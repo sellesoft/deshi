@@ -8,6 +8,7 @@ A game engine for 3D physics and graphics building on [P3DPGE](https://github.co
 * [VulkanSDK 1.2.162.1](https://vulkan.lunarg.com/sdk/home)
 * [GLM 0.9.9.8](https://github.com/g-truc/glm/releases/tag/0.9.9.8)
 * [stb](https://github.com/nothings/stb)
+* [OpenAL 1.1](https://www.openal.org/downloads/)
 
 ### Features
 * Importing Wavefront (.obj) models
@@ -30,6 +31,7 @@ A game engine for 3D physics and graphics building on [P3DPGE](https://github.co
 * [dellevelled](https://github.com/DelleVelleD) Co-developer
 * [SushiSalad](https://github.com/SushiSalad) Co-developer
 * [Dear ImGui](https://github.com/ocornut/imgui)
+* [dr_libs](https://github.com/mackron/dr_libs)
 
 ### [License](LICENSE.txt)
 Public Domain or MIT licensed -- whichever you prefer
