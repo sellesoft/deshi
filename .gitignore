@@ -348,10 +348,6 @@ CodeGraphData/
 # deshi ignores
 /docs/doxygen
 imgui.ini
-objects/
-sprites/
-scenes/
-sounds/
 *.obj
 *.png
 *.jpg
@@ -361,4 +357,4 @@ sounds/
 *.o
 /build/deshi.vcxproj.FileListAbsolute.txt
 *.recipe
-*.exe
+*.wav

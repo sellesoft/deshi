@@ -2,6 +2,7 @@
 #include "deshi_defines.h"
 
 #include <map>
+#include <iostream>
 
 //constants
 #define MAX_KEYBOARD_KEYS 256
@@ -52,15 +53,18 @@ struct Input{
 	bool keyFocus, mouseFocus;
 	
 	void UpdateKeyState(int32 key, bool state){
+		//std::cout << "updating key: " << key << std::endl;
 		newKeyState[key] = state;
 	}
 	
 	void UpdateMouseState(int32 button, bool state){
+		//std::cout << "updating mouse: " << button << std::endl;
 		newMouseState[button] = state;
 	}
 	
 	//TODO(i,delle) look into safeguarding mouse input, see: PixelGameEngine::olc_UpdateMouse
 	void UpdateMousePosition(int32 x, int32 y){
+		//std::cout << "mouse: " << x << "," << y << std::endl;
 		mouseFocus = true;
 		mouse_x = x;
 		mouse_y = y;

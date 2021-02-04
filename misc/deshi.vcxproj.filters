@@ -1,12 +1,41 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="..\src\deshi_input.h" />
-    <ClInclude Include="..\src\deshi_renderer.h" />
-    <ClInclude Include="..\src\deshi_defines.h" />
-    <ClInclude Include="..\src\deshi_glfw.h" />
+    <ClInclude Include="..\src\deshi_renderer.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\deshi_defines.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\deshi_glfw.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\deshi_input.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\deshi.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\deshi_main.cpp" />
+    <Filter Include="src">
+      <UniqueIdentifier>{cc8f6775-fe7f-43e5-8e79-15ad05cbc389}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="docs">
+      <UniqueIdentifier>{7294ad63-2d80-4adb-82d6-ce0d6c5f36b7}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\.gitignore">
+      <Filter>docs</Filter>
+    </None>
+    <None Include="..\README.md">
+      <Filter>docs</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

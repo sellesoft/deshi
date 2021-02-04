@@ -3,7 +3,7 @@
 #include "deshi_input.h"
 
 #pragma comment(lib,"glfw3.lib")
-#define GLFW_INCLUDE_VULKAN
+//#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include <map>
@@ -17,6 +17,7 @@ static void glfwError(int id, const char* description){
 	std::cout << description << std::endl;
 }
 
+//TODO(,delle) add window title updating
 struct Window{
 	GLFWwindow* window;
 	GLFWmonitor* monitor;
@@ -27,12 +28,15 @@ struct Window{
 	DisplayMode displayMode;
 	bool vsync;
 	
+	inline static Input* input;
+	
 	//TODO(c,delle) vsync isnt handled in GLFW when using vulkan, handle other renderers when necessary
 	//thanks: https://github.com/OneLoneCoder/olcPixelGameEngine/pull/181
 	void Init(Input* input, int32 width, int32 height, int32 x = 0, int32 y = 0,  
 			  DisplayMode displayMode = DisplayMode::WINDOWED, bool vsync = false){
 		glfwSetErrorCallback(&glfwError);
 		if (!glfwInit()){ return; }
+		Window::input = input;
 		
 		//TODO(r,delle) maybe we should not allow the window to be resizable in-game, but in-engine is fine
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); 
@@ -129,17 +133,17 @@ struct Window{
 		input->mapMouse[GLFW_MOUSE_BUTTON_3] = MouseButton::MB_MIDDLE;
 		input->mapMouse[GLFW_MOUSE_BUTTON_4] = MouseButton::MB_FOUR;
 		input->mapMouse[GLFW_MOUSE_BUTTON_5] = MouseButton::MB_FIVE;
-		/*
+		
 		//event callbacks
 		//void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		glfwSetMouseButtonCallback(window, 
 								   [](GLFWwindow* w, int button, int action, int mods)->void{
-									   std::map<size_t, uint8>::iterator it = input->mapMouse.find(button);
-									   if(it != input->mapMouse.end()){
+									   std::map<size_t, uint8>::iterator it = Window::input->mapMouse.find(button);
+									   if(it != Window::input->mapMouse.end()){
 										   if(action == GLFW_PRESS){
-											   input->UpdateMouseState(button, true);
+											   Window::input->UpdateMouseState(button, true);
 										   }else if(action == GLFW_RELEASE){
-											   input->UpdateMouseState(button, false);
+											   Window::input->UpdateMouseState(button, false);
 										   }
 									   }
 								   });
@@ -151,18 +155,18 @@ struct Window{
 									 GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 									 int x, y, width, height;
 									 glfwGetMonitorWorkarea(monitor, &x, &y, &width, &height);
-									 input->UpdateMousePosition((int)xpos - x, (int)ypos - y);
+									 Window::input->UpdateMousePosition((int)xpos - x, (int)ypos - y);
 								 });
 		
 		//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 		glfwSetKeyCallback(window,
 						   [](GLFWwindow* window, int key, int scancode, int action, int mods)->void{
-							   std::map<size_t, uint8>::iterator it = input->mapKeys.find(key);
-							   if(it != input->mapKeys.end()){
+							   std::map<size_t, uint8>::iterator it = Window::input->mapKeys.find(key);
+							   if(it != Window::input->mapKeys.end()){
 								   if(action == GLFW_PRESS){
-									   input->UpdateKeyState(key, true);
+									   Window::input->UpdateKeyState(key, true);
 								   }else if(action == GLFW_RELEASE){
-									   input->UpdateKeyState(key, false);
+									   Window::input->UpdateKeyState(key, false);
 								   }
 							   }
 						   });
@@ -171,13 +175,13 @@ struct Window{
 		glfwSetCursorEnterCallback(window, 
 								   [](GLFWwindow* w, int entered)->void{
 									   if (entered){
-										   input->keyFocus = true;
+										   Window::input->keyFocus = true;
 									   }else{
-										   input->keyFocus = false;
+										   Window::input->keyFocus = false;
 									   }
 								   });
-		*/
-	}
+		
+	}//Init
 	
 	void Cleanup(){
 		glfwTerminate();
@@ -186,7 +190,6 @@ struct Window{
 	void StartLoop(){
 		while(!glfwWindowShouldClose(window)){
 			glfwPollEvents();
-			//do something
 		}
 	}
 	
@@ -205,8 +208,6 @@ struct Window{
 			}break;
 			default:{ //DisplayMode::WINDOWED
 				glfwSetWindowMonitor(this->window, 0, this->x, this->y, this->window_width, this->window_height, GLFW_DONT_CARE);
-				glfwSetWindowAttrib(this->window, GLFW_DECORATED, GLFW_TRUE);
-				
 			}break;
 		}
 	}

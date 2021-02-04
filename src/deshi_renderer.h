@@ -1,6 +1,4 @@
-#ifndef DESHI_RENDERER_H
-#define DESHI_RENDERER_H
-
+#pragma once
 #include "deshi_defines.h"
 #include "deshi_glfw.h"
 
@@ -20,26 +18,88 @@
 
 #include <boost/optional.hpp>
 
+enum RenderAPI{
+	VULKAN
+};
+
 struct Renderer{
-	void Init(Window* window) = 0;
-	void Draw() = 0;
-	void Cleanup() = 0;
+	virtual void Init(Window* window) = 0;
+	virtual void Draw() = 0;
+	virtual void Cleanup() = 0;
 };
 
 struct Renderer_Vulkan : public Renderer{
+	//instance
+	VkInstance instance;
+	VkDebugUtilsMessengerEXT debugMessenger;
+	GLFWwindow* window;
+	VkSurfaceKHR surface;
+	
+	//device
+	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+	VkDevice device;
+	VkQueue graphicsQueue;
+	VkQueue presentQueue;
+	
+	//image buffers
+	VkSwapchainKHR swapChain;
+	std::vector<VkImage> swapChainImages;
+	VkFormat swapChainImageFormat;
+	VkExtent2D swapChainExtent;
+	std::vector<VkImageView> swapChainImageViews;
+	std::vector<VkFramebuffer> swapChainFramebuffers;
+	
+	//render pipeline
+	VkRenderPass renderPass;
+	VkDescriptorSetLayout descriptorSetLayout;
+	VkPipelineLayout pipelineLayout;
+	VkPipeline graphicsPipeline;
+	
+	VkCommandPool commandPool;
+	
+	VkImage colorImage;
+	VkDeviceMemory colorImageMemory;
+	VkImageView colorImageView;
+	
+	VkImage depthImage;
+	VkDeviceMemory depthImageMemory;
+	VkImageView depthImageView;
+	
+	uint32 mipLevels;
+	VkImage textureImage;
+	VkDeviceMemory textureImageMemory;
+	VkImageView textureImageView;
+	VkSampler textureSampler;
+	
+	std::vector<Vertex> vertices;
+	VkBuffer vertexBuffer;
+	VkDeviceMemory vertexBufferMemory;
+	std::vector<uint32> indices;
+	VkBuffer indexBuffer;
+	VkDeviceMemory indexBufferMemory;
+	
+	std::vector<VkBuffer> uniformBuffers;
+	std::vector<VkDeviceMemory> uniformBuffersMemory;
+	
+	VkDescriptorPool descriptorPool;
+	std::vector<VkDescriptorSet> descriptorSets;
+	
+	std::vector<VkCommandBuffer> commandBuffers;
+	
+	VkSemaphore imageAvailableSemaphore;
+	VkSemaphore renderFinishedSemaphore;
+	std::vector<VkSemaphore> imageAvailableSemaphores;
+	std::vector<VkSemaphore> renderFinishedSemaphores;
+	std::vector<VkFence> inFlightFences;
+	std::vector<VkFence> imagesInFlight;
+	size_t currentFrame = 0;
+	
+	bool framebufferResized = false;
+	
+	virtual void Init(Window* window) override;
+	virtual void Draw() override;
+	virtual void Cleanup() override;
 	
 	
-	void Init(Window* window) override{
-		
-	}
-	
-	void Draw() override{
-		
-	}
-	
-	void Cleanup() override{
-		
-	}
 };
-
-#endif //DESHI_RENDERER_H
