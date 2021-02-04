@@ -1,0 +1,13 @@
+P3DPGE Console Release Notes
+
+the console isn't actually released or anything, this just keeps track of its progress in engine
+the console's ui is written using DearImGui, but its actual functionality is defined in ConsoleSystem and the
+data it carries is defined in Console.h
+
+0.5.0 - initial release notes
+-implemented issuing commands with arguments
+-implemented a color parsing system 
+-implemented a help command
+-implemented tab completion (although its currently broken still)
+-implemented pushing text to the console from code
+-implemented pushing CASSERT and CASSERTWARN to the console from code
