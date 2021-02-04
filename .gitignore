@@ -347,13 +347,11 @@ CodeGraphData/
 
 # deshi ignores
 /docs/doxygen
+/data
 imgui.ini
-*.obj
-*.png
-*.jpg
 /build/deshi.tlog
 *.idb
 *.o
 /build/deshi.vcxproj.FileListAbsolute.txt
 *.recipe
-*.wav
+*.obj

@@ -29,7 +29,7 @@ A game engine for 3D physics and graphics building on [P3DPGE](https://github.co
 
 ### Credits
 * [dellevelled](https://github.com/DelleVelleD) Co-developer
-* [SushiSalad](https://github.com/SushiSalad) Co-developer
+* [e-sushi](https://github.com/e-sushi) Co-developer
 * [Dear ImGui](https://github.com/ocornut/imgui)
 * [dr_libs](https://github.com/mackron/dr_libs)
 

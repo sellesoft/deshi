@@ -163,6 +163,7 @@
     <ClInclude Include="..\src\deshi.h" />
     <ClInclude Include="..\src\deshi_defines.h" />
     <ClInclude Include="..\src\deshi_glfw.h" />
+    <ClInclude Include="..\src\deshi_import.h" />
     <ClInclude Include="..\src\deshi_input.h" />
     <ClInclude Include="..\src\deshi_renderer.h" />
   </ItemGroup>
@@ -171,6 +172,7 @@
     <None Include="..\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\deshi_renderer.cpp" />
     <ClCompile Include="..\src\main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

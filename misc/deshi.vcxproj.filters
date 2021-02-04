@@ -16,6 +16,9 @@
     <ClInclude Include="..\src\deshi.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\deshi_import.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -35,6 +38,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\deshi_renderer.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
