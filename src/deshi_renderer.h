@@ -72,10 +72,17 @@ struct Renderer_Vulkan : public Renderer{
 	VkImageView textureImageView;
 	VkSampler textureSampler;
 	
-	std::vector<Vertex> vertices;
+	std::vector<Vertex> vertices = {
+		{{-0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+		{{0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+		{{0.5f, 0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+		{{-0.5f, 0.5f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+	};
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexBufferMemory;
-	std::vector<uint32> indices;
+	std::vector<uint32> indices = {
+		0, 1, 2, 2, 3, 0
+	};
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 	
