@@ -2,8 +2,10 @@
 #include "deshi_defines.h"
 #include "deshi_input.h"
 
+#if defined(_MSC_VER)
 #pragma comment(lib,"glfw3.lib")
-//#define GLFW_INCLUDE_VULKAN
+#endif
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 #include <map>

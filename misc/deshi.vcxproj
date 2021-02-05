@@ -101,6 +101,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\src\boost_1_74_0;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include;</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -117,6 +118,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\src\boost_1_74_0;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include;</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,7 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\src\boost_1_74_0;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\src\boost_1_74_0;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -150,6 +152,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\src\boost_1_74_0;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include;</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -163,9 +166,18 @@
     <ClInclude Include="..\src\deshi.h" />
     <ClInclude Include="..\src\deshi_defines.h" />
     <ClInclude Include="..\src\deshi_glfw.h" />
+    <ClInclude Include="..\src\deshi_imgui.h" />
     <ClInclude Include="..\src\deshi_import.h" />
     <ClInclude Include="..\src\deshi_input.h" />
     <ClInclude Include="..\src\deshi_renderer.h" />
+    <ClInclude Include="..\src\internal\imgui\imconfig.h" />
+    <ClInclude Include="..\src\internal\imgui\imgui.h" />
+    <ClInclude Include="..\src\internal\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="..\src\internal\imgui\imgui_impl_vulkan.h" />
+    <ClInclude Include="..\src\internal\imgui\imgui_internal.h" />
+    <ClInclude Include="..\src\internal\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\src\internal\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\src\internal\imgui\imstb_truetype.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore" />
@@ -173,6 +185,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\deshi_renderer.cpp" />
+    <ClCompile Include="..\src\internal\imgui\imgui.cpp" />
+    <ClCompile Include="..\src\internal\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\src\internal\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\src\internal\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\src\internal\imgui\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="..\src\internal\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\src\internal\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\src\main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

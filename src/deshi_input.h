@@ -53,7 +53,7 @@ struct Input{
 	bool keyFocus, mouseFocus;
 	
 	void UpdateKeyState(int32 key, bool state){
-		//std::cout << "updating key: " << key << std::endl;
+		std::cout << "updating key: " << key << std::endl;
 		newKeyState[key] = state;
 	}
 	

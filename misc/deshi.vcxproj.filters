@@ -19,6 +19,33 @@
     <ClInclude Include="..\src\deshi_import.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\internal\imgui\imconfig.h">
+      <Filter>src\internal\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\internal\imgui\imgui.h">
+      <Filter>src\internal\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\internal\imgui\imgui_impl_glfw.h">
+      <Filter>src\internal\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\internal\imgui\imgui_impl_vulkan.h">
+      <Filter>src\internal\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\internal\imgui\imgui_internal.h">
+      <Filter>src\internal\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\internal\imgui\imstb_rectpack.h">
+      <Filter>src\internal\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\internal\imgui\imstb_textedit.h">
+      <Filter>src\internal\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\internal\imgui\imstb_truetype.h">
+      <Filter>src\internal\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\deshi_imgui.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -26,6 +53,12 @@
     </Filter>
     <Filter Include="docs">
       <UniqueIdentifier>{7294ad63-2d80-4adb-82d6-ce0d6c5f36b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\internal">
+      <UniqueIdentifier>{29d3584e-d40d-49d7-b334-ee2e69ad1d81}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\internal\imgui">
+      <UniqueIdentifier>{ed611ccd-1730-46c2-89ab-5aa1346d6b14}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -42,6 +75,27 @@
     </ClCompile>
     <ClCompile Include="..\src\deshi_renderer.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\internal\imgui\imgui.cpp">
+      <Filter>src\internal\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\internal\imgui\imgui_demo.cpp">
+      <Filter>src\internal\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\internal\imgui\imgui_draw.cpp">
+      <Filter>src\internal\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\internal\imgui\imgui_impl_glfw.cpp">
+      <Filter>src\internal\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\internal\imgui\imgui_impl_vulkan.cpp">
+      <Filter>src\internal\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\internal\imgui\imgui_tables.cpp">
+      <Filter>src\internal\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\internal\imgui\imgui_widgets.cpp">
+      <Filter>src\internal\imgui</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

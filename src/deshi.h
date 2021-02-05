@@ -4,11 +4,12 @@
 #include "deshi_input.h"
 #include "deshi_glfw.h"
 #include "deshi_renderer.h"
+#include "deshi_imgui.h"
 
 #include <atomic>
 #include <thread>
 
-struct Deshi {
+struct DeshiEngine {
 	inline static std::atomic<bool> running;
 	
 	//EntityAdmin entityAdmin;
@@ -16,6 +17,7 @@ struct Deshi {
 	Renderer* renderer;
 	Input input;
 	Window window;
+	deshiImGui* imgui;
 	
 	//TODO(,delle) setup loading a config file
 	void LoadConfig(){
@@ -23,8 +25,10 @@ struct Deshi {
 		//render api
 		renderAPI = RenderAPI::VULKAN;
 		switch(renderAPI){
-			//case(VULKAN):{ renderer = Renderer_Vulkan(window); }break;
-			default:{ renderer = new Renderer_Vulkan; }break;
+			case(VULKAN):default:{ 
+				renderer = new Renderer_Vulkan; 
+				imgui = new vkImGui;
+			}break;
 		}
 	}
 	
@@ -33,29 +37,33 @@ struct Deshi {
 		LoadConfig();
 		window.Init(&input, 1280, 720);
 		renderer->Init(&window);
+		imgui->Init(renderer, &input, &window);
 		
 		//start the engine thread
-		Deshi::running = true;
-		std::thread t = std::thread(&Deshi::EngineThread, this);
+		DeshiEngine::running = true;
+		std::thread t = std::thread(&DeshiEngine::EngineThread, this);
 		
 		window.StartLoop();
 		
-		Deshi::running = false;
+		DeshiEngine::running = false;
 		t.join();
 		
 		//cleanup
+		imgui->Cleanup();
 		renderer->Cleanup();
 		window.Cleanup();
 	}
 	
 	void EngineThread(){
-		while(Deshi::running){
-			if(!Update()){ Deshi::running = false; }
+		while(DeshiEngine::running){
+			if(!Update()){ DeshiEngine::running = false; }
 		}
 	}
 	
 	bool Update() {
+		imgui->NewFrame();
 		//entityAdmin.PreRenderUpdate();
+		imgui->EndFrame();
 		renderer->Draw();
 		//entityAdmin.PostRenderUpdate();
 		return true;

@@ -194,8 +194,8 @@ void Renderer_Vulkan::recreateSwapChain() {
 	glfwGetFramebufferSize(window, &width, &height);
 	while (width == 0 || height == 0) {
 		glfwGetFramebufferSize(window, &width, &height);
-		//glfwWaitEvents(); //this should stop rendering when minimized but is freezing everything TODO(r,delle) fix freezing
-		glfwPollEvents(); //this keeps rendering when minimized
+		glfwWaitEvents(); //this freezes rendering while minimized
+		//glfwPollEvents(); //this might as well?
 	}
 	
 	vkDeviceWaitIdle(device);
@@ -246,7 +246,7 @@ void Renderer_Vulkan::createInstance() {
 		createInfo.pNext = nullptr;
 	}
 	
-	if(vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
+	if(vkCreateInstance(&createInfo, 0, &instance) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create instance!");
 	}
 }
@@ -288,20 +288,22 @@ void Renderer_Vulkan::pickPhysicalDevice() {
 	if(physicalDevice == VK_NULL_HANDLE) {
 		throw std::runtime_error("failed to find a suitable GPU!");
 	}
+	
+	physicalQueueFamilies = findQueueFamilies(physicalDevice);
 }
 
 void Renderer_Vulkan::createLogicalDevice() {
 	std::cout << "{-}{-} Creating Logical Device {-}{-}" << std::endl;
-	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-	
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+	std::set<uint32> uniqueQueueFamilies = {
+		physicalQueueFamilies.graphicsFamily.value(), physicalQueueFamilies.presentFamily.value()
+	};
 	
 	float queuePriority = 1.0f;
 	for(uint32 queueFamily : uniqueQueueFamilies){
 		VkDeviceQueueCreateInfo queueCreateInfo{};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
+		queueCreateInfo.queueFamilyIndex = physicalQueueFamilies.graphicsFamily.value();
 		queueCreateInfo.queueCount = 1;
 		queueCreateInfo.pQueuePriorities = &queuePriority;
 		queueCreateInfos.push_back(queueCreateInfo);
@@ -329,8 +331,8 @@ void Renderer_Vulkan::createLogicalDevice() {
 		throw std::runtime_error("failed to create logical device!");
 	}
 	
-	vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-	vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+	vkGetDeviceQueue(device, physicalQueueFamilies.graphicsFamily.value(), 0, &graphicsQueue);
+	vkGetDeviceQueue(device, physicalQueueFamilies.presentFamily.value(), 0, &presentQueue);
 }
 
 void Renderer_Vulkan::createSwapChain() {
@@ -345,8 +347,9 @@ void Renderer_Vulkan::createSwapChain() {
 		imageCount = swapChainSupport.capabilities.maxImageCount;
 	}
 	
-	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-	uint32 queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+	uint32 queueFamilyIndices[] = {
+		physicalQueueFamilies.graphicsFamily.value(), physicalQueueFamilies.presentFamily.value()
+	};
 	
 	VkSwapchainCreateInfoKHR createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -357,7 +360,7 @@ void Renderer_Vulkan::createSwapChain() {
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	if (indices.graphicsFamily != indices.presentFamily) {
+	if (physicalQueueFamilies.graphicsFamily != physicalQueueFamilies.presentFamily) {
 		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		createInfo.queueFamilyIndexCount = 2;
 		createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -663,11 +666,10 @@ void Renderer_Vulkan::createGraphicsPipeline() {
 
 void Renderer_Vulkan::createCommandPool() {
 	std::cout << "{-}{-} Creating Command Pool {-}{-}" << std::endl;
-	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
 	
 	VkCommandPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+	poolInfo.queueFamilyIndex = physicalQueueFamilies.graphicsFamily.value();
 	poolInfo.flags = 0;
 	
 	if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
@@ -1031,7 +1033,7 @@ void Renderer_Vulkan::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCrea
 	std::cout << "{-}{-}{-} Populating Debug Messenger CreateInfo {-}{-}{-}" << std::endl;
 	createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	createInfo.messageSeverity = /*VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |*/ VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	createInfo.pfnUserCallback = debugCallback;
 }

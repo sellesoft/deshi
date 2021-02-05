@@ -1,8 +1,10 @@
 #pragma once
 #include "deshi_defines.h"
 
+#if defined(_MSC_VER)
 #pragma comment(lib,"vulkan-1.lib")
 #pragma comment(lib,"glfw3.lib")
+#endif
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
@@ -28,10 +30,20 @@ struct Renderer{
 	virtual void Cleanup() = 0;
 };
 
-
 ////////////////////////////////
 //// vulkan support structs ////
 ////////////////////////////////
+/*TODO(r,delle) update vulkan rendering
+In real implementation: 
+https://vulkan-tutorial.com/en/Vertex_buffers/Staging_buffer#page_Using-a-staging-buffer:~:text=You%20may
+https://vulkan-tutorial.com/en/Vertex_buffers/Staging_buffer#page_Conclusion:~:text=It%20should
+https://vulkan-tutorial.com/en/Vertex_buffers/Index_buffer#page_Using-an-index-buffer:~:text=The%20previous
+https://vulkan-tutorial.com/en/Uniform_buffers/Descriptor_layout_and_buffer#page_Updating-uniform-data:~:text=Using%20a%20UBO
+https://vulkan-tutorial.com/en/Texture_mapping/Combined_image_sampler#page_Updating-the-descriptors:~:text=determined.-,It%20is
+https://vulkan-tutorial.com/en/Generating_Mipmaps#page_Generating-Mipmaps:~:text=Beware%20if%20you
+https://vulkan-tutorial.com/en/Generating_Mipmaps#page_Linear-filtering-support:~:text=There%20are%20two
+https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-,like
+*/
 
 struct Vertex{
 	glm::vec3 pos;
@@ -81,13 +93,14 @@ struct Renderer_Vulkan : public Renderer{
 	///////////////////////////////
 	
 	//TODO(r,delle) INSERT VIDEO SETTINGS HERE
-	uint32 windowWidth;
-	uint32 windowHeight;
+	int32 windowWidth;
+	int32 windowHeight;
 	int MAX_FRAMES_IN_FLIGHT = 2;
 	
 	//////////////////////////////
 	//// vulkan api variables ////
 	//////////////////////////////
+	VkAllocationCallbacks* allocator;
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
 	GLFWwindow* window;
@@ -95,7 +108,10 @@ struct Renderer_Vulkan : public Renderer{
 	
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+	QueueFamilyIndices physicalQueueFamilies;
+	
 	VkDevice device;
+	QueueFamilyIndices deviceQueueFamilies;
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
 	
@@ -110,6 +126,7 @@ struct Renderer_Vulkan : public Renderer{
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
+	VkPipelineCache graphicsPipelineCache;
 	
 	VkCommandPool commandPool;
 	

@@ -1,5 +1,5 @@
 #include "deshi.h"
 int main() {
-	Deshi engine;
+	DeshiEngine engine;
 	engine.Start();
 }
