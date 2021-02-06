@@ -143,9 +143,9 @@ struct Window{
 									   std::map<size_t, uint8>::iterator it = Window::input->mapMouse.find(button);
 									   if(it != Window::input->mapMouse.end()){
 										   if(action == GLFW_PRESS){
-											   Window::input->UpdateMouseState(button, true);
+											   Window::input->realMouseState[button] = true;
 										   }else if(action == GLFW_RELEASE){
-											   Window::input->UpdateMouseState(button, false);
+											   Window::input->realMouseState[button] = false;
 										   }
 									   }
 								   });
@@ -157,7 +157,11 @@ struct Window{
 									 GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 									 int x, y, width, height;
 									 glfwGetMonitorWorkarea(monitor, &x, &y, &width, &height);
-									 Window::input->UpdateMousePosition((int)xpos - x, (int)ypos - y);
+									 Window::input->mouseFocus = true;
+									 Window::input->realMouseX = xpos - (float)x;
+									 Window::input->realMouseY = ypos - (float)y;
+									 Window::input->realScreenMouseX = xpos;
+									 Window::input->realScreenMouseY = ypos;
 								 });
 		
 		//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -166,9 +170,9 @@ struct Window{
 							   std::map<size_t, uint8>::iterator it = Window::input->mapKeys.find(key);
 							   if(it != Window::input->mapKeys.end()){
 								   if(action == GLFW_PRESS){
-									   Window::input->UpdateKeyState(key, true);
+									   Window::input->realKeyState[key] = true;
 								   }else if(action == GLFW_RELEASE){
-									   Window::input->UpdateKeyState(key, false);
+									   Window::input->realKeyState[key] = false;
 								   }
 							   }
 						   });

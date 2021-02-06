@@ -34,7 +34,6 @@ static void check_vk_result(VkResult err){
 
 //thanks: https://github.com/dandistine/olcPGEDearImGui
 struct deshiImGui{
-	Renderer* renderer;
 	Input* input;
 	Window* window;
 	std::vector<Key> controlInputKeys;
@@ -43,7 +42,6 @@ struct deshiImGui{
 	virtual void Init(Renderer* renderer, Input* input, Window* window){
 		this->input = input;
 		this->window = window;
-		this->renderer = renderer;
 		
 		//Setup Dear ImGui context
 		ImGui::CreateContext();
@@ -101,37 +99,91 @@ struct vkImGui : public deshiImGui{
 	void Init(Renderer* renderer, Input* input, Window* window) override{
 		deshiImGui::Init(renderer, input, window);
 		vkr = (Renderer_Vulkan*)renderer; 
-		/*
+		VkResult err;
+		
 		//Setup Platform/Renderer backends
 		ImGui_ImplGlfw_InitForVulkan(window->window, true);
 		ImGui_ImplVulkan_InitInfo init_info = {};
 		init_info.Instance = vkr->instance;
 		init_info.PhysicalDevice = vkr->physicalDevice;
 		init_info.Device = vkr->device;
-		init_info.QueueFamily = vkr->physicalQueueFamilies.graphicsFamily;
+		init_info.QueueFamily = vkr->physicalQueueFamilies.graphicsFamily.get();
 		init_info.Queue = vkr->graphicsQueue;
 		init_info.PipelineCache = vkr->graphicsPipelineCache;
-		init_info.DescriptorPool = g_DescriptorPool;
+		init_info.DescriptorPool = vkr->descriptorPool;
 		init_info.Allocator = vkr->allocator;
-		init_info.MinImageCount = g_MinImageCount;
-		init_info.ImageCount = wd->ImageCount;
+		init_info.MinImageCount = vkr->minImageCount;
+		init_info.ImageCount = vkr->imageCount;
 		init_info.CheckVkResultFn = check_vk_result;
 		ImGui_ImplVulkan_Init(&init_info, vkr->renderPass);
-		*/
 		
+		// Upload Fonts
+		{
+			VkCommandPool command_pool = vkr->commandPool;
+			VkCommandBuffer command_buffer = vkr->commandBuffers[vkr->currentFrame];
+			
+			err = vkResetCommandPool(vkr->device, command_pool, 0);
+			check_vk_result(err);
+			VkCommandBufferBeginInfo begin_info = {};
+			begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+			err = vkBeginCommandBuffer(command_buffer, &begin_info);
+			check_vk_result(err);
+			
+			ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
+			
+			VkSubmitInfo end_info = {};
+			end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			end_info.commandBufferCount = 1;
+			end_info.pCommandBuffers = &command_buffer;
+			err = vkEndCommandBuffer(command_buffer);
+			check_vk_result(err);
+			err = vkQueueSubmit(vkr->graphicsQueue, 1, &end_info, VK_NULL_HANDLE);
+			check_vk_result(err);
+			
+			err = vkDeviceWaitIdle(vkr->device);
+			check_vk_result(err);
+			ImGui_ImplVulkan_DestroyFontUploadObjects();
+		}
 	}
 	
 	void Cleanup() override{
-		/*ImGui_ImplVulkan_Shutdown();
-		ImGui_ImplGlfw_Shutdown();*/
+		VkResult err;
+		err = vkDeviceWaitIdle(vkr->device);
+		check_vk_result(err);
+		ImGui_ImplVulkan_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
 	}
 	
 	void NewFrame() override{
+		if(vkr->framebufferResized){
+			int w, h;
+			glfwGetFramebufferSize(vkr->window, &w, &h);
+			if(w > 0 && h > 0){
+				ImGui_ImplVulkan_SetMinImageCount(vkr->minImageCount);
+			}
+		}
 		
+		ImGuiIO& io = ImGui::GetIO();
+		//update mouse
+		io.MouseDown[0] = input->newMouseState[0];
+		io.MouseDown[1] = input->newMouseState[1];
+		io.MouseDown[2] = input->newMouseState[2];
+		io.MouseDown[3] = input->newMouseState[3];
+		io.MouseDown[4] = input->newMouseState[4];
+		io.MousePos = ImVec2(input->realMouseX, input->realMouseY);
+		
+		// Start the Dear ImGui frame
+		ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 	}
 	
 	void EndFrame() override{
-		
+		ImGui::Render();
+		// Record dear imgui primitives into command buffer
+		//ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkr->commandBuffers[vkr->currentFrame]);
+		std::cout << "-----------------" << std::endl;
 	}
 };

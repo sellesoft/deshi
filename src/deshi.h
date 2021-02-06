@@ -27,7 +27,7 @@ struct DeshiEngine {
 		switch(renderAPI){
 			case(VULKAN):default:{ 
 				renderer = new Renderer_Vulkan; 
-				imgui = new vkImGui;
+				//imgui = new vkImGui;
 			}break;
 		}
 	}
@@ -37,7 +37,7 @@ struct DeshiEngine {
 		LoadConfig();
 		window.Init(&input, 1280, 720);
 		renderer->Init(&window);
-		imgui->Init(renderer, &input, &window);
+		//imgui->Init(renderer, &input, &window);
 		
 		//start the engine thread
 		DeshiEngine::running = true;
@@ -49,8 +49,8 @@ struct DeshiEngine {
 		t.join();
 		
 		//cleanup
-		imgui->Cleanup();
-		renderer->Cleanup();
+		//imgui->Cleanup(); delete imgui;
+		renderer->Cleanup(); delete renderer;
 		window.Cleanup();
 	}
 	
@@ -61,9 +61,10 @@ struct DeshiEngine {
 	}
 	
 	bool Update() {
-		imgui->NewFrame();
+		input.Update();
+		//imgui->NewFrame();
 		//entityAdmin.PreRenderUpdate();
-		imgui->EndFrame();
+		//imgui->EndFrame();
 		renderer->Draw();
 		//entityAdmin.PostRenderUpdate();
 		return true;
