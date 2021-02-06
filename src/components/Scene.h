@@ -1,6 +1,6 @@
 #pragma once
-#include "dsh_Component.h"
-#include "dsh_Mesh.h"
+#include "Component.h"
+#include "Mesh.h"
 
 struct Light;
 struct Edge3D;

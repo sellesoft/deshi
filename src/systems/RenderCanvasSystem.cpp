@@ -1,15 +1,15 @@
-#include "dsh_RenderCanvasSystem.h"
-#include "dsh_ConsoleSystem.h"
-#include "../utils/dsh_GLOBALS.h"
+#include "RenderCanvasSystem.h"
+#include "ConsoleSystem.h"
+#include "../utils/GLOBALS.h"
 
-#include "../utils/dsh_ContainerManager.h"
+#include "../utils/ContainerManager.h"
 
-#include "../components/dsh_Canvas.h"
-#include "../components/dsh_Screen.h"
-#include "../components/dsh_Scene.h"
-#include "../components/dsh_Camera.h"
-#include "../components/dsh_Input.h"
-#include "../components/dsh_Time.h"
+#include "../components/Canvas.h"
+#include "../components/Screen.h"
+#include "../components/Scene.h"
+#include "../components/Camera.h"
+#include "../components/Input.h"
+#include "../components/Time.h"
 
 /* 
 

@@ -1,18 +1,18 @@
-#include "dsh_CommandSystem.h"
-#include "../utils/dsh_Command.h"
+#include "CommandSystem.h"
+#include "../utils/Command.h"
 
 
-#include "../systems/dsh_WorldSystem.h"
+#include "../systems/WorldSystem.h"
 
-#include "../components/dsh_Input.h"
-#include "../components/dsh_Keybinds.h"
-#include "../components/dsh_Canvas.h"
-#include "../components/dsh_Transform.h"
-#include "../components/dsh_Mesh.h"
-#include "../components/dsh_Scene.h"
-#include "../components/dsh_Physics.h"
-#include "../components/dsh_Collider.h"
-#include "../components/dsh_Source.h"
+#include "../components/Input.h"
+#include "../components/Keybinds.h"
+#include "../components/Canvas.h"
+#include "../components/Transform.h"
+#include "../components/Mesh.h"
+#include "../components/Scene.h"
+#include "../components/Physics.h"
+#include "../components/Collider.h"
+#include "../components/Source.h"
 
 //regex for checking paramaters
 #define RegPosParam   std::regex("-pos=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")

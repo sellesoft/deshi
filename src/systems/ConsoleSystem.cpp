@@ -1,11 +1,11 @@
-#include "dsh_ConsoleSystem.h"
+#include "ConsoleSystem.h"
 
-#include "../components/dsh_Time.h"
-#include "../components/dsh_Input.h"
-#include "../components/dsh_Screen.h"
-#include "../components/dsh_Console.h"
+#include "../components/Time.h"
+#include "../components/Input.h"
+#include "../components/Screen.h"
+#include "../components/Console.h"
 
-#include "../utils/dsh_Command.h"
+#include "../utils/Command.h"
 #include <time.h>
 
 

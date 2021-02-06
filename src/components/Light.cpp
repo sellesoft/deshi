@@ -1,6 +1,6 @@
 #pragma once
-#include "dsh_Component.h"
-#include "../math/dsh_Vector3.h"
+#include "Component.h"
+#include "../math/Vector3.h"
 
 struct Light : public Component {
 	Vector3 position;

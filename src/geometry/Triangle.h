@@ -1,6 +1,6 @@
 #pragma once
-#include "../math/dsh_Math.h"
-#include "dsh_Edge.h"
+#include "../math/Math.h"
+#include "Edge.h"
 
 struct Entity;
 

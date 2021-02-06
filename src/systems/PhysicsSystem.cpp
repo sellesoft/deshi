@@ -1,18 +1,18 @@
-#include "dsh_PhysicsSystem.h"
-#include "../utils/dsh_PhysicsWorld.h"
-#include "../math/dsh_Math.h"
-#include "../geometry/dsh_Geometry.h"
+#include "PhysicsSystem.h"
+#include "../utils/PhysicsWorld.h"
+#include "../math/Math.h"
+#include "../geometry/Geometry.h"
 
-#include "../components/dsh_Transform.h"
-#include "../components/dsh_Physics.h"
-#include "../components/dsh_Collider.h"
+#include "../components/Transform.h"
+#include "../components/Physics.h"
+#include "../components/Collider.h"
 
-#include "../utils/dsh_Command.h"
-#include "../components/dsh_Input.h"
-#include "../components/dsh_Time.h"
-#include "../components/dsh_Camera.h"
-#include "../components/dsh_Screen.h"
-#include "../components/dsh_Source.h"
+#include "../utils/Command.h"
+#include "../components/Input.h"
+#include "../components/Time.h"
+#include "../components/Camera.h"
+#include "../components/Screen.h"
+#include "../components/Source.h"
 
 //TODO(ip,delle) update entity movement commands to be based on EntityID
 inline void AddSelectedEntityCommands(EntityAdmin* admin) {

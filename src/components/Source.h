@@ -1,8 +1,8 @@
 #pragma once
-#include "dsh_Component.h"
-#include "dsh_Physics.h"
-#include "dsh_Transform.h"
-#include "../math/dsh_Vector3.h"
+#include "Component.h"
+#include "Physics.h"
+#include "Transform.h"
+#include "../math/Vector3.h"
 
 #include "al.h"
 #include "alc.h"

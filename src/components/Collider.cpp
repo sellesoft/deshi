@@ -1,9 +1,9 @@
 #pragma once
-#include "dsh_Component.h"
-#include "../math/dsh_Matrix3.h"
-#include "../math/dsh_Vector3.h"
-#include "../math/dsh_InertiaTensors.h"
-#include "dsh_Physics.h"
+#include "Component.h"
+#include "../math/Matrix3.h"
+#include "../math/Vector3.h"
+#include "../math/InertiaTensors.h"
+#include "Physics.h"
 
 struct Command;
 

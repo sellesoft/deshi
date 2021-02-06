@@ -1,8 +1,8 @@
-#include "dsh_SoundSystem.h"
-#include "dsh_ConsoleSystem.h"
+#include "SoundSystem.h"
+#include "ConsoleSystem.h"
 
-#include "../components/dsh_Camera.h"
-#include "../components/dsh_Source.h"
+#include "../components/Camera.h"
+#include "../components/Source.h"
 
 #include <thread>
 

@@ -1,12 +1,12 @@
 #pragma once
-#include "../utils/dsh_UsefulDefines.h"
-#include "dsh_Vector2.h"
-#include "dsh_Vector3.h"
-#include "dsh_Vector4.h"
-#include "dsh_Matrix3.h"
-#include "dsh_Matrix4.h"
-#include "dsh_MatrixN.h"
-#include "dsh_Quaternion.h"
+#include "../utils/UsefulDefines.h"
+#include "Vector2.h"
+#include "Vector3.h"
+#include "Vector4.h"
+#include "Matrix3.h"
+#include "Matrix4.h"
+#include "MatrixN.h"
+#include "Quaternion.h"
 
 #include <math.h>
 #include <algorithm>

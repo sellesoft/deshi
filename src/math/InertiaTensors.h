@@ -1,5 +1,5 @@
 #pragma once
-#include "../math/dsh_Math.h"
+#include "../math/Math.h"
 
 namespace InertiaTensors {
 	static Matrix3 SolidSphere(float radius, float mass) {

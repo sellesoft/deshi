@@ -1,10 +1,10 @@
 #pragma once
-#include "dsh_Component.h"
-#include "dsh_Transform.h"
+#include "Component.h"
+#include "Transform.h"
 
-#include "../math/dsh_Vector3.h"
-#include "../geometry/dsh_Triangle.h"
-#include "../animation/dsh_Armature.h"
+#include "../math/Vector3.h"
+#include "../geometry/Triangle.h"
+#include "../animation/Armature.h"
 
 
 struct Mesh : public Component {

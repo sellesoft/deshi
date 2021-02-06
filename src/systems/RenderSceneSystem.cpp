@@ -1,15 +1,15 @@
-#include "dsh_RenderSceneSystem.h"
-#include "dsh_ConsoleSystem.h"
-#include "../math/dsh_Math.h"
+#include "RenderSceneSystem.h"
+#include "ConsoleSystem.h"
+#include "../math/Math.h"
 
-#include "../components/dsh_Scene.h"
-#include "../components/dsh_Mesh.h"
-#include "../components/dsh_Camera.h"
-#include "../components/dsh_Light.h"
-#include "../components/dsh_Screen.h"
-#include "../components/dsh_Transform.h"
-#include "../components/dsh_Physics.h"
-#include "../components/dsh_Time.h"
+#include "../components/Scene.h"
+#include "../components/Mesh.h"
+#include "../components/Camera.h"
+#include "../components/Light.h"
+#include "../components/Screen.h"
+#include "../components/Transform.h"
+#include "../components/Physics.h"
+#include "../components/Time.h"
 
 void RenderSceneSystem::Init() {
 	

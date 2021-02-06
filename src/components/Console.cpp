@@ -1,5 +1,5 @@
 #pragma once
-#include "dsh_Component.h"
+#include "Component.h"
 
 struct Console : public Component {
 	char inputBuf[256];

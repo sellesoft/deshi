@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include "../utils/dsh_defines.h"
+#include "../utils/defines.h"
 
 struct Entity;
 

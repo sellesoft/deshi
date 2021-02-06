@@ -1,7 +1,7 @@
 #pragma once
-#include "dsh_Component.h"
+#include "Component.h"
 
-#include "dsh_Input.h"
+#include "Input.h"
 
 struct Keybinds : public Component {
 	//flying movement

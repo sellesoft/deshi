@@ -1,7 +1,7 @@
 #pragma once
 #include "deshi.h"
-#include "utils/dsh_UsefulDefines.h"
-#include "utils/dsh_Debug.h"
+#include "utils/UsefulDefines.h"
+#include "utils/Debug.h"
 
 typedef uint32 EntityID;
 struct Entity;

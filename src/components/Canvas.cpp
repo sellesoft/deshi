@@ -1,5 +1,5 @@
 #pragma once
-#include "dsh_Component.h"
+#include "Component.h"
 
 struct UIContainer;
 namespace olc { namespace imgui { struct PGE_ImGUI; } }

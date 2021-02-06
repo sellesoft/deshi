@@ -1,5 +1,5 @@
 #pragma once
-#include "dsh_Bone.h"
+#include "Bone.h"
 
 struct Armature {
 	std::vector<Bone> bones;

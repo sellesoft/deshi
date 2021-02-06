@@ -1,10 +1,10 @@
-#include "dsh_WorldSystem.h"
-#include "../dsh_EntityAdmin.h"
-#include "../utils/dsh_Debug.h"
+#include "WorldSystem.h"
+#include "../EntityAdmin.h"
+#include "../utils/Debug.h"
 
-#include "../components/dsh_World.h"
-#include "../components/dsh_Transform.h"
-#include "../components/dsh_Mesh.h"
+#include "../components/World.h"
+#include "../components/Transform.h"
+#include "../components/Mesh.h"
 
 void WorldSystem::Init() {
 	

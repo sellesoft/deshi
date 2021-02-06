@@ -1,7 +1,7 @@
 #ifndef DESHI_DEFINES_H
 #define DESHI_DEFINES_H
 
-#include "dsh_GLOBALS.h"
+#include "GLOBALS.h"
 
 //math constants
 #define M_PI         3.14159265359f

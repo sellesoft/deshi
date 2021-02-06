@@ -1,7 +1,7 @@
 #pragma once
-#include "dsh_Component.h"
-#include "dsh_Transform.h"
-#include "../math/dsh_Vector3.h"
+#include "Component.h"
+#include "Transform.h"
+#include "../math/Vector3.h"
 
 struct Physics : public Component {
 	Vector3 position;

@@ -3,9 +3,9 @@
 #include "deshi_glfw.h"
 #include "deshi_renderer.h"
 
-#include "internal/imgui/imgui.h"
-#include "internal/imgui/imgui_impl_glfw.h"
-#include "internal/imgui/imgui_impl_vulkan.h"
+#include "../internal/imgui/imgui.h"
+#include "../internal/imgui/imgui_impl_glfw.h"
+#include "../internal/imgui/imgui_impl_vulkan.h"
 
 #if defined(_MSC_VER)
 #pragma comment(lib,"vulkan-1.lib")

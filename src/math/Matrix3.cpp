@@ -1,4 +1,4 @@
-#include "dsh_Matrix3.h"
+#include "Matrix3.h"
 
 //// Constructors ////
 

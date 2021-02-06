@@ -1,7 +1,7 @@
 #pragma once
-#include "dsh_Component.h"
-#include "dsh_Camera.h"
-#include "../math/dsh_Vector3.h"
+#include "Component.h"
+#include "Camera.h"
+#include "../math/Vector3.h"
 
 //this is what OpenAL sees as the receiver of sounds in 3D space
 //there can only ever be one of them as far as I know.

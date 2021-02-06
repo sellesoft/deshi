@@ -1,6 +1,6 @@
 #pragma once
-#include "dsh_defines.h"
-#include "dsh_Color.h"
+#include "defines.h"
+#include "Color.h"
 
 #include <map>
 #include <stack>

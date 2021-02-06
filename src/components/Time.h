@@ -1,5 +1,5 @@
 #pragma once
-#include "dsh_Component.h"
+#include "Component.h"
 #include <time.h>
 
 struct Time : public Component {

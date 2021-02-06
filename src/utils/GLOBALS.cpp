@@ -1,4 +1,4 @@
-#include "dsh_GLOBALS.h"
+#include "GLOBALS.h"
 
 bool GLOBAL_DEBUG = true;
 

@@ -47,10 +47,10 @@ TODO(p,delle) add physics based collision resolution for all entities
   DebugSystem			|| ALL								|| ALL
 */
 
-#include "dsh_EntityAdmin.h"						//UsefulDefines.h, Debug.h
-#include "utils/dsh_PhysicsWorld.h"					//
-#include "utils/dsh_Command.h"						//Debug.h
-#include "utils/dsh_defines.h"				//olcPixelGameEngine.h
+#include "EntityAdmin.h"						//UsefulDefines.h, Debug.h
+#include "utils/PhysicsWorld.h"					//
+#include "utils/Command.h"						//Debug.h
+#include "utils/defines.h"				//olcPixelGameEngine.h
 //#include "math/Math.h"						//UsefulDefines.h, Vector3.h, Vector4.h, Matrix3.h, Matrix4.h, MatrixN.h,
 												//	<math.h>, <algorithm>, <numeric>
 //#include "geometry/Edge.h"					//Math.h
@@ -58,38 +58,38 @@ TODO(p,delle) add physics based collision resolution for all entities
 
 
 //component includes
-#include "components/dsh_Component.h"				//UsefulDefines.h, <vector>
-#include "components/dsh_Input.h"					//Component.h, Vector3.h
-#include "components/dsh_Screen.h"					//Component.h, Vector3.h
-#include "components/dsh_Time.h"					//Component.h, <time.h>
-#include "components/dsh_World.h"					//Component.h
-#include "components/dsh_Camera.h"					//Component.h, Vector3.h, Matrix4.h
-#include "components/dsh_Keybinds.h"				//Component.h
-#include "components/dsh_MovementState.h"			//Component.h
-#include "components/dsh_Scene.h"					//Component.h
-#include "components/dsh_Canvas.h"					//Component.h, UI.h
-#include "components/dsh_Console.h"
-#include "components/dsh_Listener.h"
+#include "components/Component.h"				//UsefulDefines.h, <vector>
+#include "components/Input.h"					//Component.h, Vector3.h
+#include "components/Screen.h"					//Component.h, Vector3.h
+#include "components/Time.h"					//Component.h, <time.h>
+#include "components/World.h"					//Component.h
+#include "components/Camera.h"					//Component.h, Vector3.h, Matrix4.h
+#include "components/Keybinds.h"				//Component.h
+#include "components/MovementState.h"			//Component.h
+#include "components/Scene.h"					//Component.h
+#include "components/Canvas.h"					//Component.h, UI.h
+#include "components/Console.h"
+#include "components/Listener.h"
 //#include "components/Mesh.h"					//Component.h, Vector3.h, Triangle.h, Armature.h
 //#include "components/Light.h"					//Component.h, Vector3.h 
 //#include "components/Physics.h"				//Component.h, Vector3.h
 //#include "components/Transform.h"				//Component.h, Vector3.h, Matrix4.h
 
 //system includes
-#include "systems/dsh_System.h"						//EntityAdmin.h
-//#include "systems/dsh_TimeSystem.h"					//System.h |cpp->| Time.h, Command.h
-//#include "systems/dsh_ScreenSystem.h"				//System.h |cpp->| Screen.h
-#include "systems/dsh_CommandSystem.h"				//System.h |cpp->| Command.h, Input.h, Canvas.h
-//#include "systems/dsh_SimpleMovementSystem.h"		//System.h |cpp->| Input.h, Keybinds.h, Camera.h, MovementState.h, Time.h
-#include "systems/dsh_PhysicsSystem.h"				//System.h |cpp->| PhysicsWorld.h, Math.h, Transform.h, Physics.h, Input.h, Command.h, Input.h, Time.h, Camera.h, Screen.h
-//#include "systems/dsh_CameraSystem.h"				//System.h |cpp->| Camera.h, Screen.h, Command.h
-//#include "systems/dsh_MeshSystem.h"					//System.h |cpp->| Mesh.h, Transform.h, Physics.h, Command.h, Input.h, Camera.h, Scene.h, Screen.h, Light.h
-#include "systems/dsh_RenderSceneSystem.h"			//System.h |cpp->| Math.h, Scene.h, Mesh.h, Camera.h, Light.h, Screen.h, Transform.h, Command.h
-#include "systems/dsh_RenderCanvasSystem.h"			//System.h |cpp->| Canvas.h, Screen.h
-#include "systems/dsh_WorldSystem.h"				//System.h |cpp->| World.h, Transform.h, Mesh.h, Command.h, Input.h
-//#include "systems/dsh_TriggeredCommandSystem.h"		//System.h |cpp->| Command.h
-#include "systems/dsh_ConsoleSystem.h"				//System.h |cpp->| Console.h
-#include "systems/dsh_SoundSystem.h"
+#include "systems/System.h"						//EntityAdmin.h
+//#include "systems/TimeSystem.h"					//System.h |cpp->| Time.h, Command.h
+//#include "systems/ScreenSystem.h"				//System.h |cpp->| Screen.h
+#include "systems/CommandSystem.h"				//System.h |cpp->| Command.h, Input.h, Canvas.h
+//#include "systems/SimpleMovementSystem.h"		//System.h |cpp->| Input.h, Keybinds.h, Camera.h, MovementState.h, Time.h
+#include "systems/PhysicsSystem.h"				//System.h |cpp->| PhysicsWorld.h, Math.h, Transform.h, Physics.h, Input.h, Command.h, Input.h, Time.h, Camera.h, Screen.h
+//#include "systems/CameraSystem.h"				//System.h |cpp->| Camera.h, Screen.h, Command.h
+//#include "systems/MeshSystem.h"					//System.h |cpp->| Mesh.h, Transform.h, Physics.h, Command.h, Input.h, Camera.h, Scene.h, Screen.h, Light.h
+#include "systems/RenderSceneSystem.h"			//System.h |cpp->| Math.h, Scene.h, Mesh.h, Camera.h, Light.h, Screen.h, Transform.h, Command.h
+#include "systems/RenderCanvasSystem.h"			//System.h |cpp->| Canvas.h, Screen.h
+#include "systems/WorldSystem.h"				//System.h |cpp->| World.h, Transform.h, Mesh.h, Command.h, Input.h
+//#include "systems/TriggeredCommandSystem.h"		//System.h |cpp->| Command.h
+#include "systems/ConsoleSystem.h"				//System.h |cpp->| Console.h
+#include "systems/SoundSystem.h"
 
 //// EntityAdmin ////
 

@@ -1,8 +1,8 @@
 #pragma once
-#include "dsh_Input.h"
-#include "dsh_Component.h"
-#include "../math/dsh_Vector3.h"
-#include "../math/dsh_Vector2.h"
+#include "Input.h"
+#include "Component.h"
+#include "../math/Vector3.h"
+#include "../math/Vector2.h"
 
 struct Screen : public Component {
 	float width;

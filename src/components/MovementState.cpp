@@ -1,5 +1,5 @@
 #pragma once
-#include "dsh_Component.h"
+#include "Component.h"
 
 #define MOVEMENT_NOCLIP		0
 #define MOVEMENT_CLIP		1

@@ -1,5 +1,5 @@
 #pragma once
-#include "dsh_System.h"
+#include "System.h"
 
 struct CommandSystem : public System {
 	void Init() override;
