@@ -14,21 +14,21 @@
 //global debug macros
 #define DEBUG if(GLOBAL_DEBUG)
 
-#define LOG(...)     DEBUG g_con->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR(...)   DEBUG g_con->PushConsole(TOSTRING("\n[c:red]", __VA_ARGS__, "[c]"))
-#define SUCCESS(...) DEBUG g_con->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
+#define LOG(...)     DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR(...)   DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", __VA_ARGS__, "[c]"))
+#define SUCCESS(...) DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
 
 //additionally prints where function was called
-#define LOG_LOC(...)     DEBUG g_con->PushConsole(TOSTRING("\n[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR_LOC(...)   DEBUG g_con->PushConsole(TOSTRING("\n[c:red]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:red]", __VA_ARGS__, "[c]"))
-#define SUCCESS_LOC(...) DEBUG g_con->PushConsole(TOSTRING("\n[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
+#define LOG_LOC(...)     DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR_LOC(...)   DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:red]", __VA_ARGS__, "[c]"))
+#define SUCCESS_LOC(...) DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
 
 #define ASSERT(condition, message)     if(!(condition) && !admin->paused){ CERROR_LOC("Assertion '" #condition "' failed: \n", message); admin->paused = true;}
 #define ASSERTWARN(condition, message) if(!(condition) && !admin->paused) CLOG_LOC("Assertion '" #condition "' failed: \n", message)
 
-#define LOGF(...)     g_con->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERRORF(...)   g_con->PushConsole(TOSTRING("\n[c:red]", __VA_ARGS__, "[c]"))
-#define SUCCESSF(...) g_con->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
+#define LOGF(...)     admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERRORF(...)   admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", __VA_ARGS__, "[c]"))
+#define SUCCESSF(...) admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
 
 #define TOSTRING(...) Debug::ToString(__VA_ARGS__)
 

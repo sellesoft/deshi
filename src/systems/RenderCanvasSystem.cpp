@@ -5,11 +5,8 @@
 #include "../utils/ContainerManager.h"
 
 #include "../components/Canvas.h"
-#include "../components/Screen.h"
 #include "../components/Scene.h"
 #include "../components/Camera.h"
-#include "../components/Input.h"
-#include "../components/Time.h"
 
 /* 
 

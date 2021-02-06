@@ -521,10 +521,10 @@ void Renderer_Vulkan::createGraphicsPipeline() {
 	//fixed shaders
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	auto bindingDescription = Vertex::getBindingDescription();
+	auto bindingDescription = VertexVk::getBindingDescription();
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
 	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-	auto attributeDescriptions = Vertex::getAttributeDescriptions();
+	auto attributeDescriptions = VertexVk::getAttributeDescriptions();
 	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32>(attributeDescriptions.size());
 	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 	
@@ -1508,31 +1508,31 @@ void Renderer_Vulkan::framebufferResizeCallback(GLFWwindow* window, int width, i
 //// vulkan support struct functions ////
 /////////////////////////////////////////
 
-VkVertexInputBindingDescription Vertex::getBindingDescription() {
+VkVertexInputBindingDescription VertexVk::getBindingDescription() {
 	VkVertexInputBindingDescription bindingDescription{};
 	bindingDescription.binding = 0;
-	bindingDescription.stride = sizeof(Vertex);
+	bindingDescription.stride = sizeof(VertexVk);
 	bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 	return bindingDescription;
 }
 
-std::array<VkVertexInputAttributeDescription, 3> Vertex::getAttributeDescriptions() {
+std::array<VkVertexInputAttributeDescription, 3> VertexVk::getAttributeDescriptions() {
 	std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 	
 	attributeDescriptions[0].binding = 0;
 	attributeDescriptions[0].location = 0;
 	attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-	attributeDescriptions[0].offset = offsetof(Vertex, pos);
+	attributeDescriptions[0].offset = offsetof(VertexVk, pos);
 	
 	attributeDescriptions[1].binding = 0;
 	attributeDescriptions[1].location = 1;
 	attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-	attributeDescriptions[1].offset = offsetof(Vertex, color);
+	attributeDescriptions[1].offset = offsetof(VertexVk, color);
 	
 	attributeDescriptions[2].binding = 0;
 	attributeDescriptions[2].location = 2;
 	attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-	attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+	attributeDescriptions[2].offset = offsetof(VertexVk, texCoord);
 	
 	return attributeDescriptions;
 }

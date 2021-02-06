@@ -62,9 +62,6 @@ TODO(p,delle) add physics based collision resolution for all entities
 
 //component includes
 #include "components/Component.h"				//UsefulDefines.h, <vector>
-//#include "components/Input.h"					//Component.h, Vector3.h
-#include "components/Screen.h"					//Component.h, Vector3.h
-#include "components/Time.h"					//Component.h, <time.h>
 #include "components/World.h"					//Component.h
 #include "components/Camera.h"					//Component.h, Vector3.h, Matrix4.h
 #include "components/Keybinds.h"				//Component.h
@@ -96,7 +93,10 @@ TODO(p,delle) add physics based collision resolution for all entities
 
 //// EntityAdmin ////
 
-void EntityAdmin::Create() {
+void EntityAdmin::Create(DeshiEngine* d) {
+
+	this->d = d;
+
 	g_cBuffer.allocate_space(100);
 
 	systems = std::vector<System*>();
@@ -106,9 +106,6 @@ void EntityAdmin::Create() {
 	physicsWorld = new PhysicsWorld();
 
 	//singleton initialization
-	input = new Input();
-	screen = new Screen();
-	time = new Time();
 	world = new World();
 
 	//current admin components
@@ -123,10 +120,7 @@ void EntityAdmin::Create() {
 	console = new Console();
 
 	//systems initialization
-	//AddSystem(new TimeSystem());
-	//AddSystem(new ScreenSystem());
 	AddSystem(new CommandSystem());
-	//AddSystem(new SimpleMovementSystem());
 	switch(physicsWorld->integrationMode) {
 		default: /* Semi-Implicit Euler */ {
 			AddSystem(new PhysicsSystem());
@@ -155,9 +149,6 @@ void EntityAdmin::Cleanup() {
 	delete physicsWorld;
 
 	//clean up singletons
-	delete input;
-	delete screen;
-	delete time;
 	delete world;
 	delete currentCamera;
 	delete currentKeybinds;

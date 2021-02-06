@@ -8,19 +8,22 @@
 #define MAX_KEYBOARD_KEYS 256
 #define MAX_MOUSE_BUTTONS 5
 
-enum Key{
-	NONE,
-	A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
-	K0, K1, K2, K3, K4, K5, K6, K7, K8, K9,
-	F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
-	UP, DOWN, LEFT, RIGHT,
-	ESCAPE, TILDE, TAB, CAPSLOCK, LSHIFT, LCONTROL, LALT,
-	BACKSPACE, ENTER, RSHIFT, RCONTROL, RALT, MINUS, EQUALS, LBRACKET, RBRACKET, 
-	SLASH, SEMICOLON, APOSTROPHE, COMMA, PERIOD, BACKSLASH, SPACE,
-	INSERT, DELETE, HOME, END, PAGEUP, PAGEDOWN, PAUSE, SCROLL,
-	NUMPAD0, NUMPAD1, NUMPAD2, NUMPAD3, NUMPAD4, NUMPAD5, NUMPAD6, NUMPAD7, NUMPAD8, NUMPAD9,
-	NUMPADMULTIPLY, NUMPADDIVIDE, NUMPADPLUS, NUMPADMINUS, NUMPADPERIOD, NUMPADENTER, NUMLOCK
+namespace Key {
+	enum Key {
+		NONE,
+		A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+		K0, K1, K2, K3, K4, K5, K6, K7, K8, K9,
+		F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
+		UP, DOWN, LEFT, RIGHT,
+		ESCAPE, TILDE, TAB, CAPSLOCK, LSHIFT, LCONTROL, LALT,
+		BACKSPACE, ENTER, RSHIFT, RCONTROL, RALT, MINUS, EQUALS, LBRACKET, RBRACKET,
+		SLASH, SEMICOLON, APOSTROPHE, COMMA, PERIOD, BACKSLASH, SPACE,
+		INSERT, DELETE, HOME, END, PAGEUP, PAGEDOWN, PAUSE, SCROLL,
+		NUMPAD0, NUMPAD1, NUMPAD2, NUMPAD3, NUMPAD4, NUMPAD5, NUMPAD6, NUMPAD7, NUMPAD8, NUMPAD9,
+		NUMPADMULTIPLY, NUMPADDIVIDE, NUMPADPLUS, NUMPADMINUS, NUMPADPERIOD, NUMPADENTER, NUMLOCK
+	};
 };
+
 
 enum MouseButton{
 	MB_LEFT, MB_RIGHT, MB_MIDDLE, MB_FOUR, MB_FIVE
@@ -70,11 +73,11 @@ struct Input{
 	//// keyboard keys input ////
 	/////////////////////////////
 	
-	inline bool KeyDown(Key key){
+	inline bool KeyDown(Key::Key key){
 		return newKeyState[key];
 	}
 	
-	bool KeyDown(Key key, InputModFlags mod){
+	bool KeyDown(Key::Key key, InputModFlags mod){
 		switch(mod){
 			case(INPUT_NONE_HELD):{ 
 				return newKeyState[key] 
@@ -130,11 +133,11 @@ struct Input{
 		}
 	}
 	
-	inline bool KeyPressed(Key key){
+	inline bool KeyPressed(Key::Key key){
 		return newKeyState[key] && !oldKeyState[key];
 	}
 	
-	bool KeyPressed(Key key, InputModFlags mod){
+	bool KeyPressed(Key::Key key, InputModFlags mod){
 		switch(mod){
 			case(INPUT_NONE_HELD):{ 
 				return (newKeyState[key] && !oldKeyState[key]) 
@@ -190,11 +193,11 @@ struct Input{
 		}
 	}
 	
-	inline bool KeyReleased(Key key){
+	inline bool KeyReleased(Key::Key key){
 		return !newKeyState[key] && oldKeyState[key];
 	}
 	
-	bool KeyReleased(Key key, InputModFlags mod){
+	bool KeyReleased(Key::Key key, InputModFlags mod){
 		switch(mod){
 			case(INPUT_NONE_HELD):{ 
 				return (!newKeyState[key] && oldKeyState[key]) 

@@ -15,6 +15,10 @@ struct Color {
 	MAGENTA, DARK_MAGENTA, VERY_DARK_MAGENTA,
 	WHITE,   BLACK,        BLANK;
 
+	Color() {
+		r = 0; g = 0; b = 0; a = 0;
+	};
+
 	Color(uint8 r, uint8 g, uint8 b) {
 		this->r = r;
 		this->g = g;

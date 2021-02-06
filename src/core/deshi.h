@@ -1,6 +1,6 @@
 #pragma once
 //#define DEBUG_P3DPGE
-//#include "EntityAdmin.h"
+#include "../EntityAdmin.h"
 #include "deshi_input.h"
 #include "deshi_glfw.h"
 #include "deshi_renderer.h"
@@ -12,7 +12,7 @@
 struct DeshiEngine {
 	inline static std::atomic<bool> running;
 	
-	//EntityAdmin entityAdmin;
+	EntityAdmin entityAdmin;
 	RenderAPI renderAPI;
 	Renderer* renderer;
 	Input input;
@@ -48,6 +48,9 @@ struct DeshiEngine {
 		DeshiEngine::running = false;
 		t.join();
 
+		//start entity admin
+		entityAdmin.Create(this);
+		
 		//cleanup
 		//imgui->Cleanup(); delete imgui;
 		renderer->Cleanup(); delete renderer;
@@ -63,7 +66,7 @@ struct DeshiEngine {
 	bool Update() {
 		input.Update();
 		//imgui->NewFrame();
-		//entityAdmin.PreRenderUpdate();
+		entityAdmin.Update();
 		//imgui->EndFrame();
 		renderer->Draw();
 		//entityAdmin.PostRenderUpdate();

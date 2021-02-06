@@ -5,23 +5,23 @@
 
 struct Keybinds : public Component {
 	//flying movement
-	Key movementFlyingUp;
-	Key movementFlyingDown;
-	Key movementFlyingForward;
-	Key movementFlyingBack;
-	Key movementFlyingRight;
-	Key movementFlyingLeft;
+	Key::Key movementFlyingUp;
+	Key::Key movementFlyingDown;
+	Key::Key movementFlyingForward;
+	Key::Key movementFlyingBack;
+	Key::Key movementFlyingRight;
+	Key::Key movementFlyingLeft;
 
 	//camera rotation
-	Key cameraRotateUp;
-	Key cameraRotateDown;
-	Key cameraRotateRight;
-	Key cameraRotateLeft;
+	Key::Key cameraRotateUp;
+	Key::Key cameraRotateDown;
+	Key::Key cameraRotateRight;
+	Key::Key cameraRotateLeft;
 
 	//render debug
-	Key debugRenderWireframe;
-	Key debugRenderEdgesNumbers;
-	Key debugRenderDisplayAxis;
+	Key::Key debugRenderEdgesNumbers;
+	Key::Key debugRenderWireframe;
+	Key::Key debugRenderDisplayAxis;
 
 	Keybinds() {
 		movementFlyingUp =		Key::E;

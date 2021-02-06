@@ -24,24 +24,18 @@ struct Command {
 
 	inline std::vector<std::string> ParseArgs(std::string args) {
 		std::vector<std::string> argsl;
-		LOG(args);
 		
 		while (args.size() != 0) {
-			//if (args.size() == 1 && args[0] == ' ') { //probably better way to check/fix this
-			//	break;
-			//}
 			if (args[0] == ' ') {
 				args.erase(0, 1);
 			}
 			else {
 				size_t fc = args.find_first_not_of(" ");//first char
 				size_t fs = args.find_first_of(" ");    //first space
-				LOG(fc, " ", fs, " ", args.substr(fc, fs));
 				argsl.push_back(args.substr(args.find_first_not_of(" "), args.find_first_of(" ")));
 				args.erase(fc, fs - fc);
 			}
-			
-			//if (args[0] == ' ') { args.erase(0, 1); }
+
 		}
 		return argsl;
 	}

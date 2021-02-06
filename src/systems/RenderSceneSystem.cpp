@@ -6,10 +6,8 @@
 #include "../components/Model.h"
 #include "../components/Camera.h"
 #include "../components/Light.h"
-#include "../components/Screen.h"
 #include "../components/Transform.h"
 #include "../components/Physics.h"
-#include "../components/Time.h"
 
 //all that work... gone
 

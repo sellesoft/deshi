@@ -31,7 +31,12 @@ typedef unsigned long  uint64;
 #define local_persist   static
 #define global_variable static
 
-//regex defines
-//used in object spawning 
+//Deshi Engine data defines
+//accessible only from inside Components/Systems
+#define Deng admin->d
+#define DengInput admin->d->input
+#define DengWindow admin->d->window
+
+
 
 #endif //DESHI_DEFINES_H

@@ -121,9 +121,6 @@
     <ClInclude Include="..\src\systems\SoundSystem.h">
       <Filter>src\systems\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\systems\System.h">
-      <Filter>src\systems\h</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\systems\WorldSystem.h">
       <Filter>src\systems\h</Filter>
     </ClInclude>
@@ -154,9 +151,6 @@
     <ClInclude Include="..\src\components\Listener.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\components\Mesh.h">
-      <Filter>src\components\h</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\components\MovementState.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
@@ -166,13 +160,7 @@
     <ClInclude Include="..\src\components\Scene.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\components\Screen.h">
-      <Filter>src\components\h</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\components\Source.h">
-      <Filter>src\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Time.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
     <ClInclude Include="..\src\components\Transform.h">
@@ -180,6 +168,12 @@
     </ClInclude>
     <ClInclude Include="..\src\components\World.h">
       <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Model.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\systems\System.h">
+      <Filter>src\systems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -286,9 +280,6 @@
     <ClCompile Include="..\src\components\Listener.cpp">
       <Filter>src\components\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\components\Mesh.cpp">
-      <Filter>src\components\cpp</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\components\MovementState.cpp">
       <Filter>src\components\cpp</Filter>
     </ClCompile>
@@ -298,13 +289,7 @@
     <ClCompile Include="..\src\components\Scene.cpp">
       <Filter>src\components\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\components\Screen.cpp">
-      <Filter>src\components\cpp</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\components\Source.cpp">
-      <Filter>src\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\components\Time.cpp">
       <Filter>src\components\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\components\Transform.cpp">
@@ -351,6 +336,9 @@
     </ClCompile>
     <ClCompile Include="..\src\EntityAdmin.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\components\Model.cpp">
+      <Filter>src\components\cpp</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

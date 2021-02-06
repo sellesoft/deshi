@@ -1,6 +1,5 @@
 #include "GLOBALS.h"
-#include "../components/Console.h"
-#include "../deshi.h"
+
 
 bool GLOBAL_DEBUG = true;
 

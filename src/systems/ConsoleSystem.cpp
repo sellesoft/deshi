@@ -1,8 +1,5 @@
 #include "ConsoleSystem.h"
 
-#include "../components/Time.h"
-#include "../components/Input.h"
-#include "../components/Screen.h"
 #include "../components/Console.h"
 
 #include "../utils/Command.h"

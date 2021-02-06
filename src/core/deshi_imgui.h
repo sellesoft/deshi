@@ -1,11 +1,11 @@
 #pragma once
-#include "deshi_input.h
+#include "deshi_input.h"
 #include "deshi_glfw.h"
 #include "deshi_renderer.h"
 
-#include "internal/imgui/imgui.h"
-#include "internal/imgui/imgui_impl_glfw.h"
-#include "internal/imgui/imgui_impl_vulkan.h"
+#include "../internal/imgui/imgui.h"
+#include "../internal/imgui/imgui_impl_glfw.h"
+#include "../internal/imgui/imgui_impl_vulkan.h"
 
 #if defined(_MSC_VER)
 #pragma comment(lib,"vulkan-1.lib")
@@ -19,7 +19,7 @@
 #include <vector>
 
 struct enKeyCharMap{
-	Key key;
+	Key::Key key;
 	char lower;
 	char upper;
 };
@@ -36,7 +36,7 @@ static void check_vk_result(VkResult err){
 struct deshiImGui{
 	Input* input;
 	Window* window;
-	std::vector<Key> controlInputKeys;
+	std::vector<Key::Key> controlInputKeys;
 	std::vector<enKeyCharMap> enValueInputKeys;
 	
 	virtual void Init(Renderer* renderer, Input* input, Window* window){

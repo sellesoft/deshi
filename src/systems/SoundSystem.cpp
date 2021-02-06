@@ -37,25 +37,25 @@ static void list_audio_devices(const ALCchar* devices)
 bool check_al_errors(const std::string& filename, const std::uint_fast32_t line, EntityAdmin* admin){
 	ALenum error = alGetError();
 	if (error != AL_NO_ERROR){
-		CERROR("***ERROR*** (", filename, ": ", line, ")\n");
+		ERROR("***ERROR*** (", filename, ": ", line, ")\n");
 		switch (error){
 		case AL_INVALID_NAME:
-			CERROR("AL_INVALID_NAME: a bad name (ID) was passed to an OpenAL function");
+			ERROR("AL_INVALID_NAME: a bad name (ID) was passed to an OpenAL function");
 			break;
 		case AL_INVALID_ENUM:
-			CERROR("AL_INVALID_ENUM: an invalid enum value was passed to an OpenAL function");
+			ERROR("AL_INVALID_ENUM: an invalid enum value was passed to an OpenAL function");
 			break;
 		case AL_INVALID_VALUE:
-			CERROR("AL_INVALID_VALUE: an invalid value was passed to an OpenAL function");
+			ERROR("AL_INVALID_VALUE: an invalid value was passed to an OpenAL function");
 			break;
 		case AL_INVALID_OPERATION:
-			CERROR("AL_INVALID_OPERATION: the requested operation is not valid");
+			ERROR("AL_INVALID_OPERATION: the requested operation is not valid");
 			break;
 		case AL_OUT_OF_MEMORY:
-			CERROR("AL_OUT_OF_MEMORY: the requested operation resulted in OpenAL running out of memory");
+			ERROR("AL_OUT_OF_MEMORY: the requested operation resulted in OpenAL running out of memory");
 			break;
 		default:
-			CERROR("UNKNOWN AL ERROR: ", error);
+			ERROR("UNKNOWN AL ERROR: ", error);
 		}
 		return false;
 	}
@@ -72,7 +72,7 @@ ALenum to_al_format(int channels, int bitsPerSample, EntityAdmin* admin) {
 	else if (channels == 2 && bitsPerSample == 16)
 		return AL_FORMAT_STEREO16;
 	else {
-		CASSERT(false, "unrecognized audio file format");
+		ASSERT(false, "unrecognized audio file format");
 	}
 }
 
@@ -214,7 +214,7 @@ void SoundSystem::Init() {
 	//can we enumerate audio devices?
 	enumeration = alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT");
 	if (enumeration == AL_FALSE)
-		CLOG_LOC("OpenAL unable to enumerate devices");
+		LOG_LOC("OpenAL unable to enumerate devices");
 
 	//list audio devices
 	list_audio_devices(alcGetString(NULL, ALC_DEVICE_SPECIFIER));
@@ -225,15 +225,15 @@ void SoundSystem::Init() {
 	//attempt to choose a device
 	device = alcOpenDevice(defaultDeviceName);
 	TEST_ERROR;
-	CASSERT(device, "unable to open a device with OpenAL");
+	ASSERT(device, "unable to open a device with OpenAL");
 	
 	//display audio device selected in console
-	CLOG("Audio device selected: ", alcGetString(device, ALC_DEVICE_SPECIFIER));
+	LOG("Audio device selected: ", alcGetString(device, ALC_DEVICE_SPECIFIER));
 
 	//attempt to create OpenAL context
 	context = alcCreateContext(device, NULL);
 	TEST_ERROR;
-	CASSERT(alcMakeContextCurrent(context), "unable to make OpenAL context");
+	ASSERT(alcMakeContextCurrent(context), "unable to make OpenAL context");
 
 	//collect all sources at startup
 	//TODO(, sushi) if its necessary, make a way to collect new sources and to remove them

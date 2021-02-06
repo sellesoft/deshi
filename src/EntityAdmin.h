@@ -24,9 +24,8 @@ struct Console;
 
 struct DeshiEngine;
 
-//the entity admin is practically global at this point, but not like ACTUALLY global 
-//just dont change anything within it please
-//i think theres a way to protect the data within somehow but i just can't remember how...
+//the entity admin is fed down to all systems and components that it controls meaning that
+//the core will also be accessible in those places too.
 struct EntityAdmin {
 
 	//yep
@@ -59,7 +58,7 @@ struct EntityAdmin {
 	bool paused = false;
 	bool IMGUI_KEY_CAPTURE = false;
 
-	void Create();
+	void Create(DeshiEngine* d);
 	void Cleanup();
 
 	void Update();

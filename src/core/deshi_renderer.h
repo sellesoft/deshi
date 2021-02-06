@@ -1,5 +1,5 @@
 #pragma once
-#include "utils/defines.h"
+#include "../utils/defines.h"
 
 #if defined(_MSC_VER)
 #pragma comment(lib,"vulkan-1.lib")
@@ -45,14 +45,14 @@ https://vulkan-tutorial.com/en/Generating_Mipmaps#page_Linear-filtering-support:
 https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-,like
 */
 
-struct Vertex{
+struct VertexVk{
 	glm::vec3 pos;
 	glm::vec3 color;
 	glm::vec2 texCoord;
 	
 	static VkVertexInputBindingDescription getBindingDescription();
 	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions();
-	bool operator==(const Vertex& other) const {
+	bool operator==(const VertexVk& other) const {
 		return pos == other.pos && color == other.color && texCoord == other.texCoord;
 	}
 };
@@ -76,8 +76,8 @@ struct SwapChainSupportDetails {
 };
 
 namespace std {
-	template<> struct hash<Vertex> {
-		size_t operator()(Vertex const& vertex) const {
+	template<> struct hash<VertexVk> {
+		size_t operator()(VertexVk const& vertex) const {
 			return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
 		}
 	};
@@ -144,7 +144,7 @@ struct Renderer_Vulkan : public Renderer{
 	VkImageView textureImageView;
 	VkSampler textureSampler;
 	
-	std::vector<Vertex> vertices = {
+	std::vector<VertexVk> vertices = {
 		{{-0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
 		{{0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
 		{{0.5f, 0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},

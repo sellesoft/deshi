@@ -6,3 +6,4 @@
 extern int buffer_size;
 extern ContainerManager<std::string> g_cBuffer;
 extern ContainerManager<std::string> g_cBuffer_last;
+

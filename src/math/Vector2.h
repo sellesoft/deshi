@@ -83,12 +83,12 @@ struct Vector2 {
 
 //// Constants ////
 
-inline static const Vector2 ZERO  = Vector2(0,  0);
-inline static const Vector2 ONE   = Vector2(1,  1);
-inline static const Vector2 RIGHT = Vector2(1,  0);
-inline static const Vector2 LEFT  = Vector2(-1, 0);
-inline static const Vector2 UP    = Vector2(0,  1);
-inline static const Vector2 DOWN  = Vector2(0, -1);
+inline static const Vector2 VZERO  = Vector2(0,  0);
+inline static const Vector2 VONE   = Vector2(1,  1);
+inline static const Vector2 VRIGHT = Vector2(1,  0);
+inline static const Vector2 VLEFT  = Vector2(-1, 0);
+inline static const Vector2 VUP    = Vector2(0,  1);
+inline static const Vector2 VDOWN  = Vector2(0, -1);
 inline static const Vector2 UNITX = Vector2(1,  0);
 inline static const Vector2 UNITY = Vector2(0,  1);
 

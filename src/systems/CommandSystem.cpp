@@ -1,10 +1,11 @@
 #include "CommandSystem.h"
-#include "../utils/Command.h"
 
+
+#include "../core/deshi_input.h"
 
 #include "../systems/WorldSystem.h"
 
-#include "../components/Input.h"
+
 #include "../components/Keybinds.h"
 #include "../components/Canvas.h"
 #include "../components/Transform.h"
@@ -13,6 +14,10 @@
 #include "../components/Physics.h"
 #include "../components/Collider.h"
 #include "../components/Source.h"
+
+
+#include "../utils/Command.h"
+#include "../utils/defines.h"
 
 //regex for checking paramaters
 #define RegPosParam   std::regex("-pos=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")
@@ -72,7 +77,7 @@ inline void AddSpawnCommands(EntityAdmin* admin) {
 			Source* s = new Source((char*)"sounds/Kick.wav", p);
 			AABBCollider* c = new AABBCollider(box, size, 1);
 			WorldSystem::AddComponentsToEntity(box, { t, m, p, s, c });
-			admin->input->selectedEntity = box;
+			DengInput->selectedEntity = box;
 			return TOSTRING("box created at ", position);
 		}
 		else {
@@ -83,7 +88,7 @@ inline void AddSpawnCommands(EntityAdmin* admin) {
 			Source* s = new Source((char*)"sounds/Kick.wav", p);
 			AABBCollider* c = new AABBCollider(box, Vector3::ONE, 1);
 			WorldSystem::AddComponentsToEntity(box, { t, m, p, s, c });
-			admin->input->selectedEntity = box;
+			Deng->input->selectedEntity = box;
 			return TOSTRING("box created at ", Vector3::ZERO);
 		}
 
