@@ -18,4 +18,7 @@ struct World : public Component {
 		for(Entity* e : deletionBuffer) delete e;
 		deletionBuffer.clear();
 	}
+
+	//dunno
+	void Update() override;
 };

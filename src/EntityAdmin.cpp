@@ -48,6 +48,9 @@ TODO(p,delle) add physics based collision resolution for all entities
 */
 
 #include "EntityAdmin.h"						//UsefulDefines.h, Debug.h
+#include "core/deshi.h"
+
+
 #include "utils/PhysicsWorld.h"					//
 #include "utils/Command.h"						//Debug.h
 #include "utils/defines.h"				//olcPixelGameEngine.h
@@ -59,7 +62,7 @@ TODO(p,delle) add physics based collision resolution for all entities
 
 //component includes
 #include "components/Component.h"				//UsefulDefines.h, <vector>
-#include "components/Input.h"					//Component.h, Vector3.h
+//#include "components/Input.h"					//Component.h, Vector3.h
 #include "components/Screen.h"					//Component.h, Vector3.h
 #include "components/Time.h"					//Component.h, <time.h>
 #include "components/World.h"					//Component.h
@@ -70,7 +73,7 @@ TODO(p,delle) add physics based collision resolution for all entities
 #include "components/Canvas.h"					//Component.h, UI.h
 #include "components/Console.h"
 #include "components/Listener.h"
-//#include "components/Mesh.h"					//Component.h, Vector3.h, Triangle.h, Armature.h
+//#include "components/Model.h"					//Component.h, Vector3.h, Triangle.h, Armature.h
 //#include "components/Light.h"					//Component.h, Vector3.h 
 //#include "components/Physics.h"				//Component.h, Vector3.h
 //#include "components/Transform.h"				//Component.h, Vector3.h, Matrix4.h

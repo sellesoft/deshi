@@ -185,7 +185,6 @@
     <ClInclude Include="..\src\components\Transform.h" />
     <ClInclude Include="..\src\components\World.h" />
     <ClInclude Include="..\src\core\deshi.h" />
-    <ClInclude Include="..\src\core\deshi_defines.h" />
     <ClInclude Include="..\src\core\deshi_glfw.h" />
     <ClInclude Include="..\src\core\deshi_imgui.h" />
     <ClInclude Include="..\src\core\deshi_import.h" />

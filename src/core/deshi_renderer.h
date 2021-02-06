@@ -1,5 +1,5 @@
 #pragma once
-#include "deshi_defines.h"
+#include "utils/defines.h"
 
 #if defined(_MSC_VER)
 #pragma comment(lib,"vulkan-1.lib")
@@ -45,24 +45,16 @@ https://vulkan-tutorial.com/en/Generating_Mipmaps#page_Linear-filtering-support:
 https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-,like
 */
 
-struct VertexVk{
+struct Vertex{
 	glm::vec3 pos;
 	glm::vec3 color;
 	glm::vec2 texCoord;
 	
 	static VkVertexInputBindingDescription getBindingDescription();
 	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions();
-	bool operator==(const VertexVk& other) const {
+	bool operator==(const Vertex& other) const {
 		return pos == other.pos && color == other.color && texCoord == other.texCoord;
 	}
-};
-
-namespace std {
-	template<> struct hash<VertexVk> {
-		size_t operator()(VertexVk const& vertex) const {
-			return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
-		}
-	};
 };
 
 struct UniformBufferObject{
@@ -83,34 +75,13 @@ struct SwapChainSupportDetails {
 	std::vector<VkPresentModeKHR> presentModes;
 };
 
-struct FrameVk{
-	VkCommandPool   commandPool;
-	VkCommandBuffer commandBuffer;
-	VkFence         fence;
-	VkImage         image;
-	VkImageView     imageView;
-	VkFramebuffer   framebuffer;
-};
-
-struct FrameSemaphoreVk{
-	VkSemaphore imageAcquiredSemaphore;
-	VkSemaphore renderCompleteSemaphore;
-};
-
-struct WindowVk{
-	int32              width;
-	int32              height;
-	VkSwapchainKHR     swapchain;
-	VkSurfaceFormatKHR surfaceFormat;
-	VkPresentModeKHR   presentMode;
-	VkRenderPass       renderPass;
-	VkPipeline         pipeline;
-	uint32             frameIndex;
-	uint32             imageCount;
-	uint32             semaphoreIndex;
-	FrameVk*           frames;
-	FrameSemaphoreVk*  frameSephamores;
-};
+namespace std {
+	template<> struct hash<Vertex> {
+		size_t operator()(Vertex const& vertex) const {
+			return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
+		}
+	};
+}
 
 //////////////////////////////
 //// vulkan delcarations  ////
@@ -124,13 +95,12 @@ struct Renderer_Vulkan : public Renderer{
 	//TODO(r,delle) INSERT VIDEO SETTINGS HERE
 	int32 windowWidth;
 	int32 windowHeight;
-	int32 minImageCount = 2;
-	int32 imageCount = minImageCount;
+	int MAX_FRAMES_IN_FLIGHT = 2;
 	
 	//////////////////////////////
 	//// vulkan api variables ////
 	//////////////////////////////
-	VkAllocationCallbacks* allocator = 0;
+	VkAllocationCallbacks* allocator;
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
 	GLFWwindow* window;
@@ -156,7 +126,7 @@ struct Renderer_Vulkan : public Renderer{
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
-	VkPipelineCache graphicsPipelineCache = VK_NULL_HANDLE;
+	VkPipelineCache graphicsPipelineCache;
 	
 	VkCommandPool commandPool;
 	
@@ -174,7 +144,7 @@ struct Renderer_Vulkan : public Renderer{
 	VkImageView textureImageView;
 	VkSampler textureSampler;
 	
-	std::vector<VertexVk> vertices = {
+	std::vector<Vertex> vertices = {
 		{{-0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
 		{{0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
 		{{0.5f, 0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
@@ -211,11 +181,7 @@ struct Renderer_Vulkan : public Renderer{
 	//////////////////////////
 	
 	virtual void Init(Window* window) override;
-	
-	//grabs an image from swap chain, submits the command buffer to the command queue, adds the image to the presentation queue
-	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Drawing/Rendering_and_presentation
 	virtual void Draw() override;
-	
 	virtual void Cleanup() override;
 	
 	void cleanupSwapChain();
@@ -320,6 +286,10 @@ struct Renderer_Vulkan : public Renderer{
 	//[CPU-GPU sync] fences are similar but are waited for in the code itself rather than threads						(pause code)
 	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Drawing/Rendering_and_presentation
 	void createSyncObjects();
+	
+	//grabs an image from swap chain, submits the command buffer to the command queue, adds the image to the presentation queue
+	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Drawing/Rendering_and_presentation
+	void drawFrame();
 	
 	//TODO(r,delle) INSERT VIDEO SETTINGS HERE
 	//updates the uniform buffers used by shaders

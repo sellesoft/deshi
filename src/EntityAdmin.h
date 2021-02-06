@@ -1,6 +1,6 @@
 #pragma once
-#include "deshi.h"
-#include "utils/UsefulDefines.h"
+#include "core/deshi.h"
+#include "utils/defines.h"
 #include "utils/Debug.h"
 
 typedef uint32 EntityID;
@@ -22,10 +22,15 @@ struct MovementState;
 struct Canvas;
 struct Console;
 
+struct DeshiEngine;
+
+//the entity admin is practically global at this point, but not like ACTUALLY global 
+//just dont change anything within it please
+//i think theres a way to protect the data within somehow but i just can't remember how...
 struct EntityAdmin {
 
-	//this is a good name do not change it 
-	DeshiEngine* deng;
+	//yep
+	DeshiEngine* d;
 
 	//reference to itself for doing things from within
 	//is this dangerous? 

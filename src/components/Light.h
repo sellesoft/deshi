@@ -17,4 +17,7 @@ struct Light : public Component {
 		this->direction = direction;
 		this->strength = strength;
 	}
+
+	
+	void Update() override;
 };

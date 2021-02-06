@@ -1,5 +1,6 @@
 #pragma once
 #include "Component.h"
+#include "../utils/Color.h"
 
 struct Console : public Component {
 	char inputBuf[256];

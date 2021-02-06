@@ -1,5 +1,5 @@
 #pragma once
-#include "deshi_defines.h"
+#include "../utils/defines.h"
 #include "deshi_input.h"
 
 #if defined(_MSC_VER)

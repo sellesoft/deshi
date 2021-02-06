@@ -14,22 +14,21 @@
 //global debug macros
 #define DEBUG if(GLOBAL_DEBUG)
 
-#define LOG(...)     DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR(...)   DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", __VA_ARGS__, "[c]"))
-#define SUCCESS(...) DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
+#define LOG(...)     DEBUG g_con->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR(...)   DEBUG g_con->PushConsole(TOSTRING("\n[c:red]", __VA_ARGS__, "[c]"))
+#define SUCCESS(...) DEBUG g_con->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
 
 //additionally prints where function was called
-#define LOG_LOC(...)     DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR_LOC(...)   DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:red]", __VA_ARGS__, "[c]"))
-#define SUCCESS_LOC(...) DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
+#define LOG_LOC(...)     DEBUG g_con->PushConsole(TOSTRING("\n[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR_LOC(...)   DEBUG g_con->PushConsole(TOSTRING("\n[c:red]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:red]", __VA_ARGS__, "[c]"))
+#define SUCCESS_LOC(...) DEBUG g_con->PushConsole(TOSTRING("\n[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
 
 #define ASSERT(condition, message)     if(!(condition) && !admin->paused){ CERROR_LOC("Assertion '" #condition "' failed: \n", message); admin->paused = true;}
 #define ASSERTWARN(condition, message) if(!(condition) && !admin->paused) CLOG_LOC("Assertion '" #condition "' failed: \n", message)
 
-#define LOGF(...)     admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERRORF(...)   admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", __VA_ARGS__, "[c]"))
-#define SUCCESSF(...) admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
-
+#define LOGF(...)     g_con->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERRORF(...)   g_con->PushConsole(TOSTRING("\n[c:red]", __VA_ARGS__, "[c]"))
+#define SUCCESSF(...) g_con->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
 
 #define TOSTRING(...) Debug::ToString(__VA_ARGS__)
 
@@ -69,7 +68,8 @@
 #define BUFFERLOGI(i, o, ...) DEBUG ([&]{static int iter = 0; if(iter == o){g_cBuffer.add_to_index(TOSTRING(__VA_ARGS__), i); iter = 0;} else iter++;}())
 
 //this stores and input vector and returns the previously stored vector
-//you must store a vector to get the previous one
+//if you pass true for the second param it will replace the stored vector and return it
+//else it just returns the stored vector
 #define V_STORE(v, t) ([&]()->Vector3{static Vector3 vect[1];\
 Vector3 vr = vect[0];\
 if(t){ vect[0] = v; return vr; } \
@@ -116,25 +116,6 @@ struct has_str_method {
 	template<class U> static decltype(&U::str, std::true_type{}) test(int);
 	template<class> static std::false_type test(...);
 	static constexpr bool value = decltype(test<T>(0))::value;
-};
-
-
-enum ConsoleColor {
-	BLUE = 1,
-	GREEN = 2,
-	CYAN = 3,
-	RED = 4,
-	PURPLE = 5,
-	YELLOW = 6,
-	WHITE = 7,
-	GREY = 8,
-	BRTBLUE = 9,
-	BRTGREEN = 10,
-	BRTCYAN = 11,
-	BRTRED = 12,
-	PINK = 13,
-	BRTYELLOW = 14,
-	BRTWHITE = 15
 };
 
 struct Camera;

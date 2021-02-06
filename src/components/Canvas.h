@@ -23,4 +23,6 @@ struct Canvas : public Component {
 		for(UIContainer* con : containers) delete con;
 		containers.clear();
 	}
+	
+	void Update() override;
 };

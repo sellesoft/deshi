@@ -19,4 +19,7 @@ struct MovementState : public Component {
 	MovementState(uint32 state) {
 		movementState = state;
 	}
+
+	
+	void Update() override;
 };

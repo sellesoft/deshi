@@ -28,9 +28,6 @@
     <ClInclude Include="..\src\core\deshi.h">
       <Filter>src\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\deshi_defines.h">
-      <Filter>src\core</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\core\deshi_glfw.h">
       <Filter>src\core</Filter>
     </ClInclude>
@@ -45,57 +42,6 @@
     </ClInclude>
     <ClInclude Include="..\src\core\deshi_renderer.h">
       <Filter>src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Camera.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Canvas.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Collider.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Component.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Console.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Keybinds.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Light.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Listener.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Mesh.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\MovementState.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Physics.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Scene.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Screen.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Source.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Time.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Transform.h">
-      <Filter>src\components\cpp\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\World.h">
-      <Filter>src\components\cpp\h</Filter>
     </ClInclude>
     <ClInclude Include="..\src\geometry\Edge.h">
       <Filter>src\geometry</Filter>
@@ -184,6 +130,57 @@
     <ClInclude Include="..\src\EntityAdmin.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\components\Camera.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Canvas.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Collider.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Component.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Console.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Keybinds.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Light.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Listener.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Mesh.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\MovementState.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Physics.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Scene.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Screen.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Source.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Time.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Transform.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\World.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -225,8 +222,8 @@
     <Filter Include="src\systems\h">
       <UniqueIdentifier>{b0b97b0f-958f-4711-bbab-fe685af843a0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\components\cpp\h">
-      <UniqueIdentifier>{225cce4e-0a96-4eeb-b41f-c1acb2def3af}</UniqueIdentifier>
+    <Filter Include="src\components\h">
+      <UniqueIdentifier>{ac3d7024-7202-4557-8232-cff3b1b89072}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

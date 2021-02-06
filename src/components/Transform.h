@@ -48,4 +48,6 @@ struct Transform : public Component {
 	inline Vector3 Forward() {
 		return (Vector3::FORWARD * Matrix4::RotationMatrix(rotation)).normalized();
 	}
+
+	void Update() override;
 };

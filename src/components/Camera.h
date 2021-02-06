@@ -31,4 +31,7 @@ struct Camera : public Component {
 		this->farZ = farZ;
 		this->fieldOfView = fov;
 	}
+
+	
+	void Update() override;
 };

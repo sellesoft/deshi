@@ -4,7 +4,7 @@
 
 #include "../components/World.h"
 #include "../components/Transform.h"
-#include "../components/Mesh.h"
+#include "../components/Model.h"
 
 void WorldSystem::Init() {
 	
@@ -80,6 +80,7 @@ int32 WorldSystem::AddAComponentToWorldEntity(EntityAdmin* admin, Entity* entity
 		Entity* e = admin->entities.at(entity->id);
 		e->components.push_back(component);
 		component->entity = e;
+		component->admin = admin;
 		return e->components.size()-1;
 	} catch(const std::out_of_range& oor) {
 		return -1;
@@ -93,6 +94,7 @@ int32 WorldSystem::AddComponentsToWorldEntity(EntityAdmin* admin, Entity* entity
 		for(auto& c : components) {
 			e->components.push_back(c);
 			c->entity = entity;
+			c->admin = admin;
 		}
 		return value;
 	} catch(const std::out_of_range& oor) {
@@ -103,6 +105,7 @@ int32 WorldSystem::AddComponentsToWorldEntity(EntityAdmin* admin, Entity* entity
 int32 WorldSystem::AddAComponentToEntity(Entity* entity, Component* component) {
 	entity->components.push_back(component);
 	component->entity = entity;
+	component->admin = entity->admin; // :/
 	return entity->components.size()-1;
 }
 
@@ -111,6 +114,7 @@ int32 WorldSystem::AddComponentsToEntity(Entity* entity, std::vector<Component*>
 	for(auto& c : components) {
 		entity->components.push_back(c);
 		c->entity = entity;
+		c->admin = entity->admin;
 	}
 	return value;
 }

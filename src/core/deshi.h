@@ -47,7 +47,7 @@ struct DeshiEngine {
 		
 		DeshiEngine::running = false;
 		t.join();
-		
+
 		//cleanup
 		//imgui->Cleanup(); delete imgui;
 		renderer->Cleanup(); delete renderer;

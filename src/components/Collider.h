@@ -13,6 +13,7 @@ struct Collider : public Component {
 
 	bool isTrigger = false;
 	Command* command = nullptr; //TODO(p,delle) implement trigger colliders
+
 };
 
 //rotatable box

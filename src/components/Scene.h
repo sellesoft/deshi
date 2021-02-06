@@ -1,6 +1,6 @@
 #pragma once
 #include "Component.h"
-#include "Mesh.h"
+#include "Model.h"
 
 struct Light;
 struct Edge3D;
@@ -40,19 +40,25 @@ struct Scene : public Component {
 
 		std::vector<Vector3> vertices;
 
-		for (Mesh* m : meshes) {
-			for (Triangle t : m->triangles) {
-				for (Vector3 v : t.points) {
-					if      (v.x < min.x) { min.x = v.x; }
-					else if (v.x > max.x) { max.x = v.x; }
-					if      (v.y < min.y) { min.y = v.y; }
-					else if (v.y > max.y) { max.y = v.y; }
-					if      (v.z < min.z) { min.z = v.z; }
-					else if (v.z > max.z) { max.z = v.z; }
-				}
-			}
-		}
+
+		//reimplement this when i know what to do with triangles
+
+		//for (Mesh* m : meshes) {
+		//	for (Triangle t : m->triangles) {
+		//		for (Vector3 v : t.points) {
+		//			if      (v.x < min.x) { min.x = v.x; }
+		//			else if (v.x > max.x) { max.x = v.x; }
+		//			if      (v.y < min.y) { min.y = v.y; }
+		//			else if (v.y > max.y) { max.y = v.y; }
+		//			if      (v.z < min.z) { min.z = v.z; }
+		//			else if (v.z > max.z) { max.z = v.z; }
+		//		}
+		//	}
+		//}
 
 		return std::pair<Vector3, Vector3>(max, min);
 	}
+
+	//I dont think scene needs this but im getting tired and unsure
+	//void Update() override;
 };

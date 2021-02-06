@@ -8,7 +8,7 @@
 #include "../components/Keybinds.h"
 #include "../components/Canvas.h"
 #include "../components/Transform.h"
-#include "../components/Mesh.h"
+#include "../components/Model.h"
 #include "../components/Scene.h"
 #include "../components/Physics.h"
 #include "../components/Collider.h"
