@@ -105,8 +105,8 @@ struct WindowVk{
 	VkPresentModeKHR   presentMode;
 	VkRenderPass       renderPass;
 	VkPipeline         pipeline;
-	uint32             frameIndex;
 	uint32             imageCount;
+	uint32             frameIndex;
 	uint32             semaphoreIndex;
 	FrameVk*           frames;
 	FrameSemaphoreVk*  frameSephamores;
@@ -141,10 +141,11 @@ struct Renderer_Vulkan : public Renderer{
 	QueueFamilyIndices physicalQueueFamilies;
 	
 	VkDevice device;
-	QueueFamilyIndices deviceQueueFamilies;
+	//QueueFamilyIndices deviceQueueFamilies;
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
 	
+	//
 	VkSwapchainKHR swapChain;
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;

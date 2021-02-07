@@ -54,7 +54,6 @@ void Renderer_Vulkan::Init(Window* window) {
 	createSyncObjects();
 }
 
-
 void Renderer_Vulkan::Draw() {
 	//std::cout << "{-}{-} Drawing Frame {-}{-}" << std::endl;
 	//if(inFlightFences.size() == 0) { return; }
@@ -301,6 +300,7 @@ void Renderer_Vulkan::createLogicalDevice() {
 	};
 	
 	float queuePriority = 1.0f;
+	//queueCreateInfos.resize(uniqueQueueFamilies.size());
 	for(uint32 queueFamily : uniqueQueueFamilies){
 		VkDeviceQueueCreateInfo queueCreateInfo{};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
