@@ -2,6 +2,8 @@
 #include "../utils/defines.h"
 #include "deshi_input.h"
 
+#include "../math/Vector2.h"
+
 #if defined(_MSC_VER)
 #pragma comment(lib,"glfw3.lib")
 #endif
@@ -24,11 +26,14 @@ struct Window{
 	GLFWwindow* window;
 	GLFWmonitor* monitor;
 	int32 x, y;
-	int32 window_width, window_height;
-	int32 screen_width, screen_height;
-	int32 screen_refreshRate;
+	int32 width, height;
+	int32 screenWidth, screenHeight;
+	//TODO(r,delle) add resolution option
+	int32 screenRefreshRate;
 	DisplayMode displayMode;
 	bool vsync;
+
+	Vector2 dimensions;
 	
 	inline static Input* input;
 	
@@ -51,10 +56,11 @@ struct Window{
 		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 		glfwGetMonitorWorkarea(monitor, &x, &y, &width, &height);
 		this->x = x; this->y = y;
-		this->window_width = width; this->window_height = height;
-		this->screen_width = mode->width; this->screen_height = mode->height;
-		this->screen_refreshRate = mode->refreshRate; this->vsync = vsync;
+		this->width = width; this->height = height;
+		this->screenWidth = mode->width; this->screenHeight = mode->height;
+		this->screenRefreshRate = mode->refreshRate; this->vsync = vsync;
 		this->displayMode = displayMode;
+		this->dimensions = Vector2(x, y);
 		
 		UpdateDisplayMode(displayMode);
 		
@@ -187,6 +193,13 @@ struct Window{
 									   }
 								   });
 		
+		//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+		glfwSetScrollCallback(window, 
+							  [](GLFWwindow* window, double xoffset, double yoffset)->void{
+								  Window::input->realScreenMouseX = xoffset;
+								  Window::input->realScreenMouseY = yoffset;
+							  });
+		
 	}//Init
 	
 	void Cleanup(){
@@ -213,7 +226,7 @@ struct Window{
 				glfwSetWindowMonitor(this->window, 0, 0, 0, mode->width, mode->height, mode->refreshRate);
 			}break;
 			default:{ //DisplayMode::WINDOWED
-				glfwSetWindowMonitor(this->window, 0, this->x, this->y, this->window_width, this->window_height, GLFW_DONT_CARE);
+				glfwSetWindowMonitor(this->window, 0, this->x, this->y, this->width, this->height, GLFW_DONT_CARE);
 			}break;
 		}
 	}

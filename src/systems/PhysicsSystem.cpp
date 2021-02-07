@@ -1,4 +1,5 @@
 #include "PhysicsSystem.h"
+#include "ConsoleSystem.h" 
 #include "../utils/PhysicsWorld.h"
 #include "../math/Math.h"
 #include "../geometry/Geometry.h"
@@ -243,11 +244,12 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 			if (DengInput->selectedEntity) {
 				if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 					Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->currentCamera->projectionMatrix,
-						admin->currentCamera->viewMatrix, admin->screen->dimensions);
-					Vector3 clickPos = Math::ScreenToWorld(DengInput->mouseClickPos, admin->currentCamera->projectionMatrix,
-						admin->currentCamera->viewMatrix, admin->screen->dimensions);
+						admin->currentCamera->viewMatrix, DengWindow->dimensions);
+					//cant remember what this is doing and will fix later
+					//Vector3 clickPos = Math::ScreenToWorld(DengInput->mouseClickPos, admin->currentCamera->projectionMatrix,
+						//admin->currentCamera->viewMatrix, DengWindow->dimensions);
 					//TODO(pi,delle) test that you can add force to a selected entity
-					PhysicsSystem::AddForce(nullptr, p, (pos - clickPos).normalized() * 5);
+					//PhysicsSystem::AddForce(nullptr, p, (pos - clickPos).normalized() * 5);
 				}
 			}
 		}
@@ -311,7 +313,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time) {
 
 	//update linear movement and clamp it to min/max velocity
 	if (!t.physics->isStatic) {
-		t.physics->velocity += t.physics->acceleration * time->physicsDeltaTime;
+		t.physics->velocity += t.physics->acceleration * time->fixedDeltaTime;
 		float velMag = t.physics->velocity.mag();
 		if (velMag > pw->maxVelocity) {
 			t.physics->velocity /= velMag;
@@ -321,7 +323,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time) {
 			t.physics->velocity = Vector3::ZERO;
 			t.physics->acceleration = Vector3::ZERO;
 		}
-		t.physics->position += t.physics->velocity * time->physicsDeltaTime;
+		t.physics->position += t.physics->velocity * time->fixedDeltaTime;
 	}
 	
 
@@ -333,7 +335,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time) {
 	}
 
 	//update rotational movement and scuffed vector rotational clamping
-	t.physics->rotVelocity += t.physics->rotAcceleration * time->physicsDeltaTime;
+	t.physics->rotVelocity += t.physics->rotAcceleration * time->fixedDeltaTime;
 	//if(t.physics->rotVelocity.x > pw->maxRotVelocity) {
 	//	t.physics->rotVelocity.x = pw->maxRotVelocity;
 	//} else if(t.physics->rotVelocity.x < -pw->maxRotVelocity) {
@@ -358,7 +360,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time) {
 	//	t.physics->rotVelocity.z = 0;
 	//	t.physics->rotAcceleration.z = 0;
 	//}
-	t.physics->rotation += t.physics->rotVelocity * time->physicsDeltaTime;
+	t.physics->rotation += t.physics->rotVelocity * time->fixedDeltaTime;
 
 	//reset accelerations
 	t.physics->forces.clear();
@@ -533,7 +535,7 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 	float distanceBetween = vectorBetween.mag();
 	if(distanceBetween < sphereCol->radius) {
 		if(!aabbCol->isTrigger && !sphereCol->isTrigger) {
-			SUCCESS("collision happened");
+			//SUCCESS("collision happened");
 			aabb->entity->GetComponent<Source>()->request_play = true;
 			//static resolution
 			if (aabbPoint == sphere->position) { 
@@ -572,57 +574,57 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 	}
 }
 
-inline void AABBBoxCollision(Physics* aabb, AABBCollider* aabbCol, Physics* box, BoxCollider* boxCol) {
+inline void AABBBoxCollision(EntityAdmin* admin, Physics* aabb, AABBCollider* aabbCol, Physics* box, BoxCollider* boxCol) {
 	ERROR("AABB-Box collision not implemented in PhysicsSystem.cpp");
 }
 
-inline void SphereSphereCollision(Physics* sphere, SphereCollider* sphereCol, Physics* other, SphereCollider* otherCol) {
+inline void SphereSphereCollision(EntityAdmin* admin, Physics* sphere, SphereCollider* sphereCol, Physics* other, SphereCollider* otherCol) {
 	ERROR("Sphere-Sphere collision not implemented in PhysicsSystem.cpp");
 }
 
-inline void SphereBoxCollision(Physics* sphere, SphereCollider* sphereCol, Physics* box, BoxCollider* boxCol) {
+inline void SphereBoxCollision(EntityAdmin* admin, Physics* sphere, SphereCollider* sphereCol, Physics* box, BoxCollider* boxCol) {
 	ERROR("Sphere-Box collision not implemented in PhysicsSystem.cpp");
 }
 
-inline void BoxBoxCollision(Physics* box, BoxCollider* boxCol, Physics* other, BoxCollider* otherCol) {
+inline void BoxBoxCollision(EntityAdmin* admin, Physics* box, BoxCollider* boxCol, Physics* other, BoxCollider* otherCol) {
 	ERROR("Box-Box collision not implemented in PhysicsSystem.cpp");
 }
 
 //NOTE make sure you are using the right physics component, because the collision 
 //functions dont check that the provided one matches the tuple
-inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other) {
+inline void CheckCollision(EntityAdmin* admin, PhysicsTuple& tuple, PhysicsTuple& other) {
 	if(AABBCollider* col = dynamic_cast<AABBCollider*>(tuple.collider)) {
 		if(AABBCollider* col2 = dynamic_cast<AABBCollider*>(other.collider)) {
 			AABBAABBCollision(tuple.physics, col, other.physics, col2);
 		} else if(SphereCollider* col2 = dynamic_cast<SphereCollider*>(other.collider)) {
 			AABBSphereCollision(tuple.physics, col, other.physics, col2);
 		} else if(BoxCollider* col2 = dynamic_cast<BoxCollider*>(other.collider)) {
-			AABBBoxCollision(tuple.physics, col, other.physics, col2);
+			AABBBoxCollision(admin, tuple.physics, col, other.physics, col2);
 		}
 	} else if(SphereCollider* col = dynamic_cast<SphereCollider*>(tuple.collider)) {
 		if(AABBCollider* col2 = dynamic_cast<AABBCollider*>(other.collider)) {
 			AABBSphereCollision(other.physics, col2, tuple.physics, col);
 		} else if(SphereCollider* col2 = dynamic_cast<SphereCollider*>(other.collider)) {
-			SphereSphereCollision(tuple.physics, col, other.physics, col2);
+			SphereSphereCollision(admin, tuple.physics, col, other.physics, col2);
 		} else if(BoxCollider* col2 = dynamic_cast<BoxCollider*>(other.collider)) {
-			SphereBoxCollision(tuple.physics, col, other.physics, col2);
+			SphereBoxCollision(admin, tuple.physics, col, other.physics, col2);
 		}
 	} else if(BoxCollider* col = dynamic_cast<BoxCollider*>(tuple.collider)) {
 		if(AABBCollider* col2 = dynamic_cast<AABBCollider*>(other.collider)) {
-			AABBBoxCollision(other.physics, col2, tuple.physics, col);
+			AABBBoxCollision(admin, other.physics, col2, tuple.physics, col);
 		} else if(SphereCollider* col2 = dynamic_cast<SphereCollider*>(other.collider)) {
-			SphereBoxCollision(other.physics, col2, tuple.physics, col);
+			SphereBoxCollision(admin, other.physics, col2, tuple.physics, col);
 		} else if(BoxCollider* col2 = dynamic_cast<BoxCollider*>(other.collider)) {
-			BoxBoxCollision(tuple.physics, col, other.physics, col2);
+			BoxBoxCollision(admin, tuple.physics, col, other.physics, col2);
 		}
 	}
 }
 
-inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
+inline void CollisionTick(EntityAdmin* admin, std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 	if(t.collider) {
 		for(auto& tuple : tuples) {
 			if(&t != &tuple && tuple.collider && t.collider->collisionLayer == tuple.collider->collisionLayer) {
-				CheckCollision(t, tuple);
+				CheckCollision(admin, t, tuple);
 			}
 		}
 	}
@@ -635,17 +637,17 @@ void PhysicsSystem::Update() {
 	std::vector<PhysicsTuple> tuples = GetPhysicsTuples(admin);
 
 	//update physics extra times per frame if frame time delta is larger than physics time delta
-	while(time->physicsAccumulator >= time->physicsDeltaTime) {
+	while(time->fixedAccumulator >= time->fixedDeltaTime) {
 		for(auto& t : tuples) {
 			PhysicsTick(t, pw, time);
-			CollisionTick(tuples, t);
+			CollisionTick(admin, tuples, t);
 		}
-		time->physicsAccumulator -= time->physicsDeltaTime;
-		time->physicsTotalTime += time->physicsDeltaTime;
+		time->fixedAccumulator -= time->fixedDeltaTime;
+		time->fixedTotalTime += time->fixedDeltaTime;
 	}
 
 	//interpolate between new physics position and old transform position by the leftover time
-	float alpha = time->physicsAccumulator / time->physicsDeltaTime;
+	float alpha = time->fixedAccumulator / time->fixedDeltaTime;
 	for(auto& t : tuples) {
 		t.transform->prevPosition = t.transform->position;
 		t.transform->prevRotation = t.transform->rotation;

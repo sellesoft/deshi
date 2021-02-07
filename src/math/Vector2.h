@@ -14,16 +14,20 @@ struct Vector2 {
 	float x{};
 	float y{};
 
-	Vector2();
-	Vector2(float inX, float inY);
-	Vector2(const Vector2& v);
+	Vector2(){};
+	Vector2(float inX, float inY) {
+		x = inX; y = inY;
+	};
+	Vector2(const Vector2& v){
+		*this = v;
+	};
 
 	static const Vector2 ZERO;
 	static const Vector2 ONE;
-	static const Vector2 RIGHT;
-	static const Vector2 LEFT;
 	static const Vector2 UP;
 	static const Vector2 DOWN;
+	static const Vector2 LEFT;
+	static const Vector2 RIGHT;
 	static const Vector2 FORWARD;
 	static const Vector2 BACK;
 	static const Vector2 UNITX;
@@ -89,8 +93,8 @@ inline static const Vector2 VRIGHT = Vector2(1,  0);
 inline static const Vector2 VLEFT  = Vector2(-1, 0);
 inline static const Vector2 VUP    = Vector2(0,  1);
 inline static const Vector2 VDOWN  = Vector2(0, -1);
-inline static const Vector2 UNITX = Vector2(1,  0);
-inline static const Vector2 UNITY = Vector2(0,  1);
+inline static const Vector2 UNITX  = Vector2(1,  0);
+inline static const Vector2 UNITY  = Vector2(0,  1);
 
 
 //// Operators ////

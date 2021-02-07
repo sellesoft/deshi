@@ -2,7 +2,6 @@
 #include "Component.h"
 
 struct UIContainer;
-namespace olc { namespace imgui { struct PGE_ImGUI; } }
 
 struct Canvas : public Component {
 	

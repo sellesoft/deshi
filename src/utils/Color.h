@@ -49,7 +49,7 @@ struct Color {
 
 };
 
-Color getrandcol() {
+inline Color getrandcol() {
 	return Color(rand() % 255 + 1, rand() % 255 + 1, rand() % 255 + 1);
 }
 

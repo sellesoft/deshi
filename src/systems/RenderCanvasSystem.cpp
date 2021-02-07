@@ -17,9 +17,9 @@ commenting all of this out until i know what's going on with ImGui
 
 
 
-#define OLC_PGEX_DEAR_IMGUI_IMPLEMENTATION
-#include "../internal/imgui/imgui_impl_pge.h"
-#include "../internal/imgui/imgui_impl_opengl2.h"
+//#define OLC_PGEX_DEAR_IMGUI_IMPLEMENTATION
+//#include "../internal/imgui/imgui_impl_pge.h"
+//#include "../internal/imgui/imgui_impl_opengl2.h"
 
 //// utility ui elements ////
 
@@ -312,5 +312,4 @@ void RenderCanvasSystem::Update() {
 	}
 
 	//p->DrawStringDecal(Color::vf2d(screen->width - 300, screen->height - 20), "Mouse: " + screen->mousePosV3.str2f());
-}
-*/
+}*/
