@@ -1,6 +1,8 @@
 #ifndef DESHI_DEFINES_H
 #define DESHI_DEFINES_H
 
+#include "GLOBALS.h"
+
 //math constants
 #define M_PI         3.14159265359f
 #define M_E          2.71828182846f
@@ -29,7 +31,11 @@ typedef unsigned long  uint64;
 #define local_persist   static
 #define global_variable static
 
-//regex defines
-//used in object spawning 
+//Deshi Engine data defines
+//accessible only from inside Components/Systems
+#define DengInput admin->input
+#define DengWindow admin->window
+
+
 
 #endif //DESHI_DEFINES_H

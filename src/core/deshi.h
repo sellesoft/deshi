@@ -1,6 +1,6 @@
 #pragma once
 //#define DEBUG_P3DPGE
-//#include "EntityAdmin.h"
+#include "../EntityAdmin.h"
 #include "deshi_input.h"
 #include "deshi_glfw.h"
 #include "deshi_renderer.h"
@@ -13,7 +13,7 @@
 struct DeshiEngine {
 	inline static std::atomic<bool> running;
 	
-	//EntityAdmin entityAdmin;
+	EntityAdmin entityAdmin;
 	RenderAPI renderAPI;
 	Renderer* renderer;
 	Input input;
@@ -29,7 +29,7 @@ struct DeshiEngine {
 		switch(renderAPI){
 			case(VULKAN):default:{ 
 				renderer = new Renderer_Vulkan; 
-				imgui = new vkImGui;
+				//imgui = new vkImGui;
 			}break;
 		}
 	}
@@ -40,7 +40,7 @@ struct DeshiEngine {
 		time.Init(300);
 		window.Init(&input, 1280, 720);
 		renderer->Init(&window);
-		imgui->Init(renderer, &input, &window, &time);
+		//imgui->Init(renderer, &input, &window);
 		
 		//start the engine thread
 		DeshiEngine::running = true;
@@ -49,9 +49,12 @@ struct DeshiEngine {
 		
 		DeshiEngine::running = false;
 		t.join();
+
+		//start entity admin
+		entityAdmin.Create(&input, &window);
 		
 		//cleanup
-		imgui->Cleanup(); delete imgui;
+		//imgui->Cleanup(); delete imgui;
 		renderer->Cleanup(); delete renderer;
 		window.Cleanup();
 	}
@@ -65,9 +68,9 @@ struct DeshiEngine {
 	bool Update() {
 		time.Update();
 		input.Update();
-		imgui->NewFrame();
-		//entityAdmin.PreRenderUpdate();
-		imgui->EndFrame();
+		//imgui->NewFrame();
+		entityAdmin.Update();
+		//imgui->EndFrame();
 		renderer->Draw();
 		//entityAdmin.PostRenderUpdate();
 		return true;

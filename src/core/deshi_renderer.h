@@ -1,5 +1,5 @@
 #pragma once
-#include "deshi_defines.h"
+#include "../utils/defines.h"
 
 #if defined(_MSC_VER)
 #pragma comment(lib,"vulkan-1.lib")

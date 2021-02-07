@@ -4,9 +4,9 @@
 #include "deshi_renderer.h"
 #include "deshi_time.h"
 
-#include "internal/imgui/imgui.h"
-#include "internal/imgui/imgui_impl_glfw.h"
-#include "internal/imgui/imgui_impl_vulkan.h"
+#include "../internal/imgui/imgui.h"
+#include "../internal/imgui/imgui_impl_glfw.h"
+#include "../internal/imgui/imgui_impl_vulkan.h"
 
 #if defined(_MSC_VER)
 #pragma comment(lib,"vulkan-1.lib")
@@ -20,7 +20,7 @@
 #include <vector>
 
 struct enKeyCharMap{
-	Key key;
+	Key::Key key;
 	char lower;
 	char upper;
 };
@@ -38,7 +38,7 @@ struct deshiImGui{
 	Input* input;
 	Window* window;
 	Time* time;
-	std::vector<Key> controlInputKeys;
+	std::vector<Key::Key> controlInputKeys;
 	std::vector<enKeyCharMap> enValueInputKeys;
 	
 	virtual void Init(Renderer* renderer, Input* input, Window* window, Time* time){

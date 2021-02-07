@@ -1,6 +1,8 @@
 #pragma once
-#include "deshi_defines.h"
+#include "../utils/defines.h"
 #include "deshi_input.h"
+
+#include "../math/Vector2.h"
 
 #if defined(_MSC_VER)
 #pragma comment(lib,"glfw3.lib")
@@ -30,6 +32,8 @@ struct Window{
 	int32 screenRefreshRate;
 	DisplayMode displayMode;
 	bool vsync;
+
+	Vector2 dimensions;
 	
 	inline static Input* input;
 	
@@ -56,6 +60,7 @@ struct Window{
 		this->screenWidth = mode->width; this->screenHeight = mode->height;
 		this->screenRefreshRate = mode->refreshRate; this->vsync = vsync;
 		this->displayMode = displayMode;
+		this->dimensions = Vector2(x, y);
 		
 		UpdateDisplayMode(displayMode);
 		
