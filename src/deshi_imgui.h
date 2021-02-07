@@ -2,6 +2,7 @@
 #include "deshi_input.h"
 #include "deshi_glfw.h"
 #include "deshi_renderer.h"
+#include "deshi_time.h"
 
 #include "internal/imgui/imgui.h"
 #include "internal/imgui/imgui_impl_glfw.h"
@@ -36,12 +37,14 @@ static void check_vk_result(VkResult err){
 struct deshiImGui{
 	Input* input;
 	Window* window;
+	Time* time;
 	std::vector<Key> controlInputKeys;
 	std::vector<enKeyCharMap> enValueInputKeys;
 	
-	virtual void Init(Renderer* renderer, Input* input, Window* window){
+	virtual void Init(Renderer* renderer, Input* input, Window* window, Time* time){
 		this->input = input;
 		this->window = window;
+		this->time = time;
 		
 		//Setup Dear ImGui context
 		ImGui::CreateContext();
@@ -96,8 +99,8 @@ struct deshiImGui{
 struct vkImGui : public deshiImGui{
 	Renderer_Vulkan* vkr;
 	
-	void Init(Renderer* renderer, Input* input, Window* window) override{
-		deshiImGui::Init(renderer, input, window);
+	void Init(Renderer* renderer, Input* input, Window* window, Time* time) override{
+		deshiImGui::Init(renderer, input, window, time);
 		vkr = (Renderer_Vulkan*)renderer; 
 		VkResult err;
 		
@@ -157,6 +160,7 @@ struct vkImGui : public deshiImGui{
 	}
 	
 	void NewFrame() override{
+		//TODO(r,delle) find out if this is actually needed
 		if(vkr->framebufferResized){
 			int w, h;
 			glfwGetFramebufferSize(vkr->window, &w, &h);
@@ -173,15 +177,36 @@ struct vkImGui : public deshiImGui{
 		io.MouseDown[3] = input->newMouseState[3];
 		io.MouseDown[4] = input->newMouseState[4];
 		io.MousePos = ImVec2(input->realMouseX, input->realMouseY);
+		io.MouseWheel = input->realScrollY;
+		
+		//update keyboard
+		io.KeyCtrl = input->newKeyState[Key::LCONTROL] || input->newKeyState[Key::RCONTROL];
+		io.KeyShift = input->newKeyState[Key::LSHIFT] || input->newKeyState[Key::RSHIFT];
+		io.KeyAlt = input->newKeyState[Key::LALT] || input->newKeyState[Key::RALT];
+		io.KeySuper = false; //NOTE maybe support super?
+		
+		for(auto& key : controlInputKeys){
+			io.KeysDown[key] = input->newKeyState[key];
+		}
+		
+		for(auto& m : enValueInputKeys){
+			if(input->newKeyState[m.key] && !input->oldKeyState[m.key]){
+				io.AddInputCharacter(io.KeyShift ? m.upper : m.lower);
+			}
+		}
+		
+		//update window and time
+		io.DisplaySize = ImVec2(window->width, window->height);
+		io.DeltaTime = time->deltaTime;
 		
 		// Start the Dear ImGui frame
-		ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
+		//ImGui_ImplVulkan_NewFrame();
+        //ImGui_ImplGlfw_NewFrame();
+        //ImGui::NewFrame();
 	}
 	
 	void EndFrame() override{
-		ImGui::Render();
+		//ImGui::Render();
 		// Record dear imgui primitives into command buffer
 		//ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkr->commandBuffers[vkr->currentFrame]);
 		std::cout << "-----------------" << std::endl;

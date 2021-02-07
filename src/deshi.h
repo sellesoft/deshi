@@ -5,6 +5,7 @@
 #include "deshi_glfw.h"
 #include "deshi_renderer.h"
 #include "deshi_imgui.h"
+#include "deshi_time.h"
 
 #include <atomic>
 #include <thread>
@@ -18,8 +19,9 @@ struct DeshiEngine {
 	Input input;
 	Window window;
 	deshiImGui* imgui;
+	Time time;
 	
-	//TODO(,delle) setup loading a config file
+	//TODO(,delle) setup loading a config file to a config struct
 	void LoadConfig(){
 		
 		//render api
@@ -35,14 +37,14 @@ struct DeshiEngine {
 	void Start(){
 		//init
 		LoadConfig();
+		time.Init(300);
 		window.Init(&input, 1280, 720);
 		renderer->Init(&window);
-		//imgui->Init(renderer, &input, &window);
+		//imgui->Init(renderer, &input, &window, &time);
 		
 		//start the engine thread
 		DeshiEngine::running = true;
 		std::thread t = std::thread(&DeshiEngine::EngineThread, this);
-		
 		window.StartLoop();
 		
 		DeshiEngine::running = false;
@@ -61,6 +63,7 @@ struct DeshiEngine {
 	}
 	
 	bool Update() {
+		time.Update();
 		input.Update();
 		//imgui->NewFrame();
 		//entityAdmin.PreRenderUpdate();

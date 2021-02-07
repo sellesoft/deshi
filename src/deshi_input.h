@@ -40,21 +40,21 @@ struct Input{
 	std::map<size_t, uint8> mapMouse;
 	
 	//TODO(oi,delle) look into storing these as vector<bool> instead
-	//TODO(oi,delle) look into storing input modifiers with the keys
 	bool oldKeyState[MAX_KEYBOARD_KEYS]   = {0};
 	bool newKeyState[MAX_KEYBOARD_KEYS]   = {0};
 	bool oldMouseState[MAX_MOUSE_BUTTONS] = {0};
 	bool newMouseState[MAX_MOUSE_BUTTONS] = {0};
 	int32 mouseX, mouseY;
 	int32 screenMouseX, screenMouseY;
+	double scrollX, scrollY;
 	
 	//real values are updated through GLFW callbacks
 	bool realKeyState[MAX_KEYBOARD_KEYS]   = {0};
 	bool realMouseState[MAX_MOUSE_BUTTONS] = {0};
 	float realMouseX, realMouseY;
 	float realScreenMouseX, realScreenMouseY;
+	double realScrollX, realScrollY;
 	bool keyFocus, mouseFocus;
-	
 	
 	//caches values so they are consistent thru the frame
 	void Update(){
@@ -64,6 +64,7 @@ struct Input{
 		memcpy(&newMouseState, &realMouseState, sizeof(bool) * MAX_MOUSE_BUTTONS);
 		mouseX = (int32)realMouseX; mouseY = (int32)realMouseY;
 		screenMouseY = (int32)realScreenMouseX; screenMouseY = (int32)realScreenMouseY;
+		scrollX = realScrollX; scrollY = realScrollY;
 	}
 	
 	/////////////////////////////
