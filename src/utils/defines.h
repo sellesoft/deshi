@@ -33,9 +33,8 @@ typedef unsigned long  uint64;
 
 //Deshi Engine data defines
 //accessible only from inside Components/Systems
-#define Deng admin->d
-#define DengInput admin->d->input
-#define DengWindow admin->d->window
+#define DengInput admin->input
+#define DengWindow admin->window
 
 
 

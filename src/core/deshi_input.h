@@ -4,6 +4,8 @@
 #include <map>
 #include <iostream>
 
+struct Entity;
+
 //constants
 #define MAX_KEYBOARD_KEYS 256
 #define MAX_MOUSE_BUTTONS 5
@@ -39,6 +41,9 @@ typedef enum InputModFlagBits{
 typedef uint32 InputModFlags;
 
 struct Input{
+
+	Entity* selectedEntity = nullptr;
+
 	std::map<size_t, uint8> mapKeys;
 	std::map<size_t, uint8> mapMouse;
 	

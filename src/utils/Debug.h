@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <cstdarg>
+#include <fstream>
 #include <iostream>
 
 //global debug macros

@@ -8,18 +8,16 @@
 #include "../components/Collider.h"
 
 #include "../utils/Command.h"
-#include "../components/Input.h"
-#include "../components/Time.h"
+#include "../core/deshi_input.h"
 #include "../components/Camera.h"
-#include "../components/Screen.h"
 #include "../components/Source.h"
 
 //TODO(ip,delle) update entity movement commands to be based on EntityID
 inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 //// translation ////
 	admin->commands["reset_position"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->acceleration = Vector3::ZERO;
 				p->velocity = Vector3::ZERO;
 				p->position = Vector3::ZERO;
@@ -29,8 +27,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "reset_position", "reset_position <EntityID> [String: xyz]");
 
 	admin->commands["reset_position_x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->acceleration = Vector3(0, p->acceleration.y, p->acceleration.z);
 				p->velocity = Vector3(0, p->velocity.y, p->velocity.z);
 				p->position = Vector3(0, p->position.y, p->position.z);
@@ -40,8 +38,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "reset_position_x", "temp");
 
 	admin->commands["reset_position_y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->acceleration = Vector3(p->acceleration.x, 0, p->acceleration.z);
 				p->velocity = Vector3(p->velocity.x, 0, p->velocity.z);
 				p->position = Vector3(p->position.x, 0, p->position.z);
@@ -51,8 +49,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "reset_position_y", "temp");
 
 	admin->commands["reset_position_z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->acceleration = Vector3(p->acceleration.x, p->acceleration.y, 0);
 				p->velocity = Vector3(p->velocity.x, p->velocity.y, 0);
 				p->position = Vector3(p->position.x, p->position.y, 0);
@@ -62,8 +60,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "reset_position_z", "temp");
 
 	admin->commands["reset_velocity"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->acceleration = Vector3::ZERO;
 				p->velocity = Vector3::ZERO;
 			}
@@ -72,8 +70,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "reset_velocity", "reset_position <EntityID> [String: xyz]");
 
 	admin->commands["translate_right"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				PhysicsSystem::AddInput(p, Vector3::RIGHT);
 			}
 		}
@@ -81,8 +79,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "translate_right", "translate_right <EntityID> <amount> [speed]");
 
 	admin->commands["translate_left"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				PhysicsSystem::AddInput(p, Vector3::LEFT);
 			}
 		}
@@ -90,8 +88,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "translate_left", "translate_left <EntityID> <amount> [speed]");
 
 	admin->commands["translate_up"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				PhysicsSystem::AddInput(p, Vector3::UP);
 			}
 		}
@@ -99,8 +97,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "translate_up", "translate_up <EntityID> <amount> [speed]");
 
 	admin->commands["translate_down"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				PhysicsSystem::AddInput(p, Vector3::DOWN);
 			}
 		}
@@ -108,8 +106,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "translate_down", "translate_down <EntityID> <amount> [speed]");
 
 	admin->commands["translate_forward"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				PhysicsSystem::AddInput(p, Vector3::FORWARD);
 			}
 		}
@@ -117,8 +115,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "translate_forward", "translate_forward <EntityID> <amount> [speed]");
 
 	admin->commands["translate_backward"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				PhysicsSystem::AddInput(p, Vector3::BACK);
 			}
 		}
@@ -128,8 +126,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 	//// rotation ////
 
 	admin->commands["reset_rotation"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->rotAcceleration = Vector3::ZERO;
 				p->rotVelocity = Vector3::ZERO;
 				p->rotation = Vector3::ZERO;
@@ -139,8 +137,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "reset_rotation", "reset_rotation <EntityID> [String: xyz]");
 
 	admin->commands["reset_rotation_x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->rotAcceleration = Vector3(0, p->rotAcceleration.y, p->rotAcceleration.z);
 				p->rotVelocity = Vector3(0, p->rotVelocity.y, p->rotVelocity.z);
 				p->rotation = Vector3(0, p->rotation.y, p->rotation.z);
@@ -150,8 +148,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "reset_rotation_x", "temp");
 
 	admin->commands["reset_rotation_y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->rotAcceleration = Vector3(p->rotAcceleration.x, 0, p->rotAcceleration.z);
 				p->rotVelocity = Vector3(p->rotVelocity.x, 0, p->rotVelocity.z);
 				p->rotation = Vector3(p->rotation.x, 0, p->rotation.z);
@@ -161,8 +159,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "reset_rotation_y", "temp");
 
 	admin->commands["reset_rotation_z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->rotAcceleration = Vector3(p->rotAcceleration.x, p->rotAcceleration.y, 0);
 				p->rotVelocity = Vector3(p->rotVelocity.x, p->rotVelocity.y, 0);
 				p->rotation = Vector3(p->rotation.x, p->rotation.y, 0);
@@ -172,8 +170,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "reset_rotation_z", "temp");
 
 	admin->commands["reset_rotation_velocity"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->rotAcceleration = Vector3::ZERO;
 				p->rotVelocity = Vector3::ZERO;
 			}
@@ -182,8 +180,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "reset_rotation_velocity", "reset_rotation_velocity <EntityID> [String: xyz]");
 
 	admin->commands["rotate_+x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->rotVelocity += Vector3(5, 0, 0);
 			}
 		}
@@ -191,8 +189,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "rotate_+x", "rotate_+x <EntityID> <amount> [speed]");
 
 	admin->commands["rotate_-x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->rotVelocity += Vector3(-5, 0, 0);
 			}
 		}
@@ -200,8 +198,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "rotate_-x", "rotate_-x <EntityID> <amount> [speed]");
 
 	admin->commands["rotate_+y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->rotVelocity += Vector3(0, 5, 0);
 			}
 		}
@@ -209,8 +207,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "rotate_+y", "rotate_+y <EntityID> <amount> [speed]");
 
 	admin->commands["rotate_-y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->rotVelocity += Vector3(0, -5, 0);
 			}
 		}
@@ -218,8 +216,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "rotate_-y", "rotate_-y <EntityID> <amount> [speed]");
 
 	admin->commands["rotate_+z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->rotVelocity += Vector3(0, 0, 5);
 			}
 		}
@@ -227,8 +225,8 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 		}, "rotate_+z", "rotate_+z <EntityID> <amount> [speed]");
 
 	admin->commands["rotate_-z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (admin->input->selectedEntity) {
-			if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
+		if (DengInput->selectedEntity) {
+			if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
 				p->rotVelocity += Vector3(0, 0, -5);
 			}
 		}
@@ -242,11 +240,11 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 			LOG("\nWarning: ScreenToWorld not yet implemented for orthographic projection. World interaction with mouse will not work.\n");
 		}
 		else {
-			if (admin->input->selectedEntity) {
-				if (Physics* p = admin->input->selectedEntity->GetComponent<Physics>()) {
-					Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->currentCamera->projectionMatrix,
+			if (DengInput->selectedEntity) {
+				if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+					Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->currentCamera->projectionMatrix,
 						admin->currentCamera->viewMatrix, admin->screen->dimensions);
-					Vector3 clickPos = Math::ScreenToWorld(admin->input->mouseClickPos, admin->currentCamera->projectionMatrix,
+					Vector3 clickPos = Math::ScreenToWorld(DengInput->mouseClickPos, admin->currentCamera->projectionMatrix,
 						admin->currentCamera->viewMatrix, admin->screen->dimensions);
 					//TODO(pi,delle) test that you can add force to a selected entity
 					PhysicsSystem::AddForce(nullptr, p, (pos - clickPos).normalized() * 5);

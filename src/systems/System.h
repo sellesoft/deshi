@@ -1,5 +1,6 @@
 #pragma once
 #include "../EntityAdmin.h"
+#include "../core/deshi.h"
 
 struct System {
 	EntityAdmin* admin; //reference to owning admin

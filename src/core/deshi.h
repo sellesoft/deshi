@@ -49,7 +49,7 @@ struct DeshiEngine {
 		t.join();
 
 		//start entity admin
-		entityAdmin.Create(this);
+		entityAdmin.Create(&input, &window);
 		
 		//cleanup
 		//imgui->Cleanup(); delete imgui;

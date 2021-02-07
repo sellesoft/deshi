@@ -29,7 +29,7 @@ TODO(p,delle) add physics based collision resolution for all entities
 
 */
 
-/*
+/* TODO(,sushi) update this eventually
 ---Systems Tick Order---||--------Read/Write Components-----||------------Read Only Components-------------------
   olcPixelGameEngine	|| Input							|| N/A
   TimeSystem			|| Time								|| N/A
@@ -53,7 +53,7 @@ TODO(p,delle) add physics based collision resolution for all entities
 
 #include "utils/PhysicsWorld.h"					//
 #include "utils/Command.h"						//Debug.h
-#include "utils/defines.h"				//olcPixelGameEngine.h
+#include "utils/defines.h"
 //#include "math/Math.h"						//UsefulDefines.h, Vector3.h, Vector4.h, Matrix3.h, Matrix4.h, MatrixN.h,
 												//	<math.h>, <algorithm>, <numeric>
 //#include "geometry/Edge.h"					//Math.h
@@ -93,9 +93,10 @@ TODO(p,delle) add physics based collision resolution for all entities
 
 //// EntityAdmin ////
 
-void EntityAdmin::Create(DeshiEngine* d) {
+void EntityAdmin::Create(Input* i, Window* w) {
 
-	this->d = d;
+	window = w;
+	input = i;
 
 	g_cBuffer.allocate_space(100);
 
@@ -210,7 +211,7 @@ Command* EntityAdmin::GetCommand(std::string command) {
 		return commands.at(command);
 	} catch(std::exception e) {
 		//ERROR("Command \"", command, "\" does not exist");
-		ERROR("Command \"", command, "\" does not exist");
+		this->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
 		return 0;
 	}
 }
@@ -221,22 +222,10 @@ bool EntityAdmin::ExecCommand(std::string command) {
 		return true;
 	} catch(std::exception e) {
 		//ERROR("Command \"", command, "\" does not exist");
-		ERROR("Command \"", command, "\" does not exist");
+		this->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
 		return false;
 	}
 }
-
-bool EntityAdmin::TriggerCommand(std::string command) {
-	try {
-		commands.at(command)->triggered = true;
-		return true;
-	} catch(std::exception e) {
-		//ERROR("Command \"", command, "\" does not exist");
-		ERROR("Command \"", command, "\" does not exist");
-		return false;
-	}
-}
-
 
 
 //// Entity ////

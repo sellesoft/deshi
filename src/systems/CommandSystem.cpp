@@ -30,125 +30,125 @@
 
 inline void AddSpawnCommands(EntityAdmin* admin) {
 
-	admin->commands["spawn_box"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		//for capturing vector parameters
-		std::cmatch m;
-
-		if (args.size() > 0) {
-			Vector3 position = Vector3::ZERO;
-			Vector3 rotation = Vector3::ZERO;
-			Vector3 scale = Vector3::ONE;
-			Vector3 size = Vector3::ONE;
-			float mass = 1;
-			bool isStatic = false;
-
-			for (std::string s : args) { //TODO(o, sushi) see if you can capture the variables when checking for a match
-				if (std::regex_match(s, RegPosParam)) { // -pos=(1,2,3)
-					std::regex_search(s.c_str(), m, VecNumMatch);
-					position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-				}
-				else if(std::regex_match(s, RegRotParam)){ //-rot=(1.1,2,3)
-					std::regex_search(s.c_str(), m, VecNumMatch);
-					rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-				}
-				else if (std::regex_match(s, RegScaleParam)) { //-scale=(0,1,0)
-					std::regex_search(s.c_str(), m, VecNumMatch);
-					scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-				}
-				else if (std::regex_match(s, RegSizeParam)) { //-size=(3,1,2)
-					std::regex_search(s.c_str(), m, VecNumMatch);
-					size = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-				}
-				else if (std::regex_match(s, std::regex("-mass=[0-9|.]+"))) {
-					std::regex_search(s.c_str(), m, std::regex("[0-9|.]+"));
-					mass = std::stof(m[0]);
-				}
-				else if (std::regex_match(s, std::regex("-static"))) {
-					isStatic = true;
-				}
-				else {
-					return "[c:red]Invalid parameter: " + s + "[c]";
-				}
-			}
-			Entity* box = WorldSystem::CreateEntity(admin);
-			Transform* t = new Transform(position, rotation, scale);
-			Mesh* m = Mesh::CreateBox(box, size, t->position);
-			Physics* p = new Physics(t->position, t->rotation, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 0, mass, isStatic);
-			Source* s = new Source((char*)"sounds/Kick.wav", p);
-			AABBCollider* c = new AABBCollider(box, size, 1);
-			WorldSystem::AddComponentsToEntity(box, { t, m, p, s, c });
-			DengInput->selectedEntity = box;
-			return TOSTRING("box created at ", position);
-		}
-		else {
-			Entity* box = WorldSystem::CreateEntity(admin);
-			Transform* t = new Transform(Vector3(0, 0, 3), Vector3::ZERO, Vector3::ONE);
-			Mesh* m = Mesh::CreateBox(box, Vector3::ONE, t->position);
-			Physics* p = new Physics(t->position, t->rotation);
-			Source* s = new Source((char*)"sounds/Kick.wav", p);
-			AABBCollider* c = new AABBCollider(box, Vector3::ONE, 1);
-			WorldSystem::AddComponentsToEntity(box, { t, m, p, s, c });
-			Deng->input->selectedEntity = box;
-			return TOSTRING("box created at ", Vector3::ZERO);
-		}
-
-		return "Somethings wrong";
-	}, "spawn_box", 
-		"spawns a box with specified parameters\n"
-		"avaliable parameters: \n"
-		"-pos=(x,y,z)\n"
-		"-rot=(x,y,z)\n"
-		"-scale=(x,y,z)\n"
-		"-size=(x,y,z)\n"
-		"example input:\n"
-		"spawn_box -pos=(0,1,0) -rot=(45,0,0)"
-		);
-
-	admin->commands["spawn_complex"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		Entity* c = WorldSystem::CreateEntity(admin);
-
-		Transform* t = new Transform(Vector3(0,0,3), Vector3::ZERO, Vector3::ONE);
-		Mesh* m = Mesh::CreateComplex(c, "objects/bmonkey.obj", false, t->position);
-		WorldSystem::AddComponentsToEntity(c, {t, m});
-		admin->input->selectedEntity = c;
-		return "";
-	}, "spawn_complex", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
-
-	admin->commands["spawn_complex1"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		Entity* c = WorldSystem::CreateEntity(admin);
-
-		Transform* t = new Transform(Vector3(0,0,3), Vector3::ZERO, Vector3::ONE);
-		Mesh* m = Mesh::CreateComplex(c, "objects/whale_ship.obj", false, t->position);
-		WorldSystem::AddComponentsToEntity(c, {t, m});
-		admin->input->selectedEntity = c;
-		return "";
-	}, "spawn_complex1", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
-
-	admin->commands["spawn_complex2"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		Entity* c = WorldSystem::CreateEntity(admin);
-
-		Transform* t = new Transform(Vector3(0,0,3), Vector3::ZERO, Vector3::ONE);
-		Mesh* m = Mesh::CreateComplex(c, "objects/24K_Triangles.obj", false, t->position);
-		WorldSystem::AddComponentsToEntity(c, {t, m});
-		admin->input->selectedEntity = c;
-		return "";
-	}, "spawn_complex2", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
-
-	admin->commands["spawn_scene"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		Entity* c = WorldSystem::CreateEntity(admin);
-
-		Transform* t = new Transform(Vector3(0, 0, 3), Vector3::ZERO, Vector3::ONE);
-		Mesh* m = Mesh::CreateComplex(c, "scenes/scene_test.obj", true, t->position);
-		WorldSystem::AddComponentsToEntity(c, { t, m });
-
-		olc::Sprite* s = new olc::Sprite(1, 1);
-		s->SetPixel(Vector2(0, 0), olc::WHITE);
-
-		m->texture = s;
-
-		admin->input->selectedEntity = c;
-		return "";
-		}, "spawn_scene", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
+	//admin->commands["spawn_box"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+	//	//for capturing vector parameters
+	//	std::cmatch m;
+	//
+	//	if (args.size() > 0) {
+	//		Vector3 position = Vector3::ZERO;
+	//		Vector3 rotation = Vector3::ZERO;
+	//		Vector3 scale = Vector3::ONE;
+	//		Vector3 size = Vector3::ONE;
+	//		float mass = 1;
+	//		bool isStatic = false;
+	//
+	//		for (std::string s : args) { //TODO(o, sushi) see if you can capture the variables when checking for a match
+	//			if (std::regex_match(s, RegPosParam)) { // -pos=(1,2,3)
+	//				std::regex_search(s.c_str(), m, VecNumMatch);
+	//				position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+	//			}
+	//			else if(std::regex_match(s, RegRotParam)){ //-rot=(1.1,2,3)
+	//				std::regex_search(s.c_str(), m, VecNumMatch);
+	//				rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+	//			}
+	//			else if (std::regex_match(s, RegScaleParam)) { //-scale=(0,1,0)
+	//				std::regex_search(s.c_str(), m, VecNumMatch);
+	//				scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+	//			}
+	//			else if (std::regex_match(s, RegSizeParam)) { //-size=(3,1,2)
+	//				std::regex_search(s.c_str(), m, VecNumMatch);
+	//				size = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+	//			}
+	//			else if (std::regex_match(s, std::regex("-mass=[0-9|.]+"))) {
+	//				std::regex_search(s.c_str(), m, std::regex("[0-9|.]+"));
+	//				mass = std::stof(m[0]);
+	//			}
+	//			else if (std::regex_match(s, std::regex("-static"))) {
+	//				isStatic = true;
+	//			}
+	//			else {
+	//				return "[c:red]Invalid parameter: " + s + "[c]";
+	//			}
+	//		}
+	//		Entity* box = WorldSystem::CreateEntity(admin);
+	//		Transform* t = new Transform(position, rotation, scale);
+	//		Mesh* m = Mesh::CreateBox(box, size, t->position);
+	//		Physics* p = new Physics(t->position, t->rotation, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 0, mass, isStatic);
+	//		Source* s = new Source((char*)"sounds/Kick.wav", p);
+	//		AABBCollider* c = new AABBCollider(box, size, 1);
+	//		WorldSystem::AddComponentsToEntity(box, { t, m, p, s, c });
+	//		DengInput->selectedEntity = box;
+	//		return TOSTRING("box created at ", position);
+	//	}
+	//	else {
+	//		Entity* box = WorldSystem::CreateEntity(admin);
+	//		Transform* t = new Transform(Vector3(0, 0, 3), Vector3::ZERO, Vector3::ONE);
+	//		Mesh* m = Mesh::CreateBox(box, Vector3::ONE, t->position);
+	//		Physics* p = new Physics(t->position, t->rotation);
+	//		Source* s = new Source((char*)"sounds/Kick.wav", p);
+	//		AABBCollider* c = new AABBCollider(box, Vector3::ONE, 1);
+	//		WorldSystem::AddComponentsToEntity(box, { t, m, p, s, c });
+	//		Deng->input->selectedEntity = box;
+	//		return TOSTRING("box created at ", Vector3::ZERO);
+	//	}
+	//
+	//	return "Somethings wrong";
+	//}, "spawn_box", 
+	//	"spawns a box with specified parameters\n"
+	//	"avaliable parameters: \n"
+	//	"-pos=(x,y,z)\n"
+	//	"-rot=(x,y,z)\n"
+	//	"-scale=(x,y,z)\n"
+	//	"-size=(x,y,z)\n"
+	//	"example input:\n"
+	//	"spawn_box -pos=(0,1,0) -rot=(45,0,0)"
+	//	);
+	//
+	//admin->commands["spawn_complex"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+	//	Entity* c = WorldSystem::CreateEntity(admin);
+	//
+	//	Transform* t = new Transform(Vector3(0,0,3), Vector3::ZERO, Vector3::ONE);
+	//	Mesh* m = Mesh::CreateComplex(c, "objects/bmonkey.obj", false, t->position);
+	//	WorldSystem::AddComponentsToEntity(c, {t, m});
+	//	admin->input->selectedEntity = c;
+	//	return "";
+	//}, "spawn_complex", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
+	//
+	//admin->commands["spawn_complex1"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+	//	Entity* c = WorldSystem::CreateEntity(admin);
+	//
+	//	Transform* t = new Transform(Vector3(0,0,3), Vector3::ZERO, Vector3::ONE);
+	//	Mesh* m = Mesh::CreateComplex(c, "objects/whale_ship.obj", false, t->position);
+	//	WorldSystem::AddComponentsToEntity(c, {t, m});
+	//	admin->input->selectedEntity = c;
+	//	return "";
+	//}, "spawn_complex1", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
+	//
+	//admin->commands["spawn_complex2"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+	//	Entity* c = WorldSystem::CreateEntity(admin);
+	//
+	//	Transform* t = new Transform(Vector3(0,0,3), Vector3::ZERO, Vector3::ONE);
+	//	Mesh* m = Mesh::CreateComplex(c, "objects/24K_Triangles.obj", false, t->position);
+	//	WorldSystem::AddComponentsToEntity(c, {t, m});
+	//	admin->input->selectedEntity = c;
+	//	return "";
+	//}, "spawn_complex2", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
+	//
+	//admin->commands["spawn_scene"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+	//	Entity* c = WorldSystem::CreateEntity(admin);
+	//
+	//	Transform* t = new Transform(Vector3(0, 0, 3), Vector3::ZERO, Vector3::ONE);
+	//	Mesh* m = Mesh::CreateComplex(c, "scenes/scene_test.obj", true, t->position);
+	//	WorldSystem::AddComponentsToEntity(c, { t, m });
+	//
+	//	Key::Sprite* s = new Key::Sprite(1, 1);
+	//	s->SetPixel(Vector2(0, 0), Key::WHITE);
+	//
+	//	m->texture = s;
+	//
+	//	admin->input->selectedEntity = c;
+	//	return "";
+	//	}, "spawn_scene", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
 
 }
 
@@ -267,55 +267,54 @@ inline void HandleMouseInputs(EntityAdmin* admin, Input* input) {
 	Canvas* canvas = admin->tempCanvas;
 
 	//mouse left click pressed
-	if(input->MousePressed(INPUT_MOUSE_LEFT)) {
+	if(input->MousePressed(MB_LEFT)) {
 		bool ui_clicked = false;
 		//check if mouse clicked on a UI element
-		if(!canvas->hideAll) {
-			for(UIContainer* con : canvas->containers) {
-				for(UI* ui : con->container) {
-					if(ui->Clicked(input->mousePos)) {
-						ui_clicked = true;
-						goto stop;
-					}//TODO(delle) re-add menu dragging
-				}
-			}
-		}
-		stop:
+		//if(!canvas->hideAll) {
+		//	for(UIContainer* con : canvas->containers) {
+		//		for(UI* ui : con->container) {
+		//			if(ui->Clicked(input->mousePos)) {
+		//				ui_clicked = true;
+		//				goto stop;
+		//			}//TODO(delle) re-add menu dragging
+		//		}
+		//	}
+		//}
+		//stop: are we even using this anymore?
 
 		//if the click wasnt on a UI element, trigger select_entity command
 		//admin->ExecCommand("select_entity"); //TODO(i,delle) re-enable clicking entities
 
 		//set click pos to mouse pos
-		input->mouseClickPos = input->mousePos;
 	}
 	//mouse left click held
-	else if(input->MouseHeld(INPUT_MOUSE_LEFT)) { 
-		static_internal Vector2 offset;
-		if(input->selectedUI) {
-			if(!input->ui_drag_latch) {
-				offset = input->selectedUI->pos - input->mousePos;
-				input->ui_drag_latch = true;
-			}
-			input->selectedUI->pos = input->mousePos + offset;
-			input->selectedUI->Update();
-		}
+	else if(input->MouseDown(MB_LEFT)) { 
+		//static_internal Vector2 offset;
+		//if(input->selectedUI) {
+		//	if(!input->ui_drag_latch) {
+		//		offset = input->selectedUI->pos - input->mousePos;
+		//		input->ui_drag_latch = true;
+		//	}
+		//	input->selectedUI->pos = input->mousePos + offset;
+		//	input->selectedUI->Update();
+		//}
 	} 
 	//mouse left click released
-	else if(input->MouseReleased(INPUT_MOUSE_LEFT)) {
-		if(input->selectedUI) {					//deselect UI
-			input->selectedUI = 0;
-			input->ui_drag_latch = false;
-		} else if(input->selectedEntity && input->mousePos != input->mouseClickPos) { //add force to selected entity
-			admin->ExecCommand("add_force");
-		}
-
-		//reset click pos to null
-		input->mouseClickPos = Vector2(admin->p->ScreenWidth(), admin->p->ScreenHeight());
+	else if(input->MouseReleased(MB_LEFT)) {
+		//if(input->selectedUI) {					//deselect UI
+		//	input->selectedUI = 0;
+		//	input->ui_drag_latch = false;
+		//} else if(input->selectedEntity && input->mousePos != input->mouseClickPos) { //add force to selected entity
+		//	admin->ExecCommand("add_force");
+		//}
+		//
+		////reset click pos to null
+		//input->mouseClickPos = Vector2(admin->p->ScreenWidth(), admin->p->ScreenHeight());
 	}
 
-	if(input->KeyPressed(olc::MINUS)) {
-		admin->p->SetMousePositionLocal(admin->p->GetWindowSize() / 2);
-	}
+	//if(input->KeyPressed(Key::MINUS)) {
+	//	admin->p->SetMousePositionLocal(admin->p->GetWindowSize() / 2);
+	//}
 }
 
 inline void HandleSelectedEntityInputs(EntityAdmin* admin, Input* input) {
@@ -324,52 +323,52 @@ inline void HandleSelectedEntityInputs(EntityAdmin* admin, Input* input) {
 	if (!admin->IMGUI_KEY_CAPTURE) {
 
 
-		if (input->KeyDown(olc::L, INPUT_NONE_HELD)) {
+		if (input->KeyDown(Key::L, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_right");
 		}
 
-		if (input->KeyDown(olc::J, INPUT_NONE_HELD)) {
+		if (input->KeyDown(Key::J, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_left");
 		}
 
-		if (input->KeyDown(olc::O, INPUT_NONE_HELD)) {
+		if (input->KeyDown(Key::O, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_up");
 		}
 
-		if (input->KeyDown(olc::U, INPUT_NONE_HELD)) {
+		if (input->KeyDown(Key::U, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_down");
 		}
 
-		if (input->KeyDown(olc::I, INPUT_NONE_HELD)) {
+		if (input->KeyDown(Key::I, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_forward");
 		}
 
-		if (input->KeyDown(olc::K, INPUT_NONE_HELD)) {
+		if (input->KeyDown(Key::K, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_backward");
 		}
 
 		//rotation
-		if (input->KeyDown(olc::L, INPUT_SHIFT_HELD)) {
+		if (input->KeyDown(Key::L, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_+x");
 		}
 
-		if (input->KeyDown(olc::J, INPUT_SHIFT_HELD)) {
+		if (input->KeyDown(Key::J, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_-x");
 		}
 
-		if (input->KeyDown(olc::O, INPUT_SHIFT_HELD)) {
+		if (input->KeyDown(Key::O, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_+y");
 		}
 
-		if (input->KeyDown(olc::U, INPUT_SHIFT_HELD)) {
+		if (input->KeyDown(Key::U, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_-y");
 		}
 
-		if (input->KeyDown(olc::I, INPUT_SHIFT_HELD)) {
+		if (input->KeyDown(Key::I, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_+z");
 		}
 
-		if (input->KeyDown(olc::K, INPUT_SHIFT_HELD)) {
+		if (input->KeyDown(Key::K, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_-z");
 		}
 	}
@@ -424,11 +423,6 @@ void CommandSystem::Init() {
 		else return "engine_pause = false";
 	}, "engine_pause", "toggles pausing the engine");
 
-	admin->commands["selent_play_sound"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->input->selectedEntity->GetComponent<Source>()->request_play = true;
-		return TOSTRING("selected entity playing sound: ", admin->input->selectedEntity->GetComponent<Source>()->snd_file);
-	}, "selent_play_sound", "plays a sound from the selected entity");
-
 	AddSpawnCommands(admin);
 	AddRenderCommands(admin);
 	AddConsoleCommands(admin);
@@ -438,28 +432,30 @@ void CommandSystem::Update() {
 	Input* input = admin->input;
 	Keybinds* binds = admin->currentKeybinds;
 
-	input->mousePos = admin->p->GetMousePos();
+	//input->mousePos = admin->p->GetMousePos();
 
 	HandleMouseInputs(admin, input);
 	HandleSelectedEntityInputs(admin, input);
 	HandleRenderInputs(admin, input, binds);
 
-	if(input->KeyPressed(olc::F1, INPUT_SHIFT_HELD)) {
-		Entity* box = WorldSystem::CreateEntity(admin);
-		Transform* t = new Transform(Vector3(-10, 0, 20), Vector3::ZERO, Vector3::ONE);
-		Mesh* m = Mesh::CreateBox(box, Vector3(5, 5, 5), t->position);
-		Physics* p = new Physics(t->position, t->rotation, 100.f, 0.1f); //heavy concrete cube
-		AABBCollider* c = new AABBCollider(box, Vector3(5, 5, 5), p->mass);
-		WorldSystem::AddComponentsToEntity(box, {t, m, p, c});
+	//old collision demo i think
 
-		Entity* sphere = WorldSystem::CreateEntity(admin);
-		Transform* t2 = new Transform(Vector3(30, 0, 20), Vector3::ZERO, Vector3::ONE);
-		Mesh* m2 = Mesh::CreateBox(sphere, Vector3(.3f, .3f, .3f), t2->position);
-		Physics* p2 = new Physics(t2->position, t2->rotation, Vector3(-30, 2, 0)); //light rubber ball
-		p2->elasticity = .5f;
-		SphereCollider* c2 = new SphereCollider(sphere, 1, p2->mass);
-		sphere->AddComponents({t2, m2, p2, c2});
-
-		admin->input->selectedEntity = box;
-	}
+	//if(input->KeyPressed(Key::F1, INPUT_SHIFT_HELD)) {
+	//	Entity* box = WorldSystem::CreateEntity(admin);
+	//	Transform* t = new Transform(Vector3(-10, 0, 20), Vector3::ZERO, Vector3::ONE);
+	//	Mesh* m = Mesh::CreateBox(box, Vector3(5, 5, 5), t->position);
+	//	Physics* p = new Physics(t->position, t->rotation, 100.f, 0.1f); //heavy concrete cube
+	//	AABBCollider* c = new AABBCollider(box, Vector3(5, 5, 5), p->mass);
+	//	WorldSystem::AddComponentsToEntity(box, {t, m, p, c});
+	//
+	//	Entity* sphere = WorldSystem::CreateEntity(admin);
+	//	Transform* t2 = new Transform(Vector3(30, 0, 20), Vector3::ZERO, Vector3::ONE);
+	//	Mesh* m2 = Mesh::CreateBox(sphere, Vector3(.3f, .3f, .3f), t2->position);
+	//	Physics* p2 = new Physics(t2->position, t2->rotation, Vector3(-30, 2, 0)); //light rubber ball
+	//	p2->elasticity = .5f;
+	//	SphereCollider* c2 = new SphereCollider(sphere, 1, p2->mass);
+	//	sphere->AddComponents({t2, m2, p2, c2});
+	//
+	//	//admin->input->selectedEntity = box;
+	//}
 }

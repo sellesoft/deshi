@@ -1,5 +1,4 @@
 #pragma once
-#include "core/deshi.h"
 #include "utils/defines.h"
 #include "utils/Debug.h"
 
@@ -10,7 +9,7 @@ struct Component;
 struct Command;
 
 struct PhysicsWorld;
-struct Input;
+
 struct Screen;
 struct Time;
 struct World;
@@ -22,17 +21,16 @@ struct MovementState;
 struct Canvas;
 struct Console;
 
-struct DeshiEngine;
+//DeshiEngine structs
+struct Window;
+struct Input;
 
 //the entity admin is fed down to all systems and components that it controls meaning that
 //the core will also be accessible in those places too.
 struct EntityAdmin {
 
-	//yep
-	DeshiEngine* d;
+	//DeshiEngine* d;
 
-	//reference to itself for doing things from within
-	//is this dangerous? 
 	EntityAdmin* admin = this;
 
 	std::vector<System*> systems;
@@ -44,7 +42,7 @@ struct EntityAdmin {
 
 	//singletons
 	Input* input;
-	Screen* screen;
+	Window* window;
 	Time* time;
 	World* world;
 
@@ -58,7 +56,7 @@ struct EntityAdmin {
 	bool paused = false;
 	bool IMGUI_KEY_CAPTURE = false;
 
-	void Create(DeshiEngine* d);
+	void Create(Input* i, Window* w);
 	void Cleanup();
 
 	void Update();
