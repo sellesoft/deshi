@@ -67,9 +67,6 @@ struct Input{
 	double realScrollX, realScrollY;
 	bool keyFocus, mouseFocus;
 
-	
-	
-	
 	//caches values so they are consistent thru the frame
 	void Update(){
 		memcpy(&oldKeyState, &newKeyState, sizeof(bool) * MAX_KEYBOARD_KEYS);
@@ -77,7 +74,7 @@ struct Input{
 		memcpy(&oldMouseState, &newMouseState, sizeof(bool) * MAX_MOUSE_BUTTONS);
 		memcpy(&newMouseState, &realMouseState, sizeof(bool) * MAX_MOUSE_BUTTONS);
 		mouseX = (int32)realMouseX; mouseY = (int32)realMouseY;
-		mousePos.x = mouseX;        mousePos.y = mouseY;
+		mousePos.x = mouseX; mousePos.y = mouseY;
 		screenMouseY = (int32)realScreenMouseX; screenMouseY = (int32)realScreenMouseY;
 		scrollX = realScrollX; scrollY = realScrollY;
 	}
