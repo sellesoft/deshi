@@ -42,6 +42,9 @@ struct DeshiEngine {
 		renderer->Init(&window);
 		//imgui->Init(renderer, &input, &window);
 		
+		//start entity admin
+		entityAdmin.Create(&input, &window, &time);
+
 		//start the engine thread
 		DeshiEngine::running = true;
 		std::thread t = std::thread(&DeshiEngine::EngineThread, this);
@@ -50,8 +53,7 @@ struct DeshiEngine {
 		DeshiEngine::running = false;
 		t.join();
 
-		//start entity admin
-		entityAdmin.Create(&input, &window);
+
 		
 		//cleanup
 		//imgui->Cleanup(); delete imgui;

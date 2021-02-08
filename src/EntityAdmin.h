@@ -9,9 +9,6 @@ struct Component;
 struct Command;
 
 struct PhysicsWorld;
-
-struct Screen;
-struct Time;
 struct World;
 
 struct Camera;
@@ -24,12 +21,12 @@ struct Console;
 //DeshiEngine structs
 struct Window;
 struct Input;
+struct Time;
+
 
 //the entity admin is fed down to all systems and components that it controls meaning that
 //the core will also be accessible in those places too.
 struct EntityAdmin {
-
-	//DeshiEngine* d;
 
 	EntityAdmin* admin = this;
 
@@ -53,10 +50,15 @@ struct EntityAdmin {
 	Canvas* tempCanvas;
 	Console* console;
 
+
+	//stores the components to be executed in between layers
+	std::vector<ContainerManager<Component*>> freeCompLayers;
+
+
 	bool paused = false;
 	bool IMGUI_KEY_CAPTURE = false;
 
-	void Create(Input* i, Window* w);
+	void Create(Input* i, Window* w, Time* t);
 	void Cleanup();
 
 	void Update();
@@ -81,7 +83,6 @@ struct EntityAdmin {
 
 	Command* GetCommand(std::string command);
 	bool ExecCommand(std::string command);
-	bool TriggerCommand(std::string command);
 };
 
 struct Entity {

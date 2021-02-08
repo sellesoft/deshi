@@ -362,3 +362,4 @@ imgui.ini
 /deshicheck-cppcheck-build-dir
 *.cppcheck
 deshi_project_suppressions.cfg
+*.exe

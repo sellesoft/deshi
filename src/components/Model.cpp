@@ -71,18 +71,20 @@ Mesh::Mesh(const char* name, std::vector<Batch> batchArray) {
 
 Model::Model(Entity* e, Mesh mesh) {
 	this->mesh = mesh;
+
+	layer = CL2_RENDSCENE;
 }
 
 Model* Model::CreateBox(Entity* e, Vector3 halfDims, Color color) {
 	Vector3 p = halfDims;
 	std::vector<Vertex> vertices = {
-		{Vector3(p.x, p.y, p.z), Vector3(color.r, color.g, color.b), Vector2(0, 0)},		// x, y, z	0
+		{Vector3(p.x, p.y, p.z),  Vector3(color.r, color.g, color.b), Vector2(0, 0)},		// x, y, z	0
 		{Vector3(-p.x, p.y, p.z), Vector3(color.r, color.g, color.b), Vector2(0, 0)},	//-x, y, z	1
-		{Vector3(p.x,-p.y, p.z), Vector3(color.r, color.g, color.b), Vector2(0, 0)},	// x,-y, z	2
-		{Vector3(p.x, p.y,-p.z), Vector3(color.r, color.g, color.b), Vector2(0, 0)},	// x, y,-z	3
+		{Vector3(p.x,-p.y, p.z),  Vector3(color.r, color.g, color.b), Vector2(0, 0)},	// x,-y, z	2
+		{Vector3(p.x, p.y,-p.z),  Vector3(color.r, color.g, color.b), Vector2(0, 0)},	// x, y,-z	3
 		{Vector3(-p.x,-p.y, p.z), Vector3(color.r, color.g, color.b), Vector2(0, 0)},	//-x,-y, z	4
 		{Vector3(-p.x, p.y,-p.z), Vector3(color.r, color.g, color.b), Vector2(0, 0)},	//-x, y,-z	5
-		{Vector3(p.x,-p.y,-p.z), Vector3(color.r, color.g, color.b), Vector2(0, 0)},	// x,-y,-z	6
+		{Vector3(p.x,-p.y,-p.z),  Vector3(color.r, color.g, color.b), Vector2(0, 0)},	// x,-y,-z	6
 		{Vector3(-p.x,-p.y,-p.z), Vector3(color.r, color.g, color.b), Vector2(0, 0)}	//-x,-y,-z	7
 	};
 	std::vector<uint32> indices = {

@@ -20,71 +20,24 @@ struct Collider : public Component {
 struct BoxCollider : public Collider {
 	Vector3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
 
-	BoxCollider(Entity* e, Vector3 halfDimensions, float mass, int8 collisionLayer = 0) {
-		this->entity = e;
-		this->halfDims = halfDimensions;
-		this->collisionLayer = collisionLayer;
-		this->isTrigger = false;
-		this->inertiaTensor = InertiaTensors::SolidCuboid(2*abs(halfDims.x), 2*abs(halfDims.x), 2*abs(halfDims.x), mass);
-	}
-
-	BoxCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, int8 collisionLayer = 0) {
-		this->entity = e;
-		this->halfDims = halfDimensions;
-		this->collisionLayer = collisionLayer;
-		this->isTrigger = isTrigger;
-		this->command = command;
-		if(!isTrigger) {
-			this->inertiaTensor = InertiaTensors::SolidCuboid(2*abs(halfDims.x), 2*abs(halfDims.x), 2*abs(halfDims.x), mass);
-		}
-	}
+	BoxCollider(Entity* e, Vector3 halfDimensions, float mass, int8 collisionLayer = 0);
+	BoxCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, int8 collisionLayer = 0);
 };
 
 //axis-aligned bounding box
 struct AABBCollider : public Collider {
 	Vector3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
 
-	AABBCollider(Entity* e, Vector3 halfDimensions, float mass, int8 collisionLayer = 0) {
-		this->entity = e;
-		this->halfDims = halfDimensions;
-		this->collisionLayer = collisionLayer;
-		this->isTrigger = false;
-		this->inertiaTensor = InertiaTensors::SolidCuboid(2*abs(halfDims.x), 2*abs(halfDims.x), 2*abs(halfDims.x), mass);
-	}
-
-	AABBCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, int8 collisionLayer = 0) {
-		this->entity = e;
-		this->halfDims = halfDimensions;
-		this->collisionLayer = collisionLayer;
-		this->isTrigger = isTrigger;
-		this->command = command;
-		if(!isTrigger) {
-			this->inertiaTensor = InertiaTensors::SolidCuboid(2*abs(halfDims.x), 2*abs(halfDims.x), 2*abs(halfDims.x), mass);
-		}
-	}
+	AABBCollider(Entity* e, Vector3 halfDimensions, float mass, int8 collisionLayer = 0);
+	AABBCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, int8 collisionLayer = 0);
+	
 };
 
 struct SphereCollider : public Collider {
 	float radius;
 
-	SphereCollider(Entity* e, float radius, float mass, int8 collisionLayer = 0) {
-		this->entity = e;
-		this->radius= radius;
-		this->collisionLayer = collisionLayer;
-		this->isTrigger = false;
-		this->inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
-	}
-
-	SphereCollider(Entity* e, float radius, float mass, bool isTrigger, Command* command, int8 collisionLayer = 0) {
-		this->entity = e;
-		this->radius= radius;
-		this->collisionLayer = collisionLayer;
-		this->isTrigger = isTrigger;
-		this->command = command;
-		if(!isTrigger) {
-			this->inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
-		}
-	}
+	SphereCollider(Entity* e, float radius, float mass, int8 collisionLayer = 0);
+	SphereCollider(Entity* e, float radius, float mass, bool isTrigger, Command* command, int8 collisionLayer = 0);
 };
 
 //TODO(p,delle) implement convexPolyCollider

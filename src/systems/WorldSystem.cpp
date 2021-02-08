@@ -1,4 +1,5 @@
 #include "WorldSystem.h"
+#include "ConsoleSystem.h"
 #include "../EntityAdmin.h"
 #include "../utils/Debug.h"
 
@@ -19,7 +20,7 @@ void WorldSystem::Update() {
 		try {
 			delete admin->entities.at(id);
 		} catch(const std::out_of_range& oor) {
-			ASSERT(false, "No entity at id when there should have been");
+			DASSERT(false, "No entity at id when there should have been");
 		}
 		admin->entities.erase(id);
 	}
@@ -44,7 +45,7 @@ Entity* WorldSystem::CreateEntity(EntityAdmin* admin) {
 Entity* WorldSystem::CreateEntity(EntityAdmin* admin, Component* singleton) {
 	World* world = admin->world;
 	Entity* e = new Entity;
-	AddAComponentToEntity(e, singleton);
+	AddAComponentToEntity(admin, e, singleton);
 	world->creationBuffer.push_back(e);
 	return e;
 }
@@ -53,7 +54,7 @@ Entity* WorldSystem::CreateEntity(EntityAdmin* admin, std::vector<Component*> co
 	World* world = admin->world;
 	Entity* e = new Entity;
 	e->components = components;
-	AddComponentsToEntity(e, components);
+	AddComponentsToEntity(admin, e, components);
 	world->creationBuffer.push_back(e);
 	return e;
 }
@@ -79,6 +80,7 @@ int32 WorldSystem::AddAComponentToWorldEntity(EntityAdmin* admin, Entity* entity
 	try {
 		Entity* e = admin->entities.at(entity->id);
 		e->components.push_back(component);
+		admin->freeCompLayers[component->layer].add(component);
 		component->entity = e;
 		component->admin = admin;
 		return e->components.size()-1;
@@ -93,6 +95,7 @@ int32 WorldSystem::AddComponentsToWorldEntity(EntityAdmin* admin, Entity* entity
 		int value = e->components.size();
 		for(auto& c : components) {
 			e->components.push_back(c);
+			admin->freeCompLayers[c->layer].add(c);
 			c->entity = entity;
 			c->admin = admin;
 		}
@@ -102,17 +105,19 @@ int32 WorldSystem::AddComponentsToWorldEntity(EntityAdmin* admin, Entity* entity
 	}
 }
 
-int32 WorldSystem::AddAComponentToEntity(Entity* entity, Component* component) {
+int32 WorldSystem::AddAComponentToEntity(EntityAdmin* admin, Entity* entity, Component* component) {
 	entity->components.push_back(component);
+	admin->freeCompLayers[component->layer].add(component);
 	component->entity = entity;
 	component->admin = entity->admin; // :/
 	return entity->components.size()-1;
 }
 
-int32 WorldSystem::AddComponentsToEntity(Entity* entity, std::vector<Component*> components) {
+int32 WorldSystem::AddComponentsToEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components) {
 	int value = entity->components.size();
 	for(auto& c : components) {
 		entity->components.push_back(c);
+		admin->freeCompLayers[c->layer].add(c);
 		c->entity = entity;
 		c->admin = entity->admin;
 	}
@@ -136,6 +141,7 @@ bool WorldSystem::RemoveAComponentFromEntity(EntityAdmin* admin, Entity* entity,
 		std::vector<Component*>* components = &admin->entities.at(entity->id)->components;
 		for(int i = 0; i < components->size(); ++i) {
 			if(components->at(i) == component) {
+				admin->freeCompLayers[component->layer].remove_from(component->layer_index);
 				delete components->at(i);
 				components->erase(components->begin()+i);
 				return true;

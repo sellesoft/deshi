@@ -406,11 +406,14 @@ inline void HandleRenderInputs(EntityAdmin* admin, Input* input, Keybinds* binds
 
 //add generic commands here
 void CommandSystem::Init() {
-	admin->commands["debug_global"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		GLOBAL_DEBUG = !GLOBAL_DEBUG;
-		if (GLOBAL_DEBUG) return "GLOBAL_DEBUG = true";
-		else return "GLOBAL_DEBUG = false";
-	}, "debug_global", "debug_global");
+
+	//TODO(,sushi) reimplement this at some point
+
+	//admin->commands["debug_global"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+	//	GLOBAL_DEBUG = !GLOBAL_DEBUG;
+	//	if (GLOBAL_DEBUG) return "GLOBAL_DEBUG = true";
+	//	else return "GLOBAL_DEBUG = false";
+	//}, "debug_global", "debug_global");
 
 	admin->commands["debug_command_exec"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 		Command::CONSOLE_PRINT_EXEC = !Command::CONSOLE_PRINT_EXEC;

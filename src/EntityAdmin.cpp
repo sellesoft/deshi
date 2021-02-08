@@ -49,6 +49,7 @@ TODO(p,delle) add physics based collision resolution for all entities
 
 #include "EntityAdmin.h"						//UsefulDefines.h, Debug.h
 #include "core/deshi.h"
+#include "core/deshi_time.h"
 
 
 #include "utils/PhysicsWorld.h"					//
@@ -93,10 +94,11 @@ TODO(p,delle) add physics based collision resolution for all entities
 
 //// EntityAdmin ////
 
-void EntityAdmin::Create(Input* i, Window* w) {
+void EntityAdmin::Create(Input* i, Window* w, Time* t) {
 
 	window = w;
 	input = i;
+	time = t;
 
 	g_cBuffer.allocate_space(100);
 
@@ -106,26 +108,18 @@ void EntityAdmin::Create(Input* i, Window* w) {
 	commands = std::map<std::string, Command*>();
 	physicsWorld = new PhysicsWorld();
 
-	//singleton initialization
-	world = new World();
-
-	//current admin components
-	currentCamera = new Camera();
-	currentScene = new Scene();
-	currentKeybinds = new Keybinds();
-
-	//temporary singletons
-	tempMovementState = new MovementState();
-	tempCanvas = new Canvas();
-
-	console = new Console();
+	//reserve complayers
+	for (int i = 0; i < 8; i++) {
+		freeCompLayers.push_back(ContainerManager<Component*>());
+	}
+	
 
 	//systems initialization
 	AddSystem(new CommandSystem());
-	switch(physicsWorld->integrationMode) {
-		default: /* Semi-Implicit Euler */ {
-			AddSystem(new PhysicsSystem());
-		}
+	switch (physicsWorld->integrationMode) {
+	default: /* Semi-Implicit Euler */ {
+		AddSystem(new PhysicsSystem());
+	}
 	}
 	//AddSystem(new CameraSystem());
 	//AddSystem(new MeshSystem());
@@ -135,10 +129,27 @@ void EntityAdmin::Create(Input* i, Window* w) {
 	//AddSystem(new TriggeredCommandSystem());
 	AddSystem(new ConsoleSystem());
 	AddSystem(new SoundSystem());
-	
-#ifdef DEBUG_P3DPGE
-	AddSystem(new DebugSystem());
-#endif	
+
+	console = new Console();
+
+	//singleton initialization
+	world = new World();
+
+	//current admin components
+	currentCamera = new Camera(this);
+	currentCamera->layer_index = freeCompLayers[currentCamera->layer].add(currentCamera);
+
+	currentScene = new Scene(this);
+	currentScene->layer_index = freeCompLayers[currentScene->layer].add(currentScene);
+
+	currentKeybinds = new Keybinds(this);
+
+	//temporary singletons
+	tempMovementState = new MovementState();
+	tempCanvas = new Canvas();
+
+
+
 }
 
 void EntityAdmin::Cleanup() {

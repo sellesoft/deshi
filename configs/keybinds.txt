@@ -1,0 +1,16 @@
+> Movement Keys
+movementFlyingUp = E
+movementFlyingDown = Q
+movementFlyingForward = W
+movementFlyingBack = S
+movementFlyingRight = D
+movementFlyingLeft = A
+> Camera Keys
+cameraRotateUp = UP
+cameraRotateDown = DOWN
+cameraRotateRight = RIGHT
+cameraRotateLeft = LEFT
+> Debug Keys
+debugRenderWireframe = COMMA
+debugRenderEdgesNumbers = PERIOD
+debugRenderDisplayAxis = SLASH

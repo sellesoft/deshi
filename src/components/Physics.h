@@ -20,27 +20,7 @@ struct Physics : public Component {
 
 	bool isStatic = false;
 
-	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO, Vector3 rotVeloctiy = Vector3::ZERO, 
-						Vector3 rotAcceleration = Vector3::ZERO, float elasticity = .5f, float mass = 1.f, bool isStatic = false){
-		this->position = position;
-		this->rotation = rotation;
-		this->velocity = velocity;
-		this->acceleration = acceleration;
-		this->rotVelocity = rotVeloctiy;
-		this->rotAcceleration = rotAcceleration;
-		this->elasticity = elasticity;
-		this->mass = mass;
-		this->isStatic = isStatic;
-	}
-
-	Physics(Vector3 position, Vector3 rotation, float mass, float elasticity){
-		this->position = position;
-		this->rotation = rotation;
-		this->velocity = Vector3::ZERO;
-		this->acceleration = Vector3::ZERO;
-		this->rotVelocity = Vector3::ZERO;
-		this->rotAcceleration = Vector3::ZERO;
-		this->mass = mass;
-		this->elasticity = elasticity;
-	}
+	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO, Vector3 rotVeloctiy = Vector3::ZERO,
+		Vector3 rotAcceleration = Vector3::ZERO, float elasticity = .5f, float mass = 1.f, bool isStatic = false);
+	Physics(Vector3 position, Vector3 rotation, float mass, float elasticity);
 };
