@@ -499,6 +499,7 @@ void Renderer_Vulkan::createDescriptorSetLayout() {
 
 void Renderer_Vulkan::createGraphicsPipeline() {
 	std::cout << "{-}{-} Creating Graphics Pipeline {-}{-}" << std::endl;
+	
 	//programmable shaders
 	std::vector<char> vertShaderCode = deshi::readFile("shaders/vert.spv");
 	std::vector<char> fragShaderCode = deshi::readFile("shaders/frag.spv");
