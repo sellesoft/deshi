@@ -1,5 +1,6 @@
 #pragma once
 #include "../utils/defines.h"
+#include "../utils/Debug.h"
 
 #if defined(_MSC_VER)
 #pragma comment(lib,"vulkan-1.lib")
@@ -27,6 +28,7 @@ enum RenderAPI{
 struct Renderer{
 	virtual void Init(Window* window) = 0;
 	virtual void Draw() = 0;
+	virtual void Render() = 0;
 	virtual void Cleanup() = 0;
 };
 
@@ -97,19 +99,34 @@ struct FrameSemaphoreVk{
 	VkSemaphore renderCompleteSemaphore;
 };
 
+struct FramebufferAttachmentsVk {
+	VkImage colorImage;
+	VkDeviceMemory colorImageMemory;
+	VkImageView colorImageView;
+	VkImage depthImage;
+	VkDeviceMemory depthImageMemory;
+	VkImageView depthImageView;
+};
+
 struct WindowVk{
-	int32              width;
-	int32              height;
-	VkSwapchainKHR     swapchain;
-	VkSurfaceFormatKHR surfaceFormat;
-	VkPresentModeKHR   presentMode;
-	VkRenderPass       renderPass;
-	VkPipeline         pipeline;
-	uint32             imageCount;
-	uint32             frameIndex;
-	uint32             semaphoreIndex;
-	FrameVk*           frames;
-	FrameSemaphoreVk*  frameSephamores;
+	int32                    width;
+	int32                    height;
+	VkSwapchainKHR           swapchain;
+	VkSurfaceKHR             surface;
+	SwapChainSupportDetails  supportDetails;
+	VkSurfaceFormatKHR       surfaceFormat;
+	VkPresentModeKHR         presentMode;
+	VkExtent2D               extent;
+	VkRenderPass             renderPass;
+	VkPipeline               pipeline;
+	uint32                   imageCount;
+	bool                     clearEnable;
+    VkClearValue*            clearValues;
+	uint32                   frameIndex;
+	uint32                   semaphoreIndex;
+	FrameVk*                 frames;
+	FrameSemaphoreVk*        frameSephamores;
+	FramebufferAttachmentsVk attachments;
 };
 
 //////////////////////////////
@@ -122,10 +139,10 @@ struct Renderer_Vulkan : public Renderer{
 	///////////////////////////////
 	
 	//TODO(r,delle) INSERT VIDEO SETTINGS HERE
-	int32 windowWidth;
-	int32 windowHeight;
-	int32 minImageCount = 2;
-	int32 imageCount = minImageCount;
+	//int32 windowWidth;
+	//int32 windowHeight;
+	int32 minImageCount = 0;
+	//int32 imageCount = minImageCount;
 	
 	//////////////////////////////
 	//// vulkan api variables ////
@@ -133,41 +150,38 @@ struct Renderer_Vulkan : public Renderer{
 	VkAllocationCallbacks* allocator = 0;
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
-	GLFWwindow* window;
-	VkSurfaceKHR surface;
+	GLFWwindow* glfwWindow;
+	//VkSurfaceKHR surface;
 	
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 	QueueFamilyIndices physicalQueueFamilies;
 	
 	VkDevice device;
-	//QueueFamilyIndices deviceQueueFamilies;
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
 	
+	VkDescriptorPool descriptorPool;
+	VkPipelineCache graphicsPipelineCache = VK_NULL_HANDLE;
 	//
-	VkSwapchainKHR swapChain;
-	std::vector<VkImage> swapChainImages;
-	VkFormat swapChainImageFormat;
-	VkExtent2D swapChainExtent;
-	std::vector<VkImageView> swapChainImageViews;
-	std::vector<VkFramebuffer> swapChainFramebuffers;
-	
-	VkRenderPass renderPass;
-	VkDescriptorSetLayout descriptorSetLayout;
+
+	WindowVk window = {0};
+	void SetupVulkan();
+	void CreateOrResizeWindow(int w, int h);
+	//destroy old swap chain and in-flight frames, create a new swap chain with desired dimensions
+	void CreateWindowSwapChain(int w, int h);
+	void CreateWindowCommandBuffers();
+	void DestroyFrame(FrameVk* frame);
+	void DestroyFrameSemaphore(FrameSemaphoreVk* sema);
+	int GetMinImageCountFromPresentMode(VkPresentModeKHR mode);
+
+	//
+
+	/*VkDescriptorSetLayout descriptorSetLayout;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
-	VkPipelineCache graphicsPipelineCache = VK_NULL_HANDLE;
 	
 	VkCommandPool commandPool;
-	
-	VkImage colorImage;
-	VkDeviceMemory colorImageMemory;
-	VkImageView colorImageView;
-	
-	VkImage depthImage;
-	VkDeviceMemory depthImageMemory;
-	VkImageView depthImageView;
 	
 	uint32 mipLevels;
 	VkImage textureImage;
@@ -192,7 +206,7 @@ struct Renderer_Vulkan : public Renderer{
 	std::vector<VkBuffer> uniformBuffers;
 	std::vector<VkDeviceMemory> uniformBuffersMemory;
 	
-	VkDescriptorPool descriptorPool;
+	
 	std::vector<VkDescriptorSet> descriptorSets;
 	
 	std::vector<VkCommandBuffer> commandBuffers;
@@ -203,7 +217,7 @@ struct Renderer_Vulkan : public Renderer{
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> inFlightFences;
 	std::vector<VkFence> imagesInFlight;
-	size_t currentFrame = 0;
+	size_t currentFrame = 0;*/
 	
 	bool framebufferResized = false;
 	
@@ -216,6 +230,8 @@ struct Renderer_Vulkan : public Renderer{
 	//grabs an image from swap chain, submits the command buffer to the command queue, adds the image to the presentation queue
 	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Drawing/Rendering_and_presentation
 	virtual void Draw() override;
+
+	virtual void Render() override;
 	
 	virtual void Cleanup() override;
 	

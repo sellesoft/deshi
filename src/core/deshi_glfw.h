@@ -54,13 +54,15 @@ struct Window{
 		if(!monitor) { glfwTerminate(); return; }
 		
 		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-		glfwGetMonitorWorkarea(monitor, &x, &y, &width, &height);
-		this->x = x; this->y = y;
+		int xpos, ypos;
+		glfwGetWindowPos(window, &xpos, &ypos);
+		this->x = xpos; this->y = ypos;
+		std::cout << this->x << " ... " << this->y << std::endl;
 		this->width = width; this->height = height;
 		this->screenWidth = mode->width; this->screenHeight = mode->height;
 		this->screenRefreshRate = mode->refreshRate; this->vsync = vsync;
 		this->displayMode = displayMode;
-		this->dimensions = Vector2(x, y);
+		this->dimensions = Vector2(width, height);
 		
 		UpdateDisplayMode(displayMode);
 		

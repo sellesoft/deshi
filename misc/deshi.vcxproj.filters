@@ -100,9 +100,6 @@
     <ClInclude Include="..\src\utils\PhysicsWorld.h">
       <Filter>src\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\utils\UsefulDefines.h">
-      <Filter>src\utils</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\systems\CommandSystem.h">
       <Filter>src\systems\h</Filter>
     </ClInclude>
@@ -134,9 +131,6 @@
       <Filter>src\components\h</Filter>
     </ClInclude>
     <ClInclude Include="..\src\components\Collider.h">
-      <Filter>src\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Component.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
     <ClInclude Include="..\src\components\Console.h">
@@ -174,6 +168,18 @@
     </ClInclude>
     <ClInclude Include="..\src\systems\System.h">
       <Filter>src\systems</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\internal\draudio\dr_wav.h">
+      <Filter>src\internal\draudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\internal\draudio\dr_flac.h">
+      <Filter>src\internal\draudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\internal\draudio\dr_mp3.h">
+      <Filter>src\internal\draudio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Component.h">
+      <Filter>src\components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -219,12 +225,18 @@
     <Filter Include="src\components\h">
       <UniqueIdentifier>{ac3d7024-7202-4557-8232-cff3b1b89072}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\internal\draudio">
+      <UniqueIdentifier>{8e998c9e-1401-4617-b5a6-d4536f3bf16e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore">
       <Filter>docs</Filter>
     </None>
     <None Include="..\README.md">
+      <Filter>docs</Filter>
+    </None>
+    <None Include="build.bat">
       <Filter>docs</Filter>
     </None>
   </ItemGroup>

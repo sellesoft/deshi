@@ -1,6 +1,7 @@
 #pragma once
 #include "../utils/defines.h"
 #include "../math/Vector2.h"
+#include "../utils/Debug.h"
 
 #include <map>
 #include <iostream>
@@ -42,7 +43,6 @@ typedef enum InputModFlagBits{
 typedef uint32 InputModFlags;
 
 struct Input{
-
 	Entity* selectedEntity = nullptr;
 
 	std::map<size_t, uint8> mapKeys;

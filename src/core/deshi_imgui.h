@@ -92,7 +92,40 @@ struct deshiImGui{
 	}
 	
 	virtual void Cleanup() = 0;
-	virtual void NewFrame() = 0;
+
+	virtual void NewFrame() {
+		ImGuiIO& io = ImGui::GetIO();
+		//update mouse
+		io.MouseDown[0] = input->newMouseState[0];
+		io.MouseDown[1] = input->newMouseState[1];
+		io.MouseDown[2] = input->newMouseState[2];
+		io.MouseDown[3] = input->newMouseState[3];
+		io.MouseDown[4] = input->newMouseState[4];
+		io.MousePos = ImVec2(input->realMouseX, input->realMouseY);
+		io.MouseWheel = input->realScrollY;
+		
+		//update keyboard
+		io.KeyCtrl = input->newKeyState[Key::LCONTROL] || input->newKeyState[Key::RCONTROL];
+		io.KeyShift = input->newKeyState[Key::LSHIFT] || input->newKeyState[Key::RSHIFT];
+		io.KeyAlt = input->newKeyState[Key::LALT] || input->newKeyState[Key::RALT];
+		io.KeySuper = false; //NOTE maybe support super?
+		
+		for(auto& key : controlInputKeys){
+			io.KeysDown[key] = input->newKeyState[key];
+		}
+		
+		for(auto& m : enValueInputKeys){
+			if(input->newKeyState[m.key] && !input->oldKeyState[m.key]){
+				io.AddInputCharacter(io.KeyShift ? m.upper : m.lower);
+			}
+		}
+		
+		//update window and time
+		io.DisplaySize = ImVec2(window->width, window->height);
+		io.DeltaTime = time->deltaTime;
+		std::cout << io.WantCaptureMouse << std::endl;
+	};
+
 	virtual void EndFrame() = 0;
 };
 
@@ -116,14 +149,16 @@ struct vkImGui : public deshiImGui{
 		init_info.DescriptorPool = vkr->descriptorPool;
 		init_info.Allocator = vkr->allocator;
 		init_info.MinImageCount = vkr->minImageCount;
-		init_info.ImageCount = vkr->imageCount;
+		init_info.ImageCount = vkr->window.imageCount;
 		init_info.CheckVkResultFn = check_vk_result;
-		ImGui_ImplVulkan_Init(&init_info, vkr->renderPass);
+		init_info.MSAASamples = vkr->msaaSamples;
+		ImGui_ImplVulkan_Init(&init_info, vkr->window.renderPass);
 		
 		// Upload Fonts
 		{
-			VkCommandPool command_pool = vkr->commandPool;
-			VkCommandBuffer command_buffer = vkr->commandBuffers[vkr->currentFrame];
+			WindowVk* window = &vkr->window;
+			VkCommandPool command_pool = window->frames[window->frameIndex].commandPool;
+			VkCommandBuffer command_buffer = window->frames[window->frameIndex].commandBuffer;
 			
 			err = vkResetCommandPool(vkr->device, command_pool, 0);
 			check_vk_result(err);
@@ -160,55 +195,27 @@ struct vkImGui : public deshiImGui{
 	}
 	
 	void NewFrame() override{
+		deshiImGui::NewFrame();
+
 		//TODO(r,delle) find out if this is actually needed
 		if(vkr->framebufferResized){
 			int w, h;
-			glfwGetFramebufferSize(vkr->window, &w, &h);
+			glfwGetFramebufferSize(vkr->glfwWindow, &w, &h);
 			if(w > 0 && h > 0){
 				ImGui_ImplVulkan_SetMinImageCount(vkr->minImageCount);
 			}
 		}
 		
-		ImGuiIO& io = ImGui::GetIO();
-		//update mouse
-		io.MouseDown[0] = input->newMouseState[0];
-		io.MouseDown[1] = input->newMouseState[1];
-		io.MouseDown[2] = input->newMouseState[2];
-		io.MouseDown[3] = input->newMouseState[3];
-		io.MouseDown[4] = input->newMouseState[4];
-		io.MousePos = ImVec2(input->realMouseX, input->realMouseY);
-		io.MouseWheel = input->realScrollY;
-		
-		//update keyboard
-		io.KeyCtrl = input->newKeyState[Key::LCONTROL] || input->newKeyState[Key::RCONTROL];
-		io.KeyShift = input->newKeyState[Key::LSHIFT] || input->newKeyState[Key::RSHIFT];
-		io.KeyAlt = input->newKeyState[Key::LALT] || input->newKeyState[Key::RALT];
-		io.KeySuper = false; //NOTE maybe support super?
-		
-		for(auto& key : controlInputKeys){
-			io.KeysDown[key] = input->newKeyState[key];
-		}
-		
-		for(auto& m : enValueInputKeys){
-			if(input->newKeyState[m.key] && !input->oldKeyState[m.key]){
-				io.AddInputCharacter(io.KeyShift ? m.upper : m.lower);
-			}
-		}
-		
-		//update window and time
-		io.DisplaySize = ImVec2(window->width, window->height);
-		io.DeltaTime = time->deltaTime;
-		
 		// Start the Dear ImGui frame
-		//ImGui_ImplVulkan_NewFrame();
-        //ImGui_ImplGlfw_NewFrame();
-        //ImGui::NewFrame();
+		ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 	}
 	
 	void EndFrame() override{
-		//ImGui::Render();
+		ImGui::Render();
 		// Record dear imgui primitives into command buffer
-		//ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkr->commandBuffers[vkr->currentFrame]);
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkr->window.frames[vkr->window.frameIndex].commandBuffer);
 		std::cout << "-----------------" << std::endl;
 	}
 };
