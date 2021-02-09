@@ -12,20 +12,18 @@
 #include <fstream>
 #include <iostream>
 
-//global debug macros
-#define DEBUG if(GLOBAL_DEBUG)
 
-#define LOG(...)     DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR(...)   DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", __VA_ARGS__, "[c]"))
-#define SUCCESS(...) DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
+#define LOG(...)     admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR(...)   admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", __VA_ARGS__, "[c]"))
+#define SUCCESS(...) admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
 
 //additionally prints where function was called
-#define LOG_LOC(...)     DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR_LOC(...)   DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:red]", __VA_ARGS__, "[c]"))
-#define SUCCESS_LOC(...) DEBUG admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
+#define LOG_LOC(...)     admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR_LOC(...)   admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:red]", __VA_ARGS__, "[c]"))
+#define SUCCESS_LOC(...) admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
 
-#define ASSERT(condition, message)     if(!(condition) && !admin->paused){ CERROR_LOC("Assertion '" #condition "' failed: \n", message); admin->paused = true;}
-#define ASSERTWARN(condition, message) if(!(condition) && !admin->paused) CLOG_LOC("Assertion '" #condition "' failed: \n", message)
+#define DASSERT(condition, message)     if(!(condition) && !admin->paused){ ERROR_LOC("Assertion '" #condition "' failed: \n", message); admin->paused = true;}
+#define DASSERTWARN(condition, message) if(!(condition) && !admin->paused) LOG_LOC("Assertion '" #condition "' failed: \n", message)
 
 #define LOGF(...)     admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
 #define ERRORF(...)   admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", __VA_ARGS__, "[c]"))
@@ -39,7 +37,7 @@
 #define STRINGIZE(x) STRINGIZE2(x)
 #define LINE_NUM  STRINGIZE(__LINE__)
 
-#define __FILENAME__ (std::strrchr(__FILE__, '\\') ? std::strrchr(__FILE__, '\\') + 1 : __FILE__)
+
 
 #define LOGFUNC LOG(__FUNCTION__, " called")
 #define LOGFUNCM(...) LOG(__FUNCTION__, " called ", __VA_ARGS__)
@@ -62,7 +60,7 @@
 #define PERM_RAND_INT ([]{ static int rint = rand() % 100000; return rint;}())
 
 //#define BUFFER_IDENTIFIER ([]{ static int id_ini = buffer_size++; return id_ini; }())
-//#define BUFFERLOG(...) g_cBuffer.add_to(new StringedBuffer(TOSTRING(__VA_ARGS__), BUFFER_IDENTIFIER))
+//#define BUFFERLOG(...) g_cBuffer.add(new StringedBuffer(TOSTRING(__VA_ARGS__), BUFFER_IDENTIFIER))
 
 #define BUFFERLOG(i, ...) DEBUG g_cBuffer.add_to_index(TOSTRING(__VA_ARGS__), i)
 
@@ -77,18 +75,7 @@ if(t){ vect[0] = v; return vr; } \
 else return vr; }\
 ())
 
-#ifndef NDEBUG
-#   define ASSERT(condition, message) \
-    do { \
-        if (! (condition)) { \
-            std::string file = __FILENAME__; \
-            std::cout << "Assertion '" #condition "' failed in " + file + " line " + std::to_string(__LINE__) + ": \n" #message << std::endl;  \
-            std::terminate(); \
-        } \
-    } while (false)
-#else
-#   define ASSERT(condition, message) condition;
-#endif
+
 
 #ifndef NDEBUG
 #   define ASSERTWARN(condition, message) \

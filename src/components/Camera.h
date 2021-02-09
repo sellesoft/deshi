@@ -20,18 +20,8 @@ struct Camera : public Component {
 	Matrix4 viewMatrix;
 	Matrix4 projectionMatrix;
 
-	Camera() {
-		nearZ = .1f;
-		farZ = 1000.1f;
-		fieldOfView = 90.f;
-	}
-
-	Camera(float fov, float nearZ = .1f, float farZ = 1000.f) {
-		this->nearZ = nearZ;
-		this->farZ = farZ;
-		this->fieldOfView = fov;
-	}
-
+	Camera(EntityAdmin* a);
+	Camera(float fov, float nearZ = .1f, float farZ = 1000.f);
 	
 	void Update() override;
 };

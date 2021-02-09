@@ -12,16 +12,8 @@ struct Canvas : public Component {
 
 	bool SHOW_FPS_GRAPH = false;
 
-	Canvas() {
-		containers = std::vector<UIContainer*>();
-		hideAll = false;
-	}
-
-	~Canvas() {
-		//delete pge_imgui;
-		for(UIContainer* con : containers) delete con;
-		containers.clear();
-	}
+	Canvas();
+	~Canvas();
 	
 	void Update() override;
 };

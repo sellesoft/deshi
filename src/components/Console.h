@@ -11,11 +11,4 @@ struct Console : public Component {
 	bool autoScroll = true;
 	bool scrollToBottom = false;
 
-	//Console() {
-	//	memset(inputBuf, 0, sizeof(inputBuf));
-	//	historyPos = -1;
-	//	autoScroll = true;
-	//	scrollToBottom = false;
-	//}
-
 };

@@ -35,6 +35,7 @@ typedef unsigned long  uint64;
 //accessible only from inside Components/Systems
 #define DengInput admin->input
 #define DengWindow admin->window
+#define DengTime admin->time
 
 
 

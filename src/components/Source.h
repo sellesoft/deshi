@@ -31,23 +31,7 @@ struct Source : public Component {
 	//this will probably be a collection of sounds eventually, once i figure out how i want that to work
 	char* snd_file; 
 
-	void RequestPlay(float gain = 1, float pitch = 1) {
-		this->gain = gain; this->pitch = pitch;
-		request_play = true;
-	}
+	void RequestPlay(float gain = 1, float pitch = 1);
 
-	Source(char* snd_file, Physics* p, Transform* t = nullptr, bool loop = false, float gain = 1, float pitch = 1) {
-		this->snd_file = snd_file;
-		this->loop = loop;
-		this->gain = gain;
-		this->pitch = pitch;
-		if (p != nullptr) {
-			physpoint = true;
-			this->p = p;
-		}
-		else {
-			ASSERT(t != nullptr, "if no physics pointer is specified, tranform must be");
-			this->t = t;
-		}
-	}
+	Source(char* snd_file, Physics* p, Transform* t = nullptr, bool loop = false, float gain = 1, float pitch = 1);
 };

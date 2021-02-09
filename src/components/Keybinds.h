@@ -23,23 +23,13 @@ struct Keybinds : public Component {
 	Key::Key debugRenderWireframe;
 	Key::Key debugRenderDisplayAxis;
 
-	Keybinds() {
-		movementFlyingUp =		Key::E;
-		movementFlyingDown =	Key::Q;
-		movementFlyingForward =	Key::W;
-		movementFlyingBack =	Key::S;
-		movementFlyingRight =	Key::D;
-		movementFlyingLeft =	Key::A;
-		
-		cameraRotateUp =	Key::UP;
-		cameraRotateDown =	Key::DOWN;
-		cameraRotateRight =	Key::RIGHT;
-		cameraRotateLeft =	Key::LEFT;
+	//mapping enum names to strings
+	std::map<std::string, Key::Key> stk;
 
-		debugRenderWireframe =	  Key::COMMA;
-		debugRenderEdgesNumbers = Key::PERIOD;
-		debugRenderDisplayAxis =  Key::SLASH;
-	}
+	//storing key vars for ez assigning 
+	std::vector<Key::Key*> keys;
+
+	Keybinds(EntityAdmin* a);
 
 	//Keybinds(file ...) {} //TODO(i,delle) look into saving/loading keybinds with a file
 

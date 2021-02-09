@@ -58,11 +58,11 @@ struct WorldSystem : public System {
 
 	//adds a component to the end of an entity's components vector
 	//returns the position in the vector
-	static int32 AddAComponentToEntity(Entity* entity, Component* component);
+	static int32 AddAComponentToEntity(EntityAdmin* admin, Entity* entity, Component* component);
 
 	//adds components to the end of an entity's components vector
 	//returns the position of the first added component in the entity's vector
-	static int32 AddComponentsToEntity(Entity* entity, std::vector<Component*> components);
+	static int32 AddComponentsToEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components);
 
 	//adds a component to the end of the components vector of an entity that already exists in the world
 	//returns the position in the vector, or -1 if the entity could not be found

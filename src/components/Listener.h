@@ -11,9 +11,5 @@ struct Listener : public Component {
 	Vector3 velocity; //these may not be necessary
 	Vector3 orientation;
 
-	Listener(Vector3 position, Vector3 velocity = Vector3::ZERO, Vector3 orientation = Vector3::ZERO) {
-		this->position = position;
-		this->velocity = velocity;
-		this->orientation = orientation;
-	}
+	Listener(Vector3 position, Vector3 velocity = Vector3::ZERO, Vector3 orientation = Vector3::ZERO);
 };

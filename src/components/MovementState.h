@@ -12,14 +12,8 @@
 struct MovementState : public Component {
 	uint32 movementState;
 
-	MovementState() {
-		movementState = MOVEMENT_NOCLIP | MOVEMENT_FLYING;
-	}
-
-	MovementState(uint32 state) {
-		movementState = state;
-	}
-
+	MovementState();
+	MovementState(uint32 state);
 	
 	void Update() override;
 };
