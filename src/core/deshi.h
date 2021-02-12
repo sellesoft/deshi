@@ -7,12 +7,7 @@
 #include "deshi_imgui.h"
 #include "deshi_time.h"
 
-#include <atomic>
-#include <thread>
-
 struct DeshiEngine {
-	inline static std::atomic<bool> running;
-	
 	EntityAdmin entityAdmin;
 	RenderAPI renderAPI;
 	Renderer* renderer;
@@ -27,7 +22,7 @@ struct DeshiEngine {
 		//render api
 		renderAPI = RenderAPI::VULKAN;
 		switch(renderAPI){
-			case(VULKAN):default:{ 
+			case(RenderAPI::VULKAN):default:{ 
 				renderer = new Renderer_Vulkan; 
 				imgui = new vkImGui;
 			}break;
@@ -45,38 +40,28 @@ struct DeshiEngine {
 		//start entity admin
 		entityAdmin.Create(&input, &window, &time);
 
-		//start the engine thread
-		DeshiEngine::running = true;
-		std::thread t = std::thread(&DeshiEngine::EngineThread, this);
-		window.StartLoop();
-		
-		DeshiEngine::running = false;
-		t.join();
+		//start main loop
+		while(!glfwWindowShouldClose(window.window)){
+			glfwPollEvents();
+			Update();
+		}
 
-
-		
 		//cleanup
 		imgui->Cleanup(); delete imgui;
 		renderer->Cleanup(); delete renderer;
 		window.Cleanup();
 	}
 	
-	void EngineThread(){
-		while(DeshiEngine::running){
-			if(!Update()){ DeshiEngine::running = false; }
-		}
-	}
-	
 	bool Update() {
 		time.Update();
 		input.Update();
-		imgui->NewFrame(); //place imgui calls after this
-		entityAdmin.Update();
-		renderer->Draw(); //place renderer cmd buffer calls after this
+		window.Update();
+		imgui->NewFrame();			//place imgui calls after this
 		ImGui::ShowDemoWindow();
-		ImGui::ShowMetricsWindow();
-		imgui->EndFrame(); //place imgui calls before this
-		renderer->Render(); //place renderer cmd buffer calls before this
+		entityAdmin.Update();
+		renderer->Draw();			//place renderer cmd buffer calls after this
+		imgui->EndFrame();			//place imgui calls before this
+		renderer->Render();			//place renderer cmd buffer calls before this
 		//entityAdmin.PostRenderUpdate();
 		return true;
 	}

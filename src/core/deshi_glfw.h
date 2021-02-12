@@ -13,7 +13,7 @@
 #include <map>
 #include <iostream>
 
-enum DisplayMode{
+enum struct DisplayMode{
 	WINDOWED, BORDERLESS_WINDOWED, FULLSCREEN
 };
 
@@ -32,6 +32,7 @@ struct Window{
 	int32 screenRefreshRate;
 	DisplayMode displayMode;
 	bool vsync;
+	bool minimized;
 
 	Vector2 dimensions;
 	
@@ -57,7 +58,6 @@ struct Window{
 		int xpos, ypos;
 		glfwGetWindowPos(window, &xpos, &ypos);
 		this->x = xpos; this->y = ypos;
-		std::cout << this->x << " ... " << this->y << std::endl;
 		this->width = width; this->height = height;
 		this->screenWidth = mode->width; this->screenHeight = mode->height;
 		this->screenRefreshRate = mode->refreshRate; this->vsync = vsync;
@@ -151,9 +151,9 @@ struct Window{
 									   std::map<size_t, uint8>::iterator it = Window::input->mapMouse.find(button);
 									   if(it != Window::input->mapMouse.end()){
 										   if(action == GLFW_PRESS){
-											   Window::input->realMouseState[button] = true;
+											   Window::input->realMouseState[it->second] = true;
 										   }else if(action == GLFW_RELEASE){
-											   Window::input->realMouseState[button] = false;
+											   Window::input->realMouseState[it->second] = false;
 										   }
 									   }
 								   });
@@ -178,9 +178,9 @@ struct Window{
 							   std::map<size_t, uint8>::iterator it = Window::input->mapKeys.find(key);
 							   if(it != Window::input->mapKeys.end()){
 								   if(action == GLFW_PRESS){
-									   Window::input->realKeyState[key] = true;
+									   Window::input->realKeyState[it->second] = true;
 								   }else if(action == GLFW_RELEASE){
-									   Window::input->realKeyState[key] = false;
+									   Window::input->realKeyState[it->second] = false;
 								   }
 							   }
 						   });
@@ -203,15 +203,26 @@ struct Window{
 							  });
 		
 	}//Init
+
+	void Update() {
+		int xpos, ypos;
+		glfwGetWindowPos(window, &xpos, &ypos);
+		this->x = xpos; this->y = ypos;
+
+		int width, height;
+		glfwGetWindowSize(window, &width, &height);
+		this->width = width; this->height = height;
+		this->minimized = width <= 0 || height <= 0 ? true : false;
+
+		const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+		this->screenWidth = mode->width; this->screenHeight = mode->height;
+		this->screenRefreshRate = mode->refreshRate; 
+
+		this->dimensions = Vector2(width, height);
+	}
 	
 	void Cleanup(){
 		glfwTerminate();
-	}
-	
-	void StartLoop(){
-		while(!glfwWindowShouldClose(window)){
-			glfwPollEvents();
-		}
 	}
 	
 	void UpdateDisplayMode(DisplayMode displayMode){

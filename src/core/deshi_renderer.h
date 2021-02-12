@@ -21,7 +21,7 @@
 
 struct Window;
 
-enum RenderAPI{
+enum struct RenderAPI{
 	VULKAN
 };
 
@@ -139,10 +139,7 @@ struct Renderer_Vulkan : public Renderer{
 	///////////////////////////////
 	
 	//TODO(r,delle) INSERT VIDEO SETTINGS HERE
-	//int32 windowWidth;
-	//int32 windowHeight;
-	int32 minImageCount = 0;
-	//int32 imageCount = minImageCount;
+	
 	
 	//////////////////////////////
 	//// vulkan api variables ////
@@ -151,7 +148,6 @@ struct Renderer_Vulkan : public Renderer{
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
 	GLFWwindow* glfwWindow;
-	//VkSurfaceKHR surface;
 	
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -163,62 +159,10 @@ struct Renderer_Vulkan : public Renderer{
 	
 	VkDescriptorPool descriptorPool;
 	VkPipelineCache graphicsPipelineCache = VK_NULL_HANDLE;
-	//
 
 	WindowVk window = {0};
-	void SetupVulkan();
-	void CreateOrResizeWindow(int w, int h);
-	//destroy old swap chain and in-flight frames, create a new swap chain with desired dimensions
-	void CreateWindowSwapChain(int w, int h);
-	void CreateWindowCommandBuffers();
-	void DestroyFrame(FrameVk* frame);
-	void DestroyFrameSemaphore(FrameSemaphoreVk* sema);
-	int GetMinImageCountFromPresentMode(VkPresentModeKHR mode);
 
-	//
-
-	/*VkDescriptorSetLayout descriptorSetLayout;
-	VkPipelineLayout pipelineLayout;
-	VkPipeline graphicsPipeline;
-	
-	VkCommandPool commandPool;
-	
-	uint32 mipLevels;
-	VkImage textureImage;
-	VkDeviceMemory textureImageMemory;
-	VkImageView textureImageView;
-	VkSampler textureSampler;
-	
-	std::vector<VertexVk> vertices = {
-		{{-0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-		{{0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, 0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-		{{-0.5f, 0.5f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-	};
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
-	std::vector<uint32> indices = {
-		0, 1, 2, 2, 3, 0
-	};
-	VkBuffer indexBuffer;
-	VkDeviceMemory indexBufferMemory;
-	
-	std::vector<VkBuffer> uniformBuffers;
-	std::vector<VkDeviceMemory> uniformBuffersMemory;
-	
-	
-	std::vector<VkDescriptorSet> descriptorSets;
-	
-	std::vector<VkCommandBuffer> commandBuffers;
-	
-	VkSemaphore imageAvailableSemaphore;
-	VkSemaphore renderFinishedSemaphore;
-	std::vector<VkSemaphore> imageAvailableSemaphores;
-	std::vector<VkSemaphore> renderFinishedSemaphores;
-	std::vector<VkFence> inFlightFences;
-	std::vector<VkFence> imagesInFlight;
-	size_t currentFrame = 0;*/
-	
+	int32 minImageCount = 0;
 	bool framebufferResized = false;
 	
 	//////////////////////////
@@ -234,14 +178,7 @@ struct Renderer_Vulkan : public Renderer{
 	virtual void Render() override;
 	
 	virtual void Cleanup() override;
-	
-	void cleanupSwapChain();
-	
-	//cleans up prev swap chain, recreates it and things that depend on it
-	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Swap_chain_recreation
-	void recreateSwapChain();
-	
-	//TODO(r,delle) INSERT VIDEO SETTINGS HERE
+
 	void createInstance();
 	
 	void setupDebugMessenger();
@@ -255,97 +192,27 @@ struct Renderer_Vulkan : public Renderer{
 	//creates an interface between the actual GPU device and a virtual device for interaction
 	//https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Logical_device_and_queues
 	void createLogicalDevice();
-	
-	//creates a set of images that can be drawn to and presented to the window
-	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Presentation/Swap_chain
-	void createSwapChain();
-	
-	//creates an image view for each swap chain image to describe how to use/write to that image
-	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Presentation/Image_views
-	void createImageViews();
-	
-	//TODO(r,delle) INSERT VIDEO SETTINGS HERE
-	//how many color/depth buffers, their sample amounts, how they should be rendered
-	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Graphics_pipeline_basics/Render_passes
-	void createRenderPass();
-	
-	//creates (storage) buffers or images to be used by shaders
-	//https://vulkan-tutorial.com/en/Uniform_buffers/Descriptor_layout_and_buffer
-	void createDescriptorSetLayout();
-	
-	//TODO(r,delle) INSERT VIDEO SETTINGS HERE
-	//almost all the parameters for doing graphics/rendering
-	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Graphics_pipeline_basics/Introduction
-	void createGraphicsPipeline();
-	
-	//creates a pool for commands to be executed on a device
-	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Drawing/Command_buffers
-	void createCommandPool();
-	
-	//creates colorImage with selected msaaSamples
-	//https://vulkan-tutorial.com/en/Multisampling
-	void createColorResources();
-	
-	//creates depthImage, a depth buffer image after finding optimal settings
-	//https://vulkan-tutorial.com/en/Depth_buffering
-	void createDepthResources();
-	
-	//creates a framebuffer per image view using the renderpass
-	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Drawing/Framebuffers
-	void createFramebuffers();
-	
-	//creates staging image on CPU, copies texture pixels to it, creates vulkan image on GPU from the staging image
-	//https://vulkan-tutorial.com/en/Texture_mapping/Images
-	void createTextureImage();
-	
-	//creates textureImageView that specifies the attributes of the textureImage already created
-	//https://vulkan-tutorial.com/en/Texture_mapping/Image_view_and_sampler
-	void createTextureImageView();
-	
-	//TODO(r,delle) INSERT VIDEO SETTINGS HERE
-	//used for filtering/anti-aliasing, this uses Repeat sampling
-	//https://vulkan-tutorial.com/en/Texture_mapping/Image_view_and_sampler#page_Samplers
-	void createTextureSampler();
-	
-	//creates a vertex buffer on CPU and GPU, fills a CPU staging buffer, copies it to the GPU
-	//https://vulkan-tutorial.com/en/Vertex_buffers/Vertex_buffer_creation
-	void createVertexBuffer();
-	
-	//creates an index buffer on CPU and GPU, fills a CPU staging buffer, copies it to the GPU
-	//https://vulkan-tutorial.com/en/Vertex_buffers/Index_buffer
-	void createIndexBuffer();
-	
-	//creates and allocates a uniform buffer per swap chain image
-	//https://vulkan-tutorial.com/en/Uniform_buffers/Descriptor_layout_and_buffer
-	void createUniformBuffers();
-	
+
 	//creates a pool of descriptors for a buffer (per image) to be sent to shaders
 	//https://vulkan-tutorial.com/en/Uniform_buffers/Descriptor_pool_and_sets
 	void createDescriptorPool();
-	
-	//creates the actual sets of info to be sent to the GPU
-	//https://vulkan-tutorial.com/en/Uniform_buffers/Descriptor_pool_and_sets
-	void createDescriptorSets();
-	
-	//TODO(r,delle) INSERT VIDEO SETTINGS HERE
-	//creates a command buffer per frame buffer
-	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Drawing/Command_buffers
-	void createCommandBuffers();
-	
-	//creates semaphores and fences indicating: images are ready, rendering is finished
-	//[GPU-GPU sync] semaphores coordinate operations across command buffers so that they execute in a specified order	(pause threads)
-	//[CPU-GPU sync] fences are similar but are waited for in the code itself rather than threads						(pause code)
-	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Drawing/Rendering_and_presentation
-	void createSyncObjects();
-	
-	//TODO(r,delle) INSERT VIDEO SETTINGS HERE
-	//updates the uniform buffers used by shaders
-	//https://vulkan-tutorial.com/en/Uniform_buffers/Descriptor_layout_and_buffer
-	void updateUniformBuffer(uint32 currentImage);
-	
+
+	void CreateOrResizeWindow(int w, int h);
+
+	//destroy old swap chain and in-flight frames, create a new swap chain with desired dimensions
+	void CreateWindowSwapChain(int w, int h);
+
+	void CreateWindowCommandBuffers();
+
 	///////////////////////////
 	//// utility functions ////
 	///////////////////////////
+
+	void DestroyFrame(FrameVk* frame);
+
+	void DestroyFrameSemaphore(FrameSemaphoreVk* sema);
+
+	int GetMinImageCountFromPresentMode(VkPresentModeKHR mode);
 	
 	bool checkValidationLayerSupport();
 	

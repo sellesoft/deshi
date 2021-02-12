@@ -38,8 +38,6 @@ struct deshiImGui{
 	Input* input;
 	Window* window;
 	Time* time;
-	std::vector<Key::Key> controlInputKeys;
-	std::vector<enKeyCharMap> enValueInputKeys;
 	
 	virtual void Init(Renderer* renderer, Input* input, Window* window, Time* time){
 		this->input = input;
@@ -48,43 +46,6 @@ struct deshiImGui{
 		
 		//Setup Dear ImGui context
 		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO();
-		
-		io.KeyMap[ImGuiKey_Tab] = Key::TAB;           io.KeyMap[ImGuiKey_LeftArrow] = Key::LEFT;
-		io.KeyMap[ImGuiKey_RightArrow] = Key::RIGHT;  io.KeyMap[ImGuiKey_UpArrow] = Key::UP;
-		io.KeyMap[ImGuiKey_DownArrow] = Key::DOWN;    io.KeyMap[ImGuiKey_PageUp] = Key::PAGEUP;
-		io.KeyMap[ImGuiKey_PageDown] = Key::PAGEDOWN; io.KeyMap[ImGuiKey_Home] = Key::HOME;
-		io.KeyMap[ImGuiKey_End] = Key::END;           io.KeyMap[ImGuiKey_Insert] = Key::INSERT;
-		io.KeyMap[ImGuiKey_Delete] = Key::DELETE;     io.KeyMap[ImGuiKey_Backspace] = Key::BACKSPACE;
-		io.KeyMap[ImGuiKey_Space] = Key::SPACE;       io.KeyMap[ImGuiKey_Enter] = Key::ENTER;
-		io.KeyMap[ImGuiKey_Escape] = Key::ESCAPE;     io.KeyMap[ImGuiKey_KeyPadEnter] = Key::NUMPADENTER;
-		io.KeyMap[ImGuiKey_A] = Key::A; io.KeyMap[ImGuiKey_C] = Key::C; io.KeyMap[ImGuiKey_V] = Key::V;
-		io.KeyMap[ImGuiKey_X] = Key::X; io.KeyMap[ImGuiKey_Y] = Key::Y; io.KeyMap[ImGuiKey_Z] = Key::Z;
-		
-		//Create a listing of all the control keys so we can iterate them later
-		controlInputKeys = {
-			Key::TAB, Key::LEFT, Key::RIGHT, Key::UP, Key::DOWN,Key::PAGEUP, Key::PAGEDOWN, 
-			Key::HOME, Key::END, Key::INSERT, Key::DELETE, Key::BACKSPACE, Key::SPACE, Key::ENTER, 
-			Key::ESCAPE, Key::NUMPADENTER, Key::A, Key::C, Key::V, Key::X, Key::Y, Key::Z,
-		};
-		
-		//Map keys which input values to input boxes.
-		enValueInputKeys = {
-			{Key::A, 'a', 'A'}, {Key::B, 'b', 'B'}, {Key::C, 'c', 'C'}, {Key::D, 'd', 'D'},
-			{Key::E, 'e', 'E'}, {Key::F, 'f', 'F'}, {Key::G, 'g', 'G'}, {Key::H, 'h', 'H'},
-			{Key::I, 'i', 'I'}, {Key::J, 'j', 'J'}, {Key::K, 'k', 'K'}, {Key::L, 'l', 'L'},
-			{Key::M, 'm', 'M'}, {Key::N, 'n', 'N'}, {Key::O, 'o', 'O'}, {Key::P, 'p', 'P'},
-			{Key::Q, 'q', 'Q'}, {Key::R, 'r', 'R'}, {Key::S, 's', 'S'}, {Key::T, 't', 'T'},
-			{Key::U, 'u', 'U'}, {Key::V, 'v', 'V'}, {Key::W, 'w', 'W'}, {Key::X, 'x', 'X'},
-			{Key::Y, 'y', 'Y'}, {Key::Z, 'z', 'Z'}, {Key::K0, '0', ')'},{Key::K1, '1', '!'},
-			{Key::K2, '2', '@'},{Key::K3, '3', '#'},{Key::K4, '4', '$'},{Key::K5, '5', '%'},
-			{Key::K6, '6', '^'},{Key::K7, '7', '&'},{Key::K8, '8', '*'},{Key::K9, '9', '('},
-			{Key::NUMPADMULTIPLY, '*', '*'}, {Key::NUMPADDIVIDE, '/', '/'}, {Key::NUMPADPLUS, '+', '+'}, 
-			{Key::NUMPADMINUS, '-', '-'}, {Key::NUMPADPERIOD, '.', '.'}, {Key::PERIOD, '.', '>'}, 
-			{Key::SPACE, ' ', ' '}, {Key::MINUS, '-', '_'}, {Key::COMMA, ',', '<'}, {Key::EQUALS, '=', '+'},
-			{Key::SEMICOLON, ';',':'}, {Key::SLASH, '/','?'}, {Key::TILDE, '~','`'},  
-			{Key::LBRACKET, '[', '{'}, {Key::RBRACKET, ']', '}'}, {Key::APOSTROPHE, '\'', '\"'},
-		};
 		
 		//Setup Dear ImGui style
 		ImGui::StyleColorsDark();
@@ -92,40 +53,7 @@ struct deshiImGui{
 	}
 	
 	virtual void Cleanup() = 0;
-
-	virtual void NewFrame() {
-		ImGuiIO& io = ImGui::GetIO();
-		//update mouse
-		io.MouseDown[0] = input->newMouseState[0];
-		io.MouseDown[1] = input->newMouseState[1];
-		io.MouseDown[2] = input->newMouseState[2];
-		io.MouseDown[3] = input->newMouseState[3];
-		io.MouseDown[4] = input->newMouseState[4];
-		io.MousePos = ImVec2(input->realMouseX, input->realMouseY);
-		io.MouseWheel = input->realScrollY;
-		
-		//update keyboard
-		io.KeyCtrl = input->newKeyState[Key::LCONTROL] || input->newKeyState[Key::RCONTROL];
-		io.KeyShift = input->newKeyState[Key::LSHIFT] || input->newKeyState[Key::RSHIFT];
-		io.KeyAlt = input->newKeyState[Key::LALT] || input->newKeyState[Key::RALT];
-		io.KeySuper = false; //NOTE maybe support super?
-		
-		for(auto& key : controlInputKeys){
-			io.KeysDown[key] = input->newKeyState[key];
-		}
-		
-		for(auto& m : enValueInputKeys){
-			if(input->newKeyState[m.key] && !input->oldKeyState[m.key]){
-				io.AddInputCharacter(io.KeyShift ? m.upper : m.lower);
-			}
-		}
-		
-		//update window and time
-		io.DisplaySize = ImVec2(window->width, window->height);
-		io.DeltaTime = time->deltaTime;
-		std::cout << io.WantCaptureMouse << std::endl;
-	};
-
+	virtual void NewFrame()= 0;
 	virtual void EndFrame() = 0;
 };
 
@@ -138,7 +66,7 @@ struct vkImGui : public deshiImGui{
 		VkResult err;
 		
 		//Setup Platform/Renderer backends
-		ImGui_ImplGlfw_InitForVulkan(window->window, true);
+		ImGui_ImplGlfw_InitForVulkan(vkr->glfwWindow, true);
 		ImGui_ImplVulkan_InitInfo init_info = {};
 		init_info.Instance = vkr->instance;
 		init_info.PhysicalDevice = vkr->physicalDevice;
@@ -195,8 +123,6 @@ struct vkImGui : public deshiImGui{
 	}
 	
 	void NewFrame() override{
-		deshiImGui::NewFrame();
-
 		//TODO(r,delle) find out if this is actually needed
 		if(vkr->framebufferResized){
 			int w, h;
@@ -216,6 +142,5 @@ struct vkImGui : public deshiImGui{
 		ImGui::Render();
 		// Record dear imgui primitives into command buffer
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkr->window.frames[vkr->window.frameIndex].commandBuffer);
-		std::cout << "-----------------" << std::endl;
 	}
 };
