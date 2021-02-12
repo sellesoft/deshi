@@ -13,7 +13,7 @@ struct Quaternion;
 struct Vector2 {
 	float x{};
 	float y{};
-
+	
 	Vector2(){};
 	Vector2(float inX, float inY) {
 		x = inX; y = inY;
@@ -21,7 +21,7 @@ struct Vector2 {
 	Vector2(const Vector2& v){
 		*this = v;
 	};
-
+	
 	static const Vector2 ZERO;
 	static const Vector2 ONE;
 	static const Vector2 UP;
@@ -33,7 +33,7 @@ struct Vector2 {
 	static const Vector2 UNITX;
 	static const Vector2 UNITY;
 	static const Vector2 UNITZ;
-
+	
 	void    operator =	(const Vector2& rhs);
 	Vector2 operator *  (float rhs) const;
 	void    operator *= (float rhs);
@@ -51,7 +51,7 @@ struct Vector2 {
 	bool    operator == (const Vector2& rhs) const;
 	bool    operator != (const Vector2& rhs) const;
 	friend Vector2 operator * (float lhs, const Vector2& rhs) { return   rhs * lhs; }
-
+	
 	const std::string str() const;
 	const std::string str2f() const;
 	Vector2 copy() const;
@@ -69,19 +69,19 @@ struct Vector2 {
 	Vector2 yComp() const;
 	Vector2 xInvert() const;
 	Vector2 yInvert() const;
-
+	
 	//is this necessary?
 	//Non-Vector vs Vector interactions defined in Math.h
 	//Vector2(const Vector2& v);
-
+	
 	Vector3 ToVector3() const;
 	Vector4 ToVector4() const;
-
+	
 	//in my haste i dont think these are necessary either
 	//MatrixN ToM1x3() const;
 	//MatrixN ToM1x4(float w) const;
 	//Vector2 ProjectionMultiply(Matrix4 projection) const;
-
+	
 };
 
 
@@ -176,7 +176,7 @@ inline const std::string Vector2::str() const {
 
 inline const std::string Vector2::str2f() const {
 	char buffer[50];
-	std::snprintf(buffer, 50, "(%+.2f, %+.2f, %+.2f)", this->x, this->y);
+	std::snprintf(buffer, 50, "(%+.2f, %+.2f)", this->x, this->y);
 	return std::string(buffer);
 }
 

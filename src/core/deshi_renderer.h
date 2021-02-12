@@ -20,16 +20,52 @@
 #include <boost/optional.hpp>
 
 struct Window;
+struct Mesh;
+struct Texture;
+struct Matrix4;
+struct Triangle;
+struct Vector3;
+typedef uint8 stbi_uc;
 
 enum struct RenderAPI{
 	VULKAN
 };
 
+enum struct RenderShader {
+	DEFAULT, TWOD, METAL, WIREFRAME
+};
+
 struct Renderer{
 	virtual void Init(Window* window) = 0;
-	virtual void Draw() = 0;
 	virtual void Render() = 0;
+	virtual void Present() = 0;
 	virtual void Cleanup() = 0;
+	
+	//2d interface
+	virtual uint32 AddTriangle(Triangle* triangle) = 0;
+	virtual void   RemoveTriangle(uint32 triangleID) = 0;
+	virtual void   UpdateTriangleColor(uint32 triangleID, Color color) = 0;
+	virtual void   UpdateTrianglePosition(uint32 triangleID, Vector3 position) = 0;
+	virtual void   TranslateTriangle(uint32 triangleID, Vector3 translation) = 0;
+	virtual std::vector<uint32> AddTriangles(std::vector<Triangle*> triangles) = 0;
+	virtual void   RemoveTriangles(std::vector<uint32> triangleIDs) = 0;
+	virtual void   UpdateTrianglesColor(std::vector<uint32> triangleIDs, Color color) = 0;
+	virtual void   TranslateTriangles(std::vector<uint32> triangleIDs, Vector3 translation) = 0;
+	
+	//mesh interface
+	virtual uint32 LoadMesh(Mesh* mesh) = 0;
+	virtual void   UnloadMesh(uint32 meshID) = 0;
+	virtual void   ApplyTextureToMesh(uint32 textureID, uint32 meshID) = 0;
+	virtual void   RemoveTextureFromMesh(uint32 textureID, uint32 meshID) = 0;
+	virtual void   UpdateMeshMatrix(uint32 meshID, Matrix4 matrix) = 0;
+	
+	//texture interface
+	virtual uint32 LoadTexture(Texture* texure) = 0;
+	virtual void   UnloadTexture(uint32 textureID) = 0;
+	
+	//scene interface
+	virtual void UpdateViewMatrix(Matrix4 matrix) = 0;
+	virtual void UpdatePerspectiveMatrix(Matrix4 matrix) = 0;
 };
 
 ////////////////////////////////
@@ -85,6 +121,29 @@ struct SwapChainSupportDetails {
 	std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct TextureVk {
+	uint32 imageID;
+	int width, height, channels;
+	stbi_uc* pixels;
+	uint32 mipLevels;
+	
+	VkBuffer       stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	
+	VkImage        image;
+	VkDeviceMemory imageMemory;
+	VkDeviceSize   imageSize;
+};
+
+struct MeshVk{
+	uint32 MeshID;
+	
+};
+
+struct PipelineVk{
+	
+};
+
 struct FrameVk{
 	VkCommandPool   commandPool;
 	VkCommandBuffer commandBuffer;
@@ -118,7 +177,7 @@ struct WindowVk{
 	VkPresentModeKHR         presentMode;
 	VkExtent2D               extent;
 	VkRenderPass             renderPass;
-	VkPipeline               pipeline;
+	//VkPipeline               pipeline;
 	uint32                   imageCount;
 	bool                     clearEnable;
     VkClearValue*            clearValues;
@@ -127,6 +186,19 @@ struct WindowVk{
 	FrameVk*                 frames;
 	FrameSemaphoreVk*        frameSephamores;
 	FramebufferAttachmentsVk attachments;
+	
+	VkBuffer       vertexBuffer;
+	VkDeviceMemory vertexBufferMemory;
+	VkDeviceSize   vertexBufferSize;
+	VkBuffer       indexBuffer;
+	VkDeviceMemory indexBufferMemory;
+	VkDeviceSize   indexBufferSize;
+	struct {
+		VkPipeline phong;
+		VkPipeline twod;
+		VkPipeline metal;
+		VkPipeline wireframe;
+	} pipelines;
 };
 
 //////////////////////////////
@@ -159,26 +231,101 @@ struct Renderer_Vulkan : public Renderer{
 	
 	VkDescriptorPool descriptorPool;
 	VkPipelineCache graphicsPipelineCache = VK_NULL_HANDLE;
-
+	
 	WindowVk window = {0};
-
+	
+	
 	int32 minImageCount = 0;
 	bool framebufferResized = false;
+	
+	//////////////////////////
+	//// render interface ////
+	//////////////////////////
+	
+	//runs the vulkan functions necessary to start rendering
+	virtual void Init(Window* window) override;
+	
+	//acquires the next image from vulkan, resets the command buffers, 
+	//updates uploaded information, begins the command buffers, begins the render pass, 
+	//runs the different shader draw methods, ends the render pass
+	virtual void Render() override;
+	
+	//places the swapchain in the presentation queue, iterates the frame index
+	virtual void Present() override;
+	
+	//cleans up memory created in Init
+	virtual void Cleanup() override;
+	
+	//adds a triangle to the 2d shader's vertex and index buffers
+	//returns the ID of the triangle
+	virtual uint32 AddTriangle(Triangle* triangle) override;
+	
+	//removes the triangle with triangleID from the 2d shader's vertex buffer
+	virtual void RemoveTriangle(uint32 triangleID) override;
+	
+	virtual void UpdateTriangleColor(uint32 triangleID, Color color) override;
+	
+	virtual void UpdateTrianglePosition(uint32 triangleID, Vector3 position) override;
+	
+	virtual void TranslateTriangle(uint32 triangleID, Vector3 translation) override;
+	
+	//adds an array of triangles to the 2d shader's vertex and index buffers
+	//returns an array of the triangle's IDs
+	virtual std::vector<uint32> AddTriangles(std::vector<Triangle*> triangles) override;
+	
+	//removes the triangles with triangleID from the 2d shader's vertex buffer
+	virtual void RemoveTriangles(std::vector<uint32> triangleIDs) override;
+	
+	virtual void UpdateTrianglesColor(std::vector<uint32> triangleIDs, Color color) override;
+	
+	virtual void TranslateTriangles(std::vector<uint32> triangleIDs, Vector3 translation) override;
+	
+	//loads a mesh to the different shaders specified in its batches
+	//returns the ID of the mesh
+	virtual uint32 LoadMesh(Mesh* mesh) override;
+	
+	virtual void UnloadMesh(uint32 meshID) override;
+	
+	//loads a texture onto the GPU
+	//returns the texture's id
+	virtual uint32 LoadTexture(Texture* texure) override;
+	
+	//unloads a texture from the GPU
+	//NOTE the previously used texture ID will not be used again
+	virtual void UnloadTexture(uint32 textureID) override;
+	
+	//attempts to apply the texture to the mesh, 
+	//replaces the previous texture of the same type
+	//NOTE does not unload the texture from the GPU
+	virtual void ApplyTextureToMesh(uint32 textureID, uint32 meshID) override;
+	
+	//removes the texture from the mesh
+	//NOTE if no textures remain on the mesh, it will use the null texture
+	virtual void RemoveTextureFromMesh(uint32 textureID, uint32 meshID) override;
+	
+	//updates a mesh's model matrix: translation, rotation, scale
+	virtual void UpdateMeshMatrix(uint32 meshID, Matrix4 matrix) override;
+	
+	//updates the GPU camera's view matrix
+	virtual void UpdateViewMatrix(Matrix4 matrix) override;
+	
+	//updates the GPU camera's perspective matrix
+	virtual void UpdatePerspectiveMatrix(Matrix4 matrix) override;
 	
 	//////////////////////////
 	//// vulkan functions ////
 	//////////////////////////
 	
-	virtual void Init(Window* window) override;
+	void PreparePipelins();
 	
-	//grabs an image from swap chain, submits the command buffer to the command queue, adds the image to the presentation queue
-	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Drawing/Rendering_and_presentation
-	virtual void Draw() override;
-
-	virtual void Render() override;
+	void RenderPipeline_Default();
 	
-	virtual void Cleanup() override;
-
+	void RenderPipeline_TwoD();
+	
+	void RenderPipeline_Metal();
+	
+	void RenderPipeline_Wireframe();
+	
 	void createInstance();
 	
 	void setupDebugMessenger();
@@ -192,26 +339,26 @@ struct Renderer_Vulkan : public Renderer{
 	//creates an interface between the actual GPU device and a virtual device for interaction
 	//https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Logical_device_and_queues
 	void createLogicalDevice();
-
-	//creates a pool of descriptors for a buffer (per image) to be sent to shaders
+	
+	//creates a pool of descriptors of different types to be sent to shaders
 	//https://vulkan-tutorial.com/en/Uniform_buffers/Descriptor_pool_and_sets
 	void createDescriptorPool();
-
+	
 	void CreateOrResizeWindow(int w, int h);
-
+	
 	//destroy old swap chain and in-flight frames, create a new swap chain with desired dimensions
 	void CreateWindowSwapChain(int w, int h);
-
+	
 	void CreateWindowCommandBuffers();
-
+	
 	///////////////////////////
 	//// utility functions ////
 	///////////////////////////
-
+	
 	void DestroyFrame(FrameVk* frame);
-
+	
 	void DestroyFrameSemaphore(FrameSemaphoreVk* sema);
-
+	
 	int GetMinImageCountFromPresentMode(VkPresentModeKHR mode);
 	
 	bool checkValidationLayerSupport();

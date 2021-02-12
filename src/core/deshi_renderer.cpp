@@ -1,13 +1,15 @@
 #include "deshi_renderer.h"
 #include "deshi_glfw.h"
 #include "deshi_import.h"
+#include "../components/Model.h"
+#include "../math/Math.h"
+#include "../geometry/Triangle.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include <set>
 #include <array>
-#include <chrono> //TODO(c,delle) remove this when actually using renderer
 #include <exception>
 
 const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
@@ -19,7 +21,7 @@ const bool enableValidationLayers = true;
 #endif
 
 //////////////////////////
-//// vulkan functions ////
+//// render interface ////
 //////////////////////////
 
 void Renderer_Vulkan::Init(Window* window) {
@@ -40,11 +42,11 @@ void Renderer_Vulkan::Init(Window* window) {
 	this->window.clearValues = (VkClearValue*)malloc(sizeof(VkClearValue) * 2);
 	this->window.clearValues[0].color = {0, 0, 0, 1};
 	this->window.clearValues[1].depthStencil = {1.f, 0};
-
+	
 	std::cout << "{-} Initializing Rendering {-}" << std::endl;
 }
 
-void Renderer_Vulkan::Draw() {
+void Renderer_Vulkan::Render() {
 	//std::cout << "{-}{-} Drawing Frame {-}{-}" << std::endl;
 	if(framebufferResized) {
 		int w, h;
@@ -55,7 +57,7 @@ void Renderer_Vulkan::Draw() {
 			framebufferResized = false;
 		}
 	}
-
+	
 	VkSemaphore image_sema = window.frameSephamores[window.semaphoreIndex].imageAcquiredSemaphore;
 	VkSemaphore render_sema = window.frameSephamores[window.semaphoreIndex].renderCompleteSemaphore;
 	VkResult result = vkAcquireNextImageKHR(device, window.swapchain, UINT64_MAX, image_sema, VK_NULL_HANDLE, &window.frameIndex);
@@ -65,7 +67,7 @@ void Renderer_Vulkan::Draw() {
 	} else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
 		throw std::runtime_error("failed to acquire swap chain image!");
 	}
-
+	
 	FrameVk* frame = &window.frames[window.frameIndex];
 	{ //wait on current fence and reset it after
 		vkWaitForFences(device, 1, &frame->fence, VK_TRUE, UINT64_MAX);
@@ -89,15 +91,15 @@ void Renderer_Vulkan::Draw() {
         info.pClearValues = window.clearValues;
         vkCmdBeginRenderPass(frame->commandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
 	}
-
+	
 	//draw below here
 }
 
-void Renderer_Vulkan::Render() {
+void Renderer_Vulkan::Present() {
 	FrameVk* frame = &window.frames[window.frameIndex];
 	VkSemaphore image_sema = window.frameSephamores[window.semaphoreIndex].imageAcquiredSemaphore;
 	VkSemaphore render_sema = window.frameSephamores[window.semaphoreIndex].renderCompleteSemaphore;
-
+	
 	// Submit command buffer
     vkCmdEndRenderPass(frame->commandBuffer);
     {
@@ -111,13 +113,13 @@ void Renderer_Vulkan::Render() {
         info.pCommandBuffers = &frame->commandBuffer;
         info.signalSemaphoreCount = 1;
         info.pSignalSemaphores = &render_sema;
-
+		
 		vkEndCommandBuffer(frame->commandBuffer);
         vkQueueSubmit(graphicsQueue, 1, &info, frame->fence);
     }
-
+	
 	if(framebufferResized) { return; }
-
+	
 	//present the image
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -137,7 +139,7 @@ void Renderer_Vulkan::Render() {
 	} else if (result != VK_SUCCESS) {
 		throw std::runtime_error("failed to present swap chain image!");
 	}
-
+	
 	//iterate the frame index
 	window.frameIndex = (window.frameIndex + 1) % window.imageCount; //loops back to zero after reaching max_frames
 }
@@ -145,6 +147,102 @@ void Renderer_Vulkan::Render() {
 void Renderer_Vulkan::Cleanup() {
 	std::cout << "{-} Initializing Cleanup {-}\n" << std::endl;
 	//TODO(r,delle) make rendering cleanup
+}
+
+uint32 Renderer_Vulkan::AddTriangle(Triangle* triangle){
+	std::cout << "Not implemented yet" << std::endl;
+	return 0xFFFFFFFF;
+}
+
+void Renderer_Vulkan::RemoveTriangle(uint32 triangleID){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+void Renderer_Vulkan::UpdateTriangleColor(uint32 triangleID, Color color){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+void Renderer_Vulkan::UpdateTrianglePosition(uint32 triangleID, Vector3 position){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+void Renderer_Vulkan::TranslateTriangle(uint32 triangleID, Vector3 translation){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+std::vector<uint32> Renderer_Vulkan::AddTriangles(std::vector<Triangle*> triangles){
+	std::cout << "Not implemented yet" << std::endl;
+	return std::vector<uint32>();
+}
+
+void Renderer_Vulkan::RemoveTriangles(std::vector<uint32> triangleIDs){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+void Renderer_Vulkan::UpdateTrianglesColor(std::vector<uint32> triangleIDs, Color color){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+void Renderer_Vulkan::TranslateTriangles(std::vector<uint32> triangleIDs, Vector3 translation){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+uint32 Renderer_Vulkan::LoadMesh(Mesh* mesh){
+	std::cout << "Not implemented yet" << std::endl;
+	return 0xFFFFFFFF;
+}
+
+void Renderer_Vulkan::UnloadMesh(uint32 meshID){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+uint32 Renderer_Vulkan::LoadTexture(Texture* texure){
+	std::cout << "Not implemented yet" << std::endl;
+	return 0xFFFFFFFF;
+}
+
+void Renderer_Vulkan::UnloadTexture(uint32 textureID){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+void Renderer_Vulkan::ApplyTextureToMesh(uint32 textureID, uint32 meshID){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+void Renderer_Vulkan::RemoveTextureFromMesh(uint32 textureID, uint32 meshID){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+void Renderer_Vulkan::UpdateMeshMatrix(uint32 meshID, Matrix4 matrix){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+void Renderer_Vulkan::UpdateViewMatrix(Matrix4 matrix){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+void Renderer_Vulkan::UpdatePerspectiveMatrix(Matrix4 matrix){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
+//////////////////////////
+//// vulkan functions ////
+//////////////////////////
+
+void Renderer_Vulkan::RenderPipeline_Default() {
+	
+}
+
+void Renderer_Vulkan::RenderPipeline_TwoD() {
+	
+}
+
+void Renderer_Vulkan::RenderPipeline_Metal() {
+	
+}
+
+void Renderer_Vulkan::RenderPipeline_Wireframe() {
+	
 }
 
 void Renderer_Vulkan::createInstance() {
@@ -306,7 +404,7 @@ void Renderer_Vulkan::DestroyFrame(FrameVk* frame) {
     frame->fence = VK_NULL_HANDLE;
     frame->commandBuffer = VK_NULL_HANDLE;
     frame->commandPool = VK_NULL_HANDLE;
-
+	
     vkDestroyImageView(device, frame->imageView, allocator);
     vkDestroyFramebuffer(device, frame->framebuffer, allocator);
 }
@@ -334,7 +432,7 @@ void Renderer_Vulkan::CreateWindowSwapChain(int w, int h) {
 	VkSwapchainKHR oldSwapChain = window.swapchain;
 	window.swapchain = NULL;
 	vkDeviceWaitIdle(device);
-
+	
 	//destroy old window swap chain stuff
 	for(uint32 i = 0; i<window.imageCount; ++i) {
 		DestroyFrame(&window.frames[i]);
@@ -346,21 +444,21 @@ void Renderer_Vulkan::CreateWindowSwapChain(int w, int h) {
 	window.frameSephamores = NULL;
 	window.imageCount = 0;
 	if(window.renderPass) { vkDestroyRenderPass(device, window.renderPass, allocator); }
-	if(window.pipeline) { vkDestroyPipeline(device, window.pipeline, allocator); }
-
+	if(window.pipelines.phong) { vkDestroyPipeline(device, window.pipelines.phong, allocator); }
+	
 	//query GPUs supported features for the swap chain
 	window.supportDetails = querySwapChainSupport(physicalDevice);
 	window.surfaceFormat = chooseSwapSurfaceFormat(window.supportDetails.formats);
 	window.presentMode = chooseSwapPresentMode(window.supportDetails.presentModes);
 	window.extent = chooseSwapExtent(window.supportDetails.capabilities);
-
+	
 	//get min image count if not specified
 	if(minImageCount == 0) { minImageCount = GetMinImageCountFromPresentMode(window.presentMode); }
-
+	
 	uint32 queueFamilyIndices[] = {
 		physicalQueueFamilies.graphicsFamily.value(), physicalQueueFamilies.presentFamily.value()
 	};
-
+	
 	//create swapchain and swap chain images, set windowvk width and height
 	{
 		VkSwapchainCreateInfoKHR info{};
@@ -395,34 +493,34 @@ void Renderer_Vulkan::CreateWindowSwapChain(int w, int h) {
 			info.imageExtent.width = window.width = window.extent.width;
 			info.imageExtent.height = window.height = window.extent.height;
 		}
-
+		
 		if (vkCreateSwapchainKHR(device, &info, allocator, &window.swapchain) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create swap chain!");
 		}
-
+		
 		//get swap chain images
 		vkGetSwapchainImagesKHR(device, window.swapchain, &window.imageCount, nullptr);
 		VkImage images[16] = {};
 		ASSERT(window.imageCount >= minImageCount, "the window should always have at least the min image count");
 		ASSERT(window.imageCount < 16, "the window should have less than 16 images, around 2-3 is ideal");
 		vkGetSwapchainImagesKHR(device, window.swapchain, &window.imageCount, images);
-
+		
 		//allocate memory for the window frames and semaphores
 		ASSERT(window.frames == NULL, "this was set to null earlier and shouldnt have been changed yet");
 		window.frames = (FrameVk*)malloc(sizeof(FrameVk) * window.imageCount);
 		window.frameSephamores = (FrameSemaphoreVk*)malloc(sizeof(FrameSemaphoreVk) * window.imageCount);
 		memset(window.frames, 0, sizeof(window.frames[0]) * window.imageCount);
 		memset(window.frameSephamores, 0, sizeof(window.frameSephamores[0]) * window.imageCount);
-
+		
 		//set the frame images to the swap chain images
 		for(uint32 i = 0; i<window.imageCount; ++i) {
 			window.frames[i].image = images[i];
 		}
 	}
-
+	
 	//delete old swap chain
 	if(oldSwapChain) { vkDestroySwapchainKHR(device, oldSwapChain, allocator); }
-
+	
 	//create the render pass
 	{
 		VkAttachmentDescription colorAttachment{};
@@ -434,7 +532,7 @@ void Renderer_Vulkan::CreateWindowSwapChain(int w, int h) {
 		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
+		
 		VkAttachmentDescription depthAttachment{};
 		depthAttachment.format = findDepthFormat();
 		depthAttachment.samples = msaaSamples;
@@ -444,7 +542,7 @@ void Renderer_Vulkan::CreateWindowSwapChain(int w, int h) {
 		depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
+		
 		VkAttachmentDescription colorAttachmentResolve{};
 		colorAttachmentResolve.format = window.surfaceFormat.format;
 		colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -454,7 +552,7 @@ void Renderer_Vulkan::CreateWindowSwapChain(int w, int h) {
 		colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
+		
 		VkAttachmentReference colorAttachmentRef{};
 		colorAttachmentRef.attachment = 0;
 		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -464,14 +562,14 @@ void Renderer_Vulkan::CreateWindowSwapChain(int w, int h) {
 		VkAttachmentReference colorAttachmentResolveRef{};
 		colorAttachmentResolveRef.attachment = 2;
 		colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
+		
 		VkSubpassDescription subpass{};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = 1;
 		subpass.pColorAttachments = &colorAttachmentRef;
 		subpass.pDepthStencilAttachment = &depthAttachmentRef;
 		subpass.pResolveAttachments = &colorAttachmentResolveRef;
-
+		
 		VkSubpassDependency dependency{};
 		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 		dependency.dstSubpass = 0;
@@ -479,7 +577,7 @@ void Renderer_Vulkan::CreateWindowSwapChain(int w, int h) {
 		dependency.srcAccessMask = 0;
 		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
+		
 		std::array<VkAttachmentDescription, 3> attachments = {colorAttachment, depthAttachment, colorAttachmentResolve};
 		VkRenderPassCreateInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -489,29 +587,29 @@ void Renderer_Vulkan::CreateWindowSwapChain(int w, int h) {
 		renderPassInfo.pSubpasses = &subpass;
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
-
+		
 		if (vkCreateRenderPass(device, &renderPassInfo, allocator, &window.renderPass) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create render pass!");
 		}
 	}
-
+	
 	//create the image views
 	for(uint32 i = 0; i<window.imageCount; ++i) {
 		window.frames[i].imageView = createImageView(window.frames[i].image, window.surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 	}
-
+	
 	//create framebuffer attachments
 	VkFormat colorFormat = window.surfaceFormat.format;
 	createImage(window.width, window.height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, 
-		VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, window.attachments.colorImage, window.attachments.colorImageMemory);
+				VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, window.attachments.colorImage, window.attachments.colorImageMemory);
 	window.attachments.colorImageView = createImageView(window.attachments.colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 	VkFormat depthFormat = findDepthFormat();
 	createImage(window.width, window.height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, 
-		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, window.attachments.depthImage, window.attachments.depthImageMemory);
+				VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, window.attachments.depthImage, window.attachments.depthImageMemory);
 	window.attachments.depthImageView = createImageView(window.attachments.depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-
+	
 	//create the framebuffers
 	for (uint32 i = 0; i < window.imageCount; i++) {
 		std::array<VkImageView, 3> attachments = {
@@ -563,8 +661,8 @@ void Renderer_Vulkan::CreateWindowCommandBuffers() {
 			fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 			fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 			if(vkCreateSemaphore(device, &semaphoreInfo, allocator, &sema->imageAcquiredSemaphore) != VK_SUCCESS ||
-				vkCreateSemaphore(device, &semaphoreInfo, allocator, &sema->renderCompleteSemaphore) != VK_SUCCESS ||
-				vkCreateFence(device, &fenceInfo, allocator, &frame->fence) != VK_SUCCESS) {
+			   vkCreateSemaphore(device, &semaphoreInfo, allocator, &sema->renderCompleteSemaphore) != VK_SUCCESS ||
+			   vkCreateFence(device, &fenceInfo, allocator, &frame->fence) != VK_SUCCESS) {
 				throw std::runtime_error("failed to create synchronization objects for a frame!");
 			}
 		}

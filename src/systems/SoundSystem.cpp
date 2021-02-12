@@ -21,7 +21,7 @@ static void list_audio_devices(const ALCchar* devices)
 {
 	const ALCchar* device = devices, * next = devices + 1;
 	size_t len = 0;
-
+	
 	fprintf(stdout, "Devices list:\n");
 	fprintf(stdout, "----------\n");
 	while (device && *device != '\0' && next && *next != '\0') {
@@ -39,22 +39,22 @@ bool check_al_errors(const std::string& filename, const std::uint_fast32_t line,
 	if (error != AL_NO_ERROR){
 		ERROR("***ERROR*** (", filename, ": ", line, ")\n");
 		switch (error){
-		case AL_INVALID_NAME:
+			case AL_INVALID_NAME:
 			ERROR("AL_INVALID_NAME: a bad name (ID) was passed to an OpenAL function");
 			break;
-		case AL_INVALID_ENUM:
+			case AL_INVALID_ENUM:
 			ERROR("AL_INVALID_ENUM: an invalid enum value was passed to an OpenAL function");
 			break;
-		case AL_INVALID_VALUE:
+			case AL_INVALID_VALUE:
 			ERROR("AL_INVALID_VALUE: an invalid value was passed to an OpenAL function");
 			break;
-		case AL_INVALID_OPERATION:
+			case AL_INVALID_OPERATION:
 			ERROR("AL_INVALID_OPERATION: the requested operation is not valid");
 			break;
-		case AL_OUT_OF_MEMORY:
+			case AL_OUT_OF_MEMORY:
 			ERROR("AL_OUT_OF_MEMORY: the requested operation resulted in OpenAL running out of memory");
 			break;
-		default:
+			default:
 			ERROR("UNKNOWN AL ERROR: ", error);
 		}
 		return false;
@@ -78,18 +78,18 @@ ALenum to_al_format(int channels, int bitsPerSample, EntityAdmin* admin) {
 
 void play_sound(Source* s) {
 	float x, y, z;
-
+	
 	alSourcePlay(s->source);
 	//get source state
 	alGetSourcei(s->source, AL_SOURCE_STATE, &s->source_state);
 	alGetSource3f(s->source, AL_POSITION, &x, &y, &z);
 	
-
-
+	
+	
 	while (s->source_state == AL_PLAYING) {
 		Vector3 pos;
 		Vector3 vel = Vector3::ZERO;
-
+		
 		if (s->physpoint) {
 			pos = s->p->position;
 			vel = s->p->velocity;
@@ -97,10 +97,10 @@ void play_sound(Source* s) {
 		else {
 			pos = s->t->position;
 		}
-
+		
 		alSource3f(s->source, AL_POSITION, pos.x, pos.y, pos.z);
 		alSource3f(s->source, AL_VELOCITY, vel.x, vel.y, vel.z);
-
+		
 		alGetSourcei(s->source, AL_SOURCE_STATE, &s->source_state);
 	}
 }
@@ -123,7 +123,7 @@ void SoundThread(EntityAdmin* admin) {
 					else {
 						pos = s->t->position;
 					}
-
+					
 					//generate source and set its data
 					alGenSources((ALuint)1, &s->source);                     TEST_ERROR;
 					alSourcef (s->source, AL_PITCH, s->pitch);               TEST_ERROR;
@@ -131,43 +131,43 @@ void SoundThread(EntityAdmin* admin) {
 					alSource3f(s->source, AL_POSITION, pos.x, pos.y, pos.z); TEST_ERROR;
 					alSource3f(s->source, AL_VELOCITY, vel.x, vel.y, vel.z); TEST_ERROR;
 					alSourcei (s->source, AL_LOOPING, s->loop);              TEST_ERROR;
-
+					
 					ALuint buffer;
 					alGenBuffers(1, &buffer); TEST_ERROR;
-
+					
 					//initialize file and get it's data
 					drwav file;
 					drwav_init_file(&file, s->snd_file, NULL);
-
+					
 					unsigned int channels = file.channels;
 					unsigned int sampleRate = file.sampleRate;
 					drwav_uint64 totalPCMFrameCount = file.totalPCMFrameCount;
 					std::uint8_t bitsPerSample = file.bitsPerSample;
-
-
-
+					
+					
+					
 					drwav_int16* decoded = (drwav_int16*)malloc(file.totalPCMFrameCount * file.channels * sizeof(drwav_int16));
 					size_t numberOfSamplesActuallyDecoded = drwav_read_pcm_frames_s16(&file, file.totalPCMFrameCount, decoded);
 					
 					//put data in buffer
 					alBufferData(buffer, to_al_format(channels, bitsPerSample, admin), decoded, totalPCMFrameCount, sampleRate); TEST_ERROR;
-
+					
 					//bind buffer to source
 					alSourcei(s->source, AL_BUFFER, buffer); TEST_ERROR;
-
+					
 					//play source
 					alSourcePlay(s->source); TEST_ERROR;
-
+					
 					playingSources.push_back(s);
-
+					
 					free(decoded);
-
+					
 					new_sources = false;
 					sources.clear();
 				}
 			}
 		}
-
+		
 		//keep track of and manage playing sources
 		for (int i = 0; i < playingSources.size(); i++) {
 			alGetSourcei(playingSources[i]->source, AL_SOURCE_STATE, &playingSources[i]->source_state); TEST_ERROR;
@@ -176,8 +176,8 @@ void SoundThread(EntityAdmin* admin) {
 				if (playingSources.size() == 1) {
 					alDeleteSources(1, &playingSources[i]->source);
 					playingSources.clear();
-
-
+					
+					
 				}
 				else {
 					alDeleteSources(1, &playingSources[i]->source);
@@ -189,7 +189,7 @@ void SoundThread(EntityAdmin* admin) {
 				//else we update source's info
 				Vector3 pos;
 				Vector3 vel = Vector3::ZERO;
-
+				
 				if (playingSources[i]->physpoint) {
 					pos = playingSources[i]->p->position;
 					vel = playingSources[i]->p->velocity;
@@ -197,7 +197,7 @@ void SoundThread(EntityAdmin* admin) {
 				else {
 					pos = playingSources[i]->t->position;
 				}
-
+				
 				alSource3f(playingSources[i]->source, AL_POSITION, pos.x, pos.y, pos.z); TEST_ERROR;
 				alSource3f(playingSources[i]->source, AL_VELOCITY, vel.x, vel.y, vel.z); TEST_ERROR;
 			}
@@ -207,21 +207,21 @@ void SoundThread(EntityAdmin* admin) {
 
 void SoundSystem::Init() {
 	ALboolean enumeration;
-
+	
 	ALCenum error;
 	ALint source_state;
-
+	
 	//can we enumerate audio devices?
 	enumeration = alcIsExtensionPresent(NULL, "ALC_ENUMERATION_EXT");
 	if (enumeration == AL_FALSE)
 		LOG_LOC("OpenAL unable to enumerate devices");
-
+	
 	//list audio devices
 	list_audio_devices(alcGetString(NULL, ALC_DEVICE_SPECIFIER));
-
+	
 	if (!defaultDeviceName)
 		defaultDeviceName = alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
-
+	
 	//attempt to choose a device
 	device = alcOpenDevice(defaultDeviceName);
 	TEST_ERROR;
@@ -229,16 +229,16 @@ void SoundSystem::Init() {
 	
 	//display audio device selected in console
 	LOG("Audio device selected: ", alcGetString(device, ALC_DEVICE_SPECIFIER));
-
+	
 	//attempt to create OpenAL context
 	context = alcCreateContext(device, NULL);
 	TEST_ERROR;
 	ASSERT(alcMakeContextCurrent(context), "unable to make OpenAL context");
-
+	
 	//collect all sources at startup
 	//TODO(, sushi) if its necessary, make a way to collect new sources and to remove them
 	//CollectSources(buffers, admin);
-
+	
 	//start main sound thread
 	std::thread sndthr(SoundThread, admin);
 	sndthr.detach();
@@ -246,9 +246,9 @@ void SoundSystem::Init() {
 }
 
 void SoundSystem::Update() {
-
+	
 	Camera* c = admin->currentCamera;
-
+	
 	Vector3 ld = c->lookDir;
 	Vector3 up = c->up;
 	ALfloat listenerOri[] = { ld.x, ld.z, ld.y, up.x, up.z, up.y };
@@ -258,7 +258,7 @@ void SoundSystem::Update() {
 	//alListener3f(AL_VELOCITY, 0, 0, 0);
 	//TEST_ERROR;
 	alListenerfv(AL_ORIENTATION, listenerOri);  TEST_ERROR;
-
+	
 	//check if any source is requesting to play audio
 	for (auto e : admin->entities) {
 		for (auto c : e.second->components) {
@@ -272,6 +272,6 @@ void SoundSystem::Update() {
 		}
 	}
 	
-
-
+	
+	
 }

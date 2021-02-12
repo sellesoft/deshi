@@ -6,7 +6,7 @@
 #include <fstream>
 
 Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
-
+	
 	//push back keys here
 	//they must be pushed back in the same order they're defined in the keybinds config
 	keys.push_back(&movementFlyingUp);
@@ -15,16 +15,16 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 	keys.push_back(&movementFlyingBack);
 	keys.push_back(&movementFlyingRight);
 	keys.push_back(&movementFlyingLeft);
-				   
+	
 	keys.push_back(&cameraRotateUp);
 	keys.push_back(&cameraRotateDown);
 	keys.push_back(&cameraRotateRight);
 	keys.push_back(&cameraRotateLeft);
-				   
+	
 	keys.push_back(&debugRenderWireframe);
 	keys.push_back(&debugRenderEdgesNumbers);
 	keys.push_back(&debugRenderDisplayAxis);
-
+	
 	stk = std::map<std::string, Key::Key>{
 		{"NONE", Key::NONE},
 		{"A", Key::A}, {"B", Key::B}, {"C", Key::C}, {"D", Key::D}, {"E", Key::E}, {"F", Key::F}, {"G", Key::G}, {"H", Key::H}, {"I", Key::I}, {"J", Key::J}, {"K", Key::K}, {"L", Key::L}, {"M", Key::M}, {"N", Key::N}, {"O", Key::O}, {"P", Key::P}, {"Q", Key::Q}, {"R", Key::R}, {"S", Key::S}, {"T", Key::T}, {"U", Key::U}, {"V", Key::V}, {"W", Key::W}, {"X", Key::X}, {"Y", Key::Y}, {"Z", Key::Z},
@@ -38,22 +38,22 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		{"NUMPAD0", Key::NUMPAD0}, {"NUMPAD1", Key::NUMPAD1}, {"NUMPAD2", Key::NUMPAD2}, {"NUMPAD3", Key::NUMPAD3}, {"NUMPAD4", Key::NUMPAD4}, {"NUMPAD5", Key::NUMPAD5}, {"NUMPAD6", Key::NUMPAD6}, {"NUMPAD7", Key::NUMPAD7}, {"NUMPAD8", Key::NUMPAD8}, {"NUMPAD9", Key::NUMPAD9},
 		{"NUMPADMULTIPLY", Key::NUMPADMULTIPLY}, {"NUMPADDIVIDE", Key::NUMPADDIVIDE}, {"NUMPADPLUS", Key::NUMPADPLUS}, {"NUMPADMINUS", Key::NUMPADMINUS}, {"NUMPADPERIOD", Key::NUMPADPERIOD}, {"NUMPADENTER", Key::NUMPADENTER}, {"NUMLOCK", Key::NUMLOCK}
 	};
-
+	
 	//read keys from keybinds.txt
 	std::fstream kf;
 	kf.open("configs/keybinds.txt", std::fstream::in);
-
+	
 	int iter = 0;
-
+	
 	//TODO(i, sushi) implement keybind name mapping and shtuff
-
+	
 	//there is prolly a better way to do this but uh
 	while (!kf.eof()) {
 		char* c = (char*)malloc(255); 
 		kf.getline(c, 255);
-
+		
 		std::string s(c);
-
+		
 		if (s[0] == '>') {
 			continue;
 		}
@@ -66,14 +66,14 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 			}
 			catch (const std::out_of_range& oor) {
 				ERROR("Key not found in map: ", oor.what());
-				*keys[iter] = Key::NONE;
+				//*keys[iter] = Key::NONE;
 			}
 			
 			iter++;
 		}
-
+		
 		free(c);
 	}
-
-
+	
+	
 }

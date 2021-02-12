@@ -59,9 +59,9 @@ struct DeshiEngine {
 		imgui->NewFrame();			//place imgui calls after this
 		ImGui::ShowDemoWindow();
 		entityAdmin.Update();
-		renderer->Draw();			//place renderer cmd buffer calls after this
+		renderer->Render();			//place renderer cmd buffer calls after this
 		imgui->EndFrame();			//place imgui calls before this
-		renderer->Render();			//place renderer cmd buffer calls before this
+		renderer->Present();			//place renderer cmd buffer calls before this
 		//entityAdmin.PostRenderUpdate();
 		return true;
 	}
