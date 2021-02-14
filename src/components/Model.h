@@ -17,13 +17,13 @@ struct Texture {
 
 struct Vertex {
 	Vector3 pos;
-	Vector3 color;
 	Vector2 uv;
+	Vector3 color;
+	Vector3 normal;
 	//bone index		4tuple
 	//bone weight		4tuple
-	//normal or tangent 3tuple
 	Vertex() {}
-	Vertex(Vector3 pos, Vector3 color, Vector2 uv);
+	Vertex(Vector3 pos, Vector2 uv, Vector3 color, Vector3 normal);
 };
 
 enum ShaderFlagsBits : uint32 {
@@ -38,12 +38,12 @@ struct Batch {
 	std::vector<Vertex>	vertexArray;
 	uint32 indexCount;
 	std::vector<uint32>	indexArray;
-
+	
 	char shaderName[16];
 	uint32 textureCount;
 	std::vector<Texture> textureArray;
 	ShaderFlags	shaderFlags;
-
+	
 	Batch() {}
 	Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray,
 		  const char* shaderName, std::vector<Texture> textureArray, ShaderFlags shaderFlags);
@@ -54,10 +54,10 @@ struct Mesh {
 	uint32 vertexCount;
 	uint32 indexCount;
 	uint32 textureCount;
-
+	
 	uint32 batchCount;
 	std::vector<Batch> batchArray;
-
+	
 	Mesh() {}
 	Mesh(const char* name, std::vector<Batch> batchArray);
 };
@@ -66,12 +66,12 @@ struct Mesh {
 struct Model : public Component {
 	//Armature armature;
 	Mesh mesh;
-
+	
 	Model() {}
 	Model(Entity* e, Mesh mesh);
-
+	
 	static Model* CreateBox(Entity* e, Vector3 halfDims, Color color = Color::WHITE);
-
+	
 	
 	void Update() override;
 };

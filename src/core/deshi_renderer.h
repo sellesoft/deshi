@@ -85,20 +85,24 @@ https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-
 
 struct VertexVk{
 	glm::vec3 pos;
-	glm::vec3 color;
 	glm::vec2 texCoord;
+	glm::vec3 color;
+	glm::vec3 normal;
 	
 	static VkVertexInputBindingDescription getBindingDescription();
-	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions();
+	static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions();
 	bool operator==(const VertexVk& other) const {
-		return pos == other.pos && color == other.color && texCoord == other.texCoord;
+		return pos == other.pos && color == other.color && texCoord == other.texCoord && normal == other.normal;
 	}
 };
 
+//pattern: OR unshifted and L-shifted, then R-shift the combo, 
+//then OR that with L-shifted, then R-shift the combo and repeat
+//until the last combo which is not R-shifted
 namespace std {
 	template<> struct hash<VertexVk> {
 		size_t operator()(VertexVk const& vertex) const {
-			return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.texCoord) << 1);
+			return (((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec2>()(vertex.texCoord) << 1)) >> 1) ^ (hash<glm::vec3>()(vertex.color) << 1) >> 1) ^ (hash<glm::vec3>()(vertex.normal) << 1);
 		}
 	};
 };
@@ -167,40 +171,6 @@ struct FramebufferAttachmentsVk {
 	VkImageView depthImageView;
 };
 
-struct WindowVk{
-	int32                    width;
-	int32                    height;
-	VkSwapchainKHR           swapchain;
-	VkSurfaceKHR             surface;
-	SwapChainSupportDetails  supportDetails;
-	VkSurfaceFormatKHR       surfaceFormat;
-	VkPresentModeKHR         presentMode;
-	VkExtent2D               extent;
-	VkRenderPass             renderPass;
-	//VkPipeline               pipeline;
-	uint32                   imageCount;
-	bool                     clearEnable;
-    VkClearValue*            clearValues;
-	uint32                   frameIndex;
-	uint32                   semaphoreIndex;
-	FrameVk*                 frames;
-	FrameSemaphoreVk*        frameSephamores;
-	FramebufferAttachmentsVk attachments;
-	
-	VkBuffer       vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
-	VkDeviceSize   vertexBufferSize;
-	VkBuffer       indexBuffer;
-	VkDeviceMemory indexBufferMemory;
-	VkDeviceSize   indexBufferSize;
-	struct {
-		VkPipeline phong;
-		VkPipeline twod;
-		VkPipeline metal;
-		VkPipeline wireframe;
-	} pipelines;
-};
-
 //////////////////////////////
 //// vulkan delcarations  ////
 //////////////////////////////
@@ -219,7 +189,7 @@ struct Renderer_Vulkan : public Renderer{
 	VkAllocationCallbacks* allocator = 0;
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
-	GLFWwindow* glfwWindow;
+	GLFWwindow* window;
 	
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -232,8 +202,47 @@ struct Renderer_Vulkan : public Renderer{
 	VkDescriptorPool descriptorPool;
 	VkPipelineCache graphicsPipelineCache = VK_NULL_HANDLE;
 	
-	WindowVk window = {0};
+	int32                    width = 0;
+	int32                    height = 0;
+	VkSwapchainKHR           swapchain = 0;
+	VkSurfaceKHR             surface;
+	SwapChainSupportDetails  supportDetails;
+	VkPhysicalDeviceFeatures deviceFeatures;
+	VkSurfaceFormatKHR       surfaceFormat;
+	VkPresentModeKHR         presentMode;
+	VkExtent2D               extent;
+	VkRenderPass             renderPass = 0;
+	//VkPipeline               pipeline = 0;
+	uint32                   imageCount = 0;
+	bool                     clearEnable = 0;
+    VkClearValue*            clearValues = 0;
+	uint32                   frameIndex = 0;
+	uint32                   semaphoreIndex = 0;
+	FrameVk*                 frames = 0;
+	FrameSemaphoreVk*        frameSemaphores = 0;
+	FramebufferAttachmentsVk attachments = {0};
 	
+	VkBuffer       vertexBuffer;
+	VkDeviceMemory vertexBufferMemory;
+	VkDeviceSize   vertexBufferSize;
+	VkBuffer       indexBuffer;
+	VkDeviceMemory indexBufferMemory;
+	VkDeviceSize   indexBufferSize;
+	
+	VkDescriptorSetLayout descriptorSetLayout;
+	VkPipelineLayout      pipelineLayout;
+	VkPipelineCache       pipelineCache = VK_NULL_HANDLE;
+	
+	//pipelines for the different shaders
+	struct {
+		VkPipeline phong;
+		VkPipeline twod;
+		VkPipeline metal;
+		VkPipeline wireframe;
+	} pipelines;
+	
+	//list of shader modules created (stored for cleanup)
+	std::vector<VkShaderModule> shaderModules;
 	
 	int32 minImageCount = 0;
 	bool framebufferResized = false;
@@ -316,7 +325,9 @@ struct Renderer_Vulkan : public Renderer{
 	//// vulkan functions ////
 	//////////////////////////
 	
-	void PreparePipelins();
+	void CreateLayouts();
+	
+	void CreatePipelines();
 	
 	void RenderPipeline_Default();
 	
@@ -370,7 +381,7 @@ struct Renderer_Vulkan : public Renderer{
 	
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 	
-	//device requires: anistrophy
+	//checks whether the graphics card supports swapchains
 	bool isDeviceSuitable(VkPhysicalDevice device);
 	
 	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
@@ -399,8 +410,9 @@ struct Renderer_Vulkan : public Renderer{
 	
 	//tries to find a viable depth format
 	VkFormat findDepthFormat();
-	//creates a shader module from the shader bytecode
-	VkShaderModule createShaderModule(const std::vector<char>& code);
+	
+	//creates a pipeline shader stage from the shader bytecode
+	VkPipelineShaderStageCreateInfo loadShader(std::string fileName, VkShaderStageFlagBits stage) ;
 	
 	//finds which memory types the graphics card offers
 	uint32 findMemoryType(uint32 typeFilter, VkMemoryPropertyFlags properties);

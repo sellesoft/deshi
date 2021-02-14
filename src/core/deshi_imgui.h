@@ -66,7 +66,7 @@ struct vkImGui : public deshiImGui{
 		VkResult err;
 		
 		//Setup Platform/Renderer backends
-		ImGui_ImplGlfw_InitForVulkan(vkr->glfwWindow, true);
+		ImGui_ImplGlfw_InitForVulkan(vkr->window, true);
 		ImGui_ImplVulkan_InitInfo init_info = {};
 		init_info.Instance = vkr->instance;
 		init_info.PhysicalDevice = vkr->physicalDevice;
@@ -77,16 +77,15 @@ struct vkImGui : public deshiImGui{
 		init_info.DescriptorPool = vkr->descriptorPool;
 		init_info.Allocator = vkr->allocator;
 		init_info.MinImageCount = vkr->minImageCount;
-		init_info.ImageCount = vkr->window.imageCount;
+		init_info.ImageCount = vkr->imageCount;
 		init_info.CheckVkResultFn = check_vk_result;
 		init_info.MSAASamples = vkr->msaaSamples;
-		ImGui_ImplVulkan_Init(&init_info, vkr->window.renderPass);
+		ImGui_ImplVulkan_Init(&init_info, vkr->renderPass);
 		
 		// Upload Fonts
 		{
-			WindowVk* window = &vkr->window;
-			VkCommandPool command_pool = window->frames[window->frameIndex].commandPool;
-			VkCommandBuffer command_buffer = window->frames[window->frameIndex].commandBuffer;
+			VkCommandPool command_pool = vkr->frames[vkr->frameIndex].commandPool;
+			VkCommandBuffer command_buffer = vkr->frames[vkr->frameIndex].commandBuffer;
 			
 			err = vkResetCommandPool(vkr->device, command_pool, 0);
 			check_vk_result(err);
@@ -126,7 +125,7 @@ struct vkImGui : public deshiImGui{
 		//TODO(r,delle) find out if this is actually needed
 		if(vkr->framebufferResized){
 			int w, h;
-			glfwGetFramebufferSize(vkr->glfwWindow, &w, &h);
+			glfwGetFramebufferSize(vkr->window, &w, &h);
 			if(w > 0 && h > 0){
 				ImGui_ImplVulkan_SetMinImageCount(vkr->minImageCount);
 			}
@@ -141,6 +140,6 @@ struct vkImGui : public deshiImGui{
 	void EndFrame() override{
 		ImGui::Render();
 		// Record dear imgui primitives into command buffer
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkr->window.frames[vkr->window.frameIndex].commandBuffer);
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkr->frames[vkr->frameIndex].commandBuffer);
 	}
 };
