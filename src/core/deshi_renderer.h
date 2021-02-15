@@ -25,6 +25,7 @@ struct Texture;
 struct Matrix4;
 struct Triangle;
 struct Vector3;
+struct ImDrawData;
 typedef uint8 stbi_uc;
 
 enum struct RenderAPI{
@@ -33,6 +34,10 @@ enum struct RenderAPI{
 
 enum struct RenderShader {
 	DEFAULT, TWOD, METAL, WIREFRAME
+};
+
+enum struct RenderAlphaMode{
+	OPAQUE, BLEND//, CLIP, HASHED
 };
 
 struct Renderer{
@@ -66,6 +71,9 @@ struct Renderer{
 	//scene interface
 	virtual void UpdateViewMatrix(Matrix4 matrix) = 0;
 	virtual void UpdatePerspectiveMatrix(Matrix4 matrix) = 0;
+	
+	//imgui interface
+	virtual void RenderImguiDrawData(ImDrawData* data) = 0;
 };
 
 ////////////////////////////////
@@ -82,6 +90,24 @@ https://vulkan-tutorial.com/en/Generating_Mipmaps#page_Generating-Mipmaps:~:text
 https://vulkan-tutorial.com/en/Generating_Mipmaps#page_Linear-filtering-support:~:text=There%20are%20two
 https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-,like
 */
+
+struct UniformBufferVk{
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 proj;
+};
+
+struct QueueFamilyIndices {
+	boost::optional<uint32> graphicsFamily;
+	boost::optional<uint32> presentFamily;
+	bool isComplete() { return graphicsFamily.has_value() && presentFamily.has_value(); }
+};
+
+struct SwapChainSupportDetails {
+	VkSurfaceCapabilitiesKHR capabilities;
+	std::vector<VkSurfaceFormatKHR> formats;
+	std::vector<VkPresentModeKHR> presentModes;
+};
 
 struct VertexVk{
 	glm::vec3 pos;
@@ -107,26 +133,9 @@ namespace std {
 	};
 };
 
-struct UniformBufferObject{
-	glm::mat4 model;
-	glm::mat4 view;
-	glm::mat4 proj;
-};
-
-struct QueueFamilyIndices {
-	boost::optional<uint32> graphicsFamily;
-	boost::optional<uint32> presentFamily;
-	bool isComplete() { return graphicsFamily.has_value() && presentFamily.has_value(); }
-};
-
-struct SwapChainSupportDetails {
-	VkSurfaceCapabilitiesKHR capabilities;
-	std::vector<VkSurfaceFormatKHR> formats;
-	std::vector<VkPresentModeKHR> presentModes;
-};
-
 struct TextureVk {
-	uint32 imageID;
+	Texture* texture;
+	uint32 textureID;
 	int width, height, channels;
 	stbi_uc* pixels;
 	uint32 mipLevels;
@@ -139,13 +148,51 @@ struct TextureVk {
 	VkDeviceSize   imageSize;
 };
 
-struct MeshVk{
-	uint32 MeshID;
-	
+//a primitive contains the information for one draw call
+struct PrimitiveVk{
+	uint32 indexOffset;
+	uint32 indexCount;
+	uint32 materialID;
 };
 
-struct PipelineVk{
+struct MeshVk{
+	Mesh* mesh;
+	uint32 MeshID;
+	glm::mat4 modelMatrix;
+	std::vector<PrimitiveVk> primitives;
+};
+
+struct MaterialVk{
+	uint32 materialID;
+	uint32 albedoTextureID   = 0xFFFFFFFF;
+	uint32 normalTextureID   = 0xFFFFFFFF;
+	uint32 specularTextureID = 0xFFFFFFFF;
+	uint32 lightTextureID    = 0xFFFFFFFF;
 	
+	float           alphaThreshold; //A pixel is rendered only if its alpha value is above this threshold
+	RenderAlphaMode alphaMode; //Blend Mode for Transparent Faces
+	VkDescriptorSet descriptorSet;
+	VkPipeline      pipeline;
+};
+
+struct SceneVk{
+	std::vector<TextureVk>  textures;
+	std::vector<MeshVk>     meshes;
+	std::vector<MaterialVk> materials;
+	
+	struct{
+		uint32         count = 0;
+		VkBuffer       buffer;
+		VkDeviceMemory bufferMemory;
+		VkDeviceSize   bufferSize;
+	} vertices;
+	
+	struct{
+		uint32         count = 0;
+		VkBuffer       buffer;
+		VkDeviceMemory bufferMemory;
+		VkDeviceSize   bufferSize;
+	} indices;
 };
 
 struct FrameVk{
@@ -155,6 +202,8 @@ struct FrameVk{
 	VkImage         image;
 	VkImageView     imageView;
 	VkFramebuffer   framebuffer;
+	VkBuffer        uniformBuffer;
+	VkDeviceMemory  uniformBufferMemory;
 };
 
 struct FrameSemaphoreVk{
@@ -196,12 +245,15 @@ struct Renderer_Vulkan : public Renderer{
 	QueueFamilyIndices physicalQueueFamilies;
 	
 	VkDevice device;
-	VkQueue graphicsQueue;
-	VkQueue presentQueue;
+	VkQueue  graphicsQueue;
+	VkQueue  presentQueue;
 	
 	VkDescriptorPool descriptorPool;
-	VkPipelineCache graphicsPipelineCache = VK_NULL_HANDLE;
+	VkPipelineCache  graphicsPipelineCache = VK_NULL_HANDLE;
 	
+	SceneVk scene;
+	
+	//swapchain specifics
 	int32                    width = 0;
 	int32                    height = 0;
 	VkSwapchainKHR           swapchain = 0;
@@ -222,23 +274,22 @@ struct Renderer_Vulkan : public Renderer{
 	FrameSemaphoreVk*        frameSemaphores = 0;
 	FramebufferAttachmentsVk attachments = {0};
 	
-	VkBuffer       vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
-	VkDeviceSize   vertexBufferSize;
-	VkBuffer       indexBuffer;
-	VkDeviceMemory indexBufferMemory;
-	VkDeviceSize   indexBufferSize;
+	VkPipelineLayout pipelineLayout;
+	VkDescriptorSet  descriptorSet;
+	VkPipelineCache  pipelineCache = VK_NULL_HANDLE;
 	
-	VkDescriptorSetLayout descriptorSetLayout;
-	VkPipelineLayout      pipelineLayout;
-	VkPipelineCache       pipelineCache = VK_NULL_HANDLE;
+	//descriptor set layouts for pipelines
+	struct {
+		VkDescriptorSetLayout matrices;
+		VkDescriptorSetLayout textures;
+	} descriptorSetLayouts;
 	
 	//pipelines for the different shaders
 	struct {
-		VkPipeline phong;
-		VkPipeline twod;
-		VkPipeline metal;
-		VkPipeline wireframe;
+		VkPipeline DEFAULT;
+		VkPipeline TWOD;
+		VkPipeline METAL;
+		VkPipeline WIREFRAME;
 	} pipelines;
 	
 	//list of shader modules created (stored for cleanup)
@@ -321,73 +372,64 @@ struct Renderer_Vulkan : public Renderer{
 	//updates the GPU camera's perspective matrix
 	virtual void UpdatePerspectiveMatrix(Matrix4 matrix) override;
 	
+	//TODO(r,delle) create render imgui functionality, ref: ImGui_ImplVulkan_RenderDrawData
+	virtual void RenderImguiDrawData(ImDrawData* data) override;
+	
 	//////////////////////////
 	//// vulkan functions ////
 	//////////////////////////
 	
-	void CreateLayouts();
+	void CreateInstance();
 	
-	void CreatePipelines();
-	
-	void RenderPipeline_Default();
-	
-	void RenderPipeline_TwoD();
-	
-	void RenderPipeline_Metal();
-	
-	void RenderPipeline_Wireframe();
-	
-	void createInstance();
-	
-	void setupDebugMessenger();
+	void SetupDebugMessenger();
 	
 	//https://vulkan-tutorial.com/Drawing_a_triangle/Presentation/Window_surface
-	void createSurface();
+	void CreateSurface();
 	
 	//https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Physical_devices_and_queue_families
-	void pickPhysicalDevice();
+	void PickPhysicalDevice();
 	
 	//creates an interface between the actual GPU device and a virtual device for interaction
 	//https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Logical_device_and_queues
-	void createLogicalDevice();
+	void CreateLogicalDevice();
 	
 	//creates a pool of descriptors of different types to be sent to shaders
 	//https://vulkan-tutorial.com/en/Uniform_buffers/Descriptor_pool_and_sets
-	void createDescriptorPool();
+	void CreateDescriptorPool();
 	
 	void CreateOrResizeWindow(int w, int h);
 	
 	//destroy old swap chain and in-flight frames, create a new swap chain with desired dimensions
 	void CreateWindowSwapChain(int w, int h);
 	
+	//create descriptor set layouts and a push constant for shaders,
+	//create pipeline layout, allocate and write to descriptor sets
+	void CreateLayouts();
+	
+	void CreatePipelines();
+	
 	void CreateWindowCommandBuffers();
+	
+	void UpdateUniformBuffer();
 	
 	///////////////////////////
 	//// utility functions ////
 	///////////////////////////
 	
 	void DestroyFrame(FrameVk* frame);
-	
 	void DestroyFrameSemaphore(FrameSemaphoreVk* sema);
-	
 	int GetMinImageCountFromPresentMode(VkPresentModeKHR mode);
-	
 	bool checkValidationLayerSupport();
-	
 	std::vector<const char*> getRequiredExtensions();
-	
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
 														VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
-	
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 	
 	//checks whether the graphics card supports swapchains
 	bool isDeviceSuitable(VkPhysicalDevice device);
 	
 	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-	
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-	
 	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 	
 	//https://vulkan-tutorial.com/en/Multisampling

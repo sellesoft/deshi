@@ -7,7 +7,7 @@
 #include <thread>
 
 #define DR_WAV_IMPLEMENTATION
-#include "../internal/draudio/dr_wav.h"
+#include "../external/draudio/dr_wav.h"
 
 #define TEST_ERROR check_al_errors(__FILE__, __LINE__, admin)
 

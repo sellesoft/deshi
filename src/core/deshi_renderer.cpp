@@ -5,6 +5,11 @@
 #include "../math/Math.h"
 #include "../geometry/Triangle.h"
 
+#include "../external/saschawillems/VulkanInitializers.hpp"
+#include "../external/imgui/imgui.h"
+#include "../external/imgui/imgui_impl_glfw.h"
+#include "../external/imgui/imgui_impl_vulkan.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -27,18 +32,19 @@ const bool enableValidationLayers = true;
 void Renderer_Vulkan::Init(Window* window) {
 	std::cout << "\n{-} Initializing Vulkan {-}" << std::endl;
 	this->window = window->window;
+	glfwGetFramebufferSize(window->window, &width, &height);
 	glfwSetWindowUserPointer(window->window, this);
 	glfwSetFramebufferSizeCallback(window->window, framebufferResizeCallback);
 	
-	createInstance();
-	setupDebugMessenger();
-	createSurface();
-	pickPhysicalDevice();
-	createLogicalDevice();
-	createDescriptorPool();
-	int w, h;
-	glfwGetFramebufferSize(window->window, &w, &h);
-	CreateOrResizeWindow(w, h);
+	CreateInstance();
+	SetupDebugMessenger();
+	CreateSurface();
+	PickPhysicalDevice();
+	CreateLogicalDevice();
+	CreateDescriptorPool();
+	CreateLayouts();
+	CreateOrResizeWindow(width, height);
+	
 	this->clearValues = (VkClearValue*)malloc(sizeof(VkClearValue) * 2);
 	this->clearValues[0].color = {0, 0, 0, 1};
 	this->clearValues[1].depthStencil = {1.f, 0};
@@ -47,7 +53,7 @@ void Renderer_Vulkan::Init(Window* window) {
 }
 
 void Renderer_Vulkan::Render() {
-	//std::cout << "{-}{-} Drawing Frame {-}{-}" << std::endl;
+	//std::cout << "{-}{-} Rendering Frame {-}{-}" << std::endl;
 	if(framebufferResized) {
 		int w, h;
 		glfwGetFramebufferSize(window, &w, &h);
@@ -96,6 +102,7 @@ void Renderer_Vulkan::Render() {
 }
 
 void Renderer_Vulkan::Present() {
+	//std::cout << "{-}{-} Presenting Frame {-}{-}" << std::endl;
 	FrameVk* frame = &frames[frameIndex];
 	VkSemaphore image_sema = frameSemaphores[semaphoreIndex].imageAcquiredSemaphore;
 	VkSemaphore render_sema = frameSemaphores[semaphoreIndex].renderCompleteSemaphore;
@@ -146,8 +153,9 @@ void Renderer_Vulkan::Present() {
 
 void Renderer_Vulkan::Cleanup() {
 	std::cout << "{-} Initializing Cleanup {-}\n" << std::endl;
-	//TODO(r,delle) maybe add rendering cleanup, 
-	//but maybe not because OS will cleanup on program close and be faster at it
+	//TODO(r,delle) maybe add rendering cleanup, but maybe not
+	//because OS will cleanup on program close and be faster at it
+	//so maybe only save changes to user settings
 }
 
 uint32 Renderer_Vulkan::AddTriangle(Triangle* triangle){
@@ -226,27 +234,15 @@ void Renderer_Vulkan::UpdatePerspectiveMatrix(Matrix4 matrix){
 	std::cout << "Not implemented yet" << std::endl;
 }
 
+void Renderer_Vulkan::RenderImguiDrawData(ImDrawData* data){
+	std::cout << "Not implemented yet" << std::endl;
+}
+
 //////////////////////////
 //// vulkan functions ////
 //////////////////////////
 
-void Renderer_Vulkan::RenderPipeline_Default() {
-	
-}
-
-void Renderer_Vulkan::RenderPipeline_TwoD() {
-	
-}
-
-void Renderer_Vulkan::RenderPipeline_Metal() {
-	
-}
-
-void Renderer_Vulkan::RenderPipeline_Wireframe() {
-	
-}
-
-void Renderer_Vulkan::createInstance() {
+void Renderer_Vulkan::CreateInstance() {
 	std::cout << "{-}{-} Creating Vulkan Instance {-}{-}" << std::endl;
 	if(enableValidationLayers && !checkValidationLayerSupport()) {
 		throw std::runtime_error("validation layers requested, but not available!");
@@ -283,7 +279,7 @@ void Renderer_Vulkan::createInstance() {
 	}
 }
 
-void Renderer_Vulkan::setupDebugMessenger() {
+void Renderer_Vulkan::SetupDebugMessenger() {
 	std::cout << "{-}{-} Setting Up Debug Messenger {-}{-}" << std::endl;
 	if(!enableValidationLayers) return;
 	
@@ -295,14 +291,14 @@ void Renderer_Vulkan::setupDebugMessenger() {
 	}
 }
 
-void Renderer_Vulkan::createSurface() {
+void Renderer_Vulkan::CreateSurface() {
 	std::cout << "{-}{-} Creating GLFW Surface {-}{-}" << std::endl;
 	if(glfwCreateWindowSurface(instance, window, allocator, &surface) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create window surface!");
 	}
 }
 
-void Renderer_Vulkan::pickPhysicalDevice() {
+void Renderer_Vulkan::PickPhysicalDevice() {
 	std::cout << "{-}{-} Picking Physical Device {-}{-}" << std::endl;
 	uint32 deviceCount = 0;
 	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -326,7 +322,7 @@ void Renderer_Vulkan::pickPhysicalDevice() {
 	physicalQueueFamilies = findQueueFamilies(physicalDevice);
 }
 
-void Renderer_Vulkan::createLogicalDevice() {
+void Renderer_Vulkan::CreateLogicalDevice() {
 	std::cout << "{-}{-} Creating Logical Device {-}{-}" << std::endl;
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<uint32> uniqueQueueFamilies = {
@@ -357,7 +353,6 @@ void Renderer_Vulkan::createLogicalDevice() {
 		}
 	}
 	
-	
 	VkDeviceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
@@ -380,12 +375,12 @@ void Renderer_Vulkan::createLogicalDevice() {
 	vkGetDeviceQueue(device, physicalQueueFamilies.presentFamily.value(), 0, &presentQueue);
 }
 
-//imgui example way
-void Renderer_Vulkan::createDescriptorPool(){
+//TODO(r,delle) find a better/safer way to do this, see gltfloading.cpp, line:592
+void Renderer_Vulkan::CreateDescriptorPool(){
 	std::cout << "{-}{-} Creating Descriptor Pool {-}{-}" << std::endl;
 	const int types = 11;
 	VkDescriptorPoolSize poolSizes[types] = {
-		{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLER,                1000 },
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
 		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          1000 },
 		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          1000 },
@@ -415,7 +410,6 @@ void Renderer_Vulkan::createDescriptorPool(){
 void Renderer_Vulkan::CreateOrResizeWindow(int w, int h) {
 	CreateWindowSwapChain(w, h);
 	CreateWindowCommandBuffers();
-	CreateLayouts();
 	CreatePipelines();
 }
 
@@ -591,19 +585,22 @@ void Renderer_Vulkan::CreateWindowSwapChain(int w, int h) {
 	}
 	
 	//create framebuffer attachments
-	VkFormat colorFormat = surfaceFormat.format;
-	createImage(width, height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, 
-				VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachments.colorImage, attachments.colorImageMemory);
-	attachments.colorImageView = createImageView(attachments.colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-	VkFormat depthFormat = findDepthFormat();
-	createImage(width, height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, 
-				VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachments.depthImage, attachments.depthImageMemory);
-	attachments.depthImageView = createImageView(attachments.depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+	{
+		VkFormat colorFormat = surfaceFormat.format;
+		createImage(width, height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, 
+					VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 
+					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachments.colorImage, attachments.colorImageMemory);
+		attachments.colorImageView = createImageView(attachments.colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+		
+		VkFormat depthFormat = findDepthFormat();
+		createImage(width, height, 1, msaaSamples, depthFormat, VK_IMAGE_TILING_OPTIMAL, 
+					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
+					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachments.depthImage, attachments.depthImageMemory);
+		attachments.depthImageView = createImageView(attachments.depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+	}
 	
 	//create the framebuffers
-	for (uint32 i = 0; i < imageCount; i++) {
+	for (uint32 i = 0; i < imageCount; ++i) {
 		std::array<VkImageView, 3> frameBufferAttachments = {
 			attachments.colorImageView, attachments.depthImageView, frames[i].imageView
 		};
@@ -621,52 +618,118 @@ void Renderer_Vulkan::CreateWindowSwapChain(int w, int h) {
 			throw std::runtime_error("failed to create framebuffer!");
 		}
 	}
+	
+	//create the uniform buffers
+	VkDeviceSize uboSize = sizeof(UniformBufferVk);
+	for(uint32 i=0; i < imageCount; ++i){
+		createBuffer(uboSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frames[i].uniformBuffer, frames[i].uniformBufferMemory);
+	}
+	UpdateUniformBuffer();
+}
+
+//TODO(r,delle) update uniform buffers with camera/model info
+void Renderer_Vulkan::UpdateUniformBuffer(){
+	//std::cout << "\n{-}{-} Updating Uniform Buffer {-}{-}\n" << std::endl;
+	UniformBufferVk ubo{};
+	ubo.model = glm::mat4(0.0f);
+	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.proj = glm::perspective(glm::radians(45.0f), extent.width / (float) extent.height, 0.1f, 10.0f);
+	ubo.proj[1][1] *= -1;
+	
+	void* data;
+	vkMapMemory(device, frames[frameIndex].uniformBufferMemory, 0, sizeof(ubo), 0, &data);{
+		memcpy(data, &ubo, sizeof(ubo));
+	}vkUnmapMemory(device, frames[frameIndex].uniformBufferMemory);
 }
 
 void Renderer_Vulkan::CreateLayouts(){
 	std::cout << "{-}{-} Creating Layouts {-}{-}" << std::endl;
-	VkDescriptorSetLayoutBinding uboLayoutBinding{};
-	uboLayoutBinding.binding = 0;
-	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	uboLayoutBinding.descriptorCount = 1;
-	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	uboLayoutBinding.pImmutableSamplers = nullptr;
+	//TODO(r,delle) cleanup previous layouts
 	
-	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-	samplerLayoutBinding.binding = 1;
-	samplerLayoutBinding.descriptorCount = 1;
-	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	samplerLayoutBinding.pImmutableSamplers = nullptr;
-	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings;
+	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI;
 	
-	std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
-		uboLayoutBinding, 
-		samplerLayoutBinding
-	};
-	
-	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
-	descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	descriptorSetLayoutInfo.bindingCount = setLayoutBindings.size();
-	descriptorSetLayoutInfo.pBindings = setLayoutBindings.data();
-	
-	if (vkCreateDescriptorSetLayout(device, &descriptorSetLayoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create descriptor set layout!");
+	//create set layout for passing matrices
+	{
+		setLayoutBindings = {
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0)
+		};
+		descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings.data(), (uint32)setLayoutBindings.size());
+		if (vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.matrices) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create ubo descriptor set layout!");
+		}
 	}
 	
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 1;
-	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
-	pipelineLayoutInfo.pushConstantRangeCount = 0;
-	pipelineLayoutInfo.pPushConstantRanges = nullptr;
+	//create set layout for passing textures (4 types of textures)
+	{ 
+		setLayoutBindings = {
+			// Color/albedo map
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+			// Normal map
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+			// Specular/reflective map
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+			// Light/emissive map
+			vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
+		};
+		descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
+		descriptorSetLayoutCI.bindingCount = 4;
+		if (vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.textures) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create textures descriptor set layout!");
+		}
+	}
 	
-	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create pipeline layout!");
+	//create push constant and pipeline layout 
+	{ 
+		std::array<VkDescriptorSetLayout, 2> setLayouts = {
+			descriptorSetLayouts.matrices, descriptorSetLayouts.textures
+		};
+		
+		//push constant range to push model matrix with every vertex
+		VkPushConstantRange pushConstantRange = vks::initializers::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0);
+		
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutInfo.setLayoutCount = setLayouts.size();
+		pipelineLayoutInfo.pSetLayouts = setLayouts.data();
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+		
+		if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create pipeline layout!");
+		}
+	}
+	
+	//allocate and write descriptor set for matrices/uniform buffers
+	{
+		VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayouts.matrices, 1);
+		if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate descriptor sets!");
+		}
+		
+		
+	}
+	
+	//allocate and write descriptor set for materials
+	for(auto& material : scene.materials){
+		VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayouts.matrices, 1);
+		if (vkAllocateDescriptorSets(device, &allocInfo, &material.descriptorSet) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate descriptor sets!");
+		}
+		
+		
 	}
 }
 
 void Renderer_Vulkan::CreatePipelines(){
 	std::cout << "{-}{-} Creating Pipelines {-}{-}" << std::endl;
+	
+	//TODO(r,delle) cleanup previous pipelines
+	if(pipelines.DEFAULT){  }
+	if(pipelines.TWOD){  }
+	if(pipelines.METAL){  }
+	if(pipelines.WIREFRAME){  }
+	
 	//determines how to group vertices together
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
 	inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -797,23 +860,23 @@ void Renderer_Vulkan::CreatePipelines(){
 	
 	//TODO(r,delle) maybe dont reload the shader file every swapchain recreation (window resize)
 	//but maybe add a function to reload it so it can be hot-tested
-	//textured/phong/default pipeline
-	shaderStages[0] = loadShader("shaders/phong.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = loadShader("shaders/phong.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-	if (vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.phong) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create phong graphics pipeline!");
+	//textured/default pipeline
+	shaderStages[0] = loadShader("shaders/default.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = loadShader("shaders/default.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	if (vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.DEFAULT) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create default graphics pipeline!");
 	}
 	
 	//all other pipelines are derivatives
 	pipelineInfo.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
-	pipelineInfo.basePipelineHandle = pipelines.phong;
+	pipelineInfo.basePipelineHandle = pipelines.DEFAULT;
 	pipelineInfo.basePipelineIndex = -1; //can either use handle or index, not both (section 9.5 of vulkan spec)
 	
 	//wireframe pipeline
 	if(deviceFeatures.fillModeNonSolid){
 		shaderStages[0] = loadShader("shaders/wireframe.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("shaders/wireframe.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-		if (vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.wireframe) != VK_SUCCESS) {
+		if (vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.WIREFRAME) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create wireframe graphics pipeline!");
 		}
 	}
