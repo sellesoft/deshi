@@ -91,12 +91,7 @@ https://vulkan-tutorial.com/en/Generating_Mipmaps#page_Linear-filtering-support:
 https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-,like
 */
 
-struct UniformBufferVk{
-	glm::mat4 model;
-	glm::mat4 view;
-	glm::mat4 proj;
-};
-
+//TODO(cr,delle) remove boost stuff and do it manually 
 struct QueueFamilyIndices {
 	boost::optional<uint32> graphicsFamily;
 	boost::optional<uint32> presentFamily;
@@ -115,8 +110,8 @@ struct VertexVk{
 	glm::vec3 color;
 	glm::vec3 normal;
 	
-	static VkVertexInputBindingDescription getBindingDescription();
-	static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions();
+	static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
+	static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 	bool operator==(const VertexVk& other) const {
 		return pos == other.pos && color == other.color && texCoord == other.texCoord && normal == other.normal;
 	}
@@ -124,7 +119,7 @@ struct VertexVk{
 
 //pattern: OR unshifted and L-shifted, then R-shift the combo, 
 //then OR that with L-shifted, then R-shift the combo and repeat
-//until the last combo which is not R-shifted
+//until the last combo which is not R-shifted ((x^(y<<))>>)^(z<<)
 namespace std {
 	template<> struct hash<VertexVk> {
 		size_t operator()(VertexVk const& vertex) const {
@@ -146,6 +141,8 @@ struct TextureVk {
 	VkImage        image;
 	VkDeviceMemory imageMemory;
 	VkDeviceSize   imageSize;
+	
+	VkDescriptorImageInfo imageInfo;
 };
 
 //a primitive contains the information for one draw call
@@ -172,7 +169,8 @@ struct MaterialVk{
 	float           alphaThreshold; //A pixel is rendered only if its alpha value is above this threshold
 	RenderAlphaMode alphaMode; //Blend Mode for Transparent Faces
 	VkDescriptorSet descriptorSet;
-	VkPipeline      pipeline;
+	//VkPipeline      pipeline;
+	
 };
 
 struct SceneVk{
@@ -193,6 +191,10 @@ struct SceneVk{
 		VkDeviceMemory bufferMemory;
 		VkDeviceSize   bufferSize;
 	} indices;
+	
+	VkDescriptorSet  descriptorSet;
+	
+	inline VkDescriptorImageInfo getTextureDescriptorInfo(size_t index);
 };
 
 struct FrameVk{
@@ -202,8 +204,6 @@ struct FrameVk{
 	VkImage         image;
 	VkImageView     imageView;
 	VkFramebuffer   framebuffer;
-	VkBuffer        uniformBuffer;
-	VkDeviceMemory  uniformBufferMemory;
 };
 
 struct FrameSemaphoreVk{
@@ -275,8 +275,20 @@ struct Renderer_Vulkan : public Renderer{
 	FramebufferAttachmentsVk attachments = {0};
 	
 	VkPipelineLayout pipelineLayout;
-	VkDescriptorSet  descriptorSet;
 	VkPipelineCache  pipelineCache = VK_NULL_HANDLE;
+	
+	//uniform buffer for the shaders
+	struct ShaderData{
+		VkBuffer        uniformBuffer;
+		VkDeviceMemory  uniformBufferMemory;
+		
+		struct Values{
+			glm::mat4 view;     //camera view matrix
+			glm::mat4 proj;     //camera projection matrix
+			glm::vec4 lightPos; //main light pos
+			glm::vec4 viewPos;  //camera pos
+		} values;
+	} shaderData;
 	
 	//descriptor set layouts for pipelines
 	struct {
@@ -286,10 +298,10 @@ struct Renderer_Vulkan : public Renderer{
 	
 	//pipelines for the different shaders
 	struct {
-		VkPipeline DEFAULT;
-		VkPipeline TWOD;
-		VkPipeline METAL;
-		VkPipeline WIREFRAME;
+		VkPipeline DEFAULT   = VK_NULL_HANDLE;
+		VkPipeline TWOD      = VK_NULL_HANDLE;
+		VkPipeline METAL     = VK_NULL_HANDLE;
+		VkPipeline WIREFRAME = VK_NULL_HANDLE;
 	} pipelines;
 	
 	//list of shader modules created (stored for cleanup)
@@ -397,20 +409,22 @@ struct Renderer_Vulkan : public Renderer{
 	//https://vulkan-tutorial.com/en/Uniform_buffers/Descriptor_pool_and_sets
 	void CreateDescriptorPool();
 	
-	void CreateOrResizeWindow(int w, int h);
+	void CreateUniformBuffer();
 	
-	//destroy old swap chain and in-flight frames, create a new swap chain with desired dimensions
-	void CreateWindowSwapChain(int w, int h);
+	void UpdateUniformBuffer();
 	
 	//create descriptor set layouts and a push constant for shaders,
 	//create pipeline layout, allocate and write to descriptor sets
 	void CreateLayouts();
 	
+	void CreateOrResizeWindow(int w, int h);
+	
+	//destroy old swap chain and in-flight frames, create a new swap chain with desired dimensions
+	void CreateWindowSwapChain(int w, int h);
+	
 	void CreatePipelines();
 	
 	void CreateWindowCommandBuffers();
-	
-	void UpdateUniformBuffer();
 	
 	///////////////////////////
 	//// utility functions ////
