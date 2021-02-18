@@ -38,7 +38,6 @@
 #define LINE_NUM  STRINGIZE(__LINE__)
 
 
-
 #define LOGFUNC LOG(__FUNCTION__, " called")
 #define LOGFUNCM(...) LOG(__FUNCTION__, " called ", __VA_ARGS__)
 
@@ -46,10 +45,10 @@
 //returns false if wherever this is called has been called before
 //eg. use this in an if statement in a loop for it to only run once ever
 #define FIRST_TIME_HERE ([] { \
-    static bool is_first_time = true; \
-    auto was_first_time = is_first_time; \
-    is_first_time = false; \
-    return was_first_time; } ())
+static bool is_first_time = true; \
+auto was_first_time = is_first_time; \
+is_first_time = false; \
+return was_first_time; } ())
 
 //wrap code in this for it to only run once the entire program
 //TODO(g, sushi) write a macro for running once in a loop
@@ -76,26 +75,13 @@ else return vr; }\
 ())
 
 
-
-#ifndef NDEBUG
-#   define ASSERTWARN(condition, message) \
-    do { \
-        if (! (condition)) { \
-            std::string file = __FILENAME__; \
-            std::cout << "Warning '" #condition "' failed in " + file + " line " + std::to_string(__LINE__) + ": \n" #message << std::endl; \
-        } \
-    } while (false)
-#else
-#   define ASSERT(condition, message) condition;
-#endif
-
 using namespace std::chrono;
 
 extern bool GLOBAL_DEBUG;
 
 namespace Math { //forward declare average
 	template<class T>
-	static double average(const T& container, int size);
+		static double average(const T& container, int size);
 }
 
 //template magic thanks to fux#2562
@@ -109,24 +95,24 @@ struct has_str_method {
 struct Camera;
 
 namespace Debug {
-
+	
 	/// Primarily for outputting to ingame console, but can return a string from any object that is a c++ number
 	/// or any of our classes (or yours :) ) that has a .str() member
 	
 	//returns the string for in engine printing
 	static std::string ToString(const char* str) { return std::string(str); }
 	static std::string ToString(char* str)       { return std::string(str); }
-
+	
 	static std::string ToString(const std::string& str) { return str; }
-
+	
 	template<class T, typename std::enable_if<!has_str_method<T>::value, bool>::type = true>
-	static std::string ToString(T t) { return ToString(std::to_string(t)); }
-
+		static std::string ToString(T t) { return ToString(std::to_string(t)); }
+	
 	template<class T, typename std::enable_if<has_str_method<T>::value, bool>::type = true>
-	static std::string ToString(T t) { return ToString(t.str()); }
-
+		static std::string ToString(T t) { return ToString(t.str()); }
+	
 	template<class... T>
-	static std::string ToString(T... args) { 
+		static std::string ToString(T... args) { 
 		std::string strings[] = { "", (ToString(std::forward<T>(args))) ... };
 		std::string str = "";
 		for (std::string s : strings) { str += s; }

@@ -39,13 +39,13 @@ struct DeshiEngine {
 		
 		//start entity admin
 		entityAdmin.Create(&input, &window, &time);
-
+		
 		//start main loop
 		while(!glfwWindowShouldClose(window.window)){
 			glfwPollEvents();
 			Update();
 		}
-
+		
 		//cleanup
 		imgui->Cleanup(); delete imgui;
 		renderer->Cleanup(); delete renderer;
@@ -56,12 +56,11 @@ struct DeshiEngine {
 		time.Update();
 		input.Update();
 		window.Update();
-		imgui->NewFrame();			//place imgui calls after this
+		imgui->NewFrame();            //place imgui calls after this
 		ImGui::ShowDemoWindow();
 		entityAdmin.Update();
-		renderer->Render();			//place renderer cmd buffer calls after this
-		imgui->EndFrame();			//place imgui calls before this
-		renderer->Present();			//place renderer cmd buffer calls before this
+		renderer->Render();           //place imgui calls before this
+		renderer->Present();
 		//entityAdmin.PostRenderUpdate();
 		return true;
 	}

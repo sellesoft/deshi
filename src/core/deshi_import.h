@@ -41,4 +41,8 @@ namespace deshi{
 	inline static std::string getSoundsPath(){
 		return getDataPath() + "sounds/";
 	}
+	
+	inline static std::string getShadersPath(){
+		return "shaders/";
+	}
 }

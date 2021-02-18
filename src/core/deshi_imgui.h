@@ -54,7 +54,7 @@ struct deshiImGui{
 	
 	virtual void Cleanup() = 0;
 	virtual void NewFrame()= 0;
-	virtual void EndFrame() = 0;
+	//ImGui::Render() called in the renderer
 };
 
 struct vkImGui : public deshiImGui{
@@ -73,7 +73,7 @@ struct vkImGui : public deshiImGui{
 		init_info.Device = vkr->device;
 		init_info.QueueFamily = vkr->physicalQueueFamilies.graphicsFamily.get();
 		init_info.Queue = vkr->graphicsQueue;
-		init_info.PipelineCache = vkr->graphicsPipelineCache;
+		init_info.PipelineCache = vkr->pipelineCache;
 		init_info.DescriptorPool = vkr->descriptorPool;
 		init_info.Allocator = vkr->allocator;
 		init_info.MinImageCount = vkr->minImageCount;
@@ -84,7 +84,7 @@ struct vkImGui : public deshiImGui{
 		
 		// Upload Fonts
 		{
-			VkCommandPool command_pool = vkr->frames[vkr->frameIndex].commandPool;
+			VkCommandPool command_pool = vkr->commandPool;
 			VkCommandBuffer command_buffer = vkr->frames[vkr->frameIndex].commandBuffer;
 			
 			err = vkResetCommandPool(vkr->device, command_pool, 0);
@@ -122,24 +122,9 @@ struct vkImGui : public deshiImGui{
 	}
 	
 	void NewFrame() override{
-		//TODO(r,delle) find out if this is actually needed
-		if(vkr->framebufferResized){
-			int w, h;
-			glfwGetFramebufferSize(vkr->window, &w, &h);
-			if(w > 0 && h > 0){
-				ImGui_ImplVulkan_SetMinImageCount(vkr->minImageCount);
-			}
-		}
-		
 		// Start the Dear ImGui frame
 		ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-	}
-	
-	void EndFrame() override{
-		ImGui::Render();
-		// Record dear imgui primitives into command buffer
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), vkr->frames[vkr->frameIndex].commandBuffer);
 	}
 };

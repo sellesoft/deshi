@@ -31,22 +31,26 @@ enum ShaderFlagsBits : uint32 {
 };
 typedef uint32 ShaderFlags;
 
+
+enum Shader : uint32 {
+	DEFAULT, TWOD, PBR, WIREFRAME
+};
+
 //NOTE indices should be counter-clockwise
 struct Batch {
 	char name[16];
 	uint32 vertexCount;
-	std::vector<Vertex>	vertexArray;
+	std::vector<Vertex> vertexArray;
 	uint32 indexCount;
-	std::vector<uint32>	indexArray;
+	std::vector<uint32> indexArray;
 	
-	char shaderName[16];
+	Shader shader;
 	uint32 textureCount;
 	std::vector<Texture> textureArray;
-	ShaderFlags	shaderFlags;
+	ShaderFlags shaderFlags;
 	
 	Batch() {}
-	Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray,
-		  const char* shaderName, std::vector<Texture> textureArray, ShaderFlags shaderFlags);
+	Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray, std::vector<Texture> textureArray, Shader shader, ShaderFlags shaderFlags);
 };
 
 struct Mesh {
