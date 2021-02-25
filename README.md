@@ -10,14 +10,14 @@ A game engine for 3D physics and graphics building on [P3DPGE](https://github.co
 * [stb](https://github.com/nothings/stb)
 * [OpenAL 1.1](https://www.openal.org/downloads/)
 
-### Features
-* Importing Wavefront (.obj) models
-* Naive 3D rendering implementation from scratch
+### [Features](https://github.com/DelleVelleD/deshi/wiki/Progress)
+* Naive 3D rendering implementation on CPU
 * 3D physics collision detection and resolution (partial)
 * Console and commands
 * Mouse and keyboard input
 
 ### Major TODOs
+* Importing models
 * Finish collisions for the remaining physics primitives
 * Component object pooling
 * 2D collision detection and resolution
