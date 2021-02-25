@@ -34,13 +34,12 @@ Vertex::Vertex(Vector3 pos, Vector2 uv, Vector3 color, Vector3 normal) {
 
 
 
-Batch::Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray,
-			 const char* shaderName, std::vector<Texture> textureArray, ShaderFlags shaderFlags) {
+Batch::Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray, std::vector<Texture> textureArray, Shader shader, ShaderFlags shaderFlags) {
 	strncpy_s(this->name, name, 16); this->name[15] = '\0';
-	strncpy_s(this->shaderName, shaderName, 16); this->shaderName[15] = '\0';
-	this->vertexArray = vertexArray;	this->vertexCount = vertexArray.size();
-	this->indexArray = indexArray;		this->indexCount = indexArray.size();
-	this->textureArray = textureArray;	this->textureCount = textureArray.size();
+	this->shader = shader; this->shaderFlags = shaderFlags;
+	this->vertexArray = vertexArray;   this->vertexCount = vertexArray.size();
+	this->indexArray = indexArray;     this->indexCount = indexArray.size();
+	this->textureArray = textureArray; this->textureCount = textureArray.size();
 }
 
 
@@ -78,14 +77,14 @@ Model::Model(Entity* e, Mesh mesh) {
 Model* Model::CreateBox(Entity* e, Vector3 halfDims, Color color) {
 	Vector3 p = halfDims;
 	std::vector<Vertex> vertices = {
-		{Vector3(p.x, p.y, p.z),  Vector2(0, 0), Vector3(color.r, color.g, color.b), Vector3::ZERO}, // x, y, z	0
-		{Vector3(-p.x, p.y, p.z), Vector2(0, 0), Vector3(color.r, color.g, color.b), Vector3::ZERO}, //-x, y, z	1
-		{Vector3(p.x,-p.y, p.z),  Vector2(0, 0), Vector3(color.r, color.g, color.b), Vector3::ZERO}, // x,-y, z	2
-		{Vector3(p.x, p.y,-p.z),  Vector2(0, 0), Vector3(color.r, color.g, color.b), Vector3::ZERO}, // x, y,-z	3
-		{Vector3(-p.x,-p.y, p.z), Vector2(0, 0), Vector3(color.r, color.g, color.b), Vector3::ZERO}, //-x,-y, z	4
-		{Vector3(-p.x, p.y,-p.z), Vector2(0, 0), Vector3(color.r, color.g, color.b), Vector3::ZERO}, //-x, y,-z	5
-		{Vector3(p.x,-p.y,-p.z),  Vector2(0, 0), Vector3(color.r, color.g, color.b), Vector3::ZERO}, // x,-y,-z	6
-		{Vector3(-p.x,-p.y,-p.z), Vector2(0, 0), Vector3(color.r, color.g, color.b), Vector3::ZERO}  //-x,-y,-z	7
+		{Vector3(p.x, p.y, p.z),  Vector2(0, 0), Vector3(color.r, color.g, color.b) / 255.f, Vector3::ZERO}, // x, y, z	0
+		{Vector3(-p.x, p.y, p.z), Vector2(0, 0), Vector3(color.r, color.g, color.b) / 255.f, Vector3::ZERO}, //-x, y, z	1
+		{Vector3(p.x,-p.y, p.z),  Vector2(0, 0), Vector3(color.r, color.g, color.b) / 255.f, Vector3::ZERO}, // x,-y, z	2
+		{Vector3(p.x, p.y,-p.z),  Vector2(0, 0), Vector3(color.r, color.g, color.b) / 255.f, Vector3::ZERO}, // x, y,-z	3
+		{Vector3(-p.x,-p.y, p.z), Vector2(0, 0), Vector3(color.r, color.g, color.b) / 255.f, Vector3::ZERO}, //-x,-y, z	4
+		{Vector3(-p.x, p.y,-p.z), Vector2(0, 0), Vector3(color.r, color.g, color.b) / 255.f, Vector3::ZERO}, //-x, y,-z	5
+		{Vector3(p.x,-p.y,-p.z),  Vector2(0, 0), Vector3(color.r, color.g, color.b) / 255.f, Vector3::ZERO}, // x,-y,-z	6
+		{Vector3(-p.x,-p.y,-p.z), Vector2(0, 0), Vector3(color.r, color.g, color.b) / 255.f, Vector3::ZERO}  //-x,-y,-z	7
 	};
 	std::vector<uint32> indices = {
 		2, 4, 0,    0, 1, 2,	//back face
@@ -96,7 +95,7 @@ Model* Model::CreateBox(Entity* e, Vector3 halfDims, Color color) {
 		4, 7, 5,    5, 1, 4,	//left face
 	};
 	
-	Batch batch("box", vertices, indices, "default", {}, NO_TEXTURE);
+	Batch batch("box", vertices, indices, {});
 	Mesh mesh("default_box", { batch });
 	Model* model = new Model(e, mesh);
 	return model;

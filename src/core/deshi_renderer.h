@@ -28,7 +28,7 @@ struct Scene;
 struct Matrix4;
 struct Triangle;
 struct Vector3;
-struct ImDrawData;
+struct deshiImGui;
 typedef uint8 stbi_uc;
 
 enum struct RenderAPI{
@@ -59,7 +59,7 @@ struct Renderer{
 	GLFWwindow*    window;
 	RenderSettings settings; //TODO(r,delle) load render settings from a file
 	
-	virtual void Init(Window* window) = 0;
+	virtual void Init(Window* window, deshiImGui* imgui) = 0;
 	virtual void Render() = 0;
 	virtual void Present() = 0;
 	virtual void Cleanup() = 0;
@@ -87,7 +87,7 @@ struct Renderer{
 	virtual void   UnloadTexture(uint32 textureID) = 0;
 	
 	//scene interface
-	virtual void CreateDefaultAssets() = 0;
+	virtual void LoadDefaultAssets() = 0;
 	virtual void LoadScene(Scene* scene) = 0;
 	virtual void UpdateViewMatrix(Matrix4 matrix) = 0;
 	virtual void UpdatePerspectiveMatrix(Matrix4 matrix) = 0;
@@ -124,7 +124,7 @@ struct SwapChainSupportDetails {
 struct VertexVk{
 	glm::vec3 pos;
 	glm::vec2 texCoord;
-	glm::vec3 color;
+	glm::vec3 color; //between 0 and 1
 	glm::vec3 normal;
 	
 	static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
@@ -146,14 +146,11 @@ namespace std {
 };
 
 struct TextureVk {
-	uint32 textureID;
+	uint32 id;
 	int width, height, channels;
 	stbi_uc* pixels;
 	uint32 mipLevels;
 	uint32 type;
-	
-	VkBuffer       stagingBuffer;
-	VkDeviceMemory stagingMemory;
 	
 	VkImage        image;
 	VkDeviceMemory imageMemory;
@@ -165,7 +162,7 @@ struct TextureVk {
 	VkDescriptorImageInfo imageInfo;
 };
 
-//a primitive contains the information for one draw call
+//a primitive contains the information for one draw call (a batch)
 struct PrimitiveVk{
 	uint32 firstIndex;
 	uint32 indexCount;
@@ -173,7 +170,7 @@ struct PrimitiveVk{
 };
 
 struct MeshVk{
-	uint32    MeshID;
+	uint32    id;
 	bool      visible;
 	glm::mat4 modelMatrix;
 	std::vector<PrimitiveVk> primitives;
@@ -181,37 +178,37 @@ struct MeshVk{
 };
 
 struct MaterialVk{
-	uint32 materialID;
-	uint32 albedoTextureIndex   = -1;
-	uint32 normalTextureIndex   = -1;
-	uint32 specularTextureIndex = -1;
-	uint32 lightTextureIndex    = -1;
+	uint32 id;
+	uint32 albedoTextureIndex   = 0;
+	uint32 normalTextureIndex   = 2;
+	uint32 specularTextureIndex = 2;
+	uint32 lightTextureIndex    = 2;
 	uint32 shader = 0;
 	
 	float           alphaThreshold; //A pixel is rendered only if its alpha value is above this threshold
 	RenderAlphaMode alphaMode; //Blend Mode for Transparent Faces
 	VkDescriptorSet descriptorSet;
-	VkPipeline*     pipeline = 0;
+	VkPipeline      pipeline = 0;
 };
 
 struct SceneVk{
-	std::vector<TextureVk>  textures;
-	std::vector<MeshVk>     meshes;
-	std::vector<MaterialVk> materials;
+	std::vector<VertexVk>   vertexBuffer = std::vector<VertexVk>(0);
+	std::vector<uint32>     indexBuffer  = std::vector<uint32>(0);
+	std::vector<TextureVk>  textures     = std::vector<TextureVk>(0);
+	std::vector<MeshVk>     meshes       = std::vector<MeshVk>(0);
+	std::vector<MaterialVk> materials    = std::vector<MaterialVk>(0);
 	
 	struct{
-		uint32         count = 0;
 		VkBuffer       buffer;
 		VkDeviceMemory bufferMemory;
 		VkDeviceSize   bufferSize;
-	} vertices;
+	} vertices{};
 	
 	struct{
-		uint32         count = 0;
 		VkBuffer       buffer;
 		VkDeviceMemory bufferMemory;
 		VkDeviceSize   bufferSize;
-	} indices;
+	} indices{};
 	
 	VkDescriptorSet  descriptorSet;
 	
@@ -240,6 +237,11 @@ struct FramebufferAttachmentsVk {
 	VkImage        depthImage       = VK_NULL_HANDLE;
 	VkDeviceMemory depthImageMemory = VK_NULL_HANDLE;
 	VkImageView    depthImageView   = VK_NULL_HANDLE;
+};
+
+struct StagingBufferVk {
+	VkBuffer buffer;
+	VkDeviceMemory memory;
 };
 
 struct Renderer_Vulkan : public Renderer{
@@ -325,7 +327,7 @@ struct Renderer_Vulkan : public Renderer{
 	//////////////////////////
 	
 	//runs the vulkan functions necessary to start rendering
-	virtual void Init(Window* window) override;
+	virtual void Init(Window* window, deshiImGui* imgui) override;
 	
 	//acquires the next image from vulkan, resets the command buffers, 
 	//updates uploaded information, begins the command buffers, begins the render pass, 
@@ -370,7 +372,7 @@ struct Renderer_Vulkan : public Renderer{
 	
 	//loads a texture onto the GPU
 	//returns the texture's id
-	virtual uint32 LoadTexture(Texture* texure) override;
+	virtual uint32 LoadTexture(Texture texure) override;
 	
 	//unloads a texture from the GPU
 	//NOTE the previously used texture ID will not be used again
@@ -388,7 +390,7 @@ struct Renderer_Vulkan : public Renderer{
 	//updates a mesh's model matrix: translation, rotation, scale
 	virtual void UpdateMeshMatrix(uint32 meshID, Matrix4 matrix) override;
 	
-	void CreateDefaultAssets() override;
+	virtual void LoadDefaultAssets() override;
 	
 	//loads a new scene to the GPU
 	//NOTE this should not be done often in gameplay
@@ -522,7 +524,10 @@ struct Renderer_Vulkan : public Renderer{
 					 VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	
 	//creates a buffer of defined usage and size on the device
-	void CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& buffer_memory, VkDeviceSize& p_buffer_size, size_t new_size, VkBufferUsageFlagBits usage, VkMemoryPropertyFlags properties);
+	void CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+	
+	//creates a buffer and maps provided data to it
+	void CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, void* data, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 	
 	//returns a command buffer that will only execute once
 	VkCommandBuffer beginSingleTimeCommands();

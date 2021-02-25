@@ -1,8 +1,5 @@
 #pragma once
-#include "deshi_input.h"
-#include "deshi_glfw.h"
 #include "deshi_renderer.h"
-#include "deshi_time.h"
 
 #include "../external/imgui/imgui.h"
 #include "../external/imgui/imgui_impl_glfw.h"
@@ -19,12 +16,6 @@
 
 #include <vector>
 
-struct enKeyCharMap{
-	Key::Key key;
-	char lower;
-	char upper;
-};
-
 static void check_vk_result(VkResult err){
     if (err == 0)
         return;
@@ -35,15 +26,7 @@ static void check_vk_result(VkResult err){
 
 //thanks: https://github.com/dandistine/olcPGEDearImGui
 struct deshiImGui{
-	Input* input;
-	Window* window;
-	Time* time;
-	
-	virtual void Init(Renderer* renderer, Input* input, Window* window, Time* time){
-		this->input = input;
-		this->window = window;
-		this->time = time;
-		
+	virtual void Init(Renderer* renderer){
 		//Setup Dear ImGui context
 		ImGui::CreateContext();
 		
@@ -60,8 +43,8 @@ struct deshiImGui{
 struct vkImGui : public deshiImGui{
 	Renderer_Vulkan* vkr;
 	
-	void Init(Renderer* renderer, Input* input, Window* window, Time* time) override{
-		deshiImGui::Init(renderer, input, window, time);
+	void Init(Renderer* renderer) override{
+		deshiImGui::Init(renderer);
 		vkr = (Renderer_Vulkan*)renderer; 
 		VkResult err;
 		
@@ -113,8 +96,7 @@ struct vkImGui : public deshiImGui{
 	}
 	
 	void Cleanup() override{
-		VkResult err;
-		err = vkDeviceWaitIdle(vkr->device);
+		VkResult err = vkDeviceWaitIdle(vkr->device);
 		check_vk_result(err);
 		ImGui_ImplVulkan_Shutdown();
 		ImGui_ImplGlfw_Shutdown();

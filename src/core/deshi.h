@@ -23,7 +23,7 @@ struct DeshiEngine {
 		renderAPI = RenderAPI::VULKAN;
 		switch(renderAPI){
 			case(RenderAPI::VULKAN):default:{ 
-				renderer = new Renderer_Vulkan; 
+				renderer = new Renderer_Vulkan;
 				imgui = new vkImGui;
 			}break;
 		}
@@ -34,8 +34,7 @@ struct DeshiEngine {
 		LoadConfig();
 		time.Init(300);
 		window.Init(&input, 1280, 720);
-		renderer->Init(&window);
-		imgui->Init(renderer, &input, &window, &time);
+		renderer->Init(&window, imgui); //inits imgui as well
 		
 		//start entity admin
 		entityAdmin.Create(&input, &window, &time);

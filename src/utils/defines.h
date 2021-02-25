@@ -48,6 +48,6 @@ typedef unsigned long  uint64;
 #define uint16(x) static_cast<uint16>(x)
 #define uint32(x) static_cast<uint32>(x)
 #define uint64(x) static_cast<uint64>(x)
-#define size_t(x) static_cast<size_t>(x)
+//#define size_t(x) static_cast<size_t>(x) //this breaks things in dr_wav
 
 #endif //DESHI_DEFINES_H

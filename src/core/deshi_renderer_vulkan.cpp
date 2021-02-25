@@ -1,5 +1,6 @@
 #include "deshi_renderer.h"
 #include "deshi_glfw.h"
+#include "deshi_imgui.h"
 #include "deshi_import.h"
 #include "../components/Model.h"
 #include "../animation/Scene.h"
@@ -13,6 +14,8 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
+#include <glm/gtc/type_ptr.hpp>
 
 #include <set>
 #include <array>
@@ -33,7 +36,7 @@ const bool enableValidationLayers = true;
 //// render interface ////
 //////////////////////////
 
-void Renderer_Vulkan::Init(Window* window) {
+void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
 	PRINT("\n{-} Initializing Vulkan {-}");
 	this->window = window->window;
 	glfwGetFramebufferSize(window->window, &width, &height);
@@ -43,8 +46,7 @@ void Renderer_Vulkan::Init(Window* window) {
 	//debug scene
 	Scene* test = new Scene;
 	Model* box = Model::CreateBox(nullptr, Vector3(1, 1, 1));
-	test.models.push_back(box);
-	LoadScene(test);
+	test->models.push_back(box);
 	
 	CreateInstance();
 	SetupDebugMessenger();
@@ -56,13 +58,18 @@ void Renderer_Vulkan::Init(Window* window) {
 	CreateDescriptorPool();
 	CreatePipelineCache();
 	CreateUniformBuffer();
-	CreateLayouts();
+	
+	LoadDefaultAssets();
+	LoadScene(test);
 	
 	CreateSwapChain();
 	CreateRenderPass();
 	CreateFrames(); //image views, color/depth resources, framebuffers, commandbuffers
+	CreateLayouts();
 	CreatePipelines();
 	CreateSyncObjects();
+	
+	imgui->Init(this);
 	BuildCommandBuffers();
 	
 	PRINT("{-} Initializing Rendering {-}");
@@ -70,7 +77,75 @@ void Renderer_Vulkan::Init(Window* window) {
 
 void Renderer_Vulkan::Render() {
 	//std::cout << "{-}{-} Rendering Frame {-}{-}" << std::endl;
-	ASSERT(false, "aye");
+	if(remakeWindow){
+		int w, h;
+		glfwGetFramebufferSize(window, &w, &h);
+		if(w <= 0 || h <= 0){ return; }
+		ResizeWindow(w, h);
+		frameIndex = 0;
+		remakeWindow = false;
+	}
+	
+	//get next image from surface
+	VkSemaphore image_sema  = semaphores[semaphoreIndex].imageAcquired;
+	VkSemaphore render_sema = semaphores[semaphoreIndex].renderComplete;
+	VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, image_sema, VK_NULL_HANDLE, &frameIndex);
+	if(result == VK_ERROR_OUT_OF_DATE_KHR){
+		remakeWindow = true;
+		return;
+	}else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){
+		ASSERT(false, "failed to acquire swap chain image");
+	}
+	
+	//wait on current fence and reset it afterwards
+	vkWaitForFences(device, 1, &fences[frameIndex], VK_TRUE, UINT64_MAX);
+	vkResetFences(device, 1, &fences[frameIndex]);
+	//vkResetCommandPool(device, frames[frameIndex].commandPool, 0);
+	
+	//render imgui stuff
+	ImGui::Render();
+	
+	//submit the command buffer to the queue
+	VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &image_sema;
+	submitInfo.pWaitDstStageMask = &wait_stage;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &frames[frameIndex].commandBuffer;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &render_sema;
+	vkQueueSubmit(graphicsQueue, 1, &submitInfo, fences[frameIndex]);
+	
+	if(remakeWindow){ return; }
+	
+	//present the image
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = &render_sema;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &swapchain;
+	presentInfo.pImageIndices = &frameIndex;
+	presentInfo.pResults = nullptr;
+	result = vkQueuePresentKHR(presentQueue, &presentInfo);
+	
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow) {
+		int w, h;
+		glfwGetFramebufferSize(window, &w, &h);
+		ResizeWindow(w, h);
+		remakeWindow = false;
+	} else if (result != VK_SUCCESS) {
+		ASSERT(false, "failed to present swap chain image");
+	}
+	
+	//iterate the frame index
+	frameIndex = (frameIndex + 1) % imageCount; //loops back to zero after reaching max_frames
+	
+	//update uniform buffers
+	UpdateUniformBuffer();
+	PRINT("--------------" << frameIndex << "---------------");
 }
 
 void Renderer_Vulkan::Present() {}
@@ -123,30 +198,36 @@ void Renderer_Vulkan::TranslateTriangles(std::vector<uint32> triangleIDs, Vector
 	PRINT("Not implemented yet");
 }
 
-uint32 Renderer_Vulkan::LoadMesh(Mesh* mesh){
-	PRINT("{-}{-} Loading Texture: " << mesh->name << " {-}{-}");
-	uint32 vertexStart = uint32(scene.vertexBuffer.size());
-	uint32 indexStart = uint32(scene.indexBuffer.size());
+uint32 Renderer_Vulkan::LoadMesh(Mesh* m){
+	PRINT("{-}{-}{-} Loading Mesh: " << m->name << " {-}{-}{-}");
+	MeshVk mesh{}; mesh.visible = true;
+	mesh.modelMatrix = glm::make_mat4(m->transform.data);
+	mesh.primitives.reserve(m->batchCount);
 	
 	//resize scene vectors
-	scene.vertexBuffer.reserve(scene.vertexBuffer.size() + mesh->vertexCount);
-	scene.indexBuffer.reserve(scene.indexBuffer.size() + mesh->indexCount);
-	scene.textures.reserve(scene.textures.size() + mesh->textureCount);
-	scene.materials.reserve(scene.materials.size() + mesh->batchCount);
+	scene.vertexBuffer.reserve(scene.vertexBuffer.size() + m->vertexCount);
+	scene.indexBuffer.reserve(scene.indexBuffer.size() + m->indexCount);
+	scene.textures.reserve(scene.textures.size() + m->textureCount);
+	scene.materials.reserve(scene.materials.size() + m->batchCount);
 	
-	for(Batch& batch : mesh->batchArray){
+	uint32 batchVertexStart;
+	uint32 batchIndexStart;
+	for(Batch& batch : m->batchArray){
+		batchVertexStart = uint32(scene.vertexBuffer.size());
+		batchIndexStart = uint32(scene.indexBuffer.size());
+		
 		//vertices
 		for(int i=0; i<batch.vertexArray.size(); ++i){ 
-			VertexVk vert; float* v = &batch.vertexArray[i].pos.x;
-			vert.pos      = glm::make_vec3(v);
-			vert.texCoord = glm::make_vec2(v+3);
-			vert.color    = glm::make_vec3(v+5);
-			vert.normal   = glm::make_vec3(v+8);
+			VertexVk vert;
+			vert.pos      = glm::make_vec3(&batch.vertexArray[i].pos.x);
+			vert.texCoord = glm::make_vec2(&batch.vertexArray[i].uv.x);
+			vert.color    = glm::make_vec3(&batch.vertexArray[i].color.x);
+			vert.normal   = glm::make_vec3(&batch.vertexArray[i].normal.x);
 			scene.vertexBuffer.push_back(vert);
 		}
 		
 		//indices
-		scene.indexBuffer.insert(indexBuffer.end(), batch.indexArray.begin(), batch.indexArray.end());
+		scene.indexBuffer.insert(scene.indexBuffer.end(), batch.indexArray.begin(), batch.indexArray.end());
 		
 		//material
 		MaterialVk mat; mat.shader = uint32(batch.shader);
@@ -162,55 +243,54 @@ uint32 Renderer_Vulkan::LoadMesh(Mesh* mesh){
 				}
 			}
 			
-			//material shader
-			switch(material.shader){
-				case(Shader::DEFAULT):  { material.pipeline = &pipelines.DEFAULT;   }break;
-				case(Shader::TWOD):     { material.pipeline = &pipelines.TWOD;      }break;
-				case(Shader::PBR):      { material.pipeline = &pipelines.PBR;       }break;
-				case(Shader::WIREFRAME):{ material.pipeline = &pipelines.WIREFRAME; }break;
-			}
+			mat.id = uint32(scene.materials.size());
+			scene.materials.push_back(mat);
 		}
 		
-		//primitives
-		
+		//primitive
+		PrimitiveVk primitive{};
+		primitive.firstIndex = batchIndexStart;
+		primitive.indexCount = batch.indexArray.size();
+		primitive.materialIndex = mat.id;
+		mesh.primitives.push_back(primitive);
 	}
 	
-	//mesh
-	
-	return 0xFFFFFFFF;
+	//add mesh to scene
+	mesh.id = uint32(scene.meshes.size());
+	scene.meshes.push_back(mesh);
+	return mesh.id;
 }
 
 void Renderer_Vulkan::UnloadMesh(uint32 meshID){
 	PRINT("Not implemented yet");
 }
 
-uint32 Renderer_Vulkan::LoadTexture(Texture texure){
-	PRINT("{-}{-} Loading Texture: " << texture.filename << " {-}{-}");
+uint32 Renderer_Vulkan::LoadTexture(Texture texture){
+	PRINT("{-}{-}{-} Loading Texture: " << texture.filename << " {-}{-}{-}");
 	TextureVk tex; 
 	tex.pixels = stbi_load((deshi::getTexturesPath() + texture.filename).c_str(), 
 						   &tex.width, &tex.height, &tex.channels, STBI_rgb_alpha);
-	ASSERT(pixels, "stb failed to load image");
+	ASSERT(tex.pixels, "stb failed to load image");
 	
-	tex.type = uint32(Texture.type);
+	tex.type = uint32(texture.type);
 	tex.mipLevels = uint32(std::floor(std::log2(std::max(tex.width, tex.height)))) + 1;
 	tex.imageSize = tex.width * tex.height * 4;
 	
 	//copy the memory to a staging buffer
-	createBuffer(tex.imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, tex.stagingBuffer, tex.stagingMemory);
-	void* data;
-	vkMapMemory(device, tex.stagingMemory, 0, tex.imageSize, 0, &data);{
-		memcpy(data, tex.pixels, size_t(tex.imageSize));
-	}vkUnmapMemory(device, tex.stagingMemory);
+	StagingBufferVk staging{};
+	CreateAndMapBuffer(staging.buffer, staging.memory, tex.imageSize, static_cast<size_t>(tex.imageSize), tex.pixels, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	
 	//copy the staging buffer to the image and generate its mipmaps
 	createImage(tex.width, tex.height, tex.mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, tex.image, tex.imageMemory);
 	transitionImageLayout(tex.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, tex.mipLevels);
-	copyBufferToImage(tex.stagingBuffer, tex.image, uint32(tex.width), uint32(tex.height));
+	copyBufferToImage(staging.buffer, tex.image, uint32(tex.width), uint32(tex.height));
 	generateMipmaps(tex.image, VK_FORMAT_R8G8B8A8_SRGB, tex.width, tex.height, tex.mipLevels);
+	//image layout set to SHADER_READ_ONLY when generating mipmaps
+	tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	
 	//cleanup staging memory
-	vkDestroyBuffer(device, stagingBuffer, nullptr);
-	vkFreeMemory(device, stagingMemory, nullptr);
+	vkDestroyBuffer(device, staging.buffer, nullptr);
+	vkFreeMemory(device, staging.memory, nullptr);
 	stbi_image_free(tex.pixels); tex.pixels = nullptr;
 	
 	//create sampler
@@ -238,13 +318,16 @@ uint32 Renderer_Vulkan::LoadTexture(Texture texure){
 	//create image view
 	tex.view = createImageView(tex.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, tex.mipLevels);
 	
-	//set image layout to SHADER_READ_ONLY
-	transitionImageLayout(tex.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, tex.mipLevels);
+	//fill descriptor image info
+	tex.imageInfo.imageView = tex.view;
+	tex.imageInfo.sampler = tex.sampler;
+	tex.imageInfo.imageLayout = tex.layout;
 	
 	//add the texture to the scene and return its index
-	uint32 index = uint32(scene.textures.size());
+	uint32 idx = uint32(scene.textures.size());
+	tex.id = idx;
 	scene.textures.push_back(tex);
-	return index;
+	return idx;
 }
 
 void Renderer_Vulkan::UnloadTexture(uint32 textureID){
@@ -263,26 +346,55 @@ void Renderer_Vulkan::UpdateMeshMatrix(uint32 meshID, Matrix4 matrix){
 	PRINT("Not implemented yet");
 }
 
-void Renderer_Vulkan::CreateDefaultAssets(){
-	PRINT("Not implemented yet");
+void Renderer_Vulkan::LoadDefaultAssets(){
+	//load default textures
+	scene.textures.reserve(4);
+	Texture nullTexture   ("null128.png");     LoadTexture(nullTexture);
+	Texture defaultTexture("default1024.png"); LoadTexture(defaultTexture);
+	Texture blackTexture  ("black1024.png");   LoadTexture(blackTexture);
+	Texture whiteTexture  ("white1024.png");   LoadTexture(whiteTexture);
 }
 
+//ref: gltfscenerendering.cpp:350
 void Renderer_Vulkan::LoadScene(Scene* sc){
-	
-	for(Model* model : sc.models){
-		Mesh* mesh = model->mesh;
-		
-		vertexBuffer.resize(vertexBuffer.size() + mesh->vertexCount);
-		scene.textures.resize(scene.textures.size() + mesh->textureCount);
-		
-		
-		
+	PRINT("{-}{-} Loading Scene {-}{-}");
+	//load meshes, materials, and textures
+	for(Model* model : sc->models){
+		LoadMesh(&model->mesh);
 	}
 	
-	//create vertex buffer
-	//create 
+	PRINT("{-}{-}{-} Creating Scene Buffers {-}{-}{-}");
+	StagingBufferVk vertexStaging{}, indexStaging{};
+	size_t vertexBufferSize = scene.vertexBuffer.size() * sizeof(VertexVk);
+	size_t indexBufferSize  = scene.indexBuffer.size()  * sizeof(uint32);
 	
-	PRINT("Not implemented yet");
+	//create host visible vertex and index buffers (CPU/RAM)
+	CreateAndMapBuffer(vertexStaging.buffer, vertexStaging.memory, scene.vertices.bufferSize, vertexBufferSize, scene.vertexBuffer.data(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	
+	CreateAndMapBuffer(indexStaging.buffer, indexStaging.memory, scene.indices.bufferSize, indexBufferSize, scene.indexBuffer.data(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	
+	//create device local buffers (GPU)
+	CreateAndMapBuffer(scene.vertices.buffer, scene.vertices.bufferMemory, scene.vertices.bufferSize, vertexBufferSize, nullptr, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	
+	CreateAndMapBuffer(scene.indices.buffer, scene.indices.bufferMemory, scene.indices.bufferSize, indexBufferSize, nullptr, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	
+	//copy data from staging buffers to device local buffers
+	VkCommandBuffer commandBuffer = beginSingleTimeCommands();{
+		VkBufferCopy copyRegion{};
+		
+		copyRegion.size = vertexBufferSize;
+		vkCmdCopyBuffer(commandBuffer, vertexStaging.buffer, scene.vertices.buffer, 1, &copyRegion);
+		
+		copyRegion.size = indexBufferSize;
+		vkCmdCopyBuffer(commandBuffer, indexStaging.buffer, scene.indices.buffer, 1, &copyRegion);
+		
+	}endSingleTimeCommands(commandBuffer);
+	
+	//free staging resources
+	vkDestroyBuffer(device, vertexStaging.buffer, nullptr);
+	vkFreeMemory(device, vertexStaging.memory, nullptr);
+	vkDestroyBuffer(device, indexStaging.buffer, nullptr);
+	vkFreeMemory(device, indexStaging.memory, nullptr);
 }
 
 void Renderer_Vulkan::UpdateViewMatrix(Matrix4 matrix){
@@ -578,7 +690,6 @@ void Renderer_Vulkan::ResizeWindow(int w, int h) {
 	vkDeviceWaitIdle(device);
 	
 	width = w; height = h;
-	
 	CreateSwapChain();
 	CreateRenderPass();
 	CreateFrames(); //image views, color/depth resources, framebuffers, commandbuffers
@@ -789,7 +900,7 @@ void Renderer_Vulkan::CreatePipelines(){
 	//destroy previous pipelines
 	if(pipelines.DEFAULT){ vkDestroyPipeline(device, pipelines.DEFAULT, nullptr); }
 	if(pipelines.TWOD){ vkDestroyPipeline(device, pipelines.TWOD, nullptr); }
-	if(pipelines.METAL){ vkDestroyPipeline(device, pipelines.METAL, nullptr); }
+	if(pipelines.PBR){ vkDestroyPipeline(device, pipelines.PBR, nullptr); }
 	if(pipelines.WIREFRAME){ vkDestroyPipeline(device, pipelines.WIREFRAME, nullptr); }
 	
 	//determines how to group vertices together
@@ -869,6 +980,16 @@ void Renderer_Vulkan::CreatePipelines(){
 	}
 	
 	//TODO(r,delle) add more pipelines/shaders
+	
+	//pair materials with thier pipelines
+	for(MaterialVk& mat : scene.materials){
+		switch(mat.shader){
+			case(Shader::DEFAULT):  { mat.pipeline = pipelines.DEFAULT;   }break;
+			case(Shader::TWOD):     { mat.pipeline = pipelines.TWOD;      }break;
+			case(Shader::PBR):      { mat.pipeline = pipelines.PBR;       }break;
+			case(Shader::WIREFRAME):{ mat.pipeline = pipelines.WIREFRAME; }break;
+		}
+	}
 }
 
 void Renderer_Vulkan::BuildCommandBuffers() {
@@ -903,8 +1024,10 @@ void Renderer_Vulkan::BuildCommandBuffers() {
 		scene.Draw(frames[i].commandBuffer, pipelineLayout);
 		
 		//draw imgui stuff
-		ImGui::Render();
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), frames[i].commandBuffer);
+		ImDrawData* imDrawData = ImGui::GetDrawData();
+		if(imDrawData){
+			ImGui_ImplVulkan_RenderDrawData(imDrawData, frames[i].commandBuffer);
+		}
 		
 		////draw stuff above here////
 		vkCmdEndRenderPass(frames[i].commandBuffer);
@@ -1135,6 +1258,7 @@ VkFormat Renderer_Vulkan::findDepthFormat() {
 }
 
 VkPipelineShaderStageCreateInfo Renderer_Vulkan::loadShader(std::string fileName, VkShaderStageFlagBits stage) {
+	PRINT("{-}{-}{-}{-} Loading Shader " << fileName << " {-}{-}{-}{-}");
 	//setup shader stage create info
 	VkPipelineShaderStageCreateInfo shaderStage{};
 	shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1183,6 +1307,7 @@ uint32 Renderer_Vulkan::findMemoryType(uint32 typeFilter, VkMemoryPropertyFlags 
 }
 
 void Renderer_Vulkan::createImage(uint32 width, uint32 height, uint32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
+	PRINT("{-}{-}{-}{-} Creating Image {-}{-}{-}{-}");
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -1211,7 +1336,8 @@ void Renderer_Vulkan::createImage(uint32 width, uint32 height, uint32 mipLevels,
 	vkBindImageMemory(device, image, imageMemory, 0);
 }
 
-void Renderer_Vulkan::CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& pBufferSize, size_t newSize, VkBufferUsageFlagBits usage, VkMemoryPropertyFlags properties){
+void Renderer_Vulkan::CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
+	PRINT("{-}{-}{-}{-} Creating or Resizing Buffer {-}{-}{-}{-}");
 	//delete old buffer
 	if(buffer != VK_NULL_HANDLE){ vkDestroyBuffer(device, buffer, allocator); }
 	if (bufferMemory != VK_NULL_HANDLE){ vkFreeMemory(device, bufferMemory, allocator); }
@@ -1235,7 +1361,54 @@ void Renderer_Vulkan::CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& buf
 	
 	ASSERTVK(vkAllocateMemory(device, &allocInfo, allocator, &bufferMemory), "failed to allocate buffer memory");
 	vkBindBufferMemory(device, buffer, bufferMemory, 0);
-	pBufferSize = newSize;
+	bufferSize = newSize;
+}
+
+void Renderer_Vulkan::CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, void* data, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
+	PRINT("{-}{-}{-}{-} Creating and Mapping Buffer {-}{-}{-}{-}");
+	//delete old buffer
+	if(buffer != VK_NULL_HANDLE){ vkDestroyBuffer(device, buffer, allocator); }
+	if (bufferMemory != VK_NULL_HANDLE){ vkFreeMemory(device, bufferMemory, allocator); }
+	
+	//create buffer
+	VkDeviceSize alignedBufferSize = ((newSize-1) / bufferMemoryAlignment + 1) * bufferMemoryAlignment;
+	VkBufferCreateInfo bufferInfo{};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = alignedBufferSize;
+	bufferInfo.usage = usage;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	ASSERTVK(vkCreateBuffer(device, &bufferInfo, allocator, &buffer), "failed to create buffer");
+	
+	VkMemoryRequirements req;
+	vkGetBufferMemoryRequirements(device, buffer, &req);
+	bufferMemoryAlignment = (bufferMemoryAlignment > req.alignment) ? bufferMemoryAlignment : req.alignment;
+	
+	//allocate buffer
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = req.size;
+	allocInfo.memoryTypeIndex = findMemoryType(req.memoryTypeBits, properties);
+	
+	ASSERTVK(vkAllocateMemory(device, &allocInfo, allocator, &bufferMemory), "failed to allocate buffer memory");
+	
+	//if data pointer, map buffer and copy data
+	if(data != nullptr){
+		void* mapped;
+		ASSERTVK(vkMapMemory(device, bufferMemory, 0, newSize, 0, &mapped), "couldnt map memory");{
+			memcpy(mapped, data, newSize);
+			// If host coherency hasn't been requested, do a manual flush to make writes visible
+			if ((properties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0){
+				VkMappedMemoryRange mappedRange = vks::initializers::mappedMemoryRange();
+				mappedRange.memory = bufferMemory;
+				mappedRange.offset = 0;
+				mappedRange.size = newSize;
+				vkFlushMappedMemoryRanges(device, 1, &mappedRange);
+			}
+		}vkUnmapMemory(device, bufferMemory);
+	}
+	
+	vkBindBufferMemory(device, buffer, bufferMemory, 0);
+	bufferSize = newSize;
 }
 
 VkCommandBuffer Renderer_Vulkan::beginSingleTimeCommands() {
@@ -1259,6 +1432,8 @@ VkCommandBuffer Renderer_Vulkan::beginSingleTimeCommands() {
 void Renderer_Vulkan::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
 	vkEndCommandBuffer(commandBuffer);
 	
+	//TODO(r,delle) maybe add a fence to ensure the buffer has finished executing
+	//instead of waiting for queue to be idle, see: sascha/VulkanDevice.cpp:508
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
@@ -1270,6 +1445,7 @@ void Renderer_Vulkan::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
 }
 
 void Renderer_Vulkan::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32 mipLevels) {
+	PRINT("{-}{-}{-}{-} Transitioning Image Layout {-}{-}{-}{-}");
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 	
 	VkImageMemoryBarrier barrier{};
@@ -1307,7 +1483,7 @@ void Renderer_Vulkan::transitionImageLayout(VkImage image, VkFormat format, VkIm
 		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 		destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 	} */else {
-		throw std::invalid_argument("unsupported layout transition");
+		ASSERT(false, "unsupported layout transition");
 	}
 	
 	vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
@@ -1316,6 +1492,7 @@ void Renderer_Vulkan::transitionImageLayout(VkImage image, VkFormat format, VkIm
 }
 
 void Renderer_Vulkan::copyBufferToImage(VkBuffer buffer, VkImage image, uint32 width, uint32 height) {
+	PRINT("{-}{-}{-}{-} Copying Buffer To Image {-}{-}{-}{-}");
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 	
 	VkBufferImageCopy region{};
@@ -1334,6 +1511,7 @@ void Renderer_Vulkan::copyBufferToImage(VkBuffer buffer, VkImage image, uint32 w
 }
 
 void Renderer_Vulkan::generateMipmaps(VkImage image, VkFormat imageFormat, int32 texWidth, int32 texHeight, uint32 mipLevels) {
+	PRINT("{-}{-}{-}{-} Creating Image Mipmaps {-}{-}{-}{-}");
 	// Check if image format supports linear blitting
 	VkFormatProperties formatProperties;
 	vkGetPhysicalDeviceFormatProperties(physicalDevice, imageFormat, &formatProperties);
