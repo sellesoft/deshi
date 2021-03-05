@@ -2,6 +2,10 @@
 
 //// Constructors ////
 
+Matrix4::Matrix4(){
+	memset(&data, 0, 16*sizeof(float));
+}
+
 Matrix4::Matrix4(float all) {
 	data[0] = all;	data[1] = all;	data[2] = all;	data[3] = all;
 	data[4] = all;	data[5] = all;	data[6] = all;	data[7] = all;
@@ -23,7 +27,9 @@ Matrix4::Matrix4(const Matrix4& m) {
 	memcpy(&data, &m.data, 16*sizeof(float));
 }
 
-
+Matrix4::Matrix4(float* data){
+	memcpy(&data, data, 16*sizeof(float));
+}
 
 //// Static Constants ////
 

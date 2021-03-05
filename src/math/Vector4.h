@@ -9,11 +9,11 @@ struct Vector4 {
 	float y{};
 	float z{};
 	float w{};
-
+	
 	Vector4() {}
 	Vector4(float inX, float inY, float inZ, float inW);
 	Vector4(const Vector4& v);
-
+	
 	void    operator =	(const Vector4& rhs);
 	Vector4 operator *  (const float& rhs) const;
 	void    operator *= (const float& rhs);
@@ -31,7 +31,7 @@ struct Vector4 {
 	bool    operator == (const Vector4& rhs) const;
 	bool    operator != (const Vector4& rhs) const;
 	friend Vector4 operator * (const float& lhs, const Vector4& rhs) { return   rhs * lhs; }
-
+	
 	const std::string str() const;
 	const std::string str2f() const;
 	Vector4 copy() const;
@@ -46,17 +46,30 @@ struct Vector4 {
 	Vector4 yInvert() const;
 	Vector4 zInvert() const;
 	Vector4 wInvert() const;
-
+	
 	//Non-Vector vs Vector interactions defined in Math.h
 	Vector4(const Vector3& v, const float& w);
-
+	
 	Vector4 operator *  (const Matrix4& rhs) const;
 	void    operator *= (const Matrix4& rhs);
-
+	
 	Vector3 ToVector3() const;
 };
 
-
+//ref: glm::hash
+namespace std{
+	template<> struct hash<Vector4>{
+		inline size_t operator()(Vector4 const& v) const{
+			size_t seed = 0;
+			hash<float> hasher; size_t hash;
+			hash = hasher(v.x); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+			hash = hasher(v.y); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+			hash = hasher(v.z); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+			hash = hasher(v.w); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+			return seed;
+		}
+	};
+};
 
 //// Constructors ////
 

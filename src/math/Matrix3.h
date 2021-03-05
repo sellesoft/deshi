@@ -6,15 +6,15 @@ struct Matrix4;
 
 struct Matrix3 {
 	float data[9]{};
-
+	
 	Matrix3() {}
 	Matrix3(float _00, float _01, float _02,
 			float _10, float _11, float _12,
 			float _20, float _21, float _22);
 	Matrix3(const Matrix3& m);
-
+	
 	static const Matrix3 IDENTITY;
-
+	
 	float&	operator () (uint32 row, uint32 col);
 	float   operator () (uint32 row, uint32 col) const;
 	void	operator =	(const Matrix3& rhs);
@@ -35,7 +35,7 @@ struct Matrix3 {
 	bool	operator == (const Matrix3& rhs) const;
 	bool	operator != (const Matrix3& rhs) const;
 	friend Matrix3 operator * (const float& lhs, const Matrix3& rhs) { return rhs * lhs; }
-
+	
 	const std::string str() const;
 	const std::string str2f() const;
 	Matrix3 Transpose() const;
@@ -48,7 +48,7 @@ struct Matrix3 {
 	static Matrix3 RotationMatrixX(float degrees);
 	static Matrix3 RotationMatrixY(float degrees);
 	static Matrix3 RotationMatrixZ(float degrees);
-
+	
 	//Non-Matrix3 vs Matrix3 interactions defined in Matrix.h/Math.h
 	Matrix4 To4x4();
 	static Matrix3 RotationMatrix(Vector3 rotation);
@@ -267,11 +267,11 @@ inline Matrix3 Matrix3::Transpose() const{
 inline float Matrix3::Determinant() const{
 	//aei + bfg + cdh - ceg - bdi - afh
 	return  (data[0] * data[4] * data[8]) +		//aei
-			(data[1] * data[5] * data[6]) +		//bfg
-			(data[2] * data[3] * data[7]) -		//cdh
-			(data[2] * data[4] * data[6]) -		//ceg
-			(data[1] * data[3] * data[8]) -		//bdi
-			(data[0] * data[5] * data[7]);		//afh
+		(data[1] * data[5] * data[6]) +		//bfg
+		(data[2] * data[3] * data[7]) -		//cdh
+		(data[2] * data[4] * data[6]) -		//ceg
+		(data[1] * data[3] * data[8]) -		//bdi
+		(data[0] * data[5] * data[7]);		//afh
 }
 
 //returns the determinant of this matrix without the specified row and column
@@ -285,7 +285,7 @@ inline float Matrix3::Minor(int row, int col) const {
 			arr[index++] = data[3 * i + j];
 		}
 	}
-
+	
 	//2x2 determinant
 	return (data[0] * data[3]) - (data[1] * data[2]);
 }
@@ -317,38 +317,32 @@ inline Matrix3 Matrix3::Inverse() const {
 	return this->Adjoint() / this->Determinant();
 }
 
-//returns a rotation transformation matrix based on input in degrees
+//returns a LH rotation transformation matrix based on input in degrees
 inline Matrix3 Matrix3::RotationMatrixX(float degrees) {
 	degrees *= TO_RADIANS;
 	float c = cosf(degrees);
 	float s = sinf(degrees);
-	return Matrix3(
-		1,	0,	0,
-		0,	c,	-s,
-		0,	s,	c
-	);
+	return Matrix3(1,  0, 0,
+				   0,  c, s,
+				   0, -s, c);
 }
 
-//returns a rotation transformation matrix based on input in degrees
+//returns a LH rotation transformation matrix based on input in degrees
 inline Matrix3 Matrix3::RotationMatrixY(float degrees) {
 	degrees *= TO_RADIANS;
 	float c = cosf(degrees);
 	float s = sinf(degrees);
-	return Matrix3(
-		c,	0,	s,
-		0,	1,	0,
-		-s,	0,	c
-	);
+	return Matrix3(c, 0, -s,
+				   0, 1,  0,
+				   s, 0,  c);
 }
 
-//returns a rotation transformation matrix based on input in degrees
+//returns a LH rotation transformation matrix based on input in degrees
 inline Matrix3 Matrix3::RotationMatrixZ(float degrees) {
 	degrees *= TO_RADIANS;
 	float c = cosf(degrees);
 	float s = sinf(degrees);
-	return Matrix3(
-		c,	-s,	0,
-		s,	c,	0,
-		0,	0,	1
-	);
+	return Matrix3(c,  s, 0,
+				   -s, c, 0,
+				   0,  0, 1);
 }

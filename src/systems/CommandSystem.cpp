@@ -9,8 +9,6 @@
 #include "../components/Keybinds.h"
 #include "../components/Canvas.h"
 #include "../components/Transform.h"
-#include "../components/Model.h"
-#include "../components/Scene.h"
 #include "../components/Physics.h"
 #include "../components/Collider.h"
 #include "../components/Source.h"
@@ -29,7 +27,7 @@
 #define VecNumMatch std::regex("[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?")
 
 inline void AddSpawnCommands(EntityAdmin* admin) {
-
+	
 	//admin->commands["spawn_box"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 	//	//for capturing vector parameters
 	//	std::cmatch m;
@@ -149,123 +147,125 @@ inline void AddSpawnCommands(EntityAdmin* admin) {
 	//	admin->input->selectedEntity = c;
 	//	return "";
 	//	}, "spawn_scene", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
-
+	
 }
 
 inline void AddRenderCommands(EntityAdmin* admin) {
+	/*
 	admin->commands["r_wireframe"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->currentScene->RENDER_WIREFRAME = !admin->currentScene->RENDER_WIREFRAME;
-		if (admin->currentScene->RENDER_WIREFRAME) return "render_wireframe = true";
-		else return "render_wireframe = false";
-	}, "r_wireframe", "toggles rendering wireframe");
-
+													 admin->currentScene->RENDER_WIREFRAME = !admin->currentScene->RENDER_WIREFRAME;
+													 if (admin->currentScene->RENDER_WIREFRAME) return "render_wireframe = true";
+													 else return "render_wireframe = false";
+												 }, "r_wireframe", "toggles rendering wireframe");
+	
 	admin->commands["r_textures"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->currentScene->RENDER_TEXTURES = !admin->currentScene->RENDER_TEXTURES;
-		if (admin->currentScene->RENDER_TEXTURES) return "render_textures = true";
-		else return "render_textures = false";
-	}, "r_textures", "toggles rendering textuires");
-
+													admin->currentScene->RENDER_TEXTURES = !admin->currentScene->RENDER_TEXTURES;
+													if (admin->currentScene->RENDER_TEXTURES) return "render_textures = true";
+													else return "render_textures = false";
+												}, "r_textures", "toggles rendering textuires");
+	
 	admin->commands["r_display_edges"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->currentScene->RENDER_EDGE_NUMBERS = !admin->currentScene->RENDER_EDGE_NUMBERS;
-		if (admin->currentScene->RENDER_EDGE_NUMBERS) return "render_edge_numbers = true";
-		else return "render_edge_numbers = false";
-		}, "r_display_edges", "toggles diaplying edge numbers on triangles");
-
+														 admin->currentScene->RENDER_EDGE_NUMBERS = !admin->currentScene->RENDER_EDGE_NUMBERS;
+														 if (admin->currentScene->RENDER_EDGE_NUMBERS) return "render_edge_numbers = true";
+														 else return "render_edge_numbers = false";
+													 }, "r_display_edges", "toggles diaplying edge numbers on triangles");
+	
 	admin->commands["r_local_axis"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->currentScene->RENDER_LOCAL_AXIS = !admin->currentScene->RENDER_LOCAL_AXIS;
-		if (admin->currentScene->RENDER_LOCAL_AXIS) return "render_local_axis = true";
-		else return "render_local_axis = false";
-		}, "r_local_axis", "toggles rendering the local axis on entities");
-
+													  admin->currentScene->RENDER_LOCAL_AXIS = !admin->currentScene->RENDER_LOCAL_AXIS;
+													  if (admin->currentScene->RENDER_LOCAL_AXIS) return "render_local_axis = true";
+													  else return "render_local_axis = false";
+												  }, "r_local_axis", "toggles rendering the local axis on entities");
+	
 	admin->commands["r_global_axis"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->currentScene->RENDER_GLOBAL_AXIS = !admin->currentScene->RENDER_GLOBAL_AXIS;
-		if (admin->currentScene->RENDER_GLOBAL_AXIS) return "render_global_axis = true";
-		else return "render_global_axis = false";
-		}, "r_global_axis", "toggles rendering the global axis relatie to camera orientation in the top right of the screen");
-
+													   admin->currentScene->RENDER_GLOBAL_AXIS = !admin->currentScene->RENDER_GLOBAL_AXIS;
+													   if (admin->currentScene->RENDER_GLOBAL_AXIS) return "render_global_axis = true";
+													   else return "render_global_axis = false";
+												   }, "r_global_axis", "toggles rendering the global axis relatie to camera orientation in the top right of the screen");
+	
 	admin->commands["r_transforms"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->currentScene->RENDER_TRANSFORMS = !admin->currentScene->RENDER_TRANSFORMS;
-		if (admin->currentScene->RENDER_TRANSFORMS) return "render_transforms = true";
-		else return "render_transforms = false";
-		}, "r_transforms", "toggles diaplaying tranform information on entities");
-
+													  admin->currentScene->RENDER_TRANSFORMS = !admin->currentScene->RENDER_TRANSFORMS;
+													  if (admin->currentScene->RENDER_TRANSFORMS) return "render_transforms = true";
+													  else return "render_transforms = false";
+												  }, "r_transforms", "toggles diaplaying tranform information on entities");
+	
 	admin->commands["r_physics"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->currentScene->RENDER_PHYSICS = !admin->currentScene->RENDER_PHYSICS;
-		if (admin->currentScene->RENDER_PHYSICS) return "render_physics = true";
-		else return "render_physics = false";
-		}, "r_physics", "toggles rendering velocity and acceleration vectors on entities");
-
+												   admin->currentScene->RENDER_PHYSICS = !admin->currentScene->RENDER_PHYSICS;
+												   if (admin->currentScene->RENDER_PHYSICS) return "render_physics = true";
+												   else return "render_physics = false";
+											   }, "r_physics", "toggles rendering velocity and acceleration vectors on entities");
+	
 	admin->commands["r_screen_bounding_box"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->currentScene->RENDER_SCREEN_BOUNDING_BOX = !admin->currentScene->RENDER_SCREEN_BOUNDING_BOX;
-		if (admin->currentScene->RENDER_SCREEN_BOUNDING_BOX) return "render_screen_bounding_box = true";
-		else return "render_screen_bounding_box = false";
-		}, "r_screen_bounding_box", "toggles rendering of the screen space bounding box of entities");
-
+															   admin->currentScene->RENDER_SCREEN_BOUNDING_BOX = !admin->currentScene->RENDER_SCREEN_BOUNDING_BOX;
+															   if (admin->currentScene->RENDER_SCREEN_BOUNDING_BOX) return "render_screen_bounding_box = true";
+															   else return "render_screen_bounding_box = false";
+														   }, "r_screen_bounding_box", "toggles rendering of the screen space bounding box of entities");
+	
 	admin->commands["r_mesh_vertices"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->currentScene->RENDER_MESH_VERTICES = !admin->currentScene->RENDER_MESH_VERTICES;
-		if (admin->currentScene->RENDER_MESH_VERTICES) return "render_mesh_vertices = true";
-		else return "render_mesh_vertices = false";
-		}, "r_mesh_vertices", "toggles rendering of mesh vertices");
-
+														 admin->currentScene->RENDER_MESH_VERTICES = !admin->currentScene->RENDER_MESH_VERTICES;
+														 if (admin->currentScene->RENDER_MESH_VERTICES) return "render_mesh_vertices = true";
+														 else return "render_mesh_vertices = false";
+													 }, "r_mesh_vertices", "toggles rendering of mesh vertices");
+	
 	admin->commands["r_grid"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->currentScene->RENDER_GRID = !admin->currentScene->RENDER_GRID;
-		if (admin->currentScene->RENDER_GRID) return "render_grid = true";
-		else return "render_grid = false";
-		}, "r_grid", "toggles rendering the world grid");
-
+												admin->currentScene->RENDER_GRID = !admin->currentScene->RENDER_GRID;
+												if (admin->currentScene->RENDER_GRID) return "render_grid = true";
+												else return "render_grid = false";
+											}, "r_grid", "toggles rendering the world grid");
+	
 	admin->commands["r_light_rays"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->currentScene->RENDER_LIGHT_RAYS = !admin->currentScene->RENDER_LIGHT_RAYS;
-		if (admin->currentScene->RENDER_LIGHT_RAYS) return "render_light_rays = true";
-		else return "render_light_rays = false";
-		}, "r_light_rays", "toggles rendering light rays");
-
+													  admin->currentScene->RENDER_LIGHT_RAYS = !admin->currentScene->RENDER_LIGHT_RAYS;
+													  if (admin->currentScene->RENDER_LIGHT_RAYS) return "render_light_rays = true";
+													  else return "render_light_rays = false";
+												  }, "r_light_rays", "toggles rendering light rays");
+	
 	admin->commands["r_mesh_normals"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->currentScene->RENDER_MESH_NORMALS = !admin->currentScene->RENDER_MESH_NORMALS;
-		if (admin->currentScene->RENDER_MESH_NORMALS) return "render_mesh_normals = true";
-		else return "render_mesh_normals = false";
-	}, "r_mesh_normals", "toggles rendering mesh normals");
+														admin->currentScene->RENDER_MESH_NORMALS = !admin->currentScene->RENDER_MESH_NORMALS;
+														if (admin->currentScene->RENDER_MESH_NORMALS) return "render_mesh_normals = true";
+														else return "render_mesh_normals = false";
+														}, "r_mesh_normals", "toggles rendering mesh normals");
+	*/
 }
 
 inline void AddConsoleCommands(EntityAdmin* admin) {
 	admin->commands["listc"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		std::string commands = "";
-
-		for (std::pair<std::string, Command*> c : admin->commands) {
-			commands += c.first + ", ";
-		}
-
-		return commands;
-	}, "listc", "lists all avaliable commands");
-
+											   std::string commands = "";
+											   
+											   for (std::pair<std::string, Command*> c : admin->commands) {
+												   commands += c.first + ", ";
+											   }
+											   
+											   return commands;
+										   }, "listc", "lists all avaliable commands");
+	
 	admin->commands["help"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-
-		if (args.size() == 0 || (args.size() == 1 && args[0] == "")) {
-			return "help \nprints help about a specified command. \nuse listc to display avaliable commands";
-		}
-		else if (admin->commands.find(args[0]) != admin->commands.end()) {
-			Command* c = admin->commands.at(args[0]);
-			return TOSTRING(c->name, "\n", c->description);
-		}
-		else {
-			return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
-		}
-	}, "help", "prints help about a specified command. \nignores any argument after the first.");
-
+											  
+											  if (args.size() == 0 || (args.size() == 1 && args[0] == "")) {
+												  return "help \nprints help about a specified command. \nuse listc to display avaliable commands";
+											  }
+											  else if (admin->commands.find(args[0]) != admin->commands.end()) {
+												  Command* c = admin->commands.at(args[0]);
+												  return TOSTRING(c->name, "\n", c->description);
+											  }
+											  else {
+												  return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
+											  }
+										  }, "help", "prints help about a specified command. \nignores any argument after the first.");
+	
 	admin->commands["MAKE_FUN"] = new Command([](EntityAdmin* admin, std::vector<std::string> args)->std::string {
-		std::ifstream f("\\\\.\\globalroot\\device\\condrv\\kernelconnect");
-		return "whelp.";
-	}, "MAKE_FUN", "hehe");
-
+												  std::ifstream f("\\\\.\\globalroot\\device\\condrv\\kernelconnect");
+												  return "whelp.";
+											  }, "MAKE_FUN", "hehe");
+	
 	admin->commands["ui_fps_graph"] = new Command([](EntityAdmin* admin, std::vector<std::string> args)->std::string {
-		admin->tempCanvas->SHOW_FPS_GRAPH = !admin->tempCanvas->SHOW_FPS_GRAPH;
-		if (admin->tempCanvas->SHOW_FPS_GRAPH) return "showing FPS graph";
-		else return "hiding fps graph";
-		}, "ui_fps_graph", "displays the FPS graph menu");
+													  admin->tempCanvas->SHOW_FPS_GRAPH = !admin->tempCanvas->SHOW_FPS_GRAPH;
+													  if (admin->tempCanvas->SHOW_FPS_GRAPH) return "showing FPS graph";
+													  else return "hiding fps graph";
+												  }, "ui_fps_graph", "displays the FPS graph menu");
 }
 
 inline void HandleMouseInputs(EntityAdmin* admin, Input* input) {
 	Canvas* canvas = admin->tempCanvas;
-
+	
 	//mouse left click pressed
 	if(input->MousePressed(MB_LEFT)) {
 		bool ui_clicked = false;
@@ -281,10 +281,10 @@ inline void HandleMouseInputs(EntityAdmin* admin, Input* input) {
 		//	}
 		//}
 		//stop: are we even using this anymore?
-
+		
 		//if the click wasnt on a UI element, trigger select_entity command
 		//admin->ExecCommand("select_entity"); //TODO(i,delle) re-enable clicking entities
-
+		
 		//set click pos to mouse pos
 	}
 	//mouse left click held
@@ -311,7 +311,7 @@ inline void HandleMouseInputs(EntityAdmin* admin, Input* input) {
 		////reset click pos to null
 		//input->mouseClickPos = Vector2(admin->p->ScreenWidth(), admin->p->ScreenHeight());
 	}
-
+	
 	//if(input->KeyPressed(Key::MINUS)) {
 	//	admin->p->SetMousePositionLocal(admin->p->GetWindowSize() / 2);
 	//}
@@ -319,55 +319,55 @@ inline void HandleMouseInputs(EntityAdmin* admin, Input* input) {
 
 inline void HandleSelectedEntityInputs(EntityAdmin* admin, Input* input) {
 	//translation
-
+	
 	if (!admin->IMGUI_KEY_CAPTURE) {
-
-
+		
+		
 		if (input->KeyDown(Key::L, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_right");
 		}
-
+		
 		if (input->KeyDown(Key::J, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_left");
 		}
-
+		
 		if (input->KeyDown(Key::O, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_up");
 		}
-
+		
 		if (input->KeyDown(Key::U, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_down");
 		}
-
+		
 		if (input->KeyDown(Key::I, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_forward");
 		}
-
+		
 		if (input->KeyDown(Key::K, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_backward");
 		}
-
+		
 		//rotation
 		if (input->KeyDown(Key::L, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_+x");
 		}
-
+		
 		if (input->KeyDown(Key::J, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_-x");
 		}
-
+		
 		if (input->KeyDown(Key::O, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_+y");
 		}
-
+		
 		if (input->KeyDown(Key::U, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_-y");
 		}
-
+		
 		if (input->KeyDown(Key::I, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_+z");
 		}
-
+		
 		if (input->KeyDown(Key::K, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_-z");
 		}
@@ -381,22 +381,22 @@ inline void HandleRenderInputs(EntityAdmin* admin, Input* input, Keybinds* binds
 		if (input->KeyPressed(binds->debugRenderWireframe, INPUT_NONE_HELD)) {
 			admin->ExecCommand("render_wireframe");
 		}
-
+		
 		//toggle textures
 		if (input->KeyPressed(binds->debugRenderWireframe, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("render_textures");
 		}
-
+		
 		//toggle edge numbers
 		if (input->KeyPressed(binds->debugRenderEdgesNumbers, INPUT_NONE_HELD)) {
 			admin->ExecCommand("render_display_edges");
 		}
-
+		
 		//toggle edge numbers
 		if (input->KeyPressed(binds->debugRenderDisplayAxis, INPUT_NONE_HELD)) {
 			admin->ExecCommand("render_local_axis");
 		}
-
+		
 		//toggle edge numbers
 		if (input->KeyPressed(binds->debugRenderDisplayAxis, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("render_global_axis");
@@ -406,26 +406,26 @@ inline void HandleRenderInputs(EntityAdmin* admin, Input* input, Keybinds* binds
 
 //add generic commands here
 void CommandSystem::Init() {
-
+	
 	//TODO(,sushi) reimplement this at some point
-
+	
 	//admin->commands["debug_global"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 	//	GLOBAL_DEBUG = !GLOBAL_DEBUG;
 	//	if (GLOBAL_DEBUG) return "GLOBAL_DEBUG = true";
 	//	else return "GLOBAL_DEBUG = false";
 	//}, "debug_global", "debug_global");
-
+	
 	admin->commands["debug_command_exec"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		Command::CONSOLE_PRINT_EXEC = !Command::CONSOLE_PRINT_EXEC;
-		return ""; //i dont know what this does so im not formatting it 
-	}, "debug_command_exec", "debug_command_exec");
-
+															Command::CONSOLE_PRINT_EXEC = !Command::CONSOLE_PRINT_EXEC;
+															return ""; //i dont know what this does so im not formatting it 
+														}, "debug_command_exec", "debug_command_exec");
+	
 	admin->commands["engine_pause"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		admin->paused = !admin->paused;
-		if (admin->paused) return "engine_pause = true";
-		else return "engine_pause = false";
-	}, "engine_pause", "toggles pausing the engine");
-
+													  admin->paused = !admin->paused;
+													  if (admin->paused) return "engine_pause = true";
+													  else return "engine_pause = false";
+												  }, "engine_pause", "toggles pausing the engine");
+	
 	AddSpawnCommands(admin);
 	AddRenderCommands(admin);
 	AddConsoleCommands(admin);
@@ -434,15 +434,15 @@ void CommandSystem::Init() {
 void CommandSystem::Update() {
 	Input* input = admin->input;
 	Keybinds* binds = admin->currentKeybinds;
-
+	
 	//input->mousePos = admin->p->GetMousePos();
-
+	
 	HandleMouseInputs(admin, input);
 	HandleSelectedEntityInputs(admin, input);
 	HandleRenderInputs(admin, input, binds);
-
+	
 	//old collision demo i think
-
+	
 	//if(input->KeyPressed(Key::F1, INPUT_SHIFT_HELD)) {
 	//	Entity* box = WorldSystem::CreateEntity(admin);
 	//	Transform* t = new Transform(Vector3(-10, 0, 20), Vector3::ZERO, Vector3::ONE);

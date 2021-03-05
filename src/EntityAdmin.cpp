@@ -38,9 +38,6 @@ TODO(p,delle) add physics based collision resolution for all entities
   SimpleMovementSystem	|| Camera							|| Input, Keybinds, MovementState, Time
   PhysicsSystem			|| Time, Transform, Physics			|| Camera, Screen
   CameraSystem			|| Camera							|| Screen
-  MeshSystem			|| Mesh								|| Transform
-  RenderSceneSystem		|| Scene							|| Mesh, Camera, Screen, Light, Time, 
-						||									||	Transform, Physics
   RenderCanvasSystem	|| Canvas							|| Screen
   WorldSystem			|| World, Entity					|| N/A
   TriggeredCommandSystem|| N/A								|| N/A
@@ -56,7 +53,7 @@ TODO(p,delle) add physics based collision resolution for all entities
 #include "utils/Command.h"						//Debug.h
 #include "utils/defines.h"
 //#include "math/Math.h"						//UsefulDefines.h, Vector3.h, Vector4.h, Matrix3.h, Matrix4.h, MatrixN.h,
-												//	<math.h>, <algorithm>, <numeric>
+//	<math.h>, <algorithm>, <numeric>
 //#include "geometry/Edge.h"					//Math.h
 //#include "geometry/Triangle.h"				//Math.h, Edge.h
 
@@ -67,11 +64,9 @@ TODO(p,delle) add physics based collision resolution for all entities
 #include "components/Camera.h"					//Component.h, Vector3.h, Matrix4.h
 #include "components/Keybinds.h"				//Component.h
 #include "components/MovementState.h"			//Component.h
-#include "components/Scene.h"					//Component.h
 #include "components/Canvas.h"					//Component.h, UI.h
 #include "components/Console.h"
 #include "components/Listener.h"
-//#include "components/Model.h"					//Component.h, Vector3.h, Triangle.h, Armature.h
 //#include "components/Light.h"					//Component.h, Vector3.h 
 //#include "components/Physics.h"				//Component.h, Vector3.h
 //#include "components/Transform.h"				//Component.h, Vector3.h, Matrix4.h
@@ -84,8 +79,6 @@ TODO(p,delle) add physics based collision resolution for all entities
 //#include "systems/SimpleMovementSystem.h"		//System.h |cpp->| Input.h, Keybinds.h, Camera.h, MovementState.h, Time.h
 #include "systems/PhysicsSystem.h"				//System.h |cpp->| PhysicsWorld.h, Math.h, Transform.h, Physics.h, Input.h, Command.h, Input.h, Time.h, Camera.h, Screen.h
 //#include "systems/CameraSystem.h"				//System.h |cpp->| Camera.h, Screen.h, Command.h
-//#include "systems/MeshSystem.h"					//System.h |cpp->| Mesh.h, Transform.h, Physics.h, Command.h, Input.h, Camera.h, Scene.h, Screen.h, Light.h
-#include "systems/RenderSceneSystem.h"			//System.h |cpp->| Math.h, Scene.h, Mesh.h, Camera.h, Light.h, Screen.h, Transform.h, Command.h
 #include "systems/RenderCanvasSystem.h"			//System.h |cpp->| Canvas.h, Screen.h
 #include "systems/WorldSystem.h"				//System.h |cpp->| World.h, Transform.h, Mesh.h, Command.h, Input.h
 //#include "systems/TriggeredCommandSystem.h"		//System.h |cpp->| Command.h
@@ -94,78 +87,71 @@ TODO(p,delle) add physics based collision resolution for all entities
 
 //// EntityAdmin ////
 
-void EntityAdmin::Create(Input* i, Window* w, Time* t) {
-
+void EntityAdmin::Create(Input* i, Window* w, Time* t, Renderer* r) {
+	
 	window = w;
 	input = i;
 	time = t;
-
+	renderer = r;
+	
 	g_cBuffer.allocate_space(100);
-
+	
 	systems = std::vector<System*>();
 	entities = std::map<EntityID, Entity*>();
 	components = std::vector<Component*>();
 	commands = std::map<std::string, Command*>();
 	physicsWorld = new PhysicsWorld();
-
+	
 	//reserve complayers
 	for (int i = 0; i < 8; i++) {
 		freeCompLayers.push_back(ContainerManager<Component*>());
 	}
 	
-
+	
 	//systems initialization
 	AddSystem(new CommandSystem());
 	switch (physicsWorld->integrationMode) {
-	default: /* Semi-Implicit Euler */ {
-		AddSystem(new PhysicsSystem());
-	}
+		default: /* Semi-Implicit Euler */ {
+			AddSystem(new PhysicsSystem());
+		}
 	}
 	//AddSystem(new CameraSystem());
 	//AddSystem(new MeshSystem());
-	AddSystem(new RenderSceneSystem());
 	AddSystem(new RenderCanvasSystem());
 	AddSystem(new WorldSystem());
 	//AddSystem(new TriggeredCommandSystem());
 	AddSystem(new ConsoleSystem());
 	AddSystem(new SoundSystem());
-
+	
 	console = new Console();
-
+	
 	//singleton initialization
 	world = new World();
-
+	
 	//current admin components
 	currentCamera = new Camera(this);
 	currentCamera->layer_index = freeCompLayers[currentCamera->layer].add(currentCamera);
-
-	currentScene = new Scene(this);
-	currentScene->layer_index = freeCompLayers[currentScene->layer].add(currentScene);
-
+	
 	currentKeybinds = new Keybinds(this);
-
+	
 	//temporary singletons
-	tempMovementState = new MovementState();
+	tempMovementState = new MovementState(this);
 	tempCanvas = new Canvas();
-
-
-
 }
 
 void EntityAdmin::Cleanup() {
 	//cleanup collections
-	for(System* s : systems)		{ delete s; }			systems.clear();
-	for(auto pair : entities)		{ delete pair.second; }	entities.clear();
-	for(Component* c : components)	{ delete c; }			components.clear();
-	for(auto pair : commands)		{ delete pair.second; }	commands.clear();
+	for(System* s : systems)       { delete s; }           systems.clear();
+	for(auto pair : entities)      { delete pair.second; } entities.clear();
+	for(Component* c : components) { delete c; }           components.clear();
+	for(auto pair : commands)      { delete pair.second; } commands.clear();
 	delete physicsWorld;
-
+	
 	//clean up singletons
 	delete world;
 	delete currentCamera;
 	delete currentKeybinds;
 	delete tempMovementState;
-	delete currentScene;
 	delete tempCanvas;
 }
 
@@ -182,11 +168,15 @@ void EntityAdmin::Update() {
 			//if      (ScreenSystem* a = dynamic_cast<ScreenSystem*>(s))             { a->Update(); }
 			if (ConsoleSystem* b = dynamic_cast<ConsoleSystem*>(s))           { b->Update(); }
 			else if (CommandSystem* c = dynamic_cast<CommandSystem*>(s))           { c->Update(); }
-			else if (RenderSceneSystem* d = dynamic_cast<RenderSceneSystem*>(s))   { d->Update(); }
 			else if (RenderCanvasSystem* e = dynamic_cast<RenderCanvasSystem*>(s)) { e->Update(); }
 			//else if (TimeSystem* f = dynamic_cast<TimeSystem*>(s))                 { f->Update(); }
-			
 		}
+	}
+	//NOTE temporary
+	currentCamera->Update();
+	tempMovementState->Update();
+	for(Component* c : components){
+		c->Update();
 	}
 }
 

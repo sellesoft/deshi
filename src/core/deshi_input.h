@@ -44,12 +44,12 @@ typedef uint32 InputModFlags;
 
 struct Input{
 	Entity* selectedEntity = nullptr;
-
+	
 	std::map<size_t, uint8> mapKeys;
 	std::map<size_t, uint8> mapMouse;
 	
 	//TODO(oi,delle) look into storing these as vector<bool> instead
-	//TODO(oi,delle) look into storing input modifiers with the keys
+	//TODO(oi,delle) look into storing input modifiers with the keys as a bit combined int
 	bool oldKeyState[MAX_KEYBOARD_KEYS]   = {0};
 	bool newKeyState[MAX_KEYBOARD_KEYS]   = {0};
 	bool oldMouseState[MAX_MOUSE_BUTTONS] = {0};
@@ -66,7 +66,7 @@ struct Input{
 	float realScreenMouseX, realScreenMouseY;
 	double realScrollX, realScrollY;
 	bool keyFocus, mouseFocus;
-
+	
 	//caches values so they are consistent thru the frame
 	void Update(){
 		memcpy(&oldKeyState, &newKeyState, sizeof(bool) * MAX_KEYBOARD_KEYS);
@@ -82,369 +82,421 @@ struct Input{
 	/////////////////////////////
 	//// keyboard keys input ////
 	/////////////////////////////
-
+	
 	inline bool KeyDown(Key::Key key) {
 		return newKeyState[key];
 	}
-
+	
 	bool KeyDown(Key::Key key, InputModFlags mod) {
 		switch (mod) {
-		case(INPUT_NONE_HELD): {
-			return newKeyState[key]
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
-					|| newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD): {
-			return newKeyState[key]
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_SHIFT_HELD): {
-			return newKeyState[key]
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ALT_HELD): {
-			return newKeyState[key]
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD): {
-			return newKeyState[key]
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& !(newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case((INPUT_CONTROL_HELD | INPUT_ALT_HELD)): {
-			return newKeyState[key]
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ALT_HELD | INPUT_SHIFT_HELD): {
-			return newKeyState[key]
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD | INPUT_ALT_HELD): {
-			return newKeyState[key]
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ANY_HELD):default: {
-			return newKeyState[key];
-		}
+			case(INPUT_NONE_HELD): {
+				return newKeyState[key]
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD): {
+				return newKeyState[key]
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_SHIFT_HELD): {
+				return newKeyState[key]
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD): {
+				return newKeyState[key]
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD): {
+				return newKeyState[key]
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case((INPUT_CONTROL_HELD | INPUT_ALT_HELD)): {
+				return newKeyState[key]
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD | INPUT_SHIFT_HELD): {
+				return newKeyState[key]
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD | INPUT_ALT_HELD): {
+				return newKeyState[key]
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ANY_HELD):default: {
+				return newKeyState[key];
+			}
 		}
 	}
-
+	
 	inline bool KeyPressed(Key::Key key) {
 		return newKeyState[key] && !oldKeyState[key];
 	}
-
+	
 	bool KeyPressed(Key::Key key, InputModFlags mod) {
 		switch (mod) {
-		case(INPUT_NONE_HELD): {
-			return (newKeyState[key] && !oldKeyState[key])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
-					|| newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD): {
-			return (newKeyState[key] && !oldKeyState[key])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_SHIFT_HELD): {
-			return (newKeyState[key] && !oldKeyState[key])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ALT_HELD): {
-			return (newKeyState[key] && !oldKeyState[key])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD): {
-			return (newKeyState[key] && !oldKeyState[key])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& !(newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_ALT_HELD): {
-			return (newKeyState[key] && !oldKeyState[key])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ALT_HELD | INPUT_SHIFT_HELD): {
-			return (newKeyState[key] && !oldKeyState[key])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD | INPUT_ALT_HELD): {
-			return (newKeyState[key] && !oldKeyState[key])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ANY_HELD):default: {
-			return newKeyState[key] && !oldKeyState[key];
-		}
+			case(INPUT_NONE_HELD): {
+				return (newKeyState[key] && !oldKeyState[key])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD): {
+				return (newKeyState[key] && !oldKeyState[key])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_SHIFT_HELD): {
+				return (newKeyState[key] && !oldKeyState[key])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD): {
+				return (newKeyState[key] && !oldKeyState[key])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD): {
+				return (newKeyState[key] && !oldKeyState[key])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_ALT_HELD): {
+				return (newKeyState[key] && !oldKeyState[key])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD | INPUT_SHIFT_HELD): {
+				return (newKeyState[key] && !oldKeyState[key])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD | INPUT_ALT_HELD): {
+				return (newKeyState[key] && !oldKeyState[key])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ANY_HELD):default: {
+				return newKeyState[key] && !oldKeyState[key];
+			}
 		}
 	}
-
+	
 	inline bool KeyReleased(Key::Key key) {
 		return !newKeyState[key] && oldKeyState[key];
 	}
-
+	
 	bool KeyReleased(Key::Key key, InputModFlags mod) {
 		switch (mod) {
-		case(INPUT_NONE_HELD): {
-			return (!newKeyState[key] && oldKeyState[key])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
-					|| newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD): {
-			return (!newKeyState[key] && oldKeyState[key])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_SHIFT_HELD): {
-			return (!newKeyState[key] && oldKeyState[key])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ALT_HELD): {
-			return (!newKeyState[key] && oldKeyState[key])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD): {
-			return (!newKeyState[key] && oldKeyState[key])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& !(newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_ALT_HELD): {
-			return (!newKeyState[key] && oldKeyState[key])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ALT_HELD | INPUT_SHIFT_HELD): {
-			return (!newKeyState[key] && oldKeyState[key])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD | INPUT_ALT_HELD): {
-			return (!newKeyState[key] && oldKeyState[key])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ANY_HELD):default: {
-			return newKeyState[key] && !oldKeyState[key];
-		}
+			case(INPUT_NONE_HELD): {
+				return (!newKeyState[key] && oldKeyState[key])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD): {
+				return (!newKeyState[key] && oldKeyState[key])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_SHIFT_HELD): {
+				return (!newKeyState[key] && oldKeyState[key])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD): {
+				return (!newKeyState[key] && oldKeyState[key])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD): {
+				return (!newKeyState[key] && oldKeyState[key])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_ALT_HELD): {
+				return (!newKeyState[key] && oldKeyState[key])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD | INPUT_SHIFT_HELD): {
+				return (!newKeyState[key] && oldKeyState[key])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD | INPUT_ALT_HELD): {
+				return (!newKeyState[key] && oldKeyState[key])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ANY_HELD):default: {
+				return newKeyState[key] && !oldKeyState[key];
+			}
 		}
 	}
-
-
+	
+	
 	/////////////////////////////
 	//// mouse buttons input ////
 	/////////////////////////////
-
+	
 	inline bool MouseDown(MouseButton button) {
 		return newMouseState[button];
 	}
-
+	
 	bool MouseDown(MouseButton button, InputModFlags mod) {
 		switch (mod) {
-		case(INPUT_NONE_HELD): {
-			return newMouseState[button]
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
-					|| newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD): {
-			return newMouseState[button]
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_SHIFT_HELD): {
-			return newMouseState[button]
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ALT_HELD): {
-			return newMouseState[button]
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD): {
-			return newMouseState[button]
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& !(newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_ALT_HELD): {
-			return newMouseState[button]
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ALT_HELD | INPUT_SHIFT_HELD): {
-			return newMouseState[button]
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD | INPUT_ALT_HELD): {
-			return newMouseState[button]
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ANY_HELD):default: {
-			return newMouseState[button];
-		}
+			case(INPUT_NONE_HELD): {
+				return newMouseState[button]
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD): {
+				return newMouseState[button]
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_SHIFT_HELD): {
+				return newMouseState[button]
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD): {
+				return newMouseState[button]
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD): {
+				return newMouseState[button]
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_ALT_HELD): {
+				return newMouseState[button]
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD | INPUT_SHIFT_HELD): {
+				return newMouseState[button]
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD | INPUT_ALT_HELD): {
+				return newMouseState[button]
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ANY_HELD):default: {
+				return newMouseState[button];
+			}
 		}
 	}
-
+	
 	inline bool MousePressed(MouseButton button) {
 		return newMouseState[button] && !oldMouseState[button];
 	}
-
+	
 	bool MousePressed(MouseButton button, InputModFlags mod) {
 		switch (mod) {
-		case(INPUT_NONE_HELD): {
-			return (newMouseState[button] && !oldMouseState[button])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
-					|| newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD): {
-			return (newMouseState[button] && !oldMouseState[button])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_SHIFT_HELD): {
-			return (newMouseState[button] && !oldMouseState[button])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ALT_HELD): {
-			return (newMouseState[button] && !oldMouseState[button])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD): {
-			return (newMouseState[button] && !oldMouseState[button])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& !(newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_ALT_HELD): {
-			return (newMouseState[button] && !oldMouseState[button])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ALT_HELD | INPUT_SHIFT_HELD): {
-			return (newMouseState[button] && !oldMouseState[button])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD | INPUT_ALT_HELD): {
-			return (newMouseState[button] && !oldMouseState[button])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ANY_HELD):default: {
-			return newMouseState[button] && !oldMouseState[button];
-		}
+			case(INPUT_NONE_HELD): {
+				return (newMouseState[button] && !oldMouseState[button])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD): {
+				return (newMouseState[button] && !oldMouseState[button])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_SHIFT_HELD): {
+				return (newMouseState[button] && !oldMouseState[button])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD): {
+				return (newMouseState[button] && !oldMouseState[button])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD): {
+				return (newMouseState[button] && !oldMouseState[button])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_ALT_HELD): {
+				return (newMouseState[button] && !oldMouseState[button])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD | INPUT_SHIFT_HELD): {
+				return (newMouseState[button] && !oldMouseState[button])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD | INPUT_ALT_HELD): {
+				return (newMouseState[button] && !oldMouseState[button])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ANY_HELD):default: {
+				return newMouseState[button] && !oldMouseState[button];
+			}
 		}
 	}
-
+	
 	inline bool MouseReleased(MouseButton button) {
 		return !newMouseState[button] && oldMouseState[button];
 	}
-
+	
 	bool MouseReleased(MouseButton button, InputModFlags mod) {
 		switch (mod) {
-		case(INPUT_NONE_HELD): {
-			return (!newMouseState[button] && oldMouseState[button])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
-					|| newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			case(INPUT_NONE_HELD): {
+				return (!newMouseState[button] && oldMouseState[button])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD): {
+				return (!newMouseState[button] && oldMouseState[button])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_SHIFT_HELD): {
+				return (!newMouseState[button] && oldMouseState[button])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD): {
+				return (!newMouseState[button] && oldMouseState[button])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD): {
+				return (!newMouseState[button] && oldMouseState[button])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_ALT_HELD): {
+				return (!newMouseState[button] && oldMouseState[button])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD | INPUT_SHIFT_HELD): {
+				return (!newMouseState[button] && oldMouseState[button])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD | INPUT_ALT_HELD): {
+				return (!newMouseState[button] && oldMouseState[button])
+					&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ANY_HELD):default: {
+				return newMouseState[button] && !oldMouseState[button];
+			}
 		}
-		case(INPUT_CONTROL_HELD): {
-			return (!newMouseState[button] && oldMouseState[button])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_SHIFT_HELD): {
-			return (!newMouseState[button] && oldMouseState[button])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
-					|| newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ALT_HELD): {
-			return (!newMouseState[button] && oldMouseState[button])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
-					|| newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD): {
-			return (!newMouseState[button] && oldMouseState[button])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& !(newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_ALT_HELD): {
-			return (!newMouseState[button] && oldMouseState[button])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ALT_HELD | INPUT_SHIFT_HELD): {
-			return (!newMouseState[button] && oldMouseState[button])
-				&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD | INPUT_ALT_HELD): {
-			return (!newMouseState[button] && oldMouseState[button])
-				&& (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
-				&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
-				&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
-		}
-		case(INPUT_ANY_HELD):default: {
-			return newMouseState[button] && !oldMouseState[button];
-		}
+	}
+	
+	/////////////////////////////
+	//// modifier keys input ////
+	/////////////////////////////
+	
+	bool ModDown(InputModFlags mods){
+		switch (mods) {
+			case(INPUT_NONE_HELD): {
+				return !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD): {
+				return (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_SHIFT_HELD): {
+				return (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]
+						 || newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD): {
+				return (newKeyState[Key::LALT] || newKeyState[Key::RALT])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]
+						 || newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD): {
+				return (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& !(newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case((INPUT_CONTROL_HELD | INPUT_ALT_HELD)): {
+				return (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& !(newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ALT_HELD | INPUT_SHIFT_HELD): {
+				return !(newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_CONTROL_HELD | INPUT_SHIFT_HELD | INPUT_ALT_HELD): {
+				return (newKeyState[Key::LCONTROL] || newKeyState[Key::RCONTROL])
+					&& (newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT])
+					&& (newKeyState[Key::LALT] || newKeyState[Key::RALT]);
+			}
+			case(INPUT_ANY_HELD):default: {
+				return true;
+			}
 		}
 	}
 };

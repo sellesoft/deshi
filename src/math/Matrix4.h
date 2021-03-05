@@ -7,13 +7,14 @@ struct Matrix3;
 struct Matrix4 {
 	float data[16]{};
 	
-	Matrix4() {}
+	Matrix4();
 	Matrix4(float all);
 	Matrix4(float _00, float _01, float _02, float _03,
 			float _10, float _11, float _12, float _13,
 			float _20, float _21, float _22, float _23,
 			float _30, float _31, float _32, float _33);
 	Matrix4(const Matrix4& m);
+	Matrix4(float* data);
 	
 	static const Matrix4 IDENTITY;
 	
@@ -54,6 +55,7 @@ struct Matrix4 {
 	//Non-Matrix4 vs Matrix4 interactions defined in Matrix.h/Math.h
 	Matrix3 To3x3();
 	static Matrix4 RotationMatrix(Vector3 rotation);
+	static Matrix4 AxisAngleRotationMatrix(float angle, Vector3 axis);
 	static Matrix4 TranslationMatrix(Vector3 translation);
 	static Matrix4 ScaleMatrix(Vector3 scale);
 	static Matrix4 TransformationMatrix(Vector3 translation, Vector3 rotation, Vector3 scale);
@@ -336,12 +338,10 @@ inline Matrix4 Matrix4::RotationMatrixX(float degrees) {
 	degrees *= TO_RADIANS;
 	float c = cosf(degrees);
 	float s = sinf(degrees);
-	return Matrix4(
-				   1,	0,	0,	0,
-				   0,	c,	-s,	0,
-				   0,	s,	c,	0,
-				   0,	0,	0,	1
-				   );
+	return Matrix4(1,  0, 0, 0,
+				   0,  c, s, 0,
+				   0, -s, c, 0,
+				   0,  0, 0, 1);
 }
 
 //returns a rotation transformation matrix based on input in degrees
@@ -349,12 +349,10 @@ inline Matrix4 Matrix4::RotationMatrixY(float degrees) {
 	degrees *= TO_RADIANS;
 	float c = cosf(degrees);
 	float s = sinf(degrees);
-	return Matrix4(
-				   c,	0,	s,	0,
-				   0,	1,	0,	0,
-				   -s,	0,	c,	0,
-				   0,	0,	0,	1
-				   );
+	return Matrix4(c, 0, -s, 0,
+				   0, 1,  0, 0,
+				   s, 0,  c, 0,
+				   0, 0,  0, 1);
 }
 
 //returns a rotation transformation matrix based on input in degrees
@@ -362,10 +360,8 @@ inline Matrix4 Matrix4::RotationMatrixZ(float degrees) {
 	degrees *= TO_RADIANS;
 	float c = cosf(degrees);
 	float s = sinf(degrees);
-	return Matrix4(
-				   c,	-s,	0,	0,
-				   s,	c,	0,	0,
-				   0,	0,	1,	0,
-				   0,	0,	0,	1
-				   );
+	return Matrix4(c,  s, 0, 0,
+				   -s, c, 0, 0,
+				   0,  0, 1, 0,
+				   0,  0, 0, 1);
 }

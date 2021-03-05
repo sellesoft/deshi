@@ -12,12 +12,12 @@ struct Vector3 {
 	float x{};
 	float y{};
 	float z{};
-
+	
 	Vector3();
 	Vector3(float inX, float inY, float inZ);
 	Vector3(float inX, float inY);
 	Vector3(const Vector3& v);
-
+	
 	static const Vector3 ZERO;
 	static const Vector3 ONE;
 	static const Vector3 RIGHT;
@@ -29,7 +29,7 @@ struct Vector3 {
 	static const Vector3 UNITX;
 	static const Vector3 UNITY;
 	static const Vector3 UNITZ;
-
+	
 	void    operator =	(const Vector3& rhs);
 	Vector3 operator *  (float rhs) const;
 	void    operator *= (float rhs);
@@ -47,7 +47,7 @@ struct Vector3 {
 	bool    operator == (const Vector3& rhs) const;
 	bool    operator != (const Vector3& rhs) const;
 	friend Vector3 operator * (float lhs, const Vector3& rhs) { return   rhs * lhs; }
-
+	
 	const std::string str() const;
 	const std::string str2f() const;
 	Vector3 copy() const;
@@ -67,21 +67,35 @@ struct Vector3 {
 	Vector3 xInvert() const;
 	Vector3 yInvert() const;
 	Vector3 zInvert() const;
-
+	
 	//Non-Vector vs Vector interactions defined in Math.h
 	Vector3(const Vector2& v);
-
+	
 	Vector3 operator *  (const Matrix3& rhs) const;
 	void    operator *= (const Matrix3& rhs);
 	Vector3 operator *  (const Matrix4& rhs) const;
 	void    operator *= (const Matrix4& rhs);
-
+	
 	Vector4 ToVector4() const;
 	Vector2 ToVector2() const; 
 	MatrixN ToM1x3() const;
 	MatrixN ToM1x4(float w) const;
 	Vector3 ProjectionMultiply(Matrix4 projection) const;
 	
+};
+
+//ref: glm::hash
+namespace std{
+	template<> struct hash<Vector3>{
+		inline size_t operator()(Vector3 const& v) const{
+			size_t seed = 0;
+			hash<float> hasher; size_t hash;
+			hash = hasher(v.x); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+			hash = hasher(v.y); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+			hash = hasher(v.z); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+			return seed;
+		}
+	};
 };
 
 
@@ -176,6 +190,7 @@ inline float Vector3::dot(const Vector3& rhs) const {
 	return this->x * rhs.x + this->y * rhs.y + this->z * rhs.z;
 }
 
+//left hand cross product
 inline Vector3 Vector3::cross(const Vector3& rhs) const {
 	return Vector3(this->y * rhs.z - rhs.y * this->z, this->x * rhs.z - rhs.x * this->z, this->x * rhs.y - rhs.x * this->y);
 }

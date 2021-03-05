@@ -11,8 +11,8 @@
 
 struct MovementState : public Component {
 	uint32 movementState;
-
-	MovementState();
+	
+	MovementState(EntityAdmin* a);
 	MovementState(uint32 state);
 	
 	void Update() override;

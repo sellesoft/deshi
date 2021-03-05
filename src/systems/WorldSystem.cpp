@@ -5,7 +5,6 @@
 
 #include "../components/World.h"
 #include "../components/Transform.h"
-#include "../components/Model.h"
 
 void WorldSystem::Init() {
 	
