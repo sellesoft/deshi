@@ -1,3 +1,4 @@
+#pragma once
 #ifndef DESHI_DEFINES_H
 #define DESHI_DEFINES_H
 
@@ -37,6 +38,16 @@ typedef unsigned long  uint64;
 #define DengWindow admin->window
 #define DengTime admin->time
 
-
+//delle's annoyance with c++ syntax defines
+//which will probably cause problems somewhere
+#define int8(x)   static_cast<int8>(x)
+#define int16(x)  static_cast<int16>(x)
+#define int32(x)  static_cast<int32>(x)
+#define int64(x)  static_cast<int64>(x)
+#define uint8(x)  static_cast<uint8>(x)
+#define uint16(x) static_cast<uint16>(x)
+#define uint32(x) static_cast<uint32>(x)
+#define uint64(x) static_cast<uint64>(x)
+//#define size_t(x) static_cast<size_t>(x) //this breaks things in dr_wav
 
 #endif //DESHI_DEFINES_H

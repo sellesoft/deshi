@@ -6,19 +6,20 @@ struct Matrix3;
 
 struct Matrix4 {
 	float data[16]{};
-
+	
 	Matrix4() {}
+	Matrix4(float all);
 	Matrix4(float _00, float _01, float _02, float _03,
 			float _10, float _11, float _12, float _13,
 			float _20, float _21, float _22, float _23,
 			float _30, float _31, float _32, float _33);
 	Matrix4(const Matrix4& m);
-
+	
 	static const Matrix4 IDENTITY;
-
-	float&	operator () (uint32 row, uint32 col);
+	
+	float&  operator () (uint32 row, uint32 col);
 	float   operator () (uint32 row, uint32 col) const;
-	void	operator =	(const Matrix4& rhs);
+	void	operator =  (const Matrix4& rhs);
 	Matrix4 operator *  (const float& rhs) const;
 	void	operator *= (const float& rhs);
 	Matrix4 operator /  (const float& rhs) const;
@@ -36,7 +37,7 @@ struct Matrix4 {
 	bool	operator == (const Matrix4& rhs) const;
 	bool	operator != (const Matrix4& rhs) const;
 	friend Matrix4 operator * (const float& lhs, const Matrix4& rhs) { return rhs * lhs; }
-
+	
 	const std::string str() const;
 	const std::string str2f() const;
 	Matrix4 Transpose() const;
@@ -45,11 +46,11 @@ struct Matrix4 {
 	float Cofactor(int row, int col) const;
 	Matrix4 Adjoint() const;
 	Matrix4 Inverse() const;
-
+	
 	static Matrix4 RotationMatrixX(float degrees);
 	static Matrix4 RotationMatrixY(float degrees);
 	static Matrix4 RotationMatrixZ(float degrees);
-
+	
 	//Non-Matrix4 vs Matrix4 interactions defined in Matrix.h/Math.h
 	Matrix3 To3x3();
 	static Matrix4 RotationMatrix(Vector3 rotation);
@@ -272,18 +273,18 @@ inline float Matrix4::Determinant() const{
 	return  data[ 0] * (data[ 5] * (data[10] * data[15] - data[11] * data[14]) -
 						data[ 9] * (data[ 6] * data[15] - data[ 7] * data[14]) + 
 						data[13] * (data[ 6] * data[11] - data[ 7] * data[10]))
-												-
-			data[ 4] * (data[ 1] * (data[10] * data[15] - data[11] * data[14]) -
-						data[ 9] * (data[ 2] * data[15] - data[ 3] * data[14]) +
-						data[13] * (data[ 2] * data[11] - data[ 3] * data[10]))
-												+
-			data[ 8] * (data[ 1] * (data[ 6] * data[15] - data[ 7] * data[14]) -
-						data[ 5] * (data[ 2] * data[15] - data[ 3] * data[14]) +
-						data[13] * (data[ 2] * data[ 7] - data[ 3] * data[ 6]))
-												-
-			data[12] * (data[ 1] * (data[ 6] * data[11] - data[ 7] * data[10]) -
-						data[ 5] * (data[ 2] * data[11] - data[ 3] * data[10]) +
-						data[ 9] * (data[ 2] * data[ 7] - data[ 3] * data[ 6]));
+		-
+		data[ 4] * (data[ 1] * (data[10] * data[15] - data[11] * data[14]) -
+					data[ 9] * (data[ 2] * data[15] - data[ 3] * data[14]) +
+					data[13] * (data[ 2] * data[11] - data[ 3] * data[10]))
+		+
+		data[ 8] * (data[ 1] * (data[ 6] * data[15] - data[ 7] * data[14]) -
+					data[ 5] * (data[ 2] * data[15] - data[ 3] * data[14]) +
+					data[13] * (data[ 2] * data[ 7] - data[ 3] * data[ 6]))
+		-
+		data[12] * (data[ 1] * (data[ 6] * data[11] - data[ 7] * data[10]) -
+					data[ 5] * (data[ 2] * data[11] - data[ 3] * data[10]) +
+					data[ 9] * (data[ 2] * data[ 7] - data[ 3] * data[ 6]));
 }
 
 //returns the determinant of this matrix without the specified row and column
@@ -297,10 +298,10 @@ inline float Matrix4::Minor(int row, int col) const {
 			arr[index++] = data[4 * i + j];
 		}
 	}
-
+	
 	//3x3 determinant
 	return (arr[0] * arr[4] * arr[8]) + (arr[1] * arr[5] * arr[6]) + (arr[2] * arr[3] * arr[7]) -	
-			(arr[2] * arr[4] * arr[6]) - (arr[1] * arr[3] * arr[8]) - (arr[0] * arr[5] * arr[7]);
+		(arr[2] * arr[4] * arr[6]) - (arr[1] * arr[3] * arr[8]) - (arr[0] * arr[5] * arr[7]);
 }
 
 //returns the cofactor (minor with adjusted sign based on location in matrix) at given row and column
@@ -336,11 +337,11 @@ inline Matrix4 Matrix4::RotationMatrixX(float degrees) {
 	float c = cosf(degrees);
 	float s = sinf(degrees);
 	return Matrix4(
-		1,	0,	0,	0,
-		0,	c,	-s,	0,
-		0,	s,	c,	0,
-		0,	0,	0,	1
-	);
+				   1,	0,	0,	0,
+				   0,	c,	-s,	0,
+				   0,	s,	c,	0,
+				   0,	0,	0,	1
+				   );
 }
 
 //returns a rotation transformation matrix based on input in degrees
@@ -349,11 +350,11 @@ inline Matrix4 Matrix4::RotationMatrixY(float degrees) {
 	float c = cosf(degrees);
 	float s = sinf(degrees);
 	return Matrix4(
-		c,	0,	s,	0,
-		0,	1,	0,	0,
-		-s,	0,	c,	0,
-		0,	0,	0,	1
-	);
+				   c,	0,	s,	0,
+				   0,	1,	0,	0,
+				   -s,	0,	c,	0,
+				   0,	0,	0,	1
+				   );
 }
 
 //returns a rotation transformation matrix based on input in degrees
@@ -362,9 +363,9 @@ inline Matrix4 Matrix4::RotationMatrixZ(float degrees) {
 	float c = cosf(degrees);
 	float s = sinf(degrees);
 	return Matrix4(
-		c,	-s,	0,	0,
-		s,	c,	0,	0,
-		0,	0,	1,	0,
-		0,	0,	0,	1
-	);
+				   c,	-s,	0,	0,
+				   s,	c,	0,	0,
+				   0,	0,	1,	0,
+				   0,	0,	0,	1
+				   );
 }

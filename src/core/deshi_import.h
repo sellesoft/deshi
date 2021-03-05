@@ -24,4 +24,25 @@ namespace deshi{
 		
 		return buffer;
 	}
+	
+	//TODO(,delle) check which dir we are in to get the correct path
+	inline static std::string getDataPath(){
+		return "data/";
+	}
+	
+	inline static std::string getModelsPath(){
+		return getDataPath() + "models/";
+	}
+	
+	inline static std::string getTexturesPath(){
+		return getDataPath() + "textures/";
+	}
+	
+	inline static std::string getSoundsPath(){
+		return getDataPath() + "sounds/";
+	}
+	
+	inline static std::string getShadersPath(){
+		return "shaders/";
+	}
 }

@@ -13,7 +13,7 @@ void WorldSystem::Init() {
 
 void WorldSystem::Update() {
 	World* world = admin->world;
-
+	
 	//deletion buffer
 	for(Entity* entity : world->deletionBuffer) {
 		uint32 id = entity->id;
@@ -25,7 +25,7 @@ void WorldSystem::Update() {
 		admin->entities.erase(id);
 	}
 	world->deletionBuffer.clear();
-
+	
 	//creation buffer
 	for(Entity* entity : world->creationBuffer) {
 		entity->id = !admin->entities.empty() ? admin->entities.rbegin()->second->id + 1 : 1; //set id to be one greater than the last
@@ -68,7 +68,7 @@ int32 WorldSystem::AddEntityToCreationBuffer(EntityAdmin* admin, Entity* entity)
 int32 WorldSystem::AddEntityToDeletionBuffer(EntityAdmin* admin, Entity* entity) {
 	World* world = admin->world;
 	try {
-		admin->entities.at(entity->id);
+		Entity* e = admin->entities.at(entity->id);
 		world->deletionBuffer.push_back(entity);
 		return world->deletionBuffer.size()-1;
 	} catch(const std::out_of_range& oor) {

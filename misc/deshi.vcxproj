@@ -72,26 +72,26 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)build</OutDir>
-    <IntDir>$(SolutionDir)build</IntDir>
+    <OutDir>$(SolutionDir)build\Debug</OutDir>
+    <IntDir>$(SolutionDir)build\Debug</IntDir>
     <SourcePath>$(SolutionDir)src;$(VC_SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)build</OutDir>
-    <IntDir>$(SolutionDir)build</IntDir>
+    <OutDir>$(SolutionDir)build\Release</OutDir>
+    <IntDir>$(SolutionDir)build\Release</IntDir>
     <SourcePath>$(SolutionDir)src;$(VC_SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)build</OutDir>
-    <IntDir>$(SolutionDir)build</IntDir>
+    <OutDir>$(SolutionDir)build\Debug</OutDir>
+    <IntDir>$(SolutionDir)build\Debug</IntDir>
     <SourcePath>$(SolutionDir)src;$(VC_SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)build</OutDir>
-    <IntDir>$(SolutionDir)build</IntDir>
+    <OutDir>$(SolutionDir)build\Release</OutDir>
+    <IntDir>$(SolutionDir)build\Release</IntDir>
     <SourcePath>$(SolutionDir)src;$(VC_SourcePath)</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

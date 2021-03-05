@@ -23,7 +23,7 @@ struct DeshiEngine {
 		renderAPI = RenderAPI::VULKAN;
 		switch(renderAPI){
 			case(RenderAPI::VULKAN):default:{ 
-				renderer = new Renderer_Vulkan; 
+				renderer = new Renderer_Vulkan;
 				imgui = new vkImGui;
 			}break;
 		}
@@ -34,18 +34,17 @@ struct DeshiEngine {
 		LoadConfig();
 		time.Init(300);
 		window.Init(&input, 1280, 720);
-		renderer->Init(&window);
-		imgui->Init(renderer, &input, &window, &time);
+		renderer->Init(&window, imgui); //inits imgui as well
 		
 		//start entity admin
 		entityAdmin.Create(&input, &window, &time);
-
+		
 		//start main loop
 		while(!glfwWindowShouldClose(window.window)){
 			glfwPollEvents();
 			Update();
 		}
-
+		
 		//cleanup
 		imgui->Cleanup(); delete imgui;
 		renderer->Cleanup(); delete renderer;
@@ -56,12 +55,11 @@ struct DeshiEngine {
 		time.Update();
 		input.Update();
 		window.Update();
-		imgui->NewFrame();			//place imgui calls after this
+		imgui->NewFrame();            //place imgui calls after this
 		ImGui::ShowDemoWindow();
 		entityAdmin.Update();
-		renderer->Draw();			//place renderer cmd buffer calls after this
-		imgui->EndFrame();			//place imgui calls before this
-		renderer->Render();			//place renderer cmd buffer calls before this
+		renderer->Render();           //place imgui calls before this
+		renderer->Present();
 		//entityAdmin.PostRenderUpdate();
 		return true;
 	}
