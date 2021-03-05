@@ -12,10 +12,9 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-#define GLM_ENABLE_EXPERIMENTAL
+#define GLM_FORCE_LEFT_HANDED
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/hash.hpp>
 
 #include <boost/optional.hpp>
 
@@ -87,10 +86,13 @@ struct Renderer{
 	virtual void   UnloadTexture(uint32 textureID) = 0;
 	
 	//scene interface
-	virtual void LoadDefaultAssets() = 0;
-	virtual void LoadScene(Scene* scene) = 0;
-	virtual void UpdateViewMatrix(Matrix4 matrix) = 0;
-	virtual void UpdatePerspectiveMatrix(Matrix4 matrix) = 0;
+	virtual void   LoadDefaultAssets() = 0;
+	virtual void   LoadScene(Scene* scene) = 0;
+	
+	//camera interface
+	virtual void   UpdateCameraPosition(Vector3 position) = 0;
+	virtual void   UpdateCameraRotation(Vector3 rotation) = 0;
+	virtual void   UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ) = 0;
 };
 
 ////////////////////////////////
@@ -121,6 +123,16 @@ struct SwapChainSupportDetails {
 	std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct CameraVk{
+	float fovX, nearZ, farZ;
+	glm::vec3 position;
+	glm::vec3 rotation;
+	uint32 mode = 0;
+	
+	void UpdateViewMatrix();
+	void UpdateProjectionMatrix();
+};
+
 struct VertexVk{
 	glm::vec3 pos;
 	glm::vec2 texCoord;
@@ -132,17 +144,6 @@ struct VertexVk{
 	bool operator==(const VertexVk& other) const {
 		return pos == other.pos && color == other.color && texCoord == other.texCoord && normal == other.normal;
 	}
-};
-
-//pattern: OR unshifted and L-shifted, then R-shift the combo, 
-//then OR that with L-shifted, then R-shift the combo and repeat
-//until the last combo which is not R-shifted ((x^(y<<))>>)^(z<<)
-namespace std {
-	template<> struct hash<VertexVk> {
-		size_t operator()(VertexVk const& vertex) const {
-			return (((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec2>()(vertex.texCoord) << 1)) >> 1) ^ (hash<glm::vec3>()(vertex.color) << 1) >> 1) ^ (hash<glm::vec3>()(vertex.normal) << 1);
-		}
-	};
 };
 
 struct TextureVk {
@@ -248,6 +249,8 @@ struct Renderer_Vulkan : public Renderer{
 	//////////////////////////////
 	//// vulkan api variables ////
 	//////////////////////////////
+	const int MAX_FRAMES = 2;
+	
 	VkAllocationCallbacks*   allocator = 0;
 	VkInstance               instance = VK_NULL_HANDLE;
 	VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
@@ -289,11 +292,12 @@ struct Renderer_Vulkan : public Renderer{
 	
 	uint32                    frameIndex = 0;
 	std::vector<FrameVk>      frames;
-	std::vector<VkFence>      fences;
-	uint32                    semaphoreIndex = 0;
+	std::vector<VkFence>      fencesInFlight;
+	std::vector<VkFence>      imagesInFlight;
 	std::vector<SemaphoresVk> semaphores;
 	FramebufferAttachmentsVk  attachments = {};
 	
+	CameraVk camera;
 	struct ShaderData{ //uniform buffer for the shaders
 		VkBuffer       uniformBuffer       = VK_NULL_HANDLE;
 		VkDeviceMemory uniformBufferMemory = VK_NULL_HANDLE;
@@ -396,11 +400,9 @@ struct Renderer_Vulkan : public Renderer{
 	//NOTE this should not be done often in gameplay
 	virtual void LoadScene(Scene* scene) override;
 	
-	//updates the GPU camera's view matrix
-	virtual void UpdateViewMatrix(Matrix4 matrix) override;
-	
-	//updates the GPU camera's perspective matrix
-	virtual void UpdatePerspectiveMatrix(Matrix4 matrix) override;
+	virtual void UpdateCameraPosition(Vector3 position) override;
+	virtual void UpdateCameraRotation(Vector3 rotation) override;
+	virtual void UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ) override;
 	
 	//////////////////////////////////
 	//// initialization functions //// (called once)

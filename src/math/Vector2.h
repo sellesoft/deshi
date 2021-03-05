@@ -96,6 +96,18 @@ inline static const Vector2 VDOWN  = Vector2(0, -1);
 inline static const Vector2 UNITX  = Vector2(1,  0);
 inline static const Vector2 UNITY  = Vector2(0,  1);
 
+//ref: glm::hash
+namespace std{
+	template<> struct hash<Vector2>{
+		inline size_t operator()(Vector2 const& v) const{
+			size_t seed = 0;
+			hash<float> hasher; size_t hash;
+			hash = hasher(v.x); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+			hash = hasher(v.y); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
+			return seed;
+		}
+	};
+};
 
 //// Operators ////
 

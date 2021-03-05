@@ -2,7 +2,7 @@
 #include "deshi_glfw.h"
 #include "deshi_imgui.h"
 #include "deshi_import.h"
-#include "../components/Model.h"
+#include "../animation/Model.h"
 #include "../animation/Scene.h"
 #include "../math/Math.h"
 #include "../geometry/Triangle.h"
@@ -16,6 +16,7 @@
 #include <stb_image.h>
 
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_access.hpp>
 
 #include <set>
 #include <array>
@@ -45,7 +46,10 @@ void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
 	
 	//debug scene
 	Scene* test = new Scene;
-	Model* box = Model::CreateBox(nullptr, Vector3(1, 1, 1));
+	Model* box = Model::CreateBox(Vector3(1, 1, 1));
+	Texture tex("UV_Grid_Sm.jpg");
+	box->mesh.batchArray[0].textureArray.push_back(tex);
+	box->mesh.batchArray[0].textureCount = 1;
 	test->models.push_back(box);
 	
 	CreateInstance();
@@ -86,10 +90,13 @@ void Renderer_Vulkan::Render() {
 		remakeWindow = false;
 	}
 	
+	vkWaitForFences(device, 1, &fencesInFlight[frameIndex], VK_TRUE, UINT64_MAX);
+	VkSemaphore image_sema  = semaphores[frameIndex].imageAcquired;
+	VkSemaphore render_sema = semaphores[frameIndex].renderComplete;
+	
 	//get next image from surface
-	VkSemaphore image_sema  = semaphores[semaphoreIndex].imageAcquired;
-	VkSemaphore render_sema = semaphores[semaphoreIndex].renderComplete;
-	VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, image_sema, VK_NULL_HANDLE, &frameIndex);
+	uint32 imageIndex;
+	VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, image_sema, VK_NULL_HANDLE, &imageIndex);
 	if(result == VK_ERROR_OUT_OF_DATE_KHR){
 		remakeWindow = true;
 		return;
@@ -97,13 +104,23 @@ void Renderer_Vulkan::Render() {
 		ASSERT(false, "failed to acquire swap chain image");
 	}
 	
-	//wait on current fence and reset it afterwards
-	vkWaitForFences(device, 1, &fences[frameIndex], VK_TRUE, UINT64_MAX);
-	vkResetFences(device, 1, &fences[frameIndex]);
-	//vkResetCommandPool(device, frames[frameIndex].commandPool, 0);
+	// Check if a previous frame is using this image (i.e. there is its fence to wait on)
+	if(imagesInFlight[imageIndex] != VK_NULL_HANDLE){
+		vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
+	}
+	// Mark the image as now being in use by this frame
+	imagesInFlight[imageIndex] = fencesInFlight[frameIndex];
+	vkResetFences(device, 1, &fencesInFlight[frameIndex]);
 	
 	//render imgui stuff
 	ImGui::Render();
+	ImDrawData* imDrawData = ImGui::GetDrawData();
+	if(imDrawData){
+		BuildCommandBuffers();
+	}
+	
+	//update uniform buffers
+	UpdateUniformBuffer();
 	
 	//submit the command buffer to the queue
 	VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -113,10 +130,11 @@ void Renderer_Vulkan::Render() {
 	submitInfo.pWaitSemaphores = &image_sema;
 	submitInfo.pWaitDstStageMask = &wait_stage;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &frames[frameIndex].commandBuffer;
+	submitInfo.pCommandBuffers = &frames[imageIndex].commandBuffer;
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &render_sema;
-	vkQueueSubmit(graphicsQueue, 1, &submitInfo, fences[frameIndex]);
+	
+	ASSERTVK(vkQueueSubmit(graphicsQueue, 1, &submitInfo, fencesInFlight[frameIndex]), "failed to submit draw command buffer");
 	
 	if(remakeWindow){ return; }
 	
@@ -127,31 +145,32 @@ void Renderer_Vulkan::Render() {
 	presentInfo.pWaitSemaphores = &render_sema;
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &swapchain;
-	presentInfo.pImageIndices = &frameIndex;
+	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr;
 	result = vkQueuePresentKHR(presentQueue, &presentInfo);
 	
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow) {
 		int w, h;
 		glfwGetFramebufferSize(window, &w, &h);
-		ResizeWindow(w, h);
 		remakeWindow = false;
+		ResizeWindow(w, h);
 	} else if (result != VK_SUCCESS) {
 		ASSERT(false, "failed to present swap chain image");
 	}
 	
 	//iterate the frame index
-	frameIndex = (frameIndex + 1) % imageCount; //loops back to zero after reaching max_frames
+	frameIndex = (frameIndex + 1) % MAX_FRAMES; //loops back to zero after reaching max_frames
+	ASSERTVK(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
 	
-	//update uniform buffers
-	UpdateUniformBuffer();
-	PRINT("--------------" << frameIndex << "---------------");
+	//PRINT("--------------" << frameIndex << "---------------");
 }
 
 void Renderer_Vulkan::Present() {}
 
 void Renderer_Vulkan::Cleanup() {
 	PRINT("{-} Initializing Cleanup {-}\n");
+	vkDeviceWaitIdle(device);
+	
 	//TODO(r,delle) maybe add rendering cleanup, but maybe not
 	//because OS will cleanup on program close and be faster at it
 	//so maybe only save changes to user settings
@@ -397,12 +416,18 @@ void Renderer_Vulkan::LoadScene(Scene* sc){
 	vkFreeMemory(device, indexStaging.memory, nullptr);
 }
 
-void Renderer_Vulkan::UpdateViewMatrix(Matrix4 matrix){
-	PRINT("Not implemented yet");
+void Renderer_Vulkan::UpdateCameraPosition(Vector3 position){
+	camera.position = glm::make_vec3(&position.x);
 }
 
-void Renderer_Vulkan::UpdatePerspectiveMatrix(Matrix4 matrix){
-	PRINT("Not implemented yet");
+void Renderer_Vulkan::UpdateCameraRotation(Vector3 rotation){
+	camera.rotation = glm::make_vec3(&rotation.x);
+}
+
+void Renderer_Vulkan::UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ){
+	camera.fovX = fovX;
+	camera.nearZ = nearZ;
+	camera.farZ = farZ;
 }
 
 //////////////////////////////////
@@ -412,7 +437,7 @@ void Renderer_Vulkan::UpdatePerspectiveMatrix(Matrix4 matrix){
 void Renderer_Vulkan::CreateInstance() {
 	PRINT("{-}{-} Creating Vulkan Instance {-}{-}");
 	if(enableValidationLayers && !checkValidationLayerSupport()) {
-		throw std::runtime_error("validation layers requested, but not available");
+		ASSERT(false, "validation layers requested, but not available");
 	}
 	
 	VkApplicationInfo appInfo{};
@@ -474,7 +499,7 @@ void Renderer_Vulkan::PickPhysicalDevice() {
 	}
 	
 	if(physicalDevice == VK_NULL_HANDLE) {
-		throw std::runtime_error("failed to find a suitable GPU");
+		ASSERT(false, "failed to find a suitable GPU");
 	}
 	
 	//get physical device capabilities
@@ -592,8 +617,9 @@ void Renderer_Vulkan::CreateClearValues(){
 
 void Renderer_Vulkan::CreateSyncObjects(){
 	PRINT("{-}{-} Creating Sync Objects {-}{-}");
-	semaphores.resize(imageCount);
-	fences.resize(imageCount);
+	semaphores.resize(MAX_FRAMES);
+	fencesInFlight.resize(MAX_FRAMES);
+	imagesInFlight.resize(imageCount);
 	
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -601,13 +627,11 @@ void Renderer_Vulkan::CreateSyncObjects(){
 	VkFenceCreateInfo fenceInfo{};
 	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-	//vkCreateFence(device, &fenceInfo, allocator, &frames[i]->fence) 
 	
-	for(int i = 0; i < imageCount; ++i){
-		if(vkCreateSemaphore(device, &semaphoreInfo, allocator, &semaphores[i].imageAcquired) != VK_SUCCESS ||
-		   vkCreateSemaphore(device, &semaphoreInfo, allocator, &semaphores[i].renderComplete) != VK_SUCCESS ||
-		   vkCreateFence(device, &fenceInfo, nullptr, &fences[i]) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create synchronization objects for a frame");
+	for(int i = 0; i < MAX_FRAMES; ++i){
+		if(vkCreateSemaphore(device, &semaphoreInfo, allocator, &semaphores[i].imageAcquired) ||
+		   vkCreateSemaphore(device, &semaphoreInfo, allocator, &semaphores[i].renderComplete) || vkCreateFence(device, &fenceInfo, nullptr, &fencesInFlight[i])){
+			ASSERT(false, "failed to create sync objects");
 		}
 	}
 }
@@ -890,7 +914,7 @@ void Renderer_Vulkan::CreateFrames(){
 		allocInfo.commandPool = commandPool;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = 1;
-		ASSERTVK(vkAllocateCommandBuffers(device, &allocInfo, &frames[i].commandBuffer), "failed to allocate command buffers");
+		ASSERTVK(vkAllocateCommandBuffers(device, &allocInfo, &frames[i].commandBuffer), "failed to allocate command buffer");
 	}
 }
 
@@ -906,7 +930,8 @@ void Renderer_Vulkan::CreatePipelines(){
 	//determines how to group vertices together
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = vks::initializers::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 	//how to draw/cull/depth things
-	VkPipelineRasterizationStateCreateInfo rasterizationState = vks::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
+	VkPipelineRasterizationStateCreateInfo rasterizationState = vks::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, 0);
+	//VkPipelineRasterizationStateCreateInfo rasterizationState = vks::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
 	
 	//how to combine colors
 	VkPipelineColorBlendAttachmentState colorBlendAttachmentState = vks::initializers::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
@@ -993,8 +1018,7 @@ void Renderer_Vulkan::CreatePipelines(){
 }
 
 void Renderer_Vulkan::BuildCommandBuffers() {
-	PRINT("{-}{-} Building Command Buffers {-}{-}");
-	
+	//PRINT("{-}{-} Building Command Buffers {-}{-}");
 	VkCommandBufferBeginInfo cmdBufferInfo{};
 	cmdBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	cmdBufferInfo.flags = 0;
@@ -1040,12 +1064,40 @@ void Renderer_Vulkan::BuildCommandBuffers() {
 //also maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
 void Renderer_Vulkan::UpdateUniformBuffer(){
 	//PRINT("{-}{-} Updating Uniform Buffer {-}{-}\n");
-	shaderData.values.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	shaderData.values.proj = glm::perspective(glm::radians(45.0f), extent.width / (float) extent.height, 0.1f, 10.0f);
-	shaderData.values.proj[1][1] *= -1;
-	shaderData.values.lightPos = glm::vec4(0.0f, 2.5f, 0.0f, 1.0f);
-	shaderData.values.viewPos = glm::vec4(0.0f, 2.5f, 0.0f, 1.0f);
+	//update view matrix
+	/*
+	glm::mat4 rotM = glm::mat4(1.f);
+	rotM = glm::rotate(rotM, glm::radians(camera.rotation.x), glm::vec3(1.f, 0.f, 0.f));
+	rotM = glm::rotate(rotM, glm::radians(camera.rotation.y), glm::vec3(0.f, 1.f, 0.f));
+	rotM = glm::rotate(rotM, glm::radians(camera.rotation.z), glm::vec3(0.f, 0.f, 1.f));
+	glm::mat4 transM = glm::translate(glm::mat4(1.f), camera.position);
 	
+	if(camera.mode == 0){
+		shaderData.values.view = rotM * transM;
+	}else{
+		shaderData.values.view = transM * rotM;
+	}
+	*/
+	glm::mat4 rotM = glm::mat4(1.f);
+	rotM = glm::rotate(rotM, glm::radians(camera.rotation.x), glm::vec3(1.f, 0.f, 0.f));
+	rotM = glm::rotate(rotM, glm::radians(camera.rotation.y), glm::vec3(0.f, 1.f, 0.f));
+	rotM = glm::rotate(rotM, glm::radians(0.f), glm::vec3(0.f, 0.f, 1.f));
+	glm::vec4 target(0.f, 0.f, 1.f, 0.f);
+	target = rotM * target; target = glm::normalize(target);
+	
+	PRINT("<> "<< target.x <<", "<< target.y <<", "<< target.z <<" <>");
+	shaderData.values.view = glm::lookAt(camera.position, camera.position + glm::vec3(target), glm::vec3(0.f, 1.f, 0.f));
+	
+	//update projection matrix
+	float aspectRatio = extent.width / (float) extent.height;
+	shaderData.values.proj = glm::perspective(glm::radians(camera.fovX / aspectRatio), aspectRatio, camera.nearZ, camera.farZ);
+	shaderData.values.proj[1][1] *= -1;
+	
+	//update other values
+	shaderData.values.viewPos = glm::vec4(camera.position, 0.f) * glm::vec4(-1.f, 0.f, -1.f, 0.f);
+	shaderData.values.lightPos = glm::vec4(0.0f, 2.5f, 0.0f, 1.0f);
+	
+	//map shader data to uniform buffer
 	void* data;
 	vkMapMemory(device, shaderData.uniformBufferMemory, 0, sizeof(shaderData.values), 0, &data);{
 		memcpy(data, &shaderData.values, sizeof(shaderData.values));
@@ -1250,7 +1302,7 @@ VkFormat Renderer_Vulkan::findSupportedFormat(const std::vector<VkFormat>& candi
 		}
 	}
 	
-	throw std::runtime_error("failed to find supported format");
+	ASSERT(false, "failed to find supported format");
 }
 
 VkFormat Renderer_Vulkan::findDepthFormat() {
@@ -1303,7 +1355,7 @@ uint32 Renderer_Vulkan::findMemoryType(uint32 typeFilter, VkMemoryPropertyFlags 
 			return i;
 		}
 	}
-	throw std::runtime_error("failed to find suitable memory type"); //error out if no suitable memory found
+	ASSERT(false, "failed to find suitable memory type"); //error out if no suitable memory found
 }
 
 void Renderer_Vulkan::createImage(uint32 width, uint32 height, uint32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
@@ -1516,7 +1568,7 @@ void Renderer_Vulkan::generateMipmaps(VkImage image, VkFormat imageFormat, int32
 	VkFormatProperties formatProperties;
 	vkGetPhysicalDeviceFormatProperties(physicalDevice, imageFormat, &formatProperties);
 	if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
-		throw std::runtime_error("texture image format does not support linear blitting");
+		ASSERT(false, "texture image format does not support linear blitting");
 	}
 	
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();

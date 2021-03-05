@@ -17,6 +17,7 @@ struct DeshiEngine {
 	Time time;
 	
 	//TODO(,delle) setup loading a config file to a config struct
+	//TODO(r,delle) change render API to a define rather than variable so it doesnt have to be a pointer
 	void LoadConfig(){
 		
 		//render api
@@ -37,7 +38,7 @@ struct DeshiEngine {
 		renderer->Init(&window, imgui); //inits imgui as well
 		
 		//start entity admin
-		entityAdmin.Create(&input, &window, &time);
+		entityAdmin.Create(&input, &window, &time, renderer);
 		
 		//start main loop
 		while(!glfwWindowShouldClose(window.window)){
@@ -58,6 +59,8 @@ struct DeshiEngine {
 		imgui->NewFrame();            //place imgui calls after this
 		ImGui::ShowDemoWindow();
 		entityAdmin.Update();
+		glm::mat4 temp = ((Renderer_Vulkan*)renderer)->scene.meshes[0].modelMatrix;
+		((Renderer_Vulkan*)renderer)->scene.meshes[0].modelMatrix = glm::rotate(temp, time.deltaTime * glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
 		renderer->Render();           //place imgui calls before this
 		renderer->Present();
 		//entityAdmin.PostRenderUpdate();
