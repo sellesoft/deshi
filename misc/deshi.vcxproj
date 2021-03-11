@@ -167,6 +167,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\animation\Armature.h" />
+    <ClInclude Include="..\src\animation\Bone.h" />
+    <ClInclude Include="..\src\animation\Model.h" />
+    <ClInclude Include="..\src\animation\Scene.h" />
     <ClInclude Include="..\src\components\Camera.h" />
     <ClInclude Include="..\src\components\Canvas.h" />
     <ClInclude Include="..\src\components\Collider.h" />
@@ -175,10 +179,8 @@
     <ClInclude Include="..\src\components\Keybinds.h" />
     <ClInclude Include="..\src\components\Light.h" />
     <ClInclude Include="..\src\components\Listener.h" />
-    <ClInclude Include="..\src\components\Model.h" />
     <ClInclude Include="..\src\components\MovementState.h" />
     <ClInclude Include="..\src\components\Physics.h" />
-    <ClInclude Include="..\src\components\Scene.h" />
     <ClInclude Include="..\src\components\Source.h" />
     <ClInclude Include="..\src\components\Transform.h" />
     <ClInclude Include="..\src\components\World.h" />
@@ -188,21 +190,24 @@
     <ClInclude Include="..\src\core\deshi_import.h" />
     <ClInclude Include="..\src\core\deshi_input.h" />
     <ClInclude Include="..\src\core\deshi_renderer.h" />
+    <ClInclude Include="..\src\core\deshi_time.h" />
     <ClInclude Include="..\src\EntityAdmin.h" />
+    <ClInclude Include="..\src\external\draudio\dr_flac.h" />
+    <ClInclude Include="..\src\external\draudio\dr_mp3.h" />
+    <ClInclude Include="..\src\external\draudio\dr_wav.h" />
+    <ClInclude Include="..\src\external\imgui\imconfig.h" />
+    <ClInclude Include="..\src\external\imgui\imgui.h" />
+    <ClInclude Include="..\src\external\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="..\src\external\imgui\imgui_impl_vulkan.h" />
+    <ClInclude Include="..\src\external\imgui\imgui_internal.h" />
+    <ClInclude Include="..\src\external\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\src\external\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\src\external\imgui\imstb_truetype.h" />
+    <ClInclude Include="..\src\external\saschawillems\VulkanInitializers.hpp" />
+    <ClInclude Include="..\src\external\tinyobjloader\tiny_obj_loader.h" />
     <ClInclude Include="..\src\geometry\Edge.h" />
     <ClInclude Include="..\src\geometry\Geometry.h" />
     <ClInclude Include="..\src\geometry\Triangle.h" />
-    <ClInclude Include="..\src\internal\draudio\dr_flac.h" />
-    <ClInclude Include="..\src\internal\draudio\dr_mp3.h" />
-    <ClInclude Include="..\src\internal\draudio\dr_wav.h" />
-    <ClInclude Include="..\src\internal\imgui\imconfig.h" />
-    <ClInclude Include="..\src\internal\imgui\imgui.h" />
-    <ClInclude Include="..\src\internal\imgui\imgui_impl_glfw.h" />
-    <ClInclude Include="..\src\internal\imgui\imgui_impl_vulkan.h" />
-    <ClInclude Include="..\src\internal\imgui\imgui_internal.h" />
-    <ClInclude Include="..\src\internal\imgui\imstb_rectpack.h" />
-    <ClInclude Include="..\src\internal\imgui\imstb_textedit.h" />
-    <ClInclude Include="..\src\internal\imgui\imstb_truetype.h" />
     <ClInclude Include="..\src\math\InertiaTensors.h" />
     <ClInclude Include="..\src\math\Math.h" />
     <ClInclude Include="..\src\math\Matrix3.h" />
@@ -216,7 +221,6 @@
     <ClInclude Include="..\src\systems\ConsoleSystem.h" />
     <ClInclude Include="..\src\systems\PhysicsSystem.h" />
     <ClInclude Include="..\src\systems\RenderCanvasSystem.h" />
-    <ClInclude Include="..\src\systems\RenderSceneSystem.h" />
     <ClInclude Include="..\src\systems\SoundSystem.h" />
     <ClInclude Include="..\src\systems\System.h" />
     <ClInclude Include="..\src\systems\WorldSystem.h" />
@@ -231,9 +235,14 @@
   <ItemGroup>
     <None Include="..\.gitignore" />
     <None Include="..\README.md" />
+    <None Include="..\shaders\default.frag" />
+    <None Include="..\shaders\default.vert" />
+    <None Include="..\shaders\wireframe.frag" />
+    <None Include="..\shaders\wireframe.vert" />
     <None Include="build.bat" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\animation\Model.cpp" />
     <ClCompile Include="..\src\components\Camera.cpp" />
     <ClCompile Include="..\src\components\Canvas.cpp" />
     <ClCompile Include="..\src\components\Collider.cpp" />
@@ -242,22 +251,20 @@
     <ClCompile Include="..\src\components\Keybinds.cpp" />
     <ClCompile Include="..\src\components\Light.cpp" />
     <ClCompile Include="..\src\components\Listener.cpp" />
-    <ClCompile Include="..\src\components\Model.cpp" />
     <ClCompile Include="..\src\components\MovementState.cpp" />
     <ClCompile Include="..\src\components\Physics.cpp" />
-    <ClCompile Include="..\src\components\Scene.cpp" />
     <ClCompile Include="..\src\components\Source.cpp" />
     <ClCompile Include="..\src\components\Transform.cpp" />
     <ClCompile Include="..\src\components\World.cpp" />
-    <ClCompile Include="..\src\core\deshi_renderer.cpp" />
+    <ClCompile Include="..\src\core\deshi_renderer_vulkan.cpp" />
     <ClCompile Include="..\src\EntityAdmin.cpp" />
-    <ClCompile Include="..\src\internal\imgui\imgui.cpp" />
-    <ClCompile Include="..\src\internal\imgui\imgui_demo.cpp" />
-    <ClCompile Include="..\src\internal\imgui\imgui_draw.cpp" />
-    <ClCompile Include="..\src\internal\imgui\imgui_impl_glfw.cpp" />
-    <ClCompile Include="..\src\internal\imgui\imgui_impl_vulkan.cpp" />
-    <ClCompile Include="..\src\internal\imgui\imgui_tables.cpp" />
-    <ClCompile Include="..\src\internal\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="..\src\external\imgui\imgui.cpp" />
+    <ClCompile Include="..\src\external\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\src\external\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\src\external\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\src\external\imgui\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="..\src\external\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\src\external\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\math\Matrix3.cpp" />
     <ClCompile Include="..\src\math\Matrix4.cpp" />
@@ -266,7 +273,6 @@
     <ClCompile Include="..\src\systems\ConsoleSystem.cpp" />
     <ClCompile Include="..\src\systems\PhysicsSystem.cpp" />
     <ClCompile Include="..\src\systems\RenderCanvasSystem.cpp" />
-    <ClCompile Include="..\src\systems\RenderSceneSystem.cpp" />
     <ClCompile Include="..\src\systems\SoundSystem.cpp" />
     <ClCompile Include="..\src\systems\WorldSystem.cpp" />
     <ClCompile Include="..\src\utils\Command.cpp" />

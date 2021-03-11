@@ -13,10 +13,10 @@ pushd C:\github\deshi\src
 
 
 
-@set OUT_EXE=Deshi
+@set OUT_EXE=deshi
 
 IF [%1]==[] GOTO DEBUG
-REM IF [%1]==[-i] GOTO ONE_FILE REM finish this
+IF [%1]==[-i] GOTO ONE_FILE
 IF [%1]==[-r] GOTO RELEASE
 
 :DEBUG
@@ -30,7 +30,10 @@ IF [%~2]==[] ECHO "Place the .cpp path after using -i" GOTO DONE
 
 @set OUT_DIR="..\build\Debug"
 IF NOT EXIST %OUT_DIR% mkdir %OUT_DIR%
-cl /EHsc /nologo /Zi /MD /std:c++17 %INCLUDES% %~2 /Fe%OUT_DIR%/%OUT_EXE%.exe /Fo%OUT_DIR%/ /link %LIBS%
+cl /c /EHsc /nologo /Zi /MD /std:c++17 %INCLUDES% %~2 /Fo%OUT_DIR%/
+pushd ..\build\Debug
+link /nologo *.obj %LIBS% /OUT:%OUT_EXE%.exe 
+popd
 GOTO DONE
 
 :RELEASE

@@ -102,10 +102,4 @@ void Camera::Update() {
 	
 	renderer->UpdateCameraPosition(position);
 	renderer->UpdateCameraRotation(rotation);
-	PRINT("camera pos: " << position.str2f() << " ");
-	PRINT("camera rot: " << rotation.str2f() << " ");
-	PRINT("camera right: " << right.str2f() << " ");
-	PRINT("camera up: " << up.str2f() << " ");
-	PRINT("camera forward: " << forward.str2f() << " ");
-	PRINT("--------------");
 }

@@ -214,7 +214,7 @@ void Renderer_Vulkan::UpdateTrianglesColor(std::vector<uint32> triangleIDs, Colo
 }
 
 void Renderer_Vulkan::TranslateTriangles(std::vector<uint32> triangleIDs, Vector3 translation){
-	PRINT("Not implemented yet");
+	PRINT("Not implemented");
 }
 
 uint32 Renderer_Vulkan::LoadMesh(Mesh* m){
@@ -1065,19 +1065,6 @@ void Renderer_Vulkan::BuildCommandBuffers() {
 void Renderer_Vulkan::UpdateUniformBuffer(){
 	//PRINT("{-}{-} Updating Uniform Buffer {-}{-}\n");
 	//update view matrix
-	/*
-	glm::mat4 rotM = glm::mat4(1.f);
-	rotM = glm::rotate(rotM, glm::radians(camera.rotation.x), glm::vec3(1.f, 0.f, 0.f));
-	rotM = glm::rotate(rotM, glm::radians(camera.rotation.y), glm::vec3(0.f, 1.f, 0.f));
-	rotM = glm::rotate(rotM, glm::radians(camera.rotation.z), glm::vec3(0.f, 0.f, 1.f));
-	glm::mat4 transM = glm::translate(glm::mat4(1.f), camera.position);
-	
-	if(camera.mode == 0){
-		shaderData.values.view = rotM * transM;
-	}else{
-		shaderData.values.view = transM * rotM;
-	}
-	*/
 	glm::mat4 rotM = glm::mat4(1.f);
 	rotM = glm::rotate(rotM, glm::radians(camera.rotation.x), glm::vec3(1.f, 0.f, 0.f));
 	rotM = glm::rotate(rotM, glm::radians(camera.rotation.y), glm::vec3(0.f, 1.f, 0.f));
@@ -1085,7 +1072,6 @@ void Renderer_Vulkan::UpdateUniformBuffer(){
 	glm::vec4 target(0.f, 0.f, 1.f, 0.f);
 	target = rotM * target; target = glm::normalize(target);
 	
-	PRINT("<> "<< target.x <<", "<< target.y <<", "<< target.z <<" <>");
 	shaderData.values.view = glm::lookAt(camera.position, camera.position + glm::vec3(target), glm::vec3(0.f, 1.f, 0.f));
 	
 	//update projection matrix
@@ -1319,7 +1305,7 @@ VkPipelineShaderStageCreateInfo Renderer_Vulkan::loadShader(std::string fileName
 	
 	//get shader name
 	char shaderName[16];
-	strncpy(shaderName, fileName.c_str(), 15);
+	strncpy_s(shaderName, fileName.c_str(), 15);
 	shaderName[15] = '\0'; //null-character
 	
 	//check if shader has already been created
