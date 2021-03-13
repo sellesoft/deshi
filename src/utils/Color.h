@@ -5,7 +5,7 @@ struct Color {
 	uint8 r, g, b, a;
 	
 	static const Color
-		GREY,    DARK_GREY,    VERY_DARK_GREY,
+	GREY,    DARK_GREY,    VERY_DARK_GREY,
 	RED,     DARK_RED,     VERY_DARK_RED,
 	YELLOW,  DARK_YELLOW,  VERY_DARK_YELLOW,
 	GREEN,   DARK_GREEN,   VERY_DARK_GREEN,
@@ -17,6 +17,11 @@ struct Color {
 	Color() {
 		r = 0; g = 0; b = 0; a = 0;
 	};
+
+	bool operator == (Color ri) {
+		if (r == ri.r && g == ri.g && b == ri.b) return true;
+		return false;
+	}
 	
 	Color(uint8 r, uint8 g, uint8 b) {
 		this->r = r;
