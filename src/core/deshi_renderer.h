@@ -98,6 +98,7 @@ struct Renderer{
 ////////////////////////////////
 //// vulkan support structs ////
 ////////////////////////////////
+//Vulkan Spec [https://renderdoc.org/vkspec_chunked/index.html]
 /*TODO(r,delle) update vulkan rendering
 In real implementation: 
 https://vulkan-tutorial.com/en/Vertex_buffers/Staging_buffer#page_Using-a-staging-buffer:~:text=You%20may

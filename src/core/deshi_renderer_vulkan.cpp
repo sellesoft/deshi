@@ -13,7 +13,7 @@
 #include "../external/imgui/imgui_impl_vulkan.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include "../external/stb/stb_image.h"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_access.hpp>

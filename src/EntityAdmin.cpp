@@ -1,94 +1,45 @@
-/* General TODOs and NOTEs board
-   TODOs should be ordered about NOTEs and TODOs should be listed in order of
-   severity.
-
-Tags: + GitIssue, s Severe, u Unimportant, p Physics, r Render, e Entity, i Input,
-	  m Math, o Optimization, g General, c Clean Up Code
-
-TODO(p,delle) add physics based collision resolution for all entities
-
-*/
-
-/* TODOs
-
-1.  create templated component tuple iterator that loops thru a vector and returns an iterator of components of templated type
-2.  store Light and other components on entities
-3.  cut away alot of triangle
-4.  store all components in an object pool so that i can loop over that instead of entities [combine with 1]
-5.  add looking up/down
-6.  cleanup some warnings
-7.  cut down physics to be better
-8.  figure out why rotation degenerates in collision, interpolation, and at higher than max velocities
-9.  local y-axis rotation is visually wrong
-10. add a .str() method to Component.h
-11. finish Scene.h render option todos
-12. spawning some complexes doesnt work
-13. fix rotation interpolation
-14. add auto organization to UI
-15. implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
-
-*/
-
-/* TODO(,sushi) update this eventually
+/*
 ---Systems Tick Order---||--------Read/Write Components-----||------------Read Only Components-------------------
-  olcPixelGameEngine	|| Input							|| N/A
-  TimeSystem			|| Time								|| N/A
-  ScreenSystem			|| Screen							|| N/A
-  CommandSystem			|| Input, Keybinds, Canvas			|| N/A 
-  SimpleMovementSystem	|| Camera							|| Input, Keybinds, MovementState, Time
-  PhysicsSystem			|| Time, Transform, Physics			|| Camera, Screen
-  CameraSystem			|| Camera							|| Screen
-  RenderCanvasSystem	|| Canvas							|| Screen
-  WorldSystem			|| World, Entity					|| N/A
-  TriggeredCommandSystem|| N/A								|| N/A
-  DebugSystem			|| ALL								|| ALL
+  olcPixelGameEngine      || Input							|| N/A
+  TimeSystem              || Time							 || N/A
+  ScreenSystem            || Screen						   || N/A
+  CommandSystem           || Input, Keybinds, Canvas		  || N/A 
+  SimpleMovementSystem    || Camera						   || Input, Keybinds, MovementState, Time
+  PhysicsSystem           || Time, Transform, Physics		 || Camera, Screen
+  CameraSystem            || Camera						   || Screen
+  RenderCanvasSystem      || Canvas						   || Screen
+  WorldSystem             || World, Entity					|| N/A
+  TriggeredCommandSystem  || N/A							  || N/A
+  DebugSystem             || ALL							  || ALL
 */
 
-#include "EntityAdmin.h"						//UsefulDefines.h, Debug.h
+#include "EntityAdmin.h"
 #include "core/deshi.h"
-#include "core/deshi_time.h"
 
-
-#include "utils/PhysicsWorld.h"					//
-#include "utils/Command.h"						//Debug.h
+#include "utils/PhysicsWorld.h"
+#include "utils/Command.h"
 #include "utils/defines.h"
-//#include "math/Math.h"						//UsefulDefines.h, Vector3.h, Vector4.h, Matrix3.h, Matrix4.h, MatrixN.h,
-//	<math.h>, <algorithm>, <numeric>
-//#include "geometry/Edge.h"					//Math.h
-//#include "geometry/Triangle.h"				//Math.h, Edge.h
 
-
-//component includes
-#include "components/Component.h"				//UsefulDefines.h, <vector>
-#include "components/World.h"					//Component.h
-#include "components/Camera.h"					//Component.h, Vector3.h, Matrix4.h
-#include "components/Keybinds.h"				//Component.h
-#include "components/MovementState.h"			//Component.h
-#include "components/Canvas.h"					//Component.h, UI.h
+#include "components/Component.h"
+#include "components/World.h"
+#include "components/Camera.h"
+#include "components/Keybinds.h"
+#include "components/MovementState.h"
+#include "components/Canvas.h"
 #include "components/Console.h"
 #include "components/Listener.h"
-//#include "components/Light.h"					//Component.h, Vector3.h 
-//#include "components/Physics.h"				//Component.h, Vector3.h
-//#include "components/Transform.h"				//Component.h, Vector3.h, Matrix4.h
 
-//system includes
-#include "systems/System.h"						//EntityAdmin.h
-//#include "systems/TimeSystem.h"					//System.h |cpp->| Time.h, Command.h
-//#include "systems/ScreenSystem.h"				//System.h |cpp->| Screen.h
-#include "systems/CommandSystem.h"				//System.h |cpp->| Command.h, Input.h, Canvas.h
-//#include "systems/SimpleMovementSystem.h"		//System.h |cpp->| Input.h, Keybinds.h, Camera.h, MovementState.h, Time.h
-#include "systems/PhysicsSystem.h"				//System.h |cpp->| PhysicsWorld.h, Math.h, Transform.h, Physics.h, Input.h, Command.h, Input.h, Time.h, Camera.h, Screen.h
-//#include "systems/CameraSystem.h"				//System.h |cpp->| Camera.h, Screen.h, Command.h
-#include "systems/RenderCanvasSystem.h"			//System.h |cpp->| Canvas.h, Screen.h
-#include "systems/WorldSystem.h"				//System.h |cpp->| World.h, Transform.h, Mesh.h, Command.h, Input.h
-//#include "systems/TriggeredCommandSystem.h"		//System.h |cpp->| Command.h
-#include "systems/ConsoleSystem.h"				//System.h |cpp->| Console.h
+#include "systems/System.h"
+#include "systems/CommandSystem.h"
+#include "systems/PhysicsSystem.h"
+#include "systems/RenderCanvasSystem.h"
+#include "systems/WorldSystem.h"
+#include "systems/ConsoleSystem.h"
 #include "systems/SoundSystem.h"
 
 //// EntityAdmin ////
 
-void EntityAdmin::Create(Input* i, Window* w, Time* t, Renderer* r) {
-	
+void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r) {
 	window = w;
 	input = i;
 	time = t;

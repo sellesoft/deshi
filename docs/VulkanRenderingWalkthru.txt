@@ -1,0 +1,79 @@
+deshi + vulkan rendering important stuff:
+
+Vulkan Flow
+-----------
+Init: line 40
+sets up most vulkan stuff and init imgui as well
+1 ) 
+	gets the glfw window and its width/height
+debug) creates a scene and with a box using the uv texture
+2 )[CreateInstance] 
+	creates the vulkan instance (the vulkan object that holds everything)
+3 )[SetupDebugMessenger] 
+	sets up the debug messenger which allows the VulkanSDK to print errors
+4 )[CreateSurface] 
+	create the glfw-vulkan surface (how glfw and vulkan talk to eachother)
+5 )[PickPhysicalDevice] 
+	pick the GPU to use for the engine
+6 )[CreateLogicalDevice] 
+	create a code abstraction of that GPU to pass to functions needed access to GPU
+    enables different functionality on the GPU 
+	creates/selects the GPUs presentation and graphics queues
+7 )[CreateClearValues]
+	creates the clear values that clear the screen to black
+8 )[CreateCommandPool]
+	creates a pool for command buffers to live
+9 )[CreateDescriptorPool]
+	creates a pool for descriptors where things like image samplers and buffers will be stored
+10)[CreatePipelineCache]
+	creates a pipeline cache so some pipeline creation information can be saved for future creation
+11)[CreateUniformBuffer] 
+	creates the uniform buffer (data (camera info) to be sent to the shader every frame)
+12)[LoadDefaultAssets]
+	loads the default textures: null, default, black, white, uv
+debug) loads the testing scene
+13)[CreateSwapChain]
+	creates the swap chain which owns the images to be rendered to
+14)[CreateRenderPass]
+	creates the render pass which deals with the framebuffer attachments, like the depth and color images
+15)[CreateFrames]
+	creates the frame specific things:
+	gets the image count and images from the swapchain
+	creates and uploads the framebuffer attachment images to the GPU after freeing the previous one
+	fills the FrameVk structs with their images, imageviews, framebuffers, allocated command buffers (not built)
+16)[CreateLayouts]
+	creates the layouts for the pipeline and layouts for different materials
+	basically, creates layout for things to be sent along the shaders
+18)[CreatePipelines]
+	creates the graphics pipelines (1 per shader) which define how alot of rendering stuff is done like:
+	rasterization (triangle order (clockwise), triangle fill-mode), alpha blending, color swizzling
+	depth testing, multisampling, vertex input method (triangle, n-gon, square, etc)
+	loads the shader code and assigns shaders to materials	
+19)[CreateSyncObjects]
+	creates the sync objects (fences and semaphores, see function comment on these) per frame
+19) inits imgui, uploads imgui font to vulkan
+20) builds the command buffers which contain the actual draw calls by looping thru the scene's meshes, and draws imgui
+
+ResizeWindow: line 711
+GLFW sets a bool to true and this func is called is multiple places if that bool is true
+1 ) recreates the swap chain with new dimensions
+2 ) recreates the render pass
+3 ) recreates the frame specific stuff
+4 ) recreates and reloads the shaders
+
+Render: line 82
+1 ) checks if the window has been resized
+2 ) waits for the in-flight fence to be ready
+3 ) acquires the next image from the surface
+4 ) waits for the fence again? (this might should not happen)
+5 ) marks the image as being used and resets the fence
+6 ) calls imgui's render func and rebuilds the command buffer if there is imgui draw data
+7 ) updates the uniform buffer (camera matrices and shader data)
+8 ) submits the image's command buffer to the graphics queue
+9 ) checks if the window needs to be recreated
+10) presents the image to presentation queue
+11) checks if the window was resized again
+12) increments the frame index and waits on the graphics queue to be idle
+
+ 
+
