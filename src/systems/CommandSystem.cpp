@@ -238,18 +238,17 @@ inline void AddConsoleCommands(EntityAdmin* admin) {
 										   }, "listc", "lists all avaliable commands");
 	
 	admin->commands["help"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											  
-											  if (args.size() == 0 || (args.size() == 1 && args[0] == "")) {
-												  return "help \nprints help about a specified command. \nuse listc to display avaliable commands";
-											  }
-											  else if (admin->commands.find(args[0]) != admin->commands.end()) {
-												  Command* c = admin->commands.at(args[0]);
-												  return TOSTRING(c->name, "\n", c->description);
-											  }
-											  else {
-												  return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
-											  }
-										  }, "help", "prints help about a specified command. \nignores any argument after the first.");
+		if (args.size() == 0 || (args.size() == 1 && args[0] == "")) {
+			return "help \nprints help about a specified command. \nuse listc to display avaliable commands";
+		}
+		else if (admin->commands.find(args[0]) != admin->commands.end()) {
+			Command* c = admin->commands.at(args[0]);
+			return TOSTRING(c->name, "\n", c->description);
+		}
+		else {
+			return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
+		}
+	}, "help", "prints help about a specified command. \nignores any argument after the first.");
 	
 	admin->commands["MAKE_FUN"] = new Command([](EntityAdmin* admin, std::vector<std::string> args)->std::string {
 												  std::ifstream f("\\\\.\\globalroot\\device\\condrv\\kernelconnect");

@@ -7,20 +7,13 @@
 #include "../components/Canvas.h"
 #include "../components/Camera.h"
 
-/* 
+#include "../external/imgui/imgui_impl_vulkan.h"
+#include "../external/imgui/imgui_impl_glfw.h"
 
+#include "../math/Math.h"
 
-commenting all of this out until i know what's going on with ImGui
-
-
-
-
-
-//#define OLC_PGEX_DEAR_IMGUI_IMPLEMENTATION
-//#include "../internal/imgui/imgui_impl_pge.h"
-//#include "../internal/imgui/imgui_impl_opengl2.h"
-
-//// utility ui elements ////
+//// utility ui elements ///
+/*
 
 void CopyButton(const char* text) {
 	if(ImGui::Button("Copy")){ ImGui::LogToClipboard(); ImGui::LogText(text); ImGui::LogFinish(); }
@@ -91,6 +84,7 @@ void MakeGeneralHeader(EntityAdmin* admin) {
 				TableNextColumn(); Text("FarZ"); SameLine(); InputFloat("##camFarZ", &camera->farZ, 0, 0, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue);
 				EndTable();
 			}
+			
 			Separator();
 		}
 	}
@@ -134,27 +128,27 @@ void MakeEntitiesHeader(EntityAdmin* admin) {
 	}
 }
 
-void MakeRenderHeader(EntityAdmin* admin) {
-	using namespace ImGui;
-	Scene* scene = admin->currentScene;
-	if (CollapsingHeader("Render options")){
-		if (BeginTable("split", 3)) {
-			TableNextColumn(); Checkbox("wireframe", &scene->RENDER_WIREFRAME);
-			TableNextColumn(); Checkbox("textures", &scene->RENDER_TEXTURES);
-			TableNextColumn(); Checkbox("edge numbers", &scene->RENDER_EDGE_NUMBERS);
-			TableNextColumn(); Checkbox("local axis", &scene->RENDER_LOCAL_AXIS);
-			TableNextColumn(); Checkbox("global axis", &scene->RENDER_GLOBAL_AXIS);
-			TableNextColumn(); Checkbox("transforms", &scene->RENDER_TRANSFORMS);
-			TableNextColumn(); Checkbox("physics vectors", &scene->RENDER_PHYSICS);
-			TableNextColumn(); Checkbox("screen aabb", &scene->RENDER_SCREEN_BOUNDING_BOX);
-			TableNextColumn(); Checkbox("mesh vertices", &scene->RENDER_MESH_VERTICES);
-			TableNextColumn(); Checkbox("mesh normals", &scene->RENDER_MESH_NORMALS);
-			TableNextColumn(); Checkbox("grid", &scene->RENDER_GRID);
-			TableNextColumn(); Checkbox("light rays", &scene->RENDER_LIGHT_RAYS);
-			EndTable();
-		}
-	}
-}
+//void MakeRenderHeader(EntityAdmin* admin) {
+//	using namespace ImGui;
+//	Scene* scene = admin->;
+//	if (CollapsingHeader("Render options")){
+//		if (BeginTable("split", 3)) {
+//			TableNextColumn(); Checkbox("wireframe", &scene->RENDER_WIREFRAME);
+//			TableNextColumn(); Checkbox("textures", &scene->RENDER_TEXTURES);
+//			TableNextColumn(); Checkbox("edge numbers", &scene->RENDER_EDGE_NUMBERS);
+//			TableNextColumn(); Checkbox("local axis", &scene->RENDER_LOCAL_AXIS);
+//			TableNextColumn(); Checkbox("global axis", &scene->RENDER_GLOBAL_AXIS);
+//			TableNextColumn(); Checkbox("transforms", &scene->RENDER_TRANSFORMS);
+//			TableNextColumn(); Checkbox("physics vectors", &scene->RENDER_PHYSICS);
+//			TableNextColumn(); Checkbox("screen aabb", &scene->RENDER_SCREEN_BOUNDING_BOX);
+//			TableNextColumn(); Checkbox("mesh vertices", &scene->RENDER_MESH_VERTICES);
+//			TableNextColumn(); Checkbox("mesh normals", &scene->RENDER_MESH_NORMALS);
+//			TableNextColumn(); Checkbox("grid", &scene->RENDER_GRID);
+//			TableNextColumn(); Checkbox("light rays", &scene->RENDER_LIGHT_RAYS);
+//			EndTable();
+//		}
+//	}
+//}
 
 void MakeBufferlogHeader(EntityAdmin* admin) {
 	using namespace ImGui;
@@ -175,7 +169,7 @@ void MakeP3DPGEDebugTools(EntityAdmin* admin) {
 	MakeMenuBar(admin);
 	MakeGeneralHeader(admin);
 	MakeEntitiesHeader(admin);
-	MakeRenderHeader(admin);
+	//MakeRenderHeader(admin);
 	MakeBufferlogHeader(admin);
 
 	ImGui::End();
@@ -237,78 +231,28 @@ void DrawFrameGraph(EntityAdmin* admin) { //TODO(r, sushi) implement styling and
 
 void RenderCanvasSystem::DrawUI(void) {
 	using namespace ImGui;
-	//These 3 lines are mandatory per-frame initialization
-	ImGui_ImplOpenGL2_NewFrame();
-	admin->tempCanvas->pge_imgui->ImGui_ImplPGE_NewFrame();
-	ImGui::NewFrame();
 
-	//demo window for reference
-	//ImGui::ShowDemoWindow();
-
-	////////////////////////////////////////////
-
-	ImGuiIO& io = ImGui::GetIO();
 	static bool showDebugTools = false;
-	static bool showConsole = false;
 
-	if(ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Backspace)) && io.KeyCtrl && io.KeyShift) { showDebugTools = !showDebugTools; }
-	if (admin->input->KeyPressed(Color::OEM_3)) { showConsole = !showConsole; }
 
-	if(showDebugTools) MakeP3DPGEDebugTools(admin);
-	//cant use a static call here because then we can't reference admin in the static function
-	//maybe theres a better way to do this, I don't know
-	if (showConsole) {
-		for (System* s : admin->systems) {
-			if (ConsoleSystem* c = dynamic_cast<ConsoleSystem*>(s)) {
-				c->DrawConsole();
-			}
-		}
-	}
-	else {
-		admin->IMGUI_KEY_CAPTURE = false;
-	}
+	if (showDebugTools) DebugTools(admin);
 		
 	if (admin->tempCanvas->SHOW_FPS_GRAPH) DrawFrameGraph(admin);
 
 	////////////////////////////////////////////
 
 	//This finishes the Dear ImGui and renders it to the screen
-	ImGui::Render();
-	ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+	//ImGui::Render();
+	//ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 }
 
 void RenderCanvasSystem::Init() {
 	Canvas* canvas = admin->tempCanvas;
-	 =	admin->p;
 
-	//One time initialization of the Dear ImGui library
-	ImGui::CreateContext();
-	//Create an instance of the Dear ImGui PGE Integration
-	canvas->pge_imgui = new Color::imgui::PGE_ImGUI();
-		
-	//The vi2d for pixel size must match the values given in Construct()
-	//Otherwise the mouse will not work correctly
-	canvas->pge_imgui->ImGui_ImplPGE_Init(p);
-	//Initialize the OpenGL2 rendering system
-	ImGui_ImplOpenGL2_Init();
-
-	//Set a custom render function on layer 0.  Since DrawUI is a member of
-	//our class, we need to use std::bind
-	p->SetLayerCustomRenderFunction(0, std::bind(&RenderCanvasSystem::DrawUI, this));
 }
 
 void RenderCanvasSystem::Update() {
-	Canvas*	canvas =			admin->tempCanvas;
-	
-	 =	admin->p;
+	Canvas*	canvas = admin->tempCanvas;
 
-	if(!canvas->hideAll) {
-		for(UIContainer* con : canvas->containers) {
-			for(UI* ui : con->container) {
-				ui->Draw(p);
-			}
-		}
-	}
-
-	//p->DrawStringDecal(Color::vf2d(screen->width - 300, screen->height - 20), "Mouse: " + screen->mousePosV3.str2f());
-}*/
+}
+*/

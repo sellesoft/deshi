@@ -2,18 +2,13 @@
 
 #include "../components/Console.h"
 
+#include "../core/deshi_input.h"
+
 #include "../utils/Command.h"
 #include <time.h>
 
-
-/*
-
-
-commenting this out until I know what's going on with ImGui
-
-
-#include "../internal/imgui/imgui_impl_pge.h"
-#include "../internal/imgui/imgui_impl_opengl2.h"
+#include "../external/imgui/imgui_impl_vulkan.h"
+#include "../external/imgui/imgui_impl_glfw.h"
 
 #define RegColorFormat std::regex("(?:\\[c:([^\\]]*)\\]([^\\]]*)\\[c\\]|([^\\[]+))")
 
@@ -213,7 +208,7 @@ void ConsoleSystem::DrawConsole() {
 	PushStyleColor(ImGuiCol_ScrollbarGrabHovered, olcPixToVec4(Color(48, 85, 90, 255)));
 
 	//initialize console window
-	SetNextWindowSize(ImVec2(admin->screen->width, admin->screen->height / 1.5));
+	SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height / 1.5));
 	SetNextWindowPos(ImVec2(0, 0));
 	
 	ImGui::Begin("Console!", 0, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
@@ -223,11 +218,6 @@ void ConsoleSystem::DrawConsole() {
 		if (BeginMenu("Console")) {
 			if (MenuItem("Clear")) { ClearLog(c); }
 			if (MenuItem("Autoscroll", 0, &c->autoScroll)) { c->autoScroll = !c->autoScroll; }
-			ImGui::EndMenu();
-		}
-		if (BeginMenu("Debug")) {
-			if (MenuItem("Throw CASSERT")) { CASSERT(false, "cool"); }
-			if (MenuItem("Throw CASSERTWARN")) { CASSERTWARN(false, "yep"); }
 			ImGui::EndMenu();
 		}
 		EndMenuBar();
@@ -241,10 +231,10 @@ void ConsoleSystem::DrawConsole() {
 	if (sel_com) {
 		bool selected = false;
 		bool escape = false;
-		if (admin->input->KeyPressed(Color::DOWN) && match_sel < posis.size() - 1) { match_sel++; }
-		if (admin->input->KeyPressed(Color::UP)   && match_sel > 0)                { match_sel--; }
-		if (admin->input->KeyPressed(Color::ENTER)) { selected = true; reclaim_focus = true; }
-		if (admin->input->KeyPressed(Color::ESCAPE)) { escape = true; match_sel = 0; reclaim_focus = true; }
+		if (admin->input->KeyPressed(Key::DOWN) && match_sel < posis.size() - 1) { match_sel++; }
+		if (admin->input->KeyPressed(Key::UP)   && match_sel > 0)                { match_sel--; }
+		if (admin->input->KeyPressed(Key::ENTER)) { selected = true; reclaim_focus = true; }
+		if (admin->input->KeyPressed(Key::ESCAPE)) { escape = true; match_sel = 0; reclaim_focus = true; }
 
 		if (escape) { ok_flag = true; }
 		else {
@@ -402,8 +392,8 @@ void ConsoleSystem::Init() {
 }
 
 void ConsoleSystem::Update() {
-	//DrawConsole();
+	if (DengInput->KeyPressed(Key::TILDE)) dispcon = !dispcon;
+	if (dispcon) DrawConsole();
 	locadmin = admin;
 	loccon = admin->console;
 }
-*/

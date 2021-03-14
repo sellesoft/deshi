@@ -1,23 +1,104 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="..\src\systems\System.h">
-      <Filter>src\systems</Filter>
+    <ClInclude Include="..\src\core\deshi.h">
+      <Filter>src\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\components\Component.h">
-      <Filter>src\components</Filter>
+    <ClInclude Include="..\src\core\deshi_glfw.h">
+      <Filter>src\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\animation\Model.h">
-      <Filter>src\animation</Filter>
+    <ClInclude Include="..\src\core\deshi_imgui.h">
+      <Filter>src\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\animation\Scene.h">
-      <Filter>src\animation</Filter>
+    <ClInclude Include="..\src\core\deshi_import.h">
+      <Filter>src\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\animation\Armature.h">
-      <Filter>src\animation</Filter>
+    <ClInclude Include="..\src\core\deshi_input.h">
+      <Filter>src\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\animation\Bone.h">
-      <Filter>src\animation</Filter>
+    <ClInclude Include="..\src\core\deshi_renderer.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\geometry\Edge.h">
+      <Filter>src\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\geometry\Geometry.h">
+      <Filter>src\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\geometry\Triangle.h">
+      <Filter>src\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\InertiaTensors.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\Math.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\Matrix3.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\Matrix4.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\MatrixN.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\Quaternion.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\Vector2.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\Vector3.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\Vector4.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\Color.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\Command.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\ContainerManager.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\Debug.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\defines.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\GLOBALS.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\PhysicsWorld.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\systems\CommandSystem.h">
+      <Filter>src\systems\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\systems\ConsoleSystem.h">
+      <Filter>src\systems\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\systems\PhysicsSystem.h">
+      <Filter>src\systems\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\systems\RenderCanvasSystem.h">
+      <Filter>src\systems\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\systems\SoundSystem.h">
+      <Filter>src\systems\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\systems\WorldSystem.h">
+      <Filter>src\systems\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\EntityAdmin.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Camera.h">
+      <Filter>src\components\h</Filter>
     </ClInclude>
     <ClInclude Include="..\src\components\Canvas.h">
       <Filter>src\components\h</Filter>
@@ -43,6 +124,9 @@
     <ClInclude Include="..\src\components\Physics.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\components\Scene.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\components\Source.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
@@ -52,29 +136,29 @@
     <ClInclude Include="..\src\components\World.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\components\Camera.h">
+    <ClInclude Include="..\src\components\Model.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\deshi_import.h">
-      <Filter>src\core</Filter>
+    <ClInclude Include="..\src\systems\System.h">
+      <Filter>src\systems</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\deshi_input.h">
-      <Filter>src\core</Filter>
+    <ClInclude Include="..\src\components\Component.h">
+      <Filter>src\components</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\deshi_renderer.h">
-      <Filter>src\core</Filter>
+    <ClInclude Include="..\src\animation\Armature.h">
+      <Filter>src\animation</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\deshi_time.h">
-      <Filter>src\core</Filter>
+    <ClInclude Include="..\src\animation\Bone.h">
+      <Filter>src\animation</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\deshi.h">
-      <Filter>src\core</Filter>
+    <ClInclude Include="..\src\animation\Model.h">
+      <Filter>src\animation</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\deshi_glfw.h">
-      <Filter>src\core</Filter>
+    <ClInclude Include="..\src\animation\Scene.h">
+      <Filter>src\animation</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\deshi_imgui.h">
-      <Filter>src\core</Filter>
+    <ClInclude Include="..\src\external\draudio\dr_flac.h">
+      <Filter>src\external\draudio</Filter>
     </ClInclude>
     <ClInclude Include="..\src\external\draudio\dr_mp3.h">
       <Filter>src\external\draudio</Filter>
@@ -82,116 +166,35 @@
     <ClInclude Include="..\src\external\draudio\dr_wav.h">
       <Filter>src\external\draudio</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\external\draudio\dr_flac.h">
-      <Filter>src\external\draudio</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\external\imgui\imgui_impl_glfw.h">
-      <Filter>src\external\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\external\imgui\imgui_impl_vulkan.h">
-      <Filter>src\external\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\external\imgui\imgui_internal.h">
-      <Filter>src\external\imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\external\imgui\imstb_rectpack.h">
+    <ClInclude Include="..\src\external\imgui\imstb_truetype.h">
       <Filter>src\external\imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\src\external\imgui\imstb_textedit.h">
       <Filter>src\external\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\external\imgui\imstb_truetype.h">
+    <ClInclude Include="..\src\external\imgui\imstb_rectpack.h">
       <Filter>src\external\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\external\imgui\imconfig.h">
+    <ClInclude Include="..\src\external\imgui\imgui_internal.h">
+      <Filter>src\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\external\imgui\imgui_impl_vulkan.h">
+      <Filter>src\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\external\imgui\imgui_impl_glfw.h">
       <Filter>src\external\imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\src\external\imgui\imgui.h">
       <Filter>src\external\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\external\saschawillems\VulkanInitializers.hpp">
-      <Filter>src\external\saschawillems</Filter>
+    <ClInclude Include="..\src\external\imgui\imconfig.h">
+      <Filter>src\external\imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\src\external\tinyobjloader\tiny_obj_loader.h">
       <Filter>src\external\tinyobjloader</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\math\MatrixN.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Quaternion.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Vector2.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Vector3.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Vector4.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\InertiaTensors.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Math.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Matrix3.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Matrix4.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\geometry\Geometry.h">
-      <Filter>src\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\geometry\Triangle.h">
-      <Filter>src\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\geometry\Edge.h">
-      <Filter>src\geometry</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\systems\PhysicsSystem.h">
-      <Filter>src\systems\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\systems\RenderCanvasSystem.h">
-      <Filter>src\systems\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\systems\SoundSystem.h">
-      <Filter>src\systems\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\systems\WorldSystem.h">
-      <Filter>src\systems\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\systems\CommandSystem.h">
-      <Filter>src\systems\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\systems\ConsoleSystem.h">
-      <Filter>src\systems\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\Debug.h">
-      <Filter>src\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\defines.h">
-      <Filter>src\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\GLOBALS.h">
-      <Filter>src\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\PhysicsWorld.h">
-      <Filter>src\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\Color.h">
-      <Filter>src\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\Command.h">
-      <Filter>src\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\ContainerManager.h">
-      <Filter>src\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\EntityAdmin.h">
-      <Filter>src</Filter>
+    <ClInclude Include="..\src\external\saschawillems\VulkanInitializers.hpp">
+      <Filter>src\external\saschawillems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -231,26 +234,26 @@
     <Filter Include="src\components\h">
       <UniqueIdentifier>{ac3d7024-7202-4557-8232-cff3b1b89072}</UniqueIdentifier>
     </Filter>
-    <Filter Include="shaders">
-      <UniqueIdentifier>{32a1e3a9-b805-46a7-9732-e8d7ab252a88}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\animation">
-      <UniqueIdentifier>{aace7262-3d50-499b-a1ef-fa15e56f32b1}</UniqueIdentifier>
+      <UniqueIdentifier>{1a054cbd-376e-4ecb-9e7b-e166da4b4673}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\external">
-      <UniqueIdentifier>{a5c42d61-2511-44d0-aca7-de17fad4ec46}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\external\draudio">
-      <UniqueIdentifier>{b31f70e7-0ae3-4476-af2b-c5719df996fd}</UniqueIdentifier>
+      <UniqueIdentifier>{29d3584e-d40d-49d7-b334-ee2e69ad1d81}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\external\imgui">
-      <UniqueIdentifier>{2328a450-77d5-4084-b074-a90df170d1e5}</UniqueIdentifier>
+      <UniqueIdentifier>{ed611ccd-1730-46c2-89ab-5aa1346d6b14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\external\draudio">
+      <UniqueIdentifier>{8e998c9e-1401-4617-b5a6-d4536f3bf16e}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\external\saschawillems">
-      <UniqueIdentifier>{3d331257-3679-4d29-a24c-19074626de97}</UniqueIdentifier>
+      <UniqueIdentifier>{ea4ee929-ca9c-46ce-a1eb-8a11ba6ba0f0}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\external\tinyobjloader">
-      <UniqueIdentifier>{72d0a5a4-f0a2-441e-9fc1-9ecf18b0f4d0}</UniqueIdentifier>
+      <UniqueIdentifier>{3e2eaec3-7113-42e7-8382-d0841d1e07e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="shaders">
+      <UniqueIdentifier>{97a16504-577a-4d29-b6c1-9d0f379e0ce6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -263,6 +266,9 @@
     <None Include="build.bat">
       <Filter>docs</Filter>
     </None>
+    <None Include="..\shaders\default.frag">
+      <Filter>shaders</Filter>
+    </None>
     <None Include="..\shaders\default.vert">
       <Filter>shaders</Filter>
     </None>
@@ -272,13 +278,22 @@
     <None Include="..\shaders\wireframe.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="..\shaders\default.frag">
-      <Filter>shaders</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\animation\Model.cpp">
-      <Filter>src\animation</Filter>
+    <ClCompile Include="..\src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\components\Camera.cpp">
+      <Filter>src\components\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\components\Canvas.cpp">
+      <Filter>src\components\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\components\Collider.cpp">
+      <Filter>src\components\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\components\Component.cpp">
+      <Filter>src\components\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\components\Console.cpp">
       <Filter>src\components\cpp</Filter>
@@ -307,59 +322,20 @@
     <ClCompile Include="..\src\components\World.cpp">
       <Filter>src\components\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\components\Camera.cpp">
-      <Filter>src\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\components\Canvas.cpp">
-      <Filter>src\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\components\Collider.cpp">
-      <Filter>src\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\components\Component.cpp">
-      <Filter>src\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\core\deshi_renderer_vulkan.cpp">
-      <Filter>src\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\external\imgui\imgui_impl_vulkan.cpp">
-      <Filter>src\external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\external\imgui\imgui_tables.cpp">
-      <Filter>src\external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\external\imgui\imgui_widgets.cpp">
-      <Filter>src\external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\external\imgui\imgui.cpp">
-      <Filter>src\external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\external\imgui\imgui_demo.cpp">
-      <Filter>src\external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\external\imgui\imgui_draw.cpp">
-      <Filter>src\external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\external\imgui\imgui_impl_glfw.cpp">
-      <Filter>src\external\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\math\Vector3.cpp">
-      <Filter>src\math</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\math\Matrix3.cpp">
       <Filter>src\math</Filter>
     </ClCompile>
     <ClCompile Include="..\src\math\Matrix4.cpp">
       <Filter>src\math</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\systems\RenderCanvasSystem.cpp">
-      <Filter>src\systems\cpp</Filter>
+    <ClCompile Include="..\src\math\Vector3.cpp">
+      <Filter>src\math</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\systems\SoundSystem.cpp">
-      <Filter>src\systems\cpp</Filter>
+    <ClCompile Include="..\src\utils\Command.cpp">
+      <Filter>src\utils</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\systems\WorldSystem.cpp">
-      <Filter>src\systems\cpp</Filter>
+    <ClCompile Include="..\src\utils\GLOBALS.cpp">
+      <Filter>src\utils</Filter>
     </ClCompile>
     <ClCompile Include="..\src\systems\CommandSystem.cpp">
       <Filter>src\systems\cpp</Filter>
@@ -370,17 +346,44 @@
     <ClCompile Include="..\src\systems\PhysicsSystem.cpp">
       <Filter>src\systems\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\utils\GLOBALS.cpp">
-      <Filter>src\utils</Filter>
+    <ClCompile Include="..\src\systems\RenderCanvasSystem.cpp">
+      <Filter>src\systems\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\utils\Command.cpp">
-      <Filter>src\utils</Filter>
+    <ClCompile Include="..\src\systems\SoundSystem.cpp">
+      <Filter>src\systems\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\main.cpp">
-      <Filter>src</Filter>
+    <ClCompile Include="..\src\systems\WorldSystem.cpp">
+      <Filter>src\systems\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\EntityAdmin.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\animation\Model.cpp">
+      <Filter>src\animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\deshi_renderer_vulkan.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\external\imgui\imgui_widgets.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\external\imgui\imgui_tables.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\external\imgui\imgui_impl_vulkan.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\external\imgui\imgui_impl_glfw.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\external\imgui\imgui_draw.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\external\imgui\imgui_demo.cpp">
+      <Filter>src\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\external\imgui\imgui.cpp">
+      <Filter>src\external\imgui</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

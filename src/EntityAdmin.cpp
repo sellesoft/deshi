@@ -71,10 +71,13 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r) {
 	AddSystem(new RenderCanvasSystem());
 	AddSystem(new WorldSystem());
 	//AddSystem(new TriggeredCommandSystem());
+
+	console = new Console();
 	AddSystem(new ConsoleSystem());
+
 	AddSystem(new SoundSystem());
 	
-	console = new Console();
+	
 	
 	//singleton initialization
 	world = new World();
