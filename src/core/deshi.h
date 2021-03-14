@@ -68,6 +68,8 @@ review the projection functions for correctness
 #include "deshi_imgui.h"
 #include "deshi_time.h"
 
+#include "../math/Math.h"
+
 struct DeshiEngine {
 	EntityAdmin entityAdmin;
 	RenderAPI renderAPI;
@@ -96,6 +98,7 @@ struct DeshiEngine {
 		LoadConfig();
 		time.Init(300);
 		window.Init(&input, 1280, 720);
+		renderer->time = &time;
 		renderer->Init(&window, imgui); //inits imgui as well
 		
 		//start entity admin
@@ -120,8 +123,6 @@ struct DeshiEngine {
 		imgui->NewFrame();            //place imgui calls after this
 		ImGui::ShowDemoWindow();
 		entityAdmin.Update();
-		glm::mat4 temp = ((Renderer_Vulkan*)renderer)->scene.meshes[0].modelMatrix;
-		((Renderer_Vulkan*)renderer)->scene.meshes[0].modelMatrix = glm::rotate(temp, time.deltaTime * glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
 		renderer->Render();           //place imgui calls before this
 		renderer->Present();
 		//entityAdmin.PostRenderUpdate();

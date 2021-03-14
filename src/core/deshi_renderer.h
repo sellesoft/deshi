@@ -21,6 +21,7 @@
 #include <array>
 
 struct Window;
+struct Time;
 struct Mesh;
 struct Texture;
 struct Scene;
@@ -55,6 +56,7 @@ struct RenderSettings{
 };
 
 struct Renderer{
+	Time* time;
 	GLFWwindow*    window;
 	RenderSettings settings; //TODO(r,delle) load render settings from a file
 	
@@ -80,6 +82,7 @@ struct Renderer{
 	virtual void   ApplyTextureToMesh(uint32 textureID, uint32 meshID) = 0;
 	virtual void   RemoveTextureFromMesh(uint32 textureID, uint32 meshID) = 0;
 	virtual void   UpdateMeshMatrix(uint32 meshID, Matrix4 matrix) = 0;
+	virtual void   TransformMeshMatrix(uint32 meshID, Matrix4 transform) = 0;
 	
 	//texture interface
 	virtual uint32 LoadTexture(Texture texure) = 0;
@@ -394,6 +397,7 @@ struct Renderer_Vulkan : public Renderer{
 	
 	//updates a mesh's model matrix: translation, rotation, scale
 	virtual void UpdateMeshMatrix(uint32 meshID, Matrix4 matrix) override;
+	virtual void TransformMeshMatrix(uint32 meshID, Matrix4 transform) override;
 	
 	virtual void LoadDefaultAssets() override;
 	

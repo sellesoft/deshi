@@ -3,6 +3,7 @@
 #include "../math/Math.h"
 #include "../core/deshi_glfw.h"
 #include "../core/deshi_renderer.h"
+#include "../core/deshi_time.h"
 
 Camera::Camera(EntityAdmin* a) : Component(a) {
 	Window* window = admin->window;
@@ -92,6 +93,7 @@ void Camera::UseOrthographicProjection(){}
 void Camera::Update() {
 	Window* window = admin->window;
 	Renderer* renderer = admin->renderer;
+	Time* time = admin->time;
 	
 	//clamp camera yaw (x-rotation)
 	rotation.x = Math::clamp(rotation.x, -89.f, 89.f);
@@ -108,4 +110,6 @@ void Camera::Update() {
 	renderer->UpdateCameraPosition(position);
 	renderer->UpdateCameraRotation(rotation);
 	renderer->UpdateCameraViewMatrix(viewMatrix);
+	
+	renderer->TransformMeshMatrix(0, Matrix4::RotationMatrixY(90.f * time->deltaTime));
 }

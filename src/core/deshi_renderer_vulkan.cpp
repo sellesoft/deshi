@@ -2,6 +2,7 @@
 #include "deshi_glfw.h"
 #include "deshi_imgui.h"
 #include "deshi_import.h"
+#include "deshi_time.h"
 #include "../animation/Model.h"
 #include "../animation/Scene.h"
 #include "../math/Math.h"
@@ -362,7 +363,11 @@ void Renderer_Vulkan::RemoveTextureFromMesh(uint32 textureID, uint32 meshID){
 }
 
 void Renderer_Vulkan::UpdateMeshMatrix(uint32 meshID, Matrix4 matrix){
-	PRINT("Not implemented yet");
+	scene.meshes[meshID].modelMatrix = glm::make_mat4(matrix.data);
+}
+
+void Renderer_Vulkan::TransformMeshMatrix(uint32 meshID, Matrix4 transform){
+	scene.meshes[meshID].modelMatrix = glm::make_mat4(transform.data) * scene.meshes[meshID].modelMatrix;
 }
 
 void Renderer_Vulkan::LoadDefaultAssets(){
@@ -426,7 +431,7 @@ void Renderer_Vulkan::UpdateCameraRotation(Vector3 rotation){
 
 void Renderer_Vulkan::UpdateCameraViewMatrix(Matrix4 m){
 	if(camera.precalcMatrices){
-		shaderData.values.view = glm::make_mat4(&m.Transpose().data[0]);
+		shaderData.values.view = glm::make_mat4(m.data);
 	}else{
 		glm::mat4 rotM = glm::mat4(1.f);
 		rotM = glm::rotate(rotM, glm::radians(camera.rotation.y), glm::vec3(0.f, 1.f, 0.f));
@@ -440,7 +445,7 @@ void Renderer_Vulkan::UpdateCameraViewMatrix(Matrix4 m){
 
 void Renderer_Vulkan::UpdateCameraProjectionMatrix(Matrix4 m){
 	if(camera.precalcMatrices){
-		shaderData.values.proj = glm::make_mat4(&m.Transpose().data[0]);
+		shaderData.values.proj = glm::make_mat4(m.data);
 	}else{
 		float aspectRatio = extent.width / (float) extent.height;
 		shaderData.values.proj = glm::perspective(glm::radians(camera.fovX / aspectRatio), aspectRatio, camera.nearZ, camera.farZ);
