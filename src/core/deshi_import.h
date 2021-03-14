@@ -35,13 +35,12 @@ namespace deshi{
 	//reads a files contents in binary and returns it as a char vector
 	static std::vector<char> readFile(const std::string& filename) {
 		std::ifstream file(filename, std::ios::ate | std::ios::binary);
-		
-		if (!file.is_open()) {
-			ASSERT(false, "failed to open file");
-		}
+		if(!file.is_open()){
+			PRINT("[ERROR] failed to open file: " << filename);
+			return std::vector<char>();
+		};
 		
 		size_t fileSize = (size_t) file.tellg();
-		//std::cout << filename << ": " << fileSize << std::endl;
 		std::vector<char> buffer(fileSize);
 		file.seekg(0);
 		file.read(buffer.data(), fileSize);

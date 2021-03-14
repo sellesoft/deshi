@@ -19,10 +19,15 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_access.hpp>
 
+#include <shaderc/shaderc.h>
+
 #include <set>
 #include <array>
 #include <exception>
 #include <cstring>
+#include <filesystem>
+#include <iostream>
+#include <fstream>
 
 const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
@@ -170,6 +175,11 @@ void Renderer_Vulkan::Render() {
 	//iterate the frame index
 	frameIndex = (frameIndex + 1) % MAX_FRAMES; //loops back to zero after reaching max_frames
 	ASSERTVK(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
+	
+	if(remakePipelines){
+		CreatePipelines();
+		remakePipelines = false;
+	}
 	
 	//PRINT("--------------" << frameIndex << "---------------");
 }
@@ -471,6 +481,10 @@ void Renderer_Vulkan::UpdateCameraProjectionProperties(float fovX, float nearZ, 
 	camera.nearZ = nearZ;
 	camera.farZ = farZ;
 	camera.precalcMatrices = precalc;
+}
+
+void Renderer_Vulkan::ReloadShaders() {
+	remakePipelines = true;
 }
 
 //////////////////////////////////
@@ -970,6 +984,13 @@ void Renderer_Vulkan::CreatePipelines(){
 	if(pipelines.PBR){ vkDestroyPipeline(device, pipelines.PBR, nullptr); }
 	if(pipelines.WIREFRAME){ vkDestroyPipeline(device, pipelines.WIREFRAME, nullptr); }
 	
+	//destroy previous shader modules
+	size_t oldCount = shaderModules.size();
+	for(auto& pair : shaderModules){
+		vkDestroyShaderModule(device, pair.second, allocator);
+	}
+	shaderModules.clear(); shaderModules.reserve(oldCount);
+	
 	//determines how to group vertices together
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = vks::initializers::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 	//how to draw/cull/depth things
@@ -1027,6 +1048,9 @@ void Renderer_Vulkan::CreatePipelines(){
 	
 	//flag that this pipelineInfo will be used as a base
 	pipelineInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
+	
+	//compile the shaders (boolean param is optimization)
+	CompileShaders(false);
 	
 	//textured/default pipeline //TODO(r,delle) change this to phong and create a pbf shader for 4 textures
 	shaderStages[0] = loadShader("default.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
@@ -1661,6 +1685,52 @@ VkPipeline Renderer_Vulkan::GetPipelineFromShader(uint32 shader){
 		case(Shader::PBR):            { return pipelines.PBR;       };
 		case(Shader::WIREFRAME):      { return pipelines.WIREFRAME; };
 	}
+}
+
+void Renderer_Vulkan::CompileShaders(bool optimize){
+	//setup shader compiler
+	shaderc_compiler_t compiler = shaderc_compiler_initialize();
+	shaderc_compile_options_t options = shaderc_compile_options_initialize();
+	if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
+	
+	//loop thru all files in the shaders dir, compile the shaders, write them to .spv files
+	for(auto& entry : std::filesystem::directory_iterator(deshi::getShadersPath())){
+		std::string ext = entry.path().extension().string();
+		std::string filename = entry.path().filename().string();
+		
+		if(ext.compare(".spv") == 0) continue; //early out
+		
+		//read in ascii shader code
+		std::vector<char> code = deshi::readFile(entry.path().string());
+		
+		//try compile from GLSL to SPIR-V binary
+		shaderc_compilation_result_t result;
+		if(ext.compare(".vert") == 0){
+			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_vertex_shader, 
+											  filename.c_str(), "main", options);
+		}else if(ext.compare(".frag") == 0){
+			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_fragment_shader, 
+											  filename.c_str(), "main", options);
+		}else{ continue; }
+		
+		if(!result){ PRINT("[ERROR]"<< filename <<": Shader compiler returned a null result"); continue; }
+		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
+			PRINT("[ERROR]"<< filename <<": "<< shaderc_result_get_error_message(result)); continue;
+		}
+		
+		//create or overwrite .spv files
+		std::ofstream outFile(entry.path().string() + ".spv", std::ios::out | std::ios::binary | std::ios::trunc);
+		ASSERT(outFile.is_open(), "failed to open file");
+		outFile.write(shaderc_result_get_bytes(result), shaderc_result_get_length(result));
+		
+		//cleanup file and compiler results
+		outFile.close();
+		shaderc_result_release(result);
+	}
+	
+	//cleanup shader compiler and options
+	shaderc_compile_options_release(options);
+	shaderc_compiler_release(compiler);
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Renderer_Vulkan::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {

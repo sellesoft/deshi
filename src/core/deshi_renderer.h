@@ -99,6 +99,9 @@ struct Renderer{
 	virtual void   UpdateCameraViewMatrix(Matrix4 m) = 0;
 	virtual void   UpdateCameraProjectionMatrix(Matrix4 m) = 0;
 	virtual void   UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ, bool precalcMatrices) = 0;
+	
+	//other
+	virtual void   ReloadShaders() = 0;
 };
 
 ////////////////////////////////
@@ -280,8 +283,10 @@ struct Renderer_Vulkan : public Renderer{
 	
 	SceneVk scene;
 	
+	bool remakeWindow    = false;
+	bool remakePipelines = false;
+	
 	//swapchain specifics
-	bool                     remakeWindow = false;
 	int32                    width = 0;
 	int32                    height = 0;
 	uint32                   imageCount = 0;
@@ -416,6 +421,9 @@ struct Renderer_Vulkan : public Renderer{
 	virtual void UpdateCameraViewMatrix(Matrix4 m) override;
 	virtual void UpdateCameraProjectionMatrix(Matrix4 m) override;
 	virtual void UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ, bool precalcMatrices) override;
+	
+	//signals vulkan to remake the pipelines
+	virtual void ReloadShaders() override;
 	
 	//////////////////////////////////
 	//// initialization functions //// (called once)
@@ -564,6 +572,9 @@ struct Renderer_Vulkan : public Renderer{
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	
 	VkPipeline GetPipelineFromShader(uint32 shader);
+	
+	//compiles the shaders in the shader folder using shaderc by Google from the VulkanSDK
+	void CompileShaders(bool optimize);
 	
 	static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 	

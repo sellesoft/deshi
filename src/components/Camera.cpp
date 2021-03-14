@@ -129,6 +129,9 @@ void Camera::Update() {
 	if(DengInput->KeyPressed(Key::X)){
 		renderer->UpdateMeshBatchShader(0, 0, 0);
 	}
+	if(DengInput->KeyPressed(Key::F5)){
+		renderer->ReloadShaders();
+	}
 	
 	renderer->TransformMeshMatrix(0, Matrix4::RotationMatrixY(90.f * time->deltaTime));
 }
