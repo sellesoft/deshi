@@ -424,10 +424,35 @@ void Renderer_Vulkan::UpdateCameraRotation(Vector3 rotation){
 	camera.rotation = glm::make_vec3(&rotation.x);
 }
 
-void Renderer_Vulkan::UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ){
+void Renderer_Vulkan::UpdateCameraViewMatrix(Matrix4 m){
+	if(camera.precalcMatrices){
+		shaderData.values.view = glm::make_mat4(&m.Transpose().data[0]);
+	}else{
+		glm::mat4 rotM = glm::mat4(1.f);
+		rotM = glm::rotate(rotM, glm::radians(camera.rotation.y), glm::vec3(0.f, 1.f, 0.f));
+		rotM = glm::rotate(rotM, glm::radians(camera.rotation.x), glm::vec3(1.f, 0.f, 0.f));
+		glm::vec4 target(0.f, 0.f, 1.f, 0.f);
+		target = rotM * target; target = glm::normalize(target);
+		
+		shaderData.values.view = glm::lookAt(camera.position, camera.position + glm::vec3(target), glm::vec3(0.f, 1.f, 0.f));
+	}
+}
+
+void Renderer_Vulkan::UpdateCameraProjectionMatrix(Matrix4 m){
+	if(camera.precalcMatrices){
+		shaderData.values.proj = glm::make_mat4(&m.Transpose().data[0]);
+	}else{
+		float aspectRatio = extent.width / (float) extent.height;
+		shaderData.values.proj = glm::perspective(glm::radians(camera.fovX / aspectRatio), aspectRatio, camera.nearZ, camera.farZ);
+		shaderData.values.proj[1][1] *= -1;
+	}
+}
+
+void Renderer_Vulkan::UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ, bool precalc){
 	camera.fovX = fovX;
 	camera.nearZ = nearZ;
 	camera.farZ = farZ;
+	camera.precalcMatrices = precalc;
 }
 
 //////////////////////////////////
@@ -1064,22 +1089,6 @@ void Renderer_Vulkan::BuildCommandBuffers() {
 //also maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
 void Renderer_Vulkan::UpdateUniformBuffer(){
 	//PRINT("{-}{-} Updating Uniform Buffer {-}{-}\n");
-	//update view matrix
-	glm::mat4 rotM = glm::mat4(1.f);
-	rotM = glm::rotate(rotM, glm::radians(camera.rotation.x), glm::vec3(1.f, 0.f, 0.f));
-	rotM = glm::rotate(rotM, glm::radians(camera.rotation.y), glm::vec3(0.f, 1.f, 0.f));
-	rotM = glm::rotate(rotM, glm::radians(0.f), glm::vec3(0.f, 0.f, 1.f));
-	glm::vec4 target(0.f, 0.f, 1.f, 0.f);
-	target = rotM * target; target = glm::normalize(target);
-	
-	shaderData.values.view = glm::lookAt(camera.position, camera.position + glm::vec3(target), glm::vec3(0.f, 1.f, 0.f));
-	
-	//update projection matrix
-	float aspectRatio = extent.width / (float) extent.height;
-	shaderData.values.proj = glm::perspective(glm::radians(camera.fovX / aspectRatio), aspectRatio, camera.nearZ, camera.farZ);
-	shaderData.values.proj[1][1] *= -1;
-	
-	//update other values
 	shaderData.values.viewPos = glm::vec4(camera.position, 0.f) * glm::vec4(-1.f, 0.f, -1.f, 0.f);
 	shaderData.values.lightPos = glm::vec4(0.0f, 2.5f, 0.0f, 1.0f);
 	
