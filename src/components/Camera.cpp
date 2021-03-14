@@ -13,8 +13,9 @@ Camera::Camera(EntityAdmin* a) : Component(a) {
 	farZ  = 1000.1f;
 	fieldOfView = 90.f;
 	
-	renderer->UpdateCameraProjectionProperties(fieldOfView, nearZ, farZ);
+	renderer->UpdateCameraProjectionProperties(fieldOfView, nearZ, farZ, false);
 	UsePerspectiveProjection(fieldOfView, window->width, window->height, nearZ, farZ);
+	renderer->UpdateCameraProjectionMatrix(projectionMatrix);
 	
 	layer = CL2_RENDSCENE;
 }
@@ -100,6 +101,10 @@ void Camera::Update() {
 	forward = (Vector4(Vector3::FORWARD, 1) * Matrix4::RotationMatrix(rotation)).ToVector3().normalized();
 	right = Vector3::UP.cross(forward).normalized();
 	up = right.cross(forward).normalized();
+	
+	//update view matrix
+	
+	//update projection matrix
 	
 	renderer->UpdateCameraPosition(position);
 	renderer->UpdateCameraRotation(rotation);

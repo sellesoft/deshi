@@ -96,7 +96,9 @@ struct Renderer{
 	//camera interface
 	virtual void   UpdateCameraPosition(Vector3 position) = 0;
 	virtual void   UpdateCameraRotation(Vector3 rotation) = 0;
-	virtual void   UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ) = 0;
+	virtual void   UpdateCameraViewMatrix(Matrix4 m) = 0;
+	virtual void   UpdateCameraProjectionMatrix(Matrix4 m) = 0;
+	virtual void   UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ, bool precalcMatrices) = 0;
 };
 
 ////////////////////////////////
@@ -132,10 +134,8 @@ struct CameraVk{
 	float fovX, nearZ, farZ;
 	glm::vec3 position;
 	glm::vec3 rotation;
+	bool precalcMatrices; 
 	uint32 mode = 0;
-	
-	void UpdateViewMatrix();
-	void UpdateProjectionMatrix();
 };
 
 struct VertexVk{
@@ -408,9 +408,11 @@ struct Renderer_Vulkan : public Renderer{
 	//NOTE this should not be done often in gameplay
 	virtual void LoadScene(Scene* scene) override;
 	
-	virtual void UpdateCameraPosition(Vector3 position) override;
-	virtual void UpdateCameraRotation(Vector3 rotation) override;
-	virtual void UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ) override;
+	virtual void   UpdateCameraPosition(Vector3 position) override;
+	virtual void   UpdateCameraRotation(Vector3 rotation) override;
+	virtual void   UpdateCameraViewMatrix(Matrix4 m) override;
+	virtual void   UpdateCameraProjectionMatrix(Matrix4 m) override;
+	virtual void   UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ, bool precalcMatrices) override;
 	
 	//////////////////////////////////
 	//// initialization functions //// (called once)
