@@ -283,6 +283,7 @@ struct Renderer_Vulkan : public Renderer{
 	
 	SceneVk scene;
 	
+	bool initialized     = false;
 	bool remakeWindow    = false;
 	bool remakePipelines = false;
 	
@@ -575,6 +576,9 @@ struct Renderer_Vulkan : public Renderer{
 	
 	//compiles the shaders in the shader folder using shaderc by Google from the VulkanSDK
 	void CompileShaders(bool optimize);
+	
+	//creates the vertex and index buffers on the GPU
+	void CreateSceneBuffers();
 	
 	static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 	

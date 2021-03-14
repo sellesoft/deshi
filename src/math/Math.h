@@ -200,9 +200,9 @@ inline Matrix3 Matrix3::RotationMatrix(Vector3 rotation) {
 	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
 	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
 	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
-	float r00 = cZ*cY;  float r01 = sZ*cX + cZ*sY*sX; float r02 = sZ*sX - cZ*sY*cX;
-	float r10 = -sZ*cY; float r11 = cZ*cX + sZ*sY*sX; float r12 = sZ*sY*cX + cZ*sX;
-	float r20 = sY;     float r21 = -cY*sX;           float r22 = cY*cX;
+	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
+	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
+	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
 	return Matrix3(r00, r01, r02,
 				   r10, r11, r12,
 				   r20, r21, r22);
@@ -217,33 +217,15 @@ inline Matrix3 Matrix3::ScaleMatrix(Vector3 scale) {
 	return newMatrix;
 }
 
-/*//returns a rotation transformation matrix based on input in degrees
-//rotates over the Y, then Z then X
-inline Matrix4 Matrix4::RotationMatrix(Vector3 rotation) {
-	rotation *= TO_RADIANS;
-	float cosX = cosf(rotation.x); float sinX = sinf(rotation.x);
-	float cosY = cosf(rotation.y); float sinY = sinf(rotation.y);
-	float cosZ = cosf(rotation.z); float sinZ = sinf(rotation.z);
-	float r00 = cosY*cosZ;	float r01 = -cosY*sinZ*cosX + sinY*sinX;	float r02 = cosY*sinZ*sinX + sinY*cosX;
-	float r10 = sinZ;		float r11 = cosZ*cosX;						float r12 = -cosZ*sinX;
-	float r20 = -sinY*cosZ;	float r21 = sinY*sinZ*cosX + cosY*sinX;		float r22 = -sinY*sinZ*sinX + cosY*cosX;
-	return Matrix4(
-				   r00,	r01,	r02,	0,
-				   r10,	r11,	r12,	0,
-				   r20,	r21,	r22,	0,
-				   0,		0,		0,  1);
-}
-*/
-
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
 inline Matrix4 Matrix4::RotationMatrix(Vector3 rotation) {
 	rotation *= TO_RADIANS;
 	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
 	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
 	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
-	float r00 = cZ*cY;  float r01 = sZ*cX + cZ*sY*sX; float r02 = sZ*sX - cZ*sY*cX;
-	float r10 = -sZ*cY; float r11 = cZ*cX + sZ*sY*sX; float r12 = sZ*sY*cX + cZ*sX;
-	float r20 = sY;     float r21 = -cY*sX;           float r22 = cY*cX;
+	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
+	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
+	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
 	return Matrix4(r00, r01, r02, 0,
 				   r10, r11, r12, 0,
 				   r20, r21, r22, 0,
@@ -282,22 +264,18 @@ inline Matrix4 Matrix4::ScaleMatrix(Vector3 scale) {
 
 //returns a transformation matrix of the combined translation, rotation, and scale matrices from input vectors
 //rotates over the Y, then Z then X
-inline Matrix4 Matrix4::TransformationMatrix(Vector3 translation, Vector3 rotation, Vector3 scale) {
+inline Matrix4 Matrix4::TransformationMatrix(Vector3 tr, Vector3 rotation, Vector3 scale) {
 	rotation *= TO_RADIANS;
-	float cosX = cosf(rotation.x);
-	float sinX = sinf(rotation.x);
-	float cosY = cosf(rotation.y);
-	float sinY = sinf(rotation.y);
-	float cosZ = cosf(rotation.z);
-	float sinZ = sinf(rotation.z);
-	float r00 = cosY*cosZ;	float r01 = -cosY*sinZ*cosX + sinY*sinX;	float r02 = cosY*sinZ*sinX + sinY*cosX;
-	float r10 = sinZ;		float r11 = cosZ*cosX;						float r12 = -cosZ*sinX;
-	float r20 = -sinY*cosZ;	float r21 = sinY*sinZ*cosX + cosY*sinX;		float r22 = -sinY*sinZ*sinX + cosY*cosX;
-	return Matrix4(
-				   scale.x*r00,	r01,			r02,			0,
-				   r10,			scale.y*r11,	r12,			0,
-				   r20,			r21,			scale.z*r22,	0,
-				   translation.x,	translation.y,	translation.z,	1);
+	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
+	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
+	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
+	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
+	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
+	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
+	return Matrix4(scale.x*r00, r01,         r02,         0,
+				   r10,         scale.y*r11, r12,         0,
+				   r20,         r21,         scale.z*r22, 0,
+				   tr.x,        tr.y,        tr.z,        1);
 }
 
 //returns a transformation matrix of the combined translation, rotation, and scale matrices from input vectors
@@ -305,17 +283,13 @@ inline Matrix4 Matrix4::TransformationMatrix(Vector3 translation, Vector3 rotati
 inline Matrix4 Matrix4::RotationMatrixAroundPoint(Vector3 pivot, Vector3 rotation) {
 	pivot = -pivot; //gotta negate this for some reason :)
 	rotation *= TO_RADIANS;
-	float cosX = cosf(rotation.x);
-	float sinX = sinf(rotation.x);
-	float cosY = cosf(rotation.y);
-	float sinY = sinf(rotation.y);
-	float cosZ = cosf(rotation.z);
-	float sinZ = sinf(rotation.z);
-	float r00 = cosY*cosZ;	float r01 = -cosY*sinZ*cosX + sinY*sinX;	float r02 = cosY*sinZ*sinX + sinY*cosX;
-	float r10 = sinZ;		float r11 = cosZ*cosX;						float r12 = -cosZ*sinX;
-	float r20 = -sinY*cosZ;	float r21 = sinY*sinZ*cosX + cosY*sinX;		float r22 = -sinY*sinZ*sinX + cosY*cosX;
-	return Matrix4(
-				   r00, r01, r02, 0,
+	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
+	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
+	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
+	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
+	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
+	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
+	return Matrix4(r00, r01, r02, 0,
 				   r10, r11, r12, 0,
 				   r20, r21, r22, 0,
 				   pivot.x - r00*pivot.x - r01*pivot.y - r02*pivot.z, pivot.y - r10*pivot.x - r11*pivot.y - r12*pivot.z, pivot.z - r20*pivot.x - r21*pivot.y - r22*pivot.z, 1);

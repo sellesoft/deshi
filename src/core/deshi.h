@@ -24,19 +24,21 @@ either move all commands to Command or move them all to their local files
 Render NOTEs: 
 Render TODOs
 ------------
-add shader reloading/recompiling
-add the ability to load new meshes/textures to the scene
 add box mesh with repeating texture on each face
+add OBJ loading
 add commands for the rendering interface functions
+delay mesh creation until after frame presentation
 fix crash on minimize/resize
 check those vulkan-tutorial links for the suggestions
 add the render options back
 add instancing [https://learnopengl.com/Advanced-OpenGL/Instancing]
 add texture transparency support
 add 2D shader and interface functions
+add buffer pre-allocation and arenas for vertices/indices/textures/etc
 add lighting and shadows
 add RenderSettings loading and usage
 add dynamic Texture updating on meshes
+add the ability to load new textures to the scene
 (maybe) remove renderer polymorphism and replace it with defines that are checked on program start
 
 Physics NOTEs: 
@@ -47,7 +49,7 @@ add physics collision sweeping
 add physics based collision resolution for remaining collider primitives
 add physics interaction functions
 
-Math NOTEs: Row-Major matrices, Left-Handed coordinate system
+Math NOTEs: Row-Major matrices, Left-Handed coordinate system (clockwise rotation when looking down axis)
 Math TODOs
 ----------
 add quaternions and converions between them and other linear algebra primitives

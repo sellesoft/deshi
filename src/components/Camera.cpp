@@ -6,6 +6,8 @@
 #include "../core/deshi_input.h"
 #include "../core/deshi_time.h"
 
+#include "../animation/Model.h" //temp for debug
+
 Camera::Camera(EntityAdmin* a) : Component(a) {
 	Window* window = admin->window;
 	Renderer* renderer = admin->renderer;
@@ -100,7 +102,7 @@ void Camera::Update() {
 	rotation.x = Math::clamp(rotation.x, -89.f, 89.f);
 	
 	//update direction vectors
-	forward = (Vector4(Vector3::FORWARD, 1) * Matrix4::RotationMatrix(rotation)).ToVector3().normalized();
+	forward = (Vector4(Vector3::FORWARD, 0.f) * Matrix4::RotationMatrix(rotation)).ToVector3().normalized();
 	right = Vector3::UP.cross(forward).normalized();
 	up = right.cross(forward).normalized();
 	
@@ -131,6 +133,11 @@ void Camera::Update() {
 	}
 	if(DengInput->KeyPressed(Key::F5)){
 		renderer->ReloadShaders();
+	}
+	if(DengInput->KeyPressed(Key::B, INPUT_SHIFT_HELD)){
+		Model* box = Model::CreateBox(Vector3(1, 1, 1));
+		uint32 id = renderer->LoadMesh(&box->mesh);
+		renderer->TransformMeshMatrix(id, Matrix4::TranslationMatrix(position + forward*10));
 	}
 	
 	renderer->TransformMeshMatrix(0, Matrix4::RotationMatrixY(90.f * time->deltaTime));

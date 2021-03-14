@@ -27,6 +27,7 @@ static void check_vk_result(VkResult err){
 //thanks: https://github.com/dandistine/olcPGEDearImGui
 struct deshiImGui{
 	virtual void Init(Renderer* renderer){
+		PRINT("{-}{-} Initializing Imgui");
 		//Setup Dear ImGui context
 		ImGui::CreateContext();
 		
