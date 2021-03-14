@@ -118,13 +118,15 @@ struct DeshiEngine {
 		input.Update();
 		window.Update();
 		imgui->NewFrame();            //place imgui calls after this
-		ImGui::ShowDemoWindow();
+		//ImGui::ShowDemoWindow();
 		entityAdmin.Update();
-		glm::mat4 temp = ((Renderer_Vulkan*)renderer)->scene.meshes[0].modelMatrix;
-		((Renderer_Vulkan*)renderer)->scene.meshes[0].modelMatrix = glm::rotate(temp, time.deltaTime * glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
+		//glm::mat4 temp = ((Renderer_Vulkan*)renderer)->scene.meshes[0].modelMatrix;
+		//((Renderer_Vulkan*)renderer)->scene.meshes[0].modelMatrix = glm::rotate(temp, time.deltaTime * glm::radians(90.f), glm::vec3(0.f, 1.f, 0.f));
+		renderer->time = time.totalTime;
 		renderer->Render();           //place imgui calls before this
 		renderer->Present();
 		//entityAdmin.PostRenderUpdate();
+		
 		return true;
 	}
 };

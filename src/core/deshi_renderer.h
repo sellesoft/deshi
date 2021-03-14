@@ -30,6 +30,8 @@ struct Vector3;
 struct deshiImGui;
 typedef uint8 stbi_uc;
 
+
+
 enum struct RenderAPI{
 	VULKAN
 };
@@ -58,6 +60,8 @@ struct Renderer{
 	GLFWwindow*    window;
 	RenderSettings settings; //TODO(r,delle) load render settings from a file
 	
+	float time = 0;
+
 	virtual void Init(Window* window, deshiImGui* imgui) = 0;
 	virtual void Render() = 0;
 	virtual void Present() = 0;
@@ -309,6 +313,9 @@ struct Renderer_Vulkan : public Renderer{
 			glm::mat4 proj;     //camera projection matrix
 			glm::vec4 lightPos; //main light pos
 			glm::vec4 viewPos;  //camera pos
+			glm::f32 time;
+			glm::f32 swidth;
+			glm::f32 sheight;
 		} values;
 	} shaderData;
 	

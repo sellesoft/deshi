@@ -33,6 +33,7 @@ const bool enableValidationLayers = true;
 
 #define ASSERTVK(func, message) ASSERT((func) == VK_SUCCESS, message);
 
+
 //////////////////////////
 //// render interface ////
 //////////////////////////
@@ -51,6 +52,14 @@ void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
 	box->mesh.batchArray[0].textureArray.push_back(tex);
 	box->mesh.batchArray[0].textureCount = 1;
 	test->models.push_back(box);
+
+	//Model* box2 = Model::CreateBox(Vector3(1, 1, 1));
+	//box2->mesh.transform = Matrix4::TranslationMatrix(Vector3(0, 0, 5));
+	////Texture tex2("UV_Grid_Sm.jpg");
+	//box2->mesh.batchArray[0].textureArray.push_back(tex);
+	//box2->mesh.batchArray[0].textureCount = 1;
+	//box2->mesh.batchArray[0].shader = WIREFRAME;
+	//test->models.push_back(box2);
 	
 	CreateInstance();
 	SetupDebugMessenger();
@@ -1004,7 +1013,7 @@ void Renderer_Vulkan::CreatePipelines(){
 		ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.WIREFRAME), "failed to create wireframe graphics pipeline");
 	}
 	
-	//TODO(r,delle) add more pipelines/shaders
+	//TODO(r,delle) add more pipelines/shader
 	
 	//pair materials with thier pipelines
 	for(MaterialVk& mat : scene.materials){
@@ -1066,14 +1075,19 @@ void Renderer_Vulkan::UpdateUniformBuffer(){
 	//PRINT("{-}{-} Updating Uniform Buffer {-}{-}\n");
 	//update view matrix
 	glm::mat4 rotM = glm::mat4(1.f);
-	rotM = glm::rotate(rotM, glm::radians(camera.rotation.x), glm::vec3(1.f, 0.f, 0.f));
 	rotM = glm::rotate(rotM, glm::radians(camera.rotation.y), glm::vec3(0.f, 1.f, 0.f));
-	rotM = glm::rotate(rotM, glm::radians(0.f), glm::vec3(0.f, 0.f, 1.f));
+	rotM = glm::rotate(rotM, glm::radians(camera.rotation.x), glm::vec3(1.f, 0.f, 0.f));
 	glm::vec4 target(0.f, 0.f, 1.f, 0.f);
 	target = rotM * target; target = glm::normalize(target);
 	
 	shaderData.values.view = glm::lookAt(camera.position, camera.position + glm::vec3(target), glm::vec3(0.f, 1.f, 0.f));
+	shaderData.values.time = time;
+
+	shaderData.values.swidth = (glm::f32)extent.width;
+	shaderData.values.sheight = (glm::f32)extent.height;
+
 	
+
 	//update projection matrix
 	float aspectRatio = extent.width / (float) extent.height;
 	shaderData.values.proj = glm::perspective(glm::radians(camera.fovX / aspectRatio), aspectRatio, camera.nearZ, camera.farZ);
