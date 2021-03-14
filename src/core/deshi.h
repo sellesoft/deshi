@@ -6,28 +6,29 @@ TODO Style: TODO(tags,person,date) description
 Rules: tags can be empty but still requires a comma, date can be empty
       eg: TODO(,delle) no tag or date; TODO(ro,sushi,03/12/2021) render,optimization tags for sushi made on that date
 
-General NOTEs: game-specific stuff should be below EntityAdmin
-General TODOs
--------------
-make TODOs script in misc to locally generate TODOs.txt rather than TODOP bot
-fix camera rotation, can reproduce problem by looking all the way up/down and looking left/right
-pool/arena components and entities for better performance
+Major Ungrouped TODOs
+---------------------
+add mouse-camera control
 add a .str() method to Component.h to print state
-cleanup compile warnings
- replace/remove external dependencies/includes were possible (glm, boost, sascha, tinyobj)
- implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
-create templated component tuple iterator that loops thru a vector and returns an iterator of components of type
-cleanup Triangle and remove unused things
 remove deshi_ prefix on core files (deshi_imgui may need to be imgui_deshi to not conflict)
 either move all commands to Command or move them all to their local files
+log console output to a file
+settings file(s) [keybinds, video, audio, etc]
 
-Render NOTEs: 
+Minor Ungrouped TODOs
+---------------------
+cleanup Triangle and remove unused things
+create templated component tuple iterator that loops thru a vector and returns an iterator of components of type
+pool/arena components and entities for better performance
+implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
+replace/remove external dependencies/includes were possible (glm, boost, sascha, tinyobj)
+(maybe) make TODOs script in misc to locally generate TODOs.txt rather than TODOP bot
+cleanup compile warnings
+
 Render TODOs
 ------------
-add box mesh with repeating texture on each face
 add OBJ loading
 add commands for the rendering interface functions
-delay mesh creation until after frame presentation
 fix crash on minimize/resize
 check those vulkan-tutorial links for the suggestions
 add the render options back
@@ -39,15 +40,22 @@ add lighting and shadows
 add RenderSettings loading and usage
 add dynamic Texture updating on meshes
 add the ability to load new textures to the scene
+  convert prints to go thru the in-game console rather than other console  
 (maybe) remove renderer polymorphism and replace it with defines that are checked on program start
 
-Physics NOTEs: 
-Physics TODOs
+Physics/Atmos TODOs
 -------------
 redo main physics loop
 add physics collision sweeping
 add physics based collision resolution for remaining collider primitives
 add physics interaction functions
+
+UI TODOs
+--------
+Fix console not relinquishing input
+Restore the spawning/inspector menus
+2D shader
+add a UI popup when reloading shaders
 
 Math NOTEs: Row-Major matrices, Left-Handed coordinate system (clockwise rotation when looking down axis)
 Math TODOs

@@ -93,4 +93,5 @@ struct Model{
 	Model(Mesh mesh);
 	
 	static Model* CreateBox(Vector3 halfDims, Color color = Color::WHITE);
+	static Model* CreatePlanarBox(Vector3 halfDims, Color color = Color::WHITE);
 };

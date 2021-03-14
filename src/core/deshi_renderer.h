@@ -580,6 +580,8 @@ struct Renderer_Vulkan : public Renderer{
 	//creates the vertex and index buffers on the GPU
 	void CreateSceneBuffers();
 	
+	void UpdateMaterialPipelines();
+	
 	static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 	
 	static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);

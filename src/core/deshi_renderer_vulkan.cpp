@@ -55,19 +55,11 @@ void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
 	
 	//debug scene
 	Scene* test = new Scene;
-	Model* box = Model::CreateBox(Vector3(1, 1, 1));
+	Model* box = Model::CreatePlanarBox(Vector3(1, 1, 1));
 	Texture tex("UV_Grid_Sm.jpg");
 	box->mesh.batchArray[0].textureArray.push_back(tex);
 	box->mesh.batchArray[0].textureCount = 1;
 	test->models.push_back(box);
-	
-	//Model* box2 = Model::CreateBox(Vector3(1, 1, 1));
-	//box2->mesh.transform = Matrix4::TranslationMatrix(Vector3(0, 0, 5));
-	////Texture tex2("UV_Grid_Sm.jpg");
-	//box2->mesh.batchArray[0].textureArray.push_back(tex);
-	//box2->mesh.batchArray[0].textureCount = 1;
-	//box2->mesh.batchArray[0].shader = WIREFRAME;
-	//test->models.push_back(box2);
 	
 	CreateInstance();
 	SetupDebugMessenger();
@@ -180,7 +172,11 @@ void Renderer_Vulkan::Render() {
 	frameIndex = (frameIndex + 1) % MAX_FRAMES; //loops back to zero after reaching max_frames
 	ASSERTVK(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
 	
-	if(remakePipelines){ CreatePipelines(); remakePipelines = false; }
+	if(remakePipelines){ 
+		CreatePipelines(); 
+		UpdateMaterialPipelines();
+		remakePipelines = false; 
+	}
 	
 	//PRINT("--------------" << frameIndex << "---------------");
 }
@@ -266,7 +262,10 @@ uint32 Renderer_Vulkan::LoadMesh(Mesh* m){
 		}
 		
 		//indices
-		scene.indexBuffer.insert(scene.indexBuffer.end(), batch.indexArray.begin(), batch.indexArray.end());
+		for(uint32 i : batch.indexArray){
+			scene.indexBuffer.push_back(batchVertexStart+i);
+		}
+		//scene.indexBuffer.insert(scene.indexBuffer.end(), batch.indexArray.begin(), batch.indexArray.end());
 		
 		//material
 		MaterialVk mat; mat.shader = uint32(batch.shader);
@@ -1733,6 +1732,12 @@ void Renderer_Vulkan::CompileShaders(bool optimize){
 	//cleanup shader compiler and options
 	shaderc_compile_options_release(options);
 	shaderc_compiler_release(compiler);
+}
+
+void Renderer_Vulkan::UpdateMaterialPipelines(){
+	for(auto& mat : scene.materials){
+		mat.pipeline = GetPipelineFromShader(mat.shader);
+	}
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Renderer_Vulkan::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {

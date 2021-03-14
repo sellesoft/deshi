@@ -140,5 +140,5 @@ void Camera::Update() {
 		renderer->TransformMeshMatrix(id, Matrix4::TranslationMatrix(position + forward*10));
 	}
 	
-	renderer->TransformMeshMatrix(0, Matrix4::RotationMatrixY(90.f * time->deltaTime));
+	//renderer->TransformMeshMatrix(0, Matrix4::RotationMatrixY(90.f * time->deltaTime));
 }
