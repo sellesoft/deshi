@@ -119,8 +119,16 @@ void Camera::Update() {
 		fieldOfView -= 5;
 		renderer->UpdateCameraProjectionProperties(fieldOfView, nearZ, farZ, false);
 	}
-
+	
 	renderer->UpdateCameraViewMatrix(viewMatrix);
+	
+	//temp debugging
+	if(DengInput->KeyPressed(Key::Z)){
+		renderer->UpdateMeshBatchShader(0, 0, 3);
+	}
+	if(DengInput->KeyPressed(Key::X)){
+		renderer->UpdateMeshBatchShader(0, 0, 0);
+	}
 	
 	renderer->TransformMeshMatrix(0, Matrix4::RotationMatrixY(90.f * time->deltaTime));
 }

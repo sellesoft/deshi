@@ -34,7 +34,6 @@ const bool enableValidationLayers = true;
 
 #define ASSERTVK(func, message) ASSERT((func) == VK_SUCCESS, message);
 
-
 //////////////////////////
 //// render interface ////
 //////////////////////////
@@ -53,7 +52,7 @@ void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
 	box->mesh.batchArray[0].textureArray.push_back(tex);
 	box->mesh.batchArray[0].textureCount = 1;
 	test->models.push_back(box);
-
+	
 	//Model* box2 = Model::CreateBox(Vector3(1, 1, 1));
 	//box2->mesh.transform = Matrix4::TranslationMatrix(Vector3(0, 0, 5));
 	////Texture tex2("UV_Grid_Sm.jpg");
@@ -294,6 +293,27 @@ void Renderer_Vulkan::UnloadMesh(uint32 meshID){
 	PRINT("Not implemented yet");
 }
 
+void Renderer_Vulkan::ApplyTextureToMesh(uint32 textureID, uint32 meshID){
+	PRINT("Not implemented yet");
+}
+
+void Renderer_Vulkan::RemoveTextureFromMesh(uint32 textureID, uint32 meshID){
+	PRINT("Not implemented yet");
+}
+
+void Renderer_Vulkan::UpdateMeshMatrix(uint32 meshID, Matrix4 matrix){
+	scene.meshes[meshID].modelMatrix = glm::make_mat4(matrix.data);
+}
+
+void Renderer_Vulkan::TransformMeshMatrix(uint32 meshID, Matrix4 transform){
+	scene.meshes[meshID].modelMatrix = glm::make_mat4(transform.data) * scene.meshes[meshID].modelMatrix;
+}
+
+void Renderer_Vulkan::UpdateMeshBatchShader(uint32 meshID, uint32 batchIndex, uint32 shader){
+	uint32 matID = scene.meshes[meshID].primitives[batchIndex].materialIndex;
+	scene.materials[matID].pipeline = GetPipelineFromShader(shader);
+}
+
 uint32 Renderer_Vulkan::LoadTexture(Texture texture){
 	PRINT("{-}{-}{-} Loading Texture: " << texture.filename << " {-}{-}{-}");
 	TextureVk tex; 
@@ -361,22 +381,6 @@ uint32 Renderer_Vulkan::LoadTexture(Texture texture){
 
 void Renderer_Vulkan::UnloadTexture(uint32 textureID){
 	PRINT("Not implemented yet");
-}
-
-void Renderer_Vulkan::ApplyTextureToMesh(uint32 textureID, uint32 meshID){
-	PRINT("Not implemented yet");
-}
-
-void Renderer_Vulkan::RemoveTextureFromMesh(uint32 textureID, uint32 meshID){
-	PRINT("Not implemented yet");
-}
-
-void Renderer_Vulkan::UpdateMeshMatrix(uint32 meshID, Matrix4 matrix){
-	scene.meshes[meshID].modelMatrix = glm::make_mat4(matrix.data);
-}
-
-void Renderer_Vulkan::TransformMeshMatrix(uint32 meshID, Matrix4 transform){
-	scene.meshes[meshID].modelMatrix = glm::make_mat4(transform.data) * scene.meshes[meshID].modelMatrix;
 }
 
 void Renderer_Vulkan::LoadDefaultAssets(){
@@ -1047,12 +1051,7 @@ void Renderer_Vulkan::CreatePipelines(){
 	
 	//pair materials with thier pipelines
 	for(MaterialVk& mat : scene.materials){
-		switch(mat.shader){
-			case(Shader::DEFAULT):  { mat.pipeline = pipelines.DEFAULT;   }break;
-			case(Shader::TWOD):     { mat.pipeline = pipelines.TWOD;      }break;
-			case(Shader::PBR):      { mat.pipeline = pipelines.PBR;       }break;
-			case(Shader::WIREFRAME):{ mat.pipeline = pipelines.WIREFRAME; }break;
-		}
+		mat.pipeline = GetPipelineFromShader(mat.shader);
 	}
 }
 
@@ -1654,6 +1653,15 @@ void Renderer_Vulkan::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDevic
 	endSingleTimeCommands(commandBuffer);
 }
 
+//TODO(ro,delle) maybe optimize this by simply doing: &pipelines + shader*sizeof(pipelines.DEFAULT)
+VkPipeline Renderer_Vulkan::GetPipelineFromShader(uint32 shader){
+	switch(shader){
+		case(Shader::DEFAULT):default:{ return pipelines.DEFAULT;   };
+		case(Shader::TWOD):           { return pipelines.TWOD;      };
+		case(Shader::PBR):            { return pipelines.PBR;       };
+		case(Shader::WIREFRAME):      { return pipelines.WIREFRAME; };
+	}
+}
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Renderer_Vulkan::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
 	PRINT("/\\  " << pCallbackData->pMessage);

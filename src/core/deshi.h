@@ -24,20 +24,20 @@ either move all commands to Command or move them all to their local files
 Render NOTEs: 
 Render TODOs
 ------------
-Add mesh matrix updating
-replace camera update functions with view matrix one
-add dynamic shader/pipeline swapping for objects
-check those vulkan-tutorial links for the suggestions
-(maybe) remove renderer polymorphism and replace it with defines that are checked on program start
-add the render options back
-add lighting and shadows
-add instancing [https://learnopengl.com/Advanced-OpenGL/Instancing]
+add shader reloading/recompiling
 add the ability to load new meshes/textures to the scene
+add box mesh with repeating texture on each face
+add commands for the rendering interface functions
+fix crash on minimize/resize
+check those vulkan-tutorial links for the suggestions
+add the render options back
+add instancing [https://learnopengl.com/Advanced-OpenGL/Instancing]
+add texture transparency support
 add 2D shader and interface functions
+add lighting and shadows
 add RenderSettings loading and usage
 add dynamic Texture updating on meshes
-add box mesh with repeating texture on each face
-add texture transparency support
+(maybe) remove renderer polymorphism and replace it with defines that are checked on program start
 
 Physics NOTEs: 
 Physics TODOs
@@ -52,9 +52,9 @@ Math TODOs
 ----------
 add quaternions and converions between them and other linear algebra primitives
 finish AxisAngleRotationMatrix function
+review the projection functions for correctness
 (maybe) move conversion functions to thier own file
 (maybe) move transform/affine matrix functions to their own file
-review the projection functions for correctness
 
 */
 

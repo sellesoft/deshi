@@ -31,8 +31,6 @@ struct Vector3;
 struct deshiImGui;
 typedef uint8 stbi_uc;
 
-
-
 enum struct RenderAPI{
 	VULKAN
 };
@@ -85,6 +83,7 @@ struct Renderer{
 	virtual void   RemoveTextureFromMesh(uint32 textureID, uint32 meshID) = 0;
 	virtual void   UpdateMeshMatrix(uint32 meshID, Matrix4 matrix) = 0;
 	virtual void   TransformMeshMatrix(uint32 meshID, Matrix4 transform) = 0;
+	virtual void   UpdateMeshBatchShader(uint32 meshID, uint32 batchIndex, uint32 shader) = 0;
 	
 	//texture interface
 	virtual uint32 LoadTexture(Texture texure) = 0;
@@ -404,17 +403,19 @@ struct Renderer_Vulkan : public Renderer{
 	virtual void UpdateMeshMatrix(uint32 meshID, Matrix4 matrix) override;
 	virtual void TransformMeshMatrix(uint32 meshID, Matrix4 transform) override;
 	
+	virtual void UpdateMeshBatchShader(uint32 meshID, uint32 batchIndex, uint32 shader) override;
+	
 	virtual void LoadDefaultAssets() override;
 	
 	//loads a new scene to the GPU
 	//NOTE this should not be done often in gameplay
 	virtual void LoadScene(Scene* scene) override;
 	
-	virtual void   UpdateCameraPosition(Vector3 position) override;
-	virtual void   UpdateCameraRotation(Vector3 rotation) override;
-	virtual void   UpdateCameraViewMatrix(Matrix4 m) override;
-	virtual void   UpdateCameraProjectionMatrix(Matrix4 m) override;
-	virtual void   UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ, bool precalcMatrices) override;
+	virtual void UpdateCameraPosition(Vector3 position) override;
+	virtual void UpdateCameraRotation(Vector3 rotation) override;
+	virtual void UpdateCameraViewMatrix(Matrix4 m) override;
+	virtual void UpdateCameraProjectionMatrix(Matrix4 m) override;
+	virtual void UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ, bool precalcMatrices) override;
 	
 	//////////////////////////////////
 	//// initialization functions //// (called once)
@@ -561,6 +562,8 @@ struct Renderer_Vulkan : public Renderer{
 	
 	//copies a buffer, we use this to copy from CPU to GPU
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+	
+	VkPipeline GetPipelineFromShader(uint32 shader);
 	
 	static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
 	
