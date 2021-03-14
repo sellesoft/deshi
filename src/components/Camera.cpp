@@ -3,6 +3,7 @@
 #include "../math/Math.h"
 #include "../core/deshi_glfw.h"
 #include "../core/deshi_renderer.h"
+#include "../core/deshi_input.h"
 #include "../core/deshi_time.h"
 
 Camera::Camera(EntityAdmin* a) : Component(a) {
@@ -109,6 +110,16 @@ void Camera::Update() {
 	
 	renderer->UpdateCameraPosition(position);
 	renderer->UpdateCameraRotation(rotation);
+	
+	if (DengInput->KeyPressed(Key::NUMPADPLUS)) { 
+		fieldOfView += 5;
+		renderer->UpdateCameraProjectionProperties(fieldOfView, nearZ, farZ, false);
+	}
+	if (DengInput->KeyPressed(Key::NUMPADMINUS)) {
+		fieldOfView -= 5;
+		renderer->UpdateCameraProjectionProperties(fieldOfView, nearZ, farZ, false);
+	}
+
 	renderer->UpdateCameraViewMatrix(viewMatrix);
 	
 	renderer->TransformMeshMatrix(0, Matrix4::RotationMatrixY(90.f * time->deltaTime));

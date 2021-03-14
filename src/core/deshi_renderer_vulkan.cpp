@@ -34,6 +34,7 @@ const bool enableValidationLayers = true;
 
 #define ASSERTVK(func, message) ASSERT((func) == VK_SUCCESS, message);
 
+
 //////////////////////////
 //// render interface ////
 //////////////////////////
@@ -52,6 +53,14 @@ void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
 	box->mesh.batchArray[0].textureArray.push_back(tex);
 	box->mesh.batchArray[0].textureCount = 1;
 	test->models.push_back(box);
+
+	//Model* box2 = Model::CreateBox(Vector3(1, 1, 1));
+	//box2->mesh.transform = Matrix4::TranslationMatrix(Vector3(0, 0, 5));
+	////Texture tex2("UV_Grid_Sm.jpg");
+	//box2->mesh.batchArray[0].textureArray.push_back(tex);
+	//box2->mesh.batchArray[0].textureCount = 1;
+	//box2->mesh.batchArray[0].shader = WIREFRAME;
+	//test->models.push_back(box2);
 	
 	CreateInstance();
 	SetupDebugMessenger();
@@ -1034,7 +1043,7 @@ void Renderer_Vulkan::CreatePipelines(){
 		ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.WIREFRAME), "failed to create wireframe graphics pipeline");
 	}
 	
-	//TODO(r,delle) add more pipelines/shaders
+	//TODO(r,delle) add more pipelines/shader
 	
 	//pair materials with thier pipelines
 	for(MaterialVk& mat : scene.materials){
@@ -1094,6 +1103,9 @@ void Renderer_Vulkan::BuildCommandBuffers() {
 //also maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
 void Renderer_Vulkan::UpdateUniformBuffer(){
 	//PRINT("{-}{-} Updating Uniform Buffer {-}{-}\n");
+	shaderData.values.time = time->totalTime;
+	shaderData.values.swidth = (glm::f32)extent.width;
+	shaderData.values.sheight = (glm::f32)extent.height;
 	shaderData.values.viewPos = glm::vec4(camera.position, 0.f) * glm::vec4(-1.f, 0.f, -1.f, 0.f);
 	shaderData.values.lightPos = glm::vec4(0.0f, 2.5f, 0.0f, 1.0f);
 	
