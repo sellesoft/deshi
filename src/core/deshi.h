@@ -2,6 +2,8 @@
 TODO Tags: + GitIssue, s Severe, u Unimportant, p Physics, r Render, e Entity, i Input,
 	  m Math, o Optimization, g General, c Clean Up Code, f Fun
 
+	  showing collin how github
+
 TODO Style: TODO(tags,person,date) description
 Rules: tags can be empty but still requires a comma, date can be empty
       eg: TODO(,delle) no tag or date; TODO(ro,sushi,03/12/2021) render,optimization tags for sushi made on that date
