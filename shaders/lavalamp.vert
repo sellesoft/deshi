@@ -26,15 +26,17 @@ layout(location = 2) out vec3 outNormal;
 layout(location = 3) out float time;
 layout(location = 4) out float swidth;
 layout(location = 5) out float sheight;
-
+layout(location = 6) out vec3 camerapos;
 
 void main() {
 	
-	gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
+	vec4 pos = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
 	
 	time = ubo.time;
 
-	//pos.w += (20 * sin(time) + 20)/2;
+	camerapos = vec3(ubo.view[3][0], ubo.view[3][1], ubo.view[3][2]);
+
+	gl_Position = pos;
 
     //gl_Position = pos + 0.1 * sin(time * gl_VertexIndex / 2) + 0.1 * cos(time * gl_VertexIndex / 2);
     outColor = inColor;

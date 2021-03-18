@@ -103,6 +103,7 @@
       <AdditionalIncludeDirectories>C:\src\OpenAL1.1\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\src\boost_1_74_0;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/permissive %(AdditionalOptions)</AdditionalOptions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -122,6 +123,7 @@
       <AdditionalIncludeDirectories>C:\src\OpenAL1.1\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\src\boost_1_74_0;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/permissive %(AdditionalOptions)</AdditionalOptions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -142,7 +144,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\src\OpenAL1.1\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\src\boost_1_74_0;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalOptions>/permissive </AdditionalOptions>
+      <AdditionalOptions>/permissive</AdditionalOptions>
       <SupportJustMyCode>false</SupportJustMyCode>
       <ModuleOutputFile />
       <BufferSecurityCheck>
@@ -158,14 +160,14 @@
       <TreatWarningAsError />
       <BasicRuntimeChecks />
       <CallingConvention />
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DiagnosticsFormat />
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\src\OpenAL1.1\libs\Win64;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win64;C:\VulkanSDK\1.2.162.1\Lib;C:\src\glfw-3.3.2.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>OpenAL32.lib;opengl32.lib;gdi32.lib;shell32.lib;vulkan-1.lib;glfw3.lib;shaderc_combined.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>OpenAL32.lib;opengl32.lib;gdi32.lib;shell32.lib;vulkan-1.lib;glfw3.lib;shaderc_combinedd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -179,6 +181,7 @@
       <AdditionalIncludeDirectories>C:\src\OpenAL1.1\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\src\boost_1_74_0;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/permissive %(AdditionalOptions)</AdditionalOptions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -261,6 +264,9 @@
     <None Include="..\README.md" />
     <None Include="..\shaders\default.frag" />
     <None Include="..\shaders\default.vert" />
+    <None Include="..\shaders\fixedimguishader.vert" />
+    <None Include="..\shaders\lavalamp.frag" />
+    <None Include="..\shaders\lavalamp.vert" />
     <None Include="..\shaders\wireframe.frag" />
     <None Include="..\shaders\wireframe.vert" />
     <None Include="build.bat" />

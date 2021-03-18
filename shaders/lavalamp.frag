@@ -15,6 +15,8 @@ layout(location = 2) in vec3 inNormal;
 layout(location = 3) in float time;
 layout(location = 4) in float swidth;
 layout(location = 5) in float sheight;
+layout(location = 6) in vec3 cp;
+
 
 layout(location = 0) out vec4 outColor;
 
@@ -26,17 +28,24 @@ void main() {
 	//TODO(r,delle) pbr shading, see pbrtexture in saschawillems' stuff
 	//outColor = texture(albedoSampler, inTexCoord);
 
-	
+	float pi = 3.14159265359;
 
 	fc.x /= swidth;
 	fc.y /= sheight;
 	texsize = textureSize(albedoSampler, 0);
 
-	float res = 300; //floor(300 * fc.y / fc.x + 1); //(sin(time) + 1)/2 + 150;
-	int colors = 2;
+	tc.x -= 0.5;
+	tc.y -= 0.5;
+	tc.x *= 2;
+	tc.y *= 2;
 
-	float xpart = (floor(fc.x * res)/res * (floor(fc.x * res)/res * cos(time) - floor(fc.y * res)/res * sin(time))- 0.1);
-	float ypart = (floor(fc.y * res)/res * (floor(fc.x * res)/res * sin(time) + floor(fc.y * res)/res * cos(time))- 0.1);
+	float dist = log(length(fc - vec4(cp, 1)));
+
+	float res = 150; //floor(300 * fc.y / fc.x + 1); //(sin(time) + 1)/2 + 150;
+	int colors = 1;
+
+	float xpart = tc.x + (floor(fc.x * res)/res * (floor(fc.x * res)/res * cos(time) - floor(fc.y * res)/res * sin(time))- 0.1);
+	float ypart = tc.y + (floor(fc.y * res)/res * (floor(fc.x * res)/res * sin(time) + floor(fc.y * res)/res * cos(time))- 0.1);
 
 	float eq1 = floor((((xpart - 2 * abs(sin(0.2 * time))) * (xpart - 2 * abs(sin(0.2 * time))) * (ypart - 0.4 * abs(cos(0.2 * time)) - 0.4) * (ypart - 0.4 * abs(cos(0.2 * time)) - 0.4) - 0.1)) * colors) / colors;
 	float eq2 = floor((sin(99 * floor(fc.x * res)/res - cos(10 * floor(fc.y * res)/res) + 0.8 * time) + cos(20 * floor(fc.y*res)/res + time) + sin(fc.x + 20 * sin(time / 20) * fc.x * fc.y))*colors)/colors;
@@ -48,7 +57,17 @@ void main() {
 
 	vec4 mix1 = mix(col2, col1, sin(2 * time + cos(2 * time)));
 
-	outColor = mix(mix1, col3, abs(0.5 * cos(time)));
+
+
+	vec4 col4 = floor(vec4((cos(6 * pi * floor(tc.x * res)/res + sin(6 * pi * floor(tc.y * res)/res + time) + 2 * time) + sin(12 * pi * floor(tc.y * res)/res) - cos(3 * pi * floor(tc.x * res)/res + sin(6 * pi * floor(tc.y * res)/res + time))), 0, 0, 1) * colors)/colors;
+	//vec4 col4 = floor(vec4(cos(2 * pi * floor(tc.x * res)/res) * cos(2 * pi * floor(tc.y * res)/res) + sin(floor(tc.x * res)/res + cos(floor(tc.y * res)/res + time)), 0.5, 0.5, 1) * colors) / colors;
+
+
+	vec4 mix2 = mix(mix1, col3, abs(0.5 * cos(time)));
+	
+	outColor = mix(col4, mix2, clamp(dist / 10, 0, 1));//cos(time));
+
+	//outColor = vec4(1, 1, 1, 1);
 	//outColor = vec4(0.5, inTexCoord.x, inTexCoord.y, 1);
 	
 	//outColor = vec4(inColor, 1.0);

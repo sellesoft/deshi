@@ -41,7 +41,7 @@ std::map<std::string, Color> colstrmap{ //TODO(, sushi) extend this map
 	{"black", Color::BLACK}
 };
 
-ImVec4 olcPixToVec4(Color p) {
+ImVec4 ColorToVec4(Color p) {
 	return ImVec4((float)p.r / 255, (float)p.g / 255, (float)p.b / 255, p.a / 255);
 }
 
@@ -199,13 +199,13 @@ void ConsoleSystem::DrawConsole() {
 
 	//window styling
 	PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
-	PushStyleColor(ImGuiCol_Border,               olcPixToVec4(Color(0, 0, 0, 255)));
-	PushStyleColor(ImGuiCol_TitleBg,              olcPixToVec4(Color(0, 0, 0, 255)));
-	PushStyleColor(ImGuiCol_WindowBg,             olcPixToVec4(Color(0, 0, 0, 255)));
-	PushStyleColor(ImGuiCol_TitleBgActive,        olcPixToVec4(Color(0, 0, 0, 255)));
-	PushStyleColor(ImGuiCol_ScrollbarGrab,        olcPixToVec4(Color(37, 36, 36, 255)));
-	PushStyleColor(ImGuiCol_ScrollbarGrabActive,  olcPixToVec4(Color(0, 94, 83, 255)));
-	PushStyleColor(ImGuiCol_ScrollbarGrabHovered, olcPixToVec4(Color(48, 85, 90, 255)));
+	PushStyleColor(ImGuiCol_Border,               ColorToVec4(Color(0, 0, 0, 255)));
+	PushStyleColor(ImGuiCol_TitleBg,              ColorToVec4(Color(0, 0, 0, 255)));
+	PushStyleColor(ImGuiCol_WindowBg,             ColorToVec4(Color(0, 0, 0, 255)));
+	PushStyleColor(ImGuiCol_TitleBgActive,        ColorToVec4(Color(0, 0, 0, 255)));
+	PushStyleColor(ImGuiCol_ScrollbarGrab,        ColorToVec4(Color(37, 36, 36, 255)));
+	PushStyleColor(ImGuiCol_ScrollbarGrabActive,  ColorToVec4(Color(0, 94, 83, 255)));
+	PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColorToVec4(Color(48, 85, 90, 255)));
 
 	//initialize console window
 	SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height / 1.5));
@@ -248,7 +248,7 @@ void ConsoleSystem::DrawConsole() {
 							TableNextColumn();
 							if (i == match_sel) {
 								SetScrollHereY(0);
-								PushStyleColor(ImGuiCol_Text, olcPixToVec4(Color::RED));
+								PushStyleColor(ImGuiCol_Text, ColorToVec4(Color::RED));
 								Text(s.c_str());
 								PopStyleColor();
 								if (selected) {
@@ -276,7 +276,7 @@ void ConsoleSystem::DrawConsole() {
 	
 	// Reserve enough left-over height for 1 separator + 1 input text
 	const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
-	PushStyleColor(ImGuiCol_ChildBg, olcPixToVec4(Color(4, 17, 21, 255)));
+	PushStyleColor(ImGuiCol_ChildBg, ColorToVec4(Color(4, 17, 21, 255)));
 	BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar);
 	if (BeginPopupContextWindow()){
 		if (ImGui::Selectable("hehe")) AddLog("hoho", c);
@@ -294,7 +294,7 @@ void ConsoleSystem::DrawConsole() {
 			TextWrapped(p.first.c_str());
 		}
 		else {
-			PushStyleColor(ImGuiCol_Text, olcPixToVec4(p.second));
+			PushStyleColor(ImGuiCol_Text, ColorToVec4(p.second));
 			SameLine(0, 0);
 			TextWrapped(p.first.c_str());
 			PopStyleColor();
@@ -318,7 +318,7 @@ void ConsoleSystem::DrawConsole() {
 	else  input_text_flags = 0;
 	
 
-	PushStyleColor(ImGuiCol_FrameBg, olcPixToVec4(Color::VERY_DARK_CYAN));
+	PushStyleColor(ImGuiCol_FrameBg, ColorToVec4(Color::VERY_DARK_CYAN));
 	SetNextItemWidth(ImGui::GetWindowWidth() - 15);
 	ImGui::SetItemDefaultFocus();
 	if (InputText("", c->inputBuf, sizeof(c->inputBuf), input_text_flags, &TextEditCallbackStub, (void*)this)) { 

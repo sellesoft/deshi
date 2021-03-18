@@ -278,6 +278,15 @@
     <None Include="..\shaders\wireframe.vert">
       <Filter>shaders</Filter>
     </None>
+    <None Include="..\shaders\lavalamp.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\lavalamp.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\fixedimguishader.vert">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\main.cpp">

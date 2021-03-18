@@ -1059,8 +1059,8 @@ void Renderer_Vulkan::CreatePipelines(){
 	CompileShaders(false);
 	
 	//textured/default pipeline //TODO(r,delle) change this to phong and create a pbf shader for 4 textures
-	shaderStages[0] = loadShader("default.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = loadShader("default.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaderStages[0] = loadShader("lavalamp.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = loadShader("lavalamp.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.DEFAULT), "failed to create default graphics pipeline");
 	
 	//all other pipelines are derivatives
