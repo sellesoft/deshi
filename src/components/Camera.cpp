@@ -127,16 +127,18 @@ void Camera::Update() {
 	//temp debugging
 	if(DengInput->KeyPressed(Key::Z)){
 		renderer->UpdateMeshBatchShader(0, 0, 3);
+		renderer->UpdateMeshBatchShader(1, 0, 3);
 	}
 	if(DengInput->KeyPressed(Key::X)){
 		renderer->UpdateMeshBatchShader(0, 0, 0);
+		renderer->UpdateMeshBatchShader(1, 0, 0);
 	}
 	if(DengInput->KeyPressed(Key::F5)){
 		renderer->ReloadShaders();
 	}
 	if(DengInput->KeyPressed(Key::B, INPUT_SHIFT_HELD)){
-		Model* box = Model::CreateBox(Vector3(1, 1, 1));
-		uint32 id = renderer->LoadMesh(&box->mesh);
+		Model box = Model::CreateBox(Vector3(1, 1, 1));
+		uint32 id = renderer->LoadMesh(&box.mesh);
 		renderer->TransformMeshMatrix(id, Matrix4::TranslationMatrix(position + forward*10));
 	}
 	

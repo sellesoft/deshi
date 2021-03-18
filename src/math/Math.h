@@ -246,11 +246,18 @@ inline Matrix4 Matrix4::AxisAngleRotationMatrix(float angle, Vector3 axis) {
 
 //returns a translation matrix where (0,3) = translation.x, (1,3) = translation.y, (2,3) = translation.z
 inline Matrix4 Matrix4::TranslationMatrix(Vector3 translation) {
-	return Matrix4(
-				   1, 0, 0, 0,
+	return Matrix4(1, 0, 0, 0,
 				   0, 1, 0, 0,
 				   0, 0, 1, 0,
 				   translation.x, translation.y, translation.z, 1);
+}
+
+//returns a translation matrix where (0,3) = translation.x, (1,3) = translation.y, (2,3) = translation.z
+inline Matrix4 Matrix4::TranslationMatrix(float x, float y, float z) {
+	return Matrix4(1, 0, 0, 0,
+				   0, 1, 0, 0,
+				   0, 0, 1, 0,
+				   x, y, z, 1);
 }
 
 //returns a scale matrix where (0,0) = scale.x, (1,1) = scale.y, (2,2) = scale.z
