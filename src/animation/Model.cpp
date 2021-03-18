@@ -1,4 +1,10 @@
 #include "Model.h"
+#include "../core/deshi_assets.h"
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "../external/tinyobjloader/tiny_obj_loader.h"
+
+#include <unordered_map>
 
 ////////////////////////////////////////////////////////////
 // Texture
@@ -6,8 +12,8 @@
 
 
 
-Texture::Texture(const char* filename, TextureType type) {
-	strncpy_s(this->filename, filename, 16); this->filename[15] = '\0';
+Texture::Texture(const char* filename, TextureTypes type) {
+	strncpy_s(this->filename, filename, 15); this->filename[15] = '\0';
 	this->type = type;
 }
 
@@ -32,11 +38,15 @@ Vertex::Vertex(Vector3 pos, Vector2 uv, Vector3 color, Vector3 normal) {
 
 
 Batch::Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray, std::vector<Texture> textureArray, Shader shader, ShaderFlags shaderFlags) {
-	strncpy_s(this->name, name, 16); this->name[15] = '\0';
+	strncpy_s(this->name, name, 15); this->name[15] = '\0';
 	this->shader = shader; this->shaderFlags = shaderFlags;
 	this->vertexArray = vertexArray;   this->vertexCount = vertexArray.size();
 	this->indexArray = indexArray;     this->indexCount = indexArray.size();
 	this->textureArray = textureArray; this->textureCount = textureArray.size();
+}
+
+void Batch::SetName(const char* name){
+	strncpy_s(this->name, name, 15); this->name[15] = '\0';
 }
 
 
@@ -58,19 +68,131 @@ Mesh::Mesh(const char* name, std::vector<Batch> batchArray, Matrix4 transform) {
 	}
 }
 
+void Mesh::SetName(const char* name){
+	strncpy_s(this->name, name, 15); this->name[15] = '\0';
+}
 
+//https://github.com/tinyobjloader/tinyobjloader
+Mesh Mesh::CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 transform){
+	Mesh mesh; mesh.SetName(name.c_str()); mesh.transform = transform;
+	int totalVertexCount = 0;
+	int totalIndexCount = 0;
+	int totalTextureCount = 0;
+	
+	//setup tinyobj
+	tinyobj::ObjReaderConfig reader_config;
+	reader_config.triangulate = true;
+	reader_config.vertex_color = true;
+	reader_config.mtl_search_path = "./"; // Path to material files
+	tinyobj::ObjReader reader;
+	if (!reader.ParseFromFile(deshi::getModelsPath() + filename, reader_config)) {
+		if (!reader.Error().empty()) {
+			std::cerr << "TinyObjReader: " << reader.Error();
+		}
+		ASSERT(false, "failed to read OBJ file");
+	}
+	if (!reader.Warning().empty()) {
+		std::cout << "TinyObjReader: " << reader.Warning();
+	}
+	auto& attrib = reader.GetAttrib();
+	auto& shapes = reader.GetShapes();
+	auto& materials = reader.GetMaterials();
+	ASSERT(shapes[0].mesh.num_face_vertices[0] == 3, "OBJ must be triangulated");
+	
+	//check which features it has
+	bool hasMaterials = materials.size() > 0;
+	bool hasNormals = attrib.normals.size() > 0;
+	bool hasUVs = attrib.texcoords.size() > 0;
+	bool hasColors = attrib.colors.size() > 0;
+	
+	//fill batches
+	mesh.batchArray.reserve(shapes.size());
+	for (auto& shape : shapes) {
+		Batch batch; batch.SetName(shape.name.c_str());
+		
+		//fill batch texture array
+		if(hasMaterials && shape.mesh.material_ids.size() > 0){
+			const tinyobj::material_t* mat = &materials[shape.mesh.material_ids[0]];
+			if(mat->diffuse_texname.length() > 0){
+				if(mat->diffuse_texopt.type == 0){
+					Texture tex(mat->diffuse_texname.c_str(), TEXTURE_ALBEDO);
+					batch.textureArray.push_back(tex);
+				}
+			}
+			if(mat->specular_texname.length() > 0){
+				if(mat->specular_texopt.type == 0){
+					Texture tex(mat->specular_texname.c_str(), TEXTURE_SPECULAR);
+					batch.textureArray.push_back(tex);
+				}
+			}
+			if(mat->bump_texname.length() > 0){
+				if(mat->bump_texopt.type == 0){
+					Texture tex(mat->bump_texname.c_str(), TEXTURE_NORMAL);
+					batch.textureArray.push_back(tex);
+				}
+			}
+			if(mat->ambient_texname.length() > 0){
+				if(mat->ambient_texopt.type == 0){
+					Texture tex(mat->ambient_texname.c_str(), TEXTURE_LIGHT);
+					batch.textureArray.push_back(tex);
+				}
+			}
+		}
+		batch.textureCount = batch.textureArray.size();
+		totalTextureCount += batch.textureCount;
+		
+		std::unordered_map<Vertex, uint32> uniqueVertices{};
+		
+		//fill batch vertex and index arrays
+		size_t faceCount = shape.mesh.num_face_vertices.size();
+		batch.vertexArray.reserve(faceCount/3);
+		batch.indexArray.reserve(shape.mesh.indices.size());
+		for(auto& idx : shape.mesh.indices) { //loop over indices
+			Vertex vertex;
+			vertex.pos.x = attrib.vertices[3*idx.vertex_index+0];
+			vertex.pos.y = attrib.vertices[3*idx.vertex_index+1];
+			vertex.pos.z = attrib.vertices[3*idx.vertex_index+2];
+			if(hasNormals){
+				vertex.normal.x = attrib.normals[3*idx.normal_index+0];
+				vertex.normal.y = attrib.normals[3*idx.normal_index+1];
+				vertex.normal.z = attrib.normals[3*idx.normal_index+2];
+			}
+			if(hasUVs){
+				vertex.uv.x = attrib.texcoords[2*idx.texcoord_index+0];
+				vertex.uv.y = attrib.texcoords[2*idx.texcoord_index+1];
+			}
+			if(hasColors){
+				vertex.color.x = attrib.colors[3*idx.vertex_index+0];
+				vertex.color.y = attrib.colors[3*idx.vertex_index+1];
+				vertex.color.z = attrib.colors[3*idx.vertex_index+2];
+			}
+			
+			if(uniqueVertices.count(vertex) == 0){
+				uniqueVertices[vertex] = uint32(batch.vertexArray.size());
+				batch.vertexArray.push_back(vertex);
+			}
+			batch.indexArray.push_back(uniqueVertices[vertex]);
+		}
+		batch.vertexCount = batch.vertexArray.size();
+		totalVertexCount += batch.vertexCount;
+		batch.indexCount = batch.indexArray.size();
+		totalIndexCount += batch.indexCount;
+		
+		//TODO(r,delle) parse different shader options here based on texture count
+		batch.shader = Shader::DEFAULT;
+		batch.shaderFlags = SHADER_FLAGS_NONE;
+		mesh.batchArray.push_back(batch);
+	}
+	
+	mesh.batchCount = mesh.batchArray.size();
+	return mesh;
+}
 
 ////////////////////////////////////////////////////////////
 // Model
 //////////////////////////////////////////////////////////
 
-
-
-Model::Model(Mesh mesh) {
-	this->mesh = mesh;
-}
-
-Model* Model::CreateBox(Vector3 halfDims, Color color) {
+Model Model::CreateBox(Vector3 halfDims, Color color) {
 	Vector3 p = halfDims;
 	Vector3 c = Vector3(color.r, color.g, color.b) / 255.f;
 	std::vector<Vertex> vertices = {
@@ -92,13 +214,13 @@ Model* Model::CreateBox(Vector3 halfDims, Color color) {
 		4,1,5,    4,0,1,	//+z face
 	};
 	
+	Model model;
 	Batch batch("box_batch", vertices, indices, {});
-	Mesh mesh("default_box", { batch });
-	Model* model = new Model(mesh);
+	model.mesh = Mesh("default_box", { batch });
 	return model;
 }
 
-Model* Model::CreatePlanarBox(Vector3 halfDims, Color color) {
+Model Model::CreatePlanarBox(Vector3 halfDims, Color color) {
 	float x = halfDims.x; float y = halfDims.y; float z = halfDims.z;
 	Vector2 tl = Vector2(0.f, 0.f);   Vector2 tr = Vector2(1.f, 0.f); 
 	Vector2 bl = Vector2(0.f, 1.f);   Vector2 br = Vector2(1.f, 1.f); 
@@ -144,8 +266,8 @@ Model* Model::CreatePlanarBox(Vector3 halfDims, Color color) {
 		20,21,22, 20,22,23,//left face
 	};
 	
+	Model model;
 	Batch batch("planarbox_batch", vertices, indices, {});
-	Mesh mesh("default_planarbox", { batch });
-	Model* model = new Model(mesh);
+	model.mesh = Mesh("default_planarbox", { batch });
 	return model;
 }

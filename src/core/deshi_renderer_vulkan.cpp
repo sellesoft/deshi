@@ -1,7 +1,7 @@
 #include "deshi_renderer.h"
 #include "deshi_glfw.h"
 #include "deshi_imgui.h"
-#include "deshi_import.h"
+#include "deshi_assets.h"
 #include "deshi_time.h"
 #include "../animation/Model.h"
 #include "../animation/Scene.h"
@@ -53,14 +53,6 @@ void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
 	glfwSetWindowUserPointer(window->window, this);
 	glfwSetFramebufferSizeCallback(window->window, framebufferResizeCallback);
 	
-	//debug scene
-	Scene* test = new Scene;
-	Model* box = Model::CreatePlanarBox(Vector3(1, 1, 1));
-	Texture tex("UV_Grid_Sm.jpg");
-	box->mesh.batchArray[0].textureArray.push_back(tex);
-	box->mesh.batchArray[0].textureCount = 1;
-	test->models.push_back(box);
-	
 	CreateInstance();
 	SetupDebugMessenger();
 	CreateSurface();
@@ -80,7 +72,19 @@ void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
 	CreateSyncObjects();
 	
 	LoadDefaultAssets();
+	
+	//debug scene
+	Scene* test = new Scene;
+	Model box = Model::CreatePlanarBox(Vector3(1, 1, 1));
+	Texture tex("UV_Grid_Sm.jpg");
+	box.mesh.batchArray[0].textureArray.push_back(tex);
+	box.mesh.batchArray[0].textureCount = 1;
+	
+	Model whaleShip; whaleShip.mesh = Mesh::CreateMeshFromOBJ("whale_ship.obj", "ship", Matrix4::TranslationMatrix(5, 0, 0));
+	
+	test->models = {box, whaleShip};
 	LoadScene(test);
+	delete test;
 	
 	imgui->Init(this);
 	BuildCommandBuffers();
@@ -94,7 +98,7 @@ void Renderer_Vulkan::Render() {
 	if(remakeWindow){
 		int w, h;
 		glfwGetFramebufferSize(window, &w, &h);
-		if(w <= 0 || h <= 0){ return; }
+		if(w <= 0 || h <= 0){  ImGui::EndFrame(); return;  }
 		ResizeWindow(w, h);
 		frameIndex = 0;
 		remakeWindow = false;
@@ -274,10 +278,10 @@ uint32 Renderer_Vulkan::LoadMesh(Mesh* m){
 			for(int i=0; i<batch.textureArray.size(); ++i){ 
 				uint32 idx = LoadTexture(batch.textureArray[i]);
 				switch(scene.textures[idx].type){
-					case(TextureType::ALBEDO):  { mat.albedoTextureIndex   = idx; }break;
-					case(TextureType::NORMAL):  { mat.normalTextureIndex   = idx; }break;
-					case(TextureType::LIGHT):   { mat.lightTextureIndex    = idx; }break;
-					case(TextureType::SPECULAR):{ mat.specularTextureIndex = idx; }break;
+					case(TEXTURE_ALBEDO):  { mat.albedoTextureIndex   = idx; }break;
+					case(TEXTURE_NORMAL):  { mat.normalTextureIndex   = idx; }break;
+					case(TEXTURE_LIGHT):   { mat.lightTextureIndex    = idx; }break;
+					case(TEXTURE_SPECULAR):{ mat.specularTextureIndex = idx; }break;
 				}
 			}
 			
@@ -418,13 +422,17 @@ void Renderer_Vulkan::LoadDefaultAssets(){
 	Texture defaultTexture("default1024.png"); LoadTexture(defaultTexture);
 	Texture blackTexture  ("black1024.png");   LoadTexture(blackTexture);
 	Texture whiteTexture  ("white1024.png");   LoadTexture(whiteTexture);
+	
+	//TODO(r,delle) add local axis 
+	//TODO(r,delle) add global axis 
+	//TODO(r,delle) add grid
 }
 
 //ref: gltfscenerendering.cpp:350
 void Renderer_Vulkan::LoadScene(Scene* sc){
 	PRINT("{-}{-} Loading Scene");
 	//load meshes, materials, and textures
-	for(Model* model : sc->models){ LoadMesh(&model->mesh); }
+	for(Model& model : sc->models){ LoadMesh(&model.mesh); }
 	
 	CreateSceneBuffers();
 }
@@ -780,6 +788,7 @@ void Renderer_Vulkan::ResizeWindow(int w, int h) {
 	CreateRenderPass();
 	CreateFrames(); //image views, color/depth resources, framebuffers, commandbuffers
 	CreatePipelines();
+	UpdateMaterialPipelines();
 }
 
 void Renderer_Vulkan::CreateSwapChain() {
@@ -924,9 +933,9 @@ void Renderer_Vulkan::CreateFrames(){
 	
 	//color framebuffer attachment
 	if(attachments.colorImage){
-		vkDestroyImageView(device, attachments.depthImageView, nullptr);
-		vkDestroyImage(device, attachments.depthImage, nullptr);
-		vkFreeMemory(device, attachments.depthImageMemory, nullptr);
+		vkDestroyImageView(device, attachments.colorImageView, nullptr);
+		vkDestroyImage(device, attachments.colorImage, nullptr);
+		vkFreeMemory(device, attachments.colorImageMemory, nullptr);
 	}
 	VkFormat colorFormat = surfaceFormat.format;
 	createImage(width, height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, 

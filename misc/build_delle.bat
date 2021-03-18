@@ -1,6 +1,7 @@
 @echo off
 
-pushd C:\github\deshi\src
+REM pushd C:\github\deshi\src
+pushd ..\src
 
 @set INCLUDES=/I..\src /IC:\src\glfw-3.3.2.bin.WIN64\include /IC:\src\OpenAL1.1\include /I%VULKAN_SDK%\include /IC:\src\glm /IC:\src\boost_1_74_0
 
@@ -9,6 +10,8 @@ pushd C:\github\deshi\src
 @set LIBS=/LIBPATH:C:\src\glfw-3.3.2.bin.WIN64\lib-vc2019 /LIBPATH:C:\src\OpenAL1.1\libs\Win64 /libpath:%VULKAN_SDK%\lib glfw3.lib OpenAL32.lib opengl32.lib gdi32.lib shell32.lib vulkan-1.lib shaderc_combined.lib
 
 @set OUT_EXE=deshi
+
+ECHO %DATE% %TIME%
 
 IF [%1]==[] GOTO DEBUG
 IF [%1]==[-i] GOTO ONE_FILE
@@ -29,6 +32,7 @@ REM ______________ ONE FILE (compiles just one file with debug options, links wi
 
 :ONE_FILE
 IF [%~2]==[] ECHO "Place the .cpp path after using -i" GOTO DONE 
+ECHO "Warning: debugging might not work with one-file compilation"
 
 @set OUT_DIR="..\build\Debug"
 IF NOT EXIST %OUT_DIR% mkdir %OUT_DIR%

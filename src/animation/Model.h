@@ -5,29 +5,41 @@
 #include "../math/Vector2.h"
 #include "Armature.h"
 
-enum TextureType : uint32 { 
-	ALBEDO, NORMAL, LIGHT, SPECULAR 
+#include <vector>
+
+enum TextureTypeBits : uint32 { 
+	TEXTURE_ALBEDO   = 0, 
+	TEXTURE_NORMAL   = 1, 
+	TEXTURE_LIGHT    = 2, 
+	TEXTURE_SPECULAR = 4, 
+	TEXTURE_CUBE     = 8, //not supported yet
+	TEXTURE_SPHERE   = 16,//not supported yet
 };
+typedef uint32 TextureTypes;
 
 struct Texture {
 	char filename[16];
-	TextureType type;
+	TextureTypes type;
 	Texture() {}
-	Texture(const char* filename, TextureType type = TextureType::ALBEDO);
+	Texture(const char* filename, TextureTypes textureType = TEXTURE_ALBEDO);
 };
 
 struct Vertex {
-	Vector3 pos;
-	Vector2 uv;
-	Vector3 color; //between 0 and 1
-	Vector3 normal;
+	Vector3 pos{};
+	Vector2 uv{};
+	Vector3 color = {1.f, 1.f, 1.f}; //between 0 and 1
+	Vector3 normal{};
 	//bone index		4tuple
 	//bone weight		4tuple
 	Vertex() {}
 	Vertex(Vector3 pos, Vector2 uv, Vector3 color, Vector3 normal);
+	
+	bool operator==(const Vertex& other) const {
+		return pos == other.pos && color == other.color && uv == other.uv && normal == other.normal;
+	}
 };
 
-
+//this is a hash function to compare vertices for a hash map
 //pattern: OR unshifted and L-shifted, then R-shift the combo, 
 //then OR that with L-shifted, then R-shift the combo and repeat
 //until the last combo which is not R-shifted ((x^(y<<))>>)^(z<<)
@@ -39,10 +51,6 @@ namespace std {
 	};
 };
 
-struct Material{
-	
-};
-
 enum ShaderFlagsBits : uint32 {
 	SHADER_FLAGS_NONE = 0,
 };
@@ -52,7 +60,7 @@ enum Shader : uint32 {
 	DEFAULT, TWOD, PBR, WIREFRAME //TODO(r,delle) make default into phong
 };
 
-//NOTE indices should be counter-clockwise
+//NOTE indices should be clockwise
 struct Batch {
 	char name[16];
 	uint32 vertexCount  = 0;
@@ -67,6 +75,8 @@ struct Batch {
 	
 	Batch() {}
 	Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray, std::vector<Texture> textureArray, Shader shader = Shader::DEFAULT, ShaderFlags shaderFlags = SHADER_FLAGS_NONE);
+	
+	void SetName(const char* name);
 };
 
 struct Mesh {
@@ -82,16 +92,20 @@ struct Mesh {
 	
 	Mesh() {}
 	Mesh(const char* name, std::vector<Batch> batchArray, Matrix4 transform = Matrix4::IDENTITY);
+	
+	void SetName(const char* name);
+	
+	//filename: filename and extension, name: loaded mesh name
+	static Mesh CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 transform = Matrix4::IDENTITY);
 };
 
-//NOTE changes to a model after creation can be expensive due to vector resizing
+//NOTE a model should not change after loading
 struct Model{
 	Armature armature;
 	Mesh mesh;
 	
 	Model() {}
-	Model(Mesh mesh);
 	
-	static Model* CreateBox(Vector3 halfDims, Color color = Color::WHITE);
-	static Model* CreatePlanarBox(Vector3 halfDims, Color color = Color::WHITE);
+	static Model CreateBox(Vector3 halfDims, Color color = Color::WHITE);
+	static Model CreatePlanarBox(Vector3 halfDims, Color color = Color::WHITE);
 };

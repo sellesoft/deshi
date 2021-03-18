@@ -5,7 +5,7 @@ struct Light;
 struct Edge3D;
 
 struct Scene{
-	std::vector<Model*>  models;
+	std::vector<Model>  models;
 	std::vector<Light*>  lights;
 	std::vector<Edge3D*> lines;
 	
