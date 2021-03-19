@@ -333,16 +333,22 @@ void Renderer_Vulkan::RemoveTextureFromMesh(uint32 textureID, uint32 meshID){
 }
 
 void Renderer_Vulkan::UpdateMeshMatrix(uint32 meshID, Matrix4 matrix){
-	scene.meshes[meshID].modelMatrix = glm::make_mat4(matrix.data);
+	if(meshID < scene.meshes.size()){
+		scene.meshes[meshID].modelMatrix = glm::make_mat4(matrix.data);
+	}
 }
 
 void Renderer_Vulkan::TransformMeshMatrix(uint32 meshID, Matrix4 transform){
-	scene.meshes[meshID].modelMatrix = glm::make_mat4(transform.data) * scene.meshes[meshID].modelMatrix;
+	if(meshID < scene.meshes.size()){
+		scene.meshes[meshID].modelMatrix = glm::make_mat4(transform.data) * scene.meshes[meshID].modelMatrix;
+	}
 }
 
 void Renderer_Vulkan::UpdateMeshBatchShader(uint32 meshID, uint32 batchIndex, uint32 shader){
-	uint32 matID = scene.meshes[meshID].primitives[batchIndex].materialIndex;
-	scene.materials[matID].pipeline = GetPipelineFromShader(shader);
+	if(meshID < scene.meshes.size() && batchIndex < scene.meshes[meshID].primitives.size()){
+		uint32 matID = scene.meshes[meshID].primitives[batchIndex].materialIndex;
+		scene.materials[matID].pipeline = GetPipelineFromShader(shader);
+	}
 }
 
 uint32 Renderer_Vulkan::LoadTexture(Texture texture){

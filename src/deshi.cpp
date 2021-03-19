@@ -10,9 +10,9 @@ Rules: tags can be empty but still requires a comma, date can be empty
 
 Major Ungrouped TODOs
 ---------------------
-add mouse-camera control
 add a component_state command to print state of a component
-add shaders: FLAT (new default, vertex colors), PHONG (flat with lighting based on normals), PBR (4textures)
+fix transformations (seem to be off)
+add shaders: FLAT (vertex colors, sharp edges), PHONG (flat with lighting based on normals), PBR (4textures)
 log console output to a file
 settings file(s) [keybinds, video, audio, etc]
 fix program stalling when Keybinds cant find the keybind file
@@ -40,7 +40,7 @@ avoid having 3 copies of a mesh (model, meshVK, vulkan)
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
 add lighting and shadows
 add RenderSettings loading and usage
-add dynamic Texture updating on meshes (update materials)
+add dynamic texture updating on meshes (update materials' textures)
   convert prints to go thru the in-game console rather than other console (after setting up logging to a file)
 find a way to forward declare vulkan stuff and move the include to the cpp
 (maybe) remove renderer polymorphism and replace it with defines that are checked on program start

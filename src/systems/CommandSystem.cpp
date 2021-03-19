@@ -1,8 +1,10 @@
 #include "CommandSystem.h"
 #include "../utils/defines.h"
 #include "../core.h"
+
 #include "../utils/Command.h"
 #include "../systems/WorldSystem.h"
+
 #include "../components/Keybinds.h"
 #include "../components/Canvas.h"
 #include "../components/Transform.h"
@@ -10,6 +12,8 @@
 #include "../components/Collider.h"
 #include "../components/Camera.h"
 #include "../components/AudioSource.h"
+
+#include "../animation/Scene.h"
 
 #include <string>     // std::string, std::stoi
 
@@ -23,7 +27,7 @@
 #define VecNumMatch std::regex("[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?")
 
 #define NEWCOMMAND(name, desc, func) admin->commands[name] =\
-new Command([](EntityAdmin* admin, std::vector<std::string> args)->std::string func, name, desc);
+new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string func, name, desc);
 
 inline void AddSpawnCommands(EntityAdmin* admin) {
 	
@@ -148,81 +152,156 @@ inline void AddSpawnCommands(EntityAdmin* admin) {
 	//	}, "spawn_scene", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
 	
 }
+////////////////////////////////////
+//// render commands and inputs ////
+////////////////////////////////////
 
 inline void AddRenderCommands(EntityAdmin* admin) {
-	/*
-	admin->commands["r_wireframe"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													 admin->currentScene->RENDER_WIREFRAME = !admin->currentScene->RENDER_WIREFRAME;
-													 if (admin->currentScene->RENDER_WIREFRAME) return "render_wireframe = true";
-													 else return "render_wireframe = false";
-												 }, "r_wireframe", "toggles rendering wireframe");
+	//NOTE im not gonna make these b/c they'll be replaced/changes later when actually adding meshes to objects
+	//create box 
+	//create planarized box
+	//mesh_update_matrix, a bit more difficult b/c it should only update the passed arguments
 	
-	admin->commands["r_textures"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													admin->currentScene->RENDER_TEXTURES = !admin->currentScene->RENDER_TEXTURES;
-													if (admin->currentScene->RENDER_TEXTURES) return "render_textures = true";
-													else return "render_textures = false";
-												}, "r_textures", "toggles rendering textuires");
+	NEWCOMMAND("reload_shaders", "Reloads all shaders", {
+				   admin->renderer->ReloadShaders();
+				   return "[c:magen]Reloading shaders[c]";
+			   });
 	
-	admin->commands["r_display_edges"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														 admin->currentScene->RENDER_EDGE_NUMBERS = !admin->currentScene->RENDER_EDGE_NUMBERS;
-														 if (admin->currentScene->RENDER_EDGE_NUMBERS) return "render_edge_numbers = true";
-														 else return "render_edge_numbers = false";
-													 }, "r_display_edges", "toggles diaplying edge numbers on triangles");
+	//TODO(r,delle) update this to be dynamic when shader loading is (if ever)
+	NEWCOMMAND("list_shaders", "Lists the shaders and their IDs", {
+				   return TOSTRING("[c:yellow]ID    SHADER          Description[c]\n",
+								   " 0    Flat            Vertex color shading without normal/edge smoothing\n",
+								   " 1    Phong           Vertex color shading with normal smoothing (good with spheres)\n",
+								   " 2    TwoD            Vertex color shading with 2D position, rotation, and scale\n",
+								   " 3    PBR             Physically-based rendering; 4 textures per material\n",
+								   " 4    Wireframe       Vertex color shading with no polygon fill\n",
+								   " 5    Lavalamp        Sushi's experimental shader");
+			   });
 	
-	admin->commands["r_local_axis"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													  admin->currentScene->RENDER_LOCAL_AXIS = !admin->currentScene->RENDER_LOCAL_AXIS;
-													  if (admin->currentScene->RENDER_LOCAL_AXIS) return "render_local_axis = true";
-													  else return "render_local_axis = false";
-												  }, "r_local_axis", "toggles rendering the local axis on entities");
+	NEWCOMMAND("mesh_update_batch_shader", "mesh_update_batch_shader <meshID:UInt> <batchID:UInt> <shaderID:UInt>", {
+				   if(args.size() != 3) {return "mesh_update_batch_shader <meshID:UInt> <batchID:UInt> <shaderID:UInt>";}
+				   try{
+					   int mesh = std::stoi(args[0]);
+					   int batch = std::stoi(args[1]);
+					   int shader = std::stoi(args[2]);
+					   admin->renderer->UpdateMeshBatchShader(mesh, batch, shader);
+					   return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s shader to shader", shader);
+				   }catch(...){
+					   return "mesh_update_batch_shader <meshID:UInt> <batchID:UInt> <shaderID:UInt>";
+				   }
+			   });
 	
-	admin->commands["r_global_axis"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													   admin->currentScene->RENDER_GLOBAL_AXIS = !admin->currentScene->RENDER_GLOBAL_AXIS;
-													   if (admin->currentScene->RENDER_GLOBAL_AXIS) return "render_global_axis = true";
-													   else return "render_global_axis = false";
-												   }, "r_global_axis", "toggles rendering the global axis relatie to camera orientation in the top right of the screen");
+	admin->commands["mesh_transform_matrix"] =
+		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+						if(args.size() > 1){
+							Mesh mesh; std::cmatch m;
+							Vector3 position{}, rotation{}, scale = {1.f, 1.f, 1.f};
+							
+							//check for optional params after the first arg
+							for (auto s = args.begin()+1; s != args.end(); ++s) { 
+								if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
+									std::regex_search(s->c_str(), m, VecNumMatch);
+									position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+								}
+								else if(std::regex_match(*s, RegRotParam)){ //-rot=(1.1,2,3)
+									std::regex_search(s->c_str(), m, VecNumMatch);
+									rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+								}
+								else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
+									std::regex_search(s->c_str(), m, VecNumMatch);
+									scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+								}
+								else {
+									return "[c:red]Invalid parameter: " + *s + "[c]";
+								}
+							}
+							
+							//update the mesh's matrix
+							try{
+								admin->renderer->TransformMeshMatrix(std::stoi(args[0]), Matrix4::TransformationMatrix(position, rotation, scale));
+								return TOSTRING("Transforming mesh", args[0], "'s matrix");
+							}catch(...){
+								return "mesh_transform_matrix <meshID:UInt> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
+							}
+						}else{
+							return "mesh_transform_matrix <meshID:UInt> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
+						}
+					}, "mesh_transform_matrix", "mesh_transform_matrix <meshID:UInt> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 	
-	admin->commands["r_transforms"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													  admin->currentScene->RENDER_TRANSFORMS = !admin->currentScene->RENDER_TRANSFORMS;
-													  if (admin->currentScene->RENDER_TRANSFORMS) return "render_transforms = true";
-													  else return "render_transforms = false";
-												  }, "r_transforms", "toggles diaplaying tranform information on entities");
+	//TODO(c,delle) figure out why the macro doesnt work here or on the one above
+	/*NEWCOMMAND("load_obj", "load_obj <model.obj:String> -position=(x,y,z) -rotation=(x,y,z) -scale=(x,y,z)", {
+				   Renderer* r = admin->renderer;
+				   if(args.size() > 0){
+					   Mesh mesh; std::cmatch m;
+					   Vector3 position{}, rotation{}, scale = {1.f, 1.f, 1.f};
+					   
+					   //check for optional params after the first arg
+					   for (auto s = args.begin()+1; s != args.end(); ++s) { 
+						   if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
+							   std::regex_search(s->c_str(), m, VecNumMatch);
+							   position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+						   }
+						   else if(std::regex_match(*s, RegRotParam)){ //-rot=(1.1,2,3)
+							   std::regex_search(s->c_str(), m, VecNumMatch);
+							   rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+						   }
+						   else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
+							   std::regex_search(s->c_str(), m, VecNumMatch);
+							   scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+						   }
+						   else {
+							   return "[c:red]Invalid parameter: " + *s + "[c]";
+						   }
+					   }
+					   
+					   //create the mesh and give to the renderer
+					   mesh = Mesh::CreateMeshFromOBJ(args[0], "no_name", 
+													  Matrix4::TransformationMatrix(position, rotation, scale));
+					   uint32 id = r->LoadMesh(&mesh);
+					   return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
+				   }else{
+					   return "load_obj <model.obj:String> -position=(x,y,z) -rotation=(x,y,z) -scale=(x,y,z)";
+				   }
+			   });*/
 	
-	admin->commands["r_physics"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   admin->currentScene->RENDER_PHYSICS = !admin->currentScene->RENDER_PHYSICS;
-												   if (admin->currentScene->RENDER_PHYSICS) return "render_physics = true";
-												   else return "render_physics = false";
-											   }, "r_physics", "toggles rendering velocity and acceleration vectors on entities");
+	admin->commands["load_obj"] = 
+		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+						if(args.size() > 0){
+							Mesh mesh; std::cmatch m;
+							Vector3 position{}, rotation{}, scale = {1.f, 1.f, 1.f};
+							
+							//check for optional params after the first arg
+							for (auto s = args.begin()+1; s != args.end(); ++s) { 
+								if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
+									std::regex_search(s->c_str(), m, VecNumMatch);
+									position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+								}
+								else if(std::regex_match(*s, RegRotParam)){ //-rot=(1.1,2,3)
+									std::regex_search(s->c_str(), m, VecNumMatch);
+									rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+								}
+								else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
+									std::regex_search(s->c_str(), m, VecNumMatch);
+									scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+								}
+								else {
+									return "[c:red]Invalid parameter: " + *s + "[c]";
+								}
+							}
+							
+							//create the mesh and give to the renderer
+							mesh = Mesh::CreateMeshFromOBJ(args[0], "no_name", 
+														   Matrix4::TransformationMatrix(position, rotation, scale));
+							uint32 id = admin->renderer->LoadMesh(&mesh);
+							return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
+						}else{
+							return "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
+						}
+					}, "load_obj", "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
+}
+
+inline void HandleRenderInputs(EntityAdmin* admin, Input* input, Keybinds* binds) {
 	
-	admin->commands["r_screen_bounding_box"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-															   admin->currentScene->RENDER_SCREEN_BOUNDING_BOX = !admin->currentScene->RENDER_SCREEN_BOUNDING_BOX;
-															   if (admin->currentScene->RENDER_SCREEN_BOUNDING_BOX) return "render_screen_bounding_box = true";
-															   else return "render_screen_bounding_box = false";
-														   }, "r_screen_bounding_box", "toggles rendering of the screen space bounding box of entities");
-	
-	admin->commands["r_mesh_vertices"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														 admin->currentScene->RENDER_MESH_VERTICES = !admin->currentScene->RENDER_MESH_VERTICES;
-														 if (admin->currentScene->RENDER_MESH_VERTICES) return "render_mesh_vertices = true";
-														 else return "render_mesh_vertices = false";
-													 }, "r_mesh_vertices", "toggles rendering of mesh vertices");
-	
-	admin->commands["r_grid"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												admin->currentScene->RENDER_GRID = !admin->currentScene->RENDER_GRID;
-												if (admin->currentScene->RENDER_GRID) return "render_grid = true";
-												else return "render_grid = false";
-											}, "r_grid", "toggles rendering the world grid");
-	
-	admin->commands["r_light_rays"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													  admin->currentScene->RENDER_LIGHT_RAYS = !admin->currentScene->RENDER_LIGHT_RAYS;
-													  if (admin->currentScene->RENDER_LIGHT_RAYS) return "render_light_rays = true";
-													  else return "render_light_rays = false";
-												  }, "r_light_rays", "toggles rendering light rays");
-	
-	admin->commands["r_mesh_normals"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														admin->currentScene->RENDER_MESH_NORMALS = !admin->currentScene->RENDER_MESH_NORMALS;
-														if (admin->currentScene->RENDER_MESH_NORMALS) return "render_mesh_normals = true";
-														else return "render_mesh_normals = false";
-														}, "r_mesh_normals", "toggles rendering mesh normals");
-	*/
 }
 
 inline void AddConsoleCommands(EntityAdmin* admin) {
@@ -372,35 +451,7 @@ inline void HandleSelectedEntityInputs(EntityAdmin* admin, Input* input) {
 	}
 }
 
-inline void HandleRenderInputs(EntityAdmin* admin, Input* input, Keybinds* binds) {
-	
-	if (!admin->IMGUI_KEY_CAPTURE) {
-		//toggle wireframe
-		if (input->KeyPressed(binds->debugRenderWireframe, INPUT_NONE_HELD)) {
-			admin->ExecCommand("render_wireframe");
-		}
-		
-		//toggle textures
-		if (input->KeyPressed(binds->debugRenderWireframe, INPUT_SHIFT_HELD)) {
-			admin->ExecCommand("render_textures");
-		}
-		
-		//toggle edge numbers
-		if (input->KeyPressed(binds->debugRenderEdgesNumbers, INPUT_NONE_HELD)) {
-			admin->ExecCommand("render_display_edges");
-		}
-		
-		//toggle edge numbers
-		if (input->KeyPressed(binds->debugRenderDisplayAxis, INPUT_NONE_HELD)) {
-			admin->ExecCommand("render_local_axis");
-		}
-		
-		//toggle edge numbers
-		if (input->KeyPressed(binds->debugRenderDisplayAxis, INPUT_SHIFT_HELD)) {
-			admin->ExecCommand("render_global_axis");
-		}
-	}
-}
+
 
 //TODO(ip,delle) update entity movement commands to be based on EntityID
 inline void AddSelectedEntityCommands(EntityAdmin* admin) {
