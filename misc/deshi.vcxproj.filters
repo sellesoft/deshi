@@ -1,24 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClInclude Include="..\src\core\deshi.h">
-      <Filter>src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\core\deshi_glfw.h">
-      <Filter>src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\core\deshi_imgui.h">
-      <Filter>src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\core\deshi_import.h">
-      <Filter>src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\core\deshi_input.h">
-      <Filter>src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\core\deshi_renderer.h">
-      <Filter>src\core</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\geometry\Edge.h">
       <Filter>src\geometry</Filter>
     </ClInclude>
@@ -115,28 +97,16 @@
     <ClInclude Include="..\src\components\Light.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\components\Listener.h">
-      <Filter>src\components\h</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\components\MovementState.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
     <ClInclude Include="..\src\components\Physics.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\components\Scene.h">
-      <Filter>src\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Source.h">
-      <Filter>src\components\h</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\components\Transform.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
     <ClInclude Include="..\src\components\World.h">
-      <Filter>src\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\components\Model.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
     <ClInclude Include="..\src\systems\System.h">
@@ -195,6 +165,33 @@
     </ClInclude>
     <ClInclude Include="..\src\external\saschawillems\VulkanInitializers.hpp">
       <Filter>src\external\saschawillems</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\input.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\renderer.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\time.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\window.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\assets.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\deshi_imgui.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\AudioListener.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\AudioSource.h">
+      <Filter>src\components\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -255,6 +252,9 @@
     <Filter Include="shaders">
       <UniqueIdentifier>{97a16504-577a-4d29-b6c1-9d0f379e0ce6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="cfg">
+      <UniqueIdentifier>{ce9f1535-2538-4fc7-b08d-1fcdcfad596c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore">
@@ -266,32 +266,47 @@
     <None Include="build.bat">
       <Filter>docs</Filter>
     </None>
-    <None Include="..\shaders\default.frag">
+    <None Include="..\shaders\phong.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="..\shaders\default.vert">
+    <None Include="..\shaders\twod.frag">
       <Filter>shaders</Filter>
     </None>
     <None Include="..\shaders\wireframe.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="..\shaders\wireframe.vert">
+    <None Include="..\shaders\flat.frag">
       <Filter>shaders</Filter>
     </None>
     <None Include="..\shaders\lavalamp.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="..\shaders\lavalamp.vert">
+    <None Include="..\shaders\pbr.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\pbr.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\phong.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\twod.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\wireframe.vert">
       <Filter>shaders</Filter>
     </None>
     <None Include="..\shaders\fixedimguishader.vert">
       <Filter>shaders</Filter>
     </None>
+    <None Include="..\shaders\flat.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\lavalamp.vert">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\main.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\components\Camera.cpp">
       <Filter>src\components\cpp</Filter>
     </ClCompile>
@@ -313,16 +328,10 @@
     <ClCompile Include="..\src\components\Light.cpp">
       <Filter>src\components\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\components\Listener.cpp">
-      <Filter>src\components\cpp</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\components\MovementState.cpp">
       <Filter>src\components\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\components\Physics.cpp">
-      <Filter>src\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\components\Source.cpp">
       <Filter>src\components\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\components\Transform.cpp">
@@ -370,9 +379,6 @@
     <ClCompile Include="..\src\animation\Model.cpp">
       <Filter>src\animation</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\deshi_renderer_vulkan.cpp">
-      <Filter>src\core</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\external\imgui\imgui_widgets.cpp">
       <Filter>src\external\imgui</Filter>
     </ClCompile>
@@ -394,5 +400,28 @@
     <ClCompile Include="..\src\external\imgui\imgui.cpp">
       <Filter>src\external\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\core\renderer_vulkan.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\window.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\deshi_imgui.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\components\AudioListener.cpp">
+      <Filter>src\components\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\components\AudioSource.cpp">
+      <Filter>src\components\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\deshi.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\cfg\keybinds.txt">
+      <Filter>cfg</Filter>
+    </Text>
   </ItemGroup>
 </Project>

@@ -1,4 +1,7 @@
 #pragma once
+#ifndef DESHI_MODEL_H
+#define DESHI_MODEL_H
+
 #include "../utils/defines.h"
 #include "../math/Matrix4.h"
 #include "../math/Vector3.h"
@@ -57,7 +60,7 @@ enum ShaderFlagsBits : uint32 {
 typedef uint32 ShaderFlags;
 
 enum Shader : uint32 {
-	DEFAULT, TWOD, PBR, WIREFRAME //TODO(r,delle) make default into phong
+	FLAT, PHONG, TWOD, PBR, WIREFRAME, LAVALAMP
 };
 
 //NOTE indices should be clockwise
@@ -74,7 +77,7 @@ struct Batch {
 	ShaderFlags shaderFlags;
 	
 	Batch() {}
-	Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray, std::vector<Texture> textureArray, Shader shader = Shader::DEFAULT, ShaderFlags shaderFlags = SHADER_FLAGS_NONE);
+	Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray, std::vector<Texture> textureArray, Shader shader = Shader::FLAT, ShaderFlags shaderFlags = SHADER_FLAGS_NONE);
 	
 	void SetName(const char* name);
 };
@@ -109,3 +112,5 @@ struct Model{
 	static Model CreateBox(Vector3 halfDims, Color color = Color::WHITE);
 	static Model CreatePlanarBox(Vector3 halfDims, Color color = Color::WHITE);
 };
+
+#endif //DESHI_MODEL_H

@@ -1,4 +1,7 @@
 #pragma once
+#ifndef DESHI_TIME_H
+#define DESHI_TIME_H
+
 #include "../utils/defines.h"
 
 #include <chrono>
@@ -68,3 +71,5 @@ struct Time{
 		}
 	}
 };
+
+#endif //DESHI_TIME_H

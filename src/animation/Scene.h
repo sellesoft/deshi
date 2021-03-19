@@ -1,4 +1,7 @@
 #pragma once
+#ifndef DESHI_SCENE_H
+#define DESHI_SCENE_H
+
 #include "Model.h"
 
 struct Light;
@@ -23,3 +26,5 @@ struct Scene{
 	bool RENDER_LIGHT_RAYS          = false;
 	bool RENDER_MESH_NORMALS        = false;
 };
+
+#endif //DESHI_SCENE_H

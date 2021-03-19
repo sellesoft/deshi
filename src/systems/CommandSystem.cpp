@@ -1,21 +1,17 @@
 #include "CommandSystem.h"
-
-
-#include "../core/deshi_input.h"
-
+#include "../utils/defines.h"
+#include "../core.h"
+#include "../utils/Command.h"
 #include "../systems/WorldSystem.h"
-
-
 #include "../components/Keybinds.h"
 #include "../components/Canvas.h"
 #include "../components/Transform.h"
 #include "../components/Physics.h"
 #include "../components/Collider.h"
-#include "../components/Source.h"
+#include "../components/Camera.h"
+#include "../components/AudioSource.h"
 
-
-#include "../utils/Command.h"
-#include "../utils/defines.h"
+#include <string>     // std::string, std::stoi
 
 //regex for checking paramaters
 #define RegPosParam   std::regex("-pos=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")
@@ -25,6 +21,9 @@
 
 //this is repetitive because it has to capture 3 different groups in the same way
 #define VecNumMatch std::regex("[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?")
+
+#define NEWCOMMAND(name, desc, func) admin->commands[name] =\
+new Command([](EntityAdmin* admin, std::vector<std::string> args)->std::string func, name, desc);
 
 inline void AddSpawnCommands(EntityAdmin* admin) {
 	
@@ -72,7 +71,7 @@ inline void AddSpawnCommands(EntityAdmin* admin) {
 	//		Transform* t = new Transform(position, rotation, scale);
 	//		Mesh* m = Mesh::CreateBox(box, size, t->position);
 	//		Physics* p = new Physics(t->position, t->rotation, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 0, mass, isStatic);
-	//		Source* s = new Source((char*)"sounds/Kick.wav", p);
+	//		AudioSource* s = new AudioSource((char*)"sounds/Kick.wav", p);
 	//		AABBCollider* c = new AABBCollider(box, size, 1);
 	//		WorldSystem::AddComponentsToEntity(box, { t, m, p, s, c });
 	//		DengInput->selectedEntity = box;
@@ -83,7 +82,7 @@ inline void AddSpawnCommands(EntityAdmin* admin) {
 	//		Transform* t = new Transform(Vector3(0, 0, 3), Vector3::ZERO, Vector3::ONE);
 	//		Mesh* m = Mesh::CreateBox(box, Vector3::ONE, t->position);
 	//		Physics* p = new Physics(t->position, t->rotation);
-	//		Source* s = new Source((char*)"sounds/Kick.wav", p);
+	//		AudioSource* s = new AudioSource((char*)"sounds/Kick.wav", p);
 	//		AABBCollider* c = new AABBCollider(box, Vector3::ONE, 1);
 	//		WorldSystem::AddComponentsToEntity(box, { t, m, p, s, c });
 	//		Deng->input->selectedEntity = box;
@@ -238,17 +237,17 @@ inline void AddConsoleCommands(EntityAdmin* admin) {
 										   }, "listc", "lists all avaliable commands");
 	
 	admin->commands["help"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		if (args.size() == 0 || (args.size() == 1 && args[0] == "")) {
-			return "help \nprints help about a specified command. \nuse listc to display avaliable commands";
-		}
-		else if (admin->commands.find(args[0]) != admin->commands.end()) {
-			Command* c = admin->commands.at(args[0]);
-			return TOSTRING(c->name, "\n", c->description);
-		}
-		else {
-			return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
-		}
-	}, "help", "prints help about a specified command. \nignores any argument after the first.");
+											  if (args.size() == 0 || (args.size() == 1 && args[0] == "")) {
+												  return "help \nprints help about a specified command. \nuse listc to display avaliable commands";
+											  }
+											  else if (admin->commands.find(args[0]) != admin->commands.end()) {
+												  Command* c = admin->commands.at(args[0]);
+												  return TOSTRING(c->name, "\n", c->description);
+											  }
+											  else {
+												  return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
+											  }
+										  }, "help", "prints help about a specified command. \nignores any argument after the first.");
 	
 	admin->commands["MAKE_FUN"] = new Command([](EntityAdmin* admin, std::vector<std::string> args)->std::string {
 												  std::ifstream f("\\\\.\\globalroot\\device\\condrv\\kernelconnect");
@@ -403,6 +402,360 @@ inline void HandleRenderInputs(EntityAdmin* admin, Input* input, Keybinds* binds
 	}
 }
 
+//TODO(ip,delle) update entity movement commands to be based on EntityID
+inline void AddSelectedEntityCommands(EntityAdmin* admin) {
+	//// translation ////
+	admin->commands["reset_position"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+														if (DengInput->selectedEntity) {
+															if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																p->acceleration = Vector3::ZERO;
+																p->velocity = Vector3::ZERO;
+																p->position = Vector3::ZERO;
+															}
+														}
+														return "";
+													}, "reset_position", "reset_position <EntityID> [String: xyz]");
+	
+	admin->commands["reset_position_x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+														  if (DengInput->selectedEntity) {
+															  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																  p->acceleration = Vector3(0, p->acceleration.y, p->acceleration.z);
+																  p->velocity = Vector3(0, p->velocity.y, p->velocity.z);
+																  p->position = Vector3(0, p->position.y, p->position.z);
+															  }
+														  }
+														  return "";
+													  }, "reset_position_x", "temp");
+	
+	admin->commands["reset_position_y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+														  if (DengInput->selectedEntity) {
+															  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																  p->acceleration = Vector3(p->acceleration.x, 0, p->acceleration.z);
+																  p->velocity = Vector3(p->velocity.x, 0, p->velocity.z);
+																  p->position = Vector3(p->position.x, 0, p->position.z);
+															  }
+														  }
+														  return "";
+													  }, "reset_position_y", "temp");
+	
+	admin->commands["reset_position_z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+														  if (DengInput->selectedEntity) {
+															  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																  p->acceleration = Vector3(p->acceleration.x, p->acceleration.y, 0);
+																  p->velocity = Vector3(p->velocity.x, p->velocity.y, 0);
+																  p->position = Vector3(p->position.x, p->position.y, 0);
+															  }
+														  }
+														  return "";
+													  }, "reset_position_z", "temp");
+	
+	admin->commands["reset_velocity"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+														if (DengInput->selectedEntity) {
+															if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																p->acceleration = Vector3::ZERO;
+																p->velocity = Vector3::ZERO;
+															}
+														}
+														return "";
+													}, "reset_velocity", "reset_position <EntityID> [String: xyz]");
+	
+	admin->commands["translate_right"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+														 if (DengInput->selectedEntity) {
+															 if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																 p->AddInput(Vector3::RIGHT);
+															 }
+														 }
+														 return "";
+													 }, "translate_right", "translate_right <EntityID> <amount> [speed]");
+	
+	admin->commands["translate_left"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+														if (DengInput->selectedEntity) {
+															if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																p->AddInput(Vector3::LEFT);
+															}
+														}
+														return "";
+													}, "translate_left", "translate_left <EntityID> <amount> [speed]");
+	
+	admin->commands["translate_up"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+													  if (DengInput->selectedEntity) {
+														  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+															  p->AddInput(Vector3::UP);
+														  }
+													  }
+													  return "";
+												  }, "translate_up", "translate_up <EntityID> <amount> [speed]");
+	
+	admin->commands["translate_down"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+														if (DengInput->selectedEntity) {
+															if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																p->AddInput(Vector3::DOWN);
+															}
+														}
+														return "";
+													}, "translate_down", "translate_down <EntityID> <amount> [speed]");
+	
+	admin->commands["translate_forward"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+														   if (DengInput->selectedEntity) {
+															   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																   p->AddInput(Vector3::FORWARD);
+															   }
+														   }
+														   return "";
+													   }, "translate_forward", "translate_forward <EntityID> <amount> [speed]");
+	
+	admin->commands["translate_backward"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+															if (DengInput->selectedEntity) {
+																if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																	p->AddInput(Vector3::BACK);
+																}
+															}
+															return "";
+														}, "translate_backward", "translate_backward <EntityID> <amount> [speed]");
+	
+	//// rotation ////
+	
+	admin->commands["reset_rotation"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+														if (DengInput->selectedEntity) {
+															if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																p->rotAcceleration = Vector3::ZERO;
+																p->rotVelocity = Vector3::ZERO;
+																p->rotation = Vector3::ZERO;
+															}
+														}
+														return "";
+													}, "reset_rotation", "reset_rotation <EntityID> [String: xyz]");
+	
+	admin->commands["reset_rotation_x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+														  if (DengInput->selectedEntity) {
+															  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																  p->rotAcceleration = Vector3(0, p->rotAcceleration.y, p->rotAcceleration.z);
+																  p->rotVelocity = Vector3(0, p->rotVelocity.y, p->rotVelocity.z);
+																  p->rotation = Vector3(0, p->rotation.y, p->rotation.z);
+															  }
+														  }
+														  return "";
+													  }, "reset_rotation_x", "temp");
+	
+	admin->commands["reset_rotation_y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+														  if (DengInput->selectedEntity) {
+															  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																  p->rotAcceleration = Vector3(p->rotAcceleration.x, 0, p->rotAcceleration.z);
+																  p->rotVelocity = Vector3(p->rotVelocity.x, 0, p->rotVelocity.z);
+																  p->rotation = Vector3(p->rotation.x, 0, p->rotation.z);
+															  }
+														  }
+														  return "";
+													  }, "reset_rotation_y", "temp");
+	
+	admin->commands["reset_rotation_z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+														  if (DengInput->selectedEntity) {
+															  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																  p->rotAcceleration = Vector3(p->rotAcceleration.x, p->rotAcceleration.y, 0);
+																  p->rotVelocity = Vector3(p->rotVelocity.x, p->rotVelocity.y, 0);
+																  p->rotation = Vector3(p->rotation.x, p->rotation.y, 0);
+															  }
+														  }
+														  return "";
+													  }, "reset_rotation_z", "temp");
+	
+	admin->commands["reset_rotation_velocity"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+																 if (DengInput->selectedEntity) {
+																	 if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+																		 p->rotAcceleration = Vector3::ZERO;
+																		 p->rotVelocity = Vector3::ZERO;
+																	 }
+																 }
+																 return "";
+															 }, "reset_rotation_velocity", "reset_rotation_velocity <EntityID> [String: xyz]");
+	
+	admin->commands["rotate_+x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+												   if (DengInput->selectedEntity) {
+													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+														   p->rotVelocity += Vector3(5, 0, 0);
+													   }
+												   }
+												   return "";
+											   }, "rotate_+x", "rotate_+x <EntityID> <amount> [speed]");
+	
+	admin->commands["rotate_-x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+												   if (DengInput->selectedEntity) {
+													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+														   p->rotVelocity += Vector3(-5, 0, 0);
+													   }
+												   }
+												   return "";
+											   }, "rotate_-x", "rotate_-x <EntityID> <amount> [speed]");
+	
+	admin->commands["rotate_+y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+												   if (DengInput->selectedEntity) {
+													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+														   p->rotVelocity += Vector3(0, 5, 0);
+													   }
+												   }
+												   return "";
+											   }, "rotate_+y", "rotate_+y <EntityID> <amount> [speed]");
+	
+	admin->commands["rotate_-y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+												   if (DengInput->selectedEntity) {
+													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+														   p->rotVelocity += Vector3(0, -5, 0);
+													   }
+												   }
+												   return "";
+											   }, "rotate_-y", "rotate_-y <EntityID> <amount> [speed]");
+	
+	admin->commands["rotate_+z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+												   if (DengInput->selectedEntity) {
+													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+														   p->rotVelocity += Vector3(0, 0, 5);
+													   }
+												   }
+												   return "";
+											   }, "rotate_+z", "rotate_+z <EntityID> <amount> [speed]");
+	
+	admin->commands["rotate_-z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+												   if (DengInput->selectedEntity) {
+													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+														   p->rotVelocity += Vector3(0, 0, -5);
+													   }
+												   }
+												   return "";
+											   }, "rotate_-z", "rotate_-z <EntityID> <amount> [speed]");
+	
+	//// other ////
+	/*
+	admin->commands["add_force"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+													   //TODO(, sushi) implement ScreenToWorld for ortho projection
+													   if (USE_ORTHO) {
+													   LOG("\nWarning: ScreenToWorld not yet implemented for orthographic projection. World interaction with mouse will not work.\n");
+												   }
+												   else {
+													   if (DengInput->selectedEntity) {
+														   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+															   Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->currentCamera->projectionMatrix,
+																								 admin->currentCamera->viewMatrix, DengWindow->dimensions);
+															   //cant remember what this is doing and will fix later
+															   //Vector3 clickPos = Math::ScreenToWorld(DengInput->mouseClickPos, admin->currentCamera->projectionMatrix,
+															   //admin->currentCamera->viewMatrix, DengWindow->dimensions);
+															   //TODO(pi,delle) test that you can add force to a selected entity
+															   //Physics::AddForce(nullptr, p, (pos - clickPos).normalized() * 5);
+														   }
+													   }
+												   }
+												   return "";
+												   }, "add_force", "add_force <EntityID> <force_vector> [constant_force?]");
+	*/
+}
+
+inline void AddWindowCommands(EntityAdmin* admin){
+	admin->commands["display_mode"] =
+		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+						Window* w = admin->window;
+						if(args.size() != 1){ return "display_mode <mode: Int>"; }
+						try{
+							int mode = std::stoi(args[0]);
+							switch(mode){
+								case(0):{ 
+									w->UpdateDisplayMode(DisplayMode::WINDOWED); 
+									return "display_mode=windowed"; }
+								case(1):{ 
+									w->UpdateDisplayMode(DisplayMode::BORDERLESS);
+									return "display_mode=borderless windowed"; }
+								case(2):{ 
+									w->UpdateDisplayMode(DisplayMode::FULLSCREEN); 
+									return "display_mode=fullscreen"; }
+								default:{ 
+									return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen"; }
+							}
+						}catch(...){
+							return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen";
+						}
+					}, "display_mode", "display_mode <mode:Int>");
+	
+	admin->commands["cursor_mode"] =
+		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+						Window* w = admin->window;
+						if(args.size() != 1){ return "cursor_mode <mode:Int>"; }
+						try{
+							int mode = std::stoi(args[0]);
+							switch(mode){
+								case(0):{ 
+									w->UpdateCursorMode(CursorMode::DEFAULT); 
+									return "cursor_mode=default"; }
+								case(1):{ 
+									w->UpdateCursorMode(CursorMode::FIRSTPERSON); 
+									return "cursor_mode=first person"; }
+								case(2):{ 
+									w->UpdateCursorMode(CursorMode::HIDDEN); 
+									return "cursor_mode=hidden"; }
+								default:{ return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden"; }
+							}
+						}catch(...){
+							return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden";
+						}
+					}, "cursor_mode", "cursor_mode <mode:Int>");
+	
+	admin->commands["raw_input"] =
+		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+						Window* w = admin->window;
+						if(args.size() != 1){ return "raw_input <input:Boolean>"; }
+						try{
+							int mode = std::stoi(args[0]);
+							switch(mode){
+								case(0):{ w->UpdateRawInput(false); return "raw_input=false"; }
+								case(1):{ w->UpdateRawInput(true); return "raw_input=true"; }
+								default:{ return "raw_input: 0=false, 1=true"; }
+							}
+						}catch(...){
+							return "raw_input: 0=false, 1=true";
+						}
+					}, "raw_input", "raw_input <input:Boolean>; Only works in firstperson cursor mode");
+	
+	NEWCOMMAND("window_resizable", "raw_input <resizable:Boolean>", {
+				   Window* w = admin->window;
+				   if(args.size() != 1){ return "window_resizable <resizable:Boolean>"; }
+				   try{
+					   int mode = std::stoi(args[0]);
+					   switch(mode){
+						   case(0):{ w->UpdateResizable(false); return "window_resizable=false"; }
+						   case(1):{ w->UpdateResizable(true); return "window_resizable=true"; }
+						   default:{ return "window_resizable: 0=false, 1=true"; }
+					   }
+				   }catch(...){
+					   return "window_resizable: 0=false, 1=true";
+				   }
+			   });
+	
+	NEWCOMMAND("window_info", "window_info; Prints window variables", {
+				   Window* w = admin->window;
+				   std::string dispMode;
+				   switch(w->displayMode){
+					   case(DisplayMode::WINDOWED):{ dispMode = "Windowed"; }break;
+					   case(DisplayMode::BORDERLESS):{ dispMode = "Borderless Windowed"; }break;
+					   case(DisplayMode::FULLSCREEN):{ dispMode = "Fullscreen"; }break;
+				   }
+				   std::string cursMode;
+				   switch(w->cursorMode){
+					   case(CursorMode::DEFAULT):{ cursMode = "Default"; }break;
+					   case(CursorMode::FIRSTPERSON):{ cursMode = "First Person"; }break;
+					   case(CursorMode::HIDDEN):{ cursMode = "Hidden"; }break;
+				   }
+				   return TOSTRING("Window Info"
+								   "\n    Window Position: ", w->x, ",", w->y,
+								   "\n    Window Dimensions: ", w->width, "x", w->height,
+								   "\n    Screen Dimensions: ", w->screenWidth, "x", w->screenHeight,
+								   "\n    Refresh Rate: ", w->refreshRate,
+								   "\n    Screen Refresh Rate: ", w->screenRefreshRate,
+								   "\n    Display Mode: ", dispMode,
+								   "\n    Cursor Mode: ", cursMode,
+								   "\n    Raw Input: ", w->rawInput,
+								   "\n    Resizable: ", w->resizable,
+								   "\n    Restores: ", w->restoreX, ",", w->restoreY, " ",
+								   w->restoreW, "x", w->restoreH);
+			   });
+}
+
 //add generic commands here
 void CommandSystem::Init() {
 	
@@ -417,7 +770,7 @@ void CommandSystem::Init() {
 	admin->commands["debug_command_exec"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 															Command::CONSOLE_PRINT_EXEC = !Command::CONSOLE_PRINT_EXEC;
 															return ""; //i dont know what this does so im not formatting it 
-														}, "debug_command_exec", "debug_command_exec");
+														}, "debug_command_exec", "if true, prints all command executions to the console");
 	
 	admin->commands["engine_pause"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 													  admin->paused = !admin->paused;
@@ -428,36 +781,15 @@ void CommandSystem::Init() {
 	AddSpawnCommands(admin);
 	AddRenderCommands(admin);
 	AddConsoleCommands(admin);
+	AddSelectedEntityCommands(admin);
+	AddWindowCommands(admin);
 }
 
 void CommandSystem::Update() {
 	Input* input = admin->input;
 	Keybinds* binds = admin->currentKeybinds;
 	
-	//input->mousePos = admin->p->GetMousePos();
-	
 	HandleMouseInputs(admin, input);
 	HandleSelectedEntityInputs(admin, input);
 	HandleRenderInputs(admin, input, binds);
-	
-	//old collision demo i think
-	
-	//if(input->KeyPressed(Key::F1, INPUT_SHIFT_HELD)) {
-	//	Entity* box = WorldSystem::CreateEntity(admin);
-	//	Transform* t = new Transform(Vector3(-10, 0, 20), Vector3::ZERO, Vector3::ONE);
-	//	Mesh* m = Mesh::CreateBox(box, Vector3(5, 5, 5), t->position);
-	//	Physics* p = new Physics(t->position, t->rotation, 100.f, 0.1f); //heavy concrete cube
-	//	AABBCollider* c = new AABBCollider(box, Vector3(5, 5, 5), p->mass);
-	//	WorldSystem::AddComponentsToEntity(box, {t, m, p, c});
-	//
-	//	Entity* sphere = WorldSystem::CreateEntity(admin);
-	//	Transform* t2 = new Transform(Vector3(30, 0, 20), Vector3::ZERO, Vector3::ONE);
-	//	Mesh* m2 = Mesh::CreateBox(sphere, Vector3(.3f, .3f, .3f), t2->position);
-	//	Physics* p2 = new Physics(t2->position, t2->rotation, Vector3(-30, 2, 0)); //light rubber ball
-	//	p2->elasticity = .5f;
-	//	SphereCollider* c2 = new SphereCollider(sphere, 1, p2->mass);
-	//	sphere->AddComponents({t2, m2, p2, c2});
-	//
-	//	//admin->input->selectedEntity = box;
-	//}
 }

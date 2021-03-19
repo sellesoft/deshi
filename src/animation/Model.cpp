@@ -1,5 +1,5 @@
 #include "Model.h"
-#include "../core/deshi_assets.h"
+#include "../core/assets.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "../external/tinyobjloader/tiny_obj_loader.h"
@@ -10,32 +10,22 @@
 // Texture
 //////////////////////////////////////////////////////////
 
-
-
 Texture::Texture(const char* filename, TextureTypes type) {
 	strncpy_s(this->filename, filename, 15); this->filename[15] = '\0';
 	this->type = type;
 }
 
-
-
 ////////////////////////////////////////////////////////////
 // Vertex
 //////////////////////////////////////////////////////////
-
-
 
 Vertex::Vertex(Vector3 pos, Vector2 uv, Vector3 color, Vector3 normal) {
 	this->pos = pos; this->color = color; this->uv = uv; this->normal = normal;
 }
 
-
-
 ////////////////////////////////////////////////////////////
 // Batch
 //////////////////////////////////////////////////////////
-
-
 
 Batch::Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray, std::vector<Texture> textureArray, Shader shader, ShaderFlags shaderFlags) {
 	strncpy_s(this->name, name, 15); this->name[15] = '\0';
@@ -49,13 +39,9 @@ void Batch::SetName(const char* name){
 	strncpy_s(this->name, name, 15); this->name[15] = '\0';
 }
 
-
-
 ////////////////////////////////////////////////////////////
 // Mesh
 //////////////////////////////////////////////////////////
-
-
 
 Mesh::Mesh(const char* name, std::vector<Batch> batchArray, Matrix4 transform) {
 	strncpy_s(this->name, name, 15); this->name[15] = '\0';
@@ -179,7 +165,7 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 tra
 		totalIndexCount += batch.indexCount;
 		
 		//TODO(r,delle) parse different shader options here based on texture count
-		batch.shader = Shader::DEFAULT;
+		batch.shader = Shader::FLAT;
 		batch.shaderFlags = SHADER_FLAGS_NONE;
 		mesh.batchArray.push_back(batch);
 	}

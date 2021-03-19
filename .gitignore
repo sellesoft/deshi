@@ -3,9 +3,6 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-#custom delle
-*.4coder
-
 # User-specific files
 *.rsuser
 *.suo
@@ -363,3 +360,6 @@ imgui.ini
 *.cppcheck
 deshi_project_suppressions.cfg
 *.exe
+*.4coder
+*.spv
+misc/4coder.bat

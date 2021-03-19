@@ -11,12 +11,12 @@ Rules: tags can be empty but still requires a comma, date can be empty
 Major Ungrouped TODOs
 ---------------------
 add mouse-camera control
-add a .str() method to Component.h to print state
-remove deshi_ prefix on core files (deshi_imgui may need to be imgui_deshi to not conflict)
-either move all commands to Command or move them all to their local files
+add a component_state command to print state of a component
+add shaders: FLAT (new default, vertex colors), PHONG (flat with lighting based on normals), PBR (4textures)
 log console output to a file
 settings file(s) [keybinds, video, audio, etc]
-make our own unordered_map that is contiguous (for vertex import)
+fix program stalling when Keybinds cant find the keybind file
+make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
 
 Minor Ungrouped TODOs
 ---------------------
@@ -30,9 +30,7 @@ cleanup compile warnings
 
 Render TODOs
 ------------
-add shaders: FLAT (new default, vertex colors), PHONG (flat with lighting based on normals), PBR (4textures)
 add commands for the rendering interface functions
-find a way to avoid pipeline recreation on window resize/restore
 check those vulkan-tutorial links for the suggestions
 add the render options back
 add instancing [https://learnopengl.com/Advanced-OpenGL/Instancing]
@@ -44,7 +42,9 @@ add lighting and shadows
 add RenderSettings loading and usage
 add dynamic Texture updating on meshes (update materials)
   convert prints to go thru the in-game console rather than other console (after setting up logging to a file)
+find a way to forward declare vulkan stuff and move the include to the cpp
 (maybe) remove renderer polymorphism and replace it with defines that are checked on program start
+(maybe) add specific shader reloading rather than all of them
 
 Physics/Atmos TODOs
 -------------
@@ -55,7 +55,6 @@ add physics interaction functions
 
 UI TODOs
 --------
-Fix console not relinquishing input
 Restore the spawning/inspector menus
 2D shader
 add a UI popup when reloading shaders
@@ -71,17 +70,8 @@ review the projection functions for correctness
 
 */
 
-
-#pragma once
-//#define DEBUG_P3DPGE
-#include "../EntityAdmin.h"
-#include "deshi_input.h"
-#include "deshi_glfw.h"
-#include "deshi_renderer.h"
-#include "deshi_imgui.h"
-#include "deshi_time.h"
-
-#include "../math/Math.h"
+#include "core.h"
+#include "EntityAdmin.h"
 
 struct DeshiEngine {
 	EntityAdmin entityAdmin;
@@ -110,7 +100,7 @@ struct DeshiEngine {
 		//init
 		LoadConfig();
 		time.Init(300);
-		window.Init(&input, 1280, 720);
+		window.Init(&input, 1280, 720); //inits input as well
 		renderer->time = &time;
 		renderer->Init(&window, imgui); //inits imgui as well
 		
@@ -131,8 +121,8 @@ struct DeshiEngine {
 	
 	bool Update() {
 		time.Update();
-		input.Update();
 		window.Update();
+		input.Update();
 		imgui->NewFrame();            //place imgui calls after this
 		ImGui::ShowDemoWindow();
 		entityAdmin.Update();
@@ -142,3 +132,10 @@ struct DeshiEngine {
 		return true;
 	}
 };
+
+int main() {
+	DeshiEngine engine;
+	engine.Start();
+	
+	int debug_breakpoint = 0;
+}
