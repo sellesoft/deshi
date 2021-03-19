@@ -120,7 +120,7 @@ void EntityAdmin::Update() {
 	else {
 		for (System* s : systems) {
 			//if      (ScreenSystem* a = dynamic_cast<ScreenSystem*>(s))             { a->Update(); }
-			if (ConsoleSystem* b = dynamic_cast<ConsoleSystem*>(s))           { b->Update(); }
+			if      (ConsoleSystem* b = dynamic_cast<ConsoleSystem*>(s))           { b->Update(); }
 			else if (CommandSystem* c = dynamic_cast<CommandSystem*>(s))           { c->Update(); }
 			else if (RenderCanvasSystem* e = dynamic_cast<RenderCanvasSystem*>(s)) { e->Update(); }
 			//else if (TimeSystem* f = dynamic_cast<TimeSystem*>(s))                 { f->Update(); }

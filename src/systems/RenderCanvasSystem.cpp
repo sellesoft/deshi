@@ -13,7 +13,7 @@
 #include "../math/Math.h"
 
 //// utility ui elements ///
-/*
+
 
 void CopyButton(const char* text) {
 	if(ImGui::Button("Copy")){ ImGui::LogToClipboard(); ImGui::LogText(text); ImGui::LogFinish(); }
@@ -229,13 +229,28 @@ void DrawFrameGraph(EntityAdmin* admin) { //TODO(r, sushi) implement styling and
 	ImGui::End();
 }
 
+void DebugTools(EntityAdmin* admin) {
+	
+}
+
+void DebugBar(EntityAdmin* admin) {
+
+	ImGuiIO& io = ImGui::GetIO();
+
+	ImGui::Begin("DebugBar", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
+	ImGui::Text(TOSTRING(io.Framerate).c_str());
+	ImGui::End();
+}
+
 void RenderCanvasSystem::DrawUI(void) {
 	using namespace ImGui;
 
 	static bool showDebugTools = false;
+	static bool showDebugBar = true;
 
 
 	if (showDebugTools) DebugTools(admin);
+	if (showDebugBar) DebugBar(admin);
 		
 	if (admin->tempCanvas->SHOW_FPS_GRAPH) DrawFrameGraph(admin);
 
@@ -255,4 +270,4 @@ void RenderCanvasSystem::Update() {
 	Canvas*	canvas = admin->tempCanvas;
 
 }
-*/
+
