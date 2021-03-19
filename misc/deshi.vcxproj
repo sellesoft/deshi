@@ -104,6 +104,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/permissive %(AdditionalOptions)</AdditionalOptions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -124,6 +125,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/permissive %(AdditionalOptions)</AdditionalOptions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -162,6 +164,7 @@
       <CallingConvention />
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DiagnosticsFormat />
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -182,6 +185,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/permissive %(AdditionalOptions)</AdditionalOptions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -189,7 +193,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\src\OpenAL1.1\libs\Win64;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win64;C:\VulkanSDK\1.2.162.1\Lib;C:\src\glfw-3.3.2.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>OpenAL32.lib;opengl32.lib;gdi32.lib;shell32.lib;vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>OpenAL32.lib;opengl32.lib;gdi32.lib;shell32.lib;vulkan-1.lib;glfw3.lib;shaderc_combinedd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -197,6 +201,8 @@
     <ClInclude Include="..\src\animation\Bone.h" />
     <ClInclude Include="..\src\animation\Model.h" />
     <ClInclude Include="..\src\animation\Scene.h" />
+    <ClInclude Include="..\src\components\AudioListener.h" />
+    <ClInclude Include="..\src\components\AudioSource.h" />
     <ClInclude Include="..\src\components\Camera.h" />
     <ClInclude Include="..\src\components\Canvas.h" />
     <ClInclude Include="..\src\components\Collider.h" />
@@ -204,20 +210,17 @@
     <ClInclude Include="..\src\components\Console.h" />
     <ClInclude Include="..\src\components\Keybinds.h" />
     <ClInclude Include="..\src\components\Light.h" />
-    <ClInclude Include="..\src\components\Listener.h" />
-    <ClInclude Include="..\src\components\Model.h" />
     <ClInclude Include="..\src\components\MovementState.h" />
     <ClInclude Include="..\src\components\Physics.h" />
-    <ClInclude Include="..\src\components\Scene.h" />
-    <ClInclude Include="..\src\components\Source.h" />
     <ClInclude Include="..\src\components\Transform.h" />
     <ClInclude Include="..\src\components\World.h" />
-    <ClInclude Include="..\src\core\deshi.h" />
-    <ClInclude Include="..\src\core\deshi_glfw.h" />
+    <ClInclude Include="..\src\core.h" />
+    <ClInclude Include="..\src\core\assets.h" />
     <ClInclude Include="..\src\core\deshi_imgui.h" />
-    <ClInclude Include="..\src\core\deshi_import.h" />
-    <ClInclude Include="..\src\core\deshi_input.h" />
-    <ClInclude Include="..\src\core\deshi_renderer.h" />
+    <ClInclude Include="..\src\core\input.h" />
+    <ClInclude Include="..\src\core\renderer.h" />
+    <ClInclude Include="..\src\core\time.h" />
+    <ClInclude Include="..\src\core\window.h" />
     <ClInclude Include="..\src\EntityAdmin.h" />
     <ClInclude Include="..\src\external\draudio\dr_flac.h" />
     <ClInclude Include="..\src\external\draudio\dr_mp3.h" />
@@ -262,17 +265,25 @@
   <ItemGroup>
     <None Include="..\.gitignore" />
     <None Include="..\README.md" />
-    <None Include="..\shaders\default.frag" />
-    <None Include="..\shaders\default.vert" />
     <None Include="..\shaders\fixedimguishader.vert" />
+    <None Include="..\shaders\flat.frag" />
+    <None Include="..\shaders\flat.vert" />
     <None Include="..\shaders\lavalamp.frag" />
     <None Include="..\shaders\lavalamp.vert" />
+    <None Include="..\shaders\pbr.frag" />
+    <None Include="..\shaders\pbr.vert" />
+    <None Include="..\shaders\phong.frag" />
+    <None Include="..\shaders\phong.vert" />
+    <None Include="..\shaders\twod.frag" />
+    <None Include="..\shaders\twod.vert" />
     <None Include="..\shaders\wireframe.frag" />
     <None Include="..\shaders\wireframe.vert" />
     <None Include="build.bat" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\animation\Model.cpp" />
+    <ClCompile Include="..\src\components\AudioListener.cpp" />
+    <ClCompile Include="..\src\components\AudioSource.cpp" />
     <ClCompile Include="..\src\components\Camera.cpp" />
     <ClCompile Include="..\src\components\Canvas.cpp" />
     <ClCompile Include="..\src\components\Collider.cpp" />
@@ -280,13 +291,14 @@
     <ClCompile Include="..\src\components\Console.cpp" />
     <ClCompile Include="..\src\components\Keybinds.cpp" />
     <ClCompile Include="..\src\components\Light.cpp" />
-    <ClCompile Include="..\src\components\Listener.cpp" />
     <ClCompile Include="..\src\components\MovementState.cpp" />
     <ClCompile Include="..\src\components\Physics.cpp" />
-    <ClCompile Include="..\src\components\Source.cpp" />
     <ClCompile Include="..\src\components\Transform.cpp" />
     <ClCompile Include="..\src\components\World.cpp" />
-    <ClCompile Include="..\src\core\deshi_renderer_vulkan.cpp" />
+    <ClCompile Include="..\src\core\deshi_imgui.cpp" />
+    <ClCompile Include="..\src\core\renderer_vulkan.cpp" />
+    <ClCompile Include="..\src\core\window.cpp" />
+    <ClCompile Include="..\src\deshi.cpp" />
     <ClCompile Include="..\src\EntityAdmin.cpp" />
     <ClCompile Include="..\src\external\imgui\imgui.cpp" />
     <ClCompile Include="..\src\external\imgui\imgui_demo.cpp" />
@@ -295,7 +307,6 @@
     <ClCompile Include="..\src\external\imgui\imgui_impl_vulkan.cpp" />
     <ClCompile Include="..\src\external\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\src\external\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\math\Matrix3.cpp" />
     <ClCompile Include="..\src\math\Matrix4.cpp" />
     <ClCompile Include="..\src\math\Vector3.cpp" />
@@ -307,6 +318,9 @@
     <ClCompile Include="..\src\systems\WorldSystem.cpp" />
     <ClCompile Include="..\src\utils\Command.cpp" />
     <ClCompile Include="..\src\utils\GLOBALS.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\cfg\keybinds.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

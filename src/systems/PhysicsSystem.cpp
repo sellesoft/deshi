@@ -1,5 +1,5 @@
 #include "PhysicsSystem.h"
-#include "ConsoleSystem.h" 
+#include "ConsoleSystem.h"
 #include "../utils/PhysicsWorld.h"
 #include "../math/Math.h"
 #include "../geometry/Geometry.h"
@@ -7,261 +7,11 @@
 #include "../components/Transform.h"
 #include "../components/Physics.h"
 #include "../components/Collider.h"
+#include "../components/AudioSource.h"
 
-#include "../utils/Command.h"
-#include "../core/deshi_input.h"
-#include "../components/Camera.h"
-#include "../components/Source.h"
-
-//TODO(ip,delle) update entity movement commands to be based on EntityID
-inline void AddSelectedEntityCommands(EntityAdmin* admin) {
-	//// translation ////
-	admin->commands["reset_position"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														if (DengInput->selectedEntity) {
-															if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																p->acceleration = Vector3::ZERO;
-																p->velocity = Vector3::ZERO;
-																p->position = Vector3::ZERO;
-															}
-														}
-														return "";
-													}, "reset_position", "reset_position <EntityID> [String: xyz]");
-	
-	admin->commands["reset_position_x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														  if (DengInput->selectedEntity) {
-															  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																  p->acceleration = Vector3(0, p->acceleration.y, p->acceleration.z);
-																  p->velocity = Vector3(0, p->velocity.y, p->velocity.z);
-																  p->position = Vector3(0, p->position.y, p->position.z);
-															  }
-														  }
-														  return "";
-													  }, "reset_position_x", "temp");
-	
-	admin->commands["reset_position_y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														  if (DengInput->selectedEntity) {
-															  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																  p->acceleration = Vector3(p->acceleration.x, 0, p->acceleration.z);
-																  p->velocity = Vector3(p->velocity.x, 0, p->velocity.z);
-																  p->position = Vector3(p->position.x, 0, p->position.z);
-															  }
-														  }
-														  return "";
-													  }, "reset_position_y", "temp");
-	
-	admin->commands["reset_position_z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														  if (DengInput->selectedEntity) {
-															  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																  p->acceleration = Vector3(p->acceleration.x, p->acceleration.y, 0);
-																  p->velocity = Vector3(p->velocity.x, p->velocity.y, 0);
-																  p->position = Vector3(p->position.x, p->position.y, 0);
-															  }
-														  }
-														  return "";
-													  }, "reset_position_z", "temp");
-	
-	admin->commands["reset_velocity"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														if (DengInput->selectedEntity) {
-															if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																p->acceleration = Vector3::ZERO;
-																p->velocity = Vector3::ZERO;
-															}
-														}
-														return "";
-													}, "reset_velocity", "reset_position <EntityID> [String: xyz]");
-	
-	admin->commands["translate_right"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														 if (DengInput->selectedEntity) {
-															 if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																 PhysicsSystem::AddInput(p, Vector3::RIGHT);
-															 }
-														 }
-														 return "";
-													 }, "translate_right", "translate_right <EntityID> <amount> [speed]");
-	
-	admin->commands["translate_left"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														if (DengInput->selectedEntity) {
-															if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																PhysicsSystem::AddInput(p, Vector3::LEFT);
-															}
-														}
-														return "";
-													}, "translate_left", "translate_left <EntityID> <amount> [speed]");
-	
-	admin->commands["translate_up"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													  if (DengInput->selectedEntity) {
-														  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-															  PhysicsSystem::AddInput(p, Vector3::UP);
-														  }
-													  }
-													  return "";
-												  }, "translate_up", "translate_up <EntityID> <amount> [speed]");
-	
-	admin->commands["translate_down"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														if (DengInput->selectedEntity) {
-															if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																PhysicsSystem::AddInput(p, Vector3::DOWN);
-															}
-														}
-														return "";
-													}, "translate_down", "translate_down <EntityID> <amount> [speed]");
-	
-	admin->commands["translate_forward"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														   if (DengInput->selectedEntity) {
-															   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																   PhysicsSystem::AddInput(p, Vector3::FORWARD);
-															   }
-														   }
-														   return "";
-													   }, "translate_forward", "translate_forward <EntityID> <amount> [speed]");
-	
-	admin->commands["translate_backward"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-															if (DengInput->selectedEntity) {
-																if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																	PhysicsSystem::AddInput(p, Vector3::BACK);
-																}
-															}
-															return "";
-														}, "translate_backward", "translate_backward <EntityID> <amount> [speed]");
-	
-	//// rotation ////
-	
-	admin->commands["reset_rotation"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														if (DengInput->selectedEntity) {
-															if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																p->rotAcceleration = Vector3::ZERO;
-																p->rotVelocity = Vector3::ZERO;
-																p->rotation = Vector3::ZERO;
-															}
-														}
-														return "";
-													}, "reset_rotation", "reset_rotation <EntityID> [String: xyz]");
-	
-	admin->commands["reset_rotation_x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														  if (DengInput->selectedEntity) {
-															  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																  p->rotAcceleration = Vector3(0, p->rotAcceleration.y, p->rotAcceleration.z);
-																  p->rotVelocity = Vector3(0, p->rotVelocity.y, p->rotVelocity.z);
-																  p->rotation = Vector3(0, p->rotation.y, p->rotation.z);
-															  }
-														  }
-														  return "";
-													  }, "reset_rotation_x", "temp");
-	
-	admin->commands["reset_rotation_y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														  if (DengInput->selectedEntity) {
-															  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																  p->rotAcceleration = Vector3(p->rotAcceleration.x, 0, p->rotAcceleration.z);
-																  p->rotVelocity = Vector3(p->rotVelocity.x, 0, p->rotVelocity.z);
-																  p->rotation = Vector3(p->rotation.x, 0, p->rotation.z);
-															  }
-														  }
-														  return "";
-													  }, "reset_rotation_y", "temp");
-	
-	admin->commands["reset_rotation_z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														  if (DengInput->selectedEntity) {
-															  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																  p->rotAcceleration = Vector3(p->rotAcceleration.x, p->rotAcceleration.y, 0);
-																  p->rotVelocity = Vector3(p->rotVelocity.x, p->rotVelocity.y, 0);
-																  p->rotation = Vector3(p->rotation.x, p->rotation.y, 0);
-															  }
-														  }
-														  return "";
-													  }, "reset_rotation_z", "temp");
-	
-	admin->commands["reset_rotation_velocity"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-																 if (DengInput->selectedEntity) {
-																	 if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-																		 p->rotAcceleration = Vector3::ZERO;
-																		 p->rotVelocity = Vector3::ZERO;
-																	 }
-																 }
-																 return "";
-															 }, "reset_rotation_velocity", "reset_rotation_velocity <EntityID> [String: xyz]");
-	
-	admin->commands["rotate_+x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (DengInput->selectedEntity) {
-													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-														   p->rotVelocity += Vector3(5, 0, 0);
-													   }
-												   }
-												   return "";
-											   }, "rotate_+x", "rotate_+x <EntityID> <amount> [speed]");
-	
-	admin->commands["rotate_-x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (DengInput->selectedEntity) {
-													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-														   p->rotVelocity += Vector3(-5, 0, 0);
-													   }
-												   }
-												   return "";
-											   }, "rotate_-x", "rotate_-x <EntityID> <amount> [speed]");
-	
-	admin->commands["rotate_+y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (DengInput->selectedEntity) {
-													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-														   p->rotVelocity += Vector3(0, 5, 0);
-													   }
-												   }
-												   return "";
-											   }, "rotate_+y", "rotate_+y <EntityID> <amount> [speed]");
-	
-	admin->commands["rotate_-y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (DengInput->selectedEntity) {
-													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-														   p->rotVelocity += Vector3(0, -5, 0);
-													   }
-												   }
-												   return "";
-											   }, "rotate_-y", "rotate_-y <EntityID> <amount> [speed]");
-	
-	admin->commands["rotate_+z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (DengInput->selectedEntity) {
-													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-														   p->rotVelocity += Vector3(0, 0, 5);
-													   }
-												   }
-												   return "";
-											   }, "rotate_+z", "rotate_+z <EntityID> <amount> [speed]");
-	
-	admin->commands["rotate_-z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (DengInput->selectedEntity) {
-													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-														   p->rotVelocity += Vector3(0, 0, -5);
-													   }
-												   }
-												   return "";
-											   }, "rotate_-z", "rotate_-z <EntityID> <amount> [speed]");
-	
-	//// other ////
-	
-	admin->commands["add_force"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (USE_ORTHO) { //TODO(, sushi) implement ScreenToWorld for ortho projection
-													   LOG("\nWarning: ScreenToWorld not yet implemented for orthographic projection. World interaction with mouse will not work.\n");
-												   }
-												   else {
-													   if (DengInput->selectedEntity) {
-														   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-															   Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->currentCamera->projectionMatrix,
-																								 admin->currentCamera->viewMatrix, DengWindow->dimensions);
-															   //cant remember what this is doing and will fix later
-															   //Vector3 clickPos = Math::ScreenToWorld(DengInput->mouseClickPos, admin->currentCamera->projectionMatrix,
-															   //admin->currentCamera->viewMatrix, DengWindow->dimensions);
-															   //TODO(pi,delle) test that you can add force to a selected entity
-															   //PhysicsSystem::AddForce(nullptr, p, (pos - clickPos).normalized() * 5);
-														   }
-													   }
-												   }
-												   return "";
-											   }, "add_force", "add_force <EntityID> <force_vector> [constant_force?]");
-}
-
-void PhysicsSystem::Init() {
-	AddSelectedEntityCommands(admin);
-}
-
-//// Integration ////
+/////////////////////
+//// integration ////
+/////////////////////
 
 struct PhysicsTuple { 
 	Transform* transform	= nullptr; 
@@ -295,14 +45,14 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time) {
 	
 	//add input forces
 	t.physics->inputVector.normalize();
-	PhysicsSystem::AddForce(nullptr, t.physics, t.physics->inputVector);
+	t.physics->AddForce(nullptr, t.physics->inputVector);
 	t.physics->inputVector = Vector3::ZERO;
 	
 	//add gravity TODO(,sushi) make this a var and toggle later
 	//PhysicsSystem::AddForce(nullptr, t.physics, Vector3(0, -9.8, 0));
 	
 	//add temp air friction force
-	PhysicsSystem::AddFrictionForce(nullptr, t.physics, pw->frictionAir);
+	t.physics->AddFrictionForce(nullptr, pw->frictionAir);
 	
 	//sum up forces to calculate acceleration
 	Vector3 netForce;
@@ -366,7 +116,9 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time) {
 	t.physics->forces.clear();
 }
 
-//// Collision ////
+/////////////////////
+//// collisions  ////
+/////////////////////
 
 Matrix4 LocalToWorldInertiaTensor(Physics* physics, Matrix3 inertiaTensor) {
 	Matrix4 inverseTransformation = Matrix4::TransformationMatrix(physics->position, physics->rotation, Vector3::ONE).Inverse();
@@ -432,7 +184,7 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 		else               zover = zmax2 - zmin1;
 		
 		//TODO(, sushi) find a nicer way to determine how loud a collision sound is 
-		//obj1->entity->GetComponent<Source>()->RequestPlay(obj1->velocity.mag() + obj2->velocity.mag());
+		//obj1->entity->GetComponent<AudioSource>()->RequestPlay(obj1->velocity.mag() + obj2->velocity.mag());
 		
 		bool xf = false; bool yf = false; bool zf = false;
 		
@@ -516,16 +268,7 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 			
 		}
 		
-		
-		
-		
-		
-		
-		
 	}
-	
-	
-	
 	
 }
 
@@ -536,7 +279,7 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 	if(distanceBetween < sphereCol->radius) {
 		if(!aabbCol->isTrigger && !sphereCol->isTrigger) {
 			//SUCCESS("collision happened");
-			aabb->entity->GetComponent<Source>()->request_play = true;
+			aabb->entity->GetComponent<AudioSource>()->request_play = true;
 			//static resolution
 			if (aabbPoint == sphere->position) { 
 				//NOTE if the closest point is the same, the vector between will have no direction; this 
@@ -567,7 +310,7 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 			float coefRest = (aabb->elasticity + sphere->elasticity); //this is completely unfounded is science :)
 			float impulseMod = (coefRest + 1) * (sphere->velocity - aabb->velocity).mag(); //this too :)
 			Vector3 impulse = normal * impulseMod;
-			PhysicsSystem::AddImpulse(sphere, aabb, -impulse);
+			aabb->AddImpulse(sphere, -impulse);
 			sphere->rotVelocity -= sphereAngularVelocityChange;
 			//aabb->entity->rotVelocity -= aabbAngularVelocityChange; //we dont do this because AABB shouldnt rotate
 		}
@@ -630,6 +373,12 @@ inline void CollisionTick(EntityAdmin* admin, std::vector<PhysicsTuple>& tuples,
 	}
 }
 
+//////////////////////////
+//// system functions ////
+//////////////////////////
+
+void PhysicsSystem::Init() {}
+
 void PhysicsSystem::Update() {
 	Time* time = DengTime;
 	PhysicsWorld* pw = admin->physicsWorld;
@@ -658,34 +407,4 @@ void PhysicsSystem::Update() {
 		//t.transform->rotation *= Matrix4::RotationMatrixAroundPoint(t.transform->position, t.transform->rotation*(1.f - alpha) + t.physics->rotation*alpha);
 		//TODO(p,delle) look into better rotational interpolation once we switch to quaternions
 	}
-}
-
-//adds a force to this entity, and this entity applies that force back on the sending object
-//simply, changes acceleration by force
-inline void PhysicsSystem::AddForce(Physics* creator, Physics* target, Vector3 force) {
-	//this->acceleration += bIgnoreMass ? force : force / mass;
-	//if (creator) { creator->acceleration -= bIgnoreMass ? force : force / creator->mass; }
-	target->forces.push_back(force);
-	if(creator) { creator->forces.push_back(-force); }
-}
-
-inline void PhysicsSystem::AddInput(Physics* target, Vector3 input) {
-	target->inputVector += input;
-}
-
-//if no creator, assume air friction
-//if creator, assume sliding friction
-//TODO(up,delle,11/13/20) change air friction to calculate for shape of object
-inline void PhysicsSystem::AddFrictionForce(Physics* creator, Physics* target, float frictionCoef, float gravity) {
-	target->forces.push_back(-target->velocity.normalized() * frictionCoef * target->mass);// * gravity);
-	if (creator) {
-		//TODO(p,delle,12/21/20) implement sliding friction between two objects 
-	}
-}
-
-//adds an impulse to this entity, and this entity applies that impulse back on the sending object
-//simply, changes velocity by impulse force
-inline void PhysicsSystem::AddImpulse(Physics* creator, Physics* target, Vector3 impulse, bool ignoreMass) {
-	target->velocity += ignoreMass ? impulse : impulse / target->mass;
-	if (creator) { creator->velocity -= ignoreMass ? impulse : impulse / creator->mass; }
 }

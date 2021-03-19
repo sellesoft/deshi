@@ -1,4 +1,7 @@
 #pragma once
+#ifndef COMPONENT_H
+#define COMPONENT_H
+
 #include <vector>
 #include "../utils/defines.h"
 
@@ -24,13 +27,15 @@ struct Component {
 	Entity* entity = nullptr; //reference to owning entity
 	EntityAdmin* admin = nullptr; //do not want to call admin through entity anymore sorry!
 	//virtual void Create(resourceHandle) = 0;
-
+	
 	Component(EntityAdmin* a = nullptr, Entity* e = nullptr);
-
+	
 	//store layer its on and where in that layer it is for deletion
 	CompLayer layer;
 	int layer_index;
-
+	
 	virtual void Update() {};
 	virtual ~Component() {};
 };
+
+#endif //COMPONENT_H

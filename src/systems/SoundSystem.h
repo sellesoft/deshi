@@ -7,9 +7,6 @@
 #include "al.h"
 #include "alc.h"
 
-
-
-
 struct SoundSystem : public System {
 	
 	//storing this here because I don't know where else to put it 

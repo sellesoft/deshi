@@ -1,4 +1,7 @@
 #pragma once
+#ifndef COMPONENT_MOVEMENTSTATE_H
+#define COMPONENT_MOVEMENTSTATE_H
+
 #include "Component.h"
 
 #define MOVEMENT_NOCLIP		0
@@ -17,3 +20,5 @@ struct MovementState : public Component {
 	
 	void Update() override;
 };
+
+#endif //COMPONENT_MOVEMENTSTATE_H

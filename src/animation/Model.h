@@ -1,4 +1,7 @@
 #pragma once
+#ifndef DESHI_MODEL_H
+#define DESHI_MODEL_H
+
 #include "../utils/defines.h"
 #include "../math/Matrix4.h"
 #include "../math/Vector3.h"
@@ -109,3 +112,5 @@ struct Model{
 	static Model CreateBox(Vector3 halfDims, Color color = Color::WHITE);
 	static Model CreatePlanarBox(Vector3 halfDims, Color color = Color::WHITE);
 };
+
+#endif //DESHI_MODEL_H

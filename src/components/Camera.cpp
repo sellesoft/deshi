@@ -1,10 +1,7 @@
 #include "Camera.h"
 #include "../EntityAdmin.h"
 #include "../math/Math.h"
-#include "../core/deshi_glfw.h"
-#include "../core/deshi_renderer.h"
-#include "../core/deshi_input.h"
-#include "../core/deshi_time.h"
+#include "../core.h"
 
 #include "../animation/Model.h" //temp for debug
 

@@ -14,7 +14,7 @@
 */
 
 #include "EntityAdmin.h"
-#include "core/deshi.h"
+#include "core.h"
 
 #include "utils/PhysicsWorld.h"
 #include "utils/Command.h"
@@ -27,7 +27,7 @@
 #include "components/MovementState.h"
 #include "components/Canvas.h"
 #include "components/Console.h"
-#include "components/Listener.h"
+#include "components/AudioListener.h"
 
 #include "systems/System.h"
 #include "systems/CommandSystem.h"
@@ -71,10 +71,10 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r) {
 	AddSystem(new RenderCanvasSystem());
 	AddSystem(new WorldSystem());
 	//AddSystem(new TriggeredCommandSystem());
-
+	
 	console = new Console();
 	AddSystem(new ConsoleSystem());
-
+	
 	AddSystem(new SoundSystem());
 	
 	

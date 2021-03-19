@@ -1,4 +1,7 @@
 #pragma once
+#ifndef COMPONENT_CAMERA_H
+#define COMPONENT_CAMERA_H
+
 #include "Component.h"
 #include "../math/Vector3.h"
 #include "../math/Matrix4.h"
@@ -36,3 +39,5 @@ struct Camera : public Component {
 	void UsePerspectiveProjection(float fovX, float width, float height, float nearZ, float farZ);
 	void UseOrthographicProjection(); //TODO(r,sushi) implement this from .cpp here (ideally without a scene pointer)
 };
+
+#endif //COMPONENT_CAMERA_H

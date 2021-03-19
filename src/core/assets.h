@@ -1,8 +1,12 @@
 #pragma once
+#ifndef DESHI_ASSETS_H
+#define DESHI_ASSETS_H
+
 #include "../utils/defines.h"
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 namespace deshi{
 	
@@ -12,6 +16,7 @@ namespace deshi{
 	inline static std::string getTexturesPath(){ return getDataPath() + "textures/"; }
 	inline static std::string getSoundsPath()  { return getDataPath() + "sounds/"; }
 	inline static std::string getShadersPath() { return "shaders/"; }
+	inline static std::string getConfigsPath() { return "cfg/"; }
 	
 	//reads a files contents in binary and returns it as a char vector
 	static std::vector<char> readFile(const std::string& filename) {
@@ -31,3 +36,5 @@ namespace deshi{
 	}
 	
 } //namespace deshi
+
+#endif //DESHI_ASSETS_H

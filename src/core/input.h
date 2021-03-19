@@ -1,4 +1,7 @@
 #pragma once
+#ifndef DESHI_INPUT_H
+#define DESHI_INPUT_H
+
 #include "../utils/defines.h"
 #include "../math/Vector2.h"
 #include "../utils/Debug.h"
@@ -500,3 +503,5 @@ struct Input{
 		}
 	}
 };
+
+#endif //DESHI_INPUT_H

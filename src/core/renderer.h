@@ -1,4 +1,7 @@
 #pragma once
+#ifndef DESHI_RENDERER_H
+#define DESHI_RENDERER_H
+
 #include "../utils/defines.h"
 #include "../utils/Debug.h"
 
@@ -591,3 +594,5 @@ struct Renderer_Vulkan : public Renderer{
 	
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 };
+
+#endif //DESHI_RENDERER_H

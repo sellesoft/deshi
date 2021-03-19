@@ -2,6 +2,7 @@
 
 #include "../EntityAdmin.h"
 #include "../systems/ConsoleSystem.h"
+#include "../core/assets.h"
 
 #include <fstream>
 
@@ -41,7 +42,7 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 	
 	//read keys from keybinds.txt
 	std::fstream kf;
-	kf.open("configs/keybinds.txt", std::fstream::in);
+	kf.open(deshi::getConfigsPath() + "keybinds.txt", std::fstream::in);
 	
 	int iter = 0;
 	

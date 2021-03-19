@@ -1,8 +1,7 @@
 #include "SoundSystem.h"
 #include "ConsoleSystem.h"
-
 #include "../components/Camera.h"
-#include "../components/Source.h"
+#include "../components/AudioSource.h"
 
 #include <thread>
 
@@ -14,7 +13,7 @@
 //bool thread_play = false;
 bool new_sources = false;
 
-std::vector<Source*> sources;
+std::vector<AudioSource*> sources;
 
 //list all data devices found on the system
 static void list_audio_devices(const ALCchar* devices)
@@ -76,7 +75,7 @@ ALenum to_al_format(int channels, int bitsPerSample, EntityAdmin* admin) {
 	}
 }
 
-void play_sound(Source* s) {
+void play_sound(AudioSource* s) {
 	float x, y, z;
 	
 	alSourcePlay(s->source);
@@ -107,11 +106,11 @@ void play_sound(Source* s) {
 
 //main sound thread that is constant
 void SoundThread(EntityAdmin* admin) {
-	std::vector<Source*> playingSources;
+	std::vector<AudioSource*> playingSources;
 	while (true) {
 		//if new sources are queued we add them
 		if (sources.size() != 0) {
-			for (Source* s : sources) {
+			for (AudioSource* s : sources) {
 				//make sure source doesn't already exist
 				if (!alIsSource(s->source)) {
 					Vector3 pos;
@@ -262,7 +261,7 @@ void SoundSystem::Update() {
 	//check if any source is requesting to play audio
 	for (auto e : admin->entities) {
 		for (auto c : e.second->components) {
-			if (Source* s = dynamic_cast<Source*>(c)) {
+			if (AudioSource* s = dynamic_cast<AudioSource*>(c)) {
 				if (s->source_state != AL_PLAYING && s->request_play) {
 					sources.push_back(s);
 					s->request_play = false;

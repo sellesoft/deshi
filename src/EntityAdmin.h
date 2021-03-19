@@ -1,4 +1,7 @@
 #pragma once
+#ifndef DESHI_ENTITYADMIN_H
+#define DESHI_ENTITYADMIN_H
+
 #include "utils/defines.h"
 #include "utils/Debug.h"
 
@@ -104,3 +107,5 @@ struct Entity {
 	
 	~Entity();
 }; //TODO(,delle) move WorldSystem entity-component functions into Entity
+
+#endif
