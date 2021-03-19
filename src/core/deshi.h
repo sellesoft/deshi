@@ -32,7 +32,6 @@ Render TODOs
 ------------
 add shaders: FLAT (new default, vertex colors), PHONG (flat with lighting based on normals), PBR (4textures)
 add commands for the rendering interface functions
-find a way to avoid pipeline recreation on window resize/restore
 check those vulkan-tutorial links for the suggestions
 add the render options back
 add instancing [https://learnopengl.com/Advanced-OpenGL/Instancing]
@@ -45,6 +44,7 @@ add RenderSettings loading and usage
 add dynamic Texture updating on meshes (update materials)
   convert prints to go thru the in-game console rather than other console (after setting up logging to a file)
 (maybe) remove renderer polymorphism and replace it with defines that are checked on program start
+(maybe) add specific shader reloading rather than all of them
 
 Physics/Atmos TODOs
 -------------

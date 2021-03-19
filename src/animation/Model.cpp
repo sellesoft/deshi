@@ -179,7 +179,7 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 tra
 		totalIndexCount += batch.indexCount;
 		
 		//TODO(r,delle) parse different shader options here based on texture count
-		batch.shader = Shader::DEFAULT;
+		batch.shader = Shader::FLAT;
 		batch.shaderFlags = SHADER_FLAGS_NONE;
 		mesh.batchArray.push_back(batch);
 	}

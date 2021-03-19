@@ -331,10 +331,12 @@ struct Renderer_Vulkan : public Renderer{
 	} descriptorSetLayouts;
 	
 	struct { //pipelines for the different shaders
-		VkPipeline DEFAULT   = VK_NULL_HANDLE;
+		VkPipeline FLAT      = VK_NULL_HANDLE;
+		VkPipeline PHONG     = VK_NULL_HANDLE;
 		VkPipeline TWOD      = VK_NULL_HANDLE;
 		VkPipeline PBR       = VK_NULL_HANDLE;
 		VkPipeline WIREFRAME = VK_NULL_HANDLE;
+		VkPipeline LAVALAMP  = VK_NULL_HANDLE;
 	} pipelines;
 	
 	//list of shader modules created

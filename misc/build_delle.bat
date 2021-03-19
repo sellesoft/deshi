@@ -11,8 +11,6 @@ pushd ..\src
 
 @set OUT_EXE=deshi
 
-ECHO %DATE% %TIME%
-
 IF [%1]==[] GOTO DEBUG
 IF [%1]==[-i] GOTO ONE_FILE
 IF [%1]==[-r] GOTO RELEASE
@@ -23,6 +21,7 @@ IF [%1]==[-r] GOTO RELEASE
 REM ______________ DEBUG (compiles without optimization)
 
 :DEBUG
+ECHO [47m[94m%DATE% %TIME% Debug[0m[0m
 @set OUT_DIR="..\build\Debug"
 IF NOT EXIST %OUT_DIR% mkdir %OUT_DIR%
 cl /EHsc /nologo /Zi /MD /std:c++17 %INCLUDES% %SOURCES% /Fe%OUT_DIR%/%OUT_EXE%.exe /Fo%OUT_DIR%/ /link %LIBS%
@@ -31,8 +30,9 @@ GOTO DONE
 REM ______________ ONE FILE (compiles just one file with debug options, links with previosly created .obj files)
 
 :ONE_FILE
+ECHO [47m[94m%DATE% %TIME% One File (Debug)[0m[0m
 IF [%~2]==[] ECHO "Place the .cpp path after using -i" GOTO DONE 
-ECHO "Warning: debugging might not work with one-file compilation"
+ECHO [93mWarning: debugging might not work with one-file compilation[0m
 
 @set OUT_DIR="..\build\Debug"
 IF NOT EXIST %OUT_DIR% mkdir %OUT_DIR%
@@ -45,6 +45,7 @@ GOTO DONE
 REM ______________ RELEASE (compiles with optimization)
 
 :RELEASE
+ECHO [47m[94m%DATE% %TIME% Release[0m[0m
 @set OUT_DIR="..\build\Release"
 IF NOT EXIST %OUT_DIR% mkdir %OUT_DIR%
 cl /EHsc /nologo /Zi /MD /Ox /Oi /std:c++17 %INCLUDES% %SOURCES% /Fe%OUT_DIR%/%OUT_EXE%.exe /Fo%OUT_DIR%/ /link %LIBS%

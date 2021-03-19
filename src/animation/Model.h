@@ -57,7 +57,7 @@ enum ShaderFlagsBits : uint32 {
 typedef uint32 ShaderFlags;
 
 enum Shader : uint32 {
-	DEFAULT, TWOD, PBR, WIREFRAME //TODO(r,delle) make default into phong
+	FLAT, PHONG, TWOD, PBR, WIREFRAME, LAVALAMP
 };
 
 //NOTE indices should be clockwise
@@ -74,7 +74,7 @@ struct Batch {
 	ShaderFlags shaderFlags;
 	
 	Batch() {}
-	Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray, std::vector<Texture> textureArray, Shader shader = Shader::DEFAULT, ShaderFlags shaderFlags = SHADER_FLAGS_NONE);
+	Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray, std::vector<Texture> textureArray, Shader shader = Shader::FLAT, ShaderFlags shaderFlags = SHADER_FLAGS_NONE);
 	
 	void SetName(const char* name);
 };
