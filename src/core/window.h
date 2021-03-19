@@ -10,7 +10,11 @@ struct GLFWwindow;
 struct GLFWmonitor;
 
 enum struct DisplayMode{
-	WINDOWED, BORDERLESS_WINDOWED, FULLSCREEN
+	WINDOWED, BORDERLESS /*borderless windowed*/, FULLSCREEN
+};
+
+enum struct CursorMode{
+	DEFAULT, FIRSTPERSON, HIDDEN
 };
 
 //TODO(,delle) add window title updating
@@ -22,10 +26,15 @@ struct Window{
 	int32 x, y;
 	int32 width, height;
 	int32 screenWidth, screenHeight;
-	//TODO(r,delle) add resolution option
-	int32 screenRefreshRate;
+	int32 restoreX, restoreY;
+	int32 restoreW, restoreH;
+	int32 centerX, centerY;
+	int32 refreshRate, screenRefreshRate; //TODO(,delle) add selecting the refresh rate
 	DisplayMode displayMode;
+	CursorMode cursorMode;
 	bool minimized;
+	bool rawInput;
+	bool resizable;
 	
 	Vector2 dimensions;
 	
@@ -38,7 +47,13 @@ struct Window{
 	
 	void Cleanup();
 	
-	void UpdateDisplayMode(DisplayMode displayMode);
+	void UpdateDisplayMode(DisplayMode mode);
+	
+	void UpdateCursorMode(CursorMode mode); 
+	
+	void UpdateRawInput(bool rawInput);
+	
+	void UpdateResizable(bool resizable);
 };
 
 #endif //DESHI_WINDOW_H

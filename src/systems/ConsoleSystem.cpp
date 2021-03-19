@@ -392,7 +392,11 @@ void ConsoleSystem::Init() {
 }
 
 void ConsoleSystem::Update() {
-	if (DengInput->KeyPressed(Key::TILDE)) dispcon = !dispcon;
+	if (DengInput->KeyPressed(Key::TILDE)) {
+		dispcon = !dispcon;
+		//TODO(i,sushi) this is a hack to fix input relinquish, it should probably be handled somewhere else
+		admin->IMGUI_KEY_CAPTURE = !admin->IMGUI_KEY_CAPTURE; 
+	}
 	if (dispcon) DrawConsole();
 	locadmin = admin;
 	loccon = admin->console;

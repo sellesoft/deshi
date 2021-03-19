@@ -57,16 +57,16 @@ struct Input{
 	bool newKeyState[MAX_KEYBOARD_KEYS]   = {0};
 	bool oldMouseState[MAX_MOUSE_BUTTONS] = {0};
 	bool newMouseState[MAX_MOUSE_BUTTONS] = {0};
-	int32 mouseX, mouseY;
-	int32 screenMouseX, screenMouseY;
+	double mouseX, mouseY;
+	double screenMouseX, screenMouseY;
 	Vector2 mousePos;
 	double scrollX, scrollY;
 	
 	//real values are updated through GLFW callbacks
 	bool realKeyState[MAX_KEYBOARD_KEYS]   = {0};
 	bool realMouseState[MAX_MOUSE_BUTTONS] = {0};
-	float realMouseX, realMouseY;
-	float realScreenMouseX, realScreenMouseY;
+	double realMouseX, realMouseY;
+	double realScreenMouseX, realScreenMouseY;
 	double realScrollX, realScrollY;
 	bool keyFocus, mouseFocus;
 	
@@ -76,9 +76,9 @@ struct Input{
 		memcpy(&newKeyState, &realKeyState, sizeof(bool) * MAX_KEYBOARD_KEYS);
 		memcpy(&oldMouseState, &newMouseState, sizeof(bool) * MAX_MOUSE_BUTTONS);
 		memcpy(&newMouseState, &realMouseState, sizeof(bool) * MAX_MOUSE_BUTTONS);
-		mouseX = (int32)realMouseX; mouseY = (int32)realMouseY;
+		//mouseX = realMouseX; mouseY = realMouseY; //NOTE this doesnt work, idk why
 		mousePos.x = mouseX; mousePos.y = mouseY;
-		screenMouseY = (int32)realScreenMouseX; screenMouseY = (int32)realScreenMouseY;
+		screenMouseY = realScreenMouseX; screenMouseY = realScreenMouseY;
 		scrollX = realScrollX; scrollY = realScrollY;
 	}
 	

@@ -16,7 +16,7 @@ struct World;
 
 struct Camera;
 struct Keybinds;
-struct MovementState;
+struct Controller;
 struct Canvas;
 struct Console;
 
@@ -47,7 +47,7 @@ struct EntityAdmin {
 	
 	Camera* currentCamera;
 	Keybinds* currentKeybinds;
-	MovementState* tempMovementState;
+	Controller* controller;
 	Canvas* tempCanvas;
 	Console* console;
 	
@@ -83,6 +83,7 @@ struct EntityAdmin {
 	
 	Command* GetCommand(std::string command);
 	bool ExecCommand(std::string command);
+	bool ExecCommand(std::string command, std::string args);
 };
 
 struct Entity {

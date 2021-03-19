@@ -1,6 +1,7 @@
 #include "CommandSystem.h"
 #include "../utils/defines.h"
-#include "../core/input.h"
+#include "../core.h"
+#include "../utils/Command.h"
 #include "../systems/WorldSystem.h"
 #include "../components/Keybinds.h"
 #include "../components/Canvas.h"
@@ -9,7 +10,8 @@
 #include "../components/Collider.h"
 #include "../components/Camera.h"
 #include "../components/AudioSource.h"
-#include "../utils/Command.h"
+
+#include <string>     // std::string, std::stoi
 
 //regex for checking paramaters
 #define RegPosParam   std::regex("-pos=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")
@@ -19,6 +21,9 @@
 
 //this is repetitive because it has to capture 3 different groups in the same way
 #define VecNumMatch std::regex("[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?")
+
+#define NEWCOMMAND(name, desc, func) admin->commands[name] =\
+new Command([](EntityAdmin* admin, std::vector<std::string> args)->std::string func, name, desc);
 
 inline void AddSpawnCommands(EntityAdmin* admin) {
 	
@@ -643,6 +648,114 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 	*/
 }
 
+inline void AddWindowCommands(EntityAdmin* admin){
+	admin->commands["display_mode"] =
+		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+						Window* w = admin->window;
+						if(args.size() != 1){ return "display_mode <mode: Int>"; }
+						try{
+							int mode = std::stoi(args[0]);
+							switch(mode){
+								case(0):{ 
+									w->UpdateDisplayMode(DisplayMode::WINDOWED); 
+									return "display_mode=windowed"; }
+								case(1):{ 
+									w->UpdateDisplayMode(DisplayMode::BORDERLESS);
+									return "display_mode=borderless windowed"; }
+								case(2):{ 
+									w->UpdateDisplayMode(DisplayMode::FULLSCREEN); 
+									return "display_mode=fullscreen"; }
+								default:{ 
+									return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen"; }
+							}
+						}catch(...){
+							return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen";
+						}
+					}, "display_mode", "display_mode <mode:Int>");
+	
+	admin->commands["cursor_mode"] =
+		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+						Window* w = admin->window;
+						if(args.size() != 1){ return "cursor_mode <mode:Int>"; }
+						try{
+							int mode = std::stoi(args[0]);
+							switch(mode){
+								case(0):{ 
+									w->UpdateCursorMode(CursorMode::DEFAULT); 
+									return "cursor_mode=default"; }
+								case(1):{ 
+									w->UpdateCursorMode(CursorMode::FIRSTPERSON); 
+									return "cursor_mode=first person"; }
+								case(2):{ 
+									w->UpdateCursorMode(CursorMode::HIDDEN); 
+									return "cursor_mode=hidden"; }
+								default:{ return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden"; }
+							}
+						}catch(...){
+							return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden";
+						}
+					}, "cursor_mode", "cursor_mode <mode:Int>");
+	
+	admin->commands["raw_input"] =
+		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+						Window* w = admin->window;
+						if(args.size() != 1){ return "raw_input <input:Boolean>"; }
+						try{
+							int mode = std::stoi(args[0]);
+							switch(mode){
+								case(0):{ w->UpdateRawInput(false); return "raw_input=false"; }
+								case(1):{ w->UpdateRawInput(true); return "raw_input=true"; }
+								default:{ return "raw_input: 0=false, 1=true"; }
+							}
+						}catch(...){
+							return "raw_input: 0=false, 1=true";
+						}
+					}, "raw_input", "raw_input <input:Boolean>; Only works in firstperson cursor mode");
+	
+	NEWCOMMAND("window_resizable", "raw_input <resizable:Boolean>", {
+				   Window* w = admin->window;
+				   if(args.size() != 1){ return "window_resizable <resizable:Boolean>"; }
+				   try{
+					   int mode = std::stoi(args[0]);
+					   switch(mode){
+						   case(0):{ w->UpdateResizable(false); return "window_resizable=false"; }
+						   case(1):{ w->UpdateResizable(true); return "window_resizable=true"; }
+						   default:{ return "window_resizable: 0=false, 1=true"; }
+					   }
+				   }catch(...){
+					   return "window_resizable: 0=false, 1=true";
+				   }
+			   });
+	
+	NEWCOMMAND("window_info", "window_info; Prints window variables", {
+				   Window* w = admin->window;
+				   std::string dispMode;
+				   switch(w->displayMode){
+					   case(DisplayMode::WINDOWED):{ dispMode = "Windowed"; }break;
+					   case(DisplayMode::BORDERLESS):{ dispMode = "Borderless Windowed"; }break;
+					   case(DisplayMode::FULLSCREEN):{ dispMode = "Fullscreen"; }break;
+				   }
+				   std::string cursMode;
+				   switch(w->cursorMode){
+					   case(CursorMode::DEFAULT):{ cursMode = "Default"; }break;
+					   case(CursorMode::FIRSTPERSON):{ cursMode = "First Person"; }break;
+					   case(CursorMode::HIDDEN):{ cursMode = "Hidden"; }break;
+				   }
+				   return TOSTRING("Window Info"
+								   "\n    Window Position: ", w->x, ",", w->y,
+								   "\n    Window Dimensions: ", w->width, "x", w->height,
+								   "\n    Screen Dimensions: ", w->screenWidth, "x", w->screenHeight,
+								   "\n    Refresh Rate: ", w->refreshRate,
+								   "\n    Screen Refresh Rate: ", w->screenRefreshRate,
+								   "\n    Display Mode: ", dispMode,
+								   "\n    Cursor Mode: ", cursMode,
+								   "\n    Raw Input: ", w->rawInput,
+								   "\n    Resizable: ", w->resizable,
+								   "\n    Restores: ", w->restoreX, ",", w->restoreY, " ",
+								   w->restoreW, "x", w->restoreH);
+			   });
+}
+
 //add generic commands here
 void CommandSystem::Init() {
 	
@@ -657,7 +770,7 @@ void CommandSystem::Init() {
 	admin->commands["debug_command_exec"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 															Command::CONSOLE_PRINT_EXEC = !Command::CONSOLE_PRINT_EXEC;
 															return ""; //i dont know what this does so im not formatting it 
-														}, "debug_command_exec", "debug_command_exec");
+														}, "debug_command_exec", "if true, prints all command executions to the console");
 	
 	admin->commands["engine_pause"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 													  admin->paused = !admin->paused;
@@ -669,6 +782,7 @@ void CommandSystem::Init() {
 	AddRenderCommands(admin);
 	AddConsoleCommands(admin);
 	AddSelectedEntityCommands(admin);
+	AddWindowCommands(admin);
 }
 
 void CommandSystem::Update() {

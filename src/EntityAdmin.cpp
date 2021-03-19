@@ -1,5 +1,5 @@
 /*
----Systems Tick Order---||--------Read/Write Components-----||------------Read Only Components-------------------
+------Tick Order---||--------Components-----||-------------------------------
   olcPixelGameEngine      || Input							|| N/A
   TimeSystem              || Time							 || N/A
   ScreenSystem            || Screen						   || N/A
@@ -24,7 +24,7 @@
 #include "components/World.h"
 #include "components/Camera.h"
 #include "components/Keybinds.h"
-#include "components/MovementState.h"
+#include "components/Controller.h"
 #include "components/Canvas.h"
 #include "components/Console.h"
 #include "components/AudioListener.h"
@@ -58,7 +58,6 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r) {
 		freeCompLayers.push_back(ContainerManager<Component*>());
 	}
 	
-	
 	//systems initialization
 	AddSystem(new CommandSystem());
 	switch (physicsWorld->integrationMode) {
@@ -66,30 +65,18 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r) {
 			AddSystem(new PhysicsSystem());
 		}
 	}
-	//AddSystem(new CameraSystem());
-	//AddSystem(new MeshSystem());
 	AddSystem(new RenderCanvasSystem());
 	AddSystem(new WorldSystem());
-	//AddSystem(new TriggeredCommandSystem());
-	
 	console = new Console();
 	AddSystem(new ConsoleSystem());
-	
 	AddSystem(new SoundSystem());
-	
-	
 	
 	//singleton initialization
 	world = new World();
-	
-	//current admin components
 	currentCamera = new Camera(this);
 	currentCamera->layer_index = freeCompLayers[currentCamera->layer].add(currentCamera);
-	
 	currentKeybinds = new Keybinds(this);
-	
-	//temporary singletons
-	tempMovementState = new MovementState(this);
+	controller = new Controller(this);
 	tempCanvas = new Canvas();
 }
 
@@ -105,14 +92,14 @@ void EntityAdmin::Cleanup() {
 	delete world;
 	delete currentCamera;
 	delete currentKeybinds;
-	delete tempMovementState;
+	delete controller;
 	delete tempCanvas;
 }
 
 void EntityAdmin::Update() {
 	if (!paused) {
 		for (System* s : systems) {
-			steady_clock::time_point startTime = steady_clock::now(); //TODO(,delle) test that system durations work
+			steady_clock::time_point startTime = steady_clock::now(); //TODO(o,delle) test that system durations work
 			s->Update();
 			s->time = duration_cast<duration<double>>(steady_clock::now() - startTime).count();
 		}
@@ -128,7 +115,7 @@ void EntityAdmin::Update() {
 	}
 	//NOTE temporary
 	currentCamera->Update();
-	tempMovementState->Update();
+	controller->Update();
 	for(Component* c : components){
 		c->Update();
 	}
@@ -177,6 +164,16 @@ bool EntityAdmin::ExecCommand(std::string command) {
 		return true;
 	} catch(std::exception e) {
 		//ERROR("Command \"", command, "\" does not exist");
+		this->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
+		return false;
+	}
+}
+
+bool EntityAdmin::ExecCommand(std::string command, std::string args) {
+	try{
+		commands.at(command)->Exec(admin, args);
+		return true;
+	}catch(std::exception e){
 		this->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
 		return false;
 	}

@@ -55,7 +55,6 @@ add physics interaction functions
 
 UI TODOs
 --------
-Fix console not relinquishing input
 Restore the spawning/inspector menus
 2D shader
 add a UI popup when reloading shaders
@@ -101,7 +100,7 @@ struct DeshiEngine {
 		//init
 		LoadConfig();
 		time.Init(300);
-		window.Init(&input, 1280, 720);
+		window.Init(&input, 1280, 720); //inits input as well
 		renderer->time = &time;
 		renderer->Init(&window, imgui); //inits imgui as well
 		
@@ -122,8 +121,8 @@ struct DeshiEngine {
 	
 	bool Update() {
 		time.Update();
-		input.Update();
 		window.Update();
+		input.Update();
 		imgui->NewFrame();            //place imgui calls after this
 		ImGui::ShowDemoWindow();
 		entityAdmin.Update();

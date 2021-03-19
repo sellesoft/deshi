@@ -19,7 +19,7 @@ void Window::Init(Input* input, int32 width, int32 height, int32 x, int32 y, Dis
 	//TODO(r,delle) maybe we should not allow the window to be resizable in-game, but in-engine is fine
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	window = glfwCreateWindow(width, height, "Deshi", NULL, NULL);
+	window = glfwCreateWindow(width, height, "deshi", NULL, NULL);
 	monitor = glfwGetPrimaryMonitor();
 	if(!window) { glfwTerminate(); return; }
 	if(!monitor) { glfwTerminate(); return; }
@@ -29,10 +29,17 @@ void Window::Init(Input* input, int32 width, int32 height, int32 x, int32 y, Dis
 	glfwGetWindowPos(window, &xpos, &ypos);
 	this->x = xpos; this->y = ypos;
 	this->width = width; this->height = height;
+	this->restoreX = x; this->restoreY = y;
+	this->restoreW = width; this->restoreH = height;
 	this->screenWidth = mode->width; this->screenHeight = mode->height;
 	this->screenRefreshRate = mode->refreshRate;
 	this->displayMode = displayMode;
+	this->cursorMode = CursorMode::DEFAULT;
 	this->dimensions = Vector2(width, height);
+	
+	this->rawInput = false;
+	UpdateRawInput(true); //sets raw input to true if supported
+	this->resizable = true;
 	
 	UpdateDisplayMode(displayMode);
 	
@@ -136,8 +143,8 @@ void Window::Init(Input* input, int32 width, int32 height, int32 x, int32 y, Dis
 								 int x, y, width, height;
 								 glfwGetMonitorWorkarea(monitor, &x, &y, &width, &height);
 								 Window::input->mouseFocus = true;
-								 Window::input->realMouseX = xpos - (float)x;
-								 Window::input->realMouseY = ypos - (float)y;
+								 Window::input->realMouseX = xpos - (double)x;
+								 Window::input->realMouseY = ypos - (double)y;
 								 Window::input->realScreenMouseX = xpos;
 								 Window::input->realScreenMouseY = ypos;
 							 });
@@ -158,11 +165,7 @@ void Window::Init(Input* input, int32 width, int32 height, int32 x, int32 y, Dis
 	//void cursor_enter_callback(GLFWwindow* window, int entered)
 	glfwSetCursorEnterCallback(window, 
 							   [](GLFWwindow* w, int entered)->void{
-								   if (entered){
-									   Window::input->keyFocus = true;
-								   }else{
-									   Window::input->keyFocus = false;
-								   }
+								   Window::input->keyFocus = entered;
 							   });
 	
 	//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -177,18 +180,22 @@ void Window::Init(Input* input, int32 width, int32 height, int32 x, int32 y, Dis
 void Window::Update() {
 	int xpos, ypos;
 	glfwGetWindowPos(window, &xpos, &ypos);
-	this->x = xpos; this->y = ypos;
+	x = xpos; y = ypos;
 	
-	int width, height;
-	glfwGetWindowSize(window, &width, &height);
-	this->width = width; this->height = height;
-	this->minimized = width <= 0 || height <= 0 ? true : false;
+	int w, h;
+	glfwGetWindowSize(window, &w, &h);
+	width = w; height = h;
+	minimized = (w <= 0 || h <= 0) ? true : false;
 	
 	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-	this->screenWidth = mode->width; this->screenHeight = mode->height;
-	this->screenRefreshRate = mode->refreshRate; 
+	screenWidth = mode->width; screenHeight = mode->height;
+	screenRefreshRate = mode->refreshRate; 
 	
+	centerX = w/2; centerY = h/2;
 	this->dimensions = Vector2(width, height);
+	
+	glfwGetCursorPos(window, &Window::input->mouseX, &Window::input->mouseY);
+	if(cursorMode == CursorMode::FIRSTPERSON){ glfwSetCursorPos(window, w/2, h/2); }
 }
 
 void Window::Cleanup(){
@@ -197,19 +204,58 @@ void Window::Cleanup(){
 
 void Window::UpdateDisplayMode(DisplayMode displayMode){
 	if(displayMode == this->displayMode){return;}
+	if(this->displayMode == DisplayMode::WINDOWED){
+		restoreX = x;  restoreY = y; 
+		restoreW = width; restoreH = height;
+	}
+	
 	this->displayMode = displayMode;
 	
 	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 	switch(displayMode){
 		case(DisplayMode::FULLSCREEN):{
-			glfwSetWindowMonitor(this->window, this->monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+			glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
 		}break;
-		case(DisplayMode::BORDERLESS_WINDOWED):{
-			glfwSetWindowAttrib(this->window, GLFW_DECORATED, GLFW_FALSE);
-			glfwSetWindowMonitor(this->window, 0, 0, 0, mode->width, mode->height, mode->refreshRate);
+		case(DisplayMode::BORDERLESS):{
+			glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
+			glfwSetWindowMonitor(window, 0, 0, 0, mode->width, mode->height, mode->refreshRate);
 		}break;
-		default:{ //DisplayMode::WINDOWED
-			glfwSetWindowMonitor(this->window, 0, this->x, this->y, this->width, this->height, GLFW_DONT_CARE);
+		case(DisplayMode::WINDOWED):default:{
+			glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_TRUE);
+			glfwSetWindowMonitor(window, 0, restoreX, restoreY, restoreW, restoreH, GLFW_DONT_CARE);
 		}break;
 	}
+}
+
+void Window::UpdateCursorMode(CursorMode mode){
+	if(mode == this->cursorMode){return;}
+	this->cursorMode = mode;
+	
+	switch(mode){
+		case(CursorMode::DEFAULT):default:{
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		}break;
+		case(CursorMode::FIRSTPERSON):{
+			int w, h;
+			glfwGetWindowSize(window, &w, &h);
+			glfwSetCursorPos(window, w/2, h/2);
+			glfwGetCursorPos(window, &Window::input->mouseX, &Window::input->mouseY);
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		}break;
+		case(CursorMode::HIDDEN):{
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+		}break;
+	}
+}
+
+void Window::UpdateRawInput(bool rawInput){
+	if (glfwRawMouseMotionSupported()){
+		this->rawInput = rawInput;
+		glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, rawInput);
+	}
+}
+
+void Window::UpdateResizable(bool resizable){
+	this->resizable = resizable;
+	glfwSetWindowAttrib(this->window, GLFW_RESIZABLE, resizable);
 }

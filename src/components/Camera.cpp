@@ -97,6 +97,7 @@ void Camera::Update() {
 	
 	//clamp camera yaw (x-rotation)
 	rotation.x = Math::clamp(rotation.x, -89.f, 89.f);
+	if(rotation.y > 1440.f || rotation.y < -1440.f){ rotation.y = 0.f; }
 	
 	//update direction vectors
 	forward = (Vector4(Vector3::FORWARD, 0.f) * Matrix4::RotationMatrix(rotation)).ToVector3().normalized();
