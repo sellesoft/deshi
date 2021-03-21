@@ -256,7 +256,7 @@ inline void    MatrixN::operator -= (const MatrixN& rhs){
 	}
 }
 
-//TODO(Op,delle) look into optimizing this by transposing to remove a loop, see Unreal implementation
+//TODO(delle,Op) look into optimizing this by transposing to remove a loop, see Unreal implementation
 inline MatrixN  MatrixN::operator *  (const MatrixN& rhs) const{
 	ASSERT(cols == rhs.rows, "MatrixN multiplication requires the columns of the left matrix to equal the rows of the right matrix");
 	MatrixN newMatrix(rows, rhs.cols);
@@ -341,7 +341,7 @@ inline bool    MatrixN::operator	!= (const MatrixN& rhs) const {
 
 //// Functions ////
 
-//TODO(ClMa,delle) clean up MatrixN.str() and MatrixN.str2F()
+//TODO(delle,ClMa) clean up MatrixN.str() and MatrixN.str2F()
 inline const std::string MatrixN::str() const {
 	if (rows == 0 || cols == 0) {
 		return "|Zero dimension matrix|";

@@ -16,7 +16,7 @@ layout(location = 2) in vec3 inNormal;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-	//TODO(r,delle) pbr shading, see pbrtexture in saschawillems' stuff
+	//TODO(delle,r) pbr shading, see pbrtexture in saschawillems' stuff
 	outColor = texture(albedoSampler, inTexCoord);
 	//outColor = vec4(inColor, 1.0);
 }

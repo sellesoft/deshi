@@ -117,7 +117,7 @@ int Console::TextEditCallback(ImGuiInputTextCallbackData* data) {
 					posi.push_back(c.first);
 				}
 			}
-			//TODO(Cmd, sushi) implement showing a commands help if tab is pressed when the command is already typed
+			//TODO( sushi,Cmd) implement showing a commands help if tab is pressed when the command is already typed
 			
 			if (posi.size() == 0) {
 				AddLog("no matches found");
@@ -307,7 +307,7 @@ void Console::DrawConsole() {
 	//print previous text
 	for (std::pair<std::string, Color> p : buffer) {
 		//color formatting is "[c:red]text[c] text text"
-		//TODO(OpCon, sushi) maybe optimize by only drawing what we know will be displayed on screen instead of parsing through all of it
+		//TODO( sushi,OpCon) maybe optimize by only drawing what we know will be displayed on screen instead of parsing through all of it
 		
 		if (p.second == Color::BLANK) {
 			SameLine(0, 0);

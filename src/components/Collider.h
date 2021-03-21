@@ -15,7 +15,7 @@ struct Collider : public Component {
 	i8 collisionLayer = 0;
 	
 	bool isTrigger = false;
-	Command* command = nullptr; //TODO(Ph,delle) implement trigger colliders
+	Command* command = nullptr; //TODO(delle,Ph) implement trigger colliders
 	
 };
 
@@ -43,9 +43,9 @@ struct SphereCollider : public Collider {
 	SphereCollider(Entity* e, float radius, float mass, bool isTrigger, Command* command, i8 collisionLayer = 0);
 };
 
-//TODO(Ph,delle) implement convexPolyCollider
-//TODO(Ph,delle) implement capsuleCollider
-//TODO(Ph,delle) implement cylinder collider
-//TODO(Ph,delle) implement complex collider (collider list)
+//TODO(delle,Ph) implement convexPolyCollider
+//TODO(delle,Ph) implement capsuleCollider
+//TODO(delle,Ph) implement cylinder collider
+//TODO(delle) implement complex collider (collider list,Ph)
 
 #endif //COMPONENT_COLLIDER_H

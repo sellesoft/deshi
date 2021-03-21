@@ -378,7 +378,7 @@ void DebugBar(EntityAdmin* admin) {
 		
 		//Triangle Count
 		if (TableNextColumn() && show_world_stats) {
-			//TODO(Ui, sushi) implement triangle count when its avaliable
+			//TODO( sushi,Ui) implement triangle count when its avaliable
 			std::string str = TOSTRING("wtris: ", admin->renderer->stats.totalTriangles);
 			float strlen = (fontsize - (fontsize / 2)) * str.size();
 			ImGui::SameLine(36 - (strlen / 2));
@@ -387,7 +387,7 @@ void DebugBar(EntityAdmin* admin) {
 		
 		//Vertice Count
 		if (TableNextColumn() && show_world_stats) {
-			//TODO(Ui, sushi) implement vertice count when its avaliable
+			//TODO( sushi,Ui) implement vertice count when its avaliable
 			std::string str = TOSTRING("wverts: ", admin->renderer->stats.totalVertices);
 			float strlen = (fontsize - (fontsize / 2)) * str.size();
 			ImGui::SameLine(36 - (strlen / 2));
@@ -402,7 +402,7 @@ void DebugBar(EntityAdmin* admin) {
 		
 		//Triangle Count
 		if (TableNextColumn() && show_selected_stats) {
-			//TODO(Ui, sushi) implement triangle count when its avaliable
+			//TODO( sushi,Ui) implement triangle count when its avaliable
 			Entity* e = DengInput->selectedEntity;
 			std::string str = TOSTRING("stris: ", "0");
 			float strlen = (fontsize - (fontsize / 2)) * str.size();
@@ -412,7 +412,7 @@ void DebugBar(EntityAdmin* admin) {
 		
 		//Vertice Count
 		if (TableNextColumn() && show_selected_stats) {
-			//TODO(Ui, sushi) implement vertice count when its avaliable
+			//TODO( sushi,Ui) implement vertice count when its avaliable
 			Entity* e = DengInput->selectedEntity;
 			std::string str = TOSTRING("sverts: ", "0");
 			float strlen = (fontsize - (fontsize / 2)) * str.size();
@@ -467,7 +467,7 @@ void DebugBar(EntityAdmin* admin) {
 		
 		
 		//Context menu for toggling parts of the bar
-		//TODO(Ui, sushi) make dynamic showing work i guess though its not really necessary
+		//TODO( sushi,Ui) make dynamic showing work i guess though its not really necessary
 		//if (ImGui::IsMouseReleased(1) && IsWindowHovered()) OpenPopup("Context");
 		if (BeginPopup("Context")) {
 			admin->IMGUI_MOUSE_CAPTURE = true;

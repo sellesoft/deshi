@@ -5,7 +5,7 @@ struct Vector3;
 struct Matrix4;
 struct Matrix3;
 
-//TODO(Ma,delle) implement quaternions
+//TODO(delle,Ma) implement quaternions
 struct Quaternion {
 	float x{}, y{}, z{}, w{};
 

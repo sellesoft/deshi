@@ -127,6 +127,6 @@ struct Entity {
 	
 	~Entity();
 	//this seems ancient so i wont touch it 
-}; //TODO(,delle) move WorldSystem entity-component functions into Entity
+}; //TODO(delle) move WorldSystem entity-component functions into Entity
 
 #endif

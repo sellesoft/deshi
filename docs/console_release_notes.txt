@@ -16,3 +16,4 @@ the console's ui is written using DearImGui.
 -rename ConsoleSystem to Console and implement all functionality on it
 -move Console to the engine rather than EntityAdmin
 -implement console buffer flushing to a log after a certain amount of characters
+-console now flashes the DebugBar when an error passes through it

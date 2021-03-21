@@ -12,7 +12,7 @@ struct Scene{
 	std::vector<Light*>  lights;
 	std::vector<Edge3D*> lines;
 	
-	//TODO(Re,delle) implement all of these
+	//TODO(delle,Re) implement all of these
 	bool RENDER_WIREFRAME           = false;
 	bool RENDER_EDGE_NUMBERS        = false;
 	bool RENDER_TEXTURES            = false;

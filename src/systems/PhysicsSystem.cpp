@@ -38,7 +38,7 @@ inline std::vector<PhysicsTuple> GetPhysicsTuples(EntityAdmin* admin) {
 	return out;
 }
 
-//TODO(Ph,delle) look into bettering this physics tick
+//TODO(delle,Ph) look into bettering this physics tick
 //https://gafferongames.com/post/physics_in_3d/
 inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time) {
 	//// translation ////
@@ -183,7 +183,7 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 		if (zmax1 < zmax2) zover = zmax1 - zmin2;
 		else               zover = zmax2 - zmin1;
 		
-		//TODO(So, sushi) find a nicer way to determine how loud a collision sound is 
+		//TODO( sushi,So) find a nicer way to determine how loud a collision sound is 
 		//obj1->entity->GetComponent<AudioSource>()->RequestPlay(obj1->velocity.mag() + obj2->velocity.mag());
 		
 		bool xf = false; bool yf = false; bool zf = false;
@@ -405,6 +405,6 @@ void PhysicsSystem::Update() {
 		//t.transform->rotation = Quaternion::QuatSlerp(t.transform->rotation, t.transform->prevRotation, alpha).ToVector3();
 		
 		//t.transform->rotation *= Matrix4::RotationMatrixAroundPoint(t.transform->position, t.transform->rotation*(1.f - alpha) + t.physics->rotation*alpha);
-		//TODO(Ph,delle) look into better rotational interpolation once we switch to quaternions
+		//TODO(delle,Ph) look into better rotational interpolation once we switch to quaternions
 	}
 }

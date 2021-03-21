@@ -26,7 +26,7 @@
 //this is repetitive because it has to capture 3 different groups in the same way
 #define VecNumMatch std::regex("[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?")
 
-//TODO(Cl,delle) update this to have a try/catch built in
+//TODO(delle,Cl) update this to have a try/catch built in
 #define NEWCOMMAND(name, desc, func) admin->commands[name] =\
 new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string func, name, desc);
 
@@ -44,7 +44,7 @@ inline void AddSpawnCommands(EntityAdmin* admin) {
 	//		float mass = 1;
 	//		bool isStatic = false;
 	//
-	//		for (std::string s : args) { //TODO(o, sushi) see if you can capture the variables when checking for a match
+	//		for (std::string s : args) { //TODO( sushi,o) see if you can capture the variables when checking for a match
 	//			if (std::regex_match(s, RegPosParam)) { // -pos=(1,2,3)
 	//				std::regex_search(s.c_str(), m, VecNumMatch);
 	//				position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
@@ -159,7 +159,7 @@ inline void AddSpawnCommands(EntityAdmin* admin) {
 
 inline void AddRenderCommands(EntityAdmin* admin) {
 	NEWCOMMAND("render_stats", "Lists different rendering stats for the previous frame", {
-				   //TODO(Cmd,delle) this
+				   //TODO(delle,Cmd) this
 				   return "";
 			   });
 	
@@ -185,7 +185,7 @@ inline void AddRenderCommands(EntityAdmin* admin) {
 	
 	//list materials
 	
-	//TODO(Re,delle) fix this, its not working
+	//TODO(delle,Re) fix this, its not working
 	NEWCOMMAND("material_texture", "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>", {
 				   if(args.size() != 3){ return "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>"; }
 				   try{
@@ -216,7 +216,7 @@ inline void AddRenderCommands(EntityAdmin* admin) {
 				   return "[c:magen]Reloading shaders[c]";
 			   });
 	
-	//TODO(Re,delle) update this to be dynamic when shader loading is (if ever)
+	//TODO(delle) update this to be dynamic when shader loading is (if ever,Re)
 	NEWCOMMAND("shader_list", "Lists the shaders and their IDs", {
 				   return TOSTRING("[c:yellow]ID    SHADER          Description[c]\n",
 								   "0    Flat            Vertex color shading without normal/edge smoothing\n",
@@ -295,7 +295,7 @@ inline void AddRenderCommands(EntityAdmin* admin) {
 						}
 					}, "mesh_transform_matrix", "mesh_transform_matrix <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 	
-	//TODO(CmdCl,delle) figure out why the macro doesnt work here or on the one above
+	//TODO(delle,CmdCl) figure out why the macro doesnt work here or on the one above
 	admin->commands["load_obj"] = 
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 						if(args.size() > 0){
@@ -440,7 +440,7 @@ inline void HandleMouseInputs(EntityAdmin* admin, Input* input) {
 		//stop: are we even using this anymore?
 		
 		//if the click wasnt on a UI element, trigger select_entity command
-		//admin->ExecCommand("select_entity"); //TODO(i,delle) re-enable clicking entities
+		//admin->ExecCommand("select_entity"); //TODO(delle,i) re-enable clicking entities
 		
 		//set click pos to mouse pos
 	}
@@ -533,7 +533,7 @@ inline void HandleSelectedEntityInputs(EntityAdmin* admin, Input* input) {
 
 
 
-//TODO(InPh,delle) update entity movement commands to be based on EntityID
+//TODO(delle,InPh) update entity movement commands to be based on EntityID
 inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 	//// translation ////
 	admin->commands["reset_position"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
@@ -757,7 +757,7 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 	//// other ////
 	/*
 	admin->commands["add_force"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													   //TODO(Re, sushi) implement ScreenToWorld for ortho projection
+													   //TODO( sushi,Re) implement ScreenToWorld for ortho projection
 													   if (USE_ORTHO) {
 													   LOG("\nWarning: ScreenToWorld not yet implemented for orthographic projection. World interaction with mouse will not work.\n");
 												   }
@@ -769,7 +769,7 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 															   //cant remember what this is doing and will fix later
 															   //Vector3 clickPos = Math::ScreenToWorld(DengInput->mouseClickPos, admin->mainCamera->projectionMatrix,
 															   //admin->mainCamera->viewMatrix, DengWindow->dimensions);
-															   //TODO(PhIn,delle) test that you can add force to a selected entity
+															   //TODO(delle,PhIn) test that you can add force to a selected entity
 															   //Physics::AddForce(nullptr, p, (pos - clickPos).normalized() * 5);
 														   }
 													   }
@@ -890,7 +890,7 @@ inline void AddWindowCommands(EntityAdmin* admin){
 //add generic commands here
 void CommandSystem::Init() {
 	
-	//TODO(Cmd,sushi) reimplement this at some point
+	//TODO(sushi,Cmd) reimplement this at some point
 	
 	//admin->commands["debug_global"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 	//	GLOBAL_DEBUG = !GLOBAL_DEBUG;

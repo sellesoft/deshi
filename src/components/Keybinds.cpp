@@ -46,7 +46,7 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 	
 	int iter = 0;
 	
-	//TODO(In, sushi) implement keybind name mapping and shtuff
+	//TODO( sushi,In) implement keybind name mapping and shtuff
 	
 	//there is prolly a better way to do this but uh
 	while (!kf.eof()) {

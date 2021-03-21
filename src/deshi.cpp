@@ -1,19 +1,19 @@
 /* deshi
 TODO Tags: 
 
+As  Assets
 Ph  Physics 
 Re  Render
 En  Entity
 In  Input
 Ma  Math
 Op  Optimization
-Ge  General
 Cl  Clean Up Code
 Ui  UI
 Vu  Vulkan
 Sh  Shader
 Co  Core
-Geo Geometry
+Ge Geometry
 So  Sound
 Fs  Filesystem
 Cmd Command
@@ -23,9 +23,9 @@ Fu  Fun
 Oth Other
 
 
-TODO Style: TODO(tags,person,date) description
+TODO Style: TODO(date,tags,person) description
 Rules: tags can be empty but still requires a comma, date can be empty
-      eg: TODO(,delle) no tag or date; TODO(ro,sushi,03/12/2021) render,optimization tags for sushi made on that date
+      eg: TODO(03/12/2021,,delle) no tag or date; TODO(ro,sushi) render,optimization tags for sushi made on that date
 
 The person listed doesn't necessarily have to be you, and can be someone else 
 if you feel they would handle the problem better.
@@ -111,8 +111,8 @@ struct DeshiEngine {
 
 
 	
-	//TODO(Fs,delle) setup loading a config file to a config struct
-	//TODO(Re,delle) change render API to a define rather than variable so it doesnt have to be a pointer
+	//TODO(delle,Fs) setup loading a config file to a config struct
+	//TODO(delle,Re) change render API to a define rather than variable so it doesnt have to be a pointer
 	void LoadConfig(){
 		
 		//render api

@@ -238,7 +238,7 @@ inline Matrix4 Matrix4::AxisAngleRotationMatrix(float angle, Vector3 axis) {
 	float c = cosf(angle); float s = sinf(angle); 
 	Vector3 temp = axis * (1.f - c);
 	
-	//TODO(Ma,delle) finish axis angle rotation matrix
+	//TODO(delle,Ma) finish axis angle rotation matrix
 	ASSERT(false, "not implemented yet");
 	Matrix4 temp2(0.f);
 	return temp2;

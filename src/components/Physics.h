@@ -33,7 +33,7 @@ struct Physics : public Component {
 	void AddForce(Physics* creator, Vector3 force);
 	
 	//if no creator, assume air friction; if creator, assume sliding friction
-	//TODO(Ph,delle,11/13/20) change air friction to calculate for shape of object
+	//TODO(11/13/20,Ph,delle) change air friction to calculate for shape of object
 	void AddFrictionForce(Physics* creator, float frictionCoef, float gravity = 9.81f);
 	
 	//changes velocity by adding an impulse to target, target also applies the impulse to creator

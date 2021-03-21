@@ -199,12 +199,12 @@ void Renderer_Vulkan::Cleanup() {
 	PRINTVK(1, "{-} Initializing Cleanup\n");
 	vkDeviceWaitIdle(device);
 	
-	//TODO(ReVu,delle) maybe add rendering cleanup, but maybe not
+	//TODO(delle,ReVu) maybe add rendering cleanup, but maybe not
 	//because OS will cleanup on program close and be faster at it
 	//so maybe only save changes to user settings
 	//NOTE but then again, it might allow for dynamically swapping renderers
 	
-	//TODO(ReOpVu,delle) save pipeline cache to disk on exit, and load on start (~20x creation speed)
+	//TODO( and load on start (~20x creation speed,ReOpVu,delle) save pipeline cache to disk on exit)
 }
 
 u32 Renderer_Vulkan::AddTriangle(Triangle* triangle){
@@ -307,7 +307,7 @@ u32 Renderer_Vulkan::LoadMesh(Mesh* m){
 			};
 			vkUpdateDescriptorSets(device, writeDescriptorSet.size(), writeDescriptorSet.data(), 0, nullptr);
 			
-			//TODO(ReVu,delle) specialization constants for materials here or in pipeline
+			//TODO(delle,ReVu) specialization constants for materials here or in pipeline
 			//see gltfscenerendering.cpp:575
 			
 			mat.id = u32(scene.materials.size());
@@ -361,7 +361,7 @@ void Renderer_Vulkan::UpdateMeshVisibility(u32 meshID, bool visible){
 
 u32 Renderer_Vulkan::LoadTexture(Texture texture){
 	PRINTVK(3, "{-}{-}{-} Loading Texture: " << texture.filename);
-	//TODO(OpReVu,delle) optimize checking if a texture was already loaded
+	//TODO(delle,OpReVu) optimize checking if a texture was already loaded
 	for(auto& tex : scene.textures){ if(strcmp(tex.filename, texture.filename) == 0){ return tex.id; } }
 	
 	TextureVk tex; 
@@ -396,7 +396,7 @@ u32 Renderer_Vulkan::LoadTexture(Texture texture){
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	samplerInfo.magFilter = VK_FILTER_LINEAR;
 	samplerInfo.minFilter = VK_FILTER_LINEAR;
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; //TODO(ReVu,delle) VK_SAMPLER_MIPMAP_MODE_NEAREST for more performance
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; //TODO(delle,ReVu) VK_SAMPLER_MIPMAP_MODE_NEAREST for more performance
 	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -507,8 +507,8 @@ void Renderer_Vulkan::LoadDefaultAssets(){
 	scene.materials.reserve(8);
 	//default flat shaded material
 	
-	//TODO(ReVu,delle) add box mesh, planarized box mesh
-	//TODO(ReVu,delle) add local axis, global axis, and grid 
+	//TODO(delle,ReVu) add box mesh, planarized box mesh
+	//TODO(delle,ReVu) add local axis, global axis, and grid 
 }
 
 //ref: gltfscenerendering.cpp:350
@@ -671,7 +671,7 @@ void Renderer_Vulkan::CreateLogicalDevice() {
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
 	
-	//TODO(ReVu,delle) add rendering options here
+	//TODO(delle,ReVu) add rendering options here
 	//enable poosible features
 	if(deviceFeatures.samplerAnisotropy){
 		enabledFeatures.samplerAnisotropy = VK_TRUE; //enable anistropic filtering
@@ -704,7 +704,7 @@ void Renderer_Vulkan::CreateLogicalDevice() {
 	vkGetDeviceQueue(device, physicalQueueFamilies.presentFamily.value(), 0, &presentQueue);
 }
 
-//TODO(ReVu,delle) find a better/more accurate way to do this, see gltfloading.cpp, line:592
+//TODO(delle,ReVu) find a better/more accurate way to do this, see gltfloading.cpp, line:592
 void Renderer_Vulkan::CreateDescriptorPool(){
 	PRINTVK(2, "{-}{-} Creating Descriptor Pool");
 	const int types = 11;
@@ -1282,7 +1282,7 @@ void Renderer_Vulkan::BuildCommandBuffers() {
 	const VkViewport viewport = vks::initializers::viewport((float)width, (float)height, 0.0f, 1.0f);
 	const VkRect2D scissor = vks::initializers::rect2D(width, height, 0, 0);
 	
-	//TODO(ReOpVu,delle) figure out why we are doing it for all frames
+	//TODO(delle,ReOpVu) figure out why we are doing it for all frames
 	for(int i = 0; i < imageCount; ++i){
 		renderPassInfo.framebuffer = frames[i].framebuffer;
 		ASSERTVK(vkBeginCommandBuffer(frames[i].commandBuffer, &cmdBufferInfo), "failed to begin recording command buffer");
@@ -1308,7 +1308,7 @@ void Renderer_Vulkan::BuildCommandBuffers() {
 }
 
 
-//TODO(ReOpVu,delle) maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
+//TODO(delle,ReOpVu) maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
 void Renderer_Vulkan::UpdateUniformBuffer(){
 	//PRINTVK(2, "{-}{-} Updating Uniform Buffer {-}{-}\n");
 	shaderData.values.time = time->totalTime;
@@ -1705,7 +1705,7 @@ VkCommandBuffer Renderer_Vulkan::beginSingleTimeCommands() {
 void Renderer_Vulkan::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
 	vkEndCommandBuffer(commandBuffer);
 	
-	//TODO(ReOpVu,delle) maybe add a fence to ensure the buffer has finished executing
+	//TODO(delle,ReOpVu) maybe add a fence to ensure the buffer has finished executing
 	//instead of waiting for queue to be idle, see: sascha/VulkanDevice.cpp:508
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1857,7 +1857,7 @@ void Renderer_Vulkan::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDevic
 	endSingleTimeCommands(commandBuffer);
 }
 
-//TODO(ReOp,delle) maybe optimize this by simply doing: &pipelines + shader*sizeof(pipelines.FLAT)
+//TODO(delle) maybe optimize this by simply doing: &pipelines + shader*sizeof(pipelines.FLAT,ReOp)
 VkPipeline Renderer_Vulkan::GetPipelineFromShader(u32 shader){
 	switch(shader){
 		case(Shader::FLAT):default: { return pipelines.FLAT;      };
@@ -1990,7 +1990,7 @@ inline VkDescriptorImageInfo SceneVk::getTextureDescriptorInfo(size_t index){
 	return textures[index].imageInfo;
 }
 
-//TODO(ReOp,delle) this got alot slower when i took it off SceneVk
+//TODO(delle,ReOp) this got alot slower when i took it off SceneVk
 void Renderer_Vulkan::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout){
 	// All vertices and indices are stored in single buffers, so we only need to bind once
 	VkDeviceSize offsets[1] = { 0 };
@@ -2011,7 +2011,7 @@ void Renderer_Vulkan::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipel
 					vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 					stats.drawnIndices += primitive.indexCount;
 					
-					//TODO(OpVu,delle) this is bad, fix it somehow
+					//TODO(delle,OpVu) this is bad, fix it somehow
 					if(settings.wireframe && material.pipeline != pipelines.WIREFRAME){
 						vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.WIREFRAME);
 						vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);

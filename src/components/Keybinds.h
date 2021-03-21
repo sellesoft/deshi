@@ -33,7 +33,7 @@ struct Keybinds : public Component {
 	
 	Keybinds(EntityAdmin* a);
 	
-	//Keybinds(file ...) {} //TODO(i,delle) look into saving/loading keybinds with a file
+	//Keybinds(file ...) {} //TODO(delle,i) look into saving/loading keybinds with a file
 	
 };
 

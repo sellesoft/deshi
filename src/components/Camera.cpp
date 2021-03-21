@@ -85,7 +85,7 @@ void Camera::Update() {
 	up = right.cross(forward).normalized();
 	
 	//update view matrix
-	//TODO(Op,delle) precalc this since we already get the direction vectors
+	//TODO(delle,Op) precalc this since we already get the direction vectors
 	viewMatrix = Math::LookAtMatrix(position, position+forward).Inverse();
 	
 	//update renderer camera properties

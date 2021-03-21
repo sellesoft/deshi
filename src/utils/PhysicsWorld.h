@@ -21,7 +21,7 @@ enum struct IntegrationMode {
 //	Vector3 rotAcceleration;
 //};
 
-//TODO(Ph,delle) look into maybe having physics here instead
+//TODO(delle,Ph) look into maybe having physics here instead
 
 struct PhysicsWorld {
 	//std::map<EntityID, PhysEntity> entityTuples;
@@ -36,7 +36,7 @@ struct PhysicsWorld {
 	float minRotVelocity = 1.f;
 
 	float gravity		= 9.81f;
-	float frictionAir	= 0.01f; //TODO(Ph,delle) this should depend on object shape
+	float frictionAir	= 0.01f; //TODO(delle,Ph) this should depend on object shape
 
 	PhysicsWorld() {
 		this->integrationMode	= IntegrationMode::EULER;

@@ -25,7 +25,7 @@ vec4 fc = gl_FragCoord;
 vec2 tc = inTexCoord;
 
 void main() {
-	//TODO(r,delle) pbr shading, see pbrtexture in saschawillems' stuff
+	//TODO(delle,r) pbr shading, see pbrtexture in saschawillems' stuff
 	//outColor = texture(albedoSampler, inTexCoord);
 
 	float pi = 3.14159265359;

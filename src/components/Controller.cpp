@@ -87,7 +87,7 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 		*/
 	}
 	if(!admin->IMGUI_MOUSE_CAPTURE){
-		//TODO(In,delle) change this so its dependent on game state or something (level editor vs gameplay)
+		//TODO(delle) change this so its dependent on game state or something (level editor vs gameplay,In)
 		if(input->MousePressed(MouseButton::MB_RIGHT)){
 			admin->ExecCommand("cursor_mode", "1");
 		}
