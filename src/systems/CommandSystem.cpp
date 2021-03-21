@@ -300,8 +300,27 @@ inline void AddRenderCommands(EntityAdmin* admin) {
 		}, "load_obj", "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 }
 
-inline void HandleRenderInputs(EntityAdmin* admin, Input* input, Keybinds* binds) {
+inline void HandleRenderInputs(EntityAdmin* admin) {
+	Renderer* renderer = admin->renderer;
+	Input* input = admin->input;
+	Keybinds* binds = admin->currentKeybinds;
 	
+	//reload shaders
+	if(DengInput->KeyPressed(Key::F5)){
+		renderer->ReloadShaders();
+	}
+}
+
+////////////////////////////////////
+//// camera commands and inputs ////
+////////////////////////////////////
+
+inline void AddCameraCommands(EntityAdmin* admin){
+	
+	
+	NEWCOMMAND("camera_info", "Prints camera variables", {
+				   return "";
+			   });
 }
 
 inline void AddConsoleCommands(EntityAdmin* admin) {
@@ -684,11 +703,11 @@ inline void AddSelectedEntityCommands(EntityAdmin* admin) {
 												   else {
 													   if (DengInput->selectedEntity) {
 														   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
-															   Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->currentCamera->projectionMatrix,
-																								 admin->currentCamera->viewMatrix, DengWindow->dimensions);
+															   Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
+																								 admin->mainCamera->viewMatrix, DengWindow->dimensions);
 															   //cant remember what this is doing and will fix later
-															   //Vector3 clickPos = Math::ScreenToWorld(DengInput->mouseClickPos, admin->currentCamera->projectionMatrix,
-															   //admin->currentCamera->viewMatrix, DengWindow->dimensions);
+															   //Vector3 clickPos = Math::ScreenToWorld(DengInput->mouseClickPos, admin->mainCamera->projectionMatrix,
+															   //admin->mainCamera->viewMatrix, DengWindow->dimensions);
 															   //TODO(pi,delle) test that you can add force to a selected entity
 															   //Physics::AddForce(nullptr, p, (pos - clickPos).normalized() * 5);
 														   }
@@ -778,7 +797,7 @@ inline void AddWindowCommands(EntityAdmin* admin){
 				   }
 			   });
 	
-	NEWCOMMAND("window_info", "window_info; Prints window variables", {
+	NEWCOMMAND("window_info", "Prints window variables", {
 				   Window* w = admin->window;
 				   std::string dispMode;
 				   switch(w->displayMode){
@@ -831,6 +850,7 @@ void CommandSystem::Init() {
 	
 	AddSpawnCommands(admin);
 	AddRenderCommands(admin);
+	AddCameraCommands(admin);
 	AddConsoleCommands(admin);
 	AddSelectedEntityCommands(admin);
 	AddWindowCommands(admin);
@@ -838,9 +858,8 @@ void CommandSystem::Init() {
 
 void CommandSystem::Update() {
 	Input* input = admin->input;
-	Keybinds* binds = admin->currentKeybinds;
 	
 	HandleMouseInputs(admin, input);
 	HandleSelectedEntityInputs(admin, input);
-	HandleRenderInputs(admin, input, binds);
+	HandleRenderInputs(admin);
 }

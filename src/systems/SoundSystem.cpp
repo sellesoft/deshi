@@ -245,10 +245,9 @@ void SoundSystem::Init() {
 }
 
 void SoundSystem::Update() {
+	Camera* c = admin->mainCamera;
 	
-	Camera* c = admin->currentCamera;
-	
-	Vector3 ld = c->lookDir;
+	Vector3 ld = c->forward;
 	Vector3 up = c->up;
 	ALfloat listenerOri[] = { ld.x, ld.z, ld.y, up.x, up.z, up.y };
 	//set OpenAL's listener to match our camera

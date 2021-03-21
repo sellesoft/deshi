@@ -535,12 +535,10 @@ namespace Math {
 		Vector3 newUp = newRight.cross(newFor); 
 		
 		//make look-at matrix
-		return Matrix4(
-					   newRight.x, -newRight.y, newRight.z, 0,
-					   newUp.x,	newUp.y,	newUp.z,	0,
-					   newFor.x,	-newFor.y,	newFor.z,	0,
-					   pos.x,		pos.y,		pos.z,		1
-					   );
+		return Matrix4(newRight.x, -newRight.y, newRight.z, 0,
+					   newUp.x,    newUp.y,     newUp.z,    0,
+					   newFor.x,   -newFor.y,   newFor.z,   0,
+					   pos.x,      pos.y,       pos.z,      1);
 	}
 	
 	//this ones for getting the up vector back for sound orientation

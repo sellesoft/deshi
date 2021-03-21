@@ -24,7 +24,6 @@ void check_vk_result(VkResult err){
 }
 
 void deshiImGui::Init(Renderer* renderer){
-	PRINT("{-}{-} Initializing Imgui");
 	//Setup Dear ImGui context
 	ImGui::CreateContext();
 	

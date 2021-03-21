@@ -71,8 +71,8 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r) {
 	AddSystem(new SoundSystem());
 	
 	//singleton initialization
-	currentCamera = new Camera(this);
-	currentCamera->layer_index = freeCompLayers[currentCamera->layer].add(currentCamera);
+	mainCamera = new Camera(this);
+	mainCamera->layer_index = freeCompLayers[mainCamera->layer].add(mainCamera);
 	currentKeybinds = new Keybinds(this);
 	controller = new Controller(this);
 	tempCanvas = new Canvas();
@@ -88,7 +88,7 @@ void EntityAdmin::Cleanup() {
 	
 	//clean up singletons
 	delete world;
-	delete currentCamera;
+	delete mainCamera;
 	delete currentKeybinds;
 	delete controller;
 	delete tempCanvas;
@@ -119,9 +119,8 @@ void EntityAdmin::Update() {
 	if (!pause_sound && !paused)   systems[5]->Update(); //Sound System
 	if (!pause_last && !paused)    UpdateLayer(freeCompLayers[CL6_LAST]);
 
-	//NOTE temporary
-	controller->Update();
-	currentCamera->Update();
+
+			
 	for(Component* c : components){
 		c->Update();
 	}
