@@ -4,7 +4,7 @@
 #include "../core.h"
 
 Camera::Camera(EntityAdmin* a) : Component(a) {
-	nearZ = 0.1f;
+	nearZ = 0.01f;
 	farZ  = 1000.1f;
 	fieldOfView = 90.f;
 	

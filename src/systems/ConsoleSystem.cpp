@@ -8,6 +8,11 @@
 #include <time.h>
 #include <iomanip>
 #include <sstream>
+#include <ctime>
+
+#include <filesystem>
+
+#include "time.h"
 
 #include "../external/imgui/imgui_impl_vulkan.h"
 #include "../external/imgui/imgui_impl_glfw.h"
@@ -62,6 +67,10 @@ void AddLog(std::string input, Console* c) {
 			//if we are, push the actual text with its color into text vector
 			c->buffer.push_back(std::pair<std::string, Color>(m[2].str(), colstrmap.at(m[1])));
 			buffersize += m[2].str().size();
+			if (colstrmap.at(m[1]) == Color::RED) {
+				locadmin->cons_error_warn = true;
+				locadmin->last_error = m[2].str();
+			}
 		}
 		else {
 			//if we arent then just push the line into text vector
@@ -387,31 +396,35 @@ void ConsoleSystem::PushConsole(std::string s) {
 }
 
 //flushes the buffer to a file once it reaches a certain size
-void FlushBuffer() {
+void FlushBuffer(EntityAdmin* admin) {
 	std::string output = "";
 	for (auto a : loccon->buffer) {
 		output += a.first;
 	}
+
+	if (!std::filesystem::is_directory("logs")) {
+		std::filesystem::create_directory("logs");
+	}
 	
-	//https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
-	using namespace std::chrono;
+
+	static std::string filename = TOSTRING("logs/deshiLog_", "-", DengTime->month, "-", DengTime->day, "-", DengTime->year, "_",  DengTime->hour, ".", DengTime->minute, ".", DengTime->second, ".txt");
+	static bool session = false;
+
+	std::ofstream file;
+
+	//if start of session make new file
+	if (!session) {
+		
+		file.open(filename);
+		file << TOSTRING("Deshi Console Log ", DengTime->month, "/", DengTime->day, "/", DengTime->year, " ", DengTime->hour, ":", DengTime->minute, ":", DengTime->second) << std::endl;
+		file << "\n" << output;
+		session = true;
 	
-	//get current time
-	auto now = system_clock::now();
-	
-	//convert to std::time_t so we can convert to std::tm
-	auto timer = system_clock::to_time_t(now);
-	
-	//convert to broken time
-	std::tm bt = *std::localtime(&timer);
-	
-	std::ostringstream oss;
-	
-	oss << std::put_time(&bt, "%H:%M:%S");
-	
-	//std::ofstream file(TOSTRING("log/deshi_log_", oss.str()));
-	
-	//file << "fuck you";
+	}
+	else {
+		file.open(filename, std::fstream::app);
+		file << output;
+	}
 	
 }
 
@@ -438,8 +451,11 @@ void ConsoleSystem::Update() {
 	locadmin = admin;
 	loccon = admin->console;
 	
-	if (buffersize >= 200) {
-		FlushBuffer();
+	if (buffersize >= 120000) {
+		FlushBuffer(admin);
 		admin->console->buffer.clear();
+		buffersize = 0;
 	}
+
+	if (dispcon && admin->cons_error_warn) admin->cons_error_warn = false;
 }

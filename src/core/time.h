@@ -24,6 +24,22 @@ struct Time{
 	
 	std::time_t end_time;
 	char datentime[30] = {};
+
+	std::time_t now;
+
+	std::tm* ltm;
+
+	int year;
+	int month;
+	int day;
+	std::string weekday;//probably should use like char array or something idk
+
+	int hour;
+	int minute;
+	int second;
+
+
+
 	
 	std::chrono::time_point<std::chrono::system_clock> tp1, tp2;
 	
@@ -68,6 +84,43 @@ struct Time{
 			frame = false;
 		}else{
 			deltaTime = 0;
+		}
+
+		//TODO(o, sushi) make it so things that dont update frequently like date stuff only updates when the time changes over to the next day n stuff 
+		now = time(0);
+
+		ltm = localtime(&now);
+
+		year = ltm->tm_year + 1900;
+		month = ltm->tm_mon + 1;
+		day = ltm->tm_mday;
+
+		hour = ltm->tm_hour + 1;
+		minute = ltm->tm_min;
+		second = ltm->tm_sec;
+
+		switch (ltm->tm_wday) {
+		case 0:
+			weekday = "Mon";
+			break;
+		case 1:
+			weekday = "Tue";
+			break;
+		case 2:
+			weekday = "Wed";
+			break;
+		case 3:
+			weekday = "Thu";
+			break;
+		case 4:
+			weekday = "Fri";
+			break;
+		case 5:
+			weekday = "Sat";
+			break;
+		case 6:
+			weekday = "Sun";
+			break;
 		}
 	}
 };

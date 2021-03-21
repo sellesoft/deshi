@@ -64,9 +64,14 @@ struct EntityAdmin {
 	bool pause_sound = false;
 	bool pause_last = false;
 
+	//imgui capture flags
 	bool IMGUI_KEY_CAPTURE = false;
 	bool IMGUI_MOUSE_CAPTURE = false;
 	
+	//console error warn flag and last error
+	bool cons_error_warn = false;
+	std::string last_error;
+
 	void Init(Input* i, Window* w, Time* t, Renderer* renderer);
 	void Cleanup();
 	

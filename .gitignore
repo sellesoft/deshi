@@ -363,3 +363,5 @@ deshi_project_suppressions.cfg
 *.4coder
 *.spv
 misc/4coder.bat
+
+/logs

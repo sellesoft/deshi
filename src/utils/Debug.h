@@ -8,9 +8,11 @@
 #include <chrono>
 #include <string>
 #include <vector>
+#include <sstream>
 #include <cstdarg>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 
 
 #define LOG(...)     admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
@@ -94,8 +96,8 @@ struct has_str_method {
 
 namespace Debug {
 	
-	/// Primarily for outputting to ingame console, but can return a string from any object that is a c++ number
-	/// or any of our classes (or yours :) ) that has a .str() member
+	//// Primarily for outputting to ingame console, but can return a string from any object that is a c++ number
+	//// or any of our classes (or yours :) ) that has a .str() member
 	
 	//returns the string for in engine printing
 	static std::string ToString(const char* str) { return std::string(str); }
@@ -118,4 +120,3 @@ namespace Debug {
 		return str;
 	}
 };
-
