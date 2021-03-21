@@ -39,7 +39,7 @@ const bool enableValidationLayers = true;
 
 #define ASSERTVK(func, message) ASSERT((func) == VK_SUCCESS, message);
 
-#define LOGGING_LEVEL 2
+#define LOGGING_LEVEL 3
 #if LOGGING_LEVEL == 0
 #define PRINTVK(level, message) (void)0
 #else
@@ -108,6 +108,9 @@ void Renderer_Vulkan::Render() {
 		remakeWindow = false;
 	}
 	
+	//reset stats
+	stats = {};
+	
 	vkWaitForFences(device, 1, &fencesInFlight[frameIndex], VK_TRUE, UINT64_MAX);
 	VkSemaphore image_sema  = semaphores[frameIndex].imageAcquired;
 	VkSemaphore render_sema = semaphores[frameIndex].renderComplete;
@@ -130,12 +133,9 @@ void Renderer_Vulkan::Render() {
 	imagesInFlight[imageIndex] = fencesInFlight[frameIndex];
 	vkResetFences(device, 1, &fencesInFlight[frameIndex]);
 	
-	//render imgui stuff
+	//render stuff
 	ImGui::Render();
-	ImDrawData* imDrawData = ImGui::GetDrawData();
-	if(imDrawData){
-		BuildCommandBuffers();
-	}
+	BuildCommandBuffers();
 	
 	//update uniform buffers
 	UpdateUniformBuffer();
@@ -179,6 +179,12 @@ void Renderer_Vulkan::Render() {
 	//iterate the frame index
 	frameIndex = (frameIndex + 1) % MAX_FRAMES; //loops back to zero after reaching max_frames
 	ASSERTVK(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
+	
+	//update stats
+	stats.drawnTriangles = stats.drawnIndices / 3;
+	stats.totalVertices = u32(scene.vertexBuffer.size());
+	stats.totalIndices = u32(scene.indexBuffer.size());
+	stats.totalTriangles = stats.totalIndices / 3;
 	
 	if(remakePipelines){ 
 		CreatePipelines(); 
@@ -327,14 +333,6 @@ void Renderer_Vulkan::UnloadMesh(u32 meshID){
 	PRINT("Not implemented yet");
 }
 
-void Renderer_Vulkan::ApplyTextureToMesh(u32 textureID, u32 meshID){
-	PRINT("Not implemented yet");
-}
-
-void Renderer_Vulkan::RemoveTextureFromMesh(u32 textureID, u32 meshID){
-	PRINT("Not implemented yet");
-}
-
 void Renderer_Vulkan::UpdateMeshMatrix(u32 meshID, Matrix4 matrix){
 	if(meshID < scene.meshes.size()){
 		scene.meshes[meshID].modelMatrix = glm::make_mat4(matrix.data);
@@ -347,10 +345,17 @@ void Renderer_Vulkan::TransformMeshMatrix(u32 meshID, Matrix4 transform){
 	}
 }
 
-void Renderer_Vulkan::UpdateMeshBatchShader(u32 meshID, u32 batchIndex, u32 shader){
-	if(meshID < scene.meshes.size() && batchIndex < scene.meshes[meshID].primitives.size()){
-		u32 matID = scene.meshes[meshID].primitives[batchIndex].materialIndex;
-		scene.materials[matID].pipeline = GetPipelineFromShader(shader);
+void Renderer_Vulkan::UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID){
+	if(meshID < scene.meshes.size() && batchIndex < scene.meshes[meshID].primitives.size() && matID < scene.materials.size()){
+		scene.meshes[meshID].primitives[batchIndex].materialIndex = matID;
+	}
+}
+
+void Renderer_Vulkan::UpdateMeshVisibility(u32 meshID, bool visible){
+	if(meshID == -1){
+		for(auto& mesh : scene.meshes){ mesh.visible = visible; }
+	}else if(meshID < scene.meshes.size()){
+		scene.meshes[meshID].visible = visible;
 	}
 }
 
@@ -391,7 +396,7 @@ u32 Renderer_Vulkan::LoadTexture(Texture texture){
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	samplerInfo.magFilter = VK_FILTER_LINEAR;
 	samplerInfo.minFilter = VK_FILTER_LINEAR;
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; //VK_SAMPLER_MIPMAP_MODE_NEAREST for more performance
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; //TODO(r,delle) VK_SAMPLER_MIPMAP_MODE_NEAREST for more performance
 	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -405,7 +410,7 @@ u32 Renderer_Vulkan::LoadTexture(Texture texture){
 	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 	samplerInfo.mipLodBias = 0.0f;
 	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = static_cast<float>(tex.mipLevels);
+	samplerInfo.maxLod = f32(tex.mipLevels);
 	ASSERTVK(vkCreateSampler(device, &samplerInfo, nullptr, &tex.sampler), "failed to create texture sampler");
 	
 	//create image view
@@ -427,6 +432,69 @@ void Renderer_Vulkan::UnloadTexture(u32 textureID){
 	PRINT("Not implemented yet");
 }
 
+std::string Renderer_Vulkan::ListTextures(){
+	std::string out = "[c:yellow]ID  Filename  Width  Height  Depth  Type[c]\n";
+	for(auto& tex : scene.textures){
+		if(tex.id < 10){
+			out += TOSTRING(" ", tex.id, "  ", tex.filename, "  ", tex.width, "  ", tex.height, "  ", tex.channels, "  ", tex.type, "\n");
+		}else{
+			out += TOSTRING(tex.id, "  ", tex.filename, "  ", tex.width, "  ", tex.height, "  ", tex.channels, "  ", tex.type, "\n");
+		}
+	}
+	return out;
+}
+
+u32 Renderer_Vulkan::CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID){
+	PRINTVK(3, "{-}{-}{-} Creating material");
+	MaterialVk mat; mat.id = u32(scene.meshes.size());
+	mat.shader = shader; mat.pipeline = GetPipelineFromShader(shader);
+	mat.albedoTextureIndex = albedoTextureID; mat.normalTextureIndex = normalTextureID;
+	mat.specularTextureIndex = specTextureID; mat.lightTextureIndex = lightTextureID;
+	
+	//allocate and write descriptor set for material
+	VkDescriptorSetAllocateInfo allocInfo = vks::initializers::descriptorSetAllocateInfo(descriptorPool, &descriptorSetLayouts.textures, 1);
+	ASSERTVK(vkAllocateDescriptorSets(device, &allocInfo, &mat.descriptorSet), "failed to allocate materials descriptor sets");
+	
+	std::vector<VkWriteDescriptorSet> writeDescriptorSet = {
+		vks::initializers::writeDescriptorSet(mat.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &scene.getTextureDescriptorInfo(mat.albedoTextureIndex)),
+		vks::initializers::writeDescriptorSet(mat.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &scene.getTextureDescriptorInfo(mat.normalTextureIndex)),
+		vks::initializers::writeDescriptorSet(mat.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &scene.getTextureDescriptorInfo(mat.specularTextureIndex)),
+		vks::initializers::writeDescriptorSet(mat.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &scene.getTextureDescriptorInfo(mat.lightTextureIndex)),
+	};
+	vkUpdateDescriptorSets(device, writeDescriptorSet.size(), writeDescriptorSet.data(), 0, nullptr);
+	
+	//add to scene
+	scene.materials.push_back(mat);
+	return mat.id;
+}
+
+void Renderer_Vulkan::UpdateMaterialTexture(u32 matID, u32 texSlot, u32 texID){
+	if(matID < scene.materials.size() && texID < scene.textures.size()){
+		switch(texSlot){
+			case(0):{ scene.materials[matID].albedoTextureIndex = texID; }
+			case(1):{ scene.materials[matID].normalTextureIndex = texID; }
+			case(2):{ scene.materials[matID].specularTextureIndex = texID; }
+			case(3):{ scene.materials[matID].lightTextureIndex = texID; }
+			default:{return;}
+		}
+		std::vector<VkWriteDescriptorSet> writeDescriptorSet = {
+			vks::initializers::writeDescriptorSet(scene.materials[matID].descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &scene.getTextureDescriptorInfo(scene.materials[matID].albedoTextureIndex)),
+			vks::initializers::writeDescriptorSet(scene.materials[matID].descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &scene.getTextureDescriptorInfo(scene.materials[matID].normalTextureIndex)),
+			vks::initializers::writeDescriptorSet(scene.materials[matID].descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &scene.getTextureDescriptorInfo(scene.materials[matID].specularTextureIndex)),
+			vks::initializers::writeDescriptorSet(scene.materials[matID].descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &scene.getTextureDescriptorInfo(scene.materials[matID].lightTextureIndex)),
+		};
+		vkUpdateDescriptorSets(device, writeDescriptorSet.size(), writeDescriptorSet.data(), 0, nullptr);
+	}
+}
+
+void Renderer_Vulkan::UpdateMaterialShader(u32 matID, u32 shader){
+	if(matID == 0xFFFFFFFF){
+		for(auto& mat : scene.materials){ mat.pipeline = GetPipelineFromShader(shader); }
+	}else if(matID < scene.materials.size()){
+		scene.materials[matID].pipeline = GetPipelineFromShader(shader);
+	}
+}
+
 void Renderer_Vulkan::LoadDefaultAssets(){
 	PRINTVK(2, "{-}{-} Loading default assets");
 	//load default textures
@@ -435,6 +503,9 @@ void Renderer_Vulkan::LoadDefaultAssets(){
 	Texture defaultTexture("default1024.png"); LoadTexture(defaultTexture);
 	Texture blackTexture  ("black1024.png");   LoadTexture(blackTexture);
 	Texture whiteTexture  ("white1024.png");   LoadTexture(whiteTexture);
+	
+	scene.materials.reserve(8);
+	//default flat shaded material
 	
 	//TODO(r,delle) add box mesh, planarized box mesh
 	//TODO(r,delle) add local axis, global axis, and grid 
@@ -499,6 +570,10 @@ void Renderer_Vulkan::UpdateCameraProjectionMatrix(Matrix4 m){
 void Renderer_Vulkan::ReloadShaders() {
 	remakePipelines = true;
 }
+
+void Renderer_Vulkan::UpdateDebugOptions(bool wireframe, bool globalAxis) {
+	settings.wireframe = wireframe; settings.globalAxis = globalAxis;
+};
 
 //////////////////////////////////
 //// initialization functions ////
@@ -993,39 +1068,116 @@ void Renderer_Vulkan::CreatePipelines(){
 	shaderModules.clear(); shaderModules.reserve(oldCount);
 	
 	//determines how to group vertices together
-	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = vks::initializers::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+	//https://renderdoc.org/vkspec_chunked/chap22.html#VkPipelineInputAssemblyStateCreateInfo
+	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
+	inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssemblyState.flags = 0;
+	inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; 
+	inputAssemblyState.primitiveRestartEnable = VK_FALSE;
+	
 	//how to draw/cull/depth things
-	VkPipelineRasterizationStateCreateInfo rasterizationState = vks::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE, 0);
-	//VkPipelineRasterizationStateCreateInfo rasterizationState = vks::initializers::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
+	//https://renderdoc.org/vkspec_chunked/chap28.html#VkPipelineRasterizationStateCreateInfo
+	VkPipelineRasterizationStateCreateInfo rasterizationState{};
+	rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizationState.flags = 0;
+	rasterizationState.depthClampEnable = VK_FALSE; //look into for shadowmapping
+	rasterizationState.rasterizerDiscardEnable = VK_FALSE;
+	rasterizationState.polygonMode = VK_POLYGON_MODE_FILL; //draw mode: fill, wireframe, vertices
+	rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizationState.frontFace = VK_FRONT_FACE_CLOCKWISE; //VK_FRONT_FACE_COUNTER_CLOCKWISE
+	rasterizationState.depthBiasEnable = VK_FALSE;
+	rasterizationState.depthBiasConstantFactor = 0.0f;
+	rasterizationState.depthBiasClamp = 0.0f;
+	rasterizationState.depthBiasSlopeFactor = 0.0f;
+	rasterizationState.lineWidth = 1.0f;
 	
-	//how to combine colors
-	VkPipelineColorBlendAttachmentState colorBlendAttachmentState = vks::initializers::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
-	//options to allow for blending based on alpha
-	//colorBlendAttachmentState.blendEnable = VK_TRUE; 
-	//colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	//colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	//how to combine colors; alpha: options to allow alpha blending
+	//https://renderdoc.org/vkspec_chunked/chap30.html#VkPipelineColorBlendAttachmentState
+	VkPipelineColorBlendAttachmentState colorBlendAttachmentState{};
+	colorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	colorBlendAttachmentState.blendEnable = VK_FALSE; //alpha: VK_TRUE
+	colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; //aplha: VK_BLEND_FACTOR_SRC_ALPHA
+	colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; //alpha: VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA
+	colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
 	
-	VkPipelineColorBlendStateCreateInfo colorBlendState = vks::initializers::pipelineColorBlendStateCreateInfo(1, &colorBlendAttachmentState);;
+	//container struct for color blend attachments with overall blending constants
+	//https://renderdoc.org/vkspec_chunked/chap30.html#VkPipelineColorBlendStateCreateInfo
+	VkPipelineColorBlendStateCreateInfo colorBlendState{};
+	colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlendState.flags = 0;
+	colorBlendState.logicOpEnable = VK_FALSE;
+	colorBlendState.logicOp = VK_LOGIC_OP_COPY;
+	colorBlendState.attachmentCount = 1;
+	colorBlendState.pAttachments = &colorBlendAttachmentState;
+	colorBlendState.blendConstants[0] = 0.0f;
+	colorBlendState.blendConstants[1] = 0.0f;
+	colorBlendState.blendConstants[2] = 0.0f;
+	colorBlendState.blendConstants[3] = 0.0f;
 	
 	//depth testing and discarding
-	VkPipelineDepthStencilStateCreateInfo depthStencilState = vks::initializers::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
+	//https://renderdoc.org/vkspec_chunked/chap29.html#VkPipelineDepthStencilStateCreateInfo
+	VkPipelineDepthStencilStateCreateInfo depthStencilState{};
+	depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencilState.flags = 0;
+	depthStencilState.depthTestEnable = VK_TRUE;
+	depthStencilState.depthWriteEnable = VK_TRUE;
+	depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS;
+	depthStencilState.depthBoundsTestEnable = VK_FALSE;
+	depthStencilState.stencilTestEnable = VK_FALSE;
+	depthStencilState.minDepthBounds = 0.0f;
+	depthStencilState.maxDepthBounds = 1.0f;
+	depthStencilState.stencilTestEnable = VK_FALSE;
+	depthStencilState.front = {};
+	depthStencilState.back = {};
 	
-	//how many viewports there are
-	VkPipelineViewportStateCreateInfo viewportState = vks::initializers::pipelineViewportStateCreateInfo(1, 1, 0);
+	//container for viewports and scissors
+	//https://renderdoc.org/vkspec_chunked/chap27.html#VkPipelineViewportStateCreateInfo
+	VkPipelineViewportStateCreateInfo viewportState{};
+	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportState.flags = 0;
+	viewportState.viewportCount = 1;
+	viewportState.pViewports = nullptr;
+	viewportState.scissorCount = 1;
+	viewportState.pScissors = nullptr;
 	
 	//useful for multisample anti-aliasing (MSAA)
-	VkPipelineMultisampleStateCreateInfo multisampleState = vks::initializers::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT, 0);
-	multisampleState.rasterizationSamples = msaaSamples; //use VK_SAMPLE_COUNT_1_BIT to disable anti-aliasing
-	multisampleState.sampleShadingEnable = VK_TRUE; //enable sample shading in the pipeline, VK_FALSE to enable
+	//https://renderdoc.org/vkspec_chunked/chap28.html#VkPipelineMultisampleStateCreateInfo
+	VkPipelineMultisampleStateCreateInfo multisampleState{};
+	multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampleState.flags = 0;
+	multisampleState.rasterizationSamples = msaaSamples; //VK_SAMPLE_COUNT_1_BIT to disable anti-aliasing
+	multisampleState.sampleShadingEnable = VK_TRUE; //enable sample shading in the pipeline, VK_FALSE to disable
 	multisampleState.minSampleShading = .2f; //min fraction for sample shading; closer to one is smoother
+	multisampleState.pSampleMask = nullptr;
+	multisampleState.alphaToCoverageEnable = VK_FALSE;
+	multisampleState.alphaToOneEnable = VK_FALSE;
 	
-	std::vector<VkDynamicState> dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR/*, VK_DYNAMIC_STATE_LINE_WIDTH*/ };
-	VkPipelineDynamicStateCreateInfo dynamicState = vks::initializers::pipelineDynamicStateCreateInfo(dynamicStateEnables.data(), (u32)dynamicStateEnables.size(), 0);
+	//dynamic states that can vary in the command buffer
+	std::vector<VkDynamicState> dynamicStates = {
+		VK_DYNAMIC_STATE_VIEWPORT, 
+		VK_DYNAMIC_STATE_SCISSOR, 
+		/*VK_DYNAMIC_STATE_LINE_WIDTH*/ 
+	};
+	VkPipelineDynamicStateCreateInfo dynamicState{};
+	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicState.dynamicStateCount = u32(dynamicStates.size());
+	dynamicState.pDynamicStates = dynamicStates.data();
 	
 	//vertex input flow control
+	//https://renderdoc.org/vkspec_chunked/chap23.html#VkPipelineVertexInputStateCreateInfo
 	std::vector<VkVertexInputBindingDescription> vertexInputBindings = VertexVk::getBindingDescriptions();
 	std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = VertexVk::getAttributeDescriptions();
-	VkPipelineVertexInputStateCreateInfo vertexInputState = vks::initializers::pipelineVertexInputStateCreateInfo(vertexInputBindings, vertexInputAttributes);
+	VkPipelineVertexInputStateCreateInfo vertexInputState{};
+	vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputState.flags = 0;
+	vertexInputState.vertexBindingDescriptionCount = u32(vertexInputBindings.size());
+	vertexInputState.pVertexBindingDescriptions = vertexInputBindings.data();
+	vertexInputState.vertexAttributeDescriptionCount = u32(vertexInputAttributes.size());
+	vertexInputState.pVertexAttributeDescriptions = vertexInputAttributes.data();
+	
 	
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
 	
@@ -1063,11 +1215,6 @@ void Renderer_Vulkan::CreatePipelines(){
 	pipelineInfo.basePipelineHandle = pipelines.FLAT;
 	pipelineInfo.basePipelineIndex = -1; //can either use handle or index, not both (section 9.5 of vulkan spec)
 	
-	//lavalamp
-	shaderStages[0] = loadShader("lavalamp.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = loadShader("lavalamp.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.LAVALAMP), "failed to create lavalamp graphics pipeline");
-	
 	//phong
 	shaderStages[0] = loadShader("phong.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 	shaderStages[1] = loadShader("phong.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -1083,14 +1230,38 @@ void Renderer_Vulkan::CreatePipelines(){
 	shaderStages[1] = loadShader("pbr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.PBR), "failed to create pbr graphics pipeline");
 	
-	//wireframe pipeline
+	//wireframe
 	if(deviceFeatures.fillModeNonSolid){
 		rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
+		rasterizationState.cullMode = VK_CULL_MODE_NONE;
+		depthStencilState.depthTestEnable = VK_FALSE;
 		
 		shaderStages[0] = loadShader("wireframe.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("wireframe.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.WIREFRAME), "failed to create wireframe graphics pipeline");
+		rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+		depthStencilState.depthTestEnable = VK_TRUE;
 	}
+	
+	//lavalamp
+	shaderStages[0] = loadShader("lavalamp.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = loadShader("lavalamp.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.LAVALAMP), "failed to create lavalamp graphics pipeline");
+	
+	//testing shaders //NOTE(delle) testing shaders should be removed on release
+	shaderStages[0] = loadShader("testing0.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = loadShader("testing0.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.TESTING0), "failed to create testing0 graphics pipeline");
+	shaderStages[0] = loadShader("testing1.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = loadShader("testing1.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.TESTING1), "failed to create testing1 graphics pipeline");
+	shaderStages[0] = loadShader("testing2.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = loadShader("testing2.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.TESTING2), "failed to create testing2 graphics pipeline");
+	shaderStages[0] = loadShader("testing3.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = loadShader("testing3.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.TESTING3), "failed to create testing3 graphics pipeline");
 }
 
 void Renderer_Vulkan::BuildCommandBuffers() {
@@ -1111,6 +1282,7 @@ void Renderer_Vulkan::BuildCommandBuffers() {
 	const VkViewport viewport = vks::initializers::viewport((float)width, (float)height, 0.0f, 1.0f);
 	const VkRect2D scissor = vks::initializers::rect2D(width, height, 0, 0);
 	
+	//TODO(ro,delle) figure out why we are doing it for all frames
 	for(int i = 0; i < imageCount; ++i){
 		renderPassInfo.framebuffer = frames[i].framebuffer;
 		ASSERTVK(vkBeginCommandBuffer(frames[i].commandBuffer, &cmdBufferInfo), "failed to begin recording command buffer");
@@ -1121,7 +1293,7 @@ void Renderer_Vulkan::BuildCommandBuffers() {
 		vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &scene.descriptorSet, 0, nullptr);
 		////draw stuff below here////
 		
-		scene.Draw(frames[i].commandBuffer, pipelineLayout);
+		Draw(frames[i].commandBuffer, pipelineLayout);
 		
 		//draw imgui stuff
 		ImDrawData* imDrawData = ImGui::GetDrawData();
@@ -1694,6 +1866,10 @@ VkPipeline Renderer_Vulkan::GetPipelineFromShader(u32 shader){
 		case(Shader::PBR):          { return pipelines.PBR;       };
 		case(Shader::WIREFRAME):    { return pipelines.WIREFRAME; };
 		case(Shader::LAVALAMP):     { return pipelines.LAVALAMP;  };
+		case(Shader::TESTING0):     { return pipelines.TESTING0;  };
+		case(Shader::TESTING1):     { return pipelines.TESTING1;  };
+		case(Shader::TESTING2):     { return pipelines.TESTING2;  };
+		case(Shader::TESTING3):     { return pipelines.TESTING3;  };
 	}
 }
 
@@ -1814,24 +1990,33 @@ inline VkDescriptorImageInfo SceneVk::getTextureDescriptorInfo(size_t index){
 	return textures[index].imageInfo;
 }
 
-void SceneVk::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout){
+//TODO(ro,delle) this got alot slower when i took it off SceneVk
+void Renderer_Vulkan::Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout){
 	// All vertices and indices are stored in single buffers, so we only need to bind once
 	VkDeviceSize offsets[1] = { 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertices.buffer, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &scene.vertices.buffer, offsets);
+	vkCmdBindIndexBuffer(commandBuffer, scene.indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 	
-	for(MeshVk& mesh : meshes){
+	for(MeshVk& mesh : scene.meshes){
 		if(mesh.visible && mesh.primitives.size() > 0){
 			//push the mesh's model matrix to the vertex shader
 			vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mesh.modelMatrix);
 			
 			for (PrimitiveVk& primitive : mesh.primitives) {
 				if (primitive.indexCount > 0) {
-					MaterialVk& material = materials[primitive.materialIndex];
+					MaterialVk& material = scene.materials[primitive.materialIndex];
 					// Bind the pipeline for the primitive's material
 					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material.pipeline);
 					vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material.descriptorSet, 0, nullptr);
 					vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+					stats.drawnIndices += primitive.indexCount;
+					
+					//TODO(o,delle) this is bad, fix it somehow
+					if(settings.wireframe && material.pipeline != pipelines.WIREFRAME){
+						vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.WIREFRAME);
+						vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+						stats.drawnIndices += primitive.indexCount;
+					}
 				}
 			}
 		}

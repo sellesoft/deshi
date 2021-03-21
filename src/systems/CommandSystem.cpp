@@ -26,6 +26,7 @@
 //this is repetitive because it has to capture 3 different groups in the same way
 #define VecNumMatch std::regex("[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?")
 
+//TODO(c,delle) update this to have a try/catch built in
 #define NEWCOMMAND(name, desc, func) admin->commands[name] =\
 new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string func, name, desc);
 
@@ -157,38 +158,103 @@ inline void AddSpawnCommands(EntityAdmin* admin) {
 ////////////////////////////////////
 
 inline void AddRenderCommands(EntityAdmin* admin) {
+	NEWCOMMAND("render_stats", "Lists different rendering stats for the previous frame", {
+				   //TODO(delle) this
+				   return "";
+			   });
+	
+	NEWCOMMAND("render_options", "render_options <wireframe:Bool>", {
+				   if(args.size() > 0){
+					   try{
+						   admin->renderer->settings.wireframe = std::stoi(args[0]);
+						   return (admin->renderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
+					   }catch(...){
+						   return "render_options <wireframe:Bool>";
+					   }
+				   }
+				   return (admin->renderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
+			   });
+	
 	//create box 
 	
 	//create planarized box
 	
 	//mesh_update_matrix, a bit more difficult b/c it should only update the passed arguments
 	
-	NEWCOMMAND("reload_shaders", "Reloads all shaders", {
+	//create material
+	
+	//list materials
+	
+	//TODO(r,delle) fix this, its not working
+	NEWCOMMAND("material_texture", "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>", {
+				   if(args.size() != 3){ return "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>"; }
+				   try{
+					   int matID = std::stoi(args[0]);
+					   int texType = std::stoi(args[1]);
+					   int texID = std::stoi(args[2]);
+					   admin->renderer->UpdateMaterialTexture(matID, texType, texID);
+					   return TOSTRING("Updated material", matID, "'s texture", texType, " to ", texID);
+				   }catch(...){
+					   return "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>";
+				   }
+			   });
+	
+	NEWCOMMAND("material_shader", "material_shader <materialID:Uint> <shaderID:Uint>", {
+				   if(args.size() != 2){ return "material_shader <materialID:Uint> <shaderID:Uint>"; }
+				   try{
+					   int matID = std::stoi(args[0]);
+					   int shader = std::stoi(args[1]);
+					   admin->renderer->UpdateMaterialShader(matID, shader);
+					   return TOSTRING("Updated material", matID, "'s shader to ", shader);
+				   }catch(...){
+					   return "material_shader <materialID:Uint> <shaderID:Uint>";
+				   }
+			   });
+	
+	NEWCOMMAND("shader_reload", "Reloads all shaders", {
 				   admin->renderer->ReloadShaders();
 				   return "[c:magen]Reloading shaders[c]";
 			   });
 	
 	//TODO(r,delle) update this to be dynamic when shader loading is (if ever)
-	NEWCOMMAND("list_shaders", "Lists the shaders and their IDs", {
+	NEWCOMMAND("shader_list", "Lists the shaders and their IDs", {
 				   return TOSTRING("[c:yellow]ID    SHADER          Description[c]\n",
 								   "0    Flat            Vertex color shading without normal/edge smoothing\n",
 								   "1    Phong           Vertex color shading with normal smoothing (good with spheres)\n",
 								   "2    TwoD            Vertex color shading with 2D position, rotation, and scale\n",
 								   "3    PBR             Physically-based rendering; 4 textures per material\n",
 								   "4    Wireframe       Vertex color shading with no polygon fill\n",
-								   "5    Lavalamp        Sushi's experimental shader");
+								   "5    Lavalamp        Sushi's experimental shader\n",
+								   "6    Test0           Testing shader 1\n",
+								   "7    Test1           Testing shader 2\n",
+								   "8    Test2           Testing shader 3\n",
+								   "9    Test3           Testing shader 4");
 			   });
 	
-	NEWCOMMAND("mesh_update_batch_shader", "mesh_update_batch_shader <meshID:UInt> <batchID:UInt> <shaderID:UInt>", {
-				   if(args.size() != 3) {return "mesh_update_batch_shader <meshID:UInt> <batchID:UInt> <shaderID:UInt>";}
+	NEWCOMMAND("mesh_visible", "mesh_visible <meshID:Uint> <visible:Bool>", {
+				   if(args.size() == 2){
+					   try{
+						   int meshID = std::stoi(args[0]);
+						   bool vis = std::stoi(args[1]);
+						   admin->renderer->UpdateMeshVisibility(meshID, vis);
+						   return TOSTRING("Setting mesh", meshID, "'s visibility to ", vis);
+					   }catch(...){
+						   return "mesh_visible <meshID:Uint> <visible:Bool>";
+					   }
+				   }
+				   return "mesh_visible <meshID:Uint> <visible:Bool>";
+			   });
+	
+	NEWCOMMAND("mesh_batch_material", "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>", {
+				   if(args.size() != 3) {return "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>";}
 				   try{
 					   int mesh = std::stoi(args[0]);
 					   int batch = std::stoi(args[1]);
-					   int shader = std::stoi(args[2]);
-					   admin->renderer->UpdateMeshBatchShader(mesh, batch, shader);
-					   return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s shader to shader", shader);
+					   int mat = std::stoi(args[2]);
+					   admin->renderer->UpdateMeshBatchMaterial(mesh, batch, mat);
+					   return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s material to ", mat);
 				   }catch(...){
-					   return "mesh_update_batch_shader <meshID:UInt> <batchID:UInt> <shaderID:UInt>";
+					   return "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>";
 				   }
 			   });
 	
@@ -222,49 +288,14 @@ inline void AddRenderCommands(EntityAdmin* admin) {
 								admin->renderer->TransformMeshMatrix(std::stoi(args[0]), Matrix4::TransformationMatrix(position, rotation, scale));
 								return TOSTRING("Transforming mesh", args[0], "'s matrix");
 							}catch(...){
-								return "mesh_transform_matrix <meshID:UInt> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
+								return "mesh_transform_matrix <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
 							}
 						}else{
-							return "mesh_transform_matrix <meshID:UInt> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
+							return "mesh_transform_matrix <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
 						}
-					}, "mesh_transform_matrix", "mesh_transform_matrix <meshID:UInt> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
+					}, "mesh_transform_matrix", "mesh_transform_matrix <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 	
 	//TODO(c,delle) figure out why the macro doesnt work here or on the one above
-	/*NEWCOMMAND("load_obj", "load_obj <model.obj:String> -position=(x,y,z) -rotation=(x,y,z) -scale=(x,y,z)", {
-				   Renderer* r = admin->renderer;
-				   if(args.size() > 0){
-					   Mesh mesh; std::cmatch m;
-					   Vector3 position{}, rotation{}, scale = {1.f, 1.f, 1.f};
-					   
-					   //check for optional params after the first arg
-					   for (auto s = args.begin()+1; s != args.end(); ++s) { 
-						   if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
-							   std::regex_search(s->c_str(), m, VecNumMatch);
-							   position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-						   }
-						   else if(std::regex_match(*s, RegRotParam)){ //-rot=(1.1,2,3)
-							   std::regex_search(s->c_str(), m, VecNumMatch);
-							   rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-						   }
-						   else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
-							   std::regex_search(s->c_str(), m, VecNumMatch);
-							   scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-						   }
-						   else {
-							   return "[c:red]Invalid parameter: " + *s + "[c]";
-						   }
-					   }
-					   
-					   //create the mesh and give to the renderer
-					   mesh = Mesh::CreateMeshFromOBJ(args[0], "no_name", 
-													  Matrix4::TransformationMatrix(position, rotation, scale));
-					   u32 id = r->LoadMesh(&mesh);
-					   return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
-				   }else{
-					   return "load_obj <model.obj:String> -position=(x,y,z) -rotation=(x,y,z) -scale=(x,y,z)";
-				   }
-			   });*/
-	
 	admin->commands["load_obj"] = 
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 						if(args.size() > 0){
@@ -295,10 +326,39 @@ inline void AddRenderCommands(EntityAdmin* admin) {
 														   Matrix4::TransformationMatrix(position, rotation, scale));
 							u32 id = admin->renderer->LoadMesh(&mesh);
 							return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
-						}else{
-							return "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
 						}
+						return "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
 					}, "load_obj", "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
+	
+	NEWCOMMAND("texture_load", "texture_load <texture.png:String> [type:Uint]", {
+				   if(args.size() > 0){
+					   Texture tex(args[0].c_str());
+					   if(args.size() == 2){
+						   try{
+							   tex.type = u32(std::stoi(args[1]));
+						   }catch(...){
+							   return "texture_load <texture.png:String> [type:Uint]";
+						   }
+					   }
+					   u32 id = admin->renderer->LoadTexture(tex);
+					   return TOSTRING("Laoded texture ", args[0], " to ID: ", id);
+				   }
+				   return "texture_load <texture.png:String> [type:Uint]";
+			   });
+	
+	NEWCOMMAND("texture_list", "Lists the textures and their info", {
+				   return admin->renderer->ListTextures();
+			   });
+	
+	NEWCOMMAND("texture_types_list", "Lists the texture types and their IDs", {
+				   return TOSTRING("Texture Types: (can be combined)\n",
+								   "   0=Albedo, Color, Diffuse\n",
+								   "   1=Normal, Bump\n",
+								   "   2=Light, Ambient\n",
+								   "   4=Specular, Reflective\n",
+								   "   8=Cube      (not supported yet)\n",
+								   "  16=Sphere    (not supported yet)");
+			   });
 }
 
 inline void HandleRenderInputs(EntityAdmin* admin) {
@@ -307,8 +367,8 @@ inline void HandleRenderInputs(EntityAdmin* admin) {
 	Keybinds* binds = admin->currentKeybinds;
 	
 	//reload shaders
-	if(DengInput->KeyPressed(Key::F5)){
-		renderer->ReloadShaders();
+	if(input->KeyPressed(Key::F5)){
+		admin->ExecCommand("reload_shaders");
 	}
 }
 

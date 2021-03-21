@@ -29,7 +29,7 @@ struct Texture {
 
 struct Vertex {
 	Vector3 pos{};
-	Vector2 uv{};
+	Vector2 uv;
 	Vector3 color = {1.f, 1.f, 1.f}; //between 0 and 1
 	Vector3 normal{};
 	//bone index		4tuple
@@ -60,7 +60,8 @@ enum ShaderFlagsBits : u32 {
 typedef u32 ShaderFlags;
 
 enum Shader : u32 {
-	FLAT, PHONG, TWOD, PBR, WIREFRAME, LAVALAMP
+	//NOTE(delle) testing shaders should be removed on release
+	FLAT, PHONG, TWOD, PBR, WIREFRAME, LAVALAMP, TESTING0, TESTING1, TESTING2, TESTING3
 };
 
 //NOTE indices should be clockwise

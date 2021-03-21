@@ -1,21 +1,13 @@
 #include "RenderCanvasSystem.h"
 #include "ConsoleSystem.h"
-#include "../utils/GLOBALS.h"
+#include "../core.h"
+#include "../components/Canvas.h"
+#include "../components/Camera.h"
+#include "../math/Math.h"
 
 //for time
 #include <iomanip>
 #include <sstream>
-
-#include "../utils/ContainerManager.h"
-
-
-#include "../components/Canvas.h"
-#include "../components/Camera.h"
-
-#include "../external/imgui/imgui_impl_vulkan.h"
-#include "../external/imgui/imgui_impl_glfw.h"
-
-#include "../math/Math.h"
 
 ImVec4 ColToVec4(Color p) {
 	return ImVec4((float)p.r / 255, (float)p.g / 255, (float)p.b / 255, p.a / 255);
@@ -387,7 +379,7 @@ void DebugBar(EntityAdmin* admin) {
 		//Triangle Count
 		if (TableNextColumn() && show_world_stats) {
 			//TODO(, sushi) implement triangle count when its avaliable
-			std::string str = TOSTRING("wtris: ", "0");
+			std::string str = TOSTRING("wtris: ", admin->renderer->stats.totalTriangles);
 			float strlen = (fontsize - (fontsize / 2)) * str.size();
 			ImGui::SameLine(36 - (strlen / 2));
 			Text(str.c_str());
@@ -396,7 +388,7 @@ void DebugBar(EntityAdmin* admin) {
 		//Vertice Count
 		if (TableNextColumn() && show_world_stats) {
 			//TODO(, sushi) implement vertice count when its avaliable
-			std::string str = TOSTRING("wverts: ", "0");
+			std::string str = TOSTRING("wverts: ", admin->renderer->stats.totalVertices);
 			float strlen = (fontsize - (fontsize / 2)) * str.size();
 			ImGui::SameLine(36 - (strlen / 2));
 			Text(str.c_str());
@@ -444,7 +436,7 @@ void DebugBar(EntityAdmin* admin) {
 				PopStyleColor();
 			}
 			
-
+			
 		}
 		
 		//Show Time

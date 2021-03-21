@@ -11,6 +11,7 @@ Rules: tags can be empty but still requires a comma, date can be empty
 Major Ungrouped TODOs
 ---------------------
 add MeshRenderer component (meshID, instanceID, etc)
+add device info debug window (graphics card, sound device, monitor res, etc)
 add a component_state command to print state of a component
 fix transformations (seem to be off)
 add shaders: FLAT (vertex colors, sharp edges), PHONG (flat with lighting based on normals), PBR (4textures)
@@ -30,20 +31,19 @@ cleanup compile warnings
 
 Render TODOs
 ------------
-add commands for the rendering interface functions
+finish commands for the rendering interface functions
 add the render options back
 add instancing [https://learnopengl.com/Advanced-OpenGL/Instancing]
 add texture transparency support
 add 2D shader and interface functions
 add lighting and shadows
 add RenderSettings loading and usage
-add dynamic texture updating on meshes (update materials' textures)
 check those vulkan-tutorial links for the suggestions
 speed up vulkan startup (cache pipelines, etc)
 avoid having 3 copies of a mesh (model, meshVK, vulkan)
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
-multi-threaded command buffers and (maybe) pipeline creation
-  convert prints to go thru the in-game console rather than other console (after setting up logging to a file)
+multi-threaded command buffers, pipeline creation, image loading
+  convert prints to go thru the in-game console rather than other console
 find a way to forward declare vulkan stuff and move the include to the cpp
 (maybe) remove renderer polymorphism and replace it with defines that are checked on program start
 (maybe) add specific shader reloading rather than all of them
@@ -102,16 +102,16 @@ struct DeshiEngine {
 	
 	void Start(){
 		//init
-
+		
 		//enforce deshi file system
 		deshi::enforceDirectories();
-
+		
 		LoadConfig();
 		time.Init(300);
 		window.Init(&input, 1280, 720); //inits input as well
 		renderer->time = &time;
 		renderer->Init(&window, imgui); //inits imgui as well
-
+		
 		
 		
 		//start entity admin
@@ -122,8 +122,8 @@ struct DeshiEngine {
 			glfwPollEvents();
 			Update();
 		}
-
-
+		
+		
 		
 		//cleanup
 		imgui->Cleanup(); delete imgui;
