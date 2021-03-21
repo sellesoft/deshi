@@ -39,8 +39,12 @@ const bool enableValidationLayers = true;
 
 #define ASSERTVK(func, message) ASSERT((func) == VK_SUCCESS, message);
 
-#define LOGGING_LEVEL 3
+#define LOGGING_LEVEL 0
+#if LOGGING_LEVEL == 0
+#define PRINTVK(level, message) (void)0
+#else
 #define PRINTVK(level, message) if(LOGGING_LEVEL >= level){ PRINT(message); }
+#endif
 
 //////////////////////////
 //// render interface ////
@@ -80,13 +84,12 @@ void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
 	box.mesh.batchArray[0].textureArray.push_back(tex);
 	box.mesh.batchArray[0].textureCount = 1;
 	
-	Model whaleShip; whaleShip.mesh = Mesh::CreateMeshFromOBJ("whale_ship.obj", "ship", Matrix4::TranslationMatrix(5, 0, 0));
-	
-	test->models = {box, whaleShip};
+	test->models = {box};
 	LoadScene(test);
 	delete test;
 	//end debug
 	
+	PRINTVK(2, "{-}{-} Initializing ImGui");
 	imgui->Init(this);
 	BuildCommandBuffers();
 	initialized = true;
@@ -486,7 +489,8 @@ void Renderer_Vulkan::UpdateCameraRotation(Vector3 rotation){
 }
 
 void Renderer_Vulkan::UpdateCameraViewMatrix(Matrix4 m){
-	if(camera.precalcMatrices){
+	if(1){
+		//if(camera.precalcMatrices){
 		shaderData.values.view = glm::make_mat4(m.data);
 	}else{
 		glm::mat4 rotM = glm::mat4(1.f);
@@ -494,19 +498,12 @@ void Renderer_Vulkan::UpdateCameraViewMatrix(Matrix4 m){
 		rotM = glm::rotate(rotM, glm::radians(camera.rotation.x), glm::vec3(1.f, 0.f, 0.f));
 		glm::vec4 target(0.f, 0.f, 1.f, 0.f);
 		target = rotM * target; target = glm::normalize(target);
-		
 		shaderData.values.view = glm::lookAt(camera.position, camera.position + glm::vec3(target), glm::vec3(0.f, 1.f, 0.f));
 	}
 }
 
 void Renderer_Vulkan::UpdateCameraProjectionMatrix(Matrix4 m){
-	if(camera.precalcMatrices){
-		shaderData.values.proj = glm::make_mat4(m.data);
-	}else{
-		float aspectRatio = extent.width / (float) extent.height;
-		shaderData.values.proj = glm::perspective(glm::radians(camera.fovX / aspectRatio), aspectRatio, camera.nearZ, camera.farZ);
-		shaderData.values.proj[1][1] *= -1;
-	}
+	shaderData.values.proj = glm::make_mat4(m.data);
 }
 
 void Renderer_Vulkan::UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ, bool precalc){
@@ -685,7 +682,7 @@ void Renderer_Vulkan::CreatePipelineCache(){
 }
 
 void Renderer_Vulkan::CreateUniformBuffer(){
-	PRINT("{-}{-} Creating Uniform Buffer");
+	PRINTVK(2, "{-}{-} Creating Uniform Buffer");
 	CreateOrResizeBuffer(shaderData.uniformBuffer, shaderData.uniformBufferMemory, shaderData.uniformBufferSize, sizeof(shaderData.values) , VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	UpdateUniformBuffer();
 }

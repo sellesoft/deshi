@@ -30,7 +30,7 @@ REM ______________ ONE FILE (compiles just one file with debug options, links wi
 
 :ONE_FILE
 ECHO [47m[94m%DATE% %TIME% One File (Debug)[0m[0m
-IF [%~2]==[] ECHO "Place the .cpp path after using -i" GOTO DONE 
+IF [%~2]==[] ECHO "Place the .cpp path after using -i"; GOTO DONE;
 ECHO [93mWarning: debugging might not work with one-file compilation[0m
 
 @set OUT_DIR="..\build\Debug"

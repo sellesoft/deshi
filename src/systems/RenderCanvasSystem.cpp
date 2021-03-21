@@ -38,7 +38,7 @@ void MakeMenuBar(EntityAdmin* admin) {
 	if (show_app_metrics)       { ImGui::ShowMetricsWindow(&show_app_metrics); }
 	if (show_app_about)         { ImGui::ShowAboutWindow(&show_app_about); }
 	if (show_app_style_editor)	{ ImGui::Begin("Dear ImGui Style Editor", &show_app_style_editor); ImGui::ShowStyleEditor(); ImGui::End(); }
-
+	
 	if(BeginMenuBar()) {
 		if(BeginMenu("Debug")) {
 			static bool global_debug = true;
@@ -72,7 +72,7 @@ void MakeMenuBar(EntityAdmin* admin) {
 
 void MakeGeneralHeader(EntityAdmin* admin) {
 	using namespace ImGui;
-	Camera* camera = admin->currentCamera;
+	Camera* camera = admin->mainCamera;
 	if(CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen)) {
 		if(TreeNodeEx("Camera", ImGuiTreeNodeFlags_NoTreePushOnOpen)) {
 			Text("Address: %#08x", camera); SameLine(); if(ImGui::Button("Copy")) { ImGui::LogToClipboard(); ImGui::LogText("%#08x", camera); ImGui::LogFinish(); }
@@ -101,7 +101,7 @@ void MakeEntitiesHeader(EntityAdmin* admin) {
 		} else {
 			Text("Selected Entity: None");
 		}
-
+		
 		if(BeginTable("split3", 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable)){
 			TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
 			TableSetupColumn("Components");
@@ -165,67 +165,67 @@ void MakeBufferlogHeader(EntityAdmin* admin) {
 void MakeP3DPGEDebugTools(EntityAdmin* admin) {
 	using namespace ImGui;
 	ImGui::Begin("P3DPGE Debug Tools", 0, ImGuiWindowFlags_MenuBar);
-
+	
 	MakeMenuBar(admin);
 	MakeGeneralHeader(admin);
 	MakeEntitiesHeader(admin);
 	//MakeRenderHeader(admin);
 	MakeBufferlogHeader(admin);
-
+	
 	ImGui::End();
 }
 
 void DrawFrameGraph(EntityAdmin* admin) { //TODO(r, sushi) implement styling and more options
 	ImGui::Begin("FPSGraph", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
-
+	
 	static int prevstoresize = 100;
 	static int storesize = 100;
 	static int fupdate = 20;
-
+	
 	ImGui::SliderInt("amount to store", &storesize, 10, 200);
 	ImGui::SliderInt("frames to update", &fupdate, 1, 40);
-
+	
 	static std::vector<float> realvalues(storesize);
 	static std::vector<float> printvalues(storesize);
 	static int max_val = 0;
 	static int min_val = INT_MAX;
-
+	
 	if (prevstoresize != storesize) {
 		//keeps the data in place when resizing
 		std::reverse(realvalues.begin(), realvalues.end());  realvalues.resize(storesize); std::reverse(realvalues.begin(), realvalues.end());
 		std::reverse(printvalues.begin(), printvalues.end());  printvalues.resize(storesize); std::reverse(printvalues.begin(), printvalues.end());
 		prevstoresize = storesize;
 	}
-
+	
 	static int frame_count = 0;
-
+	
 	std::rotate(realvalues.begin(), realvalues.begin() + 1, realvalues.end()); //rotate vector back one space
-
+	
 	int FPS = std::floor(1 / admin->time->deltaTime);
 	float avg = Math::average(realvalues.begin(), realvalues.end(), storesize);
-
+	
 	if (frame_count < fupdate) {
 		realvalues[realvalues.size() - 1] = FPS; //append frame rate
 		frame_count++;
 	}
 	else {
-
+		
 		//dynamic max/min_val setting
 		if (avg > max_val || avg < max_val - 15) max_val = avg; 
 		if (avg < min_val || avg > min_val + 15) min_val = avg;
-
+		
 		std::rotate(printvalues.begin(), printvalues.begin() + 1, printvalues.end());
 		
 		printvalues[printvalues.size() - 1] = std::floorl(avg);
-
+		
 		frame_count = 0;
 	}
-
+	
 	ImGui::Text(TOSTRING(avg, " ", max_val, " ", min_val).c_str());
 	
 	ImGui::SetNextItemWidth(ImGui::GetWindowWidth());
 	ImGui::PlotLines("", &printvalues[0], printvalues.size(), 0, 0, min_val, max_val, ImVec2(300, 200));
-
+	
 	ImGui::End();
 }
 
@@ -234,9 +234,9 @@ void DebugTools(EntityAdmin* admin) {
 }
 
 void DebugBar(EntityAdmin* admin) {
-
+	
 	ImGuiIO& io = ImGui::GetIO();
-
+	
 	ImGui::Begin("DebugBar", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar);
 	ImGui::Text(TOSTRING(io.Framerate).c_str());
 	ImGui::End();
@@ -244,18 +244,18 @@ void DebugBar(EntityAdmin* admin) {
 
 void RenderCanvasSystem::DrawUI(void) {
 	using namespace ImGui;
-
+	
 	static bool showDebugTools = false;
 	static bool showDebugBar = true;
-
-
+	
+	
 	if (showDebugTools) DebugTools(admin);
 	if (showDebugBar) DebugBar(admin);
-		
+	
 	if (admin->tempCanvas->SHOW_FPS_GRAPH) DrawFrameGraph(admin);
-
+	
 	////////////////////////////////////////////
-
+	
 	//This finishes the Dear ImGui and renders it to the screen
 	//ImGui::Render();
 	//ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
@@ -263,11 +263,11 @@ void RenderCanvasSystem::DrawUI(void) {
 
 void RenderCanvasSystem::Init() {
 	Canvas* canvas = admin->tempCanvas;
-
+	
 }
 
 void RenderCanvasSystem::Update() {
 	Canvas*	canvas = admin->tempCanvas;
-
+	
 }
 

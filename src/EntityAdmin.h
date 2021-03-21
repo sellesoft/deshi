@@ -45,7 +45,7 @@ struct EntityAdmin {
 	World* world;
 	Renderer* renderer;
 	
-	Camera* currentCamera;
+	Camera* mainCamera;
 	Keybinds* currentKeybinds;
 	Controller* controller;
 	Canvas* tempCanvas;

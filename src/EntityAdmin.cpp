@@ -73,8 +73,8 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r) {
 	
 	//singleton initialization
 	world = new World();
-	currentCamera = new Camera(this);
-	currentCamera->layer_index = freeCompLayers[currentCamera->layer].add(currentCamera);
+	mainCamera = new Camera(this);
+	mainCamera->layer_index = freeCompLayers[mainCamera->layer].add(mainCamera);
 	currentKeybinds = new Keybinds(this);
 	controller = new Controller(this);
 	tempCanvas = new Canvas();
@@ -90,13 +90,14 @@ void EntityAdmin::Cleanup() {
 	
 	//clean up singletons
 	delete world;
-	delete currentCamera;
+	delete mainCamera;
 	delete currentKeybinds;
 	delete controller;
 	delete tempCanvas;
 }
 
 void EntityAdmin::Update() {
+	controller->Update();
 	if (!paused) {
 		for (System* s : systems) {
 			steady_clock::time_point startTime = steady_clock::now(); //TODO(o,delle) test that system durations work
@@ -106,16 +107,12 @@ void EntityAdmin::Update() {
 	}
 	else {
 		for (System* s : systems) {
-			//if      (ScreenSystem* a = dynamic_cast<ScreenSystem*>(s))             { a->Update(); }
 			if      (ConsoleSystem* b = dynamic_cast<ConsoleSystem*>(s))           { b->Update(); }
 			else if (CommandSystem* c = dynamic_cast<CommandSystem*>(s))           { c->Update(); }
 			else if (RenderCanvasSystem* e = dynamic_cast<RenderCanvasSystem*>(s)) { e->Update(); }
-			//else if (TimeSystem* f = dynamic_cast<TimeSystem*>(s))                 { f->Update(); }
 		}
 	}
-	//NOTE temporary
-	currentCamera->Update();
-	controller->Update();
+	mainCamera->Update();
 	for(Component* c : components){
 		c->Update();
 	}

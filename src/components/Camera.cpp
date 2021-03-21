@@ -3,50 +3,37 @@
 #include "../math/Math.h"
 #include "../core.h"
 
-#include "../animation/Model.h" //temp for debug
-
 Camera::Camera(EntityAdmin* a) : Component(a) {
-	Window* window = admin->window;
-	Renderer* renderer = admin->renderer;
-	
 	nearZ = 0.1f;
 	farZ  = 1000.1f;
 	fieldOfView = 90.f;
 	
-	renderer->UpdateCameraProjectionProperties(fieldOfView, nearZ, farZ, false);
-	UsePerspectiveProjection(fieldOfView, window->width, window->height, nearZ, farZ);
-	renderer->UpdateCameraProjectionMatrix(projectionMatrix);
+	admin->renderer->UpdateCameraProjectionProperties(fieldOfView, nearZ, farZ, true);
+	UsePerspectiveProjection(fieldOfView, admin->window->width, admin->window->height, nearZ, farZ);
+	admin->renderer->UpdateCameraProjectionMatrix(projectionMatrix);
 	
 	layer = CL2_RENDSCENE;
 }
 
-Camera::Camera(float fov, float nearZ, float farZ) {
+Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ) : Component(a) {
 	this->nearZ = nearZ;
 	this->farZ = farZ;
 	this->fieldOfView = fov;
 	
+	admin->renderer->UpdateCameraProjectionProperties(fieldOfView, nearZ, farZ, false);
+	UsePerspectiveProjection(fieldOfView, admin->window->width, admin->window->height, nearZ, farZ);
+	admin->renderer->UpdateCameraProjectionMatrix(projectionMatrix);
+	
 	layer = CL2_RENDSCENE;
 }
 
+/*
 Matrix4 MakeViewMatrix(Camera* camera) {
-	//camera->lookDir = Vector3::FORWARD * Matrix3::RotationMatrixY(camera->rotation.y);
-	
 	camera->lookDir = Math::SphericalToRectangularCoords(camera->target);
-	//camera->lookDir = camera->targetrect - camera->position;
-	return Math::LookAtMatrix(camera->position, camera->lookDir + camera->position, camera->up).Inverse();
+	return Math::LookAtMatrix(camera->position, camera->forward + camera->position, camera->up).Inverse();
 }
+*/
 
-Matrix4 MakePerspectiveMatrix(Camera* camera, float screenWidth, float screenHeight) {
-	float renderDistance = camera->farZ - camera->nearZ;
-	float aspectRatio = screenHeight / screenWidth;
-	float fovRad = 1.f / tanf(camera->fieldOfView * .5f * TO_RADIANS);
-	
-	return Matrix4( //NOTE setting (1,1) to negative flips the y-axis
-				   aspectRatio * fovRad,	0,			0,												0,
-				   0,					   -fovRad,	0,												0,
-				   0,					   0,			camera->farZ / renderDistance,					1,
-				   0,					   0,			(-camera->farZ*camera->nearZ) / renderDistance,	0);
-}
 /*
 Matrix4 MakeOrthographicMatrix(Scene* s, Camera* c, float screenWidth, float screenHeight) {
 	std::pair<Vector3, Vector3> bbox = s->SceneBoundingBox();
@@ -93,52 +80,22 @@ void Camera::UseOrthographicProjection(){}
 void Camera::Update() {
 	Window* window = admin->window;
 	Renderer* renderer = admin->renderer;
-	Time* time = admin->time;
 	
-	//clamp camera yaw (x-rotation)
-	rotation.x = Math::clamp(rotation.x, -89.f, 89.f);
+	//clamp camera rotation
+	rotation.x = Math::clamp(rotation.x, -89.9f, 89.9f);
 	if(rotation.y > 1440.f || rotation.y < -1440.f){ rotation.y = 0.f; }
 	
 	//update direction vectors
-	forward = (Vector4(Vector3::FORWARD, 0.f) * Matrix4::RotationMatrix(rotation)).ToVector3().normalized();
+	forward = (Vector3::FORWARD * Matrix4::RotationMatrix(rotation)).normalized();
 	right = Vector3::UP.cross(forward).normalized();
 	up = right.cross(forward).normalized();
 	
 	//update view matrix
+	//TODO(o,delle) precalc this since we already get the direction vectors
+	viewMatrix = Math::LookAtMatrix(position, position+forward).Inverse();
 	
-	//update projection matrix
-	
+	//update renderer camera properties
+	renderer->UpdateCameraViewMatrix(viewMatrix);
 	renderer->UpdateCameraPosition(position);
 	renderer->UpdateCameraRotation(rotation);
-	
-	if (DengInput->KeyPressed(Key::NUMPADPLUS)) { 
-		fieldOfView += 5;
-		renderer->UpdateCameraProjectionProperties(fieldOfView, nearZ, farZ, false);
-	}
-	if (DengInput->KeyPressed(Key::NUMPADMINUS)) {
-		fieldOfView -= 5;
-		renderer->UpdateCameraProjectionProperties(fieldOfView, nearZ, farZ, false);
-	}
-	
-	renderer->UpdateCameraViewMatrix(viewMatrix);
-	
-	//temp debugging
-	if(DengInput->KeyPressed(Key::Z)){
-		renderer->UpdateMeshBatchShader(0, 0, 3);
-		renderer->UpdateMeshBatchShader(1, 0, 3);
-	}
-	if(DengInput->KeyPressed(Key::X)){
-		renderer->UpdateMeshBatchShader(0, 0, 0);
-		renderer->UpdateMeshBatchShader(1, 0, 0);
-	}
-	if(DengInput->KeyPressed(Key::F5)){
-		renderer->ReloadShaders();
-	}
-	if(DengInput->KeyPressed(Key::B, INPUT_SHIFT_HELD)){
-		Model box = Model::CreateBox(Vector3(1, 1, 1));
-		uint32 id = renderer->LoadMesh(&box.mesh);
-		renderer->TransformMeshMatrix(id, Matrix4::TranslationMatrix(position + forward*10));
-	}
-	
-	//renderer->TransformMeshMatrix(0, Matrix4::RotationMatrixY(90.f * time->deltaTime));
 }
