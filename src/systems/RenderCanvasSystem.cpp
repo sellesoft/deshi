@@ -4,6 +4,7 @@
 
 //for time
 #include <iomanip>
+#include <sstream>
 
 #include "../utils/ContainerManager.h"
 
@@ -244,18 +245,18 @@ void DebugTools(EntityAdmin* admin) {
 
 void DebugBar(EntityAdmin* admin) {
 	using namespace ImGui;
-
+	
 	//for getting fps
 	ImGuiIO& io = ImGui::GetIO();
-
+	
 	int FPS = floor(io.Framerate);
-
+	
 	//num of active columns
 	int activecols = 7;
 	
 	//font size for centering text
 	float fontsize = ImGui::GetFontSize();
-
+	
 	//flags for showing different things
 	static bool show_fps = true;
 	static bool show_fps_graph = true;
@@ -263,10 +264,10 @@ void DebugBar(EntityAdmin* admin) {
 	static bool show_selected_stats = true;
 	static bool show_floating_fps_graph = false;
 	static bool show_time = true;
-
+	
 	SetNextWindowSize(ImVec2(DengWindow->width, 50));
 	SetNextWindowPos(ImVec2(0, DengWindow->height - 20));
-
+	
 	//window styling
 	PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 2));
 	PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 0));
@@ -280,7 +281,7 @@ void DebugBar(EntityAdmin* admin) {
 	//capture mouse if hovering over this window
 	if (IsWindowHovered()) { admin->IMGUI_MOUSE_CAPTURE = true; }
 	else { admin->IMGUI_MOUSE_CAPTURE = false; }
-
+	
 	activecols = show_fps + show_fps_graph + 3 * show_world_stats + 2 * show_selected_stats + show_time + 1;
 	if (BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)) {
 		
@@ -293,11 +294,11 @@ void DebugBar(EntityAdmin* admin) {
 		if (show_selected_stats) TableSetupColumn("SelVerCount", ImGuiTableColumnFlags_WidthFixed, 72);
 		/*MIDDLE SEP*/           TableSetupColumn("MiddleSep", ImGuiTableColumnFlags_WidthStretch, 0);
 		if (show_time)           TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 64);
-
-
+		
+		
 		//FPS
 		if (TableNextColumn() && show_fps) {
-
+			
 			//trying to keep it from changing width of column
 			//actually not necessary anymore but im going to keep it cause 
 			//it keeps the numbers right aligned
@@ -312,7 +313,7 @@ void DebugBar(EntityAdmin* admin) {
 			}
 			
 		}
-	
+		
 		//FPS graph inline
 		if (TableNextColumn() && show_fps_graph) {
 			//how much data we store
@@ -322,20 +323,20 @@ void DebugBar(EntityAdmin* admin) {
 			//how often we update
 			static int fupdate = 20;
 			static int frame_count = 0;
-
+			
 			//maximum FPS
 			static int maxval = 0;
-
+			
 			//real values and printed values
 			static std::vector<float> values(storesize);
 			static std::vector<float> pvalues(storesize);
-
+			
 			//dynamic resizing that may get removed later if it sucks
 			//if FPS finds itself as less than half of what the max used to be we lower the max
 			if (FPS > maxval || FPS < maxval / 2) {
 				maxval = FPS;
 			}
-
+			
 			//if changing the amount of data we're storing we have to reverse
 			//each data set twice to ensure the data stays in the right place when we move it
 			if (prevstoresize != storesize) {
@@ -343,9 +344,9 @@ void DebugBar(EntityAdmin* admin) {
 				std::reverse(pvalues.begin(), pvalues.end());  pvalues.resize(storesize); std::reverse(pvalues.begin(), pvalues.end());
 				prevstoresize = storesize;
 			}
-
+			
 			std::rotate(values.begin(), values.begin() + 1, values.end());
-
+			
 			//update real set if we're not updating yet or update the graph if we are
 			if (frame_count < fupdate) {
 				values[values.size() - 1] = FPS;
@@ -355,10 +356,10 @@ void DebugBar(EntityAdmin* admin) {
 				float avg = Math::average(values.begin(), values.end(), storesize);
 				std::rotate(pvalues.begin(), pvalues.begin() + 1, pvalues.end());
 				pvalues[pvalues.size() - 1] = std::floorf(avg);
-
+				
 				frame_count = 0;
 			}
-
+			
 			PushStyleColor(ImGuiCol_PlotLines, ColToVec4(Color(0, 255, 200, 255)));
 			PushStyleColor(ImGuiCol_FrameBg, ColToVec4(Color(20, 20, 20, 255)));
 			
@@ -366,15 +367,15 @@ void DebugBar(EntityAdmin* admin) {
 			
 			ImGui::PopStyleColor();
 			ImGui::PopStyleColor();
-
-
-
-		
+			
+			
+			
+			
 		}
-
-
+		
+		
 		//World stats
-
+		
 		//Entity Count
 		if (TableNextColumn() && show_world_stats) {
 			std::string str = TOSTRING("wents: ", admin->entities.size());
@@ -382,7 +383,7 @@ void DebugBar(EntityAdmin* admin) {
 			ImGui::SameLine(36 - (strlen / 2));
 			Text(str.c_str());
 		}
-
+		
 		//Triangle Count
 		if (TableNextColumn() && show_world_stats) {
 			//TODO(, sushi) implement triangle count when its avaliable
@@ -391,7 +392,7 @@ void DebugBar(EntityAdmin* admin) {
 			ImGui::SameLine(36 - (strlen / 2));
 			Text(str.c_str());
 		}
-
+		
 		//Vertice Count
 		if (TableNextColumn() && show_world_stats) {
 			//TODO(, sushi) implement vertice count when its avaliable
@@ -400,13 +401,13 @@ void DebugBar(EntityAdmin* admin) {
 			ImGui::SameLine(36 - (strlen / 2));
 			Text(str.c_str());
 		}
-
-
-
+		
+		
+		
 		// Selected Stats
-
-
-
+		
+		
+		
 		//Triangle Count
 		if (TableNextColumn() && show_selected_stats) {
 			//TODO(, sushi) implement triangle count when its avaliable
@@ -416,7 +417,7 @@ void DebugBar(EntityAdmin* admin) {
 			ImGui::SameLine(36 - (strlen / 2));
 			Text(str.c_str());
 		}
-
+		
 		//Vertice Count
 		if (TableNextColumn() && show_selected_stats) {
 			//TODO(, sushi) implement vertice count when its avaliable
@@ -426,39 +427,39 @@ void DebugBar(EntityAdmin* admin) {
 			ImGui::SameLine(36 - (strlen / 2));
 			Text(str.c_str());
 		}
-
+		
 		//Middle Empty Separator
 		if (TableNextColumn()) {
-
+			
 		}
-
+		
 		//Show Time
 		if (TableNextColumn()) {
 			//https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
 			using namespace std::chrono;
-
+			
 			//get current time
 			auto now = system_clock::now();
-
+			
 			//convert to std::time_t so we can convert to std::tm
 			auto timer = system_clock::to_time_t(now);
-
+			
 			//convert to broken time
 			std::tm bt = *std::localtime(&timer);
-
+			
 			std::ostringstream oss;
-
+			
 			oss << std::put_time(&bt, "%H:%M:%S");
-
+			
 			std::string str = oss.str();
 			float strlen = (fontsize - (fontsize / 2)) * str.size();
 			ImGui::SameLine(32 - (strlen / 2));
-
+			
 			Text(str.c_str());
-
+			
 		}
-
-
+		
+		
 		//Context menu for toggling parts of the bar
 		//TODO(, sushi) make dynamic showing work i guess though its not really necessary
 		//if (ImGui::IsMouseReleased(1) && IsWindowHovered()) OpenPopup("Context");
@@ -494,7 +495,7 @@ void DebugBar(EntityAdmin* admin) {
 			EndPopup();
 		}
 		
-
+		
 		
 		EndTable();
 	}
@@ -535,6 +536,6 @@ void RenderCanvasSystem::Init() {
 void RenderCanvasSystem::Update() {
 	Canvas*	canvas = admin->tempCanvas;
 	DrawUI();
-
+	
 }
 

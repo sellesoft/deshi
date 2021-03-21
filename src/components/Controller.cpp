@@ -56,36 +56,37 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 	float deltaTime = admin->time->deltaTime;
 	
 	if (!admin->IMGUI_KEY_CAPTURE) {
-
-			//camera rotation up
-			if (input->KeyDown(binds->cameraRotateUp)) {
-				if (input->ModDown(INPUT_SHIFT_HELD))        { camera->rotation.x -= 50 * deltaTime; }
-				else if (input->ModDown(INPUT_CONTROL_HELD)) { camera->rotation.x -= 5 * deltaTime; }
-				else                                         { camera->rotation.x -= 25 * deltaTime; }
-			}
-			
-			//camera rotation down
-			if (input->KeyDown(binds->cameraRotateDown)) {
-				if (input->ModDown(INPUT_SHIFT_HELD))        { camera->rotation.x += 50 * deltaTime; }
-				else if (input->ModDown(INPUT_CONTROL_HELD)) { camera->rotation.x += 5 * deltaTime; }
-				else                                         { camera->rotation.x += 25 * deltaTime; }
-			}
-			
-			//camera rotation right
-			if (input->KeyDown(binds->cameraRotateRight)) {
-				if (input->ModDown(INPUT_SHIFT_HELD))	    { camera->rotation.y += 50 * deltaTime; }
-				else if (input->ModDown(INPUT_CONTROL_HELD)) { camera->rotation.y += 5 * deltaTime; }
-				else								         { camera->rotation.y += 25 * deltaTime; }
-			}
-			
-			//camera rotation left
-			if (input->KeyDown(binds->cameraRotateLeft)) {
-				if (input->ModDown(INPUT_SHIFT_HELD))	    { camera->rotation.y -= 50 * deltaTime; }
-				else if (input->ModDown(INPUT_CONTROL_HELD)) { camera->rotation.y -= 5 * deltaTime; }
-				else								         { camera->rotation.y -= 25 * deltaTime; }
-			}
-*/
-		
+		/*
+					//camera rotation up
+					if (input->KeyDown(binds->cameraRotateUp)) {
+						if (input->ModDown(INPUT_SHIFT_HELD))        { camera->rotation.x -= 50 * deltaTime; }
+						else if (input->ModDown(INPUT_CONTROL_HELD)) { camera->rotation.x -= 5 * deltaTime; }
+						else                                         { camera->rotation.x -= 25 * deltaTime; }
+					}
+					
+					//camera rotation down
+					if (input->KeyDown(binds->cameraRotateDown)) {
+						if (input->ModDown(INPUT_SHIFT_HELD))        { camera->rotation.x += 50 * deltaTime; }
+						else if (input->ModDown(INPUT_CONTROL_HELD)) { camera->rotation.x += 5 * deltaTime; }
+						else                                         { camera->rotation.x += 25 * deltaTime; }
+					}
+					
+					//camera rotation right
+					if (input->KeyDown(binds->cameraRotateRight)) {
+						if (input->ModDown(INPUT_SHIFT_HELD))	    { camera->rotation.y += 50 * deltaTime; }
+						else if (input->ModDown(INPUT_CONTROL_HELD)) { camera->rotation.y += 5 * deltaTime; }
+						else								         { camera->rotation.y += 25 * deltaTime; }
+					}
+					
+					//camera rotation left
+					if (input->KeyDown(binds->cameraRotateLeft)) {
+						if (input->ModDown(INPUT_SHIFT_HELD))	    { camera->rotation.y -= 50 * deltaTime; }
+						else if (input->ModDown(INPUT_CONTROL_HELD)) { camera->rotation.y -= 5 * deltaTime; }
+						else								         { camera->rotation.y -= 25 * deltaTime; }
+					}
+		*/
+	}
+	if(!admin->IMGUI_MOUSE_CAPTURE){
 		//TODO(i,delle) change this so its dependent on game state or something (level editor vs gameplay)
 		if(input->MousePressed(MouseButton::MB_RIGHT)){
 			admin->ExecCommand("cursor_mode", "1");
