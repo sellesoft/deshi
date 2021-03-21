@@ -8,9 +8,7 @@ Camera::Camera(EntityAdmin* a) : Component(a) {
 	farZ  = 1000.1f;
 	fieldOfView = 90.f;
 	
-	admin->renderer->UpdateCameraProjectionProperties(fieldOfView, nearZ, farZ, true);
 	UsePerspectiveProjection(fieldOfView, admin->window->width, admin->window->height, nearZ, farZ);
-	admin->renderer->UpdateCameraProjectionMatrix(projectionMatrix);
 	
 	layer = CL3_CONSOLE;
 }
@@ -69,6 +67,7 @@ void Camera::UsePerspectiveProjection(float fovX, float width, float height, flo
 							   0,					-fovRad, 0,							  0,
 							   0,					0,	   farZ / renderDistance,		  1,
 							   0,					0,	   -(farZ*nearZ) / renderDistance, 0);
+	admin->renderer->UpdateCameraProjectionMatrix(projectionMatrix);
 }
 
 void Camera::UseOrthographicProjection(){}
@@ -93,5 +92,4 @@ void Camera::Update() {
 	//update renderer camera properties
 	renderer->UpdateCameraViewMatrix(viewMatrix);
 	renderer->UpdateCameraPosition(position);
-	renderer->UpdateCameraRotation(rotation);
 }

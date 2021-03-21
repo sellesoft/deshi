@@ -532,13 +532,13 @@ namespace Math {
 		}
 		
 		//get up direction
-		Vector3 newUp = newRight.cross(newFor); 
+		Vector3 newUp = newFor.cross(newRight); 
 		
 		//make look-at matrix
-		return Matrix4(newRight.x, -newRight.y, newRight.z, 0,
-					   newUp.x,    newUp.y,     newUp.z,    0,
-					   newFor.x,   -newFor.y,   newFor.z,   0,
-					   pos.x,      pos.y,       pos.z,      1);
+		return Matrix4(newRight.x, newRight.y, newRight.z, 0,
+					   newUp.x,    -newUp.y,   newUp.z,  0,
+					   newFor.x,   newFor.y,   newFor.z,   0,
+					   pos.x,      pos.y,      pos.z,     1);
 	}
 	
 	//this ones for getting the up vector back for sound orientation
@@ -550,23 +550,18 @@ namespace Math {
 		Vector3 newRight;
 		if (newFor == Vector3::UP || newFor == Vector3::DOWN) {
 			newRight = Vector3::RIGHT;
-		}
-		else {
+		} else {
 			newRight = (Vector3::UP.cross(newFor)).normalized();
 		}
 		
 		//get up direction
-		Vector3 newUp = newRight.cross(newFor);
-		
-		up = newUp;
+		up = newFor.cross(newRight);
 		
 		//make look-at matrix
-		return Matrix4(
-					   newRight.x, -newRight.y, newRight.z, 0,
-					   newUp.x, newUp.y, newUp.z, 0,
-					   newFor.x, -newFor.y, newFor.z, 0,
-					   pos.x, pos.y, pos.z, 1
-					   );
+		return Matrix4(newRight.x, newRight.y, newRight.z, 0,
+					   up.x,       -up.y,      up.z,       0,
+					   newFor.x,   newFor.y,   newFor.z,   0,
+					   pos.x,      pos.y,      pos.z,      1);
 	}
 	
 	//this assumes its in degrees

@@ -107,11 +107,11 @@ inline void CameraZoom(EntityAdmin* admin){
 	
 	if (DengInput->KeyPressed(Key::NUMPADPLUS)) { 
 		cam->fieldOfView += 5;
-		renderer->UpdateCameraProjectionProperties(cam->fieldOfView, cam->nearZ, cam->farZ, false);
+		cam->UsePerspectiveProjection(cam->fieldOfView, admin->window->width, admin->window->height, cam->nearZ, cam->farZ);
 	}
 	if (DengInput->KeyPressed(Key::NUMPADMINUS)) {
 		cam->fieldOfView -= 5;
-		renderer->UpdateCameraProjectionProperties(cam->fieldOfView, cam->nearZ, cam->farZ, false);
+		cam->UsePerspectiveProjection(cam->fieldOfView, admin->window->width, admin->window->height, cam->nearZ, cam->farZ);
 	}
 }
 

@@ -481,36 +481,15 @@ void Renderer_Vulkan::CreateSceneBuffers(){
 }
 
 void Renderer_Vulkan::UpdateCameraPosition(Vector3 position){
-	camera.position = glm::make_vec3(&position.x);
-}
-
-void Renderer_Vulkan::UpdateCameraRotation(Vector3 rotation){
-	camera.rotation = glm::make_vec3(&rotation.x);
+	shaderData.values.viewPos = glm::vec4(glm::make_vec3(&position.x), 1.f);
 }
 
 void Renderer_Vulkan::UpdateCameraViewMatrix(Matrix4 m){
-	if(1){
-		//if(camera.precalcMatrices){
-		shaderData.values.view = glm::make_mat4(m.data);
-	}else{
-		glm::mat4 rotM = glm::mat4(1.f);
-		rotM = glm::rotate(rotM, glm::radians(camera.rotation.y), glm::vec3(0.f, 1.f, 0.f));
-		rotM = glm::rotate(rotM, glm::radians(camera.rotation.x), glm::vec3(1.f, 0.f, 0.f));
-		glm::vec4 target(0.f, 0.f, 1.f, 0.f);
-		target = rotM * target; target = glm::normalize(target);
-		shaderData.values.view = glm::lookAt(camera.position, camera.position + glm::vec3(target), glm::vec3(0.f, 1.f, 0.f));
-	}
+	shaderData.values.view = glm::make_mat4(m.data);
 }
 
 void Renderer_Vulkan::UpdateCameraProjectionMatrix(Matrix4 m){
 	shaderData.values.proj = glm::make_mat4(m.data);
-}
-
-void Renderer_Vulkan::UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ, bool precalc){
-	camera.fovX = fovX;
-	camera.nearZ = nearZ;
-	camera.farZ = farZ;
-	camera.precalcMatrices = precalc;
 }
 
 void Renderer_Vulkan::ReloadShaders() {
@@ -1159,7 +1138,6 @@ void Renderer_Vulkan::UpdateUniformBuffer(){
 	shaderData.values.time = time->totalTime;
 	shaderData.values.swidth = (glm::f32)extent.width;
 	shaderData.values.sheight = (glm::f32)extent.height;
-	shaderData.values.viewPos = glm::vec4(camera.position, 0.f) * glm::vec4(-1.f, 0.f, -1.f, 0.f);
 	shaderData.values.lightPos = glm::vec4(0.0f, 2.5f, 0.0f, 1.0f);
 	
 	//map shader data to uniform buffer

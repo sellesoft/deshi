@@ -7,6 +7,7 @@
 #include "../utils/Command.h"
 #include <time.h>
 #include <iomanip>
+#include <sstream>
 
 #include "../external/imgui/imgui_impl_vulkan.h"
 #include "../external/imgui/imgui_impl_glfw.h"
@@ -367,8 +368,8 @@ void ConsoleSystem::DrawConsole() {
 	
 	
 	PopStyleColor();				PopStyleColor(); PopStyleColor();   PopStyleVar();
-		PopStyleColor();		 PopStyleColor();	     PopStyleColor();
-			PopStyleColor(); PopStyleColor();             
+	PopStyleColor();		 PopStyleColor();	     PopStyleColor();
+	PopStyleColor(); PopStyleColor();             
 	
 	
 	//if we selected something from completion menu
@@ -391,27 +392,27 @@ void FlushBuffer() {
 	for (auto a : loccon->buffer) {
 		output += a.first;
 	}
-
+	
 	//https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
 	using namespace std::chrono;
-
+	
 	//get current time
 	auto now = system_clock::now();
-
+	
 	//convert to std::time_t so we can convert to std::tm
 	auto timer = system_clock::to_time_t(now);
-
+	
 	//convert to broken time
 	std::tm bt = *std::localtime(&timer);
-
+	
 	std::ostringstream oss;
-
+	
 	oss << std::put_time(&bt, "%H:%M:%S");
-
+	
 	//std::ofstream file(TOSTRING("log/deshi_log_", oss.str()));
-
+	
 	//file << "fuck you";
-
+	
 }
 
 void ConsoleSystem::Init() {
@@ -436,7 +437,7 @@ void ConsoleSystem::Update() {
 	if (dispcon) DrawConsole();
 	locadmin = admin;
 	loccon = admin->console;
-
+	
 	if (buffersize >= 200) {
 		FlushBuffer();
 		admin->console->buffer.clear();

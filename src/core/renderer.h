@@ -98,10 +98,8 @@ struct Renderer{
 	
 	//camera interface
 	virtual void   UpdateCameraPosition(Vector3 position) = 0;
-	virtual void   UpdateCameraRotation(Vector3 rotation) = 0;
 	virtual void   UpdateCameraViewMatrix(Matrix4 m) = 0;
 	virtual void   UpdateCameraProjectionMatrix(Matrix4 m) = 0;
-	virtual void   UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ, bool precalcMatrices) = 0;
 	
 	//other
 	virtual void   ReloadShaders() = 0;
@@ -134,14 +132,6 @@ struct SwapChainSupportDetails {
 	VkSurfaceCapabilitiesKHR capabilities;
 	std::vector<VkSurfaceFormatKHR> formats;
 	std::vector<VkPresentModeKHR> presentModes;
-};
-
-struct CameraVk{
-	float fovX, nearZ, farZ;
-	glm::vec3 position;
-	glm::vec3 rotation;
-	bool precalcMatrices; 
-	uint32 mode = 0;
 };
 
 struct VertexVk{
@@ -311,7 +301,6 @@ struct Renderer_Vulkan : public Renderer{
 	std::vector<SemaphoresVk> semaphores;
 	FramebufferAttachmentsVk  attachments = {};
 	
-	CameraVk camera;
 	struct ShaderData{ //uniform buffer for the shaders
 		VkBuffer       uniformBuffer       = VK_NULL_HANDLE;
 		VkDeviceMemory uniformBufferMemory = VK_NULL_HANDLE;
@@ -423,10 +412,8 @@ struct Renderer_Vulkan : public Renderer{
 	virtual void LoadScene(Scene* scene) override;
 	
 	virtual void UpdateCameraPosition(Vector3 position) override;
-	virtual void UpdateCameraRotation(Vector3 rotation) override;
 	virtual void UpdateCameraViewMatrix(Matrix4 m) override;
 	virtual void UpdateCameraProjectionMatrix(Matrix4 m) override;
-	virtual void UpdateCameraProjectionProperties(float fovX, float nearZ, float farZ, bool precalcMatrices) override;
 	
 	//signals vulkan to remake the pipelines
 	virtual void ReloadShaders() override;
