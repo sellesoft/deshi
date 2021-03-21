@@ -57,6 +57,7 @@ struct EntityAdmin {
 	
 	bool paused = false;
 	bool IMGUI_KEY_CAPTURE = false;
+	bool IMGUI_MOUSE_CAPTURE = false;
 	
 	void Init(Input* i, Window* w, Time* t, Renderer* renderer);
 	void Cleanup();

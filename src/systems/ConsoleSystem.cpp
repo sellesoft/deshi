@@ -358,9 +358,9 @@ void ConsoleSystem::DrawConsole() {
 	admin->IMGUI_KEY_CAPTURE = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 	
 	
-	PopStyleColor();             PopStyleColor(); PopStyleColor();   PopStyleVar();
-	PopStyleColor();       PopStyleColor();       PopStyleColor();
-	PopStyleColor(); PopStyleColor();             
+	PopStyleColor();				PopStyleColor(); PopStyleColor();   PopStyleVar();
+		PopStyleColor();		 PopStyleColor();	     PopStyleColor();
+			PopStyleColor(); PopStyleColor();             
 	
 	
 	//if we selected something from completion menu

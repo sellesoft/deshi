@@ -97,9 +97,6 @@
     <ClInclude Include="..\src\components\Light.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\components\MovementState.h">
-      <Filter>src\components\h</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\components\Physics.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
@@ -192,6 +189,9 @@
     </ClInclude>
     <ClInclude Include="..\src\core.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\components\Controller.h">
+      <Filter>src\components\h</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -328,9 +328,6 @@
     <ClCompile Include="..\src\components\Light.cpp">
       <Filter>src\components\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\components\MovementState.cpp">
-      <Filter>src\components\cpp</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\components\Physics.cpp">
       <Filter>src\components\cpp</Filter>
     </ClCompile>
@@ -417,6 +414,9 @@
     </ClCompile>
     <ClCompile Include="..\src\deshi.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\components\Controller.cpp">
+      <Filter>src\components\cpp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

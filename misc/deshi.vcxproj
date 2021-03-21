@@ -208,9 +208,9 @@
     <ClInclude Include="..\src\components\Collider.h" />
     <ClInclude Include="..\src\components\Component.h" />
     <ClInclude Include="..\src\components\Console.h" />
+    <ClInclude Include="..\src\components\Controller.h" />
     <ClInclude Include="..\src\components\Keybinds.h" />
     <ClInclude Include="..\src\components\Light.h" />
-    <ClInclude Include="..\src\components\MovementState.h" />
     <ClInclude Include="..\src\components\Physics.h" />
     <ClInclude Include="..\src\components\Transform.h" />
     <ClInclude Include="..\src\components\World.h" />
@@ -289,9 +289,9 @@
     <ClCompile Include="..\src\components\Collider.cpp" />
     <ClCompile Include="..\src\components\Component.cpp" />
     <ClCompile Include="..\src\components\Console.cpp" />
+    <ClCompile Include="..\src\components\Controller.cpp" />
     <ClCompile Include="..\src\components\Keybinds.cpp" />
     <ClCompile Include="..\src\components\Light.cpp" />
-    <ClCompile Include="..\src\components\MovementState.cpp" />
     <ClCompile Include="..\src\components\Physics.cpp" />
     <ClCompile Include="..\src\components\Transform.cpp" />
     <ClCompile Include="..\src\components\World.cpp" />

@@ -56,7 +56,7 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 	float deltaTime = admin->time->deltaTime;
 	
 	if (!admin->IMGUI_KEY_CAPTURE) {
-		/*
+
 			//camera rotation up
 			if (input->KeyDown(binds->cameraRotateUp)) {
 				if (input->ModDown(INPUT_SHIFT_HELD))        { camera->rotation.x -= 50 * deltaTime; }

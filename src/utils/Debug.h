@@ -92,8 +92,6 @@ struct has_str_method {
 	static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-struct Camera;
-
 namespace Debug {
 	
 	/// Primarily for outputting to ingame console, but can return a string from any object that is a c++ number
