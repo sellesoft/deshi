@@ -430,7 +430,21 @@ void DebugBar(EntityAdmin* admin) {
 		
 		//Middle Empty Separator
 		if (TableNextColumn()) {
+			static float time = DengTime->totalTime;
+			if (admin->cons_error_warn) {
+				time = DengTime->totalTime;
+				ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, GetColorU32(ColToVec4(Color(255 * (sin(2 * M_PI * time + cos(2 * M_PI * time)) + 1)/2, 0, 0, 255))));
+				
+				PushItemWidth(-1);
+				std::string str = admin->last_error;
+				float strlen = (fontsize - (fontsize / 2)) * str.size();
+				ImGui::SameLine((CalcItemWidth() - strlen) / 2);
+				PushStyleColor(ImGuiCol_Text, ColToVec4(Color(255 * -(sin(2 * M_PI * time + cos(2 * M_PI * time)) - 1)/2, 0, 0, 255)));
+				Text(str.c_str());
+				PopStyleColor();
+			}
 			
+
 		}
 		
 		//Show Time
@@ -534,8 +548,7 @@ void RenderCanvasSystem::Init() {
 }
 
 void RenderCanvasSystem::Update() {
-	Canvas*	canvas = admin->tempCanvas;
+	Canvas* canvas = admin->tempCanvas;
 	DrawUI();
-	
 }
 

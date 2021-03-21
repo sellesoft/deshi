@@ -14,7 +14,6 @@ add MeshRenderer component (meshID, instanceID, etc)
 add a component_state command to print state of a component
 fix transformations (seem to be off)
 add shaders: FLAT (vertex colors, sharp edges), PHONG (flat with lighting based on normals), PBR (4textures)
-log console output to a file
 settings file(s) [keybinds, video, audio, etc]
 fix program stalling when Keybinds cant find the keybind file
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
@@ -103,11 +102,17 @@ struct DeshiEngine {
 	
 	void Start(){
 		//init
+
+		//enforce deshi file system
+		deshi::enforceDirectories();
+
 		LoadConfig();
 		time.Init(300);
 		window.Init(&input, 1280, 720); //inits input as well
 		renderer->time = &time;
 		renderer->Init(&window, imgui); //inits imgui as well
+
+		
 		
 		//start entity admin
 		entityAdmin.Init(&input, &window, &time, renderer);
@@ -117,6 +122,8 @@ struct DeshiEngine {
 			glfwPollEvents();
 			Update();
 		}
+
+
 		
 		//cleanup
 		imgui->Cleanup(); delete imgui;
