@@ -104,7 +104,7 @@ void UpdateLayer(ContainerManager<Component*> cl) {
 }
 
 void EntityAdmin::Update() {
-
+	
 	//aha
 	if (!pause_command)	           UpdateLayer(freeCompLayers[CL0_COMMAND]);	 
 	if (!pause_command)	           systems[0]->Update(); //Command system
@@ -119,9 +119,9 @@ void EntityAdmin::Update() {
 	if (!pause_sound && !paused)   UpdateLayer(freeCompLayers[CL5_SOUND]);		 
 	if (!pause_sound && !paused)   systems[5]->Update(); //Sound System
 	if (!pause_last && !paused)    UpdateLayer(freeCompLayers[CL6_LAST]);
-
-
-			
+	
+	
+	
 	for(Component* c : components){
 		c->Update();
 	}
@@ -188,14 +188,14 @@ bool EntityAdmin::ExecCommand(std::string command, std::string args) {
 
 //// Entity ////
 
-uint32 Entity::AddComponent(Component* component) {
+u32 Entity::AddComponent(Component* component) {
 	components.push_back(component);
 	component->entity = this;
 	return components.size()-1;
 }
 
-uint32 Entity::AddComponents(std::vector<Component*> comps) {
-	uint32 value = this->components.size();
+u32 Entity::AddComponents(std::vector<Component*> comps) {
+	u32 value = this->components.size();
 	for(auto& c : comps) {
 		this->components.push_back(c);
 		c->entity = this;

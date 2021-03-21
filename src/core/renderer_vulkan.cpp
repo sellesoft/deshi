@@ -39,7 +39,7 @@ const bool enableValidationLayers = true;
 
 #define ASSERTVK(func, message) ASSERT((func) == VK_SUCCESS, message);
 
-#define LOGGING_LEVEL 0
+#define LOGGING_LEVEL 2
 #if LOGGING_LEVEL == 0
 #define PRINTVK(level, message) (void)0
 #else
@@ -113,7 +113,7 @@ void Renderer_Vulkan::Render() {
 	VkSemaphore render_sema = semaphores[frameIndex].renderComplete;
 	
 	//get next image from surface
-	uint32 imageIndex;
+	u32 imageIndex;
 	VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, image_sema, VK_NULL_HANDLE, &imageIndex);
 	if(result == VK_ERROR_OUT_OF_DATE_KHR){
 		remakeWindow = true;
@@ -201,45 +201,45 @@ void Renderer_Vulkan::Cleanup() {
 	//TODO(ro,delle) save pipeline cache to disk on exit, and load on start (~20x creation speed)
 }
 
-uint32 Renderer_Vulkan::AddTriangle(Triangle* triangle){
+u32 Renderer_Vulkan::AddTriangle(Triangle* triangle){
 	PRINT("Not implemented yet");
 	return 0xFFFFFFFF;
 }
 
-void Renderer_Vulkan::RemoveTriangle(uint32 triangleID){
+void Renderer_Vulkan::RemoveTriangle(u32 triangleID){
 	PRINT("Not implemented yet");
 }
 
-void Renderer_Vulkan::UpdateTriangleColor(uint32 triangleID, Color color){
+void Renderer_Vulkan::UpdateTriangleColor(u32 triangleID, Color color){
 	PRINT("Not implemented yet");
 }
 
-void Renderer_Vulkan::UpdateTrianglePosition(uint32 triangleID, Vector3 position){
+void Renderer_Vulkan::UpdateTrianglePosition(u32 triangleID, Vector3 position){
 	PRINT("Not implemented yet");
 }
 
-void Renderer_Vulkan::TranslateTriangle(uint32 triangleID, Vector3 translation){
+void Renderer_Vulkan::TranslateTriangle(u32 triangleID, Vector3 translation){
 	PRINT("Not implemented yet");
 }
 
-std::vector<uint32> Renderer_Vulkan::AddTriangles(std::vector<Triangle*> triangles){
+std::vector<u32> Renderer_Vulkan::AddTriangles(std::vector<Triangle*> triangles){
 	PRINT("Not implemented yet");
-	return std::vector<uint32>();
+	return std::vector<u32>();
 }
 
-void Renderer_Vulkan::RemoveTriangles(std::vector<uint32> triangleIDs){
-	PRINT("Not implemented yet");
-}
-
-void Renderer_Vulkan::UpdateTrianglesColor(std::vector<uint32> triangleIDs, Color color){
+void Renderer_Vulkan::RemoveTriangles(std::vector<u32> triangleIDs){
 	PRINT("Not implemented yet");
 }
 
-void Renderer_Vulkan::TranslateTriangles(std::vector<uint32> triangleIDs, Vector3 translation){
+void Renderer_Vulkan::UpdateTrianglesColor(std::vector<u32> triangleIDs, Color color){
+	PRINT("Not implemented yet");
+}
+
+void Renderer_Vulkan::TranslateTriangles(std::vector<u32> triangleIDs, Vector3 translation){
 	PRINT("Not implemented");
 }
 
-uint32 Renderer_Vulkan::LoadMesh(Mesh* m){
+u32 Renderer_Vulkan::LoadMesh(Mesh* m){
 	PRINTVK(3, "{-}{-}{-} Loading Mesh: " << m->name);
 	MeshVk mesh{}; mesh.visible = true;
 	mesh.modelMatrix = glm::make_mat4(m->transform.data);
@@ -251,11 +251,11 @@ uint32 Renderer_Vulkan::LoadMesh(Mesh* m){
 	scene.textures.reserve(scene.textures.size() + m->textureCount);
 	scene.materials.reserve(scene.materials.size() + m->batchCount);
 	
-	uint32 batchVertexStart;
-	uint32 batchIndexStart;
+	u32 batchVertexStart;
+	u32 batchIndexStart;
 	for(Batch& batch : m->batchArray){
-		batchVertexStart = uint32(scene.vertexBuffer.size());
-		batchIndexStart = uint32(scene.indexBuffer.size());
+		batchVertexStart = u32(scene.vertexBuffer.size());
+		batchIndexStart = u32(scene.indexBuffer.size());
 		
 		//vertices
 		for(int i=0; i<batch.vertexArray.size(); ++i){ 
@@ -268,17 +268,17 @@ uint32 Renderer_Vulkan::LoadMesh(Mesh* m){
 		}
 		
 		//indices
-		for(uint32 i : batch.indexArray){
+		for(u32 i : batch.indexArray){
 			scene.indexBuffer.push_back(batchVertexStart+i);
 		}
 		//scene.indexBuffer.insert(scene.indexBuffer.end(), batch.indexArray.begin(), batch.indexArray.end());
 		
 		//material
-		MaterialVk mat; mat.shader = uint32(batch.shader);
+		MaterialVk mat; mat.shader = u32(batch.shader);
 		{
 			//material textures
 			for(int i=0; i<batch.textureArray.size(); ++i){ 
-				uint32 idx = LoadTexture(batch.textureArray[i]);
+				u32 idx = LoadTexture(batch.textureArray[i]);
 				switch(scene.textures[idx].type){
 					case(TEXTURE_ALBEDO):  { mat.albedoTextureIndex   = idx; }break;
 					case(TEXTURE_NORMAL):  { mat.normalTextureIndex   = idx; }break;
@@ -304,7 +304,7 @@ uint32 Renderer_Vulkan::LoadMesh(Mesh* m){
 			//TODO(r,delle) specialization constants for materials here or in pipeline
 			//see gltfscenerendering.cpp:575
 			
-			mat.id = uint32(scene.materials.size());
+			mat.id = u32(scene.materials.size());
 			scene.materials.push_back(mat);
 		}
 		
@@ -317,52 +317,56 @@ uint32 Renderer_Vulkan::LoadMesh(Mesh* m){
 	}
 	
 	//add mesh to scene
-	mesh.id = uint32(scene.meshes.size());
+	mesh.id = u32(scene.meshes.size());
 	scene.meshes.push_back(mesh);
 	if(initialized){ CreateSceneBuffers(); }
 	return mesh.id;
 }
 
-void Renderer_Vulkan::UnloadMesh(uint32 meshID){
+void Renderer_Vulkan::UnloadMesh(u32 meshID){
 	PRINT("Not implemented yet");
 }
 
-void Renderer_Vulkan::ApplyTextureToMesh(uint32 textureID, uint32 meshID){
+void Renderer_Vulkan::ApplyTextureToMesh(u32 textureID, u32 meshID){
 	PRINT("Not implemented yet");
 }
 
-void Renderer_Vulkan::RemoveTextureFromMesh(uint32 textureID, uint32 meshID){
+void Renderer_Vulkan::RemoveTextureFromMesh(u32 textureID, u32 meshID){
 	PRINT("Not implemented yet");
 }
 
-void Renderer_Vulkan::UpdateMeshMatrix(uint32 meshID, Matrix4 matrix){
+void Renderer_Vulkan::UpdateMeshMatrix(u32 meshID, Matrix4 matrix){
 	if(meshID < scene.meshes.size()){
 		scene.meshes[meshID].modelMatrix = glm::make_mat4(matrix.data);
 	}
 }
 
-void Renderer_Vulkan::TransformMeshMatrix(uint32 meshID, Matrix4 transform){
+void Renderer_Vulkan::TransformMeshMatrix(u32 meshID, Matrix4 transform){
 	if(meshID < scene.meshes.size()){
 		scene.meshes[meshID].modelMatrix = glm::make_mat4(transform.data) * scene.meshes[meshID].modelMatrix;
 	}
 }
 
-void Renderer_Vulkan::UpdateMeshBatchShader(uint32 meshID, uint32 batchIndex, uint32 shader){
+void Renderer_Vulkan::UpdateMeshBatchShader(u32 meshID, u32 batchIndex, u32 shader){
 	if(meshID < scene.meshes.size() && batchIndex < scene.meshes[meshID].primitives.size()){
-		uint32 matID = scene.meshes[meshID].primitives[batchIndex].materialIndex;
+		u32 matID = scene.meshes[meshID].primitives[batchIndex].materialIndex;
 		scene.materials[matID].pipeline = GetPipelineFromShader(shader);
 	}
 }
 
-uint32 Renderer_Vulkan::LoadTexture(Texture texture){
+u32 Renderer_Vulkan::LoadTexture(Texture texture){
 	PRINTVK(3, "{-}{-}{-} Loading Texture: " << texture.filename);
+	//TODO(or,delle) optimize checking if a texture was already loaded
+	for(auto& tex : scene.textures){ if(strcmp(tex.filename, texture.filename) == 0){ return tex.id; } }
+	
 	TextureVk tex; 
+	strncpy_s(tex.filename, texture.filename, 63);
 	tex.pixels = stbi_load((deshi::getTexturesPath() + texture.filename).c_str(), 
 						   &tex.width, &tex.height, &tex.channels, STBI_rgb_alpha);
 	ASSERT(tex.pixels, "stb failed to load image");
 	
-	tex.type = uint32(texture.type);
-	tex.mipLevels = uint32(std::floor(std::log2(std::max(tex.width, tex.height)))) + 1;
+	tex.type = u32(texture.type);
+	tex.mipLevels = u32(std::floor(std::log2(std::max(tex.width, tex.height)))) + 1;
 	tex.imageSize = tex.width * tex.height * 4;
 	
 	//copy the memory to a staging buffer
@@ -372,7 +376,7 @@ uint32 Renderer_Vulkan::LoadTexture(Texture texture){
 	//copy the staging buffer to the image and generate its mipmaps
 	createImage(tex.width, tex.height, tex.mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, tex.image, tex.imageMemory);
 	transitionImageLayout(tex.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, tex.mipLevels);
-	copyBufferToImage(staging.buffer, tex.image, uint32(tex.width), uint32(tex.height));
+	copyBufferToImage(staging.buffer, tex.image, u32(tex.width), u32(tex.height));
 	generateMipmaps(tex.image, VK_FORMAT_R8G8B8A8_SRGB, tex.width, tex.height, tex.mipLevels);
 	//image layout set to SHADER_READ_ONLY when generating mipmaps
 	tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -413,13 +417,13 @@ uint32 Renderer_Vulkan::LoadTexture(Texture texture){
 	tex.imageInfo.imageLayout = tex.layout;
 	
 	//add the texture to the scene and return its index
-	uint32 idx = uint32(scene.textures.size());
+	u32 idx = u32(scene.textures.size());
 	tex.id = idx;
 	scene.textures.push_back(tex);
 	return idx;
 }
 
-void Renderer_Vulkan::UnloadTexture(uint32 textureID){
+void Renderer_Vulkan::UnloadTexture(u32 textureID){
 	PRINT("Not implemented yet");
 }
 
@@ -449,7 +453,7 @@ void Renderer_Vulkan::CreateSceneBuffers(){
 	PRINTVK(3, "{-}{-}{-} Creating Scene Buffers");
 	StagingBufferVk vertexStaging{}, indexStaging{};
 	size_t vertexBufferSize = scene.vertexBuffer.size() * sizeof(VertexVk);
-	size_t indexBufferSize  = scene.indexBuffer.size()  * sizeof(uint32);
+	size_t indexBufferSize  = scene.indexBuffer.size()  * sizeof(u32);
 	
 	//create host visible vertex and index buffers (CPU/RAM)
 	CreateAndMapBuffer(vertexStaging.buffer, vertexStaging.memory, scene.vertices.bufferSize, vertexBufferSize, scene.vertexBuffer.data(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -520,10 +524,10 @@ void Renderer_Vulkan::CreateInstance() {
 	VkInstanceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pApplicationInfo = &appInfo;
-	createInfo.enabledExtensionCount = static_cast<uint32>(extensions.size());
+	createInfo.enabledExtensionCount = static_cast<u32>(extensions.size());
 	createInfo.ppEnabledExtensionNames = extensions.data();
 	if(enableValidationLayers) {
-		createInfo.enabledLayerCount = static_cast<uint32>(validationLayers.size());
+		createInfo.enabledLayerCount = static_cast<u32>(validationLayers.size());
 		createInfo.ppEnabledLayerNames = validationLayers.data();
 		populateDebugMessengerCreateInfo(debugCreateInfo);
 		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
@@ -552,7 +556,7 @@ void Renderer_Vulkan::CreateSurface() {
 
 void Renderer_Vulkan::PickPhysicalDevice() {
 	PRINTVK(2, "{-}{-} Picking Physical Device");
-	uint32 deviceCount = 0;
+	u32 deviceCount = 0;
 	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 	std::vector<VkPhysicalDevice> devices(deviceCount);
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
@@ -577,13 +581,13 @@ void Renderer_Vulkan::PickPhysicalDevice() {
 void Renderer_Vulkan::CreateLogicalDevice() {
 	PRINTVK(2, "{-}{-} Creating Logical Device");
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32> uniqueQueueFamilies = {
+	std::set<u32> uniqueQueueFamilies = {
 		physicalQueueFamilies.graphicsFamily.value(), physicalQueueFamilies.presentFamily.value()
 	};
 	
 	float queuePriority = 1.0f;
 	//queueCreateInfos.reserve(uniqueQueueFamilies.size());
-	for(uint32 queueFamily : uniqueQueueFamilies){
+	for(u32 queueFamily : uniqueQueueFamilies){
 		VkDeviceQueueCreateInfo queueCreateInfo{};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfo.queueFamilyIndex = physicalQueueFamilies.graphicsFamily.value();
@@ -608,12 +612,12 @@ void Renderer_Vulkan::CreateLogicalDevice() {
 	VkDeviceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
-	createInfo.queueCreateInfoCount = static_cast<uint32>(queueCreateInfos.size());
+	createInfo.queueCreateInfoCount = static_cast<u32>(queueCreateInfos.size());
 	createInfo.pEnabledFeatures = &enabledFeatures;
-	createInfo.enabledExtensionCount = static_cast<uint32>(deviceExtensions.size());
+	createInfo.enabledExtensionCount = static_cast<u32>(deviceExtensions.size());
 	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	if(enableValidationLayers) {
-		createInfo.enabledLayerCount = static_cast<uint32>(validationLayers.size());
+		createInfo.enabledLayerCount = static_cast<u32>(validationLayers.size());
 		createInfo.ppEnabledLayerNames = validationLayers.data();
 	}else{
 		createInfo.enabledLayerCount = 0;
@@ -710,7 +714,7 @@ void Renderer_Vulkan::CreateLayouts(){
 	std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
 		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0)
 	};
-	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings.data(), (uint32)setLayoutBindings.size());
+	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings.data(), (u32)setLayoutBindings.size());
 	ASSERTVK(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.matrices), "failed to create ubo descriptor set layout");
 	
 	//create set layout for passing textures (4 types of textures)
@@ -724,7 +728,7 @@ void Renderer_Vulkan::CreateLayouts(){
 		// Light/emissive map
 		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
 	};
-	descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings.data(), (uint32)setLayoutBindings.size());
+	descriptorSetLayoutCI = vks::initializers::descriptorSetLayoutCreateInfo(setLayoutBindings.data(), (u32)setLayoutBindings.size());
 	ASSERTVK(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.textures), "failed to create textures descriptor set layout");
 	
 	//create pipeline layout wth push constant to push model matrix with every mesh
@@ -786,7 +790,7 @@ void Renderer_Vulkan::CreateSwapChain() {
 	//get min image count if not specified
 	if(minImageCount == 0) { minImageCount = GetMinImageCountFromPresentMode(presentMode); }
 	
-	uint32 queueFamilyIndices[] = {
+	u32 queueFamilyIndices[] = {
 		physicalQueueFamilies.graphicsFamily.value(), physicalQueueFamilies.presentFamily.value()
 	};
 	
@@ -892,7 +896,7 @@ void Renderer_Vulkan::CreateRenderPass(){
 	std::array<VkAttachmentDescription, 3> attachments = {colorAttachment, depthAttachment, colorAttachmentResolve};
 	VkRenderPassCreateInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = static_cast<uint32>(attachments.size());
+	renderPassInfo.attachmentCount = static_cast<u32>(attachments.size());
 	renderPassInfo.pAttachments = attachments.data();
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
@@ -937,7 +941,7 @@ void Renderer_Vulkan::CreateFrames(){
 	
 	
 	frames.resize(imageCount);
-	for (uint32 i = 0; i < imageCount; ++i) {
+	for (u32 i = 0; i < imageCount; ++i) {
 		//set the frame images to the swap chain images
 		//NOTE the previous image and its memory gets freed when the swapchain gets destroyed
 		frames[i].image = images[i];
@@ -952,7 +956,7 @@ void Renderer_Vulkan::CreateFrames(){
 		VkFramebufferCreateInfo info{};
 		info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		info.renderPass = renderPass;
-		info.attachmentCount = (uint32)frameBufferAttachments.size();
+		info.attachmentCount = (u32)frameBufferAttachments.size();
 		info.pAttachments = frameBufferAttachments.data();
 		info.width = width;
 		info.height = height;
@@ -1016,7 +1020,7 @@ void Renderer_Vulkan::CreatePipelines(){
 	multisampleState.minSampleShading = .2f; //min fraction for sample shading; closer to one is smoother
 	
 	std::vector<VkDynamicState> dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR/*, VK_DYNAMIC_STATE_LINE_WIDTH*/ };
-	VkPipelineDynamicStateCreateInfo dynamicState = vks::initializers::pipelineDynamicStateCreateInfo(dynamicStateEnables.data(), (uint32)dynamicStateEnables.size(), 0);
+	VkPipelineDynamicStateCreateInfo dynamicState = vks::initializers::pipelineDynamicStateCreateInfo(dynamicStateEnables.data(), (u32)dynamicStateEnables.size(), 0);
 	
 	//vertex input flow control
 	std::vector<VkVertexInputBindingDescription> vertexInputBindings = VertexVk::getBindingDescriptions();
@@ -1038,7 +1042,7 @@ void Renderer_Vulkan::CreatePipelines(){
 	pipelineInfo.pDepthStencilState  = &depthStencilState;
 	pipelineInfo.pDynamicState       = &dynamicState;
 	pipelineInfo.pVertexInputState   = &vertexInputState;
-	pipelineInfo.stageCount          = uint32(shaderStages.size());
+	pipelineInfo.stageCount          = u32(shaderStages.size());
 	pipelineInfo.pStages             = shaderStages.data();
 	pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
 	pipelineInfo.basePipelineIndex   = -1;
@@ -1101,7 +1105,7 @@ void Renderer_Vulkan::BuildCommandBuffers() {
 	renderPassInfo.renderPass = renderPass;
 	renderPassInfo.renderArea.offset = {0, 0};
 	renderPassInfo.renderArea.extent = extent;
-	renderPassInfo.clearValueCount = (uint32)clearValues.size();
+	renderPassInfo.clearValueCount = (u32)clearValues.size();
 	renderPassInfo.pClearValues = clearValues.data();
 	
 	const VkViewport viewport = vks::initializers::viewport((float)width, (float)height, 0.0f, 1.0f);
@@ -1153,7 +1157,7 @@ void Renderer_Vulkan::UpdateUniformBuffer(){
 
 bool Renderer_Vulkan::checkValidationLayerSupport() {
 	PRINTVK(3, "{-}{-}{-} Checking Validation Layer Support");
-	uint32 layerCount;
+	u32 layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 	std::vector<VkLayerProperties> availableLayers(layerCount);
 	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
@@ -1173,7 +1177,7 @@ bool Renderer_Vulkan::checkValidationLayerSupport() {
 
 std::vector<const char*> Renderer_Vulkan::getRequiredExtensions() {
 	PRINTVK(3, "{-}{-}{-} Getting Required Extensions");
-	uint32 glfwExtensionCount = 0;
+	u32 glfwExtensionCount = 0;
 	const char** glfwExtensions;
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
@@ -1207,7 +1211,7 @@ QueueFamilyIndices Renderer_Vulkan::findQueueFamilies(VkPhysicalDevice device) {
 	PRINTVK(3, "{-}{-}{-} Finding Queue Families");
 	QueueFamilyIndices indices;
 	
-	uint32 queueFamilyCount = 0;
+	u32 queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
@@ -1229,7 +1233,7 @@ QueueFamilyIndices Renderer_Vulkan::findQueueFamilies(VkPhysicalDevice device) {
 
 bool Renderer_Vulkan::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 	PRINTVK(3, "{-}{-}{-} Checking Device Extension Support");
-	uint32 extensionCount;
+	u32 extensionCount;
 	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
 	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
@@ -1247,14 +1251,14 @@ SwapChainSupportDetails Renderer_Vulkan::querySwapChainSupport(VkPhysicalDevice 
 	SwapChainSupportDetails details;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 	
-	uint32 formatCount;
+	u32 formatCount;
 	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
 	if (formatCount != 0) {
 		details.formats.resize(formatCount);
 		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
 	}
 	
-	uint32 presentModeCount;
+	u32 presentModeCount;
 	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
 	if (presentModeCount != 0) {
 		details.presentModes.resize(presentModeCount);
@@ -1308,7 +1312,7 @@ VkExtent2D Renderer_Vulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& cap
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);
 		
-		VkExtent2D actualExtent = { static_cast<uint32>(width), static_cast<uint32>(height) };
+		VkExtent2D actualExtent = { static_cast<u32>(width), static_cast<u32>(height) };
 		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
 		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
 		
@@ -1316,7 +1320,7 @@ VkExtent2D Renderer_Vulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& cap
 	}
 }
 
-VkImageView Renderer_Vulkan::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32 mipLevels) {
+VkImageView Renderer_Vulkan::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels) {
 	PRINTVK(4, "{-}{-}{-}{-} Creating Image View");
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -1380,7 +1384,7 @@ VkPipelineShaderStageCreateInfo Renderer_Vulkan::loadShader(std::string fileName
 	VkShaderModuleCreateInfo moduleInfo{};
 	moduleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	moduleInfo.codeSize = code.size();
-	moduleInfo.pCode = (uint32*)code.data();
+	moduleInfo.pCode = (u32*)code.data();
 	
 	VkShaderModule shaderModule;
 	ASSERTVK(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
@@ -1390,12 +1394,12 @@ VkPipelineShaderStageCreateInfo Renderer_Vulkan::loadShader(std::string fileName
 	return shaderStage;
 }
 
-uint32 Renderer_Vulkan::findMemoryType(uint32 typeFilter, VkMemoryPropertyFlags properties) {
+u32 Renderer_Vulkan::findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties) {
 	PRINTVK(4, "{-}{-}{-}{-} Finding Memory Types");
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 	
-	for (uint32 i = 0; i < memProperties.memoryTypeCount; i++) {
+	for (u32 i = 0; i < memProperties.memoryTypeCount; i++) {
 		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
 			return i;
 		}
@@ -1403,7 +1407,7 @@ uint32 Renderer_Vulkan::findMemoryType(uint32 typeFilter, VkMemoryPropertyFlags 
 	ASSERT(false, "failed to find suitable memory type"); //error out if no suitable memory found
 }
 
-void Renderer_Vulkan::createImage(uint32 width, uint32 height, uint32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
+void Renderer_Vulkan::createImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
 	PRINTVK(4, "{-}{-}{-}{-} Creating Image");
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1541,7 +1545,7 @@ void Renderer_Vulkan::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
 	vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
 
-void Renderer_Vulkan::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32 mipLevels) {
+void Renderer_Vulkan::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels) {
 	PRINTVK(4, "{-}{-}{-}{-} Transitioning Image Layout");
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 	
@@ -1582,7 +1586,7 @@ void Renderer_Vulkan::transitionImageLayout(VkImage image, VkFormat format, VkIm
 	endSingleTimeCommands(commandBuffer);
 }
 
-void Renderer_Vulkan::copyBufferToImage(VkBuffer buffer, VkImage image, uint32 width, uint32 height) {
+void Renderer_Vulkan::copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height) {
 	PRINTVK(4, "{-}{-}{-}{-} Copying Buffer To Image");
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 	
@@ -1601,7 +1605,7 @@ void Renderer_Vulkan::copyBufferToImage(VkBuffer buffer, VkImage image, uint32 w
 	endSingleTimeCommands(commandBuffer);
 }
 
-void Renderer_Vulkan::generateMipmaps(VkImage image, VkFormat imageFormat, int32 texWidth, int32 texHeight, uint32 mipLevels) {
+void Renderer_Vulkan::generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth, i32 texHeight, u32 mipLevels) {
 	PRINTVK(4, "{-}{-}{-}{-} Creating Image Mipmaps");
 	// Check if image format supports linear blitting
 	VkFormatProperties formatProperties;
@@ -1622,9 +1626,9 @@ void Renderer_Vulkan::generateMipmaps(VkImage image, VkFormat imageFormat, int32
 	barrier.subresourceRange.layerCount = 1;
 	barrier.subresourceRange.levelCount = 1;
 	
-	int32 mipWidth = texWidth;
-	int32 mipHeight = texHeight;
-	for (uint32 i = 1; i < mipLevels; i++) {
+	i32 mipWidth = texWidth;
+	i32 mipHeight = texHeight;
+	for (u32 i = 1; i < mipLevels; i++) {
 		barrier.subresourceRange.baseMipLevel = i - 1;
 		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -1682,7 +1686,7 @@ void Renderer_Vulkan::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDevic
 }
 
 //TODO(ro,delle) maybe optimize this by simply doing: &pipelines + shader*sizeof(pipelines.FLAT)
-VkPipeline Renderer_Vulkan::GetPipelineFromShader(uint32 shader){
+VkPipeline Renderer_Vulkan::GetPipelineFromShader(u32 shader){
 	switch(shader){
 		case(Shader::FLAT):default: { return pipelines.FLAT;      };
 		case(Shader::PHONG):        { return pipelines.PHONG;     };

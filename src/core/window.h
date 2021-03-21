@@ -23,13 +23,13 @@ struct Window{
 	GLFWmonitor* monitor;
 	inline static Input* input; //TODO(c,delle) find a way to not do this static
 	
-	int32 x, y;
-	int32 width, height;
-	int32 screenWidth, screenHeight;
-	int32 restoreX, restoreY;
-	int32 restoreW, restoreH;
-	int32 centerX, centerY;
-	int32 refreshRate, screenRefreshRate; //TODO(,delle) add selecting the refresh rate
+	i32 x, y;
+	i32 width, height;
+	i32 screenWidth, screenHeight;
+	i32 restoreX, restoreY;
+	i32 restoreW, restoreH;
+	i32 centerX, centerY;
+	i32 refreshRate, screenRefreshRate; //TODO(,delle) add selecting the refresh rate
 	DisplayMode displayMode;
 	CursorMode cursorMode;
 	bool minimized;
@@ -40,7 +40,7 @@ struct Window{
 	
 	//TODO(c,delle) vsync isnt handled in GLFW when using vulkan, handle other renderers when necessary
 	//thanks: https://github.com/OneLoneCoder/olcPixelGameEngine/pull/181
-	void Init(Input* input, int32 width, int32 height, int32 x = 0, int32 y = 0,  
+	void Init(Input* input, i32 width, i32 height, i32 x = 0, i32 y = 0,  
 			  DisplayMode displayMode = DisplayMode::WINDOWED);
 	
 	void Update();

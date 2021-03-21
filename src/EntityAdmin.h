@@ -5,7 +5,12 @@
 #include "utils/defines.h"
 #include "utils/Debug.h"
 
-typedef uint32 EntityID;
+//deshi Engine data defines; accessible only from inside Components/Systems
+#define DengInput admin->input
+#define DengWindow admin->window
+#define DengTime admin->time
+
+typedef u32 EntityID;
 struct Entity;
 struct System;
 struct Component;
@@ -63,7 +68,7 @@ struct EntityAdmin {
 	bool pause_console = false;
 	bool pause_sound = false;
 	bool pause_last = false;
-
+	
 	bool IMGUI_KEY_CAPTURE = false;
 	bool IMGUI_MOUSE_CAPTURE = false;
 	
@@ -111,9 +116,9 @@ struct Entity {
 	
 	//adds a component to the end of the components vector
 	//returns the position in the vector
-	uint32 AddComponent(Component* component);
+	u32 AddComponent(Component* component);
 	
-	uint32 AddComponents(std::vector<Component*> components);
+	u32 AddComponents(std::vector<Component*> components);
 	
 	~Entity();
 }; //TODO(,delle) move WorldSystem entity-component functions into Entity

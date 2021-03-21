@@ -11,7 +11,7 @@ void glfwError(int id, const char* description){
 	std::cout << description << std::endl;
 }
 
-void Window::Init(Input* input, int32 width, int32 height, int32 x, int32 y, DisplayMode displayMode){
+void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode displayMode){
 	glfwSetErrorCallback(&glfwError);
 	if (!glfwInit()){ return; }
 	Window::input = input;
@@ -125,7 +125,7 @@ void Window::Init(Input* input, int32 width, int32 height, int32 x, int32 y, Dis
 	//void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	glfwSetMouseButtonCallback(window, 
 							   [](GLFWwindow* w, int button, int action, int mods)->void{
-								   std::map<size_t, uint8>::iterator it = Window::input->mapMouse.find(button);
+								   std::map<size_t, u8>::iterator it = Window::input->mapMouse.find(button);
 								   if(it != Window::input->mapMouse.end()){
 									   if(action == GLFW_PRESS){
 										   Window::input->realMouseState[it->second] = true;
@@ -152,7 +152,7 @@ void Window::Init(Input* input, int32 width, int32 height, int32 x, int32 y, Dis
 	//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 	glfwSetKeyCallback(window,
 					   [](GLFWwindow* window, int key, int scancode, int action, int mods)->void{
-						   std::map<size_t, uint8>::iterator it = Window::input->mapKeys.find(key);
+						   std::map<size_t, u8>::iterator it = Window::input->mapKeys.find(key);
 						   if(it != Window::input->mapKeys.end()){
 							   if(action == GLFW_PRESS){
 								   Window::input->realKeyState[it->second] = true;

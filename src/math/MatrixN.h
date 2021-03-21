@@ -79,18 +79,18 @@ The transformation matrix will follow the format to the right:						|0,				0,			
 */
 
 struct MatrixN {
-	uint32 rows = 0;
-	uint32 cols = 0;
-	uint32 elementCount = 0;
+	u32 rows = 0;
+	u32 cols = 0;
+	u32 elementCount = 0;
 	std::vector<float> data;
-
+	
 	MatrixN() {}
-	MatrixN(uint32 inRows, uint32 inCols);
-	MatrixN(uint32 inRows, uint32 inCols, std::vector<float> list);
+	MatrixN(u32 inRows, u32 inCols);
+	MatrixN(u32 inRows, u32 inCols, std::vector<float> list);
 	MatrixN(const MatrixN& m);
-
-	float&	operator () (uint32 row, uint32 col);
-	float   operator () (uint32 row, uint32 col) const;
+	
+	float&	operator () (u32 row, u32 col);
+	float   operator () (u32 row, u32 col) const;
 	void	operator =	(const MatrixN& rhs);
 	MatrixN operator *  (const float& rhs) const;
 	void	operator *= (const float& rhs);
@@ -109,18 +109,18 @@ struct MatrixN {
 	bool	operator == (const MatrixN& rhs) const;
 	bool	operator != (const MatrixN& rhs) const;
 	friend MatrixN operator * (const float& lhs, const MatrixN& rhs) { return rhs * lhs; }
-
+	
 	const std::string str() const;
 	const std::string str2f() const;
 	MatrixN Transpose() const;
-	MatrixN Submatrix(std::vector<uint32> inRows, std::vector<uint32> inCols) const;
+	MatrixN Submatrix(std::vector<u32> inRows, std::vector<u32> inCols) const;
 	float Minor(int row, int col) const;
 	float Cofactor(int row, int col) const;
 	MatrixN Adjoint() const;
 	float Determinant() const;
 	MatrixN Inverse() const;
-
-	static MatrixN Identity(uint32 rows, uint32 cols);
+	
+	static MatrixN Identity(u32 rows, u32 cols);
 	static MatrixN M3x3To4x4(const MatrixN& m);
 	static MatrixN RotationMatrix(Vector3 rotation, bool _4x4 = true);
 	static MatrixN RotationMatrixX(float degrees, bool _4x4 = true);
@@ -129,27 +129,27 @@ struct MatrixN {
 	static MatrixN TranslationMatrix(Vector3 translation);
 	static MatrixN ScaleMatrix(Vector3 scale, bool _4x4 = true);
 	static MatrixN TransformationMatrix(Vector3 translation, Vector3 rotation, Vector3 scale);
-
+	
 	//Non-MatrixN vs MatrixN interactions
 	MatrixN(Vector3 v);
 	MatrixN(Vector3 v, float w);
-
+	
 };
 
 
 
 //// Constructors ////
 
-inline MatrixN::MatrixN(uint32 inRows, uint32 inCols) : rows(inRows), cols(inCols) {
+inline MatrixN::MatrixN(u32 inRows, u32 inCols) : rows(inRows), cols(inCols) {
 	ASSERT(inRows != 0 && inCols != 0, "MatrixN constructor was given zero size");
 	this->elementCount = inRows * inCols;
 	this->data = std::vector<float>(elementCount);
 }
 
-inline MatrixN::MatrixN(uint32 inRows, uint32 inCols, std::vector<float> list) : rows(inRows), cols(inCols) {
+inline MatrixN::MatrixN(u32 inRows, u32 inCols, std::vector<float> list) : rows(inRows), cols(inCols) {
 	ASSERT(inRows != 0 && inCols != 0, "MatrixN constructor was given zero size");
 	this->elementCount = inRows * inCols;
-	uint32 inCount = list.size();
+	u32 inCount = list.size();
 	ASSERT(inCount <= elementCount, "MatrixN constructor was given too many elements for given dimensions");
 	this->data = std::vector<float>(elementCount);
 	for (int i = 0; i < list.size(); ++i) {
@@ -166,12 +166,12 @@ inline MatrixN::MatrixN(const MatrixN& m) : rows(m.rows), cols(m.cols), elementC
 //// Operators ////
 
 //element accessor: matrix(row,col)
-inline float& MatrixN::operator () (uint32 row, uint32 col) {
+inline float& MatrixN::operator () (u32 row, u32 col) {
 	ASSERT(row < rows && col < cols, "MatrixN subscript out of bounds");
 	return data[(size_t)cols*row + col];
 }
 
-inline float  MatrixN::operator () (uint32 row, uint32 col) const {
+inline float  MatrixN::operator () (u32 row, u32 col) const {
 	ASSERT(row < rows && col < cols, "MatrixN subscript out of bounds");
 	return data[(size_t)cols * row + col];
 }
@@ -346,7 +346,7 @@ inline const std::string MatrixN::str() const {
 	if (rows == 0 || cols == 0) {
 		return "|Zero dimension matrix|";
 	}
-
+	
 	std::string str = std::to_string(rows) + "x" + std::to_string(cols) + " MatrixN:\n|";
 	if (rows == 1) {
 		for (int i = 0; i < cols-1; ++i) {
@@ -359,7 +359,7 @@ inline const std::string MatrixN::str() const {
 		str += std::string(buffer) + "|";
 		return str;
 	}
-
+	
 	for (int i = 0; i < elementCount-1; ++i) {
 		char buffer[15];
 		std::snprintf(buffer, 15, "%+.6f", data[i]);
@@ -380,7 +380,7 @@ inline const std::string MatrixN::str2f() const {
 	if (rows == 0 || cols == 0) {
 		return "|Zero dimension matrix|";
 	}
-
+	
 	std::string str = std::to_string(rows) + "x" + std::to_string(cols) + " MatrixN:\n|";
 	if (rows == 1) {
 		for (int i = 0; i < cols - 1; ++i) {
@@ -393,7 +393,7 @@ inline const std::string MatrixN::str2f() const {
 		str += std::string(buffer) + "|";
 		return str;
 	}
-
+	
 	for (int i = 0; i < elementCount - 1; ++i) {
 		char buffer[15];
 		std::snprintf(buffer, 15, "%+.2f", data[i]);
@@ -421,7 +421,7 @@ inline MatrixN MatrixN::Transpose() const{
 
 //returns a matrix only with the specified rows and cols
 //NOTE 0...n-1 not 1...n
-inline MatrixN MatrixN::Submatrix(std::vector<uint32> inRows, std::vector<uint32> inCols) const{
+inline MatrixN MatrixN::Submatrix(std::vector<u32> inRows, std::vector<u32> inCols) const{
 	ASSERT(inRows.size() != 0 && inCols.size() > 0, "MatrixN submatrix cant be performed with zero dimensions");
 	MatrixN newMatrix(inRows.size(), inCols.size());
 	for (int i = 0; i < inRows.size(); ++i) {
@@ -479,19 +479,19 @@ inline float MatrixN::Determinant() const{
 			return  data[ 0] * (data[ 5] * (data[10] * data[15] - data[11] * data[14]) -
 								data[ 9] * (data[ 6] * data[15] - data[ 7] * data[14]) + 
 								data[13] * (data[ 6] * data[11] - data[ 7] * data[10]))
-														-
-					data[ 4] * (data[ 1] * (data[10] * data[15] - data[11] * data[14]) -
-								data[ 9] * (data[ 2] * data[15] - data[ 3] * data[14]) +
-								data[13] * (data[ 2] * data[11] - data[ 3] * data[10]))
-														+
-					data[ 8] * (data[ 1] * (data[ 6] * data[15] - data[ 7] * data[14]) -
-								data[ 5] * (data[ 2] * data[15] - data[ 3] * data[14]) +
-								data[13] * (data[ 2] * data[ 7] - data[ 3] * data[ 6]))
-														-
-					data[12] * (data[ 1] * (data[ 6] * data[11] - data[ 7] * data[10]) -
-								data[ 5] * (data[ 2] * data[11] - data[ 3] * data[10]) +
-								data[ 9] * (data[ 2] * data[ 7] - data[ 3] * data[ 6]));
-			}
+				-
+				data[ 4] * (data[ 1] * (data[10] * data[15] - data[11] * data[14]) -
+							data[ 9] * (data[ 2] * data[15] - data[ 3] * data[14]) +
+							data[13] * (data[ 2] * data[11] - data[ 3] * data[10]))
+				+
+				data[ 8] * (data[ 1] * (data[ 6] * data[15] - data[ 7] * data[14]) -
+							data[ 5] * (data[ 2] * data[15] - data[ 3] * data[14]) +
+							data[13] * (data[ 2] * data[ 7] - data[ 3] * data[ 6]))
+				-
+				data[12] * (data[ 1] * (data[ 6] * data[11] - data[ 7] * data[10]) -
+							data[ 5] * (data[ 2] * data[11] - data[ 3] * data[10]) +
+							data[ 9] * (data[ 2] * data[ 7] - data[ 3] * data[ 6]));
+		}
 		default: {
 			float result = 0;
 			for (int i = 0; i < cols; ++i) {
@@ -526,7 +526,7 @@ inline MatrixN MatrixN::Inverse() const {
 }
 
 //returns an identity matrix with the given dimensions
-inline MatrixN MatrixN::Identity(uint32 rows, uint32 cols) {
+inline MatrixN MatrixN::Identity(u32 rows, u32 cols) {
 	MatrixN newMatrix(rows, cols);
 	int index = 0;
 	for (int i = 0; i < rows; ++i) {
@@ -545,9 +545,9 @@ inline MatrixN MatrixN::Identity(uint32 rows, uint32 cols) {
 inline MatrixN MatrixN::M3x3To4x4(const MatrixN& m) {
 	ASSERT(m.rows == 3 && m.cols == 3, "Cant convert 3x3 matrix to 4x4 if the matrix isnt 3x3");
 	return MatrixN(4, 4,{m(0,0), m(0,1), m(0,2), 0,
-		m(1,0), m(1,1), m(1,2), 0,
-		m(2,0), m(2,1), m(2,2), 0,
-		0,		0,		0,		1});
+					   m(1,0), m(1,1), m(1,2), 0,
+					   m(2,0), m(2,1), m(2,2), 0,
+					   0,		0,		0,		1});
 }
 
 //returns a 4x4 or 3x3 rotation transformation matrix depending on boolean argument
@@ -560,8 +560,8 @@ inline MatrixN MatrixN::RotationMatrix(Vector3 rotation, bool _4x4) {
 	float cosZ = cosf(rotation.z);
 	float sinZ = sinf(rotation.z);
 	MatrixN newMatrix(3, 3, {cosY,		sinY*sinZ,					cosZ*sinY,
-		sinX*sinY,	cosX*cosZ - cosY*sinX*sinZ,	-cosX*sinZ - cosY*cosZ*sinX,
-		-cosX*sinY,	cosZ*sinX + cosX*cosY*sinZ, cosX*cosY*cosZ - sinX*sinZ});
+						  sinX*sinY,	cosX*cosZ - cosY*sinX*sinZ,	-cosX*sinZ - cosY*cosZ*sinX,
+						  -cosX*sinY,	cosZ*sinX + cosX*cosY*sinZ, cosX*cosY*cosZ - sinX*sinZ});
 	if (_4x4) {
 		return MatrixN::M3x3To4x4(newMatrix);
 	} else {
@@ -576,10 +576,10 @@ inline MatrixN MatrixN::RotationMatrixX(float degrees, bool _4x4) {
 	float c = cosf(r);
 	float s = sinf(r);
 	MatrixN newMatrix(3, 3, {
-		1,	0,	0,
-		0,	c,	-s,
-		0,	s,	c
-		});
+						  1,	0,	0,
+						  0,	c,	-s,
+						  0,	s,	c
+					  });
 	if (_4x4) {
 		return MatrixN::M3x3To4x4(newMatrix);
 	} else {
@@ -594,10 +594,10 @@ inline MatrixN MatrixN::RotationMatrixY(float degrees, bool _4x4) {
 	float c = cosf(r);
 	float s = sinf(r);
 	MatrixN newMatrix(3, 3, {
-		c,	0,	s,
-		0,	1,	0,
-		-s,	0,	c
-		});
+						  c,	0,	s,
+						  0,	1,	0,
+						  -s,	0,	c
+					  });
 	if (_4x4) {
 		return MatrixN::M3x3To4x4(newMatrix);
 	} else {
@@ -612,10 +612,10 @@ inline MatrixN MatrixN::RotationMatrixZ(float degrees, bool _4x4) {
 	float c = cosf(r);
 	float s = sinf(r);
 	MatrixN newMatrix(3, 3, {
-		c,	-s,	0,
-		s,	c,	0,
-		0,	0,	1
-		});
+						  c,	-s,	0,
+						  s,	c,	0,
+						  0,	0,	1
+					  });
 	if (_4x4) {
 		return MatrixN::M3x3To4x4(newMatrix);
 	} else {
@@ -652,7 +652,7 @@ inline MatrixN MatrixN::TransformationMatrix(Vector3 translation, Vector3 rotati
 	float cosZ = cosf(rotation.z);
 	float sinZ = sinf(rotation.z);
 	return MatrixN(4, 4,{scale.x*(cosY),	sinY*sinZ,								cosZ*sinY,								translation.x,
-		sinX*sinY,		scale.y*(cosX*cosZ - cosY*sinX*sinZ),	-cosX*sinZ - cosY*cosZ*sinX,			translation.y,
-		-cosX*sinY,		cosZ*sinX + cosX*cosY*sinZ,				scale.z*(cosX*cosY*cosZ - sinX*sinZ),	translation.z,
-		0,				0,										0,										1});
+					   sinX*sinY,		scale.y*(cosX*cosZ - cosY*sinX*sinZ),	-cosX*sinZ - cosY*cosZ*sinX,			translation.y,
+					   -cosX*sinY,		cosZ*sinX + cosX*cosY*sinZ,				scale.z*(cosX*cosY*cosZ - sinX*sinZ),	translation.z,
+					   0,				0,										0,										1});
 }

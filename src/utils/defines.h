@@ -2,6 +2,7 @@
 #ifndef DESHI_DEFINES_H
 #define DESHI_DEFINES_H
 
+//delle: bleh
 #include "GLOBALS.h"
 
 //math constants
@@ -11,35 +12,45 @@
 #define M_ONETWELFTH 0.08333333333f
 
 //conversions
-#define TO_RADIANS (M_PI / 180.f)
-#define TO_DEGREES (180.f / M_PI)
+#define RADIANS(x) (x * (M_PI / 180.f))
+#define DEGREES(x) (x * (180.f / M_PI))
 
 //number typedefs
-typedef signed char    int8;
-typedef signed short   int16;
-typedef signed int     int32;
-typedef signed long    int64;
-typedef unsigned char  uint8;
-typedef unsigned short uint16;
-typedef unsigned int   uint32;
-typedef unsigned long  uint64;
-
-//use ortho projection
-#define USE_ORTHO false
+typedef signed char    i8;
+typedef signed short   i16;
+typedef signed int     i32;
+typedef signed long    i64;
+typedef unsigned char  u8;
+typedef unsigned short u16;
+typedef unsigned int   u32;
+typedef unsigned long  u64;
+typedef float          f32;
+typedef double         f64;
+typedef i8  int8;
+typedef i16 int16;
+typedef i32 int32;
+typedef i64 int64;
+typedef u8  uint8;
+typedef u16 uint16;
+typedef u32 uint32;
+typedef u64 uint64;
 
 //static defines
 #define static_internal static
 #define local_persist   static
 #define global_variable static
 
-//Deshi Engine data defines
-//accessible only from inside Components/Systems
-#define DengInput admin->input
-#define DengWindow admin->window
-#define DengTime admin->time
-
-//delle's annoyance with c++ syntax defines
-//which will probably cause problems somewhere
+//delle's annoyance with c++ cast syntax; which will probably cause problems somewhere
+#define i8(x)  static_cast<i8>(x)
+#define i16(x) static_cast<i16>(x)
+#define i32(x) static_cast<i32>(x)
+#define i64(x) static_cast<i64>(x)
+#define u8(x)  static_cast<u8>(x)
+#define u16(x) static_cast<u16>(x)
+#define u32(x) static_cast<u32>(x)
+#define u64(x) static_cast<u64>(x)
+#define f32(x) static_cast<f32>(x)
+#define f64(x) static_cast<f64>(x)
 #define int8(x)   static_cast<int8>(x)
 #define int16(x)  static_cast<int16>(x)
 #define int32(x)  static_cast<int32>(x)
@@ -48,6 +59,5 @@ typedef unsigned long  uint64;
 #define uint16(x) static_cast<uint16>(x)
 #define uint32(x) static_cast<uint32>(x)
 #define uint64(x) static_cast<uint64>(x)
-//#define size_t(x) static_cast<size_t>(x) //this breaks things in dr_wav
 
 #endif //DESHI_DEFINES_H

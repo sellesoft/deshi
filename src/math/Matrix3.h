@@ -15,8 +15,8 @@ struct Matrix3 {
 	
 	static const Matrix3 IDENTITY;
 	
-	float&	operator () (uint32 row, uint32 col);
-	float   operator () (uint32 row, uint32 col) const;
+	float&	operator () (u32 row, u32 col);
+	float   operator () (u32 row, u32 col) const;
 	void	operator =	(const Matrix3& rhs);
 	Matrix3 operator *  (const float& rhs) const;
 	void	operator *= (const float& rhs);
@@ -60,13 +60,13 @@ struct Matrix3 {
 //// Operators ////
 
 //element accessor: matrix(row,col)
-inline float& Matrix3::operator () (uint32 row, uint32 col) {
+inline float& Matrix3::operator () (u32 row, u32 col) {
 	ASSERT(row < 3 && col < 3, "Matrix3 subscript out of bounds");
 	return data[3*row + col];
 }
 
 //element accessor [read-only]: matrix(row,col)
-inline float Matrix3::operator () (uint32 row, uint32 col) const {
+inline float Matrix3::operator () (u32 row, u32 col) const {
 	ASSERT(row < 3 && col < 3, "Matrix3 subscript out of bounds");
 	return data[3 * row + col];
 }
@@ -318,30 +318,27 @@ inline Matrix3 Matrix3::Inverse() const {
 }
 
 //returns a LH rotation transformation matrix based on input in degrees
-inline Matrix3 Matrix3::RotationMatrixX(float degrees) {
-	degrees *= TO_RADIANS;
-	float c = cosf(degrees);
-	float s = sinf(degrees);
+inline Matrix3 Matrix3::RotationMatrixX(float angle) {
+	angle = RADIANS(angle);
+	float c = cosf(angle); float s = sinf(angle);
 	return Matrix3(1,  0, 0,
 				   0,  c, s,
 				   0, -s, c);
 }
 
 //returns a LH rotation transformation matrix based on input in degrees
-inline Matrix3 Matrix3::RotationMatrixY(float degrees) {
-	degrees *= TO_RADIANS;
-	float c = cosf(degrees);
-	float s = sinf(degrees);
+inline Matrix3 Matrix3::RotationMatrixY(float angle) {
+	angle = RADIANS(angle);
+	float c = cosf(angle); float s = sinf(angle);
 	return Matrix3(c, 0, -s,
 				   0, 1,  0,
 				   s, 0,  c);
 }
 
 //returns a LH rotation transformation matrix based on input in degrees
-inline Matrix3 Matrix3::RotationMatrixZ(float degrees) {
-	degrees *= TO_RADIANS;
-	float c = cosf(degrees);
-	float s = sinf(degrees);
+inline Matrix3 Matrix3::RotationMatrixZ(float angle) {
+	angle = RADIANS(angle);
+	float c = cosf(angle); float s = sinf(angle);
 	return Matrix3(c,  s, 0,
 				   -s, c, 0,
 				   0,  0, 1);

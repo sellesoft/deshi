@@ -4,7 +4,7 @@
 
 #include "Component.h"
 
-enum MovementMode : uint32{
+enum MovementMode : u32 {
 	MOVEMENT_MODE_FLYING,
 	MOVEMENT_MODE_WALKING,
 	MOVEMENT_MODE_SWIMMING,

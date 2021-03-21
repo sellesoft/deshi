@@ -12,12 +12,12 @@ struct Time{
 	float  prevDeltaTime;
 	float  deltaTime;
 	double totalTime;
-	uint64 updateCount;
+	u64 updateCount;
 	
 	float  fixedTimeStep;
 	float  fixedDeltaTime;
 	double fixedTotalTime;
-	uint64 fixedUpdateCount;
+	u64 fixedUpdateCount;
 	float  fixedAccumulator;
 	
 	bool paused, frame;

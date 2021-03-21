@@ -18,8 +18,8 @@ struct Matrix4 {
 	
 	static const Matrix4 IDENTITY;
 	
-	float&  operator () (uint32 row, uint32 col);
-	float   operator () (uint32 row, uint32 col) const;
+	float&  operator () (u32 row, u32 col);
+	float   operator () (u32 row, u32 col) const;
 	void	operator =  (const Matrix4& rhs);
 	Matrix4 operator *  (const float& rhs) const;
 	void	operator *= (const float& rhs);
@@ -68,12 +68,12 @@ struct Matrix4 {
 //// Operators ////
 
 //element accessor: matrix(row,col)
-inline float& Matrix4::operator () (uint32 row, uint32 col) {
+inline float& Matrix4::operator () (u32 row, u32 col) {
 	ASSERT(row < 4 && col < 4, "Matrix4 subscript out of bounds");
 	return data[4*row + col];
 }
 
-inline float Matrix4::operator () (uint32 row, uint32 col) const {
+inline float Matrix4::operator () (u32 row, u32 col) const {
 	ASSERT(row < 4 && col < 4, "Matrix4 subscript out of bounds");
 	return data[4 * row + col];
 }
@@ -335,10 +335,9 @@ inline Matrix4 Matrix4::Inverse() const {
 }
 
 //returns a rotation transformation matrix based on input in degrees
-inline Matrix4 Matrix4::RotationMatrixX(float degrees) {
-	degrees *= TO_RADIANS;
-	float c = cosf(degrees);
-	float s = sinf(degrees);
+inline Matrix4 Matrix4::RotationMatrixX(float angle) {
+	angle = RADIANS(angle);
+	float c = cosf(angle); float s = sinf(angle);
 	return Matrix4(1,  0, 0, 0,
 				   0,  c, s, 0,
 				   0, -s, c, 0,
@@ -346,10 +345,9 @@ inline Matrix4 Matrix4::RotationMatrixX(float degrees) {
 }
 
 //returns a rotation transformation matrix based on input in degrees
-inline Matrix4 Matrix4::RotationMatrixY(float degrees) {
-	degrees *= TO_RADIANS;
-	float c = cosf(degrees);
-	float s = sinf(degrees);
+inline Matrix4 Matrix4::RotationMatrixY(float angle) {
+	angle = RADIANS(angle);
+	float c = cosf(angle); float s = sinf(angle);
 	return Matrix4(c, 0, -s, 0,
 				   0, 1,  0, 0,
 				   s, 0,  c, 0,
@@ -357,10 +355,9 @@ inline Matrix4 Matrix4::RotationMatrixY(float degrees) {
 }
 
 //returns a rotation transformation matrix based on input in degrees
-inline Matrix4 Matrix4::RotationMatrixZ(float degrees) {
-	degrees *= TO_RADIANS;
-	float c = cosf(degrees);
-	float s = sinf(degrees);
+inline Matrix4 Matrix4::RotationMatrixZ(float angle) {
+	angle = RADIANS(angle);
+	float c = cosf(angle); float s = sinf(angle);
 	return Matrix4(c,  s, 0, 0,
 				   -s, c, 0, 0,
 				   0,  0, 1, 0,

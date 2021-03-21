@@ -32,7 +32,7 @@ struct Matrix4;
 struct Triangle;
 struct Vector3;
 struct deshiImGui;
-typedef uint8 stbi_uc;
+typedef u8 stbi_uc;
 
 enum struct RenderAPI{
 	VULKAN
@@ -47,15 +47,15 @@ struct RenderSettings{
 	bool   reduceBuffering;
 	float  brightness;
 	float  gamma;
-	uint32 presetLevel;
-	uint32 anisotropicFiltering;
-	uint32 antiAliasing;
-	uint32 shadowQuality;
-	uint32 modelQuality;
-	uint32 textureQuality;
-	uint32 reflectionQuality;
-	uint32 lightQuality;
-	uint32 shaderQuality;
+	u32 presetLevel;
+	u32 anisotropicFiltering;
+	u32 antiAliasing;
+	u32 shadowQuality;
+	u32 modelQuality;
+	u32 textureQuality;
+	u32 reflectionQuality;
+	u32 lightQuality;
+	u32 shaderQuality;
 };
 
 struct Renderer{
@@ -69,28 +69,28 @@ struct Renderer{
 	virtual void Cleanup() = 0;
 	
 	//2d interface
-	virtual uint32 AddTriangle(Triangle* triangle) = 0;
-	virtual void   RemoveTriangle(uint32 triangleID) = 0;
-	virtual void   UpdateTriangleColor(uint32 triangleID, Color color) = 0;
-	virtual void   UpdateTrianglePosition(uint32 triangleID, Vector3 position) = 0;
-	virtual void   TranslateTriangle(uint32 triangleID, Vector3 translation) = 0;
-	virtual std::vector<uint32> AddTriangles(std::vector<Triangle*> triangles) = 0;
-	virtual void   RemoveTriangles(std::vector<uint32> triangleIDs) = 0;
-	virtual void   UpdateTrianglesColor(std::vector<uint32> triangleIDs, Color color) = 0;
-	virtual void   TranslateTriangles(std::vector<uint32> triangleIDs, Vector3 translation) = 0;
+	virtual u32 AddTriangle(Triangle* triangle) = 0;
+	virtual void   RemoveTriangle(u32 triangleID) = 0;
+	virtual void   UpdateTriangleColor(u32 triangleID, Color color) = 0;
+	virtual void   UpdateTrianglePosition(u32 triangleID, Vector3 position) = 0;
+	virtual void   TranslateTriangle(u32 triangleID, Vector3 translation) = 0;
+	virtual std::vector<u32> AddTriangles(std::vector<Triangle*> triangles) = 0;
+	virtual void   RemoveTriangles(std::vector<u32> triangleIDs) = 0;
+	virtual void   UpdateTrianglesColor(std::vector<u32> triangleIDs, Color color) = 0;
+	virtual void   TranslateTriangles(std::vector<u32> triangleIDs, Vector3 translation) = 0;
 	
 	//mesh interface
-	virtual uint32 LoadMesh(Mesh* mesh) = 0;
-	virtual void   UnloadMesh(uint32 meshID) = 0;
-	virtual void   ApplyTextureToMesh(uint32 textureID, uint32 meshID) = 0;
-	virtual void   RemoveTextureFromMesh(uint32 textureID, uint32 meshID) = 0;
-	virtual void   UpdateMeshMatrix(uint32 meshID, Matrix4 matrix) = 0;
-	virtual void   TransformMeshMatrix(uint32 meshID, Matrix4 transform) = 0;
-	virtual void   UpdateMeshBatchShader(uint32 meshID, uint32 batchIndex, uint32 shader) = 0;
+	virtual u32 LoadMesh(Mesh* mesh) = 0;
+	virtual void   UnloadMesh(u32 meshID) = 0;
+	virtual void   ApplyTextureToMesh(u32 textureID, u32 meshID) = 0;
+	virtual void   RemoveTextureFromMesh(u32 textureID, u32 meshID) = 0;
+	virtual void   UpdateMeshMatrix(u32 meshID, Matrix4 matrix) = 0;
+	virtual void   TransformMeshMatrix(u32 meshID, Matrix4 transform) = 0;
+	virtual void   UpdateMeshBatchShader(u32 meshID, u32 batchIndex, u32 shader) = 0;
 	
 	//texture interface
-	virtual uint32 LoadTexture(Texture texure) = 0;
-	virtual void   UnloadTexture(uint32 textureID) = 0;
+	virtual u32 LoadTexture(Texture texure) = 0;
+	virtual void   UnloadTexture(u32 textureID) = 0;
 	
 	//scene interface
 	virtual void   LoadDefaultAssets() = 0;
@@ -123,8 +123,8 @@ https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-
 
 //TODO(cr,delle) remove boost stuff and do it manually 
 struct QueueFamilyIndices {
-	boost::optional<uint32> graphicsFamily;
-	boost::optional<uint32> presentFamily;
+	boost::optional<u32> graphicsFamily;
+	boost::optional<u32> presentFamily;
 	bool isComplete() { return graphicsFamily.has_value() && presentFamily.has_value(); }
 };
 
@@ -148,11 +148,12 @@ struct VertexVk{
 };
 
 struct TextureVk {
-	uint32 id;
+	char filename[64];
+	u32 id;
 	int width, height, channels;
 	stbi_uc* pixels;
-	uint32 mipLevels;
-	uint32 type;
+	u32 mipLevels;
+	u32 type;
 	
 	VkImage        image;
 	VkDeviceMemory imageMemory;
@@ -166,13 +167,13 @@ struct TextureVk {
 
 //a primitive contains the information for one draw call (a batch)
 struct PrimitiveVk{
-	uint32 firstIndex;
-	uint32 indexCount;
-	uint32 materialIndex;
+	u32 firstIndex;
+	u32 indexCount;
+	u32 materialIndex;
 };
 
 struct MeshVk{
-	uint32    id;
+	u32    id;
 	bool      visible;
 	glm::mat4 modelMatrix;
 	std::vector<PrimitiveVk> primitives;
@@ -180,12 +181,12 @@ struct MeshVk{
 };
 
 struct MaterialVk{
-	uint32 id;
-	uint32 albedoTextureIndex   = 0;
-	uint32 normalTextureIndex   = 2;
-	uint32 specularTextureIndex = 2;
-	uint32 lightTextureIndex    = 2;
-	uint32 shader = 0;
+	u32 id;
+	u32 albedoTextureIndex   = 0;
+	u32 normalTextureIndex   = 2;
+	u32 specularTextureIndex = 2;
+	u32 lightTextureIndex    = 2;
+	u32 shader = 0;
 	
 	float           alphaThreshold; //A pixel is rendered only if its alpha value is above this threshold
 	RenderAlphaMode alphaMode; //Blend Mode for Transparent Faces
@@ -195,7 +196,7 @@ struct MaterialVk{
 
 struct SceneVk{
 	std::vector<VertexVk>   vertexBuffer = std::vector<VertexVk>(0);
-	std::vector<uint32>     indexBuffer  = std::vector<uint32>(0);
+	std::vector<u32>     indexBuffer  = std::vector<u32>(0);
 	std::vector<TextureVk>  textures     = std::vector<TextureVk>(0);
 	std::vector<MeshVk>     meshes       = std::vector<MeshVk>(0);
 	std::vector<MaterialVk> materials    = std::vector<MaterialVk>(0);
@@ -281,9 +282,9 @@ struct Renderer_Vulkan : public Renderer{
 	bool remakePipelines = false;
 	
 	//swapchain specifics
-	int32                    width = 0;
-	int32                    height = 0;
-	uint32                   imageCount = 0;
+	i32                    width = 0;
+	i32                    height = 0;
+	u32                   imageCount = 0;
 	VkSwapchainKHR           swapchain = VK_NULL_HANDLE;
 	SwapChainSupportDetails  supportDetails;
 	VkPhysicalDeviceFeatures deviceFeatures;
@@ -291,10 +292,10 @@ struct Renderer_Vulkan : public Renderer{
 	VkSurfaceFormatKHR       surfaceFormat;
 	VkPresentModeKHR         presentMode;
 	VkExtent2D               extent;
-	int32                    minImageCount = 0;
+	i32                    minImageCount = 0;
 	VkRenderPass             renderPass = VK_NULL_HANDLE;
 	
-	uint32                    frameIndex = 0;
+	u32                    frameIndex = 0;
 	std::vector<FrameVk>      frames;
 	std::vector<VkFence>      fencesInFlight;
 	std::vector<VkFence>      imagesInFlight;
@@ -354,56 +355,56 @@ struct Renderer_Vulkan : public Renderer{
 	
 	//adds a triangle to the 2d shader's vertex and index buffers
 	//returns the ID of the triangle
-	virtual uint32 AddTriangle(Triangle* triangle) override;
+	virtual u32 AddTriangle(Triangle* triangle) override;
 	
 	//removes the triangle with triangleID from the 2d shader's vertex buffer
-	virtual void RemoveTriangle(uint32 triangleID) override;
+	virtual void RemoveTriangle(u32 triangleID) override;
 	
-	virtual void UpdateTriangleColor(uint32 triangleID, Color color) override;
+	virtual void UpdateTriangleColor(u32 triangleID, Color color) override;
 	
-	virtual void UpdateTrianglePosition(uint32 triangleID, Vector3 position) override;
+	virtual void UpdateTrianglePosition(u32 triangleID, Vector3 position) override;
 	
-	virtual void TranslateTriangle(uint32 triangleID, Vector3 translation) override;
+	virtual void TranslateTriangle(u32 triangleID, Vector3 translation) override;
 	
 	//adds an array of triangles to the 2d shader's vertex and index buffers
 	//returns an array of the triangle's IDs
-	virtual std::vector<uint32> AddTriangles(std::vector<Triangle*> triangles) override;
+	virtual std::vector<u32> AddTriangles(std::vector<Triangle*> triangles) override;
 	
 	//removes the triangles with triangleID from the 2d shader's vertex buffer
-	virtual void RemoveTriangles(std::vector<uint32> triangleIDs) override;
+	virtual void RemoveTriangles(std::vector<u32> triangleIDs) override;
 	
-	virtual void UpdateTrianglesColor(std::vector<uint32> triangleIDs, Color color) override;
+	virtual void UpdateTrianglesColor(std::vector<u32> triangleIDs, Color color) override;
 	
-	virtual void TranslateTriangles(std::vector<uint32> triangleIDs, Vector3 translation) override;
+	virtual void TranslateTriangles(std::vector<u32> triangleIDs, Vector3 translation) override;
 	
 	//loads a mesh to the different shaders specified in its batches
 	//returns the ID of the mesh
-	virtual uint32 LoadMesh(Mesh* mesh) override;
+	virtual u32 LoadMesh(Mesh* mesh) override;
 	
-	virtual void UnloadMesh(uint32 meshID) override;
+	virtual void UnloadMesh(u32 meshID) override;
 	
 	//loads a texture onto the GPU
 	//returns the texture's id
-	virtual uint32 LoadTexture(Texture texure) override;
+	virtual u32 LoadTexture(Texture texure) override;
 	
 	//unloads a texture from the GPU
 	//NOTE the previously used texture ID will not be used again
-	virtual void UnloadTexture(uint32 textureID) override;
+	virtual void UnloadTexture(u32 textureID) override;
 	
 	//attempts to apply the texture to the mesh, 
 	//replaces the previous texture of the same type
 	//NOTE does not unload the previous texture from the GPU
-	virtual void ApplyTextureToMesh(uint32 textureID, uint32 meshID) override;
+	virtual void ApplyTextureToMesh(u32 textureID, u32 meshID) override;
 	
 	//removes the texture from the mesh
 	//NOTE if no textures remain on the mesh, it will use the null texture
-	virtual void RemoveTextureFromMesh(uint32 textureID, uint32 meshID) override;
+	virtual void RemoveTextureFromMesh(u32 textureID, u32 meshID) override;
 	
 	//updates a mesh's model matrix: translation, rotation, scale
-	virtual void UpdateMeshMatrix(uint32 meshID, Matrix4 matrix) override;
-	virtual void TransformMeshMatrix(uint32 meshID, Matrix4 transform) override;
+	virtual void UpdateMeshMatrix(u32 meshID, Matrix4 matrix) override;
+	virtual void TransformMeshMatrix(u32 meshID, Matrix4 transform) override;
 	
-	virtual void UpdateMeshBatchShader(uint32 meshID, uint32 batchIndex, uint32 shader) override;
+	virtual void UpdateMeshBatchShader(u32 meshID, u32 batchIndex, u32 shader) override;
 	
 	virtual void LoadDefaultAssets() override;
 	
@@ -521,7 +522,7 @@ struct Renderer_Vulkan : public Renderer{
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 	
 	//creates an image view specifying how to use an image
-	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32 mipLevels);
+	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels);
 	
 	//searches the device a format matching the arguments
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
@@ -533,10 +534,10 @@ struct Renderer_Vulkan : public Renderer{
 	VkPipelineShaderStageCreateInfo loadShader(std::string fileName, VkShaderStageFlagBits stage) ;
 	
 	//finds which memory types the graphics card offers
-	uint32 findMemoryType(uint32 typeFilter, VkMemoryPropertyFlags properties);
+	u32 findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);
 	
 	//creates and binds a vulkan image to the GPU
-	void createImage(uint32 width, uint32 height, uint32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, 
+	void createImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, 
 					 VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 	
 	//creates a buffer of defined usage and size on the device
@@ -552,19 +553,19 @@ struct Renderer_Vulkan : public Renderer{
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 	
 	//converts a VkImage from one layout to another using an image memory barrier
-	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32 mipLevels);
+	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels);
 	
 	//uses commands to copy a buffer to an image
-	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32 width, uint32 height);
+	void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height);
 	
 	//scans an image for max possible mipmaps and generates them
 	//https://vulkan-tutorial.com/en/Generating_Mipmaps
-	void generateMipmaps(VkImage image, VkFormat imageFormat, int32 texWidth, int32 texHeight, uint32 mipLevels);
+	void generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth, i32 texHeight, u32 mipLevels);
 	
 	//copies a buffer, we use this to copy from CPU to GPU
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 	
-	VkPipeline GetPipelineFromShader(uint32 shader);
+	VkPipeline GetPipelineFromShader(u32 shader);
 	
 	//compiles the shaders in the shader folder using shaderc by Google from the VulkanSDK
 	void CompileShaders(bool optimize);

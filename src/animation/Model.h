@@ -10,7 +10,7 @@
 
 #include <vector>
 
-enum TextureTypeBits : uint32 { 
+enum TextureTypeBits : u32 { 
 	TEXTURE_ALBEDO   = 0, 
 	TEXTURE_NORMAL   = 1, 
 	TEXTURE_LIGHT    = 2, 
@@ -18,10 +18,10 @@ enum TextureTypeBits : uint32 {
 	TEXTURE_CUBE     = 8, //not supported yet
 	TEXTURE_SPHERE   = 16,//not supported yet
 };
-typedef uint32 TextureTypes;
+typedef u32 TextureTypes;
 
 struct Texture {
-	char filename[16];
+	char filename[64];
 	TextureTypes type;
 	Texture() {}
 	Texture(const char* filename, TextureTypes textureType = TEXTURE_ALBEDO);
@@ -54,30 +54,30 @@ namespace std {
 	};
 };
 
-enum ShaderFlagsBits : uint32 {
+enum ShaderFlagsBits : u32 {
 	SHADER_FLAGS_NONE = 0,
 };
-typedef uint32 ShaderFlags;
+typedef u32 ShaderFlags;
 
-enum Shader : uint32 {
+enum Shader : u32 {
 	FLAT, PHONG, TWOD, PBR, WIREFRAME, LAVALAMP
 };
 
 //NOTE indices should be clockwise
 struct Batch {
 	char name[16];
-	uint32 vertexCount  = 0;
-	uint32 indexCount   = 0;
-	uint32 textureCount = 0;
+	u32 vertexCount  = 0;
+	u32 indexCount   = 0;
+	u32 textureCount = 0;
 	std::vector<Vertex>  vertexArray;
-	std::vector<uint32>  indexArray;
+	std::vector<u32>  indexArray;
 	std::vector<Texture> textureArray;
 	
 	Shader      shader;
 	ShaderFlags shaderFlags;
 	
 	Batch() {}
-	Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray, std::vector<Texture> textureArray, Shader shader = Shader::FLAT, ShaderFlags shaderFlags = SHADER_FLAGS_NONE);
+	Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<u32> indexArray, std::vector<Texture> textureArray, Shader shader = Shader::FLAT, ShaderFlags shaderFlags = SHADER_FLAGS_NONE);
 	
 	void SetName(const char* name);
 };
@@ -86,11 +86,11 @@ struct Mesh {
 	char name[16];
 	Matrix4 transform;
 	
-	uint32 vertexCount  = 0;
-	uint32 indexCount   = 0;
-	uint32 textureCount = 0;
+	u32 vertexCount  = 0;
+	u32 indexCount   = 0;
+	u32 textureCount = 0;
 	
-	uint32 batchCount = 0;
+	u32 batchCount = 0;
 	std::vector<Batch> batchArray;
 	
 	Mesh() {}

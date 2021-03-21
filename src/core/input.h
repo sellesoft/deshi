@@ -43,13 +43,13 @@ typedef enum InputModFlagBits{
 	INPUT_SHIFT_HELD   = 4,
 	INPUT_ALT_HELD     = 8
 } InputModFlagBits;
-typedef uint32 InputModFlags;
+typedef u32 InputModFlags;
 
 struct Input{
 	Entity* selectedEntity = nullptr;
 	
-	std::map<size_t, uint8> mapKeys;
-	std::map<size_t, uint8> mapMouse;
+	std::map<size_t, u8> mapKeys;
+	std::map<size_t, u8> mapMouse;
 	
 	//TODO(oi,delle) look into storing these as vector<bool> instead
 	//TODO(oi,delle) look into storing input modifiers with the keys as a bit combined int

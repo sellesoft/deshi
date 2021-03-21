@@ -10,7 +10,7 @@
 
 
 
-BoxCollider::BoxCollider(Entity* e, Vector3 halfDimensions, float mass, int8 collisionLayer) {
+BoxCollider::BoxCollider(Entity* e, Vector3 halfDimensions, float mass, i8 collisionLayer) {
 	this->entity = e;
 	this->halfDims = halfDimensions;
 	this->collisionLayer = collisionLayer;
@@ -18,7 +18,7 @@ BoxCollider::BoxCollider(Entity* e, Vector3 halfDimensions, float mass, int8 col
 	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.x), 2 * abs(halfDims.x), mass);
 }
 
-BoxCollider::BoxCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, int8 collisionLayer) {
+BoxCollider::BoxCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, i8 collisionLayer) {
 	this->entity = e;
 	this->halfDims = halfDimensions;
 	this->collisionLayer = collisionLayer;
@@ -37,7 +37,7 @@ BoxCollider::BoxCollider(Entity* e, Vector3 halfDimensions, float mass, bool isT
 
 
 
-AABBCollider::AABBCollider(Entity* e, Vector3 halfDimensions, float mass, int8 collisionLayer) {
+AABBCollider::AABBCollider(Entity* e, Vector3 halfDimensions, float mass, i8 collisionLayer) {
 	this->entity = e;
 	this->halfDims = halfDimensions;
 	this->collisionLayer = collisionLayer;
@@ -45,7 +45,7 @@ AABBCollider::AABBCollider(Entity* e, Vector3 halfDimensions, float mass, int8 c
 	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.x), 2 * abs(halfDims.x), mass);
 }
 
-AABBCollider::AABBCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, int8 collisionLayer) {
+AABBCollider::AABBCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, i8 collisionLayer) {
 	this->entity = e;
 	this->halfDims = halfDimensions;
 	this->collisionLayer = collisionLayer;
@@ -64,7 +64,7 @@ AABBCollider::AABBCollider(Entity* e, Vector3 halfDimensions, float mass, bool i
 
 
 
-SphereCollider::SphereCollider(Entity* e, float radius, float mass, int8 collisionLayer) {
+SphereCollider::SphereCollider(Entity* e, float radius, float mass, i8 collisionLayer) {
 	this->entity = e;
 	this->radius = radius;
 	this->collisionLayer = collisionLayer;
@@ -72,7 +72,7 @@ SphereCollider::SphereCollider(Entity* e, float radius, float mass, int8 collisi
 	this->inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
 }
 
-SphereCollider::SphereCollider(Entity* e, float radius, float mass, bool isTrigger, Command* command, int8 collisionLayer) {
+SphereCollider::SphereCollider(Entity* e, float radius, float mass, bool isTrigger, Command* command, i8 collisionLayer) {
 	this->entity = e;
 	this->radius = radius;
 	this->collisionLayer = collisionLayer;

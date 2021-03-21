@@ -196,7 +196,7 @@ inline void Vector4::operator *= (const Matrix4& rhs) {
 
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
 inline Matrix3 Matrix3::RotationMatrix(Vector3 rotation) {
-	rotation *= TO_RADIANS;
+	rotation = RADIANS(rotation);
 	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
 	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
 	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
@@ -219,7 +219,7 @@ inline Matrix3 Matrix3::ScaleMatrix(Vector3 scale) {
 
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
 inline Matrix4 Matrix4::RotationMatrix(Vector3 rotation) {
-	rotation *= TO_RADIANS;
+	rotation = RADIANS(rotation);
 	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
 	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
 	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
@@ -234,7 +234,7 @@ inline Matrix4 Matrix4::RotationMatrix(Vector3 rotation) {
 
 //
 inline Matrix4 Matrix4::AxisAngleRotationMatrix(float angle, Vector3 axis) {
-	angle *= TO_RADIANS;   axis.normalize();
+	angle = RADIANS(angle); axis.normalize();
 	float c = cosf(angle); float s = sinf(angle); 
 	Vector3 temp = axis * (1.f - c);
 	
@@ -272,7 +272,7 @@ inline Matrix4 Matrix4::ScaleMatrix(Vector3 scale) {
 //returns a transformation matrix of the combined translation, rotation, and scale matrices from input vectors
 //rotates over the Y, then Z then X
 inline Matrix4 Matrix4::TransformationMatrix(Vector3 tr, Vector3 rotation, Vector3 scale) {
-	rotation *= TO_RADIANS;
+	rotation = RADIANS(rotation);
 	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
 	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
 	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
@@ -289,7 +289,7 @@ inline Matrix4 Matrix4::TransformationMatrix(Vector3 tr, Vector3 rotation, Vecto
 //rotates over the Y, then Z then X, ref: https://www.euclideanspace.com/maths/geometry/affine/aroundPoint/index.htm
 inline Matrix4 Matrix4::RotationMatrixAroundPoint(Vector3 pivot, Vector3 rotation) {
 	pivot = -pivot; //gotta negate this for some reason :)
-	rotation *= TO_RADIANS;
+	rotation = RADIANS(rotation);
 	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
 	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
 	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
@@ -383,7 +383,7 @@ inline Quaternion Quaternion::AxisAngleToQuat(float angle, Vector3 axis) {
 //copied from https://www.wikiwand.com/en/Conversion_between_quaternions_and_Euler_angles#/Euler_angles_to_quaternion_conversion
 inline Quaternion Quaternion::RotVecToQuat(Vector3 rotation) {
 	//this is probably necessary although he didn't do this in the Gamasutra article
-	Vector3 rotationrad = rotation * TO_RADIANS;
+	Vector3 rotationrad = RADIANS(rotation);
 	float cy = cos(rotationrad.z * 0.5);
 	float sy = sin(rotationrad.z * 0.5);
 	float cp = cos(rotationrad.y * 0.5);

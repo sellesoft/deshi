@@ -13,7 +13,7 @@ void WorldSystem::Update() {
 	
 	//deletion buffer
 	for(Entity* entity : deletionBuffer) {
-		uint32 id = entity->id;
+		u32 id = entity->id;
 		try {
 			delete admin->entities.at(id);
 		} catch(const std::out_of_range& oor) {

@@ -61,7 +61,7 @@ Matrix4 MakeOrthographicMatrix(Scene* s, Camera* c, float screenWidth, float scr
 void Camera::UsePerspectiveProjection(float fovX, float width, float height, float nearZ, float farZ){
 	float renderDistance = farZ - nearZ;
 	float aspectRatio = height / width;
-	float fovRad = 1.f / tanf(fovX * .5f * TO_RADIANS);
+	float fovRad = 1.f / tanf(RADIANS(fovX * .5f));
 	projectionMatrix = Matrix4( //NOTE setting (1,1) to negative flips the y-axis
 							   aspectRatio * fovRad, 0,	   0,							  0,
 							   0,					-fovRad, 0,							  0,

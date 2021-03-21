@@ -11,7 +11,7 @@
 //////////////////////////////////////////////////////////
 
 Texture::Texture(const char* filename, TextureTypes type) {
-	strncpy_s(this->filename, filename, 15); this->filename[15] = '\0';
+	strncpy_s(this->filename, filename, 63); this->filename[63] = '\0';
 	this->type = type;
 }
 
@@ -27,7 +27,7 @@ Vertex::Vertex(Vector3 pos, Vector2 uv, Vector3 color, Vector3 normal) {
 // Batch
 //////////////////////////////////////////////////////////
 
-Batch::Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<uint32> indexArray, std::vector<Texture> textureArray, Shader shader, ShaderFlags shaderFlags) {
+Batch::Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<u32> indexArray, std::vector<Texture> textureArray, Shader shader, ShaderFlags shaderFlags) {
 	strncpy_s(this->name, name, 15); this->name[15] = '\0';
 	this->shader = shader; this->shaderFlags = shaderFlags;
 	this->vertexArray = vertexArray;   this->vertexCount = vertexArray.size();
@@ -69,7 +69,7 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 tra
 	tinyobj::ObjReaderConfig reader_config;
 	reader_config.triangulate = true;
 	reader_config.vertex_color = true;
-	reader_config.mtl_search_path = "./"; // Path to material files
+	reader_config.mtl_search_path = deshi::getModelsPath(); // Path to material files
 	tinyobj::ObjReader reader;
 	if (!reader.ParseFromFile(deshi::getModelsPath() + filename, reader_config)) {
 		if (!reader.Error().empty()) {
@@ -101,25 +101,25 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 tra
 			const tinyobj::material_t* mat = &materials[shape.mesh.material_ids[0]];
 			if(mat->diffuse_texname.length() > 0){
 				if(mat->diffuse_texopt.type == 0){
-					Texture tex(mat->diffuse_texname.c_str(), TEXTURE_ALBEDO);
+					Texture tex(mat->diffuse_texname.substr(mat->diffuse_texname.find_last_of('\\')+1).c_str(), TEXTURE_ALBEDO);
 					batch.textureArray.push_back(tex);
 				}
 			}
 			if(mat->specular_texname.length() > 0){
 				if(mat->specular_texopt.type == 0){
-					Texture tex(mat->specular_texname.c_str(), TEXTURE_SPECULAR);
+					Texture tex(mat->specular_texname.substr(mat->specular_texname.find_last_of('\\')+1).c_str(), TEXTURE_ALBEDO);
 					batch.textureArray.push_back(tex);
 				}
 			}
 			if(mat->bump_texname.length() > 0){
 				if(mat->bump_texopt.type == 0){
-					Texture tex(mat->bump_texname.c_str(), TEXTURE_NORMAL);
+					Texture tex(mat->bump_texname.substr(mat->bump_texname.find_last_of('\\')+1).c_str(), TEXTURE_ALBEDO);
 					batch.textureArray.push_back(tex);
 				}
 			}
 			if(mat->ambient_texname.length() > 0){
 				if(mat->ambient_texopt.type == 0){
-					Texture tex(mat->ambient_texname.c_str(), TEXTURE_LIGHT);
+					Texture tex(mat->ambient_texname.substr(mat->ambient_texname.find_last_of('\\')+1).c_str(), TEXTURE_ALBEDO);
 					batch.textureArray.push_back(tex);
 				}
 			}
@@ -127,7 +127,7 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 tra
 		batch.textureCount = batch.textureArray.size();
 		totalTextureCount += batch.textureCount;
 		
-		std::unordered_map<Vertex, uint32> uniqueVertices{};
+		std::unordered_map<Vertex, u32> uniqueVertices{};
 		
 		//fill batch vertex and index arrays
 		size_t faceCount = shape.mesh.num_face_vertices.size();
@@ -154,7 +154,7 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 tra
 			}
 			
 			if(uniqueVertices.count(vertex) == 0){
-				uniqueVertices[vertex] = uint32(batch.vertexArray.size());
+				uniqueVertices[vertex] = u32(batch.vertexArray.size());
 				batch.vertexArray.push_back(vertex);
 			}
 			batch.indexArray.push_back(uniqueVertices[vertex]);
@@ -191,7 +191,7 @@ Model Model::CreateBox(Vector3 halfDims, Color color) {
 		{Vector3( p.x, p.y,-p.z), Vector2(0.f, 0.f), c, Vector3::ZERO}, // x, y,-z	6
 		{Vector3( p.x,-p.y,-p.z), Vector2(0.f, 0.f), c, Vector3::ZERO}  // x,-y,-z	7
 	};
-	std::vector<uint32> indices = {
+	std::vector<u32> indices = {
 		4,2,0,    4,6,2,	//top face
 		2,7,3,    2,6,7,	//-z face
 		6,5,7,    6,4,5,	//right face
@@ -243,7 +243,7 @@ Model Model::CreatePlanarBox(Vector3 halfDims, Color color) {
 		{Vector3(-x,-y,-z), br, c, Vector3::LEFT},    //22
 		{Vector3(-x,-y, z), bl, c, Vector3::LEFT},    //23
 	};
-	std::vector<uint32> indices = {
+	std::vector<u32> indices = {
 		0,1,2,    0,2,3,   //top face
 		4,5,6,    4,6,7,   //back face
 		8,9,10,   8,10,11, //right face
