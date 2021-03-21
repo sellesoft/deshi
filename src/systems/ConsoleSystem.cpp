@@ -408,9 +408,9 @@ void FlushBuffer() {
 
 	oss << std::put_time(&bt, "%H:%M:%S");
 
-	std::ofstream file(TOSTRING("log/deshi_log_", oss.str()));
+	//std::ofstream file(TOSTRING("log/deshi_log_", oss.str()));
 
-	file << "fuck you";
+	//file << "fuck you";
 
 }
 

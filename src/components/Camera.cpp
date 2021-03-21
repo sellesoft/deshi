@@ -12,7 +12,7 @@ Camera::Camera(EntityAdmin* a) : Component(a) {
 	UsePerspectiveProjection(fieldOfView, admin->window->width, admin->window->height, nearZ, farZ);
 	admin->renderer->UpdateCameraProjectionMatrix(projectionMatrix);
 	
-	layer = CL2_RENDSCENE;
+	layer = CL3_CONSOLE;
 }
 
 Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ) : Component(a) {
@@ -20,7 +20,7 @@ Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ) : Component(a)
 	this->farZ = farZ;
 	this->fieldOfView = fov;
 	
-	layer = CL2_RENDSCENE;
+	layer = CL3_CONSOLE;
 }
 
 /*
