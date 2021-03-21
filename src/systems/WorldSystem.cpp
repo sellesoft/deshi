@@ -2,8 +2,6 @@
 #include "ConsoleSystem.h"
 #include "../EntityAdmin.h"
 #include "../utils/Debug.h"
-
-#include "../components/World.h"
 #include "../components/Transform.h"
 
 void WorldSystem::Init() {
@@ -11,10 +9,10 @@ void WorldSystem::Init() {
 }
 
 void WorldSystem::Update() {
-	World* world = admin->world;
+	//World* world = admin->world;
 	
 	//deletion buffer
-	for(Entity* entity : world->deletionBuffer) {
+	for(Entity* entity : deletionBuffer) {
 		uint32 id = entity->id;
 		try {
 			delete admin->entities.at(id);
@@ -23,53 +21,48 @@ void WorldSystem::Update() {
 		}
 		admin->entities.erase(id);
 	}
-	world->deletionBuffer.clear();
+	deletionBuffer.clear();
 	
 	//creation buffer
-	for(Entity* entity : world->creationBuffer) {
+	for(Entity* entity : creationBuffer) {
 		entity->id = !admin->entities.empty() ? admin->entities.rbegin()->second->id + 1 : 1; //set id to be one greater than the last
 		admin->entities.insert(admin->entities.end(), {entity->id, entity}); //TODO(o,delle) see if this is worth it vs regular insert
 		entity->admin = admin;
 	}
-	world->creationBuffer.clear();
+	creationBuffer.clear();
 }
 
 Entity* WorldSystem::CreateEntity(EntityAdmin* admin) {
-	World* world = admin->world;
 	Entity* e = new Entity;
-	world->creationBuffer.push_back(e);
+	creationBuffer.push_back(e);
 	return e;
 }
 
 Entity* WorldSystem::CreateEntity(EntityAdmin* admin, Component* singleton) {
-	World* world = admin->world;
 	Entity* e = new Entity;
 	AddAComponentToEntity(admin, e, singleton);
-	world->creationBuffer.push_back(e);
+	creationBuffer.push_back(e);
 	return e;
 }
 
 Entity* WorldSystem::CreateEntity(EntityAdmin* admin, std::vector<Component*> components) {
-	World* world = admin->world;
 	Entity* e = new Entity;
 	e->components = components;
 	AddComponentsToEntity(admin, e, components);
-	world->creationBuffer.push_back(e);
+	creationBuffer.push_back(e);
 	return e;
 }
 
 int32 WorldSystem::AddEntityToCreationBuffer(EntityAdmin* admin, Entity* entity) {
-	World* world = admin->world;
-	world->creationBuffer.push_back(entity);
-	return world->deletionBuffer.size()-1;
+	creationBuffer.push_back(entity);
+	return deletionBuffer.size()-1;
 }
 
 int32 WorldSystem::AddEntityToDeletionBuffer(EntityAdmin* admin, Entity* entity) {
-	World* world = admin->world;
 	try {
 		Entity* e = admin->entities.at(entity->id);
-		world->deletionBuffer.push_back(entity);
-		return world->deletionBuffer.size()-1;
+		deletionBuffer.push_back(entity);
+		return deletionBuffer.size()-1;
 	} catch(const std::out_of_range& oor) {
 		return -1;
 	}
@@ -79,7 +72,7 @@ int32 WorldSystem::AddAComponentToWorldEntity(EntityAdmin* admin, Entity* entity
 	try {
 		Entity* e = admin->entities.at(entity->id);
 		e->components.push_back(component);
-		admin->freeCompLayers[component->layer].add(component);
+		component->layer_index = admin->freeCompLayers[component->layer].add(component);
 		component->entity = e;
 		component->admin = admin;
 		return e->components.size()-1;
@@ -94,7 +87,7 @@ int32 WorldSystem::AddComponentsToWorldEntity(EntityAdmin* admin, Entity* entity
 		int value = e->components.size();
 		for(auto& c : components) {
 			e->components.push_back(c);
-			admin->freeCompLayers[c->layer].add(c);
+			c->layer_index = admin->freeCompLayers[c->layer].add(c);
 			c->entity = entity;
 			c->admin = admin;
 		}
@@ -106,7 +99,7 @@ int32 WorldSystem::AddComponentsToWorldEntity(EntityAdmin* admin, Entity* entity
 
 int32 WorldSystem::AddAComponentToEntity(EntityAdmin* admin, Entity* entity, Component* component) {
 	entity->components.push_back(component);
-	admin->freeCompLayers[component->layer].add(component);
+	component->layer_index = admin->freeCompLayers[component->layer].add(component);
 	component->entity = entity;
 	component->admin = entity->admin; // :/
 	return entity->components.size()-1;
@@ -116,7 +109,7 @@ int32 WorldSystem::AddComponentsToEntity(EntityAdmin* admin, Entity* entity, std
 	int value = entity->components.size();
 	for(auto& c : components) {
 		entity->components.push_back(c);
-		admin->freeCompLayers[c->layer].add(c);
+		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 		c->entity = entity;
 		c->admin = entity->admin;
 	}

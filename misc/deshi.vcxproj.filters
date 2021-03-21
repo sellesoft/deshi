@@ -103,9 +103,6 @@
     <ClInclude Include="..\src\components\Transform.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\components\World.h">
-      <Filter>src\components\h</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\systems\System.h">
       <Filter>src\systems</Filter>
     </ClInclude>
@@ -332,9 +329,6 @@
       <Filter>src\components\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\components\Transform.cpp">
-      <Filter>src\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\components\World.cpp">
       <Filter>src\components\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\math\Matrix3.cpp">

@@ -12,14 +12,14 @@ struct EntityAdmin;
 enum CompLayer {
 	CL0_COMMAND,
 	CL1_PHYSICS,
-	CL2_RENDSCENE,
-	CL3_RENDCANVAS,
+	CL2_RENDCANVAS,
+	CL3_CONSOLE,
 	CL4_WORLD,
-	CL5_CONSOLE,
-	CL6_SOUND,
-	CL7_LAST,
+	CL5_SOUND,
+	CL6_LAST,
 	PHYS_LAYER,
-	TRANSFORM_LAYER
+	TRANSFORM_LAYER,
+	NONE
 };
 
 
@@ -31,7 +31,7 @@ struct Component {
 	Component(EntityAdmin* a = nullptr, Entity* e = nullptr);
 	
 	//store layer its on and where in that layer it is for deletion
-	CompLayer layer;
+	CompLayer layer = NONE;
 	int layer_index;
 	
 	virtual void Update() {};

@@ -213,7 +213,6 @@
     <ClInclude Include="..\src\components\Light.h" />
     <ClInclude Include="..\src\components\Physics.h" />
     <ClInclude Include="..\src\components\Transform.h" />
-    <ClInclude Include="..\src\components\World.h" />
     <ClInclude Include="..\src\core.h" />
     <ClInclude Include="..\src\core\assets.h" />
     <ClInclude Include="..\src\core\deshi_imgui.h" />
@@ -294,7 +293,6 @@
     <ClCompile Include="..\src\components\Light.cpp" />
     <ClCompile Include="..\src\components\Physics.cpp" />
     <ClCompile Include="..\src\components\Transform.cpp" />
-    <ClCompile Include="..\src\components\World.cpp" />
     <ClCompile Include="..\src\core\deshi_imgui.cpp" />
     <ClCompile Include="..\src\core\renderer_vulkan.cpp" />
     <ClCompile Include="..\src\core\window.cpp" />

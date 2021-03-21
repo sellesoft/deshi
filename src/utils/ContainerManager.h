@@ -49,7 +49,8 @@ class ContainerManager {
 	
 	ContainerManager() {}
 	
-	//T t& operator [](int i) { return container[i]; }
+	boost::optional<T> operator [](int i) { return container[i]; }
+	//bool operator *(){retuir}
 	//void operator = (ContainerManager<T> c) { this->copy(c); }
 	
 	//add element to container and return its position in it

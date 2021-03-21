@@ -16,16 +16,18 @@ Camera::Camera(EntityAdmin* a) : Component(a) {
 	renderer->UpdateCameraProjectionProperties(fieldOfView, nearZ, farZ, false);
 	UsePerspectiveProjection(fieldOfView, window->width, window->height, nearZ, farZ);
 	renderer->UpdateCameraProjectionMatrix(projectionMatrix);
-	
-	layer = CL2_RENDSCENE;
+
+	layer = CL2_RENDCANVAS;
+
 }
 
 Camera::Camera(float fov, float nearZ, float farZ) {
 	this->nearZ = nearZ;
 	this->farZ = farZ;
 	this->fieldOfView = fov;
+
+	layer = CL2_RENDCANVAS;
 	
-	layer = CL2_RENDSCENE;
 }
 
 Matrix4 MakeViewMatrix(Camera* camera) {

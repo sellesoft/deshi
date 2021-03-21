@@ -54,8 +54,16 @@ struct EntityAdmin {
 	//stores the components to be executed in between layers
 	std::vector<ContainerManager<Component*>> freeCompLayers;
 	
-	
+	//pause flags
 	bool paused = false;
+	bool pause_command = false;
+	bool pause_phys = false;
+	bool pause_canvas = false;
+	bool pause_world = false;
+	bool pause_console = false;
+	bool pause_sound = false;
+	bool pause_last = false;
+
 	bool IMGUI_KEY_CAPTURE = false;
 	bool IMGUI_MOUSE_CAPTURE = false;
 	

@@ -58,6 +58,7 @@ UI TODOs
 Restore the spawning/inspector menus
 2D shader
 add a UI popup when reloading shaders
+fix console auto fill adding the entire word to what you've already typed when selecting something from the match list
 
 Math NOTEs: Row-Major matrices, Left-Handed coordinate system (clockwise rotation when looking down axis)
 Math TODOs
@@ -67,6 +68,7 @@ finish AxisAngleRotationMatrix function
 review the projection functions for correctness
 (maybe) move conversion functions to thier own file
 (maybe) move transform/affine matrix functions to their own file
+replace glm :)
 
 */
 

@@ -6,13 +6,18 @@
 
 #include "../utils/Command.h"
 #include <time.h>
+#include <iomanip>
 
 #include "../external/imgui/imgui_impl_vulkan.h"
 #include "../external/imgui/imgui_impl_glfw.h"
 
+#include <fstream>
+
 #define RegColorFormat std::regex("(?:\\[c:([^\\]]*)\\]([^\\]]*)\\[c\\]|([^\\[]+))")
 
 using namespace ImGui;
+
+int buffersize = 0;
 
 EntityAdmin* locadmin; //so I can access admin in TextEditCallback
 Console* loccon; //so I can access console in TextEditCallback
@@ -55,14 +60,17 @@ void AddLog(std::string input, Console* c) {
 		if (std::regex_search(m[0].str(), std::regex("\\[c:[^\\]]+\\]"))) {
 			//if we are, push the actual text with its color into text vector
 			c->buffer.push_back(std::pair<std::string, Color>(m[2].str(), colstrmap.at(m[1])));
+			buffersize += m[2].str().size();
 		}
 		else {
 			//if we arent then just push the line into text vector
 			c->buffer.push_back(std::pair<std::string, Color>(m[0].str(), Color::BLANK));
+			buffersize += m[2].str().size();
 		}
 		input = m.suffix();
 	}
 	c->buffer[c->buffer.size() - 1].first += "\n";
+	
 }
 
 void ClearLog(Console* c) {
@@ -377,6 +385,35 @@ void ConsoleSystem::PushConsole(std::string s) {
 	AddLog(s, admin->console);
 }
 
+//flushes the buffer to a file once it reaches a certain size
+void FlushBuffer() {
+	std::string output = "";
+	for (auto a : loccon->buffer) {
+		output += a.first;
+	}
+
+	//https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
+	using namespace std::chrono;
+
+	//get current time
+	auto now = system_clock::now();
+
+	//convert to std::time_t so we can convert to std::tm
+	auto timer = system_clock::to_time_t(now);
+
+	//convert to broken time
+	std::tm bt = *std::localtime(&timer);
+
+	std::ostringstream oss;
+
+	oss << std::put_time(&bt, "%H:%M:%S");
+
+	std::ofstream file(TOSTRING("log/deshi_log_", oss.str()));
+
+	file << "fuck you";
+
+}
+
 void ConsoleSystem::Init() {
 	locadmin = admin;
 	loccon = admin->console;
@@ -394,10 +431,14 @@ void ConsoleSystem::Init() {
 void ConsoleSystem::Update() {
 	if (DengInput->KeyPressed(Key::TILDE)) {
 		dispcon = !dispcon;
-		//TODO(i,sushi) this is a hack to fix input relinquish, it should probably be handled somewhere else
 		admin->IMGUI_KEY_CAPTURE = !admin->IMGUI_KEY_CAPTURE; 
 	}
 	if (dispcon) DrawConsole();
 	locadmin = admin;
 	loccon = admin->console;
+
+	if (buffersize >= 200) {
+		FlushBuffer();
+		admin->console->buffer.clear();
+	}
 }

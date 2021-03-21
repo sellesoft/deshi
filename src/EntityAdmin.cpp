@@ -21,7 +21,6 @@
 #include "utils/defines.h"
 
 #include "components/Component.h"
-#include "components/World.h"
 #include "components/Camera.h"
 #include "components/Keybinds.h"
 #include "components/Controller.h"
@@ -66,13 +65,12 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r) {
 		}
 	}
 	AddSystem(new RenderCanvasSystem());
-	AddSystem(new WorldSystem());
 	console = new Console();
 	AddSystem(new ConsoleSystem());
+	AddSystem(new WorldSystem());
 	AddSystem(new SoundSystem());
 	
 	//singleton initialization
-	world = new World();
 	currentCamera = new Camera(this);
 	currentCamera->layer_index = freeCompLayers[currentCamera->layer].add(currentCamera);
 	currentKeybinds = new Keybinds(this);
@@ -96,26 +94,34 @@ void EntityAdmin::Cleanup() {
 	delete tempCanvas;
 }
 
+void UpdateLayer(ContainerManager<Component*> cl) {
+	for (int i = 0; i < cl.size(); i++) {
+		if (cl[i]) {
+			cl[i].get()->Update();
+		}
+	}
+}
+
 void EntityAdmin::Update() {
-	if (!paused) {
-		for (System* s : systems) {
-			steady_clock::time_point startTime = steady_clock::now(); //TODO(o,delle) test that system durations work
-			s->Update();
-			s->time = duration_cast<duration<double>>(steady_clock::now() - startTime).count();
-		}
-	}
-	else {
-		for (System* s : systems) {
-			//if      (ScreenSystem* a = dynamic_cast<ScreenSystem*>(s))             { a->Update(); }
-			if      (ConsoleSystem* b = dynamic_cast<ConsoleSystem*>(s))           { b->Update(); }
-			else if (CommandSystem* c = dynamic_cast<CommandSystem*>(s))           { c->Update(); }
-			else if (RenderCanvasSystem* e = dynamic_cast<RenderCanvasSystem*>(s)) { e->Update(); }
-			//else if (TimeSystem* f = dynamic_cast<TimeSystem*>(s))                 { f->Update(); }
-		}
-	}
+
+	//aha
+	if (!pause_command)	           UpdateLayer(freeCompLayers[CL0_COMMAND]);	 
+	if (!pause_command)	           systems[0]->Update(); //Command system
+	if (!pause_phys && !paused)    UpdateLayer(freeCompLayers[CL1_PHYSICS]);	 
+	if (!pause_phys && !paused)    systems[1]->Update(); //Physics System
+	if (!pause_canvas)	           UpdateLayer(freeCompLayers[CL2_RENDCANVAS]); 
+	if (!pause_canvas)	           systems[2]->Update(); //Canvas system
+	if (!pause_console)            UpdateLayer(freeCompLayers[CL3_CONSOLE]);	 
+	if (!pause_console)            systems[3]->Update(); //Console System
+	if (!pause_world && !paused)   UpdateLayer(freeCompLayers[CL4_WORLD]);		 
+	if (!pause_world && !paused)   systems[4]->Update(); //World system
+	if (!pause_sound && !paused)   UpdateLayer(freeCompLayers[CL5_SOUND]);		 
+	if (!pause_sound && !paused)   systems[5]->Update(); //Sound System
+	if (!pause_last && !paused)    UpdateLayer(freeCompLayers[CL6_LAST]);
+
 	//NOTE temporary
-	currentCamera->Update();
 	controller->Update();
+	currentCamera->Update();
 	for(Component* c : components){
 		c->Update();
 	}

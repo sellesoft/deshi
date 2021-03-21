@@ -7,5 +7,5 @@ AudioListener::AudioListener(Vector3 position, Vector3 velocity, Vector3 orienta
 	this->velocity = velocity;
 	this->orientation = orientation;
 	
-	layer = CL6_SOUND;
+	layer = CL5_SOUND;
 }

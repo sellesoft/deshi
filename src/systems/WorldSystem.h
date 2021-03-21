@@ -32,59 +32,62 @@ struct WorldSystem : public System {
 	void Init() override;
 	void Update() override;
 
+	std::vector<Entity*> creationBuffer;
+	std::vector<Entity*> deletionBuffer;
+
 //// Entity Lifetime Functions ////
 
 	//initializes an entity with no components and adds it to the creation buffer
 	//returns the entity that was created
-	static Entity* CreateEntity(EntityAdmin* admin);
+	Entity* CreateEntity(EntityAdmin* admin);
 
 	//initializes an entity with a single component and adds it to the creation buffer
 	//returns the entity that was created
-	static Entity* CreateEntity(EntityAdmin* admin, Component* singleton);
+	Entity* CreateEntity(EntityAdmin* admin, Component* singleton);
 
 	//initializes an entity with a component vector and adds it to the creation buffer
 	//returns the entity that was created
-	static Entity* CreateEntity(EntityAdmin* admin, std::vector<Component*> components);
+	Entity* CreateEntity(EntityAdmin* admin, std::vector<Component*> components);
 
 	//adds an already initialized entity to the creation buffer
 	//returns its place in the queue
-	static int32 AddEntityToCreationBuffer(EntityAdmin* admin, Entity* entity);
+	int32 AddEntityToCreationBuffer(EntityAdmin* admin, Entity* entity);
 
 	//adds an already initialized entity to the deletion buffer
 	//returns its place in the queue, -1 if the entity could not be found
-	static int32 AddEntityToDeletionBuffer(EntityAdmin* admin, Entity* entity);
+	int32 AddEntityToDeletionBuffer(EntityAdmin* admin, Entity* entity);
 
 //// Entity Component Functions ////
 
 	//adds a component to the end of an entity's components vector
 	//returns the position in the vector
-	static int32 AddAComponentToEntity(EntityAdmin* admin, Entity* entity, Component* component);
+	int32 AddAComponentToEntity(EntityAdmin* admin, Entity* entity, Component* component);
 
 	//adds components to the end of an entity's components vector
 	//returns the position of the first added component in the entity's vector
-	static int32 AddComponentsToEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components);
+	int32 AddComponentsToEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components);
 
 	//adds a component to the end of the components vector of an entity that already exists in the world
 	//returns the position in the vector, or -1 if the entity could not be found
-	static int32 AddAComponentToWorldEntity(EntityAdmin* admin, Entity* entity, Component* component);
+	int32 AddAComponentToWorldEntity(EntityAdmin* admin, Entity* entity, Component* component);
 
 	//adds components to the end of the components vector of an entity that already exists in the world
 	//returns the position of the first added component in the entity's vector, or -1 if the entity could not be found
-	static int32 AddComponentsToWorldEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components);
+	int32 AddComponentsToWorldEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components);
 
 	//returns an entity's component vector
 	//returns 0 if the entity could not be found
-	static std::vector<Component*>* GetComponentsOnWorldEntity(EntityAdmin* admin, Entity* entity);
+	std::vector<Component*>* GetComponentsOnWorldEntity(EntityAdmin* admin, Entity* entity);
 
 	//returns an entity's component vector
 	//returns 0 if the entity could not be found
-	static inline std::vector<Component*>* GetComponentsOnEntity(Entity* entity);
+	inline std::vector<Component*>* GetComponentsOnEntity(Entity* entity);
 
 	//removes and deletes a component from an entity's components vector
 	//returns true if successful removal, false otherwise
-	static bool RemoveAComponentFromEntity(EntityAdmin* admin, Entity* entity, Component* component);
+	bool RemoveAComponentFromEntity(EntityAdmin* admin, Entity* entity, Component* component);
 
 	//removes and deletes a component from an entity's components vector
 	//returns true if successful removal, false otherwise
-	static bool RemoveComponentsFromEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components);
+	bool RemoveComponentsFromEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components);
 };

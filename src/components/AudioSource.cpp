@@ -16,7 +16,7 @@ AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, fl
 		this->t = t;
 	}
 	
-	layer = CL6_SOUND;
+	layer = CL5_SOUND;
 }
 
 void AudioSource::RequestPlay(float gain, float pitch) {
