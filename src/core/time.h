@@ -86,7 +86,7 @@ struct Time{
 			deltaTime = 0;
 		}
 
-		//TODO(o, sushi) make it so things that dont update frequently like date stuff only updates when the time changes over to the next day n stuff 
+		//TODO(Op, sushi) make it so things that dont update frequently like date stuff only updates when the time changes over to the next day n stuff 
 		now = time(0);
 
 		ltm = localtime(&now);

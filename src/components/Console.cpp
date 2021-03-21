@@ -2,6 +2,6 @@
 
 #include "../EntityAdmin.h"
 
-Console::Console() {
-
-}
+//Console::Console() {
+//
+//}

@@ -235,7 +235,7 @@ void SoundSystem::Init() {
 	ASSERT(alcMakeContextCurrent(context), "unable to make OpenAL context");
 	
 	//collect all sources at startup
-	//TODO(, sushi) if its necessary, make a way to collect new sources and to remove them
+	//TODO(So, sushi) if its necessary, make a way to collect new sources and to remove them
 	//CollectSources(buffers, admin);
 	
 	//start main sound thread

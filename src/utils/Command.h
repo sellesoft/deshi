@@ -48,19 +48,3 @@ struct Command {
 		return action(admin, argsl);
 	}
 };
-
-//TODO(i,delle) maybe add delayed and repeating commands
-//struct DelayedCommand : public Command { 
-//	float delay;
-//
-//	DelayedCommand(CommandAction action, std::string name, float delay, std::string description = "") {
-//		this->triggered = false;
-//		this->action = action;
-//		this->name = name;
-//		this->description = description;
-//	}
-//
-//	inline void operator () (EntityAdmin* admin) const {
-//		action(admin);
-//	}
-//};

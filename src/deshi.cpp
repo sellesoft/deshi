@@ -1,12 +1,35 @@
 /* deshi
-TODO Tags: + GitIssue, s Severe, u Unimportant, p Physics, r Render, e Entity, i Input,
-	  m Math, o Optimization, g General, c Clean Up Code, f Fun
+TODO Tags: 
 
-	  showing collin how github
+Ph  Physics 
+Re  Render
+En  Entity
+In  Input
+Ma  Math
+Op  Optimization
+Ge  General
+Cl  Clean Up Code
+Ui  UI
+Vu  Vulkan
+Sh  Shader
+Co  Core
+Geo Geometry
+So  Sound
+Fs  Filesystem
+Cmd Command
+Con Console
+Wi  Window
+Fu  Fun
+Oth Other
+
 
 TODO Style: TODO(tags,person,date) description
 Rules: tags can be empty but still requires a comma, date can be empty
       eg: TODO(,delle) no tag or date; TODO(ro,sushi,03/12/2021) render,optimization tags for sushi made on that date
+
+The person listed doesn't necessarily have to be you, and can be someone else 
+if you feel they would handle the problem better.
+It should generally be you though.
 
 Major Ungrouped TODOs
 ---------------------
@@ -85,9 +108,11 @@ struct DeshiEngine {
 	Window window;
 	deshiImGui* imgui;
 	Time time;
+
+
 	
-	//TODO(,delle) setup loading a config file to a config struct
-	//TODO(r,delle) change render API to a define rather than variable so it doesnt have to be a pointer
+	//TODO(Fs,delle) setup loading a config file to a config struct
+	//TODO(Re,delle) change render API to a define rather than variable so it doesnt have to be a pointer
 	void LoadConfig(){
 		
 		//render api

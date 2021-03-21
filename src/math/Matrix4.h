@@ -149,7 +149,7 @@ inline void    Matrix4::operator -= (const Matrix4& rhs){
 	}
 }
 
-//TODO(o,delle) look into optimizing this by transposing to remove a loop, see Unreal Matrix.h
+//TODO(OpMa,delle) look into optimizing this by transposing to remove a loop, see Unreal Matrix.h
 inline Matrix4  Matrix4::operator *  (const Matrix4& rhs) const{
 	Matrix4 newMatrix;
 	for (int i = 0; i < 4; ++i) { //i=m
@@ -225,7 +225,7 @@ inline bool    Matrix4::operator	!= (const Matrix4& rhs) const {
 
 //// Functions ////
 
-//TODO(c,delle) clean up Matrix4.str() and Matrix4.str2F()
+//TODO(ClMa,delle) clean up Matrix4.str() and Matrix4.str2F()
 inline const std::string Matrix4::str() const {
 	std::string str = "Matrix4:\n|";
 	for (int i = 0; i < 15; ++i) {

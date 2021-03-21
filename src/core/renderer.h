@@ -70,7 +70,7 @@ struct RenderStats{
 struct Renderer{
 	Time*          time;
 	GLFWwindow*    window;
-	RenderSettings settings; //TODO(r,delle) load render settings from a file
+	RenderSettings settings; //TODO(Re,delle) load render settings from a file
 	RenderStats    stats{};
 	
 	virtual void Init(Window* window, deshiImGui* imgui) = 0;
@@ -125,7 +125,7 @@ struct Renderer{
 //// vulkan support structs ////
 ////////////////////////////////
 //Vulkan Spec [https://renderdoc.org/vkspec_chunked/index.html]
-/*TODO(r,delle) update vulkan rendering
+/*TODO(ReVu,delle) update vulkan rendering
 In real implementation: 
 https://vulkan-tutorial.com/en/Vertex_buffers/Staging_buffer#page_Using-a-staging-buffer:~:text=You%20may
 https://vulkan-tutorial.com/en/Vertex_buffers/Staging_buffer#page_Conclusion:~:text=It%20should
@@ -137,7 +137,7 @@ https://vulkan-tutorial.com/en/Generating_Mipmaps#page_Linear-filtering-support:
 https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-,like
 */
 
-//TODO(cr,delle) remove boost stuff and do it manually 
+//TODO(ClRe,delle) remove boost stuff and do it manually 
 struct QueueFamilyIndices {
 	boost::optional<u32> graphicsFamily;
 	boost::optional<u32> presentFamily;

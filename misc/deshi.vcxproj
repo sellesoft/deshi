@@ -197,10 +197,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\animation\Armature.h" />
-    <ClInclude Include="..\src\animation\Bone.h" />
-    <ClInclude Include="..\src\animation\Model.h" />
-    <ClInclude Include="..\src\animation\Scene.h" />
     <ClInclude Include="..\src\components\AudioListener.h" />
     <ClInclude Include="..\src\components\AudioSource.h" />
     <ClInclude Include="..\src\components\Camera.h" />
@@ -246,6 +242,10 @@
     <ClInclude Include="..\src\math\Vector2.h" />
     <ClInclude Include="..\src\math\Vector3.h" />
     <ClInclude Include="..\src\math\Vector4.h" />
+    <ClInclude Include="..\src\scene\Armature.h" />
+    <ClInclude Include="..\src\scene\Bone.h" />
+    <ClInclude Include="..\src\scene\Model.h" />
+    <ClInclude Include="..\src\scene\Scene.h" />
     <ClInclude Include="..\src\systems\CommandSystem.h" />
     <ClInclude Include="..\src\systems\ConsoleSystem.h" />
     <ClInclude Include="..\src\systems\PhysicsSystem.h" />
@@ -273,6 +273,14 @@
     <None Include="..\shaders\pbr.vert" />
     <None Include="..\shaders\phong.frag" />
     <None Include="..\shaders\phong.vert" />
+    <None Include="..\shaders\testing0.frag" />
+    <None Include="..\shaders\testing0.vert" />
+    <None Include="..\shaders\testing1.frag" />
+    <None Include="..\shaders\testing1.vert" />
+    <None Include="..\shaders\testing2.frag" />
+    <None Include="..\shaders\testing2.vert" />
+    <None Include="..\shaders\testing3.frag" />
+    <None Include="..\shaders\testing3.vert" />
     <None Include="..\shaders\twod.frag" />
     <None Include="..\shaders\twod.vert" />
     <None Include="..\shaders\wireframe.frag" />
@@ -280,7 +288,6 @@
     <None Include="build.bat" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\animation\Model.cpp" />
     <ClCompile Include="..\src\components\AudioListener.cpp" />
     <ClCompile Include="..\src\components\AudioSource.cpp" />
     <ClCompile Include="..\src\components\Camera.cpp" />
@@ -308,6 +315,7 @@
     <ClCompile Include="..\src\math\Matrix3.cpp" />
     <ClCompile Include="..\src\math\Matrix4.cpp" />
     <ClCompile Include="..\src\math\Vector3.cpp" />
+    <ClCompile Include="..\src\scene\Model.cpp" />
     <ClCompile Include="..\src\systems\CommandSystem.cpp" />
     <ClCompile Include="..\src\systems\ConsoleSystem.cpp" />
     <ClCompile Include="..\src\systems\PhysicsSystem.cpp" />

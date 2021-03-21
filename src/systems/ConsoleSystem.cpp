@@ -25,8 +25,10 @@ using namespace ImGui;
 
 int buffersize = 0;
 
-EntityAdmin* locadmin; //so I can access admin in TextEditCallback
-Console* loccon; //so I can access console in TextEditCallback
+//this is necessary so the textcallback stub can access a function in the obj
+//it has to be static i dont really know why maybe ill fix it when i go to rewrite
+//this ugly thing
+Console* me; 
 
 bool sel_com = false; //true when selecting an auto complete possibility
 bool sel_com_ret = false; //tells the callback function that it is going to replace text
@@ -34,7 +36,7 @@ std::string sel_com_str = ""; //the string we're replacing input with
 std::vector<std::string> posis;
 //int match_sel = 0;
 
-std::map<std::string, Color> colstrmap{ //TODO(, sushi) extend this map
+std::map<std::string, Color> colstrmap{
 	{"red", Color::RED},
 	{"dred", Color::DARK_RED},
 	{"blue", Color::BLUE},
@@ -49,14 +51,15 @@ std::map<std::string, Color> colstrmap{ //TODO(, sushi) extend this map
 	{"dyellow", Color::DARK_YELLOW},
 	{"magen", Color::MAGENTA},
 	{"dmagen", Color::DARK_MAGENTA},
-	{"black", Color::BLACK}
+	{"black", Color::BLACK},
+	{"error", Color::RED} //special error color for the console to know when to flash the debug bar
 };
 
 ImVec4 ColorToVec4(Color p) {
 	return ImVec4((float)p.r / 255, (float)p.g / 255, (float)p.b / 255, p.a / 255);
 }
 
-void AddLog(std::string input, Console* c) {
+void Console::AddLog(std::string input) {
 	
 	std::smatch m;
 	
@@ -65,29 +68,25 @@ void AddLog(std::string input, Console* c) {
 		//check if were dealing with a formatted part of the string
 		if (std::regex_search(m[0].str(), std::regex("\\[c:[^\\]]+\\]"))) {
 			//if we are, push the actual text with its color into text vector
-			c->buffer.push_back(std::pair<std::string, Color>(m[2].str(), colstrmap.at(m[1])));
+			buffer.push_back(std::pair<std::string, Color>(m[2].str(), colstrmap.at(m[1])));
 			buffersize += m[2].str().size();
-			if (colstrmap.at(m[1]) == Color::RED) {
-				locadmin->cons_error_warn = true;
-				locadmin->last_error = m[2].str();
+			if (m[1] == "error") {
+				admin->cons_error_warn = true;
+				admin->last_error = m[2].str();
 			}
 		}
 		else {
 			//if we arent then just push the line into text vector
-			c->buffer.push_back(std::pair<std::string, Color>(m[0].str(), Color::BLANK));
+			buffer.push_back(std::pair<std::string, Color>(m[0].str(), Color::BLANK));
 			buffersize += m[2].str().size();
 		}
 		input = m.suffix();
 	}
-	c->buffer[c->buffer.size() - 1].first += "\n";
+	buffer[buffer.size() - 1].first += "\n";
 	
 }
 
-void ClearLog(Console* c) {
-	c->buffer.clear();
-}
-
-std::string ExecCommand(std::string command, std::string args, EntityAdmin* admin) {
+std::string Console::ExecCommand(std::string command, std::string args) {
 	if (admin->commands.find(command) != admin->commands.end()) {
 		return admin->commands.at(command)->Exec(admin, args);
 	}
@@ -98,7 +97,7 @@ std::string ExecCommand(std::string command, std::string args, EntityAdmin* admi
 	//admin->
 }
 
-int TextEditCallback(ImGuiInputTextCallbackData* data) {
+int Console::TextEditCallback(ImGuiInputTextCallbackData* data) {
 	switch (data->EventFlag) {
 		case ImGuiInputTextFlags_CallbackCompletion:{
 			std::string input = data->Buf;
@@ -113,15 +112,15 @@ int TextEditCallback(ImGuiInputTextCallbackData* data) {
 			
 			std::regex e("^" + input + ".*");
 			std::vector<std::string> posi;
-			for (std::pair<std::string, Command*> c : locadmin->commands) {
+			for (std::pair<std::string, Command*> c : admin->commands) {
 				if (std::regex_search(c.first, e)) {
 					posi.push_back(c.first);
 				}
 			}
-			//TODO(, sushi) implement showing a commands help if tab is pressed when the command is already typed
+			//TODO(Cmd, sushi) implement showing a commands help if tab is pressed when the command is already typed
 			
 			if (posi.size() == 0) {
-				AddLog("no matches found", loccon);
+				AddLog("no matches found");
 			}
 			else if (posi.size() == 1) {
 				data->DeleteChars(fwordl, data->BufTextLen - fwordl);
@@ -135,32 +134,32 @@ int TextEditCallback(ImGuiInputTextCallbackData* data) {
 				
 			}
 			
-			loccon->scrollToBottom = true; //scroll to bottom when auto completing 
+			scrollToBottom = true; //scroll to bottom when auto completing 
 			
 			break;
 		}
 		case ImGuiInputTextFlags_CallbackHistory: {
 			
-			const int prev_hist_pos = loccon->historyPos;
+			const int prev_hist_pos = historyPos;
 			if (data->EventKey == ImGuiKey_UpArrow) {
-				if (loccon->historyPos == -1) {
-					loccon->historyPos = loccon->history.size() - 1;
+				if (historyPos == -1) {
+					historyPos = history.size() - 1;
 				}
-				else if (loccon->historyPos > 0) {
-					loccon->historyPos--;
+				else if (historyPos > 0) {
+					historyPos--;
 				}
 			}
 			else if (data->EventKey == ImGuiKey_DownArrow) {
-				if (loccon->historyPos != -1) {
-					if (++loccon->historyPos >= loccon->history.size()) {
-						loccon->historyPos = -1;
+				if (historyPos != -1) {
+					if (++historyPos >= history.size()) {
+						historyPos = -1;
 					}
 				}
 			}
 			
-			if (prev_hist_pos != loccon->historyPos)
+			if (prev_hist_pos != historyPos)
 			{
-				std::string history_str = (loccon->historyPos >= 0) ? loccon->history[loccon->historyPos] : "";
+				std::string history_str = (historyPos >= 0) ? history[historyPos] : "";
 				data->DeleteChars(0, data->BufTextLen);
 				data->InsertChars(0, history_str.c_str());
 			}
@@ -172,9 +171,15 @@ int TextEditCallback(ImGuiInputTextCallbackData* data) {
 				std::string str = data->Buf;
 				
 				int fwordl = 0; //we need to make sure we don't override valid input
-				if (std::regex_search(str, std::regex("^.+ +"))) {
+				if (std::regex_search(str, std::regex("^.+ *"))) {
 					fwordl = str.find_first_of(" ") + 1;
-					str.erase(0, str.find_first_of(" ") + 1);
+					if (fwordl == 0) {
+						str.erase(0, str.length());
+					}
+					else {
+						str.erase(0, str.find_first_of(" ") + 1);
+					}
+					
 				}
 				
 				str += sel_com_str;
@@ -191,17 +196,13 @@ int TextEditCallback(ImGuiInputTextCallbackData* data) {
 
 
 
-static int TextEditCallbackStub(ImGuiInputTextCallbackData* data) {
-	return TextEditCallback(data);
+int Console::TextEditCallbackStub(ImGuiInputTextCallbackData* data) {
+	return me->TextEditCallback(data);
 }
 
-void DoNothing() {
-	
-}
 
-void ConsoleSystem::DrawConsole() {
+void Console::DrawConsole() {
 	
-	Console* c = admin->console;
 	
 	ImGuiStyle& style = ImGui::GetStyle();
 	ImGuiIO& io = ImGui::GetIO();
@@ -211,6 +212,7 @@ void ConsoleSystem::DrawConsole() {
 	style.AntiAliasedLinesUseTex = false;
 	
 	//for some reason these werent set in the actual backend and it was causing issues
+	//this could no longer be true since we switch to Vulkan but ima keep it just incase :)
 	io.BackendFlags = ImGuiBackendFlags_HasGamepad | ImGuiBackendFlags_HasMouseCursors | ImGuiBackendFlags_HasSetMousePos;
 	io.ConfigWindowsMoveFromTitleBarOnly = true;
 	io.ConfigWindowsResizeFromEdges = true;
@@ -234,8 +236,8 @@ void ConsoleSystem::DrawConsole() {
 	
 	if (BeginMenuBar()) {
 		if (BeginMenu("Console")) {
-			if (MenuItem("Clear")) { ClearLog(c); }
-			if (MenuItem("Autoscroll", 0, &c->autoScroll)) { c->autoScroll = !c->autoScroll; }
+			if (MenuItem("Clear")) { buffer.clear(); }
+			if (MenuItem("Autoscroll", 0, &autoScroll)) { autoScroll = !autoScroll; }
 			ImGui::EndMenu();
 		}
 		EndMenuBar();
@@ -249,10 +251,10 @@ void ConsoleSystem::DrawConsole() {
 	if (sel_com) {
 		bool selected = false;
 		bool escape = false;
-		if (admin->input->KeyPressed(Key::DOWN) && match_sel < posis.size() - 1) { match_sel++; }
-		if (admin->input->KeyPressed(Key::UP)   && match_sel > 0)                { match_sel--; }
-		if (admin->input->KeyPressed(Key::ENTER)) { selected = true; reclaim_focus = true; }
-		if (admin->input->KeyPressed(Key::ESCAPE)) { escape = true; match_sel = 0; reclaim_focus = true; }
+		if (DengInput->KeyPressed(Key::DOWN) && match_sel < posis.size() - 1) { match_sel++; }
+		if (DengInput->KeyPressed(Key::UP)   && match_sel > 0)                { match_sel--; }
+		if (DengInput->KeyPressed(Key::ENTER)) { selected = true; reclaim_focus = true; }
+		if (DengInput->KeyPressed(Key::ESCAPE)) { escape = true; match_sel = 0; reclaim_focus = true; }
 		
 		if (escape) { ok_flag = true; }
 		else {
@@ -268,7 +270,7 @@ void ConsoleSystem::DrawConsole() {
 								SetScrollHereY(0);
 								PushStyleColor(ImGuiCol_Text, ColorToVec4(Color::RED));
 								Text(s.c_str());
-								PopStyleColor();
+								ImGui::PopStyleColor();
 								if (selected) {
 									sel_com_ret = true;
 									sel_com_str = s;
@@ -297,15 +299,15 @@ void ConsoleSystem::DrawConsole() {
 	PushStyleColor(ImGuiCol_ChildBg, ColorToVec4(Color(4, 17, 21, 255)));
 	BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar);
 	if (BeginPopupContextWindow()){
-		if (ImGui::Selectable("hehe")) AddLog("hoho", c);
+		if (ImGui::Selectable("hehe")) AddLog("hoho");
 		EndPopup();
 	}
 	
 	
 	//print previous text
-	for (std::pair<std::string, Color> p : c->buffer) {
+	for (std::pair<std::string, Color> p : buffer) {
 		//color formatting is "[c:red]text[c] text text"
-		//TODO(o, sushi) maybe optimize by only drawing what we know will be displayed on screen instead of parsing through all of it
+		//TODO(OpCon, sushi) maybe optimize by only drawing what we know will be displayed on screen instead of parsing through all of it
 		
 		if (p.second == Color::BLANK) {
 			SameLine(0, 0);
@@ -315,21 +317,20 @@ void ConsoleSystem::DrawConsole() {
 			PushStyleColor(ImGuiCol_Text, ColorToVec4(p.second));
 			SameLine(0, 0);
 			TextWrapped(p.first.c_str());
-			PopStyleColor();
+			ImGui::PopStyleColor();
 		}
 		
 		if (p.first[p.first.size() - 1] == '\n') {
 			TextWrapped("\n");
 		}
-		//TextWrapped(c->buffer[i].c_str());
 	}
 	
 	//auto scroll window
-	if (c->scrollToBottom || (c->autoScroll && GetScrollY() >= GetScrollMaxY())) SetScrollHereY(1);
-	c->scrollToBottom = false;
+	if (scrollToBottom || (autoScroll && GetScrollY() >= GetScrollMaxY())) SetScrollHereY(1);
+	scrollToBottom = false;
 	
 	EndChild();
-	PopStyleColor();
+	ImGui::PopStyleColor();
 	//get input from text box
 	ImGuiInputTextFlags input_text_flags = 0;
 	if (!sel_com)  input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackAlways;
@@ -339,14 +340,14 @@ void ConsoleSystem::DrawConsole() {
 	PushStyleColor(ImGuiCol_FrameBg, ColorToVec4(Color::VERY_DARK_CYAN));
 	SetNextItemWidth(ImGui::GetWindowWidth() - 15);
 	ImGui::SetItemDefaultFocus();
-	if (InputText("", c->inputBuf, sizeof(c->inputBuf), input_text_flags, &TextEditCallbackStub, (void*)this)) { 
+	if (InputText("", inputBuf, sizeof(inputBuf), input_text_flags, &TextEditCallbackStub, (void*)this)) { 
 		
-		std::string s = c->inputBuf;
+		std::string s = inputBuf;
 		reclaim_focus = true;
 		
-		if(s.size() != 0) c->history.push_back(s);
+		if(s.size() != 0) history.push_back(s);
 		
-		AddLog(TOSTRING("[c:cyan]/[c][c:dcyan]\\[c] ", s), c); //print command typed
+		AddLog(TOSTRING("[c:cyan]/[c][c:dcyan]\\[c] ", s)); //print command typed
 		
 		//cut off arguments into their own string
 		std::string args;
@@ -357,14 +358,14 @@ void ConsoleSystem::DrawConsole() {
 		}
 		
 		if (s.size() != 0) {
-			AddLog(ExecCommand(s, args, admin), c); //attempt to execute command and print result
+			AddLog(ExecCommand(s, args)); //attempt to execute command and print result
 		}
 		
-		c->historyPos = -1; //reset history position
+		historyPos = -1; //reset history position
 		
-		memset(c->inputBuf, 0, sizeof(s)); //erase input from text box
+		memset(inputBuf, 0, sizeof(s)); //erase input from text box
 		
-		c->scrollToBottom = true; //scroll to bottom when we press enter
+		scrollToBottom = true; //scroll to bottom when we press enter
 	}
 	
 	ImGui::SetItemDefaultFocus();
@@ -375,11 +376,11 @@ void ConsoleSystem::DrawConsole() {
 	
 	admin->IMGUI_KEY_CAPTURE = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 	
-	
-	PopStyleColor();				PopStyleColor(); PopStyleColor();   PopStyleVar();
-	PopStyleColor();		 PopStyleColor();	     PopStyleColor();
-	PopStyleColor(); PopStyleColor();             
-	
+	        ImGui::PopStyleColor();
+	    ImGui::PopStyleColor();	    ImGui::PopStyleColor();    
+    ImGui::PopStyleColor();	            ImGui::PopStyleColor();    ImGui::PopStyleVar();
+        ImGui::PopStyleColor();     ImGui::PopStyleColor();             
+            ImGui::PopStyleColor();
 	
 	//if we selected something from completion menu
 	//we have to do this here to prevent enter from sending a command
@@ -391,14 +392,14 @@ void ConsoleSystem::DrawConsole() {
 
 //this must be a separate funciton because TextEditCallback had a fit when I tried
 //making this the main AddLog function
-void ConsoleSystem::PushConsole(std::string s) {
-	AddLog(s, admin->console);
+void Console::PushConsole(std::string s) {
+	AddLog(s);
 }
 
 //flushes the buffer to a file once it reaches a certain size
-void FlushBuffer(EntityAdmin* admin) {
+void Console::FlushBuffer() {
 	std::string output = "";
-	for (auto a : loccon->buffer) {
+	for (auto a : buffer) {
 		output += a.first;
 	}
 
@@ -428,32 +429,33 @@ void FlushBuffer(EntityAdmin* admin) {
 	
 }
 
-void ConsoleSystem::Init() {
-	locadmin = admin;
-	loccon = admin->console;
-	AddLog("[c:dcyan]P3DPGE Console ver. 0.5.0[c]", loccon);
-	AddLog("\"listc\" for a list of commands\n\"help {command}\" to view a commands help page", loccon);
-	AddLog("see console_release_notes.txt for version information", loccon);
-	AddLog("\n[c:dyellow]Console TODOS:[c]", loccon);
+void Console::Init() {
+	me = this;
+
+	AddLog("[c:dcyan]Deshi Console ver. 0.5.1[c]");
+	AddLog("\"listc\" for a list of commands\n\"help {command}\" to view a commands help page");
+	AddLog("see console_release_notes.txt for version information");
+	AddLog("\n[c:dyellow]Console TODOS:[c]");
 	AddLog(
 		   "> implement argument completion for commands\n"
 		   "> implement arguments for commands that need them\n"
 		   "> add help to commands that don't have a descriptive help yet\n"
-		   "> fix tabcompletion when trying to complete the first word", loccon);
+		   "> fix tabcompletion when trying to complete the first word\n"
+		   "> (maybe) rewrite to use characters in the buffer rather than whole strings\n"
+		   "> (maybe) implement showing autocomplete as you type");
 }
 
-void ConsoleSystem::Update() {
+void Console::Update() {
 	if (DengInput->KeyPressed(Key::TILDE)) {
 		dispcon = !dispcon;
 		admin->IMGUI_KEY_CAPTURE = !admin->IMGUI_KEY_CAPTURE; 
 	}
 	if (dispcon) DrawConsole();
-	locadmin = admin;
-	loccon = admin->console;
+	me = this;
 	
 	if (buffersize >= 120000) {
-		FlushBuffer(admin);
-		admin->console->buffer.clear();
+		FlushBuffer();
+		buffer.clear();
 		buffersize = 0;
 	}
 

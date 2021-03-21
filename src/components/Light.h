@@ -7,7 +7,7 @@
 
 struct Light : public Component {
 	Vector3 position;
-	Vector3 direction; //TODO change this to Quat
+	Vector3 direction;
 	float strength;
 	//Geometry* shape;
 	

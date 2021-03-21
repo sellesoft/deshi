@@ -21,7 +21,6 @@ struct Edge {
 		else { high = true; }
 	}
 
-	//TODO(?, sushi) find a good place to update edge, probably in Triangle?
 	void update(Vector3 point1, Vector3 point2) {
 		p[0] = point1;
 		p[1] = point2;

@@ -15,21 +15,18 @@
 #include <stdexcept>
 
 
-#define LOG(...)     admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR(...)   admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", __VA_ARGS__, "[c]"))
-#define SUCCESS(...) admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
+#define LOG(...)     admin->GetSystem<Console>()->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR(...)   admin->GetSystem<Console>()->PushConsole(TOSTRING("\n[c:error]", __VA_ARGS__, "[c]"))
+#define SUCCESS(...) admin->GetSystem<Console>()->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
+//#define PRINT(...)   admin->GetSystem<Console>()->PushConsole(TOSTRING(__VA_ARGS__))
 
 //additionally prints where function was called
-#define LOG_LOC(...)     admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR_LOC(...)   admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:red]", __VA_ARGS__, "[c]"))
-#define SUCCESS_LOC(...) admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
+#define LOG_LOC(...)     admin->GetSystem<Console>()->PushConsole(TOSTRING("\n[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR_LOC(...)   admin->GetSystem<Console>()->PushConsole(TOSTRING("\n[c:error]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:red]", __VA_ARGS__, "[c]"))
+#define SUCCESS_LOC(...) admin->GetSystem<Console>()->PushConsole(TOSTRING("\n[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
 
 #define DASSERT(condition, message)     if(!(condition) && !admin->paused){ ERROR_LOC("Assertion '" #condition "' failed: \n", message); admin->paused = true;}
 #define DASSERTWARN(condition, message) if(!(condition) && !admin->paused) LOG_LOC("Assertion '" #condition "' failed: \n", message)
-
-#define LOGF(...)     admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERRORF(...)   admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", __VA_ARGS__, "[c]"))
-#define SUCCESSF(...) admin->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
 
 #define TOSTRING(...) Debug::ToString(__VA_ARGS__)
 
@@ -53,7 +50,6 @@ is_first_time = false; \
 return was_first_time; } ())
 
 //wrap code in this for it to only run once the entire program
-//TODO(g, sushi) write a macro for running once in a loop
 #define RUN_ONCE if(FIRST_TIME_HERE)
 
 //makes a random number only once and then always returns that same number

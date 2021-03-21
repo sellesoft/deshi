@@ -28,7 +28,7 @@ struct Camera : public Component {
 	
 	//horizontal fov in degrees
 	void UsePerspectiveProjection(float fovX, float width, float height, float nearZ, float farZ);
-	void UseOrthographicProjection(); //TODO(r,sushi) implement this from .cpp here (ideally without a scene pointer)
+	void UseOrthographicProjection(); //TODO(Re,sushi) implement this from .cpp here (ideally without a scene pointer)
 };
 
 #endif //COMPONENT_CAMERA_H

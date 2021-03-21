@@ -51,8 +51,8 @@ struct Input{
 	std::map<size_t, u8> mapKeys;
 	std::map<size_t, u8> mapMouse;
 	
-	//TODO(oi,delle) look into storing these as vector<bool> instead
-	//TODO(oi,delle) look into storing input modifiers with the keys as a bit combined int
+	//TODO(OpIn,delle) look into storing these as vector<bool> instead
+	//TODO(OpIn,delle) look into storing input modifiers with the keys as a bit combined int
 	bool oldKeyState[MAX_KEYBOARD_KEYS]   = {0};
 	bool newKeyState[MAX_KEYBOARD_KEYS]   = {0};
 	bool oldMouseState[MAX_MOUSE_BUTTONS] = {0};

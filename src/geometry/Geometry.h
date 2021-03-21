@@ -15,7 +15,7 @@ namespace Geometry {
 	}
 
 	Vector3 ClosestPointOnBox(Vector3 center, Vector3 halfDims, Vector3 rotation, Vector3 target) {
-		target *= Matrix4::RotationMatrixAroundPoint(center, rotation).Inverse(); //TODO(,delle) test ClosestPointOnBox
+		target *= Matrix4::RotationMatrixAroundPoint(center, rotation).Inverse(); //TODO(Geo,delle) test ClosestPointOnBox
 		return Vector3(
 			fmaxf(center.x - halfDims.x, fminf(target.x, center.x + halfDims.x)),
 			fmaxf(center.y - halfDims.y, fminf(target.y, center.y + halfDims.y)),

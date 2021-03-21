@@ -188,7 +188,6 @@ struct Triangle {
 	}
 
 	//debug
-	//TODO(,sushi) make this work when i know how to in vulkan
 	void display_edges() {
 		update_edges();
 

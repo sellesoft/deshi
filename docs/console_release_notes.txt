@@ -1,8 +1,7 @@
-P3DPGE Console Release Notes
+Deshi Console Release Notes
 
 the console isn't actually released or anything, this just keeps track of its progress in engine
-the console's ui is written using DearImGui, but its actual functionality is defined in ConsoleSystem and the
-data it carries is defined in Console.h
+the console's ui is written using DearImGui.
 
 0.5.0 - initial release notes
 -implemented issuing commands with arguments
@@ -11,3 +10,9 @@ data it carries is defined in Console.h
 -implemented tab completion (although its currently broken still)
 -implemented pushing text to the console from code
 -implemented pushing CASSERT and CASSERTWARN to the console from code
+
+0.5.1 -
+-rewrote Console to not use a component
+-rename ConsoleSystem to Console and implement all functionality on it
+-move Console to the engine rather than EntityAdmin
+-implement console buffer flushing to a log after a certain amount of characters

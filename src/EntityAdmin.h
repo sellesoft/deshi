@@ -54,7 +54,7 @@ struct EntityAdmin {
 	Keybinds* currentKeybinds;
 	Controller* controller;
 	Canvas* tempCanvas;
-	Console* console;
+	//Console* console;
 	
 	//stores the components to be executed in between layers
 	std::vector<ContainerManager<Component*>> freeCompLayers;
@@ -126,6 +126,7 @@ struct Entity {
 	u32 AddComponents(std::vector<Component*> components);
 	
 	~Entity();
+	//this seems ancient so i wont touch it 
 }; //TODO(,delle) move WorldSystem entity-component functions into Entity
 
 #endif

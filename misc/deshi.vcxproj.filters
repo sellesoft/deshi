@@ -109,18 +109,6 @@
     <ClInclude Include="..\src\components\Component.h">
       <Filter>src\components</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\animation\Armature.h">
-      <Filter>src\animation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\animation\Bone.h">
-      <Filter>src\animation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\animation\Model.h">
-      <Filter>src\animation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\animation\Scene.h">
-      <Filter>src\animation</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\external\draudio\dr_flac.h">
       <Filter>src\external\draudio</Filter>
     </ClInclude>
@@ -190,6 +178,18 @@
     <ClInclude Include="..\src\components\Controller.h">
       <Filter>src\components\h</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\scene\Armature.h">
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\scene\Bone.h">
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\scene\Model.h">
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\scene\Scene.h">
+      <Filter>src\scene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -228,9 +228,6 @@
     <Filter Include="src\components\h">
       <UniqueIdentifier>{ac3d7024-7202-4557-8232-cff3b1b89072}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\animation">
-      <UniqueIdentifier>{1a054cbd-376e-4ecb-9e7b-e166da4b4673}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\external">
       <UniqueIdentifier>{29d3584e-d40d-49d7-b334-ee2e69ad1d81}</UniqueIdentifier>
     </Filter>
@@ -251,6 +248,9 @@
     </Filter>
     <Filter Include="cfg">
       <UniqueIdentifier>{ce9f1535-2538-4fc7-b08d-1fcdcfad596c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\scene">
+      <UniqueIdentifier>{1a054cbd-376e-4ecb-9e7b-e166da4b4673}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -300,6 +300,30 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="..\shaders\lavalamp.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\testing0.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\testing0.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\testing1.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\testing1.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\testing2.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\testing2.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\testing3.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\shaders\testing3.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>
@@ -367,9 +391,6 @@
     <ClCompile Include="..\src\EntityAdmin.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\animation\Model.cpp">
-      <Filter>src\animation</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\external\imgui\imgui_widgets.cpp">
       <Filter>src\external\imgui</Filter>
     </ClCompile>
@@ -411,6 +432,9 @@
     </ClCompile>
     <ClCompile Include="..\src\components\Controller.cpp">
       <Filter>src\components\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\scene\Model.cpp">
+      <Filter>src\scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

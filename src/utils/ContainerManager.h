@@ -4,7 +4,6 @@
 #include <iostream>
 #include <boost/optional.hpp>
 
-//TODO(c, sushi) reroute global includes probably by making GLOBAL the bridge between anything we want to be global and everything else instead of Debug doing that
 
 //debug defines
 #define PRINT(x) std::cout << x << std::endl;

@@ -45,7 +45,6 @@ Matrix4 MakeOrthographicMatrix(Scene* s, Camera* c, float screenWidth, float scr
 	float r = max * aspectRatio, t = max;
 	float l = -r, b = -t;
 	
-	//TODO(r, sushi) implement ortho zooming by adjusting either the scale of objects or adjusting the bounding box
 	//r += 10; l -= 10;
 	//t += 10; b -= 10;
 	
@@ -86,7 +85,7 @@ void Camera::Update() {
 	up = right.cross(forward).normalized();
 	
 	//update view matrix
-	//TODO(o,delle) precalc this since we already get the direction vectors
+	//TODO(Op,delle) precalc this since we already get the direction vectors
 	viewMatrix = Math::LookAtMatrix(position, position+forward).Inverse();
 	
 	//update renderer camera properties

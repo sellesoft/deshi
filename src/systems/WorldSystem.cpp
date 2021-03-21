@@ -26,7 +26,7 @@ void WorldSystem::Update() {
 	//creation buffer
 	for(Entity* entity : creationBuffer) {
 		entity->id = !admin->entities.empty() ? admin->entities.rbegin()->second->id + 1 : 1; //set id to be one greater than the last
-		admin->entities.insert(admin->entities.end(), {entity->id, entity}); //TODO(o,delle) see if this is worth it vs regular insert
+		admin->entities.insert(admin->entities.end(), {entity->id, entity}); //TODO(Op,delle) see if this is worth it vs regular insert
 		entity->admin = admin;
 	}
 	creationBuffer.clear();
@@ -145,7 +145,7 @@ bool WorldSystem::RemoveAComponentFromEntity(EntityAdmin* admin, Entity* entity,
 	}
 }
 
-bool WorldSystem::RemoveComponentsFromEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components) { //TODO test this
+bool WorldSystem::RemoveComponentsFromEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components) {
 	try {
 		std::vector<Component*>* coms = &admin->entities.at(entity->id)->components;
 		bool value = false;

@@ -13,7 +13,7 @@
 
 namespace deshi{
 	
-	//TODO(,delle) check which dir we are in to get the correct path
+	//TODO(Fs,delle) check which dir we are in to get the correct path
 	inline static std::string getDataPath()    { return "data/"; }
 	inline static std::string getModelsPath()  { return getDataPath() + "models/"; }
 	inline static std::string getTexturesPath(){ return getDataPath() + "textures/"; }

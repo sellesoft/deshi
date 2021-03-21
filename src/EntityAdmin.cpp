@@ -65,8 +65,8 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r) {
 		}
 	}
 	AddSystem(new RenderCanvasSystem());
-	console = new Console();
-	AddSystem(new ConsoleSystem());
+	//console = new Console();
+	AddSystem(new Console());
 	AddSystem(new WorldSystem());
 	AddSystem(new SoundSystem());
 	
@@ -159,7 +159,7 @@ Command* EntityAdmin::GetCommand(std::string command) {
 		return commands.at(command);
 	} catch(std::exception e) {
 		//ERROR("Command \"", command, "\" does not exist");
-		this->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
+		this->GetSystem<Console>()->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
 		return 0;
 	}
 }
@@ -170,7 +170,7 @@ bool EntityAdmin::ExecCommand(std::string command) {
 		return true;
 	} catch(std::exception e) {
 		//ERROR("Command \"", command, "\" does not exist");
-		this->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
+		this->GetSystem<Console>()->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
 		return false;
 	}
 }
@@ -180,7 +180,7 @@ bool EntityAdmin::ExecCommand(std::string command, std::string args) {
 		commands.at(command)->Exec(admin, args);
 		return true;
 	}catch(std::exception e){
-		this->GetSystem<ConsoleSystem>()->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
+		this->GetSystem<Console>()->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
 		return false;
 	}
 }

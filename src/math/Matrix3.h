@@ -142,7 +142,7 @@ inline void    Matrix3::operator -= (const Matrix3& rhs){
 	}
 }
 
-//TODO(o,delle) look into optimizing this by transposing to remove a loop, see Unreal Matrix.h
+//TODO(Op,delle) look into optimizing this by transposing to remove a loop, see Unreal Matrix.h
 inline Matrix3  Matrix3::operator *  (const Matrix3& rhs) const{
 	Matrix3 newMatrix;
 	for (int i = 0; i < 3; ++i) { //i=m
@@ -217,7 +217,7 @@ inline bool    Matrix3::operator	!= (const Matrix3& rhs) const {
 
 //// Functions ////
 
-//TODO(c,delle) clean up Matrix3.str() and Matrix3.str2F()
+//TODO(ClMa,delle) clean up Matrix3.str() and Matrix3.str2F()
 inline const std::string Matrix3::str() const {
 	std::string str = "Matrix3:\n|";
 	for (int i = 0; i < 8; ++i) {
