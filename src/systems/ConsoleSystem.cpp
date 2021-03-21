@@ -416,7 +416,7 @@ void FlushBuffer(EntityAdmin* admin) {
 	if (!session) {
 		
 		file.open(filename);
-		file << TOSTRING("Deshi Console Log ", DengTime->month, "/", DengTime->day, "/", DengTime->year, " ", DengTime->hour, ":", DengTime->minute, ":", DengTime->second) << std::endl;
+		file << TOSTRING("Deshi Console Log ", DengTime->weekday, " ", DengTime->month, "/", DengTime->day, "/", DengTime->year, " ", DengTime->hour, ":", DengTime->minute, ":", DengTime->second) << std::endl;
 		file << "\n" << output;
 		session = true;
 	
