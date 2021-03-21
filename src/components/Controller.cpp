@@ -57,7 +57,7 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 	Window* window = admin->window;
 	float deltaTime = admin->time->deltaTime;
 	
-	if (!admin->IMGUI_KEY_CAPTURE) {
+	if (!admin->IMGUI_MOUSE_CAPTURE) {
 		
 		/*if (input->KeyPressed(Key::N)) {
 			camera->MOUSE_LOOK = !camera->MOUSE_LOOK;

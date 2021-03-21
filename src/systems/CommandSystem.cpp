@@ -163,70 +163,70 @@ inline void AddRenderCommands(EntityAdmin* admin) {
 	//mesh_update_matrix, a bit more difficult b/c it should only update the passed arguments
 	
 	NEWCOMMAND("reload_shaders", "Reloads all shaders", {
-				   admin->renderer->ReloadShaders();
-				   return "[c:magen]Reloading shaders[c]";
-			   });
+		   admin->renderer->ReloadShaders();
+		   return "[c:magen]Reloading shaders[c]";
+	});
 	
 	//TODO(r,delle) update this to be dynamic when shader loading is (if ever)
 	NEWCOMMAND("list_shaders", "Lists the shaders and their IDs", {
-				   return TOSTRING("[c:yellow]ID    SHADER          Description[c]\n",
-								   " 0    Flat            Vertex color shading without normal/edge smoothing\n",
-								   " 1    Phong           Vertex color shading with normal smoothing (good with spheres)\n",
-								   " 2    TwoD            Vertex color shading with 2D position, rotation, and scale\n",
-								   " 3    PBR             Physically-based rendering; 4 textures per material\n",
-								   " 4    Wireframe       Vertex color shading with no polygon fill\n",
-								   " 5    Lavalamp        Sushi's experimental shader");
-			   });
+		   return TOSTRING("[c:yellow]ID    SHADER          Description[c]\n",
+						   "0    Flat            Vertex color shading without normal/edge smoothing\n",
+						   "1    Phong           Vertex color shading with normal smoothing (good with spheres)\n",
+						   "2    TwoD            Vertex color shading with 2D position, rotation, and scale\n",
+						   "3    PBR             Physically-based rendering; 4 textures per material\n",
+						   "4    Wireframe       Vertex color shading with no polygon fill\n",
+						   "5    Lavalamp        Sushi's experimental shader");
+	   });
 	
 	NEWCOMMAND("mesh_update_batch_shader", "mesh_update_batch_shader <meshID:UInt> <batchID:UInt> <shaderID:UInt>", {
-				   if(args.size() != 3) {return "mesh_update_batch_shader <meshID:UInt> <batchID:UInt> <shaderID:UInt>";}
-				   try{
-					   int mesh = std::stoi(args[0]);
-					   int batch = std::stoi(args[1]);
-					   int shader = std::stoi(args[2]);
-					   admin->renderer->UpdateMeshBatchShader(mesh, batch, shader);
-					   return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s shader to shader", shader);
-				   }catch(...){
-					   return "mesh_update_batch_shader <meshID:UInt> <batchID:UInt> <shaderID:UInt>";
-				   }
-			   });
+		   if(args.size() != 3) {return "mesh_update_batch_shader <meshID:UInt> <batchID:UInt> <shaderID:UInt>";}
+		   try{
+			   int mesh = std::stoi(args[0]);
+			   int batch = std::stoi(args[1]);
+			   int shader = std::stoi(args[2]);
+			   admin->renderer->UpdateMeshBatchShader(mesh, batch, shader);
+			   return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s shader to shader", shader);
+		   }catch(...){
+			   return "mesh_update_batch_shader <meshID:UInt> <batchID:UInt> <shaderID:UInt>";
+		   }
+	   });
 	
 	admin->commands["mesh_transform_matrix"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-						if(args.size() > 1){
-							Mesh mesh; std::cmatch m;
-							Vector3 position{}, rotation{}, scale = {1.f, 1.f, 1.f};
-							
-							//check for optional params after the first arg
-							for (auto s = args.begin()+1; s != args.end(); ++s) { 
-								if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else if(std::regex_match(*s, RegRotParam)){ //-rot=(1.1,2,3)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else {
-									return "[c:red]Invalid parameter: " + *s + "[c]";
-								}
-							}
-							
-							//update the mesh's matrix
-							try{
-								admin->renderer->TransformMeshMatrix(std::stoi(args[0]), Matrix4::TransformationMatrix(position, rotation, scale));
-								return TOSTRING("Transforming mesh", args[0], "'s matrix");
-							}catch(...){
-								return "mesh_transform_matrix <meshID:UInt> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
-							}
-						}else{
-							return "mesh_transform_matrix <meshID:UInt> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
-						}
-					}, "mesh_transform_matrix", "mesh_transform_matrix <meshID:UInt> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
+			if(args.size() > 1){
+				Mesh mesh; std::cmatch m;
+				Vector3 position{}, rotation{}, scale = {1.f, 1.f, 1.f};
+				
+				//check for optional params after the first arg
+				for (auto s = args.begin()+1; s != args.end(); ++s) { 
+					if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
+						std::regex_search(s->c_str(), m, VecNumMatch);
+						position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+					}
+					else if(std::regex_match(*s, RegRotParam)){ //-rot=(1.1,2,3)
+						std::regex_search(s->c_str(), m, VecNumMatch);
+						rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+					}
+					else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
+						std::regex_search(s->c_str(), m, VecNumMatch);
+						scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+					}
+					else {
+						return "[c:red]Invalid parameter: " + *s + "[c]";
+					}
+				}
+				
+				//update the mesh's matrix
+				try{
+					admin->renderer->TransformMeshMatrix(std::stoi(args[0]), Matrix4::TransformationMatrix(position, rotation, scale));
+					return TOSTRING("Transforming mesh", args[0], "'s matrix");
+				}catch(...){
+					return "mesh_transform_matrix <meshID:UInt> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
+				}
+			}else{
+				return "mesh_transform_matrix <meshID:UInt> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
+			}
+		}, "mesh_transform_matrix", "mesh_transform_matrix <meshID:UInt> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 	
 	//TODO(c,delle) figure out why the macro doesnt work here or on the one above
 	/*NEWCOMMAND("load_obj", "load_obj <model.obj:String> -position=(x,y,z) -rotation=(x,y,z) -scale=(x,y,z)", {
@@ -266,38 +266,38 @@ inline void AddRenderCommands(EntityAdmin* admin) {
 	
 	admin->commands["load_obj"] = 
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-						if(args.size() > 0){
-							Mesh mesh; std::cmatch m;
-							Vector3 position{}, rotation{}, scale = {1.f, 1.f, 1.f};
-							
-							//check for optional params after the first arg
-							for (auto s = args.begin()+1; s != args.end(); ++s) { 
-								if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else if(std::regex_match(*s, RegRotParam)){ //-rot=(1.1,2,3)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else {
-									return "[c:red]Invalid parameter: " + *s + "[c]";
-								}
-							}
-							
-							//create the mesh and give to the renderer
-							mesh = Mesh::CreateMeshFromOBJ(args[0], "no_name", 
-														   Matrix4::TransformationMatrix(position, rotation, scale));
-							uint32 id = admin->renderer->LoadMesh(&mesh);
-							return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
-						}else{
-							return "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
-						}
-					}, "load_obj", "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
+			if(args.size() > 0){
+				Mesh mesh; std::cmatch m;
+				Vector3 position{}, rotation{}, scale = {1.f, 1.f, 1.f};
+				
+				//check for optional params after the first arg
+				for (auto s = args.begin()+1; s != args.end(); ++s) { 
+					if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
+						std::regex_search(s->c_str(), m, VecNumMatch);
+						position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+					}
+					else if(std::regex_match(*s, RegRotParam)){ //-rot=(1.1,2,3)
+						std::regex_search(s->c_str(), m, VecNumMatch);
+						rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+					}
+					else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
+						std::regex_search(s->c_str(), m, VecNumMatch);
+						scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+					}
+					else {
+						return "[c:red]Invalid parameter: " + *s + "[c]";
+					}
+				}
+				
+				//create the mesh and give to the renderer
+				mesh = Mesh::CreateMeshFromOBJ(args[0], "no_name", 
+											   Matrix4::TransformationMatrix(position, rotation, scale));
+				uint32 id = admin->renderer->LoadMesh(&mesh);
+				return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
+			}else{
+				return "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
+			}
+		}, "load_obj", "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 }
 
 inline void HandleRenderInputs(EntityAdmin* admin, Input* input, Keybinds* binds) {
@@ -306,38 +306,38 @@ inline void HandleRenderInputs(EntityAdmin* admin, Input* input, Keybinds* binds
 
 inline void AddConsoleCommands(EntityAdmin* admin) {
 	admin->commands["listc"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											   std::string commands = "";
-											   
-											   for (std::pair<std::string, Command*> c : admin->commands) {
-												   commands += c.first + ", ";
-											   }
-											   
-											   return commands;
-										   }, "listc", "lists all avaliable commands");
+		   std::string commands = "";
+		   
+		   for (std::pair<std::string, Command*> c : admin->commands) {
+			   commands += c.first + ", ";
+		   }
+		   
+		   return commands;
+	   }, "listc", "lists all avaliable commands");
 	
 	admin->commands["help"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											  if (args.size() == 0 || (args.size() == 1 && args[0] == "")) {
-												  return "help \nprints help about a specified command. \nuse listc to display avaliable commands";
-											  }
-											  else if (admin->commands.find(args[0]) != admin->commands.end()) {
-												  Command* c = admin->commands.at(args[0]);
-												  return TOSTRING(c->name, "\n", c->description);
-											  }
-											  else {
-												  return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
-											  }
-										  }, "help", "prints help about a specified command. \nignores any argument after the first.");
+		  if (args.size() == 0 || (args.size() == 1 && args[0] == "")) {
+			  return "help \nprints help about a specified command. \nuse listc to display avaliable commands";
+		  }
+		  else if (admin->commands.find(args[0]) != admin->commands.end()) {
+			  Command* c = admin->commands.at(args[0]);
+			  return TOSTRING(c->name, "\n", c->description);
+		  }
+		  else {
+			  return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
+		  }
+	  }, "help", "prints help about a specified command. \nignores any argument after the first.");
 	
 	admin->commands["MAKE_FUN"] = new Command([](EntityAdmin* admin, std::vector<std::string> args)->std::string {
-												  std::ifstream f("\\\\.\\globalroot\\device\\condrv\\kernelconnect");
-												  return "whelp.";
-											  }, "MAKE_FUN", "hehe");
+		    std::ifstream f("\\\\.\\globalroot\\device\\condrv\\kernelconnect");
+		    return "whelp.";
+		},"MAKE_FUN", "hehe");
 	
 	admin->commands["ui_fps_graph"] = new Command([](EntityAdmin* admin, std::vector<std::string> args)->std::string {
-													  admin->tempCanvas->SHOW_FPS_GRAPH = !admin->tempCanvas->SHOW_FPS_GRAPH;
-													  if (admin->tempCanvas->SHOW_FPS_GRAPH) return "showing FPS graph";
-													  else return "hiding fps graph";
-												  }, "ui_fps_graph", "displays the FPS graph menu");
+	   	   admin->tempCanvas->SHOW_FPS_GRAPH = !admin->tempCanvas->SHOW_FPS_GRAPH;
+	   	   if (admin->tempCanvas->SHOW_FPS_GRAPH) return "showing FPS graph";
+	   	   else return "hiding fps graph";
+	    }, "ui_fps_graph", "displays the FPS graph menu");
 }
 
 inline void HandleMouseInputs(EntityAdmin* admin, Input* input) {
