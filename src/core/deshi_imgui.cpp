@@ -1,5 +1,6 @@
 #include "deshi_imgui.h"
 #include "renderer.h"
+#include "assets.h"
 
 #include "../external/imgui/imgui_impl_glfw.h"
 #include "../external/imgui/imgui_impl_vulkan.h"
@@ -26,6 +27,8 @@ void check_vk_result(VkResult err){
 void deshiImGui::Init(Renderer* renderer){
 	//Setup Dear ImGui context
 	ImGui::CreateContext();
+	ImGuiIO io = ImGui::GetIO();
+	io.IniFilename = (deshi::getConfigsPath() + "imgui.ini").c_str();
 	
 	//Setup Dear ImGui style
 	ImGui::StyleColorsDark();

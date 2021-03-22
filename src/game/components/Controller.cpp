@@ -1,7 +1,7 @@
 #include "Controller.h"
 #include "../../EntityAdmin.h"
 #include "../../core.h"
-#include "../components/Keybinds.h"
+#include "../Keybinds.h"
 #include "../components/Camera.h"
 #include "../../math/Math.h"
 
@@ -92,8 +92,8 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 			admin->ExecCommand("cursor_mode", "1");
 		}
 		if(input->MouseDown(MouseButton::MB_RIGHT)){
-			camera->rotation.y += sens * (input->mouseX - window->centerX) * .005f;
-			camera->rotation.x += sens * (input->mouseY - window->centerY) * .005f;
+			camera->rotation.y += sens * (input->mouseX - window->centerX) * .03f;
+			camera->rotation.x += sens * (input->mouseY - window->centerY) * .03f;
 		}
 		if(input->MouseReleased(MouseButton::MB_RIGHT)){
 			admin->ExecCommand("cursor_mode", "0");
@@ -118,7 +118,7 @@ inline void CameraZoom(EntityAdmin* admin){
 void HandleMouseInputs(EntityAdmin* admin) {
 	Canvas* canvas = admin->tempCanvas;
 	Input* input = admin->input;
-
+	
 	//mouse left click pressed
 	if (input->MousePressed(MB_LEFT)) {
 		bool ui_clicked = false;
@@ -134,10 +134,10 @@ void HandleMouseInputs(EntityAdmin* admin) {
 		//	}
 		//}
 		//stop: are we even using this anymore?
-
+		
 		//if the click wasnt on a UI element, trigger select_entity command
 		//admin->ExecCommand("select_entity"); //TODO(delle,i) re-enable clicking entities
-
+		
 		//set click pos to mouse pos
 	}
 	//mouse left click held
@@ -164,7 +164,7 @@ void HandleMouseInputs(EntityAdmin* admin) {
 		////reset click pos to null
 		//input->mouseClickPos = Vector2(admin->p->ScreenWidth(), admin->p->ScreenHeight());
 	}
-
+	
 	//if(input->KeyPressed(Key::MINUS)) {
 	//	admin->p->SetMousePositionLocal(admin->p->GetWindowSize() / 2);
 	//}
@@ -174,55 +174,55 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 	Input* input = admin->input;
 	
 	//translation
-
+	
 	if (!admin->IMGUI_KEY_CAPTURE) {
-
-
+		
+		
 		if (input->KeyDown(Key::L, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_right");
 		}
-
+		
 		if (input->KeyDown(Key::J, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_left");
 		}
-
+		
 		if (input->KeyDown(Key::O, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_up");
 		}
-
+		
 		if (input->KeyDown(Key::U, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_down");
 		}
-
+		
 		if (input->KeyDown(Key::I, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_forward");
 		}
-
+		
 		if (input->KeyDown(Key::K, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_backward");
 		}
-
+		
 		//rotation
 		if (input->KeyDown(Key::L, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_+x");
 		}
-
+		
 		if (input->KeyDown(Key::J, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_-x");
 		}
-
+		
 		if (input->KeyDown(Key::O, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_+y");
 		}
-
+		
 		if (input->KeyDown(Key::U, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_-y");
 		}
-
+		
 		if (input->KeyDown(Key::I, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_+z");
 		}
-
+		
 		if (input->KeyDown(Key::K, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_-z");
 		}
@@ -233,10 +233,10 @@ void HandleRenderInputs(EntityAdmin* admin) {
 	Renderer* renderer = admin->renderer;
 	Input* input = admin->input;
 	Keybinds* binds = admin->currentKeybinds;
-
+	
 	//reload shaders
 	if (input->KeyPressed(Key::F5)) {
-		admin->ExecCommand("reload_shaders");
+		admin->ExecCommand("shader_reload", "-1");
 	}
 }
 

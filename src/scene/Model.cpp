@@ -1,8 +1,8 @@
 #include "Model.h"
-#include "../../core/assets.h"
+#include "../core/assets.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
-#include "../../external/tinyobjloader/tiny_obj_loader.h"
+#include "../external/tinyobjloader/tiny_obj_loader.h"
 
 #include <unordered_map>
 

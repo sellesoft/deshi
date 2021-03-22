@@ -6,9 +6,6 @@ layout(set = 0, binding = 0) uniform UniformBufferObject{
 	mat4 proj;
 	vec4 lightPos;
 	vec4 viewPos;
-	float time;
-	float swidth;
-	float sheight;
 } ubo;
 
 layout(push_constant) uniform PushConsts{
@@ -23,27 +20,10 @@ layout(location = 3) in vec3 inNormal;
 layout(location = 0) out vec3 outColor;
 layout(location = 1) out vec2 outTexCoord;
 layout(location = 2) out vec3 outNormal;
-layout(location = 3) out float time;
-layout(location = 4) out float swidth;
-layout(location = 5) out float sheight;
-layout(location = 6) out vec3 camerapos;
 
 void main() {
-	
-	vec4 pos = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
-	
-	time = ubo.time;
-
-	camerapos = vec3(ubo.view[3][0], ubo.view[3][1], ubo.view[3][2]);
-
-	gl_Position = pos;
-
-    //gl_Position = pos + 0.1 * sin(time * gl_VertexIndex / 2) + 0.1 * cos(time * gl_VertexIndex / 2);
+    gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
     outColor = inColor;
 	outTexCoord = inTexCoord;
 	outNormal = mat3(primitive.model) * inNormal;
-	
-	swidth = ubo.swidth;
-	sheight = ubo.sheight;
-	
 }

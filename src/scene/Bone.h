@@ -2,7 +2,8 @@
 #ifndef DESHI_BONE_H
 #define DESHI_BONE_H
 
-#include "../../math/Math.h"
+#include "../math/Math.h"
+#include <vector>
 
 struct Armature;
 

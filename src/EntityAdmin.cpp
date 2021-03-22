@@ -20,11 +20,10 @@
 #include "utils/Command.h"
 #include "utils/defines.h"
 
+#include "game/Keybinds.h"
 #include "game/components/Component.h"
 #include "game/components/Camera.h"
-#include "game/components/Keybinds.h"
 #include "game/components/Controller.h"
-#include "game/components/Canvas.h"
 #include "game/components/AudioListener.h"
 
 #include "game/systems/System.h"
@@ -99,10 +98,10 @@ void UpdateLayer(ContainerManager<Component*> cl) {
 void EntityAdmin::Update() {
 	
 	//aha
-
+	
 	controller->Update();
 	mainCamera->Update();
-
+	
 	if (!pause_phys && !paused)    UpdateLayer(freeCompLayers[CL0_PHYSICS]);	 
 	if (!pause_phys && !paused)    systems[0]->Update(); //Physics System
 	if (!pause_canvas)	           UpdateLayer(freeCompLayers[CL1_RENDCANVAS]); 

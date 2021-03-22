@@ -1,7 +1,10 @@
 #pragma once
+#ifndef DESHI_COLOR_H
+#define DESHI_COLOR_H
+
+#include "defines.h"
 
 struct Color {
-	
 	u8 r, g, b, a;
 	
 	static const Color
@@ -71,3 +74,5 @@ Color::WHITE(255, 255, 255), Color::BLACK(0, 0, 0),            Color::BLANK(0, 0
 inline Color Color::getrandcol() {
 	return Color(rand() % 255 + 1, rand() % 255 + 1, rand() % 255 + 1);
 }
+
+#endif //DESHI_COLOR_H

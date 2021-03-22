@@ -12,7 +12,7 @@ enum MovementMode : u32 {
 
 struct Controller : public Component {
 	MovementMode mode;
-	float mouseSensitivity = 7.5f;
+	float mouseSensitivity = 2.5f;
 	bool noclip = true;
 	
 	Controller(EntityAdmin* a, MovementMode s = MOVEMENT_MODE_FLYING);

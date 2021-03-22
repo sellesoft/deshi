@@ -75,5 +75,8 @@ Render: line 82
 11) checks if the window was resized again
 12) increments the frame index and waits on the graphics queue to be idle
 
- 
 
+
+
+[GPU-GPU sync] semaphores coordinate operations across command buffers so that they execute in a specified order	(pause threads)
+[CPU-GPU sync] fences are similar but are waited for in the code itself rather than threads						(pause code)

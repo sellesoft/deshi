@@ -1,6 +1,5 @@
 #include "renderer.h"
 #include "../core.h"
-#include "../scene/Model.h"
 #include "../scene/Scene.h"
 #include "../math/Math.h"
 #include "../geometry/Triangle.h"
@@ -72,6 +71,7 @@ void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
 	CreateRenderPass();
 	CreateFrames(); //image views, color/depth resources, framebuffers, commandbuffers
 	CreateLayouts();
+	SetupPipelineCreation();
 	CreatePipelines();
 	CreateSyncObjects();
 	
@@ -83,6 +83,7 @@ void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
 	Texture tex("UV_Grid_Sm.jpg");
 	box.mesh.batchArray[0].textureArray.push_back(tex);
 	box.mesh.batchArray[0].textureCount = 1;
+	box.mesh.batchArray[0].shader = Shader::PBR;
 	
 	test->models = {box};
 	LoadScene(test);
@@ -134,7 +135,11 @@ void Renderer_Vulkan::Render() {
 	vkResetFences(device, 1, &fencesInFlight[frameIndex]);
 	
 	//render stuff
-	ImGui::Render();
+	ImGui::Render(); ImDrawData* drawData = ImGui::GetDrawData();
+	if(drawData){
+		stats.drawnIndices += drawData->TotalIdxCount;
+		stats.totalVertices += drawData->TotalVtxCount;
+	}
 	BuildCommandBuffers();
 	
 	//update uniform buffers
@@ -181,10 +186,10 @@ void Renderer_Vulkan::Render() {
 	ASSERTVK(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
 	
 	//update stats
-	stats.drawnTriangles = stats.drawnIndices / 3;
-	stats.totalVertices = u32(scene.vertexBuffer.size());
-	stats.totalIndices = u32(scene.indexBuffer.size());
-	stats.totalTriangles = stats.totalIndices / 3;
+	stats.drawnTriangles += stats.drawnIndices / 3;
+	stats.totalVertices += u32(scene.vertexBuffer.size());
+	stats.totalIndices += u32(scene.indexBuffer.size());
+	stats.totalTriangles += stats.totalIndices / 3;
 	
 	if(remakePipelines){ 
 		CreatePipelines(); 
@@ -197,14 +202,27 @@ void Renderer_Vulkan::Present() {}
 
 void Renderer_Vulkan::Cleanup() {
 	PRINTVK(1, "{-} Initializing Cleanup\n");
+	
+	//save pipeline cache to disk
+	if(pipelineCache != VK_NULL_HANDLE){
+		//update pipelines
+		ReloadAllShaders();
+		
+		/* Get size of pipeline cache */
+		size_t size{};
+		ASSERTVK(vkGetPipelineCacheData(device, pipelineCache, &size, nullptr), "failed to get pipeline cache data size");
+		
+		/* Get data of pipeline cache */
+		std::vector<char> data(size);
+		ASSERTVK(vkGetPipelineCacheData(device, pipelineCache, &size, data.data()), "faile to get pipeline cache data");
+		
+		/* Write pipeline cache data to a file in binary format */
+		deshi::writeFileBinary(deshi::getDataPath() + "pipeline_cache.dat", data);
+	}
+	
+	//write pre-pipeline data
+	
 	vkDeviceWaitIdle(device);
-	
-	//TODO(delle,ReVu) maybe add rendering cleanup, but maybe not
-	//because OS will cleanup on program close and be faster at it
-	//so maybe only save changes to user settings
-	//NOTE but then again, it might allow for dynamically swapping renderers
-	
-	//TODO(delle,ReOpVu) and load on start (~20x creation speed) save pipeline cache to disk on exit)
 }
 
 u32 Renderer_Vulkan::AddTriangle(Triangle* triangle){
@@ -477,13 +495,6 @@ void Renderer_Vulkan::UpdateMaterialTexture(u32 matID, u32 texSlot, u32 texID){
 			case(3):{ scene.materials[matID].lightTextureIndex = texID; }
 			default:{return;}
 		}
-		std::vector<VkWriteDescriptorSet> writeDescriptorSet = {
-			vks::initializers::writeDescriptorSet(scene.materials[matID].descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &scene.getTextureDescriptorInfo(scene.materials[matID].albedoTextureIndex)),
-			vks::initializers::writeDescriptorSet(scene.materials[matID].descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &scene.getTextureDescriptorInfo(scene.materials[matID].normalTextureIndex)),
-			vks::initializers::writeDescriptorSet(scene.materials[matID].descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &scene.getTextureDescriptorInfo(scene.materials[matID].specularTextureIndex)),
-			vks::initializers::writeDescriptorSet(scene.materials[matID].descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &scene.getTextureDescriptorInfo(scene.materials[matID].lightTextureIndex)),
-		};
-		vkUpdateDescriptorSets(device, writeDescriptorSet.size(), writeDescriptorSet.data(), 0, nullptr);
 	}
 }
 
@@ -567,7 +578,74 @@ void Renderer_Vulkan::UpdateCameraProjectionMatrix(Matrix4 m){
 	shaderData.values.proj = glm::make_mat4(m.data);
 }
 
-void Renderer_Vulkan::ReloadShaders() {
+void Renderer_Vulkan::ReloadShader(u32 shader) {
+	switch(shader){
+		case(Shader::FLAT):default: { 
+			pipelineCreateInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
+			pipelineCreateInfo.basePipelineHandle  = VK_NULL_HANDLE;
+			vkDestroyPipeline(device, pipelines.FLAT, nullptr);
+			shaderStages[0] = CompileAndLoadShader("flat.vert", VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = CompileAndLoadShader("flat.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
+			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.FLAT), "failed to create flat graphics pipeline");
+			pipelineCreateInfo.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
+			pipelineCreateInfo.basePipelineHandle = pipelines.FLAT;
+		} break;
+		case(Shader::WIREFRAME):    {
+			if(deviceFeatures.fillModeNonSolid){
+				vkDestroyPipeline(device, pipelines.WIREFRAME, nullptr);
+				rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
+				rasterizationState.cullMode = VK_CULL_MODE_NONE;
+				depthStencilState.depthTestEnable = VK_FALSE;
+				shaderStages[0] = CompileAndLoadShader("wireframe.vert", VK_SHADER_STAGE_VERTEX_BIT);
+				shaderStages[1] = CompileAndLoadShader("wireframe.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
+				ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.WIREFRAME), "failed to create wireframe graphics pipeline");
+				rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
+				rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+				depthStencilState.depthTestEnable = VK_TRUE;
+			}
+		} break;
+		case(Shader::PHONG):        {
+			vkDestroyPipeline(device, pipelines.PHONG, nullptr);
+			shaderStages[0] = CompileAndLoadShader("phong.vert", VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = CompileAndLoadShader("phong.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
+			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.PHONG), "failed to create phong graphics pipeline");
+		} break;
+		case(Shader::TWOD):         {
+			vkDestroyPipeline(device, pipelines.TWOD, nullptr);
+			shaderStages[0] = CompileAndLoadShader("twod.vert", VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = CompileAndLoadShader("twod.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
+			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.TWOD), "failed to create twod graphics pipeline");
+		} break;
+		case(Shader::PBR):          { 
+			vkDestroyPipeline(device, pipelines.PBR, nullptr);
+			shaderStages[0] = CompileAndLoadShader("pbr.vert", VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = CompileAndLoadShader("pbr.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
+			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.PBR), "failed to create pbr graphics pipeline");
+		} break;
+		case(Shader::LAVALAMP):     { 
+			vkDestroyPipeline(device, pipelines.LAVALAMP, nullptr);
+			shaderStages[0] = CompileAndLoadShader("lavalamp.vert", VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = CompileAndLoadShader("lavalamp.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
+			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.LAVALAMP), "failed to create lavalamp graphics pipeline");
+		} break;
+		case(Shader::TESTING0):     { 
+			vkDestroyPipeline(device, pipelines.TESTING0, nullptr);
+			shaderStages[0] = CompileAndLoadShader("testing0.vert", VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = CompileAndLoadShader("testing0.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
+			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.TESTING0), "failed to create testing0 graphics pipeline");
+		} break;
+		case(Shader::TESTING1):     { 
+			vkDestroyPipeline(device, pipelines.TESTING1, nullptr);
+			shaderStages[0] = CompileAndLoadShader("testing1.vert", VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = CompileAndLoadShader("testing1.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
+			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.TESTING1), "failed to create testing1 graphics pipeline");
+		} break;
+	}
+	UpdateMaterialPipelines();
+}
+
+void Renderer_Vulkan::ReloadAllShaders() {
+	CompileAllShaders();
 	remakePipelines = true;
 }
 
@@ -587,9 +665,9 @@ void Renderer_Vulkan::CreateInstance() {
 	
 	VkApplicationInfo appInfo{};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "P3DPGE";
+	appInfo.pApplicationName = "deshi";
 	appInfo.applicationVersion = VK_MAKE_VERSION(0,5,0);
-	appInfo.pEngineName = "P3DPGE";
+	appInfo.pEngineName = "deshi";
 	appInfo.engineVersion = VK_MAKE_VERSION(0,5,0);
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 	
@@ -734,8 +812,17 @@ void Renderer_Vulkan::CreateDescriptorPool(){
 
 void Renderer_Vulkan::CreatePipelineCache(){
 	PRINTVK(2, "{-}{-} Creating Pipeline Cache");
-	VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
+	VkPipelineCacheCreateInfo pipelineCacheCreateInfo{};
 	pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+	pipelineCacheCreateInfo.flags = 0;
+	
+	/* Try to read pipeline cache file if exists */ //NOTE(delle) this saves ~2000ms on my system
+	std::vector<char> data = deshi::readFileBinary(deshi::getDataPath()+"pipeline_cache.dat");
+	if(data.size() > 0){
+		pipelineCacheCreateInfo.initialDataSize = data.size();
+		pipelineCacheCreateInfo.pInitialData = data.data();
+	}
+	
 	ASSERTVK(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache), "failed to create pipeline cache");
 }
 
@@ -1049,27 +1136,11 @@ void Renderer_Vulkan::CreateFrames(){
 	}
 }
 
-void Renderer_Vulkan::CreatePipelines(){
-	PRINTVK(2, "{-}{-} Creating Pipelines");
-	
-	//destroy previous pipelines
-	if(pipelines.FLAT){ vkDestroyPipeline(device, pipelines.FLAT, nullptr); }
-	if(pipelines.PHONG){ vkDestroyPipeline(device, pipelines.PHONG, nullptr); }
-	if(pipelines.LAVALAMP){ vkDestroyPipeline(device, pipelines.LAVALAMP, nullptr); }
-	if(pipelines.TWOD){ vkDestroyPipeline(device, pipelines.TWOD, nullptr); }
-	if(pipelines.PBR){ vkDestroyPipeline(device, pipelines.PBR, nullptr); }
-	if(pipelines.WIREFRAME){ vkDestroyPipeline(device, pipelines.WIREFRAME, nullptr); }
-	
-	//destroy previous shader modules
-	size_t oldCount = shaderModules.size();
-	for(auto& pair : shaderModules){
-		vkDestroyShaderModule(device, pair.second, allocator);
-	}
-	shaderModules.clear(); shaderModules.reserve(oldCount);
+void Renderer_Vulkan::SetupPipelineCreation(){
+	PRINTVK(2, "{-}{-} Setting up pipeline creation");
 	
 	//determines how to group vertices together
 	//https://renderdoc.org/vkspec_chunked/chap22.html#VkPipelineInputAssemblyStateCreateInfo
-	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
 	inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	inputAssemblyState.flags = 0;
 	inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; 
@@ -1077,7 +1148,6 @@ void Renderer_Vulkan::CreatePipelines(){
 	
 	//how to draw/cull/depth things
 	//https://renderdoc.org/vkspec_chunked/chap28.html#VkPipelineRasterizationStateCreateInfo
-	VkPipelineRasterizationStateCreateInfo rasterizationState{};
 	rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizationState.flags = 0;
 	rasterizationState.depthClampEnable = VK_FALSE; //look into for shadowmapping
@@ -1093,7 +1163,6 @@ void Renderer_Vulkan::CreatePipelines(){
 	
 	//how to combine colors; alpha: options to allow alpha blending
 	//https://renderdoc.org/vkspec_chunked/chap30.html#VkPipelineColorBlendAttachmentState
-	VkPipelineColorBlendAttachmentState colorBlendAttachmentState{};
 	colorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 	colorBlendAttachmentState.blendEnable = VK_FALSE; //alpha: VK_TRUE
 	colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; //aplha: VK_BLEND_FACTOR_SRC_ALPHA
@@ -1105,7 +1174,6 @@ void Renderer_Vulkan::CreatePipelines(){
 	
 	//container struct for color blend attachments with overall blending constants
 	//https://renderdoc.org/vkspec_chunked/chap30.html#VkPipelineColorBlendStateCreateInfo
-	VkPipelineColorBlendStateCreateInfo colorBlendState{};
 	colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	colorBlendState.flags = 0;
 	colorBlendState.logicOpEnable = VK_FALSE;
@@ -1119,7 +1187,6 @@ void Renderer_Vulkan::CreatePipelines(){
 	
 	//depth testing and discarding
 	//https://renderdoc.org/vkspec_chunked/chap29.html#VkPipelineDepthStencilStateCreateInfo
-	VkPipelineDepthStencilStateCreateInfo depthStencilState{};
 	depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	depthStencilState.flags = 0;
 	depthStencilState.depthTestEnable = VK_TRUE;
@@ -1135,7 +1202,6 @@ void Renderer_Vulkan::CreatePipelines(){
 	
 	//container for viewports and scissors
 	//https://renderdoc.org/vkspec_chunked/chap27.html#VkPipelineViewportStateCreateInfo
-	VkPipelineViewportStateCreateInfo viewportState{};
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportState.flags = 0;
 	viewportState.viewportCount = 1;
@@ -1145,7 +1211,6 @@ void Renderer_Vulkan::CreatePipelines(){
 	
 	//useful for multisample anti-aliasing (MSAA)
 	//https://renderdoc.org/vkspec_chunked/chap28.html#VkPipelineMultisampleStateCreateInfo
-	VkPipelineMultisampleStateCreateInfo multisampleState{};
 	multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampleState.flags = 0;
 	multisampleState.rasterizationSamples = msaaSamples; //VK_SAMPLE_COUNT_1_BIT to disable anti-aliasing
@@ -1156,21 +1221,19 @@ void Renderer_Vulkan::CreatePipelines(){
 	multisampleState.alphaToOneEnable = VK_FALSE;
 	
 	//dynamic states that can vary in the command buffer
-	std::vector<VkDynamicState> dynamicStates = {
+	dynamicStates = {
 		VK_DYNAMIC_STATE_VIEWPORT, 
 		VK_DYNAMIC_STATE_SCISSOR, 
 		/*VK_DYNAMIC_STATE_LINE_WIDTH*/ 
 	};
-	VkPipelineDynamicStateCreateInfo dynamicState{};
 	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	dynamicState.dynamicStateCount = u32(dynamicStates.size());
 	dynamicState.pDynamicStates = dynamicStates.data();
 	
 	//vertex input flow control
 	//https://renderdoc.org/vkspec_chunked/chap23.html#VkPipelineVertexInputStateCreateInfo
-	std::vector<VkVertexInputBindingDescription> vertexInputBindings = VertexVk::getBindingDescriptions();
-	std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = VertexVk::getAttributeDescriptions();
-	VkPipelineVertexInputStateCreateInfo vertexInputState{};
+	vertexInputBindings = VertexVk::getBindingDescriptions();
+	vertexInputAttributes = VertexVk::getAttributeDescriptions();
 	vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputState.flags = 0;
 	vertexInputState.vertexBindingDescriptionCount = u32(vertexInputBindings.size());
@@ -1178,57 +1241,88 @@ void Renderer_Vulkan::CreatePipelines(){
 	vertexInputState.vertexAttributeDescriptionCount = u32(vertexInputAttributes.size());
 	vertexInputState.pVertexAttributeDescriptions = vertexInputAttributes.data();
 	
-	
-	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
-	
 	//base pipeline info and options
-	VkGraphicsPipelineCreateInfo pipelineInfo{};
-	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	pipelineInfo.layout              = pipelineLayout;
-	pipelineInfo.renderPass          = renderPass;
-	pipelineInfo.pInputAssemblyState = &inputAssemblyState;
-	pipelineInfo.pRasterizationState = &rasterizationState;
-	pipelineInfo.pColorBlendState    = &colorBlendState;
-	pipelineInfo.pMultisampleState   = &multisampleState;
-	pipelineInfo.pViewportState      = &viewportState;
-	pipelineInfo.pDepthStencilState  = &depthStencilState;
-	pipelineInfo.pDynamicState       = &dynamicState;
-	pipelineInfo.pVertexInputState   = &vertexInputState;
-	pipelineInfo.stageCount          = u32(shaderStages.size());
-	pipelineInfo.pStages             = shaderStages.data();
-	pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
-	pipelineInfo.basePipelineIndex   = -1;
+	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineCreateInfo.layout              = pipelineLayout;
+	pipelineCreateInfo.renderPass          = renderPass;
+	pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
+	pipelineCreateInfo.pRasterizationState = &rasterizationState;
+	pipelineCreateInfo.pColorBlendState    = &colorBlendState;
+	pipelineCreateInfo.pMultisampleState   = &multisampleState;
+	pipelineCreateInfo.pViewportState      = &viewportState;
+	pipelineCreateInfo.pDepthStencilState  = &depthStencilState;
+	pipelineCreateInfo.pDynamicState       = &dynamicState;
+	pipelineCreateInfo.pVertexInputState   = &vertexInputState;
+	pipelineCreateInfo.stageCount          = u32(shaderStages.size());
+	pipelineCreateInfo.pStages             = shaderStages.data();
+}
+
+void Renderer_Vulkan::CreatePipelines(){
+	PRINTVK(2, "{-}{-} Creating Pipelines");
+	TIMER_START(t_p);
 	
-	//flag that this pipelineInfo will be used as a base
-	pipelineInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
+	//destroy previous pipelines
+	if(pipelines.FLAT){ vkDestroyPipeline(device, pipelines.FLAT, nullptr); }
+	if(pipelines.PHONG){ vkDestroyPipeline(device, pipelines.PHONG, nullptr); }
+	if(pipelines.TWOD){ vkDestroyPipeline(device, pipelines.TWOD, nullptr); }
+	if(pipelines.PBR){ vkDestroyPipeline(device, pipelines.PBR, nullptr); }
+	if(pipelines.WIREFRAME){ vkDestroyPipeline(device, pipelines.WIREFRAME, nullptr); }
+	if(pipelines.LAVALAMP){ vkDestroyPipeline(device, pipelines.LAVALAMP, nullptr); }
+	if(pipelines.TESTING0){ vkDestroyPipeline(device, pipelines.TESTING0, nullptr); }
+	if(pipelines.TESTING1){ vkDestroyPipeline(device, pipelines.TESTING1, nullptr); }
 	
-	//compile the shaders (boolean param is optimization)
-	CompileShaders(false);
+	//destroy previous shader modules
+	size_t oldCount = shaderModules.size();
+	for(auto& pair : shaderModules){
+		vkDestroyShaderModule(device, pair.second, allocator);
+	}
+	shaderModules.clear(); shaderModules.reserve(oldCount);
+	
+	//compile uncompiled shaders
+	PRINTVK(3, "{-}{-}{-} Compiling shaders");
+	TIMER_START(t_s);
+	for(auto& s : GetUncompiledShaders()){ CompileShader(s, false); }
+	PRINTVK(3, "{-}{-}{-} Finished compiling shaders in "<< TIMER_END(t_s) <<"ms");
+	
+	//flag that this pipelineCreateInfo will be used as a base
+	pipelineCreateInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
+	pipelineCreateInfo.basePipelineHandle  = VK_NULL_HANDLE;
+	pipelineCreateInfo.basePipelineIndex   = -1;
 	
 	//flat/default pipeline
+	//shaderStages[0] = loadShader("base.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 	shaderStages[0] = loadShader("flat.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 	shaderStages[1] = loadShader("flat.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.FLAT), "failed to create default graphics pipeline");
+	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.FLAT), "failed to create flat graphics pipeline");
 	
 	//all other pipelines are derivatives
-	pipelineInfo.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
-	pipelineInfo.basePipelineHandle = pipelines.FLAT;
-	pipelineInfo.basePipelineIndex = -1; //can either use handle or index, not both (section 9.5 of vulkan spec)
+	pipelineCreateInfo.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
+	pipelineCreateInfo.basePipelineHandle = pipelines.FLAT;
+	pipelineCreateInfo.basePipelineIndex = -1; //can either use handle or index, not both (section 9.5 of vulkan spec)
 	
 	//phong
 	shaderStages[0] = loadShader("phong.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 	shaderStages[1] = loadShader("phong.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.PHONG), "failed to create phong graphics pipeline");
+	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.PHONG), "failed to create phong graphics pipeline");
 	
 	//2d
 	shaderStages[0] = loadShader("twod.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 	shaderStages[1] = loadShader("twod.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.TWOD), "failed to create twod graphics pipeline");
+	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.TWOD), "failed to create twod graphics pipeline");
 	
 	//pbr
 	shaderStages[0] = loadShader("pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 	shaderStages[1] = loadShader("pbr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.PBR), "failed to create pbr graphics pipeline");
+	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.PBR), "failed to create pbr graphics pipeline");
+	
+	//testing shaders //NOTE(delle) testing shaders should be removed on release
+	shaderStages[0] = loadShader("testing0.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = loadShader("testing0.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.TESTING0), "failed to create testing0 graphics pipeline");
+	
+	shaderStages[0] = loadShader("testing1.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStages[1] = loadShader("testing1.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.TESTING1), "failed to create testing1 graphics pipeline");
 	
 	//wireframe
 	if(deviceFeatures.fillModeNonSolid){
@@ -1238,7 +1332,8 @@ void Renderer_Vulkan::CreatePipelines(){
 		
 		shaderStages[0] = loadShader("wireframe.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("wireframe.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-		ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.WIREFRAME), "failed to create wireframe graphics pipeline");
+		ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.WIREFRAME), "failed to create wireframe graphics pipeline");
+		
 		rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
 		depthStencilState.depthTestEnable = VK_TRUE;
@@ -1247,21 +1342,9 @@ void Renderer_Vulkan::CreatePipelines(){
 	//lavalamp
 	shaderStages[0] = loadShader("lavalamp.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 	shaderStages[1] = loadShader("lavalamp.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.LAVALAMP), "failed to create lavalamp graphics pipeline");
+	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.LAVALAMP), "failed to create lavalamp graphics pipeline");
 	
-	//testing shaders //NOTE(delle) testing shaders should be removed on release
-	shaderStages[0] = loadShader("testing0.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = loadShader("testing0.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.TESTING0), "failed to create testing0 graphics pipeline");
-	shaderStages[0] = loadShader("testing1.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = loadShader("testing1.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.TESTING1), "failed to create testing1 graphics pipeline");
-	shaderStages[0] = loadShader("testing2.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = loadShader("testing2.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.TESTING2), "failed to create testing2 graphics pipeline");
-	shaderStages[0] = loadShader("testing3.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = loadShader("testing3.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &pipelines.TESTING3), "failed to create testing3 graphics pipeline");
+	PRINTVK(2, "{-}{-} Finished creating pipelines in "<< TIMER_END(t_p) <<"ms");
 }
 
 void Renderer_Vulkan::BuildCommandBuffers() {
@@ -1323,9 +1406,9 @@ void Renderer_Vulkan::UpdateUniformBuffer(){
 	}vkUnmapMemory(device, shaderData.uniformBufferMemory);
 }
 
-/////////////////////////////
-////// utility functions ////
-/////////////////////////////
+///////////////////////////
+//// utility functions ////
+///////////////////////////
 
 bool Renderer_Vulkan::checkValidationLayerSupport() {
 	PRINTVK(3, "{-}{-}{-} Checking Validation Layer Support");
@@ -1528,42 +1611,6 @@ VkFormat Renderer_Vulkan::findSupportedFormat(const std::vector<VkFormat>& candi
 
 VkFormat Renderer_Vulkan::findDepthFormat() {
 	return findSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-}
-
-VkPipelineShaderStageCreateInfo Renderer_Vulkan::loadShader(std::string fileName, VkShaderStageFlagBits stage) {
-	PRINTVK(3, "{-}{-}{-} Loading Shader " << fileName);
-	//setup shader stage create info
-	VkPipelineShaderStageCreateInfo shaderStage{};
-	shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	shaderStage.stage = stage;
-	shaderStage.pName = "main";
-	
-	//get shader name
-	char shaderName[16];
-	strncpy_s(shaderName, fileName.c_str(), 15);
-	shaderName[15] = '\0'; //null-character
-	
-	//check if shader has already been created
-	for(auto& module : shaderModules){
-		if(strcmp(shaderName, module.first) == 0){
-			shaderStage.module = module.second;
-			break;
-		}
-	}
-	
-	//create shader module
-	std::vector<char> code = deshi::readFile(deshi::getShadersPath() + fileName);
-	VkShaderModuleCreateInfo moduleInfo{};
-	moduleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	moduleInfo.codeSize = code.size();
-	moduleInfo.pCode = (u32*)code.data();
-	
-	VkShaderModule shaderModule;
-	ASSERTVK(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
-	shaderStage.module = shaderModule;
-	
-	shaderModules.push_back(std::make_pair(shaderName, shaderStage.module));
-	return shaderStage;
 }
 
 u32 Renderer_Vulkan::findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties) {
@@ -1857,6 +1904,8 @@ void Renderer_Vulkan::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDevic
 	endSingleTimeCommands(commandBuffer);
 }
 
+void RemakePipeline(VkPipeline pipeline);
+
 //TODO(delle) maybe optimize this by simply doing: &pipelines + shader*sizeof(pipelines.FLAT,ReOp)
 VkPipeline Renderer_Vulkan::GetPipelineFromShader(u32 shader){
 	switch(shader){
@@ -1868,13 +1917,103 @@ VkPipeline Renderer_Vulkan::GetPipelineFromShader(u32 shader){
 		case(Shader::LAVALAMP):     { return pipelines.LAVALAMP;  };
 		case(Shader::TESTING0):     { return pipelines.TESTING0;  };
 		case(Shader::TESTING1):     { return pipelines.TESTING1;  };
-		case(Shader::TESTING2):     { return pipelines.TESTING2;  };
-		case(Shader::TESTING3):     { return pipelines.TESTING3;  };
 	}
 }
 
-void Renderer_Vulkan::CompileShaders(bool optimize){
-	PRINTVK(3, "{-}{-}{-} Compiling Shaders");
+
+VkPipelineShaderStageCreateInfo Renderer_Vulkan::loadShader(std::string fileName, VkShaderStageFlagBits stage) {
+	PRINTVK(3, "{-}{-}{-} Loading shader: " << fileName);
+	//setup shader stage create info
+	VkPipelineShaderStageCreateInfo shaderStage{};
+	shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStage.stage = stage;
+	shaderStage.pName = "main";
+	
+	//get shader name
+	char shaderName[16];
+	strncpy_s(shaderName, fileName.c_str(), 15);
+	shaderName[15] = '\0'; //null-character
+	
+	//check if shader has already been created
+	for(auto& module : shaderModules){
+		if(strcmp(shaderName, module.first) == 0){
+			shaderStage.module = module.second;
+			break;
+		}
+	}
+	
+	//create shader module
+	std::vector<char> code = deshi::readFileBinary(deshi::getShadersPath() + fileName);
+	VkShaderModuleCreateInfo moduleInfo{};
+	moduleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	moduleInfo.codeSize = code.size();
+	moduleInfo.pCode = (u32*)code.data();
+	
+	VkShaderModule shaderModule;
+	ASSERTVK(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
+	shaderStage.module = shaderModule;
+	
+	shaderModules.push_back(std::make_pair(shaderName, shaderStage.module));
+	return shaderStage;
+}
+
+VkPipelineShaderStageCreateInfo Renderer_Vulkan::CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize) {
+	PRINTVK(3, "{-}{-}{-} Compiling and loading shader: " << filename);
+	//check if file exists
+	std::filesystem::path entry(deshi::getShadersPath() + filename);
+	if(std::filesystem::exists(entry)){
+		std::string ext = entry.extension().string();
+		std::string filename = entry.filename().string();
+		
+		//setup shader compiler
+		shaderc_compiler_t compiler = shaderc_compiler_initialize();
+		shaderc_compile_options_t options = shaderc_compile_options_initialize();
+		if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
+		
+		std::vector<char> code = deshi::readFileBinary(deshi::getShadersPath() + filename); //read shader code
+		
+		//try compile from GLSL to SPIR-V binary
+		shaderc_compilation_result_t result;
+		if(ext.compare(".vert") == 0){
+			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_vertex_shader, 
+											  filename.c_str(), "main", options);
+		}else if(ext.compare(".frag") == 0){
+			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_fragment_shader, 
+											  filename.c_str(), "main", options);
+		}else{ ASSERT(false, "unsupported shader"); }
+		
+		//check for errors
+		if(!result){ PRINT("[ERROR]"<< filename <<": Shader compiler returned a null result"); ASSERT(false, ""); }
+		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
+			PRINT("[ERROR]"<< filename <<": "<< shaderc_result_get_error_message(result)); ASSERT(false, "");
+		}
+		
+		//create shader module
+		VkShaderModuleCreateInfo moduleInfo{};
+		moduleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		moduleInfo.codeSize = shaderc_result_get_length(result);
+		moduleInfo.pCode = (u32*)shaderc_result_get_bytes(result);
+		
+		VkShaderModule shaderModule;
+		ASSERTVK(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
+		
+		//setup shader stage create info
+		VkPipelineShaderStageCreateInfo shaderStage{};
+		shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shaderStage.stage = stage;
+		shaderStage.pName = "main";
+		shaderStage.module = shaderModule;
+		
+		//cleanup and return
+		shaderc_result_release(result);
+		return shaderStage;
+	}else{
+		ASSERT(false, "failed to load shader module b/c file does not exist");
+	}
+}
+
+
+void Renderer_Vulkan::CompileAllShaders(bool optimize){
 	//setup shader compiler
 	shaderc_compiler_t compiler = shaderc_compiler_initialize();
 	shaderc_compile_options_t options = shaderc_compile_options_initialize();
@@ -1885,10 +2024,9 @@ void Renderer_Vulkan::CompileShaders(bool optimize){
 		std::string ext = entry.path().extension().string();
 		std::string filename = entry.path().filename().string();
 		
-		if(ext.compare(".spv") == 0) continue; //early out
-		
-		//read in ascii shader code
-		std::vector<char> code = deshi::readFile(entry.path().string());
+		if(ext.compare(".spv") == 0) continue; //early out if .spv
+		std::vector<char> code = deshi::readFileBinary(entry.path().string()); //read shader code
+		PRINTVK(4, "{-}{-}{-}{-} Compiling shader: " << filename);
 		
 		//try compile from GLSL to SPIR-V binary
 		shaderc_compilation_result_t result;
@@ -1900,6 +2038,7 @@ void Renderer_Vulkan::CompileShaders(bool optimize){
 											  filename.c_str(), "main", options);
 		}else{ continue; }
 		
+		//check for errors
 		if(!result){ PRINT("[ERROR]"<< filename <<": Shader compiler returned a null result"); continue; }
 		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
 			PRINT("[ERROR]"<< filename <<": "<< shaderc_result_get_error_message(result)); continue;
@@ -1910,6 +2049,7 @@ void Renderer_Vulkan::CompileShaders(bool optimize){
 		ASSERT(outFile.is_open(), "failed to open file");
 		outFile.write(shaderc_result_get_bytes(result), shaderc_result_get_length(result));
 		
+		
 		//cleanup file and compiler results
 		outFile.close();
 		shaderc_result_release(result);
@@ -1918,6 +2058,70 @@ void Renderer_Vulkan::CompileShaders(bool optimize){
 	//cleanup shader compiler and options
 	shaderc_compile_options_release(options);
 	shaderc_compiler_release(compiler);
+}
+
+//NOTE(delle) bleh
+std::vector<std::string> Renderer_Vulkan::GetUncompiledShaders(){
+	std::vector<std::string> compiled;
+	for(auto& entry : std::filesystem::directory_iterator(deshi::getShadersPath())){
+		if(entry.path().extension() == ".spv"){
+			compiled.push_back(entry.path().stem().string());
+		}
+	}
+	
+	std::vector<std::string> files;
+	for(auto& entry : std::filesystem::directory_iterator(deshi::getShadersPath())){
+		if(entry.path().extension() == ".spv"){ continue; }
+		bool good = true;
+		for(auto& s : compiled){
+			if(entry.path().filename().string().compare(s) == 0){ good = false; break; }
+		}
+		if(good) files.push_back(entry.path().filename().string());
+	}
+	return files;
+}
+
+void Renderer_Vulkan::CompileShader(std::string& filename, bool optimize){
+	PRINTVK(3, "{-}{-}{-} Compiling shader: " << filename);
+	std::filesystem::path entry(deshi::getShadersPath() + filename);
+	if(std::filesystem::exists(entry)){
+		std::string ext = entry.extension().string();
+		std::string filename = entry.filename().string();
+		
+		//setup shader compiler
+		shaderc_compiler_t compiler = shaderc_compiler_initialize();
+		shaderc_compile_options_t options = shaderc_compile_options_initialize();
+		if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
+		
+		std::vector<char> code = deshi::readFileBinary(deshi::getShadersPath() + filename); //read shader code
+		
+		//try compile from GLSL to SPIR-V binary
+		shaderc_compilation_result_t result;
+		if(ext.compare(".vert") == 0){
+			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_vertex_shader, 
+											  filename.c_str(), "main", options);
+		}else if(ext.compare(".frag") == 0){
+			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_fragment_shader, 
+											  filename.c_str(), "main", options);
+		}else{ return; }
+		
+		//check for errors
+		if(!result){ PRINT("[ERROR]"<< filename <<": Shader compiler returned a null result"); return; }
+		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
+			PRINT("[ERROR]"<< filename <<": "<< shaderc_result_get_error_message(result)); return;
+		}
+		
+		//create or overwrite .spv files
+		std::ofstream outFile(entry.string() + ".spv", std::ios::out | std::ios::binary | std::ios::trunc);
+		ASSERT(outFile.is_open(), "failed to open file");
+		outFile.write(shaderc_result_get_bytes(result), shaderc_result_get_length(result));
+		
+		//cleanup file and compiler results
+		outFile.close();
+		shaderc_result_release(result);
+	}else{
+		PRINT("[ERROR] failed to open file: " << filename);
+	}
 }
 
 void Renderer_Vulkan::UpdateMaterialPipelines(){
@@ -1939,13 +2143,6 @@ VkResult Renderer_Vulkan::CreateDebugUtilsMessengerEXT(VkInstance instance, cons
 		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
 	} else {
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
-	}
-}
-
-void Renderer_Vulkan::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
-	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-	if (func != nullptr) {
-		func(instance, debugMessenger, pAllocator);
 	}
 }
 

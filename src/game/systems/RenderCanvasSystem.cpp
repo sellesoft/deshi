@@ -164,7 +164,7 @@ void MakeBufferlogHeader(EntityAdmin* admin) {
 //this actually creates the debug tools panel
 void MakeP3DPGEDebugTools(EntityAdmin* admin) {
 	using namespace ImGui;
-	ImGui::Begin("P3DPGE Debug Tools", 0, ImGuiWindowFlags_MenuBar);
+	ImGui::Begin("Deshi Debug Tools", 0, ImGuiWindowFlags_MenuBar);
 	
 	MakeMenuBar(admin);
 	MakeGeneralHeader(admin);

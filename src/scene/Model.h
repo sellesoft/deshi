@@ -2,10 +2,10 @@
 #ifndef DESHI_MODEL_H
 #define DESHI_MODEL_H
 
-#include "../../utils/defines.h"
-#include "../../math/Matrix4.h"
-#include "../../math/Vector3.h"
-#include "../../math/Vector2.h"
+#include "../utils/defines.h"
+#include "../math/Matrix4.h"
+#include "../math/Vector3.h"
+#include "../math/Vector2.h"
 #include "Armature.h"
 
 #include <vector>
@@ -30,7 +30,7 @@ struct Texture {
 struct Vertex {
 	Vector3 pos{};
 	Vector2 uv;
-	Vector3 color = {1.f, 1.f, 1.f}; //between 0 and 1
+	Vector3 color{1.f, 1.f, 1.f}; //between 0 and 1
 	Vector3 normal{};
 	//bone index		4tuple
 	//bone weight		4tuple
@@ -61,7 +61,7 @@ typedef u32 ShaderFlags;
 
 enum Shader : u32 {
 	//NOTE(delle) testing shaders should be removed on release
-	FLAT, PHONG, TWOD, PBR, WIREFRAME, LAVALAMP, TESTING0, TESTING1, TESTING2, TESTING3
+	FLAT, PHONG, TWOD, PBR, WIREFRAME, LAVALAMP, TESTING0, TESTING1
 };
 
 //NOTE indices should be clockwise

@@ -117,7 +117,8 @@ struct Renderer{
 	virtual void UpdateCameraProjectionMatrix(Matrix4 m) = 0;
 	
 	//other
-	virtual void ReloadShaders() = 0;
+	virtual void ReloadAllShaders() = 0;
+	virtual void ReloadShader(u32 shaderID) = 0;
 	virtual void UpdateDebugOptions(bool wireframe, bool globalAxis) = 0;
 };
 
@@ -263,25 +264,29 @@ struct Renderer_Vulkan : public Renderer{
 	//////////////////////////////
 	const int MAX_FRAMES = 2;
 	
+	//vulkan instance
 	VkAllocationCallbacks*   allocator = 0;
 	VkInstance               instance = VK_NULL_HANDLE;
 	VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 	VkSurfaceKHR             surface;
 	
+	//device
 	VkPhysicalDevice physicalDevice   = VK_NULL_HANDLE;
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
 	QueueFamilyIndices physicalQueueFamilies;
-	
 	VkDevice     device        = VK_NULL_HANDLE;
 	VkQueue      graphicsQueue = VK_NULL_HANDLE;
 	VkQueue      presentQueue  = VK_NULL_HANDLE;
 	VkDeviceSize bufferMemoryAlignment = 256;
 	
+	//swapchain
+	
+	
+	//pipeline setup
 	VkCommandPool    commandPool    = VK_NULL_HANDLE;
 	VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
 	VkPipelineCache  pipelineCache  = VK_NULL_HANDLE;
-	
 	bool clearEnable;
     std::array<VkClearValue, 2> clearValues;
 	
@@ -333,22 +338,33 @@ struct Renderer_Vulkan : public Renderer{
 		VkDescriptorSetLayout textures;
 	} descriptorSetLayouts;
 	
-	struct { //pipelines for the different shaders
+	//pipelines
+	struct {
 		VkPipeline FLAT      = VK_NULL_HANDLE;
 		VkPipeline PHONG     = VK_NULL_HANDLE;
 		VkPipeline TWOD      = VK_NULL_HANDLE;
 		VkPipeline PBR       = VK_NULL_HANDLE;
 		VkPipeline WIREFRAME = VK_NULL_HANDLE;
 		VkPipeline LAVALAMP  = VK_NULL_HANDLE;
-		//NOTE(delle) testing shaders should be removed on release
 		VkPipeline TESTING0  = VK_NULL_HANDLE;
 		VkPipeline TESTING1  = VK_NULL_HANDLE;
-		VkPipeline TESTING2  = VK_NULL_HANDLE;
-		VkPipeline TESTING3  = VK_NULL_HANDLE;
 	} pipelines;
 	
-	//list of shader modules created
-	std::vector<std::pair<char*, VkShaderModule>> shaderModules;
+	VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
+	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
+	VkPipelineRasterizationStateCreateInfo rasterizationState{};
+	VkPipelineColorBlendAttachmentState    colorBlendAttachmentState{};
+	VkPipelineColorBlendStateCreateInfo    colorBlendState{};
+	VkPipelineDepthStencilStateCreateInfo  depthStencilState{};
+	VkPipelineViewportStateCreateInfo      viewportState{};
+	VkPipelineMultisampleStateCreateInfo   multisampleState{};
+	VkPipelineVertexInputStateCreateInfo   vertexInputState{};
+	VkPipelineDynamicStateCreateInfo       dynamicState{};
+	std::vector<VkDynamicState>                    dynamicStates;
+	std::vector<VkVertexInputBindingDescription>   vertexInputBindings;
+	std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
+	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+	std::vector<std::pair<char*, VkShaderModule>>  shaderModules;
 	
 	//////////////////////////
 	//// render interface ////
@@ -412,47 +428,15 @@ struct Renderer_Vulkan : public Renderer{
 	void UpdateCameraProjectionMatrix(Matrix4 m) override;
 	
 	//signals vulkan to remake the pipelines
-	void ReloadShaders() override;
+	void ReloadShader(u32 shaderID) override;
+	void ReloadAllShaders() override;
 	void UpdateDebugOptions(bool wireframe, bool globalAxis) override;
 	
-	//////////////////////////////////
-	//// initialization functions //// (called once)
-	//////////////////////////////////
+	//////////////////////////
+	//// Vulkan Functions ////
+	//////////////////////////
 	
-	void CreateInstance();
-	void SetupDebugMessenger();
-	//https://vulkan-tutorial.com/Drawing_a_triangle/Presentation/Window_surface
-	void CreateSurface();
-	//https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Physical_devices_and_queue_families
-	void PickPhysicalDevice();
-	//creates an interface between the actual GPU device and a  device for interaction
-	//https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Logical_device_and_queues
-	void CreateLogicalDevice();
-	//initializes the color and depth used to clearing a frame
-	void CreateClearValues();
-	//creates a pool for command
-	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Drawing/Command_buffers
-	void CreateCommandPool();
-	//creates semaphores and fences indicating: images are ready, rendering is finished
-	//[GPU-GPU sync] semaphores coordinate operations across command buffers so that they execute in a specified order	(pause threads)
-	//[CPU-GPU sync] fences are similar but are waited for in the code itself rather than threads						(pause code)
-	//https://vulkan-tutorial.com/en/Drawing_a_triangle/Drawing/Rendering_and_presentation
-	void CreateSyncObjects();
-	//creates a pool of descriptors of different types to be sent to shaders
-	//https://vulkan-tutorial.com/en/Uniform_buffers/Descriptor_pool_and_sets
-	void CreateDescriptorPool();
-	void CreatePipelineCache();
-	//creates and allocates the uniform buffer on ShaderData
-	//https://vulkan-tutorial.com/en/Uniform_buffers/Descriptor_layout_and_buffer
-	void CreateUniformBuffer();
-	//create descriptor set layouts and a push constant for shaders,
-	//create pipeline layout, allocate and write to descriptor sets
-	void CreateLayouts();
-	void CreatePipelines();
 	
-	//////////////////////////////////
-	//// window resized functions //// (called whenever reconstruction is necessary)
-	//////////////////////////////////
 	
 	void ResizeWindow(int w, int h);
 	//destroy old swap chain and in-flight frames, create a new swap chain with new dimensions
@@ -470,24 +454,44 @@ struct Renderer_Vulkan : public Renderer{
 	//renders all of the scene's meshes
 	void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
 	
-	///////////////////////////
-	//// utility functions ////
-	///////////////////////////
+	//// instance ////
 	
-	void DestroyFrame(FrameVk* frame);
-	int GetMinImageCountFromPresentMode(VkPresentModeKHR mode);
+	void CreateInstance();
 	bool checkValidationLayerSupport();
 	std::vector<const char*> getRequiredExtensions();
+	
+	//// debug messenger ////
+	
+	void SetupDebugMessenger();
+	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
 														VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
-	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+	static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
+	
+	//// surface ////
+	
+	//https://vulkan-tutorial.com/Drawing_a_triangle/Presentation/Window_surface
+	void CreateSurface();
+	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+	
+	//// device ////
+	
+	void PickPhysicalDevice();
 	//checks whether the graphics card supports swapchains
 	bool isDeviceSuitable(VkPhysicalDevice device);
+	VkSampleCountFlagBits getMaxUsableSampleCount();
 	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-	//https://vulkan-tutorial.com/en/Multisampling
-	VkSampleCountFlagBits getMaxUsableSampleCount();
+	//creates an interface between the actual GPU device and a  device for interaction
+	void CreateLogicalDevice();
+	
+	//// frames ////
+	
+	void DestroyFrame(FrameVk* frame);
+	int GetMinImageCountFromPresentMode(VkPresentModeKHR mode);
+	
+	
 	//this controls color formats
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 	//this controls vsync/triple buffering
@@ -500,8 +504,7 @@ struct Renderer_Vulkan : public Renderer{
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 	//tries to find a viable depth format
 	VkFormat findDepthFormat();
-	//creates a pipeline shader stage from the shader bytecode
-	VkPipelineShaderStageCreateInfo loadShader(std::string fileName, VkShaderStageFlagBits stage) ;
+	
 	//finds which memory types the graphics card offers
 	u32 findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);
 	//creates and binds a vulkan image to the GPU
@@ -524,15 +527,45 @@ struct Renderer_Vulkan : public Renderer{
 	void generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth, i32 texHeight, u32 mipLevels);
 	//copies a buffer, we use this to copy from CPU to GPU
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-	VkPipeline GetPipelineFromShader(u32 shader);
-	//compiles the shaders in the shader folder using shaderc by Google from the VulkanSDK
-	void CompileShaders(bool optimize);
+	
 	//creates the vertex and index buffers on the GPU
 	void CreateSceneBuffers();
+	
+	//// pipelines setup ////
+	
+	//initializes the color and depth used to clearing a frame
+	void CreateClearValues();
+	//creates a pool for command
+	void CreateCommandPool();
+	//creates semaphores and fences indicating: images are ready, rendering is finished
+	//[GPU-GPU sync] semaphores coordinate operations across command buffers so that they execute in a specified order	(pause threads)
+	//[CPU-GPU sync] fences are similar but are waited for in the code itself rather than threads						(pause code)
+	void CreateSyncObjects();
+	//creates a pool of descriptors of different types to be sent to shaders
+	void CreateDescriptorPool();
+	void CreatePipelineCache();
+	//creates and allocates the uniform buffer on ShaderData
+	void CreateUniformBuffer();
+	//create descriptor set layouts and a push constant for shaders,
+	//create pipeline layout, allocate and write to descriptor sets
+	void CreateLayouts();
+	
+	//// pipelines ////
+	
+	void SetupPipelineCreation();
+	void CreatePipelines();
+	VkPipeline GetPipelineFromShader(u32 shader);
 	void UpdateMaterialPipelines();
-	static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
-	static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
-	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+	void RemakePipeline(VkPipeline pipeline);
+	//creates a pipeline shader stage from the shader bytecode
+	VkPipelineShaderStageCreateInfo loadShader(std::string fileName, VkShaderStageFlagBits stage);
+	VkPipelineShaderStageCreateInfo CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize = false);
+	
+	//// shader compiling //// (using shaderc by Google from the VulkanSDK)
+	std::vector<std::string> GetUncompiledShaders();
+	void CompileAllShaders(bool optimize = false);
+	void CompileShader(std::string& filename, bool optimize = false);
+	
 };
 
 #endif //DESHI_RENDERER_H

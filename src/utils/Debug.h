@@ -14,7 +14,6 @@
 #include <iostream>
 #include <stdexcept>
 
-
 #define LOG(...)     admin->console->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
 #define ERROR(...)   admin->console->PushConsole(TOSTRING("\n[c:error]", __VA_ARGS__, "[c]"))
 #define SUCCESS(...) admin->console->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))

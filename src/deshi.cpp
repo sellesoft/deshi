@@ -62,10 +62,9 @@ add 2D shader and interface functions
 add lighting and shadows
 add RenderSettings loading and usage
 check those vulkan-tutorial links for the suggestions
-speed up vulkan startup (cache pipelines, etc)
 avoid having 3 copies of a mesh (model, meshVK, vulkan)
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
-multi-threaded command buffers, pipeline creation, image loading
+multi-threaded command buffers, shader loading, image loading
   convert prints to go thru the in-game console rather than other console
 find a way to forward declare vulkan stuff and move the include to the cpp
 (maybe) remove renderer polymorphism and replace it with defines that are checked on program start
@@ -109,8 +108,8 @@ struct DeshiEngine {
 	deshiImGui* imgui;
 	Time time;
 	Console console;
-
-
+	
+	
 	
 	//TODO(delle,Fs) setup loading a config file to a config struct
 	//TODO(delle,Re) change render API to a define rather than variable so it doesnt have to be a pointer
@@ -140,7 +139,7 @@ struct DeshiEngine {
 		
 		//start console
 		console.Init(&time, &input, &window, &entityAdmin);
-
+		
 		//start entity admin
 		entityAdmin.Init(&input, &window, &time, renderer, &console);
 		
