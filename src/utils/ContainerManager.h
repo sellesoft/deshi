@@ -15,7 +15,7 @@ std::string file = __FILENAME__; \
 std::cout << "Warning '" #condition "' failed in " + file + " line " + std::to_string(__LINE__) + ": \n" #message << std::endl; \
 } \
 } while (false)
-#   define ASSERT(condition, message) \
+#define ASSERT(condition, message) \
 do { \
 if (! (condition)) { \
 std::string file = __FILENAME__; \

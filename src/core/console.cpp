@@ -1,18 +1,10 @@
-#include "console.h"
-
 #include "../core.h"
 #include "../EntityAdmin.h"
 
-#include "../utils/Command.h"
-#include "../scene/Scene.h"
+#include "Console.h"
 
-#include "../game/Keybinds.h"
-#include "../game/components/Camera.h"
-#include "../game/components/Physics.h"
-#include "../game/components/Collider.h"
-#include "../game/components/Transform.h"
-#include "../game/components/AudioSource.h"
-#include "../game/systems/WorldSystem.h"
+#include "time.h"
+#include "input.h"
 
 #include <ctime>
 #include <time.h>
@@ -20,6 +12,23 @@
 #include <fstream>
 #include <sstream>
 #include <filesystem>
+
+#include "../external/imgui/imgui_impl_glfw.h"
+#include "../external/imgui/imgui_impl_vulkan.h"
+
+#include "../utils/Command.h"
+#include "../utils/defines.h"
+
+#include "../game/systems/WorldSystem.h"
+
+#include "../game/components/Camera.h"
+#include "../game/components/Physics.h"
+#include "../game/components/Collider.h"
+#include "../game/Keybinds.h"
+#include "../game/components/Transform.h"
+#include "../game/components/AudioSource.h"
+
+#include "../scene/Scene.h"
 
 //regex for checking paramaters
 #define RegPosParam   std::regex("-pos=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")
