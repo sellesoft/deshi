@@ -23,10 +23,9 @@
 #include "../game/systems/WorldSystem.h"
 
 #include "../game/components/Camera.h"
-#include "../game/components/Canvas.h"
 #include "../game/components/Physics.h"
 #include "../game/components/Collider.h"
-#include "../game/components/Keybinds.h"
+#include "../game/Keybinds.h"
 #include "../game/components/Transform.h"
 #include "../game/components/AudioSource.h"
 
@@ -648,7 +647,7 @@ catch (...) {
 }
 		});
 
-	NEWCOMMAND("shader_reload", "Reloads all shaders", {
+	NEWCOMMAND("reload_shaders", "Reloads all shaders", {
 				   admin->renderer->ReloadShaders();
 				   return "[c:magen]Reloading shaders[c]";
 		});

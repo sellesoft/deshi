@@ -1,7 +1,7 @@
 #include "renderer.h"
 #include "../core.h"
-#include "../scene/Model.h"
-#include "../scene/Scene.h"
+#include "../game/scene/Model.h"
+#include "../game/scene/Scene.h"
 #include "../math/Math.h"
 #include "../geometry/Triangle.h"
 

@@ -1,8 +1,8 @@
 #include "Controller.h"
+#include "Camera.h"
+#include "../Keybinds.h"
 #include "../../EntityAdmin.h"
 #include "../../core.h"
-#include "../components/Keybinds.h"
-#include "../components/Camera.h"
 #include "../../math/Math.h"
 
 Controller::Controller(EntityAdmin* a, MovementMode m) : Component(a), mode(m) {

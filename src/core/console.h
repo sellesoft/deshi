@@ -1,4 +1,7 @@
 #pragma once
+#ifndef DESHI_CONSOLE_H
+#define DESHI_CONSOLE_H
+
 
 #include "../utils/Color.h"
 
@@ -48,3 +51,4 @@ struct Console  {
 
 	void CleanUp();
 };
+#endif

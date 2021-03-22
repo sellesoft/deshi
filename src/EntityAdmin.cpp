@@ -22,9 +22,8 @@
 
 #include "game/components/Component.h"
 #include "game/components/Camera.h"
-#include "game/components/Keybinds.h"
+#include "game/Keybinds.h"
 #include "game/components/Controller.h"
-#include "game/components/Canvas.h"
 #include "game/components/AudioListener.h"
 
 #include "game/systems/System.h"
@@ -99,7 +98,6 @@ void UpdateLayer(ContainerManager<Component*> cl) {
 void EntityAdmin::Update() {
 	
 	//aha
-
 	controller->Update();
 	mainCamera->Update();
 
