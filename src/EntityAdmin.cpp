@@ -20,28 +20,26 @@
 #include "utils/Command.h"
 #include "utils/defines.h"
 
-#include "components/Component.h"
-#include "components/Camera.h"
-#include "components/Keybinds.h"
-#include "components/Controller.h"
-#include "components/Canvas.h"
-#include "components/Console.h"
-#include "components/AudioListener.h"
+#include "game/components/Component.h"
+#include "game/components/Camera.h"
+#include "game/components/Keybinds.h"
+#include "game/components/Controller.h"
+#include "game/components/Canvas.h"
+#include "game/components/AudioListener.h"
 
-#include "systems/System.h"
-#include "systems/CommandSystem.h"
-#include "systems/PhysicsSystem.h"
-#include "systems/RenderCanvasSystem.h"
-#include "systems/WorldSystem.h"
-#include "systems/ConsoleSystem.h"
-#include "systems/SoundSystem.h"
+#include "game/systems/System.h"
+#include "game/systems/PhysicsSystem.h"
+#include "game/systems/RenderCanvasSystem.h"
+#include "game/systems/WorldSystem.h"
+#include "game/systems/SoundSystem.h"
 
 //// EntityAdmin ////
 
-void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r) {
-	window = w;
-	input = i;
+void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	time = t;
+	input = i;
+	window = w;
+	console = c;
 	renderer = r;
 	
 	g_cBuffer.allocate_space(100);
@@ -49,7 +47,6 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r) {
 	systems = std::vector<System*>();
 	entities = std::map<EntityID, Entity*>();
 	components = std::vector<Component*>();
-	commands = std::map<std::string, Command*>();
 	physicsWorld = new PhysicsWorld();
 	
 	//reserve complayers
@@ -58,15 +55,12 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r) {
 	}
 	
 	//systems initialization
-	AddSystem(new CommandSystem());
 	switch (physicsWorld->integrationMode) {
 		default: /* Semi-Implicit Euler */ {
 			AddSystem(new PhysicsSystem());
 		}
 	}
 	AddSystem(new RenderCanvasSystem());
-	//console = new Console();
-	AddSystem(new Console());
 	AddSystem(new WorldSystem());
 	AddSystem(new SoundSystem());
 	
@@ -76,7 +70,6 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r) {
 	currentKeybinds = new Keybinds(this);
 	controller = new Controller(this);
 	controller->layer_index = freeCompLayers[controller->layer].add(controller);
-	tempCanvas = new Canvas();
 }
 
 void EntityAdmin::Cleanup() {
@@ -84,7 +77,7 @@ void EntityAdmin::Cleanup() {
 	for(System* s : systems)       { delete s; }           systems.clear();
 	for(auto pair : entities)      { delete pair.second; } entities.clear();
 	for(Component* c : components) { delete c; }           components.clear();
-	for(auto pair : commands)      { delete pair.second; } commands.clear();
+	
 	delete physicsWorld;
 	
 	//clean up singletons
@@ -106,21 +99,19 @@ void UpdateLayer(ContainerManager<Component*> cl) {
 void EntityAdmin::Update() {
 	
 	//aha
-	if (!pause_command)	           UpdateLayer(freeCompLayers[CL0_COMMAND]);	 
-	if (!pause_command)	           systems[0]->Update(); //Command system
-	if (!pause_phys && !paused)    UpdateLayer(freeCompLayers[CL1_PHYSICS]);	 
-	if (!pause_phys && !paused)    systems[1]->Update(); //Physics System
-	if (!pause_canvas)	           UpdateLayer(freeCompLayers[CL2_RENDCANVAS]); 
-	if (!pause_canvas)	           systems[2]->Update(); //Canvas system
-	if (!pause_console)            UpdateLayer(freeCompLayers[CL3_CONSOLE]);	 
-	if (!pause_console)            systems[3]->Update(); //Console System
-	if (!pause_world && !paused)   UpdateLayer(freeCompLayers[CL4_WORLD]);		 
-	if (!pause_world && !paused)   systems[4]->Update(); //World system
-	if (!pause_sound && !paused)   UpdateLayer(freeCompLayers[CL5_SOUND]);		 
-	if (!pause_sound && !paused)   systems[5]->Update(); //Sound System
-	if (!pause_last && !paused)    UpdateLayer(freeCompLayers[CL6_LAST]);
-	
-	
+
+	controller->Update();
+	mainCamera->Update();
+
+	if (!pause_phys && !paused)    UpdateLayer(freeCompLayers[CL0_PHYSICS]);	 
+	if (!pause_phys && !paused)    systems[0]->Update(); //Physics System
+	if (!pause_canvas)	           UpdateLayer(freeCompLayers[CL1_RENDCANVAS]); 
+	if (!pause_canvas)	           systems[1]->Update(); //Canvas system
+	if (!pause_console)            UpdateLayer(freeCompLayers[CL2_WORLD]);	 	 
+	if (!pause_world && !paused)   systems[2]->Update(); //World system
+	if (!pause_sound && !paused)   UpdateLayer(freeCompLayers[CL3_SOUND]);		 
+	if (!pause_sound && !paused)   systems[3]->Update(); //Sound System
+	if (!pause_last && !paused)    UpdateLayer(freeCompLayers[CL4_LAST]);
 	
 	for(Component* c : components){
 		c->Update();
@@ -156,31 +147,31 @@ void EntityAdmin::RemoveComponent(Component* component) {
 
 Command* EntityAdmin::GetCommand(std::string command) {
 	try {
-		return commands.at(command);
+		return console->commands.at(command);
 	} catch(std::exception e) {
 		//ERROR("Command \"", command, "\" does not exist");
-		this->GetSystem<Console>()->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
+		this->console->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
 		return 0;
 	}
 }
 
 bool EntityAdmin::ExecCommand(std::string command) {
 	try {
-		commands.at(command)->Exec(this);
+		console->commands.at(command)->Exec(this);
 		return true;
 	} catch(std::exception e) {
 		//ERROR("Command \"", command, "\" does not exist");
-		this->GetSystem<Console>()->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
+		this->console->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
 		return false;
 	}
 }
 
 bool EntityAdmin::ExecCommand(std::string command, std::string args) {
 	try{
-		commands.at(command)->Exec(admin, args);
+		console->commands.at(command)->Exec(admin, args);
 		return true;
 	}catch(std::exception e){
-		this->GetSystem<Console>()->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
+		this->console->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
 		return false;
 	}
 }

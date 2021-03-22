@@ -197,20 +197,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\components\AudioListener.h" />
-    <ClInclude Include="..\src\components\AudioSource.h" />
-    <ClInclude Include="..\src\components\Camera.h" />
-    <ClInclude Include="..\src\components\Canvas.h" />
-    <ClInclude Include="..\src\components\Collider.h" />
-    <ClInclude Include="..\src\components\Component.h" />
-    <ClInclude Include="..\src\components\Console.h" />
-    <ClInclude Include="..\src\components\Controller.h" />
-    <ClInclude Include="..\src\components\Keybinds.h" />
-    <ClInclude Include="..\src\components\Light.h" />
-    <ClInclude Include="..\src\components\Physics.h" />
-    <ClInclude Include="..\src\components\Transform.h" />
     <ClInclude Include="..\src\core.h" />
     <ClInclude Include="..\src\core\assets.h" />
+    <ClInclude Include="..\src\core\console.h" />
     <ClInclude Include="..\src\core\deshi_imgui.h" />
     <ClInclude Include="..\src\core\input.h" />
     <ClInclude Include="..\src\core\renderer.h" />
@@ -230,6 +219,25 @@
     <ClInclude Include="..\src\external\imgui\imstb_truetype.h" />
     <ClInclude Include="..\src\external\saschawillems\VulkanInitializers.hpp" />
     <ClInclude Include="..\src\external\tinyobjloader\tiny_obj_loader.h" />
+    <ClInclude Include="..\src\game\components\AudioListener.h" />
+    <ClInclude Include="..\src\game\components\AudioSource.h" />
+    <ClInclude Include="..\src\game\components\Camera.h" />
+    <ClInclude Include="..\src\game\components\Collider.h" />
+    <ClInclude Include="..\src\game\components\Component.h" />
+    <ClInclude Include="..\src\game\components\Controller.h" />
+    <ClInclude Include="..\src\game\components\Light.h" />
+    <ClInclude Include="..\src\game\components\Physics.h" />
+    <ClInclude Include="..\src\game\components\Transform.h" />
+    <ClInclude Include="..\src\game\Keybinds.h" />
+    <ClInclude Include="..\src\game\scene\Armature.h" />
+    <ClInclude Include="..\src\game\scene\Bone.h" />
+    <ClInclude Include="..\src\game\scene\Model.h" />
+    <ClInclude Include="..\src\game\scene\Scene.h" />
+    <ClInclude Include="..\src\game\systems\PhysicsSystem.h" />
+    <ClInclude Include="..\src\game\systems\RenderCanvasSystem.h" />
+    <ClInclude Include="..\src\game\systems\SoundSystem.h" />
+    <ClInclude Include="..\src\game\systems\System.h" />
+    <ClInclude Include="..\src\game\systems\WorldSystem.h" />
     <ClInclude Include="..\src\geometry\Edge.h" />
     <ClInclude Include="..\src\geometry\Geometry.h" />
     <ClInclude Include="..\src\geometry\Triangle.h" />
@@ -242,17 +250,6 @@
     <ClInclude Include="..\src\math\Vector2.h" />
     <ClInclude Include="..\src\math\Vector3.h" />
     <ClInclude Include="..\src\math\Vector4.h" />
-    <ClInclude Include="..\src\scene\Armature.h" />
-    <ClInclude Include="..\src\scene\Bone.h" />
-    <ClInclude Include="..\src\scene\Model.h" />
-    <ClInclude Include="..\src\scene\Scene.h" />
-    <ClInclude Include="..\src\systems\CommandSystem.h" />
-    <ClInclude Include="..\src\systems\ConsoleSystem.h" />
-    <ClInclude Include="..\src\systems\PhysicsSystem.h" />
-    <ClInclude Include="..\src\systems\RenderCanvasSystem.h" />
-    <ClInclude Include="..\src\systems\SoundSystem.h" />
-    <ClInclude Include="..\src\systems\System.h" />
-    <ClInclude Include="..\src\systems\WorldSystem.h" />
     <ClInclude Include="..\src\utils\Color.h" />
     <ClInclude Include="..\src\utils\Command.h" />
     <ClInclude Include="..\src\utils\ContainerManager.h" />
@@ -288,18 +285,7 @@
     <None Include="build.bat" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\components\AudioListener.cpp" />
-    <ClCompile Include="..\src\components\AudioSource.cpp" />
-    <ClCompile Include="..\src\components\Camera.cpp" />
-    <ClCompile Include="..\src\components\Canvas.cpp" />
-    <ClCompile Include="..\src\components\Collider.cpp" />
-    <ClCompile Include="..\src\components\Component.cpp" />
-    <ClCompile Include="..\src\components\Console.cpp" />
-    <ClCompile Include="..\src\components\Controller.cpp" />
-    <ClCompile Include="..\src\components\Keybinds.cpp" />
-    <ClCompile Include="..\src\components\Light.cpp" />
-    <ClCompile Include="..\src\components\Physics.cpp" />
-    <ClCompile Include="..\src\components\Transform.cpp" />
+    <ClCompile Include="..\src\core\console.cpp" />
     <ClCompile Include="..\src\core\deshi_imgui.cpp" />
     <ClCompile Include="..\src\core\renderer_vulkan.cpp" />
     <ClCompile Include="..\src\core\window.cpp" />
@@ -312,16 +298,24 @@
     <ClCompile Include="..\src\external\imgui\imgui_impl_vulkan.cpp" />
     <ClCompile Include="..\src\external\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\src\external\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="..\src\game\components\AudioListener.cpp" />
+    <ClCompile Include="..\src\game\components\AudioSource.cpp" />
+    <ClCompile Include="..\src\game\components\Camera.cpp" />
+    <ClCompile Include="..\src\game\components\Collider.cpp" />
+    <ClCompile Include="..\src\game\components\Component.cpp" />
+    <ClCompile Include="..\src\game\components\Controller.cpp" />
+    <ClCompile Include="..\src\game\components\Light.cpp" />
+    <ClCompile Include="..\src\game\components\Physics.cpp" />
+    <ClCompile Include="..\src\game\components\Transform.cpp" />
+    <ClCompile Include="..\src\game\Keybinds.cpp" />
+    <ClCompile Include="..\src\game\scene\Model.cpp" />
+    <ClCompile Include="..\src\game\systems\PhysicsSystem.cpp" />
+    <ClCompile Include="..\src\game\systems\RenderCanvasSystem.cpp" />
+    <ClCompile Include="..\src\game\systems\SoundSystem.cpp" />
+    <ClCompile Include="..\src\game\systems\WorldSystem.cpp" />
     <ClCompile Include="..\src\math\Matrix3.cpp" />
     <ClCompile Include="..\src\math\Matrix4.cpp" />
     <ClCompile Include="..\src\math\Vector3.cpp" />
-    <ClCompile Include="..\src\scene\Model.cpp" />
-    <ClCompile Include="..\src\systems\CommandSystem.cpp" />
-    <ClCompile Include="..\src\systems\ConsoleSystem.cpp" />
-    <ClCompile Include="..\src\systems\PhysicsSystem.cpp" />
-    <ClCompile Include="..\src\systems\RenderCanvasSystem.cpp" />
-    <ClCompile Include="..\src\systems\SoundSystem.cpp" />
-    <ClCompile Include="..\src\systems\WorldSystem.cpp" />
     <ClCompile Include="..\src\utils\Command.cpp" />
     <ClCompile Include="..\src\utils\GLOBALS.cpp" />
   </ItemGroup>

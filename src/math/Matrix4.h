@@ -225,7 +225,7 @@ inline bool    Matrix4::operator	!= (const Matrix4& rhs) const {
 
 //// Functions ////
 
-//TODO(delle) clean up Matrix4.str() and Matrix4.str2F(,ClMa)
+//TODO(delle,ClMa) clean up Matrix4.str() and Matrix4.str2F()
 inline const std::string Matrix4::str() const {
 	std::string str = "Matrix4:\n|";
 	for (int i = 0; i < 15; ++i) {

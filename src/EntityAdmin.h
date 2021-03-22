@@ -40,7 +40,6 @@ struct EntityAdmin {
 	std::map<EntityID, Entity*> entities;
 	//object_pool<Component>* componentsPtr;
 	std::vector<Component*> components;
-	std::map<std::string, Command*> commands;
 	PhysicsWorld* physicsWorld;
 	
 	//singletons
@@ -54,7 +53,7 @@ struct EntityAdmin {
 	Keybinds* currentKeybinds;
 	Controller* controller;
 	Canvas* tempCanvas;
-	//Console* console;
+	Console* console;
 	
 	//stores the components to be executed in between layers
 	std::vector<ContainerManager<Component*>> freeCompLayers;
@@ -77,7 +76,7 @@ struct EntityAdmin {
 	bool cons_error_warn = false;
 	std::string last_error;
 
-	void Init(Input* i, Window* w, Time* t, Renderer* renderer);
+	void Init(Input* i, Window* w, Time* t, Renderer* r, Console* c);
 	void Cleanup();
 	
 	void Update();
@@ -89,13 +88,13 @@ struct EntityAdmin {
 	//probably be careful using this cause there could be data races
 	//im only implementing it to push data to the console
 	//i know i can do it directly but then there would be no color parsing
-	template<class T>
-		T* GetSystem() {
-		T* t = nullptr;
-		for (System* s : systems) { if (T* temp = dynamic_cast<T*>(s)) { t = temp; break; } }
-		ASSERT(t != nullptr, "attempted to retrieve a system that doesn't exist");
-		return t;
-	}
+	//template<class T>
+	//	T* GetSystem() {
+	//	T* t = nullptr;
+	//	for (System* s : systems) { if (T* temp = dynamic_cast<T*>(s)) { t = temp; break; } }
+	//	ASSERT(t != nullptr, "attempted to retrieve a system that doesn't exist");
+	//	return t;
+	//}
 	
 	void AddComponent(Component* component);
 	void RemoveComponent(Component* component);

@@ -23,7 +23,7 @@ Fu  Fun
 Oth Other
 
 
-TODO Style: TODO(date,tags,person) description
+TODO Style: TODO(person,tags) description
 Rules: tags can be empty but still requires a comma, date can be empty
       eg: TODO(03/12/2021,,delle) no tag or date; TODO(ro,sushi) render,optimization tags for sushi made on that date
 
@@ -108,6 +108,7 @@ struct DeshiEngine {
 	Window window;
 	deshiImGui* imgui;
 	Time time;
+	Console console;
 
 
 	
@@ -137,10 +138,11 @@ struct DeshiEngine {
 		renderer->time = &time;
 		renderer->Init(&window, imgui); //inits imgui as well
 		
-		
-		
+		//start console
+		console.Init(&time, &input, &window, &entityAdmin);
+
 		//start entity admin
-		entityAdmin.Init(&input, &window, &time, renderer);
+		entityAdmin.Init(&input, &window, &time, renderer, &console);
 		
 		//start main loop
 		while(!glfwWindowShouldClose(window.window)){
@@ -154,6 +156,7 @@ struct DeshiEngine {
 		imgui->Cleanup(); delete imgui;
 		renderer->Cleanup(); delete renderer;
 		window.Cleanup();
+		console.CleanUp();
 	}
 	
 	bool Update() {
@@ -162,6 +165,7 @@ struct DeshiEngine {
 		input.Update();
 		imgui->NewFrame();            //place imgui calls after this
 		ImGui::ShowDemoWindow();
+		console.Update();      //not sure where we want this
 		entityAdmin.Update();
 		renderer->Render();           //place imgui calls before this
 		renderer->Present();

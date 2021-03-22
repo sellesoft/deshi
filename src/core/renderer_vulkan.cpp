@@ -204,7 +204,7 @@ void Renderer_Vulkan::Cleanup() {
 	//so maybe only save changes to user settings
 	//NOTE but then again, it might allow for dynamically swapping renderers
 	
-	//TODO( and load on start (~20x creation speed,ReOpVu,delle) save pipeline cache to disk on exit)
+	//TODO(delle,ReOpVu) and load on start (~20x creation speed) save pipeline cache to disk on exit)
 }
 
 u32 Renderer_Vulkan::AddTriangle(Triangle* triangle){

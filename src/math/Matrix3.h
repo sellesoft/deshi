@@ -217,7 +217,7 @@ inline bool    Matrix3::operator	!= (const Matrix3& rhs) const {
 
 //// Functions ////
 
-//TODO(delle) clean up Matrix3.str() and Matrix3.str2F(,ClMa)
+//TODO(delle,ClMa) clean up Matrix3.str() and Matrix3.str2F()
 inline const std::string Matrix3::str() const {
 	std::string str = "Matrix3:\n|";
 	for (int i = 0; i < 8; ++i) {

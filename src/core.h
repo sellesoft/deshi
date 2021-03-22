@@ -10,5 +10,6 @@
 #include "core/renderer.h"
 #include "core/assets.h"
 #include "core/deshi_imgui.h"
+#include "core/console.h"
 
 #endif //DESHI_CORE_H
