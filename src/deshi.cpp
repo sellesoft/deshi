@@ -33,11 +33,10 @@ It should generally be you though.
 
 Major Ungrouped TODOs
 ---------------------
-add MeshRenderer component (meshID, instanceID, etc)
 add device info debug window (graphics card, sound device, monitor res, etc)
 add a component_state command to print state of a component
 fix transformations (seem to be off)
-add shaders: FLAT (vertex colors, sharp edges), PHONG (flat with lighting based on normals), PBR (4textures)
+add shaders: PBR (4textures)
 settings file(s) [keybinds, video, audio, etc]
 fix program stalling when Keybinds cant find the keybind file
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)

@@ -329,11 +329,11 @@ void DebugBar(EntityAdmin* admin) {
 	SetNextWindowPos(ImVec2(0, DengWindow->height - 20));
 	
 	//window styling
-	PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 2));
-	PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 0));
+	PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
+	PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
 	PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	PushStyleColor(ImGuiCol_Border, ColToVec4(Color(0, 0, 0, 255)));
-	PushStyleColor(ImGuiCol_WindowBg, ColToVec4(Color(20, 20, 20, 255)));
+	PushStyleColor(ImGuiCol_Border,           ColToVec4(Color(0, 0, 0, 255)));
+	PushStyleColor(ImGuiCol_WindowBg,         ColToVec4(Color(20, 20, 20, 255)));
 	PushStyleColor(ImGuiCol_TableBorderLight, ColToVec4(Color(45, 45, 45, 255)));
 	
 	ImGui::Begin("DebugBar", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
@@ -345,20 +345,33 @@ void DebugBar(EntityAdmin* admin) {
 	activecols = show_fps + show_fps_graph + 3 * show_world_stats + 2 * show_selected_stats + show_time + 1;
 	if (BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)) {
 		
-		if (show_fps)            TableSetupColumn("FPS", ImGuiTableColumnFlags_WidthFixed, 64);
-		if (show_fps_graph)      TableSetupColumn("FPSGraphInline", ImGuiTableColumnFlags_WidthFixed, 64);
-		if (show_world_stats)    TableSetupColumn("EntCount", ImGuiTableColumnFlags_WidthFixed, 72);
-		if (show_world_stats)    TableSetupColumn("TriCount", ImGuiTableColumnFlags_WidthFixed, 72);
-		if (show_world_stats)    TableSetupColumn("VerCount", ImGuiTableColumnFlags_WidthFixed, 72);
-		if (show_selected_stats) TableSetupColumn("SelTriCount", ImGuiTableColumnFlags_WidthFixed, 72);
-		if (show_selected_stats) TableSetupColumn("SelVerCount", ImGuiTableColumnFlags_WidthFixed, 72);
-		/*MIDDLE SEP*/           TableSetupColumn("MiddleSep", ImGuiTableColumnFlags_WidthStretch, 0);
-		if (show_time)           TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 64);
+
+		//precalc strings and stuff so we can set column widths appropriately
+		std::string str1 = TOSTRING("wents: ", admin->entities.size());
+		float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
+		std::string str2 = TOSTRING("wtris: ", admin->renderer->stats.totalTriangles);
+		float strlen2 = (fontsize - (fontsize / 2)) * str2.size();
+		std::string str3 = TOSTRING("wverts: ", admin->renderer->stats.totalVertices);
+		float strlen3 = (fontsize - (fontsize / 2)) * str3.size();
+		std::string str4 = TOSTRING("stris: ", "0");
+		float strlen4 = (fontsize - (fontsize / 2)) * str4.size();
+		std::string str5 = TOSTRING("sverts: ", "0");
+		float strlen5 = (fontsize - (fontsize / 2)) * str5.size();
+
+		TableSetupColumn("FPS",            ImGuiTableColumnFlags_WidthFixed, 64);
+		TableSetupColumn("FPSGraphInline", ImGuiTableColumnFlags_WidthFixed, 64);
+		TableSetupColumn("EntCount",       ImGuiTableColumnFlags_None, strlen1 * 1.3);
+		TableSetupColumn("TriCount",       ImGuiTableColumnFlags_None, strlen2 * 1.3);
+		TableSetupColumn("VerCount",       ImGuiTableColumnFlags_None, strlen3 * 1.3);
+		TableSetupColumn("SelTriCount",    ImGuiTableColumnFlags_None, strlen4 * 1.3);
+		TableSetupColumn("SelVerCount",    ImGuiTableColumnFlags_None, strlen5 * 1.3);
+		TableSetupColumn("MiddleSep",      ImGuiTableColumnFlags_WidthStretch, 0);
+		TableSetupColumn("Time",           ImGuiTableColumnFlags_WidthFixed, 64);
 		
 		
 		//FPS
+		
 		if (TableNextColumn() && show_fps) {
-			
 			//trying to keep it from changing width of column
 			//actually not necessary anymore but im going to keep it cause 
 			//it keeps the numbers right aligned
@@ -438,54 +451,44 @@ void DebugBar(EntityAdmin* admin) {
 		
 		//Entity Count
 		if (TableNextColumn() && show_world_stats) {
-			std::string str = TOSTRING("wents: ", admin->entities.size());
-			float strlen = (fontsize - (fontsize / 2)) * str.size();
-			ImGui::SameLine(36 - (strlen / 2));
-			Text(str.c_str());
+			ImGui::SameLine((GetColumnWidth() - strlen1) / 2);
+			Text(str1.c_str());
 		}
 		
 		//Triangle Count
 		if (TableNextColumn() && show_world_stats) {
 			//TODO( sushi,Ui) implement triangle count when its avaliable
-			std::string str = TOSTRING("wtris: ", admin->renderer->stats.totalTriangles);
-			float strlen = (fontsize - (fontsize / 2)) * str.size();
-			ImGui::SameLine(36 - (strlen / 2));
-			Text(str.c_str());
+			ImGui::SameLine((GetColumnWidth() - strlen2) / 2);
+			Text(str2.c_str());
 		}
-		
+
 		//Vertice Count
 		if (TableNextColumn() && show_world_stats) {
 			//TODO( sushi,Ui) implement vertice count when its avaliable
-			std::string str = TOSTRING("wverts: ", admin->renderer->stats.totalVertices);
-			float strlen = (fontsize - (fontsize / 2)) * str.size();
-			ImGui::SameLine(36 - (strlen / 2));
-			Text(str.c_str());
+			ImGui::SameLine((GetColumnWidth() - strlen3) / 2);
+			Text(str3.c_str());
 		}
-		
-		
-		
+
+
+
 		// Selected Stats
-		
-		
-		
+
+
+
 		//Triangle Count
 		if (TableNextColumn() && show_selected_stats) {
 			//TODO( sushi,Ui) implement triangle count when its avaliable
 			Entity* e = DengInput->selectedEntity;
-			std::string str = TOSTRING("stris: ", "0");
-			float strlen = (fontsize - (fontsize / 2)) * str.size();
-			ImGui::SameLine(36 - (strlen / 2));
-			Text(str.c_str());
+			ImGui::SameLine((GetColumnWidth() - strlen4) / 2);
+			Text(str4.c_str());
 		}
-		
+
 		//Vertice Count
 		if (TableNextColumn() && show_selected_stats) {
 			//TODO( sushi,Ui) implement vertice count when its avaliable
 			Entity* e = DengInput->selectedEntity;
-			std::string str = TOSTRING("sverts: ", "0");
-			float strlen = (fontsize - (fontsize / 2)) * str.size();
-			ImGui::SameLine(36 - (strlen / 2));
-			Text(str.c_str());
+			ImGui::SameLine((GetColumnWidth() - strlen5) / 2);
+			Text(str5.c_str());
 		}
 		
 		//Middle Empty Separator
@@ -496,11 +499,11 @@ void DebugBar(EntityAdmin* admin) {
 				ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, GetColorU32(ColToVec4(Color(255 * (sin(2 * M_PI * time + cos(2 * M_PI * time)) + 1)/2, 0, 0, 255))));
 				
 				PushItemWidth(-1);
-				std::string str = admin->last_error;
-				float strlen = (fontsize - (fontsize / 2)) * str.size();
-				ImGui::SameLine((CalcItemWidth() - strlen) / 2);
+				std::string str6 = admin->last_error;
+				float strlen6 = (fontsize - (fontsize / 2)) * str6.size();
+				ImGui::SameLine((GetColumnWidth() - strlen6) / 2);
 				PushStyleColor(ImGuiCol_Text, ColToVec4(Color(255 * -(sin(2 * M_PI * time + cos(2 * M_PI * time)) - 1)/2, 0, 0, 255)));
-				Text(str.c_str());
+				Text(str6.c_str());
 				PopStyleColor();
 			}
 			
@@ -525,11 +528,11 @@ void DebugBar(EntityAdmin* admin) {
 			
 			oss << std::put_time(&bt, "%H:%M:%S");
 			
-			std::string str = oss.str();
-			float strlen = (fontsize - (fontsize / 2)) * str.size();
-			ImGui::SameLine(32 - (strlen / 2));
+			std::string str7 = oss.str();
+			float strlen7 = (fontsize - (fontsize / 2)) * str7.size();
+			ImGui::SameLine(32 - (strlen7 / 2));
 			
-			Text(str.c_str());
+			Text(str7.c_str());
 			
 		}
 		

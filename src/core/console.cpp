@@ -27,10 +27,12 @@
 #include "../game/components/Transform.h"
 #include "../game/components/AudioSource.h"
 #include "../game/components/MeshComp.h"
+#include "../scene/Scene.h"
 #include "../EntityAdmin.h"
 
+#include <functional>
 
-#include "../scene/Scene.h"
+
 
 //regex for checking paramaters
 #define RegPosParam   std::regex("-pos=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")
@@ -82,6 +84,9 @@ std::map<std::string, Color> colstrmap{
 	{"black", Color::BLACK},
 	{"error", Color::RED} //special error color for the console to know when to flash the debug bar
 };
+
+//map for making new components in commands
+std::map<std::string, std::function<Component*()>> compstrmap;
 
 ImVec4 ColorToVec4(Color p) {
 	return ImVec4((float)p.r / 255, (float)p.g / 255, (float)p.b / 255, p.a / 255);
@@ -623,7 +628,7 @@ void Console::AddRenderCommands() {
 	//list materials
 
 	//TODO(delle,Re) fix this, its not working
-	NEWCOMMAND("material_texture", "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>", {
+	NEWCOMMAND("mat_texture", "mat_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>", {
 				   if (args.size() != 3) { return "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>"; }
 				   try {
 					   int matID = std::stoi(args[0]);
@@ -637,7 +642,7 @@ void Console::AddRenderCommands() {
 				   }
 		});
 
-	NEWCOMMAND("material_shader", "material_shader <materialID:Uint> <shaderID:Uint>", {
+	NEWCOMMAND("mat_shader", "mat_shader <materialID:Uint> <shaderID:Uint>", {
 				   if (args.size() != 2) { return "material_shader <materialID:Uint> <shaderID:Uint>"; }
 				   try {
 					   int matID = std::stoi(args[0]);
@@ -835,8 +840,14 @@ else {
 void Console::AddCameraCommands() {
 
 
-	NEWCOMMAND("camera_info", "Prints camera variables", {
+	NEWCOMMAND("cam_info", "Prints camera variables", {
 				   return "";
+		});
+
+	NEWCOMMAND("cam_reset", "Resets camera", {
+		admin->mainCamera->position = Vector3(0, 0, -5);
+		admin->mainCamera->rotation = Vector3(0, 0, 0);
+		return "reset camera";
 		});
 }
 
@@ -1242,6 +1253,13 @@ void Console::Init(Time* t, Input* i, Window* w, EntityAdmin* ea) {
 	input = i;
 	window = w;
 	admin = ea;
+
+	compstrmap.emplace("AudioSource", []() { return new AudioSource(); });
+	compstrmap.emplace("Collider",    []() { return new Collider(); });
+	compstrmap.emplace("MeshComp",    []() { return new MeshComp(); });
+	compstrmap.emplace("Transform",   []() { return new Transform(); });
+	compstrmap.emplace("Physics",     []() { return new Physics(); });
+
 
 	AddLog("[c:dcyan]Deshi Console ver. 0.5.1[c]");
 	AddLog("\"listc\" for a list of commands\n\"help {command}\" to view a commands help page");

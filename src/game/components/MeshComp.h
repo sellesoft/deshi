@@ -11,6 +11,10 @@ struct MeshComp : public Component {
 	uint16 InstanceID;
 	Mesh* m;
 
+	MeshComp() {
+		//empty for adding in commands
+	}
+
 	MeshComp(Mesh* m) {
 		this->m = m;
 		name = "MeshComp";

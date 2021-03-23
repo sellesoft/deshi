@@ -2,6 +2,11 @@
 
 #include "../../EntityAdmin.h"
 
+AudioSource::AudioSource() {
+	//empty version for adding component through command
+	name = "AudioSource";
+}
+
 AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, float gain, float pitch) {
 	this->snd_file = snd_file;
 	this->loop = loop;

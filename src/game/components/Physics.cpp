@@ -2,6 +2,20 @@
 
 #include "../../EntityAdmin.h"
 
+Physics::Physics() {
+	position = Vector3::ZERO;
+	rotation = Vector3::ZERO;
+	velocity = Vector3::ZERO;
+	acceleration = Vector3::ZERO;
+	rotVelocity = Vector3::ZERO;
+	rotAcceleration = Vector3::ZERO;
+	elasticity = 1;
+	mass = 1;
+	isStatic = false;
+
+	name = "Physics";
+}
+
 Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy,
 		         Vector3 rotAcceleration, float elasticity, float mass, bool isStatic) {
 	this->position = position;
