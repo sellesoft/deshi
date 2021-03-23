@@ -15,6 +15,8 @@ AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, fl
 		ASSERT(t != nullptr, "if no physics pointer is specified, tranform must be");
 		this->t = t;
 	}
+
+	name = "AudioSource";
 	
 	layer = CL3_SOUND;
 }

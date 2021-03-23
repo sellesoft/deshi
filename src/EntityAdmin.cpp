@@ -34,9 +34,10 @@
 
 //// EntityAdmin ////
 
-void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
+void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c, Scene* s) {
 	time = t;
 	input = i;
+	scene = s;
 	window = w;
 	console = c;
 	renderer = r;
@@ -56,12 +57,19 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	//systems initialization
 	switch (physicsWorld->integrationMode) {
 		default: /* Semi-Implicit Euler */ {
-			AddSystem(new PhysicsSystem());
+			physics = new PhysicsSystem();
 		}
 	}
-	AddSystem(new RenderCanvasSystem());
-	AddSystem(new WorldSystem());
-	AddSystem(new SoundSystem());
+	canvas = new RenderCanvasSystem();
+	world = new WorldSystem();
+	sound = new SoundSystem();
+
+	physics->admin = this;
+	canvas->admin = this;
+	world->admin = this;
+	sound->admin = this;
+
+
 	
 	//singleton initialization
 	mainCamera = new Camera(this);
@@ -73,7 +81,7 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 
 void EntityAdmin::Cleanup() {
 	//cleanup collections
-	for(System* s : systems)       { delete s; }           systems.clear();
+	//for(System* s : systems)       { delete s; }           systems.clear();
 	for(auto pair : entities)      { delete pair.second; } entities.clear();
 	for(Component* c : components) { delete c; }           components.clear();
 	
@@ -81,6 +89,9 @@ void EntityAdmin::Cleanup() {
 	
 	//clean up singletons
 	delete world;
+	delete canvas;
+	delete sound;
+	delete physics;
 	delete mainCamera;
 	delete currentKeybinds;
 	delete controller;
@@ -103,13 +114,13 @@ void EntityAdmin::Update() {
 	mainCamera->Update();
 	
 	if (!pause_phys && !paused)    UpdateLayer(freeCompLayers[CL0_PHYSICS]);	 
-	if (!pause_phys && !paused)    systems[0]->Update(); //Physics System
+	if (!pause_phys && !paused)    physics->Update(); //Physics System
 	if (!pause_canvas)	           UpdateLayer(freeCompLayers[CL1_RENDCANVAS]); 
-	if (!pause_canvas)	           systems[1]->Update(); //Canvas system
+	if (!pause_canvas)	           canvas->Update(); //Canvas system
 	if (!pause_console)            UpdateLayer(freeCompLayers[CL2_WORLD]);	 	 
-	if (!pause_world && !paused)   systems[2]->Update(); //World system
+	if (!pause_world && !paused)   world->Update(); //World system
 	if (!pause_sound && !paused)   UpdateLayer(freeCompLayers[CL3_SOUND]);		 
-	if (!pause_sound && !paused)   systems[3]->Update(); //Sound System
+	if (!pause_sound && !paused)   sound->Update(); //Sound System
 	if (!pause_last && !paused)    UpdateLayer(freeCompLayers[CL4_LAST]);
 	
 	for(Component* c : components){

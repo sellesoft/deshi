@@ -26,6 +26,8 @@ struct Component {
 	EntityAdmin* admin = nullptr; //do not want to call admin through entity anymore sorry!
 	//virtual void Create(resourceHandle) = 0;
 	
+	const char* name;
+
 	Component(EntityAdmin* a = nullptr, Entity* e = nullptr);
 	
 	//store layer its on and where in that layer it is for deletion

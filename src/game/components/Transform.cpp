@@ -2,6 +2,9 @@
 #include "../../EntityAdmin.h"
 
 Transform::Transform() {
+
+	name = "Transform";
+
 	layer = TRANSFORM_LAYER;
 }
 
@@ -12,6 +15,8 @@ Transform::Transform(Vector3 position, Vector3 rotation, Vector3 scale) {
 	prevPosition = position;
 	prevRotation = rotation;
 	
+	name = "Transform";
+
 	layer = TRANSFORM_LAYER;
 }
 

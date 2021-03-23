@@ -137,11 +137,12 @@ struct DeshiEngine {
 		renderer->time = &time;
 		renderer->Init(&window, imgui); //inits imgui as well
 		
+
 		//start console
 		console.Init(&time, &input, &window, &entityAdmin);
 		
 		//start entity admin
-		entityAdmin.Init(&input, &window, &time, renderer, &console);
+		entityAdmin.Init(&input, &window, &time, renderer, &console, renderer->scene);
 		
 		//start main loop
 		while(!glfwWindowShouldClose(window.window)){

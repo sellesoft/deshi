@@ -166,20 +166,23 @@
     <ClInclude Include="..\src\game\systems\System.h">
       <Filter>src\game\systems</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\game\scene\Armature.h">
-      <Filter>src\game\scene</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\scene\Bone.h">
-      <Filter>src\game\scene</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\scene\Model.h">
-      <Filter>src\game\scene</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\scene\Scene.h">
-      <Filter>src\game\scene</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\game\Keybinds.h">
       <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\scene\Armature.h">
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\scene\Bone.h">
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\scene\Model.h">
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\scene\Scene.h">
+      <Filter>src\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\game\components\MeshComp.h">
+      <Filter>src\game\components\h</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -225,9 +228,6 @@
     <Filter Include="src\game">
       <UniqueIdentifier>{e64d365a-ac54-4505-80f2-d077244e3492}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\game\scene">
-      <UniqueIdentifier>{1a054cbd-376e-4ecb-9e7b-e166da4b4673}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\game\components">
       <UniqueIdentifier>{d1eb4398-2a2f-4a7b-8332-24d8eb9b3094}</UniqueIdentifier>
     </Filter>
@@ -245,6 +245,9 @@
     </Filter>
     <Filter Include="src\game\systems\h">
       <UniqueIdentifier>{b0b97b0f-958f-4711-bbab-fe685af843a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\scene">
+      <UniqueIdentifier>{1a054cbd-376e-4ecb-9e7b-e166da4b4673}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -415,11 +418,14 @@
     <ClCompile Include="..\src\game\systems\WorldSystem.cpp">
       <Filter>src\game\systems\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\game\scene\Model.cpp">
-      <Filter>src\game\scene</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\game\Keybinds.cpp">
       <Filter>src\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\scene\Model.cpp">
+      <Filter>src\scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\game\components\MeshComp.cpp">
+      <Filter>src\game\components\cpp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

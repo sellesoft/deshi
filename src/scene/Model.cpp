@@ -135,22 +135,22 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 tra
 		batch.indexArray.reserve(shape.mesh.indices.size());
 		for(auto& idx : shape.mesh.indices) { //loop over indices
 			Vertex vertex;
-			vertex.pos.x = attrib.vertices[3*idx.vertex_index+0];
-			vertex.pos.y = attrib.vertices[3*idx.vertex_index+1];
-			vertex.pos.z = attrib.vertices[3*idx.vertex_index+2];
+			vertex.pos.x = attrib.vertices[3 * idx.vertex_index + 0];
+			vertex.pos.y = attrib.vertices[3 * idx.vertex_index + 1];
+			vertex.pos.z = attrib.vertices[3 * idx.vertex_index + 2];
 			if(hasNormals){
-				vertex.normal.x = attrib.normals[3*idx.normal_index+0];
-				vertex.normal.y = attrib.normals[3*idx.normal_index+1];
-				vertex.normal.z = attrib.normals[3*idx.normal_index+2];
+				vertex.normal.x = attrib.normals[3 * idx.normal_index + 0];
+				vertex.normal.y = attrib.normals[3 * idx.normal_index + 1];
+				vertex.normal.z = attrib.normals[3 * idx.normal_index + 2];
 			}
 			if(hasUVs){
-				vertex.uv.x = attrib.texcoords[2*idx.texcoord_index+0];
-				vertex.uv.y = attrib.texcoords[2*idx.texcoord_index+1];
+				vertex.uv.x = attrib.texcoords[2 * idx.texcoord_index + 0];
+				vertex.uv.y = attrib.texcoords[2 * idx.texcoord_index + 1];
 			}
 			if(hasColors){
-				vertex.color.x = attrib.colors[3*idx.vertex_index+0];
-				vertex.color.y = attrib.colors[3*idx.vertex_index+1];
-				vertex.color.z = attrib.colors[3*idx.vertex_index+2];
+				vertex.color.x = attrib.colors[3 * idx.vertex_index + 0];
+				vertex.color.y = attrib.colors[3 * idx.vertex_index + 1];
+				vertex.color.z = attrib.colors[3 * idx.vertex_index + 2];
 			}
 			
 			if(uniqueVertices.count(vertex) == 0){

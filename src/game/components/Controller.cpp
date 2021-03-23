@@ -7,6 +7,7 @@
 
 Controller::Controller(EntityAdmin* a, MovementMode m) : Component(a), mode(m) {
 	//not sure where i want this yet
+	name = "Controller";
 	layer = NONE;
 }
 

@@ -14,6 +14,8 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	this->mass = mass;
 	this->isStatic = isStatic;
 	
+	name = "Physics";
+
 	layer = PHYS_LAYER;
 }
 
@@ -27,6 +29,8 @@ Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticit
 	this->mass = mass;
 	this->elasticity = elasticity;
 	
+	name = "Physics";
+
 	layer = PHYS_LAYER;
 }
 

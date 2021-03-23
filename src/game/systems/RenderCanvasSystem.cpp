@@ -1,7 +1,9 @@
 #include "RenderCanvasSystem.h"
-#include "../../core.h"
 #include "../components/Camera.h"
+#include "../../core.h"
 #include "../../math/Math.h"
+#include "../../scene/Scene.h"
+#include "../../EntityAdmin.h"
 
 //for time
 #include <iomanip>
@@ -11,9 +13,10 @@ ImVec4 ColToVec4(Color p) {
 	return ImVec4((float)p.r / 255, (float)p.g / 255, (float)p.b / 255, p.a / 255);
 }
 
+static bool showDebugTools = false;
+static bool showDebugBar = true;
 
 //// utility ui elements ///
-
 
 void CopyButton(const char* text) {
 	if(ImGui::Button("Copy")){ ImGui::LogToClipboard(); ImGui::LogText(text); ImGui::LogFinish(); }
@@ -230,6 +233,73 @@ void DrawFrameGraph(EntityAdmin* admin) {
 }
 
 void DebugTools(EntityAdmin* admin) {
+	using namespace ImGui;
+
+	SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height));
+	SetNextWindowPos(ImVec2(0, 0));
+
+	PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
+	PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
+	PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	PushStyleColor(ImGuiCol_Border,           ColToVec4(Color( 0,  0,  0, 255)));
+	PushStyleColor(ImGuiCol_WindowBg,         ColToVec4(Color(20, 20, 20, 255)));
+	PushStyleColor(ImGuiCol_TableBorderLight, ColToVec4(Color(45, 45, 45, 255)));
+	PushStyleColor(ImGuiCol_TableHeaderBg,    ColToVec4(Color(10, 10, 10, 255)));
+
+	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+	
+	
+	if (CollapsingHeader("Entities")) {
+		if (admin->input->selectedEntity) {
+			Text("Selected Entity: %d", admin->input->selectedEntity->id);
+			if (ImGui::Button("play sound")) {
+				admin->ExecCommand("selent_play_sound");
+			}
+		}
+		else {
+			Text("Selected Entity: None");
+		}
+
+		if (BeginTable("split3", 3, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable)) {
+			TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
+			TableSetupColumn("Name");
+			TableSetupColumn("Components");
+			TableHeadersRow();
+			int counter = 0;
+			for (auto& entity : admin->entities) {
+				counter++;
+				TableNextRow(); TableNextColumn();
+				if (ImGui::Button(std::to_string(entity.first).c_str())) {
+					admin->input->selectedEntity = entity.second;
+				}
+
+				TableNextColumn();
+				Text(entity.second->name.c_str());
+
+				TableNextColumn();
+				Text("Address: %#08x", entity.second);
+				if (TreeNodeEx((std::string("comps") + std::to_string(entity.first)).c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen, "Components")) {
+					for (Component* comp : entity.second->components) {
+						Text(comp->name);
+					}
+					Separator();
+				}
+			}
+			EndTable();
+		}
+	}
+
+
+
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
+	ImGui::PopStyleColor();
+	ImGui::PopStyleColor();
+	ImGui::PopStyleColor();
+
+	ImGui::End();
 	
 }
 
@@ -465,34 +535,12 @@ void DebugBar(EntityAdmin* admin) {
 		
 		
 		//Context menu for toggling parts of the bar
-		//TODO( sushi,Ui) make dynamic showing work i guess though its not really necessary
-		//if (ImGui::IsMouseReleased(1) && IsWindowHovered()) OpenPopup("Context");
+		if (ImGui::IsMouseReleased(1) && IsWindowHovered()) OpenPopup("Context");
 		if (BeginPopup("Context")) {
 			admin->IMGUI_MOUSE_CAPTURE = true;
 			ImGui::Separator();
-			if (Button("show FPS")) {
-				show_fps = !show_fps;
-				CloseCurrentPopup();
-			}
-			if (Button("show FPS graph")) {
-				show_fps_graph = !show_fps_graph;
-				CloseCurrentPopup();
-			}
-			if (Button("show world stats")) {
-				show_world_stats = !show_world_stats;
-				CloseCurrentPopup();
-			}
-			if (Button("show selected stats")) {
-				show_selected_stats = !show_selected_stats;
-				CloseCurrentPopup();
-			}
-			if (Button("show time")) {
-				show_time = !show_time;
-				CloseCurrentPopup();
-			}
-			ImGui::Separator();
-			if (Button("show floating fps graph")) {
-				show_floating_fps_graph = !show_floating_fps_graph;
+			if (Button("Open Debug Menu")) {
+				showDebugTools = true;
 				CloseCurrentPopup();
 			}
 			
@@ -514,22 +562,8 @@ void DebugBar(EntityAdmin* admin) {
 }
 
 void RenderCanvasSystem::DrawUI(void) {
-	using namespace ImGui;
-	
-	static bool showDebugTools = false;
-	static bool showDebugBar = true;
-	
-	
 	if (showDebugTools) DebugTools(admin);
 	if (showDebugBar) DebugBar(admin);
-	
-	//if (admin->tempCanvas->SHOW_FPS_GRAPH) DrawFrameGraph(admin);
-	
-	////////////////////////////////////////////
-	
-	//This finishes the Dear ImGui and renders it to the screen
-	//ImGui::Render();
-	//ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 }
 
 void RenderCanvasSystem::Init() {

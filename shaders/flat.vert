@@ -6,6 +6,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject{
 	mat4 proj;
 	vec4 lightPos;
 	vec4 viewPos;
+	float time;
 } ubo;
 
 layout(push_constant) uniform PushConsts{
@@ -21,9 +22,15 @@ layout(location = 0) out vec3 outColor;
 layout(location = 1) out vec2 outTexCoord;
 layout(location = 2) out vec3 outNormal;
 
+
 void main() {
+   vec3 light = vec3(2,2,2);
+
     gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
-    outColor = inColor;
+	outColor = vec3(clamp(dot(normalize(light - inPosition), -inNormal), 0, 1),
+					clamp(dot(normalize(light - inPosition), -inNormal), 0, 1),
+					clamp(dot(normalize(light - inPosition), -inNormal), 0, 1));
+    //outColor = inColor;
 	outTexCoord = inTexCoord;
 	outNormal = mat3(primitive.model) * inNormal;
 }
