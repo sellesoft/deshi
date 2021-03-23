@@ -1,4 +1,4 @@
-/* deshi
+\/* deshi
 TODO Tags: 
 
 As  Assets
@@ -36,7 +36,7 @@ Major Ungrouped TODOs
 add MeshRenderer component (meshID, instanceID, etc)
 add device info debug window (graphics card, sound device, monitor res, etc)
 add a component_state command to print state of a component
-fix transformations (seem to be off)
+fix transformations (seem to be off, rotations are global)
 add shaders: FLAT (vertex colors, sharp edges), PHONG (flat with lighting based on normals), PBR (4textures)
 settings file(s) [keybinds, video, audio, etc]
 fix program stalling when Keybinds cant find the keybind file
