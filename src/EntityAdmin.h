@@ -17,13 +17,18 @@ struct Component;
 struct Command;
 
 struct PhysicsWorld;
-struct World;
+
+struct PhysicsSystem;
+struct RenderCanvasSystem;
+struct WorldSystem;
+struct SoundSystem;
 
 struct Camera;
 struct Keybinds;
 struct Controller;
 struct Canvas;
 struct Console;
+struct Scene;
 
 //DeshiEngine structs
 struct Window;
@@ -38,6 +43,7 @@ struct EntityAdmin {
 	
 	std::vector<System*> systems;
 	std::map<EntityID, Entity*> entities;
+	//are we still doing this?
 	//object_pool<Component>* componentsPtr;
 	std::vector<Component*> components;
 	PhysicsWorld* physicsWorld;
@@ -46,14 +52,22 @@ struct EntityAdmin {
 	Input* input;
 	Window* window;
 	Time* time;
-	World* world;
 	Renderer* renderer;
+	Scene* scene; 
 	
 	Camera* mainCamera;
 	Keybinds* currentKeybinds;
 	Controller* controller;
 	Canvas* tempCanvas;
 	Console* console;
+
+	//systems
+	PhysicsSystem* physics;
+	RenderCanvasSystem* canvas;
+	WorldSystem* world;
+	SoundSystem* sound;
+
+
 	
 	//stores the components to be executed in between layers
 	std::vector<ContainerManager<Component*>> freeCompLayers;
@@ -76,7 +90,7 @@ struct EntityAdmin {
 	bool cons_error_warn = false;
 	std::string last_error;
 
-	void Init(Input* i, Window* w, Time* t, Renderer* r, Console* c);
+	void Init(Input* i, Window* w, Time* t, Renderer* r, Console* c, Scene* s);
 	void Cleanup();
 	
 	void Update();
@@ -108,6 +122,7 @@ struct Entity {
 	EntityAdmin* admin; //reference to owning admin
 	EntityID id;
 	std::vector<Component*> components;
+	std::string name;
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
 	template<class T>

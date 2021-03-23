@@ -8,4 +8,7 @@ AudioListener::AudioListener(Vector3 position, Vector3 velocity, Vector3 orienta
 	this->orientation = orientation;
 	
 	layer = CL3_SOUND;
+
+	name = "AudioListener";
+	
 }

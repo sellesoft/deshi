@@ -226,13 +226,10 @@
     <ClInclude Include="..\src\game\components\Component.h" />
     <ClInclude Include="..\src\game\components\Controller.h" />
     <ClInclude Include="..\src\game\components\Light.h" />
+    <ClInclude Include="..\src\game\components\MeshComp.h" />
     <ClInclude Include="..\src\game\components\Physics.h" />
     <ClInclude Include="..\src\game\components\Transform.h" />
     <ClInclude Include="..\src\game\Keybinds.h" />
-    <ClInclude Include="..\src\game\scene\Armature.h" />
-    <ClInclude Include="..\src\game\scene\Bone.h" />
-    <ClInclude Include="..\src\game\scene\Model.h" />
-    <ClInclude Include="..\src\game\scene\Scene.h" />
     <ClInclude Include="..\src\game\systems\PhysicsSystem.h" />
     <ClInclude Include="..\src\game\systems\RenderCanvasSystem.h" />
     <ClInclude Include="..\src\game\systems\SoundSystem.h" />
@@ -250,6 +247,10 @@
     <ClInclude Include="..\src\math\Vector2.h" />
     <ClInclude Include="..\src\math\Vector3.h" />
     <ClInclude Include="..\src\math\Vector4.h" />
+    <ClInclude Include="..\src\scene\Armature.h" />
+    <ClInclude Include="..\src\scene\Bone.h" />
+    <ClInclude Include="..\src\scene\Model.h" />
+    <ClInclude Include="..\src\scene\Scene.h" />
     <ClInclude Include="..\src\utils\Color.h" />
     <ClInclude Include="..\src\utils\Command.h" />
     <ClInclude Include="..\src\utils\ContainerManager.h" />
@@ -305,10 +306,10 @@
     <ClCompile Include="..\src\game\components\Component.cpp" />
     <ClCompile Include="..\src\game\components\Controller.cpp" />
     <ClCompile Include="..\src\game\components\Light.cpp" />
+    <ClCompile Include="..\src\game\components\MeshComp.cpp" />
     <ClCompile Include="..\src\game\components\Physics.cpp" />
     <ClCompile Include="..\src\game\components\Transform.cpp" />
     <ClCompile Include="..\src\game\Keybinds.cpp" />
-    <ClCompile Include="..\src\game\scene\Model.cpp" />
     <ClCompile Include="..\src\game\systems\PhysicsSystem.cpp" />
     <ClCompile Include="..\src\game\systems\RenderCanvasSystem.cpp" />
     <ClCompile Include="..\src\game\systems\SoundSystem.cpp" />
@@ -316,6 +317,7 @@
     <ClCompile Include="..\src\math\Matrix3.cpp" />
     <ClCompile Include="..\src\math\Matrix4.cpp" />
     <ClCompile Include="..\src\math\Vector3.cpp" />
+    <ClCompile Include="..\src\scene\Model.cpp" />
     <ClCompile Include="..\src\utils\Command.cpp" />
     <ClCompile Include="..\src\utils\GLOBALS.cpp" />
   </ItemGroup>

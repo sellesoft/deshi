@@ -36,6 +36,7 @@ struct AudioSource : public Component {
 	
 	void RequestPlay(float gain = 1, float pitch = 1);
 	
+	AudioSource();
 	AudioSource(char* snd_file, Physics* p, Transform* t = nullptr, bool loop = false, float gain = 1, float pitch = 1);
 };
 

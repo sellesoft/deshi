@@ -72,6 +72,7 @@ struct Renderer{
 	GLFWwindow*    window;
 	RenderSettings settings; //TODO(delle,Re) load render settings from a file
 	RenderStats    stats{};
+	Scene* scene;
 	
 	virtual void Init(Window* window, deshiImGui* imgui) = 0;
 	virtual void Render() = 0;
@@ -290,7 +291,7 @@ struct Renderer_Vulkan : public Renderer{
 	bool clearEnable;
     std::array<VkClearValue, 2> clearValues;
 	
-	SceneVk scene;
+	SceneVk scenevk;
 	
 	bool initialized     = false;
 	bool remakeWindow    = false;
