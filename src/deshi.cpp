@@ -50,6 +50,7 @@ implement string returns, better descriptions, and parameter parsing on every co
 replace/remove external dependencies/includes were possible (glm, boost, sascha, tinyobj)
 (maybe) make TODOs script in misc to locally generate TODOs.txt rather than TODOP bot
 cleanup compile warnings
+add Event system
 
 Render TODOs
 ------------

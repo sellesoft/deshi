@@ -1,4 +1,4 @@
-/*
+/* //TODO(sushi) rewrite this list eventually
 ------Tick Order---||--------Components-----||-------------------------------
   olcPixelGameEngine      || Input							|| N/A
   TimeSystem              || Time							 || N/A
@@ -114,13 +114,13 @@ void EntityAdmin::Update() {
 	mainCamera->Update();
 	
 	if (!pause_phys && !paused)    UpdateLayer(freeCompLayers[CL0_PHYSICS]);	 
-	if (!pause_phys && !paused)    physics->Update(); //Physics System
+	if (!pause_phys && !paused)    physics->Update();
 	if (!pause_canvas)	           UpdateLayer(freeCompLayers[CL1_RENDCANVAS]); 
-	if (!pause_canvas)	           canvas->Update(); //Canvas system
+	if (!pause_canvas)	           canvas->Update();  
 	if (!pause_console)            UpdateLayer(freeCompLayers[CL2_WORLD]);	 	 
-	if (!pause_world && !paused)   world->Update(); //World system
+	if (!pause_world && !paused)   world->Update();   
 	if (!pause_sound && !paused)   UpdateLayer(freeCompLayers[CL3_SOUND]);		 
-	if (!pause_sound && !paused)   sound->Update(); //Sound System
+	if (!pause_sound && !paused)   sound->Update();   
 	if (!pause_last && !paused)    UpdateLayer(freeCompLayers[CL4_LAST]);
 	
 	for(Component* c : components){

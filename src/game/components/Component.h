@@ -23,7 +23,7 @@ enum CompLayer {
 
 struct Component {
 	Entity* entity = nullptr; //reference to owning entity
-	EntityAdmin* admin = nullptr; //do not want to call admin through entity anymore sorry!
+	EntityAdmin* admin = nullptr; 
 	//virtual void Create(resourceHandle) = 0;
 	
 	const char* name;

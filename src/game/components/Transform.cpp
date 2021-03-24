@@ -1,5 +1,6 @@
 #include "Transform.h"
 #include "../../EntityAdmin.h"
+#include "Light.h"
 
 Transform::Transform() {
 
