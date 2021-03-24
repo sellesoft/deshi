@@ -35,7 +35,7 @@ Major Ungrouped TODOs
 ---------------------
 add device info debug window (graphics card, sound device, monitor res, etc)
 add a component_state command to print state of a component
-fix transformations (seem to be off)
+fix mesh rotations begin global
 add shaders: PBR (4textures)
 settings file(s) [keybinds, video, audio, etc]
 fix program stalling when Keybinds cant find the keybind file
