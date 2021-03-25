@@ -37,8 +37,9 @@ struct Component : public Receiver {
 	CompLayer layer = NONE;
 	int layer_index;
 	
-	virtual void Update() {};
+	void ConnectSend(Component* c);
 	virtual ~Component() {};
+	virtual void Update() {};
 	virtual void ReceiveEvent(Event event) override {};
 };
 

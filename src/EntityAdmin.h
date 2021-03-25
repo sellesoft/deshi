@@ -128,7 +128,11 @@ struct Entity {
 	template<class T>
 		T* GetComponent() {
 		T* t = nullptr;
-		for (Component* c : components) { if (T* temp = dynamic_cast<T*>(c)) { t = temp; break; } }
+		for (Component* c : components) { 
+			if (T* temp = dynamic_cast<T*>(c)) { 
+				t = temp; break; 
+			} 
+		}
 		ASSERT(t != nullptr, "attempted to retrieve a component that doesn't exist");
 		return t;
 	}

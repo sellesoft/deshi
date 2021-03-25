@@ -4,15 +4,15 @@
 #include "../../EntityAdmin.h"
 
 MeshComp::MeshComp() {
-	//empty for adding in commands
-	entity->GetComponent<Transform>()->send->AddReceiver(this);
+	send = new Sender();
+	layer = CL1_RENDCANVAS;
 }
 
 MeshComp::MeshComp(Mesh* m) {
 	this->m = m;
 	name = "MeshComp";
-
-	entity->GetComponent<Transform>()->send->AddReceiver(this);
+	send = new Sender();
+	layer = CL1_RENDCANVAS;
 }
 
 void MeshComp::ReceiveEvent(Event event) {
@@ -24,5 +24,5 @@ void MeshComp::ReceiveEvent(Event event) {
 }
 
 void MeshComp::Update() {
-
+	
 }

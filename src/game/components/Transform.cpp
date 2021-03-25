@@ -8,8 +8,7 @@ Transform::Transform() {
 	name = "Transform";
 
 	layer = TRANSFORM_LAYER;
-
-	entity->GetComponent<MeshComp>()->send->AddReceiver(this);
+	send = new Sender();
 }
 
 Transform::Transform(Vector3 position, Vector3 rotation, Vector3 scale) {
@@ -22,8 +21,7 @@ Transform::Transform(Vector3 position, Vector3 rotation, Vector3 scale) {
 	name = "Transform";
 
 	layer = TRANSFORM_LAYER;
-
-	entity->GetComponent<MeshComp>()->send->AddReceiver(this);
+	send = new Sender();
 }
 
 inline Vector3 Transform::Up() {
@@ -48,5 +46,5 @@ void Transform::ReceiveEvent(Event event) {
 
 
 void Transform::Update() {
-	
+	send->SendEvent(TEST_EVENT);
 }

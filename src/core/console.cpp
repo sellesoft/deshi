@@ -432,7 +432,7 @@ void Console::PushConsole(std::string s) {
 //flushes the buffer to a file once it reaches a certain size
 void Console::FlushBuffer() {
 	std::string output = "";
-	for (auto a : buffer) {
+	for (std::pair<std::string, Color> a : buffer) {
 		output += a.first;
 	}
 
@@ -790,7 +790,7 @@ else {
 			Physics* p = new Physics(Vector3(0,0,0), Vector3(0,0,0));
 			AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 			admin->world->AddComponentsToEntity(admin, e, { mc, p, s, t });
-
+			t->ConnectSend(mc); mc->ConnectSend(t);
 
 			u32 id = admin->renderer->LoadMesh(&mesh);
 			Model mod;
