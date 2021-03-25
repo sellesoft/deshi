@@ -22,6 +22,7 @@ struct Transform : public Component {
 	inline Vector3 Forward();
 	
 	void Update() override;
+	void ReceiveEvent(Event event) override;
 };
 
 #endif //COMPONENT_TRANSFORM_H

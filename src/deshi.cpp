@@ -1,8 +1,8 @@
 /* deshi
-TODO Tags: 
+TODO Tags:
 
 As  Assets
-Ph  Physics 
+Ph  Physics
 Re  Render
 En  Entity
 In  Input
@@ -22,12 +22,11 @@ Wi  Window
 Fu  Fun
 Oth Other
 
-
 TODO Style: TODO(person,tags) description
 Rules: tags can be empty but still requires a comma, date can be empty
-      eg: TODO(03/12/2021,,delle) no tag or date; TODO(ro,sushi) render,optimization tags for sushi made on that date
+	  eg: TODO(03/12/2021,,delle) no tag or date; TODO(ro,sushi) render,optimization tags for sushi made on that date
 
-The person listed doesn't necessarily have to be you, and can be someone else 
+The person listed doesn't necessarily have to be you, and can be someone else
 if you feel they would handle the problem better.
 It should generally be you though.
 
@@ -108,57 +107,51 @@ struct DeshiEngine {
 	deshiImGui* imgui;
 	Time time;
 	Console console;
-	
-	
-	
+
 	//TODO(delle,Fs) setup loading a config file to a config struct
 	//TODO(delle,Re) change render API to a define rather than variable so it doesnt have to be a pointer
-	void LoadConfig(){
-		
+	void LoadConfig() {
 		//render api
 		renderAPI = RenderAPI::VULKAN;
-		switch(renderAPI){
-			case(RenderAPI::VULKAN):default:{ 
-				renderer = new Renderer_Vulkan;
-				imgui = new vkImGui;
-			}break;
+		switch (renderAPI) {
+		case(RenderAPI::VULKAN):default: {
+			renderer = new Renderer_Vulkan;
+			imgui = new vkImGui;
+		}break;
 		}
 	}
-	
-	void Start(){
+
+	void Start() {
 		//init
-		
+
 		//enforce deshi file system
 		deshi::enforceDirectories();
-		
+
 		LoadConfig();
 		time.Init(300);
 		window.Init(&input, 1280, 720); //inits input as well
 		renderer->time = &time;
 		renderer->Init(&window, imgui); //inits imgui as well
-		
 
 		//start console
 		console.Init(&time, &input, &window, &entityAdmin);
-		
+
 		//start entity admin
 		entityAdmin.Init(&input, &window, &time, renderer, &console, renderer->scene);
-		
+
 		//start main loop
-		while(!glfwWindowShouldClose(window.window)){
+		while (!glfwWindowShouldClose(window.window)) {
 			glfwPollEvents();
 			Update();
 		}
-		
-		
-		
+
 		//cleanup
 		imgui->Cleanup(); delete imgui;
 		renderer->Cleanup(); delete renderer;
 		window.Cleanup();
 		console.CleanUp();
 	}
-	
+
 	bool Update() {
 		time.Update();
 		window.Update();
@@ -177,6 +170,6 @@ struct DeshiEngine {
 int main() {
 	DeshiEngine engine;
 	engine.Start();
-	
+
 	int debug_breakpoint = 0;
 }

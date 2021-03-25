@@ -184,6 +184,9 @@
     <ClInclude Include="..\src\game\components\MeshComp.h">
       <Filter>src\game\components\h</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\core\event.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -426,6 +429,9 @@
     </ClCompile>
     <ClCompile Include="..\src\game\components\MeshComp.cpp">
       <Filter>src\game\components\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\event.cpp">
+      <Filter>src\core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

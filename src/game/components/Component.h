@@ -4,6 +4,7 @@
 
 #include <vector>
 #include "../../utils/defines.h"
+#include "../../core/event.h"
 
 struct Entity;
 struct EntityAdmin;
@@ -21,11 +22,13 @@ enum CompLayer {
 };
 
 
-struct Component {
+struct Component : public Receiver {
 	Entity* entity = nullptr; //reference to owning entity
 	EntityAdmin* admin = nullptr; 
 	//virtual void Create(resourceHandle) = 0;
 	
+	Sender* send = nullptr;
+
 	const char* name;
 
 	Component(EntityAdmin* a = nullptr, Entity* e = nullptr);
@@ -36,6 +39,7 @@ struct Component {
 	
 	virtual void Update() {};
 	virtual ~Component() {};
+	virtual void ReceiveEvent(Event event) override {};
 };
 
 #endif //COMPONENT_H

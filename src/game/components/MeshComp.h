@@ -11,18 +11,13 @@ struct MeshComp : public Component {
 	uint16 InstanceID;
 	Mesh* m;
 
-	MeshComp() {
-		//empty for adding in commands
-	}
-
-	MeshComp(Mesh* m) {
-		this->m = m;
-		name = "MeshComp";
-	}
+	MeshComp();
+	MeshComp(Mesh* m);
 
 	bool mesh_visible = true;
 
 	void Update() override;
+	void ReceiveEvent(Event event) override;
 };
 
 

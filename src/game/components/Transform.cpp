@@ -1,12 +1,15 @@
 #include "Transform.h"
 #include "../../EntityAdmin.h"
 #include "Light.h"
+#include "MeshComp.h"
 
 Transform::Transform() {
 
 	name = "Transform";
 
 	layer = TRANSFORM_LAYER;
+
+	entity->GetComponent<MeshComp>()->send->AddReceiver(this);
 }
 
 Transform::Transform(Vector3 position, Vector3 rotation, Vector3 scale) {
@@ -19,6 +22,8 @@ Transform::Transform(Vector3 position, Vector3 rotation, Vector3 scale) {
 	name = "Transform";
 
 	layer = TRANSFORM_LAYER;
+
+	entity->GetComponent<MeshComp>()->send->AddReceiver(this);
 }
 
 inline Vector3 Transform::Up() {
@@ -32,6 +37,15 @@ inline Vector3 Transform::Right() {
 inline Vector3 Transform::Forward() {
 	return (Vector3::FORWARD * Matrix4::RotationMatrix(rotation)).normalized();
 }
+
+void Transform::ReceiveEvent(Event event) {
+	switch (event) {
+	case TEST_EVENT:
+		PRINT("Transform receieved event");
+		break;
+	}
+}
+
 
 void Transform::Update() {
 	

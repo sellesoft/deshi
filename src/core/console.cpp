@@ -786,9 +786,10 @@ else {
 			Entity* e = admin->world->CreateEntity(admin);
 			e->name = name;
 			MeshComp* mc = new MeshComp(&mesh);
+			Transform* t = new Transform();
 			Physics* p = new Physics(Vector3(0,0,0), Vector3(0,0,0));
 			AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
-			admin->world->AddComponentsToEntity(admin, e, { mc, p, s });
+			admin->world->AddComponentsToEntity(admin, e, { mc, p, s, t });
 
 
 			u32 id = admin->renderer->LoadMesh(&mesh);

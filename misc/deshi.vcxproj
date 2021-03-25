@@ -201,6 +201,7 @@
     <ClInclude Include="..\src\core\assets.h" />
     <ClInclude Include="..\src\core\console.h" />
     <ClInclude Include="..\src\core\deshi_imgui.h" />
+    <ClInclude Include="..\src\core\event.h" />
     <ClInclude Include="..\src\core\input.h" />
     <ClInclude Include="..\src\core\renderer.h" />
     <ClInclude Include="..\src\core\time.h" />
@@ -288,6 +289,7 @@
   <ItemGroup>
     <ClCompile Include="..\src\core\console.cpp" />
     <ClCompile Include="..\src\core\deshi_imgui.cpp" />
+    <ClCompile Include="..\src\core\event.cpp" />
     <ClCompile Include="..\src\core\renderer_vulkan.cpp" />
     <ClCompile Include="..\src\core\window.cpp" />
     <ClCompile Include="..\src\deshi.cpp" />
