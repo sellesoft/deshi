@@ -187,6 +187,9 @@
     <ClInclude Include="..\src\core\event.h">
       <Filter>src\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\utils\optional.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
