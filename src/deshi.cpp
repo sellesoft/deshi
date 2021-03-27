@@ -1,26 +1,10 @@
 /* deshi
 TODO Tags:
 
-As  Assets
-Ph  Physics
-Re  Render
-En  Entity
-In  Input
-Ma  Math
-Op  Optimization
-Cl  Clean Up Code
-Ui  UI
-Vu  Vulkan
-Sh  Shader
-Co  Core
-Ge Geometry
-So  Sound
-Fs  Filesystem
-Cmd Command
-Con Console
-Wi  Window
-Fu  Fun
-Oth Other
+As  Assets    Cl  Clean Up Code    Cmd Command         Co  Core        Con Console
+En  Entity    Fu  Fun              Fs  Filesystem      Ge  Geometry    In  Input
+Ma  Math      Oth Other            Op  Optimization    Ph  Physics     Re  Render
+Sh  Shader    So  Sound            Ui  UI              Vu  Vulkan      Wi  Window
 
 TODO Style: TODO(person,tags) description
 Rules: tags can be empty but still requires a comma, date can be empty
@@ -53,9 +37,8 @@ add Event system
 
 Render TODOs
 ------------
-finish commands for the rendering interface functions
-add the render options back
 add instancing [https://learnopengl.com/Advanced-OpenGL/Instancing]
+add vertex editing
 add texture transparency support
 add 2D shader and interface functions
 add lighting and shadows
@@ -107,51 +90,51 @@ struct DeshiEngine {
 	deshiImGui* imgui;
 	Time time;
 	Console console;
-
+	
 	//TODO(delle,Fs) setup loading a config file to a config struct
 	//TODO(delle,Re) change render API to a define rather than variable so it doesnt have to be a pointer
 	void LoadConfig() {
 		//render api
 		renderAPI = RenderAPI::VULKAN;
 		switch (renderAPI) {
-		case(RenderAPI::VULKAN):default: {
-			renderer = new Renderer_Vulkan;
-			imgui = new vkImGui;
-		}break;
+			case(RenderAPI::VULKAN):default: {
+				renderer = new Renderer_Vulkan;
+				imgui = new vkImGui;
+			}break;
 		}
 	}
-
+	
 	void Start() {
 		//init
-
+		
 		//enforce deshi file system
 		deshi::enforceDirectories();
-
+		
 		LoadConfig();
 		time.Init(300);
 		window.Init(&input, 1280, 720); //inits input as well
 		renderer->time = &time;
 		renderer->Init(&window, imgui); //inits imgui as well
-
+		
 		//start console
 		console.Init(&time, &input, &window, &entityAdmin);
-
+		
 		//start entity admin
 		entityAdmin.Init(&input, &window, &time, renderer, &console, renderer->scene);
-
+		
 		//start main loop
 		while (!glfwWindowShouldClose(window.window)) {
 			glfwPollEvents();
 			Update();
 		}
-
+		
 		//cleanup
 		imgui->Cleanup(); delete imgui;
 		renderer->Cleanup(); delete renderer;
 		window.Cleanup();
 		console.CleanUp();
 	}
-
+	
 	bool Update() {
 		time.Update();
 		window.Update();
@@ -170,6 +153,6 @@ struct DeshiEngine {
 int main() {
 	DeshiEngine engine;
 	engine.Start();
-
+	
 	int debug_breakpoint = 0;
 }

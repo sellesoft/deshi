@@ -1,6 +1,6 @@
 @echo off
 
-pushd ..\src
+pushd W:\src
 
 @set INCLUDES=/I..\src /IC:\src\glfw-3.3.2.bin.WIN64\include /IC:\src\OpenAL1.1\include /I%VULKAN_SDK%\include /IC:\src\glm /IC:\src\boost_1_74_0
 

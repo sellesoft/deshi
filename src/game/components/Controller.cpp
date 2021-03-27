@@ -40,9 +40,9 @@ inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
 			if (DengInput->KeyDown(DengKeys->movementFlyingLeft)) { inputs -= camera->right; }
 			
 			
-			if (DengInput->ModDown(INPUT_SHIFT_HELD))     { camera->position += inputs.normalized() * 16 * deltaTime; }
-			else if (DengInput->ModDown(INPUT_CTRL_HELD)) { camera->position += inputs.normalized() *  4 * deltaTime; }
-			else								{ camera->position += inputs.normalized() *  8 * deltaTime; }
+			if (DengInput->ShiftDown())     { camera->position += inputs.normalized() * 16 * deltaTime; }
+			else if (DengInput->CtrlDown()) { camera->position += inputs.normalized() *  4 * deltaTime; }
+			else							{ camera->position += inputs.normalized() *  8 * deltaTime; }
 		}
 	}
 }
@@ -119,7 +119,7 @@ void HandleMouseInputs(EntityAdmin* admin) {
 	Input* input = admin->input;
 	
 	//mouse left click pressed
-	if (input->MousePressed(MB_LEFT)) {
+	if (input->MousePressed(MouseButton::MB_LEFT)) {
 		bool ui_clicked = false;
 		//check if mouse clicked on a UI element
 		//if(!canvas->hideAll) {
@@ -140,7 +140,7 @@ void HandleMouseInputs(EntityAdmin* admin) {
 		//set click pos to mouse pos
 	}
 	//mouse left click held
-	else if (input->MouseDown(MB_LEFT)) {
+	else if (input->MouseDown(MouseButton::MB_LEFT)) {
 		//static_internal Vector2 offset;
 		//if(input->selectedUI) {
 		//	if(!input->ui_drag_latch) {
@@ -152,7 +152,7 @@ void HandleMouseInputs(EntityAdmin* admin) {
 		//}
 	}
 	//mouse left click released
-	else if (input->MouseReleased(MB_LEFT)) {
+	else if (input->MouseReleased(MouseButton::MB_LEFT)) {
 		//if(input->selectedUI) {					//deselect UI
 		//	input->selectedUI = 0;
 		//	input->ui_drag_latch = false;
@@ -177,52 +177,52 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 	if (!admin->IMGUI_KEY_CAPTURE) {
 		
 		
-		if (DengInput->KeyDown(Key::L, INPUT_NONE_HELD)) {
+		if (DengInput->KeyDown(Key::L)) {
 			admin->ExecCommand("translate_right");
 		}
 		
-		if (DengInput->KeyDown(Key::J, INPUT_NONE_HELD)) {
+		if (DengInput->KeyDown(Key::J)) {
 			admin->ExecCommand("translate_left");
 		}
 		
-		if (DengInput->KeyDown(Key::O, INPUT_NONE_HELD)) {
+		if (DengInput->KeyDown(Key::O)) {
 			admin->ExecCommand("translate_up");
 		}
 		
-		if (DengInput->KeyDown(Key::U, INPUT_NONE_HELD)) {
+		if (DengInput->KeyDown(Key::U)) {
 			admin->ExecCommand("translate_down");
 		}
 		
-		if (DengInput->KeyDown(Key::I, INPUT_NONE_HELD)) {
+		if (DengInput->KeyDown(Key::I)) {
 			admin->ExecCommand("translate_forward");
 		}
 		
-		if (DengInput->KeyDown(Key::K, INPUT_NONE_HELD)) {
+		if (DengInput->KeyDown(Key::K)) {
 			admin->ExecCommand("translate_backward");
 		}
 		
 		//rotation
-		if (DengInput->KeyDown(Key::L, INPUT_SHIFT_HELD)) {
+		if (DengInput->KeyDown(Key::L | INPUTMOD_SHIFT)) {
 			admin->ExecCommand("rotate_+x");
 		}
 		
-		if (DengInput->KeyDown(Key::J, INPUT_SHIFT_HELD)) {
+		if (DengInput->KeyDown(Key::J | INPUTMOD_SHIFT)) {
 			admin->ExecCommand("rotate_-x");
 		}
 		
-		if (DengInput->KeyDown(Key::O, INPUT_SHIFT_HELD)) {
+		if (DengInput->KeyDown(Key::O | INPUTMOD_SHIFT)) {
 			admin->ExecCommand("rotate_+y");
 		}
 		
-		if (DengInput->KeyDown(Key::U, INPUT_SHIFT_HELD)) {
+		if (DengInput->KeyDown(Key::U | INPUTMOD_SHIFT)) {
 			admin->ExecCommand("rotate_-y");
 		}
 		
-		if (DengInput->KeyDown(Key::I, INPUT_SHIFT_HELD)) {
+		if (DengInput->KeyDown(Key::I | INPUTMOD_SHIFT)) {
 			admin->ExecCommand("rotate_+z");
 		}
 		
-		if (DengInput->KeyDown(Key::K, INPUT_SHIFT_HELD)) {
+		if (DengInput->KeyDown(Key::K | INPUTMOD_SHIFT)) {
 			admin->ExecCommand("rotate_-z");
 		}
 	}

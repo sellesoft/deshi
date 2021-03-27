@@ -39,7 +39,6 @@ struct Window{
 	Vector2 dimensions;
 	
 	//TODO(delle,Cl) vsync isnt handled in GLFW when using vulkan, handle other renderers when necessary
-	//thanks: https://github.com/OneLoneCoder/olcPixelGameEngine/pull/181
 	void Init(Input* input, i32 width, i32 height, i32 x = 0, i32 y = 0,  
 			  DisplayMode displayMode = DisplayMode::WINDOWED);
 	
