@@ -77,8 +77,8 @@ void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode
 	input->mapKeys[GLFW_KEY_CAPS_LOCK]     = Key::CAPSLOCK;
 	input->mapKeys[GLFW_KEY_LEFT_SHIFT]    = Key::LSHIFT; 
 	input->mapKeys[GLFW_KEY_RIGHT_SHIFT]   = Key::RSHIFT;
-	input->mapKeys[GLFW_KEY_LEFT_CONTROL]  = Key::LCONTROL; 
-	input->mapKeys[GLFW_KEY_RIGHT_CONTROL] = Key::RCONTROL;
+	input->mapKeys[GLFW_KEY_LEFT_CONTROL]  = Key::LCTRL; 
+	input->mapKeys[GLFW_KEY_RIGHT_CONTROL] = Key::RCTRL;
 	input->mapKeys[GLFW_KEY_LEFT_ALT]      = Key::LALT; 
 	input->mapKeys[GLFW_KEY_RIGHT_ALT]     = Key::RALT; 
 	input->mapKeys[GLFW_KEY_BACKSPACE]     = Key::BACKSPACE; 

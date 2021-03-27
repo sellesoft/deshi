@@ -39,18 +39,6 @@
 #define LOGFUNC LOG(__FUNCTION__, " called")
 #define LOGFUNCM(...) LOG(__FUNCTION__, " called ", __VA_ARGS__)
 
-//from John McFarlane on stack exchange
-//returns false if wherever this is called has been called before
-//eg. use this in an if statement in a loop for it to only run once ever
-#define FIRST_TIME_HERE ([] { \
-static bool is_first_time = true; \
-auto was_first_time = is_first_time; \
-is_first_time = false; \
-return was_first_time; } ())
-
-//wrap code in this for it to only run once the entire program
-#define RUN_ONCE if(FIRST_TIME_HERE)
-
 //makes a random number only once and then always returns that same number
 //if called by the same object
 #define PERM_RAND_INT ([]{ static int rint = rand() % 100000; return rint;}())

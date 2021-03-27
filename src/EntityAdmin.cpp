@@ -72,7 +72,7 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c, Sc
 	//singleton initialization
 	mainCamera = new Camera(this);
 	mainCamera->layer_index = freeCompLayers[mainCamera->layer].add(mainCamera);
-	currentKeybinds = new Keybinds(this);
+	keybinds = new Keybinds(this);
 	controller = new Controller(this);
 	controller->layer_index = freeCompLayers[controller->layer].add(controller);
 
@@ -93,7 +93,7 @@ void EntityAdmin::Cleanup() {
 	delete sound;
 	delete physics;
 	delete mainCamera;
-	delete currentKeybinds;
+	delete keybinds;
 	delete controller;
 	delete tempCanvas;
 }

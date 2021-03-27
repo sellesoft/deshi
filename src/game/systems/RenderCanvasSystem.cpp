@@ -4,6 +4,7 @@
 #include "../../math/Math.h"
 #include "../../scene/Scene.h"
 #include "../../EntityAdmin.h"
+#include "../../game/Keybinds.h"
 
 //for time
 #include <iomanip>
@@ -13,8 +14,7 @@ ImVec4 ColToVec4(Color p) {
 	return ImVec4((float)p.r / 255, (float)p.g / 255, (float)p.b / 255, p.a / 255);
 }
 
-static bool showDebugTools = false;
-static bool showDebugBar = true;
+
 
 //// utility ui elements ///
 
@@ -543,7 +543,7 @@ void DebugBar(EntityAdmin* admin) {
 			admin->IMGUI_MOUSE_CAPTURE = true;
 			ImGui::Separator();
 			if (Button("Open Debug Menu")) {
-				showDebugTools = true;
+				//showDebugTools = true;
 				CloseCurrentPopup();
 			}
 			
@@ -565,8 +565,8 @@ void DebugBar(EntityAdmin* admin) {
 }
 
 void RenderCanvasSystem::DrawUI(void) {
-	if (showDebugTools) DebugTools(admin);
-	if (showDebugBar) DebugBar(admin);
+	if (DengInput->KeyPressed(DengKeys->toggleDebugMenu)) DebugTools(admin);
+	if (DengInput->KeyPressed(DengKeys->toggleDebugBar)) DebugBar(admin);
 }
 
 void RenderCanvasSystem::Init() {

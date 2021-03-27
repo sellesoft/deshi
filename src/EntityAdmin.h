@@ -9,6 +9,7 @@
 #define DengInput admin->input
 #define DengWindow admin->window
 #define DengTime admin->time
+#define DengKeys admin->keybinds
 
 typedef u32 EntityID;
 struct Entity;
@@ -56,7 +57,7 @@ struct EntityAdmin {
 	Scene* scene; 
 	
 	Camera* mainCamera;
-	Keybinds* currentKeybinds;
+	Keybinds* keybinds;
 	Controller* controller;
 	Canvas* tempCanvas;
 	Console* console;

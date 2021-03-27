@@ -1302,9 +1302,10 @@ void Console::Init(Time* t, Input* i, Window* w, EntityAdmin* ea) {
 }
 
 void Console::Update() {
-	if (input->KeyPressed(Key::TILDE)) {
+	if (input->KeyPressed(DengKeys->toggleConsole)) {
 		dispcon = !dispcon;
-		admin->IMGUI_KEY_CAPTURE = !admin->IMGUI_KEY_CAPTURE;
+		if (dispcon) admin->IMGUI_KEY_CAPTURE = false;
+		else admin->IMGUI_KEY_CAPTURE = true;
 	}
 	if (dispcon) DrawConsole();
 	me = this;

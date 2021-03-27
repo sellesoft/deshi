@@ -158,8 +158,8 @@ struct DeshiEngine {
 		input.Update();
 		imgui->NewFrame();            //place imgui calls after this
 		ImGui::ShowDemoWindow();
-		console.Update();      //not sure where we want this
 		entityAdmin.Update();
+		console.Update();      //not sure where we want this
 		renderer->Render();           //place imgui calls before this
 		renderer->Present();
 		//entityAdmin.PostRenderUpdate();

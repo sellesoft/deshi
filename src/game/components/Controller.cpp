@@ -13,37 +13,35 @@ Controller::Controller(EntityAdmin* a, MovementMode m) : Component(a), mode(m) {
 
 inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
 	Camera* camera = admin->mainCamera;
-	Input* input = admin->input;
-	Keybinds* binds = admin->currentKeybinds;
 	float deltaTime = admin->time->deltaTime;
 	
 	if (!admin->IMGUI_KEY_CAPTURE) {
 		
-		if(input->MouseDown(MouseButton::MB_RIGHT)){
+		if(DengInput->MouseDown(MouseButton::MB_RIGHT)){
 			Vector3 inputs;
 			if (mode == MOVEMENT_MODE_FLYING) {
 				//translate up
-				if (input->KeyDown(binds->movementFlyingUp)) {  inputs.y += 1;  }
+				if (DengInput->KeyDown(DengKeys->movementFlyingUp)) {  inputs.y += 1;  }
 				
 				//translate down
-				if (input->KeyDown(binds->movementFlyingDown)) {  inputs.y -= 1; }
+				if (DengInput->KeyDown(DengKeys->movementFlyingDown)) {  inputs.y -= 1; }
 			}
 			
 			//translate forward
-			if (input->KeyDown(binds->movementFlyingForward)) {  inputs += camera->forward; }
+			if (DengInput->KeyDown(DengKeys->movementFlyingForward)) {  inputs += camera->forward; }
 			
 			//translate back
-			if (input->KeyDown(binds->movementFlyingBack)) {  inputs -= camera->forward; }
+			if (DengInput->KeyDown(DengKeys->movementFlyingBack)) {  inputs -= camera->forward; }
 			
 			//translate right
-			if (input->KeyDown(binds->movementFlyingRight)) {  inputs += camera->right; }
+			if (DengInput->KeyDown(DengKeys->movementFlyingRight)) {  inputs += camera->right; }
 			
 			//translate left
-			if (input->KeyDown(binds->movementFlyingLeft)) { inputs -= camera->right; }
+			if (DengInput->KeyDown(DengKeys->movementFlyingLeft)) { inputs -= camera->right; }
 			
 			
-			if (input->ModDown(INPUT_SHIFT_HELD))     { camera->position += inputs.normalized() * 16 * deltaTime; }
-			else if (input->ModDown(INPUT_CONTROL_HELD)) { camera->position += inputs.normalized() *  4 * deltaTime; }
+			if (DengInput->ModDown(INPUT_SHIFT_HELD))     { camera->position += inputs.normalized() * 16 * deltaTime; }
+			else if (DengInput->ModDown(INPUT_CTRL_HELD)) { camera->position += inputs.normalized() *  4 * deltaTime; }
 			else								{ camera->position += inputs.normalized() *  8 * deltaTime; }
 		}
 	}
@@ -52,7 +50,7 @@ inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
 inline void CameraRotation(EntityAdmin* admin, float sens) {
 	Camera* camera = admin->mainCamera;
 	Input* input = admin->input;
-	Keybinds* binds = admin->currentKeybinds;
+	Keybinds* binds = admin->keybinds;
 	Window* window = admin->window;
 	float deltaTime = admin->time->deltaTime;
 	
@@ -61,28 +59,28 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 					//camera rotation up
 					if (input->KeyDown(binds->cameraRotateUp)) {
 						if (input->ModDown(INPUT_SHIFT_HELD))        { camera->rotation.x -= 50 * deltaTime; }
-						else if (input->ModDown(INPUT_CONTROL_HELD)) { camera->rotation.x -= 5 * deltaTime; }
+						else if (input->ModDown(INPUT_CTRL_HELD)) { camera->rotation.x -= 5 * deltaTime; }
 						else                                         { camera->rotation.x -= 25 * deltaTime; }
 					}
 					
 					//camera rotation down
 					if (input->KeyDown(binds->cameraRotateDown)) {
 						if (input->ModDown(INPUT_SHIFT_HELD))        { camera->rotation.x += 50 * deltaTime; }
-						else if (input->ModDown(INPUT_CONTROL_HELD)) { camera->rotation.x += 5 * deltaTime; }
+						else if (input->ModDown(INPUT_CTRL_HELD)) { camera->rotation.x += 5 * deltaTime; }
 						else                                         { camera->rotation.x += 25 * deltaTime; }
 					}
 					
 					//camera rotation right
 					if (input->KeyDown(binds->cameraRotateRight)) {
 						if (input->ModDown(INPUT_SHIFT_HELD))	    { camera->rotation.y += 50 * deltaTime; }
-						else if (input->ModDown(INPUT_CONTROL_HELD)) { camera->rotation.y += 5 * deltaTime; }
+						else if (input->ModDown(INPUT_CTRL_HELD)) { camera->rotation.y += 5 * deltaTime; }
 						else								         { camera->rotation.y += 25 * deltaTime; }
 					}
 					
 					//camera rotation left
 					if (input->KeyDown(binds->cameraRotateLeft)) {
 						if (input->ModDown(INPUT_SHIFT_HELD))	    { camera->rotation.y -= 50 * deltaTime; }
-						else if (input->ModDown(INPUT_CONTROL_HELD)) { camera->rotation.y -= 5 * deltaTime; }
+						else if (input->ModDown(INPUT_CTRL_HELD)) { camera->rotation.y -= 5 * deltaTime; }
 						else								         { camera->rotation.y -= 25 * deltaTime; }
 					}
 		*/
@@ -179,52 +177,52 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 	if (!admin->IMGUI_KEY_CAPTURE) {
 		
 		
-		if (input->KeyDown(Key::L, INPUT_NONE_HELD)) {
+		if (DengInput->KeyDown(Key::L, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_right");
 		}
 		
-		if (input->KeyDown(Key::J, INPUT_NONE_HELD)) {
+		if (DengInput->KeyDown(Key::J, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_left");
 		}
 		
-		if (input->KeyDown(Key::O, INPUT_NONE_HELD)) {
+		if (DengInput->KeyDown(Key::O, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_up");
 		}
 		
-		if (input->KeyDown(Key::U, INPUT_NONE_HELD)) {
+		if (DengInput->KeyDown(Key::U, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_down");
 		}
 		
-		if (input->KeyDown(Key::I, INPUT_NONE_HELD)) {
+		if (DengInput->KeyDown(Key::I, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_forward");
 		}
 		
-		if (input->KeyDown(Key::K, INPUT_NONE_HELD)) {
+		if (DengInput->KeyDown(Key::K, INPUT_NONE_HELD)) {
 			admin->ExecCommand("translate_backward");
 		}
 		
 		//rotation
-		if (input->KeyDown(Key::L, INPUT_SHIFT_HELD)) {
+		if (DengInput->KeyDown(Key::L, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_+x");
 		}
 		
-		if (input->KeyDown(Key::J, INPUT_SHIFT_HELD)) {
+		if (DengInput->KeyDown(Key::J, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_-x");
 		}
 		
-		if (input->KeyDown(Key::O, INPUT_SHIFT_HELD)) {
+		if (DengInput->KeyDown(Key::O, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_+y");
 		}
 		
-		if (input->KeyDown(Key::U, INPUT_SHIFT_HELD)) {
+		if (DengInput->KeyDown(Key::U, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_-y");
 		}
 		
-		if (input->KeyDown(Key::I, INPUT_SHIFT_HELD)) {
+		if (DengInput->KeyDown(Key::I, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_+z");
 		}
 		
-		if (input->KeyDown(Key::K, INPUT_SHIFT_HELD)) {
+		if (DengInput->KeyDown(Key::K, INPUT_SHIFT_HELD)) {
 			admin->ExecCommand("rotate_-z");
 		}
 	}
@@ -233,7 +231,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 void HandleRenderInputs(EntityAdmin* admin) {
 	Renderer* renderer = admin->renderer;
 	Input* input = admin->input;
-	Keybinds* binds = admin->currentKeybinds;
+	Keybinds* binds = admin->keybinds;
 	
 	//reload shaders
 	if (input->KeyPressed(Key::F5)) {
