@@ -50,7 +50,7 @@ const bool enableValidationLayers = true;
 //////////////////////////
 
 void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
-	PRINTVK(1, "\n{-} Initializing Vulkan");
+	PRINTVK(1, "\nInitializing Vulkan");
 	this->window = window->window;
 	glfwGetFramebufferSize(window->window, &width, &height);
 	glfwSetWindowUserPointer(window->window, this);
@@ -86,21 +86,21 @@ void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
 	box.mesh.batchArray[0].textureCount = 1;
 	box.mesh.batchArray[0].shader = Shader::PBR;
 	
-
+	
 	scene->models = {box};
 	LoadScene(scene);
 	//end debug
 	
-	PRINTVK(2, "{-}{-} Initializing ImGui");
+	PRINTVK(2, "  Initializing ImGui");
 	imgui->Init(this);
 	BuildCommandBuffers();
 	initialized = true;
 	
-	PRINTVK(1, "{-} Initializing Rendering");
+	PRINTVK(1, "Initializing Rendering");
 }
 
 void Renderer_Vulkan::Render() {
-	//std::cout << "{-}{-} Rendering Frame {-}{-}" << std::endl;
+	//std::cout << "  Rendering Frame     " << std::endl;
 	if(remakeWindow){
 		int w, h;
 		glfwGetFramebufferSize(window, &w, &h);
@@ -202,7 +202,7 @@ void Renderer_Vulkan::Render() {
 void Renderer_Vulkan::Present() {}
 
 void Renderer_Vulkan::Cleanup() {
-	PRINTVK(1, "{-} Initializing Cleanup\n");
+	PRINTVK(1, "Initializing Cleanup\n");
 	
 	//save pipeline cache to disk
 	if(pipelineCache != VK_NULL_HANDLE){
@@ -265,7 +265,7 @@ void Renderer_Vulkan::TranslateTriangles(std::vector<u32> triangleIDs, Vector3 t
 }
 
 u32 Renderer_Vulkan::LoadMesh(Mesh* m){
-	PRINTVK(3, "{-}{-}{-} Loading Mesh: " << m->name);
+	PRINTVK(3, "    Loading Mesh: " << m->name);
 	MeshVk mesh{}; mesh.visible = true;
 	mesh.modelMatrix = glm::make_mat4(m->transform.data);
 	mesh.primitives.reserve(m->batchCount);
@@ -380,7 +380,7 @@ void Renderer_Vulkan::UpdateMeshVisibility(u32 meshID, bool visible){
 
 
 u32 Renderer_Vulkan::LoadTexture(Texture texture){
-	PRINTVK(3, "{-}{-}{-} Loading Texture: " << texture.filename);
+	PRINTVK(3, "    Loading Texture: " << texture.filename);
 	//TODO(delle,OpReVu) optimize checking if a texture was already loaded
 	for(auto& tex : scenevk.textures){ if(strcmp(tex.filename, texture.filename) == 0){ return tex.id; } }
 	
@@ -465,7 +465,7 @@ std::string Renderer_Vulkan::ListTextures(){
 }
 
 u32 Renderer_Vulkan::CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID){
-	PRINTVK(3, "{-}{-}{-} Creating material");
+	PRINTVK(3, "    Creating material");
 	MaterialVk mat; mat.id = u32(scenevk.meshes.size());
 	mat.shader = shader; mat.pipeline = GetPipelineFromShader(shader);
 	mat.albedoTextureIndex = albedoTextureID; mat.normalTextureIndex = normalTextureID;
@@ -509,7 +509,7 @@ void Renderer_Vulkan::UpdateMaterialShader(u32 matID, u32 shader){
 }
 
 void Renderer_Vulkan::LoadDefaultAssets(){
-	PRINTVK(2, "{-}{-} Loading default assets");
+	PRINTVK(2, "  Loading default assets");
 	//load default textures
 	scenevk.textures.reserve(8);
 	Texture nullTexture   ("null128.png");     LoadTexture(nullTexture);
@@ -526,7 +526,7 @@ void Renderer_Vulkan::LoadDefaultAssets(){
 
 //ref: gltfscenerendering.cpp:350
 void Renderer_Vulkan::LoadScene(Scene* sc){
-	PRINTVK(2, "{-}{-} Loading Scene");
+	PRINTVK(2, "  Loading Scene");
 	//load meshes, materials, and textures
 	for(Model& model : sc->models){ LoadMesh(&model.mesh); }
 	
@@ -534,7 +534,7 @@ void Renderer_Vulkan::LoadScene(Scene* sc){
 }
 
 void Renderer_Vulkan::CreateSceneBuffers(){
-	PRINTVK(3, "{-}{-}{-} Creating Scene Buffers");
+	PRINTVK(3, "    Creating Scene Buffers");
 	StagingBufferVk vertexStaging{}, indexStaging{};
 	size_t vertexBufferSize = scenevk.vertexBuffer.size() * sizeof(VertexVk);
 	size_t indexBufferSize  = scenevk.indexBuffer.size()  * sizeof(u32);
@@ -660,7 +660,7 @@ void Renderer_Vulkan::UpdateDebugOptions(bool wireframe, bool globalAxis) {
 //////////////////////////////////
 
 void Renderer_Vulkan::CreateInstance() {
-	PRINTVK(2, "{-}{-} Creating Vulkan Instance");
+	PRINTVK(2, "  Creating Vulkan Instance");
 	if(enableValidationLayers && !checkValidationLayerSupport()) {
 		ASSERT(false, "validation layers requested, but not available");
 	}
@@ -695,7 +695,7 @@ void Renderer_Vulkan::CreateInstance() {
 }
 
 void Renderer_Vulkan::SetupDebugMessenger() {
-	PRINTVK(2, "{-}{-} Setting Up Debug Messenger");
+	PRINTVK(2, "  Setting Up Debug Messenger");
 	if(!enableValidationLayers) return;
 	
 	VkDebugUtilsMessengerCreateInfoEXT createInfo;
@@ -705,12 +705,12 @@ void Renderer_Vulkan::SetupDebugMessenger() {
 }
 
 void Renderer_Vulkan::CreateSurface() {
-	PRINTVK(2, "{-}{-} Creating GLFW Surface");
+	PRINTVK(2, "  Creating GLFW Surface");
 	ASSERTVK(glfwCreateWindowSurface(instance, window, allocator, &surface), "failed to create window surface");
 }
 
 void Renderer_Vulkan::PickPhysicalDevice() {
-	PRINTVK(2, "{-}{-} Picking Physical Device");
+	PRINTVK(2, "  Picking Physical Device");
 	u32 deviceCount = 0;
 	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 	std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -734,7 +734,7 @@ void Renderer_Vulkan::PickPhysicalDevice() {
 }
 
 void Renderer_Vulkan::CreateLogicalDevice() {
-	PRINTVK(2, "{-}{-} Creating Logical Device");
+	PRINTVK(2, "  Creating Logical Device");
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<u32> uniqueQueueFamilies = {
 		physicalQueueFamilies.graphicsFamily.value(), physicalQueueFamilies.presentFamily.value()
@@ -786,7 +786,7 @@ void Renderer_Vulkan::CreateLogicalDevice() {
 
 //TODO(delle,ReVu) find a better/more accurate way to do this, see gltfloading.cpp, line:592
 void Renderer_Vulkan::CreateDescriptorPool(){
-	PRINTVK(2, "{-}{-} Creating Descriptor Pool");
+	PRINTVK(2, "  Creating Descriptor Pool");
 	const int types = 11;
 	VkDescriptorPoolSize poolSizes[types] = {
 		{ VK_DESCRIPTOR_TYPE_SAMPLER,                1000 },
@@ -813,7 +813,7 @@ void Renderer_Vulkan::CreateDescriptorPool(){
 }
 
 void Renderer_Vulkan::CreatePipelineCache(){
-	PRINTVK(2, "{-}{-} Creating Pipeline Cache");
+	PRINTVK(2, "  Creating Pipeline Cache");
 	VkPipelineCacheCreateInfo pipelineCacheCreateInfo{};
 	pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
 	pipelineCacheCreateInfo.flags = 0;
@@ -829,13 +829,13 @@ void Renderer_Vulkan::CreatePipelineCache(){
 }
 
 void Renderer_Vulkan::CreateUniformBuffer(){
-	PRINTVK(2, "{-}{-} Creating Uniform Buffer");
+	PRINTVK(2, "  Creating Uniform Buffer");
 	CreateOrResizeBuffer(shaderData.uniformBuffer, shaderData.uniformBufferMemory, shaderData.uniformBufferSize, sizeof(shaderData.values) , VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	UpdateUniformBuffer();
 }
 
 void Renderer_Vulkan::CreateCommandPool(){
-	PRINTVK(2, "{-}{-} Creating Command Pool");
+	PRINTVK(2, "  Creating Command Pool");
 	VkCommandPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	poolInfo.queueFamilyIndex = physicalQueueFamilies.graphicsFamily.value();
@@ -845,13 +845,13 @@ void Renderer_Vulkan::CreateCommandPool(){
 }
 
 void Renderer_Vulkan::CreateClearValues(){
-	PRINTVK(2, "{-}{-} Creating Clear Values");
+	PRINTVK(2, "  Creating Clear Values");
 	clearValues[0].color = {0, 0, 0, 1};
 	clearValues[1].depthStencil = {1.f, 0};
 }
 
 void Renderer_Vulkan::CreateSyncObjects(){
-	PRINTVK(2, "{-}{-} Creating Sync Objects");
+	PRINTVK(2, "  Creating Sync Objects");
 	semaphores.resize(MAX_FRAMES);
 	fencesInFlight.resize(MAX_FRAMES);
 	imagesInFlight.resize(imageCount);
@@ -873,7 +873,7 @@ void Renderer_Vulkan::CreateSyncObjects(){
 
 
 void Renderer_Vulkan::CreateLayouts(){
-	PRINTVK(2, "{-}{-} Creating Layouts");
+	PRINTVK(2, "  Creating Layouts");
 	//create set layout for passing matrices
 	std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
 		vks::initializers::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0)
@@ -929,7 +929,7 @@ void Renderer_Vulkan::CreateLayouts(){
 //////////////////////////////////
 
 void Renderer_Vulkan::ResizeWindow(int w, int h) {
-	PRINTVK(1, "{-} Creating Window");
+	PRINTVK(1, "Creating Window");
 	// Ensure all operations on the device have been finished before destroying resources
 	vkDeviceWaitIdle(device);
 	
@@ -940,7 +940,7 @@ void Renderer_Vulkan::ResizeWindow(int w, int h) {
 }
 
 void Renderer_Vulkan::CreateSwapChain() {
-	PRINTVK(2, "{-}{-} Creating Swapchain");
+	PRINTVK(2, "  Creating Swapchain");
 	VkSwapchainKHR oldSwapChain = swapchain;
 	swapchain = NULL;
 	vkDeviceWaitIdle(device);
@@ -999,7 +999,7 @@ void Renderer_Vulkan::CreateSwapChain() {
 }
 
 void Renderer_Vulkan::CreateRenderPass(){
-	PRINTVK(2, "{-}{-} Creating Render Pass");
+	PRINTVK(2, "  Creating Render Pass");
 	if(renderPass) { vkDestroyRenderPass(device, renderPass, allocator); }
 	
 	VkAttachmentDescription colorAttachment{};
@@ -1071,7 +1071,7 @@ void Renderer_Vulkan::CreateRenderPass(){
 }
 
 void Renderer_Vulkan::CreateFrames(){
-	PRINTVK(2, "{-}{-} Creating Frames");
+	PRINTVK(2, "  Creating Frames");
 	//get swap chain images
 	vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr); //gets the image count
 	VkImage images[16] = {};
@@ -1139,7 +1139,7 @@ void Renderer_Vulkan::CreateFrames(){
 }
 
 void Renderer_Vulkan::SetupPipelineCreation(){
-	PRINTVK(2, "{-}{-} Setting up pipeline creation");
+	PRINTVK(2, "  Setting up pipeline creation");
 	
 	//determines how to group vertices together
 	//https://renderdoc.org/vkspec_chunked/chap22.html#VkPipelineInputAssemblyStateCreateInfo
@@ -1260,7 +1260,7 @@ void Renderer_Vulkan::SetupPipelineCreation(){
 }
 
 void Renderer_Vulkan::CreatePipelines(){
-	PRINTVK(2, "{-}{-} Creating Pipelines");
+	PRINTVK(2, "  Creating Pipelines");
 	TIMER_START(t_p);
 	
 	//destroy previous pipelines
@@ -1281,10 +1281,10 @@ void Renderer_Vulkan::CreatePipelines(){
 	shaderModules.clear(); shaderModules.reserve(oldCount);
 	
 	//compile uncompiled shaders
-	PRINTVK(3, "{-}{-}{-} Compiling shaders");
+	PRINTVK(3, "    Compiling shaders");
 	TIMER_START(t_s);
 	for(auto& s : GetUncompiledShaders()){ CompileShader(s, false); }
-	PRINTVK(3, "{-}{-}{-} Finished compiling shaders in "<< TIMER_END(t_s) <<"ms");
+	PRINTVK(3, "    Finished compiling shaders in "<< TIMER_END(t_s) <<"ms");
 	
 	//flag that this pipelineCreateInfo will be used as a base
 	pipelineCreateInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
@@ -1346,11 +1346,11 @@ void Renderer_Vulkan::CreatePipelines(){
 	shaderStages[1] = loadShader("lavalamp.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.LAVALAMP), "failed to create lavalamp graphics pipeline");
 	
-	PRINTVK(2, "{-}{-} Finished creating pipelines in "<< TIMER_END(t_p) <<"ms");
+	PRINTVK(2, "  Finished creating pipelines in "<< TIMER_END(t_p) <<"ms");
 }
 
 void Renderer_Vulkan::BuildCommandBuffers() {
-	//PRINTVK(2, "{-}{-} Building Command Buffers");
+	//PRINTVK(2, "  Building Command Buffers");
 	VkCommandBufferBeginInfo cmdBufferInfo{};
 	cmdBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	cmdBufferInfo.flags = 0;
@@ -1395,7 +1395,7 @@ void Renderer_Vulkan::BuildCommandBuffers() {
 
 //TODO(delle,ReOpVu) maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
 void Renderer_Vulkan::UpdateUniformBuffer(){
-	//PRINTVK(2, "{-}{-} Updating Uniform Buffer {-}{-}\n");
+	//PRINTVK(2, "  Updating Uniform Buffer     \n");
 	shaderData.values.time = time->totalTime;
 	shaderData.values.swidth = (glm::f32)extent.width;
 	shaderData.values.sheight = (glm::f32)extent.height;
@@ -1413,7 +1413,7 @@ void Renderer_Vulkan::UpdateUniformBuffer(){
 ///////////////////////////
 
 bool Renderer_Vulkan::checkValidationLayerSupport() {
-	PRINTVK(3, "{-}{-}{-} Checking Validation Layer Support");
+	PRINTVK(3, "    Checking Validation Layer Support");
 	u32 layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 	std::vector<VkLayerProperties> availableLayers(layerCount);
@@ -1433,7 +1433,7 @@ bool Renderer_Vulkan::checkValidationLayerSupport() {
 }
 
 std::vector<const char*> Renderer_Vulkan::getRequiredExtensions() {
-	PRINTVK(3, "{-}{-}{-} Getting Required Extensions");
+	PRINTVK(3, "    Getting Required Extensions");
 	u32 glfwExtensionCount = 0;
 	const char** glfwExtensions;
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -1443,7 +1443,7 @@ std::vector<const char*> Renderer_Vulkan::getRequiredExtensions() {
 }
 
 void Renderer_Vulkan::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
-	PRINTVK(3, "{-}{-}{-} Populating Debug Messenger CreateInfo");
+	PRINTVK(3, "    Populating Debug Messenger CreateInfo");
 	createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	createInfo.messageSeverity = /*VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |*/ VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -1452,7 +1452,7 @@ void Renderer_Vulkan::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCrea
 }
 
 bool Renderer_Vulkan::isDeviceSuitable(VkPhysicalDevice device) {
-	PRINTVK(3, "{-}{-}{-} Checking Validation Layer Support");
+	PRINTVK(3, "    Checking Validation Layer Support");
 	QueueFamilyIndices indices = findQueueFamilies(device);
 	bool extensionsSupported = checkDeviceExtensionSupport(device);
 	bool swapChainAdequate = false;
@@ -1465,7 +1465,7 @@ bool Renderer_Vulkan::isDeviceSuitable(VkPhysicalDevice device) {
 }
 
 QueueFamilyIndices Renderer_Vulkan::findQueueFamilies(VkPhysicalDevice device) {
-	PRINTVK(3, "{-}{-}{-} Finding Queue Families");
+	PRINTVK(3, "    Finding Queue Families");
 	QueueFamilyIndices indices;
 	
 	u32 queueFamilyCount = 0;
@@ -1489,7 +1489,7 @@ QueueFamilyIndices Renderer_Vulkan::findQueueFamilies(VkPhysicalDevice device) {
 }
 
 bool Renderer_Vulkan::checkDeviceExtensionSupport(VkPhysicalDevice device) {
-	PRINTVK(3, "{-}{-}{-} Checking Device Extension Support");
+	PRINTVK(3, "    Checking Device Extension Support");
 	u32 extensionCount;
 	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
@@ -1504,7 +1504,7 @@ bool Renderer_Vulkan::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 }
 
 SwapChainSupportDetails Renderer_Vulkan::querySwapChainSupport(VkPhysicalDevice device) {
-	PRINTVK(3, "{-}{-}{-} Querying SwapChain Support");
+	PRINTVK(3, "    Querying SwapChain Support");
 	SwapChainSupportDetails details;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 	
@@ -1526,7 +1526,7 @@ SwapChainSupportDetails Renderer_Vulkan::querySwapChainSupport(VkPhysicalDevice 
 }
 
 VkSampleCountFlagBits Renderer_Vulkan::getMaxUsableSampleCount() {
-	PRINTVK(3, "{-}{-}{-} Getting Max Usable Sample Count");
+	PRINTVK(3, "    Getting Max Usable Sample Count");
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 	vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 	
@@ -1542,7 +1542,7 @@ VkSampleCountFlagBits Renderer_Vulkan::getMaxUsableSampleCount() {
 }
 
 VkSurfaceFormatKHR Renderer_Vulkan::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
-	PRINTVK(3, "{-}{-}{-} Choosing Swap Surface Format");
+	PRINTVK(3, "    Choosing Swap Surface Format");
 	for (const auto& availableFormat : availableFormats) {
 		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
 			return availableFormat;
@@ -1552,7 +1552,7 @@ VkSurfaceFormatKHR Renderer_Vulkan::chooseSwapSurfaceFormat(const std::vector<Vk
 }
 
 VkPresentModeKHR Renderer_Vulkan::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
-	PRINTVK(3, "{-}{-}{-} Choosing Swap Present Mode");
+	PRINTVK(3, "    Choosing Swap Present Mode");
 	for (const auto& availablePresentMode : availablePresentModes) {
 		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
 			return availablePresentMode;
@@ -1562,7 +1562,7 @@ VkPresentModeKHR Renderer_Vulkan::chooseSwapPresentMode(const std::vector<VkPres
 }
 
 VkExtent2D Renderer_Vulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
-	PRINTVK(3, "{-}{-}{-} Choosing Swap Extent");
+	PRINTVK(3, "    Choosing Swap Extent");
 	if (capabilities.currentExtent.width != UINT32_MAX) {
 		return capabilities.currentExtent;
 	} else {
@@ -1578,7 +1578,7 @@ VkExtent2D Renderer_Vulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& cap
 }
 
 VkImageView Renderer_Vulkan::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels) {
-	PRINTVK(4, "{-}{-}{-}{-} Creating Image View");
+	PRINTVK(4, "      Creating Image View");
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image = image;
@@ -1596,7 +1596,7 @@ VkImageView Renderer_Vulkan::createImageView(VkImage image, VkFormat format, VkI
 }
 
 VkFormat Renderer_Vulkan::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
-	PRINTVK(4, "{-}{-}{-}{-} Finding supported image formats");
+	PRINTVK(4, "      Finding supported image formats");
 	for (VkFormat format : candidates) {
 		VkFormatProperties props;
 		vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
@@ -1616,7 +1616,7 @@ VkFormat Renderer_Vulkan::findDepthFormat() {
 }
 
 u32 Renderer_Vulkan::findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties) {
-	PRINTVK(4, "{-}{-}{-}{-} Finding Memory Types");
+	PRINTVK(4, "      Finding Memory Types");
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 	
@@ -1629,7 +1629,7 @@ u32 Renderer_Vulkan::findMemoryType(u32 typeFilter, VkMemoryPropertyFlags proper
 }
 
 void Renderer_Vulkan::createImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
-	PRINTVK(4, "{-}{-}{-}{-} Creating Image");
+	PRINTVK(4, "      Creating Image");
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -1659,7 +1659,7 @@ void Renderer_Vulkan::createImage(u32 width, u32 height, u32 mipLevels, VkSample
 }
 
 void Renderer_Vulkan::CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
-	PRINTVK(4, "{-}{-}{-}{-} Creating or Resizing Buffer");
+	PRINTVK(4, "      Creating or Resizing Buffer");
 	//delete old buffer
 	if(buffer != VK_NULL_HANDLE){ vkDestroyBuffer(device, buffer, allocator); }
 	if (bufferMemory != VK_NULL_HANDLE){ vkFreeMemory(device, bufferMemory, allocator); }
@@ -1687,7 +1687,7 @@ void Renderer_Vulkan::CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& buf
 }
 
 void Renderer_Vulkan::CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, void* data, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
-	PRINTVK(4, "{-}{-}{-}{-} Creating and Mapping Buffer");
+	PRINTVK(4, "      Creating and Mapping Buffer");
 	//delete old buffer
 	if(buffer != VK_NULL_HANDLE){ vkDestroyBuffer(device, buffer, allocator); }
 	if (bufferMemory != VK_NULL_HANDLE){ vkFreeMemory(device, bufferMemory, allocator); }
@@ -1767,7 +1767,7 @@ void Renderer_Vulkan::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
 }
 
 void Renderer_Vulkan::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels) {
-	PRINTVK(4, "{-}{-}{-}{-} Transitioning Image Layout");
+	PRINTVK(4, "      Transitioning Image Layout");
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 	
 	VkImageMemoryBarrier barrier{};
@@ -1808,7 +1808,7 @@ void Renderer_Vulkan::transitionImageLayout(VkImage image, VkFormat format, VkIm
 }
 
 void Renderer_Vulkan::copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height) {
-	PRINTVK(4, "{-}{-}{-}{-} Copying Buffer To Image");
+	PRINTVK(4, "      Copying Buffer To Image");
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 	
 	VkBufferImageCopy region{};
@@ -1827,7 +1827,7 @@ void Renderer_Vulkan::copyBufferToImage(VkBuffer buffer, VkImage image, u32 widt
 }
 
 void Renderer_Vulkan::generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth, i32 texHeight, u32 mipLevels) {
-	PRINTVK(4, "{-}{-}{-}{-} Creating Image Mipmaps");
+	PRINTVK(4, "      Creating Image Mipmaps");
 	// Check if image format supports linear blitting
 	VkFormatProperties formatProperties;
 	vkGetPhysicalDeviceFormatProperties(physicalDevice, imageFormat, &formatProperties);
@@ -1924,7 +1924,7 @@ VkPipeline Renderer_Vulkan::GetPipelineFromShader(u32 shader){
 
 
 VkPipelineShaderStageCreateInfo Renderer_Vulkan::loadShader(std::string fileName, VkShaderStageFlagBits stage) {
-	PRINTVK(3, "{-}{-}{-} Loading shader: " << fileName);
+	PRINTVK(3, "    Loading shader: " << fileName);
 	//setup shader stage create info
 	VkPipelineShaderStageCreateInfo shaderStage{};
 	shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1960,7 +1960,7 @@ VkPipelineShaderStageCreateInfo Renderer_Vulkan::loadShader(std::string fileName
 }
 
 VkPipelineShaderStageCreateInfo Renderer_Vulkan::CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize) {
-	PRINTVK(3, "{-}{-}{-} Compiling and loading shader: " << filename);
+	PRINTVK(3, "    Compiling and loading shader: " << filename);
 	//check if file exists
 	std::filesystem::path entry(deshi::getShadersPath() + filename);
 	if(std::filesystem::exists(entry)){
@@ -2028,7 +2028,7 @@ void Renderer_Vulkan::CompileAllShaders(bool optimize){
 		
 		if(ext.compare(".spv") == 0) continue; //early out if .spv
 		std::vector<char> code = deshi::readFileBinary(entry.path().string()); //read shader code
-		PRINTVK(4, "{-}{-}{-}{-} Compiling shader: " << filename);
+		PRINTVK(4, "      Compiling shader: " << filename);
 		
 		//try compile from GLSL to SPIR-V binary
 		shaderc_compilation_result_t result;
@@ -2084,7 +2084,7 @@ std::vector<std::string> Renderer_Vulkan::GetUncompiledShaders(){
 }
 
 void Renderer_Vulkan::CompileShader(std::string& filename, bool optimize){
-	PRINTVK(3, "{-}{-}{-} Compiling shader: " << filename);
+	PRINTVK(3, "    Compiling shader: " << filename);
 	std::filesystem::path entry(deshi::getShadersPath() + filename);
 	if(std::filesystem::exists(entry)){
 		std::string ext = entry.extension().string();
@@ -2127,7 +2127,7 @@ void Renderer_Vulkan::CompileShader(std::string& filename, bool optimize){
 }
 
 void Renderer_Vulkan::UpdateMaterialPipelines(){
-	PRINTVK(4, "{-}{-}{-}{-} Updating material pipelines");
+	PRINTVK(4, "      Updating material pipelines");
 	for(auto& mat : scenevk.materials){
 		mat.pipeline = GetPipelineFromShader(mat.shader);
 	}

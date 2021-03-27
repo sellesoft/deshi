@@ -16,16 +16,16 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		{"movementFlyingBack",    movementFlyingBack},
 		{"movementFlyingRight",   movementFlyingRight},
 		{"movementFlyingLeft",    movementFlyingLeft},
-
+		
 		{"cameraRotateUp",    cameraRotateUp},
 		{"cameraRotateDown",  cameraRotateDown},
 		{"cameraRotateRight", cameraRotateRight},
 		{"cameraRotateLeft",  cameraRotateLeft},
-
+		
 		{"debugRenderEdgesNumbers", debugRenderEdgesNumbers},
 		{"debugRenderWireframe",    debugRenderWireframe},
 		{"debugRenderDisplayAxis",  debugRenderDisplayAxis},
-
+		
 		{"toggleConsole",   toggleConsole},
 		{"toggleDebugMenu", toggleDebugMenu},
 		{"toggleDebugBar",  toggleDebugBar}
@@ -38,8 +38,8 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		{"K0", Key::K0}, {"K1", Key::K1}, {"K2", Key::K2}, {"K3", Key::K3}, {"K4", Key::K4}, {"K5", Key::K5}, {"K6", Key::K6}, {"K7", Key::K7}, {"K8", Key::K8}, {"K9", Key::K9},
 		{"F1", Key::F1}, {"F2", Key::F2}, {"F3", Key::F3}, {"F4", Key::F4}, {"F5", Key::F5}, {"F6", Key::F6}, {"F7", Key::F7}, {"F8", Key::F8}, {"F9", Key::F9}, {"F10", Key::F10}, {"F11", Key::F11}, {"F12", Key::F12},
 		{"UP", Key::UP}, {"DOWN", Key::DOWN}, {"LEFT", Key::LEFT}, {"RIGHT", Key::RIGHT},
-		{"ESCAPE", Key::ESCAPE}, {"TILDE", Key::TILDE}, {"TAB", Key::TAB}, {"CAPSLOCK", Key::CAPSLOCK}, {"LSHIFT", INPUT_SHIFT_HELD}, {"LCTRL", INPUT_CTRL_HELD}, {"LALT", INPUT_ALT_HELD},
-		{"BACKSPACE", Key::BACKSPACE}, {"ENTER", Key::ENTER}, {"RSHIFT", INPUT_SHIFT_HELD}, {"RCTRL", INPUT_CTRL_HELD}, {"RALT", INPUT_ALT_HELD}, {"MINUS", Key::MINUS}, {"EQUALS", Key::EQUALS}, {"LBRACKET", Key::LBRACKET}, {"RBRACKET", Key::RBRACKET},
+		{"ESCAPE", Key::ESCAPE}, {"TILDE", Key::TILDE}, {"TAB", Key::TAB}, {"CAPSLOCK", Key::CAPSLOCK}, {"LSHIFT", INPUTMOD_SHIFT}, {"LCTRL", INPUTMOD_CTRL}, {"LALT", INPUTMOD_ALT},
+		{"BACKSPACE", Key::BACKSPACE}, {"ENTER", Key::ENTER}, {"RSHIFT", INPUTMOD_SHIFT}, {"RCTRL", INPUTMOD_CTRL}, {"RALT", INPUTMOD_ALT}, {"MINUS", Key::MINUS}, {"EQUALS", Key::EQUALS}, {"LBRACKET", Key::LBRACKET}, {"RBRACKET", Key::RBRACKET},
 		{"SLASH", Key::SLASH}, {"SEMICOLON", Key::SEMICOLON}, {"APOSTROPHE", Key::APOSTROPHE}, {"COMMA", Key::COMMA}, {"PERIOD", Key::PERIOD}, {"BACKSLASH", Key::BACKSLASH}, {"SPACE", Key::SPACE},
 		{"INSERT", Key::INSERT}, {"DELETE", Key::DELETE}, {"HOME", Key::HOME}, {"END", Key::END}, {"PAGEUP", Key::PAGEUP}, {"PAGEDOWN", Key::PAGEDOWN}, {"PAUSE", Key::PAUSE}, {"SCROLL", Key::SCROLL},
 		{"NUMPAD0", Key::NUMPAD0}, {"NUMPAD1", Key::NUMPAD1}, {"NUMPAD2", Key::NUMPAD2}, {"NUMPAD3", Key::NUMPAD3}, {"NUMPAD4", Key::NUMPAD4}, {"NUMPAD5", Key::NUMPAD5}, {"NUMPAD6", Key::NUMPAD6}, {"NUMPAD7", Key::NUMPAD7}, {"NUMPAD8", Key::NUMPAD8}, {"NUMPAD9", Key::NUMPAD9},
@@ -61,18 +61,18 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 	while (!kf.eof()) {
 		char* c = (char*)malloc(255); 
 		kf.getline(c, 255);
-
+		
 		std::string s(c);
-
+		
 		if (s[0] == '>') {
 			line++;
 			continue;
 		}
-
+		
 		std::smatch m;
-
+		
 		std::regex r;
-
+		
 		bool modif = false;
 		
 		//if string contains a + it must have a modifier
@@ -83,9 +83,11 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		else {
 			r = std::regex("([A-Za-z]+) += +(.+)");
 		}
-
+		
 		std::regex_match(s, m, r);
-
+		
+		
+		
 		if (m.size() == 1) {
 			ERROR_LOC(m[1], "\nRegex did not find any matches for this string in keybinds.txt at line ", line);
 			line++;
@@ -106,7 +108,7 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 				}
 				catch (std::out_of_range oor){
 					ERROR_LOC("Either the keybind \"", m[1], "\" or the key \"", m[2], "\" was not found in their respective maps. \nAt line ", line, " in keybinds.txt");
-
+					
 				}
 			}
 		}
