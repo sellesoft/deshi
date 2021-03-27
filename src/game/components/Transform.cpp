@@ -6,7 +6,6 @@
 Transform::Transform() {
 
 	name = "Transform";
-
 	layer = TRANSFORM_LAYER;
 	send = new Sender();
 }

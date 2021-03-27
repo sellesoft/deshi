@@ -86,8 +86,6 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 
 		std::regex_match(s, m, r);
 
-		
-
 		if (m.size() == 1) {
 			ERROR_LOC(m[1], "\nRegex did not find any matches for this string in keybinds.txt at line ", line);
 			line++;
@@ -104,7 +102,7 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 			}
 			else {
 				try {
-					keys.at(m[1]) = stk.at(m[2]);
+					keys.at(m[1]) = stk.at(m[2]) | INPUT_NONE_HELD;
 				}
 				catch (std::out_of_range oor){
 					ERROR_LOC("Either the keybind \"", m[1], "\" or the key \"", m[2], "\" was not found in their respective maps. \nAt line ", line, " in keybinds.txt");
@@ -115,7 +113,6 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		catch (std::out_of_range oor) {
 			ERROR_LOC("Key \"", m[1], "\" not found in keymap. \nAt line ", line, " in keybinds.txt");
 		}
-		
 		line++;
 		free(c);
 	}
