@@ -399,6 +399,11 @@ void DebugBar(EntityAdmin* admin) {
 }
 
 void RenderCanvasSystem::DrawUI(void) {
+<<<<<<< HEAD
+	if (DengInput->KeyPressed(DengKeys->toggleDebugMenu)) DebugTools(admin);
+	//if (DengInput->KeyPressed(DengKeys->toggleDebugBar)) DebugBar(admin);
+	DebugBar(admin);
+=======
 	if (DengInput->KeyPressed(DengKeys->toggleDebugMenu)) showDebugTools = !showDebugTools;
 	if (DengInput->KeyPressed(DengKeys->toggleDebugBar)) showDebugBar = !showDebugBar;
 	//if (DengInput->KeyPressed(DengKeys->toggleMenuBar)) showMenuBar = !showMenuBar;
