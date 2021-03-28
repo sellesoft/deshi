@@ -14,7 +14,7 @@ ImVec4 ColToVec4(Color p) {
 	return ImVec4((float)p.r / 255, (float)p.g / 255, (float)p.b / 255, p.a / 255);
 }
 
-
+bool WinHovFlag = false;
 
 //// utility ui elements ///
 
@@ -87,7 +87,6 @@ void MakeGeneralHeader(EntityAdmin* admin) {
 				TableNextColumn(); Text("FarZ"); SameLine(); InputFloat("##camFarZ", &camera->farZ, 0, 0, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue);
 				EndTable();
 			}
-			
 			Separator();
 		}
 	}
@@ -247,7 +246,9 @@ void DebugTools(EntityAdmin* admin) {
 	PushStyleColor(ImGuiCol_TableHeaderBg,    ColToVec4(Color(10, 10, 10, 255)));
 
 	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
-	
+
+	//capture mouse if hovering over this window
+	if (IsWindowHovered()) WinHovFlag = true; 
 	
 	if (CollapsingHeader("Entities")) {
 		if (admin->input->selectedEntity) {
@@ -289,7 +290,16 @@ void DebugTools(EntityAdmin* admin) {
 		}
 	}
 
-
+	if(BeginMenu("Spawn")) {
+		if(MenuItem("spawn box")) { admin->ExecCommand("spawn_box"); }
+		if(BeginMenu("spawn complex")) {
+			if(MenuItem("bmonkey")) { admin->ExecCommand("spawn_complex"); }
+			if(MenuItem("whale_ship")) { admin->ExecCommand("spawn_complex1"); }
+			if(MenuItem("24k_Triangles")) { admin->ExecCommand("spawn_complex2"); }
+			ImGui::EndMenu();
+		}
+		ImGui::EndMenu();
+	}
 
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
@@ -339,12 +349,10 @@ void DebugBar(EntityAdmin* admin) {
 	ImGui::Begin("DebugBar", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	
 	//capture mouse if hovering over this window
-	if (IsWindowHovered()) { admin->IMGUI_MOUSE_CAPTURE = true; }
-	else { admin->IMGUI_MOUSE_CAPTURE = false; }
+	if (IsWindowHovered()) WinHovFlag = true; 
 	
 	activecols = show_fps + show_fps_graph + 3 * show_world_stats + 2 * show_selected_stats + show_time + 1;
 	if (BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)) {
-		
 
 		//precalc strings and stuff so we can set column widths appropriately
 		std::string str1 = TOSTRING("wents: ", admin->entities.size());
@@ -440,10 +448,6 @@ void DebugBar(EntityAdmin* admin) {
 			
 			ImGui::PopStyleColor();
 			ImGui::PopStyleColor();
-			
-			
-			
-			
 		}
 		
 		
@@ -565,18 +569,29 @@ void DebugBar(EntityAdmin* admin) {
 }
 
 void RenderCanvasSystem::DrawUI(void) {
+<<<<<<< HEAD
 	if (DengInput->KeyPressed(DengKeys->toggleDebugMenu)) DebugTools(admin);
 	//if (DengInput->KeyPressed(DengKeys->toggleDebugBar)) DebugBar(admin);
 	DebugBar(admin);
+=======
+	if (DengInput->KeyPressed(DengKeys->toggleDebugMenu)) showDebugTools = !showDebugTools;
+	if (DengInput->KeyPressed(DengKeys->toggleDebugBar)) showDebugBar = !showDebugBar;
+	
+	if(showDebugTools) DebugTools(admin);
+	if(showDebugBar) DebugBar(admin);
+>>>>>>> 09bea41e0a0d459eb94992f522024a23f9194bb9
 }
 
 void RenderCanvasSystem::Init() {
 	Canvas* canvas = admin->tempCanvas;
-	
 }
 
 void RenderCanvasSystem::Update() {
+	WinHovFlag = 0;
 	Canvas* canvas = admin->tempCanvas;
 	DrawUI();
+	deshi::iterateDirectory(deshi::getDataPath());
+	if (WinHovFlag) admin->IMGUI_MOUSE_CAPTURE = true;
+	else            admin->IMGUI_MOUSE_CAPTURE = false;
 }
 

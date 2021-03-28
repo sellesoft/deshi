@@ -11,6 +11,7 @@ void glfwError(int id, const char* description){
 	std::cout << description << std::endl;
 }
 
+//thanks: https://github.com/OneLoneCoder/olcPixelGameEngine/pull/181
 void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode displayMode){
 	glfwSetErrorCallback(&glfwError);
 	if (!glfwInit()){ return; }

@@ -9,9 +9,8 @@ Camera::Camera(EntityAdmin* a) : Component(a) {
 	fieldOfView = 90.f;
 	
 	UsePerspectiveProjection(fieldOfView, admin->window->width, admin->window->height, nearZ, farZ);
-
+	
 	name = "Camera";
-
 	layer = NONE;
 }
 
@@ -20,8 +19,9 @@ Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ) : Component(a)
 	this->farZ = farZ;
 	this->fieldOfView = fov;
 	
+	UsePerspectiveProjection(fieldOfView, admin->window->width, admin->window->height, nearZ, farZ);
+	
 	name = "Camera";
-
 	layer = NONE;
 }
 
