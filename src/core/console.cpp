@@ -270,8 +270,8 @@ void Console::DrawConsole() {
 
 	//capture mouse if hovering over this window
 	//TODO(sushi, InCon) this is working for some reason pls fix it 
-	if (IsWindowHovered()) admin->canvas->ConsoleHovFlag = true; 
-	else admin->canvas->ConsoleHovFlag = false; 
+	//if (IsWindowHovered()) admin->canvas->ConsoleHovFlag = true; 
+	//else admin->canvas->ConsoleHovFlag = false; 
 
 	bool reclaim_focus = false;
 
@@ -752,7 +752,8 @@ else {
 	commands["load_obj"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 		if (args.size() > 0) {
-			Mesh mesh; std::cmatch m;
+			Mesh mesh;
+			std::cmatch m;
 			Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
 
 			//check for optional params after the first arg
@@ -778,18 +779,20 @@ else {
 			mesh = Mesh::CreateMeshFromOBJ(args[0], name,
 				Matrix4::TransformationMatrix(position, rotation, scale));
 
+			//Need to make this so that MeshComp has a mesh that isn't deleted 
+			Mesh* mes = new Mesh(mesh);
 
-			// :/
 			Entity* e = admin->world->CreateEntity(admin);
 			e->name = name;
-			MeshComp* mc = new MeshComp(&mesh);
+			e->admin = admin;
+			MeshComp* mc = new MeshComp(mes);
 			Transform* t = new Transform();
 			Physics* p = new Physics(Vector3(0,0,0), Vector3(0,0,0));
 			AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 			admin->world->AddComponentsToEntity(admin, e, { mc, p, s, t });
 			t->ConnectSend(mc); mc->ConnectSend(t);
 
-			u32 id = admin->renderer->LoadMesh(&mesh);
+			u32 id = admin->renderer->LoadMesh(mes);
 			Model mod;
 			mod.mesh = mesh;
 			admin->scene->models.push_back(mod);

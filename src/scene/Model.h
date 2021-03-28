@@ -71,7 +71,7 @@ struct Batch {
 	u32 indexCount   = 0;
 	u32 textureCount = 0;
 	std::vector<Vertex>  vertexArray;
-	std::vector<u32>  indexArray;
+	std::vector<u32>     indexArray;
 	std::vector<Texture> textureArray;
 	
 	Shader      shader;

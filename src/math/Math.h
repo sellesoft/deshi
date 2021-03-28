@@ -232,7 +232,6 @@ inline Matrix4 Matrix4::RotationMatrix(Vector3 rotation) {
 				   0,   0,   0,   1);
 }
 
-//
 inline Matrix4 Matrix4::AxisAngleRotationMatrix(float angle, Vector3 axis) {
 	angle = RADIANS(angle); axis.normalize();
 	float c = cosf(angle); float s = sinf(angle); 
@@ -240,6 +239,8 @@ inline Matrix4 Matrix4::AxisAngleRotationMatrix(float angle, Vector3 axis) {
 	
 	//TODO(delle,Ma) finish axis angle rotation matrix
 	ASSERT(false, "not implemented yet");
+
+
 	Matrix4 temp2(0.f);
 	return temp2;
 }

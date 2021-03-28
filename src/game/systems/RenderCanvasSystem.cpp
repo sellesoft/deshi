@@ -44,7 +44,6 @@ void MenuBar(EntityAdmin* admin) {
 	ImGui::PushStyleColor(ImGuiCol_PopupBg,   ColToVec4(Color(20, 20, 20, 255)));
 	ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ColToVec4(Color(20, 20, 20, 255)));
 
-
 	if(BeginMainMenuBar()) {
 		menubarheight = GetWindowHeight();
 		if(BeginMenu("File")) {

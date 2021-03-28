@@ -1,9 +1,13 @@
-#include "Controller.h"
 #include "Camera.h"
+#include "MeshComp.h"
+#include "Controller.h"
 #include "../Keybinds.h"
-#include "../../EntityAdmin.h"
 #include "../../core.h"
+#include "../../EntityAdmin.h"
 #include "../../math/Math.h"
+#include "../../scene/Scene.h"
+#include "../../geometry/Edge.h"
+#include "../../geometry/Triangle.h"
 
 Controller::Controller(EntityAdmin* a, MovementMode m) : Component(a), mode(m) {
 	//not sure where i want this yet
@@ -120,17 +124,56 @@ void HandleMouseInputs(EntityAdmin* admin) {
 	
 	//mouse left click pressed
 	if (input->MousePressed(MouseButton::MB_LEFT)) {
-		bool ui_clicked = false;
-		//check if mouse is over an imgui menu
-
-	
-
-
 		
-		//if the click wasnt on a UI element, trigger select_entity command
-		//admin->ExecCommand("select_entity"); //TODO(delle,i) re-enable clicking entities
-		
-		//set click pos to mouse pos
+		if (!admin->IMGUI_MOUSE_CAPTURE) {
+
+			Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
+											  admin->mainCamera->viewMatrix, admin->window->dimensions);
+			pos *= Math::WorldToLocal(admin->mainCamera->position);
+			pos.normalize();
+			pos *= 1000;
+			pos *= Math::LocalToWorld(admin->mainCamera->position);
+
+			//draw ray if debugging
+			RenderedEdge3D* ray = new RenderedEdge3D(pos, admin->mainCamera->position);
+			//ray->e = (Entity*)1; // to make it not delete every frame
+			//admin->currentScene->lines.push_back(ray);
+
+			bool objectsel = false;
+			for (auto ep : admin->entities) {
+				Entity* e = ep.second;
+				Mesh* m = e->GetComponent<MeshComp>()->m;
+				for (auto b : m->batchArray) {
+					for (int i = 0; i < b.indexArray.size(); i += 3) {
+						Triangle t = Triangle(
+							b.vertexArray[b.indexArray[i]].pos,
+							b.vertexArray[b.indexArray[i + 1]].pos,
+							b.vertexArray[b.indexArray[i + 2]].pos, 
+							Vector3(
+								m->transform(3, 0),
+								m->transform(3, 1),
+								m->transform(3, 2))
+						);
+
+						auto ve = Vector3(
+							m->transform(3, 0),
+							m->transform(3, 1),
+							m->transform(3, 2));
+
+						if (t.line_intersect(ray)) {
+							admin->input->selectedEntity = e;
+							objectsel = true;
+							goto endloop;
+						}
+					}
+				}
+			}
+		endloop:
+			if (!objectsel) {
+				admin->input->selectedEntity = nullptr;
+			}
+
+		}
 	}
 	//mouse left click held
 	else if (input->MouseDown(MouseButton::MB_LEFT)) {
