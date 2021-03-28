@@ -126,7 +126,7 @@ struct DeshiEngine {
 		entityAdmin.Init(&input, &window, &time, renderer, &console, renderer->scene);
 		
 		//start main loop
-		while (!glfwWindowShouldClose(window.window)) {
+		while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
 			glfwPollEvents();
 			Update();
 		}

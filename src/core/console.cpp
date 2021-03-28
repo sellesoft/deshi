@@ -388,7 +388,7 @@ void Console::DrawConsole() {
 			s.erase(t, s.size() - 1);
 		}
 
-		if (s.size() != 0) {
+		if (s.size() != 0 ) {
 			AddLog(ExecCommand(s, args)); //attempt to execute command and print result
 		}
 
@@ -1123,6 +1123,11 @@ void Console::AddSelectedEntityCommands() {
 }
 
 void Console::AddWindowCommands() {
+	NEWCOMMAND("quit", "exits the application", {
+		admin->window->Close();
+		return("q lol");
+		});
+
 	commands["display_mode"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 		Window* w = admin->window;

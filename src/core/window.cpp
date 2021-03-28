@@ -41,6 +41,7 @@ void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode
 	this->rawInput = false;
 	UpdateRawInput(true); //sets raw input to true if supported
 	this->resizable = true;
+	this->closeWindow = false;
 	
 	UpdateDisplayMode(displayMode);
 	
@@ -259,4 +260,8 @@ void Window::UpdateRawInput(bool rawInput){
 void Window::UpdateResizable(bool resizable){
 	this->resizable = resizable;
 	glfwSetWindowAttrib(this->window, GLFW_RESIZABLE, resizable);
+}
+
+void Window::Close() {
+	closeWindow = true;
 }

@@ -35,6 +35,7 @@ struct Window{
 	bool minimized;
 	bool rawInput;
 	bool resizable;
+	bool closeWindow;
 	
 	Vector2 dimensions;
 	
@@ -53,6 +54,8 @@ struct Window{
 	void UpdateRawInput(bool rawInput);
 	
 	void UpdateResizable(bool resizable);
+
+	void Close();
 };
 
 #endif //DESHI_WINDOW_H
