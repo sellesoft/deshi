@@ -11,28 +11,28 @@ struct Keybinds : public Component {
 	Keybinds(EntityAdmin* a);
 
 	//flying movement
-	Key::Key movementFlyingUp;
-	Key::Key movementFlyingDown;
-	Key::Key movementFlyingForward;
-	Key::Key movementFlyingBack;
-	Key::Key movementFlyingRight;
-	Key::Key movementFlyingLeft;
+	Key::Key movementFlyingUp = Key::E;
+	Key::Key movementFlyingDown = Key::Q;
+	Key::Key movementFlyingForward = Key::W;
+	Key::Key movementFlyingBack = Key::S;
+	Key::Key movementFlyingRight = Key::D;
+	Key::Key movementFlyingLeft = Key::A;
 	
 	//camera rotation
-	Key::Key cameraRotateUp;
-	Key::Key cameraRotateDown;
-	Key::Key cameraRotateRight;
-	Key::Key cameraRotateLeft;
+	Key::Key cameraRotateUp = Key::UP;
+	Key::Key cameraRotateDown = Key::DOWN;
+	Key::Key cameraRotateRight = Key::RIGHT;
+	Key::Key cameraRotateLeft = Key::LEFT;
 	
 	//render debug
-	Key::Key debugRenderEdgesNumbers;
-	Key::Key debugRenderWireframe;
-	Key::Key debugRenderDisplayAxis;
+	Key::Key debugRenderEdgesNumbers = Key::COMMA;
+	Key::Key debugRenderWireframe = Key::PERIOD;
+	Key::Key debugRenderDisplayAxis = Key::SLASH;
 
 	//debug menu stuff
-	Key::Key toggleConsole;
-	Key::Key toggleDebugMenu;
-	Key::Key toggleDebugBar;
+	Key::Key toggleConsole = Key::TILDE;
+	Key::Key toggleDebugMenu = Key::LCTRL | Key::TILDE;
+	Key::Key toggleDebugBar = Key::LSHIFT | Key::TILDE;
 
 private: //so VS doesnt show this in intellisense
 	//mapping enum names to strings
@@ -42,6 +42,9 @@ private: //so VS doesnt show this in intellisense
 	
 	
 	//Keybinds(file ...) {} //TODO(delle,i) look into saving/loading keybinds with a file
+	 
+	//Reads through a keybinds file and fills keybind struct with provided keys
+	void ReloadKeybinds(std::fstream& kf);
 	
 };
 

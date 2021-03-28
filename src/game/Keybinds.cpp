@@ -6,6 +6,28 @@
 
 #include <fstream>
 
+std::string default_keybinds = "> Movement Keys\n"
+"movementFlyingUp = E\n"
+"movementFlyingDown = Q\n"
+"movementFlyingForward = W\n"
+"movementFlyingBack = S\n"
+"movementFlyingRight = D\n"
+"movementFlyingLeft = A\n"
+"> Camera Keys\n"
+"cameraRotateUp = UP\n"
+"cameraRotateDown = DOWN\n"
+"cameraRotateRight = RIGHT\n"
+"cameraRotateLeft = LEFT\n"
+"> Debug Keys\n"
+"debugRenderWireframe = COMMA\n"
+"debugRenderEdgesNumbers = PERIOD\n"
+"debugRenderDisplayAxis = SLASH\n"
+"> Debug Menu Keys\n"
+"toggleConsole = TILDE\n"
+"toggleDebugMenu = LCTRL + TILDE\n"
+"toggleDebugBar = LSHIFT + TILDE";
+
+
 Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 	
 	//set up key map
@@ -50,16 +72,30 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 	std::fstream kf;
 	kf.open(deshi::getConfigsPath() + "keybinds.txt", std::fstream::in);
 	
-	int iter = 0;
+	if (kf.is_open()) {
+		ReloadKeybinds(kf);
+		kf.close();
+
+	}
+	else {
+		kf.close();
+		LOG("No keybinds file found, generating a new one in config folder.");
+		deshi::writeFile(deshi::getConfigsPath() + "keybinds.txt", default_keybinds.c_str(), default_keybinds.size());
+		kf.open(deshi::getConfigsPath() + "keybinds.txt", std::fstream::in);
+		ReloadKeybinds(kf);
+		kf.close();
+	}
 	
+}
+void Keybinds::ReloadKeybinds(std::fstream& kf) {
 	//TODO( sushi,In) implement keybind name mapping and shtuff
-	
-	//there is prolly a better way to do this but hehe
-	//NOTE IF YOU ARE GOING TO IMPLEMENT RIGHT/LEFT MOD DIFFERENCE AND ITS NOT WORKING MAKE
-	//SURE YOU CHANGE THE ABOVE MAP TO WORK WITH IT !!!
+
+		//there is prolly a better way to do this but hehe
+		//NOTE IF YOU ARE GOING TO IMPLEMENT RIGHT/LEFT MOD DIFFERENCE AND ITS NOT WORKING MAKE
+		//SURE YOU CHANGE THE ABOVE MAP TO WORK WITH IT !!!
 	int line = 0;
 	while (!kf.eof()) {
-		char* c = (char*)malloc(255); 
+		char* c = (char*)malloc(255);
 		kf.getline(c, 255);
 
 		std::string s(c);
@@ -74,7 +110,7 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		std::regex r;
 
 		bool modif = false;
-		
+
 		//if string contains a + it must have a modifier
 		if (s.find("+") != std::string::npos) {
 			r = std::regex("([A-Za-z]+) += +(LCTRL|LSHIFT|LALT|RCTRL|RSHIFT|RALT) +\\+ +(.+)");
@@ -86,7 +122,7 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 
 		std::regex_match(s, m, r);
 
-		
+
 
 		if (m.size() == 1) {
 			ERROR_LOC(m[1], "\nRegex did not find any matches for this string in keybinds.txt at line ", line);
@@ -98,7 +134,7 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 				try {
 					keys.at(m[1]) = stk.at(m[3]) | stk.at(m[2]);
 				}
-				catch (std::out_of_range oor){
+				catch (std::out_of_range oor) {
 					ERROR_LOC("Either the modifier \"", m[2], "\", the keybind name \"", m[3], "\", or the key name \"", m[1], "\" was not found in their respective maps. \nAt line ", line, " in keybinds.txt");
 				}
 			}
@@ -106,7 +142,7 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 				try {
 					keys.at(m[1]) = stk.at(m[2]);
 				}
-				catch (std::out_of_range oor){
+				catch (std::out_of_range oor) {
 					ERROR_LOC("Either the keybind \"", m[1], "\" or the key \"", m[2], "\" was not found in their respective maps. \nAt line ", line, " in keybinds.txt");
 
 				}
@@ -115,10 +151,13 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		catch (std::out_of_range oor) {
 			ERROR_LOC("Key \"", m[1], "\" not found in keymap. \nAt line ", line, " in keybinds.txt");
 		}
-		
+
 		line++;
 		free(c);
 	}
-	
-	
+
+
+
 }
+
+	

@@ -14,7 +14,7 @@ cameraRotateLeft = LEFT
 debugRenderWireframe = COMMA
 debugRenderEdgesNumbers = PERIOD
 debugRenderDisplayAxis = SLASH
->Debug Menu Keys
+> Debug Menu Keys
 toggleConsole = TILDE
 toggleDebugMenu = LCTRL + TILDE
 toggleDebugBar = LSHIFT + TILDE
