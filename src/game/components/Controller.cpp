@@ -121,18 +121,11 @@ void HandleMouseInputs(EntityAdmin* admin) {
 	//mouse left click pressed
 	if (input->MousePressed(MouseButton::MB_LEFT)) {
 		bool ui_clicked = false;
-		//check if mouse clicked on a UI element
-		//if(!canvas->hideAll) {
-		//	for(UIContainer* con : canvas->containers) {
-		//		for(UI* ui : con->container) {
-		//			if(ui->Clicked(input->mousePos)) {
-		//				ui_clicked = true;
-		//				goto stop;
-		//			}//TODO(,delle) re-add menu dragging
-		//		}
-		//	}
-		//}
-		//stop: are we even using this anymore?
+		//check if mouse is over an imgui menu
+
+	
+
+
 		
 		//if the click wasnt on a UI element, trigger select_entity command
 		//admin->ExecCommand("select_entity"); //TODO(delle,i) re-enable clicking entities

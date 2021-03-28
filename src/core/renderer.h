@@ -28,6 +28,7 @@ struct Time;
 struct Mesh;
 struct Texture;
 struct Scene;
+struct Console;
 struct Matrix4;
 struct Triangle;
 struct Vector3;
@@ -69,12 +70,13 @@ struct RenderStats{
 
 struct Renderer{
 	Time*          time;
+	Console*       console;
 	GLFWwindow*    window;
 	RenderSettings settings; //TODO(delle,Re) load render settings from a file
 	RenderStats    stats{};
 	Scene* scene;
 	
-	virtual void Init(Window* window, deshiImGui* imgui) = 0;
+	virtual void Init(Window* window, deshiImGui* imgui, Console* console) = 0;
 	virtual void Render() = 0;
 	virtual void Present() = 0;
 	virtual void Cleanup() = 0;
@@ -372,7 +374,7 @@ struct Renderer_Vulkan : public Renderer{
 	//////////////////////////
 	
 	//runs the vulkan functions necessary to start rendering
-	void Init(Window* window, deshiImGui* imgui) override;
+	void Init(Window* window, deshiImGui* imgui, Console* console) override;
 	//acquires the next image from vulkan, resets the command buffers, 
 	//updates uploaded information, begins the command buffers, begins the render pass, 
 	//runs the different shader draw methods, ends the render pass

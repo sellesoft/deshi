@@ -27,6 +27,26 @@
 #define DASSERT(condition, message)     if(!(condition) && !admin->paused){ ERROR_LOC("Assertion '" #condition "' failed: \n", message); admin->paused = true;}
 #define DASSERTWARN(condition, message) if(!(condition) && !admin->paused) LOG_LOC("Assertion '" #condition "' failed: \n", message)
 
+#ifndef NDEBUG
+#   define ASSERTWARN(condition, message) \
+do { \
+if (! (condition)) { \
+std::string file = __FILENAME__; \
+std::cout << "Warning '" #condition "' failed in " + file + " line " + std::to_string(__LINE__) + ": \n" #message << std::endl; \
+} \
+} while (false)
+#define ASSERT(condition, message) \
+do { \
+if (! (condition)) { \
+std::string file = __FILENAME__; \
+std::cout << "Assertion '" #condition "' failed in " + file + " line " + std::to_string(__LINE__) + ": \n" #message << std::endl;  \
+std::terminate(); \
+} \
+} while (false)
+#else
+#   define ASSERT(condition, message) condition;
+#endif
+
 #define TOSTRING(...) Debug::ToString(__VA_ARGS__)
 
 //stringize certain macros

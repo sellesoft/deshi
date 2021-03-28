@@ -104,7 +104,7 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 			}
 			else {
 				try {
-					keys.at(m[1]) = stk.at(m[2]) | INPUT_NONE_HELD;
+					keys.at(m[1]) = stk.at(m[2]);
 				}
 				catch (std::out_of_range oor){
 					ERROR_LOC("Either the keybind \"", m[1], "\" or the key \"", m[2], "\" was not found in their respective maps. \nAt line ", line, " in keybinds.txt");

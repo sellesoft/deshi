@@ -33,7 +33,7 @@ implement string returns, better descriptions, and parameter parsing on every co
 replace/remove external dependencies/includes were possible (glm, boost, sascha, tinyobj)
 (maybe) make TODOs script in misc to locally generate TODOs.txt rather than TODOP bot
 cleanup compile warnings
-add Event system
+investigate program closing slowly
 
 Render TODOs
 ------------
@@ -110,14 +110,17 @@ struct DeshiEngine {
 		//enforce deshi file system
 		deshi::enforceDirectories();
 		
+		//start console
+		
+
 		LoadConfig();
 		time.Init(300);
 		window.Init(&input, 1280, 720); //inits input as well
-		renderer->time = &time;
-		renderer->Init(&window, imgui); //inits imgui as well
-		
-		//start console
 		console.Init(&time, &input, &window, &entityAdmin);
+		renderer->time = &time;
+		renderer->Init(&window, imgui, &console); //inits imgui as well
+		
+		
 		
 		//start entity admin
 		entityAdmin.Init(&input, &window, &time, renderer, &console, renderer->scene);

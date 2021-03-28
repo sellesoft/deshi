@@ -91,10 +91,11 @@ namespace deshi{
 	//probably return something other than a vector of strings but thts how it is for now
 	static std::vector<std::string> iterateDirectory(const std::string& filepath) {
 		using namespace std::filesystem;
+		std::vector<std::string> files;
 		for (auto& p : directory_iterator(filepath)) {
-			PRINT(p.path());
+			files.push_back(p.path().stem().string());
 		}
-		return std::vector<std::string>();
+		return files;
 	}
 	
 	//creates base deshi directories if they dont already exist

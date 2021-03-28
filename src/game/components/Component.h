@@ -25,9 +25,6 @@ enum CompLayer {
 struct Component : public Receiver {
 	Entity* entity = nullptr; //reference to owning entity
 	EntityAdmin* admin = nullptr; 
-	//virtual void Create(resourceHandle) = 0;
-	
-	Sender* send = nullptr;
 
 	const char* name;
 

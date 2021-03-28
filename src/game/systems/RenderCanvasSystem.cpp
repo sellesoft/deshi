@@ -5,6 +5,7 @@
 #include "../../scene/Scene.h"
 #include "../../EntityAdmin.h"
 #include "../../game/Keybinds.h"
+#include "../../game/systems/WorldSystem.h"
 
 //for time
 #include <iomanip>
@@ -33,202 +34,32 @@ void InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate = false) {
 
 //// major ui elements ////
 
-void MakeMenuBar(EntityAdmin* admin) {
+void MenuBar(EntityAdmin* admin) {
 	using namespace ImGui;
-	static bool show_app_metrics = false;
-	static bool show_app_about = false;
-	static bool show_app_style_editor = false;
-	if (show_app_metrics)       { ImGui::ShowMetricsWindow(&show_app_metrics); }
-	if (show_app_about)         { ImGui::ShowAboutWindow(&show_app_about); }
-	if (show_app_style_editor)	{ ImGui::Begin("Dear ImGui Style Editor", &show_app_style_editor); ImGui::ShowStyleEditor(); ImGui::End(); }
-	
-	if(BeginMenuBar()) {
-		if(BeginMenu("Debug")) {
-			static bool global_debug = true;
-			if(MenuItem("global debug", 0, &global_debug)) { global_debug = !global_debug; admin->ExecCommand("debug_global"); }
-			static bool print_commands = true;
-			if(MenuItem("print commands", 0, &print_commands)) { print_commands = !print_commands; admin->ExecCommand("debug_command_exec"); }
-			static bool pause_engine = false;
-			if(MenuItem("pause engine", 0, &pause_engine)) { pause_engine = !pause_engine; admin->ExecCommand("time_pause_engine"); }
-			if(MenuItem("next frame")) { admin->ExecCommand("time_next_frame"); }
+
+	if(BeginMainMenuBar()) {
+		if(BeginMenu("File")) {
+			if (MenuItem("placeholder")) {
+
+			}
+			ImGui::EndMenu();
+		}
+		if(BeginMenu("Edit")) {
+			if (MenuItem("placeholder")) {
+
+			}
 			ImGui::EndMenu();
 		}
 		if(BeginMenu("Spawn")) {
-			if(MenuItem("spawn box")) { admin->ExecCommand("spawn_box"); }
-			if(BeginMenu("spawn complex")) {
-				if(MenuItem("bmonkey")) { admin->ExecCommand("spawn_complex"); }
-				if(MenuItem("whale_ship")) { admin->ExecCommand("spawn_complex1"); }
-				if(MenuItem("24k_Triangles")) { admin->ExecCommand("spawn_complex2"); }
-				ImGui::EndMenu();
+			std::vector<std::string> files = deshi::iterateDirectory(deshi::getModelsPath());
+			for (int i = 0; i < files.size(); i++) {
+				if(MenuItem(files[i].c_str())) { admin->console->ExecCommand("load_obj", files[i] + ".obj"); }
 			}
-			ImGui::EndMenu();
-		}
-		if (BeginMenu("Imgui")){
-			MenuItem("Metrics/Debugger", NULL, &show_app_metrics);
-			MenuItem("Style Editor", NULL, &show_app_style_editor);
-			ImGui::MenuItem("About Dear ImGui", NULL, &show_app_about);
-			ImGui::EndMenu();
-		}
-		EndMenuBar();
-	}
-}
-
-void MakeGeneralHeader(EntityAdmin* admin) {
-	using namespace ImGui;
-	Camera* camera = admin->mainCamera;
-	if(CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen)) {
-		if(TreeNodeEx("Camera", ImGuiTreeNodeFlags_NoTreePushOnOpen)) {
-			Text("Address: %#08x", camera); SameLine(); if(ImGui::Button("Copy")) { ImGui::LogToClipboard(); ImGui::LogText("%#08x", camera); ImGui::LogFinish(); }
-			Text("Position"); SameLine(); InputVector3("##camPos", &camera->position);
-			Text("Rotation"); SameLine(); InputVector3("##camRot", &camera->rotation);
-			if(BeginTable("split2", 3)) {
-				TableNextColumn(); Text("FOV"); SameLine(); InputFloat("##camFOV", &camera->fieldOfView, 0, 0, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue);
-				TableNextColumn(); Text("NearZ"); SameLine(); InputFloat("##camNearZ", &camera->nearZ, 0, 0, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue);
-				TableNextColumn(); Text("FarZ"); SameLine(); InputFloat("##camFarZ", &camera->farZ, 0, 0, "%.2f", ImGuiInputTextFlags_EnterReturnsTrue);
-				EndTable();
-			}
-			Separator();
-		}
-	}
-}
-
-void MakeEntitiesHeader(EntityAdmin* admin) {
-	using namespace ImGui;
-	if(CollapsingHeader("Entities")) {
-		if(admin->input->selectedEntity) {
-			Text("Selected Entity: %d", admin->input->selectedEntity->id);
-			if (ImGui::Button("play sound")) {
-				admin->ExecCommand("selent_play_sound");
-			}
-		} else {
-			Text("Selected Entity: None");
+			EndMenu();
 		}
 		
-		if(BeginTable("split3", 2, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable)){
-			TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
-			TableSetupColumn("Components");
-			TableHeadersRow();
-			int counter = 0;
-			for(auto& entity : admin->entities) {
-				counter++;
-				TableNextRow(); TableNextColumn();
-				if(ImGui::Button(std::to_string(entity.first).c_str())) {
-					admin->input->selectedEntity = entity.second;
-				}
-				
-				TableNextColumn();
-				Text("Address: %#08x", entity.second);
-				if(TreeNodeEx((std::string("comps") + std::to_string(entity.first)).c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen, "Components")) {
-					for(Component* comp : entity.second->components) {
-						
-					}
-					Separator();
-				}
-			}
-			EndTable();
-		}
+		EndMainMenuBar();
 	}
-}
-
-//void MakeRenderHeader(EntityAdmin* admin) {
-//	using namespace ImGui;
-//	Scene* scene = admin->;
-//	if (CollapsingHeader("Render options")){
-//		if (BeginTable("split", 3)) {
-//			TableNextColumn(); Checkbox("wireframe", &scene->RENDER_WIREFRAME);
-//			TableNextColumn(); Checkbox("textures", &scene->RENDER_TEXTURES);
-//			TableNextColumn(); Checkbox("edge numbers", &scene->RENDER_EDGE_NUMBERS);
-//			TableNextColumn(); Checkbox("local axis", &scene->RENDER_LOCAL_AXIS);
-//			TableNextColumn(); Checkbox("global axis", &scene->RENDER_GLOBAL_AXIS);
-//			TableNextColumn(); Checkbox("transforms", &scene->RENDER_TRANSFORMS);
-//			TableNextColumn(); Checkbox("physics vectors", &scene->RENDER_PHYSICS);
-//			TableNextColumn(); Checkbox("screen aabb", &scene->RENDER_SCREEN_BOUNDING_BOX);
-//			TableNextColumn(); Checkbox("mesh vertices", &scene->RENDER_MESH_VERTICES);
-//			TableNextColumn(); Checkbox("mesh normals", &scene->RENDER_MESH_NORMALS);
-//			TableNextColumn(); Checkbox("grid", &scene->RENDER_GRID);
-//			TableNextColumn(); Checkbox("light rays", &scene->RENDER_LIGHT_RAYS);
-//			EndTable();
-//		}
-//	}
-//}
-
-void MakeBufferlogHeader(EntityAdmin* admin) {
-	using namespace ImGui;
-	if(CollapsingHeader("Bufferlog")) {
-		for(auto str : g_cBuffer.container) {
-			if(str.has_value()) {
-				Text(str.get().c_str());
-			}
-		}
-	}
-}
-
-//this actually creates the debug tools panel
-void MakeP3DPGEDebugTools(EntityAdmin* admin) {
-	using namespace ImGui;
-	ImGui::Begin("Deshi Debug Tools", 0, ImGuiWindowFlags_MenuBar);
-	
-	MakeMenuBar(admin);
-	MakeGeneralHeader(admin);
-	MakeEntitiesHeader(admin);
-	//MakeRenderHeader(admin);
-	MakeBufferlogHeader(admin);
-	
-	ImGui::End();
-}
-
-void DrawFrameGraph(EntityAdmin* admin) { 
-	ImGui::Begin("FPSGraph", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize);
-	
-	static int prevstoresize = 100;
-	static int storesize = 100;
-	static int fupdate = 20;
-	
-	ImGui::SliderInt("amount to store", &storesize, 10, 200);
-	ImGui::SliderInt("frames to update", &fupdate, 1, 40);
-	
-	static std::vector<float> realvalues(storesize);
-	static std::vector<float> printvalues(storesize);
-	static int max_val = 0;
-	static int min_val = INT_MAX;
-	
-	if (prevstoresize != storesize) {
-		//keeps the data in place when resizing
-		std::reverse(realvalues.begin(), realvalues.end());    realvalues.resize(storesize);  std::reverse(realvalues.begin(), realvalues.end());
-		std::reverse(printvalues.begin(), printvalues.end());  printvalues.resize(storesize); std::reverse(printvalues.begin(), printvalues.end());
-		prevstoresize = storesize;
-	}
-	
-	static int frame_count = 0;
-	
-	std::rotate(realvalues.begin(), realvalues.begin() + 1, realvalues.end()); //rotate vector back one space
-	
-	int FPS = std::floor(1 / admin->time->deltaTime);
-	float avg = Math::average(realvalues.begin(), realvalues.end(), storesize);
-	
-	if (frame_count < fupdate) {
-		realvalues[realvalues.size() - 1] = FPS; //append frame rate
-		frame_count++;
-	}
-	else {
-		
-		//dynamic max/min_val setting
-		if (avg > max_val || avg < max_val - 15) max_val = avg; 
-		if (avg < min_val || avg > min_val + 15) min_val = avg;
-		
-		std::rotate(printvalues.begin(), printvalues.begin() + 1, printvalues.end());
-		
-		printvalues[printvalues.size() - 1] = std::floorl(avg);
-		
-		frame_count = 0;
-	}
-	
-	ImGui::Text(TOSTRING(avg, " ", max_val, " ", min_val).c_str());
-	
-	ImGui::SetNextItemWidth(ImGui::GetWindowWidth());
-	ImGui::PlotLines("", &printvalues[0], printvalues.size(), 0, 0, min_val, max_val, ImVec2(300, 200));
-	
-	ImGui::End();
 }
 
 void DebugTools(EntityAdmin* admin) {
@@ -244,66 +75,65 @@ void DebugTools(EntityAdmin* admin) {
 	PushStyleColor(ImGuiCol_WindowBg,         ColToVec4(Color(20, 20, 20, 255)));
 	PushStyleColor(ImGuiCol_TableBorderLight, ColToVec4(Color(45, 45, 45, 255)));
 	PushStyleColor(ImGuiCol_TableHeaderBg,    ColToVec4(Color(10, 10, 10, 255)));
+	PushStyleColor(ImGuiCol_Button, ColToVec4(Color(30, 30, 30)));
 
-	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 
 	//capture mouse if hovering over this window
 	if (IsWindowHovered()) WinHovFlag = true; 
 	
-	if (CollapsingHeader("Entities")) {
-		if (admin->input->selectedEntity) {
-			Text("Selected Entity: %d", admin->input->selectedEntity->id);
-			if (ImGui::Button("play sound")) {
-				admin->ExecCommand("selent_play_sound");
+
+	if (admin->input->selectedEntity) {
+		Text("Selected Entity: %d", admin->input->selectedEntity->id);
+		if (ImGui::Button("play sound")) {
+			admin->ExecCommand("selent_play_sound");
+		}
+	}
+	else {
+		Text("Selected Entity: None");
+	}
+
+	if (BeginTable("split3", 3, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable)) {
+		TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
+		TableSetupColumn("Name");
+		TableSetupColumn("Components");
+		TableHeadersRow();
+		int counter = 0;
+		for (auto& entity : admin->entities) {
+			counter++;
+			TableNextRow(); TableNextColumn();
+			if (ImGui::Button(std::to_string(entity.first).c_str())) {
+				admin->input->selectedEntity = entity.second;
 			}
-		}
-		else {
-			Text("Selected Entity: None");
-		}
 
-		if (BeginTable("split3", 3, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable)) {
-			TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
-			TableSetupColumn("Name");
-			TableSetupColumn("Components");
-			TableHeadersRow();
-			int counter = 0;
-			for (auto& entity : admin->entities) {
-				counter++;
-				TableNextRow(); TableNextColumn();
-				if (ImGui::Button(std::to_string(entity.first).c_str())) {
-					admin->input->selectedEntity = entity.second;
-				}
+			TableNextColumn();
+			Text(entity.second->name.c_str());
 
-				TableNextColumn();
-				Text(entity.second->name.c_str());
-
-				TableNextColumn();
-				Text("Address: %#08x", entity.second);
-				if (TreeNodeEx((std::string("comps") + std::to_string(entity.first)).c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen, "Components")) {
-					for (Component* comp : entity.second->components) {
-						Text(comp->name);
+			TableNextColumn();
+			//Text("Address: %#08x", entity.second);
+			if (TreeNodeEx((std::string("comps") + std::to_string(entity.first)).c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen, TOSTRING(entity.second->components.size()).c_str())) {
+				for (Component* comp : entity.second->components) {
+					Text(comp->name);
+					SameLine();
+					if (Button("Del")) {
+						admin->world->RemoveAComponentFromEntity(admin, entity.second, comp);
 					}
-					Separator();
 				}
+				Separator();
 			}
-			EndTable();
 		}
+		EndTable();
 	}
+	
 
-	if(BeginMenu("Spawn")) {
-		if(MenuItem("spawn box")) { admin->ExecCommand("spawn_box"); }
-		if(BeginMenu("spawn complex")) {
-			if(MenuItem("bmonkey")) { admin->ExecCommand("spawn_complex"); }
-			if(MenuItem("whale_ship")) { admin->ExecCommand("spawn_complex1"); }
-			if(MenuItem("24k_Triangles")) { admin->ExecCommand("spawn_complex2"); }
-			ImGui::EndMenu();
-		}
-		ImGui::EndMenu();
-	}
+	Separator();
+
+	
 
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
@@ -571,9 +401,11 @@ void DebugBar(EntityAdmin* admin) {
 void RenderCanvasSystem::DrawUI(void) {
 	if (DengInput->KeyPressed(DengKeys->toggleDebugMenu)) showDebugTools = !showDebugTools;
 	if (DengInput->KeyPressed(DengKeys->toggleDebugBar)) showDebugBar = !showDebugBar;
+	//if (DengInput->KeyPressed(DengKeys->toggleMenuBar)) showMenuBar = !showMenuBar;
 	
-	if(showDebugTools) DebugTools(admin);
-	if(showDebugBar) DebugBar(admin);
+	if (showDebugBar) DebugBar(admin);
+	if (showDebugTools) DebugTools(admin);
+	if (showMenuBar) MenuBar(admin);
 }
 
 void RenderCanvasSystem::Init() {
@@ -584,8 +416,7 @@ void RenderCanvasSystem::Update() {
 	WinHovFlag = 0;
 	Canvas* canvas = admin->tempCanvas;
 	DrawUI();
-	deshi::iterateDirectory(deshi::getDataPath());
-	if (WinHovFlag) admin->IMGUI_MOUSE_CAPTURE = true;
-	else            admin->IMGUI_MOUSE_CAPTURE = false;
+	if (ConsoleHovFlag || WinHovFlag) admin->IMGUI_MOUSE_CAPTURE = true;
+	else                              admin->IMGUI_MOUSE_CAPTURE = false;
 }
 

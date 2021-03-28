@@ -30,6 +30,8 @@
 #include "../scene/Scene.h"
 #include "../EntityAdmin.h"
 
+#include "../game/systems/RenderCanvasSystem.h"
+
 #include <functional>
 
 
@@ -264,17 +266,13 @@ void Console::DrawConsole() {
 	SetNextWindowSize(ImVec2(window->width, window->height / 1.5));
 	SetNextWindowPos(ImVec2(0, 0));
 
-	ImGui::Begin("Console!", 0, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
+	ImGui::Begin("Console!", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
 
+	//capture mouse if hovering over this window
+	//TODO(sushi, InCon) this is working for some reason pls fix it 
+	if (IsWindowHovered()) admin->canvas->ConsoleHovFlag = true; 
+	else admin->canvas->ConsoleHovFlag = false; 
 
-	if (BeginMenuBar()) {
-		if (BeginMenu("Console")) {
-			if (MenuItem("Clear")) { buffer.clear(); }
-			if (MenuItem("Autoscroll", 0, &autoScroll)) { autoScroll = !autoScroll; }
-			ImGui::EndMenu();
-		}
-		EndMenuBar();
-	}
 	bool reclaim_focus = false;
 
 	//display completion table
@@ -401,9 +399,8 @@ void Console::DrawConsole() {
 		scrollToBottom = true; //scroll to bottom when we press enter
 	}
 
-	ImGui::SetItemDefaultFocus();
-	if (reclaim_focus)
-		ImGui::SetKeyboardFocusHere(-1);
+
+	ImGui::SetKeyboardFocusHere(-1);
 
 	reclaim_focus = false;
 
@@ -1302,12 +1299,16 @@ void Console::Init(Time* t, Input* i, Window* w, EntityAdmin* ea) {
 }
 
 void Console::Update() {
-	if (input->KeyPressed(DengKeys->toggleConsole)) {
-		dispcon = !dispcon;
-		if (dispcon) admin->IMGUI_KEY_CAPTURE = false;
-		else admin->IMGUI_KEY_CAPTURE = true;
+	if (input->KeyPressed(DengKeys->toggleConsole)) dispcon = !dispcon;
+		
+	if (dispcon) {
+		DrawConsole();
+		admin->IMGUI_KEY_CAPTURE = true;
 	}
-	if (dispcon) DrawConsole();
+	else {
+		admin->IMGUI_KEY_CAPTURE = false;
+	}
+
 	me = this;
 
 	if (buffersize >= 120000) {

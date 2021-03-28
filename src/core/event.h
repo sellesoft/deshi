@@ -29,7 +29,7 @@ struct Receiver {
     Receiver(Sender* s);
     ~Receiver();
 
-    Sender* sender;
+    Sender* send;
 
     virtual void ReceiveEvent(Event event) = 0;
 };

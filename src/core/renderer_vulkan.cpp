@@ -42,14 +42,24 @@ const bool enableValidationLayers = true;
 #if LOGGING_LEVEL == 0
 #define PRINTVK(level, message) (void)0
 #else
-#define PRINTVK(level, message) if(LOGGING_LEVEL >= level){ PRINT(message); }
+#define PRINTVK(level, ...) if(LOGGING_LEVEL >= level){ LOG(__VA_ARGS__); }
 #endif
+
+//redefine debug's ERROR to work in this file 
+#define LOG(...)   console->PushConsole(TOSTRING("[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR(...) console->PushConsole(TOSTRING("[c:error]", __VA_ARGS__, "[c]"))
+
+Renderer_Vulkan* me = nullptr;
+bool initover = false;
 
 //////////////////////////
 //// render interface ////
 //////////////////////////
 
-void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
+void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui, Console* console) {
+	this->console = console;
+	me = this;
+
 	PRINTVK(1, "\nInitializing Vulkan");
 	this->window = window->window;
 	glfwGetFramebufferSize(window->window, &width, &height);
@@ -97,6 +107,7 @@ void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui) {
 	initialized = true;
 	
 	PRINTVK(1, "Initializing Rendering");
+	initover = true;
 }
 
 void Renderer_Vulkan::Render() {
@@ -265,7 +276,7 @@ void Renderer_Vulkan::TranslateTriangles(std::vector<u32> triangleIDs, Vector3 t
 }
 
 u32 Renderer_Vulkan::LoadMesh(Mesh* m){
-	PRINTVK(3, "    Loading Mesh: " << m->name);
+	PRINTVK(3, "    Loading Mesh: ", m->name);
 	MeshVk mesh{}; mesh.visible = true;
 	mesh.modelMatrix = glm::make_mat4(m->transform.data);
 	mesh.primitives.reserve(m->batchCount);
@@ -380,7 +391,7 @@ void Renderer_Vulkan::UpdateMeshVisibility(u32 meshID, bool visible){
 
 
 u32 Renderer_Vulkan::LoadTexture(Texture texture){
-	PRINTVK(3, "    Loading Texture: " << texture.filename);
+	PRINTVK(3, "    Loading Texture: ", texture.filename);
 	//TODO(delle,OpReVu) optimize checking if a texture was already loaded
 	for(auto& tex : scenevk.textures){ if(strcmp(tex.filename, texture.filename) == 0){ return tex.id; } }
 	
@@ -1284,7 +1295,7 @@ void Renderer_Vulkan::CreatePipelines(){
 	PRINTVK(3, "    Compiling shaders");
 	TIMER_START(t_s);
 	for(auto& s : GetUncompiledShaders()){ CompileShader(s, false); }
-	PRINTVK(3, "    Finished compiling shaders in "<< TIMER_END(t_s) <<"ms");
+	PRINTVK(3, "    Finished compiling shaders in ", TIMER_END(t_s), "ms");
 	
 	//flag that this pipelineCreateInfo will be used as a base
 	pipelineCreateInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
@@ -1346,7 +1357,7 @@ void Renderer_Vulkan::CreatePipelines(){
 	shaderStages[1] = loadShader("lavalamp.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.LAVALAMP), "failed to create lavalamp graphics pipeline");
 	
-	PRINTVK(2, "  Finished creating pipelines in "<< TIMER_END(t_p) <<"ms");
+	PRINTVK(2, "  Finished creating pipelines in ", TIMER_END(t_p), "ms");
 }
 
 void Renderer_Vulkan::BuildCommandBuffers() {
@@ -1924,7 +1935,7 @@ VkPipeline Renderer_Vulkan::GetPipelineFromShader(u32 shader){
 
 
 VkPipelineShaderStageCreateInfo Renderer_Vulkan::loadShader(std::string fileName, VkShaderStageFlagBits stage) {
-	PRINTVK(3, "    Loading shader: " << fileName);
+	PRINTVK(3, "    Loading shader: ", fileName);
 	//setup shader stage create info
 	VkPipelineShaderStageCreateInfo shaderStage{};
 	shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1960,7 +1971,7 @@ VkPipelineShaderStageCreateInfo Renderer_Vulkan::loadShader(std::string fileName
 }
 
 VkPipelineShaderStageCreateInfo Renderer_Vulkan::CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize) {
-	PRINTVK(3, "    Compiling and loading shader: " << filename);
+	PRINTVK(3, "    Compiling and loading shader: ", filename);
 	//check if file exists
 	std::filesystem::path entry(deshi::getShadersPath() + filename);
 	if(std::filesystem::exists(entry)){
@@ -2028,7 +2039,7 @@ void Renderer_Vulkan::CompileAllShaders(bool optimize){
 		
 		if(ext.compare(".spv") == 0) continue; //early out if .spv
 		std::vector<char> code = deshi::readFileBinary(entry.path().string()); //read shader code
-		PRINTVK(4, "      Compiling shader: " << filename);
+		PRINTVK(4, "      Compiling shader: ", filename);
 		
 		//try compile from GLSL to SPIR-V binary
 		shaderc_compilation_result_t result;
@@ -2084,7 +2095,7 @@ std::vector<std::string> Renderer_Vulkan::GetUncompiledShaders(){
 }
 
 void Renderer_Vulkan::CompileShader(std::string& filename, bool optimize){
-	PRINTVK(3, "    Compiling shader: " << filename);
+	PRINTVK(3, "    Compiling shader: ", filename);
 	std::filesystem::path entry(deshi::getShadersPath() + filename);
 	if(std::filesystem::exists(entry)){
 		std::string ext = entry.extension().string();
@@ -2134,7 +2145,8 @@ void Renderer_Vulkan::UpdateMaterialPipelines(){
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Renderer_Vulkan::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-	PRINT("/\\  " << pCallbackData->pMessage);
+	//TODO(sushi, Con) fix console color formatting for this case
+	me->console->PushConsole(TOSTRING("[c:error]", pCallbackData->pMessage, "[c]"));
 	return VK_FALSE;
 }
 

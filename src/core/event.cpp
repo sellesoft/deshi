@@ -19,7 +19,7 @@ void Sender::SendEvent(Event event) {
 }
 
 Receiver::Receiver() {
-    sender = nullptr;
+    send = nullptr;
 }
 
 Receiver::Receiver(Sender* s) {
@@ -27,5 +27,5 @@ Receiver::Receiver(Sender* s) {
 }
 
 Receiver::~Receiver() {
-    sender->RemoveReceiver(this);
+    if(send) send->RemoveReceiver(this);
 }
