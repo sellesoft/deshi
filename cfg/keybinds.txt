@@ -18,3 +18,4 @@ debugRenderDisplayAxis = SLASH
 toggleConsole = TILDE
 toggleDebugMenu = LCTRL + TILDE
 toggleDebugBar = LSHIFT + TILDE
+toggleMenuBar = LALT + TILDE

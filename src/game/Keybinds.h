@@ -34,6 +34,9 @@ struct Keybinds : public Component {
 	Key::Key toggleDebugMenu = Key::LCTRL | Key::TILDE;
 	Key::Key toggleDebugBar = Key::LSHIFT | Key::TILDE;
 
+	//main menu bar
+	Key::Key toggleMenuBar = Key::LALT | Key::TILDE;
+
 private: //so VS doesnt show this in intellisense
 	//mapping enum names to strings
 	std::map<std::string, Key::Key> stk;

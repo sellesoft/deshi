@@ -16,6 +16,8 @@ ImVec4 ColToVec4(Color p) {
 }
 
 bool WinHovFlag = false;
+float menubarheight = 0;
+bool menubar = true;
 
 //// utility ui elements ///
 
@@ -37,7 +39,14 @@ void InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate = false) {
 void MenuBar(EntityAdmin* admin) {
 	using namespace ImGui;
 
+	ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+	ImGui::PushStyleColor(ImGuiCol_PopupBg,   ColToVec4(Color(20, 20, 20, 255)));
+	ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ColToVec4(Color(20, 20, 20, 255)));
+
+
 	if(BeginMainMenuBar()) {
+		menubarheight = GetWindowHeight();
 		if(BeginMenu("File")) {
 			if (MenuItem("placeholder")) {
 
@@ -60,43 +69,46 @@ void MenuBar(EntityAdmin* admin) {
 		
 		EndMainMenuBar();
 	}
+
+	PopStyleColor();
+	PopStyleColor();
+	PopStyleVar();
+	PopStyleVar();
+
 }
 
 void DebugTools(EntityAdmin* admin) {
 	using namespace ImGui;
 
-	SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height));
-	SetNextWindowPos(ImVec2(0, 0));
-
-	PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
-	PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
-	PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	PushStyleColor(ImGuiCol_Border,           ColToVec4(Color( 0,  0,  0, 255)));
-	PushStyleColor(ImGuiCol_WindowBg,         ColToVec4(Color(20, 20, 20, 255)));
-	PushStyleColor(ImGuiCol_TableBorderLight, ColToVec4(Color(45, 45, 45, 255)));
-	PushStyleColor(ImGuiCol_TableHeaderBg,    ColToVec4(Color(10, 10, 10, 255)));
-	PushStyleColor(ImGuiCol_Button, ColToVec4(Color(30, 30, 30)));
+	if (menubar) {
+		ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - menubarheight));
+		ImGui::SetNextWindowPos(ImVec2(0, menubarheight));
+	}
+	else {
+		ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height));
+		ImGui::SetNextWindowPos(ImVec2(0, 0));
+	}
+	
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	ImGui::PushStyleColor(ImGuiCol_Border,           ColToVec4(Color( 0,  0,  0)));
+	ImGui::PushStyleColor(ImGuiCol_Button,           ColToVec4(Color(30, 30, 30)));
+	ImGui::PushStyleColor(ImGuiCol_WindowBg,         ColToVec4(Color(20, 20, 20)));
+	ImGui::PushStyleColor(ImGuiCol_PopupBg,          ColToVec4(Color(20, 20, 20)));
+	ImGui::PushStyleColor(ImGuiCol_TableBorderLight, ColToVec4(Color(45, 45, 45)));
+	ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,    ColToVec4(Color(10, 10, 10)));
 
 	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 
 	//capture mouse if hovering over this window
 	if (IsWindowHovered()) WinHovFlag = true; 
-	
-
-	if (admin->input->selectedEntity) {
-		Text("Selected Entity: %d", admin->input->selectedEntity->id);
-		if (ImGui::Button("play sound")) {
-			admin->ExecCommand("selent_play_sound");
-		}
-	}
-	else {
-		Text("Selected Entity: None");
-	}
 
 	if (BeginTable("split3", 3, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable)) {
-		TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
-		TableSetupColumn("Name");
-		TableSetupColumn("Components");
+		ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("Name");
+		ImGui::TableSetupColumn("Components");
 		TableHeadersRow();
 		int counter = 0;
 		for (auto& entity : admin->entities) {
@@ -114,7 +126,7 @@ void DebugTools(EntityAdmin* admin) {
 			if (TreeNodeEx((std::string("comps") + std::to_string(entity.first)).c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen, TOSTRING(entity.second->components.size()).c_str())) {
 				for (Component* comp : entity.second->components) {
 					Text(comp->name);
-					SameLine();
+					SameLine(CalcItemWidth());
 					if (Button("Del")) {
 						admin->world->RemoveAComponentFromEntity(admin, entity.second, comp);
 					}
@@ -124,15 +136,32 @@ void DebugTools(EntityAdmin* admin) {
 		}
 		EndTable();
 	}
+
+
 	
 
 	Separator();
 
+	if (admin->input->selectedEntity) {
+		Entity* sel = admin->input->selectedEntity;
+		Text(TOSTRING("Selected Entity: ", sel->name).c_str());
+		if (ImGui::Button("play sound")) {
+			admin->ExecCommand("selent_play_sound");
+		}
+		if (ImGui::BeginTable("SelectedComponents", 1)) {
+			ImGui::EndTable();
+		}
+	}
+	else {
+		Text("Selected Entity: None");
+	}
 	
 
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
@@ -165,16 +194,16 @@ void DebugBar(EntityAdmin* admin) {
 	static bool show_floating_fps_graph = false;
 	static bool show_time = true;
 	
-	SetNextWindowSize(ImVec2(DengWindow->width, 50));
-	SetNextWindowPos(ImVec2(0, DengWindow->height - 20));
+	ImGui::SetNextWindowSize(ImVec2(DengWindow->width, 50));
+	ImGui::SetNextWindowPos(ImVec2(0, DengWindow->height - 20));
 	
 	//window styling
-	PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
-	PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
-	PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	PushStyleColor(ImGuiCol_Border,           ColToVec4(Color(0, 0, 0, 255)));
-	PushStyleColor(ImGuiCol_WindowBg,         ColToVec4(Color(20, 20, 20, 255)));
-	PushStyleColor(ImGuiCol_TableBorderLight, ColToVec4(Color(45, 45, 45, 255)));
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	ImGui::PushStyleColor(ImGuiCol_Border,           ColToVec4(Color(0, 0, 0, 255)));
+	ImGui::PushStyleColor(ImGuiCol_WindowBg,         ColToVec4(Color(20, 20, 20, 255)));
+	ImGui::PushStyleColor(ImGuiCol_TableBorderLight, ColToVec4(Color(45, 45, 45, 255)));
 	
 	ImGui::Begin("DebugBar", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	
@@ -196,15 +225,15 @@ void DebugBar(EntityAdmin* admin) {
 		std::string str5 = TOSTRING("sverts: ", "0");
 		float strlen5 = (fontsize - (fontsize / 2)) * str5.size();
 
-		TableSetupColumn("FPS",            ImGuiTableColumnFlags_WidthFixed, 64);
-		TableSetupColumn("FPSGraphInline", ImGuiTableColumnFlags_WidthFixed, 64);
-		TableSetupColumn("EntCount",       ImGuiTableColumnFlags_None, strlen1 * 1.3);
-		TableSetupColumn("TriCount",       ImGuiTableColumnFlags_None, strlen2 * 1.3);
-		TableSetupColumn("VerCount",       ImGuiTableColumnFlags_None, strlen3 * 1.3);
-		TableSetupColumn("SelTriCount",    ImGuiTableColumnFlags_None, strlen4 * 1.3);
-		TableSetupColumn("SelVerCount",    ImGuiTableColumnFlags_None, strlen5 * 1.3);
-		TableSetupColumn("MiddleSep",      ImGuiTableColumnFlags_WidthStretch, 0);
-		TableSetupColumn("Time",           ImGuiTableColumnFlags_WidthFixed, 64);
+		ImGui::TableSetupColumn("FPS",            ImGuiTableColumnFlags_WidthFixed, 64);
+		ImGui::TableSetupColumn("FPSGraphInline", ImGuiTableColumnFlags_WidthFixed, 64);
+		ImGui::TableSetupColumn("EntCount",       ImGuiTableColumnFlags_None, strlen1 * 1.3);
+		ImGui::TableSetupColumn("TriCount",       ImGuiTableColumnFlags_None, strlen2 * 1.3);
+		ImGui::TableSetupColumn("VerCount",       ImGuiTableColumnFlags_None, strlen3 * 1.3);
+		ImGui::TableSetupColumn("SelTriCount",    ImGuiTableColumnFlags_None, strlen4 * 1.3);
+		ImGui::TableSetupColumn("SelVerCount",    ImGuiTableColumnFlags_None, strlen5 * 1.3);
+		ImGui::TableSetupColumn("MiddleSep",      ImGuiTableColumnFlags_WidthStretch, 0);
+		ImGui::TableSetupColumn("Time",           ImGuiTableColumnFlags_WidthFixed, 64);
 		
 		
 		//FPS
@@ -271,10 +300,10 @@ void DebugBar(EntityAdmin* admin) {
 				frame_count = 0;
 			}
 			
-			PushStyleColor(ImGuiCol_PlotLines, ColToVec4(Color(0, 255, 200, 255)));
-			PushStyleColor(ImGuiCol_FrameBg, ColToVec4(Color(20, 20, 20, 255)));
+			ImGui::PushStyleColor(ImGuiCol_PlotLines, ColToVec4(Color(0, 255, 200, 255)));
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, ColToVec4(Color(20, 20, 20, 255)));
 			
-			PlotLines("", &pvalues[0], pvalues.size(), 0, 0, 0, maxval, ImVec2(64, 20));
+			ImGui::PlotLines("", &pvalues[0], pvalues.size(), 0, 0, 0, maxval, ImVec2(64, 20));
 			
 			ImGui::PopStyleColor();
 			ImGui::PopStyleColor();
@@ -336,7 +365,7 @@ void DebugBar(EntityAdmin* admin) {
 				std::string str6 = admin->last_error;
 				float strlen6 = (fontsize - (fontsize / 2)) * str6.size();
 				ImGui::SameLine((GetColumnWidth() - strlen6) / 2);
-				PushStyleColor(ImGuiCol_Text, ColToVec4(Color(255 * -(sin(2 * M_PI * time + cos(2 * M_PI * time)) - 1)/2, 0, 0, 255)));
+				ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(Color(255 * -(sin(2 * M_PI * time + cos(2 * M_PI * time)) - 1)/2, 0, 0, 255)));
 				Text(str6.c_str());
 				PopStyleColor();
 			}
@@ -399,18 +428,16 @@ void DebugBar(EntityAdmin* admin) {
 }
 
 void RenderCanvasSystem::DrawUI(void) {
-<<<<<<< HEAD
-	if (DengInput->KeyPressed(DengKeys->toggleDebugMenu)) DebugTools(admin);
-	//if (DengInput->KeyPressed(DengKeys->toggleDebugBar)) DebugBar(admin);
-	DebugBar(admin);
-=======
 	if (DengInput->KeyPressed(DengKeys->toggleDebugMenu)) showDebugTools = !showDebugTools;
 	if (DengInput->KeyPressed(DengKeys->toggleDebugBar)) showDebugBar = !showDebugBar;
-	//if (DengInput->KeyPressed(DengKeys->toggleMenuBar)) showMenuBar = !showMenuBar;
+	if (DengInput->KeyPressed(DengKeys->toggleMenuBar)) showMenuBar = !showMenuBar;
 	
 	if (showDebugBar) DebugBar(admin);
 	if (showDebugTools) DebugTools(admin);
 	if (showMenuBar) MenuBar(admin);
+
+	if (showMenuBar) menubar = true;
+	else menubar = false;
 }
 
 void RenderCanvasSystem::Init() {
