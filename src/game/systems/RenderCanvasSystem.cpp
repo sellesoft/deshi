@@ -19,7 +19,8 @@ ImVec4 ColToVec4(Color p) {
 
 bool WinHovFlag = false;
 float menubarheight = 0;
-bool menubar = true;
+float debugbarheight = 0;
+float debugtoolswidth = 0;
 
 //current palette:
 //https://lospec.com/palette-list/slso8
@@ -64,6 +65,7 @@ void RenderCanvasSystem::MenuBar() {
 	ImGui::PushStyleColor(ImGuiCol_PopupBg,   ColToVec4(Color(20, 20, 20, 255)));
 	ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ColToVec4(Color(20, 20, 20, 255)));
 
+	
 	if(BeginMainMenuBar()) {
 		menubarheight = GetWindowHeight();
 		if(BeginMenu("File")) {
@@ -87,6 +89,7 @@ void RenderCanvasSystem::MenuBar() {
 		if (BeginMenu("Window")) {
 			if (MenuItem("Object Property Menu")) showDebugTools = !showDebugTools;
 			if (MenuItem("Debug Bar")) showDebugBar = !showDebugBar;
+			if (MenuItem("DebugLayer")) showDebugLayer = !showDebugLayer;
 			if (MenuItem("ImGui Demo Window")) showImGuiDemoWindow = !showImGuiDemoWindow;
 			EndMenu();
 		}
@@ -107,14 +110,10 @@ void RenderCanvasSystem::DebugTools() {
 	float fontsize = ImGui::GetFontSize();
 
 	//resize tool menu if main menu bar is open
-	if (menubar) {
-		ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - menubarheight));
-		ImGui::SetNextWindowPos(ImVec2(0, menubarheight));
-	}
-	else {
-		ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height));
-		ImGui::SetNextWindowPos(ImVec2(0, 0));
-	}
+	ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - (menubarheight + debugbarheight)));
+	ImGui::SetNextWindowPos(ImVec2(0, menubarheight));
+	
+	
 	
 	//window styling
 	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
@@ -137,7 +136,9 @@ void RenderCanvasSystem::DebugTools() {
 
 
 
-	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+
+	debugtoolswidth = GetWindowWidth();
 
 	//capture mouse if hovering over this window
 	if (IsWindowHovered()) WinHovFlag = true; 
@@ -365,9 +366,10 @@ void RenderCanvasSystem::DebugBar() {
 	static bool show_floating_fps_graph = false;
 	static bool show_time = true;
 	
-	ImGui::SetNextWindowSize(ImVec2(DengWindow->width, 50));
+	ImGui::SetNextWindowSize(ImVec2(DengWindow->width, 20));
 	ImGui::SetNextWindowPos(ImVec2(0, DengWindow->height - 20));
 	
+
 	//window styling
 	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
@@ -377,10 +379,11 @@ void RenderCanvasSystem::DebugBar() {
 	ImGui::PushStyleColor(ImGuiCol_TableBorderLight, ColToVec4(Color(45, 45, 45, 255)));
 	
 	ImGui::Begin("DebugBar", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
-	
+	debugbarheight = 20;
+	LOG(debugbarheight);
 	//capture mouse if hovering over this window
 	if (IsWindowHovered()) WinHovFlag = true; 
-	
+
 	activecols = show_fps + show_fps_graph + 3 * show_world_stats + 2 * show_selected_stats + show_time + 1;
 	if (BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)) {
 
@@ -594,18 +597,114 @@ void RenderCanvasSystem::DebugBar() {
 	ImGui::PopStyleColor();
 	ImGui::End();
 }
+
+//sort of sandbox for drawing ImGui stuff over the entire screen
+void RenderCanvasSystem::DebugLayer() {
+	
+	ImGui::SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height));
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ColToVec4(Color(0, 0, 0, 0)));
+
+	static std::vector<std::pair<float, Vector2>> times;
+	
+
+
+	ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+
+	//ImGui::SetCursorPos(ImVec2(DengInput->mousePos.x, DengInput->mousePos.y));
+	Vector2 mp = DengInput->mousePos;
+
+	float time = DengTime->totalTime;
+	float fontsize = ImGui::GetFontSize();
+
+	Camera* c = admin->mainCamera;
+
+	for (int i = -20; i < 20; i++) {
+		Vector3 v1 = Vector3(-20 + i, 0, -20);
+		Vector3 v2 = Vector3(-20 + i, 0,  20);
+		Vector3 v3 = Vector3(-20, 0, -20 + i);
+		Vector3 v4 = Vector3( 20, 0, -20 + i);
+
+		Vector2 v12 = Math::WorldToScreen2D(v1, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
+		Vector2 v22 = Math::WorldToScreen2D(v2, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
+		Vector2 v32 = Math::WorldToScreen2D(v3, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
+		Vector2 v42 = Math::WorldToScreen2D(v4, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
+
+
+
+		ImGui::GetBackgroundDrawList()->AddLine(v12.ToImVec2(), v22.ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 1)));
+		ImGui::GetBackgroundDrawList()->AddLine(v32.ToImVec2(), v42.ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 1)));
+
+
+
+	}
+
+	
+
+	if (DengInput->MousePressed(MouseButton::MB_LEFT) && rand() % 100 + 1 == 80) {
+		times.push_back(std::pair<float, Vector2>(0, mp));
+	}
+	
+	int index = 0;
+	for (auto& f : times) {
+		ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(Color(255. * fabs(sinf(time)), 255. * fabs(cosf(time)), 255, 255)));
+		
+		f.first += DengTime->deltaTime;
+
+		Vector2 p = f.second;
+
+		ImGui::SetCursorPos(ImVec2(p.x + 20 * sin(2 * time), p.y - 200 * (f.first / 5)));
+		
+		Vector2 curpos = Vector2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY());
+
+		std::string str1 = "hehe!!!!";
+		float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
+		for (int i = 0; i < str1.size(); i++) {
+			ImGui::SetCursorPos(ImVec2(
+				curpos.x + i * fontsize / 2,
+				curpos.y + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))
+			));
+			ImGui::Text(str1.substr(i, 1).c_str());
+		}
+
+		if (f.first >= 5) {
+			times.erase(times.begin() + index);
+			index--;
+		}
+
+		ImGui::PopStyleColor();
+		index++;
+	}
+	//ImGui::Text("test");
+
+
+	ImGui::PopStyleColor();
+	ImGui::End();
+}
+
 void RenderCanvasSystem::DrawUI(void) {
 	if (DengInput->KeyPressed(DengKeys->toggleDebugMenu)) showDebugTools = !showDebugTools;
 	if (DengInput->KeyPressed(DengKeys->toggleDebugBar)) showDebugBar = !showDebugBar;
 	if (DengInput->KeyPressed(DengKeys->toggleMenuBar)) showMenuBar = !showMenuBar;
 	
-	if (showDebugBar) DebugBar();
+	if (showDebugLayer) DebugLayer();
 	if (showDebugTools) DebugTools();
-	if (showMenuBar) MenuBar();
+	if (showDebugBar)   DebugBar();
+	if (showMenuBar)    MenuBar();
 	if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
 
-	if (showMenuBar) menubar = true;
-	else menubar = false;
+
+	if (!showMenuBar) {
+		menubarheight = 0;
+	}
+
+	if (!showDebugBar){
+		debugbarheight = 0;
+	}
+	if (!showDebugTools) {
+		debugtoolswidth = 0;
+	}
 }
 
 void RenderCanvasSystem::Init() {

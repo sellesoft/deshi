@@ -72,6 +72,10 @@ struct Color {
 		this->b = rand() % 255 + 1;
 	}
 	Color getrandcol();
+
+	std::string str() {
+		return "C{" + std::to_string(r) + ", " + std::to_string(g) + ", " + std::to_string(b) + ", " + std::to_string(a) + "}";
+	}
 };
 
 //// Static Constants ////

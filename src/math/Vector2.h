@@ -1,5 +1,6 @@
 #pragma once
 #include "../utils/Debug.h"
+#include "../external/imgui/imgui.h"
 
 struct MatrixN;
 struct Matrix3;
@@ -13,7 +14,7 @@ struct Quaternion;
 struct Vector2 {
 	float x{};
 	float y{};
-	
+
 	Vector2(){};
 	Vector2(float inX, float inY) {
 		x = inX; y = inY;
@@ -76,11 +77,8 @@ struct Vector2 {
 	
 	Vector3 ToVector3() const;
 	Vector4 ToVector4() const;
+	ImVec2 ToImVec2() const;
 	
-	//in my haste i dont think these are necessary either
-	//MatrixN ToM1x3() const;
-	//MatrixN ToM1x4(float w) const;
-	//Vector2 ProjectionMultiply(Matrix4 projection) const;
 	
 };
 
@@ -313,4 +311,8 @@ inline Vector2 Vector2::xInvert() const {
 
 inline Vector2 Vector2::yInvert() const {
 	return Vector2(x, -y);
+}
+
+inline ImVec2 Vector2::ToImVec2() const {
+	return ImVec2(x, y);
 }

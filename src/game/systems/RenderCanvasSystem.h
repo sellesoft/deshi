@@ -7,6 +7,7 @@ struct RenderCanvasSystem : public System {
 	bool showDebugBar = true;
 	bool showMenuBar = true;
 	bool showImGuiDemoWindow = false;
+	bool showDebugLayer = true;
 
 	//this can be done better
 	bool ConsoleHovFlag = false;
@@ -14,6 +15,7 @@ struct RenderCanvasSystem : public System {
 	void DebugBar();
 	void DebugTools();
 	void MenuBar();
+	void DebugLayer();
 
 	void Init() override;
 	void Update() override;

@@ -17,14 +17,18 @@ Controller::Controller(EntityAdmin* a, MovementMode m) : Component(a), mode(m) {
 }
 
 bool CONTROLLER_MOUSE_CAPTURE = false;
+bool moveOverride = false; //for moving when using arrow keys (cause i cant use mouse when remoting into my pc so)
 
 inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
 	Camera* camera = admin->mainCamera;
 	float deltaTime = admin->time->deltaTime;
+
+	//most likely temporary
+	if (DengInput->KeyPressed(Key::A | INPUTMOD_CTRL)) moveOverride = !moveOverride;
 	
 	if (!admin->IMGUI_KEY_CAPTURE) {
 		
-		if(DengInput->MouseDown(MouseButton::MB_RIGHT)){
+		if(DengInput->MouseDown(MouseButton::MB_RIGHT) || moveOverride){
 			Vector3 inputs;
 			if (mode == MOVEMENT_MODE_FLYING) {
 				//translate up
@@ -62,35 +66,35 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 	float deltaTime = admin->time->deltaTime;
 	
 	if (!admin->IMGUI_KEY_CAPTURE) {
-		/*
-					//camera rotation up
-					if (input->KeyDown(binds->cameraRotateUp)) {
-						if (input->ModDown(INPUT_SHIFT_HELD))        { camera->rotation.x -= 50 * deltaTime; }
-						else if (input->ModDown(INPUT_CTRL_HELD)) { camera->rotation.x -= 5 * deltaTime; }
-						else                                         { camera->rotation.x -= 25 * deltaTime; }
-					}
+
+		//camera rotation up
+		if (input->KeyDown(binds->cameraRotateUp)) {
+			if (input->ModsDown(INPUTMOD_SHIFT))     { camera->rotation.x -= 50 * deltaTime; }
+			else if (input->ModsDown(INPUTMOD_CTRL)) { camera->rotation.x -= 5 * deltaTime; }
+			else                                     { camera->rotation.x -= 25 * deltaTime; }
+		}
 					
-					//camera rotation down
-					if (input->KeyDown(binds->cameraRotateDown)) {
-						if (input->ModDown(INPUT_SHIFT_HELD))        { camera->rotation.x += 50 * deltaTime; }
-						else if (input->ModDown(INPUT_CTRL_HELD)) { camera->rotation.x += 5 * deltaTime; }
-						else                                         { camera->rotation.x += 25 * deltaTime; }
-					}
+		//camera rotation down
+		if (input->KeyDown(binds->cameraRotateDown)) {
+			if (input->ModsDown(INPUTMOD_SHIFT))     { camera->rotation.x += 50 * deltaTime; }
+			else if (input->ModsDown(INPUTMOD_CTRL)) { camera->rotation.x += 5 * deltaTime; }
+			else                                     { camera->rotation.x += 25 * deltaTime; }
+		}
 					
-					//camera rotation right
-					if (input->KeyDown(binds->cameraRotateRight)) {
-						if (input->ModDown(INPUT_SHIFT_HELD))	    { camera->rotation.y += 50 * deltaTime; }
-						else if (input->ModDown(INPUT_CTRL_HELD)) { camera->rotation.y += 5 * deltaTime; }
-						else								         { camera->rotation.y += 25 * deltaTime; }
-					}
+		//camera rotation right
+		if (input->KeyDown(binds->cameraRotateRight)) {
+			if (input->ModsDown(INPUTMOD_SHIFT))	 { camera->rotation.y += 50 * deltaTime; }
+			else if (input->ModsDown(INPUTMOD_CTRL)) { camera->rotation.y += 5 * deltaTime; }
+			else								     { camera->rotation.y += 25 * deltaTime; }
+		}
 					
-					//camera rotation left
-					if (input->KeyDown(binds->cameraRotateLeft)) {
-						if (input->ModDown(INPUT_SHIFT_HELD))	    { camera->rotation.y -= 50 * deltaTime; }
-						else if (input->ModDown(INPUT_CTRL_HELD)) { camera->rotation.y -= 5 * deltaTime; }
-						else								         { camera->rotation.y -= 25 * deltaTime; }
-					}
-		*/
+		//camera rotation left
+		if (input->KeyDown(binds->cameraRotateLeft)) {
+			if (input->ModsDown(INPUTMOD_SHIFT))	 { camera->rotation.y -= 50 * deltaTime; }
+			else if (input->ModsDown(INPUTMOD_CTRL)) { camera->rotation.y -= 5 * deltaTime; }
+			else								     { camera->rotation.y -= 25 * deltaTime; }
+		}
+		
 	}
 	if(!admin->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE){
 		//TODO(delle,In) change this so its dependent on game state or something (level editor vs gameplay)
@@ -153,52 +157,32 @@ void HandleMouseInputs(EntityAdmin* admin) {
 			for (auto ep : admin->entities) {
 				Entity* e = ep.second;
 				Mesh* m = e->GetComponent<MeshComp>()->m;
-				for (auto b : m->batchArray) {
-					for (int i = 0; i < b.indexArray.size(); i += 3) {
+				if (m) {
+					for (auto& b : m->batchArray) {
+						for (int i = 0; i < b.indexArray.size(); i += 3) {
+							float t = 0;
 
-						float t = 0;
+							p0 = b.vertexArray[b.indexArray[i]].pos;
+							p1 = b.vertexArray[b.indexArray[i + 1]].pos;
+							p2 = b.vertexArray[b.indexArray[i + 2]].pos;
 
-						p0 = b.vertexArray[b.indexArray[i]].pos;
-						p1 = b.vertexArray[b.indexArray[i + 1]].pos;
-						p2 = b.vertexArray[b.indexArray[i + 2]].pos;
+							norm = (p1 - p0).cross(p2 - p0);
 
-						norm = (p1 - p0).cross(p2 - p0);
+							Vector3 inter = Math::VectorPlaneIntersect(p0, norm, ray->p[0], ray->p[1], t);
 
-						Vector3 inter = Math::VectorPlaneIntersect(p0, norm, ray->p[0], ray->p[1], t);
+							Vector3 v01 = p1 - p0;
+							Vector3 v12 = p2 - p1;
+							Vector3 v20 = p0 - p2;
 
-						Vector3 v01 = p1 - p0;
-						Vector3 v12 = p2 - p1;
-						Vector3 v20 = p0 - p2;
+							rot = Matrix4::AxisAngleRotationMatrix(90, Vector4(norm, 0));
 
-						rot = Matrix4::AxisAngleRotationMatrix(90, Vector4(norm, 0));
-
-						if ((v01 * rot).dot(p0 - inter) < 0 &&
-							(v12 * rot).dot(p1 - inter) < 0 &&
-							(v20 * rot).dot(p2 - inter) < 0) {
-							admin->input->selectedEntity = e;
-							goto endloop;
+							if ((v01 * rot).dot(p0 - inter) < 0 &&
+								(v12 * rot).dot(p1 - inter) < 0 &&
+								(v20 * rot).dot(p2 - inter) < 0) {
+								admin->input->selectedEntity = e;
+								goto endloop;
+							}
 						}
-
-						//Triangle t = Triangle(
-						//	b.vertexArray[b.indexArray[i]].pos,
-						//	b.vertexArray[b.indexArray[i + 1]].pos,
-						//	b.vertexArray[b.indexArray[i + 2]].pos, 
-						//	Vector3(
-						//		m->transform(3, 0),
-						//		m->transform(3, 1),
-						//		m->transform(3, 2))
-						//);
-						//
-						//auto ve = Vector3(
-						//	m->transform(3, 0),
-						//	m->transform(3, 1),
-						//	m->transform(3, 2));
-						//
-						//if (t.line_intersect(ray)) {
-						//	admin->input->selectedEntity = e;
-						//	objectsel = true;
-						//	goto endloop;
-						//}
 					}
 				}
 			}
@@ -326,18 +310,23 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 				}
 				else if (xaxis) {
 
+					ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+
+
 					//TODO(sushi, MaIn) make all this math work
 					Vector2 screenpos = Math::WorldToScreen2D(initialObjPos, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
 					Vector2 xaxistoscreen = Math::WorldToScreen2D(worldpos + Vector3::RIGHT, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
 					Vector2 screenxaxis = (xaxistoscreen - screenpos).normalized();
 
-					//left frustrum normal in 2d top down
-					Vector2 flpn = Math::Vector2RotateByAngle(90 - (c->fieldOfView / 2), Vector2(c->forward.x, c->forward.z));
+					//frustrum normals
+					Vector3 flpn = c->forward * Matrix4::AxisAngleRotationMatrix(90 - (c->fieldOfView / 2), Vector4(Vector3::UP, 0));
+					Vector3 frpn = c->forward * Matrix4::AxisAngleRotationMatrix(-(90 - (c->fieldOfView / 2)), Vector4(Vector3::UP, 0));
+
 					float t = 0;
 					
 					//points of intersection with frustrum planes
-					Vector3 lpi = Math::VectorPlaneIntersect(c->position, Vector3(flpn.x, 0, flpn.y), initialObjPos, Vector3::RIGHT, t);
-					Vector3 rpi = Math::VectorPlaneIntersect(c->position, Vector3(-flpn.x, 0, flpn.y), initialObjPos, Vector3::RIGHT, t);
+					Vector3 lpi = Math::VectorPlaneIntersect(c->position, flpn, initialObjPos, Vector3::RIGHT, t);
+					Vector3 rpi = Math::VectorPlaneIntersect(c->position, frpn, initialObjPos, Vector3::RIGHT, t);
 					
 					//previous points in screen space
 					Vector2 slpi = Math::WorldToScreen2D(lpi, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
@@ -349,7 +338,6 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					//displacement of projected point along screen axis line
 					float disp = (DengInput->mousePos - srpi).dot(sal);
 
-
 					float ratio = (sal.normalized() * disp).mag();
 
 					//TODO(sushi, In) implement displacement mod changing when mouse scrolling works
@@ -359,6 +347,9 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					else dispmod = 0.1;
 					
 					sel->transform->position = rpi + ratio * (lpi - rpi);
+
+					ImGui::GetBackgroundDrawList()->AddLine(ImVec2(slpi.x, slpi.y), ImVec2(srpi.x, srpi.y), ImGui::GetColorU32(ImVec4(1, 1, 1, 1)));
+					ImGui::End();
 				}
 
 			}
