@@ -30,6 +30,7 @@ struct Controller;
 struct Canvas;
 struct Console;
 struct Scene;
+struct Transform;
 
 //DeshiEngine structs
 struct Window;
@@ -124,6 +125,8 @@ struct Entity {
 	EntityID id;
 	std::vector<Component*> components;
 	std::string name;
+
+	Transform* transform;
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
 	template<class T>
@@ -134,7 +137,12 @@ struct Entity {
 				t = temp; break; 
 			} 
 		}
-		ASSERT(t != nullptr, "attempted to retrieve a component that doesn't exist");
+		//ASSERT(t != nullptr, "attempted to retrieve a component that doesn't exist");
+		if (t == nullptr) {
+			//TODO(sushi) make it so stuff like this only shows up when debugging 
+			LOG("attempted to retrieve a component that doesn't exist on entity ", name, " with ID ", id);
+		}
+		
 		return t;
 	}
 	
@@ -144,6 +152,7 @@ struct Entity {
 	
 	u32 AddComponents(std::vector<Component*> components);
 	
+	Entity();
 	~Entity();
 	//this seems ancient so i wont touch it 
 }; //TODO(delle) move WorldSystem entity-component functions into Entity

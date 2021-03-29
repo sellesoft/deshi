@@ -51,6 +51,8 @@ struct Window{
 	
 	void UpdateCursorMode(CursorMode mode); 
 	
+	void SetCursorPos(Vector2 pos);
+	
 	void UpdateRawInput(bool rawInput);
 	
 	void UpdateResizable(bool resizable);

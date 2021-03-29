@@ -59,9 +59,46 @@ enum ShaderFlagsBits : u32 {
 };
 typedef u32 ShaderFlags;
 
+//TODO(sushi) find a nicer way to dynamically generate lists of shaders and other things like materials n such
 enum Shader : u32 {
 	//NOTE(delle) testing shaders should be removed on release
 	FLAT, PHONG, TWOD, PBR, WIREFRAME, LAVALAMP, TESTING0, TESTING1
+};
+
+//is there maybe a better way of doing this than using 2 maps?
+static std::map<Shader, std::string> shadertostring = {
+	{FLAT,      "FLAT"},
+	{PHONG,     "PHONG"},
+	{TWOD,      "TWOD"},
+	{PBR,       "PBR"},
+	{WIREFRAME, "WIREFRAME"},
+	{LAVALAMP,  "LAVALAMP"},
+	{TESTING0,  "TESTING0"},
+	{TESTING1,  "TESTING1"}
+};
+
+//this is temporary i promise
+//until i find a nicer way to dynamically get shader names n such
+static std::map<int, std::string> shadertostringint = {
+	{0,      "FLAT"},
+	{1,     "PHONG"},
+	{2,      "TWOD"},
+	{3,       "PBR"},
+	{4, "WIREFRAME"},
+	{5,  "LAVALAMP"},
+	{6,  "TESTING0"},
+	{7,  "TESTING1"}
+};
+
+static std::map<std::string, Shader> stringtoshader = {
+	{"FLAT",      FLAT},
+	{"PHONG",     PHONG},
+	{"TWOD",      TWOD},
+	{"PBR",       PBR},
+	{"WIREFRAME", WIREFRAME},
+	{"LAVALAMP",  LAVALAMP},
+	{"TESTING0",  TESTING0},
+	{"TESTING1",  TESTING1}
 };
 
 //NOTE indices should be clockwise

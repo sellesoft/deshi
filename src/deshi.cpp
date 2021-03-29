@@ -34,6 +34,8 @@ replace/remove external dependencies/includes were possible (glm, boost, sascha,
 (maybe) make TODOs script in misc to locally generate TODOs.txt rather than TODOP bot
 cleanup compile warnings
 investigate program closing slowly
+add Qol (quality of life) tag to TODOP
+get mouse scrolling input to work
 
 Render TODOs
 ------------
@@ -51,6 +53,8 @@ multi-threaded command buffers, shader loading, image loading
 find a way to forward declare vulkan stuff and move the include to the cpp
 (maybe) remove renderer polymorphism and replace it with defines that are checked on program start
 (maybe) add specific shader reloading rather than all of them
+add support for empty scene
+add orthographic pipeline for side views etc.
 
 Physics/Atmos TODOs
 -------------
@@ -64,7 +68,8 @@ UI TODOs
 Restore the spawning/inspector menus
 2D shader
 add a UI popup when reloading shaders
-fix console auto fill adding the entire word to what you've already typed when selecting something from the match list
+add UI color palettes for easy color changing
+renaming entities from entity list
 
 Math NOTEs: Row-Major matrices, Left-Handed coordinate system (clockwise rotation when looking down axis)
 Math TODOs
@@ -143,7 +148,7 @@ struct DeshiEngine {
 		window.Update();
 		input.Update();
 		imgui->NewFrame();            //place imgui calls after this
-		ImGui::ShowDemoWindow();
+		
 		entityAdmin.Update();
 		console.Update();      //not sure where we want this
 		renderer->Render();           //place imgui calls before this

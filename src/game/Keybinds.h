@@ -37,6 +37,11 @@ struct Keybinds : public Component {
 	//main menu bar
 	Key::Key toggleMenuBar = Key::LALT | Key::TILDE;
 
+	//selected object manipulation modes
+	Key::Key grabSelectedObject = Key::G;
+	Key::Key rotateSelectedObject = Key::R;
+	Key::Key scaleSelectedObject = Key::S;
+
 private: //so VS doesnt show this in intellisense
 	//mapping enum names to strings
 	std::map<std::string, Key::Key> stk;

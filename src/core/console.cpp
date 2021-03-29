@@ -786,15 +786,14 @@ else {
 			e->name = name;
 			e->admin = admin;
 			MeshComp* mc = new MeshComp(mes);
-			Transform* t = new Transform();
 			Physics* p = new Physics(Vector3(0,0,0), Vector3(0,0,0));
 			AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
-			admin->world->AddComponentsToEntity(admin, e, { mc, p, s, t });
-			t->ConnectSend(mc); mc->ConnectSend(t);
+			admin->world->AddComponentsToEntity(admin, e, { mc, p, s });
 
 			u32 id = admin->renderer->LoadMesh(mes);
 			Model mod;
 			mod.mesh = mesh;
+			mc->MeshID = id;
 			admin->scene->models.push_back(mod);
 
 			return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);

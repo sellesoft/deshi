@@ -9,6 +9,7 @@ struct Mesh;
 
 struct MeshComp : public Component {
 	uint16 InstanceID;
+	uint16 MeshID;
 	Mesh* m;
 
 	MeshComp();
@@ -16,8 +17,10 @@ struct MeshComp : public Component {
 
 	bool mesh_visible = true;
 
-	void Update() override;
+	void ToggleVisibility();
+
 	void ReceiveEvent(Event event) override;
+	void Update() override;
 };
 
 

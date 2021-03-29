@@ -250,6 +250,10 @@ void Window::UpdateCursorMode(CursorMode mode){
 	}
 }
 
+void Window::SetCursorPos(Vector2 pos){
+	glfwSetCursorPos(window, pos.x, pos.y);
+}
+
 void Window::UpdateRawInput(bool rawInput){
 	if (glfwRawMouseMotionSupported()){
 		this->rawInput = rawInput;

@@ -19,3 +19,7 @@ toggleConsole = TILDE
 toggleDebugMenu = LCTRL + TILDE
 toggleDebugBar = LSHIFT + TILDE
 toggleMenuBar = LALT + TILDE
+>selected object manipulation modes
+grabSelectedObject = G
+rotateSelectedObject = R
+scaleSelectedObject = S

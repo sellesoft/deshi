@@ -25,6 +25,11 @@
 #include "game/components/Camera.h"
 #include "game/components/Controller.h"
 #include "game/components/AudioListener.h"
+#include "game/components/Transform.h"
+#include "game/components/MeshComp.h"
+#include "scene/Scene.h"
+
+
 
 #include "game/systems/System.h"
 #include "game/systems/PhysicsSystem.h"
@@ -69,12 +74,27 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c, Sc
 	world->admin = this;
 	sound->admin = this;
 
+	physics->Init();
+	canvas->Init();
+	world->Init();
+	sound->Init();
+
 	//singleton initialization
 	mainCamera = new Camera(this);
 	mainCamera->layer_index = freeCompLayers[mainCamera->layer].add(mainCamera);
 	keybinds = new Keybinds(this);
 	controller = new Controller(this);
 	controller->layer_index = freeCompLayers[controller->layer].add(controller);
+
+
+	//debug box initialization that needs to be removed when the debug box is 
+	Entity* e = world->CreateEntity(admin);
+	e->name = "box";
+	MeshComp* mc = new MeshComp(&scene->models[0].mesh);
+	admin->world->AddComponentsToEntity(admin, e, { mc });
+	mc->MeshID = 0;
+	mc->admin = this;
+
 
 	
 }
@@ -107,8 +127,6 @@ void UpdateLayer(ContainerManager<Component*> cl) {
 }
 
 void EntityAdmin::Update() {
-	//aha
-
 	controller->Update();
 	mainCamera->Update();
 
@@ -200,6 +218,10 @@ u32 Entity::AddComponents(std::vector<Component*> comps) {
 		c->entity = this;
 	}
 	return value;
+}
+
+Entity::Entity() {
+	transform = new Transform();
 }
 
 Entity::~Entity() {

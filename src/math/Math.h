@@ -104,6 +104,12 @@ namespace Math {
 					   0,						0,						-2 / (f - n),						0,
 					   -(r + l) / (r - l),		-(t + b) / (t - b),		-(f + n) / (f - n),	1);
 	}
+
+	//TODO(sushi, Ma) implement this on Vector2
+	static Vector2 Vector2RotateByAngle(float angle, Vector2 v) {
+		angle = RADIANS(angle);
+		return Vector2(v.x * cosf(angle) - v.y * sinf(angle), v.x * sin(angle) + v.y * cos(angle));
+	}
 	
 }
 
@@ -232,17 +238,48 @@ inline Matrix4 Matrix4::RotationMatrix(Vector3 rotation) {
 				   0,   0,   0,   1);
 }
 
-inline Matrix4 Matrix4::AxisAngleRotationMatrix(float angle, Vector3 axis) {
-	angle = RADIANS(angle); axis.normalize();
+//https://github.com/microsoft/DirectXMath/blob/7c30ba5932e081ca4d64ba4abb8a8986a7444ec9/Inc/DirectXMathMatrix.inl
+//line 1675
+//return a matrix to rotate a vector around an arbitrary axis by some angle
+inline Matrix4 Matrix4::AxisAngleRotationMatrix(float angle, Vector4 axis) {
+	angle = RADIANS(angle); 
+	float mag = axis.mag();
+	axis = Vector4(axis.x / mag, axis.y / mag, axis.z / mag, axis.w / mag);
+	//axis.normalize();
 	float c = cosf(angle); float s = sinf(angle); 
-	Vector3 temp = axis * (1.f - c);
 	
+	Vector4 A = Vector4(s, c, 1 - c, 0);
+
+	Vector4 C2 = Vector4(A.z, A.z, A.z, A.z);
+	Vector4 C1 = Vector4(A.y, A.y, A.y, A.y);
+	Vector4 C0 = Vector4(A.x, A.x, A.x, A.x);
+
+	Vector4 N0 = Vector4(axis.y, axis.z, axis.x, axis.w);
+	Vector4 N1 = Vector4(axis.z, axis.x, axis.y, axis.w);
+
+	Vector4 V0 = C2 * N0;
+	V0 *= N1;
+
+	Vector4 R0 = C2 * axis;
+	R0 = R0 * axis + C1;
+	
+	Vector4 R1 = C0 * axis + V0;
+	Vector4 R2 = (V0 - C0) * axis;
+
+	V0 = Vector4(R0.x, R0.y, R0.z, A.w);
+	Vector4 V1 = Vector4(R1.z, R2.y, R2.z, R1.x);
+	Vector4 V2 = Vector4(R1.y, R2.x, R1.y, R2.x);
+
+	return Matrix4(
+		V0.x, V1.x, V1.y, V0.w,
+		V1.z, V0.y, V1.w, V0.w,
+		V2.x, V2.y, V0.z, V0.w,
+		0,    0,    0,    1
+	);
+
 	//TODO(delle,Ma) finish axis angle rotation matrix
-	ASSERT(false, "not implemented yet");
+	//ASSERT(false, "not implemented yet");
 
-
-	Matrix4 temp2(0.f);
-	return temp2;
 }
 
 //returns a translation matrix where (0,3) = translation.x, (1,3) = translation.y, (2,3) = translation.z

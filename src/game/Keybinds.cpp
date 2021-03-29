@@ -51,7 +51,12 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		{"toggleConsole",   toggleConsole},
 		{"toggleDebugMenu", toggleDebugMenu},
 		{"toggleDebugBar",  toggleDebugBar},
-		{"toggleMenuBar", toggleMenuBar}
+		{"toggleMenuBar", toggleMenuBar},
+
+		{"grabSelectedObject", grabSelectedObject},
+		{"rotateSelectedObject", rotateSelectedObject},
+		{"scaleSelectedObject", scaleSelectedObject}
+
 	};
 	
 	//string to key map

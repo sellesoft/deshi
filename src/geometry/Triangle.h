@@ -1,5 +1,6 @@
 #pragma once
 #include "../math/Math.h"
+#include "../core/time.h"
 #include "Edge.h"
 
 struct Entity;
@@ -47,7 +48,7 @@ struct Triangle {
 	}
 
 	Vector3 get_normal() {
-		return (points[1] - points[0]).cross(points[2] - points[0]).yInvert().normalized();
+		return (points[1] - points[0]).cross(points[2] - points[0]).normalized();
 	}
 
 	void set_normal() {
@@ -98,23 +99,32 @@ struct Triangle {
 
 	//TODO(sushi, GeOp) change this function to use the new method of determining if a point is within a polygon
 	bool line_intersect(Edge3D* e) {
-		float t = 0;
 
-		Vector3 i = Math::VectorPlaneIntersect(points[0], get_normal(), e->p[0], e->p[1], t);
+		
+		Vector3 norm = get_normal();
 
-		float a1 = Math::TriangleArea(points[0] - i, points[2] - i);
-		float a2 = Math::TriangleArea(points[2] - i, points[1] - i);
-		float a3 = Math::TriangleArea(points[1] - i, points[0] - i);
+		
 
-		area = get_area();
 
-		float ta = Math::round2f(a1 + a2 + a3);
+		//this is now implemented in Controller.cpp and should probably be removed eventually
+		
+		return false;
 
-		if (ta > Math::round2f(area)) { 
-			return false; 
-		} else {
-			return true; 
-		}
+		//float a1 = Math::TriangleArea(points[0] - i, points[2] - i);
+		//float a2 = Math::TriangleArea(points[2] - i, points[1] - i);
+		//float a3 = Math::TriangleArea(points[1] - i, points[0] - i);
+		//
+		//area = get_area();
+		//
+		//float ta = Math::round2f(a1 + a2 + a3);
+		//
+		//if (ta > Math::round2f(area)) { 
+		//	return false; 
+		//} else {
+		//	return true; 
+		//}
+
+		
 	}
 
 	Vector3 midpoint() {

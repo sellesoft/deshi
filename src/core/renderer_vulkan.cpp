@@ -1,8 +1,10 @@
 #include "renderer.h"
 #include "../core.h"
 #include "../scene/Scene.h"
+#include "../game/systems/WorldSystem.h"
 #include "../math/Math.h"
 #include "../geometry/Triangle.h"
+#include "../game/components/MeshComp.h"
 
 #include "../external/saschawillems/VulkanInitializers.hpp"
 #include "../external/imgui/imgui.h"
@@ -88,14 +90,13 @@ void Renderer_Vulkan::Init(Window* window, deshiImGui* imgui, Console* console) 
 	LoadDefaultAssets();
 	
 	//debug scene
-	//this is where i am initializing scene for now 
+	//this box is initialized as an entity in EntityAdmin init
 	scene = new Scene();
 	Model box = Model::CreatePlanarBox(Vector3(1, 1, 1));
 	Texture tex("UV_Grid_Sm.jpg");
 	box.mesh.batchArray[0].textureArray.push_back(tex);
 	box.mesh.batchArray[0].textureCount = 1;
 	box.mesh.batchArray[0].shader = Shader::PBR;
-	
 	
 	scene->models = {box};
 	LoadScene(scene);
@@ -123,7 +124,9 @@ void Renderer_Vulkan::Render() {
 	
 	//reset stats
 	stats = {};
+
 	
+
 	vkWaitForFences(device, 1, &fencesInFlight[frameIndex], VK_TRUE, UINT64_MAX);
 	VkSemaphore image_sema  = semaphores[frameIndex].imageAcquired;
 	VkSemaphore render_sema = semaphores[frameIndex].renderComplete;

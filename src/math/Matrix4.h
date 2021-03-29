@@ -2,6 +2,7 @@
 #include "../utils/Debug.h"
 
 struct Vector3;
+struct Vector4;
 struct Matrix3;
 
 struct Matrix4 {
@@ -55,7 +56,7 @@ struct Matrix4 {
 	//Non-Matrix4 vs Matrix4 interactions defined in Matrix.h/Math.h
 	Matrix3 To3x3();
 	static Matrix4 RotationMatrix(Vector3 rotation);
-	static Matrix4 AxisAngleRotationMatrix(float angle, Vector3 axis);
+	static Matrix4 AxisAngleRotationMatrix(float angle, Vector4 axis);
 	static Matrix4 TranslationMatrix(Vector3 translation);
 	static Matrix4 TranslationMatrix(float x, float y, float z);
 	static Matrix4 ScaleMatrix(Vector3 scale);

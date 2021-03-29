@@ -1,10 +1,12 @@
 #include "RenderCanvasSystem.h"
 #include "../components/Camera.h"
 #include "../../core.h"
+#include "../../utils/defines.h"
 #include "../../math/Math.h"
 #include "../../scene/Scene.h"
 #include "../../EntityAdmin.h"
 #include "../../game/Keybinds.h"
+#include "../../game/components/MeshComp.h"
 #include "../../game/systems/WorldSystem.h"
 
 //for time
@@ -18,6 +20,24 @@ ImVec4 ColToVec4(Color p) {
 bool WinHovFlag = false;
 float menubarheight = 0;
 bool menubar = true;
+
+//current palette:
+//https://lospec.com/palette-list/slso8
+//TODO(sushi, Ui) implement menu style file loading sort of stuff yeah
+//TODO(sushi, Ui) standardize what UI element each color belongs to
+struct {
+	Color c1 = Color(0x0d2b45);
+	Color c2 = Color(0x203c56);
+	Color c3 = Color(0x544e68);
+	Color c4 = Color(0x8d697a);
+	Color c5 = Color(0xd08159);
+	Color c6 = Color(0xffaa5e);
+	Color c7 = Color(0xffd4a3);
+	Color c8 = Color(0xffecd6);
+	Color c9 = Color(20, 20, 20);
+}colors;
+
+std::vector<std::string> files;
 
 //// utility ui elements ///
 
@@ -36,7 +56,7 @@ void InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate = false) {
 
 //// major ui elements ////
 
-void MenuBar(EntityAdmin* admin) {
+void RenderCanvasSystem::MenuBar() {
 	using namespace ImGui;
 
 	ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
@@ -59,10 +79,15 @@ void MenuBar(EntityAdmin* admin) {
 			ImGui::EndMenu();
 		}
 		if(BeginMenu("Spawn")) {
-			std::vector<std::string> files = deshi::iterateDirectory(deshi::getModelsPath());
 			for (int i = 0; i < files.size(); i++) {
 				if(MenuItem(files[i].c_str())) { admin->console->ExecCommand("load_obj", files[i] + ".obj"); }
 			}
+			EndMenu();
+		}
+		if (BeginMenu("Window")) {
+			if (MenuItem("Object Property Menu")) showDebugTools = !showDebugTools;
+			if (MenuItem("Debug Bar")) showDebugBar = !showDebugBar;
+			if (MenuItem("ImGui Demo Window")) showImGuiDemoWindow = !showImGuiDemoWindow;
 			EndMenu();
 		}
 		
@@ -76,9 +101,12 @@ void MenuBar(EntityAdmin* admin) {
 
 }
 
-void DebugTools(EntityAdmin* admin) {
+void RenderCanvasSystem::DebugTools() {
 	using namespace ImGui;
 
+	float fontsize = ImGui::GetFontSize();
+
+	//resize tool menu if main menu bar is open
 	if (menubar) {
 		ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - menubarheight));
 		ImGui::SetNextWindowPos(ImVec2(0, menubarheight));
@@ -88,70 +116,207 @@ void DebugTools(EntityAdmin* admin) {
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
 	}
 	
+	//window styling
+	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
 	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	ImGui::PushStyleColor(ImGuiCol_Border,           ColToVec4(Color( 0,  0,  0)));
-	ImGui::PushStyleColor(ImGuiCol_Button,           ColToVec4(Color(30, 30, 30)));
-	ImGui::PushStyleColor(ImGuiCol_WindowBg,         ColToVec4(Color(20, 20, 20)));
-	ImGui::PushStyleColor(ImGuiCol_PopupBg,          ColToVec4(Color(20, 20, 20)));
-	ImGui::PushStyleColor(ImGuiCol_TableBorderLight, ColToVec4(Color(45, 45, 45)));
-	ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,    ColToVec4(Color(10, 10, 10)));
+
+	ImGui::PushStyleColor(ImGuiCol_Border,               ColToVec4(Color( 0,  0,  0)));
+	ImGui::PushStyleColor(ImGuiCol_Button,               ColToVec4(Color(30, 30, 30)));
+	ImGui::PushStyleColor(ImGuiCol_WindowBg,             ColToVec4(colors.c9));
+	ImGui::PushStyleColor(ImGuiCol_PopupBg,              ColToVec4(Color(20, 20, 20)));
+	ImGui::PushStyleColor(ImGuiCol_TableBorderLight,     ColToVec4(Color(45, 45, 45)));
+	ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,        ColToVec4(Color(10, 10, 10)));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarBg,          ColToVec4(Color(10, 10, 10)));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab,        ColToVec4(Color(55, 55, 55)));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,  ColToVec4(Color(75, 75, 75)));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColToVec4(Color(65, 65, 65)));
+
+
 
 	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 
 	//capture mouse if hovering over this window
 	if (IsWindowHovered()) WinHovFlag = true; 
 
-	if (BeginTable("split3", 3, ImGuiTableFlags_BordersOuter | ImGuiTableFlags_Resizable)) {
-		ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
-		ImGui::TableSetupColumn("Name");
-		ImGui::TableSetupColumn("Components");
-		TableHeadersRow();
-		int counter = 0;
-		for (auto& entity : admin->entities) {
-			counter++;
-			TableNextRow(); TableNextColumn();
-			if (ImGui::Button(std::to_string(entity.first).c_str())) {
-				admin->input->selectedEntity = entity.second;
-			}
+	//display header bar outside of child window so it doesnt scroll with it
+	//
+	// 
+	// 	   I'm commenting this out for now cause I don't think its necessary but someone might
+	// 	   want it later so here it is 
+	// 
+	// 
+	//TODO(sushi, Ui) format this list to work and look better
+	//if (BeginTable("entityHeader", 4, ImGuiTableFlags_BordersInner)) {
+	//	std::string str1 = "ID";
+	//	float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
+	//
+	//	ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed, strlen1 * 1.3);
+	//	ImGui::TableSetupColumn("Vis", ImGuiTableColumnFlags_WidthFixed);
+	//	ImGui::TableSetupColumn("Name");
+	//	ImGui::TableSetupColumn("Components");
+	//	TableHeadersRow();
+	//	ImGui::EndTable();
+	//}
 
-			TableNextColumn();
-			Text(entity.second->name.c_str());
-
-			TableNextColumn();
-			//Text("Address: %#08x", entity.second);
-			if (TreeNodeEx((std::string("comps") + std::to_string(entity.first)).c_str(), ImGuiTreeNodeFlags_NoTreePushOnOpen, TOSTRING(entity.second->components.size()).c_str())) {
-				for (Component* comp : entity.second->components) {
-					Text(comp->name);
-					SameLine(CalcItemWidth());
-					if (Button("Del")) {
-						admin->world->RemoveAComponentFromEntity(admin, entity.second, comp);
-					}
-				}
-				Separator();
-			}
-		}
-		EndTable();
-	}
-
-
+	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+	ImGui::Text("Entities");
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
+	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
 	
+	if (BeginChild("entityListScroll", ImVec2(GetWindowWidth() * 0.95, 100), false)) {
+		if (IsWindowHovered()) WinHovFlag = true; 
+		if (admin->entities.size() == 0) {
+			float time = DengTime->totalTime;
+			std::string str1 = "Nothing yet...";
+			float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
+			for (int i = 0; i < str1.size(); i++) {
+				SetCursorPos(ImVec2((GetWindowSize().x - strlen1) / 2 + i * (fontsize / 2), (GetWindowSize().y - fontsize) / 2 + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))));
+				Text(str1.substr(i, 1).c_str());
+			}
+		}
+		else {
+			if (BeginTable("split3", 4, ImGuiTableFlags_BordersInner)) {
 
-	Separator();
+				std::string str1 = "ID";
+				float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
 
+				ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("Vis", ImGuiTableColumnFlags_WidthFixed);
+				ImGui::TableSetupColumn("Name");
+				ImGui::TableSetupColumn("Components");
+				//TableHeadersRow();
+
+
+				int counter = 0;
+
+
+				for (auto& entity : admin->entities) {
+					counter++;
+					PushID(counter);
+					TableNextRow(); TableNextColumn();
+					std::string id = std::to_string(entity.first);
+					//SetCursorPosX((GetColumnWidth() - (fontsize - (fontsize / 2)) * id.size()) / 2);
+					if (ImGui::Button(id.c_str())) {
+						admin->input->selectedEntity = entity.second;
+					}
+					TableNextColumn();
+
+					//TODO(UiEnt, sushi) implement visibility for things other than meshes like lights, etc.
+					MeshComp* m = entity.second->GetComponent<MeshComp>();
+					if (m) {
+						if (m->mesh_visible) {
+							if (SmallButton("O")) {
+								m->ToggleVisibility();
+							}
+						}
+						else {
+							if (SmallButton("X")) {
+								m->ToggleVisibility();
+							}
+						}
+					}
+					else {
+						Text("NM");
+					}
+
+					TableNextColumn();
+					Text(TOSTRING(" ", entity.second->name).c_str());
+
+					TableNextColumn();
+					//TODO(sushi, Ui) find something better to put here
+					Text(TOSTRING(" comps: ", entity.second->components.size()).c_str());
+					PopID();
+				}
+
+				ImGui::EndTable();
+			}
+		}
+		EndChild();
+	}
+	ImGui::PopStyleColor();
+
+	ImGui::Separator();
+
+	//Selected Entity property editing
 	if (admin->input->selectedEntity) {
-		Entity* sel = admin->input->selectedEntity;
-		Text(TOSTRING("Selected Entity: ", sel->name).c_str());
-		if (ImGui::Button("play sound")) {
-			admin->ExecCommand("selent_play_sound");
+		if (BeginChild("SelectedEntityMenu", ImVec2(GetWindowWidth(), 500), true)) {
+			if (IsWindowHovered()) WinHovFlag = true;
+			Entity* sel = admin->input->selectedEntity;
+			SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+			Text(TOSTRING("Selected Entity: ", sel->name).c_str());
+			Text("Components: ");
+			
+			ImGui::PushStyleColor(ImGuiCol_TabActive,  ColToVec4(Color::VERY_DARK_CYAN));
+			ImGui::PushStyleColor(ImGuiCol_TabHovered, ColToVec4(Color::DARK_CYAN));
+			ImGui::PushStyleColor(ImGuiCol_Tab,        ColToVec4(colors.c1));
+			ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
+			if (BeginTabBar("ObjectPropertyMenus")) {
+				
+				//Components menu
+				if (BeginTabItem("Comp")) {
+					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+					if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 100), true)) {
+						if (IsWindowHovered()) WinHovFlag = true;
+
+						if (ImGui::BeginTable("SelectedComponents", 1)) {
+
+							ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
+							for (Component* c : sel->components) {
+								TableNextColumn(); TableNextRow();
+								Text(c->name);
+								SameLine(CalcItemWidth());
+								if (Button("Del")) {
+									admin->world->RemoveAComponentFromEntity(admin, sel, c);
+								}
+							}
+							ImGui::EndTable();
+						}
+						EndChild();
+					}
+					EndTabItem();
+				}
+
+				//Materials menu
+				if (BeginTabItem("Mat")) {
+					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+					if (BeginChild("SelectedMaterialsWindow", ImVec2(GetWindowWidth() * 0.95, 200), true)) {
+						if (IsWindowHovered()) WinHovFlag = true;
+						MeshComp* m = sel->GetComponent<MeshComp>();
+						if (m) {
+							//TODO(sushi, Ui) set up showing multiple batches shaders when that becomes relevant
+							Text(TOSTRING("Shader: ", shadertostring.at(m->m->batchArray[0].shader)).c_str());
+							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+							if (ImGui::TreeNode("Shader Select")) {
+								static int selected = -1;
+								for (int i = 0; i < shadertostringint.size(); i++) {
+									if (Selectable(shadertostringint[i].c_str(), selected == i)) {
+										selected = i;
+										admin->renderer->UpdateMaterialShader(m->MeshID, stringtoshader.at(shadertostringint[i]));
+									}
+								}
+								TreePop();
+							}
+						}
+						EndChild();
+					}
+					EndTabItem();
+				}
+				EndTabBar();
+			}
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+			ImGui::PopStyleVar();
+			EndChild();
 		}
-		if (ImGui::BeginTable("SelectedComponents", 1)) {
-			ImGui::EndTable();
-		}
+		
 	}
 	else {
+		SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
 		Text("Selected Entity: None");
 	}
 	
@@ -160,6 +325,13 @@ void DebugTools(EntityAdmin* admin) {
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+
+	ImGui::PopStyleColor();
+	ImGui::PopStyleColor();
+	ImGui::PopStyleColor();
+	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
@@ -171,7 +343,7 @@ void DebugTools(EntityAdmin* admin) {
 	
 }
 
-void DebugBar(EntityAdmin* admin) {
+void RenderCanvasSystem::DebugBar() {
 	using namespace ImGui;
 	
 	//for getting fps
@@ -411,10 +583,7 @@ void DebugBar(EntityAdmin* admin) {
 			
 			EndPopup();
 		}
-		
-		
-		
-		EndTable();
+		ImGui::EndTable();
 	}
 	
 	ImGui::PopStyleVar();
@@ -430,15 +599,17 @@ void RenderCanvasSystem::DrawUI(void) {
 	if (DengInput->KeyPressed(DengKeys->toggleDebugBar)) showDebugBar = !showDebugBar;
 	if (DengInput->KeyPressed(DengKeys->toggleMenuBar)) showMenuBar = !showMenuBar;
 	
-	if (showDebugBar) DebugBar(admin);
-	if (showDebugTools) DebugTools(admin);
-	if (showMenuBar) MenuBar(admin);
+	if (showDebugBar) DebugBar();
+	if (showDebugTools) DebugTools();
+	if (showMenuBar) MenuBar();
+	if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
 
 	if (showMenuBar) menubar = true;
 	else menubar = false;
 }
 
 void RenderCanvasSystem::Init() {
+	files = deshi::iterateDirectory(deshi::getModelsPath());
 	Canvas* canvas = admin->tempCanvas;
 }
 

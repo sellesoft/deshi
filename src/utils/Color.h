@@ -21,11 +21,6 @@ struct Color {
 		r = 0; g = 0; b = 0; a = 0;
 	};
 	
-	bool operator == (Color ri) {
-		if (r == ri.r && g == ri.g && b == ri.b) return true;
-		return false;
-	}
-	
 	Color(u8 r, u8 g, u8 b) {
 		this->r = r;
 		this->g = g;
@@ -38,6 +33,29 @@ struct Color {
 		this->g = g;
 		this->b = b;
 		this->a = a;
+	}
+
+	//hex to rgb
+	Color(int hex) {
+		r = ((hex >> 16) & 0xFF);
+		g = ((hex >> 8) & 0xFF);
+		b = ((hex)     & 0xFF);
+		a = 255;
+	}
+
+	//TODO(sushi, Col) implement more operators for colors maybe
+	bool operator == (Color ri) {
+		if (r == ri.r && g == ri.g && b == ri.b) return true;
+		return false;
+	}
+
+	//kind of useless
+	Color operator * (Color rhs) {
+		return Color(r * rhs.r, g * rhs.g, b * rhs.b);
+	}
+
+	Color operator * (const float& rhs) {
+		return Color(r * rhs, g * rhs, b * rhs);
 	}
 	
 	Color rinvert() { //fancy name huh
