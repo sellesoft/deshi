@@ -380,7 +380,6 @@ void RenderCanvasSystem::DebugBar() {
 	
 	ImGui::Begin("DebugBar", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	debugbarheight = 20;
-	LOG(debugbarheight);
 	//capture mouse if hovering over this window
 	if (IsWindowHovered()) WinHovFlag = true; 
 
@@ -620,21 +619,52 @@ void RenderCanvasSystem::DebugLayer() {
 
 	Camera* c = admin->mainCamera;
 
-	for (int i = -20; i < 20; i++) {
-		Vector3 v1 = Vector3(-20 + i, 0, -20);
-		Vector3 v2 = Vector3(-20 + i, 0,  20);
-		Vector3 v3 = Vector3(-20, 0, -20 + i);
-		Vector3 v4 = Vector3( 20, 0, -20 + i);
+	
 
-		Vector2 v12 = Math::WorldToScreen2D(v1, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
-		Vector2 v22 = Math::WorldToScreen2D(v2, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
-		Vector2 v32 = Math::WorldToScreen2D(v3, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
-		Vector2 v42 = Math::WorldToScreen2D(v4, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
+	//psuedo grid
+	for (int i = 0; i < 40; i++) {
+		Vector3 cpos = c->position;
+		Vector3 v1 = Math::WorldToCamera(Vector3(floor(cpos.x) + -20 + i, 0, floor(cpos.z) + -20), c->viewMatrix).ToVector3();
+		Vector3 v2 = Math::WorldToCamera(Vector3(floor(cpos.x) + -20 + i, 0, floor(cpos.z) +  20), c->viewMatrix).ToVector3();
+		Vector3 v3 = Math::WorldToCamera(Vector3(floor(cpos.x) + -20, 0, floor(cpos.z) + -20 + i), c->viewMatrix).ToVector3();
+		Vector3 v4 = Math::WorldToCamera(Vector3(floor(cpos.x) +  20, 0, floor(cpos.z) + -20 + i), c->viewMatrix).ToVector3();
+		
+		bool l1flag = false;
+		bool l2flag = false;
+
+		if (floor(cpos.x) - 20 + i == 0){
+			l1flag = true;
+		}
+		if (floor(cpos.z) - 20 + i == 0) {
+			l2flag = true;
+		}
 
 
+		//Vector3 v1t = v1.ToVector3();
+		//Vector3 v2t = v2.ToVector3();
+		//Vector3 v3t = v3.ToVector3();
+		//Vector3 v4t = v4.ToVector3();
 
-		ImGui::GetBackgroundDrawList()->AddLine(v12.ToImVec2(), v22.ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 1)));
-		ImGui::GetBackgroundDrawList()->AddLine(v32.ToImVec2(), v42.ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 1)));
+		
+		if (Math::ClipLineToZPlanes(v1, v2, c)) {
+			Vector3 v1s = Math::CameraToScreen(v1, c->projectionMatrix, DengWindow->dimensions);
+			Vector3 v2s = Math::CameraToScreen(v2, c->projectionMatrix, DengWindow->dimensions);
+			Math::ClipLineToBorderPlanes(v1s, v2s, DengWindow->dimensions);
+			if(!l1flag) ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.7)));
+			else ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 0, 0, 0.7)));
+
+		}
+		if (Math::ClipLineToZPlanes(v3, v4, c)) {
+			Vector3 v3s = Math::CameraToScreen(v3, c->projectionMatrix, DengWindow->dimensions);
+			Vector3 v4s = Math::CameraToScreen(v4, c->projectionMatrix, DengWindow->dimensions);
+			Math::ClipLineToBorderPlanes(v3s, v4s, DengWindow->dimensions);
+			if(!l2flag) ImGui::GetBackgroundDrawList()->AddLine(v3s.ToVector2().ToImVec2(), v4s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.7)));
+			else ImGui::GetBackgroundDrawList()->AddLine(v3s.ToVector2().ToImVec2(), v4s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(0, 0, 1, 0.7)));
+		}
+		//v1.takeVec3(v1t); v2.takeVec3(v2t);
+		//v3.takeVec3(v3t); v4.takeVec3(v4t);
+
+		
 
 
 

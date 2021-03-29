@@ -7,6 +7,7 @@
 #include "Matrix4.h"
 #include "MatrixN.h"
 #include "Quaternion.h"
+#include "../game/components/Camera.h"
 
 #include <math.h>
 #include <algorithm>
@@ -660,6 +661,118 @@ namespace Math {
 	//returns where two lines intersect in 3D space //TODO(,sushi) implement this
 	static Vector3 LineIntersect3(Vector3 adir, Vector3 ap, Vector3 bdir, Vector3 bp) {
 	}
+
+	//the input vectors should be in viewMatrix/camera space
+	//returns true if the line can be rendered after clipping, false otherwise
+	static bool ClipLineToZPlanes(Vector3& start, Vector3& end, Camera* camera) {
+		//clip to the near plane
+		Vector3 planePoint = Vector3(0, 0, camera->nearZ);
+		Vector3 planeNormal = Vector3::FORWARD;
+		float d = planeNormal.dot(planePoint);
+		bool startBeyondPlane = planeNormal.dot(start) - d < 0;
+		bool endBeyondPlane = planeNormal.dot(end) - d < 0;
+		float t;
+		if (startBeyondPlane && !endBeyondPlane) {
+			start = Math::VectorPlaneIntersect(planePoint, planeNormal, start, end, t);
+		} else if (!startBeyondPlane && endBeyondPlane) {
+			end = Math::VectorPlaneIntersect(planePoint, planeNormal, start, end, t);
+		} else if (startBeyondPlane && endBeyondPlane) {
+			return false;
+		}
+	
+		//clip to the far plane
+		planePoint = Vector3(0, 0, camera->farZ);
+		planeNormal = Vector3::BACK;
+		d = planeNormal.dot(planePoint);
+		startBeyondPlane = planeNormal.dot(start) - d < 0;
+		endBeyondPlane = planeNormal.dot(end) - d < 0;
+		if (startBeyondPlane && !endBeyondPlane) {
+			start = Math::VectorPlaneIntersect(planePoint, planeNormal, start, end, t);
+		} else if (!startBeyondPlane && endBeyondPlane) {
+			end = Math::VectorPlaneIntersect(planePoint, planeNormal, start, end, t);
+		} else if (startBeyondPlane && endBeyondPlane) {
+			return false;
+		}
+		return true;
+	} //ClipLineToZPlanes
+
+	  //cohen-sutherland algorithm https://en.wikipedia.org/wiki/Cohen%E2%80%93Sutherland_algorithm
+	  //the input vectors should be in screen space
+	  //returns true if the line can be rendered after clipping, false otherwise
+	static bool ClipLineToBorderPlanes(Vector3& start, Vector3& end, Vector2 dimensions) {
+		//clip to the vertical and horizontal planes
+		const int CLIP_INSIDE = 0;
+		const int CLIP_LEFT = 1;
+		const int CLIP_RIGHT = 2;
+		const int CLIP_BOTTOM = 4;
+		const int CLIP_TOP = 8;
+		auto ComputeOutCode = [&](Vector3& vertex) {
+			int code = CLIP_INSIDE;
+			if (vertex.x < 0) {
+				code |= CLIP_LEFT;
+			}
+			else if (vertex.x > dimensions.x) {
+				code |= CLIP_RIGHT;
+			}
+			if (vertex.y < 0) { //these are inverted because we are in screen space
+				code |= CLIP_TOP;
+			}
+			else if (vertex.y > dimensions.y) {
+				code |= CLIP_BOTTOM;
+			}
+			return code;
+		};
+
+		int lineStartCode = ComputeOutCode(start);
+		int lineEndCode = ComputeOutCode(end);
+
+		//loop until all points are within or outside the screen zone
+		while (true) {
+			if (!(lineStartCode | lineEndCode)) {
+				//both points are inside the screen zone
+				return true;
+			}
+			else if (lineStartCode & lineEndCode) {
+				//both points are in the same outside zone
+				return false;
+			}
+			else {
+				float x, y;
+				//select one of the points outside
+				int code = lineEndCode > lineStartCode ? lineEndCode : lineStartCode;
+
+				//clip the points the the screen bounds by finding the intersection point
+				if			(code & CLIP_TOP) {		//point is above screen
+					x = start.x + (end.x - start.x) * (-start.y) / (end.y - start.y);
+					y = 0;
+				} 
+				else if	(code & CLIP_BOTTOM) {		//point is below screen
+					x = start.x + (end.x - start.x) * (dimensions.y - start.y) / (end.y - start.y);
+					y = dimensions.y;
+				} 
+				else if	(code & CLIP_RIGHT) {		//point is right of screen
+					y = start.y + (end.y - start.y) * (dimensions.x - start.x) / (end.x - start.x);
+					x = dimensions.x;
+				} 
+				else if	(code & CLIP_LEFT) {		//point is left of screen
+					y = start.y + (end.y - start.y) * (-start.x) / (end.x - start.x);
+					x = 0;
+				}
+
+				//update the vector's points and restart loop
+				if (code == lineStartCode) {
+					start.x = x;
+					start.y = y;
+					lineStartCode = ComputeOutCode(start);
+				}
+				else {
+					end.x = x;
+					end.y = y;
+					lineEndCode = ComputeOutCode(end);
+				}
+			}
+		}
+	} //ClipLineToBorderPlanes
 	
 	//returns area of a triangle of sides a and b
 	static float TriangleArea(Vector3 a, Vector3 b) { return a.cross(b).mag() / 2; }

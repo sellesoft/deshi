@@ -47,6 +47,8 @@ struct Vector4 {
 	Vector4 zInvert() const;
 	Vector4 wInvert() const;
 	
+	void takeVec3(Vector3 v); //dunno what to call this but it just takes data from a vector3 and leaves w alone
+	
 	//Non-Vector vs Vector interactions defined in Math.h
 	Vector4(const Vector3& v, const float& w);
 	
@@ -213,4 +215,8 @@ inline Vector4 Vector4::zInvert() const {
 
 inline Vector4 Vector4::wInvert() const {
 	return Vector4(x, y, z,-w);
+}
+
+inline void Vector4::takeVec3(Vector3 v) {
+	x = v.x; y = v.y; z = v.z;
 }
