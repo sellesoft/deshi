@@ -83,7 +83,7 @@ void RenderCanvasSystem::MenuBar() {
 				if(MenuItem(files[i].c_str())) { admin->console->ExecCommand("load_obj", files[i] + ".obj"); }
 			}
 			EndMenu();
-		}
+		}//agh
 		if (BeginMenu("Window")) {
 			if (MenuItem("Object Property Menu")) showDebugTools = !showDebugTools;
 			if (MenuItem("Debug Bar")) showDebugBar = !showDebugBar;
