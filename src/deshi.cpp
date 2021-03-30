@@ -57,6 +57,21 @@ find a way to forward declare vulkan stuff and move the include to the cpp
 add support for empty scene
 add orthographic pipeline for side views etc.
 
+Level Editor TODOs
+------------
+orbitting camera for rotating around objects
+rotating objects
+scaling objects
+typing numbers while grabbing/rotating/scaling for precise manipulation (like in Blender)
+adding components
+manipulating component/entity data through UI
+changing materials/textures through UI
+highlighing selected object (maybe AABB for now but figure out precise outlining later)
+implement grabbing/rotating/scaling with a visual tool thing (like in Unreal)
+world axis in top right (like we used to have)
+orthographic side views
+(maybe) multiple viewports
+
 Physics/Atmos TODOs
 -------------
 redo main physics loop
@@ -75,12 +90,12 @@ renaming entities from entity list
 Math NOTEs: Row-Major matrices, Left-Handed coordinate system (clockwise rotation when looking down axis)
 Math TODOs
 ----------
+cleanup math library (remove redundant/old things, make functions more consistent, etc.)
 add quaternions and converions between them and other linear algebra primitives
-finish AxisAngleRotationMatrix function
-review the projection functions for correctness
 (maybe) move conversion functions to thier own file
 (maybe) move transform/affine matrix functions to their own file
 replace glm :)
+
 
 */
 

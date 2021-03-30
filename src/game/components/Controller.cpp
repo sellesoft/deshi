@@ -236,6 +236,8 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 				grabbingObj = true;
 				CONTROLLER_MOUSE_CAPTURE = true;
 
+				float t = 0;
+
 				//bools for if we're in an axis movement mode
 				static bool xaxis = false;
 				static bool yaxis = false;
@@ -309,7 +311,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					
 				}
 				else if (xaxis) {
-
+					ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0,0,0,0));
 					ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
 
 
@@ -318,27 +320,72 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					Vector2 xaxistoscreen = Math::WorldToScreen2D(worldpos + Vector3::RIGHT, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
 					Vector2 screenxaxis = (xaxistoscreen - screenpos).normalized();
 
-					//frustrum normals
-					Vector3 flpn = c->forward * Matrix4::AxisAngleRotationMatrix(90 - (c->fieldOfView / 2), Vector4(Vector3::UP, 0));
-					Vector3 frpn = c->forward * Matrix4::AxisAngleRotationMatrix(-(90 - (c->fieldOfView / 2)), Vector4(Vector3::UP, 0));
 
-					float t = 0;
+					Vector3 xp1 = initialObjPos - (Vector3::RIGHT * 2000);
+					Vector3 xp2 = initialObjPos + (Vector3::RIGHT * 2000);
+
+					Vector3 pc1 = Math::WorldToCamera(xp1, c->viewMatrix).ToVector3();
+					Vector3 pc2 = Math::WorldToCamera(xp2, c->viewMatrix).ToVector3();
+
+
+					if (Math::ClipLineToZPlanes(pc1, pc2, c)) {
+
+						Vector3 pn1 = Vector3::FORWARD * Matrix4::AxisAngleRotationMatrix(  70 - (c->fieldOfView / 2), Vector4(0, 1, 0, 0));
+						Vector3 pn2 = Vector3::FORWARD * Matrix4::AxisAngleRotationMatrix(-(70 - (c->fieldOfView / 2)), Vector4(0, 1, 0, 0));
+
+						Vector3 ps1 = Math::VectorPlaneIntersect(Vector3::ZERO, pn1, pc1, pc2, t); 
+						Vector3 ps2 = Math::VectorPlaneIntersect(Vector3::ZERO, pn2, pc1, pc2, t); 
+									
+						Vector3 pir1 = Math::CameraToWorld(ps1, c->viewMatrix).ToVector3();
+						Vector3 pir2 = Math::CameraToWorld(ps2, c->viewMatrix).ToVector3();
+
+						Vector3 v1s = Math::CameraToScreen(ps1, c->projectionMatrix, DengWindow->dimensions);
+						Vector3 v2s = Math::CameraToScreen(ps2, c->projectionMatrix, DengWindow->dimensions);
+						
+						Math::ClipLineToBorderPlanes(v1s, v2s, DengWindow->dimensions);
+						
+						Vector2 mouseline = DengInput->mousePos - v1s.ToVector2();
+						Vector2 screenline = v2s.ToVector2() - v1s.ToVector2();
+						Vector3 worldline = pir2 - pir1;
+
+						Vector3 backplaneintersect = Math::VectorPlaneIntersect(c->forward + (c->forward.normalized() * c->farZ), c->forward, pir1, pir2, t);
+
+						float dist = mouseline.dot(screenline.normalized());
+						LOG("Dist: ", dist, "\nscreenline: ", screenline.mag());
+						float ratio = (screenline.normalized() * dist).mag() / screenline.mag();
+
+						sel->transform->position = pir1 + (worldline.mag() * ratio) * worldline.normalized();
+
+						float fontsize = ImGui::GetFontSize();
+						std::string str1 = TOSTRING(pir2);
+						float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
+
+						ImGui::GetBackgroundDrawList()->AddLine(DengInput->mousePos.ToImVec2(), v1s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(0, 0.6, 0.3, 1)));
+						ImGui::GetBackgroundDrawList()->AddLine((v1s.ToVector2() + (screenline.normalized()* dist)).ToImVec2(), v1s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(0.3, 0.6, 0, 1)));
+						ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(0, 1, 0.1, 1)));
+
+						ImGui::SetCursorPos(v1s.ToVector2().ToImVec2());
+						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8, 0.4, 0, 1));
+						ImGui::Text(TOSTRING(pir1).c_str());
+						ImGui::PopStyleColor();
+						ImGui::SetCursorPos(v2s.ToVector2().ToImVec2());
+						ImGui::SetCursorPosX(ImGui::GetCursorPosX() - strlen1);
+						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0.4, 0.8, 1));
+						ImGui::Text(TOSTRING(pir2).c_str());
+						ImGui::PopStyleColor();
+
+
+						
 					
-					//points of intersection with frustrum planes
-					Vector3 lpi = Math::VectorPlaneIntersect(c->position, flpn, initialObjPos, Vector3::RIGHT, t);
-					Vector3 rpi = Math::VectorPlaneIntersect(c->position, frpn, initialObjPos, Vector3::RIGHT, t);
-					
-					//previous points in screen space
-					Vector2 slpi = Math::WorldToScreen2D(lpi, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
-					Vector2 srpi = Math::WorldToScreen2D(rpi, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
+					}
 
 					//screen axis line
-					Vector2 sal = slpi - srpi;
+					//Vector2 sal = slpi - srpi;
 
 					//displacement of projected point along screen axis line
-					float disp = (DengInput->mousePos - srpi).dot(sal);
+					//float disp = (DengInput->mousePos - srpi).dot(sal);
 
-					float ratio = (sal.normalized() * disp).mag();
+					//float ratio = (sal.normalized() * disp).mag();
 
 					//TODO(sushi, In) implement displacement mod changing when mouse scrolling works
 					float dispmod = 0.1;
@@ -346,9 +393,9 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					if (DengInput->ModsDown(INPUTMOD_CTRL)) dispmod = 0.05;
 					else dispmod = 0.1;
 					
-					sel->transform->position = rpi + ratio * (lpi - rpi);
+					//sel->transform->position = rpi + ratio * (lpi - rpi);
 
-					ImGui::GetBackgroundDrawList()->AddLine(ImVec2(slpi.x, slpi.y), ImVec2(srpi.x, srpi.y), ImGui::GetColorU32(ImVec4(1, 1, 1, 1)));
+					ImGui::PopStyleColor();
 					ImGui::End();
 				}
 

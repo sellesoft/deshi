@@ -14,15 +14,15 @@
 #include <iostream>
 #include <stdexcept>
 
-#define LOG(...)     admin->console->PushConsole(TOSTRING("\n[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR(...)   admin->console->PushConsole(TOSTRING("\n[c:error]", __VA_ARGS__, "[c]"))
-#define SUCCESS(...) admin->console->PushConsole(TOSTRING("\n[c:green]", __VA_ARGS__, "[c]"))
+#define LOG(...)     admin->console->PushConsole(TOSTRING("[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR(...)   admin->console->PushConsole(TOSTRING("[c:error]", __VA_ARGS__, "[c]"))
+#define SUCCESS(...) admin->console->PushConsole(TOSTRING("[c:green]", __VA_ARGS__, "[c]"))
 //#define PRINT(...)   admin->GetSystem<Console>()->PushConsole(TOSTRING(__VA_ARGS__))
 
 //additionally prints where function was called
-#define LOG_LOC(...)     admin->console->PushConsole(TOSTRING("\n[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR_LOC(...)   admin->console->PushConsole(TOSTRING("\n[c:error]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:error]", __VA_ARGS__, "[c]"))
-#define SUCCESS_LOC(...) admin->console->PushConsole(TOSTRING("\n[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
+#define LOG_LOC(...)     admin->console->PushConsole(TOSTRING("[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR_LOC(...)   admin->console->PushConsole(TOSTRING("[c:error]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:error]", __VA_ARGS__, "[c]"))
+#define SUCCESS_LOC(...) admin->console->PushConsole(TOSTRING("[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
 
 #define DASSERT(condition, message)     if(!(condition) && !admin->paused){ ERROR_LOC("Assertion '" #condition "' failed: \n", message); admin->paused = true;}
 #define DASSERTWARN(condition, message) if(!(condition) && !admin->paused) LOG_LOC("Assertion '" #condition "' failed: \n", message)

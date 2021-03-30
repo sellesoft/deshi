@@ -780,6 +780,10 @@ namespace Math {
 	static Vector4 WorldToCamera(Vector3 vertex, Matrix4 viewMatrix) {
 		return Math::ProjMult(vertex.ToVector4(), viewMatrix);
 	}
+
+	static Vector4 CameraToWorld(Vector3 vertex, Matrix4 viewMatrix) {
+		return Math::ProjMult(vertex.ToVector4(), viewMatrix.Inverse());
+	}
 	
 	static Vector3 CameraToScreen(Vector3 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions) {
 		Vector3 vm = Math::ProjMult(csVertex.ToVector4(), projectionMatrix).ToVector3();
