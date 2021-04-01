@@ -28,27 +28,27 @@ inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
 	
 	if (!admin->IMGUI_KEY_CAPTURE) {
 		
-		if(DengInput->MouseDown(MouseButton::MB_RIGHT) || moveOverride){
+		if(DengInput->MouseDownAnyMod(MouseButton::MB_RIGHT) || moveOverride){
 			Vector3 inputs;
 			if (mode == MOVEMENT_MODE_FLYING) {
 				//translate up
-				if (DengInput->KeyDown(DengKeys->movementFlyingUp)) {  inputs.y += 1;  }
+				if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingUp)) {  inputs.y += 1;  }
 				
 				//translate down
-				if (DengInput->KeyDown(DengKeys->movementFlyingDown)) {  inputs.y -= 1; }
+				if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingDown)) {  inputs.y -= 1; }
 			}
 			
 			//translate forward
-			if (DengInput->KeyDown(DengKeys->movementFlyingForward)) {  inputs += camera->forward; }
+			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingForward)) {  inputs += camera->forward; }
 			
 			//translate back
-			if (DengInput->KeyDown(DengKeys->movementFlyingBack)) {  inputs -= camera->forward; }
+			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingBack)) {  inputs -= camera->forward; }
 			
 			//translate right
-			if (DengInput->KeyDown(DengKeys->movementFlyingRight)) {  inputs += camera->right; }
+			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingRight)) {  inputs += camera->right; }
 			
 			//translate left
-			if (DengInput->KeyDown(DengKeys->movementFlyingLeft)) { inputs -= camera->right; }
+			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingLeft)) { inputs -= camera->right; }
 			
 			
 			if (DengInput->ShiftDown())     { camera->position += inputs.normalized() * 16 * deltaTime; }
@@ -68,28 +68,28 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 	if (!admin->IMGUI_KEY_CAPTURE) {
 
 		//camera rotation up
-		if (input->KeyDown(binds->cameraRotateUp)) {
+		if (input->KeyDownAnyMod(binds->cameraRotateUp)) {
 			if (input->ModsDown(INPUTMOD_SHIFT))     { camera->rotation.x -= 50 * deltaTime; }
 			else if (input->ModsDown(INPUTMOD_CTRL)) { camera->rotation.x -= 5 * deltaTime; }
 			else                                     { camera->rotation.x -= 25 * deltaTime; }
 		}
 					
 		//camera rotation down
-		if (input->KeyDown(binds->cameraRotateDown)) {
+		if (input->KeyDownAnyMod(binds->cameraRotateDown)) {
 			if (input->ModsDown(INPUTMOD_SHIFT))     { camera->rotation.x += 50 * deltaTime; }
 			else if (input->ModsDown(INPUTMOD_CTRL)) { camera->rotation.x += 5 * deltaTime; }
 			else                                     { camera->rotation.x += 25 * deltaTime; }
 		}
 					
 		//camera rotation right
-		if (input->KeyDown(binds->cameraRotateRight)) {
+		if (input->KeyDownAnyMod(binds->cameraRotateRight)) {
 			if (input->ModsDown(INPUTMOD_SHIFT))	 { camera->rotation.y += 50 * deltaTime; }
 			else if (input->ModsDown(INPUTMOD_CTRL)) { camera->rotation.y += 5 * deltaTime; }
 			else								     { camera->rotation.y += 25 * deltaTime; }
 		}
 					
 		//camera rotation left
-		if (input->KeyDown(binds->cameraRotateLeft)) {
+		if (input->KeyDownAnyMod(binds->cameraRotateLeft)) {
 			if (input->ModsDown(INPUTMOD_SHIFT))	 { camera->rotation.y -= 50 * deltaTime; }
 			else if (input->ModsDown(INPUTMOD_CTRL)) { camera->rotation.y -= 5 * deltaTime; }
 			else								     { camera->rotation.y -= 25 * deltaTime; }
@@ -98,14 +98,14 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 	}
 	if(!admin->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE){
 		//TODO(delle,In) change this so its dependent on game state or something (level editor vs gameplay)
-		if(input->MousePressed(MouseButton::MB_RIGHT)){
+		if(input->MousePressed(MouseButton::MB_RIGHT | INPUTMOD_ANY)){
 			admin->ExecCommand("cursor_mode", "1");
 		}
-		if(input->MouseDown(MouseButton::MB_RIGHT)){
+		if(input->MouseDown(MouseButton::MB_RIGHT | INPUTMOD_ANY)){
 			camera->rotation.y += sens * (input->mouseX - window->centerX) * .03f;
 			camera->rotation.x += sens * (input->mouseY - window->centerY) * .03f;
 		}
-		if(input->MouseReleased(MouseButton::MB_RIGHT)){
+		if(input->MouseReleased(MouseButton::MB_RIGHT | INPUTMOD_ANY)){
 			admin->ExecCommand("cursor_mode", "0");
 		}
 	}
