@@ -335,7 +335,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 
 						Vector3 ps1 = Math::VectorPlaneIntersect(Vector3::ZERO, pn1, pc1, pc2, t); 
 						Vector3 ps2 = Math::VectorPlaneIntersect(Vector3::ZERO, pn2, pc1, pc2, t); 
-									
+						
 						Vector3 pir1 = Math::CameraToWorld(ps1, c->viewMatrix).ToVector3();
 						Vector3 pir2 = Math::CameraToWorld(ps2, c->viewMatrix).ToVector3();
 
@@ -351,7 +351,6 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 						Vector3 backplaneintersect = Math::VectorPlaneIntersect(c->forward + (c->forward.normalized() * c->farZ), c->forward, pir1, pir2, t);
 
 						float dist = mouseline.dot(screenline.normalized());
-						LOG("Dist: ", dist, "\nscreenline: ", screenline.mag());
 						float ratio = (screenline.normalized() * dist).mag() / screenline.mag();
 
 						sel->transform->position = pir1 + (worldline.mag() * ratio) * worldline.normalized();

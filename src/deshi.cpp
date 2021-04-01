@@ -81,7 +81,6 @@ add physics interaction functions
 
 UI TODOs
 --------
-Restore the spawning/inspector menus
 2D shader
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
