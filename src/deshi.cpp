@@ -95,8 +95,6 @@ add quaternions and converions between them and other linear algebra primitives
 (maybe) move conversion functions to thier own file
 (maybe) move transform/affine matrix functions to their own file
 replace glm :)
-
-
 */
 
 #include "core.h"
@@ -104,47 +102,31 @@ replace glm :)
 
 struct DeshiEngine {
 	EntityAdmin entityAdmin;
-	RenderAPI renderAPI;
-	Renderer* renderer;
+	Renderer renderer;
 	Input input;
 	Window window;
-	deshiImGui* imgui;
+	deshiImGui imgui;
 	Time time;
 	Console console;
 	
 	//TODO(delle,Fs) setup loading a config file to a config struct
-	//TODO(delle,Re) change render API to a define rather than variable so it doesnt have to be a pointer
 	void LoadConfig() {
-		//render api
-		renderAPI = RenderAPI::VULKAN;
-		switch (renderAPI) {
-			case(RenderAPI::VULKAN):default: {
-				renderer = new Renderer_Vulkan;
-				imgui = new vkImGui;
-			}break;
-		}
+		
 	}
 	
 	void Start() {
-		//init
-		
 		//enforce deshi file system
 		deshi::enforceDirectories();
 		
-		//start console
-		
-
+		//init core
 		LoadConfig();
-		time.Init(300);
+		time.Init(300); //300 tps for physics
 		window.Init(&input, 1280, 720); //inits input as well
 		console.Init(&time, &input, &window, &entityAdmin);
-		renderer->time = &time;
-		renderer->Init(&window, imgui, &console); //inits imgui as well
+		renderer.Init(&time, &window, &imgui, &console); //inits imgui as well
 		
-		
-		
-		//start entity admin
-		entityAdmin.Init(&input, &window, &time, renderer, &console, renderer->scene);
+		//init game admin
+		entityAdmin.Init(&input, &window, &time, &renderer, &console, renderer.scene);
 		
 		//start main loop
 		while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
@@ -153,8 +135,8 @@ struct DeshiEngine {
 		}
 		
 		//cleanup
-		imgui->Cleanup(); delete imgui;
-		renderer->Cleanup(); delete renderer;
+		imgui.Cleanup();
+		renderer.Cleanup();
 		window.Cleanup();
 		console.CleanUp();
 	}
@@ -163,12 +145,11 @@ struct DeshiEngine {
 		time.Update();
 		window.Update();
 		input.Update();
-		imgui->NewFrame();            //place imgui calls after this
-		
+		imgui.NewFrame();            //place imgui calls after this
 		entityAdmin.Update();
 		console.Update();      //not sure where we want this
-		renderer->Render();           //place imgui calls before this
-		renderer->Present();
+		renderer.Render();           //place imgui calls before this
+		renderer.Present();
 		//entityAdmin.PostRenderUpdate();
 		return true;
 	}

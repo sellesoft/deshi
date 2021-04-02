@@ -59,24 +59,24 @@ void InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate = false) {
 
 void RenderCanvasSystem::MenuBar() {
 	using namespace ImGui;
-
+	
 	ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
 	ImGui::PushStyleColor(ImGuiCol_PopupBg,   ColToVec4(Color(20, 20, 20, 255)));
 	ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ColToVec4(Color(20, 20, 20, 255)));
-
+	
 	
 	if(BeginMainMenuBar()) {
 		menubarheight = GetWindowHeight();
 		if(BeginMenu("File")) {
 			if (MenuItem("placeholder")) {
-
+				
 			}
 			ImGui::EndMenu();
 		}
 		if(BeginMenu("Edit")) {
 			if (MenuItem("placeholder")) {
-
+				
 			}
 			ImGui::EndMenu();
 		}
@@ -96,19 +96,19 @@ void RenderCanvasSystem::MenuBar() {
 		
 		EndMainMenuBar();
 	}
-
+	
 	PopStyleColor();
 	PopStyleColor();
 	PopStyleVar();
 	PopStyleVar();
-
+	
 }
 
 void RenderCanvasSystem::DebugTools() {
 	using namespace ImGui;
-
+	
 	float fontsize = ImGui::GetFontSize();
-
+	
 	//resize tool menu if main menu bar is open
 	ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - (menubarheight + debugbarheight)));
 	ImGui::SetNextWindowPos(ImVec2(0, menubarheight));
@@ -122,7 +122,7 @@ void RenderCanvasSystem::DebugTools() {
 	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-
+	
 	ImGui::PushStyleColor(ImGuiCol_Border,               ColToVec4(Color( 0,  0,  0)));
 	ImGui::PushStyleColor(ImGuiCol_Button,               ColToVec4(Color(30, 30, 30)));
 	ImGui::PushStyleColor(ImGuiCol_WindowBg,             ColToVec4(colors.c9));
@@ -133,16 +133,16 @@ void RenderCanvasSystem::DebugTools() {
 	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab,        ColToVec4(Color(55, 55, 55)));
 	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,  ColToVec4(Color(75, 75, 75)));
 	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColToVec4(Color(65, 65, 65)));
-
-
-
+	
+	
+	
 	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
-
+	
 	debugtoolswidth = GetWindowWidth();
-
+	
 	//capture mouse if hovering over this window
 	if (IsWindowHovered()) WinHovFlag = true; 
-
+	
 	//display header bar outside of child window so it doesnt scroll with it
 	//
 	// 
@@ -162,7 +162,7 @@ void RenderCanvasSystem::DebugTools() {
 	//	TableHeadersRow();
 	//	ImGui::EndTable();
 	//}
-
+	
 	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
 	ImGui::Text("Entities");
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
@@ -181,20 +181,20 @@ void RenderCanvasSystem::DebugTools() {
 		}
 		else {
 			if (BeginTable("split3", 4, ImGuiTableFlags_BordersInner)) {
-
+				
 				std::string str1 = "ID";
 				float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-
+				
 				ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
 				ImGui::TableSetupColumn("Vis", ImGuiTableColumnFlags_WidthFixed);
 				ImGui::TableSetupColumn("Name");
 				ImGui::TableSetupColumn("Components");
 				//TableHeadersRow();
-
-
+				
+				
 				int counter = 0;
-
-
+				
+				
 				for (auto& entity : admin->entities) {
 					counter++;
 					PushID(counter);
@@ -205,7 +205,7 @@ void RenderCanvasSystem::DebugTools() {
 						admin->input->selectedEntity = entity.second;
 					}
 					TableNextColumn();
-
+					
 					//TODO(UiEnt, sushi) implement visibility for things other than meshes like lights, etc.
 					MeshComp* m = entity.second->GetComponent<MeshComp>();
 					if (m) {
@@ -223,25 +223,25 @@ void RenderCanvasSystem::DebugTools() {
 					else {
 						Text("NM");
 					}
-
+					
 					TableNextColumn();
 					Text(TOSTRING(" ", entity.second->name).c_str());
-
+					
 					TableNextColumn();
 					//TODO(sushi, Ui) find something better to put here
 					Text(TOSTRING(" comps: ", entity.second->components.size()).c_str());
 					PopID();
 				}
-
+				
 				ImGui::EndTable();
 			}
 		}
 		EndChild();
 	}
 	ImGui::PopStyleColor();
-
+	
 	ImGui::Separator();
-
+	
 	//Selected Entity property editing
 	if (admin->input->selectedEntity) {
 		if (BeginChild("SelectedEntityMenu", ImVec2(GetWindowWidth(), 500), true)) {
@@ -262,9 +262,9 @@ void RenderCanvasSystem::DebugTools() {
 					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
 					if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 100), true)) {
 						if (IsWindowHovered()) WinHovFlag = true;
-
+						
 						if (ImGui::BeginTable("SelectedComponents", 1)) {
-
+							
 							ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
 							for (Component* c : sel->components) {
 								TableNextColumn(); TableNextRow();
@@ -280,7 +280,7 @@ void RenderCanvasSystem::DebugTools() {
 					}
 					EndTabItem();
 				}
-
+				
 				//Materials menu
 				if (BeginTabItem("Mat")) {
 					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
@@ -321,14 +321,14 @@ void RenderCanvasSystem::DebugTools() {
 		Text("Selected Entity: None");
 	}
 	
-
+	
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
-
+	
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
@@ -339,7 +339,7 @@ void RenderCanvasSystem::DebugTools() {
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
-
+	
 	ImGui::End();
 	
 }
@@ -356,7 +356,7 @@ void RenderCanvasSystem::DebugBar() {
 	int activecols = 7;
 	
 	
-
+	
 	//font size for centering text
 	float fontsize = ImGui::GetFontSize();
 	
@@ -371,7 +371,7 @@ void RenderCanvasSystem::DebugBar() {
 	ImGui::SetNextWindowSize(ImVec2(DengWindow->width, 20));
 	ImGui::SetNextWindowPos(ImVec2(0, DengWindow->height - 20));
 	
-
+	
 	//window styling
 	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
 	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
@@ -384,10 +384,10 @@ void RenderCanvasSystem::DebugBar() {
 	debugbarheight = 20;
 	//capture mouse if hovering over this window
 	if (IsWindowHovered()) WinHovFlag = true; 
-
+	
 	activecols = show_fps + show_fps_graph + 3 * show_world_stats + 2 * show_selected_stats + show_time + 1;
 	if (BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)) {
-
+		
 		//precalc strings and stuff so we can set column widths appropriately
 		std::string str1 = TOSTRING("wents: ", admin->entities.size());
 		float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
@@ -399,7 +399,7 @@ void RenderCanvasSystem::DebugBar() {
 		float strlen4 = (fontsize - (fontsize / 2)) * str4.size();
 		std::string str5 = TOSTRING("sverts: ", "0");
 		float strlen5 = (fontsize - (fontsize / 2)) * str5.size();
-
+		
 		ImGui::TableSetupColumn("FPS",            ImGuiTableColumnFlags_WidthFixed, 64);
 		ImGui::TableSetupColumn("FPSGraphInline", ImGuiTableColumnFlags_WidthFixed, 64);
 		ImGui::TableSetupColumn("EntCount",       ImGuiTableColumnFlags_None, strlen1 * 1.3);
@@ -499,20 +499,20 @@ void RenderCanvasSystem::DebugBar() {
 			ImGui::SameLine((GetColumnWidth() - strlen2) / 2);
 			Text(str2.c_str());
 		}
-
+		
 		//Vertice Count
 		if (TableNextColumn() && show_world_stats) {
 			//TODO( sushi,Ui) implement vertice count when its avaliable
 			ImGui::SameLine((GetColumnWidth() - strlen3) / 2);
 			Text(str3.c_str());
 		}
-
-
-
+		
+		
+		
 		// Selected Stats
-
-
-
+		
+		
+		
 		//Triangle Count
 		if (TableNextColumn() && show_selected_stats) {
 			//TODO( sushi,Ui) implement triangle count when its avaliable
@@ -520,7 +520,7 @@ void RenderCanvasSystem::DebugBar() {
 			ImGui::SameLine((GetColumnWidth() - strlen4) / 2);
 			Text(str4.c_str());
 		}
-
+		
 		//Vertice Count
 		if (TableNextColumn() && show_selected_stats) {
 			//TODO( sushi,Ui) implement vertice count when its avaliable
@@ -604,25 +604,25 @@ void RenderCanvasSystem::DebugLayer() {
 	
 	ImGui::SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height));
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
-
+	
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, ColToVec4(Color(0, 0, 0, 0)));
 	Camera* c = admin->mainCamera;
 	float time = DengTime->totalTime;
-
+	
 	static std::vector<std::pair<float, Vector2>> times;
 	
 	static std::vector<Vector3> spots;
-
-
+	
+	
 	ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
 	
 	Vector2 mp = DengInput->mousePos;
-
-	float fontsize = ImGui::GetFontSize();
-
-
 	
-
+	float fontsize = ImGui::GetFontSize();
+	
+	
+	
+	
 	//psuedo grid
 	int lines = 100;
 	for (int i = 0; i < lines * 2; i++) {
@@ -634,20 +634,20 @@ void RenderCanvasSystem::DebugLayer() {
 		
 		bool l1flag = false;
 		bool l2flag = false;
-	
+		
 		if (floor(cpos.x) - lines + i == 0){
 			l1flag = true;
 		}
 		if (floor(cpos.z) - lines + i == 0) {
 			l2flag = true;
 		}
-	
-	
+		
+		
 		//Vector3 v1t = v1.ToVector3();
 		//Vector3 v2t = v2.ToVector3();
 		//Vector3 v3t = v3.ToVector3();
 		//Vector3 v4t = v4.ToVector3();
-	
+		
 		
 		if (Math::ClipLineToZPlanes(v1, v2, c)) {
 			Vector3 v1s = Math::CameraToScreen(v1, c->projectionMatrix, DengWindow->dimensions);
@@ -655,7 +655,7 @@ void RenderCanvasSystem::DebugLayer() {
 			Math::ClipLineToBorderPlanes(v1s, v2s, DengWindow->dimensions);
 			if(!l1flag) ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
 			else        ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 0, 0, 1)));
-	
+			
 		}
 		if (Math::ClipLineToZPlanes(v3, v4, c)) {
 			Vector3 v3s = Math::CameraToScreen(v3, c->projectionMatrix, DengWindow->dimensions);
@@ -666,17 +666,17 @@ void RenderCanvasSystem::DebugLayer() {
 		}
 		//v1.takeVec3(v1t); v2.takeVec3(v2t);
 		//v3.takeVec3(v3t); v4.takeVec3(v4t);
-	
 		
-	
-	
-	
+		
+		
+		
+		
 	}
-
 	
-
+	
+	
 	if (DengInput->MousePressed(MouseButton::MB_LEFT) && rand() % 100 + 1 == 80) {
-		times.push_back(std::pair<float, Vector2>(0, mp));
+		times.push_back(std::pair<float, Vector2>(0.f, mp));
 	}
 	
 	int index = 0;
@@ -684,34 +684,34 @@ void RenderCanvasSystem::DebugLayer() {
 		ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(Color(255. * fabs(sinf(time)), 255. * fabs(cosf(time)), 255, 255)));
 		
 		f.first += DengTime->deltaTime;
-
+		
 		Vector2 p = f.second;
-
+		
 		ImGui::SetCursorPos(ImVec2(p.x + 20 * sin(2 * time), p.y - 200 * (f.first / 5)));
 		
 		Vector2 curpos = Vector2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY());
-
+		
 		std::string str1 = "hehe!!!!";
 		float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
 		for (int i = 0; i < str1.size(); i++) {
 			ImGui::SetCursorPos(ImVec2(
-				curpos.x + i * fontsize / 2,
-				curpos.y + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))
-			));
+									   curpos.x + i * fontsize / 2,
+									   curpos.y + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))
+									   ));
 			ImGui::Text(str1.substr(i, 1).c_str());
 		}
-
+		
 		if (f.first >= 5) {
 			times.erase(times.begin() + index);
 			index--;
 		}
-
+		
 		ImGui::PopStyleColor();
 		index++;
 	}
 	//ImGui::Text("test");
-
-
+	
+	
 	ImGui::PopStyleColor();
 	ImGui::End();
 }
@@ -726,12 +726,12 @@ void RenderCanvasSystem::DrawUI(void) {
 	if (showDebugBar)   DebugBar();
 	if (showMenuBar)    MenuBar();
 	if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
-
-
+	
+	
 	if (!showMenuBar) {
 		menubarheight = 0;
 	}
-
+	
 	if (!showDebugBar){
 		debugbarheight = 0;
 	}

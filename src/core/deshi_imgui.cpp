@@ -1,7 +1,8 @@
-#include "deshi_imgui.h"
+#include "deshi_imgui_vulkan.h"
 #include "renderer.h"
 #include "assets.h"
 
+#include "../external/imgui/imgui.h"
 #include "../external/imgui/imgui_impl_glfw.h"
 #include "../external/imgui/imgui_impl_vulkan.h"
 
@@ -33,11 +34,8 @@ void deshiImGui::Init(Renderer* renderer){
 	//Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 	//ImGui::StyleColorsClassic();
-}
-
-void vkImGui::Init(Renderer* renderer){
-	deshiImGui::Init(renderer);
-	vkr = (Renderer_Vulkan*)renderer; 
+	
+	vkr = renderer; 
 	VkResult err;
 	
 	//Setup Platform/Renderer backends
@@ -46,7 +44,7 @@ void vkImGui::Init(Renderer* renderer){
 	init_info.Instance = vkr->instance;
 	init_info.PhysicalDevice = vkr->physicalDevice;
 	init_info.Device = vkr->device;
-	init_info.QueueFamily = vkr->physicalQueueFamilies.graphicsFamily.get();
+	init_info.QueueFamily = vkr->physicalQueueFamilies.graphicsFamily.value;
 	init_info.Queue = vkr->graphicsQueue;
 	init_info.PipelineCache = vkr->pipelineCache;
 	init_info.DescriptorPool = vkr->descriptorPool;
@@ -87,7 +85,7 @@ void vkImGui::Init(Renderer* renderer){
 	}
 }
 
-void vkImGui::Cleanup(){
+void deshiImGui::Cleanup(){
 	VkResult err = vkDeviceWaitIdle(vkr->device);
 	check_vk_result(err);
 	ImGui_ImplVulkan_Shutdown();
@@ -95,7 +93,7 @@ void vkImGui::Cleanup(){
 	ImGui::DestroyContext();
 }
 
-void vkImGui::NewFrame(){
+void deshiImGui::NewFrame(){
 	// Start the Dear ImGui frame
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();

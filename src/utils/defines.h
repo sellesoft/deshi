@@ -11,32 +11,22 @@
 #define M_TWOTHIRDS  0.66666666666f
 #define M_ONETWELFTH 0.08333333333f
 
-
-
-
 //conversions
 #define RADIANS(x) (x * (M_PI / 180.f))
 #define DEGREES(x) (x * (180.f / M_PI))
 
 //number typedefs
-typedef signed char    i8;
-typedef signed short   i16;
-typedef signed int     i32;
-typedef signed long    i64;
-typedef unsigned char  u8;
-typedef unsigned short u16;
-typedef unsigned int   u32;
-typedef unsigned long  u64;
-typedef float          f32;
-typedef double         f64;
-typedef i8  int8;
-typedef i16 int16;
-typedef i32 int32;
-typedef i64 int64;
-typedef u8  uint8;
-typedef u16 uint16;
-typedef u32 uint32;
-typedef u64 uint64;
+typedef signed char    i8;     typedef i8  int8;
+typedef signed short   i16;    typedef i16 int16;
+typedef signed int     i32;    typedef i32 int32;
+typedef signed long    i64;    typedef i64 int64;
+typedef unsigned char  u8;     typedef u8  uint8;
+typedef unsigned short u16;    typedef u16 uint16;
+typedef unsigned int   u32;    typedef u32 uint32;
+typedef unsigned long  u64;    typedef u64 uint64;
+typedef float          f32;    typedef f32 float32;
+typedef double         f64;    typedef f64 float64;
+typedef i32 b32; //int based boolean so c++ doesnt convert to 0 or 1
 
 //static defines
 #define static_internal static

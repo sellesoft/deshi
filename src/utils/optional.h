@@ -6,25 +6,35 @@
 
 template <typename T>
 struct Optional {
-	
-	T a;
+	T value;
 	Optional() {
-		memset(&a, 0xFFFFFFFF, sizeof(T));
+		memset(&value, 0xFFFFFFFF, sizeof(T));
 	};
 	
-	Optional(T a) {
-		this->a = a;
+	Optional(T value) {
+		this->value = value;
 	}
 	
-	bool test() {
+	bool test(){
 		T b;
 		memset(&b, 0xFFFFFFFF, sizeof(T));
-		if (memcmp(&a, &b, sizeof(T)) {
-			return(true);
+		if(memcmp(&value, &b, sizeof(T))){
+			return true;
+		}else{
+			return false;
 		}
-		else {
-			return(false);
-		}
+	}
+	
+	constexpr explicit operator bool() const{
+		return test;
+	}
+	
+	inline bool operator==(const Optional& rhs) const{
+		return value == rhs.value;
+	}
+	
+	inline bool operator!=(const Optional& rhs) const{
+		return value != rhs.value;
 	}
 };
 
