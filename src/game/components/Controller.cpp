@@ -162,9 +162,9 @@ void HandleMouseInputs(EntityAdmin* admin) {
 						for (int i = 0; i < b.indexArray.size(); i += 3) {
 							float t = 0;
 
-							p0 = b.vertexArray[b.indexArray[i]].pos;
-							p1 = b.vertexArray[b.indexArray[i + 1]].pos;
-							p2 = b.vertexArray[b.indexArray[i + 2]].pos;
+							p0 = b.vertexArray[b.indexArray[i]].pos + e->transform->position;
+							p1 = b.vertexArray[b.indexArray[i + 1]].pos + e->transform->position;
+							p2 = b.vertexArray[b.indexArray[i + 2]].pos + e->transform->position;
 
 							norm = (p1 - p0).cross(p2 - p0);
 
@@ -262,17 +262,27 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					xaxis = false; yaxis = false; zaxis = true; 
 					sel->transform->position = initialObjPos;
 				}
+				if (!(xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) { //|| DengInput->MousePressed(1)) {
+					//stop grabbing entirely if press esc or right click w no grab mode on
+					//TODO(sushi, In) figure out why the camera rotates violently when rightlicking to leave grabbing. probably because of the mouse moving to the object?
+					xaxis = false; yaxis = false; zaxis = false; 
+					sel->transform->position = initialObjPos;
+					initialgrab = true; grabbingObj = false;
+					CONTROLLER_MOUSE_CAPTURE = false;
+					return;
+				}
 				if ((xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
 					//leave grab mode if in one when pressing esc
 					xaxis = false; yaxis = false; zaxis = false; 
 					sel->transform->position = initialObjPos; initialgrab = true;
 				}
-				if (!(xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
-					xaxis = false; yaxis = false; zaxis = false; 
-					sel->transform->position = initialObjPos;
-					initialgrab = true;
-					grabbingObj = false;
+				if (DengInput->MousePressed(0)) {
+					//drop the object if left click
+					xaxis = false; yaxis = false; zaxis = false;
+					initialgrab = true; grabbingObj = false;  
 					CONTROLLER_MOUSE_CAPTURE = false;
+					return;
+
 				}
 
 
@@ -281,7 +291,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 				//and get initial distance from obj
 				
 				if (initialgrab) {
-					Vector2 screenPos = Math::WorldToScreen2D(sel->transform->position, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
+					Vector2 screenPos = Math::WorldToScreen2(sel->transform->position, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
 					admin->window->SetCursorPos(screenPos);
 					worldpos = Math::ScreenToWorld(DengInput->mousePos, c->projectionMatrix,
 												   c->viewMatrix, admin->window->dimensions);
@@ -292,8 +302,6 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 
 				if (!(xaxis || yaxis || zaxis)) {
 
-					
-					//calc where mouse is now
 					Vector3 nuworldpos = Math::ScreenToWorld(DengInput->mousePos, c->projectionMatrix,
 															 c->viewMatrix, admin->window->dimensions);
 
@@ -316,16 +324,16 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 
 
 					//TODO(sushi, MaIn) make all this math work
-					Vector2 screenpos = Math::WorldToScreen2D(initialObjPos, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
-					Vector2 xaxistoscreen = Math::WorldToScreen2D(worldpos + Vector3::RIGHT, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
+					Vector2 screenpos = Math::WorldToScreen2(initialObjPos, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
+					Vector2 xaxistoscreen = Math::WorldToScreen2(worldpos + Vector3::RIGHT, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
 					Vector2 screenxaxis = (xaxistoscreen - screenpos).normalized();
 
 
 					Vector3 xp1 = initialObjPos - (Vector3::RIGHT * 2000);
 					Vector3 xp2 = initialObjPos + (Vector3::RIGHT * 2000);
 
-					Vector3 pc1 = Math::WorldToCamera(xp1, c->viewMatrix).ToVector3();
-					Vector3 pc2 = Math::WorldToCamera(xp2, c->viewMatrix).ToVector3();
+					Vector3 pc1 = Math::WorldToCamera4(xp1, c->viewMatrix).ToVector3();
+					Vector3 pc2 = Math::WorldToCamera4(xp2, c->viewMatrix).ToVector3();
 
 
 					if (Math::ClipLineToZPlanes(pc1, pc2, c)) {
@@ -336,11 +344,11 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 						Vector3 ps1 = Math::VectorPlaneIntersect(Vector3::ZERO, pn1, pc1, pc2, t); 
 						Vector3 ps2 = Math::VectorPlaneIntersect(Vector3::ZERO, pn2, pc1, pc2, t); 
 						
-						Vector3 pir1 = Math::CameraToWorld(ps1, c->viewMatrix).ToVector3();
-						Vector3 pir2 = Math::CameraToWorld(ps2, c->viewMatrix).ToVector3();
+						Vector3 pir1 = Math::CameraToWorld4(ps1, c->viewMatrix).ToVector3();
+						Vector3 pir2 = Math::CameraToWorld4(ps2, c->viewMatrix).ToVector3();
 
-						Vector3 v1s = Math::CameraToScreen(ps1, c->projectionMatrix, DengWindow->dimensions);
-						Vector3 v2s = Math::CameraToScreen(ps2, c->projectionMatrix, DengWindow->dimensions);
+						Vector3 v1s = Math::CameraToScreen3(ps1, c->projectionMatrix, DengWindow->dimensions);
+						Vector3 v2s = Math::CameraToScreen3(ps2, c->projectionMatrix, DengWindow->dimensions);
 						
 						Math::ClipLineToBorderPlanes(v1s, v2s, DengWindow->dimensions);
 						

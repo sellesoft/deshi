@@ -92,26 +92,6 @@ namespace Math {
 		return Matrix4::TranslationMatrix(offsetFromOrigin).Inverse();
 	}
 	
-	inline static float to_radians(float angle) { return angle * (M_PI / 180); }
-	inline static float to_degrees(float angle) { return angle * (180 / M_PI); }
-	
-	inline static Vector3 to_radians(Vector3& vector) { return vector * (M_PI / 180); }
-	inline static Vector3 to_degrees(Vector3& vector) { return vector * (180 / M_PI); }
-	
-	static Matrix4 MakeOrthoProjMat(float r, float l, float t, float b, float f, float n) {
-		return Matrix4(
-					   2 / (r - l),			0,						0,												0,
-					   0,						2 / (t - b),			0,												0,
-					   0,						0,						-2 / (f - n),						0,
-					   -(r + l) / (r - l),		-(t + b) / (t - b),		-(f + n) / (f - n),	1);
-	}
-
-	//TODO(sushi, Ma) implement this on Vector2
-	static Vector2 Vector2RotateByAngle(float angle, Vector2 v) {
-		angle = RADIANS(angle);
-		return Vector2(v.x * cosf(angle) - v.y * sinf(angle), v.x * sin(angle) + v.y * cos(angle));
-	}
-	
 }
 
 
@@ -240,7 +220,7 @@ inline Matrix4 Matrix4::RotationMatrix(Vector3 rotation) {
 }
 
 //https://github.com/microsoft/DirectXMath/blob/7c30ba5932e081ca4d64ba4abb8a8986a7444ec9/Inc/DirectXMathMatrix.inl
-//line 1675
+//line 1675 i do not know how this works but it does so :D
 //return a matrix to rotate a vector around an arbitrary axis by some angle
 inline Matrix4 Matrix4::AxisAngleRotationMatrix(float angle, Vector4 axis) {
 	angle = RADIANS(angle); 
@@ -341,6 +321,10 @@ inline Matrix4 Matrix4::RotationMatrixAroundPoint(Vector3 pivot, Vector3 rotatio
 				   pivot.x - r00*pivot.x - r01*pivot.y - r02*pivot.z, pivot.y - r10*pivot.x - r11*pivot.y - r12*pivot.z, pivot.z - r20*pivot.x - r21*pivot.y - r22*pivot.z, 1);
 }
 
+inline Vector3 Matrix4::PositionFromTransform(Matrix4 m) {
+	return Vector3(m(3, 0), m(3, 1), m(3, 2));
+}
+
 //// Non-Vector vs Vector Interactions ////
 
 inline Vector3::Vector3(const Vector2& v) {
@@ -382,8 +366,6 @@ inline MatrixN::MatrixN(Vector3 v, float w) {
 	this->data = {v.x, v.y, v.z, w};
 }
 
-
-
 //// Non-Quaternion vs Quaternion Interactions ////
 
 inline Vector3 Quaternion::ToVector3() {
@@ -413,7 +395,7 @@ inline Vector3 Quaternion::ToVector3() {
 //im not sure how this works or where it will be used and im not even sure if its
 //set up properly (sorry)
 inline Quaternion Quaternion::AxisAngleToQuat(float angle, Vector3 axis) {
-	float angler = Math::to_radians(angle);
+	float angler = RADIANS(angle);
 	return Quaternion(sinf(angler / 2) * axis.x, sinf(angler / 2) * axis.y, sinf(angler / 2) * axis.z, cosf(angler / 2));
 }
 
@@ -482,8 +464,6 @@ inline Quaternion Quaternion::QuatSlerp(Vector3 fromv, Vector3 tov, float t) {
 
 namespace Math {
 	
-	
-	
 	//ref: https://en.cppreference.com/w/cpp/algorithm/clamp
 	static float clamp(float v, float lo, float hi) {
 		ASSERT(lo < hi, "The low must be less than the high clamp");
@@ -542,16 +522,8 @@ namespace Math {
 	template<class T>
 		static double average(const T& container, int size) { return average(std::begin(container), std::end(container), size); }
 	
-	static Vector3 averageVector3(std::vector<Vector3> v) {
-		Vector3 n;
-		for (Vector3 e : v) { n += e; }
-		if (v.size() != 0) return n / v.size();
-		else return Vector3::ZERO;
-	}
-	
 	//interpolating
-	static float lerpf(float p1, float p2, float t) { return (1.f - t) * p1 + t * p2; }
-	
+	static float   lerpf(float p1, float p2, float t) { return (1.f - t) * p1 + t * p2; }
 	static Vector3 lerpv(Vector3 v1, Vector3 v2, float t) { return  v1 * (1.f - t) + v2 * t; }
 	static Vector2 lerpv(Vector2 v1, Vector2 v2, float t) { return  v1 * (1.f - t) + v2 * t; }
 	
@@ -566,7 +538,8 @@ namespace Math {
 		Vector3 newRight; 
 		if(newFor == Vector3::UP || newFor == Vector3::DOWN) { 
 			newRight = Vector3::RIGHT; 
-		} else {
+		} 
+		else {
 			newRight = (Vector3::UP.cross(newFor)).normalized(); 
 		}
 		
@@ -589,7 +562,8 @@ namespace Math {
 		Vector3 newRight;
 		if (newFor == Vector3::UP || newFor == Vector3::DOWN) {
 			newRight = Vector3::RIGHT;
-		} else {
+		} 
+		else {
 			newRight = (Vector3::UP.cross(newFor)).normalized();
 		}
 		
@@ -605,31 +579,24 @@ namespace Math {
 	
 	//this assumes its in degrees
 	static Vector3 SphericalToRectangularCoords(Vector3 v) {
-		float y = Math::to_radians(v.y);
-		float z = Math::to_radians(v.z);
+		float y = RADIANS(v.y);
+		float z = RADIANS(v.z);
 		return Vector3(v.x * sinf(z) * cosf(y), v.x * cosf(z), v.x * sinf(z) * sinf(y));
 	}
 	
 	static Vector3 RectangularToSphericalCoords(Vector3 v) {
-		float rho = sqrt(v.mag());
-		float theta = Math::to_degrees(atan(v.y / v.z));
-		float phi = Math::to_degrees(acos(v.z / v.mag())); //maybe use v.y instead of v.z because y is our vertical axis
+		float rho = RADIANS(sqrt(v.mag()));
+		float theta = RADIANS(atan(v.y / v.z));
+		float phi = acos(v.z / v.mag()); //maybe use v.y instead of v.z because y is our vertical axis
 		return Vector3(rho, theta, phi);
 		
-	}
-	
-	//this assumes a rectangle whose pivot is the top left corner
-	static bool PointInRect(Vector2 size, Vector2 pos, Vector2 point) {
-		return pos.x < point.x&& point.x < pos.x + size.x &&
-			pos.y < point.y&& point.y < pos.y + size.y;
 	}
 	
 	static float DistTwoPoints(Vector3 a, Vector3 b) {
 		return sqrtf(
 					 (a.x - b.x) * (a.x - b.x) +
 					 (a.y - b.y) * (a.y - b.y) +
-					 (a.z - b.z) * (a.z - b.z)
-					 );
+					 (a.z - b.z) * (a.z - b.z));
 	}
 	
 	static float DistPointToPlane(Vector3 point, Vector3 plane_n, Vector3 plane_p) {
@@ -658,7 +625,7 @@ namespace Math {
 		return Vector3(x, y);
 	}
 	
-	//returns where two lines intersect in 3D space //TODO(,sushi) implement this
+	//returns where two lines intersect in 3D space //TODO(sushi, MaGe) implement this
 	static Vector3 LineIntersect3(Vector3 adir, Vector3 ap, Vector3 bdir, Vector3 bp) {
 	}
 
@@ -696,9 +663,9 @@ namespace Math {
 		return true;
 	} //ClipLineToZPlanes
 
-	  //cohen-sutherland algorithm https://en.wikipedia.org/wiki/Cohen%E2%80%93Sutherland_algorithm
-	  //the input vectors should be in screen space
-	  //returns true if the line can be rendered after clipping, false otherwise
+	//cohen-sutherland algorithm https://en.wikipedia.org/wiki/Cohen%E2%80%93Sutherland_algorithm
+	//the input vectors should be in screen space
+	//returns true if the line can be rendered after clipping, false otherwise
 	static bool ClipLineToBorderPlanes(Vector3& start, Vector3& end, Vector2 dimensions) {
 		//clip to the vertical and horizontal planes
 		const int CLIP_INSIDE = 0;
@@ -777,15 +744,31 @@ namespace Math {
 	//returns area of a triangle of sides a and b
 	static float TriangleArea(Vector3 a, Vector3 b) { return a.cross(b).mag() / 2; }
 	
-	static Vector4 WorldToCamera(Vector3 vertex, Matrix4 viewMatrix) {
+	static Vector3 WorldToCamera3(Vector3 vertex, Matrix4 viewMatrix) {
+		return Math::ProjMult(vertex.ToVector4(), viewMatrix).ToVector3();
+	}
+
+	static Vector4 WorldToCamera4(Vector3 vertex, Matrix4 viewMatrix) {
 		return Math::ProjMult(vertex.ToVector4(), viewMatrix);
 	}
 
-	static Vector4 CameraToWorld(Vector3 vertex, Matrix4 viewMatrix) {
+	static Vector3 CameraToWorld3(Vector3 vertex, Matrix4 viewMatrix) {
+		return Math::ProjMult(vertex.ToVector4(), viewMatrix.Inverse()).ToVector3();
+	}
+
+	static Vector4 CameraToWorld4(Vector3 vertex, Matrix4 viewMatrix) {
 		return Math::ProjMult(vertex.ToVector4(), viewMatrix.Inverse());
 	}
 	
-	static Vector3 CameraToScreen(Vector3 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions) {
+	static Vector3 CameraToScreen2(Vector3 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions) {
+		Vector3 vm = Math::ProjMult(csVertex.ToVector4(), projectionMatrix).ToVector3();
+		vm.x += 1.0f; vm.y += 1.0f;
+		vm.x *= 0.5f * (float)screenDimensions.x;
+		vm.y *= 0.5f * (float)screenDimensions.y;
+		return vm;
+	}
+
+	static Vector3 CameraToScreen3(Vector3 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions) {
 		Vector3 vm = Math::ProjMult(csVertex.ToVector4(), projectionMatrix).ToVector3();
 		vm.x += 1.0f; vm.y += 1.0f;
 		vm.x *= 0.5f * (float)screenDimensions.x;
@@ -793,7 +776,7 @@ namespace Math {
 		return vm;
 	}
 	
-	static Vector3 CameraToScreen(Vector3 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions, float& w) {
+	static Vector3 CameraToScreen3(Vector3 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions, float& w) {
 		Vector4 bleh = csVertex.ToVector4() * projectionMatrix;
 		w = bleh.w;
 		Vector3 vm = bleh.normalized().ToVector3();
@@ -803,7 +786,7 @@ namespace Math {
 		return vm;
 	}
 	
-	static Vector3 CameraToScreen(Vector4 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions) {
+	static Vector3 CameraToScreen3(Vector4 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions) {
 		Vector3 vm = Math::ProjMult(csVertex, projectionMatrix).ToVector3();
 		vm.x += 1.0f; vm.y += 1.0f;
 		vm.x *= 0.5f * (float)screenDimensions.x;
@@ -811,7 +794,7 @@ namespace Math {
 		return vm;
 	}
 	
-	static Vector4 CameraToScreenV4(Vector4 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions) {
+	static Vector4 CameraToScreen4(Vector4 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions) {
 		Vector4 vm = (csVertex * projectionMatrix).normalized();
 		vm.x += 1.0f; vm.y += 1.0f;
 		vm.x *= 0.5f * (float)screenDimensions.x;
@@ -820,11 +803,11 @@ namespace Math {
 	}
 	
 	static Vector3 WorldToScreen(Vector3 point, Matrix4 ProjMat, Matrix4 ViewMat, Vector2 screenDimensions) {
-		return CameraToScreen(WorldToCamera(point, ViewMat), ProjMat, screenDimensions);
+		return CameraToScreen3(WorldToCamera4(point, ViewMat), ProjMat, screenDimensions);
 	}
 	
-	static Vector2 WorldToScreen2D(Vector3 point, Matrix4 ProjMat, Matrix4 ViewMat, Vector2 screenDimensions) {
-		Vector3 v = CameraToScreen(WorldToCamera(point, ViewMat), ProjMat, screenDimensions);
+	static Vector2 WorldToScreen2(Vector3 point, Matrix4 ProjMat, Matrix4 ViewMat, Vector2 screenDimensions) {
+		Vector3 v = CameraToScreen3(WorldToCamera4(point, ViewMat), ProjMat, screenDimensions);
 		return Vector2(v.x, v.y);
 	}
 	

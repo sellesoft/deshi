@@ -2,8 +2,7 @@
 #ifndef DESHI_DEFINES_H
 #define DESHI_DEFINES_H
 
-//delle: bleh
-#include "GLOBALS.h"
+#include "ContainerManager.h"
 
 //math constants
 #define M_PI         3.14159265359f
@@ -44,16 +43,16 @@ typedef u64 uint64;
 #define global_variable static
 
 //delle's annoyance with c++ cast syntax; which will probably cause problems somewhere
-#define i8(x)  static_cast<i8>(x)
-#define i16(x) static_cast<i16>(x)
-#define i32(x) static_cast<i32>(x)
-#define i64(x) static_cast<i64>(x)
-#define u8(x)  static_cast<u8>(x)
-#define u16(x) static_cast<u16>(x)
-#define u32(x) static_cast<u32>(x)
-#define u64(x) static_cast<u64>(x)
-#define f32(x) static_cast<f32>(x)
-#define f64(x) static_cast<f64>(x)
+#define i8(x)     static_cast<i8>(x)
+#define i16(x)    static_cast<i16>(x)
+#define i32(x)    static_cast<i32>(x)
+#define i64(x)    static_cast<i64>(x)
+#define u8(x)     static_cast<u8>(x)
+#define u16(x)    static_cast<u16>(x)
+#define u32(x)    static_cast<u32>(x)
+#define u64(x)    static_cast<u64>(x)
+#define f32(x)    static_cast<f32>(x)
+#define f64(x)    static_cast<f64>(x)
 #define int8(x)   static_cast<int8>(x)
 #define int16(x)  static_cast<int16>(x)
 #define int32(x)  static_cast<int32>(x)

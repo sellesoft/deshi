@@ -257,7 +257,6 @@
     <ClInclude Include="..\src\utils\ContainerManager.h" />
     <ClInclude Include="..\src\utils\Debug.h" />
     <ClInclude Include="..\src\utils\defines.h" />
-    <ClInclude Include="..\src\utils\GLOBALS.h" />
     <ClInclude Include="..\src\utils\optional.h" />
     <ClInclude Include="..\src\utils\PhysicsWorld.h" />
   </ItemGroup>
@@ -322,7 +321,6 @@
     <ClCompile Include="..\src\math\Vector3.cpp" />
     <ClCompile Include="..\src\scene\Model.cpp" />
     <ClCompile Include="..\src\utils\Command.cpp" />
-    <ClCompile Include="..\src\utils\GLOBALS.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\cfg\keybinds.txt" />

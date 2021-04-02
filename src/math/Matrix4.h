@@ -62,6 +62,8 @@ struct Matrix4 {
 	static Matrix4 ScaleMatrix(Vector3 scale);
 	static Matrix4 TransformationMatrix(Vector3 translation, Vector3 rotation, Vector3 scale);
 	static Matrix4 RotationMatrixAroundPoint(Vector3 pivot, Vector3 rotation);
+
+	static Vector3 PositionFromTransform(Matrix4 m);
 };
 
 
