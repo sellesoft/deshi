@@ -7,6 +7,8 @@
 #include "../../EntityAdmin.h"
 #include "../../game/Keybinds.h"
 #include "../../game/components/MeshComp.h"
+#include "../../game/components/Transform.h"
+
 #include "../../game/systems/WorldSystem.h"
 
 //for time
@@ -21,6 +23,8 @@ bool WinHovFlag = false;
 float menubarheight = 0;
 float debugbarheight = 0;
 float debugtoolswidth = 0;
+
+float padding = 0.95;
 
 //current palette:
 //https://lospec.com/palette-list/slso8
@@ -162,11 +166,11 @@ void RenderCanvasSystem::DebugTools() {
 	//	TableHeadersRow();
 	//	ImGui::EndTable();
 	//}
-	
-	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+
+	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 	ImGui::Text("Entities");
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
-	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 	
 	if (BeginChild("entityListScroll", ImVec2(GetWindowWidth() * 0.95, 100), false)) {
 		if (IsWindowHovered()) WinHovFlag = true; 
@@ -189,9 +193,6 @@ void RenderCanvasSystem::DebugTools() {
 				ImGui::TableSetupColumn("Vis", ImGuiTableColumnFlags_WidthFixed);
 				ImGui::TableSetupColumn("Name");
 				ImGui::TableSetupColumn("Components");
-				//TableHeadersRow();
-				
-				
 				int counter = 0;
 				
 				
@@ -247,7 +248,7 @@ void RenderCanvasSystem::DebugTools() {
 		if (BeginChild("SelectedEntityMenu", ImVec2(GetWindowWidth(), 500), true)) {
 			if (IsWindowHovered()) WinHovFlag = true;
 			Entity* sel = admin->input->selectedEntity;
-			SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+			SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 			Text(TOSTRING("Selected Entity: ", sel->name).c_str());
 			Text("Components: ");
 			
@@ -255,8 +256,33 @@ void RenderCanvasSystem::DebugTools() {
 			ImGui::PushStyleColor(ImGuiCol_TabHovered, ColToVec4(Color::DARK_CYAN));
 			ImGui::PushStyleColor(ImGuiCol_Tab,        ColToVec4(colors.c1));
 			ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
+
+			
 			if (BeginTabBar("ObjectPropertyMenus")) {
 				
+
+				if (BeginTabItem("Obj")) {
+					Text("Transform");
+					Separator();
+
+					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+					Text("Position ");
+					SameLine(); InputVector3("position", &sel->transform->position);
+					Separator();
+
+					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+					Text("Rotation ");
+					SameLine(); InputVector3("rotation", &sel->transform->rotation);
+					Separator();
+
+					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+					Text("Scale    ");
+					SameLine(); InputVector3("scale", &sel->transform->scale);
+					Separator();
+
+					EndTabItem();
+				}
+
 				//Components menu
 				if (BeginTabItem("Comp")) {
 					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
@@ -267,9 +293,10 @@ void RenderCanvasSystem::DebugTools() {
 							
 							ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
 							for (Component* c : sel->components) {
-								TableNextColumn(); TableNextRow();
+								TableNextColumn(); //TableNextRow();
+								SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 								Text(c->name);
-								SameLine(CalcItemWidth());
+								SameLine(CalcItemWidth() + 20);
 								if (Button("Del")) {
 									admin->world->RemoveAComponentFromEntity(admin, sel, c);
 								}
@@ -283,14 +310,14 @@ void RenderCanvasSystem::DebugTools() {
 				
 				//Materials menu
 				if (BeginTabItem("Mat")) {
-					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 					if (BeginChild("SelectedMaterialsWindow", ImVec2(GetWindowWidth() * 0.95, 200), true)) {
 						if (IsWindowHovered()) WinHovFlag = true;
 						MeshComp* m = sel->GetComponent<MeshComp>();
 						if (m) {
 							//TODO(sushi, Ui) set up showing multiple batches shaders when that becomes relevant
 							Text(TOSTRING("Shader: ", shadertostring.at(m->m->batchArray[0].shader)).c_str());
-							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 							if (ImGui::TreeNode("Shader Select")) {
 								static int selected = -1;
 								for (int i = 0; i < shadertostringint.size(); i++) {
@@ -312,23 +339,22 @@ void RenderCanvasSystem::DebugTools() {
 			ImGui::PopStyleColor();
 			ImGui::PopStyleColor();
 			ImGui::PopStyleVar();
+
 			EndChild();
 		}
 		
 	}
 	else {
-		SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+		SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 		Text("Selected Entity: None");
 	}
-	
-	
+
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
-	
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
@@ -627,54 +653,42 @@ void RenderCanvasSystem::DebugLayer() {
 	int lines = 100;
 	for (int i = 0; i < lines * 2; i++) {
 		Vector3 cpos = c->position;
-		Vector3 v1 = Math::WorldToCamera(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines), c->viewMatrix).ToVector3();
-		Vector3 v2 = Math::WorldToCamera(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) +  lines), c->viewMatrix).ToVector3();
-		Vector3 v3 = Math::WorldToCamera(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.z) + -lines + i), c->viewMatrix).ToVector3();
-		Vector3 v4 = Math::WorldToCamera(Vector3(floor(cpos.x) +  lines, 0, floor(cpos.z) + -lines + i), c->viewMatrix).ToVector3();
-		
+		Vector3 v1 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines), c->viewMatrix).ToVector3();
+		Vector3 v2 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + lines), c->viewMatrix).ToVector3();
+		Vector3 v3 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.z) + -lines + i), c->viewMatrix).ToVector3();
+		Vector3 v4 = Math::WorldToCamera4(Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i), c->viewMatrix).ToVector3();
+
 		bool l1flag = false;
 		bool l2flag = false;
-		
-		if (floor(cpos.x) - lines + i == 0){
+
+		if (floor(cpos.x) - lines + i == 0) {
 			l1flag = true;
 		}
 		if (floor(cpos.z) - lines + i == 0) {
 			l2flag = true;
 		}
-		
-		
 		//Vector3 v1t = v1.ToVector3();
 		//Vector3 v2t = v2.ToVector3();
 		//Vector3 v3t = v3.ToVector3();
 		//Vector3 v4t = v4.ToVector3();
-		
-		
+
+
 		if (Math::ClipLineToZPlanes(v1, v2, c)) {
-			Vector3 v1s = Math::CameraToScreen(v1, c->projectionMatrix, DengWindow->dimensions);
-			Vector3 v2s = Math::CameraToScreen(v2, c->projectionMatrix, DengWindow->dimensions);
+			Vector3 v1s = Math::CameraToScreen3(v1, c->projectionMatrix, DengWindow->dimensions);
+			Vector3 v2s = Math::CameraToScreen3(v2, c->projectionMatrix, DengWindow->dimensions);
 			Math::ClipLineToBorderPlanes(v1s, v2s, DengWindow->dimensions);
-			if(!l1flag) ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
+			if (!l1flag) ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
 			else        ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 0, 0, 1)));
-			
 		}
 		if (Math::ClipLineToZPlanes(v3, v4, c)) {
-			Vector3 v3s = Math::CameraToScreen(v3, c->projectionMatrix, DengWindow->dimensions);
-			Vector3 v4s = Math::CameraToScreen(v4, c->projectionMatrix, DengWindow->dimensions);
+			Vector3 v3s = Math::CameraToScreen3(v3, c->projectionMatrix, DengWindow->dimensions);
+			Vector3 v4s = Math::CameraToScreen3(v4, c->projectionMatrix, DengWindow->dimensions);
 			Math::ClipLineToBorderPlanes(v3s, v4s, DengWindow->dimensions);
-			if(!l2flag) ImGui::GetBackgroundDrawList()->AddLine(v3s.ToVector2().ToImVec2(), v4s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
+			if (!l2flag) ImGui::GetBackgroundDrawList()->AddLine(v3s.ToVector2().ToImVec2(), v4s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
 			else        ImGui::GetBackgroundDrawList()->AddLine(v3s.ToVector2().ToImVec2(), v4s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(0, 0, 1, 1)));
 		}
-		//v1.takeVec3(v1t); v2.takeVec3(v2t);
-		//v3.takeVec3(v3t); v4.takeVec3(v4t);
-		
-		
-		
-		
-		
 	}
-	
-	
-	
+
 	if (DengInput->MousePressed(MouseButton::MB_LEFT) && rand() % 100 + 1 == 80) {
 		times.push_back(std::pair<float, Vector2>(0.f, mp));
 	}

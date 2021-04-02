@@ -47,8 +47,6 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c, Sc
 	console = c;
 	renderer = r;
 
-	g_cBuffer.allocate_space(100);
-
 	systems = std::vector<System*>();
 	entities = std::map<EntityID, Entity*>();
 	components = std::vector<Component*>();

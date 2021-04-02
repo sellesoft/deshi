@@ -78,10 +78,12 @@ redo main physics loop
 add physics collision sweeping
 add physics based collision resolution for remaining collider primitives
 add physics interaction functions
+finish imlementing AABB vs AABB collisions
+implement Sphere vs Sphere collisions
+implement Complex Colliders 
 
 UI TODOs
 --------
-Restore the spawning/inspector menus
 2D shader
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
@@ -95,6 +97,9 @@ add quaternions and converions between them and other linear algebra primitives
 (maybe) move conversion functions to thier own file
 (maybe) move transform/affine matrix functions to their own file
 replace glm :)
+look into scaling not rotating (scaling is probably being done in world not local)
+
+
 */
 
 #include "core.h"

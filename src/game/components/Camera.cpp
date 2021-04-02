@@ -2,6 +2,7 @@
 #include "../../EntityAdmin.h"
 #include "../../math/Math.h"
 #include "../../core.h"
+#include "../../scene/Scene.h"
 
 Camera::Camera(EntityAdmin* a) : Component(a) {
 	nearZ = 0.01f;
@@ -37,8 +38,8 @@ Matrix4 MakeOrthographicMatrix(Scene* s, Camera* c, float screenWidth, float scr
 	std::pair<Vector3, Vector3> bbox = s->SceneBoundingBox();
 	
 	//convert bounding box to camera space
-	Vector3 maxcam = Math::WorldToCamera(bbox.first,  c->viewMatrix).ToVector3();
-	Vector3 mincam = Math::WorldToCamera(bbox.second, c->viewMatrix).ToVector3(); 
+	Vector3 maxcam = Math::WorldToCamera4(bbox.first,  c->viewMatrix).ToVector3();
+	Vector3 mincam = Math::WorldToCamera4(bbox.second, c->viewMatrix).ToVector3(); 
 	
 	//make screen box from camera space bounding box
 	float maxx = std::max(fabs(mincam.x), fabs(maxcam.x));
@@ -73,7 +74,35 @@ void Camera::UsePerspectiveProjection(float fovX, float width, float height, flo
 	admin->renderer->UpdateCameraProjectionMatrix(projectionMatrix);
 }
 
-void Camera::UseOrthographicProjection(){}
+//TODO(sushi, Re) figure out why we cant see anything when we use this
+void Camera::UseOrthographicProjection() {
+	std::pair<Vector3, Vector3> bbox = admin->scene->SceneBoundingBox();
+
+	//convert bounding box to camera space
+	Vector3 maxcam = Math::WorldToCamera3(bbox.first,  admin->mainCamera->viewMatrix);
+	Vector3 mincam = Math::WorldToCamera3(bbox.second, admin->mainCamera->viewMatrix); 
+
+	//make screen box from camera space bounding box
+	float maxx = std::max(fabs(mincam.x), fabs(maxcam.x));
+	float maxy = std::max(fabs(mincam.y), fabs(maxcam.y));
+	float max  = std::max(maxx, maxy);
+
+	float aspectRatio = DengWindow->height / DengWindow->width;
+	float r = max * aspectRatio, t = max;
+	float l = -r, b = -t;
+
+	r += 10 * aspectRatio; l -= 10;
+	t += 10; b -= 10;
+
+	float f = admin->mainCamera->farZ;
+	float n = 0.01;//admin->mainCamera->nearZ;
+	
+	admin->renderer->UpdateCameraProjectionMatrix(Matrix4(
+		2 / (r - l),			0,						0,					0,
+		0,						2 / (t - b),			0,					0,
+		0,						0,						-2 / (f - n),		0,
+		-(r + l) / (r - l),		-(t + b) / (t - b),		-(f + n) / (f - n),	1));
+}
 
 void Camera::Update() {
 	Window* window = admin->window;
@@ -88,6 +117,8 @@ void Camera::Update() {
 	right = Vector3::UP.cross(forward).normalized();
 	up = right.cross(forward).normalized();
 	
+	//UseOrthographicProjection();
+
 	//update view matrix
 	//TODO(delle,Op) precalc this since we already get the direction vectors
 	viewMatrix = Math::LookAtMatrix(position, position+forward).Inverse();

@@ -52,9 +52,6 @@
     <ClInclude Include="..\src\utils\defines.h">
       <Filter>src\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\utils\GLOBALS.h">
-      <Filter>src\utils</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\utils\PhysicsWorld.h">
       <Filter>src\utils</Filter>
     </ClInclude>
@@ -341,9 +338,6 @@
       <Filter>src\math</Filter>
     </ClCompile>
     <ClCompile Include="..\src\utils\Command.cpp">
-      <Filter>src\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\utils\GLOBALS.cpp">
       <Filter>src\utils</Filter>
     </ClCompile>
     <ClCompile Include="..\src\EntityAdmin.cpp">
