@@ -9,7 +9,7 @@ import json
 
 
 
-src_dir = "C:\\Users\\sushi\\Documents\\GitHub\\deshi\\src"
+src_dir = "../src"
 
 ignore_dirs = ["imgui", "saschawillems", "draudio", "stb", "tinyobjloader"] #put the name of folders you want to ignore here
 
@@ -111,7 +111,6 @@ for file_name, line_num, arguments, body in TODOs:
 	Tags = []
 	if len(arguments) >= 2:
 		Tags = getTags(arguments[1])
-	print(file_name, line_num, body)
 	#write the file the TODO was found in and what line
 	TODOList.write(file_name[file_name.rfind("\\") + 1:] + ", Line: " + str(line_num) + "\n")
 	
