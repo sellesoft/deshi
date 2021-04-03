@@ -790,7 +790,7 @@ void Console::AddRenderCommands() {
 							AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 							admin->world->AddComponentsToEntity(admin, e, { mc, p, s });
 							
-							u32 id = admin->renderer->LoadMesh(mes);
+							u32 id = admin->renderer->LoadBaseMesh(mes);
 							Model mod;
 							mod.mesh = mesh;
 							mc->MeshID = id;

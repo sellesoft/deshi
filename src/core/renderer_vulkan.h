@@ -117,10 +117,12 @@ struct PrimitiveVk{
 };
 
 struct MeshVk{
-	u32  id = 0xFFFFFFFF;
+	u32  id      = 0xFFFFFFFF;
 	bool visible = true;
+	bool base    = false;
 	glm::mat4 modelMatrix = glm::mat4(1.f);
 	std::vector<PrimitiveVk> primitives;
+	std::vector<u32> children;
 };
 
 struct MaterialVk{
@@ -204,9 +206,10 @@ struct Renderer{
 	
 	//loads a mesh to the different shaders specified in its batches
 	//returns the ID of the mesh
-	u32  LoadMesh(Mesh* mesh);
-	u32  DuplicateMesh(u32 meshID, Matrix4 matrix);
-	void UnloadMesh(u32 meshID);
+	u32  LoadBaseMesh(Mesh* mesh);
+	u32  CreateMesh(u32 meshID, Matrix4 matrix);
+	void UnloadBaseMesh(u32 meshID);
+	void RemoveMesh(u32 meshID);
 	Matrix4 GetMeshMatrix(u32 meshID);
 	//updates a mesh's model matrix: translation, rotation, scale
 	void UpdateMeshMatrix(u32 meshID, Matrix4 matrix);

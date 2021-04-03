@@ -284,9 +284,9 @@ void Renderer::TranslateTriangles(std::vector<u32> triangleIDs, Vector3 translat
 	PRINT("Not implemented");
 }
 
-u32 Renderer::LoadMesh(Mesh* m){
+u32 Renderer::LoadBaseMesh(Mesh* m){
 	PRINTVK(3, "    Loading Mesh: ", m->name);
-	MeshVk mesh{};
+	MeshVk mesh{}; mesh.base = true;
 	mesh.primitives.reserve(m->batchCount);
 	
 	//resize scene vectors
@@ -387,21 +387,40 @@ u32 Renderer::LoadMesh(Mesh* m){
 	return mesh.id;
 }
 
-u32 Renderer::DuplicateMesh(u32 meshID, Matrix4 matrix){
+u32 Renderer::CreateMesh(u32 meshID, Matrix4 matrix){
 	if(meshID < meshes.size()){
-		MeshVk mesh{};
+		MeshVk mesh{}; mesh.base = false;
 		mesh.primitives = std::vector<PrimitiveVk>(meshes[meshID].primitives);
 		mesh.modelMatrix = glm::make_mat4(matrix.data);
 		
 		mesh.id = u32(meshes.size());
 		meshes.push_back(mesh);
+		meshes[meshID].children.push_back(mesh.id);
 		return mesh.id;
 	}
 	return 0xFFFFFFFF;
 }
 
-void Renderer::UnloadMesh(u32 meshID){
-	PRINT("Not implemented yet");
+void Renderer::UnloadBaseMesh(u32 meshID){
+	if(meshID < meshes.size()){
+		if(meshes[meshID].base){
+			//loop thru children and remove them
+			//remove verts and indices
+			ERROR("UnloadMesh: Not implemented yet");
+		}else{
+			ERROR("Only a base mesh can be unloaded");
+		}
+	}
+}
+
+void Renderer::RemoveMesh(u32 meshID){
+	if(meshID < meshes.size()){
+		if(!meshes[meshID].base){
+			meshes.erase(meshes.begin() + meshID);
+		}else{
+			ERROR("Only a child/non-base mesh can be removed");
+		}
+	}
 }
 
 Matrix4 Renderer::GetMeshMatrix(u32 meshID){
@@ -438,24 +457,24 @@ void Renderer::UpdateMeshVisibility(u32 meshID, bool visible){
 }
 
 u32 Renderer::MakeInstance(u32 meshID, Matrix4 matrix) {
-	PRINT("Not implemented yet");
+	ERROR("MakeInstance: Not implemented yet");
 	return 0xFFFFFFFF;
 }
 
 void Renderer::RemoveInstance(u32 instanceID) {
-	PRINT("Not implemented yet");
+	ERROR("RemoveInstance: Not implemented yet");
 }
 
 void Renderer::UpdateInstanceMatrix(u32 instanceID, Matrix4 matrix) {
-	PRINT("Not implemented yet");
+	ERROR("UpdateInstanceMatrix: Not implemented yet");
 }
 
 void Renderer::TransformInstanceMatrix(u32 instanceID, Matrix4 transform) {
-	PRINT("Not implemented yet");
+	ERROR("TransformInstanceMatrix: Not implemented yet");
 }
 
 void Renderer::UpdateInstanceVisibility(u32 instanceID, bool visible) {
-	PRINT("Not implemented yet");
+	ERROR("UpdateInstanceVisibility: Not implemented yet");
 }
 
 u32 Renderer::LoadTexture(Texture texture){
@@ -618,6 +637,9 @@ void Renderer::LoadDefaultAssets(){
 	materials.reserve(8);
 	//default flat shaded material
 	
+	//load default meshes
+	
+	
 	//TODO(delle,ReVu) add box mesh, planarized box mesh
 	//TODO(delle,ReVu) add local axis, global axis, and grid 
 }
@@ -626,7 +648,7 @@ void Renderer::LoadDefaultAssets(){
 void Renderer::LoadScene(Scene* sc){
 	PRINTVK(2, "  Loading Scene");
 	//load meshes, materials, and textures
-	for(Model& model : sc->models){ LoadMesh(&model.mesh); }
+	for(Model& model : sc->models){ LoadBaseMesh(&model.mesh); }
 	
 	CreateSceneBuffers();
 }
