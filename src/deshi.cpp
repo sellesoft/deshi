@@ -55,7 +55,6 @@ find a way to forward declare vulkan stuff and move the include to the cpp
 (maybe) remove renderer polymorphism and replace it with defines that are checked on program start
 (maybe) add specific shader reloading rather than all of them
 add support for empty scene
-add orthographic pipeline for side views etc.
 
 Level Editor TODOs
 ------------

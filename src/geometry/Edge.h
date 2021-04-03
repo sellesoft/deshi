@@ -5,14 +5,14 @@ struct Entity;
 
 //attached to entities to allow different forms of checking sides of more complex objects
 struct Edge {
-	Vector3 p[2];
+	Vector2 p[2];
 	//if lead is true then p[1] is the right most point.
 	//ditto for high but on y
 	bool lead = false;
 	bool high = false;
 
 	Edge() {}
-	Edge(Vector3 point1, Vector3 point2) {
+	Edge(Vector2 point1, Vector2 point2) {
 		p[0] = point1;
 		p[1] = point2;
 		if (point1.x > point2.x) { lead = false; }
@@ -21,7 +21,7 @@ struct Edge {
 		else { high = true; }
 	}
 
-	void update(Vector3 point1, Vector3 point2) {
+	void update(Vector2 point1, Vector2 point2) {
 		p[0] = point1;
 		p[1] = point2;
 		if (point1.x > point2.x) { lead = false; }
@@ -37,46 +37,46 @@ struct Edge {
 
 	//y intercept and range/domain checks
 	float ycross() { return p[!lead].y - slope() * p[!lead].x; }
-	bool within_range(Vector3 point)  { return (point.y <= p[high].y&& point.y >= p[!high].y); }
+	bool within_range(Vector2 point)  { return (point.y <= p[high].y&& point.y >= p[!high].y); }
 	bool within_range(float y_point)  { return (y_point <= p[high].y&& y_point >= p[!high].y); }
-	bool within_domain(Vector3 point) { return (point.x <= p[lead].x&& point.x >= p[!lead].x); }
+	bool within_domain(Vector2 point) { return (point.x <= p[lead].x&& point.x >= p[!lead].x); }
 	bool within_domain(float x_point) { return (x_point <= p[lead].x&& x_point >= p[!lead].x); }
 
 	//returns edge's normal
 	//returns a normal rotated -90
-	Vector3 edge_normal() {
-		Vector3 v = p[1] - p[0];
-		return Vector3(v.y, -v.x, 0).normalized();
+	Vector2 edge_normal() {
+		Vector2 v = p[1] - p[0];
+		return Vector2(v.y, -v.x).normalized();
 	}
 
-	Vector3 edge_midpoint() {
-		return Vector3((p[0].x + p[1].x) / 2, (p[0].y + p[1].y) / 2, 0);
+	Vector2 edge_midpoint() {
+		return Vector2((p[0].x + p[1].x) / 2, (p[0].y + p[1].y) / 2);
 	}
 
 	//is a point on, above, or below edge
-	bool on_edge(Vector3 point) {
+	bool on_edge(Vector2 point) {
 		if ((point.y == slope() * point.x + ycross()) && within_domain(point)) { return true; }
 		else { return false; }
 	}
 
 	//these signs may look wrong but its to accomidate for the top left coord (maybe)
-	bool above_edge(Vector3 point) {
+	bool above_edge(Vector2 point) {
 		int bp = 0;
 		if (point.y < slope() * point.x + ycross()) { return true; }
 		else { return false; }
 	}
 
-	bool below_edge(Vector3 point) {
+	bool below_edge(Vector2 point) {
 		if (point.y > slope() * point.x + ycross()) { return true; }
 		else { return false; }
 	}
 
-	bool right_of_edge(Vector3 point) {
+	bool right_of_edge(Vector2 point) {
 		if ((point.x > (point.y - ycross()) / slope())) { return true; }
 		else { return false; }
 	}
 
-	bool left_of_edge(Vector3 point) {
+	bool left_of_edge(Vector2 point) {
 		if ((point.x < (point.y - ycross()) / slope())) { return true; }
 		else { return false; }
 	}
@@ -85,14 +85,11 @@ struct Edge {
 	//intersection and then seeing if that point lies on either of them
 	bool edge_intersect(Edge e) {
 		if (slope() == e.slope() && (!on_edge(e.p[0]) || !on_edge(e.p[1]))) { return false; }
-		Vector3 cross = Math::LineIntersect2(slope(), ycross(), e.slope(), e.ycross());
+		Vector2 cross = Math::LineIntersect2(slope(), ycross(), e.slope(), e.ycross());
 		if (within_domain(cross) && within_range(cross) &&
 			e.within_domain(cross) && e.within_range(cross)) {
 			return true;
-		}
-		else {
-			return false;
-		}
+		} else return false;
 	}
 
 	std::string str() { return "{(" + p[0].str() + "), (" + p[1].str() + ")}"; }

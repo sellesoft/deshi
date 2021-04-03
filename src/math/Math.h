@@ -92,6 +92,34 @@ namespace Math {
 		return Matrix4::TranslationMatrix(offsetFromOrigin).Inverse();
 	}
 	
+	//returns how far along a polynomial fit for a set of data you are
+	//you are not allowed to have 2 points with the same x value here
+	//using Lagrange Polynomials
+	//TODO(sushi, Ma) look into maybe implementing Newton's Polynomials at some point idk if they're better but they look more simple
+	static float PolynomialCurveInterpolation(std::vector<Vector2> vs, float t) {
+		float sum = 0;
+		for (int j = 0; j < vs.size(); j++) {
+			float vy = vs[j].y; 
+			float jx = vs[j].x;
+			float lbp = 1;
+			for (int m = 0; m < vs.size(); m++) {
+				if (lbp != 0) {
+					if (m != j) {
+						float mx = vs[m].x;
+						lbp *= (t - mx) / (jx - mx);
+					}
+				} else break;
+			}
+			sum += vy * lbp;
+		}
+		return sum;
+	}
+
+	static Vector2 Vector2RotateByAngle(float angle, Vector2 v) {
+		angle = RADIANS(angle);
+		return Vector2(v.x * cosf(angle) - v.y * sinf(angle), v.x * sin(angle) + v.y * cos(angle));
+	}
+
 }
 
 
@@ -469,6 +497,15 @@ namespace Math {
 		ASSERT(lo < hi, "The low must be less than the high clamp");
 		return (v < lo) ? lo : (hi < v) ? hi : v;
 	}
+
+	//clamps all values of a Vector3 between two floats
+	static Vector3 clamp(Vector3 v, float lo, float hi) {
+		ASSERT(lo < hi, "The low must be less than the high clamp");
+		return Vector3(
+			(v.x < lo) ? lo : (hi < v.x) ? hi : v.x,
+			(v.y < lo) ? lo : (hi < v.y) ? hi : v.y,
+			(v.z < lo) ? lo : (hi < v.z) ? hi : v.z);
+	}
 	
 	//for debugging with floats or doubles
 	static std::string append_decimal(std::string s) {
@@ -524,7 +561,7 @@ namespace Math {
 	
 	//interpolating
 	static float   lerpf(float p1, float p2, float t) { return (1.f - t) * p1 + t * p2; }
-	static Vector3 lerpv(Vector3 v1, Vector3 v2, float t) { return  v1 * (1.f - t) + v2 * t; }
+	static Vector3 lerpv(Vector3 v1, Vector3 v2, float t) { return  v1 * (1.f - t * t) + v2 * t * t; }
 	static Vector2 lerpv(Vector2 v1, Vector2 v2, float t) { return  v1 * (1.f - t) + v2 * t; }
 	
 	//this function returns a matrix that tells a vector how to look at a specific point in space.
@@ -616,18 +653,17 @@ namespace Math {
 	}
 	
 	//return where two lines intersect on the x axis with slope and the y-intercept
-	static Vector3 LineIntersect2(float slope1, float ycross1, float slope2, float ycross2) {
+	static Vector2 LineIntersect2(float slope1, float ycross1, float slope2, float ycross2) {
 		MatrixN lhs(2,2,{ slope1, ycross1, slope2, ycross2 });
 		MatrixN rhs(2,1,{ 1, 1 });
 		MatrixN det = lhs.Inverse() * rhs;
-		float x = 1 / det(0,1) * det(0,0);
+		float x = 1 / det(1,0) * det(0,0);
 		float y = slope1 * x + ycross1;
-		return Vector3(x, y);
+		return Vector2(x, y);
 	}
 	
 	//returns where two lines intersect in 3D space //TODO(sushi, MaGe) implement this
-	static Vector3 LineIntersect3(Vector3 adir, Vector3 ap, Vector3 bdir, Vector3 bp) {
-	}
+	static Vector3 LineIntersect3(Vector3 adir, Vector3 ap, Vector3 bdir, Vector3 bp) {}
 
 	//the input vectors should be in viewMatrix/camera space
 	//returns true if the line can be rendered after clipping, false otherwise

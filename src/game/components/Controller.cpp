@@ -329,6 +329,9 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					Vector2 screenxaxis = (xaxistoscreen - screenpos).normalized();
 
 
+					std::vector<Vector2> vs;
+
+
 					Vector3 xp1 = initialObjPos - (Vector3::RIGHT * 2000);
 					Vector3 xp2 = initialObjPos + (Vector3::RIGHT * 2000);
 
@@ -341,9 +344,44 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 						Vector3 pn1 = Vector3::FORWARD * Matrix4::AxisAngleRotationMatrix(  70 - (c->fieldOfView / 2), Vector4(0, 1, 0, 0));
 						Vector3 pn2 = Vector3::FORWARD * Matrix4::AxisAngleRotationMatrix(-(70 - (c->fieldOfView / 2)), Vector4(0, 1, 0, 0));
 
+
+						
+
+
 						Vector3 ps1 = Math::VectorPlaneIntersect(Vector3::ZERO, pn1, pc1, pc2, t); 
 						Vector3 ps2 = Math::VectorPlaneIntersect(Vector3::ZERO, pn2, pc1, pc2, t); 
 						
+						//get 2D positions of plane intersections and camera position from top down
+						Vector2 p1 = Vector2(ps1.x, ps1.z);
+						Vector2 p2 = Vector2(ps2.x, ps2.z);
+
+						Vector2 campos = Vector2(c->position.x, c->position.z);
+						Vector2 camfor = Vector2(c->forward.x, c->forward.z);
+
+
+						std::vector<Vector2> ip;
+
+
+
+						if ((p2 - p1).dot(Vector2::UP) < 0) {
+							//viewing axis from right side
+
+							Vector2 ro = Math::Vector2RotateByAngle(-c->fieldOfView / 2, camfor);
+
+							Edge e = Edge(p2, p2 + Vector2::LEFT * 2000);
+							Edge e2 = Edge(Vector2::ZERO, p1);
+
+							
+
+
+							//creates 30 sample points along axis line to build polynomial curve from
+							for (int i = 0; i < 30; i++) {
+
+							}
+
+						}
+
+
 						Vector3 pir1 = Math::CameraToWorld4(ps1, c->viewMatrix).ToVector3();
 						Vector3 pir2 = Math::CameraToWorld4(ps2, c->viewMatrix).ToVector3();
 
@@ -355,6 +393,11 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 						Vector2 mouseline = DengInput->mousePos - v1s.ToVector2();
 						Vector2 screenline = v2s.ToVector2() - v1s.ToVector2();
 						Vector3 worldline = pir2 - pir1;
+
+						
+
+
+
 
 						Vector3 backplaneintersect = Math::VectorPlaneIntersect(c->forward + (c->forward.normalized() * c->farZ), c->forward, pir1, pir2, t);
 

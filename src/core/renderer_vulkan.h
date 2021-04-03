@@ -232,7 +232,8 @@ struct Renderer{
 	u32 CreateMaterial(u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2);
 	void UpdateMaterialTexture(u32 matID, u32 textureSlot, u32 textureID);
 	void UpdateMaterialShader(u32 matID, u32 shader);
-	
+	std::vector<u32> GetMaterialIDs(u32 MeshID);
+
 	void LoadDefaultAssets();
 	//loads a new scene to the GPU
 	//NOTE this should not be done often in gameplay

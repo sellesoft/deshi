@@ -22,8 +22,15 @@ layout(location = 1) out vec2 outTexCoord;
 layout(location = 2) out vec3 outNormal;
 
 void main() {
+
+
+
     gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
-    outColor = inColor;
+    gl_Position.x = floor(gl_Position.x);
+	gl_Position.y = floor(gl_Position.y);
+	gl_Position.z = floor(gl_Position.z);
+	
+	outColor = inColor;
 	outTexCoord = inTexCoord;
 	outNormal = mat3(primitive.model) * inNormal;
 }

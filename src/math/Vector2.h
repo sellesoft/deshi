@@ -29,11 +29,8 @@ struct Vector2 {
 	static const Vector2 DOWN;
 	static const Vector2 LEFT;
 	static const Vector2 RIGHT;
-	static const Vector2 FORWARD;
-	static const Vector2 BACK;
 	static const Vector2 UNITX;
 	static const Vector2 UNITY;
-	static const Vector2 UNITZ;
 	
 	void    operator =	(const Vector2& rhs);
 	Vector2 operator *  (float rhs) const;
@@ -198,26 +195,9 @@ inline float Vector2::dot(const Vector2& rhs) const {
 	return this->x * rhs.x + this->y * rhs.y ;
 }
 
-//not necessary I dont think?
-//inline Vector2 Vector2::cross(const Vector2& rhs) const {
-//	return Vector2(this->y * rhs.z - rhs.y * this->z, this->x * rhs.z - rhs.x * this->z);
-//}
-
 inline float Vector2::mag() const {
 	return std::sqrt(x * x + y * y);
 }
-
-////ref: https://betterexplained.com/articles/understanding-quakes-fast-inverse-square-root/
-//inline float Vector2::mag() const {
-//	ASSERT(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
-//	float k = x * x + y * y + z * z;
-//	float kHalf = .5f * k;
-//	int32 i = *(int32*)&k;
-//	i = 0x5f3759df - (i >> 1);
-//	k = *(float*)&i;
-//	k = k*(1.5f - kHalf*k*k);
-//	return 1.f / k;
-//}
 
 inline void Vector2::normalize() {
 	if (*this != Vector2(0, 0)) {
@@ -225,39 +205,12 @@ inline void Vector2::normalize() {
 	}
 }
 
-//inline void Vector2::normalize() {
-//	if (*this != Vector2(0, 0)) {
-//		ASSERT(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
-//		float k = x * x + y * y + z * z;
-//		float kHalf = .5f * k;
-//		int32 i = *(int32*)&k;
-//		i = 0x5f3759df - (i >> 1);
-//		k = *(float*)&i;
-//		k = k*(1.5f - kHalf*k*k);
-//		*this *= k;
-//	}
-//}
-
 inline Vector2 Vector2::normalized() const {
 	if (*this != Vector2(0, 0)) {
 		return *this / this->mag();
 	}
 	return Vector2(*this);
 }
-
-//inline Vector2 Vector2::normalized() const {
-//	if (*this != Vector2(0, 0)) {
-//		ASSERT(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
-//		float k = x * x + y * y + z * z;
-//		float kHalf = .5f * k;
-//		int32 i = *(int32*)&k;
-//		i = 0x5f3759df - (i >> 1);
-//		k = *(float*)&i;
-//		k = k*(1.5f - kHalf*k*k);
-//		return *this * k;
-//	}
-//	return Vector2(*this);
-//}
 
 inline void Vector2::clampMag(float min, float max) {
 	float mag = this->mag();

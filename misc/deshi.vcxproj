@@ -204,6 +204,7 @@
     <ClInclude Include="..\src\core\event.h" />
     <ClInclude Include="..\src\core\input.h" />
     <ClInclude Include="..\src\core\renderer.h" />
+    <ClInclude Include="..\src\core\renderer_vulkan.h" />
     <ClInclude Include="..\src\core\time.h" />
     <ClInclude Include="..\src\core\window.h" />
     <ClInclude Include="..\src\EntityAdmin.h" />
@@ -228,6 +229,7 @@
     <ClInclude Include="..\src\game\components\Controller.h" />
     <ClInclude Include="..\src\game\components\Light.h" />
     <ClInclude Include="..\src\game\components\MeshComp.h" />
+    <ClInclude Include="..\src\game\components\Orb.h" />
     <ClInclude Include="..\src\game\components\Physics.h" />
     <ClInclude Include="..\src\game\components\Transform.h" />
     <ClInclude Include="..\src\game\Keybinds.h" />
@@ -309,6 +311,7 @@
     <ClCompile Include="..\src\game\components\Controller.cpp" />
     <ClCompile Include="..\src\game\components\Light.cpp" />
     <ClCompile Include="..\src\game\components\MeshComp.cpp" />
+    <ClCompile Include="..\src\game\components\Orb.cpp" />
     <ClCompile Include="..\src\game\components\Physics.cpp" />
     <ClCompile Include="..\src\game\components\Transform.cpp" />
     <ClCompile Include="..\src\game\Keybinds.cpp" />
@@ -318,6 +321,7 @@
     <ClCompile Include="..\src\game\systems\WorldSystem.cpp" />
     <ClCompile Include="..\src\math\Matrix3.cpp" />
     <ClCompile Include="..\src\math\Matrix4.cpp" />
+    <ClCompile Include="..\src\math\Vector2.cpp" />
     <ClCompile Include="..\src\math\Vector3.cpp" />
     <ClCompile Include="..\src\scene\Model.cpp" />
     <ClCompile Include="..\src\utils\Command.cpp" />

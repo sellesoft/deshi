@@ -259,7 +259,6 @@ void RenderCanvasSystem::DebugTools() {
 
 			
 			if (BeginTabBar("ObjectPropertyMenus")) {
-				
 
 				if (BeginTabItem("Obj")) {
 					Text("Transform");
@@ -323,7 +322,11 @@ void RenderCanvasSystem::DebugTools() {
 								for (int i = 0; i < shadertostringint.size(); i++) {
 									if (Selectable(shadertostringint[i].c_str(), selected == i)) {
 										selected = i;
-										admin->renderer->UpdateMaterialShader(m->MeshID, stringtoshader.at(shadertostringint[i]));
+										for (int iter = 0; iter < sel->components.size(); iter++) {
+											if (MeshComp* mc = dynamic_cast<MeshComp*>(sel->components[iter])) {
+												mc->ChangeMaterialShader(stringtoshader.at(shadertostringint[i]));
+											}
+										}
 									}
 								}
 								TreePop();

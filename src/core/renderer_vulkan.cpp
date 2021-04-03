@@ -606,6 +606,18 @@ void Renderer::UpdateMaterialShader(u32 matID, u32 shader){
 	}
 }
 
+std::vector<u32> Renderer::GetMaterialIDs(u32 MeshID) {
+	if (MeshID < meshes.size()) {
+		MeshVk* m = &meshes[MeshID];
+		std::vector<u32> out;
+		for (auto a : m->primitives) {
+			out.push_back(a.materialIndex);
+		}
+		return out;
+	}
+	return std::vector<u32>();
+}
+
 void Renderer::LoadDefaultAssets(){
 	PRINTVK(2, "  Loading default assets");
 	//load default textures
