@@ -29,7 +29,6 @@ struct EntityAdmin;
 typedef u32 EntityID;
 
 struct WorldSystem : public System {
-	void Init() override;
 	void Update() override;
 	
 	std::vector<Entity*> creationBuffer;

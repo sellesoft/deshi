@@ -40,7 +40,6 @@ look into integrating TODOP with Discord
 
 Render TODOs
 ------------
-add instancing [https://learnopengl.com/Advanced-OpenGL/Instancing]
 add vertex editing
 add texture transparency support
 add 2D shader and interface functions
@@ -48,6 +47,7 @@ add lighting and shadows
 add RenderSettings loading and usage
 check those vulkan-tutorial links for the suggestions
 avoid having 3 copies of a mesh (model, meshVK, vulkan)
+add instancing [https://learnopengl.com/Advanced-OpenGL/Instancing]
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
 multi-threaded command buffers, shader loading, image loading
   convert prints to go thru the in-game console rather than other console
@@ -130,7 +130,7 @@ struct DeshiEngine {
 		renderer.Init(&time, &window, &imgui, &console); //inits imgui as well
 		
 		//init game admin
-		entityAdmin.Init(&input, &window, &time, &renderer, &console, renderer.scene);
+		entityAdmin.Init(&input, &window, &time, &renderer, &console);
 		
 		//start main loop
 		while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {

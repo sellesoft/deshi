@@ -616,7 +616,46 @@ void Console::AddRenderCommands() {
 	
 	//create box 
 	
+	
 	//create planarized box
+	commands["create_box_uv"] =
+		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+						try{
+							std::cmatch m;
+							Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
+							
+							for (auto s = args.begin(); s != args.end(); ++s) {
+								if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
+									std::regex_search(s->c_str(), m, VecNumMatch);
+									position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+								}
+								else if (std::regex_match(*s, RegRotParam)) { //-rot=(1.1,2,3)
+									std::regex_search(s->c_str(), m, VecNumMatch);
+									rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+								}
+								else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
+									std::regex_search(s->c_str(), m, VecNumMatch);
+									scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+								}
+								else {
+									return "[c:red]Invalid parameter: " + *s + "[c]";
+								}
+							}
+							
+							u32 id = admin->renderer->CreateMesh(2, Matrix4::TransformationMatrix(position, rotation, scale));
+							Mesh* ptr = admin->renderer->GetMeshPtr(id);
+							
+							MeshComp* mc = new MeshComp(ptr);
+							mc->MeshID = id;
+							Physics* p = new Physics(Vector3(0,0,0), Vector3(0,0,0));
+							AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
+							Entity* e = admin->world->CreateEntity(admin, { mc, p, s });
+							
+							return TOSTRING("Created textured box with id: ", id);
+						}catch(...){
+							return "create_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
+						}
+					}, "create_box_uv", "create_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 	
 	//mesh_update_matrix, a bit more difficult b/c it should only update the passed arguments
 	
@@ -694,6 +733,51 @@ void Console::AddRenderCommands() {
 				   }
 				   return "mesh_visible <meshID:Uint> <visible:Bool>";
 			   });
+	
+	commands["mesh_create"] =
+		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+						try{
+							if (args.size() > 0) {
+								int meshID = std::stoi(args[0]);
+								
+								std::cmatch m;
+								Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
+								
+								//check for optional params after the first arg
+								for (auto s = args.begin() + 1; s != args.end(); ++s) {
+									if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
+										std::regex_search(s->c_str(), m, VecNumMatch);
+										position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+									}
+									else if (std::regex_match(*s, RegRotParam)) { //-rot=(1.1,2,3)
+										std::regex_search(s->c_str(), m, VecNumMatch);
+										rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+									}
+									else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
+										std::regex_search(s->c_str(), m, VecNumMatch);
+										scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+									}
+									else {
+										return "[c:red]Invalid parameter: " + *s + "[c]";
+									}
+								}
+								
+								u32 id = admin->renderer->CreateMesh(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
+								Mesh* ptr = admin->renderer->GetMeshPtr(id);
+								
+								MeshComp* mc = new MeshComp(ptr);
+								mc->MeshID = id;
+								Physics* p = new Physics(Vector3(0,0,0), Vector3(0,0,0));
+								AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
+								Entity* e = admin->world->CreateEntity(admin, { mc, p, s });
+								
+								return TOSTRING("Created mesh with id: ", id, " based on mesh: ", meshID);
+							}
+							return "mesh_create <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
+						}catch(...){
+							return "mesh_create <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
+						}
+					}, "mesh_create", "mesh_create <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 	
 	NEWCOMMAND("mesh_batch_material", "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>", {
 				   if (args.size() != 3) { return "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>"; }
@@ -790,7 +874,7 @@ void Console::AddRenderCommands() {
 							AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 							admin->world->AddComponentsToEntity(admin, e, { mc, p, s });
 							
-							u32 id = admin->renderer->LoadMesh(mes);
+							u32 id = admin->renderer->LoadBaseMesh(mes);
 							Model mod;
 							mod.mesh = mesh;
 							mc->MeshID = id;

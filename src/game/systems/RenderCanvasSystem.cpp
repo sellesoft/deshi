@@ -166,7 +166,7 @@ void RenderCanvasSystem::DebugTools() {
 	//	TableHeadersRow();
 	//	ImGui::EndTable();
 	//}
-
+	
 	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 	ImGui::Text("Entities");
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
@@ -256,32 +256,33 @@ void RenderCanvasSystem::DebugTools() {
 			ImGui::PushStyleColor(ImGuiCol_TabHovered, ColToVec4(Color::DARK_CYAN));
 			ImGui::PushStyleColor(ImGuiCol_Tab,        ColToVec4(colors.c1));
 			ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
-
+			
 			
 			if (BeginTabBar("ObjectPropertyMenus")) {
-
+				
+				
 				if (BeginTabItem("Obj")) {
 					Text("Transform");
 					Separator();
-
+					
 					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 					Text("Position ");
 					SameLine(); InputVector3("position", &sel->transform->position);
 					Separator();
-
+					
 					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 					Text("Rotation ");
 					SameLine(); InputVector3("rotation", &sel->transform->rotation);
 					Separator();
-
+					
 					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 					Text("Scale    ");
 					SameLine(); InputVector3("scale", &sel->transform->scale);
 					Separator();
-
+					
 					EndTabItem();
 				}
-
+				
 				//Components menu
 				if (BeginTabItem("Comp")) {
 					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
@@ -342,7 +343,7 @@ void RenderCanvasSystem::DebugTools() {
 			ImGui::PopStyleColor();
 			ImGui::PopStyleColor();
 			ImGui::PopStyleVar();
-
+			
 			EndChild();
 		}
 		
@@ -351,7 +352,7 @@ void RenderCanvasSystem::DebugTools() {
 		SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 		Text("Selected Entity: None");
 	}
-
+	
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
@@ -660,10 +661,10 @@ void RenderCanvasSystem::DebugLayer() {
 		Vector3 v2 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + lines), c->viewMatrix).ToVector3();
 		Vector3 v3 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.z) + -lines + i), c->viewMatrix).ToVector3();
 		Vector3 v4 = Math::WorldToCamera4(Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i), c->viewMatrix).ToVector3();
-
+		
 		bool l1flag = false;
 		bool l2flag = false;
-
+		
 		if (floor(cpos.x) - lines + i == 0) {
 			l1flag = true;
 		}
@@ -674,8 +675,8 @@ void RenderCanvasSystem::DebugLayer() {
 		//Vector3 v2t = v2.ToVector3();
 		//Vector3 v3t = v3.ToVector3();
 		//Vector3 v4t = v4.ToVector3();
-
-
+		
+		
 		if (Math::ClipLineToZPlanes(v1, v2, c)) {
 			Vector3 v1s = Math::CameraToScreen3(v1, c->projectionMatrix, DengWindow->dimensions);
 			Vector3 v2s = Math::CameraToScreen3(v2, c->projectionMatrix, DengWindow->dimensions);
@@ -691,7 +692,7 @@ void RenderCanvasSystem::DebugLayer() {
 			else        ImGui::GetBackgroundDrawList()->AddLine(v3s.ToVector2().ToImVec2(), v4s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(0, 0, 1, 1)));
 		}
 	}
-
+	
 	if (DengInput->MousePressed(MouseButton::MB_LEFT) && rand() % 100 + 1 == 80) {
 		times.push_back(std::pair<float, Vector2>(0.f, mp));
 	}
@@ -757,7 +758,8 @@ void RenderCanvasSystem::DrawUI(void) {
 	}
 }
 
-void RenderCanvasSystem::Init() {
+void RenderCanvasSystem::Init(EntityAdmin* admin) {
+	System::Init(admin);
 	files = deshi::iterateDirectory(deshi::getModelsPath());
 	Canvas* canvas = admin->tempCanvas;
 }

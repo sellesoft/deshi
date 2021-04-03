@@ -19,6 +19,7 @@
 #include "utils/PhysicsWorld.h"
 #include "utils/Command.h"
 #include "utils/defines.h"
+#include "scene/Scene.h"
 
 #include "game/Keybinds.h"
 #include "game/components/Component.h"
@@ -31,8 +32,6 @@
 
 #include "scene/Scene.h"
 
-
-
 #include "game/systems/System.h"
 #include "game/systems/PhysicsSystem.h"
 #include "game/systems/RenderCanvasSystem.h"
@@ -41,45 +40,40 @@
 
 //// EntityAdmin ////
 
-void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c, Scene* s) {
+void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	time = t;
 	input = i;
-	scene = s;
 	window = w;
 	console = c;
 	renderer = r;
-
+	
 	systems = std::vector<System*>();
 	entities = std::map<EntityID, Entity*>();
 	components = std::vector<Component*>();
 	physicsWorld = new PhysicsWorld();
-
+	
 	//reserve complayers
 	for (int i = 0; i < 8; i++) {
 		freeCompLayers.push_back(ContainerManager<Component*>());
 	}
-
+	
 	//systems initialization
 	switch (physicsWorld->integrationMode) {
-	default: /* Semi-Implicit Euler */ {
-		physics = new PhysicsSystem();
-	}
+		default: /* Semi-Implicit Euler */ {
+			physics = new PhysicsSystem();
+		}
 	}
 	canvas = new RenderCanvasSystem();
 	world = new WorldSystem();
 	sound = new SoundSystem();
-
-	physics->admin = this;
-	canvas->admin = this;
-	world->admin = this;
-	sound->admin = this;
-
-	physics->Init();
-	canvas->Init();
-	world->Init();
-	sound->Init();
-
+	
+	physics->Init(this);
+	canvas->Init(this);
+	world->Init(this);
+	sound->Init(this);
+	
 	//singleton initialization
+	scene = new Scene();
 	mainCamera = new Camera(this);
 	mainCamera->layer_index = freeCompLayers[mainCamera->layer].add(mainCamera);
 	keybinds = new Keybinds(this);
@@ -87,13 +81,7 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c, Sc
 	controller->layer_index = freeCompLayers[controller->layer].add(controller);
 
 
-	//debug box initialization that needs to be removed when the debug box is 
-	Entity* e = world->CreateEntity(admin);
-	e->name = "box";
-	MeshComp* mc = new MeshComp(&scene->models[0].mesh);
-	admin->world->AddComponentsToEntity(admin, e, { mc });
-	mc->MeshID = 0;
-	mc->admin = this;
+	
 
 	//orb testing
 	Entity* orbtest = world->CreateEntity(admin);
@@ -116,9 +104,9 @@ void EntityAdmin::Cleanup() {
 	//for(System* s : systems)       { delete s; }           systems.clear();
 	for (auto pair : entities) { delete pair.second; } entities.clear();
 	for (Component* c : components) { delete c; }           components.clear();
-
+	
 	delete physicsWorld;
-
+	
 	//clean up singletons
 	delete world;
 	delete canvas;
@@ -141,7 +129,7 @@ void UpdateLayer(ContainerManager<Component*> cl) {
 void EntityAdmin::Update() {
 	controller->Update();
 	mainCamera->Update();
-
+	
 	if (!pause_phys && !paused)    UpdateLayer(freeCompLayers[CL0_PHYSICS]);
 	if (!pause_phys && !paused)    physics->Update();
 	if (!pause_canvas)	           UpdateLayer(freeCompLayers[CL1_RENDCANVAS]);
@@ -151,7 +139,7 @@ void EntityAdmin::Update() {
 	if (!pause_sound && !paused)   UpdateLayer(freeCompLayers[CL3_SOUND]);
 	if (!pause_sound && !paused)   sound->Update();
 	if (!pause_last && !paused)    UpdateLayer(freeCompLayers[CL4_LAST]);
-
+	
 	for (Component* c : components) {
 		c->Update();
 	}
@@ -159,8 +147,7 @@ void EntityAdmin::Update() {
 
 void EntityAdmin::AddSystem(System* system) {
 	systems.push_back(system);
-	system->admin = this;
-	system->Init();
+	system->Init(this);
 }
 
 void EntityAdmin::RemoveSystem(System* system) {

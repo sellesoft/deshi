@@ -4,10 +4,6 @@
 #include "../../utils/Debug.h"
 #include "../components/Transform.h"
 
-void WorldSystem::Init() {
-	
-}
-
 void WorldSystem::Update() {
 	//World* world = admin->world;
 	
@@ -47,7 +43,6 @@ Entity* WorldSystem::CreateEntity(EntityAdmin* admin, Component* singleton) {
 
 Entity* WorldSystem::CreateEntity(EntityAdmin* admin, std::vector<Component*> components) {
 	Entity* e = new Entity;
-	e->components = components;
 	AddComponentsToEntity(admin, e, components);
 	creationBuffer.push_back(e);
 	return e;
@@ -111,7 +106,7 @@ int32 WorldSystem::AddComponentsToEntity(EntityAdmin* admin, Entity* entity, std
 		entity->components.push_back(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 		c->entity = entity;
-		c->admin = entity->admin;
+		c->admin = admin;
 	}
 	return value;
 }

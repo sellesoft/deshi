@@ -103,7 +103,7 @@ static std::map<std::string, Shader> stringtoshader = {
 
 //NOTE indices should be clockwise
 struct Batch {
-	char name[16];
+	char name[64];
 	u32 vertexCount  = 0;
 	u32 indexCount   = 0;
 	u32 textureCount = 0;
@@ -121,7 +121,7 @@ struct Batch {
 };
 
 struct Mesh {
-	char name[16];
+	char name[64];
 	Matrix4 transform;
 	
 	u32 vertexCount  = 0;
@@ -136,8 +136,11 @@ struct Mesh {
 	
 	void SetName(const char* name);
 	
-	//filename: filename and extension, name: loaded mesh name
+	//filename: filename and extension, name: loaded mesh name, transform: pos,rot,scale of mesh
 	static Mesh CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 transform = Matrix4::IDENTITY);
+	static Mesh CreateBox(Vector3 halfDims, Color color = Color::WHITE);
+	static Mesh CreatePlanarBox(Vector3 halfDims, Color color = Color::WHITE);
+	static Mesh CreatePlanarBox(Vector3 halfDims, Texture texture);
 };
 
 //NOTE a model should not change after loading
@@ -146,9 +149,6 @@ struct Model{
 	Mesh mesh;
 	
 	Model() {}
-	
-	static Model CreateBox(Vector3 halfDims, Color color = Color::WHITE);
-	static Model CreatePlanarBox(Vector3 halfDims, Color color = Color::WHITE);
 };
 
 #endif //DESHI_MODEL_H
