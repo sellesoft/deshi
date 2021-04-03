@@ -51,25 +51,23 @@ struct EntityAdmin {
 	PhysicsWorld* physicsWorld;
 	
 	//singletons
-	Input* input;
-	Window* window;
-	Time* time;
+	Input*    input;
+	Window*   window;
+	Time*     time;
 	Renderer* renderer;
-	Scene* scene; 
+	Console*  console;
+	Scene*    scene; 
 	
-	Camera* mainCamera;
-	Keybinds* keybinds;
+	Camera*     mainCamera;
+	Keybinds*   keybinds;
 	Controller* controller;
-	Canvas* tempCanvas;
-	Console* console;
-
+	Canvas*     tempCanvas;
+	
 	//systems
 	PhysicsSystem* physics;
 	RenderCanvasSystem* canvas;
 	WorldSystem* world;
 	SoundSystem* sound;
-
-
 	
 	//stores the components to be executed in between layers
 	std::vector<ContainerManager<Component*>> freeCompLayers;
@@ -83,7 +81,7 @@ struct EntityAdmin {
 	bool pause_console = false;
 	bool pause_sound = false;
 	bool pause_last = false;
-
+	
 	//imgui capture flags
 	bool IMGUI_KEY_CAPTURE = false;
 	bool IMGUI_MOUSE_CAPTURE = false;
@@ -91,8 +89,8 @@ struct EntityAdmin {
 	//console error warn flag and last error
 	bool cons_error_warn = false;
 	std::string last_error;
-
-	void Init(Input* i, Window* w, Time* t, Renderer* r, Console* c, Scene* s);
+	
+	void Init(Input* i, Window* w, Time* t, Renderer* r, Console* c);
 	void Cleanup();
 	
 	void Update();
@@ -125,7 +123,7 @@ struct Entity {
 	EntityID id;
 	std::vector<Component*> components;
 	std::string name;
-
+	
 	Transform* transform;
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
@@ -149,12 +147,10 @@ struct Entity {
 	//adds a component to the end of the components vector
 	//returns the position in the vector
 	u32 AddComponent(Component* component);
-	
 	u32 AddComponents(std::vector<Component*> components);
 	
 	Entity();
 	~Entity();
-	//this seems ancient so i wont touch it 
-}; //TODO(delle) move WorldSystem entity-component functions into Entity
+};
 
 #endif

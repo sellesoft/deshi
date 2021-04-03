@@ -377,8 +377,6 @@ inline void CollisionTick(EntityAdmin* admin, std::vector<PhysicsTuple>& tuples,
 //// system functions ////
 //////////////////////////
 
-void PhysicsSystem::Init() {}
-
 void PhysicsSystem::Update() {
 	Time* time = DengTime;
 	PhysicsWorld* pw = admin->physicsWorld;

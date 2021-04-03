@@ -57,11 +57,11 @@ struct RenderSettings{
 };
 
 struct RenderStats{
-	uint32 totalTriangles;
-	uint32 totalVertices;
-	uint32 totalIndices;
-	uint32 drawnTriangles;
-	uint32 drawnIndices;
+	u32 totalTriangles;
+	u32 totalVertices;
+	u32 totalIndices;
+	u32 drawnTriangles;
+	u32 drawnIndices;
 };
 
 ////////////////////////////////
@@ -117,6 +117,7 @@ struct PrimitiveVk{
 };
 
 struct MeshVk{
+	Mesh* ptr    = nullptr;
 	u32  id      = 0xFFFFFFFF;
 	bool visible = true;
 	bool base    = false;
@@ -172,7 +173,6 @@ struct Renderer{
 	GLFWwindow*    window;
 	RenderSettings settings; //TODO(delle,Re) load render settings from a file
 	RenderStats    stats{};
-	Scene* scene;
 	
 	//////////////////////////
 	//// render interface ////
@@ -211,6 +211,7 @@ struct Renderer{
 	void UnloadBaseMesh(u32 meshID);
 	void RemoveMesh(u32 meshID);
 	Matrix4 GetMeshMatrix(u32 meshID);
+	Mesh* GetMeshPtr(u32 meshID);
 	//updates a mesh's model matrix: translation, rotation, scale
 	void UpdateMeshMatrix(u32 meshID, Matrix4 matrix);
 	void TransformMeshMatrix(u32 meshID, Matrix4 transform);
@@ -248,7 +249,7 @@ struct Renderer{
 	//signals vulkan to remake the pipelines
 	void ReloadShader(u32 shaderID);
 	void ReloadAllShaders();
-	void UpdateDebugOptions(bool wireframe, bool globalAxis);
+	void UpdateDebugOptions(bool wireframe, bool globalAxis, bool wireframeOnly);
 	
 	//scene //TODO(delle,ReOp) use container manager for arrays that remove elements
 	std::vector<VertexVk>   vertexBuffer = std::vector<VertexVk>(0);

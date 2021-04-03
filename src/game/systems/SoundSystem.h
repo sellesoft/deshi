@@ -19,6 +19,6 @@ struct SoundSystem : public System {
 	ALCcontext* context;
 	std::vector<ALuint*> buffers;
 	
-	void Init() override;
+	void Init(EntityAdmin* admin) override;
 	void Update() override;
 };

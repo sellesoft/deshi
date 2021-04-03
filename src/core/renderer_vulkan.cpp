@@ -99,23 +99,11 @@ void Renderer::Init(Time* time, Window* window, deshiImGui* imgui, Console* cons
 	CreateSyncObjects();
 	
 	LoadDefaultAssets();
-	
-	//debug scene
-	//this box is initialized as an entity in EntityAdmin init
-	scene = new Scene();
-	Model box = Model::CreatePlanarBox(Vector3(1, 1, 1));
-	Texture tex("UV_Grid_Sm.jpg");
-	box.mesh.batchArray[0].textureArray.push_back(tex);
-	box.mesh.batchArray[0].textureCount = 1;
-	box.mesh.batchArray[0].shader = Shader::PBR;
-	
-	scene->models = {box};
-	LoadScene(scene);
-	//end debug
+	CreateSceneBuffers();
 	
 	PRINTVK(2, "  Initializing ImGui");
 	imgui->Init(this);
-	BuildCommandBuffers();
+	//BuildCommandBuffers();
 	initialized = true;
 	
 	PRINTVK(1, "Initializing Rendering");
@@ -286,7 +274,8 @@ void Renderer::TranslateTriangles(std::vector<u32> triangleIDs, Vector3 translat
 
 u32 Renderer::LoadBaseMesh(Mesh* m){
 	PRINTVK(3, "    Loading Mesh: ", m->name);
-	MeshVk mesh{}; mesh.base = true;
+	MeshVk mesh;  mesh.base = true; 
+	mesh.ptr = m; mesh.visible = false;
 	mesh.primitives.reserve(m->batchCount);
 	
 	//resize scene vectors
@@ -373,7 +362,7 @@ u32 Renderer::LoadBaseMesh(Mesh* m){
 		}
 		
 		//primitive
-		PrimitiveVk primitive{};
+		PrimitiveVk primitive;
 		primitive.firstIndex = batchIndexStart;
 		primitive.indexCount = batch.indexArray.size();
 		primitive.materialIndex = mat.id;
@@ -389,7 +378,8 @@ u32 Renderer::LoadBaseMesh(Mesh* m){
 
 u32 Renderer::CreateMesh(u32 meshID, Matrix4 matrix){
 	if(meshID < meshes.size()){
-		MeshVk mesh{}; mesh.base = false;
+		MeshVk mesh; mesh.base = false; 
+		mesh.ptr = meshes[meshID].ptr; mesh.visible = true;
 		mesh.primitives = std::vector<PrimitiveVk>(meshes[meshID].primitives);
 		mesh.modelMatrix = glm::make_mat4(matrix.data);
 		
@@ -428,6 +418,13 @@ Matrix4 Renderer::GetMeshMatrix(u32 meshID){
 		return Matrix4((float*)glm::value_ptr(meshes[meshID].modelMatrix));
 	}
 	return Matrix4(0.f);
+}
+
+Mesh* Renderer::GetMeshPtr(u32 meshID){
+	if(meshID < meshes.size()){
+		return meshes[meshID].ptr;
+	}
+	return nullptr;
 }
 
 void Renderer::UpdateMeshMatrix(u32 meshID, Matrix4 matrix){
@@ -635,12 +632,15 @@ void Renderer::LoadDefaultAssets(){
 	Texture whiteTex  ("white1024.png");   LoadTexture(whiteTex);
 	
 	materials.reserve(8);
-	//default flat shaded material
+	//default default materials
+	CreateMaterial(0); //flat
+	CreateMaterial(1); //phong
 	
 	//load default meshes
+	Mesh* default_box = new Mesh; *default_box = Mesh::CreateBox(Vector3(1,1,1)); LoadBaseMesh(default_box);
+	Mesh* planar_box = new Mesh; *planar_box = Mesh::CreatePlanarBox(Vector3(1,1,1)); LoadBaseMesh(planar_box);
+	Mesh* textured_box = new Mesh; *textured_box = Mesh::CreatePlanarBox(Vector3(1,1,1), Texture("UV_Grid_Sm.jpg")); LoadBaseMesh(textured_box);
 	
-	
-	//TODO(delle,ReVu) add box mesh, planarized box mesh
 	//TODO(delle,ReVu) add local axis, global axis, and grid 
 }
 
@@ -817,8 +817,9 @@ void Renderer::ReloadAllShaders() {
 	remakePipelines = true;
 }
 
-void Renderer::UpdateDebugOptions(bool wireframe, bool globalAxis) {
+void Renderer::UpdateDebugOptions(bool wireframe, bool globalAxis, bool wireframeOnly) {
 	settings.wireframe = wireframe; settings.globalAxis = globalAxis;
+	settings.wireframeOnly = wireframeOnly;
 };
 
 //////////////////////////////////

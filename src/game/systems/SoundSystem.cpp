@@ -204,7 +204,8 @@ void SoundThread(EntityAdmin* admin) {
 	}
 }
 
-void SoundSystem::Init() {
+void SoundSystem::Init(EntityAdmin* admin) {
+	System::Init(admin);
 	ALboolean enumeration;
 	
 	ALCenum error;
