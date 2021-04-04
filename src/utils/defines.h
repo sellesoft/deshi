@@ -9,8 +9,8 @@
 #define M_ONETWELFTH 0.08333333333f
 
 //conversions
-#define RADIANS(x) (x * (M_PI / 180.f))
-#define DEGREES(x) (x * (180.f / M_PI))
+#define RADIANS(x) ((x) * (M_PI / 180.f))
+#define DEGREES(x) ((x) * (180.f / M_PI))
 
 //number typedefs
 typedef signed char    i8;     typedef i8  int8;

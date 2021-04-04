@@ -5,7 +5,6 @@
 #include "../utils/defines.h"
 
 #include <chrono>
-#include <time.h>
 #include <ctime>
 
 #define TIMER_START(name) auto name = std::chrono::high_resolution_clock::now();

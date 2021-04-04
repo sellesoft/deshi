@@ -34,24 +34,24 @@
 
 #include <functional>
 
-
-
 //regex for checking paramaters
-#define RegPosParam   std::regex("-pos=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")
-#define RegRotParam   std::regex("-rot=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")
-#define RegScaleParam std::regex("-scale=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")
-#define RegSizeParam  std::regex("-size=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")
-
+std::regex RegColorFormat("(?:\\[c:([^\\]]*)\\]([^\\]]*)\\[c\\]|([^\\[]+))", std::regex::optimize);
+std::regex RegPosParam("-pos=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
+std::regex RegRotParam("-rot=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
+std::regex RegScaleParam("-scale=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
+std::regex RegSizeParam("-size=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
 //this is repetitive because it has to capture 3 different groups in the same way
-#define VecNumMatch std::regex("[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?")
+std::regex VecNumMatch("[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?", std::regex::optimize);
+std::regex StringRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\(([a-z]+)\\)", std::regex::optimize|std::regex::icase); }
+std::regex IntRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\(([-]?[0-9]+)\\)", std::regex::optimize); }
+std::regex FloatRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\(([-]?[0-9|.]+)\\)", std::regex::optimize); }
+std::regex BoolRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\((true|1|false|0)\\)", std::regex::optimize|std::regex::icase); }
 
-//TODO(delle,Cl) update this to have a try/catch built in
+
 #define NEWCOMMAND(name, desc, func) commands[name] =\
 new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {\
 try{ func }catch(...){ return desc; }\
 }, name, desc);
-
-#define RegColorFormat std::regex("(?:\\[c:([^\\]]*)\\]([^\\]]*)\\[c\\]|([^\\[]+))")
 
 using namespace ImGui;
 
@@ -704,6 +704,10 @@ void Console::AddRenderCommands() {
 								   "6    Test0           Testing shader 1\n",
 								   "7    Test1           Testing shader 2");
 			   });
+	NEWCOMMAND("shader_freeze", "Toggles shader data being uploaded to GPU", {
+				   admin->renderer->shaderData.freeze = !admin->renderer->shaderData.freeze;
+				   return (admin->renderer->shaderData.freeze)? "Shaders frozen" : "Shaders unfrozen";
+			   });
 	
 	NEWCOMMAND("mesh_visible", "mesh_visible <meshID:Uint> <visible:Bool>", {
 				   if (args.size() == 2) {
@@ -883,12 +887,12 @@ void Console::AddRenderCommands() {
 			   });
 	
 	NEWCOMMAND("texture_type_list", "Lists the texture types and their IDs", {
-				   return TOSTRING("Texture Types: (can be combined)\n",
-								   "   0=Albedo, Color, Diffuse\n",
-								   "   1=Normal, Bump\n",
-								   "   2=Light, Ambient\n",
-								   "   4=Specular, Reflective\n",
-								   "   8=Cube      (not supported yet)\n",
+				   return TOSTRING("[c:yellow]Texture Types: (can be combined)[c]\n"
+								   "   0=Albedo, Color, Diffuse\n"
+								   "   1=Normal, Bump\n"
+								   "   2=Light, Ambient\n"
+								   "   4=Specular, Reflective\n"
+								   "   8=Cube      (not supported yet)\n"
 								   "  16=Sphere    (not supported yet)");
 			   });
 }
@@ -898,17 +902,70 @@ void Console::AddRenderCommands() {
 ////////////////////////////////////
 
 void Console::AddCameraCommands() {
-	
-	
 	NEWCOMMAND("cam_info", "Prints camera variables", {
-				   return "";
+				   return admin->mainCamera->str();
+			   });
+	
+	NEWCOMMAND("cam_matrix_projection", "Prints camera's projection matrix", {
+				   return admin->mainCamera->projectionMatrix.str2f();
+			   });
+	
+	NEWCOMMAND("cam_matrix_view", "Prints camera's view matrix", {
+				   return admin->mainCamera->viewMatrix.str2f();
 			   });
 	
 	NEWCOMMAND("cam_reset", "Resets camera", {
-				   admin->mainCamera->position = Vector3(0, 0, -5);
-				   admin->mainCamera->rotation = Vector3(0, 0, 0);
+				   admin->mainCamera->position = Vector3(4.f, 3.f, -4.f);
+				   admin->mainCamera->rotation = Vector3(28.f, -45.f, 0.f);
 				   return "reset camera";
 			   });
+	
+	commands["cam_vars"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+										   Camera* c = admin->mainCamera;
+										   if(args.size() == 0){ return "cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)"; }
+										   try{
+											   std::cmatch m;
+											   std::regex nearZ = FloatRegex("nearZ");
+											   std::regex farZ = FloatRegex("farZ");
+											   std::regex fov = FloatRegex("fov");
+											   std::regex freeCam = BoolRegex("static");
+											   
+											   for (auto s = args.begin(); s != args.end(); ++s) {
+												   if (std::regex_match(*s, RegPosParam)) {
+													   std::regex_search(s->c_str(), m, VecNumMatch);
+													   c->position = {std::stof(m[1]), std::stof(m[2]), std::stof(m[3])};
+												   }
+												   else if (std::regex_match(*s, RegRotParam)) {
+													   std::regex_search(s->c_str(), m, VecNumMatch);
+													   c->rotation = {std::stof(m[1]), std::stof(m[2]), std::stof(m[3])};
+												   }
+												   else if (std::regex_search(s->c_str(), m, nearZ)) {
+													   c->nearZ = std::stof(m[1]);
+												   }
+												   else if (std::regex_search(s->c_str(), m, farZ)) {
+													   c->farZ = std::stof(m[1]);
+												   }
+												   else if (std::regex_search(s->c_str(), m, fov)) {
+													   c->fov = std::stof(m[1]);
+												   }
+												   else if (std::regex_search(s->c_str(), m, freeCam)) {
+													   if(m[1].str() == "0" || m[1].str() == "false"){
+														   c->freeCamera = true; //backwards cus naming
+													   }else{
+														   c->freeCamera = false;
+													   }
+												   }
+												   else {
+													   return "[c:red]Invalid parameter: " + *s + "[c]";
+												   }
+											   }
+											   
+											   c->UpdateProjectionMatrix();
+											   return admin->mainCamera->str();
+										   }catch(...){
+											   return "cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)";
+										   }
+									   }, "cam_vars", "cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)");
 }
 
 void Console::AddConsoleCommands() {

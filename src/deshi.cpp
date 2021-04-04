@@ -1,24 +1,23 @@
 /* deshi
 TODO Tags:
-
 As  Assets    Cl  Clean Up Code    Cmd Command         Co  Core        Con Console
 En  Entity    Fu  Fun              Fs  Filesystem      Ge  Geometry    In  Input
 Ma  Math      Oth Other            Op  Optimization    Ph  Physics     Re  Render
 Sh  Shader    So  Sound            Ui  UI              Vu  Vulkan      Wi  Window
 
 TODO Style: TODO(person,tags) description
-Rules: tags can be empty but still requires a comma, date can be empty
-	  eg: TODO(03/12/2021,,delle) no tag or date; TODO(ro,sushi) render,optimization tags for sushi made on that date
+	  eg: TODO(delle) no tag or date 
+eg: TODO(sushi,ReOp) render,optimization tags for sushi
 
 The person listed doesn't necessarily have to be you, and can be someone else
-if you feel they would handle the problem better.
-It should generally be you though.
+if you feel they would handle the problem better. It should generally be you though.
 
 Major Ungrouped TODOs
 ---------------------
 add device info debug window (graphics card, sound device, monitor res, etc)
 add a component_state command to print state of a component
 fix mesh rotations begin global
+add option to not use input callbacks so fps doesnt get affected dramatically by input
 add shaders: PBR (4textures)
 settings file(s) [keybinds, video, audio, etc]
 fix program stalling when Keybinds cant find the keybind file
@@ -27,12 +26,9 @@ make our own unordered_map and map that is contiguous (array of pairs basically,
 Minor Ungrouped TODOs
 ---------------------
 cleanup Triangle and remove unused things
-create templated component tuple iterator that loops thru a vector and returns an iterator of components of type
 pool/arena components and entities for better performance
 implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
 replace/remove external dependencies/includes were possible (glm, boost, sascha, tinyobj)
-(maybe) make TODOs script in misc to locally generate TODOs.txt rather than TODOP bot
-cleanup compile warnings
 investigate program closing slowly
 add Qol (quality of life) tag to TODOP
 get mouse scrolling input to work
@@ -40,21 +36,17 @@ look into integrating TODOP with Discord
 
 Render TODOs
 ------------
-add vertex editing
 add texture transparency support
 add 2D shader and interface functions
 add lighting and shadows
+add vertex editing
 add RenderSettings loading and usage
 check those vulkan-tutorial links for the suggestions
 avoid having 3 copies of a mesh (model, meshVK, vulkan)
-add instancing [https://learnopengl.com/Advanced-OpenGL/Instancing]
+add instancing
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
 multi-threaded command buffers, shader loading, image loading
-  convert prints to go thru the in-game console rather than other console
 find a way to forward declare vulkan stuff and move the include to the cpp
-(maybe) remove renderer polymorphism and replace it with defines that are checked on program start
-(maybe) add specific shader reloading rather than all of them
-add support for empty scene
 
 Level Editor TODOs
 ------------
@@ -93,8 +85,6 @@ Math TODOs
 ----------
 cleanup math library (remove redundant/old things, make functions more consistent, etc.)
 add quaternions and converions between them and other linear algebra primitives
-(maybe) move conversion functions to thier own file
-(maybe) move transform/affine matrix functions to their own file
 replace glm :)
 look into scaling not rotating (scaling is probably being done in world not local)
 
@@ -103,7 +93,6 @@ look into scaling not rotating (scaling is probably being done in world not loca
 
 #include "core.h"
 #include "EntityAdmin.h"
-#include "math/Math.h"
 
 struct DeshiEngine {
 	EntityAdmin entityAdmin;

@@ -74,15 +74,15 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	
 	//singleton initialization
 	scene = new Scene();
-	mainCamera = new Camera(this);
+	mainCamera = new Camera(this, 90.f, .01f, 1000.01f, true);
 	mainCamera->layer_index = freeCompLayers[mainCamera->layer].add(mainCamera);
 	keybinds = new Keybinds(this);
 	controller = new Controller(this);
 	controller->layer_index = freeCompLayers[controller->layer].add(controller);
-
-
 	
-
+	
+	
+	/*
 	//orb testing
 	Entity* orbtest = world->CreateEntity(admin);
 	orbtest->name = "orbtest";
@@ -96,7 +96,7 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	Mesh* m = new Mesh(mesh);
 	OrbManager* om = new OrbManager(m, this, orbtest);
 	admin->world->AddAComponentToEntity(admin, orbtest, om);
-	
+	*/
 }
 
 void EntityAdmin::Cleanup() {

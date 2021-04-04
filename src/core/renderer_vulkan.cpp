@@ -1697,17 +1697,19 @@ void Renderer::BuildCommandBuffers() {
 
 //TODO(delle,ReOpVu) maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
 void Renderer::UpdateUniformBuffer(){
-	//PRINTVK(2, "  Updating Uniform Buffer     \n");
-	shaderData.values.time = time->totalTime;
-	shaderData.values.swidth = (glm::f32)extent.width;
-	shaderData.values.sheight = (glm::f32)extent.height;
-	shaderData.values.lightPos = glm::vec4(0.0f, 2.5f, 0.0f, 1.0f);
-	
-	//map shader data to uniform buffer
-	void* data;
-	vkMapMemory(device, shaderData.uniformBufferMemory, 0, sizeof(shaderData.values), 0, &data);{
-		memcpy(data, &shaderData.values, sizeof(shaderData.values));
-	}vkUnmapMemory(device, shaderData.uniformBufferMemory);
+	if(!shaderData.freeze){
+		//PRINTVK(2, "  Updating Uniform Buffer     \n");
+		shaderData.values.time = time->totalTime;
+		shaderData.values.swidth = (glm::f32)extent.width;
+		shaderData.values.sheight = (glm::f32)extent.height;
+		shaderData.values.lightPos = glm::vec4(0.0f, 2.5f, 0.0f, 1.0f);
+		
+		//map shader data to uniform buffer
+		void* data;
+		vkMapMemory(device, shaderData.uniformBufferMemory, 0, sizeof(shaderData.values), 0, &data);{
+			memcpy(data, &shaderData.values, sizeof(shaderData.values));
+		}vkUnmapMemory(device, shaderData.uniformBufferMemory);
+	}
 }
 
 ///////////////////////////

@@ -2,9 +2,11 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
-#include <vector>
 #include "../../utils/defines.h"
 #include "../../core/event.h"
+
+#include <vector>
+#include <string>
 
 struct Entity;
 struct EntityAdmin;
@@ -25,9 +27,9 @@ enum CompLayer {
 struct Component : public Receiver {
 	Entity* entity = nullptr; //reference to owning entity
 	EntityAdmin* admin = nullptr; 
-
+	
 	const char* name;
-
+	
 	Component(EntityAdmin* a = nullptr, Entity* e = nullptr);
 	
 	//store layer its on and where in that layer it is for deletion
@@ -38,6 +40,7 @@ struct Component : public Receiver {
 	virtual ~Component() {};
 	virtual void Update() {};
 	virtual void ReceiveEvent(Event event) override {};
+	virtual std::string str(){ return ""; };
 };
 
 #endif //COMPONENT_H

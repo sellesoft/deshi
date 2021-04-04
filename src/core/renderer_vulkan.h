@@ -329,6 +329,8 @@ struct Renderer{
 			glm::f32 swidth;
 			glm::f32 sheight;
 		} values;
+		
+		bool freeze = false;
 	} shaderData;
 	VkDescriptorSet sceneDescriptorSet;
 	
