@@ -75,34 +75,34 @@ void Camera::UsePerspectiveProjection(float fovX, float width, float height, flo
 }
 
 //TODO(sushi, Re) figure out why we cant see anything when we use this
-void Camera::UseOrthographicProjection() {
-	std::pair<Vector3, Vector3> bbox = admin->scene->SceneBoundingBox();
-
-	//convert bounding box to camera space
-	Vector3 maxcam = Math::WorldToCamera3(bbox.first,  admin->mainCamera->viewMatrix);
-	Vector3 mincam = Math::WorldToCamera3(bbox.second, admin->mainCamera->viewMatrix); 
-
-	//make screen box from camera space bounding box
-	float maxx = std::max(fabs(mincam.x), fabs(maxcam.x));
-	float maxy = std::max(fabs(mincam.y), fabs(maxcam.y));
-	float max  = std::max(maxx, maxy);
-
-	float aspectRatio = DengWindow->height / DengWindow->width;
-	float r = max * aspectRatio, t = max;
-	float l = -r, b = -t;
-
-	r += 10 * aspectRatio; l -= 10;
-	t += 10; b -= 10;
-
-	float f = admin->mainCamera->farZ;
-	float n = 0.01;//admin->mainCamera->nearZ;
-	
-	admin->renderer->UpdateCameraProjectionMatrix(Matrix4(
-		2 / (r - l),			0,						0,					0,
-		0,						2 / (t - b),			0,					0,
-		0,						0,						-2 / (f - n),		0,
-		-(r + l) / (r - l),		-(t + b) / (t - b),		-(f + n) / (f - n),	1));
-}
+//void Camera::UseOrthographicProjection() {
+//	std::pair<Vector3, Vector3> bbox = admin->scene->SceneBoundingBox();
+//
+//	//convert bounding box to camera space
+//	Vector3 maxcam = Math::WorldToCamera3(bbox.first,  admin->mainCamera->viewMatrix);
+//	Vector3 mincam = Math::WorldToCamera3(bbox.second, admin->mainCamera->viewMatrix); 
+//
+//	//make screen box from camera space bounding box
+//	float maxx = std::max(fabs(mincam.x), fabs(maxcam.x));
+//	float maxy = std::max(fabs(mincam.y), fabs(maxcam.y));
+//	float max  = std::max(maxx, maxy);
+//
+//	float aspectRatio = DengWindow->height / DengWindow->width;
+//	float r = max * aspectRatio, t = max;
+//	float l = -r, b = -t;
+//
+//	r += 10 * aspectRatio; l -= 10;
+//	t += 10; b -= 10;
+//
+//	float f = admin->mainCamera->farZ;
+//	float n = 0.01;//admin->mainCamera->nearZ;
+//	
+//	admin->renderer->UpdateCameraProjectionMatrix(Matrix4(
+//		2 / (r - l),			0,						0,					0,
+//		0,						2 / (t - b),			0,					0,
+//		0,						0,						-2 / (f - n),		0,
+//		-(r + l) / (r - l),		-(t + b) / (t - b),		-(f + n) / (f - n),	1));
+//}
 
 void Camera::Update() {
 	Window* window = admin->window;

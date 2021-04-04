@@ -21,7 +21,7 @@ OrbManager::OrbManager(Mesh* m, EntityAdmin* a, Entity* e) {
  		orbs.push_back(orb);
 		admin->world->AddAComponentToEntity(admin, entity, mc);
 
-		u32 id = admin->renderer->LoadMesh(mes);
+		u32 id = admin->renderer->LoadBaseMesh(mes);
 		Model mod;
 		mod.mesh = *mes;
 		mc->MeshID = id;
