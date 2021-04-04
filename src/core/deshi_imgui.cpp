@@ -29,7 +29,7 @@ void deshiImGui::Init(Renderer* renderer){
 	//Setup Dear ImGui context
 	ImGui::CreateContext();
 	ImGuiIO io = ImGui::GetIO();
-	io.IniFilename = (deshi::getConfigsPath() + "imgui.ini").c_str();
+	io.IniFilename = (deshi::dirConfig() + "imgui.ini").c_str();
 	
 	//Setup Dear ImGui style
 	ImGui::StyleColorsDark();

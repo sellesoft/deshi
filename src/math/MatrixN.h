@@ -1,10 +1,4 @@
-#pragma once
-#include "../utils/Debug.h"
-
-struct Vector3;
-
-/*
-//// Notes ////
+/* //// Notes ////
 Matrices can only hold floats
 Matrices are in row-major format and all the functionality follows that format
 Non-MatrixN vs MatrixN interactions should be in Math.h (or a header file dedicated to those interactions)
@@ -75,8 +69,11 @@ eg: MatrixN(1, 2, {-5, .5f}) % MatrixN(1, 2, {2, .5f}); This will return a 1x2 m
 You can create a transformation matrix by providing the translation, rotation,		|rot,			scaleY * rot,	rot,		  translationY|
 and scale to the TransformationMatrix() method.										|rot,			rot,			scaleZ * rot, translationZ|
 The transformation matrix will follow the format to the right:						|0,				0,				0,			  1			  |
-
 */
+
+#pragma once
+#include "../utils/debug.h"
+#include "Vector.h"
 
 struct MatrixN {
 	u32 rows = 0;
@@ -89,7 +86,7 @@ struct MatrixN {
 	MatrixN(u32 inRows, u32 inCols, std::vector<float> list);
 	MatrixN(const MatrixN& m);
 	
-	float&	operator () (u32 row, u32 col);
+	float&  operator () (u32 row, u32 col);
 	float   operator () (u32 row, u32 col) const;
 	void	operator =	(const MatrixN& rhs);
 	MatrixN operator *  (const float& rhs) const;
@@ -114,10 +111,10 @@ struct MatrixN {
 	const std::string str2f() const;
 	MatrixN Transpose() const;
 	MatrixN Submatrix(std::vector<u32> inRows, std::vector<u32> inCols) const;
-	float Minor(int row, int col) const;
-	float Cofactor(int row, int col) const;
+	float   Minor(int row, int col) const;
+	float   Cofactor(int row, int col) const;
 	MatrixN Adjoint() const;
-	float Determinant() const;
+	float   Determinant() const;
 	MatrixN Inverse() const;
 	
 	static MatrixN Identity(u32 rows, u32 cols);
@@ -135,8 +132,6 @@ struct MatrixN {
 	MatrixN(Vector3 v, float w);
 	
 };
-
-
 
 //// Constructors ////
 
@@ -655,4 +650,28 @@ inline MatrixN MatrixN::TransformationMatrix(Vector3 translation, Vector3 rotati
 					   sinX*sinY,		scale.y*(cosX*cosZ - cosY*sinX*sinZ),	-cosX*sinZ - cosY*cosZ*sinX,			translation.y,
 					   -cosX*sinY,		cosZ*sinX + cosX*cosY*sinZ,				scale.z*(cosX*cosY*cosZ - sinX*sinZ),	translation.z,
 					   0,				0,										0,										1});
+}
+
+//// Non-Vector vs Vector Interactions ////
+
+inline MatrixN Vector3::ToM1x3() const {
+	return MatrixN(1, 3, {x, y, z});
+}
+
+inline MatrixN Vector3::ToM1x4(float w) const {
+	return MatrixN(1, 4, { x, y, z, w });
+}
+
+//// Non-MatrixN vs MatrixN Interactions ////
+
+//Creates a 1x3 matrix
+inline MatrixN::MatrixN(Vector3 v) {
+	this->rows = 1; this->cols = 3; this->elementCount = 3;
+	this->data = {v.x, v.y, v.z};
+}
+
+//Creates a 1x4 matrix
+inline MatrixN::MatrixN(Vector3 v, float w) {
+	this->rows = 1; this->cols = 4; this->elementCount = 4;
+	this->data = {v.x, v.y, v.z, w};
 }

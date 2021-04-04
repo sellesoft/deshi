@@ -1,5 +1,4 @@
 #include "Keybinds.h"
-
 #include "../EntityAdmin.h"
 #include "../core/console.h"
 #include "../core/assets.h"
@@ -52,11 +51,11 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		{"toggleDebugMenu", toggleDebugMenu},
 		{"toggleDebugBar",  toggleDebugBar},
 		{"toggleMenuBar", toggleMenuBar},
-
+		
 		{"grabSelectedObject", grabSelectedObject},
 		{"rotateSelectedObject", rotateSelectedObject},
 		{"scaleSelectedObject", scaleSelectedObject}
-
+		
 	};
 	
 	//string to key map
@@ -76,18 +75,18 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 	
 	//read keys from keybinds.txt
 	std::fstream kf;
-	kf.open(deshi::getConfigsPath() + "keybinds.txt", std::fstream::in);
+	kf.open(deshi::dirConfig() + "keybinds.txt", std::fstream::in);
 	
 	if (kf.is_open()) {
 		ReloadKeybinds(kf);
 		kf.close();
-
+		
 	}
 	else {
 		kf.close();
 		LOG("No keybinds file found, generating a new one in config folder.");
-		deshi::writeFile(deshi::getConfigsPath() + "keybinds.txt", default_keybinds.c_str(), default_keybinds.size());
-		kf.open(deshi::getConfigsPath() + "keybinds.txt", std::fstream::in);
+		deshi::writeFile(deshi::dirConfig() + "keybinds.txt", default_keybinds.c_str(), default_keybinds.size());
+		kf.open(deshi::dirConfig() + "keybinds.txt", std::fstream::in);
 		ReloadKeybinds(kf);
 		kf.close();
 	}
@@ -95,10 +94,10 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 }
 void Keybinds::ReloadKeybinds(std::fstream& kf) {
 	//TODO( sushi,In) implement keybind name mapping and shtuff
-
-		//there is prolly a better way to do this but hehe
-		//NOTE IF YOU ARE GOING TO IMPLEMENT RIGHT/LEFT MOD DIFFERENCE AND ITS NOT WORKING MAKE
-		//SURE YOU CHANGE THE ABOVE MAP TO WORK WITH IT !!!
+	
+	//there is prolly a better way to do this but hehe
+	//NOTE IF YOU ARE GOING TO IMPLEMENT RIGHT/LEFT MOD DIFFERENCE AND ITS NOT WORKING MAKE
+	//SURE YOU CHANGE THE ABOVE MAP TO WORK WITH IT !!!
 	int line = 0;
 	while (!kf.eof()) {
 		char* c = (char*)malloc(255);
@@ -116,7 +115,7 @@ void Keybinds::ReloadKeybinds(std::fstream& kf) {
 		std::regex r;
 		
 		bool modif = false;
-
+		
 		//if string contains a + it must have a modifier
 		if (s.find("+") != std::string::npos) {
 			r = std::regex("([A-Za-z]+) += +(LCTRL|LSHIFT|LALT|RCTRL|RSHIFT|RALT) +\\+ +(.+)");
@@ -160,9 +159,8 @@ void Keybinds::ReloadKeybinds(std::fstream& kf) {
 		line++;
 		free(c);
 	}
-
-
-
+	
+	
+	
 }
 
-	

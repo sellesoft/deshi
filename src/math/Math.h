@@ -1,10 +1,6 @@
 #pragma once
 #include "../utils/defines.h"
-#include "Vector2.h"
-#include "Vector3.h"
-#include "Vector4.h"
-#include "Matrix3.h"
-#include "Matrix4.h"
+#include "VectorMatrix.h"
 #include "MatrixN.h"
 #include "Quaternion.h"
 #include "../game/components/Camera.h"
@@ -12,50 +8,6 @@
 #include <math.h>
 #include <algorithm>
 #include <numeric>
-
-#define V2ZERO Vector2(0,0)
-
-//qol defines
-#define RANDCOLOR Color(rand() % 255 + 1, rand() % 255 + 1, rand() % 255 + 1)
-#define RANDVEC(a) Vector3(rand() % a + 1, rand() % a + 1, rand() % a + 1)
-
-//useful math things
-//averages vectors over a interval i and returns that average
-//pass in vector v and interval i
-#define V_AVG(i, v) ([&] { \
-static std::vector<Vector3> vectors; \
-static Vector3 nv; \
-static int iter = 0; \
-if(i == vectors.size()){ \
-vectors.erase(vectors.begin()); \
-vectors.push_back(v); \
-iter++; \
-} \
-else{ \
-vectors.push_back(v); \
-iter++; \
-}\
-if(iter == i){ \
-nv = Math::averageVector3(vectors); \
-iter = 0; \
-} \
-return nv; \
-}())
-
-//averages vectors but consistently returns the value
-#define V_AVGCON(i, v) ([&] { \
-static std::vector<Vector3> vectors; \
-static Vector3 nv; \
-if(i == vectors.size()){ \
-vectors.erase(vectors.begin()); \
-vectors.push_back(v); \
-} \
-else{ \
-vectors.push_back(v); \
-} \
-nv = Math::averageVector3(vectors); \
-return nv; \
-}())
 
 #define F_AVG(i, f) ([&] { \
 static std::vector<float> floats; \
@@ -114,284 +66,12 @@ namespace Math {
 		}
 		return sum;
 	}
-
+	
 	static Vector2 Vector2RotateByAngle(float angle, Vector2 v) {
 		angle = RADIANS(angle);
 		return Vector2(v.x * cosf(angle) - v.y * sinf(angle), v.x * sin(angle) + v.y * cos(angle));
 	}
-
-}
-
-
-
-//// Vector3 vs Vector4 Interactions ////
-
-inline Vector4::Vector4(const Vector3& v, const float& w) {
-	this->x = v.x; this->y = v.y; this->z = v.z; this->w = w;
-}
-
-inline Vector4 Vector3::ToVector4() const {
-	return Vector4(x, y, z, 1);
-}
-
-inline Vector3 Vector4::ToVector3() const {
-	return Vector3(x, y, z);
-}
-
-
-
-//// Matrix3 vs Matrix4 Interactions ////
-
-inline Matrix4 Matrix3::To4x4() {
-	return Matrix4(
-				   data[0],	data[1],	data[2],	0,
-				   data[3],	data[4],	data[5],	0,
-				   data[6],	data[7],	data[8],	0,
-				   0,			0,			0,			1
-				   );
-}
-
-inline Matrix3 Matrix4::To3x3() {
-	return Matrix3(
-				   data[0], data[1], data[2],
-				   data[4], data[5], data[6],
-				   data[8], data[9], data[10]
-				   );
-}
-
-
-
-//// Vector vs Matrix Interactions ////
-
-inline Vector3 Vector3::operator *  (const Matrix3& rhs) const {
-	return Vector3(
-				   x*rhs.data[0] + y*rhs.data[3] + z*rhs.data[6], 
-				   x*rhs.data[1] + y*rhs.data[4] + z*rhs.data[7], 
-				   x*rhs.data[2] + y*rhs.data[5] + z*rhs.data[8]);
-}
-
-inline void Vector3::operator *= (const Matrix3& rhs) {
-	*this = Vector3(
-					x * rhs.data[0] + y * rhs.data[3] + z * rhs.data[6],
-					x * rhs.data[1] + y * rhs.data[4] + z * rhs.data[7],
-					x * rhs.data[2] + y * rhs.data[5] + z * rhs.data[8]
-					);
-}
-
-inline Vector3 Vector3::operator *  (const Matrix4& rhs) const {
-	return Vector3(
-				   x*rhs.data[0] + y*rhs.data[4] + z*rhs.data[8] + rhs.data[12],
-				   x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9] + rhs.data[13],
-				   x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + rhs.data[14]
-				   );
-}
-
-inline void Vector3::operator *= (const Matrix4& rhs) {
-	*this = Vector3(
-					x * rhs.data[0] + y * rhs.data[4] + z * rhs.data[8]  + rhs.data[12],
-					x * rhs.data[1] + y * rhs.data[5] + z * rhs.data[9]  + rhs.data[13],
-					x * rhs.data[2] + y * rhs.data[6] + z * rhs.data[10] + rhs.data[14]);
-}
-
-inline Vector4 Vector4::operator *  (const Matrix4& rhs) const {
-	return Vector4(
-				   x*rhs.data[0] + y*rhs.data[4] + z*rhs.data[8]  + w*rhs.data[12],
-				   x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9]  + w*rhs.data[13],
-				   x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + w*rhs.data[14],
-				   x*rhs.data[3] + y*rhs.data[7] + z*rhs.data[11] + w*rhs.data[15]);
-}
-
-inline void Vector4::operator *= (const Matrix4& rhs) {
-	*this = Vector4(
-					x * rhs.data[0] + y * rhs.data[4] + z * rhs.data[8]  + w * rhs.data[12],
-					x * rhs.data[1] + y * rhs.data[5] + z * rhs.data[9]  + w * rhs.data[13],
-					x * rhs.data[2] + y * rhs.data[6] + z * rhs.data[10] + w * rhs.data[14],
-					x * rhs.data[3] + y * rhs.data[7] + z * rhs.data[11] + w * rhs.data[15]);
-}
-
-//returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
-inline Matrix3 Matrix3::RotationMatrix(Vector3 rotation) {
-	rotation = RADIANS(rotation);
-	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
-	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
-	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
-	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
-	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
-	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
-	return Matrix3(r00, r01, r02,
-				   r10, r11, r12,
-				   r20, r21, r22);
-}
-
-//returns a scale matrix where (0,0) = scale.x, (1,1) = scale.y, (2,2) = scale.z
-inline Matrix3 Matrix3::ScaleMatrix(Vector3 scale) {
-	Matrix3 newMatrix = Matrix3::IDENTITY;
-	newMatrix.data[0] = scale.x;
-	newMatrix.data[4] = scale.y;
-	newMatrix.data[8] = scale.z;
-	return newMatrix;
-}
-
-//returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
-inline Matrix4 Matrix4::RotationMatrix(Vector3 rotation) {
-	rotation = RADIANS(rotation);
-	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
-	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
-	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
-	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
-	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
-	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
-	return Matrix4(r00, r01, r02, 0,
-				   r10, r11, r12, 0,
-				   r20, r21, r22, 0,
-				   0,   0,   0,   1);
-}
-
-//https://github.com/microsoft/DirectXMath/blob/7c30ba5932e081ca4d64ba4abb8a8986a7444ec9/Inc/DirectXMathMatrix.inl
-//line 1675 i do not know how this works but it does so :D
-//return a matrix to rotate a vector around an arbitrary axis by some angle
-inline Matrix4 Matrix4::AxisAngleRotationMatrix(float angle, Vector4 axis) {
-	angle = RADIANS(angle); 
-	float mag = axis.mag();
-	axis = Vector4(axis.x / mag, axis.y / mag, axis.z / mag, axis.w / mag);
-	//axis.normalize();
-	float c = cosf(angle); float s = sinf(angle); 
 	
-	Vector4 A = Vector4(s, c, 1 - c, 0);
-
-	Vector4 C2 = Vector4(A.z, A.z, A.z, A.z);
-	Vector4 C1 = Vector4(A.y, A.y, A.y, A.y);
-	Vector4 C0 = Vector4(A.x, A.x, A.x, A.x);
-
-	Vector4 N0 = Vector4(axis.y, axis.z, axis.x, axis.w);
-	Vector4 N1 = Vector4(axis.z, axis.x, axis.y, axis.w);
-
-	Vector4 V0 = C2 * N0;
-	V0 *= N1;
-
-	Vector4 R0 = C2 * axis;
-	R0 = R0 * axis + C1;
-	
-	Vector4 R1 = C0 * axis + V0;
-	Vector4 R2 = (V0 - C0) * axis;
-
-	V0 = Vector4(R0.x, R0.y, R0.z, A.w);
-	Vector4 V1 = Vector4(R1.z, R2.y, R2.z, R1.x);
-	Vector4 V2 = Vector4(R1.y, R2.x, R1.y, R2.x);
-
-	return Matrix4(
-		V0.x, V1.x, V1.y, V0.w,
-		V1.z, V0.y, V1.w, V0.w,
-		V2.x, V2.y, V0.z, V0.w,
-		0,    0,    0,    1
-	);
-
-	//TODO(delle,Ma) finish axis angle rotation matrix
-	//ASSERT(false, "not implemented yet");
-
-}
-
-//returns a translation matrix where (0,3) = translation.x, (1,3) = translation.y, (2,3) = translation.z
-inline Matrix4 Matrix4::TranslationMatrix(Vector3 translation) {
-	return Matrix4(1, 0, 0, 0,
-				   0, 1, 0, 0,
-				   0, 0, 1, 0,
-				   translation.x, translation.y, translation.z, 1);
-}
-
-//returns a translation matrix where (0,3) = translation.x, (1,3) = translation.y, (2,3) = translation.z
-inline Matrix4 Matrix4::TranslationMatrix(float x, float y, float z) {
-	return Matrix4(1, 0, 0, 0,
-				   0, 1, 0, 0,
-				   0, 0, 1, 0,
-				   x, y, z, 1);
-}
-
-//returns a scale matrix where (0,0) = scale.x, (1,1) = scale.y, (2,2) = scale.z
-inline Matrix4 Matrix4::ScaleMatrix(Vector3 scale) {
-	Matrix4 newMatrix = Matrix4::IDENTITY;
-	newMatrix.data[0] = scale.x;
-	newMatrix.data[4] = scale.y;
-	newMatrix.data[8] = scale.z;
-	return newMatrix;
-}
-
-//returns a transformation matrix of the combined translation, rotation, and scale matrices from input vectors
-//rotates over the Y, then Z then X
-inline Matrix4 Matrix4::TransformationMatrix(Vector3 tr, Vector3 rotation, Vector3 scale) {
-	rotation = RADIANS(rotation);
-	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
-	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
-	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
-	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
-	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
-	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
-	return Matrix4(scale.x*r00, r01,         r02,         0,
-				   r10,         scale.y*r11, r12,         0,
-				   r20,         r21,         scale.z*r22, 0,
-				   tr.x,        tr.y,        tr.z,        1);
-}
-
-//returns a transformation matrix of the combined translation, rotation, and scale matrices from input vectors
-//rotates over the Y, then Z then X, ref: https://www.euclideanspace.com/maths/geometry/affine/aroundPoint/index.htm
-inline Matrix4 Matrix4::RotationMatrixAroundPoint(Vector3 pivot, Vector3 rotation) {
-	pivot = -pivot; //gotta negate this for some reason :)
-	rotation = RADIANS(rotation);
-	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
-	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
-	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
-	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
-	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
-	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
-	return Matrix4(r00, r01, r02, 0,
-				   r10, r11, r12, 0,
-				   r20, r21, r22, 0,
-				   pivot.x - r00*pivot.x - r01*pivot.y - r02*pivot.z, pivot.y - r10*pivot.x - r11*pivot.y - r12*pivot.z, pivot.z - r20*pivot.x - r21*pivot.y - r22*pivot.z, 1);
-}
-
-inline Vector3 Matrix4::PositionFromTransform(Matrix4 m) {
-	return Vector3(m(3, 0), m(3, 1), m(3, 2));
-}
-
-//// Non-Vector vs Vector Interactions ////
-
-inline Vector3::Vector3(const Vector2& v) {
-	this->x = v.x; this->y = v.y; this->z = 0;
-}
-
-inline Vector2 Vector3::ToVector2() const {
-	return Vector2(x, y);
-}
-
-inline MatrixN Vector3::ToM1x3() const {
-	return MatrixN(1, 3, {x, y, z});
-}
-
-inline MatrixN Vector3::ToM1x4(float w) const {
-	return MatrixN(1, 4, { x, y, z, w });
-}
-
-//i dont think these will ever be used but whatever
-inline Vector4 Vector2::ToVector4() const {
-	return Vector4(x, y, 0, 0);
-}
-
-inline Vector3 Vector2::ToVector3() const {
-	return Vector3(x, y, 0);
-}
-
-//// Non-MatrixN vs MatrixN Interactions ////
-
-//Creates a 1x3 matrix
-inline MatrixN::MatrixN(Vector3 v) {
-	this->rows = 1; this->cols = 3; this->elementCount = 3;
-	this->data = {v.x, v.y, v.z};
-}
-
-//Creates a 1x4 matrix
-inline MatrixN::MatrixN(Vector3 v, float w) {
-	this->rows = 1; this->cols = 4; this->elementCount = 4;
-	this->data = {v.x, v.y, v.z, w};
 }
 
 //// Non-Quaternion vs Quaternion Interactions ////
@@ -497,14 +177,10 @@ namespace Math {
 		ASSERT(lo < hi, "The low must be less than the high clamp");
 		return (v < lo) ? lo : (hi < v) ? hi : v;
 	}
-
-	//clamps all values of a Vector3 between two floats
+	
 	static Vector3 clamp(Vector3 v, float lo, float hi) {
 		ASSERT(lo < hi, "The low must be less than the high clamp");
-		return Vector3(
-			(v.x < lo) ? lo : (hi < v.x) ? hi : v.x,
-			(v.y < lo) ? lo : (hi < v.y) ? hi : v.y,
-			(v.z < lo) ? lo : (hi < v.z) ? hi : v.z);
+		return v.clamp(lo, hi);
 	}
 	
 	//for debugging with floats or doubles
@@ -664,7 +340,7 @@ namespace Math {
 	
 	//returns where two lines intersect in 3D space //TODO(sushi, MaGe) implement this
 	static Vector3 LineIntersect3(Vector3 adir, Vector3 ap, Vector3 bdir, Vector3 bp) {}
-
+	
 	//the input vectors should be in viewMatrix/camera space
 	//returns true if the line can be rendered after clipping, false otherwise
 	static bool ClipLineToZPlanes(Vector3& start, Vector3& end, Camera* camera) {
@@ -682,7 +358,7 @@ namespace Math {
 		} else if (startBeyondPlane && endBeyondPlane) {
 			return false;
 		}
-	
+		
 		//clip to the far plane
 		planePoint = Vector3(0, 0, camera->farZ);
 		planeNormal = Vector3::BACK;
@@ -698,7 +374,7 @@ namespace Math {
 		}
 		return true;
 	} //ClipLineToZPlanes
-
+	
 	//cohen-sutherland algorithm https://en.wikipedia.org/wiki/Cohen%E2%80%93Sutherland_algorithm
 	//the input vectors should be in screen space
 	//returns true if the line can be rendered after clipping, false otherwise
@@ -725,10 +401,10 @@ namespace Math {
 			}
 			return code;
 		};
-
+		
 		int lineStartCode = ComputeOutCode(start);
 		int lineEndCode = ComputeOutCode(end);
-
+		
 		//loop until all points are within or outside the screen zone
 		while (true) {
 			if (!(lineStartCode | lineEndCode)) {
@@ -743,7 +419,7 @@ namespace Math {
 				float x, y;
 				//select one of the points outside
 				int code = lineEndCode > lineStartCode ? lineEndCode : lineStartCode;
-
+				
 				//clip the points the the screen bounds by finding the intersection point
 				if			(code & CLIP_TOP) {		//point is above screen
 					x = start.x + (end.x - start.x) * (-start.y) / (end.y - start.y);
@@ -761,7 +437,7 @@ namespace Math {
 					y = start.y + (end.y - start.y) * (-start.x) / (end.x - start.x);
 					x = 0;
 				}
-
+				
 				//update the vector's points and restart loop
 				if (code == lineStartCode) {
 					start.x = x;
@@ -783,15 +459,15 @@ namespace Math {
 	static Vector3 WorldToCamera3(Vector3 vertex, Matrix4 viewMatrix) {
 		return Math::ProjMult(vertex.ToVector4(), viewMatrix).ToVector3();
 	}
-
+	
 	static Vector4 WorldToCamera4(Vector3 vertex, Matrix4 viewMatrix) {
 		return Math::ProjMult(vertex.ToVector4(), viewMatrix);
 	}
-
+	
 	static Vector3 CameraToWorld3(Vector3 vertex, Matrix4 viewMatrix) {
 		return Math::ProjMult(vertex.ToVector4(), viewMatrix.Inverse()).ToVector3();
 	}
-
+	
 	static Vector4 CameraToWorld4(Vector3 vertex, Matrix4 viewMatrix) {
 		return Math::ProjMult(vertex.ToVector4(), viewMatrix.Inverse());
 	}
@@ -803,7 +479,7 @@ namespace Math {
 		vm.y *= 0.5f * (float)screenDimensions.y;
 		return vm;
 	}
-
+	
 	static Vector3 CameraToScreen3(Vector3 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions) {
 		Vector3 vm = Math::ProjMult(csVertex.ToVector4(), projectionMatrix).ToVector3();
 		vm.x += 1.0f; vm.y += 1.0f;

@@ -3,8 +3,8 @@
 #define DESHI_INPUT_H
 
 #include "../utils/defines.h"
-#include "../math/Vector2.h"
-#include "../utils/Debug.h"
+#include "../utils/debug.h"
+#include "../math/Vector.h"
 
 #include <map>
 #include <iostream>

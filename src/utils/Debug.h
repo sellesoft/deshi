@@ -1,4 +1,7 @@
 #pragma once
+#ifndef DESHI_DEBUG_H
+#define DESHI_DEBUG_H
+
 #include "defines.h"
 #include "Color.h"
 
@@ -14,19 +17,7 @@
 #include <iostream>
 #include <stdexcept>
 
-#define LOG(...)     admin->console->PushConsole(TOSTRING("[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR(...)   admin->console->PushConsole(TOSTRING("[c:error]", __VA_ARGS__, "[c]"))
-#define SUCCESS(...) admin->console->PushConsole(TOSTRING("[c:green]", __VA_ARGS__, "[c]"))
-//#define PRINT(...)   admin->GetSystem<Console>()->PushConsole(TOSTRING(__VA_ARGS__))
-
-//additionally prints where function was called
-#define LOG_LOC(...)     admin->console->PushConsole(TOSTRING("[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR_LOC(...)   admin->console->PushConsole(TOSTRING("[c:error]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:error]", __VA_ARGS__, "[c]"))
-#define SUCCESS_LOC(...) admin->console->PushConsole(TOSTRING("[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
-
-#define DASSERT(condition, message)     if(!(condition) && !admin->paused){ ERROR_LOC("Assertion '" #condition "' failed: \n", message); admin->paused = true;}
-#define DASSERTWARN(condition, message) if(!(condition) && !admin->paused) LOG_LOC("Assertion '" #condition "' failed: \n", message)
-
+#define PRINT(x) std::cout << x << std::endl;
 #ifndef NDEBUG
 #   define ASSERTWARN(condition, message) \
 do { \
@@ -46,6 +37,21 @@ std::terminate(); \
 #else
 #   define ASSERT(condition, message) condition;
 #endif
+
+#define __FILENAME__ (std::strrchr(__FILE__, '\\') ? std::strrchr(__FILE__, '\\') + 1 : __FILE__)
+
+#define LOG(...)     admin->console->PushConsole(TOSTRING("[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR(...)   admin->console->PushConsole(TOSTRING("[c:error]", __VA_ARGS__, "[c]"))
+#define SUCCESS(...) admin->console->PushConsole(TOSTRING("[c:green]", __VA_ARGS__, "[c]"))
+//#define PRINT(...)   admin->GetSystem<Console>()->PushConsole(TOSTRING(__VA_ARGS__))
+
+//additionally prints where function was called
+#define LOG_LOC(...)     admin->console->PushConsole(TOSTRING("[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR_LOC(...)   admin->console->PushConsole(TOSTRING("[c:error]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:error]", __VA_ARGS__, "[c]"))
+#define SUCCESS_LOC(...) admin->console->PushConsole(TOSTRING("[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
+
+#define DASSERT(condition, message)     if(!(condition) && !admin->paused){ ERROR_LOC("Assertion '" #condition "' failed: \n", message); admin->paused = true;}
+#define DASSERTWARN(condition, message) if(!(condition) && !admin->paused) LOG_LOC("Assertion '" #condition "' failed: \n", message)
 
 #define TOSTRING(...) Debug::ToString(__VA_ARGS__)
 
@@ -69,16 +75,6 @@ std::terminate(); \
 #define BUFFERLOG(i, ...) DEBUG g_cBuffer.add_to_index(TOSTRING(__VA_ARGS__), i)
 
 #define BUFFERLOGI(i, o, ...) DEBUG ([&]{static int iter = 0; if(iter == o){g_cBuffer.add_to_index(TOSTRING(__VA_ARGS__), i); iter = 0;} else iter++;}())
-
-//this stores and input vector and returns the previously stored vector
-//if you pass true for the second param it will replace the stored vector and return it
-//else it just returns the stored vector
-#define V_STORE(v, t) ([&]()->Vector3{static Vector3 vect[1];\
-Vector3 vr = vect[0];\
-if(t){ vect[0] = v; return vr; } \
-else return vr; }\
-())
-
 
 using namespace std::chrono;
 
@@ -123,3 +119,5 @@ namespace Debug {
 		return str;
 	}
 };
+
+#endif //DESHI_DEBUG_H

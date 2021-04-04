@@ -5,7 +5,7 @@
 #include "Component.h"
 #include "Physics.h"
 #include "Transform.h"
-#include "../../math/Vector3.h"
+#include "../../math/Vector.h"
 
 #include "al.h"
 #include "alc.h"

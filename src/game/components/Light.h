@@ -3,7 +3,7 @@
 #define COMPONENT_LIGHT_H
 
 #include "Component.h"
-#include "../../math/Vector3.h"
+#include "../../math/Vector.h"
 
 struct Light : public Component {
 	Vector3 position;

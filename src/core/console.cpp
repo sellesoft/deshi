@@ -34,24 +34,24 @@
 
 #include <functional>
 
-
-
 //regex for checking paramaters
-#define RegPosParam   std::regex("-pos=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")
-#define RegRotParam   std::regex("-rot=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")
-#define RegScaleParam std::regex("-scale=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")
-#define RegSizeParam  std::regex("-size=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)")
-
+std::regex RegColorFormat("(?:\\[c:([^\\]]*)\\]([^\\]]*)\\[c\\]|([^\\[]+))", std::regex::optimize);
+std::regex RegPosParam("-pos=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
+std::regex RegRotParam("-rot=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
+std::regex RegScaleParam("-scale=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
+std::regex RegSizeParam("-size=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
 //this is repetitive because it has to capture 3 different groups in the same way
-#define VecNumMatch std::regex("[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?")
+std::regex VecNumMatch("[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?", std::regex::optimize);
+std::regex StringRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\(([a-z]+)\\)", std::regex::optimize|std::regex::icase); }
+std::regex IntRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\(([-]?[0-9]+)\\)", std::regex::optimize); }
+std::regex FloatRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\(([-]?[0-9|.]+)\\)", std::regex::optimize); }
+std::regex BoolRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\((true|1|false|0)\\)", std::regex::optimize|std::regex::icase); }
 
-//TODO(delle,Cl) update this to have a try/catch built in
+
 #define NEWCOMMAND(name, desc, func) commands[name] =\
 new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {\
 try{ func }catch(...){ return desc; }\
 }, name, desc);
-
-#define RegColorFormat std::regex("(?:\\[c:([^\\]]*)\\]([^\\]]*)\\[c\\]|([^\\[]+))")
 
 using namespace ImGui;
 
@@ -596,6 +596,14 @@ inline void AddSpawnCommands(EntityAdmin* admin) {
 ////////////////////////////////////
 
 void Console::AddRenderCommands() {
+	//TODO(delle,Cmd) create material
+	
+	//TODO(delle,Cmd) list materials
+	
+	//TODO(delle,Cmd) create box 
+	
+	//TODO(delle,Cmd) create planarized box
+	
 	NEWCOMMAND("render_stats", "Lists different rendering stats for the previous frame", {
 				   //TODO(delle,Cmd) this
 				   return "";
@@ -614,11 +622,7 @@ void Console::AddRenderCommands() {
 				   return (admin->renderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
 			   });
 	
-	//create box 
-	
-	
-	//create planarized box
-	commands["create_box_uv"] =
+	commands["spawn_box_uv"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 						try{
 							std::cmatch m;
@@ -653,42 +657,39 @@ void Console::AddRenderCommands() {
 							
 							return TOSTRING("Created textured box with id: ", id);
 						}catch(...){
-							return "create_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
+							return "spawn_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
 						}
-					}, "create_box_uv", "create_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
+					}, "spawn_box_uv", "spawn_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 	
-	//mesh_update_matrix, a bit more difficult b/c it should only update the passed arguments
-	
-	//create material
-	
-	//list materials
-	
-	//TODO(delle,Re) fix this, its not working
 	NEWCOMMAND("mat_texture", "mat_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>", {
 				   if (args.size() != 3) { return "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>"; }
-				   try {
-					   int matID = std::stoi(args[0]);
-					   int texType = std::stoi(args[1]);
-					   int texID = std::stoi(args[2]);
-					   admin->renderer->UpdateMaterialTexture(matID, texType, texID);
-					   return TOSTRING("Updated material", matID, "'s texture", texType, " to ", texID);
-				   }
-				   catch (...) {
-					   return "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>";
-				   }
+				   
+				   int matID = std::stoi(args[0]);
+				   int texType = std::stoi(args[1]);
+				   int texID = std::stoi(args[2]);
+				   admin->renderer->UpdateMaterialTexture(matID, texType, texID);
+				   return TOSTRING("Updated material", matID, "'s texture", texType, " to ", texID);
 			   });
 	
 	NEWCOMMAND("mat_shader", "mat_shader <materialID:Uint> <shaderID:Uint>", {
 				   if (args.size() != 2) { return "material_shader <materialID:Uint> <shaderID:Uint>"; }
-				   try {
-					   int matID = std::stoi(args[0]);
-					   int shader = std::stoi(args[1]);
-					   admin->renderer->UpdateMaterialShader(matID, shader);
-					   return TOSTRING("Updated material", matID, "'s shader to ", shader);
+				   int matID = std::stoi(args[0]);
+				   int shader = std::stoi(args[1]);
+				   admin->renderer->UpdateMaterialShader(matID, shader);
+				   return TOSTRING("Updated material", matID, "'s shader to ", shader);
+			   });
+	
+	NEWCOMMAND("mat_list", "mat_list", {
+				   Renderer* r = admin->renderer;
+				   std::string out = "[c:yellow]Materials List:\nID  Shader  Albedo  Normal  Specular  Light[c]";
+				   for(auto mat : r->materials){
+					   out += TOSTRING("\n", mat.id, "  ", shadertostringint[mat.shader], "  ",
+									   mat.albedoID, ":", r->textures[mat.albedoID].filename, "  ",
+									   mat.normalID, ":", r->textures[mat.normalID].filename, "  ",
+									   mat.specularID, ":", r->textures[mat.specularID].filename, "  ",
+									   mat.lightID, ":", r->textures[mat.lightID].filename);
 				   }
-				   catch (...) {
-					   return "material_shader <materialID:Uint> <shaderID:Uint>";
-				   }
+				   return out;
 			   });
 	
 	NEWCOMMAND("shader_reload", "shader_reload <shaderID:Uint>", {
@@ -697,14 +698,13 @@ void Console::AddRenderCommands() {
 				   if (id == -1) {
 					   admin->renderer->ReloadAllShaders();
 					   return "[c:magen]Reloading all shaders[c]";
-				   }
-				   else {
+				   }else{
 					   admin->renderer->ReloadShader(id);
 					   return ""; //printed in renderer
 				   }
 			   });
 	
-	//TODO(delle) update this to be dynamic when shader loading is (if ever,Re)
+	//TODO(delle,ReCl) update this to be dynamic when shader loading is (if ever)
 	NEWCOMMAND("shader_list", "Lists the shaders and their IDs", {
 				   return TOSTRING("[c:yellow]ID    SHADER          Description[c]\n",
 								   "0    Flat            Vertex color shading without normal/edge smoothing\n",
@@ -714,9 +714,11 @@ void Console::AddRenderCommands() {
 								   "4    Wireframe       Vertex color shading with no polygon fill\n",
 								   "5    Lavalamp        Sushi's experimental shader\n",
 								   "6    Test0           Testing shader 1\n",
-								   "7    Test1           Testing shader 2\n",
-								   "8    Test2           Testing shader 3\n",
-								   "9    Test3           Testing shader 4");
+								   "7    Test1           Testing shader 2");
+			   });
+	NEWCOMMAND("shader_freeze", "Toggles shader data being uploaded to GPU", {
+				   admin->renderer->shaderData.freeze = !admin->renderer->shaderData.freeze;
+				   return (admin->renderer->shaderData.freeze)? "Shaders frozen" : "Shaders unfrozen";
 			   });
 	
 	NEWCOMMAND("mesh_visible", "mesh_visible <meshID:Uint> <visible:Bool>", {
@@ -724,7 +726,7 @@ void Console::AddRenderCommands() {
 					   try {
 						   int meshID = std::stoi(args[0]);
 						   bool vis = std::stoi(args[1]);
-						   admin->renderer->UpdateInstanceVisibility(meshID, vis);
+						   admin->renderer->UpdateMeshVisibility(meshID, vis);
 						   return TOSTRING("Setting mesh", meshID, "'s visibility to ", vis);
 					   }
 					   catch (...) {
@@ -781,17 +783,14 @@ void Console::AddRenderCommands() {
 	
 	NEWCOMMAND("mesh_batch_material", "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>", {
 				   if (args.size() != 3) { return "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>"; }
-				   try {
-					   int mesh = std::stoi(args[0]);
-					   int batch = std::stoi(args[1]);
-					   int mat = std::stoi(args[2]);
-					   admin->renderer->UpdateMeshBatchMaterial(mesh, batch, mat);
-					   return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s material to ", mat);
-				   }
-				   catch (...) {
-					   return "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>";
-				   }
+				   int mesh = std::stoi(args[0]);
+				   int batch = std::stoi(args[1]);
+				   int mat = std::stoi(args[2]);
+				   admin->renderer->UpdateMeshBatchMaterial(mesh, batch, mat);
+				   return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s material to ", mat);
 			   });
+	
+	//mesh_update_matrix, a bit more difficult b/c it should only update the passed arguments
 	
 	commands["mesh_transform_matrix"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
@@ -888,16 +887,9 @@ void Console::AddRenderCommands() {
 	NEWCOMMAND("texture_load", "texture_load <texture.png:String> [type:Uint]", {
 				   if (args.size() > 0) {
 					   Texture tex(args[0].c_str());
-					   if (args.size() == 2) {
-						   try {
-							   tex.type = u32(std::stoi(args[1]));
-						   }
-						   catch (...) {
-							   return "texture_load <texture.png:String> [type:Uint]";
-						   }
-					   }
+					   if (args.size() == 2) { tex.type = u32(std::stoi(args[1])); }
 					   u32 id = admin->renderer->LoadTexture(tex);
-					   return TOSTRING("Laoded texture ", args[0], " to ID: ", id);
+					   return TOSTRING("Loaded texture ", args[0], " to ID: ", id);
 				   }
 				   return "texture_load <texture.png:String> [type:Uint]";
 			   });
@@ -906,13 +898,13 @@ void Console::AddRenderCommands() {
 				   return admin->renderer->ListTextures();
 			   });
 	
-	NEWCOMMAND("texture_types_list", "Lists the texture types and their IDs", {
-				   return TOSTRING("Texture Types: (can be combined)\n",
-								   "   0=Albedo, Color, Diffuse\n",
-								   "   1=Normal, Bump\n",
-								   "   2=Light, Ambient\n",
-								   "   4=Specular, Reflective\n",
-								   "   8=Cube      (not supported yet)\n",
+	NEWCOMMAND("texture_type_list", "Lists the texture types and their IDs", {
+				   return TOSTRING("[c:yellow]Texture Types: (can be combined)[c]\n"
+								   "   0=Albedo, Color, Diffuse\n"
+								   "   1=Normal, Bump\n"
+								   "   2=Light, Ambient\n"
+								   "   4=Specular, Reflective\n"
+								   "   8=Cube      (not supported yet)\n"
 								   "  16=Sphere    (not supported yet)");
 			   });
 }
@@ -922,17 +914,70 @@ void Console::AddRenderCommands() {
 ////////////////////////////////////
 
 void Console::AddCameraCommands() {
-	
-	
 	NEWCOMMAND("cam_info", "Prints camera variables", {
-				   return "";
+				   return admin->mainCamera->str();
+			   });
+	
+	NEWCOMMAND("cam_matrix_projection", "Prints camera's projection matrix", {
+				   return admin->mainCamera->projectionMatrix.str2f();
+			   });
+	
+	NEWCOMMAND("cam_matrix_view", "Prints camera's view matrix", {
+				   return admin->mainCamera->viewMatrix.str2f();
 			   });
 	
 	NEWCOMMAND("cam_reset", "Resets camera", {
-				   admin->mainCamera->position = Vector3(0, 0, -5);
-				   admin->mainCamera->rotation = Vector3(0, 0, 0);
+				   admin->mainCamera->position = Vector3(4.f, 3.f, -4.f);
+				   admin->mainCamera->rotation = Vector3(28.f, -45.f, 0.f);
 				   return "reset camera";
 			   });
+	
+	commands["cam_vars"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+										   Camera* c = admin->mainCamera;
+										   if(args.size() == 0){ return "cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)"; }
+										   try{
+											   std::cmatch m;
+											   std::regex nearZ = FloatRegex("nearZ");
+											   std::regex farZ = FloatRegex("farZ");
+											   std::regex fov = FloatRegex("fov");
+											   std::regex freeCam = BoolRegex("static");
+											   
+											   for (auto s = args.begin(); s != args.end(); ++s) {
+												   if (std::regex_match(*s, RegPosParam)) {
+													   std::regex_search(s->c_str(), m, VecNumMatch);
+													   c->position = {std::stof(m[1]), std::stof(m[2]), std::stof(m[3])};
+												   }
+												   else if (std::regex_match(*s, RegRotParam)) {
+													   std::regex_search(s->c_str(), m, VecNumMatch);
+													   c->rotation = {std::stof(m[1]), std::stof(m[2]), std::stof(m[3])};
+												   }
+												   else if (std::regex_search(s->c_str(), m, nearZ)) {
+													   c->nearZ = std::stof(m[1]);
+												   }
+												   else if (std::regex_search(s->c_str(), m, farZ)) {
+													   c->farZ = std::stof(m[1]);
+												   }
+												   else if (std::regex_search(s->c_str(), m, fov)) {
+													   c->fov = std::stof(m[1]);
+												   }
+												   else if (std::regex_search(s->c_str(), m, freeCam)) {
+													   if(m[1].str() == "0" || m[1].str() == "false"){
+														   c->freeCamera = true; //backwards cus naming
+													   }else{
+														   c->freeCamera = false;
+													   }
+												   }
+												   else {
+													   return "[c:red]Invalid parameter: " + *s + "[c]";
+												   }
+											   }
+											   
+											   c->UpdateProjectionMatrix();
+											   return admin->mainCamera->str();
+										   }catch(...){
+											   return "cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)";
+										   }
+									   }, "cam_vars", "cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)");
 }
 
 void Console::AddConsoleCommands() {

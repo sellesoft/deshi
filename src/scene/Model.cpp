@@ -69,9 +69,9 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 tra
 	tinyobj::ObjReaderConfig reader_config;
 	reader_config.triangulate = true;
 	reader_config.vertex_color = true;
-	reader_config.mtl_search_path = deshi::getModelsPath(); // Path to material files
+	reader_config.mtl_search_path = deshi::dirModels(); // Path to material files
 	tinyobj::ObjReader reader;
-	if (!reader.ParseFromFile(deshi::getModelsPath() + filename, reader_config)) {
+	if (!reader.ParseFromFile(deshi::dirModels() + filename, reader_config)) {
 		if (!reader.Error().empty()) {
 			std::cerr << "TinyObjReader: " << reader.Error();
 		}

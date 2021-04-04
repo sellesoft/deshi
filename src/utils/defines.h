@@ -2,8 +2,6 @@
 #ifndef DESHI_DEFINES_H
 #define DESHI_DEFINES_H
 
-#include "ContainerManager.h"
-
 //math constants
 #define M_PI         3.14159265359f
 #define M_E          2.71828182846f
@@ -11,8 +9,8 @@
 #define M_ONETWELFTH 0.08333333333f
 
 //conversions
-#define RADIANS(x) (x * (M_PI / 180.f))
-#define DEGREES(x) (x * (180.f / M_PI))
+#define RADIANS(x) ((x) * (M_PI / 180.f))
+#define DEGREES(x) ((x) * (180.f / M_PI))
 
 //number typedefs
 typedef signed char    i8;     typedef i8  int8;
@@ -51,5 +49,8 @@ typedef i32 b32; //int based boolean so c++ doesnt convert to 0 or 1
 #define uint16(x) static_cast<uint16>(x)
 #define uint32(x) static_cast<uint32>(x)
 #define uint64(x) static_cast<uint64>(x)
+
+//i: variable name; x: number of iterations 
+#define for_n(i,x) for(int i=0; i<x; ++i)
 
 #endif //DESHI_DEFINES_H

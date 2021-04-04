@@ -1,10 +1,13 @@
 #pragma once
-#include "Debug.h"
+#ifndef DESHI_COMMAND_H
+#define DESHI_COMMAND_H
+
+#include <string>
+#include <vector>
 
 struct EntityAdmin;
 
 typedef std::string (*CommandAction)(EntityAdmin* admin, std::vector<std::string> args);
-
 //typedef void (*CommandActionArgs)(EntityAdmin* admin, std::string args);
 
 struct Command {
@@ -12,16 +15,16 @@ struct Command {
 	bool triggered;
 	std::string name;
 	std::string description;
-
+	
 	static bool CONSOLE_PRINT_EXEC;
-
+	
 	Command(CommandAction action, std::string name, std::string description = "") {
 		this->triggered = false;
 		this->action = action;
 		this->name = name;
 		this->description = description;
 	}
-
+	
 	inline std::vector<std::string> ParseArgs(std::string args) {
 		std::vector<std::string> argsl;
 		
@@ -35,16 +38,18 @@ struct Command {
 				argsl.push_back(args.substr(args.find_first_not_of(" "), args.find_first_of(" ")));
 				args.erase(fc, fs - fc);
 			}
-
+			
 		}
 		return argsl;
 	}
-
+	
 	//execute command action function
 	inline std::string Exec(EntityAdmin* admin, std::string args = "") {
- 		std::vector<std::string> argsl = ParseArgs(args);
+		std::vector<std::string> argsl = ParseArgs(args);
 		//DEBUG if(CONSOLE_PRINT_EXEC) LOG("Executing command: ", name);
 		//if(CONSOLE_PRINT_EXEC) Debug::ToString(1, std::string("Executing command: ") + name, true);
 		return action(admin, argsl);
 	}
 };
+
+#endif //DESHI_COMMAND_H

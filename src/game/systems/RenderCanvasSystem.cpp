@@ -760,7 +760,7 @@ void RenderCanvasSystem::DrawUI(void) {
 
 void RenderCanvasSystem::Init(EntityAdmin* admin) {
 	System::Init(admin);
-	files = deshi::iterateDirectory(deshi::getModelsPath());
+	files = deshi::iterateDirectory(deshi::dirModels());
 	Canvas* canvas = admin->tempCanvas;
 }
 

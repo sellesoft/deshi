@@ -4,7 +4,7 @@
 
 #include "Component.h"
 #include "../../utils/defines.h"
-#include "../../math/Vector3.h"
+#include "../../math/Vector.h"
 
 struct MeshComp;
 struct Mesh;
@@ -12,7 +12,7 @@ struct Mesh;
 
 
 struct Orb {
-
+	
 	Vector3 pos;
 	Vector3 posbflerp;
 	Vector3 origpos;
@@ -22,11 +22,11 @@ struct Orb {
 	Vector3 rot;
 	Vector3 rotvel;
 	Vector3 rotacc;
-
+	
 	MeshComp* mc;
-
+	
 	Vector3 ito = Vector3(2, 0, 2);
-
+	
 	Orb(Vector3 pos, Vector3 rot, Vector3 rotvel, Vector3 rotacc) {
 		this->pos = pos;
 		origpos = pos;
@@ -39,16 +39,16 @@ struct Orb {
 struct OrbManager : public Component {
 	
 	OrbManager(Mesh* m, EntityAdmin* a, Entity* e);
-
-	int orbcount = 100;
-
 	
-
+	int orbcount = 100;
+	
+	
+	
 	std::vector<Orb*> orbs;
-
-
-
-
+	
+	
+	
+	
 	void ReceiveEvent(Event event) override;
 	void Update() override;
 };

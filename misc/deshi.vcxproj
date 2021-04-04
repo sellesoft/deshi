@@ -144,7 +144,7 @@
       </SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\src\OpenAL1.1\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\src\boost_1_74_0;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\src\OpenAL1.1\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/permissive</AdditionalOptions>
       <SupportJustMyCode>false</SupportJustMyCode>
@@ -243,13 +243,11 @@
     <ClInclude Include="..\src\geometry\Triangle.h" />
     <ClInclude Include="..\src\math\InertiaTensors.h" />
     <ClInclude Include="..\src\math\Math.h" />
-    <ClInclude Include="..\src\math\Matrix3.h" />
-    <ClInclude Include="..\src\math\Matrix4.h" />
+    <ClInclude Include="..\src\math\Matrix.h" />
     <ClInclude Include="..\src\math\MatrixN.h" />
     <ClInclude Include="..\src\math\Quaternion.h" />
-    <ClInclude Include="..\src\math\Vector2.h" />
-    <ClInclude Include="..\src\math\Vector3.h" />
-    <ClInclude Include="..\src\math\Vector4.h" />
+    <ClInclude Include="..\src\math\Vector.h" />
+    <ClInclude Include="..\src\math\VectorMatrix.h" />
     <ClInclude Include="..\src\scene\Armature.h" />
     <ClInclude Include="..\src\scene\Bone.h" />
     <ClInclude Include="..\src\scene\Model.h" />
@@ -286,9 +284,15 @@
     <None Include="..\shaders\twod.vert" />
     <None Include="..\shaders\wireframe.frag" />
     <None Include="..\shaders\wireframe.vert" />
+    <None Include="..\src\math\Matrix3.inl" />
+    <None Include="..\src\math\Matrix4.inl" />
+    <None Include="..\src\math\Vector2.inl" />
+    <None Include="..\src\math\Vector3.inl" />
+    <None Include="..\src\math\Vector4.inl" />
     <None Include="build.bat" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\core\assets.cpp" />
     <ClCompile Include="..\src\core\console.cpp" />
     <ClCompile Include="..\src\core\deshi_imgui.cpp" />
     <ClCompile Include="..\src\core\event.cpp" />
@@ -319,11 +323,8 @@
     <ClCompile Include="..\src\game\systems\RenderCanvasSystem.cpp" />
     <ClCompile Include="..\src\game\systems\SoundSystem.cpp" />
     <ClCompile Include="..\src\game\systems\WorldSystem.cpp" />
-    <ClCompile Include="..\src\math\Matrix3.cpp" />
-    <ClCompile Include="..\src\math\Matrix4.cpp" />
-    <ClCompile Include="..\src\math\Vector2.cpp" />
-    <ClCompile Include="..\src\math\Vector3.cpp" />
     <ClCompile Include="..\src\scene\Model.cpp" />
+    <ClCompile Include="..\src\scene\Scene.cpp" />
     <ClCompile Include="..\src\utils\Command.cpp" />
   </ItemGroup>
   <ItemGroup>

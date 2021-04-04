@@ -3,7 +3,7 @@
 #define DESHI_RENDERER_VULKAN_H
 
 #include "../utils/defines.h"
-#include "../utils/Debug.h"
+#include "../utils/debug.h"
 #include "../utils/optional.h"
 
 #if defined(_MSC_VER)
@@ -129,10 +129,10 @@ struct MeshVk{
 struct MaterialVk{
 	u32 id     = 0xFFFFFFFF;
 	u32 shader = 0;
-	u32 albedoTextureIndex   = 0;
-	u32 normalTextureIndex   = 2;
-	u32 specularTextureIndex = 2;
-	u32 lightTextureIndex    = 2;
+	u32 albedoID   = 0;
+	u32 normalID   = 2;
+	u32 specularID = 2;
+	u32 lightID    = 2;
 	
 	VkDescriptorSet descriptorSet;
 	VkPipeline      pipeline = 0;
@@ -237,7 +237,7 @@ struct Renderer{
 	void UpdateMaterialTexture(u32 matID, u32 textureSlot, u32 textureID);
 	void UpdateMaterialShader(u32 matID, u32 shader);
 	std::vector<u32> GetMaterialIDs(u32 MeshID);
-
+	
 	void LoadDefaultAssets();
 	//loads a new scene to the GPU
 	//NOTE this should not be done often in gameplay
@@ -329,6 +329,8 @@ struct Renderer{
 			glm::f32 swidth;
 			glm::f32 sheight;
 		} values;
+		
+		bool freeze = false;
 	} shaderData;
 	VkDescriptorSet sceneDescriptorSet;
 	

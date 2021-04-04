@@ -1,5 +1,5 @@
 #pragma once
-#include "../utils/Debug.h"
+#include "../utils/debug.h"
 
 struct Vector3;
 struct Matrix4;
@@ -8,14 +8,14 @@ struct Matrix3;
 //TODO(delle,Ma) implement quaternions
 struct Quaternion {
 	float x{}, y{}, z{}, w{};
-
+	
 	Quaternion() : x(0), y(0), z(0), w(1) {}
 	Quaternion(float inX, float inY, float inZ, float inW) : x(inX), y(inY), z(inZ), w(inW) {}
-
+	
 	//Non-Quat vs Quat interactions defined in Math.h
 	Quaternion(const Vector3& rotation);
 	Quaternion(const Vector3& axis, float theta);
-
+	
 	void operator =			(const Quaternion& rhs);
 	Quaternion operator /	(const float& rhs);
 	void operator /=		(const float& rhs);
@@ -30,7 +30,7 @@ struct Quaternion {
 	Quaternion operator /	(const Quaternion& rhs);
 	void operator /=		(const Quaternion& rhs);
 	Quaternion operator - ();
-
+	
 	float mag();
 	void normalize();
 	Quaternion normalized();
@@ -38,13 +38,13 @@ struct Quaternion {
 	Quaternion inverse();
 	float dot(Quaternion q);
 	Vector3 ToVector3();
-
+	
 	Quaternion AxisAngleToQuat(float angle, Vector3 axis);
 	static Quaternion RotVecToQuat(Vector3 rotation);
-
+	
 	static Quaternion QuatSlerp(Quaternion from, Quaternion to, float t);
 	static Quaternion QuatSlerp(Vector3 from, Vector3 to, float t);
-
+	
 };
 
 
@@ -65,7 +65,7 @@ inline void Quaternion::operator /= (const float& rhs) {
 }
 
 inline Quaternion Quaternion::operator * (const float& rhs) {
-
+	
 	return Quaternion(x * rhs, y * rhs, z * rhs, w * rhs);
 }
 
@@ -104,15 +104,15 @@ inline Quaternion Quaternion::operator * (const Quaternion& rhs) {
 	G = (w + y) * (rhs.w - rhs.z);
 	H = (w - y) * (rhs.w + rhs.z);
 	return Quaternion(
-		A - (E + F + G + H) / 2,
-		C + (E - F + G - H) / 2,
-		D + (E - F - G + H) / 2,
-		B + (-E - F + G + H) / 2);
+					  A - (E + F + G + H) / 2,
+					  C + (E - F + G - H) / 2,
+					  D + (E - F - G + H) / 2,
+					  B + (-E - F + G + H) / 2);
 }
 
 inline void Quaternion::operator *= (const Quaternion& rhs) {
 	x *= rhs.x; y *= rhs.y; z *= rhs.z; w *= rhs.w;
-
+	
 	float A, B, C, D, E, F, G, H;
 	A = (w + x) * (rhs.w + rhs.x);
 	B = (z - y) * (rhs.y - rhs.z);
@@ -174,19 +174,19 @@ inline Quaternion Quaternion::QuatSlerp(Quaternion from, Quaternion to, float t)
 	//this implements Spherical Linear intERPoplation
 	//it interpolates between two quaternions along the shortest arc on a sphere formed by them
 	//taken from https://www.wikiwand.com/en/Slerp#/Quaternion_Slerp
-
+	
 	from.normalize();
 	to.normalize();
-
+	
 	float dot = to.dot(from);
-
+	
 	if (dot < 0) {
 		to = -to;
 		dot = -dot;
 	}
-
+	
 	const float dot_thresh = 0.9995;
-
+	
 	// calculate coefficients
 	if (dot > dot_thresh) {
 		// standard case (slerp)
@@ -194,18 +194,18 @@ inline Quaternion Quaternion::QuatSlerp(Quaternion from, Quaternion to, float t)
 		result.normalize();
 		return result;
 	}
-
+	
 	//since dot is in range [0, DOT_THRESHOLD], acos is safe
 	double theta_0 = acos(dot);			//theta_0 = angle between input vectors
 	double theta = theta_0 * t;			//theta = angle between v0 and result
 	double sin_theta = sin(theta);		//compute this value only once
 	double sin_theta_0 = sin(theta_0);	//compute this value only once
-
+	
 	double s0 = cos(theta) - dot * sin_theta / sin_theta_0;  // == sin(theta_0 - theta) / sin(theta_0)
 	double s1 = sin_theta / sin_theta_0;
-
+	
 	return (from * s0) + (to * s1);
-
-
+	
+	
 	// calculate final values
 }

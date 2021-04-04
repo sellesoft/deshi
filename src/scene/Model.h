@@ -3,9 +3,8 @@
 #define DESHI_MODEL_H
 
 #include "../utils/defines.h"
-#include "../math/Matrix4.h"
-#include "../math/Vector3.h"
-#include "../math/Vector2.h"
+#include "../math/Matrix.h"
+#include "../math/Vector.h"
 #include "Armature.h"
 
 #include <vector>

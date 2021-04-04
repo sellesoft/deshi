@@ -10,33 +10,6 @@
     <ClInclude Include="..\src\geometry\Triangle.h">
       <Filter>src\geometry</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\math\InertiaTensors.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Math.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Matrix3.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Matrix4.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\MatrixN.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Quaternion.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Vector2.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Vector3.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Vector4.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\utils\Color.h">
       <Filter>src\utils</Filter>
     </ClInclude>
@@ -193,6 +166,27 @@
     <ClInclude Include="..\src\game\components\Orb.h">
       <Filter>src\game\components\h</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\math\Quaternion.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\Vector.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\VectorMatrix.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\InertiaTensors.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\Math.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\Matrix.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\MatrixN.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -332,17 +326,23 @@
     <None Include="..\shaders\testing3.vert">
       <Filter>shaders</Filter>
     </None>
+    <None Include="..\src\math\Vector2.inl">
+      <Filter>src\math</Filter>
+    </None>
+    <None Include="..\src\math\Vector3.inl">
+      <Filter>src\math</Filter>
+    </None>
+    <None Include="..\src\math\Vector4.inl">
+      <Filter>src\math</Filter>
+    </None>
+    <None Include="..\src\math\Matrix3.inl">
+      <Filter>src\math</Filter>
+    </None>
+    <None Include="..\src\math\Matrix4.inl">
+      <Filter>src\math</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\math\Matrix3.cpp">
-      <Filter>src\math</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\math\Matrix4.cpp">
-      <Filter>src\math</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\math\Vector3.cpp">
-      <Filter>src\math</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\utils\Command.cpp">
       <Filter>src\utils</Filter>
     </ClCompile>
@@ -436,11 +436,14 @@
     <ClCompile Include="..\src\core\event.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\math\Vector2.cpp">
-      <Filter>src\math</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\game\components\Orb.cpp">
       <Filter>src\game\components\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\assets.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\scene\Scene.cpp">
+      <Filter>src\scene</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

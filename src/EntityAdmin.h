@@ -3,7 +3,8 @@
 #define DESHI_ENTITYADMIN_H
 
 #include "utils/defines.h"
-#include "utils/Debug.h"
+#include "utils/debug.h"
+#include "utils/ContainerManager.h"
 
 //deshi Engine data defines; accessible only from inside Components/Systems
 #define DengInput admin->input
