@@ -17,8 +17,7 @@ A game engine for 3D physics and graphics building on [P3DPGE](https://github.co
 * Lighting and shadows
 * Level/scene editor
 
-### Build Dependencies:
-* [Boost Libraries 1.74.0](https://www.boost.org/users/history/version_1_74_0.html)
+### Build Dependencies
 * [GLFW 3.3.2](https://www.glfw.org/download.html)
 * [VulkanSDK 1.2.162.1](https://vulkan.lunarg.com/sdk/home)
 * [GLM 0.9.9.8](https://github.com/g-truc/glm/releases/tag/0.9.9.8)
