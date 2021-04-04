@@ -13,7 +13,7 @@ struct Scene{
 	std::vector<RenderedEdge3D*> lines;
 	
 	//this will be here until i find a better place/way to make this work on GPU or something idk
-	//std::pair<Vector3, Vector3> SceneBoundingBox() {};
+	std::pair<Vector3, Vector3> SceneBoundingBox();
 };
 
 #endif //DESHI_SCENE_H
