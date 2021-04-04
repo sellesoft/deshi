@@ -1,7 +1,7 @@
 #include "WorldSystem.h"
 #include "../../core/console.h"
 #include "../../EntityAdmin.h"
-#include "../../utils/Debug.h"
+#include "../../utils/debug.h"
 #include "../components/Transform.h"
 
 void WorldSystem::Update() {

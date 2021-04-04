@@ -3,7 +3,7 @@
 #define DESHI_WINDOW_H
 
 #include "../utils/defines.h"
-#include "../math/Vector2.h"
+#include "../math/Vector.h"
 
 struct Input;
 struct GLFWwindow;
@@ -56,7 +56,7 @@ struct Window{
 	void UpdateRawInput(bool rawInput);
 	
 	void UpdateResizable(bool resizable);
-
+	
 	void Close();
 };
 

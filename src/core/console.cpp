@@ -596,6 +596,14 @@ inline void AddSpawnCommands(EntityAdmin* admin) {
 ////////////////////////////////////
 
 void Console::AddRenderCommands() {
+	//TODO(delle,Cmd) create material
+	
+	//TODO(delle,Cmd) list materials
+	
+	//TODO(delle,Cmd) create box 
+	
+	//TODO(delle,Cmd) create planarized box
+	
 	NEWCOMMAND("render_stats", "Lists different rendering stats for the previous frame", {
 				   //TODO(delle,Cmd) this
 				   return "";
@@ -614,11 +622,7 @@ void Console::AddRenderCommands() {
 				   return (admin->renderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
 			   });
 	
-	//create box 
-	
-	
-	//create planarized box
-	commands["create_box_uv"] =
+	commands["spawn_box_uv"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 						try{
 							std::cmatch m;
@@ -653,42 +657,27 @@ void Console::AddRenderCommands() {
 							
 							return TOSTRING("Created textured box with id: ", id);
 						}catch(...){
-							return "create_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
+							return "spawn_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
 						}
-					}, "create_box_uv", "create_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
+					}, "spawn_box_uv", "spawn_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 	
-	//mesh_update_matrix, a bit more difficult b/c it should only update the passed arguments
-	
-	//create material
-	
-	//list materials
-	
-	//TODO(delle,Re) fix this, its not working
+	//TODO(delle,Re) fix this, its not working (update descriptor set)
 	NEWCOMMAND("mat_texture", "mat_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>", {
 				   if (args.size() != 3) { return "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>"; }
-				   try {
-					   int matID = std::stoi(args[0]);
-					   int texType = std::stoi(args[1]);
-					   int texID = std::stoi(args[2]);
-					   admin->renderer->UpdateMaterialTexture(matID, texType, texID);
-					   return TOSTRING("Updated material", matID, "'s texture", texType, " to ", texID);
-				   }
-				   catch (...) {
-					   return "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>";
-				   }
+				   
+				   int matID = std::stoi(args[0]);
+				   int texType = std::stoi(args[1]);
+				   int texID = std::stoi(args[2]);
+				   admin->renderer->UpdateMaterialTexture(matID, texType, texID);
+				   return TOSTRING("Updated material", matID, "'s texture", texType, " to ", texID);
 			   });
 	
 	NEWCOMMAND("mat_shader", "mat_shader <materialID:Uint> <shaderID:Uint>", {
 				   if (args.size() != 2) { return "material_shader <materialID:Uint> <shaderID:Uint>"; }
-				   try {
-					   int matID = std::stoi(args[0]);
-					   int shader = std::stoi(args[1]);
-					   admin->renderer->UpdateMaterialShader(matID, shader);
-					   return TOSTRING("Updated material", matID, "'s shader to ", shader);
-				   }
-				   catch (...) {
-					   return "material_shader <materialID:Uint> <shaderID:Uint>";
-				   }
+				   int matID = std::stoi(args[0]);
+				   int shader = std::stoi(args[1]);
+				   admin->renderer->UpdateMaterialShader(matID, shader);
+				   return TOSTRING("Updated material", matID, "'s shader to ", shader);
 			   });
 	
 	NEWCOMMAND("shader_reload", "shader_reload <shaderID:Uint>", {
@@ -697,14 +686,13 @@ void Console::AddRenderCommands() {
 				   if (id == -1) {
 					   admin->renderer->ReloadAllShaders();
 					   return "[c:magen]Reloading all shaders[c]";
-				   }
-				   else {
+				   }else{
 					   admin->renderer->ReloadShader(id);
 					   return ""; //printed in renderer
 				   }
 			   });
 	
-	//TODO(delle) update this to be dynamic when shader loading is (if ever,Re)
+	//TODO(delle,ReCl) update this to be dynamic when shader loading is (if ever)
 	NEWCOMMAND("shader_list", "Lists the shaders and their IDs", {
 				   return TOSTRING("[c:yellow]ID    SHADER          Description[c]\n",
 								   "0    Flat            Vertex color shading without normal/edge smoothing\n",
@@ -714,9 +702,7 @@ void Console::AddRenderCommands() {
 								   "4    Wireframe       Vertex color shading with no polygon fill\n",
 								   "5    Lavalamp        Sushi's experimental shader\n",
 								   "6    Test0           Testing shader 1\n",
-								   "7    Test1           Testing shader 2\n",
-								   "8    Test2           Testing shader 3\n",
-								   "9    Test3           Testing shader 4");
+								   "7    Test1           Testing shader 2");
 			   });
 	
 	NEWCOMMAND("mesh_visible", "mesh_visible <meshID:Uint> <visible:Bool>", {
@@ -724,7 +710,7 @@ void Console::AddRenderCommands() {
 					   try {
 						   int meshID = std::stoi(args[0]);
 						   bool vis = std::stoi(args[1]);
-						   admin->renderer->UpdateInstanceVisibility(meshID, vis);
+						   admin->renderer->UpdateMeshVisibility(meshID, vis);
 						   return TOSTRING("Setting mesh", meshID, "'s visibility to ", vis);
 					   }
 					   catch (...) {
@@ -781,17 +767,14 @@ void Console::AddRenderCommands() {
 	
 	NEWCOMMAND("mesh_batch_material", "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>", {
 				   if (args.size() != 3) { return "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>"; }
-				   try {
-					   int mesh = std::stoi(args[0]);
-					   int batch = std::stoi(args[1]);
-					   int mat = std::stoi(args[2]);
-					   admin->renderer->UpdateMeshBatchMaterial(mesh, batch, mat);
-					   return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s material to ", mat);
-				   }
-				   catch (...) {
-					   return "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>";
-				   }
+				   int mesh = std::stoi(args[0]);
+				   int batch = std::stoi(args[1]);
+				   int mat = std::stoi(args[2]);
+				   admin->renderer->UpdateMeshBatchMaterial(mesh, batch, mat);
+				   return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s material to ", mat);
 			   });
+	
+	//mesh_update_matrix, a bit more difficult b/c it should only update the passed arguments
 	
 	commands["mesh_transform_matrix"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
@@ -888,16 +871,9 @@ void Console::AddRenderCommands() {
 	NEWCOMMAND("texture_load", "texture_load <texture.png:String> [type:Uint]", {
 				   if (args.size() > 0) {
 					   Texture tex(args[0].c_str());
-					   if (args.size() == 2) {
-						   try {
-							   tex.type = u32(std::stoi(args[1]));
-						   }
-						   catch (...) {
-							   return "texture_load <texture.png:String> [type:Uint]";
-						   }
-					   }
+					   if (args.size() == 2) { tex.type = u32(std::stoi(args[1])); }
 					   u32 id = admin->renderer->LoadTexture(tex);
-					   return TOSTRING("Laoded texture ", args[0], " to ID: ", id);
+					   return TOSTRING("Loaded texture ", args[0], " to ID: ", id);
 				   }
 				   return "texture_load <texture.png:String> [type:Uint]";
 			   });
@@ -906,7 +882,7 @@ void Console::AddRenderCommands() {
 				   return admin->renderer->ListTextures();
 			   });
 	
-	NEWCOMMAND("texture_types_list", "Lists the texture types and their IDs", {
+	NEWCOMMAND("texture_type_list", "Lists the texture types and their IDs", {
 				   return TOSTRING("Texture Types: (can be combined)\n",
 								   "   0=Albedo, Color, Diffuse\n",
 								   "   1=Normal, Bump\n",

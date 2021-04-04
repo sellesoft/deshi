@@ -14,7 +14,6 @@ https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-
 #include "renderer_vulkan.h"
 #include "../core.h"
 #include "../scene/Scene.h"
-#include "../game/systems/WorldSystem.h"
 #include "../math/Math.h"
 #include "../geometry/Triangle.h"
 
@@ -58,9 +57,13 @@ const bool enableValidationLayers = true;
 #define PRINTVK(level, ...) if(LOGGING_LEVEL >= level){ LOG(__VA_ARGS__); }
 #endif
 
+#pragma warning( push )
+#pragma warning( disable : 4005) //disable redefinition warning
 //redefine debug's ERROR to work in this file 
 #define LOG(...)   console->PushConsole(TOSTRING("[c:yellow]", __VA_ARGS__, "[c]"))
 #define ERROR(...) console->PushConsole(TOSTRING("[c:error]", __VA_ARGS__, "[c]"))
+#pragma warning( pop ) 
+
 
 Renderer* me = nullptr;
 
@@ -226,14 +229,14 @@ void Renderer::Cleanup() {
 		ASSERTVK(vkGetPipelineCacheData(device, pipelineCache, &size, data.data()), "faile to get pipeline cache data");
 		
 		/* Write pipeline cache data to a file in binary format */
-		deshi::writeFileBinary(deshi::getDataPath() + "pipeline_cache.dat", data);
+		deshi::writeFileBinary(deshi::dirData() + "pipeline_cache.dat", data);
 	}
 	
 	//write pre-pipeline data
 	
 	vkDeviceWaitIdle(device);
 }
-
+/*
 u32 Renderer::AddTriangle(Triangle* triangle){
 	PRINT("Not implemented yet");
 	return 0xFFFFFFFF;
@@ -271,7 +274,7 @@ void Renderer::UpdateTrianglesColor(std::vector<u32> triangleIDs, Color color){
 void Renderer::TranslateTriangles(std::vector<u32> triangleIDs, Vector3 translation){
 	PRINT("Not implemented");
 }
-
+*/
 u32 Renderer::LoadBaseMesh(Mesh* m){
 	PRINTVK(3, "    Loading Mesh: ", m->name);
 	MeshVk mesh;  mesh.base = true; 
@@ -452,7 +455,7 @@ void Renderer::UpdateMeshVisibility(u32 meshID, bool visible){
 		meshes[meshID].visible = visible;
 	}
 }
-
+/*
 u32 Renderer::MakeInstance(u32 meshID, Matrix4 matrix) {
 	ERROR("MakeInstance: Not implemented yet");
 	return 0xFFFFFFFF;
@@ -473,7 +476,7 @@ void Renderer::TransformInstanceMatrix(u32 instanceID, Matrix4 transform) {
 void Renderer::UpdateInstanceVisibility(u32 instanceID, bool visible) {
 	ERROR("UpdateInstanceVisibility: Not implemented yet");
 }
-
+*/
 u32 Renderer::LoadTexture(Texture texture){
 	PRINTVK(3, "    Loading Texture: ", texture.filename);
 	//TODO(delle,OpReVu) optimize checking if a texture was already loaded
@@ -481,9 +484,11 @@ u32 Renderer::LoadTexture(Texture texture){
 	
 	TextureVk tex; 
 	strncpy_s(tex.filename, texture.filename, 63);
-	tex.pixels = stbi_load((deshi::getTexturesPath() + texture.filename).c_str(), 
-						   &tex.width, &tex.height, &tex.channels, STBI_rgb_alpha);
-	ASSERT(tex.pixels, "stb failed to load image");
+	
+	std::string imagePath = deshi::getTexture(texture.filename);
+	if(imagePath == ""){ return 0; }
+	tex.pixels = stbi_load(imagePath.c_str(), &tex.width, &tex.height, &tex.channels, STBI_rgb_alpha);
+	ASSERT(tex.pixels, "stb failed to load an image");
 	
 	tex.type = u32(texture.type);
 	tex.mipLevels = u32(std::floor(std::log2(std::max(tex.width, tex.height)))) + 1;
@@ -542,11 +547,11 @@ u32 Renderer::LoadTexture(Texture texture){
 	textures.push_back(tex);
 	return idx;
 }
-
+/*
 void Renderer::UnloadTexture(u32 textureID){
 	PRINT("Not implemented yet");
 }
-
+*/
 std::string Renderer::ListTextures(){
 	std::string out = "[c:yellow]ID  Filename  Width  Height  Depth  Type[c]\n";
 	for(auto& tex : textures){
@@ -998,7 +1003,7 @@ void Renderer::CreatePipelineCache(){
 	pipelineCacheCreateInfo.flags = 0;
 	
 	/* Try to read pipeline cache file if exists */ //NOTE(delle) this saves ~2000ms on my system
-	std::vector<char> data = deshi::readFileBinary(deshi::getDataPath()+"pipeline_cache.dat");
+	std::vector<char> data = deshi::readFileBinary(deshi::dirData()+"pipeline_cache.dat");
 	if(data.size() > 0){
 		pipelineCacheCreateInfo.initialDataSize = data.size();
 		pipelineCacheCreateInfo.pInitialData = data.data();
@@ -2243,7 +2248,7 @@ VkPipelineShaderStageCreateInfo Renderer::loadShader(std::string fileName, VkSha
 	}
 	
 	//create shader module
-	std::vector<char> code = deshi::readFileBinary(deshi::getShadersPath() + fileName);
+	std::vector<char> code = deshi::readFileBinary(deshi::dirShaders() + fileName);
 	VkShaderModuleCreateInfo moduleInfo{};
 	moduleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	moduleInfo.codeSize = code.size();
@@ -2260,7 +2265,7 @@ VkPipelineShaderStageCreateInfo Renderer::loadShader(std::string fileName, VkSha
 VkPipelineShaderStageCreateInfo Renderer::CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize) {
 	PRINTVK(3, "    Compiling and loading shader: ", filename);
 	//check if file exists
-	std::filesystem::path entry(deshi::getShadersPath() + filename);
+	std::filesystem::path entry(deshi::dirShaders() + filename);
 	if(std::filesystem::exists(entry)){
 		std::string ext = entry.extension().string();
 		std::string filename = entry.filename().string();
@@ -2270,7 +2275,7 @@ VkPipelineShaderStageCreateInfo Renderer::CompileAndLoadShader(std::string filen
 		shaderc_compile_options_t options = shaderc_compile_options_initialize();
 		if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
 		
-		std::vector<char> code = deshi::readFileBinary(deshi::getShadersPath() + filename); //read shader code
+		std::vector<char> code = deshi::readFileBinary(deshi::dirShaders() + filename); //read shader code
 		
 		//try compile from GLSL to SPIR-V binary
 		shaderc_compilation_result_t result;
@@ -2320,7 +2325,7 @@ void Renderer::CompileAllShaders(bool optimize){
 	if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
 	
 	//loop thru all files in the shaders dir, compile the shaders, write them to .spv files
-	for(auto& entry : std::filesystem::directory_iterator(deshi::getShadersPath())){
+	for(auto& entry : std::filesystem::directory_iterator(deshi::dirShaders())){
 		std::string ext = entry.path().extension().string();
 		std::string filename = entry.path().filename().string();
 		
@@ -2360,17 +2365,17 @@ void Renderer::CompileAllShaders(bool optimize){
 	shaderc_compiler_release(compiler);
 }
 
-//NOTE(delle) bleh
+//TODO(delle,ReCl) clean this up
 std::vector<std::string> Renderer::GetUncompiledShaders(){
 	std::vector<std::string> compiled;
-	for(auto& entry : std::filesystem::directory_iterator(deshi::getShadersPath())){
+	for(auto& entry : std::filesystem::directory_iterator(deshi::dirShaders())){
 		if(entry.path().extension() == ".spv"){
 			compiled.push_back(entry.path().stem().string());
 		}
 	}
 	
 	std::vector<std::string> files;
-	for(auto& entry : std::filesystem::directory_iterator(deshi::getShadersPath())){
+	for(auto& entry : std::filesystem::directory_iterator(deshi::dirShaders())){
 		if(entry.path().extension() == ".spv"){ continue; }
 		bool good = true;
 		for(auto& s : compiled){
@@ -2383,7 +2388,7 @@ std::vector<std::string> Renderer::GetUncompiledShaders(){
 
 void Renderer::CompileShader(std::string& filename, bool optimize){
 	PRINTVK(3, "    Compiling shader: ", filename);
-	std::filesystem::path entry(deshi::getShadersPath() + filename);
+	std::filesystem::path entry(deshi::dirShaders() + filename);
 	if(std::filesystem::exists(entry)){
 		std::string ext = entry.extension().string();
 		std::string filename = entry.filename().string();
@@ -2393,7 +2398,7 @@ void Renderer::CompileShader(std::string& filename, bool optimize){
 		shaderc_compile_options_t options = shaderc_compile_options_initialize();
 		if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
 		
-		std::vector<char> code = deshi::readFileBinary(deshi::getShadersPath() + filename); //read shader code
+		std::vector<char> code = deshi::readFileBinary(deshi::dirShaders() + filename); //read shader code
 		
 		//try compile from GLSL to SPIR-V binary
 		shaderc_compilation_result_t result;

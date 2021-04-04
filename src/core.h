@@ -3,7 +3,7 @@
 #define DESHI_CORE_H
 
 #include "utils/defines.h"
-#include "utils/Debug.h"
+#include "utils/debug.h"
 #include "core/time.h"
 #include "core/input.h"
 #include "core/window.h"

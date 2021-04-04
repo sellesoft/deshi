@@ -3,8 +3,8 @@
 #define COMPONENT_COLLIDER_H
 
 #include "Component.h"
-#include "../../math/Matrix3.h"
-#include "../../math/Vector3.h"
+#include "../../math/Matrix.h"
+#include "../../math/Vector.h"
 #include "../../math/InertiaTensors.h"
 #include "Physics.h"
 
@@ -46,6 +46,6 @@ struct SphereCollider : public Collider {
 //TODO(delle,Ph) implement convexPolyCollider
 //TODO(delle,Ph) implement capsuleCollider
 //TODO(delle,Ph) implement cylinder collider
-//TODO(delle) implement complex collider (collider list,Ph)
+//TODO(delle,Ph) implement complex collider (collider list)
 
 #endif //COMPONENT_COLLIDER_H

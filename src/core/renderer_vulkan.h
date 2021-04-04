@@ -3,7 +3,7 @@
 #define DESHI_RENDERER_VULKAN_H
 
 #include "../utils/defines.h"
-#include "../utils/Debug.h"
+#include "../utils/debug.h"
 #include "../utils/optional.h"
 
 #if defined(_MSC_VER)
@@ -237,7 +237,7 @@ struct Renderer{
 	void UpdateMaterialTexture(u32 matID, u32 textureSlot, u32 textureID);
 	void UpdateMaterialShader(u32 matID, u32 shader);
 	std::vector<u32> GetMaterialIDs(u32 MeshID);
-
+	
 	void LoadDefaultAssets();
 	//loads a new scene to the GPU
 	//NOTE this should not be done often in gameplay

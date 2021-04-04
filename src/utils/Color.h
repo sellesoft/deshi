@@ -4,6 +4,10 @@
 
 #include "defines.h"
 
+#include <string>
+
+#define RANDCOLOR Color(rand() % 255 + 1, rand() % 255 + 1, rand() % 255 + 1)
+
 struct Color {
 	u8 r, g, b, a;
 	
@@ -34,7 +38,7 @@ struct Color {
 		this->b = b;
 		this->a = a;
 	}
-
+	
 	//hex to rgb
 	Color(int hex) {
 		r = ((hex >> 16) & 0xFF);
@@ -42,18 +46,18 @@ struct Color {
 		b = ((hex)     & 0xFF);
 		a = 255;
 	}
-
+	
 	//TODO(sushi, Col) implement more operators for colors maybe
 	bool operator == (Color ri) {
 		if (r == ri.r && g == ri.g && b == ri.b) return true;
 		return false;
 	}
-
+	
 	//kind of useless
 	Color operator * (Color rhs) {
 		return Color(r * rhs.r, g * rhs.g, b * rhs.b);
 	}
-
+	
 	Color operator * (const float& rhs) {
 		return Color(r * rhs, g * rhs, b * rhs);
 	}
@@ -72,7 +76,7 @@ struct Color {
 		this->b = rand() % 255 + 1;
 	}
 	Color getrandcol();
-
+	
 	std::string str() {
 		return "C{" + std::to_string(r) + ", " + std::to_string(g) + ", " + std::to_string(b) + ", " + std::to_string(a) + "}";
 	}

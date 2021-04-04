@@ -4,7 +4,7 @@
 
 #include "Component.h"
 #include "Camera.h"
-#include "../../math/Vector3.h"
+#include "../../math/Vector.h"
 
 //this is what OpenAL sees as the receiver of sounds in 3D space
 //there can only ever be one of them as far as I know.

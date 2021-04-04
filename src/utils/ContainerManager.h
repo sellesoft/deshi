@@ -4,31 +4,6 @@
 #include <iostream>
 #include <boost/optional.hpp>
 
-
-//debug defines
-#define PRINT(x) std::cout << x << std::endl;
-#ifndef NDEBUG
-#   define ASSERTWARN(condition, message) \
-do { \
-if (! (condition)) { \
-std::string file = __FILENAME__; \
-std::cout << "Warning '" #condition "' failed in " + file + " line " + std::to_string(__LINE__) + ": \n" #message << std::endl; \
-} \
-} while (false)
-#define ASSERT(condition, message) \
-do { \
-if (! (condition)) { \
-std::string file = __FILENAME__; \
-std::cout << "Assertion '" #condition "' failed in " + file + " line " + std::to_string(__LINE__) + ": \n" #message << std::endl;  \
-std::terminate(); \
-} \
-} while (false)
-#else
-#   define ASSERT(condition, message) condition;
-#endif
-
-#define __FILENAME__ (std::strrchr(__FILE__, '\\') ? std::strrchr(__FILE__, '\\') + 1 : __FILE__)
-
 //this is meant to be a wrapper around vector.
 //the idea is that you can have a vector whose elements stay in a position regardless of
 //if something before it is deleted.

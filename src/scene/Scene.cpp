@@ -12,7 +12,7 @@ std::pair<Vector3, Vector3> Scene::SceneBoundingBox() {
 		Mesh* m = &mo.mesh;
 		for (Batch b : m->batchArray) {
 			for (Vertex ver : b.vertexArray) {
-				Vector3 v = Vector3(ver.pos.x, ver.pos.y, ver.pos.z) + Matrix4::PositionFromTransform(m->transform);
+				Vector3 v = Vector3(ver.pos.x, ver.pos.y, ver.pos.z) + m->transform.Translation();
 				if      (v.x < min.x) { min.x = v.x; }
 				else if (v.x > max.x) { max.x = v.x; }
 				if      (v.y < min.y) { min.y = v.y; }

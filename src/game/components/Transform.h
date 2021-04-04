@@ -3,8 +3,8 @@
 #define COMPONENT_TRANSFORM_H
 
 #include "Component.h"
-#include "../../math/Vector3.h"
-#include "../../math/Matrix4.h"
+#include "../../math/Vector.h"
+#include "../../math/Matrix.h"
 
 struct Transform : public Component {
 	Vector3 position = Vector3::ZERO;
