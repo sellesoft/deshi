@@ -129,10 +129,10 @@ struct MeshVk{
 struct MaterialVk{
 	u32 id     = 0xFFFFFFFF;
 	u32 shader = 0;
-	u32 albedoTextureIndex   = 0;
-	u32 normalTextureIndex   = 2;
-	u32 specularTextureIndex = 2;
-	u32 lightTextureIndex    = 2;
+	u32 albedoID   = 0;
+	u32 normalID   = 2;
+	u32 specularID = 2;
+	u32 lightID    = 2;
 	
 	VkDescriptorSet descriptorSet;
 	VkPipeline      pipeline = 0;

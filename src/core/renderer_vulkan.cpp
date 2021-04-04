@@ -71,7 +71,8 @@ Renderer* me = nullptr;
 //// render interface ////
 //////////////////////////
 
-void Renderer::Init(Time* time, Window* window, deshiImGui* imgui, Console* console) {
+void Renderer::
+Init(Time* time, Window* window, deshiImGui* imgui, Console* console) {
 	PRINTVK(1, "\nInitializing Vulkan");
 	this->time = time;
 	this->console = console;
@@ -112,7 +113,8 @@ void Renderer::Init(Time* time, Window* window, deshiImGui* imgui, Console* cons
 	PRINTVK(1, "Initializing Rendering");
 }
 
-void Renderer::Render() {
+void Renderer::
+Render() {
 	//std::cout << "  Rendering Frame     " << std::endl;
 	if(remakeWindow){
 		int w, h;
@@ -212,9 +214,11 @@ void Renderer::Render() {
 	}
 }
 
-void Renderer::Present() {}
+void Renderer::
+Present() {}
 
-void Renderer::Cleanup() {
+void Renderer::
+Cleanup() {
 	PRINTVK(1, "Initializing Cleanup\n");
 	
 	//save pipeline cache to disk
@@ -237,45 +241,55 @@ void Renderer::Cleanup() {
 	vkDeviceWaitIdle(device);
 }
 /*
-u32 Renderer::AddTriangle(Triangle* triangle){
+u32 Renderer::
+AddTriangle(Triangle* triangle){
 	PRINT("Not implemented yet");
 	return 0xFFFFFFFF;
 }
 
-void Renderer::RemoveTriangle(u32 triangleID){
+void Renderer::
+RemoveTriangle(u32 triangleID){
 	PRINT("Not implemented yet");
 }
 
-void Renderer::UpdateTriangleColor(u32 triangleID, Color color){
+void Renderer::
+UpdateTriangleColor(u32 triangleID, Color color){
 	PRINT("Not implemented yet");
 }
 
-void Renderer::UpdateTrianglePosition(u32 triangleID, Vector3 position){
+void Renderer::
+UpdateTrianglePosition(u32 triangleID, Vector3 position){
 	PRINT("Not implemented yet");
 }
 
-void Renderer::TranslateTriangle(u32 triangleID, Vector3 translation){
+void Renderer::
+TranslateTriangle(u32 triangleID, Vector3 translation){
 	PRINT("Not implemented yet");
 }
 
-std::vector<u32> Renderer::AddTriangles(std::vector<Triangle*> triangles){
+std::vector<u32> Renderer::
+AddTriangles(std::vector<Triangle*> triangles){
 	PRINT("Not implemented yet");
 	return std::vector<u32>();
 }
 
-void Renderer::RemoveTriangles(std::vector<u32> triangleIDs){
+void Renderer::
+RemoveTriangles(std::vector<u32> triangleIDs){
 	PRINT("Not implemented yet");
 }
 
-void Renderer::UpdateTrianglesColor(std::vector<u32> triangleIDs, Color color){
+void Renderer::
+UpdateTrianglesColor(std::vector<u32> triangleIDs, Color color){
 	PRINT("Not implemented yet");
 }
 
-void Renderer::TranslateTriangles(std::vector<u32> triangleIDs, Vector3 translation){
+void Renderer::
+TranslateTriangles(std::vector<u32> triangleIDs, Vector3 translation){
 	PRINT("Not implemented");
 }
 */
-u32 Renderer::LoadBaseMesh(Mesh* m){
+u32 Renderer::
+LoadBaseMesh(Mesh* m){
 	PRINTVK(3, "    Loading Mesh: ", m->name);
 	MeshVk mesh;  mesh.base = true; 
 	mesh.ptr = m; mesh.visible = false;
@@ -317,10 +331,10 @@ u32 Renderer::LoadBaseMesh(Mesh* m){
 			for(int i=0; i<batch.textureArray.size(); ++i){ 
 				u32 idx = LoadTexture(batch.textureArray[i]);
 				switch(textures[idx].type){
-					case(TEXTURE_ALBEDO):  { mat.albedoTextureIndex   = idx; }break;
-					case(TEXTURE_NORMAL):  { mat.normalTextureIndex   = idx; }break;
-					case(TEXTURE_LIGHT):   { mat.lightTextureIndex    = idx; }break;
-					case(TEXTURE_SPECULAR):{ mat.specularTextureIndex = idx; }break;
+					case(TEXTURE_ALBEDO):  { mat.albedoID   = idx; }break;
+					case(TEXTURE_NORMAL):  { mat.normalID   = idx; }break;
+					case(TEXTURE_LIGHT):   { mat.lightID    = idx; }break;
+					case(TEXTURE_SPECULAR):{ mat.specularID = idx; }break;
 				}
 			}
 			
@@ -340,19 +354,19 @@ u32 Renderer::LoadBaseMesh(Mesh* m){
 			writeDescriptorSets[0].dstArrayElement = 0;
 			writeDescriptorSets[0].descriptorCount = 1;
 			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSets[0].pImageInfo = &textures[mat.albedoTextureIndex].imageInfo;
+			writeDescriptorSets[0].pImageInfo = &textures[mat.albedoID].imageInfo;
 			writeDescriptorSets[0].dstBinding = 0;
 			
 			memcpy(&writeDescriptorSets[1], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
-			writeDescriptorSets[1].pImageInfo = &textures[mat.normalTextureIndex].imageInfo;
+			writeDescriptorSets[1].pImageInfo = &textures[mat.normalID].imageInfo;
 			writeDescriptorSets[1].dstBinding = 1;
 			
 			memcpy(&writeDescriptorSets[2], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
-			writeDescriptorSets[2].pImageInfo = &textures[mat.specularTextureIndex].imageInfo;
+			writeDescriptorSets[2].pImageInfo = &textures[mat.specularID].imageInfo;
 			writeDescriptorSets[2].dstBinding = 2;
 			
 			memcpy(&writeDescriptorSets[3], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
-			writeDescriptorSets[3].pImageInfo = &textures[mat.lightTextureIndex].imageInfo;
+			writeDescriptorSets[3].pImageInfo = &textures[mat.lightID].imageInfo;
 			writeDescriptorSets[3].dstBinding = 3;
 			
 			vkUpdateDescriptorSets(device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
@@ -379,7 +393,8 @@ u32 Renderer::LoadBaseMesh(Mesh* m){
 	return mesh.id;
 }
 
-u32 Renderer::CreateMesh(u32 meshID, Matrix4 matrix){
+u32 Renderer::
+CreateMesh(u32 meshID, Matrix4 matrix){
 	if(meshID < meshes.size()){
 		MeshVk mesh; mesh.base = false; 
 		mesh.ptr = meshes[meshID].ptr; mesh.visible = true;
@@ -394,7 +409,8 @@ u32 Renderer::CreateMesh(u32 meshID, Matrix4 matrix){
 	return 0xFFFFFFFF;
 }
 
-void Renderer::UnloadBaseMesh(u32 meshID){
+void Renderer::
+UnloadBaseMesh(u32 meshID){
 	if(meshID < meshes.size()){
 		if(meshes[meshID].base){
 			//loop thru children and remove them
@@ -406,7 +422,8 @@ void Renderer::UnloadBaseMesh(u32 meshID){
 	}
 }
 
-void Renderer::RemoveMesh(u32 meshID){
+void Renderer::
+RemoveMesh(u32 meshID){
 	if(meshID < meshes.size()){
 		if(!meshes[meshID].base){
 			meshes.erase(meshes.begin() + meshID);
@@ -416,39 +433,45 @@ void Renderer::RemoveMesh(u32 meshID){
 	}
 }
 
-Matrix4 Renderer::GetMeshMatrix(u32 meshID){
+Matrix4 Renderer::
+GetMeshMatrix(u32 meshID){
 	if(meshID < meshes.size()){
 		return Matrix4((float*)glm::value_ptr(meshes[meshID].modelMatrix));
 	}
 	return Matrix4(0.f);
 }
 
-Mesh* Renderer::GetMeshPtr(u32 meshID){
+Mesh* Renderer::
+GetMeshPtr(u32 meshID){
 	if(meshID < meshes.size()){
 		return meshes[meshID].ptr;
 	}
 	return nullptr;
 }
 
-void Renderer::UpdateMeshMatrix(u32 meshID, Matrix4 matrix){
+void Renderer::
+UpdateMeshMatrix(u32 meshID, Matrix4 matrix){
 	if(meshID < meshes.size()){
 		meshes[meshID].modelMatrix = glm::make_mat4(matrix.data);
 	}
 }
 
-void Renderer::TransformMeshMatrix(u32 meshID, Matrix4 transform){
+void Renderer::
+TransformMeshMatrix(u32 meshID, Matrix4 transform){
 	if(meshID < meshes.size()){
 		meshes[meshID].modelMatrix = glm::make_mat4(transform.data) * meshes[meshID].modelMatrix;
 	}
 }
 
-void Renderer::UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID){
+void Renderer::
+UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID){
 	if(meshID < meshes.size() && batchIndex < meshes[meshID].primitives.size() && matID < materials.size()){
 		meshes[meshID].primitives[batchIndex].materialIndex = matID;
 	}
 }
 
-void Renderer::UpdateMeshVisibility(u32 meshID, bool visible){
+void Renderer::
+UpdateMeshVisibility(u32 meshID, bool visible){
 	if(meshID == -1){
 		for(auto& mesh : meshes){ mesh.visible = visible; }
 	}else if(meshID < meshes.size()){
@@ -456,28 +479,34 @@ void Renderer::UpdateMeshVisibility(u32 meshID, bool visible){
 	}
 }
 /*
-u32 Renderer::MakeInstance(u32 meshID, Matrix4 matrix) {
+u32 Renderer::
+MakeInstance(u32 meshID, Matrix4 matrix) {
 	ERROR("MakeInstance: Not implemented yet");
 	return 0xFFFFFFFF;
 }
 
-void Renderer::RemoveInstance(u32 instanceID) {
+void Renderer::
+RemoveInstance(u32 instanceID) {
 	ERROR("RemoveInstance: Not implemented yet");
 }
 
-void Renderer::UpdateInstanceMatrix(u32 instanceID, Matrix4 matrix) {
+void Renderer::
+UpdateInstanceMatrix(u32 instanceID, Matrix4 matrix) {
 	ERROR("UpdateInstanceMatrix: Not implemented yet");
 }
 
-void Renderer::TransformInstanceMatrix(u32 instanceID, Matrix4 transform) {
+void Renderer::
+TransformInstanceMatrix(u32 instanceID, Matrix4 transform) {
 	ERROR("TransformInstanceMatrix: Not implemented yet");
 }
 
-void Renderer::UpdateInstanceVisibility(u32 instanceID, bool visible) {
+void Renderer::
+UpdateInstanceVisibility(u32 instanceID, bool visible) {
 	ERROR("UpdateInstanceVisibility: Not implemented yet");
 }
 */
-u32 Renderer::LoadTexture(Texture texture){
+u32 Renderer::
+LoadTexture(Texture texture){
 	PRINTVK(3, "    Loading Texture: ", texture.filename);
 	//TODO(delle,OpReVu) optimize checking if a texture was already loaded
 	for(auto& tex : textures){ if(strcmp(tex.filename, texture.filename) == 0){ return tex.id; } }
@@ -548,11 +577,13 @@ u32 Renderer::LoadTexture(Texture texture){
 	return idx;
 }
 /*
-void Renderer::UnloadTexture(u32 textureID){
+void Renderer::
+UnloadTexture(u32 textureID){
 	PRINT("Not implemented yet");
 }
 */
-std::string Renderer::ListTextures(){
+std::string Renderer::
+ListTextures(){
 	std::string out = "[c:yellow]ID  Filename  Width  Height  Depth  Type[c]\n";
 	for(auto& tex : textures){
 		if(tex.id < 10){
@@ -564,12 +595,13 @@ std::string Renderer::ListTextures(){
 	return out;
 }
 
-u32 Renderer::CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID){
+u32 Renderer::
+CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID){
 	PRINTVK(3, "    Creating material");
 	MaterialVk mat; mat.id = u32(meshes.size());
 	mat.shader = shader; mat.pipeline = GetPipelineFromShader(shader);
-	mat.albedoTextureIndex = albedoTextureID; mat.normalTextureIndex = normalTextureID;
-	mat.specularTextureIndex = specTextureID; mat.lightTextureIndex = lightTextureID;
+	mat.albedoID = albedoTextureID; mat.normalID = normalTextureID;
+	mat.specularID = specTextureID; mat.lightID = lightTextureID;
 	
 	//allocate and write descriptor set for material
 	VkDescriptorSetAllocateInfo allocInfo{};
@@ -585,19 +617,19 @@ u32 Renderer::CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureI
 	writeDescriptorSets[0].dstArrayElement = 0;
 	writeDescriptorSets[0].descriptorCount = 1;
 	writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	writeDescriptorSets[0].pImageInfo = &textures[mat.albedoTextureIndex].imageInfo;
+	writeDescriptorSets[0].pImageInfo = &textures[mat.albedoID].imageInfo;
 	writeDescriptorSets[0].dstBinding = 0;
 	
 	memcpy(&writeDescriptorSets[1], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
-	writeDescriptorSets[1].pImageInfo = &textures[mat.normalTextureIndex].imageInfo;
+	writeDescriptorSets[1].pImageInfo = &textures[mat.normalID].imageInfo;
 	writeDescriptorSets[1].dstBinding = 1;
 	
 	memcpy(&writeDescriptorSets[2], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
-	writeDescriptorSets[2].pImageInfo = &textures[mat.specularTextureIndex].imageInfo;
+	writeDescriptorSets[2].pImageInfo = &textures[mat.specularID].imageInfo;
 	writeDescriptorSets[2].dstBinding = 2;
 	
 	memcpy(&writeDescriptorSets[3], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
-	writeDescriptorSets[3].pImageInfo = &textures[mat.lightTextureIndex].imageInfo;
+	writeDescriptorSets[3].pImageInfo = &textures[mat.lightID].imageInfo;
 	writeDescriptorSets[3].dstBinding = 3;
 	
 	vkUpdateDescriptorSets(device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
@@ -607,19 +639,47 @@ u32 Renderer::CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureI
 	return mat.id;
 }
 
-void Renderer::UpdateMaterialTexture(u32 matID, u32 texSlot, u32 texID){
+void Renderer::
+UpdateMaterialTexture(u32 matID, u32 texSlot, u32 texID){
 	if(matID < materials.size() && texID < textures.size()){
+		VkWriteDescriptorSet writeDescriptorSet{};
+		writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptorSet.dstSet = materials[matID].descriptorSet;
+		writeDescriptorSet.dstArrayElement = 0;
+		writeDescriptorSet.descriptorCount = 1;
+		writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		
 		switch(texSlot){
-			case(0):{ materials[matID].albedoTextureIndex = texID; }
-			case(1):{ materials[matID].normalTextureIndex = texID; }
-			case(2):{ materials[matID].specularTextureIndex = texID; }
-			case(3):{ materials[matID].lightTextureIndex = texID; }
-			default:{return;}
+			case(0):{ 
+				materials[matID].albedoID = texID; 
+				writeDescriptorSet.pImageInfo = &textures[materials[matID].albedoID].imageInfo;
+				writeDescriptorSet.dstBinding = 0;
+			} break;
+			case(1):{ 
+				materials[matID].normalID = texID; 
+				writeDescriptorSet.pImageInfo = &textures[materials[matID].normalID].imageInfo;
+				writeDescriptorSet.dstBinding = 1;
+			} break;
+			case(2):{ 
+				materials[matID].specularID = texID; 
+				writeDescriptorSet.pImageInfo = &textures[materials[matID].specularID].imageInfo;
+				writeDescriptorSet.dstBinding = 2;
+			}  break;
+			case(3):{ 
+				materials[matID].lightID = texID; 
+				writeDescriptorSet.pImageInfo = &textures[materials[matID].lightID].imageInfo;
+				writeDescriptorSet.dstBinding = 3;
+			}  break;
+			default:{ return; }
 		}
+		
+		vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 	}
+	
 }
 
-void Renderer::UpdateMaterialShader(u32 matID, u32 shader){
+void Renderer::
+UpdateMaterialShader(u32 matID, u32 shader){
 	if(matID == 0xFFFFFFFF){
 		for(auto& mat : materials){ mat.pipeline = GetPipelineFromShader(shader); }
 	}else if(matID < materials.size()){
@@ -627,11 +687,12 @@ void Renderer::UpdateMaterialShader(u32 matID, u32 shader){
 	}
 }
 
-std::vector<u32> Renderer::GetMaterialIDs(u32 MeshID) {
+std::vector<u32> Renderer::
+GetMaterialIDs(u32 MeshID) {
 	if (MeshID < meshes.size()) {
 		MeshVk* m = &meshes[MeshID];
-		std::vector<u32> out;
-		for (auto a : m->primitives) {
+		std::vector<u32> out; out.resize(m->primitives.size());
+		for (auto& a : m->primitives) {
 			out.push_back(a.materialIndex);
 		}
 		return out;
@@ -639,7 +700,8 @@ std::vector<u32> Renderer::GetMaterialIDs(u32 MeshID) {
 	return std::vector<u32>();
 }
 
-void Renderer::LoadDefaultAssets(){
+void Renderer::
+LoadDefaultAssets(){
 	PRINTVK(2, "  Loading default assets");
 	//load default textures
 	textures.reserve(8);
@@ -662,7 +724,8 @@ void Renderer::LoadDefaultAssets(){
 }
 
 //ref: gltfscenerendering.cpp:350
-void Renderer::LoadScene(Scene* sc){
+void Renderer::
+LoadScene(Scene* sc){
 	PRINTVK(2, "  Loading Scene");
 	//load meshes, materials, and textures
 	for(Model& model : sc->models){ LoadBaseMesh(&model.mesh); }
@@ -670,7 +733,8 @@ void Renderer::LoadScene(Scene* sc){
 	CreateSceneBuffers();
 }
 
-void Renderer::CreateSceneBuffers(){
+void Renderer::
+CreateSceneBuffers(){
 	PRINTVK(3, "    Creating Scene Buffers");
 	StagingBufferVk vertexStaging{}, indexStaging{};
 	size_t vertexBufferSize = vertexBuffer.size() * sizeof(VertexVk);
@@ -705,7 +769,8 @@ void Renderer::CreateSceneBuffers(){
 	vkFreeMemory(device, indexStaging.memory, nullptr);
 }
 
-void Renderer::UpdateVertexBuffer(){
+void Renderer::
+UpdateVertexBuffer(){
 	PRINTVK(3, "    Updating vertex buffer");
 	StagingBufferVk vertexStaging{};
 	size_t vertexBufferSize = vertexBuffer.size() * sizeof(VertexVk);
@@ -728,7 +793,8 @@ void Renderer::UpdateVertexBuffer(){
 	vkFreeMemory(device, vertexStaging.memory, nullptr);
 }
 
-void Renderer::UpdateIndexBuffer(){
+void Renderer::
+UpdateIndexBuffer(){
 	PRINTVK(3, "    Updating index buffer");
 	StagingBufferVk indexStaging{};
 	size_t indexBufferSize  = indexBuffer.size() * sizeof(u32);
@@ -751,19 +817,23 @@ void Renderer::UpdateIndexBuffer(){
 	vkFreeMemory(device, indexStaging.memory, nullptr);
 }
 
-void Renderer::UpdateCameraPosition(Vector3 position){
+void Renderer::
+UpdateCameraPosition(Vector3 position){
 	shaderData.values.viewPos = glm::vec4(glm::make_vec3(&position.x), 1.f);
 }
 
-void Renderer::UpdateCameraViewMatrix(Matrix4 m){
+void Renderer::
+UpdateCameraViewMatrix(Matrix4 m){
 	shaderData.values.view = glm::make_mat4(m.data);
 }
 
-void Renderer::UpdateCameraProjectionMatrix(Matrix4 m){
+void Renderer::
+UpdateCameraProjectionMatrix(Matrix4 m){
 	shaderData.values.proj = glm::make_mat4(m.data);
 }
 
-void Renderer::ReloadShader(u32 shader) {
+void Renderer::
+ReloadShader(u32 shader) {
 	switch(shader){
 		case(Shader::FLAT):default: { 
 			pipelineCreateInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
@@ -829,12 +899,14 @@ void Renderer::ReloadShader(u32 shader) {
 	UpdateMaterialPipelines();
 }
 
-void Renderer::ReloadAllShaders() {
+void Renderer::
+ReloadAllShaders() {
 	CompileAllShaders();
 	remakePipelines = true;
 }
 
-void Renderer::UpdateDebugOptions(bool wireframe, bool globalAxis, bool wireframeOnly) {
+void Renderer::
+UpdateDebugOptions(bool wireframe, bool globalAxis, bool wireframeOnly) {
 	settings.wireframe = wireframe; settings.globalAxis = globalAxis;
 	settings.wireframeOnly = wireframeOnly;
 };
@@ -843,7 +915,8 @@ void Renderer::UpdateDebugOptions(bool wireframe, bool globalAxis, bool wirefram
 //// initialization functions ////
 //////////////////////////////////
 
-void Renderer::CreateInstance() {
+void Renderer::
+CreateInstance() {
 	PRINTVK(2, "  Creating Vulkan Instance");
 	if(enableValidationLayers && !checkValidationLayerSupport()) {
 		ASSERT(false, "validation layers requested, but not available");
@@ -878,7 +951,8 @@ void Renderer::CreateInstance() {
 	ASSERTVK(vkCreateInstance(&createInfo, allocator, &instance), "failed to create instance");
 }
 
-void Renderer::SetupDebugMessenger() {
+void Renderer::
+SetupDebugMessenger() {
 	PRINTVK(2, "  Setting Up Debug Messenger");
 	if(!enableValidationLayers) return;
 	
@@ -888,12 +962,14 @@ void Renderer::SetupDebugMessenger() {
 	ASSERTVK(CreateDebugUtilsMessengerEXT(instance, &createInfo, allocator, &debugMessenger), "failed to set up debug messenger");
 }
 
-void Renderer::CreateSurface() {
+void Renderer::
+CreateSurface() {
 	PRINTVK(2, "  Creating GLFW Surface");
 	ASSERTVK(glfwCreateWindowSurface(instance, window, allocator, &surface), "failed to create window surface");
 }
 
-void Renderer::PickPhysicalDevice() {
+void Renderer::
+PickPhysicalDevice() {
 	PRINTVK(2, "  Picking Physical Device");
 	u32 deviceCount = 0;
 	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -917,7 +993,8 @@ void Renderer::PickPhysicalDevice() {
 	physicalQueueFamilies = findQueueFamilies(physicalDevice);
 }
 
-void Renderer::CreateLogicalDevice() {
+void Renderer::
+CreateLogicalDevice() {
 	PRINTVK(2, "  Creating Logical Device");
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	std::set<u32> uniqueQueueFamilies = {
@@ -969,7 +1046,8 @@ void Renderer::CreateLogicalDevice() {
 }
 
 //TODO(delle,ReVu) find a better/more accurate way to do this, see gltfloading.cpp, line:592
-void Renderer::CreateDescriptorPool(){
+void Renderer::
+CreateDescriptorPool(){
 	PRINTVK(2, "  Creating Descriptor Pool");
 	const int types = 11;
 	VkDescriptorPoolSize poolSizes[types] = {
@@ -996,7 +1074,8 @@ void Renderer::CreateDescriptorPool(){
 	ASSERTVK(vkCreateDescriptorPool(device, &poolInfo, allocator, &descriptorPool), "failed to create descriptor pool");
 }
 
-void Renderer::CreatePipelineCache(){
+void Renderer::
+CreatePipelineCache(){
 	PRINTVK(2, "  Creating Pipeline Cache");
 	VkPipelineCacheCreateInfo pipelineCacheCreateInfo{};
 	pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
@@ -1012,13 +1091,15 @@ void Renderer::CreatePipelineCache(){
 	ASSERTVK(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache), "failed to create pipeline cache");
 }
 
-void Renderer::CreateUniformBuffer(){
+void Renderer::
+CreateUniformBuffer(){
 	PRINTVK(2, "  Creating Uniform Buffer");
 	CreateOrResizeBuffer(shaderData.uniformBuffer, shaderData.uniformBufferMemory, shaderData.uniformBufferSize, sizeof(shaderData.values) , VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	UpdateUniformBuffer();
 }
 
-void Renderer::CreateCommandPool(){
+void Renderer::
+CreateCommandPool(){
 	PRINTVK(2, "  Creating Command Pool");
 	VkCommandPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -1028,13 +1109,15 @@ void Renderer::CreateCommandPool(){
 	ASSERTVK(vkCreateCommandPool(device, &poolInfo, allocator, &commandPool), "failed to create command pool");
 }
 
-void Renderer::CreateClearValues(){
+void Renderer::
+CreateClearValues(){
 	PRINTVK(2, "  Creating Clear Values");
 	clearValues[0].color = {0, 0, 0, 1};
 	clearValues[1].depthStencil = {1.f, 0};
 }
 
-void Renderer::CreateSyncObjects(){
+void Renderer::
+CreateSyncObjects(){
 	PRINTVK(2, "  Creating Sync Objects");
 	semaphores.resize(MAX_FRAMES);
 	fencesInFlight.resize(MAX_FRAMES);
@@ -1056,7 +1139,8 @@ void Renderer::CreateSyncObjects(){
 }
 
 
-void Renderer::CreateLayouts(){
+void Renderer::
+CreateLayouts(){
 	PRINTVK(2, "  Creating Layouts");
 	//// uniform camera matrices binding ////
 	std::array<VkDescriptorSetLayoutBinding, 4> setLayoutBindings{};
@@ -1139,11 +1223,8 @@ void Renderer::CreateLayouts(){
 	}
 }
 
-//////////////////////////////////
-//// window resized functions ////
-//////////////////////////////////
-
-void Renderer::ResizeWindow(int w, int h) {
+void Renderer::
+ResizeWindow(int w, int h) {
 	PRINTVK(1, "Creating Window");
 	// Ensure all operations on the device have been finished before destroying resources
 	vkDeviceWaitIdle(device);
@@ -1154,7 +1235,8 @@ void Renderer::ResizeWindow(int w, int h) {
 	CreateFrames(); //image views, color/depth resources, framebuffers, commandbuffers
 }
 
-void Renderer::CreateSwapChain() {
+void Renderer::
+CreateSwapChain() {
 	PRINTVK(2, "  Creating Swapchain");
 	VkSwapchainKHR oldSwapChain = swapchain;
 	swapchain = NULL;
@@ -1213,7 +1295,8 @@ void Renderer::CreateSwapChain() {
 	if(oldSwapChain != VK_NULL_HANDLE) { vkDestroySwapchainKHR(device, oldSwapChain, allocator); }
 }
 
-void Renderer::CreateRenderPass(){
+void Renderer::
+CreateRenderPass(){
 	PRINTVK(2, "  Creating Render Pass");
 	if(renderPass) { vkDestroyRenderPass(device, renderPass, allocator); }
 	
@@ -1285,7 +1368,8 @@ void Renderer::CreateRenderPass(){
 	ASSERTVK(vkCreateRenderPass(device, &renderPassInfo, allocator, &renderPass), "failed to create render pass");
 }
 
-void Renderer::CreateFrames(){
+void Renderer::
+CreateFrames(){
 	PRINTVK(2, "  Creating Frames");
 	//get swap chain images
 	vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr); //gets the image count
@@ -1353,7 +1437,8 @@ void Renderer::CreateFrames(){
 	}
 }
 
-void Renderer::SetupPipelineCreation(){
+void Renderer::
+SetupPipelineCreation(){
 	PRINTVK(2, "  Setting up pipeline creation");
 	
 	//determines how to group vertices together
@@ -1506,7 +1591,8 @@ void Renderer::SetupPipelineCreation(){
 	pipelineCreateInfo.pStages             = shaderStages.data();
 }
 
-void Renderer::CreatePipelines(){
+void Renderer::
+CreatePipelines(){
 	PRINTVK(2, "  Creating Pipelines");
 	TIMER_START(t_p);
 	
@@ -1596,7 +1682,8 @@ void Renderer::CreatePipelines(){
 	PRINTVK(2, "  Finished creating pipelines in ", TIMER_END(t_p), "ms");
 }
 
-void Renderer::BuildCommandBuffers() {
+void Renderer::
+BuildCommandBuffers() {
 	//PRINTVK(2, "  Building Command Buffers");
 	VkCommandBufferBeginInfo cmdBufferInfo{};
 	cmdBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1696,7 +1783,8 @@ void Renderer::BuildCommandBuffers() {
 
 
 //TODO(delle,ReOpVu) maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
-void Renderer::UpdateUniformBuffer(){
+void Renderer::
+UpdateUniformBuffer(){
 	if(!shaderData.freeze){
 		//PRINTVK(2, "  Updating Uniform Buffer     \n");
 		shaderData.values.time = time->totalTime;
@@ -1716,7 +1804,8 @@ void Renderer::UpdateUniformBuffer(){
 //// utility functions ////
 ///////////////////////////
 
-bool Renderer::checkValidationLayerSupport() {
+bool Renderer::
+checkValidationLayerSupport() {
 	PRINTVK(3, "    Checking Validation Layer Support");
 	u32 layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -1736,7 +1825,8 @@ bool Renderer::checkValidationLayerSupport() {
 	return true;
 }
 
-std::vector<const char*> Renderer::getRequiredExtensions() {
+std::vector<const char*> Renderer::
+getRequiredExtensions() {
 	PRINTVK(3, "    Getting Required Extensions");
 	u32 glfwExtensionCount = 0;
 	const char** glfwExtensions;
@@ -1746,7 +1836,8 @@ std::vector<const char*> Renderer::getRequiredExtensions() {
 	return extensions;
 }
 
-void Renderer::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
+void Renderer::
+populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
 	PRINTVK(3, "    Populating Debug Messenger CreateInfo");
 	createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -1755,7 +1846,8 @@ void Renderer::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoE
 	createInfo.pfnUserCallback = debugCallback;
 }
 
-bool Renderer::isDeviceSuitable(VkPhysicalDevice device) {
+bool Renderer::
+isDeviceSuitable(VkPhysicalDevice device) {
 	PRINTVK(3, "    Checking Validation Layer Support");
 	QueueFamilyIndices indices = findQueueFamilies(device);
 	bool extensionsSupported = checkDeviceExtensionSupport(device);
@@ -1768,7 +1860,8 @@ bool Renderer::isDeviceSuitable(VkPhysicalDevice device) {
 	return indices.isComplete() && extensionsSupported && swapChainAdequate;
 }
 
-QueueFamilyIndices Renderer::findQueueFamilies(VkPhysicalDevice device) {
+QueueFamilyIndices Renderer::
+findQueueFamilies(VkPhysicalDevice device) {
 	PRINTVK(3, "    Finding Queue Families");
 	QueueFamilyIndices indices;
 	
@@ -1792,7 +1885,8 @@ QueueFamilyIndices Renderer::findQueueFamilies(VkPhysicalDevice device) {
 	return indices;
 }
 
-bool Renderer::checkDeviceExtensionSupport(VkPhysicalDevice device) {
+bool Renderer::
+checkDeviceExtensionSupport(VkPhysicalDevice device) {
 	PRINTVK(3, "    Checking Device Extension Support");
 	u32 extensionCount;
 	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -1807,7 +1901,8 @@ bool Renderer::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 	return requiredExtensions.empty();
 }
 
-SwapChainSupportDetails Renderer::querySwapChainSupport(VkPhysicalDevice device) {
+SwapChainSupportDetails Renderer::
+querySwapChainSupport(VkPhysicalDevice device) {
 	PRINTVK(3, "    Querying SwapChain Support");
 	SwapChainSupportDetails details;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
@@ -1829,7 +1924,8 @@ SwapChainSupportDetails Renderer::querySwapChainSupport(VkPhysicalDevice device)
 	return details;
 }
 
-VkSampleCountFlagBits Renderer::getMaxUsableSampleCount() {
+VkSampleCountFlagBits Renderer::
+getMaxUsableSampleCount() {
 	PRINTVK(3, "    Getting Max Usable Sample Count");
 	VkPhysicalDeviceProperties physicalDeviceProperties;
 	vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
@@ -1845,7 +1941,8 @@ VkSampleCountFlagBits Renderer::getMaxUsableSampleCount() {
 	return VK_SAMPLE_COUNT_1_BIT;
 }
 
-VkSurfaceFormatKHR Renderer::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+VkSurfaceFormatKHR Renderer::
+chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
 	PRINTVK(3, "    Choosing Swap Surface Format");
 	for (const auto& availableFormat : availableFormats) {
 		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -1855,7 +1952,8 @@ VkSurfaceFormatKHR Renderer::chooseSwapSurfaceFormat(const std::vector<VkSurface
 	return availableFormats[0];
 }
 
-VkPresentModeKHR Renderer::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+VkPresentModeKHR Renderer::
+chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
 	PRINTVK(3, "    Choosing Swap Present Mode");
 	for (const auto& availablePresentMode : availablePresentModes) {
 		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
@@ -1865,7 +1963,8 @@ VkPresentModeKHR Renderer::chooseSwapPresentMode(const std::vector<VkPresentMode
 	return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D Renderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+VkExtent2D Renderer::
+chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
 	PRINTVK(3, "    Choosing Swap Extent");
 	if (capabilities.currentExtent.width != UINT32_MAX) {
 		return capabilities.currentExtent;
@@ -1881,7 +1980,8 @@ VkExtent2D Renderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabiliti
 	}
 }
 
-VkImageView Renderer::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels) {
+VkImageView Renderer::
+createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels) {
 	PRINTVK(4, "      Creating Image View");
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -1899,7 +1999,8 @@ VkImageView Renderer::createImageView(VkImage image, VkFormat format, VkImageAsp
 	return imageView;
 }
 
-VkFormat Renderer::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
+VkFormat Renderer::
+findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
 	PRINTVK(4, "      Finding supported image formats");
 	for (VkFormat format : candidates) {
 		VkFormatProperties props;
@@ -1915,11 +2016,13 @@ VkFormat Renderer::findSupportedFormat(const std::vector<VkFormat>& candidates, 
 	ASSERT(false, "failed to find supported format");
 }
 
-VkFormat Renderer::findDepthFormat() {
+VkFormat Renderer::
+findDepthFormat() {
 	return findSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-u32 Renderer::findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties) {
+u32 Renderer::
+findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties) {
 	PRINTVK(4, "      Finding Memory Types");
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
@@ -1932,7 +2035,8 @@ u32 Renderer::findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties) {
 	ASSERT(false, "failed to find suitable memory type"); //error out if no suitable memory found
 }
 
-void Renderer::createImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
+void Renderer::
+createImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
 	PRINTVK(4, "      Creating Image");
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1962,7 +2066,8 @@ void Renderer::createImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFl
 	vkBindImageMemory(device, image, imageMemory, 0);
 }
 
-void Renderer::CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
+void Renderer::
+CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
 	PRINTVK(4, "      Creating or Resizing Buffer");
 	//delete old buffer
 	if(buffer != VK_NULL_HANDLE){ vkDestroyBuffer(device, buffer, allocator); }
@@ -1990,7 +2095,8 @@ void Renderer::CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemo
 	bufferSize = newSize;
 }
 
-void Renderer::CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, void* data, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
+void Renderer::
+CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, void* data, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
 	PRINTVK(4, "      Creating and Mapping Buffer");
 	//delete old buffer
 	if(buffer != VK_NULL_HANDLE){ vkDestroyBuffer(device, buffer, allocator); }
@@ -2038,7 +2144,8 @@ void Renderer::CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory
 	bufferSize = newSize;
 }
 
-VkCommandBuffer Renderer::beginSingleTimeCommands() {
+VkCommandBuffer Renderer::
+beginSingleTimeCommands() {
 	VkCommandBuffer commandBuffer;
 	
 	VkCommandBufferAllocateInfo allocInfo{};
@@ -2056,7 +2163,8 @@ VkCommandBuffer Renderer::beginSingleTimeCommands() {
 	return commandBuffer;
 }
 
-void Renderer::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
+void Renderer::
+endSingleTimeCommands(VkCommandBuffer commandBuffer) {
 	vkEndCommandBuffer(commandBuffer);
 	
 	//TODO(delle,ReOpVu) maybe add a fence to ensure the buffer has finished executing
@@ -2071,7 +2179,8 @@ void Renderer::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
 	vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
 
-void Renderer::transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels) {
+void Renderer::
+transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels) {
 	PRINTVK(4, "      Transitioning Image Layout");
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 	
@@ -2112,7 +2221,8 @@ void Renderer::transitionImageLayout(VkImage image, VkFormat format, VkImageLayo
 	endSingleTimeCommands(commandBuffer);
 }
 
-void Renderer::copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height) {
+void Renderer::
+copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height) {
 	PRINTVK(4, "      Copying Buffer To Image");
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 	
@@ -2131,7 +2241,8 @@ void Renderer::copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 
 	endSingleTimeCommands(commandBuffer);
 }
 
-void Renderer::generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth, i32 texHeight, u32 mipLevels) {
+void Renderer::
+generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth, i32 texHeight, u32 mipLevels) {
 	PRINTVK(4, "      Creating Image Mipmaps");
 	// Check if image format supports linear blitting
 	VkFormatProperties formatProperties;
@@ -2201,7 +2312,8 @@ void Renderer::generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth
 	endSingleTimeCommands(commandBuffer);
 }
 
-void Renderer::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+void Renderer::
+copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
 	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 	
 	VkBufferCopy copyRegion{};
@@ -2213,8 +2325,9 @@ void Renderer::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize s
 
 void RemakePipeline(VkPipeline pipeline);
 
-//TODO(delle) maybe optimize this by simply doing: &pipelines + shader*sizeof(pipelines.FLAT,ReOp)
-VkPipeline Renderer::GetPipelineFromShader(u32 shader){
+//TODO(delle,ReOp) maybe optimize this by simply doing: &pipelines + shader*sizeof(pipelines.FLAT)
+VkPipeline Renderer::
+GetPipelineFromShader(u32 shader){
 	switch(shader){
 		case(Shader::FLAT):default: { return pipelines.FLAT;      };
 		case(Shader::PHONG):        { return pipelines.PHONG;     };
@@ -2228,7 +2341,8 @@ VkPipeline Renderer::GetPipelineFromShader(u32 shader){
 }
 
 
-VkPipelineShaderStageCreateInfo Renderer::loadShader(std::string fileName, VkShaderStageFlagBits stage) {
+VkPipelineShaderStageCreateInfo Renderer::
+loadShader(std::string fileName, VkShaderStageFlagBits stage) {
 	PRINTVK(3, "    Loading shader: ", fileName);
 	//setup shader stage create info
 	VkPipelineShaderStageCreateInfo shaderStage{};
@@ -2264,7 +2378,8 @@ VkPipelineShaderStageCreateInfo Renderer::loadShader(std::string fileName, VkSha
 	return shaderStage;
 }
 
-VkPipelineShaderStageCreateInfo Renderer::CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize) {
+VkPipelineShaderStageCreateInfo Renderer::
+CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize) {
 	PRINTVK(3, "    Compiling and loading shader: ", filename);
 	//check if file exists
 	std::filesystem::path entry(deshi::dirShaders() + filename);
@@ -2320,7 +2435,8 @@ VkPipelineShaderStageCreateInfo Renderer::CompileAndLoadShader(std::string filen
 }
 
 
-void Renderer::CompileAllShaders(bool optimize){
+void Renderer::
+CompileAllShaders(bool optimize){
 	//setup shader compiler
 	shaderc_compiler_t compiler = shaderc_compiler_initialize();
 	shaderc_compile_options_t options = shaderc_compile_options_initialize();
@@ -2368,7 +2484,8 @@ void Renderer::CompileAllShaders(bool optimize){
 }
 
 //TODO(delle,ReCl) clean this up
-std::vector<std::string> Renderer::GetUncompiledShaders(){
+std::vector<std::string> Renderer::
+GetUncompiledShaders(){
 	std::vector<std::string> compiled;
 	for(auto& entry : std::filesystem::directory_iterator(deshi::dirShaders())){
 		if(entry.path().extension() == ".spv"){
@@ -2388,7 +2505,8 @@ std::vector<std::string> Renderer::GetUncompiledShaders(){
 	return files;
 }
 
-void Renderer::CompileShader(std::string& filename, bool optimize){
+void Renderer::
+CompileShader(std::string& filename, bool optimize){
 	PRINTVK(3, "    Compiling shader: ", filename);
 	std::filesystem::path entry(deshi::dirShaders() + filename);
 	if(std::filesystem::exists(entry)){
@@ -2431,14 +2549,16 @@ void Renderer::CompileShader(std::string& filename, bool optimize){
 	}
 }
 
-void Renderer::UpdateMaterialPipelines(){
+void Renderer::
+UpdateMaterialPipelines(){
 	PRINTVK(4, "      Updating material pipelines");
 	for(auto& mat : materials){
 		mat.pipeline = GetPipelineFromShader(mat.shader);
 	}
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL Renderer::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+VKAPI_ATTR VkBool32 VKAPI_CALL Renderer::
+debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
 	//TODO(sushi, Con) fix console color formatting for this case
 	me->console->PushConsole(TOSTRING("[c:error]", pCallbackData->pMessage, "[c]"));
 	PRINT(pCallbackData->pMessage);
@@ -2446,7 +2566,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Renderer::debugCallback(VkDebugUtilsMessageSeveri
 }
 
 
-VkResult Renderer::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+VkResult Renderer::
+CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
 	auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func != nullptr) {
 		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -2455,7 +2576,8 @@ VkResult Renderer::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDeb
 	}
 }
 
-int Renderer::GetMinImageCountFromPresentMode(VkPresentModeKHR mode) {
+int Renderer::
+GetMinImageCountFromPresentMode(VkPresentModeKHR mode) {
 	switch(mode) {
 		case(VK_PRESENT_MODE_MAILBOX_KHR):      { return 3; }
 		case(VK_PRESENT_MODE_FIFO_KHR):         { return 2; }
@@ -2466,7 +2588,8 @@ int Renderer::GetMinImageCountFromPresentMode(VkPresentModeKHR mode) {
 	return -1;
 }
 
-void Renderer::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+void Renderer::
+framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 	auto app = reinterpret_cast<Renderer*>(glfwGetWindowUserPointer(window));
 	app->remakeWindow = true;
 }

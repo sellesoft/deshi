@@ -661,7 +661,6 @@ void Console::AddRenderCommands() {
 						}
 					}, "spawn_box_uv", "spawn_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 	
-	//TODO(delle,Re) fix this, its not working (update descriptor set)
 	NEWCOMMAND("mat_texture", "mat_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>", {
 				   if (args.size() != 3) { return "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>"; }
 				   
@@ -678,6 +677,19 @@ void Console::AddRenderCommands() {
 				   int shader = std::stoi(args[1]);
 				   admin->renderer->UpdateMaterialShader(matID, shader);
 				   return TOSTRING("Updated material", matID, "'s shader to ", shader);
+			   });
+	
+	NEWCOMMAND("mat_list", "mat_list", {
+				   Renderer* r = admin->renderer;
+				   std::string out = "[c:yellow]Materials List:\nID  Shader  Albedo  Normal  Specular  Light[c]";
+				   for(auto mat : r->materials){
+					   out += TOSTRING("\n", mat.id, "  ", shadertostringint[mat.shader], "  ",
+									   mat.albedoID, ":", r->textures[mat.albedoID].filename, "  ",
+									   mat.normalID, ":", r->textures[mat.normalID].filename, "  ",
+									   mat.specularID, ":", r->textures[mat.specularID].filename, "  ",
+									   mat.lightID, ":", r->textures[mat.lightID].filename);
+				   }
+				   return out;
 			   });
 	
 	NEWCOMMAND("shader_reload", "shader_reload <shaderID:Uint>", {
