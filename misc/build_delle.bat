@@ -4,7 +4,7 @@ pushd W:\src
 
 @set DEFINES=/DVULKAN
 
-@set INCLUDES=/I..\src /IC:\src\glfw-3.3.2.bin.WIN64\include /IC:\src\OpenAL1.1\include /I%VULKAN_SDK%\include /IC:\src\glm /IC:\src\boost_1_74_0
+@set INCLUDES=/I..\src /IC:\src\glfw-3.3.2.bin.WIN64\include /IC:\src\OpenAL1.1\include /I%VULKAN_SDK%\include /IC:\src\glm
 
 @set SOURCES=*.cpp core\*.cpp external\imgui\*.cpp game\*.cpp game\components\*.cpp game\systems\*.cpp scene\*.cpp utils\*.cpp
 

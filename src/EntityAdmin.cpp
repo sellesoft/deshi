@@ -120,8 +120,8 @@ void EntityAdmin::Cleanup() {
 
 void UpdateLayer(ContainerManager<Component*> cl) {
 	for (int i = 0; i < cl.size(); i++) {
-		if (cl[i]) {
-			cl[i].get()->Update();
+		if (cl[i].test()) {
+			cl[i].value->Update();
 		}
 	}
 }

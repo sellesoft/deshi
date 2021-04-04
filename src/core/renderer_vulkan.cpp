@@ -1702,7 +1702,7 @@ void Renderer::UpdateUniformBuffer(){
 		shaderData.values.time = time->totalTime;
 		shaderData.values.swidth = (glm::f32)extent.width;
 		shaderData.values.sheight = (glm::f32)extent.height;
-		shaderData.values.lightPos = glm::vec4(0.0f, 2.5f, 0.0f, 1.0f);
+		shaderData.values.lightPos = glm::vec4(1.0f, -3.f, -1.0f, 1.0f);
 		
 		//map shader data to uniform buffer
 		void* data;

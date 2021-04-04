@@ -16,17 +16,12 @@ struct Optional {
 	}
 	
 	bool test(){
-		T b;
-		memset(&b, 0xFFFFFFFF, sizeof(T));
-		if(memcmp(&value, &b, sizeof(T))){
-			return true;
-		}else{
-			return false;
-		}
+		T b; memset(&b, 0xFFFFFFFF, sizeof(T));
+		return (memcmp(&value, &b, sizeof(T)))? true : false;
 	}
 	
-	constexpr explicit operator bool() const{
-		return test;
+	inline void reset(){
+		memset(&value, 0xFFFFFFFF, sizeof(T));
 	}
 	
 	inline bool operator==(const Optional& rhs) const{

@@ -1,8 +1,12 @@
 #pragma once
+#ifndef DESHI_CONTAINERMANAGER_H
+#define DESHI_CONTAINERMANAGER_H
+
+#include "optional.h"
+
 #include <string>
 #include <vector>
 #include <iostream>
-#include <boost/optional.hpp>
 
 //this is meant to be a wrapper around vector.
 //the idea is that you can have a vector whose elements stay in a position regardless of
@@ -12,18 +16,17 @@
 //when placing an item it looks for the first empty spot and places it there
 
 template<class T>
-class ContainerManager {
-	public:
+struct ContainerManager {
 	//std::vector<std::pair<std::optional<T>, int>> container;
 	
-	std::vector<boost::optional<T>> container;
+	std::vector<Optional<T>> container;
 	std::vector<int> empties;
 	
 	int real_size = 0;
 	
 	ContainerManager() {}
 	
-	boost::optional<T> operator [](int i) { return container[i]; }
+	Optional<T> operator [](int i) { return container[i]; }
 	//bool operator *(){retuir}
 	//void operator = (ContainerManager<T> c) { this->copy(c); }
 	
@@ -56,7 +59,7 @@ class ContainerManager {
 	
 	//attempt to remove element at index 
 	void remove_from(int index) {
-		ASSERT(container[index], "Container at index " + std::to_string(index) + " is already empty.");
+		ASSERT(container[index].test(), "Container at index " + std::to_string(index) + " is already empty.");
 		ASSERT(index < container.size(), "Trying to access container at an index that doesn't exist.");
 		
 		if (index == container.size() - 1) {
@@ -79,7 +82,7 @@ class ContainerManager {
 			return true;
 		}
 		else {
-			boost::optional<T> o;
+			Optional<T> o;
 			for (int i = container.size(); i < index; i++) {
 				container.push_back(o);
 			}
@@ -123,3 +126,5 @@ class ContainerManager {
 		return s;
 	}
 };
+
+#endif //DESHI_CONTAINERMANAGER_H
