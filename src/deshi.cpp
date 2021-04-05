@@ -118,6 +118,7 @@ struct DeshiEngine {
 		time.Init(300); //300 tps for physics
 		window.Init(&input, 1280, 720); //inits input as well
 		console.Init(&time, &input, &window, &entityAdmin); 
+		deshi::Init(&console);
 		renderer.Init(&time, &window, &imgui, &console); //inits imgui as well
 		
 		//init game admin

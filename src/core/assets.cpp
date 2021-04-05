@@ -1,9 +1,22 @@
 #include "assets.h"
 #include "../utils/debug.h"
+#include "console.h"
 
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+
+#pragma warning( push )
+#pragma warning( disable : 4005) //disable redefinition warning
+//redefine debug's ERROR to work in this file 
+#define LOG(...)   console->PushConsole(TOSTRING("[c:yellow]", __VA_ARGS__, "[c]"))
+#define ERROR(...) console->PushConsole(TOSTRING("[c:error]", __VA_ARGS__, "[c]"))
+#pragma warning( pop ) 
+
+void deshi::
+Init(Console* console){
+	deshi::console = console;
+}
 
 ////////////////////
 //// file paths ////
@@ -15,7 +28,7 @@ getData(const char* filename){
 	if(std::filesystem::exists(std::filesystem::path(file))){
 		return file;
 	}else{
-		PRINT("Failed to find data: "<< file); return "";
+		ERROR("Failed to find data: ", file); return "";
 	}
 }
 
@@ -25,7 +38,7 @@ getModel(const char* filename){
 	if(std::filesystem::exists(std::filesystem::path(file))){
 		return file;
 	}else{
-		PRINT("Failed to find model: "<< file); return "";
+		ERROR("Failed to find model: ", file); return "";
 	}
 }
 
@@ -35,7 +48,7 @@ getTexture(const char* filename){
 	if(std::filesystem::exists(std::filesystem::path(file))){
 		return file;
 	}else{
-		PRINT("Failed to find texture: "<< file); return "";
+		ERROR("Failed to find texture: ", file); return "";
 	}
 }
 
@@ -45,7 +58,7 @@ getSound(const char* filename){
 	if(std::filesystem::exists(std::filesystem::path(file))){
 		return file;
 	}else{
-		PRINT("Failed to find sound: "<< file); return "";
+		ERROR("Failed to find sound: ", file); return "";
 	}
 }
 
@@ -55,7 +68,7 @@ getShader(const char* filename){
 	if(std::filesystem::exists(std::filesystem::path(file))){
 		return file;
 	}else{
-		PRINT("Failed to find shader: "<< file); return "";
+		ERROR("Failed to find shader: ", file); return "";
 	}
 }
 
@@ -65,7 +78,7 @@ getConfig(const char* filename){
 	if(std::filesystem::exists(std::filesystem::path(file))){
 		return file;
 	}else{
-		PRINT("Failed to find config: "<< file); return "";
+		ERROR("Failed to find config: ", file); return "";
 	}
 }
 
@@ -76,7 +89,7 @@ getConfig(const char* filename){
 std::vector<char> deshi::
 readFile(const std::string& filepath, u32 chars) {
 	std::ifstream file(filepath, std::ios::ate);
-	if(!file.is_open()){ PRINT("[READ-ERROR] failed to open file: " << filepath); return {}; };
+	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
 	
 	if(chars == 0){ chars = u32(file.tellg()); }
 	
@@ -91,7 +104,7 @@ readFile(const std::string& filepath, u32 chars) {
 std::vector<char> deshi::
 readFileBinary(const std::string& filepath, u32 bytes) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
-	if(!file.is_open()){ PRINT("[READ-ERROR] failed to open file: " << filepath); return {}; };
+	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
 	
 	if(bytes == 0){ bytes = u32(file.tellg()); }
 	std::vector<char> buffer(bytes);
@@ -105,7 +118,7 @@ readFileBinary(const std::string& filepath, u32 bytes) {
 void deshi::
 writeFile(const std::string& filepath, std::vector<char>& data, u32 chars){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
-	if(!file.is_open()){ PRINT("[WRITE-ERROR] failed to open file: " << filepath); return; }
+	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
 	
 	if(chars == 0){ chars = data.size(); }
 	
@@ -116,7 +129,7 @@ writeFile(const std::string& filepath, std::vector<char>& data, u32 chars){
 void deshi::
 writeFile(const std::string& filepath, const char* data, u32 chars){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
-	if(!file.is_open()){ PRINT("[WRITE-ERROR] failed to open file: " << filepath); return; }
+	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
 	
 	file.write(data, chars);
 	file.close();
@@ -125,7 +138,7 @@ writeFile(const std::string& filepath, const char* data, u32 chars){
 void deshi::
 writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
-	if(!file.is_open()){ PRINT("[WRITE-ERROR] failed to open file: " << filepath); return; }
+	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
 	
 	if(bytes == 0){ bytes = data.size(); }
 	
@@ -136,7 +149,7 @@ writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes)
 void deshi::
 writeFileBinary(const std::string& filepath, const char* data, u32 bytes){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
-	if(!file.is_open()){ PRINT("[WRITE-ERROR] failed to open file: " << filepath); return; }
+	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
 	
 	file.write(data, bytes);
 	file.close();
