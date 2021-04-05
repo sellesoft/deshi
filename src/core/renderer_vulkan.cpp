@@ -57,26 +57,14 @@ const bool enableValidationLayers = true;
 #define PRINTVK(level, ...) if(LOGGING_LEVEL >= level){ LOG(__VA_ARGS__); }
 #endif
 
-#pragma warning( push )
-#pragma warning( disable : 4005) //disable redefinition warning
-//redefine debug's ERROR to work in this file 
-#define LOG(...)   console->PushConsole(TOSTRING("[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR(...) console->PushConsole(TOSTRING("[c:error]", __VA_ARGS__, "[c]"))
-#pragma warning( pop ) 
-
-
-Renderer* me = nullptr;
-
 //////////////////////////
 //// render interface ////
 //////////////////////////
 
 void Renderer::
-Init(Time* time, Window* window, deshiImGui* imgui, Console* console) {
+Init(Time* time, Window* window, deshiImGui* imgui) {
 	PRINTVK(1, "\nInitializing Vulkan");
 	this->time = time;
-	this->console = console;
-	me = this;
 	this->window = window->window;
 	
 	glfwGetFramebufferSize(window->window, &width, &height);
@@ -426,6 +414,8 @@ void Renderer::
 RemoveMesh(u32 meshID){
 	if(meshID < meshes.size()){
 		if(!meshes[meshID].base){
+			//TODO(delle,ReOp) optimize this with mesh pooling
+			for(int i=meshID; i<meshes.size(); ++i) { --meshes[i].id;  } 
 			meshes.erase(meshes.begin() + meshID);
 		}else{
 			ERROR("Only a child/non-base mesh can be removed");
@@ -2560,7 +2550,7 @@ UpdateMaterialPipelines(){
 VKAPI_ATTR VkBool32 VKAPI_CALL Renderer::
 debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
 	//TODO(sushi, Con) fix console color formatting for this case
-	me->console->PushConsole(TOSTRING("[c:error]", pCallbackData->pMessage, "[c]"));
+	g_console->PushConsole(TOSTRING("[c:error]", pCallbackData->pMessage, "[c]"));
 	PRINT(pCallbackData->pMessage);
 	return VK_FALSE;
 }

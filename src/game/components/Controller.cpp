@@ -1,7 +1,7 @@
 #include "Camera.h"
 #include "MeshComp.h"
 #include "Controller.h"
-#include "Transform.h"
+#include "../Transform.h"
 #include "../Keybinds.h"
 #include "../../core.h"
 #include "../../EntityAdmin.h"
@@ -162,9 +162,9 @@ void HandleMouseInputs(EntityAdmin* admin) {
 						for (int i = 0; i < b.indexArray.size(); i += 3) {
 							float t = 0;
 							
-							p0 = b.vertexArray[b.indexArray[i]].pos + e->transform->position;
-							p1 = b.vertexArray[b.indexArray[i + 1]].pos + e->transform->position;
-							p2 = b.vertexArray[b.indexArray[i + 2]].pos + e->transform->position;
+							p0 = b.vertexArray[b.indexArray[i]].pos + e->transform.position;
+							p1 = b.vertexArray[b.indexArray[i + 1]].pos + e->transform.position;
+							p2 = b.vertexArray[b.indexArray[i + 2]].pos + e->transform.position;
 							
 							norm = (p1 - p0).cross(p2 - p0);
 							
@@ -252,21 +252,21 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 				//different cases for mode chaning
 				if (DengInput->KeyPressed(Key::X)) {
 					xaxis = true; yaxis = false; zaxis = false; 
-					sel->transform->position = initialObjPos;
+					sel->transform.position = initialObjPos;
 				}
 				if (DengInput->KeyPressed(Key::Y)) {
 					xaxis = false; yaxis = true; zaxis = false; 
-					sel->transform->position = initialObjPos;
+					sel->transform.position = initialObjPos;
 				}
 				if (DengInput->KeyPressed(Key::Z)) {
 					xaxis = false; yaxis = false; zaxis = true; 
-					sel->transform->position = initialObjPos;
+					sel->transform.position = initialObjPos;
 				}
 				if (!(xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) { //|| DengInput->MousePressed(1)) {
 					//stop grabbing entirely if press esc or right click w no grab mode on
 					//TODO(sushi, In) figure out why the camera rotates violently when rightlicking to leave grabbing. probably because of the mouse moving to the object?
 					xaxis = false; yaxis = false; zaxis = false; 
-					sel->transform->position = initialObjPos;
+					sel->transform.position = initialObjPos;
 					initialgrab = true; grabbingObj = false;
 					CONTROLLER_MOUSE_CAPTURE = false;
 					return;
@@ -274,7 +274,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 				if ((xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
 					//leave grab mode if in one when pressing esc
 					xaxis = false; yaxis = false; zaxis = false; 
-					sel->transform->position = initialObjPos; initialgrab = true;
+					sel->transform.position = initialObjPos; initialgrab = true;
 				}
 				if (DengInput->MousePressed(0)) {
 					//drop the object if left click
@@ -291,12 +291,12 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 				//and get initial distance from obj
 				
 				if (initialgrab) {
-					Vector2 screenPos = Math::WorldToScreen2(sel->transform->position, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
+					Vector2 screenPos = Math::WorldToScreen2(sel->transform.position, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
 					admin->window->SetCursorPos(screenPos);
 					worldpos = Math::ScreenToWorld(DengInput->mousePos, c->projectionMatrix,
 												   c->viewMatrix, admin->window->dimensions);
-					initialObjPos = sel->transform->position;
-					initialdist = (worldpos - sel->transform->position).mag();
+					initialObjPos = sel->transform.position;
+					initialdist = (worldpos - sel->transform.position).mag();
 					initialgrab = false;
 				}
 				
@@ -313,7 +313,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					newpos *= initialdist;
 					newpos *= Math::LocalToWorld(admin->mainCamera->position);
 					
-					sel->transform->position = newpos;
+					sel->transform.position = newpos;
 					
 					worldpos = nuworldpos;
 					
@@ -404,7 +404,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 						float dist = mouseline.dot(screenline.normalized());
 						float ratio = (screenline.normalized() * dist).mag() / screenline.mag();
 						
-						sel->transform->position = pir1 + (worldline.mag() * ratio) * worldline.normalized();
+						sel->transform.position = pir1 + (worldline.mag() * ratio) * worldline.normalized();
 						
 						float fontsize = ImGui::GetFontSize();
 						std::string str1 = TOSTRING(pir2);
@@ -443,7 +443,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					if (DengInput->ModsDown(INPUTMOD_CTRL)) dispmod = 0.05;
 					else dispmod = 0.1;
 					
-					//sel->transform->position = rpi + ratio * (lpi - rpi);
+					//sel->transform.position = rpi + ratio * (lpi - rpi);
 					
 					ImGui::PopStyleColor();
 					ImGui::End();

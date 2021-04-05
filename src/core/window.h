@@ -5,6 +5,8 @@
 #include "../utils/defines.h"
 #include "../math/Vector.h"
 
+#include <string>
+
 struct Input;
 struct GLFWwindow;
 struct GLFWmonitor;
@@ -58,6 +60,8 @@ struct Window{
 	void UpdateResizable(bool resizable);
 	
 	void Close();
+	
+	std::string str();
 };
 
 #endif //DESHI_WINDOW_H

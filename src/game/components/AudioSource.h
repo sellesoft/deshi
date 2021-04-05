@@ -3,12 +3,12 @@
 #define COMPONENT_AUDIOSOURCE_H
 
 #include "Component.h"
-#include "Physics.h"
-#include "Transform.h"
-#include "../../math/Vector.h"
 
 #include "al.h"
 #include "alc.h"
+
+struct Physics;
+struct Transform;
 
 //this is what OpenAL sees as the source of sound in 3D space
 struct AudioSource : public Component {

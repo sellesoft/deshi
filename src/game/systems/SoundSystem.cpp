@@ -2,6 +2,7 @@
 #include "../../core/console.h"
 #include "../components/Camera.h"
 #include "../components/AudioSource.h"
+#include "../components/Physics.h"
 
 #include <thread>
 

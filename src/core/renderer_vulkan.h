@@ -169,7 +169,6 @@ struct Renderer{
 	//// renderer variables ////
 	////////////////////////////
 	Time*          time;
-	Console*       console;
 	GLFWwindow*    window;
 	RenderSettings settings; //TODO(delle,Re) load render settings from a file
 	RenderStats    stats{};
@@ -179,7 +178,7 @@ struct Renderer{
 	//////////////////////////
 	
 	//runs the vulkan functions necessary to start rendering
-	void Init(Time* time, Window* window, deshiImGui* imgui, Console* console);
+	void Init(Time* time, Window* window, deshiImGui* imgui);
 	//acquires the next image from vulkan, resets the command buffers, 
 	//updates uploaded information, begins the command buffers, begins the render pass, 
 	//runs the different shader draw methods, ends the render pass

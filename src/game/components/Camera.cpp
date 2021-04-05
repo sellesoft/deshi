@@ -1,9 +1,8 @@
 #include "Camera.h"
+#include "../../core.h"
 #include "../../EntityAdmin.h"
 #include "../../math/Math.h"
-#include "../../core.h"
 #include "../../scene/Scene.h"
-#include <math.h>
 
 Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ, bool freeCam) : Component(a) {
 	this->nearZ = nearZ;

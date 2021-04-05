@@ -7,7 +7,7 @@
 #include "../../EntityAdmin.h"
 #include "../../game/Keybinds.h"
 #include "../../game/components/MeshComp.h"
-#include "../../game/components/Transform.h"
+#include "../../game/Transform.h"
 
 #include "../../game/systems/WorldSystem.h"
 
@@ -267,17 +267,17 @@ void RenderCanvasSystem::DebugTools() {
 					
 					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 					Text("Position ");
-					SameLine(); InputVector3("position", &sel->transform->position);
+					SameLine(); InputVector3("position", &sel->transform.position);
 					Separator();
 					
 					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 					Text("Rotation ");
-					SameLine(); InputVector3("rotation", &sel->transform->rotation);
+					SameLine(); InputVector3("rotation", &sel->transform.rotation);
 					Separator();
 					
 					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 					Text("Scale    ");
-					SameLine(); InputVector3("scale", &sel->transform->scale);
+					SameLine(); InputVector3("scale", &sel->transform.scale);
 					Separator();
 					
 					EndTabItem();

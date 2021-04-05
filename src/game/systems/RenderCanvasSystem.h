@@ -1,4 +1,7 @@
 #pragma once
+#ifndef SYSTEM_RENDERCANVAS_H
+#define SYSTEM_RENDERCANVAS_H
+
 #include "System.h"
 
 struct RenderCanvasSystem : public System {
@@ -20,3 +23,5 @@ struct RenderCanvasSystem : public System {
 	void Update() override;
 	void DrawUI(void);
 };
+
+#endif //SYSTEM_RENDERCANVAS_H

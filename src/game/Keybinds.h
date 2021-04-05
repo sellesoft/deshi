@@ -1,6 +1,6 @@
 #pragma once
-#ifndef COMPONENT_KEYBINDS_H
-#define COMPONENT_KEYBINDS_H
+#ifndef GAME_KEYBINDS_H
+#define GAME_KEYBINDS_H
 
 #include "components/Component.h"
 #include "../core/input.h"
@@ -55,4 +55,4 @@ struct Keybinds : public Component {
 	
 };
 
-#endif //COMPONENT_KEYBINDS_H
+#endif //GAME_KEYBINDS_H

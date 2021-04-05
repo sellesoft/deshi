@@ -5,17 +5,9 @@
 #include "defines.h"
 #include "Color.h"
 
-#include <map>
-#include <stack>
-#include <regex>
-#include <chrono>
 #include <string>
 #include <vector>
-#include <sstream>
-#include <cstdarg>
-#include <fstream>
 #include <iostream>
-#include <stdexcept>
 
 #define PRINT(x) std::cout << x << std::endl;
 #ifndef NDEBUG
@@ -39,16 +31,6 @@ std::terminate(); \
 #endif
 
 #define __FILENAME__ (std::strrchr(__FILE__, '\\') ? std::strrchr(__FILE__, '\\') + 1 : __FILE__)
-
-#define LOG(...)     admin->console->PushConsole(TOSTRING("[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR(...)   admin->console->PushConsole(TOSTRING("[c:error]", __VA_ARGS__, "[c]"))
-#define SUCCESS(...) admin->console->PushConsole(TOSTRING("[c:green]", __VA_ARGS__, "[c]"))
-//#define PRINT(...)   admin->GetSystem<Console>()->PushConsole(TOSTRING(__VA_ARGS__))
-
-//additionally prints where function was called
-#define LOG_LOC(...)     admin->console->PushConsole(TOSTRING("[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR_LOC(...)   admin->console->PushConsole(TOSTRING("[c:error]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:error]", __VA_ARGS__, "[c]"))
-#define SUCCESS_LOC(...) admin->console->PushConsole(TOSTRING("[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
 
 #define DASSERT(condition, message)     if(!(condition) && !admin->paused){ ERROR_LOC("Assertion '" #condition "' failed: \n", message); admin->paused = true;}
 #define DASSERTWARN(condition, message) if(!(condition) && !admin->paused) LOG_LOC("Assertion '" #condition "' failed: \n", message)
@@ -75,8 +57,6 @@ std::terminate(); \
 #define BUFFERLOG(i, ...) DEBUG g_cBuffer.add_to_index(TOSTRING(__VA_ARGS__), i)
 
 #define BUFFERLOGI(i, o, ...) DEBUG ([&]{static int iter = 0; if(iter == o){g_cBuffer.add_to_index(TOSTRING(__VA_ARGS__), i); iter = 0;} else iter++;}())
-
-using namespace std::chrono;
 
 extern bool GLOBAL_DEBUG;
 

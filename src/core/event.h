@@ -1,5 +1,4 @@
 #pragma once
-
 #ifndef DESHI_EVENT_H
 #define DESHI_EVENT_H
 
@@ -24,14 +23,14 @@ struct Sender {
 };
 
 struct Receiver {
-
+	
     Receiver();
     Receiver(Sender* s);
     ~Receiver();
-
+	
     Sender* send;
-
+	
     virtual void ReceiveEvent(Event event) = 0;
 };
 
-#endif
+#endif //DESHI_EVENT_H

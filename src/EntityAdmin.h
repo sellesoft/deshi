@@ -5,6 +5,9 @@
 #include "utils/defines.h"
 #include "utils/debug.h"
 #include "utils/ContainerManager.h"
+#include "game/transform.h"
+
+#include <map>
 
 //deshi Engine data defines; accessible only from inside Components/Systems
 #define DengInput admin->input
@@ -125,7 +128,7 @@ struct Entity {
 	std::vector<Component*> components;
 	std::string name;
 	
-	Transform* transform;
+	Transform transform;
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
 	template<class T>
@@ -139,7 +142,7 @@ struct Entity {
 		//ASSERT(t != nullptr, "attempted to retrieve a component that doesn't exist");
 		if (t == nullptr) {
 			//TODO(sushi) make it so stuff like this only shows up when debugging 
-			LOG("attempted to retrieve a component that doesn't exist on entity ", name, " with ID ", id);
+			PRINT("attempted to retrieve a component that doesn't exist on entity "<< name <<" with ID "<< id);
 		}
 		
 		return t;

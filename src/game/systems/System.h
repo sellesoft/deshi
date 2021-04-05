@@ -1,4 +1,7 @@
 #pragma once
+#ifndef SYSTEM_H
+#define SYSTEM_H
+
 #include "../../EntityAdmin.h"
 #include "../../core.h"
 
@@ -11,3 +14,5 @@ struct System {
 	virtual double Duration() { return time; }
 	//virtual void NotifyComponent(Component*) = 0;
 };
+
+#endif //SYSTEM_H
