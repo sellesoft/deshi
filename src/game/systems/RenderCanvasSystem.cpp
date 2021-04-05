@@ -260,17 +260,17 @@ void RenderCanvasSystem::DebugTools() {
 
 								SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 								Text("Position ");
-								SameLine(); InputVector3("position", &sel->transform->position);
+								SameLine(); InputVector3("position", &sel->transform.position);
 								Separator();
 
 								SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 								Text("Rotation ");
-								SameLine(); InputVector3("rotation", &sel->transform->rotation);
+								SameLine(); InputVector3("rotation", &sel->transform.rotation);
 								Separator();
 
 								SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 								Text("Scale    ");
-								SameLine(); InputVector3("scale", &sel->transform->scale);
+								SameLine(); InputVector3("scale", &sel->transform.scale);
 								Separator();
 
 								EndChild();
@@ -334,8 +334,6 @@ void RenderCanvasSystem::DebugTools() {
 						}
 						EndTabBar();
 					}
-					
-
 					EndChild();
 				}
 
@@ -397,29 +395,22 @@ void RenderCanvasSystem::DebugTools() {
 		EndTabBar();
 	}
 	
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
+                                         ImGui::PopStyleVar();
+                                             ImGui::PopStyleVar();
+                                         ImGui::PopStyleVar();
+                                     ImGui::PopStyleVar();
+                                 ImGui::PopStyleVar();
+                                     ImGui::PopStyleVar();
+                                         ImGui::PopStyleVar();
+                                     ImGui::PopStyleColor();
+                        ImGui::PopStyleColor();    ImGui::PopStyleColor();
+                    ImGui::PopStyleColor();            ImGui::PopStyleColor();
+                ImGui::PopStyleColor();                    ImGui::PopStyleColor();
+            ImGui::PopStyleColor();        /*  .u.  */          ImGui::PopStyleColor();
+        ImGui::PopStyleColor();                                    ImGui::PopStyleColor();
+    ImGui::PopStyleColor();                                            ImGui::PopStyleColor();
 	
-	ImGui::End();
-	
+										  ImGui::End();
 }
 
 void RenderCanvasSystem::DebugBar() {

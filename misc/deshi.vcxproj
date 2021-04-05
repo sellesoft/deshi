@@ -201,6 +201,7 @@
     <ClInclude Include="..\src\core\assets.h" />
     <ClInclude Include="..\src\core\console.h" />
     <ClInclude Include="..\src\core\deshi_imgui.h" />
+    <ClInclude Include="..\src\core\deshi_imgui_vulkan.h" />
     <ClInclude Include="..\src\core\event.h" />
     <ClInclude Include="..\src\core\input.h" />
     <ClInclude Include="..\src\core\renderer.h" />
@@ -231,13 +232,13 @@
     <ClInclude Include="..\src\game\components\MeshComp.h" />
     <ClInclude Include="..\src\game\components\Orb.h" />
     <ClInclude Include="..\src\game\components\Physics.h" />
-    <ClInclude Include="..\src\game\components\Transform.h" />
     <ClInclude Include="..\src\game\Keybinds.h" />
     <ClInclude Include="..\src\game\systems\PhysicsSystem.h" />
     <ClInclude Include="..\src\game\systems\RenderCanvasSystem.h" />
     <ClInclude Include="..\src\game\systems\SoundSystem.h" />
     <ClInclude Include="..\src\game\systems\System.h" />
     <ClInclude Include="..\src\game\systems\WorldSystem.h" />
+    <ClInclude Include="..\src\game\Transform.h" />
     <ClInclude Include="..\src\geometry\Edge.h" />
     <ClInclude Include="..\src\geometry\Geometry.h" />
     <ClInclude Include="..\src\geometry\Triangle.h" />
@@ -294,7 +295,7 @@
   <ItemGroup>
     <ClCompile Include="..\src\core\assets.cpp" />
     <ClCompile Include="..\src\core\console.cpp" />
-    <ClCompile Include="..\src\core\deshi_imgui.cpp" />
+    <ClCompile Include="..\src\core\deshi_imgui_vulkan.cpp" />
     <ClCompile Include="..\src\core\event.cpp" />
     <ClCompile Include="..\src\core\renderer_vulkan.cpp" />
     <ClCompile Include="..\src\core\window.cpp" />
@@ -317,7 +318,6 @@
     <ClCompile Include="..\src\game\components\MeshComp.cpp" />
     <ClCompile Include="..\src\game\components\Orb.cpp" />
     <ClCompile Include="..\src\game\components\Physics.cpp" />
-    <ClCompile Include="..\src\game\components\Transform.cpp" />
     <ClCompile Include="..\src\game\Keybinds.cpp" />
     <ClCompile Include="..\src\game\systems\PhysicsSystem.cpp" />
     <ClCompile Include="..\src\game\systems\RenderCanvasSystem.cpp" />

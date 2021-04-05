@@ -332,7 +332,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					}
 
 					
-					sel->transform->position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
+					sel->transform.position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
 
 					Vector3 xp1 = initialObjPos - (Vector3::RIGHT * 2000);
 					Vector3 xp2 = initialObjPos + (Vector3::RIGHT * 2000);
@@ -434,7 +434,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					else {
 						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
 					}
-					sel->transform->position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
+					sel->transform.position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
 
 				}
 				else if (zaxis) {
@@ -454,8 +454,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					else {
 						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
 					}
-					sel->transform->position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
-
+					sel->transform.position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
 				}
 				
 			}

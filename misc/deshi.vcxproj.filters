@@ -118,9 +118,6 @@
     <ClInclude Include="..\src\game\components\Physics.h">
       <Filter>src\game\components\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\game\components\Transform.h">
-      <Filter>src\game\components\h</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\game\systems\PhysicsSystem.h">
       <Filter>src\game\systems\h</Filter>
     </ClInclude>
@@ -186,6 +183,12 @@
     </ClInclude>
     <ClInclude Include="..\src\math\MatrixN.h">
       <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\game\Transform.h">
+      <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\deshi_imgui_vulkan.h">
+      <Filter>src\core</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -376,9 +379,6 @@
     <ClCompile Include="..\src\core\window.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\deshi_imgui.cpp">
-      <Filter>src\core</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\deshi.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -407,9 +407,6 @@
       <Filter>src\game\components\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\game\components\Physics.cpp">
-      <Filter>src\game\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\components\Transform.cpp">
       <Filter>src\game\components\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\game\systems\PhysicsSystem.cpp">
@@ -444,6 +441,9 @@
     </ClCompile>
     <ClCompile Include="..\src\scene\Scene.cpp">
       <Filter>src\scene</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\deshi_imgui_vulkan.cpp">
+      <Filter>src\core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -22,6 +22,7 @@ add shaders: PBR (4textures)
 settings file(s) [keybinds, video, audio, etc]
 fix program stalling when Keybinds cant find the keybind file
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
+figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
 
 Minor Ungrouped TODOs
 ---------------------
