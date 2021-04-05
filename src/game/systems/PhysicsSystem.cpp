@@ -4,7 +4,7 @@
 #include "../../math/Math.h"
 #include "../../geometry/Geometry.h"
 
-#include "../components/Transform.h"
+#include "../Transform.h"
 #include "../components/Physics.h"
 #include "../components/Collider.h"
 #include "../components/AudioSource.h"

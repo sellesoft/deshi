@@ -6,18 +6,6 @@
 #include <fstream>
 #include <filesystem>
 
-#pragma warning( push )
-#pragma warning( disable : 4005) //disable redefinition warning
-//redefine debug's ERROR to work in this file 
-#define LOG(...)   console->PushConsole(TOSTRING("[c:yellow]", __VA_ARGS__, "[c]"))
-#define ERROR(...) console->PushConsole(TOSTRING("[c:error]", __VA_ARGS__, "[c]"))
-#pragma warning( pop ) 
-
-void deshi::
-Init(Console* console){
-	deshi::console = console;
-}
-
 ////////////////////
 //// file paths ////
 ////////////////////

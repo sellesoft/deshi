@@ -2,7 +2,8 @@
 #include "../../core/console.h"
 #include "../../EntityAdmin.h"
 #include "../../utils/debug.h"
-#include "../components/Transform.h"
+#include "../components/Component.h"
+#include "../Transform.h"
 
 void WorldSystem::Update() {
 	//World* world = admin->world;

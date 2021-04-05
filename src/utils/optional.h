@@ -2,8 +2,6 @@
 #ifndef DESHI_OPTIONAL_H
 #define DESHI_OPTIONAL_H
 
-#include <cstring>
-
 template <typename T>
 struct Optional {
 	T value;

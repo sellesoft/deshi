@@ -7,7 +7,7 @@
 #include "../../EntityAdmin.h"
 #include "../../game/Keybinds.h"
 #include "../../game/components/MeshComp.h"
-#include "../../game/components/Transform.h"
+#include "../../game/Transform.h"
 
 #include "../../game/systems/WorldSystem.h"
 

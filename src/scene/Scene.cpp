@@ -1,5 +1,5 @@
 #include "Scene.h"
-#include "../game/components/Transform.h"
+#include "../game/Transform.h"
 
 std::pair<Vector3, Vector3> Scene::SceneBoundingBox() {
 	float inf = std::numeric_limits<float>::max();

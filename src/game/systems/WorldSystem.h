@@ -1,4 +1,7 @@
 #pragma once
+#ifndef SYSTEM_WORLD_H
+#define SYSTEM_WORLD_H
+
 #include "System.h"
 
 /*
@@ -90,3 +93,5 @@ struct WorldSystem : public System {
 	//returns true if successful removal, false otherwise
 	bool RemoveComponentsFromEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components);
 };
+
+#endif //SYSTEM_WORLD_H

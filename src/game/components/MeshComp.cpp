@@ -1,6 +1,6 @@
 #include "MeshComp.h"
 #include "../../core.h"
-#include "Transform.h"
+#include "../Transform.h"
 #include "../../scene/Model.h"
 #include "../../scene/Scene.h"
 
@@ -27,15 +27,15 @@ void MeshComp::ToggleVisibility() {
 
 void MeshComp::ReceiveEvent(Event event) {
 	switch (event) {
-	case TEST_EVENT:
-		PRINT("Transform receieved event");
+		case TEST_EVENT:
+		PRINT("MeshComp receieved event");
 		break;
 	}
 }
 
 void MeshComp::ChangeMaterialShader(u32 s) {
 	std::vector<u32> ids = admin->renderer->GetMaterialIDs(MeshID);
-
+	
 	for (u32 id : ids) {
 		admin->renderer->UpdateMaterialShader(id, s);
 	}
@@ -48,5 +48,5 @@ void MeshComp::UpdateMeshTransform(Vector3 position, Vector3 rotation, Vector3 s
 
 void MeshComp::Update() {
 	//update mesh's transform with entities tranform
-	if(ENTITY_CONTROL) admin->renderer->UpdateMeshMatrix(MeshID, entity->transform->TranformMatrix());
+	if(ENTITY_CONTROL) admin->renderer->UpdateMeshMatrix(MeshID, entity->transform.TransformMatrix());
 }

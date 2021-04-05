@@ -53,4 +53,4 @@ struct OrbManager : public Component {
 	void Update() override;
 };
 
-#endif
+#endif //COMPONENT_ORB_H

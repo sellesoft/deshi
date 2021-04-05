@@ -96,6 +96,8 @@ look into scaling not rotating (scaling is probably being done in world not loca
 #include "core.h"
 #include "EntityAdmin.h"
 
+Console* g_console;
+
 struct DeshiEngine {
 	EntityAdmin entityAdmin;
 	Renderer renderer;
@@ -118,9 +120,8 @@ struct DeshiEngine {
 		LoadConfig();
 		time.Init(300); //300 tps for physics
 		window.Init(&input, 1280, 720); //inits input as well
-		console.Init(&time, &input, &window, &entityAdmin); 
-		deshi::Init(&console);
-		renderer.Init(&time, &window, &imgui, &console); //inits imgui as well
+		console.Init(&time, &input, &window, &entityAdmin); g_console = &console;
+		renderer.Init(&time, &window, &imgui); //inits imgui as well
 		
 		//init game admin
 		entityAdmin.Init(&input, &window, &time, &renderer, &console);

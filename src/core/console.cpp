@@ -6,13 +6,6 @@
 #include "time.h"
 #include "input.h"
 
-#include <ctime>
-#include <time.h>
-#include <iomanip>
-#include <fstream>
-#include <sstream>
-#include <filesystem>
-
 #include "../external/imgui/imgui_impl_glfw.h"
 #include "../external/imgui/imgui_impl_vulkan.h"
 
@@ -20,11 +13,11 @@
 #include "../utils/defines.h"
 
 #include "../game/Keybinds.h"
+#include "../game/Transform.h"
 #include "../game/systems/WorldSystem.h"
 #include "../game/components/Camera.h"
 #include "../game/components/Physics.h"
 #include "../game/components/Collider.h"
-#include "../game/components/Transform.h"
 #include "../game/components/AudioSource.h"
 #include "../game/components/MeshComp.h"
 #include "../scene/Scene.h"
@@ -33,6 +26,13 @@
 #include "../game/systems/RenderCanvasSystem.h"
 
 #include <functional>
+#include <ctime>
+#include <time.h>
+#include <iomanip>
+#include <fstream>
+#include <sstream>
+#include <filesystem>
+#include <regex>
 
 //regex for checking paramaters
 std::regex RegColorFormat("(?:\\[c:([^\\]]*)\\]([^\\]]*)\\[c\\]|([^\\[]+))", std::regex::optimize);
@@ -1353,31 +1353,7 @@ void Console::AddWindowCommands() {
 			   });
 	
 	NEWCOMMAND("window_info", "Prints window variables", {
-				   Window * w = admin->window;
-				   std::string dispMode;
-				   switch (w->displayMode) {
-					   case(DisplayMode::WINDOWED): { dispMode = "Windowed"; }break;
-					   case(DisplayMode::BORDERLESS): { dispMode = "Borderless Windowed"; }break;
-					   case(DisplayMode::FULLSCREEN): { dispMode = "Fullscreen"; }break;
-				   }
-				   std::string cursMode;
-				   switch (w->cursorMode) {
-					   case(CursorMode::DEFAULT): { cursMode = "Default"; }break;
-					   case(CursorMode::FIRSTPERSON): { cursMode = "First Person"; }break;
-					   case(CursorMode::HIDDEN): { cursMode = "Hidden"; }break;
-				   }
-				   return TOSTRING("Window Info"
-								   "\n    Window Position: ", w->x, ",", w->y,
-								   "\n    Window Dimensions: ", w->width, "x", w->height,
-								   "\n    Screen Dimensions: ", w->screenWidth, "x", w->screenHeight,
-								   "\n    Refresh Rate: ", w->refreshRate,
-								   "\n    Screen Refresh Rate: ", w->screenRefreshRate,
-								   "\n    Display Mode: ", dispMode,
-								   "\n    Cursor Mode: ", cursMode,
-								   "\n    Raw Input: ", w->rawInput,
-								   "\n    Resizable: ", w->resizable,
-								   "\n    Restores: ", w->restoreX, ",", w->restoreY, " ",
-								   w->restoreW, "x", w->restoreH);
+				   return admin->window->str();
 			   });
 }
 
@@ -1402,7 +1378,6 @@ void Console::Init(Time* t, Input* i, Window* w, EntityAdmin* ea) {
 	compstrmap.emplace("AudioSource", []() { return new AudioSource(); });
 	compstrmap.emplace("Collider",    []() { return new Collider(); });
 	compstrmap.emplace("MeshComp",    []() { return new MeshComp(); });
-	compstrmap.emplace("Transform",   []() { return new Transform(); });
 	compstrmap.emplace("Physics",     []() { return new Physics(); });
 	
 	

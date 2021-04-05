@@ -1,5 +1,6 @@
 #include "window.h"
 #include "input.h"
+#include "../utils/debug.h"
 
 #if defined(_MSC_VER)
 #pragma comment(lib,"glfw3.lib")
@@ -268,4 +269,30 @@ void Window::UpdateResizable(bool resizable){
 
 void Window::Close() {
 	closeWindow = true;
+}
+
+std::string Window::str(){
+	std::string dispMode;
+	switch (displayMode) {
+		case(DisplayMode::WINDOWED):   { dispMode = "Windowed"; }break;
+		case(DisplayMode::BORDERLESS): { dispMode = "Borderless Windowed"; }break;
+		case(DisplayMode::FULLSCREEN): { dispMode = "Fullscreen"; }break;
+	}
+	std::string cursMode;
+	switch (cursorMode) {
+		case(CursorMode::DEFAULT):     { cursMode = "Default"; }break;
+		case(CursorMode::FIRSTPERSON): { cursMode = "First Person"; }break;
+		case(CursorMode::HIDDEN):      { cursMode = "Hidden"; }break;
+	}
+	return TOSTRING("Window Info"
+					"\n    Window Position: ", x, ",", y,
+					"\n    Window Dimensions: ", width, "x", height,
+					"\n    Screen Dimensions: ", screenWidth, "x", screenHeight,
+					"\n    Refresh Rate: ", refreshRate,
+					"\n    Screen Refresh Rate: ", screenRefreshRate,
+					"\n    Display Mode: ", dispMode,
+					"\n    Cursor Mode: ", cursMode,
+					"\n    Raw Input: ", rawInput,
+					"\n    Resizable: ", resizable,
+					"\n    Restores: ", restoreX, ",", restoreY, " ", restoreW, "x", restoreH);
 }

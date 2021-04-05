@@ -4,8 +4,10 @@
 #include "../core/assets.h"
 
 #include <fstream>
+#include <regex>
 
-std::string default_keybinds = "> Movement Keys\n"
+std::string default_keybinds = ""
+"> Movement Keys\n"
 "movementFlyingUp = E\n"
 "movementFlyingDown = Q\n"
 "movementFlyingForward = W\n"

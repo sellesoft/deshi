@@ -22,15 +22,13 @@
 #include "scene/Scene.h"
 
 #include "game/Keybinds.h"
+#include "game/Transform.h"
 #include "game/components/Component.h"
 #include "game/components/Camera.h"
 #include "game/components/Controller.h"
 #include "game/components/AudioListener.h"
-#include "game/components/Transform.h"
 #include "game/components/MeshComp.h"
 #include "game/components/Orb.h"
-
-#include "scene/Scene.h"
 
 #include "game/systems/System.h"
 #include "game/systems/PhysicsSystem.h"
@@ -220,7 +218,7 @@ u32 Entity::AddComponents(std::vector<Component*> comps) {
 }
 
 Entity::Entity() {
-	transform = new Transform();
+	transform = Transform();
 }
 
 Entity::~Entity() {

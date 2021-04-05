@@ -1,4 +1,7 @@
 #pragma once
+#ifndef SYSTEM_SOUND_H
+#define SYSTEM_SOUND_H
+
 #include "System.h"
 
 #if defined(_MSC_VER)
@@ -22,3 +25,5 @@ struct SoundSystem : public System {
 	void Init(EntityAdmin* admin) override;
 	void Update() override;
 };
+
+#endif //SYSTEM_SOUND_H

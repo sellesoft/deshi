@@ -1,4 +1,7 @@
 #pragma once
+#ifndef DESHI_MATH_H
+#define DESHI_MATH_H
+
 #include "../utils/defines.h"
 #include "VectorMatrix.h"
 #include "MatrixN.h"
@@ -551,3 +554,5 @@ namespace Math {
 		return out;
 	}
 };
+
+#endif //DESHI_MATH_H
