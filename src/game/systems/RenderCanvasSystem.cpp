@@ -71,26 +71,36 @@ void RenderCanvasSystem::MenuBar() {
 	
 	
 	if(BeginMainMenuBar()) {
+		if (IsWindowHovered()) WinHovFlag = true; 
+
 		menubarheight = GetWindowHeight();
 		if(BeginMenu("File")) {
+			if (IsWindowHovered()) WinHovFlag = true; 
+
 			if (MenuItem("placeholder")) {
-				
+
 			}
 			ImGui::EndMenu();
 		}
 		if(BeginMenu("Edit")) {
+			if (IsWindowHovered()) WinHovFlag = true; 
+
 			if (MenuItem("placeholder")) {
-				
+
 			}
 			ImGui::EndMenu();
 		}
 		if(BeginMenu("Spawn")) {
+			if (IsWindowHovered()) WinHovFlag = true; 
+
 			for (int i = 0; i < files.size(); i++) {
 				if(MenuItem(files[i].c_str())) { admin->console->ExecCommand("load_obj", files[i] + ".obj"); }
 			}
 			EndMenu();
 		}//agh
 		if (BeginMenu("Window")) {
+			if (IsWindowHovered()) WinHovFlag = true; 
+
 			if (MenuItem("Object Property Menu")) showDebugTools = !showDebugTools;
 			if (MenuItem("Debug Bar")) showDebugBar = !showDebugBar;
 			if (MenuItem("DebugLayer")) showDebugLayer = !showDebugLayer;
@@ -116,8 +126,6 @@ void RenderCanvasSystem::DebugTools() {
 	//resize tool menu if main menu bar is open
 	ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - (menubarheight + debugbarheight)));
 	ImGui::SetNextWindowPos(ImVec2(0, menubarheight));
-	
-	
 	
 	//window styling
 	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
@@ -146,26 +154,6 @@ void RenderCanvasSystem::DebugTools() {
 	
 	//capture mouse if hovering over this window
 	if (IsWindowHovered()) WinHovFlag = true; 
-	
-	//display header bar outside of child window so it doesnt scroll with it
-	//
-	// 
-	// 	   I'm commenting this out for now cause I don't think its necessary but someone might
-	// 	   want it later so here it is 
-	// 
-	// 
-	//TODO(sushi, Ui) format this list to work and look better
-	//if (BeginTable("entityHeader", 4, ImGuiTableFlags_BordersInner)) {
-	//	std::string str1 = "ID";
-	//	float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-	//
-	//	ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed, strlen1 * 1.3);
-	//	ImGui::TableSetupColumn("Vis", ImGuiTableColumnFlags_WidthFixed);
-	//	ImGui::TableSetupColumn("Name");
-	//	ImGui::TableSetupColumn("Components");
-	//	TableHeadersRow();
-	//	ImGui::EndTable();
-	//}
 	
 	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 	ImGui::Text("Entities");
@@ -243,114 +231,170 @@ void RenderCanvasSystem::DebugTools() {
 	
 	ImGui::Separator();
 	
+	ImGui::PushStyleColor(ImGuiCol_TabActive, ColToVec4(Color::VERY_DARK_CYAN));
+	ImGui::PushStyleColor(ImGuiCol_TabHovered, ColToVec4(Color::DARK_CYAN));
+	ImGui::PushStyleColor(ImGuiCol_Tab, ColToVec4(colors.c1));
+	ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
+
+	if (BeginTabBar("SettingsTabs")) {
 	//Selected Entity property editing
-	if (admin->input->selectedEntity) {
-		if (BeginChild("SelectedEntityMenu", ImVec2(GetWindowWidth(), 500), true)) {
-			if (IsWindowHovered()) WinHovFlag = true;
-			Entity* sel = admin->input->selectedEntity;
-			SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-			Text(TOSTRING("Selected Entity: ", sel->name).c_str());
-			Text("Components: ");
-			
-			ImGui::PushStyleColor(ImGuiCol_TabActive,  ColToVec4(Color::VERY_DARK_CYAN));
-			ImGui::PushStyleColor(ImGuiCol_TabHovered, ColToVec4(Color::DARK_CYAN));
-			ImGui::PushStyleColor(ImGuiCol_Tab,        ColToVec4(colors.c1));
-			ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
-			
-			
-			if (BeginTabBar("ObjectPropertyMenus")) {
-				
-				
-				if (BeginTabItem("Obj")) {
-					Text("Transform");
-					Separator();
-					
+		if (BeginTabItem("Ent")) {
+			if (admin->input->selectedEntity) {
+				if (BeginChild("SelectedEntityMenu", ImVec2(GetWindowWidth(), 500), true)) {
+					if (IsWindowHovered()) WinHovFlag = true;
+					Entity* sel = admin->input->selectedEntity;
 					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-					Text("Position ");
-					SameLine(); InputVector3("position", &sel->transform->position);
-					Separator();
-					
-					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-					Text("Rotation ");
-					SameLine(); InputVector3("rotation", &sel->transform->rotation);
-					Separator();
-					
-					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-					Text("Scale    ");
-					SameLine(); InputVector3("scale", &sel->transform->scale);
-					Separator();
-					
-					EndTabItem();
-				}
-				
-				//Components menu
-				if (BeginTabItem("Comp")) {
-					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
-					if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 100), true)) {
-						if (IsWindowHovered()) WinHovFlag = true;
-						
-						if (ImGui::BeginTable("SelectedComponents", 1)) {
-							
-							ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
-							for (Component* c : sel->components) {
-								TableNextColumn(); //TableNextRow();
+					Text(TOSTRING("Selected Entity: ", sel->name).c_str());
+					Text("Components: ");
+
+					if (BeginTabBar("ObjectPropertyMenus")) {
+
+
+						if (BeginTabItem("Obj")) {
+							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+							if (BeginChild("ObjMenu", ImVec2(GetWindowWidth()* 0.95, 100), true)) {
+								if (IsWindowHovered()) WinHovFlag = true;
+
+								Text("Transform");
+								Separator();
+
 								SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-								Text(c->name);
-								SameLine(CalcItemWidth() + 20);
-								if (Button("Del")) {
-									admin->world->RemoveAComponentFromEntity(admin, sel, c);
-								}
+								Text("Position ");
+								SameLine(); InputVector3("position", &sel->transform->position);
+								Separator();
+
+								SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+								Text("Rotation ");
+								SameLine(); InputVector3("rotation", &sel->transform->rotation);
+								Separator();
+
+								SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+								Text("Scale    ");
+								SameLine(); InputVector3("scale", &sel->transform->scale);
+								Separator();
+
+								EndChild();
 							}
-							ImGui::EndTable();
+							EndTabItem();
 						}
-						EndChild();
-					}
-					EndTabItem();
-				}
-				
-				//Materials menu
-				if (BeginTabItem("Mat")) {
-					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-					if (BeginChild("SelectedMaterialsWindow", ImVec2(GetWindowWidth() * 0.95, 200), true)) {
-						if (IsWindowHovered()) WinHovFlag = true;
-						MeshComp* m = sel->GetComponent<MeshComp>();
-						if (m) {
-							//TODO(sushi, Ui) set up showing multiple batches shaders when that becomes relevant
-							Text(TOSTRING("Shader: ", shadertostring.at(m->m->batchArray[0].shader)).c_str());
-							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-							if (ImGui::TreeNode("Shader Select")) {
-								static int selected = -1;
-								for (int i = 0; i < shadertostringint.size(); i++) {
-									if (Selectable(shadertostringint[i].c_str(), selected == i)) {
-										selected = i;
-										for (int iter = 0; iter < sel->components.size(); iter++) {
-											if (MeshComp* mc = dynamic_cast<MeshComp*>(sel->components[iter])) {
-												mc->ChangeMaterialShader(stringtoshader.at(shadertostringint[i]));
-											}
+
+						//Components menu
+						if (BeginTabItem("Comp")) {
+							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+							if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 100), true)) {
+								if (IsWindowHovered()) WinHovFlag = true;
+
+								if (ImGui::BeginTable("SelectedComponents", 1)) {
+
+									ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
+									for (Component* c : sel->components) {
+										TableNextColumn(); //TableNextRow();
+										SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+										Text(c->name);
+										SameLine(CalcItemWidth() + 20);
+										if (Button("Del")) {
+											admin->world->RemoveAComponentFromEntity(admin, sel, c);
 										}
 									}
+									ImGui::EndTable();
 								}
-								TreePop();
+								EndChild();
 							}
+							EndTabItem();
 						}
-						EndChild();
+
+						//Materials menu
+						if (BeginTabItem("Mat")) {
+							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+							if (BeginChild("SelectedMaterialsWindow", ImVec2(GetWindowWidth() * 0.95, 200), true)) {
+								if (IsWindowHovered()) WinHovFlag = true;
+								MeshComp* m = sel->GetComponent<MeshComp>();
+								if (m) {
+									//TODO(sushi, Ui) set up showing multiple batches shaders when that becomes relevant
+									Text(TOSTRING("Shader: ", shadertostring.at(m->m->batchArray[0].shader)).c_str());
+									SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+									if (ImGui::TreeNode("Shader Select")) {
+										static int selected = -1;
+										for (int i = 0; i < shadertostringint.size(); i++) {
+											if (Selectable(shadertostringint[i].c_str(), selected == i)) {
+												selected = i;
+												for (int iter = 0; iter < sel->components.size(); iter++) {
+													if (MeshComp* mc = dynamic_cast<MeshComp*>(sel->components[iter])) {
+														mc->ChangeMaterialShader(stringtoshader.at(shadertostringint[i]));
+													}
+												}
+											}
+										}
+										TreePop();
+									}
+								}
+								EndChild();
+							}
+							EndTabItem();
+						}
+						EndTabBar();
 					}
-					EndTabItem();
+					
+
+					EndChild();
 				}
-				EndTabBar();
+
 			}
-			ImGui::PopStyleColor();
-			ImGui::PopStyleColor();
-			ImGui::PopStyleColor();
-			ImGui::PopStyleVar();
-			
-			EndChild();
+			else {
+				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				Text("Selected Entity: None");
+			}
+			EndTabItem();
 		}
-		
-	}
-	else {
-		SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-		Text("Selected Entity: None");
+		if (BeginTabItem("Cam")) {
+			if (BeginChild("SelectedEntityMenu", ImVec2(GetWindowWidth(), 500), true)) {
+				if (IsWindowHovered()) WinHovFlag = true;
+				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				
+				Camera* c = admin->mainCamera;
+
+				Text("Transform");
+				Separator();
+
+				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				Text("Position ");
+				SameLine(); InputVector3("position", &c->position);
+				Separator();
+
+				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				Text("Rotation ");
+				SameLine(); InputVector3("rotation", &c->rotation);
+				Separator();
+
+				if (Button("Reset camera")) admin->ExecCommand("cam_reset");
+				
+				Separator();
+
+				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				Text("fov:   ");
+				SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+				if (InputFloat("fov", &c->fov, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsDecimal)) {
+					c->UpdateProjectionMatrix();
+				}
+				Separator();
+
+				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				Text("nearZ: ");
+				SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+				InputFloat("nearz", &c->nearZ, ImGuiInputTextFlags_CharsDecimal);
+				Separator();
+
+				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				Text("farZ:  ");
+				SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+				InputFloat("farz", &c->farZ, ImGuiInputTextFlags_CharsDecimal);
+				Separator();
+
+				EndChild();
+			}
+			EndTabItem();
+		}
+		EndTabBar();
 	}
 	
 	ImGui::PopStyleVar();
@@ -359,6 +403,10 @@ void RenderCanvasSystem::DebugTools() {
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
+	ImGui::PopStyleColor();
+	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();

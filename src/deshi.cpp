@@ -63,6 +63,7 @@ implement grabbing/rotating/scaling with a visual tool thing (like in Unreal)
 world axis in top right (like we used to have)
 orthographic side views
 (maybe) multiple viewports
+add showing axis lines through object when axis grabbing once we have lines in Vulkan
 
 Physics/Atmos TODOs
 -------------

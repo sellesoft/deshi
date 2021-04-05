@@ -174,9 +174,9 @@ void deshi::enforceDirectories() {
 		create_directory("data/sounds");
 		create_directory("data/textures");
 	} else {
-		if (!is_directory("data/models")) { create_directory("data/models"); }
-		if (!is_directory("data/scenes")) { create_directory("data/scenes"); }
-		if (!is_directory("data/sounds")) { create_directory("data/sounds"); }
+		if (!is_directory("data/models"))   { create_directory("data/models"); }
+		if (!is_directory("data/scenes"))   { create_directory("data/scenes"); }
+		if (!is_directory("data/sounds"))   { create_directory("data/sounds"); }
 		if (!is_directory("data/textures")) { create_directory("data/textures"); }
 	}
 	

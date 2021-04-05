@@ -294,7 +294,8 @@ LoadBaseMesh(Mesh* m){
 	MeshVk mesh;  mesh.base = true; 
 	mesh.ptr = m; mesh.visible = false;
 	mesh.primitives.reserve(m->batchCount);
-	
+	mesh.name = m->name;
+
 	//resize scene vectors
 	vertexBuffer.reserve(vertexBuffer.size() + m->vertexCount);
 	indexBuffer.reserve(indexBuffer.size() + m->indexCount);
@@ -400,7 +401,7 @@ CreateMesh(u32 meshID, Matrix4 matrix){
 		mesh.ptr = meshes[meshID].ptr; mesh.visible = true;
 		mesh.primitives = std::vector<PrimitiveVk>(meshes[meshID].primitives);
 		mesh.modelMatrix = glm::make_mat4(matrix.data);
-		
+		mesh.name = meshes[meshID].name;
 		mesh.id = u32(meshes.size());
 		meshes.push_back(mesh);
 		meshes[meshID].children.push_back(mesh.id);

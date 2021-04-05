@@ -132,7 +132,7 @@ void HandleMouseInputs(EntityAdmin* admin) {
 	//mouse left click pressed
 	if (input->MousePressed(MouseButton::MB_LEFT)) {
 		
-		if (!admin->IMGUI_MOUSE_CAPTURE) {
+		if (!admin->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE) {
 			
 			//TODO(sushi, Ma) figure out why this sometimes returns true when clicking outside of object
 			
@@ -277,14 +277,10 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					initialgrab = true; grabbingObj = false;  
 					CONTROLLER_MOUSE_CAPTURE = false;
 					return;
-					
 				}
-				
-				
-				
+
 				//if we're initially grabbing the object, set the mouse's position to it
 				//and get initial distance from obj
-				
 				if (initialgrab) {
 					Vector2 screenPos = Math::WorldToScreen2(sel->transform->position, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
 					admin->window->SetCursorPos(screenPos);
@@ -338,23 +334,17 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					
 					sel->transform->position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
 
-
 					Vector3 xp1 = initialObjPos - (Vector3::RIGHT * 2000);
 					Vector3 xp2 = initialObjPos + (Vector3::RIGHT * 2000);
 					
 					Vector3 pc1 = Math::WorldToCamera4(xp1, c->viewMatrix).ToVector3();
 					Vector3 pc2 = Math::WorldToCamera4(xp2, c->viewMatrix).ToVector3();
 					
-					
 					if (Math::ClipLineToZPlanes(pc1, pc2, c)) {
 						
 						Vector3 pn1 = Vector3::FORWARD * Matrix4::AxisAngleRotationMatrix(  70 - (c->fov / 2), Vector4(0, 1, 0, 0));
 						Vector3 pn2 = Vector3::FORWARD * Matrix4::AxisAngleRotationMatrix(-(70 - (c->fov / 2)), Vector4(0, 1, 0, 0));
-						
-						
-						
-						
-						
+
 						Vector3 ps1 = Math::VectorPlaneIntersect(Vector3::ZERO, pn1, pc1, pc2, t); 
 						Vector3 ps2 = Math::VectorPlaneIntersect(Vector3::ZERO, pn2, pc1, pc2, t); 
 						
@@ -376,11 +366,6 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 						Vector2 mouseline = DengInput->mousePos - v1s.ToVector2();
 						Vector2 screenline = v2s.ToVector2() - v1s.ToVector2();
 						Vector3 worldline = pir2 - pir1;
-						
-						
-						
-						
-						
 						
 						Vector3 backplaneintersect = Math::VectorPlaneIntersect(c->forward + (c->forward.normalized() * c->farZ), c->forward, pir1, pir2, t);
 						
@@ -447,12 +432,31 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
 					}
 					else {
-						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
+						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
 					}
-					LOG(planeinter);
 					sel->transform->position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
 
-				}				
+				}
+				else if (zaxis) {
+					Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
+													  admin->mainCamera->viewMatrix, admin->window->dimensions);
+					pos *= Math::WorldToLocal(admin->mainCamera->position);
+					pos.normalize();
+					pos *= 1000;
+					pos *= Math::LocalToWorld(admin->mainCamera->position);
+
+
+					Vector3 planeinter;
+
+					if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
+						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
+					}
+					else {
+						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
+					}
+					sel->transform->position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
+
+				}
 				
 			}
 		}

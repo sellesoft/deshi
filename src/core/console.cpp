@@ -40,7 +40,6 @@ std::regex RegPosParam("-pos=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex
 std::regex RegRotParam("-rot=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
 std::regex RegScaleParam("-scale=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
 std::regex RegSizeParam("-size=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
-//this is repetitive because it has to capture 3 different groups in the same way
 std::regex VecNumMatch("[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?", std::regex::optimize);
 std::regex StringRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\(([a-z]+)\\)", std::regex::optimize|std::regex::icase); }
 std::regex IntRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\(([-]?[0-9]+)\\)", std::regex::optimize); }
@@ -839,6 +838,15 @@ void Console::AddRenderCommands() {
 							std::cmatch m;
 							Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
 							
+
+							std::string name = args[0].substr(0, args[0].size() - 4);
+							
+							u32 id;
+							bool loaded = false;
+							for (MeshVk vkm : admin->renderer->basemeshes) {
+								if (name == vkm.name) { loaded = true; break; id = vkm.id; }
+							}
+
 							//check for optional params after the first arg
 							for (auto s = args.begin() + 1; s != args.end(); ++s) {
 								if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
@@ -857,11 +865,14 @@ void Console::AddRenderCommands() {
 									return "[c:red]Invalid parameter: " + *s + "[c]";
 								}
 							}
-							std::string name = args[0].substr(0, args[0].size() - 4);
-							//create the mesh and give to the renderer
-							mesh = Mesh::CreateMeshFromOBJ(args[0], name,
-														   Matrix4::TransformationMatrix(position, rotation, scale));
 							
+							//create the mesh and give to the renderer if its a base
+							if (!loaded) {
+								mesh = Mesh::CreateMeshFromOBJ(args[0], name,
+															   Matrix4::TransformationMatrix(position, rotation, scale));
+								id = admin->renderer->LoadBaseMesh(&mesh);
+							}
+						
 							//Need to make this so that MeshComp has a mesh that isn't deleted 
 							Mesh* mes = new Mesh(mesh);
 							
@@ -873,10 +884,10 @@ void Console::AddRenderCommands() {
 							AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 							admin->world->AddComponentsToEntity(admin, e, { mc, p, s });
 							
-							u32 id = admin->renderer->LoadBaseMesh(mes);
+							u32 newid = admin->renderer->CreateMesh(id, Matrix4::TransformationMatrix(position, rotation, scale));
 							Model mod;
 							mod.mesh = mesh;
-							mc->MeshID = id;
+							mc->MeshID = newid;
 							admin->scene->models.push_back(mod);
 							
 							return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);

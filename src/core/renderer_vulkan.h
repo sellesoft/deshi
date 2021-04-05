@@ -119,6 +119,7 @@ struct PrimitiveVk{
 struct MeshVk{
 	Mesh* ptr    = nullptr;
 	u32  id      = 0xFFFFFFFF;
+	std::string name = "";
 	bool visible = true;
 	bool base    = false;
 	glm::mat4 modelMatrix = glm::mat4(1.f);
@@ -257,6 +258,7 @@ struct Renderer{
 	std::vector<u32>        indexBuffer  = std::vector<u32>(0);
 	std::vector<TextureVk>  textures     = std::vector<TextureVk>(0);
 	std::vector<MeshVk>     meshes       = std::vector<MeshVk>(0);
+	std::vector<MeshVk>     basemeshes   = std::vector<MeshVk>(0);
 	std::vector<MaterialVk> materials    = std::vector<MaterialVk>(0);
 	
 	//////////////////////////////
