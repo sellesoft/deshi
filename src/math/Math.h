@@ -240,6 +240,12 @@ namespace Math {
 	static Vector3 lerpv(Vector3 v1, Vector3 v2, float t) { return  v1 * (1.f - t * t) + v2 * t * t; }
 	static Vector2 lerpv(Vector2 v1, Vector2 v2, float t) { return  v1 * (1.f - t) + v2 * t; }
 	
+	//returns in degrees
+	static float AngBetweenVectors(Vector3 v1, Vector3 v2) {
+		return DEGREES(acosf(v1.dot(v2) / (v1.mag() * v2.mag())));
+	}
+
+
 	//this function returns a matrix that tells a vector how to look at a specific point in space.
 	static Matrix4 LookAtMatrix(const Vector3& pos, const Vector3& target) {
 		if(pos == target) { return LookAtMatrix(pos, target + Vector3(.01f, 0, 0)); }
@@ -323,6 +329,18 @@ namespace Math {
 		float ad = line_start.dot(plane_n);
 		float bd = line_end.dot(plane_n);
 		t = (-plane_d - ad) / (bd - ad);
+		Vector3 line_start_to_end = line_end - line_start;
+		Vector3 line_to_intersect = line_start_to_end * t;
+		return line_start + line_to_intersect;
+	}
+
+	//where a line intersects with a plane
+	static Vector3 VectorPlaneIntersect(Vector3 plane_p, Vector3 plane_n, Vector3 line_start, Vector3 line_end) {
+		//plane_n.normalize();
+		float plane_d = -plane_n.dot(plane_p);
+		float ad = line_start.dot(plane_n);
+		float bd = line_end.dot(plane_n);
+		float t = (-plane_d - ad) / (bd - ad);
 		Vector3 line_start_to_end = line_end - line_start;
 		Vector3 line_to_intersect = line_start_to_end * t;
 		return line_start + line_to_intersect;

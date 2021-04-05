@@ -143,16 +143,10 @@ void HandleMouseInputs(EntityAdmin* admin) {
 			pos *= 1000;
 			pos *= Math::LocalToWorld(admin->mainCamera->position);
 			
-			//draw ray if debugging
 			RenderedEdge3D* ray = new RenderedEdge3D(pos, admin->mainCamera->position);
-			//ray->e = (Entity*)1; // to make it not delete every frame
-			//admin->currentScene->lines.push_back(ray);
 			
 			admin->input->selectedEntity = nullptr;
-			Vector3 p0;
-			Vector3 p1;
-			Vector3 p2;
-			Vector3 norm;
+			Vector3 p0, p1, p2, norm;
 			Matrix4 rot;
 			for (auto ep : admin->entities) {
 				Entity* e = ep.second;
@@ -222,8 +216,9 @@ void HandleMouseInputs(EntityAdmin* admin) {
 
 void HandleSelectedEntityInputs(EntityAdmin* admin) {
 	Input* input = admin->input;
-	
+	Camera* c = admin->mainCamera;
 	Entity* sel = input->selectedEntity;
+
 	if (sel) {
 		
 		static bool grabbingObj = false;
@@ -232,7 +227,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 		
 		if (!admin->IMGUI_MOUSE_CAPTURE) {
 			if (DengInput->KeyPressed(DengKeys->grabSelectedObject) || grabbingObj) {
-				Camera* c = admin->mainCamera;
+				//Camera* c = admin->mainCamera;
 				grabbingObj = true;
 				CONTROLLER_MOUSE_CAPTURE = true;
 				
@@ -322,16 +317,28 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0,0,0,0));
 					ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
 					
+					//project ray out into world from mouse
+					Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
+													  admin->mainCamera->viewMatrix, admin->window->dimensions);
+					pos *= Math::WorldToLocal(admin->mainCamera->position);
+					pos.normalize();
+					pos *= 1000;
+					pos *= Math::LocalToWorld(admin->mainCamera->position);
+
 					
-					//TODO(sushi, MaIn) make all this math work
-					Vector2 screenpos = Math::WorldToScreen2(initialObjPos, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
-					Vector2 xaxistoscreen = Math::WorldToScreen2(worldpos + Vector3::RIGHT, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
-					Vector2 screenxaxis = (xaxistoscreen - screenpos).normalized();
+					Vector3 planeinter;
+
+					if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
+						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
+					}
+					else {
+						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
+					}
+
 					
-					
-					std::vector<Vector2> vs;
-					
-					
+					sel->transform->position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
+
+
 					Vector3 xp1 = initialObjPos - (Vector3::RIGHT * 2000);
 					Vector3 xp2 = initialObjPos + (Vector3::RIGHT * 2000);
 					
@@ -357,31 +364,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 						
 						Vector2 campos = Vector2(c->position.x, c->position.z);
 						Vector2 camfor = Vector2(c->forward.x, c->forward.z);
-						
-						
-						std::vector<Vector2> ip;
-						
-						
-						
-						if ((p2 - p1).dot(Vector2::UP) < 0) {
-							//viewing axis from right side
-							
-							Vector2 ro = Math::Vector2RotateByAngle(-c->fov / 2, camfor);
-							
-							Edge e = Edge(p2, p2 + Vector2::LEFT * 2000);
-							Edge e2 = Edge(Vector2::ZERO, p1);
-							
-							
-							
-							
-							//creates 30 sample points along axis line to build polynomial curve from
-							for (int i = 0; i < 30; i++) {
-								
-							}
-							
-						}
-						
-						
+
 						Vector3 pir1 = Math::CameraToWorld4(ps1, c->viewMatrix).ToVector3();
 						Vector3 pir2 = Math::CameraToWorld4(ps2, c->viewMatrix).ToVector3();
 						
@@ -404,7 +387,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 						float dist = mouseline.dot(screenline.normalized());
 						float ratio = (screenline.normalized() * dist).mag() / screenline.mag();
 						
-						sel->transform->position = pir1 + (worldline.mag() * ratio) * worldline.normalized();
+						//sel->transform->position = pir1 + (worldline.mag() * ratio) * worldline.normalized();
 						
 						float fontsize = ImGui::GetFontSize();
 						std::string str1 = TOSTRING(pir2);
@@ -448,6 +431,28 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					ImGui::PopStyleColor();
 					ImGui::End();
 				}
+				else if (yaxis) {
+					//project ray out into world from mouse
+					Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
+													  admin->mainCamera->viewMatrix, admin->window->dimensions);
+					pos *= Math::WorldToLocal(admin->mainCamera->position);
+					pos.normalize();
+					pos *= 1000;
+					pos *= Math::LocalToWorld(admin->mainCamera->position);
+
+
+					Vector3 planeinter;
+
+					if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
+						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
+					}
+					else {
+						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
+					}
+					LOG(planeinter);
+					sel->transform->position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
+
+				}				
 				
 			}
 		}

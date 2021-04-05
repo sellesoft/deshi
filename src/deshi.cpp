@@ -33,6 +33,7 @@ investigate program closing slowly
 add Qol (quality of life) tag to TODOP
 get mouse scrolling input to work
 look into integrating TODOP with Discord
+add yaxis line
 
 Render TODOs
 ------------
