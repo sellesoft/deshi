@@ -7,7 +7,11 @@
 #include <string>
 #include <vector>
 
+struct Console;
+
 namespace deshi{
+	inline static Console* console = 0;
+	void Init(Console* console);
 	
 	inline static std::string dirData()    { return "data/"; }
 	inline static std::string dirModels()  { return dirData() + "models/"; }
