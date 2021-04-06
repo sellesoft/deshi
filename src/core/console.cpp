@@ -465,131 +465,6 @@ void Console::FlushBuffer() {
 //////////////////////////////////////////////////////////////////////
 
 
-
-
-inline void AddSpawnCommands(EntityAdmin* admin) {
-	
-	//commands["spawn_box"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-	//	//for capturing vector parameters
-	//	std::cmatch m;
-	//
-	//	if (args.size() > 0) {
-	//		Vector3 position = Vector3::ZERO;
-	//		Vector3 rotation = Vector3::ZERO;
-	//		Vector3 scale = Vector3::ONE;
-	//		Vector3 size = Vector3::ONE;
-	//		float mass = 1;
-	//		bool isStatic = false;
-	//
-	//		for (std::string s : args) { //TODO( sushi,o) see if you can capture the variables when checking for a match
-	//			if (std::regex_match(s, RegPosParam)) { // -pos=(1,2,3)
-	//				std::regex_search(s.c_str(), m, VecNumMatch);
-	//				position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-	//			}
-	//			else if(std::regex_match(s, RegRotParam)){ //-rot=(1.1,2,3)
-	//				std::regex_search(s.c_str(), m, VecNumMatch);
-	//				rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-	//			}
-	//			else if (std::regex_match(s, RegScaleParam)) { //-scale=(0,1,0)
-	//				std::regex_search(s.c_str(), m, VecNumMatch);
-	//				scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-	//			}
-	//			else if (std::regex_match(s, RegSizeParam)) { //-size=(3,1,2)
-	//				std::regex_search(s.c_str(), m, VecNumMatch);
-	//				size = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-	//			}
-	//			else if (std::regex_match(s, std::regex("-mass=[0-9|.]+"))) {
-	//				std::regex_search(s.c_str(), m, std::regex("[0-9|.]+"));
-	//				mass = std::stof(m[0]);
-	//			}
-	//			else if (std::regex_match(s, std::regex("-static"))) {
-	//				isStatic = true;
-	//			}
-	//			else {
-	//				return "[c:red]Invalid parameter: " + s + "[c]";
-	//			}
-	//		}
-	//		Entity* box = WorldSystem::CreateEntity(admin);
-	//		Transform* t = new Transform(position, rotation, scale);
-	//		Mesh* m = Mesh::CreateBox(box, size, t->position);
-	//		Physics* p = new Physics(t->position, t->rotation, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 0, mass, isStatic);
-	//		AudioSource* s = new AudioSource((char*)"sounds/Kick.wav", p);
-	//		AABBCollider* c = new AABBCollider(box, size, 1);
-	//		WorldSystem::AddComponentsToEntity(box, { t, m, p, s, c });
-	//		DengInput->selectedEntity = box;
-	//		return TOSTRING("box created at ", position);
-	//	}
-	//	else {
-	//		Entity* box = WorldSystem::CreateEntity(admin);
-	//		Transform* t = new Transform(Vector3(0, 0, 3), Vector3::ZERO, Vector3::ONE);
-	//		Mesh* m = Mesh::CreateBox(box, Vector3::ONE, t->position);
-	//		Physics* p = new Physics(t->position, t->rotation);
-	//		AudioSource* s = new AudioSource((char*)"sounds/Kick.wav", p);
-	//		AABBCollider* c = new AABBCollider(box, Vector3::ONE, 1);
-	//		WorldSystem::AddComponentsToEntity(box, { t, m, p, s, c });
-	//		Deng->input->selectedEntity = box;
-	//		return TOSTRING("box created at ", Vector3::ZERO);
-	//	}
-	//
-	//	return "Somethings wrong";
-	//}, "spawn_box", 
-	//	"spawns a box with specified parameters\n"
-	//	"avaliable parameters: \n"
-	//	"-pos=(x,y,z)\n"
-	//	"-rot=(x,y,z)\n"
-	//	"-scale=(x,y,z)\n"
-	//	"-size=(x,y,z)\n"
-	//	"example input:\n"
-	//	"spawn_box -pos=(0,1,0) -rot=(45,0,0)"
-	//	);
-	//
-	//commands["spawn_complex"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-	//	Entity* c = WorldSystem::CreateEntity(admin);
-	//
-	//	Transform* t = new Transform(Vector3(0,0,3), Vector3::ZERO, Vector3::ONE);
-	//	Mesh* m = Mesh::CreateComplex(c, "objects/bmonkey.obj", false, t->position);
-	//	WorldSystem::AddComponentsToEntity(c, {t, m});
-	//	admin->input->selectedEntity = c;
-	//	return "";
-	//}, "spawn_complex", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
-	//
-	//commands["spawn_complex1"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-	//	Entity* c = WorldSystem::CreateEntity(admin);
-	//
-	//	Transform* t = new Transform(Vector3(0,0,3), Vector3::ZERO, Vector3::ONE);
-	//	Mesh* m = Mesh::CreateComplex(c, "objects/whale_ship.obj", false, t->position);
-	//	WorldSystem::AddComponentsToEntity(c, {t, m});
-	//	admin->input->selectedEntity = c;
-	//	return "";
-	//}, "spawn_complex1", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
-	//
-	//commands["spawn_complex2"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-	//	Entity* c = WorldSystem::CreateEntity(admin);
-	//
-	//	Transform* t = new Transform(Vector3(0,0,3), Vector3::ZERO, Vector3::ONE);
-	//	Mesh* m = Mesh::CreateComplex(c, "objects/24K_Triangles.obj", false, t->position);
-	//	WorldSystem::AddComponentsToEntity(c, {t, m});
-	//	admin->input->selectedEntity = c;
-	//	return "";
-	//}, "spawn_complex2", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
-	//
-	//commands["spawn_scene"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-	//	Entity* c = WorldSystem::CreateEntity(admin);
-	//
-	//	Transform* t = new Transform(Vector3(0, 0, 3), Vector3::ZERO, Vector3::ONE);
-	//	Mesh* m = Mesh::CreateComplex(c, "scenes/scene_test.obj", true, t->position);
-	//	WorldSystem::AddComponentsToEntity(c, { t, m });
-	//
-	//	Key::Sprite* s = new Key::Sprite(1, 1);
-	//	s->SetPixel(Vector2(0, 0), Key::WHITE);
-	//
-	//	m->texture = s;
-	//
-	//	admin->input->selectedEntity = c;
-	//	return "";
-	//	}, "spawn_scene", "spawn_box <filePath: String> <hasTexture: Boolean> <position: Vector3> [rotation: Vector3] [scale: Vector3]");
-	
-}
 ////////////////////////////////////
 //// render commands and inputs ////
 ////////////////////////////////////
@@ -1402,15 +1277,15 @@ void Console::Init(Time* t, Input* i, Window* w, EntityAdmin* ea) {
 	//}, "debug_global", "debug_global");
 	
 	commands["debug_command_exec"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													 Command::CONSOLE_PRINT_EXEC = !Command::CONSOLE_PRINT_EXEC;
-													 return ""; //i dont know what this does so im not formatting it 
-												 }, "debug_command_exec", "if true, prints all command executions to the console");
-	
+		    	 Command::CONSOLE_PRINT_EXEC = !Command::CONSOLE_PRINT_EXEC;
+		    	 return ""; //i dont know what this does so im not formatting it 
+		    }, "debug_command_exec", "if true, prints all command executions to the console");
+
 	commands["engine_pause"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											   admin->paused = !admin->paused;
-											   if (admin->paused) return "engine_pause = true";
-											   else return "engine_pause = false";
-										   }, "engine_pause", "toggles pausing the engine");
+			   admin->paused = !admin->paused;
+			   if (admin->paused) return "engine_pause = true";
+			   else return "engine_pause = false";
+		   }, "engine_pause", "toggles pausing the engine");
 	
 	//AddSpawnCommands();
 	AddRenderCommands();

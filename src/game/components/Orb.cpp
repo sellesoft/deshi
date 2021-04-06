@@ -12,19 +12,21 @@ OrbManager::OrbManager(Mesh* m, EntityAdmin* a, Entity* e) {
 	//create the orbs and their mesh components
 	this->admin = a;
 	this->entity = e;
+	Mesh* mes = new Mesh(*m);
+	u32 id = admin->renderer->LoadBaseMesh(mes);
 	for (int i = 0; i < orbcount; i++) {
 		Orb* orb = new Orb(Vector3(10, 10, 10), Vector3::ONE * 0.1 * i, Vector3::ZERO, Vector3::ZERO);
-		Mesh* mes = new Mesh(*m);
+		
 		MeshComp* mc = new MeshComp(mes);
 		orb->mc = mc;
 		mc->ENTITY_CONTROL = false;
 		orbs.push_back(orb);
 		admin->world->AddAComponentToEntity(admin, entity, mc);
 		
-		u32 id = admin->renderer->LoadBaseMesh(mes);
+		u32 newid = admin->renderer->CreateMesh(id, Matrix4::TransformationMatrix(orb->pos, orb->rot, Vector3::ONE));
 		Model mod;
 		mod.mesh = *mes;
-		mc->MeshID = id;
+		mc->MeshID = newid;
 		admin->scene->models.push_back(mod);
 	}
 	name = "OrbManager";
@@ -41,7 +43,7 @@ void OrbManager::Update() {
 	static bool lerping = false;
 	
 	static float timer = 0;
-	static float lerptime = 5;
+	static float lerptime = 2;
 	
 	std::vector<Vector2> vs{
 		Vector2(0, 0),
@@ -107,8 +109,9 @@ void OrbManager::Update() {
 		}
 		
 		//o->pos.x += 10 * sin(t->totalTime + i);
-		o->mc->UpdateMeshTransform(o->pos, Vector3(180 * sin(sin(i) * t->totalTime), 180 * cos(cos(i) * t->totalTime), 0), Vector3::ONE);
-		
+		//o->mc->UpdateMeshTransform(o->pos, Vector3(180 * sin(sin(i) * t->totalTime), 180 * cos(cos(i) * t->totalTime), 0), Vector3::ONE);
+		o->mc->UpdateMeshTransform(o->pos, Vector3::ZERO, Vector3::ONE);
+
 		//ti += 0.00001;
 	}
 	

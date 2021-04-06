@@ -43,6 +43,8 @@ struct {
 }colors;
 
 std::vector<std::string> files;
+std::vector<std::string> textures;
+
 
 //// utility ui elements ///
 
@@ -94,7 +96,9 @@ void RenderCanvasSystem::MenuBar() {
 			if (IsWindowHovered()) WinHovFlag = true; 
 
 			for (int i = 0; i < files.size(); i++) {
-				if(MenuItem(files[i].c_str())) { admin->console->ExecCommand("load_obj", files[i] + ".obj"); }
+				if (files[i].find(".obj") != std::string::npos) {
+					if(MenuItem(files[i].c_str())) { admin->console->ExecCommand("load_obj", files[i]); }
+				}
 			}
 			EndMenu();
 		}//agh
@@ -285,7 +289,6 @@ void RenderCanvasSystem::DebugTools() {
 								if (IsWindowHovered()) WinHovFlag = true;
 
 								if (ImGui::BeginTable("SelectedComponents", 1)) {
-
 									ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
 									for (Component* c : sel->components) {
 										TableNextColumn(); //TableNextRow();
@@ -308,25 +311,64 @@ void RenderCanvasSystem::DebugTools() {
 							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 							if (BeginChild("SelectedMaterialsWindow", ImVec2(GetWindowWidth() * 0.95, 200), true)) {
 								if (IsWindowHovered()) WinHovFlag = true;
-								MeshComp* m = sel->GetComponent<MeshComp>();
-								if (m) {
-									//TODO(sushi, Ui) set up showing multiple batches shaders when that becomes relevant
-									Text(TOSTRING("Shader: ", shadertostring.at(m->m->batchArray[0].shader)).c_str());
-									SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-									if (ImGui::TreeNode("Shader Select")) {
-										static int selected = -1;
-										for (int i = 0; i < shadertostringint.size(); i++) {
-											if (Selectable(shadertostringint[i].c_str(), selected == i)) {
-												selected = i;
-												for (int iter = 0; iter < sel->components.size(); iter++) {
-													if (MeshComp* mc = dynamic_cast<MeshComp*>(sel->components[iter])) {
-														mc->ChangeMaterialShader(stringtoshader.at(shadertostringint[i]));
+								if (BeginTabBar("MaterialTab")) {
+									if (BeginTabItem("Shdr")) {
+										MeshComp* m = sel->GetComponent<MeshComp>();
+										if (m) {
+											//TODO(sushi, Ui) set up showing multiple batches shaders when that becomes relevant
+											Text(TOSTRING("Shader: ", shadertostring.at(m->m->batchArray[0].shader)).c_str());
+											SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+											if (ImGui::TreeNode("Shader Select")) {
+												static int selected = -1;
+												for (int i = 0; i < shadertostringint.size(); i++) {
+													if (Selectable(shadertostringint[i].c_str(), selected == i)) {
+														selected = i;
+														for (int iter = 0; iter < sel->components.size(); iter++) {
+															if (MeshComp* mc = dynamic_cast<MeshComp*>(sel->components[iter])) {
+																mc->ChangeMaterialShader(stringtoshader.at(shadertostringint[i]));
+															}
+														}
 													}
+												}
+												TreePop();
+											}
+										}
+										EndTabItem();
+									}
+									if (BeginTabItem("Tex")) {
+										
+										MeshComp* m = sel->GetComponent<MeshComp>();
+										if (m) {
+											if (m->m->batchArray.size() > 0) {
+												if (m->m->batchArray[0].textureArray.size() > 0) {
+													Text(TOSTRING("Texture: ", m->m->batchArray[0].textureArray[0].filename).c_str());
+												}
+												else {
+													Text("Current Texture: None");
+												}
+												//TODO(sushi, Ui) immplement showing multiple textures when yeah
+												Separator();
+												SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+
+												static int selected = -1;
+												for (int i = 0; i < textures.size(); i++) {
+													SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+													if (Selectable(textures[i].c_str(), selected == i)) {
+														selected = i;
+														for (int iter = 0; iter < sel->components.size(); iter++) {
+															if (MeshComp* mc = dynamic_cast<MeshComp*>(sel->components[iter])) {
+																Texture tex(textures[i].c_str(), 0);
+																mc->ChangeMaterialTexture(admin->renderer->LoadTexture(tex));
+															}
+														}
+													}
+
 												}
 											}
 										}
-										TreePop();
+										EndTabItem();
 									}
+									EndTabBar();
 								}
 								EndChild();
 							}
@@ -379,13 +421,17 @@ void RenderCanvasSystem::DebugTools() {
 				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 				Text("nearZ: ");
 				SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-				InputFloat("nearz", &c->nearZ, ImGuiInputTextFlags_CharsDecimal);
+				if (InputFloat("nearz", &c->nearZ, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsDecimal)) {
+					c->UpdateProjectionMatrix();
+				};
 				Separator();
 
 				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 				Text("farZ:  ");
 				SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-				InputFloat("farz", &c->farZ, ImGuiInputTextFlags_CharsDecimal);
+				if (InputFloat("farz", &c->farZ, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsDecimal)) {
+					c->UpdateProjectionMatrix();
+				};
 				Separator();
 
 				EndChild();
@@ -800,6 +846,7 @@ void RenderCanvasSystem::DrawUI(void) {
 void RenderCanvasSystem::Init(EntityAdmin* admin) {
 	System::Init(admin);
 	files = deshi::iterateDirectory(deshi::dirModels());
+	textures = deshi::iterateDirectory(deshi::dirTextures());
 	Canvas* canvas = admin->tempCanvas;
 }
 

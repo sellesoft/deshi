@@ -80,13 +80,13 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	
 	
 	
-	/*
+	
 	//orb testing
 	Entity* orbtest = world->CreateEntity(admin);
 	orbtest->name = "orbtest";
 	orbtest->admin = this;
-	Mesh mesh = Mesh::CreateMeshFromOBJ("sphere.obj", "sphere");
-	Texture tex("lambertian.jpg");
+	Mesh mesh = Mesh::CreateMeshFromOBJ("box.obj", "sphere");
+	Texture tex("default1024.png");
 	admin->renderer->LoadTexture(tex);
 	mesh.batchArray[0].textureArray.push_back(tex);
 	mesh.batchArray[0].textureCount = 1;
@@ -94,7 +94,7 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	Mesh* m = new Mesh(mesh);
 	OrbManager* om = new OrbManager(m, this, orbtest);
 	admin->world->AddAComponentToEntity(admin, orbtest, om);
-	*/
+	
 }
 
 void EntityAdmin::Cleanup() {
