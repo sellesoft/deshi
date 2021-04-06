@@ -35,6 +35,7 @@ add Qol (quality of life) tag to TODOP
 get mouse scrolling input to work
 look into integrating TODOP with Discord
 add yaxis line
+begin reimplementing sound system and maybe rethink its design a bit
 
 Render TODOs
 ------------
@@ -82,6 +83,7 @@ UI TODOs
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
 renaming entities from entity list
+redo debug bar to be more informative and have different modes
 
 Math NOTEs: Row-Major matrices, Left-Handed coordinate system (clockwise rotation when looking down axis)
 Math TODOs

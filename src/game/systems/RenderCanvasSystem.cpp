@@ -289,7 +289,6 @@ void RenderCanvasSystem::DebugTools() {
 								if (IsWindowHovered()) WinHovFlag = true;
 
 								if (ImGui::BeginTable("SelectedComponents", 1)) {
-
 									ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
 									for (Component* c : sel->components) {
 										TableNextColumn(); //TableNextRow();
@@ -356,7 +355,6 @@ void RenderCanvasSystem::DebugTools() {
 													SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 													if (Selectable(textures[i].c_str(), selected == i)) {
 														selected = i;
-
 														for (int iter = 0; iter < sel->components.size(); iter++) {
 															if (MeshComp* mc = dynamic_cast<MeshComp*>(sel->components[iter])) {
 																Texture tex(textures[i].c_str(), 0);
@@ -366,7 +364,6 @@ void RenderCanvasSystem::DebugTools() {
 													}
 
 												}
-
 											}
 										}
 										EndTabItem();
