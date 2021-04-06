@@ -25,6 +25,8 @@ struct MeshComp : public Component {
 	void UpdateMeshTransform(Vector3 position, Vector3 rotation, Vector3 scale);
 	
 	void ChangeMaterialShader(u32 s);
+	void ChangeMaterialTexture(u32 t);
+
 	
 	void ReceiveEvent(Event event) override;
 	void Update() override;

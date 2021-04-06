@@ -148,7 +148,7 @@ iterateDirectory(const std::string& filepath) {
 	using namespace std::filesystem;
 	std::vector<std::string> files;
 	for (auto& p : directory_iterator(filepath)) {
-		files.push_back(p.path().stem().string());
+		files.push_back(p.path().filename().string());
 	}
 	return files;
 }
