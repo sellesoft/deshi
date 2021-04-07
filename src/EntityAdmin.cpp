@@ -80,7 +80,7 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	
 	
 	
-	
+	/*
 	//orb testing
 	Entity* orbtest = world->CreateEntity(admin);
 	orbtest->name = "orbtest";
@@ -94,7 +94,7 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	Mesh* m = new Mesh(mesh);
 	OrbManager* om = new OrbManager(m, this, orbtest);
 	admin->world->AddAComponentToEntity(admin, orbtest, om);
-	
+	*/
 }
 
 void EntityAdmin::Cleanup() {

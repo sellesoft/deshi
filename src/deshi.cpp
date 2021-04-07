@@ -14,7 +14,9 @@ if you feel they would handle the problem better. It should generally be you tho
 
 Major Ungrouped TODOs
 ---------------------
-add device info debug window (graphics card, sound device, monitor res, etc)
+add console flag forshowing text in bottom right message bar like error does
+add fullscreen keybind and window commands
+add device info command (graphics card, sound device, monitor res, etc)
 add a component_state command to print state of a component (add str methods to all components/systems)
 add option to not use input callbacks so fps doesnt get affected dramatically by input
 add shaders: PBR (4textures)
@@ -46,6 +48,7 @@ http://blog.wolfire.com/2009/02/rendering-plants-with-smooth-edges/
 add 2D shader and interface functions
 add lighting and shadows
 add vertex editing
+look into adding volk for faster loading/function calls
 add RenderSettings loading and usage
 check those vulkan-tutorial links for the suggestions
 avoid having 3 copies of a mesh (model, meshVK, vulkan)
