@@ -42,7 +42,7 @@ struct RenderSettings{
 	f32  gamma;
 	u32  presetLevel;
 	u32  anisotropicFiltering;
-	u32  antiAliasing;
+	u32  antiAliasing = 0;
 	u32  shadowQuality;
 	u32  modelQuality;
 	u32  textureQuality;
@@ -56,17 +56,39 @@ struct RenderSettings{
 	bool globalAxis    = false;
 };
 
+//TODO(delle,Re) add timer here (cycles and time)
 struct RenderStats{
 	u32 totalTriangles;
 	u32 totalVertices;
 	u32 totalIndices;
 	u32 drawnTriangles;
 	u32 drawnIndices;
+	f32 renderTimeMS;
 };
 
 ////////////////////////////////
 //// vulkan support structs ////
 ////////////////////////////////
+
+//TODO(delle,Re) make this so its bit/flag based
+enum RendererStageBits : u32 { 
+	RENDERERSTAGE_NONE  = 0, 
+	RSVK_INSTANCE       = 1,
+	RSVK_SURFACE        = 2,
+	RSVK_PHYSICALDEVICE = 4,
+	RSVK_LOGICALDEVICE  = 8,
+	RSVK_SWAPCHAIN      = 16,
+	RSVK_RENDERPASS     = 32,
+	RSVK_COMMANDPOOL    = 64,
+	RSVK_FRAMES         = 128,
+	RSVK_SYNCOBJECTS    = 256,
+	RSVK_UNIFORMBUFFER  = 512,
+	RSVK_DESCRIPTORPOOL = 1024,
+	RSVK_LAYOUTS        = 2048,
+	RSVK_PIPELINESETUP  = 4096,
+	RSVK_PIPELINECREATE = 8192,
+	RSVK_RENDER   = 0xFFFFFFFF,
+}; typedef u32 RendererStage;
 
 struct QueueFamilyIndices {
 	Optional<u32> graphicsFamily;
@@ -146,11 +168,6 @@ struct FrameVk{
 	VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
 };
 
-struct SemaphoresVk{
-	VkSemaphore imageAcquired  = VK_NULL_HANDLE;
-	VkSemaphore renderComplete = VK_NULL_HANDLE;
-};
-
 struct FramebufferAttachmentsVk {
 	VkImage        colorImage       = VK_NULL_HANDLE;
 	VkDeviceMemory colorImageMemory = VK_NULL_HANDLE;
@@ -171,12 +188,16 @@ struct Renderer{
 	////////////////////////////
 	Time*          time;
 	GLFWwindow*    window;
-	RenderSettings settings; //TODO(delle,Re) load render settings from a file
+	RenderSettings settings;
 	RenderStats    stats{};
+	RendererStage  rendererStage{};
 	
 	//////////////////////////
 	//// render interface ////
 	//////////////////////////
+	
+	//TODO(delle,Re) load render settings from a file
+	void LoadRenderSettings();
 	
 	//runs the vulkan functions necessary to start rendering
 	void Init(Time* time, Window* window, deshiImGui* imgui);
@@ -264,57 +285,126 @@ struct Renderer{
 	//// vulkan api variables ////
 	//////////////////////////////
 	const int MAX_FRAMES = 2;
-	
-	//vulkan instance
-	VkAllocationCallbacks*   allocator = 0;
-	VkInstance               instance = VK_NULL_HANDLE;
-	VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
-	VkSurfaceKHR             surface;
-	
-	//device
-	VkPhysicalDevice physicalDevice   = VK_NULL_HANDLE;
-	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
-	QueueFamilyIndices physicalQueueFamilies;
-	VkDevice     device        = VK_NULL_HANDLE;
-	VkQueue      graphicsQueue = VK_NULL_HANDLE;
-	VkQueue      presentQueue  = VK_NULL_HANDLE;
-	VkDeviceSize bufferMemoryAlignment = 256;
-	
-	//swapchain
-	
-	
-	//pipeline setup
-	VkCommandPool    commandPool    = VK_NULL_HANDLE;
-	VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
-	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-	VkPipelineCache  pipelineCache  = VK_NULL_HANDLE;
-	bool clearEnable;
-    std::array<VkClearValue, 2> clearValues;
+	VkAllocationCallbacks* allocator = 0;
 	
 	bool initialized     = false;
 	bool remakeWindow    = false;
 	bool remakePipelines = false;
 	
-	//swapchain specifics
-	i32                    width = 0;
-	i32                    height = 0;
-	u32                    imageCount = 0;
-	VkSwapchainKHR           swapchain = VK_NULL_HANDLE;
-	SwapChainSupportDetails  supportDetails;
-	VkPhysicalDeviceFeatures deviceFeatures;
-	VkPhysicalDeviceFeatures enabledFeatures{};
-	VkSurfaceFormatKHR       surfaceFormat;
-	VkPresentModeKHR         presentMode;
-	VkExtent2D               extent;
-	i32                    minImageCount = 0;
-	VkRenderPass             renderPass = VK_NULL_HANDLE;
+	//render settings
+	VkSampleCountFlagBits msaaSamples{};
 	
-	u32                    frameIndex = 0;
-	std::vector<FrameVk>      frames;
-	std::vector<VkFence>      fencesInFlight;
-	std::vector<VkFence>      imagesInFlight;
-	std::vector<SemaphoresVk> semaphores;
-	FramebufferAttachmentsVk  attachments = {};
+	//////////////////////////
+	//// vulkan functions ////
+	//////////////////////////
+	//// instance ////
+	
+	
+	VkInstance instance = VK_NULL_HANDLE; //ptr
+	
+	void CreateInstance();
+	bool checkValidationLayerSupport();
+	std::vector<const char*> getRequiredExtensions();
+	
+	
+	//// debug messenger ////
+	
+	
+	VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE; //ptr
+	
+	void SetupDebugMessenger();
+	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
+														VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
+	static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
+	
+	
+	//// surface ////
+	
+	
+	VkSurfaceKHR surface; //ptr or struct; platform dependent
+	
+	void CreateSurface();
+	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+	
+	
+	//// device ////
+	
+	
+	VkPhysicalDevice         physicalDevice = VK_NULL_HANDLE; //ptr
+	VkSampleCountFlagBits    maxMsaaSamples = VK_SAMPLE_COUNT_1_BIT;  //flags
+	VkPhysicalDeviceFeatures deviceFeatures{}; //struct
+	VkPhysicalDeviceFeatures enabledFeatures{}; //struct
+	QueueFamilyIndices       physicalQueueFamilies; //struct
+	VkDevice                 device        = VK_NULL_HANDLE; //ptr
+	VkQueue                  graphicsQueue = VK_NULL_HANDLE; //ptr
+	VkQueue                  presentQueue  = VK_NULL_HANDLE; //ptr
+	VkDeviceSize             bufferMemoryAlignment = 256; //u64
+	
+	void PickPhysicalDevice();
+	//checks whether the graphics card supports swapchains
+	bool isDeviceSuitable(VkPhysicalDevice device);
+	VkSampleCountFlagBits getMaxUsableSampleCount();
+	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+	//creates an interface between the actual GPU device and a  device for interaction
+	void CreateLogicalDevice();
+	
+	
+	//// swap chain ////
+	
+	i32 width  = 0;
+	i32 height = 0;
+	VkSwapchainKHR          swapchain = VK_NULL_HANDLE; //ptr
+	SwapChainSupportDetails supportDetails{}; //struct
+	VkSurfaceFormatKHR      surfaceFormat{}; //struct
+	VkPresentModeKHR        presentMode; //flags
+	VkExtent2D              extent; //struct
+	i32                     minImageCount = 0;
+	
+	//destroy old swap chain and in-flight frames, create a new swap chain with new dimensions
+	void CreateSwapChain();
+	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+	//this controls color formats
+	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+	//this controls vsync/triple buffering
+	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+	//returns the drawable dimensions of the window
+	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+	int GetMinImageCountFromPresentMode(VkPresentModeKHR mode);
+	
+	
+	//// render pass ////
+	
+	
+	VkRenderPass renderPass = VK_NULL_HANDLE;
+	
+	void CreateRenderPass();
+	void CreateRenderPass2();
+	
+	
+	//// frames ////
+	
+	
+	u32           imageCount = 0;
+	u32           frameIndex = 0;
+	std::vector<FrameVk> frames;
+	FramebufferAttachmentsVk attachments{};
+	VkSemaphore   imageAcquiredSemaphore  = VK_NULL_HANDLE; //ptr
+	VkSemaphore   renderCompleteSemaphore = VK_NULL_HANDLE; //ptr
+	VkCommandPool commandPool = VK_NULL_HANDLE; //ptr
+	
+	//creates a pool for commands
+	void CreateCommandPool();
+	//creates image views, color/depth resources, framebuffers, commandbuffers
+	void CreateFrames();
+	void CreateFrames2();
+	//creates semaphores indicating: image acquired, rendering complete
+	void CreateSyncObjects();
+	
+	
+	//// global buffers ////
+	
 	
 	struct ShaderData{ //uniform buffer for the shaders
 		VkBuffer       uniformBuffer       = VK_NULL_HANDLE;
@@ -333,33 +423,79 @@ struct Renderer{
 		
 		bool freeze = false;
 	} shaderData;
-	VkDescriptorSet sceneDescriptorSet;
-	
-	VkBuffer        instanceBuffer       = VK_NULL_HANDLE;
-	VkDeviceMemory  instanceBufferMemory = VK_NULL_HANDLE;
-	VkDeviceSize    instanceBufferSize   = VK_NULL_HANDLE;
-	VkDescriptorSet instanceDescriptorSet;
-	
-	struct{
+	VkDescriptorSet uboDescriptorSet;
+	struct{ //instances buffer
+		VkBuffer        buffer;
+		VkDeviceMemory  bufferMemory;
+		VkDeviceSize    bufferSize;
+		VkDescriptorSet descriptorSet;
+	} instances{};
+	struct{ //vertices buffer
 		VkBuffer       buffer;
 		VkDeviceMemory bufferMemory;
 		VkDeviceSize   bufferSize;
 	} vertices{};
-	
-	struct{
+	struct{ //indices buffer
 		VkBuffer       buffer;
 		VkDeviceMemory bufferMemory;
 		VkDeviceSize   bufferSize;
 	} indices{};
 	
+	//creates and allocates the uniform buffer on ShaderData
+	void CreateUniformBuffer();
+	//updates the uniform buffers sent to shaders
+	void UpdateUniformBuffer();
+	//creates the vertex and index buffers on the GPU
+	void CreateSceneBuffers();
+	void UpdateVertexBuffer();
+	void UpdateIndexBuffer();
+	
+	//// pipelines setup ////
+	
+	
+	std::array<VkClearValue, 3> clearValues; //struct
+	VkDescriptorPool descriptorPool = VK_NULL_HANDLE; //ptr
+	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE; //ptr
+	VkPipelineCache  pipelineCache  = VK_NULL_HANDLE; //ptr
+	VkGraphicsPipelineCreateInfo           pipelineCreateInfo{}; //struct
+	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{}; //struct
+	VkPipelineRasterizationStateCreateInfo rasterizationState{}; //struct
+	VkPipelineColorBlendAttachmentState    colorBlendAttachmentState{}; //struct
+	VkPipelineColorBlendStateCreateInfo    colorBlendState{}; //struct
+	VkPipelineDepthStencilStateCreateInfo  depthStencilState{}; //struct
+	VkPipelineViewportStateCreateInfo      viewportState{}; //struct
+	VkPipelineMultisampleStateCreateInfo   multisampleState{}; //struct
+	VkPipelineVertexInputStateCreateInfo   vertexInputState{}; //struct
+	VkPipelineDynamicStateCreateInfo       dynamicState{}; //struct
+	std::vector<VkDynamicState>                    dynamicStates; //struct
+	std::vector<VkVertexInputBindingDescription>   vertexInputBindings; //struct
+	std::vector<VkVertexInputAttributeDescription> vertexInputAttributes; //struct
 	struct { //descriptor set layouts for pipelines
 		VkDescriptorSetLayout matrices;
 		VkDescriptorSetLayout textures;
+		VkDescriptorSetLayout iar; //input attachment read
 		VkDescriptorSetLayout instances;
 	} descriptorSetLayouts;
 	
-	//pipelines
-	struct {
+	VkDescriptorSet iarDescriptorSet;
+	
+	//initializes the color and depth used to clearing a frame
+	void CreateClearValues();
+	void CreateClearValues2();
+	//creates a pool of descriptors of different types to be sent to shaders
+	void CreateDescriptorPool();
+	//create descriptor set layouts and a push constant for shaders,
+	//create pipeline layout, allocate and write to descriptor sets
+	void CreateLayouts();
+	void CreateLayouts2();
+	void CreatePipelineCache();
+	void SetupPipelineCreation();
+	
+	
+	//// pipelines creation ////
+	
+	
+	struct { //pipelines
 		VkPipeline FLAT      = VK_NULL_HANDLE;
 		VkPipeline PHONG     = VK_NULL_HANDLE;
 		VkPipeline TWOD      = VK_NULL_HANDLE;
@@ -370,153 +506,60 @@ struct Renderer{
 		VkPipeline TESTING1  = VK_NULL_HANDLE;
 	} pipelines;
 	
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
-	VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
-	VkPipelineRasterizationStateCreateInfo rasterizationState{};
-	VkPipelineColorBlendAttachmentState    colorBlendAttachmentState{};
-	VkPipelineColorBlendStateCreateInfo    colorBlendState{};
-	VkPipelineDepthStencilStateCreateInfo  depthStencilState{};
-	VkPipelineViewportStateCreateInfo      viewportState{};
-	VkPipelineMultisampleStateCreateInfo   multisampleState{};
-	VkPipelineVertexInputStateCreateInfo   vertexInputState{};
-	VkPipelineDynamicStateCreateInfo       dynamicState{};
-	std::vector<VkDynamicState>                    dynamicStates;
-	std::vector<VkVertexInputBindingDescription>   vertexInputBindings;
-	std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
 	std::vector<std::pair<char*, VkShaderModule>>  shaderModules;
 	
-	//////////////////////////
-	//// Vulkan Functions ////
-	//////////////////////////
+	void CreatePipelines();
+	void RemakePipeline(VkPipeline pipeline);
+	VkPipeline GetPipelineFromShader(u32 shader);
+	void UpdateMaterialPipelines();
+	std::vector<std::string> GetUncompiledShaders();
+	//creates a pipeline shader stage from the shader bytecode
+	VkPipelineShaderStageCreateInfo loadShader(std::string fileName, VkShaderStageFlagBits stage);
+	VkPipelineShaderStageCreateInfo CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize = false);
+	void CompileAllShaders(bool optimize = false);
+	void CompileShader(std::string& filename, bool optimize = false);
 	
-	void ResizeWindow(int w, int h);
-	//destroy old swap chain and in-flight frames, create a new swap chain with new dimensions
-	void CreateSwapChain();
-	void CreateFrames();
-	void CreateRenderPass();
-	//updates the uniform buffers sent to shaders
-	//https://vulkan-tutorial.com/en/Uniform_buffers/Descriptor_layout_and_buffer
-	void UpdateUniformBuffer();
-	//we define a call order to command buffers so they can be executed by Render()
-	//dynamically sets the viewport and scissor, binds the descriptor set,
-	//calls scene's draw, then calls imgui's draw
-	//NOTE ref: gltfscenerendering.cpp:310
-	void BuildCommandBuffers();
-	//renders all of the scene's meshes
-	void Draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
-	//this controls color formats
-	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-	//this controls vsync/triple buffering
-	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-	//returns the drawable dimensions of the window
-	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
-	//creates an image view specifying how to use an image
-	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels);
-	//searches the device a format matching the arguments
-	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-	//tries to find a viable depth format
-	VkFormat findDepthFormat();
+	
+	//// memory/images ////
+	
 	
 	//finds which memory types the graphics card offers
 	u32 findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties);
+	//tries to find a viable depth format
+	VkFormat findDepthFormat();
+	//searches the device a format matching the arguments
+	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+	//creates an image view specifying how to use an image
+	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels);
 	//creates and binds a vulkan image to the GPU
 	void createImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, 
 					 VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+	//converts a VkImage from one layout to another using an image memory barrier
+	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels);
+	//scans an image for max possible mipmaps and generates them
+	void generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth, i32 texHeight, u32 mipLevels);
 	//creates a buffer of defined usage and size on the device
 	void CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 	//creates a buffer and maps provided data to it
 	void CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, void* data, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+	//uses commands to copy a buffer to an image
+	void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height);
+	//copies a buffer, we use this to copy from CPU to GPU
+	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+	
+	
+	//// other ////
+	
+	//recreates the swapchain and frames
+	void ResizeWindow();
 	//returns a command buffer that will only execute once
 	VkCommandBuffer beginSingleTimeCommands();
 	//ends a command buffer and frees that buffers memory
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-	//converts a VkImage from one layout to another using an image memory barrier
-	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels);
-	//uses commands to copy a buffer to an image
-	void copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height);
-	//scans an image for max possible mipmaps and generates them
-	//https://vulkan-tutorial.com/en/Generating_Mipmaps
-	void generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth, i32 texHeight, u32 mipLevels);
-	//copies a buffer, we use this to copy from CPU to GPU
-	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-	int GetMinImageCountFromPresentMode(VkPresentModeKHR mode);
-	
-	//creates the vertex, index, and instance buffers on the GPU
-	void CreateSceneBuffers();
-	void UpdateVertexBuffer();
-	void UpdateIndexBuffer();
-	
-	//// instance ////
-	
-	void CreateInstance();
-	bool checkValidationLayerSupport();
-	std::vector<const char*> getRequiredExtensions();
-	
-	//// debug messenger ////
-	
-	void SetupDebugMessenger();
-	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
-														VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData);
-	static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
-	
-	//// surface ////
-	
-	//https://vulkan-tutorial.com/Drawing_a_triangle/Presentation/Window_surface
-	void CreateSurface();
-	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
-	
-	//// device ////
-	
-	void PickPhysicalDevice();
-	//checks whether the graphics card supports swapchains
-	bool isDeviceSuitable(VkPhysicalDevice device);
-	VkSampleCountFlagBits getMaxUsableSampleCount();
-	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-	//creates an interface between the actual GPU device and a  device for interaction
-	void CreateLogicalDevice();
-	
-	//// frames ////
-	
-	void DestroyFrame(FrameVk* frame);
-	
-	//// pipelines setup ////
-	
-	//initializes the color and depth used to clearing a frame
-	void CreateClearValues();
-	//creates a pool for command
-	void CreateCommandPool();
-	//creates semaphores and fences indicating: images are ready, rendering is finished
-	//[GPU-GPU sync] semaphores coordinate operations across command buffers so that they execute in a specified order	(pause threads)
-	//[CPU-GPU sync] fences are similar but are waited for in the code itself rather than threads						(pause code)
-	void CreateSyncObjects();
-	//creates a pool of descriptors of different types to be sent to shaders
-	void CreateDescriptorPool();
-	void CreatePipelineCache();
-	//creates and allocates the uniform buffer on ShaderData
-	void CreateUniformBuffer();
-	//create descriptor set layouts and a push constant for shaders,
-	//create pipeline layout, allocate and write to descriptor sets
-	void CreateLayouts();
-	
-	//// pipelines ////
-	
-	void SetupPipelineCreation();
-	void CreatePipelines();
-	VkPipeline GetPipelineFromShader(u32 shader);
-	void UpdateMaterialPipelines();
-	void RemakePipeline(VkPipeline pipeline);
-	//creates a pipeline shader stage from the shader bytecode
-	VkPipelineShaderStageCreateInfo loadShader(std::string fileName, VkShaderStageFlagBits stage);
-	VkPipelineShaderStageCreateInfo CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize = false);
-	
-	//// shader compiling //// (using shaderc by Google from the VulkanSDK)
-	std::vector<std::string> GetUncompiledShaders();
-	void CompileAllShaders(bool optimize = false);
-	void CompileShader(std::string& filename, bool optimize = false);
+	//we define a call order to command buffers so they can be executed by Render()
+	//dynamically sets the viewport and scissor, binds the descriptor set,
+	void BuildCommandBuffers();
 	
 };
 

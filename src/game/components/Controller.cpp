@@ -100,14 +100,14 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 	if(!admin->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE && camera->freeCamera){
 		//TODO(delle,In) change this so its dependent on game state or something (level editor vs gameplay)
 		if(input->MousePressed(MouseButton::MB_RIGHT | INPUTMOD_ANY)){
-			admin->ExecCommand("cursor_mode", "1");
+			admin->ExecCommand("window_cursor_mode", "1");
 		}
 		if(input->MouseDown(MouseButton::MB_RIGHT | INPUTMOD_ANY)){
 			camera->rotation.y += sens * (input->mouseX - window->centerX) * .03f;
 			camera->rotation.x += sens * (input->mouseY - window->centerY) * .03f;
 		}
 		if(input->MouseReleased(MouseButton::MB_RIGHT | INPUTMOD_ANY)){
-			admin->ExecCommand("cursor_mode", "0");
+			admin->ExecCommand("window_cursor_mode", "0");
 		}
 	}
 }
@@ -219,7 +219,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 	Input* input = admin->input;
 	Camera* c = admin->mainCamera;
 	Entity* sel = input->selectedEntity;
-
+	
 	if (sel) {
 		
 		static bool grabbingObj = false;
@@ -279,7 +279,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					CONTROLLER_MOUSE_CAPTURE = false;
 					return;
 				}
-
+				
 				//if we're initially grabbing the object, set the mouse's position to it
 				//and get initial distance from obj
 				if (initialgrab) {
@@ -321,20 +321,20 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					pos.normalize();
 					pos *= 1000;
 					pos *= Math::LocalToWorld(admin->mainCamera->position);
-
+					
 					
 					Vector3 planeinter;
-
+					
 					if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
 						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
 					}
 					else {
 						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
 					}
-
+					
 					
 					sel->transform.position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
-
+					
 					Vector3 xp1 = initialObjPos - (Vector3::RIGHT * 2000);
 					Vector3 xp2 = initialObjPos + (Vector3::RIGHT * 2000);
 					
@@ -345,7 +345,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 						
 						Vector3 pn1 = Vector3::FORWARD * Matrix4::AxisAngleRotationMatrix(  70 - (c->fov / 2), Vector4(0, 1, 0, 0));
 						Vector3 pn2 = Vector3::FORWARD * Matrix4::AxisAngleRotationMatrix(-(70 - (c->fov / 2)), Vector4(0, 1, 0, 0));
-
+						
 						Vector3 ps1 = Math::VectorPlaneIntersect(Vector3::ZERO, pn1, pc1, pc2, t); 
 						Vector3 ps2 = Math::VectorPlaneIntersect(Vector3::ZERO, pn2, pc1, pc2, t); 
 						
@@ -355,7 +355,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 						
 						Vector2 campos = Vector2(c->position.x, c->position.z);
 						Vector2 camfor = Vector2(c->forward.x, c->forward.z);
-
+						
 						Vector3 pir1 = Math::CameraToWorld4(ps1, c->viewMatrix).ToVector3();
 						Vector3 pir2 = Math::CameraToWorld4(ps2, c->viewMatrix).ToVector3();
 						
@@ -425,10 +425,10 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					pos.normalize();
 					pos *= 1000;
 					pos *= Math::LocalToWorld(admin->mainCamera->position);
-
-
+					
+					
 					Vector3 planeinter;
-
+					
 					if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
 						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
 					}
@@ -436,7 +436,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
 					}
 					sel->transform.position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
-
+					
 				}
 				else if (zaxis) {
 					Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
@@ -445,10 +445,10 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					pos.normalize();
 					pos *= 1000;
 					pos *= Math::LocalToWorld(admin->mainCamera->position);
-
-
+					
+					
 					Vector3 planeinter;
-
+					
 					if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
 						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
 					}
@@ -525,6 +525,15 @@ void HandleRenderInputs(EntityAdmin* admin) {
 	//reload shaders
 	if (input->KeyPressed(Key::F5)) {
 		admin->ExecCommand("shader_reload", "-1");
+	}
+	
+	//fullscreen
+	if (input->KeyPressed(Key::F11)) {
+		if(admin->window->displayMode == DisplayMode::WINDOWED || admin->window->displayMode == DisplayMode::BORDERLESS){
+			admin->window->UpdateDisplayMode(DisplayMode::FULLSCREEN);
+		}else{
+			admin->window->UpdateDisplayMode(DisplayMode::WINDOWED);
+		}
 	}
 }
 

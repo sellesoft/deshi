@@ -14,9 +14,10 @@ if you feel they would handle the problem better. It should generally be you tho
 
 Major Ungrouped TODOs
 ---------------------
-add device info debug window (graphics card, sound device, monitor res, etc)
-add a component_state command to print state of a component
-fix mesh rotations begin global
+add console flag forshowing text in bottom right message bar like error does
+add fullscreen keybind and window commands
+add device info command (graphics card, sound device, monitor res, etc)
+add a component_state command to print state of a component (add str methods to all components/systems)
 add option to not use input callbacks so fps doesnt get affected dramatically by input
 add shaders: PBR (4textures)
 settings file(s) [keybinds, video, audio, etc]
@@ -29,8 +30,7 @@ Minor Ungrouped TODOs
 cleanup Triangle and remove unused things
 pool/arena components and entities for better performance
 implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
-replace/remove external dependencies/includes were possible (glm, boost, sascha, tinyobj)
-investigate program closing slowly
+replace/remove external dependencies/includes were possible (glm, tinyobj)
 add Qol (quality of life) tag to TODOP
 get mouse scrolling input to work
 look into integrating TODOP with Discord
@@ -39,10 +39,16 @@ begin reimplementing sound system and maybe rethink its design a bit
 
 Render TODOs
 ------------
-add texture transparency support
+add texture transparency/gif support{
+https://www.reddit.com/r/vulkan/comments/6x7e8e/help_request_cant_get_alpha_blending_to_work/
+https://github.com/nothings/stb/blob/f67165c2bb2af3060ecae7d20d6f731173485ad0/stb_image.h#L1300
+https://matthewwellings.com/blog/depth-peeling-order-independent-transparency-in-vulkan/
+http://blog.wolfire.com/2009/02/rendering-plants-with-smooth-edges/
+}
 add 2D shader and interface functions
 add lighting and shadows
 add vertex editing
+look into adding volk for faster loading/function calls
 add RenderSettings loading and usage
 check those vulkan-tutorial links for the suggestions
 avoid having 3 copies of a mesh (model, meshVK, vulkan)

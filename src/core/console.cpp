@@ -722,7 +722,7 @@ void Console::AddRenderCommands() {
 							for (MeshVk vkm : admin->renderer->basemeshes) {
 								if (name == vkm.name) { loaded = true; break; id = vkm.id; }
 							}
-
+							
 							//check for optional params after the first arg
 							for (auto s = args.begin() + 1; s != args.end(); ++s) {
 								if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
@@ -748,7 +748,7 @@ void Console::AddRenderCommands() {
 															   Matrix4::TransformationMatrix(position, rotation, scale));
 								id = admin->renderer->LoadBaseMesh(&mesh);
 							}
-						
+							
 							//Need to make this so that MeshComp has a mesh that isn't deleted 
 							Mesh* mes = new Mesh(mesh);
 							
@@ -1150,10 +1150,10 @@ void Console::AddSelectedEntityCommands() {
 void Console::AddWindowCommands() {
 	NEWCOMMAND("quit", "exits the application", {
 				   admin->window->Close();
-				   return("q lol");
+				   return("");
 			   });
 	
-	commands["display_mode"] =
+	commands["window_display_mode"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 						Window* w = admin->window;
 						if (args.size() != 1) { return "display_mode <mode: Int>"; }
@@ -1176,9 +1176,9 @@ void Console::AddWindowCommands() {
 						catch (...) {
 							return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen";
 						}
-					}, "display_mode", "display_mode <mode:Int>");
+					}, "window_display_mode", "window_display_mode <mode:Int>");
 	
-	commands["cursor_mode"] =
+	commands["window_cursor_mode"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 						Window* w = admin->window;
 						if (args.size() != 1) { return "cursor_mode <mode:Int>"; }
@@ -1200,9 +1200,9 @@ void Console::AddWindowCommands() {
 						catch (...) {
 							return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden";
 						}
-					}, "cursor_mode", "cursor_mode <mode:Int>");
+					}, "window_cursor_mode", "window_cursor_mode <mode:Int>");
 	
-	commands["raw_input"] =
+	commands["window_raw_input"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 						Window* w = admin->window;
 						if (args.size() != 1) { return "raw_input <input:Boolean>"; }
@@ -1217,9 +1217,9 @@ void Console::AddWindowCommands() {
 						catch (...) {
 							return "raw_input: 0=false, 1=true";
 						}
-					}, "raw_input", "raw_input <input:Boolean>; Only works in firstperson cursor mode");
+					}, "window_raw_input", "raw_input <input:Boolean>; Only works in firstperson cursor mode");
 	
-	NEWCOMMAND("window_resizable", "raw_input <resizable:Boolean>", {
+	NEWCOMMAND("window_resizable", "window_raw_input <resizable:Boolean>", {
 				   Window * w = admin->window;
 				   if (args.size() != 1) { return "window_resizable <resizable:Boolean>"; }
 				   try {
@@ -1285,15 +1285,15 @@ void Console::Init(Time* t, Input* i, Window* w, EntityAdmin* ea) {
 	//}, "debug_global", "debug_global");
 	
 	commands["debug_command_exec"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-		    	 Command::CONSOLE_PRINT_EXEC = !Command::CONSOLE_PRINT_EXEC;
-		    	 return ""; //i dont know what this does so im not formatting it 
-		    }, "debug_command_exec", "if true, prints all command executions to the console");
-
+													 Command::CONSOLE_PRINT_EXEC = !Command::CONSOLE_PRINT_EXEC;
+													 return ""; //i dont know what this does so im not formatting it 
+												 }, "debug_command_exec", "if true, prints all command executions to the console");
+	
 	commands["engine_pause"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-			   admin->paused = !admin->paused;
-			   if (admin->paused) return "engine_pause = true";
-			   else return "engine_pause = false";
-		   }, "engine_pause", "toggles pausing the engine");
+											   admin->paused = !admin->paused;
+											   if (admin->paused) return "engine_pause = true";
+											   else return "engine_pause = false";
+										   }, "engine_pause", "toggles pausing the engine");
 	
 	//AddSpawnCommands();
 	AddRenderCommands();
