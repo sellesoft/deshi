@@ -16,7 +16,6 @@ https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-
 #include "../core.h"
 #include "../scene/Scene.h"
 #include "../math/Math.h"
-#include "../geometry/Triangle.h"
 
 #include "../external/imgui/imgui.h"
 #include "../external/imgui/imgui_impl_glfw.h"
@@ -62,8 +61,30 @@ const bool enableValidationLayers = true;
 //// render interface ////
 //////////////////////////
 
+//TODO(sushi) finish implementing this
 void Renderer::
 LoadRenderSettings(){
+
+	//std::map<std::string, std::string> in = deshi::extractConfig("render.cfg");
+	//
+	//
+	//
+	//enum RenderSettingsEnum {
+	//	vsync, reduceBuffering, brightness, gamma, presetLevel, anisotropicFiltering, 
+	//	antiAliasing, shadowQuality, modelQuality, textureQuality, reflectionQuality,
+	//	lightQuality, shaderQuality, wireframe, wireframeOnly, globalAxis
+	//};
+	//
+	//std::map<std::string, RenderSettingsEnum> strs{
+	//	{"vsync", vsync}, {"reduceBuffering", reduceBuffering},{"brightness", brightness},{"gamma", gamma},{"presetLevel", presetLevel},{"anistrophicFiltering",  anistrophicFiltering},
+	//	{"antiAliasing", antiAliasing}, {"shadowQuality", shadowQuality},{"modelQuality",  modelQuality},{"textureQuality", textureQuality},{"reflectionQuality",  reflectionQuality},
+	//	{"lightQuality", lightQuality}, {"shaderQuality", shaderQuality},{"wireframe", wireframe},{"wireframeOnly", wireframeOnly}, {"globalAxis", globalAxis}
+	//};
+	//
+	//for (int i = 0; i < in.size(); i++) {
+	//
+	//}
+
 	msaaSamples = maxMsaaSamples;
 }
 
@@ -695,6 +716,7 @@ UpdateMaterialShader(u32 matID, u32 shader){
 		for(auto& mat : materials){ mat.pipeline = GetPipelineFromShader(shader); }
 	}else if(matID < materials.size()){
 		materials[matID].pipeline = GetPipelineFromShader(shader);
+		materials[matID].shader = shader;
 	}
 }
 
@@ -743,12 +765,6 @@ LoadScene(Scene* sc){
 	
 	CreateSceneBuffers();
 }
-
-
-
-
-
-
 
 void Renderer::
 UpdateCameraPosition(Vector3 position){
@@ -2451,9 +2467,9 @@ CompileAllShaders(bool optimize){
 		}else{ continue; }
 		
 		//check for errors
-		if(!result){ PRINT("[ERROR]"<< filename <<": Shader compiler returned a null result"); continue; }
+		if(!result){ ERROR_LOC(filename,": Shader compiler returned a null result"); continue; }
 		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
-			PRINT("[ERROR]"<< filename <<": "<< shaderc_result_get_error_message(result)); continue;
+			ERROR(filename, ": ", shaderc_result_get_error_message(result)); continue;
 		}
 		
 		//create or overwrite .spv files
@@ -2498,9 +2514,9 @@ CompileShader(std::string& filename, bool optimize){
 		}else{ return; }
 		
 		//check for errors
-		if(!result){ PRINT("[ERROR]"<< filename <<": Shader compiler returned a null result"); return; }
+		if(!result){ ERROR_LOC(filename,": Shader compiler returned a null result"); return; }
 		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
-			PRINT("[ERROR]"<< filename <<": "<< shaderc_result_get_error_message(result)); return;
+			ERROR(filename, ": ", shaderc_result_get_error_message(result)); return;
 		}
 		
 		//create or overwrite .spv files
@@ -2512,7 +2528,7 @@ CompileShader(std::string& filename, bool optimize){
 		outFile.close();
 		shaderc_result_release(result);
 	}else{
-		PRINT("[ERROR] failed to open file: " << filename);
+		ERROR_LOC("[ERROR] failed to open file: ", filename);
 	}
 }
 

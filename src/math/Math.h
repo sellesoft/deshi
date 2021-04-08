@@ -240,9 +240,11 @@ namespace Math {
 	
 	//interpolating
 	static float   lerpf(float p1, float p2, float t) { return (1.f - t) * p1 + t * p2; }
-	static Vector3 lerpv(Vector3 v1, Vector3 v2, float t) { return  v1 * (1.f - t * t) + v2 * t * t; }
+	static Vector3 lerpv(Vector3 v1, Vector3 v2, float t) { return  v1 * (1.f - t) + v2 * t; }
 	static Vector2 lerpv(Vector2 v1, Vector2 v2, float t) { return  v1 * (1.f - t) + v2 * t; }
 	
+	static Matrix4 lerpm4(Matrix4 m1, Matrix4 m2, float t) { return m1 * (1.f - t) + m2 * t; }
+
 	//returns in degrees
 	static float AngBetweenVectors(Vector3 v1, Vector3 v2) {
 		return DEGREES(acosf(v1.dot(v2) / (v1.mag() * v2.mag())));
@@ -474,9 +476,21 @@ namespace Math {
 		}
 	} //ClipLineToBorderPlanes
 	
+	//NOTE these triangle functions are quite useless I think but I put them here in case
+	//since I deleted Triangle.h
+
 	//returns area of a triangle of sides a and b
 	static float TriangleArea(Vector3 a, Vector3 b) { return a.cross(b).mag() / 2; }
 	
+	//The normal this returns heavily depends on how you give it the points
+	static Vector3 TriangleNormal(Vector3 p1, Vector3 p2, Vector3 p3) {
+		return (p3 - p1).cross(p2 - p1).normalized();
+	}
+
+	static Vector3 TriangleMidpoint(Vector3 p1, Vector3 p2, Vector3 p3) {
+		return (p1 + p2 + p3) / 3;
+	}
+
 	static Vector3 WorldToCamera3(Vector3 vertex, Matrix4 viewMatrix) {
 		return Math::ProjMult(vertex.ToVector4(), viewMatrix).ToVector3();
 	}

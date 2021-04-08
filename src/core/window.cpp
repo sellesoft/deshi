@@ -174,8 +174,8 @@ void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode
 	//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	glfwSetScrollCallback(window, 
 						  [](GLFWwindow* window, double xoffset, double yoffset)->void{
-							  Window::input->realScreenMouseX = xoffset;
-							  Window::input->realScreenMouseY = yoffset;
+							  Window::input->realScrollX = xoffset;
+							  Window::input->realScrollY = yoffset;
 						  });
 	
 }//Init

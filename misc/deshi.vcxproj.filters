@@ -7,9 +7,6 @@
     <ClInclude Include="..\src\geometry\Geometry.h">
       <Filter>src\geometry</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\geometry\Triangle.h">
-      <Filter>src\geometry</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\utils\Color.h">
       <Filter>src\utils</Filter>
     </ClInclude>
@@ -343,6 +340,9 @@
     </None>
     <None Include="..\src\math\Matrix4.inl">
       <Filter>src\math</Filter>
+    </None>
+    <None Include="..\cfg\render.cfg">
+      <Filter>cfg</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

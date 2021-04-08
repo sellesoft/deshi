@@ -38,8 +38,8 @@ struct RenderSettings{
 	//loaded from file
 	bool vsync;
 	bool reduceBuffering;
-	f32  brightness;
-	f32  gamma;
+	float  brightness;
+	float  gamma;
 	u32  presetLevel;
 	u32  anisotropicFiltering;
 	u32  antiAliasing = 0;

@@ -32,10 +32,10 @@ pool/arena components and entities for better performance
 implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
 replace/remove external dependencies/includes were possible (glm, tinyobj)
 add Qol (quality of life) tag to TODOP
-get mouse scrolling input to work
 look into integrating TODOP with Discord
 add yaxis line
 begin reimplementing sound system and maybe rethink its design a bit
+fix console color parsing regex to only match from opening bracket to FIRST closing bracket
 
 Render TODOs
 ------------
@@ -80,6 +80,7 @@ add physics collision sweeping
 add physics based collision resolution for remaining collider primitives
 add physics interaction functions
 finish imlementing AABB vs AABB collisions
+implement collision manifold generation
 implement Sphere vs Sphere collisions
 implement Complex Colliders 
 
@@ -154,7 +155,7 @@ struct DeshiEngine {
 		input.Update();
 		imgui.NewFrame();            //place imgui calls after this
 		entityAdmin.Update();
-		console.Update();      //not sure where we want this
+		console.Update();      
 		renderer.Render();           //place imgui calls before this
 		renderer.Present();
 		//entityAdmin.PostRenderUpdate();

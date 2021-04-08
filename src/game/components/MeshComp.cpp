@@ -37,7 +37,6 @@ void MeshComp::ReceiveEvent(Event event) {
 
 void MeshComp::ChangeMaterialShader(u32 s) {
 	std::vector<u32> ids = admin->renderer->GetMaterialIDs(MeshID);
-	
 	for (u32 id : ids) {
 		admin->renderer->UpdateMaterialShader(id, s);
 	}

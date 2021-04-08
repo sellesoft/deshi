@@ -13,7 +13,7 @@ struct Entity;
 
 //constants
 #define MAX_KEYBOARD_KEYS 256
-#define MAX_MOUSE_BUTTONS 5
+#define MAX_MOUSE_BUTTONS 7
 
 namespace Key {
 	typedef enum KeyBits {
@@ -34,7 +34,7 @@ namespace Key {
 
 namespace MouseButton{
 	typedef enum MouseButtonBits{
-		MB_LEFT, MB_RIGHT, MB_MIDDLE, MB_FOUR, MB_FIVE
+		MB_LEFT, MB_RIGHT, MB_MIDDLE, MB_FOUR, MB_FIVE, MB_SCROLLDOWN, MB_SCROLLUP
 	} MouseButtonBits;
 	typedef u32 MouseButton;
 }
@@ -86,7 +86,11 @@ struct Input{
 		//mouseX = realMouseX; mouseY = realMouseY; //NOTE this doesnt work, idk why
 		mousePos.x = mouseX; mousePos.y = mouseY;
 		screenMouseY = realScreenMouseX; screenMouseY = realScreenMouseY;
-		scrollX = realScrollX; scrollY = realScrollY;
+		//bit scuffed mouse wheel stuff
+		if      (realScrollY < 0) newMouseState[MouseButton::MB_SCROLLDOWN] = 1;
+		else if (realScrollY > 0) newMouseState[MouseButton::MB_SCROLLUP] = 1;
+		else    { newMouseState[MouseButton::MB_SCROLLDOWN] = 0; newMouseState[MouseButton::MB_SCROLLUP] = 0; }
+		realScrollY = 0;
 	}
 	
 	/////////////////////////////////

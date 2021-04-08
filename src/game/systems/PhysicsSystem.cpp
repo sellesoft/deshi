@@ -206,67 +206,10 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 		}
 		
 		//dynamic resolution
-		Vector3 ovel;
-		
-		//if the first objects vel is zero we must use the other obj to avoid
-		//dividing by zero. if both are 0 then we dont resolve anything
-		//i dont think this is necessary anymore since i fixed something in
-		//Vector3 but im gonna keep it just incase
-		if (obj1->velocity != Vector3::ZERO) {
-			ovel = obj1->velocity;
-		}
-		else if (obj2->velocity != Vector3::ZERO) {
-			ovel = obj2->velocity;
-		}
-		else {
-			ovel = Vector3::ZERO;
-		}
-		
-		Vector3 vcm;
-		Vector3 v1f;
-		Vector3 v2f;
-		
-		//resolution by the Center of Mass Frame Reference Method
-		//http://www.ww-p.org/common/pages/DisplayFile.aspx?itemId=8889217
-		if (ovel != Vector3::ZERO) {
-			
-			vcm = ((obj1->mass * obj1->velocity) + (obj2->mass * obj2->velocity)) / (obj1->mass + obj2->mass);
-			v1f = -obj1->velocity + (2 * vcm);
-			v2f = -obj2->velocity + (2 * vcm);
-			
-			if (!obj1->isStatic) obj1->velocity = v1f;
-			if (!obj2->isStatic) obj2->velocity = v2f;
-			
-			//account for elasticity
-			//makes object reflect off of whichever surface of the aabb it hit
-			
-			//if (obj1->elasticity != 0 || obj2->elasticity != 0) {
-			//	if (xf) {
-			//		//this rotates the vel vector 180 degrees around the vector perp to the surface it hit.
-			//		Vector3 velcomp = -ovel.compOn(Vector3(1, 0, 0) * (ovel.x / fabs(ovel.x))); //the division is so sign is correct
-			//		Vector3 velperp = -ovel - velcomp;
-			//		obj->velocity = obj->elasticity * ovel.mag() * (-velperp + velcomp).normalized();
-			//		oobj->velocity = oobj->velocity.mag() * -obj->velocity.normalized();
-			//		
-			//
-			//
-			//	}
-			//	else if (yf) {
-			//		Vector3 velcomp = -ovel.compOn(Vector3(0, 1, 0) * (ovel.y / fabs(ovel.y)));
-			//		Vector3 velperp = -ovel - velcomp;
-			//		obj->velocity = obj->elasticity * ovel.mag() * (-velperp + velcomp).normalized();
-			//		oobj->velocity = oobj->velocity.mag() * -obj->velocity.normalized();
-			//	}
-			//	else if (zf) {
-			//		Vector3 velcomp = -ovel.compOn(Vector3(0, 0, 1) * (ovel.z / fabs(ovel.z)));
-			//		Vector3 velperp = -ovel - velcomp;
-			//		obj->velocity = obj->elasticity * ovel.mag() * (-velperp + velcomp).normalized();
-			//		oobj->velocity = oobj->velocity.mag() * -obj->velocity.normalized();
-			//
-			//	}
-			//}
-			
-		}
+
+		//get relative velocity
+		Vector3 relvel = obj2->velocity - obj1->velocity;
+
 		
 	}
 	

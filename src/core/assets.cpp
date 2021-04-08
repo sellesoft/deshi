@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <regex>
 
 ////////////////////
 //// file paths ////
@@ -160,6 +161,47 @@ iterateDirectory(const std::string& filepath) {
 		files.push_back(p.path().filename().string());
 	}
 	return files;
+}
+
+std::map<std::string, std::string> deshi::
+extractConfig(const std::string& filepath) {
+	std::map<std::string, std::string> out;
+
+	std::fstream in;
+	in.open(deshi::dirConfig() + filepath, std::fstream::in);
+
+	if (in.is_open()) {
+
+		std::regex r = std::regex("([A-Za-z]+) += +(.+)");
+		int line = 0;
+		while (!in.eof()) {
+			char* c = (char*)malloc(255);
+			in.getline(c, 255);
+
+			std::string s(c);
+
+			if (s[0] == '>') { line++; continue; }
+
+			std::smatch m;
+
+			std::regex_match(s, m, r);
+			
+			if (m.size() == 1) {
+				ERROR_LOC(m[1], "\nConfig regex did not find a match for the string above.");
+				line++;
+				continue;
+			}
+
+			out.emplace(m[1], m[2]);
+
+		}
+	}
+	else {
+		out.emplace("FileNotFound", "");
+	}
+
+	return out;
+
 }
 
 void deshi::enforceDirectories() {

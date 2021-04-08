@@ -65,7 +65,7 @@ enum Shader : u32 {
 };
 
 //is there maybe a better way of doing this than using 2 maps?
-static std::map<Shader, std::string> shadertostring = {
+static std::map<u32, std::string> shadertostring = {
 	{FLAT,      "FLAT"},
 	{PHONG,     "PHONG"},
 	{TWOD,      "TWOD"},
@@ -110,7 +110,7 @@ struct Batch {
 	std::vector<u32>     indexArray;
 	std::vector<Texture> textureArray;
 	
-	Shader      shader;
+	u32      shader;
 	ShaderFlags shaderFlags;
 	
 	Batch() {}

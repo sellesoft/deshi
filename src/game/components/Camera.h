@@ -13,6 +13,7 @@ enum struct CameraType {
 struct Camera : public Component {
 	Vector3 position{4.f, 3.f, -4.f};
 	Vector3 rotation{28.f, -45.f, 0.f};
+	Vector3 target;
 	Vector3 forward = Vector3::ZERO;
 	Vector3 right   = Vector3::ZERO;
 	Vector3 up      = Vector3::ZERO;
@@ -32,6 +33,8 @@ struct Camera : public Component {
 	//horizontal fov in degrees
 	Matrix4 MakePerspectiveProjection();
 	Matrix4 MakeOrthographicProjection();
+	void UseOrthographicProjection();
+
 	void UpdateProjectionMatrix();
 
 	std::string Save() override;

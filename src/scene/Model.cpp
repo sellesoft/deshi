@@ -107,19 +107,19 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 tra
 			}
 			if(mat->specular_texname.length() > 0){
 				if(mat->specular_texopt.type == 0){
-					Texture tex(mat->specular_texname.substr(mat->specular_texname.find_last_of('\\')+1).c_str(), TEXTURE_ALBEDO);
+					Texture tex(mat->specular_texname.substr(mat->specular_texname.find_last_of('\\')+1).c_str(), TEXTURE_SPECULAR);
 					batch.textureArray.push_back(tex);
 				}
 			}
 			if(mat->bump_texname.length() > 0){
 				if(mat->bump_texopt.type == 0){
-					Texture tex(mat->bump_texname.substr(mat->bump_texname.find_last_of('\\')+1).c_str(), TEXTURE_ALBEDO);
+					Texture tex(mat->bump_texname.substr(mat->bump_texname.find_last_of('\\')+1).c_str(), TEXTURE_NORMAL);
 					batch.textureArray.push_back(tex);
 				}
 			}
 			if(mat->ambient_texname.length() > 0){
 				if(mat->ambient_texopt.type == 0){
-					Texture tex(mat->ambient_texname.substr(mat->ambient_texname.find_last_of('\\')+1).c_str(), TEXTURE_ALBEDO);
+					Texture tex(mat->ambient_texname.substr(mat->ambient_texname.find_last_of('\\')+1).c_str(), TEXTURE_LIGHT);
 					batch.textureArray.push_back(tex);
 				}
 			}

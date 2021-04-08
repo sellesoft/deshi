@@ -25,34 +25,8 @@ Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ, bool freeCam) 
 	layer = NONE;
 }
 
-/*
-Matrix4 MakeOrthographicMatrix(Scene* s, Camera* c, float screenWidth, float screenHeight) {
-	std::pair<Vector3, Vector3> bbox = s->SceneBoundingBox();
-	
-	//convert bounding box to camera space
-	Vector3 maxcam = Math::WorldToCamera4(bbox.first,  c->viewMatrix).ToVector3();
-	Vector3 mincam = Math::WorldToCamera4(bbox.second, c->viewMatrix).ToVector3(); 
-	
-	//make screen box from camera space bounding box
-	float maxx = std::max(fabs(mincam.x), fabs(maxcam.x));
-	float maxy = std::max(fabs(mincam.y), fabs(maxcam.y));
-	float max = std::max(maxx, maxy);
-	
-	float aspectRatio = screenHeight / screenWidth;
-	float r = max * aspectRatio, t = max;
-	float l = -r, b = -t;
-	
-	//r += 10; l -= 10;
-	//t += 10; b -= 10;
-	
-	return Matrix4(
-				   2 / (r - l),			0,						0,												0,
-				   0,						2 / (t - b),			0,												0,
-				   0,						0,						-2 / (c->farZ - c->nearZ),						0,
-				   -(r + l) / (r - l),		-(t + b) / (t - b),		-(c->farZ + c->nearZ) / (c->farZ - c->nearZ),	1);
-	
+void Camera::UseOrthographicProjection() {
 }
-*/
 
 Matrix4 Camera::MakePerspectiveProjection(){
 	float renderDistance = farZ - nearZ;
@@ -78,20 +52,25 @@ Matrix4 Camera::MakeOrthographicProjection() {
 	float maxy = std::max(fabs(mincam.y), fabs(maxcam.y));
 	float max  = std::max(maxx, maxy);
 	
-	float aspectRatio = DengWindow->height / DengWindow->width;
+	float aspectRatio = (float)DengWindow->width / DengWindow->height;
 	float r = max * aspectRatio, t = max;
 	float l = -r, b = -t;
 	
-	r += 10 * aspectRatio; l -= 10;
-	t += 10; b -= 10;
+	static float zoom = 10;
+
+	if (DengInput->MousePressed(MouseButton::MB_SCROLLDOWN)) zoom -= 5;
+	if (DengInput->MousePressed(MouseButton::MB_SCROLLUP)) zoom += 5;
+	
+	r += zoom * aspectRatio; l = -r;
+	t += zoom; b -= zoom;
 	
 	float f = admin->mainCamera->farZ;
-	float n = 0.01;//admin->mainCamera->nearZ;
+	float n = admin->mainCamera->nearZ;
 	
 	return Matrix4(2/(r-l),      0,            0,            0,
-				   0,            2/(t-b),      0,            0,
+				   0,            2/(b-t),      0,            0,
 				   0,            0,            -2/(f-n),     0,
-				   -(r+l)/(r-l), -(t+b)/(t-b), -(f+n)/(f-n), 1);
+				   -(r+l)/(r-l), -(t+b)/(b-t), -(f+n)/(n-f), 1);
 }
 
 void Camera::UpdateProjectionMatrix(){
@@ -132,15 +111,31 @@ void Camera::Update() {
 		right = Vector3::UP.cross(forward).normalized();
 		up = right.cross(forward).normalized();
 		
-		//UseOrthographicProjection();
+		if (DengInput->KeyPressed(Key::P)) {
+			switch (type) {
+				case(CameraType::PERSPECTIVE):{ type = CameraType::ORTHOGRAPHIC; } break;
+				case(CameraType::ORTHOGRAPHIC): { type = CameraType::PERSPECTIVE; UpdateProjectionMatrix(); } break;
+			}
+		}
 		
 		//update view matrix
 		//TODO(delle,Op) precalc this since we already get the direction vectors
-		viewMatrix = Math::LookAtMatrix(position, position+forward).Inverse();
+		if (type == CameraType::ORTHOGRAPHIC) {
+			target = Vector3::ZERO;
+		}
+		else {
+			target = position + forward;
+		}
+		
+		viewMatrix = Math::LookAtMatrix(position, target).Inverse();
 		
 		//update renderer camera properties
+		if (type == CameraType::ORTHOGRAPHIC) {
+			UpdateProjectionMatrix();
+		}
 		renderer->UpdateCameraViewMatrix(viewMatrix);
 		renderer->UpdateCameraPosition(position);
+		
 	}
 }
 

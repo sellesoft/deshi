@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 struct Console;
 
@@ -51,6 +52,9 @@ namespace deshi{
 	//probably return something other than a vector of strings but thts how it is for now
 	std::vector<std::string> iterateDirectory(const std::string& filepath);
 	
+	//iterates a config file and returns a map of keys and values (see keybinds.cfg)
+	std::map<std::string, std::string> extractConfig(const std::string& filepath);
+
 	//creates base deshi directories if they dont already exist
 	void enforceDirectories();
 	

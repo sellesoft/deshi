@@ -241,7 +241,6 @@
     <ClInclude Include="..\src\game\Transform.h" />
     <ClInclude Include="..\src\geometry\Edge.h" />
     <ClInclude Include="..\src\geometry\Geometry.h" />
-    <ClInclude Include="..\src\geometry\Triangle.h" />
     <ClInclude Include="..\src\math\InertiaTensors.h" />
     <ClInclude Include="..\src\math\Math.h" />
     <ClInclude Include="..\src\math\Matrix.h" />
@@ -263,6 +262,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore" />
+    <None Include="..\cfg\render.cfg" />
     <None Include="..\README.md" />
     <None Include="..\shaders\fixedimguishader.vert" />
     <None Include="..\shaders\flat.frag" />
