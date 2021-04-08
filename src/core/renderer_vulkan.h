@@ -113,6 +113,16 @@ struct VertexVk{
 	}
 };
 
+struct Vertex2DVk{
+	glm::vec3 pos;
+	glm::vec2 texCoord;
+	glm::vec3 color; //between 0 and 1
+	
+	bool operator==(const VertexVk& other) const {
+		return pos == other.pos && color == other.color && texCoord == other.texCoord;
+	}
+};
+
 struct TextureVk {
 	char filename[64];
 	u32 id = 0xFFFFFFFF;

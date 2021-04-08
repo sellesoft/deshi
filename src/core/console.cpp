@@ -437,7 +437,7 @@ void Console::FlushBuffer() {
 	}
 	
 	
-	static std::string filename = TOSTRING("logs/deshiLog_", "-", DengTime->month, "-", DengTime->day, "-", DengTime->year, "_", DengTime->hour, ".", DengTime->minute, ".", DengTime->second, ".txt");
+	static std::string filename = DengTime->FormatDateTime("logs/deshiLog_{M}-{d}-{y}_{h}.{m}.{s}.txt");
 	static bool session = false;
 	
 	std::ofstream file;
@@ -446,7 +446,7 @@ void Console::FlushBuffer() {
 	if (!session) {
 		
 		file.open(filename);
-		file << TOSTRING("Deshi Console Log ", DengTime->weekday, " ", DengTime->month, "/", DengTime->day, "/", DengTime->year, " ", DengTime->hour, ":", DengTime->minute, ":", DengTime->second) << std::endl;
+		file << DengTime->FormatDateTime("Deshi Console Log {w} {M}/{d}/{y} {h}:{m}:{s}") << std::endl;
 		file << "\n" << output;
 		session = true;
 		
@@ -471,8 +471,6 @@ void Console::FlushBuffer() {
 
 void Console::AddRenderCommands() {
 	//TODO(delle,Cmd) create material
-	
-	//TODO(delle,Cmd) list materials
 	
 	//TODO(delle,Cmd) create box 
 	
@@ -1263,7 +1261,6 @@ void Console::Init(Time* t, Input* i, Window* w, EntityAdmin* ea) {
 	compstrmap.emplace("MeshComp",    []() { return new MeshComp(); });
 	compstrmap.emplace("Physics",     []() { return new Physics(); });
 	
-	
 	AddLog("[c:dcyan]Deshi Console ver. 0.5.1[c]");
 	AddLog("\"listc\" for a list of commands\n\"help {command}\" to view a commands help page");
 	AddLog("see console_release_notes.txt for version information");
@@ -1314,8 +1311,6 @@ void Console::Update() {
 		admin->IMGUI_KEY_CAPTURE = false;
 	}
 	
-	me = this;
-	
 	if (buffersize >= 120000) {
 		FlushBuffer();
 		buffer.clear();
@@ -1323,9 +1318,6 @@ void Console::Update() {
 	}
 	
 	if (dispcon && admin->cons_error_warn) admin->cons_error_warn = false;
-	
-	Input* input = admin->input;
-	
 }
 
 //Flush the buffer at program close

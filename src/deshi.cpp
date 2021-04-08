@@ -15,10 +15,10 @@ if you feel they would handle the problem better. It should generally be you tho
 Major Ungrouped TODOs
 ---------------------
 add console flag forshowing text in bottom right message bar like error does
-add fullscreen keybind and window commands
 add device info command (graphics card, sound device, monitor res, etc)
 add a component_state command to print state of a component (add str methods to all components/systems)
 add option to not use input callbacks so fps doesnt get affected dramatically by input
+add a general logging system with log levels and locations
 add shaders: PBR (4textures)
 settings file(s) [keybinds, video, audio, etc]
 fix program stalling when Keybinds cant find the keybind file
@@ -39,15 +39,10 @@ fix console color parsing regex to only match from opening bracket to FIRST clos
 
 Render TODOs
 ------------
-add texture transparency/gif support{
-https://www.reddit.com/r/vulkan/comments/6x7e8e/help_request_cant_get_alpha_blending_to_work/
-https://github.com/nothings/stb/blob/f67165c2bb2af3060ecae7d20d6f731173485ad0/stb_image.h#L1300
-https://matthewwellings.com/blog/depth-peeling-order-independent-transparency-in-vulkan/
-http://blog.wolfire.com/2009/02/rendering-plants-with-smooth-edges/
-}
 add 2D shader and interface functions
 add lighting and shadows
 add vertex editing
+fix texture transparency
 look into adding volk for faster loading/function calls
 add RenderSettings loading and usage
 check those vulkan-tutorial links for the suggestions
@@ -109,13 +104,14 @@ look into scaling not rotating (scaling is probably being done in world not loca
 Console* g_console;
 
 struct DeshiEngine {
-	EntityAdmin entityAdmin;
-	Renderer renderer;
-	Input input;
-	Window window;
-	deshiImGui imgui;
-	Time time;
-	Console console;
+	Time time;               float timeTime = 0;
+	Window window;           float windowTime = 0;
+	Input input;             float inputTime = 0;
+	EntityAdmin entityAdmin; float adminTime = 0;
+	Console console;         float consoleTime = 0;
+	Renderer renderer;       float renderTime = 0;
+	deshiImGui imgui;        float frameTime = 0;
+	TIMER_START(t_d); TIMER_START(t_f);
 	
 	//TODO(delle,Fs) setup loading a config file to a config struct
 	void LoadConfig() {
@@ -136,6 +132,8 @@ struct DeshiEngine {
 		//init game admin
 		entityAdmin.Init(&input, &window, &time, &renderer, &console);
 		
+		LOG("Finished deshi initialization in ",TIMER_END(t_d),"ms");
+		
 		//start main loop
 		while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
 			glfwPollEvents();
@@ -150,15 +148,17 @@ struct DeshiEngine {
 	}
 	
 	bool Update() {
-		time.Update();
-		window.Update();
-		input.Update();
-		imgui.NewFrame();            //place imgui calls after this
-		entityAdmin.Update();
-		console.Update();      
-		renderer.Render();           //place imgui calls before this
-		renderer.Present();
+		TIMER_RESET(t_d); time.Update();        timeTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); window.Update();      windowTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); input.Update();       inputTime = TIMER_END(t_d);
+		imgui.NewFrame();                                                                  //place imgui calls after this
+		TIMER_RESET(t_d); entityAdmin.Update(); adminTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); console.Update();     consoleTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); renderer.Render();    renderTime = TIMER_END(t_d);       //place imgui calls before this
 		//entityAdmin.PostRenderUpdate();
+		
+		frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
+		//LOG("Time: ",timeTime,"ms, Window: ",windowTime,"ms, Input: ",inputTime,"ms, Admin: ",adminTime,"ms, Console: ",consoleTime,"ms, Renderer: ",renderTime,"ms, Frame: ",frameTime,"ms");
 		return true;
 	}
 };
