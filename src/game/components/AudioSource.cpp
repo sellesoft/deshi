@@ -6,7 +6,8 @@
 
 AudioSource::AudioSource() {
 	//empty version for adding component through command
-	name = "AudioSource";
+	strncpy_s(name, "AudioSource", 63);
+	this->name[63] = '\0';
 }
 
 AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, float gain, float pitch) {
@@ -22,9 +23,10 @@ AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, fl
 		ASSERT(t != nullptr, "if no physics pointer is specified, tranform must be");
 		this->t = t;
 	}
-	
-	name = "AudioSource";
-	
+
+	strncpy_s(name, "AudioSource", 63);
+	this->name[63] = '\0';
+	sortid = 1;
 	layer = CL3_SOUND;
 }
 

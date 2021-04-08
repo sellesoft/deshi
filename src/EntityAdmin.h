@@ -101,52 +101,41 @@ struct EntityAdmin {
 	
 	void AddSystem(System* system);
 	void RemoveSystem(System* system);
-	
-	//returns a pointer to a system
-	//probably be careful using this cause there could be data races
-	//im only implementing it to push data to the console
-	//i know i can do it directly but then there would be no color parsing
-	//template<class T>
-	//	T* GetSystem() {
-	//	T* t = nullptr;
-	//	for (System* s : systems) { if (T* temp = dynamic_cast<T*>(s)) { t = temp; break; } }
-	//	ASSERT(t != nullptr, "attempted to retrieve a system that doesn't exist");
-	//	return t;
-	//}
-	
+
 	void AddComponent(Component* component);
 	void RemoveComponent(Component* component);
 	
+	void Save();
+	void Load(const char* filename);
+
 	Command* GetCommand(std::string command);
 	bool ExecCommand(std::string command);
 	bool ExecCommand(std::string command, std::string args);
 };
 
 struct Entity {
-	EntityAdmin* admin; //reference to owning admin
+	char name[64];
+
 	EntityID id;
+	EntityAdmin* admin; //reference to owning admin
 	std::vector<Component*> components;
-	std::string name;
 	
 	Transform transform;
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
 	template<class T>
-		T* GetComponent() {
+	T* GetComponent() {
 		T* t = nullptr;
 		for (Component* c : components) { 
 			if (T* temp = dynamic_cast<T*>(c)) { 
 				t = temp; break; 
 			} 
 		}
-		//ASSERT(t != nullptr, "attempted to retrieve a component that doesn't exist");
-		if (t == nullptr) {
-			//TODO(sushi) make it so stuff like this only shows up when debugging 
-			PRINT("attempted to retrieve a component that doesn't exist on entity "<< name <<" with ID "<< id);
-		}
-		
 		return t;
 	}
+
+	std::string Save();
+	void Load(const char* filename);
 	
 	//adds a component to the end of the components vector
 	//returns the position in the vector

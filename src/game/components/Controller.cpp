@@ -12,7 +12,8 @@
 
 Controller::Controller(EntityAdmin* a, MovementMode m) : Component(a), mode(m) {
 	//not sure where i want this yet
-	name = "Controller";
+	strncpy_s(name, "Controller", 63);
+	this->name[63] = '\0';
 	layer = NONE;
 }
 
@@ -150,26 +151,26 @@ void HandleMouseInputs(EntityAdmin* admin) {
 			Matrix4 rot;
 			for (auto ep : admin->entities) {
 				Entity* e = ep.second;
-				Mesh* m = e->GetComponent<MeshComp>()->m;
-				if (m) {
+				if (MeshComp* mc = e->GetComponent<MeshComp>()) {
+					Mesh* m = mc->m;
 					for (auto& b : m->batchArray) {
 						for (int i = 0; i < b.indexArray.size(); i += 3) {
 							float t = 0;
-							
+
 							p0 = b.vertexArray[b.indexArray[i]].pos + e->transform.position;
 							p1 = b.vertexArray[b.indexArray[i + 1]].pos + e->transform.position;
 							p2 = b.vertexArray[b.indexArray[i + 2]].pos + e->transform.position;
-							
+
 							norm = (p1 - p0).cross(p2 - p0);
-							
+
 							Vector3 inter = Math::VectorPlaneIntersect(p0, norm, ray->p[0], ray->p[1], t);
-							
+
 							Vector3 v01 = p1 - p0;
 							Vector3 v12 = p2 - p1;
 							Vector3 v20 = p0 - p2;
-							
+
 							rot = Matrix4::AxisAngleRotationMatrix(90, Vector4(norm, 0));
-							
+
 							if ((v01 * rot).dot(p0 - inter) < 0 &&
 								(v12 * rot).dot(p1 - inter) < 0 &&
 								(v20 * rot).dot(p2 - inter) < 0) {

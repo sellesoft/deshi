@@ -9,14 +9,16 @@
 MeshComp::MeshComp() {
 	send = new Sender();
 	layer = CL1_RENDCANVAS;
+	sortid = 5;
 	r = admin->renderer;
 }
 
 MeshComp::MeshComp(Mesh* m) {
 	this->m = m;
-	name = "MeshComp";
+	strncpy_s(name, "MeshComp", 63);
 	send = new Sender();
 	layer = CL1_RENDCANVAS;
+	sortid = 5;
 	//r = admin->renderer;
 }
 
@@ -47,6 +49,15 @@ void MeshComp::ChangeMaterialTexture(u32 t) {
 	for (u32 id : ids) {
 		admin->renderer->UpdateMaterialTexture(id, 0, t);
 	}
+}
+std::string MeshComp::Save() {
+	return TOSTRING(
+		"MeshID: ", MeshID, "\n",
+		"mesh_visible: ", mesh_visible, "\n",
+		"ENTITY_CONTROL: ", ENTITY_CONTROL, "\n");
+}
+void MeshComp::Load() {
+
 }
 
 //this should only be used when the entity is not controlling the Mesh

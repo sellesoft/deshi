@@ -20,7 +20,8 @@ Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ, bool freeCam) 
 	admin->renderer->UpdateCameraViewMatrix(viewMatrix);
 	admin->renderer->UpdateCameraPosition(position);
 	
-	name = "Camera";
+	strncpy_s(name, "Camera", 63);
+	this->name[63] = '\0';
 	layer = NONE;
 }
 
@@ -141,4 +142,20 @@ void Camera::Update() {
 		renderer->UpdateCameraViewMatrix(viewMatrix);
 		renderer->UpdateCameraPosition(position);
 	}
+}
+
+std::string Camera::Save() {
+	return TOSTRING(
+		"position: ", position, "\n",
+		"rotation: ", rotation, "\n",
+		"freeCamera: ", freeCamera, "\n",
+		"type: ", (int)type, "\n",
+		"nearZ: ", nearZ, "\n",
+		"farZ: ", farZ, "\n",
+		"fov: ", fov, "\n"
+	);
+}
+
+void Camera::Load() {
+
 }

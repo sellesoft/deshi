@@ -44,6 +44,9 @@ namespace deshi{
 	//truncates and writes a char array to a file in binary
 	void writeFileBinary(const std::string& filepath, const char* data, u32 bytes);
 	
+	//appends and writes a char array to a file in binary
+	void appendFileBinary(const std::string& filepath, const char* data, u32 bytes);
+
 	//iterates directory and returns a list of files in it
 	//probably return something other than a vector of strings but thts how it is for now
 	std::vector<std::string> iterateDirectory(const std::string& filepath);

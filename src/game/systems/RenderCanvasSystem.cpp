@@ -79,8 +79,8 @@ void RenderCanvasSystem::MenuBar() {
 		if(BeginMenu("File")) {
 			if (IsWindowHovered()) WinHovFlag = true; 
 
-			if (MenuItem("placeholder")) {
-
+			if (MenuItem("Save")) {
+				admin->Save();
 			}
 			ImGui::EndMenu();
 		}
@@ -200,8 +200,7 @@ void RenderCanvasSystem::DebugTools() {
 					TableNextColumn();
 					
 					//TODO(UiEnt, sushi) implement visibility for things other than meshes like lights, etc.
-					MeshComp* m = entity.second->GetComponent<MeshComp>();
-					if (m) {
+					if (MeshComp* m = entity.second->GetComponent<MeshComp>()) {
 						if (m->mesh_visible) {
 							if (SmallButton("O")) {
 								m->ToggleVisibility();

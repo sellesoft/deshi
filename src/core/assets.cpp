@@ -143,6 +143,15 @@ writeFileBinary(const std::string& filepath, const char* data, u32 bytes){
 	file.close();
 }
 
+void deshi::
+appendFileBinary(const std::string& filepath, const char* data, u32 bytes){
+	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::app);
+	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+
+	file.write(data, bytes);
+	file.close();
+}
+
 std::vector<std::string> deshi::
 iterateDirectory(const std::string& filepath) {
 	using namespace std::filesystem;

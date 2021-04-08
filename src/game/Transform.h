@@ -36,6 +36,18 @@ struct Transform {
 	inline Matrix4 TransformMatrix(){
 		return Matrix4::TransformationMatrix(position, rotation, scale);
 	}
+
+	inline std::string Save() {
+		return TOSTRING(
+			"pos: ", position, "\n",
+			"rot: ", rotation, "\n",
+			"scale: ", scale, "\n"
+		);
+	}
+
+	inline void Load() {
+
+	}
 };
 
 #endif //GAME_TRANSFORM_H
