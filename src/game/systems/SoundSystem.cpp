@@ -241,8 +241,8 @@ void SoundSystem::Init(EntityAdmin* admin) {
 	//CollectSources(buffers, admin);
 	
 	//start main sound thread
-	std::thread sndthr(SoundThread, admin);
-	sndthr.detach();
+	//std::thread sndthr(SoundThread, admin);
+	//sndthr.detach();
 	
 }
 

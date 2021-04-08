@@ -713,9 +713,10 @@ void Console::AddRenderCommands() {
 							std::cmatch m;
 							Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
 							
+							char name[64];
+							strncpy_s(name, args[0].substr(0, args[0].size() - 4).c_str(), 63);
+							name[63] = '\0';
 
-							std::string name = args[0].substr(0, args[0].size() - 4);
-							
 							u32 id;
 							bool loaded = false;
 							for (MeshVk vkm : admin->renderer->basemeshes) {
@@ -752,7 +753,7 @@ void Console::AddRenderCommands() {
 							Mesh* mes = new Mesh(mesh);
 							
 							Entity* e = admin->world->CreateEntity(admin);
-							e->name = name;
+							strncpy_s(e->name, name, 63);
 							e->admin = admin;
 							MeshComp* mc = new MeshComp(mes);
 							Physics* p = new Physics(Vector3(0,0,0), Vector3(0,0,0));
@@ -765,6 +766,7 @@ void Console::AddRenderCommands() {
 							mc->MeshID = newid;
 							admin->scene->models.push_back(mod);
 							
+
 							return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
 						}
 						return "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
@@ -889,7 +891,13 @@ void Console::AddConsoleCommands() {
 										   return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
 									   }
 								   }, "help", "prints help about a specified command. \nignores any argument after the first.");
-	
+	commands["save"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+			
+			admin->Save();
+			return "Saved.";
+
+		}, "save", "saves the state of Entity Admin");
+
 }
 
 

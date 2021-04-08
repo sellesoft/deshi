@@ -50,6 +50,10 @@ typedef i32 b32; //int based boolean so c++ doesnt convert to 0 or 1
 #define uint32(x) static_cast<uint32>(x)
 #define uint64(x) static_cast<uint64>(x)
 
+//sushi's annoyance with c++ cast syntax, which WILL NOT cause problems ANYWHERE
+#define dyncast(name, type, comp) type* name = dynamic_cast<type*>(comp)
+
+
 //i: variable name; x: number of iterations 
 #define for_n(i,x) for(int i=0; i<x; ++i)
 

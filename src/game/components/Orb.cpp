@@ -29,8 +29,11 @@ OrbManager::OrbManager(Mesh* m, EntityAdmin* a, Entity* e) {
 		mc->MeshID = newid;
 		admin->scene->models.push_back(mod);
 	}
-	name = "OrbManager";
+	strncpy_s(name, "OrbManager", 63);
+	this->name[63] = '\0';
+
 	layer = CL0_PHYSICS;
+	sortid = 6;
 };
 
 void OrbManager::ReceiveEvent(Event event) {

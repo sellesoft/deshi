@@ -13,11 +13,12 @@ Physics::Physics() {
 	mass = 1;
 	isStatic = false;
 
-	name = "Physics";
+	strncpy_s(name, "Physics", 63);
+	sortid = 7;
 }
 
 Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy,
-		         Vector3 rotAcceleration, float elasticity, float mass, bool isStatic) {
+				 Vector3 rotAcceleration, float elasticity, float mass, bool isStatic) {
 	this->position = position;
 	this->rotation = rotation;
 	this->velocity = velocity;
@@ -27,10 +28,11 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	this->elasticity = elasticity;
 	this->mass = mass;
 	this->isStatic = isStatic;
-	
-	name = "Physics";
+
+	strncpy_s(name, "Physics", 63);
 
 	layer = PHYS_LAYER;
+	sortid = 7;
 }
 
 Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticity) {
@@ -42,10 +44,12 @@ Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticit
 	this->rotAcceleration = Vector3::ZERO;
 	this->mass = mass;
 	this->elasticity = elasticity;
-	
-	name = "Physics";
+
+	strncpy_s(name, "Physics", 63);
+	this->name[63] = '\0';
 
 	layer = PHYS_LAYER;
+	sortid = 7;
 }
 
 //////////////////////////

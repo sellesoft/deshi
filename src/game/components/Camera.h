@@ -6,7 +6,7 @@
 #include "../../math/Vector.h"
 #include "../../math/Matrix.h"
 
-enum struct CameraType{
+enum struct CameraType {
 	PERSPECTIVE, ORTHOGRAPHIC
 };
 
@@ -33,6 +33,9 @@ struct Camera : public Component {
 	Matrix4 MakePerspectiveProjection();
 	Matrix4 MakeOrthographicProjection();
 	void UpdateProjectionMatrix();
+
+	std::string Save() override;
+	void Load() override;
 	
 	std::string str() override;
 };

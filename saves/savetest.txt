@@ -1,0 +1,35 @@
+[Camera]
+pos: (0,0,0)
+rot: (90,20,20)
+type: Perspective
+freeCamera: true
+nearZ: 0.001
+farZ: 1000
+fov: 90
+
+[Entity]
+ID: 1
+Name: test
+
+[Entity/Transform]
+pos: (2,3,4)
+rot: (90,0,0)
+scale: (1,1,1)
+[Entity/Components]
+[Components/MeshComp]
+MeshID: 1
+mesh_visible: true
+ENTITY_CONTROL: true
+[MeshComp/Batch]
+[Batch/0]
+tex_filename: background.png
+tex_type: TEXTURE_ALBEDO
+shader: PBR
+[Batch/1]
+tex_filename: sponza.png
+tex_type: TEXTURE_ALBEDO
+shader: PBR
+
+
+
+

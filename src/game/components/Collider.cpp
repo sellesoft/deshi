@@ -16,7 +16,8 @@ BoxCollider::BoxCollider(Entity* e, Vector3 halfDimensions, float mass, i8 colli
 	this->collisionLayer = collisionLayer;
 	this->isTrigger = false;
 	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.x), 2 * abs(halfDims.x), mass);
-	name = "BoxCollider";
+	strncpy_s(name, "BoxCollider", 63);
+	sortid = 2;
 }
 
 BoxCollider::BoxCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, i8 collisionLayer) {
@@ -28,7 +29,8 @@ BoxCollider::BoxCollider(Entity* e, Vector3 halfDimensions, float mass, bool isT
 	if (!isTrigger) {
 		this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.x), 2 * abs(halfDims.x), mass);
 	}
-	name = "BoxCollider";
+	strncpy_s(name, "BoxCollider", 63);
+	sortid = 2;
 }
 
 
@@ -45,7 +47,8 @@ AABBCollider::AABBCollider(Entity* e, Vector3 halfDimensions, float mass, i8 col
 	this->collisionLayer = collisionLayer;
 	this->isTrigger = false;
 	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.x), 2 * abs(halfDims.x), mass);
-	name = "AABBCollider";
+	strncpy_s(name, "AABBCollider", 63);
+	sortid = 3;
 }
 
 AABBCollider::AABBCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, i8 collisionLayer) {
@@ -57,7 +60,8 @@ AABBCollider::AABBCollider(Entity* e, Vector3 halfDimensions, float mass, bool i
 	if (!isTrigger) {
 		this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.x), 2 * abs(halfDims.x), mass);
 	}
-	name = "AABBCollider";
+	strncpy_s(name, "AABBCollider", 63);
+	sortid = 3;
 }
 
 
@@ -74,7 +78,8 @@ SphereCollider::SphereCollider(Entity* e, float radius, float mass, i8 collision
 	this->collisionLayer = collisionLayer;
 	this->isTrigger = false;
 	this->inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
-	name = "SphereCollider";
+	strncpy_s(name, "SphereCollider", 63);
+	sortid = 4;
 }
 
 SphereCollider::SphereCollider(Entity* e, float radius, float mass, bool isTrigger, Command* command, i8 collisionLayer) {
@@ -86,5 +91,6 @@ SphereCollider::SphereCollider(Entity* e, float radius, float mass, bool isTrigg
 	if (!isTrigger) {
 		this->inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
 	}
-	name = "SphereCollider";
+	strncpy_s(name, "SphereCollider", 63);
+	sortid = 4;
 }
