@@ -6,6 +6,9 @@ layout(set = 0, binding = 0) uniform UniformBufferObject{
 	mat4 proj;
 	vec4 lightPos;
 	vec4 viewPos;
+	float time;
+	float width;
+	float height;
 } ubo;
 
 layout(push_constant) uniform PushConsts{
@@ -21,6 +24,12 @@ layout(location = 0) out vec3 outColor;
 layout(location = 1) out vec2 outTexCoord;
 layout(location = 2) out vec3 outNormal;
 layout(location = 3) out vec3 outPosition;
+layout(location = 4) out float time;
+layout(location = 5) out vec3 fragPos;
+layout(location = 6) out float width;
+layout(location = 7) out float height;
+
+
 
 
 void main() {
@@ -29,4 +38,8 @@ void main() {
 	outTexCoord = inTexCoord;
 	outNormal = mat3(primitive.model) * inNormal;
 	outPosition = inPosition;
+	time = ubo.time;
+	width = ubo.width;
+	height = ubo.height;
+	fragPos = vec3(primitive.model * vec4(inPosition, 1));
 }

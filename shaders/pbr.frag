@@ -13,23 +13,30 @@ layout(location = 0) in vec3 inColor;
 layout(location = 1) in vec2 inTexCoord;
 layout(location = 2) in vec3 inNormal;
 layout(location = 3) in vec3 inPosition;
+layout(location = 4) in float time;
+layout(location = 5) in vec3 fragPos;
+layout(location = 6) in float width;
+layout(location = 7) in float height;
 
 
 layout(location = 0) out vec4 outColor;
 
+
+
 void main() {
 	//TODO(delle,r) pbr shading, see pbrtexture in saschawillems' stuff
 	vec2 tc = inTexCoord;
+
 	tc.y *= -1;
+	vec4 normal = texture(albedoSampler, tc);
 	vec4 tex = texture(albedoSampler, tc);
-	vec3 light = vec3(2,2,2);
+	vec3 light = vec3(-8000, 2 ,2);
 	vec4 lightcolor = vec4(
-					  clamp(dot(normalize(light - inPosition), -inNormal), .1f, 1),
-			bhbhbi		  clamp(dot(normalize(light - inPosition), -inNormal), .1f, 1),
-					  clamp(dot(normalize(light - inPosition), -inNormal), .1f, 1), 1);
+					  clamp(dot(normalize(light - inPosition), -vec3(normal)), 0, 1),
+					  clamp(dot(normalize(light - inPosition), -vec3(normal)), 0, 1),
+					  clamp(dot(normalize(light - inPosition), -vec3(normal)), 0, 1), 1);
 	
-	outColor = tex * lightcolor;
+	
+	outColor = tex * lightcolor;// * color;// * color2;
 
-
-	//outColor = vec4(inColor, 1.0);
 }
