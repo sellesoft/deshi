@@ -23,6 +23,7 @@
 #include <array>
 
 struct Window;
+struct Input;
 struct Time;
 struct Mesh;
 struct Texture;
@@ -197,6 +198,7 @@ struct Renderer{
 	//// renderer variables ////
 	////////////////////////////
 	Time*          time;
+	Input*         input;
 	GLFWwindow*    window;
 	RenderSettings settings;
 	RenderStats    stats{};
@@ -210,7 +212,7 @@ struct Renderer{
 	void LoadRenderSettings();
 	
 	//runs the vulkan functions necessary to start rendering
-	void Init(Time* time, Window* window, deshiImGui* imgui);
+	void Init(Time* time, Input* input, Window* window, deshiImGui* imgui);
 	//acquires the next image from vulkan, resets the command buffers, 
 	//updates uploaded information, begins the command buffers, begins the render pass, 
 	//runs the different shader draw methods, ends the render pass
@@ -426,9 +428,10 @@ struct Renderer{
 			glm::mat4 proj;     //camera projection matrix
 			glm::vec4 lightPos; //main light pos
 			glm::vec4 viewPos;  //camera pos
-			glm::f32 time;
-			glm::f32 swidth;
-			glm::f32 sheight;
+			glm::f32 time;      //total time
+			glm::f32 width;		//screen width
+			glm::f32 height;	//screen height
+			glm::vec2 mousepos; //mouse screen pos
 		} values;
 		
 		bool freeze = false;

@@ -35,7 +35,7 @@ add Qol (quality of life) tag to TODOP
 look into integrating TODOP with Discord
 add yaxis line
 begin reimplementing sound system and maybe rethink its design a bit
-fix console color parsing regex to only match from opening bracket to FIRST closing bracket
+fix console color parsing regex to be able to match with brackets inside
 
 Render TODOs
 ------------
@@ -127,7 +127,7 @@ struct DeshiEngine {
 		time.Init(300); //300 tps for physics
 		window.Init(&input, 1280, 720); //inits input as well
 		console.Init(&time, &input, &window, &entityAdmin); g_console = &console;
-		renderer.Init(&time, &window, &imgui); //inits imgui as well
+		renderer.Init(&time, &input, &window, &imgui); //inits imgui as well
 		
 		//init game admin
 		entityAdmin.Init(&input, &window, &time, &renderer, &console);

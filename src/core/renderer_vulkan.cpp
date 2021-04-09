@@ -41,7 +41,7 @@ https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-
 #include <fstream>
 
 const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
-const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME };
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
@@ -89,9 +89,10 @@ LoadRenderSettings(){
 }
 
 void Renderer::
-Init(Time* time, Window* window, deshiImGui* imgui) {
+Init(Time* time, Input* input, Window* window, deshiImGui* imgui) {
 	PRINTVK(1, "\nInitializing Vulkan");
 	this->time = time;
+	this->input = input;
 	this->window = window->window;
 	TIMER_START(t_v);
 	
@@ -973,7 +974,7 @@ populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 VKAPI_ATTR VkBool32 VKAPI_CALL Renderer::
 debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
 	//TODO(sushi, Con) fix console color formatting for this case
-	g_console->PushConsole(TOSTRING("[c:error]/\\ ", pCallbackData->pMessage, "[c]"));
+	g_console->PushConsole(TOSTRING("[c:error]", pCallbackData->pMessage, "[c]"));
 	PRINT("/\\ "<< pCallbackData->pMessage);
 	return VK_FALSE;
 }
@@ -1141,6 +1142,12 @@ CreateLogicalDevice() {
 		if(deviceFeatures.wideLines){
 			//enabledFeatures.wideLines = VK_TRUE; //wide lines (anime/toon style)
 		}
+	}
+	if (deviceFeatures.fragmentStoresAndAtomics) {
+		enabledFeatures.fragmentStoresAndAtomics = VK_TRUE;
+	}
+	if (deviceFeatures.vertexPipelineStoresAndAtomics) {
+		enabledFeatures.vertexPipelineStoresAndAtomics = VK_TRUE;
 	}
 	
 	VkDeviceCreateInfo createInfo{};
@@ -1655,10 +1662,11 @@ UpdateUniformBuffer(){
 	if(!shaderData.freeze){
 		//PRINTVK(2, "  Updating Uniform Buffer");
 		shaderData.values.time = time->totalTime;
-		shaderData.values.swidth = (glm::f32)extent.width;
-		shaderData.values.sheight = (glm::f32)extent.height;
+		shaderData.values.width = (glm::f32)extent.width;
+		shaderData.values.height = (glm::f32)extent.height;
 		shaderData.values.lightPos = glm::vec4(1.0f, -3.f, -1.0f, 1.0f);
-		
+		shaderData.values.mousepos = glm::vec2(input->mousePos.x, input->mousePos.y);
+
 		//map shader data to uniform buffer
 		void* data;
 		vkMapMemory(device, shaderData.uniformBufferMemory, 0, sizeof(shaderData.values), 0, &data);{
