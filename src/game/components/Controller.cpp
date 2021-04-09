@@ -178,7 +178,9 @@ void HandleMouseInputs(EntityAdmin* admin) {
 									(v20 * rot).dot(p2 - inter) < 0) {
 									
 									admin->input->selectedEntity = e;
-									um->AddUndoSelect((void**)&admin->input->selectedEntity, oldEnt, e);
+									if(oldEnt != e){
+										um->AddUndoSelect((void**)&admin->input->selectedEntity, oldEnt, e);
+									}
 									goto endloop;
 								}
 							}
