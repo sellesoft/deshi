@@ -6,9 +6,10 @@
 #include "../../scene/Scene.h"
 #include "../../EntityAdmin.h"
 #include "../../game/Keybinds.h"
-#include "../../game/components/MeshComp.h"
 #include "../../game/Transform.h"
+#include "../../game/UndoManager.h"
 
+#include "../../game/components/MeshComp.h"
 #include "../../game/systems/WorldSystem.h"
 
 //for time
@@ -52,12 +53,12 @@ void CopyButton(const char* text) {
 	if(ImGui::Button("Copy")){ ImGui::LogToClipboard(); ImGui::LogText(text); ImGui::LogFinish(); }
 }
 
-void InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate = false) {
+bool InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate = false) {
 	ImGui::SetNextItemWidth(-FLT_MIN);
-	if(inputUpdate) { //pointer voodoo to treat Vector3 as float vector
-		ImGui::InputFloat3(id, (float*)vecPtr); 
+	if(inputUpdate) {
+		return ImGui::InputFloat3(id, (float*)vecPtr); 
 	} else {
-		ImGui::InputFloat3(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue); 
+		return ImGui::InputFloat3(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue); 
 	}
 }
 
@@ -74,11 +75,11 @@ void RenderCanvasSystem::MenuBar() {
 	
 	if(BeginMainMenuBar()) {
 		if (IsWindowHovered()) WinHovFlag = true; 
-
+		
 		menubarheight = GetWindowHeight();
 		if(BeginMenu("File")) {
 			if (IsWindowHovered()) WinHovFlag = true; 
-
+			
 			if (MenuItem("Save")) {
 				admin->Save();
 			}
@@ -86,15 +87,15 @@ void RenderCanvasSystem::MenuBar() {
 		}
 		if(BeginMenu("Edit")) {
 			if (IsWindowHovered()) WinHovFlag = true; 
-
+			
 			if (MenuItem("placeholder")) {
-
+				
 			}
 			ImGui::EndMenu();
 		}
 		if(BeginMenu("Spawn")) {
 			if (IsWindowHovered()) WinHovFlag = true; 
-
+			
 			for (int i = 0; i < files.size(); i++) {
 				if (files[i].find(".obj") != std::string::npos) {
 					if(MenuItem(files[i].c_str())) { admin->console->ExecCommand("load_obj", files[i]); }
@@ -104,7 +105,7 @@ void RenderCanvasSystem::MenuBar() {
 		}//agh
 		if (BeginMenu("Window")) {
 			if (IsWindowHovered()) WinHovFlag = true; 
-
+			
 			if (MenuItem("Object Property Menu")) showDebugTools = !showDebugTools;
 			if (MenuItem("Debug Bar")) showDebugBar = !showDebugBar;
 			if (MenuItem("DebugLayer")) showDebugLayer = !showDebugLayer;
@@ -238,9 +239,9 @@ void RenderCanvasSystem::DebugTools() {
 	ImGui::PushStyleColor(ImGuiCol_TabHovered, ColToVec4(Color::DARK_CYAN));
 	ImGui::PushStyleColor(ImGuiCol_Tab, ColToVec4(colors.c1));
 	ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
-
+	
 	if (BeginTabBar("SettingsTabs")) {
-	//Selected Entity property editing
+		//Selected Entity property editing
 		if (BeginTabItem("Ent")) {
 			if (admin->input->selectedEntity) {
 				if (BeginChild("SelectedEntityMenu", ImVec2(GetWindowWidth(), 500), true)) {
@@ -249,44 +250,53 @@ void RenderCanvasSystem::DebugTools() {
 					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 					Text(TOSTRING("Selected Entity: ", sel->name).c_str());
 					Text("Components: ");
-
+					
 					if (BeginTabBar("ObjectPropertyMenus")) {
-
-
+						
+						
 						if (BeginTabItem("Obj")) {
 							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
 							if (BeginChild("ObjMenu", ImVec2(GetWindowWidth()* 0.95, 100), true)) {
 								if (IsWindowHovered()) WinHovFlag = true;
-
+								
 								Text("Transform");
 								Separator();
-
+								
 								SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 								Text("Position ");
-								SameLine(); InputVector3("position", &sel->transform.position);
+								vec3 oldVec = sel->transform.position;
+								SameLine(); if(InputVector3("position", &sel->transform.position)){
+									admin->undoManager.AddUndoTranslate(&sel->transform, &oldVec, &sel->transform.position);
+								}
 								Separator();
-
+								
 								SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 								Text("Rotation ");
-								SameLine(); InputVector3("rotation", &sel->transform.rotation);
+								oldVec = sel->transform.rotation;
+								SameLine(); if(InputVector3("rotation", &sel->transform.rotation)){
+									admin->undoManager.AddUndoRotate(&sel->transform, &oldVec, &sel->transform.rotation);
+								}
 								Separator();
-
+								
 								SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 								Text("Scale    ");
-								SameLine(); InputVector3("scale", &sel->transform.scale);
+								oldVec = sel->transform.scale;
+								SameLine(); if(InputVector3("scale", &sel->transform.scale)){
+									admin->undoManager.AddUndoScale(&sel->transform, &oldVec, &sel->transform.scale);
+								}
 								Separator();
-
+								
 								EndChild();
 							}
 							EndTabItem();
 						}
-
+						
 						//Components menu
 						if (BeginTabItem("Comp")) {
 							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
 							if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 100), true)) {
 								if (IsWindowHovered()) WinHovFlag = true;
-
+								
 								if (ImGui::BeginTable("SelectedComponents", 1)) {
 									ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
 									for (Component* c : sel->components) {
@@ -304,7 +314,7 @@ void RenderCanvasSystem::DebugTools() {
 							}
 							EndTabItem();
 						}
-
+						
 						//Materials menu
 						if (BeginTabItem("Mat")) {
 							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
@@ -348,7 +358,7 @@ void RenderCanvasSystem::DebugTools() {
 												//TODO(sushi, Ui) immplement showing multiple textures when yeah
 												Separator();
 												SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-
+												
 												static int selected = -1;
 												for (int i = 0; i < textures.size(); i++) {
 													SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
@@ -361,7 +371,7 @@ void RenderCanvasSystem::DebugTools() {
 															}
 														}
 													}
-
+													
 												}
 											}
 										}
@@ -377,7 +387,7 @@ void RenderCanvasSystem::DebugTools() {
 					}
 					EndChild();
 				}
-
+				
 			}
 			else {
 				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
@@ -391,24 +401,24 @@ void RenderCanvasSystem::DebugTools() {
 				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 				
 				Camera* c = admin->mainCamera;
-
+				
 				Text("Transform");
 				Separator();
-
+				
 				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 				Text("Position ");
 				SameLine(); InputVector3("position", &c->position);
 				Separator();
-
+				
 				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 				Text("Rotation ");
 				SameLine(); InputVector3("rotation", &c->rotation);
 				Separator();
-
+				
 				if (Button("Reset camera")) admin->ExecCommand("cam_reset");
 				
 				Separator();
-
+				
 				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 				Text("fov:   ");
 				SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
@@ -416,7 +426,7 @@ void RenderCanvasSystem::DebugTools() {
 					c->UpdateProjectionMatrix();
 				}
 				Separator();
-
+				
 				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 				Text("nearZ: ");
 				SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
@@ -424,7 +434,7 @@ void RenderCanvasSystem::DebugTools() {
 					c->UpdateProjectionMatrix();
 				};
 				Separator();
-
+				
 				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
 				Text("farZ:  ");
 				SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
@@ -432,7 +442,7 @@ void RenderCanvasSystem::DebugTools() {
 					c->UpdateProjectionMatrix();
 				};
 				Separator();
-
+				
 				EndChild();
 			}
 			EndTabItem();
@@ -440,22 +450,22 @@ void RenderCanvasSystem::DebugTools() {
 		EndTabBar();
 	}
 	
-                                         ImGui::PopStyleVar();
-                                             ImGui::PopStyleVar();
-                                         ImGui::PopStyleVar();
-                                     ImGui::PopStyleVar();
-                                 ImGui::PopStyleVar();
-                                     ImGui::PopStyleVar();
-                                         ImGui::PopStyleVar();
-                                     ImGui::PopStyleColor();
-                        ImGui::PopStyleColor();    ImGui::PopStyleColor();
-                    ImGui::PopStyleColor();            ImGui::PopStyleColor();
-                ImGui::PopStyleColor();                    ImGui::PopStyleColor();
-            ImGui::PopStyleColor();        /*  .u.  */          ImGui::PopStyleColor();
-        ImGui::PopStyleColor();                                    ImGui::PopStyleColor();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
+	ImGui::PopStyleColor();    ImGui::PopStyleColor();
+	ImGui::PopStyleColor();            ImGui::PopStyleColor();
+	ImGui::PopStyleColor();                    ImGui::PopStyleColor();
+	ImGui::PopStyleColor();        /*  .u.  */          ImGui::PopStyleColor();
+	ImGui::PopStyleColor();                                    ImGui::PopStyleColor();
     ImGui::PopStyleColor();                                            ImGui::PopStyleColor();
 	
-										  ImGui::End();
+	ImGui::End();
 }
 
 void RenderCanvasSystem::DebugBar() {

@@ -14,6 +14,7 @@
 
 #include "../game/Keybinds.h"
 #include "../game/Transform.h"
+#include "../game/UndoManager.h"
 #include "../game/systems/WorldSystem.h"
 #include "../game/components/Camera.h"
 #include "../game/components/Physics.h"
@@ -714,7 +715,7 @@ void Console::AddRenderCommands() {
 							char name[64];
 							strncpy_s(name, args[0].substr(0, args[0].size() - 4).c_str(), 63);
 							name[63] = '\0';
-
+							
 							u32 id;
 							bool loaded = false;
 							for (MeshVk vkm : admin->renderer->basemeshes) {
@@ -764,7 +765,7 @@ void Console::AddRenderCommands() {
 							mc->MeshID = newid;
 							admin->scene->models.push_back(mod);
 							
-
+							
 							return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
 						}
 						return "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
@@ -890,12 +891,12 @@ void Console::AddConsoleCommands() {
 									   }
 								   }, "help", "prints help about a specified command. \nignores any argument after the first.");
 	commands["save"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-			
-			admin->Save();
-			return "Saved.";
-
-		}, "save", "saves the state of Entity Admin");
-
+									   
+									   admin->Save();
+									   return "Saved.";
+									   
+								   }, "save", "saves the state of Entity Admin");
+	
 }
 
 
@@ -1291,6 +1292,16 @@ void Console::Init(Time* t, Input* i, Window* w, EntityAdmin* ea) {
 											   if (admin->paused) return "engine_pause = true";
 											   else return "engine_pause = false";
 										   }, "engine_pause", "toggles pausing the engine");
+	
+	NEWCOMMAND("undo", "undo",{
+				   admin->undoManager.Undo();
+				   return "";
+			   });
+	
+	NEWCOMMAND("redo", "redo",{
+				   admin->undoManager.Redo();
+				   return "";
+			   });
 	
 	//AddSpawnCommands();
 	AddRenderCommands();

@@ -9,7 +9,10 @@
 #include <vector>
 #include <iostream>
 
+//std::cout short form
 #define PRINT(x) std::cout << x << std::endl;
+
+//assert
 #ifndef NDEBUG
 #   define ASSERTWARN(condition, message) \
 do { \
@@ -29,6 +32,14 @@ std::terminate(); \
 #else
 #   define ASSERT(condition, message) condition;
 #endif
+
+//debug breakpoint
+#ifdef _MSC_VER
+#define DEBUG_BREAK __debugbreak()
+#else
+#define DEBUG_BREAK (void)0
+#endif
+
 
 #define __FILENAME__ (std::strrchr(__FILE__, '\\') ? std::strrchr(__FILE__, '\\') + 1 : __FILE__)
 

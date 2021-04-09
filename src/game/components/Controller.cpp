@@ -3,6 +3,7 @@
 #include "Controller.h"
 #include "../Transform.h"
 #include "../Keybinds.h"
+#include "../UndoManager.h"
 #include "../../core.h"
 #include "../../EntityAdmin.h"
 #include "../../math/Math.h"
@@ -128,10 +129,10 @@ inline void CameraZoom(EntityAdmin* admin){
 void HandleMouseInputs(EntityAdmin* admin) {
 	Canvas* canvas = admin->tempCanvas;
 	Input* input = admin->input;
-
+	UndoManager* um = &admin->undoManager;
+	
 	//mouse left click pressed
 	if (input->MousePressed(MouseButton::MB_LEFT)) {
-		
 		if (!admin->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE) {
 			
 			//TODO(sushi, Ma) figure out why this sometimes returns true when clicking outside of object
@@ -145,6 +146,7 @@ void HandleMouseInputs(EntityAdmin* admin) {
 			
 			RenderedEdge3D* ray = new RenderedEdge3D(pos, admin->mainCamera->position);
 			
+			Entity* oldEnt = admin->input->selectedEntity;
 			admin->input->selectedEntity = nullptr;
 			Vector3 p0, p1, p2, norm;
 			Matrix4 rot;
@@ -156,25 +158,27 @@ void HandleMouseInputs(EntityAdmin* admin) {
 						for (auto& b : m->batchArray) {
 							for (int i = 0; i < b.indexArray.size(); i += 3) {
 								float t = 0;
-
+								
 								p0 = b.vertexArray[b.indexArray[i]].pos + e->transform.position;
 								p1 = b.vertexArray[b.indexArray[i + 1]].pos + e->transform.position;
 								p2 = b.vertexArray[b.indexArray[i + 2]].pos + e->transform.position;
-
+								
 								norm = (p1 - p0).cross(p2 - p0);
-
+								
 								Vector3 inter = Math::VectorPlaneIntersect(p0, norm, ray->p[0], ray->p[1], t);
-
+								
 								Vector3 v01 = p1 - p0;
 								Vector3 v12 = p2 - p1;
 								Vector3 v20 = p0 - p2;
-
+								
 								rot = Matrix4::AxisAngleRotationMatrix(90, Vector4(norm, 0));
-
+								
 								if ((v01 * rot).dot(p0 - inter) < 0 &&
 									(v12 * rot).dot(p1 - inter) < 0 &&
 									(v20 * rot).dot(p2 - inter) < 0) {
+									
 									admin->input->selectedEntity = e;
+									um->AddUndoSelect((void**)&admin->input->selectedEntity, oldEnt, e);
 									goto endloop;
 								}
 							}
@@ -220,6 +224,7 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 	Input* input = admin->input;
 	Camera* c = admin->mainCamera;
 	Entity* sel = input->selectedEntity;
+	UndoManager* um = &admin->undoManager;
 	
 	if (sel) {
 		
@@ -278,6 +283,9 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					xaxis = false; yaxis = false; zaxis = false;
 					initialgrab = true; grabbingObj = false;  
 					CONTROLLER_MOUSE_CAPTURE = false;
+					if(initialObjPos != sel->transform.position){
+						um->AddUndoTranslate(&sel->transform, &initialObjPos, &sel->transform.position);
+					}
 					return;
 				}
 				
@@ -393,10 +401,6 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0.4, 0.8, 1));
 						ImGui::Text(TOSTRING(pir2).c_str());
 						ImGui::PopStyleColor();
-						
-						
-						
-						
 					}
 					
 					//screen axis line
@@ -458,62 +462,26 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 					}
 					sel->transform.position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
 				}
-				
-			}
-		}
+			} //if(DengInput->KeyPressed(DengKeys->grabSelectedObject) || grabbingObj)
+		} //if(!admin->IMGUI_MOUSE_CAPTURE)
 		
 		
 		if (!admin->IMGUI_KEY_CAPTURE) {
-			
-			
-			if (DengInput->KeyDown(Key::L)) {
-				admin->ExecCommand("translate_right");
-			}
-			
-			if (DengInput->KeyDown(Key::J)) {
-				admin->ExecCommand("translate_left");
-			}
-			
-			if (DengInput->KeyDown(Key::O)) {
-				admin->ExecCommand("translate_up");
-			}
-			
-			if (DengInput->KeyDown(Key::U)) {
-				admin->ExecCommand("translate_down");
-			}
-			
-			if (DengInput->KeyDown(Key::I)) {
-				admin->ExecCommand("translate_forward");
-			}
-			
-			if (DengInput->KeyDown(Key::K)) {
-				admin->ExecCommand("translate_backward");
-			}
+			//translation
+			if (DengInput->KeyDown(Key::L)) { admin->ExecCommand("translate_right"); }
+			if (DengInput->KeyDown(Key::J)) { admin->ExecCommand("translate_left"); }
+			if (DengInput->KeyDown(Key::O)) { admin->ExecCommand("translate_up"); }
+			if (DengInput->KeyDown(Key::U)) { admin->ExecCommand("translate_down"); }
+			if (DengInput->KeyDown(Key::I)) { admin->ExecCommand("translate_forward"); }
+			if (DengInput->KeyDown(Key::K)) { admin->ExecCommand("translate_backward"); }
 			
 			//rotation
-			if (DengInput->KeyDown(Key::L | INPUTMOD_SHIFT)) {
-				admin->ExecCommand("rotate_+x");
-			}
-			
-			if (DengInput->KeyDown(Key::J | INPUTMOD_SHIFT)) {
-				admin->ExecCommand("rotate_-x");
-			}
-			
-			if (DengInput->KeyDown(Key::O | INPUTMOD_SHIFT)) {
-				admin->ExecCommand("rotate_+y");
-			}
-			
-			if (DengInput->KeyDown(Key::U | INPUTMOD_SHIFT)) {
-				admin->ExecCommand("rotate_-y");
-			}
-			
-			if (DengInput->KeyDown(Key::I | INPUTMOD_SHIFT)) {
-				admin->ExecCommand("rotate_+z");
-			}
-			
-			if (DengInput->KeyDown(Key::K | INPUTMOD_SHIFT)) {
-				admin->ExecCommand("rotate_-z");
-			}
+			if (DengInput->KeyDown(Key::L | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+x"); }
+			if (DengInput->KeyDown(Key::J | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-x"); }
+			if (DengInput->KeyDown(Key::O | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+y"); }
+			if (DengInput->KeyDown(Key::U | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-y"); }
+			if (DengInput->KeyDown(Key::I | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+z"); }
+			if (DengInput->KeyDown(Key::K | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-z"); }
 		}
 	}
 }
@@ -538,6 +506,13 @@ void HandleRenderInputs(EntityAdmin* admin) {
 	}
 }
 
+void HandleUndoInputs(EntityAdmin* admin){
+	if (!admin->IMGUI_KEY_CAPTURE) {
+		if (admin->input->KeyPressed(Key::Z | INPUTMOD_CTRL)) { admin->undoManager.Undo(); }
+		if (admin->input->KeyPressed(Key::Y | INPUTMOD_CTRL)) { admin->undoManager.Redo(); }
+	}
+}
+
 
 
 
@@ -548,4 +523,5 @@ void Controller::Update() {
 	HandleMouseInputs(admin);
 	HandleSelectedEntityInputs(admin);
 	HandleRenderInputs(admin);
+	HandleUndoInputs(admin);
 }

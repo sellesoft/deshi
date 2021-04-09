@@ -187,6 +187,9 @@
     <ClInclude Include="..\src\core\deshi_imgui_vulkan.h">
       <Filter>src\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\game\UndoManager.h">
+      <Filter>src\game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -444,6 +447,9 @@
     </ClCompile>
     <ClCompile Include="..\src\core\deshi_imgui_vulkan.cpp">
       <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\game\UndoManager.cpp">
+      <Filter>src\game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

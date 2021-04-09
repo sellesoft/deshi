@@ -14,6 +14,7 @@ if you feel they would handle the problem better. It should generally be you tho
 
 Major Ungrouped TODOs
 ---------------------
+move times in deshi.cpp to time.h
 add console flag forshowing text in bottom right message bar like error does
 add device info command (graphics card, sound device, monitor res, etc)
 add a component_state command to print state of a component (add str methods to all components/systems)

@@ -239,6 +239,7 @@
     <ClInclude Include="..\src\game\systems\System.h" />
     <ClInclude Include="..\src\game\systems\WorldSystem.h" />
     <ClInclude Include="..\src\game\Transform.h" />
+    <ClInclude Include="..\src\game\UndoManager.h" />
     <ClInclude Include="..\src\geometry\Edge.h" />
     <ClInclude Include="..\src\geometry\Geometry.h" />
     <ClInclude Include="..\src\math\InertiaTensors.h" />
@@ -323,6 +324,7 @@
     <ClCompile Include="..\src\game\systems\RenderCanvasSystem.cpp" />
     <ClCompile Include="..\src\game\systems\SoundSystem.cpp" />
     <ClCompile Include="..\src\game\systems\WorldSystem.cpp" />
+    <ClCompile Include="..\src\game\UndoManager.cpp" />
     <ClCompile Include="..\src\scene\Model.cpp" />
     <ClCompile Include="..\src\scene\Scene.cpp" />
     <ClCompile Include="..\src\utils\Command.cpp" />

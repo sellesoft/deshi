@@ -5,7 +5,8 @@
 #include "utils/defines.h"
 #include "utils/debug.h"
 #include "utils/ContainerManager.h"
-#include "game/transform.h"
+#include "game/Transform.h"
+#include "game/UndoManager.h"
 
 #include <map>
 
@@ -73,6 +74,8 @@ struct EntityAdmin {
 	WorldSystem* world;
 	SoundSystem* sound;
 	
+	UndoManager undoManager;
+	
 	//stores the components to be executed in between layers
 	std::vector<ContainerManager<Component*>> freeCompLayers;
 	
@@ -101,13 +104,13 @@ struct EntityAdmin {
 	
 	void AddSystem(System* system);
 	void RemoveSystem(System* system);
-
+	
 	void AddComponent(Component* component);
 	void RemoveComponent(Component* component);
 	
 	void Save();
 	void Load(const char* filename);
-
+	
 	Command* GetCommand(std::string command);
 	bool ExecCommand(std::string command);
 	bool ExecCommand(std::string command, std::string args);
@@ -115,7 +118,7 @@ struct EntityAdmin {
 
 struct Entity {
 	char name[64];
-
+	
 	EntityID id;
 	EntityAdmin* admin; //reference to owning admin
 	std::vector<Component*> components;
@@ -124,7 +127,7 @@ struct Entity {
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
 	template<class T>
-	T* GetComponent() {
+		T* GetComponent() {
 		T* t = nullptr;
 		for (Component* c : components) { 
 			if (T* temp = dynamic_cast<T*>(c)) { 
@@ -133,7 +136,7 @@ struct Entity {
 		}
 		return t;
 	}
-
+	
 	std::string Save();
 	void Load(const char* filename);
 	

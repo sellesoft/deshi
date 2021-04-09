@@ -56,6 +56,5 @@ typedef i32 b32; //int based boolean so c++ doesnt convert to 0 or 1
 
 //i: variable name; x: number of iterations 
 #define for_n(i,x) for(int i=0; i<x; ++i)
-#define for_if(loop_statement,if_statement) for(loop_statement) if(if_statement)
 
 #endif //DESHI_DEFINES_H

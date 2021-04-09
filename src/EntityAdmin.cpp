@@ -72,6 +72,8 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	world->Init(this);
 	sound->Init(this);
 	
+	undoManager.Init();
+	
 	//singleton initialization
 	scene = new Scene();
 	mainCamera = new Camera(this, 90.f, .01f, 1000.01f, true);
@@ -143,7 +145,7 @@ void EntityAdmin::Update() {
 	for (Component* c : components) {
 		c->Update();
 	}
-
+	
 	
 }
 
@@ -151,8 +153,8 @@ void EntityAdmin::Save() {
 	//generate header data
 	std::string file = "test.desh";
 	std::vector<Component*> comps;
-
-
+	
+	
 	//gather components
 	for (auto e : entities){
 		comps.insert(comps.end(), e.second->components.begin(), e.second->components.end());
@@ -164,7 +166,7 @@ void EntityAdmin::Save() {
 	deshi::writeFileBinary(file, (const char*)&entsize, sizeof(int));
 	//how many components
 	deshi::appendFileBinary(file, (const char*)&compsize, sizeof(int));
-
+	
 	//store camera's size so we know offset to following entities list then store camera
 	int camsize = sizeof(*mainCamera);
 	deshi::appendFileBinary(file, (const char*)&camsize, sizeof(int));
@@ -175,11 +177,11 @@ void EntityAdmin::Save() {
 	for (auto e : entities) {
 		deshi::appendFileBinary(file, (const char*)e.second, sizeof(*e.second));
 	}
-
+	
 	//store components in groups of type so they're packed together
 	//deshi::appendFileBinary(file, "comps", sizeof("comps"));
 	std::sort(comps.begin(), comps.end(), [](Component* c1, Component* c2) { return c1->sortid > c2->sortid; });
-
+	
 	//there must be a nicer way to do this
 	for (auto c : comps) {
 		if (dyncast(d, MeshComp, c))
@@ -201,13 +203,13 @@ void EntityAdmin::Save() {
 		else
 			LOG("Unknown component ", c->name, " found when attempting to save.");
 	}
-
-
-
+	
+	
+	
 }
 
 void EntityAdmin::Load(const char* filename) {
-
+	
 }
 
 void EntityAdmin::AddSystem(System* system) {

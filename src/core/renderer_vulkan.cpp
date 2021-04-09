@@ -64,7 +64,7 @@ const bool enableValidationLayers = true;
 //TODO(sushi) finish implementing this
 void Renderer::
 LoadRenderSettings(){
-
+	
 	//std::map<std::string, std::string> in = deshi::extractConfig("render.cfg");
 	//
 	//
@@ -84,7 +84,7 @@ LoadRenderSettings(){
 	//for (int i = 0; i < in.size(); i++) {
 	//
 	//}
-
+	
 	msaaSamples = maxMsaaSamples;
 }
 
@@ -1026,7 +1026,7 @@ PickPhysicalDevice() {
 	std::vector<VkPhysicalDevice> devices(deviceCount);
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 	
-	for_if(auto& device : devices, isDeviceSuitable(device)) { physicalDevice = device; break; }
+	for(auto& device : devices) { if(isDeviceSuitable(device)) {physicalDevice = device; break; }}
 	ASSERT(physicalDevice != VK_NULL_HANDLE, "failed to find a suitable GPU that supports Vulkan");
 	
 	//get physical device capabilities
