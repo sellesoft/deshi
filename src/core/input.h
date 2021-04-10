@@ -2,6 +2,7 @@
 #ifndef DESHI_INPUT_H
 #define DESHI_INPUT_H
 
+#include "console.h"
 #include "../utils/defines.h"
 #include "../utils/debug.h"
 #include "../math/Vector.h"
@@ -34,7 +35,7 @@ namespace Key {
 
 namespace MouseButton{
 	typedef enum MouseButtonBits{
-		MB_LEFT, MB_RIGHT, MB_MIDDLE, MB_FOUR, MB_FIVE, MB_SCROLLDOWN, MB_SCROLLUP
+		LEFT, RIGHT, MIDDLE, FOUR, FIVE, SCROLLDOWN, SCROLLUP
 	} MouseButtonBits;
 	typedef u32 MouseButton;
 }
@@ -77,6 +78,8 @@ struct Input{
 	double realScrollX,      realScrollY;
 	bool keyFocus, mouseFocus;
 	
+	b32 logInput = false;
+	
 	//caches values so they are consistent thru the frame
 	void Update(){
 		memcpy(&oldKeyState, &newKeyState, sizeof(bool) * MAX_KEYBOARD_KEYS);
@@ -87,9 +90,9 @@ struct Input{
 		mousePos.x = mouseX; mousePos.y = mouseY;
 		screenMouseY = realScreenMouseX; screenMouseY = realScreenMouseY;
 		//bit scuffed mouse wheel stuff
-		if      (realScrollY < 0) newMouseState[MouseButton::MB_SCROLLDOWN] = 1;
-		else if (realScrollY > 0) newMouseState[MouseButton::MB_SCROLLUP] = 1;
-		else    { newMouseState[MouseButton::MB_SCROLLDOWN] = 0; newMouseState[MouseButton::MB_SCROLLUP] = 0; }
+		if      (realScrollY < 0) newMouseState[MouseButton::SCROLLDOWN] = 1;
+		else if (realScrollY > 0) newMouseState[MouseButton::SCROLLUP] = 1;
+		else    { newMouseState[MouseButton::SCROLLDOWN] = 0; newMouseState[MouseButton::SCROLLUP] = 0; }
 		realScrollY = 0;
 	}
 	
@@ -102,16 +105,18 @@ struct Input{
 	inline bool AltDown(){ return newKeyState[Key::LALT] || newKeyState[Key::RALT]; }
 	
 	bool ModsDown(u32 mods){
-		if     (!mods)/*INPUTMOD_NONE*/      { return !CtrlDown() && !ShiftDown() && !AltDown(); }
-		else if(mods & INPUTMOD_ANY)         { return true; }
-		else if(mods & INPUTMOD_CTRL)        { return  CtrlDown() && !ShiftDown() && !AltDown(); }
-		else if(mods & INPUTMOD_SHIFT)       { return !CtrlDown() &&  ShiftDown() && !AltDown(); }
-		else if(mods & INPUTMOD_ALT)         { return !CtrlDown() && !ShiftDown() &&  AltDown(); }
-		else if(mods & INPUTMOD_CTRLSHIFT)   { return  CtrlDown() &&  ShiftDown() && !AltDown(); }
-		else if(mods & INPUTMOD_CTRLALT)     { return  CtrlDown() && !ShiftDown() &&  AltDown(); }
-		else if(mods & INPUTMOD_SHIFTALT)    { return !CtrlDown() &&  ShiftDown() &&  AltDown(); }
-		else if(mods & INPUTMOD_CTRLSHIFTALT){ return  CtrlDown() &&  ShiftDown() &&  AltDown(); }
-		else{ PRINT("[ERROR] ModsDown called with invalid mod: "<<mods<<"; defaulting to any mod"); return true; }
+		switch(mods){
+			case(INPUTMOD_ANY):          return true;
+			case(INPUTMOD_NONE):         return !CtrlDown() && !ShiftDown() && !AltDown();
+			case(INPUTMOD_CTRL):         return  CtrlDown() && !ShiftDown() && !AltDown();
+			case(INPUTMOD_SHIFT):        return !CtrlDown() &&  ShiftDown() && !AltDown();
+			case(INPUTMOD_ALT):          return !CtrlDown() && !ShiftDown() &&  AltDown();
+			case(INPUTMOD_CTRLSHIFT):    return  CtrlDown() &&  ShiftDown() && !AltDown();
+			case(INPUTMOD_CTRLALT):      return  CtrlDown() && !ShiftDown() &&  AltDown();
+			case(INPUTMOD_SHIFTALT):     return !CtrlDown() &&  ShiftDown() &&  AltDown();
+			case(INPUTMOD_CTRLSHIFTALT): return  CtrlDown() &&  ShiftDown() &&  AltDown();
+			default: ERROR("[ERROR] ModsDown called with invalid mod: ", mods, "; defaulting to any mod"); return true;
+		}
 	}
 	
 	/////////////////////////////

@@ -29,7 +29,7 @@ inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
 	
 	if (!admin->IMGUI_KEY_CAPTURE && camera->freeCamera) {
 		
-		if(DengInput->MouseDownAnyMod(MouseButton::MB_RIGHT) || moveOverride){
+		if(DengInput->MouseDownAnyMod(MouseButton::RIGHT) || moveOverride){
 			Vector3 inputs;
 			if (mode == MOVEMENT_MODE_FLYING) {
 				//translate up
@@ -99,14 +99,14 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 	}
 	if(!admin->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE && camera->freeCamera){
 		//TODO(delle,In) change this so its dependent on game state or something (level editor vs gameplay)
-		if(input->MousePressed(MouseButton::MB_RIGHT | INPUTMOD_ANY)){
+		if(input->MousePressed(MouseButton::RIGHT | INPUTMOD_ANY)){
 			admin->ExecCommand("window_cursor_mode", "1");
 		}
-		if(input->MouseDown(MouseButton::MB_RIGHT | INPUTMOD_ANY)){
+		if(input->MouseDown(MouseButton::RIGHT | INPUTMOD_ANY)){
 			camera->rotation.y += sens * (input->mouseX - window->centerX) * .03f;
 			camera->rotation.x += sens * (input->mouseY - window->centerY) * .03f;
 		}
-		if(input->MouseReleased(MouseButton::MB_RIGHT | INPUTMOD_ANY)){
+		if(input->MouseReleased(MouseButton::RIGHT | INPUTMOD_ANY)){
 			admin->ExecCommand("window_cursor_mode", "0");
 		}
 	}
@@ -132,7 +132,7 @@ void HandleMouseInputs(EntityAdmin* admin) {
 	UndoManager* um = &admin->undoManager;
 	
 	//mouse left click pressed
-	if (input->MousePressed(MouseButton::MB_LEFT)) {
+	if (input->MousePressed(MouseButton::LEFT)) {
 		if (!admin->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE) {
 			
 			//TODO(sushi, Ma) figure out why this sometimes returns true when clicking outside of object
@@ -193,7 +193,7 @@ void HandleMouseInputs(EntityAdmin* admin) {
 		}
 	}
 	//mouse left click held
-	else if (input->MouseDown(MouseButton::MB_LEFT)) {
+	else if (input->MouseDown(MouseButton::LEFT)) {
 		//static_internal Vector2 offset;
 		//if(input->selectedUI) {
 		//	if(!input->ui_drag_latch) {
@@ -205,7 +205,7 @@ void HandleMouseInputs(EntityAdmin* admin) {
 		//}
 	}
 	//mouse left click released
-	else if (input->MouseReleased(MouseButton::MB_LEFT)) {
+	else if (input->MouseReleased(MouseButton::LEFT)) {
 		//if(input->selectedUI) {					//deselect UI
 		//	input->selectedUI = 0;
 		//	input->ui_drag_latch = false;
@@ -510,8 +510,13 @@ void HandleRenderInputs(EntityAdmin* admin) {
 
 void HandleUndoInputs(EntityAdmin* admin){
 	if (!admin->IMGUI_KEY_CAPTURE) {
-		if (admin->input->KeyPressed(Key::Z | INPUTMOD_CTRL)) { admin->undoManager.Undo(); }
-		if (admin->input->KeyPressed(Key::Y | INPUTMOD_CTRL)) { admin->undoManager.Redo(); }
+		
+		if (admin->input->KeyPressed(Key::Z | INPUTMOD_CTRL) || admin->input->MousePressed(MouseButton::FOUR | INPUTMOD_CTRL)) { 
+			admin->undoManager.Undo(); 
+		}
+		if (admin->input->KeyPressed(Key::Y | INPUTMOD_CTRL) || admin->input->MousePressed(MouseButton::FIVE | INPUTMOD_CTRL)) { 
+			admin->undoManager.Redo(); 
+		}
 	}
 }
 

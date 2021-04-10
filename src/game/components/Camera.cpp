@@ -57,9 +57,9 @@ Matrix4 Camera::MakeOrthographicProjection() {
 	float l = -r, b = -t;
 	
 	static float zoom = 10;
-
-	if (DengInput->MousePressed(MouseButton::MB_SCROLLDOWN)) zoom -= 5;
-	if (DengInput->MousePressed(MouseButton::MB_SCROLLUP)) zoom += 5;
+	
+	if (DengInput->MousePressed(MouseButton::SCROLLDOWN)) zoom -= 5;
+	if (DengInput->MousePressed(MouseButton::SCROLLUP)) zoom += 5;
 	
 	r += zoom * aspectRatio; l = -r;
 	t += zoom; b -= zoom;
@@ -141,16 +141,16 @@ void Camera::Update() {
 
 std::string Camera::Save() {
 	return TOSTRING(
-		"position: ", position, "\n",
-		"rotation: ", rotation, "\n",
-		"freeCamera: ", freeCamera, "\n",
-		"type: ", (int)type, "\n",
-		"nearZ: ", nearZ, "\n",
-		"farZ: ", farZ, "\n",
-		"fov: ", fov, "\n"
-	);
+					"position: ", position, "\n",
+					"rotation: ", rotation, "\n",
+					"freeCamera: ", freeCamera, "\n",
+					"type: ", (int)type, "\n",
+					"nearZ: ", nearZ, "\n",
+					"farZ: ", farZ, "\n",
+					"fov: ", fov, "\n"
+					);
 }
 
 void Camera::Load() {
-
+	
 }

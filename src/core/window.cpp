@@ -1,6 +1,10 @@
 #include "window.h"
 #include "input.h"
+#include "console.h"
+#include "assets.h"
 #include "../utils/debug.h"
+
+#include "../external/stb/stb_image.h"
 
 #if defined(_MSC_VER)
 #pragma comment(lib,"glfw3.lib")
@@ -25,6 +29,15 @@ void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode
 	monitor = glfwGetPrimaryMonitor();
 	if(!window) { glfwTerminate(); return; }
 	if(!monitor) { glfwTerminate(); return; }
+	
+	//load and set icon
+	GLFWimage icon; int icon_channels;
+	icon.pixels = stbi_load("data/textures/deshi_icon.png", &icon.width, &icon.height, &icon_channels, STBI_rgb_alpha);
+	if(icon.pixels){
+		glfwSetWindowIcon(window, 1, &icon);
+	}else{
+		PRINT("Failed to load texture: deshi_icon.png; Using default window icon");
+	}
 	
 	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 	int xpos, ypos;
@@ -118,11 +131,11 @@ void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode
 	input->mapKeys[GLFW_KEY_NUM_LOCK]    = Key::NUMLOCK;
 	
 	//mouse mappings
-	input->mapMouse[GLFW_MOUSE_BUTTON_1] = MouseButton::MB_LEFT;
-	input->mapMouse[GLFW_MOUSE_BUTTON_2] = MouseButton::MB_RIGHT;
-	input->mapMouse[GLFW_MOUSE_BUTTON_3] = MouseButton::MB_MIDDLE;
-	input->mapMouse[GLFW_MOUSE_BUTTON_4] = MouseButton::MB_FOUR;
-	input->mapMouse[GLFW_MOUSE_BUTTON_5] = MouseButton::MB_FIVE;
+	input->mapMouse[GLFW_MOUSE_BUTTON_1] = MouseButton::LEFT;
+	input->mapMouse[GLFW_MOUSE_BUTTON_2] = MouseButton::RIGHT;
+	input->mapMouse[GLFW_MOUSE_BUTTON_3] = MouseButton::MIDDLE;
+	input->mapMouse[GLFW_MOUSE_BUTTON_4] = MouseButton::FOUR;
+	input->mapMouse[GLFW_MOUSE_BUTTON_5] = MouseButton::FIVE;
 	
 	//event callbacks
 	//void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -132,6 +145,7 @@ void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode
 								   if(it != Window::input->mapMouse.end()){
 									   if(action == GLFW_PRESS){
 										   Window::input->realMouseState[it->second] = true;
+										   if(Window::input->logInput) { LOG("{m", it->second, "|", mods,"}"); }
 									   }else if(action == GLFW_RELEASE){
 										   Window::input->realMouseState[it->second] = false;
 									   }
@@ -159,6 +173,7 @@ void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode
 						   if(it != Window::input->mapKeys.end()){
 							   if(action == GLFW_PRESS){
 								   Window::input->realKeyState[it->second] = true;
+								   if(Window::input->logInput) { LOG("{k", it->second, "|", mods,"}"); }
 							   }else if(action == GLFW_RELEASE){
 								   Window::input->realKeyState[it->second] = false;
 							   }

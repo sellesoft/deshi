@@ -1,21 +1,11 @@
+#include "console.h"
 #include "../core.h"
-#include "../EntityAdmin.h"
-
-#include "Console.h"
-
-#include "time.h"
-#include "input.h"
-
-#include "../external/imgui/imgui_impl_glfw.h"
-#include "../external/imgui/imgui_impl_vulkan.h"
-
 #include "../utils/Command.h"
-#include "../utils/defines.h"
-
 #include "../game/Keybinds.h"
 #include "../game/Transform.h"
 #include "../game/UndoManager.h"
 #include "../game/systems/WorldSystem.h"
+#include "../game/systems/RenderCanvasSystem.h"
 #include "../game/components/Camera.h"
 #include "../game/components/Physics.h"
 #include "../game/components/Collider.h"
@@ -24,7 +14,8 @@
 #include "../scene/Scene.h"
 #include "../EntityAdmin.h"
 
-#include "../game/systems/RenderCanvasSystem.h"
+#include "../external/imgui/imgui_impl_glfw.h"
+#include "../external/imgui/imgui_impl_vulkan.h"
 
 #include <functional>
 #include <ctime>

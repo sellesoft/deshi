@@ -23,6 +23,7 @@ enum struct CursorMode{
 struct Window{
 	GLFWwindow* window;
 	GLFWmonitor* monitor;
+	
 	inline static Input* input; //TODO(delle,Cl) find a way to not do this static
 	
 	i32 x, y;

@@ -787,7 +787,7 @@ void RenderCanvasSystem::DebugLayer() {
 		}
 	}
 	
-	if (DengInput->MousePressed(MouseButton::MB_LEFT) && rand() % 100 + 1 == 80) {
+	if (DengInput->MousePressed(MouseButton::LEFT) && rand() % 100 + 1 == 80) {
 		times.push_back(std::pair<float, Vector2>(0.f, mp));
 	}
 	
