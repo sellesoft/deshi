@@ -51,6 +51,7 @@ struct Console  {
 	void AddConsoleCommands();
 	void AddSelectedEntityCommands();
 	void AddWindowCommands();
+	void AddAliases();
 	
 	void CleanUp();
 };

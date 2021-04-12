@@ -21,6 +21,7 @@ struct Quaternion {
 	void operator /=		(const float& rhs);
 	Quaternion operator *	(const float& rhs);
 	void operator *=		(const float& rhs);
+	Vector3 operator *      (const Vector3& rhs);
 	Quaternion operator +	(const Quaternion& rhs);
 	void operator +=		(const Quaternion& rhs);
 	Quaternion operator -	(const Quaternion& rhs);
@@ -39,7 +40,7 @@ struct Quaternion {
 	float dot(Quaternion q);
 	Vector3 ToVector3();
 	
-	Quaternion AxisAngleToQuat(float angle, Vector3 axis);
+	static Quaternion AxisAngleToQuat(float angle, Vector3 axis);
 	static Quaternion RotVecToQuat(Vector3 rotation);
 	
 	static Quaternion QuatSlerp(Quaternion from, Quaternion to, float t);

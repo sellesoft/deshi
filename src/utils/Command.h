@@ -46,8 +46,6 @@ struct Command {
 	//execute command action function
 	inline std::string Exec(EntityAdmin* admin, std::string args = "") {
 		std::vector<std::string> argsl = ParseArgs(args);
-		//DEBUG if(CONSOLE_PRINT_EXEC) LOG("Executing command: ", name);
-		//if(CONSOLE_PRINT_EXEC) Debug::ToString(1, std::string("Executing command: ") + name, true);
 		return action(admin, argsl);
 	}
 };

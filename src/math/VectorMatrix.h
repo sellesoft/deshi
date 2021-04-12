@@ -213,7 +213,6 @@ ScaleMatrix(Vector3 scale) {
 }
 
 //returns a transformation matrix of the combined translation, rotation, and scale matrices from input vectors
-//rotates over the Y, then Z then X
 inline Matrix4 Matrix4::
 TransformationMatrix(Vector3 tr, Vector3 rot, Vector3 scale) {
 	rot = RADIANS(rot);
@@ -229,4 +228,20 @@ TransformationMatrix(Vector3 tr, Vector3 rot, Vector3 scale) {
 				   tr.x,        tr.y,        tr.z,        1);
 }
 
+//returns euler angles from a rotation matrix
+//TODO(sushi, Ma) confirm that this works at some point
+inline Vector3 Matrix4::
+Rotation() {
+	if ((*this)(0, 2) < 1) {
+		if ((*this)(0, 2) > -1) {
+			return -Vector3(atan2(-(*this)(1, 2), (*this)(2, 2)), asin((*this)(0, 2)), atan2(-(*this)(0,1), (*this)(0,0)));
+		} else {
+			return -Vector3(-atan2((*this)(1, 0), (*this)(1, 1)), -M_PI / 2, 0);
+		}
+	} else {
+		return -Vector3(atan2((*this)(1, 0), (*this)(1, 1)),  M_PI / 2 , 0);
+	}
+
+
+}
 #endif //DESHI_VECTORMATRIX_H

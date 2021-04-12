@@ -15,7 +15,6 @@ if you feel they would handle the problem better. It should generally be you tho
 Major Ungrouped TODOs
 ---------------------
 move times in deshi.cpp to time.h
-add console flag forshowing text in bottom right message bar like error does
 add device info command (graphics card, sound device, monitor res, etc)
 add a component_state command to print state of a component (add str methods to all components/systems)
 add option to not use input callbacks so fps doesnt get affected dramatically by input
@@ -28,15 +27,14 @@ figure out why selecting sometimes selects outside of an object and sometimes do
 
 Minor Ungrouped TODOs
 ---------------------
-cleanup Triangle and remove unused things
+add command binding and aliasing
 pool/arena components and entities for better performance
-implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
+!!!implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
 replace/remove external dependencies/includes were possible (glm, tinyobj)
 add Qol (quality of life) tag to TODOP
 look into integrating TODOP with Discord
 add yaxis line
 begin reimplementing sound system and maybe rethink its design a bit
-fix console color parsing regex to be able to match with brackets inside
 
 Render TODOs
 ------------
@@ -56,8 +54,8 @@ find a way to forward declare vulkan stuff and move the include to the cpp
 Level Editor TODOs
 ------------
 orbitting camera for rotating around objects
-rotating objects
 scaling objects
+copy/pasting objects
 typing numbers while grabbing/rotating/scaling for precise manipulation (like in Blender)
 adding components
 manipulating component/entity data through UI
@@ -82,6 +80,17 @@ implement collision manifold generation
 implement Sphere vs Sphere collisions
 implement Complex Colliders 
 
+Console TODOs
+-------------
+fix console color parsing regex to be able to match with brackets inside
+OR change how we format color to something less common than brackets
+reformat to use a single character buffer rather than the line/subline thing its doing now
+implement command chaining
+(maybe) add auto complete for arguments of commands
+add console flag for showing text in bottom right message bar like error does
+command to print all avaliable keys for binding
+command to print all keybinds, with (maybe) an option for printing only contextual keybinds
+
 UI TODOs
 --------
 2D shader
@@ -97,6 +106,9 @@ add quaternions and converions between them and other linear algebra primitives
 replace glm :)
 look into scaling not rotating (scaling is probably being done in world not local)
 
+Fun TODOs
+---------
+look into implementing Lua 
 
 */
 
@@ -128,7 +140,8 @@ struct DeshiEngine {
 		LoadConfig();
 		time.Init(300); //300 tps for physics
 		window.Init(&input, 1280, 720); //inits input as well
-		console.Init(&time, &input, &window, &entityAdmin); g_console = &console;
+		g_console = &console;
+		console.Init(&time, &input, &window, &entityAdmin); 
 		renderer.Init(&time, &input, &window, &imgui); //inits imgui as well
 		
 		//init game admin

@@ -167,6 +167,7 @@ struct Vector3 {
 	void    operator *= (const Vector3& rhs);
 	Vector3 operator /  (const Vector3& rhs) const;
 	void    operator /= (const Vector3& rhs);
+	Vector3 operator *  (const Quaternion& rhs) const;
 	Vector3 operator -  () const;
 	bool    operator == (const Vector3& rhs) const;
 	bool    operator != (const Vector3& rhs) const;

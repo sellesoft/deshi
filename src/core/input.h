@@ -28,14 +28,19 @@ namespace Key {
 		SLASH, SEMICOLON, APOSTROPHE, COMMA, PERIOD, BACKSLASH, SPACE,
 		INSERT, DELETE, HOME, END, PAGEUP, PAGEDOWN, PAUSE, SCROLL,
 		NUMPAD0, NUMPAD1, NUMPAD2, NUMPAD3, NUMPAD4, NUMPAD5, NUMPAD6, NUMPAD7, NUMPAD8, NUMPAD9,
-		NUMPADMULTIPLY, NUMPADDIVIDE, NUMPADPLUS, NUMPADMINUS, NUMPADPERIOD, NUMPADENTER, NUMLOCK
+		NUMPADMULTIPLY, NUMPADDIVIDE, NUMPADPLUS, NUMPADMINUS, NUMPADPERIOD, NUMPADENTER, NUMLOCK,
+		MBLEFT, MBRIGHT, MBMIDDLE, MBFOUR, MBFIVE, MBSIX, MBSEVEN, MBEIGHT, MBSCROLLDOWN, MBSCROLLUP
 	} KeyBits;
 	typedef u32 Key;
 };
 
 namespace MouseButton{
 	typedef enum MouseButtonBits{
-		LEFT, RIGHT, MIDDLE, FOUR, FIVE, SCROLLDOWN, SCROLLUP
+		LEFT = Key::MBLEFT, RIGHT = Key::MBRIGHT, MIDDLE = Key::MBMIDDLE, 
+		FOUR = Key::MBFOUR, FIVE = Key::MBFIVE, 
+		SIX = Key::MBSIX, SEVEN = Key::MBSEVEN, 
+		EIGHT = Key::MBEIGHT,
+		SCROLLDOWN = Key::MBSCROLLDOWN, SCROLLUP = Key::MBSCROLLUP
 	} MouseButtonBits;
 	typedef u32 MouseButton;
 }
@@ -63,16 +68,18 @@ struct Input{
 	//TODO(delle,OpIn) look into storing these as vector<bool> instead
 	bool oldKeyState[MAX_KEYBOARD_KEYS]   = {0};
 	bool newKeyState[MAX_KEYBOARD_KEYS]   = {0};
-	bool oldMouseState[MAX_MOUSE_BUTTONS] = {0};
-	bool newMouseState[MAX_MOUSE_BUTTONS] = {0};
 	double mouseX,       mouseY;
 	double screenMouseX, screenMouseY;
 	double scrollX,      scrollY;
 	Vector2 mousePos;
+
+	//NOTE sushi: I was going to put this on keybinds, but I wanted it to only check binds if some input occured, and it seems easiest to do that here
+	//for console command binding
+	std::vector<std::pair<std::string, Key::Key>> binds;
+	bool checkbinds = false; //needed bc glfw callbacks would call the function too early
 	
 	//real values are updated through GLFW callbacks
 	bool realKeyState[MAX_KEYBOARD_KEYS]   = {0};
-	bool realMouseState[MAX_MOUSE_BUTTONS] = {0};
 	double realMouseX,       realMouseY;
 	double realScreenMouseX, realScreenMouseY;
 	double realScrollX,      realScrollY;
@@ -84,15 +91,13 @@ struct Input{
 	void Update(){
 		memcpy(&oldKeyState, &newKeyState, sizeof(bool) * MAX_KEYBOARD_KEYS);
 		memcpy(&newKeyState, &realKeyState, sizeof(bool) * MAX_KEYBOARD_KEYS);
-		memcpy(&oldMouseState, &newMouseState, sizeof(bool) * MAX_MOUSE_BUTTONS);
-		memcpy(&newMouseState, &realMouseState, sizeof(bool) * MAX_MOUSE_BUTTONS);
 		//mouseX = realMouseX; mouseY = realMouseY; //NOTE this doesnt work, idk why
 		mousePos.x = mouseX; mousePos.y = mouseY;
 		screenMouseY = realScreenMouseX; screenMouseY = realScreenMouseY;
 		//bit scuffed mouse wheel stuff
-		if      (realScrollY < 0) newMouseState[MouseButton::SCROLLDOWN] = 1;
-		else if (realScrollY > 0) newMouseState[MouseButton::SCROLLUP] = 1;
-		else    { newMouseState[MouseButton::SCROLLDOWN] = 0; newMouseState[MouseButton::SCROLLUP] = 0; }
+		if      (realScrollY < 0) newKeyState[MouseButton::SCROLLDOWN] = 1;
+		else if (realScrollY > 0) newKeyState[MouseButton::SCROLLUP] = 1;
+		else    { newKeyState[MouseButton::SCROLLDOWN] = 0; newKeyState[MouseButton::SCROLLUP] = 0; }
 		realScrollY = 0;
 	}
 	
@@ -147,32 +152,13 @@ struct Input{
 		u32 key = mod_key & 0x000000FF;
 		return !newKeyState[key] && oldKeyState[key] && ModsDown(mod_key & 0xFFFFFF00);
 	}
-	
-	/////////////////////////////
-	//// mouse buttons input ////
-	/////////////////////////////
-	
-	inline bool MouseDownAnyMod(u32 mod_but){ return newMouseState[mod_but & 0x000000FF]; }
-	
-	inline bool MouseDown(u32 mod_but) {
-		u32 button = mod_but & 0x000000FF;
-		return newMouseState[button] && ModsDown(mod_but & 0xFFFFFF00);
+
+	inline void AddBind(std::string command, Key::Key key) {
+		
 	}
-	
-	inline bool MouseUp(u32 mod_but) {
-		u32 button = mod_but & 0x000000FF;
-		return newMouseState[button] && ModsDown(mod_but & 0xFFFFFF00);
-	}
-	
-	inline bool MousePressed(u32 mod_but) {
-		u32 button = mod_but & 0x000000FF;
-		return newMouseState[button] && !oldMouseState[button] && ModsDown(mod_but & 0xFFFFFF00);
-	}
-	
-	inline bool MouseReleased(u32 mod_but) {
-		u32 button = mod_but & 0x000000FF;
-		return !newMouseState[button] && oldMouseState[button] && ModsDown(mod_but & 0xFFFFFF00);
-	}
+
+
+
 };
 
 #endif //DESHI_INPUT_H

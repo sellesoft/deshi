@@ -125,6 +125,26 @@ writeFile(const std::string& filepath, const char* data, u32 chars){
 }
 
 void deshi::
+appendFile(const std::string& filepath, std::vector<char>& data, u32 chars){
+	std::ofstream file(filepath, std::ios::out | std::ios::app);
+	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+
+	if(chars == 0){ chars = data.size(); }
+
+	file.write(reinterpret_cast<const char*>(data.data()), chars);
+	file.close();
+}
+
+void deshi::
+appendFile(const std::string& filepath, const char* data, u32 chars){
+	std::ofstream file(filepath, std::ios::out | std::ios::app);
+	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+
+	file.write(data, chars);
+	file.close();
+}
+
+void deshi::
 writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }

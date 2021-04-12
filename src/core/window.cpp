@@ -136,6 +136,9 @@ void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode
 	input->mapMouse[GLFW_MOUSE_BUTTON_3] = MouseButton::MIDDLE;
 	input->mapMouse[GLFW_MOUSE_BUTTON_4] = MouseButton::FOUR;
 	input->mapMouse[GLFW_MOUSE_BUTTON_5] = MouseButton::FIVE;
+	input->mapMouse[GLFW_MOUSE_BUTTON_6] = MouseButton::SIX;
+	input->mapMouse[GLFW_MOUSE_BUTTON_7] = MouseButton::SEVEN;
+	input->mapMouse[GLFW_MOUSE_BUTTON_8] = MouseButton::EIGHT;
 	
 	//event callbacks
 	//void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -144,10 +147,11 @@ void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode
 								   std::map<size_t, u8>::iterator it = Window::input->mapMouse.find(button);
 								   if(it != Window::input->mapMouse.end()){
 									   if(action == GLFW_PRESS){
-										   Window::input->realMouseState[it->second] = true;
+										   Window::input->realKeyState[it->second] = true;
+										   Window::input->checkbinds = true;
 										   if(Window::input->logInput) { LOG("{m", it->second, "|", mods,"}"); }
 									   }else if(action == GLFW_RELEASE){
-										   Window::input->realMouseState[it->second] = false;
+										   Window::input->realKeyState[it->second] = false;
 									   }
 								   }
 							   });
@@ -173,6 +177,7 @@ void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode
 						   if(it != Window::input->mapKeys.end()){
 							   if(action == GLFW_PRESS){
 								   Window::input->realKeyState[it->second] = true;
+								   Window::input->checkbinds = true;
 								   if(Window::input->logInput) { LOG("{k", it->second, "|", mods,"}"); }
 							   }else if(action == GLFW_RELEASE){
 								   Window::input->realKeyState[it->second] = false;

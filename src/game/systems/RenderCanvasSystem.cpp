@@ -226,6 +226,25 @@ void RenderCanvasSystem::DebugTools() {
 					
 					TableNextColumn();
 					Text(TOSTRING(" ", entity.second->name).c_str());
+					static bool rename = false;
+					static char buff[64] = {};
+					static char ogname[64] = {};
+					if (ImGui::IsItemClicked()) {
+						rename = true;
+						strncpy_s(buff, entity.second->name, 64);
+						strncpy_s(ogname, entity.second->name, 64);
+					}
+
+					if (rename) {
+						if (ImGui::InputText("name input", buff, sizeof(buff), ImGuiInputTextFlags_EnterReturnsTrue)) {
+							strncpy_s(entity.second->name, buff, 64);
+							rename = false;
+						}
+						if (DengInput->KeyPressed(Key::ESCAPE)) {
+							strncpy_s(entity.second->name, ogname, 64);
+							rename = false;
+						}
+					}
 					
 					TableNextColumn();
 					//TODO(sushi, Ui) find something better to put here
@@ -801,7 +820,7 @@ void RenderCanvasSystem::DebugLayer() {
 		}
 	}
 	
-	if (DengInput->MousePressed(MouseButton::LEFT) && rand() % 100 + 1 == 80) {
+	if (DengInput->KeyPressed(MouseButton::LEFT) && rand() % 100 + 1 == 80) {
 		times.push_back(std::pair<float, Vector2>(0.f, mp));
 	}
 	

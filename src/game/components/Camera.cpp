@@ -3,6 +3,7 @@
 #include "../../EntityAdmin.h"
 #include "../../math/Math.h"
 #include "../../scene/Scene.h"
+#include "../Keybinds.h"
 
 Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ, bool freeCam) : Component(a) {
 	this->nearZ = nearZ;
@@ -39,7 +40,6 @@ Matrix4 Camera::MakePerspectiveProjection(){
 				   0,					0,	   -(farZ*nearZ) / renderDistance, 0);
 }
 
-//TODO(sushi, Re) figure out why we cant see anything when we use this
 Matrix4 Camera::MakeOrthographicProjection() {
 	std::pair<Vector3, Vector3> bbox = admin->scene->SceneBoundingBox();
 	
@@ -57,13 +57,43 @@ Matrix4 Camera::MakeOrthographicProjection() {
 	float l = -r, b = -t;
 	
 	static float zoom = 10;
+	static float oloffsetx = 0;
+	static float oloffsety = 0;
+	static float offsetx = 0;
+	static float offsety = 0;
+	static Vector2 initmouse;
+	static bool initoffset = false;
+
+
+	//orthographic view controls
+	if (DengInput->KeyPressed(DengKeys->orthoZoomIn) && zoom != 1) zoom -= 1;
+	if (DengInput->KeyPressed(DengKeys->orthoZoomOut)) zoom += 1;
 	
-	if (DengInput->MousePressed(MouseButton::SCROLLDOWN)) zoom -= 5;
-	if (DengInput->MousePressed(MouseButton::SCROLLUP)) zoom += 5;
-	
+	if (DengInput->KeyPressed(DengKeys->orthoOffset)) initoffset = true;
+
+	if (DengInput->KeyDown(DengKeys->orthoOffset)) {
+		if (initoffset) {
+			initmouse = DengInput->mousePos;
+			initoffset = false;
+		}
+		offsetx = 0.02 * (DengInput->mousePos.x - initmouse.x);
+		offsety = 0.02 * (DengInput->mousePos.y - initmouse.y);
+	}
+
+	if (DengInput->KeyReleased(DengKeys->orthoOffset)) {
+		oloffsetx += offsetx; oloffsety += offsety;
+		offsetx = 0; offsety = 0;
+	}
+
+	if (DengInput->KeyPressed(DengKeys->orthoResetOffset)) {
+		oloffsetx = 0; oloffsety = 0;
+	}
+
 	r += zoom * aspectRatio; l = -r;
+	r -= offsetx + oloffsetx; l -= offsetx + oloffsetx;
 	t += zoom; b -= zoom;
-	
+	t += offsety + oloffsety; b += offsety + oloffsety;
+
 	float f = admin->mainCamera->farZ;
 	float n = admin->mainCamera->nearZ;
 	
@@ -120,12 +150,12 @@ void Camera::Update() {
 		
 		//update view matrix
 		//TODO(delle,Op) precalc this since we already get the direction vectors
-		if (type == CameraType::ORTHOGRAPHIC) {
-			target = Vector3::ZERO;
-		}
-		else {
+		//if (type == CameraType::ORTHOGRAPHIC) {
+		//	target = Vector3::ZERO;
+		//}
+		//else {
 			target = position + forward;
-		}
+		//}
 		
 		viewMatrix = Math::LookAtMatrix(position, target).Inverse();
 		

@@ -24,36 +24,36 @@ struct Keybinds : public Component {
 	Key::Key cameraRotateLeft = Key::LEFT;
 	
 	//render debug
-	Key::Key debugRenderEdgesNumbers = Key::COMMA;
-	Key::Key debugRenderWireframe = Key::PERIOD;
-	Key::Key debugRenderDisplayAxis = Key::SLASH;
+	u32 debugRenderEdgesNumbers = Key::COMMA;
+	u32 debugRenderWireframe = Key::PERIOD;
+	u32 debugRenderDisplayAxis = Key::SLASH;
 	
 	//debug menu stuff
-	Key::Key toggleConsole = Key::TILDE;
-	Key::Key toggleDebugMenu = Key::LCTRL | Key::TILDE;
-	Key::Key toggleDebugBar = Key::LSHIFT | Key::TILDE;
+	u32 toggleConsole = Key::TILDE;
+	u32 toggleDebugMenu = Key::LCTRL | Key::TILDE;
+	u32 toggleDebugBar = Key::LSHIFT | Key::TILDE;
 	
 	//main menu bar
-	Key::Key toggleMenuBar = Key::LALT | Key::TILDE;
+	u32 toggleMenuBar = Key::LALT | Key::TILDE;
 	
 	//selected object manipulation modes
-	Key::Key grabSelectedObject = Key::G;
-	Key::Key rotateSelectedObject = Key::R;
-	Key::Key scaleSelectedObject = Key::S;
+	u32 grabSelectedObject = Key::G;
+	u32 rotateSelectedObject = Key::R;
+	u32 scaleSelectedObject = Key::S;
 
-	Key::Key undo = Key::LCTRL | Key::Z;
-	Key::Key redo = Key::LCTRL | Key::Y;
+	//orthographic view controls
+	u32 orthoOffset = MouseButton::MIDDLE;
+	u32 orthoZoomIn = MouseButton::SCROLLUP;
+	u32 orthoZoomOut = MouseButton::SCROLLDOWN;
+	u32 orthoResetOffset = Key::NUMPADPERIOD;
 
-	
-	private: //so VS doesnt show this in intellisense
+	u32 undo = Key::LCTRL | Key::Z;
+	u32 redo = Key::LCTRL | Key::Y;
+
 	//mapping enum names to strings
 	std::map<std::string, Key::Key> stk;
 	std::map<std::string, Key::Key&> keys;
-	
-	
-	
-	//Keybinds(file ...) {} //TODO(delle,i) look into saving/loading keybinds with a file
-	
+
 	//Reads through a keybinds file and fills keybind struct with provided keys
 	void ReloadKeybinds(std::fstream& kf);
 	

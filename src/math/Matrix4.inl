@@ -375,6 +375,7 @@ RotationMatrixZ(float angle) {
 				   0,  0, 0, 1);
 }
 
+//TODO(sushi, Ma) fix the rotation order here since I think its incorrect. It should be Y->Z->X right?
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
 inline Matrix4 Matrix4::
 RotationMatrix(float x, float y, float z) {

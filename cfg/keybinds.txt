@@ -26,3 +26,8 @@ scaleSelectedObject = S
 >undo/redo
 undo = LCTRL + Z
 redo = LCTRL + Y
+>ortho controls
+orthoOffset = MBMIDDLE
+orthoZoomIn = MBSCROLLUP
+orthoZoomOut = MBSCROLLDOWN
+orthoResetOffset = NUMPADPERIOD

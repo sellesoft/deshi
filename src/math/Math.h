@@ -79,12 +79,21 @@ namespace Math {
 
 //// Non-Quaternion vs Quaternion Interactions ////
 
+inline Vector3 Quaternion::operator *(const Vector3& rhs) {
+	return (Quaternion(rhs.x, rhs.y, rhs.z, 0) * *this).ToVector3();
+}
+
+//TODO(sushi, MaCl) move this and others into their our Quaternion / Quaternion nonQuat file
+inline Vector3 Vector3::operator *(const Quaternion& rhs) const {
+	return (Quaternion(x, y, z, 0) * rhs).ToVector3();
+}
+
 inline Quaternion::Quaternion(const Vector3& rotation) {
 	this->RotVecToQuat(rotation);
 }
 
 inline Quaternion::Quaternion(const Vector3& axis, float theta) {
-	this->AxisAngleToQuat(theta, axis);
+	*this = AxisAngleToQuat(theta, axis);
 }
 
 //https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles?oldformat=true
@@ -261,10 +270,8 @@ namespace Math {
 
 	//returns in degrees
 	static float AngBetweenVectors(Vector2 v1, Vector2 v2) {
-		return DEGREES(acosf(v1.dot(v2) / (v1.mag() * v2.mag())));
+		return DEGREES(atan2(v1.x * v2.y - v1.y * v2.x, v1.dot(v2)));
 	}
-
-
 
 	//this function returns a matrix that tells a vector how to look at a specific point in space.
 	static Matrix4 LookAtMatrix(const Vector3& pos, const Vector3& target) {

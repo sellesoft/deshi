@@ -6,6 +6,7 @@
 #include <fstream>
 #include <regex>
 
+//TODO(anyone) update this string at some point
 std::string default_keybinds = ""
 "> Movement Keys\n"
 "movementFlyingUp = E\n"
@@ -59,7 +60,12 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		{"scaleSelectedObject", scaleSelectedObject},
 
 		{"undo", undo},
-		{"redo", redo}
+		{"redo", redo},
+
+		{"orthoOffset", orthoOffset},
+		{"orthoZoomIn", orthoZoomIn},
+		{"orthoZoomOut", orthoZoomOut},
+		{"orthoResetOffset", orthoResetOffset}
 		
 	};
 	
@@ -75,7 +81,8 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		{"SLASH", Key::SLASH}, {"SEMICOLON", Key::SEMICOLON}, {"APOSTROPHE", Key::APOSTROPHE}, {"COMMA", Key::COMMA}, {"PERIOD", Key::PERIOD}, {"BACKSLASH", Key::BACKSLASH}, {"SPACE", Key::SPACE},
 		{"INSERT", Key::INSERT}, {"DELETE", Key::DELETE}, {"HOME", Key::HOME}, {"END", Key::END}, {"PAGEUP", Key::PAGEUP}, {"PAGEDOWN", Key::PAGEDOWN}, {"PAUSE", Key::PAUSE}, {"SCROLL", Key::SCROLL},
 		{"NUMPAD0", Key::NUMPAD0}, {"NUMPAD1", Key::NUMPAD1}, {"NUMPAD2", Key::NUMPAD2}, {"NUMPAD3", Key::NUMPAD3}, {"NUMPAD4", Key::NUMPAD4}, {"NUMPAD5", Key::NUMPAD5}, {"NUMPAD6", Key::NUMPAD6}, {"NUMPAD7", Key::NUMPAD7}, {"NUMPAD8", Key::NUMPAD8}, {"NUMPAD9", Key::NUMPAD9},
-		{"NUMPADMULTIPLY", Key::NUMPADMULTIPLY}, {"NUMPADDIVIDE", Key::NUMPADDIVIDE}, {"NUMPADPLUS", Key::NUMPADPLUS}, {"NUMPADMINUS", Key::NUMPADMINUS}, {"NUMPADPERIOD", Key::NUMPADPERIOD}, {"NUMPADENTER", Key::NUMPADENTER}, {"NUMLOCK", Key::NUMLOCK}
+		{"NUMPADMULTIPLY", Key::NUMPADMULTIPLY}, {"NUMPADDIVIDE", Key::NUMPADDIVIDE}, {"NUMPADPLUS", Key::NUMPADPLUS}, {"NUMPADMINUS", Key::NUMPADMINUS}, {"NUMPADPERIOD", Key::NUMPADPERIOD}, {"NUMPADENTER", Key::NUMPADENTER}, {"NUMLOCK", Key::NUMLOCK},
+		{"MBLEFT", Key::MBLEFT}, {"MBRIGHT", Key:: MBRIGHT}, {"MBMIDDLE", Key:: MBMIDDLE}, {"MBFOUR", Key:: MBFOUR}, {" MBFIVE", Key:: MBFIVE}, {"MBSIX", Key:: MBSIX}, {"MBSEVEN", Key:: MBSEVEN}, {"MBEIGHT", Key:: MBEIGHT}, {"MBSCROLLDOWN", Key:: MBSCROLLDOWN}, {"MBSCROLLUP", Key:: MBSCROLLUP} 
 	};
 	
 	//read keys from keybinds.txt

@@ -38,6 +38,12 @@ namespace deshi{
 	
 	//truncates and writes a char array to a file in ASCII format
 	void writeFile(const std::string& filepath, const char* data, u32 chars);
+
+	//appends and writes a char array to a file in ASCII format
+	void appendFile(const std::string& filepath, const char* data, u32 chars);
+
+	//appends and writes a char vector array to a file in ASCII format
+	void appendFile(const std::string& filepath, std::vector<char>& data, u32 chars);
 	
 	//truncates and writes a char vector to a file in binary
 	void writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes = 0);

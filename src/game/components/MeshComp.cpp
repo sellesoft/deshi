@@ -66,13 +66,5 @@ void MeshComp::UpdateMeshTransform(Vector3 position, Vector3 rotation, Vector3 s
 
 void MeshComp::Update() {
 	//update mesh's transform with entities tranform
-
-	//entity->transform.AlignForward(Vector3(-20 + DengTime->totalTime * 20, 80 + DengTime->totalTime * 20, -30));
-
-	//Vector3 rot = entity->transform.rotation;
-
-	entity->transform.rotation += -Vector3::RIGHT * Matrix4::AxisAngleRotationMatrix(2 * DengTime->totalTime, Vector4(1, 0, 0, 0));
-	
-
 	if(ENTITY_CONTROL) admin->renderer->UpdateMeshMatrix(MeshID, entity->transform.TransformMatrix());
 }
