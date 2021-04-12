@@ -13,18 +13,20 @@
 #define TIMER_END(name) std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - name).count()
 
 struct Time{
-	f32 prevDeltaTime;
-	f32 deltaTime;
-	f64 totalTime;
-	u64 updateCount;
+	f32 prevDeltaTime = 0;
+	f32 deltaTime = 0;
+	f64 totalTime = 0;
+	u64 updateCount = 0;
 	
 	f32 fixedTimeStep;
 	f32 fixedDeltaTime;
-	f64 fixedTotalTime;
-	u64 fixedUpdateCount;
-	f32 fixedAccumulator;
+	f64 fixedTotalTime = 0;
+	u64 fixedUpdateCount = 0;
+	f32 fixedAccumulator = 0;
 	
-	bool paused, frame;
+	f32 timeTime{}, windowTime{}, inputTime{}, adminTime{}, consoleTime{}, renderTime{}, frameTime{};
+	
+	bool paused{}, frame{};
 	
 	std::chrono::time_point<std::chrono::system_clock> tp1, tp2;
 	
@@ -32,22 +34,12 @@ struct Time{
 	void Update();
 	
 	std::string FormatDateTime(std::string format);
+	std::string FormatTickTime(std::string format);
 };
 
 inline void Time::Init(float fixedUpdatesPerSecond){
-	prevDeltaTime = 0;
-	deltaTime     = 0;
-	totalTime     = 0;
-	updateCount   = 0;
-	
 	fixedTimeStep    = fixedUpdatesPerSecond;
 	fixedDeltaTime   = 1.f / fixedUpdatesPerSecond;
-	fixedTotalTime   = 0;
-	fixedUpdateCount = 0;
-	fixedAccumulator = 0;
-	
-	paused = false;
-	frame  = false;
 	
 	tp1 = std::chrono::system_clock::now();
 	tp2 = std::chrono::system_clock::now();
@@ -98,22 +90,65 @@ inline std::string Time::FormatDateTime(std::string fmt){
 					out.append(std::to_string(ltm->tm_year + 1900));
 				}i+=2;continue;
 				case('M'):{
-					out.append((ltm->tm_mon + 1 > 9) ? std::to_string(ltm->tm_mon + 1) : std::string("0") + std::to_string(ltm->tm_mon + 1));
+					out.append((ltm->tm_mon + 1 > 9) ? std::to_string(ltm->tm_mon + 1) :
+							   std::string("0") + std::to_string(ltm->tm_mon + 1));
 				}i+=2;continue;
 				case('d'):{
-					out.append((ltm->tm_mday > 9) ? std::to_string(ltm->tm_mday) : std::string("0") + std::to_string(ltm->tm_mday));
+					out.append((ltm->tm_mday > 9) ? std::to_string(ltm->tm_mday) :
+							   std::string("0") + std::to_string(ltm->tm_mday));
 				}i+=2;continue;
 				case('h'):{
-					out.append((ltm->tm_hour > 9) ? std::to_string(ltm->tm_hour) : std::string("0") + std::to_string(ltm->tm_hour));
+					out.append((ltm->tm_hour > 9) ? std::to_string(ltm->tm_hour) :
+							   std::string("0") + std::to_string(ltm->tm_hour));
 				}i+=2;continue;
 				case('m'):{
-					out.append((ltm->tm_min > 9) ? std::to_string(ltm->tm_min) : std::string("0") + std::to_string(ltm->tm_min));
+					out.append((ltm->tm_min > 9) ? std::to_string(ltm->tm_min) :
+							   std::string("0") + std::to_string(ltm->tm_min));
 				}i+=2;continue;
 				case('s'):{
-					out.append((ltm->tm_sec > 9) ? std::to_string(ltm->tm_sec) : std::string("0") + std::to_string(ltm->tm_sec));
+					out.append((ltm->tm_sec > 9) ? std::to_string(ltm->tm_sec) :
+							   std::string("0") + std::to_string(ltm->tm_sec));
 				}i+=2;continue;
 				case('w'):{
 					out.append(weekday);
+				}i+=2;continue;
+			}
+		}
+		out.push_back(fmt[i]);
+	}
+	
+	out.shrink_to_fit(); return out;
+}
+
+//{t}:time, {w}:window, {i}:input, {a}:admin, {c}:console, {r}:render, {f}:frame, {d}:delta
+inline std::string Time::FormatTickTime(std::string fmt){
+	std::string out = ""; out.reserve(256);
+	for_n(i, fmt.size()){
+		if(fmt[i] == '{'){
+			switch(fmt[i+1]){
+				case('t'):{
+					out.append(std::to_string(timeTime));
+				}i+=2;continue;
+				case('w'):{
+					out.append(std::to_string(windowTime));
+				}i+=2;continue;
+				case('i'):{
+					out.append(std::to_string(inputTime));
+				}i+=2;continue;
+				case('a'):{
+					out.append(std::to_string(adminTime));
+				}i+=2;continue;
+				case('c'):{
+					out.append(std::to_string(consoleTime));
+				}i+=2;continue;
+				case('r'):{
+					out.append(std::to_string(renderTime));
+				}i+=2;continue;
+				case('f'):{
+					out.append(std::to_string(frameTime));
+				}i+=2;continue;
+				case('d'):{
+					out.append(std::to_string(deltaTime));
 				}i+=2;continue;
 			}
 		}

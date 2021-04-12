@@ -90,7 +90,6 @@ add UI color palettes for easy color changing
 renaming entities from entity list
 redo debug bar to be more informative and have different modes
 
-Math NOTEs: Row-Major matrices, Left-Handed coordinate system (clockwise rotation when looking down axis)
 Math TODOs
 ----------
 cleanup math library (remove redundant/old things, make functions more consistent, etc.)
@@ -107,13 +106,13 @@ look into scaling not rotating (scaling is probably being done in world not loca
 Console* g_console;
 
 struct DeshiEngine {
-	Time time;               float timeTime = 0;
-	Window window;           float windowTime = 0;
-	Input input;             float inputTime = 0;
-	EntityAdmin entityAdmin; float adminTime = 0;
-	Console console;         float consoleTime = 0;
-	Renderer renderer;       float renderTime = 0;
-	deshiImGui imgui;        float frameTime = 0;
+	Time time;
+	Window window;
+	Input input;
+	EntityAdmin entityAdmin;
+	Console console;
+	Renderer renderer;
+	deshiImGui imgui;
 	TIMER_START(t_d); TIMER_START(t_f);
 	
 	//TODO(delle,Fs) setup loading a config file to a config struct
@@ -151,17 +150,16 @@ struct DeshiEngine {
 	}
 	
 	bool Update() {
-		TIMER_RESET(t_d); time.Update();        timeTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); window.Update();      windowTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); input.Update();       inputTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); time.Update();        time.timeTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); window.Update();      time.windowTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); input.Update();       time.inputTime = TIMER_END(t_d);
 		imgui.NewFrame();                                                                  //place imgui calls after this
-		TIMER_RESET(t_d); entityAdmin.Update(); adminTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); console.Update();     consoleTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); renderer.Render();    renderTime = TIMER_END(t_d);       //place imgui calls before this
+		TIMER_RESET(t_d); entityAdmin.Update(); time.adminTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); console.Update();     time.consoleTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); renderer.Render();    time.renderTime = TIMER_END(t_d);       //place imgui calls before this
 		//entityAdmin.PostRenderUpdate();
 		
-		frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
-		//LOG("Time: ",timeTime,"ms, Window: ",windowTime,"ms, Input: ",inputTime,"ms, Admin: ",adminTime,"ms, Console: ",consoleTime,"ms, Renderer: ",renderTime,"ms, Frame: ",frameTime,"ms");
+		time.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 		return true;
 	}
 };
