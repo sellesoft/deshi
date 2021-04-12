@@ -23,3 +23,6 @@ toggleMenuBar = LALT + TILDE
 grabSelectedObject = G
 rotateSelectedObject = R
 scaleSelectedObject = S
+>undo/redo
+undo = LCTRL + Z
+redo = LCTRL + Y

@@ -222,6 +222,242 @@ void HandleMouseInputs(EntityAdmin* admin) {
 	//}
 }
 
+void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um) {
+	static bool grabbingObj = false;
+
+	if (!admin->IMGUI_MOUSE_CAPTURE) { 
+		if (DengInput->KeyPressed(DengKeys->grabSelectedObject) || grabbingObj) {
+			//Camera* c = admin->mainCamera;
+			grabbingObj = true;
+			CONTROLLER_MOUSE_CAPTURE = true;
+
+			//bools for if we're in an axis movement mode
+			static bool xaxis = false;
+			static bool yaxis = false;
+			static bool zaxis = false;
+
+			static bool initialgrab = true;
+
+			static Vector3 initialObjPos;
+			static float initialdist; 
+
+			//different cases for mode chaning
+			if (DengInput->KeyPressed(Key::X)) {
+				xaxis = true; yaxis = false; zaxis = false; 
+				sel->transform.position = initialObjPos;
+			}
+			if (DengInput->KeyPressed(Key::Y)) {
+				xaxis = false; yaxis = true; zaxis = false; 
+				sel->transform.position = initialObjPos;
+			}
+			if (DengInput->KeyPressed(Key::Z)) {
+				xaxis = false; yaxis = false; zaxis = true; 
+				sel->transform.position = initialObjPos;
+			}
+			if (!(xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) { //|| DengInput->MousePressed(1)) {
+																					//stop grabbing entirely if press esc or right click w no grab mode on
+																					//TODO(sushi, In) figure out why the camera rotates violently when rightlicking to leave grabbing. probably because of the mouse moving to the object?
+				xaxis = false; yaxis = false; zaxis = false; 
+				sel->transform.position = initialObjPos;
+				initialgrab = true; grabbingObj = false;
+				CONTROLLER_MOUSE_CAPTURE = false;
+				return;
+			}
+			if ((xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
+				//leave grab mode if in one when pressing esc
+				xaxis = false; yaxis = false; zaxis = false; 
+				sel->transform.position = initialObjPos; initialgrab = true;
+			}
+			if (DengInput->MousePressed(0)) {
+				//drop the object if left click
+				xaxis = false; yaxis = false; zaxis = false;
+				initialgrab = true; grabbingObj = false;  
+				CONTROLLER_MOUSE_CAPTURE = false;
+				if(initialObjPos != sel->transform.position){
+					um->AddUndoTranslate(&sel->transform, &initialObjPos, &sel->transform.position);
+				}
+				return;
+			}
+
+			//set mouse to obj position on screen and save that position
+			if (initialgrab) {
+				Vector2 screenPos = Math::WorldToScreen2(sel->transform.position, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
+				admin->window->SetCursorPos(screenPos);
+				initialObjPos = sel->transform.position;
+				initialdist = (initialObjPos - c->position).mag();
+				initialgrab = false;
+			}
+
+			if (!(xaxis || yaxis || zaxis)) {
+
+				Vector3 nuworldpos = Math::ScreenToWorld(DengInput->mousePos, c->projectionMatrix,
+														 c->viewMatrix, admin->window->dimensions);
+
+				Vector3 newpos = nuworldpos;
+
+				newpos *= Math::WorldToLocal(admin->mainCamera->position);
+				newpos.normalize();
+				newpos *= initialdist;
+				newpos *= Math::LocalToWorld(admin->mainCamera->position);
+
+				sel->transform.position = newpos;
+
+
+			}
+			else if (xaxis) {
+				Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
+												  admin->mainCamera->viewMatrix, admin->window->dimensions);
+				pos *= Math::WorldToLocal(admin->mainCamera->position);
+				pos.normalize();
+				pos *= 1000;
+				pos *= Math::LocalToWorld(admin->mainCamera->position);
+
+				Vector3 planeinter;
+
+				if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
+					planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
+				}
+				else {
+					planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
+				}
+
+				sel->transform.position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
+			}
+			else if (yaxis) {
+				Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
+												  admin->mainCamera->viewMatrix, admin->window->dimensions);
+				pos *= Math::WorldToLocal(admin->mainCamera->position);
+				pos.normalize();
+				pos *= 1000;
+				pos *= Math::LocalToWorld(admin->mainCamera->position);
+
+				Vector3 planeinter;
+
+				if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
+					planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
+				}
+				else {
+					planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
+				}
+				sel->transform.position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
+
+			}
+			else if (zaxis) {
+				Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
+												  admin->mainCamera->viewMatrix, admin->window->dimensions);
+				pos *= Math::WorldToLocal(admin->mainCamera->position);
+				pos.normalize();
+				pos *= 1000;
+				pos *= Math::LocalToWorld(admin->mainCamera->position);
+
+				Vector3 planeinter;
+
+				if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
+					planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
+				}
+				else {
+					planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
+				}
+				sel->transform.position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
+			}
+		} //if(DengInput->KeyPressed(DengKeys->grabSelectedObject) || grabbingObj)
+	} //if(!admin->IMGUI_MOUSE_CAPTURE)
+}
+
+void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um) {
+	static bool rotatingObj = false;
+
+	if (!admin->IMGUI_MOUSE_CAPTURE) { 
+		if (DengInput->KeyPressed(DengKeys->rotateSelectedObject) || rotatingObj) {
+			rotatingObj = true;
+			CONTROLLER_MOUSE_CAPTURE = true;
+
+			//bools for if we're in an axis movement mode
+			static bool xaxis = false;
+			static bool yaxis = false;
+			static bool zaxis = false;
+
+			static Vector2 origmousepos = DengInput->mousePos;
+
+			static bool initialrot = true;
+
+			static Vector3 initialObjRot;
+
+			//different cases for mode chaning
+			if (DengInput->KeyPressed(Key::X)) {
+				xaxis = true; yaxis = false; zaxis = false; 
+				sel->transform.rotation = initialObjRot;
+			}
+			if (DengInput->KeyPressed(Key::Y)) {
+				xaxis = false; yaxis = true; zaxis = false; 
+				sel->transform.rotation = initialObjRot;
+			}
+			if (DengInput->KeyPressed(Key::Z)) {
+				xaxis = false; yaxis = false; zaxis = true; 
+				sel->transform.rotation = initialObjRot;
+			}
+			if (!(xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
+				//stop rotating entirely if press esc or right click w no rotate mode on
+				xaxis = false; yaxis = false; zaxis = false; 
+				sel->transform.rotation = initialObjRot;
+				initialrot = true; rotatingObj = false;
+				CONTROLLER_MOUSE_CAPTURE = false;
+				return;
+			}
+			if ((xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
+				//leave rotation mode if in one when pressing esc
+				xaxis = false; yaxis = false; zaxis = false; 
+				sel->transform.rotation = initialObjRot; initialrot = true;
+			}
+			if (DengInput->MousePressed(0)) {
+				//drop the object if left click
+				xaxis = false; yaxis = false; zaxis = false;
+				initialrot = true; rotatingObj = false;  
+				CONTROLLER_MOUSE_CAPTURE = false;
+				if(initialObjRot != sel->transform.rotation){
+					um->AddUndoRotate(&sel->transform, &initialObjRot, &sel->transform.rotation);
+				}
+				return;
+			}
+
+			if (initialrot) {
+				initialObjRot = sel->transform.rotation;
+				initialrot = false;
+				origmousepos = DengInput->mousePos;
+			}
+
+			if (!(xaxis || yaxis || zaxis)) {
+
+				Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
+				Vector2 mousepos = DengInput->mousePos;
+
+				Vector2 ctm = mousepos - center;
+
+				float ang = Math::AngBetweenVectors(ctm, origmousepos - center);
+
+				LOG(ang);
+
+				//Math::LookAtMatrix(Vector3::ZERO, c->up * );
+
+				sel->transform.rotation = c->up * Matrix4::AxisAngleRotationMatrix(ang, Vector4(c->forward, 0));
+				sel->transform.rotation.x = DEGREES(sel->transform.rotation.x);
+				sel->transform.rotation.y = DEGREES(sel->transform.rotation.y);
+				sel->transform.rotation.z = DEGREES(sel->transform.rotation.z);
+
+			}
+			else if (xaxis) {
+			
+			}
+			else if (yaxis) {
+
+			}
+			else if (zaxis) {
+			
+			}
+		} //if(DengInput->KeyPressed(DengKeys->grabSelectedObject) || grabbingObj)
+	} //if(!admin->IMGUI_MOUSE_CAPTURE)
+}
+
 void HandleSelectedEntityInputs(EntityAdmin* admin) {
 	Input* input = admin->input;
 	Camera* c = admin->mainCamera;
@@ -230,244 +466,12 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 	
 	if (sel) {
 		
-		static bool grabbingObj = false;
-		static bool rotatingObj = false;
-		static bool scalingObj = false;
+		HandleGrabbing(sel, c, admin, um);
+		HandleRotating(sel, c, admin, um);
 		
-		if (!admin->IMGUI_MOUSE_CAPTURE) {
-			if (DengInput->KeyPressed(DengKeys->grabSelectedObject) || grabbingObj) {
-				//Camera* c = admin->mainCamera;
-				grabbingObj = true;
-				CONTROLLER_MOUSE_CAPTURE = true;
-				
-				float t = 0;
-				
-				//bools for if we're in an axis movement mode
-				static bool xaxis = false;
-				static bool yaxis = false;
-				static bool zaxis = false;
-				
-				static bool initialgrab = true;
-				
-				static Vector3 worldpos;
-				static Vector3 initialObjPos;
-				static float initialdist; 
-				
-				//different cases for mode chaning
-				if (DengInput->KeyPressed(Key::X)) {
-					xaxis = true; yaxis = false; zaxis = false; 
-					sel->transform.position = initialObjPos;
-				}
-				if (DengInput->KeyPressed(Key::Y)) {
-					xaxis = false; yaxis = true; zaxis = false; 
-					sel->transform.position = initialObjPos;
-				}
-				if (DengInput->KeyPressed(Key::Z)) {
-					xaxis = false; yaxis = false; zaxis = true; 
-					sel->transform.position = initialObjPos;
-				}
-				if (!(xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) { //|| DengInput->MousePressed(1)) {
-					//stop grabbing entirely if press esc or right click w no grab mode on
-					//TODO(sushi, In) figure out why the camera rotates violently when rightlicking to leave grabbing. probably because of the mouse moving to the object?
-					xaxis = false; yaxis = false; zaxis = false; 
-					sel->transform.position = initialObjPos;
-					initialgrab = true; grabbingObj = false;
-					CONTROLLER_MOUSE_CAPTURE = false;
-					return;
-				}
-				if ((xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
-					//leave grab mode if in one when pressing esc
-					xaxis = false; yaxis = false; zaxis = false; 
-					sel->transform.position = initialObjPos; initialgrab = true;
-				}
-				if (DengInput->MousePressed(0)) {
-					//drop the object if left click
-					xaxis = false; yaxis = false; zaxis = false;
-					initialgrab = true; grabbingObj = false;  
-					CONTROLLER_MOUSE_CAPTURE = false;
-					if(initialObjPos != sel->transform.position){
-						um->AddUndoTranslate(&sel->transform, &initialObjPos, &sel->transform.position);
-					}
-					return;
-				}
-				
-				//if we're initially grabbing the object, set the mouse's position to it
-				//and get initial distance from obj
-				if (initialgrab) {
-					Vector2 screenPos = Math::WorldToScreen2(sel->transform.position, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
-					admin->window->SetCursorPos(screenPos);
-					worldpos = Math::ScreenToWorld(DengInput->mousePos, c->projectionMatrix,
-												   c->viewMatrix, admin->window->dimensions);
-					initialObjPos = sel->transform.position;
-					initialdist = (worldpos - sel->transform.position).mag();
-					initialgrab = false;
-				}
-				
-				if (!(xaxis || yaxis || zaxis)) {
-					
-					Vector3 nuworldpos = Math::ScreenToWorld(DengInput->mousePos, c->projectionMatrix,
-															 c->viewMatrix, admin->window->dimensions);
-					
-					
-					Vector3 newpos = nuworldpos;
-					
-					newpos *= Math::WorldToLocal(admin->mainCamera->position);
-					newpos.normalize();
-					newpos *= initialdist;
-					newpos *= Math::LocalToWorld(admin->mainCamera->position);
-					
-					sel->transform.position = newpos;
-					
-					worldpos = nuworldpos;
-					
-				}
-				else if (xaxis) {
-					ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0,0,0,0));
-					ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
-					
-					//project ray out into world from mouse
-					Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
-													  admin->mainCamera->viewMatrix, admin->window->dimensions);
-					pos *= Math::WorldToLocal(admin->mainCamera->position);
-					pos.normalize();
-					pos *= 1000;
-					pos *= Math::LocalToWorld(admin->mainCamera->position);
-					
-					
-					Vector3 planeinter;
-					
-					if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
-						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
-					}
-					else {
-						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
-					}
-					
-					
-					sel->transform.position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
-					
-					Vector3 xp1 = initialObjPos - (Vector3::RIGHT * 2000);
-					Vector3 xp2 = initialObjPos + (Vector3::RIGHT * 2000);
-					
-					Vector3 pc1 = Math::WorldToCamera4(xp1, c->viewMatrix).ToVector3();
-					Vector3 pc2 = Math::WorldToCamera4(xp2, c->viewMatrix).ToVector3();
-					
-					if (Math::ClipLineToZPlanes(pc1, pc2, c)) {
-						
-						Vector3 pn1 = Vector3::FORWARD * Matrix4::AxisAngleRotationMatrix(  70 - (c->fov / 2), Vector4(0, 1, 0, 0));
-						Vector3 pn2 = Vector3::FORWARD * Matrix4::AxisAngleRotationMatrix(-(70 - (c->fov / 2)), Vector4(0, 1, 0, 0));
-						
-						Vector3 ps1 = Math::VectorPlaneIntersect(Vector3::ZERO, pn1, pc1, pc2, t); 
-						Vector3 ps2 = Math::VectorPlaneIntersect(Vector3::ZERO, pn2, pc1, pc2, t); 
-						
-						//get 2D positions of plane intersections and camera position from top down
-						Vector2 p1 = Vector2(ps1.x, ps1.z);
-						Vector2 p2 = Vector2(ps2.x, ps2.z);
-						
-						Vector2 campos = Vector2(c->position.x, c->position.z);
-						Vector2 camfor = Vector2(c->forward.x, c->forward.z);
-						
-						Vector3 pir1 = Math::CameraToWorld4(ps1, c->viewMatrix).ToVector3();
-						Vector3 pir2 = Math::CameraToWorld4(ps2, c->viewMatrix).ToVector3();
-						
-						Vector3 v1s = Math::CameraToScreen3(ps1, c->projectionMatrix, DengWindow->dimensions);
-						Vector3 v2s = Math::CameraToScreen3(ps2, c->projectionMatrix, DengWindow->dimensions);
-						
-						Math::ClipLineToBorderPlanes(v1s, v2s, DengWindow->dimensions);
-						
-						Vector2 mouseline = DengInput->mousePos - v1s.ToVector2();
-						Vector2 screenline = v2s.ToVector2() - v1s.ToVector2();
-						Vector3 worldline = pir2 - pir1;
-						
-						Vector3 backplaneintersect = Math::VectorPlaneIntersect(c->forward + (c->forward.normalized() * c->farZ), c->forward, pir1, pir2, t);
-						
-						float dist = mouseline.dot(screenline.normalized());
-						float ratio = (screenline.normalized() * dist).mag() / screenline.mag();
-						
-						//sel->transform->position = pir1 + (worldline.mag() * ratio) * worldline.normalized();
-						
-						float fontsize = ImGui::GetFontSize();
-						std::string str1 = TOSTRING(pir2);
-						float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-						
-						ImGui::GetBackgroundDrawList()->AddLine(DengInput->mousePos.ToImVec2(), v1s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(0, 0.6, 0.3, 1)));
-						ImGui::GetBackgroundDrawList()->AddLine((v1s.ToVector2() + (screenline.normalized()* dist)).ToImVec2(), v1s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(0.3, 0.6, 0, 1)));
-						ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(0, 1, 0.1, 1)));
-						
-						ImGui::SetCursorPos(v1s.ToVector2().ToImVec2());
-						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8, 0.4, 0, 1));
-						ImGui::Text(TOSTRING(pir1).c_str());
-						ImGui::PopStyleColor();
-						ImGui::SetCursorPos(v2s.ToVector2().ToImVec2());
-						ImGui::SetCursorPosX(ImGui::GetCursorPosX() - strlen1);
-						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 0.4, 0.8, 1));
-						ImGui::Text(TOSTRING(pir2).c_str());
-						ImGui::PopStyleColor();
-					}
-					
-					//screen axis line
-					//Vector2 sal = slpi - srpi;
-					
-					//displacement of projected point along screen axis line
-					//float disp = (DengInput->mousePos - srpi).dot(sal);
-					
-					//float ratio = (sal.normalized() * disp).mag();
-					
-					//TODO(sushi, In) implement displacement mod changing when mouse scrolling works
-					float dispmod = 0.1;
-					
-					if (DengInput->ModsDown(INPUTMOD_CTRL)) dispmod = 0.05;
-					else dispmod = 0.1;
-					
-					//sel->transform.position = rpi + ratio * (lpi - rpi);
-					
-					ImGui::PopStyleColor();
-					ImGui::End();
-				}
-				else if (yaxis) {
-					//project ray out into world from mouse
-					Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
-													  admin->mainCamera->viewMatrix, admin->window->dimensions);
-					pos *= Math::WorldToLocal(admin->mainCamera->position);
-					pos.normalize();
-					pos *= 1000;
-					pos *= Math::LocalToWorld(admin->mainCamera->position);
-					
-					
-					Vector3 planeinter;
-					
-					if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
-						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
-					}
-					else {
-						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
-					}
-					sel->transform.position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
-					
-				}
-				else if (zaxis) {
-					Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
-													  admin->mainCamera->viewMatrix, admin->window->dimensions);
-					pos *= Math::WorldToLocal(admin->mainCamera->position);
-					pos.normalize();
-					pos *= 1000;
-					pos *= Math::LocalToWorld(admin->mainCamera->position);
-					
-					
-					Vector3 planeinter;
-					
-					if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
-						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
-					}
-					else {
-						planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
-					}
-					sel->transform.position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
-				}
-			} //if(DengInput->KeyPressed(DengKeys->grabSelectedObject) || grabbingObj)
-		} //if(!admin->IMGUI_MOUSE_CAPTURE)
-		
-		
+
+
+
 		if (!admin->IMGUI_KEY_CAPTURE) {
 			//translation
 			if (DengInput->KeyDown(Key::L)) { admin->ExecCommand("translate_right"); }
@@ -510,8 +514,8 @@ void HandleRenderInputs(EntityAdmin* admin) {
 
 void HandleUndoInputs(EntityAdmin* admin){
 	if (!admin->IMGUI_KEY_CAPTURE) {
-		if (admin->input->KeyPressed(Key::Z | INPUTMOD_CTRL)) { admin->undoManager.Undo(); }
-		if (admin->input->KeyPressed(Key::Y | INPUTMOD_CTRL)) { admin->undoManager.Redo(); }
+		if (DengInput->KeyPressed(DengKeys->undo)) { admin->undoManager.Undo(); }
+		if (DengInput->KeyPressed(DengKeys->redo)) { admin->undoManager.Redo(); }
 	}
 }
 

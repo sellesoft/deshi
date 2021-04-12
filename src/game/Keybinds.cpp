@@ -56,7 +56,10 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		
 		{"grabSelectedObject", grabSelectedObject},
 		{"rotateSelectedObject", rotateSelectedObject},
-		{"scaleSelectedObject", scaleSelectedObject}
+		{"scaleSelectedObject", scaleSelectedObject},
+
+		{"undo", undo},
+		{"redo", redo}
 		
 	};
 	

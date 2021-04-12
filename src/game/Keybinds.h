@@ -40,6 +40,10 @@ struct Keybinds : public Component {
 	Key::Key grabSelectedObject = Key::G;
 	Key::Key rotateSelectedObject = Key::R;
 	Key::Key scaleSelectedObject = Key::S;
+
+	Key::Key undo = Key::LCTRL | Key::Z;
+	Key::Key redo = Key::LCTRL | Key::Y;
+
 	
 	private: //so VS doesnt show this in intellisense
 	//mapping enum names to strings

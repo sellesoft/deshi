@@ -5,7 +5,7 @@
 #include "System.h"
 
 struct RenderCanvasSystem : public System {
-	bool showDebugTools = false;
+	bool showDebugTools = true;
 	bool showDebugBar = true;
 	bool showMenuBar = true;
 	bool showImGuiDemoWindow = false;

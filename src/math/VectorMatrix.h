@@ -174,7 +174,6 @@ AxisAngleRotationMatrix(float angle, Vector4 axis) {
 				   0,    0,    0,    1);
 }
 
-//TODO(delle,Ma) confirm this is correct
 //returns a transformation matrix of the combined translation, rotation, and scale matrices from input vectors
 //rotates over the Y, then Z then X, ref: https://www.euclideanspace.com/maths/geometry/affine/aroundPoint/index.htm
 inline Matrix4 Matrix4::RotationMatrixAroundPoint(Vector3 pivot, Vector3 rotation) {

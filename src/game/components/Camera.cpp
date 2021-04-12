@@ -14,7 +14,7 @@ Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ, bool freeCam) 
 	right = Vector3::UP.cross(forward).normalized();
 	up = right.cross(forward).normalized();
 	
-	viewMatrix = Math::LookAtMatrix(position, position+forward).Inverse();
+	viewMatrix = Math::LookAtMatrix(position, position + forward).Inverse();
 	UpdateProjectionMatrix();
 	
 	admin->renderer->UpdateCameraViewMatrix(viewMatrix);

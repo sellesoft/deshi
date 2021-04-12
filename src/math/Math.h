@@ -79,25 +79,34 @@ namespace Math {
 
 //// Non-Quaternion vs Quaternion Interactions ////
 
+inline Quaternion::Quaternion(const Vector3& rotation) {
+	this->RotVecToQuat(rotation);
+}
+
+inline Quaternion::Quaternion(const Vector3& axis, float theta) {
+	this->AxisAngleToQuat(theta, axis);
+}
+
+//https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles?oldformat=true
 inline Vector3 Quaternion::ToVector3() {
 	Vector3 angles;
 	
 	// roll (x-axis rotation)
 	double sinr_cosp = 2 * (w * x + y * z);
 	double cosr_cosp = 1 - 2 * (x * x + y * y);
-	angles.x = std::atan2(sinr_cosp, cosr_cosp);
+	angles.x = atan2(sinr_cosp, cosr_cosp);
 	
 	// pitch (y-axis rotation)
 	double sinp = 2 * (w * y - z * x);
 	if (std::abs(sinp) >= 1)
-		angles.y = std::copysign(M_PI / 2, sinp); // use 90 degrees if out of range
+		angles.y = copysign(M_PI / 2, sinp); // use 90 degrees if out of range
 	else
-		angles.y = std::asin(sinp);
+		angles.y = asin(sinp);
 	
 	// yaw (z-axis rotation)
 	double siny_cosp = 2 * (w * z + x * y);
 	double cosy_cosp = 1 - 2 * (y * y + z * z);
-	angles.z = std::atan2(siny_cosp, cosy_cosp);
+	angles.z = atan2(siny_cosp, cosy_cosp);
 	
 	return angles;
 }
@@ -112,7 +121,7 @@ inline Quaternion Quaternion::AxisAngleToQuat(float angle, Vector3 axis) {
 
 //this may be wrong but I think a rotation vector would be 
 //Vector3(roll, pitch, yaw)
-//copied from https://www.wikiwand.com/en/Conversion_between_quaternions_and_Euler_angles#/Euler_angles_to_quaternion_conversion
+//https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles?oldformat=true
 inline Quaternion Quaternion::RotVecToQuat(Vector3 rotation) {
 	//this is probably necessary although he didn't do this in the Gamasutra article
 	Vector3 rotationrad = RADIANS(rotation);
@@ -250,6 +259,12 @@ namespace Math {
 		return DEGREES(acosf(v1.dot(v2) / (v1.mag() * v2.mag())));
 	}
 
+	//returns in degrees
+	static float AngBetweenVectors(Vector2 v1, Vector2 v2) {
+		return DEGREES(acosf(v1.dot(v2) / (v1.mag() * v2.mag())));
+	}
+
+
 
 	//this function returns a matrix that tells a vector how to look at a specific point in space.
 	static Matrix4 LookAtMatrix(const Vector3& pos, const Vector3& target) {
@@ -272,9 +287,9 @@ namespace Math {
 		
 		//make look-at matrix
 		return Matrix4(newRight.x, newRight.y, newRight.z, 0,
-					   newUp.x,    -newUp.y,   newUp.z,  0,
+					   newUp.x,    -newUp.y,   newUp.z,    0,
 					   newFor.x,   newFor.y,   newFor.z,   0,
-					   pos.x,      pos.y,      pos.z,     1);
+					   pos.x,      pos.y,      pos.z,      1);
 	}
 	
 	//this ones for getting the up vector back for sound orientation

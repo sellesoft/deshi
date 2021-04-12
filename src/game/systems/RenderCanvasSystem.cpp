@@ -27,6 +27,15 @@ float debugtoolswidth = 0;
 
 float padding = 0.95;
 
+//defines to make repetitve things less ugly and more editable
+
+//check if mouse is over window so we can prevent mouse from being captured by engine
+#define WinHovCheck if (IsWindowHovered()) WinHovFlag = true 
+
+//allows me to manually set padding so i have a little more control than ImGui gives me (I think idk lol)
+#define SetPadding SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2)
+
+
 //current palette:
 //https://lospec.com/palette-list/slso8
 //TODO(sushi, Ui) implement menu style file loading sort of stuff yeah
@@ -74,11 +83,11 @@ void RenderCanvasSystem::MenuBar() {
 	
 	
 	if(BeginMainMenuBar()) {
-		if (IsWindowHovered()) WinHovFlag = true; 
+		WinHovCheck; 
 		
 		menubarheight = GetWindowHeight();
 		if(BeginMenu("File")) {
-			if (IsWindowHovered()) WinHovFlag = true; 
+			WinHovCheck; 
 			
 			if (MenuItem("Save")) {
 				admin->Save();
@@ -86,7 +95,7 @@ void RenderCanvasSystem::MenuBar() {
 			ImGui::EndMenu();
 		}
 		if(BeginMenu("Edit")) {
-			if (IsWindowHovered()) WinHovFlag = true; 
+			WinHovCheck; 
 			
 			if (MenuItem("placeholder")) {
 				
@@ -94,7 +103,7 @@ void RenderCanvasSystem::MenuBar() {
 			ImGui::EndMenu();
 		}
 		if(BeginMenu("Spawn")) {
-			if (IsWindowHovered()) WinHovFlag = true; 
+			WinHovCheck; 
 			
 			for (int i = 0; i < files.size(); i++) {
 				if (files[i].find(".obj") != std::string::npos) {
@@ -104,7 +113,7 @@ void RenderCanvasSystem::MenuBar() {
 			EndMenu();
 		}//agh
 		if (BeginMenu("Window")) {
-			if (IsWindowHovered()) WinHovFlag = true; 
+			WinHovCheck; 
 			
 			if (MenuItem("Object Property Menu")) showDebugTools = !showDebugTools;
 			if (MenuItem("Debug Bar")) showDebugBar = !showDebugBar;
@@ -151,22 +160,20 @@ void RenderCanvasSystem::DebugTools() {
 	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,  ColToVec4(Color(75, 75, 75)));
 	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColToVec4(Color(65, 65, 65)));
 	
-	
-	
 	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	
 	debugtoolswidth = GetWindowWidth();
 	
 	//capture mouse if hovering over this window
-	if (IsWindowHovered()) WinHovFlag = true; 
+	WinHovCheck; 
 	
-	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+	SetPadding;
 	ImGui::Text("Entities");
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
-	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+	SetPadding;
 	
 	if (BeginChild("entityListScroll", ImVec2(GetWindowWidth() * 0.95, 100), false)) {
-		if (IsWindowHovered()) WinHovFlag = true; 
+		WinHovCheck; 
 		if (admin->entities.size() == 0) {
 			float time = DengTime->totalTime;
 			std::string str1 = "Nothing yet...";
@@ -245,9 +252,9 @@ void RenderCanvasSystem::DebugTools() {
 		if (BeginTabItem("Ent")) {
 			if (admin->input->selectedEntity) {
 				if (BeginChild("SelectedEntityMenu", ImVec2(GetWindowWidth(), 500), true)) {
-					if (IsWindowHovered()) WinHovFlag = true;
+					WinHovCheck;
 					Entity* sel = admin->input->selectedEntity;
-					SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+					SetPadding;
 					Text(TOSTRING("Selected Entity: ", sel->name).c_str());
 					Text("Components: ");
 					
@@ -257,12 +264,12 @@ void RenderCanvasSystem::DebugTools() {
 						if (BeginTabItem("Obj")) {
 							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
 							if (BeginChild("ObjMenu", ImVec2(GetWindowWidth()* 0.95, 100), true)) {
-								if (IsWindowHovered()) WinHovFlag = true;
+								WinHovCheck;
 								
 								Text("Transform");
 								Separator();
 								
-								SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+								SetPadding;
 								Text("Position ");
 								vec3 oldVec = sel->transform.position;
 								SameLine(); if(InputVector3("position", &sel->transform.position)){
@@ -270,7 +277,7 @@ void RenderCanvasSystem::DebugTools() {
 								}
 								Separator();
 								
-								SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+								SetPadding;
 								Text("Rotation ");
 								oldVec = sel->transform.rotation;
 								SameLine(); if(InputVector3("rotation", &sel->transform.rotation)){
@@ -278,7 +285,7 @@ void RenderCanvasSystem::DebugTools() {
 								}
 								Separator();
 								
-								SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+								SetPadding;
 								Text("Scale    ");
 								oldVec = sel->transform.scale;
 								SameLine(); if(InputVector3("scale", &sel->transform.scale)){
@@ -295,13 +302,13 @@ void RenderCanvasSystem::DebugTools() {
 						if (BeginTabItem("Comp")) {
 							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
 							if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 100), true)) {
-								if (IsWindowHovered()) WinHovFlag = true;
+								WinHovCheck;
 								
 								if (ImGui::BeginTable("SelectedComponents", 1)) {
 									ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
 									for (Component* c : sel->components) {
 										TableNextColumn(); //TableNextRow();
-										SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+										SetPadding;
 										Text(c->name);
 										SameLine(CalcItemWidth() + 20);
 										if (Button("Del")) {
@@ -317,63 +324,70 @@ void RenderCanvasSystem::DebugTools() {
 						
 						//Materials menu
 						if (BeginTabItem("Mat")) {
-							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-							if (BeginChild("SelectedMaterialsWindow", ImVec2(GetWindowWidth() * 0.95, 200), true)) {
-								if (IsWindowHovered()) WinHovFlag = true;
+							SetPadding;
+							if (BeginChild("SelectedMaterialsWindow", ImVec2(GetWindowWidth() * 0.95, 400), true, ImGuiWindowFlags_NoScrollbar)) {
+								WinHovCheck;
 								if (BeginTabBar("MaterialTab")) {
 									if (BeginTabItem("Shdr")) {
-										MeshComp* m = sel->GetComponent<MeshComp>();
-										if (m) {
-											//TODO(sushi, Ui) set up showing multiple batches shaders when that becomes relevant
-											Text(TOSTRING("Shader: ", shadertostring.at(m->m->batchArray[0].shader)).c_str());
-											SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-											if (ImGui::TreeNode("Shader Select")) {
-												static int selected = -1;
-												for (int i = 0; i < shadertostringint.size(); i++) {
-													if (Selectable(shadertostringint[i].c_str(), selected == i)) {
-														selected = i;
-														for (int iter = 0; iter < sel->components.size(); iter++) {
-															if (MeshComp* mc = dynamic_cast<MeshComp*>(sel->components[iter])) {
-																mc->ChangeMaterialShader(stringtoshader.at(shadertostringint[i]));
+										if (BeginChild("ShaderTab", ImVec2(GetWindowWidth() * 0.95, 200), true)) {
+											WinHovCheck;
+											MeshComp* m = sel->GetComponent<MeshComp>();
+											if (m) {
+												//TODO(sushi, Ui) set up showing multiple batches shaders when that becomes relevant
+												Text(TOSTRING("Shader: ", shadertostring.at(m->m->batchArray[0].shader)).c_str());
+												SetPadding;
+												if (ImGui::TreeNode("Shader Select")) {
+													static int selected = -1;
+													for (int i = 0; i < shadertostringint.size(); i++) {
+														if (Selectable(shadertostringint[i].c_str(), selected == i)) {
+															selected = i;
+															for (int iter = 0; iter < sel->components.size(); iter++) {
+																if (MeshComp* mc = dynamic_cast<MeshComp*>(sel->components[iter])) {
+																	mc->ChangeMaterialShader(stringtoshader.at(shadertostringint[i]));
+																}
 															}
 														}
 													}
+													TreePop();
 												}
-												TreePop();
 											}
+											EndChild();
 										}
 										EndTabItem();
 									}
 									if (BeginTabItem("Tex")) {
-										
-										MeshComp* m = sel->GetComponent<MeshComp>();
-										if (m) {
-											if (m->m->batchArray.size() > 0) {
-												if (m->m->batchArray[0].textureArray.size() > 0) {
-													Text(TOSTRING("Texture: ", m->m->batchArray[0].textureArray[0].filename).c_str());
-												}
-												else {
-													Text("Current Texture: None");
-												}
-												//TODO(sushi, Ui) immplement showing multiple textures when yeah
-												Separator();
-												SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-												
-												static int selected = -1;
-												for (int i = 0; i < textures.size(); i++) {
-													SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
-													if (Selectable(textures[i].c_str(), selected == i)) {
-														selected = i;
-														for (int iter = 0; iter < sel->components.size(); iter++) {
-															if (MeshComp* mc = dynamic_cast<MeshComp*>(sel->components[iter])) {
-																Texture tex(textures[i].c_str(), 0);
-																mc->ChangeMaterialTexture(admin->renderer->LoadTexture(tex));
+										if (BeginChild("TexTab", ImVec2(GetWindowWidth() * 0.95, 200), true)) {
+											WinHovCheck;
+											MeshComp* m = sel->GetComponent<MeshComp>();
+											if (m) {
+												if (m->m->batchArray.size() > 0) {
+													if (m->m->batchArray[0].textureArray.size() > 0) {
+														Text(TOSTRING("Texture: ", m->m->batchArray[0].textureArray[0].filename).c_str());
+													}
+													else {
+														Text("Current Texture: None");
+													}
+													//TODO(sushi, Ui) immplement showing multiple textures when yeah
+													Separator();
+													SetPadding;
+
+													static int selected = -1;
+													for (int i = 0; i < textures.size(); i++) {
+														SetPadding;
+														if (Selectable(textures[i].c_str(), selected == i)) {
+															selected = i;
+															for (int iter = 0; iter < sel->components.size(); iter++) {
+																if (MeshComp* mc = dynamic_cast<MeshComp*>(sel->components[iter])) {
+																	Texture tex(textures[i].c_str(), 0);
+																	mc->ChangeMaterialTexture(admin->renderer->LoadTexture(tex));
+																}
 															}
 														}
+
 													}
-													
 												}
 											}
+											EndChild();
 										}
 										EndTabItem();
 									}
@@ -390,27 +404,27 @@ void RenderCanvasSystem::DebugTools() {
 				
 			}
 			else {
-				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				SetPadding;
 				Text("Selected Entity: None");
 			}
 			EndTabItem();
 		}
 		if (BeginTabItem("Cam")) {
 			if (BeginChild("SelectedEntityMenu", ImVec2(GetWindowWidth(), 500), true)) {
-				if (IsWindowHovered()) WinHovFlag = true;
-				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				WinHovCheck;
+				SetPadding;
 				
 				Camera* c = admin->mainCamera;
 				
 				Text("Transform");
 				Separator();
 				
-				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				SetPadding;
 				Text("Position ");
 				SameLine(); InputVector3("position", &c->position);
 				Separator();
 				
-				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				SetPadding;
 				Text("Rotation ");
 				SameLine(); InputVector3("rotation", &c->rotation);
 				Separator();
@@ -419,7 +433,7 @@ void RenderCanvasSystem::DebugTools() {
 				
 				Separator();
 				
-				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				SetPadding;
 				Text("fov:   ");
 				SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
 				if (InputFloat("fov", &c->fov, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsDecimal)) {
@@ -427,7 +441,7 @@ void RenderCanvasSystem::DebugTools() {
 				}
 				Separator();
 				
-				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				SetPadding;
 				Text("nearZ: ");
 				SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
 				if (InputFloat("nearz", &c->nearZ, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsDecimal)) {
@@ -435,7 +449,7 @@ void RenderCanvasSystem::DebugTools() {
 				};
 				Separator();
 				
-				SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2);
+				SetPadding;
 				Text("farZ:  ");
 				SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
 				if (InputFloat("farz", &c->farZ, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CharsDecimal)) {
@@ -450,22 +464,22 @@ void RenderCanvasSystem::DebugTools() {
 		EndTabBar();
 	}
 	
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();    ImGui::PopStyleColor();
-	ImGui::PopStyleColor();            ImGui::PopStyleColor();
-	ImGui::PopStyleColor();                    ImGui::PopStyleColor();
-	ImGui::PopStyleColor();        /*  .u.  */          ImGui::PopStyleColor();
-	ImGui::PopStyleColor();                                    ImGui::PopStyleColor();
+	                                          ImGui::PopStyleVar();
+	                                             ImGui::PopStyleVar();
+	                                       ImGui::PopStyleVar();
+	                                   ImGui::PopStyleVar();
+	                                      ImGui::PopStyleVar();
+	                                         ImGui::PopStyleVar();
+	                                    ImGui::PopStyleVar();
+	                                ImGui::PopStyleColor();
+	                    ImGui::PopStyleColor();    ImGui::PopStyleColor();
+	                ImGui::PopStyleColor();            ImGui::PopStyleColor();
+	            ImGui::PopStyleColor();                    ImGui::PopStyleColor();
+	        ImGui::PopStyleColor();        /*  .u.  */          ImGui::PopStyleColor();
+	    ImGui::PopStyleColor();                                    ImGui::PopStyleColor();
     ImGui::PopStyleColor();                                            ImGui::PopStyleColor();
 	
-	ImGui::End();
+	                                      ImGui::End();
 }
 
 void RenderCanvasSystem::DebugBar() {
@@ -507,7 +521,7 @@ void RenderCanvasSystem::DebugBar() {
 	ImGui::Begin("DebugBar", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	debugbarheight = 20;
 	//capture mouse if hovering over this window
-	if (IsWindowHovered()) WinHovFlag = true; 
+	WinHovCheck; 
 	
 	activecols = show_fps + show_fps_graph + 3 * show_world_stats + 2 * show_selected_stats + show_time + 1;
 	if (BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)) {
