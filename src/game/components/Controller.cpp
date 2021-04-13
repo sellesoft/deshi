@@ -21,14 +21,16 @@ inline void AddBindings(EntityAdmin* admin) {
 		binds.getline(c, 255);
 		std::string s(c);
 		
-		std::string key = s.substr(0, s.find_first_of(" "));
-		std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
-		
-		try {
-			DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, DengKeys->stk.at(key)));
-		}
-		catch (...) {
-			ERROR("Unknown key \"", key, "\" attempted to bind to command \"", command, "\"");
+		if (s != "") {
+			std::string key = s.substr(0, s.find_first_of(" "));
+			std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
+
+			try {
+				DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, DengKeys->stk.at(key)));
+			}
+			catch (...) {
+				ERROR("Unknown key \"", key, "\" attempted to bind to command \"", command, "\"");
+			}
 		}
 	}
 	else {
@@ -155,6 +157,25 @@ inline void CameraZoom(EntityAdmin* admin){
 			}
 		}
 	}
+}
+
+inline void CameraProperties(EntityAdmin* admin) {
+	Camera* c = admin->mainCamera;
+
+	if (DengInput->KeyPressed(DengKeys->perspectiveToggle)) {
+		switch (c->type) {
+			case(CameraType::PERSPECTIVE): {  c->type = CameraType::ORTHOGRAPHIC; c->farZ = 1000000; } break;
+			case(CameraType::ORTHOGRAPHIC): { c->type = CameraType::PERSPECTIVE; c->farZ = 1000; c->UpdateProjectionMatrix(); } break;
+		}
+	}
+
+	if (DengInput->KeyPressed(DengKeys->orthoFrontView))    c->orthoview = FRONT;
+	if (DengInput->KeyPressed(DengKeys->orthoBackView))     c->orthoview = BACK;
+	if (DengInput->KeyPressed(DengKeys->orthoRightView))    c->orthoview = RIGHT;
+	if (DengInput->KeyPressed(DengKeys->orthoLeftView))     c->orthoview = LEFT;
+	if (DengInput->KeyPressed(DengKeys->orthoTopDownView))  c->orthoview = TOPDOWN;
+	if (DengInput->KeyPressed(DengKeys->orthoBottomUpView)) c->orthoview = BOTTOMUP;
+
 }
 
 inline void HandleMouseInputs(EntityAdmin* admin) {
@@ -589,6 +610,7 @@ void Controller::Update() {
 	CameraMovement(admin, mode);
 	CameraRotation(admin, mouseSensitivity);
 	CameraZoom(admin);
+	CameraProperties(admin);
 	HandleMouseInputs(admin);
 	HandleSelectedEntityInputs(admin);
 	HandleRenderInputs(admin);

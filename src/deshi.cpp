@@ -31,6 +31,7 @@ pool/arena components and entities for better performance
 !!!implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
 replace/remove external dependencies/includes were possible (glm, tinyobj)
 add Qol (quality of life) tag to TODOP
+add Camera tag to TODOP
 look into integrating TODOP with Discord
 add yaxis line
 begin reimplementing sound system and maybe rethink its design a bit
@@ -89,6 +90,7 @@ implement command chaining
 add console flag for showing text in bottom right message bar like error does
 command to print all avaliable keys for binding
 command to print all keybinds, with (maybe) an option for printing only contextual keybinds
+if multiple errors are sent to the console before the user opens it, show a number in the debug bar indicating how many
 
 UI TODOs
 --------
