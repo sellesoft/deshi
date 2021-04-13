@@ -14,19 +14,18 @@ if you feel they would handle the problem better. It should generally be you tho
 
 Major Ungrouped TODOs
 ---------------------
-add device info command (graphics card, sound device, monitor res, etc)
-add a component_state command to print state of a component (add str methods to all components/systems)
-add option to not use input callbacks so fps doesnt get affected dramatically by input
-add a general logging system with log levels and locations
+add level saving and loading
 add shaders: PBR (4textures)
 settings file(s) [keybinds, video, audio, etc]
-fix program stalling when Keybinds cant find the keybind file
-make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
 figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
 
 Minor Ungrouped TODOs
 ---------------------
-add command binding and aliasing
+add a general logging system with log levels and locations
+add option to not use input callbacks so fps doesnt get affected dramatically by input
+add a component_state command to print state of a component (add str methods to all components/systems)
+make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
+add device info command (graphics card, sound device, monitor res, etc)
 pool/arena components and entities for better performance
 !!!implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
 replace/remove external dependencies/includes were possible (glm, tinyobj)
@@ -37,15 +36,15 @@ begin reimplementing sound system and maybe rethink its design a bit
 
 Render TODOs
 ------------
-add 2D shader and interface functions
 add lighting and shadows
+add 2D shader and interface functions
 add vertex editing
 fix texture transparency
-look into adding volk for faster loading/function calls
 add RenderSettings loading and usage
 check those vulkan-tutorial links for the suggestions
 avoid having 3 copies of a mesh (model, meshVK, vulkan)
 add instancing
+look into adding volk for faster loading/function calls
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
 multi-threaded command buffers, shader loading, image loading
 find a way to forward declare vulkan stuff and move the include to the cpp
