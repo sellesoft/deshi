@@ -5,7 +5,7 @@
 #include "../game/Transform.h"
 #include "../game/UndoManager.h"
 #include "../game/systems/WorldSystem.h"
-#include "../game/systems/RenderCanvasSystem.h"
+#include "../game/systems/CanvasSystem.h"
 #include "../game/components/Camera.h"
 #include "../game/components/Physics.h"
 #include "../game/components/Collider.h"
@@ -89,9 +89,9 @@ void Console::AddLog(std::string input) {
 	
 	if (this) {
 		std::smatch m;
-
+		
 		while (std::regex_search(input, m, RegColorFormat)) { //parse text for color formatting
-
+			
 			//check if were dealing with a formatted part of the string
 			if (std::regex_search(m[0].str(), std::regex("\\[c:[^\\]]+\\]"))) {
 				//if we are, push the actual text with its color into text vector
@@ -888,10 +888,10 @@ void Console::AddConsoleCommands() {
 									   return "Saved.";
 									   
 								   }, "save", "saves the state of Entity Admin");
-
+	
 	commands["alias"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string 
 									{
-
+										
 										if (args.size() == 0) {
 											return "alias \nassign an alias to another command to call it with a different name\n alias (alias name) (command name)";
 										}
@@ -903,16 +903,16 @@ void Console::AddConsoleCommands() {
 											try {
 												com = admin->console->commands.at(args[1]);
 												admin->console->commands.emplace(args[0], com);
-
+												
 												std::string data = args[0] + " " + args[1] + "\n";
 												std::vector<char> datav;
-
+												
 												for (auto c : data) {
 													datav.push_back(c);
 												}
-
+												
 												deshi::appendFile(deshi::getConfig("aliases.cfg"), datav, datav.size());
-
+												
 												return "[c:green]alias \"" + args[0] + "\" successfully assigned to command \"" + args[1] + "\"[c]";
 											}
 											catch (...) {
@@ -922,41 +922,41 @@ void Console::AddConsoleCommands() {
 										else {
 											return "too many arguments specified.";
 										}
-
-								   }, "alias", "assign an alias to another command to call it with a different name");
+										
+									}, "alias", "assign an alias to another command to call it with a different name");
 	
 	commands["bind"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string 
-									{
-
-										if (args.size() == 0) {
-											return "bind \nassign a command to a key\n bind (key) (command name)";
-										}
-										else if(args.size() == 1){
-											return "you must specify a command to assign to this bind.";
-										}
-										else {
-											std::string s = "";
-											for (int i = 1; i < args.size(); i++) {
-												s += args[i];
-											}
-											Key::Key key;
-
-											try {
-												key = DengKeys->stk.at(args[0]);
-												DengInput->binds.push_back(std::pair<std::string, Key::Key>(s, key));
-												return "[c:green]key \"" + args[0] + "\" successfully bound to \n" + s + "[c]";
-											}
-											catch(...){
-												return "[c:red]key \"" + args[0] + "\" not found in the key list.[c]";
-											}
-
-											
-										}
-
-									}, "bind", "bind a command to a key");
-
-
-
+								   {
+									   
+									   if (args.size() == 0) {
+										   return "bind \nassign a command to a key\n bind (key) (command name)";
+									   }
+									   else if(args.size() == 1){
+										   return "you must specify a command to assign to this bind.";
+									   }
+									   else {
+										   std::string s = "";
+										   for (int i = 1; i < args.size(); i++) {
+											   s += args[i];
+										   }
+										   Key::Key key;
+										   
+										   try {
+											   key = DengKeys->stk.at(args[0]);
+											   DengInput->binds.push_back(std::pair<std::string, Key::Key>(s, key));
+											   return "[c:green]key \"" + args[0] + "\" successfully bound to \n" + s + "[c]";
+										   }
+										   catch(...){
+											   return "[c:red]key \"" + args[0] + "\" not found in the key list.[c]";
+										   }
+										   
+										   
+									   }
+									   
+								   }, "bind", "bind a command to a key");
+	
+	
+	
 }
 
 //TODO(delle,InPh) update entity movement commands to be based on EntityID
@@ -1300,19 +1300,19 @@ void Console::AddWindowCommands() {
 
 void Console::AddAliases() {
 	std::ifstream aliases;
-
+	
 	if (deshi::getConfig("aliases.cfg") != "") {
 		aliases = std::ifstream(deshi::getConfig("aliases.cfg"), std::ios::in);
-
+		
 		char* c = (char*)malloc(255);
 		aliases.getline(c, 255);
 		std::string s(c);
-
+		
 		std::string alias = s.substr(0, s.find_first_of(" "));
 		std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
-
+		
 		Command* com;
-
+		
 		try {
 			com = commands.at(command);
 			commands.emplace(alias, com);
@@ -1327,7 +1327,7 @@ void Console::AddAliases() {
 		
 		return;
 	}
-
+	
 }
 
 

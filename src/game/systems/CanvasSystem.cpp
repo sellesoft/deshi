@@ -1,4 +1,4 @@
-#include "RenderCanvasSystem.h"
+#include "CanvasSystem.h"
 #include "../components/Camera.h"
 #include "../../core.h"
 #include "../../utils/defines.h"
@@ -73,7 +73,7 @@ bool InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate = false) {
 
 //// major ui elements ////
 
-void RenderCanvasSystem::MenuBar() {
+void CanvasSystem::MenuBar() {
 	using namespace ImGui;
 	
 	ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
@@ -132,7 +132,7 @@ void RenderCanvasSystem::MenuBar() {
 	
 }
 
-void RenderCanvasSystem::DebugTools() {
+void CanvasSystem::DebugTools() {
 	using namespace ImGui;
 	
 	float fontsize = ImGui::GetFontSize();
@@ -234,7 +234,7 @@ void RenderCanvasSystem::DebugTools() {
 						strncpy_s(buff, entity.second->name, 64);
 						strncpy_s(ogname, entity.second->name, 64);
 					}
-
+					
 					if (rename) {
 						if (ImGui::InputText("name input", buff, sizeof(buff), ImGuiInputTextFlags_EnterReturnsTrue)) {
 							strncpy_s(entity.second->name, buff, 64);
@@ -389,7 +389,7 @@ void RenderCanvasSystem::DebugTools() {
 													//TODO(sushi, Ui) immplement showing multiple textures when yeah
 													Separator();
 													SetPadding;
-
+													
 													static int selected = -1;
 													for (int i = 0; i < textures.size(); i++) {
 														SetPadding;
@@ -402,7 +402,7 @@ void RenderCanvasSystem::DebugTools() {
 																}
 															}
 														}
-
+														
 													}
 												}
 											}
@@ -483,25 +483,25 @@ void RenderCanvasSystem::DebugTools() {
 		EndTabBar();
 	}
 	
-	                                          ImGui::PopStyleVar();
-	                                             ImGui::PopStyleVar();
-	                                       ImGui::PopStyleVar();
-	                                   ImGui::PopStyleVar();
-	                                      ImGui::PopStyleVar();
-	                                         ImGui::PopStyleVar();
-	                                    ImGui::PopStyleVar();
-	                                ImGui::PopStyleColor();
-	                    ImGui::PopStyleColor();    ImGui::PopStyleColor();
-	                ImGui::PopStyleColor();            ImGui::PopStyleColor();
-	            ImGui::PopStyleColor();                    ImGui::PopStyleColor();
-	        ImGui::PopStyleColor();        /*  .u.  */          ImGui::PopStyleColor();
-	    ImGui::PopStyleColor();                                    ImGui::PopStyleColor();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleVar();
+	ImGui::PopStyleColor();
+	ImGui::PopStyleColor();    ImGui::PopStyleColor();
+	ImGui::PopStyleColor();            ImGui::PopStyleColor();
+	ImGui::PopStyleColor();                    ImGui::PopStyleColor();
+	ImGui::PopStyleColor();        /*  .u.  */          ImGui::PopStyleColor();
+	ImGui::PopStyleColor();                                    ImGui::PopStyleColor();
     ImGui::PopStyleColor();                                            ImGui::PopStyleColor();
 	
-	                                      ImGui::End();
+	ImGui::End();
 }
 
-void RenderCanvasSystem::DebugBar() {
+void CanvasSystem::DebugBar() {
 	using namespace ImGui;
 	
 	//for getting fps
@@ -757,7 +757,7 @@ void RenderCanvasSystem::DebugBar() {
 }
 
 //sort of sandbox for drawing ImGui stuff over the entire screen
-void RenderCanvasSystem::DebugLayer() {
+void CanvasSystem::DebugLayer() {
 	
 	ImGui::SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height));
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -861,40 +861,49 @@ void RenderCanvasSystem::DebugLayer() {
 	ImGui::End();
 }
 
-void RenderCanvasSystem::DrawUI(void) {
-	if (DengInput->KeyPressed(DengKeys->toggleDebugMenu)) showDebugTools = !showDebugTools;
-	if (DengInput->KeyPressed(DengKeys->toggleDebugBar)) showDebugBar = !showDebugBar;
-	if (DengInput->KeyPressed(DengKeys->toggleMenuBar)) showMenuBar = !showMenuBar;
-	
-	if (showDebugLayer) DebugLayer();
-	if (showDebugTools) DebugTools();
-	if (showDebugBar)   DebugBar();
-	if (showMenuBar)    MenuBar();
-	if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
-	
-	
-	if (!showMenuBar) {
-		menubarheight = 0;
+void CanvasSystem::DrawUI(void) {
+	if(admin->state == GameState::PLAY){
+		
 	}
-	
-	if (!showDebugBar){
-		debugbarheight = 0;
+	else if(admin->state == GameState::MENU){
+		
 	}
-	if (!showDebugTools) {
-		debugtoolswidth = 0;
+	else if(admin->state == GameState::EDITOR || admin->state == GameState::PLAY_DEBUG){
+		if (DengInput->KeyPressed(DengKeys->toggleDebugMenu)) showDebugTools = !showDebugTools;
+		if (DengInput->KeyPressed(DengKeys->toggleDebugBar)) showDebugBar = !showDebugBar;
+		if (DengInput->KeyPressed(DengKeys->toggleMenuBar)) showMenuBar = !showMenuBar;
+		
+		if (showDebugLayer) DebugLayer();
+		if (showDebugTools) DebugTools();
+		if (showDebugBar)   DebugBar();
+		if (showMenuBar)    MenuBar();
+		if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
+		
+		
+		if (!showMenuBar) {
+			menubarheight = 0;
+		}
+		
+		if (!showDebugBar){
+			debugbarheight = 0;
+		}
+		if (!showDebugTools) {
+			debugtoolswidth = 0;
+		}
+	}
+	else{
+		ASSERT(false, "Unknown game state in CanvasSystem");
 	}
 }
 
-void RenderCanvasSystem::Init(EntityAdmin* admin) {
+void CanvasSystem::Init(EntityAdmin* admin) {
 	System::Init(admin);
 	files = deshi::iterateDirectory(deshi::dirModels());
 	textures = deshi::iterateDirectory(deshi::dirTextures());
-	Canvas* canvas = admin->tempCanvas;
 }
 
-void RenderCanvasSystem::Update() {
+void CanvasSystem::Update() {
 	WinHovFlag = 0;
-	Canvas* canvas = admin->tempCanvas;
 	DrawUI();
 	if (ConsoleHovFlag || WinHovFlag) admin->IMGUI_MOUSE_CAPTURE = true;
 	else                              admin->IMGUI_MOUSE_CAPTURE = false;

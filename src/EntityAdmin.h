@@ -25,14 +25,13 @@ struct Command;
 struct PhysicsWorld;
 
 struct PhysicsSystem;
-struct RenderCanvasSystem;
+struct CanvasSystem;
 struct WorldSystem;
 struct SoundSystem;
 
 struct Camera;
 struct Keybinds;
 struct Controller;
-struct Canvas;
 struct Console;
 struct Scene;
 struct Transform;
@@ -43,14 +42,20 @@ struct Input;
 struct Time;
 struct Renderer;
 
+enum struct GameState{
+	NONE, PLAY, PLAY_DEBUG, EDITOR, MENU
+};
+
 //the entity admin is fed down to all systems and components that it controls meaning that
 //the core will also be accessible in those places too.
 struct EntityAdmin {
 	EntityAdmin* admin = this;
 	
+	GameState state = GameState::NONE;
+	
 	std::vector<System*> systems;
 	std::map<EntityID, Entity*> entities;
-	//are we still doing this?
+	//are we still doing this?  reply: eventually, not necessary for prototype
 	//object_pool<Component>* componentsPtr;
 	std::vector<Component*> components;
 	PhysicsWorld* physicsWorld;
@@ -66,13 +71,12 @@ struct EntityAdmin {
 	Camera*     mainCamera;
 	Keybinds*   keybinds;
 	Controller* controller;
-	Canvas*     tempCanvas;
 	
 	//systems
 	PhysicsSystem* physics;
-	RenderCanvasSystem* canvas;
-	WorldSystem* world;
-	SoundSystem* sound;
+	CanvasSystem*  canvas;
+	WorldSystem*   world;
+	SoundSystem*   sound;
 	
 	UndoManager undoManager;
 	

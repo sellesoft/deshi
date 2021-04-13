@@ -1,10 +1,10 @@
 #pragma once
-#ifndef SYSTEM_RENDERCANVAS_H
-#define SYSTEM_RENDERCANVAS_H
+#ifndef SYSTEM_CANVAS_H
+#define SYSTEM_CANVAS_H
 
 #include "System.h"
 
-struct RenderCanvasSystem : public System {
+struct CanvasSystem : public System {
 	bool showDebugTools = true;
 	bool showDebugBar = true;
 	bool showMenuBar = true;
@@ -24,4 +24,4 @@ struct RenderCanvasSystem : public System {
 	void DrawUI(void);
 };
 
-#endif //SYSTEM_RENDERCANVAS_H
+#endif //SYSTEM_CANVAS_H

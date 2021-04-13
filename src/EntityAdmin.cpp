@@ -34,7 +34,7 @@
 
 #include "game/systems/System.h"
 #include "game/systems/PhysicsSystem.h"
-#include "game/systems/RenderCanvasSystem.h"
+#include "game/systems/CanvasSystem.h"
 #include "game/systems/WorldSystem.h"
 #include "game/systems/SoundSystem.h"
 
@@ -63,9 +63,9 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 			physics = new PhysicsSystem();
 		}
 	}
-	canvas = new RenderCanvasSystem();
-	world = new WorldSystem();
-	sound = new SoundSystem();
+	canvas = new CanvasSystem();
+	world  = new WorldSystem();
+	sound  = new SoundSystem();
 	
 	physics->Init(this);
 	canvas->Init(this);
@@ -82,7 +82,7 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	controller = new Controller(this);
 	controller->layer_index = freeCompLayers[controller->layer].add(controller);
 	
-	
+	state = GameState::EDITOR;
 	
 	/*
 	//orb testing
@@ -117,7 +117,6 @@ void EntityAdmin::Cleanup() {
 	delete mainCamera;
 	delete keybinds;
 	delete controller;
-	delete tempCanvas;
 }
 
 void UpdateLayer(ContainerManager<Component*> cl) {
@@ -145,8 +144,6 @@ void EntityAdmin::Update() {
 	for (Component* c : components) {
 		c->Update();
 	}
-	
-	
 }
 
 void EntityAdmin::Save() {

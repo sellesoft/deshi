@@ -14,7 +14,6 @@ if you feel they would handle the problem better. It should generally be you tho
 
 Major Ungrouped TODOs
 ---------------------
-move times in deshi.cpp to time.h
 add device info command (graphics card, sound device, monitor res, etc)
 add a component_state command to print state of a component (add str methods to all components/systems)
 add option to not use input callbacks so fps doesnt get affected dramatically by input

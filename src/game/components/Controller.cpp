@@ -11,19 +11,19 @@
 #include "../../geometry/Edge.h"
 #include <fstream>
 
-void AddBindings(EntityAdmin* admin) {
+inline void AddBindings(EntityAdmin* admin) {
 	std::ifstream binds;
-
+	
 	if (deshi::getConfig("binds.cfg") != "") {
 		binds = std::ifstream(deshi::getConfig("binds.cfg"), std::ios::in);
-
+		
 		char* c = (char*)malloc(255);
 		binds.getline(c, 255);
 		std::string s(c);
-
+		
 		std::string key = s.substr(0, s.find_first_of(" "));
 		std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
-
+		
 		try {
 			DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, DengKeys->stk.at(key)));
 		}
@@ -34,7 +34,7 @@ void AddBindings(EntityAdmin* admin) {
 	else {
 		LOG("Creating binds file..");
 		deshi::writeFile(deshi::dirConfig() + "binds.cfg", "", 0);
-
+		
 		return;
 	}
 }
@@ -44,6 +44,11 @@ Controller::Controller(EntityAdmin* a, MovementMode m) : Component(a), mode(m) {
 	strncpy_s(name, "Controller", 63);
 	this->name[63] = '\0';
 	layer = NONE;
+	
+	if(admin->state == GameState::PLAY || admin->state == GameState::PLAY_DEBUG){
+		admin->ExecCommand("window_cursor_mode", "1");
+	}
+	
 	AddBindings(a);
 }
 
@@ -58,33 +63,20 @@ inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
 	if (DengInput->KeyPressed(Key::A | INPUTMOD_CTRL)) moveOverride = !moveOverride;
 	
 	if (!admin->IMGUI_KEY_CAPTURE && camera->freeCamera) {
-		
 		if(DengInput->KeyDownAnyMod(MouseButton::RIGHT) || moveOverride){
 			Vector3 inputs;
 			if (mode == MOVEMENT_MODE_FLYING) {
-				//translate up
-				if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingUp)) {  inputs.y += 1;  }
+				if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingUp))      {  inputs.y += 1;  }
+				if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingDown))    {  inputs.y -= 1; }
+				if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingForward)) {  inputs += camera->forward; }
+				if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingBack))    {  inputs -= camera->forward; }
+				if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingRight))   {  inputs += camera->right; }
+				if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingLeft))    { inputs -= camera->right; }
 				
-				//translate down
-				if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingDown)) {  inputs.y -= 1; }
+				if (DengInput->ShiftDown())     { camera->position += inputs.normalized() * 16 * deltaTime; }
+				else if (DengInput->CtrlDown()) { camera->position += inputs.normalized() *  4 * deltaTime; }
+				else							{ camera->position += inputs.normalized() *  8 * deltaTime; }
 			}
-			
-			//translate forward
-			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingForward)) {  inputs += camera->forward; }
-			
-			//translate back
-			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingBack)) {  inputs -= camera->forward; }
-			
-			//translate right
-			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingRight)) {  inputs += camera->right; }
-			
-			//translate left
-			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingLeft)) { inputs -= camera->right; }
-			
-			
-			if (DengInput->ShiftDown())     { camera->position += inputs.normalized() * 16 * deltaTime; }
-			else if (DengInput->CtrlDown()) { camera->position += inputs.normalized() *  4 * deltaTime; }
-			else							{ camera->position += inputs.normalized() *  8 * deltaTime; }
 		}
 	}
 }
@@ -128,16 +120,21 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 		
 	}
 	if(!admin->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE && camera->freeCamera){
-		//TODO(delle,In) change this so its dependent on game state or something (level editor vs gameplay)
-		if(input->KeyPressed(MouseButton::RIGHT | INPUTMOD_ANY)){
-			admin->ExecCommand("window_cursor_mode", "1");
-		}
-		if(input->KeyDown(MouseButton::RIGHT | INPUTMOD_ANY)){
+		if(admin->state == GameState::PLAY || admin->state == GameState::PLAY_DEBUG){
 			camera->rotation.y += sens * (input->mouseX - window->centerX) * .03f;
 			camera->rotation.x += sens * (input->mouseY - window->centerY) * .03f;
 		}
-		if(input->KeyReleased(MouseButton::RIGHT | INPUTMOD_ANY)){
-			admin->ExecCommand("window_cursor_mode", "0");
+		else if(admin->state == GameState::EDITOR){
+			if(input->KeyPressed(MouseButton::RIGHT | INPUTMOD_ANY)){
+				admin->ExecCommand("window_cursor_mode", "1");
+			}
+			if(input->KeyDown(MouseButton::RIGHT | INPUTMOD_ANY)){
+				camera->rotation.y += sens * (input->mouseX - window->centerX) * .03f;
+				camera->rotation.x += sens * (input->mouseY - window->centerY) * .03f;
+			}
+			if(input->KeyReleased(MouseButton::RIGHT | INPUTMOD_ANY)){
+				admin->ExecCommand("window_cursor_mode", "0");
+			}
 		}
 	}
 }
@@ -146,25 +143,27 @@ inline void CameraZoom(EntityAdmin* admin){
 	Camera* cam = admin->mainCamera;
 	Renderer* renderer = admin->renderer;
 	
-	if (DengInput->KeyPressed(Key::NUMPADPLUS)) { 
-		cam->fov += 5;
-		cam->UpdateProjectionMatrix();
-	}
-	if (DengInput->KeyPressed(Key::NUMPADMINUS)) {
-		cam->fov -= 5;
-		cam->UpdateProjectionMatrix();
+	if (!admin->IMGUI_KEY_CAPTURE && cam->freeCamera) {
+		if(admin->state == GameState::EDITOR){
+			if (DengInput->KeyPressed(Key::NUMPADPLUS)) { 
+				cam->fov += 5;
+				cam->UpdateProjectionMatrix();
+			}
+			if (DengInput->KeyPressed(Key::NUMPADMINUS)) {
+				cam->fov -= 5;
+				cam->UpdateProjectionMatrix();
+			}
+		}
 	}
 }
 
-void HandleMouseInputs(EntityAdmin* admin) {
-	Canvas* canvas = admin->tempCanvas;
+inline void HandleMouseInputs(EntityAdmin* admin) {
 	Input* input = admin->input;
 	UndoManager* um = &admin->undoManager;
 	
 	//mouse left click pressed
-	if (input->KeyPressed(MouseButton::LEFT)) {
-		if (!admin->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE) {
-			
+	if (!admin->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE) {
+		if (input->KeyPressed(MouseButton::LEFT)) {
 			//TODO(sushi, Ma) figure out why this sometimes returns true when clicking outside of object
 			
 			Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
@@ -224,25 +223,25 @@ void HandleMouseInputs(EntityAdmin* admin) {
 	}
 }
 
-void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um) {
+inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um) {
 	static bool grabbingObj = false;
-
+	
 	if (!admin->IMGUI_MOUSE_CAPTURE) { 
 		if (DengInput->KeyPressed(DengKeys->grabSelectedObject) || grabbingObj) {
 			//Camera* c = admin->mainCamera;
 			grabbingObj = true;
 			CONTROLLER_MOUSE_CAPTURE = true;
-
+			
 			//bools for if we're in an axis movement mode
 			static bool xaxis = false;
 			static bool yaxis = false;
 			static bool zaxis = false;
-
+			
 			static bool initialgrab = true;
-
+			
 			static Vector3 initialObjPos;
 			static float initialdist; 
-
+			
 			//different cases for mode chaning
 			if (DengInput->KeyPressed(Key::X)) {
 				xaxis = true; yaxis = false; zaxis = false; 
@@ -257,8 +256,8 @@ void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um)
 				sel->transform.position = initialObjPos;
 			}
 			if (!(xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) { //|| DengInput->MousePressed(1)) {
-																					//stop grabbing entirely if press esc or right click w no grab mode on
-																					//TODO(sushi, In) figure out why the camera rotates violently when rightlicking to leave grabbing. probably because of the mouse moving to the object?
+				//stop grabbing entirely if press esc or right click w no grab mode on
+				//TODO(sushi, In) figure out why the camera rotates violently when rightlicking to leave grabbing. probably because of the mouse moving to the object?
 				xaxis = false; yaxis = false; zaxis = false; 
 				sel->transform.position = initialObjPos;
 				initialgrab = true; grabbingObj = false;
@@ -280,7 +279,7 @@ void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um)
 				}
 				return;
 			}
-
+			
 			//set mouse to obj position on screen and save that position
 			if (initialgrab) {
 				Vector2 screenPos = Math::WorldToScreen2(sel->transform.position, c->projectionMatrix, c->viewMatrix, admin->window->dimensions);
@@ -289,22 +288,22 @@ void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um)
 				initialdist = (initialObjPos - c->position).mag();
 				initialgrab = false;
 			}
-
+			
 			if (!(xaxis || yaxis || zaxis)) {
-
+				
 				Vector3 nuworldpos = Math::ScreenToWorld(DengInput->mousePos, c->projectionMatrix,
 														 c->viewMatrix, admin->window->dimensions);
-
+				
 				Vector3 newpos = nuworldpos;
-
+				
 				newpos *= Math::WorldToLocal(admin->mainCamera->position);
 				newpos.normalize();
 				newpos *= initialdist;
 				newpos *= Math::LocalToWorld(admin->mainCamera->position);
-
+				
 				sel->transform.position = newpos;
-
-
+				
+				
 			}
 			else if (xaxis) {
 				Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
@@ -313,16 +312,16 @@ void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um)
 				pos.normalize();
 				pos *= 1000;
 				pos *= Math::LocalToWorld(admin->mainCamera->position);
-
+				
 				Vector3 planeinter;
-
+				
 				if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
 					planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
 				}
 				else {
 					planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
 				}
-
+				
 				sel->transform.position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
 			}
 			else if (yaxis) {
@@ -332,9 +331,9 @@ void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um)
 				pos.normalize();
 				pos *= 1000;
 				pos *= Math::LocalToWorld(admin->mainCamera->position);
-
+				
 				Vector3 planeinter;
-
+				
 				if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
 					planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
 				}
@@ -342,7 +341,7 @@ void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um)
 					planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
 				}
 				sel->transform.position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
-
+				
 			}
 			else if (zaxis) {
 				Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
@@ -351,9 +350,9 @@ void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um)
 				pos.normalize();
 				pos *= 1000;
 				pos *= Math::LocalToWorld(admin->mainCamera->position);
-
+				
 				Vector3 planeinter;
-
+				
 				if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
 					planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
 				}
@@ -366,25 +365,25 @@ void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um)
 	} //if(!admin->IMGUI_MOUSE_CAPTURE)
 }
 
-void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um) {
+inline void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um) {
 	static bool rotatingObj = false;
-
+	
 	if (!admin->IMGUI_MOUSE_CAPTURE) { 
 		if (DengInput->KeyPressed(DengKeys->rotateSelectedObject) || rotatingObj) {
 			rotatingObj = true;
 			CONTROLLER_MOUSE_CAPTURE = true;
-
+			
 			//bools for if we're in an axis movement mode
 			static bool xaxis = false;
 			static bool yaxis = false;
 			static bool zaxis = false;
-
+			
 			static Vector2 origmousepos = DengInput->mousePos;
-
+			
 			static bool initialrot = true;
-
+			
 			static Vector3 initialObjRot;
-
+			
 			//different cases for mode chaning
 			if (DengInput->KeyPressed(Key::X)) {
 				xaxis = true; yaxis = false; zaxis = false; 
@@ -421,96 +420,92 @@ void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um)
 				}
 				return;
 			}
-
+			
 			if (initialrot) {
 				initialObjRot = sel->transform.rotation;
 				initialrot = false;
 				origmousepos = DengInput->mousePos;
 			}
-
+			
 			//TODO(sushi, InMa) implement rotating over an arbitrary axis in a nicer way everntually
 			//TODO(sushi, In) make rotation controls a little more nice eg. probably just make it how far along the screen the mouse is to determine it.
 			if (!(xaxis || yaxis || zaxis)) {
-
+				
 				Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
 				Vector2 mousepos = DengInput->mousePos;
-
+				
 				Vector2 ctm = mousepos - center;
-
+				
 				float ang = Math::AngBetweenVectors(ctm, origmousepos - center);
-
+				
 				//make angle go between 360 instead of -180 and 180
 				if (ang < 0) {
 					ang = 180 + (180 + ang);
 				}
-
+				
 				sel->transform.rotation = Matrix4::AxisAngleRotationMatrix(ang, Vector4((sel->transform.position - c->position).normalized(), 0)).Rotation();
-
+				
 				sel->transform.rotation.x = DEGREES(sel->transform.rotation.x);
 				sel->transform.rotation.y = DEGREES(sel->transform.rotation.y);
 				sel->transform.rotation.z = DEGREES(sel->transform.rotation.z);
-
+				
 			}
 			else if (xaxis) {
 				Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
 				Vector2 mousepos = DengInput->mousePos;
-
+				
 				Vector2 ctm = mousepos - center;
-
+				
 				float ang = Math::AngBetweenVectors(ctm, origmousepos - center);
-
+				
 				if (ang < 0) {
 					ang = 180 + (180 + ang);
 				}
-
+				
 				sel->transform.rotation.z = ang;
 			}
 			else if (yaxis) {
 				Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
 				Vector2 mousepos = DengInput->mousePos;
-
+				
 				Vector2 ctm = mousepos - center;
-
+				
 				float ang = Math::AngBetweenVectors(ctm, origmousepos - center);
-
+				
 				if (ang < 0) {
 					ang = 180 + (180 + ang);
 				}
-
+				
 				sel->transform.rotation.y = ang;
 			}
 			else if (zaxis) {
 				Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
 				Vector2 mousepos = DengInput->mousePos;
-
+				
 				Vector2 ctm = mousepos - center;
-
+				
 				float ang = Math::AngBetweenVectors(ctm, origmousepos - center);
-
+				
 				if (ang < 0) {
 					ang = 180 + (180 + ang);
 				}
-
+				
 				sel->transform.rotation.x = ang;
 			}
 		} //if(DengInput->KeyPressed(DengKeys->grabSelectedObject) || grabbingObj)
 	} //if(!admin->IMGUI_MOUSE_CAPTURE)
 }
 
-void HandleSelectedEntityInputs(EntityAdmin* admin) {
+inline void HandleSelectedEntityInputs(EntityAdmin* admin) {
 	Input* input = admin->input;
 	Camera* c = admin->mainCamera;
 	Entity* sel = input->selectedEntity;
 	UndoManager* um = &admin->undoManager;
 	
-	if (sel) {
-		
+	if (sel && admin->state == GameState::EDITOR) {
 		HandleGrabbing(sel, c, admin, um);
 		HandleRotating(sel, c, admin, um);
 		
-
-
-
 		if (!admin->IMGUI_KEY_CAPTURE) {
 			//translation
 			if (DengInput->KeyDown(Key::L)) { admin->ExecCommand("translate_right"); }
@@ -531,15 +526,24 @@ void HandleSelectedEntityInputs(EntityAdmin* admin) {
 	}
 }
 
-void HandleRenderInputs(EntityAdmin* admin) {
+inline void HandleRenderInputs(EntityAdmin* admin) {
 	Renderer* renderer = admin->renderer;
 	Input* input = admin->input;
 	Keybinds* binds = admin->keybinds;
 	
-	//reload shaders
-	if (input->KeyPressed(Key::F5)) {
-		admin->ExecCommand("shader_reload", "-1");
+	//// editor inputs ////
+	if(admin->state == GameState::EDITOR){
+		//reload shaders
+		if (input->KeyPressed(Key::F5)) {
+			admin->ExecCommand("shader_reload", "-1");
+		}
 	}
+	
+	//// gameplay inputs ////
+	
+	
+	
+	//// both ////
 	
 	//fullscreen
 	if (input->KeyPressed(Key::F11)) {
@@ -551,14 +555,14 @@ void HandleRenderInputs(EntityAdmin* admin) {
 	}
 }
 
-void HandleUndoInputs(EntityAdmin* admin){
-	if (!admin->IMGUI_KEY_CAPTURE) {
+inline void HandleUndoInputs(EntityAdmin* admin){
+	if (!admin->IMGUI_KEY_CAPTURE && admin->state == GameState::EDITOR) {
 		if (DengInput->KeyPressed(DengKeys->undo)) { admin->undoManager.Undo(); }
 		if (DengInput->KeyPressed(DengKeys->redo)) { admin->undoManager.Redo(); }
 	}
 }
 
-void CheckBinds(EntityAdmin* admin) {
+inline void CheckBinds(EntityAdmin* admin) {
 	if (!admin->IMGUI_KEY_CAPTURE && DengInput->checkbinds) {
 		for (auto b : DengInput->binds) {
 			if (DengInput->KeyPressed(b.second)) {
@@ -573,7 +577,7 @@ void CheckBinds(EntityAdmin* admin) {
 			}
 		}
 		DengInput->checkbinds = false;
-
+		
 	}
 }
 
