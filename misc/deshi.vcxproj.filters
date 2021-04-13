@@ -118,9 +118,6 @@
     <ClInclude Include="..\src\game\systems\PhysicsSystem.h">
       <Filter>src\game\systems\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\game\systems\RenderCanvasSystem.h">
-      <Filter>src\game\systems\h</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\game\systems\SoundSystem.h">
       <Filter>src\game\systems\h</Filter>
     </ClInclude>
@@ -189,6 +186,9 @@
     </ClInclude>
     <ClInclude Include="..\src\game\UndoManager.h">
       <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\game\systems\CanvasSystem.h">
+      <Filter>src\game\systems\h</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -415,9 +415,6 @@
     <ClCompile Include="..\src\game\systems\PhysicsSystem.cpp">
       <Filter>src\game\systems\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\game\systems\RenderCanvasSystem.cpp">
-      <Filter>src\game\systems\cpp</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\game\systems\SoundSystem.cpp">
       <Filter>src\game\systems\cpp</Filter>
     </ClCompile>
@@ -450,6 +447,9 @@
     </ClCompile>
     <ClCompile Include="..\src\game\UndoManager.cpp">
       <Filter>src\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\game\systems\CanvasSystem.cpp">
+      <Filter>src\game\systems\cpp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

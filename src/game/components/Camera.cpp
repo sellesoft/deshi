@@ -141,26 +141,24 @@ void Camera::Update() {
 		right = Vector3::UP.cross(forward).normalized();
 		up = right.cross(forward).normalized();
 		
-		if (DengInput->KeyPressed(Key::P)) {
-			switch (type) {
-				case(CameraType::PERSPECTIVE):{ type = CameraType::ORTHOGRAPHIC; } break;
-				case(CameraType::ORTHOGRAPHIC): { type = CameraType::PERSPECTIVE; UpdateProjectionMatrix(); } break;
-			}
-		}
 		
-		//update view matrix
-		//TODO(delle,Op) precalc this since we already get the direction vectors
-		//if (type == CameraType::ORTHOGRAPHIC) {
-		//	target = Vector3::ZERO;
-		//}
-		//else {
-			target = position + forward;
-		//}
 		
+
+		target = position + forward;
+	
 		viewMatrix = Math::LookAtMatrix(position, target).Inverse();
 		
 		//update renderer camera properties
 		if (type == CameraType::ORTHOGRAPHIC) {
+			
+			switch (orthoview) {
+				case FRONT:    position = Vector3(0, 0, -999); rotation = Vector3(0, 0, 0);   break;
+				case BACK:     position = Vector3(0, 0, 999);  rotation = Vector3(0, 180, 0); break;
+				case RIGHT:    position = Vector3(999, 0, 0);  rotation = Vector3(0, -90, 0);  break;
+				case LEFT:     position = Vector3(-999, 0, 0); rotation = Vector3(0, 90, 0); break;
+				case TOPDOWN:  position = Vector3(0, 999, 0);  rotation = Vector3(89.9, 0, 0); break;
+				case BOTTOMUP: position = Vector3(0, -999, 0); rotation = Vector3(-89.9, 0, 0);  break;
+			}
 			UpdateProjectionMatrix();
 		}
 		renderer->UpdateCameraViewMatrix(viewMatrix);

@@ -21,14 +21,16 @@ inline void AddBindings(EntityAdmin* admin) {
 		binds.getline(c, 255);
 		std::string s(c);
 		
-		std::string key = s.substr(0, s.find_first_of(" "));
-		std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
-		
-		try {
-			DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, DengKeys->stk.at(key)));
-		}
-		catch (...) {
-			ERROR("Unknown key \"", key, "\" attempted to bind to command \"", command, "\"");
+		if (s != "") {
+			std::string key = s.substr(0, s.find_first_of(" "));
+			std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
+			
+			try {
+				DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, DengKeys->stk.at(key)));
+			}
+			catch (...) {
+				ERROR("Unknown key \"", key, "\" attempted to bind to command \"", command, "\"");
+			}
 		}
 	}
 	else {
@@ -475,53 +477,78 @@ inline void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 }
 
 inline void HandleEditorInputs(EntityAdmin* admin){
+	Input* input = admin->input;
 	
-	
-	//// selected entity ////
-	Entity* sel = DengInput->selectedEntity;
-	
-	if (!admin->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE) {
-		if (DengInput->KeyPressed(MouseButton::LEFT)) { HandleSelectEntity(admin); }
-	}
-	
-	if (sel) {
-		HandleGrabbing(sel, admin->mainCamera, admin, &admin->undoManager);
-		HandleRotating(sel, admin->mainCamera, admin, &admin->undoManager);
+	{//// selected entity ////
+		Entity* sel = input->selectedEntity;
 		
-		//translation
-		if (DengInput->KeyDown(Key::L)) { admin->ExecCommand("translate_right"); }
-		if (DengInput->KeyDown(Key::J)) { admin->ExecCommand("translate_left"); }
-		if (DengInput->KeyDown(Key::O)) { admin->ExecCommand("translate_up"); }
-		if (DengInput->KeyDown(Key::U)) { admin->ExecCommand("translate_down"); }
-		if (DengInput->KeyDown(Key::I)) { admin->ExecCommand("translate_forward"); }
-		if (DengInput->KeyDown(Key::K)) { admin->ExecCommand("translate_backward"); }
+		if (!admin->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE) {
+			if (input->KeyPressed(MouseButton::LEFT)) { HandleSelectEntity(admin); }
+		}
 		
-		//rotation
-		if (DengInput->KeyDown(Key::L | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+x"); }
-		if (DengInput->KeyDown(Key::J | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-x"); }
-		if (DengInput->KeyDown(Key::O | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+y"); }
-		if (DengInput->KeyDown(Key::U | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-y"); }
-		if (DengInput->KeyDown(Key::I | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+z"); }
-		if (DengInput->KeyDown(Key::K | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-z"); }
-	}
-	
-	//// render ////
-	
-	//reload all shaders
-	if (DengInput->KeyPressed(Key::F5)) { admin->ExecCommand("shader_reload", "-1"); }
-	
-	//fullscreen toggle
-	if (DengInput->KeyPressed(Key::F11)) {
-		if(admin->window->displayMode == DisplayMode::WINDOWED || admin->window->displayMode == DisplayMode::BORDERLESS){
-			admin->window->UpdateDisplayMode(DisplayMode::FULLSCREEN);
-		}else{
-			admin->window->UpdateDisplayMode(DisplayMode::WINDOWED);
+		if (sel) {
+			HandleGrabbing(sel, admin->mainCamera, admin, &admin->undoManager);
+			HandleRotating(sel, admin->mainCamera, admin, &admin->undoManager);
+			
+			//translation
+			if (input->KeyDown(Key::L)) { admin->ExecCommand("translate_right"); }
+			if (input->KeyDown(Key::J)) { admin->ExecCommand("translate_left"); }
+			if (input->KeyDown(Key::O)) { admin->ExecCommand("translate_up"); }
+			if (input->KeyDown(Key::U)) { admin->ExecCommand("translate_down"); }
+			if (input->KeyDown(Key::I)) { admin->ExecCommand("translate_forward"); }
+			if (input->KeyDown(Key::K)) { admin->ExecCommand("translate_backward"); }
+			
+			//rotation
+			if (input->KeyDown(Key::L | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+x"); }
+			if (input->KeyDown(Key::J | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-x"); }
+			if (input->KeyDown(Key::O | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+y"); }
+			if (input->KeyDown(Key::U | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-y"); }
+			if (input->KeyDown(Key::I | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+z"); }
+			if (input->KeyDown(Key::K | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-z"); }
 		}
 	}
-	
-	//// undo/redo ////
-	if (DengInput->KeyPressed(DengKeys->undo)) { admin->undoManager.Undo(); }
-	if (DengInput->KeyPressed(DengKeys->redo)) { admin->undoManager.Redo(); }
+	{//// render ////
+		//reload all shaders
+		if (input->KeyPressed(Key::F5)) { admin->ExecCommand("shader_reload", "-1"); }
+		
+		//fullscreen toggle
+		if (input->KeyPressed(Key::F11)) {
+			if(admin->window->displayMode == DisplayMode::WINDOWED || admin->window->displayMode == DisplayMode::BORDERLESS){
+				admin->window->UpdateDisplayMode(DisplayMode::FULLSCREEN);
+			}else{
+				admin->window->UpdateDisplayMode(DisplayMode::WINDOWED);
+			}
+		}
+	}
+	{//// camera ////
+		Camera* c = admin->mainCamera;
+		
+		//toggle ortho
+		if(input->KeyPressed(DengKeys->perspectiveToggle)) {
+			switch(c->type) {
+				case(CameraType::PERSPECTIVE):  { 
+					c->type = CameraType::ORTHOGRAPHIC; c->farZ = 1000000; c->UpdateProjectionMatrix(); 
+				} break;
+				case(CameraType::ORTHOGRAPHIC): { 
+					c->type = CameraType::PERSPECTIVE;  c->farZ = 1000;    c->UpdateProjectionMatrix(); 
+				} break;
+			}
+		}
+		
+		//ortho views
+		if (input->KeyPressed(DengKeys->orthoFrontView))    c->orthoview = FRONT;
+		if (input->KeyPressed(DengKeys->orthoBackView))     c->orthoview = BACK;
+		if (input->KeyPressed(DengKeys->orthoRightView))    c->orthoview = RIGHT;
+		if (input->KeyPressed(DengKeys->orthoLeftView))     c->orthoview = LEFT;
+		if (input->KeyPressed(DengKeys->orthoTopDownView))  c->orthoview = TOPDOWN;
+		if (input->KeyPressed(DengKeys->orthoBottomUpView)) c->orthoview = BOTTOMUP;
+	}
+	{//// undo/redo ////
+		UndoManager* um = &admin->undoManager;
+		
+		if (input->KeyPressed(DengKeys->undo)) { um->Undo(); }
+		if (input->KeyPressed(DengKeys->redo)) { um->Redo(); }
+	}
 }
 
 inline void CheckBinds(EntityAdmin* admin) {

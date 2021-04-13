@@ -233,8 +233,8 @@
     <ClInclude Include="..\src\game\components\Orb.h" />
     <ClInclude Include="..\src\game\components\Physics.h" />
     <ClInclude Include="..\src\game\Keybinds.h" />
+    <ClInclude Include="..\src\game\systems\CanvasSystem.h" />
     <ClInclude Include="..\src\game\systems\PhysicsSystem.h" />
-    <ClInclude Include="..\src\game\systems\RenderCanvasSystem.h" />
     <ClInclude Include="..\src\game\systems\SoundSystem.h" />
     <ClInclude Include="..\src\game\systems\System.h" />
     <ClInclude Include="..\src\game\systems\WorldSystem.h" />
@@ -320,8 +320,8 @@
     <ClCompile Include="..\src\game\components\Orb.cpp" />
     <ClCompile Include="..\src\game\components\Physics.cpp" />
     <ClCompile Include="..\src\game\Keybinds.cpp" />
+    <ClCompile Include="..\src\game\systems\CanvasSystem.cpp" />
     <ClCompile Include="..\src\game\systems\PhysicsSystem.cpp" />
-    <ClCompile Include="..\src\game\systems\RenderCanvasSystem.cpp" />
     <ClCompile Include="..\src\game\systems\SoundSystem.cpp" />
     <ClCompile Include="..\src\game\systems\WorldSystem.cpp" />
     <ClCompile Include="..\src\game\UndoManager.cpp" />

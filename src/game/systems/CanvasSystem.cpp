@@ -789,6 +789,22 @@ void CanvasSystem::DebugLayer() {
 		Vector3 v3 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.z) + -lines + i), c->viewMatrix).ToVector3();
 		Vector3 v4 = Math::WorldToCamera4(Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i), c->viewMatrix).ToVector3();
 		
+
+		//TODO(sushi, CamMa) make grid lines appear properly when in different orthographic views
+		//if (c->type == CameraType::ORTHOGRAPHIC) {
+		//
+		//	if (c->orthoview == FRONT) {
+		//		v1 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.y) + -lines), c->viewMatrix).ToVector3();
+		//		v2 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.y) + lines), c->viewMatrix).ToVector3();
+		//		v3 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.y) + -lines + i), c->viewMatrix).ToVector3();
+		//		v4 = Math::WorldToCamera4(Vector3(floor(cpos.x) + lines, 0, floor(cpos.y) + -lines + i), c->viewMatrix).ToVector3();
+		//
+		//	}
+		//	
+		//
+		//
+		//}
+
 		bool l1flag = false;
 		bool l2flag = false;
 		

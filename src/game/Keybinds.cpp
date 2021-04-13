@@ -65,7 +65,15 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		{"orthoOffset", orthoOffset},
 		{"orthoZoomIn", orthoZoomIn},
 		{"orthoZoomOut", orthoZoomOut},
-		{"orthoResetOffset", orthoResetOffset}
+		{"orthoResetOffset", orthoResetOffset},
+		{"perspectiveToggle", perspectiveToggle},
+
+		{"orthoRightView", orthoRightView}, 
+		{"orthoLeftView", orthoLeftView}, 
+		{"orthoFrontView", orthoFrontView}, 
+		{"orthoBackView", orthoBackView}, 
+		{"orthoTopDownView", orthoTopDownView}, 
+		{"orthoBottomUpView", orthoBottomUpView}
 		
 	};
 	
@@ -114,64 +122,66 @@ void Keybinds::ReloadKeybinds(std::fstream& kf) {
 	while (!kf.eof()) {
 		char* c = (char*)malloc(255);
 		kf.getline(c, 255);
-		
+
 		std::string s(c);
-		
+
 		if (s[0] == '>') {
 			line++;
 			continue;
 		}
-		
-		std::smatch m;
-		
-		std::regex r;
-		
-		bool modif = false;
-		
-		//if string contains a + it must have a modifier
-		if (s.find("+") != std::string::npos) {
-			r = std::regex("([A-Za-z]+) += +(LCTRL|LSHIFT|LALT|RCTRL|RSHIFT|RALT) +\\+ +(.+)");
-			modif = true;
-		}
-		else {
-			r = std::regex("([A-Za-z]+) += +(.+)");
-		}
-		
-		std::regex_match(s, m, r);
-		
-		
-		
-		if (m.size() == 1) {
-			ERROR_LOC(m[1], "\nRegex did not find any matches for this string in keybinds.txt at line ", line);
-			line++;
-			continue;
-		}
-		try {
-			if (modif) {
-				try {
-					keys.at(m[1]) = stk.at(m[3]) | stk.at(m[2]);
-				}
-				catch (std::out_of_range oor) {
-					ERROR_LOC("Either the modifier \"", m[2], "\", the keybind name \"", m[3], "\", or the key name \"", m[1], "\" was not found in their respective maps. \nAt line ", line, " in keybinds.txt");
-				}
+
+		if (s != "") {
+			std::smatch m;
+
+			std::regex r;
+
+			bool modif = false;
+
+			//if string contains a + it must have a modifier
+			if (s.find("+") != std::string::npos) {
+				r = std::regex("([A-Za-z]+) += +(LCTRL|LSHIFT|LALT|RCTRL|RSHIFT|RALT) +\\+ +(.+)");
+				modif = true;
 			}
 			else {
-				try {
-					keys.at(m[1]) = stk.at(m[2]);
+				r = std::regex("([A-Za-z]+) += +(.+)");
+			}
+
+			std::regex_match(s, m, r);
+
+
+
+			if (m.size() == 1) {
+				ERROR_LOC(m[1], "\nRegex did not find any matches for this string in keybinds.txt at line ", line);
+				line++;
+				continue;
+			}
+			try {
+				if (modif) {
+					try {
+						keys.at(m[1]) = stk.at(m[3]) | stk.at(m[2]);
+					}
+					catch (std::out_of_range oor) {
+						ERROR_LOC("Either the modifier \"", m[2], "\", the keybind name \"", m[3], "\", or the key name \"", m[1], "\" was not found in their respective maps. \nAt line ", line, " in keybinds.txt");
+					}
 				}
-				catch (std::out_of_range oor) {
-					ERROR_LOC("Either the keybind \"", m[1], "\" or the key \"", m[2], "\" was not found in their respective maps. \nAt line ", line, " in keybinds.txt");
-					
+				else {
+					try {
+						keys.at(m[1]) = stk.at(m[2]);
+					}
+					catch (std::out_of_range oor) {
+						ERROR_LOC("Either the keybind \"", m[1], "\" or the key \"", m[2], "\" was not found in their respective maps. \nAt line ", line, " in keybinds.txt");
+
+					}
 				}
 			}
+			catch (std::out_of_range oor) {
+				ERROR_LOC("Key \"", m[1], "\" not found in keymap. \nAt line ", line, " in keybinds.txt");
+			}
+			line++;
+			free(c);
+
 		}
-		catch (std::out_of_range oor) {
-			ERROR_LOC("Key \"", m[1], "\" not found in keymap. \nAt line ", line, " in keybinds.txt");
-		}
-		line++;
-		free(c);
 	}
-	
 	
 	
 }
