@@ -162,10 +162,24 @@ inline void CameraZoom(EntityAdmin* admin){
 inline void CameraProperties(EntityAdmin* admin) {
 	Camera* c = admin->mainCamera;
 
+	static Vector3 ogpos;
+	static Vector3 ogrot;
+
 	if (DengInput->KeyPressed(DengKeys->perspectiveToggle)) {
 		switch (c->type) {
-			case(CameraType::PERSPECTIVE): {  c->type = CameraType::ORTHOGRAPHIC; c->farZ = 1000000; } break;
-			case(CameraType::ORTHOGRAPHIC): { c->type = CameraType::PERSPECTIVE; c->farZ = 1000; c->UpdateProjectionMatrix(); } break;
+			case(CameraType::PERSPECTIVE): {  
+				ogpos = c->position;
+				ogrot = c->rotation;
+				c->type = CameraType::ORTHOGRAPHIC; 
+				c->farZ = 1000000; 
+			} break;
+			case(CameraType::ORTHOGRAPHIC): { 
+				c->position = ogpos; 
+				c->rotation = ogrot;
+				c->type = CameraType::PERSPECTIVE; 
+				c->farZ = 1000; 
+				c->UpdateProjectionMatrix(); 
+			} break;
 		}
 	}
 

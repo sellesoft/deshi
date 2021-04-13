@@ -328,25 +328,31 @@ void Console::DrawConsole() {
 	
 	
 	//print previous text
-	for (std::pair<std::string, Color> p : buffer) {
-		//color formatting is "[c:red]text[c] text text"
-		//TODO( sushi,OpCon) maybe optimize by only drawing what we know will be displayed on screen instead of parsing through all of it
-		
-		if (p.second == Color::BLANK) {
-			SameLine(0, 0);
-			TextWrapped(p.first.c_str());
-		}
-		else {
-			PushStyleColor(ImGuiCol_Text, ColorToVec4(p.second));
-			SameLine(0, 0);
-			TextWrapped(p.first.c_str());
-			ImGui::PopStyleColor();
-		}
-		
-		if (p.first[p.first.size() - 1] == '\n') {
-			TextWrapped("\n");
+	ImGuiListClipper clipper;
+	clipper.Begin(buffer.size());
+	while (clipper.Step()) {
+		//for (std::pair<std::string, Color> p : buffer) {
+		for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
+			//color formatting is "[c:red]text[c] text text"
+			//TODO( sushi,OpCon) maybe optimize by only drawing what we know will be displayed on screen instead of parsing through all of it
+
+			if (buffer[i].second == Color::BLANK) {
+				SameLine(0, 0);
+				TextWrapped(buffer[i].first.c_str());
+			}
+			else {
+				PushStyleColor(ImGuiCol_Text, ColorToVec4(buffer[i].second));
+				SameLine(0, 0);
+				TextWrapped(buffer[i].first.c_str());
+				ImGui::PopStyleColor();
+			}
+
+			if (buffer[i].first[buffer[i].first.size() - 1] == '\n') {
+				TextWrapped("\n");
+			}
 		}
 	}
+	
 	
 	//auto scroll window
 	if (scrollToBottom || (autoScroll && GetScrollY() >= GetScrollMaxY())) SetScrollHereY(1);
@@ -1428,15 +1434,15 @@ void Console::Update() {
 //TODO(sushi, Con) fix this once we have new command system
 void Console::CleanUp() {
 	FlushBuffer();
-	for (auto pair : commands) { 
-		if (pair.second) {
-			try {
-				delete pair.second; 
-				pair.second = nullptr; 
-			}
-			catch (...) {
-				pair.second = nullptr;
-			}
-		}
-	} commands.clear();
+	//for (auto pair : commands) { 
+	//	if (pair.second) {
+	//		try {
+	//			delete pair.second; 
+	//			pair.second = nullptr; 
+	//		}
+	//		catch (...) {
+	//			pair.second = nullptr;
+	//		}
+	//	}
+	//} commands.clear();
 }
