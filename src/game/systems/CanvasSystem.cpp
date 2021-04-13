@@ -8,6 +8,8 @@
 #include "../../game/Keybinds.h"
 #include "../../game/Transform.h"
 #include "../../game/UndoManager.h"
+#include "../components/Physics.h"
+#include "../systems/PhysicsSystem.h"
 
 #include "../../game/components/MeshComp.h"
 #include "../../game/systems/WorldSystem.h"
@@ -480,6 +482,28 @@ void CanvasSystem::DebugTools() {
 			}
 			EndTabItem();
 		}
+
+		if (BeginTabItem("Phys")) {
+			if (BeginChild("SelectedEntityMenu", ImVec2(GetWindowWidth(), 500), true)) {
+				
+				SetPadding;
+				if (ImGui::Button("Pause")) {
+					admin->pause_phys = !admin->pause_phys;
+				}
+
+				SetPadding;
+				ImGui::InputFloat("gravity", &admin->physics->gravity);
+
+				SetPadding;
+				ImGui::Text("#colliders: not implemented");
+
+				
+				
+				EndChild();
+			}
+			EndTabItem();
+		}
+
 		EndTabBar();
 	}
 	
@@ -872,6 +896,16 @@ void CanvasSystem::DebugLayer() {
 	}
 	//ImGui::Text("test");
 	
+
+	if (admin->paused) {
+		std::string s = "ENGINE PAUSED";
+		float strlen = (fontsize - (fontsize / 2)) * s.size();
+		//ImGui::SameLine(32 - (strlen / 2));
+		ImGui::SetCursorPos(ImVec2(DengWindow->width - strlen * 1.3, menubarheight));
+		ImGui::Text(s.c_str());
+	}
+
+
 	
 	ImGui::PopStyleColor();
 	ImGui::End();

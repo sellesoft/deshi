@@ -331,23 +331,23 @@ void Console::DrawConsole() {
 	ImGuiListClipper clipper;
 	clipper.Begin(buffer.size());
 	while (clipper.Step()) {
-		//for (std::pair<std::string, Color> p : buffer) {
-		for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
+		for (std::pair<std::string, Color> p : buffer) {
+		//for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
 			//color formatting is "[c:red]text[c] text text"
 			//TODO( sushi,OpCon) maybe optimize by only drawing what we know will be displayed on screen instead of parsing through all of it
 
-			if (buffer[i].second == Color::BLANK) {
+			if (p.second == Color::BLANK) {
 				SameLine(0, 0);
-				TextWrapped(buffer[i].first.c_str());
+				TextWrapped(p.first.c_str());
 			}
 			else {
-				PushStyleColor(ImGuiCol_Text, ColorToVec4(buffer[i].second));
+				PushStyleColor(ImGuiCol_Text, ColorToVec4(p.second));
 				SameLine(0, 0);
-				TextWrapped(buffer[i].first.c_str());
+				TextWrapped(p.first.c_str());
 				ImGui::PopStyleColor();
 			}
 
-			if (buffer[i].first[buffer[i].first.size() - 1] == '\n') {
+			if (p.first[p.first.size() - 1] == '\n') {
 				TextWrapped("\n");
 			}
 		}
@@ -754,8 +754,9 @@ void Console::AddRenderCommands() {
 							e->admin = admin;
 							MeshComp* mc = new MeshComp(mes);
 							Physics* p = new Physics(Vector3(0,0,0), Vector3(0,0,0));
+							Collider* col = new AABBCollider(e, Vector3(1, 1, 1), 1);
 							AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
-							admin->world->AddComponentsToEntity(admin, e, { mc, p, s });
+							admin->world->AddComponentsToEntity(admin, e, { mc, p, s, col });
 							
 							u32 newid = admin->renderer->CreateMesh(id, Matrix4::TransformationMatrix(position, rotation, scale));
 							Model mod;
@@ -943,7 +944,7 @@ void Console::AddConsoleCommands() {
 									   else {
 										   std::string s = "";
 										   for (int i = 1; i < args.size(); i++) {
-											   s += args[i];
+											   s += args[i] + " ";
 										   }
 										   Key::Key key;
 										   
