@@ -1,6 +1,6 @@
 @echo off
 
-pushd W:\src
+pushd ..\src
 
 @set DEFINES=/DVULKAN
 

@@ -332,10 +332,10 @@ void Console::DrawConsole() {
 	clipper.Begin(buffer.size());
 	while (clipper.Step()) {
 		for (std::pair<std::string, Color> p : buffer) {
-		//for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
+			//for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
 			//color formatting is "[c:red]text[c] text text"
 			//TODO( sushi,OpCon) maybe optimize by only drawing what we know will be displayed on screen instead of parsing through all of it
-
+			
 			if (p.second == Color::BLANK) {
 				SameLine(0, 0);
 				TextWrapped(p.first.c_str());
@@ -346,7 +346,7 @@ void Console::DrawConsole() {
 				TextWrapped(p.first.c_str());
 				ImGui::PopStyleColor();
 			}
-
+			
 			if (p.first[p.first.size() - 1] == '\n') {
 				TextWrapped("\n");
 			}
@@ -522,9 +522,7 @@ void Console::AddRenderCommands() {
 							
 							MeshComp* mc = new MeshComp(ptr);
 							mc->MeshID = id;
-							Physics* p = new Physics(Vector3(0,0,0), Vector3(0,0,0));
-							AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
-							Entity* e = admin->world->CreateEntity(admin, { mc, p, s });
+							Entity* e = admin->world->CreateEntity(admin, { mc });
 							
 							return TOSTRING("Created textured box with id: ", id);
 						}catch(...){
@@ -762,7 +760,7 @@ void Console::AddRenderCommands() {
 							Model mod;
 							mod.mesh = mesh;
 							mc->MeshID = newid;
-							admin->scene->models.push_back(mod);
+							admin->scene.models.push_back(mod);
 							
 							
 							return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
@@ -949,7 +947,7 @@ void Console::AddConsoleCommands() {
 										   Key::Key key;
 										   
 										   try {
-											   key = DengKeys->stk.at(args[0]);
+											   key = DengKeys.stk.at(args[0]);
 											   DengInput->binds.push_back(std::pair<std::string, Key::Key>(s, key));
 											   return "[c:green]key \"" + args[0] + "\" successfully bound to \n" + s + "[c]";
 										   }
@@ -1412,7 +1410,7 @@ void Console::Init(Time* t, Input* i, Window* w, EntityAdmin* ea) {
 }
 
 void Console::Update() {
-	if (input->KeyPressed(DengKeys->toggleConsole)) dispcon = !dispcon;
+	if (input->KeyPressed(DengKeys.toggleConsole)) dispcon = !dispcon;
 	
 	if (dispcon) {
 		DrawConsole();

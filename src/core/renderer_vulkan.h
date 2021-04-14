@@ -149,6 +149,7 @@ struct PrimitiveVk{
 	u32 materialIndex = 0xFFFFFFFF;
 };
 
+//TODO(delle) redo child/parent mesh structure
 struct MeshVk{
 	Mesh* ptr    = nullptr;
 	u32  id      = 0xFFFFFFFF;

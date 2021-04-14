@@ -27,11 +27,11 @@ OrbManager::OrbManager(Mesh* m, EntityAdmin* a, Entity* e) {
 		Model mod;
 		mod.mesh = *mes;
 		mc->MeshID = newid;
-		admin->scene->models.push_back(mod);
+		admin->scene.models.push_back(mod);
 	}
 	strncpy_s(name, "OrbManager", 63);
 	this->name[63] = '\0';
-
+	
 	layer = CL0_PHYSICS;
 	sortid = 6;
 };
@@ -114,7 +114,7 @@ void OrbManager::Update() {
 		//o->pos.x += 10 * sin(t->totalTime + i);
 		//o->mc->UpdateMeshTransform(o->pos, Vector3(180 * sin(sin(i) * t->totalTime), 180 * cos(cos(i) * t->totalTime), 0), Vector3::ONE);
 		o->mc->UpdateMeshTransform(o->pos, Vector3::ZERO, Vector3::ONE);
-
+		
 		//ti += 0.00001;
 	}
 	

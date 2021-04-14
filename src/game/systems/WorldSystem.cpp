@@ -97,7 +97,7 @@ int32 WorldSystem::AddAComponentToEntity(EntityAdmin* admin, Entity* entity, Com
 	entity->components.push_back(component);
 	component->layer_index = admin->freeCompLayers[component->layer].add(component);
 	component->entity = entity;
-	component->admin = entity->admin; // :/
+	component->admin = admin;
 	return entity->components.size()-1;
 }
 

@@ -1,0 +1,179 @@
+Deshi Save File Binary Format: .desh
+Last Updated: 4/14/2021 by delle
+
+/////////////////////////////
+//// Overall File Layout ////
+/////////////////////////////
+
+Sections (size in bytes)
+------------------------
+file header                 ( 32)
+entity array                (104 * count)
+mesh                        ( 72 * count)
+component type header array ( 16 * count)
+audio listener comp array   ( 40 * count)
+audio source comp array     (  4 * count) //to be determined
+box collider comp array     ( 53 * count)
+aabb collider comp array    ( 53 * count)
+sphere collider comp array  ( 45 * count)
+light comp array            ( 32 * count)
+mesh comp array             ( 16 * count)
+physics comp array          ( 88 * count)
+
+////////////////////////////
+//// Section Breakdowns //// 
+////////////////////////////
+Offset: from start of section in bytes
+Size  : number of bytes used by type
+Type  : in C++ or Deshi (custom types like vector3/float64/matrix4)
+Note: vector3 = 3 float32, matrix3 = 9 float32
+
+File Header (32 bytes)
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | char[4]    | magic number/file yype; should be "DESH" or "1213416772"
+4      | 4    | uint32     | flags (unused currently)
+8      | 4    | uint32     | entity count
+12     | 4    | uint32     | absolute offset to entity array
+16     | 4    | uint32     | mesh count
+20     | 4    | uint32     | absolute offset to mesh array
+24     | 4    | uint32     | component type count
+28     | 4    | uint32     | absolute offset to component type headers array
+========================================
+
+Entity (104 bytes)
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | uint32     | id
+4      | 64   | char[64]   | name
+68     | 12   | vector3    | position
+80     | 12   | vector3    | rotation
+92     | 12   | vector3    | scale
+========================================
+
+Mesh (72 bytes)
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | uint32     | id
+4      | 4    | bool32     | is this a base mesh?
+8      | 64   | char[64]   | name
+========================================
+
+Component Type Header (16 bytes)
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | uint32     | component type (see below)
+4      | 4    | uint32     | size in bytes of this component type
+8      | 4    | uint32     | count of this component type
+12     | 4    | uint32     | absolute offset to array for this component type
+========================================
+
+/////////////////////////
+//// Component Types //// 
+/////////////////////////
+
+0  = ComponentType_NONE
+1  = ComponentType_AudioListener
+2  = ComponentType_AudioSource
+3  = ComponentType_Camera
+4  = ComponentType_ColliderBox
+5  = ComponentType_ColliderAABB
+6  = ComponentType_ColliderSphere
+7  = ComponentType_Controller
+8  = ComponentType_Light
+9  = ComponentType_MeshComp
+10 = ComponentType_OrbManager
+11 = ComponentType_Physics
+0xFFFFFFFF = ComponentType_LAST
+
+//////////////////////////////
+//// Component Breakdowns //// 
+//////////////////////////////
+
+Audio Listener (40 bytes)
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | uint32     | entity id
+4      | 12   | vector3    | position
+16     | 12   | vector3    | velocity
+28     | 12   | vector3    | orientation
+========================================
+
+Audio Source (4 bytes) //to be determined
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | uint32     | entity id
+========================================
+
+Box Collider (53 bytes)
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | uint32     | entity id
+4      | 36   | matrix3    | inertia tensor a box
+40     | 1    | int8       | collision layer
+41     | 12   | vector3    | half dimensions of the box
+========================================
+
+AABB Collider (53 bytes)
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | uint32     | entity id
+4      | 36   | matrix3    | inertia tensor a box
+40     | 1    | int8       | collision layer
+41     | 12   | vector3    | half dimensions of the box
+========================================
+
+Sphere Collider (45 bytes)
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | uint32     | entity id
+4      | 36   | matrix3    | inertia tensor a sphere
+40     | 1    | int8       | collision layer
+41     | 4    | float32    | radius of the sphere
+========================================
+
+Light Component (32 bytes)
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | uint32     | entity id
+4      | 12   | vector3    | position
+16     | 12   | vector3    | direction
+28     | 4    | float32    | strength
+========================================
+
+Mesh Component (16 bytes)
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | uint32     | entity id
+4      | 2    | uint16     | instance id
+6      | 2    | uint16     | mesh id
+8      | 4    | bool32     | is the mesh visible?
+12     | 4    | bool32     | should this component update the meshes transform?
+========================================
+
+Physics Component (88 bytes)
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | uint32     | entity id
+4      | 12   | vector3    | position
+16     | 12   | vector3    | rotation
+28     | 12   | vector3    | velocity
+40     | 12   | vector3    | acceleration
+52     | 12   | vector3    | rotational velocity
+64     | 12   | vector3    | rotational acceleration
+76     | 4    | float32    | elasticity
+80     | 4    | float32    | mass
+84     | 4    | bool32     | is the object static?
+========================================

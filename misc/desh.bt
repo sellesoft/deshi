@@ -44,18 +44,25 @@ struct{
     u32  flags;
     u32  entity_count;
     u32  entity_array_offset;
+    u32  mesh_count;
+    u32  mesh_array_offset;
     u32  component_type_count;
     u32  component_type_header_array_offset;
 } header;
 
 struct{
-    char name[64];
     u32  id;
-    u32  component_count;
+    char name[64];
     vec3 position;
     vec3 rotation;
     vec3 scale;
 } entities[header.entity_count];
+
+struct{
+    u32 id;
+    b32 base;
+    char name[64];
+} meshes[header.mesh_count];
 
 struct{
     u32 type;

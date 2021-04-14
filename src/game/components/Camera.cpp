@@ -41,7 +41,7 @@ Matrix4 Camera::MakePerspectiveProjection(){
 }
 
 Matrix4 Camera::MakeOrthographicProjection() {
-	std::pair<Vector3, Vector3> bbox = admin->scene->SceneBoundingBox();
+	std::pair<Vector3, Vector3> bbox = admin->scene.SceneBoundingBox();
 	
 	//convert bounding box to camera space
 	Vector3 maxcam = Math::WorldToCamera3(bbox.first,  admin->mainCamera->viewMatrix);
@@ -63,15 +63,15 @@ Matrix4 Camera::MakeOrthographicProjection() {
 	static float offsety = 0;
 	static Vector2 initmouse;
 	static bool initoffset = false;
-
-
-	//orthographic view controls
-	if (DengInput->KeyPressed(DengKeys->orthoZoomIn) && zoom != 1) zoom -= 1;
-	if (DengInput->KeyPressed(DengKeys->orthoZoomOut)) zoom += 1;
 	
-	if (DengInput->KeyPressed(DengKeys->orthoOffset)) initoffset = true;
-
-	if (DengInput->KeyDown(DengKeys->orthoOffset)) {
+	
+	//orthographic view controls
+	if (DengInput->KeyPressed(DengKeys.orthoZoomIn) && zoom != 1) zoom -= 1;
+	if (DengInput->KeyPressed(DengKeys.orthoZoomOut)) zoom += 1;
+	
+	if (DengInput->KeyPressed(DengKeys.orthoOffset)) initoffset = true;
+	
+	if (DengInput->KeyDown(DengKeys.orthoOffset)) {
 		if (initoffset) {
 			initmouse = DengInput->mousePos;
 			initoffset = false;
@@ -79,21 +79,21 @@ Matrix4 Camera::MakeOrthographicProjection() {
 		offsetx = 0.02 * (DengInput->mousePos.x - initmouse.x);
 		offsety = 0.02 * (DengInput->mousePos.y - initmouse.y);
 	}
-
-	if (DengInput->KeyReleased(DengKeys->orthoOffset)) {
+	
+	if (DengInput->KeyReleased(DengKeys.orthoOffset)) {
 		oloffsetx += offsetx; oloffsety += offsety;
 		offsetx = 0; offsety = 0;
 	}
-
-	if (DengInput->KeyPressed(DengKeys->orthoResetOffset)) {
+	
+	if (DengInput->KeyPressed(DengKeys.orthoResetOffset)) {
 		oloffsetx = 0; oloffsety = 0;
 	}
-
+	
 	r += zoom * aspectRatio; l = -r;
 	r -= offsetx + oloffsetx; l -= offsetx + oloffsetx;
 	t += zoom; b -= zoom;
 	t += offsety + oloffsety; b += offsety + oloffsety;
-
+	
 	float f = admin->mainCamera->farZ;
 	float n = admin->mainCamera->nearZ;
 	
@@ -143,9 +143,9 @@ void Camera::Update() {
 		
 		
 		
-
+		
 		target = position + forward;
-	
+		
 		viewMatrix = Math::LookAtMatrix(position, target).Inverse();
 		
 		//update renderer camera properties

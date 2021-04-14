@@ -427,6 +427,7 @@ LoadBaseMesh(Mesh* m){
 u32 Renderer::
 CreateMesh(u32 meshID, Matrix4 matrix){
 	if(meshID < meshes.size()){
+		PRINTVK(3, "    Creating Mesh: ", meshes[meshID].ptr->name);
 		MeshVk mesh; mesh.base = false; 
 		mesh.ptr = meshes[meshID].ptr; mesh.visible = true;
 		mesh.primitives = std::vector<PrimitiveVk>(meshes[meshID].primitives);
@@ -1666,7 +1667,7 @@ UpdateUniformBuffer(){
 		shaderData.values.height = (glm::f32)extent.height;
 		shaderData.values.lightPos = glm::vec4(1.0f, -3.f, -1.0f, 1.0f);
 		shaderData.values.mousepos = glm::vec2(input->mousePos.x, input->mousePos.y);
-
+		
 		//map shader data to uniform buffer
 		void* data;
 		vkMapMemory(device, shaderData.uniformBufferMemory, 0, sizeof(shaderData.values), 0, &data);{

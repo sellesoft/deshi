@@ -1,5 +1,4 @@
 #include "Keybinds.h"
-#include "../EntityAdmin.h"
 #include "../core/console.h"
 #include "../core/assets.h"
 
@@ -20,18 +19,13 @@ std::string default_keybinds = ""
 "cameraRotateDown = DOWN\n"
 "cameraRotateRight = RIGHT\n"
 "cameraRotateLeft = LEFT\n"
-"> Debug Keys\n"
-"debugRenderWireframe = COMMA\n"
-"debugRenderEdgesNumbers = PERIOD\n"
-"debugRenderDisplayAxis = SLASH\n"
 "> Debug Menu Keys\n"
 "toggleConsole = TILDE\n"
 "toggleDebugMenu = LCTRL + TILDE\n"
 "toggleDebugBar = LSHIFT + TILDE";
 
 
-Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
-	
+void Keybinds::Init(){
 	//set up key map
 	keys = std::map<std::string, Key::Key&>{
 		{"movementFlyingUp",      movementFlyingUp},
@@ -46,33 +40,29 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 		{"cameraRotateRight", cameraRotateRight},
 		{"cameraRotateLeft",  cameraRotateLeft},
 		
-		{"debugRenderEdgesNumbers", debugRenderEdgesNumbers},
-		{"debugRenderWireframe",    debugRenderWireframe},
-		{"debugRenderDisplayAxis",  debugRenderDisplayAxis},
-		
 		{"toggleConsole",   toggleConsole},
 		{"toggleDebugMenu", toggleDebugMenu},
 		{"toggleDebugBar",  toggleDebugBar},
-		{"toggleMenuBar", toggleMenuBar},
+		{"toggleMenuBar",   toggleMenuBar},
 		
-		{"grabSelectedObject", grabSelectedObject},
+		{"grabSelectedObject",   grabSelectedObject},
 		{"rotateSelectedObject", rotateSelectedObject},
-		{"scaleSelectedObject", scaleSelectedObject},
-
+		{"scaleSelectedObject",  scaleSelectedObject},
+		
 		{"undo", undo},
 		{"redo", redo},
-
-		{"orthoOffset", orthoOffset},
-		{"orthoZoomIn", orthoZoomIn},
-		{"orthoZoomOut", orthoZoomOut},
-		{"orthoResetOffset", orthoResetOffset},
+		
+		{"orthoOffset",       orthoOffset},
+		{"orthoZoomIn",       orthoZoomIn},
+		{"orthoZoomOut",      orthoZoomOut},
+		{"orthoResetOffset",  orthoResetOffset},
 		{"perspectiveToggle", perspectiveToggle},
-
-		{"orthoRightView", orthoRightView}, 
-		{"orthoLeftView", orthoLeftView}, 
-		{"orthoFrontView", orthoFrontView}, 
-		{"orthoBackView", orthoBackView}, 
-		{"orthoTopDownView", orthoTopDownView}, 
+		
+		{"orthoRightView",    orthoRightView}, 
+		{"orthoLeftView",     orthoLeftView}, 
+		{"orthoFrontView",    orthoFrontView}, 
+		{"orthoBackView",     orthoBackView}, 
+		{"orthoTopDownView",  orthoTopDownView}, 
 		{"orthoBottomUpView", orthoBottomUpView}
 		
 	};
@@ -96,21 +86,17 @@ Keybinds::Keybinds(EntityAdmin* a) : Component(a) {
 	//read keys from keybinds.txt
 	std::fstream kf;
 	kf.open(deshi::dirConfig() + "keybinds.txt", std::fstream::in);
-	
-	if (kf.is_open()) {
+	if (kf.is_open()) { //file exists
 		ReloadKeybinds(kf);
 		kf.close();
-		
-	}
-	else {
+	}else{              //file doesnt exist
 		kf.close();
-		LOG("No keybinds file found, generating a new one in config folder.");
+		LOG("No keybinds file found, generating a new one in the cfg directory");
 		deshi::writeFile(deshi::dirConfig() + "keybinds.txt", default_keybinds.c_str(), default_keybinds.size());
 		kf.open(deshi::dirConfig() + "keybinds.txt", std::fstream::in);
 		ReloadKeybinds(kf);
 		kf.close();
 	}
-	
 }
 void Keybinds::ReloadKeybinds(std::fstream& kf) {
 	//TODO( sushi,In) implement keybind name mapping and shtuff
@@ -122,67 +108,49 @@ void Keybinds::ReloadKeybinds(std::fstream& kf) {
 	while (!kf.eof()) {
 		char* c = (char*)malloc(255);
 		kf.getline(c, 255);
-
 		std::string s(c);
-
-		if (s[0] == '>') {
-			line++;
-			continue;
-		}
-
+		
+		if (s[0] == '>') line++; continue; //skip comments
+		
 		if (s != "") {
 			std::smatch m;
-
 			std::regex r;
-
 			bool modif = false;
-
+			
 			//if string contains a + it must have a modifier
-			if (s.find("+") != std::string::npos) {
+			if(s.find("+") != std::string::npos) {
 				r = std::regex("([A-Za-z]+) += +(LCTRL|LSHIFT|LALT|RCTRL|RSHIFT|RALT) +\\+ +(.+)");
 				modif = true;
-			}
-			else {
+			}else{
 				r = std::regex("([A-Za-z]+) += +(.+)");
 			}
-
+			
 			std::regex_match(s, m, r);
-
-
-
 			if (m.size() == 1) {
 				ERROR_LOC(m[1], "\nRegex did not find any matches for this string in keybinds.txt at line ", line);
-				line++;
-				continue;
+				line++; continue;
 			}
+			
 			try {
-				if (modif) {
+				if(modif) {
 					try {
 						keys.at(m[1]) = stk.at(m[3]) | stk.at(m[2]);
-					}
-					catch (std::out_of_range oor) {
+					}catch(std::out_of_range oor) {
 						ERROR_LOC("Either the modifier \"", m[2], "\", the keybind name \"", m[3], "\", or the key name \"", m[1], "\" was not found in their respective maps. \nAt line ", line, " in keybinds.txt");
 					}
-				}
-				else {
+				}else{
 					try {
 						keys.at(m[1]) = stk.at(m[2]);
-					}
-					catch (std::out_of_range oor) {
+					}catch (std::out_of_range oor) {
 						ERROR_LOC("Either the keybind \"", m[1], "\" or the key \"", m[2], "\" was not found in their respective maps. \nAt line ", line, " in keybinds.txt");
-
 					}
 				}
-			}
-			catch (std::out_of_range oor) {
+			}catch(...) {
 				ERROR_LOC("Key \"", m[1], "\" not found in keymap. \nAt line ", line, " in keybinds.txt");
 			}
 			line++;
 			free(c);
-
 		}
-	}
-	
-	
+	} //while (!kf.eof())
 }
 

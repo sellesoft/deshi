@@ -4,6 +4,11 @@
 
 void UndoManager::Init(){}
 
+void UndoManager::Reset(){
+	undos.clear();
+	redos.clear();
+}
+
 //select data layout:
 //0x00  void*      | selected entity pointer
 //0x08  void*      | old selection

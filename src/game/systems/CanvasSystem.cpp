@@ -94,6 +94,9 @@ void CanvasSystem::MenuBar() {
 			if (MenuItem("Save")) {
 				admin->Save();
 			}
+			if (MenuItem("Load")) {
+				admin->Load("data/save.desh"); //TODO(delle) add dropdown/something for specific file loading
+			}
 			ImGui::EndMenu();
 		}
 		if(BeginMenu("Edit")) {
@@ -482,7 +485,7 @@ void CanvasSystem::DebugTools() {
 			}
 			EndTabItem();
 		}
-
+		
 		if (BeginTabItem("Phys")) {
 			if (BeginChild("SelectedEntityMenu", ImVec2(GetWindowWidth(), 500), true)) {
 				
@@ -490,20 +493,20 @@ void CanvasSystem::DebugTools() {
 				if (ImGui::Button("Pause")) {
 					admin->pause_phys = !admin->pause_phys;
 				}
-
+				
 				SetPadding;
 				ImGui::InputFloat("gravity", &admin->physics->gravity);
-
+				
 				SetPadding;
 				ImGui::Text("#colliders: not implemented");
-
+				
 				
 				
 				EndChild();
 			}
 			EndTabItem();
 		}
-
+		
 		EndTabBar();
 	}
 	
@@ -813,7 +816,7 @@ void CanvasSystem::DebugLayer() {
 		Vector3 v3 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.z) + -lines + i), c->viewMatrix).ToVector3();
 		Vector3 v4 = Math::WorldToCamera4(Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i), c->viewMatrix).ToVector3();
 		
-
+		
 		//TODO(sushi, CamMa) make grid lines appear properly when in different orthographic views
 		//if (c->type == CameraType::ORTHOGRAPHIC) {
 		//
@@ -828,7 +831,7 @@ void CanvasSystem::DebugLayer() {
 		//
 		//
 		//}
-
+		
 		bool l1flag = false;
 		bool l2flag = false;
 		
@@ -896,7 +899,7 @@ void CanvasSystem::DebugLayer() {
 	}
 	//ImGui::Text("test");
 	
-
+	
 	if (admin->paused) {
 		std::string s = "ENGINE PAUSED";
 		float strlen = (fontsize - (fontsize / 2)) * s.size();
@@ -904,8 +907,8 @@ void CanvasSystem::DebugLayer() {
 		ImGui::SetCursorPos(ImVec2(DengWindow->width - strlen * 1.3, menubarheight));
 		ImGui::Text(s.c_str());
 	}
-
-
+	
+	
 	
 	ImGui::PopStyleColor();
 	ImGui::End();
@@ -919,9 +922,9 @@ void CanvasSystem::DrawUI(void) {
 		
 	}
 	else if(admin->state == GameState::EDITOR || admin->state == GameState::PLAY_DEBUG){
-		if (DengInput->KeyPressed(DengKeys->toggleDebugMenu)) showDebugTools = !showDebugTools;
-		if (DengInput->KeyPressed(DengKeys->toggleDebugBar)) showDebugBar = !showDebugBar;
-		if (DengInput->KeyPressed(DengKeys->toggleMenuBar)) showMenuBar = !showMenuBar;
+		if (DengInput->KeyPressed(DengKeys.toggleDebugMenu)) showDebugTools = !showDebugTools;
+		if (DengInput->KeyPressed(DengKeys.toggleDebugBar)) showDebugBar = !showDebugBar;
+		if (DengInput->KeyPressed(DengKeys.toggleMenuBar)) showMenuBar = !showMenuBar;
 		
 		if (showDebugLayer) DebugLayer();
 		if (showDebugTools) DebugTools();

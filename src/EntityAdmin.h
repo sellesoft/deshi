@@ -5,7 +5,10 @@
 #include "utils/defines.h"
 #include "utils/debug.h"
 #include "utils/ContainerManager.h"
+#include "scene/scene.h"
 #include "game/Transform.h"
+#include "game/Keybinds.h"
+#include "game/Controller.h"
 #include "game/UndoManager.h"
 
 #include <map>
@@ -16,31 +19,25 @@
 #define DengTime admin->time
 #define DengKeys admin->keybinds
 
-typedef u32 EntityID;
 struct Entity;
 struct System;
 struct Component;
 struct Command;
 
 struct PhysicsWorld;
-
 struct PhysicsSystem;
 struct CanvasSystem;
 struct WorldSystem;
 struct SoundSystem;
 
 struct Camera;
-struct Keybinds;
-struct Controller;
-struct Console;
-struct Scene;
-struct Transform;
 
-//DeshiEngine structs
+//core structs
 struct Window;
 struct Input;
 struct Time;
 struct Renderer;
+struct Console;
 
 enum struct GameState{
 	NONE, PLAY, PLAY_DEBUG, EDITOR, MENU
@@ -53,32 +50,31 @@ struct EntityAdmin {
 	
 	GameState state = GameState::NONE;
 	
-	std::vector<System*> systems;
-	std::map<EntityID, Entity*> entities;
+	std::map<u32, Entity*> entities;
 	//are we still doing this?  reply: eventually, not necessary for prototype
 	//object_pool<Component>* componentsPtr;
-	std::vector<Component*> components;
-	PhysicsWorld* physicsWorld;
 	
-	//singletons
+	//core
 	Input*    input;
 	Window*   window;
 	Time*     time;
 	Renderer* renderer;
 	Console*  console;
-	Scene*    scene; 
-	
-	Camera*     mainCamera;
-	Keybinds*   keybinds;
-	Controller* controller;
 	
 	//systems
+	PhysicsWorld*  physicsWorld; //TODO(delle) move these vars to a global vars file
 	PhysicsSystem* physics;
 	CanvasSystem*  canvas;
 	WorldSystem*   world;
 	SoundSystem*   sound;
 	
+	//admin singletons
+	Scene       scene;
+	Keybinds    keybinds;
+	Controller  controller;
 	UndoManager undoManager;
+	
+	Camera* mainCamera;
 	
 	//stores the components to be executed in between layers
 	std::vector<ContainerManager<Component*>> freeCompLayers;
@@ -106,28 +102,33 @@ struct EntityAdmin {
 	
 	void Update();
 	
-	void AddSystem(System* system);
-	void RemoveSystem(System* system);
-	
-	void AddComponent(Component* component);
-	void RemoveComponent(Component* component);
-	
 	void Save();
 	void Load(const char* filename);
 	
 	Command* GetCommand(std::string command);
-	bool ExecCommand(std::string command);
-	bool ExecCommand(std::string command, std::string args);
+	bool     ExecCommand(std::string command);
+	bool     ExecCommand(std::string command, std::string args);
 };
 
 struct Entity {
-	char name[64];
-	
-	EntityID id;
 	EntityAdmin* admin; //reference to owning admin
-	std::vector<Component*> components;
 	
+	u32 id;
+	char name[64];
+	std::vector<Component*> components;
 	Transform transform;
+	
+	Entity();
+	Entity(vec3 pos, vec3 rot, vec3 scale);
+	~Entity();
+	
+	std::string Save();
+	void Load(const char* filename);
+	
+	//adds a component to the end of the components vector
+	//returns the position in the vector
+	u32 AddComponent(Component* component);
+	u32 AddComponents(std::vector<Component*> components);
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
 	template<class T>
@@ -140,18 +141,6 @@ struct Entity {
 		}
 		return t;
 	}
-	
-	std::string Save();
-	void Load(const char* filename);
-	
-	//adds a component to the end of the components vector
-	//returns the position in the vector
-	u32 AddComponent(Component* component);
-	u32 AddComponents(std::vector<Component*> components);
-	
-	Entity();
-	Entity(vec3 pos, vec3 rot, vec3 scale);
-	~Entity();
 };
 
 #endif

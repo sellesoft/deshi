@@ -26,6 +26,7 @@ struct UndoManager{
 	std::deque<EditAction> redos = std::deque<EditAction>();
 	
 	void Init();
+	void Reset();
 	
 	void AddUndoSelect(void** sel, void* oldEnt, void* newEnt);
 	void AddUndoTranslate(Transform* t, Vector3* oldPos, Vector3* newPos);

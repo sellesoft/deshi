@@ -1,6 +1,14 @@
 #include "Scene.h"
 #include "../game/Transform.h"
 
+void Scene::Init(){}
+
+void Scene::Reset(){
+	models.clear();
+	lights.clear();
+	lines.clear();
+}
+
 std::pair<Vector3, Vector3> Scene::SceneBoundingBox() {
 	float inf = std::numeric_limits<float>::max();
 	Vector3 max(-inf, -inf, -inf);

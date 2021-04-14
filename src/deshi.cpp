@@ -15,9 +15,12 @@ if you feel they would handle the problem better. It should generally be you tho
 Major Ungrouped TODOs
 ---------------------
 add level saving and loading
+create a hot-loadable global vars file
+create a global core object rather than pass everything thru entity admin
 add shaders: PBR (4textures)
 settings file(s) [keybinds, video, audio, etc]
 figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
+implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
 
 Minor Ungrouped TODOs
 ---------------------
@@ -27,7 +30,6 @@ add a component_state command to print state of a component (add str methods to 
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
 add device info command (graphics card, sound device, monitor res, etc)
 pool/arena components and entities for better performance
-!!!implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
 replace/remove external dependencies/includes were possible (glm, tinyobj)
 add Qol (quality of life) tag to TODOP
 add Camera tag to TODOP
@@ -70,11 +72,11 @@ keybind to move camera to object (like Blender's NPMINUS)
 
 Physics/Atmos TODOs
 -------------
+finish imlementing AABB vs AABB collisions
 redo main physics loop
 add physics collision sweeping
 add physics based collision resolution for remaining collider primitives
 add physics interaction functions
-finish imlementing AABB vs AABB collisions
 implement collision manifold generation
 implement Sphere vs Sphere collisions
 implement Complex Colliders 
@@ -155,7 +157,7 @@ struct DeshiEngine {
 			Update();
 		}
 		
-		admin.Save();
+		//admin.Save();
 		
 		//cleanup
 		imgui.Cleanup();

@@ -23,10 +23,10 @@
 
 #include "game/Keybinds.h"
 #include "game/Transform.h"
+#include "game/Controller.h"
 #include "game/components/Component.h"
 #include "game/components/Collider.h"
 #include "game/components/Camera.h"
-#include "game/components/Controller.h"
 #include "game/components/AudioListener.h"
 #include "game/components/AudioSource.h"
 #include "game/components/MeshComp.h"
@@ -45,15 +45,11 @@
 //// EntityAdmin ////
 
 void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
-	time = t;
-	input = i;
-	window = w;
-	console = c;
-	renderer = r;
+	time = t; input = i; window = w; console = c; renderer = r;
 	
-	systems = std::vector<System*>();
+	state = GameState::EDITOR;
+	
 	entities = std::map<EntityID, Entity*>();
-	components = std::vector<Component*>();
 	physicsWorld = new PhysicsWorld();
 	
 	//reserve complayers
@@ -76,17 +72,14 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	world->Init(this);
 	sound->Init(this);
 	
+	scene.Init();
+	controller.Init(this);
+	keybinds.Init();
 	undoManager.Init();
 	
 	//singleton initialization
-	scene = new Scene();
 	mainCamera = new Camera(this, 90.f, .01f, 1000.01f, true);
 	mainCamera->layer_index = freeCompLayers[mainCamera->layer].add(mainCamera);
-	keybinds = new Keybinds(this);
-	controller = new Controller(this);
-	controller->layer_index = freeCompLayers[controller->layer].add(controller);
-	
-	state = GameState::EDITOR;
 	
 	/*
 	//orb testing
@@ -107,20 +100,15 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 
 void EntityAdmin::Cleanup() {
 	//cleanup collections
-	//for(System* s : systems)       { delete s; }           systems.clear();
-	for (auto pair : entities) { delete pair.second; } entities.clear();
-	for (Component* c : components) { delete c; }           components.clear();
+	for(auto pair : entities) { delete pair.second; } entities.clear();
+	freeCompLayers.clear();
 	
 	delete physicsWorld;
-	
-	//clean up singletons
-	delete world;
-	delete canvas;
-	delete sound;
 	delete physics;
+	delete canvas;
+	delete world;
+	delete sound;
 	delete mainCamera;
-	delete keybinds;
-	delete controller;
 }
 
 void UpdateLayer(ContainerManager<Component*> cl) {
@@ -132,7 +120,7 @@ void UpdateLayer(ContainerManager<Component*> cl) {
 }
 
 void EntityAdmin::Update() {
-	controller->Update();
+	controller.Update();
 	mainCamera->Update();
 	
 	if (!pause_phys && !paused)    UpdateLayer(freeCompLayers[CL0_PHYSICS]);
@@ -144,10 +132,6 @@ void EntityAdmin::Update() {
 	if (!pause_sound && !paused)   UpdateLayer(freeCompLayers[CL3_SOUND]);
 	if (!pause_sound && !paused)   sound->Update();
 	if (!pause_last && !paused)    UpdateLayer(freeCompLayers[CL4_LAST]);
-	
-	for (Component* c : components) {
-		c->Update();
-	}
 }
 
 struct SaveHeader{
@@ -156,6 +140,8 @@ struct SaveHeader{
 	//u32 cameraOffset;
 	u32 entityCount;
 	u32 entityArrayOffset;
+	u32 meshCount;
+	u32 meshArrayOffset;
 	u32 componentTypeCount;
 	u32 componentTypeHeaderArrayOffset;
 };
@@ -168,28 +154,44 @@ struct ComponentTypeHeader{
 };
 
 typedef enum ComponentTypeBits : u32{
-	ComponentType_NONE,
+	ComponentType_NONE = 0,
 	ComponentType_AudioListener, ComponentType_AudioSource,    ComponentType_Camera,     ComponentType_ColliderBox,
 	ComponentType_ColliderAABB,  ComponentType_ColliderSphere, ComponentType_Controller, ComponentType_Light, 
 	ComponentType_MeshComp,      ComponentType_OrbManager,     ComponentType_Physics, 
-	ComponentType_LAST,
-} ComponentTypeBits; typedef u32 ComponentType;
+	ComponentType_LAST = 0xFFFFFFFF,
+} ComponentTypeBits;
 
 void EntityAdmin::Save() {
+	//assertions so things stay up to date; last updated: 4/14/2021 by delle //TODO(delle) move these to component files
+	ASSERT(32 == sizeof(SaveHeader), "SaveHeader size is out of date");
+	ASSERT(16 == sizeof(ComponentTypeHeader), "ComponentTypeHeader is out of date");
+	ASSERT(168 == sizeof(Entity), "Entity is out of date");
+	ASSERT(176 == sizeof(MeshVk), "MeshVk is out of date");
+	ASSERT(152 == sizeof(AudioListener), "AudioListener is out of date");
+	ASSERT(160 == sizeof(AudioSource), "AudioSource is out of date");
+	ASSERT(336 == sizeof(Camera), "Camera is out of date");
+	ASSERT(176 == sizeof(BoxCollider), "BoxCollider is out of date");
+	ASSERT(176 == sizeof(AABBCollider), "AABBCollider is out of date");
+	ASSERT(168 == sizeof(SphereCollider), "SphereCollider is out of date");
+	ASSERT(144 == sizeof(Light), "Light is out of date");
+	ASSERT(144 == sizeof(MeshComp), "MeshComp is out of date");
+	ASSERT(232 == sizeof(Physics), "Physics is out of date");
+	
 	//open file
-	std::string filepath = deshi::dirData() + "test.desh";
+	std::string filepath = deshi::dirData() + "save.desh";
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file '", filepath, "' when trying to save"); return; }
 	
-	SaveHeader header;
+	SaveHeader header{};
 	file.write((const char*)&header, sizeof(SaveHeader)); //zero fill header
 	header.magic                          = 1213416772; //DESH
 	header.flags                          = 0;
 	//header.cameraOffset                   = 0;
+	
+	//// entities ////
 	header.entityCount                    = entities.size();
 	header.entityArrayOffset              = sizeof(SaveHeader);
 	
-	//// entities ////
 	//store sorted components and write entities
 	header.componentTypeCount = 8;
 	std::vector<AudioListener*>  compsAudioListener;
@@ -201,17 +203,14 @@ void EntityAdmin::Save() {
 	std::vector<MeshComp*>       compsMeshComp;
 	std::vector<Physics*>        compsPhysics;
 	
-	u32 compCount;
 	for(auto& pair : entities) {
 		//write entity
 		Entity* e = pair.second;
-		file.write(e->name, 64);
-		file.write((const char*)&e->id, sizeof(EntityID));
-		compCount = e->components.size();
-		file.write((const char*)&compCount, sizeof(u32));
+		file.write((const char*)&e->id,                 sizeof(u32));
+		file.write(e->name,                             64);
 		file.write((const char*)&e->transform.position, sizeof(Vector3));
 		file.write((const char*)&e->transform.rotation, sizeof(Vector3));
-		file.write((const char*)&e->transform.scale, sizeof(Vector3));
+		file.write((const char*)&e->transform.scale,    sizeof(Vector3));
 		
 		//sort components
 		for(auto c : e->components) {
@@ -239,9 +238,20 @@ void EntityAdmin::Save() {
 		}
 	}
 	
-	header.componentTypeHeaderArrayOffset = file.tellp();
+	//// write meshes ////
+	header.meshCount = renderer->meshes.size();
+	header.meshArrayOffset = file.tellp();
 	
-	//// write component type headers ////
+	for(auto& m : renderer->meshes){
+		b32 base = m.base;
+		std::string temp = m.name; temp.resize(64);
+		file.write((const char*)&m.id, sizeof(u32));
+		file.write((const char*)&base, sizeof(b32));
+		file.write(temp.c_str(),       64); //NOTE(delle) using the mesh name doesnt work on obj loaded meshes?
+	}
+	
+	//// write component type headers //// //TODO(delle) move these to thier respective files
+	header.componentTypeHeaderArrayOffset = file.tellp();
 	ComponentTypeHeader typeHeader;
 	
 	//audio listener
@@ -290,14 +300,14 @@ void EntityAdmin::Save() {
 	//mesh comp
 	typeHeader.type        = ComponentType_MeshComp;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(u16)*2 + sizeof(u32)*2; //instanceID, meshID, visible, entity_control
+	typeHeader.size        = sizeof(u32) + sizeof(u16)*2 + sizeof(b32)*2; //instanceID, meshID, visible, entity_control
 	typeHeader.count       = compsMeshComp.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
 	//physics
 	typeHeader.type        = ComponentType_Physics;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(u32);
+	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(b32);
 	typeHeader.count       = compsPhysics.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
@@ -350,15 +360,18 @@ void EntityAdmin::Save() {
 	
 	//mesh comp
 	for(auto c : compsMeshComp){
+		b32 bool1 = c->mesh_visible;
+		b32 bool2 = c->ENTITY_CONTROL;
 		file.write((const char*)&c->entity->id,     sizeof(u32));
 		file.write((const char*)&c->InstanceID,     sizeof(u16));
 		file.write((const char*)&c->MeshID,         sizeof(u16));
-		file.write((const char*)&c->mesh_visible,   sizeof(u32));
-		file.write((const char*)&c->ENTITY_CONTROL, sizeof(u32));
+		file.write((const char*)&bool1,             sizeof(b32));
+		file.write((const char*)&bool2,             sizeof(b32));
 	}
 	
 	//physics
 	for(auto c : compsPhysics){
+		b32 isStatic = c->isStatic;
 		file.write((const char*)&c->entity->id,      sizeof(u32));
 		file.write((const char*)&c->position,        sizeof(Vector3));
 		file.write((const char*)&c->rotation,        sizeof(Vector3));
@@ -368,7 +381,7 @@ void EntityAdmin::Save() {
 		file.write((const char*)&c->rotAcceleration, sizeof(Vector3));
 		file.write((const char*)&c->elasticity,      sizeof(float));
 		file.write((const char*)&c->mass,            sizeof(float));
-		file.write((const char*)&c->isStatic,        sizeof(u32));
+		file.write((const char*)&isStatic,           sizeof(b32));
 	}
 	
 	//store camera's size so we know offset to following entities list then store camera
@@ -377,41 +390,44 @@ void EntityAdmin::Save() {
 	//deshi::appendFileBinary(file, (const char*)mainCamera, camsize);
 	
 	
-	//// close file ////
+	//finish header
 	file.seekp(0);
 	file.write((const char*)&header, sizeof(SaveHeader));
 	
+	//// close file ////
 	file.close();
 }
 
 void EntityAdmin::Load(const char* filename) {
+	//// clear current stuff ////
+	for(auto pair : entities) { delete pair.second; } entities.clear();
+	freeCompLayers.clear(); //TODO(delle) check if this is a memory leak
+	scene.Reset();
+	undoManager.Reset();
 	
-}
-
-void EntityAdmin::AddSystem(System* system) {
-	systems.push_back(system);
-	system->Init(this);
-}
-
-void EntityAdmin::RemoveSystem(System* system) {
-	for (int i = 0; i < systems.size(); ++i) {
-		if (systems[i] == system) {
-			systems.erase(systems.begin() + i);
-		}
-	}
-}
-
-void EntityAdmin::AddComponent(Component* component) {
-	components.push_back(component);
-	component->entity = 0;
-}
-
-void EntityAdmin::RemoveComponent(Component* component) {
-	for (int i = 0; i < components.size(); ++i) {
-		if (components[i] == component) {
-			components.erase(components.begin() + i);
-		}
-	}
+	SUCCESS("Cleaned up previous level");
+	SUCCESS("Loading level: ", filename);
+	
+	//// read file to char array ////
+	u32 cursor = 0;
+	std::vector<char> file = deshi::readFileBinary(filename);
+	const char* data = file.data();
+	if(!data) return;
+	
+	//check for magic number
+	u32 magic = 1213416772; //DESH
+	if(memcmp(data, &magic, 4) != 0) return ERROR("Invalid magic number when loading save file: ", filename);
+	cursor += 4;
+	
+	//parse header
+	u32 flags, entityCount, entityArrayOffset, meshCount, meshArrayOffset, compTypeCount, compTypeArrayOffset;
+	memcpy(&flags,               data+cursor, sizeof(u32)); cursor += sizeof(u32);
+	memcpy(&entityCount,         data+cursor, sizeof(u32)); cursor += sizeof(u32);
+	memcpy(&entityArrayOffset,   data+cursor, sizeof(u32)); cursor += sizeof(u32);
+	memcpy(&meshCount,           data+cursor, sizeof(u32)); cursor += sizeof(u32);
+	memcpy(&meshArrayOffset,     data+cursor, sizeof(u32)); cursor += sizeof(u32);
+	memcpy(&compTypeCount,       data+cursor, sizeof(u32)); cursor += sizeof(u32);
+	memcpy(&compTypeArrayOffset, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 }
 
 Command* EntityAdmin::GetCommand(std::string command) {

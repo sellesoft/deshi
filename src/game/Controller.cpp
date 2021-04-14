@@ -1,15 +1,19 @@
-#include "Camera.h"
-#include "MeshComp.h"
 #include "Controller.h"
-#include "../Transform.h"
-#include "../Keybinds.h"
-#include "../UndoManager.h"
-#include "../../core.h"
-#include "../../EntityAdmin.h"
-#include "../../math/Math.h"
-#include "../../scene/Scene.h"
-#include "../../geometry/Edge.h"
+#include "Transform.h"
+#include "Keybinds.h"
+#include "UndoManager.h"
+#include "components/Camera.h"
+#include "components/MeshComp.h"
+#include "../core.h"
+#include "../EntityAdmin.h"
+#include "../math/Math.h"
+#include "../scene/Scene.h"
+#include "../geometry/Edge.h"
+
 #include <fstream>
+
+bool CONTROLLER_MOUSE_CAPTURE = false;
+bool moveOverride = false; //for moving when using arrow keys (cause i cant use mouse when remoting into my pc so)
 
 inline void AddBindings(EntityAdmin* admin) {
 	std::ifstream binds;
@@ -26,7 +30,7 @@ inline void AddBindings(EntityAdmin* admin) {
 			std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
 			
 			try {
-				DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, DengKeys->stk.at(key)));
+				DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, DengKeys.stk.at(key)));
 			}
 			catch (...) {
 				ERROR("Unknown key \"", key, "\" attempted to bind to command \"", command, "\"");
@@ -41,22 +45,6 @@ inline void AddBindings(EntityAdmin* admin) {
 	}
 }
 
-Controller::Controller(EntityAdmin* a, MovementMode m) : Component(a), mode(m) {
-	//not sure where i want this yet
-	strncpy_s(name, "Controller", 63);
-	this->name[63] = '\0';
-	layer = NONE;
-	
-	if(admin->state == GameState::PLAY || admin->state == GameState::PLAY_DEBUG){
-		admin->ExecCommand("window_cursor_mode", "1");
-	}
-	
-	AddBindings(a);
-}
-
-bool CONTROLLER_MOUSE_CAPTURE = false;
-bool moveOverride = false; //for moving when using arrow keys (cause i cant use mouse when remoting into my pc so)
-
 inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
 	Camera* camera = admin->mainCamera;
 	float deltaTime = admin->time->deltaTime;
@@ -67,12 +55,12 @@ inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
 	if(DengInput->KeyDownAnyMod(MouseButton::RIGHT) || moveOverride){
 		Vector3 inputs;
 		if (mode == MOVEMENT_MODE_FLYING) {
-			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingUp))      {  inputs.y += 1;  }
-			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingDown))    {  inputs.y -= 1; }
-			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingForward)) {  inputs += camera->forward; }
-			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingBack))    {  inputs -= camera->forward; }
-			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingRight))   {  inputs += camera->right; }
-			if (DengInput->KeyDownAnyMod(DengKeys->movementFlyingLeft))    {  inputs -= camera->right; }
+			if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingUp))      {  inputs.y += 1;  }
+			if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingDown))    {  inputs.y -= 1; }
+			if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingForward)) {  inputs += camera->forward; }
+			if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingBack))    {  inputs -= camera->forward; }
+			if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingRight))   {  inputs += camera->right; }
+			if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingLeft))    {  inputs -= camera->right; }
 			
 			if     (DengInput->ShiftDown()) { camera->position += inputs.normalized() * 16 * deltaTime; }
 			else if(DengInput->CtrlDown())  { camera->position += inputs.normalized() *  4 * deltaTime; }
@@ -84,7 +72,7 @@ inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
 inline void CameraRotation(EntityAdmin* admin, float sens) {
 	Camera* camera = admin->mainCamera;
 	Input* input = admin->input;
-	Keybinds* binds = admin->keybinds;
+	Keybinds* binds = &admin->keybinds;
 	Window* window = admin->window;
 	float deltaTime = admin->time->deltaTime;
 	
@@ -149,7 +137,7 @@ inline void CameraZoom(EntityAdmin* admin){
 
 //TODO(sushi, Ma) figure out why this sometimes returns true when clicking outside of object
 inline void HandleSelectEntity(EntityAdmin* admin){
-	Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
+	Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
 									  admin->mainCamera->viewMatrix, admin->window->dimensions);
 	pos *= Math::WorldToLocal(admin->mainCamera->position);
 	pos.normalize();
@@ -158,8 +146,8 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 	
 	RenderedEdge3D* ray = new RenderedEdge3D(pos, admin->mainCamera->position);
 	
-	Entity* oldEnt = admin->input->selectedEntity;
-	admin->input->selectedEntity = nullptr;
+	Entity* oldEnt = DengInput->selectedEntity;
+	DengInput->selectedEntity = nullptr;
 	Vector3 p0, p1, p2, norm;
 	Matrix4 rot;
 	for (auto ep : admin->entities) {
@@ -189,9 +177,9 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 							(v12 * rot).dot(p1 - inter) < 0 &&
 							(v20 * rot).dot(p2 - inter) < 0) {
 							
-							admin->input->selectedEntity = e;
+							DengInput->selectedEntity = e;
 							if(oldEnt != e){
-								admin->undoManager.AddUndoSelect((void**)&admin->input->selectedEntity, oldEnt, e);
+								admin->undoManager.AddUndoSelect((void**)&DengInput->selectedEntity, oldEnt, e);
 							}
 							goto endloop;
 						}
@@ -207,7 +195,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 	static bool grabbingObj = false;
 	
 	if (!admin->IMGUI_MOUSE_CAPTURE) { 
-		if (DengInput->KeyPressed(DengKeys->grabSelectedObject) || grabbingObj) {
+		if (DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj) {
 			//Camera* c = admin->mainCamera;
 			grabbingObj = true;
 			CONTROLLER_MOUSE_CAPTURE = true;
@@ -286,7 +274,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				
 			}
 			else if (xaxis) {
-				Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
+				Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
 												  admin->mainCamera->viewMatrix, admin->window->dimensions);
 				pos *= Math::WorldToLocal(admin->mainCamera->position);
 				pos.normalize();
@@ -305,7 +293,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				sel->transform.position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
 			}
 			else if (yaxis) {
-				Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
+				Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
 												  admin->mainCamera->viewMatrix, admin->window->dimensions);
 				pos *= Math::WorldToLocal(admin->mainCamera->position);
 				pos.normalize();
@@ -324,7 +312,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				
 			}
 			else if (zaxis) {
-				Vector3 pos = Math::ScreenToWorld(admin->input->mousePos, admin->mainCamera->projectionMatrix,
+				Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
 												  admin->mainCamera->viewMatrix, admin->window->dimensions);
 				pos *= Math::WorldToLocal(admin->mainCamera->position);
 				pos.normalize();
@@ -341,7 +329,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				}
 				sel->transform.position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
 			}
-		} //if(DengInput->KeyPressed(DengKeys->grabSelectedObject) || grabbingObj)
+		} //if(DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj)
 	} //if(!admin->IMGUI_MOUSE_CAPTURE)
 }
 
@@ -349,7 +337,7 @@ inline void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 	static bool rotatingObj = false;
 	
 	if (!admin->IMGUI_MOUSE_CAPTURE) { 
-		if (DengInput->KeyPressed(DengKeys->rotateSelectedObject) || rotatingObj) {
+		if (DengInput->KeyPressed(DengKeys.rotateSelectedObject) || rotatingObj) {
 			rotatingObj = true;
 			CONTROLLER_MOUSE_CAPTURE = true;
 			
@@ -472,18 +460,16 @@ inline void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				
 				sel->transform.rotation.x = ang;
 			}
-		} //if(DengInput->KeyPressed(DengKeys->grabSelectedObject) || grabbingObj)
+		} //if(DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj)
 	} //if(!admin->IMGUI_MOUSE_CAPTURE)
 }
 
 inline void HandleEditorInputs(EntityAdmin* admin){
-	Input* input = admin->input;
-	
 	{//// selected entity ////
-		Entity* sel = input->selectedEntity;
+		Entity* sel = DengInput->selectedEntity;
 		
 		if (!admin->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE) {
-			if (input->KeyPressed(MouseButton::LEFT)) { HandleSelectEntity(admin); }
+			if (DengInput->KeyPressed(MouseButton::LEFT)) { HandleSelectEntity(admin); }
 		}
 		
 		if (sel) {
@@ -491,39 +477,39 @@ inline void HandleEditorInputs(EntityAdmin* admin){
 			HandleRotating(sel, admin->mainCamera, admin, &admin->undoManager);
 			
 			//translation
-			if (input->KeyDown(Key::L)) { admin->ExecCommand("translate_right"); }
-			if (input->KeyDown(Key::J)) { admin->ExecCommand("translate_left"); }
-			if (input->KeyDown(Key::O)) { admin->ExecCommand("translate_up"); }
-			if (input->KeyDown(Key::U)) { admin->ExecCommand("translate_down"); }
-			if (input->KeyDown(Key::I)) { admin->ExecCommand("translate_forward"); }
-			if (input->KeyDown(Key::K)) { admin->ExecCommand("translate_backward"); }
+			if (DengInput->KeyDown(Key::L)) { admin->ExecCommand("translate_right"); }
+			if (DengInput->KeyDown(Key::J)) { admin->ExecCommand("translate_left"); }
+			if (DengInput->KeyDown(Key::O)) { admin->ExecCommand("translate_up"); }
+			if (DengInput->KeyDown(Key::U)) { admin->ExecCommand("translate_down"); }
+			if (DengInput->KeyDown(Key::I)) { admin->ExecCommand("translate_forward"); }
+			if (DengInput->KeyDown(Key::K)) { admin->ExecCommand("translate_backward"); }
 			
 			//rotation
-			if (input->KeyDown(Key::L | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+x"); }
-			if (input->KeyDown(Key::J | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-x"); }
-			if (input->KeyDown(Key::O | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+y"); }
-			if (input->KeyDown(Key::U | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-y"); }
-			if (input->KeyDown(Key::I | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+z"); }
-			if (input->KeyDown(Key::K | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-z"); }
+			if (DengInput->KeyDown(Key::L | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+x"); }
+			if (DengInput->KeyDown(Key::J | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-x"); }
+			if (DengInput->KeyDown(Key::O | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+y"); }
+			if (DengInput->KeyDown(Key::U | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-y"); }
+			if (DengInput->KeyDown(Key::I | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_+z"); }
+			if (DengInput->KeyDown(Key::K | INPUTMOD_SHIFT)) { admin->ExecCommand("rotate_-z"); }
 		}
 	}
 	{//// render ////
 		//reload all shaders
-		if (input->KeyPressed(Key::F5)) { admin->ExecCommand("shader_reload", "-1"); }
+		if (DengInput->KeyPressed(Key::F5)) { admin->ExecCommand("shader_reload", "-1"); }
 		
 		//fullscreen toggle
-		if (input->KeyPressed(Key::F11)) {
+		if (DengInput->KeyPressed(Key::F11)) {
 			if(admin->window->displayMode == DisplayMode::WINDOWED || admin->window->displayMode == DisplayMode::BORDERLESS){
 				admin->window->UpdateDisplayMode(DisplayMode::FULLSCREEN);
 			}else{
 				admin->window->UpdateDisplayMode(DisplayMode::WINDOWED);
 			}
 		}
-
-		if (input->KeyPressed(Key::P | INPUTMOD_CTRL)) {
+		
+		if (DengInput->KeyPressed(Key::P | INPUTMOD_CTRL)) {
 			admin->paused = !admin->paused;
 		}
-
+		
 	}
 	{//// camera ////
 		Camera* c = admin->mainCamera;
@@ -531,7 +517,7 @@ inline void HandleEditorInputs(EntityAdmin* admin){
 		//toggle ortho
 		static Vector3 ogpos;
 		static Vector3 ogrot;
-		if (DengInput->KeyPressed(DengKeys->perspectiveToggle)) {
+		if (DengInput->KeyPressed(DengKeys.perspectiveToggle)) {
 			switch (c->type) {
 				case(CameraType::PERSPECTIVE): {  
 					ogpos = c->position;
@@ -550,18 +536,18 @@ inline void HandleEditorInputs(EntityAdmin* admin){
 		}
 		
 		//ortho views
-		if (input->KeyPressed(DengKeys->orthoFrontView))    c->orthoview = FRONT;
-		if (input->KeyPressed(DengKeys->orthoBackView))     c->orthoview = BACK;
-		if (input->KeyPressed(DengKeys->orthoRightView))    c->orthoview = RIGHT;
-		if (input->KeyPressed(DengKeys->orthoLeftView))     c->orthoview = LEFT;
-		if (input->KeyPressed(DengKeys->orthoTopDownView))  c->orthoview = TOPDOWN;
-		if (input->KeyPressed(DengKeys->orthoBottomUpView)) c->orthoview = BOTTOMUP;
+		if (DengInput->KeyPressed(DengKeys.orthoFrontView))    c->orthoview = FRONT;
+		if (DengInput->KeyPressed(DengKeys.orthoBackView))     c->orthoview = BACK;
+		if (DengInput->KeyPressed(DengKeys.orthoRightView))    c->orthoview = RIGHT;
+		if (DengInput->KeyPressed(DengKeys.orthoLeftView))     c->orthoview = LEFT;
+		if (DengInput->KeyPressed(DengKeys.orthoTopDownView))  c->orthoview = TOPDOWN;
+		if (DengInput->KeyPressed(DengKeys.orthoBottomUpView)) c->orthoview = BOTTOMUP;
 	}
 	{//// undo/redo ////
 		UndoManager* um = &admin->undoManager;
 		
-		if (input->KeyPressed(DengKeys->undo)) { um->Undo(); }
-		if (input->KeyPressed(DengKeys->redo)) { um->Redo(); }
+		if (DengInput->KeyPressed(DengKeys.undo)) { um->Undo(); }
+		if (DengInput->KeyPressed(DengKeys.redo)) { um->Redo(); }
 	}
 }
 
@@ -583,9 +569,15 @@ inline void CheckBinds(EntityAdmin* admin) {
 	}
 }
 
-
-
-
+void Controller::Init(EntityAdmin* a, MovementMode m){
+	this->admin = a; this->mode = m;
+	
+	if(admin->state == GameState::PLAY || admin->state == GameState::PLAY_DEBUG){
+		admin->ExecCommand("window_cursor_mode", "1");
+	}
+	
+	AddBindings(a);
+}
 
 void Controller::Update() {
 	if (!admin->IMGUI_KEY_CAPTURE) {
