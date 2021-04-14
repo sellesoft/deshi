@@ -519,18 +519,32 @@ inline void HandleEditorInputs(EntityAdmin* admin){
 				admin->window->UpdateDisplayMode(DisplayMode::WINDOWED);
 			}
 		}
+
+		if (input->KeyPressed(Key::P | INPUTMOD_CTRL)) {
+			admin->paused = !admin->paused;
+		}
+
 	}
 	{//// camera ////
 		Camera* c = admin->mainCamera;
 		
 		//toggle ortho
-		if(input->KeyPressed(DengKeys->perspectiveToggle)) {
-			switch(c->type) {
-				case(CameraType::PERSPECTIVE):  { 
-					c->type = CameraType::ORTHOGRAPHIC; c->farZ = 1000000; c->UpdateProjectionMatrix(); 
+		static Vector3 ogpos;
+		static Vector3 ogrot;
+		if (DengInput->KeyPressed(DengKeys->perspectiveToggle)) {
+			switch (c->type) {
+				case(CameraType::PERSPECTIVE): {  
+					ogpos = c->position;
+					ogrot = c->rotation;
+					c->type = CameraType::ORTHOGRAPHIC; 
+					c->farZ = 1000000; 
 				} break;
 				case(CameraType::ORTHOGRAPHIC): { 
-					c->type = CameraType::PERSPECTIVE;  c->farZ = 1000;    c->UpdateProjectionMatrix(); 
+					c->position = ogpos; 
+					c->rotation = ogrot;
+					c->type = CameraType::PERSPECTIVE; 
+					c->farZ = 1000; 
+					c->UpdateProjectionMatrix(); 
 				} break;
 			}
 		}
