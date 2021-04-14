@@ -1,0 +1,127 @@
+typedef uint32 u32;
+typedef uint16 u16;
+typedef float  f32;
+
+typedef struct {
+    f32 x;
+    f32 y;
+    f32 z;
+} vec3<read=vec3Read>;
+
+string vec3Read( vec3 &v ) {
+    string s;
+    SPrintf(s, "x: %.2f, y: %.2f, z: %.2f", v.x, v.y, v.z);
+    return s;
+}
+
+typedef struct {
+    f32 _00; f32 _01; f32 _02;
+    f32 _10; f32 _11; f32 _12;
+    f32 _20; f32 _21; f32 _22;
+} mat3<read=mat3Read>;
+
+string mat3Read( mat3 &m ) {
+    string s;
+    SPrintf(s, "%.2f, %.2f, %.2f,\n%.2f, %.2f, %.2f,\n%.2f, %.2f, %.2f", 
+            _00, _01, _02, _10, _11, _12, _20, _21, _22);
+    return s;
+}
+
+typedef struct {
+    u32 value;
+} b32<read=b32Read>;
+
+string b32Read( b32 &b ) {
+    if(b.value != 0){
+        return "true";
+    }else{
+        return "false";
+    }
+}
+
+struct{
+    char magic[4]; //DESH
+    u32  flags;
+    u32  entity_count;
+    u32  entity_array_offset;
+    u32  component_type_count;
+    u32  component_type_header_array_offset;
+} header;
+
+struct{
+    char name[64];
+    u32  id;
+    u32  component_count;
+    vec3 position;
+    vec3 rotation;
+    vec3 scale;
+} entities[header.entity_count];
+
+struct{
+    u32 type;
+    u32 size;
+    u32 count;
+    u32 array_offset;
+} component_type_headers[header.component_type_count];
+
+//// component arrays ////
+
+struct{
+    u32  entity_id;
+    vec3 position;
+    vec3 velocity;
+    vec3 orientation;
+} audio_listeners[component_type_headers[0].count];
+
+struct{
+    u32  entity_id;
+} audio_sources[component_type_headers[1].count];
+
+struct{
+    u32  entity_id;
+    mat3 inertia_tensor;
+    byte collision_layer;
+    vec3 half_dimensions;
+} box_colliders[component_type_headers[2].count];
+
+struct{
+    u32  entity_id;
+    mat3 inertia_tensor;
+    byte collision_layer;
+    vec3 half_dimensions;
+} aabb_colliders[component_type_headers[3].count];
+
+struct{
+    u32  entity_id;
+    mat3 inertia_tensor;
+    byte collision_layer;
+    f32  half_dimensions;
+} sphere_colliders[component_type_headers[4].count];
+
+struct{
+    u32  entity_id;
+    vec3 position;
+    vec3 direction;
+    f32  strength;
+} lights[component_type_headers[5].count];
+
+struct{
+    u32 entity_id;
+    u16 instance_id;
+    u16 mesh_id;
+    b32 mesh_visible;
+    b32 entity_control;
+} mesh_comps[component_type_headers[6].count];
+
+struct{
+    u32  entity_id;
+    vec3 position;
+    vec3 rotation;
+    vec3 velocity;
+    vec3 acceleration;
+    vec3 rot_velocity;
+    vec3 rot_acceleration;
+    f32  elasticity;
+    f32  mass;
+    b32  is_static;
+} physics[component_type_headers[7].count];

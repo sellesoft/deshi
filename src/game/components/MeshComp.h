@@ -26,10 +26,10 @@ struct MeshComp : public Component {
 	
 	void ChangeMaterialShader(u32 s);
 	void ChangeMaterialTexture(u32 t);
-
+	
 	std::string Save() override;
 	void Load() override;
-
+	
 	
 	void ReceiveEvent(Event event) override;
 	void Update() override;

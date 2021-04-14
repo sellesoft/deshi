@@ -150,6 +150,7 @@ struct Entity {
 	u32 AddComponents(std::vector<Component*> components);
 	
 	Entity();
+	Entity(vec3 pos, vec3 rot, vec3 scale);
 	~Entity();
 };
 

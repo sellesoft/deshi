@@ -31,12 +31,16 @@
 #include "game/components/AudioSource.h"
 #include "game/components/MeshComp.h"
 #include "game/components/Orb.h"
+#include "game/components/Light.h"
 
 #include "game/systems/System.h"
 #include "game/systems/PhysicsSystem.h"
 #include "game/systems/CanvasSystem.h"
 #include "game/systems/WorldSystem.h"
 #include "game/systems/SoundSystem.h"
+
+#include <iostream>
+#include <fstream>
 
 //// EntityAdmin ////
 
@@ -133,8 +137,8 @@ void EntityAdmin::Update() {
 	
 	if (!pause_phys && !paused)    UpdateLayer(freeCompLayers[CL0_PHYSICS]);
 	if (!pause_phys && !paused)    physics->Update();
-	if (!pause_canvas)	           UpdateLayer(freeCompLayers[CL1_RENDCANVAS]);
-	if (!pause_canvas)	           canvas->Update();
+	if (!pause_canvas)             UpdateLayer(freeCompLayers[CL1_RENDCANVAS]);
+	if (!pause_canvas)             canvas->Update();
 	if (!pause_console)            UpdateLayer(freeCompLayers[CL2_WORLD]);
 	if (!pause_world && !paused)   world->Update();
 	if (!pause_sound && !paused)   UpdateLayer(freeCompLayers[CL3_SOUND]);
@@ -146,63 +150,238 @@ void EntityAdmin::Update() {
 	}
 }
 
+struct SaveHeader{
+	u32 magic;
+	u32 flags;
+	//u32 cameraOffset;
+	u32 entityCount;
+	u32 entityArrayOffset;
+	u32 componentTypeCount;
+	u32 componentTypeHeaderArrayOffset;
+};
+
+struct ComponentTypeHeader{
+	u32 type;
+	u32 size;
+	u32 count;
+	u32 arrayOffset;
+};
+
+typedef enum ComponentTypeBits : u32{
+	ComponentType_NONE,
+	ComponentType_AudioListener, ComponentType_AudioSource,    ComponentType_Camera,     ComponentType_ColliderBox,
+	ComponentType_ColliderAABB,  ComponentType_ColliderSphere, ComponentType_Controller, ComponentType_Light, 
+	ComponentType_MeshComp,      ComponentType_OrbManager,     ComponentType_Physics, 
+	ComponentType_LAST,
+} ComponentTypeBits; typedef u32 ComponentType;
+
 void EntityAdmin::Save() {
-	//generate header data
-	std::string file = "test.desh";
-	std::vector<Component*> comps;
+	//open file
+	std::string filepath = deshi::dirData() + "test.desh";
+	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
+	if(!file.is_open()){ ERROR("Failed to open file '", filepath, "' when trying to save"); return; }
 	
+	SaveHeader header;
+	file.write((const char*)&header, sizeof(SaveHeader)); //zero fill header
+	header.magic                          = 1213416772; //DESH
+	header.flags                          = 0;
+	//header.cameraOffset                   = 0;
+	header.entityCount                    = entities.size();
+	header.entityArrayOffset              = sizeof(SaveHeader);
 	
-	//gather components
-	for (auto e : entities){
-		comps.insert(comps.end(), e.second->components.begin(), e.second->components.end());
+	//// entities ////
+	//store sorted components and write entities
+	header.componentTypeCount = 8;
+	std::vector<AudioListener*>  compsAudioListener;
+	std::vector<AudioSource*>    compsAudioSource;
+	std::vector<BoxCollider*>    compsColliderBox;
+	std::vector<AABBCollider*>   compsColliderAABB;
+	std::vector<SphereCollider*> compsColliderSphere;
+	std::vector<Light*>          compsLight;
+	std::vector<MeshComp*>       compsMeshComp;
+	std::vector<Physics*>        compsPhysics;
+	
+	u32 compCount;
+	for(auto& pair : entities) {
+		//write entity
+		Entity* e = pair.second;
+		file.write(e->name, 64);
+		file.write((const char*)&e->id, sizeof(EntityID));
+		compCount = e->components.size();
+		file.write((const char*)&compCount, sizeof(u32));
+		file.write((const char*)&e->transform.position, sizeof(Vector3));
+		file.write((const char*)&e->transform.rotation, sizeof(Vector3));
+		file.write((const char*)&e->transform.scale, sizeof(Vector3));
+		
+		//sort components
+		for(auto c : e->components) {
+			if(dyncast(d, MeshComp, c)) {
+				compsMeshComp.push_back(d);
+			}else if(dyncast(d, Physics, c)) {
+				compsPhysics.push_back(d);
+			}else if(dyncast(col, Collider, c)){
+				if (dyncast(d, BoxCollider, col)){
+					compsColliderBox.push_back(d);
+				}else if(dyncast(d, AABBCollider, col)){
+					compsColliderAABB.push_back(d);
+				}else if(dyncast(d, SphereCollider, col)){
+					compsColliderSphere.push_back(d);
+				}else{
+					ERROR("Unhandled collider component '", c->name, "' found when attempting to save");
+				}
+			}else if(dyncast(d, AudioListener, c)){
+				compsAudioListener.push_back(d);
+			}else if(dyncast(d, AudioSource, c)){
+				compsAudioSource.push_back(d);
+			}else{
+				ERROR("Unhandled component '", c->name, "' found when attempting to save");
+			}
+		}
 	}
-	int compsize = comps.size();
-	int entsize = entities.size();
 	
-	//how many entities
-	deshi::writeFileBinary(file, (const char*)&entsize, sizeof(int));
-	//how many components
-	deshi::appendFileBinary(file, (const char*)&compsize, sizeof(int));
+	header.componentTypeHeaderArrayOffset = file.tellp();
+	
+	//// write component type headers ////
+	ComponentTypeHeader typeHeader;
+	
+	//audio listener
+	typeHeader.type        = ComponentType_AudioListener;
+	typeHeader.arrayOffset = header.componentTypeHeaderArrayOffset + sizeof(ComponentTypeHeader) * header.componentTypeCount;
+	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*3;
+	typeHeader.count       = compsAudioListener.size();
+	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
+	
+	//audio source
+	typeHeader.type        = ComponentType_AudioSource;
+	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
+	typeHeader.size        = sizeof(u32) + 0; //TODO(sushi) tell delle what data is important to save on a source
+	typeHeader.count       = compsAudioSource.size();
+	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
+	
+	//TODO(delle) update when colliders have triggers
+	//collider box
+	typeHeader.type        = ComponentType_ColliderBox;
+	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
+	typeHeader.size        = sizeof(u32) + sizeof(Matrix3) + sizeof(i8) + sizeof(Vector3);
+	typeHeader.count       = compsColliderBox.size();
+	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
+	
+	//collider aabb
+	typeHeader.type        = ComponentType_ColliderAABB;
+	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
+	typeHeader.size        = sizeof(u32) + sizeof(Matrix3) + sizeof(i8) + sizeof(Vector3);
+	typeHeader.count       = compsColliderAABB.size();
+	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
+	
+	//collider sphere
+	typeHeader.type        = ComponentType_ColliderSphere;
+	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
+	typeHeader.size        = sizeof(u32) + sizeof(Matrix3) + sizeof(i8) + sizeof(float);
+	typeHeader.count       = compsColliderSphere.size();
+	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
+	
+	//light
+	typeHeader.type        = ComponentType_Light;
+	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
+	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*2 + sizeof(float);
+	typeHeader.count       = compsLight.size();
+	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
+	
+	//mesh comp
+	typeHeader.type        = ComponentType_MeshComp;
+	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
+	typeHeader.size        = sizeof(u32) + sizeof(u16)*2 + sizeof(u32)*2; //instanceID, meshID, visible, entity_control
+	typeHeader.count       = compsMeshComp.size();
+	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
+	
+	//physics
+	typeHeader.type        = ComponentType_Physics;
+	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
+	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(u32);
+	typeHeader.count       = compsPhysics.size();
+	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
+	
+	//// write components ////
+	
+	//audio listener
+	for(auto c : compsAudioListener){
+		file.write((const char*)&c->entity->id,  sizeof(u32));
+		file.write((const char*)&c->position,    sizeof(Vector3));
+		file.write((const char*)&c->velocity,    sizeof(Vector3));
+		file.write((const char*)&c->orientation, sizeof(Vector3));
+	}
+	
+	//audio source
+	for(auto c : compsAudioSource){
+		file.write((const char*)&c->entity->id, sizeof(u32));
+	}
+	
+	//collider box
+	for(auto c : compsColliderBox){
+		file.write((const char*)&c->entity->id,     sizeof(u32));
+		file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
+		file.write((const char*)&c->collisionLayer, sizeof(i8));
+		file.write((const char*)&c->halfDims,       sizeof(Vector3));
+	}
+	
+	//collider aabb
+	for(auto c : compsColliderAABB){
+		file.write((const char*)&c->entity->id,     sizeof(u32));
+		file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
+		file.write((const char*)&c->collisionLayer, sizeof(i8));
+		file.write((const char*)&c->halfDims,       sizeof(Vector3));
+	}
+	
+	//collider sphere
+	for(auto c : compsColliderSphere){
+		file.write((const char*)&c->entity->id,     sizeof(u32));
+		file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
+		file.write((const char*)&c->collisionLayer, sizeof(i8));
+		file.write((const char*)&c->radius,         sizeof(float));
+	}
+	
+	//light
+	for(auto c : compsLight){
+		file.write((const char*)&c->entity->id, sizeof(u32));
+		file.write((const char*)&c->position,   sizeof(Vector3));
+		file.write((const char*)&c->direction,  sizeof(Vector3));
+		file.write((const char*)&c->strength,   sizeof(float));
+	}
+	
+	//mesh comp
+	for(auto c : compsMeshComp){
+		file.write((const char*)&c->entity->id,     sizeof(u32));
+		file.write((const char*)&c->InstanceID,     sizeof(u16));
+		file.write((const char*)&c->MeshID,         sizeof(u16));
+		file.write((const char*)&c->mesh_visible,   sizeof(u32));
+		file.write((const char*)&c->ENTITY_CONTROL, sizeof(u32));
+	}
+	
+	//physics
+	for(auto c : compsPhysics){
+		file.write((const char*)&c->entity->id,      sizeof(u32));
+		file.write((const char*)&c->position,        sizeof(Vector3));
+		file.write((const char*)&c->rotation,        sizeof(Vector3));
+		file.write((const char*)&c->velocity,        sizeof(Vector3));
+		file.write((const char*)&c->acceleration,    sizeof(Vector3));
+		file.write((const char*)&c->rotVelocity,     sizeof(Vector3));
+		file.write((const char*)&c->rotAcceleration, sizeof(Vector3));
+		file.write((const char*)&c->elasticity,      sizeof(float));
+		file.write((const char*)&c->mass,            sizeof(float));
+		file.write((const char*)&c->isStatic,        sizeof(u32));
+	}
 	
 	//store camera's size so we know offset to following entities list then store camera
-	int camsize = sizeof(*mainCamera);
-	deshi::appendFileBinary(file, (const char*)&camsize, sizeof(int));
-	deshi::appendFileBinary(file, (const char*)mainCamera, camsize);
-	
-	//store entities
-	//deshi::appendFileBinary(file, "ents", sizeof("ents"));
-	for (auto e : entities) {
-		deshi::appendFileBinary(file, (const char*)e.second, sizeof(*e.second));
-	}
-	
-	//store components in groups of type so they're packed together
-	//deshi::appendFileBinary(file, "comps", sizeof("comps"));
-	std::sort(comps.begin(), comps.end(), [](Component* c1, Component* c2) { return c1->sortid > c2->sortid; });
-	
-	//there must be a nicer way to do this
-	for (auto c : comps) {
-		if (dyncast(d, MeshComp, c))
-			deshi::appendFileBinary(file, (const char*)d, sizeof(*d));
-		else if (dyncast(d, AudioListener, c))
-			deshi::appendFileBinary(file, (const char*)d, sizeof(*d));
-		else if (dyncast(d, AudioSource, c))
-			deshi::appendFileBinary(file, (const char*)d, sizeof(*d));
-		else if (dyncast(d, BoxCollider, c))
-			deshi::appendFileBinary(file, (const char*)d, sizeof(*d));
-		else if (dyncast(d, AABBCollider, c))
-			deshi::appendFileBinary(file, (const char*)d, sizeof(*d));
-		else if (dyncast(d, SphereCollider, c))
-			deshi::appendFileBinary(file, (const char*)d, sizeof(*d));
-		else if (dyncast(d, OrbManager, c))
-			deshi::appendFileBinary(file, (const char*)d, sizeof(*d));
-		else if (dyncast(d, Physics, c))
-			deshi::appendFileBinary(file, (const char*)d, sizeof(*d));
-		else
-			LOG("Unknown component ", c->name, " found when attempting to save.");
-	}
+	//int camsize = sizeof(*mainCamera);
+	//deshi::appendFileBinary(file, (const char*)&camsize, sizeof(int));
+	//deshi::appendFileBinary(file, (const char*)mainCamera, camsize);
 	
 	
+	//// close file ////
+	file.seekp(0);
+	file.write((const char*)&header, sizeof(SaveHeader));
 	
+	file.close();
 }
 
 void EntityAdmin::Load(const char* filename) {
@@ -290,6 +469,10 @@ u32 Entity::AddComponents(std::vector<Component*> comps) {
 
 Entity::Entity() {
 	transform = Transform();
+}
+
+Entity::Entity(vec3 pos, vec3 rot, vec3 scale) {
+	transform = Transform(pos, rot, scale);
 }
 
 Entity::~Entity() {
