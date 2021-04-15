@@ -17,26 +17,31 @@ void WorldSystem::Update() {
 	//creation buffer
 	for(Entity* e : creationBuffer) {
 		admin->entities.emplace_back(admin, (u32)admin->entities.size(), e->transform, e->name, e->components);
-		for(Component* c : e->components){ c->entity = &admin->entities[admin->entities.size()-1]; }
+		for(Component* c : e->components){ 
+			c->entity = &admin->entities[admin->entities.size()-1]; 
+			c->Init();
+		}
 		operator delete(e); //call this to not delete components, but still delete the staging entity (doesnt call destructor)
 	}
 	creationBuffer.clear();
 }
 
-void WorldSystem::CreateEntity(EntityAdmin* admin, const char* name) {
+u32 WorldSystem::CreateEntity(EntityAdmin* admin, const char* name) {
 	Entity* e = new Entity;
 	e->SetName(name);
 	e->admin = admin;
 	creationBuffer.push_back(e);
+	return admin->entities.size() + creationBuffer.size() - 1;
 }
 
-void WorldSystem::CreateEntity(EntityAdmin* admin, std::vector<Component*> components, const char* name, Transform transform) {
+u32 WorldSystem::CreateEntity(EntityAdmin* admin, std::vector<Component*> components, const char* name, Transform transform) {
 	Entity* e = new Entity;
 	e->SetName(name);
 	e->admin = admin;
 	e->transform = transform;
 	e->AddComponents(components);
 	creationBuffer.push_back(e);
+	return admin->entities.size() + creationBuffer.size() - 1;
 }
 
 void WorldSystem::AddEntityToCreationBuffer(EntityAdmin* admin, Entity* entity) {

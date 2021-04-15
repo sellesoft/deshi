@@ -32,8 +32,8 @@ struct Keybinds{
 	
 	//debug menu stuff
 	Key::Key toggleConsole   = Key::TILDE;
-	Key::Key toggleDebugMenu = Key::TILDE | Key::LCTRL;
-	Key::Key toggleDebugBar  = Key::TILDE | Key::LSHIFT;
+	Key::Key toggleDebugMenu = Key::TILDE | INPUTMOD_CTRL;
+	Key::Key toggleDebugBar  = Key::TILDE | INPUTMOD_SHIFT;
 	
 	//main menu bar
 	Key::Key toggleMenuBar = Key::TILDE | Key::LALT;
@@ -43,8 +43,8 @@ struct Keybinds{
 	Key::Key rotateSelectedObject = Key::R;
 	Key::Key scaleSelectedObject  = Key::S;
 	
-	Key::Key undo = Key::Z | Key::LCTRL;
-	Key::Key redo = Key::Y | Key::LCTRL;
+	Key::Key undo = Key::Z | INPUTMOD_CTRL;
+	Key::Key redo = Key::Y | INPUTMOD_CTRL;
 	
 	//mapping enum names to strings
 	std::map<std::string, Key::Key>  stk;

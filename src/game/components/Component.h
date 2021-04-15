@@ -35,20 +35,21 @@ struct Component : public Receiver {
 	Sender* send = nullptr;
 	
 	Component(EntityAdmin* a = nullptr, Entity* e = nullptr);
+	virtual ~Component() { if(send) send->RemoveReceiver(this); };
 	
 	//sorting id for when we save because mmm yeah
 	int sortid;
-
+	
 	//store layer its on and where in that layer it is for deletion
 	CompLayer layer = NONE;
 	int layer_index;
 	
-	void ConnectSend(Component* c);
-	virtual ~Component() { if(send) send->RemoveReceiver(this); };
+	virtual void Init() {};
 	virtual void Update() {};
+	void ConnectSend(Component* c);
+	virtual void ReceiveEvent(Event event) override {};
 	virtual std::string Save();
 	virtual void Load();
-	virtual void ReceiveEvent(Event event) override {};
 	virtual std::string str(){ return ""; };
 };
 

@@ -252,7 +252,6 @@ Reset() {
 	indexBuffer.clear();
 	textures.clear();
 	meshes.clear();
-	basemeshes.clear();
 	materials.clear();
 	
 	LoadDefaultAssets();
@@ -329,13 +328,14 @@ TranslateTriangles(std::vector<u32> triangleIDs, Vector3 translation){
 	PRINT("Not implemented");
 }
 */
-u32 Renderer::
-LoadBaseMesh(Mesh* m){
-	PRINTVK(3, "    Loading Mesh: ", m->name);
+u32 Renderer::LoadBaseMesh(Mesh* m){
+	PRINTVK(3, "    Loading base mesh: ", m->name);
+	
+	
 	MeshVk mesh;  mesh.base = true; 
 	mesh.ptr = m; mesh.visible = false;
 	mesh.primitives.reserve(m->batchCount);
-	mesh.name = m->name;
+	strncpy_s(mesh.name, m->name, 63); mesh.name[63] = '\0';
 	
 	//resize scene vectors
 	vertexBuffer.reserve(vertexBuffer.size() + m->vertexCount);
@@ -436,6 +436,34 @@ LoadBaseMesh(Mesh* m){
 }
 
 u32 Renderer::
+CreateMesh(Scene* scene, const char* filename){\
+	//check if Mesh was already created
+	for(auto& model : scene->models){ 
+		if(strcmp(model.mesh.name, filename) == 0){ 
+			return CreateMesh(&model.mesh, Matrix4::IDENTITY);
+		} 
+	}
+	PRINTVK(3, "    Creating mesh: ", filename);
+	
+	scene->models.emplace_back(Mesh::CreateMeshFromOBJ(filename, filename));
+	
+	return CreateMesh(&scene->models[scene->models.size()-1].mesh, Matrix4::IDENTITY);
+}
+
+u32 Renderer::
+CreateMesh(Mesh* m, Matrix4 matrix){
+	//check if MeshVk was already 
+	for(auto& mesh : meshes){ 
+		if(strcmp(mesh.name, m->name) == 0){ 
+			return CreateMesh(mesh.id, m->transform);
+		} 
+	}
+	PRINTVK(3, "    Creating mesh: ", m->name);
+	
+	return CreateMesh(LoadBaseMesh(m), m->transform);
+}
+
+u32 Renderer::
 CreateMesh(u32 meshID, Matrix4 matrix){
 	if(meshID < meshes.size()){
 		PRINTVK(3, "    Creating Mesh: ", meshes[meshID].ptr->name);
@@ -443,7 +471,7 @@ CreateMesh(u32 meshID, Matrix4 matrix){
 		mesh.ptr = meshes[meshID].ptr; mesh.visible = true;
 		mesh.primitives = std::vector<PrimitiveVk>(meshes[meshID].primitives);
 		mesh.modelMatrix = glm::make_mat4(matrix.data);
-		mesh.name = meshes[meshID].name;
+		strncpy_s(mesh.name, meshes[meshID].name, 63); mesh.name[63] = '\0';
 		mesh.id = u32(meshes.size());
 		meshes.push_back(mesh);
 		meshes[meshID].children.push_back(mesh.id);
@@ -607,7 +635,7 @@ LoadTexture(Texture texture){
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	samplerInfo.magFilter = VK_FILTER_LINEAR;
 	samplerInfo.minFilter = VK_FILTER_LINEAR;
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; //TODO(delle,ReVu) VK_SAMPLER_MIPMAP_MODE_NEAREST for more performance
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; //TODO(delle,ReOp) VK_SAMPLER_MIPMAP_MODE_NEAREST for more performance
 	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -779,13 +807,6 @@ LoadDefaultAssets(){
 	//default default materials
 	CreateMaterial(0); //flat
 	CreateMaterial(1); //phong
-	
-	//load default meshes
-	Mesh* default_box = new Mesh; *default_box = Mesh::CreateBox(Vector3(1,1,1)); LoadBaseMesh(default_box);
-	Mesh* planar_box = new Mesh; *planar_box = Mesh::CreatePlanarBox(Vector3(1,1,1)); LoadBaseMesh(planar_box);
-	Mesh* textured_box = new Mesh; *textured_box = Mesh::CreatePlanarBox(Vector3(1,1,1), Texture("UV_Grid_Sm.jpg")); LoadBaseMesh(textured_box);
-	
-	//TODO(delle,ReVu) add local axis, global axis, and grid 
 }
 
 //ref: gltfscenerendering.cpp:350
@@ -1712,6 +1733,7 @@ CreateSceneBuffers(){
 	StagingBufferVk vertexStaging{}, indexStaging{};
 	size_t vertexBufferSize = vertexBuffer.size() * sizeof(VertexVk);
 	size_t indexBufferSize  = indexBuffer.size() * sizeof(u32);
+	if(vertexBufferSize == 0 || indexBufferSize == 0) return; //early out if empty buffers
 	
 	//create host visible vertex and index buffers (CPU/RAM)
 	CreateAndMapBuffer(vertexStaging.buffer, vertexStaging.memory, vertices.bufferSize, vertexBufferSize, vertexBuffer.data(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);

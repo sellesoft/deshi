@@ -72,6 +72,7 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	sound->Init(this);
 	
 	scene.Init();
+	renderer->LoadScene(&scene);
 	controller.Init(this);
 	keybinds.Init();
 	undoManager.Init();
@@ -82,19 +83,15 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	
 	/*
 	//orb testing
-	Entity* orbtest = world->CreateEntity(admin);
-	orbtest->name = "orbtest";
-	orbtest->admin = this;
-	Mesh mesh = Mesh::CreateMeshFromOBJ("box.obj", "sphere");
-	Texture tex("default1024.png");
-	admin->renderer->LoadTexture(tex);
-	mesh.batchArray[0].textureArray.push_back(tex);
-	mesh.batchArray[0].textureCount = 1;
-	mesh.batchArray[0].shader = Shader::PBR;
-	Mesh* m = new Mesh(mesh);
-	OrbManager* om = new OrbManager(m, this, orbtest);
-	admin->world->AddAComponentToEntity(admin, orbtest, om);
-	*/
+	Mesh* mesh = new Mesh(Mesh::CreateMeshFromOBJ("sphere.obj", "sphere.obj"));
+	//Texture tex("default1024.png");
+	//admin->renderer->LoadTexture(tex);
+	//*mesh.batchArray[0].textureArray.push_back(tex);
+	//*mesh.batchArray[0].textureCount = 1;
+	mesh->batchArray[0].shader = Shader::WIREFRAME;
+	OrbManager* om = new OrbManager(mesh, this);
+	world->CreateEntity(admin, {om}, "orbtest");
+*/
 }
 
 void EntityAdmin::Cleanup() {
@@ -403,10 +400,11 @@ void EntityAdmin::Load(const char* filename) {
 	entities.clear(); entities.reserve(1000);
 	for (auto& layer : freeCompLayers) { layer.clear(); } //TODO(delle) see if this causes a memory leak
 	
-	scene.Reset();
-	undoManager.Reset();
 	input->selectedEntity = 0;
+	undoManager.Reset();
+	scene.Reset();
 	renderer->Reset();
+	renderer->LoadScene(&scene);
 	
 	SUCCESS("Cleaned up previous level");
 	SUCCESS("Loading level: ", filename);
@@ -435,7 +433,16 @@ void EntityAdmin::Load(const char* filename) {
 	//parse and create entities
 	Entity tempEntity;
 	for_n(i,entityCount){
+		tempEntity.admin = this;
+		memcpy(&tempEntity.id, data+cursor, sizeof(u32) + 64 + sizeof(Vector3)*3);
+		cursor += sizeof(u32) + 64 + sizeof(Vector3)*3;
+	}
+	
+	//parse and load/create meshes
+	u32 id; char meshName[64];
+	for_n(i,meshCount){
 		
+		renderer->CreateMesh(&scene, meshName);
 	}
 	
 	//skip any ongoing updates

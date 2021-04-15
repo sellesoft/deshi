@@ -298,6 +298,9 @@ void CanvasSystem::DebugTools() {
 								vec3 oldVec = sel->transform.position;
 								SameLine(); if(InputVector3("position", &sel->transform.position)){
 									admin->undoManager.AddUndoTranslate(&sel->transform, &oldVec, &sel->transform.position);
+									if(Physics* p = sel->GetComponent<Physics>()){
+										p->position = sel->transform.position;
+									}
 								}
 								Separator();
 								
@@ -306,6 +309,9 @@ void CanvasSystem::DebugTools() {
 								oldVec = sel->transform.rotation;
 								SameLine(); if(InputVector3("rotation", &sel->transform.rotation)){
 									admin->undoManager.AddUndoRotate(&sel->transform, &oldVec, &sel->transform.rotation);
+									if(Physics* p = sel->GetComponent<Physics>()){
+										p->rotation = sel->transform.rotation;
+									}
 								}
 								Separator();
 								
@@ -445,7 +451,8 @@ void CanvasSystem::DebugTools() {
 				
 				SetPadding;
 				Text("Position ");
-				SameLine(); InputVector3("position", &c->position);
+				SameLine(); 
+				InputVector3("position", &c->position);
 				Separator();
 				
 				SetPadding;

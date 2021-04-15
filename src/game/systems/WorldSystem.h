@@ -40,10 +40,12 @@ struct WorldSystem : public System {
 	//// Entity Lifetime Functions ////
 	
 	//initializes an entity with no components and adds it to the creation buffer
-	void CreateEntity(EntityAdmin* admin, const char* name = 0);
+	//returns the eventual position in the admin's entities array
+	u32 CreateEntity(EntityAdmin* admin, const char* name = 0);
 	
 	//initializes an entity with a component vector and adds it to the creation buffer
-	void CreateEntity(EntityAdmin* admin, std::vector<Component*> components, const char* name = 0, Transform transform = Transform());
+	//returns the eventual position in the admin's entities array
+	u32 CreateEntity(EntityAdmin* admin, std::vector<Component*> components, const char* name = 0, Transform transform = Transform());
 	
 	//adds an already initialized entity to the creation buffer
 	//returns its place in the queue

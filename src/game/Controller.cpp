@@ -377,7 +377,7 @@ inline void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				xaxis = false; yaxis = false; zaxis = false; 
 				sel->transform.rotation = initialObjRot; initialrot = true;
 			}
-			if (DengInput->KeyPressed(0)) {
+			if (DengInput->KeyPressed(MouseButton::LEFT)) {
 				//drop the object if left click
 				xaxis = false; yaxis = false; zaxis = false;
 				initialrot = true; rotatingObj = false;  
