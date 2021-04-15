@@ -22,12 +22,12 @@ struct PhysicsTuple {
 
 inline std::vector<PhysicsTuple> GetPhysicsTuples(EntityAdmin* admin) {
 	std::vector<PhysicsTuple> out;
-	for(auto e : admin->entities) {
-		Transform* transform = &e.second->transform;
-		Physics* physics	 = nullptr;
-		Collider* collider	 = nullptr;
+	for(auto& e : admin->entities) {
+		Transform* transform = &e.transform;
+		Physics*   physics   = nullptr;
+		Collider* collider   = nullptr;
 		
-		for(Component* c : e.second->components) {
+		for(Component* c : e.components) {
 			if(Physics* phy = dynamic_cast<Physics*>(c)) { physics = phy; }
 			if(Collider* col = dynamic_cast<Collider*>(c)) { collider = col; }
 		}
@@ -50,7 +50,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time, float gra
 	
 	//add gravity TODO(,sushi) make this a var and toggle later
 	t.physics->AddForce(nullptr, Vector3(0, gravity, 0));
-
+	
 	//add temp air friction force
 	t.physics->AddFrictionForce(nullptr, pw->frictionAir);
 	
@@ -209,7 +209,7 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 		//TODO(sushi, Ph) finish implementing AABB dynamic collision
 		//get relative velocity
 		Vector3 relvel = obj2->velocity - obj1->velocity;
-
+		
 		
 	}
 	

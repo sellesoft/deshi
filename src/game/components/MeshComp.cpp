@@ -10,16 +10,17 @@ MeshComp::MeshComp() {
 	send = new Sender();
 	layer = CL1_RENDCANVAS;
 	sortid = 5;
-	r = admin->renderer;
 }
 
-MeshComp::MeshComp(Mesh* m) {
+MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
 	this->m = m;
+	this->MeshID = meshID;
+	this->InstanceID = instanceID;
+	
 	strncpy_s(name, "MeshComp", 63);
 	send = new Sender();
 	layer = CL1_RENDCANVAS;
 	sortid = 5;
-	//r = admin->renderer;
 }
 
 void MeshComp::ToggleVisibility() {
@@ -44,19 +45,20 @@ void MeshComp::ChangeMaterialShader(u32 s) {
 
 void MeshComp::ChangeMaterialTexture(u32 t) {
 	std::vector<u32> ids = admin->renderer->GetMaterialIDs(MeshID);
-
+	
 	for (u32 id : ids) {
 		admin->renderer->UpdateMaterialTexture(id, 0, t);
 	}
 }
-std::string MeshComp::Save() {
-	return TOSTRING(
-		"MeshID: ", MeshID, "\n",
-		"mesh_visible: ", mesh_visible, "\n",
-		"ENTITY_CONTROL: ", ENTITY_CONTROL, "\n");
-}
-void MeshComp::Load() {
 
+std::string MeshComp::Save() {
+	return TOSTRING("MeshID: ", MeshID, "\n",
+					"mesh_visible: ", mesh_visible, "\n",
+					"ENTITY_CONTROL: ", ENTITY_CONTROL, "\n");
+}
+
+void MeshComp::Load() {
+	
 }
 
 //this should only be used when the entity is not controlling the Mesh

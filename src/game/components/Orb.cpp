@@ -2,7 +2,6 @@
 #include "MeshComp.h"
 #include "../../core.h"
 #include "../../EntityAdmin.h"
-#include "../systems/WorldSystem.h"
 #include "../../scene/Model.h"
 #include "../../scene/Scene.h"
 
@@ -21,7 +20,7 @@ OrbManager::OrbManager(Mesh* m, EntityAdmin* a, Entity* e) {
 		orb->mc = mc;
 		mc->ENTITY_CONTROL = false;
 		orbs.push_back(orb);
-		admin->world->AddAComponentToEntity(admin, entity, mc);
+		entity->AddComponent(mc);
 		
 		u32 newid = admin->renderer->CreateMesh(id, Matrix4::TransformationMatrix(orb->pos, orb->rot, Vector3::ONE));
 		Model mod;

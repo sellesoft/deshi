@@ -23,24 +23,24 @@ struct Collider : public Component {
 struct BoxCollider : public Collider {
 	Vector3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
 	
-	BoxCollider(Entity* e, Vector3 halfDimensions, float mass, i8 collisionLayer = 0);
-	BoxCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, i8 collisionLayer = 0);
+	BoxCollider(Vector3 halfDimensions, float mass, i8 collisionLayer = 0);
+	BoxCollider(Vector3 halfDimensions, float mass, bool isTrigger, Command* command, i8 collisionLayer = 0);
 };
 
 //axis-aligned bounding box
 struct AABBCollider : public Collider {
 	Vector3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
 	
-	AABBCollider(Entity* e, Vector3 halfDimensions, float mass, i8 collisionLayer = 0);
-	AABBCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, i8 collisionLayer = 0);
+	AABBCollider(Vector3 halfDimensions, float mass, i8 collisionLayer = 0);
+	AABBCollider(Vector3 halfDimensions, float mass, bool isTrigger, Command* command, i8 collisionLayer = 0);
 	
 };
 
 struct SphereCollider : public Collider {
 	float radius;
 	
-	SphereCollider(Entity* e, float radius, float mass, i8 collisionLayer = 0);
-	SphereCollider(Entity* e, float radius, float mass, bool isTrigger, Command* command, i8 collisionLayer = 0);
+	SphereCollider(float radius, float mass, i8 collisionLayer = 0);
+	SphereCollider(float radius, float mass, bool isTrigger, Command* command, i8 collisionLayer = 0);
 };
 
 //TODO(delle,Ph) implement convexPolyCollider

@@ -64,13 +64,13 @@ operator *= (const Matrix4& rhs) {
 //// matrix3 ////
 
 inline Vector3 Matrix3::
-r(u32 row){
+row(u32 row){
 	ASSERT(row < 3, "Matrix3 subscript out of bounds");
 	return Vector3(&data[4*row]);
 }
 
 inline Vector3 Matrix3::
-c(u32 col){
+col(u32 col){
 	ASSERT(col < 3, "Matrix3 subscript out of bounds");
 	return Vector3(data[col], data[4+col], data[8+col]);
 }
@@ -103,13 +103,13 @@ ScaleMatrix(Vector3 scale) {
 //// matrix4 ////
 
 inline Vector4 Matrix4::
-r(u32 row){
+row(u32 row){
 	ASSERT(row < 4, "Matrix4 subscript out of bounds");
 	return Vector4(&data[4*row]);
 }
 
 inline Vector4 Matrix4::
-c(u32 col){
+col(u32 col){
 	ASSERT(col < 4, "Matrix4 subscript out of bounds");
 	return Vector4(data[col], data[4+col], data[8+col], data[12+col]);
 }
@@ -241,7 +241,7 @@ Rotation() {
 	} else {
 		return -Vector3(atan2((*this)(1, 0), (*this)(1, 1)),  M_PI / 2 , 0);
 	}
-
-
+	
+	
 }
 #endif //DESHI_VECTORMATRIX_H

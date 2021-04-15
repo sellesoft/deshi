@@ -218,7 +218,8 @@ struct Renderer{
 	//updates uploaded information, begins the command buffers, begins the render pass, 
 	//runs the different shader draw methods, ends the render pass
 	void Render();
-	void Present();
+	//clears the scene
+	void Reset();
 	//saves the pipeline cache to disk
 	void Cleanup();
 	

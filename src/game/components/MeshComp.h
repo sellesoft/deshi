@@ -13,10 +13,8 @@ struct MeshComp : public Component {
 	uint16 MeshID;
 	Mesh* m;
 	
-	Renderer* r;
-	
 	MeshComp();
-	MeshComp(Mesh* m);
+	MeshComp(Mesh* m, u32 meshID = 0, u32 instanceID = 0);
 	
 	bool mesh_visible = true;
 	bool ENTITY_CONTROL = true;

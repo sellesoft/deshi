@@ -245,7 +245,18 @@ Render() {
 }
 
 void Renderer::
-Present() {}
+Reset() {
+	vkDeviceWaitIdle(device); //wait before cleanup
+	
+	vertexBuffer.clear();
+	indexBuffer.clear();
+	textures.clear();
+	meshes.clear();
+	basemeshes.clear();
+	materials.clear();
+	
+	LoadDefaultAssets();
+}
 
 void Renderer::
 Cleanup() {
@@ -438,6 +449,7 @@ CreateMesh(u32 meshID, Matrix4 matrix){
 		meshes[meshID].children.push_back(mesh.id);
 		return mesh.id;
 	}
+	ERROR("There is no mesh with id: ", meshID);
 	return 0xFFFFFFFF;
 }
 
@@ -451,6 +463,8 @@ UnloadBaseMesh(u32 meshID){
 		}else{
 			ERROR("Only a base mesh can be unloaded");
 		}
+	}else{
+		ERROR("There is no mesh with id: ", meshID);
 	}
 }
 
@@ -464,6 +478,8 @@ RemoveMesh(u32 meshID){
 		}else{
 			ERROR("Only a child/non-base mesh can be removed");
 		}
+	}else{
+		ERROR("There is no mesh with id: ", meshID);
 	}
 }
 
@@ -472,6 +488,7 @@ GetMeshMatrix(u32 meshID){
 	if(meshID < meshes.size()){
 		return Matrix4((float*)glm::value_ptr(meshes[meshID].modelMatrix));
 	}
+	ERROR("There is no mesh with id: ", meshID);
 	return Matrix4(0.f);
 }
 
@@ -480,6 +497,7 @@ GetMeshPtr(u32 meshID){
 	if(meshID < meshes.size()){
 		return meshes[meshID].ptr;
 	}
+	ERROR("There is no mesh with id: ", meshID);
 	return nullptr;
 }
 
@@ -487,6 +505,8 @@ void Renderer::
 UpdateMeshMatrix(u32 meshID, Matrix4 matrix){
 	if(meshID < meshes.size()){
 		meshes[meshID].modelMatrix = glm::make_mat4(matrix.data);
+	}else{
+		ERROR("There is no mesh with id: ", meshID);
 	}
 }
 
@@ -494,14 +514,20 @@ void Renderer::
 TransformMeshMatrix(u32 meshID, Matrix4 transform){
 	if(meshID < meshes.size()){
 		meshes[meshID].modelMatrix = glm::make_mat4(transform.data) * meshes[meshID].modelMatrix;
+	}else{
+		ERROR("There is no mesh with id: ", meshID);
 	}
 }
 
 void Renderer::
 UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID){
-	if(meshID < meshes.size() && batchIndex < meshes[meshID].primitives.size() && matID < materials.size()){
-		meshes[meshID].primitives[batchIndex].materialIndex = matID;
-	}
+	if(meshID < meshes.size()){
+		if(batchIndex < meshes[meshID].primitives.size()){
+			if(matID < materials.size()){
+				meshes[meshID].primitives[batchIndex].materialIndex = matID;
+			}else{ ERROR("There is no material with id: ", matID); } 
+		}else{ ERROR("There is no batch on the mesh with id: ", batchIndex); }
+	}else{ ERROR("There is no mesh with id: ", meshID); }
 }
 
 void Renderer::
@@ -510,6 +536,8 @@ UpdateMeshVisibility(u32 meshID, bool visible){
 		for(auto& mesh : meshes){ mesh.visible = visible; }
 	}else if(meshID < meshes.size()){
 		meshes[meshID].visible = visible;
+	}else{
+		ERROR("There is no mesh with id: ", meshID);
 	}
 }
 /*
@@ -673,7 +701,7 @@ CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTex
 	return mat.id;
 }
 
-void Renderer::
+void Renderer:: //TODO(delle,Vu) add error logging
 UpdateMaterialTexture(u32 matID, u32 texSlot, u32 texID){
 	if(matID < materials.size() && texID < textures.size()){
 		VkWriteDescriptorSet writeDescriptorSet{};
@@ -709,7 +737,6 @@ UpdateMaterialTexture(u32 matID, u32 texSlot, u32 texID){
 		
 		vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 	}
-	
 }
 
 void Renderer::
@@ -719,19 +746,22 @@ UpdateMaterialShader(u32 matID, u32 shader){
 	}else if(matID < materials.size()){
 		materials[matID].pipeline = GetPipelineFromShader(shader);
 		materials[matID].shader = shader;
+	}else{
+		ERROR("There is no material with id: ", matID);
 	}
 }
 
 std::vector<u32> Renderer::
-GetMaterialIDs(u32 MeshID) {
-	if (MeshID < meshes.size()) {
-		MeshVk* m = &meshes[MeshID];
+GetMaterialIDs(u32 meshID) {
+	if (meshID < meshes.size()) {
+		MeshVk* m = &meshes[meshID];
 		std::vector<u32> out; out.resize(m->primitives.size());
 		for (auto& a : m->primitives) {
 			out.push_back(a.materialIndex);
 		}
 		return out;
 	}
+	ERROR("There is no mesh with id: ", meshID);
 	return std::vector<u32>();
 }
 

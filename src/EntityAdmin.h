@@ -50,7 +50,7 @@ struct EntityAdmin {
 	
 	GameState state = GameState::NONE;
 	
-	std::map<u32, Entity*> entities;
+	std::vector<Entity> entities;
 	//are we still doing this?  reply: eventually, not necessary for prototype
 	//object_pool<Component>* componentsPtr;
 	
@@ -80,6 +80,7 @@ struct EntityAdmin {
 	std::vector<ContainerManager<Component*>> freeCompLayers;
 	
 	//pause flags
+	b32  skip = false;
 	bool paused = false;
 	bool pause_command = false;
 	bool pause_phys = false;
@@ -115,20 +116,24 @@ struct Entity {
 	
 	u32 id;
 	char name[64];
-	std::vector<Component*> components;
 	Transform transform;
+	std::vector<Component*> components;
 	
 	Entity();
-	Entity(vec3 pos, vec3 rot, vec3 scale);
+	Entity(EntityAdmin* admin, u32 id, Transform transform = Transform(), 
+		   const char* name = 0, std::vector<Component*> components = {});
 	~Entity();
 	
 	std::string Save();
 	void Load(const char* filename);
 	
+	void SetName(const char* name);
 	//adds a component to the end of the components vector
 	//returns the position in the vector
-	u32 AddComponent(Component* component);
-	u32 AddComponents(std::vector<Component*> components);
+	void AddComponent(Component* component);
+	void AddComponents(std::vector<Component*> components);
+	void RemoveComponent(Component* component);
+	void RemoveComponents(std::vector<Component*> components);
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
 	template<class T>

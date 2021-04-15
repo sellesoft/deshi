@@ -260,8 +260,8 @@ void SoundSystem::Update() {
 	alListenerfv(AL_ORIENTATION, listenerOri);  TEST_ERROR;
 	
 	//check if any source is requesting to play audio
-	for (auto e : admin->entities) {
-		for (auto c : e.second->components) {
+	for (auto& e : admin->entities) {
+		for (auto c : e.components) {
 			if (AudioSource* s = dynamic_cast<AudioSource*>(c)) {
 				if (s->source_state != AL_PLAYING && s->request_play) {
 					sources.push_back(s);
