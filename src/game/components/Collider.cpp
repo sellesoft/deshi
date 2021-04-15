@@ -10,8 +10,7 @@
 
 
 
-BoxCollider::BoxCollider(Entity* e, Vector3 halfDimensions, float mass, i8 collisionLayer) {
-	this->entity = e;
+BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, i8 collisionLayer) {
 	this->halfDims = halfDimensions;
 	this->collisionLayer = collisionLayer;
 	this->isTrigger = false;
@@ -20,8 +19,7 @@ BoxCollider::BoxCollider(Entity* e, Vector3 halfDimensions, float mass, i8 colli
 	sortid = 2;
 }
 
-BoxCollider::BoxCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, i8 collisionLayer) {
-	this->entity = e;
+BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, bool isTrigger, Command* command, i8 collisionLayer) {
 	this->halfDims = halfDimensions;
 	this->collisionLayer = collisionLayer;
 	this->isTrigger = isTrigger;
@@ -41,8 +39,7 @@ BoxCollider::BoxCollider(Entity* e, Vector3 halfDimensions, float mass, bool isT
 
 
 
-AABBCollider::AABBCollider(Entity* e, Vector3 halfDimensions, float mass, i8 collisionLayer) {
-	this->entity = e;
+AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, i8 collisionLayer) {
 	this->halfDims = halfDimensions;
 	this->collisionLayer = collisionLayer;
 	this->isTrigger = false;
@@ -51,8 +48,7 @@ AABBCollider::AABBCollider(Entity* e, Vector3 halfDimensions, float mass, i8 col
 	sortid = 3;
 }
 
-AABBCollider::AABBCollider(Entity* e, Vector3 halfDimensions, float mass, bool isTrigger, Command* command, i8 collisionLayer) {
-	this->entity = e;
+AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, bool isTrigger, Command* command, i8 collisionLayer) {
 	this->halfDims = halfDimensions;
 	this->collisionLayer = collisionLayer;
 	this->isTrigger = isTrigger;
@@ -72,8 +68,7 @@ AABBCollider::AABBCollider(Entity* e, Vector3 halfDimensions, float mass, bool i
 
 
 
-SphereCollider::SphereCollider(Entity* e, float radius, float mass, i8 collisionLayer) {
-	this->entity = e;
+SphereCollider::SphereCollider(float radius, float mass, i8 collisionLayer) {
 	this->radius = radius;
 	this->collisionLayer = collisionLayer;
 	this->isTrigger = false;
@@ -82,8 +77,7 @@ SphereCollider::SphereCollider(Entity* e, float radius, float mass, i8 collision
 	sortid = 4;
 }
 
-SphereCollider::SphereCollider(Entity* e, float radius, float mass, bool isTrigger, Command* command, i8 collisionLayer) {
-	this->entity = e;
+SphereCollider::SphereCollider(float radius, float mass, bool isTrigger, Command* command, i8 collisionLayer) {
 	this->radius = radius;
 	this->collisionLayer = collisionLayer;
 	this->isTrigger = isTrigger;

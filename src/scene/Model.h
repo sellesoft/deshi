@@ -26,32 +26,6 @@ struct Texture {
 	Texture(const char* filename, TextureTypes textureType = TEXTURE_ALBEDO);
 };
 
-struct Vertex {
-	Vector3 pos{};
-	Vector2 uv;
-	Vector3 color{1.f, 1.f, 1.f}; //between 0 and 1
-	Vector3 normal{};
-	//bone index		4tuple
-	//bone weight		4tuple
-	Vertex() {}
-	Vertex(Vector3 pos, Vector2 uv, Vector3 color, Vector3 normal);
-	
-	bool operator==(const Vertex& other) const {
-		return pos == other.pos && color == other.color && uv == other.uv && normal == other.normal;
-	}
-};
-
-//this is a hash function to compare vertices for a hash map
-//pattern: OR unshifted and L-shifted, then R-shift the combo, 
-//then OR that with L-shifted, then R-shift the combo and repeat
-//until the last combo which is not R-shifted ((x^(y<<))>>)^(z<<)
-namespace std {
-	template<> struct hash<Vertex> {
-		size_t operator()(Vertex const& vertex) const {
-			return (((hash<Vector3>()(vertex.pos) ^ (hash<Vector2>()(vertex.uv) << 1)) >> 1) ^ (hash<Vector3>()(vertex.color) << 1) >> 1) ^ (hash<Vector3>()(vertex.normal) << 1);
-		}
-	};
-};
 
 enum ShaderFlagsBits : u32 {
 	SHADER_FLAGS_NONE = 0,
@@ -98,6 +72,41 @@ static std::map<std::string, Shader> stringtoshader = {
 	{"LAVALAMP",  LAVALAMP},
 	{"TESTING0",  TESTING0},
 	{"TESTING1",  TESTING1}
+};
+
+
+struct Material{
+	char name[64];
+	u32 shader;
+	u32 shaderFlags;
+	std::vector<Texture> textureArray;
+};
+
+struct Vertex {
+	Vector3 pos{};
+	Vector2 uv;
+	Vector3 color{1.f, 1.f, 1.f}; //between 0 and 1
+	Vector3 normal{};
+	//bone index		4tuple
+	//bone weight		4tuple
+	Vertex() {}
+	Vertex(Vector3 pos, Vector2 uv, Vector3 color, Vector3 normal);
+	
+	bool operator==(const Vertex& other) const {
+		return pos == other.pos && color == other.color && uv == other.uv && normal == other.normal;
+	}
+};
+
+//this is a hash function to compare vertices for a hash map
+//pattern: OR unshifted and L-shifted, then R-shift the combo, 
+//then OR that with L-shifted, then R-shift the combo and repeat
+//until the last combo which is not R-shifted ((x^(y<<))>>)^(z<<)
+namespace std {
+	template<> struct hash<Vertex> {
+		size_t operator()(Vertex const& vertex) const {
+			return (((hash<Vector3>()(vertex.pos) ^ (hash<Vector2>()(vertex.uv) << 1)) >> 1) ^ (hash<Vector3>()(vertex.color) << 1) >> 1) ^ (hash<Vector3>()(vertex.normal) << 1);
+		}
+	};
 };
 
 //NOTE indices should be clockwise
@@ -148,6 +157,7 @@ struct Model{
 	Mesh mesh;
 	
 	Model() {}
+	Model(Mesh mesh);
 };
 
 #endif //DESHI_MODEL_H

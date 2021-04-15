@@ -2,39 +2,32 @@
 #include "MeshComp.h"
 #include "../../core.h"
 #include "../../EntityAdmin.h"
-#include "../systems/WorldSystem.h"
 #include "../../scene/Model.h"
 #include "../../scene/Scene.h"
 
-
-
-OrbManager::OrbManager(Mesh* m, EntityAdmin* a, Entity* e) {	
-	//create the orbs and their mesh components
-	this->admin = a;
-	this->entity = e;
-	Mesh* mes = new Mesh(*m);
-	u32 id = admin->renderer->LoadBaseMesh(mes);
-	for (int i = 0; i < orbcount; i++) {
-		Orb* orb = new Orb(Vector3(10, 10, 10), Vector3::ONE * 0.1 * i, Vector3::ZERO, Vector3::ZERO);
-		
-		MeshComp* mc = new MeshComp(mes);
-		orb->mc = mc;
-		mc->ENTITY_CONTROL = false;
-		orbs.push_back(orb);
-		admin->world->AddAComponentToEntity(admin, entity, mc);
-		
-		u32 newid = admin->renderer->CreateMesh(id, Matrix4::TransformationMatrix(orb->pos, orb->rot, Vector3::ONE));
-		Model mod;
-		mod.mesh = *mes;
-		mc->MeshID = newid;
-		admin->scene.models.push_back(mod);
-	}
+OrbManager::OrbManager(Mesh* m, EntityAdmin* a, int orbcount) : Component(a) {
+	this->mesh = m;
+	this->orbcount = orbcount;
+	
 	strncpy_s(name, "OrbManager", 63);
 	this->name[63] = '\0';
-	
 	layer = CL0_PHYSICS;
 	sortid = 6;
 };
+
+void OrbManager::Init(){
+	//create the orbs and their mesh components
+	for (int i = 0; i < orbcount; i++) {
+		Orb* orb = new Orb(Vector3(10, 10, 10), Vector3::ONE * 0.1 * i, Vector3::ZERO, Vector3::ZERO);
+		
+		u32 id = admin->renderer->CreateMesh(mesh, Matrix4::TransformationMatrix(orb->pos, orb->rot, Vector3::ONE));
+		MeshComp* mc = new MeshComp(mesh, id);
+		orb->mc = mc;
+		mc->ENTITY_CONTROL = false;
+		entity->AddComponent(mc);
+		orbs.push_back(orb);
+	}
+}
 
 void OrbManager::ReceiveEvent(Event event) {
 	

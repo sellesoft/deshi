@@ -4,15 +4,12 @@
 
 #include "Component.h"
 #include "../../utils/defines.h"
-#include "../../math/Vector.h"
+#include "../../math/VectorMatrix.h"
 
 struct MeshComp;
 struct Mesh;
 
-
-
 struct Orb {
-	
 	Vector3 pos;
 	Vector3 posbflerp;
 	Vector3 origpos;
@@ -37,20 +34,15 @@ struct Orb {
 };
 
 struct OrbManager : public Component {
-	
-	OrbManager(Mesh* m, EntityAdmin* a, Entity* e);
-	
-	int orbcount = 100;
-	
-	
-	
+	int orbcount;
+	Mesh* mesh = nullptr;
 	std::vector<Orb*> orbs;
 	
+	OrbManager(Mesh* mesh, EntityAdmin* admin, int orbcount = 100);
 	
-	
-	
-	void ReceiveEvent(Event event) override;
+	void Init() override;
 	void Update() override;
+	void ReceiveEvent(Event event) override;
 };
 
 #endif //COMPONENT_ORB_H

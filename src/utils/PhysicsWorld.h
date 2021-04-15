@@ -14,7 +14,7 @@ struct PhysicsWorld {
 	IntegrationMode integrationMode      = IntegrationMode::EULER;
 	CollisionDetectionMode collisionMode = CollisionDetectionMode::DISCRETE;
 	
-	float gravity     = 9.81f;
+	float gravity     = -9.81f;
 	float frictionAir = 0.01f; //TODO(delle,Ph) this should depend on object shape
 	
 	float maxVelocity    = 100.f;

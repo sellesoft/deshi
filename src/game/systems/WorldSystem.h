@@ -29,7 +29,7 @@
 struct Entity;
 struct Component;
 struct EntityAdmin;
-typedef u32 EntityID;
+struct Transform;
 
 struct WorldSystem : public System {
 	void Update() override;
@@ -40,58 +40,20 @@ struct WorldSystem : public System {
 	//// Entity Lifetime Functions ////
 	
 	//initializes an entity with no components and adds it to the creation buffer
-	//returns the entity that was created
-	Entity* CreateEntity(EntityAdmin* admin);
-	
-	//initializes an entity with a single component and adds it to the creation buffer
-	//returns the entity that was created
-	Entity* CreateEntity(EntityAdmin* admin, Component* singleton);
+	//returns the eventual position in the admin's entities array
+	u32 CreateEntity(EntityAdmin* admin, const char* name = 0);
 	
 	//initializes an entity with a component vector and adds it to the creation buffer
-	//returns the entity that was created
-	Entity* CreateEntity(EntityAdmin* admin, std::vector<Component*> components);
+	//returns the eventual position in the admin's entities array
+	u32 CreateEntity(EntityAdmin* admin, std::vector<Component*> components, const char* name = 0, Transform transform = Transform());
 	
 	//adds an already initialized entity to the creation buffer
 	//returns its place in the queue
-	int32 AddEntityToCreationBuffer(EntityAdmin* admin, Entity* entity);
+	void AddEntityToCreationBuffer(EntityAdmin* admin, Entity* entity);
 	
 	//adds an already initialized entity to the deletion buffer
 	//returns its place in the queue, -1 if the entity could not be found
-	int32 AddEntityToDeletionBuffer(EntityAdmin* admin, Entity* entity);
-	
-	//// Entity Component Functions ////
-	
-	//adds a component to the end of an entity's components vector
-	//returns the position in the vector
-	int32 AddAComponentToEntity(EntityAdmin* admin, Entity* entity, Component* component);
-	
-	//adds components to the end of an entity's components vector
-	//returns the position of the first added component in the entity's vector
-	int32 AddComponentsToEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components);
-	
-	//adds a component to the end of the components vector of an entity that already exists in the world
-	//returns the position in the vector, or -1 if the entity could not be found
-	int32 AddAComponentToWorldEntity(EntityAdmin* admin, Entity* entity, Component* component);
-	
-	//adds components to the end of the components vector of an entity that already exists in the world
-	//returns the position of the first added component in the entity's vector, or -1 if the entity could not be found
-	int32 AddComponentsToWorldEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components);
-	
-	//returns an entity's component vector
-	//returns 0 if the entity could not be found
-	std::vector<Component*>* GetComponentsOnWorldEntity(EntityAdmin* admin, Entity* entity);
-	
-	//returns an entity's component vector
-	//returns 0 if the entity could not be found
-	inline std::vector<Component*>* GetComponentsOnEntity(Entity* entity);
-	
-	//removes and deletes a component from an entity's components vector
-	//returns true if successful removal, false otherwise
-	bool RemoveAComponentFromEntity(EntityAdmin* admin, Entity* entity, Component* component);
-	
-	//removes and deletes a component from an entity's components vector
-	//returns true if successful removal, false otherwise
-	bool RemoveComponentsFromEntity(EntityAdmin* admin, Entity* entity, std::vector<Component*> components);
+	void AddEntityToDeletionBuffer(EntityAdmin* admin, Entity* entity);
 };
 
 #endif //SYSTEM_WORLD_H

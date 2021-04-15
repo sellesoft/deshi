@@ -149,11 +149,10 @@ struct PrimitiveVk{
 	u32 materialIndex = 0xFFFFFFFF;
 };
 
-//TODO(delle) redo child/parent mesh structure
 struct MeshVk{
 	Mesh* ptr    = nullptr;
 	u32  id      = 0xFFFFFFFF;
-	std::string name = "";
+	char name[64];
 	bool visible = true;
 	bool base    = false;
 	glm::mat4 modelMatrix = glm::mat4(1.f);
@@ -218,7 +217,8 @@ struct Renderer{
 	//updates uploaded information, begins the command buffers, begins the render pass, 
 	//runs the different shader draw methods, ends the render pass
 	void Render();
-	void Present();
+	//clears the scene
+	void Reset();
 	//saves the pipeline cache to disk
 	void Cleanup();
 	
@@ -240,8 +240,10 @@ struct Renderer{
 	
 	//loads a mesh to the different shaders specified in its batches
 	//returns the ID of the mesh
-	u32  LoadBaseMesh(Mesh* mesh);
-	u32  CreateMesh(u32 meshID, Matrix4 matrix);
+	u32 LoadBaseMesh(Mesh* m);
+	u32 CreateMesh(Scene* scene, const char* filename);
+	u32 CreateMesh(Mesh* mesh, Matrix4 matrix);
+	u32 CreateMesh(u32 meshID, Matrix4 matrix);
 	void UnloadBaseMesh(u32 meshID);
 	void RemoveMesh(u32 meshID);
 	Matrix4 GetMeshMatrix(u32 meshID);
@@ -291,7 +293,6 @@ struct Renderer{
 	std::vector<u32>        indexBuffer  = std::vector<u32>(0);
 	std::vector<TextureVk>  textures     = std::vector<TextureVk>(0);
 	std::vector<MeshVk>     meshes       = std::vector<MeshVk>(0);
-	std::vector<MeshVk>     basemeshes   = std::vector<MeshVk>(0);
 	std::vector<MaterialVk> materials    = std::vector<MaterialVk>(0);
 	
 	//////////////////////////////

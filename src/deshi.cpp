@@ -39,6 +39,7 @@ begin reimplementing sound system and maybe rethink its design a bit
 
 Render TODOs
 ------------
+redo MeshVk so its only child meshes
 add lighting and shadows
 add 2D shader and interface functions
 add vertex editing

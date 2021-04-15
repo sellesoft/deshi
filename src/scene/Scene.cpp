@@ -1,12 +1,20 @@
 #include "Scene.h"
 #include "../game/Transform.h"
 
-void Scene::Init(){}
+void Scene::Init(){
+	models.emplace_back(Mesh::CreateBox(Vector3(1,1,1)));
+	models.emplace_back(Mesh::CreatePlanarBox(Vector3(1,1,1)));
+	models.emplace_back(Mesh::CreatePlanarBox(Vector3(1,1,1), Texture("UV_Grid_Sm.jpg")));
+	
+	//TODO(delle,ReVu) add local axis, global axis, and grid meshes
+}
 
 void Scene::Reset(){
 	models.clear();
 	lights.clear();
 	lines.clear();
+	
+	Init();
 }
 
 std::pair<Vector3, Vector3> Scene::SceneBoundingBox() {

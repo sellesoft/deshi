@@ -152,18 +152,17 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 	DengInput->selectedEntity = nullptr;
 	Vector3 p0, p1, p2, norm;
 	Matrix4 rot;
-	for (auto ep : admin->entities) {
-		Entity* e = ep.second;
-		if (MeshComp* mc = e->GetComponent<MeshComp>()) {
+	for (auto& e : admin->entities) {
+		if (MeshComp* mc = e.GetComponent<MeshComp>()) {
 			if (mc->mesh_visible) {
 				Mesh* m = mc->m;
 				for (auto& b : m->batchArray) {
 					for (int i = 0; i < b.indexArray.size(); i += 3) {
 						float t = 0;
 						
-						p0 = b.vertexArray[b.indexArray[i]].pos + e->transform.position;
-						p1 = b.vertexArray[b.indexArray[i + 1]].pos + e->transform.position;
-						p2 = b.vertexArray[b.indexArray[i + 2]].pos + e->transform.position;
+						p0 = b.vertexArray[b.indexArray[i]].pos + e.transform.position;
+						p1 = b.vertexArray[b.indexArray[i + 1]].pos + e.transform.position;
+						p2 = b.vertexArray[b.indexArray[i + 2]].pos + e.transform.position;
 						
 						norm = (p1 - p0).cross(p2 - p0);
 						
@@ -179,9 +178,9 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 							(v12 * rot).dot(p1 - inter) < 0 &&
 							(v20 * rot).dot(p2 - inter) < 0) {
 							
-							DengInput->selectedEntity = e;
-							if(oldEnt != e){
-								admin->undoManager.AddUndoSelect((void**)&DengInput->selectedEntity, oldEnt, e);
+							DengInput->selectedEntity = &e;
+							if(oldEnt != &e){
+								admin->undoManager.AddUndoSelect((void**)&DengInput->selectedEntity, oldEnt, &e);
 							}
 							goto endloop;
 						}
@@ -396,7 +395,7 @@ inline void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				xaxis = false; yaxis = false; zaxis = false; 
 				sel->transform.rotation = initialObjRot; initialrot = true;
 			}
-			if (DengInput->KeyPressed(0)) {
+			if (DengInput->KeyPressed(MouseButton::LEFT)) {
 				//drop the object if left click
 				xaxis = false; yaxis = false; zaxis = false;
 				initialrot = true; rotatingObj = false;  

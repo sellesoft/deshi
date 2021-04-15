@@ -92,8 +92,8 @@ struct Matrix3 {
 	Matrix4 To4x4();
 	
 	//vector interactions
-	Vector3 r(u32 row);
-	Vector3 c(u32 col);
+	Vector3 row(u32 row);
+	Vector3 col(u32 col);
 	static Matrix3 RotationMatrix(Vector3 rotation);
 	static Matrix3 ScaleMatrix(Vector3 scale);
 };
@@ -156,8 +156,8 @@ struct Matrix4 {
 	Matrix3 To3x3();
 	
 	//vector interactions
-	Vector4 r(u32 row);
-	Vector4 c(u32 col);
+	Vector4 row(u32 row);
+	Vector4 col(u32 col);
 	Vector3 Translation();
 	Vector3 Rotation();
 	Vector3 Scale();

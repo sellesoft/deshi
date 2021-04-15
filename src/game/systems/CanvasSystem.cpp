@@ -261,15 +261,15 @@ void CanvasSystem::DebugTools() {
 					counter++;
 					PushID(counter);
 					TableNextRow(); TableNextColumn();
-					std::string id = std::to_string(entity.first);
+					std::string id = std::to_string(entity.id);
 					//SetCursorPosX((GetColumnWidth() - (fontsize - (fontsize / 2)) * id.size()) / 2);
 					if (ImGui::Button(id.c_str())) {
-						admin->input->selectedEntity = entity.second;
+						admin->input->selectedEntity = &entity;
 					}
 					TableNextColumn();
 					
 					//TODO(UiEnt, sushi) implement visibility for things other than meshes like lights, etc.
-					if (MeshComp* m = entity.second->GetComponent<MeshComp>()) {
+					if (MeshComp* m = entity.GetComponent<MeshComp>()) {
 						if (m->mesh_visible) {
 							if (SmallButton("O")) {
 								m->ToggleVisibility();
@@ -286,30 +286,30 @@ void CanvasSystem::DebugTools() {
 					}
 					
 					TableNextColumn();
-					Text(TOSTRING(" ", entity.second->name).c_str());
+					Text(TOSTRING(" ", entity.name).c_str());
 					static bool rename = false;
 					static char buff[64] = {};
 					static char ogname[64] = {};
 					if (ImGui::IsItemClicked()) {
 						rename = true;
-						strncpy_s(buff, entity.second->name, 64);
-						strncpy_s(ogname, entity.second->name, 64);
+						strncpy_s(buff, entity.name, 64);
+						strncpy_s(ogname, entity.name, 64);
 					}
 					
 					if (rename) {
 						if (ImGui::InputText("name input", buff, sizeof(buff), ImGuiInputTextFlags_EnterReturnsTrue)) {
-							strncpy_s(entity.second->name, buff, 64);
+							strncpy_s(entity.name, buff, 64);
 							rename = false;
 						}
 						if (DengInput->KeyPressed(Key::ESCAPE)) {
-							strncpy_s(entity.second->name, ogname, 64);
+							strncpy_s(entity.name, ogname, 64);
 							rename = false;
 						}
 					}
 					
 					TableNextColumn();
 					//TODO(sushi, Ui) find something better to put here
-					Text(TOSTRING(" comps: ", entity.second->components.size()).c_str());
+					Text(TOSTRING(" comps: ", entity.components.size()).c_str());
 					PopID();
 				}
 				
@@ -351,6 +351,9 @@ void CanvasSystem::DebugTools() {
 								vec3 oldVec = sel->transform.position;
 								SameLine(); if(InputVector3("position", &sel->transform.position)){
 									admin->undoManager.AddUndoTranslate(&sel->transform, &oldVec, &sel->transform.position);
+									if(Physics* p = sel->GetComponent<Physics>()){
+										p->position = sel->transform.position;
+									}
 								}
 								Separator();
 								
@@ -359,6 +362,9 @@ void CanvasSystem::DebugTools() {
 								oldVec = sel->transform.rotation;
 								SameLine(); if(InputVector3("rotation", &sel->transform.rotation)){
 									admin->undoManager.AddUndoRotate(&sel->transform, &oldVec, &sel->transform.rotation);
+									if(Physics* p = sel->GetComponent<Physics>()){
+										p->rotation = sel->transform.rotation;
+									}
 								}
 								Separator();
 								
@@ -388,7 +394,7 @@ void CanvasSystem::DebugTools() {
 										Text(c->name);
 										SameLine(CalcItemWidth() + 20);
 										if (Button("Del")) {
-											admin->world->RemoveAComponentFromEntity(admin, sel, c);
+											sel->RemoveComponent(c);
 										}
 									}
 									ImGui::EndTable();
@@ -497,7 +503,8 @@ void CanvasSystem::DebugTools() {
 				
 				SetPadding;
 				Text("Position ");
-				SameLine(); InputVector3("position", &c->position);
+				SameLine(); 
+				InputVector3("position", &c->position);
 				Separator();
 				
 				SetPadding;

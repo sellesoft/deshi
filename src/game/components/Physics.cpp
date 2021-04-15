@@ -12,7 +12,7 @@ Physics::Physics() {
 	elasticity = 1;
 	mass = 1;
 	isStatic = false;
-
+	
 	strncpy_s(name, "Physics", 63);
 	sortid = 7;
 }
@@ -28,9 +28,9 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	this->elasticity = elasticity;
 	this->mass = mass;
 	this->isStatic = isStatic;
-
+	
 	strncpy_s(name, "Physics", 63);
-
+	
 	layer = PHYS_LAYER;
 	sortid = 7;
 }
@@ -44,10 +44,10 @@ Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticit
 	this->rotAcceleration = Vector3::ZERO;
 	this->mass = mass;
 	this->elasticity = elasticity;
-
+	
 	strncpy_s(name, "Physics", 63);
 	this->name[63] = '\0';
-
+	
 	layer = PHYS_LAYER;
 	sortid = 7;
 }
@@ -65,8 +65,8 @@ void Physics::AddForce(Physics* creator, Vector3 force) {
 	if(creator) { creator->forces.push_back(-force); }
 }
 
-void Physics::AddFrictionForce(Physics* creator, float frictionCoef, float gravity) {
-	forces.push_back(-velocity.normalized() * frictionCoef * mass);// * gravity);
+void Physics::AddFrictionForce(Physics* creator, float frictionCoef) {
+	forces.push_back(-velocity.normalized() * frictionCoef * mass);
 	if (creator) { 
 		//TODO(delle,Ph) implement sliding friction between two objects
 	}

@@ -245,7 +245,17 @@ Render() {
 }
 
 void Renderer::
-Present() {}
+Reset() {
+	vkDeviceWaitIdle(device); //wait before cleanup
+	
+	vertexBuffer.clear();
+	indexBuffer.clear();
+	textures.clear();
+	meshes.clear();
+	materials.clear();
+	
+	LoadDefaultAssets();
+}
 
 void Renderer::
 Cleanup() {
@@ -318,13 +328,14 @@ TranslateTriangles(std::vector<u32> triangleIDs, Vector3 translation){
 	PRINT("Not implemented");
 }
 */
-u32 Renderer::
-LoadBaseMesh(Mesh* m){
-	PRINTVK(3, "    Loading Mesh: ", m->name);
+u32 Renderer::LoadBaseMesh(Mesh* m){
+	PRINTVK(3, "    Loading base mesh: ", m->name);
+	
+	
 	MeshVk mesh;  mesh.base = true; 
 	mesh.ptr = m; mesh.visible = false;
 	mesh.primitives.reserve(m->batchCount);
-	mesh.name = m->name;
+	strncpy_s(mesh.name, m->name, 63); mesh.name[63] = '\0';
 	
 	//resize scene vectors
 	vertexBuffer.reserve(vertexBuffer.size() + m->vertexCount);
@@ -425,6 +436,34 @@ LoadBaseMesh(Mesh* m){
 }
 
 u32 Renderer::
+CreateMesh(Scene* scene, const char* filename){\
+	//check if Mesh was already created
+	for(auto& model : scene->models){ 
+		if(strcmp(model.mesh.name, filename) == 0){ 
+			return CreateMesh(&model.mesh, Matrix4::IDENTITY);
+		} 
+	}
+	PRINTVK(3, "    Creating mesh: ", filename);
+	
+	scene->models.emplace_back(Mesh::CreateMeshFromOBJ(filename, filename));
+	
+	return CreateMesh(&scene->models[scene->models.size()-1].mesh, Matrix4::IDENTITY);
+}
+
+u32 Renderer::
+CreateMesh(Mesh* m, Matrix4 matrix){
+	//check if MeshVk was already 
+	for(auto& mesh : meshes){ 
+		if(strcmp(mesh.name, m->name) == 0){ 
+			return CreateMesh(mesh.id, m->transform);
+		} 
+	}
+	PRINTVK(3, "    Creating mesh: ", m->name);
+	
+	return CreateMesh(LoadBaseMesh(m), m->transform);
+}
+
+u32 Renderer::
 CreateMesh(u32 meshID, Matrix4 matrix){
 	if(meshID < meshes.size()){
 		PRINTVK(3, "    Creating Mesh: ", meshes[meshID].ptr->name);
@@ -432,12 +471,13 @@ CreateMesh(u32 meshID, Matrix4 matrix){
 		mesh.ptr = meshes[meshID].ptr; mesh.visible = true;
 		mesh.primitives = std::vector<PrimitiveVk>(meshes[meshID].primitives);
 		mesh.modelMatrix = glm::make_mat4(matrix.data);
-		mesh.name = meshes[meshID].name;
+		strncpy_s(mesh.name, meshes[meshID].name, 63); mesh.name[63] = '\0';
 		mesh.id = u32(meshes.size());
 		meshes.push_back(mesh);
 		meshes[meshID].children.push_back(mesh.id);
 		return mesh.id;
 	}
+	ERROR("There is no mesh with id: ", meshID);
 	return 0xFFFFFFFF;
 }
 
@@ -451,6 +491,8 @@ UnloadBaseMesh(u32 meshID){
 		}else{
 			ERROR("Only a base mesh can be unloaded");
 		}
+	}else{
+		ERROR("There is no mesh with id: ", meshID);
 	}
 }
 
@@ -464,6 +506,8 @@ RemoveMesh(u32 meshID){
 		}else{
 			ERROR("Only a child/non-base mesh can be removed");
 		}
+	}else{
+		ERROR("There is no mesh with id: ", meshID);
 	}
 }
 
@@ -472,6 +516,7 @@ GetMeshMatrix(u32 meshID){
 	if(meshID < meshes.size()){
 		return Matrix4((float*)glm::value_ptr(meshes[meshID].modelMatrix));
 	}
+	ERROR("There is no mesh with id: ", meshID);
 	return Matrix4(0.f);
 }
 
@@ -480,6 +525,7 @@ GetMeshPtr(u32 meshID){
 	if(meshID < meshes.size()){
 		return meshes[meshID].ptr;
 	}
+	ERROR("There is no mesh with id: ", meshID);
 	return nullptr;
 }
 
@@ -487,6 +533,8 @@ void Renderer::
 UpdateMeshMatrix(u32 meshID, Matrix4 matrix){
 	if(meshID < meshes.size()){
 		meshes[meshID].modelMatrix = glm::make_mat4(matrix.data);
+	}else{
+		ERROR("There is no mesh with id: ", meshID);
 	}
 }
 
@@ -494,14 +542,20 @@ void Renderer::
 TransformMeshMatrix(u32 meshID, Matrix4 transform){
 	if(meshID < meshes.size()){
 		meshes[meshID].modelMatrix = glm::make_mat4(transform.data) * meshes[meshID].modelMatrix;
+	}else{
+		ERROR("There is no mesh with id: ", meshID);
 	}
 }
 
 void Renderer::
 UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID){
-	if(meshID < meshes.size() && batchIndex < meshes[meshID].primitives.size() && matID < materials.size()){
-		meshes[meshID].primitives[batchIndex].materialIndex = matID;
-	}
+	if(meshID < meshes.size()){
+		if(batchIndex < meshes[meshID].primitives.size()){
+			if(matID < materials.size()){
+				meshes[meshID].primitives[batchIndex].materialIndex = matID;
+			}else{ ERROR("There is no material with id: ", matID); } 
+		}else{ ERROR("There is no batch on the mesh with id: ", batchIndex); }
+	}else{ ERROR("There is no mesh with id: ", meshID); }
 }
 
 void Renderer::
@@ -510,6 +564,8 @@ UpdateMeshVisibility(u32 meshID, bool visible){
 		for(auto& mesh : meshes){ mesh.visible = visible; }
 	}else if(meshID < meshes.size()){
 		meshes[meshID].visible = visible;
+	}else{
+		ERROR("There is no mesh with id: ", meshID);
 	}
 }
 /*
@@ -579,7 +635,7 @@ LoadTexture(Texture texture){
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	samplerInfo.magFilter = VK_FILTER_LINEAR;
 	samplerInfo.minFilter = VK_FILTER_LINEAR;
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; //TODO(delle,ReVu) VK_SAMPLER_MIPMAP_MODE_NEAREST for more performance
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; //TODO(delle,ReOp) VK_SAMPLER_MIPMAP_MODE_NEAREST for more performance
 	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -673,7 +729,7 @@ CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTex
 	return mat.id;
 }
 
-void Renderer::
+void Renderer:: //TODO(delle,Vu) add error logging
 UpdateMaterialTexture(u32 matID, u32 texSlot, u32 texID){
 	if(matID < materials.size() && texID < textures.size()){
 		VkWriteDescriptorSet writeDescriptorSet{};
@@ -709,7 +765,6 @@ UpdateMaterialTexture(u32 matID, u32 texSlot, u32 texID){
 		
 		vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 	}
-	
 }
 
 void Renderer::
@@ -719,19 +774,22 @@ UpdateMaterialShader(u32 matID, u32 shader){
 	}else if(matID < materials.size()){
 		materials[matID].pipeline = GetPipelineFromShader(shader);
 		materials[matID].shader = shader;
+	}else{
+		ERROR("There is no material with id: ", matID);
 	}
 }
 
 std::vector<u32> Renderer::
-GetMaterialIDs(u32 MeshID) {
-	if (MeshID < meshes.size()) {
-		MeshVk* m = &meshes[MeshID];
+GetMaterialIDs(u32 meshID) {
+	if (meshID < meshes.size()) {
+		MeshVk* m = &meshes[meshID];
 		std::vector<u32> out; out.resize(m->primitives.size());
 		for (auto& a : m->primitives) {
 			out.push_back(a.materialIndex);
 		}
 		return out;
 	}
+	ERROR("There is no mesh with id: ", meshID);
 	return std::vector<u32>();
 }
 
@@ -749,13 +807,6 @@ LoadDefaultAssets(){
 	//default default materials
 	CreateMaterial(0); //flat
 	CreateMaterial(1); //phong
-	
-	//load default meshes
-	Mesh* default_box = new Mesh; *default_box = Mesh::CreateBox(Vector3(1,1,1)); LoadBaseMesh(default_box);
-	Mesh* planar_box = new Mesh; *planar_box = Mesh::CreatePlanarBox(Vector3(1,1,1)); LoadBaseMesh(planar_box);
-	Mesh* textured_box = new Mesh; *textured_box = Mesh::CreatePlanarBox(Vector3(1,1,1), Texture("UV_Grid_Sm.jpg")); LoadBaseMesh(textured_box);
-	
-	//TODO(delle,ReVu) add local axis, global axis, and grid 
 }
 
 //ref: gltfscenerendering.cpp:350
@@ -1682,6 +1733,7 @@ CreateSceneBuffers(){
 	StagingBufferVk vertexStaging{}, indexStaging{};
 	size_t vertexBufferSize = vertexBuffer.size() * sizeof(VertexVk);
 	size_t indexBufferSize  = indexBuffer.size() * sizeof(u32);
+	if(vertexBufferSize == 0 || indexBufferSize == 0) return; //early out if empty buffers
 	
 	//create host visible vertex and index buffers (CPU/RAM)
 	CreateAndMapBuffer(vertexStaging.buffer, vertexStaging.memory, vertices.bufferSize, vertexBufferSize, vertexBuffer.data(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);

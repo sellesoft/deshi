@@ -518,11 +518,9 @@ void Console::AddRenderCommands() {
 							}
 							
 							u32 id = admin->renderer->CreateMesh(2, Matrix4::TransformationMatrix(position, rotation, scale));
-							Mesh* ptr = admin->renderer->GetMeshPtr(id);
 							
-							MeshComp* mc = new MeshComp(ptr);
-							mc->MeshID = id;
-							Entity* e = admin->world->CreateEntity(admin, { mc });
+							MeshComp* mc = new MeshComp(admin->renderer->GetMeshPtr(id), id);
+							admin->world->CreateEntity(admin, { mc }, "uv_texture_box", Transform(position, rotation, scale));
 							
 							return TOSTRING("Created textured box with id: ", id);
 						}catch(...){
@@ -638,9 +636,9 @@ void Console::AddRenderCommands() {
 								
 								MeshComp* mc = new MeshComp(ptr);
 								mc->MeshID = id;
-								Physics* p = new Physics(Vector3(0,0,0), Vector3(0,0,0));
+								Physics* p = new Physics(position, rotation);
 								AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
-								Entity* e = admin->world->CreateEntity(admin, { mc, p, s });
+								admin->world->CreateEntity(admin, { mc, p, s });
 								
 								return TOSTRING("Created mesh with id: ", id, " based on mesh: ", meshID);
 							}
@@ -704,7 +702,6 @@ void Console::AddRenderCommands() {
 	commands["load_obj"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 						if (args.size() > 0) {
-							Mesh mesh;
 							std::cmatch m;
 							Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
 							float mass;
@@ -758,15 +755,14 @@ void Console::AddRenderCommands() {
 								}
 							}
 							
-							//create the mesh and give to the renderer if its a base
-							if (!loaded) {
-								mesh = Mesh::CreateMeshFromOBJ(args[0], name,
-															   Matrix4::TransformationMatrix(position, rotation, scale));
-								id = admin->renderer->LoadBaseMesh(&mesh);
-							}
+							//cut off the .obj extension for entity name
+							char name[64];
+							strncpy_s(name, args[0].substr(0, args[0].size() - 4).c_str(), 63);
+							name[63] = '\0';
 							
-							//Need to make this so that MeshComp has a mesh that isn't deleted 
-							Mesh* mes = new Mesh(mesh);
+							//create the mesh
+							u32 id = admin->renderer->CreateMesh(&admin->scene, args[0].c_str());
+							Mesh* mesh = admin->renderer->GetMeshPtr(id);
 							
 							
 							strncpy_s(e->name, name, 63);
@@ -776,14 +772,8 @@ void Console::AddRenderCommands() {
 							p->isStatic = staticc;
 							if (!col) col = new AABBCollider(e, Vector3(0.5, 0.5, 0.5), 1);
 							AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
-							admin->world->AddComponentsToEntity(admin, e, { mc, p, s, col });
-							
-							u32 newid = admin->renderer->CreateMesh(id, Matrix4::TransformationMatrix(position, rotation, scale));
-							Model mod;
-							mod.mesh = mesh;
-							mc->MeshID = newid;
-							admin->scene.models.push_back(mod);
-							
+							admin->world->CreateEntity(admin, { mc, p, s, col }, 
+													   name, Transform(position, rotation, scale));
 							
 							return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
 						}

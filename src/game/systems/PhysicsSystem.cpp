@@ -23,12 +23,12 @@ struct PhysicsTuple {
 
 inline std::vector<PhysicsTuple> GetPhysicsTuples(EntityAdmin* admin) {
 	std::vector<PhysicsTuple> out;
-	for(auto e : admin->entities) {
-		Transform* transform = &e.second->transform;
-		Physics* physics	 = nullptr;
-		Collider* collider	 = nullptr;
+	for(auto& e : admin->entities) {
+		Transform* transform = &e.transform;
+		Physics*   physics   = nullptr;
+		Collider* collider   = nullptr;
 		
-		for(Component* c : e.second->components) {
+		for(Component* c : e.components) {
 			if(Physics* phy = dynamic_cast<Physics*>(c)) { physics = phy; }
 			if(Collider* col = dynamic_cast<Collider*>(c)) { collider = col; }
 		}
@@ -41,7 +41,7 @@ inline std::vector<PhysicsTuple> GetPhysicsTuples(EntityAdmin* admin) {
 
 //TODO(delle,Ph) look into bettering this physics tick
 //https://gafferongames.com/post/physics_in_3d/
-inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time, float gravity) {
+inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time) {
 	//// translation ////
 	
 	//add input forces
@@ -50,8 +50,8 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time, float gra
 	t.physics->inputVector = Vector3::ZERO;
 	
 	//add gravity TODO(,sushi) make this a var and toggle later
-	t.physics->AddForce(nullptr, Vector3(0, gravity, 0));
-
+	t.physics->AddForce(nullptr, Vector3(0, pw->gravity, 0));
+	
 	//add temp air friction force
 	t.physics->AddFrictionForce(nullptr, pw->frictionAir);
 	
@@ -210,7 +210,7 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 		//TODO(sushi, Ph) finish implementing AABB dynamic collision
 		//get relative velocity
 		Vector3 relvel = obj2->velocity - obj1->velocity;
-
+		
 		
 	}
 	
@@ -353,7 +353,7 @@ void PhysicsSystem::Update() {
 	//update physics extra times per frame if frame time delta is larger than physics time delta
 	while(time->fixedAccumulator >= time->fixedDeltaTime) {
 		for(auto& t : tuples) {
-			PhysicsTick(t, pw, time, gravity);
+			PhysicsTick(t, pw, time);
 			CollisionTick(admin, tuples, t);
 		}
 		time->fixedAccumulator -= time->fixedDeltaTime;
