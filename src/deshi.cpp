@@ -124,6 +124,8 @@ Bug Board
 ---------
 dragging the console scroll bar doesn't work
 when minimizing the window ImGui throws an exception about calling End rather than EndChild in the DebugTools function
+after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and the batchArray size of whatever mesh its checking is something like 400000000000
+	it looks like some sort of corrupt mesh makes its way in there somehow?
 
 */
 

@@ -156,7 +156,9 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 		if (MeshComp* mc = e.GetComponent<MeshComp>()) {
 			if (mc->mesh_visible) {
 				Mesh* m = mc->m;
+				int te = 0;
 				for (auto& b : m->batchArray) {
+					te++;
 					for (int i = 0; i < b.indexArray.size(); i += 3) {
 						float t = 0;
 						

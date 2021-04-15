@@ -708,19 +708,6 @@ void Console::AddRenderCommands() {
 							bool staticc = false;
 
 							Collider* col = nullptr;
-
-
-							Entity* e = admin->world->CreateEntity(admin);
-
-							char name[64];
-							strncpy_s(name, args[0].substr(0, args[0].size() - 4).c_str(), 63);
-							name[63] = '\0';
-							
-							u32 id;
-							bool loaded = false;
-							for (MeshVk vkm : admin->renderer->basemeshes) {
-								if (name == vkm.name) { loaded = true; break; id = vkm.id; }
-							}
 							
 							//check for optional params after the first arg
 							for (auto s = args.begin() + 1; s != args.end(); ++s) {
@@ -738,8 +725,8 @@ void Console::AddRenderCommands() {
 								}
 								else if (std::regex_match(*s, StringRegex("collider"))) {
 									std::regex_search(s->c_str(), m, StringRegex("collider"));
-									if (m[1] == "aabb") col = new AABBCollider(e, Vector3(0.5,0.5,0.5), 1);
-									if (m[1] == "sphere") col = new SphereCollider(e, 1, 1);
+									if (m[1] == "aabb") col = new AABBCollider(Vector3(0.5,0.5,0.5), 1);
+									if (m[1] == "sphere") col = new SphereCollider(1, 1);
 								}
 								else if (std::regex_match(*s, FloatRegex("mass"))) {
 									std::regex_search(s->c_str(), m, FloatRegex("mass"));
@@ -764,13 +751,10 @@ void Console::AddRenderCommands() {
 							u32 id = admin->renderer->CreateMesh(&admin->scene, args[0].c_str());
 							Mesh* mesh = admin->renderer->GetMeshPtr(id);
 							
-							
-							strncpy_s(e->name, name, 63);
-							e->admin = admin;
-							MeshComp* mc = new MeshComp(mes);
+							MeshComp* mc = new MeshComp(mesh, id);
 							Physics* p = new Physics(position, rotation, mass, 1);
 							p->isStatic = staticc;
-							if (!col) col = new AABBCollider(e, Vector3(0.5, 0.5, 0.5), 1);
+							if (!col) col = new AABBCollider(Vector3(0.5, 0.5, 0.5), 1);
 							AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 							admin->world->CreateEntity(admin, { mc, p, s, col }, 
 													   name, Transform(position, rotation, scale));
