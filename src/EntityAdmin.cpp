@@ -73,8 +73,8 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	sound->Init(this);
 	
 	scene.Init();
-	controller.Init(this);
 	keybinds.Init();
+	controller.Init(this);
 	undoManager.Init();
 	
 	//singleton initialization
@@ -132,6 +132,10 @@ void EntityAdmin::Update() {
 	if (!pause_sound && !paused)   UpdateLayer(freeCompLayers[CL3_SOUND]);
 	if (!pause_sound && !paused)   sound->Update();
 	if (!pause_last && !paused)    UpdateLayer(freeCompLayers[CL4_LAST]);
+
+	time->paused = paused;
+	time->phys_pause = pause_phys;
+	
 }
 
 struct SaveHeader{

@@ -69,10 +69,12 @@ orthographic side views
 add showing axis lines through object when axis grabbing once we have lines in Vulkan
 show all textures/shaders on an object instead of just the first one
 keybind to move camera to object (like Blender's NPMINUS)
+implement orthographic grabbing 
 
 Physics/Atmos TODOs
 -------------
 finish imlementing AABB vs AABB collisions
+make colliders obey scale
 redo main physics loop
 add physics collision sweeping
 add physics based collision resolution for remaining collider primitives
@@ -86,12 +88,15 @@ Console TODOs
 fix console color parsing regex to be able to match with brackets inside
 OR change how we format color to something less common than brackets
 reformat to use a single character buffer rather than the line/subline thing its doing now
+implement buffer clipping using ImGui's clipper
 implement command chaining
 (maybe) add auto complete for arguments of commands
 add console flag for showing text in bottom right message bar like error does
 command to print all avaliable keys for binding
 command to print all keybinds, with (maybe) an option for printing only contextual keybinds
 if multiple errors are sent to the console before the user opens it, show a number in the debug bar indicating how many
+make binds and aliases check if one already exists for a key or a command. if a key already exists probably just overwrite it?
+implement filtering console buffer by function and file name (add __FILENAME__ and __FUNCTION__ or whatever it is to the defines)
 
 UI TODOs
 --------
@@ -111,6 +116,12 @@ look into scaling not rotating (scaling is probably being done in world not loca
 Fun TODOs
 ---------
 look into implementing Lua 
+look into making a function that takes in the types on a component and formatsbinary for saving and what not like what were currently doing for typeHeader in EntityAdmin Save()
+
+Bug Board
+---------
+dragging the console scroll bar doesn't work
+when minimizing the window ImGui throws an exception about calling End rather than EndChild in the DebugTools function
 
 */
 

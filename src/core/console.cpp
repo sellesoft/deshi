@@ -314,10 +314,10 @@ void Console::DrawConsole() {
 				TreePop();
 			}
 		}
-		
 	}
 	
 	// Reserve enough left-over height for 1 separator + 1 input text
+	//TODO(sushi, Con) figure out why the scroll bar doesnt allow you to drag it
 	const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 	PushStyleColor(ImGuiCol_ChildBg, ColorToVec4(Color(4, 17, 21, 255)));
 	BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar);
@@ -752,7 +752,7 @@ void Console::AddRenderCommands() {
 							e->admin = admin;
 							MeshComp* mc = new MeshComp(mes);
 							Physics* p = new Physics(Vector3(0,0,0), Vector3(0,0,0));
-							Collider* col = new AABBCollider(e, Vector3(1, 1, 1), 1);
+							Collider* col = new SphereCollider(e, 1, 1);
 							AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 							admin->world->AddComponentsToEntity(admin, e, { mc, p, s, col });
 							
@@ -949,6 +949,12 @@ void Console::AddConsoleCommands() {
 										   try {
 											   key = DengKeys.stk.at(args[0]);
 											   DengInput->binds.push_back(std::pair<std::string, Key::Key>(s, key));
+											   std::vector<char> datav;
+											   for (auto c : args[0] + " " + s) {
+												   datav.push_back(c);
+											   }
+											   datav.push_back('\n');
+											   deshi::appendFile(deshi::getConfig("binds.cfg"), datav, datav.size());
 											   return "[c:green]key \"" + args[0] + "\" successfully bound to \n" + s + "[c]";
 										   }
 										   catch(...){

@@ -58,6 +58,62 @@ std::vector<std::string> files;
 std::vector<std::string> textures;
 
 
+//functions to simplify the usage of our DebugLayer
+namespace ImGui {
+	void BeginDebugLayer() {
+		//ImGui::SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height));
+		ImGui::SetNextWindowPos(ImVec2(0, 0));
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ColToVec4(Color(0, 0, 0, 0)));
+		ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+	}
+
+	//not necessary, but I'm adding it for clarity in code
+	void EndDebugLayer() {
+		ImGui::PopStyleColor();
+		ImGui::End();
+	}
+
+	void DebugDrawCircle(Vector2 pos, float radius, Color color) {
+		ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(pos.x, pos.y), radius, ImGui::GetColorU32(ColToVec4(color)));
+	}
+
+	void DebugDrawCircle3(Vector3 pos, float radius, Camera* c, Vector2 windimen, Color color) {
+		Vector2 pos2 = Math::WorldToScreen2(pos, c->projectionMatrix, c->viewMatrix, windimen);
+		ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(pos.x, pos.y), radius, ImGui::GetColorU32(ColToVec4(color)));
+	}
+
+	void DebugDrawLine(Vector2 pos1, Vector2 pos2, Color color) {
+		ImGui::GetBackgroundDrawList()->AddLine(pos1.ToImVec2(), pos2.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
+	}
+
+	void DebugDrawLine3(Vector3 pos1, Vector3 pos2, Camera* c, Vector2 windimen, Color color) {
+		Vector2 pos12 = Math::WorldToScreen2(pos1, c->projectionMatrix, c->viewMatrix, windimen);
+		Vector2 pos22 = Math::WorldToScreen2(pos2, c->projectionMatrix, c->viewMatrix, windimen);
+		ImGui::GetBackgroundDrawList()->AddLine(pos12.ToImVec2(), pos22.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
+	}
+
+	void DebugDrawText(const char* text, Vector2 pos, Color color) {		
+		ImGui::SetCursorPos(pos.ToImVec2());
+
+		ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(color));
+		ImGui::Text(text);
+		ImGui::PopStyleColor();
+	}
+
+	void DebugDrawText3(const char* text, Vector3 pos, Camera* c, Vector2 windimen, Color color) {
+		Vector2 pos2 = Math::WorldToScreen2(pos, c->projectionMatrix, c->viewMatrix, windimen);
+		ImGui::SetCursorPos(pos2.ToImVec2());
+
+		ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(color));
+		ImGui::Text(text);
+		ImGui::PopStyleColor();
+	}
+
+}
+
+
+
+
 //// utility ui elements ///
 
 void CopyButton(const char* text) {
@@ -852,14 +908,14 @@ void CanvasSystem::DebugLayer() {
 			Vector3 v2s = Math::CameraToScreen3(v2, c->projectionMatrix, DengWindow->dimensions);
 			Math::ClipLineToBorderPlanes(v1s, v2s, DengWindow->dimensions);
 			if (!l1flag) ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
-			else        ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 0, 0, 1)));
+			else         ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 0, 0, 1)));
 		}
 		if (Math::ClipLineToZPlanes(v3, v4, c)) {
 			Vector3 v3s = Math::CameraToScreen3(v3, c->projectionMatrix, DengWindow->dimensions);
 			Vector3 v4s = Math::CameraToScreen3(v4, c->projectionMatrix, DengWindow->dimensions);
 			Math::ClipLineToBorderPlanes(v3s, v4s, DengWindow->dimensions);
 			if (!l2flag) ImGui::GetBackgroundDrawList()->AddLine(v3s.ToVector2().ToImVec2(), v4s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
-			else        ImGui::GetBackgroundDrawList()->AddLine(v3s.ToVector2().ToImVec2(), v4s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(0, 0, 1, 1)));
+			else         ImGui::GetBackgroundDrawList()->AddLine(v3s.ToVector2().ToImVec2(), v4s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(0, 0, 1, 1)));
 		}
 	}
 	

@@ -9,6 +9,7 @@
 #include "../components/Collider.h"
 #include "../components/AudioSource.h"
 
+#include "../systems/CanvasSystem.h"
 /////////////////////
 //// integration ////
 /////////////////////
@@ -264,8 +265,18 @@ inline void AABBBoxCollision(EntityAdmin* admin, Physics* aabb, AABBCollider* aa
 	ERROR("AABB-Box collision not implemented in PhysicsSystem.cpp");
 }
 
-inline void SphereSphereCollision(EntityAdmin* admin, Physics* sphere, SphereCollider* sphereCol, Physics* other, SphereCollider* otherCol) {
-	ERROR("Sphere-Sphere collision not implemented in PhysicsSystem.cpp");
+inline void SphereSphereCollision(EntityAdmin* admin, Physics* s1, SphereCollider* sc1, Physics* s2, SphereCollider* sc2) {
+	//static resolution
+	ImGui::BeginDebugLayer();
+	
+	
+	if (sc1->radius + sc2->radius > (s1->position - s2->position).mag()) {
+
+		ImGui::DebugDrawLine3(s1->position, s2->position, Color::RED, admin->mainCamera, DengWindow->dimensions);
+
+	}
+
+	ImGui::EndDebugLayer();
 }
 
 inline void SphereBoxCollision(EntityAdmin* admin, Physics* sphere, SphereCollider* sphereCol, Physics* box, BoxCollider* boxCol) {

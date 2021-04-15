@@ -25,8 +25,8 @@ struct Time{
 	f32 fixedAccumulator = 0;
 	
 	f32 timeTime{}, windowTime{}, inputTime{}, adminTime{}, consoleTime{}, renderTime{}, frameTime{};
-	
-	bool paused{}, frame{};
+
+	bool paused{}, frame{}, phys_pause{};
 	
 	std::chrono::time_point<std::chrono::system_clock> tp1, tp2;
 	
@@ -56,7 +56,7 @@ inline void Time::Update(){
 	if(!paused){
 		totalTime += deltaTime;
 		++updateCount;
-		fixedAccumulator += deltaTime;
+		if (!phys_pause) fixedAccumulator += deltaTime;
 	}else if(frame){
 		totalTime += deltaTime;
 		++updateCount;

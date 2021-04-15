@@ -4,6 +4,7 @@
 #include "UndoManager.h"
 #include "components/Camera.h"
 #include "components/MeshComp.h"
+#include "components/Physics.h"
 #include "../core.h"
 #include "../EntityAdmin.h"
 #include "../math/Math.h"
@@ -20,20 +21,21 @@ inline void AddBindings(EntityAdmin* admin) {
 	
 	if (deshi::getConfig("binds.cfg") != "") {
 		binds = std::ifstream(deshi::getConfig("binds.cfg"), std::ios::in);
+		while (!binds.eof()) {
+			char* c = (char*)malloc(255);
+			binds.getline(c, 255);
+			std::string s(c);
 		
-		char* c = (char*)malloc(255);
-		binds.getline(c, 255);
-		std::string s(c);
-		
-		if (s != "") {
-			std::string key = s.substr(0, s.find_first_of(" "));
-			std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
-			
-			try {
-				DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, DengKeys.stk.at(key)));
-			}
-			catch (...) {
-				ERROR("Unknown key \"", key, "\" attempted to bind to command \"", command, "\"");
+			if (s != "") {
+				std::string key = s.substr(0, s.find_first_of(" "));
+				std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
+
+				try {
+					DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, DengKeys.stk.at(key)));
+				}
+				catch (...) {
+					ERROR("Unknown key \"", key, "\" attempted to bind to command \"", command, "\"");
+				}
 			}
 		}
 	}
@@ -270,7 +272,9 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				newpos *= Math::LocalToWorld(admin->mainCamera->position);
 				
 				sel->transform.position = newpos;
-				
+				if (Physics* p = sel->GetComponent<Physics>()) {
+					p->position = newpos;
+				}
 				
 			}
 			else if (xaxis) {
@@ -291,6 +295,9 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				}
 				
 				sel->transform.position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
+				if (Physics* p = sel->GetComponent<Physics>()) {
+					p->position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
+				}
 			}
 			else if (yaxis) {
 				Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
@@ -309,7 +316,10 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 					planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
 				}
 				sel->transform.position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
-				
+				if (Physics* p = sel->GetComponent<Physics>()) {
+					p->position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
+				}	
+			
 			}
 			else if (zaxis) {
 				Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
@@ -328,6 +338,10 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 					planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
 				}
 				sel->transform.position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
+				if (Physics* p = sel->GetComponent<Physics>()) {
+					p->position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
+				}
+			
 			}
 		} //if(DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj)
 	} //if(!admin->IMGUI_MOUSE_CAPTURE)
