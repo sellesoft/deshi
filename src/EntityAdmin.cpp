@@ -123,15 +123,15 @@ void EntityAdmin::Update() {
 	controller.Update();
 	mainCamera->Update();
 	
-	if (!pause_phys && !paused)    UpdateLayer(freeCompLayers[CL0_PHYSICS]);
-	if (!pause_phys && !paused)    physics->Update();
-	if (!pause_canvas)             UpdateLayer(freeCompLayers[CL1_RENDCANVAS]);
-	if (!pause_canvas)             canvas->Update();
-	if (!pause_console)            UpdateLayer(freeCompLayers[CL2_WORLD]);
-	if (!pause_world && !paused)   world->Update();
-	if (!pause_sound && !paused)   UpdateLayer(freeCompLayers[CL3_SOUND]);
-	if (!pause_sound && !paused)   sound->Update();
-	if (!pause_last && !paused)    UpdateLayer(freeCompLayers[CL4_LAST]);
+	TIMER_RESET(t_a); if (!pause_phys && !paused)    UpdateLayer(freeCompLayers[CL0_PHYSICS]);		time->physLyrTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!pause_phys && !paused)    physics->Update();								time->physSysTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!pause_canvas)             UpdateLayer(freeCompLayers[CL1_RENDCANVAS]);	time->canvasLyrTme = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!pause_canvas)             canvas->Update();								time->canvasSysTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!pause_console)            UpdateLayer(freeCompLayers[CL2_WORLD]);		time->worldLyrTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!pause_world && !paused)   world->Update();								time->worldSysTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!pause_sound && !paused)   UpdateLayer(freeCompLayers[CL3_SOUND]);		time->sndLyrTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!pause_sound && !paused)   sound->Update();								time->sndSysTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!pause_last && !paused)    UpdateLayer(freeCompLayers[CL4_LAST]);			time->lastLyrTime = TIMER_END(t_a);
 
 	time->paused = paused;
 	time->phys_pause = pause_phys;

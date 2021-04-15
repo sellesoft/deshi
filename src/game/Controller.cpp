@@ -249,6 +249,10 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				}
 				return;
 			}
+
+			if (DengInput->KeyPressed(MouseButton::SCROLLDOWN)) initialdist -= 1;
+			if (DengInput->KeyPressed(MouseButton::SCROLLUP))   initialdist += 1;
+
 			
 			//set mouse to obj position on screen and save that position
 			if (initialgrab) {

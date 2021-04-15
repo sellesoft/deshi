@@ -55,6 +55,7 @@ find a way to forward declare vulkan stuff and move the include to the cpp
 Level Editor TODOs
 ------------
 orbitting camera for rotating around objects
+context menu when right clicking on an object 
 scaling objects
 copy/pasting objects
 typing numbers while grabbing/rotating/scaling for precise manipulation (like in Blender)

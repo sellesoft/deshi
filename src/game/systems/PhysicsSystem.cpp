@@ -271,10 +271,23 @@ inline void SphereSphereCollision(EntityAdmin* admin, Physics* s1, SphereCollide
 	
 	
 	if (sc1->radius + sc2->radius > (s1->position - s2->position).mag()) {
+		ImGui::DebugDrawLine3(s1->position, s2->position, admin->mainCamera, DengWindow->dimensions);
+		
+		Vector3 s1t2 = s2->position - s1->position;
 
-		ImGui::DebugDrawLine3(s1->position, s2->position, Color::RED, admin->mainCamera, DengWindow->dimensions);
+		float overlap = (sc1->radius + sc2->radius) - s1t2.mag();
+		
+		ImGui::DebugDrawText3(TOSTRING(overlap).c_str(), s1->position, admin->mainCamera, DengWindow->dimensions);
+	
+		s1->position -= s1t2.normalized() * overlap / 2;
+		s2->position += s1t2.normalized() * overlap / 2;
+
 
 	}
+
+
+
+
 
 	ImGui::EndDebugLayer();
 }

@@ -89,6 +89,10 @@ struct EntityAdmin {
 	bool pause_sound = false;
 	bool pause_last = false;
 	
+	//timer related
+	bool debugTimes = true;
+	TIMER_START(t_a);
+	
 	//imgui capture flags
 	bool IMGUI_KEY_CAPTURE = false;
 	bool IMGUI_MOUSE_CAPTURE = false;

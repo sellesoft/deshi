@@ -241,6 +241,8 @@ namespace Math {
 	
 	//round a float to two decimal places
 	static float round2f(float f) { return (float)((int)(f * 100 + .5)) / 100; }
+	static float round4f(float f) { return (float)((int)(f * 10000 + .5)) / 10000; }
+
 	
 	static Vector3 round2v(Vector3 v) {
 		return Vector3(

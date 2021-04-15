@@ -33,10 +33,10 @@ std::regex RegRotParam("-rot=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex
 std::regex RegScaleParam("-scale=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
 std::regex RegSizeParam("-size=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
 std::regex VecNumMatch("[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?", std::regex::optimize);
-std::regex StringRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\(([a-z]+)\\)", std::regex::optimize|std::regex::icase); }
-std::regex IntRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\(([-]?[0-9]+)\\)", std::regex::optimize); }
-std::regex FloatRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\(([-]?[0-9|.]+)\\)", std::regex::optimize); }
-std::regex BoolRegex(const char* param){ return std::regex(std::string("-")+ param +"=\\((true|1|false|0)\\)", std::regex::optimize|std::regex::icase); }
+std::regex StringRegex(const char* param){ return std::regex(std::string("-")+ param +"=([A-z]+)", std::regex::optimize|std::regex::icase); }
+std::regex IntRegex(const char* param)   { return std::regex(std::string("-")+ param +"=([-]?[0-9]+)", std::regex::optimize); }
+std::regex FloatRegex(const char* param) { return std::regex(std::string("-")+ param +"=([-]?[0-9|.]+)", std::regex::optimize); }
+std::regex BoolRegex(const char* param)  { return std::regex(std::string("-")+ param +"=(true|1|false|0)", std::regex::optimize|std::regex::icase); }
 
 
 #define NEWCOMMAND(name, desc, func) commands[name] =\
@@ -707,7 +707,14 @@ void Console::AddRenderCommands() {
 							Mesh mesh;
 							std::cmatch m;
 							Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
-							
+							float mass;
+							bool staticc = false;
+
+							Collider* col = nullptr;
+
+
+							Entity* e = admin->world->CreateEntity(admin);
+
 							char name[64];
 							strncpy_s(name, args[0].substr(0, args[0].size() - 4).c_str(), 63);
 							name[63] = '\0';
@@ -732,6 +739,20 @@ void Console::AddRenderCommands() {
 									std::regex_search(s->c_str(), m, VecNumMatch);
 									scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 								}
+								else if (std::regex_match(*s, StringRegex("collider"))) {
+									std::regex_search(s->c_str(), m, StringRegex("collider"));
+									if (m[1] == "aabb") col = new AABBCollider(e, Vector3(0.5,0.5,0.5), 1);
+									if (m[1] == "sphere") col = new SphereCollider(e, 1, 1);
+								}
+								else if (std::regex_match(*s, FloatRegex("mass"))) {
+									std::regex_search(s->c_str(), m, FloatRegex("mass"));
+									if (std::stof(m[1]) < 0) return "[c:red]Mass must be greater than 0[c]";
+									mass = std::stof(m[1]);
+								}
+								else if (std::regex_match(*s, BoolRegex("static"))) {
+									std::regex_search(s->c_str(), m, BoolRegex("static"));
+									if (m[1] == "1" || m[1] == "true") staticc = true;
+								}
 								else {
 									return "[c:red]Invalid parameter: " + *s + "[c]";
 								}
@@ -747,12 +768,13 @@ void Console::AddRenderCommands() {
 							//Need to make this so that MeshComp has a mesh that isn't deleted 
 							Mesh* mes = new Mesh(mesh);
 							
-							Entity* e = admin->world->CreateEntity(admin);
+							
 							strncpy_s(e->name, name, 63);
 							e->admin = admin;
 							MeshComp* mc = new MeshComp(mes);
-							Physics* p = new Physics(Vector3(0,0,0), Vector3(0,0,0));
-							Collider* col = new SphereCollider(e, 1, 1);
+							Physics* p = new Physics(position, rotation, mass, 1);
+							p->isStatic = staticc;
+							if (!col) col = new AABBCollider(e, Vector3(0.5, 0.5, 0.5), 1);
 							AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 							admin->world->AddComponentsToEntity(admin, e, { mc, p, s, col });
 							
