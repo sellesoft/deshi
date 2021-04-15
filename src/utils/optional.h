@@ -15,7 +15,7 @@ struct Optional {
 	
 	bool test(){
 		T b; memset(&b, 0xFFFFFFFF, sizeof(T));
-		return (memcmp(&value, &b, sizeof(T)))? true : false;
+		return (memcmp(&value, &b, sizeof(T))) ? true : false;
 	}
 	
 	inline void reset(){

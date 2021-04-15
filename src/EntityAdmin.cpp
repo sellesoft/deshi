@@ -119,15 +119,15 @@ void EntityAdmin::Update() {
 	if(!skip) controller.Update();
 	if(!skip) mainCamera->Update();
 	
-	TIMER_RESET(t_a); if (!skip && !pause_phys && !paused)    UpdateLayer(freeCompLayers[CL0_PHYSICS]);		time->physLyrTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_phys && !paused)    physics->Update();								time->physSysTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_canvas)             UpdateLayer(freeCompLayers[CL1_RENDCANVAS]);	time->canvasLyrTme = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_canvas)             canvas->Update();								time->canvasSysTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_console)            UpdateLayer(freeCompLayers[CL2_WORLD]);		time->worldLyrTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_world && !paused)   world->Update();								time->worldSysTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_sound && !paused)   UpdateLayer(freeCompLayers[CL3_SOUND]);		time->sndLyrTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_sound && !paused)   sound->Update();								time->sndSysTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_last && !paused)    UpdateLayer(freeCompLayers[CL4_LAST]);			time->lastLyrTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!skip && !pause_phys && !paused)  { UpdateLayer(freeCompLayers[CL0_PHYSICS]); }	 time->physLyrTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!skip && !pause_phys && !paused)  { physics->Update(); }							 time->physSysTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!skip && !pause_canvas)           { UpdateLayer(freeCompLayers[CL1_RENDCANVAS]); } time->canvasLyrTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!skip && !pause_canvas)           { canvas->Update(); }						     time->canvasSysTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!skip && !pause_console)          { UpdateLayer(freeCompLayers[CL2_WORLD]); }	     time->worldLyrTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!skip && !pause_world && !paused) { world->Update(); }						     time->worldSysTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!skip && !pause_sound && !paused) { UpdateLayer(freeCompLayers[CL3_SOUND]); }	     time->sndLyrTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!skip && !pause_sound && !paused) { sound->Update(); }						     time->sndSysTime = TIMER_END(t_a);
+	TIMER_RESET(t_a); if (!skip && !pause_last && !paused)  { UpdateLayer(freeCompLayers[CL4_LAST]); }	     time->lastLyrTime = TIMER_END(t_a);
 
 	time->paused = paused;
 	time->phys_pause = pause_phys;
@@ -531,6 +531,7 @@ void Entity::AddComponents(std::vector<Component*> comps) {
 void Entity::RemoveComponent(Component* c) {
 	for_n(i,components.size()){
 		if(components[i] == c){
+			admin->freeCompLayers[c->layer].remove_from(c->layer_index);
 			delete c; 
 			components.erase(components.begin()+i); 
 			return;

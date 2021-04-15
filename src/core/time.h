@@ -26,7 +26,7 @@ struct Time{
 	
 	f32 timeTime{}, windowTime{}, inputTime{}, adminTime{}, consoleTime{}, renderTime{}, frameTime{};
 
-	f32 physLyrTime{}, physSysTime{}, canvasLyrTme{}, canvasSysTime{}, worldLyrTime{}, worldSysTime{}, sndLyrTime{}, sndSysTime{}, lastLyrTime{};
+	f32 physLyrTime{}, physSysTime{}, canvasLyrTime{}, canvasSysTime{}, worldLyrTime{}, worldSysTime{}, sndLyrTime{}, sndSysTime{}, lastLyrTime{};
 
 	bool paused{}, frame{}, phys_pause{};
 	

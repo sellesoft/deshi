@@ -87,6 +87,7 @@ implement Complex Colliders
 
 Console TODOs
 -------------
+!!!implement console popout
 fix console color parsing regex to be able to match with brackets inside
 OR change how we format color to something less common than brackets
 reformat to use a single character buffer rather than the line/subline thing its doing now
@@ -107,6 +108,8 @@ add a UI popup when reloading shaders
 add UI color palettes for easy color changing
 renaming entities from entity list
 redo debug bar to be more informative and have different modes
+(maybe) implement a way to push data to something in the DebugLayer, sort of how we had before with BufferLog
+	so you can see it without opening console
 
 Math TODOs
 ----------

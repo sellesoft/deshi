@@ -49,7 +49,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time) {
 	t.physics->AddForce(nullptr, t.physics->inputVector);
 	t.physics->inputVector = Vector3::ZERO;
 	
-	//add gravity TODO(,sushi) make this a var and toggle later
+	//add gravity 
 	t.physics->AddForce(nullptr, Vector3(0, pw->gravity, 0));
 	
 	//add temp air friction force
@@ -284,10 +284,6 @@ inline void SphereSphereCollision(EntityAdmin* admin, Physics* s1, SphereCollide
 
 
 	}
-
-
-
-
 
 	ImGui::EndDebugLayer();
 }
