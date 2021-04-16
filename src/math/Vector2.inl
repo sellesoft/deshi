@@ -124,16 +124,9 @@ operator!=(const Vector2& rhs) const {
 //// functions ////
 ///////////////////
 
-inline const std::string Vector2::
-str() const {
-	return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + ")";
-}
-
-inline const std::string Vector2::
-str2f() const {
-	char buffer[50];
-	std::snprintf(buffer, 50, "(%+.2f, %+.2f)", this->x, this->y);
-	return std::string(buffer);
+inline Vector2 Vector2::
+absV() const{
+	return Vector2(abs(x), abs(y));
 }
 
 inline Vector2 Vector2::
@@ -210,6 +203,11 @@ projectOn(Vector2 rhs) {
 }
 
 inline Vector2 Vector2::
+midpoint(Vector2 rhs){
+	return Vector2((x+rhs.x)/2.f, (y+rhs.y)/2.f);
+}
+
+inline Vector2 Vector2::
 xComp() const {
 	return Vector2(x, 0);
 }
@@ -227,6 +225,18 @@ xInvert() const {
 inline Vector2 Vector2::
 yInvert() const {
 	return Vector2(x, -y);
+}
+
+inline const std::string Vector2::
+str() const {
+	return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + ")";
+}
+
+inline const std::string Vector2::
+str2f() const {
+	char buffer[50];
+	std::snprintf(buffer, 50, "(%+.2f, %+.2f)", this->x, this->y);
+	return std::string(buffer);
 }
 
 //////////////

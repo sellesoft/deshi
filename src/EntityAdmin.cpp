@@ -119,19 +119,29 @@ void EntityAdmin::Update() {
 	if(!skip) controller.Update();
 	if(!skip) mainCamera->Update();
 	
-	TIMER_RESET(t_a); if (!skip && !pause_phys && !paused)  { UpdateLayer(freeCompLayers[CL0_PHYSICS]); }	 time->physLyrTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_phys && !paused)  { physics->Update(); }							 time->physSysTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_canvas)           { UpdateLayer(freeCompLayers[CL1_RENDCANVAS]); } time->canvasLyrTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_canvas)           { canvas->Update(); }						     time->canvasSysTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_console)          { UpdateLayer(freeCompLayers[CL2_WORLD]); }	     time->worldLyrTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_world && !paused) { world->Update(); }						     time->worldSysTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_sound && !paused) { UpdateLayer(freeCompLayers[CL3_SOUND]); }	     time->sndLyrTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_sound && !paused) { sound->Update(); }						     time->sndSysTime = TIMER_END(t_a);
-	TIMER_RESET(t_a); if (!skip && !pause_last && !paused)  { UpdateLayer(freeCompLayers[CL4_LAST]); }	     time->lastLyrTime = TIMER_END(t_a);
-
+	TIMER_RESET(t_a); 
+	if (!skip && !pause_phys && !paused)  { UpdateLayer(freeCompLayers[CL0_PHYSICS]); }
+	time->physLyrTime =   TIMER_END(t_a); TIMER_RESET(t_a);
+	if (!skip && !pause_phys && !paused)  { physics->Update(); }
+	time->physSysTime =   TIMER_END(t_a); TIMER_RESET(t_a);
+	if (!skip && !pause_canvas)           { UpdateLayer(freeCompLayers[CL1_RENDCANVAS]); }
+	time->canvasLyrTime = TIMER_END(t_a); TIMER_RESET(t_a);
+	if (!skip && !pause_canvas)           { canvas->Update(); }
+	time->canvasSysTime = TIMER_END(t_a); TIMER_RESET(t_a);
+	if (!skip && !pause_console)          { UpdateLayer(freeCompLayers[CL2_WORLD]); }
+	time->worldLyrTime =  TIMER_END(t_a); TIMER_RESET(t_a);
+	if (!skip && !pause_world && !paused) { world->Update(); }
+	time->worldSysTime =  TIMER_END(t_a); TIMER_RESET(t_a);
+	if (!skip && !pause_sound && !paused) { UpdateLayer(freeCompLayers[CL3_SOUND]); }
+	time->sndLyrTime =    TIMER_END(t_a); TIMER_RESET(t_a);
+	if (!skip && !pause_sound && !paused) { sound->Update(); }
+	time->sndSysTime =    TIMER_END(t_a); TIMER_RESET(t_a);
+	if (!skip && !pause_last && !paused)  { UpdateLayer(freeCompLayers[CL4_LAST]); }
+	time->lastLyrTime =   TIMER_END(t_a);
+	
 	time->paused = paused;
 	time->phys_pause = pause_phys;
-	
+	skip = false;
 }
 
 struct SaveHeader{
@@ -166,7 +176,7 @@ void EntityAdmin::Save() {
 	ASSERT(32 == sizeof(SaveHeader), "SaveHeader size is out of date");
 	ASSERT(16 == sizeof(ComponentTypeHeader), "ComponentTypeHeader is out of date");
 	ASSERT(160 == sizeof(Entity), "Entity is out of date");
-	ASSERT(176 == sizeof(MeshVk), "MeshVk is out of date");
+	ASSERT(192 == sizeof(MeshVk), "MeshVk is out of date");
 	ASSERT(152 == sizeof(AudioListener), "AudioListener is out of date");
 	ASSERT(160 == sizeof(AudioSource), "AudioSource is out of date");
 	ASSERT(336 == sizeof(Camera), "Camera is out of date");
@@ -243,10 +253,9 @@ void EntityAdmin::Save() {
 	
 	for(auto& m : renderer->meshes){
 		b32 base = m.base;
-		std::string temp = m.name; temp.resize(64);
 		file.write((const char*)&m.id, sizeof(u32));
 		file.write((const char*)&base, sizeof(b32));
-		file.write(temp.c_str(),       64); //NOTE(delle) using the mesh name doesnt work on obj loaded meshes?
+		file.write(m.name,            64);
 	}
 	
 	//// write component type headers //// //TODO(delle) move these to thier respective files
@@ -400,7 +409,7 @@ void EntityAdmin::Save() {
 void EntityAdmin::Load(const char* filename) {
 	//// clear current stuff ////
 	entities.clear(); entities.reserve(1000);
-	for (auto& layer : freeCompLayers) { layer.clear(); } //TODO(delle) see if this causes a memory leak
+	for (auto& layer : freeCompLayers) { layer.clear(); } //TODO(delle) see if this causes a leak
 	
 	input->selectedEntity = 0;
 	undoManager.Reset();
@@ -493,7 +502,7 @@ Entity::Entity(EntityAdmin* admin, u32 id, Transform transform, const char* name
 	this->admin = admin;
 	this->id = id;
 	this->transform = transform;
-	if(name){ strncpy_s(this->name, name, 63); } this->name[63] = '\0';
+	if(name) cpystr(this->name, name, 63);
 	for (Component* c : components) this->components.push_back(c);
 }
 
@@ -507,20 +516,21 @@ std::string Entity::Save() {
 }
 
 void Entity::SetName(const char* name){
-	if(name) strncpy_s(this->name, name, 63);
-	this->name[63] = '\0';
+	if(name) cpystr(this->name, name, 63);
 }
 
-void Entity::AddComponent(Component* component) {
-	components.push_back(component);
-	component->layer_index = admin->freeCompLayers[component->layer].add(component);
-	component->entity = this;
-	component->admin = this->admin;
+void Entity::AddComponent(Component* c) {
+	if(!c) return;
+	components.push_back(c);
+	c->layer_index = admin->freeCompLayers[c->layer].add(c);
+	c->entity = this;
+	c->admin = this->admin;
 }
 
 void Entity::AddComponents(std::vector<Component*> comps) {
 	u32 value = this->components.size();
 	for (Component* c : comps) {
+		if(!c) continue;
 		this->components.push_back(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 		c->entity = this;
@@ -529,6 +539,7 @@ void Entity::AddComponents(std::vector<Component*> comps) {
 }
 
 void Entity::RemoveComponent(Component* c) {
+	if(!c) return;
 	for_n(i,components.size()){
 		if(components[i] == c){
 			admin->freeCompLayers[c->layer].remove_from(c->layer_index);
@@ -542,6 +553,7 @@ void Entity::RemoveComponent(Component* c) {
 void Entity::RemoveComponents(std::vector<Component*> comps) {
 	while(comps.size()){
 		for_n(i,components.size()){
+			if(!comps[i]) continue;
 			if(components[i] == comps[0]){ 
 				delete comps[i]; 
 				components.erase(components.begin()+i); 

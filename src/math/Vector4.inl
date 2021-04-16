@@ -117,17 +117,11 @@ operator != (const Vector4& rhs) const {
 //// functions ////
 ///////////////////
 
-inline const std::string Vector4::
-str() const {
-	return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + "," + std::to_string(this->z) + "," + std::to_string(this->w) + ")";
+inline Vector4 Vector4::
+absV() const{
+	return Vector4(abs(x), abs(y), abs(z), abs(w));
 }
 
-inline const std::string Vector4::
-str2f() const {
-	char buffer[50];
-	std::snprintf(buffer, 50, "(%+.2f, %+.2f, %+.2f, %+.2f)", this->x, this->y, this->z, this->w);
-	return std::string(buffer);
-}
 
 inline Vector4 Vector4::
 copy() const {
@@ -191,6 +185,18 @@ zInvert() const {
 inline Vector4 Vector4::
 wInvert() const {
 	return Vector4(x, y, z,-w);
+}
+
+inline const std::string Vector4::
+str() const {
+	return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + "," + std::to_string(this->z) + "," + std::to_string(this->w) + ")";
+}
+
+inline const std::string Vector4::
+str2f() const {
+	char buffer[50];
+	std::snprintf(buffer, 50, "(%+.2f, %+.2f, %+.2f, %+.2f)", this->x, this->y, this->z, this->w);
+	return std::string(buffer);
 }
 
 //////////////

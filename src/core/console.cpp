@@ -38,12 +38,6 @@ std::regex IntRegex(const char* param)   { return std::regex(std::string("-")+ p
 std::regex FloatRegex(const char* param) { return std::regex(std::string("-")+ param +"=([-]?[0-9|.]+)", std::regex::optimize); }
 std::regex BoolRegex(const char* param)  { return std::regex(std::string("-")+ param +"=(true|1|false|0)", std::regex::optimize|std::regex::icase); }
 
-
-#define NEWCOMMAND(name, desc, func) commands[name] =\
-new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {\
-try{ func }catch(...){ return desc; }\
-}, name, desc);
-
 using namespace ImGui;
 
 int buffersize = 0;
@@ -463,6 +457,59 @@ void Console::FlushBuffer() {
 // command creation functions
 //////////////////////////////////////////////////////////////////////
 
+#define NEWCOMMAND(name, desc, func) commands[name] =\
+new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {\
+try{ func }catch(...){ return desc; }\
+}, name, desc);
+
+#define COMMANDFUNC(name) std::string command_##name##_back(EntityAdmin* admin, std::vector<std::string> args)
+#define ADDCOMMAND(name, desc) commands[#name] = new Command(command_##name##_back, #name, desc)
+
+
+////////////////////////////////////////
+//// various uncategorized commands ////
+////////////////////////////////////////
+
+COMMANDFUNC(daytime){
+	return DengTime->FormatDateTime("{w} {M}/{d}/{y} {h}:{m}:{s}");
+}
+
+COMMANDFUNC(time_engine){
+	return DengTime->FormatTickTime("Time:   {t}ms Window:{w}ms Input:{i}ms Admin:{a}ms\n"
+									"Console:{c}ms Render:{r}ms Frame:{f}ms Delta:{d}ms");
+}
+
+COMMANDFUNC(time_game){
+	return DengTime->FormatAdminTime("Layers:  Physics:{P}ms Canvas:{C}ms World:{W}ms Send:{S}ms Last:{L}ms\n"
+									 "Systems: Physics:{p}ms Canvas:{c}ms World:{w}ms Send:{s}ms");
+}
+
+void Console::AddRandomCommands(){
+	//TODO(sushi,Cmd) reimplement this at some point
+	//commands["debug_global"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+	//	GLOBAL_DEBUG = !GLOBAL_DEBUG;
+	//	if (GLOBAL_DEBUG) return "GLOBAL_DEBUG = true";
+	//	else return "GLOBAL_DEBUG = false";
+	//}, "debug_global", "debug_global");
+	
+	commands["debug_command_exec"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+													 Command::CONSOLE_PRINT_EXEC = !Command::CONSOLE_PRINT_EXEC;
+													 return (Command::CONSOLE_PRINT_EXEC) ? "Log command execution: true" : "Log command execution: false"; 
+												 }, "debug_command_exec", "if true, prints all command executions to the console");
+	
+	commands["engine_pause"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+											   admin->paused = !admin->paused;
+											   if (admin->paused) return "engine_pause = true";
+											   else return "engine_pause = false";
+										   }, "engine_pause", "toggles pausing the engine");
+	
+	NEWCOMMAND("undo", "undos previous level editor action",{ admin->undoManager.Undo(); return ""; });
+	NEWCOMMAND("redo", "redos last undone level editor action",{ admin->undoManager.Redo(); return ""; });
+	
+	ADDCOMMAND(daytime, "Logs the time in day-time format");
+	ADDCOMMAND(time_engine, "Logs the engine times");
+	ADDCOMMAND(time_game, "Logs the game times");
+}
 
 ////////////////////////////////////
 //// render commands and inputs ////
@@ -704,10 +751,10 @@ void Console::AddRenderCommands() {
 						if (args.size() > 0) {
 							std::cmatch m;
 							Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
-							float mass;
+							float mass = 1.f;
 							bool staticc = false;
-
-							Collider* col = nullptr;
+							bool aabb = false;
+							bool sphere = false;
 							
 							//check for optional params after the first arg
 							for (auto s = args.begin() + 1; s != args.end(); ++s) {
@@ -725,8 +772,8 @@ void Console::AddRenderCommands() {
 								}
 								else if (std::regex_match(*s, StringRegex("collider"))) {
 									std::regex_search(s->c_str(), m, StringRegex("collider"));
-									if (m[1] == "aabb") col = new AABBCollider(Vector3(0.5,0.5,0.5), 1);
-									if (m[1] == "sphere") col = new SphereCollider(1, 1);
+									if (m[1] == "aabb") aabb = true;
+									else if (m[1] == "sphere") sphere = true;
 								}
 								else if (std::regex_match(*s, FloatRegex("mass"))) {
 									std::regex_search(s->c_str(), m, FloatRegex("mass"));
@@ -742,19 +789,30 @@ void Console::AddRenderCommands() {
 								}
 							}
 							
+							//NOTE(sushi) for non vector regex, you only need to search, not match and search
+							//see cam_vars command for example; and maybe you can remake the vector one to support
+							//matching and capturing as well
+							
 							//cut off the .obj extension for entity name
 							char name[64];
-							strncpy_s(name, args[0].substr(0, args[0].size() - 4).c_str(), 63);
-							name[63] = '\0';
+							cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), 63);
 							
 							//create the mesh
 							u32 id = admin->renderer->CreateMesh(&admin->scene, args[0].c_str());
 							Mesh* mesh = admin->renderer->GetMeshPtr(id);
 							
+							//collider
+							Collider* col = nullptr;
+							if(true || aabb){ //NOTE forcing this true for debugging, remove once -collider is fixed
+								col = new AABBCollider(mesh, 1);
+							}else if(sphere){
+								//TODO(sushi) i dont know how you wanna handle this -delle
+								col = new SphereCollider(1.f, 1);
+							}
+							
 							MeshComp* mc = new MeshComp(mesh, id);
-							Physics* p = new Physics(position, rotation, mass, 1);
-							p->isStatic = staticc;
-							if (!col) col = new AABBCollider(Vector3(0.5, 0.5, 0.5), 1);
+							Physics* p = new Physics(position, rotation, Vector3::ZERO, Vector3::ZERO, 
+													 Vector3::ZERO, Vector3::ZERO, .5f, mass, staticc);
 							AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 							admin->world->CreateEntity(admin, { mc, p, s, col }, 
 													   name, Transform(position, rotation, scale));
@@ -1373,36 +1431,7 @@ void Console::Init(Time* t, Input* i, Window* w, EntityAdmin* ea) {
 		   "> (maybe) rewrite to use characters in the buffer rather than whole strings\n"
 		   "> (maybe) implement showing autocomplete as you type");
 	
-	//TODO(sushi,Cmd) reimplement this at some point
-	
-	//commands["debug_global"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-	//	GLOBAL_DEBUG = !GLOBAL_DEBUG;
-	//	if (GLOBAL_DEBUG) return "GLOBAL_DEBUG = true";
-	//	else return "GLOBAL_DEBUG = false";
-	//}, "debug_global", "debug_global");
-	
-	commands["debug_command_exec"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													 Command::CONSOLE_PRINT_EXEC = !Command::CONSOLE_PRINT_EXEC;
-													 return ""; //i dont know what this does so im not formatting it 
-												 }, "debug_command_exec", "if true, prints all command executions to the console");
-	
-	commands["engine_pause"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											   admin->paused = !admin->paused;
-											   if (admin->paused) return "engine_pause = true";
-											   else return "engine_pause = false";
-										   }, "engine_pause", "toggles pausing the engine");
-	
-	NEWCOMMAND("undo", "undo",{
-				   admin->undoManager.Undo();
-				   return "";
-			   });
-	
-	NEWCOMMAND("redo", "redo",{
-				   admin->undoManager.Redo();
-				   return "";
-			   });
-	
-	//AddSpawnCommands();
+	AddRandomCommands();
 	AddRenderCommands();
 	AddCameraCommands();
 	AddConsoleCommands();

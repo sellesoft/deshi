@@ -8,10 +8,8 @@ AudioListener::AudioListener(Vector3 position, Vector3 velocity, Vector3 orienta
 	this->orientation = orientation;
 	
 	layer = CL3_SOUND;
-
-	sortid = 0;
-
-	strncpy_s(name, "AudioListener", 63);
-	this->name[63] = '\0';
 	
+	sortid = 0;
+	
+	cpystr(name, "AudioListener", 63);
 }

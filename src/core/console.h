@@ -46,6 +46,7 @@ struct Console  {
 	int TextEditCallback(ImGuiInputTextCallbackData* data);
 	static int TextEditCallbackStub(ImGuiInputTextCallbackData* data);
 	
+	void AddRandomCommands();
 	void AddRenderCommands();
 	void AddCameraCommands();
 	void AddConsoleCommands();

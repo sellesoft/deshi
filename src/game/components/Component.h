@@ -44,6 +44,7 @@ struct Component : public Receiver {
 	CompLayer layer = NONE;
 	int layer_index;
 	
+	//Init only gets called when this component's entity is spawned thru the world system
 	virtual void Init() {};
 	virtual void Update() {};
 	void ConnectSend(Component* c);

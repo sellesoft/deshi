@@ -221,7 +221,7 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 	Vector3 vectorBetween = aabbPoint - sphere->position; //sphere towards aabb
 	float distanceBetween = vectorBetween.mag();
 	if(distanceBetween < sphereCol->radius) {
-		if(!aabbCol->isTrigger && !sphereCol->isTrigger) {
+		if(!aabbCol->command && !sphereCol->command) {
 			//SUCCESS("collision happened");
 			aabb->entity->GetComponent<AudioSource>()->request_play = true;
 			//static resolution
@@ -274,17 +274,17 @@ inline void SphereSphereCollision(EntityAdmin* admin, Physics* s1, SphereCollide
 		ImGui::DebugDrawLine3(s1->position, s2->position, admin->mainCamera, DengWindow->dimensions);
 		
 		Vector3 s1t2 = s2->position - s1->position;
-
+		
 		float overlap = (sc1->radius + sc2->radius) - s1t2.mag();
 		
 		ImGui::DebugDrawText3(TOSTRING(overlap).c_str(), s1->position, admin->mainCamera, DengWindow->dimensions);
-	
+		
 		s1->position -= s1t2.normalized() * overlap / 2;
 		s2->position += s1t2.normalized() * overlap / 2;
-
-
+		
+		
 	}
-
+	
 	ImGui::EndDebugLayer();
 }
 

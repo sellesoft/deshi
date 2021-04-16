@@ -6,29 +6,29 @@
 
 #include <unordered_map>
 
-////////////////////////////////////////////////////////////
-// Texture
-//////////////////////////////////////////////////////////
+/////////////////
+//// Texture ////
+/////////////////
 
 Texture::Texture(const char* filename, TextureTypes type) {
-	strncpy_s(this->filename, filename, 63); this->filename[63] = '\0';
+	cpystr(this->filename, filename, 63);
 	this->type = type;
 }
 
-////////////////////////////////////////////////////////////
-// Vertex
-//////////////////////////////////////////////////////////
+////////////////
+//// Vertex ////
+////////////////
 
 Vertex::Vertex(Vector3 pos, Vector2 uv, Vector3 color, Vector3 normal) {
 	this->pos = pos; this->color = color; this->uv = uv; this->normal = normal;
 }
 
-////////////////////////////////////////////////////////////
-// Batch
-//////////////////////////////////////////////////////////
+///////////////
+//// Batch ////
+///////////////
 
 Batch::Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<u32> indexArray, std::vector<Texture> textureArray, Shader shader, ShaderFlags shaderFlags) {
-	strncpy_s(this->name, name, 63); this->name[63] = '\0';
+	cpystr(this->name, name, 63);
 	this->shader = shader; this->shaderFlags = shaderFlags;
 	this->vertexArray = vertexArray;   this->vertexCount = vertexArray.size();
 	this->indexArray = indexArray;     this->indexCount = indexArray.size();
@@ -36,15 +36,15 @@ Batch::Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<u32>
 }
 
 void Batch::SetName(const char* name){
-	strncpy_s(this->name, name, 63); this->name[63] = '\0';
+	cpystr(this->name, name, 63);
 }
 
-////////////////////////////////////////////////////////////
-// Mesh
-//////////////////////////////////////////////////////////
+//////////////
+//// Mesh ////
+//////////////
 
 Mesh::Mesh(const char* name, std::vector<Batch> batchArray, Matrix4 transform) {
-	strncpy_s(this->name, name, 63); this->name[63] = '\0';
+	cpystr(this->name, name, 63);
 	this->transform = transform;
 	this->batchArray = batchArray; this->batchCount = batchArray.size();
 	for (Batch& batch : batchArray) {
@@ -55,7 +55,7 @@ Mesh::Mesh(const char* name, std::vector<Batch> batchArray, Matrix4 transform) {
 }
 
 void Mesh::SetName(const char* name){
-	strncpy_s(this->name, name, 63); this->name[63] = '\0';
+	cpystr(this->name, name, 63);
 }
 
 //https://github.com/tinyobjloader/tinyobjloader
@@ -170,6 +170,9 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 tra
 		mesh.batchArray.push_back(batch);
 	}
 	
+	mesh.vertexCount = totalVertexCount;
+	mesh.indexCount = totalIndexCount;
+	mesh.textureCount = totalTextureCount;
 	mesh.batchCount = mesh.batchArray.size();
 	return mesh;
 }
@@ -198,7 +201,12 @@ Mesh Mesh::CreateBox(Vector3 halfDims, Color color) {
 	};
 	
 	Batch batch("box_batch", vertices, indices, {});
-	return Mesh("default_box", { batch });
+	Mesh mesh = Mesh("default_box", { batch });
+	mesh.vertexCount = 8;
+	mesh.indexCount = 36;
+	mesh.textureCount = 0;
+	mesh.batchCount = 1;
+	return mesh;
 }
 
 Mesh Mesh::CreatePlanarBox(Vector3 halfDims, Color color) {
@@ -248,9 +256,15 @@ Mesh Mesh::CreatePlanarBox(Vector3 halfDims, Color color) {
 	};
 	
 	Batch batch("planarbox_batch", vertices, indices, {});
-	return Mesh("default_planarbox", { batch });
+	Mesh mesh = Mesh("default_planarbox", { batch });
+	mesh.vertexCount = 24;
+	mesh.indexCount = 36;
+	mesh.textureCount = 0;
+	mesh.batchCount = 1;
+	return mesh;
 }
 
+//TODO(delle) make this a texture array and make each face its own batch for multi-textured boxes
 Mesh Mesh::CreatePlanarBox(Vector3 halfDims, Texture texture) {
 	float x = halfDims.x; float y = halfDims.y; float z = halfDims.z;
 	Vector2 tl = Vector2(0.f, 0.f);   Vector2 tr = Vector2(1.f, 0.f); 
@@ -298,12 +312,17 @@ Mesh Mesh::CreatePlanarBox(Vector3 halfDims, Texture texture) {
 	};
 	
 	Batch batch("planarbox_batch", vertices, indices, { texture }, Shader::PBR);
-	return Mesh("textured_planarbox", { batch });
+	Mesh mesh = Mesh("textured_planarbox", { batch });
+	mesh.vertexCount = 24;
+	mesh.indexCount = 36;
+	mesh.textureCount = 1;
+	mesh.batchCount = 1;
+	return mesh;
 }
 
-////////////////////////////////////////////////////////////
-// Model
-//////////////////////////////////////////////////////////
+///////////////
+//// Model ////
+///////////////
 
 Model::Model(Mesh mesh){
 	this->mesh = mesh;

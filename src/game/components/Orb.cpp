@@ -9,8 +9,7 @@ OrbManager::OrbManager(Mesh* m, EntityAdmin* a, int orbcount) : Component(a) {
 	this->mesh = m;
 	this->orbcount = orbcount;
 	
-	strncpy_s(name, "OrbManager", 63);
-	this->name[63] = '\0';
+	cpystr(name, "OrbManager", 63);
 	layer = CL0_PHYSICS;
 	sortid = 6;
 };

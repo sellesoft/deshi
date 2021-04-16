@@ -66,49 +66,49 @@ namespace ImGui {
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ColToVec4(Color(0, 0, 0, 0)));
 		ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
 	}
-
+	
 	//not necessary, but I'm adding it for clarity in code
 	void EndDebugLayer() {
 		ImGui::PopStyleColor();
 		ImGui::End();
 	}
-
+	
 	void DebugDrawCircle(Vector2 pos, float radius, Color color) {
 		ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(pos.x, pos.y), radius, ImGui::GetColorU32(ColToVec4(color)));
 	}
-
+	
 	void DebugDrawCircle3(Vector3 pos, float radius, Camera* c, Vector2 windimen, Color color) {
 		Vector2 pos2 = Math::WorldToScreen2(pos, c->projectionMatrix, c->viewMatrix, windimen);
 		ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(pos.x, pos.y), radius, ImGui::GetColorU32(ColToVec4(color)));
 	}
-
+	
 	void DebugDrawLine(Vector2 pos1, Vector2 pos2, Color color) {
 		ImGui::GetBackgroundDrawList()->AddLine(pos1.ToImVec2(), pos2.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
 	}
-
+	
 	void DebugDrawLine3(Vector3 pos1, Vector3 pos2, Camera* c, Vector2 windimen, Color color) {
 		Vector2 pos12 = Math::WorldToScreen2(pos1, c->projectionMatrix, c->viewMatrix, windimen);
 		Vector2 pos22 = Math::WorldToScreen2(pos2, c->projectionMatrix, c->viewMatrix, windimen);
 		ImGui::GetBackgroundDrawList()->AddLine(pos12.ToImVec2(), pos22.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
 	}
-
+	
 	void DebugDrawText(const char* text, Vector2 pos, Color color) {		
 		ImGui::SetCursorPos(pos.ToImVec2());
-
+		
 		ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(color));
 		ImGui::Text(text);
 		ImGui::PopStyleColor();
 	}
-
+	
 	void DebugDrawText3(const char* text, Vector3 pos, Camera* c, Vector2 windimen, Color color) {
 		Vector2 pos2 = Math::WorldToScreen2(pos, c->projectionMatrix, c->viewMatrix, windimen);
 		ImGui::SetCursorPos(pos2.ToImVec2());
-
+		
 		ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(color));
 		ImGui::Text(text);
 		ImGui::PopStyleColor();
 	}
-
+	
 }
 
 
@@ -292,17 +292,17 @@ void CanvasSystem::DebugTools() {
 					static char ogname[64] = {};
 					if (ImGui::IsItemClicked()) {
 						rename = true;
-						strncpy_s(buff, entity.name, 64);
-						strncpy_s(ogname, entity.name, 64);
+						cpystr(buff, entity.name, 63);
+						cpystr(ogname, entity.name, 63);
 					}
 					
 					if (rename) {
 						if (ImGui::InputText("name input", buff, sizeof(buff), ImGuiInputTextFlags_EnterReturnsTrue)) {
-							strncpy_s(entity.name, buff, 64);
+							cpystr(entity.name, buff, 63);
 							rename = false;
 						}
 						if (DengInput->KeyPressed(Key::ESCAPE)) {
-							strncpy_s(entity.name, ogname, 64);
+							cpystr(entity.name, ogname, 63);
 							rename = false;
 						}
 					}
@@ -350,9 +350,11 @@ void CanvasSystem::DebugTools() {
 								Text("Position ");
 								vec3 oldVec = sel->transform.position;
 								SameLine(); if(InputVector3("position", &sel->transform.position)){
-									admin->undoManager.AddUndoTranslate(&sel->transform, &oldVec, &sel->transform.position);
 									if(Physics* p = sel->GetComponent<Physics>()){
 										p->position = sel->transform.position;
+										admin->undoManager.AddUndoTranslate(&sel->transform, &oldVec, &p->position);
+									}else{
+										admin->undoManager.AddUndoTranslate(&sel->transform, &oldVec, &sel->transform.position);
 									}
 								}
 								Separator();
@@ -361,9 +363,11 @@ void CanvasSystem::DebugTools() {
 								Text("Rotation ");
 								oldVec = sel->transform.rotation;
 								SameLine(); if(InputVector3("rotation", &sel->transform.rotation)){
-									admin->undoManager.AddUndoRotate(&sel->transform, &oldVec, &sel->transform.rotation);
 									if(Physics* p = sel->GetComponent<Physics>()){
 										p->rotation = sel->transform.rotation;
+										admin->undoManager.AddUndoRotate(&sel->transform, &oldVec, &p->rotation);
+									}else{
+										admin->undoManager.AddUndoRotate(&sel->transform, &oldVec, &sel->transform.rotation);
 									}
 								}
 								Separator();
@@ -966,7 +970,7 @@ void CanvasSystem::DebugLayer() {
 		ImGui::SetCursorPos(ImVec2(DengWindow->width - strlen * 1.3, menubarheight));
 		ImGui::Text(s.c_str());
 	}
-
+	
 	if (admin->debugTimes) {
 		std::string timet =    TOSTRING("Time time:        ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->timeTime))));
 		std::string windowt =  TOSTRING("Window time:      ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->windowTime))));
@@ -984,16 +988,16 @@ void CanvasSystem::DebugLayer() {
 		std::string consolet = TOSTRING("Console time:     ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->consoleTime))));
 		std::string rendert =  TOSTRING("Render time:      ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->renderTime))));
 		std::string framet =   TOSTRING("Frame time:       ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->adminTime))));
-
+		
 		float fontw = (fontsize - (fontsize / 2));
-
+		
 		ImGui::PushStyleColor(ImGuiCol_TableBorderLight,     ColToVec4(Color(45, 45, 45)));
 		ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,        ColToVec4(Color(10, 10, 10)));
 		
 		ImGui::SetCursorPos(ImVec2(DengWindow->width - fontw * 18 * 1.3 - 20, menubarheight));
-
+		
 		if (ImGui::BeginTable("TimeTable", 1, ImGuiTableFlags_NoBordersInBody)) {
-
+			
 			ImGui::TableNextColumn();
 			ImGui::Text(timet.c_str());    ImGui::TableNextColumn();
 			ImGui::Text(windowt.c_str());  ImGui::TableNextColumn();
@@ -1011,13 +1015,13 @@ void CanvasSystem::DebugLayer() {
 			ImGui::Text(consolet.c_str()); ImGui::TableNextColumn();
 			ImGui::Text(rendert.c_str());  ImGui::TableNextColumn();
 			ImGui::Text(framet.c_str());   ImGui::TableNextColumn();
-
+			
 			ImGui::EndTable();
 		}
 		ImGui::PopStyleColor();
 		ImGui::PopStyleColor();
-
-
+		
+		
 	}
 	
 	

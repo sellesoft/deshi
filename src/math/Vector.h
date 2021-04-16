@@ -105,8 +105,7 @@ struct Vector2 {
 	bool    operator != (const Vector2& rhs) const;
 	friend Vector2 operator * (float lhs, const Vector2& rhs) { return   rhs * lhs; }
 	
-	const std::string str() const;
-	const std::string str2f() const;
+	Vector2 absV() const;
 	Vector2 copy() const;
 	float   dot(const Vector2& rhs) const;
 	Vector2 cross(const Vector2& rhs) const;
@@ -118,10 +117,13 @@ struct Vector2 {
 	float   distanceTo(const Vector2& rhs) const;
 	Vector2 compOn(Vector2 rhs);
 	float   projectOn(Vector2 rhs);
+	Vector2 midpoint(Vector2 rhs);
 	Vector2 xComp() const;
 	Vector2 yComp() const;
 	Vector2 xInvert() const;
 	Vector2 yInvert() const;
+	const std::string str() const;
+	const std::string str2f() const;
 	
 	//vector interactions
 	Vector2(const Vector3& v);
@@ -173,6 +175,7 @@ struct Vector3 {
 	bool    operator != (const Vector3& rhs) const;
 	friend Vector3 operator * (float lhs, const Vector3& rhs) { return   rhs * lhs; }
 	
+	Vector3 absV() const;
 	Vector3 copy() const;
 	float   dot(const Vector3& rhs) const;
 	Vector3 cross(const Vector3& rhs) const;
@@ -185,6 +188,7 @@ struct Vector3 {
 	float   distanceTo(const Vector3& rhs) const;
 	Vector3 compOn(Vector3 rhs);
 	float   projectOn(Vector3 rhs);
+	Vector3 midpoint(Vector3 rhs);
 	Vector3 xComp() const;
 	Vector3 yComp() const;
 	Vector3 zComp() const;
@@ -241,6 +245,7 @@ struct Vector4 {
 	bool    operator != (const Vector4& rhs) const;
 	friend Vector4 operator * (const float& lhs, const Vector4& rhs) { return rhs * lhs; }
 	
+	Vector4 absV() const;
 	Vector4 copy() const;
 	float   dot(const Vector4& rhs) const;
 	float   mag() const;

@@ -13,7 +13,7 @@ Physics::Physics() {
 	mass = 1;
 	isStatic = false;
 	
-	strncpy_s(name, "Physics", 63);
+	cpystr(name, "Physics", 63);
 	sortid = 7;
 }
 
@@ -29,8 +29,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	this->mass = mass;
 	this->isStatic = isStatic;
 	
-	strncpy_s(name, "Physics", 63);
-	
+	cpystr(name, "Physics", 63);
 	layer = PHYS_LAYER;
 	sortid = 7;
 }
@@ -45,9 +44,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticit
 	this->mass = mass;
 	this->elasticity = elasticity;
 	
-	strncpy_s(name, "Physics", 63);
-	this->name[63] = '\0';
-	
+	cpystr(name, "Physics", 63);
 	layer = PHYS_LAYER;
 	sortid = 7;
 }

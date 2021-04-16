@@ -18,7 +18,7 @@ struct Physics : public Component {
 	float mass;
 	
 	std::vector<Vector3> forces;
-	Vector3 inputVector;
+	Vector3 inputVector = Vector3::ZERO;
 	
 	bool isStatic = false;
 	

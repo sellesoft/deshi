@@ -7,8 +7,7 @@ Light::Light(const Vector3& position, const Vector3& direction, float strength) 
 	this->position = position;
 	this->direction = direction;
 	this->strength = strength;
-	strncpy_s(name, "Light", 63);
-	this->name[63] = '\0';
+	cpystr(name, "Light", 63);
 }
 
 

@@ -7,6 +7,7 @@
 #include "../../EntityAdmin.h"
 
 MeshComp::MeshComp() {
+	cpystr(name, "MeshComp", 63);
 	send = new Sender();
 	layer = CL1_RENDCANVAS;
 	sortid = 5;
@@ -17,7 +18,7 @@ MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
 	this->MeshID = meshID;
 	this->InstanceID = instanceID;
 	
-	strncpy_s(name, "MeshComp", 63);
+	cpystr(name, "MeshComp", 63);
 	send = new Sender();
 	layer = CL1_RENDCANVAS;
 	sortid = 5;

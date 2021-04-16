@@ -131,16 +131,9 @@ operator != (const Vector3& rhs) const {
 //// functions ////
 ///////////////////
 
-inline const std::string Vector3::
-str() const {
-	return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + "," + std::to_string(this->z) + ")";
-}
-
-inline const std::string Vector3::
-str2f() const {
-	char buffer[50];
-	std::snprintf(buffer, 50, "(%+.2f, %+.2f, %+.2f)", this->x, this->y, this->z);
-	return std::string(buffer);
+inline Vector3 Vector3::
+absV() const{
+	return Vector3(abs(x), abs(y), abs(z));
 }
 
 inline Vector3 Vector3::
@@ -271,6 +264,11 @@ projectOn(Vector3 rhs) {
 }
 
 inline Vector3 Vector3::
+midpoint(Vector3 rhs){
+	return Vector3((x+rhs.x)/2.f, (y+rhs.y)/2.f, (z+rhs.z)/2.f);
+}
+
+inline Vector3 Vector3::
 xComp() const {
 	return Vector3(x, 0, 0);
 }
@@ -298,6 +296,18 @@ yInvert() const {
 inline Vector3 Vector3::
 zInvert() const {
 	return Vector3(x, y, -z);
+}
+
+inline const std::string Vector3::
+str() const {
+	return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + "," + std::to_string(this->z) + ")";
+}
+
+inline const std::string Vector3::
+str2f() const {
+	char buffer[50];
+	std::snprintf(buffer, 50, "(%+.2f, %+.2f, %+.2f)", this->x, this->y, this->z);
+	return std::string(buffer);
 }
 
 //////////////

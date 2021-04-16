@@ -25,9 +25,10 @@ struct Time{
 	f32 fixedAccumulator = 0;
 	
 	f32 timeTime{}, windowTime{}, inputTime{}, adminTime{}, consoleTime{}, renderTime{}, frameTime{};
-
-	f32 physLyrTime{}, physSysTime{}, canvasLyrTime{}, canvasSysTime{}, worldLyrTime{}, worldSysTime{}, sndLyrTime{}, sndSysTime{}, lastLyrTime{};
-
+	
+	f32 physLyrTime{}, canvasLyrTime{}, worldLyrTime{}, sndLyrTime{}, lastLyrTime{};
+	f32 physSysTime{}, canvasSysTime{}, worldSysTime{}, sndSysTime{};
+	
 	bool paused{}, frame{}, phys_pause{};
 	
 	std::chrono::time_point<std::chrono::system_clock> tp1, tp2;
@@ -37,6 +38,7 @@ struct Time{
 	
 	std::string FormatDateTime(std::string format);
 	std::string FormatTickTime(std::string format);
+	std::string FormatAdminTime(std::string format);
 };
 
 inline void Time::Init(float fixedUpdatesPerSecond){
@@ -75,13 +77,13 @@ inline std::string Time::FormatDateTime(std::string fmt){
 	std::tm* ltm = localtime(&now);
 	std::string weekday;
 	switch (ltm->tm_wday) {
-		case 0: weekday = "Mon"; break;
-		case 1: weekday = "Tue"; break;
-		case 2: weekday = "Wed"; break;
-		case 3: weekday = "Thu"; break;
-		case 4: weekday = "Fri"; break;
-		case 5: weekday = "Sat"; break;
-		case 6: weekday = "Sun"; break;
+		case 0: weekday = "Sun"; break;
+		case 1: weekday = "Mon"; break;
+		case 2: weekday = "Tue"; break;
+		case 3: weekday = "Wed"; break;
+		case 4: weekday = "Thu"; break;
+		case 5: weekday = "Fri"; break;
+		case 6: weekday = "Sat"; break;
 	}
 	
 	std::string out = ""; out.reserve(256);
@@ -124,7 +126,7 @@ inline std::string Time::FormatDateTime(std::string fmt){
 
 //{t}:time, {w}:window, {i}:input, {a}:admin, {c}:console, {r}:render, {f}:frame, {d}:delta
 inline std::string Time::FormatTickTime(std::string fmt){
-	std::string out = ""; out.reserve(256);
+	std::string out = ""; out.reserve(512);
 	for_n(i, fmt.size()){
 		if(fmt[i] == '{'){
 			switch(fmt[i+1]){
@@ -151,6 +153,48 @@ inline std::string Time::FormatTickTime(std::string fmt){
 				}i+=2;continue;
 				case('d'):{
 					out.append(std::to_string(deltaTime));
+				}i+=2;continue;
+			}
+		}
+		out.push_back(fmt[i]);
+	}
+	
+	out.shrink_to_fit(); return out;
+}
+
+//{P}:physics layer,  {C}:canvas layer,  {W}:world layer,  {S}:send layer,  {L}:last layer
+//{p}:physics system, {c}:canvas system, {w}:world system, {s}:send system, 
+inline std::string Time::FormatAdminTime(std::string fmt){
+	std::string out = ""; out.reserve(512);
+	for_n(i, fmt.size()){
+		if(fmt[i] == '{'){
+			switch(fmt[i+1]){
+				case('P'):{
+					out.append(std::to_string(physLyrTime));
+				}i+=2;continue;
+				case('p'):{
+					out.append(std::to_string(physSysTime));
+				}i+=2;continue;
+				case('C'):{
+					out.append(std::to_string(canvasLyrTime));
+				}i+=2;continue;
+				case('c'):{
+					out.append(std::to_string(canvasSysTime));
+				}i+=2;continue;
+				case('W'):{
+					out.append(std::to_string(worldLyrTime));
+				}i+=2;continue;
+				case('w'):{
+					out.append(std::to_string(worldSysTime));
+				}i+=2;continue;
+				case('S'):{
+					out.append(std::to_string(sndLyrTime));
+				}i+=2;continue;
+				case('s'):{
+					out.append(std::to_string(sndSysTime));
+				}i+=2;continue;
+				case('L'):{
+					out.append(std::to_string(lastLyrTime));
 				}i+=2;continue;
 			}
 		}

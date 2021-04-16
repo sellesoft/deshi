@@ -335,7 +335,7 @@ u32 Renderer::LoadBaseMesh(Mesh* m){
 	MeshVk mesh;  mesh.base = true; 
 	mesh.ptr = m; mesh.visible = false;
 	mesh.primitives.reserve(m->batchCount);
-	strncpy_s(mesh.name, m->name, 63); mesh.name[63] = '\0';
+	cpystr(mesh.name, m->name, 63);
 	
 	//resize scene vectors
 	vertexBuffer.reserve(vertexBuffer.size() + m->vertexCount);
@@ -471,7 +471,7 @@ CreateMesh(u32 meshID, Matrix4 matrix){
 		mesh.ptr = meshes[meshID].ptr; mesh.visible = true;
 		mesh.primitives = std::vector<PrimitiveVk>(meshes[meshID].primitives);
 		mesh.modelMatrix = glm::make_mat4(matrix.data);
-		strncpy_s(mesh.name, meshes[meshID].name, 63); mesh.name[63] = '\0';
+		cpystr(mesh.name, meshes[meshID].name, 63);
 		mesh.id = u32(meshes.size());
 		meshes.push_back(mesh);
 		meshes[meshID].children.push_back(mesh.id);
@@ -602,7 +602,7 @@ LoadTexture(Texture texture){
 	for(auto& tex : textures){ if(strcmp(tex.filename, texture.filename) == 0){ return tex.id; } }
 	
 	TextureVk tex; 
-	strncpy_s(tex.filename, texture.filename, 63);
+	cpystr(tex.filename, texture.filename, 63);
 	
 	std::string imagePath = deshi::getTexture(texture.filename);
 	if(imagePath == ""){ return 0; }
@@ -2418,8 +2418,7 @@ loadShader(std::string fileName, VkShaderStageFlagBits stage) {
 	
 	//get shader name
 	char shaderName[16];
-	strncpy_s(shaderName, fileName.c_str(), 15);
-	shaderName[15] = '\0'; //null-character
+	cpystr(shaderName, fileName.c_str(), 15);
 	
 	//check if shader has already been created
 	for(auto& module : shaderModules){

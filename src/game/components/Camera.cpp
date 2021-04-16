@@ -21,8 +21,7 @@ Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ, bool freeCam) 
 	admin->renderer->UpdateCameraViewMatrix(viewMatrix);
 	admin->renderer->UpdateCameraPosition(position);
 	
-	strncpy_s(name, "Camera", 63);
-	this->name[63] = '\0';
+	cpystr(name, "Camera", 63);
 	layer = NONE;
 }
 
