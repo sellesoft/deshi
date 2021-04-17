@@ -13,6 +13,7 @@ BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer,
 	cpystr(name, "BoxCollider", 63);
 	sortid = 2;
 	
+	this->type = ColliderType_Box;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 	this->command = command;
@@ -23,6 +24,7 @@ BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionL
 	cpystr(name, "BoxCollider", 63);
 	sortid = 2;
 	
+	this->type = ColliderType_Box;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = tensor;
 	this->command = command;
@@ -44,8 +46,9 @@ void BoxCollider::Load(std::vector<Entity>& entities, const char* data, u32& cur
 			continue;
 		}
 		
-		memcpy(&layer, data+cursor, sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3)); 
-		cursor += sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
+		memcpy(&layer, data+cursor,          sizeof(u32));  cursor += sizeof(u32);
+		memcpy(&tensor, data+cursor,         sizeof(mat3)); cursor += sizeof(mat3);
+		memcpy(&halfDimensions, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
 		entities[entityID].AddComponent(new BoxCollider(halfDimensions, tensor, layer, nullptr));
 	}
 }
@@ -59,6 +62,7 @@ AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Command* 
 	cpystr(name, "AABBCollider", 63);
 	sortid = 3;
 	
+	this->type = ColliderType_AABB;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 	this->command = command;
@@ -108,6 +112,7 @@ AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLaye
 	cpystr(name, "AABBCollider", 63);
 	sortid = 3;
 	
+	this->type = ColliderType_AABB;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 	this->command = command;
@@ -118,6 +123,7 @@ AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisio
 	cpystr(name, "AABBCollider", 63);
 	sortid = 3;
 	
+	this->type = ColliderType_AABB;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = tensor;
 	this->command = command;
@@ -139,8 +145,9 @@ void AABBCollider::Load(std::vector<Entity>& entities, const char* data, u32& cu
 			continue;
 		}
 		
-		memcpy(&layer, data+cursor, sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3)); 
-		cursor += sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
+		memcpy(&layer, data+cursor,          sizeof(u32));  cursor += sizeof(u32);
+		memcpy(&tensor, data+cursor,         sizeof(mat3)); cursor += sizeof(mat3);
+		memcpy(&halfDimensions, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
 		entities[entityID].AddComponent(new AABBCollider(halfDimensions, tensor, layer, nullptr));
 	}
 }
@@ -153,6 +160,7 @@ SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Com
 	cpystr(name, "SphereCollider", 63);
 	sortid = 4;
 	
+	this->type = ColliderType_Sphere;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
 	this->command = command;
@@ -163,6 +171,7 @@ SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer
 	cpystr(name, "SphereCollider", 63);
 	sortid = 4;
 	
+	this->type = ColliderType_Sphere;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = tensor;
 	this->command = command;
@@ -184,8 +193,9 @@ void SphereCollider::Load(std::vector<Entity>& entities, const char* data, u32& 
 			continue;
 		}
 		
-		memcpy(&layer, data+cursor, sizeof(u32) + sizeof(mat3) + sizeof(f32)); 
-		cursor += sizeof(u32) + sizeof(mat3) + sizeof(f32);
+		memcpy(&layer, data+cursor,  sizeof(u32));  cursor += sizeof(u32);
+		memcpy(&tensor, data+cursor, sizeof(mat3)); cursor += sizeof(mat3);
+		memcpy(&radius, data+cursor, sizeof(f32));  cursor += sizeof(f32);
 		entities[entityID].AddComponent(new SphereCollider(radius, tensor, layer, nullptr));
 	}
 }

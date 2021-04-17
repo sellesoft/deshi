@@ -61,7 +61,6 @@ ECHO [47m[94m%DATE% %TIME% Release[0m[0m
 @set OUT_DIR="..\build\Release"
 IF NOT EXIST %OUT_DIR% mkdir %OUT_DIR%
 cl /EHsc /nologo /Zi /MD /O2 /Oi /MP /std:c++17 %DEFINES% %INCLUDES% %SOURCES% /Fe%OUT_DIR%/%OUT_EXE% /Fo%OUT_DIR%/ /link %LIBS%
-COPY %OUT_DIR%/%OUT_EXE% ..\%OUT_EXE%
 GOTO DONE
 
 :DONE

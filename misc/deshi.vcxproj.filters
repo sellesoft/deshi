@@ -349,9 +349,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\utils\Command.cpp">
-      <Filter>src\utils</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\EntityAdmin.cpp">
       <Filter>src</Filter>
     </ClCompile>

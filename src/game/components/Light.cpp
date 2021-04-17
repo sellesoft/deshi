@@ -28,8 +28,9 @@ void Light::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u
 			continue;
 		}
 		
-		memcpy(&position, data+cursor, sizeof(Vector3)*2 + sizeof(f32)); 
-		cursor += sizeof(Vector3)*2 + sizeof(f32);
+		memcpy(&position, data+cursor,  sizeof(vec3)); cursor += sizeof(vec3);
+		memcpy(&direction, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
+		memcpy(&strength, data+cursor,  sizeof(f32));  cursor += sizeof(f32);
 		entities[entityID].AddComponent(new Light(position, direction, strength));
 	}
 }

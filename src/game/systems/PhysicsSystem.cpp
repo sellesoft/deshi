@@ -261,23 +261,23 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 	}
 }
 
-inline void AABBBoxCollision(EntityAdmin* admin, Physics* aabb, AABBCollider* aabbCol, Physics* box, BoxCollider* boxCol) {
+inline void AABBBoxCollision(Physics* aabb, AABBCollider* aabbCol, Physics* box, BoxCollider* boxCol) {
 	ERROR("AABB-Box collision not implemented in PhysicsSystem.cpp");
 }
 
-inline void SphereSphereCollision(EntityAdmin* admin, Physics* s1, SphereCollider* sc1, Physics* s2, SphereCollider* sc2) {
+inline void SphereSphereCollision(Physics* s1, SphereCollider* sc1, Physics* s2, SphereCollider* sc2) {
 	//static resolution
-	ImGui::BeginDebugLayer();
+	//ImGui::BeginDebugLayer();
 	
 	
 	if (sc1->radius + sc2->radius > (s1->position - s2->position).mag()) {
-		ImGui::DebugDrawLine3(s1->position, s2->position, admin->mainCamera, DengWindow->dimensions);
+		//ImGui::DebugDrawLine3(s1->position, s2->position, g_admin->mainCamera, DengWindow->dimensions);
 		
 		Vector3 s1t2 = s2->position - s1->position;
 		
 		float overlap = (sc1->radius + sc2->radius) - s1t2.mag();
 		
-		ImGui::DebugDrawText3(TOSTRING(overlap).c_str(), s1->position, admin->mainCamera, DengWindow->dimensions);
+		//ImGui::DebugDrawText3(TOSTRING(overlap).c_str(), s1->position, g_admin->mainCamera, DengWindow->dimensions);
 		
 		s1->position -= s1t2.normalized() * overlap / 2;
 		s2->position += s1t2.normalized() * overlap / 2;
@@ -285,52 +285,56 @@ inline void SphereSphereCollision(EntityAdmin* admin, Physics* s1, SphereCollide
 		
 	}
 	
-	ImGui::EndDebugLayer();
+	//ImGui::EndDebugLayer();
 }
 
-inline void SphereBoxCollision(EntityAdmin* admin, Physics* sphere, SphereCollider* sphereCol, Physics* box, BoxCollider* boxCol) {
+inline void SphereBoxCollision(Physics* sphere, SphereCollider* sphereCol, Physics* box, BoxCollider* boxCol) {
 	ERROR("Sphere-Box collision not implemented in PhysicsSystem.cpp");
 }
 
-inline void BoxBoxCollision(EntityAdmin* admin, Physics* box, BoxCollider* boxCol, Physics* other, BoxCollider* otherCol) {
+inline void BoxBoxCollision(Physics* box, BoxCollider* boxCol, Physics* other, BoxCollider* otherCol) {
 	ERROR("Box-Box collision not implemented in PhysicsSystem.cpp");
 }
 
 //NOTE make sure you are using the right physics component, because the collision 
 //functions dont check that the provided one matches the tuple
-inline void CheckCollision(EntityAdmin* admin, PhysicsTuple& tuple, PhysicsTuple& other) {
-	if(AABBCollider* col = dynamic_cast<AABBCollider*>(tuple.collider)) {
-		if(AABBCollider* col2 = dynamic_cast<AABBCollider*>(other.collider)) {
-			AABBAABBCollision(tuple.physics, col, other.physics, col2);
-		} else if(SphereCollider* col2 = dynamic_cast<SphereCollider*>(other.collider)) {
-			AABBSphereCollision(tuple.physics, col, other.physics, col2);
-		} else if(BoxCollider* col2 = dynamic_cast<BoxCollider*>(other.collider)) {
-			AABBBoxCollision(admin, tuple.physics, col, other.physics, col2);
-		}
-	} else if(SphereCollider* col = dynamic_cast<SphereCollider*>(tuple.collider)) {
-		if(AABBCollider* col2 = dynamic_cast<AABBCollider*>(other.collider)) {
-			AABBSphereCollision(other.physics, col2, tuple.physics, col);
-		} else if(SphereCollider* col2 = dynamic_cast<SphereCollider*>(other.collider)) {
-			SphereSphereCollision(admin, tuple.physics, col, other.physics, col2);
-		} else if(BoxCollider* col2 = dynamic_cast<BoxCollider*>(other.collider)) {
-			SphereBoxCollision(admin, tuple.physics, col, other.physics, col2);
-		}
-	} else if(BoxCollider* col = dynamic_cast<BoxCollider*>(tuple.collider)) {
-		if(AABBCollider* col2 = dynamic_cast<AABBCollider*>(other.collider)) {
-			AABBBoxCollision(admin, other.physics, col2, tuple.physics, col);
-		} else if(SphereCollider* col2 = dynamic_cast<SphereCollider*>(other.collider)) {
-			SphereBoxCollision(admin, other.physics, col2, tuple.physics, col);
-		} else if(BoxCollider* col2 = dynamic_cast<BoxCollider*>(other.collider)) {
-			BoxBoxCollision(admin, tuple.physics, col, other.physics, col2);
-		}
+inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other) {
+	switch(tuple.collider->type){
+		case(ColliderType_Box):
+		switch(other.collider->type){
+			case(ColliderType_Box):   { BoxBoxCollision   (tuple.physics, (BoxCollider*)   tuple.collider, 
+														   other.physics, (BoxCollider*)   other.collider); }break;
+			case(ColliderType_Sphere):{ SphereBoxCollision(other.physics, (SphereCollider*)other.collider, 
+														   tuple.physics, (BoxCollider*)   tuple.collider); }break;
+			case(ColliderType_AABB):  { AABBBoxCollision  (other.physics, (AABBCollider*)  other.collider, 
+														   tuple.physics, (BoxCollider*)   tuple.collider); }break;
+		}break;
+		case(ColliderType_Sphere):
+		switch(other.collider->type){
+			case(ColliderType_Box):   { SphereBoxCollision   (tuple.physics, (SphereCollider*)tuple.collider, 
+															  other.physics, (BoxCollider*)   other.collider); }break;
+			case(ColliderType_Sphere):{ SphereSphereCollision(tuple.physics, (SphereCollider*)tuple.collider, 
+															  other.physics, (SphereCollider*)other.collider); }break;
+			case(ColliderType_AABB):  { AABBSphereCollision  (other.physics, (AABBCollider*)  other.collider, 
+															  tuple.physics, (SphereCollider*)tuple.collider); }break;
+		}break;
+		case(ColliderType_AABB):
+		switch(other.collider->type){
+			case(ColliderType_Box):   { AABBBoxCollision   (tuple.physics, (AABBCollider*)  tuple.collider, 
+															other.physics, (BoxCollider*)   other.collider); }break;
+			case(ColliderType_Sphere):{ AABBSphereCollision(tuple.physics, (AABBCollider*)  tuple.collider, 
+															other.physics, (SphereCollider*)other.collider); }break;
+			case(ColliderType_AABB):  { AABBAABBCollision  (tuple.physics, (AABBCollider*)  tuple.collider, 
+															other.physics, (AABBCollider*)  other.collider); }break;
+		}break;
 	}
 }
 
-inline void CollisionTick(EntityAdmin* admin, std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
+inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 	if(t.collider) {
 		for(auto& tuple : tuples) {
 			if(&t != &tuple && tuple.collider && t.collider->collisionLayer == tuple.collider->collisionLayer) {
-				CheckCollision(admin, t, tuple);
+				CheckCollision(t, tuple);
 			}
 		}
 	}
@@ -350,7 +354,7 @@ void PhysicsSystem::Update() {
 	while(time->fixedAccumulator >= time->fixedDeltaTime) {
 		for(auto& t : tuples) {
 			PhysicsTick(t, pw, time);
-			CollisionTick(admin, tuples, t);
+			CollisionTick(tuples, t);
 		}
 		time->fixedAccumulator -= time->fixedDeltaTime;
 		time->fixedTotalTime += time->fixedDeltaTime;

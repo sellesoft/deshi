@@ -327,7 +327,6 @@
     <ClCompile Include="..\src\game\UndoManager.cpp" />
     <ClCompile Include="..\src\scene\Model.cpp" />
     <ClCompile Include="..\src\scene\Scene.cpp" />
-    <ClCompile Include="..\src\utils\Command.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\cfg\keybinds.txt" />

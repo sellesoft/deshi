@@ -2460,7 +2460,7 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
 		std::vector<char> code = deshi::readFileBinary(deshi::dirShaders() + filename); //read shader code
 		
 		//try compile from GLSL to SPIR-V binary
-		shaderc_compilation_result_t result;
+		shaderc_compilation_result_t result = 0;
 		if(ext.compare(".vert") == 0){
 			result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_vertex_shader, 
 											  filename.c_str(), "main", options);

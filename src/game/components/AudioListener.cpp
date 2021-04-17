@@ -14,7 +14,7 @@ AudioListener::AudioListener(Vector3 position, Vector3 velocity, Vector3 orienta
 
 void AudioListener::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF;
-	Vector3 position, velocity, orientation;
+	vec3 position{}, velocity{}, orientation{};
 	for_n(i,count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); 
 		cursor += sizeof(u32);
@@ -24,8 +24,9 @@ void AudioListener::Load(std::vector<Entity>& entities, const char* data, u32& c
 			continue;
 		}
 		
-		memcpy(&position, data+cursor, sizeof(Vector3)*3); 
-		cursor += sizeof(Vector3)*3;
+		memcpy(&position, data+cursor,    sizeof(vec3)); cursor += sizeof(vec3);
+		memcpy(&velocity, data+cursor,    sizeof(vec3)); cursor += sizeof(vec3);
+		memcpy(&orientation, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
 		entities[entityID].AddComponent(new AudioListener(position, velocity, orientation));
 	}
 }

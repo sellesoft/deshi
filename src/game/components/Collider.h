@@ -8,7 +8,12 @@
 struct Command;
 struct Mesh;
 
+enum ColliderTypeBits : u32{
+	ColliderType_Box, ColliderType_AABB, ColliderType_Sphere
+}; typedef u32 ColliderType;
+
 struct Collider : public Component {
+	ColliderType type;
 	u32 collisionLayer;
 	Matrix3 inertiaTensor;
 	Command* command; //TODO(delle,Ph) implement trigger colliders

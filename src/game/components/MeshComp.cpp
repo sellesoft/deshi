@@ -83,8 +83,10 @@ void MeshComp::Load(std::vector<Entity>& entities, const char* data, u32& cursor
 			continue;
 		}
 		
-		memcpy(&instanceID, data+cursor, sizeof(u32)*2 + sizeof(b32)*2); 
-		cursor += sizeof(u32)*2 + sizeof(b32)*2;
+		memcpy(&instanceID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&meshID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&visible, data+cursor, sizeof(b32)); cursor += sizeof(b32);
+		memcpy(&entity_control, data+cursor, sizeof(b32)); cursor += sizeof(b32);
 		
 		MeshComp* mc = new MeshComp();
 		mc->mesh = DengRenderer->GetMeshPtr(meshID);

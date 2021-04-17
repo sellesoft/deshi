@@ -983,56 +983,26 @@ void CanvasSystem::DebugLayer() {
 	}
 	
 	if (admin->debugTimes) {
-		std::string timet =    TOSTRING("Time time:        ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->timeTime))));
-		std::string windowt =  TOSTRING("Window time:      ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->windowTime))));
-		std::string inputt =   TOSTRING("Input time:       ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->inputTime))));
-		std::string admint =   TOSTRING("Admin time:       ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->adminTime))));
-		std::string physlt =   TOSTRING("Physics Lyr time: ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->physLyrTime))));
-		std::string physst =   TOSTRING("Physics Sys time: ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->physSysTime))));
-		std::string canvaslt = TOSTRING("Canvas Lyr time:  ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->canvasLyrTime))));
-		std::string canvasst = TOSTRING("Canvas Sys time:  ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->canvasSysTime))));
-		std::string worldlt =  TOSTRING("World Lyr time:   ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->worldLyrTime))));
-		std::string worldst =  TOSTRING("World Sys time:   ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->worldSysTime))));
-		std::string sndlt =    TOSTRING("Sound Lyr time:   ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->sndLyrTime))));
-		std::string sndst =    TOSTRING("Sound Sys time:   ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->sndSysTime))));
-		std::string lastlt =   TOSTRING("Last Lyr time:    ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->lastLyrTime))));
-		std::string consolet = TOSTRING("Console time:     ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->consoleTime))));
-		std::string rendert =  TOSTRING("Render time:      ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->renderTime))));
-		std::string framet =   TOSTRING("Frame time:       ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->frameTime))));
+		std::string time1 = DengTime->FormatTickTime ("Time       : {t}\n"
+													  "Window     : {w}\n"
+													  "Input      : {i}\n");
+		time1            += DengTime->FormatAdminTime("Physics Lyr: {P}\n"
+													  "        Sys: {p}\n"
+													  "Canvas  Lyr: {C}\n"
+													  "        Sys: {c}\n"
+													  "World   Lyr: {W}\n"
+													  "        Sys: {w}\n"
+													  "Sound   Lyr: {S}\n"
+													  "        Sys: {s}\n"
+													  "Last    Lyr: {L}\n");
+		time1            += DengTime->FormatTickTime ("Admin      : {a}\n"
+													  "Console    : {c}\n"
+													  "Render     : {r}\n"
+													  "Frame      : {f}");
 		
 		float fontw = (fontsize - (fontsize / 2));
-		
-		ImGui::PushStyleColor(ImGuiCol_TableBorderLight,     ColToVec4(Color(45, 45, 45)));
-		ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,        ColToVec4(Color(10, 10, 10)));
-		
 		ImGui::SetCursorPos(ImVec2(DengWindow->width - fontw * 18 * 1.3 - 20, menubarheight));
-		
-		if (ImGui::BeginTable("TimeTable", 1, ImGuiTableFlags_NoBordersInBody)) {
-			
-			ImGui::TableNextColumn();
-			ImGui::Text(timet.c_str());    ImGui::TableNextColumn();
-			ImGui::Text(windowt.c_str());  ImGui::TableNextColumn();
-			ImGui::Text(inputt.c_str());   ImGui::TableNextColumn();
-			ImGui::Text(admint.c_str());   ImGui::TableNextColumn();
-			ImGui::Text(physlt.c_str());   ImGui::TableNextColumn();
-			ImGui::Text(physst.c_str());   ImGui::TableNextColumn();
-			ImGui::Text(canvaslt.c_str());   ImGui::TableNextColumn();
-			ImGui::Text(canvasst.c_str());   ImGui::TableNextColumn();
-			ImGui::Text(worldlt.c_str());   ImGui::TableNextColumn();
-			ImGui::Text(worldst.c_str());   ImGui::TableNextColumn();
-			ImGui::Text(sndlt.c_str());   ImGui::TableNextColumn();
-			ImGui::Text(sndst.c_str());   ImGui::TableNextColumn();
-			ImGui::Text(lastlt.c_str());   ImGui::TableNextColumn();
-			ImGui::Text(consolet.c_str()); ImGui::TableNextColumn();
-			ImGui::Text(rendert.c_str());  ImGui::TableNextColumn();
-			ImGui::Text(framet.c_str());   ImGui::TableNextColumn();
-			
-			ImGui::EndTable();
-		}
-		ImGui::PopStyleColor();
-		ImGui::PopStyleColor();
-		
-		
+		ImGui::Text(time1.c_str());
 	}
 	
 	
