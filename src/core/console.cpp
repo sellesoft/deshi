@@ -42,11 +42,6 @@ using namespace ImGui;
 
 int buffersize = 0;
 
-//this is necessary so the textcallback stub can access a function in the obj
-//it has to be static i dont really know why maybe ill fix it when i go to rewrite
-//this ugly thing
-Console* me;
-
 bool sel_com = false; //true when selecting an auto complete possibility
 bool sel_com_ret = false; //tells the callback function that it is going to replace text
 std::string sel_com_str = ""; //the string we're replacing input with
@@ -92,8 +87,8 @@ void Console::AddLog(std::string input) {
 				buffer.push_back(std::pair<std::string, Color>(m[2].str(), colstrmap.at(m[1])));
 				buffersize += m[2].str().size();
 				if (m[1] == "error") {
-					admin->cons_error_warn = true;
-					admin->last_error = m[2].str();
+					cons_error_warn = true;
+					last_error = m[2].str();
 				}
 			}
 			else {
@@ -107,15 +102,32 @@ void Console::AddLog(std::string input) {
 	}
 }
 
-std::string Console::ExecCommand(std::string command, std::string args) {
+
+Command* Console::GetCommand(std::string command) {
+	try {
+		return commands.at(command);
+	} catch (std::exception e) {
+		PushConsole(TOSTRING("[c:error]Command '", command, "' does not exist[c]"));
+		return 0;
+	}
+}
+
+std::string Console::ExecCommand(std::string command) {
 	if (commands.find(command) != commands.end()) {
-		return commands.at(command)->Exec(admin, args);
+		return commands.at(command)->Exec(g_admin, "");
 	}
 	else {
 		return "[c:red]Command[c] \"" + command + "\" [c:red]not found.[c]";
 	}
-	
-	//admin->
+}
+
+std::string Console::ExecCommand(std::string command, std::string args) {
+	if (commands.find(command) != commands.end()) {
+		return commands.at(command)->Exec(g_admin, args);
+	}
+	else {
+		return "[c:red]Command[c] \"" + command + "\" [c:red]not found.[c]";
+	}
 }
 
 int Console::TextEditCallback(ImGuiInputTextCallbackData* data) {
@@ -218,13 +230,11 @@ int Console::TextEditCallback(ImGuiInputTextCallbackData* data) {
 
 
 int Console::TextEditCallbackStub(ImGuiInputTextCallbackData* data) {
-	return me->TextEditCallback(data);
+	return DengConsole->TextEditCallback(data);
 }
 
 
 void Console::DrawConsole() {
-	
-	
 	ImGuiStyle& style = ImGui::GetStyle();
 	ImGuiIO& io = ImGui::GetIO();
 	
@@ -249,7 +259,7 @@ void Console::DrawConsole() {
 	PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColorToVec4(Color(48, 85, 90, 255)));
 	
 	//initialize console window
-	SetNextWindowSize(ImVec2(window->width, window->height / 1.5));
+	SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height / 1.5));
 	SetNextWindowPos(ImVec2(0, 0));
 	
 	ImGui::Begin("Console!", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
@@ -268,10 +278,10 @@ void Console::DrawConsole() {
 	if (sel_com) {
 		bool selected = false;
 		bool escape = false;
-		if (input->KeyPressed(Key::DOWN) && match_sel < posis.size() - 1) { match_sel++; }
-		if (input->KeyPressed(Key::UP) && match_sel > 0) { match_sel--; }
-		if (input->KeyPressed(Key::ENTER)) { selected = true; reclaim_focus = true; }
-		if (input->KeyPressed(Key::ESCAPE)) { escape = true; match_sel = 0; reclaim_focus = true; }
+		if (DengInput->KeyPressed(Key::DOWN) && match_sel < posis.size() - 1) { match_sel++; }
+		if (DengInput->KeyPressed(Key::UP) && match_sel > 0) { match_sel--; }
+		if (DengInput->KeyPressed(Key::ENTER)) { selected = true; reclaim_focus = true; }
+		if (DengInput->KeyPressed(Key::ESCAPE)) { escape = true; match_sel = 0; reclaim_focus = true; }
 		
 		if (escape) { ok_flag = true; }
 		else {
@@ -396,7 +406,7 @@ void Console::DrawConsole() {
 	
 	reclaim_focus = false;
 	
-	admin->IMGUI_KEY_CAPTURE = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+	IMGUI_KEY_CAPTURE = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 	
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();	    ImGui::PopStyleColor();
@@ -484,6 +494,14 @@ COMMANDFUNC(time_game){
 									 "Systems: Physics:{p}ms Canvas:{c}ms World:{w}ms Send:{s}ms");
 }
 
+COMMANDFUNC(undo){
+	admin->undoManager.Undo(); return "";
+}
+
+COMMANDFUNC(redo){
+	admin->undoManager.Redo(); return "";
+}
+
 void Console::AddRandomCommands(){
 	//TODO(sushi,Cmd) reimplement this at some point
 	//commands["debug_global"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
@@ -492,23 +510,18 @@ void Console::AddRandomCommands(){
 	//	else return "GLOBAL_DEBUG = false";
 	//}, "debug_global", "debug_global");
 	
-	commands["debug_command_exec"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													 Command::CONSOLE_PRINT_EXEC = !Command::CONSOLE_PRINT_EXEC;
-													 return (Command::CONSOLE_PRINT_EXEC) ? "Log command execution: true" : "Log command execution: false"; 
-												 }, "debug_command_exec", "if true, prints all command executions to the console");
-	
 	commands["engine_pause"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 											   admin->paused = !admin->paused;
 											   if (admin->paused) return "engine_pause = true";
 											   else return "engine_pause = false";
 										   }, "engine_pause", "toggles pausing the engine");
 	
-	NEWCOMMAND("undo", "undos previous level editor action",{ admin->undoManager.Undo(); return ""; });
-	NEWCOMMAND("redo", "redos last undone level editor action",{ admin->undoManager.Redo(); return ""; });
 	
 	ADDCOMMAND(daytime, "Logs the time in day-time format");
 	ADDCOMMAND(time_engine, "Logs the engine times");
 	ADDCOMMAND(time_game, "Logs the game times");
+	ADDCOMMAND(undo, "Undos previous level editor action");
+	ADDCOMMAND(redo, "Redos last undone level editor action");
 }
 
 ////////////////////////////////////
@@ -530,14 +543,14 @@ void Console::AddRenderCommands() {
 	NEWCOMMAND("render_options", "render_options <wireframe:Bool>", {
 				   if (args.size() > 0) {
 					   try {
-						   admin->renderer->settings.wireframe = std::stoi(args[0]);
-						   return (admin->renderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
+						   DengRenderer->settings.wireframe = std::stoi(args[0]);
+						   return (DengRenderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
 					   }
 					   catch (...) {
 						   return "render_options <wireframe:Bool>";
 					   }
 				   }
-				   return (admin->renderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
+				   return (DengRenderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
 			   });
 	
 	commands["spawn_box_uv"] =
@@ -564,9 +577,9 @@ void Console::AddRenderCommands() {
 								}
 							}
 							
-							u32 id = admin->renderer->CreateMesh(2, Matrix4::TransformationMatrix(position, rotation, scale));
+							u32 id = DengRenderer->CreateMesh(2, Matrix4::TransformationMatrix(position, rotation, scale));
 							
-							MeshComp* mc = new MeshComp(admin->renderer->GetMeshPtr(id), id);
+							MeshComp* mc = new MeshComp(DengRenderer->GetMeshPtr(id), id);
 							admin->world->CreateEntity(admin, { mc }, "uv_texture_box", Transform(position, rotation, scale));
 							
 							return TOSTRING("Created textured box with id: ", id);
@@ -581,7 +594,7 @@ void Console::AddRenderCommands() {
 				   int matID = std::stoi(args[0]);
 				   int texType = std::stoi(args[1]);
 				   int texID = std::stoi(args[2]);
-				   admin->renderer->UpdateMaterialTexture(matID, texType, texID);
+				   DengRenderer->UpdateMaterialTexture(matID, texType, texID);
 				   return TOSTRING("Updated material", matID, "'s texture", texType, " to ", texID);
 			   });
 	
@@ -589,12 +602,12 @@ void Console::AddRenderCommands() {
 				   if (args.size() != 2) { return "material_shader <materialID:Uint> <shaderID:Uint>"; }
 				   int matID = std::stoi(args[0]);
 				   int shader = std::stoi(args[1]);
-				   admin->renderer->UpdateMaterialShader(matID, shader);
+				   DengRenderer->UpdateMaterialShader(matID, shader);
 				   return TOSTRING("Updated material", matID, "'s shader to ", shader);
 			   });
 	
 	NEWCOMMAND("mat_list", "mat_list", {
-				   Renderer* r = admin->renderer;
+				   Renderer* r = DengRenderer;
 				   std::string out = "[c:yellow]Materials List:\nID  Shader  Albedo  Normal  Specular  Light[c]";
 				   for(auto mat : r->materials){
 					   out += TOSTRING("\n", mat.id, "  ", shadertostringint[mat.shader], "  ",
@@ -610,10 +623,10 @@ void Console::AddRenderCommands() {
 				   if (args.size() != 1) return "shader_reload <shaderID:Uint>";
 				   int id = std::stoi(args[0]);
 				   if (id == -1) {
-					   admin->renderer->ReloadAllShaders();
+					   DengRenderer->ReloadAllShaders();
 					   return "[c:magen]Reloading all shaders[c]";
 				   }else{
-					   admin->renderer->ReloadShader(id);
+					   DengRenderer->ReloadShader(id);
 					   return ""; //printed in renderer
 				   }
 			   });
@@ -631,8 +644,8 @@ void Console::AddRenderCommands() {
 								   "7    Test1           Testing shader 2");
 			   });
 	NEWCOMMAND("shader_freeze", "Toggles shader data being uploaded to GPU", {
-				   admin->renderer->shaderData.freeze = !admin->renderer->shaderData.freeze;
-				   return (admin->renderer->shaderData.freeze)? "Shaders frozen" : "Shaders unfrozen";
+				   DengRenderer->shaderData.freeze = !DengRenderer->shaderData.freeze;
+				   return (DengRenderer->shaderData.freeze)? "Shaders frozen" : "Shaders unfrozen";
 			   });
 	
 	NEWCOMMAND("mesh_visible", "mesh_visible <meshID:Uint> <visible:Bool>", {
@@ -640,7 +653,7 @@ void Console::AddRenderCommands() {
 					   try {
 						   int meshID = std::stoi(args[0]);
 						   bool vis = std::stoi(args[1]);
-						   admin->renderer->UpdateMeshVisibility(meshID, vis);
+						   DengRenderer->UpdateMeshVisibility(meshID, vis);
 						   return TOSTRING("Setting mesh", meshID, "'s visibility to ", vis);
 					   }
 					   catch (...) {
@@ -678,8 +691,8 @@ void Console::AddRenderCommands() {
 									}
 								}
 								
-								u32 id = admin->renderer->CreateMesh(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
-								Mesh* ptr = admin->renderer->GetMeshPtr(id);
+								u32 id = DengRenderer->CreateMesh(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
+								Mesh* ptr = DengRenderer->GetMeshPtr(id);
 								
 								MeshComp* mc = new MeshComp(ptr, id);
 								Physics* p = new Physics(position, rotation);
@@ -699,7 +712,7 @@ void Console::AddRenderCommands() {
 				   int mesh = std::stoi(args[0]);
 				   int batch = std::stoi(args[1]);
 				   int mat = std::stoi(args[2]);
-				   admin->renderer->UpdateMeshBatchMaterial(mesh, batch, mat);
+				   DengRenderer->UpdateMeshBatchMaterial(mesh, batch, mat);
 				   return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s material to ", mat);
 			   });
 	
@@ -732,7 +745,7 @@ void Console::AddRenderCommands() {
 							
 							//update the mesh's matrix
 							try {
-								admin->renderer->TransformMeshMatrix(std::stoi(args[0]), Matrix4::TransformationMatrix(position, rotation, scale));
+								DengRenderer->TransformMeshMatrix(std::stoi(args[0]), Matrix4::TransformationMatrix(position, rotation, scale));
 								return TOSTRING("Transforming mesh", args[0], "'s matrix");
 							}
 							catch (...) {
@@ -751,7 +764,7 @@ void Console::AddRenderCommands() {
 							std::cmatch m;
 							Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
 							float mass = 1.f;
-							bool staticc = false;
+							bool staticc = true;
 							bool aabb = false;
 							bool sphere = false;
 							
@@ -769,36 +782,29 @@ void Console::AddRenderCommands() {
 									std::regex_search(s->c_str(), m, VecNumMatch);
 									scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 								}
-								else if (std::regex_match(*s, StringRegex("collider"))) {
-									std::regex_search(s->c_str(), m, StringRegex("collider"));
+								else if (std::regex_search(s->c_str(), m, StringRegex("collider"))) {
 									if (m[1] == "aabb") aabb = true;
 									else if (m[1] == "sphere") sphere = true;
 								}
-								else if (std::regex_match(*s, FloatRegex("mass"))) {
-									std::regex_search(s->c_str(), m, FloatRegex("mass"));
+								else if (std::regex_search(s->c_str(), m, FloatRegex("mass"))) {
 									if (std::stof(m[1]) < 0) return "[c:red]Mass must be greater than 0[c]";
 									mass = std::stof(m[1]);
 								}
-								else if (std::regex_match(*s, BoolRegex("static"))) {
-									std::regex_search(s->c_str(), m, BoolRegex("static"));
-									if (m[1] == "1" || m[1] == "true") staticc = true;
+								else if (std::regex_search(s->c_str(), m, BoolRegex("static"))) {
+									if (m[1] == "0" || m[1] == "false") staticc = false;
 								}
 								else {
 									return "[c:red]Invalid parameter: " + *s + "[c]";
 								}
 							}
 							
-							//NOTE(sushi) for non vector regex, you only need to search, not match and search
-							//see cam_vars command for example; and maybe you can remake the vector one to support
-							//matching and capturing as well
-							
 							//cut off the .obj extension for entity name
 							char name[64];
 							cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), 63);
 							
 							//create the mesh
-							u32 id = admin->renderer->CreateMesh(&admin->scene, args[0].c_str());
-							Mesh* mesh = admin->renderer->GetMeshPtr(id);
+							u32 id = DengRenderer->CreateMesh(&admin->scene, args[0].c_str());
+							Mesh* mesh = DengRenderer->GetMeshPtr(id);
 							
 							//collider
 							Collider* col = nullptr;
@@ -825,14 +831,14 @@ void Console::AddRenderCommands() {
 				   if (args.size() > 0) {
 					   Texture tex(args[0].c_str());
 					   if (args.size() == 2) { tex.type = u32(std::stoi(args[1])); }
-					   u32 id = admin->renderer->LoadTexture(tex);
+					   u32 id = DengRenderer->LoadTexture(tex);
 					   return TOSTRING("Loaded texture ", args[0], " to ID: ", id);
 				   }
 				   return "texture_load <texture.png:String> [type:Uint]";
 			   });
 	
 	NEWCOMMAND("texture_list", "Lists the textures and their info", {
-				   return admin->renderer->ListTextures();
+				   return DengRenderer->ListTextures();
 			   });
 	
 	NEWCOMMAND("texture_type_list", "Lists the texture types and their IDs", {
@@ -921,7 +927,7 @@ void Console::AddConsoleCommands() {
 	commands["listc"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 										std::string allcommands = "";
 										
-										for (std::pair<std::string, Command*> c : admin->console->commands) {
+										for (std::pair<std::string, Command*> c : DengConsole->commands) {
 											allcommands += c.first + "\n";
 										}
 										
@@ -932,8 +938,8 @@ void Console::AddConsoleCommands() {
 									   if (args.size() == 0 || (args.size() == 1 && args[0] == "")) {
 										   return "help \nprints help about a specified command. \nuse listc to display avaliable commands";
 									   }
-									   else if (admin->console->commands.find(args[0]) != admin->console->commands.end()) {
-										   Command* c = admin->console->commands.at(args[0]);
+									   else if (DengConsole->commands.find(args[0]) != DengConsole->commands.end()) {
+										   Command* c = DengConsole->commands.at(args[0]);
 										   return TOSTRING(c->name, "\n", c->description);
 									   }
 									   else {
@@ -959,8 +965,8 @@ void Console::AddConsoleCommands() {
 										else if (args.size() == 2) {
 											Command* com;
 											try {
-												com = admin->console->commands.at(args[1]);
-												admin->console->commands.emplace(args[0], com);
+												com = DengConsole->commands.at(args[1]);
+												DengConsole->commands.emplace(args[0], com);
 												
 												std::string data = args[0] + " " + args[1] + "\n";
 												std::vector<char> datav;
@@ -1027,8 +1033,8 @@ void Console::AddConsoleCommands() {
 void Console::AddSelectedEntityCommands() {
 	//// translation ////
 	commands["reset_position"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												 if (DengInput->selectedEntity) {
-													 if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+												 if (admin->selectedEntity) {
+													 if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 														 p->acceleration = Vector3::ZERO;
 														 p->velocity = Vector3::ZERO;
 														 p->position = Vector3::ZERO;
@@ -1038,8 +1044,8 @@ void Console::AddSelectedEntityCommands() {
 											 }, "reset_position", "reset_position <EntityID> [String: xyz]");
 	
 	commands["reset_position_x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (DengInput->selectedEntity) {
-													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+												   if (admin->selectedEntity) {
+													   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 														   p->acceleration = Vector3(0, p->acceleration.y, p->acceleration.z);
 														   p->velocity = Vector3(0, p->velocity.y, p->velocity.z);
 														   p->position = Vector3(0, p->position.y, p->position.z);
@@ -1049,8 +1055,8 @@ void Console::AddSelectedEntityCommands() {
 											   }, "reset_position_x", "temp");
 	
 	commands["reset_position_y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (DengInput->selectedEntity) {
-													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+												   if (admin->selectedEntity) {
+													   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 														   p->acceleration = Vector3(p->acceleration.x, 0, p->acceleration.z);
 														   p->velocity = Vector3(p->velocity.x, 0, p->velocity.z);
 														   p->position = Vector3(p->position.x, 0, p->position.z);
@@ -1060,8 +1066,8 @@ void Console::AddSelectedEntityCommands() {
 											   }, "reset_position_y", "temp");
 	
 	commands["reset_position_z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (DengInput->selectedEntity) {
-													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+												   if (admin->selectedEntity) {
+													   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 														   p->acceleration = Vector3(p->acceleration.x, p->acceleration.y, 0);
 														   p->velocity = Vector3(p->velocity.x, p->velocity.y, 0);
 														   p->position = Vector3(p->position.x, p->position.y, 0);
@@ -1071,8 +1077,8 @@ void Console::AddSelectedEntityCommands() {
 											   }, "reset_position_z", "temp");
 	
 	commands["reset_velocity"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												 if (DengInput->selectedEntity) {
-													 if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+												 if (admin->selectedEntity) {
+													 if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 														 p->acceleration = Vector3::ZERO;
 														 p->velocity = Vector3::ZERO;
 													 }
@@ -1081,8 +1087,8 @@ void Console::AddSelectedEntityCommands() {
 											 }, "reset_velocity", "reset_position <EntityID> [String: xyz]");
 	
 	commands["translate_right"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												  if (DengInput->selectedEntity) {
-													  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+												  if (admin->selectedEntity) {
+													  if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 														  p->AddInput(Vector3::RIGHT);
 													  }
 												  }
@@ -1090,8 +1096,8 @@ void Console::AddSelectedEntityCommands() {
 											  }, "translate_right", "translate_right <EntityID> <amount> [speed]");
 	
 	commands["translate_left"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												 if (DengInput->selectedEntity) {
-													 if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+												 if (admin->selectedEntity) {
+													 if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 														 p->AddInput(Vector3::LEFT);
 													 }
 												 }
@@ -1099,8 +1105,8 @@ void Console::AddSelectedEntityCommands() {
 											 }, "translate_left", "translate_left <EntityID> <amount> [speed]");
 	
 	commands["translate_up"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											   if (DengInput->selectedEntity) {
-												   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+											   if (admin->selectedEntity) {
+												   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 													   p->AddInput(Vector3::UP);
 												   }
 											   }
@@ -1108,8 +1114,8 @@ void Console::AddSelectedEntityCommands() {
 										   }, "translate_up", "translate_up <EntityID> <amount> [speed]");
 	
 	commands["translate_down"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												 if (DengInput->selectedEntity) {
-													 if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+												 if (admin->selectedEntity) {
+													 if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 														 p->AddInput(Vector3::DOWN);
 													 }
 												 }
@@ -1117,8 +1123,8 @@ void Console::AddSelectedEntityCommands() {
 											 }, "translate_down", "translate_down <EntityID> <amount> [speed]");
 	
 	commands["translate_forward"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													if (DengInput->selectedEntity) {
-														if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+													if (admin->selectedEntity) {
+														if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 															p->AddInput(Vector3::FORWARD);
 														}
 													}
@@ -1126,8 +1132,8 @@ void Console::AddSelectedEntityCommands() {
 												}, "translate_forward", "translate_forward <EntityID> <amount> [speed]");
 	
 	commands["translate_backward"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													 if (DengInput->selectedEntity) {
-														 if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+													 if (admin->selectedEntity) {
+														 if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 															 p->AddInput(Vector3::BACK);
 														 }
 													 }
@@ -1137,8 +1143,8 @@ void Console::AddSelectedEntityCommands() {
 	//// rotation ////
 	
 	commands["reset_rotation"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												 if (DengInput->selectedEntity) {
-													 if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+												 if (admin->selectedEntity) {
+													 if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 														 p->rotAcceleration = Vector3::ZERO;
 														 p->rotVelocity = Vector3::ZERO;
 														 p->rotation = Vector3::ZERO;
@@ -1148,8 +1154,8 @@ void Console::AddSelectedEntityCommands() {
 											 }, "reset_rotation", "reset_rotation <EntityID> [String: xyz]");
 	
 	commands["reset_rotation_x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (DengInput->selectedEntity) {
-													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+												   if (admin->selectedEntity) {
+													   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 														   p->rotAcceleration = Vector3(0, p->rotAcceleration.y, p->rotAcceleration.z);
 														   p->rotVelocity = Vector3(0, p->rotVelocity.y, p->rotVelocity.z);
 														   p->rotation = Vector3(0, p->rotation.y, p->rotation.z);
@@ -1159,8 +1165,8 @@ void Console::AddSelectedEntityCommands() {
 											   }, "reset_rotation_x", "temp");
 	
 	commands["reset_rotation_y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (DengInput->selectedEntity) {
-													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+												   if (admin->selectedEntity) {
+													   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 														   p->rotAcceleration = Vector3(p->rotAcceleration.x, 0, p->rotAcceleration.z);
 														   p->rotVelocity = Vector3(p->rotVelocity.x, 0, p->rotVelocity.z);
 														   p->rotation = Vector3(p->rotation.x, 0, p->rotation.z);
@@ -1170,8 +1176,8 @@ void Console::AddSelectedEntityCommands() {
 											   }, "reset_rotation_y", "temp");
 	
 	commands["reset_rotation_z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (DengInput->selectedEntity) {
-													   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+												   if (admin->selectedEntity) {
+													   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 														   p->rotAcceleration = Vector3(p->rotAcceleration.x, p->rotAcceleration.y, 0);
 														   p->rotVelocity = Vector3(p->rotVelocity.x, p->rotVelocity.y, 0);
 														   p->rotation = Vector3(p->rotation.x, p->rotation.y, 0);
@@ -1181,8 +1187,8 @@ void Console::AddSelectedEntityCommands() {
 											   }, "reset_rotation_z", "temp");
 	
 	commands["reset_rotation_velocity"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														  if (DengInput->selectedEntity) {
-															  if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+														  if (admin->selectedEntity) {
+															  if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 																  p->rotAcceleration = Vector3::ZERO;
 																  p->rotVelocity = Vector3::ZERO;
 															  }
@@ -1191,8 +1197,8 @@ void Console::AddSelectedEntityCommands() {
 													  }, "reset_rotation_velocity", "reset_rotation_velocity <EntityID> [String: xyz]");
 	
 	commands["rotate_+x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											if (DengInput->selectedEntity) {
-												if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+											if (admin->selectedEntity) {
+												if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 													p->rotVelocity += Vector3(5, 0, 0);
 												}
 											}
@@ -1200,8 +1206,8 @@ void Console::AddSelectedEntityCommands() {
 										}, "rotate_+x", "rotate_+x <EntityID> <amount> [speed]");
 	
 	commands["rotate_-x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											if (DengInput->selectedEntity) {
-												if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+											if (admin->selectedEntity) {
+												if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 													p->rotVelocity += Vector3(-5, 0, 0);
 												}
 											}
@@ -1209,8 +1215,8 @@ void Console::AddSelectedEntityCommands() {
 										}, "rotate_-x", "rotate_-x <EntityID> <amount> [speed]");
 	
 	commands["rotate_+y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											if (DengInput->selectedEntity) {
-												if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+											if (admin->selectedEntity) {
+												if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 													p->rotVelocity += Vector3(0, 5, 0);
 												}
 											}
@@ -1218,8 +1224,8 @@ void Console::AddSelectedEntityCommands() {
 										}, "rotate_+y", "rotate_+y <EntityID> <amount> [speed]");
 	
 	commands["rotate_-y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											if (DengInput->selectedEntity) {
-												if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+											if (admin->selectedEntity) {
+												if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 													p->rotVelocity += Vector3(0, -5, 0);
 												}
 											}
@@ -1227,8 +1233,8 @@ void Console::AddSelectedEntityCommands() {
 										}, "rotate_-y", "rotate_-y <EntityID> <amount> [speed]");
 	
 	commands["rotate_+z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											if (DengInput->selectedEntity) {
-												if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+											if (admin->selectedEntity) {
+												if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 													p->rotVelocity += Vector3(0, 0, 5);
 												}
 											}
@@ -1236,8 +1242,8 @@ void Console::AddSelectedEntityCommands() {
 										}, "rotate_+z", "rotate_+z <EntityID> <amount> [speed]");
 	
 	commands["rotate_-z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											if (DengInput->selectedEntity) {
-												if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+											if (admin->selectedEntity) {
+												if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 													p->rotVelocity += Vector3(0, 0, -5);
 												}
 											}
@@ -1252,8 +1258,8 @@ void Console::AddSelectedEntityCommands() {
 													   LOG("\nWarning: ScreenToWorld not yet implemented for orthographic projection. World interaction with mouse will not work.\n");
 												   }
 												   else {
-													   if (DengInput->selectedEntity) {
-														   if (Physics* p = DengInput->selectedEntity->GetComponent<Physics>()) {
+													   if (admin->selectedEntity) {
+														   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
 															   Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
 																								 admin->mainCamera->viewMatrix, DengWindow->dimensions);
 															   //cant remember what this is doing and will fix later
@@ -1271,25 +1277,24 @@ void Console::AddSelectedEntityCommands() {
 
 void Console::AddWindowCommands() {
 	NEWCOMMAND("quit", "exits the application", {
-				   admin->window->Close();
+				   DengWindow->Close();
 				   return("");
 			   });
 	
 	commands["window_display_mode"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-						Window* w = admin->window;
 						if (args.size() != 1) { return "display_mode <mode: Int>"; }
 						try {
 							int mode = std::stoi(args[0]);
 							switch (mode) {
 								case(0): {
-									w->UpdateDisplayMode(DisplayMode::WINDOWED);
+									DengWindow->UpdateDisplayMode(DisplayMode::WINDOWED);
 									return "display_mode=windowed"; }
 								case(1): {
-									w->UpdateDisplayMode(DisplayMode::BORDERLESS);
+									DengWindow->UpdateDisplayMode(DisplayMode::BORDERLESS);
 									return "display_mode=borderless windowed"; }
 								case(2): {
-									w->UpdateDisplayMode(DisplayMode::FULLSCREEN);
+									DengWindow->UpdateDisplayMode(DisplayMode::FULLSCREEN);
 									return "display_mode=fullscreen"; }
 								default: {
 									return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen"; }
@@ -1302,19 +1307,18 @@ void Console::AddWindowCommands() {
 	
 	commands["window_cursor_mode"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-						Window* w = admin->window;
 						if (args.size() != 1) { return "cursor_mode <mode:Int>"; }
 						try {
 							int mode = std::stoi(args[0]);
 							switch (mode) {
 								case(0): {
-									w->UpdateCursorMode(CursorMode::DEFAULT);
+									DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
 									return "cursor_mode=default"; }
 								case(1): {
-									w->UpdateCursorMode(CursorMode::FIRSTPERSON);
+									DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
 									return "cursor_mode=first person"; }
 								case(2): {
-									w->UpdateCursorMode(CursorMode::HIDDEN);
+									DengWindow->UpdateCursorMode(CursorMode::HIDDEN);
 									return "cursor_mode=hidden"; }
 								default: { return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden"; }
 							}
@@ -1326,13 +1330,12 @@ void Console::AddWindowCommands() {
 	
 	commands["window_raw_input"] =
 		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-						Window* w = admin->window;
 						if (args.size() != 1) { return "raw_input <input:Boolean>"; }
 						try {
 							int mode = std::stoi(args[0]);
 							switch (mode) {
-								case(0): { w->UpdateRawInput(false); return "raw_input=false"; }
-								case(1): { w->UpdateRawInput(true); return "raw_input=true"; }
+								case(0): { DengWindow->UpdateRawInput(false); return "raw_input=false"; }
+								case(1): { DengWindow->UpdateRawInput(true); return "raw_input=true"; }
 								default: { return "raw_input: 0=false, 1=true"; }
 							}
 						}
@@ -1342,13 +1345,12 @@ void Console::AddWindowCommands() {
 					}, "window_raw_input", "raw_input <input:Boolean>; Only works in firstperson cursor mode");
 	
 	NEWCOMMAND("window_resizable", "window_raw_input <resizable:Boolean>", {
-				   Window * w = admin->window;
 				   if (args.size() != 1) { return "window_resizable <resizable:Boolean>"; }
 				   try {
 					   int mode = std::stoi(args[0]);
 					   switch (mode) {
-						   case(0): { w->UpdateResizable(false); return "window_resizable=false"; }
-						   case(1): { w->UpdateResizable(true); return "window_resizable=true"; }
+						   case(0): { DengWindow->UpdateResizable(false); return "window_resizable=false"; }
+						   case(1): { DengWindow->UpdateResizable(true); return "window_resizable=true"; }
 						   default: { return "window_resizable: 0=false, 1=true"; }
 					   }
 				   }
@@ -1358,7 +1360,7 @@ void Console::AddWindowCommands() {
 			   });
 	
 	NEWCOMMAND("window_info", "Prints window variables", {
-				   return admin->window->str();
+				   return DengWindow->str();
 			   });
 }
 
@@ -1402,17 +1404,7 @@ void Console::AddAliases() {
 // console init and update
 //////////////////////////////////////////////////////////////////////
 
-
-
-
-void Console::Init(Time* t, Input* i, Window* w, EntityAdmin* ea) {
-	me = this;
-	
-	time = t;
-	input = i;
-	window = w;
-	admin = ea;
-	
+void Console::Init() {
 	compstrmap.emplace("AudioSource", []() { return new AudioSource(); });
 	compstrmap.emplace("Collider",    []() { return new Collider(); });
 	compstrmap.emplace("MeshComp",    []() { return new MeshComp(); });
@@ -1440,14 +1432,11 @@ void Console::Init(Time* t, Input* i, Window* w, EntityAdmin* ea) {
 }
 
 void Console::Update() {
-	if (input->KeyPressed(DengKeys.toggleConsole)) dispcon = !dispcon;
-	
 	if (dispcon) {
 		DrawConsole();
-		admin->IMGUI_KEY_CAPTURE = true;
-	}
-	else {
-		admin->IMGUI_KEY_CAPTURE = false;
+		IMGUI_KEY_CAPTURE = true;
+	}else{
+		IMGUI_KEY_CAPTURE = false;
 	}
 	
 	if (buffersize >= 120000) {
@@ -1456,7 +1445,7 @@ void Console::Update() {
 		buffersize = 0;
 	}
 	
-	if (dispcon && admin->cons_error_warn) admin->cons_error_warn = false;
+	if (dispcon && cons_error_warn) cons_error_warn = false;
 }
 
 //Flush the buffer at program close and clean up commands

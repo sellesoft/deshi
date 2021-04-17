@@ -2,8 +2,7 @@
 #ifndef DESHI_VECTOR_H
 #define DESHI_VECTOR_H
 
-#include "../utils/debug.h"
-#include "../external/imgui/imgui.h"
+#include <string>
 
 struct Vector2;
 struct Vector3;
@@ -11,60 +10,8 @@ struct Vector4;
 struct MatrixN;
 struct Matrix3;
 struct Matrix4;
+struct ImVec2;
 struct Quaternion;
-
-//TODO(delle,MaCl) maybe remove string functions from vectors and matrices and have the string parser handle them
-
-/////////////////
-//// defines ////
-/////////////////
-
-#define RANDVEC(a) Vector3(rand() % a + 1, rand() % a + 1, rand() % a + 1)
-
-//averages a vector v over an interval i and returns that average
-#define V_AVG(i, v) ([&] { \
-static std::vector<Vector3> vectors; \
-static Vector3 nv; \
-static int iter = 0; \
-if(i == vectors.size()){ \
-vectors.erase(vectors.begin()); \
-vectors.push_back(v); \
-iter++; \
-} \
-else{ \
-vectors.push_back(v); \
-iter++; \
-}\
-if(iter == i){ \
-nv = Math::averageVector3(vectors); \
-iter = 0; \
-} \
-return nv; \
-}())
-
-//averages vectors but consistently returns the value
-#define V_AVGCON(i, v) ([&] { \
-static std::vector<Vector3> vectors; \
-static Vector3 nv; \
-if(i == vectors.size()){ \
-vectors.erase(vectors.begin()); \
-vectors.push_back(v); \
-} \
-else{ \
-vectors.push_back(v); \
-} \
-nv = Math::averageVector3(vectors); \
-return nv; \
-}())
-
-//this stores an input vector and returns the previously stored vector
-//if you pass true for the second param it will replace the stored vector and return it
-//else it just returns the stored vector
-#define V_STORE(v, t) ([&]()->Vector3{static Vector3 vect[1];\
-Vector3 vr = vect[0];\
-if(t){ vect[0] = v; return vr; } \
-else return vr; }\
-())
 
 //////////////////////
 //// declarations ////
@@ -349,5 +296,56 @@ inline void Vector4::
 takeVec3(Vector3 v) {
 	x = v.x; y = v.y; z = v.z;
 }
+
+/////////////////
+//// defines ////
+/////////////////
+
+#define RANDVEC(a) Vector3(rand() % a + 1, rand() % a + 1, rand() % a + 1)
+
+//averages a vector v over an interval i and returns that average
+#define V_AVG(i, v) ([&] { \
+static std::vector<Vector3> vectors; \
+static Vector3 nv; \
+static int iter = 0; \
+if(i == vectors.size()){ \
+vectors.erase(vectors.begin()); \
+vectors.push_back(v); \
+iter++; \
+} \
+else{ \
+vectors.push_back(v); \
+iter++; \
+}\
+if(iter == i){ \
+nv = Math::averageVector3(vectors); \
+iter = 0; \
+} \
+return nv; \
+}())
+
+//averages vectors but consistently returns the value
+#define V_AVGCON(i, v) ([&] { \
+static std::vector<Vector3> vectors; \
+static Vector3 nv; \
+if(i == vectors.size()){ \
+vectors.erase(vectors.begin()); \
+vectors.push_back(v); \
+} \
+else{ \
+vectors.push_back(v); \
+} \
+nv = Math::averageVector3(vectors); \
+return nv; \
+}())
+
+//this stores an input vector and returns the previously stored vector
+//if you pass true for the second param it will replace the stored vector and return it
+//else it just returns the stored vector
+#define V_STORE(v, t) ([&]()->Vector3{static Vector3 vect[1];\
+Vector3 vr = vect[0];\
+if(t){ vect[0] = v; return vr; } \
+else return vr; }\
+())
 
 #endif //DESHI_VECTOR_H

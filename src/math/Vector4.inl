@@ -135,7 +135,7 @@ dot(const Vector4& rhs) const {
 
 inline float Vector4::
 mag() const {
-	return std::sqrtf(x * x + y * y + z * z + w * w);
+	return sqrtf(x * x + y * y + z * z + w * w);
 }
 
 //NOTE: normalizing a Vector4 means dividing all parts by W

@@ -154,7 +154,7 @@ cross(const Vector3& rhs) const {
 
 inline float Vector3::
 mag() const {
-	return std::sqrt(x * x + y * y + z * z);
+	return sqrt(x * x + y * y + z * z);
 }
 
 ////ref: https://betterexplained.com/articles/understanding-quakes-fast-inverse-square-root/
@@ -217,7 +217,7 @@ normalized() const {
 //clamps all values of a Vector3 between two floats
 inline Vector3 Vector3::
 clamp(float lo, float hi){
-	ASSERT(lo < hi, "The low must be less than the high clamp");
+	if(lo > hi) float temp = lo; lo = hi; hi = lo;
 	return Vector3((x < lo) ? lo : (hi < x) ? hi : x,
 				   (y < lo) ? lo : (hi < y) ? hi : y,
 				   (z < lo) ? lo : (hi < z) ? hi : z);

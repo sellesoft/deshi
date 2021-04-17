@@ -10,8 +10,6 @@
 #include <map>
 #include <iostream>
 
-struct Entity;
-
 //constants
 #define MAX_KEYBOARD_KEYS 256
 #define MAX_MOUSE_BUTTONS 7
@@ -60,8 +58,6 @@ typedef enum InputModFlagBits{
 typedef u32 InputModFlags;
 
 struct Input{
-	Entity* selectedEntity = nullptr; //TODO(delle,InCl) move this to level editor
-	
 	std::map<size_t, u8> mapKeys;
 	std::map<size_t, u8> mapMouse;
 	
@@ -72,7 +68,7 @@ struct Input{
 	double screenMouseX, screenMouseY;
 	double scrollX,      scrollY;
 	Vector2 mousePos;
-
+	
 	//NOTE sushi: I was going to put this on keybinds, but I wanted it to only check binds if some input occured, and it seems easiest to do that here
 	//for console command binding
 	std::vector<std::pair<std::string, Key::Key>> binds;
@@ -152,13 +148,18 @@ struct Input{
 		u32 key = mod_key & 0x000000FF;
 		return !newKeyState[key] && oldKeyState[key] && ModsDown(mod_key & 0xFFFFFF00);
 	}
-
+	
 	inline void AddBind(std::string command, Key::Key key) {
 		
 	}
-
-
-
+	
+	
+	
 };
+
+//global input pointer
+extern Input* g_input;
+#define DengInput g_input
+
 
 #endif //DESHI_INPUT_H

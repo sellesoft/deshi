@@ -21,6 +21,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <array>
+#include <vector>
 
 struct Window;
 struct Input;
@@ -32,6 +33,7 @@ struct Console;
 struct Matrix4;
 struct Triangle;
 struct Vector3;
+struct Color;
 struct deshiImGui;
 typedef u8 stbi_uc;
 
@@ -577,5 +579,9 @@ struct Renderer{
 	void BuildCommandBuffers();
 	
 };
+
+//global renderer pointer
+extern Renderer* g_renderer;
+#define DengRenderer g_renderer
 
 #endif //DESHI_RENDERER_VULKAN_H

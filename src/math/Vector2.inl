@@ -2,6 +2,8 @@
 #ifndef DESHI_VECTOR2_INL
 #define DESHI_VECTOR2_INL
 
+#include "../external/imgui/imgui.h"
+
 //////////////////////
 //// constructors ////
 //////////////////////
@@ -141,7 +143,7 @@ dot(const Vector2& rhs) const {
 
 inline float Vector2::
 mag() const {
-	return std::sqrt(x * x + y * y);
+	return sqrt(x * x + y * y);
 }
 
 inline void Vector2::

@@ -14,9 +14,10 @@ if you feel they would handle the problem better. It should generally be you tho
 
 Major Ungrouped TODOs
 ---------------------
-create a global core object rather than pass everything thru entity admin
 add shaders: PBR (4textures)
 settings file(s) [keybinds, video, audio, etc]
+create a demo level
+add player movement and player entity
 figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
 implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
 
@@ -24,7 +25,6 @@ Minor Ungrouped TODOs
 ---------------------
 create a hot-loadable global vars file
 add a general logging system with log levels and locations
-add option to not use input callbacks so fps doesnt get affected dramatically by input
 add a component_state command to print state of a component (add str methods to all components/systems)
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
 add device info command (graphics card, sound device, monitor res, etc)
@@ -128,13 +128,19 @@ after spawning a decent amount of objects and clicking, HandleSelectEntity throw
 	it looks like some sort of corrupt mesh makes its way in there somehow?
 look into scaling not rotating (scaling is probably being done in world not local)
 console scrolls past top and bottom
+AABB collider generation from Mesh* is wrong
 
 */
 
 #include "core.h"
 #include "EntityAdmin.h"
 
+Time* g_time;
+Window* g_window;
+Input* g_input;
 Console* g_console;
+Renderer* g_renderer;
+EntityAdmin* g_admin;
 
 struct DeshiEngine {
 	Time time;
@@ -158,13 +164,18 @@ struct DeshiEngine {
 		//init core
 		LoadConfig();
 		time.Init(300); //300 tps for physics
+		g_time = &time;
 		window.Init(&input, 1280, 720); //inits input as well
+		g_window = &window;
+		g_input = &input;
+		console.Init();
 		g_console = &console;
-		console.Init(&time, &input, &window, &admin); 
 		renderer.Init(&time, &input, &window, &imgui); //inits imgui as well
+		g_renderer = &renderer;
 		
 		//init game admin
-		admin.Init(&input, &window, &time, &renderer, &console);
+		admin.Init();
+		g_admin = &admin;
 		
 		LOG("Finished deshi initialization in ",TIMER_END(t_d),"ms");
 		

@@ -5,7 +5,7 @@
 #include "../utils/defines.h"
 #include "../math/Vector.h"
 
-#include <string>
+#include <iosfwd> //forward delcare: <string>
 
 struct Input;
 struct GLFWwindow;
@@ -42,27 +42,23 @@ struct Window{
 	
 	Vector2 dimensions;
 	
-	//TODO(delle,Cl) vsync isnt handled in GLFW when using vulkan, handle other renderers when necessary
+	//NOTE(delle) vsync isnt handled in GLFW when using vulkan
 	void Init(Input* input, i32 width, i32 height, i32 x = 0, i32 y = 0,  
 			  DisplayMode displayMode = DisplayMode::WINDOWED);
-	
 	void Update();
-	
 	void Cleanup();
-	
 	void UpdateDisplayMode(DisplayMode mode);
-	
 	void UpdateCursorMode(CursorMode mode); 
-	
 	void SetCursorPos(Vector2 pos);
-	
 	void UpdateRawInput(bool rawInput);
-	
 	void UpdateResizable(bool resizable);
-	
 	void Close();
 	
 	std::string str();
 };
+
+//global window pointer
+extern Window* g_window;
+#define DengWindow g_window
 
 #endif //DESHI_WINDOW_H

@@ -283,49 +283,49 @@ Cleanup() {
 /*
 u32 Renderer::
 AddTriangle(Triangle* triangle){
-	PRINT("Not implemented yet");
+	PRINTLN("Not implemented yet");
 	return 0xFFFFFFFF;
 }
 
 void Renderer::
 RemoveTriangle(u32 triangleID){
-	PRINT("Not implemented yet");
+	PRINTLN("Not implemented yet");
 }
 
 void Renderer::
 UpdateTriangleColor(u32 triangleID, Color color){
-	PRINT("Not implemented yet");
+	PRINTLN("Not implemented yet");
 }
 
 void Renderer::
 UpdateTrianglePosition(u32 triangleID, Vector3 position){
-	PRINT("Not implemented yet");
+	PRINTLN("Not implemented yet");
 }
 
 void Renderer::
 TranslateTriangle(u32 triangleID, Vector3 translation){
-	PRINT("Not implemented yet");
+	PRINTLN("Not implemented yet");
 }
 
 std::vector<u32> Renderer::
 AddTriangles(std::vector<Triangle*> triangles){
-	PRINT("Not implemented yet");
+	PRINTLN("Not implemented yet");
 	return std::vector<u32>();
 }
 
 void Renderer::
 RemoveTriangles(std::vector<u32> triangleIDs){
-	PRINT("Not implemented yet");
+	PRINTLN("Not implemented yet");
 }
 
 void Renderer::
 UpdateTrianglesColor(std::vector<u32> triangleIDs, Color color){
-	PRINT("Not implemented yet");
+	PRINTLN("Not implemented yet");
 }
 
 void Renderer::
 TranslateTriangles(std::vector<u32> triangleIDs, Vector3 translation){
-	PRINT("Not implemented");
+	PRINTLN("Not implemented");
 }
 */
 u32 Renderer::LoadBaseMesh(Mesh* m){
@@ -669,7 +669,7 @@ LoadTexture(Texture texture){
 /*
 void Renderer::
 UnloadTexture(u32 textureID){
-	PRINT("Not implemented yet");
+	PRINTLN("Not implemented yet");
 }
 */
 std::string Renderer::
@@ -1026,8 +1026,8 @@ populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 VKAPI_ATTR VkBool32 VKAPI_CALL Renderer::
 debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
 	//TODO(sushi, Con) fix console color formatting for this case
-	g_console->PushConsole(TOSTRING("[c:error]", pCallbackData->pMessage, "[c]"));
-	PRINT("/\\ "<< pCallbackData->pMessage);
+	DengConsole->PushConsole(TOSTRING("[c:error]", pCallbackData->pMessage, "[c]"));
+	PRINTLN("/\\ "<< pCallbackData->pMessage);
 	return VK_FALSE;
 }
 
@@ -2470,9 +2470,9 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
 		}else{ ASSERT(false, "unsupported shader"); }
 		
 		//check for errors
-		if(!result){ PRINT("[ERROR]"<< filename <<": Shader compiler returned a null result"); ASSERT(false, ""); }
+		if(!result){ PRINTLN("[ERROR]"<< filename <<": Shader compiler returned a null result"); ASSERT(false, ""); }
 		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
-			PRINT("[ERROR]"<< filename <<": "<< shaderc_result_get_error_message(result)); ASSERT(false, "");
+			PRINTLN("[ERROR]"<< filename <<": "<< shaderc_result_get_error_message(result)); ASSERT(false, "");
 		}
 		
 		//create shader module

@@ -3,24 +3,17 @@
 #define DESHI_DEBUG_H
 
 #include "defines.h"
-#include "Color.h"
 
 #include <string>
-#include <vector>
 #include <iostream>
 
 //std::cout short form
-#define PRINT(x) std::cout << x << std::endl;
+#define PRINTLN(x) std::cout << x << std::endl;
+
+#define __FILENAME__ (std::strrchr(__FILE__, '\\') ? std::strrchr(__FILE__, '\\') + 1 : __FILE__)
 
 //assert
 #ifndef NDEBUG
-#   define ASSERTWARN(condition, message) \
-do { \
-if (! (condition)) { \
-std::string file = __FILENAME__; \
-std::cout << "Warning '" #condition "' failed in " + file + " line " + std::to_string(__LINE__) + ": \n" #message << std::endl; \
-} \
-} while (false)
 #define ASSERT(condition, message) \
 do { \
 if (! (condition)) { \
@@ -40,36 +33,11 @@ std::terminate(); \
 #define DEBUG_BREAK (void)0
 #endif
 
-
-#define __FILENAME__ (std::strrchr(__FILE__, '\\') ? std::strrchr(__FILE__, '\\') + 1 : __FILE__)
-
-#define DASSERT(condition, message)     if(!(condition) && !admin->paused){ ERROR_LOC("Assertion '" #condition "' failed: \n", message); admin->paused = true;}
-#define DASSERTWARN(condition, message) if(!(condition) && !admin->paused) LOG_LOC("Assertion '" #condition "' failed: \n", message)
-
 #define TOSTRING(...) Debug::ToString(__VA_ARGS__)
-
-//stringize certain macros
-//this is all probably REALLY slow but will be as is unless I find a more elegent solution
-#define STRINGIZE2(x) #x
-#define STRINGIZE(x) STRINGIZE2(x)
-#define LINE_NUM  STRINGIZE(__LINE__)
-
-
-#define LOGFUNC LOG(__FUNCTION__, " called")
-#define LOGFUNCM(...) LOG(__FUNCTION__, " called ", __VA_ARGS__)
 
 //makes a random number only once and then always returns that same number
 //if called by the same object
 #define PERM_RAND_INT ([]{ static int rint = rand() % 100000; return rint;}())
-
-//#define BUFFER_IDENTIFIER ([]{ static int id_ini = buffer_size++; return id_ini; }())
-//#define BUFFERLOG(...) g_cBuffer.add(new StringedBuffer(TOSTRING(__VA_ARGS__), BUFFER_IDENTIFIER))
-
-#define BUFFERLOG(i, ...) DEBUG g_cBuffer.add_to_index(TOSTRING(__VA_ARGS__), i)
-
-#define BUFFERLOGI(i, o, ...) DEBUG ([&]{static int iter = 0; if(iter == o){g_cBuffer.add_to_index(TOSTRING(__VA_ARGS__), i); iter = 0;} else iter++;}())
-
-extern bool GLOBAL_DEBUG;
 
 namespace Math { //forward declare average
 	template<class T>

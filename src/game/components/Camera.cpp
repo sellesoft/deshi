@@ -18,8 +18,8 @@ Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ, bool freeCam) 
 	viewMatrix = Math::LookAtMatrix(position, position + forward).Inverse();
 	UpdateProjectionMatrix();
 	
-	admin->renderer->UpdateCameraViewMatrix(viewMatrix);
-	admin->renderer->UpdateCameraPosition(position);
+	DengRenderer->UpdateCameraViewMatrix(viewMatrix);
+	DengRenderer->UpdateCameraPosition(position);
 	
 	cpystr(name, "Camera", 63);
 	layer = NONE;
@@ -30,7 +30,7 @@ void Camera::UseOrthographicProjection() {
 
 Matrix4 Camera::MakePerspectiveProjection(){
 	float renderDistance = farZ - nearZ;
-	float aspectRatio = f32(admin->window->height) / f32(admin->window->width);
+	float aspectRatio = f32(DengWindow->height) / f32(DengWindow->width);
 	float fovRad = 1.f / tanf(RADIANS(fov * .5f));
 	return Matrix4( //NOTE setting (1,1) to negative flips the y-axis
 				   aspectRatio * fovRad, 0,	   0,							  0,
@@ -107,7 +107,7 @@ void Camera::UpdateProjectionMatrix(){
 		case(CameraType::PERSPECTIVE):default:{ projectionMatrix = MakePerspectiveProjection(); } break;
 		case(CameraType::ORTHOGRAPHIC):{ projectionMatrix = MakeOrthographicProjection(); }break;
 	}
-	admin->renderer->UpdateCameraProjectionMatrix(projectionMatrix);
+	DengRenderer->UpdateCameraProjectionMatrix(projectionMatrix);
 }
 
 std::string Camera::str(){
@@ -128,8 +128,8 @@ std::string Camera::str(){
 
 void Camera::Update() {
 	if(freeCamera){
-		Window* window = admin->window;
-		Renderer* renderer = admin->renderer;
+		Window* window = DengWindow;
+		Renderer* renderer = DengRenderer;
 		
 		//clamp camera rotation
 		rotation.x = Math::clamp(rotation.x, -89.9f, 89.9f);

@@ -19,7 +19,7 @@ void OrbManager::Init(){
 	for (int i = 0; i < orbcount; i++) {
 		Orb* orb = new Orb(Vector3(10, 10, 10), Vector3::ONE * 0.1 * i, Vector3::ZERO, Vector3::ZERO);
 		
-		u32 id = admin->renderer->CreateMesh(mesh, Matrix4::TransformationMatrix(orb->pos, orb->rot, Vector3::ONE));
+		u32 id = g_renderer->CreateMesh(mesh, Matrix4::TransformationMatrix(orb->pos, orb->rot, Vector3::ONE));
 		MeshComp* mc = new MeshComp(mesh, id);
 		orb->mc = mc;
 		mc->ENTITY_CONTROL = false;

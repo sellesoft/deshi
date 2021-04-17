@@ -26,29 +26,29 @@ MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
 
 void MeshComp::ToggleVisibility() {
 	mesh_visible = !mesh_visible;
-	admin->renderer->UpdateMeshVisibility(meshID, mesh_visible);
+	DengRenderer->UpdateMeshVisibility(meshID, mesh_visible);
 }
 
 void MeshComp::ReceiveEvent(Event event) {
 	switch (event) {
 		case TEST_EVENT:
-		PRINT("MeshComp receieved event");
+		LOG("MeshComp receieved event");
 		break;
 	}
 }
 
 void MeshComp::ChangeMaterialShader(u32 s) {
-	std::vector<u32> ids = admin->renderer->GetMaterialIDs(meshID);
+	std::vector<u32> ids = DengRenderer->GetMaterialIDs(meshID);
 	for (u32 id : ids) {
-		admin->renderer->UpdateMaterialShader(id, s);
+		DengRenderer->UpdateMaterialShader(id, s);
 	}
 }
 
 void MeshComp::ChangeMaterialTexture(u32 t) {
-	std::vector<u32> ids = admin->renderer->GetMaterialIDs(meshID);
+	std::vector<u32> ids = DengRenderer->GetMaterialIDs(meshID);
 	
 	for (u32 id : ids) {
-		admin->renderer->UpdateMaterialTexture(id, 0, t);
+		DengRenderer->UpdateMaterialTexture(id, 0, t);
 	}
 }
 
@@ -60,12 +60,12 @@ std::string MeshComp::Save() {
 
 //this should only be used when the entity is not controlling the Mesh
 void MeshComp::UpdateMeshTransform(Vector3 position, Vector3 rotation, Vector3 scale) {
-	admin->renderer->UpdateMeshMatrix(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
+	DengRenderer->UpdateMeshMatrix(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
 }
 
 void MeshComp::Update() {
 	//update mesh's transform with entities tranform
-	if(ENTITY_CONTROL) admin->renderer->UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
+	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
 }
 
 void MeshComp::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
@@ -87,7 +87,7 @@ void MeshComp::Load(std::vector<Entity>& entities, const char* data, u32& cursor
 		cursor += sizeof(u32)*2 + sizeof(b32)*2;
 		
 		MeshComp* mc = new MeshComp();
-		mc->mesh = entities[entityID].admin->renderer->GetMeshPtr(meshID);
+		mc->mesh = DengRenderer->GetMeshPtr(meshID);
 		mc->instanceID = instanceID;
 		mc->meshID = meshID;
 		mc->mesh_visible = visible;

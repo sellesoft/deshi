@@ -148,6 +148,16 @@ void CanvasSystem::MenuBar() {
 		if(BeginMenu("File")) {
 			WinHovCheck; 
 			
+			if (MenuItem("New")) {
+				admin->entities.clear(); admin->entities.reserve(1000);
+				for (auto& layer : admin->freeCompLayers) { layer.clear(); } //TODO(delle) see if this causes a leak
+				
+				admin->selectedEntity = 0;
+				admin->undoManager.Reset();
+				admin->scene.Reset();
+				g_renderer->Reset();
+				g_renderer->LoadScene(&admin->scene);
+			}
 			if (MenuItem("Save")) {
 				admin->Save();
 			}
@@ -169,7 +179,7 @@ void CanvasSystem::MenuBar() {
 			
 			for (int i = 0; i < files.size(); i++) {
 				if (files[i].find(".obj") != std::string::npos) {
-					if(MenuItem(files[i].c_str())) { admin->console->ExecCommand("load_obj", files[i]); }
+					if(MenuItem(files[i].c_str())) { DengConsole->ExecCommand("load_obj", files[i]); }
 				}
 			}
 			EndMenu();
@@ -265,7 +275,7 @@ void CanvasSystem::DebugTools() {
 					std::string id = std::to_string(entity.id);
 					//SetCursorPosX((GetColumnWidth() - (fontsize - (fontsize / 2)) * id.size()) / 2);
 					if (ImGui::Button(id.c_str())) {
-						admin->input->selectedEntity = &entity;
+						admin->selectedEntity = &entity;
 					}
 					TableNextColumn();
 					
@@ -331,10 +341,10 @@ void CanvasSystem::DebugTools() {
 	if (BeginTabBar("SettingsTabs")) {
 		//Selected Entity property editing
 		if (BeginTabItem("Ent")) {
-			if (admin->input->selectedEntity) {
+			if (admin->selectedEntity) {
 				if (BeginChild("SelectedEntityMenu", ImVec2(GetWindowWidth(), 500), true)) {
 					WinHovCheck;
-					Entity* sel = admin->input->selectedEntity;
+					Entity* sel = admin->selectedEntity;
 					SetPadding;
 					Text(TOSTRING("Selected Entity: ", sel->name).c_str());
 					Text("Components: ");
@@ -468,7 +478,7 @@ void CanvasSystem::DebugTools() {
 															for (int iter = 0; iter < sel->components.size(); iter++) {
 																if (MeshComp* mc = dynamic_cast<MeshComp*>(sel->components[iter])) {
 																	Texture tex(textures[i].c_str(), 0);
-																	mc->ChangeMaterialTexture(admin->renderer->LoadTexture(tex));
+																	mc->ChangeMaterialTexture(g_renderer->LoadTexture(tex));
 																}
 															}
 														}
@@ -517,7 +527,7 @@ void CanvasSystem::DebugTools() {
 				SameLine(); InputVector3("rotation", &c->rotation);
 				Separator();
 				
-				if (Button("Reset camera")) admin->ExecCommand("cam_reset");
+				if (Button("Reset camera")) DengConsole->ExecCommand("cam_reset");
 				
 				Separator();
 				
@@ -639,9 +649,9 @@ void CanvasSystem::DebugBar() {
 		//precalc strings and stuff so we can set column widths appropriately
 		std::string str1 = TOSTRING("wents: ", admin->entities.size());
 		float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-		std::string str2 = TOSTRING("wtris: ", admin->renderer->stats.totalTriangles);
+		std::string str2 = TOSTRING("wtris: ", g_renderer->stats.totalTriangles);
 		float strlen2 = (fontsize - (fontsize / 2)) * str2.size();
-		std::string str3 = TOSTRING("wverts: ", admin->renderer->stats.totalVertices);
+		std::string str3 = TOSTRING("wverts: ", g_renderer->stats.totalVertices);
 		float strlen3 = (fontsize - (fontsize / 2)) * str3.size();
 		std::string str4 = TOSTRING("stris: ", "0");
 		float strlen4 = (fontsize - (fontsize / 2)) * str4.size();
@@ -764,7 +774,7 @@ void CanvasSystem::DebugBar() {
 		//Triangle Count
 		if (TableNextColumn() && show_selected_stats) {
 			//TODO( sushi,Ui) implement triangle count when its avaliable
-			Entity* e = DengInput->selectedEntity;
+			Entity* e = admin->selectedEntity;
 			ImGui::SameLine((GetColumnWidth() - strlen4) / 2);
 			Text(str4.c_str());
 		}
@@ -772,7 +782,7 @@ void CanvasSystem::DebugBar() {
 		//Vertice Count
 		if (TableNextColumn() && show_selected_stats) {
 			//TODO( sushi,Ui) implement vertice count when its avaliable
-			Entity* e = DengInput->selectedEntity;
+			Entity* e = admin->selectedEntity;
 			ImGui::SameLine((GetColumnWidth() - strlen5) / 2);
 			Text(str5.c_str());
 		}
@@ -780,12 +790,12 @@ void CanvasSystem::DebugBar() {
 		//Middle Empty Separator
 		if (TableNextColumn()) {
 			static float time = DengTime->totalTime;
-			if (admin->cons_error_warn) {
+			if (DengConsole->cons_error_warn) {
 				time = DengTime->totalTime;
 				ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, GetColorU32(ColToVec4(Color(255 * (sin(2 * M_PI * time + cos(2 * M_PI * time)) + 1)/2, 0, 0, 255))));
 				
 				PushItemWidth(-1);
-				std::string str6 = admin->last_error;
+				std::string str6 = DengConsole->last_error;
 				float strlen6 = (fontsize - (fontsize / 2)) * str6.size();
 				ImGui::SameLine((GetColumnWidth() - strlen6) / 2);
 				ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(Color(255 * -(sin(2 * M_PI * time + cos(2 * M_PI * time)) - 1)/2, 0, 0, 255)));
@@ -826,7 +836,7 @@ void CanvasSystem::DebugBar() {
 		//Context menu for toggling parts of the bar
 		if (ImGui::IsMouseReleased(1) && IsWindowHovered()) OpenPopup("Context");
 		if (BeginPopup("Context")) {
-			admin->IMGUI_MOUSE_CAPTURE = true;
+			DengConsole->IMGUI_MOUSE_CAPTURE = true;
 			ImGui::Separator();
 			if (Button("Open Debug Menu")) {
 				//showDebugTools = true;
@@ -988,7 +998,7 @@ void CanvasSystem::DebugLayer() {
 		std::string lastlt =   TOSTRING("Last Lyr time:    ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->lastLyrTime))));
 		std::string consolet = TOSTRING("Console time:     ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->consoleTime))));
 		std::string rendert =  TOSTRING("Render time:      ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->renderTime))));
-		std::string framet =   TOSTRING("Frame time:       ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->adminTime))));
+		std::string framet =   TOSTRING("Frame time:       ", Math::append_two_decimal(TOSTRING(Math::round2f(DengTime->frameTime))));
 		
 		float fontw = (fontsize - (fontsize / 2));
 		
@@ -1075,7 +1085,7 @@ void CanvasSystem::Init(EntityAdmin* admin) {
 void CanvasSystem::Update() {
 	WinHovFlag = 0;
 	DrawUI();
-	if (ConsoleHovFlag || WinHovFlag) admin->IMGUI_MOUSE_CAPTURE = true;
-	else                              admin->IMGUI_MOUSE_CAPTURE = false;
+	if (ConsoleHovFlag || WinHovFlag) DengConsole->IMGUI_MOUSE_CAPTURE = true;
+	else                              DengConsole->IMGUI_MOUSE_CAPTURE = false;
 }
 

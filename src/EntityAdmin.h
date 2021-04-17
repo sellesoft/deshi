@@ -13,10 +13,6 @@
 
 #include <map>
 
-//deshi Engine data defines; accessible only from inside Components/Systems
-#define DengInput admin->input
-#define DengWindow admin->window
-#define DengTime admin->time
 #define DengKeys admin->keybinds
 
 struct Entity;
@@ -32,13 +28,6 @@ struct SoundSystem;
 
 struct Camera;
 
-//core structs
-struct Window;
-struct Input;
-struct Time;
-struct Renderer;
-struct Console;
-
 enum struct GameState{
 	NONE, PLAY, PLAY_DEBUG, EDITOR, MENU
 };
@@ -46,20 +35,11 @@ enum struct GameState{
 //the entity admin is fed down to all systems and components that it controls meaning that
 //the core will also be accessible in those places too.
 struct EntityAdmin {
-	EntityAdmin* admin = this;
-	
 	GameState state = GameState::NONE;
 	
 	std::vector<Entity> entities;
 	//are we still doing this?  reply: eventually, not necessary for prototype
 	//object_pool<Component>* componentsPtr;
-	
-	//core
-	Input*    input;
-	Window*   window;
-	Time*     time;
-	Renderer* renderer;
-	Console*  console;
 	
 	//systems
 	PhysicsWorld*  physicsWorld; //TODO(delle) move these vars to a global vars file
@@ -75,6 +55,8 @@ struct EntityAdmin {
 	UndoManager undoManager;
 	
 	Camera* mainCamera;
+	
+	Entity* selectedEntity = 0;
 	
 	//stores the components to be executed in between layers
 	std::vector<ContainerManager<Component*>> freeCompLayers;
@@ -94,25 +76,13 @@ struct EntityAdmin {
 	bool debugTimes = true;
 	TIMER_START(t_a);
 	
-	//imgui capture flags
-	bool IMGUI_KEY_CAPTURE = false;
-	bool IMGUI_MOUSE_CAPTURE = false;
-	
-	//console error warn flag and last error
-	bool cons_error_warn = false;
-	std::string last_error;
-	
-	void Init(Input* i, Window* w, Time* t, Renderer* r, Console* c);
+	void Init();
 	void Cleanup();
 	
 	void Update();
 	
 	void Save();
 	void Load(const char* filename);
-	
-	Command* GetCommand(std::string command);
-	bool     ExecCommand(std::string command);
-	bool     ExecCommand(std::string command, std::string args);
 };
 
 struct Entity {
@@ -151,5 +121,8 @@ struct Entity {
 		return t;
 	}
 };
+
+//global admin pointer
+extern EntityAdmin* g_admin;
 
 #endif

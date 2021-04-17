@@ -10,21 +10,9 @@
 #include <map>
 
 struct ImGuiInputTextCallbackData;
-struct Input;
-struct Window;
-struct Time;
-struct EntityAdmin;
 struct Command;
 
 struct Console  {
-	
-	Console() {}
-	
-	Time* time;
-	Input* input;
-	Window* window;
-	EntityAdmin* admin;
-	
 	std::map<std::string, Command*> commands;
 	
 	char inputBuf[256]{};
@@ -36,16 +24,28 @@ struct Console  {
 	bool autoScroll = true;
 	bool scrollToBottom = false;
 	
-	void Init(Time* t, Input* i, Window* w, EntityAdmin* ea);
+	//console error warn flag and last error
+	bool cons_error_warn = false;
+	std::string last_error;
+	
+	//imgui capture flags
+	bool IMGUI_KEY_CAPTURE = false;
+	bool IMGUI_MOUSE_CAPTURE = false;
+	
+	Console() {}
+	
+	void Init();
 	void Update();
 	void DrawConsole();
 	void PushConsole(std::string s);
 	void AddLog(std::string input);
 	void FlushBuffer();
-	std::string ExecCommand(std::string command, std::string args);
 	int TextEditCallback(ImGuiInputTextCallbackData* data);
 	static int TextEditCallbackStub(ImGuiInputTextCallbackData* data);
 	
+	Command* GetCommand(std::string command);
+	std::string ExecCommand(std::string command);
+	std::string ExecCommand(std::string command, std::string args);
 	void AddRandomCommands();
 	void AddRenderCommands();
 	void AddCameraCommands();
@@ -59,15 +59,18 @@ struct Console  {
 
 //global console pointer
 extern Console* g_console;
+#define DengConsole g_console
 
 #define LOG(...)     g_console->PushConsole(TOSTRING("[c:yellow]", __VA_ARGS__, "[c]"))
 #define ERROR(...)   g_console->PushConsole(TOSTRING("[c:error]", __VA_ARGS__, "[c]"))
 #define SUCCESS(...) g_console->PushConsole(TOSTRING("[c:green]", __VA_ARGS__, "[c]"))
-//#define PRINT(...)   admin->GetSystem<Console>()->PushConsole(TOSTRING(__VA_ARGS__))
 
 //additionally prints where function was called
 #define LOG_LOC(...)     g_console->PushConsole(TOSTRING("[c:yellow]In ", __FILENAME__, " at ", __LINE__ , ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
 #define ERROR_LOC(...)   g_console->PushConsole(TOSTRING("[c:error]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:error]", __VA_ARGS__, "[c]"))
 #define SUCCESS_LOC(...) g_console->PushConsole(TOSTRING("[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]")
+
+#define LOGFUNC LOG(__FUNCTION__, " called")
+#define LOGFUNCM(...) LOG(__FUNCTION__, " called ", __VA_ARGS__)
 
 #endif //DESHI_CONSOLE_H

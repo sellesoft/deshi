@@ -41,6 +41,10 @@ struct Time{
 	std::string FormatAdminTime(std::string format);
 };
 
+//global time pointer
+extern Time* g_time;
+#define DengTime g_time
+
 inline void Time::Init(float fixedUpdatesPerSecond){
 	fixedTimeStep    = fixedUpdatesPerSecond;
 	fixedDeltaTime   = 1.f / fixedUpdatesPerSecond;

@@ -36,7 +36,7 @@ void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode
 	if(icon.pixels){
 		glfwSetWindowIcon(window, 1, &icon);
 	}else{
-		PRINT("Failed to load texture: deshi_icon.png; Using default window icon");
+		PRINTLN("Failed to load texture: deshi_icon.png; Using default window icon");
 	}
 	
 	const GLFWvidmode* mode = glfwGetVideoMode(monitor);

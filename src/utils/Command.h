@@ -8,15 +8,12 @@
 struct EntityAdmin;
 
 typedef std::string (*CommandAction)(EntityAdmin* admin, std::vector<std::string> args);
-//typedef void (*CommandActionArgs)(EntityAdmin* admin, std::string args);
 
 struct Command {
 	CommandAction action;
 	bool triggered;
 	std::string name;
 	std::string description;
-	
-	static bool CONSOLE_PRINT_EXEC;
 	
 	Command(CommandAction action, std::string name, std::string description = "") {
 		this->triggered = false;

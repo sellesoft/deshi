@@ -72,8 +72,14 @@ The transformation matrix will follow the format to the right:						|0,				0,			
 */
 
 #pragma once
+#ifndef DESHI_MATRIXN_H
+#define DESHI_MATRIXN_H
+
 #include "../utils/debug.h"
 #include "Vector.h"
+
+#include <vector>
+#include <string>
 
 struct MatrixN {
 	u32 rows = 0;
@@ -675,3 +681,5 @@ inline MatrixN::MatrixN(Vector3 v, float w) {
 	this->rows = 1; this->cols = 4; this->elementCount = 4;
 	this->data = {v.x, v.y, v.z, w};
 }
+
+#endif //DESHI_MATRIXN_H

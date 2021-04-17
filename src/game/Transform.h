@@ -3,7 +3,6 @@
 #define GAME_TRANSFORM_H
 
 #include "../math/VectorMatrix.h"
-#include "../math/Math.h"
 
 struct Transform {
 	Vector3 position = Vector3::ZERO;
@@ -33,17 +32,17 @@ struct Transform {
 	inline Matrix4 TransformMatrix(){
 		return Matrix4::TransformationMatrix(position, rotation, scale);
 	}
-
+	
 	inline std::string Save() {
 		return TOSTRING(
-			"pos: ", position, "\n",
-			"rot: ", rotation, "\n",
-			"scale: ", scale, "\n"
-		);
+						"pos: ", position, "\n",
+						"rot: ", rotation, "\n",
+						"scale: ", scale, "\n"
+						);
 	}
-
+	
 	inline void Load() {
-
+		
 	}
 };
 

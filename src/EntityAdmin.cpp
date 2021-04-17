@@ -45,9 +45,7 @@
 
 //// EntityAdmin ////
 
-void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
-	time = t; input = i; window = w; console = c; renderer = r;
-	
+void EntityAdmin::Init() {
 	state = GameState::EDITOR;
 	entities.reserve(1000);
 	
@@ -73,7 +71,7 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	sound->Init(this);
 	
 	scene.Init();
-	renderer->LoadScene(&scene);
+	DengRenderer->LoadScene(&scene);
 	keybinds.Init();
 	controller.Init(this);
 	undoManager.Init();
@@ -86,7 +84,7 @@ void EntityAdmin::Init(Input* i, Window* w, Time* t, Renderer* r, Console* c) {
 	//orb testing
 	Mesh* mesh = new Mesh(Mesh::CreateMeshFromOBJ("sphere.obj", "sphere.obj"));
 	//Texture tex("default1024.png");
-	//admin->renderer->LoadTexture(tex);
+	//DengRenderer->LoadTexture(tex);
 	//*mesh.batchArray[0].textureArray.push_back(tex);
 	//*mesh.batchArray[0].textureCount = 1;
 	mesh->batchArray[0].shader = Shader::WIREFRAME;
@@ -122,26 +120,26 @@ void EntityAdmin::Update() {
 	
 	TIMER_RESET(t_a); 
 	if (!skip && !pause_phys && !paused)  { UpdateLayer(freeCompLayers[CL0_PHYSICS]); }
-	time->physLyrTime =   TIMER_END(t_a); TIMER_RESET(t_a);
+	DengTime->physLyrTime =   TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_phys && !paused)  { physics->Update(); }
-	time->physSysTime =   TIMER_END(t_a); TIMER_RESET(t_a);
+	DengTime->physSysTime =   TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_canvas)           { UpdateLayer(freeCompLayers[CL1_RENDCANVAS]); }
-	time->canvasLyrTime = TIMER_END(t_a); TIMER_RESET(t_a);
+	DengTime->canvasLyrTime = TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_canvas)           { canvas->Update(); }
-	time->canvasSysTime = TIMER_END(t_a); TIMER_RESET(t_a);
+	DengTime->canvasSysTime = TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_console)          { UpdateLayer(freeCompLayers[CL2_WORLD]); }
-	time->worldLyrTime =  TIMER_END(t_a); TIMER_RESET(t_a);
+	DengTime->worldLyrTime =  TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_world && !paused) { world->Update(); }
-	time->worldSysTime =  TIMER_END(t_a); TIMER_RESET(t_a);
+	DengTime->worldSysTime =  TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_sound && !paused) { UpdateLayer(freeCompLayers[CL3_SOUND]); }
-	time->sndLyrTime =    TIMER_END(t_a); TIMER_RESET(t_a);
+	DengTime->sndLyrTime =    TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_sound && !paused) { sound->Update(); }
-	time->sndSysTime =    TIMER_END(t_a); TIMER_RESET(t_a);
+	DengTime->sndSysTime =    TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_last && !paused)  { UpdateLayer(freeCompLayers[CL4_LAST]); }
-	time->lastLyrTime =   TIMER_END(t_a);
+	DengTime->lastLyrTime =   TIMER_END(t_a);
 	
-	time->paused = paused;
-	time->phys_pause = pause_phys;
+	DengTime->paused = paused;
+	DengTime->phys_pause = pause_phys;
 	skip = false;
 }
 
@@ -249,10 +247,10 @@ void EntityAdmin::Save() {
 	}
 	
 	//// write meshes ////
-	header.meshCount = renderer->meshes.size();
+	header.meshCount = DengRenderer->meshes.size();
 	header.meshArrayOffset = file.tellp();
 	
-	for(auto& m : renderer->meshes){
+	for(auto& m : DengRenderer->meshes){
 		b32 base = m.base;
 		file.write((const char*)&m.id, sizeof(u32));
 		file.write((const char*)&base, sizeof(b32));
@@ -412,11 +410,11 @@ void EntityAdmin::Load(const char* filename) {
 	entities.clear(); entities.reserve(1000);
 	for (auto& layer : freeCompLayers) { layer.clear(); } //TODO(delle) see if this causes a leak
 	
-	input->selectedEntity = 0;
+	selectedEntity = 0;
 	undoManager.Reset();
 	scene.Reset();
-	renderer->Reset();
-	renderer->LoadScene(&scene);
+	DengRenderer->Reset();
+	DengRenderer->LoadScene(&scene);
 	
 	SUCCESS("Cleaned up previous level");
 	SUCCESS("Loading level: ", filename);
@@ -464,7 +462,7 @@ void EntityAdmin::Load(const char* filename) {
 		memcpy(&baseMesh, data+cursor, sizeof(b32)); 
 		cursor += sizeof(b32);
 		memcpy(meshName, data+cursor, 64); cursor += 64;
-		if(!baseMesh) renderer->CreateMesh(&scene, meshName);
+		if(!baseMesh) DengRenderer->CreateMesh(&scene, meshName);
 	}
 	
 	//// parse and create components ////
@@ -500,35 +498,6 @@ void EntityAdmin::Load(const char* filename) {
 	SUCCESS("Finished loading level '", filename, "' in ", TIMER_END(t_l), "ms");
 	//skip any ongoing updates
 	skip = true;
-}
-
-Command* EntityAdmin::GetCommand(std::string command) {
-	try {
-		return console->commands.at(command);
-	} catch (std::exception e) {
-		ERROR("Command '", command, "' does not exist");
-		return 0;
-	}
-}
-
-bool EntityAdmin::ExecCommand(std::string command) {
-	try {
-		console->commands.at(command)->Exec(this);
-		return true;
-	} catch (std::exception e) {
-		ERROR("Command '", command, "' does not exist");
-		return false;
-	}
-}
-
-bool EntityAdmin::ExecCommand(std::string command, std::string args) {
-	try {
-		console->commands.at(command)->Exec(admin, args);
-		return true;
-	} catch (std::exception e) {
-		ERROR("Command '", command, "' does not exist");
-		return false;
-	}
 }
 
 //// Entity ////

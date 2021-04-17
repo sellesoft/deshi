@@ -60,7 +60,7 @@ AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Command* 
 	sortid = 3;
 	
 	this->collisionLayer = collisionLayer;
-	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.x), 2 * abs(halfDims.x), mass);
+	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 	this->command = command;
 	
 	if(!mesh) {
