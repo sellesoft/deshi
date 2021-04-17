@@ -38,6 +38,8 @@ struct AudioSource : public Component {
 	
 	AudioSource();
 	AudioSource(char* snd_file, Physics* p, Transform* t = nullptr, bool loop = false, float gain = 1, float pitch = 1);
+	
+	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif //COMPONENT_AUDIOSOURCE_H

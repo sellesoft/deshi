@@ -41,6 +41,6 @@ namespace InertiaTensors {
 		float value = M_ONETWELFTH * mass * (3 * rSqrd + height * height);
 		return Matrix3(value, 0, 0,
 					   0, value, 0,
-					   0, 0, .5f * mass * rSqrd);
+					   0, 0, mass*rSqrd/2.f);
 	}
 };

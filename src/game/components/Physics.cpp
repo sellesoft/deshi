@@ -78,3 +78,25 @@ void Physics::AddImpulseNomass(Physics* creator, Vector3 impulse) {
 	velocity += impulse;
 	if (creator) { creator->velocity -= impulse; }
 }
+
+void Physics::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
+	u32 entityID = 0xFFFFFFFF;
+	Physics p;
+	for_n(i,count){
+		memcpy(&entityID, data+cursor, sizeof(u32)); 
+		cursor += sizeof(u32);
+		if(entityID >= entities.size()) {
+			ERROR("Failed to load physics component at pos '", cursor-sizeof(u32),
+				  "' because it has an invalid entity ID: ", entityID);
+			continue;
+		}
+		
+		memcpy(&p, data+cursor,          sizeof(vec3)*6 + sizeof(f32)*2); 
+		cursor += sizeof(vec3)*6 + sizeof(f32)*2;
+		memcpy(&p.isStatic, data+cursor, sizeof(b32));
+		cursor += sizeof(b32);
+		
+		entities[entityID].AddComponent(new Physics(p.position, p.rotation, p.velocity, p.acceleration, p.rotVelocity,
+													p.rotAcceleration, p.elasticity, p.mass, p.isStatic));
+	}
+}

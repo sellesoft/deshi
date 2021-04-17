@@ -13,6 +13,7 @@
 
 #include "../../game/components/MeshComp.h"
 #include "../../game/systems/WorldSystem.h"
+#include "../../utils/PhysicsWorld.h"
 
 //for time
 #include <iomanip>
@@ -421,7 +422,7 @@ void CanvasSystem::DebugTools() {
 											MeshComp* m = sel->GetComponent<MeshComp>();
 											if (m) {
 												//TODO(sushi, Ui) set up showing multiple batches shaders when that becomes relevant
-												Text(TOSTRING("Shader: ", shadertostring.at(m->m->batchArray[0].shader)).c_str());
+												Text(TOSTRING("Shader: ", shadertostring.at(m->mesh->batchArray[0].shader)).c_str());
 												SetPadding;
 												if (ImGui::TreeNode("Shader Select")) {
 													static int selected = -1;
@@ -448,9 +449,9 @@ void CanvasSystem::DebugTools() {
 											WinHovCheck;
 											MeshComp* m = sel->GetComponent<MeshComp>();
 											if (m) {
-												if (m->m->batchArray.size() > 0) {
-													if (m->m->batchArray[0].textureArray.size() > 0) {
-														Text(TOSTRING("Texture: ", m->m->batchArray[0].textureArray[0].filename).c_str());
+												if (m->mesh->batchArray.size() > 0) {
+													if (m->mesh->batchArray[0].textureArray.size() > 0) {
+														Text(TOSTRING("Texture: ", m->mesh->batchArray[0].textureArray[0].filename).c_str());
 													}
 													else {
 														Text("Current Texture: None");
@@ -558,7 +559,7 @@ void CanvasSystem::DebugTools() {
 				}
 				
 				SetPadding;
-				ImGui::InputFloat("gravity", &admin->physics->gravity);
+				ImGui::InputFloat("gravity", &admin->physicsWorld->gravity);
 				
 				SetPadding;
 				ImGui::Text("#colliders: not implemented");

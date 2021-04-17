@@ -12,10 +12,10 @@ entity array                (104 * count)
 mesh                        ( 72 * count)
 component type header array ( 16 * count)
 audio listener comp array   ( 40 * count)
-audio source comp array     (  4 * count) //to be determined
-box collider comp array     ( 53 * count)
-aabb collider comp array    ( 53 * count)
-sphere collider comp array  ( 45 * count)
+audio source comp array     (  4 * count)    //to be determined
+box collider comp array     ( 56 * count)
+aabb collider comp array    ( 56 * count)
+sphere collider comp array  ( 48 * count)
 light comp array            ( 32 * count)
 mesh comp array             ( 16 * count)
 physics comp array          ( 88 * count)
@@ -57,7 +57,7 @@ Mesh (72 bytes)
 ========================================
 Offset | Size | Type       | Description
 -------|------|------------|-------------
-0      | 4    | uint32     | id
+0      | 4    | uint32     | id    //to be removed
 4      | 4    | bool32     | is this a base mesh?
 8      | 64   | char[64]   | name
 ========================================
@@ -67,7 +67,7 @@ Component Type Header (16 bytes)
 Offset | Size | Type       | Description
 -------|------|------------|-------------
 0      | 4    | uint32     | component type (see below)
-4      | 4    | uint32     | size in bytes of this component type
+4      | 4    | uint32     | size in bytes of this component type    //to be removed
 8      | 4    | uint32     | count of this component type
 12     | 4    | uint32     | absolute offset to array for this component type
 ========================================
@@ -83,11 +83,10 @@ Offset | Size | Type       | Description
 4  = ComponentType_ColliderBox
 5  = ComponentType_ColliderAABB
 6  = ComponentType_ColliderSphere
-7  = ComponentType_Controller
-8  = ComponentType_Light
-9  = ComponentType_MeshComp
-10 = ComponentType_OrbManager
-11 = ComponentType_Physics
+7  = ComponentType_Light
+8  = ComponentType_MeshComp
+9  = ComponentType_OrbManager
+10 = ComponentType_Physics
 0xFFFFFFFF = ComponentType_LAST
 
 //////////////////////////////
@@ -104,41 +103,41 @@ Offset | Size | Type       | Description
 28     | 12   | vector3    | orientation
 ========================================
 
-Audio Source (4 bytes) //to be determined
+Audio Source (4 bytes)    //to be determined
 ========================================
 Offset | Size | Type       | Description
 -------|------|------------|-------------
 0      | 4    | uint32     | entity id
 ========================================
 
-Box Collider (53 bytes)
+Box Collider (56 bytes)
 ========================================
 Offset | Size | Type       | Description
 -------|------|------------|-------------
 0      | 4    | uint32     | entity id
-4      | 36   | matrix3    | inertia tensor a box
-40     | 1    | int8       | collision layer
-41     | 12   | vector3    | half dimensions of the box
+4      | 4    | uint32     | collision layer
+8      | 36   | matrix3    | inertia tensor
+44     | 12   | vector3    | half dimensions of the box
 ========================================
 
-AABB Collider (53 bytes)
+AABB Collider (56 bytes)
 ========================================
 Offset | Size | Type       | Description
 -------|------|------------|-------------
 0      | 4    | uint32     | entity id
-4      | 36   | matrix3    | inertia tensor a box
-40     | 1    | int8       | collision layer
-41     | 12   | vector3    | half dimensions of the box
+4      | 4    | uint32     | collision layer
+8      | 36   | matrix3    | inertia tensor
+44     | 12   | vector3    | half dimensions of the box
 ========================================
 
-Sphere Collider (45 bytes)
+Sphere Collider (48 bytes)
 ========================================
 Offset | Size | Type       | Description
 -------|------|------------|-------------
 0      | 4    | uint32     | entity id
-4      | 36   | matrix3    | inertia tensor a sphere
-40     | 1    | int8       | collision layer
-41     | 4    | float32    | radius of the sphere
+4      | 4    | uint32     | collision layer
+8      | 36   | matrix3    | inertia tensor
+44     | 4    | float32    | radius of the sphere
 ========================================
 
 Light Component (32 bytes)
@@ -151,15 +150,15 @@ Offset | Size | Type       | Description
 28     | 4    | float32    | strength
 ========================================
 
-Mesh Component (16 bytes)
+Mesh Component (20 bytes)
 ========================================
 Offset | Size | Type       | Description
 -------|------|------------|-------------
 0      | 4    | uint32     | entity id
-4      | 2    | uint16     | instance id
-6      | 2    | uint16     | mesh id
-8      | 4    | bool32     | is the mesh visible?
-12     | 4    | bool32     | should this component update the meshes transform?
+4      | 4    | uint32     | instance id
+8      | 4    | uint32     | mesh id
+12     | 4    | bool32     | is the mesh visible?
+16     | 4    | bool32     | should this component update the meshes transform?
 ========================================
 
 Physics Component (88 bytes)

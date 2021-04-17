@@ -14,9 +14,9 @@ MeshComp::MeshComp() {
 }
 
 MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
-	this->m = m;
-	this->MeshID = meshID;
-	this->InstanceID = instanceID;
+	this->mesh = m;
+	this->meshID = meshID;
+	this->instanceID = instanceID;
 	
 	cpystr(name, "MeshComp", 63);
 	send = new Sender();
@@ -26,7 +26,7 @@ MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
 
 void MeshComp::ToggleVisibility() {
 	mesh_visible = !mesh_visible;
-	admin->renderer->UpdateMeshVisibility(MeshID, mesh_visible);
+	admin->renderer->UpdateMeshVisibility(meshID, mesh_visible);
 }
 
 void MeshComp::ReceiveEvent(Event event) {
@@ -38,14 +38,14 @@ void MeshComp::ReceiveEvent(Event event) {
 }
 
 void MeshComp::ChangeMaterialShader(u32 s) {
-	std::vector<u32> ids = admin->renderer->GetMaterialIDs(MeshID);
+	std::vector<u32> ids = admin->renderer->GetMaterialIDs(meshID);
 	for (u32 id : ids) {
 		admin->renderer->UpdateMaterialShader(id, s);
 	}
 }
 
 void MeshComp::ChangeMaterialTexture(u32 t) {
-	std::vector<u32> ids = admin->renderer->GetMaterialIDs(MeshID);
+	std::vector<u32> ids = admin->renderer->GetMaterialIDs(meshID);
 	
 	for (u32 id : ids) {
 		admin->renderer->UpdateMaterialTexture(id, 0, t);
@@ -53,21 +53,45 @@ void MeshComp::ChangeMaterialTexture(u32 t) {
 }
 
 std::string MeshComp::Save() {
-	return TOSTRING("MeshID: ", MeshID, "\n",
+	return TOSTRING("meshID: ", meshID, "\n",
 					"mesh_visible: ", mesh_visible, "\n",
 					"ENTITY_CONTROL: ", ENTITY_CONTROL, "\n");
 }
 
-void MeshComp::Load() {
-	
-}
-
 //this should only be used when the entity is not controlling the Mesh
 void MeshComp::UpdateMeshTransform(Vector3 position, Vector3 rotation, Vector3 scale) {
-	admin->renderer->UpdateMeshMatrix(MeshID, Matrix4::TransformationMatrix(position, rotation, scale));
+	admin->renderer->UpdateMeshMatrix(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
 }
 
 void MeshComp::Update() {
 	//update mesh's transform with entities tranform
-	if(ENTITY_CONTROL) admin->renderer->UpdateMeshMatrix(MeshID, entity->transform.TransformMatrix());
+	if(ENTITY_CONTROL) admin->renderer->UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
+}
+
+void MeshComp::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
+	u32 entityID = 0xFFFFFFFF;
+	u32 instanceID = -1;
+	u32 meshID = -1;
+	b32 visible = 0;
+	b32 entity_control = 0;
+	for_n(i,count){
+		memcpy(&entityID, data+cursor, sizeof(u32)); 
+		cursor += sizeof(u32);
+		if(entityID >= entities.size()) {
+			ERROR("Failed to load mesh component at pos '", cursor-sizeof(u32),
+				  "' because it has an invalid entity ID: ", entityID);
+			continue;
+		}
+		
+		memcpy(&instanceID, data+cursor, sizeof(u32)*2 + sizeof(b32)*2); 
+		cursor += sizeof(u32)*2 + sizeof(b32)*2;
+		
+		MeshComp* mc = new MeshComp();
+		mc->mesh = entities[entityID].admin->renderer->GetMeshPtr(meshID);
+		mc->instanceID = instanceID;
+		mc->meshID = meshID;
+		mc->mesh_visible = visible;
+		mc->ENTITY_CONTROL = entity_control;
+		entities[entityID].AddComponent(mc);
+	}
 }

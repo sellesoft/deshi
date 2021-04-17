@@ -14,8 +14,6 @@ if you feel they would handle the problem better. It should generally be you tho
 
 Major Ungrouped TODOs
 ---------------------
-add level saving and loading
-create a hot-loadable global vars file
 create a global core object rather than pass everything thru entity admin
 add shaders: PBR (4textures)
 settings file(s) [keybinds, video, audio, etc]
@@ -24,6 +22,7 @@ implement string returns, better descriptions, and parameter parsing on every co
 
 Minor Ungrouped TODOs
 ---------------------
+create a hot-loadable global vars file
 add a general logging system with log levels and locations
 add option to not use input callbacks so fps doesnt get affected dramatically by input
 add a component_state command to print state of a component (add str methods to all components/systems)
@@ -108,15 +107,13 @@ add a UI popup when reloading shaders
 add UI color palettes for easy color changing
 renaming entities from entity list
 redo debug bar to be more informative and have different modes
-(maybe) implement a way to push data to something in the DebugLayer, sort of how we had before with BufferLog
-	so you can see it without opening console
+(maybe) implement a way to push data to something in the DebugLayer, sort of how we had before with BufferLog so you can see it without opening console
 
 Math TODOs
 ----------
 cleanup math library (remove redundant/old things, make functions more consistent, etc.)
 add quaternions and converions between them and other linear algebra primitives
 replace glm :)
-look into scaling not rotating (scaling is probably being done in world not local)
 
 Fun TODOs
 ---------
@@ -129,6 +126,8 @@ dragging the console scroll bar doesn't work
 when minimizing the window ImGui throws an exception about calling End rather than EndChild in the DebugTools function
 after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and the batchArray size of whatever mesh its checking is something like 400000000000
 	it looks like some sort of corrupt mesh makes its way in there somehow?
+look into scaling not rotating (scaling is probably being done in world not local)
+console scrolls past top and bottom
 
 */
 

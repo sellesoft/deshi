@@ -32,6 +32,7 @@
 #include "game/components/MeshComp.h"
 #include "game/components/Orb.h"
 #include "game/components/Light.h"
+#include "game/components/Physics.h"
 
 #include "game/systems/System.h"
 #include "game/systems/PhysicsSystem.h"
@@ -166,8 +167,8 @@ struct ComponentTypeHeader{
 typedef enum ComponentTypeBits : u32{
 	ComponentType_NONE = 0,
 	ComponentType_AudioListener, ComponentType_AudioSource,    ComponentType_Camera,     ComponentType_ColliderBox,
-	ComponentType_ColliderAABB,  ComponentType_ColliderSphere, ComponentType_Controller, ComponentType_Light, 
-	ComponentType_MeshComp,      ComponentType_OrbManager,     ComponentType_Physics, 
+	ComponentType_ColliderAABB,  ComponentType_ColliderSphere, ComponentType_Light,      ComponentType_MeshComp,
+	ComponentType_OrbManager,    ComponentType_Physics, 
 	ComponentType_LAST = 0xFFFFFFFF,
 } ComponentTypeBits;
 
@@ -216,7 +217,7 @@ void EntityAdmin::Save() {
 	for(auto& e : entities) {
 		//write entity
 		file.write((const char*)&e.id,                 sizeof(u32));
-		file.write(e.name,                             64);
+		file.write(e.name,                             sizeof(char)*64);
 		file.write((const char*)&e.transform.position, sizeof(Vector3));
 		file.write((const char*)&e.transform.rotation, sizeof(Vector3));
 		file.write((const char*)&e.transform.scale,    sizeof(Vector3));
@@ -255,7 +256,7 @@ void EntityAdmin::Save() {
 		b32 base = m.base;
 		file.write((const char*)&m.id, sizeof(u32));
 		file.write((const char*)&base, sizeof(b32));
-		file.write(m.name,            64);
+		file.write(m.name,             sizeof(char)*64);
 	}
 	
 	//// write component type headers //// //TODO(delle) move these to thier respective files
@@ -280,21 +281,21 @@ void EntityAdmin::Save() {
 	//collider box
 	typeHeader.type        = ComponentType_ColliderBox;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(Matrix3) + sizeof(i8) + sizeof(Vector3);
+	typeHeader.size        = sizeof(u32) + sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
 	typeHeader.count       = compsColliderBox.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
 	//collider aabb
 	typeHeader.type        = ComponentType_ColliderAABB;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(Matrix3) + sizeof(i8) + sizeof(Vector3);
+	typeHeader.size        = sizeof(u32) + sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
 	typeHeader.count       = compsColliderAABB.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
 	//collider sphere
 	typeHeader.type        = ComponentType_ColliderSphere;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(Matrix3) + sizeof(i8) + sizeof(float);
+	typeHeader.size        = sizeof(u32) + sizeof(u32) + sizeof(Matrix3) + sizeof(float);
 	typeHeader.count       = compsColliderSphere.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
@@ -308,7 +309,7 @@ void EntityAdmin::Save() {
 	//mesh comp
 	typeHeader.type        = ComponentType_MeshComp;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(u16)*2 + sizeof(b32)*2; //instanceID, meshID, visible, entity_control
+	typeHeader.size        = sizeof(u32) + sizeof(u32)*2 + sizeof(b32)*2; //instanceID, meshID, visible, entity_control
 	typeHeader.count       = compsMeshComp.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
@@ -337,24 +338,24 @@ void EntityAdmin::Save() {
 	//collider box
 	for(auto c : compsColliderBox){
 		file.write((const char*)&c->entity->id,     sizeof(u32));
+		file.write((const char*)&c->collisionLayer, sizeof(u32));
 		file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
-		file.write((const char*)&c->collisionLayer, sizeof(i8));
 		file.write((const char*)&c->halfDims,       sizeof(Vector3));
 	}
 	
 	//collider aabb
 	for(auto c : compsColliderAABB){
 		file.write((const char*)&c->entity->id,     sizeof(u32));
+		file.write((const char*)&c->collisionLayer, sizeof(u32));
 		file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
-		file.write((const char*)&c->collisionLayer, sizeof(i8));
 		file.write((const char*)&c->halfDims,       sizeof(Vector3));
 	}
 	
 	//collider sphere
 	for(auto c : compsColliderSphere){
 		file.write((const char*)&c->entity->id,     sizeof(u32));
+		file.write((const char*)&c->collisionLayer, sizeof(u32));
 		file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
-		file.write((const char*)&c->collisionLayer, sizeof(i8));
 		file.write((const char*)&c->radius,         sizeof(float));
 	}
 	
@@ -371,8 +372,8 @@ void EntityAdmin::Save() {
 		b32 bool1 = c->mesh_visible;
 		b32 bool2 = c->ENTITY_CONTROL;
 		file.write((const char*)&c->entity->id,     sizeof(u32));
-		file.write((const char*)&c->InstanceID,     sizeof(u16));
-		file.write((const char*)&c->MeshID,         sizeof(u16));
+		file.write((const char*)&c->instanceID,     sizeof(u32));
+		file.write((const char*)&c->meshID,         sizeof(u32));
 		file.write((const char*)&bool1,             sizeof(b32));
 		file.write((const char*)&bool2,             sizeof(b32));
 	}
@@ -419,6 +420,7 @@ void EntityAdmin::Load(const char* filename) {
 	
 	SUCCESS("Cleaned up previous level");
 	SUCCESS("Loading level: ", filename);
+	TIMER_START(t_l);
 	
 	//// read file to char array ////
 	u32 cursor = 0;
@@ -429,33 +431,73 @@ void EntityAdmin::Load(const char* filename) {
 	//check for magic number
 	u32 magic = 1213416772; //DESH
 	if(memcmp(data, &magic, 4) != 0) return ERROR("Invalid magic number when loading save file: ", filename);
-	cursor += 4;
 	
-	//parse header
-	u32 flags, entityCount, entityArrayOffset, meshCount, meshArrayOffset, compTypeCount, compTypeArrayOffset;
-	memcpy(&flags,               data+cursor, sizeof(u32)); cursor += sizeof(u32);
-	memcpy(&entityCount,         data+cursor, sizeof(u32)); cursor += sizeof(u32);
-	memcpy(&entityArrayOffset,   data+cursor, sizeof(u32)); cursor += sizeof(u32);
-	memcpy(&meshCount,           data+cursor, sizeof(u32)); cursor += sizeof(u32);
-	memcpy(&meshArrayOffset,     data+cursor, sizeof(u32)); cursor += sizeof(u32);
-	memcpy(&compTypeCount,       data+cursor, sizeof(u32)); cursor += sizeof(u32);
-	memcpy(&compTypeArrayOffset, data+cursor, sizeof(u32)); cursor += sizeof(u32);
+	//// parse header ////
+	SaveHeader header;
+	memcpy(&header, data+cursor, sizeof(SaveHeader)); cursor += sizeof(SaveHeader);
 	
-	//parse and create entities
+	//// parse and create entities ////
+	if(cursor != header.entityArrayOffset) {
+		return ERROR("Load failed because cursor was at '", cursor, 
+					 "' when reading entities which start at '", header.entityArrayOffset, "'");
+	}
+	
+	entities.reserve(header.entityCount);
 	Entity tempEntity;
-	for_n(i,entityCount){
+	for_n(i, header.entityCount){
 		tempEntity.admin = this;
 		memcpy(&tempEntity.id, data+cursor, sizeof(u32) + 64 + sizeof(Vector3)*3);
 		cursor += sizeof(u32) + 64 + sizeof(Vector3)*3;
+		entities.push_back(tempEntity);
 	}
 	
-	//parse and load/create meshes
-	u32 id; char meshName[64];
-	for_n(i,meshCount){
+	//// parse and load/create meshes ////
+	if(cursor != header.meshArrayOffset) {
+		return ERROR("Load failed because cursor was at '", cursor, 
+					 "' when reading meshes which start at '", header.meshArrayOffset, "'");
+	}
+	
+	b32 baseMesh = 0;
+	char meshName[64];
+	for_n(i, header.meshCount){
+		cursor += sizeof(u32);
+		memcpy(&baseMesh, data+cursor, sizeof(b32)); 
+		cursor += sizeof(b32);
+		memcpy(meshName, data+cursor, 64); cursor += 64;
+		if(!baseMesh) renderer->CreateMesh(&scene, meshName);
+	}
+	
+	//// parse and create components ////
+	if(cursor != header.componentTypeHeaderArrayOffset) {
+		return ERROR("Load failed because cursor was at '", cursor, 
+					 "' when reading meshes which start at '", header.componentTypeHeaderArrayOffset, "'");
+	}
+	
+	ComponentTypeHeader compHeader;
+	for_n(i, header.componentTypeCount){
+		cursor = header.componentTypeHeaderArrayOffset + (sizeof(u32)*4)*i;
+		memcpy(&compHeader, data+cursor, sizeof(u32)*4);
+		cursor = compHeader.arrayOffset;
 		
-		renderer->CreateMesh(&scene, meshName);
+		switch(compHeader.type){
+			case(ComponentType_AudioListener):  AudioListener ::Load(entities, data, cursor, compHeader.count); break;
+			case(ComponentType_AudioSource):    AudioSource   ::Load(entities, data, cursor, compHeader.count); break;
+			case(ComponentType_Camera):         Camera        ::Load(entities, data, cursor, compHeader.count); break;
+			case(ComponentType_ColliderBox):    BoxCollider   ::Load(entities, data, cursor, compHeader.count); break;
+			case(ComponentType_ColliderAABB):   AABBCollider  ::Load(entities, data, cursor, compHeader.count); break;
+			case(ComponentType_ColliderSphere): SphereCollider::Load(entities, data, cursor, compHeader.count); break;
+			case(ComponentType_Light):          Light         ::Load(entities, data, cursor, compHeader.count); break;
+			case(ComponentType_MeshComp):       MeshComp      ::Load(entities, data, cursor, compHeader.count); break;
+			case(ComponentType_OrbManager):     OrbManager    ::Load(entities, data, cursor, compHeader.count); break;
+			case(ComponentType_Physics):        Physics       ::Load(entities, data, cursor, compHeader.count); break;
+			default:{
+				ERROR("Failed to load a component array because of unknown component type '", 
+					  compHeader.type, "' at pos: ", cursor);
+			}break;
+		}
 	}
 	
+	SUCCESS("Finished loading level '", filename, "' in ", TIMER_END(t_l), "ms");
 	//skip any ongoing updates
 	skip = true;
 }
@@ -464,8 +506,7 @@ Command* EntityAdmin::GetCommand(std::string command) {
 	try {
 		return console->commands.at(command);
 	} catch (std::exception e) {
-		//ERROR("Command \"", command, "\" does not exist");
-		this->console->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
+		ERROR("Command '", command, "' does not exist");
 		return 0;
 	}
 }
@@ -475,8 +516,7 @@ bool EntityAdmin::ExecCommand(std::string command) {
 		console->commands.at(command)->Exec(this);
 		return true;
 	} catch (std::exception e) {
-		//ERROR("Command \"", command, "\" does not exist");
-		this->console->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
+		ERROR("Command '", command, "' does not exist");
 		return false;
 	}
 }
@@ -486,7 +526,7 @@ bool EntityAdmin::ExecCommand(std::string command, std::string args) {
 		console->commands.at(command)->Exec(admin, args);
 		return true;
 	} catch (std::exception e) {
-		this->console->PushConsole(TOSTRING("\n[c:red]", "Command \"", command, "\" does not exist", "[c]"));
+		ERROR("Command '", command, "' does not exist");
 		return false;
 	}
 }

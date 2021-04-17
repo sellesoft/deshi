@@ -681,8 +681,7 @@ void Console::AddRenderCommands() {
 								u32 id = admin->renderer->CreateMesh(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
 								Mesh* ptr = admin->renderer->GetMeshPtr(id);
 								
-								MeshComp* mc = new MeshComp(ptr);
-								mc->MeshID = id;
+								MeshComp* mc = new MeshComp(ptr, id);
 								Physics* p = new Physics(position, rotation);
 								AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 								admin->world->CreateEntity(admin, { mc, p, s });
@@ -803,7 +802,7 @@ void Console::AddRenderCommands() {
 							
 							//collider
 							Collider* col = nullptr;
-							if(true || aabb){ //NOTE forcing this true for debugging, remove once -collider is fixed
+							if(aabb){
 								col = new AABBCollider(mesh, 1);
 							}else if(sphere){
 								//TODO(sushi) i dont know how you wanna handle this -delle

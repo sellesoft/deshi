@@ -86,22 +86,22 @@ struct{
 
 struct{
     u32  entity_id;
+    u32 collision_layer;
     mat3 inertia_tensor;
-    byte collision_layer;
     vec3 half_dimensions;
 } box_colliders[component_type_headers[2].count];
 
 struct{
     u32  entity_id;
+    u32 collision_layer;
     mat3 inertia_tensor;
-    byte collision_layer;
     vec3 half_dimensions;
 } aabb_colliders[component_type_headers[3].count];
 
 struct{
     u32  entity_id;
+    u32 collision_layer;
     mat3 inertia_tensor;
-    byte collision_layer;
     f32  half_dimensions;
 } sphere_colliders[component_type_headers[4].count];
 
@@ -114,8 +114,8 @@ struct{
 
 struct{
     u32 entity_id;
-    u16 instance_id;
-    u16 mesh_id;
+    u32 instance_id;
+    u32 mesh_id;
     b32 mesh_visible;
     b32 entity_control;
 } mesh_comps[component_type_headers[6].count];

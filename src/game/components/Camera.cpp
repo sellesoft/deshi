@@ -178,6 +178,7 @@ std::string Camera::Save() {
 					);
 }
 
-void Camera::Load() {
-	
+
+void Camera::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
+	ERROR("Camera load function not setup");
 }

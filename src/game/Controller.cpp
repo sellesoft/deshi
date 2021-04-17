@@ -25,11 +25,11 @@ inline void AddBindings(EntityAdmin* admin) {
 			char* c = (char*)malloc(255);
 			binds.getline(c, 255);
 			std::string s(c);
-		
+			
 			if (s != "") {
 				std::string key = s.substr(0, s.find_first_of(" "));
 				std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
-
+				
 				try {
 					DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, DengKeys.stk.at(key)));
 				}
@@ -155,7 +155,7 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 	for (auto& e : admin->entities) {
 		if (MeshComp* mc = e.GetComponent<MeshComp>()) {
 			if (mc->mesh_visible) {
-				Mesh* m = mc->m;
+				Mesh* m = mc->mesh;
 				int te = 0;
 				for (auto& b : m->batchArray) {
 					te++;
@@ -250,10 +250,10 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				}
 				return;
 			}
-
+			
 			if (DengInput->KeyPressed(MouseButton::SCROLLDOWN)) initialdist -= 1;
 			if (DengInput->KeyPressed(MouseButton::SCROLLUP))   initialdist += 1;
-
+			
 			
 			//set mouse to obj position on screen and save that position
 			if (initialgrab) {
@@ -324,7 +324,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				if (Physics* p = sel->GetComponent<Physics>()) {
 					p->position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
 				}	
-			
+				
 			}
 			else if (zaxis) {
 				Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
@@ -346,7 +346,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				if (Physics* p = sel->GetComponent<Physics>()) {
 					p->position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
 				}
-			
+				
 			}
 		} //if(DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj)
 	} //if(!admin->IMGUI_MOUSE_CAPTURE)

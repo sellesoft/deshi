@@ -59,4 +59,7 @@ typedef i32 b32; //int based boolean so c++ doesnt convert to 0 or 1
 //dst: destination c-string; src: source c-string; bytes: number of characters to copy
 #define cpystr(dst, src, bytes) strncpy_s(dst, src, bytes); dst[bytes] = '\0'
 
+//compile-time print sizeof()
+//char (*__kaboom)[sizeof( YourTypeHere )] = 1;
+
 #endif //DESHI_DEFINES_H

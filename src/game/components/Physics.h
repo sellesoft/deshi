@@ -23,8 +23,9 @@ struct Physics : public Component {
 	bool isStatic = false;
 	
 	Physics();
-	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO, Vector3 rotVeloctiy = Vector3::ZERO,
-			Vector3 rotAcceleration = Vector3::ZERO, float elasticity = .5f, float mass = 1.f, bool isStatic = false);
+	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO,
+			Vector3 rotVeloctiy = Vector3::ZERO,Vector3 rotAcceleration = Vector3::ZERO, float elasticity = .5f, 
+			float mass = 1.f, bool isStatic = false);
 	Physics(Vector3 position, Vector3 rotation, float mass, float elasticity);
 	
 	//adds the input vector to the target's input vector
@@ -40,6 +41,8 @@ struct Physics : public Component {
 	//changes velocity by adding an impulse to target, target also applies the impulse to creator
 	void AddImpulse(Physics* creator, Vector3 impulse);
 	void AddImpulseNomass(Physics* creator, Vector3 impulse);
+	
+	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif //COMPONENT_PHYSICS_H

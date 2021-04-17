@@ -39,13 +39,12 @@ struct Camera : public Component {
 	Matrix4 MakePerspectiveProjection();
 	Matrix4 MakeOrthographicProjection();
 	void UseOrthographicProjection();
-
+	
 	void UpdateProjectionMatrix();
-
-	std::string Save() override;
-	void Load() override;
 	
 	std::string str() override;
+	std::string Save() override;
+	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif //COMPONENT_CAMERA_H

@@ -3,41 +3,45 @@
 #define COMPONENT_COLLIDER_H
 
 #include "Component.h"
-#include "../../math/Matrix.h"
-#include "../../math/Vector.h"
-#include "../../math/InertiaTensors.h"
-#include "Physics.h"
+#include "../../math/VectorMatrix.h"
 
 struct Command;
 struct Mesh;
 
 struct Collider : public Component {
+	u32 collisionLayer;
 	Matrix3 inertiaTensor;
-	i8 collisionLayer = 0;
-	
-	Command* command = nullptr; //TODO(delle,Ph) implement trigger colliders
+	Command* command; //TODO(delle,Ph) implement trigger colliders
 };
 
 //rotatable box
 struct BoxCollider : public Collider {
 	Vector3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
 	
-	BoxCollider(Vector3 halfDimensions, float mass, i8 collisionLayer = 0, Command* command = nullptr);
+	BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr);
+	BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Command* command = nullptr);
+	
+	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //axis-aligned bounding box
 struct AABBCollider : public Collider {
 	Vector3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
 	
-	AABBCollider(Mesh* mesh, float mass, i8 collisionLayer = 0, Command* command = nullptr);
-	AABBCollider(Vector3 halfDimensions, float mass, i8 collisionLayer = 0, Command* command = nullptr);
+	AABBCollider(Mesh* mesh, float mass, u32 collisionLayer = 0, Command* command = nullptr);
+	AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr);
+	AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Command* command = nullptr);
 	
+	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 struct SphereCollider : public Collider {
 	float radius;
 	
-	SphereCollider(float radius, float mass, i8 collisionLayer = 0, Command* command = nullptr);
+	SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr);
+	SphereCollider(float radius, float mass, u32 collisionLayer = 0, Command* command = nullptr);
+	
+	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //TODO(delle,Ph) implement convexPolyCollider

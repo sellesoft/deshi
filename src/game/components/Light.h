@@ -15,6 +15,8 @@ struct Light : public Component {
 	Light(const Vector3& position, const Vector3& direction, float strength = 1.f);
 	
 	void Update() override;
+	
+	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif //COMPONENT_LIGHT_H

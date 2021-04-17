@@ -1,5 +1,7 @@
 #include "Collider.h"
 
+#include "../../EntityAdmin.h"
+#include "../../math/InertiaTensors.h"
 #include "../../math/math.h"
 #include "../../scene/Model.h"
 
@@ -7,16 +9,44 @@
 //// Box Collider ////
 //////////////////////
 
-BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, i8 collisionLayer, Command* command) {
+BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Command* command) {
 	cpystr(name, "BoxCollider", 63);
 	sortid = 2;
 	
-	this->halfDims = halfDimensions;
 	this->collisionLayer = collisionLayer;
-	if(command){
-		this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.x), 2 * abs(halfDims.x), mass);
-	}else{
-		this->inertiaTensor = Matrix3::IDENTITY;
+	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
+	this->command = command;
+	this->halfDims = halfDimensions;
+}
+
+BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Command* command) {
+	cpystr(name, "BoxCollider", 63);
+	sortid = 2;
+	
+	this->collisionLayer = collisionLayer;
+	this->inertiaTensor = tensor;
+	this->command = command;
+	this->halfDims = halfDimensions;
+}
+
+void BoxCollider::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
+	u32 entityID = -1;
+	u32 layer = -1;
+	mat3 tensor{};
+	vec3 halfDimensions{};
+	
+	for_n(i,count){
+		memcpy(&entityID, data+cursor, sizeof(u32)); 
+		cursor += sizeof(u32);
+		if(entityID >= entities.size()) {
+			ERROR("Failed to load box collider component at pos '", cursor-sizeof(u32),
+				  "' because it has an invalid entity ID: ", entityID);
+			continue;
+		}
+		
+		memcpy(&layer, data+cursor, sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3)); 
+		cursor += sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
+		entities[entityID].AddComponent(new BoxCollider(halfDimensions, tensor, layer, nullptr));
 	}
 }
 
@@ -24,16 +54,14 @@ BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, i8 collisionLayer, 
 //// AABB Collider ////
 ///////////////////////
 
-AABBCollider::AABBCollider(Mesh* mesh, float mass, i8 collisionLayer, Command* command) {
+//TODO(delle) test this
+AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Command* command) {
 	cpystr(name, "AABBCollider", 63);
 	sortid = 3;
 	
 	this->collisionLayer = collisionLayer;
-	if(command){
-		this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.x), 2 * abs(halfDims.x), mass);
-	}else{
-		this->inertiaTensor = Matrix3::IDENTITY;
-	}
+	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.x), 2 * abs(halfDims.x), mass);
+	this->command = command;
 	
 	if(!mesh) {
 		this->halfDims = Vector3::ZERO;
@@ -76,16 +104,44 @@ AABBCollider::AABBCollider(Mesh* mesh, float mass, i8 collisionLayer, Command* c
 	}
 }
 
-AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, i8 collisionLayer, Command* command) {
+AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Command* command) {
 	cpystr(name, "AABBCollider", 63);
 	sortid = 3;
 	
-	this->halfDims = halfDimensions;
 	this->collisionLayer = collisionLayer;
-	if(command){
-		this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.x), 2 * abs(halfDims.x), mass);
-	}else{
-		this->inertiaTensor = Matrix3::IDENTITY;
+	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
+	this->command = command;
+	this->halfDims = halfDimensions;
+}
+
+AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Command* command) {
+	cpystr(name, "AABBCollider", 63);
+	sortid = 3;
+	
+	this->collisionLayer = collisionLayer;
+	this->inertiaTensor = tensor;
+	this->command = command;
+	this->halfDims = halfDimensions;
+}
+
+void AABBCollider::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
+	u32 entityID = -1;
+	u32 layer = -1;
+	mat3 tensor{};
+	vec3 halfDimensions{};
+	
+	for_n(i,count){
+		memcpy(&entityID, data+cursor, sizeof(u32)); 
+		cursor += sizeof(u32);
+		if(entityID >= entities.size()) {
+			ERROR("Failed to load aabb collider component at pos '", cursor-sizeof(u32),
+				  "' because it has an invalid entity ID: ", entityID);
+			continue;
+		}
+		
+		memcpy(&layer, data+cursor, sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3)); 
+		cursor += sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
+		entities[entityID].AddComponent(new AABBCollider(halfDimensions, tensor, layer, nullptr));
 	}
 }
 
@@ -93,15 +149,43 @@ AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, i8 collisionLayer
 //// Sphere Collider ////
 /////////////////////////
 
-SphereCollider::SphereCollider(float radius, float mass, i8 collisionLayer, Command* command) {
+SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Command* command) {
 	cpystr(name, "SphereCollider", 63);
 	sortid = 4;
 	
-	this->radius = radius;
 	this->collisionLayer = collisionLayer;
-	if(command){
-		this->inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
-	}else{
-		this->inertiaTensor = Matrix3::IDENTITY;
+	this->inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
+	this->command = command;
+	this->radius = radius;
+}
+
+SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer, Command* command) {
+	cpystr(name, "SphereCollider", 63);
+	sortid = 4;
+	
+	this->collisionLayer = collisionLayer;
+	this->inertiaTensor = tensor;
+	this->command = command;
+	this->radius = radius;
+}
+
+void SphereCollider::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
+	u32 entityID = -1;
+	u32 layer = -1;
+	mat3 tensor{};
+	f32 radius = 0.f;
+	
+	for_n(i,count){
+		memcpy(&entityID, data+cursor, sizeof(u32)); 
+		cursor += sizeof(u32);
+		if(entityID >= entities.size()) {
+			ERROR("Failed to load sphere collider component at pos '", cursor-sizeof(u32),
+				  "' because it has an invalid entity ID: ", entityID);
+			continue;
+		}
+		
+		memcpy(&layer, data+cursor, sizeof(u32) + sizeof(mat3) + sizeof(f32)); 
+		cursor += sizeof(u32) + sizeof(mat3) + sizeof(f32);
+		entities[entityID].AddComponent(new SphereCollider(radius, tensor, layer, nullptr));
 	}
 }
