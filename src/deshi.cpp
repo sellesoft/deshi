@@ -118,7 +118,7 @@ replace glm :)
 Fun TODOs
 ---------
 look into implementing Lua 
-look into making a function that takes in the types on a component and formatsbinary for saving and what not like what were currently doing for typeHeader in EntityAdmin Save()
+look into making a function that takes in the types on a component and formats binary for saving and what not like what were currently doing for typeHeader in EntityAdmin Save()
 
 Bug Board
 ---------

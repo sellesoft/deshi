@@ -432,7 +432,7 @@ void CanvasSystem::DebugTools() {
 											MeshComp* m = sel->GetComponent<MeshComp>();
 											if (m) {
 												//TODO(sushi, Ui) set up showing multiple batches shaders when that becomes relevant
-												Text(TOSTRING("Shader: ", shadertostring.at(m->mesh->batchArray[0].shader)).c_str());
+												//Text(TOSTRING("Shader: ", shadertostring.at(m->mesh->batchArray[0].shader)).c_str());
 												SetPadding;
 												if (ImGui::TreeNode("Shader Select")) {
 													static int selected = -1;

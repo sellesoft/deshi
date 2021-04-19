@@ -267,22 +267,13 @@ inline void AABBBoxCollision(Physics* aabb, AABBCollider* aabbCol, Physics* box,
 
 inline void SphereSphereCollision(Physics* s1, SphereCollider* sc1, Physics* s2, SphereCollider* sc2) {
 	//static resolution
-	//ImGui::BeginDebugLayer();
-	
-	
-	if (sc1->radius + sc2->radius > (s1->position - s2->position).mag()) {
-		//ImGui::DebugDrawLine3(s1->position, s2->position, g_admin->mainCamera, DengWindow->dimensions);
-		
+	float dist = (s1->position - s2->position).mag();
+	float rsum = sc1->radius + sc2->radius;
+	if (rsum > dist) {
 		Vector3 s1t2 = s2->position - s1->position;
-		
-		float overlap = (sc1->radius + sc2->radius) - s1t2.mag();
-		
-		//ImGui::DebugDrawText3(TOSTRING(overlap).c_str(), s1->position, g_admin->mainCamera, DengWindow->dimensions);
-		
-		s1->position -= s1t2.normalized() * overlap / 2;
-		s2->position += s1t2.normalized() * overlap / 2;
-		
-		
+		float overlap = (rsum - dist) / 2;
+		s1->position -= s1t2.normalized() * overlap;
+		s2->position += s1t2.normalized() * overlap;
 	}
 	
 	//ImGui::EndDebugLayer();
