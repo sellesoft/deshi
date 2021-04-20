@@ -1,5 +1,5 @@
 Deshi Save File Binary Format: .desh
-Last Updated: 4/14/2021 by delle
+Last Updated: 4/20/2021 by delle
 
 /////////////////////////////
 //// Overall File Layout ////
@@ -76,17 +76,17 @@ Offset | Size | Type       | Description
 //// Component Types //// 
 /////////////////////////
 
-0  = ComponentType_NONE
-1  = ComponentType_AudioListener
-2  = ComponentType_AudioSource
-3  = ComponentType_Camera
-4  = ComponentType_ColliderBox
-5  = ComponentType_ColliderAABB
-6  = ComponentType_ColliderSphere
-7  = ComponentType_Light
-8  = ComponentType_MeshComp
-9  = ComponentType_OrbManager
-10 = ComponentType_Physics
+0    = ComponentType_NONE
+1    = ComponentType_MeshComp
+2    = ComponentType_Physics
+4    = ComponentType_ColliderBox
+8    = ComponentType_ColliderAABB
+16   = ComponentType_ColliderSphere
+32   = ComponentType_AudioListener
+64   = ComponentType_AudioSource
+128  = ComponentType_Camera
+256  = ComponentType_Light
+512  = ComponentType_OrbManager
 0xFFFFFFFF = ComponentType_LAST
 
 //////////////////////////////

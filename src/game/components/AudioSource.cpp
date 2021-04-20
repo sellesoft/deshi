@@ -7,8 +7,7 @@
 AudioSource::AudioSource() {
 	//empty version for adding component through command
 	cpystr(name, "AudioSource", 63);
-	sortid = 1;
-	layer = CL3_SOUND;
+	layer = ComponentLayer_Sound;
 }
 
 AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, float gain, float pitch) {
@@ -26,13 +25,17 @@ AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, fl
 	}
 	
 	cpystr(name, "AudioSource", 63);
-	sortid = 1;
-	layer = CL3_SOUND;
+	layer = ComponentLayer_Sound;
 }
 
 void AudioSource::RequestPlay(float gain, float pitch) {
 	this->gain = gain; this->pitch = pitch;
 	request_play = true;
+}
+
+std::vector<char> AudioSource::Save() {
+	std::vector<char> out;
+	return out;
 }
 
 void AudioSource::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){

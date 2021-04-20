@@ -16,6 +16,7 @@ struct Light : public Component {
 	
 	void Update() override;
 	
+	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 

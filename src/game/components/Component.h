@@ -12,17 +12,37 @@ struct Entity;
 struct EntityAdmin;
 
 //suffix is the system that comes after the layer
-enum CompLayer {
-	CL0_PHYSICS,
-	CL1_RENDCANVAS,
-	CL2_WORLD,
-	CL3_SOUND,
-	CL4_LAST,
-	PHYS_LAYER,
-	TRANSFORM_LAYER,
-	NONE
+enum ComponentLayerBits : u32{
+	ComponentLayer_NONE = 0,
+	ComponentLayer_Physics,
+	ComponentLayer_Canvas,
+	ComponentLayer_World,
+	ComponentLayer_Sound,
+	ComponentLayer_LAST,
+	SystemLayer_Physics,
+}; typedef u32 ComponentLayer;
+
+struct ComponentTypeHeader{
+	u32 type;
+	u32 size;
+	u32 count;
+	u32 arrayOffset;
 };
 
+enum ComponentTypeBits : u32{
+	ComponentType_NONE           = 0,
+	ComponentType_MeshComp       = 1 << 0,
+	ComponentType_Physics        = 1 << 1, 
+	ComponentType_ColliderBox    = 1 << 2,
+	ComponentType_ColliderAABB   = 1 << 3,
+	ComponentType_ColliderSphere = 1 << 4,
+	ComponentType_AudioListener  = 1 << 5,
+	ComponentType_AudioSource    = 1 << 6,
+	ComponentType_Camera         = 1 << 7,
+	ComponentType_Light          = 1 << 8,
+	ComponentType_OrbManager     = 1 << 9,
+	ComponentType_LAST = 0xFFFFFFFF,
+}; typedef u32 ComponentType;
 
 struct Component : public Receiver {
 	char name[64];
@@ -35,13 +55,10 @@ struct Component : public Receiver {
 	Sender* send = nullptr;
 	
 	Component(EntityAdmin* a = nullptr, Entity* e = nullptr);
-	virtual ~Component() { if(send) send->RemoveReceiver(this); };
-	
-	//sorting id for when we save because mmm yeah
-	int sortid;
+	virtual ~Component();
 	
 	//store layer its on and where in that layer it is for deletion
-	CompLayer layer = NONE;
+	ComponentLayer layer = ComponentLayer_NONE;
 	int layer_index;
 	
 	//Init only gets called when this component's entity is spawned thru the world system
@@ -49,8 +66,8 @@ struct Component : public Receiver {
 	virtual void Update() {};
 	void ConnectSend(Component* c);
 	virtual void ReceiveEvent(Event event) override {};
-	virtual std::string Save();
-	virtual void Load();
+	virtual std::vector<char> Save() { return std::vector<char>(); };
+	virtual void Load() {};
 	virtual std::string str(){ return ""; };
 };
 

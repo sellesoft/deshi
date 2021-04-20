@@ -22,7 +22,7 @@ Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ, bool freeCam) 
 	DengRenderer->UpdateCameraPosition(position);
 	
 	cpystr(name, "Camera", 63);
-	layer = NONE;
+	layer = ComponentLayer_NONE;
 }
 
 void Camera::UseOrthographicProjection() {
@@ -166,18 +166,10 @@ void Camera::Update() {
 	}
 }
 
-std::string Camera::Save() {
-	return TOSTRING(
-					"position: ", position, "\n",
-					"rotation: ", rotation, "\n",
-					"freeCamera: ", freeCamera, "\n",
-					"type: ", (int)type, "\n",
-					"nearZ: ", nearZ, "\n",
-					"farZ: ", farZ, "\n",
-					"fov: ", fov, "\n"
-					);
+std::vector<char> Camera::Save() {
+	std::vector<char> out;
+	return out;
 }
-
 
 void Camera::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
 	ERROR("Camera load function not setup");

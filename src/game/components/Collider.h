@@ -9,9 +9,10 @@ struct Command;
 struct Mesh;
 
 enum ColliderTypeBits : u32{
-	ColliderType_Box, ColliderType_AABB, ColliderType_Sphere
+	ColliderType_NONE, ColliderType_Box, ColliderType_AABB, ColliderType_Sphere
 }; typedef u32 ColliderType;
 
+//TODO(delle,Ph) maybe add offset vec3
 struct Collider : public Component {
 	ColliderType type;
 	u32 collisionLayer;
@@ -26,6 +27,7 @@ struct BoxCollider : public Collider {
 	BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr);
 	BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Command* command = nullptr);
 	
+	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
@@ -37,6 +39,7 @@ struct AABBCollider : public Collider {
 	AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr);
 	AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Command* command = nullptr);
 	
+	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
@@ -46,6 +49,7 @@ struct SphereCollider : public Collider {
 	SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr);
 	SphereCollider(float radius, float mass, u32 collisionLayer = 0, Command* command = nullptr);
 	
+	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 

@@ -1,19 +1,20 @@
 #include "CanvasSystem.h"
-#include "../components/Camera.h"
 #include "../../core.h"
-#include "../../utils/defines.h"
 #include "../../math/Math.h"
 #include "../../scene/Scene.h"
 #include "../../EntityAdmin.h"
-#include "../../game/Keybinds.h"
-#include "../../game/Transform.h"
-#include "../../game/UndoManager.h"
+#include "PhysicsSystem.h"
+#include "WorldSystem.h"
+#include "../Keybinds.h"
+#include "../Transform.h"
+#include "../UndoManager.h"
+#include "../components/AudioListener.h"
+#include "../components/AudioSource.h"
+#include "../components/Camera.h"
+#include "../components/Collider.h"
+#include "../components/Light.h"
+#include "../components/MeshComp.h"
 #include "../components/Physics.h"
-#include "../systems/PhysicsSystem.h"
-
-#include "../../game/components/MeshComp.h"
-#include "../../game/systems/WorldSystem.h"
-#include "../../utils/PhysicsWorld.h"
 
 //for time
 #include <iomanip>
@@ -37,7 +38,6 @@ float padding = 0.95;
 
 //allows me to manually set padding so i have a little more control than ImGui gives me (I think idk lol)
 #define SetPadding SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2)
-
 
 //current palette:
 //https://lospec.com/palette-list/slso8
@@ -109,7 +109,6 @@ namespace ImGui {
 		ImGui::Text(text);
 		ImGui::PopStyleColor();
 	}
-	
 }
 
 
@@ -128,6 +127,10 @@ bool InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate = false) {
 	} else {
 		return ImGui::InputFloat3(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue); 
 	}
+}
+
+void AddPadding(float x){
+	ImGui::SetCursorPosX(ImGui::GetCursorPosX() + x);
 }
 
 //// major ui elements ////
@@ -204,46 +207,9 @@ void CanvasSystem::MenuBar() {
 	
 }
 
-void CanvasSystem::DebugTools() {
+inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 	using namespace ImGui;
-	
-	float fontsize = ImGui::GetFontSize();
-	
-	//resize tool menu if main menu bar is open
-	ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - (menubarheight + debugbarheight)));
-	ImGui::SetNextWindowPos(ImVec2(0, menubarheight));
-	
-	//window styling
-	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
-	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	
-	ImGui::PushStyleColor(ImGuiCol_Border,               ColToVec4(Color( 0,  0,  0)));
-	ImGui::PushStyleColor(ImGuiCol_Button,               ColToVec4(Color(30, 30, 30)));
-	ImGui::PushStyleColor(ImGuiCol_WindowBg,             ColToVec4(colors.c9));
-	ImGui::PushStyleColor(ImGuiCol_PopupBg,              ColToVec4(Color(20, 20, 20)));
-	ImGui::PushStyleColor(ImGuiCol_TableBorderLight,     ColToVec4(Color(45, 45, 45)));
-	ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,        ColToVec4(Color(10, 10, 10)));
-	ImGui::PushStyleColor(ImGuiCol_ScrollbarBg,          ColToVec4(Color(10, 10, 10)));
-	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab,        ColToVec4(Color(55, 55, 55)));
-	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,  ColToVec4(Color(75, 75, 75)));
-	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColToVec4(Color(65, 65, 65)));
-	
-	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
-	
-	debugtoolswidth = GetWindowWidth();
-	
-	//capture mouse if hovering over this window
-	WinHovCheck; 
-	
-	SetPadding;
-	ImGui::Text("Entities");
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
-	SetPadding;
-	
 	if (BeginChild("entityListScroll", ImVec2(GetWindowWidth() * 0.95, 100), false)) {
 		WinHovCheck; 
 		if (admin->entities.size() == 0) {
@@ -273,14 +239,17 @@ void CanvasSystem::DebugTools() {
 					PushID(counter);
 					TableNextRow(); TableNextColumn();
 					std::string id = std::to_string(entity.id);
+					MeshComp* m = entity.GetComponent<MeshComp>();
+					
 					//SetCursorPosX((GetColumnWidth() - (fontsize - (fontsize / 2)) * id.size()) / 2);
 					if (ImGui::Button(id.c_str())) {
 						admin->selectedEntity = &entity;
+						if(m) DengRenderer->SetSelectedMesh(m->meshID);
 					}
 					TableNextColumn();
 					
 					//TODO(UiEnt, sushi) implement visibility for things other than meshes like lights, etc.
-					if (MeshComp* m = entity.GetComponent<MeshComp>()) {
+					if (m) {
 						if (m->mesh_visible) {
 							if (SmallButton("O")) {
 								m->ToggleVisibility();
@@ -332,11 +301,6 @@ void CanvasSystem::DebugTools() {
 	ImGui::PopStyleColor();
 	
 	ImGui::Separator();
-	
-	ImGui::PushStyleColor(ImGuiCol_TabActive, ColToVec4(Color::VERY_DARK_CYAN));
-	ImGui::PushStyleColor(ImGuiCol_TabHovered, ColToVec4(Color::DARK_CYAN));
-	ImGui::PushStyleColor(ImGuiCol_Tab, ColToVec4(colors.c1));
-	ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
 	
 	if (BeginTabBar("SettingsTabs")) {
 		//Selected Entity property editing
@@ -569,7 +533,7 @@ void CanvasSystem::DebugTools() {
 				}
 				
 				SetPadding;
-				ImGui::InputFloat("gravity", &admin->physicsWorld->gravity);
+				ImGui::InputFloat("gravity", &admin->physics->gravity);
 				
 				SetPadding;
 				ImGui::Text("#colliders: not implemented");
@@ -583,22 +547,268 @@ void CanvasSystem::DebugTools() {
 		
 		EndTabBar();
 	}
+}
+
+inline void CreateTab(EntityAdmin* admin, float fontsize){
+	using namespace ImGui;
 	
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();    ImGui::PopStyleColor();
-	ImGui::PopStyleColor();            ImGui::PopStyleColor();
-	ImGui::PopStyleColor();                    ImGui::PopStyleColor();
-	ImGui::PopStyleColor();        /*  .u.  */          ImGui::PopStyleColor();
-	ImGui::PopStyleColor();                                    ImGui::PopStyleColor();
-    ImGui::PopStyleColor();                                            ImGui::PopStyleColor();
+	//// creation variables ////
+	const char* presets[] = {"None", "AABB", "Box", "Sphere", "Player"};
+	local_persist int current_preset = 0;
+	local_persist char entity_name[64] = {};
+	local_persist vec3 entity_pos{}, entity_rot{}, entity_scale = Vector3::ONE;
+	local_persist bool comp_audiolistener{}, comp_audiosource{}, comp_collider{}, comp_mesh{}, comp_light{}, comp_physics{};
+	const char* colliders[] = {"None", "Box", "AABB", "Sphere"};
+	local_persist int  collider_type = ColliderType_NONE;
+	local_persist vec3 collider_halfdims = Vector3::ONE;
+	local_persist f32  collider_radius  = 1.f;
+	local_persist const char* mesh_name;
+	local_persist u32  mesh_id = -1, mesh_instance_id = 0;
+	local_persist f32  light_strength = 1.f;
+	local_persist vec3 physics_velocity{}, physics_accel{}, physics_rotVel{}, physics_rotAccel{};
+	local_persist f32  physics_elasticity = .5f, physics_mass = 1.f;
+	local_persist bool physics_staticPosition{}, physics_staticRotation{};
+	u32 entity_id = admin->entities.size();
 	
+	//// create panel ////
+	PushStyleVar(ImGuiStyleVar_IndentSpacing, 5.0f);
+	SetPadding; if (BeginChild("CreateMenu", ImVec2(GetWindowWidth() * 0.95f, GetWindowHeight() * .9f), true)) { WinHovCheck;
+		if (Button("Create")){
+			//create components
+			AudioListener* al = 0;
+			if(comp_audiolistener){ 
+				al = new AudioListener(entity_pos, Vector3::ZERO, entity_rot); 
+			}
+			AudioSource* as = 0;
+			if(comp_audiosource) {
+				as = new AudioSource();
+			}
+			Collider* coll = 0;
+			if(comp_collider){
+				switch(collider_type){
+					case ColliderType_Box:{
+						coll = new BoxCollider(collider_halfdims, physics_mass);
+					}break;
+					case ColliderType_AABB:{
+						coll = new AABBCollider(collider_halfdims, physics_mass);
+					}break;
+					case ColliderType_Sphere:{
+						coll = new SphereCollider(collider_radius, physics_mass);
+					}break;
+				}
+			}
+			MeshComp* mc = 0;
+			if(comp_mesh){
+				u32 new_mesh_id = DengRenderer->CreateMesh(mesh_id, 
+														   mat4::TransformationMatrix(entity_pos, entity_rot, entity_scale));
+				mc = new MeshComp(new_mesh_id, mesh_instance_id);
+			}
+			Light* light = 0;
+			if(comp_light){
+				light = new Light(entity_pos, entity_rot, light_strength);
+			}
+			Physics* phys = 0;
+			if(comp_physics){
+				phys = new Physics(entity_pos, entity_rot, physics_velocity, physics_accel, physics_rotVel,
+								   physics_rotAccel, physics_elasticity, physics_mass, physics_staticPosition);
+				if(comp_audiolistener) al->velocity = physics_velocity;
+			}
+			
+			//create entity
+			admin->world->CreateEntity(admin, {al, as, coll, mc, light, phys}, entity_name, 
+									   Transform(entity_pos, entity_rot, entity_scale));
+		}Separator();
+		
+		//// presets ////
+		SetPadding; Text("Presets    "); SameLine(); SetNextItemWidth(-1); 
+		if(Combo("##preset_combo", &current_preset, presets, IM_ARRAYSIZE(presets))){
+			switch(current_preset){
+				case(0):default:{
+					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_light = comp_physics = false;
+					collider_type = ColliderType_NONE;
+					collider_halfdims = Vector3::ONE;
+					collider_radius  = 1.f;
+					mesh_id = mesh_instance_id = -1;
+					light_strength = 1.f;
+					physics_velocity = Vector3::ZERO; physics_accel    = Vector3::ZERO; 
+					physics_rotVel   = Vector3::ZERO; physics_rotAccel = Vector3::ZERO;
+					physics_elasticity = .5f; physics_mass = 1.f;
+					physics_staticPosition = physics_staticRotation = true;
+					cpystr(entity_name, TOSTRING("default", entity_id).c_str(), 63);
+				}break;
+				case(1):{
+					comp_audiolistener = comp_audiosource = comp_light = false;
+					comp_collider = comp_mesh = comp_physics = true;
+					collider_type = ColliderType_AABB;
+					collider_halfdims = Vector3::ONE;
+					mesh_id = DengRenderer->GetBaseMeshID("default_box");
+					physics_staticPosition = physics_staticRotation = true;
+					cpystr(entity_name, TOSTRING("aabb", entity_id).c_str(), 63);
+				}break;
+				case(2):{
+					comp_audiolistener = comp_audiosource = comp_light = false;
+					comp_collider = comp_mesh = comp_physics = true;
+					collider_halfdims = Vector3::ONE;
+					mesh_id = DengRenderer->GetBaseMeshID("default_box");
+					physics_staticPosition = physics_staticRotation = true;
+					cpystr(entity_name, TOSTRING("box", entity_id).c_str(), 63);
+				}break;
+				case(3):{
+					comp_audiolistener = comp_audiosource = comp_light = false;
+					comp_collider = comp_mesh = comp_physics = true;
+					collider_type = ColliderType_Sphere;
+					collider_radius = 1.f;
+					mesh_id = DengRenderer->GetBaseMeshID("sphere.obj");
+					physics_staticPosition = physics_staticRotation = true;
+					cpystr(entity_name, TOSTRING("sphere", entity_id).c_str(), 63);
+				}break;
+				case(4):{
+					comp_light = false;
+					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = true;
+					collider_type = ColliderType_AABB; //TODO(delle,PhCl) ideally cylinder/capsule collider
+					collider_halfdims = vec3(1, 2, 1);
+					comp_mesh = true;
+					mesh_id = DengRenderer->GetBaseMeshID("bmonkey.obj");
+					physics_staticPosition = physics_staticRotation = false;
+					cpystr(entity_name, "player", 63);
+				}break;
+			}
+			if(mesh_id < DengRenderer->meshes.size()) mesh_name = DengRenderer->meshes[mesh_id].name;
+		}
+		
+		SetPadding; Text("Name: "); 
+		SameLine(); SetNextItemWidth(-1); InputText("##unique_id", entity_name, 64, ImGuiInputTextFlags_EnterReturnsTrue | 
+													ImGuiInputTextFlags_AutoSelectAll);
+		
+		//// transform ////
+		int tree_flags = ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_NoAutoOpenOnLog;
+		SetNextItemOpen(true, ImGuiCond_Once);
+		if (TreeNodeEx("Transform", tree_flags)){
+			Text("Position     "); SameLine(); InputVector3("entity_pos",   &entity_pos);   Separator();
+			Text("Rotation     "); SameLine(); InputVector3("entity_rot",   &entity_rot);   Separator();
+			Text("Scale        "); SameLine(); InputVector3("entity_scale", &entity_scale);
+			TreePop();
+		}
+		
+		//// toggle components ////
+		SetNextItemOpen(true, ImGuiCond_Once);
+		if (TreeNodeEx("Components", tree_flags)){
+			Checkbox("Mesh", &comp_mesh);
+			SameLine(); Checkbox("Physics", &comp_physics); 
+			SameLine(); Checkbox("Collider", &comp_collider);
+			Checkbox("Audio Listener", &comp_audiolistener);
+			SameLine(); Checkbox("Light", &comp_light);
+			Checkbox("Audio Source", &comp_audiosource);
+			TreePop();
+		}
+		
+		//// component headers ////
+		if(comp_mesh && TreeNodeEx("Mesh", tree_flags)){
+			Text(TOSTRING("MeshID: ", mesh_id).c_str());
+			SetNextItemWidth(-1); if(BeginCombo("##mesh_combo", mesh_name)){
+				for_n(i, DengRenderer->meshes.size()){
+					if(DengRenderer->meshes[i].base && Selectable(DengRenderer->meshes[i].name, mesh_id == i)){
+						mesh_id = i; 
+						mesh_name = DengRenderer->meshes[i].name;
+					}
+				}
+				EndCombo();
+			}
+			TreePop();
+		}
+		if(comp_physics && TreeNodeEx("Physics", tree_flags)){
+			Text("Velocity     "); SameLine(); InputVector3("phys_vel",   &physics_velocity);    Separator();
+			Text("Accelertaion "); SameLine(); InputVector3("phys_accel",   &physics_accel);     Separator();
+			Text("Rot Velocity "); SameLine(); InputVector3("phys_rotvel", &physics_rotVel);     Separator();
+			Text("Rot Accel    "); SameLine(); InputVector3("phys_rotaccel", &physics_rotAccel); Separator();
+			Text("Elasticity   "); SameLine(); InputFloat("phys_elastic", &physics_elasticity);  Separator();
+			Text("Mass         "); SameLine(); InputFloat("phys_mass", &physics_mass);           Separator();
+			Checkbox("Static Position", &physics_staticPosition);                                Separator();
+			Checkbox("Static Rotation", &physics_staticRotation);
+			TreePop();
+		}
+		if(comp_collider && TreeNodeEx("Collider", tree_flags)){
+			SetNextItemWidth(-1); Combo("##coll_combo", &collider_type, colliders, IM_ARRAYSIZE(colliders));
+			switch(collider_type){
+				case ColliderType_Box: case ColliderType_AABB:{
+					Text("Half Dims    "); SameLine(); InputVector3("coll_halfdims", &collider_halfdims);
+				}break;
+				case ColliderType_Sphere:{
+					Text("Radius       "); SameLine(); InputFloat("coll_radius", &collider_radius);
+				}break;
+			}
+			TreePop();
+		}
+		if(comp_audiolistener && TreeNodeEx("Audio Listener", tree_flags)){
+			//TODO(sushi,Ui) add audio listener create menu
+			TreePop();
+		}
+		if(comp_audiosource && TreeNodeEx("Audio Source", tree_flags)){
+			//TODO(sushi,Ui) add audio source create menu
+			TreePop();
+		}
+		if(comp_light && TreeNodeEx("Light", tree_flags)){
+			Text("Strength     "); SameLine(); InputFloat("phys_mass", &physics_mass); Separator();
+			TreePop();
+		}
+		EndChild();
+	}
+	PopStyleVar();
+}
+
+void CanvasSystem::DebugTools() {
+	using namespace ImGui;
+	
+	float fontsize = ImGui::GetFontSize();
+	
+	//resize tool menu if main menu bar is open
+	ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - (menubarheight + debugbarheight)));
+	ImGui::SetNextWindowPos(ImVec2(0, menubarheight));
+	
+	//window styling
+	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
+	
+	ImGui::PushStyleColor(ImGuiCol_Border,               ColToVec4(Color( 0,  0,  0)));
+	ImGui::PushStyleColor(ImGuiCol_Button,               ColToVec4(Color(30, 30, 30)));
+	ImGui::PushStyleColor(ImGuiCol_WindowBg,             ColToVec4(colors.c9));
+	ImGui::PushStyleColor(ImGuiCol_PopupBg,              ColToVec4(Color(20, 20, 20)));
+	ImGui::PushStyleColor(ImGuiCol_TableBorderLight,     ColToVec4(Color(45, 45, 45)));
+	ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,        ColToVec4(Color(10, 10, 10)));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarBg,          ColToVec4(Color(10, 10, 10)));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab,        ColToVec4(Color(55, 55, 55)));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,  ColToVec4(Color(75, 75, 75)));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColToVec4(Color(65, 65, 65)));
+	ImGui::PushStyleColor(ImGuiCol_TabActive, ColToVec4(Color::VERY_DARK_CYAN));
+	ImGui::PushStyleColor(ImGuiCol_TabHovered, ColToVec4(Color::DARK_CYAN));
+	ImGui::PushStyleColor(ImGuiCol_Tab, ColToVec4(colors.c1));
+	
+	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+	
+	//capture mouse if hovering over this window
+	WinHovCheck; 
+	
+	SetPadding;
+	if (BeginTabBar("MajorTabs")) {
+		if (BeginTabItem("Entities")) {
+			EntitiesTab(admin, fontsize);
+			EndTabItem();
+		}
+		if (BeginTabItem("Create")) {
+			CreateTab(admin, fontsize);
+			EndTabItem();
+		}
+		
+		EndTabBar();
+	}
+	
+	ImGui::PopStyleVar(7);
+	ImGui::PopStyleColor(13);
 	ImGui::End();
 }
 
@@ -1054,7 +1264,8 @@ void CanvasSystem::Init(EntityAdmin* admin) {
 
 void CanvasSystem::Update() {
 	WinHovFlag = 0;
-	DrawUI();
+	if(!DengWindow->minimized) DrawUI();
+	//DrawUI();  //HACK program crashes somewhere in DebugTools() if minimized
 	if (ConsoleHovFlag || WinHovFlag) DengConsole->IMGUI_MOUSE_CAPTURE = true;
 	else                              DengConsole->IMGUI_MOUSE_CAPTURE = false;
 }

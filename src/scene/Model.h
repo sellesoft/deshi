@@ -130,7 +130,6 @@ struct Batch {
 
 struct Mesh {
 	char name[64];
-	Matrix4 transform;
 	
 	u32 vertexCount  = 0;
 	u32 indexCount   = 0;
@@ -140,12 +139,12 @@ struct Mesh {
 	std::vector<Batch> batchArray;
 	
 	Mesh() {}
-	Mesh(const char* name, std::vector<Batch> batchArray, Matrix4 transform = Matrix4::IDENTITY);
+	Mesh(const char* name, std::vector<Batch> batchArray);
 	
 	void SetName(const char* name);
 	
 	//filename: filename and extension, name: loaded mesh name, transform: pos,rot,scale of mesh
-	static Mesh CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 transform = Matrix4::IDENTITY);
+	static Mesh CreateMeshFromOBJ(std::string filename);
 	static Mesh CreateBox(Vector3 halfDims, Color color = Color::WHITE);
 	static Mesh CreatePlanarBox(Vector3 halfDims, Color color = Color::WHITE);
 	static Mesh CreatePlanarBox(Vector3 halfDims, Texture texture);

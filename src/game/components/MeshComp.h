@@ -3,10 +3,8 @@
 #define COMPONENT_MESHCOMP_H
 
 #include "Component.h"
-#include "../../utils/defines.h"
 
 struct Mesh;
-
 
 struct MeshComp : public Component {
 	Mesh* mesh;
@@ -16,6 +14,7 @@ struct MeshComp : public Component {
 	bool ENTITY_CONTROL = true;
 	
 	MeshComp();
+	MeshComp(u32 meshID, u32 instanceID = 0);
 	MeshComp(Mesh* m, u32 meshID = 0, u32 instanceID = 0);
 	
 	void ToggleVisibility();
@@ -25,9 +24,11 @@ struct MeshComp : public Component {
 	void ChangeMaterialTexture(u32 t);
 	
 	void ReceiveEvent(Event event) override;
+	
+	void Init() override;
 	void Update() override;
 	
-	std::string Save() override;
+	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 

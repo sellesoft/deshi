@@ -21,6 +21,8 @@ struct Physics : public Component {
 	Vector3 inputVector = Vector3::ZERO;
 	
 	bool isStatic = false;
+	//bool staticRotation = false;
+	//TODO(delle,Ph) separate static movement and rotation
 	
 	Physics();
 	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO,
@@ -42,6 +44,7 @@ struct Physics : public Component {
 	void AddImpulse(Physics* creator, Vector3 impulse);
 	void AddImpulseNomass(Physics* creator, Vector3 impulse);
 	
+	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 

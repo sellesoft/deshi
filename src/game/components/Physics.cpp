@@ -14,7 +14,7 @@ Physics::Physics() {
 	isStatic = false;
 	
 	cpystr(name, "Physics", 63);
-	sortid = 7;
+	layer = SystemLayer_Physics;
 }
 
 Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy,
@@ -30,8 +30,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	this->isStatic = isStatic;
 	
 	cpystr(name, "Physics", 63);
-	layer = PHYS_LAYER;
-	sortid = 7;
+	layer = SystemLayer_Physics;
 }
 
 Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticity) {
@@ -45,13 +44,8 @@ Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticit
 	this->elasticity = elasticity;
 	
 	cpystr(name, "Physics", 63);
-	layer = PHYS_LAYER;
-	sortid = 7;
+	layer = SystemLayer_Physics;
 }
-
-//////////////////////////
-//// static functions ////
-//////////////////////////
 
 void Physics::AddInput(Vector3 input) {
 	inputVector += input;
@@ -79,9 +73,16 @@ void Physics::AddImpulseNomass(Physics* creator, Vector3 impulse) {
 	if (creator) { creator->velocity -= impulse; }
 }
 
+std::vector<char> Physics::Save() {
+	std::vector<char> out;
+	return out;
+}
+
 void Physics::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF;
-	Physics p;
+	vec3 position{}, rotation{}, velocity{}, accel{}, rotVel{}, rotAccel{};
+	f32 elasticity = 0.f, mass = 0.f;
+	b32 staticPos = false, staticRot = false;
 	for_n(i,count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); 
 		cursor += sizeof(u32);
@@ -91,12 +92,16 @@ void Physics::Load(std::vector<Entity>& entities, const char* data, u32& cursor,
 			continue;
 		}
 		
-		memcpy(&p, data+cursor,          sizeof(vec3)*6 + sizeof(f32)*2); 
-		cursor += sizeof(vec3)*6 + sizeof(f32)*2;
-		memcpy(&p.isStatic, data+cursor, sizeof(b32));
-		cursor += sizeof(b32);
-		
-		entities[entityID].AddComponent(new Physics(p.position, p.rotation, p.velocity, p.acceleration, p.rotVelocity,
-													p.rotAcceleration, p.elasticity, p.mass, p.isStatic));
+		memcpy(&position,   data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
+		memcpy(&rotation,   data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
+		memcpy(&velocity,   data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
+		memcpy(&accel,      data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
+		memcpy(&rotVel,     data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
+		memcpy(&rotAccel,   data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
+		memcpy(&elasticity, data+cursor, sizeof(f32));  cursor += sizeof(f32);
+		memcpy(&mass,       data+cursor, sizeof(f32));  cursor += sizeof(f32);
+		memcpy(&staticPos,  data+cursor, sizeof(b32));  cursor += sizeof(b32);
+		entities[entityID].AddComponent(new Physics(position, rotation, velocity, accel, rotVel,
+													rotAccel, elasticity, mass, staticPos));
 	}
 }

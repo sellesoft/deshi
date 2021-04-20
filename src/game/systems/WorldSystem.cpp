@@ -6,8 +6,6 @@
 #include "../Transform.h"
 
 void WorldSystem::Update() {
-	//World* world = admin->world;
-	
 	//deletion buffer
 	for(Entity* entity : deletionBuffer) {
 		admin->entities.erase(admin->entities.begin()+entity->id);

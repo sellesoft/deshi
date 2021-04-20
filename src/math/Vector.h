@@ -103,7 +103,8 @@ struct Vector3 {
 	static const Vector3 UNITY;
 	static const Vector3 UNITZ;
 	
-	void    operator =	(const Vector3& rhs);
+	void    operator =  (const Vector3& rhs);
+	void    operator =  (Vector3& rhs);
 	Vector3 operator *  (float rhs) const;
 	void    operator *= (float rhs);
 	Vector3 operator /  (float rhs) const;

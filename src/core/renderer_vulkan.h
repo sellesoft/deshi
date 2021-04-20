@@ -54,6 +54,7 @@ struct RenderSettings{
 	u32  shaderQuality;
 	
 	//debug
+	u8 selectedR = 204, selectedG = 125, selectedB = 41;
 	bool wireframe     = false;
 	bool wireframeOnly = false;
 	bool globalAxis    = false;
@@ -243,6 +244,7 @@ struct Renderer{
 	//loads a mesh to the different shaders specified in its batches
 	//returns the ID of the mesh
 	u32 LoadBaseMesh(Mesh* m);
+	u32 GetBaseMeshID(const char* name);
 	u32 CreateMesh(Scene* scene, const char* filename);
 	u32 CreateMesh(Mesh* mesh, Matrix4 matrix);
 	u32 CreateMesh(u32 meshID, Matrix4 matrix);
@@ -255,6 +257,7 @@ struct Renderer{
 	void TransformMeshMatrix(u32 meshID, Matrix4 transform);
 	void UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID);
 	void UpdateMeshVisibility(u32 meshID, bool visible);
+	void SetSelectedMesh(u32 meshID);
 	
 	u32  MakeInstance(u32 meshID, Matrix4 matrix);
 	void RemoveInstance(u32 instanceID);
@@ -296,6 +299,7 @@ struct Renderer{
 	std::vector<TextureVk>  textures     = std::vector<TextureVk>(0);
 	std::vector<MeshVk>     meshes       = std::vector<MeshVk>(0);
 	std::vector<MaterialVk> materials    = std::vector<MaterialVk>(0);
+	u32 selectedMeshID = -1;
 	
 	//////////////////////////////
 	//// vulkan api variables ////
@@ -518,6 +522,7 @@ struct Renderer{
 		VkPipeline TWOD      = VK_NULL_HANDLE;
 		VkPipeline PBR       = VK_NULL_HANDLE;
 		VkPipeline WIREFRAME = VK_NULL_HANDLE;
+		VkPipeline SELECTED  = VK_NULL_HANDLE;
 		VkPipeline LAVALAMP  = VK_NULL_HANDLE;
 		VkPipeline TESTING0  = VK_NULL_HANDLE;
 		VkPipeline TESTING1  = VK_NULL_HANDLE;

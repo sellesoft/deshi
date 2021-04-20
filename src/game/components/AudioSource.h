@@ -34,11 +34,12 @@ struct AudioSource : public Component {
 	//this will probably be a collection of sounds eventually, once i figure out how i want that to work
 	char* snd_file; 
 	
-	void RequestPlay(float gain = 1, float pitch = 1);
-	
 	AudioSource();
 	AudioSource(char* snd_file, Physics* p, Transform* t = nullptr, bool loop = false, float gain = 1, float pitch = 1);
 	
+	void RequestPlay(float gain = 1, float pitch = 1);
+	
+	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 

@@ -163,6 +163,12 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 						p0 = b.vertexArray[b.indexArray[i]].pos + e.transform.position;
 						p1 = b.vertexArray[b.indexArray[i + 1]].pos + e.transform.position;
 						p2 = b.vertexArray[b.indexArray[i + 2]].pos + e.transform.position;
+						/*
+mat4 transform = e.transform.TransformMatrix();
+						p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
+						p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
+						p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
+*/
 						
 						norm = (p1 - p0).cross(p2 - p0);
 						
@@ -180,16 +186,17 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 							
 							admin->selectedEntity = &e;
 							if(oldEnt != &e){
+								DengRenderer->SetSelectedMesh(mc->meshID);
 								admin->undoManager.AddUndoSelect((void**)&admin->selectedEntity, oldEnt, &e);
 							}
-							goto endloop;
+							return;
 						}
 					}
 				}
 			}
 		}
 	}
-	endloop:;
+	DengRenderer->SetSelectedMesh(-1);
 }
 
 inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um) {
