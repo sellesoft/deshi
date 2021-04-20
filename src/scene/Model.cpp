@@ -43,9 +43,8 @@ void Batch::SetName(const char* name){
 //// Mesh ////
 //////////////
 
-Mesh::Mesh(const char* name, std::vector<Batch> batchArray, Matrix4 transform) {
+Mesh::Mesh(const char* name, std::vector<Batch> batchArray) {
 	cpystr(this->name, name, 63);
-	this->transform = transform;
 	this->batchArray = batchArray; this->batchCount = batchArray.size();
 	for (Batch& batch : batchArray) {
 		this->vertexCount += batch.vertexCount;
@@ -59,8 +58,8 @@ void Mesh::SetName(const char* name){
 }
 
 //https://github.com/tinyobjloader/tinyobjloader
-Mesh Mesh::CreateMeshFromOBJ(std::string filename, std::string name, Matrix4 transform){
-	Mesh mesh; mesh.SetName(name.c_str()); mesh.transform = transform;
+Mesh Mesh::CreateMeshFromOBJ(std::string filename){
+	Mesh mesh; mesh.SetName(filename.c_str());
 	int totalVertexCount = 0;
 	int totalIndexCount = 0;
 	int totalTextureCount = 0;

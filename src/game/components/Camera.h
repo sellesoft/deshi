@@ -43,7 +43,7 @@ struct Camera : public Component {
 	void UpdateProjectionMatrix();
 	
 	std::string str() override;
-	std::string Save() override;
+	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 

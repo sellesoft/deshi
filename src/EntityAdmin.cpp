@@ -16,7 +16,6 @@
 #include "EntityAdmin.h"
 #include "core.h"
 
-#include "utils/PhysicsWorld.h"
 #include "utils/Command.h"
 #include "utils/defines.h"
 #include "scene/Scene.h"
@@ -33,7 +32,6 @@
 #include "game/components/Orb.h"
 #include "game/components/Light.h"
 #include "game/components/Physics.h"
-
 #include "game/systems/System.h"
 #include "game/systems/PhysicsSystem.h"
 #include "game/systems/CanvasSystem.h"
@@ -55,16 +53,10 @@ void EntityAdmin::Init() {
 	}
 	
 	//systems initialization
-	physicsWorld = new PhysicsWorld();
-	switch (physicsWorld->integrationMode) {
-		default: /* Semi-Implicit Euler */ {
-			physics = new PhysicsSystem();
-		}
-	}
+	physics = new PhysicsSystem();
 	canvas = new CanvasSystem();
 	world  = new WorldSystem();
 	sound  = new SoundSystem();
-	
 	physics->Init(this);
 	canvas->Init(this);
 	world->Init(this);
@@ -98,7 +90,6 @@ void EntityAdmin::Cleanup() {
 	entities.clear();
 	freeCompLayers.clear();
 	
-	delete physicsWorld;
 	delete physics;
 	delete canvas;
 	delete world;
@@ -119,23 +110,23 @@ void EntityAdmin::Update() {
 	if(!skip) mainCamera->Update();
 	
 	TIMER_RESET(t_a); 
-	if (!skip && !pause_phys && !paused)  { UpdateLayer(freeCompLayers[CL0_PHYSICS]); }
+	if (!skip && !pause_phys && !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_Physics]); }
 	DengTime->physLyrTime =   TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_phys && !paused)  { physics->Update(); }
 	DengTime->physSysTime =   TIMER_END(t_a); TIMER_RESET(t_a);
-	if (!skip && !pause_canvas)           { UpdateLayer(freeCompLayers[CL1_RENDCANVAS]); }
+	if (!skip && !pause_canvas)           { UpdateLayer(freeCompLayers[ComponentLayer_Canvas]); }
 	DengTime->canvasLyrTime = TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_canvas)           { canvas->Update(); }
 	DengTime->canvasSysTime = TIMER_END(t_a); TIMER_RESET(t_a);
-	if (!skip && !pause_console)          { UpdateLayer(freeCompLayers[CL2_WORLD]); }
+	if (!skip && !pause_console)          { UpdateLayer(freeCompLayers[ComponentLayer_World]); }
 	DengTime->worldLyrTime =  TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_world && !paused) { world->Update(); }
 	DengTime->worldSysTime =  TIMER_END(t_a); TIMER_RESET(t_a);
-	if (!skip && !pause_sound && !paused) { UpdateLayer(freeCompLayers[CL3_SOUND]); }
+	if (!skip && !pause_sound && !paused) { UpdateLayer(freeCompLayers[ComponentLayer_Sound]); }
 	DengTime->sndLyrTime =    TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_sound && !paused) { sound->Update(); }
 	DengTime->sndSysTime =    TIMER_END(t_a); TIMER_RESET(t_a);
-	if (!skip && !pause_last && !paused)  { UpdateLayer(freeCompLayers[CL4_LAST]); }
+	if (!skip && !pause_last && !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_LAST]); }
 	DengTime->lastLyrTime =   TIMER_END(t_a);
 	
 	DengTime->paused = paused;
@@ -155,36 +146,8 @@ struct SaveHeader{
 	u32 componentTypeHeaderArrayOffset;
 };
 
-struct ComponentTypeHeader{
-	u32 type;
-	u32 size;
-	u32 count;
-	u32 arrayOffset;
-};
-
-typedef enum ComponentTypeBits : u32{
-	ComponentType_NONE = 0,
-	ComponentType_AudioListener, ComponentType_AudioSource,    ComponentType_Camera,     ComponentType_ColliderBox,
-	ComponentType_ColliderAABB,  ComponentType_ColliderSphere, ComponentType_Light,      ComponentType_MeshComp,
-	ComponentType_OrbManager,    ComponentType_Physics, 
-	ComponentType_LAST = 0xFFFFFFFF,
-} ComponentTypeBits;
-
 void EntityAdmin::Save() {
-	//assertions so things stay up to date; last updated: 4/14/2021 by delle //TODO(delle) move these to component files
-	ASSERT(32 == sizeof(SaveHeader), "SaveHeader size is out of date");
-	ASSERT(16 == sizeof(ComponentTypeHeader), "ComponentTypeHeader is out of date");
-	ASSERT(160 == sizeof(Entity), "Entity is out of date");
-	ASSERT(192 == sizeof(MeshVk), "MeshVk is out of date");
-	ASSERT(152 == sizeof(AudioListener), "AudioListener is out of date");
-	ASSERT(160 == sizeof(AudioSource), "AudioSource is out of date");
-	ASSERT(336 == sizeof(Camera), "Camera is out of date");
-	ASSERT(176 == sizeof(BoxCollider), "BoxCollider is out of date");
-	ASSERT(176 == sizeof(AABBCollider), "AABBCollider is out of date");
-	ASSERT(168 == sizeof(SphereCollider), "SphereCollider is out of date");
-	ASSERT(144 == sizeof(Light), "Light is out of date");
-	ASSERT(136 == sizeof(MeshComp), "MeshComp is out of date");
-	ASSERT(232 == sizeof(Physics), "Physics is out of date");
+	//std::vector<char> save_data(4096);
 	
 	//open file
 	std::string filepath = deshi::dirData() + "save.desh";
@@ -193,13 +156,12 @@ void EntityAdmin::Save() {
 	
 	SaveHeader header{};
 	file.write((const char*)&header, sizeof(SaveHeader)); //zero fill header
-	header.magic                          = 1213416772; //DESH
-	header.flags                          = 0;
-	//header.cameraOffset                   = 0;
+	header.magic = 1213416772; //DESH
+	header.flags = 0;
 	
 	//// entities ////
-	header.entityCount                    = entities.size();
-	header.entityArrayOffset              = sizeof(SaveHeader);
+	header.entityCount       = entities.size();
+	header.entityArrayOffset = sizeof(SaveHeader);
 	
 	//store sorted components and write entities
 	header.componentTypeCount = 8;
@@ -211,6 +173,9 @@ void EntityAdmin::Save() {
 	std::vector<Light*>          compsLight;
 	std::vector<MeshComp*>       compsMeshComp;
 	std::vector<Physics*>        compsPhysics;
+	//TODO(delle,Cl) convert these vectors to char vectors and when iterating thru entities
+	// and thier components, call the save function of an entity to add to the components
+	// vector and then use the final size of that vector for type header offsets
 	
 	for(auto& e : entities) {
 		//write entity
@@ -517,11 +482,6 @@ Entity::Entity(EntityAdmin* admin, u32 id, Transform transform, const char* name
 
 Entity::~Entity() {
 	for (Component* c : components) delete c;
-}
-
-std::string Entity::Save() {
-	
-	return "";
 }
 
 void Entity::SetName(const char* name){

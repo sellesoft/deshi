@@ -7,10 +7,23 @@
 #include "../../EntityAdmin.h"
 
 MeshComp::MeshComp() {
+	this->mesh = 0;
+	this->meshID = -1;
+	this->instanceID = -1
+		;
 	cpystr(name, "MeshComp", 63);
 	send = new Sender();
-	layer = CL1_RENDCANVAS;
-	sortid = 5;
+	layer = ComponentLayer_Canvas;
+}
+
+MeshComp::MeshComp(u32 meshID, u32 instanceID) {
+	this->mesh = 0;
+	this->meshID = meshID;
+	this->instanceID = instanceID;
+	
+	cpystr(name, "MeshComp", 63);
+	send = new Sender();
+	layer = ComponentLayer_Canvas;
 }
 
 MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
@@ -20,8 +33,13 @@ MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
 	
 	cpystr(name, "MeshComp", 63);
 	send = new Sender();
-	layer = CL1_RENDCANVAS;
-	sortid = 5;
+	layer = ComponentLayer_Canvas;
+}
+
+void MeshComp::Init() {
+	if(!mesh) mesh = DengRenderer->GetMeshPtr(meshID);
+	//NOTE ideally we check for an existing mesh pointer, but 
+	// something is filling the mesh pointer with bad food
 }
 
 void MeshComp::ToggleVisibility() {
@@ -52,20 +70,21 @@ void MeshComp::ChangeMaterialTexture(u32 t) {
 	}
 }
 
-std::string MeshComp::Save() {
-	return TOSTRING("meshID: ", meshID, "\n",
-					"mesh_visible: ", mesh_visible, "\n",
-					"ENTITY_CONTROL: ", ENTITY_CONTROL, "\n");
-}
-
 //this should only be used when the entity is not controlling the Mesh
 void MeshComp::UpdateMeshTransform(Vector3 position, Vector3 rotation, Vector3 scale) {
 	DengRenderer->UpdateMeshMatrix(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
 }
 
 void MeshComp::Update() {
+	ASSERT(mesh->vertexCount, "Mesh has no vertices");
+	
 	//update mesh's transform with entities tranform
 	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
+}
+
+std::vector<char> MeshComp::Save() {
+	std::vector<char> out;
+	return out;
 }
 
 void MeshComp::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){

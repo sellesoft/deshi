@@ -1,27 +1,18 @@
-#include "Component.h"
+#include "component.h"
+#include "EntityAdmin.h"
 
-#include "../../EntityAdmin.h"
 
 Component::Component(EntityAdmin* a, Entity* e) {
 	admin = a;
 	entity = e;
 }
 
+Component::~Component() { 
+	if(send) send->RemoveReceiver(this); 
+	//if(admin && layer != ComponentLayer_NONE) admin->freeCompLayers[layer].remove_from(layer_index);
+	//TODO(delle,Cl) fix this so we can remove components
+};
+
 void Component::ConnectSend(Component* c) {
 	c->send->AddReceiver(this);
-}
-
-std::string Component::Save() {
-	
-	//TODO(sushi) implement a good way to save event connections
-	//std::string s = "";
-	//
-	//for (Receiver* r : send->receivers) {
-	//	s += 
-	//}
-	return "";
-}
-
-void Component::Load() {
-
 }

@@ -1,6 +1,5 @@
 #include "PhysicsSystem.h"
 #include "../../core/console.h"
-#include "../../utils/PhysicsWorld.h"
 #include "../../math/Math.h"
 #include "../../geometry/Geometry.h"
 
@@ -9,28 +8,28 @@
 #include "../components/Collider.h"
 #include "../components/AudioSource.h"
 
-#include "../systems/CanvasSystem.h"
+struct PhysicsTuple { 
+	Transform* transform = nullptr; 
+	Physics*   physics   = nullptr; 
+	Collider*  collider  = nullptr;
+	PhysicsTuple(Transform* transform, Physics* physics, Collider* collider) 
+		: transform(transform), physics(physics), collider(collider) {}
+};
+
 /////////////////////
 //// integration ////
 /////////////////////
-
-struct PhysicsTuple { 
-	Transform* transform	= nullptr; 
-	Physics* physics		= nullptr; 
-	Collider* collider		= nullptr;
-	PhysicsTuple(Transform* transform, Physics* physics, Collider* collider) : transform(transform), physics(physics), collider(collider) {}
-};
 
 inline std::vector<PhysicsTuple> GetPhysicsTuples(EntityAdmin* admin) {
 	std::vector<PhysicsTuple> out;
 	for(auto& e : admin->entities) {
 		Transform* transform = &e.transform;
 		Physics*   physics   = nullptr;
-		Collider* collider   = nullptr;
+		Collider*  collider  = nullptr;
 		
 		for(Component* c : e.components) {
-			if(Physics* phy = dynamic_cast<Physics*>(c)) { physics = phy; }
-			if(Collider* col = dynamic_cast<Collider*>(c)) { collider = col; }
+			if(Physics* phy = dynamic_cast<Physics*>(c)) { physics = phy; continue; }
+			if(Collider* col = dynamic_cast<Collider*>(c)) { collider = col; continue; }
 		}
 		if(physics) {
 			out.push_back(PhysicsTuple(transform, physics, collider));
@@ -41,7 +40,7 @@ inline std::vector<PhysicsTuple> GetPhysicsTuples(EntityAdmin* admin) {
 
 //TODO(delle,Ph) look into bettering this physics tick
 //https://gafferongames.com/post/physics_in_3d/
-inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time) {
+inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	//// translation ////
 	
 	//add input forces
@@ -50,10 +49,10 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time) {
 	t.physics->inputVector = Vector3::ZERO;
 	
 	//add gravity 
-	t.physics->AddForce(nullptr, Vector3(0, pw->gravity, 0));
+	t.physics->AddForce(nullptr, Vector3(0, ps->gravity, 0));
 	
 	//add temp air friction force
-	t.physics->AddFrictionForce(nullptr, pw->frictionAir);
+	t.physics->AddFrictionForce(nullptr, ps->frictionAir);
 	
 	//sum up forces to calculate acceleration
 	Vector3 netForce;
@@ -66,11 +65,11 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time) {
 	if (!t.physics->isStatic) {
 		t.physics->velocity += t.physics->acceleration * time->fixedDeltaTime;
 		float velMag = t.physics->velocity.mag();
-		if (velMag > pw->maxVelocity) {
+		if (velMag > ps->maxVelocity) {
 			t.physics->velocity /= velMag;
-			t.physics->velocity *= pw->maxVelocity;
+			t.physics->velocity *= ps->maxVelocity;
 		}
-		else if (velMag < pw->minVelocity) {
+		else if (velMag < ps->minVelocity) {
 			t.physics->velocity = Vector3::ZERO;
 			t.physics->acceleration = Vector3::ZERO;
 		}
@@ -82,32 +81,32 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsWorld* pw, Time* time) {
 	
 	//make fake rotational friction
 	if(t.physics->rotVelocity != Vector3::ZERO) {
-		t.physics->rotAcceleration = Vector3(t.physics->rotVelocity.x > 0 ? -1 : 1, t.physics->rotVelocity.y > 0 ? -1 : 1, t.physics->rotVelocity.z > 0 ? -1 : 1) * pw->frictionAir * t.physics->mass * 100;
+		t.physics->rotAcceleration = Vector3(t.physics->rotVelocity.x > 0 ? -1 : 1, t.physics->rotVelocity.y > 0 ? -1 : 1, t.physics->rotVelocity.z > 0 ? -1 : 1) * ps->frictionAir * t.physics->mass * 100;
 	}
 	
 	//update rotational movement and scuffed vector rotational clamping
 	t.physics->rotVelocity += t.physics->rotAcceleration * time->fixedDeltaTime;
-	//if(t.physics->rotVelocity.x > pw->maxRotVelocity) {
-	//	t.physics->rotVelocity.x = pw->maxRotVelocity;
-	//} else if(t.physics->rotVelocity.x < -pw->maxRotVelocity) {
-	//	t.physics->rotVelocity.x = -pw->maxRotVelocity;
-	//} else if(abs(t.physics->rotVelocity.x) < pw->minRotVelocity) {
+	//if(t.physics->rotVelocity.x > ps->maxRotVelocity) {
+	//	t.physics->rotVelocity.x = ps->maxRotVelocity;
+	//} else if(t.physics->rotVelocity.x < -ps->maxRotVelocity) {
+	//	t.physics->rotVelocity.x = -ps->maxRotVelocity;
+	//} else if(abs(t.physics->rotVelocity.x) < ps->minRotVelocity) {
 	//	t.physics->rotVelocity.x = 0;
 	//	t.physics->rotAcceleration.x = 0;
 	//}
-	//if(t.physics->rotVelocity.y > pw->maxRotVelocity) {
-	//	t.physics->rotVelocity.y = pw->maxRotVelocity;
-	//} else if(t.physics->rotVelocity.y < -pw->maxRotVelocity) {
-	//	t.physics->rotVelocity.y = -pw->maxRotVelocity;
-	//} else if(abs(t.physics->rotVelocity.y) < pw->minRotVelocity) {
+	//if(t.physics->rotVelocity.y > ps->maxRotVelocity) {
+	//	t.physics->rotVelocity.y = ps->maxRotVelocity;
+	//} else if(t.physics->rotVelocity.y < -ps->maxRotVelocity) {
+	//	t.physics->rotVelocity.y = -ps->maxRotVelocity;
+	//} else if(abs(t.physics->rotVelocity.y) < ps->minRotVelocity) {
 	//	t.physics->rotVelocity.y = 0;
 	//	t.physics->rotAcceleration.y = 0;
 	//}
-	//if(t.physics->rotVelocity.z > pw->maxRotVelocity) {
-	//	t.physics->rotVelocity.z = pw->maxRotVelocity;
-	//} else if(t.physics->rotVelocity.z < -pw->maxRotVelocity) {
-	//	t.physics->rotVelocity.z = -pw->maxRotVelocity;
-	//} else if(abs(t.physics->rotVelocity.z) < pw->minRotVelocity) {
+	//if(t.physics->rotVelocity.z > ps->maxRotVelocity) {
+	//	t.physics->rotVelocity.z = ps->maxRotVelocity;
+	//} else if(t.physics->rotVelocity.z < -ps->maxRotVelocity) {
+	//	t.physics->rotVelocity.z = -ps->maxRotVelocity;
+	//} else if(abs(t.physics->rotVelocity.z) < ps->minRotVelocity) {
 	//	t.physics->rotVelocity.z = 0;
 	//	t.physics->rotAcceleration.z = 0;
 	//}
@@ -127,61 +126,27 @@ Matrix4 LocalToWorldInertiaTensor(Physics* physics, Matrix3 inertiaTensor) {
 }
 
 inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABBCollider* obj2Col) {
-	std::vector<Vector3> obj1ps;
-	std::vector<Vector3> obj2ps;
-	
-	obj1ps.reserve(8); obj2ps.reserve(8);
-	
-	//oh bruh
-	obj1ps.push_back(obj1->position + obj1Col->halfDims); obj2ps.push_back(obj2->position + obj2Col->halfDims);
-	obj1ps.push_back(obj1->position + obj1Col->halfDims.xInvert()); obj2ps.push_back(obj2->position + obj2Col->halfDims.xInvert());
-	obj1ps.push_back(obj1->position + obj1Col->halfDims.yInvert()); obj2ps.push_back(obj2->position + obj2Col->halfDims.yInvert());
-	obj1ps.push_back(obj1->position + obj1Col->halfDims.zInvert()); obj2ps.push_back(obj2->position + obj2Col->halfDims.zInvert());
-	obj1ps.push_back(obj1->position + obj1Col->halfDims.xInvert().yInvert()); obj2ps.push_back(obj2->position + obj2Col->halfDims.xInvert().yInvert());
-	obj1ps.push_back(obj1->position + obj1Col->halfDims.xInvert().zInvert()); obj2ps.push_back(obj2->position + obj2Col->halfDims.xInvert().zInvert());
-	obj1ps.push_back(obj1->position + obj1Col->halfDims.yInvert().zInvert()); obj2ps.push_back(obj2->position + obj2Col->halfDims.yInvert().zInvert());
-	obj1ps.push_back(obj1->position + obj1Col->halfDims.xInvert().yInvert().zInvert());	obj2ps.push_back(obj2->position + obj2Col->halfDims.xInvert().yInvert().zInvert());
-	
 	//calculate min and max values over each axis
-	float max = std::numeric_limits<float>::max();
-	
-	float xmax1 = -max; float ymax1 = -max; float zmax1 = -max;
-	float xmax2 = -max; float ymax2 = -max; float zmax2 = -max;
-	
-	float xmin1 = max; float ymin1 = max; float zmin1 = max;
-	float xmin2 = max; float ymin2 = max; float zmin2 = max;
-	
-	for (int i = 0; i < 8; i++) {
-		if      (obj1ps[i].x > xmax1) xmax1 = obj1ps[i].x;
-		else if (obj1ps[i].x < xmin1) xmin1 = obj1ps[i].x; 
-		if      (obj1ps[i].y > ymax1) ymax1 = obj1ps[i].y;
-		else if (obj1ps[i].y < ymin1) ymin1 = obj1ps[i].y;
-		if      (obj1ps[i].z > zmax1) zmax1 = obj1ps[i].z;
-		else if (obj1ps[i].z < zmin1) zmin1 = obj1ps[i].z;
-		
-		if      (obj2ps[i].x > xmax2) xmax2 = obj2ps[i].x;
-		else if (obj2ps[i].x < xmin2) xmin2 = obj2ps[i].x;
-		if      (obj2ps[i].y > ymax2) ymax2 = obj2ps[i].y;
-		else if (obj2ps[i].y < ymin2) ymin2 = obj2ps[i].y;
-		if      (obj2ps[i].z > zmax2) zmax2 = obj2ps[i].z;
-		else if (obj2ps[i].z < zmin2) zmin2 = obj2ps[i].z;
-	}
+	vec3 max1 = obj1->position + obj1Col->halfDims;
+	vec3 min1 = obj1->position - obj1Col->halfDims;
+	vec3 max2 = obj2->position + obj2Col->halfDims;
+	vec3 min2 = obj2->position - obj2Col->halfDims;
 	
 	if (//check if overlapping
-		(xmin1 <= xmax2 && xmax1 >= xmin2) &&
-		(ymin1 <= ymax2 && ymax1 >= ymin2) &&
-		(zmin1 <= zmax2 && zmax1 >= zmin2)) {
+		(min1.x <= max2.x && max1.x >= min2.x) &&
+		(min1.y <= max2.y && max1.y >= min2.y) &&
+		(min1.z <= max2.z && max1.z >= min2.z)) {
 		
 		float xover, yover, zover;
 		
 		//we need to know which box is in front over each axis so
 		//the overlap is correct
-		if (xmax1 < xmax2) xover = xmax1 - xmin2;
-		else               xover = xmax2 - xmin1;
-		if (ymax1 < ymax2) yover = ymax1 - ymin2;
-		else               yover = ymax2 - ymin1;
-		if (zmax1 < zmax2) zover = zmax1 - zmin2;
-		else               zover = zmax2 - zmin1;
+		if (max1.x < max2.x) xover = max1.x - min2.x;
+		else                 xover = max2.x - min1.x;
+		if (max1.y < max2.y) yover = max1.y - min2.y;
+		else                 yover = max2.y - min1.y;
+		if (max1.z < max2.z) zover = max1.z - min2.z;
+		else                 zover = max2.z - min1.z;
 		
 		//TODO( sushi,So) find a nicer way to determine how loud a collision sound is	 
 		//obj1->entity->GetComponent<AudioSource>()->RequestPlay(obj1->velocity.mag() + obj2->velocity.mag());
@@ -232,8 +197,16 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 			float overlap = .5f * (sphereCol->radius - distanceBetween);
 			Vector3 normal = -vectorBetween.normalized();
 			vectorBetween = -normal * overlap;
-			aabb->position += vectorBetween;
-			sphere->position -= vectorBetween;
+			if(aabb->isStatic && aabb->isStatic){
+				//do nothing b/c neither can move
+			}else if(aabb->isStatic){
+				sphere->position -= vectorBetween;
+			}else if(sphere->isStatic){
+				aabb->position += vectorBetween;
+			}else{
+				aabb->position += vectorBetween / 2.f;
+				sphere->position -= vectorBetween / 2.f;
+			}
 			
 			//dynamic resolution
 			Matrix4 sphereInertiaTensorInverse = LocalToWorldInertiaTensor(sphere, sphereCol->inertiaTensor).Inverse();
@@ -352,23 +325,20 @@ inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 //////////////////////////
 
 void PhysicsSystem::Update() {
-	Time* time = DengTime;
-	PhysicsWorld* pw = admin->physicsWorld;
-	
 	std::vector<PhysicsTuple> tuples = GetPhysicsTuples(admin);
 	
 	//update physics extra times per frame if frame time delta is larger than physics time delta
-	while(time->fixedAccumulator >= time->fixedDeltaTime) {
+	while(DengTime->fixedAccumulator >= DengTime->fixedDeltaTime) {
 		for(auto& t : tuples) {
-			PhysicsTick(t, pw, time);
+			PhysicsTick(t, this, DengTime);
 			CollisionTick(tuples, t);
 		}
-		time->fixedAccumulator -= time->fixedDeltaTime;
-		time->fixedTotalTime += time->fixedDeltaTime;
+		DengTime->fixedAccumulator -= DengTime->fixedDeltaTime;
+		DengTime->fixedTotalTime += DengTime->fixedDeltaTime;
 	}
 	
 	//interpolate between new physics position and old transform position by the leftover time
-	float alpha = time->fixedAccumulator / time->fixedDeltaTime;
+	float alpha = DengTime->fixedAccumulator / DengTime->fixedDeltaTime;
 	for(auto& t : tuples) {
 		t.transform->prevPosition = t.transform->position;
 		t.transform->prevRotation = t.transform->rotation;

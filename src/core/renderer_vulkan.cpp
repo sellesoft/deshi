@@ -436,7 +436,7 @@ u32 Renderer::LoadBaseMesh(Mesh* m){
 }
 
 u32 Renderer::
-CreateMesh(Scene* scene, const char* filename){\
+CreateMesh(Scene* scene, const char* filename){
 	//check if Mesh was already created
 	for(auto& model : scene->models){ 
 		if(strcmp(model.mesh.name, filename) == 0){ 
@@ -445,7 +445,7 @@ CreateMesh(Scene* scene, const char* filename){\
 	}
 	PRINTVK(3, "    Creating mesh: ", filename);
 	
-	scene->models.emplace_back(Mesh::CreateMeshFromOBJ(filename, filename));
+	scene->models.emplace_back(Mesh::CreateMeshFromOBJ(filename));
 	
 	return CreateMesh(&scene->models[scene->models.size()-1].mesh, Matrix4::IDENTITY);
 }
@@ -455,12 +455,12 @@ CreateMesh(Mesh* m, Matrix4 matrix){
 	//check if MeshVk was already 
 	for(auto& mesh : meshes){ 
 		if(strcmp(mesh.name, m->name) == 0){ 
-			return CreateMesh(mesh.id, m->transform);
+			return CreateMesh(mesh.id, matrix);
 		} 
 	}
 	PRINTVK(3, "    Creating mesh: ", m->name);
 	
-	return CreateMesh(LoadBaseMesh(m), m->transform);
+	return CreateMesh(LoadBaseMesh(m), matrix);
 }
 
 u32 Renderer::
@@ -487,7 +487,7 @@ UnloadBaseMesh(u32 meshID){
 		if(meshes[meshID].base){
 			//loop thru children and remove them
 			//remove verts and indices
-			ERROR("UnloadMesh: Not implemented yet");
+			ERROR("UnloadBaseMesh: Not implemented yet");
 		}else{
 			ERROR("Only a base mesh can be unloaded");
 		}
@@ -529,6 +529,14 @@ GetMeshPtr(u32 meshID){
 	return nullptr;
 }
 
+u32 Renderer::
+GetBaseMeshID(const char* name){
+	for_n(i,meshes.size()){
+		if(meshes[i].base && strcmp(name, meshes[i].name) == 0) return i;
+	}
+	return -1;
+}
+
 void Renderer::
 UpdateMeshMatrix(u32 meshID, Matrix4 matrix){
 	if(meshID < meshes.size()){
@@ -568,6 +576,18 @@ UpdateMeshVisibility(u32 meshID, bool visible){
 		ERROR("There is no mesh with id: ", meshID);
 	}
 }
+
+void Renderer::
+SetSelectedMesh(u32 meshID){
+	if(meshID == -1){
+		selectedMeshID = meshID;
+	}else if(meshID < meshes.size()){
+		selectedMeshID = meshID;
+	}else{
+		ERROR("There is no mesh with id: ", meshID);
+	}
+}
+
 /*
 u32 Renderer::
 MakeInstance(u32 meshID, Matrix4 matrix) {
@@ -813,10 +833,13 @@ LoadDefaultAssets(){
 void Renderer::
 LoadScene(Scene* sc){
 	PRINTVK(2, "  Loading Scene");
+	initialized = false;
+	
 	//load meshes, materials, and textures
 	for(Model& model : sc->models){ LoadBaseMesh(&model.mesh); }
 	
 	CreateSceneBuffers();
+	initialized = true;
 }
 
 void Renderer::
@@ -2164,7 +2187,6 @@ SetupPipelineCreation(){
 	
 	//how to combine colors; alpha: options to allow alpha blending
 	//https://renderdoc.org/vkspec_chunked/chap30.html#VkPipelineColorBlendAttachmentState
-	colorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 	colorBlendAttachmentState.blendEnable = VK_FALSE;
 	colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
 	colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -2172,6 +2194,7 @@ SetupPipelineCreation(){
 	colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 	colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 	
 	//container struct for color blend attachments with overall blending constants
 	//https://renderdoc.org/vkspec_chunked/chap30.html#VkPipelineColorBlendStateCreateInfo
@@ -2386,6 +2409,26 @@ CreatePipelines(){
 		shaderStages[0] = loadShader("wireframe.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("wireframe.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.WIREFRAME), "failed to create wireframe graphics pipeline");
+		
+		{ //selected entity gets a specific colored wireframe
+			colorBlendAttachmentState.blendEnable = VK_TRUE;
+			colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
+			colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
+			colorBlendState.blendConstants[0] = (f32)settings.selectedR / 255.f;
+			colorBlendState.blendConstants[1] = (f32)settings.selectedG / 255.f;
+			colorBlendState.blendConstants[2] = (f32)settings.selectedB / 255.f;
+			colorBlendState.blendConstants[3] = 1.0f;
+			
+			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.SELECTED), "failed to create selected entity graphics pipeline");
+			
+			colorBlendAttachmentState.blendEnable = VK_FALSE;
+			colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+			colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			colorBlendState.blendConstants[0] = 0.f;
+			colorBlendState.blendConstants[1] = 0.f;
+			colorBlendState.blendConstants[2] = 0.f;
+			colorBlendState.blendConstants[3] = 1.0f;
+		}
 		
 		rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
@@ -3086,10 +3129,27 @@ BuildCommandBuffers() {
 				}
 			}
 		}
+		if(selectedMeshID < meshes.size()){
+			MeshVk& mesh = meshes[selectedMeshID];
+			if(mesh.visible && mesh.primitives.size() > 0){
+				//push the mesh's model matrix to the vertex shader
+				vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mesh.modelMatrix);
+				
+				for (PrimitiveVk& primitive : mesh.primitives) {
+					if (primitive.indexCount > 0) {
+						MaterialVk& material = materials[primitive.materialIndex];
+						// Bind the pipeline for the primitive's material
+						vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.SELECTED);
+						vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material.descriptorSet, 0, nullptr);
+						vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+						stats.drawnIndices += primitive.indexCount;
+					}
+				}
+			}
+		}
 		
 		//draw imgui stuff
-		ImDrawData* imDrawData = ImGui::GetDrawData();
-		if(imDrawData){
+		if(ImDrawData* imDrawData = ImGui::GetDrawData()){
 			ImGui_ImplVulkan_RenderDrawData(imDrawData, frames[i].commandBuffer);
 		}
 		

@@ -4,7 +4,26 @@
 
 #include "System.h"
 
+enum struct CollisionDetectionMode {
+	DISCRETE, /*CONTINUOUS, GJK,*/ NONE
+};
+
+enum struct IntegrationMode {
+	/*RK4, VERLET,*/ EULER
+};
+
 struct PhysicsSystem : public System {
+	IntegrationMode integrationMode      = IntegrationMode::EULER;
+	CollisionDetectionMode collisionMode = CollisionDetectionMode::DISCRETE;
+	
+	float gravity     = -9.81f;
+	float frictionAir = 0.01f; //TODO(delle,Ph) this should depend on object shape
+	
+	float maxVelocity    = 100.f;
+	float minVelocity    = 0.15f;
+	float maxRotVelocity = 360.f; //per axis in degrees
+	float minRotVelocity = 1.f;
+	
 	void Update() override;
 };
 

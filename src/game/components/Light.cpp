@@ -15,6 +15,11 @@ void Light::Update() {
 	
 }
 
+std::vector<char> Light::Save() {
+	std::vector<char> out;
+	return out;
+}
+
 void Light::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF;
 	Vector3 position{}, direction{};

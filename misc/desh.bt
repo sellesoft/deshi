@@ -22,8 +22,8 @@ typedef struct {
 
 string mat3Read( mat3 &m ) {
     string s;
-    SPrintf(s, "%.2f, %.2f, %.2f,\n%.2f, %.2f, %.2f,\n%.2f, %.2f, %.2f", 
-            _00, _01, _02, _10, _11, _12, _20, _21, _22);
+    SPrintf(s, "%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f", 
+            m._00, m._01, m._02, m._10, m._11, m._12, m._20, m._21, m._22);
     return s;
 }
 
@@ -86,21 +86,21 @@ struct{
 
 struct{
     u32  entity_id;
-    u32 collision_layer;
+    u32  collision_layer;
     mat3 inertia_tensor;
     vec3 half_dimensions;
 } box_colliders[component_type_headers[2].count];
 
 struct{
     u32  entity_id;
-    u32 collision_layer;
+    u32  collision_layer;
     mat3 inertia_tensor;
     vec3 half_dimensions;
 } aabb_colliders[component_type_headers[3].count];
 
 struct{
     u32  entity_id;
-    u32 collision_layer;
+    u32  collision_layer;
     mat3 inertia_tensor;
     f32  half_dimensions;
 } sphere_colliders[component_type_headers[4].count];

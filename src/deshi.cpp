@@ -123,11 +123,14 @@ look into making a function that takes in the types on a component and formats b
 Bug Board
 ---------
 dragging the console scroll bar doesn't work
-when minimizing the window ImGui throws an exception about calling End rather than EndChild in the DebugTools function
-after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and the batchArray size of whatever mesh its checking is something like 400000000000
-	it looks like some sort of corrupt mesh makes its way in there somehow?
+after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and 
+____the batchArray size of whatever mesh its checking is something like 400000000000
+	____it looks like some sort of corrupt mesh makes its way in there somehow?
+____TODO(sushi) check if ^this^ is still an issue, i added a NOTE on MeshComp::Init() saying what maybe fixed it
 look into scaling not rotating (scaling is probably being done in world not local)
 console scrolls past top and bottom
+calling a components destructor causes a crash related the component layers
+selecting scaled meshes doesnt work; i think because we dont scale the vertices when checking for an intersection
 AABB collider generation from Mesh* is wrong
 sometimes MeshComp is assigned a nonexistant mesh
 

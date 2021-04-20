@@ -51,6 +51,11 @@ operator =  (const Vector3& rhs) {
 	this->x = rhs.x; this->y = rhs.y; this->z = rhs.z;
 }
 
+inline void Vector3::
+operator =  (Vector3& rhs) {
+	this->x = rhs.x; this->y = rhs.y; this->z = rhs.z;
+}
+
 inline Vector3 Vector3::
 operator *  (float rhs) const {
 	return Vector3(this->x * rhs, this->y * rhs, this->z * rhs);

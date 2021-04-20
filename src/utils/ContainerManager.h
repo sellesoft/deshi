@@ -59,8 +59,8 @@ struct ContainerManager {
 	
 	//attempt to remove element at index 
 	void remove_from(int index) {
-		ASSERT(container[index].test(), "Container at index " + std::to_string(index) + " is already empty.");
 		ASSERT(index < container.size(), "Trying to access container at an index that doesn't exist.");
+		ASSERT(container[index].test(), "Container at index " + std::to_string(index) + " is already empty.");
 		
 		if (index == container.size() - 1) {
 			container.pop_back();

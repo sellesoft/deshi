@@ -19,14 +19,11 @@ struct Entity;
 struct System;
 struct Component;
 struct Command;
-
-struct PhysicsWorld;
+struct Camera;
 struct PhysicsSystem;
 struct CanvasSystem;
 struct WorldSystem;
 struct SoundSystem;
-
-struct Camera;
 
 enum struct GameState{
 	NONE, PLAY, PLAY_DEBUG, EDITOR, MENU
@@ -38,11 +35,9 @@ struct EntityAdmin {
 	GameState state = GameState::NONE;
 	
 	std::vector<Entity> entities;
-	//are we still doing this?  reply: eventually, not necessary for prototype
-	//object_pool<Component>* componentsPtr;
+	//object_pool<Component>* components;
 	
 	//systems
-	PhysicsWorld*  physicsWorld; //TODO(delle) move these vars to a global vars file
 	PhysicsSystem* physics;
 	CanvasSystem*  canvas;
 	WorldSystem*   world;
@@ -98,7 +93,7 @@ struct Entity {
 		   const char* name = 0, std::vector<Component*> components = {});
 	~Entity();
 	
-	std::string Save();
+	std::vector<char> Save();
 	void Load(const char* filename);
 	
 	void SetName(const char* name);
