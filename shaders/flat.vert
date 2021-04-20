@@ -24,13 +24,15 @@ layout(location = 2) out vec3 outNormal;
 
 
 void main() {
-    vec3 light = vec3(10,10,2);
+    vec3 light = vec3(ubo.viewPos);
+
+	vec3 normal = mat3(primitive.model) * inNormal;
 
     gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
-	outColor = vec3(dot(normalize(light - inPosition), inNormal),
-					dot(normalize(light - inPosition), inNormal),
-					dot(normalize(light - inPosition), inNormal));
+	outColor = vec3(clamp(dot(normalize(light - inPosition), normal), .1f, 1),
+					clamp(dot(normalize(light - inPosition), normal), .1f, 1),
+					clamp(dot(normalize(light - inPosition), normal), .1f, 1));
     //outColor = inColor;
 	outTexCoord = inTexCoord;
-	outNormal = mat3(primitive.model) * inNormal;
+	outNormal = normal;
 }

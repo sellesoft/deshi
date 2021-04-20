@@ -442,11 +442,11 @@
     <ClCompile Include="..\src\game\UndoManager.cpp">
       <Filter>src\game</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\game\systems\CanvasSystem.cpp">
-      <Filter>src\game\systems\cpp</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\game\Controller.cpp">
       <Filter>src\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\game\systems\CanvasSystem.cpp">
+      <Filter>src\game\systems\cpp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

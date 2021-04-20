@@ -129,6 +129,7 @@ after spawning a decent amount of objects and clicking, HandleSelectEntity throw
 look into scaling not rotating (scaling is probably being done in world not local)
 console scrolls past top and bottom
 AABB collider generation from Mesh* is wrong
+sometimes MeshComp is assigned a nonexistant mesh
 
 */
 

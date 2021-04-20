@@ -9,7 +9,7 @@ struct Command;
 struct Mesh;
 
 enum ColliderTypeBits : u32{
-	ColliderType_Box, ColliderType_AABB, ColliderType_Sphere
+	ColliderType_Box, ColliderType_AABB, ColliderType_Sphere, ColliderType_Landscape
 }; typedef u32 ColliderType;
 
 struct Collider : public Component {
@@ -46,6 +46,15 @@ struct SphereCollider : public Collider {
 	SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr);
 	SphereCollider(float radius, float mass, u32 collisionLayer = 0, Command* command = nullptr);
 	
+	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
+};
+
+//collider for terrain
+struct LandscapeCollider : public Collider {
+	std::vector<std::pair<AABBCollider, Vector3>> aabbcols; //aabb colliders and their local positions
+
+	LandscapeCollider(Mesh* mesh, u32 collisionleyer = 0, Command* command = nullptr);
+
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 

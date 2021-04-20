@@ -111,7 +111,7 @@ struct Matrix4 {
 			float _30, float _31, float _32, float _33);
 	Matrix4(const Matrix4& m);
 	Matrix4(float* data);
-	
+
 	static const Matrix4 IDENTITY;
 	
 	float&  operator () (u32 row, u32 col);

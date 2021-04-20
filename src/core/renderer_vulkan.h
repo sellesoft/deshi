@@ -436,6 +436,7 @@ struct Renderer{
 			glm::f32 width;		//screen width
 			glm::f32 height;	//screen height
 			glm::vec2 mousepos; //mouse screen pos
+			glm::vec3 mouseRay; //point casted out from mouse 
 		} values;
 		
 		bool freeze = false;

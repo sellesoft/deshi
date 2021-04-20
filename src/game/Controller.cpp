@@ -143,7 +143,7 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 	pos.normalize();
 	pos *= 1000;
 	pos *= Math::LocalToWorld(admin->mainCamera->position);
-	
+
 	RenderedEdge3D* ray = new RenderedEdge3D(pos, admin->mainCamera->position);
 	
 	Entity* oldEnt = admin->selectedEntity;
@@ -154,9 +154,7 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 		if (MeshComp* mc = e.GetComponent<MeshComp>()) {
 			if (mc->mesh_visible) {
 				Mesh* m = mc->mesh;
-				int te = 0;
 				for (auto& b : m->batchArray) {
-					te++;
 					for (int i = 0; i < b.indexArray.size(); i += 3) {
 						float t = 0;
 						
@@ -207,9 +205,12 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 			static bool zaxis = false;
 			
 			static bool initialgrab = true;
+
+			static bool physgrab = false;
 			
 			static Vector3 initialObjPos;
 			static float initialdist; 
+			static Vector3 lastFramePos;
 			
 			//different cases for mode chaning
 			if (DengInput->KeyPressed(Key::X)) {
@@ -231,6 +232,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				sel->transform.position = initialObjPos;
 				initialgrab = true; grabbingObj = false;
 				CONTROLLER_MOUSE_CAPTURE = false;
+				physgrab = false;
 				return;
 			}
 			if ((xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
@@ -243,6 +245,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				xaxis = false; yaxis = false; zaxis = false;
 				initialgrab = true; grabbingObj = false;  
 				CONTROLLER_MOUSE_CAPTURE = false;
+				physgrab = false;
 				if(initialObjPos != sel->transform.position){
 					um->AddUndoTranslate(&sel->transform, &initialObjPos, &sel->transform.position);
 				}
@@ -251,6 +254,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 			
 			if (DengInput->KeyPressed(MouseButton::SCROLLDOWN)) initialdist -= 1;
 			if (DengInput->KeyPressed(MouseButton::SCROLLUP))   initialdist += 1;
+			if (DengInput->KeyPressed(Key::P)) physgrab = !physgrab;
 			
 			
 			//set mouse to obj position on screen and save that position
@@ -346,6 +350,10 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				}
 				
 			}
+			if (Physics* p = sel->GetComponent<Physics>()) {
+				p->velocity = (sel->transform.position - lastFramePos) / DengTime->deltaTime;
+			}
+			lastFramePos = sel->transform.position;
 		} //if(DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj)
 	} //if(!DengConsole->IMGUI_MOUSE_CAPTURE)
 }
@@ -421,12 +429,26 @@ inline void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				
 				Vector2 ctm = mousepos - center;
 				
-				float ang = Math::AngBetweenVectors(ctm, origmousepos - center);
+				Vector2 cleft = Vector2(0, DengWindow->height / 2);
+				Vector2 cright = Vector2(DengWindow->width, DengWindow->height / 2);
+
+				Vector2 mp = DengInput->mousePos;
+
+				Vector2 cltmp = mp - cleft;
+
+				float dist = (cleft - cright).normalized().dot(cltmp);
+
+				float ratio = dist / (cright - cleft).mag();
+
+
+				float ang = 360 * ratio;
+
+				LOG(ang);
 				
 				//make angle go between 360 instead of -180 and 180
-				if (ang < 0) {
-					ang = 180 + (180 + ang);
-				}
+				//if (ang < 0) {
+				//	ang = 180 + (180 + ang);
+				//}
 				
 				sel->transform.rotation = Matrix4::AxisAngleRotationMatrix(ang, Vector4((sel->transform.position - c->position).normalized(), 0)).Rotation();
 				

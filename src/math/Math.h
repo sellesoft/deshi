@@ -190,7 +190,6 @@ inline Quaternion Quaternion::QuatSlerp(Vector3 fromv, Vector3 tov, float t) {
 	return (from * s0) + (to * s1);
 }
 
-
 namespace Math {
 	
 	//ref: https://en.cppreference.com/w/cpp/algorithm/clamp
@@ -300,6 +299,8 @@ namespace Math {
 					   newFor.x,   newFor.y,   newFor.z,   0,
 					   pos.x,      pos.y,      pos.z,      1);
 	}
+
+
 	
 	//this ones for getting the up vector back for sound orientation
 	static Matrix4 LookAtMatrix(const Vector3& pos, const Vector3& target, Vector3& up) {

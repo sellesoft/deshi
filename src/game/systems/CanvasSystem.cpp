@@ -351,7 +351,7 @@ void CanvasSystem::DebugTools() {
 					if (BeginTabBar("ObjectPropertyMenus")) {
 						if (BeginTabItem("Obj")) {
 							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
-							if (BeginChild("ObjMenu", ImVec2(GetWindowWidth()* 0.95, 100), true)) {
+							if (BeginChild("ObjMenu", ImVec2(GetWindowWidth()* 0.95, 400), true)) {
 								WinHovCheck;
 								
 								Text("Transform");
@@ -390,7 +390,28 @@ void CanvasSystem::DebugTools() {
 									admin->undoManager.AddUndoScale(&sel->transform, &oldVec, &sel->transform.scale);
 								}
 								Separator();
-								
+
+								if (Physics* p = sel->GetComponent<Physics>()) {
+									SetPadding;
+									Text("Velocity ");
+									SameLine(); if (InputVector3("velocity", &p->velocity));
+									Separator();
+
+									SetPadding;
+									Text("Accel    ");
+									SameLine(); if (InputVector3("acceleration", &p->acceleration));
+									Separator();
+
+									SetPadding;
+									Text("RotVel   ");
+									SameLine(); if (InputVector3("rvelocity", &p->rotVelocity));
+									Separator();
+
+									SetPadding;
+									Text("RotAccel ");
+									SameLine(); if (InputVector3("racceleration", &p->rotAcceleration));
+									Separator();
+								}
 								EndChild();
 							}
 							EndTabItem();
@@ -564,9 +585,7 @@ void CanvasSystem::DebugTools() {
 			if (BeginChild("SelectedEntityMenu", ImVec2(GetWindowWidth(), 500), true)) {
 				
 				SetPadding;
-				if (ImGui::Button("Pause")) {
-					admin->pause_phys = !admin->pause_phys;
-				}
+				ImGui::Selectable("Pause", &admin->pause_phys);
 				
 				SetPadding;
 				ImGui::InputFloat("gravity", &admin->physicsWorld->gravity);

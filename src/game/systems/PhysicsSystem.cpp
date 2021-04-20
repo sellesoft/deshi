@@ -127,7 +127,6 @@ Matrix4 LocalToWorldInertiaTensor(Physics* physics, Matrix3 inertiaTensor) {
 }
 
 inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABBCollider* obj2Col) {
-	//ERROR("AABB-AABB collision not implemented in PhysicsSystem.cpp");
 	std::vector<Vector3> obj1ps;
 	std::vector<Vector3> obj2ps;
 	
@@ -141,7 +140,7 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 	obj1ps.push_back(obj1->position + obj1Col->halfDims.xInvert().yInvert()); obj2ps.push_back(obj2->position + obj2Col->halfDims.xInvert().yInvert());
 	obj1ps.push_back(obj1->position + obj1Col->halfDims.xInvert().zInvert()); obj2ps.push_back(obj2->position + obj2Col->halfDims.xInvert().zInvert());
 	obj1ps.push_back(obj1->position + obj1Col->halfDims.yInvert().zInvert()); obj2ps.push_back(obj2->position + obj2Col->halfDims.yInvert().zInvert());
-	obj1ps.push_back(obj1->position + obj1Col->halfDims.xInvert().yInvert().zInvert());obj2ps.push_back(obj2->position + obj2Col->halfDims.xInvert().yInvert().zInvert());
+	obj1ps.push_back(obj1->position + obj1Col->halfDims.xInvert().yInvert().zInvert());	obj2ps.push_back(obj2->position + obj2Col->halfDims.xInvert().yInvert().zInvert());
 	
 	//calculate min and max values over each axis
 	float max = std::numeric_limits<float>::max();
@@ -184,7 +183,7 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 		if (zmax1 < zmax2) zover = zmax1 - zmin2;
 		else               zover = zmax2 - zmin1;
 		
-		//TODO( sushi,So) find a nicer way to determine how loud a collision sound is 
+		//TODO( sushi,So) find a nicer way to determine how loud a collision sound is	 
 		//obj1->entity->GetComponent<AudioSource>()->RequestPlay(obj1->velocity.mag() + obj2->velocity.mag());
 		
 		bool xf = false; bool yf = false; bool zf = false;
@@ -223,7 +222,7 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 	if(distanceBetween < sphereCol->radius) {
 		if(!aabbCol->command && !sphereCol->command) {
 			//SUCCESS("collision happened");
-			aabb->entity->GetComponent<AudioSource>()->request_play = true;
+			//aabb->entity->GetComponent<AudioSource>()->request_play = true;
 			//static resolution
 			if (aabbPoint == sphere->position) { 
 				//NOTE if the closest point is the same, the vector between will have no direction; this 
@@ -272,11 +271,28 @@ inline void SphereSphereCollision(Physics* s1, SphereCollider* sc1, Physics* s2,
 	if (rsum > dist) {
 		Vector3 s1t2 = s2->position - s1->position;
 		float overlap = (rsum - dist) / 2;
-		s1->position -= s1t2.normalized() * overlap;
-		s2->position += s1t2.normalized() * overlap;
+		if (!s1->isStatic) s1->position -= s1t2.normalized() * overlap;
+		if (!s2->isStatic) s2->position += s1t2.normalized() * overlap;
+
+		//dynamic resolution
+		//from https://www.gamasutra.com/view/feature/131424/pool_hall_lessons_fast_accurate_.php?print=1
+		Vector3 n = s1->position - s2->position;
+		n.normalize();
+
+		float a1 = s1->velocity.dot(n);
+		float a2 = s2->velocity.dot(n);
+
+		float opP = (2 * (a1 - a2)) / (s1->mass + s2->mass);
+
+		s1->velocity = s1->velocity - opP * s2->mass * n;
+		s2->velocity = s2->velocity + opP * s1->mass * n;
 	}
+
+
+}
+
+inline void SphereLandscapeCollision(Physics* s, SphereCollider* sc, Physics* ls, SphereCollider* lsc) {
 	
-	//ImGui::EndDebugLayer();
 }
 
 inline void SphereBoxCollision(Physics* sphere, SphereCollider* sphereCol, Physics* box, BoxCollider* boxCol) {

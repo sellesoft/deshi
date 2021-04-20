@@ -21,6 +21,7 @@ struct Physics : public Component {
 	Vector3 inputVector = Vector3::ZERO;
 	
 	bool isStatic = false;
+	bool twoDphys = false;
 	
 	Physics();
 	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO,

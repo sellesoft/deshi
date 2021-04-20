@@ -99,7 +99,7 @@ AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Command* 
 	}else{
 		float midMag = mid.mag();
 		Vector3 minN = ((min / midMag) - mid).absV(); //normalize to midpoint then center on origin
-		Vector3 maxN = ((max / midMag) - mid).absV(); //then abs for comparison
+		Vector3  maxN = ((max / midMag) - mid).absV(); //then abs for comparison
 		this->halfDims.x = (minN.x > maxN.x) ? minN.x : maxN.x;
 		this->halfDims.y = (minN.y > maxN.y) ? minN.y : maxN.y;
 		this->halfDims.z = (minN.z > maxN.z) ? minN.z : maxN.z;
@@ -198,4 +198,34 @@ void SphereCollider::Load(std::vector<Entity>& entities, const char* data, u32& 
 		memcpy(&radius, data+cursor, sizeof(f32));  cursor += sizeof(f32);
 		entities[entityID].AddComponent(new SphereCollider(radius, tensor, layer, nullptr));
 	}
+}
+
+
+////////////////////////////
+//// Landscape Collider ////
+////////////////////////////
+
+
+LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Command* command) {
+	cpystr(name, "LandscapeCollider", 63);
+
+	this->type = ColliderType_Landscape;
+	this->collisionLayer = collisionLayer;
+	this->command = command;
+
+	if (!mesh) {
+		ERROR("Null mesh passed during LandscapeCollider creation");
+		return;
+	}
+	if (!mesh->batchArray.size() || !mesh->vertexCount) {
+		ERROR("Mesh passed during LandscapeCollider creation had no vertices");
+		return;
+	}
+
+	for (auto& b : mesh->batchArray) {
+		for (int i = 0; i < b.indexArray.size(); i += 3) {
+
+		}
+	}
+
 }
