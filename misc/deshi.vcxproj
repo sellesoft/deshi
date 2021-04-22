@@ -197,6 +197,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\..\src\tracy\Tracy.hpp" />
     <ClInclude Include="..\src\core.h" />
     <ClInclude Include="..\src\core\assets.h" />
     <ClInclude Include="..\src\core\console.h" />
@@ -263,6 +264,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore" />
+    <None Include="..\cfg\aliases.cfg" />
+    <None Include="..\cfg\binds.cfg" />
     <None Include="..\cfg\render.cfg" />
     <None Include="..\README.md" />
     <None Include="..\shaders\fixedimguishader.vert" />
@@ -294,6 +297,7 @@
     <None Include="build.bat" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\..\src\tracy\TracyClient.cpp" />
     <ClCompile Include="..\src\core\assets.cpp" />
     <ClCompile Include="..\src\core\console.cpp" />
     <ClCompile Include="..\src\core\deshi_imgui_vulkan.cpp" />
@@ -326,7 +330,6 @@
     <ClCompile Include="..\src\game\systems\WorldSystem.cpp" />
     <ClCompile Include="..\src\game\UndoManager.cpp" />
     <ClCompile Include="..\src\scene\Model.cpp" />
-    <ClCompile Include="..\src\scene\Scene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\cfg\keybinds.txt" />

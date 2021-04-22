@@ -62,6 +62,21 @@ struct LandscapeCollider : public Collider {
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
+
+
+struct ConvexPolyCollider : public Collider {
+	
+};
+
+//collider defined by arbitrary mesh
+struct ComplexCollider : public Collider {
+	Mesh* mesh;
+
+	ComplexCollider(Mesh* mesh, u32 collisionleyer = 0, Command* command = nullptr);
+
+	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
+};
+
 //TODO(delle,Ph) implement convexPolyCollider
 //TODO(delle,Ph) implement capsuleCollider
 //TODO(delle,Ph) implement cylinder collider

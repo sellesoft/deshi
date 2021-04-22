@@ -1359,18 +1359,21 @@ chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes
 	immediate = fifo_relaxed = mailbox = false;
 	
 	for (const auto& availablePresentMode : availablePresentModes) {
-		if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) { immediate = true; }
+		if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)    { immediate = true; }
+		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)      { mailbox = true; }
 		if (availablePresentMode == VK_PRESENT_MODE_FIFO_RELAXED_KHR) { fifo_relaxed = true; }
-		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) { mailbox = true; }
 	}
 	
 	if(immediate && false){ //TODO(delle,ReVu) test if this is possible regardless of minImageCount
 		return VK_PRESENT_MODE_IMMEDIATE_KHR;
-	}else if(fifo_relaxed){
-		return VK_PRESENT_MODE_FIFO_RELAXED_KHR;
 	}else if(mailbox){
+		PRINTLN("mailbox");
 		return VK_PRESENT_MODE_MAILBOX_KHR;
+	}else if(fifo_relaxed){
+		PRINTLN("Fifo Relaxed");
+		return VK_PRESENT_MODE_FIFO_RELAXED_KHR;
 	}else{
+		PRINTLN("Fifo");
 		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 }

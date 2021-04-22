@@ -81,7 +81,6 @@ add physics collision sweeping
 add physics based collision resolution for remaining collider primitives
 add physics interaction functions
 implement collision manifold generation
-implement Sphere vs Sphere collisions
 implement Complex Colliders 
 
 Console TODOs
@@ -136,6 +135,7 @@ sometimes MeshComp is assigned a nonexistant mesh
 
 */
 
+
 #include "core.h"
 #include "EntityAdmin.h"
 
@@ -162,6 +162,7 @@ struct DeshiEngine {
 	}
 	
 	void Start() {
+
 		//enforce deshi file system
 		deshi::enforceDirectories();
 		
@@ -209,6 +210,8 @@ struct DeshiEngine {
 		//entityAdmin.PostRenderUpdate();
 		
 		time.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
+
+
 		return true;
 	}
 };

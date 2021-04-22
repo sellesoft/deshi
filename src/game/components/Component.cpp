@@ -1,5 +1,5 @@
 #include "component.h"
-#include "EntityAdmin.h"
+#include "../../EntityAdmin.h"
 
 
 Component::Component(EntityAdmin* a, Entity* e) {

@@ -111,9 +111,6 @@ namespace ImGui {
 	}
 }
 
-
-
-
 //// utility ui elements ///
 
 void CopyButton(const char* text) {
@@ -136,6 +133,8 @@ void AddPadding(float x){
 //// major ui elements ////
 
 void CanvasSystem::MenuBar() {
+	
+
 	using namespace ImGui;
 	
 	ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
@@ -208,6 +207,8 @@ void CanvasSystem::MenuBar() {
 }
 
 inline void EntitiesTab(EntityAdmin* admin, float fontsize){
+	
+
 	using namespace ImGui;
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
 	if (BeginChild("entityListScroll", ImVec2(GetWindowWidth() * 0.95, 100), false)) {
@@ -557,8 +558,6 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 				SetPadding;
 				ImGui::Text("#colliders: not implemented");
 				
-				
-				
 				EndChild();
 			}
 			EndTabItem();
@@ -569,6 +568,9 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 }
 
 inline void CreateTab(EntityAdmin* admin, float fontsize){
+	
+
+	
 	using namespace ImGui;
 	
 	//// creation variables ////
@@ -776,6 +778,8 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 }
 
 void CanvasSystem::DebugTools() {
+	
+
 	using namespace ImGui;
 	
 	float fontsize = ImGui::GetFontSize();
@@ -794,18 +798,26 @@ void CanvasSystem::DebugTools() {
 	ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
 	
 	ImGui::PushStyleColor(ImGuiCol_Border,               ColToVec4(Color( 0,  0,  0)));
-	ImGui::PushStyleColor(ImGuiCol_Button,               ColToVec4(Color(30, 30, 30)));
+	ImGui::PushStyleColor(ImGuiCol_Button,               ColToVec4(Color(40, 40, 40)));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive,         ColToVec4(Color(48, 48, 48)));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered,        ColToVec4(Color(60, 60, 60)));
 	ImGui::PushStyleColor(ImGuiCol_WindowBg,             ColToVec4(colors.c9));
 	ImGui::PushStyleColor(ImGuiCol_PopupBg,              ColToVec4(Color(20, 20, 20)));
+	ImGui::PushStyleColor(ImGuiCol_FrameBg,              ColToVec4(Color(35, 45, 50)));
+	ImGui::PushStyleColor(ImGuiCol_FrameBgActive,        ColToVec4(Color(42, 54, 60)));
+	ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,       ColToVec4(Color(54, 68, 75)));
+	ImGui::PushStyleColor(ImGuiCol_Header,               ColToVec4(Color(35, 45, 50)));
+	ImGui::PushStyleColor(ImGuiCol_HeaderActive,         ColToVec4(Color( 0, 74, 74)));
+	ImGui::PushStyleColor(ImGuiCol_HeaderHovered,        ColToVec4(Color( 0, 93, 93)));
 	ImGui::PushStyleColor(ImGuiCol_TableBorderLight,     ColToVec4(Color(45, 45, 45)));
 	ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,        ColToVec4(Color(10, 10, 10)));
 	ImGui::PushStyleColor(ImGuiCol_ScrollbarBg,          ColToVec4(Color(10, 10, 10)));
 	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab,        ColToVec4(Color(55, 55, 55)));
 	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,  ColToVec4(Color(75, 75, 75)));
 	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColToVec4(Color(65, 65, 65)));
-	ImGui::PushStyleColor(ImGuiCol_TabActive, ColToVec4(Color::VERY_DARK_CYAN));
-	ImGui::PushStyleColor(ImGuiCol_TabHovered, ColToVec4(Color::DARK_CYAN));
-	ImGui::PushStyleColor(ImGuiCol_Tab, ColToVec4(colors.c1));
+	ImGui::PushStyleColor(ImGuiCol_TabActive,            ColToVec4(Color::VERY_DARK_CYAN));
+	ImGui::PushStyleColor(ImGuiCol_TabHovered,           ColToVec4(Color::DARK_CYAN));
+	ImGui::PushStyleColor(ImGuiCol_Tab,                  ColToVec4(colors.c1));
 	
 	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	
@@ -827,11 +839,13 @@ void CanvasSystem::DebugTools() {
 	}
 	
 	ImGui::PopStyleVar(7);
-	ImGui::PopStyleColor(13);
+	ImGui::PopStyleColor(21);
 	ImGui::End();
 }
 
 void CanvasSystem::DebugBar() {
+	
+
 	using namespace ImGui;
 	
 	//for getting fps
@@ -841,8 +855,6 @@ void CanvasSystem::DebugBar() {
 	
 	//num of active columns
 	int activecols = 7;
-	
-	
 	
 	//font size for centering text
 	float fontsize = ImGui::GetFontSize();
@@ -1088,7 +1100,8 @@ void CanvasSystem::DebugBar() {
 
 //sort of sandbox for drawing ImGui stuff over the entire screen
 void CanvasSystem::DebugLayer() {
-	
+
+
 	ImGui::SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height));
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	
@@ -1200,7 +1213,7 @@ void CanvasSystem::DebugLayer() {
 		ImGui::PopStyleColor();
 		index++;
 	}
-	//ImGui::Text("test");
+	ImGui::Text("test");
 	
 	
 	if (admin->paused) {
@@ -1241,6 +1254,8 @@ void CanvasSystem::DebugLayer() {
 }
 
 void CanvasSystem::DrawUI(void) {
+	
+
 	if(admin->state == GameState::PLAY){
 		
 	}

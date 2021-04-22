@@ -158,17 +158,16 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 					for (int i = 0; i < b.indexArray.size(); i += 3) {
 						float t = 0;
 						
-						p0 = b.vertexArray[b.indexArray[i]].pos + e.transform.position;
-						p1 = b.vertexArray[b.indexArray[i + 1]].pos + e.transform.position;
-						p2 = b.vertexArray[b.indexArray[i + 2]].pos + e.transform.position;
-						/*
-mat4 transform = e.transform.TransformMatrix();
+						//p0 = b.vertexArray[b.indexArray[i]].pos + e.transform.position;
+						//p1 = b.vertexArray[b.indexArray[i + 1]].pos + e.transform.position;
+						//p2 = b.vertexArray[b.indexArray[i + 2]].pos + e.transform.position;
+						
+						mat4 transform = e.transform.TransformMatrix();
 						p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
 						p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
 						p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
-*/
 						
-						norm = (p1 - p0).cross(p2 - p0);
+						norm = (p2 - p0).cross(p1 - p0);
 						
 						Vector3 inter = Math::VectorPlaneIntersect(p0, norm, ray->p[0], ray->p[1], t);
 						

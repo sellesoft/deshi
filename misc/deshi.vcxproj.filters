@@ -190,6 +190,7 @@
     <ClInclude Include="..\src\game\Controller.h">
       <Filter>src\game</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\..\..\src\tracy\Tracy.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -347,6 +348,12 @@
     <None Include="..\cfg\render.cfg">
       <Filter>cfg</Filter>
     </None>
+    <None Include="..\cfg\aliases.cfg">
+      <Filter>cfg</Filter>
+    </None>
+    <None Include="..\cfg\binds.cfg">
+      <Filter>cfg</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\EntityAdmin.cpp">
@@ -433,9 +440,6 @@
     <ClCompile Include="..\src\core\assets.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\scene\Scene.cpp">
-      <Filter>src\scene</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\core\deshi_imgui_vulkan.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
@@ -448,6 +452,7 @@
     <ClCompile Include="..\src\game\systems\CanvasSystem.cpp">
       <Filter>src\game\systems\cpp</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\..\src\tracy\TracyClient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\cfg\keybinds.txt">

@@ -61,7 +61,7 @@ struct Console  {
 extern Console* g_console;
 #define DengConsole g_console
 
-#define LOG(...)     g_console->PushConsole(TOSTRING("[c:yellow]", __VA_ARGS__, "[c]"))
+#define LOG(...)     g_console->PushConsole(TOSTRING(__VA_ARGS__))
 #define ERROR(...)   g_console->PushConsole(TOSTRING("[c:error]", __VA_ARGS__, "[c]"))
 #define SUCCESS(...) g_console->PushConsole(TOSTRING("[c:green]", __VA_ARGS__, "[c]"))
 

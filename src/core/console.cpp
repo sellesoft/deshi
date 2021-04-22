@@ -765,8 +765,7 @@ void Console::AddRenderCommands() {
 							Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
 							float mass = 1.f;
 							bool staticc = true;
-							bool aabb = false;
-							bool sphere = false;
+							ColliderType ctype;
 							
 							//check for optional params after the first arg
 							for (auto s = args.begin() + 1; s != args.end(); ++s) {
@@ -783,8 +782,10 @@ void Console::AddRenderCommands() {
 									scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 								}
 								else if (std::regex_search(s->c_str(), m, StringRegex("collider"))) {
-									if (m[1] == "aabb") aabb = true;
-									else if (m[1] == "sphere") sphere = true;
+									if (m[1] == "aabb") ctype = ColliderType_AABB;
+									else if (m[1] == "sphere") ctype = ColliderType_Sphere;
+									else if (m[1] == "landscape") ctype = ColliderType_Landscape;
+									else if (m[1] == "box") ctype = ColliderType_Box;
 								}
 								else if (std::regex_search(s->c_str(), m, FloatRegex("mass"))) {
 									if (std::stof(m[1]) < 0) return "[c:red]Mass must be greater than 0[c]";
@@ -808,11 +809,11 @@ void Console::AddRenderCommands() {
 							
 							//collider
 							Collider* col = nullptr;
-							if(aabb){
-								col = new AABBCollider(mesh, 1);
-							}else if(sphere){
-								//TODO(sushi) i dont know how you wanna handle this -delle
-								col = new SphereCollider(1.f, 1);
+							switch (ctype) {
+							case ColliderType_AABB: col = new AABBCollider(mesh, 1); break;
+							case ColliderType_Sphere: col = new SphereCollider(1, 1); break;
+							case ColliderType_Landscape: col = new LandscapeCollider(mesh);
+							case ColliderType_Box: col = new BoxCollider(Vector3(1, 1, 1), 1);
 							}
 							
 							MeshComp* mc = new MeshComp(mesh, id);
