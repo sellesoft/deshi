@@ -14,6 +14,8 @@ if you feel they would handle the problem better. It should generally be you tho
 
 Major Ungrouped TODOs
 ---------------------
+make it so the play state starts when you go from EDITOR to PLAY or PLAY_DEBUG
+	like it is in Unreal, eg. everything resets to some start position when you stop playing
 add shaders: PBR (4textures)
 settings file(s) [keybinds, video, audio, etc]
 create a demo level

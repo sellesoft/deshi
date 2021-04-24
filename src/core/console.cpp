@@ -764,6 +764,7 @@ void Console::AddRenderCommands() {
 							std::cmatch m;
 							Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
 							float mass = 1.f;
+							float elasticity = 0;
 							bool staticc = true;
 							ColliderType ctype;
 							
@@ -794,6 +795,9 @@ void Console::AddRenderCommands() {
 								else if (std::regex_search(s->c_str(), m, BoolRegex("static"))) {
 									if (m[1] == "0" || m[1] == "false") staticc = false;
 								}
+								else if (std::regex_search(s->c_str(), m, FloatRegex("elasticity"))) {
+									elasticity = std::stof(m[1]);
+								}
 								else {
 									return "[c:red]Invalid parameter: " + *s + "[c]";
 								}
@@ -818,7 +822,7 @@ void Console::AddRenderCommands() {
 							
 							MeshComp* mc = new MeshComp(mesh, id);
 							Physics* p = new Physics(position, rotation, Vector3::ZERO, Vector3::ZERO, 
-													 Vector3::ZERO, Vector3::ZERO, .5f, mass, staticc);
+													 Vector3::ZERO, Vector3::ZERO, elasticity, mass, staticc);
 							AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 							admin->world->CreateEntity(admin, { mc, p, s, col }, 
 													   name, Transform(position, rotation, scale));

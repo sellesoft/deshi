@@ -59,7 +59,9 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	for(auto& f : t.physics->forces) {
 		netForce += f;
 	}
-	t.physics->acceleration = netForce / t.physics->mass * 50;
+	t.physics->acceleration += netForce / t.physics->mass * 50;
+
+	
 	
 	//update linear movement and clamp it to min/max velocity
 	if (!t.physics->isStatic) {
@@ -114,6 +116,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	
 	//reset accelerations
 	t.physics->forces.clear();
+	t.physics->acceleration = Vector3::ZERO;
 }
 
 /////////////////////
@@ -126,12 +129,15 @@ Matrix4 LocalToWorldInertiaTensor(Physics* physics, Matrix3 inertiaTensor) {
 }
 
 inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABBCollider* obj2Col) {
-	//calculate min and max values over each axis
-	vec3 max1 = obj1->position + obj1Col->halfDims;
-	vec3 min1 = obj1->position - obj1Col->halfDims;
-	vec3 max2 = obj2->position + obj2Col->halfDims;
-	vec3 min2 = obj2->position - obj2Col->halfDims;
+	vec3 min1 = obj1->position - (obj1Col->halfDims * obj1->entity->transform.scale);
+	vec3 max1 = obj1->position + (obj1Col->halfDims * obj1->entity->transform.scale);
+	vec3 min2 = obj2->position - (obj2Col->halfDims * obj2->entity->transform.scale);
+	vec3 max2 = obj2->position + (obj2Col->halfDims * obj2->entity->transform.scale);
 	
+	//ERROR(max1, " ", max2);
+
+	PRINTLN(TOSTRING(obj1->entity->name, "------------------------"));
+
 	if (//check if overlapping
 		(min1.x <= max2.x && max1.x >= min2.x) &&
 		(min1.y <= max2.y && max1.y >= min2.y) &&
@@ -148,34 +154,47 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 		if (max1.z < max2.z) zover = max1.z - min2.z;
 		else                 zover = max2.z - min1.z;
 		
-		//TODO( sushi,So) find a nicer way to determine how loud a collision sound is	 
-		//obj1->entity->GetComponent<AudioSource>()->RequestPlay(obj1->velocity.mag() + obj2->velocity.mag());
-		
-		bool xf = false; bool yf = false; bool zf = false;
-		
 		//static resolution
+		Vector3 norm;
 		if (xover < yover && xover < zover) {
 			if(!obj1->isStatic) obj1->position.x += xover / 2;
 			if(!obj2->isStatic) obj2->position.x -= xover / 2;
-			xf = true;
+			norm = Vector3::LEFT;
 		}	
 		else if (yover < xover && yover < zover) {
 			if(!obj1->isStatic) obj1->position.y += yover / 2;
 			if(!obj2->isStatic) obj2->position.y -= yover / 2;
-			yf = true;
+			norm = Vector3::DOWN;
 		}
 		else if (zover < yover && zover < xover) {
 			if(!obj1->isStatic) obj1->position.z += zover / 2;
 			if(!obj2->isStatic) obj2->position.z -= zover / 2;
-			zf = true;
+			norm = Vector3::BACK;
 		}
 		
 		//dynamic resolution
-		//TODO(sushi, Ph) finish implementing AABB dynamic collision
-		//get relative velocity
-		Vector3 relvel = obj2->velocity - obj1->velocity;
-		
-		
+		Vector2 rv = obj2->velocity - obj1->velocity;
+
+		//if (obj2->isStatic) rv = obj1->velocity;
+
+		float vAlongNorm = rv.dot(norm);
+
+		PRINTLN(TOSTRING("vAlongNorm: ", vAlongNorm));
+
+		if (vAlongNorm < 0) {
+			//TODO(sushi, Ph) do better elasticity later
+			float j = -(1 + (obj1->elasticity + obj2->elasticity) / 2) * vAlongNorm;
+			j /= 1 / obj1->mass + 1 / obj2->mass;
+
+			Vector2 impulse = j * norm;
+			PRINTLN(TOSTRING("vel:        ", obj1->velocity));
+			PRINTLN(TOSTRING("impulse:    ", impulse / obj1->mass));
+			PRINTLN(TOSTRING("elasticity: ", obj1->elasticity));
+
+			if (!obj1->isStatic) obj1->velocity -= impulse / obj1->mass;
+			if (!obj2->isStatic) obj2->velocity += impulse / obj2->mass;
+
+		}
 	}
 	
 }

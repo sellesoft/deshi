@@ -1,18 +1,3 @@
-/* //TODO(sushi) rewrite this list eventually
-------Tick Order---||--------Components-----||-------------------------------
-  olcPixelGameEngine      || Input							|| N/A
-  TimeSystem              || Time							 || N/A
-  ScreenSystem            || Screen						   || N/A
-  CommandSystem           || Input, Keybinds, Canvas		  || N/A
-  SimpleMovementSystem    || Camera						   || Input, Keybinds, MovementState, Time
-  PhysicsSystem           || Time, Transform, Physics		 || Camera, Screen
-  CameraSystem            || Camera						   || Screen
-  RenderCanvasSystem      || Canvas						   || Screen
-  WorldSystem             || World, Entity					|| N/A
-  TriggeredCommandSystem  || N/A							  || N/A
-  DebugSystem             || ALL							  || ALL
-*/
-
 #include "EntityAdmin.h"
 #include "core.h"
 
@@ -23,20 +8,22 @@
 #include "game/Keybinds.h"
 #include "game/Transform.h"
 #include "game/Controller.h"
-#include "game/components/Component.h"
-#include "game/components/Collider.h"
-#include "game/components/Camera.h"
-#include "game/components/AudioListener.h"
-#include "game/components/AudioSource.h"
-#include "game/components/MeshComp.h"
 #include "game/components/Orb.h"
 #include "game/components/Light.h"
+#include "game/components/Camera.h"
+#include "game/components/Player.h"
 #include "game/components/Physics.h"
-#include "game/systems/System.h"
+#include "game/components/MeshComp.h"
+#include "game/components/Collider.h"
+#include "game/components/Movement.h"
+#include "game/components/Component.h"
+#include "game/components/AudioSource.h"
+#include "game/components/AudioListener.h"
 #include "game/systems/PhysicsSystem.h"
 #include "game/systems/CanvasSystem.h"
-#include "game/systems/WorldSystem.h"
 #include "game/systems/SoundSystem.h"
+#include "game/systems/WorldSystem.h"
+#include "game/systems/System.h"
 
 #include <iostream>
 #include <fstream>
@@ -72,6 +59,16 @@ void EntityAdmin::Init() {
 	mainCamera = new Camera(this, 90.f, .01f, 1000.01f, true);
 	mainCamera->layer_index = freeCompLayers[mainCamera->layer].add(mainCamera);
 	
+	//make player
+	//probably will do this better later
+	//TODO(sushi, Cl) find a nice place to make the player and set the admin player pointer to it since CreateEntity doesnt make it immedietly
+	Collider* col = new AABBCollider(Vector3(1, 1, 1), 10);
+	Physics*  phy = new Physics(Vector3::ZERO, Vector3::ZERO, 1, 0);
+	phy->isStatic = false;
+	Movement* mov = new Movement(phy);	
+	Player*   pla = new Player(mov);
+	player = world->CreateEntityNow(this, { col, phy, mov, pla }, "player", Transform(Vector3::ZERO, Vector3::ZERO, Vector3::ZERO));
+
 	/*
 	//orb testing
 	Mesh* mesh = new Mesh(Mesh::CreateMeshFromOBJ("sphere.obj", "sphere.obj"));
@@ -82,7 +79,7 @@ void EntityAdmin::Init() {
 	mesh->batchArray[0].shader = Shader::WIREFRAME;
 	OrbManager* om = new OrbManager(mesh, this);
 	world->CreateEntity(admin, {om}, "orbtest");
-*/
+	*/
 }
 
 void EntityAdmin::Cleanup() {
