@@ -183,12 +183,29 @@ void CopyButton(const char* text) {
 	if(ImGui::Button("Copy")){ ImGui::LogToClipboard(); ImGui::LogText(text); ImGui::LogFinish(); }
 }
 
+bool InputVector2(const char* id, Vector2* vecPtr, bool inputUpdate = false) {
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	if(inputUpdate) {
+		return ImGui::InputFloat2(id, (float*)vecPtr); 
+	} else {
+		return ImGui::InputFloat2(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
+	}
+}
+
 bool InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate = false) {
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	if(inputUpdate) {
 		return ImGui::InputFloat3(id, (float*)vecPtr); 
 	} else {
 		return ImGui::InputFloat3(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue); 
+	}
+}
+bool InputVector4(const char* id, Vector4* vecPtr, bool inputUpdate = false) {
+	ImGui::SetNextItemWidth(-FLT_MIN);
+	if(inputUpdate) {
+		return ImGui::InputFloat4(id, (float*)vecPtr); 
+	} else {
+		return ImGui::InputFloat4(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue); 
 	}
 }
 
@@ -200,7 +217,7 @@ void AddPadding(float x){
 
 void CanvasSystem::MenuBar() {
 	
-
+	
 	using namespace ImGui;
 	
 	ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
@@ -274,7 +291,7 @@ void CanvasSystem::MenuBar() {
 
 inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 	
-
+	
 	using namespace ImGui;
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
 	if (BeginChild("entityListScroll", ImVec2(GetWindowWidth() * 0.95, 100), false)) {
@@ -421,23 +438,23 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 									admin->undoManager.AddUndoScale(&sel->transform, &oldVec, &sel->transform.scale);
 								}
 								Separator();
-
+								
 								if (Physics* p = sel->GetComponent<Physics>()) {
 									SetPadding;
 									Text("Velocity ");
 									SameLine(); if (InputVector3("velocity", &p->velocity));
 									Separator();
-
+									
 									SetPadding;
 									Text("Accel    ");
 									SameLine(); if (InputVector3("acceleration", &p->acceleration));
 									Separator();
-
+									
 									SetPadding;
 									Text("RotVel   ");
 									SameLine(); if (InputVector3("rvelocity", &p->rotVelocity));
 									Separator();
-
+									
 									SetPadding;
 									Text("RotAccel ");
 									SameLine(); if (InputVector3("racceleration", &p->rotAcceleration));
@@ -639,18 +656,19 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 	}
 }
 
-inline void CreateTab(EntityAdmin* admin, float fontsize){
-	
+enum TwodPresets : u32 {
+	Twod_NONE = 0, Twod_Line, Twod_Triangle, Twod_Square, Twod_NGon, Twod_Image, 
+};
 
-	
+inline void CreateTab(EntityAdmin* admin, float fontsize){
 	using namespace ImGui;
 	
 	//// creation variables ////
-	const char* presets[] = {"None", "AABB", "Box", "Sphere", "Player"};
+	const char* presets[] = {"None", "AABB", "Box", "Sphere", "2D", "Player"};
 	local_persist int current_preset = 0;
 	local_persist char entity_name[64] = {};
 	local_persist vec3 entity_pos{}, entity_rot{}, entity_scale = Vector3::ONE;
-	local_persist bool comp_audiolistener{}, comp_audiosource{}, comp_collider{}, comp_mesh{}, comp_light{}, comp_physics{};
+	local_persist bool comp_audiolistener{}, comp_audiosource{}, comp_collider{}, comp_mesh{}, comp_light{}, comp_physics{}, comp_2d{};
 	const char* colliders[] = {"None", "Box", "AABB", "Sphere"};
 	local_persist int  collider_type = ColliderType_NONE;
 	local_persist vec3 collider_halfdims = Vector3::ONE;
@@ -661,6 +679,12 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 	local_persist vec3 physics_velocity{}, physics_accel{}, physics_rotVel{}, physics_rotAccel{};
 	local_persist f32  physics_elasticity = .5f, physics_mass = 1.f;
 	local_persist bool physics_staticPosition{}, physics_staticRotation{};
+	const char* twods[] = {"None", "Line", "Triangle", "Square", "N-Gon", "Image"};
+	local_persist int  twod_type = 0, twod_vert_count = 0;
+	local_persist u32  twod_id = -1;
+	local_persist vec4 twod_color = vec4::ONE;
+	local_persist f32  twod_radius = 1.f;
+	local_persist std::vector<vec2> twod_verts;
 	u32 entity_id = admin->entities.size();
 	
 	//// create panel ////
@@ -692,8 +716,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 			}
 			MeshComp* mc = 0;
 			if(comp_mesh){
-				u32 new_mesh_id = DengRenderer->CreateMesh(mesh_id, 
-														   mat4::TransformationMatrix(entity_pos, entity_rot, entity_scale));
+				u32 new_mesh_id = DengRenderer->CreateMesh(mesh_id, mat4::TransformationMatrix(entity_pos, entity_rot, entity_scale));
 				mc = new MeshComp(new_mesh_id, mesh_instance_id);
 			}
 			Light* light = 0;
@@ -756,11 +779,22 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					cpystr(entity_name, TOSTRING("sphere", entity_id).c_str(), 63);
 				}break;
 				case(4):{
+					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = comp_light = false;
+					comp_2d = true;
+					twod_id = -1;
+					twod_type = 2;
+					twod_vert_count = 3;
+					twod_radius = 25.f;
+					twod_verts.resize(3);
+					twod_verts[0] = {-100.f, 0.f}; twod_verts[1] = {0.f, 100.f}; twod_verts[2] = {100.f, 0.f};
+					entity_pos = {700.f, 400.f, 0};
+					cpystr(entity_name, "twod", 63);
+				}break;
+				case(5):{
 					comp_light = false;
 					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = true;
 					collider_type = ColliderType_AABB; //TODO(delle,PhCl) ideally cylinder/capsule collider
 					collider_halfdims = vec3(1, 2, 1);
-					comp_mesh = true;
 					mesh_id = DengRenderer->GetBaseMeshID("bmonkey.obj");
 					physics_staticPosition = physics_staticRotation = false;
 					cpystr(entity_name, "player", 63);
@@ -792,6 +826,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 			Checkbox("Audio Listener", &comp_audiolistener);
 			SameLine(); Checkbox("Light", &comp_light);
 			Checkbox("Audio Source", &comp_audiosource);
+			SameLine(); Checkbox("Mesh2D", &comp_2d);
 			TreePop();
 		}
 		
@@ -806,6 +841,67 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					}
 				}
 				EndCombo();
+			}
+			TreePop();
+		}
+		if(comp_2d && TreeNodeEx("Mesh2D", tree_flags)){
+			ImU32 color = ColorConvertFloat4ToU32(ImVec4(twod_color.x, twod_color.y, twod_color.z, twod_color.w));
+			SetNextItemWidth(-1); if(Combo("##twod_combo", &twod_type, twods, IM_ARRAYSIZE(twods))){
+				twod_vert_count = twod_type + 1;
+				twod_verts.resize(twod_vert_count);
+				switch(twod_type){
+					case(Twod_Line):{
+						twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = {100.f, 100.f};
+					}break;
+					case(Twod_Triangle):{
+						twod_verts[0] = {-100.f, 0.f}; twod_verts[1] = {0.f, 100.f}; twod_verts[2] = {100.f, 0.f};
+					}break;
+					case(Twod_Square):{
+						twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = { 100.f, -100.f};
+						twod_verts[2] = { 100.f,  100.f}; twod_verts[3] = {-100.f,  100.f};
+					}break;
+					case(Twod_NGon):{
+						
+					}break;
+					case(Twod_Image):{
+						
+					}break;
+				}
+			}
+			
+			Text("Color "); SameLine(); SetNextItemWidth(-1); ColorEdit4("##twod_color", (float*)&twod_color); Separator();
+			ImDrawList* draw_list = ImGui::GetForegroundDrawList();
+			switch(twod_type){
+				case(Twod_Line):{
+					draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
+					draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), color, 3.f);
+				}break;
+				case(Twod_Triangle):{
+					draw_list->AddTriangle(ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
+				}break;
+				case(Twod_Square):{
+					draw_list->AddTriangle(ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
+					draw_list->AddTriangle(ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), ImVec2(entity_pos.x+twod_verts[3].x, entity_pos.y+twod_verts[3].y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
+				}break;
+				case(Twod_NGon):{
+					draw_list->AddNgon(ImVec2(entity_pos.x, entity_pos.y), twod_radius, color, twod_vert_count, 3.f);
+					Text("Vertices "); SameLine(); SliderInt("##vert_cnt", &twod_vert_count, 5, 12); Separator();
+					Text("Radius   "); SameLine(); SliderFloat("##vert_rad", &twod_radius, .01f, 100.f); Separator();
+				}break;
+				case(Twod_Image):{
+					Text("Not implemented yet");
+				}break;
+			}
+			
+			if(twod_vert_count > 1 && twod_vert_count < 5){
+				std::string point("Point 0     ");
+				SetNextItemWidth(-1); if(ListBoxHeader("##twod_verts", (int)twod_vert_count, 5)){
+					for_n(i,twod_vert_count){
+						point[6] = 49 + i;
+						Text(point.c_str()); SameLine(); InputVector2(point.c_str(), &twod_verts[0] + i);  Separator();
+					}
+					ListBoxFooter();
+				}
 			}
 			TreePop();
 		}
@@ -851,7 +947,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 
 void CanvasSystem::DebugTools() {
 	
-
+	
 	using namespace ImGui;
 	
 	float fontsize = ImGui::GetFontSize();
@@ -917,7 +1013,7 @@ void CanvasSystem::DebugTools() {
 
 void CanvasSystem::DebugBar() {
 	
-
+	
 	using namespace ImGui;
 	
 	//for getting fps
@@ -1172,8 +1268,8 @@ void CanvasSystem::DebugBar() {
 
 //sort of sandbox for drawing ImGui stuff over the entire screen
 void CanvasSystem::DebugLayer() {
-
-
+	
+	
 	ImGui::SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height));
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	
@@ -1327,7 +1423,7 @@ void CanvasSystem::DebugLayer() {
 
 void CanvasSystem::DrawUI(void) {
 	
-
+	
 	if(admin->state == GameState::PLAY){
 		
 	}

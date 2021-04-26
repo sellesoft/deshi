@@ -27,7 +27,7 @@ Matrix4(float _00, float _01, float _02, float _03,
 
 inline Matrix4::
 Matrix4(const Matrix4& m) {
-	memcpy(&data, &m.data, 16*sizeof(float));
+	memcpy(this->data, &m.data, 16*sizeof(float));
 }
 
 inline Matrix4::
@@ -64,7 +64,7 @@ operator () (u32 row, u32 col) const {
 //creates the data from rhs
 inline void Matrix4::
 operator =  (const Matrix4& rhs) {
-	memcpy(&data, &rhs.data, 16*sizeof(float));
+	memcpy(this->data, &rhs.data, 16*sizeof(float));
 }
 
 //scalar multiplication

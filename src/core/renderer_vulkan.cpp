@@ -279,57 +279,62 @@ Cleanup() {
 	
 	vkDeviceWaitIdle(device);
 }
-/*
+
+//////////////////
+//// 2D stuff ////
+//////////////////
+
+
+
+/////////////////////
+//// debug stuff ////
+/////////////////////
+
 u32 Renderer::
-AddTriangle(Triangle* triangle){
-	PRINTLN("Not implemented yet");
-	return 0xFFFFFFFF;
+CreateDebugLine(Vector3 start, Vector3 end, Color color){
+	Vector3 c = Vector3(color.r, color.g, color.b) / 255.f;
+	std::vector<Vertex> vertices = {
+		{start, Vector2::ZERO, c, Vector3::ZERO},
+		{end  , Vector2::ZERO, c, Vector3::ZERO},
+	};
+	std::vector<u32> indices = { 0,1,0 };
+	Batch batch("line_batch", vertices, indices, {});
+	batch.shader = Shader::WIREFRAME;
+	Mesh mesh("debug_line", { batch });
+	mesh.vertexCount = 2;
+	mesh.indexCount = 3;
+	mesh.batchCount = 1;
+	u32 id = LoadBaseMesh(&mesh);
+	materials[meshes[id].primitives[0].materialIndex].pipeline = pipelines.WIREFRAME_DEPTH;
+	materials[meshes[id].primitives[0].materialIndex].shader = 5;
+	return id;
 }
 
-void Renderer::
-RemoveTriangle(u32 triangleID){
-	PRINTLN("Not implemented yet");
+u32 Renderer::
+CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color){
+	Vector3 c = Vector3(color.r, color.g, color.b) / 255.f;
+	std::vector<Vertex> vertices = {
+		{v1, Vector2::ZERO, c, Vector3::ZERO},
+		{v2, Vector2::ZERO, c, Vector3::ZERO},
+		{v3, Vector2::ZERO, c, Vector3::ZERO},
+	};
+	std::vector<u32> indices = { 0,1,2 };
+	Batch batch("tri_batch", vertices, indices, {});
+	batch.shader = Shader::TESTING1;
+	Mesh mesh("debug_tri", { batch });
+	mesh.vertexCount = 3;
+	mesh.indexCount = 3;
+	mesh.batchCount = 1;
+	return LoadBaseMesh(&mesh);
 }
 
-void Renderer::
-UpdateTriangleColor(u32 triangleID, Color color){
-	PRINTLN("Not implemented yet");
-}
+///////////////////////
+//// trimesh stuff ////
+///////////////////////
 
-void Renderer::
-UpdateTrianglePosition(u32 triangleID, Vector3 position){
-	PRINTLN("Not implemented yet");
-}
-
-void Renderer::
-TranslateTriangle(u32 triangleID, Vector3 translation){
-	PRINTLN("Not implemented yet");
-}
-
-std::vector<u32> Renderer::
-AddTriangles(std::vector<Triangle*> triangles){
-	PRINTLN("Not implemented yet");
-	return std::vector<u32>();
-}
-
-void Renderer::
-RemoveTriangles(std::vector<u32> triangleIDs){
-	PRINTLN("Not implemented yet");
-}
-
-void Renderer::
-UpdateTrianglesColor(std::vector<u32> triangleIDs, Color color){
-	PRINTLN("Not implemented yet");
-}
-
-void Renderer::
-TranslateTriangles(std::vector<u32> triangleIDs, Vector3 translation){
-	PRINTLN("Not implemented");
-}
-*/
-u32 Renderer::LoadBaseMesh(Mesh* m){
+u32 Renderer::
+LoadBaseMesh(Mesh* m){
 	PRINTVK(3, "    Loading base mesh: ", m->name);
-	
 	
 	MeshVk mesh;  mesh.base = true; 
 	mesh.ptr = m; mesh.visible = false;
@@ -1214,7 +1219,7 @@ CreateLogicalDevice() {
 	if(deviceFeatures.fillModeNonSolid){
 		enabledFeatures.fillModeNonSolid = VK_TRUE; //wireframe
 		if(deviceFeatures.wideLines){
-			//enabledFeatures.wideLines = VK_TRUE; //wide lines (anime/toon style)
+			enabledFeatures.wideLines = VK_TRUE; //wide lines (anime/toon style)
 		}
 	}
 	if (deviceFeatures.fragmentStoresAndAtomics) {
@@ -1743,7 +1748,7 @@ UpdateUniformBuffer(){
 		shaderData.values.height = (glm::f32)extent.height;
 		shaderData.values.lightPos = glm::vec4(1.0f, -3.f, -1.0f, 1.0f);
 		shaderData.values.mousepos = glm::vec2(input->mousePos.x, input->mousePos.y);
-
+		
 		//get point projected out from mouse 
 		//this is v temporary i just want it to work and this is the quickest way i could think
 		//to do it without grabbing stuff from admin
@@ -2398,9 +2403,25 @@ CreatePipelines(){
 	shaderStages[1] = loadShader("testing0.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.TESTING0), "failed to create testing0 graphics pipeline");
 	
-	shaderStages[0] = loadShader("testing1.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStages[1] = loadShader("testing1.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-	ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.TESTING1), "failed to create testing1 graphics pipeline");
+	{//used for debug tris
+		colorBlendAttachmentState.blendEnable = VK_TRUE;
+		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		rasterizationState.cullMode = VK_CULL_MODE_NONE;
+		
+		shaderStages[0] = loadShader("testing1.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = loadShader("testing1.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.TESTING1), "failed to create testing1 graphics pipeline");
+		
+		colorBlendAttachmentState.blendEnable = VK_FALSE;
+		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+		colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; 
+		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+	}
 	
 	//wireframe
 	if(deviceFeatures.fillModeNonSolid){
@@ -2412,16 +2433,31 @@ CreatePipelines(){
 		shaderStages[1] = loadShader("wireframe.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.WIREFRAME), "failed to create wireframe graphics pipeline");
 		
-		{ //selected entity gets a specific colored wireframe
+		{//wireframe with depth test
+			depthStencilState.depthTestEnable = VK_TRUE;
+			
+			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.WIREFRAME_DEPTH), "failed to create wireframe-depth graphics pipeline");
+			
+			depthStencilState.depthTestEnable = VK_FALSE;
+		}
+		
+		{ //selected entity and collider gets a specific colored wireframe
 			colorBlendAttachmentState.blendEnable = VK_TRUE;
 			colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
 			colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
 			colorBlendState.blendConstants[0] = (f32)settings.selectedR / 255.f;
 			colorBlendState.blendConstants[1] = (f32)settings.selectedG / 255.f;
 			colorBlendState.blendConstants[2] = (f32)settings.selectedB / 255.f;
-			colorBlendState.blendConstants[3] = 1.0f;
+			colorBlendState.blendConstants[3] = (f32)settings.selectedA / 255.f;;
 			
 			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.SELECTED), "failed to create selected entity graphics pipeline");
+			
+			colorBlendState.blendConstants[0] = (f32)settings.colliderR / 255.f;
+			colorBlendState.blendConstants[1] = (f32)settings.colliderG / 255.f;
+			colorBlendState.blendConstants[2] = (f32)settings.colliderB / 255.f;
+			colorBlendState.blendConstants[3] = (f32)settings.colliderA / 255.f;
+			
+			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.COLLIDER), "failed to create collider graphics pipeline");
 			
 			colorBlendAttachmentState.blendEnable = VK_FALSE;
 			colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
