@@ -104,7 +104,7 @@ struct Vertex {
 namespace std {
 	template<> struct hash<Vertex> {
 		size_t operator()(Vertex const& vertex) const {
-			return (((hash<Vector3>()(vertex.pos) ^ (hash<Vector2>()(vertex.uv) << 1)) >> 1) ^ (hash<Vector3>()(vertex.color) << 1) >> 1) ^ (hash<Vector3>()(vertex.normal) << 1);
+			return ((hash<Vector3>()(vertex.pos) ^ (hash<Vector2>()(vertex.uv) << 1)) >> 1) ^ (hash<Vector3>()(vertex.color) << 1);
 		}
 	};
 };
@@ -127,6 +127,13 @@ struct Batch {
 	
 	void SetName(const char* name);
 };
+
+struct Triangle {
+	Vector3 p[3];
+	Triangle* nbr[3];
+
+};
+
 
 struct Mesh {
 	char name[64];

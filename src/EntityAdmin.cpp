@@ -41,9 +41,9 @@ void EntityAdmin::Init() {
 	
 	//systems initialization
 	physics = new PhysicsSystem();
-	canvas = new CanvasSystem();
-	world  = new WorldSystem();
-	sound  = new SoundSystem();
+	canvas  = new CanvasSystem();
+	world   = new WorldSystem();
+	sound   = new SoundSystem();
 	physics->Init(this);
 	canvas->Init(this);
 	world->Init(this);
@@ -58,16 +58,6 @@ void EntityAdmin::Init() {
 	//singleton initialization
 	mainCamera = new Camera(this, 90.f, .01f, 1000.01f, true);
 	mainCamera->layer_index = freeCompLayers[mainCamera->layer].add(mainCamera);
-	
-	//make player
-	//probably will do this better later
-	//TODO(sushi, Cl) find a nice place to make the player and set the admin player pointer to it since CreateEntity doesnt make it immedietly
-	Collider* col = new AABBCollider(Vector3(1, 1, 1), 10);
-	Physics*  phy = new Physics(Vector3::ZERO, Vector3::ZERO, 1, 0);
-	phy->isStatic = false;
-	Movement* mov = new Movement(phy);	
-	Player*   pla = new Player(mov);
-	player = world->CreateEntityNow(this, { col, phy, mov, pla }, "player", Transform(Vector3::ZERO, Vector3::ZERO, Vector3::ZERO));
 
 	/*
 	//orb testing

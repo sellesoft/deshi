@@ -2,6 +2,7 @@
 #include "Physics.h"
 #include "../../EntityAdmin.h"
 
+#include "../systems/CanvasSystem.h"
 
 Movement::Movement(Physics* phys) {
 	this->phys = phys;
@@ -10,7 +11,8 @@ Movement::Movement(Physics* phys) {
 }
 
 void Movement::Update() {
-	phys->acceleration += inputs * airAccel;
+	phys->acceleration += inputs * 3;
+
 }
 
 std::vector<char> Movement::Save() {

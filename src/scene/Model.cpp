@@ -127,7 +127,7 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename){
 		totalTextureCount += batch.textureCount;
 		
 		std::unordered_map<Vertex, u32> uniqueVertices{};
-		
+
 		//fill batch vertex and index arrays
 		size_t faceCount = shape.mesh.num_face_vertices.size();
 		batch.vertexArray.reserve(faceCount/3);
@@ -152,9 +152,12 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename){
 				vertex.color.z = attrib.colors[3 * idx.vertex_index + 2];
 			}
 			
-			if(uniqueVertices.count(vertex) == 0){
+			if (uniqueVertices.count(vertex) == 0) {
 				uniqueVertices[vertex] = u32(batch.vertexArray.size());
 				batch.vertexArray.push_back(vertex);
+			}
+			else {
+				batch.vertexArray[uniqueVertices[vertex]].normal = (vertex.normal + batch.vertexArray[uniqueVertices[vertex]].normal).normalized();
 			}
 			batch.indexArray.push_back(uniqueVertices[vertex]);
 		}

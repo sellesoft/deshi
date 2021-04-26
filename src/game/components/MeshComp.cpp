@@ -47,6 +47,11 @@ void MeshComp::ToggleVisibility() {
 	DengRenderer->UpdateMeshVisibility(meshID, mesh_visible);
 }
 
+void MeshComp::Visible(bool visible) {
+	mesh_visible = visible;
+	DengRenderer->UpdateMeshVisibility(meshID, mesh_visible);
+}
+
 void MeshComp::ReceiveEvent(Event event) {
 	switch (event) {
 		case TEST_EVENT:

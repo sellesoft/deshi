@@ -11,14 +11,7 @@ Player::Player(Movement* movement) {
 }
 
 void Player::Update() {
-	switch (admin->state) {
-	case GameState::EDITOR:
-		movement->phys->isStatic = true;
-		break;
-	case GameState::PLAY:
-		movement->phys->isStatic = false;
-		break;
-	}
+
 }
 
 std::vector<char> Player::Save() {
