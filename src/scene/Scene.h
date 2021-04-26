@@ -46,8 +46,8 @@ inline std::pair<Vector3, Vector3> Scene::SceneBoundingBox() {
 	Vector3 v;
 	for (MeshVk& mesh : DengRenderer->meshes) {
 		for (PrimitiveVk& p : mesh.primitives) {
-			for(int i = p.firstIndex; i < p.indexCount; ++i){
-				v = vec3((float*)glm::value_ptr(DengRenderer->vertexBuffer[i].pos)) +
+			for(int i = p.firstIndex; i < p.indexCount; i++){
+				v = vec3((float*)glm::value_ptr(DengRenderer->vertexBuffer[DengRenderer->indexBuffer[i]].pos)) +
 					mat4((float*)glm::value_ptr(mesh.modelMatrix)).Translation();
 				if      (v.x < min.x) { min.x = v.x; }
 				else if (v.x > max.x) { max.x = v.x; }

@@ -40,11 +40,12 @@ Matrix4 Camera::MakePerspectiveProjection(){
 }
 
 Matrix4 Camera::MakeOrthographicProjection() {
-	std::pair<Vector3, Vector3> bbox = admin->scene.SceneBoundingBox();
+	//std::pair<Vector3, Vector3> bbox = admin->scene.SceneBoundingBox();
 	
 	//convert bounding box to camera space
-	Vector3 maxcam = Math::WorldToCamera3(bbox.first,  admin->mainCamera->viewMatrix);
-	Vector3 mincam = Math::WorldToCamera3(bbox.second, admin->mainCamera->viewMatrix); 
+	static float zoom = 10;
+	Vector3 maxcam = Math::WorldToCamera3(Vector3( zoom, zoom, zoom),  admin->mainCamera->viewMatrix);
+	Vector3 mincam = Math::WorldToCamera3(Vector3(-zoom,-zoom,-zoom), admin->mainCamera->viewMatrix); 
 	
 	//make screen box from camera space bounding box
 	float maxx = std::max(fabs(mincam.x), fabs(maxcam.x));
@@ -55,7 +56,6 @@ Matrix4 Camera::MakeOrthographicProjection() {
 	float r = max * aspectRatio, t = max;
 	float l = -r, b = -t;
 	
-	static float zoom = 10;
 	static float oloffsetx = 0;
 	static float oloffsety = 0;
 	static float offsetx = 0;
@@ -63,10 +63,10 @@ Matrix4 Camera::MakeOrthographicProjection() {
 	static Vector2 initmouse;
 	static bool initoffset = false;
 	
-	
+	PRINTLN(zoom);
 	//orthographic view controls
-	if (DengInput->KeyPressed(DengKeys.orthoZoomIn) && zoom != 1) zoom -= 1;
-	if (DengInput->KeyPressed(DengKeys.orthoZoomOut)) zoom += 1;
+	if (DengInput->KeyPressed(DengKeys.orthoZoomIn) && zoom > 0.0000000009) zoom -= zoom / 5;
+	if (DengInput->KeyPressed(DengKeys.orthoZoomOut)) zoom += zoom / 5;
 	
 	if (DengInput->KeyPressed(DengKeys.orthoOffset)) initoffset = true;
 	
@@ -75,8 +75,8 @@ Matrix4 Camera::MakeOrthographicProjection() {
 			initmouse = DengInput->mousePos;
 			initoffset = false;
 		}
-		offsetx = 0.02 * (DengInput->mousePos.x - initmouse.x);
-		offsety = 0.02 * (DengInput->mousePos.y - initmouse.y);
+		offsetx = 0.0002 * zoom * (DengInput->mousePos.x - initmouse.x);
+		offsety = 0.0002 * zoom * (DengInput->mousePos.y - initmouse.y);
 	}
 	
 	if (DengInput->KeyReleased(DengKeys.orthoOffset)) {

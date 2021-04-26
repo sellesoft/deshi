@@ -134,6 +134,8 @@ struct Triangle {
 	Vector3 p[3];
 	Triangle* nbr[3]{};
 
+	std::vector<Triangle*> nbrs;
+
 	Vector3 midpoint() {
 		return Vector3(
 			(p[0].x + p[1].x + p[2].x) / 3,

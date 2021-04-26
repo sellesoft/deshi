@@ -61,6 +61,13 @@ inline Vector3 VertToVec3(const Vertex& v){
 	return Vector3(v.pos.x, v.pos.y, v.pos.z);
 }
 
+template<class T>
+bool isthisin(T test, std::vector<T> vec) {
+	for (T t : vec) if (test == t) return true;
+	return false;
+}
+
+
 std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 	std::vector<Triangle*> triangles;
 
@@ -80,54 +87,33 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 		return false;
 	};
 
+	std::sort(triangles.begin(), triangles.end(), [](Triangle* t1, Triangle* t2) {
+		return t1->midpoint().z > t2->midpoint().z;
+		});
+
 	//find and mark neighbors
+	TIMER_START(tnf);
 	Triangle* ti;
 	Triangle* to;
 	for (int i = 0; i < triangles.size(); i++) {
 		ti = triangles[i];
-
-		PRINTLN("test iterate~~~~ " << i);
-
 		if (!(ti->nbr[0] && ti->nbr[1] && ti->nbr[2])) {
 			std::vector<Vector3> tip{ ti->p[0], ti->p[1], ti->p[2] };
+			for (int o = i + 1; o < triangles.size(); o++) {
+				to = triangles[o];
+				if (!isthisin(to, ti->nbrs)) {
+					if (eqtoany(tip, to->p[0]) && eqtoany(tip, to->p[1]) ||
+						eqtoany(tip, to->p[1]) && eqtoany(tip, to->p[2]) ||
+						eqtoany(tip, to->p[2]) && eqtoany(tip, to->p[0])) {
 
-			for (int o = 0; o < triangles.size(); o++) {
-				if (ti->nbr[0] && ti->nbr[1] && ti->nbr[2]) break;
-				if (o != i) {
-					to = triangles[o];
-					if (to != ti->nbr[0] && to != ti->nbr[1] && to != ti->nbr[2]) {
-						if (eqtoany(tip, to->p[0]) && eqtoany(tip, to->p[1]) ||
-							eqtoany(tip, to->p[1]) && eqtoany(tip, to->p[2]) ||
-							eqtoany(tip, to->p[2]) && eqtoany(tip, to->p[0])) {
-
-							auto setnbr = [&](int index) {
-								ti->nbr[index] = to;
-								if (!to->nbr[0]) to->nbr[0] = ti;
-								else if (!to->nbr[1]) to->nbr[1] = ti;
-								else if (!to->nbr[2]) to->nbr[2] = ti;
-								else ASSERT(false, "Triangle found too many neighbors.");
-							};
-
-							if      (!ti->nbr[0]) setnbr(0);
-							else if (!ti->nbr[1]) setnbr(1);
-							else if (!ti->nbr[2]) setnbr(2);
-
-							int breakhere = 0;
-						}
+						ti->nbrs.push_back(to);
+						to->nbrs.push_back(ti);
 					}
 				}
 			}
 		}
 	}
-
-	//temp debug assert
-	if (triangles.size() > 4) {
-		for (Triangle* t : triangles) {
-			ASSERT(t->nbr[0] && t->nbr[1] && t->nbr[2], "triangle without 3 neighbors found");
-		}
-	}
-
-	//m->triangles = triangles;
+	PRINTLN(TIMER_END(tnf));
 
 	return triangles;
 

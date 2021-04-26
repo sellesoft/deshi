@@ -32,7 +32,7 @@ Matrix4(const Matrix4& m) {
 
 inline Matrix4::
 Matrix4(float* data){
-	memcpy(&data, data, 16*sizeof(float));
+	memcpy(this->data, data, 16*sizeof(float));
 }
 
 ///////////////////

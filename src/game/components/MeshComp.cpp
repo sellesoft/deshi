@@ -92,11 +92,20 @@ void MeshComp::Update() {
 	Color c2 = Color(50, 30, 15) * 3;
 
 	int i = 0;
+	std::vector<Triangle> triangles;
+	for (Triangle* t : mesh->triangles) {
+		triangles.push_back(*t);
+	}
+
+	for (Triangle t : triangles) {
+			
+	}
+
 	for (auto t : mesh->triangles) {
-		ImGui::DebugDrawLine3(t->midpoint(), t->nbr[0]->midpoint(), g_admin->mainCamera, DengWindow->dimensions, (i % 2 == 0) ? c1 : c2);
-		ImGui::DebugDrawLine3(t->midpoint(), t->nbr[1]->midpoint(), g_admin->mainCamera, DengWindow->dimensions, (i % 2 == 0) ? c1 : c2);
-		ImGui::DebugDrawLine3(t->midpoint(), t->nbr[2]->midpoint(), g_admin->mainCamera, DengWindow->dimensions, (i % 2 == 0) ? c1 : c2);
-		i++;
+		for (auto n : t->nbrs) {
+			ImGui::DebugDrawLine3(t->midpoint(), n->midpoint(), g_admin->mainCamera, DengWindow->dimensions, (i % 2 == 0) ? c1 : c2);
+			i++;
+		}
 	}
 
 
