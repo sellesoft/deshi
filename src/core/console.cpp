@@ -28,15 +28,11 @@
 
 //regex for checking paramaters
 std::regex RegColorFormat("(?:\\[c:([^\\]]*)\\]([^\\]]*)\\[c\\]|([^\\[]+))", std::regex::optimize);
-std::regex RegPosParam("-pos=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
-std::regex RegRotParam("-rot=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
-std::regex RegScaleParam("-scale=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
-std::regex RegSizeParam("-size=\\([0-9|.|-]+,[0-9|.|-]+,[0-9|.|-]+\\)", std::regex::optimize);
-std::regex VecNumMatch("[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?[,\\(]?([0-9|.|-]+)[,\\)]?", std::regex::optimize);
 std::regex StringRegex(const char* param){ return std::regex(std::string("-")+ param +"=([A-z]+)", std::regex::optimize|std::regex::icase); }
 std::regex IntRegex(const char* param)   { return std::regex(std::string("-")+ param +"=([-]?[0-9]+)", std::regex::optimize); }
 std::regex FloatRegex(const char* param) { return std::regex(std::string("-")+ param +"=([-]?[0-9|.]+)", std::regex::optimize); }
 std::regex BoolRegex(const char* param)  { return std::regex(std::string("-")+ param +"=(true|1|false|0)", std::regex::optimize|std::regex::icase); }
+std::regex Vec3Regex(const char* param)  { return std::regex(std::string("-")+ param +"=\\(([-]?[0-9|.]+),([-]?[0-9|.]+),([-]?[0-9|.]+)\\)", std::regex::optimize); }
 
 using namespace ImGui;
 
@@ -475,6 +471,11 @@ try{ func }catch(...){ return desc; }\
 #define COMMANDFUNC(name) std::string command_##name##_back(EntityAdmin* admin, std::vector<std::string> args)
 #define ADDCOMMAND(name, desc) commands[#name] = new Command(command_##name##_back, #name, desc)
 
+#define CMDADD(name, desc) commands[#name] = new Command(command_##name##_back, #name, desc)
+#define CMDERROR args.at(-1) = ""
+#define CMDSTART(name) std::string command_##name##_back(EntityAdmin* admin, std::vector<std::string> args){ try{std::cmatch m;
+#define CMDSTARTA(name,assert) CMDSTART(name) if(!(assert)){CMDERROR;}
+#define CMDEND(error) CMDERROR; }catch(...){ return error; }}
 
 ////////////////////////////////////////
 //// various uncategorized commands ////
@@ -502,6 +503,192 @@ COMMANDFUNC(redo){
 	admin->undoManager.Redo(); return "";
 }
 
+CMDSTARTA(draw_line, args.size() > 1){
+	Vector3 pos1{}, pos2{}, color = {255,255,255};
+	for (auto s = args.begin(); s != args.end(); ++s) {
+		if(std::regex_search(s->c_str(), m, Vec3Regex("start"))){
+			pos1  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("end"))){
+			pos2  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("color"))){
+			color = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else{
+			return "[c:red]Invalid parameter: " + *s + "[c]";
+		}
+	}
+	Color temp((color.x > 255) ? 255 : (u8)color.x, 
+			   (color.y > 255) ? 255 : (u8)color.y,
+			   (color.z > 255) ? 255 : (u8)color.z);
+	
+	u32 id = DengRenderer->CreateDebugLine(pos1, pos2, temp);
+	DengRenderer->UpdateMeshVisibility(id, true);
+	return TOSTRING("Created debug line with meshID: ", id);
+}CMDEND("draw_line <-start=(x,y,z)> <-end=(x,y,z)> -color=(r,g,b){0..255}");
+
+CMDSTARTA(draw_triangle, args.size() > 2){
+	Vector3 pos1{}, pos2{}, pos3{}, color = {255,255,255};
+	for (auto s = args.begin(); s != args.end(); ++s) {
+		if(std::regex_search(s->c_str(), m, Vec3Regex("v1"))){
+			pos1  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("v2"))){
+			pos2  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("v3"))){
+			pos3  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("color"))){
+			color = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else{
+			return "[c:red]Invalid parameter: " + *s + "[c]";
+		}
+	}
+	Color temp((color.x > 255) ? 255 : (u8)color.x, 
+			   (color.y > 255) ? 255 : (u8)color.y,
+			   (color.z > 255) ? 255 : (u8)color.z);
+	
+	u32 id = DengRenderer->CreateDebugTriangle(pos1, pos2, pos3, temp);
+	DengRenderer->UpdateMeshVisibility(id, true);
+	return TOSTRING("Created debug triangle with meshID: ", id);
+}CMDEND("draw_triangle <-v1=(x,y,z)> <-v2=(x,y,z)> <-v3=(x,y,z)> -color=(r,g,b){0..255}");
+
+CMDSTARTA(load_obj, args.size() > 0){
+	Vector3 pos{}, rot{}, scale = Vector3::ONE;
+	f32 mass = 1.f; b32 staticPosition = 1; ColliderType ctype = ColliderType_NONE;
+	//check for optional params after the first arg
+	for (auto s = args.begin() + 1; s != args.end(); ++s) {
+		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
+			pos = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
+			rot = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
+			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, StringRegex("collider"))) {
+			if(m[1] == "aabb") ctype = ColliderType_AABB;
+			else if(m[1] == "sphere")    ctype = ColliderType_Sphere;
+			else if(m[1] == "landscape") ctype = ColliderType_Landscape;
+			else if(m[1] == "box")       ctype = ColliderType_Box;
+		}else if(std::regex_search(s->c_str(), m, FloatRegex("mass"))) {
+			if(std::stof(m[1]) < 0) return "[c:red]Mass must be greater than 0[c]";
+			mass = std::stof(m[1]);
+		}else if (std::regex_search(s->c_str(), m, BoolRegex("static"))) {
+			if (m[1] == "0" || m[1] == "false") staticPosition = false;
+		}else {
+			return "[c:red]Invalid parameter: " + *s + "[c]";
+		}
+	}
+	
+	//cut off the .obj extension for entity name
+	char name[64];
+	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), 63);
+	
+	//create the mesh
+	u32 id = DengRenderer->CreateMesh(&admin->scene, args[0].c_str());
+	Mesh* mesh = DengRenderer->GetMeshPtr(id);
+	
+	//collider
+	Collider* col = nullptr;
+	switch (ctype) {
+		case ColliderType_AABB: col = new AABBCollider(mesh, 1); break;
+		case ColliderType_Sphere: col = new SphereCollider(1, 1); break;
+		case ColliderType_Landscape: col = new LandscapeCollider(mesh);
+		case ColliderType_Box: col = new BoxCollider(Vector3(1, 1, 1), 1);
+	}
+	
+	MeshComp* mc = new MeshComp(mesh, id);
+	Physics* p = new Physics(pos, rot, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, .5f, mass, staticPosition);
+	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
+	admin->world->CreateEntity(admin, { mc, p, s, col }, name, Transform(pos, rot, scale));
+	
+	return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
+}CMDEND("load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z) -collider=String{aabb|sphere} -mass=Float -static=Bool");
+
+CMDSTART(spawn_box_uv){
+	Vector3 pos{}, rot{}, scale = vec3::ONE;
+	for (auto s = args.begin(); s != args.end(); ++s) {
+		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
+			pos = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
+			rot = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
+			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else{
+			return "[c:red]Invalid parameter: " + *s + "[c]";
+		}
+	}
+	
+	u32 id = DengRenderer->CreateMesh(2, Matrix4::TransformationMatrix(pos, rot, scale));
+	MeshComp* mc = new MeshComp(DengRenderer->GetMeshPtr(id), id);
+	admin->world->CreateEntity(admin, { mc }, "uv_texture_box", Transform(pos, rot, scale));
+	
+	return TOSTRING("Created textured box with id: ", id);
+}CMDEND("spawn_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
+
+CMDSTART(mesh_create){
+	Vector3 pos{}, rot{}, scale = vec3::ONE;
+	for (auto s = args.begin(); s != args.end(); ++s) {
+		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
+			pos = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
+			rot = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
+			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else{
+			return "[c:red]Invalid parameter: " + *s + "[c]";
+		}
+	}
+	
+	u32 meshID = std::atoi(args[0].c_str());
+	u32 id = DengRenderer->CreateMesh(meshID, Matrix4::TransformationMatrix(pos, rot, scale));
+	Mesh* ptr = DengRenderer->GetMeshPtr(id); if(!ptr) CMDERROR;
+	
+	MeshComp* mc = new MeshComp(ptr, id);
+	Physics* p = new Physics(pos, rot);
+	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
+	admin->world->CreateEntity(admin, { mc, p, s });
+	
+	return TOSTRING("Created mesh with id: ", id, " based on mesh: ", meshID);
+}CMDEND("mesh_create <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
+
+//mesh_update_matrix, a bit more difficult b/c it should only update the passed arguments
+
+CMDSTART(mesh_transform_matrix){
+	Vector3 pos{}, rot{}, scale = vec3::ONE;
+	for (auto s = args.begin(); s != args.end(); ++s) {
+		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
+			pos = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
+			rot = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
+			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else{
+			return "[c:red]Invalid parameter: " + *s + "[c]";
+		}
+	}
+	
+	DengRenderer->TransformMeshMatrix(std::stoi(args[0]), Matrix4::TransformationMatrix(pos, rot, scale));
+	return TOSTRING("Transforming mesh", args[0], "'s matrix");
+}CMDEND("mesh_transform_matrix <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
+
+CMDSTARTA(cam_vars, args.size() != 0){
+	Camera* c = admin->mainCamera;
+	for (auto s = args.begin(); s != args.end(); ++s) {
+		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
+			c->position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
+			c->rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}else if(std::regex_search(s->c_str(), m, FloatRegex("nearZ"))){
+			c->nearZ = std::stof(m[1]);
+		}else if(std::regex_search(s->c_str(), m, FloatRegex("farZ"))){
+			c->farZ = std::stof(m[1]);
+		}else if(std::regex_search(s->c_str(), m, FloatRegex("fov"))){
+			c->fov = std::stof(m[1]);
+		}else{
+			return "[c:red]Invalid parameter: " + *s + "[c]";
+		}
+	}
+	
+	c->UpdateProjectionMatrix();
+	return c->str();
+}CMDEND("cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)");
+
 void Console::AddRandomCommands(){
 	//TODO(sushi,Cmd) reimplement this at some point
 	//commands["debug_global"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
@@ -517,11 +704,18 @@ void Console::AddRandomCommands(){
 										   }, "engine_pause", "toggles pausing the engine");
 	
 	
-	ADDCOMMAND(daytime, "Logs the time in day-time format");
-	ADDCOMMAND(time_engine, "Logs the engine times");
-	ADDCOMMAND(time_game, "Logs the game times");
-	ADDCOMMAND(undo, "Undos previous level editor action");
-	ADDCOMMAND(redo, "Redos last undone level editor action");
+	CMDADD(daytime, "Logs the time in day-time format");
+	CMDADD(time_engine, "Logs the engine times");
+	CMDADD(time_game, "Logs the game times");
+	CMDADD(undo, "Undos previous level editor action");
+	CMDADD(redo, "Redos last undone level editor action");
+	CMDADD(draw_line, "Draws a line in 3D with desired color");
+	CMDADD(draw_triangle, "Draws a triangle in 3D with desired color");
+	CMDADD(load_obj, "Loads a .obj file from the models folder with desired options");
+	CMDADD(spawn_box_uv, "Creates a planarized box with the UV texture on it");
+	CMDADD(mesh_create, "Creates a mesh based on another mesh");
+	CMDADD(mesh_transform_matrix, "Transforms a mesh by the provided matrix");
+	CMDADD(cam_vars, "Allows editing to the camera variables");
 }
 
 ////////////////////////////////////
@@ -552,41 +746,6 @@ void Console::AddRenderCommands() {
 				   }
 				   return (DengRenderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
 			   });
-	
-	commands["spawn_box_uv"] =
-		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-						try{
-							std::cmatch m;
-							Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
-							
-							for (auto s = args.begin(); s != args.end(); ++s) {
-								if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else if (std::regex_match(*s, RegRotParam)) { //-rot=(1.1,2,3)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else {
-									return "[c:red]Invalid parameter: " + *s + "[c]";
-								}
-							}
-							
-							u32 id = DengRenderer->CreateMesh(2, Matrix4::TransformationMatrix(position, rotation, scale));
-							
-							MeshComp* mc = new MeshComp(DengRenderer->GetMeshPtr(id), id);
-							admin->world->CreateEntity(admin, { mc }, "uv_texture_box", Transform(position, rotation, scale));
-							
-							return TOSTRING("Created textured box with id: ", id);
-						}catch(...){
-							return "spawn_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
-						}
-					}, "spawn_box_uv", "spawn_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 	
 	NEWCOMMAND("mat_texture", "mat_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>", {
 				   if (args.size() != 3) { return "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>"; }
@@ -663,50 +822,6 @@ void Console::AddRenderCommands() {
 				   return "mesh_visible <meshID:Uint> <visible:Bool>";
 			   });
 	
-	commands["mesh_create"] =
-		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-						try{
-							if (args.size() > 0) {
-								int meshID = std::stoi(args[0]);
-								
-								std::cmatch m;
-								Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
-								
-								//check for optional params after the first arg
-								for (auto s = args.begin() + 1; s != args.end(); ++s) {
-									if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
-										std::regex_search(s->c_str(), m, VecNumMatch);
-										position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-									}
-									else if (std::regex_match(*s, RegRotParam)) { //-rot=(1.1,2,3)
-										std::regex_search(s->c_str(), m, VecNumMatch);
-										rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-									}
-									else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
-										std::regex_search(s->c_str(), m, VecNumMatch);
-										scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-									}
-									else {
-										return "[c:red]Invalid parameter: " + *s + "[c]";
-									}
-								}
-								
-								u32 id = DengRenderer->CreateMesh(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
-								Mesh* ptr = DengRenderer->GetMeshPtr(id);
-								
-								MeshComp* mc = new MeshComp(ptr, id);
-								Physics* p = new Physics(position, rotation);
-								AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
-								admin->world->CreateEntity(admin, { mc, p, s });
-								
-								return TOSTRING("Created mesh with id: ", id, " based on mesh: ", meshID);
-							}
-							return "mesh_create <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
-						}catch(...){
-							return "mesh_create <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
-						}
-					}, "mesh_create", "mesh_create <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
-	
 	NEWCOMMAND("mesh_batch_material", "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>", {
 				   if (args.size() != 3) { return "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>"; }
 				   int mesh = std::stoi(args[0]);
@@ -716,117 +831,6 @@ void Console::AddRenderCommands() {
 				   return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s material to ", mat);
 			   });
 	
-	//mesh_update_matrix, a bit more difficult b/c it should only update the passed arguments
-	
-	commands["mesh_transform_matrix"] =
-		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-						if (args.size() > 1) {
-							Mesh mesh; std::cmatch m;
-							Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
-							
-							//check for optional params after the first arg
-							for (auto s = args.begin() + 1; s != args.end(); ++s) {
-								if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else if (std::regex_match(*s, RegRotParam)) { //-rot=(1.1,2,3)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else {
-									return "[c:red]Invalid parameter: " + *s + "[c]";
-								}
-							}
-							
-							//update the mesh's matrix
-							try {
-								DengRenderer->TransformMeshMatrix(std::stoi(args[0]), Matrix4::TransformationMatrix(position, rotation, scale));
-								return TOSTRING("Transforming mesh", args[0], "'s matrix");
-							}
-							catch (...) {
-								return "mesh_transform_matrix <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
-							}
-						}
-						else {
-							return "mesh_transform_matrix <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
-						}
-					}, "mesh_transform_matrix", "mesh_transform_matrix <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
-	
-	//TODO(delle,CmdCl) figure out why the macro doesnt work here or on the one above
-	commands["load_obj"] =
-		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-						if (args.size() > 0) {
-							std::cmatch m;
-							Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
-							float mass = 1.f;
-							bool staticc = true;
-							ColliderType ctype;
-							
-							//check for optional params after the first arg
-							for (auto s = args.begin() + 1; s != args.end(); ++s) {
-								if (std::regex_match(*s, RegPosParam)) { // -pos=(1,2,3)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else if (std::regex_match(*s, RegRotParam)) { //-rot=(1.1,2,3)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else if (std::regex_match(*s, RegScaleParam)) { //-scale=(0,1,0)
-									std::regex_search(s->c_str(), m, VecNumMatch);
-									scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-								}
-								else if (std::regex_search(s->c_str(), m, StringRegex("collider"))) {
-									if (m[1] == "aabb") ctype = ColliderType_AABB;
-									else if (m[1] == "sphere") ctype = ColliderType_Sphere;
-									else if (m[1] == "landscape") ctype = ColliderType_Landscape;
-									else if (m[1] == "box") ctype = ColliderType_Box;
-								}
-								else if (std::regex_search(s->c_str(), m, FloatRegex("mass"))) {
-									if (std::stof(m[1]) < 0) return "[c:red]Mass must be greater than 0[c]";
-									mass = std::stof(m[1]);
-								}
-								else if (std::regex_search(s->c_str(), m, BoolRegex("static"))) {
-									if (m[1] == "0" || m[1] == "false") staticc = false;
-								}
-								else {
-									return "[c:red]Invalid parameter: " + *s + "[c]";
-								}
-							}
-							
-							//cut off the .obj extension for entity name
-							char name[64];
-							cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), 63);
-							
-							//create the mesh
-							u32 id = DengRenderer->CreateMesh(&admin->scene, args[0].c_str());
-							Mesh* mesh = DengRenderer->GetMeshPtr(id);
-							
-							//collider
-							Collider* col = nullptr;
-							switch (ctype) {
-							case ColliderType_AABB: col = new AABBCollider(mesh, 1); break;
-							case ColliderType_Sphere: col = new SphereCollider(1, 1); break;
-							case ColliderType_Landscape: col = new LandscapeCollider(mesh);
-							case ColliderType_Box: col = new BoxCollider(Vector3(1, 1, 1), 1);
-							}
-							
-							MeshComp* mc = new MeshComp(mesh, id);
-							Physics* p = new Physics(position, rotation, Vector3::ZERO, Vector3::ZERO, 
-													 Vector3::ZERO, Vector3::ZERO, .5f, mass, staticc);
-							AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
-							admin->world->CreateEntity(admin, { mc, p, s, col }, 
-													   name, Transform(position, rotation, scale));
-							
-							return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
-						}
-						return "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
-					}, "load_obj", "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 	
 	NEWCOMMAND("texture_load", "texture_load <texture.png:String> [type:Uint]", {
 				   if (args.size() > 0) {
@@ -875,53 +879,6 @@ void Console::AddCameraCommands() {
 				   admin->mainCamera->rotation = Vector3(28.f, -45.f, 0.f);
 				   return "reset camera";
 			   });
-	
-	commands["cam_vars"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-										   Camera* c = admin->mainCamera;
-										   if(args.size() == 0){ return "cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)"; }
-										   try{
-											   std::cmatch m;
-											   std::regex nearZ = FloatRegex("nearZ");
-											   std::regex farZ = FloatRegex("farZ");
-											   std::regex fov = FloatRegex("fov");
-											   std::regex freeCam = BoolRegex("static");
-											   
-											   for (auto s = args.begin(); s != args.end(); ++s) {
-												   if (std::regex_match(*s, RegPosParam)) {
-													   std::regex_search(s->c_str(), m, VecNumMatch);
-													   c->position = {std::stof(m[1]), std::stof(m[2]), std::stof(m[3])};
-												   }
-												   else if (std::regex_match(*s, RegRotParam)) {
-													   std::regex_search(s->c_str(), m, VecNumMatch);
-													   c->rotation = {std::stof(m[1]), std::stof(m[2]), std::stof(m[3])};
-												   }
-												   else if (std::regex_search(s->c_str(), m, nearZ)) {
-													   c->nearZ = std::stof(m[1]);
-												   }
-												   else if (std::regex_search(s->c_str(), m, farZ)) {
-													   c->farZ = std::stof(m[1]);
-												   }
-												   else if (std::regex_search(s->c_str(), m, fov)) {
-													   c->fov = std::stof(m[1]);
-												   }
-												   else if (std::regex_search(s->c_str(), m, freeCam)) {
-													   if(m[1].str() == "0" || m[1].str() == "false"){
-														   c->freeCamera = true; //backwards cus naming
-													   }else{
-														   c->freeCamera = false;
-													   }
-												   }
-												   else {
-													   return "[c:red]Invalid parameter: " + *s + "[c]";
-												   }
-											   }
-											   
-											   c->UpdateProjectionMatrix();
-											   return admin->mainCamera->str();
-										   }catch(...){
-											   return "cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)";
-										   }
-									   }, "cam_vars", "cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)");
 }
 
 void Console::AddConsoleCommands() {
@@ -1345,7 +1302,7 @@ void Console::AddWindowCommands() {
 						}
 					}, "window_raw_input", "raw_input <input:Boolean>; Only works in firstperson cursor mode");
 	
-	NEWCOMMAND("window_resizable", "window_raw_input <resizable:Boolean>", {
+	NEWCOMMAND("window_resizable", "window_resizable <resizable:Boolean>", {
 				   if (args.size() != 1) { return "window_resizable <resizable:Boolean>"; }
 				   try {
 					   int mode = std::stoi(args[0]);

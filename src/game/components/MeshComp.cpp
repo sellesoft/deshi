@@ -116,3 +116,34 @@ void MeshComp::Load(std::vector<Entity>& entities, const char* data, u32& cursor
 		entities[entityID].AddComponent(mc);
 	}
 }
+
+////////////////////
+//// MeshComp2D ////
+////////////////////
+
+
+MeshComp2D::MeshComp2D(u32 id) {
+	this->twodID = id;
+	
+	cpystr(name, "MeshComp", 63);
+	send = new Sender();
+	layer = ComponentLayer_Canvas;
+}
+
+void MeshComp2D::Init() {}
+
+void MeshComp2D::ToggleVisibility() {
+	visible = !visible;
+	DengRenderer->UpdateMeshVisibility(twodID, visible);
+}
+
+void MeshComp2D::ReceiveEvent(Event event) {}
+
+void MeshComp2D::Update() {}
+
+std::vector<char> MeshComp2D::Save() {
+	std::vector<char> out;
+	return out;
+}
+
+void MeshComp2D::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){}

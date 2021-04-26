@@ -17,7 +17,7 @@ Matrix3(float _00, float _01, float _02,
 
 inline Matrix3::
 Matrix3(const Matrix3& m) {
-	memcpy(&data, &m.data, 9*sizeof(float));
+	memcpy(this->data, &m.data, 9*sizeof(float));
 }
 
 ///////////////////
@@ -49,7 +49,7 @@ operator () (u32 row, u32 col) const {
 //copies the data from rhs
 inline void Matrix3::
 operator =  (const Matrix3& rhs) {
-	memcpy(&data, &rhs.data, 9*sizeof(float));
+	memcpy(this->data, &rhs.data, 9*sizeof(float));
 }
 
 //scalar multiplication

@@ -23,18 +23,10 @@
 #include <array>
 #include <vector>
 
-struct Window;
-struct Input;
-struct Time;
-struct Mesh;
-struct Texture;
-struct Scene;
-struct Console;
-struct Matrix4;
-struct Triangle;
-struct Vector3;
-struct Color;
-struct deshiImGui;
+struct Time; struct Window; struct Input; struct Console; struct deshiImGui;
+struct Scene; struct Mesh; struct Texture;
+struct Matrix4; struct Matrix3;
+struct Vector4; struct Vector3; struct Vector2; struct Color;
 typedef u8 stbi_uc;
 
 struct RenderSettings{
@@ -54,13 +46,12 @@ struct RenderSettings{
 	u32  shaderQuality;
 	
 	//debug
-	u8 selectedR = 204, selectedG = 125, selectedB = 41;
-	bool wireframe     = false;
-	bool wireframeOnly = false;
-	bool globalAxis    = false;
+	u8 selectedR = 204, selectedG = 125, selectedB = 41, selectedA = 255;
+	u8 colliderR = 116, colliderG = 186, colliderB = 67, colliderA = 255;
+	bool wireframe  = false, wireframeOnly = false;
+	bool globalAxis = false;
 };
 
-//TODO(delle,Re) add timer here (cycles and time)
 struct RenderStats{
 	u32 totalTriangles;
 	u32 totalVertices;
@@ -74,24 +65,23 @@ struct RenderStats{
 //// vulkan support structs ////
 ////////////////////////////////
 
-//TODO(delle,Re) make this so its bit/flag based
 enum RendererStageBits : u32 { 
 	RENDERERSTAGE_NONE  = 0, 
-	RSVK_INSTANCE       = 1,
-	RSVK_SURFACE        = 2,
-	RSVK_PHYSICALDEVICE = 4,
-	RSVK_LOGICALDEVICE  = 8,
-	RSVK_SWAPCHAIN      = 16,
-	RSVK_RENDERPASS     = 32,
-	RSVK_COMMANDPOOL    = 64,
-	RSVK_FRAMES         = 128,
-	RSVK_SYNCOBJECTS    = 256,
-	RSVK_UNIFORMBUFFER  = 512,
-	RSVK_DESCRIPTORPOOL = 1024,
-	RSVK_LAYOUTS        = 2048,
-	RSVK_PIPELINESETUP  = 4096,
-	RSVK_PIPELINECREATE = 8192,
-	RSVK_RENDER   = 0xFFFFFFFF,
+	RSVK_INSTANCE       = 1 << 0,
+	RSVK_SURFACE        = 1 << 1,
+	RSVK_PHYSICALDEVICE = 1 << 2,
+	RSVK_LOGICALDEVICE  = 1 << 3,
+	RSVK_SWAPCHAIN      = 1 << 4,
+	RSVK_RENDERPASS     = 1 << 5,
+	RSVK_COMMANDPOOL    = 1 << 6,
+	RSVK_FRAMES         = 1 << 7,
+	RSVK_SYNCOBJECTS    = 1 << 8,
+	RSVK_UNIFORMBUFFER  = 1 << 9,
+	RSVK_DESCRIPTORPOOL = 1 << 10,
+	RSVK_LAYOUTS        = 1 << 11,
+	RSVK_PIPELINESETUP  = 1 << 12,
+	RSVK_PIPELINECREATE = 1 << 13,
+	RSVK_RENDER      = 0xFFFFFFFF,
 }; typedef u32 RendererStage;
 
 struct QueueFamilyIndices {
@@ -114,16 +104,6 @@ struct VertexVk{
 	
 	bool operator==(const VertexVk& other) const {
 		return pos == other.pos && color == other.color && texCoord == other.texCoord && normal == other.normal;
-	}
-};
-
-struct Vertex2DVk{
-	glm::vec3 pos;
-	glm::vec2 texCoord;
-	glm::vec3 color; //between 0 and 1
-	
-	bool operator==(const VertexVk& other) const {
-		return pos == other.pos && color == other.color && texCoord == other.texCoord;
 	}
 };
 
@@ -225,21 +205,18 @@ struct Renderer{
 	//saves the pipeline cache to disk
 	void Cleanup();
 	
-	//adds a triangle to the 2d shader's vertex and index buffers
-	//returns the ID of the triangle
-	u32 AddTriangle(Triangle* triangle);
-	//removes the triangle with triangleID from the 2d shader's vertex buffer
-	void RemoveTriangle(u32 triangleID);
-	void UpdateTriangleColor(u32 triangleID, Color color);
-	void UpdateTrianglePosition(u32 triangleID, Vector3 position);
-	void TranslateTriangle(u32 triangleID, Vector3 translation);
-	//adds an array of triangles to the 2d shader's vertex and index buffers
-	//returns an array of the triangle's IDs
-	std::vector<u32> AddTriangles(std::vector<Triangle*> triangles);
-	//removes the triangles with triangleID from the 2d shader's vertex buffer
-	void RemoveTriangles(std::vector<u32> triangleIDs);
-	void UpdateTrianglesColor(std::vector<u32> triangleIDs, Color color);
-	void TranslateTriangles(std::vector<u32> triangleIDs, Vector3 translation);
+	//2d primitives where points are defined from -1 to 1, where -1 is the bottom/left and 1 is the top/right of the screen
+	u32 CreateTwod(std::vector<Vector2> points);
+	u32 CreateTwod(std::vector<Vector2> points, Vector2 position, Vector2 scale);
+	u32 CreateTwod(std::vector<Vector2> points, Vector2 position, Vector2 scale, Color color, float rotation);
+	//position: center of the image
+	u32 CreateImage(Texture texture, Vector2 position);
+	//removes the twod with twodID from the 2d shader's vertex buffer
+	void RemoveTwod(u32 twodID);
+	void UpdateTwodColor(u32 twodID, Color color);
+	void UpdateTwodPosition(u32 twodID, Vector2 position);
+	void UpdateTwodRotation(u32 twodID, float rotation);
+	void UpdateTwodVisibility(u32 twodID, b32 visible);
 	
 	//loads a mesh to the different shaders specified in its batches
 	//returns the ID of the mesh
@@ -258,6 +235,11 @@ struct Renderer{
 	void UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID);
 	void UpdateMeshVisibility(u32 meshID, bool visible);
 	void SetSelectedMesh(u32 meshID);
+	
+	//returns a base mesh ID
+	u32 CreateDebugLine(Vector3 start, Vector3 end, Color color);
+	//returns a base mesh ID
+	u32 CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color);
 	
 	u32  MakeInstance(u32 meshID, Matrix4 matrix);
 	void RemoveInstance(u32 instanceID);
@@ -523,7 +505,9 @@ struct Renderer{
 		VkPipeline TWOD      = VK_NULL_HANDLE;
 		VkPipeline PBR       = VK_NULL_HANDLE;
 		VkPipeline WIREFRAME = VK_NULL_HANDLE;
+		VkPipeline WIREFRAME_DEPTH = VK_NULL_HANDLE;
 		VkPipeline SELECTED  = VK_NULL_HANDLE;
+		VkPipeline COLLIDER  = VK_NULL_HANDLE;
 		VkPipeline LAVALAMP  = VK_NULL_HANDLE;
 		VkPipeline TESTING0  = VK_NULL_HANDLE;
 		VkPipeline TESTING1  = VK_NULL_HANDLE;
