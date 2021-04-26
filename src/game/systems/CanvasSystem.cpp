@@ -88,9 +88,14 @@ namespace ImGui {
 	}
 	
 	void DebugDrawLine3(Vector3 pos1, Vector3 pos2, Camera* c, Vector2 windimen, Color color) {
-		Vector2 pos12 = Math::WorldToScreen2(pos1, c->projectionMatrix, c->viewMatrix, windimen);
-		Vector2 pos22 = Math::WorldToScreen2(pos2, c->projectionMatrix, c->viewMatrix, windimen);
-		ImGui::GetBackgroundDrawList()->AddLine(pos12.ToImVec2(), pos22.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
+		Vector3 pos1n = Math::WorldToCamera3(pos1, c->viewMatrix);
+		Vector3 pos2n = Math::WorldToCamera3(pos2, c->viewMatrix);
+
+		if (Math::ClipLineToZPlanes(pos1n, pos2n, c)) {
+			ImGui::GetBackgroundDrawList()->AddLine(
+				Math::CameraToScreen2(pos1n, c->projectionMatrix, windimen).ToImVec2(), 
+				Math::CameraToScreen2(pos2n, c->projectionMatrix, windimen).ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
+		}
 	}
 	
 	void DebugDrawText(const char* text, Vector2 pos, Color color) {		
