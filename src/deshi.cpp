@@ -15,17 +15,17 @@ if you feel they would handle the problem better. It should generally be you tho
 Major Ungrouped TODOs
 ---------------------
 make it so the play state starts when you go from EDITOR to PLAY or PLAY_DEBUG
-	like it is in Unreal, eg. everything resets to some start position when you stop playing
+	____like it is in Unreal, eg. everything resets to some start position when you stop playing
 add shaders: PBR (4textures)
-settings file(s) [keybinds, video, audio, etc]
 create a demo level
 add player movement and player entity
-figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
-implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
 
 Minor Ungrouped TODOs
 ---------------------
-create a hot-loadable global vars file
+figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
+implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
+settings file(s) [keybinds, video, audio, etc]
+____create a hot-loadable global vars file
 add a general logging system with log levels and locations
 add a component_state command to print state of a component (add str methods to all components/systems)
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
@@ -41,15 +41,15 @@ begin reimplementing sound system and maybe rethink its design a bit
 Render TODOs
 ------------
 get debugPrintf extension to work
-	you can test it through PHONG shader for now
+	  ____you can test it through PHONG shader for now
 redo MeshVk so its only child meshes
+____avoid having 3 copies of a mesh (model, meshVK, vulkan)
 add lighting and shadows
 add 2D shader and interface functions
 add vertex editing
 fix texture transparency
 add RenderSettings loading and usage
 check those vulkan-tutorial links for the suggestions
-avoid having 3 copies of a mesh (model, meshVK, vulkan)
 add instancing
 look into adding volk for faster loading/function calls
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
@@ -57,7 +57,7 @@ multi-threaded command buffers, shader loading, image loading
 find a way to forward declare vulkan stuff and move the include to the cpp
 
 Level Editor TODOs
-------------
+------------------
 add transfering the player pointer between entities that have an actor comp
 orbitting camera for rotating around objects
 context menu when right clicking on an object 
@@ -111,7 +111,8 @@ add a UI popup when reloading shaders
 add UI color palettes for easy color changing
 renaming entities from entity list
 redo debug bar to be more informative and have different modes
-(maybe) implement a way to push data to something in the DebugLayer, sort of how we had before with BufferLog so you can see it without opening console
+(maybe) implement a way to push data to something in the DebugLayer
+____sort of how we had before with BufferLog so you can see it without opening console
 
 Math TODOs
 ----------
@@ -122,7 +123,8 @@ replace glm :)
 Fun TODOs
 ---------
 look into implementing Lua 
-look into making a function that takes in the types on a component and formats binary for saving and what not like what were currently doing for typeHeader in EntityAdmin Save()
+look into making a function that takes in the types on a component and formats binary for saving and what not 
+____like what were currently doing for typeHeader in EntityAdmin Save()
 
 Bug Board
 ---------
@@ -134,8 +136,6 @@ ____TODO(sushi) check if ^this^ is still an issue, i added a NOTE on MeshComp::I
 look into scaling not rotating (scaling is probably being done in world not local)
 console scrolls past top and bottom
 calling a components destructor causes a crash related the component layers
-selecting scaled meshes doesnt work; i think because we dont scale the vertices when checking for an intersection
-AABB collider generation from Mesh* is wrong
 sometimes MeshComp is assigned a nonexistant mesh
 
 */
@@ -167,7 +167,7 @@ struct DeshiEngine {
 	}
 	
 	void Start() {
-
+		
 		//enforce deshi file system
 		deshi::enforceDirectories();
 		
@@ -215,8 +215,8 @@ struct DeshiEngine {
 		//entityAdmin.PostRenderUpdate();
 		
 		time.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
-
-
+		
+		
 		return true;
 	}
 };

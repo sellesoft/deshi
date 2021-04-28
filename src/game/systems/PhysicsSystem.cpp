@@ -2,6 +2,7 @@
 #include "../../core/console.h"
 #include "../../math/Math.h"
 #include "../../geometry/Geometry.h"
+#include "../../utils/Command.h"
 
 #include "../Transform.h"
 #include "../components/Physics.h"
@@ -62,7 +63,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 		netForce += f;
 	}
 	t.physics->acceleration += netForce / t.physics->mass;
-
+	
 	//update linear movement and clamp it to min/max velocity
 	if (!t.physics->isStatic) {
 		t.physics->velocity += t.physics->acceleration * time->fixedDeltaTime;
@@ -115,15 +116,15 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	
 	//reset accelerations
 	t.physics->forces.clear();
-
+	
 	//ImGui::DebugDrawText3(t.physics->position.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(180, 150, 130));
 	//ImGui::DebugDrawText3(t.physics->velocity.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(130, 150, 180), Vector2(0, 20));
 	//ImGui::DebugDrawText3(t.physics->acceleration.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(150, 130, 180), Vector2(0, 40));
-
+	
 	if (!strcmp("player", t.physics->entity->name)) {
 		int i = 0;
 	}
-
+	
 	t.physics->acceleration = Vector3::ZERO;
 }
 
@@ -146,6 +147,11 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 		(min1.x <= max2.x && max1.x >= min2.x) &&
 		(min1.y <= max2.y && max1.y >= min2.y) &&
 		(min1.z <= max2.z && max1.z >= min2.z)) {
+		
+		//triggers and no collision
+		if(obj1Col->command) obj1Col->command->Exec(g_admin);
+		if(obj2Col->command) obj2Col->command->Exec(g_admin);
+		if(obj1Col->noCollide || obj2Col->noCollide) return;
 		
 		float xover, yover, zover;
 		
@@ -178,23 +184,22 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 		
 		//dynamic resolution
 		Vector2 rv = obj2->velocity - obj1->velocity;
-
+		
 		//if (obj2->isStatic) rv = obj1->velocity;
-
+		
 		float vAlongNorm = rv.dot(norm);
-
+		
 		if (vAlongNorm < 0) {
 			//TODO(sushi, Ph) do better elasticity later
 			float j = -(1 + (obj1->elasticity + obj2->elasticity) / 2) * vAlongNorm;
 			j /= 1 / obj1->mass + 1 / obj2->mass;
-
+			
 			Vector2 impulse = j * norm;
 			if (!obj1->isStatic) obj1->velocity -= impulse / obj1->mass;
 			if (!obj2->isStatic) obj2->velocity += impulse / obj2->mass;
-
+			
 		}
 	}
-	
 }
 
 inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* sphere, SphereCollider* sphereCol) {
@@ -202,51 +207,53 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 	Vector3 vectorBetween = aabbPoint - sphere->position; //sphere towards aabb
 	float distanceBetween = vectorBetween.mag();
 	if(distanceBetween < sphereCol->radius) {
-		if(!aabbCol->command && !sphereCol->command) {
-			//SUCCESS("collision happened");
-			//aabb->entity->GetComponent<AudioSource>()->request_play = true;
-			//static resolution
-			if (aabbPoint == sphere->position) { 
-				//NOTE if the closest point is the same, the vector between will have no direction; this 
-				//is supposed to be a remedy to that by offsetting in the direction between thier centers
-				vectorBetween = aabb->position - sphere->position;
-			}
-			float overlap = .5f * (sphereCol->radius - distanceBetween);
-			Vector3 normal = -vectorBetween.normalized();
-			vectorBetween = -normal * overlap;
-			if(aabb->isStatic && sphere->isStatic){
-				//do nothing b/c neither can move
-			}else if(aabb->isStatic){
-				sphere->position -= vectorBetween;
-			}else if(sphere->isStatic){
-				aabb->position += vectorBetween;
-			}else{
-				aabb->position += vectorBetween / 2.f;
-				sphere->position -= vectorBetween / 2.f;
-			}
+		//triggers and no collision
+		if(aabbCol->command) aabbCol->command->Exec(g_admin);
+		if(sphereCol->command) sphereCol->command->Exec(g_admin);
+		if(aabbCol->noCollide || sphereCol->noCollide) return;
 			
-			//dynamic resolution
-			Matrix4 sphereInertiaTensorInverse = LocalToWorldInertiaTensor(sphere, sphereCol->inertiaTensor).Inverse();
-			Vector3 ra = sphere->position + Geometry::ClosestPointOnSphere(sphere->position, sphereCol->radius, aabbPoint);
-			Vector3 sphereAngularVelocityChange = normal.cross(ra);
-			sphereAngularVelocityChange *= sphereInertiaTensorInverse;
-			float inverseMassA = 1.f / sphere->mass;
-			float scalar = inverseMassA + sphereAngularVelocityChange.cross(ra).dot(normal);
-			
-			Matrix4 aabbInertiaTensorInverse = LocalToWorldInertiaTensor(aabb, aabbCol->inertiaTensor).Inverse();
-			Vector3 rb = aabb->position + aabbPoint;
-			Vector3 aabbAngularVelocityChange = normal.cross(rb);
-			aabbAngularVelocityChange *= aabbInertiaTensorInverse;
-			float inverseMassB = 1.f / aabb->mass; 
-			scalar += inverseMassB + aabbAngularVelocityChange.cross(rb).dot(normal);
-			
-			float coefRest = (aabb->elasticity + sphere->elasticity) / 2; //this is completely unfounded is science :)
-			float impulseMod = (coefRest + 1) * (sphere->velocity - aabb->velocity).mag(); //this too :)
-			Vector3 impulse = normal * impulseMod;
-			aabb->AddImpulse(sphere, -impulse);
-			sphere->rotVelocity -= sphereAngularVelocityChange;
-			//aabb->entity->rotVelocity -= aabbAngularVelocityChange; //we dont do this because AABB shouldnt rotate
+		//aabb->entity->GetComponent<AudioSource>()->request_play = true;
+		//static resolution
+		if (aabbPoint == sphere->position) { 
+			//NOTE if the closest point is the same, the vector between will have no direction; this 
+			//is supposed to be a remedy to that by offsetting in the direction between thier centers
+			vectorBetween = aabb->position - sphere->position;
 		}
+		float overlap = .5f * (sphereCol->radius - distanceBetween);
+		Vector3 normal = -vectorBetween.normalized();
+		vectorBetween = -normal * overlap;
+		if(aabb->isStatic && sphere->isStatic){
+			//do nothing b/c neither can move
+		}else if(aabb->isStatic){
+			sphere->position -= vectorBetween;
+		}else if(sphere->isStatic){
+			aabb->position += vectorBetween;
+		}else{
+			aabb->position += vectorBetween / 2.f;
+			sphere->position -= vectorBetween / 2.f;
+		}
+			
+		//dynamic resolution
+		Matrix4 sphereInertiaTensorInverse = LocalToWorldInertiaTensor(sphere, sphereCol->inertiaTensor).Inverse();
+		Vector3 ra = sphere->position + Geometry::ClosestPointOnSphere(sphere->position, sphereCol->radius, aabbPoint);
+		Vector3 sphereAngularVelocityChange = normal.cross(ra);
+		sphereAngularVelocityChange *= sphereInertiaTensorInverse;
+		float inverseMassA = 1.f / sphere->mass;
+		float scalar = inverseMassA + sphereAngularVelocityChange.cross(ra).dot(normal);
+			
+		Matrix4 aabbInertiaTensorInverse = LocalToWorldInertiaTensor(aabb, aabbCol->inertiaTensor).Inverse();
+		Vector3 rb = aabb->position + aabbPoint;
+		Vector3 aabbAngularVelocityChange = normal.cross(rb);
+		aabbAngularVelocityChange *= aabbInertiaTensorInverse;
+		float inverseMassB = 1.f / aabb->mass; 
+		scalar += inverseMassB + aabbAngularVelocityChange.cross(rb).dot(normal);
+			
+		float coefRest = (aabb->elasticity + sphere->elasticity) / 2; //this is completely unfounded is science :)
+		float impulseMod = (coefRest + 1) * (sphere->velocity - aabb->velocity).mag(); //this too :)
+		Vector3 impulse = normal * impulseMod;
+		aabb->AddImpulse(sphere, -impulse);
+		sphere->rotVelocity -= sphereAngularVelocityChange;
+		//aabb->entity->rotVelocity -= aabbAngularVelocityChange; //we dont do this because AABB shouldnt rotate
 	}
 }
 
@@ -259,26 +266,29 @@ inline void SphereSphereCollision(Physics* s1, SphereCollider* sc1, Physics* s2,
 	float dist = (s1->position - s2->position).mag();
 	float rsum = sc1->radius + sc2->radius;
 	if (rsum > dist) {
+		//triggers and no collision
+		if(sc1->command) sc1->command->Exec(g_admin);
+		if(sc2->command) sc2->command->Exec(g_admin);
+		if(sc1->noCollide || sc2->noCollide) return;
+		
 		Vector3 s1t2 = s2->position - s1->position;
 		float overlap = (rsum - dist) / 2;
 		if (!s1->isStatic) s1->position -= s1t2.normalized() * overlap;
 		if (!s2->isStatic) s2->position += s1t2.normalized() * overlap;
-
+		
 		//dynamic resolution
 		//from https://www.gamasutra.com/view/feature./131424/pool_hall_lessons_fast_accurate_.php?print=1
 		Vector3 n = s1->position - s2->position;
 		n.normalize();
-
+		
 		float a1 = s1->velocity.dot(n);
 		float a2 = s2->velocity.dot(n);
-
+		
 		float opP = (2 * (a1 - a2)) / (s1->mass + s2->mass);
-
+		
 		s1->velocity = s1->velocity - opP * s2->mass * n;
 		s2->velocity = s2->velocity + opP * s1->mass * n;
 	}
-
-
 }
 
 inline void SphereLandscapeCollision(Physics* s, SphereCollider* sc, Physics* ls, SphereCollider* lsc) {
@@ -294,7 +304,7 @@ inline void BoxBoxCollision(Physics* box, BoxCollider* boxCol, Physics* other, B
 }
 
 inline void Solve2DManifolds() {
-
+	
 }
 
 //NOTE make sure you are using the right physics component, because the collision 
@@ -351,7 +361,7 @@ inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 
 void PhysicsSystem::Update() {
 	std::vector<PhysicsTuple> tuples = GetPhysicsTuples(admin);
-
+	
 	//update physics extra times per frame if frame time delta is larger than physics time delta
 	TIMER_START(physLocalTime);
 	while(DengTime->fixedAccumulator >= DengTime->fixedDeltaTime) {
@@ -380,5 +390,4 @@ void PhysicsSystem::Update() {
 		//t.transform->rotation *= Matrix4::RotationMatrixAroundPoint(t.transform->position, t.transform->rotation*(1.f - alpha) + t.physics->rotation*alpha);
 		//TODO(delle,Ph) look into better rotational interpolation once we switch to quaternions
 	}
-
 }

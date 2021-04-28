@@ -83,34 +83,34 @@ void MeshComp::UpdateMeshTransform(Vector3 position, Vector3 rotation, Vector3 s
 }
 
 void MeshComp::Update() {
-	ASSERT(mesh->vertexCount, "Mesh has no vertices");
+	ASSERT(mesh && mesh->vertexCount, "Mesh has no vertices");
 	
-
+	
 	ImGui::BeginDebugLayer();
-
+	
 	Color c1 = Color(15, 30, 50) * 3;
 	Color c2 = Color(50, 30, 15) * 3;
-
+	
 	int i = 0;
 	std::vector<Triangle> triangles;
 	for (Triangle* t : mesh->triangles) {
 		triangles.push_back(*t);
 	}
-
+	
 	for (Triangle t : triangles) {
-			
+		
 	}
-
+	
 	for (auto t : mesh->triangles) {
 		for (auto n : t->nbrs) {
 			ImGui::DebugDrawLine3(t->midpoint(), n->midpoint(), g_admin->mainCamera, DengWindow->dimensions, (i % 2 == 0) ? c1 : c2);
 			i++;
 		}
 	}
-
-
+	
+	
 	ImGui::EndDebugLayer();
-
+	
 	//update mesh's transform with entities tranform
 	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
 }
