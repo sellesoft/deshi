@@ -149,26 +149,26 @@ namespace ImGui {
 
 		ImGui::GetBackgroundDrawList()->AddTriangleFilled(p1n.ToImVec2(), p2n.ToImVec2(), p3n.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
 	}
-
+	
 	void DebugDrawGraphFloat(Vector2 pos, float inval, float sizex, float sizey) {
 		//display in value
 		ImGui::SetCursorPos(ImVec2(pos.x, pos.y - 10));
 		ImGui::Text(TOSTRING(inval).c_str());
-
+		
 		//how much data we store
 		static int prevstoresize = 100;
 		static int storesize = 100;
-
+		
 		//how often we update
 		static int fupdate = 1;
 		static int frame_count = 0;
-
+		
 		static float maxval = inval + 5;
 		static float minval = inval - 5;
-
+		
 		//if (inval > maxval) maxval = inval;
 		//if (inval < minval) minval = inval;
-
+		
 		if (inval > maxval || inval < minval) {
 			maxval = inval + 5;
 			minval = inval - 5;
@@ -176,7 +176,7 @@ namespace ImGui {
 		//real values and printed values
 		static std::vector<float> values(storesize);
 		static std::vector<float> pvalues(storesize);
-
+		
 		//if changing the amount of data we're storing we have to reverse
 		//each data set twice to ensure the data stays in the right place when we move it
 		if (prevstoresize != storesize) {
@@ -184,9 +184,9 @@ namespace ImGui {
 			std::reverse(pvalues.begin(), pvalues.end());  pvalues.resize(storesize); std::reverse(pvalues.begin(), pvalues.end());
 			prevstoresize = storesize;
 		}
-
+		
 		std::rotate(values.begin(), values.begin() + 1, values.end());
-
+		
 		//update real set if we're not updating yet or update the graph if we are
 		if (frame_count < fupdate) {
 			values[values.size() - 1] = inval;
@@ -199,13 +199,13 @@ namespace ImGui {
 			
 			frame_count = 0;
 		}
-
+		
 		ImGui::PushStyleColor(ImGuiCol_PlotLines, ColToVec4(Color(0, 255, 200, 255)));
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, ColToVec4(Color(20, 20, 20, 255)));
-
+		
 		ImGui::SetCursorPos(pos.ToImVec2());
 		ImGui::PlotLines("", &pvalues[0], pvalues.size(), 0, 0, minval, maxval, ImVec2(sizex, sizey));
-
+		
 		ImGui::PopStyleColor();
 		ImGui::PopStyleColor();
 	}
@@ -671,7 +671,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 				
 				SetPadding;
 				ImGui::InputFloat("gravity", &admin->physics->gravity);
-
+				
 				SetPadding;
 				if (ImGui::InputFloat("tick rate", &DengTime->fixedTimeStep, ImGuiInputTextFlags_EnterReturnsTrue)) {
 					DengTime->fixedDeltaTime = 1 / DengTime->fixedTimeStep;
@@ -707,6 +707,9 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 	local_persist int  collider_type = ColliderType_NONE;
 	local_persist vec3 collider_halfdims = Vector3::ONE;
 	local_persist f32  collider_radius  = 1.f;
+	local_persist bool collider_trigger = false;
+	local_persist bool collider_nocollide = false;
+	local_persist char collider_command[64] = {};
 	local_persist const char* mesh_name;
 	local_persist u32  mesh_id = -1, mesh_instance_id = 0;
 	local_persist f32  light_strength = 1.f;
@@ -738,13 +741,13 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 			if(comp_collider){
 				switch(collider_type){
 					case ColliderType_Box:{
-						coll = new BoxCollider(collider_halfdims, physics_mass);
+						coll = new BoxCollider(collider_halfdims, physics_mass, 0, (collider_trigger) ? DengConsole->GetCommand(collider_command) : nullptr, collider_nocollide);
 					}break;
 					case ColliderType_AABB:{
-						coll = new AABBCollider(collider_halfdims, physics_mass);
+						coll = new AABBCollider(collider_halfdims, physics_mass, 0, (collider_trigger) ? DengConsole->GetCommand(collider_command) : nullptr, collider_nocollide);
 					}break;
 					case ColliderType_Sphere:{
-						coll = new SphereCollider(collider_radius, physics_mass);
+						coll = new SphereCollider(collider_radius, physics_mass, 0, (collider_trigger) ? DengConsole->GetCommand(collider_command) : nullptr, collider_nocollide);
 					}break;
 				}
 			}
@@ -798,6 +801,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 				case(2):{
 					comp_audiolistener = comp_audiosource = comp_light = false;
 					comp_collider = comp_mesh = comp_physics = true;
+					collider_type = ColliderType_Box;
 					collider_halfdims = Vector3::ONE;
 					mesh_id = DengRenderer->GetBaseMeshID("default_box");
 					physics_staticPosition = physics_staticRotation = true;
@@ -950,7 +954,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 			Checkbox("Static Rotation", &physics_staticRotation);
 			TreePop();
 		}
-		if(comp_collider && TreeNodeEx("Collider", tree_flags)){
+		if(comp_collider && TreeNodeEx("Collider", tree_flags)){ 
 			SetNextItemWidth(-1); Combo("##coll_combo", &collider_type, colliders, IM_ARRAYSIZE(colliders));
 			switch(collider_type){
 				case ColliderType_Box: case ColliderType_AABB:{
@@ -959,6 +963,13 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 				case ColliderType_Sphere:{
 					Text("Radius       "); SameLine(); InputFloat("coll_radius", &collider_radius);
 				}break;
+			}
+			Checkbox("Resolve Collisions", &collider_nocollide);
+			Checkbox("Trigger", &collider_trigger);
+			if(collider_trigger){
+				Text("Command: "); SameLine(); SetNextItemWidth(-1);
+				InputText("##collider_cmd", collider_command, 64, 
+						  ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
 			}
 			TreePop();
 		}
@@ -980,8 +991,6 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 }
 
 void CanvasSystem::DebugTools() {
-	
-	
 	using namespace ImGui;
 	
 	float fontsize = ImGui::GetFontSize();

@@ -9,22 +9,24 @@
 //// Box Collider ////
 //////////////////////
 
-BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Command* command) {
+BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Command* command, b32 nocollide) {
 	cpystr(name, "BoxCollider", 63);
 	
 	this->type = ColliderType_Box;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
+	this->noCollide = nocollide;
 	this->command = command;
 	this->halfDims = halfDimensions;
 }
 
-BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Command* command) {
+BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Command* command, b32 nocollide) {
 	cpystr(name, "BoxCollider", 63);
 	
 	this->type = ColliderType_Box;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = tensor;
+	this->noCollide = nocollide;
 	this->command = command;
 	this->halfDims = halfDimensions;
 }
@@ -60,12 +62,12 @@ void BoxCollider::Load(std::vector<Entity>& entities, const char* data, u32& cur
 //// AABB Collider ////
 ///////////////////////
 
-//TODO(delle) test this
-AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Command* command) {
+AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Command* command, b32 nocollide) {
 	cpystr(name, "AABBCollider", 63);
 	
 	this->type = ColliderType_AABB;
 	this->collisionLayer = collisionLayer;
+	this->noCollide = nocollide;
 	this->command = command;
 	
 	if(!mesh) {
@@ -111,22 +113,24 @@ AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Command* 
 	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 
-AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Command* command) {
+AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Command* command, b32 nocollide) {
 	cpystr(name, "AABBCollider", 63);
 	
 	this->type = ColliderType_AABB;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
+	this->noCollide = nocollide;
 	this->command = command;
 	this->halfDims = halfDimensions;
 }
 
-AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Command* command) {
+AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Command* command, b32 nocollide) {
 	cpystr(name, "AABBCollider", 63);
 	
 	this->type = ColliderType_AABB;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = tensor;
+	this->noCollide = nocollide;
 	this->command = command;
 	this->halfDims = halfDimensions;
 }
@@ -162,22 +166,24 @@ void AABBCollider::Load(std::vector<Entity>& entities, const char* data, u32& cu
 //// Sphere Collider ////
 /////////////////////////
 
-SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Command* command) {
+SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Command* command, b32 nocollide) {
 	cpystr(name, "SphereCollider", 63);
 	
 	this->type = ColliderType_Sphere;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
+	this->noCollide = nocollide;
 	this->command = command;
 	this->radius = radius;
 }
 
-SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer, Command* command) {
+SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer, Command* command, b32 nocollide) {
 	cpystr(name, "SphereCollider", 63);
 	
 	this->type = ColliderType_Sphere;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = tensor;
+	this->noCollide = nocollide;
 	this->command = command;
 	this->radius = radius;
 }
@@ -215,13 +221,14 @@ void SphereCollider::Load(std::vector<Entity>& entities, const char* data, u32& 
 ////////////////////////////
 
 
-LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Command* command) {
+LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Command* command, b32 nocollide) {
 	cpystr(name, "LandscapeCollider", 63);
-
+	
 	this->type = ColliderType_Landscape;
 	this->collisionLayer = collisionLayer;
+	this->noCollide = nocollide;
 	this->command = command;
-
+	
 	if (!mesh) {
 		ERROR("Null mesh passed during LandscapeCollider creation");
 		return;
@@ -230,46 +237,46 @@ LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Command* co
 		ERROR("Mesh passed during LandscapeCollider creation had no vertices");
 		return;
 	}
-
+	
 	//NOTE this will be optimized later i just need it to work :)
 	//currently its just checking all triangles against a single one until it finds a connection to it.
 	//to move on to the next triangle it has to find 3 neighbors to the current one,
 	//this attempts to make it so connections spread out evenly and don't form lines and other odd shapes
 	//that may not be necessary, but im going to implement it anyways
-
+	
 	//a way to optimize this probably would be to do something like, check for connections against
 	//a couple of sets of triangles and their connections and if two connections come together
 	//and joining them would keep then under the connection limit, then join them
 	//not sure if that would be faster or not.
-
+	
 	//find triangle connections so that we can generate AABBs for each set
 	std::vector<std::vector<Vector3>> va; //vertex array of triangles
 	std::vector<std::vector<Vector3>> vaperm; //vertex array of triangles that will be used to generate AABBS
-
+	
 	std::vector<std::vector<u32>> ia; //index array that stores all connections to the first triangle 
 	std::vector<u32> iq; //index queue, queues triangles to check for connections against
-
+	
 	//gather all triangles
 	for (auto& b : mesh->batchArray) {
 		for (int i = 0; i < b.indexArray.size(); i += 3) {
 			va.push_back(
-				std::vector<Vector3>{
-				b.vertexArray[b.indexArray[i]].pos,
-				b.vertexArray[b.indexArray[i + 1]].pos,
-				b.vertexArray[b.indexArray[i + 2]].pos
-				}
-			);
+						 std::vector<Vector3>{
+							 b.vertexArray[b.indexArray[i]].pos,
+							 b.vertexArray[b.indexArray[i + 1]].pos,
+							 b.vertexArray[b.indexArray[i + 2]].pos
+						 }
+						 );
 		}
 	}
-
+	
 	//copy temp vertex array to permanent one
 	vaperm = va;
-
+	
 	auto eqtoany = [](std::vector<Vector3> v, Vector3 t) {
 		for (Vector3 a : v) if (t == a) return true;
 		return false;
 	};
-
+	
 	Vector3 ct[3]; //current triangle we're checking against
 	iq.push_back(0);
 	bool begin = true;
@@ -281,14 +288,14 @@ LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Command* co
 			va.erase(va.begin() + i); iq.erase(iq.begin()); 
 			ia[0].push_back(i); begin = false;  continue;
 		}
-
+		
 		//check if two vertices match the current triangles vertices
 		if (eqtoany(va[i], ct[0]) && eqtoany(va[i], ct[1]) ||
 			eqtoany(va[i], ct[1]) && eqtoany(va[i], ct[2]) ||
 			eqtoany(va[i], ct[2]) && eqtoany(va[i], ct[0])) {
-
-
-
+			
+			
+			
 		}
 	}
 }
@@ -298,6 +305,6 @@ LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Command* co
 ///// Complex Collider /////
 ////////////////////////////
 
-ComplexCollider::ComplexCollider(Mesh* mesh, u32 collisionleyer, Command* command) {
-
+ComplexCollider::ComplexCollider(Mesh* mesh, u32 collisionleyer, Command* command, b32 nocollide) {
+	
 }

@@ -17,15 +17,16 @@ struct Collider : public Component {
 	ColliderType type;
 	u32 collisionLayer;
 	Matrix3 inertiaTensor;
-	Command* command; //TODO(delle,Ph) implement trigger colliders
+	b32 noCollide;
+	Command* command;
 };
 
 //rotatable box
 struct BoxCollider : public Collider {
 	Vector3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
 	
-	BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr);
-	BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Command* command = nullptr);
+	BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
+	BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
 	
 	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
@@ -35,9 +36,9 @@ struct BoxCollider : public Collider {
 struct AABBCollider : public Collider {
 	Vector3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
 	
-	AABBCollider(Mesh* mesh, float mass, u32 collisionLayer = 0, Command* command = nullptr);
-	AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr);
-	AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Command* command = nullptr);
+	AABBCollider(Mesh* mesh, float mass, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
+	AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
+	AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
 	
 	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
@@ -46,8 +47,8 @@ struct AABBCollider : public Collider {
 struct SphereCollider : public Collider {
 	float radius;
 	
-	SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr);
-	SphereCollider(float radius, float mass, u32 collisionLayer = 0, Command* command = nullptr);
+	SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
+	SphereCollider(float radius, float mass, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
 	
 	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
@@ -56,9 +57,9 @@ struct SphereCollider : public Collider {
 //collider for terrain
 struct LandscapeCollider : public Collider {
 	std::vector<std::pair<AABBCollider, Vector3>> aabbcols; //aabb colliders and their local positions
-
-	LandscapeCollider(Mesh* mesh, u32 collisionleyer = 0, Command* command = nullptr);
-
+	
+	LandscapeCollider(Mesh* mesh, u32 collisionleyer = 0, Command* command = nullptr, b32 noCollide = 0);
+	
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
@@ -71,9 +72,9 @@ struct ConvexPolyCollider : public Collider {
 //collider defined by arbitrary mesh
 struct ComplexCollider : public Collider {
 	Mesh* mesh;
-
-	ComplexCollider(Mesh* mesh, u32 collisionleyer = 0, Command* command = nullptr);
-
+	
+	ComplexCollider(Mesh* mesh, u32 collisionleyer = 0, Command* command = nullptr, b32 noCollide = 0);
+	
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
