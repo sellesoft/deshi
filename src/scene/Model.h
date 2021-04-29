@@ -129,18 +129,24 @@ struct Batch {
 };
 
 //primarily for caching triangles neighbors
-//TODO(sushi, Op) maybe cache what edge a triangle shares with each of its neighbors too?
 struct Triangle {
 	Vector3 p[3];
-	Triangle* nbr[3]{};
 
+	//parallel vectors for storing the neighbors and their respective points
 	std::vector<Triangle*> nbrs;
+	std::vector<u8> sharededge; //index of first point where second is the first plus one
+	bool removed = false; //for checking if triangle was culled
+	
 
 	Vector3 midpoint() {
 		return Vector3(
 			(p[0].x + p[1].x + p[2].x) / 3,
 			(p[0].y + p[1].y + p[2].y) / 3,
 			(p[0].z + p[1].z + p[2].z) / 3);
+	}
+
+	Vector3 norm() {
+		return (p[1] - p[0]).cross(p[2] - p[0]);
 	}
 };
 

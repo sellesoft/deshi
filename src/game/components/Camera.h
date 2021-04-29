@@ -28,8 +28,8 @@ struct Camera : public Component {
 	float nearZ; //the distance from the camera's position to screen plane
 	float farZ; //the maximum render distance
 	float fov;
-	Matrix4 viewMatrix;
-	Matrix4 projectionMatrix;
+	Matrix4 viewMat;
+	Matrix4 projMat;
 	
 	Camera(EntityAdmin*a, float fov, float nearZ = .01f, float farZ = 1000.01f, bool freeCam = true);
 	

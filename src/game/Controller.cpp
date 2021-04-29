@@ -166,8 +166,8 @@ inline void CameraZoom(EntityAdmin* admin){
 
 //TODO(sushi, Ma) figure out why this sometimes returns true when clicking outside of object
 inline void HandleSelectEntity(EntityAdmin* admin){
-	Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
-									  admin->mainCamera->viewMatrix, DengWindow->dimensions);
+	Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
+									  admin->mainCamera->viewMat, DengWindow->dimensions);
 	pos *= Math::WorldToLocal(admin->mainCamera->position);
 	pos.normalize();
 	pos *= 1000;
@@ -212,7 +212,7 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 							
 							admin->selectedEntity = &e;
 							if(oldEnt != &e){
-								DengRenderer->SetSelectedMesh(mc->meshID);
+								//DengRenderer->SetSelectedMesh(mc->meshID);
 								admin->undoManager.AddUndoSelect((void**)&admin->selectedEntity, oldEnt, &e);
 							}
 							return;
@@ -222,7 +222,7 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 			}
 		}
 	}
-	DengRenderer->SetSelectedMesh(-1);
+	//DengRenderer->SetSelectedMesh(-1);
 }
 
 inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um) {
@@ -294,7 +294,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 			
 			//set mouse to obj position on screen and save that position
 			if (initialgrab) {
-				Vector2 screenPos = Math::WorldToScreen2(sel->transform.position, c->projectionMatrix, c->viewMatrix, DengWindow->dimensions);
+				Vector2 screenPos = Math::WorldToScreen2(sel->transform.position, c->projMat, c->viewMat, DengWindow->dimensions);
 				DengWindow->SetCursorPos(screenPos);
 				initialObjPos = sel->transform.position;
 				initialdist = (initialObjPos - c->position).mag();
@@ -303,8 +303,8 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 			
 			if (!(xaxis || yaxis || zaxis)) {
 				
-				Vector3 nuworldpos = Math::ScreenToWorld(DengInput->mousePos, c->projectionMatrix,
-														 c->viewMatrix, DengWindow->dimensions);
+				Vector3 nuworldpos = Math::ScreenToWorld(DengInput->mousePos, c->projMat,
+														 c->viewMat, DengWindow->dimensions);
 				
 				Vector3 newpos = nuworldpos;
 				
@@ -320,8 +320,8 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				
 			}
 			else if (xaxis) {
-				Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
-												  admin->mainCamera->viewMatrix, DengWindow->dimensions);
+				Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
+												  admin->mainCamera->viewMat, DengWindow->dimensions);
 				pos *= Math::WorldToLocal(admin->mainCamera->position);
 				pos.normalize();
 				pos *= 1000;
@@ -342,8 +342,8 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				}
 			}
 			else if (yaxis) {
-				Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
-												  admin->mainCamera->viewMatrix, DengWindow->dimensions);
+				Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
+												  admin->mainCamera->viewMat, DengWindow->dimensions);
 				pos *= Math::WorldToLocal(admin->mainCamera->position);
 				pos.normalize();
 				pos *= 1000;
@@ -364,8 +364,8 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				
 			}
 			else if (zaxis) {
-				Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
-												  admin->mainCamera->viewMatrix, DengWindow->dimensions);
+				Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
+												  admin->mainCamera->viewMat, DengWindow->dimensions);
 				pos *= Math::WorldToLocal(admin->mainCamera->position);
 				pos.normalize();
 				pos *= 1000;

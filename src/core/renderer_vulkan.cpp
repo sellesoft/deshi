@@ -583,13 +583,13 @@ UpdateMeshVisibility(u32 meshID, bool visible){
 
 void Renderer::
 SetSelectedMesh(u32 meshID){
-	if(meshID == -1){
-		selectedMeshID = meshID;
-	}else if(meshID < meshes.size()){
-		selectedMeshID = meshID;
-	}else{
-		ERROR("There is no mesh with id: ", meshID);
-	}
+	//if(meshID == -1){
+	//	selectedMeshID = meshID;
+	//}else if(meshID < meshes.size()){
+	//	selectedMeshID = meshID;
+	//}else{
+	//	ERROR("There is no mesh with id: ", meshID);
+	//}
 }
 
 /*

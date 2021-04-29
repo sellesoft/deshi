@@ -14,6 +14,8 @@
 #include <map>
 
 #define DengKeys admin->keybinds
+#define DengAdmin g_admin
+#define DengCamera g_admin->mainCamera
 
 struct Entity;
 struct System;
@@ -65,6 +67,8 @@ struct EntityAdmin {
 	bool pause_console = false;
 	bool pause_sound = false;
 	bool pause_last = false;
+
+	bool find_triangle_neighbors = true;
 	
 	//timer related
 	bool debugTimes = true;
