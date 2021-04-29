@@ -328,6 +328,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 	
 	using namespace ImGui;
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
+	SetPadding;
 	if (BeginChild("entityListScroll", ImVec2(GetWindowWidth() * 0.95, 100), false)) {
 		WinHovCheck; 
 		if (admin->entities.size() == 0) {
@@ -408,6 +409,10 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 					TableNextColumn();
 					//TODO(sushi, Ui) find something better to put here
 					Text(TOSTRING(" comps: ", entity.components.size()).c_str());
+					SameLine();
+					if (Button("Del")) {
+						g_admin->world->DeleteEntity(g_admin, &entity);
+					}
 					PopID();
 				}
 				

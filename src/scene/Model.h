@@ -167,10 +167,10 @@ struct Mesh {
 	void SetName(const char* name);
 	
 	//filename: filename and extension, name: loaded mesh name, transform: pos,rot,scale of mesh
-	static Mesh CreateMeshFromOBJ(std::string filename);
-	static Mesh CreateBox(Vector3 halfDims, Color color = Color::WHITE);
-	static Mesh CreatePlanarBox(Vector3 halfDims, Color color = Color::WHITE);
-	static Mesh CreatePlanarBox(Vector3 halfDims, Texture texture);
+	static Mesh* CreateMeshFromOBJ(std::string filename);
+	static Mesh* CreateBox(Vector3 halfDims, Color color = Color::WHITE);
+	static Mesh* CreatePlanarBox(Vector3 halfDims, Color color = Color::WHITE);
+	static Mesh* CreatePlanarBox(Vector3 halfDims, Texture texture);
 };
 
 
@@ -182,10 +182,10 @@ struct Poly2 {
 //NOTE a model should not change after loading
 struct Model{
 	Armature armature;
-	Mesh mesh;
+	Mesh* mesh;
 	
 	Model() {}
-	Model(Mesh mesh);
+	Model(Mesh* mesh);
 };
 
 #endif //DESHI_MODEL_H

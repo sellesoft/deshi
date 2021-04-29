@@ -16,6 +16,7 @@ struct MeshComp : public Component {
 	MeshComp();
 	MeshComp(u32 meshID, u32 instanceID = 0);
 	MeshComp(Mesh* m, u32 meshID = 0, u32 instanceID = 0);
+	~MeshComp();
 	
 	void ToggleVisibility();
 	void Visible(bool visible);

@@ -123,10 +123,6 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	//ImGui::DebugDrawText3(t.physics->velocity.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(130, 150, 180), Vector2(0, 20));
 	//ImGui::DebugDrawText3(t.physics->acceleration.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(150, 130, 180), Vector2(0, 40));
 	
-	if (!strcmp("player", t.physics->entity->name)) {
-		int i = 0;
-	}
-	
 	t.physics->acceleration = Vector3::ZERO;
 }
 
@@ -139,7 +135,7 @@ Matrix4 LocalToWorldInertiaTensor(Physics* physics, Matrix3 inertiaTensor) {
 	return inverseTransformation.Transpose() * inertiaTensor.To4x4() * inverseTransformation;
 }
 
-inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABBCollider* obj2Col) {
+bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABBCollider* obj2Col) {
 	vec3 min1 = obj1->position - (obj1Col->halfDims * obj1->entity->transform.scale);
 	vec3 max1 = obj1->position + (obj1Col->halfDims * obj1->entity->transform.scale);
 	vec3 min2 = obj2->position - (obj2Col->halfDims * obj2->entity->transform.scale);
@@ -153,7 +149,7 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 		//triggers and no collision
 		if(obj1Col->command) obj1Col->command->Exec(g_admin);
 		if(obj2Col->command) obj2Col->command->Exec(g_admin);
-		if(obj1Col->noCollide || obj2Col->noCollide) return;
+		if(obj1Col->noCollide || obj2Col->noCollide) return false;
 		
 		float xover, yover, zover;
 		
@@ -187,10 +183,7 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 		//dynamic resolution
 		Vector2 rv = obj2->velocity - obj1->velocity;
 		
-		//if (obj2->isStatic) rv = obj1->velocity;
-		
 		float vAlongNorm = rv.dot(norm);
-		
 		if (vAlongNorm < 0) {
 			//TODO(sushi, Ph) do better elasticity later
 			float j = -(1 + (obj1->elasticity + obj2->elasticity) / 2) * vAlongNorm;
@@ -199,9 +192,11 @@ inline void AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj
 			Vector2 impulse = j * norm;
 			if (!obj1->isStatic) obj1->velocity -= impulse / obj1->mass;
 			if (!obj2->isStatic) obj2->velocity += impulse / obj2->mass;
-			
+			return true;
 		}
-	}
+		return true;
+	}	
+	return false;
 }
 
 inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* sphere, SphereCollider* sphereCol) {
@@ -250,7 +245,7 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 		float inverseMassB = 1.f / aabb->mass; 
 		scalar += inverseMassB + aabbAngularVelocityChange.cross(rb).dot(normal);
 		
-		float coefRest = (aabb->elasticity + sphere->elasticity) / 2; //this is completely unfounded is science :)
+		float coefRest = (aabb->elasticity + sphere->elasticity) / 2; 
 		float impulseMod = (coefRest + 1) * (sphere->velocity - aabb->velocity).mag(); //this too :)
 		Vector3 impulse = normal * impulseMod;
 		aabb->AddImpulse(sphere, -impulse);
@@ -575,9 +570,22 @@ poly GeneratePoly(Physics* p) {
 
 }
 
+
+
 //NOTE make sure you are using the right physics component, because the collision 
 //functions dont check that the provided one matches the tuple
 inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other, std::vector<poly>& polys) {
+	auto genpolys = [&]() {
+		if (!tuple.physics->twoDpolygon) {
+			tuple.physics->twoDpolygon = new poly(GeneratePoly(tuple.physics));
+			polys.push_back(*tuple.physics->twoDpolygon);
+		}
+		if (!other.physics->twoDpolygon) {
+			other.physics->twoDpolygon = new poly(GeneratePoly(other.physics));
+			polys.push_back(*other.physics->twoDpolygon);
+		}
+	};
+	
 	switch(tuple.collider->type){
 		case(ColliderType_Box):
 		switch(other.collider->type){
@@ -595,16 +603,7 @@ inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other, std::vector
 			case(ColliderType_Sphere):{ 
 				if (!SphereSphereCollision(tuple.physics, (SphereCollider*)tuple.collider,
 					other.physics, (SphereCollider*)other.collider)) {
-					if (tuple.physics->twoDphys && other.physics->twoDphys) {
-						if (!tuple.physics->twoDpolygon) {
-							tuple.physics->twoDpolygon = new poly(GeneratePoly(tuple.physics));
-							polys.push_back(*tuple.physics->twoDpolygon);
-						} 
-						if (!other.physics->twoDpolygon) {
-							other.physics->twoDpolygon = new poly(GeneratePoly(other.physics));
-							polys.push_back(*other.physics->twoDpolygon);
-						}
-					}
+					if (tuple.physics->twoDphys && other.physics->twoDphys) genpolys();
 				}
 				
 			}break;
@@ -617,8 +616,13 @@ inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other, std::vector
 															other.physics, (BoxCollider*)   other.collider); }break;
 			case(ColliderType_Sphere):{ AABBSphereCollision(tuple.physics, (AABBCollider*)  tuple.collider, 
 															other.physics, (SphereCollider*)other.collider); }break;
-			case(ColliderType_AABB):  { AABBAABBCollision  (tuple.physics, (AABBCollider*)  tuple.collider, 
-															other.physics, (AABBCollider*)  other.collider); }break;
+			case(ColliderType_AABB):  { 
+				if (!AABBAABBCollision(tuple.physics, (AABBCollider*)tuple.collider,
+					other.physics, (AABBCollider*)other.collider)) {
+					if (tuple.physics->twoDphys && other.physics->twoDphys) genpolys();
+				}
+
+				}break;
 		}break;
 	}
 }

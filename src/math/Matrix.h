@@ -167,6 +167,7 @@ struct Matrix4 {
 	static Matrix4 TranslationMatrix(Vector3 translation);
 	static Matrix4 ScaleMatrix(Vector3 scale);
 	static Matrix4 TransformationMatrix(Vector3 translation, Vector3 rotation, Vector3 scale);
+
 };
 typedef Matrix4 mat4;
 #include "Matrix4.inl"

@@ -445,15 +445,17 @@ u32 Renderer::
 CreateMesh(Scene* scene, const char* filename){
 	//check if Mesh was already created
 	for(auto& model : scene->models){ 
-		if(strcmp(model.mesh.name, filename) == 0){ 
-			return CreateMesh(&model.mesh, Matrix4::IDENTITY);
+		if(strcmp(model.mesh->name, filename) == 0){ 
+			return CreateMesh(model.mesh, Matrix4::IDENTITY);
 		} 
 	}
 	PRINTVK(3, "    Creating mesh: ", filename);
 	
+
+
 	scene->models.emplace_back(Mesh::CreateMeshFromOBJ(filename));
 	
-	return CreateMesh(&scene->models[scene->models.size()-1].mesh, Matrix4::IDENTITY);
+	return CreateMesh(scene->models[scene->models.size()-1].mesh, Matrix4::IDENTITY);
 }
 
 u32 Renderer::
@@ -842,7 +844,7 @@ LoadScene(Scene* sc){
 	initialized = false;
 	
 	//load meshes, materials, and textures
-	for(Model& model : sc->models){ LoadBaseMesh(&model.mesh); }
+	for(Model& model : sc->models){ LoadBaseMesh(model.mesh); }
 	
 	CreateSceneBuffers();
 	initialized = true;

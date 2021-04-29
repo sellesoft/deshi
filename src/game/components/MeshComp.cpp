@@ -38,6 +38,10 @@ MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
 	layer = ComponentLayer_Canvas;
 }
 
+MeshComp::~MeshComp() {
+	DengRenderer->RemoveMesh(meshID);
+}
+
 void MeshComp::Init() {
 	if(!mesh) mesh = DengRenderer->GetMeshPtr(meshID);
 	//NOTE ideally we check for an existing mesh pointer, but 
@@ -96,11 +100,6 @@ void MeshComp::Update() {
 			ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
 		}
 	}
-
-	
-
-	
-
 
 
 	//update mesh's transform with entities tranform

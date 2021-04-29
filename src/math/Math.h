@@ -413,6 +413,7 @@ namespace Math {
 			return false;
 		}
 		
+		
 		//clip to the far plane
 		planePoint = Vector3(0, 0, camera->farZ);
 		planeNormal = Vector3::BACK;

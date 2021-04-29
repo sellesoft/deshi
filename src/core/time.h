@@ -44,6 +44,7 @@ struct Time{
 //global time pointer
 extern Time* g_time;
 #define DengTime g_time
+#define DengTotalTime g_time->totalTime
 
 inline void Time::Init(float fixedUpdatesPerSecond){
 	fixedTimeStep    = fixedUpdatesPerSecond;

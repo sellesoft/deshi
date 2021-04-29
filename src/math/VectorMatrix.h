@@ -177,7 +177,7 @@ AxisAngleRotationMatrix(float angle, Vector4 axis) {
 //returns a transformation matrix of the combined translation, rotation, and scale matrices from input vectors
 //rotates over the Y, then Z then X, ref: https://www.euclideanspace.com/maths/geometry/affine/aroundPoint/index.htm
 inline Matrix4 Matrix4::RotationMatrixAroundPoint(Vector3 pivot, Vector3 rotation) {
-	pivot = -pivot; //gotta negate this for some reason :)
+	//pivot = -pivot; //gotta negate this for some reason :)
 	rotation = RADIANS(rotation);
 	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
 	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
@@ -185,6 +185,7 @@ inline Matrix4 Matrix4::RotationMatrixAroundPoint(Vector3 pivot, Vector3 rotatio
 	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
 	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
 	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
+	
 	return Matrix4(r00, r01, r02, 0,
 				   r10, r11, r12, 0,
 				   r20, r21, r22, 0,
@@ -234,12 +235,12 @@ inline Vector3 Matrix4::
 Rotation() {
 	if ((*this)(0, 2) < 1) {
 		if ((*this)(0, 2) > -1) {
-			return -Vector3(atan2(-(*this)(1, 2), (*this)(2, 2)), asin((*this)(0, 2)), atan2(-(*this)(0,1), (*this)(0,0)));
+			return -Vector3(DEGREES(atan2(-(*this)(1, 2), (*this)(2, 2))), DEGREES(asin((*this)(0, 2))), DEGREES(atan2(-(*this)(0,1), (*this)(0,0))));
 		} else {
-			return -Vector3(-atan2((*this)(1, 0), (*this)(1, 1)), -M_PI / 2, 0);
+			return -Vector3(DEGREES(-atan2((*this)(1, 0), (*this)(1, 1))), DEGREES(-M_PI / 2), 0);
 		}
 	} else {
-		return -Vector3(atan2((*this)(1, 0), (*this)(1, 1)),  M_PI / 2 , 0);
+		return -Vector3(DEGREES(atan2((*this)(1, 0), (*this)(1, 1))),  DEGREES(M_PI / 2) , 0);
 	}
 	
 	

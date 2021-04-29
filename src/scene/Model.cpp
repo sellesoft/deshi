@@ -136,8 +136,8 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 }
 
 //https://github.com/tinyobjloader/tinyobjloader
-Mesh Mesh::CreateMeshFromOBJ(std::string filename){
-	Mesh mesh; mesh.SetName(filename.c_str());
+Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
+	Mesh* mesh = new Mesh(); mesh->SetName(filename.c_str());
 	int totalVertexCount = 0;
 	int totalIndexCount = 0;
 	int totalTextureCount = 0;
@@ -169,7 +169,7 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename){
 	bool hasColors = attrib.colors.size() > 0;
 	
 	//fill batches
-	mesh.batchArray.reserve(shapes.size());
+	mesh->batchArray.reserve(shapes.size());
 	for (auto& shape : shapes) {
 		Batch batch; batch.SetName(shape.name.c_str());
 		
@@ -247,19 +247,19 @@ Mesh Mesh::CreateMeshFromOBJ(std::string filename){
 		//TODO(delle,Re) parse different shader options here based on texture count
 		batch.shader = Shader::FLAT;
 		batch.shaderFlags = SHADER_FLAGS_NONE;
-		mesh.batchArray.push_back(batch);
+		mesh->batchArray.push_back(batch);
 	}
 	
-	mesh.vertexCount = totalVertexCount;
-	mesh.indexCount = totalIndexCount;
-	mesh.textureCount = totalTextureCount;
-	mesh.batchCount = mesh.batchArray.size();
-	mesh.triangles = FindTriangleNeighbors(&mesh);
+	mesh->vertexCount = totalVertexCount;
+	mesh->indexCount = totalIndexCount;
+	mesh->textureCount = totalTextureCount;
+	mesh->batchCount = mesh->batchArray.size();
+	mesh->triangles = FindTriangleNeighbors(mesh);
 	return mesh;
 }
 
 
-Mesh Mesh::CreateBox(Vector3 halfDims, Color color) {
+Mesh* Mesh::CreateBox(Vector3 halfDims, Color color) {
 	Vector3 p = halfDims;
 	Vector3 c = Vector3(color.r, color.g, color.b) / 255.f;
 	std::vector<Vertex> vertices = {
@@ -282,15 +282,15 @@ Mesh Mesh::CreateBox(Vector3 halfDims, Color color) {
 	};
 	
 	Batch batch("box_batch", vertices, indices, {});
-	Mesh mesh = Mesh("default_box", { batch });
-	mesh.vertexCount = 8;
-	mesh.indexCount = 36;
-	mesh.textureCount = 0;
-	mesh.batchCount = 1;
+	Mesh* mesh = new Mesh("default_box", { batch });
+	mesh->vertexCount = 8;
+	mesh->indexCount = 36;
+	mesh->textureCount = 0;
+	mesh->batchCount = 1;
 	return mesh;
 }
 
-Mesh Mesh::CreatePlanarBox(Vector3 halfDims, Color color) {
+Mesh* Mesh::CreatePlanarBox(Vector3 halfDims, Color color) {
 	float x = halfDims.x; float y = halfDims.y; float z = halfDims.z;
 	Vector2 tl = Vector2(0.f, 0.f);   Vector2 tr = Vector2(1.f, 0.f); 
 	Vector2 bl = Vector2(0.f, 1.f);   Vector2 br = Vector2(1.f, 1.f); 
@@ -337,16 +337,16 @@ Mesh Mesh::CreatePlanarBox(Vector3 halfDims, Color color) {
 	};
 	
 	Batch batch("planarbox_batch", vertices, indices, {});
-	Mesh mesh = Mesh("default_planarbox", { batch });
-	mesh.vertexCount = 24;
-	mesh.indexCount = 36;
-	mesh.textureCount = 0;
-	mesh.batchCount = 1;
+	Mesh* mesh = new Mesh("default_planarbox", { batch });
+	mesh->vertexCount = 24;
+	mesh->indexCount = 36;
+	mesh->textureCount = 0;
+	mesh->batchCount = 1;
 	return mesh;
 }
 
 //TODO(delle) make this a texture array and make each face its own batch for multi-textured boxes
-Mesh Mesh::CreatePlanarBox(Vector3 halfDims, Texture texture) {
+Mesh* Mesh::CreatePlanarBox(Vector3 halfDims, Texture texture) {
 	float x = halfDims.x; float y = halfDims.y; float z = halfDims.z;
 	Vector2 tl = Vector2(0.f, 0.f);   Vector2 tr = Vector2(1.f, 0.f); 
 	Vector2 bl = Vector2(0.f, 1.f);   Vector2 br = Vector2(1.f, 1.f); 
@@ -393,11 +393,11 @@ Mesh Mesh::CreatePlanarBox(Vector3 halfDims, Texture texture) {
 	};
 	
 	Batch batch("planarbox_batch", vertices, indices, { texture }, Shader::PBR);
-	Mesh mesh = Mesh("textured_planarbox", { batch });
-	mesh.vertexCount = 24;
-	mesh.indexCount = 36;
-	mesh.textureCount = 1;
-	mesh.batchCount = 1;
+	Mesh* mesh = new Mesh("textured_planarbox", { batch });
+	mesh->vertexCount = 24;
+	mesh->indexCount = 36;
+	mesh->textureCount = 1;
+	mesh->batchCount = 1;
 	return mesh;
 }
 
@@ -405,6 +405,6 @@ Mesh Mesh::CreatePlanarBox(Vector3 halfDims, Texture texture) {
 //// Model ////
 ///////////////
 
-Model::Model(Mesh mesh){
+Model::Model(Mesh* mesh){
 	this->mesh = mesh;
 }
