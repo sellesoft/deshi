@@ -5,8 +5,11 @@
 #include "../core.h"
 
 
-enum Event {
-    TEST_EVENT
+enum Event : u32{
+	Event_NONE = 0,
+	TEST_EVENT,
+	Event_DoorOpen, Event_DoorClose,
+	Event_LAST,
 };
 
 

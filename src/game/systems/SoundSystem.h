@@ -13,16 +13,18 @@
 struct SoundSystem : public System {
 	
 	//storing this here because I don't know where else to put it 
-	const ALCchar* devices;
-	const ALCchar* defaultDeviceName;
+	const ALCchar* devices = 0;
+	const ALCchar* defaultDeviceName = 0;
 	int ret;
-	char* bufferData;
-	ALCdevice* device;
-	ALvoid* data;
-	ALCcontext* context;
+	char* bufferData = 0;
+	ALCdevice* device = 0;
+	ALvoid* data = 0;
+	ALCcontext* context = 0;
 	std::vector<ALuint*> buffers;
 	
-	void Init(EntityAdmin* admin) override;
+	SoundSystem(EntityAdmin* admin);
+	
+	void Init();
 	void Update() override;
 };
 

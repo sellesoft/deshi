@@ -1,4 +1,5 @@
 #include "assets.h"
+#include "../EntityAdmin.h"
 #include "../utils/debug.h"
 #include "console.h"
 
@@ -18,6 +19,16 @@ getData(const char* filename){
 		return file;
 	}else{
 		ERROR("Failed to find data: ", file); return "";
+	}
+}
+
+std::string deshi::
+getEntity(const char* filename){
+	std::string file = dirEntities() + filename;
+	if(std::filesystem::exists(std::filesystem::path(file))){
+		return file;
+	}else{
+		ERROR("Failed to find entity: ", file); return "";
 	}
 }
 
@@ -128,9 +139,9 @@ void deshi::
 appendFile(const std::string& filepath, std::vector<char>& data, u32 chars){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
-
+	
 	if(chars == 0){ chars = data.size(); }
-
+	
 	file.write(reinterpret_cast<const char*>(data.data()), chars);
 	file.close();
 }
@@ -139,7 +150,7 @@ void deshi::
 appendFile(const std::string& filepath, const char* data, u32 chars){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
-
+	
 	file.write(data, chars);
 	file.close();
 }
@@ -168,9 +179,50 @@ void deshi::
 appendFileBinary(const std::string& filepath, const char* data, u32 bytes){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::app);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
-
+	
 	file.write(data, bytes);
 	file.close();
+}
+
+std::map<std::string, std::string> deshi::
+extractConfig(const std::string& filepath) {
+	std::map<std::string, std::string> out;
+	
+	std::fstream in;
+	in.open(deshi::dirConfig() + filepath, std::fstream::in);
+	
+	if (in.is_open()) {
+		
+		std::regex r = std::regex("([A-Za-z]+) += +(.+)");
+		int line = 0;
+		while (!in.eof()) {
+			char* c = (char*)malloc(255);
+			in.getline(c, 255);
+			
+			std::string s(c);
+			
+			if (s[0] == '>') { line++; continue; }
+			
+			std::smatch m;
+			
+			std::regex_match(s, m, r);
+			
+			if (m.size() == 1) {
+				ERROR_LOC(m[1], "\nConfig regex did not find a match for the string above.");
+				line++;
+				continue;
+			}
+			
+			out.emplace(m[1], m[2]);
+			
+		}
+	}
+	else {
+		out.emplace("FileNotFound", "");
+	}
+	
+	return out;
+	
 }
 
 std::vector<std::string> deshi::
@@ -183,56 +235,18 @@ iterateDirectory(const std::string& filepath) {
 	return files;
 }
 
-std::map<std::string, std::string> deshi::
-extractConfig(const std::string& filepath) {
-	std::map<std::string, std::string> out;
-
-	std::fstream in;
-	in.open(deshi::dirConfig() + filepath, std::fstream::in);
-
-	if (in.is_open()) {
-
-		std::regex r = std::regex("([A-Za-z]+) += +(.+)");
-		int line = 0;
-		while (!in.eof()) {
-			char* c = (char*)malloc(255);
-			in.getline(c, 255);
-
-			std::string s(c);
-
-			if (s[0] == '>') { line++; continue; }
-
-			std::smatch m;
-
-			std::regex_match(s, m, r);
-			
-			if (m.size() == 1) {
-				ERROR_LOC(m[1], "\nConfig regex did not find a match for the string above.");
-				line++;
-				continue;
-			}
-
-			out.emplace(m[1], m[2]);
-
-		}
-	}
-	else {
-		out.emplace("FileNotFound", "");
-	}
-
-	return out;
-
-}
-
-void deshi::enforceDirectories() {
+void deshi::
+enforceDirectories() {
 	using namespace std::filesystem;
 	if (!is_directory("data")) {
 		create_directory("data");
+		create_directory("data/entities");
 		create_directory("data/models");
 		create_directory("data/scenes");
 		create_directory("data/sounds");
 		create_directory("data/textures");
 	} else {
+		if (!is_directory("data/entities"))   { create_directory("data/entities"); }
 		if (!is_directory("data/models"))   { create_directory("data/models"); }
 		if (!is_directory("data/scenes"))   { create_directory("data/scenes"); }
 		if (!is_directory("data/sounds"))   { create_directory("data/sounds"); }

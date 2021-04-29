@@ -196,6 +196,9 @@
     <ClInclude Include="..\src\game\components\Player.h">
       <Filter>src\game\components\h</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\game\components\door.h">
+      <Filter>src\game\components\h</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -461,6 +464,9 @@
       <Filter>src\game\components\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\game\components\Player.cpp">
+      <Filter>src\game\components\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\game\components\door.cpp">
       <Filter>src\game\components\cpp</Filter>
     </ClCompile>
   </ItemGroup>

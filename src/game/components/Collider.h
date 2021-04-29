@@ -19,6 +19,8 @@ struct Collider : public Component {
 	Matrix3 inertiaTensor;
 	b32 noCollide;
 	Command* command;
+	
+	virtual void RecalculateTensor(f32 mass) {};
 };
 
 //rotatable box
@@ -28,6 +30,7 @@ struct BoxCollider : public Collider {
 	BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
 	BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
 	
+	void RecalculateTensor(f32 mass) override;
 	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
@@ -40,6 +43,7 @@ struct AABBCollider : public Collider {
 	AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
 	AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
 	
+	void RecalculateTensor(f32 mass) override;
 	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };
@@ -50,6 +54,7 @@ struct SphereCollider : public Collider {
 	SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
 	SphereCollider(float radius, float mass, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
 	
+	void RecalculateTensor(f32 mass) override;
 	std::vector<char> Save() override;
 	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
 };

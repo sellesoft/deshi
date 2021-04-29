@@ -205,10 +205,10 @@ void SoundThread(EntityAdmin* admin) {
 	}
 }
 
-void SoundSystem::Init(EntityAdmin* admin) {
-	System::Init(admin);
-	ALboolean enumeration;
+SoundSystem::SoundSystem(EntityAdmin* a){
+	admin = a;
 	
+	ALboolean enumeration;
 	ALCenum error;
 	ALint source_state;
 	
@@ -218,7 +218,7 @@ void SoundSystem::Init(EntityAdmin* admin) {
 		LOG_LOC("OpenAL unable to enumerate devices");
 	
 	//list audio devices
-	list_audio_devices(alcGetString(NULL, ALC_DEVICE_SPECIFIER));
+	//list_audio_devices(alcGetString(NULL, ALC_DEVICE_SPECIFIER));
 	
 	if (!defaultDeviceName)
 		defaultDeviceName = alcGetString(NULL, ALC_DEFAULT_DEVICE_SPECIFIER);
@@ -243,6 +243,10 @@ void SoundSystem::Init(EntityAdmin* admin) {
 	//start main sound thread
 	//std::thread sndthr(SoundThread, admin);
 	//sndthr.detach();
+	
+}
+
+void SoundSystem::Init() {
 	
 }
 

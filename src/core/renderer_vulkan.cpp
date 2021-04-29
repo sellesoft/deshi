@@ -1369,15 +1369,16 @@ chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes
 	}
 	
 	if(immediate && false){ //TODO(delle,ReVu) test if this is possible regardless of minImageCount
+		settings.vsync = VSyncType_Immediate;
 		return VK_PRESENT_MODE_IMMEDIATE_KHR;
 	}else if(mailbox){
-		PRINTLN("mailbox");
+		settings.vsync = VSyncType_Mailbox;
 		return VK_PRESENT_MODE_MAILBOX_KHR;
 	}else if(fifo_relaxed){
-		PRINTLN("Fifo Relaxed");
+		settings.vsync = VSyncType_FifoRelaxed;
 		return VK_PRESENT_MODE_FIFO_RELAXED_KHR;
 	}else{
-		PRINTLN("Fifo");
+		settings.vsync = VSyncType_Fifo;
 		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 }

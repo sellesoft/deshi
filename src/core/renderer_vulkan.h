@@ -29,9 +29,13 @@ struct Matrix4; struct Matrix3;
 struct Vector4; struct Vector3; struct Vector2; struct Color;
 typedef u8 stbi_uc;
 
+enum VSyncType : u32{
+	VSyncType_NONE = 0, VSyncType_Immediate, VSyncType_Mailbox, VSyncType_FifoRelaxed, VSyncType_Fifo
+};
+
 struct RenderSettings{
 	//loaded from file
-	bool vsync;
+	VSyncType vsync;
 	bool reduceBuffering;
 	float  brightness;
 	float  gamma;

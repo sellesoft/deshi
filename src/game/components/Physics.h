@@ -11,12 +11,12 @@ struct Physics;
 struct Manifold {
 	Physics* a = nullptr;
 	Physics* b = nullptr;
-
+	
 	int refID = 0;
 	Vector2 colpoints[2];
 	float depth[2];
 	int nColPoints = 0;
-
+	
 	Vector2 norm;
 };
 
@@ -36,7 +36,7 @@ struct Physics : public Component {
 	Vector3 inputVector = Vector3::ZERO;
 	
 	bool isStatic = false;
-	//bool staticRotation = false;
+	b32 staticRotation = false;
 	//TODO(delle,Ph) separate static movement and rotation
 	bool twoDphys = false;
 	

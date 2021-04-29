@@ -227,6 +227,7 @@
     <ClInclude Include="..\src\game\components\Camera.h" />
     <ClInclude Include="..\src\game\components\Collider.h" />
     <ClInclude Include="..\src\game\components\Component.h" />
+    <ClInclude Include="..\src\game\components\door.h" />
     <ClInclude Include="..\src\game\components\Light.h" />
     <ClInclude Include="..\src\game\components\MeshComp.h" />
     <ClInclude Include="..\src\game\components\Movement.h" />
@@ -318,6 +319,7 @@
     <ClCompile Include="..\src\game\components\Camera.cpp" />
     <ClCompile Include="..\src\game\components\Collider.cpp" />
     <ClCompile Include="..\src\game\components\Component.cpp" />
+    <ClCompile Include="..\src\game\components\door.cpp" />
     <ClCompile Include="..\src\game\components\Light.cpp" />
     <ClCompile Include="..\src\game\components\MeshComp.cpp" />
     <ClCompile Include="..\src\game\components\Movement.cpp" />

@@ -56,6 +56,7 @@ typedef i32 b32; //int based boolean so c++ doesnt convert to 0 or 1
 //i: variable name; x: number of iterations 
 #define for_n(i,x) for(int i=0; i<x; ++i)
 
+//NOTE(delle) bytes should be minus one but keeping it like this since strncpy works like this
 //dst: destination c-string; src: source c-string; bytes: number of characters to copy
 #define cpystr(dst, src, bytes) strncpy_s(dst, src, bytes); dst[bytes] = '\0'
 
