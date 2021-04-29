@@ -19,6 +19,9 @@ struct PhysicsSystem : public System {
 	float gravity     = -9.81f;
 	float frictionAir = 0.01f; //TODO(delle,Ph) this should depend on object shape
 	
+	
+
+
 	float maxVelocity    = 100.f;
 	float minVelocity    = 0.005f;
 	float maxRotVelocity = 360.f; //per axis in degrees

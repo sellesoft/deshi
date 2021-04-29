@@ -57,6 +57,7 @@ struct Vector2 {
 	Vector2 copy() const;
 	float   dot(const Vector2& rhs) const;
 	Vector2 cross(const Vector2& rhs) const;
+	Vector2 perp() const;
 	float   mag() const;
 	void    normalize();
 	Vector2 normalized() const;

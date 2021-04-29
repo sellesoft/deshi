@@ -220,7 +220,7 @@ struct Renderer{
 	
 	//loads a mesh to the different shaders specified in its batches
 	//returns the ID of the mesh
-	u32 LoadBaseMesh(Mesh* m);
+	u32 LoadBaseMesh(Mesh* m, bool visible = false);
 	u32 GetBaseMeshID(const char* name);
 	u32 CreateMesh(Scene* scene, const char* filename);
 	u32 CreateMesh(Mesh* mesh, Matrix4 matrix);
@@ -237,9 +237,9 @@ struct Renderer{
 	void SetSelectedMesh(u32 meshID);
 	
 	//returns a base mesh ID
-	u32 CreateDebugLine(Vector3 start, Vector3 end, Color color);
+	u32 CreateDebugLine(Vector3 start, Vector3 end, Color color, bool visible = false);
 	//returns a base mesh ID
-	u32 CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color);
+	u32 CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool visible = false);
 	
 	u32  MakeInstance(u32 meshID, Matrix4 matrix);
 	void RemoveInstance(u32 instanceID);

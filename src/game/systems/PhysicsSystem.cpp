@@ -8,6 +8,8 @@
 #include "../components/Physics.h"
 #include "../components/Collider.h"
 #include "../components/AudioSource.h"
+#include "../components/MeshComp.h"
+
 
 #include "CanvasSystem.h"
 
@@ -252,7 +254,7 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 		float impulseMod = (coefRest + 1) * (sphere->velocity - aabb->velocity).mag(); //this too :)
 		Vector3 impulse = normal * impulseMod;
 		aabb->AddImpulse(sphere, -impulse);
-		sphere->rotVelocity -= sphereAngularVelocityChange;
+		//sphere->rotVelocity -= sphereAngularVelocityChange;
 		//aabb->entity->rotVelocity -= aabbAngularVelocityChange; //we dont do this because AABB shouldnt rotate
 	}
 }
@@ -261,7 +263,7 @@ inline void AABBBoxCollision(Physics* aabb, AABBCollider* aabbCol, Physics* box,
 	ERROR("AABB-Box collision not implemented in PhysicsSystem.cpp");
 }
 
-inline void SphereSphereCollision(Physics* s1, SphereCollider* sc1, Physics* s2, SphereCollider* sc2) {
+inline bool SphereSphereCollision(Physics* s1, SphereCollider* sc1, Physics* s2, SphereCollider* sc2) {
 	//static resolution
 	float dist = (s1->position - s2->position).mag();
 	float rsum = sc1->radius + sc2->radius;
@@ -269,7 +271,7 @@ inline void SphereSphereCollision(Physics* s1, SphereCollider* sc1, Physics* s2,
 		//triggers and no collision
 		if(sc1->command) sc1->command->Exec(g_admin);
 		if(sc2->command) sc2->command->Exec(g_admin);
-		if(sc1->noCollide || sc2->noCollide) return;
+		if(sc1->noCollide || sc2->noCollide) return false;
 		
 		Vector3 s1t2 = s2->position - s1->position;
 		float overlap = (rsum - dist) / 2;
@@ -288,7 +290,9 @@ inline void SphereSphereCollision(Physics* s1, SphereCollider* sc1, Physics* s2,
 		
 		s1->velocity = s1->velocity - opP * s2->mass * n;
 		s2->velocity = s2->velocity + opP * s1->mass * n;
+		return true;
 	}
+	return false;
 }
 
 inline void SphereLandscapeCollision(Physics* s, SphereCollider* sc, Physics* ls, SphereCollider* lsc) {
@@ -303,13 +307,277 @@ inline void BoxBoxCollision(Physics* box, BoxCollider* boxCol, Physics* other, B
 	ERROR("Box-Box collision not implemented in PhysicsSystem.cpp");
 }
 
-inline void Solve2DManifolds() {
+
+////////////////////
+//
+//
+// 2D Stuff, will probably be moved later
+//
+//
+
+
+//returns what point in a vector of 2D vectors is furthest along a normal
+int FurthestAlongNormal(std::vector<Vector2> p, Vector2 n) {
+	float furthest = -INFINITY;
+	int furthestID = 0;
+	for (int i = 0; i < p.size(); i++) {
+		float dist = n.dot(p[i]);
+		if (dist > furthest) {
+			furthest = dist;
+			furthestID = i;
+		}
+	}
+	return furthestID;
+}
+
+int GetFaceID(poly* p, Vector2 n) {
+	int furthestPointID = FurthestAlongNormal(p->p, n);
+	float mostSimilar = -1;
+	int ID = 0;
+
+	for (int i = 0; i < p->p.size(); i++) {
+		int o = (i + 1) % p->p.size();
+
+		Vector2 p1 = p->p[i];
+		Vector2 p2 = p->p[o];
+
+		if (i == furthestPointID || o == furthestPointID) {
+			Vector2 norm = (p2 - p1).perp().normalized();
+			float similarity = norm.dot(n);
+			if (similarity > mostSimilar) {
+				mostSimilar = similarity;
+				ID = i;
+			}
+		}
+	}
+	return ID;
+}
+
+void ClipSide(Vector2* colpoints, poly* p, int faceID) {
+
+	int outside = 0;
+	int inside = 0;
+
+	Vector2 fp1 = p->p[faceID];
+	Vector2	fp2 = p->p[(faceID + 1) % p->p.size()];
+	Vector2 norm = (fp2 - fp1).perp().normalized();
+
+	float dists[2];
+
+	for (int i = 0; i < 2; i++) {
+		float dist = (colpoints[i] - fp1).dot(norm);
+		dists[i] = dist;
+		if (dist > 0) outside++;
+		else          inside++;
+	}
+
+	if (inside == 2) return;
+	else if (inside == 1) {
+		float total = abs(dists[0]) + abs(dists[1]);
+		int insideID = (dists[0] > 0) ? 1 : 0;
+		int outsideID = !insideID;
+		float ratio = abs(dists[insideID]) / total;
+		Vector2 v = (colpoints[outsideID] - colpoints[insideID]) * ratio;
+		Vector2 np = colpoints[insideID] + v;
+		colpoints[outsideID] = np;
+	}
+}
+
+void Clip(Manifold& m) {
+	int refID = GetFaceID(m.a, m.norm);
+	int incID = GetFaceID(m.b, -m.norm);
+
+	int asize = m.a->p.size();
+	int bsize = m.b->p.size();
+
+	Vector2 colpoints[2] = { m.b->p[incID], m.b->p[(incID + 1) % bsize] };
+
+	//clip colpoints against adjacent faces of reference
+	ClipSide(colpoints, m.a, ((refID + (asize - 1)) % asize));
+	ClipSide(colpoints, m.a, ((refID + 1) % asize));
+	m.nColPoints = 2;
+
+	//get distance from ref face of collision points
+	for (int i = 0; i < 2; i++) {
+		float dist = (colpoints[i] - m.a->p[refID]).dot(m.norm);
+		m.depth[i] = dist;
+	}
+	m.colpoints[0] = colpoints[0];
+	m.colpoints[1] = colpoints[1];
+
+	//remove collision points that are above the reference face and reoder them in manifold if needed
+	for (int i = 0; i < 2; i++) {
+		if (m.depth[i] > 0) {
+			m.nColPoints--;
+			if (i == 0) {
+				m.colpoints[0] = m.colpoints[1];
+				m.depth[0] = m.depth[1];
+			}
+		}
+	}
+
+	m.refID = refID;
+
+}
+
+bool ShapeOverlapSAT(poly& r1, poly& r2, Manifold& m) {
+	//PRINTLN("SAT------------------------------")
+	static int depcount = 0;
+
+	poly* p1 = &r1;
+	poly* p2 = &r2;
+	poly* refpoly = nullptr;
+
+	float minpen = -INFINITY;
+	Vector2 bnorm;
+
+
+	for (int shape = 0; shape < 2; shape++) {
+		if (shape == 1) { p1 = &r2; p2 = &r1; }
+
+		for (int i = 0; i < p1->p.size(); i += 2) {
+
+			Vector2 fp1 = p1->p[i];
+			//DrawString(Vector2(fp1.x, fp1.y - 20), std::to_string(i), olc::CYAN);
+			Vector2 fp2 = p1->p[i + 1];
+			//DrawString(Vector2(fp2.x + 10, fp2.y - 20), std::to_string(i), olc::CYAN);
+
+			Vector2 norm = (fp2 - fp1).perp().normalized();
+			float deepest = INFINITY;
+
+			Vector2 vertp;
+
+			for (int j = 0; j < p2->p.size(); j++) {
+
+				Vector2 vert = p2->p[j];
+				vertp = vert;
+				float vertdepth = (fp1 - vert).dot(norm);
+				//if(shape == 0) DrawLine(vert, vert - norm * vertdepth, olc::Pixel(255 * (j+1)/p2->p.size(), 255 * (p2->p.size() - j) / p2->p.size(), 255 * (p1->p.size() - i) / p1->p.size()));
+				//if(shape == 0) DrawString(vert, std::to_string(j));
+				//if(shape == 0) DrawString(Vector2(0 + 300 * shape, GetWindowSize().y - (100 + 9 * depcount)), "dep face " + std::to_string(i) + " point " + std::to_string(j) + ": " + std::to_string(vertdepth), olc::Pixel(255 * (j + 1) / p2->p.size(), 255 * (p2->p.size() - j) / p2->p.size(), 255 * (p1->p.size() - i) / p1->p.size()));
+				depcount++;
+				if (vertdepth < deepest) deepest = vertdepth;
+			}
+			//PRINTLN(deepest);
+			if (deepest > 0) {
+				return false;
+			}
+			else if (deepest > minpen) {
+				minpen = deepest;
+				bnorm = norm;
+				refpoly = p1;
+			}
+		}
+		depcount = 0;
+	}
+
+
+	m.a = refpoly;
+	m.b = (&r1 == refpoly) ? &r2 : &r1;
+	m.norm = bnorm;
+
+	Clip(m);
+
+	return true;
+}
+
+void FillManis(std::vector<poly>& polys, std::vector<Manifold>& manis) {
+	manis.clear();
+	for (int m = 0; m < polys.size(); m++) {
+		for (int n = m + 1; n < polys.size(); n++) {
+			
+			
+			
+			Manifold ma;
+			if (ShapeOverlapSAT(polys[m], polys[n], ma)) {
+				//PRINTLN("TRUE------------------------");
+			}
+			else {
+				//PRINTLN("FALSE------------------------");
+			}
+			//polys[m].overlap |= 
+			manis.push_back(ma);
+		}
+	}
+}
+
+void SolveManifolds(std::vector<Manifold> manis) {
+	for (Manifold& m : manis) {
+		poly* p1 = m.a;
+		poly* p2 = m.b;
+
+		if (p1 && p2) {
+
+			if (!p1->isStatic && m.depth[0] < 0) p1->pos += m.norm * m.depth[0] / 2;
+			if (!p1->isStatic && m.depth[1] < 0) p1->pos += m.norm * m.depth[1] / 2;
+
+			if (!p2->isStatic && m.depth[0] < 0) p2->pos -= m.norm * m.depth[0] / 2;
+			if (!p2->isStatic && m.depth[1] < 0) p2->pos -= m.norm * m.depth[1] / 2;
+
+			Vector2 rv = p1->vel - p2->vel;
+
+			float vAlongNorm = rv.dot(m.norm);
+			PRINTLN(vAlongNorm);
+
+			if (vAlongNorm < 0) {
+				float e = 0.1;
+				float j = -(1 + e) * rv.dot(m.norm);
+				j /= 1 / p1->mass + 1 / p2->mass;
+
+				Vector2 impulse = j * m.norm;
+				if (!p1->isStatic) {
+					
+					Vector3 impworld = Math::ScreenToWorld(p1->pos - impulse, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
+					Vector3 impworldpr = Math::VectorPlaneIntersect(p1->ogphys->position, DengCamera->position - p1->ogphys->position, DengCamera->position, impworld);
+					
+					p1->ogphys->velocity -= impworldpr - p1->ogphys->position;
+
+				}
+				if (!p2->isStatic) {
+					//p2->vel += impulse / p2->mass;
+					//p2->ogphys->velocity += impulse.ToVector3() * (p2->ogphys->position - DengCamera->position).mag() / p2->ogphys->mass;
+				
+					Vector3 impworld = Math::ScreenToWorld(p2->pos - impulse, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
+					Vector3 impworldpr = Math::VectorPlaneIntersect(p2->ogphys->position, DengCamera->position - p2->ogphys->position, DengCamera->position, impworld);
+
+					p2->ogphys->velocity -= impworldpr - p2->ogphys->position;
+
+				}
+			}
+		}
+	}
+}
+
+poly GeneratePoly(Physics* p) {
+	poly poly;
+	poly.o =
+	Geometry::GenerateOutlinePoints(p->entity->GetComponent<MeshComp>()->mesh, 
+		Matrix4::TransformationMatrix(p->position, p->rotation, p->entity->transform.scale),
+			DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
+	poly.p = poly.o;
+
+	poly.pos = Math::WorldToScreen2(p->position, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 	
+
+	//translate objects 3D velocity into screen space
+	Vector3 opv = p->position + p->velocity;
+	Vector2 opvs = Math::WorldToScreen2(opv, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
+	poly.vel = opvs - poly.pos;
+
+	//maybe make a nicer way of calculating this
+	poly.mass = p->mass;
+
+	poly.isStatic = p->isStatic;
+
+	poly.ogphys = p;
+
+	return poly;
+
 }
 
 //NOTE make sure you are using the right physics component, because the collision 
 //functions dont check that the provided one matches the tuple
-inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other) {
+inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other, std::vector<poly>& polys) {
 	switch(tuple.collider->type){
 		case(ColliderType_Box):
 		switch(other.collider->type){
@@ -324,8 +592,22 @@ inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other) {
 		switch(other.collider->type){
 			case(ColliderType_Box):   { SphereBoxCollision   (tuple.physics, (SphereCollider*)tuple.collider, 
 															  other.physics, (BoxCollider*)   other.collider); }break;
-			case(ColliderType_Sphere):{ SphereSphereCollision(tuple.physics, (SphereCollider*)tuple.collider, 
-															  other.physics, (SphereCollider*)other.collider); }break;
+			case(ColliderType_Sphere):{ 
+				if (!SphereSphereCollision(tuple.physics, (SphereCollider*)tuple.collider,
+					other.physics, (SphereCollider*)other.collider)) {
+					if (tuple.physics->twoDphys && other.physics->twoDphys) {
+						if (!tuple.physics->twoDpolygon) {
+							tuple.physics->twoDpolygon = new poly(GeneratePoly(tuple.physics));
+							polys.push_back(*tuple.physics->twoDpolygon);
+						} 
+						if (!other.physics->twoDpolygon) {
+							other.physics->twoDpolygon = new poly(GeneratePoly(other.physics));
+							polys.push_back(*other.physics->twoDpolygon);
+						}
+					}
+				}
+				
+			}break;
 			case(ColliderType_AABB):  { AABBSphereCollision  (other.physics, (AABBCollider*)  other.collider, 
 															  tuple.physics, (SphereCollider*)tuple.collider); }break;
 		}break;
@@ -342,12 +624,17 @@ inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other) {
 }
 
 inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
+	std::vector<Manifold> manis; //TODO(sushi, Ph) put the manifolds vector somewhere better later
+	std::vector<poly> polys; 
 	if(t.collider) {
 		for(auto& tuple : tuples) {
 			if(&t != &tuple && tuple.collider && t.collider->collisionLayer == tuple.collider->collisionLayer) {
-				CheckCollision(t, tuple);
+				CheckCollision(t, tuple, polys);
 			}
 		}
+		FillManis(polys, manis);
+		SolveManifolds(manis);
+
 	}
 }
 
@@ -361,7 +648,7 @@ inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 
 void PhysicsSystem::Update() {
 	std::vector<PhysicsTuple> tuples = GetPhysicsTuples(admin);
-	
+
 	//update physics extra times per frame if frame time delta is larger than physics time delta
 	TIMER_START(physLocalTime);
 	while(DengTime->fixedAccumulator >= DengTime->fixedDeltaTime) {
@@ -381,6 +668,10 @@ void PhysicsSystem::Update() {
 	//interpolate between new physics position and old transform position by the leftover time
 	float alpha = DengTime->fixedAccumulator / DengTime->fixedDeltaTime;
 	for(auto& t : tuples) {
+		if (t.physics->twoDpolygon) {
+			delete t.physics->twoDpolygon;
+			t.physics->twoDpolygon = 0;
+		}
 		t.transform->prevPosition = t.transform->position;
 		t.transform->prevRotation = t.transform->rotation;
 		t.transform->position = t.transform->position * (1.f - alpha) + t.physics->position * alpha;

@@ -9,8 +9,6 @@
 
 #include "../../EntityAdmin.h"
 
-#include "../../utils/InstanceManager.h"
-
 MeshComp::MeshComp() {
 	this->mesh = 0;
 	this->meshID = -1;
@@ -92,14 +90,10 @@ bool isthisin(T test, std::vector<T> vec) {
 
 void MeshComp::Update() {
 	ASSERT(mesh->vertexCount, "Mesh has no vertices");
-	//static InstanceManager<Vector3, u32, Vector3, Vector3, Color> o;
 	if (g_admin->selectedEntity == entity) {
 		std::vector<Vector2> outline = Geometry::GenerateOutlinePoints(mesh, entity->transform.TransformMatrix(), DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 		for (int i = 0; i < outline.size(); i += 2) {
-			//o.Instance(i, Vector3(1, 1, 1), [](Vector3 out, Vector3 in, u32 i) {
-			//	return Vector3();
-			//	}, CreateDebugLine, Vector3(1,1,1), Vector3::ZERO, Color::WHITE))
-			ImGui::DebugDrawLine(outline[i], outline[(i + 1) % outline.size()], Color::CYAN);
+			ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
 		}
 	}
 

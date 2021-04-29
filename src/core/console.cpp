@@ -553,29 +553,34 @@ CMDSTARTA(draw_triangle, args.size() > 2){
 
 CMDSTARTA(load_obj, args.size() > 0){
 	Vector3 pos{}, rot{}, scale = Vector3::ONE;
-	f32 mass = 1.f, elasticity = .5f; b32 staticPosition = 1; 
+	f32 mass = 1.f, elasticity = .5f; b32 staticPosition = 1, twoDphys = false;
 	ColliderType ctype = ColliderType_NONE;
 	//check for optional params after the first arg
 	for (auto s = args.begin() + 1; s != args.end(); ++s) {
-		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
+		if (std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
 			pos = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
+		} else if (std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
 			rot = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
+		} else if (std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
 			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, StringRegex("collider"))) {
+		} else if (std::regex_search(s->c_str(), m, StringRegex("collider"))) {
 			if(m[1] == "aabb") ctype = ColliderType_AABB;
 			else if(m[1] == "sphere")    ctype = ColliderType_Sphere;
 			else if(m[1] == "landscape") ctype = ColliderType_Landscape;
 			else if(m[1] == "box")       ctype = ColliderType_Box;
-		}else if(std::regex_search(s->c_str(), m, FloatRegex("mass"))) {
-			if(std::stof(m[1]) != 0) return "[c:red]Mass can't be zero[c]";
+		} else if (std::regex_search(s->c_str(), m, FloatRegex("mass"))) {
+			if(std::stof(m[1]) == 0) return "[c:red]Mass can't be zero[c]";
 			mass = std::stof(m[1]);
-		} else if(std::regex_search(s->c_str(), m, FloatRegex("elasticity"))) {
+		} else if (std::regex_search(s->c_str(), m, FloatRegex("elasticity"))) {
 			elasticity = std::stof(m[1]);
-		} else if(std::regex_search(s->c_str(), m, BoolRegex("static"))) {
-			if (m[1] == "0" || m[1] == "false") staticPosition = false;
-		}else {
+		} else if (std::regex_search(s->c_str(), m, BoolRegex("static"))) {
+			if (m[1] == "0" || m[1] == "false") {
+				staticPosition = false;
+				//mass = INFINITY;
+			}
+		} else if (std::regex_search(s->c_str(), m, StringRegex("twoDphys"))){
+			if(m[1] == "1" || m[1] == "true") twoDphys = true;
+		} else {
 			return "[c:red]Invalid parameter: " + *s + "[c]";
 		}
 	}
@@ -599,6 +604,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 	
 	MeshComp* mc = new MeshComp(mesh, id);
 	Physics* p = new Physics(pos, rot, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, elasticity, mass, staticPosition);
+	if (twoDphys) p->twoDphys = true;
 	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 	admin->world->CreateEntity(admin, { mc, p, s, col }, name, Transform(pos, rot, scale));
 	

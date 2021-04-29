@@ -362,7 +362,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 					//SetCursorPosX((GetColumnWidth() - (fontsize - (fontsize / 2)) * id.size()) / 2);
 					if (ImGui::Button(id.c_str())) {
 						admin->selectedEntity = &entity;
-						if(m) DengRenderer->SetSelectedMesh(m->meshID);
+						//if(m) DengRenderer->SetSelectedMesh(m->meshID);
 					}
 					TableNextColumn();
 					

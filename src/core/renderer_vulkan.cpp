@@ -291,7 +291,7 @@ Cleanup() {
 /////////////////////
 
 u32 Renderer::
-CreateDebugLine(Vector3 start, Vector3 end, Color color){
+CreateDebugLine(Vector3 start, Vector3 end, Color color, bool visible){
 	Vector3 c = Vector3(color.r, color.g, color.b) / 255.f;
 	std::vector<Vertex> vertices = {
 		{start, Vector2::ZERO, c, Vector3::ZERO},
@@ -304,14 +304,14 @@ CreateDebugLine(Vector3 start, Vector3 end, Color color){
 	mesh.vertexCount = 2;
 	mesh.indexCount = 3;
 	mesh.batchCount = 1;
-	u32 id = LoadBaseMesh(&mesh);
+	u32 id = LoadBaseMesh(&mesh, visible);
 	materials[meshes[id].primitives[0].materialIndex].pipeline = pipelines.WIREFRAME_DEPTH;
 	materials[meshes[id].primitives[0].materialIndex].shader = 5;
 	return id;
 }
 
 u32 Renderer::
-CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color){
+CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool visible){
 	Vector3 c = Vector3(color.r, color.g, color.b) / 255.f;
 	std::vector<Vertex> vertices = {
 		{v1, Vector2::ZERO, c, Vector3::ZERO},
@@ -325,7 +325,7 @@ CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color){
 	mesh.vertexCount = 3;
 	mesh.indexCount = 3;
 	mesh.batchCount = 1;
-	return LoadBaseMesh(&mesh);
+	return LoadBaseMesh(&mesh, visible);
 }
 
 ///////////////////////
@@ -333,11 +333,12 @@ CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color){
 ///////////////////////
 
 u32 Renderer::
-LoadBaseMesh(Mesh* m){
+LoadBaseMesh(Mesh* m, bool visible) {
 	PRINTVK(3, "    Loading base mesh: ", m->name);
 	
 	MeshVk mesh;  mesh.base = true; 
-	mesh.ptr = m; mesh.visible = false;
+	mesh.ptr = m; 
+	if(!visible) mesh.visible = false;
 	mesh.primitives.reserve(m->batchCount);
 	cpystr(mesh.name, m->name, 63);
 	
@@ -436,6 +437,7 @@ LoadBaseMesh(Mesh* m){
 	mesh.id = u32(meshes.size());
 	meshes.push_back(mesh);
 	if(initialized){ CreateSceneBuffers(); }
+	if (visible) mesh.visible = true;
 	return mesh.id;
 }
 
@@ -583,13 +585,13 @@ UpdateMeshVisibility(u32 meshID, bool visible){
 
 void Renderer::
 SetSelectedMesh(u32 meshID){
-	//if(meshID == -1){
-	//	selectedMeshID = meshID;
-	//}else if(meshID < meshes.size()){
-	//	selectedMeshID = meshID;
-	//}else{
-	//	ERROR("There is no mesh with id: ", meshID);
-	//}
+	if(meshID == -1){
+		selectedMeshID = meshID;
+	}else if(meshID < meshes.size()){
+		selectedMeshID = meshID;
+	}else{
+		ERROR("There is no mesh with id: ", meshID);
+	}
 }
 
 /*

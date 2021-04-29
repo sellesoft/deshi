@@ -8,9 +8,10 @@
 
 //only used for 2D currently
 struct Physics;
+struct poly;
 struct Manifold {
-	Physics* a = nullptr;
-	Physics* b = nullptr;
+	poly* a = nullptr;
+	poly* b = nullptr;
 
 	int refID = 0;
 	Vector2 colpoints[2];
@@ -18,6 +19,57 @@ struct Manifold {
 	int nColPoints = 0;
 
 	Vector2 norm;
+};
+
+//temp 2D polygon class 
+struct poly {
+	std::vector<Vector2> p;
+	Vector2 pos;
+	Vector2 vel;
+	Vector2 acc;
+	float rotvel = 0;
+	float rotacc = 0;
+	float angle = 0;
+	float mass;
+	float moi = 1;
+	std::vector<Vector2> o;
+	bool overlap = false;
+
+	Physics* ogphys;
+
+	bool isStatic = false;
+
+	bool PointInside(Vector2 point) {
+		int s = p.size();
+		for (int i = 0; i < s; i++) {
+			Vector2 a = p[i];
+			Vector2 b = p[(i + 1) % s];
+
+			Vector2 n = (b - a).perp();
+
+			if (n.dot(point - a) > 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	void update() {
+
+		//rotate
+		float angler = angle * M_PI / 180;
+		for (Vector2 v : p) {
+			v.x = cosf(angler * v.x) - sinf(angler * v.y);
+			v.y = sinf(angler * v.x) + cosf(angler * v.y);
+		}
+
+		//translate
+		for (int i = 0; i < o.size(); i++) {
+			p[i] = o[i] + pos;
+		}
+
+	}
+
 };
 
 struct Physics : public Component {
@@ -39,6 +91,7 @@ struct Physics : public Component {
 	//bool staticRotation = false;
 	//TODO(delle,Ph) separate static movement and rotation
 	bool twoDphys = false;
+	poly* twoDpolygon = nullptr;
 	
 	Physics();
 	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO,

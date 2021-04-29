@@ -173,6 +173,12 @@ struct Mesh {
 	static Mesh CreatePlanarBox(Vector3 halfDims, Texture texture);
 };
 
+
+//temp 2d
+struct Poly2 {
+
+};
+
 //NOTE a model should not change after loading
 struct Model{
 	Armature armature;

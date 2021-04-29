@@ -141,6 +141,11 @@ dot(const Vector2& rhs) const {
 	return this->x * rhs.x + this->y * rhs.y ;
 }
 
+inline Vector2 Vector2::
+perp() const {
+	return Vector2(-y, x);
+}
+
 inline float Vector2::
 mag() const {
 	return sqrt(x * x + y * y);

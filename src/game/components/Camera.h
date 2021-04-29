@@ -6,6 +6,7 @@
 #include "../../math/Vector.h"
 #include "../../math/Matrix.h"
 
+
 enum struct CameraType {
 	PERSPECTIVE, ORTHOGRAPHIC
 };

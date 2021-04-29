@@ -6,7 +6,7 @@ namespace Geometry {
 	static std::vector<Vector2> GenerateOutlinePoints(Mesh* m, Matrix4 transform, Matrix4 proj, Matrix4 view, Vector2 windimen) {
 
 		std::vector<Vector2> outline;
-		
+
 		std::vector<Triangle> nonculled;
 		for (Triangle* t : m->triangles) {
 			t->removed = false;
@@ -17,7 +17,8 @@ namespace Geometry {
 				tri.p[2] = Math::WorldToScreen(t->p[2] * transform, proj, view, windimen);
 
 				nonculled.push_back(tri);
-			} else t->removed = true;
+			}
+			else t->removed = true;
 		}
 
 		for (Triangle t : nonculled) {
