@@ -61,6 +61,7 @@ inline Vector3 VertToVec3(const Vertex& v){
 	return Vector3(v.pos.x, v.pos.y, v.pos.z);
 }
 
+//TODO(sushi, Cl) move this to some utilities file eventually 
 template<class T>
 bool isthisin(T test, std::vector<T> vec) {
 	for (T t : vec) if (test == t) return true;
@@ -68,6 +69,11 @@ bool isthisin(T test, std::vector<T> vec) {
 }
 
 
+//TODO(sushi, Op) eventually I need to find a way to optimize this, maybe through multithreading or something else
+// this data can definitely be saved along with the model for future use, but even generating this info
+// for large models is incredibly time consuming.
+// on a model with ~240k triangles I left it running for over an hour and it had only gotten 30% of the way there
+// there really is no way around checking every triangle against every other triangle though.
 std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 	std::vector<Triangle*> triangles;
 
@@ -75,9 +81,10 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 	for (auto& b : m->batchArray) {
 		for (int i = 0; i < b.indexArray.size(); i += 3) {
 			Triangle* t = new Triangle(); 
-			t->p[0] = VertToVec3(b.vertexArray[b.indexArray[i]]);
-			t->p[1] = VertToVec3(b.vertexArray[b.indexArray[i + 1]]);
-			t->p[2] = VertToVec3(b.vertexArray[b.indexArray[i + 2]]);
+			t->p[0] = b.vertexArray[b.indexArray[i]].pos;
+			t->p[1] = b.vertexArray[b.indexArray[i + 1]].pos;
+			t->p[2] = b.vertexArray[b.indexArray[i + 2]].pos;
+
 			triangles.push_back(t);
 		}
 	}
@@ -87,9 +94,23 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 		return false;
 	};
 
-	std::sort(triangles.begin(), triangles.end(), [](Triangle* t1, Triangle* t2) {
-		return t1->midpoint().z > t2->midpoint().z;
-		});
+	//TODO(sushi, Op) more sophisticated sorting may help reduce the amount of time it takes to look for a neighbor
+	//std::sort(triangles.begin(), triangles.end(), [](Triangle* t1, Triangle* t2) {
+	//	return t1->midpoint().z > t2->midpoint().z;
+	//	});
+
+	auto jointris = [&](Triangle* ti, Triangle* to, int pindex) {
+		ti->nbrs.push_back(to);
+
+		to->sharededge.push_back(pindex);
+		to->nbrs.push_back(ti);
+		
+		std::vector<Vector3> top(to->p, to->p + 3);
+		if      (eqtoany(top, ti->p[0]) && eqtoany(top, ti->p[1])) ti->sharededge.push_back(0);
+		else if (eqtoany(top, ti->p[1]) && eqtoany(top, ti->p[2])) ti->sharededge.push_back(1);
+		else if (eqtoany(top, ti->p[2]) && eqtoany(top, ti->p[0])) ti->sharededge.push_back(2);
+
+	};
 
 	//find and mark neighbors
 	TIMER_START(tnf);
@@ -97,21 +118,16 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 	Triangle* to;
 	for (int i = 0; i < triangles.size(); i++) {
 		ti = triangles[i];
-		if (!(ti->nbr[0] && ti->nbr[1] && ti->nbr[2])) {
-			std::vector<Vector3> tip{ ti->p[0], ti->p[1], ti->p[2] };
-			for (int o = i + 1; o < triangles.size(); o++) {
-				to = triangles[o];
-				if (!isthisin(to, ti->nbrs)) {
-					if (eqtoany(tip, to->p[0]) && eqtoany(tip, to->p[1]) ||
-						eqtoany(tip, to->p[1]) && eqtoany(tip, to->p[2]) ||
-						eqtoany(tip, to->p[2]) && eqtoany(tip, to->p[0])) {
-
-						ti->nbrs.push_back(to);
-						to->nbrs.push_back(ti);
-					}
-				}
+		std::vector<Vector3> tip{ ti->p[0], ti->p[1], ti->p[2] };
+		for (int o = i + 1; o < triangles.size(); o++) {
+			to = triangles[o];
+			if (!isthisin(to, ti->nbrs)) {
+				if      (eqtoany(tip, to->p[0]) && eqtoany(tip, to->p[1])) jointris(ti, to, 0);
+				else if (eqtoany(tip, to->p[1]) && eqtoany(tip, to->p[2])) jointris(ti, to, 1);
+				else if (eqtoany(tip, to->p[2]) && eqtoany(tip, to->p[0])) jointris(ti, to, 2);
 			}
 		}
+		
 	}
 	PRINTLN(TIMER_END(tnf));
 

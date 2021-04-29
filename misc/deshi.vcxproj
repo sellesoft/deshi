@@ -261,6 +261,7 @@
     <ClInclude Include="..\src\utils\ContainerManager.h" />
     <ClInclude Include="..\src\utils\Debug.h" />
     <ClInclude Include="..\src\utils\defines.h" />
+    <ClInclude Include="..\src\utils\InstanceManager.h" />
     <ClInclude Include="..\src\utils\optional.h" />
     <ClInclude Include="..\src\utils\PhysicsWorld.h" />
   </ItemGroup>

@@ -4,6 +4,7 @@
 #include "../../math/Math.h"
 #include "../../scene/Scene.h"
 #include "../Keybinds.h"
+#include "../systems/CanvasSystem.h"
 
 Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ, bool freeCam) : Component(a) {
 	this->nearZ = nearZ;
@@ -15,10 +16,10 @@ Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ, bool freeCam) 
 	right = Vector3::UP.cross(forward).normalized();
 	up = right.cross(forward).normalized();
 	
-	viewMatrix = Math::LookAtMatrix(position, position + forward).Inverse();
+	viewMat = Math::LookAtMatrix(position, position + forward).Inverse();
 	UpdateProjectionMatrix();
 	
-	DengRenderer->UpdateCameraViewMatrix(viewMatrix);
+	DengRenderer->UpdateCameraViewMatrix(viewMat);
 	DengRenderer->UpdateCameraPosition(position);
 	
 	cpystr(name, "Camera", 63);
@@ -41,11 +42,10 @@ Matrix4 Camera::MakePerspectiveProjection(){
 
 Matrix4 Camera::MakeOrthographicProjection() {
 	//std::pair<Vector3, Vector3> bbox = admin->scene.SceneBoundingBox();
-	
 	//convert bounding box to camera space
 	static float zoom = 10;
-	Vector3 maxcam = Math::WorldToCamera3(Vector3( zoom, zoom, zoom),  admin->mainCamera->viewMatrix);
-	Vector3 mincam = Math::WorldToCamera3(Vector3(-zoom,-zoom,-zoom), admin->mainCamera->viewMatrix); 
+	Vector3 maxcam = Math::WorldToCamera3(Vector3( zoom, zoom, zoom),  admin->mainCamera->viewMat);
+	Vector3 mincam = Math::WorldToCamera3(Vector3(-zoom,-zoom,-zoom), admin->mainCamera->viewMat); 
 	
 	//make screen box from camera space bounding box
 	float maxx = std::max(fabs(mincam.x), fabs(maxcam.x));
@@ -104,10 +104,10 @@ Matrix4 Camera::MakeOrthographicProjection() {
 
 void Camera::UpdateProjectionMatrix(){
 	switch(type){
-		case(CameraType::PERSPECTIVE):default:{ projectionMatrix = MakePerspectiveProjection(); } break;
-		case(CameraType::ORTHOGRAPHIC):{ projectionMatrix = MakeOrthographicProjection(); }break;
+		case(CameraType::PERSPECTIVE):default:{ projMat = MakePerspectiveProjection(); } break;
+		case(CameraType::ORTHOGRAPHIC):{ projMat = MakeOrthographicProjection(); }break;
 	}
-	DengRenderer->UpdateCameraProjectionMatrix(projectionMatrix);
+	DengRenderer->UpdateCameraProjectionMatrix(projMat);
 }
 
 std::string Camera::str(){
@@ -131,6 +131,11 @@ void Camera::Update() {
 		Window* window = DengWindow;
 		Renderer* renderer = DengRenderer;
 		
+		//NOTE this can happen whether the camera is free or not so move it out
+		//of this scope once we implement that
+		static int wwidth = window->width;
+		static int wheight = window->height;
+
 		//clamp camera rotation
 		rotation.x = Math::clamp(rotation.x, -89.9f, 89.9f);
 		if(rotation.y > 1440.f || rotation.y < -1440.f){ rotation.y = 0.f; }
@@ -145,22 +150,31 @@ void Camera::Update() {
 		
 		target = position + forward;
 		
-		viewMatrix = Math::LookAtMatrix(position, target).Inverse();
+		viewMat = Math::LookAtMatrix(position, target).Inverse();
 		
 		//update renderer camera properties
 		if (type == CameraType::ORTHOGRAPHIC) {
+			float fw = ImGui::GetFontSize() / 2;
 			
 			switch (orthoview) {
-				case FRONT:    position = Vector3(0, 0, -999); rotation = Vector3(0, 0, 0);   break;
-				case BACK:     position = Vector3(0, 0, 999);  rotation = Vector3(0, 180, 0); break;
-				case RIGHT:    position = Vector3(999, 0, 0);  rotation = Vector3(0, -90, 0);  break;
-				case LEFT:     position = Vector3(-999, 0, 0); rotation = Vector3(0, 90, 0); break;
-				case TOPDOWN:  position = Vector3(0, 999, 0);  rotation = Vector3(89.9, 0, 0); break;
-				case BOTTOMUP: position = Vector3(0, -999, 0); rotation = Vector3(-89.9, 0, 0);  break;
+				case FRONT:    position = Vector3(0, 0, -999); rotation = Vector3(0, 0, 0);     ImGui::DebugDrawText("FRONT (+Z)",  Vector2(window->width - fw * 1.3 * sizeof("FRONT (+Z)"), window->height - 50));  break;
+				case BACK:     position = Vector3(0, 0, 999);  rotation = Vector3(0, 180, 0);   ImGui::DebugDrawText("BACK (-Z)",   Vector2(window->width - fw * 1.3 * sizeof("BACK (-Z)"), window->height - 50));   break;
+				case RIGHT:    position = Vector3(999, 0, 0);  rotation = Vector3(0, -90, 0);   ImGui::DebugDrawText("RIGHT (+X)",  Vector2(window->width - fw * 1.3 * sizeof("RIGHT (+X)"), window->height - 50));  break;
+				case LEFT:     position = Vector3(-999, 0, 0); rotation = Vector3(0, 90, 0);    ImGui::DebugDrawText("LEFT (-X)",   Vector2(window->width - fw * 1.3 * sizeof("LEFT (-X)"), window->height - 50));   break;
+				case TOPDOWN:  position = Vector3(0, 999, 0);  rotation = Vector3(89.9, 0, 0);  ImGui::DebugDrawText("TOP (-Y)",    Vector2(window->width - fw * 1.3 * sizeof("TOP (-Y)"), window->height - 50));    break;
+				case BOTTOMUP: position = Vector3(0, -999, 0); rotation = Vector3(-89.9, 0, 0); ImGui::DebugDrawText("BOTTOM (+Y)", Vector2(window->width - fw * 1.3 * sizeof("BOTTOM (+Y)"), window->height - 50)); break;
 			}
 			UpdateProjectionMatrix();
 		}
-		renderer->UpdateCameraViewMatrix(viewMatrix);
+
+		//redo projection matrix is window size changes
+		if (window->width != wwidth || window->height != wheight) {
+			wwidth = window->width;
+			wheight = window->height;
+			UpdateProjectionMatrix();
+		}
+		
+		renderer->UpdateCameraViewMatrix(viewMat);
 		renderer->UpdateCameraPosition(position);
 		
 	}

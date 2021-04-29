@@ -274,6 +274,12 @@ namespace Math {
 		return DEGREES(atan2(v1.x * v2.y - v1.y * v2.x, v1.dot(v2)));
 	}
 
+	//returns in degrees between 0 and 360
+	static float AngBetweenVectors360(Vector2 v1, Vector2 v2) {
+		float ang = DEGREES(atan2(v1.x * v2.y - v1.y * v2.x, v1.dot(v2)));
+		return (ang < 0) ? 360 + ang : ang;
+	}
+
 	//this function returns a matrix that tells a vector how to look at a specific point in space.
 	static Matrix4 LookAtMatrix(const Vector3& pos, const Vector3& target) {
 		if(pos == target) { return LookAtMatrix(pos, target + Vector3(.01f, 0, 0)); }
@@ -389,7 +395,7 @@ namespace Math {
 	//returns where two lines intersect in 3D space //TODO(sushi, MaGe) implement this
 	static Vector3 LineIntersect3(Vector3 adir, Vector3 ap, Vector3 bdir, Vector3 bp) {}
 	
-	//the input vectors should be in viewMatrix/camera space
+	//the input vectors should be in viewMat/camera space
 	//returns true if the line can be rendered after clipping, false otherwise
 	static bool ClipLineToZPlanes(Vector3& start, Vector3& end, Camera* camera) {
 		//clip to the near plane
@@ -426,14 +432,14 @@ namespace Math {
 	//cohen-sutherland algorithm https://en.wikipedia.org/wiki/Cohen%E2%80%93Sutherland_algorithm
 	//the input vectors should be in screen space
 	//returns true if the line can be rendered after clipping, false otherwise
-	static bool ClipLineToBorderPlanes(Vector3& start, Vector3& end, Vector2 dimensions) {
+	static bool ClipLineToBorderPlanes(Vector2& start, Vector2& end, Vector2 dimensions) {
 		//clip to the vertical and horizontal planes
 		const int CLIP_INSIDE = 0;
 		const int CLIP_LEFT = 1;
 		const int CLIP_RIGHT = 2;
 		const int CLIP_BOTTOM = 4;
 		const int CLIP_TOP = 8;
-		auto ComputeOutCode = [&](Vector3& vertex) {
+		auto ComputeOutCode = [&](Vector2& vertex) {
 			int code = CLIP_INSIDE;
 			if (vertex.x < 0) {
 				code |= CLIP_LEFT;
@@ -516,40 +522,40 @@ namespace Math {
 		return (p1 + p2 + p3) / 3;
 	}
 
-	static Vector3 WorldToCamera3(Vector3 vertex, Matrix4 viewMatrix) {
-		return Math::ProjMult(vertex.ToVector4(), viewMatrix).ToVector3();
+	static Vector3 WorldToCamera3(Vector3 vertex, Matrix4 viewMat) {
+		return Math::ProjMult(vertex.ToVector4(), viewMat).ToVector3();
 	}
 	
-	static Vector4 WorldToCamera4(Vector3 vertex, Matrix4 viewMatrix) {
-		return Math::ProjMult(vertex.ToVector4(), viewMatrix);
+	static Vector4 WorldToCamera4(Vector3 vertex, Matrix4 viewMat) {
+		return Math::ProjMult(vertex.ToVector4(), viewMat);
 	}
 	
-	static Vector3 CameraToWorld3(Vector3 vertex, Matrix4 viewMatrix) {
-		return Math::ProjMult(vertex.ToVector4(), viewMatrix.Inverse()).ToVector3();
+	static Vector3 CameraToWorld3(Vector3 vertex, Matrix4 viewMat) {
+		return Math::ProjMult(vertex.ToVector4(), viewMat.Inverse()).ToVector3();
 	}
 	
-	static Vector4 CameraToWorld4(Vector3 vertex, Matrix4 viewMatrix) {
-		return Math::ProjMult(vertex.ToVector4(), viewMatrix.Inverse());
+	static Vector4 CameraToWorld4(Vector3 vertex, Matrix4 viewMat) {
+		return Math::ProjMult(vertex.ToVector4(), viewMat.Inverse());
 	}
 	
-	static Vector2 CameraToScreen2(Vector3 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions) {
-		Vector3 vm = Math::ProjMult(csVertex.ToVector4(), projectionMatrix).ToVector3();
+	static Vector2 CameraToScreen2(Vector3 csVertex, Matrix4 projMat, Vector2 screenDimensions) {
+		Vector3 vm = Math::ProjMult(csVertex.ToVector4(), projMat).ToVector3();
 		vm.x += 1.0f; vm.y += 1.0f;
 		vm.x *= 0.5f * (float)screenDimensions.x;
 		vm.y *= 0.5f * (float)screenDimensions.y;
 		return vm.ToVector2();
 	}
 	
-	static Vector3 CameraToScreen3(Vector3 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions) {
-		Vector3 vm = Math::ProjMult(csVertex.ToVector4(), projectionMatrix).ToVector3();
+	static Vector3 CameraToScreen3(Vector3 csVertex, Matrix4 projMat, Vector2 screenDimensions) {
+		Vector3 vm = Math::ProjMult(csVertex.ToVector4(), projMat).ToVector3();
 		vm.x += 1.0f; vm.y += 1.0f;
 		vm.x *= 0.5f * (float)screenDimensions.x;
 		vm.y *= 0.5f * (float)screenDimensions.y;
 		return vm;
 	}
 	
-	static Vector3 CameraToScreen3(Vector3 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions, float& w) {
-		Vector4 bleh = csVertex.ToVector4() * projectionMatrix;
+	static Vector3 CameraToScreen3(Vector3 csVertex, Matrix4 projMat, Vector2 screenDimensions, float& w) {
+		Vector4 bleh = csVertex.ToVector4() * projMat;
 		w = bleh.w;
 		Vector3 vm = bleh.normalized().ToVector3();
 		vm.x += 1.0f; vm.y += 1.0f;
@@ -558,16 +564,16 @@ namespace Math {
 		return vm;
 	}
 	
-	static Vector3 CameraToScreen3(Vector4 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions) {
-		Vector3 vm = Math::ProjMult(csVertex, projectionMatrix).ToVector3();
+	static Vector3 CameraToScreen3(Vector4 csVertex, Matrix4 projMat, Vector2 screenDimensions) {
+		Vector3 vm = Math::ProjMult(csVertex, projMat).ToVector3();
 		vm.x += 1.0f; vm.y += 1.0f;
 		vm.x *= 0.5f * (float)screenDimensions.x;
 		vm.y *= 0.5f * (float)screenDimensions.y;
 		return vm;
 	}
 	
-	static Vector4 CameraToScreen4(Vector4 csVertex, Matrix4 projectionMatrix, Vector2 screenDimensions) {
-		Vector4 vm = (csVertex * projectionMatrix).normalized();
+	static Vector4 CameraToScreen4(Vector4 csVertex, Matrix4 projMat, Vector2 screenDimensions) {
+		Vector4 vm = (csVertex * projMat).normalized();
 		vm.x += 1.0f; vm.y += 1.0f;
 		vm.x *= 0.5f * (float)screenDimensions.x;
 		vm.y *= 0.5f * (float)screenDimensions.y;

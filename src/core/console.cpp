@@ -954,11 +954,11 @@ void Console::AddCameraCommands() {
 			   });
 	
 	NEWCOMMAND("cam_matrix_projection", "Prints camera's projection matrix", {
-				   return admin->mainCamera->projectionMatrix.str2f();
+				   return admin->mainCamera->projMat.str2f();
 			   });
 	
 	NEWCOMMAND("cam_matrix_view", "Prints camera's view matrix", {
-				   return admin->mainCamera->viewMatrix.str2f();
+				   return admin->mainCamera->viewMat.str2f();
 			   });
 	
 	NEWCOMMAND("cam_reset", "Resets camera", {
@@ -1305,11 +1305,11 @@ void Console::AddSelectedEntityCommands() {
 												   else {
 													   if (admin->selectedEntity) {
 														   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-															   Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projectionMatrix,
-																								 admin->mainCamera->viewMatrix, DengWindow->dimensions);
+															   Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
+																								 admin->mainCamera->viewMat, DengWindow->dimensions);
 															   //cant remember what this is doing and will fix later
-															   //Vector3 clickPos = Math::ScreenToWorld(DengInput->mouseClickPos, admin->mainCamera->projectionMatrix,
-															   //admin->mainCamera->viewMatrix, DengWindow->dimensions);
+															   //Vector3 clickPos = Math::ScreenToWorld(DengInput->mouseClickPos, admin->mainCamera->projMat,
+															   //admin->mainCamera->viewMat, DengWindow->dimensions);
 															   //TODO(delle,PhIn) test that you can add force to a selected entity
 															   //Physics::AddForce(nullptr, p, (pos - clickPos).normalized() * 5);
 														   }

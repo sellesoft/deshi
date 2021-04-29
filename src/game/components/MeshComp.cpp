@@ -5,14 +5,16 @@
 #include "../../scene/Scene.h"
 
 #include "../systems/CanvasSystem.h"
+#include "../../geometry/Geometry.h"
 
 #include "../../EntityAdmin.h"
+
+#include "../../utils/InstanceManager.h"
 
 MeshComp::MeshComp() {
 	this->mesh = 0;
 	this->meshID = -1;
-	this->instanceID = -1
-		;
+	this->instanceID = -1;
 	cpystr(name, "MeshComp", 63);
 	send = new Sender();
 	layer = ComponentLayer_Canvas;
@@ -82,35 +84,31 @@ void MeshComp::UpdateMeshTransform(Vector3 position, Vector3 rotation, Vector3 s
 	DengRenderer->UpdateMeshMatrix(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
 }
 
+template<class T>
+bool isthisin(T test, std::vector<T> vec) {
+	for (T t : vec) if (test == t) return true;
+	return false;
+}
+
 void MeshComp::Update() {
-	ASSERT(mesh && mesh->vertexCount, "Mesh has no vertices");
-	
-	
-	ImGui::BeginDebugLayer();
-	
-	Color c1 = Color(15, 30, 50) * 3;
-	Color c2 = Color(50, 30, 15) * 3;
-	
-	int i = 0;
-	std::vector<Triangle> triangles;
-	for (Triangle* t : mesh->triangles) {
-		triangles.push_back(*t);
-	}
-	
-	for (Triangle t : triangles) {
-		
-	}
-	
-	for (auto t : mesh->triangles) {
-		for (auto n : t->nbrs) {
-			ImGui::DebugDrawLine3(t->midpoint(), n->midpoint(), g_admin->mainCamera, DengWindow->dimensions, (i % 2 == 0) ? c1 : c2);
-			i++;
+	ASSERT(mesh->vertexCount, "Mesh has no vertices");
+	//static InstanceManager<Vector3, u32, Vector3, Vector3, Color> o;
+	if (g_admin->selectedEntity == entity) {
+		std::vector<Vector2> outline = Geometry::GenerateOutlinePoints(mesh, entity->transform.TransformMatrix(), DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
+		for (int i = 0; i < outline.size(); i += 2) {
+			//o.Instance(i, Vector3(1, 1, 1), [](Vector3 out, Vector3 in, u32 i) {
+			//	return Vector3();
+			//	}, CreateDebugLine, Vector3(1,1,1), Vector3::ZERO, Color::WHITE))
+			ImGui::DebugDrawLine(outline[i], outline[(i + 1) % outline.size()], Color::CYAN);
 		}
 	}
+
 	
+
 	
-	ImGui::EndDebugLayer();
-	
+
+
+
 	//update mesh's transform with entities tranform
 	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
 }

@@ -92,6 +92,7 @@ void UpdateLayer(ContainerManager<Component*> cl) {
 }
 
 void EntityAdmin::Update() {
+	ImGui::BeginDebugLayer();
 	if(!skip) controller.Update();
 	if(!skip) mainCamera->Update();
 	
@@ -114,6 +115,7 @@ void EntityAdmin::Update() {
 	DengTime->sndSysTime =    TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_last && !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_LAST]); }
 	DengTime->lastLyrTime =   TIMER_END(t_a);
+	ImGui::EndDebugLayer();
 	
 	DengTime->paused = paused;
 	DengTime->phys_pause = pause_phys;

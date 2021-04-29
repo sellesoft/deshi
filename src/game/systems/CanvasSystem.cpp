@@ -78,23 +78,29 @@ namespace ImGui {
 		ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(pos.x, pos.y), radius, ImGui::GetColorU32(ColToVec4(color)));
 	}
 	
-	void DebugDrawCircle3(Vector3 pos, float radius, Camera* c, Vector2 windimen, Color color) {
-		Vector2 pos2 = Math::WorldToScreen2(pos, c->projectionMatrix, c->viewMatrix, windimen);
-		ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(pos.x, pos.y), radius, ImGui::GetColorU32(ColToVec4(color)));
+	void DebugDrawCircle3(Vector3 pos, float radius, Color color) {
+		Camera* c = g_admin->mainCamera;
+		Vector2 windimen = DengWindow->dimensions;
+		Vector2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
+		ImGui::GetBackgroundDrawList()->AddCircle(pos2.ToImVec2(), radius, ImGui::GetColorU32(ColToVec4(color)));
 	}
 	
 	void DebugDrawLine(Vector2 pos1, Vector2 pos2, Color color) {
+		Math::ClipLineToBorderPlanes(pos1, pos2, DengWindow->dimensions);
 		ImGui::GetBackgroundDrawList()->AddLine(pos1.ToImVec2(), pos2.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
 	}
 	
-	void DebugDrawLine3(Vector3 pos1, Vector3 pos2, Camera* c, Vector2 windimen, Color color) {
-		Vector3 pos1n = Math::WorldToCamera3(pos1, c->viewMatrix);
-		Vector3 pos2n = Math::WorldToCamera3(pos2, c->viewMatrix);
+	void DebugDrawLine3(Vector3 pos1, Vector3 pos2, Color color) {
+		Camera* c = g_admin->mainCamera;
+		Vector2 windimen = DengWindow->dimensions;
 		
+		Vector3 pos1n = Math::WorldToCamera3(pos1, c->viewMat);
+		Vector3 pos2n = Math::WorldToCamera3(pos2, c->viewMat);
+
 		if (Math::ClipLineToZPlanes(pos1n, pos2n, c)) {
 			ImGui::GetBackgroundDrawList()->AddLine(
-													Math::CameraToScreen2(pos1n, c->projectionMatrix, windimen).ToImVec2(), 
-													Math::CameraToScreen2(pos2n, c->projectionMatrix, windimen).ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
+				Math::CameraToScreen2(pos1n, c->projMat, windimen).ToImVec2(), 
+				Math::CameraToScreen2(pos2n, c->projMat, windimen).ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
 		}
 	}
 	
@@ -106,14 +112,42 @@ namespace ImGui {
 		ImGui::PopStyleColor();
 	}
 	
-	void DebugDrawText3(const char* text, Vector3 pos, Camera* c, Vector2 windimen, Color color, Vector2 twoDoffset) {
-		Vector3 posc = Math::WorldToCamera3(pos, c->viewMatrix);
+	void DebugDrawText3(const char* text, Vector3 pos, Color color, Vector2 twoDoffset) {
+		Camera* c = g_admin->mainCamera;
+		Vector2 windimen = DengWindow->dimensions;
+		
+		Vector3 posc = Math::WorldToCamera3(pos, c->viewMat);
 		if(Math::ClipLineToZPlanes(posc, posc, c)){
-			ImGui::SetCursorPos((Math::CameraToScreen2(posc, c->projectionMatrix, windimen) + twoDoffset).ToImVec2());
+			ImGui::SetCursorPos((Math::CameraToScreen2(posc, c->projMat, windimen) + twoDoffset).ToImVec2());
 			ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(color));
 			ImGui::Text(text);
 			ImGui::PopStyleColor();
 		}
+	}
+
+	void DebugDrawTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color) {
+		DebugDrawLine(p1, p2);
+		DebugDrawLine(p2, p3);
+		DebugDrawLine(p3, p1);
+	}
+
+	void DebugFillTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color) {
+		ImGui::GetBackgroundDrawList()->AddTriangleFilled(p1.ToImVec2(), p2.ToImVec2(), p3.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
+	}
+
+	void DebugDrawTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color) {
+		DebugDrawLine3(p1, p2, color);
+		DebugDrawLine3(p2, p3, color);
+		DebugDrawLine3(p3, p1, color);
+	}
+
+	//TODO(sushi, Ui) add triangle clipping to this function
+	void DebugFillTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color) {
+		Vector2 p1n = Math::WorldToScreen(p1, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
+		Vector2 p2n = Math::WorldToScreen(p2, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
+		Vector2 p3n = Math::WorldToScreen(p3, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
+
+		ImGui::GetBackgroundDrawList()->AddTriangleFilled(p1n.ToImVec2(), p2n.ToImVec2(), p3n.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
 	}
 	
 	void DebugDrawGraphFloat(Vector2 pos, float inval, float sizex, float sizey) {
@@ -1304,20 +1338,20 @@ void CanvasSystem::DebugLayer() {
 	int lines = 100;
 	for (int i = 0; i < lines * 2; i++) {
 		Vector3 cpos = c->position;
-		Vector3 v1 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines), c->viewMatrix).ToVector3();
-		Vector3 v2 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + lines), c->viewMatrix).ToVector3();
-		Vector3 v3 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.z) + -lines + i), c->viewMatrix).ToVector3();
-		Vector3 v4 = Math::WorldToCamera4(Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i), c->viewMatrix).ToVector3();
+		Vector3 v1 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines), c->viewMat).ToVector3();
+		Vector3 v2 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + lines), c->viewMat).ToVector3();
+		Vector3 v3 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.z) + -lines + i), c->viewMat).ToVector3();
+		Vector3 v4 = Math::WorldToCamera4(Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i), c->viewMat).ToVector3();
 		
 		
 		//TODO(sushi, CamMa) make grid lines appear properly when in different orthographic views
 		//if (c->type == CameraType::ORTHOGRAPHIC) {
 		//
 		//	if (c->orthoview == FRONT) {
-		//		v1 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.y) + -lines), c->viewMatrix).ToVector3();
-		//		v2 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.y) + lines), c->viewMatrix).ToVector3();
-		//		v3 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.y) + -lines + i), c->viewMatrix).ToVector3();
-		//		v4 = Math::WorldToCamera4(Vector3(floor(cpos.x) + lines, 0, floor(cpos.y) + -lines + i), c->viewMatrix).ToVector3();
+		//		v1 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.y) + -lines), c->viewMat).ToVector3();
+		//		v2 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.y) + lines), c->viewMat).ToVector3();
+		//		v3 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.y) + -lines + i), c->viewMat).ToVector3();
+		//		v4 = Math::WorldToCamera4(Vector3(floor(cpos.x) + lines, 0, floor(cpos.y) + -lines + i), c->viewMat).ToVector3();
 		//
 		//	}
 		//	
@@ -1341,18 +1375,18 @@ void CanvasSystem::DebugLayer() {
 		
 		
 		if (Math::ClipLineToZPlanes(v1, v2, c)) {
-			Vector3 v1s = Math::CameraToScreen3(v1, c->projectionMatrix, DengWindow->dimensions);
-			Vector3 v2s = Math::CameraToScreen3(v2, c->projectionMatrix, DengWindow->dimensions);
+			Vector2 v1s = Math::CameraToScreen2(v1, c->projMat, DengWindow->dimensions);
+			Vector2 v2s = Math::CameraToScreen2(v2, c->projMat, DengWindow->dimensions);
 			Math::ClipLineToBorderPlanes(v1s, v2s, DengWindow->dimensions);
-			if (!l1flag) ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
-			else         ImGui::GetBackgroundDrawList()->AddLine(v1s.ToVector2().ToImVec2(), v2s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 0, 0, 1)));
+			if (!l1flag) ImGui::GetBackgroundDrawList()->AddLine(v1s.ToImVec2(), v2s.ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
+			else         ImGui::GetBackgroundDrawList()->AddLine(v1s.ToImVec2(), v2s.ToImVec2(), ImGui::GetColorU32(ImVec4(1, 0, 0, 1)));
 		}
 		if (Math::ClipLineToZPlanes(v3, v4, c)) {
-			Vector3 v3s = Math::CameraToScreen3(v3, c->projectionMatrix, DengWindow->dimensions);
-			Vector3 v4s = Math::CameraToScreen3(v4, c->projectionMatrix, DengWindow->dimensions);
+			Vector2 v3s = Math::CameraToScreen2(v3, c->projMat, DengWindow->dimensions);
+			Vector2 v4s = Math::CameraToScreen2(v4, c->projMat, DengWindow->dimensions);
 			Math::ClipLineToBorderPlanes(v3s, v4s, DengWindow->dimensions);
-			if (!l2flag) ImGui::GetBackgroundDrawList()->AddLine(v3s.ToVector2().ToImVec2(), v4s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
-			else         ImGui::GetBackgroundDrawList()->AddLine(v3s.ToVector2().ToImVec2(), v4s.ToVector2().ToImVec2(), ImGui::GetColorU32(ImVec4(0, 0, 1, 1)));
+			if (!l2flag) ImGui::GetBackgroundDrawList()->AddLine(v3s.ToImVec2(), v4s.ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
+			else         ImGui::GetBackgroundDrawList()->AddLine(v3s.ToImVec2(), v4s.ToImVec2(), ImGui::GetColorU32(ImVec4(0, 0, 1, 1)));
 		}
 	}
 	

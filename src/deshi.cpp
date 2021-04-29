@@ -29,6 +29,7 @@ ____create a hot-loadable global vars file
 add a general logging system with log levels and locations
 add a component_state command to print state of a component (add str methods to all components/systems)
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
+try to make our own tuple cause i dont like how std's works :)
 add device info command (graphics card, sound device, monitor res, etc)
 pool/arena components and entities for better performance
 replace/remove external dependencies/includes were possible (glm, tinyobj)
