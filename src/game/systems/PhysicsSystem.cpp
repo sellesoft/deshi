@@ -213,7 +213,7 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 		if(aabbCol->command) aabbCol->command->Exec(g_admin);
 		if(sphereCol->command) sphereCol->command->Exec(g_admin);
 		if(aabbCol->noCollide || sphereCol->noCollide) return;
-			
+		
 		//aabb->entity->GetComponent<AudioSource>()->request_play = true;
 		//static resolution
 		if (aabbPoint == sphere->position) { 
@@ -234,7 +234,7 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 			aabb->position += vectorBetween / 2.f;
 			sphere->position -= vectorBetween / 2.f;
 		}
-			
+		
 		//dynamic resolution
 		Matrix4 sphereInertiaTensorInverse = LocalToWorldInertiaTensor(sphere, sphereCol->inertiaTensor).Inverse();
 		Vector3 ra = sphere->position + Geometry::ClosestPointOnSphere(sphere->position, sphereCol->radius, aabbPoint);
@@ -242,14 +242,14 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 		sphereAngularVelocityChange *= sphereInertiaTensorInverse;
 		float inverseMassA = 1.f / sphere->mass;
 		float scalar = inverseMassA + sphereAngularVelocityChange.cross(ra).dot(normal);
-			
+		
 		Matrix4 aabbInertiaTensorInverse = LocalToWorldInertiaTensor(aabb, aabbCol->inertiaTensor).Inverse();
 		Vector3 rb = aabb->position + aabbPoint;
 		Vector3 aabbAngularVelocityChange = normal.cross(rb);
 		aabbAngularVelocityChange *= aabbInertiaTensorInverse;
 		float inverseMassB = 1.f / aabb->mass; 
 		scalar += inverseMassB + aabbAngularVelocityChange.cross(rb).dot(normal);
-			
+		
 		float coefRest = (aabb->elasticity + sphere->elasticity) / 2; //this is completely unfounded is science :)
 		float impulseMod = (coefRest + 1) * (sphere->velocity - aabb->velocity).mag(); //this too :)
 		Vector3 impulse = normal * impulseMod;
@@ -645,6 +645,10 @@ inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 //////////////////////////
 //// system functions ////
 //////////////////////////
+
+PhysicsSystem::PhysicsSystem(EntityAdmin* admin) {
+	this->admin = admin;
+}
 
 void PhysicsSystem::Update() {
 	std::vector<PhysicsTuple> tuples = GetPhysicsTuples(admin);

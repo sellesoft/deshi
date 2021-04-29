@@ -36,6 +36,10 @@ std::vector<char> BoxCollider::Save() {
 	return out;
 }
 
+void BoxCollider::RecalculateTensor(f32 mass) {
+	inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
+}
+
 void BoxCollider::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
 	u32 entityID = -1;
 	u32 layer = -1;
@@ -135,6 +139,10 @@ AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisio
 	this->halfDims = halfDimensions;
 }
 
+void AABBCollider::RecalculateTensor(f32 mass) {
+	inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
+}
+
 std::vector<char> AABBCollider::Save() {
 	std::vector<char> out;
 	return out;
@@ -186,6 +194,10 @@ SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer
 	this->noCollide = nocollide;
 	this->command = command;
 	this->radius = radius;
+}
+
+void SphereCollider::RecalculateTensor(f32 mass) {
+	inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
 }
 
 std::vector<char> SphereCollider::Save() {

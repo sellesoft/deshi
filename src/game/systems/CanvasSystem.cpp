@@ -1501,10 +1501,14 @@ void CanvasSystem::DrawUI(void) {
 	}
 }
 
-void CanvasSystem::Init(EntityAdmin* admin) {
-	System::Init(admin);
+CanvasSystem::CanvasSystem(EntityAdmin* a){
+	admin = a;
 	files = deshi::iterateDirectory(deshi::dirModels());
 	textures = deshi::iterateDirectory(deshi::dirTextures());
+}
+
+void CanvasSystem::Init() {
+	
 }
 
 void CanvasSystem::Update() {

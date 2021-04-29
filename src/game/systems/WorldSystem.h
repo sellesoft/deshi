@@ -32,10 +32,12 @@ struct EntityAdmin;
 struct Transform;
 
 struct WorldSystem : public System {
-	void Update() override;
-	
 	std::vector<Entity*> creationBuffer;
 	std::vector<Entity*> deletionBuffer;
+	
+	WorldSystem(EntityAdmin* admin);
+	
+	void Update() override;
 	
 	//// Entity Lifetime Functions ////
 	
@@ -47,17 +49,18 @@ struct WorldSystem : public System {
 	//returns the eventual position in the admin's entities array
 	u32 CreateEntity(EntityAdmin* admin, std::vector<Component*> components, const char* name = 0, Transform transform = Transform());
 	
+	//adds an already initialized entity to the creation buffer
+	u32 CreateEntity(EntityAdmin* admin, Entity* entity);
+	
 	//initializes an entity with a component vector and adds it to entities immedietly
 	//returns a pointer to the entitiy
 	Entity* CreateEntityNow(EntityAdmin* admin, std::vector<Component*> components, const char* name = 0, Transform transform = Transform());
-
-	//adds an already initialized entity to the creation buffer
-	//returns its place in the queue
-	void AddEntityToCreationBuffer(EntityAdmin* admin, Entity* entity);
+	
+	//adds the entity at ID to the deletion buffer
+	void DeleteEntity(EntityAdmin* admin, u32 id);
 	
 	//adds an already initialized entity to the deletion buffer
-	//returns its place in the queue, -1 if the entity could not be found
-	void AddEntityToDeletionBuffer(EntityAdmin* admin, Entity* entity);
+	void DeleteEntity(EntityAdmin* admin, Entity* entity);
 };
 
 #endif //SYSTEM_WORLD_H

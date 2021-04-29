@@ -36,12 +36,14 @@ struct CanvasSystem : public System {
 	//this can be done better
 	bool ConsoleHovFlag = false;
 	
+	CanvasSystem(EntityAdmin* admin);
+	
 	void DebugBar();
 	void DebugTools();
 	void MenuBar();
 	void DebugLayer();
 	
-	void Init(EntityAdmin* admin) override;
+	void Init();
 	void Update() override;
 	void DrawUI(void);
 };

@@ -477,7 +477,7 @@ try{ func }catch(...){ return desc; }\
 #define CMDERROR args.at(-1) = ""
 #define CMDSTART(name) std::string command_##name##_back(EntityAdmin* admin, std::vector<std::string> args){ try{std::cmatch m;
 #define CMDSTARTA(name,assert) CMDSTART(name) if(!(assert)){CMDERROR;}
-#define CMDEND(error) CMDERROR; }catch(...){ return error; }}
+#define CMDEND(error) CMDERROR; return "Error"; }catch(...){ ERROR(error); return ""; }}
 
 ////////////////////////////////////////
 //// various uncategorized commands ////
@@ -504,6 +504,14 @@ COMMANDFUNC(undo){
 COMMANDFUNC(redo){
 	admin->undoManager.Redo(); return "";
 }
+
+CMDSTARTA(load_entity, args.size() > 0){
+	if(Entity* e = Entity::CreateEntityFromFile(admin, args[0])){
+		u32 id = admin->world->CreateEntity(admin, e);
+		SUCCESS("Creating entity '", e->name, "' with ID: ", id);
+		return "";
+	}
+}CMDEND("load_entity <example.entity:String>");
 
 CMDSTARTA(draw_line, args.size() > 1){
 	Vector3 pos1{}, pos2{}, color = {255,255,255};
@@ -708,7 +716,7 @@ COMMANDFUNC(add_player) {
 		float elasticity = 0;
 		bool staticc = true;
 		ColliderType ctype;
-
+		
 		//check for optional params after the first arg
 		for (auto s = args.begin() + 1; s != args.end(); ++s) {
 			if (std::regex_search(s->c_str(), m, Vec3Regex("pos"))) {
@@ -740,32 +748,32 @@ COMMANDFUNC(add_player) {
 				return "[c:red]Invalid parameter: " + *s + "[c]";
 			}
 		}
-
+		
 		//cut off the .obj extension for entity name
 		char name[64];
 		cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), 63);
-
+		
 		//create the mesh
 		u32 id = DengRenderer->CreateMesh(&admin->scene, args[0].c_str());
 		Mesh* mesh = DengRenderer->GetMeshPtr(id);
-
+		
 		//collider
 		Collider* col = nullptr;
 		switch (ctype) {
-		case ColliderType_AABB: col = new AABBCollider(mesh, 1); break;
-		case ColliderType_Sphere: col = new SphereCollider(1, 1); break;
-		case ColliderType_Landscape: col = new LandscapeCollider(mesh); break;
-		case ColliderType_Box: col = new BoxCollider(Vector3(1, 1, 1), 1); break;
+			case ColliderType_AABB: col = new AABBCollider(mesh, 1); break;
+			case ColliderType_Sphere: col = new SphereCollider(1, 1); break;
+			case ColliderType_Landscape: col = new LandscapeCollider(mesh); break;
+			case ColliderType_Box: col = new BoxCollider(Vector3(1, 1, 1), 1); break;
 		}
-
+		
 		MeshComp* mc = new MeshComp(mesh, id);
 		Physics* p = new Physics(position, rotation, Vector3::ZERO, Vector3::ZERO,
-			Vector3::ZERO, Vector3::ZERO, elasticity, mass, staticc);
+								 Vector3::ZERO, Vector3::ZERO, elasticity, mass, staticc);
 		AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 		Movement* mov = new Movement(p);
 		Player* pl = new Player(mov);
 		admin->player = admin->world->CreateEntityNow(admin, { mc, p, s, col, mov, pl },
-			name, Transform(position, rotation, scale));
+													  name, Transform(position, rotation, scale));
 		admin->controller.playermove = mov;
 		return TOSTRING("Added player.");
 	}
@@ -792,6 +800,7 @@ void Console::AddRandomCommands(){
 	CMDADD(time_game, "Logs the game times");
 	CMDADD(undo, "Undos previous level editor action");
 	CMDADD(redo, "Redos last undone level editor action");
+	CMDADD(load_entity, "Loads an entity from the entities folder");
 	CMDADD(add_player, "Adds a player to the world.");
 	CMDADD(draw_line, "Draws a line in 3D with desired color");
 	CMDADD(draw_triangle, "Draws a triangle in 3D with desired color");

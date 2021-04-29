@@ -81,6 +81,8 @@ struct EntityAdmin {
 	
 	void Save();
 	void Load(const char* filename);
+	
+	static u32 LoadEntityFromFile(const char* filename);
 };
 
 struct Entity {
@@ -106,6 +108,9 @@ struct Entity {
 	void AddComponents(std::vector<Component*> components);
 	void RemoveComponent(Component* component);
 	void RemoveComponents(std::vector<Component*> components);
+	
+	//returns an entity loaded from the entities folder
+	static Entity* CreateEntityFromFile(EntityAdmin* admin, std::string& filename);
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
 	template<class T>

@@ -13,6 +13,7 @@ struct Console;
 namespace deshi{
 	
 	inline static std::string dirData()    { return "data/"; }
+	inline static std::string dirEntities(){ return dirData() + "entities/"; }
 	inline static std::string dirModels()  { return dirData() + "models/"; }
 	inline static std::string dirTextures(){ return dirData() + "textures/"; }
 	inline static std::string dirSounds()  { return dirData() + "sounds/"; }
@@ -21,6 +22,7 @@ namespace deshi{
 	
 	//return "" if file not found
 	std::string getData(const char* filename);
+	std::string getEntity(const char* filename);
 	std::string getModel(const char* filename);
 	std::string getTexture(const char* filename);
 	std::string getSound(const char* filename);
@@ -38,10 +40,10 @@ namespace deshi{
 	
 	//truncates and writes a char array to a file in ASCII format
 	void writeFile(const std::string& filepath, const char* data, u32 chars);
-
+	
 	//appends and writes a char array to a file in ASCII format
 	void appendFile(const std::string& filepath, const char* data, u32 chars);
-
+	
 	//appends and writes a char vector array to a file in ASCII format
 	void appendFile(const std::string& filepath, std::vector<char>& data, u32 chars);
 	
@@ -53,14 +55,14 @@ namespace deshi{
 	
 	//appends and writes a char array to a file in binary
 	void appendFileBinary(const std::string& filepath, const char* data, u32 bytes);
-
+	
+	//iterates a config file and returns a map of keys and values (see keybinds.cfg)
+	std::map<std::string, std::string> extractConfig(const std::string& filepath);
+	
 	//iterates directory and returns a list of files in it
 	//probably return something other than a vector of strings but thts how it is for now
 	std::vector<std::string> iterateDirectory(const std::string& filepath);
 	
-	//iterates a config file and returns a map of keys and values (see keybinds.cfg)
-	std::map<std::string, std::string> extractConfig(const std::string& filepath);
-
 	//creates base deshi directories if they dont already exist
 	void enforceDirectories();
 	

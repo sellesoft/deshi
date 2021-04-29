@@ -22,8 +22,8 @@ add player movement and player entity
 
 Minor Ungrouped TODOs
 ---------------------
+add prefab-style entity creation
 figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
-implement string returns, better descriptions, and parameter parsing on every command (use spawn_box as reference)
 settings file(s) [keybinds, video, audio, etc]
 ____create a hot-loadable global vars file
 add a general logging system with log levels and locations
@@ -38,6 +38,7 @@ add Camera tag to TODOP
 look into integrating TODOP with Discord
 add yaxis line
 begin reimplementing sound system and maybe rethink its design a bit
+remove WorldSystem and add its functionality to EntityAdmin
 
 Render TODOs
 ------------
@@ -135,10 +136,8 @@ dragging the console scroll bar doesn't work
 after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and 
 ____the batchArray size of whatever mesh its checking is something like 400000000000
 	____it looks like some sort of corrupt mesh makes its way in there somehow?
-____TODO(sushi) check if ^this^ is still an issue, i added a NOTE on MeshComp::Init() saying what maybe fixed it
 look into scaling not rotating (scaling is probably being done in world not local)
 console scrolls past top and bottom
-calling a components destructor causes a crash related the component layers
 sometimes MeshComp is assigned a nonexistant mesh
 
 */

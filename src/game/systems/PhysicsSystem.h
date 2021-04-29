@@ -27,6 +27,8 @@ struct PhysicsSystem : public System {
 	float maxRotVelocity = 360.f; //per axis in degrees
 	float minRotVelocity = 1.f;
 	
+	PhysicsSystem(EntityAdmin* admin);
+	
 	void Update() override;
 };
 
