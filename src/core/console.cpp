@@ -1,11 +1,7 @@
 #include "console.h"
 #include "../core.h"
 #include "../utils/Command.h"
-#include "../game/Keybinds.h"
-#include "../game/Transform.h"
-#include "../game/UndoManager.h"
-#include "../game/systems/WorldSystem.h"
-#include "../game/systems/CanvasSystem.h"
+#include "../EntityAdmin.h"
 #include "../game/components/Camera.h"
 #include "../game/components/Physics.h"
 #include "../game/components/Collider.h"
@@ -13,8 +9,6 @@
 #include "../game/components/MeshComp.h"
 #include "../game/components/Player.h"
 #include "../game/components/Movement.h"
-#include "../scene/Scene.h"
-#include "../EntityAdmin.h"
 
 #include "../external/imgui/imgui_impl_glfw.h"
 #include "../external/imgui/imgui_impl_vulkan.h"
@@ -433,12 +427,7 @@ void Console::FlushBuffer() {
 		output += a.first;
 	}
 	
-	if (!std::filesystem::is_directory("logs")) {
-		std::filesystem::create_directory("logs");
-	}
-	
-	
-	static std::string filename = DengTime->FormatDateTime("logs/deshiLog_{M}-{d}-{y}_{h}.{m}.{s}.txt");
+	static std::string filename = deshi::dirLogs() + DengTime->FormatDateTime("deshiLog_{M}-{d}-{y}_{h}.{m}.{s}.txt");
 	static bool session = false;
 	
 	std::ofstream file;
@@ -477,11 +466,17 @@ try{ func }catch(...){ return desc; }\
 #define CMDERROR args.at(-1) = ""
 #define CMDSTART(name) std::string command_##name##_back(EntityAdmin* admin, std::vector<std::string> args){ try{std::cmatch m;
 #define CMDSTARTA(name,assert) CMDSTART(name) if(!(assert)){CMDERROR;}
-#define CMDEND(error) CMDERROR; return "Error"; }catch(...){ ERROR(error); return ""; }}
+#define CMDEND(error) CMDERROR; return ""; }catch(...){ ERROR(error); return ""; }}
 
 ////////////////////////////////////////
 //// various uncategorized commands ////
 ////////////////////////////////////////
+
+COMMANDFUNC(save){
+	std::string path = (args.size() > 0) ? args[0] : "save.desh";
+	admin->Save(deshi::assetPath(path.c_str(), AssetType_Save).c_str());
+	return "";
+}
 
 COMMANDFUNC(daytime){
 	return DengTime->FormatDateTime("{w} {M}/{d}/{y} {h}:{m}:{s}");
@@ -505,9 +500,23 @@ COMMANDFUNC(redo){
 	admin->undoManager.Redo(); return "";
 }
 
+CMDSTARTA(state, args.size() > 0){
+	if(args[0] == "play"){
+		admin->ChangeState(GameState_Play);
+	}else if(args[0] == "menu"){
+		admin->ChangeState(GameState_Menu);
+	}else if(args[0] == "debug"){
+		admin->ChangeState(GameState_Debug);
+	}else if(args[0] == "editor"){
+		admin->ChangeState(GameState_Editor);
+	}else if(args[0] == "exit"){
+		admin->ChangeState(GameState_Exit);
+	}
+}CMDEND("state <new_state:String>{play|menu|debug|editor|exit}");
+
 CMDSTARTA(load_entity, args.size() > 0){
 	if(Entity* e = Entity::CreateEntityFromFile(admin, args[0])){
-		u32 id = admin->world->CreateEntity(admin, e);
+		u32 id = admin->CreateEntity(e);
 		SUCCESS("Creating entity '", e->name, "' with ID: ", id);
 		return "";
 	}
@@ -614,7 +623,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 	Physics* p = new Physics(pos, rot, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, elasticity, mass, staticPosition);
 	if (twoDphys) p->twoDphys = true;
 	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
-	admin->world->CreateEntity(admin, { mc, p, s, col }, name, Transform(pos, rot, scale));
+	admin->CreateEntity({ mc, p, s, col }, name, Transform(pos, rot, scale));
 	
 	return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
 }CMDEND("load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z) -collider=String{aabb|sphere} -mass=Float -static=Bool");
@@ -635,7 +644,7 @@ CMDSTART(spawn_box_uv){
 	
 	u32 id = DengRenderer->CreateMesh(2, Matrix4::TransformationMatrix(pos, rot, scale));
 	MeshComp* mc = new MeshComp(DengRenderer->GetMeshPtr(id), id);
-	admin->world->CreateEntity(admin, { mc }, "uv_texture_box", Transform(pos, rot, scale));
+	admin->CreateEntity({ mc }, "uv_texture_box", Transform(pos, rot, scale));
 	
 	return TOSTRING("Created textured box with id: ", id);
 }CMDEND("spawn_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
@@ -661,7 +670,7 @@ CMDSTART(mesh_create){
 	MeshComp* mc = new MeshComp(ptr, id);
 	Physics* p = new Physics(pos, rot);
 	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
-	admin->world->CreateEntity(admin, { mc, p, s });
+	admin->CreateEntity({ mc, p, s });
 	
 	return TOSTRING("Created mesh with id: ", id, " based on mesh: ", meshID);
 }CMDEND("mesh_create <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
@@ -772,8 +781,8 @@ COMMANDFUNC(add_player) {
 		AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 		Movement* mov = new Movement(p);
 		Player* pl = new Player(mov);
-		admin->player = admin->world->CreateEntityNow(admin, { mc, p, s, col, mov, pl },
-													  name, Transform(position, rotation, scale));
+		admin->player = admin->CreateEntityNow({ mc, p, s, col, mov, pl },
+											   name, Transform(position, rotation, scale));
 		admin->controller.playermove = mov;
 		return TOSTRING("Added player.");
 	}
@@ -794,7 +803,7 @@ void Console::AddRandomCommands(){
 											   else return "engine_pause = false";
 										   }, "engine_pause", "toggles pausing the engine");
 	
-	
+	CMDADD(save, "Saves the state of the editor");
 	CMDADD(daytime, "Logs the time in day-time format");
 	CMDADD(time_engine, "Logs the engine times");
 	CMDADD(time_game, "Logs the game times");
@@ -809,6 +818,7 @@ void Console::AddRandomCommands(){
 	CMDADD(mesh_create, "Creates a mesh based on another mesh");
 	CMDADD(mesh_transform_matrix, "Transforms a mesh by the provided matrix");
 	CMDADD(cam_vars, "Allows editing to the camera variables");
+	CMDADD(state, "Changes the admin's gamestate");
 }
 
 ////////////////////////////////////
@@ -997,12 +1007,6 @@ void Console::AddConsoleCommands() {
 										   return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
 									   }
 								   }, "help", "prints help about a specified command. \nignores any argument after the first.");
-	commands["save"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-									   
-									   admin->Save();
-									   return "Saved.";
-									   
-								   }, "save", "saves the state of Entity Admin");
 	
 	commands["alias"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string 
 									{
@@ -1026,7 +1030,8 @@ void Console::AddConsoleCommands() {
 													datav.push_back(c);
 												}
 												
-												deshi::appendFile(deshi::getConfig("aliases.cfg"), datav, datav.size());
+												deshi::appendFile(deshi::assetPath("aliases.cfg", AssetType_Config), 
+																  datav, datav.size());
 												
 												return "[c:green]alias \"" + args[0] + "\" successfully assigned to command \"" + args[1] + "\"[c]";
 											}
@@ -1064,7 +1069,8 @@ void Console::AddConsoleCommands() {
 												   datav.push_back(c);
 											   }
 											   datav.push_back('\n');
-											   deshi::appendFile(deshi::getConfig("binds.cfg"), datav, datav.size());
+											   deshi::appendFile(deshi::assetPath("binds.cfg", AssetType_Config), 
+																 datav, datav.size());
 											   return "[c:green]key \"" + args[0] + "\" successfully bound to \n" + s + "[c]";
 										   }
 										   catch(...){
@@ -1418,8 +1424,9 @@ void Console::AddWindowCommands() {
 void Console::AddAliases() {
 	std::ifstream aliases;
 	
-	if (deshi::getConfig("aliases.cfg") != "") {
-		aliases = std::ifstream(deshi::getConfig("aliases.cfg"), std::ios::in);
+	std::string path = deshi::assetPath("aliases.cfg", AssetType_Config, false);
+	if (path != "") {
+		aliases = std::ifstream(path, std::ios::in);
 		
 		char* c = (char*)malloc(255);
 		aliases.getline(c, 255);

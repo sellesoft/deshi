@@ -2,7 +2,9 @@
 #ifndef SYSTEM_PHYSICS_H
 #define SYSTEM_PHYSICS_H
 
-#include "System.h"
+#include "../../utils/defines.h"
+
+struct EntityAdmin;
 
 enum struct CollisionDetectionMode {
 	DISCRETE, /*CONTINUOUS, GJK,*/ NONE
@@ -12,24 +14,19 @@ enum struct IntegrationMode {
 	/*RK4, VERLET,*/ EULER
 };
 
-struct PhysicsSystem : public System {
-	IntegrationMode integrationMode      = IntegrationMode::EULER;
-	CollisionDetectionMode collisionMode = CollisionDetectionMode::DISCRETE;
+struct PhysicsSystem{
+	EntityAdmin* admin;
+	IntegrationMode integrationMode;
+	CollisionDetectionMode collisionMode;
+	f32 gravity;
+	f32 frictionAir; //TODO(delle,Ph) this should depend on object shape
+	f32 maxVelocity;
+	f32 minVelocity;
+	f32 maxRotVelocity; //per axis in degrees
+	f32 minRotVelocity;
 	
-	float gravity     = -9.81f;
-	float frictionAir = 0.01f; //TODO(delle,Ph) this should depend on object shape
-	
-	
-
-
-	float maxVelocity    = 100.f;
-	float minVelocity    = 0.005f;
-	float maxRotVelocity = 360.f; //per axis in degrees
-	float minRotVelocity = 1.f;
-	
-	PhysicsSystem(EntityAdmin* admin);
-	
-	void Update() override;
+	void Init(EntityAdmin* admin);
+	void Update();
 };
 
 #endif //SYSTEM_PHYSICS_H

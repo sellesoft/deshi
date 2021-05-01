@@ -16,10 +16,10 @@ enum ComponentLayerBits : u32{
 	ComponentLayer_NONE = 0,
 	ComponentLayer_Physics,
 	ComponentLayer_Canvas,
-	ComponentLayer_World,
 	ComponentLayer_Sound,
+	ComponentLayer_World,
 	ComponentLayer_LAST,
-	SystemLayer_Physics,
+	SystemLayer_Physics = 0,
 }; typedef u32 ComponentLayer;
 
 struct ComponentTypeHeader{
@@ -46,16 +46,15 @@ enum ComponentTypeBits : u32{
 }; typedef u32 ComponentType;
 
 struct Component : public Receiver {
+	EntityAdmin* admin = 0;
+	u32 entityID = -1;
 	char name[64];
-	
-	Entity* entity = nullptr; //reference to owning entity
-	EntityAdmin* admin = nullptr; 
-	
 	
 	//sender for outputting events to a list of receivers
 	Sender* send = nullptr;
 	
-	Component(EntityAdmin* a = nullptr, Entity* e = nullptr);
+	Component(){};
+	Component(EntityAdmin* a, u32 entityID);
 	virtual ~Component();
 	
 	//store layer its on and where in that layer it is for deletion
@@ -63,7 +62,7 @@ struct Component : public Receiver {
 	int layer_index;
 	
 	//Init only gets called when this component's entity is spawned thru the world system
-	virtual void Init() {};
+	virtual void Init(EntityAdmin* admin) {};
 	virtual void Update() {};
 	void ConnectSend(Component* c);
 	virtual void ReceiveEvent(Event event) override {};

@@ -14,10 +14,10 @@ BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer,
 	
 	this->type = ColliderType_Box;
 	this->collisionLayer = collisionLayer;
-	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 	this->noCollide = nocollide;
 	this->command = command;
 	this->halfDims = halfDimensions;
+	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 
 BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Command* command, b32 nocollide) {
@@ -122,10 +122,10 @@ AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLaye
 	
 	this->type = ColliderType_AABB;
 	this->collisionLayer = collisionLayer;
-	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 	this->noCollide = nocollide;
 	this->command = command;
 	this->halfDims = halfDimensions;
+	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 
 AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Command* command, b32 nocollide) {
@@ -179,10 +179,10 @@ SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Com
 	
 	this->type = ColliderType_Sphere;
 	this->collisionLayer = collisionLayer;
-	this->inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
 	this->noCollide = nocollide;
 	this->command = command;
 	this->radius = radius;
+	this->inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
 }
 
 SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer, Command* command, b32 nocollide) {

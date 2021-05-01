@@ -20,11 +20,6 @@
 #include "game/components/Component.h"
 #include "game/components/AudioSource.h"
 #include "game/components/AudioListener.h"
-#include "game/systems/PhysicsSystem.h"
-#include "game/systems/CanvasSystem.h"
-#include "game/systems/SoundSystem.h"
-#include "game/systems/WorldSystem.h"
-#include "game/systems/System.h"
 
 #include <iostream>
 #include <fstream>
@@ -34,20 +29,26 @@
 //// EntityAdmin ////
 
 void EntityAdmin::Init() {
-	state = GameState::EDITOR;
+	//decide initial gamestate
+#if defined(DESHI_BUILD_PLAY)
+	state = GameState_Play;
+#elif defined(DESHI_BUILD_DEBUG)
+	state = GameState_Debug;
+#else
+	state = GameState_Editor;
+#endif
 	entities.reserve(1000);
+	creationBuffer.reserve(100);
+	deletionBuffer.reserve(100);
 	
 	//reserve complayers
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < ComponentLayer_LAST; i++) {
 		freeCompLayers.push_back(ContainerManager<Component*>());
 	}
 	
-	//systems initialization
-	physics = new PhysicsSystem(this);
-	canvas  = new CanvasSystem(this);
-	world   = new WorldSystem(this);
-	sound   = new SoundSystem(this);
-	
+	physics.Init(this);
+	canvas.Init(this);
+	sound.Init(this);
 	scene.Init();
 	DengRenderer->LoadScene(&scene);
 	keybinds.Init();
@@ -55,8 +56,16 @@ void EntityAdmin::Init() {
 	undoManager.Init();
 	
 	//singleton initialization
-	mainCamera = new Camera(this, 90.f, .01f, 1000.01f, true);
+	mainCamera = new Camera(90.f, .01f, 1000.01f, true); //temporary camera creation on admin
 	mainCamera->layer_index = freeCompLayers[mainCamera->layer].add(mainCamera);
+	mainCamera->Init(this);
+	selectedEntity = nullptr;
+	
+	skip = false;
+	paused = false;
+	pause_command = pause_phys = pause_canvas = pause_world = pause_sound = pause_last = false;
+	find_triangle_neighbors = true;
+	debugTimes = true;
 	
 	/*
 	//orb testing
@@ -72,15 +81,7 @@ void EntityAdmin::Init() {
 }
 
 void EntityAdmin::Cleanup() {
-	//cleanup collections
-	entities.clear();
-	freeCompLayers.clear();
 	
-	delete physics;
-	delete canvas;
-	delete world;
-	delete sound;
-	delete mainCamera;
 }
 
 void UpdateLayer(ContainerManager<Component*> cl) {
@@ -99,27 +100,78 @@ void EntityAdmin::Update() {
 	TIMER_RESET(t_a); 
 	if (!skip && !pause_phys && !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_Physics]); }
 	DengTime->physLyrTime =   TIMER_END(t_a); TIMER_RESET(t_a);
-	if (!skip && !pause_phys && !paused)  { physics->Update(); }
+	if (!skip && !pause_phys && !paused)  { physics.Update(); }
 	DengTime->physSysTime =   TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_canvas)           { UpdateLayer(freeCompLayers[ComponentLayer_Canvas]); }
 	DengTime->canvasLyrTime = TIMER_END(t_a); TIMER_RESET(t_a);
-	if (!skip && !pause_canvas)           { canvas->Update(); }
+	if (!skip && !pause_canvas)           { canvas.Update(); }
 	DengTime->canvasSysTime = TIMER_END(t_a); TIMER_RESET(t_a);
-	if (!skip && !pause_console)          { UpdateLayer(freeCompLayers[ComponentLayer_World]); }
-	DengTime->worldLyrTime =  TIMER_END(t_a); TIMER_RESET(t_a);
-	if (!skip && !pause_world && !paused) { world->Update(); }
-	DengTime->worldSysTime =  TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_sound && !paused) { UpdateLayer(freeCompLayers[ComponentLayer_Sound]); }
 	DengTime->sndLyrTime =    TIMER_END(t_a); TIMER_RESET(t_a);
-	if (!skip && !pause_sound && !paused) { sound->Update(); }
-	DengTime->sndSysTime =    TIMER_END(t_a); TIMER_RESET(t_a);
-	if (!skip && !pause_last && !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_LAST]); }
-	DengTime->lastLyrTime =   TIMER_END(t_a);
+	if (!skip && !pause_sound && !paused) { sound.Update(); }
+	DengTime->sndSysTime =    TIMER_END(t_a);
 	ImGui::EndDebugLayer();
+}
+
+void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed
+	TIMER_RESET(t_a);
+	if (!skip && !pause_world) UpdateLayer(freeCompLayers[ComponentLayer_World]); 
+	DengTime->worldLyrTime = TIMER_END(t_a); TIMER_RESET(t_a);
+	
+	//deletion buffer
+	for(Entity* e : deletionBuffer) {
+		if(selectedEntity == e) selectedEntity = 0;
+		for(Component* c : e->components){ 
+			freeCompLayers[c->layer].remove_from(c->layer_index);
+		}
+		entities.erase(entities.begin()+e->id);
+	}
+	deletionBuffer.clear();
+	
+	//creation buffer
+	for(Entity* e : creationBuffer) {
+		entities.emplace_back(this, u32(entities.size()), e->transform, e->name, e->components);
+		for(Component* c : e->components){ 
+			c->entityID = entities.size()-1;
+			c->layer_index = freeCompLayers[c->layer].add(c);
+			c->Init(this);
+		}
+		operator delete(e); //call this to not delete components, but still delete the staging entity (doesnt call destructor)
+	}
+	creationBuffer.clear();
+	DengTime->worldSysTime =  TIMER_END(t_a); TIMER_RESET(t_a);
 	
 	DengTime->paused = paused;
 	DengTime->phys_pause = pause_phys;
 	skip = false;
+}
+
+void EntityAdmin::ChangeState(GameState new_state){
+	if(state == new_state) return;
+	if(state > GameState_LAST) return ERROR("Admin attempted to switch to unhandled gamestate: ", new_state);
+	
+	std::string from, to;
+	switch(state){
+		case GameState_Play:{ from = "PLAY";
+			switch(new_state){
+				case GameState_Menu:{   to = "MENU";
+					
+				}break;
+				case GameState_Debug:{  to = "DEBUG";
+					
+				}break;
+				case GameState_Editor:{ to = "EDITOR";
+					Save("auto.desh");
+				}break;
+				case GameState_Exit:{   to = "EXIT";
+					Save("auto.desh");
+				}break;
+			}
+		}break;
+		default: from = TOSTRING(state);
+	}
+	state = new_state;
+	SUCCESS("Changed gamestate from ", from, " to ", to);
 }
 
 struct SaveHeader{
@@ -134,11 +186,11 @@ struct SaveHeader{
 	u32 componentTypeHeaderArrayOffset;
 };
 
-void EntityAdmin::Save() {
+void EntityAdmin::Save(const char* filename) {
 	//std::vector<char> save_data(4096);
 	
 	//open file
-	std::string filepath = deshi::dirData() + "save.desh";
+	std::string filepath = deshi::dirSaves() + filename;
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file '", filepath, "' when trying to save"); return; }
 	
@@ -275,7 +327,7 @@ void EntityAdmin::Save() {
 	
 	//audio listener
 	for(auto c : compsAudioListener){
-		file.write((const char*)&c->entity->id,  sizeof(u32));
+		file.write((const char*)&c->entityID,    sizeof(u32));
 		file.write((const char*)&c->position,    sizeof(Vector3));
 		file.write((const char*)&c->velocity,    sizeof(Vector3));
 		file.write((const char*)&c->orientation, sizeof(Vector3));
@@ -283,12 +335,12 @@ void EntityAdmin::Save() {
 	
 	//audio source
 	for(auto c : compsAudioSource){
-		file.write((const char*)&c->entity->id, sizeof(u32));
+		file.write((const char*)&c->entityID, sizeof(u32));
 	}
 	
 	//collider box
 	for(auto c : compsColliderBox){
-		file.write((const char*)&c->entity->id,     sizeof(u32));
+		file.write((const char*)&c->entityID,       sizeof(u32));
 		file.write((const char*)&c->collisionLayer, sizeof(u32));
 		file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
 		file.write((const char*)&c->halfDims,       sizeof(Vector3));
@@ -296,7 +348,7 @@ void EntityAdmin::Save() {
 	
 	//collider aabb
 	for(auto c : compsColliderAABB){
-		file.write((const char*)&c->entity->id,     sizeof(u32));
+		file.write((const char*)&c->entityID,       sizeof(u32));
 		file.write((const char*)&c->collisionLayer, sizeof(u32));
 		file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
 		file.write((const char*)&c->halfDims,       sizeof(Vector3));
@@ -304,7 +356,7 @@ void EntityAdmin::Save() {
 	
 	//collider sphere
 	for(auto c : compsColliderSphere){
-		file.write((const char*)&c->entity->id,     sizeof(u32));
+		file.write((const char*)&c->entityID,       sizeof(u32));
 		file.write((const char*)&c->collisionLayer, sizeof(u32));
 		file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
 		file.write((const char*)&c->radius,         sizeof(float));
@@ -312,7 +364,7 @@ void EntityAdmin::Save() {
 	
 	//light
 	for(auto c : compsLight){
-		file.write((const char*)&c->entity->id, sizeof(u32));
+		file.write((const char*)&c->entityID,   sizeof(u32));
 		file.write((const char*)&c->position,   sizeof(Vector3));
 		file.write((const char*)&c->direction,  sizeof(Vector3));
 		file.write((const char*)&c->strength,   sizeof(float));
@@ -322,7 +374,7 @@ void EntityAdmin::Save() {
 	for(auto c : compsMeshComp){
 		b32 bool1 = c->mesh_visible;
 		b32 bool2 = c->ENTITY_CONTROL;
-		file.write((const char*)&c->entity->id,     sizeof(u32));
+		file.write((const char*)&c->entityID,       sizeof(u32));
 		file.write((const char*)&c->instanceID,     sizeof(u32));
 		file.write((const char*)&c->meshID,         sizeof(u32));
 		file.write((const char*)&bool1,             sizeof(b32));
@@ -332,7 +384,7 @@ void EntityAdmin::Save() {
 	//physics
 	for(auto c : compsPhysics){
 		b32 isStatic = c->isStatic;
-		file.write((const char*)&c->entity->id,      sizeof(u32));
+		file.write((const char*)&c->entityID,        sizeof(u32));
 		file.write((const char*)&c->position,        sizeof(Vector3));
 		file.write((const char*)&c->rotation,        sizeof(Vector3));
 		file.write((const char*)&c->velocity,        sizeof(Vector3));
@@ -356,6 +408,7 @@ void EntityAdmin::Save() {
 	
 	//// close file ////
 	file.close();
+	SUCCESS("Successfully saved to ", filename);
 }
 
 void EntityAdmin::Load(const char* filename) {
@@ -452,21 +505,84 @@ void EntityAdmin::Load(const char* filename) {
 	skip = true;
 }
 
+
+u32 EntityAdmin::CreateEntity(const char* name) {
+	u32 id = entities.size() + creationBuffer.size() - 1;
+	creationBuffer.push_back(new Entity(this, id, Transform(), name));
+	return id;
+}
+
+u32 EntityAdmin::CreateEntity(std::vector<Component*> components, const char* name, Transform transform) {
+	Entity* e = new Entity;
+	e->SetName(name);
+	e->admin = this;
+	e->transform = transform;
+	e->AddComponents(components);
+	creationBuffer.push_back(e);
+	return entities.size() + creationBuffer.size() - 1;
+}
+
+u32 EntityAdmin::CreateEntity(Entity* e) {
+	e->admin = this;
+	creationBuffer.push_back(e);
+	return entities.size() + creationBuffer.size() - 1;
+}
+
+Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const char* name, Transform transform) {
+	Entity* e = new Entity;
+	e->SetName(name);
+	e->admin = this;
+	e->transform = transform;
+	e->AddComponents(components);
+	u32 id = entities.size();
+	entities.emplace_back(this, id, e->transform, e->name, e->components);
+	for (Component* c : e->components) {
+		c->entityID = id;
+		c->Init(this);
+	}
+	operator delete(e);
+	return &entities[id];
+}
+
+void EntityAdmin::DeleteEntity(u32 id) {
+	if(id < entities.size()){
+		deletionBuffer.push_back(&entities[id]);
+	}else{
+		ERROR("Attempted to add entity '", id, "' to deletion buffer when it doesn't exist on the admin");
+	}
+}
+
+void EntityAdmin::DeleteEntity(Entity* e) {
+	if(e->id < entities.size()){
+		deletionBuffer.push_back(e);
+	}else{
+		ERROR("Attempted to add entity '", e->id, "' to deletion buffer when it doesn't exist on the admin");
+	}
+}
+
+
 ////////////////
 //// Entity ////
 ////////////////
 
 Entity::Entity(){
+	this->admin = 0;
+	this->id = -1;
 	this->transform = Transform();
 	this->name[63] = '\0';
 }
 
-Entity::Entity(EntityAdmin* admin, u32 id, Transform transform, const char* name, std::vector<Component*> components){
+Entity::Entity(EntityAdmin* admin, u32 id, Transform transform, const char* name, std::vector<Component*> comps){
 	this->admin = admin;
 	this->id = id;
 	this->transform = transform;
 	if(name) cpystr(this->name, name, 63);
-	for (Component* c : components) this->components.push_back(c);
+	for (Component* c : comps) {
+		if(!c) continue;
+		this->components.push_back(c);
+		c->entityID = id;
+		c->admin = admin;
+	}
 }
 
 Entity::~Entity() {
@@ -480,7 +596,7 @@ void Entity::SetName(const char* name){
 void Entity::AddComponent(Component* c) {
 	if(!c) return;
 	components.push_back(c);
-	c->entity = this;
+	c->entityID = id;
 	c->admin = this->admin;
 }
 
@@ -489,7 +605,7 @@ void Entity::AddComponents(std::vector<Component*> comps) {
 	for (Component* c : comps) {
 		if(!c) continue;
 		this->components.push_back(c);
-		c->entity = this;
+		c->entityID = id;
 		c->admin = this->admin;
 	}
 }
@@ -498,6 +614,7 @@ void Entity::RemoveComponent(Component* c) {
 	if(!c) return;
 	for_n(i,components.size()){
 		if(components[i] == c){
+			admin->freeCompLayers[c->layer].remove_from(c->layer_index);
 			delete c; 
 			components.erase(components.begin()+i); 
 			return;
@@ -510,6 +627,7 @@ void Entity::RemoveComponents(std::vector<Component*> comps) {
 		for_n(i,components.size()){
 			if(!comps[i]) continue;
 			if(components[i] == comps[0]){ 
+				admin->freeCompLayers[comps[i]->layer].remove_from(comps[i]->layer_index);
 				delete comps[i]; 
 				components.erase(components.begin()+i); 
 				comps.erase(components.begin()); 
@@ -518,6 +636,9 @@ void Entity::RemoveComponents(std::vector<Component*> comps) {
 		}
 	}
 }
+
+
+
 
 
 auto eat_spaces(std::string& str){
@@ -634,7 +755,7 @@ Entity* Entity::CreateEntityFromFile(EntityAdmin* admin, std::string& filename){
 				as = new AudioSource;
 			}else if(line.find(">camera") != -1){
 				//TODO(delle) handle camera component
-				cam = new Camera(admin, 90);
+				cam = new Camera(90.f);
 			}else if(line.find(">collider") != -1){
 				while(true){
 					std::getline(file, line); line_number++;

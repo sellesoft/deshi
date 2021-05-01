@@ -13,72 +13,24 @@
 ////////////////////
 
 std::string deshi::
-getData(const char* filename){
-	std::string file = dirData() + filename;
-	if(std::filesystem::exists(std::filesystem::path(file))){
-		return file;
-	}else{
-		ERROR("Failed to find data: ", file); return "";
+assetPath(const char* filename, AssetType type, b32 logError){
+	std::string file;
+	switch(type){
+		case AssetType_Entity:  file = dirEntities() + filename; break;
+		case AssetType_Model:   file = dirModels() + filename; break;
+		case AssetType_Texture: file = dirTextures() + filename; break;
+		case AssetType_Save:    file = dirSaves() + filename; break;
+		case AssetType_Sound:   file = dirSounds() + filename; break;
+		case AssetType_Shader:  file = dirShaders() + filename; break;
+		case AssetType_Config:  file = dirConfig() + filename; break;
+		case AssetType_NONE:    file = filename; break;
+		default:                file = dirData() + filename; break;
 	}
-}
-
-std::string deshi::
-getEntity(const char* filename){
-	std::string file = dirEntities() + filename;
 	if(std::filesystem::exists(std::filesystem::path(file))){
 		return file;
 	}else{
-		ERROR("Failed to find entity: ", file); return "";
-	}
-}
-
-std::string deshi::
-getModel(const char* filename){
-	std::string file = dirModels() + filename;
-	if(std::filesystem::exists(std::filesystem::path(file))){
-		return file;
-	}else{
-		ERROR("Failed to find model: ", file); return "";
-	}
-}
-
-std::string deshi::
-getTexture(const char* filename){
-	std::string file = dirTextures() + filename;
-	if(std::filesystem::exists(std::filesystem::path(file))){
-		return file;
-	}else{
-		ERROR("Failed to find texture: ", file); return "";
-	}
-}
-
-std::string deshi::
-getSound(const char* filename){
-	std::string file = dirSounds() + filename;
-	if(std::filesystem::exists(std::filesystem::path(file))){
-		return file;
-	}else{
-		ERROR("Failed to find sound: ", file); return "";
-	}
-}
-
-std::string deshi::
-getShader(const char* filename){
-	std::string file = dirShaders() + filename;
-	if(std::filesystem::exists(std::filesystem::path(file))){
-		return file;
-	}else{
-		ERROR("Failed to find shader: ", file); return "";
-	}
-}
-
-std::string deshi::
-getConfig(const char* filename){
-	std::string file = dirConfig() + filename;
-	if(std::filesystem::exists(std::filesystem::path(file))){
-		return file;
-	}else{
-		ERROR("Failed to find config: ", file); return "";
+		if(logError) ERROR("Failed to find data: ", file);
+		return "";
 	}
 }
 
@@ -238,22 +190,24 @@ iterateDirectory(const std::string& filepath) {
 void deshi::
 enforceDirectories() {
 	using namespace std::filesystem;
-	if (!is_directory("data")) {
-		create_directory("data");
-		create_directory("data/entities");
-		create_directory("data/models");
-		create_directory("data/scenes");
-		create_directory("data/sounds");
-		create_directory("data/textures");
+	if (!is_directory(dirData())) {
+		create_directory(dirData());
+		create_directory(dirConfig());
+		create_directory(dirEntities());
+		create_directory(dirLogs());
+		create_directory(dirModels());
+		create_directory(dirSaves());
+		create_directory(dirShaders());
+		create_directory(dirSounds());
+		create_directory(dirTextures());
 	} else {
-		if (!is_directory("data/entities"))   { create_directory("data/entities"); }
-		if (!is_directory("data/models"))   { create_directory("data/models"); }
-		if (!is_directory("data/scenes"))   { create_directory("data/scenes"); }
-		if (!is_directory("data/sounds"))   { create_directory("data/sounds"); }
-		if (!is_directory("data/textures")) { create_directory("data/textures"); }
+		if (!is_directory(dirConfig()))   create_directory(dirConfig());
+		if (!is_directory(dirEntities())) create_directory(dirEntities());
+		if (!is_directory(dirLogs()))     create_directory(dirLogs());
+		if (!is_directory(dirModels()))   create_directory(dirModels());
+		if (!is_directory(dirSaves()))    create_directory(dirSaves());
+		if (!is_directory(dirShaders()))  create_directory(dirShaders());
+		if (!is_directory(dirSounds()))   create_directory(dirSounds());
+		if (!is_directory(dirTextures())) create_directory(dirTextures());
 	}
-	
-	if (!is_directory("shaders")) { create_directory("shaders"); }
-	if (!is_directory("cfg")) { create_directory("cfg"); }
-	if (!is_directory("logs")) { create_directory("logs"); }
 }

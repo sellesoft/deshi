@@ -6,7 +6,7 @@
 #include "../Keybinds.h"
 #include "../systems/CanvasSystem.h"
 
-Camera::Camera(EntityAdmin*a, float fov, float nearZ, float farZ, bool freeCam) : Component(a) {
+Camera::Camera(float fov, float nearZ, float farZ, bool freeCam){
 	this->nearZ = nearZ;
 	this->farZ = farZ;
 	this->fov = fov;
@@ -126,6 +126,10 @@ std::string Camera::str(){
 					"\nStatic: ", (freeCamera)? "false" : "true");
 }
 
+void Camera::Init(EntityAdmin* a){
+	admin = a;
+}
+
 void Camera::Update() {
 	if(freeCamera){
 		Window* window = DengWindow;
@@ -135,7 +139,7 @@ void Camera::Update() {
 		//of this scope once we implement that
 		static int wwidth = window->width;
 		static int wheight = window->height;
-
+		
 		//clamp camera rotation
 		rotation.x = Math::clamp(rotation.x, -89.9f, 89.9f);
 		if(rotation.y > 1440.f || rotation.y < -1440.f){ rotation.y = 0.f; }
@@ -166,7 +170,7 @@ void Camera::Update() {
 			}
 			UpdateProjectionMatrix();
 		}
-
+		
 		//redo projection matrix is window size changes
 		if (window->width != wwidth || window->height != wheight) {
 			wwidth = window->width;

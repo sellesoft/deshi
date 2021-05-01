@@ -38,9 +38,9 @@ struct OrbManager : public Component {
 	Mesh* mesh = nullptr;
 	std::vector<Orb*> orbs;
 	
-	OrbManager(Mesh* mesh, EntityAdmin* admin, int orbcount = 100);
+	OrbManager(Mesh* mesh, int orbcount = 100);
 	
-	void Init() override;
+	void Init(EntityAdmin* admin) override;
 	void Update() override;
 	void ReceiveEvent(Event event) override;
 	

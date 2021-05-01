@@ -17,9 +17,8 @@ struct Controller{
 	EntityAdmin* admin;
 	MovementMode mode;
 	Movement* playermove;
-	bool noclip = true;
 	
-	float mouseSensitivity = 2.5f;
+	f32 mouseSensitivity;
 	
 	void Init(EntityAdmin* a, MovementMode m = MOVEMENT_MODE_FLYING);
 	void Update();

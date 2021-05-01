@@ -12,7 +12,6 @@ https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-
 */
 
 #include "renderer_vulkan.h"
-
 #include "../core.h"
 #include "../scene/Scene.h"
 #include "../math/Math.h"
@@ -451,8 +450,8 @@ CreateMesh(Scene* scene, const char* filename){
 	}
 	PRINTVK(3, "    Creating mesh: ", filename);
 	
-
-
+	
+	
 	scene->models.emplace_back(Mesh::CreateMeshFromOBJ(filename));
 	
 	return CreateMesh(scene->models[scene->models.size()-1].mesh, Matrix4::IDENTITY);
@@ -632,7 +631,7 @@ LoadTexture(Texture texture){
 	TextureVk tex; 
 	cpystr(tex.filename, texture.filename, 63);
 	
-	std::string imagePath = deshi::getTexture(texture.filename);
+	std::string imagePath = deshi::assetPath(texture.filename, AssetType_Texture);
 	if(imagePath == ""){ return 0; }
 	tex.pixels = stbi_load(imagePath.c_str(), &tex.width, &tex.height, &tex.channels, STBI_rgb_alpha);
 	ASSERT(tex.pixels, "stb failed to load an image");

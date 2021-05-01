@@ -10,8 +10,9 @@
 #include "game/Keybinds.h"
 #include "game/Controller.h"
 #include "game/UndoManager.h"
-
-#include <map>
+#include "game/systems/PhysicsSystem.h"
+#include "game/systems/CanvasSystem.h"
+#include "game/systems/SoundSystem.h"
 
 #define DengKeys admin->keybinds
 #define DengAdmin g_admin
@@ -22,26 +23,18 @@ struct System;
 struct Component;
 struct Command;
 struct Camera;
-struct PhysicsSystem;
-struct CanvasSystem;
-struct WorldSystem;
-struct SoundSystem;
 
-enum struct GameState{
-	NONE, PLAY, PLAY_DEBUG, EDITOR, MENU
-};
+enum GameStateBits : u32{
+	GameState_Play, GameState_Menu, GameState_Debug, GameState_Editor, GameState_Exit, GameState_LAST
+}; typedef u32 GameState;
 
 struct EntityAdmin {
-	GameState state = GameState::NONE;
-	
-	std::vector<Entity> entities;
-	//object_pool<Component>* components;
+	GameState state;
 	
 	//systems
-	PhysicsSystem* physics;
-	CanvasSystem*  canvas;
-	WorldSystem*   world;
-	SoundSystem*   sound;
+	PhysicsSystem physics;
+	CanvasSystem  canvas;
+	SoundSystem   sound;
 	
 	//admin singletons
 	Scene       scene;
@@ -51,43 +44,64 @@ struct EntityAdmin {
 	
 	Entity* player;
 	Camera* mainCamera;
+	Entity* selectedEntity;
 	
-	Entity* selectedEntity = 0;
+	std::vector<Entity> entities;
+	std::vector<Entity*> creationBuffer;
+	std::vector<Entity*> deletionBuffer;
 	
+	//object_pool<Component>* components;
 	//stores the components to be executed in between layers
 	std::vector<ContainerManager<Component*>> freeCompLayers;
 	
 	//pause flags
-	b32  skip = false;
-	bool paused = false;
-	bool pause_command = false;
-	bool pause_phys = false;
-	bool pause_canvas = false;
-	bool pause_world = false;
-	bool pause_console = false;
-	bool pause_sound = false;
-	bool pause_last = false;
-
-	bool find_triangle_neighbors = true;
+	b32  skip;
+	bool paused;
+	bool pause_command, pause_phys, pause_canvas, pause_world, pause_sound, pause_last;
 	
 	//timer related
-	bool debugTimes = true;
+	bool debugTimes;
 	TIMER_START(t_a);
 	
+	bool find_triangle_neighbors;
+	
 	void Init();
+	void Update();
+	void PostRenderUpdate();
 	void Cleanup();
 	
-	void Update();
+	inline void SkipUpdate(){ skip = true; };
+	void ChangeState(GameState state);
 	
-	void Save();
+	void Save(const char* filename);
 	void Load(const char* filename);
 	
-	static u32 LoadEntityFromFile(const char* filename);
+	//// Entity Storage Functions ////
+	
+	//initializes an entity with no components and adds it to the creation buffer
+	//returns the eventual position in the admin's entities array
+	u32 CreateEntity(const char* name = 0);
+	
+	//initializes an entity with a component vector and adds it to the creation buffer
+	//returns the eventual position in the admin's entities array
+	u32 CreateEntity(std::vector<Component*> components, const char* name = 0, Transform transform = Transform());
+	
+	//adds an already initialized entity to the creation buffer
+	u32 CreateEntity(Entity* entity);
+	
+	//initializes an entity with a component vector and adds it to entities immedietly
+	//returns a pointer to the entitiy
+	Entity* CreateEntityNow(std::vector<Component*> components, const char* name = 0, Transform transform = Transform());
+	
+	//adds the entity at ID to the deletion buffer
+	void DeleteEntity(u32 id);
+	
+	//adds an already initialized entity to the deletion buffer
+	void DeleteEntity(Entity* entity);
 };
 
 struct Entity {
 	EntityAdmin* admin; //reference to owning admin
-	
 	u32 id;
 	char name[64];
 	Transform transform;
@@ -127,5 +141,6 @@ struct Entity {
 
 //global admin pointer
 extern EntityAdmin* g_admin;
+inline Entity& EntityAt(u32 id) { return g_admin->entities[id]; }
 
 #endif

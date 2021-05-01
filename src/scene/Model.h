@@ -131,20 +131,20 @@ struct Batch {
 //primarily for caching triangles neighbors
 struct Triangle {
 	Vector3 p[3];
-
+	
 	//parallel vectors for storing the neighbors and their respective points
 	std::vector<Triangle*> nbrs;
 	std::vector<u8> sharededge; //index of first point where second is the first plus one
 	bool removed = false; //for checking if triangle was culled
 	
-
+	
 	Vector3 midpoint() {
 		return Vector3(
-			(p[0].x + p[1].x + p[2].x) / 3,
-			(p[0].y + p[1].y + p[2].y) / 3,
-			(p[0].z + p[1].z + p[2].z) / 3);
+					   (p[0].x + p[1].x + p[2].x) / 3,
+					   (p[0].y + p[1].y + p[2].y) / 3,
+					   (p[0].z + p[1].z + p[2].z) / 3);
 	}
-
+	
 	Vector3 norm() {
 		return (p[1] - p[0]).cross(p[2] - p[0]);
 	}
@@ -160,11 +160,12 @@ struct Mesh {
 	u32 batchCount = 0;
 	std::vector<Batch> batchArray;
 	std::vector<Triangle*> triangles;
-
+	
 	Mesh() {}
 	Mesh(const char* name, std::vector<Batch> batchArray);
 	
 	void SetName(const char* name);
+	std::vector<Vector2> GenerateOutlinePoints(Matrix4 transform, Matrix4 proj, Matrix4 view, Vector2 windimen, Vector3 camPosition);
 	
 	//filename: filename and extension, name: loaded mesh name, transform: pos,rot,scale of mesh
 	static Mesh* CreateMeshFromOBJ(std::string filename);
@@ -176,7 +177,7 @@ struct Mesh {
 
 //temp 2d
 struct Poly2 {
-
+	
 };
 
 //NOTE a model should not change after loading

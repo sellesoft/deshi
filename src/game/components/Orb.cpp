@@ -5,7 +5,7 @@
 #include "../../scene/Model.h"
 #include "../../scene/Scene.h"
 
-OrbManager::OrbManager(Mesh* m, EntityAdmin* a, int orbcount) : Component(a) {
+OrbManager::OrbManager(Mesh* m, int orbcount){
 	this->mesh = m;
 	this->orbcount = orbcount;
 	
@@ -13,7 +13,8 @@ OrbManager::OrbManager(Mesh* m, EntityAdmin* a, int orbcount) : Component(a) {
 	layer = ComponentLayer_Physics;
 };
 
-void OrbManager::Init(){
+void OrbManager::Init(EntityAdmin* a){
+	admin = a;
 	//create the orbs and their mesh components
 	for (int i = 0; i < orbcount; i++) {
 		Orb* orb = new Orb(Vector3(10, 10, 10), Vector3::ONE * 0.1 * i, Vector3::ZERO, Vector3::ZERO);
@@ -22,7 +23,7 @@ void OrbManager::Init(){
 		MeshComp* mc = new MeshComp(mesh, id);
 		orb->mc = mc;
 		mc->ENTITY_CONTROL = false;
-		entity->AddComponent(mc);
+		EntityAt(entityID).AddComponent(mc);
 		orbs.push_back(orb);
 	}
 }

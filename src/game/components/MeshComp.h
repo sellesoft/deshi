@@ -27,7 +27,7 @@ struct MeshComp : public Component {
 	
 	void ReceiveEvent(Event event) override;
 	
-	void Init() override;
+	void Init(EntityAdmin* admin) override;
 	void Update() override;
 	
 	std::vector<char> Save() override;
@@ -44,7 +44,7 @@ struct MeshComp2D : public Component {
 	
 	void ReceiveEvent(Event event) override;
 	
-	void Init() override;
+	void Init(EntityAdmin* admin) override;
 	void Update() override;
 	
 	std::vector<char> Save() override;

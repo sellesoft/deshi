@@ -19,7 +19,7 @@ MeshComp::MeshComp() {
 }
 
 MeshComp::MeshComp(u32 meshID, u32 instanceID) {
-	this->mesh = 0;
+	this->mesh = DengRenderer->GetMeshPtr(meshID);
 	this->meshID = meshID;
 	this->instanceID = instanceID;
 	
@@ -40,12 +40,6 @@ MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
 
 MeshComp::~MeshComp() {
 	DengRenderer->RemoveMesh(meshID);
-}
-
-void MeshComp::Init() {
-	if(!mesh) mesh = DengRenderer->GetMeshPtr(meshID);
-	//NOTE ideally we check for an existing mesh pointer, but 
-	// something is filling the mesh pointer with bad food
 }
 
 void MeshComp::ToggleVisibility() {
@@ -92,18 +86,22 @@ bool isthisin(T test, std::vector<T> vec) {
 	return false;
 }
 
+void MeshComp::Init(EntityAdmin* a) {
+	admin = a;
+}
+
 void MeshComp::Update() {
 	ASSERT(mesh->vertexCount, "Mesh has no vertices");
-	if (g_admin->selectedEntity == entity) {
-		std::vector<Vector2> outline = Geometry::GenerateOutlinePoints(mesh, entity->transform.TransformMatrix(), DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
+	if (g_admin->selectedEntity == &admin->entities[entityID]) {
+		std::vector<Vector2> outline = mesh->GenerateOutlinePoints(admin->entities[entityID].transform.TransformMatrix(), DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, admin->mainCamera->position);
 		for (int i = 0; i < outline.size(); i += 2) {
 			ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
 		}
 	}
-
-
+	
+	
 	//update mesh's transform with entities tranform
-	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
+	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, admin->entities[entityID].transform.TransformMatrix());
 }
 
 std::vector<char> MeshComp::Save() {
@@ -154,7 +152,9 @@ MeshComp2D::MeshComp2D(u32 id) {
 	layer = ComponentLayer_Canvas;
 }
 
-void MeshComp2D::Init() {}
+void MeshComp2D::Init(EntityAdmin* a) {
+	admin = a;
+}
 
 void MeshComp2D::ToggleVisibility() {
 	visible = !visible;

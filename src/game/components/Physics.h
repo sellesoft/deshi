@@ -12,7 +12,7 @@ struct poly;
 struct Manifold {
 	poly* a = nullptr;
 	poly* b = nullptr;
-
+	
 	int refID = 0;
 	Vector2 colpoints[2];
 	float depth[2];
@@ -34,42 +34,42 @@ struct poly {
 	float moi = 1;
 	std::vector<Vector2> o;
 	bool overlap = false;
-
+	
 	Physics* ogphys;
-
+	
 	bool isStatic = false;
-
+	
 	bool PointInside(Vector2 point) {
 		int s = p.size();
 		for (int i = 0; i < s; i++) {
 			Vector2 a = p[i];
 			Vector2 b = p[(i + 1) % s];
-
+			
 			Vector2 n = (b - a).perp();
-
+			
 			if (n.dot(point - a) > 0) {
 				return false;
 			}
 		}
 		return true;
 	}
-
+	
 	void update() {
-
+		
 		//rotate
 		float angler = angle * M_PI / 180;
 		for (Vector2 v : p) {
 			v.x = cosf(angler * v.x) - sinf(angler * v.y);
 			v.y = sinf(angler * v.x) + cosf(angler * v.y);
 		}
-
+		
 		//translate
 		for (int i = 0; i < o.size(); i++) {
 			p[i] = o[i] + pos;
 		}
-
+		
 	}
-
+	
 };
 
 struct Physics : public Component {

@@ -239,8 +239,6 @@
     <ClInclude Include="..\src\game\systems\CanvasSystem.h" />
     <ClInclude Include="..\src\game\systems\PhysicsSystem.h" />
     <ClInclude Include="..\src\game\systems\SoundSystem.h" />
-    <ClInclude Include="..\src\game\systems\System.h" />
-    <ClInclude Include="..\src\game\systems\WorldSystem.h" />
     <ClInclude Include="..\src\game\Transform.h" />
     <ClInclude Include="..\src\game\UndoManager.h" />
     <ClInclude Include="..\src\geometry\Edge.h" />
@@ -331,7 +329,6 @@
     <ClCompile Include="..\src\game\systems\CanvasSystem.cpp" />
     <ClCompile Include="..\src\game\systems\PhysicsSystem.cpp" />
     <ClCompile Include="..\src\game\systems\SoundSystem.cpp" />
-    <ClCompile Include="..\src\game\systems\WorldSystem.cpp" />
     <ClCompile Include="..\src\game\UndoManager.cpp" />
     <ClCompile Include="..\src\scene\Model.cpp" />
   </ItemGroup>

@@ -10,24 +10,27 @@
 
 struct Console;
 
+enum AssetTypeBits : u32{
+	AssetType_NONE, 
+	AssetType_Data, AssetType_Entity, AssetType_Model,  AssetType_Texture, 
+	AssetType_Save, AssetType_Sound,  AssetType_Shader, AssetType_Config, 
+	AssetType_LAST
+}; typedef u32 AssetType;
+
 namespace deshi{
 	
 	inline static std::string dirData()    { return "data/"; }
+	inline static std::string dirConfig()  { return dirData() + "cfg/"; }
 	inline static std::string dirEntities(){ return dirData() + "entities/"; }
+	inline static std::string dirLogs()    { return dirData() + "logs/"; }
 	inline static std::string dirModels()  { return dirData() + "models/"; }
-	inline static std::string dirTextures(){ return dirData() + "textures/"; }
+	inline static std::string dirSaves()   { return dirData() + "saves/"; }
+	inline static std::string dirShaders() { return dirData() + "shaders/"; }
 	inline static std::string dirSounds()  { return dirData() + "sounds/"; }
-	inline static std::string dirShaders() { return "shaders/"; }
-	inline static std::string dirConfig()  { return "cfg/"; }
+	inline static std::string dirTextures(){ return dirData() + "textures/"; }
 	
-	//return "" if file not found
-	std::string getData(const char* filename);
-	std::string getEntity(const char* filename);
-	std::string getModel(const char* filename);
-	std::string getTexture(const char* filename);
-	std::string getSound(const char* filename);
-	std::string getShader(const char* filename);
-	std::string getConfig(const char* filename);
+	//returns "" if file not found, and logs error to console
+	std::string assetPath(const char* filename, AssetType type, b32 logError = true);
 	
 	//reads a files contents in ASCII and returns it as a char vector
 	std::vector<char> readFile(const std::string& filepath, u32 chars = 0);

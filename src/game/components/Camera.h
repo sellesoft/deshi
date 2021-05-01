@@ -32,8 +32,9 @@ struct Camera : public Component {
 	Matrix4 viewMat;
 	Matrix4 projMat;
 	
-	Camera(EntityAdmin*a, float fov, float nearZ = .01f, float farZ = 1000.01f, bool freeCam = true);
+	Camera(float fov, float nearZ = .01f, float farZ = 1000.01f, bool freeCam = true);
 	
+	void Init(EntityAdmin* admin) override;
 	void Update() override;
 	
 	//horizontal fov in degrees

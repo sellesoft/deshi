@@ -193,12 +193,7 @@ operator %= (const Matrix3& rhs){
 
 inline bool Matrix3::
 operator == (const Matrix3& rhs) const { 
-	for (int i = 0; i < 9; ++i) {
-		if (this->data[i] != rhs.data[i]) {
-			return false;
-		}
-	}
-	return true;
+	return memcmp(this->data, rhs.data, sizeof(f32)*9) == 0;
 }
 
 inline bool Matrix3::

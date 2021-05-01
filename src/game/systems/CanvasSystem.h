@@ -2,13 +2,11 @@
 #ifndef SYSTEM_CANVAS_H
 #define SYSTEM_CANVAS_H
 
-#include "System.h"
+#include "../../utils/defines.h"
+#include "../../utils/color.h"
+#include "../../math/vector.h"
 
-struct Renderer;
-struct Vector2;
-struct Vector3;
-struct Color;
-struct Camera;
+struct EntityAdmin;
 
 namespace ImGui {
 	void BeginDebugLayer();
@@ -26,26 +24,22 @@ namespace ImGui {
 	void DebugDrawGraphFloat(Vector2 pos, float inval, float sizex = 100, float sizey = 100);
 }
 
-struct CanvasSystem : public System {
-	bool showDebugTools = true;
-	bool showDebugBar = true;
-	bool showMenuBar = true;
-	bool showImGuiDemoWindow = false;
-	bool showDebugLayer = true;
+struct CanvasSystem {
+	EntityAdmin* admin;
+	bool showDebugTools;
+	bool showDebugBar;
+	bool showMenuBar;
+	bool showImGuiDemoWindow;
+	bool showDebugLayer;
+	bool ConsoleHovFlag; //this can be done better
 	
-	//this can be done better
-	bool ConsoleHovFlag = false;
+	void Init(EntityAdmin* admin);
+	void Update();
 	
-	CanvasSystem(EntityAdmin* admin);
-	
-	void DebugBar();
-	void DebugTools();
 	void MenuBar();
 	void DebugLayer();
-	
-	void Init();
-	void Update() override;
-	void DrawUI(void);
+	void DebugBar();
+	void DebugTools();
 };
 
 #endif //SYSTEM_CANVAS_H

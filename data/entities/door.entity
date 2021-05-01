@@ -1,0 +1,17 @@
+>entity
+name  door
+scale (3,4,1)
+
+>collider
+type     aabb
+halfdims (1,1,1)
+
+>mesh
+name default_box
+
+>physics
+staticPosition true
+staticRotation true
+
+>door
+isOpen false

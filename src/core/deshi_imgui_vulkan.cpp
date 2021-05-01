@@ -28,8 +28,9 @@ void check_vk_result(VkResult err){
 void deshiImGui::Init(Renderer* renderer){
 	//Setup Dear ImGui context
 	ImGui::CreateContext();
-	ImGuiIO io = ImGui::GetIO();
-	io.IniFilename = (deshi::dirConfig() + "imgui.ini").c_str();
+	ImGuiIO& io = ImGui::GetIO();
+	iniFilepath = deshi::dirConfig() + "imgui.ini";
+	io.IniFilename = iniFilepath.c_str();
 	
 	//Setup Dear ImGui style
 	ImGui::StyleColorsDark();

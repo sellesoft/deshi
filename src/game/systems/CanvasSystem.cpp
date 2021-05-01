@@ -3,11 +3,6 @@
 #include "../../math/Math.h"
 #include "../../scene/Scene.h"
 #include "../../EntityAdmin.h"
-#include "PhysicsSystem.h"
-#include "WorldSystem.h"
-#include "../Keybinds.h"
-#include "../Transform.h"
-#include "../UndoManager.h"
 #include "../components/AudioListener.h"
 #include "../components/AudioSource.h"
 #include "../components/Camera.h"
@@ -24,12 +19,11 @@ ImVec4 ColToVec4(Color p) {
 	return ImVec4((float)p.r / 255, (float)p.g / 255, (float)p.b / 255, p.a / 255);
 }
 
-bool WinHovFlag = false;
-float menubarheight = 0;
-float debugbarheight = 0;
+bool  WinHovFlag = false;
+float menubarheight   = 0;
+float debugbarheight  = 0;
 float debugtoolswidth = 0;
-
-float padding = 0.95;
+float padding         = 0.95f;
 
 //defines to make repetitve things less ugly and more editable
 
@@ -96,11 +90,11 @@ namespace ImGui {
 		
 		Vector3 pos1n = Math::WorldToCamera3(pos1, c->viewMat);
 		Vector3 pos2n = Math::WorldToCamera3(pos2, c->viewMat);
-
+		
 		if (Math::ClipLineToZPlanes(pos1n, pos2n, c)) {
 			ImGui::GetBackgroundDrawList()->AddLine(
-				Math::CameraToScreen2(pos1n, c->projMat, windimen).ToImVec2(), 
-				Math::CameraToScreen2(pos2n, c->projMat, windimen).ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
+													Math::CameraToScreen2(pos1n, c->projMat, windimen).ToImVec2(), 
+													Math::CameraToScreen2(pos2n, c->projMat, windimen).ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
 		}
 	}
 	
@@ -124,29 +118,29 @@ namespace ImGui {
 			ImGui::PopStyleColor();
 		}
 	}
-
+	
 	void DebugDrawTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color) {
 		DebugDrawLine(p1, p2);
 		DebugDrawLine(p2, p3);
 		DebugDrawLine(p3, p1);
 	}
-
+	
 	void DebugFillTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color) {
 		ImGui::GetBackgroundDrawList()->AddTriangleFilled(p1.ToImVec2(), p2.ToImVec2(), p3.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
 	}
-
+	
 	void DebugDrawTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color) {
 		DebugDrawLine3(p1, p2, color);
 		DebugDrawLine3(p2, p3, color);
 		DebugDrawLine3(p3, p1, color);
 	}
-
+	
 	//TODO(sushi, Ui) add triangle clipping to this function
 	void DebugFillTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color) {
 		Vector2 p1n = Math::WorldToScreen(p1, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
 		Vector2 p2n = Math::WorldToScreen(p2, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
 		Vector2 p3n = Math::WorldToScreen(p3, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
-
+		
 		ImGui::GetBackgroundDrawList()->AddTriangleFilled(p1n.ToImVec2(), p2n.ToImVec2(), p3n.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
 	}
 	
@@ -250,8 +244,6 @@ void AddPadding(float x){
 //// major ui elements ////
 
 void CanvasSystem::MenuBar() {
-	
-	
 	using namespace ImGui;
 	
 	ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
@@ -278,7 +270,7 @@ void CanvasSystem::MenuBar() {
 				g_renderer->LoadScene(&admin->scene);
 			}
 			if (MenuItem("Save")) {
-				admin->Save();
+				admin->Save("save.desh");
 			}
 			if (MenuItem("Load")) {
 				admin->Load("data/save.desh"); //TODO(delle) add dropdown/something for specific file loading
@@ -312,6 +304,14 @@ void CanvasSystem::MenuBar() {
 			if (MenuItem("ImGui Demo Window")) showImGuiDemoWindow = !showImGuiDemoWindow;
 			EndMenu();
 		}
+		if (BeginMenu("State")) {
+			WinHovCheck;
+			if (MenuItem("Play")) DengConsole->ExecCommand("state_play");
+			if (MenuItem("Play (Debug)")) DengConsole->ExecCommand("state_debug");
+			if (MenuItem("Editor")) DengConsole->ExecCommand("state_editor");
+			if (MenuItem("Menu")) DengConsole->ExecCommand("state_menu");
+			EndMenu();
+		}
 		
 		EndMainMenuBar();
 	}
@@ -324,8 +324,6 @@ void CanvasSystem::MenuBar() {
 }
 
 inline void EntitiesTab(EntityAdmin* admin, float fontsize){
-	
-	
 	using namespace ImGui;
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
 	SetPadding;
@@ -411,7 +409,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 					Text(TOSTRING(" comps: ", entity.components.size()).c_str());
 					SameLine();
 					if (Button("Del")) {
-						g_admin->world->DeleteEntity(g_admin, &entity);
+						g_admin->DeleteEntity(&entity);
 					}
 					PopID();
 				}
@@ -675,7 +673,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 				ImGui::Selectable("Pause", &admin->pause_phys);
 				
 				SetPadding;
-				ImGui::InputFloat("gravity", &admin->physics->gravity);
+				ImGui::InputFloat("gravity", &admin->physics.gravity);
 				
 				SetPadding;
 				if (ImGui::InputFloat("tick rate", &DengTime->fixedTimeStep, ImGuiInputTextFlags_EnterReturnsTrue)) {
@@ -759,6 +757,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 			MeshComp* mc = 0;
 			if(comp_mesh){
 				u32 new_mesh_id = DengRenderer->CreateMesh(mesh_id, mat4::TransformationMatrix(entity_pos, entity_rot, entity_scale));
+				mesh_name = DengRenderer->meshes[mesh_id].name;
 				mc = new MeshComp(new_mesh_id, mesh_instance_id);
 			}
 			Light* light = 0;
@@ -773,13 +772,13 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 			}
 			
 			//create entity
-			admin->world->CreateEntity(admin, {al, as, coll, mc, light, phys}, entity_name, 
-									   Transform(entity_pos, entity_rot, entity_scale));
+			admin->CreateEntity({al, as, coll, mc, light, phys}, entity_name, 
+								Transform(entity_pos, entity_rot, entity_scale));
 		}Separator();
 		
 		//// presets ////
 		SetPadding; Text("Presets    "); SameLine(); SetNextItemWidth(-1); 
-		if(Combo("##preset_combo", &current_preset, presets, IM_ARRAYSIZE(presets))){
+		if(Combo("##preset_combo", &current_preset, presets, IM_ARRAYSIZE(presets))){ WinHovCheck;
 			switch(current_preset){
 				case(0):default:{
 					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_light = comp_physics = false;
@@ -876,7 +875,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 		//// component headers ////
 		if(comp_mesh && TreeNodeEx("Mesh", tree_flags)){
 			Text(TOSTRING("MeshID: ", mesh_id).c_str());
-			SetNextItemWidth(-1); if(BeginCombo("##mesh_combo", mesh_name)){
+			SetNextItemWidth(-1); if(BeginCombo("##mesh_combo", mesh_name)){ WinHovCheck;
 				for_n(i, DengRenderer->meshes.size()){
 					if(DengRenderer->meshes[i].base && Selectable(DengRenderer->meshes[i].name, mesh_id == i)){
 						mesh_id = i; 
@@ -889,7 +888,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 		}
 		if(comp_2d && TreeNodeEx("Mesh2D", tree_flags)){
 			ImU32 color = ColorConvertFloat4ToU32(ImVec4(twod_color.x, twod_color.y, twod_color.z, twod_color.w));
-			SetNextItemWidth(-1); if(Combo("##twod_combo", &twod_type, twods, IM_ARRAYSIZE(twods))){
+			SetNextItemWidth(-1); if(Combo("##twod_combo", &twod_type, twods, IM_ARRAYSIZE(twods))){ WinHovCheck; 
 				twod_vert_count = twod_type + 1;
 				twod_verts.resize(twod_vert_count);
 				switch(twod_type){
@@ -969,7 +968,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					Text("Radius       "); SameLine(); InputFloat("coll_radius", &collider_radius);
 				}break;
 			}
-			Checkbox("Resolve Collisions", &collider_nocollide);
+			Checkbox("Don't Resolve Collisions", &collider_nocollide);
 			Checkbox("Trigger", &collider_trigger);
 			if(collider_trigger){
 				Text("Command: "); SameLine(); SetNextItemWidth(-1);
@@ -1060,8 +1059,6 @@ void CanvasSystem::DebugTools() {
 }
 
 void CanvasSystem::DebugBar() {
-	
-	
 	using namespace ImGui;
 	
 	//for getting fps
@@ -1316,8 +1313,6 @@ void CanvasSystem::DebugBar() {
 
 //sort of sandbox for drawing ImGui stuff over the entire screen
 void CanvasSystem::DebugLayer() {
-	
-	
 	ImGui::SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height));
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	
@@ -1451,8 +1446,7 @@ void CanvasSystem::DebugLayer() {
 													  "World   Lyr: {W}\n"
 													  "        Sys: {w}\n"
 													  "Sound   Lyr: {S}\n"
-													  "        Sys: {s}\n"
-													  "Last    Lyr: {L}\n");
+													  "        Sys: {s}\n");
 		time1            += DengTime->FormatTickTime ("Admin      : {a}\n"
 													  "Console    : {c}\n"
 													  "Render     : {r}\n"
@@ -1463,64 +1457,51 @@ void CanvasSystem::DebugLayer() {
 		ImGui::Text(time1.c_str());
 	}
 	
-	
-	
 	ImGui::PopStyleColor();
 	ImGui::End();
 }
 
-void CanvasSystem::DrawUI(void) {
-	
-	
-	if(admin->state == GameState::PLAY){
-		
-	}
-	else if(admin->state == GameState::MENU){
-		
-	}
-	else if(admin->state == GameState::EDITOR || admin->state == GameState::PLAY_DEBUG){
-		if (DengInput->KeyPressed(DengKeys.toggleDebugMenu)) showDebugTools = !showDebugTools;
-		if (DengInput->KeyPressed(DengKeys.toggleDebugBar)) showDebugBar = !showDebugBar;
-		if (DengInput->KeyPressed(DengKeys.toggleMenuBar)) showMenuBar = !showMenuBar;
-		
-		if (showDebugLayer) DebugLayer();
-		if (showDebugTools) DebugTools();
-		if (showDebugBar)   DebugBar();
-		if (showMenuBar)    MenuBar();
-		if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
-		
-		
-		if (!showMenuBar) {
-			menubarheight = 0;
-		}
-		
-		if (!showDebugBar){
-			debugbarheight = 0;
-		}
-		if (!showDebugTools) {
-			debugtoolswidth = 0;
-		}
-	}
-	else{
-		ASSERT(false, "Unknown game state in CanvasSystem");
-	}
-}
-
-CanvasSystem::CanvasSystem(EntityAdmin* a){
+void CanvasSystem::Init(EntityAdmin* a) {
 	admin = a;
+	showDebugTools      = true;
+	showDebugBar        = true;
+	showMenuBar         = true;
+	showImGuiDemoWindow = false;
+	showDebugLayer      = true;
+	ConsoleHovFlag      = false;
+	
 	files = deshi::iterateDirectory(deshi::dirModels());
 	textures = deshi::iterateDirectory(deshi::dirTextures());
 }
 
-void CanvasSystem::Init() {
-	
-}
-
 void CanvasSystem::Update() {
 	WinHovFlag = 0;
-	if(!DengWindow->minimized) DrawUI();
-	//DrawUI();  //HACK program crashes somewhere in DebugTools() if minimized
-	if (ConsoleHovFlag || WinHovFlag) DengConsole->IMGUI_MOUSE_CAPTURE = true;
-	else                              DengConsole->IMGUI_MOUSE_CAPTURE = false;
+	if(!DengWindow->minimized){  //TODO(delle,Cl) program crashes somewhere in DebugTools() if minimized
+		switch(admin->state){
+			case GameState_Play:{
+				
+			}break;
+			case GameState_Menu:{
+				
+			}break;
+			case GameState_Editor: case GameState_Debug:{
+				if (DengInput->KeyPressed(DengKeys.toggleDebugMenu)) showDebugTools = !showDebugTools;
+				if (DengInput->KeyPressed(DengKeys.toggleDebugBar)) showDebugBar = !showDebugBar;
+				if (DengInput->KeyPressed(DengKeys.toggleMenuBar)) showMenuBar = !showMenuBar;
+				
+				if (showDebugLayer) DebugLayer();
+				if (showDebugTools) DebugTools();
+				if (showDebugBar)   DebugBar();
+				if (showMenuBar)    MenuBar();
+				if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
+				
+				
+				if (!showMenuBar)    menubarheight = 0;
+				if (!showDebugBar)   debugbarheight = 0;
+				if (!showDebugTools) debugtoolswidth = 0;
+			}break;
+		}
+	}
+	DengConsole->IMGUI_MOUSE_CAPTURE = (ConsoleHovFlag || WinHovFlag) ? true : false;
 }
 

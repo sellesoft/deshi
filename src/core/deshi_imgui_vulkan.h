@@ -2,10 +2,12 @@
 #ifndef DESHI_IMGUI_VULKAN_H
 #define DESHI_IMGUI_VULKAN_H
 
+#include <string>
+
 struct Renderer;
 
 struct deshiImGui{
-	const char* iniFilepath;
+	std::string iniFilepath;
 	Renderer* vkr;
 	
 	void Init(Renderer* renderer);

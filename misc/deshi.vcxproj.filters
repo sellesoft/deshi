@@ -118,12 +118,6 @@
     <ClInclude Include="..\src\game\systems\SoundSystem.h">
       <Filter>src\game\systems\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\game\systems\WorldSystem.h">
-      <Filter>src\game\systems\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\systems\System.h">
-      <Filter>src\game\systems</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\game\Keybinds.h">
       <Filter>src\game</Filter>
     </ClInclude>
@@ -198,9 +192,6 @@
     </ClInclude>
     <ClInclude Include="..\src\game\components\door.h">
       <Filter>src\game\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\utils\InstanceManager.h">
-      <Filter>src\utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -428,9 +419,6 @@
       <Filter>src\game\systems\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\game\systems\SoundSystem.cpp">
-      <Filter>src\game\systems\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\systems\WorldSystem.cpp">
       <Filter>src\game\systems\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\game\Keybinds.cpp">

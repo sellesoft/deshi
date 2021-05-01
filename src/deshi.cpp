@@ -22,7 +22,7 @@ add player movement and player entity
 
 Minor Ungrouped TODOs
 ---------------------
-add prefab-style entity creation
+change undo's to never use pointers and have undos that can act like linked lists to chain them
 figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
 settings file(s) [keybinds, video, audio, etc]
 ____create a hot-loadable global vars file
@@ -197,9 +197,8 @@ struct DeshiEngine {
 			Update();
 		}
 		
-		//admin.Save();
-		
 		//cleanup
+		admin.Cleanup();
 		imgui.Cleanup();
 		renderer.Cleanup();
 		window.Cleanup();
@@ -207,18 +206,16 @@ struct DeshiEngine {
 	}
 	
 	bool Update() {
-		TIMER_RESET(t_d); time.Update();     time.timeTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); window.Update();   time.windowTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); input.Update();    time.inputTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); time.Update();            time.timeTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); window.Update();          time.windowTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); input.Update();           time.inputTime = TIMER_END(t_d);
 		imgui.NewFrame();                                                            //place imgui calls after this
-		TIMER_RESET(t_d); admin.Update();    time.adminTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); console.Update();  time.consoleTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); renderer.Render(); time.renderTime = TIMER_END(t_d);       //place imgui calls before this
-		//entityAdmin.PostRenderUpdate();
+		TIMER_RESET(t_d); admin.Update();           time.adminTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); console.Update();         time.consoleTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); renderer.Render();        time.renderTime = TIMER_END(t_d);       //place imgui calls before this
+		TIMER_RESET(t_d); admin.PostRenderUpdate(); time.adminTime += TIMER_END(t_d);
 		
 		time.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
-		
-		
 		return true;
 	}
 };

@@ -1,8 +1,15 @@
 #include "SoundSystem.h"
 #include "../../core/console.h"
+#include "../../EntityAdmin.h"
 #include "../components/Camera.h"
 #include "../components/AudioSource.h"
 #include "../components/Physics.h"
+
+#if defined(_MSC_VER)
+#pragma comment(lib,"OpenAL32.lib")
+#endif
+#include "al.h"
+#include "alc.h"
 
 #include <thread>
 
@@ -205,8 +212,13 @@ void SoundThread(EntityAdmin* admin) {
 	}
 }
 
-SoundSystem::SoundSystem(EntityAdmin* a){
+void SoundSystem::Init(EntityAdmin* a) {
 	admin = a;
+	devices = 0;
+	defaultDeviceName = 0;
+	bufferData = 0;
+	device = 0;
+	context = 0;
 	
 	ALboolean enumeration;
 	ALCenum error;
@@ -243,10 +255,6 @@ SoundSystem::SoundSystem(EntityAdmin* a){
 	//start main sound thread
 	//std::thread sndthr(SoundThread, admin);
 	//sndthr.detach();
-	
-}
-
-void SoundSystem::Init() {
 	
 }
 

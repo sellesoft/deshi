@@ -208,12 +208,7 @@ operator %= (const Matrix4& rhs){
 
 inline bool Matrix4::
 operator == (const Matrix4& rhs) const { 
-	for (int i = 0; i < 16; ++i) {
-		if (this->data[i] != rhs.data[i]) {
-			return false;
-		}
-	}
-	return true;
+	return memcmp(this->data, rhs.data, sizeof(f32)*16) == 0;
 }
 
 inline bool Matrix4::

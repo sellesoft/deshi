@@ -57,6 +57,33 @@ void Mesh::SetName(const char* name){
 	cpystr(this->name, name, 63);
 }
 
+std::vector<Vector2> Mesh::GenerateOutlinePoints(Matrix4 transform, Matrix4 proj, Matrix4 view, Vector2 windimen, Vector3 camPosition) {
+	std::vector<Vector2> outline;
+	std::vector<Triangle> nonculled;
+	for (Triangle* t : triangles) {
+		t->removed = false;
+		if (t->norm().yInvert().dot(camPosition - t->p[0] * transform) > 0) {
+			Triangle tri = *t;
+			tri.p[0] = Math::WorldToScreen(t->p[0] * transform, proj, view, windimen);
+			tri.p[1] = Math::WorldToScreen(t->p[1] * transform, proj, view, windimen);
+			tri.p[2] = Math::WorldToScreen(t->p[2] * transform, proj, view, windimen);
+			
+			nonculled.push_back(tri);
+		}
+		else t->removed = true;
+	}
+	
+	for (Triangle& t : nonculled) {
+		for (int i = 0; i < t.nbrs.size(); i++) {
+			if (t.nbrs[i]->removed) {
+				outline.push_back(t.p[t.sharededge[i]].ToVector2());
+				outline.push_back(t.p[(t.sharededge[i] + 1) % 3].ToVector2());
+			}
+		}
+	}
+	return outline;
+}
+
 inline Vector3 VertToVec3(const Vertex& v){
 	return Vector3(v.pos.x, v.pos.y, v.pos.z);
 }
@@ -76,7 +103,7 @@ bool isthisin(T test, std::vector<T> vec) {
 // there really is no way around checking every triangle against every other triangle though.
 std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 	std::vector<Triangle*> triangles;
-
+	
 	//gather all triangles out of batch arrays
 	for (auto& b : m->batchArray) {
 		for (int i = 0; i < b.indexArray.size(); i += 3) {
@@ -84,24 +111,24 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 			t->p[0] = b.vertexArray[b.indexArray[i]].pos;
 			t->p[1] = b.vertexArray[b.indexArray[i + 1]].pos;
 			t->p[2] = b.vertexArray[b.indexArray[i + 2]].pos;
-
+			
 			triangles.push_back(t);
 		}
 	}
-
+	
 	auto eqtoany = [](std::vector<Vector3> v, Vector3 t) {
 		for (Vector3 a : v) if (t == a) return true;
 		return false;
 	};
-
+	
 	//TODO(sushi, Op) more sophisticated sorting may help reduce the amount of time it takes to look for a neighbor
 	//std::sort(triangles.begin(), triangles.end(), [](Triangle* t1, Triangle* t2) {
 	//	return t1->midpoint().z > t2->midpoint().z;
 	//	});
-
+	
 	auto jointris = [&](Triangle* ti, Triangle* to, int pindex) {
 		ti->nbrs.push_back(to);
-
+		
 		to->sharededge.push_back(pindex);
 		to->nbrs.push_back(ti);
 		
@@ -109,9 +136,9 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 		if      (eqtoany(top, ti->p[0]) && eqtoany(top, ti->p[1])) ti->sharededge.push_back(0);
 		else if (eqtoany(top, ti->p[1]) && eqtoany(top, ti->p[2])) ti->sharededge.push_back(1);
 		else if (eqtoany(top, ti->p[2]) && eqtoany(top, ti->p[0])) ti->sharededge.push_back(2);
-
+		
 	};
-
+	
 	//find and mark neighbors
 	TIMER_START(tnf);
 	Triangle* ti;
@@ -130,9 +157,9 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 		
 	}
 	PRINTLN(TIMER_END(tnf));
-
+	
 	return triangles;
-
+	
 }
 
 //https://github.com/tinyobjloader/tinyobjloader
@@ -205,7 +232,7 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 		totalTextureCount += batch.textureCount;
 		
 		std::unordered_map<Vertex, u32> uniqueVertices{};
-
+		
 		//fill batch vertex and index arrays
 		size_t faceCount = shape.mesh.num_face_vertices.size();
 		batch.vertexArray.reserve(faceCount/3);
@@ -287,6 +314,7 @@ Mesh* Mesh::CreateBox(Vector3 halfDims, Color color) {
 	mesh->indexCount = 36;
 	mesh->textureCount = 0;
 	mesh->batchCount = 1;
+	mesh->triangles = FindTriangleNeighbors(mesh);
 	return mesh;
 }
 
@@ -342,6 +370,7 @@ Mesh* Mesh::CreatePlanarBox(Vector3 halfDims, Color color) {
 	mesh->indexCount = 36;
 	mesh->textureCount = 0;
 	mesh->batchCount = 1;
+	mesh->triangles = FindTriangleNeighbors(mesh);
 	return mesh;
 }
 
@@ -398,6 +427,7 @@ Mesh* Mesh::CreatePlanarBox(Vector3 halfDims, Texture texture) {
 	mesh->indexCount = 36;
 	mesh->textureCount = 1;
 	mesh->batchCount = 1;
+	mesh->triangles = FindTriangleNeighbors(mesh);
 	return mesh;
 }
 

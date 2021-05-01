@@ -2,30 +2,29 @@
 #ifndef SYSTEM_SOUND_H
 #define SYSTEM_SOUND_H
 
-#include "System.h"
+#include "../../utils/defines.h"
+#include <vector>
 
-#if defined(_MSC_VER)
-#pragma comment(lib,"OpenAL32.lib")
-#endif
-#include "al.h"
-#include "alc.h"
+struct EntityAdmin;
+typedef char ALCchar;
+typedef struct ALCdevice_struct ALCdevice;
+typedef struct ALCcontext_struct ALCcontext;
+typedef void ALvoid;
+typedef unsigned int ALuint;
 
-struct SoundSystem : public System {
-	
-	//storing this here because I don't know where else to put it 
-	const ALCchar* devices = 0;
-	const ALCchar* defaultDeviceName = 0;
+struct SoundSystem{
+	EntityAdmin* admin;
+	const ALCchar* devices;
+	const ALCchar* defaultDeviceName;
 	int ret;
-	char* bufferData = 0;
-	ALCdevice* device = 0;
-	ALvoid* data = 0;
-	ALCcontext* context = 0;
+	char* bufferData;
+	ALCdevice* device;
+	ALvoid* data;
+	ALCcontext* context;
 	std::vector<ALuint*> buffers;
 	
-	SoundSystem(EntityAdmin* admin);
-	
-	void Init();
-	void Update() override;
+	void Init(EntityAdmin* admin);
+	void Update();
 };
 
 #endif //SYSTEM_SOUND_H

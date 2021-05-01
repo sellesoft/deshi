@@ -26,8 +26,8 @@ struct Time{
 	
 	f32 timeTime{}, windowTime{}, inputTime{}, adminTime{}, consoleTime{}, renderTime{}, frameTime{};
 	
-	f32 physLyrTime{}, canvasLyrTime{}, worldLyrTime{}, sndLyrTime{}, lastLyrTime{};
-	f32 physSysTime{}, canvasSysTime{}, worldSysTime{}, sndSysTime{};
+	f32 physLyrTime{}, canvasLyrTime{}, sndLyrTime{}, worldLyrTime{};
+	f32 physSysTime{}, canvasSysTime{}, sndSysTime{}, worldSysTime{};
 	
 	bool paused{}, frame{}, phys_pause{};
 	
@@ -167,7 +167,7 @@ inline std::string Time::FormatTickTime(std::string fmt){
 	out.shrink_to_fit(); return out;
 }
 
-//{P}:physics layer,  {C}:canvas layer,  {W}:world layer,  {S}:send layer,  {L}:last layer
+//{P}:physics layer,  {C}:canvas layer,  {W}:world layer,  {S}:send layer
 //{p}:physics system, {c}:canvas system, {w}:world system, {s}:send system, 
 inline std::string Time::FormatAdminTime(std::string fmt){
 	std::string out = ""; out.reserve(512);
@@ -197,9 +197,6 @@ inline std::string Time::FormatAdminTime(std::string fmt){
 				}i+=2;continue;
 				case('s'):{
 					out.append(std::to_string(sndSysTime));
-				}i+=2;continue;
-				case('L'):{
-					out.append(std::to_string(lastLyrTime));
 				}i+=2;continue;
 			}
 		}
