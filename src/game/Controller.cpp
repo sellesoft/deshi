@@ -1,22 +1,18 @@
 #include "Controller.h"
-#include "Transform.h"
-#include "Keybinds.h"
-#include "UndoManager.h"
+#include "../core.h"
+#include "../math/Math.h"
+#include "../scene/Scene.h"
+#include "../geometry/Edge.h"
+#include "../EntityAdmin.h"
 #include "components/Camera.h"
 #include "components/MeshComp.h"
 #include "components/Physics.h"
 #include "components/Movement.h"
 #include "components/Player.h"
 
-#include "../core.h"
-#include "../EntityAdmin.h"
-#include "../math/Math.h"
-#include "../scene/Scene.h"
-#include "../geometry/Edge.h"
-
-#include "systems/CanvasSystem.h"
-
 #include <fstream>
+
+f32 MOUSE_SENS_FRACTION = .03f;
 
 bool CONTROLLER_MOUSE_CAPTURE = false;
 bool moveOverride = false; //for moving when using arrow keys (cause i cant use mouse when remoting into my pc so)
@@ -40,7 +36,7 @@ inline void AddBindings(EntityAdmin* admin) {
 					DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, DengKeys.stk.at(key)));
 				}
 				catch (...) {
-					ERROR("Unknown key \"", key, "\" attempted to bind to command \"", command, "\"");
+					ERROR("Unknown key '", key, "' attempted to bind to command '", command, "'");
 				}
 			}
 		}
@@ -56,20 +52,19 @@ inline void AddBindings(EntityAdmin* admin) {
 inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
 	Camera* camera = admin->mainCamera;
 	float deltaTime = DengTime->deltaTime;
+	Vector3 inputs;
 	
 	//most likely temporary
 	if (DengInput->KeyPressed(Key::A | INPUTMOD_CTRL)) moveOverride = !moveOverride;
 	
-	Vector3 inputs;
-	
 	//TODO(sushi, Cl) figure out a nicer way to do all these conditions like right click down, game state, and whatever else shows up in here next
 	if(DengInput->KeyDownAnyMod(MouseButton::RIGHT) || moveOverride){
-		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingUp))      {  inputs.y += 1;  }
-		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingDown))    {  inputs.y -= 1; }
-		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingForward)) {  inputs += camera->forward; }
-		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingBack))    {  inputs -= camera->forward; }
-		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingRight))   {  inputs += camera->right; }
-		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingLeft))    {  inputs -= camera->right; }
+		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingUp))      { inputs.y += 1;  }
+		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingDown))    { inputs.y -= 1; }
+		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingForward)) { inputs += camera->forward; }
+		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingBack))    { inputs -= camera->forward; }
+		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingRight))   { inputs += camera->right; }
+		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingLeft))    { inputs -= camera->right; }
 		
 		if     (DengInput->ShiftDown()) { camera->position += inputs.normalized() * 16 * deltaTime; }
 		else if(DengInput->CtrlDown())  { camera->position += inputs.normalized() *  4 * deltaTime; }
@@ -80,7 +75,6 @@ inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
 inline void PlayerMovement(EntityAdmin* admin, MovementMode mode, Movement* playermove) {
 	Camera* camera = admin->mainCamera;
 	float deltaTime = DengTime->deltaTime;
-	
 	Vector3 inputs;
 	
 	if (mode == MOVEMENT_MODE_WALKING) {
@@ -88,13 +82,12 @@ inline void PlayerMovement(EntityAdmin* admin, MovementMode mode, Movement* play
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingBackward)) { inputs -= Vector3(camera->forward.x, 0, camera->forward.z); }
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingRight))    { inputs += Vector3(camera->right.x, 0, camera->right.z); }
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingLeft))     { inputs -= Vector3(camera->right.x, 0, camera->right.z); }
-		if (DengInput->KeyDownAnyMod(DengKeys.movementJump))            { inputs += Vector3::UP; }
+		if (DengInput->KeyPressed(DengKeys.movementJump | INPUTMOD_ANY)){ inputs += Vector3::UP; }
 		
 		if (playermove) {
 			playermove->inputs = inputs.normalized();
 			camera->position = admin->player->transform.position + Vector3::ONE;
-		}
-		else {
+		}else{
 			ERROR_LOC("Playermovement pointer is null");
 		}
 	}
@@ -135,20 +128,19 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 	
 	if(!DengConsole->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE){
 		if(admin->state == GameState_Play || admin->state == GameState_Debug){
-			DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
-			camera->rotation.y += sens * (DengInput->mouseX - DengWindow->centerX) * .03f;
-			camera->rotation.x += sens * (DengInput->mouseY - DengWindow->centerY) * .03f;
+			camera->rotation.y += (DengInput->mouseX - DengWindow->centerX) * sens*MOUSE_SENS_FRACTION;
+			camera->rotation.x += (DengInput->mouseY - DengWindow->centerY) * sens*MOUSE_SENS_FRACTION;
 		}
 		else if(admin->state == GameState_Editor){
 			if(DengInput->KeyPressed(MouseButton::RIGHT | INPUTMOD_ANY)){
-				DengConsole->ExecCommand("window_cursor_mode", "1");
+				DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
 			}
 			if(DengInput->KeyDown(MouseButton::RIGHT | INPUTMOD_ANY)){
-				camera->rotation.y += sens * (DengInput->mouseX - DengWindow->centerX) * .03f;
-				camera->rotation.x += sens * (DengInput->mouseY - DengWindow->centerY) * .03f;
+				camera->rotation.y += (DengInput->mouseX - DengWindow->centerX) * sens*MOUSE_SENS_FRACTION;
+				camera->rotation.x += (DengInput->mouseY - DengWindow->centerY) * sens*MOUSE_SENS_FRACTION;
 			}
 			if(DengInput->KeyReleased(MouseButton::RIGHT | INPUTMOD_ANY)){
-				DengConsole->ExecCommand("window_cursor_mode", "0");
+				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
 			}
 		}
 	}
@@ -544,7 +536,7 @@ inline void HandleEditorInputs(EntityAdmin* admin){
 		Entity* sel = admin->selectedEntity;
 		
 		if (!DengConsole->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE) {
-			if (DengInput->KeyPressed(MouseButton::LEFT)) { HandleSelectEntity(admin); }
+			if (DengInput->KeyPressed(MouseButton::LEFT)) HandleSelectEntity(admin);
 		}
 		
 		if (sel) {
@@ -552,20 +544,20 @@ inline void HandleEditorInputs(EntityAdmin* admin){
 			HandleRotating(sel, admin->mainCamera, admin, &admin->undoManager);
 			
 			//translation
-			if (DengInput->KeyDown(Key::L)) { DengConsole->ExecCommand("translate_right"); }
-			if (DengInput->KeyDown(Key::J)) { DengConsole->ExecCommand("translate_left"); }
-			if (DengInput->KeyDown(Key::O)) { DengConsole->ExecCommand("translate_up"); }
-			if (DengInput->KeyDown(Key::U)) { DengConsole->ExecCommand("translate_down"); }
-			if (DengInput->KeyDown(Key::I)) { DengConsole->ExecCommand("translate_forward"); }
-			if (DengInput->KeyDown(Key::K)) { DengConsole->ExecCommand("translate_backward"); }
+			if (DengInput->KeyDown(Key::L)) DengConsole->ExecCommand("translate_right");
+			if (DengInput->KeyDown(Key::J)) DengConsole->ExecCommand("translate_left");
+			if (DengInput->KeyDown(Key::O)) DengConsole->ExecCommand("translate_up");
+			if (DengInput->KeyDown(Key::U)) DengConsole->ExecCommand("translate_down");
+			if (DengInput->KeyDown(Key::I)) DengConsole->ExecCommand("translate_forward");
+			if (DengInput->KeyDown(Key::K)) DengConsole->ExecCommand("translate_backward");
 			
 			//rotation
-			if (DengInput->KeyDown(Key::L | INPUTMOD_SHIFT)) { DengConsole->ExecCommand("rotate_+x"); }
-			if (DengInput->KeyDown(Key::J | INPUTMOD_SHIFT)) { DengConsole->ExecCommand("rotate_-x"); }
-			if (DengInput->KeyDown(Key::O | INPUTMOD_SHIFT)) { DengConsole->ExecCommand("rotate_+y"); }
-			if (DengInput->KeyDown(Key::U | INPUTMOD_SHIFT)) { DengConsole->ExecCommand("rotate_-y"); }
-			if (DengInput->KeyDown(Key::I | INPUTMOD_SHIFT)) { DengConsole->ExecCommand("rotate_+z"); }
-			if (DengInput->KeyDown(Key::K | INPUTMOD_SHIFT)) { DengConsole->ExecCommand("rotate_-z"); }
+			if (DengInput->KeyDown(Key::L | INPUTMOD_SHIFT)) DengConsole->ExecCommand("rotate_+x");
+			if (DengInput->KeyDown(Key::J | INPUTMOD_SHIFT)) DengConsole->ExecCommand("rotate_-x");
+			if (DengInput->KeyDown(Key::O | INPUTMOD_SHIFT)) DengConsole->ExecCommand("rotate_+y");
+			if (DengInput->KeyDown(Key::U | INPUTMOD_SHIFT)) DengConsole->ExecCommand("rotate_-y");
+			if (DengInput->KeyDown(Key::I | INPUTMOD_SHIFT)) DengConsole->ExecCommand("rotate_+z");
+			if (DengInput->KeyDown(Key::K | INPUTMOD_SHIFT)) DengConsole->ExecCommand("rotate_-z");
 		}
 	}
 	{//// render ////
@@ -611,53 +603,17 @@ inline void HandleEditorInputs(EntityAdmin* admin){
 		}
 		
 		//ortho views
-		if (DengInput->KeyPressed(DengKeys.orthoFrontView))    c->orthoview = FRONT;
-		if (DengInput->KeyPressed(DengKeys.orthoBackView))     c->orthoview = BACK;
-		if (DengInput->KeyPressed(DengKeys.orthoRightView))    c->orthoview = RIGHT;
-		if (DengInput->KeyPressed(DengKeys.orthoLeftView))     c->orthoview = LEFT;
-		if (DengInput->KeyPressed(DengKeys.orthoTopDownView))  c->orthoview = TOPDOWN;
-		if (DengInput->KeyPressed(DengKeys.orthoBottomUpView)) c->orthoview = BOTTOMUP;
+		if      (DengInput->KeyPressed(DengKeys.orthoFrontView))    c->orthoview = FRONT;
+		else if (DengInput->KeyPressed(DengKeys.orthoBackView))     c->orthoview = BACK;
+		else if (DengInput->KeyPressed(DengKeys.orthoRightView))    c->orthoview = RIGHT;
+		else if (DengInput->KeyPressed(DengKeys.orthoLeftView))     c->orthoview = LEFT;
+		else if (DengInput->KeyPressed(DengKeys.orthoTopDownView))  c->orthoview = TOPDOWN;
+		else if (DengInput->KeyPressed(DengKeys.orthoBottomUpView)) c->orthoview = BOTTOMUP;
 	}
 	{//// undo/redo ////
-		UndoManager* um = &admin->undoManager;
-		
-		if (DengInput->KeyPressed(DengKeys.undo)) { um->Undo(); }
-		if (DengInput->KeyPressed(DengKeys.redo)) { um->Redo(); }
+		if (DengInput->KeyPressed(DengKeys.undo)) admin->undoManager.Undo();
+		if (DengInput->KeyPressed(DengKeys.redo)) admin->undoManager.Redo();
 	}
-}
-
-inline void HandleModeInputs(EntityAdmin* admin) {
-	if (DengInput->KeyPressed(Key::F1)) {
-		admin->state = GameState_Editor;
-		if (admin->player) {
-			Physics* p = admin->player->GetComponent<Physics>();
-			p->isStatic = true;
-			admin->player->GetComponent<MeshComp>()->Visible(true);
-		}
-	}
-	if (DengInput->KeyPressed(Key::F2)) {
-		admin->state = GameState_Play;
-		if(admin->player){
-			Physics* p = admin->player->GetComponent<Physics>();
-			p->position = admin->mainCamera->position;
-			p->velocity = Vector3::ZERO;
-			p->isStatic = false;
-			admin->player->GetComponent<MeshComp>()->Visible(false);
-			
-		}
-	}
-	if (DengInput->KeyPressed(Key::F3)) {
-		admin->state = GameState_Debug;
-		if (admin->player) {
-			Physics* p = admin->player->GetComponent<Physics>();
-			p->position = admin->mainCamera->position;
-			p->velocity = Vector3::ZERO;
-			p->isStatic = false;
-			admin->player->GetComponent<MeshComp>()->Visible(false);
-			
-		}
-	}
-	
 }
 
 inline void CheckBinds(EntityAdmin* admin) {
@@ -681,28 +637,44 @@ inline void CheckBinds(EntityAdmin* admin) {
 void Controller::Init(EntityAdmin* a, MovementMode m){
 	this->admin = a; this->mode = m;
 	mouseSensitivity = 2.5f;
+	playermove = 0;
 	
 	if(admin->state == GameState_Play || admin->state == GameState_Debug){
 		DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
+	}else{
+		DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
 	}
 	
 	AddBindings(a);
 }
 
 void Controller::Update() {
-	if (DengInput->KeyPressed(DengKeys.toggleConsole)) DengConsole->dispcon = !DengConsole->dispcon;
+	if(DengInput->KeyPressed(DengKeys.toggleConsole)) DengConsole->dispcon = !DengConsole->dispcon;
 	
-	if (!DengConsole->IMGUI_KEY_CAPTURE) {
-		if (admin->state == GameState_Play || admin->state == GameState_Debug)
-			PlayerMovement(admin, MOVEMENT_MODE_WALKING, playermove);
-		else 
-			CameraMovement(admin, MOVEMENT_MODE_FLYING);
-		CameraRotation(admin, mouseSensitivity);
-		CameraZoom(admin);
-		if(admin->state == GameState_Editor){
-			HandleEditorInputs(admin);
+#if !defined(DESHI_BUILD_PLAY) && !defined(DESHI_BUILD_DEBUG)
+	if(DengInput->KeyPressed(Key::F8)) admin->ChangeState(GameState_Editor);
+#endif //if not built for playing, allow for easy exit to editor
+	
+	if(!DengConsole->IMGUI_KEY_CAPTURE) {
+		switch(admin->state){
+			case GameState_Play:{
+				PlayerMovement(admin, MOVEMENT_MODE_WALKING, playermove);
+				CameraRotation(admin, mouseSensitivity);
+			}break;
+			case GameState_Menu:{
+				
+			}break;
+			case GameState_Debug:{
+				PlayerMovement(admin, MOVEMENT_MODE_WALKING, playermove);
+				CameraRotation(admin, mouseSensitivity);
+			}break;
+			case GameState_Editor:{
+				CameraMovement(admin, MOVEMENT_MODE_FLYING);
+				CameraRotation(admin, mouseSensitivity);
+				CameraZoom(admin);
+				HandleEditorInputs(admin);
+			}break;
 		}
-		HandleModeInputs(admin);
 		CheckBinds(admin);
 	}
 }

@@ -6,6 +6,7 @@ struct Matrix4;
 struct Matrix3;
 
 //TODO(delle,Ma) implement quaternions
+// https://github.com/erich666/GraphicsGems/blob/master/gemsiv/euler_angle/EulerAngles.c
 struct Quaternion {
 	float x{}, y{}, z{}, w{};
 	

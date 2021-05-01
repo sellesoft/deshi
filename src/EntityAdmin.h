@@ -25,7 +25,7 @@ struct Command;
 struct Camera;
 
 enum GameStateBits : u32{
-	GameState_Play, GameState_Menu, GameState_Debug, GameState_Editor, GameState_Exit, GameState_LAST
+	GameState_Play, GameState_Menu, GameState_Debug, GameState_Editor, GameState_LAST
 }; typedef u32 GameState;
 
 struct EntityAdmin {
@@ -43,6 +43,7 @@ struct EntityAdmin {
 	UndoManager undoManager;
 	
 	Entity* player;
+	Camera* editorCamera;
 	Camera* mainCamera;
 	Entity* selectedEntity;
 	
@@ -57,7 +58,7 @@ struct EntityAdmin {
 	//pause flags
 	b32  skip;
 	bool paused;
-	bool pause_command, pause_phys, pause_canvas, pause_world, pause_sound, pause_last;
+	bool pause_command, pause_phys, pause_canvas, pause_world, pause_sound;
 	
 	//timer related
 	bool debugTimes;
@@ -73,6 +74,7 @@ struct EntityAdmin {
 	inline void SkipUpdate(){ skip = true; };
 	void ChangeState(GameState state);
 	
+	void Reset();
 	void Save(const char* filename);
 	void Load(const char* filename);
 	

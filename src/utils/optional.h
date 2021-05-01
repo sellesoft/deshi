@@ -29,6 +29,8 @@ struct Optional {
 	inline bool operator!=(const Optional& rhs) const{
 		return value != rhs.value;
 	}
+	
+	inline explicit operator bool(){ return test(); }
 };
 
 #endif //DESHI_OPTIONAL_H

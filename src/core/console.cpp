@@ -509,10 +509,8 @@ CMDSTARTA(state, args.size() > 0){
 		admin->ChangeState(GameState_Debug);
 	}else if(args[0] == "editor"){
 		admin->ChangeState(GameState_Editor);
-	}else if(args[0] == "exit"){
-		admin->ChangeState(GameState_Exit);
 	}
-}CMDEND("state <new_state:String>{play|menu|debug|editor|exit}");
+}CMDEND("state <new_state:String>{play|menu|debug|editor}");
 
 CMDSTARTA(load_entity, args.size() > 0){
 	if(Entity* e = Entity::CreateEntityFromFile(admin, args[0])){

@@ -28,6 +28,7 @@ misc/shell.bat
 misc/deshi.vcxproj.user
 
 #data ignores (large/binary/user files)
+data/*.*
 data/cfg/
 #data/entities/
 data/logs/

@@ -32,20 +32,27 @@ void EntityAdmin::Init() {
 	//decide initial gamestate
 #if defined(DESHI_BUILD_PLAY)
 	state = GameState_Play;
+	pause_phys = pause_sound = false;
+	editorCamera = 0;
 #elif defined(DESHI_BUILD_DEBUG)
 	state = GameState_Debug;
+	pause_phys = pause_sound = false;
+	editorCamera = 0;
 #else
 	state = GameState_Editor;
+	pause_phys = pause_sound = true;
+	editorCamera = new Camera(90.f, .01f, 1000.01f, true); //temporary camera creation on admin
+	editorCamera->Init(this);
+	mainCamera = editorCamera;
 #endif
+	
+	//reserve arrays
 	entities.reserve(1000);
 	creationBuffer.reserve(100);
 	deletionBuffer.reserve(100);
+	for_n(i, ComponentLayer_LAST) freeCompLayers.push_back(ContainerManager<Component*>());
 	
-	//reserve complayers
-	for (int i = 0; i < ComponentLayer_LAST; i++) {
-		freeCompLayers.push_back(ContainerManager<Component*>());
-	}
-	
+	//init singletons
 	physics.Init(this);
 	canvas.Init(this);
 	sound.Init(this);
@@ -55,41 +62,21 @@ void EntityAdmin::Init() {
 	controller.Init(this);
 	undoManager.Init();
 	
-	//singleton initialization
-	mainCamera = new Camera(90.f, .01f, 1000.01f, true); //temporary camera creation on admin
-	mainCamera->layer_index = freeCompLayers[mainCamera->layer].add(mainCamera);
-	mainCamera->Init(this);
-	selectedEntity = nullptr;
-	
+	//default values
+	selectedEntity = player = 0;
 	skip = false;
 	paused = false;
-	pause_command = pause_phys = pause_canvas = pause_world = pause_sound = pause_last = false;
+	pause_command = pause_canvas = pause_world = false;
 	find_triangle_neighbors = true;
 	debugTimes = true;
-	
-	/*
-	//orb testing
-	Mesh* mesh = new Mesh(Mesh::CreateMeshFromOBJ("sphere.obj", "sphere.obj"));
-	//Texture tex("default1024.png");
-	//DengRenderer->LoadTexture(tex);
-	//*mesh.batchArray[0].textureArray.push_back(tex);
-	//*mesh.batchArray[0].textureCount = 1;
-	mesh->batchArray[0].shader = Shader::WIREFRAME;
-	OrbManager* om = new OrbManager(mesh, this);
-	world->CreateEntity(admin, {om}, "orbtest");
-	*/
 }
 
 void EntityAdmin::Cleanup() {
-	
+	Save("auto.desh");
 }
 
 void UpdateLayer(ContainerManager<Component*> cl) {
-	for (int i = 0; i < cl.size(); i++) {
-		if (cl[i].test()) {
-			cl[i].value->Update();
-		}
-	}
+	for_n(i, cl.size()) if(cl[i]) cl[i].value->Update();
 }
 
 void EntityAdmin::Update() {
@@ -136,7 +123,7 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed
 			c->layer_index = freeCompLayers[c->layer].add(c);
 			c->Init(this);
 		}
-		operator delete(e); //call this to not delete components, but still delete the staging entity (doesnt call destructor)
+		operator delete(e); //call this to delete the staging entity, but not components (doesnt call destructor)
 	}
 	creationBuffer.clear();
 	DengTime->worldSysTime =  TIMER_END(t_a); TIMER_RESET(t_a);
@@ -148,30 +135,77 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed
 
 void EntityAdmin::ChangeState(GameState new_state){
 	if(state == new_state) return;
-	if(state > GameState_LAST) return ERROR("Admin attempted to switch to unhandled gamestate: ", new_state);
+	if(state >= GameState_LAST) return ERROR("Admin attempted to switch to unhandled gamestate: ", new_state);
 	
 	std::string from, to;
 	switch(state){
-		case GameState_Play:{ from = "PLAY";
-			switch(new_state){
-				case GameState_Menu:{   to = "MENU";
-					
-				}break;
-				case GameState_Debug:{  to = "DEBUG";
-					
-				}break;
-				case GameState_Editor:{ to = "EDITOR";
-					Save("auto.desh");
-				}break;
-				case GameState_Exit:{   to = "EXIT";
-					Save("auto.desh");
-				}break;
-			}
+		//old state: play/debug
+		case GameState_Play: 
+		case GameState_Debug:     from = "PLAY/DEBUG";
+		switch(new_state){
+			case GameState_Menu:{   to = "MENU";
+				pause_phys = true;
+				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+			}break;
+			case GameState_Editor:{ to = "EDITOR";
+				pause_phys = pause_sound = true;
+				Save("auto.desh");
+				Load("temp.desh");
+				if(player) player->GetComponent<MeshComp>()->Visible(true);
+				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+			}break;
 		}break;
-		default: from = TOSTRING(state);
+		
+		//old state: menu
+		case GameState_Menu:      from = "MENU";
+		switch(new_state){
+			case GameState_Play: 
+			case GameState_Debug:{  to = "PLAY/DEBUG";
+				pause_phys = false;
+				if(!player) ERROR("No player on admin");
+				DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
+			}break;
+			case GameState_Editor:{ to = "EDITOR";
+				pause_phys = pause_sound = true;
+				Save("auto.desh");
+				Load("temp.desh");
+				if(player) player->GetComponent<MeshComp>()->Visible(true);
+				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+			}break;
+		}break;
+		
+		//old state: editor
+		case GameState_Editor:    from = "EDITOR";
+		switch(new_state){
+			case GameState_Play: 
+			case GameState_Debug:{  to = "PLAY/DEBUG";
+				pause_phys = pause_sound = false;
+				Save("temp.desh");
+				if(player) {
+					player->GetComponent<MeshComp>()->Visible(false);
+				}else{
+					ERROR("No player on admin");
+				}
+				DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
+			}break;
+			case GameState_Menu:{   to = "MENU";
+				Save("save.desh");
+				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+			}break;
+		}break;
 	}
 	state = new_state;
 	SUCCESS("Changed gamestate from ", from, " to ", to);
+}
+
+void EntityAdmin::Reset(){
+	entities.clear(); entities.reserve(1000);
+	for (auto& layer : freeCompLayers) { layer.clear(); }
+	selectedEntity = 0;
+	undoManager.Reset();
+	scene.Reset();
+	DengRenderer->Reset();
+	DengRenderer->LoadScene(&scene);
 }
 
 struct SaveHeader{
@@ -412,23 +446,13 @@ void EntityAdmin::Save(const char* filename) {
 }
 
 void EntityAdmin::Load(const char* filename) {
-	//// clear current stuff ////
-	entities.clear(); entities.reserve(1000);
-	for (auto& layer : freeCompLayers) { layer.clear(); } //TODO(delle) see if this causes a leak
-	
-	selectedEntity = 0;
-	undoManager.Reset();
-	scene.Reset();
-	DengRenderer->Reset();
-	DengRenderer->LoadScene(&scene);
-	
-	SUCCESS("Cleaned up previous level");
-	SUCCESS("Loading level: ", filename);
+	Reset();
+	SUCCESS("Loading level: ", deshi::dirSaves() + filename);
 	TIMER_START(t_l);
 	
 	//// read file to char array ////
 	u32 cursor = 0;
-	std::vector<char> file = deshi::readFileBinary(filename);
+	std::vector<char> file = deshi::readFileBinary(deshi::dirSaves() + filename);
 	const char* data = file.data();
 	if(!data) return;
 	
@@ -501,8 +525,7 @@ void EntityAdmin::Load(const char* filename) {
 	}
 	
 	SUCCESS("Finished loading level '", filename, "' in ", TIMER_END(t_l), "ms");
-	//skip any ongoing updates
-	skip = true;
+	SkipUpdate();
 }
 
 

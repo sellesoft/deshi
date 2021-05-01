@@ -10,6 +10,8 @@
 #include "../components/Light.h"
 #include "../components/MeshComp.h"
 #include "../components/Physics.h"
+#include "../components/Player.h"
+#include "../components/Movement.h"
 
 //for time
 #include <iomanip>
@@ -248,49 +250,24 @@ void AddPadding(float x){
 
 void CanvasSystem::MenuBar() {
 	using namespace ImGui;
-	
 	ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
 	ImGui::PushStyleColor(ImGuiCol_PopupBg,   ColToVec4(Color(20, 20, 20, 255)));
 	ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ColToVec4(Color(20, 20, 20, 255)));
 	
-	
-	if(BeginMainMenuBar()) {
-		WinHovCheck; 
-		
+	if(BeginMainMenuBar()) { WinHovCheck; 
 		menubarheight = GetWindowHeight();
-		if(BeginMenu("File")) {
-			WinHovCheck; 
+		if(BeginMenu("File")) { WinHovCheck; 
 			
-			if (MenuItem("New")) {
-				admin->entities.clear(); admin->entities.reserve(1000);
-				for (auto& layer : admin->freeCompLayers) { layer.clear(); } //TODO(delle) see if this causes a leak
-				
-				admin->selectedEntity = 0;
-				admin->undoManager.Reset();
-				admin->scene.Reset();
-				g_renderer->Reset();
-				g_renderer->LoadScene(&admin->scene);
-			}
-			if (MenuItem("Save")) {
-				admin->Save("save.desh");
-			}
-			if (MenuItem("Load")) {
-				admin->Load("data/save.desh"); //TODO(delle) add dropdown/something for specific file loading
-			}
+			if (MenuItem("New"))     admin->Reset();
+			if (MenuItem("Save"))    admin->Save("save.desh");
+			//TODO(delle) add textbox for saving to specific file
+			if (MenuItem("Save As")) {} 
+			//TODO(delle) add dropdown/something for specific file loading
+			if (MenuItem("Load"))    admin->Load("save.desh");
 			ImGui::EndMenu();
 		}
-		if(BeginMenu("Edit")) {
-			WinHovCheck; 
-			
-			if (MenuItem("placeholder")) {
-				
-			}
-			ImGui::EndMenu();
-		}
-		if(BeginMenu("Spawn")) {
-			WinHovCheck; 
-			
+		if(BeginMenu("Spawn")) { WinHovCheck; 
 			for (int i = 0; i < files.size(); i++) {
 				if (files[i].find(".obj") != std::string::npos) {
 					if(MenuItem(files[i].c_str())) { DengConsole->ExecCommand("load_obj", files[i]); }
@@ -298,47 +275,38 @@ void CanvasSystem::MenuBar() {
 			}
 			EndMenu();
 		}//agh
-		if (BeginMenu("Window")) {
-			WinHovCheck; 
-			
+		if (BeginMenu("Window")) { WinHovCheck; 
 			if (MenuItem("Object Property Menu")) showDebugTools = !showDebugTools;
-			if (MenuItem("Debug Bar")) showDebugBar = !showDebugBar;
-			if (MenuItem("DebugLayer")) showDebugLayer = !showDebugLayer;
-			if (MenuItem("ImGui Demo Window")) showImGuiDemoWindow = !showImGuiDemoWindow;
+			if (MenuItem("Debug Bar"))            showDebugBar = !showDebugBar;
+			if (MenuItem("DebugLayer"))           showDebugLayer = !showDebugLayer;
+			if (MenuItem("ImGui Demo Window"))    showImGuiDemoWindow = !showImGuiDemoWindow;
 			EndMenu();
 		}
-		if (BeginMenu("State")) {
-			WinHovCheck;
-			if (MenuItem("Play")) DengConsole->ExecCommand("state_play");
-			if (MenuItem("Play (Debug)")) DengConsole->ExecCommand("state_debug");
-			if (MenuItem("Editor")) DengConsole->ExecCommand("state_editor");
-			if (MenuItem("Menu")) DengConsole->ExecCommand("state_menu");
+		if (BeginMenu("State")) { WinHovCheck;
+			if (MenuItem("Play"))   admin->ChangeState(GameState_Play);
+			if (MenuItem("Debug"))  admin->ChangeState(GameState_Debug);
+			if (MenuItem("Editor")) admin->ChangeState(GameState_Editor);
+			if (MenuItem("Menu"))   admin->ChangeState(GameState_Menu);
 			EndMenu();
 		}
-		
 		EndMainMenuBar();
 	}
 	
-	PopStyleColor();
-	PopStyleColor();
-	PopStyleVar();
-	PopStyleVar();
-	
+	PopStyleColor(2);
+	PopStyleVar(2);
 }
 
 
 inline void ComponentsMenu(Entity* sel) {
 	using namespace ImGui;
-
+	
 	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
-	if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 100), true)) {
-		WinHovCheck;
+	if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 100), true)) { WinHovCheck;
 		if (ImGui::BeginTable("SelectedComponents", 1)) {
 			ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
 			for (Component* c : sel->components) {
 				TableNextColumn(); //TableNextRow();
-				SetPadding;
-				Text(c->name);
+				SetPadding; Text(c->name);
 				SameLine(CalcItemWidth() + 20);
 				if (Button("Del")) {
 					sel->RemoveComponent(c);
@@ -353,7 +321,7 @@ inline void ComponentsMenu(Entity* sel) {
 
 inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 	using namespace ImGui;
-
+	
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
 	SetPadding;
 	if (BeginChild("entityListScroll", ImVec2(GetWindowWidth() * 0.95, 100), false)) {
@@ -717,7 +685,8 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 	local_persist int current_preset = 0;
 	local_persist char entity_name[64] = {};
 	local_persist vec3 entity_pos{}, entity_rot{}, entity_scale = Vector3::ONE;
-	local_persist bool comp_audiolistener{}, comp_audiosource{}, comp_collider{}, comp_mesh{}, comp_light{}, comp_physics{}, comp_2d{};
+	local_persist bool comp_audiolistener{}, comp_audiosource{}, comp_collider{}, comp_mesh{};
+	local_persist bool comp_light{}, comp_physics{}, comp_2d{}, comp_player{};
 	const char* colliders[] = {"None", "Box", "AABB", "Sphere"};
 	local_persist int  collider_type = ColliderType_NONE;
 	local_persist vec3 collider_halfdims = Vector3::ONE;
@@ -777,14 +746,17 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 				light = new Light(entity_pos, entity_rot, light_strength);
 			}
 			Physics* phys = 0;
+			Movement* move = 0;
+			Player* pl = 0;
 			if(comp_physics){
 				phys = new Physics(entity_pos, entity_rot, physics_velocity, physics_accel, physics_rotVel,
 								   physics_rotAccel, physics_elasticity, physics_mass, physics_staticPosition);
 				if(comp_audiolistener) al->velocity = physics_velocity;
+				if(comp_player) move = new Movement(phys); pl = new Player(move);
 			}
 			
 			//create entity
-			admin->CreateEntity({al, as, coll, mc, light, phys}, entity_name, 
+			admin->CreateEntity({al, as, coll, mc, light, phys, move, pl}, entity_name, 
 								Transform(entity_pos, entity_rot, entity_scale));
 		}Separator();
 		
@@ -846,7 +818,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 				}break;
 				case(5):{
 					comp_light = false;
-					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = true;
+					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = comp_player = true;
 					collider_type = ColliderType_AABB; //TODO(delle,PhCl) ideally cylinder/capsule collider
 					collider_halfdims = vec3(1, 2, 1);
 					mesh_id = DengRenderer->GetBaseMeshID("bmonkey.obj");
@@ -881,6 +853,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 			SameLine(); Checkbox("Light", &comp_light);
 			Checkbox("Audio Source", &comp_audiosource);
 			SameLine(); Checkbox("Mesh2D", &comp_2d);
+			Checkbox("Player", &comp_player);
 			TreePop();
 		}
 		

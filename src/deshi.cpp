@@ -38,7 +38,6 @@ add Camera tag to TODOP
 look into integrating TODOP with Discord
 add yaxis line
 begin reimplementing sound system and maybe rethink its design a bit
-remove WorldSystem and add its functionality to EntityAdmin
 
 Render TODOs
 ------------
@@ -61,6 +60,7 @@ find a way to forward declare vulkan stuff and move the include to the cpp
 
 Level Editor TODOs
 ------------------
+add shader/texture seleciton on entity creation
 add transfering the player pointer between entities that have an actor comp
 orbitting camera for rotating around objects
 context menu when right clicking on an object 
@@ -111,6 +111,8 @@ fix regex match variable to be smatch instead of cmatch, so we don't have to kee
 
 UI TODOs
 --------
+look into easier hover checking and input intercepting for imgui
+____https://github.com/ocornut/imgui/issues/52
 2D shader
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
@@ -140,6 +142,10 @@ ____the batchArray size of whatever mesh its checking is something like 40000000
 look into scaling not rotating (scaling is probably being done in world not local)
 console scrolls past top and bottom
 sometimes MeshComp is assigned a nonexistant mesh
+program crashes in CanvasSystem when minimized
+____temp fix by checking if minimized, but need to find root cause
+program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
+____read this to try to fix: http://www.debuginfo.com/tips/userbpntdll.html
 
 */
 

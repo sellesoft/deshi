@@ -268,10 +268,10 @@ Cleanup() {
 		
 		/* Get data of pipeline cache */
 		std::vector<char> data(size);
-		ASSERTVK(vkGetPipelineCacheData(device, pipelineCache, &size, data.data()), "faile to get pipeline cache data");
+		ASSERTVK(vkGetPipelineCacheData(device, pipelineCache, &size, data.data()), "failed to get pipeline cache data");
 		
 		/* Write pipeline cache data to a file in binary format */
-		deshi::writeFileBinary(deshi::dirData() + "pipeline_cache.dat", data);
+		deshi::writeFileBinary(deshi::dirData() + "pipelines.cache", data);
 	}
 	
 	//write pre-pipeline data
@@ -2159,8 +2159,10 @@ CreatePipelineCache(){
 	pipelineCacheCreateInfo.flags = 0;
 	
 	//try to read pipeline cache file if exists
-	std::vector<char> data = deshi::readFileBinary(deshi::dirData()+"pipeline_cache.dat");
-	if(data.size() > 0){
+	std::string path = deshi::assetPath("pipelines.cache", AssetType_Data, false);
+	std::vector<char> data;
+	if(path != ""){
+		data = deshi::readFileBinary(path);
 		pipelineCacheCreateInfo.initialDataSize = data.size();
 		pipelineCacheCreateInfo.pInitialData = data.data();
 	}
