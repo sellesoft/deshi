@@ -39,7 +39,6 @@ if (name.size() < i) name.push_back(DengRenderer->CreateDebugLine(v1, v2, color,
 static std::vector<u32> name; \
 if (name.size() < i) name.push_back(DengRenderer->CreateDebugTriangle(v1, v2, v3, color, true));\
 
-
 //static defines
 #define static_internal static
 #define local_persist   static

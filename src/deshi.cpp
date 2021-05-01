@@ -48,6 +48,7 @@ redo MeshVk so its only child meshes
 ____avoid having 3 copies of a mesh (model, meshVK, vulkan)
 add lighting and shadows
 add 2D shader and interface functions
+add face normal and tangents to vertex buffer
 add vertex editing
 fix texture transparency
 add RenderSettings loading and usage

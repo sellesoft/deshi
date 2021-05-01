@@ -25,6 +25,9 @@ float debugbarheight  = 0;
 float debugtoolswidth = 0;
 float padding         = 0.95f;
 
+float fontwidth = 0;
+float fontheight = 0;
+
 //defines to make repetitve things less ugly and more editable
 
 //check if mouse is over window so we can prevent mouse from being captured by engine
@@ -323,8 +326,34 @@ void CanvasSystem::MenuBar() {
 	
 }
 
+
+inline void ComponentsMenu(Entity* sel) {
+	using namespace ImGui;
+
+	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
+	if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 100), true)) {
+		WinHovCheck;
+		if (ImGui::BeginTable("SelectedComponents", 1)) {
+			ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
+			for (Component* c : sel->components) {
+				TableNextColumn(); //TableNextRow();
+				SetPadding;
+				Text(c->name);
+				SameLine(CalcItemWidth() + 20);
+				if (Button("Del")) {
+					sel->RemoveComponent(c);
+				}
+			}
+			ImGui::EndTable();
+		}
+		EndChild();
+	}
+}
+
+
 inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 	using namespace ImGui;
+
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
 	SetPadding;
 	if (BeginChild("entityListScroll", ImVec2(GetWindowWidth() * 0.95, 100), false)) {
@@ -504,24 +533,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 						
 						//Components menu
 						if (BeginTabItem("Comp")) {
-							SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
-							if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 100), true)) {
-								WinHovCheck;
-								if (ImGui::BeginTable("SelectedComponents", 1)) {
-									ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
-									for (Component* c : sel->components) {
-										TableNextColumn(); //TableNextRow();
-										SetPadding;
-										Text(c->name);
-										SameLine(CalcItemWidth() + 20);
-										if (Button("Del")) {
-											sel->RemoveComponent(c);
-										}
-									}
-									ImGui::EndTable();
-								}
-								EndChild();
-							}
+							ComponentsMenu(sel);
 							EndTabItem();
 						}
 						
@@ -998,6 +1010,8 @@ void CanvasSystem::DebugTools() {
 	using namespace ImGui;
 	
 	float fontsize = ImGui::GetFontSize();
+	fontheight = fontsize;
+	fontwidth = fontsize / 2;
 	
 	//resize tool menu if main menu bar is open
 	ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - (menubarheight + debugbarheight)));

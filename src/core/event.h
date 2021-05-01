@@ -9,6 +9,7 @@ enum Event : u32{
 	Event_NONE = 0,
 	TEST_EVENT,
 	Event_DoorOpen, Event_DoorClose,
+    Event_LightToggle,
 	Event_LAST,
 };
 

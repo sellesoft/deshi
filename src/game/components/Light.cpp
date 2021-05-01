@@ -15,6 +15,14 @@ void Light::Update() {
 	
 }
 
+void Light::ReceiveEvent(Event event) {
+	switch (event) {
+	case Event_LightToggle:
+		active = !active;
+		break;
+	}
+}
+
 std::vector<char> Light::Save() {
 	std::vector<char> out;
 	return out;
