@@ -20,10 +20,19 @@ layout(location = 3) in vec3 inNormal;
 layout(location = 0) out vec3 outColor;
 layout(location = 1) out vec2 outTexCoord;
 layout(location = 2) out vec3 outNormal;
+layout(location = 3) out vec3 outLightPos;
+layout(location = 4) out float outLightBrightness;
+layout(location = 5) out vec3 outWorldPos;
+layout(location = 6) out vec3 viewPosition;
 
 void main() {
+
+	viewPosition = (ubo.view * primitive.model * vec4(inPosition.xyz, 1.0)).xyz;
     gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
     outColor = inColor;
 	outTexCoord = inTexCoord;
-	outNormal = mat3(primitive.model) * inNormal;
+	outNormal = normalize(mat3(primitive.model) * inNormal);
+	outLightPos = ubo.lightPos.xyz;
+	outLightBrightness = ubo.lightPos.w;
+	outWorldPos = vec3(primitive.model * vec4(inPosition.xyz, 1.0));
 }
