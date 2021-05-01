@@ -6,16 +6,17 @@ A game engine for 3D physics and graphics building on [P3DPGE](https://github.co
 * Vulkan rendering
 * Importing OBJ models
 * Console and commands
-* Mouse and keyboard input
-
-### Major TODOs
 * 3D physics collision detection and resolution
 * 2D collision detection and resolution
+* 3D-2D entity conversion and physics interaction
+
+### Major TODOs
+* Level/scene editor and saving
 * Component object pooling
-* 3D-2D entity conversion
 * Atmospherics and fluids
 * Lighting and shadows
-* Level/scene editor
+* Multithreading
+* Scripting/event system
 
 ### Build Dependencies
 * [GLFW 3.3.2](https://www.glfw.org/download.html)
