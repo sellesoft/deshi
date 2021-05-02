@@ -269,69 +269,6 @@
     <None Include="build.bat">
       <Filter>docs</Filter>
     </None>
-    <None Include="..\shaders\phong.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\twod.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\wireframe.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\flat.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\lavalamp.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\pbr.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\pbr.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\phong.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\twod.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\wireframe.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\fixedimguishader.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\flat.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\lavalamp.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\testing0.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\testing0.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\testing1.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\testing1.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\testing2.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\testing2.vert">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\testing3.frag">
-      <Filter>shaders</Filter>
-    </None>
-    <None Include="..\shaders\testing3.vert">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="..\src\math\Vector2.inl">
       <Filter>src\math</Filter>
     </None>
@@ -355,6 +292,60 @@
     </None>
     <None Include="..\cfg\binds.cfg">
       <Filter>cfg</Filter>
+    </None>
+    <None Include="..\data\shaders\base.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\fixedimguishader.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\flat.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\flat.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\lavalamp.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\lavalamp.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\pbr.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\pbr.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\phong.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\phong.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\testing0.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\testing0.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\testing1.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\testing1.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\twod.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\twod.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\wireframe.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\wireframe.vert">
+      <Filter>shaders</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

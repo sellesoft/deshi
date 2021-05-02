@@ -189,7 +189,11 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			Vector2 impulse = j * norm;
 			if (!obj1->isStatic) obj1->velocity -= impulse / obj1->mass;
 			if (!obj2->isStatic) obj2->velocity += impulse / obj2->mass;
+			//PRINTLN(obj2->velocity.mag());
 			return true;
+		}
+		else if (vAlongNorm == 0) {
+			obj1->contactState = ContactMoving;
 		}
 		return true;
 	}	
@@ -634,13 +638,8 @@ inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 		}
 		FillManis(polys, manis);
 		SolveManifolds(manis);
-		
 	}
 }
-
-
-
-
 
 //////////////////////////
 //// system functions ////

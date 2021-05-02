@@ -72,6 +72,12 @@ struct poly {
 	
 };
 
+enum ContactState {
+	ContactNONE,
+	ContactStationary,
+	ContactMoving
+};
+
 struct Physics : public Component {
 	Vector3 position;
 	Vector3 rotation;
@@ -92,6 +98,14 @@ struct Physics : public Component {
 	//TODO(delle,Ph) separate static movement and rotation
 	bool twoDphys = false;
 	poly* twoDpolygon = nullptr;
+
+	//NOTE these default values are really only meant for debugging
+	//and can be removed if I forget to remove them
+	//they are the values of wood against wood
+	float kineticFricCoef = 0.3;
+	float staticFricCoef = 0.42;
+
+	ContactState contactState;
 	
 	Physics();
 	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO,
