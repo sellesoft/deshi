@@ -82,7 +82,8 @@ inline void PlayerMovement(EntityAdmin* admin, MovementMode mode, Movement* play
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingBackward)) { inputs -= Vector3(camera->forward.x, 0, camera->forward.z); }
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingRight))    { inputs += Vector3(camera->right.x, 0, camera->right.z); }
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingLeft))     { inputs -= Vector3(camera->right.x, 0, camera->right.z); }
-		if (DengInput->KeyPressed(DengKeys.movementJump | INPUTMOD_ANY)){ inputs += Vector3::UP; }
+		if (DengInput->KeyPressed(DengKeys.movementJump | INPUTMOD_ANY)
+			&& playermove->moveState == OnGround)                       { playermove->jump = true; }
 		
 		if (playermove) {
 			playermove->inputs = inputs.normalized();

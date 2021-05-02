@@ -316,7 +316,7 @@ void Console::DrawConsole() {
 	//TODO(sushi, Con) figure out why the scroll bar doesnt allow you to drag it
 	const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 	PushStyleColor(ImGuiCol_ChildBg, ColorToVec4(Color(4, 17, 21, 255)));
-	BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar);
+	BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false);
 	if (BeginPopupContextWindow()) {
 		if (ImGui::Selectable("hehe")) AddLog("hoho");
 		EndPopup();
@@ -324,9 +324,9 @@ void Console::DrawConsole() {
 	
 	
 	//print previous text
-	ImGuiListClipper clipper;
-	clipper.Begin(buffer.size());
-	while (clipper.Step()) {
+	//ImGuiListClipper clipper;
+	//clipper.Begin(buffer.size());
+	//while (clipper.Step()) {
 		for (std::pair<std::string, Color> p : buffer) {
 			//for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
 			//color formatting is "[c:red]text[c] text text"
@@ -337,7 +337,7 @@ void Console::DrawConsole() {
 				TextWrapped(p.first.c_str());
 			}
 			else {
-				PushStyleColor(ImGuiCol_Text, ColorToVec4(p.second));
+				ImGui::PushStyleColor(ImGuiCol_Text, ColorToVec4(p.second));
 				SameLine(0, 0);
 				TextWrapped(p.first.c_str());
 				ImGui::PopStyleColor();
@@ -347,7 +347,7 @@ void Console::DrawConsole() {
 				TextWrapped("\n");
 			}
 		}
-	}
+	//}
 	
 	
 	//auto scroll window
@@ -498,6 +498,10 @@ COMMANDFUNC(undo){
 
 COMMANDFUNC(redo){
 	admin->undoManager.Redo(); return "";
+}
+
+COMMANDFUNC(flush) {
+	g_console->FlushBuffer(); return "";
 }
 
 CMDSTARTA(state, args.size() > 0){
@@ -787,6 +791,27 @@ COMMANDFUNC(add_player) {
 	return "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
 }
 
+
+COMMANDFUNC(add_force) {
+	if (args.size() > 0) {
+		std::cmatch m;
+		for (std::string s : args) {
+			if (std::regex_search(s.c_str(), m, Vec3Regex("force"))) {
+				Physics* p = admin->selectedEntity->GetComponent<Physics>();
+				if (p) {
+					p->AddForce(nullptr, Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3])));
+					return "";
+				}
+				else {
+					return "[c:error]selectesd object doesn't have a physics component.[c]";
+				}
+			}
+
+		}
+	}
+	return "add_force -force=(x,y,z)";
+}
+
 void Console::AddRandomCommands(){
 	//TODO(sushi,Cmd) reimplement this at some point
 	//commands["debug_global"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
@@ -817,6 +842,10 @@ void Console::AddRandomCommands(){
 	CMDADD(mesh_transform_matrix, "Transforms a mesh by the provided matrix");
 	CMDADD(cam_vars, "Allows editing to the camera variables");
 	CMDADD(state, "Changes the admin's gamestate");
+	CMDADD(flush, "Flushes the console's buffer to the log file.");
+	CMDADD(add_force, "Adds a force to the selected object.");
+
+
 }
 
 ////////////////////////////////////
@@ -1305,29 +1334,6 @@ void Console::AddSelectedEntityCommands() {
 											return "";
 										}, "rotate_-z", "rotate_-z <EntityID> <amount> [speed]");
 	
-	//// other ////
-	/*
-	commands["add_force"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													   //TODO( sushi,Re) implement ScreenToWorld for ortho projection
-													   if (USE_ORTHO) {
-													   LOG("\nWarning: ScreenToWorld not yet implemented for orthographic projection. World interaction with mouse will not work.\n");
-												   }
-												   else {
-													   if (admin->selectedEntity) {
-														   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-															   Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
-																								 admin->mainCamera->viewMat, DengWindow->dimensions);
-															   //cant remember what this is doing and will fix later
-															   //Vector3 clickPos = Math::ScreenToWorld(DengInput->mouseClickPos, admin->mainCamera->projMat,
-															   //admin->mainCamera->viewMat, DengWindow->dimensions);
-															   //TODO(delle,PhIn) test that you can add force to a selected entity
-															   //Physics::AddForce(nullptr, p, (pos - clickPos).normalized() * 5);
-														   }
-													   }
-												   }
-												   return "";
-												   }, "add_force", "add_force <EntityID> <force_vector> [constant_force?]");
-	*/
 }
 
 void Console::AddWindowCommands() {

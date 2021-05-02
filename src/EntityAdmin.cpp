@@ -247,6 +247,8 @@ void EntityAdmin::Save(const char* filename) {
 	std::vector<Light*>          compsLight;
 	std::vector<MeshComp*>       compsMeshComp;
 	std::vector<Physics*>        compsPhysics;
+	std::vector<Player*>         compsPlayer;
+
 	//TODO(delle,Cl) convert these vectors to char vectors and when iterating thru entities
 	// and thier components, call the save function of an entity to add to the components
 	// vector and then use the final size of that vector for type header offsets
@@ -279,6 +281,8 @@ void EntityAdmin::Save(const char* filename) {
 				compsAudioListener.push_back(d);
 			}else if(dyncast(d, AudioSource, c)){
 				compsAudioSource.push_back(d);
+			}else if (dyncast(d, Player, c)) {
+				compsPlayer.push_back(d);
 			}else{
 				ERROR("Unhandled component '", c->name, "' found when attempting to save");
 			}
@@ -429,6 +433,10 @@ void EntityAdmin::Save(const char* filename) {
 		file.write((const char*)&c->mass,            sizeof(float));
 		file.write((const char*)&isStatic,           sizeof(b32));
 	}
+
+	for (auto c : compsPlayer) {
+
+	}
 	
 	//store camera's size so we know offset to following entities list then store camera
 	//int camsize = sizeof(*mainCamera);
@@ -561,6 +569,7 @@ Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const c
 	entities.emplace_back(this, id, e->transform, e->name, e->components);
 	for (Component* c : e->components) {
 		c->entityID = id;
+		c->layer_index = freeCompLayers[c->layer].add(c);
 		c->Init(this);
 	}
 	operator delete(e);
