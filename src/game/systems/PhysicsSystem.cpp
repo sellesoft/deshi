@@ -60,13 +60,14 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	//this should be changed later.
 	//contacts is the various contact states it has with each object while
 	//contactState is the overall state of the object, regardless of what object its touching
-	
-
 	bool contactMoving = false;
 	bool contactStationary = false;
 	for (auto c : t.physics->contacts) {
 		if (c.second == ContactMoving) {
-			if(!t.physics->fricOverride) t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
+			if(!t.physics->fricOverride && t.physics->velocity.mag() > 0.12)
+				t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
+			else
+				t.physics->velocity = Vector3::ZERO;
 			contactMoving = true;
 		}
 		else if (c.second == ContactStationary) contactStationary = true;

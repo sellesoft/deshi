@@ -6,6 +6,7 @@
 #include "../components/AudioListener.h"
 #include "../components/AudioSource.h"
 #include "../components/Camera.h"
+#include "../components/Orb.h"
 #include "../components/Collider.h"
 #include "../components/Light.h"
 #include "../components/MeshComp.h"
@@ -297,11 +298,16 @@ void CanvasSystem::MenuBar() {
 }
 
 
+inline void EventsMenu() {
+
+}
+
+
 inline void ComponentsMenu(Entity* sel) {
 	using namespace ImGui;
 	int tree_flags = ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_NoAutoOpenOnLog;
 	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
-	if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 100), true)) { WinHovCheck;
+	if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 500), true)) { WinHovCheck;
 		//if (ImGui::BeginTable("SelectedComponents", 1)) {
 			//ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
 			for (Component* c : sel->components) {
@@ -313,13 +319,17 @@ inline void ComponentsMenu(Entity* sel) {
 							Text("Accelertaion "); SameLine(); InputVector3("phys_accel", &d->acceleration);       Separator();
 							Text("Rot Velocity "); SameLine(); InputVector3("phys_rotvel", &d->rotVelocity);       Separator();
 							Text("Rot Accel    "); SameLine(); InputVector3("phys_rotaccel", &d->rotAcceleration); Separator();
-							Text("Elasticity   "); SameLine(); InputFloat("phys_elastic", &d->elasticity);         Separator();
-							Text("Mass         "); SameLine(); InputFloat("phys_mass", &d->mass);                  Separator();
+							Text("Elasticity   "); SameLine(); 
+							ImGui::SetNextItemWidth(-FLT_MIN);
+							InputFloat("phys_elastic", &d->elasticity);         Separator();
+							Text("Mass         "); SameLine();
+							ImGui::SetNextItemWidth(-FLT_MIN);
+							InputFloat("phys_mass", &d->mass);                  Separator();
 							Checkbox("Static Position", &d->isStatic);                                             Separator();
 							Checkbox("Static Rotation", &d->staticRotation);
 							TreePop();
-							break;
 						}
+						break;
 					case ComponentType_Collider: {
 						dyncast(col, Collider, c);
 						switch (col->type) {
@@ -329,7 +339,6 @@ inline void ComponentsMenu(Entity* sel) {
 									Text("Half Dims    "); SameLine(); InputVector3("coll_halfdims", &d->halfDims);
 									TextWrapped("TODO sushi implement collider commands/events menu");
 									TreePop();
-									break;
 								}
 								break;
 							}
@@ -339,22 +348,21 @@ inline void ComponentsMenu(Entity* sel) {
 									Text("Half Dims    "); SameLine(); InputVector3("coll_halfdims", &d->halfDims);
 									TextWrapped("TODO sushi implement collider commands/events menu");
 									TreePop();
-									break;
 								}
 								break;
 							}
 							case ColliderType_Sphere: {
 								if (TreeNodeEx("Sphere Collider", tree_flags)) {
 									dyncast(d, SphereCollider, col);
-									Text("Radius       "); SameLine(); InputFloat("coll_radius", &d->radius);
+									Text("Radius       "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+									InputFloat("coll_radius", &d->radius);
 									TextWrapped("TODO sushi implement collider commands/events menu");
 									TreePop();
-									break;
 								}
 								break;
 							}
 						}
-						
+
 						break;
 					}
 					case ComponentType_AudioListener:
@@ -373,14 +381,34 @@ inline void ComponentsMenu(Entity* sel) {
 					case ComponentType_Light:
 						if (TreeNodeEx("Light", tree_flags)) {
 							dyncast(d, Light, c);
-							Text("Strength     "); SameLine(); InputFloat("strength", &d->strength); Separator();
+							Text("Strength     "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+							InputFloat("strength", &d->strength); Separator();
 							Text("Position     "); SameLine(); InputVector3("position", &d->position); Separator();
 							Text("Direction    "); SameLine(); InputVector3("direction", &d->direction); Separator();
 
-						
+
 							TreePop();
 						}
 						break;
+
+					case ComponentType_OrbManager:
+						if (TreeNodeEx("Orbs", tree_flags)) {
+							dyncast(d, OrbManager, c);
+							Text("Orb count   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+							InputInt("orbcount", &d->orbcount);
+							TreePop();
+						}
+						break;
+
+					case ComponentType_Movement:
+						if (TreeNodeEx("Movement", tree_flags)) {
+							dyncast(d, Movement, c);
+							Text("Ground Accel"); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+							InputFloat("gndaccel", &d->gndAccel);
+							Text("Air Accel   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+							InputFloat("airaccel", &d->airAccel);
+							TreePop();
+						}
 				}
 
 				//TableNextColumn(); //TableNextRow();

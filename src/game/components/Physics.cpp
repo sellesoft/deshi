@@ -15,7 +15,7 @@ Physics::Physics() {
 	
 	cpystr(name, "Physics", 63);
 	layer = SystemLayer_Physics;
-	comptype = ComponentLayer_Physics;
+	comptype = ComponentType_Physics;
 }
 
 Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy,
@@ -32,6 +32,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	
 	cpystr(name, "Physics", 63);
 	layer = SystemLayer_Physics;
+	comptype = ComponentType_Physics;
 }
 
 Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticity) {
@@ -46,6 +47,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticit
 	
 	cpystr(name, "Physics", 63);
 	layer = SystemLayer_Physics;
+	comptype = ComponentType_Physics;
 }
 
 void Physics::AddInput(Vector3 input) {

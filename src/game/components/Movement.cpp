@@ -39,7 +39,6 @@ void Movement::Update() {
 
 	if (inputs == Vector3::ZERO && moveState == OnGround) {
 		if (phys->velocity != Vector3::ZERO) {
-			PRINTLN(phys->velocity.mag());
 			if (phys->velocity.mag() > 0.12)
 				phys->AddFrictionForce(nullptr, 5);
 			else
