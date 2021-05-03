@@ -51,11 +51,31 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	t.physics->inputVector = Vector3::ZERO;
 	
 	//add gravity 
-	t.physics->acceleration += Vector3(0, ps->gravity, 0);
+	t.physics->acceleration += Vector3(0, -ps->gravity, 0);
 	
 	//add temp air friction force
 	t.physics->AddFrictionForce(nullptr, ps->frictionAir);
 	
+	//currently this is how we communicate to Movement what state the obj's physics is in
+	//this should be changed later.
+	//contacts is the various contact states it has with each object while
+	//contactState is the overall state of the object, regardless of what object its touching
+	
+
+	bool contactMoving = false;
+	bool contactStationary = false;
+	for (auto c : t.physics->contacts) {
+		if (c.second == ContactMoving) {
+			if(!t.physics->fricOverride) t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
+			contactMoving = true;
+		}
+		else if (c.second == ContactStationary) contactStationary = true;
+	}
+
+	if      (contactMoving)     t.physics->contactState = ContactMoving;
+	else if (contactStationary) t.physics->contactState = ContactStationary;
+	else                        t.physics->contactState = ContactNONE;
+
 	//sum up forces to calculate acceleration
 	Vector3 netForce;
 	for(auto& f : t.physics->forces) {
@@ -178,7 +198,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		}
 		
 		//dynamic resolution
-		Vector2 rv = obj2->velocity - obj1->velocity;
+		Vector3 rv = obj2->velocity - obj1->velocity;
 		
 		float vAlongNorm = rv.dot(norm);
 		if (vAlongNorm < 0) {
@@ -189,10 +209,29 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			Vector2 impulse = j * norm;
 			if (!obj1->isStatic) obj1->velocity -= impulse / obj1->mass;
 			if (!obj2->isStatic) obj2->velocity += impulse / obj2->mass;
+			//PRINTLN(obj2->velocity.mag());
+
+			
+			if (obj1->velocity.x != 0 || obj1->velocity.z != 0) {
+				obj1->contacts[obj2] = ContactMoving;
+			}
+			else {
+				obj1->contacts[obj2] = ContactStationary;
+			}
+			if (obj2->velocity.x != 0 || obj2->velocity.z != 0) {
+				obj2->contacts[obj1] = ContactMoving;
+			}
+			else {
+				obj2->contacts[obj1] = ContactStationary;
+			}
+			
+
 			return true;
 		}
 		return true;
 	}	
+	obj1->contacts[obj2] = ContactNONE;
+	obj2->contacts[obj1] = ContactNONE;
 	return false;
 }
 
@@ -634,13 +673,8 @@ inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 		}
 		FillManis(polys, manis);
 		SolveManifolds(manis);
-		
 	}
 }
-
-
-
-
 
 //////////////////////////
 //// system functions ////
@@ -651,7 +685,7 @@ void PhysicsSystem::Init(EntityAdmin* a) {
 	integrationMode = IntegrationMode::EULER;
 	collisionMode   = CollisionDetectionMode::DISCRETE;
 	
-	gravity        = -9.81;
+	gravity        = 9.81;
 	frictionAir    = 0.01f; 
 	minVelocity    = 0.005f;
 	maxVelocity    = 100.f;
@@ -681,6 +715,19 @@ void PhysicsSystem::Update() {
 	//interpolate between new physics position and old transform position by the leftover time
 	float alpha = DengTime->fixedAccumulator / DengTime->fixedDeltaTime;
 	for(auto& t : tuples) {
+
+		switch (t.physics->contactState) {
+		case ContactMoving:
+			ImGui::DebugDrawText3("ContactMoving", t.transform->position);
+			break;
+		case ContactStationary:
+			ImGui::DebugDrawText3("ContactStationary", t.transform->position);
+			break;
+		case ContactNONE:
+			ImGui::DebugDrawText3("ContactNONE", t.transform->position);
+			break;
+		}
+		
 		if (t.physics->twoDpolygon) {
 			delete t.physics->twoDpolygon;
 			t.physics->twoDpolygon = 0;

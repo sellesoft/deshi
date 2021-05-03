@@ -56,8 +56,8 @@ void Physics::AddForce(Physics* creator, Vector3 force) {
 	if(creator) { creator->forces.push_back(-force); }
 }
 
-void Physics::AddFrictionForce(Physics* creator, float frictionCoef) {
-	forces.push_back(-velocity.normalized() * frictionCoef * mass);
+void Physics::AddFrictionForce(Physics* creator, float frictionCoef, float grav) {
+	forces.push_back(-velocity.normalized() * frictionCoef * mass * grav);
 	if (creator) { 
 		//TODO(delle,Ph) implement sliding friction between two objects
 	}

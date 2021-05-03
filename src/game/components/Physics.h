@@ -5,6 +5,8 @@
 #include "Component.h"
 #include "../../math/Vector.h"
 
+#include <unordered_map>
+
 
 //only used for 2D currently
 struct Physics;
@@ -72,6 +74,12 @@ struct poly {
 	
 };
 
+enum ContactState {
+	ContactNONE,
+	ContactStationary,
+	ContactMoving
+};
+
 struct Physics : public Component {
 	Vector3 position;
 	Vector3 rotation;
@@ -92,6 +100,15 @@ struct Physics : public Component {
 	//TODO(delle,Ph) separate static movement and rotation
 	bool twoDphys = false;
 	poly* twoDpolygon = nullptr;
+
+	//NOTE these default values are really only meant for debugging
+	//and can be removed if I forget to remove them
+	//they are the values of wood against wood
+	float kineticFricCoef = 0.3;
+	float staticFricCoef = 0.42;
+	std::unordered_map<Physics*, ContactState> contacts;
+	ContactState contactState;
+	bool fricOverride = false;
 	
 	Physics();
 	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO,
@@ -107,7 +124,7 @@ struct Physics : public Component {
 	
 	//if no creator, assume air friction; if creator, assume sliding friction
 	//TODO(delle,Ph) change air friction to calculate for shape of object
-	void AddFrictionForce(Physics* creator, float frictionCoef);
+	void AddFrictionForce(Physics* creator, float frictionCoef, float grav = 9.807);
 	
 	//changes velocity by adding an impulse to target, target also applies the impulse to creator
 	void AddImpulse(Physics* creator, Vector3 impulse);

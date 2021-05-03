@@ -93,7 +93,7 @@ struct Vertex {
 	Vertex(Vector3 pos, Vector2 uv, Vector3 color, Vector3 normal);
 	
 	bool operator==(const Vertex& other) const {
-		return pos == other.pos && color == other.color && uv == other.uv;
+		return pos == other.pos && color == other.color && uv == other.uv && normal == other.normal;
 	}
 };
 

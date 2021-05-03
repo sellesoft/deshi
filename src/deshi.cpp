@@ -15,7 +15,7 @@ if you feel they would handle the problem better. It should generally be you tho
 Major Ungrouped TODOs
 ---------------------
 make it so the play state starts when you go from EDITOR to PLAY or PLAY_DEBUG
-	____like it is in Unreal, eg. everything resets to some start position when you stop playing
+____like it is in Unreal, eg. everything resets to some start position when you stop playing
 add shaders: PBR (4textures)
 create a demo level
 add player movement and player entity
@@ -42,7 +42,7 @@ begin reimplementing sound system and maybe rethink its design a bit
 Render TODOs
 ------------
 get debugPrintf extension to work
-	  ____you can test it through PHONG shader for now
+____you can test it through PHONG shader for now
 redo MeshVk so its only child meshes
 ____avoid having 3 copies of a mesh (model, meshVK, vulkan)
 add lighting and shadows
@@ -142,7 +142,6 @@ ____the batchArray size of whatever mesh its checking is something like 40000000
 look into scaling not rotating (scaling is probably being done in world not local)
 console scrolls past top and bottom
 sometimes MeshComp is assigned a nonexistant mesh
-program crashes in CanvasSystem when minimized
 ____temp fix by checking if minimized, but need to find root cause
 program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
 ____read this to try to fix: http://www.debuginfo.com/tips/userbpntdll.html
@@ -196,7 +195,7 @@ struct DeshiEngine {
 		admin.Init();
 		g_admin = &admin;
 		
-		LOG("Finished deshi initialization in ",TIMER_END(t_d),"ms");
+		LOG("Finished deshi initialization in ", TIMER_END(t_d), "ms");
 		
 		//start main loop
 		while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {

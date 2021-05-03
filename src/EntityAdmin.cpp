@@ -199,6 +199,7 @@ void EntityAdmin::ChangeState(GameState new_state){
 }
 
 void EntityAdmin::Reset(){
+	SUCCESS("Resetting scene");
 	entities.clear(); entities.reserve(1000);
 	for (auto& layer : freeCompLayers) { layer.clear(); }
 	selectedEntity = 0;
@@ -527,6 +528,7 @@ void EntityAdmin::Load(const char* filename) {
 			case(ComponentType_MeshComp):       MeshComp      ::Load(entities, data, cursor, compHeader.count); break;
 			case(ComponentType_OrbManager):     OrbManager    ::Load(entities, data, cursor, compHeader.count); break;
 			case(ComponentType_Physics):        Physics       ::Load(entities, data, cursor, compHeader.count); break;
+			case(ComponentType_Player):         Player        ::Load(entities, data, cursor, compHeader.count); break;
 			default:{
 				ERROR("Failed to load a component array because of unknown component type '", 
 					  compHeader.type, "' at pos: ", cursor);
@@ -571,6 +573,7 @@ Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const c
 	entities.emplace_back(this, id, e->transform, e->name, e->components);
 	for (Component* c : e->components) {
 		c->entityID = id;
+		c->layer_index = freeCompLayers[c->layer].add(c);
 		c->Init(this);
 	}
 	operator delete(e);

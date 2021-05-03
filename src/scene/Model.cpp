@@ -84,10 +84,6 @@ std::vector<Vector2> Mesh::GenerateOutlinePoints(Matrix4 transform, Matrix4 proj
 	return outline;
 }
 
-inline Vector3 VertToVec3(const Vertex& v){
-	return Vector3(v.pos.x, v.pos.y, v.pos.z);
-}
-
 //TODO(sushi, Cl) move this to some utilities file eventually 
 template<class T>
 bool isthisin(T test, std::vector<T> vec) {

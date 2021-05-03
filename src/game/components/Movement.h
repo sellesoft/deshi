@@ -21,8 +21,12 @@ struct Movement : public Component {
 
 	MoveState moveState;
 
-	float gndAccel = 10;
-	float airAccel = 100;
+	float gndAccel = 150;
+	float airAccel = 1000;
+
+	float gndFriction = 100;
+
+	bool jump = false;
 
 	Movement(Physics* phys);
 

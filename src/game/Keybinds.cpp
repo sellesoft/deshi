@@ -83,17 +83,17 @@ void Keybinds::Init(){
 		{"MBLEFT", Key::MBLEFT}, {"MBRIGHT", Key:: MBRIGHT}, {"MBMIDDLE", Key:: MBMIDDLE}, {"MBFOUR", Key:: MBFOUR}, {" MBFIVE", Key:: MBFIVE}, {"MBSIX", Key:: MBSIX}, {"MBSEVEN", Key:: MBSEVEN}, {"MBEIGHT", Key:: MBEIGHT}, {"MBSCROLLDOWN", Key:: MBSCROLLDOWN}, {"MBSCROLLUP", Key:: MBSCROLLUP} 
 	};
 	
-	//read keys from keybinds.txt
+	//read keys from keybinds.cfg
 	std::fstream kf;
-	kf.open(deshi::dirConfig() + "keybinds.txt", std::fstream::in);
+	kf.open(deshi::dirConfig() + "keybinds.cfg", std::fstream::in);
 	if (kf.is_open()) { //file exists
 		ReloadKeybinds(kf);
 		kf.close();
 	}else{              //file doesnt exist
 		kf.close();
 		LOG("No keybinds file found, generating a new one in the cfg directory");
-		deshi::writeFile(deshi::dirConfig() + "keybinds.txt", default_keybinds.c_str(), default_keybinds.size());
-		kf.open(deshi::dirConfig() + "keybinds.txt", std::fstream::in);
+		deshi::writeFile(deshi::dirConfig() + "keybinds.cfg", default_keybinds.c_str(), default_keybinds.size());
+		kf.open(deshi::dirConfig() + "keybinds.cfg", std::fstream::in);
 		ReloadKeybinds(kf);
 		kf.close();
 	}
