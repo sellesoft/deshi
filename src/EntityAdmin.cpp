@@ -238,7 +238,7 @@ void EntityAdmin::Save(const char* filename) {
 	header.entityArrayOffset = sizeof(SaveHeader);
 	
 	//store sorted components and write entities
-	header.componentTypeCount = 8;
+	header.componentTypeCount = 9;
 	std::vector<AudioListener*>  compsAudioListener;
 	std::vector<AudioSource*>    compsAudioSource;
 	std::vector<BoxCollider*>    compsColliderBox;
@@ -247,6 +247,7 @@ void EntityAdmin::Save(const char* filename) {
 	std::vector<Light*>          compsLight;
 	std::vector<MeshComp*>       compsMeshComp;
 	std::vector<Physics*>        compsPhysics;
+	std::vector<Player*>         compsPlayer;
 	//TODO(delle,Cl) convert these vectors to char vectors and when iterating thru entities
 	// and thier components, call the save function of an entity to add to the components
 	// vector and then use the final size of that vector for type header offsets
@@ -266,7 +267,7 @@ void EntityAdmin::Save(const char* filename) {
 			}else if(dyncast(d, Physics, c)) {
 				compsPhysics.push_back(d);
 			}else if(dyncast(col, Collider, c)){
-				if (dyncast(d, BoxCollider, col)){
+				if      (dyncast(d, BoxCollider, col)){
 					compsColliderBox.push_back(d);
 				}else if(dyncast(d, AABBCollider, col)){
 					compsColliderAABB.push_back(d);
@@ -279,6 +280,8 @@ void EntityAdmin::Save(const char* filename) {
 				compsAudioListener.push_back(d);
 			}else if(dyncast(d, AudioSource, c)){
 				compsAudioSource.push_back(d);
+			}else if(dyncast(d, Player, c)){
+				compsPlayer.push_back(d);
 			}else{
 				ERROR("Unhandled component '", c->name, "' found when attempting to save");
 			}
@@ -357,6 +360,13 @@ void EntityAdmin::Save(const char* filename) {
 	typeHeader.count       = compsPhysics.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
+	//player
+	typeHeader.type        = ComponentType_Player;
+	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
+	typeHeader.size        = sizeof(u32) + sizeof(int);
+	typeHeader.count       = compsPlayer.size();
+	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
+	
 	//// write components ////
 	
 	//audio listener
@@ -398,21 +408,21 @@ void EntityAdmin::Save(const char* filename) {
 	
 	//light
 	for(auto c : compsLight){
-		file.write((const char*)&c->entityID,   sizeof(u32));
-		file.write((const char*)&c->position,   sizeof(Vector3));
-		file.write((const char*)&c->direction,  sizeof(Vector3));
-		file.write((const char*)&c->strength,   sizeof(float));
+		file.write((const char*)&c->entityID,  sizeof(u32));
+		file.write((const char*)&c->position,  sizeof(Vector3));
+		file.write((const char*)&c->direction, sizeof(Vector3));
+		file.write((const char*)&c->strength,  sizeof(float));
 	}
 	
 	//mesh comp
 	for(auto c : compsMeshComp){
 		b32 bool1 = c->mesh_visible;
 		b32 bool2 = c->ENTITY_CONTROL;
-		file.write((const char*)&c->entityID,       sizeof(u32));
-		file.write((const char*)&c->instanceID,     sizeof(u32));
-		file.write((const char*)&c->meshID,         sizeof(u32));
-		file.write((const char*)&bool1,             sizeof(b32));
-		file.write((const char*)&bool2,             sizeof(b32));
+		file.write((const char*)&c->entityID,   sizeof(u32));
+		file.write((const char*)&c->instanceID, sizeof(u32));
+		file.write((const char*)&c->meshID,     sizeof(u32));
+		file.write((const char*)&bool1,         sizeof(b32));
+		file.write((const char*)&bool2,         sizeof(b32));
 	}
 	
 	//physics
@@ -430,11 +440,11 @@ void EntityAdmin::Save(const char* filename) {
 		file.write((const char*)&isStatic,           sizeof(b32));
 	}
 	
-	//store camera's size so we know offset to following entities list then store camera
-	//int camsize = sizeof(*mainCamera);
-	//deshi::appendFileBinary(file, (const char*)&camsize, sizeof(int));
-	//deshi::appendFileBinary(file, (const char*)mainCamera, camsize);
-	
+	//player
+	for(auto c : compsPlayer){
+		file.write((const char*)&c->entityID, sizeof(u32));
+		file.write((const char*)&c->health,   sizeof(int));
+	}
 	
 	//finish header
 	file.seekp(0);

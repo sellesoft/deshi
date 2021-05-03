@@ -725,13 +725,16 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 			if(comp_collider){
 				switch(collider_type){
 					case ColliderType_Box:{
-						coll = new BoxCollider(collider_halfdims, physics_mass, 0, (collider_trigger) ? DengConsole->GetCommand(collider_command) : nullptr, collider_nocollide);
+						coll = new BoxCollider(collider_halfdims, physics_mass, 0, (collider_trigger) ?
+											   DengConsole->GetCommand(collider_command) : nullptr, collider_nocollide);
 					}break;
 					case ColliderType_AABB:{
-						coll = new AABBCollider(collider_halfdims, physics_mass, 0, (collider_trigger) ? DengConsole->GetCommand(collider_command) : nullptr, collider_nocollide);
+						coll = new AABBCollider(collider_halfdims, physics_mass, 0, (collider_trigger) ?
+												DengConsole->GetCommand(collider_command) : nullptr, collider_nocollide);
 					}break;
 					case ColliderType_Sphere:{
-						coll = new SphereCollider(collider_radius, physics_mass, 0, (collider_trigger) ? DengConsole->GetCommand(collider_command) : nullptr, collider_nocollide);
+						coll = new SphereCollider(collider_radius, physics_mass, 0, (collider_trigger) ?
+												  DengConsole->GetCommand(collider_command) : nullptr, collider_nocollide);
 					}break;
 				}
 			}
@@ -765,7 +768,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 		if(Combo("##preset_combo", &current_preset, presets, IM_ARRAYSIZE(presets))){ WinHovCheck;
 			switch(current_preset){
 				case(0):default:{
-					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_light = comp_physics = false;
+					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_light = comp_physics = comp_player = false;
 					collider_type = ColliderType_NONE;
 					collider_halfdims = Vector3::ONE;
 					collider_radius  = 1.f;
@@ -778,7 +781,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					cpystr(entity_name, TOSTRING("default", entity_id).c_str(), 63);
 				}break;
 				case(1):{
-					comp_audiolistener = comp_audiosource = comp_light = false;
+					comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
 					comp_collider = comp_mesh = comp_physics = true;
 					collider_type = ColliderType_AABB;
 					collider_halfdims = Vector3::ONE;
@@ -787,7 +790,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					cpystr(entity_name, TOSTRING("aabb", entity_id).c_str(), 63);
 				}break;
 				case(2):{
-					comp_audiolistener = comp_audiosource = comp_light = false;
+					comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
 					comp_collider = comp_mesh = comp_physics = true;
 					collider_type = ColliderType_Box;
 					collider_halfdims = Vector3::ONE;
@@ -796,7 +799,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					cpystr(entity_name, TOSTRING("box", entity_id).c_str(), 63);
 				}break;
 				case(3):{
-					comp_audiolistener = comp_audiosource = comp_light = false;
+					comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
 					comp_collider = comp_mesh = comp_physics = true;
 					collider_type = ColliderType_Sphere;
 					collider_radius = 1.f;
@@ -805,7 +808,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					cpystr(entity_name, TOSTRING("sphere", entity_id).c_str(), 63);
 				}break;
 				case(4):{
-					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = comp_light = false;
+					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = comp_light = comp_player = false;
 					comp_2d = true;
 					twod_id = -1;
 					twod_type = 2;
@@ -823,6 +826,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					collider_halfdims = vec3(1, 2, 1);
 					mesh_id = DengRenderer->GetBaseMeshID("bmonkey.obj");
 					physics_staticPosition = physics_staticRotation = false;
+					physics_elasticity = 0.f;
 					cpystr(entity_name, "player", 63);
 				}break;
 			}

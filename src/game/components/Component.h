@@ -31,18 +31,19 @@ struct ComponentTypeHeader{
 
 enum ComponentTypeBits : u32{
 	ComponentType_NONE           = 0,
-	ComponentType_MeshComp       = 1 << 0,
-	ComponentType_Physics        = 1 << 1, 
-	ComponentType_ColliderBox    = 1 << 2, //TODO(delle,Cl) consolidate these to one collider since we have ColliderType now
-	ComponentType_ColliderAABB   = 1 << 3,
-	ComponentType_ColliderSphere = 1 << 4,
-	ComponentType_AudioListener  = 1 << 5,
-	ComponentType_AudioSource    = 1 << 6,
-	ComponentType_Camera         = 1 << 7,
-	ComponentType_Light          = 1 << 8,
-	ComponentType_OrbManager     = 1 << 9,
+	ComponentType_MeshComp       = 1 <<  0,
+	ComponentType_Physics        = 1 <<  1, 
+	ComponentType_ColliderBox    = 1 <<  2, //TODO(delle,Cl) consolidate these to one collider since we have ColliderType now
+	ComponentType_ColliderAABB   = 1 <<  3,
+	ComponentType_ColliderSphere = 1 <<  4,
+	ComponentType_AudioListener  = 1 <<  5,
+	ComponentType_AudioSource    = 1 <<  6,
+	ComponentType_Camera         = 1 <<  7,
+	ComponentType_Light          = 1 <<  8,
+	ComponentType_OrbManager     = 1 <<  9,
 	ComponentType_Door           = 1 << 10,
-	ComponentType_LAST = 0xFFFFFFFF,
+	ComponentType_Player         = 1 << 11,
+	ComponentType_LAST        = 0xFFFFFFFF,
 }; typedef u32 ComponentType;
 
 struct Component : public Receiver {

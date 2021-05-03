@@ -42,9 +42,9 @@ struct EntityAdmin {
 	Controller  controller;
 	UndoManager undoManager;
 	
-	Entity* player;
 	Camera* editorCamera;
 	Camera* mainCamera;
+	Entity* player;
 	Entity* selectedEntity;
 	
 	std::vector<Entity> entities;
@@ -140,9 +140,25 @@ struct Entity {
 		return t;
 	}
 };
+/*
+struct Player;
+struct Movement;
+struct AudioListener;
+struct Collider;
+struct MeshComp;
+struct Physics;
 
+struct PlayerEntity : public Entity{
+	Player* player;
+	Movement* movement;
+	AudioListener* listener;
+	Collider* collider;
+	MeshComp* mesh;
+	Physics* physics;
+};
+*/
 //global admin pointer
 extern EntityAdmin* g_admin;
-inline Entity& EntityAt(u32 id) { return g_admin->entities[id]; }
+#define EntityAt(id) g_admin->entities[id]
 
 #endif
