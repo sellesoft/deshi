@@ -85,11 +85,11 @@ inline void PlayerMovement(EntityAdmin* admin, MovementMode mode, Movement* play
 		if (DengInput->KeyPressed(DengKeys.movementJump | INPUTMOD_ANY)
 			&& playermove->moveState == OnGround)                       { playermove->jump = true; }
 		
-		if (playermove) {
+		if (playermove && admin->player) {
 			playermove->inputs = inputs.normalized();
 			camera->position = admin->player->transform.position + Vector3::ONE;
 		}else{
-			ERROR_LOC("Playermovement pointer is null");
+			ERROR_LOC("Playermovement/player pointer is null");
 		}
 	}
 }

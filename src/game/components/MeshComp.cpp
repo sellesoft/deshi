@@ -114,10 +114,6 @@ std::vector<char> MeshComp::Save() {
 
 void MeshComp::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF;
-	u32 instanceID = -1;
-	u32 meshID = -1;
-	b32 visible = 0;
-	b32 entity_control = 0;
 	for_n(i,count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); 
 		cursor += sizeof(u32);
@@ -127,18 +123,15 @@ void MeshComp::Load(std::vector<Entity>& entities, const char* data, u32& cursor
 			continue;
 		}
 		
-		memcpy(&instanceID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
-		memcpy(&meshID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
-		memcpy(&visible, data+cursor, sizeof(b32)); cursor += sizeof(b32);
-		memcpy(&entity_control, data+cursor, sizeof(b32)); cursor += sizeof(b32);
-		
 		MeshComp* mc = new MeshComp();
-		mc->mesh = DengRenderer->GetMeshPtr(meshID);
-		mc->instanceID = instanceID;
-		mc->meshID = meshID;
-		mc->mesh_visible = visible;
-		mc->ENTITY_CONTROL = entity_control;
+		memcpy(&mc->instanceID,     data+cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&mc->meshID,         data+cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&mc->mesh_visible,   data+cursor, sizeof(b32)); cursor += sizeof(b32);
+		memcpy(&mc->ENTITY_CONTROL, data+cursor, sizeof(b32)); cursor += sizeof(b32);
+		mc->mesh = DengRenderer->GetMeshPtr(mc->meshID);
 		entities[entityID].AddComponent(mc);
+		DengRenderer->UpdateMeshVisibility(mc->meshID, mc->mesh_visible);
+		DengRenderer->UpdateMeshMatrix(mc->meshID, entities[entityID].transform.TransformMatrix());
 	}
 }
 
