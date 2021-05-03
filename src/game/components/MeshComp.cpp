@@ -91,6 +91,7 @@ bool isthisin(T test, std::vector<T> vec) {
 
 void MeshComp::Init(EntityAdmin* a) {
 	admin = a;
+	mesh  = DengRenderer->GetMeshPtr(meshID);
 }
 
 void MeshComp::Update() {
@@ -128,10 +129,8 @@ void MeshComp::Load(std::vector<Entity>& entities, const char* data, u32& cursor
 		memcpy(&mc->meshID,         data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		memcpy(&mc->mesh_visible,   data+cursor, sizeof(b32)); cursor += sizeof(b32);
 		memcpy(&mc->ENTITY_CONTROL, data+cursor, sizeof(b32)); cursor += sizeof(b32);
-		mc->mesh = DengRenderer->GetMeshPtr(mc->meshID);
 		entities[entityID].AddComponent(mc);
 		DengRenderer->UpdateMeshVisibility(mc->meshID, mc->mesh_visible);
-		DengRenderer->UpdateMeshMatrix(mc->meshID, entities[entityID].transform.TransformMatrix());
 	}
 }
 
