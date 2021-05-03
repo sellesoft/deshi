@@ -96,7 +96,7 @@ struct Physics : public Component {
 	Vector3 inputVector = Vector3::ZERO;
 	
 	bool isStatic = false;
-	b32 staticRotation = false;
+	bool staticRotation = false;
 	//TODO(delle,Ph) separate static movement and rotation
 	bool twoDphys = false;
 	poly* twoDpolygon = nullptr;

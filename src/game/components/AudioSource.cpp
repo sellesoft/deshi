@@ -8,6 +8,7 @@ AudioSource::AudioSource() {
 	//empty version for adding component through command
 	cpystr(name, "AudioSource", 63);
 	layer = ComponentLayer_Sound;
+	comptype = ComponentType_AudioSource;
 }
 
 AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, float gain, float pitch) {
@@ -26,6 +27,7 @@ AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, fl
 	
 	cpystr(name, "AudioSource", 63);
 	layer = ComponentLayer_Sound;
+	comptype = ComponentType_AudioSource;
 }
 
 void AudioSource::RequestPlay(float gain, float pitch) {

@@ -9,6 +9,7 @@ Movement::Movement(Physics* phys) {
 	phys->kineticFricCoef = 1;
 	phys->fricOverride = true;
 	layer = ComponentLayer_Physics;
+	comptype = ComponentType_Movement;
 	cpystr(name, "Movement", 63);
 }
 
@@ -40,7 +41,7 @@ void Movement::Update() {
 		if (phys->velocity != Vector3::ZERO) {
 			PRINTLN(phys->velocity.mag());
 			if (phys->velocity.mag() > 0.12)
-				phys->AddFrictionForce(nullptr, 10);
+				phys->AddFrictionForce(nullptr, 5);
 			else
 				phys->velocity = Vector3::ZERO;
 		}

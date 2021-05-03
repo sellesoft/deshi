@@ -2,6 +2,7 @@
 
 Door::Door(b32 isOpen){
 	this->isOpen = isOpen;
+	comptype = ComponentType_Door;
 }
 
 void Door::ReceiveEvent(Event event){

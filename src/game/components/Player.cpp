@@ -5,6 +5,7 @@
 
 Player::Player(Movement* movement) {
 	layer = ComponentLayer_Physics;
+	comptype = ComponentType_Player;
 	this->movement = movement;
 	cpystr(name, "Player", 63);
 

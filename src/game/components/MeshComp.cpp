@@ -16,6 +16,7 @@ MeshComp::MeshComp() {
 	cpystr(name, "MeshComp", 63);
 	send = new Sender();
 	layer = ComponentLayer_Canvas;
+	comptype = ComponentType_MeshComp;
 }
 
 MeshComp::MeshComp(u32 meshID, u32 instanceID) {
@@ -26,6 +27,7 @@ MeshComp::MeshComp(u32 meshID, u32 instanceID) {
 	cpystr(name, "MeshComp", 63);
 	send = new Sender();
 	layer = ComponentLayer_Canvas;
+	comptype = ComponentType_MeshComp;
 }
 
 MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
@@ -36,6 +38,7 @@ MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
 	cpystr(name, "MeshComp", 63);
 	send = new Sender();
 	layer = ComponentLayer_Canvas;
+	comptype = ComponentType_MeshComp;
 }
 
 MeshComp::~MeshComp() {

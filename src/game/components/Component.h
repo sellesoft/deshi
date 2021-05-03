@@ -30,18 +30,22 @@ struct ComponentTypeHeader{
 };
 
 enum ComponentTypeBits : u32{
-	ComponentType_NONE           = 0,
-	ComponentType_MeshComp       = 1 << 0,
-	ComponentType_Physics        = 1 << 1, 
-	ComponentType_ColliderBox    = 1 << 2, //TODO(delle,Cl) consolidate these to one collider since we have ColliderType now
-	ComponentType_ColliderAABB   = 1 << 3,
-	ComponentType_ColliderSphere = 1 << 4,
-	ComponentType_AudioListener  = 1 << 5,
-	ComponentType_AudioSource    = 1 << 6,
-	ComponentType_Camera         = 1 << 7,
-	ComponentType_Light          = 1 << 8,
-	ComponentType_OrbManager     = 1 << 9,
-	ComponentType_Door           = 1 << 10,
+	ComponentType_NONE              = 0,
+	ComponentType_MeshComp          = 1 << 0,
+	ComponentType_Physics           = 1 << 1, 
+	ComponentType_Collider          = 1 << 2, //TODO(delle,Cl) consolidate these to one collider since we have ColliderType now
+	ComponentType_ColliderBox       = 1 << 3, //TODO(delle,Cl) consolidate these to one collider since we have ColliderType now
+	ComponentType_ColliderAABB      = 1 << 4,
+	ComponentType_ColliderSphere    = 1 << 5,
+	ComponentType_ColliderLandscape = 1 << 6,
+	ComponentType_AudioListener     = 1 << 7,
+	ComponentType_AudioSource       = 1 << 8,
+	ComponentType_Camera            = 1 << 9,
+	ComponentType_Light             = 1 << 10,
+	ComponentType_OrbManager        = 1 << 11,
+	ComponentType_Door              = 1 << 12,
+	ComponentType_Player            = 1 << 13,
+	ComponentType_Movement          = 1 << 14,
 	ComponentType_LAST = 0xFFFFFFFF,
 }; typedef u32 ComponentType;
 
@@ -49,7 +53,10 @@ struct Component : public Receiver {
 	EntityAdmin* admin = 0;
 	u32 entityID = -1;
 	char name[64];
-	
+	ComponentType comptype;
+
+
+
 	//sender for outputting events to a list of receivers
 	Sender* send = nullptr;
 	

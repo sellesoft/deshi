@@ -8,6 +8,7 @@ Light::Light(const Vector3& position, const Vector3& direction, float strength) 
 	this->direction = direction;
 	this->strength = strength;
 	cpystr(name, "Light", 63);
+	comptype = ComponentType_Light;
 }
 
 

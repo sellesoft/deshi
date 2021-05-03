@@ -15,6 +15,7 @@ Physics::Physics() {
 	
 	cpystr(name, "Physics", 63);
 	layer = SystemLayer_Physics;
+	comptype = ComponentLayer_Physics;
 }
 
 Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy,

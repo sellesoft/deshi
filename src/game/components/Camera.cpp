@@ -24,6 +24,7 @@ Camera::Camera(float fov, float nearZ, float farZ, bool freeCam){
 	
 	cpystr(name, "Camera", 63);
 	layer = ComponentLayer_NONE;
+	comptype = ComponentType_Camera;
 }
 
 void Camera::UseOrthographicProjection() {

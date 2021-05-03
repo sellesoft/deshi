@@ -299,21 +299,99 @@ void CanvasSystem::MenuBar() {
 
 inline void ComponentsMenu(Entity* sel) {
 	using namespace ImGui;
-	
+	int tree_flags = ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_NoAutoOpenOnLog;
 	SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
 	if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 100), true)) { WinHovCheck;
-		if (ImGui::BeginTable("SelectedComponents", 1)) {
-			ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
+		//if (ImGui::BeginTable("SelectedComponents", 1)) {
+			//ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
 			for (Component* c : sel->components) {
-				TableNextColumn(); //TableNextRow();
-				SetPadding; Text(c->name);
-				SameLine(CalcItemWidth() + 20);
-				if (Button("Del")) {
-					sel->RemoveComponent(c);
+				switch (c->comptype) {
+					case ComponentType_Physics:
+						if (TreeNodeEx("Physics", tree_flags)) {
+							dyncast(d, Physics, c);
+							Text("Velocity     "); SameLine(); InputVector3("phys_vel", &d->velocity);             Separator();
+							Text("Accelertaion "); SameLine(); InputVector3("phys_accel", &d->acceleration);       Separator();
+							Text("Rot Velocity "); SameLine(); InputVector3("phys_rotvel", &d->rotVelocity);       Separator();
+							Text("Rot Accel    "); SameLine(); InputVector3("phys_rotaccel", &d->rotAcceleration); Separator();
+							Text("Elasticity   "); SameLine(); InputFloat("phys_elastic", &d->elasticity);         Separator();
+							Text("Mass         "); SameLine(); InputFloat("phys_mass", &d->mass);                  Separator();
+							Checkbox("Static Position", &d->isStatic);                                             Separator();
+							Checkbox("Static Rotation", &d->staticRotation);
+							TreePop();
+							break;
+						}
+					case ComponentType_Collider: {
+						dyncast(col, Collider, c);
+						switch (col->type) {
+							case ColliderType_Box: {
+								if (TreeNodeEx("Box Collider", tree_flags)) {
+									dyncast(d, BoxCollider, col);
+									Text("Half Dims    "); SameLine(); InputVector3("coll_halfdims", &d->halfDims);
+									TextWrapped("TODO sushi implement collider commands/events menu");
+									TreePop();
+									break;
+								}
+								break;
+							}
+							case ColliderType_AABB: {
+								if (TreeNodeEx("AABB Collider", tree_flags)) {
+									dyncast(d, AABBCollider, col);
+									Text("Half Dims    "); SameLine(); InputVector3("coll_halfdims", &d->halfDims);
+									TextWrapped("TODO sushi implement collider commands/events menu");
+									TreePop();
+									break;
+								}
+								break;
+							}
+							case ColliderType_Sphere: {
+								if (TreeNodeEx("Sphere Collider", tree_flags)) {
+									dyncast(d, SphereCollider, col);
+									Text("Radius       "); SameLine(); InputFloat("coll_radius", &d->radius);
+									TextWrapped("TODO sushi implement collider commands/events menu");
+									TreePop();
+									break;
+								}
+								break;
+							}
+						}
+						
+						break;
+					}
+					case ComponentType_AudioListener:
+						if (TreeNodeEx("Audio Listener", tree_flags)) {
+							Text("TODO sushi implement audio listener editing");
+							TreePop();
+						}
+						break;
+
+					case ComponentType_AudioSource:
+						if (TreeNodeEx("Audio Source", tree_flags)) {
+							Text("TODO sushi implement audio source editing");
+							TreePop();
+						}
+						break;
+					case ComponentType_Light:
+						if (TreeNodeEx("Light", tree_flags)) {
+							dyncast(d, Light, c);
+							Text("Strength     "); SameLine(); InputFloat("strength", &d->strength); Separator();
+							Text("Position     "); SameLine(); InputVector3("position", &d->position); Separator();
+							Text("Direction    "); SameLine(); InputVector3("direction", &d->direction); Separator();
+
+						
+							TreePop();
+						}
+						break;
 				}
+
+				//TableNextColumn(); //TableNextRow();
+				//SetPadding; Text(c->name);
+				//SameLine(CalcItemWidth() + 20);
+				//if (Button("Del")) {
+				//	sel->RemoveComponent(c);
+				//}
 			}
-			ImGui::EndTable();
-		}
+			//ImGui::EndTable();
+		
 		EndChild();
 	}
 }
@@ -904,11 +982,11 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), color, 3.f);
 				}break;
 				case(Twod_Triangle):{
-					draw_list->AddTriangle(ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
+					draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
 				}break;
 				case(Twod_Square):{
-					draw_list->AddTriangle(ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
-					draw_list->AddTriangle(ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), ImVec2(entity_pos.x+twod_verts[3].x, entity_pos.y+twod_verts[3].y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
+					draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
+					draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[2].x, entity_pos.y+twod_verts[2].y), ImVec2(entity_pos.x+twod_verts[3].x, entity_pos.y+twod_verts[3].y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
 				}break;
 				case(Twod_NGon):{
 					draw_list->AddNgon(ImVec2(entity_pos.x, entity_pos.y), twod_radius, color, twod_vert_count, 3.f);
