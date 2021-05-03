@@ -64,10 +64,12 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	bool contactStationary = false;
 	for (auto c : t.physics->contacts) {
 		if (c.second == ContactMoving) {
-			if(!t.physics->fricOverride && t.physics->velocity.mag() > 0.12)
-				t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
-			else
-				t.physics->velocity = Vector3::ZERO;
+			if (!t.physics->fricOverride) {
+				if (t.physics->velocity.mag() > 0.12)
+					t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
+				else 
+					t.physics->velocity = Vector3::ZERO;
+			}
 			contactMoving = true;
 		}
 		else if (c.second == ContactStationary) contactStationary = true;
@@ -207,12 +209,11 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			float j = -(1 + (obj1->elasticity + obj2->elasticity) / 2) * vAlongNorm;
 			j /= 1 / obj1->mass + 1 / obj2->mass;
 			
-			Vector2 impulse = j * norm;
+			Vector3 impulse = j * norm;
 			if (!obj1->isStatic) obj1->velocity -= impulse / obj1->mass;
 			if (!obj2->isStatic) obj2->velocity += impulse / obj2->mass;
 			//PRINTLN(obj2->velocity.mag());
 
-			
 			if (obj1->velocity.x != 0 || obj1->velocity.z != 0) {
 				obj1->contacts[obj2] = ContactMoving;
 			}

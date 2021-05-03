@@ -129,8 +129,24 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 	
 	if(!DengConsole->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE){
 		if(admin->state == GameState_Play || admin->state == GameState_Debug){
-			camera->rotation.y += (DengInput->mouseX - DengWindow->centerX) * sens*MOUSE_SENS_FRACTION;
-			camera->rotation.x += (DengInput->mouseY - DengWindow->centerY) * sens*MOUSE_SENS_FRACTION;
+			static bool debugmouse = false;
+
+			if (!debugmouse) {
+				camera->rotation.y += (DengInput->mouseX - DengWindow->centerX) * sens * MOUSE_SENS_FRACTION;
+				camera->rotation.x += (DengInput->mouseY - DengWindow->centerY) * sens * MOUSE_SENS_FRACTION;
+			}
+
+			if (DengInput->KeyPressed(Key::F1)) {
+				if (debugmouse) {
+					DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
+					debugmouse = false;
+				}
+				else {
+					DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+					debugmouse = true;
+				}
+			}
+		
 		}
 		else if(admin->state == GameState_Editor){
 			if(DengInput->KeyPressed(MouseButton::RIGHT | INPUTMOD_ANY)){

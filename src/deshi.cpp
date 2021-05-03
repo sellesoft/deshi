@@ -135,12 +135,10 @@ ____like what were currently doing for typeHeader in EntityAdmin Save()
 
 Bug Board
 ---------
-dragging the console scroll bar doesn't work
 after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and 
 ____the batchArray size of whatever mesh its checking is something like 400000000000
 	____it looks like some sort of corrupt mesh makes its way in there somehow?
 look into scaling not rotating (scaling is probably being done in world not local)
-console scrolls past top and bottom
 sometimes MeshComp is assigned a nonexistant mesh
 ____temp fix by checking if minimized, but need to find root cause
 program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)

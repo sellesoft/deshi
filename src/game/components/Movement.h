@@ -24,6 +24,8 @@ struct Movement : public Component {
 	float gndAccel = 150;
 	float airAccel = 1000;
 
+	float maxWalkingSpeed = 12;
+
 	bool jump = false;
 
 	Movement(Physics* phys);
