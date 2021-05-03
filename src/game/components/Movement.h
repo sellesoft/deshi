@@ -21,7 +21,7 @@ struct Movement : public Component {
 
 	MoveState moveState;
 
-	float gndAccel = 20;
+	float gndAccel = 100;
 	float airAccel = 1000;
 
 	float maxWalkingSpeed = 12;

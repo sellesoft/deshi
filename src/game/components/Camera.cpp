@@ -178,7 +178,7 @@ void Camera::Update() {
 			wheight = window->height;
 			UpdateProjectionMatrix();
 		}
-		
+
 		renderer->UpdateCameraViewMatrix(viewMat);
 		renderer->UpdateCameraPosition(position);
 		

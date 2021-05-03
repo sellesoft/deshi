@@ -57,6 +57,7 @@ look into adding volk for faster loading/function calls
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
 multi-threaded command buffers, shader loading, image loading
 find a way to forward declare vulkan stuff and move the include to the cpp
+SSBOs in shaders so we can pass variable length arrays to it 
 
 Level Editor TODOs
 ------------------
@@ -123,6 +124,8 @@ ____sort of how we had before with BufferLog so you can see it without opening c
 
 Math TODOs
 ----------
+add functions and members similar to what glsl/glm has where you can do stuff like 
+____v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
 cleanup math library (remove redundant/old things, make functions more consistent, etc.)
 add quaternions and converions between them and other linear algebra primitives
 replace glm :)

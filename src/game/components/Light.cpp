@@ -3,17 +3,18 @@
 #include "../../EntityAdmin.h"
 #include "../../core.h"
 
-Light::Light(const Vector3& position, const Vector3& direction, float strength) {
+Light::Light(const Vector3& position, const Vector3& direction, float brightness) {
 	this->position = position;
 	this->direction = direction;
-	this->strength = strength;
+	this->brightness = brightness;
 	cpystr(name, "Light", 63);
 	comptype = ComponentType_Light;
+	layer = ComponentLayer_Physics;
 }
 
 
 void Light::Update() {
-	
+	position = entity->transform.position;
 }
 
 void Light::ReceiveEvent(Event event) {

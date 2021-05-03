@@ -96,12 +96,10 @@ void MeshComp::Init(EntityAdmin* a) {
 
 void MeshComp::Update() {
 	ASSERT(mesh->vertexCount, "Mesh has no vertices");
-	if (g_admin->selectedEntity) {
-		if (g_admin->selectedEntity == &admin->entities[entityID]) {
-			std::vector<Vector2> outline = mesh->GenerateOutlinePoints(admin->entities[entityID].transform.TransformMatrix(), DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, admin->mainCamera->position);
-			for (int i = 0; i < outline.size(); i += 2) {
-				ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
-			}
+	if (g_admin->selectedEntity == &admin->entities[entityID]) {
+		std::vector<Vector2> outline = mesh->GenerateOutlinePoints(admin->entities[entityID].transform.TransformMatrix(), DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, admin->mainCamera->position);
+		for (int i = 0; i < outline.size(); i += 2) {
+			ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
 		}
 	}
 

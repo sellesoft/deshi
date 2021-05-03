@@ -55,7 +55,7 @@ struct Component : public Receiver {
 	char name[64];
 	ComponentType comptype;
 
-
+	Entity* entity;
 
 	//sender for outputting events to a list of receivers
 	Sender* send = nullptr;
