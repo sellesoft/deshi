@@ -635,7 +635,6 @@ void Entity::AddComponent(Component* c) {
 	c->entityID = id;
 	c->admin = this->admin;
 	if(admin){
-		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 		c->Init(admin);
 	}
 }
@@ -648,7 +647,6 @@ void Entity::AddComponents(std::vector<Component*> comps) {
 		c->entityID = id;
 		c->admin = this->admin;
 		if(admin){
-			c->layer_index = admin->freeCompLayers[c->layer].add(c);
 			c->Init(admin);
 		}
 	}

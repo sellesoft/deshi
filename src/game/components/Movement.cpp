@@ -24,8 +24,23 @@ void Movement::Update() {
 		ImGui::DebugDrawText("in air", DengWindow->dimensions / 2);
 	}
 
-	if(moveState != InAir)
-		phys->acceleration += inputs * gndAccel;
+
+	if (moveState == OnGround) {
+		phys->velocity += inputs * gndAccel * DengTime->deltaTime;
+		//float projVel = phys->velocity.dot(inputs);
+		//
+		//if (projVel < maxWalkingSpeed - DengTime->deltaTime * gndAccel) {
+		//	phys->velocity += DengTime->fixedDeltaTime * gndAccel * inputs;
+		//}
+		//else if (maxWalkingSpeed - DengTime->deltaTime * gndAccel <= projVel && projVel < maxWalkingSpeed){
+		//	phys->velocity += (maxWalkingSpeed - phys->velocity.mag() * cosf(Math::AngBetweenVectors(phys->velocity, inputs))) * inputs;
+		//}
+	}
+	//else
+	//	phys->acceleration += Accelerate(inputs, phys->velocity, airAccel, maxWalkingSpeed);
+
+
+
 
 	//TODO(sushi) implement more Source-like speed limiting later
 	if (moveState == OnGround && phys->velocity.mag() > maxWalkingSpeed) {
