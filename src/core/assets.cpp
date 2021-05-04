@@ -42,13 +42,13 @@ std::vector<char> deshi::
 readFile(const std::string& filepath, u32 chars) {
 	std::ifstream file(filepath, std::ios::ate);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
+	defer{ file.close(); };
 	
 	if(chars == 0){ chars = u32(file.tellg()); }
 	
 	std::vector<char> buffer(chars);
 	file.seekg(0);
 	file.read(buffer.data(), chars);
-	file.close();
 	
 	return buffer;
 }
@@ -57,12 +57,12 @@ std::vector<char> deshi::
 readFileBinary(const std::string& filepath, u32 bytes) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
+	defer{ file.close(); };
 	
 	if(bytes == 0){ bytes = u32(file.tellg()); }
 	std::vector<char> buffer(bytes);
 	file.seekg(0);
 	file.read(buffer.data(), bytes);
-	file.close();
 	
 	return buffer;
 }
@@ -71,110 +71,95 @@ void deshi::
 writeFile(const std::string& filepath, std::vector<char>& data, u32 chars){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	defer{ file.close(); };
 	
 	if(chars == 0){ chars = data.size(); }
-	
 	file.write(reinterpret_cast<const char*>(data.data()), chars);
-	file.close();
 }
 
 void deshi::
 writeFile(const std::string& filepath, const char* data, u32 chars){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	defer{ file.close(); };
 	
 	file.write(data, chars);
-	file.close();
 }
 
 void deshi::
 appendFile(const std::string& filepath, std::vector<char>& data, u32 chars){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	defer{ file.close(); };
 	
 	if(chars == 0){ chars = data.size(); }
-	
 	file.write(reinterpret_cast<const char*>(data.data()), chars);
-	file.close();
 }
 
 void deshi::
 appendFile(const std::string& filepath, const char* data, u32 chars){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	defer{ file.close(); };
 	
 	file.write(data, chars);
-	file.close();
 }
 
 void deshi::
 writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	defer{ file.close(); };
 	
 	if(bytes == 0){ bytes = data.size(); }
-	
 	file.write(reinterpret_cast<const char*>(data.data()), bytes);
-	file.close();
 }
 
 void deshi::
 writeFileBinary(const std::string& filepath, const char* data, u32 bytes){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	defer{ file.close(); };
 	
 	file.write(data, bytes);
-	file.close();
 }
 
 void deshi::
 appendFileBinary(const std::string& filepath, const char* data, u32 bytes){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::app);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	defer{ file.close(); };
 	
 	file.write(data, bytes);
-	file.close();
 }
 
 std::map<std::string, std::string> deshi::
 extractConfig(const std::string& filepath) {
 	std::map<std::string, std::string> out;
 	
-	std::fstream in;
-	in.open(deshi::dirConfig() + filepath, std::fstream::in);
+	std::fstream in(deshi::dirConfig() + filepath, std::fstream::in);
+	if(!in.is_open()){ ERROR("Failed to open file: ", filepath); out.emplace("FileNotFound", ""); return out; }
+	defer{ in.close(); };
 	
-	if (in.is_open()) {
+	std::regex r = std::regex("([A-Za-z]+) += +(.+)");
+	int line = 0;
+	char* c = (char*)malloc(255);
+	while (!in.eof()) {
+		in.getline(c, 255);
+		std::string s(c);
 		
-		std::regex r = std::regex("([A-Za-z]+) += +(.+)");
-		int line = 0;
-		while (!in.eof()) {
-			char* c = (char*)malloc(255);
-			in.getline(c, 255);
-			
-			std::string s(c);
-			
-			if (s[0] == '>') { line++; continue; }
-			
-			std::smatch m;
-			
-			std::regex_match(s, m, r);
-			
-			if (m.size() == 1) {
-				ERROR_LOC(m[1], "\nConfig regex did not find a match for the string above.");
-				line++;
-				continue;
-			}
-			
-			out.emplace(m[1], m[2]);
-			
+		if (s[0] == '>') { line++; continue; }
+		
+		std::smatch m;
+		std::regex_match(s, m, r);
+		if (m.size() == 1) {
+			ERROR_LOC(m[1], "\nConfig regex did not find a match for the string above.");
+			line++;
+			continue;
 		}
+		out.emplace(m[1], m[2]);
 	}
-	else {
-		out.emplace("FileNotFound", "");
-	}
-	
 	return out;
-	
 }
 
 std::vector<std::string> deshi::
