@@ -8,7 +8,7 @@
 struct Light : public Component {
 	Vector3 position;
 	Vector3 direction;
-	float strength;
+	float brightness;
 
 	bool active = true;
 

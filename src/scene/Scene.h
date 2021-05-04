@@ -2,6 +2,7 @@
 #ifndef DESHI_SCENE_H
 #define DESHI_SCENE_H
 
+#include "../math/Math.h"
 #include "Model.h"
 #include <glm/gtc/type_ptr.hpp>
 
@@ -12,7 +13,7 @@ struct RenderedEdge3D;
 
 struct Scene{
 	std::vector<Model>   models;
-	std::vector<Light*>  lights;
+	std::vector<Light*> lights;
 	std::vector<RenderedEdge3D*> lines;
 	
 	void Init();
@@ -34,7 +35,7 @@ inline void Scene::Reset(){
 	models.clear();
 	lights.clear();
 	lines.clear();
-	
+
 	Init();
 }
 

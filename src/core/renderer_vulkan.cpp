@@ -1750,7 +1750,7 @@ UpdateUniformBuffer(){
 		shaderData.values.time = time->totalTime;
 		shaderData.values.width = (glm::f32)extent.width;
 		shaderData.values.height = (glm::f32)extent.height;
-		shaderData.values.lightPos = glm::vec4(1.0f, -3.f, -1.0f, 1.0f);
+		std::copy(lights, lights + 10, shaderData.values.lights);
 		shaderData.values.mousepos = glm::vec2(input->mousePos.x, input->mousePos.y);
 		
 		//get point projected out from mouse 

@@ -381,8 +381,8 @@ inline void ComponentsMenu(Entity* sel) {
 					case ComponentType_Light:
 						if (TreeNodeEx("Light", tree_flags)) {
 							dyncast(d, Light, c);
-							Text("Strength     "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-							InputFloat("strength", &d->strength); Separator();
+							Text("Brightness   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+							InputFloat("brightness", &d->brightness); Separator();
 							Text("Position     "); SameLine(); InputVector3("position", &d->position); Separator();
 							Text("Direction    "); SameLine(); InputVector3("direction", &d->direction); Separator();
 

@@ -6,6 +6,11 @@ layout(set = 0, binding = 0) uniform UniformBufferObject{
 	mat4 proj;
 	vec4 lightPos;
 	vec4 viewPos;
+	float time;         
+	float width;		
+	float height;	  
+	vec2 mousepos;    
+	vec3 mouseRay;   
 } ubo;
 
 layout(push_constant) uniform PushConsts{
@@ -25,7 +30,35 @@ layout(location = 4) out float outLightBrightness;
 layout(location = 5) out vec3 outWorldPos;
 layout(location = 6) out vec3 viewPosition;
 
+
+mat4 translation(vec3 t){
+	return mat4(
+	1, 0, 0, t.x,
+	0, 1, 0, t.y,
+	0, 0, 1, t.z,
+	0, 0, 0, 1);
+}
+
 void main() {
+
+	vec3 mp = vec3(ubo.mousepos, -1);
+
+	mp.xy *= 2 * vec2(ubo.width, ubo.height);
+
+	mp.xy -= 1.f;
+
+	vec4 mp4 = inverse(ubo.proj) * (inverse(ubo.view) * vec4(mp, 1));
+	mp4.xyz /= mp4.w;
+
+	mp = mp4.xyz;
+
+	mp = vec3(translation(ubo.viewPos.xyz) * vec4(mp, 1));
+
+	mp = normalize(mp);
+
+	mp *= 1000;
+
+	mp = vec3(inverse(translation(ubo.viewPos.xyz)) * vec4(mp, 1));
 
 	viewPosition = (ubo.view * primitive.model * vec4(inPosition.xyz, 1.0)).xyz;
     gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);

@@ -85,7 +85,7 @@ void EntityAdmin::Update() {
 	if(!skip) mainCamera->Update();
 	
 	TIMER_RESET(t_a); 
-	if (!skip && !pause_phys && !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_Physics]); }
+	if (!skip && !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_Physics]); }
 	DengTime->physLyrTime =   TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_phys && !paused)  { physics.Update(); }
 	DengTime->physSysTime =   TIMER_END(t_a); TIMER_RESET(t_a);
@@ -121,13 +121,29 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed
 		for(Component* c : e->components){ 
 			c->entityID = entities.size()-1;
 			c->layer_index = freeCompLayers[c->layer].add(c);
+			if (c->comptype == ComponentType_Light) {
+				dyncast(d, Light, c);
+				scene.lights.push_back(d);
+			}
 			c->Init(this);
+			c->entity = &entities[c->entityID];
 		}
 		operator delete(e); //call this to delete the staging entity, but not components (doesnt call destructor)
 	}
 	creationBuffer.clear();
 	DengTime->worldSysTime =  TIMER_END(t_a); TIMER_RESET(t_a);
 	
+	for (int i = 0; i < 10; i++) {
+		if (i < scene.lights.size()) {
+			Vector3 p = scene.lights[i]->position;
+			DengRenderer->lights[i] = glm::vec4(p.x, p.y, p.z, scene.lights[i]->brightness);
+		}
+		else {
+			DengRenderer->lights[i] = glm::vec4(0, 0, 0, -1);
+		}
+	}
+
+
 	DengTime->paused = paused;
 	DengTime->phys_pause = pause_phys;
 	skip = false;
@@ -409,10 +425,10 @@ void EntityAdmin::Save(const char* filename) {
 	
 	//light
 	for(auto c : compsLight){
-		file.write((const char*)&c->entityID,  sizeof(u32));
-		file.write((const char*)&c->position,  sizeof(Vector3));
-		file.write((const char*)&c->direction, sizeof(Vector3));
-		file.write((const char*)&c->strength,  sizeof(float));
+		file.write((const char*)&c->entityID,    sizeof(u32));
+		file.write((const char*)&c->position,    sizeof(Vector3));
+		file.write((const char*)&c->direction,   sizeof(Vector3));
+		file.write((const char*)&c->brightness,  sizeof(float));
 	}
 	
 	//mesh comp
@@ -575,6 +591,7 @@ Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const c
 		c->entityID = id;
 		c->layer_index = freeCompLayers[c->layer].add(c);
 		c->Init(this);
+		c->entity = &entities[c->entityID];
 	}
 	operator delete(e);
 	return &entities[id];
