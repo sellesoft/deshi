@@ -1556,7 +1556,13 @@ void CanvasSystem::DebugLayer() {
 		ImGui::SetCursorPos(ImVec2(DengWindow->width - fontw * 18 * 1.3 - 20, menubarheight));
 		ImGui::Text(time1.c_str());
 	}
+
+
+	ImGui::DebugDrawText(TOSTRING(-50 * cos(2 * DengTotalTime)).c_str(), DengWindow->dimensions / 2);
 	
+	ImGui::DebugDrawText(TOSTRING(-50 * sin(2 * DengTotalTime)).c_str(), Vector2(DengWindow->width / 2, DengWindow->height / 2 + 20));
+
+
 	ImGui::PopStyleColor();
 	ImGui::End();
 }

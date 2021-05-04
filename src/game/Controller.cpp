@@ -178,13 +178,15 @@ inline void CameraZoom(EntityAdmin* admin){
 inline void HandleSelectEntity(EntityAdmin* admin){
 	Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
 									  admin->mainCamera->viewMat, DengWindow->dimensions);
-	pos *= Math::WorldToLocal(admin->mainCamera->position);
-	pos.normalize();
-	pos *= 1000;
-	pos *= Math::LocalToWorld(admin->mainCamera->position);
+
 	
 	RenderedEdge3D* ray = new RenderedEdge3D(pos, admin->mainCamera->position);
 	
+
+	//NOTE sushi part of the problem with selecting is that we aren't clipping triangles
+	//			 you can see this if you click on an object to show it's outline
+	//			 then moving so that the object is behind you and clicking inside
+	//			 the outline as it appears there. if you click out side of it it doesnt deselect the obj
 	Entity* oldEnt = admin->selectedEntity;
 	admin->selectedEntity = nullptr;
 	Vector3 p0, p1, p2, norm;

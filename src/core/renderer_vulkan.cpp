@@ -1745,55 +1745,21 @@ CreateUniformBuffer(){
 void Renderer::
 UpdateUniformBuffer(){
 	ASSERT(rendererStage & RSVK_UNIFORMBUFFER, "UpdateUniformBuffer called before CreateUniformBuffer");
-	if(!shaderData.freeze){
+	if (!shaderData.freeze) {
 		//PRINTVK(2, "  Updating Uniform Buffer");
 		shaderData.values.time = time->totalTime;
 		shaderData.values.width = (glm::f32)extent.width;
 		shaderData.values.height = (glm::f32)extent.height;
 		std::copy(lights, lights + 10, shaderData.values.lights);
 		shaderData.values.mousepos = glm::vec2(input->mousePos.x, input->mousePos.y);
-		
+
 		//get point projected out from mouse 
-		//this is v temporary i just want it to work and this is the quickest way i could think
-		//to do it without grabbing stuff from admin
-		//this doesnt work ill fix it later
-		/*if (initialized) {
-			glm::mat4 p = shaderData.values.proj;
-			Matrix4 pm = Matrix4(
-				p[0][0], p[0][1], p[0][2], p[0][3],
-				p[1][0], p[1][1], p[1][2], p[1][3],
-				p[2][0], p[2][1], p[2][2], p[2][3],
-				p[3][0], p[3][1], p[3][2], p[3][3]);
-
-			glm::mat4 v = shaderData.values.view;
-			Matrix4 vm = Matrix4(
-				v[0][0], v[0][1], v[0][2], v[0][3],
-				v[1][0], v[1][1], v[1][2], v[1][3],
-				v[2][0], v[2][1], v[2][2], v[2][3],
-				v[3][0], v[3][1], v[3][2], v[3][3]);
-
-
-
-			Vector3 pos = Math::ScreenToWorld(input->mousePos, pm, vm, Vector2(extent.width, extent.height));
-
-			Vector3 cpos = Vector3(
-				shaderData.values.view[3][0],
-				shaderData.values.view[3][1],
-				shaderData.values.view[3][2]);
-			pos *= Math::WorldToLocal(cpos);
-			pos.normalize();
-			pos *= 1000;
-			pos *= Math::LocalToWorld(cpos);
-
-
-			shaderData.values.mouseRay = glm::vec3(pos.x, pos.y, pos.z);
-
-			if (input->KeyPressed(MouseButton::LEFT)) {
-				LOG(pos);
-				LOG(vm);
-				LOG(cpos);
-			}
-		}*/
+		if (initialized){
+			Vector3 pos = Math::ScreenToWorld(DengInput->mousePos,
+				Matrix4(&shaderData.values.proj[0][0]),
+				Matrix4(&shaderData.values.view[0][0]), DengWindow->dimensions);
+			shaderData.values.mouseWorld = glm::vec3(pos.x, pos.y, pos.z);
+		}
 		//map shader data to uniform buffer
 		void* data;
 		vkMapMemory(device, shaderData.uniformBufferMemory, 0, sizeof(shaderData.values), 0, &data);{

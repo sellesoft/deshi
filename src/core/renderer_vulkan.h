@@ -425,13 +425,13 @@ struct Renderer{
 		struct Values{ //TODO(delle,ReOp) size this so its a multiple of 16bytes
 			glm::mat4 view;        //camera view matrix
 			glm::mat4 proj;        //camera projection matrix
-			glm::vec4 lights[10]; //lights
+			glm::vec4 lights[10];  //lights
 			glm::vec4 viewPos;     //camera pos
 			glm::f32 time;         //total time
 			glm::f32 width;		   //screen width
 			glm::f32 height;	   //screen height
 			glm::vec2 mousepos;    //mouse screen pos
-			glm::vec3 mouseRay;    //point casted out from mouse 
+			glm::vec3 mouseWorld;  //point casted out from mouse 
 		} values;
 		
 		bool freeze = false;
