@@ -41,6 +41,9 @@ begin reimplementing sound system and maybe rethink its design a bit
 
 Render TODOs
 ------------
+debug normals
+____https://github.com/SaschaWillems/Vulkan/blob/master/examples/geometryshader/geometryshader.cpp
+____https://github.com/SaschaWillems/Vulkan/blob/master/data/shaders/glsl/geometryshader/normaldebug.geom
 get debugPrintf extension to work
 ____you can test it through PHONG shader for now
 redo MeshVk so its only child meshes

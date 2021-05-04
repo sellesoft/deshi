@@ -25,20 +25,6 @@ typedef float          f32;    typedef f32 float32;
 typedef double         f64;    typedef f64 float64;
 typedef i32 b32; //int based boolean so c++ doesnt convert to 0 or 1
 
-//dunno where to put these yet
-//TODO(sushi) update this define to change each vertices positions each call
-#define DeshDebugLines(name, i, v1, v2)\
-static std::vector<u32> name; \
-if (name.size() < i) name.push_back(DengRenderer->CreateDebugLine(v1, v2, Color::WHITE, true));\
-
-#define DeshDebugLinesCol(name, i, v1, v2, color)\
-static std::vector<u32> name; \
-if (name.size() < i) name.push_back(DengRenderer->CreateDebugLine(v1, v2, color, true));\
-
-#define DeshDebugTrisCol(name, i, v1, v2, v3, color)\
-static std::vector<u32> name; \
-if (name.size() < i) name.push_back(DengRenderer->CreateDebugTriangle(v1, v2, v3, color, true));\
-
 //static defines
 #define static_internal static
 #define local_persist   static
@@ -76,5 +62,15 @@ if (name.size() < i) name.push_back(DengRenderer->CreateDebugTriangle(v1, v2, v3
 
 //compile-time print sizeof()
 //char (*__kaboom)[sizeof( YourTypeHere )] = 1;
+
+//https://stackoverflow.com/a/42060129
+#ifndef defer
+struct defer_dummy {};
+template <class F> struct deferrer { F f; ~deferrer() { f(); } };
+template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
+#define DEFER_(LINE) zz_defer##LINE
+#define DEFER(LINE) DEFER_(LINE)
+#define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
+#endif // defer
 
 #endif //DESHI_DEFINES_H
