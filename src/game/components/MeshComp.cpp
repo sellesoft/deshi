@@ -92,17 +92,22 @@ bool isthisin(T test, std::vector<T> vec) {
 void MeshComp::Init(EntityAdmin* a) {
 	admin = a;
 	mesh  = DengRenderer->GetMeshPtr(meshID);
+	DengRenderer->UpdateMeshVisibility(meshID, mesh_visible);
 }
 
 void MeshComp::Update() {
 	ASSERT(mesh->vertexCount, "Mesh has no vertices");
 	if (g_admin->selectedEntity == &admin->entities[entityID]) {
-		std::vector<Vector2> outline = mesh->GenerateOutlinePoints(admin->entities[entityID].transform.TransformMatrix(), DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, admin->mainCamera->position);
-		for (int i = 0; i < outline.size(); i += 2) {
-			ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
+		if(g_admin->fast_outline){
+			DengRenderer->SetSelectedMesh(meshID);
+		}else{
+			std::vector<Vector2> outline = mesh->GenerateOutlinePoints(admin->entities[entityID].transform.TransformMatrix(), DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, admin->mainCamera->position);
+			for (int i = 0; i < outline.size(); i += 2) {
+				ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
+			}
 		}
 	}
-
+	
 	//update mesh's transform with entities tranform
 	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, admin->entities[entityID].transform.TransformMatrix());
 }
@@ -112,24 +117,32 @@ std::vector<char> MeshComp::Save() {
 	return out;
 }
 
-void MeshComp::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
+void MeshComp::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF;
+	u32 meshID = 0xFFFFFFFF;
+	u32 instanceID = 0xFFFFFFFF;
 	for_n(i,count){
-		memcpy(&entityID, data+cursor, sizeof(u32)); 
-		cursor += sizeof(u32);
-		if(entityID >= entities.size()) {
+		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
+		if(entityID >= admin->entities.size()) {
 			ERROR("Failed to load mesh component at pos '", cursor-sizeof(u32),
-				  "' because it has an invalid entity ID: ", entityID);
-			continue;
+				  "' because it has an invalid entity ID: ", entityID); continue;
 		}
 		
-		MeshComp* mc = new MeshComp();
-		memcpy(&mc->instanceID,     data+cursor, sizeof(u32)); cursor += sizeof(u32);
-		memcpy(&mc->meshID,         data+cursor, sizeof(u32)); cursor += sizeof(u32);
-		memcpy(&mc->mesh_visible,   data+cursor, sizeof(b32)); cursor += sizeof(b32);
-		memcpy(&mc->ENTITY_CONTROL, data+cursor, sizeof(b32)); cursor += sizeof(b32);
-		entities[entityID].AddComponent(mc);
-		DengRenderer->UpdateMeshVisibility(mc->meshID, mc->mesh_visible);
+		memcpy(&instanceID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&meshID,     data+cursor, sizeof(u32)); cursor += sizeof(u32);
+		if(meshID >= DengRenderer->meshes.size()){
+			ERROR("Failed to load mesh component at pos '", cursor-sizeof(u32),
+				  "' because it has an invalid mesh ID: ", meshID); continue;
+		}
+		
+		MeshComp* c = new MeshComp();
+		c->instanceID = instanceID;
+		c->meshID = meshID;
+		memcpy(&c->mesh_visible,   data+cursor, sizeof(b32)); cursor += sizeof(b32);
+		memcpy(&c->ENTITY_CONTROL, data+cursor, sizeof(b32)); cursor += sizeof(b32);
+		admin->entities[entityID].AddComponent(c);
+		c->layer_index = admin->freeCompLayers[c->layer].add(c);
+		c->Init(admin);
 	}
 }
 
@@ -164,4 +177,6 @@ std::vector<char> MeshComp2D::Save() {
 	return out;
 }
 
-void MeshComp2D::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){}
+void MeshComp2D::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+	ERROR("MeshComp2D::Load not setup");
+}

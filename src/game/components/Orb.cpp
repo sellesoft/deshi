@@ -114,6 +114,6 @@ void OrbManager::Update() {
 	
 }
 
-void OrbManager::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
-	ERROR("Loading orb manager not setup");
+void OrbManager::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+	ERROR("OrbManager::Load not setup");
 }

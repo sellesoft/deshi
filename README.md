@@ -2,7 +2,7 @@
 ===
 A game engine for 3D physics and graphics building on [P3DPGE](https://github.com/SushiSalad/P3DPGE)
 
-### [Features](https://github.com/DelleVelleD/deshi/wiki/Progress)
+### [Features](https://github.com/DelleVelleD/deshi/wiki)
 * Vulkan rendering
 * Importing OBJ models
 * Console and commands

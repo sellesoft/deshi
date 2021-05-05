@@ -32,7 +32,7 @@ struct BoxCollider : public Collider {
 	
 	void RecalculateTensor(f32 mass) override;
 	std::vector<char> Save() override;
-	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
+	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //axis-aligned bounding box
@@ -45,7 +45,7 @@ struct AABBCollider : public Collider {
 	
 	void RecalculateTensor(f32 mass) override;
 	std::vector<char> Save() override;
-	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
+	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 struct SphereCollider : public Collider {
@@ -56,7 +56,7 @@ struct SphereCollider : public Collider {
 	
 	void RecalculateTensor(f32 mass) override;
 	std::vector<char> Save() override;
-	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
+	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //collider for terrain
@@ -65,7 +65,7 @@ struct LandscapeCollider : public Collider {
 	
 	LandscapeCollider(Mesh* mesh, u32 collisionleyer = 0, Command* command = nullptr, b32 noCollide = 0);
 	
-	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
+	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 
@@ -80,7 +80,7 @@ struct ComplexCollider : public Collider {
 	
 	ComplexCollider(Mesh* mesh, u32 collisionleyer = 0, Command* command = nullptr, b32 noCollide = 0);
 	
-	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
+	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //TODO(delle,Ph) implement convexPolyCollider

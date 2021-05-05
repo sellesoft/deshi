@@ -32,10 +32,11 @@ inline void Scene::Init(){
 }
 
 inline void Scene::Reset(){
+	SUCCESS("Resetting scene");
 	models.clear();
 	lights.clear();
 	lines.clear();
-
+	
 	Init();
 }
 

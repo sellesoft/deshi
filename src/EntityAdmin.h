@@ -66,7 +66,9 @@ struct EntityAdmin {
 	bool debugTimes;
 	TIMER_START(t_a);
 	
+	//debug stuff
 	bool find_triangle_neighbors;
+	b32  fast_outline;
 	
 	void Init();
 	void Update();

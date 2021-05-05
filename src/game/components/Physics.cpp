@@ -81,7 +81,7 @@ std::vector<char> Physics::Save() {
 	return out;
 }
 
-void Physics::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
+void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF;
 	vec3 position{}, rotation{}, velocity{}, accel{}, rotVel{}, rotAccel{};
 	f32 elasticity = 0.f, mass = 0.f;
@@ -89,7 +89,7 @@ void Physics::Load(std::vector<Entity>& entities, const char* data, u32& cursor,
 	for_n(i,count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); 
 		cursor += sizeof(u32);
-		if(entityID >= entities.size()) {
+		if(entityID >= admin->entities.size()) {
 			ERROR("Failed to load physics component at pos '", cursor-sizeof(u32),
 				  "' because it has an invalid entity ID: ", entityID);
 			continue;
@@ -104,7 +104,9 @@ void Physics::Load(std::vector<Entity>& entities, const char* data, u32& cursor,
 		memcpy(&elasticity, data+cursor, sizeof(f32));  cursor += sizeof(f32);
 		memcpy(&mass,       data+cursor, sizeof(f32));  cursor += sizeof(f32);
 		memcpy(&staticPos,  data+cursor, sizeof(b32));  cursor += sizeof(b32);
-		entities[entityID].AddComponent(new Physics(position, rotation, velocity, accel, rotVel,
-													rotAccel, elasticity, mass, staticPos));
+		Physics* c = new Physics(position, rotation, velocity, accel, rotVel, rotAccel, elasticity, mass, staticPos);
+		admin->entities[entityID].AddComponent(c);
+		c->layer_index = admin->freeCompLayers[c->layer].add(c);
+		c->Init(admin);
 	}
 }

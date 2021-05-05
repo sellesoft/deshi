@@ -100,7 +100,7 @@ struct Physics : public Component {
 	//TODO(delle,Ph) separate static movement and rotation
 	bool twoDphys = false;
 	poly* twoDpolygon = nullptr;
-
+	
 	//NOTE these default values are really only meant for debugging
 	//and can be removed if I forget to remove them
 	//they are the values of wood against wood
@@ -131,7 +131,7 @@ struct Physics : public Component {
 	void AddImpulseNomass(Physics* creator, Vector3 impulse);
 	
 	std::vector<char> Save() override;
-	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
+	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif //COMPONENT_PHYSICS_H

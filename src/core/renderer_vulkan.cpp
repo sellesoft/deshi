@@ -244,6 +244,7 @@ Render() {
 
 void Renderer::
 Reset() {
+	SUCCESS("Resetting renderer (Vulkan)");
 	vkDeviceWaitIdle(device); //wait before cleanup
 	
 	vertexBuffer.clear();
@@ -586,9 +587,7 @@ UpdateMeshVisibility(u32 meshID, bool visible){
 
 void Renderer::
 SetSelectedMesh(u32 meshID){
-	if(meshID == -1){
-		selectedMeshID = meshID;
-	}else if(meshID < meshes.size()){
+	if(meshID < meshes.size()){
 		selectedMeshID = meshID;
 	}else{
 		ERROR("There is no mesh with id: ", meshID);
@@ -1752,12 +1751,12 @@ UpdateUniformBuffer(){
 		shaderData.values.height = (glm::f32)extent.height;
 		std::copy(lights, lights + 10, shaderData.values.lights);
 		shaderData.values.mousepos = glm::vec2(input->mousePos.x, input->mousePos.y);
-
+		
 		//get point projected out from mouse 
 		if (initialized){
 			Vector3 pos = Math::ScreenToWorld(DengInput->mousePos,
-				Matrix4(&shaderData.values.proj[0][0]),
-				Matrix4(&shaderData.values.view[0][0]), DengWindow->dimensions);
+											  Matrix4(&shaderData.values.proj[0][0]),
+											  Matrix4(&shaderData.values.view[0][0]), DengWindow->dimensions);
 			shaderData.values.mouseWorld = glm::vec3(pos.x, pos.y, pos.z);
 		}
 		//map shader data to uniform buffer

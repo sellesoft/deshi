@@ -41,18 +41,21 @@ std::vector<char> AudioSource::Save() {
 	return out;
 }
 
-void AudioSource::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
+void AudioSource::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF;
-	
 	for_n(i,count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); 
 		cursor += sizeof(u32);
-		if(entityID >= entities.size()) {
+		if(entityID >= admin->entities.size()) {
 			ERROR("Failed to load audio source component at pos '", cursor-sizeof(u32),
 				  "' because it has an invalid entity ID: ", entityID);
 			continue;
 		}
 		
-		entities[entityID].AddComponent(new AudioSource());
+		ERROR("AudioSource::Load not setup");
+		//AudioSource* c = new AudioSource();
+		//admin->entities[entityID].AddComponent(c);
+		//c->layer_index = admin->freeCompLayers[c->layer].add(c);
+		//c->Init(admin);
 	}
 }
