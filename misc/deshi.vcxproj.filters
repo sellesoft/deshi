@@ -25,9 +25,6 @@
     <ClInclude Include="..\src\utils\PhysicsWorld.h">
       <Filter>src\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\EntityAdmin.h">
-      <Filter>src</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\external\draudio\dr_flac.h">
       <Filter>src\external\draudio</Filter>
     </ClInclude>
@@ -193,6 +190,15 @@
     <ClInclude Include="..\src\game\components\door.h">
       <Filter>src\game\components\h</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\game\entities\player.h">
+      <Filter>src\game\entities\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\game\entities\Entity.h">
+      <Filter>src\game\entities\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\EntityAdmin.h">
+      <Filter>src\game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -257,6 +263,18 @@
     </Filter>
     <Filter Include="src\scene">
       <UniqueIdentifier>{1a054cbd-376e-4ecb-9e7b-e166da4b4673}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="entities">
+      <UniqueIdentifier>{8c839c22-d0ce-4f08-b477-e8abd74d5fc2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\game\entities">
+      <UniqueIdentifier>{9823d188-a342-4244-917d-ab38574c391b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\game\entities\h">
+      <UniqueIdentifier>{f0316b0c-b7bb-43cd-8476-329d8527f029}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\game\entities\cpp">
+      <UniqueIdentifier>{9f7fae91-62b0-48b1-9257-3ae72ccd99a3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -349,9 +367,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\EntityAdmin.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\external\imgui\imgui_widgets.cpp">
       <Filter>src\external\imgui</Filter>
     </ClCompile>
@@ -450,6 +465,15 @@
     </ClCompile>
     <ClCompile Include="..\src\game\components\door.cpp">
       <Filter>src\game\components\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\game\entities\player.cpp">
+      <Filter>src\game\entities\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\game\entities\Entity.cpp">
+      <Filter>src\game\entities\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\EntityAdmin.cpp">
+      <Filter>src\game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

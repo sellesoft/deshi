@@ -13,12 +13,14 @@
 #include "game/systems/PhysicsSystem.h"
 #include "game/systems/CanvasSystem.h"
 #include "game/systems/SoundSystem.h"
+#include "game/entities/Entity.h"
+
 
 #define DengKeys admin->keybinds
 #define DengAdmin g_admin
 #define DengCamera g_admin->mainCamera
 
-struct Entity;
+//struct Entity;
 struct System;
 struct Component;
 struct Command;
@@ -102,61 +104,7 @@ struct EntityAdmin {
 	void DeleteEntity(Entity* entity);
 };
 
-struct Entity {
-	EntityAdmin* admin; //reference to owning admin
-	u32 id;
-	char name[64];
-	Transform transform;
-	std::vector<Component*> components;
-	
-	Entity();
-	Entity(EntityAdmin* admin, u32 id, Transform transform = Transform(), 
-		   const char* name = 0, std::vector<Component*> components = {});
-	~Entity();
-	
-	std::vector<char> Save();
-	void Load(const char* filename);
-	
-	void SetName(const char* name);
-	//adds a component to the end of the components vector
-	//returns the position in the vector
-	void AddComponent(Component* component);
-	void AddComponents(std::vector<Component*> components);
-	void RemoveComponent(Component* component);
-	void RemoveComponents(std::vector<Component*> components);
-	
-	//returns an entity loaded from the entities folder
-	static Entity* CreateEntityFromFile(EntityAdmin* admin, std::string& filename);
-	
-	//returns a component pointer from the entity of provided type, nullptr otherwise
-	template<class T>
-		T* GetComponent() {
-		T* t = nullptr;
-		for (Component* c : components) { 
-			if (T* temp = dynamic_cast<T*>(c)) { 
-				t = temp; break; 
-			} 
-		}
-		return t;
-	}
-};
-/*
-struct Player;
-struct Movement;
-struct AudioListener;
-struct Collider;
-struct MeshComp;
-struct Physics;
 
-struct PlayerEntity : public Entity{
-	Player* player;
-	Movement* movement;
-	AudioListener* listener;
-	Collider* collider;
-	MeshComp* mesh;
-	Physics* physics;
-};
-*/
 //global admin pointer
 extern EntityAdmin* g_admin;
 #define EntityAt(id) g_admin->entities[id]

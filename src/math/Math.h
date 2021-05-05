@@ -265,6 +265,7 @@ namespace Math {
 	static Matrix4 lerpm4(Matrix4 m1, Matrix4 m2, float t) { return m1 * (1.f - t) + m2 * t; }
 
 	//returns in degrees
+	//this doesn't really work in 3D but this function is here anyways
 	static float AngBetweenVectors(Vector3 v1, Vector3 v2) {
 		return DEGREES(acosf(v1.dot(v2) / (v1.mag() * v2.mag())));
 	}

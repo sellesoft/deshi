@@ -41,6 +41,8 @@ begin reimplementing sound system and maybe rethink its design a bit
 
 Render TODOs
 ------------
+ability to do transparency in a fragment shader eg. we can do outColor = vec4(1,1,1,0.5)
+___this would be for experimenting with volumetrics, making a window shader w/o need for textures, etc.
 debug normals
 ____https://github.com/SaschaWillems/Vulkan/blob/master/examples/geometryshader/geometryshader.cpp
 ____https://github.com/SaschaWillems/Vulkan/blob/master/data/shaders/glsl/geometryshader/normaldebug.geom
