@@ -67,8 +67,11 @@ void EntityAdmin::Init() {
 	skip = false;
 	paused = false;
 	pause_command = pause_canvas = pause_world = false;
+	
+	//debug
 	find_triangle_neighbors = true;
 	debugTimes = true;
+	fast_outline = 1;
 }
 
 void EntityAdmin::Cleanup() {
@@ -142,8 +145,8 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed
 			DengRenderer->lights[i] = glm::vec4(0, 0, 0, -1);
 		}
 	}
-
-
+	
+	
 	DengTime->paused = paused;
 	DengTime->phys_pause = pause_phys;
 	skip = false;
@@ -215,7 +218,7 @@ void EntityAdmin::ChangeState(GameState new_state){
 }
 
 void EntityAdmin::Reset(){
-	SUCCESS("Resetting scene");
+	SUCCESS("Resetting admin");
 	entities.clear(); entities.reserve(1000);
 	for (auto& layer : freeCompLayers) { layer.clear(); }
 	selectedEntity = 0;
@@ -534,17 +537,17 @@ void EntityAdmin::Load(const char* filename) {
 		cursor = compHeader.arrayOffset;
 		
 		switch(compHeader.type){
-			case(ComponentType_AudioListener):  AudioListener ::Load(entities, data, cursor, compHeader.count); break;
-			case(ComponentType_AudioSource):    AudioSource   ::Load(entities, data, cursor, compHeader.count); break;
-			case(ComponentType_Camera):         Camera        ::Load(entities, data, cursor, compHeader.count); break;
-			case(ComponentType_ColliderBox):    BoxCollider   ::Load(entities, data, cursor, compHeader.count); break;
-			case(ComponentType_ColliderAABB):   AABBCollider  ::Load(entities, data, cursor, compHeader.count); break;
-			case(ComponentType_ColliderSphere): SphereCollider::Load(entities, data, cursor, compHeader.count); break;
-			case(ComponentType_Light):          Light         ::Load(entities, data, cursor, compHeader.count); break;
-			case(ComponentType_MeshComp):       MeshComp      ::Load(entities, data, cursor, compHeader.count); break;
-			case(ComponentType_OrbManager):     OrbManager    ::Load(entities, data, cursor, compHeader.count); break;
-			case(ComponentType_Physics):        Physics       ::Load(entities, data, cursor, compHeader.count); break;
-			case(ComponentType_Player):         Player        ::Load(entities, data, cursor, compHeader.count); break;
+			case(ComponentType_AudioListener):  AudioListener ::Load(this, data, cursor, compHeader.count); break;
+			case(ComponentType_AudioSource):    AudioSource   ::Load(this, data, cursor, compHeader.count); break;
+			case(ComponentType_Camera):         Camera        ::Load(this, data, cursor, compHeader.count); break;
+			case(ComponentType_ColliderBox):    BoxCollider   ::Load(this, data, cursor, compHeader.count); break;
+			case(ComponentType_ColliderAABB):   AABBCollider  ::Load(this, data, cursor, compHeader.count); break;
+			case(ComponentType_ColliderSphere): SphereCollider::Load(this, data, cursor, compHeader.count); break;
+			case(ComponentType_Light):          Light         ::Load(this, data, cursor, compHeader.count); break;
+			case(ComponentType_MeshComp):       MeshComp      ::Load(this, data, cursor, compHeader.count); break;
+			case(ComponentType_OrbManager):     OrbManager    ::Load(this, data, cursor, compHeader.count); break;
+			case(ComponentType_Physics):        Physics       ::Load(this, data, cursor, compHeader.count); break;
+			case(ComponentType_Player):         Player        ::Load(this, data, cursor, compHeader.count); break;
 			default:{
 				ERROR("Failed to load a component array because of unknown component type '", 
 					  compHeader.type, "' at pos: ", cursor);
@@ -651,10 +654,6 @@ void Entity::AddComponent(Component* c) {
 	components.push_back(c);
 	c->entityID = id;
 	c->admin = this->admin;
-	if(admin){
-		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-		c->Init(admin);
-	}
 }
 
 void Entity::AddComponents(std::vector<Component*> comps) {
@@ -664,10 +663,6 @@ void Entity::AddComponents(std::vector<Component*> comps) {
 		this->components.push_back(c);
 		c->entityID = id;
 		c->admin = this->admin;
-		if(admin){
-			c->layer_index = admin->freeCompLayers[c->layer].add(c);
-			c->Init(admin);
-		}
 	}
 }
 

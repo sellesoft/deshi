@@ -34,7 +34,7 @@ enum ComponentTypeBits : u32{
 	ComponentType_MeshComp          = 1 << 0,
 	ComponentType_Physics           = 1 << 1, 
 	ComponentType_Collider          = 1 << 2, //TODO(delle,Cl) consolidate these to one collider since we have ColliderType now
-	ComponentType_ColliderBox       = 1 << 3, //TODO(delle,Cl) consolidate these to one collider since we have ColliderType now
+	ComponentType_ColliderBox       = 1 << 3,
 	ComponentType_ColliderAABB      = 1 << 4,
 	ComponentType_ColliderSphere    = 1 << 5,
 	ComponentType_ColliderLandscape = 1 << 6,
@@ -54,9 +54,9 @@ struct Component : public Receiver {
 	u32 entityID = -1;
 	char name[64];
 	ComponentType comptype;
-
+	
 	Entity* entity;
-
+	
 	//sender for outputting events to a list of receivers
 	Sender* send = nullptr;
 	

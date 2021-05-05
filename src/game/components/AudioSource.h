@@ -40,7 +40,7 @@ struct AudioSource : public Component {
 	void RequestPlay(float gain = 1, float pitch = 1);
 	
 	std::vector<char> Save() override;
-	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
+	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif //COMPONENT_AUDIOSOURCE_H

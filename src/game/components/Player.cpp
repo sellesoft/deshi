@@ -19,6 +19,6 @@ std::vector<char> Player::Save() {
 	return {};
 }
 
-void Player::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
-	ERROR("Player loading not setup");
+void Player::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+	ERROR("Player::Load not setup");
 }

@@ -44,7 +44,7 @@ struct OrbManager : public Component {
 	void Update() override;
 	void ReceiveEvent(Event event) override;
 	
-	static void Load(std::vector<Entity>& entityArray, const char* fileData, u32& cursor, u32 countToLoad);
+	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif //COMPONENT_ORB_H

@@ -178,7 +178,7 @@ void Camera::Update() {
 			wheight = window->height;
 			UpdateProjectionMatrix();
 		}
-
+		
 		renderer->UpdateCameraViewMatrix(viewMat);
 		renderer->UpdateCameraPosition(position);
 		
@@ -190,6 +190,6 @@ std::vector<char> Camera::Save() {
 	return out;
 }
 
-void Camera::Load(std::vector<Entity>& entities, const char* data, u32& cursor, u32 count){
-	ERROR("Camera load function not setup");
+void Camera::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+	ERROR("Camera::Load not setup");
 }

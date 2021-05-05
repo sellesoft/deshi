@@ -5,6 +5,7 @@
 void UndoManager::Init(){}
 
 void UndoManager::Reset(){
+	SUCCESS("Resetting undos/redos");
 	undos.clear();
 	redos.clear();
 }
