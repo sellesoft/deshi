@@ -236,7 +236,7 @@
     <ClInclude Include="..\src\game\components\Player.h" />
     <ClInclude Include="..\src\game\Controller.h" />
     <ClInclude Include="..\src\game\entities\Entity.h" />
-    <ClInclude Include="..\src\game\entities\player.h" />
+    <ClInclude Include="..\src\game\entities\PlayerEntity.h" />
     <ClInclude Include="..\src\game\Keybinds.h" />
     <ClInclude Include="..\src\game\systems\CanvasSystem.h" />
     <ClInclude Include="..\src\game\systems\PhysicsSystem.h" />
@@ -325,7 +325,7 @@
     <ClCompile Include="..\src\game\components\Player.cpp" />
     <ClCompile Include="..\src\game\Controller.cpp" />
     <ClCompile Include="..\src\game\entities\Entity.cpp" />
-    <ClCompile Include="..\src\game\entities\player.cpp" />
+    <ClCompile Include="..\src\game\entities\PlayerEntity.cpp" />
     <ClCompile Include="..\src\game\Keybinds.cpp" />
     <ClCompile Include="..\src\game\systems\CanvasSystem.cpp" />
     <ClCompile Include="..\src\game\systems\PhysicsSystem.cpp" />

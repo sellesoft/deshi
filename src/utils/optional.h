@@ -9,7 +9,7 @@ struct Optional {
 		memset(&value, 0xFFFFFFFF, sizeof(T));
 	};
 	
-	Optional(T value) {
+	Optional(T& value) {
 		this->value = value;
 	}
 	
@@ -28,6 +28,14 @@ struct Optional {
 	
 	inline bool operator!=(const Optional& rhs) const{
 		return value != rhs.value;
+	}
+
+	T* operator &() {
+		return &value;
+	}
+
+	inline T* getptr() {
+		return &value;
 	}
 	
 	inline explicit operator bool(){ return test(); }

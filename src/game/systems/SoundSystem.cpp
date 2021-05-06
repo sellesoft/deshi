@@ -273,12 +273,14 @@ void SoundSystem::Update() {
 	
 	//check if any source is requesting to play audio
 	for (auto& e : admin->entities) {
-		for (auto c : e.components) {
-			if (AudioSource* s = dynamic_cast<AudioSource*>(c)) {
-				if (s->source_state != AL_PLAYING && s->request_play) {
-					sources.push_back(s);
-					s->request_play = false;
-					new_sources = true;
+		if (e) {
+			for (auto c : e.value.components) {
+				if (AudioSource* s = dynamic_cast<AudioSource*>(c)) {
+					if (s->source_state != AL_PLAYING && s->request_play) {
+						sources.push_back(s);
+						s->request_play = false;
+						new_sources = true;
+					}
 				}
 			}
 		}

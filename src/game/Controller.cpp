@@ -192,7 +192,7 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 	Vector3 p0, p1, p2, norm;
 	Matrix4 rot;
 	for (auto& e : admin->entities) {
-		if (MeshComp* mc = e.GetComponent<MeshComp>()) {
+		if (MeshComp* mc = e.value.GetComponent<MeshComp>()) {
 			if (mc->mesh_visible) {
 				Mesh* m = mc->mesh;
 				for (auto& b : m->batchArray) {
@@ -203,7 +203,7 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 						//p1 = b.vertexArray[b.indexArray[i + 1]].pos + e.transform.position;
 						//p2 = b.vertexArray[b.indexArray[i + 2]].pos + e.transform.position;
 						
-						mat4 transform = e.transform.TransformMatrix();
+						mat4 transform = e.value.transform.TransformMatrix();
 						p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
 						p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
 						p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
@@ -222,8 +222,8 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 							(v12 * rot).dot(p1 - inter) < 0 &&
 							(v20 * rot).dot(p2 - inter) < 0) {
 							
-							admin->selectedEntity = &e;
-							if(oldEnt != &e){
+							admin->selectedEntity = e.getptr();
+							if(oldEnt != e.getptr()){
 								//DengRenderer->SetSelectedMesh(mc->meshID);
 								admin->undoManager.AddUndoSelect((void**)&admin->selectedEntity, oldEnt, &e);
 							}
@@ -696,4 +696,5 @@ void Controller::Update() {
 		}
 		CheckBinds(admin);
 	}
+
 }

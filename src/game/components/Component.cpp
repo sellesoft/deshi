@@ -4,6 +4,7 @@
 Component::Component(EntityAdmin* a, u32 eID) {
 	admin = a;
 	entityID = eID;
+	entity->id;
 }
 
 Component::~Component() { 

@@ -190,14 +190,14 @@
     <ClInclude Include="..\src\game\components\door.h">
       <Filter>src\game\components\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\game\entities\player.h">
-      <Filter>src\game\entities\h</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\game\entities\Entity.h">
       <Filter>src\game\entities\h</Filter>
     </ClInclude>
     <ClInclude Include="..\src\EntityAdmin.h">
       <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\game\entities\PlayerEntity.h">
+      <Filter>src\game\entities\h</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -466,14 +466,14 @@
     <ClCompile Include="..\src\game\components\door.cpp">
       <Filter>src\game\components\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\game\entities\player.cpp">
-      <Filter>src\game\entities\cpp</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\game\entities\Entity.cpp">
       <Filter>src\game\entities\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\EntityAdmin.cpp">
       <Filter>src\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\game\entities\PlayerEntity.cpp">
+      <Filter>src\game\entities\cpp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

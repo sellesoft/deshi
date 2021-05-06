@@ -49,7 +49,7 @@ struct EntityAdmin {
 	Entity* player;
 	Entity* selectedEntity;
 	
-	std::vector<Entity> entities;
+	ContainerManager<Entity> entities;
 	std::vector<Entity*> creationBuffer;
 	std::vector<Entity*> deletionBuffer;
 	
@@ -109,6 +109,6 @@ struct EntityAdmin {
 
 //global admin pointer
 extern EntityAdmin* g_admin;
-#define EntityAt(id) g_admin->entities[id]
+#define EntityAt(id) g_admin->entities[id].value
 
 #endif

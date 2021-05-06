@@ -8,6 +8,8 @@
 #include <vector>
 #include <iostream>
 
+
+
 //this is meant to be a wrapper around vector.
 //the idea is that you can have a vector whose elements stay in a position regardless of
 //if something before it is deleted.
@@ -18,7 +20,6 @@
 template<class T>
 struct ContainerManager {
 	//std::vector<std::pair<std::optional<T>, int>> container;
-	
 	std::vector<Optional<T>> container;
 	std::vector<int> empties;
 	
@@ -27,14 +28,18 @@ struct ContainerManager {
 	ContainerManager() {}
 	
 	Optional<T> operator [](int i) { return container[i]; }
-	//bool operator *(){retuir}
-	//void operator = (ContainerManager<T> c) { this->copy(c); }
+
+	//TODO(sushi) figure this out sometime :)
+	//T* operator &() {
+	//	return &T;
+	//}
 	
 	//add element to container and return its position in it
 	int add(T t) {
 		//if container is totally full add it to the end
 		if (empties.size() == 0) {
-			container.push_back(t);
+			Optional<T> op(t);
+			container.push_back(Optional<T>(t));
 			real_size++;
 			return container.size() - 1;
 		}
@@ -72,31 +77,11 @@ struct ContainerManager {
 		}
 	}
 	
-	bool allocate_space(int index) {
-		ASSERT(index >= 0, "Attempted to pass negative index.");
-		ASSERT(index >= container.size(), "Attempted to allocate space at an index larger than container size.");
-		
-		if (index < container.size()) {
-			//space already exists, there is no check to actually see if
-			//it's already used by something else yet though
-			return true;
-		}
-		else {
-			Optional<T> o;
-			for (int i = container.size(); i < index; i++) {
-				container.push_back(o);
-			}
-			
-			return true;
-		}
-		return false;
-	}
-	
 	int size() {
 		return container.size();
 	}
 	
-	void copy(ContainerManager<T> cm) {
+	void operator =(ContainerManager<T> cm) {
 		container = cm.container;
 		empties = cm.empties;
 	}
@@ -114,6 +99,30 @@ struct ContainerManager {
 	void clear() {
 		container.clear();
 		real_size = 0;
+	}
+
+	//if reserve gets used when the container isn't empty this will probably fuck up
+	//so if you're here because somethings broken thats why
+	void reserve(int i) {
+		for (int o = 0; o < i; o++) {
+			empties.push_back(o);
+			Optional<T> op;
+			container.push_back(op);
+
+		}
+	}
+
+	//typedef typename iterator  iterator;
+	//typedef typename iterator std::vector<T>::const_iterator const_iterator;
+
+	using iterator = typename std::vector<Optional<T>>::iterator;
+	
+	iterator begin() {
+		return container.begin();
+	}
+
+	iterator end() {
+		return container.end();
 	}
 	
 	std::string str() {

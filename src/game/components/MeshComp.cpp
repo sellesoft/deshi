@@ -97,11 +97,11 @@ void MeshComp::Init(EntityAdmin* a) {
 
 void MeshComp::Update() {
 	ASSERT(mesh->vertexCount, "Mesh has no vertices");
-	if (g_admin->selectedEntity == &admin->entities[entityID]) {
+	if (g_admin->selectedEntity == &admin->entities[entityID].value) {
 		if(g_admin->fast_outline){
 			DengRenderer->SetSelectedMesh(meshID);
 		}else{
-			std::vector<Vector2> outline = mesh->GenerateOutlinePoints(admin->entities[entityID].transform.TransformMatrix(), DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, admin->mainCamera->position);
+			std::vector<Vector2> outline = mesh->GenerateOutlinePoints(admin->entities[entityID].value.transform.TransformMatrix(), DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, admin->mainCamera->position);
 			for (int i = 0; i < outline.size(); i += 2) {
 				ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
 			}
@@ -109,7 +109,7 @@ void MeshComp::Update() {
 	}
 	
 	//update mesh's transform with entities tranform
-	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, admin->entities[entityID].transform.TransformMatrix());
+	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, admin->entities[entityID].value.transform.TransformMatrix());
 }
 
 std::vector<char> MeshComp::Save() {
@@ -140,7 +140,7 @@ void MeshComp::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count
 		c->meshID = meshID;
 		memcpy(&c->mesh_visible,   data+cursor, sizeof(b32)); cursor += sizeof(b32);
 		memcpy(&c->ENTITY_CONTROL, data+cursor, sizeof(b32)); cursor += sizeof(b32);
-		admin->entities[entityID].AddComponent(c);
+		admin->entities[entityID].value.AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 		c->Init(admin);
 	}

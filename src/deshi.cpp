@@ -41,19 +41,19 @@ begin reimplementing sound system and maybe rethink its design a bit
 
 Render TODOs
 ------------
+get debugPrintf extension to work
+add vertex editing
 ability to do transparency in a fragment shader eg. we can do outColor = vec4(1,1,1,0.5)
 ___this would be for experimenting with volumetrics, making a window shader w/o need for textures, etc.
 debug normals
 ____https://github.com/SaschaWillems/Vulkan/blob/master/examples/geometryshader/geometryshader.cpp
 ____https://github.com/SaschaWillems/Vulkan/blob/master/data/shaders/glsl/geometryshader/normaldebug.geom
-get debugPrintf extension to work
 ____you can test it through PHONG shader for now
 redo MeshVk so its only child meshes
 ____avoid having 3 copies of a mesh (model, meshVK, vulkan)
 add lighting and shadows
 add 2D shader and interface functions
 add face normal and tangents to vertex buffer
-add vertex editing
 fix texture transparency
 add RenderSettings loading and usage
 check those vulkan-tutorial links for the suggestions

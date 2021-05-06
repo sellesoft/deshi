@@ -24,17 +24,19 @@ struct PhysicsTuple {
 
 inline std::vector<PhysicsTuple> GetPhysicsTuples(EntityAdmin* admin) {
 	std::vector<PhysicsTuple> out;
-	for(auto& e : admin->entities) {
-		Transform* transform = &e.transform;
-		Physics*   physics   = nullptr;
-		Collider*  collider  = nullptr;
-		
-		for(Component* c : e.components) {
-			if(Physics* phy = dynamic_cast<Physics*>(c)) { physics = phy; continue; }
-			if(Collider* col = dynamic_cast<Collider*>(c)) { collider = col; continue; }
-		}
-		if(physics) {
-			out.push_back(PhysicsTuple(transform, physics, collider));
+	for(int i = 0; i < admin->entities.size(); i++) {
+		if (admin->entities[i]) {
+			Transform* transform = &admin->entities[i].getptr()->transform;
+			Physics* physics = nullptr;
+			Collider* collider = nullptr;
+
+			for (Component* c : admin->entities[i].getptr()->components) {
+				if (Physics* phy = dynamic_cast<Physics*>(c)) { physics = phy; continue; }
+				if (Collider* col = dynamic_cast<Collider*>(c)) { collider = col; continue; }
+			}
+			if (physics) {
+				out.push_back(PhysicsTuple(transform, physics, collider));
+			}
 		}
 	}
 	return out;

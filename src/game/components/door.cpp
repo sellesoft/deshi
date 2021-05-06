@@ -1,5 +1,6 @@
 #include "door.h"
-#include "EntityAdmin.h"
+#include "../../EntityAdmin.h"
+#include "../entities/Entity.h"
 
 Door::Door(b32 isOpen){
 	this->isOpen = isOpen;
@@ -30,7 +31,7 @@ void Door::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 		
 		memcpy(&isOpen, data+cursor, sizeof(b32)); cursor += sizeof(b32);
 		Door* c = new Door(isOpen);
-		admin->entities[entityID].AddComponent(c);
+		admin->entities[entityID].value.AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 		c->Init(admin);
 	}

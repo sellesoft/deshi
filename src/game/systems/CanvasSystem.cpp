@@ -469,66 +469,68 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 				
 				
 				for (auto& entity : admin->entities) {
-					counter++;
-					PushID(counter);
-					TableNextRow(); TableNextColumn();
-					std::string id = std::to_string(entity.id);
-					MeshComp* m = entity.GetComponent<MeshComp>();
-					
-					//SetCursorPosX((GetColumnWidth() - (fontsize - (fontsize / 2)) * id.size()) / 2);
-					if (ImGui::Button(id.c_str())) {
-						admin->selectedEntity = &entity;
-						//if(m) DengRenderer->SetSelectedMesh(m->meshID);
-					}
-					TableNextColumn();
-					
-					//TODO(UiEnt, sushi) implement visibility for things other than meshes like lights, etc.
-					if (m) {
-						if (m->mesh_visible) {
-							if (SmallButton("O")) {
-								m->ToggleVisibility();
+					if (entity) {
+						counter++;
+						PushID(counter);
+						TableNextRow(); TableNextColumn();
+						std::string id = std::to_string(entity.value.id);
+						MeshComp* m = entity.value.GetComponent<MeshComp>();
+
+						//SetCursorPosX((GetColumnWidth() - (fontsize - (fontsize / 2)) * id.size()) / 2);
+						if (ImGui::Button(id.c_str())) {
+							admin->selectedEntity = entity.getptr();
+							//if(m) DengRenderer->SetSelectedMesh(m->meshID);
+						}
+						TableNextColumn();
+
+						//TODO(UiEnt, sushi) implement visibility for things other than meshes like lights, etc.
+						if (m) {
+							if (m->mesh_visible) {
+								if (SmallButton("O")) {
+									m->ToggleVisibility();
+								}
+							}
+							else {
+								if (SmallButton("X")) {
+									m->ToggleVisibility();
+								}
 							}
 						}
 						else {
-							if (SmallButton("X")) {
-								m->ToggleVisibility();
+							Text("NM");
+						}
+
+						TableNextColumn();
+						Text(TOSTRING(" ", entity.value.name).c_str());
+						static bool rename = false;
+						static char buff[64] = {};
+						static char ogname[64] = {};
+						if (ImGui::IsItemClicked()) {
+							rename = true;
+							cpystr(buff, entity.value.name, 63);
+							cpystr(ogname, entity.value.name, 63);
+						}
+
+						if (rename) {
+							if (ImGui::InputText("name input", buff, sizeof(buff), ImGuiInputTextFlags_EnterReturnsTrue)) {
+								cpystr(entity.value.name, buff, 63);
+								rename = false;
+							}
+							if (DengInput->KeyPressed(Key::ESCAPE)) {
+								cpystr(entity.value.name, ogname, 63);
+								rename = false;
 							}
 						}
-					}
-					else {
-						Text("NM");
-					}
-					
-					TableNextColumn();
-					Text(TOSTRING(" ", entity.name).c_str());
-					static bool rename = false;
-					static char buff[64] = {};
-					static char ogname[64] = {};
-					if (ImGui::IsItemClicked()) {
-						rename = true;
-						cpystr(buff, entity.name, 63);
-						cpystr(ogname, entity.name, 63);
-					}
-					
-					if (rename) {
-						if (ImGui::InputText("name input", buff, sizeof(buff), ImGuiInputTextFlags_EnterReturnsTrue)) {
-							cpystr(entity.name, buff, 63);
-							rename = false;
+
+						TableNextColumn();
+						//TODO(sushi, Ui) find something better to put here
+						Text(TOSTRING(" comps: ", entity.value.components.size()).c_str());
+						SameLine();
+						if (Button("Del")) {
+							g_admin->DeleteEntity(entity.getptr());
 						}
-						if (DengInput->KeyPressed(Key::ESCAPE)) {
-							cpystr(entity.name, ogname, 63);
-							rename = false;
-						}
+						PopID();
 					}
-					
-					TableNextColumn();
-					//TODO(sushi, Ui) find something better to put here
-					Text(TOSTRING(" comps: ", entity.components.size()).c_str());
-					SameLine();
-					if (Button("Del")) {
-						g_admin->DeleteEntity(&entity);
-					}
-					PopID();
 				}
 				
 				ImGui::EndTable();

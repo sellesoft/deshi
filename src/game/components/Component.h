@@ -60,7 +60,7 @@ struct Component : public Receiver {
 	//sender for outputting events to a list of receivers
 	Sender* send = nullptr;
 	
-	Component(){};
+	Component() {};
 	Component(EntityAdmin* a, u32 entityID);
 	virtual ~Component();
 	

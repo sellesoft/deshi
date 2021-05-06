@@ -105,7 +105,7 @@ void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count)
 		memcpy(&mass,       data+cursor, sizeof(f32));  cursor += sizeof(f32);
 		memcpy(&staticPos,  data+cursor, sizeof(b32));  cursor += sizeof(b32);
 		Physics* c = new Physics(position, rotation, velocity, accel, rotVel, rotAccel, elasticity, mass, staticPos);
-		admin->entities[entityID].AddComponent(c);
+		admin->entities[entityID].value.AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 		c->Init(admin);
 	}

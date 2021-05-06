@@ -47,7 +47,8 @@ void EntityAdmin::Init() {
 #endif
 	
 	//reserve arrays
-	entities.reserve(1000);
+	//TODO(sushi) figure out why the reserve function i set up in ContainerManager tries deleting a nonexistant entity
+	//entities.reserve(1000);
 	creationBuffer.reserve(100);
 	deletionBuffer.reserve(100);
 	for_n(i, ComponentLayer_LAST) freeCompLayers.push_back(ContainerManager<Component*>());
@@ -71,7 +72,7 @@ void EntityAdmin::Init() {
 	//debug
 	find_triangle_neighbors = true;
 	debugTimes = true;
-	fast_outline = 1;
+	fast_outline = 0;
 }
 
 void EntityAdmin::Cleanup() {
@@ -114,22 +115,22 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed
 		for(Component* c : e->components){ 
 			freeCompLayers[c->layer].remove_from(c->layer_index);
 		}
-		entities.erase(entities.begin()+e->id);
+		entities.remove_from(e->id);
 	}
 	deletionBuffer.clear();
 	
 	//creation buffer
 	for(Entity* e : creationBuffer) {
-		entities.emplace_back(this, u32(entities.size()), e->transform, e->name, e->components);
+		int index = entities.add(Entity(this, u32(entities.size()), e->transform, e->name, e->components));
 		for(Component* c : e->components){ 
-			c->entityID = entities.size()-1;
+			c->entityID = index;
 			c->layer_index = freeCompLayers[c->layer].add(c);
 			if (c->comptype == ComponentType_Light) {
 				dyncast(d, Light, c);
 				scene.lights.push_back(d);
 			}
 			c->Init(this);
-			c->entity = &entities[c->entityID];
+			c->entity = entities[c->entityID].getptr();
 		}
 		operator delete(e); //call this to delete the staging entity, but not components (doesnt call destructor)
 	}
@@ -274,14 +275,14 @@ void EntityAdmin::Save(const char* filename) {
 	
 	for(auto& e : entities) {
 		//write entity
-		file.write((const char*)&e.id,                 sizeof(u32));
-		file.write(e.name,                             sizeof(char)*64);
-		file.write((const char*)&e.transform.position, sizeof(Vector3));
-		file.write((const char*)&e.transform.rotation, sizeof(Vector3));
-		file.write((const char*)&e.transform.scale,    sizeof(Vector3));
+		file.write((const char*)&e.value.id,                 sizeof(u32));
+		file.write(e.value.name,                             sizeof(char)*64);
+		file.write((const char*)&e.value.transform.position, sizeof(Vector3));
+		file.write((const char*)&e.value.transform.rotation, sizeof(Vector3));
+		file.write((const char*)&e.value.transform.scale,    sizeof(Vector3));
 		
 		//sort components
-		for(auto c : e.components) {
+		for(auto c : e.value.components) {
 			if(dyncast(d, MeshComp, c)) {
 				compsMeshComp.push_back(d);
 			}else if(dyncast(d, Physics, c)) {
@@ -506,7 +507,7 @@ void EntityAdmin::Load(const char* filename) {
 		memcpy(&tempEntity.id,        data+cursor, sizeof(u32));     cursor += sizeof(u32);
 		memcpy(tempEntity.name,       data+cursor, sizeof(char)*64); cursor += sizeof(char)*64;
 		memcpy(&tempEntity.transform, data+cursor, sizeof(vec3)*3);  cursor += sizeof(vec3)*3;
-		entities.push_back(tempEntity);
+		entities.add(tempEntity);
 	}
 	
 	//// parse and load/create meshes ////
@@ -589,20 +590,20 @@ Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const c
 	e->transform = transform;
 	e->AddComponents(components);
 	u32 id = entities.size();
-	entities.emplace_back(this, id, e->transform, e->name, e->components);
+	entities.add(Entity(this, id, e->transform, e->name, e->components));
 	for (Component* c : e->components) {
 		c->entityID = id;
 		c->layer_index = freeCompLayers[c->layer].add(c);
 		c->Init(this);
-		c->entity = &entities[c->entityID];
+		c->entity = entities[c->entityID].getptr();
 	}
 	operator delete(e);
-	return &entities[id];
+	return &entities[id].value;
 }
 
 void EntityAdmin::DeleteEntity(u32 id) {
 	if(id < entities.size()){
-		deletionBuffer.push_back(&entities[id]);
+		deletionBuffer.push_back(entities[id].getptr());
 	}else{
 		ERROR("Attempted to add entity '", id, "' to deletion buffer when it doesn't exist on the admin");
 	}
