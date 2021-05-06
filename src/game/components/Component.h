@@ -62,14 +62,14 @@ struct Component : public Receiver {
 	
 	Component() {};
 	Component(EntityAdmin* a, u32 entityID);
-	virtual ~Component();
+	~Component();
 	
 	//store layer its on and where in that layer it is for deletion
 	ComponentLayer layer = ComponentLayer_NONE;
 	int layer_index;
 	
 	//Init only gets called when this component's entity is spawned thru the world system
-	virtual void Init(EntityAdmin* admin) {};
+	virtual void Init() {};
 	virtual void Update() {};
 	void ConnectSend(Component* c);
 	virtual void ReceiveEvent(Event event) override {};

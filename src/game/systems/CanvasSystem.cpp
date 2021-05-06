@@ -1,8 +1,5 @@
 #include "CanvasSystem.h"
-#include "../../core.h"
-#include "../../math/Math.h"
-#include "../../scene/Scene.h"
-#include "../../EntityAdmin.h"
+#include "../admin.h"
 #include "../components/AudioListener.h"
 #include "../components/AudioSource.h"
 #include "../components/Camera.h"
@@ -13,6 +10,9 @@
 #include "../components/Physics.h"
 #include "../components/Player.h"
 #include "../components/Movement.h"
+#include "../../core.h"
+#include "../../math/Math.h"
+#include "../../scene/Scene.h"
 
 //for time
 #include <iomanip>
@@ -313,25 +313,25 @@ inline void ComponentsMenu(Entity* sel) {
 		for (Component* c : sel->components) {
 			switch (c->comptype) {
 				case ComponentType_Physics:
-					if (TreeNodeEx("Physics", tree_flags)) {
-						dyncast(d, Physics, c);
-						Text("Velocity     "); SameLine(); InputVector3("##phys_vel", &d->velocity);             Separator();
-						Text("Accelertaion "); SameLine(); InputVector3("##phys_accel", &d->acceleration);       Separator();
-						Text("Rot Velocity "); SameLine(); InputVector3("##phys_rotvel", &d->rotVelocity);       Separator();
-						Text("Rot Accel    "); SameLine(); InputVector3("##phys_rotaccel", &d->rotAcceleration); Separator();
-						Text("Elasticity   "); SameLine();
-						ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_elastic", &d->elasticity); Separator();
-						Text("Mass         "); SameLine();
-						ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->mass); Separator();
-						Text("Kinetic Fric "); SameLine();
-						ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->kineticFricCoef); Separator();
-						Checkbox("Static Position", &d->isStatic); Separator();
-						Checkbox("Static Rotation", &d->staticRotation);
-						Checkbox("2D Physics", &d->twoDphys);
-						TreePop();
-					}
-					break;
-
+				if (TreeNodeEx("Physics", tree_flags)) {
+					dyncast(d, Physics, c);
+					Text("Velocity     "); SameLine(); InputVector3("##phys_vel", &d->velocity);             Separator();
+					Text("Accelertaion "); SameLine(); InputVector3("##phys_accel", &d->acceleration);       Separator();
+					Text("Rot Velocity "); SameLine(); InputVector3("##phys_rotvel", &d->rotVelocity);       Separator();
+					Text("Rot Accel    "); SameLine(); InputVector3("##phys_rotaccel", &d->rotAcceleration); Separator();
+					Text("Elasticity   "); SameLine();
+					ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_elastic", &d->elasticity); Separator();
+					Text("Mass         "); SameLine();
+					ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->mass); Separator();
+					Text("Kinetic Fric "); SameLine();
+					ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->kineticFricCoef); Separator();
+					Checkbox("Static Position", &d->isStatic); Separator();
+					Checkbox("Static Rotation", &d->staticRotation);
+					Checkbox("2D Physics", &d->twoDphys);
+					TreePop();
+				}
+				break;
+				
 				case ComponentType_Collider: {
 					dyncast(col, Collider, c);
 					switch (col->type) {
@@ -366,63 +366,63 @@ inline void ComponentsMenu(Entity* sel) {
 					}
 					break;
 				}
-
+				
 				case ComponentType_AudioListener:
-					if (TreeNodeEx("Audio Listener", tree_flags)) {
-						Text("TODO sushi implement audio listener editing");
-						TreePop();
-					}
-					break;
+				if (TreeNodeEx("Audio Listener", tree_flags)) {
+					Text("TODO sushi implement audio listener editing");
+					TreePop();
+				}
+				break;
 				
 				case ComponentType_AudioSource:
-					if (TreeNodeEx("Audio Source", tree_flags)) {
-						Text("TODO sushi implement audio source editing");
-						TreePop();
-					}
-					break;
-
+				if (TreeNodeEx("Audio Source", tree_flags)) {
+					Text("TODO sushi implement audio source editing");
+					TreePop();
+				}
+				break;
+				
 				case ComponentType_Light:
-					if (TreeNodeEx("Light", tree_flags)) {
-						dyncast(d, Light, c);
-						Text("Brightness   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-						InputFloat("brightness", &d->brightness); Separator();
-						Text("Position     "); SameLine(); InputVector3("position", &d->position); Separator();
-						Text("Direction    "); SameLine(); InputVector3("direction", &d->direction); Separator();
+				if (TreeNodeEx("Light", tree_flags)) {
+					dyncast(d, Light, c);
+					Text("Brightness   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+					InputFloat("brightness", &d->brightness); Separator();
+					Text("Position     "); SameLine(); InputVector3("position", &d->position); Separator();
+					Text("Direction    "); SameLine(); InputVector3("direction", &d->direction); Separator();
 					
 					
-						TreePop();
-					}
-					break;
+					TreePop();
+				}
+				break;
 				
 				case ComponentType_OrbManager:
-					if (TreeNodeEx("Orbs", tree_flags)) {
-						dyncast(d, OrbManager, c);
-						Text("Orb count   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-						InputInt("orbcount", &d->orbcount);
-						TreePop();
-					}
-					break;
+				if (TreeNodeEx("Orbs", tree_flags)) {
+					dyncast(d, OrbManager, c);
+					Text("Orb count   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+					InputInt("orbcount", &d->orbcount);
+					TreePop();
+				}
+				break;
 				
 				case ComponentType_Movement:
-					if (TreeNodeEx("Movement", tree_flags)) {
-						dyncast(d, Movement, c);
-						Text("Ground Accel  "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-						InputFloat("gndaccel", &d->gndAccel);
-						Text("Air Accel     "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-						InputFloat("airaccel", &d->airAccel);
-						Text("Max Walk Speed"); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-						InputFloat("maxwalk ", &d->maxWalkingSpeed);
-						TreePop();
-					}
-
+				if (TreeNodeEx("Movement", tree_flags)) {
+					dyncast(d, Movement, c);
+					Text("Ground Accel  "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+					InputFloat("gndaccel", &d->gndAccel);
+					Text("Air Accel     "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+					InputFloat("airaccel", &d->airAccel);
+					Text("Max Walk Speed"); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+					InputFloat("maxwalk ", &d->maxWalkingSpeed);
+					TreePop();
+				}
+				
 				case ComponentType_MeshComp:
-					if (TreeNodeEx("Mesh", tree_flags)) {
-						dyncast(d, MeshComp, c);
-						Text(TOSTRING("Mesh ID: ", d->meshID).c_str());
-						Text(TOSTRING("Visible: ", d->mesh_visible).c_str());
-
-					}
-					break;
+				if (TreeNodeEx("Mesh", tree_flags)) {
+					dyncast(d, MeshComp, c);
+					Text(TOSTRING("Mesh ID: ", d->meshID).c_str());
+					Text(TOSTRING("Visible: ", d->mesh_visible).c_str());
+					
+				}
+				break;
 			}
 			
 			//TableNextColumn(); //TableNextRow();
@@ -475,14 +475,14 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 						TableNextRow(); TableNextColumn();
 						std::string id = std::to_string(entity.value.id);
 						MeshComp* m = entity.value.GetComponent<MeshComp>();
-
+						
 						//SetCursorPosX((GetColumnWidth() - (fontsize - (fontsize / 2)) * id.size()) / 2);
 						if (ImGui::Button(id.c_str())) {
 							admin->selectedEntity = entity.getptr();
 							//if(m) DengRenderer->SetSelectedMesh(m->meshID);
 						}
 						TableNextColumn();
-
+						
 						//TODO(UiEnt, sushi) implement visibility for things other than meshes like lights, etc.
 						if (m) {
 							if (m->mesh_visible) {
@@ -499,7 +499,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 						else {
 							Text("NM");
 						}
-
+						
 						TableNextColumn();
 						Text(TOSTRING(" ", entity.value.name).c_str());
 						static bool rename = false;
@@ -510,7 +510,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 							cpystr(buff, entity.value.name, 63);
 							cpystr(ogname, entity.value.name, 63);
 						}
-
+						
 						if (rename) {
 							if (ImGui::InputText("name input", buff, sizeof(buff), ImGuiInputTextFlags_EnterReturnsTrue)) {
 								cpystr(entity.value.name, buff, 63);
@@ -521,7 +521,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 								rename = false;
 							}
 						}
-
+						
 						TableNextColumn();
 						//TODO(sushi, Ui) find something better to put here
 						Text(TOSTRING(" comps: ", entity.value.components.size()).c_str());
@@ -1570,7 +1570,7 @@ void CanvasSystem::DebugLayer() {
 		ImGui::SetCursorPos(ImVec2(DengWindow->width - fontw * 18 * 1.3 - 20, menubarheight));
 		ImGui::Text(time1.c_str());
 	}
-
+	
 	ImGui::PopStyleColor();
 	ImGui::End();
 }

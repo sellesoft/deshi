@@ -40,7 +40,7 @@ struct OrbManager : public Component {
 	
 	OrbManager(Mesh* mesh, int orbcount = 100);
 	
-	void Init(EntityAdmin* admin) override;
+	void Init() override;
 	void Update() override;
 	void ReceiveEvent(Event event) override;
 	

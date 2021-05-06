@@ -1,14 +1,14 @@
 #include "Controller.h"
-#include "../core.h"
-#include "../math/Math.h"
-#include "../scene/Scene.h"
-#include "../geometry/Edge.h"
-#include "../EntityAdmin.h"
+#include "admin.h"
 #include "components/Camera.h"
 #include "components/MeshComp.h"
 #include "components/Physics.h"
 #include "components/Movement.h"
 #include "components/Player.h"
+#include "../core.h"
+#include "../math/Math.h"
+#include "../scene/Scene.h"
+#include "../geometry/Edge.h"
 
 #include <fstream>
 
@@ -130,12 +130,12 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 	if(!DengConsole->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE){
 		if(admin->state == GameState_Play || admin->state == GameState_Debug){
 			static bool debugmouse = false;
-
+			
 			if (!debugmouse) {
 				camera->rotation.y += (DengInput->mouseX - DengWindow->centerX) * sens * MOUSE_SENS_FRACTION;
 				camera->rotation.x += (DengInput->mouseY - DengWindow->centerY) * sens * MOUSE_SENS_FRACTION;
 			}
-
+			
 			if (DengInput->KeyPressed(Key::F1)) {
 				if (debugmouse) {
 					DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
@@ -146,7 +146,7 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 					debugmouse = true;
 				}
 			}
-		
+			
 		}
 		else if(admin->state == GameState_Editor){
 			if(DengInput->KeyPressed(MouseButton::RIGHT | INPUTMOD_ANY)){
@@ -178,11 +178,11 @@ inline void CameraZoom(EntityAdmin* admin){
 inline void HandleSelectEntity(EntityAdmin* admin){
 	Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
 									  admin->mainCamera->viewMat, DengWindow->dimensions);
-
+	
 	
 	RenderedEdge3D* ray = new RenderedEdge3D(pos, admin->mainCamera->position);
 	
-
+	
 	//NOTE sushi part of the problem with selecting is that we aren't clipping triangles
 	//			 you can see this if you click on an object to show it's outline
 	//			 then moving so that the object is behind you and clicking inside
@@ -696,5 +696,5 @@ void Controller::Update() {
 		}
 		CheckBinds(admin);
 	}
-
+	
 }

@@ -1,8 +1,13 @@
 #include "Physics.h"
 
-#include "../../EntityAdmin.h"
+#include "../admin.h"
 
 Physics::Physics() {
+	admin = g_admin;
+	cpystr(name, "Physics", 63);
+	layer = SystemLayer_Physics;
+	comptype = ComponentType_Physics;
+	
 	position = Vector3::ZERO;
 	rotation = Vector3::ZERO;
 	velocity = Vector3::ZERO;
@@ -12,14 +17,15 @@ Physics::Physics() {
 	elasticity = 1;
 	mass = 1;
 	isStatic = false;
-	
-	cpystr(name, "Physics", 63);
-	layer = SystemLayer_Physics;
-	comptype = ComponentType_Physics;
 }
 
 Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy,
 				 Vector3 rotAcceleration, float elasticity, float mass, bool isStatic) {
+	admin = g_admin;
+	cpystr(name, "Physics", 63);
+	layer = SystemLayer_Physics;
+	comptype = ComponentType_Physics;
+	
 	this->position = position;
 	this->rotation = rotation;
 	this->velocity = velocity;
@@ -29,13 +35,14 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	this->elasticity = elasticity;
 	this->mass = mass;
 	this->isStatic = isStatic;
-	
-	cpystr(name, "Physics", 63);
-	layer = SystemLayer_Physics;
-	comptype = ComponentType_Physics;
 }
 
 Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticity) {
+	admin = g_admin;
+	cpystr(name, "Physics", 63);
+	layer = SystemLayer_Physics;
+	comptype = ComponentType_Physics;
+	
 	this->position = position;
 	this->rotation = rotation;
 	this->velocity = Vector3::ZERO;
@@ -44,10 +51,6 @@ Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticit
 	this->rotAcceleration = Vector3::ZERO;
 	this->mass = mass;
 	this->elasticity = elasticity;
-	
-	cpystr(name, "Physics", 63);
-	layer = SystemLayer_Physics;
-	comptype = ComponentType_Physics;
 }
 
 void Physics::AddInput(Vector3 input) {
@@ -87,12 +90,10 @@ void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count)
 	f32 elasticity = 0.f, mass = 0.f;
 	b32 staticPos = false, staticRot = false;
 	for_n(i,count){
-		memcpy(&entityID, data+cursor, sizeof(u32)); 
-		cursor += sizeof(u32);
+		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		if(entityID >= admin->entities.size()) {
 			ERROR("Failed to load physics component at pos '", cursor-sizeof(u32),
-				  "' because it has an invalid entity ID: ", entityID);
-			continue;
+				  "' because it has an invalid entity ID: ", entityID); continue;
 		}
 		
 		memcpy(&position,   data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
@@ -107,6 +108,5 @@ void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count)
 		Physics* c = new Physics(position, rotation, velocity, accel, rotVel, rotAccel, elasticity, mass, staticPos);
 		admin->entities[entityID].value.AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-		c->Init(admin);
 	}
 }

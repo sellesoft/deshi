@@ -26,10 +26,8 @@ struct MeshComp : public Component {
 	void ChangeMaterialTexture(u32 t);
 	
 	void ReceiveEvent(Event event) override;
-	
-	void Init(EntityAdmin* admin) override;
+	void Init() override;
 	void Update() override;
-	
 	std::vector<char> Save() override;
 	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
@@ -43,10 +41,8 @@ struct MeshComp2D : public Component {
 	void ToggleVisibility();
 	
 	void ReceiveEvent(Event event) override;
-	
-	void Init(EntityAdmin* admin) override;
+	void Init() override;
 	void Update() override;
-	
 	std::vector<char> Save() override;
 	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };

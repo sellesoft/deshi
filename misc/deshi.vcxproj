@@ -208,7 +208,6 @@
     <ClInclude Include="..\src\core\renderer_vulkan.h" />
     <ClInclude Include="..\src\core\time.h" />
     <ClInclude Include="..\src\core\window.h" />
-    <ClInclude Include="..\src\EntityAdmin.h" />
     <ClInclude Include="..\src\external\draudio\dr_flac.h" />
     <ClInclude Include="..\src\external\draudio\dr_mp3.h" />
     <ClInclude Include="..\src\external\draudio\dr_wav.h" />
@@ -222,6 +221,7 @@
     <ClInclude Include="..\src\external\imgui\imstb_truetype.h" />
     <ClInclude Include="..\src\external\saschawillems\VulkanInitializers.hpp" />
     <ClInclude Include="..\src\external\tinyobjloader\tiny_obj_loader.h" />
+    <ClInclude Include="..\src\game\Admin.h" />
     <ClInclude Include="..\src\game\components\AudioListener.h" />
     <ClInclude Include="..\src\game\components\AudioSource.h" />
     <ClInclude Include="..\src\game\components\Camera.h" />
@@ -237,6 +237,7 @@
     <ClInclude Include="..\src\game\Controller.h" />
     <ClInclude Include="..\src\game\entities\Entity.h" />
     <ClInclude Include="..\src\game\entities\PlayerEntity.h" />
+    <ClInclude Include="..\src\game\entities\StaticMeshEntity.h" />
     <ClInclude Include="..\src\game\Keybinds.h" />
     <ClInclude Include="..\src\game\systems\CanvasSystem.h" />
     <ClInclude Include="..\src\game\systems\PhysicsSystem.h" />
@@ -303,7 +304,6 @@
     <ClCompile Include="..\src\core\renderer_vulkan.cpp" />
     <ClCompile Include="..\src\core\window.cpp" />
     <ClCompile Include="..\src\deshi.cpp" />
-    <ClCompile Include="..\src\EntityAdmin.cpp" />
     <ClCompile Include="..\src\external\imgui\imgui.cpp" />
     <ClCompile Include="..\src\external\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\src\external\imgui\imgui_draw.cpp" />
@@ -311,6 +311,7 @@
     <ClCompile Include="..\src\external\imgui\imgui_impl_vulkan.cpp" />
     <ClCompile Include="..\src\external\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\src\external\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="..\src\game\Admin.cpp" />
     <ClCompile Include="..\src\game\components\AudioListener.cpp" />
     <ClCompile Include="..\src\game\components\AudioSource.cpp" />
     <ClCompile Include="..\src\game\components\Camera.cpp" />

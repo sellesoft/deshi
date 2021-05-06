@@ -158,7 +158,7 @@ ____read this to try to fix: http://www.debuginfo.com/tips/userbpntdll.html
 
 
 #include "core.h"
-#include "EntityAdmin.h"
+#include "game/admin.h"
 
 Time* g_time;
 Window* g_window;

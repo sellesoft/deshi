@@ -1,30 +1,31 @@
 #include "Movement.h"
 #include "Physics.h"
-#include "../../EntityAdmin.h"
-
+#include "../admin.h"
 #include "../systems/CanvasSystem.h"
 
 Movement::Movement(Physics* phys) {
-	this->phys = phys;
-	phys->kineticFricCoef = 1;
-	phys->fricOverride = true;
+	admin = g_admin;
 	layer = ComponentLayer_Physics;
 	comptype = ComponentType_Movement;
 	cpystr(name, "Movement", 63);
+	
+	this->phys = phys;
+	phys->kineticFricCoef = 1;
+	phys->fricOverride = true;
 }
 
 void Movement::Update() {
 	if (phys->contactState == ContactNONE) moveState = InAir;
 	else moveState = OnGround;
-
+	
 	if (moveState == OnGround) {
 		ImGui::DebugDrawText("on ground", DengWindow->dimensions / 2);
 	}
 	else {
 		ImGui::DebugDrawText("in air", DengWindow->dimensions / 2);
 	}
-
-
+	
+	
 	if (moveState == OnGround) {
 		phys->velocity += inputs * gndAccel * DengTime->deltaTime;
 		//float projVel = phys->velocity.dot(inputs);
@@ -38,15 +39,15 @@ void Movement::Update() {
 	}
 	//else
 	//	phys->acceleration += Accelerate(inputs, phys->velocity, airAccel, maxWalkingSpeed);
-
-
-
-
+	
+	
+	
+	
 	//TODO(sushi) implement more Source-like speed limiting later
 	if (moveState == OnGround && phys->velocity.mag() > maxWalkingSpeed) {
 		phys->velocity = phys->velocity.normalized() * maxWalkingSpeed;
 	}
-
+	
 	if (jump) {
 		phys->AddForce(nullptr, Vector3(0, 17500, 0));
 		jump = false;
@@ -62,7 +63,7 @@ void Movement::Update() {
 				phys->velocity = Vector3::ZERO;
 		}
 	}
-
+	
 }
 
 std::vector<char> Movement::Save() {

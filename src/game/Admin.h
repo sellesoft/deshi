@@ -1,24 +1,19 @@
 #pragma once
-#ifndef DESHI_ENTITYADMIN_H
-#define DESHI_ENTITYADMIN_H
+#ifndef GAME_ADMIN_H
+#define GAME_ADMIN_H
 
-#include "utils/defines.h"
-#include "utils/debug.h"
-#include "utils/ContainerManager.h"
-#include "scene/scene.h"
-#include "game/Transform.h"
-#include "game/Keybinds.h"
-#include "game/Controller.h"
-#include "game/UndoManager.h"
-#include "game/systems/PhysicsSystem.h"
-#include "game/systems/CanvasSystem.h"
-#include "game/systems/SoundSystem.h"
-#include "game/entities/Entity.h"
-
-
-#define DengKeys admin->keybinds
-#define DengAdmin g_admin
-#define DengCamera g_admin->mainCamera
+#include "../utils/defines.h"
+#include "../utils/debug.h"
+#include "../utils/ContainerManager.h"
+#include "../scene/scene.h"
+#include "Transform.h"
+#include "Keybinds.h"
+#include "Controller.h"
+#include "UndoManager.h"
+#include "systems/PhysicsSystem.h"
+#include "systems/CanvasSystem.h"
+#include "systems/SoundSystem.h"
+#include "entities/Entity.h"
 
 //struct Entity;
 struct System;
@@ -110,5 +105,8 @@ struct EntityAdmin {
 //global admin pointer
 extern EntityAdmin* g_admin;
 #define EntityAt(id) g_admin->entities[id].value
+#define DengAdmin  g_admin
+#define DengKeys   g_admin->keybinds
+#define DengCamera g_admin->mainCamera
 
-#endif
+#endif //GAME_ADMIN_H

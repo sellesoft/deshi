@@ -1,5 +1,5 @@
 #include "AudioSource.h"
-#include "../../EntityAdmin.h"
+#include "../admin.h"
 
 #include "Physics.h"
 #include "../transform.h"

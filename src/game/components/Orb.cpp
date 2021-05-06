@@ -1,11 +1,12 @@
 #include "Orb.h"
 #include "MeshComp.h"
+#include "../admin.h"
 #include "../../core.h"
-#include "../../EntityAdmin.h"
 #include "../../scene/Model.h"
 #include "../../scene/Scene.h"
 
 OrbManager::OrbManager(Mesh* m, int orbcount){
+	admin = g_admin;
 	this->mesh = m;
 	this->orbcount = orbcount;
 	
@@ -14,13 +15,12 @@ OrbManager::OrbManager(Mesh* m, int orbcount){
 	comptype = ComponentType_OrbManager;
 };
 
-void OrbManager::Init(EntityAdmin* a){
-	admin = a;
+void OrbManager::Init(){
 	//create the orbs and their mesh components
 	for (int i = 0; i < orbcount; i++) {
 		Orb* orb = new Orb(Vector3(10, 10, 10), Vector3::ONE * 0.1 * i, Vector3::ZERO, Vector3::ZERO);
 		
-		u32 id = g_renderer->CreateMesh(mesh, Matrix4::TransformationMatrix(orb->pos, orb->rot, Vector3::ONE));
+		u32 id = DengRenderer->CreateMesh(mesh, Matrix4::TransformationMatrix(orb->pos, orb->rot, Vector3::ONE));
 		MeshComp* mc = new MeshComp(mesh, id);
 		orb->mc = mc;
 		mc->ENTITY_CONTROL = false;

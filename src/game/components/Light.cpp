@@ -1,9 +1,10 @@
 #include "Light.h"
 
-#include "../../EntityAdmin.h"
+#include "../admin.h"
 #include "../../core.h"
 
 Light::Light(const Vector3& position, const Vector3& direction, float brightness) {
+	admin = g_admin;
 	this->position = position;
 	this->direction = direction;
 	this->brightness = brightness;
@@ -48,6 +49,5 @@ void Light::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 		Light* c = new Light(position, direction, strength);
 		admin->entities[entityID].value.AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-		c->Init(admin);
 	}
 }

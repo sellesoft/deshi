@@ -6,7 +6,6 @@
 #include "../../math/Vector.h"
 #include "../../math/Matrix.h"
 
-
 enum struct CameraType {
 	PERSPECTIVE, ORTHOGRAPHIC
 };
@@ -34,7 +33,6 @@ struct Camera : public Component {
 	
 	Camera(float fov, float nearZ = .01f, float farZ = 1000.01f, bool freeCam = true);
 	
-	void Init(EntityAdmin* admin) override;
 	void Update() override;
 	
 	//horizontal fov in degrees

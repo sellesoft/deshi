@@ -1,7 +1,7 @@
 #include "event.h"
 
 void Sender::AddReceiver(Receiver* r) {
-    receivers.push_back(r);
+    if(r) receivers.push_back(r);
 }
 
 void Sender::RemoveReceiver(Receiver* r) {
@@ -18,14 +18,6 @@ void Sender::SendEvent(Event event) {
     }
 }
 
-Receiver::Receiver() {
-    
-}
-
 Receiver::Receiver(Sender* s) {
-    s->AddReceiver(this);
-}
-
-Receiver::~Receiver() {
-    
+    if(s) s->AddReceiver(this);
 }

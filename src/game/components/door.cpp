@@ -1,20 +1,18 @@
 #include "door.h"
-#include "../../EntityAdmin.h"
+#include "../admin.h"
 #include "../entities/Entity.h"
 
 Door::Door(b32 isOpen){
-	this->isOpen = isOpen;
+	admin = g_admin;
+	cpystr(name, "MeshComp", 63);
 	comptype = ComponentType_Door;
+	
+	this->isOpen = isOpen;
 }
 
 void Door::ReceiveEvent(Event event){
-	switch(event){
-		case Event_DoorOpen:{
-			isOpen = 1;
-		}break;
-		case Event_DoorClose:{
-			isOpen = 0;
-		}break;
+	if(event == Event_DoorToggle){
+		isOpen = !isOpen;
 	}
 }
 
@@ -33,6 +31,5 @@ void Door::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 		Door* c = new Door(isOpen);
 		admin->entities[entityID].value.AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-		c->Init(admin);
 	}
 }

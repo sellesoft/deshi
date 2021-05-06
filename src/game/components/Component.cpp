@@ -1,5 +1,5 @@
 #include "component.h"
-#include "../../EntityAdmin.h"
+#include "../admin.h"
 
 Component::Component(EntityAdmin* a, u32 eID) {
 	admin = a;

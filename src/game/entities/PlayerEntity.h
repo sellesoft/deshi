@@ -1,4 +1,8 @@
-#include "../../EntityAdmin.h"
+#pragma once
+#ifndef GAME_ENTITY_PLAYER_H
+#define GAME_ENTITY_PLAYER_H
+
+#include "Entity.h"
 
 struct Player;
 struct Movement;
@@ -14,8 +18,10 @@ struct PlayerEntity : public Entity {
 	Collider* collider;
 	MeshComp* mesh;
 	Physics* physics;
-
-
-
-
+	
+	
+	
+	
 };
+
+#endif //GAME_ENTITY_PLAYER_H

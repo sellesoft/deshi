@@ -1,14 +1,13 @@
 #include "PhysicsSystem.h"
-#include "../../core/console.h"
-#include "../../math/Math.h"
-#include "../../geometry/Geometry.h"
-#include "../../utils/Command.h"
-
-#include "../../EntityAdmin.h"
+#include "../admin.h"
 #include "../components/Physics.h"
 #include "../components/Collider.h"
 #include "../components/AudioSource.h"
 #include "../components/MeshComp.h"
+#include "../../core/console.h"
+#include "../../math/Math.h"
+#include "../../geometry/Geometry.h"
+#include "../../utils/Command.h"
 
 u32 collCount;
 
@@ -31,7 +30,7 @@ inline std::vector<PhysicsTuple> GetPhysicsTuples(EntityAdmin* admin) {
 			Transform* transform = &admin->entities[i].getptr()->transform;
 			Physics* physics = nullptr;
 			Collider* collider = nullptr;
-
+			
 			for (Component* c : admin->entities[i].getptr()->components) {
 				if (Physics* phy = dynamic_cast<Physics*>(c)) { physics = phy; continue; }
 				if (Collider* col = dynamic_cast<Collider*>(c)) { collider = col; continue; }

@@ -1,14 +1,15 @@
 #include "Player.h"
 #include "Physics.h"
 #include "Movement.h"
-#include "../../EntityAdmin.h"
+#include "../admin.h"
 
 Player::Player(Movement* movement) {
+	admin = g_admin;
 	layer = ComponentLayer_Physics;
 	comptype = ComponentType_Player;
-	this->movement = movement;
 	cpystr(name, "Player", 63);
 	
+	this->movement = movement;
 }
 
 void Player::Update() {

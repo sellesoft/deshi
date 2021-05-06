@@ -1,5 +1,6 @@
 #include "MeshComp.h"
 #include "../../core.h"
+#include "../admin.h"
 #include "../Transform.h"
 #include "../../scene/Model.h"
 #include "../../scene/Scene.h"
@@ -7,38 +8,41 @@
 #include "../systems/CanvasSystem.h"
 #include "../../geometry/Geometry.h"
 
-#include "../../EntityAdmin.h"
-
 MeshComp::MeshComp() {
+	admin = g_admin;
+	cpystr(name, "MeshComp", 63);
+	send = new Sender();
+	layer = ComponentLayer_Canvas;
+	comptype = ComponentType_MeshComp;
+	
 	this->mesh = 0;
 	this->meshID = -1;
 	this->instanceID = -1;
-	cpystr(name, "MeshComp", 63);
-	send = new Sender();
-	layer = ComponentLayer_Canvas;
-	comptype = ComponentType_MeshComp;
 }
 
 MeshComp::MeshComp(u32 meshID, u32 instanceID) {
-	this->mesh = DengRenderer->GetMeshPtr(meshID);
-	this->meshID = meshID;
-	this->instanceID = instanceID;
-	
+	admin = g_admin;
 	cpystr(name, "MeshComp", 63);
 	send = new Sender();
 	layer = ComponentLayer_Canvas;
 	comptype = ComponentType_MeshComp;
+	
+	
+	this->meshID = meshID;
+	this->instanceID = instanceID;
+	this->mesh = DengRenderer->GetMeshPtr(meshID);
 }
 
 MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
-	this->mesh = m;
-	this->meshID = meshID;
-	this->instanceID = instanceID;
-	
+	admin = g_admin;
 	cpystr(name, "MeshComp", 63);
 	send = new Sender();
 	layer = ComponentLayer_Canvas;
 	comptype = ComponentType_MeshComp;
+	
+	this->mesh = m;
+	this->meshID = meshID;
+	this->instanceID = instanceID;
 }
 
 MeshComp::~MeshComp() {
@@ -89,9 +93,7 @@ bool isthisin(T test, std::vector<T> vec) {
 	return false;
 }
 
-void MeshComp::Init(EntityAdmin* a) {
-	admin = a;
-	mesh  = DengRenderer->GetMeshPtr(meshID);
+void MeshComp::Init() {
 	DengRenderer->UpdateMeshVisibility(meshID, mesh_visible);
 }
 
@@ -135,14 +137,11 @@ void MeshComp::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count
 				  "' because it has an invalid mesh ID: ", meshID); continue;
 		}
 		
-		MeshComp* c = new MeshComp();
-		c->instanceID = instanceID;
-		c->meshID = meshID;
+		MeshComp* c = new MeshComp(meshID, instanceID);
 		memcpy(&c->mesh_visible,   data+cursor, sizeof(b32)); cursor += sizeof(b32);
 		memcpy(&c->ENTITY_CONTROL, data+cursor, sizeof(b32)); cursor += sizeof(b32);
 		admin->entities[entityID].value.AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-		c->Init(admin);
 	}
 }
 
@@ -152,15 +151,16 @@ void MeshComp::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count
 
 
 MeshComp2D::MeshComp2D(u32 id) {
-	this->twodID = id;
-	
+	admin = g_admin;
 	cpystr(name, "MeshComp", 63);
 	send = new Sender();
 	layer = ComponentLayer_Canvas;
+	
+	this->twodID = id;
 }
 
-void MeshComp2D::Init(EntityAdmin* a) {
-	admin = a;
+void MeshComp2D::Init() {
+	DengRenderer->UpdateMeshVisibility(twodID, visible);
 }
 
 void MeshComp2D::ToggleVisibility() {

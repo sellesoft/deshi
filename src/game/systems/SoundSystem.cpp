@@ -1,9 +1,9 @@
 #include "SoundSystem.h"
-#include "../../core/console.h"
-#include "../../EntityAdmin.h"
+#include "../admin.h"
 #include "../components/Camera.h"
 #include "../components/AudioSource.h"
 #include "../components/Physics.h"
+#include "../../core/console.h"
 
 #if defined(_MSC_VER)
 #pragma comment(lib,"OpenAL32.lib")

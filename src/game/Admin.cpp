@@ -1,25 +1,17 @@
-#include "EntityAdmin.h"
-#include "core.h"
-
-#include "utils/Command.h"
-#include "utils/defines.h"
-#include "scene/Scene.h"
-
-#include "game/Keybinds.h"
-#include "game/Transform.h"
-#include "game/Controller.h"
-#include "game/components/Orb.h"
-#include "game/components/door.h"
-#include "game/components/Light.h"
-#include "game/components/Camera.h"
-#include "game/components/Player.h"
-#include "game/components/Physics.h"
-#include "game/components/MeshComp.h"
-#include "game/components/Collider.h"
-#include "game/components/Movement.h"
-#include "game/components/Component.h"
-#include "game/components/AudioSource.h"
-#include "game/components/AudioListener.h"
+#include "Admin.h"
+#include "../core.h"
+#include "components/Orb.h"
+#include "components/door.h"
+#include "components/Light.h"
+#include "components/Camera.h"
+#include "components/Player.h"
+#include "components/Physics.h"
+#include "components/MeshComp.h"
+#include "components/Collider.h"
+#include "components/Movement.h"
+#include "components/Component.h"
+#include "components/AudioSource.h"
+#include "components/AudioListener.h"
 
 #include <iostream>
 #include <fstream>
@@ -42,7 +34,6 @@ void EntityAdmin::Init() {
 	state = GameState_Editor;
 	pause_phys = pause_sound = true;
 	editorCamera = new Camera(90.f, .01f, 1000.01f, true); //temporary camera creation on admin
-	editorCamera->Init(this);
 	mainCamera = editorCamera;
 #endif
 	
@@ -131,7 +122,6 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed
 				dyncast(d, Light, c);
 				scene.lights.push_back(d);
 			}
-			c->Init(this);
 			c->entity = entities[c->entityID].getptr();
 		}
 		operator delete(e); //call this to delete the staging entity, but not components (doesnt call destructor)
@@ -602,7 +592,6 @@ Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const c
 	for (Component* c : e->components) {
 		c->entityID = id;
 		c->layer_index = freeCompLayers[c->layer].add(c);
-		c->Init(this);
 		c->entity = entities[c->entityID].getptr();
 	}
 	operator delete(e);

@@ -1,7 +1,7 @@
 #include "console.h"
 #include "../core.h"
 #include "../utils/Command.h"
-#include "../EntityAdmin.h"
+#include "../game/admin.h"
 #include "../game/components/Camera.h"
 #include "../game/components/Physics.h"
 #include "../game/components/Collider.h"
@@ -13,9 +13,6 @@
 #include "../external/imgui/imgui_impl_glfw.h"
 #include "../external/imgui/imgui_impl_vulkan.h"
 
-#include <functional>
-#include <ctime>
-#include <time.h>
 #include <iomanip>
 #include <fstream>
 #include <sstream>
@@ -58,9 +55,6 @@ std::map<std::string, Color> colstrmap{
 	{"black", Color::BLACK},
 	{"error", Color::RED} //special error color for the console to know when to flash the debug bar
 };
-
-//map for making new components in commands
-std::map<std::string, std::function<Component*()>> compstrmap;
 
 ImVec4 ColorToVec4(Color p) {
 	return ImVec4((float)p.r / 255, (float)p.g / 255, (float)p.b / 255, p.a / 255);
@@ -327,26 +321,26 @@ void Console::DrawConsole() {
 	//ImGuiListClipper clipper;
 	//clipper.Begin(buffer.size());
 	//while (clipper.Step()) {
-		for (std::pair<std::string, Color> p : buffer) {
-			//for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
-			//color formatting is "[c:red]text[c] text text"
-			//TODO( sushi,OpCon) maybe optimize by only drawing what we know will be displayed on screen instead of parsing through all of it
-			
-			if (p.second == Color::BLANK) {
-				SameLine(0, 0);
-				TextWrapped(p.first.c_str());
-			}
-			else {
-				ImGui::PushStyleColor(ImGuiCol_Text, ColorToVec4(p.second));
-				SameLine(0, 0);
-				TextWrapped(p.first.c_str());
-				ImGui::PopStyleColor();
-			}
-			
-			if (p.first[p.first.size() - 1] == '\n') {
-				TextWrapped("\n");
-			}
+	for (std::pair<std::string, Color> p : buffer) {
+		//for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
+		//color formatting is "[c:red]text[c] text text"
+		//TODO( sushi,OpCon) maybe optimize by only drawing what we know will be displayed on screen instead of parsing through all of it
+		
+		if (p.second == Color::BLANK) {
+			SameLine(0, 0);
+			TextWrapped(p.first.c_str());
 		}
+		else {
+			ImGui::PushStyleColor(ImGuiCol_Text, ColorToVec4(p.second));
+			SameLine(0, 0);
+			TextWrapped(p.first.c_str());
+			ImGui::PopStyleColor();
+		}
+		
+		if (p.first[p.first.size() - 1] == '\n') {
+			TextWrapped("\n");
+		}
+	}
 	//}
 	
 	
@@ -515,14 +509,6 @@ CMDSTARTA(state, args.size() > 0){
 		admin->ChangeState(GameState_Editor);
 	}
 }CMDEND("state <new_state:String>{play|menu|debug|editor}");
-
-CMDSTARTA(load_entity, args.size() > 0){
-	if(Entity* e = Entity::CreateEntityFromFile(admin, args[0])){
-		u32 id = admin->CreateEntity(e);
-		SUCCESS("Creating entity '", e->name, "' with ID: ", id);
-		return "";
-	}
-}CMDEND("load_entity <example.entity:String>");
 
 CMDSTARTA(draw_line, args.size() > 1){
 	Vector3 pos1{}, pos2{}, color = {255,255,255};
@@ -806,10 +792,16 @@ COMMANDFUNC(add_force) {
 					return "[c:error]selectesd object doesn't have a physics component.[c]";
 				}
 			}
-
+			
 		}
 	}
 	return "add_force -force=(x,y,z)";
+}
+
+COMMANDFUNC(engine_pause){
+	admin->paused = !admin->paused;
+	if (admin->paused) return "engine_pause = true";
+	else return "engine_pause = false";
 }
 
 void Console::AddRandomCommands(){
@@ -832,7 +824,6 @@ void Console::AddRandomCommands(){
 	CMDADD(time_game, "Logs the game times");
 	CMDADD(undo, "Undos previous level editor action");
 	CMDADD(redo, "Redos last undone level editor action");
-	CMDADD(load_entity, "Loads an entity from the entities folder");
 	CMDADD(add_player, "Adds a player to the world.");
 	CMDADD(draw_line, "Draws a line in 3D with desired color");
 	CMDADD(draw_triangle, "Draws a triangle in 3D with desired color");
@@ -844,8 +835,7 @@ void Console::AddRandomCommands(){
 	CMDADD(state, "Changes the admin's gamestate");
 	CMDADD(flush, "Flushes the console's buffer to the log file.");
 	CMDADD(add_force, "Adds a force to the selected object.");
-
-
+	CMDADD(engine_pause, "Pauses/Unpauses the engine");
 }
 
 ////////////////////////////////////
@@ -1467,11 +1457,6 @@ void Console::AddAliases() {
 //////////////////////////////////////////////////////////////////////
 
 void Console::Init() {
-	compstrmap.emplace("AudioSource", []() { return new AudioSource(); });
-	compstrmap.emplace("Collider",    []() { return new Collider(); });
-	compstrmap.emplace("MeshComp",    []() { return new MeshComp(); });
-	compstrmap.emplace("Physics",     []() { return new Physics(); });
-	
 	AddLog("[c:dcyan]Deshi Console ver. 0.5.1[c]");
 	AddLog("\"listc\" for a list of commands\n\"help {command}\" to view a commands help page");
 	AddLog("see console_release_notes.txt for version information");

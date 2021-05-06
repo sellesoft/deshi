@@ -1,7 +1,6 @@
 #include "Collider.h"
 
-#include "../../EntityAdmin.h"
-
+#include "../admin.h"
 #include "../../math/InertiaTensors.h"
 #include "../../math/math.h"
 #include "../../scene/Model.h"
@@ -11,6 +10,7 @@
 //////////////////////
 
 BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Command* command, b32 nocollide) {
+	admin = g_admin;
 	cpystr(name, "BoxCollider", 63);
 	comptype = ComponentType_Collider;
 	
@@ -24,6 +24,7 @@ BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer,
 }
 
 BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Command* command, b32 nocollide) {
+	admin = g_admin;
 	cpystr(name, "BoxCollider", 63);
 	comptype = ComponentType_Collider;
 	
@@ -63,7 +64,6 @@ void BoxCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 co
 		BoxCollider* c = new BoxCollider(halfDimensions, tensor, layer, nullptr);
 		admin->entities[entityID].value.AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-		c->Init(admin);
 	}
 }
 
@@ -72,6 +72,7 @@ void BoxCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 co
 ///////////////////////
 
 AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Command* command, b32 nocollide) {
+	admin = g_admin;
 	cpystr(name, "AABBCollider", 63);
 	comptype = ComponentType_Collider;
 	
@@ -125,6 +126,7 @@ AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Command* 
 }
 
 AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Command* command, b32 nocollide) {
+	admin = g_admin;
 	cpystr(name, "AABBCollider", 63);
 	comptype = ComponentType_Collider;
 	
@@ -137,6 +139,7 @@ AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLaye
 }
 
 AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Command* command, b32 nocollide) {
+	admin = g_admin;
 	cpystr(name, "AABBCollider", 63);
 	comptype = ComponentType_Collider;
 	
@@ -176,7 +179,6 @@ void AABBCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 c
 		AABBCollider* c = new AABBCollider(halfDimensions, tensor, layer, nullptr);
 		admin->entities[entityID].value.AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-		c->Init(admin);
 	}
 }
 
@@ -185,6 +187,7 @@ void AABBCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 c
 /////////////////////////
 
 SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Command* command, b32 nocollide) {
+	admin = g_admin;
 	cpystr(name, "SphereCollider", 63);
 	comptype = ComponentType_Collider;
 	
@@ -197,6 +200,7 @@ SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Com
 }
 
 SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer, Command* command, b32 nocollide) {
+	admin = g_admin;
 	cpystr(name, "SphereCollider", 63);
 	comptype = ComponentType_Collider;
 	
@@ -236,10 +240,7 @@ void SphereCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32
 		SphereCollider* c = new SphereCollider(radius, tensor, layer, nullptr);
 		admin->entities[entityID].value.AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-		c->Init(admin);
 	}
-
-	
 }
 
 
@@ -249,6 +250,7 @@ void SphereCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32
 
 
 LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Command* command, b32 nocollide) {
+	admin = g_admin;
 	cpystr(name, "LandscapeCollider", 63);
 	comptype = ComponentType_Collider;
 	
@@ -334,5 +336,7 @@ LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Command* co
 ////////////////////////////
 
 ComplexCollider::ComplexCollider(Mesh* mesh, u32 collisionleyer, Command* command, b32 nocollide) {
-	
+	admin = g_admin;
+	cpystr(name, "ComplexCollider", 63);
+	comptype = ComponentType_Collider;
 }

@@ -1,6 +1,6 @@
 #include "AudioListener.h"
 
-#include "../../EntityAdmin.h"
+#include "../admin.h"
 
 AudioListener::AudioListener() {
 	layer = ComponentLayer_Sound;
@@ -56,6 +56,5 @@ void AudioListener::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 
 		memcpy(&c->orientation, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
 		admin->entities[entityID].value.AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-		c->Init(admin);
 	}
 }
