@@ -10,6 +10,8 @@
 #include "../components/AudioSource.h"
 #include "../components/MeshComp.h"
 
+u32 collCount;
+
 struct PhysicsTuple { 
 	Transform* transform = nullptr; 
 	Physics*   physics   = nullptr; 
@@ -76,11 +78,11 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 		}
 		else if (c.second == ContactStationary) contactStationary = true;
 	}
-
+	
 	if      (contactMoving)     t.physics->contactState = ContactMoving;
 	else if (contactStationary) t.physics->contactState = ContactStationary;
 	else                        t.physics->contactState = ContactNONE;
-
+	
 	//sum up forces to calculate acceleration
 	Vector3 netForce;
 	for(auto& f : t.physics->forces) {
@@ -215,7 +217,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			if (!obj1->isStatic) obj1->velocity -= impulse / obj1->mass;
 			if (!obj2->isStatic) obj2->velocity += impulse / obj2->mass;
 			//PRINTLN(obj2->velocity.mag());
-
+			
 			if (obj1->velocity.x != 0 || obj1->velocity.z != 0) {
 				obj1->contacts[obj2] = ContactMoving;
 			}
@@ -229,7 +231,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 				obj2->contacts[obj1] = ContactStationary;
 			}
 			
-
+			
 			return true;
 		}
 		return true;
@@ -259,9 +261,7 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 		float overlap = .5f * (sphereCol->radius - distanceBetween);
 		Vector3 normal = -vectorBetween.normalized();
 		vectorBetween = -normal * overlap;
-		if(aabb->isStatic && sphere->isStatic){
-			//do nothing b/c neither can move
-		}else if(aabb->isStatic){
+		if(aabb->isStatic){
 			sphere->position -= vectorBetween;
 		}else if(sphere->isStatic){
 			aabb->position += vectorBetween;
@@ -670,9 +670,12 @@ inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 	std::vector<Manifold> manis; //TODO(sushi, Ph) put the manifolds vector somewhere better later
 	std::vector<poly> polys; 
 	if(t.collider) {
-		for(auto& tuple : tuples) {
-			if(&t != &tuple && tuple.collider && t.collider->collisionLayer == tuple.collider->collisionLayer) {
-				CheckCollision(t, tuple, polys);
+		for(auto& t2 : tuples) {
+			if(&t != &t2 && t2.collider && 
+			   t.collider->collisionLayer == t2.collider->collisionLayer &&
+			   (!t.physics->isStatic && !t2.physics->isStatic)) {
+				CheckCollision(t, t2, polys);
+				++collCount;
 			}
 		}
 		FillManis(polys, manis);
@@ -703,6 +706,7 @@ void PhysicsSystem::Update() {
 	//update physics extra times per frame if frame time delta is larger than physics time delta
 	TIMER_START(physLocalTime);
 	while(DengTime->fixedAccumulator >= DengTime->fixedDeltaTime) {
+		collCount = 0;
 		for(auto& t : tuples) {
 			if (TIMER_END(physLocalTime) > 5000) {
 				admin->pause_phys = true;
@@ -714,20 +718,20 @@ void PhysicsSystem::Update() {
 		}
 		DengTime->fixedAccumulator -= DengTime->fixedDeltaTime;
 		DengTime->fixedTotalTime += DengTime->fixedDeltaTime;
+		collisionCount = collCount;
 	}
 	physend:
 	//interpolate between new physics position and old transform position by the leftover time
 	float alpha = DengTime->fixedAccumulator / DengTime->fixedDeltaTime;
 	for(auto& t : tuples) {
-
 		switch (t.physics->contactState) {
-		case ContactMoving:
+			case ContactMoving:
 			ImGui::DebugDrawText3("ContactMoving", t.transform->position);
 			break;
-		case ContactStationary:
+			case ContactStationary:
 			ImGui::DebugDrawText3("ContactStationary", t.transform->position);
 			break;
-		case ContactNONE:
+			case ContactNONE:
 			ImGui::DebugDrawText3("ContactNONE", t.transform->position);
 			break;
 		}

@@ -2,31 +2,45 @@
 #ifndef DESHI_OPTIONAL_H
 #define DESHI_OPTIONAL_H
 
+#include <type_traits>
+
 template <typename T>
 struct Optional {
 	T value;
+	bool has_value;
+	
 	Optional() {
-		memset(&value, 0xFFFFFFFF, sizeof(T));
+		this->has_value = false;
 	};
 	
 	Optional(T& value) {
 		this->value = value;
+		this->has_value = true;
 	}
 	
-	bool test(){
-		T b; memset(&b, 0xFFFFFFFF, sizeof(T));
-		return (memcmp(&value, &b, sizeof(T))) ? true : false;
+	inline bool test(){
+		return has_value;
 	}
 	
 	inline void reset(){
-		memset(&value, 0xFFFFFFFF, sizeof(T));
+		has_value = false;
 	}
 	
-	inline bool operator==(const Optional& rhs) const{
+	inline bool operator=(Optional& rhs){
+		has_value = true;
+		return value = rhs.value;
+	}
+	
+	inline bool operator=(T& rhs){
+		has_value = true;
+		return value = rhs;
+	}
+	
+	inline bool operator==(Optional& rhs){
 		return value == rhs.value;
 	}
 	
-	inline bool operator!=(const Optional& rhs) const{
+	inline bool operator!=(Optional& rhs){
 		return value != rhs.value;
 	}
 
@@ -38,7 +52,7 @@ struct Optional {
 		return &value;
 	}
 	
-	inline explicit operator bool(){ return test(); }
+	inline explicit operator bool(){ return has_value; }
 };
 
 #endif //DESHI_OPTIONAL_H

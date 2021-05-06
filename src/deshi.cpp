@@ -14,11 +14,7 @@ if you feel they would handle the problem better. It should generally be you tho
 
 Major Ungrouped TODOs
 ---------------------
-make it so the play state starts when you go from EDITOR to PLAY or PLAY_DEBUG
-____like it is in Unreal, eg. everything resets to some start position when you stop playing
-add shaders: PBR (4textures)
 create a demo level
-add player movement and player entity
 
 Minor Ungrouped TODOs
 ---------------------
@@ -55,6 +51,8 @@ add lighting and shadows
 add 2D shader and interface functions
 add face normal and tangents to vertex buffer
 fix texture transparency
+ability to do transparency in a fragment shader eg. we can do outColor = vec4(1,1,1,0.5)
+___this would be for experimenting with volumetrics, making a window shader w/o need for textures, etc.
 add RenderSettings loading and usage
 check those vulkan-tutorial links for the suggestions
 add instancing

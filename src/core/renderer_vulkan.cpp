@@ -1141,13 +1141,13 @@ findQueueFamilies(VkPhysicalDevice device) {
 	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 	
-	int i = 0;
+	u32 i = 0;
 	for(auto& queueFamily : queueFamilies) {
-		if(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) { indices.graphicsFamily = i; }
+		if(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) indices.graphicsFamily = i;
 		
 		VkBool32 presentSupport = false;
 		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
-		if (presentSupport) { indices.presentFamily = i; }
+		if (presentSupport) indices.presentFamily = i;
 		
 		if(indices.isComplete()) { break; }
 		i++;
@@ -1203,7 +1203,7 @@ CreateLogicalDevice() {
 	
 	float queuePriority = 1.0f;
 	//queueCreateInfos.reserve(uniqueQueueFamilies.size());
-	for(u32 queueFamily : uniqueQueueFamilies){
+	for(int queueFamily : uniqueQueueFamilies){
 		VkDeviceQueueCreateInfo queueCreateInfo{};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfo.queueFamilyIndex = physicalQueueFamilies.graphicsFamily.value;
