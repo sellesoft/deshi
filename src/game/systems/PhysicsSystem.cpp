@@ -672,9 +672,9 @@ inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 		for(auto& t2 : tuples) {
 			if(&t != &t2 && t2.collider && 
 			   t.collider->collisionLayer == t2.collider->collisionLayer &&
-			   (!t.physics->isStatic && !t2.physics->isStatic)) {
-				CheckCollision(t, t2, polys);
-				++collCount;
+			   (!t.physics->isStatic || !t2.physics->isStatic)) {
+				//CheckCollision(t, t2, polys);
+				collCount++;
 			}
 		}
 		FillManis(polys, manis);

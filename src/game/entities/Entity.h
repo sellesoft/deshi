@@ -37,9 +37,6 @@ struct Entity {
 	void RemoveComponent(Component* component);
 	void RemoveComponents(std::vector<Component*> components);
 	
-	//returns an entity loaded from the entities folder
-	static Entity* CreateEntityFromFile(EntityAdmin* admin, std::string& filename);
-	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
 	template<class T>
 		T* GetComponent() {

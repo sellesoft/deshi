@@ -33,13 +33,14 @@ void EntityAdmin::Init() {
 #else
 	state = GameState_Editor;
 	pause_phys = pause_sound = true;
+	DengTime->phys_pause = true;
+	DengTime->fixedAccumulator = 0;
 	editorCamera = new Camera(90.f, .01f, 1000.01f, true); //temporary camera creation on admin
 	editorCamera->admin = this;
 	mainCamera = editorCamera;
 #endif
 	
 	//reserve arrays
-	//TODO(sushi) figure out why the reserve function i set up in ContainerManager tries deleting a nonexistant entity
 	//entities.reserve(1000);
 	creationBuffer.reserve(100);
 	deletionBuffer.reserve(100);
@@ -144,6 +145,63 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed
 	DengTime->paused = paused;
 	DengTime->phys_pause = pause_phys;
 	skip = false;
+}
+
+u32 EntityAdmin::CreateEntity(const char* name) {
+	u32 id = entities.size() + creationBuffer.size() - 1;
+	creationBuffer.push_back(new Entity(this, id, Transform(), name));
+	return id;
+}
+
+u32 EntityAdmin::CreateEntity(std::vector<Component*> components, const char* name, Transform transform) {
+	Entity* e = new Entity;
+	e->SetName(name);
+	e->admin = this;
+	e->transform = transform;
+	e->AddComponents(components);
+	creationBuffer.push_back(e);
+	return entities.size() + creationBuffer.size() - 1;
+}
+
+u32 EntityAdmin::CreateEntity(Entity* e) {
+	e->admin = this;
+	creationBuffer.push_back(e);
+	return entities.size() + creationBuffer.size() - 1;
+}
+
+Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const char* name, Transform transform) {
+	Entity* e = new Entity;
+	e->SetName(name);
+	e->admin = this;
+	e->transform = transform;
+	e->AddComponents(components);
+	int index = entities.add(Entity(this, 0, e->transform, e->name, e->components));
+	entities[index].getptr()->id = index;
+	for (Component* c : e->components) {
+		c->entityID = index;
+		c->layer_index = freeCompLayers[c->layer].add(c);
+		c->entity = entities[c->entityID].getptr();
+	}
+	operator delete(e);
+	return &entities[index].value;
+}
+
+void EntityAdmin::DeleteEntity(u32 id) {
+	if (id < entities.size()) {
+		deletionBuffer.push_back(entities[id].getptr());
+	}
+	else {
+		ERROR("Attempted to add entity '", id, "' to deletion buffer when it doesn't exist on the admin");
+	}
+}
+
+void EntityAdmin::DeleteEntity(Entity* e) {
+	if (e->id < entities.size()) {
+		deletionBuffer.push_back(e);
+	}
+	else {
+		ERROR("Attempted to add entity '", e->id, "' to deletion buffer when it doesn't exist on the admin");
+	}
 }
 
 void EntityAdmin::ChangeState(GameState new_state){
@@ -560,59 +618,6 @@ void EntityAdmin::Load(const char* filename) {
 }
 
 
-u32 EntityAdmin::CreateEntity(const char* name) {
-	u32 id = entities.size() + creationBuffer.size() - 1;
-	creationBuffer.push_back(new Entity(this, id, Transform(), name));
-	return id;
-}
 
-u32 EntityAdmin::CreateEntity(std::vector<Component*> components, const char* name, Transform transform) {
-	Entity* e = new Entity;
-	e->SetName(name);
-	e->admin = this;
-	e->transform = transform;
-	e->AddComponents(components);
-	creationBuffer.push_back(e);
-	return entities.size() + creationBuffer.size() - 1;
-}
-
-u32 EntityAdmin::CreateEntity(Entity* e) {
-	e->admin = this;
-	creationBuffer.push_back(e);
-	return entities.size() + creationBuffer.size() - 1;
-}
-
-Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const char* name, Transform transform) {
-	Entity* e = new Entity;
-	e->SetName(name);
-	e->admin = this;
-	e->transform = transform;
-	e->AddComponents(components);
-	u32 id = entities.size();
-	entities.add(Entity(this, id, e->transform, e->name, e->components));
-	for (Component* c : e->components) {
-		c->entityID = id;
-		c->layer_index = freeCompLayers[c->layer].add(c);
-		c->entity = entities[c->entityID].getptr();
-	}
-	operator delete(e);
-	return &entities[id].value;
-}
-
-void EntityAdmin::DeleteEntity(u32 id) {
-	if(id < entities.size()){
-		deletionBuffer.push_back(entities[id].getptr());
-	}else{
-		ERROR("Attempted to add entity '", id, "' to deletion buffer when it doesn't exist on the admin");
-	}
-}
-
-void EntityAdmin::DeleteEntity(Entity* e) {
-	if(e->id < entities.size()){
-		deletionBuffer.push_back(e);
-	}else{
-		ERROR("Attempted to add entity '", e->id, "' to deletion buffer when it doesn't exist on the admin");
-	}
-}
 
 

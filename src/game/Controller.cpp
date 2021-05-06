@@ -33,7 +33,7 @@ inline void AddBindings(EntityAdmin* admin) {
 				std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
 				
 				try {
-					DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, DengKeys.stk.at(key)));
+					DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, admin->keybinds.stk.at(key)));
 				}
 				catch (...) {
 					ERROR("Unknown key '", key, "' attempted to bind to command '", command, "'");

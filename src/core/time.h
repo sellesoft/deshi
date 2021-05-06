@@ -49,7 +49,7 @@ extern Time* g_time;
 inline void Time::Init(float fixedUpdatesPerSecond){
 	fixedTimeStep    = fixedUpdatesPerSecond;
 	fixedDeltaTime   = 1.f / fixedUpdatesPerSecond;
-	
+
 	tp1 = std::chrono::system_clock::now();
 	tp2 = std::chrono::system_clock::now();
 }
