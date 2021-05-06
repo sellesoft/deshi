@@ -190,7 +190,7 @@ struct Renderer{
 	RenderSettings settings;
 	RenderStats    stats{};
 	RendererStage  rendererStage{};
-
+	
 	//this is temporary
 	//TODO(sushi, Re) implement SSBOs so we can have a dynamically sized light array
 	//and other various dynamically sized things for things and such

@@ -25,6 +25,8 @@ struct PhysicsSystem{
 	f32 maxRotVelocity; //per axis in degrees
 	f32 minRotVelocity;
 	
+	u32 collisionCount;
+	
 	void Init(EntityAdmin* admin);
 	void Update();
 };

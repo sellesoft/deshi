@@ -6,7 +6,7 @@ pushd ..\src
 
 @set INCLUDES=/I..\src /IC:\src\glfw-3.3.2.bin.WIN64\include /IC:\src\OpenAL1.1\include /I%VULKAN_SDK%\include /IC:\src\glm
 
-@set SOURCES=*.cpp core\*.cpp external\imgui\*.cpp game\*.cpp game\components\*.cpp game\systems\*.cpp scene\*.cpp
+@set SOURCES=*.cpp core\*.cpp external\imgui\*.cpp game\*.cpp game\components\*.cpp game\systems\*.cpp scene\*.cpp game\entities\*.cpp
 
 @set LIBS=/LIBPATH:C:\src\glfw-3.3.2.bin.WIN64\lib-vc2019 /LIBPATH:C:\src\OpenAL1.1\libs\Win64 /libpath:%VULKAN_SDK%\lib glfw3.lib OpenAL32.lib opengl32.lib gdi32.lib shell32.lib vulkan-1.lib shaderc_combined.lib
 
