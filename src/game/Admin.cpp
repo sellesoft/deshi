@@ -34,6 +34,7 @@ void EntityAdmin::Init() {
 	state = GameState_Editor;
 	pause_phys = pause_sound = true;
 	editorCamera = new Camera(90.f, .01f, 1000.01f, true); //temporary camera creation on admin
+	editorCamera->admin = this;
 	mainCamera = editorCamera;
 #endif
 	
