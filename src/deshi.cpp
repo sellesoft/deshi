@@ -18,6 +18,9 @@ create a demo level
 
 Minor Ungrouped TODOs
 ---------------------
+deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
+__the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
+____to update it's canvas system.
 change undo's to never use pointers and have undos that can act like linked lists to chain them
 figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
 settings file(s) [keybinds, video, audio, etc]

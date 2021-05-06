@@ -113,6 +113,7 @@ struct ContainerManager {
 	
 	void clear() {
 		container.clear();
+		empties.clear();
 		real_size = 0;
 	}
 

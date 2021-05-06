@@ -114,6 +114,9 @@ struct Physics : public Component {
 	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO,
 			Vector3 rotVeloctiy = Vector3::ZERO,Vector3 rotAcceleration = Vector3::ZERO, float elasticity = .5f, 
 			float mass = 1.f, bool isStatic = false);
+	Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy, Vector3 rotAcceleration, float elasticity,
+			float mass, bool isStatic, bool staticRotation, bool twoDphys, float kineticFricCoef, float staticFricCoef,
+			bool fricOverride);
 	Physics(Vector3 position, Vector3 rotation, float mass, float elasticity);
 	
 	//adds the input vector to the target's input vector

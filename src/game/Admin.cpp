@@ -316,7 +316,7 @@ void EntityAdmin::Save(const char* filename) {
 	header.entityArrayOffset = sizeof(SaveHeader);
 	
 	//store sorted components and write entities
-	header.componentTypeCount = 9;
+	header.componentTypeCount = 10;
 	std::vector<AudioListener*>  compsAudioListener;
 	std::vector<AudioSource*>    compsAudioSource;
 	std::vector<BoxCollider*>    compsColliderBox;
@@ -325,6 +325,7 @@ void EntityAdmin::Save(const char* filename) {
 	std::vector<Light*>          compsLight;
 	std::vector<MeshComp*>       compsMeshComp;
 	std::vector<Physics*>        compsPhysics;
+	std::vector<Movement*>		 compsMovement;
 	std::vector<Player*>         compsPlayer;
 	//TODO(delle,Cl) convert these vectors to char vectors and when iterating thru entities
 	// and thier components, call the save function of an entity to add to the components
@@ -339,30 +340,26 @@ void EntityAdmin::Save(const char* filename) {
 		file.write((const char*)&e.value.transform.scale,    sizeof(Vector3));
 		
 		//sort components
-		for(auto c : e.value.components) {
-			if(dyncast(d, MeshComp, c)) {
-				compsMeshComp.push_back(d);
-			}else if(dyncast(d, Physics, c)) {
-				compsPhysics.push_back(d);
-			}else if(dyncast(col, Collider, c)){
-				if      (dyncast(d, BoxCollider, col)){
-					compsColliderBox.push_back(d);
-				}else if(dyncast(d, AABBCollider, col)){
-					compsColliderAABB.push_back(d);
-				}else if(dyncast(d, SphereCollider, col)){
-					compsColliderSphere.push_back(d);
-				}else{
-					ERROR("Unhandled collider component '", c->name, "' found when attempting to save");
+		for (auto c : e.value.components) {
+			switch (c->comptype) {
+				case ComponentType_Physics:       compsPhysics.push_back(dyncasta(Physics, c)); break;
+				case ComponentType_Collider: {
+					dyncast(col, Collider, c);
+					switch (col->type) {
+						case ColliderType_Box:    compsColliderBox.push_back(dyncasta(BoxCollider, col)); break;
+						case ColliderType_AABB:   compsColliderAABB.push_back(dyncasta(AABBCollider, col)); break;
+						case ColliderType_Sphere: compsColliderSphere.push_back(dyncasta(SphereCollider, col)); break;
+						}
+					break;
 				}
-			}else if(dyncast(d, AudioListener, c)){
-				compsAudioListener.push_back(d);
-			}else if(dyncast(d, AudioSource, c)){
-				compsAudioSource.push_back(d);
-			}else if(dyncast(d, Player, c)){
-				compsPlayer.push_back(d);
-			}else{
-				ERROR("Unhandled component '", c->name, "' found when attempting to save");
-			}
+				case ComponentType_AudioListener: //compsAudioListener.push_back(dyncasta(AudioListener, c)); break;
+				case ComponentType_AudioSource:   //compsAudioSource.push_back(dyncasta(AudioSource, c)); break;
+				case ComponentType_Light:         compsLight.push_back(dyncasta(Light, c)); break;
+				case ComponentType_OrbManager:    //TODO(sushi) impl orb saving break;
+				case ComponentType_Movement:      compsMovement.push_back(dyncasta(Movement, c)); break;
+				case ComponentType_MeshComp:      compsMeshComp.push_back(dyncasta(MeshComp, c)); break;
+				case ComponentType_Player:        compsPlayer.push_back(dyncasta(Player, c)) break;
+				}
 		}
 	}
 	
@@ -381,14 +378,14 @@ void EntityAdmin::Save(const char* filename) {
 	header.componentTypeHeaderArrayOffset = file.tellp();
 	ComponentTypeHeader typeHeader;
 	
-	//audio listener
+	//audio listener 0
 	typeHeader.type        = ComponentType_AudioListener;
 	typeHeader.arrayOffset = header.componentTypeHeaderArrayOffset + sizeof(ComponentTypeHeader) * header.componentTypeCount;
 	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*3;
 	typeHeader.count       = compsAudioListener.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
-	//audio source
+	//audio source 1
 	typeHeader.type        = ComponentType_AudioSource;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
 	typeHeader.size        = sizeof(u32) + 0; //TODO(sushi) tell delle what data is important to save on a source
@@ -396,49 +393,60 @@ void EntityAdmin::Save(const char* filename) {
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
 	//TODO(delle) update when colliders have triggers
-	//collider box
+	//collider box 2
 	typeHeader.type        = ComponentType_ColliderBox;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
 	typeHeader.size        = sizeof(u32) + sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
 	typeHeader.count       = compsColliderBox.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
-	//collider aabb
+	//collider aabb 3
 	typeHeader.type        = ComponentType_ColliderAABB;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
 	typeHeader.size        = sizeof(u32) + sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
 	typeHeader.count       = compsColliderAABB.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
-	//collider sphere
+	//collider sphere 4
 	typeHeader.type        = ComponentType_ColliderSphere;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
 	typeHeader.size        = sizeof(u32) + sizeof(u32) + sizeof(Matrix3) + sizeof(float);
 	typeHeader.count       = compsColliderSphere.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
-	//light
+	//light 5
 	typeHeader.type        = ComponentType_Light;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
 	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*2 + sizeof(float);
 	typeHeader.count       = compsLight.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
-	//mesh comp
+	//mesh comp 6
 	typeHeader.type        = ComponentType_MeshComp;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
 	typeHeader.size        = sizeof(u32) + sizeof(u32)*2 + sizeof(b32)*2; //instanceID, meshID, visible, entity_control
 	typeHeader.count       = compsMeshComp.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
-	//physics
+	//physics 7
 	typeHeader.type        = ComponentType_Physics;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(b32);
+	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(b32) * 3 + sizeof(float) * 2 + sizeof(b32);
 	typeHeader.count       = compsPhysics.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
-	//player
+	//NOTE sushi: this is kind of scuffed because movement has a pointer to physics, and player
+	// 			  has a pointer to movement so they have to be loaded in this order in order
+	//			  for movement, physics, and player to find the pointers they need on their entity
+	// 			  this should probably be done better at some point :). maybe it is already idk
+	//movement 8
+	typeHeader.type        = ComponentType_Movement;
+	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
+	typeHeader.size        = sizeof(u32) + sizeof(Vector3) + sizeof(float) * 3 + sizeof(b32);
+	typeHeader.count       = compsMovement.size();
+	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
+
+	//player 9
 	typeHeader.type        = ComponentType_Player;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
 	typeHeader.size        = sizeof(u32) + sizeof(int);
@@ -506,6 +514,9 @@ void EntityAdmin::Save(const char* filename) {
 	//physics
 	for(auto c : compsPhysics){
 		b32 isStatic = c->isStatic;
+		b32 staticRotation = c->staticRotation;
+		b32 twoDphys = c->twoDphys;
+		b32 fricOverride = c->fricOverride;
 		file.write((const char*)&c->entityID,        sizeof(u32));
 		file.write((const char*)&c->position,        sizeof(Vector3));
 		file.write((const char*)&c->rotation,        sizeof(Vector3));
@@ -516,6 +527,22 @@ void EntityAdmin::Save(const char* filename) {
 		file.write((const char*)&c->elasticity,      sizeof(float));
 		file.write((const char*)&c->mass,            sizeof(float));
 		file.write((const char*)&isStatic,           sizeof(b32));
+		file.write((const char*)&staticRotation,     sizeof(b32));
+		file.write((const char*)&twoDphys,           sizeof(b32));
+		file.write((const char*)&c->kineticFricCoef, sizeof(float));
+		file.write((const char*)&c->staticFricCoef,  sizeof(float));
+		file.write((const char*)&c->fricOverride,	 sizeof(b32));
+	}
+
+	//movement
+	for (auto c : compsMovement) {
+		b32 jump = c->jump;
+		file.write((const char*)&c->entityID,        sizeof(u32));
+		file.write((const char*)&c->inputs,          sizeof(Vector3));
+		file.write((const char*)&c->gndAccel,        sizeof(float));
+		file.write((const char*)&c->airAccel,        sizeof(float));
+		file.write((const char*)&c->maxWalkingSpeed, sizeof(float));
+		file.write((const char*)&jump,            sizeof(b32));
 	}
 	
 	//player
@@ -605,6 +632,7 @@ void EntityAdmin::Load(const char* filename) {
 			case(ComponentType_MeshComp):       MeshComp      ::Load(this, data, cursor, compHeader.count); break;
 			case(ComponentType_OrbManager):     OrbManager    ::Load(this, data, cursor, compHeader.count); break;
 			case(ComponentType_Physics):        Physics       ::Load(this, data, cursor, compHeader.count); break;
+			case(ComponentType_Movement):       Movement      ::Load(this, data, cursor, compHeader.count); break;
 			case(ComponentType_Player):         Player        ::Load(this, data, cursor, compHeader.count); break;
 			default:{
 				ERROR("Failed to load a component array because of unknown component type '", 

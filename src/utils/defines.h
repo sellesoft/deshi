@@ -53,6 +53,9 @@ typedef i32 b32; //int based boolean so c++ doesnt convert to 0 or 1
 //sushi's annoyance with c++ cast syntax, which WILL NOT cause problems ANYWHERE
 #define dyncast(name, child, base) child* name = dynamic_cast<child*>(base)
 
+//anonymous dyncast, probably should change the name but 
+#define dyncasta(child, base) dynamic_cast<child*>(base)
+
 //i: variable name; x: number of iterations 
 #define for_n(i,x) for(int i=0; i<x; ++i)
 

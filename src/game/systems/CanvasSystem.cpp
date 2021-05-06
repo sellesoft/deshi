@@ -414,6 +414,7 @@ inline void ComponentsMenu(Entity* sel) {
 					InputFloat("maxwalk ", &d->maxWalkingSpeed);
 					TreePop();
 				}
+				break;
 				
 				case ComponentType_MeshComp:
 				if (TreeNodeEx("Mesh", tree_flags)) {

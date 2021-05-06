@@ -13,7 +13,6 @@ enum MoveState {
 struct Physics;
 
 struct Movement : public Component {
-	Vector3 position;
 	Vector3 inputs;
 	
 	//pointer to player's physics
@@ -29,10 +28,14 @@ struct Movement : public Component {
 	bool jump = false;
 	
 	Movement(Physics* phys);
+
+	Movement(Physics* phys, float gndAccel, float airAccel, float maxWalkingSpeed, bool jump);
 	
 	void Update() override;
 	
 	std::vector<char> Save() override;
+	static void Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count);
+
 };
 
 

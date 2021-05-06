@@ -132,3 +132,17 @@ struct{
     f32  mass;
     b32  is_static;
 } physics[component_type_headers[7].count];
+
+struct{
+    u32  entity_id;
+    vec3 inputs;
+    f32  gndAccel;
+    f32  airAccel;
+    f32  maxWalkingSpeed;
+    b32  jump;
+} movement[component_type_headers[8].count];
+
+struct{
+    u32 entity_id;
+    u32 health;
+} player[component_type_headers[8].count];

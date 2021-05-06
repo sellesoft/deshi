@@ -15,6 +15,9 @@ struct Player : public Component {
 	Movement* movement;
 	
 	Player(Movement* movement);
+
+	Player(Movement* movement, int health);
+
 	
 	void Update() override;
 	
