@@ -115,13 +115,15 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed
 		for(Component* c : e->components){ 
 			freeCompLayers[c->layer].remove_from(c->layer_index);
 		}
+		entities[e->id].getptr()->CleanUp();
 		entities.remove_from(e->id);
 	}
 	deletionBuffer.clear();
 	
 	//creation buffer
 	for(Entity* e : creationBuffer) {
-		int index = entities.add(Entity(this, u32(entities.size()), e->transform, e->name, e->components));
+		int index = entities.add(Entity(this, 255, e->transform, e->name, e->components));
+		entities[index].getptr()->id = index;
 		for(Component* c : e->components){ 
 			c->entityID = index;
 			c->layer_index = freeCompLayers[c->layer].add(c);
@@ -220,7 +222,13 @@ void EntityAdmin::ChangeState(GameState new_state){
 
 void EntityAdmin::Reset(){
 	SUCCESS("Resetting admin");
-	entities.clear(); entities.reserve(1000);
+	entities.clear(); //entities.reserve(1000);
+	for (auto& e : entities) {
+		if (e) {
+			e().CleanUp();
+		}
+	}
+	
 	for (auto& layer : freeCompLayers) { layer.clear(); }
 	selectedEntity = 0;
 	undoManager.Reset();

@@ -4,7 +4,7 @@
 
 #include <type_traits>
 
-template <typename T>
+template <class T>
 struct Optional {
 	T value;
 	bool has_value;
@@ -26,14 +26,14 @@ struct Optional {
 		has_value = false;
 	}
 	
-	inline bool operator=(Optional& rhs){
+	inline void operator=(Optional& rhs){
 		has_value = true;
-		return value = rhs.value;
+		value = rhs.value;
 	}
 	
-	inline bool operator=(T& rhs){
+	inline void operator=(T& rhs){
 		has_value = true;
-		return value = rhs;
+		value = rhs;
 	}
 	
 	inline bool operator==(Optional& rhs){
@@ -44,10 +44,18 @@ struct Optional {
 		return value != rhs.value;
 	}
 
+
+	// :)
+	T& operator()() {
+		return value;
+	}
+
+
 	T* operator &() {
 		return &value;
 	}
 
+	//TODO(sushi) figure out a way to allow grabbing the values/functions the templated value has without having to use an operator/function >:)
 	inline T* getptr() {
 		return &value;
 	}

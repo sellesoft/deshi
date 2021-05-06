@@ -23,7 +23,9 @@ struct Entity {
 		const char* name = 0, std::vector<Component*> components = {});
 	~Entity();
 
-	void operator =(Entity e);
+	void operator =(Entity& e);
+
+	void CleanUp();
 
 	std::vector<char> Save();
 	void Load(const char* filename);

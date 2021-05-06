@@ -51,12 +51,12 @@ Entity::Entity(EntityAdmin* admin, u32 id, Transform transform, const char* name
 }
 
 Entity::~Entity() {
-	for (Component* c : components) {
-		if(c) delete c;
-	}
+	//for (Component* c : components) {
+	//	if(c) delete c;
+	//}
 }
 
-void Entity::operator=(Entity e) {
+void Entity::operator=(Entity& e) {
 	admin = e.admin;
 	id = e.id;
 	cpystr(name, e.name, 63);
@@ -67,6 +67,12 @@ void Entity::operator=(Entity e) {
 		this->components.push_back(c);
 	}
 
+}
+
+void Entity::CleanUp() {
+	for (Component* c : components) {
+		if(c) delete c;
+	}
 }
 
 void Entity::SetName(const char* name) {

@@ -27,7 +27,7 @@ struct ContainerManager {
 	
 	ContainerManager() {}
 	
-	Optional<T> operator [](int i) { return container[i]; }
+	Optional<T>& operator [](int i) { return container[i]; }
 
 	//TODO(sushi) figure this out sometime :)
 	//T* operator &() {
@@ -38,7 +38,6 @@ struct ContainerManager {
 	int add(T t) {
 		//if container is totally full add it to the end
 		if (empties.size() == 0) {
-			Optional<T> op(t);
 			container.push_back(Optional<T>(t));
 			real_size++;
 			return container.size() - 1;
@@ -46,6 +45,22 @@ struct ContainerManager {
 		//else place it at the first empty spot and return index
 		else {
 			container[empties[0]] = t;
+			int index = empties[0];
+			empties.erase(empties.begin());
+			real_size++;
+			return index;
+		}
+	}
+	int add(T* t) {
+		//if container is totally full add it to the end
+		if (empties.size() == 0) {
+			container.push_back(Optional<T>(*t));
+			real_size++;
+			return container.size() - 1;
+		}
+		//else place it at the first empty spot and return index
+		else {
+			container[empties[0]] = *t;
 			int index = empties[0];
 			empties.erase(empties.begin());
 			real_size++;
