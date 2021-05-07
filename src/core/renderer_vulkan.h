@@ -131,9 +131,9 @@ struct TextureVk {
 
 //a primitive contains the information for one draw call (a batch)
 struct PrimitiveVk{
-	u32 firstIndex    = 0xFFFFFFFF;
-	u32 indexCount    = 0xFFFFFFFF;
-	u32 materialIndex = 0xFFFFFFFF;
+	u32 firstIndex    = 0;
+	u32 indexCount    = 0;
+	u32 materialIndex = 0;
 };
 
 struct MeshVk{
@@ -266,6 +266,7 @@ struct Renderer{
 	std::string ListTextures();
 	
 	u32 CreateMaterial(u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2);
+	u32 CopyMaterial(u32 materialID);
 	void UpdateMaterialTexture(u32 matID, u32 textureSlot, u32 textureID);
 	void UpdateMaterialShader(u32 matID, u32 shader);
 	std::vector<u32> GetMaterialIDs(u32 MeshID);

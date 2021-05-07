@@ -451,16 +451,13 @@ CreateMesh(Scene* scene, const char* filename){
 	}
 	PRINTVK(3, "    Creating mesh: ", filename);
 	
-	
-	
 	scene->models.emplace_back(Mesh::CreateMeshFromOBJ(filename));
-	
 	return CreateMesh(scene->models[scene->models.size()-1].mesh, Matrix4::IDENTITY);
 }
 
 u32 Renderer::
 CreateMesh(Mesh* m, Matrix4 matrix){
-	//check if MeshVk was already 
+	//check if MeshVk was already created
 	for(auto& mesh : meshes){ 
 		if(strcmp(mesh.name, m->name) == 0){ 
 			return CreateMesh(mesh.id, matrix);
@@ -477,7 +474,10 @@ CreateMesh(u32 meshID, Matrix4 matrix){
 		PRINTVK(3, "    Creating Mesh: ", meshes[meshID].ptr->name);
 		MeshVk mesh; mesh.base = false; 
 		mesh.ptr = meshes[meshID].ptr; mesh.visible = true;
-		mesh.primitives = std::vector<PrimitiveVk>(meshes[meshID].primitives);
+		mesh.primitives = std::vector(meshes[meshID].primitives);
+		for_n(i, meshes[meshID].primitives.size()){
+			mesh.primitives[i].materialIndex = CopyMaterial(meshes[meshID].primitives[i].materialIndex);
+		}
 		mesh.modelMatrix = glm::make_mat4(matrix.data);
 		cpystr(mesh.name, meshes[meshID].name, 63);
 		mesh.id = u32(meshes.size());
@@ -714,10 +714,52 @@ ListTextures(){
 u32 Renderer::
 CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID){
 	PRINTVK(3, "    Creating material");
-	MaterialVk mat; mat.id = u32(meshes.size());
+	MaterialVk mat; mat.id = u32(materials.size());
 	mat.shader = shader; mat.pipeline = GetPipelineFromShader(shader);
 	mat.albedoID = albedoTextureID; mat.normalID = normalTextureID;
 	mat.specularID = specTextureID; mat.lightID = lightTextureID;
+	
+	//allocate and write descriptor set for material
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.pSetLayouts = &descriptorSetLayouts.textures;
+	allocInfo.descriptorSetCount = 1;
+	ASSERTVK(vkAllocateDescriptorSets(device, &allocInfo, &mat.descriptorSet), "failed to allocate materials descriptor sets");
+	
+	std::array<VkWriteDescriptorSet, 4> writeDescriptorSets{};
+	writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeDescriptorSets[0].dstSet = mat.descriptorSet;
+	writeDescriptorSets[0].dstArrayElement = 0;
+	writeDescriptorSets[0].descriptorCount = 1;
+	writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	writeDescriptorSets[0].pImageInfo = &textures[mat.albedoID].imageInfo;
+	writeDescriptorSets[0].dstBinding = 0;
+	
+	memcpy(&writeDescriptorSets[1], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
+	writeDescriptorSets[1].pImageInfo = &textures[mat.normalID].imageInfo;
+	writeDescriptorSets[1].dstBinding = 1;
+	
+	memcpy(&writeDescriptorSets[2], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
+	writeDescriptorSets[2].pImageInfo = &textures[mat.specularID].imageInfo;
+	writeDescriptorSets[2].dstBinding = 2;
+	
+	memcpy(&writeDescriptorSets[3], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
+	writeDescriptorSets[3].pImageInfo = &textures[mat.lightID].imageInfo;
+	writeDescriptorSets[3].dstBinding = 3;
+	
+	vkUpdateDescriptorSets(device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
+	
+	//add to scene
+	materials.push_back(mat);
+	return mat.id;
+}
+
+u32 Renderer::
+CopyMaterial(u32 materialID){
+	PRINTVK(3, "    Copying material");
+	MaterialVk mat = materials[materialID]; 
+	mat.id = u32(materials.size());
 	
 	//allocate and write descriptor set for material
 	VkDescriptorSetAllocateInfo allocInfo{};
