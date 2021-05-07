@@ -15,6 +15,8 @@ if you feel they would handle the problem better. It should generally be you tho
 Major Ungrouped TODOs
 ---------------------
 create a demo level
+material saving
+instanced objects using different materials
 
 Minor Ungrouped TODOs
 ---------------------

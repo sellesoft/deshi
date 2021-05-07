@@ -5,7 +5,7 @@ layout(location = 0) in vec3 inColor;
 layout(location = 1) in vec2 inTexCoord;
 layout(location = 2) in vec3 inNormal;
 layout(location = 3) in float lightBrightness;
-layout(location = 4) in vec3 worldPos;
+layout(location = 4) in vec3 worldPosition;
 layout(location = 5) in vec3 viewPosition;
 layout(location = 6) in vec4 lights[10];
 
@@ -36,8 +36,8 @@ void main() {
    outColor = vec4(0,0,0,1);
    for(int i = 0; i < 10; i++){
        if(lights[i].w != -1){
-	       outColor += calcLight(lights[i].xyz, worldPos, lights[i].w, inNormal);
-		   outColor = clamp(outColor, vec4(0,0,0,0), vec4(1,1,1,1));
+	       outColor += calcLight(lights[i].xyz, worldPosition, lights[i].w, inNormal);
+		   //outColor = clamp(outColor, vec4(0,0,0,0), vec4(1,1,1,1));
 	   }
    }
 

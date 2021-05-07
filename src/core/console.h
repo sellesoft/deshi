@@ -30,6 +30,9 @@ struct Console  {
 	
 	//imgui capture flags
 	bool IMGUI_KEY_CAPTURE = false;
+	//im diofferenciating between console and imgui so external things (like canvas)
+	//can set imgui key capture without console overriding it 
+	bool CONSOLE_KEY_CAPTURE = false;
 	bool IMGUI_MOUSE_CAPTURE = false;
 	
 	Console() {}

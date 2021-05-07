@@ -237,7 +237,7 @@ bool InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate = false) {
 bool InputVector4(const char* id, Vector4* vecPtr, bool inputUpdate = false) {
 	ImGui::SetNextItemWidth(-FLT_MIN);
 	if(inputUpdate) {
-		return ImGui::InputFloat4(id, (float*)vecPtr); 
+		return ImGui::InputFloat4(id, (float*)vecPtr);
 	} else {
 		return ImGui::InputFloat4(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue); 
 	}
@@ -421,7 +421,7 @@ inline void ComponentsMenu(Entity* sel) {
 					dyncast(d, MeshComp, c);
 					Text(TOSTRING("Mesh ID: ", d->meshID).c_str());
 					Text(TOSTRING("Visible: ", d->mesh_visible).c_str());
-					
+					TreePop();
 				}
 				break;
 			}
@@ -447,7 +447,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 	SetPadding;
 	if (BeginChild("entityListScroll", ImVec2(GetWindowWidth() * 0.95, 100), false)) {
 		WinHovCheck; 
-		if (admin->entities.size() == 0) {
+		if (admin->entities.real_size == 0) {
 			float time = DengTime->totalTime;
 			std::string str1 = "Nothing yet...";
 			float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
@@ -487,39 +487,52 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 						//TODO(UiEnt, sushi) implement visibility for things other than meshes like lights, etc.
 						if (m) {
 							if (m->mesh_visible) {
-								if (SmallButton("O")) {
-									m->ToggleVisibility();
-								}
+								if (SmallButton("O")) m->ToggleVisibility();
 							}
 							else {
-								if (SmallButton("X")) {
-									m->ToggleVisibility();
-								}
+								if (SmallButton("X")) m->ToggleVisibility();
 							}
 						}
 						else {
-							Text("NM");
+							Light* l = entity.value.GetComponent<Light>();
+							if (l) {
+								//TODO(sushi, UiCl) find a nicer way of indicating light on/off later
+								if (l->active) {
+									if (SmallButton("L")) l->active = false;
+								}
+								else {
+									if (SmallButton("l")) l->active = true;
+								}
+							}
+							else {
+								Text("NM");
+							}
 						}
 						
 						TableNextColumn();
-						Text(TOSTRING(" ", entity.value.name).c_str());
 						static bool rename = false;
 						static char buff[64] = {};
 						static char ogname[64] = {};
+						static int renameid = 0;
+						if(!rename) Text(TOSTRING(" ", entity.value.name).c_str());
 						if (ImGui::IsItemClicked()) {
+							renameid = counter;
 							rename = true;
 							cpystr(buff, entity.value.name, 63);
 							cpystr(ogname, entity.value.name, 63);
 						}
-						
-						if (rename) {
+
+						if(rename) DengConsole->IMGUI_KEY_CAPTURE = true;
+						if (rename && counter == renameid) {
 							if (ImGui::InputText("name input", buff, sizeof(buff), ImGuiInputTextFlags_EnterReturnsTrue)) {
 								cpystr(entity.value.name, buff, 63);
 								rename = false;
+								DengConsole->IMGUI_KEY_CAPTURE = false;
 							}
 							if (DengInput->KeyPressed(Key::ESCAPE)) {
 								cpystr(entity.value.name, ogname, 63);
 								rename = false;
+								DengConsole->IMGUI_KEY_CAPTURE = false;
 							}
 						}
 						
@@ -533,7 +546,6 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 						PopID();
 					}
 				}
-				
 				ImGui::EndTable();
 			}
 		}
@@ -1098,7 +1110,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 			TreePop();
 		}
 		if(comp_light && TreeNodeEx("Light", tree_flags)){
-			Text("Strength     "); SameLine(); InputFloat("phys_mass", &physics_mass); Separator();
+			Text("Strength     "); SameLine(); InputFloat("strength", &physics_mass); Separator();
 			TreePop();
 		}
 		EndChild();

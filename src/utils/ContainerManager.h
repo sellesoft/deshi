@@ -89,6 +89,7 @@ struct ContainerManager {
 			real_size--;
 			container[index].reset();
 			empties.push_back(index);
+			std::sort(empties.begin(), empties.end());
 		}
 	}
 	

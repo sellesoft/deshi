@@ -24,6 +24,7 @@ struct Optional {
 	
 	inline void reset(){
 		has_value = false;
+		//memset(&value, 0xFFFFFFFF, sizeof(T));
 	}
 	
 	inline void operator=(Optional& rhs){

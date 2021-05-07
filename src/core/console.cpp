@@ -392,7 +392,7 @@ void Console::DrawConsole() {
 	
 	reclaim_focus = false;
 	
-	IMGUI_KEY_CAPTURE = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
+	//IMGUI_KEY_CAPTURE = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 	
 	ImGui::PopStyleColor();
 	ImGui::PopStyleColor();	    ImGui::PopStyleColor();
@@ -468,7 +468,7 @@ try{ func }catch(...){ return desc; }\
 
 COMMANDFUNC(save){
 	std::string path = (args.size() > 0) ? args[0] : "save.desh";
-	admin->Save(deshi::assetPath(path.c_str(), AssetType_Save).c_str());
+	admin->Save(path.c_str());
 	return "";
 }
 
@@ -1481,9 +1481,9 @@ void Console::Init() {
 void Console::Update() {
 	if (dispcon) {
 		DrawConsole();
-		IMGUI_KEY_CAPTURE = true;
+		CONSOLE_KEY_CAPTURE = true;
 	}else{
-		IMGUI_KEY_CAPTURE = false;
+		CONSOLE_KEY_CAPTURE = false;
 	}
 	
 	if (buffersize >= 120000) {

@@ -31,7 +31,7 @@ void main() {
     gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
     outColor = inColor;
 	outTexCoord = inTexCoord;
-	outNormal = normalize(mat3(primitive.model) * inNormal);
+	outNormal = mat3(primitive.model) * inNormal;
 	//outLightPos = ubo.lightPos.xyz;
 	//outLightBrightness = ubo.lightPos.w;
 	outLights = ubo.lights;

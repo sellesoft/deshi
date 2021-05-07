@@ -68,7 +68,6 @@ void Movement::Update() {
 		phys->AddForce(nullptr, Vector3(0, 17500, 0));
 		jump = false;
 	}
-	PRINTLN(TOSTRING(inputs));
 	if (inputs == Vector3::ZERO && moveState == OnGround) {
 		if (phys->velocity != Vector3::ZERO) {
 			if (phys->velocity.mag() > 0.12){

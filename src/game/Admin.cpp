@@ -41,7 +41,7 @@ void EntityAdmin::Init() {
 #endif
 	
 	//reserve arrays
-	//entities.reserve(1000);
+	entities.reserve(1000);
 	creationBuffer.reserve(100);
 	deletionBuffer.reserve(100);
 	for_n(i, ComponentLayer_LAST) freeCompLayers.push_back(ContainerManager<Component*>());
@@ -121,8 +121,8 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed
 			c->entityID = index;
 			c->layer_index = freeCompLayers[c->layer].add(c);
 			if (c->comptype == ComponentType_Light) {
-				dyncast(d, Light, c);
-				scene.lights.push_back(d);
+				scene.lights.push_back(dyncasta(Light, c));
+
 			}
 			c->entity = entities[c->entityID].getptr();
 		}
@@ -181,6 +181,9 @@ Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const c
 		c->entityID = index;
 		c->layer_index = freeCompLayers[c->layer].add(c);
 		c->entity = entities[c->entityID].getptr();
+		if (c->comptype == ComponentType_Light) {
+			scene.lights.push_back(dyncasta(Light, c));
+		}
 	}
 	operator delete(e);
 	return &entities[index].value;
@@ -271,12 +274,12 @@ void EntityAdmin::ChangeState(GameState new_state){
 
 void EntityAdmin::Reset(){
 	SUCCESS("Resetting admin");
-	entities.clear(); //entities.reserve(1000);
 	for (auto& e : entities) {
 		if (e) {
 			e().CleanUp();
 		}
 	}
+	entities.clear(); //entities.reserve(1000);
 	
 	for (auto& layer : freeCompLayers) { layer.clear(); }
 	selectedEntity = 0;
@@ -312,7 +315,7 @@ void EntityAdmin::Save(const char* filename) {
 	header.flags = 0;
 	
 	//// entities ////
-	header.entityCount       = entities.size();
+	header.entityCount       = entities.real_size;
 	header.entityArrayOffset = sizeof(SaveHeader);
 	
 	//store sorted components and write entities
@@ -332,34 +335,36 @@ void EntityAdmin::Save(const char* filename) {
 	// vector and then use the final size of that vector for type header offsets
 	
 	for(auto& e : entities) {
-		//write entity
-		file.write((const char*)&e.value.id,                 sizeof(u32));
-		file.write(e.value.name,                             sizeof(char)*64);
-		file.write((const char*)&e.value.transform.position, sizeof(Vector3));
-		file.write((const char*)&e.value.transform.rotation, sizeof(Vector3));
-		file.write((const char*)&e.value.transform.scale,    sizeof(Vector3));
-		
-		//sort components
-		for (auto c : e.value.components) {
-			switch (c->comptype) {
-				case ComponentType_Physics:       compsPhysics.push_back(dyncasta(Physics, c)); break;
-				case ComponentType_Collider: {
-					dyncast(col, Collider, c);
-					switch (col->type) {
-						case ColliderType_Box:    compsColliderBox.push_back(dyncasta(BoxCollider, col)); break;
-						case ColliderType_AABB:   compsColliderAABB.push_back(dyncasta(AABBCollider, col)); break;
-						case ColliderType_Sphere: compsColliderSphere.push_back(dyncasta(SphereCollider, col)); break;
+		if (e) {
+			//write entity
+			file.write((const char*)&e.value.id, sizeof(u32));
+			file.write(e.value.name, sizeof(char) * 64);
+			file.write((const char*)&e.value.transform.position, sizeof(Vector3));
+			file.write((const char*)&e.value.transform.rotation, sizeof(Vector3));
+			file.write((const char*)&e.value.transform.scale, sizeof(Vector3));
+
+			//sort components
+			for (auto c : e.value.components) {
+				switch (c->comptype) {
+					case ComponentType_Physics:       compsPhysics.push_back(dyncasta(Physics, c)); break;
+					case ComponentType_Collider: {
+						dyncast(col, Collider, c);
+						switch (col->type) {
+							case ColliderType_Box:    compsColliderBox.push_back(dyncasta(BoxCollider, col)); break;
+							case ColliderType_AABB:   compsColliderAABB.push_back(dyncasta(AABBCollider, col)); break;
+							case ColliderType_Sphere: compsColliderSphere.push_back(dyncasta(SphereCollider, col)); break;
 						}
-					break;
+						break;
+					}
+					case ComponentType_AudioListener: compsAudioListener.push_back(dyncasta(AudioListener, c)); break;
+					case ComponentType_AudioSource:   compsAudioSource.push_back(dyncasta(AudioSource, c)); break;
+					case ComponentType_Light:         compsLight.push_back(dyncasta(Light, c)); break;
+					case ComponentType_OrbManager:    /*TODO(sushi) impl orb saving*/ break;
+					case ComponentType_Movement:      compsMovement.push_back(dyncasta(Movement, c)); break;
+					case ComponentType_MeshComp:      compsMeshComp.push_back(dyncasta(MeshComp, c)); break;
+					case ComponentType_Player:        compsPlayer.push_back(dyncasta(Player, c)); break;
 				}
-				case ComponentType_AudioListener: //compsAudioListener.push_back(dyncasta(AudioListener, c)); break;
-				case ComponentType_AudioSource:   //compsAudioSource.push_back(dyncasta(AudioSource, c)); break;
-				case ComponentType_Light:         compsLight.push_back(dyncasta(Light, c)); break;
-				case ComponentType_OrbManager:    //TODO(sushi) impl orb saving break;
-				case ComponentType_Movement:      compsMovement.push_back(dyncasta(Movement, c)); break;
-				case ComponentType_MeshComp:      compsMeshComp.push_back(dyncasta(MeshComp, c)); break;
-				case ComponentType_Player:        compsPlayer.push_back(dyncasta(Player, c)) break;
-				}
+			}
 		}
 	}
 	
@@ -562,7 +567,7 @@ void EntityAdmin::Save(const char* filename) {
 
 void EntityAdmin::Load(const char* filename) {
 	Reset();
-	SUCCESS("Loading level: ", deshi::dirSaves() + filename);
+	LOG("Loading level: ", deshi::dirSaves() + filename);
 	TIMER_START(t_l);
 	
 	//// read file to char array ////

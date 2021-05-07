@@ -1,6 +1,7 @@
 #include "Entity.h"
 #include "../admin.h"
 #include "../components/Component.h"
+#include "../components/Light.h"
 
 Entity::Entity() {
 	this->admin = 0;
@@ -59,7 +60,11 @@ void Entity::AddComponent(Component* c) {
 	if (!c) return;
 	components.push_back(c);
 	c->entityID = id;
+	c->entity = this;
 	c->admin = this->admin;
+	if (c->comptype == ComponentType_Light) {
+		DengAdmin->scene.lights.push_back(dyncasta(Light, c));
+	}
 }
 
 void Entity::AddComponents(std::vector<Component*> comps) {
