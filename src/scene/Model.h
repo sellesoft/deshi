@@ -10,70 +10,32 @@
 #include <vector>
 
 enum TextureTypeBits : u32 { 
-	TEXTURE_ALBEDO   = 0, 
-	TEXTURE_NORMAL   = 1, 
-	TEXTURE_LIGHT    = 2, 
-	TEXTURE_SPECULAR = 4, 
-	TEXTURE_CUBE     = 8, //not supported yet
-	TEXTURE_SPHERE   = 16,//not supported yet
-};
-typedef u32 TextureTypes;
+	TextureType_Albedo   = 0,
+	TextureType_Normal   = 1 << 0,
+	TextureType_Specular = 1 << 1,
+	TextureType_Light    = 1 << 2,
+	TextureType_Cube     = 1 << 3, //not supported yet
+	TextureType_Sphere   = 1 << 4, //not supported yet
+}; typedef u32 TextureType;
 
 struct Texture {
 	char filename[64];
-	TextureTypes type;
+	TextureType type;
 	Texture() {}
-	Texture(const char* filename, TextureTypes textureType = TEXTURE_ALBEDO);
+	Texture(const char* filename, TextureType textureType = TextureType_Albedo);
 };
 
-
 enum ShaderFlagsBits : u32 {
-	SHADER_FLAGS_NONE = 0,
+	ShaderFlags_NONE = 0,
 };
 typedef u32 ShaderFlags;
 
-//TODO(sushi) find a nicer way to dynamically generate lists of shaders and other things like materials n such
-enum Shader : u32 {
-	//NOTE(delle) testing shaders should be removed on release
-	FLAT, PHONG, TWOD, PBR, WIREFRAME, LAVALAMP, TESTING0, TESTING1
+enum ShaderBits : u32{ 
+	Shader_Flat, Shader_Phong, Shader_Twod, Shader_PBR, Shader_Wireframe, Shader_Lavalamp, Shader_Testing0, Shader_Testing1
+}; typedef u32 Shader;
+static const char* ShaderStrings[] = {
+	"Flat", "Phong", "TwoD", "PBR", "Wireframe", "Lavalamp", "Testing0", "Testing1"
 };
-
-//is there maybe a better way of doing this than using 2 maps?
-static std::map<u32, std::string> shadertostring = {
-	{FLAT,      "FLAT"},
-	{PHONG,     "PHONG"},
-	{TWOD,      "TWOD"},
-	{PBR,       "PBR"},
-	{WIREFRAME, "WIREFRAME"},
-	{LAVALAMP,  "LAVALAMP"},
-	{TESTING0,  "TESTING0"},
-	{TESTING1,  "TESTING1"}
-};
-
-//this is temporary i promise
-//until i find a nicer way to dynamically get shader names n such
-static std::map<int, std::string> shadertostringint = {
-	{0,      "FLAT"},
-	{1,     "PHONG"},
-	{2,      "TWOD"},
-	{3,       "PBR"},
-	{4, "WIREFRAME"},
-	{5,  "LAVALAMP"},
-	{6,  "TESTING0"},
-	{7,  "TESTING1"}
-};
-
-static std::map<std::string, Shader> stringtoshader = {
-	{"FLAT",      FLAT},
-	{"PHONG",     PHONG},
-	{"TWOD",      TWOD},
-	{"PBR",       PBR},
-	{"WIREFRAME", WIREFRAME},
-	{"LAVALAMP",  LAVALAMP},
-	{"TESTING0",  TESTING0},
-	{"TESTING1",  TESTING1}
-};
-
 
 struct Material{
 	char name[64];
@@ -119,11 +81,11 @@ struct Batch {
 	std::vector<u32>     indexArray;
 	std::vector<Texture> textureArray;
 	
-	u32      shader;
+	u32         shader;
 	ShaderFlags shaderFlags;
 	
 	Batch() {}
-	Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<u32> indexArray, std::vector<Texture> textureArray, Shader shader = Shader::FLAT, ShaderFlags shaderFlags = SHADER_FLAGS_NONE);
+	Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<u32> indexArray, std::vector<Texture> textureArray, Shader shader = Shader_Flat, ShaderFlags shaderFlags = ShaderFlags_NONE);
 	
 	void SetName(const char* name);
 };

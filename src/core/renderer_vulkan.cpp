@@ -299,14 +299,14 @@ CreateDebugLine(Vector3 start, Vector3 end, Color color, bool visible){
 	};
 	std::vector<u32> indices = { 0,1,0 };
 	Batch batch("line_batch", vertices, indices, {});
-	batch.shader = Shader::WIREFRAME;
+	batch.shader = Shader_Wireframe;
 	Mesh mesh("debug_line", { batch });
 	mesh.vertexCount = 2;
 	mesh.indexCount = 3;
 	mesh.batchCount = 1;
 	u32 id = LoadBaseMesh(&mesh, visible);
 	materials[meshes[id].primitives[0].materialIndex].pipeline = pipelines.WIREFRAME_DEPTH;
-	materials[meshes[id].primitives[0].materialIndex].shader = 5;
+	materials[meshes[id].primitives[0].materialIndex].shader = 4;
 	return id;
 }
 
@@ -320,12 +320,15 @@ CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool visibl
 	};
 	std::vector<u32> indices = { 0,1,2 };
 	Batch batch("tri_batch", vertices, indices, {});
-	batch.shader = Shader::TESTING1;
+	batch.shader = Shader_Wireframe;
 	Mesh mesh("debug_tri", { batch });
 	mesh.vertexCount = 3;
 	mesh.indexCount = 3;
 	mesh.batchCount = 1;
-	return LoadBaseMesh(&mesh, visible);
+	u32 id = LoadBaseMesh(&mesh, visible);
+	materials[meshes[id].primitives[0].materialIndex].pipeline = pipelines.WIREFRAME_DEPTH;
+	materials[meshes[id].primitives[0].materialIndex].shader = 4;
+	return id;
 }
 
 ///////////////////////
@@ -348,8 +351,8 @@ LoadBaseMesh(Mesh* m, bool visible) {
 	textures.reserve(textures.size() + m->textureCount);
 	materials.reserve(materials.size() + m->batchCount);
 	
-	u32 batchVertexStart;
-	u32 batchIndexStart;
+	u32 batchVertexStart, batchIndexStart;
+	u32 matID, albedoID, normalID, lightID, specularID;
 	for(Batch& batch : m->batchArray){
 		batchVertexStart = u32(vertexBuffer.size());
 		batchIndexStart = u32(indexBuffer.size());
@@ -368,68 +371,25 @@ LoadBaseMesh(Mesh* m, bool visible) {
 		for(u32 i : batch.indexArray){
 			indexBuffer.push_back(batchVertexStart+i);
 		}
-		//scene.indexBuffer.insert(scene.indexBuffer.end(), batch.indexArray.begin(), batch.indexArray.end());
 		
-		//TODO(delle,ReOp) not every material uses textures
-		//material
-		MaterialVk mat; mat.shader = u32(batch.shader);
-		{
-			//material textures
-			for(int i=0; i<batch.textureArray.size(); ++i){ 
-				u32 idx = LoadTexture(batch.textureArray[i]);
-				switch(textures[idx].type){
-					case(TEXTURE_ALBEDO):  { mat.albedoID   = idx; }break;
-					case(TEXTURE_NORMAL):  { mat.normalID   = idx; }break;
-					case(TEXTURE_LIGHT):   { mat.lightID    = idx; }break;
-					case(TEXTURE_SPECULAR):{ mat.specularID = idx; }break;
-				}
+		//material and textures
+		albedoID = 0, normalID = 2, lightID = 2, specularID = 2;
+		for(int i=0; i<batch.textureArray.size(); ++i){ 
+			u32 idx = LoadTexture(batch.textureArray[i]);
+			switch(textures[idx].type){
+				case TextureType_Albedo:  { albedoID   = idx; }break;
+				case TextureType_Normal:  { normalID   = idx; }break;
+				case TextureType_Light:   { lightID    = idx; }break;
+				case TextureType_Specular:{ specularID = idx; }break;
 			}
-			
-			mat.pipeline = GetPipelineFromShader(batch.shader);
-			
-			//allocate and write descriptor set for material
-			VkDescriptorSetAllocateInfo allocInfo{};
-			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			allocInfo.descriptorPool = descriptorPool;
-			allocInfo.pSetLayouts = &descriptorSetLayouts.textures;
-			allocInfo.descriptorSetCount = 1;
-			ASSERTVK(vkAllocateDescriptorSets(device, &allocInfo, &mat.descriptorSet), "failed to allocate materials descriptor sets");
-			
-			std::array<VkWriteDescriptorSet, 4> writeDescriptorSets{};
-			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[0].dstSet = mat.descriptorSet;
-			writeDescriptorSets[0].dstArrayElement = 0;
-			writeDescriptorSets[0].descriptorCount = 1;
-			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSets[0].pImageInfo = &textures[mat.albedoID].imageInfo;
-			writeDescriptorSets[0].dstBinding = 0;
-			
-			memcpy(&writeDescriptorSets[1], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
-			writeDescriptorSets[1].pImageInfo = &textures[mat.normalID].imageInfo;
-			writeDescriptorSets[1].dstBinding = 1;
-			
-			memcpy(&writeDescriptorSets[2], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
-			writeDescriptorSets[2].pImageInfo = &textures[mat.specularID].imageInfo;
-			writeDescriptorSets[2].dstBinding = 2;
-			
-			memcpy(&writeDescriptorSets[3], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
-			writeDescriptorSets[3].pImageInfo = &textures[mat.lightID].imageInfo;
-			writeDescriptorSets[3].dstBinding = 3;
-			
-			vkUpdateDescriptorSets(device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
-			
-			//TODO(delle,ReVu) specialization constants for materials here or in pipeline
-			//see gltfscenerendering.cpp:575
-			
-			mat.id = u32(materials.size());
-			materials.push_back(mat);
 		}
+		matID = CreateMaterial(batch.shader, albedoID, normalID, specularID, lightID, batch.name);
 		
 		//primitive
 		PrimitiveVk primitive;
 		primitive.firstIndex = batchIndexStart;
 		primitive.indexCount = batch.indexArray.size();
-		primitive.materialIndex = mat.id;
+		primitive.materialIndex = matID;
 		mesh.primitives.push_back(primitive);
 	}
 	
@@ -623,10 +583,9 @@ UpdateInstanceVisibility(u32 instanceID, bool visible) {
 */
 u32 Renderer::
 LoadTexture(Texture texture){
-	PRINTVK(3, "    Loading Texture: ", texture.filename);
-	//TODO(delle,OpReVu) optimize checking if a texture was already loaded
 	for(auto& tex : textures){ if(strcmp(tex.filename, texture.filename) == 0){ return tex.id; } }
 	
+	PRINTVK(3, "    Loading Texture: ", texture.filename);
 	TextureVk tex; 
 	cpystr(tex.filename, texture.filename, 63);
 	
@@ -712,12 +671,13 @@ ListTextures(){
 }
 
 u32 Renderer::
-CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID){
+CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID, const char* name){
 	PRINTVK(3, "    Creating material");
 	MaterialVk mat; mat.id = u32(materials.size());
 	mat.shader = shader; mat.pipeline = GetPipelineFromShader(shader);
 	mat.albedoID = albedoTextureID; mat.normalID = normalTextureID;
 	mat.specularID = specTextureID; mat.lightID = lightTextureID;
+	cpystr(mat.name, (name) ? name : "unnamed_material", 63);
 	
 	//allocate and write descriptor set for material
 	VkDescriptorSetAllocateInfo allocInfo{};
@@ -872,7 +832,7 @@ LoadDefaultAssets(){
 	Texture whiteTex  ("white1024.png");   LoadTexture(whiteTex);
 	
 	materials.reserve(8);
-	//default default materials
+	//create default materials
 	CreateMaterial(0); //flat
 	CreateMaterial(1); //phong
 }
@@ -908,7 +868,7 @@ UpdateCameraProjectionMatrix(Matrix4 m){
 void Renderer::
 ReloadShader(u32 shader) {
 	switch(shader){
-		case(Shader::FLAT):default: { 
+		case(Shader_Flat):default: { 
 			pipelineCreateInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
 			pipelineCreateInfo.basePipelineHandle  = VK_NULL_HANDLE;
 			vkDestroyPipeline(device, pipelines.FLAT, nullptr);
@@ -918,7 +878,7 @@ ReloadShader(u32 shader) {
 			pipelineCreateInfo.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
 			pipelineCreateInfo.basePipelineHandle = pipelines.FLAT;
 		} break;
-		case(Shader::WIREFRAME):    {
+		case(Shader_Wireframe):    {
 			if(deviceFeatures.fillModeNonSolid){
 				vkDestroyPipeline(device, pipelines.WIREFRAME, nullptr);
 				rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
@@ -932,37 +892,37 @@ ReloadShader(u32 shader) {
 				depthStencilState.depthTestEnable = VK_TRUE;
 			}
 		} break;
-		case(Shader::PHONG):        {
+		case(Shader_Phong):        {
 			vkDestroyPipeline(device, pipelines.PHONG, nullptr);
 			shaderStages[0] = CompileAndLoadShader("phong.vert", VK_SHADER_STAGE_VERTEX_BIT);
 			shaderStages[1] = CompileAndLoadShader("phong.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.PHONG), "failed to create phong graphics pipeline");
 		} break;
-		case(Shader::TWOD):         {
+		case(Shader_Twod):         {
 			vkDestroyPipeline(device, pipelines.TWOD, nullptr);
 			shaderStages[0] = CompileAndLoadShader("twod.vert", VK_SHADER_STAGE_VERTEX_BIT);
 			shaderStages[1] = CompileAndLoadShader("twod.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.TWOD), "failed to create twod graphics pipeline");
 		} break;
-		case(Shader::PBR):          { 
+		case(Shader_PBR):          { 
 			vkDestroyPipeline(device, pipelines.PBR, nullptr);
 			shaderStages[0] = CompileAndLoadShader("pbr.vert", VK_SHADER_STAGE_VERTEX_BIT);
 			shaderStages[1] = CompileAndLoadShader("pbr.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.PBR), "failed to create pbr graphics pipeline");
 		} break;
-		case(Shader::LAVALAMP):     { 
+		case(Shader_Lavalamp):     { 
 			vkDestroyPipeline(device, pipelines.LAVALAMP, nullptr);
 			shaderStages[0] = CompileAndLoadShader("lavalamp.vert", VK_SHADER_STAGE_VERTEX_BIT);
 			shaderStages[1] = CompileAndLoadShader("lavalamp.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.LAVALAMP), "failed to create lavalamp graphics pipeline");
 		} break;
-		case(Shader::TESTING0):     { 
+		case(Shader_Testing0):     { 
 			vkDestroyPipeline(device, pipelines.TESTING0, nullptr);
 			shaderStages[0] = CompileAndLoadShader("testing0.vert", VK_SHADER_STAGE_VERTEX_BIT);
 			shaderStages[1] = CompileAndLoadShader("testing0.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
 			ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.TESTING0), "failed to create testing0 graphics pipeline");
 		} break;
-		case(Shader::TESTING1):     { 
+		case(Shader_Testing1):     { 
 			vkDestroyPipeline(device, pipelines.TESTING1, nullptr);
 			shaderStages[0] = CompileAndLoadShader("testing1.vert", VK_SHADER_STAGE_VERTEX_BIT);
 			shaderStages[1] = CompileAndLoadShader("testing1.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -2501,14 +2461,14 @@ RemakePipeline(VkPipeline pipeline){}
 VkPipeline Renderer::
 GetPipelineFromShader(u32 shader){
 	switch(shader){
-		case(Shader::FLAT):default: { return pipelines.FLAT;      };
-		case(Shader::PHONG):        { return pipelines.PHONG;     };
-		case(Shader::TWOD):         { return pipelines.TWOD;      };
-		case(Shader::PBR):          { return pipelines.PBR;       };
-		case(Shader::WIREFRAME):    { return pipelines.WIREFRAME; };
-		case(Shader::LAVALAMP):     { return pipelines.LAVALAMP;  };
-		case(Shader::TESTING0):     { return pipelines.TESTING0;  };
-		case(Shader::TESTING1):     { return pipelines.TESTING1;  };
+		case(Shader_Flat):default: { return pipelines.FLAT;      };
+		case(Shader_Phong):        { return pipelines.PHONG;     };
+		case(Shader_Twod):         { return pipelines.TWOD;      };
+		case(Shader_PBR):          { return pipelines.PBR;       };
+		case(Shader_Wireframe):    { return pipelines.WIREFRAME; };
+		case(Shader_Lavalamp):     { return pipelines.LAVALAMP;  };
+		case(Shader_Testing0):     { return pipelines.TESTING0;  };
+		case(Shader_Testing1):     { return pipelines.TESTING1;  };
 	}
 }
 
@@ -3169,7 +3129,6 @@ BuildCommandBuffers() {
 							vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 							stats.drawnIndices += primitive.indexCount;
 							
-							//TODO(delle,OpVu) this might slow the loop down with ifs
 							if(settings.wireframe && material.pipeline != pipelines.WIREFRAME){
 								vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.WIREFRAME);
 								vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
@@ -3180,6 +3139,8 @@ BuildCommandBuffers() {
 				}
 			}
 		}
+		
+		//draw selected mesh
 		if(selectedMeshID < meshes.size()){
 			MeshVk& mesh = meshes[selectedMeshID];
 			if(mesh.visible && mesh.primitives.size() > 0){

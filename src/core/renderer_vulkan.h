@@ -137,23 +137,24 @@ struct PrimitiveVk{
 };
 
 struct MeshVk{
-	Mesh* ptr    = nullptr;
-	u32  id      = 0xFFFFFFFF;
+	u32 id      = -1;
+	b32 visible = true;
+	b32 base    = false;
+	Mesh* ptr   = nullptr;
 	char name[64];
-	bool visible = true;
-	bool base    = false;
 	glm::mat4 modelMatrix = glm::mat4(1.f);
 	std::vector<PrimitiveVk> primitives;
 	std::vector<u32> children;
 };
 
 struct MaterialVk{
-	u32 id     = 0xFFFFFFFF;
-	u32 shader = 0;
+	u32 id         = -1;
+	u32 shader     = 0;
 	u32 albedoID   = 0;
 	u32 normalID   = 2;
 	u32 specularID = 2;
 	u32 lightID    = 2;
+	char name[64];
 	
 	VkDescriptorSet descriptorSet;
 	VkPipeline      pipeline = 0;
@@ -265,7 +266,7 @@ struct Renderer{
 	void UnloadTexture(u32 textureID);
 	std::string ListTextures();
 	
-	u32 CreateMaterial(u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2);
+	u32 CreateMaterial(u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2, const char* name = 0);
 	u32 CopyMaterial(u32 materialID);
 	void UpdateMaterialTexture(u32 matID, u32 textureSlot, u32 textureID);
 	void UpdateMaterialShader(u32 matID, u32 shader);

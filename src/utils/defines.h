@@ -5,8 +5,8 @@
 //math constants
 #define M_PI         3.14159265359f
 #define M_E          2.71828182846f
-#define M_TWOTHIRDS  0.66666666666f
-#define M_ONETWELFTH 0.08333333333f
+#define M_SQRT_TWO   1.41421356237f
+#define M_SQRT_THREE 1.73205080757f
 
 //conversions
 #define RADIANS(x) ((x) * (M_PI / 180.f))
@@ -66,7 +66,7 @@ typedef i32 b32; //int based boolean so c++ doesnt convert to 0 or 1
 //compile-time print sizeof()
 //char (*__kaboom)[sizeof( YourTypeHere )] = 1;
 
-//https://stackoverflow.com/a/42060129
+// https://stackoverflow.com/a/42060129
 #ifndef defer
 struct defer_dummy {};
 template <class F> struct deferrer { F f; ~deferrer() { f(); } };
@@ -75,5 +75,9 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define DEFER(LINE) DEFER_(LINE)
 #define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
 #endif // defer
+
+// https://gcc.gnu.org/onlinedocs/cpp/Stringizing.html
+#define xx_STRINGIZE(x) #x
+#define STRINGIZE(x) xx_STRINGIZE(x)
 
 #endif //DESHI_DEFINES_H

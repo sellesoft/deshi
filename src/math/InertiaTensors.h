@@ -10,7 +10,7 @@ namespace InertiaTensors {
 	}
 	
 	static Matrix3 HollowSphere(float radius, float mass) {
-		float value = M_TWOTHIRDS * mass * radius * radius;
+		float value = (2.f/3.f) * mass * radius * radius;
 		return Matrix3(value, 0, 0,
 					   0, value, 0,
 					   0, 0, value);
@@ -27,7 +27,7 @@ namespace InertiaTensors {
 	}
 	
 	static Matrix3 SolidCuboid(float width, float height, float depth, float mass) {
-		float oneTwelfthMass = M_ONETWELFTH * mass;
+		float oneTwelfthMass = (1.f/12.f) * mass;
 		float wSqrd = width * width;
 		float hSqrd = height * height;
 		float dSqrd = depth * depth;
@@ -38,7 +38,7 @@ namespace InertiaTensors {
 	
 	static Matrix3 SolidCylinder(float radius, float height, float mass) {
 		float rSqrd = radius * radius;
-		float value = M_ONETWELFTH * mass * (3 * rSqrd + height * height);
+		float value = (1.f/12.f) * mass * (3 * rSqrd + height * height);
 		return Matrix3(value, 0, 0,
 					   0, value, 0,
 					   0, 0, mass*rSqrd/2.f);

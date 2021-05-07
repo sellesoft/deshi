@@ -1,5 +1,5 @@
 Deshi Save File Binary Format: .desh
-Last Updated: 4/20/2021 by delle
+Last Updated: May 7, 2021 by delle
 
 /////////////////////////////
 //// Overall File Layout ////
@@ -7,8 +7,10 @@ Last Updated: 4/20/2021 by delle
 
 Sections (size in bytes)
 ------------------------
-file header                 ( 32)
+file header                 ( 48)
 entity array                (104 * count)
+texture                     ( 68 * count)
+material                    ( 84 * count)
 mesh                        ( 72 * count)
 component type header array ( 16 * count)
 audio listener comp array   ( 40 * count)
@@ -53,11 +55,31 @@ Offset | Size | Type       | Description
 92     | 12   | vector3    | scale
 ========================================
 
+Texture (68 bytes)
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | uint32     | texture type (albedo, normal, etc)
+4      | 64   | char[64]   | name
+========================================
+
+Material (84 bytes)
+========================================
+Offset | Size | Type       | Description
+-------|------|------------|-------------
+0      | 4    | uint32     | shader
+4      | 4    | uint32     | albedo   texture ID
+8      | 4    | uint32     | normal   texture ID
+12     | 4    | uint32     | specular texture ID
+16     | 4    | uint32     | light    texture ID
+20     | 64   | char[64]   | name
+========================================
+
 Mesh (72 bytes)
 ========================================
 Offset | Size | Type       | Description
 -------|------|------------|-------------
-0      | 4    | uint32     | id    //to be removed
+0      | 4    | uint32     | material ID
 4      | 4    | bool32     | is this a base mesh?
 8      | 64   | char[64]   | name
 ========================================
@@ -76,18 +98,33 @@ Offset | Size | Type       | Description
 //// Component Types //// 
 /////////////////////////
 
-0    = ComponentType_NONE
-1    = ComponentType_MeshComp
-2    = ComponentType_Physics
-4    = ComponentType_ColliderBox
-8    = ComponentType_ColliderAABB
-16   = ComponentType_ColliderSphere
-32   = ComponentType_AudioListener
-64   = ComponentType_AudioSource
-128  = ComponentType_Camera
-256  = ComponentType_Light
-512  = ComponentType_OrbManager
-0xFFFFFFFF = ComponentType_LAST
+ComponentType_NONE              = 0,
+ComponentType_MeshComp          = 1,
+ComponentType_Physics           = 2, 
+ComponentType_Collider          = 4,
+ComponentType_ColliderBox       = 8,
+ComponentType_ColliderAABB      = 16,
+ComponentType_ColliderSphere    = 32,
+ComponentType_ColliderLandscape = 64,
+ComponentType_AudioListener     = 128,
+ComponentType_AudioSource       = 256,
+ComponentType_Camera            = 512,
+ComponentType_Light             = 1024,
+ComponentType_OrbManager        = 2048,
+ComponentType_Door              = 4096,
+ComponentType_Player            = 8192,
+ComponentType_Movement          = 16384,
+
+///////////////////////
+//// Texture Types //// 
+///////////////////////
+
+TextureType_Albedo   = 0,
+TextureType_Normal   = 1,
+TextureType_Specular = 2,
+TextureType_Light    = 4,
+TextureType_Cube     = 8, //not supported yet
+TextureType_Sphere   = 16, //not supported yet
 
 //////////////////////////////
 //// Component Breakdowns //// 

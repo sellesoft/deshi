@@ -16,7 +16,7 @@ MeshComp::MeshComp() {
 	comptype = ComponentType_MeshComp;
 	
 	this->mesh = 0;
-	this->meshID = -1;
+	this->meshID = 0;
 	this->instanceID = -1;
 }
 

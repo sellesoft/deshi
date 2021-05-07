@@ -521,7 +521,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 							cpystr(buff, entity.value.name, 63);
 							cpystr(ogname, entity.value.name, 63);
 						}
-
+						
 						if(rename) DengConsole->IMGUI_KEY_CAPTURE = true;
 						if (rename && counter == renameid) {
 							if (ImGui::InputText("name input", buff, sizeof(buff), ImGuiInputTextFlags_EnterReturnsTrue)) {
@@ -652,17 +652,15 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 											WinHovCheck;
 											MeshComp* m = sel->GetComponent<MeshComp>();
 											if (m) {
-												//TODO(sushi, Ui) set up showing multiple batches shaders when that becomes relevant
-												//Text(TOSTRING("Shader: ", shadertostring.at(m->mesh->batchArray[0].shader)).c_str());
 												SetPadding;
 												if (ImGui::TreeNode("Shader Select")) {
 													static int selected = -1;
-													for (int i = 0; i < shadertostringint.size(); i++) {
-														if (Selectable(shadertostringint[i].c_str(), selected == i)) {
+													for (int i = 0; i < IM_ARRAYSIZE(ShaderStrings); i++) {
+														if (Selectable(ShaderStrings[i], selected == i)) {
 															selected = i;
 															for (int iter = 0; iter < sel->components.size(); iter++) {
 																if (MeshComp* mc = dynamic_cast<MeshComp*>(sel->components[iter])) {
-																	mc->ChangeMaterialShader(stringtoshader.at(shadertostringint[i]));
+																	mc->ChangeMaterialShader(i);
 																}
 															}
 														}

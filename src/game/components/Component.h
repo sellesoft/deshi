@@ -18,7 +18,6 @@ enum ComponentLayerBits : u32{
 	ComponentLayer_Canvas,
 	ComponentLayer_Sound,
 	ComponentLayer_World,
-	ComponentLayer_LAST,
 	SystemLayer_Physics = 0,
 }; typedef u32 ComponentLayer;
 
@@ -46,7 +45,6 @@ enum ComponentTypeBits : u32{
 	ComponentType_Door              = 1 << 12,
 	ComponentType_Player            = 1 << 13,
 	ComponentType_Movement          = 1 << 14,
-	ComponentType_LAST = 0xFFFFFFFF,
 }; typedef u32 ComponentType;
 
 struct Component : public Receiver {
@@ -62,7 +60,7 @@ struct Component : public Receiver {
 	
 	Component() {};
 	Component(EntityAdmin* a, u32 entityID);
-	~Component();
+	virtual ~Component();
 	
 	//store layer its on and where in that layer it is for deletion
 	ComponentLayer layer = ComponentLayer_NONE;

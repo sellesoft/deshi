@@ -44,7 +44,7 @@ void EntityAdmin::Init() {
 	entities.reserve(1000);
 	creationBuffer.reserve(100);
 	deletionBuffer.reserve(100);
-	for_n(i, ComponentLayer_LAST) freeCompLayers.push_back(ContainerManager<Component*>());
+	for_n(i, ComponentLayer_World+1) freeCompLayers.push_back(ContainerManager<Component*>());
 	
 	//init singletons
 	physics.Init(this);
@@ -122,7 +122,7 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed
 			c->layer_index = freeCompLayers[c->layer].add(c);
 			if (c->comptype == ComponentType_Light) {
 				scene.lights.push_back(dyncasta(Light, c));
-
+				
 			}
 			c->entity = entities[c->entityID].getptr();
 		}
@@ -292,9 +292,12 @@ void EntityAdmin::Reset(){
 struct SaveHeader{
 	u32 magic;
 	u32 flags;
-	//u32 cameraOffset;
 	u32 entityCount;
 	u32 entityArrayOffset;
+	u32 textureCount;
+	u32 textureArrayOffset;
+	u32 materialCount;
+	u32 materialArrayOffset;
 	u32 meshCount;
 	u32 meshArrayOffset;
 	u32 componentTypeCount;
@@ -302,15 +305,15 @@ struct SaveHeader{
 };
 
 void EntityAdmin::Save(const char* filename) {
-	//std::vector<char> save_data(4096);
+	//std::vector<char> save_data(16384);
 	
 	//open file
 	std::string filepath = deshi::dirSaves() + filename;
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file '", filepath, "' when trying to save"); return; }
 	
-	SaveHeader header{};
-	file.write((const char*)&header, sizeof(SaveHeader)); //zero fill header
+	SaveHeader header;
+	file.write((const char*)&header, sizeof(SaveHeader)); //fill header
 	header.magic = 1213416772; //DESH
 	header.flags = 0;
 	
@@ -328,21 +331,22 @@ void EntityAdmin::Save(const char* filename) {
 	std::vector<Light*>          compsLight;
 	std::vector<MeshComp*>       compsMeshComp;
 	std::vector<Physics*>        compsPhysics;
-	std::vector<Movement*>		 compsMovement;
+	std::vector<Movement*>       compsMovement;
 	std::vector<Player*>         compsPlayer;
 	//TODO(delle,Cl) convert these vectors to char vectors and when iterating thru entities
 	// and thier components, call the save function of an entity to add to the components
 	// vector and then use the final size of that vector for type header offsets
+	//Or, loop thru layers
 	
 	for(auto& e : entities) {
 		if (e) {
 			//write entity
-			file.write((const char*)&e.value.id, sizeof(u32));
-			file.write(e.value.name, sizeof(char) * 64);
+			file.write((const char*)&e.value.id,                 sizeof(u32));
+			file.write(e.value.name,                             sizeof(char)*64);
 			file.write((const char*)&e.value.transform.position, sizeof(Vector3));
 			file.write((const char*)&e.value.transform.rotation, sizeof(Vector3));
-			file.write((const char*)&e.value.transform.scale, sizeof(Vector3));
-
+			file.write((const char*)&e.value.transform.scale,    sizeof(Vector3));
+			
 			//sort components
 			for (auto c : e.value.components) {
 				switch (c->comptype) {
@@ -368,15 +372,34 @@ void EntityAdmin::Save(const char* filename) {
 		}
 	}
 	
-	//// write meshes ////
+	//// write textures ////
+	header.textureCount = DengRenderer->textures.size();
+	header.textureArrayOffset = file.tellp();
+	for(auto& t : DengRenderer->textures){
+		file.write((const char*)&t.type, sizeof(u32));
+		file.write(t.filename,           sizeof(char)*64);
+	}
+	
+	//// write materials ////
+	header.materialCount = DengRenderer->materials.size();
+	header.materialArrayOffset = file.tellp();
+	for(auto& m : DengRenderer->materials){
+		file.write((const char*)&m.shader,     sizeof(u32));
+		file.write((const char*)&m.albedoID,   sizeof(u32));
+		file.write((const char*)&m.normalID,   sizeof(u32));
+		file.write((const char*)&m.specularID, sizeof(u32));
+		file.write((const char*)&m.lightID,    sizeof(u32));
+		file.write(m.name,                     sizeof(char)*64);
+	}
+	
+	//// write meshes //// //TODO(delle) support multiple materials per mesh
 	header.meshCount = DengRenderer->meshes.size();
 	header.meshArrayOffset = file.tellp();
-	
 	for(auto& m : DengRenderer->meshes){
 		b32 base = m.base;
-		file.write((const char*)&m.id, sizeof(u32));
-		file.write((const char*)&base, sizeof(b32));
-		file.write(m.name,             sizeof(char)*64);
+		file.write((const char*)&m.primitives[0].materialIndex, sizeof(u32));
+		file.write((const char*)&base,                          sizeof(b32));
+		file.write(m.name,                                      sizeof(char)*64);
 	}
 	
 	//// write component type headers //// //TODO(delle) move these to thier respective files
@@ -450,7 +473,7 @@ void EntityAdmin::Save(const char* filename) {
 	typeHeader.size        = sizeof(u32) + sizeof(Vector3) + sizeof(float) * 3 + sizeof(b32);
 	typeHeader.count       = compsMovement.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
-
+	
 	//player 9
 	typeHeader.type        = ComponentType_Player;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
@@ -538,7 +561,7 @@ void EntityAdmin::Save(const char* filename) {
 		file.write((const char*)&c->staticFricCoef,  sizeof(float));
 		file.write((const char*)&c->fricOverride,	 sizeof(b32));
 	}
-
+	
 	//movement
 	for (auto c : compsMovement) {
 		b32 jump = c->jump;
@@ -589,8 +612,6 @@ void EntityAdmin::Load(const char* filename) {
 		return ERROR("Load failed because cursor was at '", cursor, 
 					 "' when reading entities which start at '", header.entityArrayOffset, "'");
 	}
-	
-	entities.reserve(header.entityCount);
 	Entity tempEntity; tempEntity.admin = this;
 	for_n(i, header.entityCount){
 		memcpy(&tempEntity.id,        data+cursor, sizeof(u32));     cursor += sizeof(u32);
@@ -599,25 +620,54 @@ void EntityAdmin::Load(const char* filename) {
 		entities.add(tempEntity);
 	}
 	
+	//// parse and load textures ////
+	if(cursor != header.textureArrayOffset) {
+		return ERROR("Load failed because cursor was at '", cursor, 
+					 "' when reading textures which start at '", header.textureArrayOffset, "'");
+	}
+	Texture tex{};
+	for_n(i, header.textureCount){
+		memcpy(&tex.type,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
+		memcpy(tex.filename, data+cursor, sizeof(char)*64); cursor += sizeof(char)*64;
+		if(i>3) DengRenderer->LoadTexture(tex);
+	}
+	
+	//// parse and create materials ////
+	if(cursor != header.materialArrayOffset) {
+		return ERROR("Load failed because cursor was at '", cursor, 
+					 "' when reading materials which start at '", header.materialArrayOffset, "'");
+	}
+	u32 shader = 0, albedoID = 0, normalID = 2, specularId = 2, lightID = 2; char matName[64];
+	for_n(i, header.materialCount){
+		memcpy(&shader,     data+cursor, sizeof(u32));     cursor += sizeof(u32);
+		memcpy(&albedoID,   data+cursor, sizeof(u32));     cursor += sizeof(u32);
+		memcpy(&normalID,   data+cursor, sizeof(u32));     cursor += sizeof(u32);
+		memcpy(&specularId, data+cursor, sizeof(u32));     cursor += sizeof(u32);
+		memcpy(&lightID,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
+		memcpy(matName,     data+cursor, sizeof(char)*64); cursor += sizeof(char)*64;
+		if(i>5) DengRenderer->CreateMaterial(shader, albedoID, normalID, specularId, lightID, matName);
+	}
+	
 	//// parse and load/create meshes ////
 	if(cursor != header.meshArrayOffset) {
 		return ERROR("Load failed because cursor was at '", cursor, 
 					 "' when reading meshes which start at '", header.meshArrayOffset, "'");
 	}
-	
-	b32 baseMesh = 0;
-	char meshName[64];
+	b32 matID = 0, baseMesh = 0; char meshName[64];
 	for_n(i, header.meshCount){
-		cursor += sizeof(u32);
+		memcpy(&matID,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
 		memcpy(&baseMesh, data+cursor, sizeof(b32));     cursor += sizeof(b32);
 		memcpy(meshName,  data+cursor, sizeof(char)*64); cursor += sizeof(char)*64;
-		if(!baseMesh) DengRenderer->CreateMesh(&scene, meshName);
+		if(!baseMesh) {
+			u32 meshID = DengRenderer->CreateMesh(&scene, meshName);
+			DengRenderer->UpdateMeshBatchMaterial(meshID, 0, matID);
+		}
 	}
 	
 	//// parse and create components ////
 	if(cursor != header.componentTypeHeaderArrayOffset) {
 		return ERROR("Load failed because cursor was at '", cursor, 
-					 "' when reading meshes which start at '", header.componentTypeHeaderArrayOffset, "'");
+					 "' when reading component headers which start at '", header.componentTypeHeaderArrayOffset, "'");
 	}
 	
 	ComponentTypeHeader compHeader;

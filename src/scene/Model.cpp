@@ -10,7 +10,7 @@
 //// Texture ////
 /////////////////
 
-Texture::Texture(const char* filename, TextureTypes type) {
+Texture::Texture(const char* filename, TextureType type) {
 	cpystr(this->filename, filename, 63);
 	this->type = type;
 }
@@ -201,25 +201,25 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 			const tinyobj::material_t* mat = &materials[shape.mesh.material_ids[0]];
 			if(mat->diffuse_texname.length() > 0){
 				if(mat->diffuse_texopt.type == 0){
-					Texture tex(mat->diffuse_texname.substr(mat->diffuse_texname.find_last_of('\\')+1).c_str(), TEXTURE_ALBEDO);
+					Texture tex(mat->diffuse_texname.substr(mat->diffuse_texname.find_last_of('\\')+1).c_str(), TextureType_Albedo);
 					batch.textureArray.push_back(tex);
 				}
 			}
 			if(mat->specular_texname.length() > 0){
 				if(mat->specular_texopt.type == 0){
-					Texture tex(mat->specular_texname.substr(mat->specular_texname.find_last_of('\\')+1).c_str(), TEXTURE_SPECULAR);
+					Texture tex(mat->specular_texname.substr(mat->specular_texname.find_last_of('\\')+1).c_str(), TextureType_Specular);
 					batch.textureArray.push_back(tex);
 				}
 			}
 			if(mat->bump_texname.length() > 0){
 				if(mat->bump_texopt.type == 0){
-					Texture tex(mat->bump_texname.substr(mat->bump_texname.find_last_of('\\')+1).c_str(), TEXTURE_NORMAL);
+					Texture tex(mat->bump_texname.substr(mat->bump_texname.find_last_of('\\')+1).c_str(), TextureType_Normal);
 					batch.textureArray.push_back(tex);
 				}
 			}
 			if(mat->ambient_texname.length() > 0){
 				if(mat->ambient_texopt.type == 0){
-					Texture tex(mat->ambient_texname.substr(mat->ambient_texname.find_last_of('\\')+1).c_str(), TEXTURE_LIGHT);
+					Texture tex(mat->ambient_texname.substr(mat->ambient_texname.find_last_of('\\')+1).c_str(), TextureType_Light);
 					batch.textureArray.push_back(tex);
 				}
 			}
@@ -268,8 +268,8 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 		totalIndexCount += batch.indexCount;
 		
 		//TODO(delle,Re) parse different shader options here based on texture count
-		batch.shader = Shader::FLAT;
-		batch.shaderFlags = SHADER_FLAGS_NONE;
+		batch.shader = Shader_Flat;
+		batch.shaderFlags = ShaderFlags_NONE;
 		mesh->batchArray.push_back(batch);
 	}
 	
@@ -285,15 +285,15 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 Mesh* Mesh::CreateBox(Vector3 halfDims, Color color) {
 	Vector3 p = halfDims;
 	Vector3 c = Vector3(color.r, color.g, color.b) / 255.f;
-	std::vector<Vertex> vertices = {
-		{Vector3(-p.x, p.y, p.z), Vector2(0.f, 0.f), c, Vector3::ZERO}, //-x, y, z	0
-		{Vector3(-p.x,-p.y, p.z), Vector2(0.f, 0.f), c, Vector3::ZERO}, //-x,-y, z	1
-		{Vector3(-p.x, p.y,-p.z), Vector2(0.f, 0.f), c, Vector3::ZERO}, //-x, y,-z	2
-		{Vector3(-p.x,-p.y,-p.z), Vector2(0.f, 0.f), c, Vector3::ZERO}, //-x,-y,-z	3
-		{Vector3( p.x, p.y, p.z), Vector2(0.f, 0.f), c, Vector3::ZERO}, // x, y, z	4
-		{Vector3( p.x,-p.y, p.z), Vector2(0.f, 0.f), c, Vector3::ZERO}, // x,-y, z	5
-		{Vector3( p.x, p.y,-p.z), Vector2(0.f, 0.f), c, Vector3::ZERO}, // x, y,-z	6
-		{Vector3( p.x,-p.y,-p.z), Vector2(0.f, 0.f), c, Vector3::ZERO}  // x,-y,-z	7
+	std::vector<Vertex> vertices = { //{position, uv, color, normal}
+		{Vector3(-p.x, p.y, p.z), Vector2(0.f, 0.f), c, Vector3(-1, 1, 1)/M_SQRT_THREE}, //-x, y, z	0
+		{Vector3(-p.x,-p.y, p.z), Vector2(0.f, 0.f), c, Vector3(-1,-1, 1)/M_SQRT_THREE}, //-x,-y, z	1
+		{Vector3(-p.x, p.y,-p.z), Vector2(0.f, 0.f), c, Vector3(-1, 1,-1)/M_SQRT_THREE}, //-x, y,-z	2
+		{Vector3(-p.x,-p.y,-p.z), Vector2(0.f, 0.f), c, Vector3(-1,-1,-1)/M_SQRT_THREE}, //-x,-y,-z	3
+		{Vector3( p.x, p.y, p.z), Vector2(0.f, 0.f), c, Vector3( 1, 1, 1)/M_SQRT_THREE}, // x, y, z	4
+		{Vector3( p.x,-p.y, p.z), Vector2(0.f, 0.f), c, Vector3( 1,-1, 1)/M_SQRT_THREE}, // x,-y, z	5
+		{Vector3( p.x, p.y,-p.z), Vector2(0.f, 0.f), c, Vector3( 1, 1,-1)/M_SQRT_THREE}, // x, y,-z	6
+		{Vector3( p.x,-p.y,-p.z), Vector2(0.f, 0.f), c, Vector3( 1,-1,-1)/M_SQRT_THREE}  // x,-y,-z	7
 	};
 	std::vector<u32> indices = {
 		4,2,0,    4,6,2,	//top face
@@ -417,7 +417,7 @@ Mesh* Mesh::CreatePlanarBox(Vector3 halfDims, Texture texture) {
 		20,21,22, 20,22,23, //left face
 	};
 	
-	Batch batch("planarbox_batch", vertices, indices, { texture }, Shader::PBR);
+	Batch batch("planarbox_batch", vertices, indices, { texture }, Shader_PBR);
 	Mesh* mesh = new Mesh("textured_planarbox", { batch });
 	mesh->vertexCount = 24;
 	mesh->indexCount = 36;

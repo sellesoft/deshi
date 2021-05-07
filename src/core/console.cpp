@@ -889,7 +889,7 @@ void Console::AddRenderCommands() {
 				   Renderer* r = DengRenderer;
 				   std::string out = "[c:yellow]Materials List:\nID  Shader  Albedo  Normal  Specular  Light[c]";
 				   for(auto& mat : r->materials){
-					   out += TOSTRING("\n", mat.id, "  ", shadertostringint[mat.shader], "  ",
+					   out += TOSTRING("\n", mat.id, "  ", ShaderStrings[mat.shader], "  ",
 									   mat.albedoID, ":", r->textures[mat.albedoID].filename, "  ",
 									   mat.normalID, ":", r->textures[mat.normalID].filename, "  ",
 									   mat.specularID, ":", r->textures[mat.specularID].filename, "  ",

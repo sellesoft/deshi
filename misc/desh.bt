@@ -44,6 +44,10 @@ struct{
     u32  flags;
     u32  entity_count;
     u32  entity_array_offset;
+    u32  texture_count;
+    u32  texture_array_offset;
+    u32  material_count;
+    u32  material_array_offset;
     u32  mesh_count;
     u32  mesh_array_offset;
     u32  component_type_count;
@@ -59,7 +63,21 @@ struct{
 } entities[header.entity_count];
 
 struct{
-    u32 id;
+    u32  type;
+    char name[64];
+} textures[header.texture_count];
+
+struct{
+    u32 shader;
+    u32 albedo_texture_id;
+    u32 normal_texture_id;
+    u32 specular_texture_id;
+    u32 light_texture_id;
+    char name[64];
+} materials[header.material_count];
+
+struct{
+    u32 material_id;
     b32 base;
     char name[64];
 } meshes[header.mesh_count];
