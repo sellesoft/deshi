@@ -29,7 +29,7 @@ void Door::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 		
 		memcpy(&isOpen, data+cursor, sizeof(b32)); cursor += sizeof(b32);
 		Door* c = new Door(isOpen);
-		admin->entities[entityID].value.AddComponent(c);
+		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
 }

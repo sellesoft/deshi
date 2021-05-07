@@ -447,7 +447,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 	SetPadding;
 	if (BeginChild("entityListScroll", ImVec2(GetWindowWidth() * 0.95, 100), false)) {
 		WinHovCheck; 
-		if (admin->entities.real_size == 0) {
+		if (admin->entities.size() == 0) {
 			float time = DengTime->totalTime;
 			std::string str1 = "Nothing yet...";
 			float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
@@ -466,85 +466,82 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 				ImGui::TableSetupColumn("Vis", ImGuiTableColumnFlags_WidthFixed);
 				ImGui::TableSetupColumn("Name");
 				ImGui::TableSetupColumn("Components");
+				
 				int counter = 0;
-				
-				
-				for (auto& entity : admin->entities) {
-					if (entity) {
-						counter++;
-						PushID(counter);
-						TableNextRow(); TableNextColumn();
-						std::string id = std::to_string(entity.value.id);
-						MeshComp* m = entity.value.GetComponent<MeshComp>();
-						
-						//SetCursorPosX((GetColumnWidth() - (fontsize - (fontsize / 2)) * id.size()) / 2);
-						if (ImGui::Button(id.c_str())) {
-							admin->selectedEntity = entity.getptr();
-							//if(m) DengRenderer->SetSelectedMesh(m->meshID);
+				for (Entity* entity : admin->entities) {
+					counter++;
+					PushID(counter);
+					TableNextRow(); TableNextColumn();
+					std::string id = std::to_string(entity->id);
+					MeshComp* m = entity->GetComponent<MeshComp>();
+					
+					//SetCursorPosX((GetColumnWidth() - (fontsize - (fontsize / 2)) * id.size()) / 2);
+					if (ImGui::Button(id.c_str())) {
+						admin->selectedEntity = entity;
+						//if(m) DengRenderer->SetSelectedMesh(m->meshID);
+					}
+					TableNextColumn();
+					
+					//TODO(UiEnt, sushi) implement visibility for things other than meshes like lights, etc.
+					if (m) {
+						if (m->mesh_visible) {
+							if (SmallButton("O")) m->ToggleVisibility();
 						}
-						TableNextColumn();
-						
-						//TODO(UiEnt, sushi) implement visibility for things other than meshes like lights, etc.
-						if (m) {
-							if (m->mesh_visible) {
-								if (SmallButton("O")) m->ToggleVisibility();
+						else {
+							if (SmallButton("X")) m->ToggleVisibility();
+						}
+					}
+					else {
+						Light* l = entity->GetComponent<Light>();
+						if (l) {
+							//TODO(sushi, UiCl) find a nicer way of indicating light on/off later
+							if (l->active) {
+								if (SmallButton("L")) l->active = false;
 							}
 							else {
-								if (SmallButton("X")) m->ToggleVisibility();
+								if (SmallButton("l")) l->active = true;
 							}
 						}
 						else {
-							Light* l = entity.value.GetComponent<Light>();
-							if (l) {
-								//TODO(sushi, UiCl) find a nicer way of indicating light on/off later
-								if (l->active) {
-									if (SmallButton("L")) l->active = false;
-								}
-								else {
-									if (SmallButton("l")) l->active = true;
-								}
-							}
-							else {
-								Text("NM");
-							}
+							Text("NM");
 						}
-						
-						TableNextColumn();
-						static bool rename = false;
-						static char buff[64] = {};
-						static char ogname[64] = {};
-						static int renameid = 0;
-						if(!rename) Text(TOSTRING(" ", entity.value.name).c_str());
-						if (ImGui::IsItemClicked()) {
-							renameid = counter;
-							rename = true;
-							cpystr(buff, entity.value.name, 63);
-							cpystr(ogname, entity.value.name, 63);
-						}
-						
-						if(rename) DengConsole->IMGUI_KEY_CAPTURE = true;
-						if (rename && counter == renameid) {
-							if (ImGui::InputText("name input", buff, sizeof(buff), ImGuiInputTextFlags_EnterReturnsTrue)) {
-								cpystr(entity.value.name, buff, 63);
-								rename = false;
-								DengConsole->IMGUI_KEY_CAPTURE = false;
-							}
-							if (DengInput->KeyPressed(Key::ESCAPE)) {
-								cpystr(entity.value.name, ogname, 63);
-								rename = false;
-								DengConsole->IMGUI_KEY_CAPTURE = false;
-							}
-						}
-						
-						TableNextColumn();
-						//TODO(sushi, Ui) find something better to put here
-						Text(TOSTRING(" comps: ", entity.value.components.size()).c_str());
-						SameLine();
-						if (Button("Del")) {
-							g_admin->DeleteEntity(entity.getptr());
-						}
-						PopID();
 					}
+					
+					TableNextColumn();
+					static bool rename = false;
+					static char buff[64] = {};
+					static char ogname[64] = {};
+					static int renameid = 0;
+					if(!rename) Text(TOSTRING(" ", entity->name).c_str());
+					if (ImGui::IsItemClicked()) {
+						renameid = counter;
+						rename = true;
+						cpystr(buff, entity->name, 63);
+						cpystr(ogname, entity->name, 63);
+					}
+					
+					if(rename) DengConsole->IMGUI_KEY_CAPTURE = true;
+					if (rename && counter == renameid) {
+						if (ImGui::InputText("##ent_name_input", buff, sizeof(buff), ImGuiInputTextFlags_EnterReturnsTrue)) {
+							cpystr(entity->name, buff, 63);
+							rename = false;
+							DengConsole->IMGUI_KEY_CAPTURE = false;
+						}
+						if (DengInput->KeyPressed(Key::ESCAPE)) {
+							cpystr(entity->name, ogname, 63);
+							rename = false;
+							DengConsole->IMGUI_KEY_CAPTURE = false;
+						}
+					}
+					
+					TableNextColumn();
+					//TODO(sushi, Ui) find something better to put here
+					Text(TOSTRING(" comps: ", entity->components.size()).c_str());
+					SameLine();
+					if (Button("Del")) {
+						g_admin->DeleteEntity(entity);
+					}
+					PopID();
 				}
 				ImGui::EndTable();
 			}
@@ -888,7 +885,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 				phys = new Physics(entity_pos, entity_rot, physics_velocity, physics_accel, physics_rotVel,
 								   physics_rotAccel, physics_elasticity, physics_mass, physics_staticPosition);
 				if(comp_audiolistener) al->velocity = physics_velocity;
-				if(comp_player) move = new Movement(phys); pl = new Player(move);
+				if(comp_player) { move = new Movement(phys); pl = new Player(move); }
 			}
 			
 			//create entity

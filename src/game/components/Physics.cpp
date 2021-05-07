@@ -39,14 +39,14 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 
 //for loading only really
 Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy, Vector3 rotAcceleration, float elasticity,
-	float mass, bool isStatic, bool staticRotation, bool twoDphys, float kineticFricCoef, float staticFricCoef,
-	bool fricOverride) {
+				 float mass, bool isStatic, bool staticRotation, bool twoDphys, float kineticFricCoef, float staticFricCoef,
+				 bool fricOverride) {
 	
 	admin = g_admin;
 	cpystr(name, "Physics", 63);
 	layer = SystemLayer_Physics;
 	comptype = ComponentType_Physics;
-
+	
 	this->position = position;
 	this->rotation = rotation;
 	this->velocity = velocity;
@@ -61,8 +61,8 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	this->kineticFricCoef = kineticFricCoef;
 	this->staticFricCoef = staticFricCoef;
 	this->fricOverride = fricOverride;
-
-
+	
+	
 }
 
 Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticity) {
@@ -138,9 +138,9 @@ void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count)
 		memcpy(&kineticFricCoef, data+cursor, sizeof(float)); cursor += sizeof(float);
 		memcpy(&staticFricCoef,  data+cursor, sizeof(float)); cursor += sizeof(float);
 		memcpy(&fricOverride,    data+cursor, sizeof(b32));   cursor += sizeof(b32);
-
+		
 		Physics* c = new Physics(position, rotation, velocity, accel, rotVel, rotAccel, elasticity, mass, staticPos, staticRot, twoDphys, kineticFricCoef, staticFricCoef, fricOverride);
-		admin->entities[entityID].value.AddComponent(c);
+		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
 }

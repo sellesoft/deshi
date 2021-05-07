@@ -316,7 +316,6 @@
     <ClCompile Include="..\src\game\components\AudioSource.cpp" />
     <ClCompile Include="..\src\game\components\Camera.cpp" />
     <ClCompile Include="..\src\game\components\Collider.cpp" />
-    <ClCompile Include="..\src\game\components\Component.cpp" />
     <ClCompile Include="..\src\game\components\door.cpp" />
     <ClCompile Include="..\src\game\components\Light.cpp" />
     <ClCompile Include="..\src\game\components\MeshComp.cpp" />

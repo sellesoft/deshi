@@ -27,11 +27,11 @@ inline std::vector<PhysicsTuple> GetPhysicsTuples(EntityAdmin* admin) {
 	std::vector<PhysicsTuple> out;
 	for(int i = 0; i < admin->entities.size(); i++) {
 		if (admin->entities[i]) {
-			Transform* transform = &admin->entities[i].getptr()->transform;
+			Transform* transform = &EntityAt(i)->transform;
 			Physics* physics = nullptr;
 			Collider* collider = nullptr;
 			
-			for (Component* c : admin->entities[i].getptr()->components) {
+			for (Component* c : EntityAt(i)->components) {
 				if (Physics* phy = dynamic_cast<Physics*>(c)) { physics = phy; continue; }
 				if (Collider* col = dynamic_cast<Collider*>(c)) { collider = col; continue; }
 			}
@@ -159,10 +159,10 @@ Matrix4 LocalToWorldInertiaTensor(Physics* physics, Matrix3 inertiaTensor) {
 }
 
 bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABBCollider* obj2Col) {
-	vec3 min1 = obj1->position - (obj1Col->halfDims * EntityAt(obj1->entityID).transform.scale);
-	vec3 max1 = obj1->position + (obj1Col->halfDims * EntityAt(obj1->entityID).transform.scale);
-	vec3 min2 = obj2->position - (obj2Col->halfDims * EntityAt(obj2->entityID).transform.scale);
-	vec3 max2 = obj2->position + (obj2Col->halfDims * EntityAt(obj2->entityID).transform.scale);
+	vec3 min1 = obj1->position - (obj1Col->halfDims * EntityAt(obj1->entityID)->transform.scale);
+	vec3 max1 = obj1->position + (obj1Col->halfDims * EntityAt(obj1->entityID)->transform.scale);
+	vec3 min2 = obj2->position - (obj2Col->halfDims * EntityAt(obj2->entityID)->transform.scale);
+	vec3 max2 = obj2->position + (obj2Col->halfDims * EntityAt(obj2->entityID)->transform.scale);
 	
 	if (//check if overlapping
 		(min1.x <= max2.x && max1.x >= min2.x) &&
@@ -241,7 +241,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 }
 
 inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* sphere, SphereCollider* sphereCol) {
-	Vector3 aabbPoint = Geometry::ClosestPointOnAABB(aabb->position, (aabbCol->halfDims * EntityAt(aabb->entityID).transform.scale), sphere->position);
+	Vector3 aabbPoint = Geometry::ClosestPointOnAABB(aabb->position, (aabbCol->halfDims * EntityAt(aabb->entityID)->transform.scale), sphere->position);
 	Vector3 vectorBetween = aabbPoint - sphere->position; //sphere towards aabb
 	float distanceBetween = vectorBetween.mag();
 	if(distanceBetween < sphereCol->radius) {
@@ -585,8 +585,9 @@ void SolveManifolds(std::vector<Manifold> manis) {
 poly GeneratePoly(Physics* p) {
 	poly poly;
 	poly.o =
-		EntityAt(p->entityID).GetComponent<MeshComp>()->mesh->GenerateOutlinePoints(Matrix4::TransformationMatrix(p->position, p->rotation, EntityAt(p->entityID).transform.scale),
-																					DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, g_admin->mainCamera->position);
+		EntityAt(p->entityID)->GetComponent<MeshComp>()->mesh->
+		GenerateOutlinePoints(Matrix4::TransformationMatrix(p->position, p->rotation, EntityAt(p->entityID)->transform.scale),
+							  DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, g_admin->mainCamera->position);
 	poly.p = poly.o;
 	
 	poly.pos = Math::WorldToScreen2(p->position, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);

@@ -47,7 +47,7 @@ void Light::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 		memcpy(&direction, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
 		memcpy(&strength,  data+cursor, sizeof(f32));  cursor += sizeof(f32);
 		Light* c = new Light(position, direction, strength);
-		admin->entities[entityID].value.AddComponent(c);
+		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
 }

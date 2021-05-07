@@ -25,7 +25,6 @@ struct Entity {
 	void operator =(Entity& e);
 	
 	virtual void Init();
-	void CleanUp();
 	//virtual std::vector<char> Save();
 	//virtual void Load(const char* filename);
 	

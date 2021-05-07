@@ -415,9 +415,6 @@
     <ClCompile Include="..\src\game\components\Collider.cpp">
       <Filter>src\game\components\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\game\components\Component.cpp">
-      <Filter>src\game\components\cpp</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\game\components\Light.cpp">
       <Filter>src\game\components\cpp</Filter>
     </ClCompile>

@@ -97,7 +97,7 @@ void EntityAdmin::Update() {
 	ImGui::EndDebugLayer();
 }
 
-void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed
+void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already happened
 	TIMER_RESET(t_a);
 	if (!skip && !pause_world) UpdateLayer(freeCompLayers[ComponentLayer_World]); 
 	DengTime->worldLyrTime = TIMER_END(t_a); TIMER_RESET(t_a);
@@ -105,32 +105,29 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed
 	//deletion buffer
 	for(Entity* e : deletionBuffer) {
 		if(selectedEntity == e) selectedEntity = 0;
-		for(Component* c : e->components){ 
-			freeCompLayers[c->layer].remove_from(c->layer_index);
-		}
-		entities[e->id].getptr()->CleanUp();
-		entities.remove_from(e->id);
+		for(Component* c : e->components) freeCompLayers[c->layer].remove_from(c->layer_index);
+		for(int i = e->id+1; i < entities.size(); ++i) entities[i]->id -= 1;
+		entities.erase(entities.begin()+e->id);
+		delete e;
 	}
 	deletionBuffer.clear();
 	
 	//creation buffer
 	for(Entity* e : creationBuffer) {
-		int index = entities.add(Entity(this, 255, e->transform, e->name, e->components));
-		entities[index].getptr()->id = index;
+		e->id = entities.size();
+		e->admin = this;
+		entities.push_back(e);
 		for(Component* c : e->components){ 
-			c->entityID = index;
+			c->entityID = e->id;
+			c->entity = e;
 			c->layer_index = freeCompLayers[c->layer].add(c);
-			if (c->comptype == ComponentType_Light) {
-				scene.lights.push_back(dyncasta(Light, c));
-				
-			}
-			c->entity = entities[c->entityID].getptr();
+			if (c->comptype == ComponentType_Light) scene.lights.push_back(dyncasta(Light, c));
 		}
-		operator delete(e); //call this to delete the staging entity, but not components (doesnt call destructor)
 	}
 	creationBuffer.clear();
-	DengTime->worldSysTime =  TIMER_END(t_a); TIMER_RESET(t_a);
+	DengTime->worldSysTime = TIMER_END(t_a); TIMER_RESET(t_a);
 	
+	//light updating
 	for (int i = 0; i < 10; i++) {
 		if (i < scene.lights.size()) {
 			Vector3 p = scene.lights[i]->position;
@@ -154,13 +151,9 @@ u32 EntityAdmin::CreateEntity(const char* name) {
 }
 
 u32 EntityAdmin::CreateEntity(std::vector<Component*> components, const char* name, Transform transform) {
-	Entity* e = new Entity;
-	e->SetName(name);
-	e->admin = this;
-	e->transform = transform;
-	e->AddComponents(components);
-	creationBuffer.push_back(e);
-	return entities.size() + creationBuffer.size() - 1;
+	u32 id = entities.size() + creationBuffer.size() - 1;
+	creationBuffer.push_back(new Entity(this, id, transform, name, components));
+	return id;
 }
 
 u32 EntityAdmin::CreateEntity(Entity* e) {
@@ -170,28 +163,20 @@ u32 EntityAdmin::CreateEntity(Entity* e) {
 }
 
 Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const char* name, Transform transform) {
-	Entity* e = new Entity;
-	e->SetName(name);
-	e->admin = this;
-	e->transform = transform;
-	e->AddComponents(components);
-	int index = entities.add(Entity(this, 0, e->transform, e->name, e->components));
-	entities[index].getptr()->id = index;
+	Entity* e = new Entity(this, entities.size(), transform, name, components);
+	entities.push_back(e);
 	for (Component* c : e->components) {
-		c->entityID = index;
+		c->entityID = e->id;
+		c->entity = e;
 		c->layer_index = freeCompLayers[c->layer].add(c);
-		c->entity = entities[c->entityID].getptr();
-		if (c->comptype == ComponentType_Light) {
-			scene.lights.push_back(dyncasta(Light, c));
-		}
+		if (c->comptype == ComponentType_Light) scene.lights.push_back(dyncasta(Light, c));
 	}
-	operator delete(e);
-	return &entities[index].value;
+	return e;
 }
 
 void EntityAdmin::DeleteEntity(u32 id) {
 	if (id < entities.size()) {
-		deletionBuffer.push_back(entities[id].getptr());
+		deletionBuffer.push_back(entities[id]);
 	}
 	else {
 		ERROR("Attempted to add entity '", id, "' to deletion buffer when it doesn't exist on the admin");
@@ -274,12 +259,8 @@ void EntityAdmin::ChangeState(GameState new_state){
 
 void EntityAdmin::Reset(){
 	SUCCESS("Resetting admin");
-	for (auto& e : entities) {
-		if (e) {
-			e().CleanUp();
-		}
-	}
-	entities.clear(); //entities.reserve(1000);
+	for (Entity* e : entities) if(e) delete e;
+	entities.clear();
 	
 	for (auto& layer : freeCompLayers) { layer.clear(); }
 	selectedEntity = 0;
@@ -318,7 +299,7 @@ void EntityAdmin::Save(const char* filename) {
 	header.flags = 0;
 	
 	//// entities ////
-	header.entityCount       = entities.real_size;
+	header.entityCount       = entities.size();
 	header.entityArrayOffset = sizeof(SaveHeader);
 	
 	//store sorted components and write entities
@@ -338,36 +319,34 @@ void EntityAdmin::Save(const char* filename) {
 	// vector and then use the final size of that vector for type header offsets
 	//Or, loop thru layers
 	
-	for(auto& e : entities) {
-		if (e) {
-			//write entity
-			file.write((const char*)&e.value.id,                 sizeof(u32));
-			file.write(e.value.name,                             sizeof(char)*64);
-			file.write((const char*)&e.value.transform.position, sizeof(Vector3));
-			file.write((const char*)&e.value.transform.rotation, sizeof(Vector3));
-			file.write((const char*)&e.value.transform.scale,    sizeof(Vector3));
-			
-			//sort components
-			for (auto c : e.value.components) {
-				switch (c->comptype) {
-					case ComponentType_Physics:       compsPhysics.push_back(dyncasta(Physics, c)); break;
-					case ComponentType_Collider: {
-						dyncast(col, Collider, c);
-						switch (col->type) {
-							case ColliderType_Box:    compsColliderBox.push_back(dyncasta(BoxCollider, col)); break;
-							case ColliderType_AABB:   compsColliderAABB.push_back(dyncasta(AABBCollider, col)); break;
-							case ColliderType_Sphere: compsColliderSphere.push_back(dyncasta(SphereCollider, col)); break;
-						}
-						break;
+	for(Entity* e : entities) {
+		//write entity
+		file.write((const char*)&e->id,                 sizeof(u32));
+		file.write(e->name,                             sizeof(char)*64);
+		file.write((const char*)&e->transform.position, sizeof(Vector3));
+		file.write((const char*)&e->transform.rotation, sizeof(Vector3));
+		file.write((const char*)&e->transform.scale,    sizeof(Vector3));
+		
+		//sort components
+		for (Component* c : e->components) {
+			switch (c->comptype) {
+				case ComponentType_Physics:       compsPhysics.push_back(dyncasta(Physics, c)); break;
+				case ComponentType_Collider: {
+					dyncast(col, Collider, c);
+					switch (col->type) {
+						case ColliderType_Box:    compsColliderBox.push_back(dyncasta(BoxCollider, col)); break;
+						case ColliderType_AABB:   compsColliderAABB.push_back(dyncasta(AABBCollider, col)); break;
+						case ColliderType_Sphere: compsColliderSphere.push_back(dyncasta(SphereCollider, col)); break;
 					}
-					case ComponentType_AudioListener: compsAudioListener.push_back(dyncasta(AudioListener, c)); break;
-					case ComponentType_AudioSource:   compsAudioSource.push_back(dyncasta(AudioSource, c)); break;
-					case ComponentType_Light:         compsLight.push_back(dyncasta(Light, c)); break;
-					case ComponentType_OrbManager:    /*TODO(sushi) impl orb saving*/ break;
-					case ComponentType_Movement:      compsMovement.push_back(dyncasta(Movement, c)); break;
-					case ComponentType_MeshComp:      compsMeshComp.push_back(dyncasta(MeshComp, c)); break;
-					case ComponentType_Player:        compsPlayer.push_back(dyncasta(Player, c)); break;
+					break;
 				}
+				case ComponentType_AudioListener: compsAudioListener.push_back(dyncasta(AudioListener, c)); break;
+				case ComponentType_AudioSource:   compsAudioSource.push_back(dyncasta(AudioSource, c)); break;
+				case ComponentType_Light:         compsLight.push_back(dyncasta(Light, c)); break;
+				case ComponentType_OrbManager:    /*TODO(sushi) impl orb saving*/ break;
+				case ComponentType_Movement:      compsMovement.push_back(dyncasta(Movement, c)); break;
+				case ComponentType_MeshComp:      compsMeshComp.push_back(dyncasta(MeshComp, c)); break;
+				case ComponentType_Player:        compsPlayer.push_back(dyncasta(Player, c)); break;
 			}
 		}
 	}
@@ -612,12 +591,12 @@ void EntityAdmin::Load(const char* filename) {
 		return ERROR("Load failed because cursor was at '", cursor, 
 					 "' when reading entities which start at '", header.entityArrayOffset, "'");
 	}
-	Entity tempEntity; tempEntity.admin = this;
+	Transform entTrans{}; char entName[64];
 	for_n(i, header.entityCount){
-		memcpy(&tempEntity.id,        data+cursor, sizeof(u32));     cursor += sizeof(u32);
-		memcpy(tempEntity.name,       data+cursor, sizeof(char)*64); cursor += sizeof(char)*64;
-		memcpy(&tempEntity.transform, data+cursor, sizeof(vec3)*3);  cursor += sizeof(vec3)*3;
-		entities.add(tempEntity);
+		cursor += sizeof(u32); //skipped
+		memcpy(entName,   data+cursor, sizeof(char)*64); cursor += sizeof(char)*64;
+		memcpy(&entTrans, data+cursor, sizeof(vec3)*3);  cursor += sizeof(vec3)*3;
+		entities.push_back(new Entity(this, entities.size(), entTrans, entName, {}));
 	}
 	
 	//// parse and load textures ////

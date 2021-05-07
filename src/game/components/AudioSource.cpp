@@ -53,9 +53,5 @@ void AudioSource::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 co
 		}
 		
 		ERROR("AudioSource::Load not setup");
-		//AudioSource* c = new AudioSource();
-		//admin->entities[entityID].AddComponent(c);
-		//c->layer_index = admin->freeCompLayers[c->layer].add(c);
-		//c->Init(admin);
 	}
 }

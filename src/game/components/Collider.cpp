@@ -62,7 +62,7 @@ void BoxCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 co
 		memcpy(&tensor,         data+cursor, sizeof(mat3)); cursor += sizeof(mat3);
 		memcpy(&halfDimensions, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
 		BoxCollider* c = new BoxCollider(halfDimensions, tensor, layer, nullptr);
-		admin->entities[entityID].value.AddComponent(c);
+		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
 }
@@ -177,7 +177,7 @@ void AABBCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 c
 		memcpy(&tensor, data+cursor,         sizeof(mat3)); cursor += sizeof(mat3);
 		memcpy(&halfDimensions, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
 		AABBCollider* c = new AABBCollider(halfDimensions, tensor, layer, nullptr);
-		admin->entities[entityID].value.AddComponent(c);
+		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
 }
@@ -238,7 +238,7 @@ void SphereCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32
 		memcpy(&tensor, data+cursor, sizeof(mat3)); cursor += sizeof(mat3);
 		memcpy(&radius, data+cursor, sizeof(f32));  cursor += sizeof(f32);
 		SphereCollider* c = new SphereCollider(radius, tensor, layer, nullptr);
-		admin->entities[entityID].value.AddComponent(c);
+		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
 }

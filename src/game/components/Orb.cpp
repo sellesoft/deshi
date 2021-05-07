@@ -24,7 +24,7 @@ void OrbManager::Init(){
 		MeshComp* mc = new MeshComp(mesh, id);
 		orb->mc = mc;
 		mc->ENTITY_CONTROL = false;
-		EntityAt(entityID).AddComponent(mc);
+		EntityAt(entityID)->AddComponent(mc);
 		orbs.push_back(orb);
 	}
 }

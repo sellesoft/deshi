@@ -464,6 +464,8 @@ UnloadBaseMesh(u32 meshID){
 	}
 }
 
+
+//TODO(delle,ReCl) this causes a "leak" in that it doesnt remove the materials created with CreateMesh
 void Renderer::
 RemoveMesh(u32 meshID){
 	if(meshID < meshes.size()){

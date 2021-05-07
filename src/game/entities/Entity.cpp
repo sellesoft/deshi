@@ -24,9 +24,7 @@ Entity::Entity(EntityAdmin* admin, u32 id, Transform transform, const char* name
 }
 
 Entity::~Entity() {
-	//for (Component* c : components) {
-	//	if(c) delete c;
-	//}
+	for (Component* c : components) if(c) delete c;
 }
 
 void Entity::operator=(Entity& e) {
@@ -44,12 +42,6 @@ void Entity::operator=(Entity& e) {
 
 void Entity::Init(){
 	for_n(i,components.size()) components[i]->Init();
-}
-
-void Entity::CleanUp() {
-	for (Component* c : components) {
-		if(c) delete c;
-	}
 }
 
 void Entity::SetName(const char* name) {

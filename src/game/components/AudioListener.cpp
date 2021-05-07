@@ -54,7 +54,7 @@ void AudioListener::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 
 		memcpy(&c->position,    data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
 		memcpy(&c->velocity,    data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
 		memcpy(&c->orientation, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
-		admin->entities[entityID].value.AddComponent(c);
+		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
 }

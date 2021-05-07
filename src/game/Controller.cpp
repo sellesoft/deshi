@@ -191,45 +191,43 @@ inline void HandleSelectEntity(EntityAdmin* admin){
 	admin->selectedEntity = nullptr;
 	Vector3 p0, p1, p2, norm;
 	Matrix4 rot;
-	for (auto& e : admin->entities) {
-		if (e) {
-			if (MeshComp* mc = e.value.GetComponent<MeshComp>()) {
-				if (mc->mesh_visible) {
-					Mesh* m = mc->mesh;
-					for (auto& b : m->batchArray) {
-						for (int i = 0; i < b.indexArray.size(); i += 3) {
-							float t = 0;
-
-							//p0 = b.vertexArray[b.indexArray[i]].pos + e.transform.position;
-							//p1 = b.vertexArray[b.indexArray[i + 1]].pos + e.transform.position;
-							//p2 = b.vertexArray[b.indexArray[i + 2]].pos + e.transform.position;
-
-							mat4 transform = e.value.transform.TransformMatrix();
-							p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
-							p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
-							p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
-
-							norm = (p2 - p0).cross(p1 - p0);
-
-							Vector3 inter = Math::VectorPlaneIntersect(p0, norm, ray->p[0], ray->p[1], t);
-
-							Vector3 v01 = p1 - p0;
-							Vector3 v12 = p2 - p1;
-							Vector3 v20 = p0 - p2;
-
-							rot = Matrix4::AxisAngleRotationMatrix(90, Vector4(norm, 0));
-
-							if ((v01 * rot).dot(p0 - inter) < 0 &&
-								(v12 * rot).dot(p1 - inter) < 0 &&
-								(v20 * rot).dot(p2 - inter) < 0) {
-
-								admin->selectedEntity = e.getptr();
-								if (oldEnt != e.getptr()) {
-									//DengRenderer->SetSelectedMesh(mc->meshID);
-									admin->undoManager.AddUndoSelect((void**)&admin->selectedEntity, oldEnt, &e);
-								}
-								return;
+	for (Entity* e : admin->entities) {
+		if (MeshComp* mc = e->GetComponent<MeshComp>()) {
+			if (mc->mesh_visible) {
+				Mesh* m = mc->mesh;
+				for (auto& b : m->batchArray) {
+					for (int i = 0; i < b.indexArray.size(); i += 3) {
+						float t = 0;
+						
+						//p0 = b.vertexArray[b.indexArray[i]].pos + e.transform.position;
+						//p1 = b.vertexArray[b.indexArray[i + 1]].pos + e.transform.position;
+						//p2 = b.vertexArray[b.indexArray[i + 2]].pos + e.transform.position;
+						
+						mat4 transform = e->transform.TransformMatrix();
+						p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
+						p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
+						p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
+						
+						norm = (p2 - p0).cross(p1 - p0);
+						
+						Vector3 inter = Math::VectorPlaneIntersect(p0, norm, ray->p[0], ray->p[1], t);
+						
+						Vector3 v01 = p1 - p0;
+						Vector3 v12 = p2 - p1;
+						Vector3 v20 = p0 - p2;
+						
+						rot = Matrix4::AxisAngleRotationMatrix(90, Vector4(norm, 0));
+						
+						if ((v01 * rot).dot(p0 - inter) < 0 &&
+							(v12 * rot).dot(p1 - inter) < 0 &&
+							(v20 * rot).dot(p2 - inter) < 0) {
+							
+							admin->selectedEntity = e;
+							if (oldEnt != e) {
+								//DengRenderer->SetSelectedMesh(mc->meshID);
+								admin->undoManager.AddUndoSelect((void**)&admin->selectedEntity, oldEnt, &e);
 							}
+							return;
 						}
 					}
 				}
@@ -675,9 +673,9 @@ void Controller::Update() {
 #if !defined(DESHI_BUILD_PLAY) && !defined(DESHI_BUILD_DEBUG)
 	if(DengInput->KeyPressed(Key::F8)) admin->ChangeState(GameState_Editor);
 #endif //if not built for playing, allow for easy exit to editor
-
+	
 	if(!ImGui::GetIO().WantCaptureKeyboard){ //&& !DengConsole->CONSOLE_KEY_CAPTURE) {
-
+		
 		switch(admin->state){
 			case GameState_Play:{
 				PlayerMovement(admin, MOVEMENT_MODE_WALKING, playermove);

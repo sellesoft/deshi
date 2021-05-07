@@ -48,28 +48,26 @@ enum ComponentTypeBits : u32{
 }; typedef u32 ComponentType;
 
 struct Component : public Receiver {
-	EntityAdmin* admin = 0;
-	u32 entityID = -1;
+	EntityAdmin* admin;
+	u32 entityID;
 	char name[64];
 	ComponentType comptype;
-	
 	Entity* entity;
-	
-	//sender for outputting events to a list of receivers
-	Sender* send = nullptr;
-	
-	Component() {};
-	Component(EntityAdmin* a, u32 entityID);
-	virtual ~Component();
-	
-	//store layer its on and where in that layer it is for deletion
+	Sender* send = nullptr; //sender for outputting events to a list of receivers
 	ComponentLayer layer = ComponentLayer_NONE;
-	int layer_index;
+	int layer_index; //index in the layer for deletion
+	
+	virtual ~Component() {
+		if(send) send->RemoveReceiver(this);
+	}
+	
+	void ConnectSend(Component* c) {
+		c->send->AddReceiver(this);
+	}
 	
 	//Init only gets called when this component's entity is spawned thru the world system
 	virtual void Init() {};
 	virtual void Update() {};
-	void ConnectSend(Component* c);
 	virtual void ReceiveEvent(Event event) override {};
 	virtual std::vector<char> Save() { return std::vector<char>(); };
 	virtual void Load() {};
