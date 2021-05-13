@@ -17,6 +17,8 @@
 //is set to empty. if it's position is at the end then it simply removes that last position
 //when placing an item it looks for the first empty spot and places it there
 
+//TODO(sushi, Cl) container manager needs some clean up, some redundant functions need removed, and some need fleshed out for stability
+
 template<class T>
 struct ContainerManager {
 	//std::vector<std::pair<std::optional<T>, int>> container;

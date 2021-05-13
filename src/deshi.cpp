@@ -15,8 +15,8 @@ if you feel they would handle the problem better. It should generally be you tho
 Major Ungrouped TODOs
 ---------------------
 create a demo level
-material saving
-instanced objects using different materials
+put instructions to set up saving and loading for a new component somewhere
+____and maybe look into setting it up to be more streamlined somehow
 
 Minor Ungrouped TODOs
 ---------------------
@@ -50,6 +50,9 @@ debug normals
 ____https://github.com/SaschaWillems/Vulkan/blob/master/examples/geometryshader/geometryshader.cpp
 ____https://github.com/SaschaWillems/Vulkan/blob/master/data/shaders/glsl/geometryshader/normaldebug.geom
 ____you can test it through PHONG shader for now
+look into getting info from shaders, or setting up compute shaders
+____the primary reason being that we need to optimize outlining objects, which will
+____involve clipping triangles and stuff.
 redo MeshVk so its only child meshes
 ____avoid having 3 copies of a mesh (model, meshVK, vulkan)
 add lighting and shadows
