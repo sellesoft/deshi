@@ -671,11 +671,17 @@ void Controller::Update() {
 	if(DengInput->KeyPressed(DengKeys.toggleConsole)) DengConsole->dispcon = !DengConsole->dispcon;
 	
 #if !defined(DESHI_BUILD_PLAY) && !defined(DESHI_BUILD_DEBUG)
-	if(DengInput->KeyPressed(Key::F8)) admin->ChangeState(GameState_Editor);
+	if (DengInput->KeyPressed(Key::F8)) {
+		admin->ChangeState(GameState_Editor);
+	}
 #endif //if not built for playing, allow for easy exit to editor
 	
 	if(!ImGui::GetIO().WantCaptureKeyboard){ //&& !DengConsole->CONSOLE_KEY_CAPTURE) {
 		
+		if (!playermove && admin->player) {
+			playermove = admin->player->GetComponent<Movement>();
+		}
+
 		switch(admin->state){
 			case GameState_Play:{
 				PlayerMovement(admin, MOVEMENT_MODE_WALKING, playermove);

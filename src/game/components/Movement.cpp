@@ -10,7 +10,7 @@ Movement::Movement(Physics* phys) {
 	cpystr(name, "Movement", 63);
 	
 	this->phys = phys;
-	phys->kineticFricCoef = 1;
+	phys->kineticFricCoef = 0.32;
 	phys->fricOverride = true;
 }
 
@@ -70,10 +70,8 @@ void Movement::Update() {
 	}
 	if (inputs == Vector3::ZERO && moveState == OnGround) {
 		if (phys->velocity != Vector3::ZERO) {
-			if (phys->velocity.mag() > 0.12){
-				phys->AddFrictionForce(nullptr, 5);
-				PRINTLN("apply fric");
-			}
+			if (phys->velocity.mag() > 0.12)
+				phys->AddFrictionForce(nullptr, 0.34);
 			else
 				phys->velocity = Vector3::ZERO;
 		}

@@ -205,7 +205,9 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		
 		//dynamic resolution
 		Vector3 rv = obj2->velocity - obj1->velocity;
-		
+
+		PRINTLN(TOSTRING(rv));
+
 		float vAlongNorm = rv.dot(norm);
 		if (vAlongNorm < 0) {
 			//TODO(sushi, Ph) do better elasticity later
@@ -217,14 +219,18 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			if (!obj2->isStatic) obj2->velocity += impulse / obj2->mass;
 			//PRINTLN(obj2->velocity.mag());
 			
-			if (obj1->velocity.x != 0 || obj1->velocity.z != 0) {
-				obj1->contacts[obj2] = ContactMoving;
+
+			//setting contact state depending on movement 
+			if (obj1->velocity != Vector3::ZERO) {
+				if(!obj1->isStatic) obj1->contacts[obj2] = ContactMoving;
+				else obj1->contacts[obj2] = ContactStationary;
 			}
 			else {
 				obj1->contacts[obj2] = ContactStationary;
 			}
-			if (obj2->velocity.x != 0 || obj2->velocity.z != 0) {
-				obj2->contacts[obj1] = ContactMoving;
+			if (obj2->velocity != Vector3::ZERO) {
+				if (!obj2->isStatic) obj2->contacts[obj1] = ContactMoving;
+				else obj2->contacts[obj1] = ContactStationary;
 			}
 			else {
 				obj2->contacts[obj1] = ContactStationary;

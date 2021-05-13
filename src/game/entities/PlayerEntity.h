@@ -24,7 +24,7 @@ struct PlayerEntity : public Entity {
 	MeshComp* mesh;
 	Physics* physics;
 	
-	PlayerEntity(EntityAdmin* admin, u32 id, Transform t);
+	PlayerEntity(Transform transform);
 
 	void Init() override;
 	

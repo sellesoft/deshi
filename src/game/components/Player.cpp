@@ -46,7 +46,7 @@ void Player::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
-	
-	
+	if(count > 0)
+		admin->player = EntityAt(entityID);
 	//ERROR("Player::Load not setup");
 }

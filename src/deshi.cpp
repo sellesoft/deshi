@@ -15,6 +15,9 @@ if you feel they would handle the problem better. It should generally be you tho
 Major Ungrouped TODOs
 ---------------------
 create a demo level
+have a talk about how we want to handle premade entity creation
+____specifically player. right now I just have it so i make a new PlayerEntity, set admin's player pointer to it
+____then use admin's CreateEntity function to set up the rest
 put instructions to set up saving and loading for a new component somewhere
 ____and maybe look into setting it up to be more streamlined somehow
 

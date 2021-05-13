@@ -475,6 +475,9 @@
     <ClCompile Include="..\src\game\Admin.cpp">
       <Filter>src\game</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\game\entities\StaticMeshEntity.cpp">
+      <Filter>src\game\entities\cpp</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\cfg\keybinds.txt">

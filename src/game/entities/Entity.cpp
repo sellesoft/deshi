@@ -63,7 +63,6 @@ void Entity::AddComponents(std::vector<Component*> comps) {
 	u32 value = this->components.size();
 	for (Component* c : comps) {
 		if (!c) continue;
-		admin->freeCompLayers[c->layer].add(c);
 		this->components.push_back(c);
 		c->entityID = id;
 		c->admin = this->admin;

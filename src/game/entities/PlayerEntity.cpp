@@ -9,8 +9,11 @@
 #include "../components/AudioListener.h"
 
 
-PlayerEntity::PlayerEntity(EntityAdmin* admin, u32 id, Transform t) : Entity(admin, id, t, "player") {
+PlayerEntity::PlayerEntity(Transform transform) {
+	cpystr(name, "player", 6);
+	this->transform = transform;
 	physics = new Physics();
+	physics->elasticity = 0;
 	movement = new Movement(physics);
 	player = new Player(movement);
 	mesh = new MeshComp(Mesh::CreateMeshFromOBJ("box.obj"));
@@ -18,8 +21,9 @@ PlayerEntity::PlayerEntity(EntityAdmin* admin, u32 id, Transform t) : Entity(adm
 	listener = new AudioListener();
 	//source = new AudioSource()
 	AddComponents({ physics, movement, player, mesh, collider, listener });
-	
 }
+
+
 
 void PlayerEntity::Init() {
 

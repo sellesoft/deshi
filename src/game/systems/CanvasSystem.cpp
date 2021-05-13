@@ -11,6 +11,7 @@
 #include "../components/Player.h"
 #include "../components/Movement.h"
 #include "../components/door.h"
+#include "../entities/PlayerEntity.h"
 #include "../../core.h"
 #include "../../math/Math.h"
 #include "../../scene/Scene.h"
@@ -324,11 +325,9 @@ void CanvasSystem::MenuBar() {
 	PopStyleVar(2);
 }
 
-
 inline void EventsMenu() {
 	
 }
-
 
 inline void ComponentsMenu(Entity* sel) {
 	using namespace ImGui;
@@ -465,7 +464,6 @@ inline void ComponentsMenu(Entity* sel) {
 		EndChild();
 	}
 }
-
 
 inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 	using namespace ImGui;
@@ -1212,7 +1210,9 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 	
 	//// creation variables ////
 	local_persist const char* presets[] = {"None", "AABB", "Box", "Sphere", "2D", "Player"};
+	local_persist const char* premades[] = { "Player" };
 	local_persist int current_preset = 0;
+	local_persist int current_premade = 0;
 	local_persist char entity_name[64] = {};
 	local_persist vec3 entity_pos{}, entity_rot{}, entity_scale = Vector3::ONE;
 	local_persist bool comp_audiolistener{}, comp_audiosource{}, comp_collider{}, comp_mesh{};
@@ -1288,11 +1288,39 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 				if(comp_player) { move = new Movement(phys); pl = new Player(move); }
 			}
 			
-			//create entity
-			admin->CreateEntity({al, as, coll, mc, light, phys, move, pl}, entity_name, 
-								Transform(entity_pos, entity_rot, entity_scale));
-		}Separator();
 		
+
+			admin->CreateEntity({ al, as, coll, mc, light, phys, move, pl }, entity_name,
+				Transform(entity_pos, entity_rot, entity_scale));
+
+			
+		
+			
+		}Separator();
+
+		//// premades ////
+		SetPadding; Text("Premades   ");  SameLine(); SetNextItemWidth(-1);
+		if (BeginMenu("##premades")) {
+			WinHovCheck;
+			if(MenuItem("Player")){
+				
+				if (!admin->player) {
+					PlayerEntity* pl = new PlayerEntity(Transform(Vector3::ZERO, Vector3::ZERO, Vector3::ZERO));
+					admin->CreateEntity(pl);
+					admin->player = pl;
+				}
+				else {
+					ERROR("Player has already been created.");
+				}
+				
+			}
+			
+			
+			EndCombo();
+
+		}
+
+
 		//// presets ////
 		SetPadding; Text("Presets    "); SameLine(); SetNextItemWidth(-1); 
 		if(Combo("##preset_combo", &current_preset, presets, IM_ARRAYSIZE(presets))){ WinHovCheck;
