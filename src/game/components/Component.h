@@ -46,6 +46,9 @@ enum ComponentTypeBits : u32{
 	ComponentType_Player            = 1 << 13,
 	ComponentType_Movement          = 1 << 14,
 }; typedef u32 ComponentType;
+static const char* ComponentTypeStrings[] = {
+	"None", "MeshComp", "Physics", "Collider", "ColliderBox", "ColliderAABB", "ColliderSphere", "ColliderLandscape", "AudioListener", "AudioSource", "Camera", "Light", "OrbManager", "Door", "Player", "Movement"
+};
 
 struct Component : public Receiver {
 	EntityAdmin* admin;
@@ -73,5 +76,56 @@ struct Component : public Receiver {
 	virtual void Load() {};
 	virtual std::string str(){ return ""; };
 };
+
+/* //switch statement on component type for copy/paste
+switch(c->comptype){
+				case ComponentType_MeshComp:{
+					
+				}break;
+				case ComponentType_Physics:{
+					
+				}break;
+				case ComponentType_Collider:{
+					switch(dyncasta(Collider, c)->type){
+						case ColliderType_Box:{
+							
+						}break;
+						case ColliderType_AABB:{
+							
+						}break;
+						case ColliderType_Sphere:{
+							
+						}break;
+						case ColliderType_Landscape:{
+							
+						}break;
+					}
+				}break;
+				case ComponentType_AudioListener:{
+					
+				}break;
+				case ComponentType_AudioSource:{
+					
+				}break;
+				case ComponentType_Camera:{
+					
+				}break;
+				case ComponentType_Light:{
+					
+				}break;
+				case ComponentType_OrbManager:{
+					
+				}break;
+				case ComponentType_Door:{
+					
+				}break;
+				case ComponentType_Player:{
+					
+				}break;
+				case ComponentType_Movement:{
+					
+				}break;
+			}
+*/
 
 #endif //COMPONENT_H

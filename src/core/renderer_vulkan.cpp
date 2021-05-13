@@ -1,6 +1,6 @@
 /*
 Vulkan Spec [https://renderdoc.org/vkspec_chunked/index.html]
-In real implementation: 
+Read into for optimization: 
 https://vulkan-tutorial.com/en/Vertex_buffers/Staging_buffer#page_Using-a-staging-buffer:~:text=You%20may
 https://vulkan-tutorial.com/en/Vertex_buffers/Staging_buffer#page_Conclusion:~:text=It%20should
 https://vulkan-tutorial.com/en/Vertex_buffers/Index_buffer#page_Using-an-index-buffer:~:text=The%20previous
@@ -9,6 +9,7 @@ https://vulkan-tutorial.com/en/Texture_mapping/Combined_image_sampler#page_Updat
 https://vulkan-tutorial.com/en/Generating_Mipmaps#page_Generating-Mipmaps:~:text=Beware%20if%20you
 https://vulkan-tutorial.com/en/Generating_Mipmaps#page_Linear-filtering-support:~:text=There%20are%20two
 https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-,like
+https://vkguide.dev/docs/extra-chapter/abstracting_descriptors/
 */
 
 #include "renderer_vulkan.h"
@@ -584,19 +585,19 @@ UpdateInstanceVisibility(u32 instanceID, bool visible) {
 }
 */
 u32 Renderer::
-LoadTexture(Texture texture){
-	for(auto& tex : textures){ if(strcmp(tex.filename, texture.filename) == 0){ return tex.id; } }
+LoadTexture(const char* filename, u32 type){
+	for(auto& tex : textures){ if(strcmp(tex.filename, filename) == 0){ return tex.id; } }
 	
-	PRINTVK(3, "    Loading Texture: ", texture.filename);
+	PRINTVK(3, "    Loading Texture: ", filename);
 	TextureVk tex; 
-	cpystr(tex.filename, texture.filename, 63);
+	cpystr(tex.filename, filename, 63);
 	
-	std::string imagePath = deshi::assetPath(texture.filename, AssetType_Texture);
+	std::string imagePath = deshi::assetPath(filename, AssetType_Texture);
 	if(imagePath == ""){ return 0; }
 	tex.pixels = stbi_load(imagePath.c_str(), &tex.width, &tex.height, &tex.channels, STBI_rgb_alpha);
 	ASSERT(tex.pixels, "stb failed to load an image");
 	
-	tex.type = u32(texture.type);
+	tex.type = type;
 	tex.mipLevels = u32(std::floor(std::log2(std::max(tex.width, tex.height)))) + 1;
 	tex.imageSize = tex.width * tex.height * 4;
 	
@@ -652,6 +653,12 @@ LoadTexture(Texture texture){
 	tex.id = idx;
 	textures.push_back(tex);
 	return idx;
+}
+
+u32 Renderer::
+LoadTexture(Texture texture){
+	for(auto& tex : textures){ if(strcmp(tex.filename, texture.filename) == 0){ return tex.id; } }
+	return LoadTexture(texture.filename, texture.type);
 }
 /*
 void Renderer::
@@ -730,7 +737,7 @@ CopyMaterial(u32 materialID){
 	allocInfo.pSetLayouts = &descriptorSetLayouts.textures;
 	allocInfo.descriptorSetCount = 1;
 	ASSERTVK(vkAllocateDescriptorSets(device, &allocInfo, &mat.descriptorSet), "failed to allocate materials descriptor sets");
-	
+	//TODO(delle,Vu) https://renderdoc.org/vkspec_chunked/chap15.html#VkCopyDescriptorSet
 	std::array<VkWriteDescriptorSet, 4> writeDescriptorSets{};
 	writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	writeDescriptorSets[0].dstSet = mat.descriptorSet;
@@ -821,6 +828,20 @@ GetMaterialIDs(u32 meshID) {
 	}
 	ERROR("There is no mesh with id: ", meshID);
 	return std::vector<u32>();
+}
+
+//TODO(delle,Vu) this leaks in the GPU b/c the descriptor sets are not deallocated, figure that out
+void Renderer::
+RemoveMaterial(u32 matID){
+	if(matID < materials.size()) return ERROR("RemoveMaterial: There is no material with id: ", matID);
+	
+	for(MeshVk& mesh : meshes){
+		for(PrimitiveVk& prim : mesh.primitives){
+			if(prim.materialIndex == matID) prim.materialIndex = 0;
+		}
+	}
+	
+	
 }
 
 void Renderer::

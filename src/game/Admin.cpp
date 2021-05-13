@@ -118,6 +118,7 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
 		e->admin = this;
 		entities.push_back(e);
 		for(Component* c : e->components){ 
+			c->admin = this;
 			c->entityID = e->id;
 			c->entity = e;
 			c->layer_index = freeCompLayers[c->layer].add(c);
