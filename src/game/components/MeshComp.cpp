@@ -67,6 +67,22 @@ void MeshComp::ReceiveEvent(Event event) {
 	}
 }
 
+//this should only be used when the entity is not controlling the Mesh
+void MeshComp::UpdateMeshTransform(Vector3 position, Vector3 rotation, Vector3 scale) {
+	DengRenderer->UpdateMeshMatrix(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
+}
+
+void MeshComp::ChangeMesh(u32 newMeshIdx){
+	if(newMeshIdx == meshID) return;
+	if(newMeshIdx > DengRenderer->meshes.size()) return ERROR("ChangeMesh: There is no mesh with index: ", newMeshIdx);
+	if(!DengRenderer->meshes[newMeshIdx].base) return ERROR("ChangeMesh: You can only change the mesh to a base mesh");
+	
+	Matrix4 oldMat = DengRenderer->GetMeshMatrix(meshID);
+	DengRenderer->RemoveMesh(meshID);
+	meshID = DengRenderer->CreateMesh(newMeshIdx, oldMat);
+	mesh = DengRenderer->GetMeshPtr(meshID);
+}
+
 void MeshComp::ChangeMaterialShader(u32 s) {
 	std::vector<u32> ids = DengRenderer->GetMaterialIDs(meshID);
 	for (u32 id : ids) {
@@ -80,11 +96,6 @@ void MeshComp::ChangeMaterialTexture(u32 t) {
 	for (u32 id : ids) {
 		DengRenderer->UpdateMaterialTexture(id, 0, t);
 	}
-}
-
-//this should only be used when the entity is not controlling the Mesh
-void MeshComp::UpdateMeshTransform(Vector3 position, Vector3 rotation, Vector3 scale) {
-	DengRenderer->UpdateMeshMatrix(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
 }
 
 template<class T>

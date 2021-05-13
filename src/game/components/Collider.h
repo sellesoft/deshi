@@ -11,6 +11,9 @@ struct Mesh;
 enum ColliderTypeBits : u32{
 	ColliderType_NONE, ColliderType_Box, ColliderType_AABB, ColliderType_Sphere, ColliderType_Landscape
 }; typedef u32 ColliderType;
+static const char* ColliderTypeStrings[] = {
+	"None", "Box", "AABB", "Sphere", "Landscape"
+};
 
 //TODO(delle,Ph) maybe add offset vec3
 struct Collider : public Component {

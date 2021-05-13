@@ -260,6 +260,7 @@ struct Renderer{
 	
 	//loads a texture onto the GPU
 	//returns the texture's id
+	u32 LoadTexture(const char* filename, u32 type);
 	u32 LoadTexture(Texture texure);
 	//unloads a texture from the GPU
 	//NOTE the previously used texture ID will not be used again
@@ -267,10 +268,11 @@ struct Renderer{
 	std::string ListTextures();
 	
 	u32 CreateMaterial(u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2, const char* name = 0);
-	u32 CopyMaterial(u32 materialID);
+	u32  CopyMaterial(u32 materialID);
 	void UpdateMaterialTexture(u32 matID, u32 textureSlot, u32 textureID);
 	void UpdateMaterialShader(u32 matID, u32 shader);
 	std::vector<u32> GetMaterialIDs(u32 MeshID);
+	void RemoveMaterial(u32 materialID);
 	
 	void LoadDefaultAssets();
 	//loads a new scene to the GPU

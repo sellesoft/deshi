@@ -6,6 +6,8 @@
 
 #include <unordered_map>
 
+b32 find_triangle_neighbors = false;
+
 /////////////////
 //// Texture ////
 /////////////////
@@ -277,7 +279,7 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 	mesh->indexCount = totalIndexCount;
 	mesh->textureCount = totalTextureCount;
 	mesh->batchCount = mesh->batchArray.size();
-	mesh->triangles = FindTriangleNeighbors(mesh);
+	if(find_triangle_neighbors) mesh->triangles = FindTriangleNeighbors(mesh);
 	return mesh;
 }
 
@@ -310,7 +312,7 @@ Mesh* Mesh::CreateBox(Vector3 halfDims, Color color) {
 	mesh->indexCount = 36;
 	mesh->textureCount = 0;
 	mesh->batchCount = 1;
-	mesh->triangles = FindTriangleNeighbors(mesh);
+	if(find_triangle_neighbors) mesh->triangles = FindTriangleNeighbors(mesh);
 	return mesh;
 }
 
@@ -366,7 +368,7 @@ Mesh* Mesh::CreatePlanarBox(Vector3 halfDims, Color color) {
 	mesh->indexCount = 36;
 	mesh->textureCount = 0;
 	mesh->batchCount = 1;
-	mesh->triangles = FindTriangleNeighbors(mesh);
+	if(find_triangle_neighbors) mesh->triangles = FindTriangleNeighbors(mesh);
 	return mesh;
 }
 
@@ -423,7 +425,7 @@ Mesh* Mesh::CreatePlanarBox(Vector3 halfDims, Texture texture) {
 	mesh->indexCount = 36;
 	mesh->textureCount = 1;
 	mesh->batchCount = 1;
-	mesh->triangles = FindTriangleNeighbors(mesh);
+	if(find_triangle_neighbors) mesh->triangles = FindTriangleNeighbors(mesh);
 	return mesh;
 }
 

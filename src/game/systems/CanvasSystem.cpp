@@ -10,6 +10,7 @@
 #include "../components/Physics.h"
 #include "../components/Player.h"
 #include "../components/Movement.h"
+#include "../components/door.h"
 #include "../../core.h"
 #include "../../math/Math.h"
 #include "../../scene/Scene.h"
@@ -443,6 +444,370 @@ inline void ComponentsMenu(Entity* sel) {
 inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 	using namespace ImGui;
 	
+	PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
+	SetPadding; if(BeginChild("entityListScroll", ImVec2(GetWindowWidth() * 0.95, 100), false)) { WinHovCheck; 
+		if (admin->entities.size() == 0) {
+			float time = DengTime->totalTime;
+			std::string str1 = "Nothing yet...";
+			float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
+			for (int i = 0; i < str1.size(); i++) {
+				SetCursorPos(ImVec2((GetWindowSize().x - strlen1) / 2 + i * (fontsize / 2), (GetWindowSize().y - fontsize) / 2 + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))));
+				Text(str1.substr(i, 1).c_str());
+			}
+		}
+		else {
+			if (BeginTable("split3", 4, ImGuiTableFlags_BordersInner)) {
+				
+				std::string str1 = "ID";
+				float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
+				
+				TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
+				TableSetupColumn("Vis", ImGuiTableColumnFlags_WidthFixed);
+				TableSetupColumn("Name");
+				TableSetupColumn("Components");
+				
+				int counter = 0;
+				for (Entity* entity : admin->entities) {
+					counter++;
+					PushID(counter);
+					TableNextRow(); TableNextColumn();
+					std::string id = std::to_string(entity->id);
+					MeshComp* m = entity->GetComponent<MeshComp>();
+					
+					//SetCursorPosX((GetColumnWidth() - (fontsize - (fontsize / 2)) * id.size()) / 2);
+					if (ImGui::Button(id.c_str())) {
+						admin->selectedEntity = entity;
+						//if(m) DengRenderer->SetSelectedMesh(m->meshID);
+					}
+					TableNextColumn();
+					
+					//TODO(UiEnt, sushi) implement visibility for things other than meshes like lights, etc.
+					if (m) {
+						if (m->mesh_visible) {
+							if (SmallButton("O")) m->ToggleVisibility();
+						}
+						else {
+							if (SmallButton("X")) m->ToggleVisibility();
+						}
+					}
+					else {
+						Light* l = entity->GetComponent<Light>();
+						if (l) {
+							//TODO(sushi, UiCl) find a nicer way of indicating light on/off later
+							if (l->active) {
+								if (SmallButton("L")) l->active = false;
+							}
+							else {
+								if (SmallButton("l")) l->active = true;
+							}
+						}
+						else {
+							Text("NM");
+						}
+					}
+					
+					TableNextColumn();
+					static bool rename = false;
+					static char buff[64] = {};
+					static char ogname[64] = {}; //TODO(delle,Op) maybe optimize this by making one buffer before loop for all entities
+					static int renameid = 0;
+					if(!rename) Text(TOSTRING(" ", entity->name).c_str());
+					if (IsItemClicked()) {
+						renameid = counter;
+						rename = true;
+						cpystr(buff, entity->name, 63);
+						cpystr(ogname, entity->name, 63);
+					}
+					
+					if(rename) DengConsole->IMGUI_KEY_CAPTURE = true;
+					if (rename && counter == renameid) {
+						if (InputText("##ent_name_input", buff, sizeof(buff), ImGuiInputTextFlags_EnterReturnsTrue)) {
+							cpystr(entity->name, buff, 63);
+							rename = false;
+							DengConsole->IMGUI_KEY_CAPTURE = false;
+						}
+						if (DengInput->KeyPressed(Key::ESCAPE)) {
+							cpystr(entity->name, ogname, 63);
+							rename = false;
+							DengConsole->IMGUI_KEY_CAPTURE = false;
+						}
+					}
+					
+					TableNextColumn();
+					//TODO(sushi, Ui) find something better to put here
+					Text(TOSTRING(" comps: ", entity->components.size()).c_str());
+					SameLine();
+					if (Button("Del")) {
+						g_admin->DeleteEntity(entity);
+					}
+					PopID();
+				}
+				ImGui::EndTable();
+			}
+		}
+		EndChild();
+	}
+	PopStyleColor();
+	
+	Separator();
+	
+	//// selected entity inspector panel ////
+	Entity* sel = admin->selectedEntity;
+	if(!sel) return;
+	PushStyleVar(ImGuiStyleVar_IndentSpacing, 5.0f);
+	SetPadding; if (BeginChild("EntityInspector", ImVec2(GetWindowWidth() * 0.95f, GetWindowHeight() * .9f), true)) { WinHovCheck;
+		
+		//// name ////
+		SetPadding; Text(TOSTRING(sel->id, ":").c_str()); 
+		SameLine(); SetNextItemWidth(-FLT_MIN); InputText("##ent_name_input", sel->name, 64, 
+														  ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+		
+		//// transform ////
+		int tree_flags = ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_NoAutoOpenOnLog;
+		SetNextItemOpen(true, ImGuiCond_Once);
+		if (TreeNodeEx("Transform", tree_flags)){
+			vec3 oldVec = sel->transform.position;
+			
+			Text("Position    "); SameLine();
+			if(InputVector3("##ent_pos", &sel->transform.position)){
+				if(Physics* p = sel->GetComponent<Physics>()){
+					p->position = sel->transform.position;
+					admin->undoManager.AddUndoTranslate(&sel->transform, &oldVec, &p->position);
+				}else{
+					admin->undoManager.AddUndoTranslate(&sel->transform, &oldVec, &sel->transform.position);
+				}
+			}Separator();
+			
+			oldVec = sel->transform.rotation;
+			Text("Rotation    "); SameLine(); 
+			if(InputVector3("##ent_rot", &sel->transform.rotation)){
+				if(Physics* p = sel->GetComponent<Physics>()){
+					p->rotation = sel->transform.rotation;
+					admin->undoManager.AddUndoRotate(&sel->transform, &oldVec, &p->rotation);
+				}else{
+					admin->undoManager.AddUndoRotate(&sel->transform, &oldVec, &sel->transform.rotation);
+				}
+			}Separator();
+			
+			oldVec = sel->transform.scale;
+			Text("Scale       "); SameLine(); 
+			if(InputVector3("##ent_scale",   &sel->transform.scale)){
+				if(Physics* p = sel->GetComponent<Physics>()){
+					p->position = sel->transform.scale;
+					admin->undoManager.AddUndoScale(&sel->transform, &oldVec, &p->scale);
+				}else{
+					admin->undoManager.AddUndoScale(&sel->transform, &oldVec, &sel->transform.scale);
+				}
+			}Separator();
+			TreePop();
+		}
+		
+		//// components ////
+		for(Component* c : sel->components){
+			switch(c->comptype){
+				//mesh
+				case ComponentType_MeshComp:{
+					MeshComp* mc = dyncasta(MeshComp, c);
+					if(mc && TreeNodeEx("Mesh", tree_flags)){
+						MeshVk& mvk = DengRenderer->meshes[mc->meshID];
+						Text("Mesh     "); SameLine(); SetNextItemWidth(-1); 
+						if(BeginCombo("##mesh_combo", mvk.name)){ WinHovCheck;
+							for_n(i, DengRenderer->meshes.size()){
+								if(DengRenderer->meshes[i].base && Selectable(DengRenderer->meshes[i].name, mc->meshID == i)){
+									mc->ChangeMesh(i);
+								}
+							}
+							EndCombo();}
+						
+						u32 mesh_batch_idx = 0;
+						Text("Batch    "); SameLine(); SetNextItemWidth(-1); 
+						if(BeginCombo("##mesh_batch_combo", mc->mesh->batchArray[mesh_batch_idx].name)){ WinHovCheck;
+							for_n(i, mc->mesh->batchArray.size()){
+								if(Selectable(mc->mesh->batchArray[i].name, mesh_batch_idx == i)){
+									mesh_batch_idx = i; 
+								}
+							}
+							EndCombo();
+						}
+						
+						Text("Material "); SameLine(); SetNextItemWidth(-1); 
+						if(BeginCombo("##mesh_mat_combo", DengRenderer->materials[mvk.primitives[mesh_batch_idx].materialIndex].name)){ WinHovCheck;
+							for_n(i, DengRenderer->materials.size()){
+								if(Selectable(DengRenderer->materials[i].name, mvk.primitives[mesh_batch_idx].materialIndex == i)){
+									DengRenderer->UpdateMeshBatchMaterial(mc->meshID, mesh_batch_idx, i);
+								}
+							}
+							EndCombo();
+						}
+						
+						Indent();{
+							Text("Shader "); SameLine(); SetNextItemWidth(-1);
+							if(BeginCombo("##mesh_shader_combo", ShaderStrings[DengRenderer->materials[mvk.primitives[mesh_batch_idx].materialIndex].shader])){ WinHovCheck;
+								for_n(i, IM_ARRAYSIZE(ShaderStrings)){
+									if(Selectable(ShaderStrings[i], DengRenderer->materials[mvk.primitives[mesh_batch_idx].materialIndex].shader == i)){
+										DengRenderer->UpdateMaterialShader(mvk.primitives[mesh_batch_idx].materialIndex, i);
+									}
+								}
+								EndCombo();
+							}
+							
+							Text("Albedo   "); SameLine(); SetNextItemWidth(-1);
+							if(BeginCombo("##mesh_albedo_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_idx].materialIndex].albedoID].filename)){ WinHovCheck;
+								for_n(i, textures.size()){
+									if(Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_idx].materialIndex].albedoID].filename, textures[i].c_str()) == 0)){
+										DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_idx].materialIndex, 0,
+																			DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Albedo));
+									}
+								}
+								EndCombo();
+							}
+							
+							Text("Normal   "); SameLine(); SetNextItemWidth(-1);
+							if(BeginCombo("##mesh_normal_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_idx].materialIndex].normalID].filename)){ WinHovCheck;
+								for_n(i, textures.size()){
+									if(Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_idx].materialIndex].normalID].filename, textures[i].c_str()) == 0)){
+										DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_idx].materialIndex, 0,
+																			DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Normal));
+									}
+								}
+								EndCombo();
+							}
+							
+							Text("Specular "); SameLine(); SetNextItemWidth(-1);
+							if(BeginCombo("##mesh_specular_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_idx].materialIndex].specularID].filename)){ WinHovCheck;
+								for_n(i, textures.size()){
+									if(Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_idx].materialIndex].specularID].filename, textures[i].c_str()) == 0)){
+										DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_idx].materialIndex, 0,
+																			DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Specular));
+									}
+								}
+								EndCombo();
+							}
+							
+							Text("Light    "); SameLine(); SetNextItemWidth(-1);
+							if(BeginCombo("##mesh_light_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_idx].materialIndex].lightID].filename)){ WinHovCheck;
+								for_n(i, textures.size()){
+									if(Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_idx].materialIndex].lightID].filename, textures[i].c_str()) == 0)){
+										DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_idx].materialIndex, 0,
+																			DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Light));
+									}
+								}
+								EndCombo();
+							}
+							
+						}Unindent();
+						TreePop();
+					}
+				}break;
+				
+				//mesh2D
+				//TODO() implement mesh2D component inspector
+				
+				//physics
+				case ComponentType_Physics:{
+					Physics* phys = dyncasta(Physics, c);
+					if(phys && TreeNodeEx("Physics", tree_flags)){
+						Text("Velocity     "); SameLine(); InputVector3("phys_vel",      &phys->velocity);        Separator();
+						Text("Accelertaion "); SameLine(); InputVector3("phys_accel",    &phys->acceleration);    Separator();
+						Text("Rot Velocity "); SameLine(); InputVector3("phys_rotvel",   &phys->rotVelocity);     Separator();
+						Text("Rot Accel    "); SameLine(); InputVector3("phys_rotaccel", &phys->rotAcceleration); Separator();
+						Text("Elasticity   "); SameLine(); InputFloat("phys_elastic", &phys->elasticity);         Separator();
+						Text("Mass         "); SameLine(); InputFloat("phys_mass",    &phys->mass);               Separator();
+						Checkbox("Static Position", &phys->isStatic);                                             Separator();
+						Checkbox("Static Rotation", &phys->staticRotation);
+						TreePop();
+					}
+				}break;
+				
+				//colliders
+				case ComponentType_Collider:{
+					Collider* coll = dyncasta(Collider, c);
+					if(coll && TreeNodeEx("Collider", tree_flags)){
+						//Text("Shape "); SameLine(); SetNextItemWidth(-1);
+						//if(BeginCombo("##coll_type_combo", )){ WinHovCheck;
+						//for_n(i, IM_ARRAYSIZE(ColliderTypeStrings)){
+						//if(Selectable(ColliderTypeStrings[i], coll->type == i)){
+						//
+						//}
+						//}
+						//EndCombo();
+						//}
+						Text("Collider changing not setup");
+						
+						switch(coll->type){
+							case ColliderType_Box:{
+								BoxCollider* coll_box = dyncasta(BoxCollider, coll);
+								Text("Half Dims "); SameLine(); InputVector3("##coll_halfdims", &coll_box->halfDims);
+							}break;
+							case ColliderType_AABB:{
+								
+							}break;
+							case ColliderType_Sphere:{
+								
+							}break;
+							case ColliderType_Landscape:{
+								
+							}break;
+						}
+						
+						
+						TreePop();
+					}
+				}break;
+				
+				//audio listener
+				case ComponentType_AudioListener:{
+					
+				}break;
+				
+				//audio source
+				case ComponentType_AudioSource:{
+					
+				}break;
+				
+				//camera
+				case ComponentType_Camera:{
+					
+				}break;
+				
+				//light
+				case ComponentType_Light:{
+					
+				}break;
+				
+				//orb manager
+				case ComponentType_OrbManager:{
+					
+				}break;
+				
+				//door
+				case ComponentType_Door:{
+					
+				}break;
+				
+				//player
+				case ComponentType_Player:{
+					
+				}break;
+				
+				//movement
+				case ComponentType_Movement:{
+					
+				}break;
+			}
+		}
+		
+		//// add/remove component ////
+		
+		
+		EndChild(); //CreateMenu
+	}
+	PopStyleVar(); //ImGuiStyleVar_IndentSpacing
+}
+
+inline void _EntitiesTab(EntityAdmin* admin, float fontsize){
+	using namespace ImGui;
+	
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
 	SetPadding;
 	if (BeginChild("entityListScroll", ImVec2(GetWindowWidth() * 0.95, 100), false)) {
@@ -811,13 +1176,13 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 	using namespace ImGui;
 	
 	//// creation variables ////
-	const char* presets[] = {"None", "AABB", "Box", "Sphere", "2D", "Player"};
+	local_persist const char* presets[] = {"None", "AABB", "Box", "Sphere", "2D", "Player"};
 	local_persist int current_preset = 0;
 	local_persist char entity_name[64] = {};
 	local_persist vec3 entity_pos{}, entity_rot{}, entity_scale = Vector3::ONE;
 	local_persist bool comp_audiolistener{}, comp_audiosource{}, comp_collider{}, comp_mesh{};
 	local_persist bool comp_light{}, comp_physics{}, comp_2d{}, comp_player{};
-	const char* colliders[] = {"None", "Box", "AABB", "Sphere"};
+	local_persist const char* colliders[] = {"None", "Box", "AABB", "Sphere"};
 	local_persist int  collider_type = ColliderType_NONE;
 	local_persist vec3 collider_halfdims = Vector3::ONE;
 	local_persist f32  collider_radius  = 1.f;
@@ -830,7 +1195,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 	local_persist vec3 physics_velocity{}, physics_accel{}, physics_rotVel{}, physics_rotAccel{};
 	local_persist f32  physics_elasticity = .5f, physics_mass = 1.f;
 	local_persist bool physics_staticPosition{}, physics_staticRotation{};
-	const char* twods[] = {"None", "Line", "Triangle", "Square", "N-Gon", "Image"};
+	local_persist const char* twods[] = {"None", "Line", "Triangle", "Square", "N-Gon", "Image"};
 	local_persist int  twod_type = 0, twod_vert_count = 0;
 	local_persist u32  twod_id = -1;
 	local_persist vec4 twod_color = vec4::ONE;
@@ -1067,12 +1432,12 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 			TreePop();
 		}
 		if(comp_physics && TreeNodeEx("Physics", tree_flags)){
-			Text("Velocity     "); SameLine(); InputVector3("phys_vel",   &physics_velocity);    Separator();
-			Text("Accelertaion "); SameLine(); InputVector3("phys_accel",   &physics_accel);     Separator();
-			Text("Rot Velocity "); SameLine(); InputVector3("phys_rotvel", &physics_rotVel);     Separator();
-			Text("Rot Accel    "); SameLine(); InputVector3("phys_rotaccel", &physics_rotAccel); Separator();
-			Text("Elasticity   "); SameLine(); InputFloat("phys_elastic", &physics_elasticity);  Separator();
-			Text("Mass         "); SameLine(); InputFloat("phys_mass", &physics_mass);           Separator();
+			Text("Velocity     "); SameLine(); InputVector3("##phys_vel",   &physics_velocity);    Separator();
+			Text("Accelertaion "); SameLine(); InputVector3("##phys_accel",   &physics_accel);     Separator();
+			Text("Rot Velocity "); SameLine(); InputVector3("##phys_rotvel", &physics_rotVel);     Separator();
+			Text("Rot Accel    "); SameLine(); InputVector3("##phys_rotaccel", &physics_rotAccel); Separator();
+			Text("Elasticity   "); SameLine(); InputFloat("##phys_elastic", &physics_elasticity);  Separator();
+			Text("Mass         "); SameLine(); InputFloat("##phys_mass", &physics_mass);           Separator();
 			Checkbox("Static Position", &physics_staticPosition);                                Separator();
 			Checkbox("Static Rotation", &physics_staticRotation);
 			TreePop();
@@ -1081,10 +1446,10 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 			SetNextItemWidth(-1); Combo("##coll_combo", &collider_type, colliders, IM_ARRAYSIZE(colliders));
 			switch(collider_type){
 				case ColliderType_Box: case ColliderType_AABB:{
-					Text("Half Dims    "); SameLine(); InputVector3("coll_halfdims", &collider_halfdims);
+					Text("Half Dims    "); SameLine(); InputVector3("##coll_halfdims", &collider_halfdims);
 				}break;
 				case ColliderType_Sphere:{
-					Text("Radius       "); SameLine(); InputFloat("coll_radius", &collider_radius);
+					Text("Radius       "); SameLine(); InputFloat("##coll_radius", &collider_radius);
 				}break;
 			}
 			Checkbox("Don't Resolve Collisions", &collider_nocollide);
