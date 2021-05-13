@@ -264,9 +264,35 @@ void CanvasSystem::MenuBar() {
 			if (MenuItem("New"))     admin->Reset();
 			if (MenuItem("Save"))    admin->Save("save.desh");
 			//TODO(delle) add textbox for saving to specific file
-			if (MenuItem("Save As")) {} 
+			if (BeginMenu("Save As")) {
+				static char buff[255] = {};
+				if(ImGui::InputText("SaveAsInput", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
+					std::string s(buff); s += ".desh";
+					admin->Save(s.c_str());
+				}
+				EndMenu();
+			} 
 			//TODO(delle) add dropdown/something for specific file loading
-			if (MenuItem("Load"))    admin->Load("save.desh");
+			if (BeginMenu("Load")) { WinHovCheck;
+				static bool fopen = false;
+				static std::vector<std::string> saves;
+
+				if (!fopen) {
+					saves = deshi::iterateDirectory(deshi::dirSaves());
+					fopen = false;
+				}
+
+				for_n(i, saves.size()) {
+					if (MenuItem(saves[i].c_str())) {
+						admin->Load(saves[i].c_str());
+					}
+				}
+
+				
+				//admin->Load("save.desh");
+				
+				ImGui::EndMenu();
+			}
 			ImGui::EndMenu();
 		}
 		if(BeginMenu("Spawn")) { WinHovCheck; 
@@ -792,7 +818,16 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 				
 				//movement
 				case ComponentType_Movement:{
-					
+					if (TreeNodeEx("Movement", tree_flags)) {
+						dyncast(d, Movement, c);
+						Text("Ground Accel  "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						InputFloat("gndaccel", &d->gndAccel);
+						Text("Air Accel     "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						InputFloat("airaccel", &d->airAccel);
+						Text("Max Walk Speed"); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						InputFloat("maxwalk ", &d->maxWalkingSpeed);
+						TreePop();
+					}
 				}break;
 			}
 		}
