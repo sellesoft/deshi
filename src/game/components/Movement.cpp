@@ -11,7 +11,7 @@ Movement::Movement(Physics* phys) {
 	
 	this->phys = phys;
 	phys->kineticFricCoef = 0.32;
-	phys->fricOverride = true;
+	phys->physOverride = true;
 }
 
 //for loading
@@ -23,7 +23,7 @@ Movement::Movement(Physics* phys, float gndAccel, float airAccel, float maxWalki
 	
 	this->phys = phys;
 	//phys->kineticFricCoef = 1;
-	//phys->fricOverride = true;
+	//phys->physOverride = true;
 	this->gndAccel = gndAccel;
 	this->airAccel = airAccel;
 	this->maxWalkingSpeed = maxWalkingSpeed;
@@ -31,9 +31,22 @@ Movement::Movement(Physics* phys, float gndAccel, float airAccel, float maxWalki
 }
 
 void Movement::Update() {
+
+	//check if were on the ground
 	if (phys->contactState == ContactNONE) moveState = InAir;
-	else moveState = OnGround;
-	
+	else {
+		bool onGround = false;
+		for (auto& p : phys->manifolds) {
+			Vector3 norm = -p.second.norm.normalized();
+			float ang = DEGREES(asin(norm.dot(Vector3::UP)));
+			PRINTLN(ang);
+			if (ang > 45) {
+				onGround = true;
+			}
+		}
+		if (onGround) moveState = OnGround;
+		else          moveState = InAir;
+	}
 	if (moveState == OnGround) {
 		ImGui::DebugDrawText("on ground", DengWindow->dimensions / 2);
 	}
@@ -43,7 +56,17 @@ void Movement::Update() {
 	
 	
 	if (moveState == OnGround) {
-		phys->velocity += inputs * gndAccel * DengTime->deltaTime;
+
+		if (jump) {
+			phys->acceleration += Vector3(0, 9999, 0);
+			phys->velocity += phys->acceleration * inputs * DengTime->deltaTime;
+			jump = false;
+		}
+		else {
+			phys->velocity += inputs * gndAccel * DengTime->deltaTime;
+		}
+
+		
 		//float projVel = phys->velocity.dot(inputs);
 		//
 		//if (projVel < maxWalkingSpeed - DengTime->deltaTime * gndAccel) {
@@ -52,26 +75,72 @@ void Movement::Update() {
 		//else if (maxWalkingSpeed - DengTime->deltaTime * gndAccel <= projVel && projVel < maxWalkingSpeed){
 		//	phys->velocity += (maxWalkingSpeed - phys->velocity.mag() * cosf(Math::AngBetweenVectors(phys->velocity, inputs))) * inputs;
 		//}
+
+		float velMag = phys->velocity.mag();
+		if (velMag > maxWalkingSpeed) {
+			phys->velocity /= velMag;
+			phys->velocity *= maxWalkingSpeed;
+		}
+		else if (velMag < 0.12) {
+			phys->velocity = Vector3::ZERO;
+			phys->acceleration = Vector3::ZERO;
+		}
+
+		phys->position += phys->velocity * DengTime->deltaTime;
 	}
-	//else
-	//	phys->acceleration += Accelerate(inputs, phys->velocity, airAccel, maxWalkingSpeed);
-	
-	
-	
+	else {
+		phys->acceleration += Vector3(0, -9.81, 0);
+		//phys->velocity += inputs * gndAccel * DengTime->deltaTime;
+		phys->velocity += phys->acceleration * DengTime->deltaTime;
+		phys->position += phys->velocity * DengTime->deltaTime;
+
+	}
+
+	phys->acceleration = Vector3::ZERO;
+
+
+	for (auto& m : phys->manifolds) {
+		Vector3 norm = m.second.norm.normalized();
+
+		Vector3 vPerpNorm = phys->velocity - phys->velocity.dot(norm) * norm;
+
+		//PRINTLN(TOSTRING("------------------",
+		//	"norm:     ", norm, "\n",
+		//	"vel:      ", phys->velocity, "\n",
+		//	"vel perp: ", vPerpNorm));
+
+
+	}
 	
 	//TODO(sushi) implement more Source-like speed limiting later
 	if (moveState == OnGround && phys->velocity.mag() > maxWalkingSpeed) {
 		phys->velocity = phys->velocity.normalized() * maxWalkingSpeed;
 	}
 	
-	if (jump) {
-		phys->AddForce(nullptr, Vector3(0, 17500, 0));
-		jump = false;
-	}
+	
 	if (inputs == Vector3::ZERO && moveState == OnGround) {
 		if (phys->velocity != Vector3::ZERO) {
-			if (phys->velocity.mag() > 0.12)
-				phys->AddFrictionForce(nullptr, 0.34);
+			if (phys->velocity.mag() > 0.12) {
+			
+				for (auto& m : phys->manifolds) {
+					Vector3 norm = m.second.norm.normalized();
+
+					Vector3 vPerpNorm = phys->velocity - phys->velocity.dot(norm) * norm;
+
+					//PRINTLN(TOSTRING("------------------",
+					//	"norm:     ", norm, "\n",
+					//	"vel:      ", phys->velocity, "\n",
+					//	"vel perp: ", vPerpNorm));
+					//PRINTLN(TOSTRING("vel perp: ", vPerpNorm));
+
+
+					phys->forces.push_back(-vPerpNorm.normalized() * phys->kineticFricCoef * phys->mass * -9.81);
+
+
+				}
+				
+				//phys->AddFrictionForce(nullptr, 0.34);
+			}
 			else
 				phys->velocity = Vector3::ZERO;
 		}

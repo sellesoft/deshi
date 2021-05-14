@@ -40,7 +40,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 //for loading only really
 Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy, Vector3 rotAcceleration, float elasticity,
 				 float mass, bool isStatic, bool staticRotation, bool twoDphys, float kineticFricCoef, float staticFricCoef,
-				 bool fricOverride) {
+				 bool physOverride) {
 	
 	admin = g_admin;
 	cpystr(name, "Physics", 63);
@@ -60,7 +60,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	this->twoDphys = twoDphys;
 	this->kineticFricCoef = kineticFricCoef;
 	this->staticFricCoef = staticFricCoef;
-	this->fricOverride = fricOverride;
+	this->physOverride = physOverride;
 	
 	
 }
@@ -92,9 +92,6 @@ void Physics::AddForce(Physics* creator, Vector3 force) {
 
 void Physics::AddFrictionForce(Physics* creator, float frictionCoef, float grav) {
 	forces.push_back(-velocity.normalized() * frictionCoef * mass * grav);
-	if (creator) { 
-		//TODO(delle,Ph) implement sliding friction between two objects
-	}
 }
 
 void Physics::AddImpulse(Physics* creator, Vector3 impulse) {
@@ -116,7 +113,7 @@ void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count)
 	u32 entityID = 0xFFFFFFFF;
 	vec3 position{}, rotation{}, velocity{}, accel{}, rotVel{}, rotAccel{};
 	f32 elasticity = 0.f, mass = 0.f, kineticFricCoef = 0.f, staticFricCoef = 0.f;
-	b32 staticPos = false, staticRot = false, twoDphys = false, fricOverride = false;
+	b32 staticPos = false, staticRot = false, twoDphys = false, physOverride = false;
 	for_n(i,count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		if(entityID >= admin->entities.size()) {
@@ -137,9 +134,9 @@ void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count)
 		memcpy(&twoDphys,        data+cursor, sizeof(b32));   cursor += sizeof(b32);
 		memcpy(&kineticFricCoef, data+cursor, sizeof(float)); cursor += sizeof(float);
 		memcpy(&staticFricCoef,  data+cursor, sizeof(float)); cursor += sizeof(float);
-		memcpy(&fricOverride,    data+cursor, sizeof(b32));   cursor += sizeof(b32);
+		memcpy(&physOverride,    data+cursor, sizeof(b32));   cursor += sizeof(b32);
 		
-		Physics* c = new Physics(position, rotation, velocity, accel, rotVel, rotAccel, elasticity, mass, staticPos, staticRot, twoDphys, kineticFricCoef, staticFricCoef, fricOverride);
+		Physics* c = new Physics(position, rotation, velocity, accel, rotVel, rotAccel, elasticity, mass, staticPos, staticRot, twoDphys, kineticFricCoef, staticFricCoef, physOverride);
 		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}

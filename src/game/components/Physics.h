@@ -7,11 +7,12 @@
 
 #include <unordered_map>
 
+typedef u32 ColliderType;
 
 //only used for 2D currently
 struct Physics;
 struct poly;
-struct Manifold {
+struct Manifold2 {
 	poly* a = nullptr;
 	poly* b = nullptr;
 	
@@ -21,6 +22,24 @@ struct Manifold {
 	int nColPoints = 0;
 	
 	Vector2 norm;
+};
+
+struct Collider;
+struct Manifold3 {
+	Collider* a = nullptr;
+	Collider* b = nullptr;
+
+	ColliderType coltypea;
+	ColliderType coltypeb;
+
+	//will be implemented later
+	// 
+	//int refID = 0;
+	//Vector2 colpoints[2];
+	//float depth[2];
+	//int nColPoints = 0;
+
+	Vector3 norm;
 };
 
 //temp 2D polygon class 
@@ -101,6 +120,9 @@ struct Physics : public Component {
 	//TODO(delle,Ph) separate static movement and rotation
 	bool twoDphys = false;
 	poly* twoDpolygon = nullptr;
+
+	//this is probably temporary, i just need a way to communicate collision normals elsewhere
+	std::unordered_map<Physics*, Manifold3> manifolds;
 	
 	//NOTE these default values are really only meant for debugging
 	//and can be removed if I forget to remove them
@@ -109,7 +131,7 @@ struct Physics : public Component {
 	float staticFricCoef = 0.42;
 	std::unordered_map<Physics*, ContactState> contacts;
 	ContactState contactState;
-	bool fricOverride = false;
+	bool physOverride = false;
 	
 	Physics();
 	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO,

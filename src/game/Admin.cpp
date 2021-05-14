@@ -82,7 +82,7 @@ void EntityAdmin::Update() {
 	if(!skip) mainCamera->Update();
 	
 	TIMER_RESET(t_a); 
-	if (!skip && !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_Physics]); }
+	if (!skip && !pause_phys && !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_Physics]); }
 	DengTime->physLyrTime =   TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_phys && !paused)  { physics.Update(); }
 	DengTime->physSysTime =   TIMER_END(t_a); TIMER_RESET(t_a);
@@ -108,6 +108,7 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
 		for(Component* c : e->components) freeCompLayers[c->layer].remove_from(c->layer_index);
 		for(int i = e->id+1; i < entities.size(); ++i) entities[i]->id -= 1;
 		entities.erase(entities.begin()+e->id);
+		if (e == player) player = nullptr;
 		delete e;
 	}
 	deletionBuffer.clear();
@@ -524,7 +525,7 @@ void EntityAdmin::Save(const char* filename) {
 		b32 isStatic = c->isStatic;
 		b32 staticRotation = c->staticRotation;
 		b32 twoDphys = c->twoDphys;
-		b32 fricOverride = c->fricOverride;
+		b32 physOverride = c->physOverride;
 		file.write((const char*)&c->entityID,        sizeof(u32));
 		file.write((const char*)&c->position,        sizeof(Vector3));
 		file.write((const char*)&c->rotation,        sizeof(Vector3));
@@ -539,7 +540,7 @@ void EntityAdmin::Save(const char* filename) {
 		file.write((const char*)&twoDphys,           sizeof(b32));
 		file.write((const char*)&c->kineticFricCoef, sizeof(float));
 		file.write((const char*)&c->staticFricCoef,  sizeof(float));
-		file.write((const char*)&c->fricOverride,	 sizeof(b32));
+		file.write((const char*)&c->physOverride,	 sizeof(b32));
 	}
 	
 	//movement
