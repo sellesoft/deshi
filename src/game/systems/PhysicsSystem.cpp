@@ -4,6 +4,7 @@
 #include "../components/Collider.h"
 #include "../components/AudioSource.h"
 #include "../components/MeshComp.h"
+#include "../components/Movement.h"
 #include "../../core/console.h"
 #include "../../math/Math.h"
 #include "../../geometry/Geometry.h"
@@ -81,7 +82,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 			else if (c.second == ContactStationary) contactStationary = true;
 		}
 
-		if (contactMoving)     t.physics->contactState = ContactMoving;
+		if      (contactMoving)     t.physics->contactState = ContactMoving;
 		else if (contactStationary) t.physics->contactState = ContactStationary;
 		else                        t.physics->contactState = ContactNONE;
 
@@ -210,8 +211,8 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			norm = Vector3::BACK;
 		}
 
-		m1.norm =  norm;
-		m2.norm = -norm;
+		m1.norm = norm;
+		m2.norm = norm;
 
 		
 		//dynamic resolution
@@ -246,15 +247,25 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			else {
 				obj2->contacts[obj1] = ContactStationary;
 			}
+		}
+
+		//all of this probably isnt nececssary but i'm trying to get it to wo rkr kr k r
+		if (g_admin->player == obj1->entity) {
+			Vector3 pto = obj2->position - obj1->position;
+			if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
+			else                                { m1.player = 0; m2.player = 1; }
 			
 			obj1->manifolds[obj2] = m1;
 			obj2->manifolds[obj1] = m2;
-
-			
-			return true;
 		}
-		obj1->manifolds[obj2] = m1;
-		obj2->manifolds[obj1] = m2;
+		else if (g_admin->player == obj2->entity) {
+			Vector3 pto = obj2->position - obj1->position;
+			if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
+			else { m1.player = 0; m2.player = 1; }
+
+			obj1->manifolds[obj2] = m2;
+			obj2->manifolds[obj1] = m1;
+		}
 
 		return true;
 	}	
@@ -736,6 +747,9 @@ void PhysicsSystem::Update() {
 				ERROR("Physics system took longer than 5 seconds, pausing.");
 				goto physend;
 			}
+			//if (admin->player) {
+			//	admin->player->GetComponent<Movement>()->Update();
+			//}
 			PhysicsTick(t, this, DengTime);
 			CollisionTick(tuples, t);
 		}

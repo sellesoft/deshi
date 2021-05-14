@@ -10,7 +10,7 @@ Movement::Movement(Physics* phys) {
 	cpystr(name, "Movement", 63);
 	
 	this->phys = phys;
-	phys->kineticFricCoef = 0.32;
+	phys->kineticFricCoef = 0.75;
 	phys->physOverride = true;
 }
 
@@ -32,14 +32,30 @@ Movement::Movement(Physics* phys, float gndAccel, float airAccel, float maxWalki
 
 void Movement::Update() {
 
+
+	bool contactMoving = false;
+	bool contactStationary = false;
+	for (auto c : phys->contacts) {
+		if (c.second == ContactMoving) {
+			contactMoving = true;
+		}
+		else if (c.second == ContactStationary) contactStationary = true;
+	}
+
+	if (contactMoving)          phys->contactState = ContactMoving;
+	else if (contactStationary) phys->contactState = ContactStationary;
+	else                        phys->contactState = ContactNONE;
+
+
+
 	//check if were on the ground
 	if (phys->contactState == ContactNONE) moveState = InAir;
 	else {
 		bool onGround = false;
 		for (auto& p : phys->manifolds) {
-			Vector3 norm = -p.second.norm.normalized();
+			Vector3 norm = p.second.norm.normalized();
+			if (p.second.player) norm = -norm;
 			float ang = DEGREES(asin(norm.dot(Vector3::UP)));
-			PRINTLN(ang);
 			if (ang > 45) {
 				onGround = true;
 			}
@@ -53,18 +69,21 @@ void Movement::Update() {
 	else {
 		ImGui::DebugDrawText("in air", DengWindow->dimensions / 2);
 	}
+	//PRINTLN(phys->manifolds.size());
+	phys->manifolds.clear();
+
 	
 	
 	if (moveState == OnGround) {
-
+		phys->acceleration += Vector3(0, -9.81, 0);
 		if (jump) {
-			phys->acceleration += Vector3(0, 9999, 0);
-			phys->velocity += phys->acceleration * inputs * DengTime->deltaTime;
+			phys->velocity += Vector3(0, 20, 0);
+			//phys->velocity += phys->acceleration * inputs * DengTime->deltaTime;
 			jump = false;
 		}
-		else {
-			phys->velocity += inputs * gndAccel * DengTime->deltaTime;
-		}
+	
+		phys->velocity += inputs * gndAccel * DengTime->fixedDeltaTime;
+		
 
 		
 		//float projVel = phys->velocity.dot(inputs);
@@ -86,13 +105,13 @@ void Movement::Update() {
 			phys->acceleration = Vector3::ZERO;
 		}
 
-		phys->position += phys->velocity * DengTime->deltaTime;
+		phys->position += phys->velocity * DengTime->fixedDeltaTime;
 	}
 	else {
 		phys->acceleration += Vector3(0, -9.81, 0);
 		//phys->velocity += inputs * gndAccel * DengTime->deltaTime;
-		phys->velocity += phys->acceleration * DengTime->deltaTime;
-		phys->position += phys->velocity * DengTime->deltaTime;
+		phys->velocity += phys->acceleration * DengTime->fixedDeltaTime;
+		phys->position += phys->velocity * DengTime->fixedDeltaTime;
 
 	}
 

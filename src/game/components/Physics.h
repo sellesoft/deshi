@@ -32,6 +32,9 @@ struct Manifold3 {
 	ColliderType coltypea;
 	ColliderType coltypeb;
 
+	//bool indicating which normal is the player's
+	b32 player = 0;
+
 	//will be implemented later
 	// 
 	//int refID = 0;
