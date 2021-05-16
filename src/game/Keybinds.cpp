@@ -5,7 +5,7 @@
 #include <fstream>
 #include <regex>
 
-//TODO(anyone) update this string at some point
+//TODO(sushi) update all of keybinds to match the new binds in Keybinds.h
 std::string default_keybinds = ""
 "> Movement Keys\n"
 "movementFlyingUp = E\n"

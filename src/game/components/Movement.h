@@ -5,31 +5,38 @@
 #include "Component.h"
 #include "../../math/Vector.h"
 
-//TODO(sushi) add different states such as Stationary, Walking, Running, etc. and probably make them so we can do bit masking to check for multiple states
-enum MoveState {
-	InAir, OnGround
+enum MoveState : u32{
+	InAirNoInput, // this isn't necessary i dont think
+	InAirCrouching,
+	OnGroundNoInput,
+	OnGroundWalking,   
+	OnGroundRunning,   
+	OnGroundCrouching 
 };
 
 struct Physics;
 
 struct Movement : public Component {
 	Vector3 inputs;
-	
-	//pointer to player's physics
 	Physics* phys;
 	
+	bool inAir;
 	MoveState moveState;
 	
 	float gndAccel = 100;
 	float airAccel = 1000;
+
+	float jumpImpulse = 10;
 	
-	float maxWalkingSpeed = 12;
+	float maxWalkingSpeed   = 5;
+	float maxRunningSpeed   = 12;
+	float maxCrouchingSpeed = 2.5;
 	
 	bool jump = false;
 	
 	Movement(Physics* phys);
 
-	Movement(Physics* phys, float gndAccel, float airAccel, float maxWalkingSpeed, bool jump);
+	Movement(Physics* phys, float gndAccel, float airAccel, float maxWalkingSpeed, float maxRunningSpeed, float maxCrouchingSpeed, bool jump, float jumpImpulse);
 	
 	void Update() override;
 	

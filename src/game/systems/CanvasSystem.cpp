@@ -819,12 +819,18 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 				case ComponentType_Movement:{
 					if (TreeNodeEx("Movement", tree_flags)) {
 						dyncast(d, Movement, c);
-						Text("Ground Accel  "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-						InputFloat("gndaccel", &d->gndAccel);
-						Text("Air Accel     "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-						InputFloat("airaccel", &d->airAccel);
-						Text("Max Walk Speed"); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-						InputFloat("maxwalk ", &d->maxWalkingSpeed);
+						Text("Ground Accel    "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						InputFloat("gndaccel ", &d->gndAccel);
+						Text("Air Accel       "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						InputFloat("airaccel ", &d->airAccel);
+						Text("Jump Impulse    "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						InputFloat("jimp     ", &d->jumpImpulse);
+						Text("Max Walk Speed  "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						InputFloat("maxwalk  ", &d->maxWalkingSpeed);
+						Text("Max Run Speed   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						InputFloat("maxrun   ", &d->maxRunningSpeed);
+						Text("Max Crouch Speed"); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						InputFloat("maxcrouch", &d->maxCrouchingSpeed);
 						TreePop();
 					}
 				}break;

@@ -264,7 +264,7 @@ compOn(Vector3 rhs) {
 
 inline float Vector3::
 projectOn(Vector3 rhs) {
-	if (this->mag() != 0) return this->dot(rhs) / this->mag();
+	if (this->mag() != 0) return this->dot(rhs) / rhs.mag();
 	else return 0;
 }
 

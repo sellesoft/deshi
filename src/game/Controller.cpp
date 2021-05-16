@@ -83,17 +83,18 @@ inline void PlayerMovement(EntityAdmin* admin, MovementMode mode, Movement* play
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingRight))    { inputs += Vector3(camera->right.x, 0, camera->right.z); }
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingLeft))     { inputs -= Vector3(camera->right.x, 0, camera->right.z); }
 		if (DengInput->KeyPressed(DengKeys.movementJump | INPUTMOD_ANY)
-			&& playermove->moveState == OnGround)                       { playermove->jump = true; }
+			&& !playermove->inAir)                                      { playermove->jump = true; }
 		
 		if (playermove && admin->player) {
 			playermove->inputs = inputs.normalized();
 			Vector3 standpos = admin->player->transform.position + Vector3::UP * 2;
-			Vector3 crouchpos = admin->player->transform.position;
+			Vector3 crouchpos = admin->player->transform.position + Vector3::UP * 0.5;
 			static Vector3 cpos = standpos;
 			static float timer = 0;
 			float ttc = 0.2;
 
-			if (DengInput->KeyDownAnyMod(Key::LCTRL)) {
+			//TODO(sushi, Cl) move crounch controls and ideally camera control to Movement
+			if (DengInput->KeyDownAnyMod(DengKeys.movementCrouch)) {
 				if (timer < 0.2) timer += DengTime->deltaTime;
 			}
 			else {

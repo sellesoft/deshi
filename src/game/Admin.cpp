@@ -451,7 +451,7 @@ void EntityAdmin::Save(const char* filename) {
 	//movement 8
 	typeHeader.type        = ComponentType_Movement;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(Vector3) + sizeof(float) * 3 + sizeof(b32);
+	typeHeader.size        = sizeof(u32) + sizeof(Vector3) + sizeof(float) * 6 + sizeof(b32);
 	typeHeader.count       = compsMovement.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
@@ -546,12 +546,15 @@ void EntityAdmin::Save(const char* filename) {
 	//movement
 	for (auto c : compsMovement) {
 		b32 jump = c->jump;
-		file.write((const char*)&c->entityID,        sizeof(u32));
-		file.write((const char*)&c->inputs,          sizeof(Vector3));
-		file.write((const char*)&c->gndAccel,        sizeof(float));
-		file.write((const char*)&c->airAccel,        sizeof(float));
-		file.write((const char*)&c->maxWalkingSpeed, sizeof(float));
-		file.write((const char*)&jump,            sizeof(b32));
+		file.write((const char*)&c->entityID,          sizeof(u32));
+		file.write((const char*)&c->inputs,            sizeof(Vector3));
+		file.write((const char*)&c->gndAccel,          sizeof(float));
+		file.write((const char*)&c->airAccel,          sizeof(float));
+		file.write((const char*)&c->maxWalkingSpeed,   sizeof(float));
+		file.write((const char*)&c->maxRunningSpeed,   sizeof(float));
+		file.write((const char*)&c->maxCrouchingSpeed, sizeof(float));
+		file.write((const char*)&jump,                 sizeof(b32));
+		file.write((const char*)&c->jumpImpulse,       sizeof(float));
 	}
 	
 	//player

@@ -19,6 +19,8 @@ struct Keybinds{
 	Key::Key movementWalkingRight = Key::D;
 	Key::Key movementWalkingLeft = Key::A;
 	Key::Key movementJump = Key::SPACE;
+	Key::Key movementCrouch = Key::LCTRL;
+	Key::Key movementRun = Key::LSHIFT;
 	
 	//camera controls
 	Key::Key cameraRotateUp    = Key::UP;
