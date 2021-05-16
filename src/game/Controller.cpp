@@ -87,7 +87,20 @@ inline void PlayerMovement(EntityAdmin* admin, MovementMode mode, Movement* play
 		
 		if (playermove && admin->player) {
 			playermove->inputs = inputs.normalized();
-			camera->position = admin->player->transform.position + Vector3::ONE;
+			Vector3 standpos = admin->player->transform.position + Vector3::UP * 2;
+			Vector3 crouchpos = admin->player->transform.position;
+			static Vector3 cpos = standpos;
+			static float timer = 0;
+			float ttc = 0.2;
+
+			if (DengInput->KeyDownAnyMod(Key::LCTRL)) {
+				if (timer < 0.2) timer += DengTime->deltaTime;
+			}
+			else {
+				if (timer > 0) timer -= DengTime->deltaTime;
+			}
+
+			camera->position = Math::lerpv(standpos, crouchpos, timer / ttc);
 		}else{
 			ERROR_LOC("Playermovement/player pointer is null");
 		}

@@ -1,5 +1,6 @@
 #include "PhysicsSystem.h"
 #include "../admin.h"
+#include "../Event.h"
 #include "../components/Physics.h"
 #include "../components/Collider.h"
 #include "../components/AudioSource.h"
@@ -11,6 +12,8 @@
 #include "../../utils/Command.h"
 
 u32 collCount;
+
+bool breakphys = false;
 
 struct PhysicsTuple { 
 	Transform* transform = nullptr; 
@@ -72,8 +75,19 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 		for (auto c : t.physics->contacts) {
 			if (c.second == ContactMoving) {
 				if (!t.physics->physOverride) {
-					if (t.physics->velocity.mag() > 0.12)
+					if (t.physics->velocity.mag() > 0.12) {
+
+						for (auto& m : t.physics->manifolds) {
+							Vector3 norm = m.second.norm.normalized();
+							Vector3 vPerpNorm = t.physics->velocity - t.physics->velocity.dot(norm) * norm;
+
+							t.physics->forces.push_back(-vPerpNorm.normalized() * t.physics->kineticFricCoef * t.physics->mass * -9.81);
+						}
+
 						t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
+						
+					
+					}
 					else
 						t.physics->velocity = Vector3::ZERO;
 				}
@@ -175,8 +189,8 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		(min1.z <= max2.z && max1.z >= min2.z)) {
 		
 		//triggers and no collision
-		if(obj1Col->command) obj1Col->command->Exec(g_admin);
-		if(obj2Col->command) obj2Col->command->Exec(g_admin);
+		if(obj1Col->event != 0) obj1Col->sender->SendEvent(obj1Col->event);
+		if(obj2Col->event != 0) obj2Col->sender->SendEvent(obj2Col->event);
 		if(obj1Col->noCollide || obj2Col->noCollide) return false;
 		
 		float xover, yover, zover;
@@ -280,9 +294,9 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 	float distanceBetween = vectorBetween.mag();
 	if(distanceBetween < sphereCol->radius) {
 		//triggers and no collision
-		if(aabbCol->command) aabbCol->command->Exec(g_admin);
-		if(sphereCol->command) sphereCol->command->Exec(g_admin);
-		if(aabbCol->noCollide || sphereCol->noCollide) return;
+		if (aabbCol->event != 0)   aabbCol->sender->SendEvent(aabbCol->event);
+		if (sphereCol->event != 0) sphereCol->sender->SendEvent(sphereCol->event);
+		if (aabbCol->noCollide || sphereCol->noCollide) return;
 		
 		//aabb->entity->GetComponent<AudioSource>()->request_play = true;
 		//static resolution
@@ -337,8 +351,8 @@ inline bool SphereSphereCollision(Physics* s1, SphereCollider* sc1, Physics* s2,
 	float rsum = sc1->radius + sc2->radius;
 	if (rsum > dist) {
 		//triggers and no collision
-		if(sc1->command) sc1->command->Exec(g_admin);
-		if(sc2->command) sc2->command->Exec(g_admin);
+		if(sc1->event != Event_NONE) sc1->sender->SendEvent(sc1->event);
+		if(sc2->event != Event_NONE) sc2->sender->SendEvent(sc2->event);
 		if(sc1->noCollide || sc2->noCollide) return false;
 		
 		Vector3 s1t2 = s2->position - s1->position;
@@ -626,9 +640,12 @@ poly GeneratePoly(Physics* p) {
 	
 	poly.pos = Math::WorldToScreen2(p->position, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 	
-	
+	Vector3 relvel = Vector3::ZERO;
+	if (g_admin->player) {
+		relvel = p->velocity - g_admin->player->GetComponent<Physics>()->velocity;
+	}
 	//translate objects 3D velocity into screen space
-	Vector3 opv = p->position + p->velocity;
+	Vector3 opv = p->position + relvel;
 	Vector2 opvs = Math::WorldToScreen2(opv, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 	poly.vel = opvs - poly.pos;
 	
@@ -742,15 +759,16 @@ void PhysicsSystem::Update() {
 	while(DengTime->fixedAccumulator >= DengTime->fixedDeltaTime) {
 		collCount = 0;
 		for(auto& t : tuples) {
-			if (TIMER_END(physLocalTime) > 5000) {
+			if (TIMER_END(physLocalTime) > 5000 && breakphys) {
 				admin->pause_phys = true;
 				ERROR("Physics system took longer than 5 seconds, pausing.");
 				goto physend;
 			}
-			//if (admin->player) {
-			//	admin->player->GetComponent<Movement>()->Update();
-			//}
-			PhysicsTick(t, this, DengTime);
+			if (admin->player && admin->player == t.physics->entity) {
+				admin->player->GetComponent<Movement>()->Update();
+			}
+			
+			if(admin->player != t.physics->entity) PhysicsTick(t, this, DengTime);
 			CollisionTick(tuples, t);
 		}
 		DengTime->fixedAccumulator -= DengTime->fixedDeltaTime;

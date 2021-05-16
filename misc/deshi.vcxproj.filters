@@ -133,9 +133,6 @@
     <ClInclude Include="..\src\game\components\MeshComp.h">
       <Filter>src\game\components\h</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\event.h">
-      <Filter>src\core</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\utils\optional.h">
       <Filter>src\utils</Filter>
     </ClInclude>
@@ -201,6 +198,9 @@
     </ClInclude>
     <ClInclude Include="..\src\game\entities\StaticMeshEntity.h">
       <Filter>src\game\entities\h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\game\Event.h">
+      <Filter>src\game</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -436,9 +436,6 @@
     <ClCompile Include="..\src\game\components\MeshComp.cpp">
       <Filter>src\game\components\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\event.cpp">
-      <Filter>src\core</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\game\components\Orb.cpp">
       <Filter>src\game\components\cpp</Filter>
     </ClCompile>
@@ -477,6 +474,9 @@
     </ClCompile>
     <ClCompile Include="..\src\game\entities\StaticMeshEntity.cpp">
       <Filter>src\game\entities\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\game\Event.cpp">
+      <Filter>src\game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -735,8 +735,9 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 						Text("Accelertaion "); SameLine(); InputVector3("phys_accel",    &phys->acceleration);    Separator();
 						Text("Rot Velocity "); SameLine(); InputVector3("phys_rotvel",   &phys->rotVelocity);     Separator();
 						Text("Rot Accel    "); SameLine(); InputVector3("phys_rotaccel", &phys->rotAcceleration); Separator();
-						Text("Elasticity   "); SameLine(); InputFloat("phys_elastic", &phys->elasticity);         Separator();
-						Text("Mass         "); SameLine(); InputFloat("phys_mass",    &phys->mass);               Separator();
+						Text("Elasticity   "); SameLine(); InputFloat("phys_elastic",    &phys->elasticity);         Separator();
+						Text("Mass         "); SameLine(); InputFloat("phys_mass",       &phys->mass);               Separator();
+						Text("Kinetic Fric "); SameLine(); InputFloat("kinfric",         &phys->kineticFricCoef);               Separator();
 						Checkbox("Static Position", &phys->isStatic);                                             Separator();
 						Checkbox("Static Rotation", &phys->staticRotation);
 						TreePop();
@@ -1255,16 +1256,13 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 			if(comp_collider){
 				switch(collider_type){
 					case ColliderType_Box:{
-						coll = new BoxCollider(collider_halfdims, physics_mass, 0, (collider_trigger) ?
-											   DengConsole->GetCommand(collider_command) : nullptr, collider_nocollide);
+						coll = new BoxCollider(collider_halfdims, physics_mass, 0, Event_NONE, collider_nocollide);
 					}break;
 					case ColliderType_AABB:{
-						coll = new AABBCollider(collider_halfdims, physics_mass, 0, (collider_trigger) ?
-												DengConsole->GetCommand(collider_command) : nullptr, collider_nocollide);
+						coll = new AABBCollider(collider_halfdims, physics_mass, 0, Event_NONE, collider_nocollide);
 					}break;
 					case ColliderType_Sphere:{
-						coll = new SphereCollider(collider_radius, physics_mass, 0, (collider_trigger) ?
-												  DengConsole->GetCommand(collider_command) : nullptr, collider_nocollide);
+						coll = new SphereCollider(collider_radius, physics_mass, 0, Event_NONE, collider_nocollide);
 					}break;
 				}
 			}

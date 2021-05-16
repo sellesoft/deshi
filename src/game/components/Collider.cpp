@@ -9,7 +9,7 @@
 //// Box Collider ////
 //////////////////////
 
-BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Command* command, b32 nocollide) {
+BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Event event, b32 nocollide) {
 	admin = g_admin;
 	cpystr(name, "BoxCollider", 63);
 	comptype = ComponentType_Collider;
@@ -17,13 +17,13 @@ BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer,
 	this->type = ColliderType_Box;
 	this->collisionLayer = collisionLayer;
 	this->noCollide = nocollide;
-	this->command = command;
+	this->event = event;
 	this->halfDims = halfDimensions;
 	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 	
 }
 
-BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Command* command, b32 nocollide) {
+BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Event event, b32 nocollide) {
 	admin = g_admin;
 	cpystr(name, "BoxCollider", 63);
 	comptype = ComponentType_Collider;
@@ -32,7 +32,7 @@ BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionL
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = tensor;
 	this->noCollide = nocollide;
-	this->command = command;
+	this->event = event;
 	this->halfDims = halfDimensions;
 }
 
@@ -61,7 +61,7 @@ void BoxCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 co
 		memcpy(&layer,          data+cursor, sizeof(u32));  cursor += sizeof(u32);
 		memcpy(&tensor,         data+cursor, sizeof(mat3)); cursor += sizeof(mat3);
 		memcpy(&halfDimensions, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
-		BoxCollider* c = new BoxCollider(halfDimensions, tensor, layer, nullptr);
+		BoxCollider* c = new BoxCollider(halfDimensions, tensor, layer);
 		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
@@ -71,7 +71,7 @@ void BoxCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 co
 //// AABB Collider ////
 ///////////////////////
 
-AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Command* command, b32 nocollide) {
+AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Event event, b32 nocollide) {
 	admin = g_admin;
 	cpystr(name, "AABBCollider", 63);
 	comptype = ComponentType_Collider;
@@ -79,7 +79,7 @@ AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Command* 
 	this->type = ColliderType_AABB;
 	this->collisionLayer = collisionLayer;
 	this->noCollide = nocollide;
-	this->command = command;
+	this->event = event;
 	
 	if (!mesh) {
 		this->halfDims = Vector3::ZERO;
@@ -125,7 +125,7 @@ AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Command* 
 	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 
-AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Command* command, b32 nocollide) {
+AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Event event, b32 nocollide) {
 	admin = g_admin;
 	cpystr(name, "AABBCollider", 63);
 	comptype = ComponentType_Collider;
@@ -133,12 +133,12 @@ AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLaye
 	this->type = ColliderType_AABB;
 	this->collisionLayer = collisionLayer;
 	this->noCollide = nocollide;
-	this->command = command;
+	this->event = event;
 	this->halfDims = halfDimensions;
 	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 
-AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Command* command, b32 nocollide) {
+AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Event event, b32 nocollide) {
 	admin = g_admin;
 	cpystr(name, "AABBCollider", 63);
 	comptype = ComponentType_Collider;
@@ -147,7 +147,7 @@ AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisio
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = tensor;
 	this->noCollide = nocollide;
-	this->command = command;
+	this->event = event;
 	this->halfDims = halfDimensions;
 }
 
@@ -176,7 +176,7 @@ void AABBCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 c
 		memcpy(&layer, data+cursor,          sizeof(u32));  cursor += sizeof(u32);
 		memcpy(&tensor, data+cursor,         sizeof(mat3)); cursor += sizeof(mat3);
 		memcpy(&halfDimensions, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
-		AABBCollider* c = new AABBCollider(halfDimensions, tensor, layer, nullptr);
+		AABBCollider* c = new AABBCollider(halfDimensions, tensor, layer);
 		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
@@ -186,7 +186,7 @@ void AABBCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 c
 //// Sphere Collider ////
 /////////////////////////
 
-SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Command* command, b32 nocollide) {
+SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Event event, b32 nocollide) {
 	admin = g_admin;
 	cpystr(name, "SphereCollider", 63);
 	comptype = ComponentType_Collider;
@@ -194,12 +194,12 @@ SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Com
 	this->type = ColliderType_Sphere;
 	this->collisionLayer = collisionLayer;
 	this->noCollide = nocollide;
-	this->command = command;
+	this->event = event;
 	this->radius = radius;
 	this->inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
 }
 
-SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer, Command* command, b32 nocollide) {
+SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer, Event event, b32 nocollide) {
 	admin = g_admin;
 	cpystr(name, "SphereCollider", 63);
 	comptype = ComponentType_Collider;
@@ -208,7 +208,7 @@ SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = tensor;
 	this->noCollide = nocollide;
-	this->command = command;
+	this->event = event;
 	this->radius = radius;
 }
 
@@ -237,7 +237,7 @@ void SphereCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32
 		memcpy(&layer,  data+cursor, sizeof(u32));  cursor += sizeof(u32);
 		memcpy(&tensor, data+cursor, sizeof(mat3)); cursor += sizeof(mat3);
 		memcpy(&radius, data+cursor, sizeof(f32));  cursor += sizeof(f32);
-		SphereCollider* c = new SphereCollider(radius, tensor, layer, nullptr);
+		SphereCollider* c = new SphereCollider(radius, tensor, layer);
 		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
@@ -249,7 +249,7 @@ void SphereCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32
 ////////////////////////////
 
 
-LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Command* command, b32 nocollide) {
+LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Event event, b32 nocollide) {
 	admin = g_admin;
 	cpystr(name, "LandscapeCollider", 63);
 	comptype = ComponentType_Collider;
@@ -257,7 +257,7 @@ LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Command* co
 	this->type = ColliderType_Landscape;
 	this->collisionLayer = collisionLayer;
 	this->noCollide = nocollide;
-	this->command = command;
+	this->event = event;
 	
 	if (!mesh) {
 		ERROR("Null mesh passed during LandscapeCollider creation");
@@ -267,67 +267,7 @@ LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Command* co
 		ERROR("Mesh passed during LandscapeCollider creation had no vertices");
 		return;
 	}
-	
-	//NOTE this will be optimized later i just need it to work :)
-	//currently its just checking all triangles against a single one until it finds a connection to it.
-	//to move on to the next triangle it has to find 3 neighbors to the current one,
-	//this attempts to make it so connections spread out evenly and don't form lines and other odd shapes
-	//that may not be necessary, but im going to implement it anyways
-	
-	//a way to optimize this probably would be to do something like, check for connections against
-	//a couple of sets of triangles and their connections and if two connections come together
-	//and joining them would keep then under the connection limit, then join them
-	//not sure if that would be faster or not.
-	
-	//find triangle connections so that we can generate AABBs for each set
-	std::vector<std::vector<Vector3>> va; //vertex array of triangles
-	std::vector<std::vector<Vector3>> vaperm; //vertex array of triangles that will be used to generate AABBS
-	
-	std::vector<std::vector<u32>> ia; //index array that stores all connections to the first triangle 
-	std::vector<u32> iq; //index queue, queues triangles to check for connections against
-	
-	//gather all triangles
-	for (auto& b : mesh->batchArray) {
-		for (int i = 0; i < b.indexArray.size(); i += 3) {
-			va.push_back(
-						 std::vector<Vector3>{
-							 b.vertexArray[b.indexArray[i]].pos,
-							 b.vertexArray[b.indexArray[i + 1]].pos,
-							 b.vertexArray[b.indexArray[i + 2]].pos
-						 }
-						 );
-		}
-	}
-	
-	//copy temp vertex array to permanent one
-	vaperm = va;
-	
-	auto eqtoany = [](std::vector<Vector3> v, Vector3 t) {
-		for (Vector3 a : v) if (t == a) return true;
-		return false;
-	};
-	
-	Vector3 ct[3]; //current triangle we're checking against
-	iq.push_back(0);
-	bool begin = true;
-	for (int i = 0; i < va.size(); i++) {
-		
-		//get next triangle to check against
-		if (begin) { 
-			ct[0] = va[iq[0]][0]; ct[1] = va[iq[0]][1]; ct[2] = va[iq[0]][2];
-			va.erase(va.begin() + i); iq.erase(iq.begin()); 
-			ia[0].push_back(i); begin = false;  continue;
-		}
-		
-		//check if two vertices match the current triangles vertices
-		if (eqtoany(va[i], ct[0]) && eqtoany(va[i], ct[1]) ||
-			eqtoany(va[i], ct[1]) && eqtoany(va[i], ct[2]) ||
-			eqtoany(va[i], ct[2]) && eqtoany(va[i], ct[0])) {
-			
-			
-			
-		}
-	}
+
 }
 
 
@@ -335,7 +275,7 @@ LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Command* co
 ///// Complex Collider /////
 ////////////////////////////
 
-ComplexCollider::ComplexCollider(Mesh* mesh, u32 collisionleyer, Command* command, b32 nocollide) {
+ComplexCollider::ComplexCollider(Mesh* mesh, u32 collisionleyer, Event event, b32 nocollide) {
 	admin = g_admin;
 	cpystr(name, "ComplexCollider", 63);
 	comptype = ComponentType_Collider;

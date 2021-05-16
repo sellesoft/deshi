@@ -202,7 +202,6 @@
     <ClInclude Include="..\src\core\console.h" />
     <ClInclude Include="..\src\core\deshi_imgui.h" />
     <ClInclude Include="..\src\core\deshi_imgui_vulkan.h" />
-    <ClInclude Include="..\src\core\event.h" />
     <ClInclude Include="..\src\core\input.h" />
     <ClInclude Include="..\src\core\renderer.h" />
     <ClInclude Include="..\src\core\renderer_vulkan.h" />
@@ -238,6 +237,7 @@
     <ClInclude Include="..\src\game\entities\Entity.h" />
     <ClInclude Include="..\src\game\entities\PlayerEntity.h" />
     <ClInclude Include="..\src\game\entities\StaticMeshEntity.h" />
+    <ClInclude Include="..\src\game\Event.h" />
     <ClInclude Include="..\src\game\Keybinds.h" />
     <ClInclude Include="..\src\game\systems\CanvasSystem.h" />
     <ClInclude Include="..\src\game\systems\PhysicsSystem.h" />
@@ -300,7 +300,6 @@
     <ClCompile Include="..\src\core\assets.cpp" />
     <ClCompile Include="..\src\core\console.cpp" />
     <ClCompile Include="..\src\core\deshi_imgui_vulkan.cpp" />
-    <ClCompile Include="..\src\core\event.cpp" />
     <ClCompile Include="..\src\core\renderer_vulkan.cpp" />
     <ClCompile Include="..\src\core\window.cpp" />
     <ClCompile Include="..\src\deshi.cpp" />
@@ -327,6 +326,7 @@
     <ClCompile Include="..\src\game\entities\Entity.cpp" />
     <ClCompile Include="..\src\game\entities\PlayerEntity.cpp" />
     <ClCompile Include="..\src\game\entities\StaticMeshEntity.cpp" />
+    <ClCompile Include="..\src\game\Event.cpp" />
     <ClCompile Include="..\src\game\Keybinds.cpp" />
     <ClCompile Include="..\src\game\systems\CanvasSystem.cpp" />
     <ClCompile Include="..\src\game\systems\PhysicsSystem.cpp" />

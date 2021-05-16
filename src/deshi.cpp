@@ -72,6 +72,7 @@ add buffer pre-allocation and arenas for vertices/indices/textures/etc
 multi-threaded command buffers, shader loading, image loading
 find a way to forward declare vulkan stuff and move the include to the cpp
 SSBOs in shaders so we can pass variable length arrays to it 
+geometry shaders
 
 Level Editor TODOs
 ------------------

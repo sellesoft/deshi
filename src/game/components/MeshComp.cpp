@@ -11,7 +11,7 @@
 MeshComp::MeshComp() {
 	admin = g_admin;
 	cpystr(name, "MeshComp", 63);
-	send = new Sender();
+	sender = new Sender();
 	layer = ComponentLayer_Canvas;
 	comptype = ComponentType_MeshComp;
 	
@@ -23,7 +23,7 @@ MeshComp::MeshComp() {
 MeshComp::MeshComp(u32 meshID, u32 instanceID) {
 	admin = g_admin;
 	cpystr(name, "MeshComp", 63);
-	send = new Sender();
+	sender = new Sender();
 	layer = ComponentLayer_Canvas;
 	comptype = ComponentType_MeshComp;
 	
@@ -36,7 +36,7 @@ MeshComp::MeshComp(u32 meshID, u32 instanceID) {
 MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
 	admin = g_admin;
 	cpystr(name, "MeshComp", 63);
-	send = new Sender();
+	sender = new Sender();
 	layer = ComponentLayer_Canvas;
 	comptype = ComponentType_MeshComp;
 	
@@ -164,7 +164,7 @@ void MeshComp::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count
 MeshComp2D::MeshComp2D(u32 id) {
 	admin = g_admin;
 	cpystr(name, "MeshComp", 63);
-	send = new Sender();
+	sender = new Sender();
 	layer = ComponentLayer_Canvas;
 	
 	this->twodID = id;

@@ -21,7 +21,7 @@ struct Collider : public Component {
 	u32 collisionLayer;
 	Matrix3 inertiaTensor;
 	b32 noCollide;
-	Command* command;
+	Event event;
 	
 	virtual void RecalculateTensor(f32 mass) {};
 };
@@ -30,8 +30,8 @@ struct Collider : public Component {
 struct BoxCollider : public Collider {
 	Vector3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
 	
-	BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
-	BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
+	BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Event event = Event_NONE, b32 noCollide = 0);
+	BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
 	void RecalculateTensor(f32 mass) override;
 	std::vector<char> Save() override;
@@ -42,9 +42,9 @@ struct BoxCollider : public Collider {
 struct AABBCollider : public Collider {
 	Vector3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
 	
-	AABBCollider(Mesh* mesh, float mass, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
-	AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
-	AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
+	AABBCollider(Mesh* mesh, float mass, u32 collisionLayer = 0, Event event = Event_NONE, b32 noCollide = 0);
+	AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Event event = Event_NONE, b32 noCollide = 0);
+	AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
 	void RecalculateTensor(f32 mass) override;
 	std::vector<char> Save() override;
@@ -54,8 +54,8 @@ struct AABBCollider : public Collider {
 struct SphereCollider : public Collider {
 	float radius;
 	
-	SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
-	SphereCollider(float radius, float mass, u32 collisionLayer = 0, Command* command = nullptr, b32 noCollide = 0);
+	SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer = 0, Event event = Event_NONE, b32 noCollide = 0);
+	SphereCollider(float radius, float mass, u32 collisionLayer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
 	void RecalculateTensor(f32 mass) override;
 	std::vector<char> Save() override;
@@ -66,7 +66,7 @@ struct SphereCollider : public Collider {
 struct LandscapeCollider : public Collider {
 	std::vector<std::pair<AABBCollider, Vector3>> aabbcols; //aabb colliders and their local positions
 	
-	LandscapeCollider(Mesh* mesh, u32 collisionleyer = 0, Command* command = nullptr, b32 noCollide = 0);
+	LandscapeCollider(Mesh* mesh, u32 collisionleyer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
 	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
@@ -81,7 +81,7 @@ struct ConvexPolyCollider : public Collider {
 struct ComplexCollider : public Collider {
 	Mesh* mesh;
 	
-	ComplexCollider(Mesh* mesh, u32 collisionleyer = 0, Command* command = nullptr, b32 noCollide = 0);
+	ComplexCollider(Mesh* mesh, u32 collisionleyer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
 	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };

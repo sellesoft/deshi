@@ -5,19 +5,19 @@
 
 Movement::Movement(Physics* phys) {
 	admin = g_admin;
-	layer = ComponentLayer_Physics;
+	layer = ComponentLayer_NONE;
 	comptype = ComponentType_Movement;
 	cpystr(name, "Movement", 63);
 	
 	this->phys = phys;
-	phys->kineticFricCoef = 0.75;
+	phys->kineticFricCoef = 4;
 	phys->physOverride = true;
 }
 
 //for loading
 Movement::Movement(Physics* phys, float gndAccel, float airAccel, float maxWalkingSpeed, bool jump) {
 	admin = g_admin;
-	layer = ComponentLayer_Physics;
+	layer = ComponentLayer_NONE;
 	comptype = ComponentType_Movement;
 	cpystr(name, "Movement", 63);
 	
@@ -41,20 +41,19 @@ void Movement::Update() {
 		}
 		else if (c.second == ContactStationary) contactStationary = true;
 	}
-
+	
 	if (contactMoving)          phys->contactState = ContactMoving;
 	else if (contactStationary) phys->contactState = ContactStationary;
 	else                        phys->contactState = ContactNONE;
 
-
-
+	Vector3 norm;
 	//check if were on the ground
 	if (phys->contactState == ContactNONE) moveState = InAir;
 	else {
 		bool onGround = false;
 		for (auto& p : phys->manifolds) {
-			Vector3 norm = p.second.norm.normalized();
-			if (p.second.player) norm = -norm;
+			norm = p.second.norm.normalized();
+			if (!p.second.player) norm = -norm;
 			float ang = DEGREES(asin(norm.dot(Vector3::UP)));
 			if (ang > 45) {
 				onGround = true;
@@ -70,7 +69,7 @@ void Movement::Update() {
 		ImGui::DebugDrawText("in air", DengWindow->dimensions / 2);
 	}
 	//PRINTLN(phys->manifolds.size());
-	phys->manifolds.clear();
+	
 
 	
 	
@@ -100,9 +99,35 @@ void Movement::Update() {
 			phys->velocity /= velMag;
 			phys->velocity *= maxWalkingSpeed;
 		}
-		else if (velMag < 0.12) {
-			phys->velocity = Vector3::ZERO;
-			phys->acceleration = Vector3::ZERO;
+		//else if (velMag < 0.12 && inputs != Vector3::ZERO) {
+		//	phys->velocity = Vector3::ZERO;
+		//	phys->acceleration = Vector3::ZERO;
+		//}
+
+		
+
+		if (inputs == Vector3::ZERO) {
+			if (phys->velocity != Vector3::ZERO) {
+				if (phys->velocity.mag() > 0.12) {
+
+					for (auto& m : phys->manifolds) {
+						Vector3 norm = m.second.norm.normalized();
+						Vector3 vPerpNorm = phys->velocity - phys->velocity.dot(norm) * norm;
+
+						//phys->forces.push_back();
+						PRINTLN(TOSTRING("fric: ", vPerpNorm.normalized() * phys->kineticFricCoef * phys->mass * -9.81))
+						phys->acceleration += vPerpNorm.normalized() * phys->kineticFricCoef * phys->mass * -9.81 / phys->mass;
+						phys->velocity += phys->acceleration * DengTime->fixedDeltaTime;
+						//phys->position += phys->velocity * DengTime->fixedDeltaTime;
+
+
+					}
+
+					//phys->AddFrictionForce(nullptr, 0.34);
+				}
+				else
+					phys->velocity = Vector3::ZERO;
+			}
 		}
 
 		phys->position += phys->velocity * DengTime->fixedDeltaTime;
@@ -115,55 +140,30 @@ void Movement::Update() {
 
 	}
 
+	phys->manifolds.clear();
 	phys->acceleration = Vector3::ZERO;
 
 
-	for (auto& m : phys->manifolds) {
-		Vector3 norm = m.second.norm.normalized();
-
-		Vector3 vPerpNorm = phys->velocity - phys->velocity.dot(norm) * norm;
-
-		//PRINTLN(TOSTRING("------------------",
-		//	"norm:     ", norm, "\n",
-		//	"vel:      ", phys->velocity, "\n",
-		//	"vel perp: ", vPerpNorm));
-
-
-	}
+	//for (auto& m : phys->manifolds) {
+	//	Vector3 norm = m.second.norm.normalized();
+	//
+	//	Vector3 vPerpNorm = phys->velocity - phys->velocity.dot(norm) * norm;
+	//
+	//	//PRINTLN(TOSTRING("------------------",
+	//	//	"norm:     ", norm, "\n",
+	//	//	"vel:      ", phys->velocity, "\n",
+	//	//	"vel perp: ", vPerpNorm));
+	//
+	//
+	//}
+	//
+	////TODO(sushi) implement more Source-like speed limiting later
+	//if (moveState == OnGround && phys->velocity.mag() > maxWalkingSpeed) {
+	//	phys->velocity = phys->velocity.normalized() * maxWalkingSpeed;
+	//}
 	
-	//TODO(sushi) implement more Source-like speed limiting later
-	if (moveState == OnGround && phys->velocity.mag() > maxWalkingSpeed) {
-		phys->velocity = phys->velocity.normalized() * maxWalkingSpeed;
-	}
 	
 	
-	if (inputs == Vector3::ZERO && moveState == OnGround) {
-		if (phys->velocity != Vector3::ZERO) {
-			if (phys->velocity.mag() > 0.12) {
-			
-				for (auto& m : phys->manifolds) {
-					Vector3 norm = m.second.norm.normalized();
-
-					Vector3 vPerpNorm = phys->velocity - phys->velocity.dot(norm) * norm;
-
-					//PRINTLN(TOSTRING("------------------",
-					//	"norm:     ", norm, "\n",
-					//	"vel:      ", phys->velocity, "\n",
-					//	"vel perp: ", vPerpNorm));
-					//PRINTLN(TOSTRING("vel perp: ", vPerpNorm));
-
-
-					phys->forces.push_back(-vPerpNorm.normalized() * phys->kineticFricCoef * phys->mass * -9.81);
-
-
-				}
-				
-				//phys->AddFrictionForce(nullptr, 0.34);
-			}
-			else
-				phys->velocity = Vector3::ZERO;
-		}
-	}
 	
 }
 

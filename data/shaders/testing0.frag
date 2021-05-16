@@ -179,9 +179,7 @@ void main() {
 	//outColor = quant4(outColor, 2);
 	
 
-	//outColor = mouseColor(vec3( 30 * sin(time), -5,  30 * cos(time * 2))) + 
-		       //mouseColor(vec3(-30 * sin(time * 2), 0, -30 * cos(time)));//+
-			   //mouseColor(vec3(30, -5, -30)) + mouseColor(vec3(-30, 0,  30));
+	outColor = mouseWaterDrop();
 
 
 

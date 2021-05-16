@@ -4,7 +4,7 @@
 layout(set = 0, binding = 0) uniform UniformBufferObject{
 	mat4 view;
 	mat4 proj;
-	vec4 lightPos;
+	vec4 lightPos[10];
 	vec4 viewPos;
 	float time;
 	float swidth;

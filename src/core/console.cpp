@@ -757,7 +757,7 @@ COMMANDFUNC(add_player) {
 		//collider
 		Collider* col = nullptr;
 		switch (ctype) {
-			case ColliderType_AABB: col = new AABBCollider(mesh, 1); break;
+			case ColliderType_AABB: col = new AABBCollider(Vector3(0.5, 1, 0.5), 2); break;
 			case ColliderType_Sphere: col = new SphereCollider(1, 1); break;
 			case ColliderType_Landscape: col = new LandscapeCollider(mesh); break;
 			case ColliderType_Box: col = new BoxCollider(Vector3(1, 1, 1), 1); break;

@@ -3,7 +3,7 @@
 #define COMPONENT_H
 
 #include "../../utils/defines.h"
-#include "../../core/event.h"
+#include "../Event.h"
 
 #include <vector>
 #include <string>
@@ -56,16 +56,16 @@ struct Component : public Receiver {
 	char name[64];
 	ComponentType comptype;
 	Entity* entity;
-	Sender* send = nullptr; //sender for outputting events to a list of receivers
+	Sender* sender = nullptr; //sender for outputting events to a list of receivers
 	ComponentLayer layer = ComponentLayer_NONE;
 	int layer_index; //index in the layer for deletion
 	
 	virtual ~Component() {
-		if(send) send->RemoveReceiver(this);
+		if(sender) sender->RemoveReceiver(this);
 	}
 	
 	void ConnectSend(Component* c) {
-		c->send->AddReceiver(this);
+		c->sender->AddReceiver(this);
 	}
 	
 	//Init only gets called when this component's entity is spawned thru the world system

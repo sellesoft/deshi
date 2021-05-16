@@ -11,6 +11,5 @@
 #include "core/assets.h"
 #include "core/deshi_imgui.h"
 #include "core/console.h"
-#include "core/event.h"
 
 #endif //DESHI_CORE_H
