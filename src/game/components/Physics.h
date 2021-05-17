@@ -134,7 +134,6 @@ struct Physics : public Component {
 	float staticFricCoef = 0.42;
 	std::unordered_map<Physics*, ContactState> contacts;
 	ContactState contactState;
-	bool physOverride = false;
 	
 	Physics();
 	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO,
@@ -142,7 +141,7 @@ struct Physics : public Component {
 			float mass = 1.f, bool isStatic = false);
 	Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy, Vector3 rotAcceleration, 
 			float elasticity, float mass, bool isStatic, bool staticRotation, bool twoDphys, 
-			float kineticFricCoef, float staticFricCoef, bool fricOverride);
+			float kineticFricCoef, float staticFricCoef);
 	Physics(Vector3 position, Vector3 rotation, float mass, float elasticity);
 	
 	//adds the input vector to the target's input vector

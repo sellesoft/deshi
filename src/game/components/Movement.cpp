@@ -11,7 +11,6 @@ Movement::Movement(Physics* phys) {
 	
 	this->phys = phys;
 	phys->kineticFricCoef = 4;
-	phys->physOverride = true;
 }
 
 //for loading
@@ -73,9 +72,6 @@ void Movement::Update() {
 		}
 		else { moveState = InAirNoInput; inAir = true; }
 	}
-	
-
-	
 	
 	//apply gravity
 	phys->velocity += Vector3(0, -9.81, 0) * DengTime->fixedDeltaTime;
@@ -178,9 +174,8 @@ void Movement::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count
 		memcpy(&maxCrouchingSpeed, data + cursor, sizeof(float));   cursor += sizeof(bool);
 		memcpy(&jump,              data + cursor, sizeof(bool));    cursor += sizeof(bool);
 		memcpy(&jumpImpulse,       data + cursor, sizeof(float));   cursor += sizeof(bool);
-
 		
-		Movement* c = new Movement(EntityAt(entityID)->GetComponent<Physics>(), gndAccel, airAccel, maxWalkingSpeed, jump);
+		Movement* c = new Movement(EntityAt(entityID)->GetComponent<Physics>(), gndAccel, airAccel, maxWalkingSpeed, maxRunningSpeed, maxCrouchingSpeed, jump, jumpImpulse);
 		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}

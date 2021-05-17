@@ -456,12 +456,12 @@ UnloadBaseMesh(u32 meshID){
 		if(meshes[meshID].base){
 			//loop thru children and remove them
 			//remove verts and indices
-			ERROR("UnloadBaseMesh: Not implemented yet");
+			ERROR_LOC("UnloadBaseMesh: Not implemented yet");
 		}else{
-			ERROR("Only a base mesh can be unloaded");
+			ERROR_LOC("UnloadBaseMesh: Only a base mesh can be unloaded");
 		}
 	}else{
-		ERROR("There is no mesh with id: ", meshID);
+		ERROR_LOC("UnloadBaseMesh: There is no mesh with id: ", meshID);
 	}
 }
 
@@ -475,10 +475,10 @@ RemoveMesh(u32 meshID){
 			for(int i=meshID; i<meshes.size(); ++i) { --meshes[i].id;  } 
 			meshes.erase(meshes.begin() + meshID);
 		}else{
-			ERROR("Only a child/non-base mesh can be removed");
+			ERROR_LOC("Only a child/non-base mesh can be removed");
 		}
 	}else{
-		ERROR("There is no mesh with id: ", meshID);
+		ERROR_LOC("There is no mesh with id: ", meshID);
 	}
 }
 
@@ -487,7 +487,7 @@ GetMeshMatrix(u32 meshID){
 	if(meshID < meshes.size()){
 		return Matrix4((float*)glm::value_ptr(meshes[meshID].modelMatrix));
 	}
-	ERROR("There is no mesh with id: ", meshID);
+	ERROR_LOC("There is no mesh with id: ", meshID);
 	return Matrix4(0.f);
 }
 
@@ -496,7 +496,7 @@ GetMeshPtr(u32 meshID){
 	if(meshID < meshes.size()){
 		return meshes[meshID].ptr;
 	}
-	ERROR("There is no mesh with id: ", meshID);
+	ERROR_LOC("There is no mesh with id: ", meshID);
 	return nullptr;
 }
 
@@ -513,7 +513,7 @@ UpdateMeshMatrix(u32 meshID, Matrix4 matrix){
 	if(meshID < meshes.size()){
 		meshes[meshID].modelMatrix = glm::make_mat4(matrix.data);
 	}else{
-		ERROR("There is no mesh with id: ", meshID);
+		ERROR_LOC("There is no mesh with id: ", meshID);
 	}
 }
 
@@ -522,7 +522,7 @@ TransformMeshMatrix(u32 meshID, Matrix4 transform){
 	if(meshID < meshes.size()){
 		meshes[meshID].modelMatrix = glm::make_mat4(transform.data) * meshes[meshID].modelMatrix;
 	}else{
-		ERROR("There is no mesh with id: ", meshID);
+		ERROR_LOC("There is no mesh with id: ", meshID);
 	}
 }
 
@@ -532,9 +532,9 @@ UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID){
 		if(batchIndex < meshes[meshID].primitives.size()){
 			if(matID < materials.size()){
 				meshes[meshID].primitives[batchIndex].materialIndex = matID;
-			}else{ ERROR("There is no material with id: ", matID); } 
-		}else{ ERROR("There is no batch on the mesh with id: ", batchIndex); }
-	}else{ ERROR("There is no mesh with id: ", meshID); }
+			}else{ ERROR_LOC("There is no material with id: ", matID); } 
+		}else{ ERROR_LOC("There is no batch on the mesh with id: ", batchIndex); }
+	}else{ ERROR_LOC("There is no mesh with id: ", meshID); }
 }
 
 void Renderer::
@@ -544,7 +544,7 @@ UpdateMeshVisibility(u32 meshID, bool visible){
 	}else if(meshID < meshes.size()){
 		meshes[meshID].visible = visible;
 	}else{
-		ERROR("There is no mesh with id: ", meshID);
+		ERROR_LOC("There is no mesh with id: ", meshID);
 	}
 }
 
@@ -553,35 +553,35 @@ SetSelectedMesh(u32 meshID){
 	if(meshID < meshes.size()){
 		selectedMeshID = meshID;
 	}else{
-		ERROR("There is no mesh with id: ", meshID);
+		ERROR_LOC("There is no mesh with id: ", meshID);
 	}
 }
 
 /*
 u32 Renderer::
 MakeInstance(u32 meshID, Matrix4 matrix) {
-	ERROR("MakeInstance: Not implemented yet");
+	ERROR_LOC("MakeInstance: Not implemented yet");
 	return 0xFFFFFFFF;
 }
 
 void Renderer::
 RemoveInstance(u32 instanceID) {
-	ERROR("RemoveInstance: Not implemented yet");
+	ERROR_LOC("RemoveInstance: Not implemented yet");
 }
 
 void Renderer::
 UpdateInstanceMatrix(u32 instanceID, Matrix4 matrix) {
-	ERROR("UpdateInstanceMatrix: Not implemented yet");
+	ERROR_LOC("UpdateInstanceMatrix: Not implemented yet");
 }
 
 void Renderer::
 TransformInstanceMatrix(u32 instanceID, Matrix4 transform) {
-	ERROR("TransformInstanceMatrix: Not implemented yet");
+	ERROR_LOC("TransformInstanceMatrix: Not implemented yet");
 }
 
 void Renderer::
 UpdateInstanceVisibility(u32 instanceID, bool visible) {
-	ERROR("UpdateInstanceVisibility: Not implemented yet");
+	ERROR_LOC("UpdateInstanceVisibility: Not implemented yet");
 }
 */
 u32 Renderer::
@@ -812,7 +812,7 @@ UpdateMaterialShader(u32 matID, u32 shader){
 		materials[matID].pipeline = GetPipelineFromShader(shader);
 		materials[matID].shader = shader;
 	}else{
-		ERROR("There is no material with id: ", matID);
+		ERROR_LOC("There is no material with id: ", matID);
 	}
 }
 
@@ -826,14 +826,14 @@ GetMaterialIDs(u32 meshID) {
 		}
 		return out;
 	}
-	ERROR("There is no mesh with id: ", meshID);
+	ERROR_LOC("There is no mesh with id: ", meshID);
 	return std::vector<u32>();
 }
 
 //TODO(delle,Vu) this leaks in the GPU b/c the descriptor sets are not deallocated, figure that out
 void Renderer::
 RemoveMaterial(u32 matID){
-	if(matID < materials.size()) return ERROR("RemoveMaterial: There is no material with id: ", matID);
+	if(matID < materials.size()) return ERROR_LOC("RemoveMaterial: There is no material with id: ", matID);
 	
 	for(MeshVk& mesh : meshes){
 		for(PrimitiveVk& prim : mesh.primitives){

@@ -154,9 +154,6 @@ ____like what were currently doing for typeHeader in EntityAdmin Save()
 
 Bug Board
 ---------
-going from Play or PlayDebug to the editor loads in meshes that aren't in the same position/scale
-____as they were when going into play. replicate this by using load_obj and scaling/moving the object
-________The object loads in with the right data, but the renderer doesn't reflect it
 after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and 
 ____the batchArray size of whatever mesh its checking is something like 400000000000
 	____it looks like some sort of corrupt mesh makes its way in there somehow?
@@ -167,7 +164,6 @@ program breakpoints when pressing F12 in a .dll on a different thread than main 
 ____read this to try to fix: http://www.debuginfo.com/tips/userbpntdll.html
 
 */
-
 
 #include "core.h"
 #include "game/admin.h"

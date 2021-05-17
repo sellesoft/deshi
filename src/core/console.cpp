@@ -560,6 +560,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 	Vector3 pos{}, rot{}, scale = Vector3::ONE;
 	f32 mass = 1.f, elasticity = .5f; b32 staticPosition = 1, twoDphys = false;
 	ColliderType ctype = ColliderType_NONE;
+	Event event = 0;
 	//check for optional params after the first arg
 	for (auto s = args.begin() + 1; s != args.end(); ++s) {
 		if (std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
@@ -585,6 +586,14 @@ CMDSTARTA(load_obj, args.size() > 0){
 			}
 		} else if (std::regex_search(s->c_str(), m, StringRegex("twoDphys"))){
 			if(m[1] == "1" || m[1] == "true") twoDphys = true;
+		} else if (std::regex_search(s->c_str(), m , StringRegex("event"))){
+			if (ctype == ColliderType_NONE) return "[c:red]Attempt to attach event with no collider[c]";
+			bool found = false;
+			for_n(i, sizeof(EventStrings)) 
+				if (m[1] == EventStrings[i]) { 
+					found = true; event = (u32)i;  break;
+				}
+			if (!found) return TOSTRING("[c:red]Unknown event '", m[1], "'");
 		} else {
 			return "[c:red]Invalid parameter: " + *s + "[c]";
 		}
@@ -601,10 +610,10 @@ CMDSTARTA(load_obj, args.size() > 0){
 	//collider
 	Collider* col = nullptr;
 	switch (ctype) {
-		case ColliderType_AABB: col = new AABBCollider(mesh, 1); break;
-		case ColliderType_Sphere: col = new SphereCollider(1, 1); break;
-		case ColliderType_Landscape: col = new LandscapeCollider(mesh); break;
-		case ColliderType_Box: col = new BoxCollider(Vector3(1, 1, 1), 1); break;
+		case ColliderType_AABB:      col = new AABBCollider(mesh, 1, 0U, event); break;
+		case ColliderType_Sphere:    col = new SphereCollider(1, 1, 0U, event); break;
+		case ColliderType_Landscape: col = new LandscapeCollider(mesh, 0U, event); break;
+		case ColliderType_Box:       col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
 	}
 	
 	MeshComp* mc = new MeshComp(mesh, id);

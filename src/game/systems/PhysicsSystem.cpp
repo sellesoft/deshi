@@ -31,11 +31,11 @@ inline std::vector<PhysicsTuple> GetPhysicsTuples(EntityAdmin* admin) {
 	std::vector<PhysicsTuple> out;
 	for(int i = 0; i < admin->entities.size(); i++) {
 		if (admin->entities[i]) {
-			Transform* transform = &EntityAt(i)->transform;
+			Transform* transform = &admin->entities[i]->transform;
 			Physics* physics = nullptr;
 			Collider* collider = nullptr;
 			
-			for (Component* c : EntityAt(i)->components) {
+			for (Component* c : admin->entities[i]->components) {
 				if (Physics* phy = dynamic_cast<Physics*>(c)) { physics = phy; continue; }
 				if (Collider* col = dynamic_cast<Collider*>(c)) { collider = col; continue; }
 			}
@@ -50,122 +50,114 @@ inline std::vector<PhysicsTuple> GetPhysicsTuples(EntityAdmin* admin) {
 //TODO(delle,Ph) look into bettering this physics tick
 //https://gafferongames.com/post/physics_in_3d/
 inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
-	//currently movement is the only thing doing this, since it kept requiring custom
-	//ways of handling it's physics i decided just to do it there. movement can be seen as a custom
-	//physics component i guess.
-	if (!t.physics->physOverride) {
+	//// translation ////
 
-		//// translation ////
+	//add input forces
+	t.physics->inputVector.normalize();
+	t.physics->AddForce(nullptr, t.physics->inputVector);
+	t.physics->inputVector = Vector3::ZERO;
 
-		//add input forces
-		t.physics->inputVector.normalize();
-		t.physics->AddForce(nullptr, t.physics->inputVector);
-		t.physics->inputVector = Vector3::ZERO;
+	//add gravity 
+	t.physics->acceleration += Vector3(0, -ps->gravity, 0);
 
-		//add gravity 
-		t.physics->acceleration += Vector3(0, -ps->gravity, 0);
+	//add temp air friction force
+	t.physics->AddFrictionForce(nullptr, ps->frictionAir);
 
-		//add temp air friction force
-		t.physics->AddFrictionForce(nullptr, ps->frictionAir);
+	//contacts is the various contact states it has with each object while
+	//contactState is the overall state of the object, regardless of what object its touching
+	bool contactMoving = false;
+	bool contactStationary = false;
+	for (auto c : t.physics->contacts) {
+		if (c.second == ContactMoving) {
+			if (t.physics->velocity.mag() > 0.12) {
 
-		//contacts is the various contact states it has with each object while
-		//contactState is the overall state of the object, regardless of what object its touching
-		bool contactMoving = false;
-		bool contactStationary = false;
-		for (auto c : t.physics->contacts) {
-			if (c.second == ContactMoving) {
-				if (!t.physics->physOverride) {
-					if (t.physics->velocity.mag() > 0.12) {
+				for (auto& m : t.physics->manifolds) {
+					Vector3 norm = m.second.norm.normalized();
+					Vector3 vPerpNorm = t.physics->velocity - t.physics->velocity.dot(norm) * norm;
 
-						for (auto& m : t.physics->manifolds) {
-							Vector3 norm = m.second.norm.normalized();
-							Vector3 vPerpNorm = t.physics->velocity - t.physics->velocity.dot(norm) * norm;
+					t.physics->forces.push_back(-vPerpNorm.normalized() * t.physics->kineticFricCoef * t.physics->mass * -9.81);
+				}
 
-							t.physics->forces.push_back(-vPerpNorm.normalized() * t.physics->kineticFricCoef * t.physics->mass * -9.81);
-						}
-
-						t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
+				t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
 						
 					
-					}
-					else
-						t.physics->velocity = Vector3::ZERO;
-				}
-				contactMoving = true;
 			}
-			else if (c.second == ContactStationary) contactStationary = true;
-		}
-
-		if      (contactMoving)     t.physics->contactState = ContactMoving;
-		else if (contactStationary) t.physics->contactState = ContactStationary;
-		else                        t.physics->contactState = ContactNONE;
-
-		//sum up forces to calculate acceleration
-		Vector3 netForce;
-		for (auto& f : t.physics->forces) {
-			netForce += f;
-		}
-		t.physics->acceleration += netForce / t.physics->mass;
-
-		//update linear movement and clamp it to min/max velocity
-		if (!t.physics->isStatic) {
-			t.physics->velocity += t.physics->acceleration * time->fixedDeltaTime;
-			float velMag = t.physics->velocity.mag();
-			if (velMag > ps->maxVelocity) {
-				t.physics->velocity /= velMag;
-				t.physics->velocity *= ps->maxVelocity;
-			}
-			else if (velMag < ps->minVelocity) {
+			else
 				t.physics->velocity = Vector3::ZERO;
-				t.physics->acceleration = Vector3::ZERO;
-			}
-			t.physics->position += t.physics->velocity * time->fixedDeltaTime;
+			contactMoving = true;
 		}
-
-		//// rotation ////
-
-		//make fake rotational friction
-		if (t.physics->rotVelocity != Vector3::ZERO) {
-			t.physics->rotAcceleration = Vector3(t.physics->rotVelocity.x > 0 ? -1 : 1, t.physics->rotVelocity.y > 0 ? -1 : 1, t.physics->rotVelocity.z > 0 ? -1 : 1) * ps->frictionAir * t.physics->mass * 100;
-		}
-
-		//update rotational movement and scuffed vector rotational clamping
-		t.physics->rotVelocity += t.physics->rotAcceleration * time->fixedDeltaTime;
-		//if(t.physics->rotVelocity.x > ps->maxRotVelocity) {
-		//	t.physics->rotVelocity.x = ps->maxRotVelocity;
-		//} else if(t.physics->rotVelocity.x < -ps->maxRotVelocity) {
-		//	t.physics->rotVelocity.x = -ps->maxRotVelocity;
-		//} else if(abs(t.physics->rotVelocity.x) < ps->minRotVelocity) {
-		//	t.physics->rotVelocity.x = 0;
-		//	t.physics->rotAcceleration.x = 0;
-		//}
-		//if(t.physics->rotVelocity.y > ps->maxRotVelocity) {
-		//	t.physics->rotVelocity.y = ps->maxRotVelocity;
-		//} else if(t.physics->rotVelocity.y < -ps->maxRotVelocity) {
-		//	t.physics->rotVelocity.y = -ps->maxRotVelocity;
-		//} else if(abs(t.physics->rotVelocity.y) < ps->minRotVelocity) {
-		//	t.physics->rotVelocity.y = 0;
-		//	t.physics->rotAcceleration.y = 0;
-		//}
-		//if(t.physics->rotVelocity.z > ps->maxRotVelocity) {
-		//	t.physics->rotVelocity.z = ps->maxRotVelocity;
-		//} else if(t.physics->rotVelocity.z < -ps->maxRotVelocity) {
-		//	t.physics->rotVelocity.z = -ps->maxRotVelocity;
-		//} else if(abs(t.physics->rotVelocity.z) < ps->minRotVelocity) {
-		//	t.physics->rotVelocity.z = 0;
-		//	t.physics->rotAcceleration.z = 0;
-		//}
-		t.physics->rotation += t.physics->rotVelocity * time->fixedDeltaTime;
-
-		//reset accelerations
-		t.physics->forces.clear();
-
-		//ImGui::DebugDrawText3(t.physics->position.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(180, 150, 130));
-		//ImGui::DebugDrawText3(t.physics->velocity.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(130, 150, 180), Vector2(0, 20));
-		//ImGui::DebugDrawText3(t.physics->acceleration.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(150, 130, 180), Vector2(0, 40));
-
-		t.physics->acceleration = Vector3::ZERO;
+		else if (c.second == ContactStationary) contactStationary = true;
 	}
+
+	if      (contactMoving)     t.physics->contactState = ContactMoving;
+	else if (contactStationary) t.physics->contactState = ContactStationary;
+	else                        t.physics->contactState = ContactNONE;
+
+	//sum up forces to calculate acceleration
+	Vector3 netForce;
+	for (auto& f : t.physics->forces) {
+		netForce += f;
+	}
+	t.physics->acceleration += netForce / t.physics->mass;
+
+	//update linear movement and clamp it to min/max velocity
+	if (!t.physics->isStatic) {
+		t.physics->velocity += t.physics->acceleration * time->fixedDeltaTime;
+		float velMag = t.physics->velocity.mag();
+		if (velMag > ps->maxVelocity) {
+			t.physics->velocity /= velMag;
+			t.physics->velocity *= ps->maxVelocity;
+		}
+		else if (velMag < ps->minVelocity) {
+			t.physics->velocity = Vector3::ZERO;
+			t.physics->acceleration = Vector3::ZERO;
+		}
+		t.physics->position += t.physics->velocity * time->fixedDeltaTime;
+	}
+
+	//// rotation ////
+
+	//make fake rotational friction
+	if (t.physics->rotVelocity != Vector3::ZERO) {
+		t.physics->rotAcceleration = Vector3(t.physics->rotVelocity.x > 0 ? -1 : 1, t.physics->rotVelocity.y > 0 ? -1 : 1, t.physics->rotVelocity.z > 0 ? -1 : 1) * ps->frictionAir * t.physics->mass * 100;
+	}
+
+	//update rotational movement and scuffed vector rotational clamping
+	t.physics->rotVelocity += t.physics->rotAcceleration * time->fixedDeltaTime;
+	//if(t.physics->rotVelocity.x > ps->maxRotVelocity) {
+	//	t.physics->rotVelocity.x = ps->maxRotVelocity;
+	//} else if(t.physics->rotVelocity.x < -ps->maxRotVelocity) {
+	//	t.physics->rotVelocity.x = -ps->maxRotVelocity;
+	//} else if(abs(t.physics->rotVelocity.x) < ps->minRotVelocity) {
+	//	t.physics->rotVelocity.x = 0;
+	//	t.physics->rotAcceleration.x = 0;
+	//}
+	//if(t.physics->rotVelocity.y > ps->maxRotVelocity) {
+	//	t.physics->rotVelocity.y = ps->maxRotVelocity;
+	//} else if(t.physics->rotVelocity.y < -ps->maxRotVelocity) {
+	//	t.physics->rotVelocity.y = -ps->maxRotVelocity;
+	//} else if(abs(t.physics->rotVelocity.y) < ps->minRotVelocity) {
+	//	t.physics->rotVelocity.y = 0;
+	//	t.physics->rotAcceleration.y = 0;
+	//}
+	//if(t.physics->rotVelocity.z > ps->maxRotVelocity) {
+	//	t.physics->rotVelocity.z = ps->maxRotVelocity;
+	//} else if(t.physics->rotVelocity.z < -ps->maxRotVelocity) {
+	//	t.physics->rotVelocity.z = -ps->maxRotVelocity;
+	//} else if(abs(t.physics->rotVelocity.z) < ps->minRotVelocity) {
+	//	t.physics->rotVelocity.z = 0;
+	//	t.physics->rotAcceleration.z = 0;
+	//}
+	t.physics->rotation += t.physics->rotVelocity * time->fixedDeltaTime;
+
+	//reset forces
+	t.physics->forces.clear();
+
+	//ImGui::DebugDrawText3(t.physics->position.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(180, 150, 130));
+	//ImGui::DebugDrawText3(t.physics->velocity.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(130, 150, 180), Vector2(0, 20));
+	//ImGui::DebugDrawText3(t.physics->acceleration.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(150, 130, 180), Vector2(0, 40));
+
+	t.physics->acceleration = Vector3::ZERO;
 }
 
 /////////////////////

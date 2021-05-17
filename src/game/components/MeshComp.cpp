@@ -62,8 +62,8 @@ void MeshComp::Visible(bool visible) {
 void MeshComp::ReceiveEvent(Event event) {
 	switch (event) {
 		case TEST_EVENT:
-		LOG("MeshComp receieved event");
-		break;
+			LOG("MeshComp receieved event");
+			break;
 	}
 }
 
@@ -110,11 +110,11 @@ void MeshComp::Init() {
 
 void MeshComp::Update() {
 	ASSERT(mesh->vertexCount, "Mesh has no vertices");
-	if (g_admin->selectedEntity == EntityAt(entityID)) {
+	if (g_admin->selectedEntity == entity) {
 		if(g_admin->fast_outline){
 			DengRenderer->SetSelectedMesh(meshID);
 		}else{
-			std::vector<Vector2> outline = mesh->GenerateOutlinePoints(EntityAt(entityID)->transform.TransformMatrix(), DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, admin->mainCamera->position);
+			std::vector<Vector2> outline = mesh->GenerateOutlinePoints(entity->transform.TransformMatrix(), DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, admin->mainCamera->position);
 			for (int i = 0; i < outline.size(); i += 2) {
 				ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
 			}
@@ -122,7 +122,7 @@ void MeshComp::Update() {
 	}
 	
 	//update mesh's transform with entities tranform
-	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, EntityAt(entityID)->transform.TransformMatrix());
+	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
 }
 
 std::vector<char> MeshComp::Save() {

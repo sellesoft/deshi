@@ -73,7 +73,11 @@ void EntityAdmin::Cleanup() {
 }
 
 void UpdateLayer(ContainerManager<Component*> cl) {
-	for_n(i, cl.size()) if(cl[i]) cl[i].value->Update();
+	for_n(i, cl.size()) {
+		if (cl[i]) {
+			cl[i].value->Update();
+		}
+	}
 }
 
 void EntityAdmin::Update() {
@@ -133,7 +137,8 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
 	for (int i = 0; i < 10; i++) {
 		if (i < scene.lights.size()) {
 			Vector3 p = scene.lights[i]->position;
-			DengRenderer->lights[i] = glm::vec4(p.x, p.y, p.z, scene.lights[i]->brightness);
+			DengRenderer->lights[i] = glm::vec4(p.x, p.y, p.z,
+				(scene.lights[i]->active) ? scene.lights[i]->brightness : 0);
 		}
 		else {
 			DengRenderer->lights[i] = glm::vec4(0, 0, 0, -1);
@@ -440,7 +445,7 @@ void EntityAdmin::Save(const char* filename) {
 	//physics 7
 	typeHeader.type        = ComponentType_Physics;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(b32) * 3 + sizeof(float) * 2 + sizeof(b32);
+	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(b32) * 3 + sizeof(float) * 2;
 	typeHeader.count       = compsPhysics.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
@@ -525,7 +530,6 @@ void EntityAdmin::Save(const char* filename) {
 		b32 isStatic = c->isStatic;
 		b32 staticRotation = c->staticRotation;
 		b32 twoDphys = c->twoDphys;
-		b32 physOverride = c->physOverride;
 		file.write((const char*)&c->entityID,        sizeof(u32));
 		file.write((const char*)&c->position,        sizeof(Vector3));
 		file.write((const char*)&c->rotation,        sizeof(Vector3));
@@ -540,7 +544,6 @@ void EntityAdmin::Save(const char* filename) {
 		file.write((const char*)&twoDphys,           sizeof(b32));
 		file.write((const char*)&c->kineticFricCoef, sizeof(float));
 		file.write((const char*)&c->staticFricCoef,  sizeof(float));
-		file.write((const char*)&c->physOverride,	 sizeof(b32));
 	}
 	
 	//movement

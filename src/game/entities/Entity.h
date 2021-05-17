@@ -16,6 +16,7 @@ struct Entity {
 	char name[64];
 	Transform transform;
 	std::vector<Component*> components;
+	std::vector<u32> connections; //connections to other entities through components
 	
 	Entity();
 	Entity(EntityAdmin* admin, u32 id, Transform transform = Transform(),

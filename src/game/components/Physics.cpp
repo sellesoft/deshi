@@ -39,8 +39,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 
 //for loading only really
 Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy, Vector3 rotAcceleration, float elasticity,
-				 float mass, bool isStatic, bool staticRotation, bool twoDphys, float kineticFricCoef, float staticFricCoef,
-				 bool physOverride) {
+				 float mass, bool isStatic, bool staticRotation, bool twoDphys, float kineticFricCoef, float staticFricCoef) {
 	
 	admin = g_admin;
 	cpystr(name, "Physics", 63);
@@ -60,7 +59,6 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	this->twoDphys = twoDphys;
 	this->kineticFricCoef = kineticFricCoef;
 	this->staticFricCoef = staticFricCoef;
-	this->physOverride = physOverride;
 	
 	
 }
@@ -113,7 +111,7 @@ void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count)
 	u32 entityID = 0xFFFFFFFF;
 	vec3 position{}, rotation{}, velocity{}, accel{}, rotVel{}, rotAccel{};
 	f32 elasticity = 0.f, mass = 0.f, kineticFricCoef = 0.f, staticFricCoef = 0.f;
-	b32 staticPos = false, staticRot = false, twoDphys = false, physOverride = false;
+	b32 staticPos = false, staticRot = false, twoDphys = false;
 	for_n(i,count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		if(entityID >= admin->entities.size()) {
@@ -134,9 +132,8 @@ void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count)
 		memcpy(&twoDphys,        data+cursor, sizeof(b32));   cursor += sizeof(b32);
 		memcpy(&kineticFricCoef, data+cursor, sizeof(float)); cursor += sizeof(float);
 		memcpy(&staticFricCoef,  data+cursor, sizeof(float)); cursor += sizeof(float);
-		memcpy(&physOverride,    data+cursor, sizeof(b32));   cursor += sizeof(b32);
 		
-		Physics* c = new Physics(position, rotation, velocity, accel, rotVel, rotAccel, elasticity, mass, staticPos, staticRot, twoDphys, kineticFricCoef, staticFricCoef, physOverride);
+		Physics* c = new Physics(position, rotation, velocity, accel, rotVel, rotAccel, elasticity, mass, staticPos, staticRot, twoDphys, kineticFricCoef, staticFricCoef);
 		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}

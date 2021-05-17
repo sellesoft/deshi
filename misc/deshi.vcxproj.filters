@@ -359,14 +359,14 @@
     <None Include="..\data\shaders\twod.frag">
       <Filter>shaders</Filter>
     </None>
-    <None Include="..\data\shaders\twod.vert">
-      <Filter>shaders</Filter>
-    </None>
     <None Include="..\data\shaders\wireframe.frag">
       <Filter>shaders</Filter>
     </None>
     <None Include="..\data\shaders\wireframe.vert">
       <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\twod.vert">
+      <Filter>src\core</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

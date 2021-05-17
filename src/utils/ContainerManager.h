@@ -25,8 +25,6 @@ struct ContainerManager {
 	std::vector<Optional<T>> container;
 	std::vector<int> empties;
 	
-	int real_size = 0;
-	
 	ContainerManager() {}
 	
 	Optional<T>& operator [](int i) { return container[i]; }
@@ -35,13 +33,16 @@ struct ContainerManager {
 	//T* operator &() {
 	//	return &T;
 	//}
+
+	int real_size() {
+		return container.size() - empties.size();
+	}
 	
 	//add element to container and return its position in it
 	int add(T t) {
 		//if container is totally full add it to the end
 		if (empties.size() == 0) {
 			container.push_back(Optional<T>(t));
-			real_size++;
 			return container.size() - 1;
 		}
 		//else place it at the first empty spot and return index
@@ -49,7 +50,6 @@ struct ContainerManager {
 			container[empties[0]] = t;
 			int index = empties[0];
 			empties.erase(empties.begin());
-			real_size++;
 			return index;
 		}
 	}
@@ -57,7 +57,6 @@ struct ContainerManager {
 		//if container is totally full add it to the end
 		if (empties.size() == 0) {
 			container.push_back(Optional<T>(*t));
-			real_size++;
 			return container.size() - 1;
 		}
 		//else place it at the first empty spot and return index
@@ -65,7 +64,6 @@ struct ContainerManager {
 			container[empties[0]] = *t;
 			int index = empties[0];
 			empties.erase(empties.begin());
-			real_size++;
 			return index;
 		}
 	}
@@ -88,7 +86,6 @@ struct ContainerManager {
 			container.pop_back();
 		}
 		else {
-			real_size--;
 			container[index].reset();
 			empties.push_back(index);
 			std::sort(empties.begin(), empties.end());
@@ -105,19 +102,16 @@ struct ContainerManager {
 	}
 	
 	void empty() {
-		//this probably isn't what I should do so fix this if it isn't
 		empties.clear();
 		for (int i = 0; i < container.size(); i++) {
 			container[i].reset();
 			empties.push_back(i);
 		}
-		real_size = 0;
 	}
 	
 	void clear() {
 		container.clear();
 		empties.clear();
-		real_size = 0;
 	}
 
 	//if reserve gets used when the container isn't empty this will probably fuck up
@@ -130,9 +124,6 @@ struct ContainerManager {
 
 		}
 	}
-
-	//typedef typename iterator  iterator;
-	//typedef typename iterator std::vector<T>::const_iterator const_iterator;
 
 	using iterator = typename std::vector<Optional<T>>::iterator;
 	

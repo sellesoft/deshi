@@ -6,12 +6,15 @@
 
 struct Receiver;
 
-enum Event : u32{
+enum EventBits : u32 {
 	Event_NONE = 0,
 	TEST_EVENT,
 	Event_DoorToggle,
-    Event_LightToggle,
-	Event_LAST,
+    Event_LightToggle
+}; typedef u32 Event;
+
+static const char* EventStrings[] = {
+    "NONE", "DoorToggle", "LightToggle"
 };
 
 //object stored on a component that wants to send a signal

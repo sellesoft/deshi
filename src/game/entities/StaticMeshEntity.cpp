@@ -12,7 +12,7 @@ StaticMesh::StaticMesh(Transform transform, const char* name){
 	
 	mesh = new MeshComp();
 	physics = new Physics(transform.position, transform.rotation, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 
-						  .5f, 1.f, true, true, false, .3f, .42f, false);
+						  .5f, 1.f, true, true, false, .3f, .42f);
 	collider = 0;
 	AddComponents({ physics, mesh });
 }
@@ -23,7 +23,7 @@ StaticMesh::StaticMesh(u32 meshID, u32 colliderType, f32 mass, Transform transfo
 	
 	mesh = new MeshComp(meshID);
 	physics = new Physics(transform.position, transform.rotation, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 
-						  .5f, mass, true, true, false, .3f, .42f, false);
+						  .5f, mass, true, true, false, .3f, .42f);
 	switch(colliderType){
 		case ColliderType_Box:    collider = new BoxCollider(Vector3(1,1,1), mass); break;
 		case ColliderType_Sphere: collider = new SphereCollider(1.f, mass); break;

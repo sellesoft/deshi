@@ -30,8 +30,8 @@ float debugbarheight  = 0;
 float debugtoolswidth = 0;
 float padding         = 0.95f;
 
-float fontwidth = 0;
-float fontheight = 0;
+float fontw = 0;
+float fonth = 0;
 
 //defines to make repetitve things less ugly and more editable
 
@@ -325,8 +325,69 @@ void CanvasSystem::MenuBar() {
 	PopStyleVar(2);
 }
 
-inline void EventsMenu() {
+inline void EventsMenu(Entity* current) {
+	using namespace ImGui;
+
+	std::vector<Entity*> entities = g_admin->entities;
+
 	
+
+
+	static Entity* other = nullptr;
+
+	ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+	ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 2, DengWindow->height / 2));
+	ImGui::SetNextWindowPos(ImVec2(DengWindow->width / 4, DengWindow->height / 4));
+	Begin("EventsMenu", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+	WinHovCheck;
+	float padx = (GetWindowWidth() - (GetWindowWidth() * padding)) / 2;
+	float pady = (GetWindowHeight() - (GetWindowHeight() * padding)) / 2;
+
+	float width = GetWindowWidth();
+	float height = GetWindowHeight();
+
+
+	//NOTE make this one child window dummy
+	SetCursorPos(ImVec2(padx, pady));
+	if (BeginChild("left", ImVec2(width / 2 * padding, GetWindowHeight() * padding))) {
+		SetCursorPos(ImVec2(padx, GetWindowHeight() / 2));
+		Text("hi");
+		EndChild();
+	}
+	
+	float maxlen = 0;
+
+	for (Entity* e : entities) maxlen = std::max(maxlen, (float)std::string(e->name).size());
+
+	if (entities.size() - 1 != 0) {
+		SetCursorPos(ImVec2(width / 2, pady));
+		if (BeginChild("right", ImVec2(width / 2, height * padding))) {
+			float cwidth = GetWindowWidth();
+			float cheight = GetWindowHeight();
+			float inc = cheight / (entities.size());
+			int i = 1;
+			for (Entity* e : entities) {
+				if (e != current) {
+					SetCursorPos(ImVec2(cwidth - maxlen * fontw * 1.2 - padx, i * inc));
+					//SetNextItemWidth(-FLT_MIN);
+					if (Button(e->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
+
+					}
+					i++;
+				}
+			}
+			EndChild();
+		}
+	}
+	else {
+		const char* sorry = "No other entities...";
+		SetCursorPos(ImVec2(width - sizeof("No other entities...") * fontw, height / 2));
+		Text(sorry);
+	}
+
+
+	End();
 }
 
 inline void ComponentsMenu(Entity* sel) {
@@ -558,8 +619,21 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 					}
 					
 					TableNextColumn();
-					//TODO(sushi, Ui) find something better to put here
-					Text(TOSTRING(" comps: ", entity->components.size()).c_str());
+					static b32 showevents = false;
+					static Entity* shownent = nullptr;
+					if (Button("Events")) {
+						if (!showevents) {
+							shownent = entity;
+							showevents = true;
+						}
+						else {
+							shownent = nullptr;
+							showevents = false;
+						}
+					}
+
+					if (showevents) EventsMenu(shownent);
+					
 					SameLine();
 					if (Button("Del")) {
 						g_admin->DeleteEntity(entity);
@@ -579,7 +653,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 	Entity* sel = admin->selectedEntity;
 	if(!sel) return;
 	PushStyleVar(ImGuiStyleVar_IndentSpacing, 5.0f);
-	SetPadding; if (BeginChild("EntityInspector", ImVec2(GetWindowWidth() * 0.95f, GetWindowHeight() * .9f), true)) { WinHovCheck;
+	SetPadding; if (BeginChild("EntityInspector", ImVec2(GetWindowWidth() * 0.95f, GetWindowHeight() * .9f), true, ImGuiWindowFlags_NoScrollbar)) { WinHovCheck;
 		
 		//// name ////
 		SetPadding; Text(TOSTRING(sel->id, ":").c_str()); 
@@ -1548,10 +1622,6 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 void CanvasSystem::DebugTools() {
 	using namespace ImGui;
 	
-	float fontsize = ImGui::GetFontSize();
-	fontheight = fontsize;
-	fontwidth = fontsize / 2;
-	
 	//resize tool menu if main menu bar is open
 	ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - (menubarheight + debugbarheight)));
 	ImGui::SetNextWindowPos(ImVec2(0, menubarheight));
@@ -1560,11 +1630,12 @@ void CanvasSystem::DebugTools() {
 	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
 	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
-	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,      ImVec2(0, 2));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,     ImVec2(2, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,    ImVec2(0, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, ImVec2(1, 0));
 	ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
-	
+
 	ImGui::PushStyleColor(ImGuiCol_Border,               ColToVec4(Color( 0,  0,  0)));
 	ImGui::PushStyleColor(ImGuiCol_Button,               ColToVec4(Color(40, 40, 40)));
 	ImGui::PushStyleColor(ImGuiCol_ButtonActive,         ColToVec4(Color(48, 48, 48)));
@@ -1574,6 +1645,8 @@ void CanvasSystem::DebugTools() {
 	ImGui::PushStyleColor(ImGuiCol_FrameBg,              ColToVec4(Color(35, 45, 50)));
 	ImGui::PushStyleColor(ImGuiCol_FrameBgActive,        ColToVec4(Color(42, 54, 60)));
 	ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,       ColToVec4(Color(54, 68, 75)));
+	ImGui::PushStyleColor(ImGuiCol_TitleBg,              ColToVec4(Color(0,   0,  0)));
+	ImGui::PushStyleColor(ImGuiCol_TitleBgActive,        ColToVec4(Color(0,   0,  0)));
 	ImGui::PushStyleColor(ImGuiCol_Header,               ColToVec4(Color(35, 45, 50)));
 	ImGui::PushStyleColor(ImGuiCol_HeaderActive,         ColToVec4(Color( 0, 74, 74)));
 	ImGui::PushStyleColor(ImGuiCol_HeaderHovered,        ColToVec4(Color( 0, 93, 93)));
@@ -1586,6 +1659,7 @@ void CanvasSystem::DebugTools() {
 	ImGui::PushStyleColor(ImGuiCol_TabActive,            ColToVec4(Color::VERY_DARK_CYAN));
 	ImGui::PushStyleColor(ImGuiCol_TabHovered,           ColToVec4(Color::DARK_CYAN));
 	ImGui::PushStyleColor(ImGuiCol_Tab,                  ColToVec4(colors.c1));
+	ImGui::PushStyleColor(ImGuiCol_Separator,            ColToVec4(Color::VERY_DARK_CYAN));
 	
 	ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	
@@ -1595,19 +1669,19 @@ void CanvasSystem::DebugTools() {
 	SetPadding;
 	if (BeginTabBar("MajorTabs")) {
 		if (BeginTabItem("Entities")) {
-			EntitiesTab(admin, fontsize);
+			EntitiesTab(admin, ImGui::GetFontSize());
 			EndTabItem();
 		}
 		if (BeginTabItem("Create")) {
-			CreateTab(admin, fontsize);
+			CreateTab(admin, ImGui::GetFontSize());
 			EndTabItem();
 		}
 		
 		EndTabBar();
 	}
 	
-	ImGui::PopStyleVar(7);
-	ImGui::PopStyleColor(21);
+	ImGui::PopStyleVar(8);
+	ImGui::PopStyleColor(24);
 	ImGui::End();
 }
 
@@ -2053,6 +2127,8 @@ void CanvasSystem::Update() {
 				if (!showMenuBar)    menubarheight = 0;
 				if (!showDebugBar)   debugbarheight = 0;
 				if (!showDebugTools) debugtoolswidth = 0;
+				fonth = ImGui::GetFontSize();
+				fontw = fonth / 2;
 			}break;
 		}
 	}

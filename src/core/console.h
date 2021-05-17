@@ -71,9 +71,9 @@ extern Console* g_console;
 
 //additionally prints where function was called
 #define LOG_LOC(...)     g_console->PushConsole(TOSTRING("In ", __FILENAME__, " at ", __LINE__ , ": \n", __VA_ARGS__))
-#define ERROR_LOC(...)   g_console->PushConsole(TOSTRING("[c:error]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:error]", __VA_ARGS__, "[c]"))
-#define SUCCESS_LOC(...) g_console->PushConsole(TOSTRING("[c:green]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]")
-#define WARNING_LOC(...) g_console->PushConsole(TOSTRING("[c:yellow]In ", __FILENAME__, " at ", __LINE__, ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]")
+#define ERROR_LOC(...)   g_console->PushConsole(TOSTRING("[c:error]In ", __FILENAME__, " in func ", __FUNCTION__, " at ", __LINE__, ": \n[c]", "[c:error]", __VA_ARGS__, "[c]"))
+#define SUCCESS_LOC(...) g_console->PushConsole(TOSTRING("[c:green]In ", __FILENAME__, " in func ", __FUNCTION__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]")
+#define WARNING_LOC(...) g_console->PushConsole(TOSTRING("[c:yellow]In ", __FILENAME__, " in func ", __FUNCTION__, " at ", __LINE__, ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]")
 
 #define LOGFUNC LOG(__FUNCTION__, " called")
 #define LOGFUNCM(...) LOG(__FUNCTION__, " called ", __VA_ARGS__)

@@ -141,7 +141,7 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 		else										 { camera->rotation.y -= 25 * deltaTime; }
 	}
 	
-	if(!DengConsole->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE){
+	if (!DengConsole->IMGUI_MOUSE_CAPTURE && !CONTROLLER_MOUSE_CAPTURE){
 		if(admin->state == GameState_Play || admin->state == GameState_Debug){
 			static bool debugmouse = false;
 			
