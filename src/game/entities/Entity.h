@@ -6,6 +6,8 @@
 #include "../Transform.h"
 
 #include <vector>
+#include <set>
+#include <unordered_map>
 
 struct EntityAdmin;
 struct Component;
@@ -16,8 +18,10 @@ struct Entity {
 	char name[64];
 	Transform transform;
 	std::vector<Component*> components;
-	std::vector<u32> connections; //connections to other entities through components
+	//std::unordered_map<Entity*, Entity*> connections; //connections to other entities through components
 	
+	std::set<Entity*> connections;
+
 	Entity();
 	Entity(EntityAdmin* admin, u32 id, Transform transform = Transform(),
 		   const char* name = 0, std::vector<Component*> components = {});

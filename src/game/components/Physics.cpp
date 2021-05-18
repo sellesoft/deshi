@@ -7,6 +7,7 @@ Physics::Physics() {
 	cpystr(name, "Physics", 63);
 	layer = SystemLayer_Physics;
 	comptype = ComponentType_Physics;
+	sender = new Sender();
 	
 	position = Vector3::ZERO;
 	rotation = Vector3::ZERO;
@@ -25,6 +26,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	cpystr(name, "Physics", 63);
 	layer = SystemLayer_Physics;
 	comptype = ComponentType_Physics;
+	sender = new Sender();
 	
 	this->position = position;
 	this->rotation = rotation;
@@ -45,6 +47,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	cpystr(name, "Physics", 63);
 	layer = SystemLayer_Physics;
 	comptype = ComponentType_Physics;
+	sender = new Sender();
 	
 	this->position = position;
 	this->rotation = rotation;
@@ -68,6 +71,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticit
 	cpystr(name, "Physics", 63);
 	layer = SystemLayer_Physics;
 	comptype = ComponentType_Physics;
+	sender = new Sender();
 	
 	this->position = position;
 	this->rotation = rotation;

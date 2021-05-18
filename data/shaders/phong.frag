@@ -30,20 +30,11 @@ vec4 calcLight(vec3 lightPos, vec3 worldPos, float brightness, vec3 normal, vec3
 }
 
 void main() {
-   // vec3 faceNormal = normalize(cross(dFdx(viewPosition), dFdy(viewPosition)));
-
-
    outColor = vec4(0,0,0,1);
    for(int i = 0; i < 10; i++){
-       if(lights[i].w != -1){
+       if(lights[i].w != -1 && lights[i].w != 0){
 	       outColor += calcLight(lights[i].xyz, worldPosition, lights[i].w, inNormal);
 		   //outColor = clamp(outColor, vec4(0,0,0,0), vec4(1,1,1,1));
 	   }
    }
-
-	//outColor = calcLight(lightPos, worldPos, lightBrightness, inNormal);
-
-	//outColor = vec4(worldPos - camPos, 1.0);
-	
-
 }

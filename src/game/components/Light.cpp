@@ -11,6 +11,7 @@ Light::Light(const Vector3& position, const Vector3& direction, float brightness
 	cpystr(name, "Light", 63);
 	comptype = ComponentType_Light;
 	layer = ComponentLayer_Physics;
+	sender = new Sender();
 }
 
 

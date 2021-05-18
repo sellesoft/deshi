@@ -4,11 +4,12 @@
 
 #include "../core.h"
 
+#include <set>
+
 struct Receiver;
 
 enum EventBits : u32 {
 	Event_NONE = 0,
-	TEST_EVENT,
 	Event_DoorToggle,
     Event_LightToggle
 }; typedef u32 Event;
@@ -21,11 +22,13 @@ static const char* EventStrings[] = {
 //using SendSignal and an Event
 //TODO(sushi) figure out a better way to send signals than using an Enum. Maybe string but we can't switch on strings so
 struct Sender {
-    std::vector<Receiver*> receivers;
+    std::set<Receiver*> receivers;
 	
     void AddReceiver(Receiver* r);
     void RemoveReceiver(Receiver* r);
     void SendEvent(Event event);
+    
+    bool HasReceiver(Receiver* r);
 };
 
 struct Receiver {

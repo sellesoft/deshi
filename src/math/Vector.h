@@ -135,6 +135,8 @@ struct Vector3 {
 	Vector3 clamp(float lo, float hi);
 	void    clampMag(float min, float max);
 	Vector3 clampedMag(float min, float max) const;
+	void round(int place);
+	Vector3 rounded(int place);
 	float   distanceTo(const Vector3& rhs) const;
 	Vector3 compOn(Vector3 rhs);
 	float   projectOn(Vector3 rhs);
@@ -159,7 +161,6 @@ struct Vector3 {
 	void    operator *= (const Matrix3& rhs);
 	Vector3 operator *  (const Matrix4& rhs) const;
 	void    operator *= (const Matrix4& rhs);
-	Vector3 ProjectionMultiply(Matrix4 projection) const;
 	MatrixN ToM1x3() const;
 	MatrixN ToM1x4(float w) const;
 };

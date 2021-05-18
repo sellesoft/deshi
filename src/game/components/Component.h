@@ -57,6 +57,7 @@ struct Component : public Receiver {
 	ComponentType comptype;
 	Entity* entity;
 	Sender* sender = nullptr; //sender for outputting events to a list of receivers
+	Event event = Event_NONE; //event to be sent TODO(sushi) implement multiple events being able to be sent
 	ComponentLayer layer = ComponentLayer_NONE;
 	int layer_index; //index in the layer for deletion
 	
@@ -66,6 +67,11 @@ struct Component : public Receiver {
 	
 	void ConnectSend(Component* c) {
 		c->sender->AddReceiver(this);
+
+	}
+
+	void SetEvent(Event event) {
+		this->event = event;
 	}
 	
 	//Init only gets called when this component's entity is spawned thru the world system

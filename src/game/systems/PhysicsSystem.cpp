@@ -79,8 +79,6 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 				}
 
 				t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
-						
-					
 			}
 			else
 				t.physics->velocity = Vector3::ZERO;
@@ -181,8 +179,10 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		(min1.z <= max2.z && max1.z >= min2.z)) {
 		
 		//triggers and no collision
-		if(obj1Col->event != 0) obj1Col->sender->SendEvent(obj1Col->event);
-		if(obj2Col->event != 0) obj2Col->sender->SendEvent(obj2Col->event);
+		if(obj1Col->event != 0 && !obj1Col->sentEvent){ 
+			obj1Col->sender->SendEvent(obj1Col->event); obj1Col->sentEvent = true;}
+		if(obj2Col->event != 0 && !obj2Col->sentEvent){ 
+			obj2Col->sender->SendEvent(obj2Col->event); obj2Col->sentEvent = true;}
 		if(obj1Col->noCollide || obj2Col->noCollide) return false;
 		
 		float xover, yover, zover;
@@ -239,15 +239,18 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			
 
 			//setting contact state depending on movement
-			if (fabs(obj1->velocity.normalized().dot(norm)) != 1) {
-				if(!obj1->isStatic) obj1->contacts[obj2] = ContactMoving;
+			if (fabs(obj1->velocity.rounded(2).normalized().dot(norm)) != 1) {
+				if (!obj1->isStatic) {
+					obj1->contacts[obj2] = ContactMoving;
+				}
 				else obj1->contacts[obj2] = ContactStationary;
 			}
 			else {
 				obj1->contacts[obj2] = ContactStationary;
 			}
-			if (fabs(obj2->velocity.normalized().dot(norm)) != 1) {
-				if (!obj2->isStatic) obj2->contacts[obj1] = ContactMoving;
+			if (fabs(obj2->velocity.rounded(2).normalized().dot(norm)) != 1) {
+				if (!obj2->isStatic) 
+					obj2->contacts[obj1] = ContactMoving;
 				else obj2->contacts[obj1] = ContactStationary;
 			}
 			else {
@@ -791,8 +794,8 @@ void PhysicsSystem::Update() {
 		t.transform->prevRotation = t.transform->rotation;
 		t.transform->position = t.transform->position * (1.f - alpha) + t.physics->position * alpha;
 		t.transform->rotation = t.transform->rotation * (1.f - alpha) + t.physics->rotation * alpha;
+		t.collider->sentEvent = false;
 		//t.transform->rotation = Quaternion::QuatSlerp(t.transform->rotation, t.transform->prevRotation, alpha).ToVector3();
-		
 		//t.transform->rotation *= Matrix4::RotationMatrixAroundPoint(t.transform->position, t.transform->rotation*(1.f - alpha) + t.physics->rotation*alpha);
 		//TODO(delle,Ph) look into better rotational interpolation once we switch to quaternions
 	}

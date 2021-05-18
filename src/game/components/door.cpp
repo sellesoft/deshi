@@ -8,6 +8,7 @@ Door::Door(b32 isOpen){
 	comptype = ComponentType_Door;
 	
 	this->isOpen = isOpen;
+	sender = new Sender();
 }
 
 void Door::ReceiveEvent(Event event){

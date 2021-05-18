@@ -19,6 +19,7 @@ Movement::Movement(Physics* phys, float gndAccel, float airAccel, float maxWalki
 	layer = ComponentLayer_NONE;
 	comptype = ComponentType_Movement;
 	cpystr(name, "Movement", 63);
+	sender = new Sender();
 	
 	this->phys = phys;
 	//phys->kineticFricCoef = 1;

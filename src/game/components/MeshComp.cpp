@@ -60,11 +60,7 @@ void MeshComp::Visible(bool visible) {
 }
 
 void MeshComp::ReceiveEvent(Event event) {
-	switch (event) {
-		case TEST_EVENT:
-			LOG("MeshComp receieved event");
-			break;
-	}
+	switch (event) {}
 }
 
 //this should only be used when the entity is not controlling the Mesh

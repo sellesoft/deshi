@@ -13,6 +13,7 @@ OrbManager::OrbManager(Mesh* m, int orbcount){
 	cpystr(name, "OrbManager", 63);
 	layer = ComponentLayer_Physics;
 	comptype = ComponentType_OrbManager;
+	sender = new Sender();
 };
 
 void OrbManager::Init(){

@@ -6,6 +6,7 @@ AudioListener::AudioListener() {
 	layer = ComponentLayer_Sound;
 	comptype = ComponentType_AudioListener;
 	cpystr(name, "AudioListener", 63);
+	sender = new Sender();
 }
 
 AudioListener::AudioListener(Vector3 position, Vector3 velocity, Vector3 orientation) {
@@ -16,6 +17,7 @@ AudioListener::AudioListener(Vector3 position, Vector3 velocity, Vector3 orienta
 	layer = ComponentLayer_Sound;
 	comptype = ComponentType_AudioListener;
 	cpystr(name, "AudioListener", 63);
+	sender = new Sender();
 }
 
 ////////////////////////////

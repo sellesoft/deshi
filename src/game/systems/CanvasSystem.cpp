@@ -325,21 +325,27 @@ void CanvasSystem::MenuBar() {
 	PopStyleVar(2);
 }
 
-inline void EventsMenu(Entity* current) {
+//NOTE sushi: this is really bad, but i just need it to work for now
+inline void EventsMenu(Entity* current, bool reset = false) {
 	using namespace ImGui;
 
 	std::vector<Entity*> entities = g_admin->entities;
-
-	
-
-
 	static Entity* other = nullptr;
+	static Component* selcompr = nullptr;
+	static Component* selcompl = nullptr;
 
-	ImDrawList* drawList = ImGui::GetWindowDrawList();
+	if (reset) {
+		other = nullptr;
+		selcompr = nullptr;
+		selcompl = nullptr;
+		return;
+	}
 
 	ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 2, DengWindow->height / 2));
 	ImGui::SetNextWindowPos(ImVec2(DengWindow->width / 4, DengWindow->height / 4));
-	Begin("EventsMenu", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+	Begin("EventsMenu", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+	ImVec2 winpos = ImGui::GetWindowPos();
+	ImDrawList* drawList = ImGui::GetWindowDrawList();
 	WinHovCheck;
 	float padx = (GetWindowWidth() - (GetWindowWidth() * padding)) / 2;
 	float pady = (GetWindowHeight() - (GetWindowHeight() * padding)) / 2;
@@ -348,37 +354,189 @@ inline void EventsMenu(Entity* current) {
 	float height = GetWindowHeight();
 
 
-	//NOTE make this one child window dummy
 	SetCursorPos(ImVec2(padx, pady));
-	if (BeginChild("left", ImVec2(width / 2 * padding, GetWindowHeight() * padding))) {
-		SetCursorPos(ImVec2(padx, GetWindowHeight() / 2));
-		Text("hi");
-		EndChild();
-	}
+	if (BeginChild("ahahaha", ImVec2(width * padding, height * padding))) {
+		ImDrawList* drawListc = ImGui::GetWindowDrawList();
+
+		float cwidth = GetWindowWidth();
+		float cheight = GetWindowHeight();
+
+		winpos = GetWindowPos();
+
+		SetCursorPos(ImVec2(padx, (GetWindowHeight() - fonth) / 2));
+		Text(current->name);
 	
-	float maxlen = 0;
+		float maxlen = 0;
 
-	for (Entity* e : entities) maxlen = std::max(maxlen, (float)std::string(e->name).size());
+		for (Entity* e : entities) maxlen = std::max(maxlen, (float)std::string(e->name).size());
+		//TODO(sushi, ClUi) make the right list scrollable once it reaches a certain point
+		//or just redesign this entirely
+		
 
-	if (entities.size() - 1 != 0) {
-		SetCursorPos(ImVec2(width / 2, pady));
-		if (BeginChild("right", ImVec2(width / 2, height * padding))) {
-			float cwidth = GetWindowWidth();
-			float cheight = GetWindowHeight();
+		//if we haven't selected an entity display other entities
+		if (other == nullptr) {
 			float inc = cheight / (entities.size());
 			int i = 1;
 			for (Entity* e : entities) {
 				if (e != current) {
-					SetCursorPos(ImVec2(cwidth - maxlen * fontw * 1.2 - padx, i * inc));
-					//SetNextItemWidth(-FLT_MIN);
-					if (Button(e->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
+					PushID(i);
+					if (e->connections.find(current) != e->connections.end()) {
+						float lx = 1.2 * (padx + CalcTextSize(current->name).x);
+						float ly = cheight / 2;
 
+						float rx = cwidth - maxlen * fontw * 1.2 - padx * 0.8 + CalcTextSize(e->name).x / 2;
+						float ry = i * inc + CalcTextSize(e->name).y / 2;
+
+						drawListc->AddLine(
+							ImVec2(winpos.x + lx, winpos.y + ly),
+							ImVec2(winpos.x + rx, winpos.y + ry),
+							GetColorU32(ColToVec4(Color::WHITE)));
+					}
+
+					SetCursorPos(ImVec2(cwidth - maxlen * fontw * 1.2 - padx, i * inc));
+					if (Button(e->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
+						other = e;
 					}
 					i++;
+					PopID();
+
 				}
 			}
-			EndChild();
 		}
+		else {
+
+		
+
+			float rightoffset = cwidth - (float)std::string(other->name).size() * fontw - padx;
+			
+
+			//display other entity and it's components
+			SetCursorPos(ImVec2(rightoffset, (cheight - fonth) / 2 ));
+			Text(other->name);
+
+			//if we select a comp for each ent, show options for connecting an event
+			if (selcompr && selcompl) {
+				int currevent = selcompl->event;
+				if (Combo("##events_combo2", &currevent, EventStrings, IM_ARRAYSIZE(EventStrings))) {
+					switch (currevent) {
+						case Event_NONE:
+							selcompl->sender->RemoveReceiver(selcompr);
+							selcompl->event = Event_NONE;
+							selcompl->entity->connections.erase(selcompr->entity);
+							selcompr->entity->connections.erase(selcompl->entity);
+							break;
+						default:
+							selcompl->sender->AddReceiver(selcompr);
+							selcompl->event = (u32)currevent;
+							selcompr->entity->connections.insert(selcompl->entity);
+							selcompl->entity->connections.insert(selcompr->entity);
+							break;
+					}
+				}
+
+				if (selcompl->sender->HasReceiver(selcompr)) {
+					float lx = 1.2 * (padx * 2 + CalcTextSize(current->name).x + CalcTextSize(selcompl->name).x) / 2;
+					float ly = cheight / 2;
+
+					float rx = rightoffset * 0.8 + ((float)std::string(selcompr->name).size() * fontw) / 2;
+					float ry = cheight / 2;
+
+					drawListc->AddLine(
+						ImVec2(winpos.x + lx, winpos.y + ly),
+						ImVec2(winpos.x + rx, winpos.y + ry),
+						GetColorU32(ColToVec4(Color::WHITE)));
+				}
+
+			}
+
+			//TODO(sushi, Op) make this run only when we first select the entity
+			float maxlen = 0;
+			for (Component* c : other->components) maxlen = std::max(maxlen, (float)std::string(c->name).size());
+			int i = 0; //increment for IDs
+			if (!selcompr) {
+				float inc = cheight / (other->components.size() + 1);
+				int o = 1;
+				
+				for (Component* c : other->components) {
+					SetCursorPos(ImVec2(rightoffset * 0.8, o * inc));
+					PushID(i);
+					if (selcompl && selcompl->sender->HasReceiver(c)) {
+						float lx = 1.2 * (padx * 2 + CalcTextSize(current->name).x + (CalcTextSize(selcompl->name).x) / 2);
+						float ly = cheight / 2;
+
+						float rx = rightoffset * 0.8 + CalcTextSize(c->name).y / 2;
+						float ry = o * inc + CalcTextSize(c->name).x / 2;
+
+						drawListc->AddLine(
+							ImVec2(winpos.x + lx, winpos.y + ly),
+							ImVec2(winpos.x + rx, winpos.y + ry),
+							GetColorU32(ColToVec4(Color::WHITE)));
+					}
+					if (Button(c->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
+						selcompr = c;
+					}
+					i++; o++;
+					PopID();
+				}
+			}
+			else {
+				SetCursorPos(ImVec2(rightoffset * 0.8, (cheight - fonth) / 2));
+				PushID(i);
+				if (Button(selcompr->name)) {
+					selcompr = nullptr;
+				}
+				i++;
+				PopID();
+			}
+
+			maxlen = 0;
+			for (Component* c : current->components) maxlen = std::max(maxlen, (float)std::string(c->name).size());
+			
+			//display initial entities components
+			if (!selcompl) {
+				float inc = cheight / (current->components.size() + 1);
+				int o = 1;
+
+				for (Component* c : current->components) {
+					SetCursorPos(ImVec2(1.2 * (padx * 2 + (float)std::string(current->name).size() * fontw), o * inc));
+					PushID(i);
+					if (selcompr && selcompr->sender->HasReceiver(c)) {
+						float lx = 1.2 * (padx * 2 + CalcTextSize(current->name).x + CalcTextSize(selcompl->name).x / 2);
+						float ly = o * inc + CalcTextSize(c->name).x / 2;
+
+						float rx = rightoffset * 0.8 + CalcTextSize(c->name).y / 2;
+						float ry = cheight / 2;
+
+						drawListc->AddLine(
+							ImVec2(winpos.x + lx, winpos.y + ly),
+							ImVec2(winpos.x + rx, winpos.y + ry),
+							GetColorU32(ColToVec4(Color::WHITE)));
+					}
+					if (Button(c->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
+						selcompl = c;
+					}
+					i++; o++;
+					PopID();
+				}
+			}
+			else {
+				SetCursorPos(ImVec2(1.2 * (padx * 2 + (float)std::string(current->name).size() * fontw), cheight / 2 - fonth / 2));
+				PushID(i);
+				if (Button(selcompl->name)) {
+					selcompl = nullptr;
+				}
+				i++;
+				PopID();
+			}
+			
+			SetCursorPos(ImVec2(0, 0));
+			if (Button("Back")) { 
+				other = nullptr; 
+				selcompl = nullptr;
+				selcompr = nullptr;
+			}
+		}
+		EndChild();
 	}
 	else {
 		const char* sorry = "No other entities...";
@@ -626,13 +784,17 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 							shownent = entity;
 							showevents = true;
 						}
+						else if (shownent != entity) {
+							shownent = entity;
+						}
 						else {
 							shownent = nullptr;
 							showevents = false;
+							EventsMenu(nullptr, true);
 						}
 					}
 
-					if (showevents) EventsMenu(shownent);
+					if (showevents && shownent == entity) EventsMenu(shownent);
 					
 					SameLine();
 					if (Button("Del")) {
@@ -2121,8 +2283,10 @@ void CanvasSystem::Update() {
 				if (showDebugTools) DebugTools();
 				if (showDebugBar)   DebugBar();
 				if (showMenuBar)    MenuBar();
+				ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
 				if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
-				
+				ImGui::PopStyleColor();
+
 				
 				if (!showMenuBar)    menubarheight = 0;
 				if (!showDebugBar)   debugbarheight = 0;

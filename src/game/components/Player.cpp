@@ -8,6 +8,7 @@ Player::Player(Movement* movement) {
 	layer = ComponentLayer_Physics;
 	comptype = ComponentType_Player;
 	cpystr(name, "Player", 63);
+	sender = new Sender();
 	
 	this->movement = movement;
 }
@@ -17,6 +18,7 @@ Player::Player(Movement* movement, int health) {
 	layer = ComponentLayer_Physics;
 	comptype = ComponentType_Player;
 	cpystr(name, "Player", 63);
+	sender = new Sender();
 	
 	this->movement = movement;
 	this->health = health;

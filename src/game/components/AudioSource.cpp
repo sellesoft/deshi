@@ -10,6 +10,7 @@ AudioSource::AudioSource() {
 	cpystr(name, "AudioSource", 63);
 	layer = ComponentLayer_Sound;
 	comptype = ComponentType_AudioSource;
+	sender = new Sender();
 }
 
 AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, float gain, float pitch) {
@@ -29,6 +30,7 @@ AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, fl
 	cpystr(name, "AudioSource", 63);
 	layer = ComponentLayer_Sound;
 	comptype = ComponentType_AudioSource;
+	sender = new Sender();
 }
 
 void AudioSource::RequestPlay(float gain, float pitch) {

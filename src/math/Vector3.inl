@@ -252,6 +252,21 @@ clampedMag(float min, float max) const {
 	}
 }
 
+//round to a decimal place
+inline void Vector3::round(int place) {
+	x = floor(x * place * 10 + 0.5) / (place * 10);
+	y = floor(y * place * 10 + 0.5) / (place * 10);
+	z = floor(z * place * 10 + 0.5) / (place * 10);
+}
+
+//round to a decimal place
+inline Vector3 Vector3::rounded(int place) {
+	return Vector3(
+		floor(x * place * 10 + 0.5) / (place * 10),
+		floor(y * place * 10 + 0.5) / (place * 10),
+		floor(z * place * 10 + 0.5) / (place * 10));
+}
+
 inline float Vector3::
 distanceTo(const Vector3& rhs) const {
 	return (*this - rhs).mag();

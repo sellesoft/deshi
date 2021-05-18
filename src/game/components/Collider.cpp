@@ -13,7 +13,7 @@ BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer,
 	admin = g_admin;
 	cpystr(name, "BoxCollider", 63);
 	comptype = ComponentType_Collider;
-	
+	sender = new Sender();
 	this->type = ColliderType_Box;
 	this->collisionLayer = collisionLayer;
 	this->noCollide = nocollide;
@@ -27,7 +27,7 @@ BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionL
 	admin = g_admin;
 	cpystr(name, "BoxCollider", 63);
 	comptype = ComponentType_Collider;
-	
+	sender = new Sender();
 	this->type = ColliderType_Box;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = tensor;
@@ -75,7 +75,7 @@ AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Event eve
 	admin = g_admin;
 	cpystr(name, "AABBCollider", 63);
 	comptype = ComponentType_Collider;
-	
+	sender = new Sender();
 	this->type = ColliderType_AABB;
 	this->collisionLayer = collisionLayer;
 	this->noCollide = nocollide;
@@ -129,7 +129,7 @@ AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLaye
 	admin = g_admin;
 	cpystr(name, "AABBCollider", 63);
 	comptype = ComponentType_Collider;
-	
+	sender = new Sender();
 	this->type = ColliderType_AABB;
 	this->collisionLayer = collisionLayer;
 	this->noCollide = nocollide;
@@ -142,7 +142,7 @@ AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisio
 	admin = g_admin;
 	cpystr(name, "AABBCollider", 63);
 	comptype = ComponentType_Collider;
-	
+	sender = new Sender();
 	this->type = ColliderType_AABB;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = tensor;
@@ -190,7 +190,7 @@ SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Eve
 	admin = g_admin;
 	cpystr(name, "SphereCollider", 63);
 	comptype = ComponentType_Collider;
-	
+	sender = new Sender();
 	this->type = ColliderType_Sphere;
 	this->collisionLayer = collisionLayer;
 	this->noCollide = nocollide;
@@ -203,7 +203,7 @@ SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer
 	admin = g_admin;
 	cpystr(name, "SphereCollider", 63);
 	comptype = ComponentType_Collider;
-	
+	sender = new Sender();
 	this->type = ColliderType_Sphere;
 	this->collisionLayer = collisionLayer;
 	this->inertiaTensor = tensor;
@@ -253,7 +253,7 @@ LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Event event
 	admin = g_admin;
 	cpystr(name, "LandscapeCollider", 63);
 	comptype = ComponentType_Collider;
-	
+	sender = new Sender();
 	this->type = ColliderType_Landscape;
 	this->collisionLayer = collisionLayer;
 	this->noCollide = nocollide;

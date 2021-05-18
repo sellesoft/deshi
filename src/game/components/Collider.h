@@ -21,8 +21,8 @@ struct Collider : public Component {
 	u32 collisionLayer;
 	Matrix3 inertiaTensor;
 	b32 noCollide;
-	Event event;
-	
+	b32 sentEvent = false;
+
 	virtual void RecalculateTensor(f32 mass) {};
 };
 
