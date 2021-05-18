@@ -202,6 +202,12 @@
     <ClInclude Include="..\src\game\Event.h">
       <Filter>src\game</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\utils\tuple.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\pair.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">

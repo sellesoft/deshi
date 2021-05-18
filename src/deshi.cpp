@@ -42,6 +42,7 @@ add Camera tag to TODOP
 look into integrating TODOP with Discord
 add yaxis line
 begin reimplementing sound system and maybe rethink its design a bit
+replace std::pair with pair throughout the project
 
 Render TODOs
 ------------
@@ -151,6 +152,7 @@ Fun TODOs
 look into implementing Lua 
 look into making a function that takes in the types on a component and formats binary for saving and what not 
 ____like what were currently doing for typeHeader in EntityAdmin Save()
+write a preprocessing/postprocessing compiler that 
 
 Bug Board
 ---------
