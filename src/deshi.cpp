@@ -26,6 +26,10 @@ Minor Ungrouped TODOs
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
 __the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
 ____to update it's canvas system.
+think of a way to implement different events being sent between comps as right now it's only one
+____is this necessary though? we can define these events at run time, but the connections must be made through UI
+____so maybe have a UI option that allows the comps update function to handle it and only connects them.
+____actually having an option for anything other than collider is kind of useless soooo maybe get rid of event on every component or just only let u choose that event on colliders
 change undo's to never use pointers and have undos that can act like linked lists to chain them
 figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
 settings file(s) [keybinds, video, audio, etc]
@@ -100,8 +104,11 @@ implement orthographic grabbing
 
 Physics/Atmos TODOs
 -------------
-finish imlementing AABB vs AABB collisions
-make colliders obey scale
+make collider trigger latching a boolean, so it can continuous trigger an event while an obj is in it
+____dont forget that it's in a physics tick though, so you have to make sure it doesn't do it 300 times per frame
+figure out how to handle multi events being set for a collider. for other components its not really an issue
+___because u just choose what event to send at run time, but i don't want to do this inside of the collider
+___functions themselves, as it would be way too much clutter. maybe a helper function on collider to choose what to do 
 redo main physics loop
 add physics collision sweeping
 add physics based collision resolution for remaining collider primitives

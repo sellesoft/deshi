@@ -46,7 +46,7 @@ void BoxCollider::RecalculateTensor(f32 mass) {
 }
 
 void BoxCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
-	u32 entityID = -1;
+	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	u32 layer = -1;
 	mat3 tensor{};
 	vec3 halfDimensions{};
@@ -57,12 +57,16 @@ void BoxCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 co
 			ERROR("Failed to load box collider component at pos '", cursor-sizeof(u32),
 				  "' because it has an invalid entity ID: ", entityID); continue;
 		}
+		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
 		
 		memcpy(&layer,          data+cursor, sizeof(u32));  cursor += sizeof(u32);
 		memcpy(&tensor,         data+cursor, sizeof(mat3)); cursor += sizeof(mat3);
 		memcpy(&halfDimensions, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
 		BoxCollider* c = new BoxCollider(halfDimensions, tensor, layer);
 		EntityAt(entityID)->AddComponent(c);
+		c->SetCompID(compID);
+		c->SetEvent(event);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
 }
@@ -161,7 +165,7 @@ std::vector<char> AABBCollider::Save() {
 }
 
 void AABBCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
-	u32 entityID = -1;
+	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	u32 layer = -1;
 	mat3 tensor{};
 	vec3 halfDimensions{};
@@ -172,12 +176,16 @@ void AABBCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 c
 			ERROR("Failed to load aabb collider component at pos '", cursor-sizeof(u32),
 				  "' because it has an invalid entity ID: ", entityID); continue;
 		}
+		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
 		
 		memcpy(&layer, data+cursor,          sizeof(u32));  cursor += sizeof(u32);
 		memcpy(&tensor, data+cursor,         sizeof(mat3)); cursor += sizeof(mat3);
 		memcpy(&halfDimensions, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
 		AABBCollider* c = new AABBCollider(halfDimensions, tensor, layer);
 		EntityAt(entityID)->AddComponent(c);
+		c->SetCompID(compID);
+		c->SetEvent(event);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
 }
@@ -222,7 +230,7 @@ std::vector<char> SphereCollider::Save() {
 }
 
 void SphereCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
-	u32 entityID = -1;
+	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	u32 layer = -1;
 	mat3 tensor{};
 	f32 radius = 0.f;
@@ -233,11 +241,15 @@ void SphereCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32
 			ERROR("Failed to load sphere collider component at pos '", cursor-sizeof(u32),
 				  "' because it has an invalid entity ID: ", entityID); continue;
 		}
-		
+		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+
 		memcpy(&layer,  data+cursor, sizeof(u32));  cursor += sizeof(u32);
 		memcpy(&tensor, data+cursor, sizeof(mat3)); cursor += sizeof(mat3);
 		memcpy(&radius, data+cursor, sizeof(f32));  cursor += sizeof(f32);
 		SphereCollider* c = new SphereCollider(radius, tensor, layer);
+		c->SetCompID(compID);
+		c->SetEvent(event);
 		EntityAt(entityID)->AddComponent(c);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}

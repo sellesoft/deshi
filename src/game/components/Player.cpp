@@ -34,7 +34,7 @@ std::vector<char> Player::Save() {
 }
 
 void Player::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
-	u32 entityID = -1;
+	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	int health = 0;
 	for_n(i, count) {
 		memcpy(&entityID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
@@ -42,10 +42,14 @@ void Player::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 			ERROR("Failed to load sphere collider component at pos '", cursor - sizeof(u32),
 				  "' because it has an invalid entity ID: ", entityID); continue;
 		}
-		
+		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+
 		memcpy(&health, data + cursor, sizeof(int));  cursor += sizeof(int);
 		Player* c = new Player(EntityAt(entityID)->GetComponent<Movement>(), health);
 		EntityAt(entityID)->AddComponent(c);
+		c->SetCompID(compID);
+		c->SetEvent(event);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
 	if(count > 0)

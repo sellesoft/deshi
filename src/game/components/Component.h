@@ -53,6 +53,7 @@ static const char* ComponentTypeStrings[] = {
 struct Component : public Receiver {
 	EntityAdmin* admin;
 	u32 entityID;
+	u32 compID; //this should ONLY be used for saving/loading, not indexing anykind of array for now
 	char name[64];
 	ComponentType comptype;
 	Entity* entity;
@@ -70,9 +71,9 @@ struct Component : public Receiver {
 
 	}
 
-	void SetEvent(Event event) {
-		this->event = event;
-	}
+	void SetEvent(Event event) { this->event = event; }
+
+	void SetCompID(u32 id) { compID = id; }
 	
 	//Init only gets called when this component's entity is spawned thru the world system
 	virtual void Init() {};

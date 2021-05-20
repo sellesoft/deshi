@@ -112,7 +112,7 @@ std::vector<char> Physics::Save() {
 }
 
 void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
-	u32 entityID = 0xFFFFFFFF;
+	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	vec3 position{}, rotation{}, velocity{}, accel{}, rotVel{}, rotAccel{};
 	f32 elasticity = 0.f, mass = 0.f, kineticFricCoef = 0.f, staticFricCoef = 0.f;
 	b32 staticPos = false, staticRot = false, twoDphys = false;
@@ -122,7 +122,9 @@ void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count)
 			ERROR("Failed to load physics component at pos '", cursor-sizeof(u32),
 				  "' because it has an invalid entity ID: ", entityID); continue;
 		}
-		
+		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+
 		memcpy(&position,        data+cursor, sizeof(vec3));  cursor += sizeof(vec3);
 		memcpy(&rotation,        data+cursor, sizeof(vec3));  cursor += sizeof(vec3);
 		memcpy(&velocity,        data+cursor, sizeof(vec3));  cursor += sizeof(vec3);
@@ -139,6 +141,8 @@ void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count)
 		
 		Physics* c = new Physics(position, rotation, velocity, accel, rotVel, rotAccel, elasticity, mass, staticPos, staticRot, twoDphys, kineticFricCoef, staticFricCoef);
 		EntityAt(entityID)->AddComponent(c);
+		c->SetCompID(compID);
+		c->SetEvent(event);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
 }

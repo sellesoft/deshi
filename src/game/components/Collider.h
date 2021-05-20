@@ -5,6 +5,8 @@
 #include "Component.h"
 #include "../../math/VectorMatrix.h"
 
+#include <set>
+
 struct Command;
 struct Mesh;
 
@@ -22,6 +24,8 @@ struct Collider : public Component {
 	Matrix3 inertiaTensor;
 	b32 noCollide;
 	b32 sentEvent = false;
+
+	std::set<Collider*> collided;
 
 	virtual void RecalculateTensor(f32 mass) {};
 };

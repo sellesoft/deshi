@@ -51,6 +51,7 @@ struct EntityAdmin {
 	//object_pool<Component>* components;
 	//stores the components to be executed in between layers
 	std::vector<ContainerManager<Component*>> freeCompLayers;
+	u32 compIDcount = 0;
 	
 	//pause flags
 	b32  skip;
