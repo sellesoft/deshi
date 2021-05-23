@@ -711,7 +711,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 				
 				int counter = 0;
 				for (Entity* entity : admin->entities) {
-					counter++;
+					counter++;	
 					PushID(counter);
 					TableNextRow(); TableNextColumn();
 					std::string id = std::to_string(entity->id);
@@ -976,6 +976,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 						Text("Kinetic Fric "); SameLine(); InputFloat("kinfric",         &phys->kineticFricCoef);               Separator();
 						Checkbox("Static Position", &phys->isStatic);                                             Separator();
 						Checkbox("Static Rotation", &phys->staticRotation);
+
 						TreePop();
 					}
 				}break;

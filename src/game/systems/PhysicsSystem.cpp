@@ -177,14 +177,25 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		(min1.x <= max2.x && max1.x >= min2.x) &&
 		(min1.y <= max2.y && max1.y >= min2.y) &&
 		(min1.z <= max2.z && max1.z >= min2.z)) {
+
+		
+
 		
 		//triggers and no collision
-		if(obj1Col->event != 0 && !obj1Col->sentEvent){ 
-			obj1Col->sender->SendEvent(obj1Col->event); obj1Col->sentEvent = true;}
-		if(obj2Col->event != 0 && !obj2Col->sentEvent){ 
-			obj2Col->sender->SendEvent(obj2Col->event); obj2Col->sentEvent = true;}
-		if(obj1Col->noCollide || obj2Col->noCollide) return false;
+		if (obj1Col->collided.find(obj2Col) == obj1Col->collided.end()) {
+			if (obj1Col->event != 0 && !obj1Col->sentEvent) { obj1Col->sender->SendEvent(obj1Col->event); obj1Col->sentEvent = true; }
+			if (obj2Col->event != 0 && !obj2Col->sentEvent) { obj2Col->sender->SendEvent(obj2Col->event); obj2Col->sentEvent = true; }
+		}
 		
+		obj1Col->collided.clear();
+		obj2Col->collided.clear();
+
+		//store entity
+		obj1Col->collided.insert(obj2Col);
+		obj2Col->collided.insert(obj1Col);
+
+		if(obj1Col->noCollide || obj2Col->noCollide) return false;
+
 		float xover, yover, zover;
 		
 		//we need to know which box is in front over each axis so

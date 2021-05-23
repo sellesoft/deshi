@@ -44,7 +44,7 @@ std::vector<char> AudioSource::Save() {
 }
 
 void AudioSource::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
-	u32 entityID = 0xFFFFFFFF;
+	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	for_n(i,count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); 
 		cursor += sizeof(u32);
@@ -53,7 +53,10 @@ void AudioSource::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 co
 				  "' because it has an invalid entity ID: ", entityID);
 			continue;
 		}
-		
+		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+		//c->SetCompID(compID);
+		//c->SetEvent(event);
 		ERROR("AudioSource::Load not setup");
 	}
 }

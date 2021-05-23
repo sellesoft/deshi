@@ -125,9 +125,11 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
 		for(Component* c : e->components){ 
 			c->admin = this;
 			c->entityID = e->id;
+			c->compID = compIDcount;
 			c->entity = e;
 			c->layer_index = freeCompLayers[c->layer].add(c);
 			if (c->comptype == ComponentType_Light) scene.lights.push_back(dyncasta(Light, c));
+			compIDcount++;
 		}
 	}
 	creationBuffer.clear();
@@ -145,6 +147,9 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
 		}
 	}
 	
+	//compIDcount = 0;
+	//for (Entity* e : entities) compIDcount += e->components.size();
+
 	
 	DengTime->paused = paused;
 	DengTime->phys_pause = pause_phys;
@@ -174,9 +179,11 @@ Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const c
 	entities.push_back(e);
 	for (Component* c : e->components) {
 		c->entityID = e->id;
+		c->compID = compIDcount;
 		c->entity = e;
 		c->layer_index = freeCompLayers[c->layer].add(c);
 		if (c->comptype == ComponentType_Light) scene.lights.push_back(dyncasta(Light, c));
+		compIDcount++;
 	}
 	return e;
 }
@@ -395,57 +402,56 @@ void EntityAdmin::Save(const char* filename) {
 	//audio listener 0
 	typeHeader.type        = ComponentType_AudioListener;
 	typeHeader.arrayOffset = header.componentTypeHeaderArrayOffset + sizeof(ComponentTypeHeader) * header.componentTypeCount;
-	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*3;
+	typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3)*3;
 	typeHeader.count       = compsAudioListener.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
 	//audio source 1
 	typeHeader.type        = ComponentType_AudioSource;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + 0; //TODO(sushi) tell delle what data is important to save on a source
+	typeHeader.size        = sizeof(u32) * 3 + 0; //TODO(sushi) tell delle what data is important to save on a source
 	typeHeader.count       = compsAudioSource.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
-	//TODO(delle) update when colliders have triggers
 	//collider box 2
 	typeHeader.type        = ComponentType_ColliderBox;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
+	typeHeader.size        = sizeof(u32) * 3 + sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
 	typeHeader.count       = compsColliderBox.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
 	//collider aabb 3
 	typeHeader.type        = ComponentType_ColliderAABB;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
+	typeHeader.size        = sizeof(u32) * 3 + sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
 	typeHeader.count       = compsColliderAABB.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
 	//collider sphere 4
 	typeHeader.type        = ComponentType_ColliderSphere;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(u32) + sizeof(Matrix3) + sizeof(float);
+	typeHeader.size        = sizeof(u32) * 3 + sizeof(u32) + sizeof(Matrix3) + sizeof(float);
 	typeHeader.count       = compsColliderSphere.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
 	//light 5
 	typeHeader.type        = ComponentType_Light;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*2 + sizeof(float);
+	typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3)*2 + sizeof(float);
 	typeHeader.count       = compsLight.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
 	//mesh comp 6
 	typeHeader.type        = ComponentType_MeshComp;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(u32)*2 + sizeof(b32)*2; //instanceID, meshID, visible, entity_control
+	typeHeader.size        = sizeof(u32) * 3 + sizeof(u32)*2 + sizeof(b32)*2; //instanceID, meshID, visible, entity_control
 	typeHeader.count       = compsMeshComp.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
 	//physics 7
 	typeHeader.type        = ComponentType_Physics;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(b32) * 3 + sizeof(float) * 2;
+	typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(b32) * 3 + sizeof(float) * 2;
 	typeHeader.count       = compsPhysics.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
@@ -456,14 +462,14 @@ void EntityAdmin::Save(const char* filename) {
 	//movement 8
 	typeHeader.type        = ComponentType_Movement;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(Vector3) + sizeof(float) * 6 + sizeof(b32);
+	typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3) + sizeof(float) * 6 + sizeof(b32);
 	typeHeader.count       = compsMovement.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
 	//player 9
 	typeHeader.type        = ComponentType_Player;
 	typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-	typeHeader.size        = sizeof(u32) + sizeof(int);
+	typeHeader.size        = sizeof(u32) * 3 + sizeof(int);
 	typeHeader.count       = compsPlayer.size();
 	file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
 	
@@ -472,6 +478,8 @@ void EntityAdmin::Save(const char* filename) {
 	//audio listener
 	for(auto c : compsAudioListener){
 		file.write((const char*)&c->entityID,    sizeof(u32));
+		file.write((const char*)&c->compID,      sizeof(u32));
+		file.write((const char*)&c->event,       sizeof(u32));
 		file.write((const char*)&c->position,    sizeof(Vector3));
 		file.write((const char*)&c->velocity,    sizeof(Vector3));
 		file.write((const char*)&c->orientation, sizeof(Vector3));
@@ -480,11 +488,16 @@ void EntityAdmin::Save(const char* filename) {
 	//audio source
 	for(auto c : compsAudioSource){
 		file.write((const char*)&c->entityID, sizeof(u32));
+		file.write((const char*)&c->compID,   sizeof(u32));
+		file.write((const char*)&c->event,    sizeof(u32));
+
 	}
 	
 	//collider box
 	for(auto c : compsColliderBox){
 		file.write((const char*)&c->entityID,       sizeof(u32));
+		file.write((const char*)&c->compID,         sizeof(u32));
+		file.write((const char*)&c->event,          sizeof(u32));
 		file.write((const char*)&c->collisionLayer, sizeof(u32));
 		file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
 		file.write((const char*)&c->halfDims,       sizeof(Vector3));
@@ -493,6 +506,8 @@ void EntityAdmin::Save(const char* filename) {
 	//collider aabb
 	for(auto c : compsColliderAABB){
 		file.write((const char*)&c->entityID,       sizeof(u32));
+		file.write((const char*)&c->compID,         sizeof(u32));
+		file.write((const char*)&c->event,          sizeof(u32));
 		file.write((const char*)&c->collisionLayer, sizeof(u32));
 		file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
 		file.write((const char*)&c->halfDims,       sizeof(Vector3));
@@ -501,6 +516,8 @@ void EntityAdmin::Save(const char* filename) {
 	//collider sphere
 	for(auto c : compsColliderSphere){
 		file.write((const char*)&c->entityID,       sizeof(u32));
+		file.write((const char*)&c->compID,         sizeof(u32));
+		file.write((const char*)&c->event,          sizeof(u32));
 		file.write((const char*)&c->collisionLayer, sizeof(u32));
 		file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
 		file.write((const char*)&c->radius,         sizeof(float));
@@ -509,6 +526,8 @@ void EntityAdmin::Save(const char* filename) {
 	//light
 	for(auto c : compsLight){
 		file.write((const char*)&c->entityID,    sizeof(u32));
+		file.write((const char*)&c->compID,      sizeof(u32));
+		file.write((const char*)&c->event,       sizeof(u32));
 		file.write((const char*)&c->position,    sizeof(Vector3));
 		file.write((const char*)&c->direction,   sizeof(Vector3));
 		file.write((const char*)&c->brightness,  sizeof(float));
@@ -519,6 +538,8 @@ void EntityAdmin::Save(const char* filename) {
 		b32 bool1 = c->mesh_visible;
 		b32 bool2 = c->ENTITY_CONTROL;
 		file.write((const char*)&c->entityID,   sizeof(u32));
+		file.write((const char*)&c->compID,     sizeof(u32));
+		file.write((const char*)&c->event,      sizeof(u32));
 		file.write((const char*)&c->instanceID, sizeof(u32));
 		file.write((const char*)&c->meshID,     sizeof(u32));
 		file.write((const char*)&bool1,         sizeof(b32));
@@ -531,6 +552,8 @@ void EntityAdmin::Save(const char* filename) {
 		b32 staticRotation = c->staticRotation;
 		b32 twoDphys = c->twoDphys;
 		file.write((const char*)&c->entityID,        sizeof(u32));
+		file.write((const char*)&c->compID,          sizeof(u32));
+		file.write((const char*)&c->event,           sizeof(u32));
 		file.write((const char*)&c->position,        sizeof(Vector3));
 		file.write((const char*)&c->rotation,        sizeof(Vector3));
 		file.write((const char*)&c->velocity,        sizeof(Vector3));
@@ -550,6 +573,8 @@ void EntityAdmin::Save(const char* filename) {
 	for (auto c : compsMovement) {
 		b32 jump = c->jump;
 		file.write((const char*)&c->entityID,          sizeof(u32));
+		file.write((const char*)&c->compID,            sizeof(u32));
+		file.write((const char*)&c->event,             sizeof(u32));
 		file.write((const char*)&c->inputs,            sizeof(Vector3));
 		file.write((const char*)&c->gndAccel,          sizeof(float));
 		file.write((const char*)&c->airAccel,          sizeof(float));
@@ -563,6 +588,8 @@ void EntityAdmin::Save(const char* filename) {
 	//player
 	for(auto c : compsPlayer){
 		file.write((const char*)&c->entityID, sizeof(u32));
+		file.write((const char*)&c->compID,   sizeof(u32));
+		file.write((const char*)&c->event,    sizeof(u32));
 		file.write((const char*)&c->health,   sizeof(int));
 	}
 	

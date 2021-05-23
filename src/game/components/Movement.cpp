@@ -155,7 +155,7 @@ std::vector<char> Movement::Save() {
 }
 
 void Movement::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count) {
-	u32 entityID = -1;
+	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	Vector3 inputs{};
 	float gndAccel{}, airAccel{}, maxWalkingSpeed{}, maxRunningSpeed{}, maxCrouchingSpeed{}, jumpImpulse{};
 	bool jump = false;
@@ -166,7 +166,9 @@ void Movement::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count
 			ERROR("Failed to load sphere collider component at pos '", cursor - sizeof(u32),
 				  "' because it has an invalid entity ID: ", entityID); continue;
 		}
-		
+		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+
 		memcpy(&inputs,            data + cursor, sizeof(Vector3)); cursor += sizeof(Vector3);
 		memcpy(&gndAccel,          data + cursor, sizeof(float));   cursor += sizeof(float);
 		memcpy(&airAccel,          data + cursor, sizeof(float));   cursor += sizeof(float);
@@ -178,6 +180,8 @@ void Movement::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count
 		
 		Movement* c = new Movement(EntityAt(entityID)->GetComponent<Physics>(), gndAccel, airAccel, maxWalkingSpeed, maxRunningSpeed, maxCrouchingSpeed, jump, jumpImpulse);
 		EntityAt(entityID)->AddComponent(c);
+		c->SetCompID(compID);
+		c->SetEvent(event);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
 	

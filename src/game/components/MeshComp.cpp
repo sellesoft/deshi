@@ -127,7 +127,7 @@ std::vector<char> MeshComp::Save() {
 }
 
 void MeshComp::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
-	u32 entityID = 0xFFFFFFFF;
+	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	u32 meshID = 0xFFFFFFFF;
 	u32 instanceID = 0xFFFFFFFF;
 	for_n(i,count){
@@ -136,7 +136,9 @@ void MeshComp::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count
 			ERROR("Failed to load mesh component at pos '", cursor-sizeof(u32),
 				  "' because it has an invalid entity ID: ", entityID); continue;
 		}
-		
+		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
+
 		memcpy(&instanceID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		memcpy(&meshID,     data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		if(meshID >= DengRenderer->meshes.size()){
@@ -148,6 +150,8 @@ void MeshComp::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count
 		memcpy(&c->mesh_visible,   data+cursor, sizeof(b32)); cursor += sizeof(b32);
 		memcpy(&c->ENTITY_CONTROL, data+cursor, sizeof(b32)); cursor += sizeof(b32);
 		EntityAt(entityID)->AddComponent(c);
+		c->SetCompID(compID);
+		c->SetEvent(event);
 		c->layer_index = admin->freeCompLayers[c->layer].add(c);
 	}
 }

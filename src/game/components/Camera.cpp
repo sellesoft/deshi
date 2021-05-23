@@ -35,7 +35,7 @@ void Camera::Update() {
 		
 		//NOTE this can happen whether the camera is free or not so move it out
 		//of this scope once we implement that
-		static int wwidth = window->width;
+		static int wwidth = window->width; 
 		static int wheight = window->height;
 		
 		//clamp camera rotation
