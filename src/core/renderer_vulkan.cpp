@@ -332,6 +332,143 @@ CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool visibl
 	return id;
 }
 
+
+u32 Renderer::
+CreateMeshBrush(Mesh* m, Matrix4 matrix){
+	PRINTVK(3, "    Creating mesh brush based on: ", m->name);
+	
+	if(m->vertexCount == 0 || m->indexCount == 0 || m->batchCount == 0) {  //early out if empty buffers
+		ERROR("CreateMeshBrush: A mesh was passed in with no vertices or indices or batches");
+		return -1;
+	}
+	
+	//// mesh brush ////
+	MeshBrushVk mesh; mesh.id = meshBrushes.size();
+	cpystr(mesh.name, m->name, 63);
+	mesh.matrix = glm::make_mat4(matrix.data);
+	
+	mesh.vertices.reserve(m->vertexCount);
+	mesh.indices.reserve(m->indexCount);
+	u32 batchVertexStart, batchIndexStart;
+	for(Batch& batch : m->batchArray){
+		batchVertexStart = u32(mesh.vertices.size());
+		batchIndexStart = u32(mesh.indices.size());
+		
+		//vertices
+		for(int i=0; i<batch.vertexArray.size(); ++i){ 
+			VertexVk vert;
+			vert.pos      = glm::make_vec3(&batch.vertexArray[i].pos.x);
+			vert.texCoord = glm::make_vec2(&batch.vertexArray[i].uv.x);
+			vert.color    = glm::make_vec3(&batch.vertexArray[i].color.x);
+			vert.normal   = glm::make_vec3(&batch.vertexArray[i].normal.x);
+			mesh.vertices.push_back(vert);
+		}
+		
+		//indices
+		for(u32 i : batch.indexArray){
+			mesh.indices.push_back(batchVertexStart+i);
+		}
+	}
+	
+	{//// vulkan buffers ////
+		StagingBufferVk vertexStaging{}, indexStaging{};
+		size_t vbSize = mesh.vertices.size() * sizeof(VertexVk);
+		size_t ibSize = mesh.indices.size() * sizeof(u32);
+		
+		//create host visible vertex and index buffers (CPU/RAM)
+		CreateAndMapBuffer(vertexStaging.buffer, vertexStaging.memory, mesh.vertexBufferSize, vbSize, mesh.vertices.data(),
+						   VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+						   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		
+		CreateAndMapBuffer(indexStaging.buffer, indexStaging.memory, mesh.indexBufferSize, ibSize, mesh.indices.data(),
+						   VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+						   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		
+		//create device local buffers (GPU)
+		CreateAndMapBuffer(mesh.vertexBuffer, mesh.vertexBufferMemory, mesh.vertexBufferSize, vbSize, nullptr,
+						   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+						   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		
+		CreateAndMapBuffer(mesh.indexBuffer, mesh.indexBufferMemory, mesh.indexBufferSize, ibSize, nullptr,
+						   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+						   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		
+		//copy data from staging buffers to device local buffers
+		VkCommandBuffer commandBuffer = beginSingleTimeCommands();{
+			VkBufferCopy copyRegion{};
+			
+			copyRegion.size = vbSize;
+			vkCmdCopyBuffer(commandBuffer, vertexStaging.buffer, mesh.vertexBuffer, 1, &copyRegion);
+			
+			copyRegion.size = ibSize;
+			vkCmdCopyBuffer(commandBuffer, indexStaging.buffer, mesh.indexBuffer, 1, &copyRegion);
+		}endSingleTimeCommands(commandBuffer);
+		
+		//free staging resources
+		vkDestroyBuffer(device, vertexStaging.buffer, nullptr);
+		vkFreeMemory(device, vertexStaging.memory, nullptr);
+		vkDestroyBuffer(device, indexStaging.buffer, nullptr);
+		vkFreeMemory(device, indexStaging.memory, nullptr);
+	}
+	
+	//store mesh brush
+	meshBrushes.push_back(mesh);
+	return mesh.id;
+}
+
+void Renderer::
+UpdateMeshBrushBuffers(u32 meshBrushIdx){
+	if(meshBrushIdx >= meshBrushes.size()) return ERROR_LOC("There is no mesh with id: ", meshBrushIdx);
+	
+	MeshBrushVk& mesh = meshBrushes[meshBrushIdx];
+	StagingBufferVk vertexStaging{}, indexStaging{};
+	size_t vbSize = mesh.vertices.size() * sizeof(VertexVk);
+	size_t ibSize = mesh.indices.size() * sizeof(u32);
+	
+	//create host visible vertex and index buffers (CPU/RAM)
+	CreateAndMapBuffer(vertexStaging.buffer, vertexStaging.memory, mesh.vertexBufferSize, vbSize, mesh.vertices.data(),
+					   VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	
+	CreateAndMapBuffer(indexStaging.buffer, indexStaging.memory, mesh.indexBufferSize, ibSize, mesh.indices.data(),
+					   VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	
+	//create device local buffers (GPU)
+	CreateAndMapBuffer(mesh.vertexBuffer, mesh.vertexBufferMemory, mesh.vertexBufferSize, vbSize, nullptr,
+					   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+					   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	
+	CreateAndMapBuffer(mesh.indexBuffer, mesh.indexBufferMemory, mesh.indexBufferSize, ibSize, nullptr,
+					   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+					   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	
+	//copy data from staging buffers to device local buffers
+	VkCommandBuffer commandBuffer = beginSingleTimeCommands();{
+		VkBufferCopy copyRegion{};
+		
+		copyRegion.size = vbSize;
+		vkCmdCopyBuffer(commandBuffer, vertexStaging.buffer, mesh.vertexBuffer, 1, &copyRegion);
+		
+		copyRegion.size = ibSize;
+		vkCmdCopyBuffer(commandBuffer, indexStaging.buffer, mesh.indexBuffer, 1, &copyRegion);
+	}endSingleTimeCommands(commandBuffer);
+	
+	//free staging resources
+	vkDestroyBuffer(device, vertexStaging.buffer, nullptr);
+	vkFreeMemory(device, vertexStaging.memory, nullptr);
+	vkDestroyBuffer(device, indexStaging.buffer, nullptr);
+	vkFreeMemory(device, indexStaging.memory, nullptr);
+}
+
+void Renderer::
+RemoveMeshBrush(u32 meshBrushIdx){
+	if(meshBrushIdx < meshBrushes.size()){
+		for(int i=meshBrushIdx; i<meshBrushes.size(); ++i) { --meshBrushes[i].id; } 
+		meshBrushes.erase(meshBrushes.begin() + meshBrushIdx);
+	}else{ ERROR_LOC("There is no mesh brush with id: ", meshBrushIdx); }
+}
+
 ///////////////////////
 //// trimesh stuff ////
 ///////////////////////
@@ -1819,7 +1956,6 @@ CreateSceneBuffers(){
 		
 		copyRegion.size = indexBufferSize;
 		vkCmdCopyBuffer(commandBuffer, indexStaging.buffer, indices.buffer, 1, &copyRegion);
-		
 	}endSingleTimeCommands(commandBuffer);
 	
 	//free staging resources
@@ -3105,7 +3241,7 @@ BuildCommandBuffers() {
 	scissor.offset.x = 0;
 	scissor.offset.y = 0;
 	
-	//TODO(delle,ReOpVu) figure out why we are doing it for all images
+	//TODO(delle,ReVu) figure out why we are doing it for all images
 	for(int i = 0; i < imageCount; ++i){
 		renderPassInfo.framebuffer = frames[i].framebuffer;
 		ASSERTVK(vkBeginCommandBuffer(frames[i].commandBuffer, &cmdBufferInfo), "failed to begin recording command buffer");
@@ -3115,11 +3251,20 @@ BuildCommandBuffers() {
 		//bind scene matrices descriptor to set 0
 		vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboDescriptorSet, 0, nullptr);
 		//// draw stuff below here ////
-		
 		VkDeviceSize offsets[1] = { 0 };
-		//index buffer
+		
+		//draw mesh brushes
+		for(MeshBrushVk& mesh : meshBrushes){
+			vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &mesh.vertexBuffer, offsets);
+			vkCmdBindIndexBuffer(frames[i].commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mesh.matrix);
+			vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.COLLIDER);
+			vkCmdDrawIndexed(frames[i].commandBuffer, mesh.indices.size(), 1, 0, 0, 0);
+			stats.drawnIndices += mesh.indices.size();
+		}
+		
+		//draw meshes
 		vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &vertices.buffer, offsets);
-		//index buffer
 		vkCmdBindIndexBuffer(frames[i].commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 		
 		if(settings.wireframeOnly){ //draw all with wireframe shader

@@ -510,6 +510,12 @@ CMDSTARTA(state, args.size() > 0){
 	}
 }CMDEND("state <new_state:String>{play|menu|debug|editor}");
 
+CMDSTART(meshbrush_create_box){
+	u32 id = DengRenderer->CreateMeshBrush(admin->scene.models[0].mesh, Matrix4::IDENTITY);
+	SUCCESS("Created mesh brush with id: ", id);
+	return "";
+}CMDEND("meshbrush_create_box");
+
 CMDSTARTA(draw_line, args.size() > 1){
 	Vector3 pos1{}, pos2{}, color = {255,255,255};
 	for (auto s = args.begin(); s != args.end(); ++s) {
@@ -591,8 +597,8 @@ CMDSTARTA(load_obj, args.size() > 0){
 			bool found = false;
 			for_n(i, sizeof(EventStrings)) 
 				if (m[1] == EventStrings[i]) { 
-					found = true; event = (u32)i;  break;
-				}
+				found = true; event = (u32)i;  break;
+			}
 			if (!found) return TOSTRING("[c:red]Unknown event '", m[1], "'");
 		} else {
 			return "[c:red]Invalid parameter: " + *s + "[c]";
@@ -845,6 +851,7 @@ void Console::AddRandomCommands(){
 	CMDADD(flush, "Flushes the console's buffer to the log file.");
 	CMDADD(add_force, "Adds a force to the selected object.");
 	CMDADD(engine_pause, "Pauses/Unpauses the engine");
+	CMDADD(meshbrush_create_box, "Creates a mesh brush of a box");
 }
 
 ////////////////////////////////////

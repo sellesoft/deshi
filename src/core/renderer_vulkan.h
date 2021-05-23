@@ -147,6 +147,20 @@ struct MeshVk{
 	std::vector<u32> children;
 };
 
+struct MeshBrushVk{
+	u32  id = -1;
+	char name[64];
+	glm::mat4 matrix = glm::mat4(1.f);
+	std::vector<VertexVk> vertices;
+	std::vector<u32>      indices;
+	VkBuffer       vertexBuffer       = 0;
+	VkDeviceMemory vertexBufferMemory = 0;
+	VkDeviceSize   vertexBufferSize   = 0;
+	VkBuffer       indexBuffer        = 0;
+	VkDeviceMemory indexBufferMemory  = 0;
+	VkDeviceSize   indexBufferSize    = 0;
+};
+
 struct MaterialVk{
 	u32 id         = -1;
 	u32 shader     = 0;
@@ -246,6 +260,10 @@ struct Renderer{
 	void UpdateMeshVisibility(u32 meshID, bool visible);
 	void SetSelectedMesh(u32 meshID);
 	
+	//creates a mesh with editable vertices
+	u32 CreateMeshBrush(Mesh* m, Matrix4 matrix);
+	void UpdateMeshBrushBuffers(u32 meshBrushIdx);
+	void RemoveMeshBrush(u32 meshBrushIdx);
 	//returns a base mesh ID
 	u32 CreateDebugLine(Vector3 start, Vector3 end, Color color, bool visible = false);
 	//returns a base mesh ID
@@ -289,11 +307,12 @@ struct Renderer{
 	void UpdateDebugOptions(bool wireframe, bool globalAxis, bool wireframeOnly);
 	
 	//scene //TODO(delle,ReOp) use container manager for arrays that remove elements
-	std::vector<VertexVk>   vertexBuffer = std::vector<VertexVk>(0);
-	std::vector<u32>        indexBuffer  = std::vector<u32>(0);
-	std::vector<TextureVk>  textures     = std::vector<TextureVk>(0);
-	std::vector<MeshVk>     meshes       = std::vector<MeshVk>(0);
-	std::vector<MaterialVk> materials    = std::vector<MaterialVk>(0);
+	std::vector<VertexVk>    vertexBuffer = std::vector<VertexVk>(0);
+	std::vector<u32>         indexBuffer  = std::vector<u32>(0);
+	std::vector<TextureVk>   textures     = std::vector<TextureVk>(0);
+	std::vector<MeshVk>      meshes       = std::vector<MeshVk>(0);
+	std::vector<MaterialVk>  materials    = std::vector<MaterialVk>(0);
+	std::vector<MeshBrushVk> meshBrushes  = std::vector<MeshBrushVk>(0);
 	u32 selectedMeshID = -1;
 	
 	//////////////////////////////
