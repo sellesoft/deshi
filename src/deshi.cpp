@@ -44,7 +44,6 @@ replace/remove external dependencies/includes were possible (glm, tinyobj)
 add Qol (quality of life) tag to TODOP
 add Camera tag to TODOP
 look into integrating TODOP with Discord
-add yaxis line
 begin reimplementing sound system and maybe rethink its design a bit
 replace std::pair with pair throughout the project
 move common things in the Component contructors to the parent constructor
