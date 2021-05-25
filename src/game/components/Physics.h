@@ -28,20 +28,20 @@ struct Collider;
 struct Manifold3 {
 	Collider* a = nullptr;
 	Collider* b = nullptr;
-
+	
 	ColliderType coltypea;
 	ColliderType coltypeb;
-
+	
 	//bool indicating which normal is the player's
 	b32 player = 0;
-
+	
 	//will be implemented later
 	// 
 	//int refID = 0;
 	//Vector2 colpoints[2];
 	//float depth[2];
 	//int nColPoints = 0;
-
+	
 	Vector3 norm;
 };
 
@@ -123,7 +123,7 @@ struct Physics : public Component {
 	//TODO(delle,Ph) separate static movement and rotation
 	bool twoDphys = false;
 	poly* twoDpolygon = nullptr;
-
+	
 	//this is probably temporary, i just need a way to communicate collision normals elsewhere
 	std::unordered_map<Physics*, Manifold3> manifolds;
 	
@@ -158,8 +158,8 @@ struct Physics : public Component {
 	void AddImpulse(Physics* creator, Vector3 impulse);
 	void AddImpulseNomass(Physics* creator, Vector3 impulse);
 	
-	std::vector<char> Save() override;
-	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	std::vector<char> SaveTEXT() override;
+	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif //COMPONENT_PHYSICS_H

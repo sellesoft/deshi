@@ -121,12 +121,11 @@ void MeshComp::Update() {
 	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
 }
 
-std::vector<char> MeshComp::Save() {
-	std::vector<char> out;
-	return out;
+std::vector<char> MeshComp::SaveTEXT(){
+	return std::vector<char>();
 }
 
-void MeshComp::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void MeshComp::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	u32 meshID = 0xFFFFFFFF;
 	u32 instanceID = 0xFFFFFFFF;
@@ -138,7 +137,7 @@ void MeshComp::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count
 		}
 		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
 		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-
+		
 		memcpy(&instanceID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		memcpy(&meshID,     data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		if(meshID >= DengRenderer->meshes.size()){
@@ -183,11 +182,10 @@ void MeshComp2D::ReceiveEvent(Event event) {}
 
 void MeshComp2D::Update() {}
 
-std::vector<char> MeshComp2D::Save() {
-	std::vector<char> out;
-	return out;
+std::vector<char> MeshComp2D::SaveTEXT(){
+	return std::vector<char>();
 }
 
-void MeshComp2D::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void MeshComp2D::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	ERROR("MeshComp2D::Load not setup");
 }

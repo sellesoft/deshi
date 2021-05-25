@@ -263,13 +263,13 @@ void CanvasSystem::MenuBar() {
 		if(BeginMenu("File")) { WinHovCheck; 
 			
 			if (MenuItem("New"))     admin->Reset();
-			if (MenuItem("Save"))    admin->Save("save.desh");
+			if (MenuItem("Save"))    admin->SaveDESH("save.desh");
 			//TODO(delle) add textbox for saving to specific file
 			if (BeginMenu("Save As")) {
 				static char buff[255] = {};
-				if(ImGui::InputText("SaveAsInput", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
+				if(ImGui::InputText("##saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
 					std::string s(buff); s += ".desh";
-					admin->Save(s.c_str());
+					admin->SaveDESH(s.c_str());
 				}
 				EndMenu();
 			} 
@@ -285,13 +285,9 @@ void CanvasSystem::MenuBar() {
 				
 				for_n(i, saves.size()) {
 					if (MenuItem(saves[i].c_str())) {
-						admin->Load(saves[i].c_str());
+						admin->LoadDESH(saves[i].c_str());
 					}
 				}
-				
-				
-				//admin->Load("save.desh");
-				
 				ImGui::EndMenu();
 			}
 			ImGui::EndMenu();
@@ -976,7 +972,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 						Text("Kinetic Fric "); SameLine(); InputFloat("kinfric",         &phys->kineticFricCoef);               Separator();
 						Checkbox("Static Position", &phys->isStatic);                                             Separator();
 						Checkbox("Static Rotation", &phys->staticRotation);
-
+						
 						TreePop();
 					}
 				}break;

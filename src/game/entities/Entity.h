@@ -21,7 +21,7 @@ struct Entity {
 	//std::unordered_map<Entity*, Entity*> connections; //connections to other entities through components
 	
 	std::set<Entity*> connections;
-
+	
 	Entity();
 	Entity(EntityAdmin* admin, u32 id, Transform transform = Transform(),
 		   const char* name = 0, std::vector<Component*> components = {});
@@ -31,7 +31,7 @@ struct Entity {
 	
 	virtual void Init();
 	//virtual std::vector<char> Save();
-	//virtual void Load(const char* filename);
+	//virtual void LoadDESH(const char* filename);
 	
 	void SetName(const char* name);
 	//adds a component to the end of the components vector

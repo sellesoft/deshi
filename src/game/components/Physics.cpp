@@ -106,12 +106,11 @@ void Physics::AddImpulseNomass(Physics* creator, Vector3 impulse) {
 	if (creator) { creator->velocity -= impulse; }
 }
 
-std::vector<char> Physics::Save() {
-	std::vector<char> out;
-	return out;
+std::vector<char> Physics::SaveTEXT(){
+	return std::vector<char>();
 }
 
-void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void Physics::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	vec3 position{}, rotation{}, velocity{}, accel{}, rotVel{}, rotAccel{};
 	f32 elasticity = 0.f, mass = 0.f, kineticFricCoef = 0.f, staticFricCoef = 0.f;
@@ -124,7 +123,7 @@ void Physics::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count)
 		}
 		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
 		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-
+		
 		memcpy(&position,        data+cursor, sizeof(vec3));  cursor += sizeof(vec3);
 		memcpy(&rotation,        data+cursor, sizeof(vec3));  cursor += sizeof(vec3);
 		memcpy(&velocity,        data+cursor, sizeof(vec3));  cursor += sizeof(vec3);

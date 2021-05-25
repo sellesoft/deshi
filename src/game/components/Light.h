@@ -17,8 +17,8 @@ struct Light : public Component {
 	void Update() override;
 	virtual void ReceiveEvent(Event event) override;
 	
-	std::vector<char> Save() override;
-	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	std::vector<char> SaveTEXT() override;
+	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif //COMPONENT_LIGHT_H

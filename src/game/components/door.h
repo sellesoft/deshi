@@ -10,7 +10,7 @@ struct Door : public Component{
 	Door(b32 isOpen = 0);
 	
 	void ReceiveEvent(Event event) override;
-	static void Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count);
+	static void LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count);
 };
 
 #endif //COMPONENT_DOOR_H

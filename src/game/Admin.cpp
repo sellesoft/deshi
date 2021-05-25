@@ -69,7 +69,7 @@ void EntityAdmin::Init() {
 }
 
 void EntityAdmin::Cleanup() {
-	Save((state == GameState_Editor) ? "temp.desh" : "auto.desh");
+	SaveDESH((state == GameState_Editor) ? "temp.desh" : "auto.desh");
 }
 
 void UpdateLayer(ContainerManager<Component*> cl) {
@@ -140,7 +140,7 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
 		if (i < scene.lights.size()) {
 			Vector3 p = scene.lights[i]->position;
 			DengRenderer->lights[i] = glm::vec4(p.x, p.y, p.z,
-				(scene.lights[i]->active) ? scene.lights[i]->brightness : 0);
+												(scene.lights[i]->active) ? scene.lights[i]->brightness : 0);
 		}
 		else {
 			DengRenderer->lights[i] = glm::vec4(0, 0, 0, -1);
@@ -149,7 +149,7 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
 	
 	//compIDcount = 0;
 	//for (Entity* e : entities) compIDcount += e->components.size();
-
+	
 	
 	DengTime->paused = paused;
 	DengTime->phys_pause = pause_phys;
@@ -222,8 +222,8 @@ void EntityAdmin::ChangeState(GameState new_state){
 			}break;
 			case GameState_Editor:{ to = "EDITOR";
 				pause_phys = pause_sound = true;
-				Save("auto.desh");
-				Load("temp.desh");
+				SaveDESH("auto.desh");
+				LoadDESH("temp.desh");
 				if(player) player->GetComponent<MeshComp>()->Visible(true);
 				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
 			}break;
@@ -240,8 +240,8 @@ void EntityAdmin::ChangeState(GameState new_state){
 			}break;
 			case GameState_Editor:{ to = "EDITOR";
 				pause_phys = pause_sound = true;
-				Save("auto.desh");
-				Load("temp.desh");
+				SaveDESH("auto.desh");
+				LoadDESH("temp.desh");
 				if(player) player->GetComponent<MeshComp>()->Visible(true);
 				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
 			}break;
@@ -253,7 +253,7 @@ void EntityAdmin::ChangeState(GameState new_state){
 			case GameState_Play: 
 			case GameState_Debug:{  to = "PLAY/DEBUG";
 				pause_phys = pause_sound = false;
-				Save("temp.desh");
+				SaveDESH("temp.desh");
 				if(player) {
 					player->GetComponent<MeshComp>()->Visible(false);
 				}else{
@@ -262,7 +262,7 @@ void EntityAdmin::ChangeState(GameState new_state){
 				DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
 			}break;
 			case GameState_Menu:{   to = "MENU";
-				Save("save.desh");
+				SaveDESH("save.desh");
 				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
 			}break;
 		}break;
@@ -299,7 +299,7 @@ struct SaveHeader{
 	u32 componentTypeHeaderArrayOffset;
 };
 
-void EntityAdmin::Save(const char* filename) {
+void EntityAdmin::SaveDESH(const char* filename) {
 	//std::vector<char> save_data(16384);
 	
 	//open file
@@ -490,7 +490,7 @@ void EntityAdmin::Save(const char* filename) {
 		file.write((const char*)&c->entityID, sizeof(u32));
 		file.write((const char*)&c->compID,   sizeof(u32));
 		file.write((const char*)&c->event,    sizeof(u32));
-
+		
 	}
 	
 	//collider box
@@ -602,7 +602,7 @@ void EntityAdmin::Save(const char* filename) {
 	SUCCESS("Successfully saved to ", filename);
 }
 
-void EntityAdmin::Load(const char* filename) {
+void EntityAdmin::LoadDESH(const char* filename) {
 	Reset();
 	LOG("Loading level: ", deshi::dirSaves() + filename);
 	TIMER_START(t_l);
@@ -691,18 +691,18 @@ void EntityAdmin::Load(const char* filename) {
 		cursor = compHeader.arrayOffset;
 		
 		switch(compHeader.type){
-			case(ComponentType_AudioListener):  AudioListener ::Load(this, data, cursor, compHeader.count); break;
-			case(ComponentType_AudioSource):    AudioSource   ::Load(this, data, cursor, compHeader.count); break;
-			case(ComponentType_Camera):         Camera        ::Load(this, data, cursor, compHeader.count); break;
-			case(ComponentType_ColliderBox):    BoxCollider   ::Load(this, data, cursor, compHeader.count); break;
-			case(ComponentType_ColliderAABB):   AABBCollider  ::Load(this, data, cursor, compHeader.count); break;
-			case(ComponentType_ColliderSphere): SphereCollider::Load(this, data, cursor, compHeader.count); break;
-			case(ComponentType_Light):          Light         ::Load(this, data, cursor, compHeader.count); break;
-			case(ComponentType_MeshComp):       MeshComp      ::Load(this, data, cursor, compHeader.count); break;
-			case(ComponentType_OrbManager):     OrbManager    ::Load(this, data, cursor, compHeader.count); break;
-			case(ComponentType_Physics):        Physics       ::Load(this, data, cursor, compHeader.count); break;
-			case(ComponentType_Movement):       Movement      ::Load(this, data, cursor, compHeader.count); break;
-			case(ComponentType_Player):         Player        ::Load(this, data, cursor, compHeader.count); break;
+			case(ComponentType_AudioListener):  AudioListener ::LoadDESH(this, data, cursor, compHeader.count); break;
+			case(ComponentType_AudioSource):    AudioSource   ::LoadDESH(this, data, cursor, compHeader.count); break;
+			case(ComponentType_Camera):         Camera        ::LoadDESH(this, data, cursor, compHeader.count); break;
+			case(ComponentType_ColliderBox):    BoxCollider   ::LoadDESH(this, data, cursor, compHeader.count); break;
+			case(ComponentType_ColliderAABB):   AABBCollider  ::LoadDESH(this, data, cursor, compHeader.count); break;
+			case(ComponentType_ColliderSphere): SphereCollider::LoadDESH(this, data, cursor, compHeader.count); break;
+			case(ComponentType_Light):          Light         ::LoadDESH(this, data, cursor, compHeader.count); break;
+			case(ComponentType_MeshComp):       MeshComp      ::LoadDESH(this, data, cursor, compHeader.count); break;
+			case(ComponentType_OrbManager):     OrbManager    ::LoadDESH(this, data, cursor, compHeader.count); break;
+			case(ComponentType_Physics):        Physics       ::LoadDESH(this, data, cursor, compHeader.count); break;
+			case(ComponentType_Movement):       Movement      ::LoadDESH(this, data, cursor, compHeader.count); break;
+			case(ComponentType_Player):         Player        ::LoadDESH(this, data, cursor, compHeader.count); break;
 			default:{
 				ERROR("Failed to load a component array because of unknown component type '", 
 					  compHeader.type, "' at pos: ", cursor);

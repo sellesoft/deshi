@@ -29,11 +29,11 @@ void Player::Update() {
 	
 }
 
-std::vector<char> Player::Save() {
-	return {};
+std::vector<char> Player::SaveTEXT(){
+	return std::vector<char>();
 }
 
-void Player::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void Player::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	int health = 0;
 	for_n(i, count) {
@@ -44,7 +44,7 @@ void Player::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 		}
 		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
 		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-
+		
 		memcpy(&health, data + cursor, sizeof(int));  cursor += sizeof(int);
 		Player* c = new Player(EntityAt(entityID)->GetComponent<Movement>(), health);
 		EntityAt(entityID)->AddComponent(c);
@@ -54,5 +54,4 @@ void Player::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	}
 	if(count > 0)
 		admin->player = EntityAt(entityID);
-	//ERROR("Player::Load not setup");
 }

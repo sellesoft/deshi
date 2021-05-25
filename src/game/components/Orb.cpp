@@ -115,6 +115,6 @@ void OrbManager::Update() {
 	
 }
 
-void OrbManager::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void OrbManager::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	ERROR("OrbManager::Load not setup");
 }

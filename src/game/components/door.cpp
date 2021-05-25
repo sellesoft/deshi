@@ -17,7 +17,7 @@ void Door::ReceiveEvent(Event event){
 	}
 }
 
-void Door::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void Door::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	b32 isOpen = 0;
 	for_n(i,count){
@@ -29,7 +29,7 @@ void Door::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 		}
 		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
 		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-
+		
 		memcpy(&isOpen, data+cursor, sizeof(b32)); cursor += sizeof(b32);
 		Door* c = new Door(isOpen);
 		EntityAt(entityID)->AddComponent(c);

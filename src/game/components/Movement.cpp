@@ -34,8 +34,8 @@ Movement::Movement(Physics* phys, float gndAccel, float airAccel, float maxWalki
 }
 
 void Movement::Update() {
-
-
+	
+	
 	bool contactMoving = false;
 	bool contactStationary = false;
 	for (auto c : phys->contacts) {
@@ -48,7 +48,7 @@ void Movement::Update() {
 	if (contactMoving)          phys->contactState = ContactMoving;
 	else if (contactStationary) phys->contactState = ContactStationary;
 	else                        phys->contactState = ContactNONE;
-
+	
 	Vector3 norm;
 	//check if were on the ground
 	if (phys->contactState == ContactNONE) { moveState = InAirNoInput; inAir = true; }
@@ -81,7 +81,7 @@ void Movement::Update() {
 		phys->velocity += Vector3(0, 10, 0);
 		jump = false;
 	}
-
+	
 	auto accel = [&](float max, float accel) {
 		//float projvel = phys->velocity.projectOn(inputs);
 		//PRINTLN(TOSTRING("---------\n",
@@ -93,12 +93,12 @@ void Movement::Update() {
 		//else if (maxWalkingSpeed - fabs(DengTime->fixedDeltaTime * accel) <= projvel && projvel < max)
 		//	phys->velocity += (max - phys->velocity.mag() * cosf(Math::AngBetweenVectors(phys->velocity, inputs))) * inputs;
 		phys->velocity += accel * DengTime->fixedDeltaTime * inputs;
-
+		
 		if (phys->velocity.mag() > max) phys->velocity.clampMag(0, max);
-	
+		
 	};
-
-		//float projVel = phys->velocity.dot(inputs);
+	
+	//float projVel = phys->velocity.dot(inputs);
 	//
 	//if (projVel < maxWalkingSpeed - DengTime->deltaTime * gndAccel) {
 	//	phys->velocity += DengTime->fixedDeltaTime * gndAccel * inputs;
@@ -113,22 +113,22 @@ void Movement::Update() {
 	
 	switch (moveState) {
 		case InAirNoInput:
-			break;
+		break;
 		case InAirCrouching:
-			break;
+		break;
 		case OnGroundNoInput:
-			break;
+		break;
 		case OnGroundWalking:
-			accel(maxWalkingSpeed, gndAccel);
-			break;
+		accel(maxWalkingSpeed, gndAccel);
+		break;
 		case OnGroundRunning:
-			accel(maxRunningSpeed, gndAccel);
-			break;
+		accel(maxRunningSpeed, gndAccel);
+		break;
 		case OnGroundCrouching:
-			accel(maxCrouchingSpeed, gndAccel);
-			break;
+		accel(maxCrouchingSpeed, gndAccel);
+		break;
 	}
-		
+	
 	//apply ground friction
 	//TODO(sushi) implement friction scaling with velocity and eventually canceling out new velocity
 	if (moveState == OnGroundNoInput) {
@@ -145,16 +145,16 @@ void Movement::Update() {
 	}
 	
 	phys->position += phys->velocity * DengTime->fixedDeltaTime;
-
+	
 	phys->manifolds.clear();
 	phys->acceleration = Vector3::ZERO;
 }
 
-std::vector<char> Movement::Save() {
-	return {};
+std::vector<char> Movement::SaveTEXT(){
+	return std::vector<char>();
 }
 
-void Movement::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count) {
+void Movement::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count) {
 	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	Vector3 inputs{};
 	float gndAccel{}, airAccel{}, maxWalkingSpeed{}, maxRunningSpeed{}, maxCrouchingSpeed{}, jumpImpulse{};
@@ -168,7 +168,7 @@ void Movement::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count
 		}
 		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
 		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-
+		
 		memcpy(&inputs,            data + cursor, sizeof(Vector3)); cursor += sizeof(Vector3);
 		memcpy(&gndAccel,          data + cursor, sizeof(float));   cursor += sizeof(float);
 		memcpy(&airAccel,          data + cursor, sizeof(float));   cursor += sizeof(float);

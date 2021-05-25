@@ -2748,9 +2748,9 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
 		//cleanup and return
 		shaderc_result_release(result);
 		return shaderStage;
-	}else{
-		ASSERT(false, "failed to load shader module b/c file does not exist");
 	}
+	ASSERT(false, "failed to load shader module b/c file does not exist");
+	return VkPipelineShaderStageCreateInfo();
 }
 
 
@@ -2862,7 +2862,9 @@ findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties) {
 			return i;
 		}
 	}
+	
 	ASSERT(false, "failed to find suitable memory type"); //error out if no suitable memory found
+	return 0;
 }
 
 VkFormat Renderer::
@@ -2885,6 +2887,7 @@ findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tilin
 	}
 	
 	ASSERT(false, "failed to find supported format");
+	return (VkFormat)0;
 }
 
 VkImageView Renderer::

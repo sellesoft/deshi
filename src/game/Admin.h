@@ -75,8 +75,8 @@ struct EntityAdmin {
 	void ChangeState(GameState state);
 	
 	void Reset();
-	void Save(const char* filename);
-	void Load(const char* filename);
+	void SaveDESH(const char* filename);
+	void LoadDESH(const char* filename);
 	
 	//// Entity Storage Functions ////
 	

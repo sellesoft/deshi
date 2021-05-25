@@ -182,11 +182,10 @@ std::string Camera::str(){
 					"\nStatic: ", (freeCamera)? "false" : "true");
 }
 
-std::vector<char> Camera::Save() {
-	std::vector<char> out;
-	return out;
+std::vector<char> Camera::SaveTEXT(){
+	return std::vector<char>();
 }
 
-void Camera::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
-	ERROR("Camera::Load not setup");
+void Camera::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+	ERROR("Camera::LoadDESH not setup");
 }

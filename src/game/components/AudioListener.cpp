@@ -24,25 +24,11 @@ AudioListener::AudioListener(Vector3 position, Vector3 velocity, Vector3 orienta
 //// saving and loading ////
 ////////////////////////////
 
-std::vector<char> AudioListener::Save() {
-	std::vector<char> out;
-	return out;
+std::vector<char> AudioListener::SaveTEXT(){
+	return std::vector<char>();
 }
 
-/*static std::vector<char> SaveComponentHeader(u32 offset, u32 count){
-	ComponentTypeHeader typeHeader;
-	typeHeader.type        = ComponentType_AudioListener;
-	typeHeader.arrayOffset = offset;
-	typeHeader.size        = sizeof(u32) + sizeof(Vector3)*3;
-	typeHeader.count       = count;
-	
-	std::vector<char> out; out.resize(sizeof(ComponentTypeHeader));
-	memcpy(&out.data, &typeHeader, sizeof(ComponentTypeHeader));
-	
-	return out;
-}*/
-
-void AudioListener::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void AudioListener::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	for_n(i,count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);

@@ -3,6 +3,7 @@
 #define DESHI_ASSETS_H
 
 #include "../utils/defines.h"
+#include "../utils/tuple.h"
 
 #include <string>
 #include <vector>
@@ -59,15 +60,36 @@ namespace deshi{
 	//appends and writes a char array to a file in binary
 	void appendFileBinary(const std::string& filepath, const char* data, u32 bytes);
 	
-	//iterates a config file and returns a map of keys and values (see keybinds.cfg)
-	std::map<std::string, std::string> extractConfig(const std::string& filepath);
-	
 	//iterates directory and returns a list of files in it
 	//probably return something other than a vector of strings but thts how it is for now
 	std::vector<std::string> iterateDirectory(const std::string& filepath);
 	
 	//creates base deshi directories if they dont already exist
 	void enforceDirectories();
+	
+	///////////////////////////
+	//// parsing utilities ////
+	///////////////////////////
+	
+	//returns a new string with the leading spaces removed
+	std::string eat_spaces_leading(std::string str);
+	
+	//returns a new string with the trailing spaces removed
+	std::string eat_spaces_trailing(std::string str);
+	
+	//separates a string by spaces, ignores leading and trailing spaces
+	std::vector<std::string> space_delimit(std::string str);
+	
+	//separates a string by spaces, ignores leading and trailing spaces
+	//also ignores spaces between double quotes
+	std::vector<std::string> space_delimit_ignore_strings(std::string str);
+	
+	//splits a string by space and does special case checking for comments, strings, and parenthesis
+	//for use in deshi text-file parsing, ignores leading and trailing spaces
+	pair<std::string, std::string> split_keyValue(std::string str);
+	
+	//iterates a config file and returns a map of keys and values (see keybinds.cfg)
+	std::map<std::string, std::string> extractConfig(const std::string& filepath);
 	
 } //namespace deshi
 

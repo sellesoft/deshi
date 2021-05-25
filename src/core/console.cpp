@@ -468,7 +468,7 @@ try{ func }catch(...){ return desc; }\
 
 COMMANDFUNC(save){
 	std::string path = (args.size() > 0) ? args[0] : "save.desh";
-	admin->Save(path.c_str());
+	admin->SaveDESH(path.c_str());
 	return "";
 }
 

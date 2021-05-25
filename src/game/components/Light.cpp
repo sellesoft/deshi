@@ -27,12 +27,11 @@ void Light::ReceiveEvent(Event event) {
 	}
 }
 
-std::vector<char> Light::Save() {
-	std::vector<char> out;
-	return out;
+std::vector<char> Light::SaveTEXT(){
+	return std::vector<char>();
 }
 
-void Light::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void Light::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	Vector3 position{}, direction{};
 	float strength = 0.f;
@@ -45,7 +44,7 @@ void Light::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 		}
 		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
 		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-
+		
 		memcpy(&position,  data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
 		memcpy(&direction, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
 		memcpy(&strength,  data+cursor, sizeof(f32));  cursor += sizeof(f32);

@@ -68,19 +68,19 @@ struct Component : public Receiver {
 	
 	void ConnectSend(Component* c) {
 		c->sender->AddReceiver(this);
-
+		
 	}
-
+	
 	void SetEvent(Event event) { this->event = event; }
-
+	
 	void SetCompID(u32 id) { compID = id; }
 	
 	//Init only gets called when this component's entity is spawned thru the world system
 	virtual void Init() {};
 	virtual void Update() {};
 	virtual void ReceiveEvent(Event event) override {};
-	virtual std::vector<char> Save() { return std::vector<char>(); };
-	virtual void Load() {};
+	virtual std::vector<char> SaveTEXT() { return std::vector<char>(); };
+	virtual void LoadTEXT() {};
 	virtual std::string str(){ return ""; };
 };
 

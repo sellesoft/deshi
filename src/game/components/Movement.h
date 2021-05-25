@@ -25,7 +25,7 @@ struct Movement : public Component {
 	
 	float gndAccel = 100;
 	float airAccel = 1000;
-
+	
 	float jumpImpulse = 10;
 	
 	float maxWalkingSpeed   = 5;
@@ -35,18 +35,17 @@ struct Movement : public Component {
 	bool jump = false;
 	
 	Movement(Physics* phys);
-
+	
 	Movement(Physics* phys, float gndAccel, float airAccel, float maxWalkingSpeed, float maxRunningSpeed, float maxCrouchingSpeed, bool jump, float jumpImpulse);
 	
 	void Update() override;
 	
-	std::vector<char> Save() override;
-	static void Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count);
-
+	std::vector<char> SaveTEXT() override;
+	static void LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count);
 };
 
 
 
 
 
-#endif
+#endif //COMPONENT_MOVEMENT_H

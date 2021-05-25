@@ -28,8 +28,8 @@ struct MeshComp : public Component {
 	void ReceiveEvent(Event event) override;
 	void Init() override;
 	void Update() override;
-	std::vector<char> Save() override;
-	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	std::vector<char> SaveTEXT() override;
+	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 struct MeshComp2D : public Component {
@@ -43,8 +43,8 @@ struct MeshComp2D : public Component {
 	void ReceiveEvent(Event event) override;
 	void Init() override;
 	void Update() override;
-	std::vector<char> Save() override;
-	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	std::vector<char> SaveTEXT() override;
+	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 

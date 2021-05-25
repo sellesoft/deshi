@@ -24,9 +24,9 @@ struct Collider : public Component {
 	Matrix3 inertiaTensor;
 	b32 noCollide;
 	b32 sentEvent = false;
-
+	
 	std::set<Collider*> collided;
-
+	
 	virtual void RecalculateTensor(f32 mass) {};
 };
 
@@ -38,8 +38,8 @@ struct BoxCollider : public Collider {
 	BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
 	void RecalculateTensor(f32 mass) override;
-	std::vector<char> Save() override;
-	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	std::vector<char> SaveTEXT() override;
+	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //axis-aligned bounding box
@@ -51,8 +51,8 @@ struct AABBCollider : public Collider {
 	AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
 	void RecalculateTensor(f32 mass) override;
-	std::vector<char> Save() override;
-	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	std::vector<char> SaveTEXT() override;
+	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 struct SphereCollider : public Collider {
@@ -62,8 +62,8 @@ struct SphereCollider : public Collider {
 	SphereCollider(float radius, float mass, u32 collisionLayer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
 	void RecalculateTensor(f32 mass) override;
-	std::vector<char> Save() override;
-	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	std::vector<char> SaveTEXT() override;
+	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //collider for terrain
@@ -72,7 +72,7 @@ struct LandscapeCollider : public Collider {
 	
 	LandscapeCollider(Mesh* mesh, u32 collisionleyer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
-	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 
@@ -87,7 +87,7 @@ struct ComplexCollider : public Collider {
 	
 	ComplexCollider(Mesh* mesh, u32 collisionleyer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
-	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //TODO(delle,Ph) implement convexPolyCollider

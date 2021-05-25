@@ -36,16 +36,15 @@ BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionL
 	this->halfDims = halfDimensions;
 }
 
-std::vector<char> BoxCollider::Save() {
-	std::vector<char> out;
-	return out;
-}
-
 void BoxCollider::RecalculateTensor(f32 mass) {
 	inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 
-void BoxCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+std::vector<char> BoxCollider::SaveTEXT(){
+	return std::vector<char>();
+}
+
+void BoxCollider::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	u32 layer = -1;
 	mat3 tensor{};
@@ -159,12 +158,11 @@ void AABBCollider::RecalculateTensor(f32 mass) {
 	inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 
-std::vector<char> AABBCollider::Save() {
-	std::vector<char> out;
-	return out;
+std::vector<char> AABBCollider::SaveTEXT(){
+	return std::vector<char>();
 }
 
-void AABBCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void AABBCollider::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	u32 layer = -1;
 	mat3 tensor{};
@@ -224,12 +222,11 @@ void SphereCollider::RecalculateTensor(f32 mass) {
 	inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
 }
 
-std::vector<char> SphereCollider::Save() {
-	std::vector<char> out;
-	return out;
+std::vector<char> SphereCollider::SaveTEXT(){
+	return std::vector<char>();
 }
 
-void SphereCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void SphereCollider::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	u32 layer = -1;
 	mat3 tensor{};
@@ -243,7 +240,7 @@ void SphereCollider::Load(EntityAdmin* admin, const char* data, u32& cursor, u32
 		}
 		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
 		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-
+		
 		memcpy(&layer,  data+cursor, sizeof(u32));  cursor += sizeof(u32);
 		memcpy(&tensor, data+cursor, sizeof(mat3)); cursor += sizeof(mat3);
 		memcpy(&radius, data+cursor, sizeof(f32));  cursor += sizeof(f32);
@@ -279,7 +276,7 @@ LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Event event
 		ERROR("Mesh passed during LandscapeCollider creation had no vertices");
 		return;
 	}
-
+	
 }
 
 

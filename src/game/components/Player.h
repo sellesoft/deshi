@@ -15,14 +15,14 @@ struct Player : public Component {
 	Movement* movement;
 	
 	Player(Movement* movement);
-
+	
 	Player(Movement* movement, int health);
-
+	
 	
 	void Update() override;
 	
-	std::vector<char> Save() override;
-	static void Load(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	std::vector<char> SaveTEXT() override;
+	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif

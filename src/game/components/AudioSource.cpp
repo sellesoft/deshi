@@ -38,12 +38,11 @@ void AudioSource::RequestPlay(float gain, float pitch) {
 	request_play = true;
 }
 
-std::vector<char> AudioSource::Save() {
-	std::vector<char> out;
-	return out;
+std::vector<char> AudioSource::SaveTEXT(){
+	return std::vector<char>();
 }
 
-void AudioSource::Load(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void AudioSource::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	for_n(i,count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); 
