@@ -604,13 +604,15 @@ UnloadBaseMesh(u32 meshID){
 
 
 //TODO(delle,ReCl) this causes a "leak" in that it doesnt remove the materials created with CreateMesh
+//NOTE temporarily disabled since it causes a crash b/c we don't update mesh comp's ids
 void Renderer::
 RemoveMesh(u32 meshID){
 	if(meshID < meshes.size()){
 		if(!meshes[meshID].base){
-			//TODO(delle,ReOp) optimize this with mesh pooling
-			for(int i=meshID; i<meshes.size(); ++i) { --meshes[i].id;  } 
-			meshes.erase(meshes.begin() + meshID);
+			//for(int i=meshID; i<meshes.size(); ++i) { --meshes[i].id;  } 
+			//meshes.erase(meshes.begin() + meshID);
+			meshes[meshID].visible = false;
+			ERROR_LOC("RemoveMesh: Not implemented yet");
 		}else{
 			ERROR_LOC("Only a child/non-base mesh can be removed");
 		}
@@ -686,12 +688,26 @@ UpdateMeshVisibility(u32 meshID, bool visible){
 }
 
 void Renderer::
-SetSelectedMesh(u32 meshID){
+AddSelectedMesh(u32 meshID){
 	if(meshID < meshes.size()){
-		selectedMeshID = meshID;
-	}else{
-		ERROR_LOC("There is no mesh with id: ", meshID);
+		selected.push_back(meshID);
+	}else{ ERROR_LOC("There is no mesh with id: ", meshID); }
+}
+
+void Renderer::
+RemoveSelectedMesh(u32 meshID){
+	if(meshID == -1) { 
+		selected.clear(); 
+		return; 
 	}
+	if(meshID < meshes.size()){
+		for_n(i, selected.size()){
+			if(selected[i] == meshID){
+				selected.erase(selected.begin()+i);
+				return;
+			}
+		}
+	}else{ ERROR_LOC("There is no mesh with id: ", meshID); }
 }
 
 /*
@@ -2887,7 +2903,7 @@ findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tilin
 	}
 	
 	ASSERT(false, "failed to find supported format");
-	return (VkFormat)0;
+	return VK_FORMAT_UNDEFINED;
 }
 
 VkImageView Renderer::
@@ -3311,9 +3327,9 @@ BuildCommandBuffers() {
 			}
 		}
 		
-		//draw selected mesh
-		if(selectedMeshID < meshes.size()){
-			MeshVk& mesh = meshes[selectedMeshID];
+		//draw selected meshes
+		for(u32 id : selected){
+			MeshVk& mesh = meshes[id];
 			if(mesh.visible && mesh.primitives.size() > 0){
 				//push the mesh's model matrix to the vertex shader
 				vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mesh.modelMatrix);

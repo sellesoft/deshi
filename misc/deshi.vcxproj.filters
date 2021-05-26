@@ -208,6 +208,9 @@
     <ClInclude Include="..\src\utils\pair.h">
       <Filter>src\utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\game\Editor.h">
+      <Filter>src\game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -482,6 +485,9 @@
       <Filter>src\game\entities\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\game\Event.cpp">
+      <Filter>src\game</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\game\Editor.cpp">
       <Filter>src\game</Filter>
     </ClCompile>
   </ItemGroup>

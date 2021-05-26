@@ -23,10 +23,11 @@ struct Scene{
 };
 
 inline void Scene::Init(){
-	models.emplace_back(Mesh::CreateBox(Vector3(1,1,1)));
 	models.emplace_back(Mesh::CreatePlanarBox(Vector3(1,1,1)));
+	models.emplace_back(Mesh::CreateBox(Vector3(1,1,1)));
 	models.emplace_back(Mesh::CreatePlanarBox(Vector3(1,1,1), Texture("UV_Grid_Sm.jpg")));
 	models.emplace_back(Mesh::CreateMeshFromOBJ("sphere.obj"));
+	models.emplace_back(Mesh::CreateMeshFromOBJ("arrow.obj"));
 	
 	//TODO(delle,ReVu) add local axis, global axis, and grid meshes
 }

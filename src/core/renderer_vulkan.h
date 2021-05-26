@@ -258,7 +258,9 @@ struct Renderer{
 	void TransformMeshMatrix(u32 meshID, Matrix4 transform);
 	void UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID);
 	void UpdateMeshVisibility(u32 meshID, bool visible);
-	void SetSelectedMesh(u32 meshID);
+	void AddSelectedMesh(u32 meshID);
+	//passing -1 will remove all
+	void RemoveSelectedMesh(u32 meshID);
 	
 	//creates a mesh with editable vertices
 	u32 CreateMeshBrush(Mesh* m, Matrix4 matrix);
@@ -313,7 +315,7 @@ struct Renderer{
 	std::vector<MeshVk>      meshes       = std::vector<MeshVk>(0);
 	std::vector<MaterialVk>  materials    = std::vector<MaterialVk>(0);
 	std::vector<MeshBrushVk> meshBrushes  = std::vector<MeshBrushVk>(0);
-	u32 selectedMeshID = -1;
+	std::vector<u32>         selected     = std::vector<u32>(0);
 	
 	//////////////////////////////
 	//// vulkan api variables ////

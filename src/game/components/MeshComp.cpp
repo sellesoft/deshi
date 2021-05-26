@@ -5,9 +5,6 @@
 #include "../../scene/Model.h"
 #include "../../scene/Scene.h"
 
-#include "../systems/CanvasSystem.h"
-#include "../../geometry/Geometry.h"
-
 MeshComp::MeshComp() {
 	admin = g_admin;
 	cpystr(name, "MeshComp", 63);
@@ -94,29 +91,11 @@ void MeshComp::ChangeMaterialTexture(u32 t) {
 	}
 }
 
-template<class T>
-bool isthisin(T test, std::vector<T> vec) {
-	for (T t : vec) if (test == t) return true;
-	return false;
-}
-
 void MeshComp::Init() {
 	DengRenderer->UpdateMeshVisibility(meshID, mesh_visible);
 }
 
 void MeshComp::Update() {
-	ASSERT(mesh->vertexCount, "Mesh has no vertices");
-	if (g_admin->selectedEntity == entity) {
-		if(g_admin->fast_outline){
-			DengRenderer->SetSelectedMesh(meshID);
-		}else{
-			std::vector<Vector2> outline = mesh->GenerateOutlinePoints(entity->transform.TransformMatrix(), DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, admin->mainCamera->position);
-			for (int i = 0; i < outline.size(); i += 2) {
-				ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
-			}
-		}
-	}
-	
 	//update mesh's transform with entities tranform
 	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
 }
@@ -126,9 +105,8 @@ std::vector<char> MeshComp::SaveTEXT(){
 }
 
 void MeshComp::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
-	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
-	u32 meshID = 0xFFFFFFFF;
-	u32 instanceID = 0xFFFFFFFF;
+	u32 entityID = -1, compID = -1, event = -1;
+	u32 meshID = -1, instanceID = -1;
 	for_n(i,count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		if(entityID >= admin->entities.size()) {

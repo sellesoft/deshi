@@ -1,5 +1,6 @@
 #include "Model.h"
 #include "../core/assets.h"
+#include "../core/console.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "../external/tinyobjloader/tiny_obj_loader.h"
@@ -154,7 +155,7 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 		}
 		
 	}
-	PRINTLN(TIMER_END(tnf));
+	LOG("FindTriangleNeighbors on mesh '", m->name, "' took ", TIMER_END(tnf), "ms");
 	
 	return triangles;
 	
@@ -162,26 +163,19 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 
 //https://github.com/tinyobjloader/tinyobjloader
 Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
-	Mesh* mesh = new Mesh(); mesh->SetName(filename.c_str());
-	int totalVertexCount = 0;
-	int totalIndexCount = 0;
-	int totalTextureCount = 0;
-	
-	//setup tinyobj
+	//setup tinyobj and parse the OBJ file
 	tinyobj::ObjReaderConfig reader_config;
 	reader_config.triangulate = true;
 	reader_config.vertex_color = true;
 	reader_config.mtl_search_path = deshi::dirModels(); // Path to material files
 	tinyobj::ObjReader reader;
 	if (!reader.ParseFromFile(deshi::dirModels() + filename, reader_config)) {
-		if (!reader.Error().empty()) {
-			std::cerr << "TinyObjReader: " << reader.Error();
-		}
-		ASSERT(false, "failed to read OBJ file");
+		ERROR("Failed to read OBJ file: ", filename);
+		if (!reader.Error().empty()) ERROR("TinyObjReader: ", reader.Error());
+		return 0;
 	}
-	if (!reader.Warning().empty()) {
-		std::cout << "TinyObjReader: " << reader.Warning();
-	}
+	if (!reader.Warning().empty())  WARNING("TinyObjReader: " , reader.Warning());
+	
 	auto& attrib = reader.GetAttrib();
 	auto& shapes = reader.GetShapes();
 	auto& materials = reader.GetMaterials();
@@ -192,12 +186,18 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 	bool hasNormals = attrib.normals.size() > 0;
 	bool hasUVs = attrib.texcoords.size() > 0;
 	bool hasColors = attrib.colors.size() > 0;
-
+	
+	//// create the mesh ////
+	Mesh* mesh = new Mesh(); mesh->SetName(filename.c_str());
+	int totalVertexCount = 0;
+	int totalIndexCount = 0;
+	int totalTextureCount = 0;
+	
 	//fill batches
 	mesh->batchArray.reserve(shapes.size());
 	for (auto& shape : shapes) {
 		Batch batch; batch.SetName(shape.name.c_str());
-
+		
 		//fill batch texture array
 		if (hasMaterials && shape.mesh.material_ids.size() > 0) {
 			const tinyobj::material_t* mat = &materials[shape.mesh.material_ids[0]];
@@ -228,9 +228,9 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 		}
 		batch.textureCount = batch.textureArray.size();
 		totalTextureCount += batch.textureCount;
-
+		
 		std::unordered_map<Vertex, u32> uniqueVertices{};
-
+		
 		//fill batch vertex and index arrays
 		size_t faceCount = shape.mesh.num_face_vertices.size();
 		batch.vertexArray.reserve(faceCount / 3);
@@ -240,7 +240,7 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 			vertex.pos.x = attrib.vertices[3 * idx.vertex_index + 0];
 			vertex.pos.y = attrib.vertices[3 * idx.vertex_index + 1];
 			vertex.pos.z = attrib.vertices[3 * idx.vertex_index + 2];
-
+			
 			if (hasNormals) {
 				vertex.normal.x = attrib.normals[3 * idx.normal_index + 0];
 				vertex.normal.y = attrib.normals[3 * idx.normal_index + 1];
@@ -268,29 +268,144 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 		totalVertexCount += batch.vertexCount;
 		batch.indexCount = batch.indexArray.size();
 		totalIndexCount += batch.indexCount;
-
+		
 		//TODO(delle,Re) parse different shader options here based on texture count
 		batch.shader = Shader_Flat;
 		batch.shaderFlags = ShaderFlags_NONE;
 		mesh->batchArray.push_back(batch);
-
-
+		
+		
 	}
-
+	
 	mesh->vertexCount = totalVertexCount;
 	mesh->indexCount = totalIndexCount;
 	mesh->textureCount = totalTextureCount;
 	mesh->batchCount = mesh->batchArray.size();
 	if(find_triangle_neighbors) mesh->triangles = FindTriangleNeighbors(mesh);
-
 	
-
-
-
-
 	return mesh;
 }
 
+Mesh* Mesh::CreateMeshFromOBJ(std::string filename, Shader shader, Color color){
+	//setup tinyobj and parse the OBJ file
+	tinyobj::ObjReaderConfig reader_config;
+	reader_config.triangulate = true;
+	reader_config.vertex_color = true;
+	reader_config.mtl_search_path = deshi::dirModels(); // Path to material files
+	tinyobj::ObjReader reader;
+	if (!reader.ParseFromFile(deshi::dirModels() + filename, reader_config)) {
+		ERROR("Failed to read OBJ file: ", filename);
+		if (!reader.Error().empty()) ERROR("TinyObjReader: ", reader.Error());
+		return 0;
+	}
+	if (!reader.Warning().empty())  WARNING("TinyObjReader: " , reader.Warning());
+	
+	auto& attrib = reader.GetAttrib();
+	auto& shapes = reader.GetShapes();
+	auto& materials = reader.GetMaterials();
+	ASSERT(shapes[0].mesh.num_face_vertices[0] == 3, "OBJ must be triangulated");
+	
+	//check which features it has
+	bool hasMaterials = materials.size() > 0;
+	bool hasNormals = attrib.normals.size() > 0;
+	bool hasUVs = attrib.texcoords.size() > 0;
+	bool hasColors = attrib.colors.size() > 0;
+	
+	//// create the mesh ////
+	Mesh* mesh = new Mesh(); mesh->SetName(filename.c_str());
+	int totalVertexCount = 0;
+	int totalIndexCount = 0;
+	int totalTextureCount = 0;
+	
+	//fill batches
+	mesh->batchArray.reserve(shapes.size());
+	for (auto& shape : shapes) {
+		Batch batch; batch.SetName(shape.name.c_str());
+		
+		//fill batch texture array
+		if (hasMaterials && shape.mesh.material_ids.size() > 0) {
+			const tinyobj::material_t* mat = &materials[shape.mesh.material_ids[0]];
+			if (mat->diffuse_texname.length() > 0) {
+				if (mat->diffuse_texopt.type == 0) {
+					Texture tex(mat->diffuse_texname.substr(mat->diffuse_texname.find_last_of('\\') + 1).c_str(), TextureType_Albedo);
+					batch.textureArray.push_back(tex);
+				}
+			}
+			if (mat->specular_texname.length() > 0) {
+				if (mat->specular_texopt.type == 0) {
+					Texture tex(mat->specular_texname.substr(mat->specular_texname.find_last_of('\\') + 1).c_str(), TextureType_Specular);
+					batch.textureArray.push_back(tex);
+				}
+			}
+			if (mat->bump_texname.length() > 0) {
+				if (mat->bump_texopt.type == 0) {
+					Texture tex(mat->bump_texname.substr(mat->bump_texname.find_last_of('\\') + 1).c_str(), TextureType_Normal);
+					batch.textureArray.push_back(tex);
+				}
+			}
+			if (mat->ambient_texname.length() > 0) {
+				if (mat->ambient_texopt.type == 0) {
+					Texture tex(mat->ambient_texname.substr(mat->ambient_texname.find_last_of('\\') + 1).c_str(), TextureType_Light);
+					batch.textureArray.push_back(tex);
+				}
+			}
+		}
+		batch.textureCount = batch.textureArray.size();
+		totalTextureCount += batch.textureCount;
+		
+		std::unordered_map<Vertex, u32> uniqueVertices{};
+		
+		//fill batch vertex and index arrays
+		size_t faceCount = shape.mesh.num_face_vertices.size();
+		batch.vertexArray.reserve(faceCount / 3);
+		batch.indexArray.reserve(shape.mesh.indices.size());
+		for (auto& idx : shape.mesh.indices) { //loop over indices
+			Vertex vertex;
+			vertex.pos.x = attrib.vertices[3 * idx.vertex_index + 0];
+			vertex.pos.y = attrib.vertices[3 * idx.vertex_index + 1];
+			vertex.pos.z = attrib.vertices[3 * idx.vertex_index + 2];
+			
+			if (hasNormals) {
+				vertex.normal.x = attrib.normals[3 * idx.normal_index + 0];
+				vertex.normal.y = attrib.normals[3 * idx.normal_index + 1];
+				vertex.normal.z = attrib.normals[3 * idx.normal_index + 2];
+			}
+			if (hasUVs) {
+				vertex.uv.x = attrib.texcoords[2 * idx.texcoord_index + 0];
+				vertex.uv.y = attrib.texcoords[2 * idx.texcoord_index + 1];
+			}
+			
+			vertex.color.x = (f32)color.r / 255.f;
+			vertex.color.y = (f32)color.g / 255.f;
+			vertex.color.z = (f32)color.b / 255.f;
+			
+			if (uniqueVertices.count(vertex) == 0) {
+				uniqueVertices[vertex] = u32(batch.vertexArray.size());
+				batch.vertexArray.push_back(vertex);
+			}
+			else {
+				batch.vertexArray[uniqueVertices[vertex]].normal = (vertex.normal + batch.vertexArray[uniqueVertices[vertex]].normal).normalized();
+			}
+			batch.indexArray.push_back(uniqueVertices[vertex]);
+		}
+		batch.vertexCount = batch.vertexArray.size();
+		totalVertexCount += batch.vertexCount;
+		batch.indexCount = batch.indexArray.size();
+		totalIndexCount += batch.indexCount;
+		
+		batch.shader = shader;
+		batch.shaderFlags = ShaderFlags_NONE;
+		mesh->batchArray.push_back(batch);
+	}
+	
+	mesh->vertexCount = totalVertexCount;
+	mesh->indexCount = totalIndexCount;
+	mesh->textureCount = totalTextureCount;
+	mesh->batchCount = mesh->batchArray.size();
+	if(find_triangle_neighbors) mesh->triangles = FindTriangleNeighbors(mesh);
+	
+	return mesh;
+}
 
 Mesh* Mesh::CreateBox(Vector3 halfDims, Color color) {
 	Vector3 p = halfDims;

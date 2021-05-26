@@ -3,6 +3,7 @@
 #define DESHI_DEFINES_H
 
 //math constants
+#define M_EPSILON    0.001f
 #define M_PI         3.14159265359f
 #define M_E          2.71828182846f
 #define M_SQRT_TWO   1.41421356237f

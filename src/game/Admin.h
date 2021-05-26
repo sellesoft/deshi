@@ -9,7 +9,7 @@
 #include "Transform.h"
 #include "Keybinds.h"
 #include "Controller.h"
-#include "UndoManager.h"
+#include "Editor.h"
 #include "systems/PhysicsSystem.h"
 #include "systems/CanvasSystem.h"
 #include "systems/SoundSystem.h"
@@ -22,7 +22,7 @@ struct Command;
 struct Camera;
 
 enum GameStateBits : u32{
-	GameState_Play, GameState_Menu, GameState_Debug, GameState_Editor, GameState_LAST
+	GameState_Play, GameState_Menu, GameState_Debug, GameState_Editor, GameState_COUNT
 }; typedef u32 GameState;
 
 struct EntityAdmin {
@@ -37,18 +37,15 @@ struct EntityAdmin {
 	Scene       scene;
 	Keybinds    keybinds;
 	Controller  controller;
-	UndoManager undoManager;
+	Editor      editor;
 	
-	Camera* editorCamera;
 	Camera* mainCamera;
 	Entity* player;
-	Entity* selectedEntity;
 	
 	std::vector<Entity*> entities;
 	std::vector<Entity*> creationBuffer;
 	std::vector<Entity*> deletionBuffer;
 	
-	//object_pool<Component>* components;
 	//stores the components to be executed in between layers
 	std::vector<ContainerManager<Component*>> freeCompLayers;
 	u32 compIDcount = 0;
@@ -58,13 +55,9 @@ struct EntityAdmin {
 	bool paused;
 	bool pause_command, pause_phys, pause_canvas, pause_world, pause_sound;
 	
-	//timer related
+	//debug stuff
 	bool debugTimes;
 	TIMER_START(t_a);
-	
-	//debug stuff
-	bool find_triangle_neighbors;
-	b32  fast_outline;
 	
 	void Init();
 	void Update();

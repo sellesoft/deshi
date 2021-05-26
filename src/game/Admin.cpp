@@ -25,19 +25,14 @@ void EntityAdmin::Init() {
 #if defined(DESHI_BUILD_PLAY)
 	state = GameState_Play;
 	pause_phys = pause_sound = false;
-	editorCamera = 0;
 #elif defined(DESHI_BUILD_DEBUG)
 	state = GameState_Debug;
 	pause_phys = pause_sound = false;
-	editorCamera = 0;
 #else
 	state = GameState_Editor;
 	pause_phys = pause_sound = true;
 	DengTime->phys_pause = true;
 	DengTime->fixedAccumulator = 0;
-	editorCamera = new Camera(90.f, .01f, 1000.01f, true); //temporary camera creation on admin
-	editorCamera->admin = this;
-	mainCamera = editorCamera;
 #endif
 	
 	//reserve arrays
@@ -54,18 +49,17 @@ void EntityAdmin::Init() {
 	DengRenderer->LoadScene(&scene);
 	keybinds.Init();
 	controller.Init(this);
-	undoManager.Init();
+	editor.Init(this);
+	mainCamera = editor.camera;//TODO(delle) remove this eventually
 	
 	//default values
-	selectedEntity = player = 0;
+	player = 0;
 	skip = false;
 	paused = false;
 	pause_command = pause_canvas = pause_world = false;
 	
 	//debug
-	find_triangle_neighbors = true;
 	debugTimes = true;
-	fast_outline = 0;
 }
 
 void EntityAdmin::Cleanup() {
@@ -82,6 +76,7 @@ void UpdateLayer(ContainerManager<Component*> cl) {
 
 void EntityAdmin::Update() {
 	ImGui::BeginDebugLayer();
+	if(!skip && (state == GameState_Editor || state == GameState_Debug)) editor.Update();
 	if(!skip) controller.Update();
 	if(!skip) mainCamera->Update();
 	
@@ -108,7 +103,6 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
 	
 	//deletion buffer
 	for(Entity* e : deletionBuffer) {
-		if(selectedEntity == e) selectedEntity = 0;
 		for(Component* c : e->components) freeCompLayers[c->layer].remove_from(c->layer_index);
 		for(int i = e->id+1; i < entities.size(); ++i) entities[i]->id -= 1;
 		entities.erase(entities.begin()+e->id);
@@ -208,7 +202,7 @@ void EntityAdmin::DeleteEntity(Entity* e) {
 
 void EntityAdmin::ChangeState(GameState new_state){
 	if(state == new_state) return;
-	if(state >= GameState_LAST) return ERROR("Admin attempted to switch to unhandled gamestate: ", new_state);
+	if(state >= GameState_COUNT) return ERROR("Admin attempted to switch to unhandled gamestate: ", new_state);
 	
 	std::string from, to;
 	switch(state){
@@ -277,8 +271,7 @@ void EntityAdmin::Reset(){
 	entities.clear();
 	
 	for (auto& layer : freeCompLayers) { layer.clear(); }
-	selectedEntity = 0;
-	undoManager.Reset();
+	editor.Reset();
 	scene.Reset();
 	DengRenderer->Reset();
 	DengRenderer->LoadScene(&scene);

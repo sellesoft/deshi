@@ -487,11 +487,11 @@ COMMANDFUNC(time_game){
 }
 
 COMMANDFUNC(undo){
-	admin->undoManager.Undo(); return "";
+	admin->editor.undo_manager.Undo(); return "";
 }
 
 COMMANDFUNC(redo){
-	admin->undoManager.Redo(); return "";
+	admin->editor.undo_manager.Redo(); return "";
 }
 
 COMMANDFUNC(flush) {
@@ -798,16 +798,14 @@ COMMANDFUNC(add_force) {
 		std::cmatch m;
 		for (std::string s : args) {
 			if (std::regex_search(s.c_str(), m, Vec3Regex("force"))) {
-				Physics* p = admin->selectedEntity->GetComponent<Physics>();
-				if (p) {
+				if(Physics* p = admin->editor.selected[0]->GetComponent<Physics>()){
 					p->AddForce(nullptr, Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3])));
 					return "";
-				}
-				else {
-					return "[c:error]selectesd object doesn't have a physics component.[c]";
+				}else{
+					ERROR("Selectesd object doesn't have a physics component");
+					return "";
 				}
 			}
-			
 		}
 	}
 	return "add_force -force=(x,y,z)";
@@ -1119,229 +1117,6 @@ void Console::AddConsoleCommands() {
 	
 }
 
-//TODO(delle,InPh) update entity movement commands to be based on EntityID
-void Console::AddSelectedEntityCommands() {
-	//// translation ////
-	commands["reset_position"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												 if (admin->selectedEntity) {
-													 if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-														 p->acceleration = Vector3::ZERO;
-														 p->velocity = Vector3::ZERO;
-														 p->position = Vector3::ZERO;
-													 }
-												 }
-												 return "";
-											 }, "reset_position", "reset_position <EntityID> [String: xyz]");
-	
-	commands["reset_position_x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (admin->selectedEntity) {
-													   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-														   p->acceleration = Vector3(0, p->acceleration.y, p->acceleration.z);
-														   p->velocity = Vector3(0, p->velocity.y, p->velocity.z);
-														   p->position = Vector3(0, p->position.y, p->position.z);
-													   }
-												   }
-												   return "";
-											   }, "reset_position_x", "temp");
-	
-	commands["reset_position_y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (admin->selectedEntity) {
-													   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-														   p->acceleration = Vector3(p->acceleration.x, 0, p->acceleration.z);
-														   p->velocity = Vector3(p->velocity.x, 0, p->velocity.z);
-														   p->position = Vector3(p->position.x, 0, p->position.z);
-													   }
-												   }
-												   return "";
-											   }, "reset_position_y", "temp");
-	
-	commands["reset_position_z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (admin->selectedEntity) {
-													   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-														   p->acceleration = Vector3(p->acceleration.x, p->acceleration.y, 0);
-														   p->velocity = Vector3(p->velocity.x, p->velocity.y, 0);
-														   p->position = Vector3(p->position.x, p->position.y, 0);
-													   }
-												   }
-												   return "";
-											   }, "reset_position_z", "temp");
-	
-	commands["reset_velocity"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												 if (admin->selectedEntity) {
-													 if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-														 p->acceleration = Vector3::ZERO;
-														 p->velocity = Vector3::ZERO;
-													 }
-												 }
-												 return "";
-											 }, "reset_velocity", "reset_position <EntityID> [String: xyz]");
-	
-	commands["translate_right"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												  if (admin->selectedEntity) {
-													  if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-														  p->AddInput(Vector3::RIGHT);
-													  }
-												  }
-												  return "";
-											  }, "translate_right", "translate_right <EntityID> <amount> [speed]");
-	
-	commands["translate_left"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												 if (admin->selectedEntity) {
-													 if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-														 p->AddInput(Vector3::LEFT);
-													 }
-												 }
-												 return "";
-											 }, "translate_left", "translate_left <EntityID> <amount> [speed]");
-	
-	commands["translate_up"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											   if (admin->selectedEntity) {
-												   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-													   p->AddInput(Vector3::UP);
-												   }
-											   }
-											   return "";
-										   }, "translate_up", "translate_up <EntityID> <amount> [speed]");
-	
-	commands["translate_down"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												 if (admin->selectedEntity) {
-													 if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-														 p->AddInput(Vector3::DOWN);
-													 }
-												 }
-												 return "";
-											 }, "translate_down", "translate_down <EntityID> <amount> [speed]");
-	
-	commands["translate_forward"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													if (admin->selectedEntity) {
-														if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-															p->AddInput(Vector3::FORWARD);
-														}
-													}
-													return "";
-												}, "translate_forward", "translate_forward <EntityID> <amount> [speed]");
-	
-	commands["translate_backward"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-													 if (admin->selectedEntity) {
-														 if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-															 p->AddInput(Vector3::BACK);
-														 }
-													 }
-													 return "";
-												 }, "translate_backward", "translate_backward <EntityID> <amount> [speed]");
-	
-	//// rotation ////
-	
-	commands["reset_rotation"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												 if (admin->selectedEntity) {
-													 if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-														 p->rotAcceleration = Vector3::ZERO;
-														 p->rotVelocity = Vector3::ZERO;
-														 p->rotation = Vector3::ZERO;
-													 }
-												 }
-												 return "";
-											 }, "reset_rotation", "reset_rotation <EntityID> [String: xyz]");
-	
-	commands["reset_rotation_x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (admin->selectedEntity) {
-													   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-														   p->rotAcceleration = Vector3(0, p->rotAcceleration.y, p->rotAcceleration.z);
-														   p->rotVelocity = Vector3(0, p->rotVelocity.y, p->rotVelocity.z);
-														   p->rotation = Vector3(0, p->rotation.y, p->rotation.z);
-													   }
-												   }
-												   return "";
-											   }, "reset_rotation_x", "temp");
-	
-	commands["reset_rotation_y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (admin->selectedEntity) {
-													   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-														   p->rotAcceleration = Vector3(p->rotAcceleration.x, 0, p->rotAcceleration.z);
-														   p->rotVelocity = Vector3(p->rotVelocity.x, 0, p->rotVelocity.z);
-														   p->rotation = Vector3(p->rotation.x, 0, p->rotation.z);
-													   }
-												   }
-												   return "";
-											   }, "reset_rotation_y", "temp");
-	
-	commands["reset_rotation_z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-												   if (admin->selectedEntity) {
-													   if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-														   p->rotAcceleration = Vector3(p->rotAcceleration.x, p->rotAcceleration.y, 0);
-														   p->rotVelocity = Vector3(p->rotVelocity.x, p->rotVelocity.y, 0);
-														   p->rotation = Vector3(p->rotation.x, p->rotation.y, 0);
-													   }
-												   }
-												   return "";
-											   }, "reset_rotation_z", "temp");
-	
-	commands["reset_rotation_velocity"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-														  if (admin->selectedEntity) {
-															  if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-																  p->rotAcceleration = Vector3::ZERO;
-																  p->rotVelocity = Vector3::ZERO;
-															  }
-														  }
-														  return "";
-													  }, "reset_rotation_velocity", "reset_rotation_velocity <EntityID> [String: xyz]");
-	
-	commands["rotate_+x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											if (admin->selectedEntity) {
-												if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-													p->rotVelocity += Vector3(5, 0, 0);
-												}
-											}
-											return "";
-										}, "rotate_+x", "rotate_+x <EntityID> <amount> [speed]");
-	
-	commands["rotate_-x"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											if (admin->selectedEntity) {
-												if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-													p->rotVelocity += Vector3(-5, 0, 0);
-												}
-											}
-											return "";
-										}, "rotate_-x", "rotate_-x <EntityID> <amount> [speed]");
-	
-	commands["rotate_+y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											if (admin->selectedEntity) {
-												if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-													p->rotVelocity += Vector3(0, 5, 0);
-												}
-											}
-											return "";
-										}, "rotate_+y", "rotate_+y <EntityID> <amount> [speed]");
-	
-	commands["rotate_-y"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											if (admin->selectedEntity) {
-												if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-													p->rotVelocity += Vector3(0, -5, 0);
-												}
-											}
-											return "";
-										}, "rotate_-y", "rotate_-y <EntityID> <amount> [speed]");
-	
-	commands["rotate_+z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											if (admin->selectedEntity) {
-												if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-													p->rotVelocity += Vector3(0, 0, 5);
-												}
-											}
-											return "";
-										}, "rotate_+z", "rotate_+z <EntityID> <amount> [speed]");
-	
-	commands["rotate_-z"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											if (admin->selectedEntity) {
-												if (Physics* p = admin->selectedEntity->GetComponent<Physics>()) {
-													p->rotVelocity += Vector3(0, 0, -5);
-												}
-											}
-											return "";
-										}, "rotate_-z", "rotate_-z <EntityID> <amount> [speed]");
-	
-}
-
 void Console::AddWindowCommands() {
 	NEWCOMMAND("quit", "exits the application", {
 				   DengWindow->Close();
@@ -1477,8 +1252,7 @@ void Console::Init() {
 	AddLog("\"listc\" for a list of commands\n\"help {command}\" to view a commands help page");
 	AddLog("see console_release_notes.txt for version information");
 	AddLog("\n[c:dyellow]Console TODOS:[c]");
-	AddLog(
-		   "> implement argument completion for commands\n"
+	AddLog("> implement argument completion for commands\n"
 		   "> implement arguments for commands that need them\n"
 		   "> add help to commands that don't have a descriptive help yet\n"
 		   "> fix tabcompletion when trying to complete the first word\n"
@@ -1489,7 +1263,6 @@ void Console::Init() {
 	AddRenderCommands();
 	AddCameraCommands();
 	AddConsoleCommands();
-	AddSelectedEntityCommands();
 	AddWindowCommands();
 	AddAliases();
 }

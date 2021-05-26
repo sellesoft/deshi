@@ -24,20 +24,20 @@ ____and maybe look into setting it up to be more streamlined somehow
 Minor Ungrouped TODOs
 ---------------------
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
-__the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
+____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
 ____to update it's canvas system.
 think of a way to implement different events being sent between comps as right now it's only one
 ____is this necessary though? we can define these events at run time, but the connections must be made through UI
 ____so maybe have a UI option that allows the comps update function to handle it and only connects them.
-____actually having an option for anything other than collider is kind of useless soooo maybe get rid of event on every component or just only let u choose that event on colliders
+____actually having an option for anything other than collider is kind of useless soooo maybe 
+____get rid of event on every component or just only let u choose that event on colliders
 change undo's to never use pointers and have undos that can act like linked lists to chain them
 figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
 settings file(s) [keybinds, video, audio, etc]
 ____create a hot-loadable global vars file
-add a general logging system with log levels and locations
+add a general logging system with log levels and locations (for filtering)
 add a component_state command to print state of a component (add str methods to all components/systems)
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
-try to make our own tuple cause i dont like how std's works :)
 add device info command (graphics card, sound device, monitor res, etc)
 pool/arena components and entities for better performance
 replace/remove external dependencies/includes were possible (glm, tinyobj)
@@ -51,7 +51,7 @@ move common things in the Component contructors to the parent constructor
 Render TODOs
 ------------
 get debugPrintf extension to work
-add vertex editing
+add vertex editing interface functions
 ability to do transparency in a fragment shader eg. we can do outColor = vec4(1,1,1,0.5)
 ___this would be for experimenting with volumetrics, making a window shader w/o need for textures, etc.
 debug normals
@@ -67,10 +67,8 @@ add lighting and shadows
 add 2D shader and interface functions
 add face normal and tangents to vertex buffer
 fix texture transparency
-ability to do transparency in a fragment shader eg. we can do outColor = vec4(1,1,1,0.5)
-___this would be for experimenting with volumetrics, making a window shader w/o need for textures, etc.
 add RenderSettings loading and usage
-check those vulkan-tutorial links for the suggestions
+check those vulkan-tutorial links for the suggestions and optimizations
 add instancing
 look into adding volk for faster loading/function calls
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
@@ -91,13 +89,11 @@ typing numbers while grabbing/rotating/scaling for precise manipulation (like in
 adding components
 manipulating component/entity data through UI
 changing materials/textures through UI
-highlighing selected object (maybe AABB for now but figure out precise outlining later)
 implement grabbing/rotating/scaling with a visual tool thing (like in Unreal)
 world axis in top right (like we used to have)
 orthographic side views
 (maybe) multiple viewports
 add showing axis lines through object when axis grabbing once we have lines in Vulkan
-show all textures/shaders on an object instead of just the first one
 keybind to move camera to object (like Blender's NPMINUS)
 implement orthographic grabbing 
 
@@ -137,7 +133,7 @@ UI TODOs
 --------
 look into easier hover checking and input intercepting for imgui
 ____https://github.com/ocornut/imgui/issues/52
-2D shader
+2D shader (and handle ImGui ourselves)
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
 renaming entities from entity list
@@ -149,7 +145,7 @@ Math TODOs
 ----------
 add functions and members similar to what glsl/glm has where you can do stuff like 
 ____v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
-________you probably just need to add a Vector2/3 for each permutation of each vector
+____you probably just need to add a Vector2/3 for each permutation of each vector
 cleanup math library (remove redundant/old things, make functions more consistent, etc.)
 add quaternions and converions between them and other linear algebra primitives
 replace glm :)
@@ -171,17 +167,19 @@ sometimes MeshComp is assigned a nonexistant mesh
 ____temp fix by checking if minimized, but need to find root cause
 program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
 ____read this to try to fix: http://www.debuginfo.com/tips/userbpntdll.html
+selecting an entity only works on planes with vertical normals
+some UI can be clicked thru and select the entity
 
 */
 
 #include "core.h"
 #include "game/admin.h"
 
-Time* g_time;
-Window* g_window;
-Input* g_input;
-Console* g_console;
-Renderer* g_renderer;
+Time*        g_time;
+Window*      g_window;
+Input*       g_input;
+Console*     g_console;
+Renderer*    g_renderer;
 EntityAdmin* g_admin;
 
 struct DeshiEngine {
@@ -200,7 +198,6 @@ struct DeshiEngine {
 	}
 	
 	void Start() {
-		
 		//enforce deshi file system
 		deshi::enforceDirectories();
 		
@@ -240,10 +237,10 @@ struct DeshiEngine {
 		TIMER_RESET(t_d); time.Update();            time.timeTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); window.Update();          time.windowTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); input.Update();           time.inputTime = TIMER_END(t_d);
-		imgui.NewFrame();                                                            //place imgui calls after this
+		imgui.NewFrame();                                                              //place imgui calls after this
 		TIMER_RESET(t_d); admin.Update();           time.adminTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); console.Update();         time.consoleTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); renderer.Render();        time.renderTime = TIMER_END(t_d);       //place imgui calls before this
+		TIMER_RESET(t_d); renderer.Render();        time.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time.adminTime += TIMER_END(t_d);
 		
 		time.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);

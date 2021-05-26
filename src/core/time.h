@@ -49,7 +49,7 @@ extern Time* g_time;
 inline void Time::Init(float fixedUpdatesPerSecond){
 	fixedTimeStep    = fixedUpdatesPerSecond;
 	fixedDeltaTime   = 1.f / fixedUpdatesPerSecond;
-
+	
 	tp1 = std::chrono::system_clock::now();
 	tp2 = std::chrono::system_clock::now();
 }
@@ -167,6 +167,7 @@ inline std::string Time::FormatTickTime(std::string fmt){
 	out.shrink_to_fit(); return out;
 }
 
+//TODO(delle,Cl) move this to admin
 //{P}:physics layer,  {C}:canvas layer,  {W}:world layer,  {S}:send layer
 //{p}:physics system, {c}:canvas system, {w}:world system, {s}:send system, 
 inline std::string Time::FormatAdminTime(std::string fmt){

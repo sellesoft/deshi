@@ -131,6 +131,7 @@ struct Mesh {
 	
 	//filename: filename and extension, name: loaded mesh name, transform: pos,rot,scale of mesh
 	static Mesh* CreateMeshFromOBJ(std::string filename);
+	static Mesh* CreateMeshFromOBJ(std::string filename, Shader shader, Color color);
 	static Mesh* CreateBox(Vector3 halfDims, Color color = Color::WHITE);
 	static Mesh* CreatePlanarBox(Vector3 halfDims, Color color = Color::WHITE);
 	static Mesh* CreatePlanarBox(Vector3 halfDims, Texture texture);
