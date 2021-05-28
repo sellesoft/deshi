@@ -167,7 +167,6 @@ sometimes MeshComp is assigned a nonexistant mesh
 ____temp fix by checking if minimized, but need to find root cause
 program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
 ____read this to try to fix: http://www.debuginfo.com/tips/userbpntdll.html
-selecting an entity only works on planes with vertical normals
 some UI can be clicked thru and select the entity
 
 */

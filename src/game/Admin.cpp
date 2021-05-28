@@ -80,8 +80,10 @@ void EntityAdmin::Update() {
 	if(!skip) controller.Update();
 	if(!skip) mainCamera->Update();
 	
+	//NOTE sushi: we need to maybe make a pause_phys_layer thing, because things unrelated to physics in that layer arent getting updated in editor. eg. lights
+	//			  or we can just have different update blocks for different game states
 	TIMER_RESET(t_a); 
-	if (!skip && !pause_phys && !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_Physics]); }
+	if (!skip && /*!pause_phys &&*/ !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_Physics]); }
 	DengTime->physLyrTime =   TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_phys && !paused)  { physics.Update(); }
 	DengTime->physSysTime =   TIMER_END(t_a); TIMER_RESET(t_a);
@@ -133,7 +135,7 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
 	for (int i = 0; i < 10; i++) {
 		if (i < scene.lights.size()) {
 			Vector3 p = scene.lights[i]->position;
-			DengRenderer->lights[i] = glm::vec4(p.x, p.y, p.z,
+				DengRenderer->lights[i] = glm::vec4(p.x, p.y, p.z,
 												(scene.lights[i]->active) ? scene.lights[i]->brightness : 0);
 		}
 		else {

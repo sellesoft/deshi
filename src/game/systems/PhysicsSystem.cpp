@@ -69,16 +69,19 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	bool contactStationary = false;
 	for (auto c : t.physics->contacts) {
 		if (c.second == ContactMoving) {
-			if (t.physics->velocity.mag() > 0.12) {
+			if (t.physics->velocity.mag() > 0.01) {
 
 				for (auto& m : t.physics->manifolds) {
 					Vector3 norm = m.second.norm.normalized();
 					Vector3 vPerpNorm = t.physics->velocity - t.physics->velocity.dot(norm) * norm;
 
-					t.physics->forces.push_back(-vPerpNorm.normalized() * t.physics->kineticFricCoef * t.physics->mass * -9.81);
+					Vector3 weight = Vector3::DOWN * t.physics->mass * ps->gravity;
+					float primedweight = weight.dot(norm);
+					PRINTLN(primedweight);
+					t.physics->forces.push_back(-vPerpNorm.normalized() * t.physics->kineticFricCoef * primedweight);
 				}
 
-				t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
+				//t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
 			}
 			else
 				t.physics->velocity = Vector3::ZERO;
@@ -168,10 +171,10 @@ Matrix4 LocalToWorldInertiaTensor(Physics* physics, Matrix3 inertiaTensor) {
 }
 
 bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABBCollider* obj2Col) {
-	vec3 min1 = obj1->position - (obj1Col->halfDims * EntityAt(obj1->entityID)->transform.scale);
-	vec3 max1 = obj1->position + (obj1Col->halfDims * EntityAt(obj1->entityID)->transform.scale);
-	vec3 min2 = obj2->position - (obj2Col->halfDims * EntityAt(obj2->entityID)->transform.scale);
-	vec3 max2 = obj2->position + (obj2Col->halfDims * EntityAt(obj2->entityID)->transform.scale);
+	vec3 min1 = obj1->position - (obj1Col->halfDims * obj1->entity->transform.scale);
+	vec3 max1 = obj1->position + (obj1Col->halfDims * obj1->entity->transform.scale);
+	vec3 min2 = obj2->position - (obj2Col->halfDims * obj2->entity->transform.scale);
+	vec3 max2 = obj2->position + (obj2Col->halfDims * obj2->entity->transform.scale);
 	
 	if (//check if overlapping
 		(min1.x <= max2.x && max1.x >= min2.x) &&
@@ -250,7 +253,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			
 
 			//setting contact state depending on movement
-			if (fabs(obj1->velocity.rounded(2).normalized().dot(norm)) != 1) {
+			if (fabs(obj1->velocity.normalized().dot(norm)) != 1) {
 				if (!obj1->isStatic) {
 					obj1->contacts[obj2] = ContactMoving;
 				}
@@ -259,7 +262,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			else {
 				obj1->contacts[obj2] = ContactStationary;
 			}
-			if (fabs(obj2->velocity.rounded(2).normalized().dot(norm)) != 1) {
+			if (fabs(obj2->velocity.normalized().dot(norm)) != 1) {
 				if (!obj2->isStatic) 
 					obj2->contacts[obj1] = ContactMoving;
 				else obj2->contacts[obj1] = ContactStationary;
@@ -270,7 +273,10 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		}
 
 		//all of this probably isnt nececssary but i'm trying to get it to wo rkr kr k r
-		if (g_admin->player == obj1->entity) {
+		//the player checking is so i can point the normal in the proper direction when trying 
+		//to figure out if the player is on the floor or a wall/ceiling
+		//TODO(sushi, PhCl) clean this up
+		if (g_admin->player == obj1->entity || g_admin->player == obj2->entity) {
 			Vector3 pto = obj2->position - obj1->position;
 			if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
 			else                                { m1.player = 0; m2.player = 1; }
@@ -278,11 +284,15 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			obj1->manifolds[obj2] = m1;
 			obj2->manifolds[obj1] = m2;
 		}
-		else if (g_admin->player == obj2->entity) {
-			Vector3 pto = obj2->position - obj1->position;
-			if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
-			else { m1.player = 0; m2.player = 1; }
-
+		//else if (g_admin->player == obj2->entity) {
+		//	Vector3 pto = obj2->position - obj1->position;
+		//	if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
+		//	else { m1.player = 0; m2.player = 1; }
+		//
+		//	obj1->manifolds[obj2] = m2;
+		//	obj2->manifolds[obj1] = m1;
+		//}
+		else {
 			obj1->manifolds[obj2] = m2;
 			obj2->manifolds[obj1] = m1;
 		}
