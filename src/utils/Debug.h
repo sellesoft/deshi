@@ -6,6 +6,7 @@
 
 #include <string>
 #include <iostream>
+#include <unordered_map>
 
 //std::cout short form
 #define PRINTLN(x) std::cout << x << std::endl;
@@ -33,7 +34,7 @@ std::terminate(); \
 #define DEBUG_BREAK (void)0
 #endif
 
-#define TOSTRING(...) Debug::ToString(__VA_ARGS__)
+#define TOSTRING(...) ToString(__VA_ARGS__)
 
 //makes a random number only once and then always returns that same number
 //if called by the same object
@@ -52,31 +53,46 @@ struct has_str_method {
 	static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-namespace Debug {
 	
-	//// Primarily for outputting to ingame console, but can return a string from any object that is a c++ number
-	//// or any of our classes (or yours :) ) that has a .str() member
+//// Primarily for outputting to ingame console, but can return a string from any object that is a c++ number
+//// or any of our classes (or yours :) ) that has a .str() member
 	
-	//returns the string for in engine printing
-	static std::string ToString(const char* str) { return std::string(str); }
-	static std::string ToString(char* str)       { return std::string(str); }
+//returns the string for in engine printing
+static std::string ToString(const char* str) { return std::string(str); }
+static std::string ToString(char* str)       { return std::string(str); }
 	
-	static std::string ToString(const std::string& str) { return str; }
+static std::string ToString(const std::string& str) { return str; }
 	
-	template<class T, typename std::enable_if<!has_str_method<T>::value, bool>::type = true>
-		static std::string ToString(T t) { return ToString(std::to_string(t)); }
+template<class T, typename std::enable_if<!has_str_method<T>::value, bool>::type = true>
+	static std::string ToString(T t) { return ToString(std::to_string(t)); }
 	
-	template<class T, typename std::enable_if<has_str_method<T>::value, bool>::type = true>
-		static std::string ToString(T t) { return ToString(t.str()); }
+template<class T, typename std::enable_if<has_str_method<T>::value, bool>::type = true>
+	static std::string ToString(T t) { return ToString(t.str()); }
 	
-	template<class... T>
-		static std::string ToString(T... args) { 
-		std::string strings[] = { "", (ToString(std::forward<T>(args))) ... };
-		std::string str = "";
-		for (std::string s : strings) { str += s; }
+template<class... T>
+	static std::string ToString(T... args) { 
+	std::string strings[] = { "", (ToString(std::forward<T>(args))) ... };
+	std::string str = "";
+	for (std::string s : strings) { str += s; }
 		
-		return str;
-	}
+	return str;
+}
+
+
+
+
+struct Vector3;
+struct Color;
+
+//GPU debug mesh handler that could also end up being used for more stuff later, so i'll keep it named Debug
+struct DebugMeshHandler {
+	std::unordered_map<void*, u32> meshes;
+
+	u32 frame = 0;
+
+	void DrawLine(Vector3 v1, Vector3 v2, void* unique, Color color);
+
 };
+
 
 #endif //DESHI_DEBUG_H

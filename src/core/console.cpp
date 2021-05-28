@@ -783,6 +783,7 @@ COMMANDFUNC(add_player) {
 								 Vector3::ZERO, Vector3::ZERO, elasticity, mass, staticc);
 		AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 		Movement* mov = new Movement(p);
+		mov->camera = admin->mainCamera;
 		Player* pl = new Player(mov);
 		admin->player = admin->CreateEntityNow({ mc, p, s, col, mov, pl },
 											   name, Transform(position, rotation, scale));

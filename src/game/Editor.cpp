@@ -26,10 +26,23 @@ Entity* Editor::SelectEntityRaycast(){
 	vec3 pos = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions);
 	RenderedEdge3D* ray = new RenderedEdge3D(pos, camera->position);
 
+	//NOTE sushi: this sort of works, but fails sometimes since the position of a larger obj
+	//			  can be closer than a smaller one even though the small one appears in front
+	//			  this can be mediated by sorting triangles in
+	std::vector<Entity*> sorted_ents = admin->entities;
+	std::sort(sorted_ents.begin(), sorted_ents.end(),
+		[&](Entity* e1, Entity* e2) {
+			return (e1->transform.position - camera->position).mag() < (e2->transform.position - camera->position).mag();
+		});
+
+	u32 closeindex = -1;
+	f32 mint = -INFINITY;
+
 	vec3 p0, p1, p2, normal, intersect;
 	mat4 rot, transform;
 	f32  t;
-	for(Entity* e : admin->entities) {
+	int  index = 0;
+	for(Entity* e : sorted_ents) {
 		if(MeshComp* mc = e->GetComponent<MeshComp>()) {
 			if(mc->mesh_visible) {
 				Mesh* m = mc->mesh;
@@ -40,7 +53,7 @@ Entity* Editor::SelectEntityRaycast(){
 						p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
 						p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
 						normal = b.vertexArray[b.indexArray[i + 0]].normal * transform;
-
+						
 						//NOTE sushi: our normal here is now based on whatever the vertices normal is when we load the model
 						//			  so if we end up loading models and combining vertices again, this will break
 						
@@ -50,14 +63,35 @@ Entity* Editor::SelectEntityRaycast(){
 						if(((p1 - p0) * rot).dot(p0 - intersect) < 0 &&
 						   ((p2 - p1) * rot).dot(p1 - intersect) < 0 &&
 						   ((p0 - p2) * rot).dot(p2 - intersect) < 0 && t < 0) {
-							return e;
+							DeshDebugLine(camera->position, intersect);
+							DeshDebugLineCol(p0 + (p1 - p0) * rot, p0, Color::RED);
+							DeshDebugLineCol(p1 + (p2 - p1) * rot, p1, Color::RED);
+							DeshDebugLineCol(p2 + (p0 - p2) * rot, p2, Color::RED);
+							DeshDebugLineCol(p0, intersect, Color::BLUE);
+							DeshDebugLineCol(p1, intersect, Color::BLUE);
+							DeshDebugLineCol(p2, intersect, Color::BLUE);
+							
+							
+							DeshDebugTri(p0, p1, p2);
+
+							if (t > mint) {
+								closeindex = index;
+								mint = t;
+								PRINTLN(mint);
+								goto entend;
+							}
+						
 						}
 					}
 				}
 			}
 		}
+		entend:
+		index++;
 	}
-	return 0;
+
+	if (closeindex != -1) return sorted_ents[closeindex];
+	else return 0;
 }
 
 void Editor::TranslateEntity(Entity* e, TransformationAxis axis){
@@ -79,8 +113,6 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 			static bool zaxis = false;
 			
 			static bool initialgrab = true;
-			
-			static bool physgrab = false;
 			
 			static Vector3 initialObjPos;
 			static float initialdist; 
@@ -106,7 +138,6 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				sel->transform.position = initialObjPos;
 				initialgrab = true; grabbingObj = false;
 				admin->controller.cameraLocked= false;
-				physgrab = false;
 				return;
 			}
 			if ((xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
@@ -119,7 +150,6 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				xaxis = false; yaxis = false; zaxis = false;
 				initialgrab = true; grabbingObj = false;  
 				admin->controller.cameraLocked = false;
-				physgrab = false;
 				if(initialObjPos != sel->transform.position){
 					um->AddUndoTranslate(&sel->transform, &initialObjPos, &sel->transform.position);
 				}
@@ -128,8 +158,6 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 			
 			if (DengInput->KeyPressed(MouseButton::SCROLLDOWN)) initialdist -= 1;
 			if (DengInput->KeyPressed(MouseButton::SCROLLUP))   initialdist += 1;
-			if (DengInput->KeyPressed(Key::P)) physgrab = !physgrab;
-			
 			
 			//set mouse to obj position on screen and save that position
 			if (initialgrab) {
@@ -223,9 +251,6 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 					p->position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
 				}
 				
-			}
-			if (Physics* p = sel->GetComponent<Physics>()) {
-				p->velocity = (sel->transform.position - lastFramePos) / DengTime->deltaTime;
 			}
 			lastFramePos = sel->transform.position;
 		} //if(DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj)

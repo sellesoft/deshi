@@ -174,12 +174,14 @@ some UI can be clicked thru and select the entity
 #include "core.h"
 #include "game/admin.h"
 
-Time*        g_time;
-Window*      g_window;
-Input*       g_input;
-Console*     g_console;
-Renderer*    g_renderer;
+Time*		 g_time;
+Window*		 g_window;
+Input*		 g_input;
+Console*	 g_console;
+Renderer*	 g_renderer;
 EntityAdmin* g_admin;
+Debug*       g_debug;
+
 
 struct DeshiEngine {
 	Time time;
@@ -189,6 +191,7 @@ struct DeshiEngine {
 	Console console;
 	Renderer renderer;
 	deshiImGui imgui;
+	Debug debug;
 	TIMER_START(t_d); TIMER_START(t_f);
 	
 	//TODO(delle,Fs) setup loading a config file to a config struct
@@ -211,7 +214,8 @@ struct DeshiEngine {
 		g_console = &console;
 		renderer.Init(&time, &input, &window, &imgui); //inits imgui as well
 		g_renderer = &renderer;
-		
+		g_debug = &debug;
+
 		//init game admin
 		admin.Init();
 		g_admin = &admin;
@@ -241,7 +245,7 @@ struct DeshiEngine {
 		TIMER_RESET(t_d); console.Update();         time.consoleTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); renderer.Render();        time.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time.adminTime += TIMER_END(t_d);
-		
+		g_debug->frame++;
 		time.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 		return true;
 	}

@@ -218,6 +218,7 @@ void EntityAdmin::ChangeState(GameState new_state){
 			}break;
 			case GameState_Editor:{ to = "EDITOR";
 				pause_phys = pause_sound = true;
+				controller.playermove = nullptr;
 				SaveDESH("auto.desh");
 				LoadDESH("temp.desh");
 				if(player) player->GetComponent<MeshComp>()->Visible(true);
