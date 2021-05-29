@@ -3296,14 +3296,16 @@ BuildCommandBuffers() {
 		VkDeviceSize offsets[1] = { 0 };
 		
 		//draw mesh brushes
-		for (MeshBrushVk& mesh : meshBrushes) {
-			if (mesh.visible) {
-				vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &mesh.vertexBuffer, offsets);
-				vkCmdBindIndexBuffer(frames[i].commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-				vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mesh.matrix);
-				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.WIREFRAME_DEPTH);
-				vkCmdDrawIndexed(frames[i].commandBuffer, mesh.indices.size(), 1, 0, 0, 0);
-				stats.drawnIndices += mesh.indices.size();
+		if (!generatingWorldGrid) {
+			for (MeshBrushVk& mesh : meshBrushes) {
+				if (mesh.visible) {
+					vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &mesh.vertexBuffer, offsets);
+					vkCmdBindIndexBuffer(frames[i].commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+					vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mesh.matrix);
+					vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.WIREFRAME_DEPTH);
+					vkCmdDrawIndexed(frames[i].commandBuffer, mesh.indices.size(), 1, 0, 0, 0);
+					stats.drawnIndices += mesh.indices.size();
+				}
 			}
 		}
 		//draw meshes

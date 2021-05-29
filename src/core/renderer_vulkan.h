@@ -211,7 +211,8 @@ struct Renderer{
 	//TODO(sushi, Re) implement SSBOs so we can have a dynamically sized light array
 	//and other various dynamically sized things for things and such
 	glm::vec4 lights[10]{ glm::vec4(0,0,0,-1) };
-	
+	bool generatingWorldGrid = false; //this area is my random var test area now :)
+
 	//////////////////////////
 	//// render interface ////
 	//////////////////////////

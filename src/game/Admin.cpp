@@ -97,11 +97,13 @@ void EntityAdmin::Update() {
 	DengTime->sndSysTime =    TIMER_END(t_a);
 	ImGui::EndDebugLayer();
 
-	//for (int i = 0; i < 10; i++) {
-	//	DeshDebugLines(i, 
-	//		Vector3(10 * sin(DengTotalTime), 0, 10 * cos(DengTotalTime + i * M_PI)), 
-	//		Vector3(0, 10 * sin(DengTotalTime + i * M_PI), 10 * cos(DengTotalTime)), 5);
-	//}
+	for (int i = 0; i < 10; i++) {
+		if (fmod(DengTotalTime, 2) == 0) {
+			DebugLines(i,
+				Vector3(10 * sin(DengTotalTime), 0, 10 * cos(DengTotalTime + i * M_PI)),
+				Vector3(0, 10 * sin(DengTotalTime + i * M_PI), 10 * cos(DengTotalTime)), 5);
+		}
+	}
 
 }
 

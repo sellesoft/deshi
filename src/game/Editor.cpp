@@ -18,6 +18,7 @@
 #include "../geometry/Edge.h"
 
 #include <iomanip> //std::put_time
+#include <thread>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// inputs
@@ -2243,7 +2244,7 @@ void Editor::DebugLayer() {
 	
 	
 	//psuedo grid
-	int lines = 100;
+	int lines = 0;
 	for (int i = 0; i < lines * 2; i++) {
 		Vector3 cpos = c->position;
 		Vector3 v1 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines), c->viewMat).ToVector3();
@@ -2347,6 +2348,41 @@ void Editor::DebugLayer() {
 	ImGui::PopStyleColor();
 	ImGui::End();
 }
+
+
+void Editor::WorldGrid(Vector3 cpos) {
+	int lines = 30; //this should be 100, imgui can handle it, but Vulkan struggles?
+	cpos = Vector3::ZERO;
+		
+	for (int i = 0; i < lines * 2 + 1; i++) {
+		Vector3 v1 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines);
+		Vector3 v2 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + lines);
+		Vector3 v3 = Vector3(floor(cpos.x) + -lines, 0, floor(cpos.z) + -lines + i);
+		Vector3 v4 = Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i);
+		//
+		//DebugLinesStatic(i, v3, v4, -1);
+
+		bool l1flag = false;
+		bool l2flag = false;
+
+		if (floor(cpos.x) - lines + i == 0) {
+			l1flag = true;
+		}
+		if (floor(cpos.z) - lines + i == 0) {
+			l2flag = true;
+		}
+
+		if (l1flag) { DebugLinesCol(i, v1, v2, -1, Color::BLUE); }
+		else { DebugLinesCol(i, v1, v2, -1, Color(50, 50, 50, 50)) };
+
+		if (l2flag) { DebugLinesCol(i, v3, v4, -1, Color::RED); }
+		else { DebugLinesCol(i, v3, v4, -1, Color(50, 50, 50, 50)) };
+
+
+	}
+		
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// editor struct
@@ -2455,19 +2491,31 @@ void Editor::Update(){
 	
 	WinHovFlag = 0;
 	//TODO(delle,Cl) program crashes somewhere in DebugTools() if minimized
-	if(!DengWindow->minimized){
+	if (!DengWindow->minimized) {
 		if (showDebugLayer) DebugLayer();
 		if (showTimes)      DrawTimes();
 		if (showDebugTools) DebugTools();
 		if (showDebugBar)   DebugBar();
 		if (showMenuBar)    MenuBar();
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));{
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1)); {
 			if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
 		}ImGui::PopStyleColor();
-		
+
 		if (!showMenuBar)    menubarheight = 0;
 		if (!showDebugBar)   debugbarheight = 0;
 		if (!showDebugTools) debugtoolswidth = 0;
+
+		Vector3 cpos = camera->position;
+		static Vector3 lastcpos = camera->position;
+		static bool first = true;
+		if ((lastcpos - cpos).mag() > 10000 || first) {
+			//TODO(sushi, Op) look into if we can some how load/change things on the GPU in a different thread 
+			//std::thread worldgrid(WorldGrid, cpos);
+			WorldGrid(cpos);
+			//worldgrid.detach();
+			lastcpos = camera->position;
+			first = false;
+		}
 	}
 	DengConsole->IMGUI_MOUSE_CAPTURE = (ConsoleHovFlag || WinHovFlag) ? true : false;
 	

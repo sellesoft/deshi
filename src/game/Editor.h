@@ -51,6 +51,7 @@ struct Editor{
 	void DebugBar();
 	void DebugTools();
 	void DrawTimes();
+	void WorldGrid(Vector3 cpos);
 };
 
 namespace ImGui {

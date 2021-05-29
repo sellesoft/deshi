@@ -90,11 +90,13 @@ struct MeshInfo {
 	b32 calledThisFrame;
 	b32 clearNextFrame;
 	b32 wasInvis;
+	Vector3* last[2];
+
 };
 
 //GPU debug mesh handler that could also end up being used for more stuff later, so i'll keep it named Debug
 struct Debug {
-	std::unordered_map<u32, MeshInfo> meshes;
+	std::unordered_map<int, MeshInfo> meshes;
 	
 	int miter = 0;
 
