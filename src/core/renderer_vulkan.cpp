@@ -305,10 +305,20 @@ CreateDebugLine(Vector3 start, Vector3 end, Color color, bool visible){
 	mesh.vertexCount = 2;
 	mesh.indexCount = 3;
 	mesh.batchCount = 1;
-	u32 id = LoadBaseMesh(&mesh, visible);
-	materials[meshes[id].primitives[0].materialIndex].pipeline = pipelines.WIREFRAME_DEPTH;
-	materials[meshes[id].primitives[0].materialIndex].shader = 4;
+	u32 id = CreateMeshBrush(&mesh, Matrix4::TransformationMatrix(Vector3::ZERO, Vector3::ZERO, Vector3::ONE));
+	//materials[mesh[id].primitives[0].materialIndex].pipeline = pipelines.WIREFRAME_DEPTH;
+	//materials[mesh[id].primitives[0].materialIndex].shader = 4;
 	return id;
+}
+
+void Renderer::
+UpdateDebugLine(u32 id, Vector3 start, Vector3 end, Color color) {
+	meshBrushes[id].vertices[0].pos = glm::make_vec3(&start.x);
+	meshBrushes[id].vertices[1].pos = glm::make_vec3(&end.x);
+	meshBrushes[id].vertices[0].color = glm::make_vec3(&color.r);
+	meshBrushes[id].vertices[1].color = glm::make_vec3(&color.r);
+	UpdateMeshBrushBuffers(id);
+
 }
 
 u32 Renderer::
@@ -683,6 +693,19 @@ UpdateMeshVisibility(u32 meshID, bool visible){
 	}else if(meshID < meshes.size()){
 		meshes[meshID].visible = visible;
 	}else{
+		ERROR_LOC("There is no mesh with id: ", meshID);
+	}
+}
+
+void Renderer::
+UpdateMeshBrushVisibility(u32 meshID, bool visible) {
+	if (meshID == -1) {
+		for (auto& mesh : meshBrushes) { mesh.visible = visible; }
+	}
+	else if (meshID < meshBrushes.size()) {
+		meshBrushes[meshID].visible = visible;
+	}
+	else {
 		ERROR_LOC("There is no mesh with id: ", meshID);
 	}
 }
@@ -3273,15 +3296,16 @@ BuildCommandBuffers() {
 		VkDeviceSize offsets[1] = { 0 };
 		
 		//draw mesh brushes
-		for(MeshBrushVk& mesh : meshBrushes){
-			vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &mesh.vertexBuffer, offsets);
-			vkCmdBindIndexBuffer(frames[i].commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-			vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mesh.matrix);
-			vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.COLLIDER);
-			vkCmdDrawIndexed(frames[i].commandBuffer, mesh.indices.size(), 1, 0, 0, 0);
-			stats.drawnIndices += mesh.indices.size();
+		for (MeshBrushVk& mesh : meshBrushes) {
+			if (mesh.visible) {
+				vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &mesh.vertexBuffer, offsets);
+				vkCmdBindIndexBuffer(frames[i].commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mesh.matrix);
+				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.WIREFRAME_DEPTH);
+				vkCmdDrawIndexed(frames[i].commandBuffer, mesh.indices.size(), 1, 0, 0, 0);
+				stats.drawnIndices += mesh.indices.size();
+			}
 		}
-		
 		//draw meshes
 		vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &vertices.buffer, offsets);
 		vkCmdBindIndexBuffer(frames[i].commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);

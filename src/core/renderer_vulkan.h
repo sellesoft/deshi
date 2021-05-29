@@ -150,6 +150,7 @@ struct MeshVk{
 struct MeshBrushVk{
 	u32  id = -1;
 	char name[64];
+	b32 visible = true;
 	glm::mat4 matrix = glm::mat4(1.f);
 	std::vector<VertexVk> vertices;
 	std::vector<u32>      indices;
@@ -258,6 +259,7 @@ struct Renderer{
 	void TransformMeshMatrix(u32 meshID, Matrix4 transform);
 	void UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID);
 	void UpdateMeshVisibility(u32 meshID, bool visible);
+	void UpdateMeshBrushVisibility(u32 meshID, bool visible);
 	void AddSelectedMesh(u32 meshID);
 	//passing -1 will remove all
 	void RemoveSelectedMesh(u32 meshID);
@@ -268,6 +270,7 @@ struct Renderer{
 	void RemoveMeshBrush(u32 meshBrushIdx);
 	//returns a base mesh ID
 	u32 CreateDebugLine(Vector3 start, Vector3 end, Color color, bool visible = false);
+	void UpdateDebugLine(u32 id, Vector3 start, Vector3 end, Color color);
 	//returns a base mesh ID
 	u32 CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool visible = false);
 	

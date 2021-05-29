@@ -57,7 +57,6 @@ struct has_str_method {
 //// Primarily for outputting to ingame console, but can return a string from any object that is a c++ number
 //// or any of our classes (or yours :) ) that has a .str() member
 	
-//returns the string for in engine printing
 static std::string ToString(const char* str) { return std::string(str); }
 static std::string ToString(char* str)       { return std::string(str); }
 	
@@ -84,15 +83,29 @@ template<class... T>
 struct Vector3;
 struct Color;
 
-//GPU debug mesh handler that could also end up being used for more stuff later, so i'll keep it named Debug
-struct DebugMeshHandler {
-	std::unordered_map<void*, u32> meshes;
-
-	u32 frame = 0;
-
-	void DrawLine(Vector3 v1, Vector3 v2, void* unique, Color color);
-
+struct MeshInfo {
+	u32 meshID;
+	float idleTime;
+	float allowedTime = 0;
+	b32 calledThisFrame;
+	b32 clearNextFrame;
+	b32 wasInvis;
 };
 
+//GPU debug mesh handler that could also end up being used for more stuff later, so i'll keep it named Debug
+struct Debug {
+	std::unordered_map<u32, MeshInfo> meshes;
+	
+	int miter = 0;
+
+	void Update();
+
+	void DrawLine(Vector3 v1, Vector3 v2, int unique, Color color);
+	void DrawLine(Vector3 v1, Vector3 v2, int unique, float time, Color color);
+	void DrawLine(int i, Vector3 v1, Vector3 v2, int unique, Color color);
+	void DrawLine(int i, Vector3 v1, Vector3 v2, int unique, float time, Color color);
+};
+
+extern Debug* g_debug;
 
 #endif //DESHI_DEBUG_H

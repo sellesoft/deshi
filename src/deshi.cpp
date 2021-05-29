@@ -38,6 +38,7 @@ ____create a hot-loadable global vars file
 add a general logging system with log levels and locations (for filtering)
 add a component_state command to print state of a component (add str methods to all components/systems)
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
+____also allow it to store up to 3 types
 add device info command (graphics card, sound device, monitor res, etc)
 pool/arena components and entities for better performance
 replace/remove external dependencies/includes were possible (glm, tinyobj)
@@ -46,7 +47,6 @@ add Camera tag to TODOP
 look into integrating TODOP with Discord
 begin reimplementing sound system and maybe rethink its design a bit
 replace std::pair with pair throughout the project
-move common things in the Component contructors to the parent constructor
 
 Render TODOs
 ------------
@@ -245,7 +245,7 @@ struct DeshiEngine {
 		TIMER_RESET(t_d); console.Update();         time.consoleTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); renderer.Render();        time.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time.adminTime += TIMER_END(t_d);
-		g_debug->frame++;
+		g_debug->Update(); //TODO(sushi) put a timer on this
 		time.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 		return true;
 	}

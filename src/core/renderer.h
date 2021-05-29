@@ -10,22 +10,23 @@
 #include "renderer_vulkan.h"
 #endif
 
-//dunno where to put these yet
-//TODO(sushi) update this define to change each vertices positions each call
-#define DeshDebugLines(name, i, v1, v2)\
-static std::vector<u32> name; \
-if (name.size() < i) name.push_back(DengRenderer->CreateDebugLine(v1, v2, Color::WHITE, true));
+#define DebugLine(v1, v2, time)\
+g_debug->DrawLine(v1, v2, ((int)this << __LINE__ ^ (int)__FUNCTION__ << (int)__FILENAME__), time, Color::WHITE);
 
-#define DeshDebugLinesCol(name, i, v1, v2, color)\
-static std::vector<u32> name; \
-if (name.size() < i) name.push_back(DengRenderer->CreateDebugLine(v1, v2, color, true));
+#define DebugLineCol(v1, v2, time, color)\
+g_debug->DrawLine(v1, v2, ((int)this << __LINE__ ^ (int)__FUNCTION__ << (int)__FILENAME__), time, color);
+
+//these are for use in loops, if you'd like to just make a new line everytime something happens (regardless of a loop) use -1 for i
+#define DebugLines(i, v1, v2, time)\
+g_debug->DrawLine(i, v1, v2, ((int)this << __LINE__ ^ (int)__FUNCTION__ << (int)__FILENAME__), time, Color::WHITE);
+
+#define DebugLinesCol(i, v1, v2, time, color)\
+g_debug->DrawLine(i, v1, v2, ((int)this << __LINE__ ^ (int)__FUNCTION__ << (int)__FILENAME__), time, color);
 
 #define DeshDebugTrisCol(name, i, v1, v2, v3, color)\
 static std::vector<u32> name; \
 if (name.size() < i) name.push_back(DengRenderer->CreateDebugTriangle(v1, v2, v3, color, true));
 
-#define DeshDebugLine(v1, v2) DengRenderer->CreateDebugLine(v1, v2, Color::WHITE, true)
-#define DeshDebugLineCol(v1, v2, color) DengRenderer->CreateDebugLine(v1, v2, color, true)
 
 #define DeshDebugTri(v1, v2, v3) DengRenderer->CreateDebugTriangle(v1, v2, v3, Color::WHITE, true)
 

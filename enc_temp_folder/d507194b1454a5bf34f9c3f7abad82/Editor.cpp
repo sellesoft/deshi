@@ -38,7 +38,7 @@ Entity* Editor::SelectEntityRaycast(){
 	u32 closeindex = -1;
 	f32 mint = -INFINITY;
 
-	vec3 p0, p1, p2, normal, intersect;
+	//vec3 p0, p1, p2, normal, intersect;
 	mat4 rot, transform;
 	f32  t;
 	int  index = 0;
@@ -50,15 +50,15 @@ Entity* Editor::SelectEntityRaycast(){
 				for(Batch& b : m->batchArray){
 					for(u32 i = 0; i < b.indexArray.size(); i += 3){
 						transform = e->transform.TransformMatrix();
-						p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
-						p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
-						p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
-						normal = b.vertexArray[b.indexArray[i + 0]].normal * transform;
+						Vector3 p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
+						Vector3 p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
+						Vector3 p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
+						Vector3 normal = b.vertexArray[b.indexArray[i + 0]].normal * transform;
 						
 						//NOTE sushi: our normal here is now based on whatever the vertices normal is when we load the model
 						//			  so if we end up loading models and combining vertices again, this will break
 						
-						intersect = Math::VectorPlaneIntersect(p0, normal, ray->p[0], ray->p[1], t);
+						Vector3 intersect = Math::VectorPlaneIntersect(p0, normal, ray->p[0], ray->p[1], t);
 						rot = Matrix4::AxisAngleRotationMatrix(90, Vector4(normal, 0));
 						
 						if(

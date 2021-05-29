@@ -96,6 +96,13 @@ void EntityAdmin::Update() {
 	if (!skip && !pause_sound && !paused) { sound.Update(); }
 	DengTime->sndSysTime =    TIMER_END(t_a);
 	ImGui::EndDebugLayer();
+
+	//for (int i = 0; i < 10; i++) {
+	//	DeshDebugLines(i, 
+	//		Vector3(10 * sin(DengTotalTime), 0, 10 * cos(DengTotalTime + i * M_PI)), 
+	//		Vector3(0, 10 * sin(DengTotalTime + i * M_PI), 10 * cos(DengTotalTime)), 5);
+	//}
+
 }
 
 void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already happened
