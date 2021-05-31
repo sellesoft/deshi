@@ -93,6 +93,7 @@ struct{
 
 struct{
     u32  entity_id;
+    u32  comp_id;
     vec3 position;
     vec3 velocity;
     vec3 orientation;
@@ -100,10 +101,12 @@ struct{
 
 struct{
     u32  entity_id;
+    u32  comp_id;
 } audio_sources[component_type_headers[1].count];
 
 struct{
     u32  entity_id;
+    u32  comp_id;
     u32  collision_layer;
     mat3 inertia_tensor;
     vec3 half_dimensions;
@@ -111,6 +114,7 @@ struct{
 
 struct{
     u32  entity_id;
+    u32  comp_id;
     u32  collision_layer;
     mat3 inertia_tensor;
     vec3 half_dimensions;
@@ -118,6 +122,7 @@ struct{
 
 struct{
     u32  entity_id;
+    u32  comp_id;
     u32  collision_layer;
     mat3 inertia_tensor;
     f32  half_dimensions;
@@ -125,6 +130,7 @@ struct{
 
 struct{
     u32  entity_id;
+    u32  comp_id;
     vec3 position;
     vec3 direction;
     f32  strength;
@@ -132,6 +138,7 @@ struct{
 
 struct{
     u32 entity_id;
+    u32  comp_id;
     u32 instance_id;
     u32 mesh_id;
     b32 mesh_visible;
@@ -140,6 +147,7 @@ struct{
 
 struct{
     u32  entity_id;
+    u32  comp_id;
     vec3 position;
     vec3 rotation;
     vec3 velocity;
@@ -153,6 +161,7 @@ struct{
 
 struct{
     u32  entity_id;
+    u32  comp_id;
     vec3 inputs;
     f32  gndAccel;
     f32  airAccel;
@@ -162,5 +171,6 @@ struct{
 
 struct{
     u32 entity_id;
+    u32  comp_id;
     u32 health;
 } player[component_type_headers[8].count];

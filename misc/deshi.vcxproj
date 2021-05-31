@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -264,7 +264,6 @@
     <ClInclude Include="..\src\utils\Debug.h" />
     <ClInclude Include="..\src\utils\defines.h" />
     <ClInclude Include="..\src\utils\optional.h" />
-    <ClInclude Include="..\src\utils\pair.h" />
     <ClInclude Include="..\src\utils\PhysicsWorld.h" />
     <ClInclude Include="..\src\utils\tuple.h" />
   </ItemGroup>
