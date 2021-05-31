@@ -4,7 +4,7 @@
 
 Door::Door(b32 isOpen){
 	admin = g_admin;
-	cpystr(name, "MeshComp", 63);
+	cpystr(name, "MeshComp", DESHI_NAME_SIZE);
 	comptype = ComponentType_Door;
 	
 	this->isOpen = isOpen;
@@ -15,6 +15,12 @@ void Door::ReceiveEvent(Event event){
 	if(event == Event_DoorToggle){
 		isOpen = !isOpen;
 	}
+}
+
+std::string Door::SaveTEXT(){
+	return TOSTRING("\n>door"
+					"\nopen ", (isOpen) ? "true" : "false",
+					"\n");
 }
 
 void Door::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){

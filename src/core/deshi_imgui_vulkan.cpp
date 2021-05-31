@@ -1,6 +1,7 @@
 #include "deshi_imgui_vulkan.h"
 #include "renderer.h"
 #include "assets.h"
+#include "window.h"
 
 #include "../external/imgui/imgui.h"
 #include "../external/imgui/imgui_impl_glfw.h"
@@ -40,7 +41,7 @@ void deshiImGui::Init(Renderer* renderer){
 	VkResult err;
 	
 	//Setup Platform/Renderer backends
-	ImGui_ImplGlfw_InitForVulkan(vkr->window, true);
+	ImGui_ImplGlfw_InitForVulkan(vkr->window->window, true);
 	ImGui_ImplVulkan_InitInfo init_info = {};
 	init_info.Instance = vkr->instance;
 	init_info.PhysicalDevice = vkr->physicalDevice;

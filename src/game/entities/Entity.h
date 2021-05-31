@@ -5,6 +5,7 @@
 #include "../../utils/defines.h"
 #include "../Transform.h"
 
+#include <string>
 #include <vector>
 #include <set>
 #include <unordered_map>
@@ -15,7 +16,7 @@ struct Component;
 struct Entity {
 	EntityAdmin* admin; //reference to owning admin
 	u32 id;
-	char name[64];
+	char name[DESHI_NAME_SIZE];
 	Transform transform;
 	std::vector<Component*> components;
 	//std::unordered_map<Entity*, Entity*> connections; //connections to other entities through components
@@ -30,7 +31,8 @@ struct Entity {
 	void operator =(Entity& e);
 	
 	virtual void Init();
-	//virtual std::vector<char> Save();
+	
+	virtual std::string SaveTEXT();
 	//virtual void LoadDESH(const char* filename);
 	
 	void SetName(const char* name);

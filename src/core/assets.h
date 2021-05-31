@@ -13,8 +13,8 @@ struct Console;
 
 enum AssetTypeBits : u32{
 	AssetType_NONE, 
-	AssetType_Data, AssetType_Entity, AssetType_Model,  AssetType_Texture, 
-	AssetType_Save, AssetType_Sound,  AssetType_Shader, AssetType_Config, 
+	AssetType_Data,  AssetType_Entity, AssetType_Model,  AssetType_Texture, 
+	AssetType_Save,  AssetType_Sound,  AssetType_Shader, AssetType_Config,
 	AssetType_LAST
 }; typedef u32 AssetType;
 

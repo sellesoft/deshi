@@ -8,7 +8,7 @@
 
 Camera::Camera(float fov, float nearZ, float farZ, bool freeCam){
 	admin = g_admin;
-	cpystr(name, "Camera", 63);
+	cpystr(name, "Camera", DESHI_NAME_SIZE);
 	layer = ComponentLayer_NONE;
 	comptype = ComponentType_Camera;
 	
@@ -55,7 +55,7 @@ void Camera::Update() {
 		viewMat = Math::LookAtMatrix(position, target).Inverse();
 		
 		//update renderer camera properties
-		if (type == CameraType::ORTHOGRAPHIC) {
+		if (type == CameraType_Orthographic) {
 			float fw = ImGui::GetFontSize() / 2;
 			
 			switch (orthoview) {
@@ -160,30 +160,36 @@ Matrix4 Camera::MakeOrthographicProjection() {
 
 void Camera::UpdateProjectionMatrix(){
 	switch(type){
-		case(CameraType::PERSPECTIVE):default:{ projMat = MakePerspectiveProjection(); } break;
-		case(CameraType::ORTHOGRAPHIC):{ projMat = MakeOrthographicProjection(); }break;
+		case(CameraType_Perspective):default:{ projMat = MakePerspectiveProjection(); } break;
+		case(CameraType_Orthographic):{ projMat = MakeOrthographicProjection(); }break;
 	}
 	DengRenderer->UpdateCameraProjectionMatrix(projMat);
 }
 
 std::string Camera::str(){
-	std::string camType;
-	switch(type){
-		case(CameraType::PERSPECTIVE):{ camType = "Perspective"; } break;
-		case(CameraType::ORTHOGRAPHIC):{ camType = "Orthographic"; }break;
-	}
 	return TOSTRING("[c:yellow]Camera Info:[c]",
 					"\nPosition: ", position,
 					"\nRotation: ", rotation,
 					"\nNear Plane: ", nearZ,
 					"\nFar Plane: ", farZ,
 					"\nHorizontal FOV: ", fov,
-					"\nType: ", camType,
+					"\nType: ", CameraTypeStrings[type],
 					"\nStatic: ", (freeCamera)? "false" : "true");
 }
 
-std::vector<char> Camera::SaveTEXT(){
-	return std::vector<char>();
+////////////////////////////
+//// saving and loading ////
+////////////////////////////
+
+std::string Camera::SaveTEXT(){
+	return TOSTRING("\n>camera"
+					"\nposition (",position.x,",",position.y,",",position.z,")"
+					"\nrotation (",rotation.x,",",rotation.y,",",rotation.z,")"
+					"\ntype     ", type,
+					"\nnear_z   ", nearZ,
+					"\nfar_z    ", farZ,
+					"\nfov      ", fov,
+					"\n");
 }
 
 void Camera::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){

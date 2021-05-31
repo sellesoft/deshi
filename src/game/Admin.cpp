@@ -17,6 +17,7 @@
 #include <fstream>
 #include <utility>
 #include <stdexcept>
+#include <filesystem>
 
 //// EntityAdmin ////
 
@@ -277,6 +278,68 @@ void EntityAdmin::Reset(){
 	DengRenderer->LoadScene(&scene);
 }
 
+//NOTE using a levels directory temporarily so it doesnt cause problems with the save directory
+//TODO(delle) this removes the entire level dir and recreates it, optimize by diffing for speed and comment preservation
+//TODO add safe-checking so you dont override another level accidentally
+void EntityAdmin::SaveTEXT(const char* level_name_cstr){
+	namespace fs = std::filesystem;
+	if(!level_name_cstr) return ERROR("Failed to create save text-file: no name passed");
+	SUCCESS("Started saving level '", level_name_cstr, "'");
+	TIMER_START(t_s);
+	
+	//// setup the level directory ////
+	std::string levels_dir = deshi::dirData() + "levels/";
+	if(!fs::is_directory(levels_dir)) fs::create_directory(levels_dir);
+	
+	//replace spaces with underscores
+	std::string level_name(level_name_cstr);
+	//for_n(c, level_name.size()){ if(level_name[c] == ' ') level_name[c] = '_'; }
+	
+	std::string level_dir = levels_dir + std::string(level_name) + "/";
+	if(fs::is_directory(level_dir)) fs::remove_all(level_dir);
+	fs::create_directory(level_dir);
+	SUCCESS("  Created level directory '", level_dir, "'");
+	
+	//// level header file ////
+	std::string level_text; level_text.reserve(2048);
+	level_text.append(TOSTRING(">level"
+							   "\nname         \"", level_name_cstr, "\""
+							   "\nentity_count ", entities.size(),
+							   "\nlast_updated \"", DengTime->FormatDateTime("{M}/{d}/{y} {h}:{m}::{s}"), "\""
+							   "\n"
+							   "\n>entities"));
+	
+	//// entities files ////
+	u32   entity_idx_digits   = u32(log10(entities.size())) + 1;
+	u32   entity_idx_str_size = sizeof(char) * (entity_idx_digits + 2); //+2 because of _ and null-terminator
+	char* entity_idx_str      = (char*)malloc(entity_idx_str_size);
+	defer{ free(entity_idx_str); };
+	std::vector<std::string> entity_names(entities.size());
+	std::string entity_file_name;
+	
+	for_n(idx, entities.size()){
+		snprintf(entity_idx_str, entity_idx_str_size, "%0*u_", entity_idx_digits, idx);
+		
+		entity_file_name = TOSTRING(entity_idx_str, entities[idx]->name);
+		//for_n(c, entity_file_name.size()){ if(entity_file_name[c] == ' ') entity_file_name[c] = '_'; }
+		level_text.append(1, '\n');
+		level_text.append(entity_file_name);
+		
+		std::string entity_text = entities[idx]->SaveTEXT();
+		deshi::writeFile(level_dir + entity_file_name, entity_text.c_str(), entity_text.size());
+		SUCCESS("  Created entity file '", entity_file_name, "'");
+	}
+	
+	deshi::writeFile(level_dir + "_", level_text.c_str(), level_text.size());
+	SUCCESS("  Created level file '_'");
+	
+	SUCCESS("Finished saving level '", level_name, "' in ", TIMER_END(t_s), "ms");
+}
+
+void EntityAdmin::LoadTEXT(const char* savename){
+	
+}
+
 struct SaveHeader{
 	u32 magic;
 	u32 flags;
@@ -329,7 +392,7 @@ void EntityAdmin::SaveDESH(const char* filename) {
 	for(Entity* e : entities) {
 		//write entity
 		file.write((const char*)&e->id,                 sizeof(u32));
-		file.write(e->name,                             sizeof(char)*64);
+		file.write(e->name,                             sizeof(char)*DESHI_NAME_SIZE);
 		file.write((const char*)&e->transform.position, sizeof(Vector3));
 		file.write((const char*)&e->transform.rotation, sizeof(Vector3));
 		file.write((const char*)&e->transform.scale,    sizeof(Vector3));
@@ -363,7 +426,7 @@ void EntityAdmin::SaveDESH(const char* filename) {
 	header.textureArrayOffset = file.tellp();
 	for(auto& t : DengRenderer->textures){
 		file.write((const char*)&t.type, sizeof(u32));
-		file.write(t.filename,           sizeof(char)*64);
+		file.write(t.filename,           sizeof(char)*DESHI_NAME_SIZE);
 	}
 	
 	//// write materials ////
@@ -375,7 +438,7 @@ void EntityAdmin::SaveDESH(const char* filename) {
 		file.write((const char*)&m.normalID,   sizeof(u32));
 		file.write((const char*)&m.specularID, sizeof(u32));
 		file.write((const char*)&m.lightID,    sizeof(u32));
-		file.write(m.name,                     sizeof(char)*64);
+		file.write(m.name,                     sizeof(char)*DESHI_NAME_SIZE);
 	}
 	
 	//// write meshes //// //TODO(delle) support multiple materials per mesh
@@ -385,7 +448,7 @@ void EntityAdmin::SaveDESH(const char* filename) {
 		b32 base = m.base;
 		file.write((const char*)&m.primitives[0].materialIndex, sizeof(u32));
 		file.write((const char*)&base,                          sizeof(b32));
-		file.write(m.name,                                      sizeof(char)*64);
+		file.write(m.name,                                      sizeof(char)*DESHI_NAME_SIZE);
 	}
 	
 	//// write component type headers //// //TODO(delle) move these to thier respective files
@@ -619,10 +682,10 @@ void EntityAdmin::LoadDESH(const char* filename) {
 		return ERROR("Load failed because cursor was at '", cursor, 
 					 "' when reading entities which start at '", header.entityArrayOffset, "'");
 	}
-	Transform entTrans{}; char entName[64];
+	Transform entTrans{}; char entName[DESHI_NAME_SIZE];
 	for_n(i, header.entityCount){
 		cursor += sizeof(u32); //skipped
-		memcpy(entName,   data+cursor, sizeof(char)*64); cursor += sizeof(char)*64;
+		memcpy(entName,   data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
 		memcpy(&entTrans, data+cursor, sizeof(vec3)*3);  cursor += sizeof(vec3)*3;
 		entities.push_back(new Entity(this, entities.size(), entTrans, entName, {}));
 	}
@@ -635,7 +698,7 @@ void EntityAdmin::LoadDESH(const char* filename) {
 	Texture tex{};
 	for_n(i, header.textureCount){
 		memcpy(&tex.type,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
-		memcpy(tex.filename, data+cursor, sizeof(char)*64); cursor += sizeof(char)*64;
+		memcpy(tex.filename, data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
 		if(i>3) DengRenderer->LoadTexture(tex);
 	}
 	
@@ -644,14 +707,14 @@ void EntityAdmin::LoadDESH(const char* filename) {
 		return ERROR("Load failed because cursor was at '", cursor, 
 					 "' when reading materials which start at '", header.materialArrayOffset, "'");
 	}
-	u32 shader = 0, albedoID = 0, normalID = 2, specularId = 2, lightID = 2; char matName[64];
+	u32 shader = 0, albedoID = 0, normalID = 2, specularId = 2, lightID = 2; char matName[DESHI_NAME_SIZE];
 	for_n(i, header.materialCount){
-		memcpy(&shader,     data+cursor, sizeof(u32));     cursor += sizeof(u32);
-		memcpy(&albedoID,   data+cursor, sizeof(u32));     cursor += sizeof(u32);
-		memcpy(&normalID,   data+cursor, sizeof(u32));     cursor += sizeof(u32);
-		memcpy(&specularId, data+cursor, sizeof(u32));     cursor += sizeof(u32);
-		memcpy(&lightID,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
-		memcpy(matName,     data+cursor, sizeof(char)*64); cursor += sizeof(char)*64;
+		memcpy(&shader,     data+cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&albedoID,   data+cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&normalID,   data+cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&specularId, data+cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(&lightID,    data+cursor, sizeof(u32)); cursor += sizeof(u32);
+		memcpy(matName,     data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
 		if(i>5) DengRenderer->CreateMaterial(shader, albedoID, normalID, specularId, lightID, matName);
 	}
 	
@@ -660,11 +723,11 @@ void EntityAdmin::LoadDESH(const char* filename) {
 		return ERROR("Load failed because cursor was at '", cursor, 
 					 "' when reading meshes which start at '", header.meshArrayOffset, "'");
 	}
-	b32 matID = 0, baseMesh = 0; char meshName[64];
+	b32 matID = 0, baseMesh = 0; char meshName[DESHI_NAME_SIZE];
 	for_n(i, header.meshCount){
 		memcpy(&matID,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
 		memcpy(&baseMesh, data+cursor, sizeof(b32));     cursor += sizeof(b32);
-		memcpy(meshName,  data+cursor, sizeof(char)*64); cursor += sizeof(char)*64;
+		memcpy(meshName,  data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
 		if(!baseMesh) {
 			u32 meshID = DengRenderer->CreateMesh(&scene, meshName);
 			DengRenderer->UpdateMeshBatchMaterial(meshID, 0, matID);

@@ -5,7 +5,7 @@
 AudioListener::AudioListener() {
 	layer = ComponentLayer_Sound;
 	comptype = ComponentType_AudioListener;
-	cpystr(name, "AudioListener", 63);
+	cpystr(name, "AudioListener", DESHI_NAME_SIZE);
 	sender = new Sender();
 }
 
@@ -16,7 +16,7 @@ AudioListener::AudioListener(Vector3 position, Vector3 velocity, Vector3 orienta
 	
 	layer = ComponentLayer_Sound;
 	comptype = ComponentType_AudioListener;
-	cpystr(name, "AudioListener", 63);
+	cpystr(name, "AudioListener", DESHI_NAME_SIZE);
 	sender = new Sender();
 }
 
@@ -24,8 +24,12 @@ AudioListener::AudioListener(Vector3 position, Vector3 velocity, Vector3 orienta
 //// saving and loading ////
 ////////////////////////////
 
-std::vector<char> AudioListener::SaveTEXT(){
-	return std::vector<char>();
+std::string AudioListener::SaveTEXT(){
+	return TOSTRING("\n>audio listener"
+					"\nposition (",position.x,",",position.y,",",position.z,")"
+					"\nvelocity (",velocity.x,",",velocity.y,",",velocity.z,")"
+					"\norientation (",orientation.x,",",orientation.y,",",orientation.z,")"
+					"\n");
 }
 
 void AudioListener::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){

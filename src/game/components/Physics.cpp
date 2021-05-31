@@ -4,7 +4,7 @@
 
 Physics::Physics() {
 	admin = g_admin;
-	cpystr(name, "Physics", 63);
+	cpystr(name, "Physics", DESHI_NAME_SIZE);
 	layer = SystemLayer_Physics;
 	comptype = ComponentType_Physics;
 	sender = new Sender();
@@ -23,7 +23,7 @@ Physics::Physics() {
 Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy,
 				 Vector3 rotAcceleration, float elasticity, float mass, bool isStatic) {
 	admin = g_admin;
-	cpystr(name, "Physics", 63);
+	cpystr(name, "Physics", DESHI_NAME_SIZE);
 	layer = SystemLayer_Physics;
 	comptype = ComponentType_Physics;
 	sender = new Sender();
@@ -44,7 +44,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 				 float mass, bool isStatic, bool staticRotation, bool twoDphys, float kineticFricCoef, float staticFricCoef) {
 	
 	admin = g_admin;
-	cpystr(name, "Physics", 63);
+	cpystr(name, "Physics", DESHI_NAME_SIZE);
 	layer = SystemLayer_Physics;
 	comptype = ComponentType_Physics;
 	sender = new Sender();
@@ -68,7 +68,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 
 Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticity) {
 	admin = g_admin;
-	cpystr(name, "Physics", 63);
+	cpystr(name, "Physics", DESHI_NAME_SIZE);
 	layer = SystemLayer_Physics;
 	comptype = ComponentType_Physics;
 	sender = new Sender();
@@ -106,8 +106,19 @@ void Physics::AddImpulseNomass(Physics* creator, Vector3 impulse) {
 	if (creator) { creator->velocity -= impulse; }
 }
 
-std::vector<char> Physics::SaveTEXT(){
-	return std::vector<char>();
+std::string Physics::SaveTEXT(){
+	return TOSTRING("\n>physics"
+					"\nvelocity           (",velocity.x,",",velocity.y,",",velocity.z,")"
+					"\nacceleration       (",acceleration.x,",",acceleration.y,",",acceleration.z,")"
+					"\nrot_velocity       (",rotVelocity.x,",",rotVelocity.y,",",rotVelocity.z,")"
+					"\nrot_acceleration   (",rotAcceleration.x,",",rotAcceleration.y,",",rotAcceleration.z,")"
+					"\nelasticity         ", elasticity,
+					"\nmass               ", mass,
+					"\nfriction_kinetic   ", kineticFricCoef,
+					"\nfriction_static    ", staticFricCoef,
+					"\nstatic_position    ", (isStatic) ? "true" : "false",
+					"\nstatic_rotation    ", (staticRotation) ? "true" : "false",
+					"\n");
 }
 
 void Physics::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){

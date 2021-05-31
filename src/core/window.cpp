@@ -12,6 +12,9 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+b32 _resized = false;
+int _width, _height, _x, _y;
+
 void glfwError(int id, const char* description){
 	std::cout << description << std::endl;
 }
@@ -55,7 +58,11 @@ void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode
 	this->rawInput = false;
 	UpdateRawInput(true); //sets raw input to true if supported
 	this->resizable = true;
+	
+	this->resized = false;
 	this->closeWindow = false;
+	
+	_width = width; _height = height;
 	
 	UpdateDisplayMode(displayMode);
 	
@@ -198,27 +205,36 @@ void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode
 							  Window::input->realScrollY = yoffset;
 						  });
 	
+	//void function_name(GLFWwindow* window, int width, int height)
+	glfwSetFramebufferSizeCallback(window, 
+								   [](GLFWwindow* window, int width, int height)->void{
+									   if(width != _width || height != _height) _resized = true;
+								   });
 }//Init
 
 void Window::Update() {
-	int xpos, ypos;
-	glfwGetWindowPos(window, &xpos, &ypos);
-	x = xpos; y = ypos;
+	glfwGetWindowPos(window, &_x, &_y);
+	x = _x; y = _y;
 	
-	int w, h;
-	glfwGetWindowSize(window, &w, &h);
-	width = w; height = h;
-	minimized = (w <= 0 || h <= 0) ? true : false;
+	resized = false;
+	if(_resized) {
+		resized = true;
+		_resized = false;
+	}
+	
+	glfwGetWindowSize(window, &_width, &_height);
+	width = _width; height = _height;
+	minimized = (width <= 0 || height <= 0) ? true : false;
 	
 	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 	screenWidth = mode->width; screenHeight = mode->height;
 	screenRefreshRate = mode->refreshRate; 
 	
-	centerX = w/2; centerY = h/2;
+	centerX = width/2; centerY = height/2;
 	this->dimensions = Vector2(width, height);
 	
 	glfwGetCursorPos(window, &Window::input->mouseX, &Window::input->mouseY);
-	if(cursorMode == CursorMode::FIRSTPERSON){ glfwSetCursorPos(window, w/2, h/2); }
+	if(cursorMode == CursorMode::FIRSTPERSON){ glfwSetCursorPos(window, width/2, height/2); }
 }
 
 void Window::Cleanup(){

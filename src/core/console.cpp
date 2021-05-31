@@ -606,8 +606,8 @@ CMDSTARTA(load_obj, args.size() > 0){
 	}
 	
 	//cut off the .obj extension for entity name
-	char name[64];
-	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), 63);
+	char name[DESHI_NAME_SIZE];
+	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
 	
 	//create the mesh
 	u32 id = DengRenderer->CreateMesh(&admin->scene, args[0].c_str());
@@ -622,7 +622,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 		case ColliderType_Box:       col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
 	}
 	
-	MeshComp* mc = new MeshComp(mesh, id);
+	MeshComp* mc = new MeshComp(id);
 	Physics* p = new Physics(pos, rot, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, elasticity, mass, staticPosition);
 	if (twoDphys) p->twoDphys = true;
 	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
@@ -646,7 +646,7 @@ CMDSTART(spawn_box_uv){
 	}
 	
 	u32 id = DengRenderer->CreateMesh(2, Matrix4::TransformationMatrix(pos, rot, scale));
-	MeshComp* mc = new MeshComp(DengRenderer->GetMeshPtr(id), id);
+	MeshComp* mc = new MeshComp(id);
 	admin->CreateEntity({ mc }, "uv_texture_box", Transform(pos, rot, scale));
 	
 	return TOSTRING("Created textured box with id: ", id);
@@ -670,7 +670,7 @@ CMDSTART(mesh_create){
 	u32 id = DengRenderer->CreateMesh(meshID, Matrix4::TransformationMatrix(pos, rot, scale));
 	Mesh* ptr = DengRenderer->GetMeshPtr(id); if(!ptr) CMDERROR;
 	
-	MeshComp* mc = new MeshComp(ptr, id);
+	MeshComp* mc = new MeshComp(id);
 	Physics* p = new Physics(pos, rot);
 	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 	admin->CreateEntity({ mc, p, s });
@@ -762,8 +762,8 @@ COMMANDFUNC(add_player) {
 		}
 		
 		//cut off the .obj extension for entity name
-		char name[64];
-		cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), 63);
+		char name[DESHI_NAME_SIZE];
+		cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
 		
 		//create the mesh
 		u32 id = DengRenderer->CreateMesh(&admin->scene, args[0].c_str());
@@ -778,7 +778,7 @@ COMMANDFUNC(add_player) {
 			case ColliderType_Box: col = new BoxCollider(Vector3(1, 1, 1), 1); break;
 		}
 		
-		MeshComp* mc = new MeshComp(mesh, id);
+		MeshComp* mc = new MeshComp(id);
 		Physics* p = new Physics(position, rotation, Vector3::ZERO, Vector3::ZERO,
 								 Vector3::ZERO, Vector3::ZERO, elasticity, mass, staticc);
 		AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);

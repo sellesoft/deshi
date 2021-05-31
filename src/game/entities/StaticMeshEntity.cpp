@@ -8,18 +8,18 @@
 
 StaticMesh::StaticMesh(Transform transform, const char* name){
 	this->transform = transform;
-	if (name) cpystr(this->name, name, 63);
+	if (name) cpystr(this->name, name, DESHI_NAME_SIZE);
 	
-	mesh = new MeshComp();
+	mesh = new MeshComp(0);
 	physics = new Physics(transform.position, transform.rotation, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 
 						  .5f, 1.f, true, true, false, .3f, .42f);
-	collider = 0;
+	collider = new BoxCollider(Vector3(1,1,1), 1.f);
 	AddComponents({ physics, mesh });
 }
 
 StaticMesh::StaticMesh(u32 meshID, u32 colliderType, f32 mass, Transform transform, const char* name){
 	this->transform = transform;
-	if (name) cpystr(this->name, name, 63);
+	if (name) cpystr(this->name, name, DESHI_NAME_SIZE);
 	
 	mesh = new MeshComp(meshID);
 	physics = new Physics(transform.position, transform.rotation, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 
@@ -31,5 +31,4 @@ StaticMesh::StaticMesh(u32 meshID, u32 colliderType, f32 mass, Transform transfo
 		default: ERROR("Invalid component type in StaticMesh creation: ", ColliderTypeStrings[colliderType]); collider = 0; break;
 	}
 	AddComponents({ collider, mesh, physics });
-
 }

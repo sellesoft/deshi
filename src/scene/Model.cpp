@@ -14,7 +14,7 @@ b32 find_triangle_neighbors = true;
 /////////////////
 
 Texture::Texture(const char* filename, TextureType type) {
-	cpystr(this->filename, filename, 63);
+	cpystr(this->filename, filename, DESHI_NAME_SIZE);
 	this->type = type;
 }
 
@@ -31,7 +31,7 @@ Vertex::Vertex(Vector3 pos, Vector2 uv, Vector3 color, Vector3 normal) {
 ///////////////
 
 Batch::Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<u32> indexArray, std::vector<Texture> textureArray, Shader shader, ShaderFlags shaderFlags) {
-	cpystr(this->name, name, 63);
+	cpystr(this->name, name, DESHI_NAME_SIZE);
 	this->shader = shader; this->shaderFlags = shaderFlags;
 	this->vertexArray = vertexArray;   this->vertexCount = vertexArray.size();
 	this->indexArray = indexArray;     this->indexCount = indexArray.size();
@@ -39,7 +39,7 @@ Batch::Batch(const char* name, std::vector<Vertex> vertexArray, std::vector<u32>
 }
 
 void Batch::SetName(const char* name){
-	cpystr(this->name, name, 63);
+	cpystr(this->name, name, DESHI_NAME_SIZE);
 }
 
 //////////////
@@ -47,7 +47,7 @@ void Batch::SetName(const char* name){
 //////////////
 
 Mesh::Mesh(const char* name, std::vector<Batch> batchArray) {
-	cpystr(this->name, name, 63);
+	cpystr(this->name, name, DESHI_NAME_SIZE);
 	this->batchArray = batchArray; this->batchCount = batchArray.size();
 	for (Batch& batch : batchArray) {
 		this->vertexCount += batch.vertexCount;
@@ -57,7 +57,7 @@ Mesh::Mesh(const char* name, std::vector<Batch> batchArray) {
 }
 
 void Mesh::SetName(const char* name){
-	cpystr(this->name, name, 63);
+	cpystr(this->name, name, DESHI_NAME_SIZE);
 }
 
 std::vector<Vector2> Mesh::GenerateOutlinePoints(Matrix4 transform, Matrix4 proj, Matrix4 view, Vector2 windimen, Vector3 camPosition) {

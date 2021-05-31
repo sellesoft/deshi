@@ -7,7 +7,7 @@ Movement::Movement(Physics* phys) {
 	admin = g_admin;
 	layer = ComponentLayer_NONE;
 	comptype = ComponentType_Movement;
-	cpystr(name, "Movement", 63);
+	cpystr(name, "Movement", DESHI_NAME_SIZE);
 	
 	this->phys = phys;
 	phys->kineticFricCoef = 4;
@@ -18,7 +18,7 @@ Movement::Movement(Physics* phys, float gndAccel, float airAccel, float maxWalki
 	admin = g_admin;
 	layer = ComponentLayer_NONE;
 	comptype = ComponentType_Movement;
-	cpystr(name, "Movement", 63);
+	cpystr(name, "Movement", DESHI_NAME_SIZE);
 	sender = new Sender();
 	
 	this->phys = phys;
@@ -150,8 +150,15 @@ void Movement::Update() {
 	phys->acceleration = Vector3::ZERO;
 }
 
-std::vector<char> Movement::SaveTEXT(){
-	return std::vector<char>();
+std::string Movement::SaveTEXT(){
+	return TOSTRING("\n>movement"
+					"\nground_accel ", gndAccel,
+					"\nair_accel    ", airAccel,
+					"\njump_impulse ", jumpImpulse,
+					"\nwalk_speed   ", maxWalkingSpeed,
+					"\nrun_speed    ", maxRunningSpeed,
+					"\ncrouch_speed ", maxCrouchingSpeed,
+					"\n");
 }
 
 void Movement::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count) {

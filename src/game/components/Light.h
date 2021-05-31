@@ -9,6 +9,7 @@ struct Light : public Component {
 	Vector3 position;
 	Vector3 direction;
 	float brightness;
+	//TODO(delle) add color var
 	
 	bool active = true;
 	
@@ -17,7 +18,7 @@ struct Light : public Component {
 	void Update() override;
 	virtual void ReceiveEvent(Event event) override;
 	
-	std::vector<char> SaveTEXT() override;
+	std::string SaveTEXT() override;
 	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 

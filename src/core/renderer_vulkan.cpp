@@ -93,12 +93,14 @@ Init(Time* time, Input* input, Window* window, deshiImGui* imgui) {
 	PRINTVK(1, "\nInitializing Vulkan");
 	this->time = time;
 	this->input = input;
-	this->window = window->window;
+	this->window = window;
 	TIMER_START(t_v);
 	
-	glfwGetFramebufferSize(window->window, &width, &height);
-	glfwSetWindowUserPointer(window->window, this);
-	glfwSetFramebufferSizeCallback(window->window, framebufferResizeCallback);
+	width = window->width;
+	height = window->height;
+	//glfwGetFramebufferSize(window->window, &width, &height);
+	//glfwSetWindowUserPointer(window->window, this);
+	//glfwSetFramebufferSizeCallback(window->window, framebufferResizeCallback);
 	
 	TIMER_START(t_temp);
 	CreateInstance();
@@ -158,9 +160,10 @@ Render() {
 	ASSERT(rendererStage & (RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS) == (RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS), "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
 	rendererStage = RSVK_RENDER;
 	
+	if(window->resized) remakeWindow = true;
 	if(remakeWindow){
 		int w, h;
-		glfwGetFramebufferSize(window, &w, &h);
+		glfwGetFramebufferSize(window->window, &w, &h);
 		if(w <= 0 || h <= 0){  ImGui::EndFrame(); return;  }
 		ResizeWindow();
 		frameIndex = 0;
@@ -344,7 +347,7 @@ CreateMeshBrush(Mesh* m, Matrix4 matrix){
 	
 	//// mesh brush ////
 	MeshBrushVk mesh; mesh.id = meshBrushes.size();
-	cpystr(mesh.name, m->name, 63);
+	cpystr(mesh.name, m->name, DESHI_NAME_SIZE);
 	mesh.matrix = glm::make_mat4(matrix.data);
 	
 	mesh.vertices.reserve(m->vertexCount);
@@ -461,6 +464,7 @@ UpdateMeshBrushBuffers(u32 meshBrushIdx){
 	vkFreeMemory(device, indexStaging.memory, nullptr);
 }
 
+//TODO(delle) free GPU resources in this func
 void Renderer::
 RemoveMeshBrush(u32 meshBrushIdx){
 	if(meshBrushIdx < meshBrushes.size()){
@@ -481,7 +485,7 @@ LoadBaseMesh(Mesh* m, bool visible) {
 	mesh.ptr = m; 
 	if(!visible) mesh.visible = false;
 	mesh.primitives.reserve(m->batchCount);
-	cpystr(mesh.name, m->name, 63);
+	cpystr(mesh.name, m->name, DESHI_NAME_SIZE);
 	
 	//resize scene vectors
 	vertexBuffer.reserve(vertexBuffer.size() + m->vertexCount);
@@ -577,7 +581,7 @@ CreateMesh(u32 meshID, Matrix4 matrix){
 			mesh.primitives[i].materialIndex = CopyMaterial(meshes[meshID].primitives[i].materialIndex);
 		}
 		mesh.modelMatrix = glm::make_mat4(matrix.data);
-		cpystr(mesh.name, meshes[meshID].name, 63);
+		cpystr(mesh.name, meshes[meshID].name, DESHI_NAME_SIZE);
 		mesh.id = u32(meshes.size());
 		meshes.push_back(mesh);
 		meshes[meshID].children.push_back(mesh.id);
@@ -743,7 +747,7 @@ LoadTexture(const char* filename, u32 type){
 	
 	PRINTVK(3, "    Loading Texture: ", filename);
 	TextureVk tex; 
-	cpystr(tex.filename, filename, 63);
+	cpystr(tex.filename, filename, DESHI_NAME_SIZE);
 	
 	std::string imagePath = deshi::assetPath(filename, AssetType_Texture);
 	if(imagePath == ""){ return 0; }
@@ -839,7 +843,7 @@ CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTex
 	mat.shader = shader; mat.pipeline = GetPipelineFromShader(shader);
 	mat.albedoID = albedoTextureID; mat.normalID = normalTextureID;
 	mat.specularID = specTextureID; mat.lightID = lightTextureID;
-	cpystr(mat.name, (name) ? name : "unnamed_material", 63);
+	cpystr(mat.name, (name) ? name : "unnamed_material", DESHI_NAME_SIZE);
 	
 	//allocate and write descriptor set for material
 	VkDescriptorSetAllocateInfo allocInfo{};
@@ -1260,13 +1264,7 @@ CreateSurface() {
 	ASSERT(rendererStage & RSVK_INSTANCE, "CreateSurface called before CreateInstance");
 	rendererStage |= RSVK_SURFACE;
 	
-	ASSERTVK(glfwCreateWindowSurface(instance, window, allocator, &surface), "failed to create window surface");
-}
-
-void Renderer::
-framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-	auto app = reinterpret_cast<Renderer*>(glfwGetWindowUserPointer(window));
-	app->remakeWindow = true;
+	ASSERTVK(glfwCreateWindowSurface(instance, window->window, allocator, &surface), "failed to create window surface");
 }
 
 
@@ -1446,7 +1444,7 @@ CreateSwapChain() {
 	vkDeviceWaitIdle(device);
 	
 	//update width and height
-	glfwGetFramebufferSize(window, &width, &height);
+	glfwGetFramebufferSize(window->window, &width, &height);
 	
 	//query GPUs supported features for the swap chain
 	supportDetails = querySwapChainSupport(physicalDevice);
@@ -2686,13 +2684,9 @@ loadShader(std::string fileName, VkShaderStageFlagBits stage) {
 	shaderStage.stage = stage;
 	shaderStage.pName = "main";
 	
-	//get shader name
-	char shaderName[16];
-	cpystr(shaderName, fileName.c_str(), 15);
-	
 	//check if shader has already been created
 	for(auto& module : shaderModules){
-		if(strcmp(shaderName, module.first) == 0){
+		if(fileName == module.first){
 			shaderStage.module = module.second;
 			break;
 		}
@@ -2709,7 +2703,7 @@ loadShader(std::string fileName, VkShaderStageFlagBits stage) {
 	ASSERTVK(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
 	shaderStage.module = shaderModule;
 	
-	shaderModules.push_back(std::make_pair(shaderName, shaderStage.module));
+	shaderModules.push_back(std::make_pair(fileName, shaderStage.module));
 	return shaderStage;
 }
 

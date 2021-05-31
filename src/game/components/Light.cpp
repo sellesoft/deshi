@@ -8,7 +8,7 @@ Light::Light(const Vector3& position, const Vector3& direction, float brightness
 	this->position = position;
 	this->direction = direction;
 	this->brightness = brightness;
-	cpystr(name, "Light", 63);
+	cpystr(name, "Light", DESHI_NAME_SIZE);
 	comptype = ComponentType_Light;
 	layer = ComponentLayer_Physics;
 	sender = new Sender();
@@ -27,8 +27,12 @@ void Light::ReceiveEvent(Event event) {
 	}
 }
 
-std::vector<char> Light::SaveTEXT(){
-	return std::vector<char>();
+std::string Light::SaveTEXT(){
+	return TOSTRING("\n>light"
+					"\nposition   (",position.x,",",position.y,",",position.z,")"
+					"\ndirection  (",direction.x,",",direction.y,",",direction.z,")"
+					"\nbrightness ", brightness,
+					"\n");
 }
 
 void Light::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){

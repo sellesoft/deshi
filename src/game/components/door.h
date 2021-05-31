@@ -10,6 +10,7 @@ struct Door : public Component{
 	Door(b32 isOpen = 0);
 	
 	void ReceiveEvent(Event event) override;
+	std::string SaveTEXT() override;
 	static void LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count);
 };
 

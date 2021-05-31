@@ -15,7 +15,6 @@ struct MeshComp : public Component {
 	
 	MeshComp();
 	MeshComp(u32 meshID, u32 instanceID = 0);
-	MeshComp(Mesh* m, u32 meshID = 0, u32 instanceID = 0);
 	~MeshComp();
 	
 	void ToggleVisibility();
@@ -28,7 +27,7 @@ struct MeshComp : public Component {
 	void ReceiveEvent(Event event) override;
 	void Init() override;
 	void Update() override;
-	std::vector<char> SaveTEXT() override;
+	std::string SaveTEXT() override;
 	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
@@ -43,7 +42,7 @@ struct MeshComp2D : public Component {
 	void ReceiveEvent(Event event) override;
 	void Init() override;
 	void Update() override;
-	std::vector<char> SaveTEXT() override;
+	std::string SaveTEXT() override;
 	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 

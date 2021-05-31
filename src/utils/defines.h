@@ -2,16 +2,17 @@
 #ifndef DESHI_DEFINES_H
 #define DESHI_DEFINES_H
 
-//math constants
+//math constants and macros
 #define M_EPSILON    0.001f
 #define M_PI         3.14159265359f
 #define M_E          2.71828182846f
 #define M_SQRT_TWO   1.41421356237f
 #define M_SQRT_THREE 1.73205080757f
-
-//conversions
 #define RADIANS(x) ((x) * (M_PI / 180.f))
 #define DEGREES(x) ((x) * (180.f / M_PI))
+
+//deshi constants
+#define DESHI_NAME_SIZE 64
 
 //number typedefs
 typedef signed char    i8;     typedef i8  int8;
@@ -60,9 +61,9 @@ typedef i32 b32; //int based boolean so c++ doesnt convert to 0 or 1
 //i: variable name; x: number of iterations 
 #define for_n(i,x) for(int i=0; i<x; ++i)
 
-//NOTE(delle) bytes should be minus one but keeping it like this since strncpy works like this
 //dst: destination c-string; src: source c-string; bytes: number of characters to copy
-#define cpystr(dst, src, bytes) strncpy_s(dst, src, bytes); dst[bytes] = '\0'
+//NOTE the last character in the copy is replaced with a null-terminating character
+#define cpystr(dst, src, bytes) strncpy_s(dst, src, bytes); dst[bytes-1] = '\0'
 
 //compile-time print sizeof()
 //char (*__kaboom)[sizeof( YourTypeHere )] = 1;

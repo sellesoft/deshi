@@ -10,13 +10,13 @@
 
 
 PlayerEntity::PlayerEntity(Transform transform) {
-	cpystr(name, "player", 6);
+	cpystr(name, "player", DESHI_NAME_SIZE);
 	this->transform = transform;
 	physics = new Physics();
 	physics->elasticity = 0;
 	movement = new Movement(physics);
 	player = new Player(movement);
-	mesh = new MeshComp(Mesh::CreateMeshFromOBJ("box.obj"));
+	mesh = new MeshComp(0);
 	collider = new AABBCollider(mesh->mesh, 1);
 	listener = new AudioListener();
 	//source = new AudioSource()
@@ -26,5 +26,5 @@ PlayerEntity::PlayerEntity(Transform transform) {
 
 
 void PlayerEntity::Init() {
-
+	
 }

@@ -44,6 +44,7 @@ struct OrbManager : public Component {
 	void Update() override;
 	void ReceiveEvent(Event event) override;
 	
+	std::string SaveTEXT() override;
 	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 

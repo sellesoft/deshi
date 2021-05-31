@@ -54,7 +54,7 @@ struct Component : public Receiver {
 	EntityAdmin* admin;
 	u32 entityID;
 	u32 compID; //this should ONLY be used for saving/loading, not indexing anykind of array for now
-	char name[64];
+	char name[DESHI_NAME_SIZE];
 	ComponentType comptype;
 	Entity* entity;
 	Sender* sender = nullptr; //sender for outputting events to a list of receivers
@@ -79,60 +79,10 @@ struct Component : public Receiver {
 	virtual void Init() {};
 	virtual void Update() {};
 	virtual void ReceiveEvent(Event event) override {};
-	virtual std::vector<char> SaveTEXT() { return std::vector<char>(); };
-	virtual void LoadTEXT() {};
+	
+	virtual std::string SaveTEXT() { return ""; };
+	
 	virtual std::string str(){ return ""; };
 };
-
-/* //switch statement on component type for copy/paste
-switch(c->comptype){
-				case ComponentType_MeshComp:{
-					
-				}break;
-				case ComponentType_Physics:{
-					
-				}break;
-				case ComponentType_Collider:{
-					switch(dyncasta(Collider, c)->type){
-						case ColliderType_Box:{
-							
-						}break;
-						case ColliderType_AABB:{
-							
-						}break;
-						case ColliderType_Sphere:{
-							
-						}break;
-						case ColliderType_Landscape:{
-							
-						}break;
-					}
-				}break;
-				case ComponentType_AudioListener:{
-					
-				}break;
-				case ComponentType_AudioSource:{
-					
-				}break;
-				case ComponentType_Camera:{
-					
-				}break;
-				case ComponentType_Light:{
-					
-				}break;
-				case ComponentType_OrbManager:{
-					
-				}break;
-				case ComponentType_Door:{
-					
-				}break;
-				case ComponentType_Player:{
-					
-				}break;
-				case ComponentType_Movement:{
-					
-				}break;
-			}
-*/
 
 #endif //COMPONENT_H
