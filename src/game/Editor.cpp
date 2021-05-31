@@ -18,26 +18,32 @@
 #include "../geometry/Edge.h"
 
 #include <iomanip> //std::put_time
+#include <thread>
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// inputs
 
-
-
-//TODO(sushi, Ma) figure out why this sometimes returns true when clicking outside of object
-//TODO(delle) look into fixing selection with this
-//https://github.com/microsoft/DirectXMath/blob/7c30ba5932e081ca4d64ba4abb8a8986a7444ec9/Inc/DirectXCollision.inl#L4331
 Entity* Editor::SelectEntityRaycast(){
 	vec3 pos = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions);
 	RenderedEdge3D* ray = new RenderedEdge3D(pos, camera->position);
-	
-	//NOTE part of the problem with selecting is that we aren't clipping triangles
-	//     you can see this if you click on an object to show it's outline
-	//     then moving so that the object is behind you and clicking inside
-	//     the outline as it appears there. if you click out side of it it doesnt deselect the obj
+
+	//NOTE sushi: this sort of works, but fails sometimes since the position of a larger obj
+	//			  can be closer than a smaller one even though the small one appears in front
+	//			  this can be mediated by sorting triangles in
+	//std::vector<Entity*> sorted_ents = admin->entities;
+	//std::sort(sorted_ents.begin(), sorted_ents.end(),
+	//	[&](Entity* e1, Entity* e2) {
+	//		return (e1->transform.position - camera->position).mag() < (e2->transform.position - camera->position).mag();
+	//	});
+
+	u32 closeindex = -1;
+	f32 mint = -INFINITY;
+
 	vec3 p0, p1, p2, normal, intersect;
 	mat4 rot, transform;
-	f32  dummy;
+	f32  t;
+	int  index = 0;
+	bool done = false;
 	for(Entity* e : admin->entities) {
 		if(MeshComp* mc = e->GetComponent<MeshComp>()) {
 			if(mc->mesh_visible) {
@@ -48,22 +54,46 @@ Entity* Editor::SelectEntityRaycast(){
 						p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
 						p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
 						p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
-						normal = (p2 - p0).cross(p1 - p0); //NOTE shouldn't this be normalized?
+						normal = b.vertexArray[b.indexArray[i + 0]].normal * transform;
 						
-						intersect = Math::VectorPlaneIntersect(p0, normal, ray->p[0], ray->p[1], dummy);
+						//NOTE sushi: our normal here is now based on whatever the vertices normal is when we load the model
+						//			  so if we end up loading models and combining vertices again, this will break
+						
+						intersect = Math::VectorPlaneIntersect(p0, normal, ray->p[0], ray->p[1], t);
 						rot = Matrix4::AxisAngleRotationMatrix(90, Vector4(normal, 0));
 						
-						if(((p1 - p0) * rot).dot(p0 - intersect) < 0 &&
+						if(
+						   ((p1 - p0) * rot).dot(p0 - intersect) < 0 &&
 						   ((p2 - p1) * rot).dot(p1 - intersect) < 0 &&
-						   ((p0 - p2) * rot).dot(p2 - intersect) < 0) {
-							return e;
+						   ((p0 - p2) * rot).dot(p2 - intersect) < 0 && t < 0) {
+							DebugLines(index, camera->position, intersect, -1);
+							DebugLinesCol(index, p0 + (p1 - p0) * rot, p0, -1, Color::RED);
+							DebugLinesCol(index, p1 + (p2 - p1) * rot, p1, -1, Color::RED);
+							DebugLinesCol(index, p2 + (p0 - p2) * rot, p2, -1, Color::RED);
+							DebugLinesCol(index, p0, intersect, -1, Color::BLUE);
+							DebugLinesCol(index, p1, intersect, -1, Color::BLUE);
+							DebugLinesCol(index, p2, intersect, -1, Color::BLUE);
+
+							if (t > mint) {
+								closeindex = index;
+								mint = t;
+								done = true;
+								break;
+							}
+						
 						}
+						if(done) break;
 					}
+					if (done) break;
 				}
 			}
 		}
+		done = false;
+		index++;
 	}
-	return 0;
+
+	if (closeindex != -1) return admin->entities[closeindex];
+	else return 0;
 }
 
 void Editor::TranslateEntity(Entity* e, TransformationAxis axis){
@@ -85,8 +115,6 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 			static bool zaxis = false;
 			
 			static bool initialgrab = true;
-			
-			static bool physgrab = false;
 			
 			static Vector3 initialObjPos;
 			static float initialdist; 
@@ -112,7 +140,6 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				sel->transform.position = initialObjPos;
 				initialgrab = true; grabbingObj = false;
 				admin->controller.cameraLocked= false;
-				physgrab = false;
 				return;
 			}
 			if ((xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
@@ -125,7 +152,6 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 				xaxis = false; yaxis = false; zaxis = false;
 				initialgrab = true; grabbingObj = false;  
 				admin->controller.cameraLocked = false;
-				physgrab = false;
 				if(initialObjPos != sel->transform.position){
 					um->AddUndoTranslate(&sel->transform, &initialObjPos, &sel->transform.position);
 				}
@@ -134,8 +160,6 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 			
 			if (DengInput->KeyPressed(MouseButton::SCROLLDOWN)) initialdist -= 1;
 			if (DengInput->KeyPressed(MouseButton::SCROLLUP))   initialdist += 1;
-			if (DengInput->KeyPressed(Key::P)) physgrab = !physgrab;
-			
 			
 			//set mouse to obj position on screen and save that position
 			if (initialgrab) {
@@ -229,9 +253,6 @@ inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
 					p->position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
 				}
 				
-			}
-			if (Physics* p = sel->GetComponent<Physics>()) {
-				p->velocity = (sel->transform.position - lastFramePos) / DengTime->deltaTime;
 			}
 			lastFramePos = sel->transform.position;
 		} //if(DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj)
@@ -1234,7 +1255,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 			Text("Scale       "); SameLine(); 
 			if(InputVector3("##ent_scale",   &sel->transform.scale)){
 				if(Physics* p = sel->GetComponent<Physics>()){
-					p->position = sel->transform.scale;
+					p->scale = sel->transform.scale;
 					admin->editor.undo_manager.AddUndoScale(&sel->transform, &oldVec, &p->scale);
 				}else{
 					admin->editor.undo_manager.AddUndoScale(&sel->transform, &oldVec, &sel->transform.scale);
@@ -1345,22 +1366,25 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 				//TODO() implement mesh2D component inspector
 				
 				//physics
-				case ComponentType_Physics:{
-					Physics* phys = dyncasta(Physics, c);
-					if(phys && TreeNodeEx("Physics", tree_flags)){
-						Text("Velocity     "); SameLine(); InputVector3("phys_vel",      &phys->velocity);        Separator();
-						Text("Accelertaion "); SameLine(); InputVector3("phys_accel",    &phys->acceleration);    Separator();
-						Text("Rot Velocity "); SameLine(); InputVector3("phys_rotvel",   &phys->rotVelocity);     Separator();
-						Text("Rot Accel    "); SameLine(); InputVector3("phys_rotaccel", &phys->rotAcceleration); Separator();
-						Text("Elasticity   "); SameLine(); InputFloat("phys_elastic",    &phys->elasticity);         Separator();
-						Text("Mass         "); SameLine(); InputFloat("phys_mass",       &phys->mass);               Separator();
-						Text("Kinetic Fric "); SameLine(); InputFloat("kinfric",         &phys->kineticFricCoef);               Separator();
-						Checkbox("Static Position", &phys->isStatic);                                             Separator();
-						Checkbox("Static Rotation", &phys->staticRotation);
-						
+				case ComponentType_Physics:
+					if (TreeNodeEx("Physics", tree_flags)) {
+						dyncast(d, Physics, c);
+						Text("Velocity     "); SameLine(); InputVector3("##phys_vel", &d->velocity);             Separator();
+						Text("Accelertaion "); SameLine(); InputVector3("##phys_accel", &d->acceleration);       Separator();
+						Text("Rot Velocity "); SameLine(); InputVector3("##phys_rotvel", &d->rotVelocity);       Separator();
+						Text("Rot Accel    "); SameLine(); InputVector3("##phys_rotaccel", &d->rotAcceleration); Separator();
+						Text("Elasticity   "); SameLine();
+						ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_elastic", &d->elasticity); Separator();
+						Text("Mass         "); SameLine();
+						ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->mass); Separator();
+						Text("Kinetic Fric "); SameLine();
+						ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->kineticFricCoef); Separator();
+						Checkbox("Static Position", &d->isStatic); Separator();
+						Checkbox("Static Rotation", &d->staticRotation);
+						Checkbox("2D Physics", &d->twoDphys);
 						TreePop();
 					}
-				}break;
+					break;
 				
 				//colliders
 				case ComponentType_Collider:{
@@ -1414,9 +1438,18 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 				}break;
 				
 				//light
-				case ComponentType_Light:{
-					
-				}break;
+				case ComponentType_Light:
+					if (TreeNodeEx("Light", tree_flags)) {
+						dyncast(d, Light, c);
+						Text("Brightness   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						InputFloat("brightness", &d->brightness); Separator();
+						Text("Position     "); SameLine(); InputVector3("position", &d->position); Separator();
+						Text("Direction    "); SameLine(); InputVector3("direction", &d->direction); Separator();
+
+
+						TreePop();
+					}
+					break;
 				
 				//orb manager
 				case ComponentType_OrbManager:{
@@ -2218,7 +2251,7 @@ void Editor::DebugLayer() {
 	
 	
 	//psuedo grid
-	int lines = 100;
+	int lines = 0;
 	for (int i = 0; i < lines * 2; i++) {
 		Vector3 cpos = c->position;
 		Vector3 v1 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines), c->viewMat).ToVector3();
@@ -2322,6 +2355,41 @@ void Editor::DebugLayer() {
 	ImGui::PopStyleColor();
 	ImGui::End();
 }
+
+
+void Editor::WorldGrid(Vector3 cpos) {
+	int lines = 30; //this should be 100, imgui can handle it, but Vulkan struggles?
+	cpos = Vector3::ZERO;
+		
+	for (int i = 0; i < lines * 2 + 1; i++) {
+		Vector3 v1 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines);
+		Vector3 v2 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + lines);
+		Vector3 v3 = Vector3(floor(cpos.x) + -lines, 0, floor(cpos.z) + -lines + i);
+		Vector3 v4 = Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i);
+		//
+		//DebugLinesStatic(i, v3, v4, -1);
+
+		bool l1flag = false;
+		bool l2flag = false;
+
+		if (floor(cpos.x) - lines + i == 0) {
+			l1flag = true;
+		}
+		if (floor(cpos.z) - lines + i == 0) {
+			l2flag = true;
+		}
+
+		if (l1flag) { DebugLinesCol(i, v1, v2, -1, Color::BLUE); }
+		else { DebugLinesCol(i, v1, v2, -1, Color(50, 50, 50, 50)) };
+
+		if (l2flag) { DebugLinesCol(i, v3, v4, -1, Color::RED); }
+		else { DebugLinesCol(i, v3, v4, -1, Color(50, 50, 50, 50)) };
+
+
+	}
+		
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// editor struct
@@ -2430,19 +2498,31 @@ void Editor::Update(){
 	
 	WinHovFlag = 0;
 	//TODO(delle,Cl) program crashes somewhere in DebugTools() if minimized
-	if(!DengWindow->minimized){
+	if (!DengWindow->minimized) {
 		if (showDebugLayer) DebugLayer();
 		if (showTimes)      DrawTimes();
 		if (showDebugTools) DebugTools();
 		if (showDebugBar)   DebugBar();
 		if (showMenuBar)    MenuBar();
-		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));{
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1)); {
 			if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
 		}ImGui::PopStyleColor();
-		
+
 		if (!showMenuBar)    menubarheight = 0;
 		if (!showDebugBar)   debugbarheight = 0;
 		if (!showDebugTools) debugtoolswidth = 0;
+
+		Vector3 cpos = camera->position;
+		static Vector3 lastcpos = camera->position;
+		static bool first = true;
+		if ((lastcpos - cpos).mag() > 10000 || first) {
+			//TODO(sushi, Op) look into if we can some how load/change things on the GPU in a different thread 
+			//std::thread worldgrid(WorldGrid, cpos);
+			WorldGrid(cpos);
+			//worldgrid.detach();
+			lastcpos = camera->position;
+			first = false;
+		}
 	}
 	DengConsole->IMGUI_MOUSE_CAPTURE = (ConsoleHovFlag || WinHovFlag) ? true : false;
 	

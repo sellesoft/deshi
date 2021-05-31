@@ -38,6 +38,7 @@ ____create a hot-loadable global vars file
 add a general logging system with log levels and locations (for filtering)
 add a component_state command to print state of a component (add str methods to all components/systems)
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
+____also allow it to store up to 3 types
 add device info command (graphics card, sound device, monitor res, etc)
 pool/arena components and entities for better performance
 replace/remove external dependencies/includes were possible (glm, tinyobj)
@@ -46,7 +47,6 @@ add Camera tag to TODOP
 look into integrating TODOP with Discord
 begin reimplementing sound system and maybe rethink its design a bit
 replace std::pair with pair throughout the project
-move common things in the Component contructors to the parent constructor
 
 Render TODOs
 ------------
@@ -168,7 +168,6 @@ sometimes MeshComp is assigned a nonexistant mesh
 ____temp fix by checking if minimized, but need to find root cause
 program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
 ____read this to try to fix: http://www.debuginfo.com/tips/userbpntdll.html
-selecting an entity only works on planes with vertical normals
 some UI can be clicked thru and select the entity
 
 */
@@ -176,12 +175,14 @@ some UI can be clicked thru and select the entity
 #include "core.h"
 #include "game/admin.h"
 
-Time*        g_time;
-Window*      g_window;
-Input*       g_input;
-Console*     g_console;
-Renderer*    g_renderer;
+Time*		 g_time;
+Window*		 g_window;
+Input*		 g_input;
+Console*	 g_console;
+Renderer*	 g_renderer;
 EntityAdmin* g_admin;
+Debug*       g_debug;
+
 
 struct DeshiEngine {
 	Time time;
@@ -191,6 +192,7 @@ struct DeshiEngine {
 	Console console;
 	Renderer renderer;
 	deshiImGui imgui;
+	Debug debug;
 	TIMER_START(t_d); TIMER_START(t_f);
 	
 	//TODO(delle,Fs) setup loading a config file to a config struct
@@ -213,7 +215,8 @@ struct DeshiEngine {
 		g_console = &console;
 		renderer.Init(&time, &input, &window, &imgui); //inits imgui as well
 		g_renderer = &renderer;
-		
+		g_debug = &debug;
+
 		//init game admin
 		admin.Init();
 		g_admin = &admin;
@@ -243,7 +246,7 @@ struct DeshiEngine {
 		TIMER_RESET(t_d); console.Update();         time.consoleTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); renderer.Render();        time.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time.adminTime += TIMER_END(t_d);
-		
+		g_debug->Update(); //TODO(sushi) put a timer on this
 		time.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 		return true;
 	}

@@ -76,6 +76,10 @@ inline void PlayerMovement(EntityAdmin* admin, MovementMode mode, Movement* play
 	float deltaTime = DengTime->deltaTime;
 	Vector3 inputs;
 	
+	//TEMP CROSSHAIR
+	ImGui::DebugDrawCircle(DengWindow->dimensions / 2, 2.5, Color::DARK_GREY);
+
+
 	if (mode == MOVEMENT_MODE_WALKING) {
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingForward))  { inputs += Vector3(camera->forward.x, 0, camera->forward.z); }
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingBackward)) { inputs -= Vector3(camera->forward.x, 0, camera->forward.z); }
@@ -86,25 +90,17 @@ inline void PlayerMovement(EntityAdmin* admin, MovementMode mode, Movement* play
 		
 		if (playermove && admin->player) {
 			playermove->inputs = inputs.normalized();
-			Vector3 standpos = admin->player->transform.position + Vector3::UP * 2;
-			Vector3 crouchpos = admin->player->transform.position + Vector3::UP * 0.5;
-			static Vector3 cpos = standpos;
-			static float timer = 0;
-			float ttc = 0.2;
 			
-			//TODO(sushi, Cl) move crounch controls and ideally camera control to Movement
-			if (DengInput->KeyDownAnyMod(DengKeys.movementCrouch)) {
-				if (timer < 0.2) timer += DengTime->deltaTime;
-			}
-			else {
-				if (timer > 0) timer -= DengTime->deltaTime;
-			}
 			
-			camera->position = Math::lerpv(standpos, crouchpos, timer / ttc);
 		}else{
 			ERROR_LOC("Playermovement/player pointer is null");
 		}
 	}
+}
+
+//NOTE sushi: this can probably be implemented somewhere else, dunno yet
+inline void PlayerGrabbing() {
+
 }
 
 inline void CameraRotation(EntityAdmin* admin, float sens) {

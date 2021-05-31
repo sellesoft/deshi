@@ -11,14 +11,18 @@ enum MoveState : u32{
 	OnGroundNoInput,
 	OnGroundWalking,   
 	OnGroundRunning,   
-	OnGroundCrouching 
+	OnGroundCrouching,
+	OnGroundCrouched
 };
 
 struct Physics;
+struct Camera;
 
 struct Movement : public Component {
 	Vector3 inputs;
 	Physics* phys;
+
+	Camera* camera;
 	
 	bool inAir;
 	MoveState moveState;
@@ -39,6 +43,11 @@ struct Movement : public Component {
 	Movement(Physics* phys, float gndAccel, float airAccel, float maxWalkingSpeed, float maxRunningSpeed, float maxCrouchingSpeed, bool jump, float jumpImpulse);
 	
 	void Update() override;
+
+	void DecideContactState();
+	void DecideMovementState();
+
+	void GrabObject();
 	
 	std::string SaveTEXT() override;
 	static void LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count);

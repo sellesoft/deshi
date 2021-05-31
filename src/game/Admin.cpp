@@ -81,8 +81,10 @@ void EntityAdmin::Update() {
 	if(!skip) controller.Update();
 	if(!skip) mainCamera->Update();
 	
+	//NOTE sushi: we need to maybe make a pause_phys_layer thing, because things unrelated to physics in that layer arent getting updated in editor. eg. lights
+	//			  or we can just have different update blocks for different game states
 	TIMER_RESET(t_a); 
-	if (!skip && !pause_phys && !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_Physics]); }
+	if (!skip && /*!pause_phys &&*/ !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_Physics]); }
 	DengTime->physLyrTime =   TIMER_END(t_a); TIMER_RESET(t_a);
 	if (!skip && !pause_phys && !paused)  { physics.Update(); }
 	DengTime->physSysTime =   TIMER_END(t_a); TIMER_RESET(t_a);
@@ -95,6 +97,15 @@ void EntityAdmin::Update() {
 	if (!skip && !pause_sound && !paused) { sound.Update(); }
 	DengTime->sndSysTime =    TIMER_END(t_a);
 	ImGui::EndDebugLayer();
+
+	for (int i = 0; i < 10; i++) {
+		if (fmod(DengTotalTime, 2) == 0) {
+			DebugLines(i,
+				Vector3(10 * sin(DengTotalTime), 0, 10 * cos(DengTotalTime + i * M_PI)),
+				Vector3(0, 10 * sin(DengTotalTime + i * M_PI), 10 * cos(DengTotalTime)), 5);
+		}
+	}
+
 }
 
 void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already happened
@@ -134,7 +145,7 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
 	for (int i = 0; i < 10; i++) {
 		if (i < scene.lights.size()) {
 			Vector3 p = scene.lights[i]->position;
-			DengRenderer->lights[i] = glm::vec4(p.x, p.y, p.z,
+				DengRenderer->lights[i] = glm::vec4(p.x, p.y, p.z,
 												(scene.lights[i]->active) ? scene.lights[i]->brightness : 0);
 		}
 		else {
@@ -217,6 +228,7 @@ void EntityAdmin::ChangeState(GameState new_state){
 			}break;
 			case GameState_Editor:{ to = "EDITOR";
 				pause_phys = pause_sound = true;
+				controller.playermove = nullptr;
 				SaveDESH("auto.desh");
 				LoadDESH("temp.desh");
 				if(player) player->GetComponent<MeshComp>()->Visible(true);

@@ -69,16 +69,18 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	bool contactStationary = false;
 	for (auto c : t.physics->contacts) {
 		if (c.second == ContactMoving) {
-			if (t.physics->velocity.mag() > 0.12) {
+			if (t.physics->velocity.mag() > 0.01) {
 
 				for (auto& m : t.physics->manifolds) {
 					Vector3 norm = m.second.norm.normalized();
 					Vector3 vPerpNorm = t.physics->velocity - t.physics->velocity.dot(norm) * norm;
-
-					t.physics->forces.push_back(-vPerpNorm.normalized() * t.physics->kineticFricCoef * t.physics->mass * -9.81);
+					//account for friction along ang surfaces
+					Vector3 weight = Vector3::DOWN * t.physics->mass * ps->gravity;
+					float primedweight = weight.dot(norm);
+					t.physics->forces.push_back(-vPerpNorm.normalized() * t.physics->kineticFricCoef * primedweight);
 				}
 
-				t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
+				//t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
 			}
 			else
 				t.physics->velocity = Vector3::ZERO;
@@ -168,10 +170,10 @@ Matrix4 LocalToWorldInertiaTensor(Physics* physics, Matrix3 inertiaTensor) {
 }
 
 bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABBCollider* obj2Col) {
-	vec3 min1 = obj1->position - (obj1Col->halfDims * EntityAt(obj1->entityID)->transform.scale);
-	vec3 max1 = obj1->position + (obj1Col->halfDims * EntityAt(obj1->entityID)->transform.scale);
-	vec3 min2 = obj2->position - (obj2Col->halfDims * EntityAt(obj2->entityID)->transform.scale);
-	vec3 max2 = obj2->position + (obj2Col->halfDims * EntityAt(obj2->entityID)->transform.scale);
+	vec3 min1 = obj1->position - (obj1Col->halfDims * obj1->entity->transform.scale);
+	vec3 max1 = obj1->position + (obj1Col->halfDims * obj1->entity->transform.scale);
+	vec3 min2 = obj2->position - (obj2Col->halfDims * obj2->entity->transform.scale);
+	vec3 max2 = obj2->position + (obj2Col->halfDims * obj2->entity->transform.scale);
 	
 	if (//check if overlapping
 		(min1.x <= max2.x && max1.x >= min2.x) &&
@@ -250,7 +252,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			
 
 			//setting contact state depending on movement
-			if (fabs(obj1->velocity.rounded(2).normalized().dot(norm)) != 1) {
+			if (fabs(obj1->velocity.normalized().dot(norm)) != 1) {
 				if (!obj1->isStatic) {
 					obj1->contacts[obj2] = ContactMoving;
 				}
@@ -259,7 +261,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			else {
 				obj1->contacts[obj2] = ContactStationary;
 			}
-			if (fabs(obj2->velocity.rounded(2).normalized().dot(norm)) != 1) {
+			if (fabs(obj2->velocity.normalized().dot(norm)) != 1) {
 				if (!obj2->isStatic) 
 					obj2->contacts[obj1] = ContactMoving;
 				else obj2->contacts[obj1] = ContactStationary;
@@ -270,6 +272,9 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		}
 
 		//all of this probably isnt nececssary but i'm trying to get it to wo rkr kr k r
+		//the player checking is so i can point the normal in the proper direction when trying 
+		//to figure out if the player is on the floor or a wall/ceiling
+		//TODO(sushi, PhCl) clean this up
 		if (g_admin->player == obj1->entity) {
 			Vector3 pto = obj2->position - obj1->position;
 			if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
@@ -281,8 +286,12 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		else if (g_admin->player == obj2->entity) {
 			Vector3 pto = obj2->position - obj1->position;
 			if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
-			else { m1.player = 0; m2.player = 1; }
-
+			else                                { m1.player = 0; m2.player = 1; }
+		
+			obj1->manifolds[obj2] = m2;
+			obj2->manifolds[obj1] = m1;
+		}
+		else {
 			obj1->manifolds[obj2] = m2;
 			obj2->manifolds[obj1] = m1;
 		}
@@ -596,26 +605,28 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 		
 		if (p1 && p2) {
 			
-			if (!p1->isStatic && m.depth[0] < 0) p1->pos += m.norm * m.depth[0] / 2;
-			if (!p1->isStatic && m.depth[1] < 0) p1->pos += m.norm * m.depth[1] / 2;
+			//if (!p1->isStatic && m.depth[0] < 0) p1->pos += m.norm * m.depth[0] / 2;
+			//if (!p1->isStatic && m.depth[1] < 0) p1->pos += m.norm * m.depth[1] / 2;
+			//
+			//if (!p2->isStatic && m.depth[0] < 0) p2->pos -= m.norm * m.depth[0] / 2;
+			//if (!p2->isStatic && m.depth[1] < 0) p2->pos -= m.norm * m.depth[1] / 2;
 			
-			if (!p2->isStatic && m.depth[0] < 0) p2->pos -= m.norm * m.depth[0] / 2;
-			if (!p2->isStatic && m.depth[1] < 0) p2->pos -= m.norm * m.depth[1] / 2;
-			
+			if (p1->isStatic) p1->vel = Vector2::ZERO;
+			if (p2->isStatic) p2->vel = Vector2::ZERO;
+
 			Vector2 rv = p1->vel - p2->vel;
 			
 			float vAlongNorm = rv.dot(m.norm);
-			PRINTLN(vAlongNorm);
 			
 			if (vAlongNorm < 0) {
-				float e = 0.1;
+				float e = 0;
 				float j = -(1 + e) * rv.dot(m.norm);
 				j /= 1 / p1->mass + 1 / p2->mass;
 				
 				Vector2 impulse = j * m.norm;
 				if (!p1->isStatic) {
 					
-					Vector3 impworld = Math::ScreenToWorld(p1->pos - impulse, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
+					Vector3 impworld = Math::ScreenToWorld(p1->pos + p1->vel + impulse, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 					Vector3 impworldpr = Math::VectorPlaneIntersect(p1->ogphys->position, DengCamera->position - p1->ogphys->position, DengCamera->position, impworld);
 					
 					p1->ogphys->velocity -= impworldpr - p1->ogphys->position;
@@ -625,7 +636,7 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 					//p2->vel += impulse / p2->mass;
 					//p2->ogphys->velocity += impulse.ToVector3() * (p2->ogphys->position - DengCamera->position).mag() / p2->ogphys->mass;
 					
-					Vector3 impworld = Math::ScreenToWorld(p2->pos - impulse, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
+					Vector3 impworld = Math::ScreenToWorld(p2->pos + p2->vel + impulse, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 					Vector3 impworldpr = Math::VectorPlaneIntersect(p2->ogphys->position, DengCamera->position - p2->ogphys->position, DengCamera->position, impworld);
 					
 					p2->ogphys->velocity -= impworldpr - p2->ogphys->position;
@@ -646,6 +657,7 @@ poly GeneratePoly(Physics* p) {
 	
 	poly.pos = Math::WorldToScreen2(p->position, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 	
+	//apply relative velocity if player exists and is moving
 	Vector3 relvel = Vector3::ZERO;
 	if (g_admin->player) {
 		relvel = p->velocity - g_admin->player->GetComponent<Physics>()->velocity;
@@ -654,7 +666,7 @@ poly GeneratePoly(Physics* p) {
 	Vector3 opv = p->position + relvel;
 	Vector2 opvs = Math::WorldToScreen2(opv, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 	poly.vel = opvs - poly.pos;
-	
+	ImGui::DebugDrawLine(poly.pos, opvs, Color::CYAN);
 	//maybe make a nicer way of calculating this
 	poly.mass = p->mass;
 	
@@ -665,8 +677,6 @@ poly GeneratePoly(Physics* p) {
 	return poly;
 	
 }
-
-
 
 //NOTE make sure you are using the right physics component, because the collision 
 //functions dont check that the provided one matches the tuple

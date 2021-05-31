@@ -29,9 +29,9 @@ void main() {
 	vec3 position = primitive.model[3].xyz;
 
     gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
-	outColor = vec3(clamp(dot(normalize(light - position), normal) * 0.9, .1f, 1),
-					clamp(dot(normalize(light - position), normal) * 0.9, .1f, 1),
-					clamp(dot(normalize(light - position), normal) * 0.9, .1f, 1));
+	outColor = vec3(clamp(dot(normalize(light - position), normal) * 0.7, .1f, 1),
+					clamp(dot(normalize(light - position), normal) * 0.7, .1f, 1),
+					clamp(dot(normalize(light - position), normal) * 0.7, .1f, 1));
 	outTexCoord = inTexCoord;
 	outNormal = normal;
 }

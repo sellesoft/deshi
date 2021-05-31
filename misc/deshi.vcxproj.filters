@@ -490,6 +490,9 @@
     <ClCompile Include="..\src\game\Editor.cpp">
       <Filter>src\game</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\utils\Debug.cpp">
+      <Filter>src\utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\cfg\keybinds.txt">
