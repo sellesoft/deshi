@@ -49,7 +49,7 @@ struct Movement : public Component {
 
 	void GrabObject();
 	
-	std::vector<char> SaveTEXT() override;
+	std::string SaveTEXT() override;
 	static void LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count);
 };
 

@@ -40,6 +40,8 @@ struct Window{
 	bool resizable;
 	bool closeWindow;
 	
+	b32  resized;
+	
 	Vector2 dimensions;
 	
 	//NOTE(delle) vsync isnt handled in GLFW when using vulkan

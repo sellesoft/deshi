@@ -22,7 +22,7 @@ void OrbManager::Init(){
 		Orb* orb = new Orb(Vector3(10, 10, 10), Vector3::ONE * 0.1 * i, Vector3::ZERO, Vector3::ZERO);
 		
 		u32 id = DengRenderer->CreateMesh(mesh, Matrix4::TransformationMatrix(orb->pos, orb->rot, Vector3::ONE));
-		MeshComp* mc = new MeshComp(mesh, id);
+		MeshComp* mc = new MeshComp(id);
 		orb->mc = mc;
 		mc->ENTITY_CONTROL = false;
 		EntityAt(entityID)->AddComponent(mc);
@@ -113,6 +113,11 @@ void OrbManager::Update() {
 	}
 	
 	
+}
+
+std::string OrbManager::SaveTEXT(){
+	return TOSTRING("\n>orb manager"
+					"\n");
 }
 
 void OrbManager::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){

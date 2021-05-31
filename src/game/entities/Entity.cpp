@@ -14,7 +14,7 @@ Entity::Entity(EntityAdmin* admin, u32 id, Transform transform, const char* name
 	this->admin = admin;
 	this->id = id;
 	this->transform = transform;
-	if (name) cpystr(this->name, name, 63);
+	if (name) cpystr(this->name, name, DESHI_NAME_SIZE);
 	for (Component* c : comps) {
 		if (!c) continue;
 		this->components.push_back(c);
@@ -30,7 +30,7 @@ Entity::~Entity() {
 void Entity::operator=(Entity& e) {
 	admin = e.admin;
 	id = e.id;
-	cpystr(name, e.name, 63);
+	cpystr(name, e.name, DESHI_NAME_SIZE);
 	transform = e.transform;
 	//std::copy(e.components.begin(), e.components.end(), components);
 	for (Component* c : e.components) {
@@ -44,8 +44,21 @@ void Entity::Init(){
 	for_n(i,components.size()) components[i]->Init();
 }
 
+std::string Entity::SaveTEXT(){
+	std::string result; result.reserve(2048);
+	result.append(TOSTRING(">entity",
+						   "\nid       ", id,
+						   "\nname     \"",name,"\"",
+						   "\nposition (",transform.position.x,",",transform.position.y,",",transform.position.z,")",
+						   "\nrotation (",transform.position.x,",",transform.position.y,",",transform.position.z,")",
+						   "\nscale    (",transform.position.x,",",transform.position.y,",",transform.position.z,")\n"));
+	for(Component* c : components) result.append(c->SaveTEXT());
+	result.shrink_to_fit();
+	return result;
+}
+
 void Entity::SetName(const char* name) {
-	if (name) cpystr(this->name, name, 63);
+	if (name) cpystr(this->name, name, DESHI_NAME_SIZE);
 }
 
 void Entity::AddComponent(Component* c) {

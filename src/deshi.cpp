@@ -96,6 +96,7 @@ orthographic side views
 add showing axis lines through object when axis grabbing once we have lines in Vulkan
 keybind to move camera to object (like Blender's NPMINUS)
 implement orthographic grabbing 
+add level_name var to editor.h for ease of saving (and have a modal when none is set)
 
 Physics/Atmos TODOs
 -------------

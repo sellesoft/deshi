@@ -6,8 +6,7 @@
 #include "../../math/Vector.h"
 
 AudioSource::AudioSource() {
-	//empty version for adding component through command
-	cpystr(name, "AudioSource", 63);
+	cpystr(name, "AudioSource", DESHI_NAME_SIZE);
 	layer = ComponentLayer_Sound;
 	comptype = ComponentType_AudioSource;
 	sender = new Sender();
@@ -27,7 +26,7 @@ AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, fl
 		this->t = t;
 	}
 	
-	cpystr(name, "AudioSource", 63);
+	cpystr(name, "AudioSource", DESHI_NAME_SIZE);
 	layer = ComponentLayer_Sound;
 	comptype = ComponentType_AudioSource;
 	sender = new Sender();
@@ -38,8 +37,14 @@ void AudioSource::RequestPlay(float gain, float pitch) {
 	request_play = true;
 }
 
-std::vector<char> AudioSource::SaveTEXT(){
-	return std::vector<char>();
+////////////////////////////
+//// saving and loading ////
+////////////////////////////
+
+//TODO(sushi) setup audio source saving
+std::string AudioSource::SaveTEXT(){
+	return TOSTRING("\n>audio source"
+					"\n");
 }
 
 void AudioSource::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){

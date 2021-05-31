@@ -6,8 +6,11 @@
 #include "../../math/Vector.h"
 #include "../../math/Matrix.h"
 
-enum struct CameraType {
-	PERSPECTIVE, ORTHOGRAPHIC
+enum CameraTypeBits : u32{
+	CameraType_Perspective, CameraType_Orthographic
+}; typedef u32 CameraType;
+static const char* CameraTypeStrings[] = {
+	"Perspective", "Orthographic"
 };
 
 enum OrthoViews {
@@ -22,7 +25,7 @@ struct Camera : public Component {
 	Vector3 right   = Vector3::ZERO;
 	Vector3 up      = Vector3::ZERO;
 	bool freeCamera = true; //whether the camera can move or not (no need to update if false)
-	CameraType type = CameraType::PERSPECTIVE;
+	CameraType type = CameraType_Perspective;
 	OrthoViews orthoview = FRONT; //TODO(sushi, Cl) combine this with type using bit masking if this is how i decide to keep doing ortho views
 	
 	float nearZ; //the distance from the camera's position to screen plane
@@ -43,7 +46,7 @@ struct Camera : public Component {
 	void UpdateProjectionMatrix();
 	
 	std::string str() override;
-	std::vector<char> SaveTEXT() override;
+	std::string SaveTEXT() override;
 	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 

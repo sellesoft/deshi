@@ -7,7 +7,7 @@ Player::Player(Movement* movement) {
 	admin = g_admin;
 	layer = ComponentLayer_Physics;
 	comptype = ComponentType_Player;
-	cpystr(name, "Player", 63);
+	cpystr(name, "Player", DESHI_NAME_SIZE);
 	sender = new Sender();
 	
 	this->movement = movement;
@@ -17,7 +17,7 @@ Player::Player(Movement* movement, int health) {
 	admin = g_admin;
 	layer = ComponentLayer_Physics;
 	comptype = ComponentType_Player;
-	cpystr(name, "Player", 63);
+	cpystr(name, "Player", DESHI_NAME_SIZE);
 	sender = new Sender();
 	
 	this->movement = movement;
@@ -29,12 +29,14 @@ void Player::Update() {
 	
 }
 
-std::vector<char> Player::SaveTEXT(){
-	return std::vector<char>();
+std::string Player::SaveTEXT(){
+	return TOSTRING("\n>player"
+					"\nhealth ", health,
+					"\n");
 }
 
 void Player::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
-	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
+	u32 entityID = -1, compID = -1, event = -1;
 	int health = 0;
 	for_n(i, count) {
 		memcpy(&entityID, data + cursor, sizeof(u32)); cursor += sizeof(u32);

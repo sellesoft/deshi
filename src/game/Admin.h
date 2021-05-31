@@ -68,6 +68,8 @@ struct EntityAdmin {
 	void ChangeState(GameState state);
 	
 	void Reset();
+	void SaveTEXT(const char* savename);
+	void LoadTEXT(const char* savename);
 	void SaveDESH(const char* filename);
 	void LoadDESH(const char* filename);
 	

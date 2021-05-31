@@ -668,7 +668,14 @@ void Editor::MenuBar() {
 					admin->SaveDESH(s.c_str());
 				}
 				EndMenu();
-			} 
+			}
+			if (BeginMenu("Save Level")) {
+				static char buff[255] = {};
+				if(ImGui::InputText("##savelevelas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
+					admin->SaveTEXT(buff);
+				}
+				EndMenu();
+			}
 			if (BeginMenu("Load")) { WinHovCheck;
 				static bool fopen = false;
 				static std::vector<std::string> saves;
@@ -1146,26 +1153,26 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 					
 					TableNextColumn();
 					static bool rename = false;
-					static char buff[64] = {};
-					static char ogname[64] = {}; //TODO(delle,Op) maybe optimize this by making one buffer before loop for all entities
+					static char buff[DESHI_NAME_SIZE] = {};
+					static char ogname[DESHI_NAME_SIZE] = {};
 					static int renameid = 0;
 					if(!rename) Text(TOSTRING(" ", entity->name).c_str());
 					if (IsItemClicked()) {
 						renameid = counter;
 						rename = true;
-						cpystr(buff, entity->name, 63);
-						cpystr(ogname, entity->name, 63);
+						cpystr(buff, entity->name, DESHI_NAME_SIZE);
+						cpystr(ogname, entity->name, DESHI_NAME_SIZE);
 					}
 					
 					if(rename) DengConsole->IMGUI_KEY_CAPTURE = true;
 					if (rename && counter == renameid) {
 						if (InputText("##ent_name_input", buff, sizeof(buff), ImGuiInputTextFlags_EnterReturnsTrue)) {
-							cpystr(entity->name, buff, 63);
+							cpystr(entity->name, buff, DESHI_NAME_SIZE);
 							rename = false;
 							DengConsole->IMGUI_KEY_CAPTURE = false;
 						}
 						if (DengInput->KeyPressed(Key::ESCAPE)) {
-							cpystr(entity->name, ogname, 63);
+							cpystr(entity->name, ogname, DESHI_NAME_SIZE);
 							rename = false;
 							DengConsole->IMGUI_KEY_CAPTURE = false;
 						}
@@ -1214,7 +1221,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 		
 		//// name ////
 		SetPadding; Text(TOSTRING(sel->id, ":").c_str()); 
-		SameLine(); SetNextItemWidth(-FLT_MIN); InputText("##ent_name_input", sel->name, 64, 
+		SameLine(); SetNextItemWidth(-FLT_MIN); InputText("##ent_name_input", sel->name, DESHI_NAME_SIZE, 
 														  ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
 		
 		//// transform ////
@@ -1501,7 +1508,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 	local_persist const char* premades[] = { "Player" };
 	local_persist int current_preset = 0;
 	local_persist int current_premade = 0;
-	local_persist char entity_name[64] = {};
+	local_persist char entity_name[DESHI_NAME_SIZE] = {};
 	local_persist vec3 entity_pos{}, entity_rot{}, entity_scale = Vector3::ONE;
 	local_persist bool comp_audiolistener{}, comp_audiosource{}, comp_collider{}, comp_mesh{};
 	local_persist bool comp_light{}, comp_physics{}, comp_2d{}, comp_player{};
@@ -1621,7 +1628,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					physics_rotVel   = Vector3::ZERO; physics_rotAccel = Vector3::ZERO;
 					physics_elasticity = .5f; physics_mass = 1.f;
 					physics_staticPosition = physics_staticRotation = true;
-					cpystr(entity_name, TOSTRING("default", entity_id).c_str(), 63);
+					cpystr(entity_name, TOSTRING("default", entity_id).c_str(), DESHI_NAME_SIZE);
 				}break;
 				case(1):{
 					comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
@@ -1630,7 +1637,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					collider_halfdims = Vector3::ONE;
 					mesh_id = 0;
 					physics_staticPosition = physics_staticRotation = true;
-					cpystr(entity_name, TOSTRING("aabb", entity_id).c_str(), 63);
+					cpystr(entity_name, TOSTRING("aabb", entity_id).c_str(), DESHI_NAME_SIZE);
 				}break;
 				case(2):{
 					comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
@@ -1639,7 +1646,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					collider_halfdims = Vector3::ONE;
 					mesh_id = 0;
 					physics_staticPosition = physics_staticRotation = true;
-					cpystr(entity_name, TOSTRING("box", entity_id).c_str(), 63);
+					cpystr(entity_name, TOSTRING("box", entity_id).c_str(), DESHI_NAME_SIZE);
 				}break;
 				case(3):{
 					comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
@@ -1648,7 +1655,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					collider_radius = 1.f;
 					mesh_id = DengRenderer->GetBaseMeshID("sphere.obj");
 					physics_staticPosition = physics_staticRotation = true;
-					cpystr(entity_name, TOSTRING("sphere", entity_id).c_str(), 63);
+					cpystr(entity_name, TOSTRING("sphere", entity_id).c_str(), DESHI_NAME_SIZE);
 				}break;
 				case(4):{
 					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = comp_light = comp_player = false;
@@ -1660,7 +1667,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					twod_verts.resize(3);
 					twod_verts[0] = {-100.f, 0.f}; twod_verts[1] = {0.f, 100.f}; twod_verts[2] = {100.f, 0.f};
 					entity_pos = {700.f, 400.f, 0};
-					cpystr(entity_name, "twod", 63);
+					cpystr(entity_name, "twod", DESHI_NAME_SIZE);
 				}break;
 				case(5):{
 					comp_light = false;
@@ -1670,14 +1677,14 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 					mesh_id = DengRenderer->GetBaseMeshID("bmonkey.obj");
 					physics_staticPosition = physics_staticRotation = false;
 					physics_elasticity = 0.f;
-					cpystr(entity_name, "player", 63);
+					cpystr(entity_name, "player", DESHI_NAME_SIZE);
 				}break;
 			}
 			if(mesh_id < DengRenderer->meshes.size()) mesh_name = DengRenderer->meshes[mesh_id].name;
 		}
 		
 		SetPadding; Text("Name: "); 
-		SameLine(); SetNextItemWidth(-1); InputText("##unique_id", entity_name, 64, ImGuiInputTextFlags_EnterReturnsTrue | 
+		SameLine(); SetNextItemWidth(-1); InputText("##unique_id", entity_name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | 
 													ImGuiInputTextFlags_AutoSelectAll);
 		
 		//// transform ////
@@ -2451,16 +2458,16 @@ void Editor::Update(){
 		static Vector3 ogrot;
 		if (DengInput->KeyPressed(DengKeys.perspectiveToggle)) {
 			switch (camera->type) {
-				case(CameraType::PERSPECTIVE): {  
+				case(CameraType_Perspective): {  
 					ogpos = camera->position;
 					ogrot = camera->rotation;
-					camera->type = CameraType::ORTHOGRAPHIC; 
+					camera->type = CameraType_Orthographic; 
 					camera->farZ = 1000000; 
 				} break;
-				case(CameraType::ORTHOGRAPHIC): { 
+				case(CameraType_Orthographic): { 
 					camera->position = ogpos; 
 					camera->rotation = ogrot;
-					camera->type = CameraType::PERSPECTIVE; 
+					camera->type = CameraType_Perspective; 
 					camera->farZ = 1000; 
 					camera->UpdateProjectionMatrix(); 
 				} break;

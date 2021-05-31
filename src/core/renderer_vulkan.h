@@ -112,7 +112,7 @@ struct VertexVk{
 };
 
 struct TextureVk {
-	char filename[64];
+	char filename[DESHI_NAME_SIZE];
 	u32 id = 0xFFFFFFFF;
 	int width, height, channels;
 	stbi_uc* pixels;
@@ -141,7 +141,7 @@ struct MeshVk{
 	b32 visible = true;
 	b32 base    = false;
 	Mesh* ptr   = nullptr;
-	char name[64];
+	char name[DESHI_NAME_SIZE];
 	glm::mat4 modelMatrix = glm::mat4(1.f);
 	std::vector<PrimitiveVk> primitives;
 	std::vector<u32> children;
@@ -149,7 +149,7 @@ struct MeshVk{
 
 struct MeshBrushVk{
 	u32  id = -1;
-	char name[64];
+	char name[DESHI_NAME_SIZE];
 	b32 visible = true;
 	glm::mat4 matrix = glm::mat4(1.f);
 	std::vector<VertexVk> vertices;
@@ -169,7 +169,7 @@ struct MaterialVk{
 	u32 normalID   = 2;
 	u32 specularID = 2;
 	u32 lightID    = 2;
-	char name[64];
+	char name[DESHI_NAME_SIZE];
 	
 	VkDescriptorSet descriptorSet;
 	VkPipeline      pipeline = 0;
@@ -202,7 +202,7 @@ struct Renderer{
 	////////////////////////////
 	Time*          time;
 	Input*         input;
-	GLFWwindow*    window;
+	Window*        window;
 	RenderSettings settings;
 	RenderStats    stats{};
 	RendererStage  rendererStage{};
@@ -365,7 +365,6 @@ struct Renderer{
 	VkSurfaceKHR surface; //ptr or struct; platform dependent
 	
 	void CreateSurface();
-	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 	
 	
 	//// device ////
@@ -552,7 +551,7 @@ struct Renderer{
 	} pipelines;
 	
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
-	std::vector<std::pair<char*, VkShaderModule>>  shaderModules;
+	std::vector<std::pair<std::string, VkShaderModule>>  shaderModules;
 	
 	void CreatePipelines();
 	void RemakePipeline(VkPipeline pipeline);

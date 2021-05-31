@@ -19,7 +19,7 @@ enum TextureTypeBits : u32 {
 }; typedef u32 TextureType;
 
 struct Texture {
-	char filename[64];
+	char filename[DESHI_NAME_SIZE];
 	TextureType type;
 	Texture() {}
 	Texture(const char* filename, TextureType textureType = TextureType_Albedo);
@@ -38,7 +38,7 @@ static const char* ShaderStrings[] = {
 };
 
 struct Material{
-	char name[64];
+	char name[DESHI_NAME_SIZE];
 	u32 shader;
 	u32 shaderFlags;
 	std::vector<Texture> textureArray;
@@ -73,7 +73,7 @@ namespace std {
 
 //NOTE indices should be clockwise
 struct Batch {
-	char name[64];
+	char name[DESHI_NAME_SIZE];
 	u32 vertexCount  = 0;
 	u32 indexCount   = 0;
 	u32 textureCount = 0;
@@ -113,7 +113,7 @@ struct Triangle {
 };
 
 struct Mesh {
-	char name[64];
+	char name[DESHI_NAME_SIZE];
 	
 	u32 vertexCount  = 0;
 	u32 indexCount   = 0;

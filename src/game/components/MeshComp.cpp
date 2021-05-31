@@ -7,7 +7,7 @@
 
 MeshComp::MeshComp() {
 	admin = g_admin;
-	cpystr(name, "MeshComp", 63);
+	cpystr(name, "MeshComp", DESHI_NAME_SIZE);
 	sender = new Sender();
 	layer = ComponentLayer_Canvas;
 	comptype = ComponentType_MeshComp;
@@ -19,7 +19,7 @@ MeshComp::MeshComp() {
 
 MeshComp::MeshComp(u32 meshID, u32 instanceID) {
 	admin = g_admin;
-	cpystr(name, "MeshComp", 63);
+	cpystr(name, "MeshComp", DESHI_NAME_SIZE);
 	sender = new Sender();
 	layer = ComponentLayer_Canvas;
 	comptype = ComponentType_MeshComp;
@@ -28,18 +28,6 @@ MeshComp::MeshComp(u32 meshID, u32 instanceID) {
 	this->meshID = meshID;
 	this->instanceID = instanceID;
 	this->mesh = DengRenderer->GetMeshPtr(meshID);
-}
-
-MeshComp::MeshComp(Mesh* m, u32 meshID, u32 instanceID) {
-	admin = g_admin;
-	cpystr(name, "MeshComp", 63);
-	sender = new Sender();
-	layer = ComponentLayer_Canvas;
-	comptype = ComponentType_MeshComp;
-	
-	this->mesh = m;
-	this->meshID = meshID;
-	this->instanceID = instanceID;
 }
 
 MeshComp::~MeshComp() {
@@ -100,8 +88,11 @@ void MeshComp::Update() {
 	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
 }
 
-std::vector<char> MeshComp::SaveTEXT(){
-	return std::vector<char>();
+std::string MeshComp::SaveTEXT(){
+	return TOSTRING("\n>mesh"
+					"\nname    \"", DengRenderer->meshes[meshID].name, "\""
+					"\nvisible ", (mesh_visible) ? "true" : "false",
+					"\n");
 }
 
 void MeshComp::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
@@ -140,7 +131,7 @@ void MeshComp::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 c
 
 MeshComp2D::MeshComp2D(u32 id) {
 	admin = g_admin;
-	cpystr(name, "MeshComp", 63);
+	cpystr(name, "MeshComp", DESHI_NAME_SIZE);
 	sender = new Sender();
 	layer = ComponentLayer_Canvas;
 	
@@ -160,8 +151,11 @@ void MeshComp2D::ReceiveEvent(Event event) {}
 
 void MeshComp2D::Update() {}
 
-std::vector<char> MeshComp2D::SaveTEXT(){
-	return std::vector<char>();
+std::string MeshComp2D::SaveTEXT(){
+	return TOSTRING("\n>mesh"
+					"\nname    \"", DengRenderer->meshes[twodID].name, "\""
+					"\nvisible ", (visible) ? "true" : "false",
+					"\n");
 }
 
 void MeshComp2D::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
