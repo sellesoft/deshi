@@ -3,11 +3,19 @@
 #include "../admin.h"
 #include "../../core.h"
 
-Light::Light(const Vector3& position, const Vector3& direction, float brightness) {
+Light::Light(){
 	admin = g_admin;
+	cpystr(name, "Light", DESHI_NAME_SIZE);
+	comptype = ComponentType_Light;
+	layer = ComponentLayer_Physics;
+	sender = new Sender();
+}
+
+Light::Light(const Vector3& position, const Vector3& direction, float brightness) {
 	this->position = position;
 	this->direction = direction;
 	this->brightness = brightness;
+	admin = g_admin;
 	cpystr(name, "Light", DESHI_NAME_SIZE);
 	comptype = ComponentType_Light;
 	layer = ComponentLayer_Physics;

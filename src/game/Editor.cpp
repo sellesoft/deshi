@@ -26,7 +26,7 @@
 Entity* Editor::SelectEntityRaycast(){
 	vec3 pos = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions);
 	RenderedEdge3D* ray = new RenderedEdge3D(pos, camera->position);
-
+	
 	//NOTE sushi: this sort of works, but fails sometimes since the position of a larger obj
 	//			  can be closer than a smaller one even though the small one appears in front
 	//			  this can be mediated by sorting triangles in
@@ -35,10 +35,10 @@ Entity* Editor::SelectEntityRaycast(){
 	//	[&](Entity* e1, Entity* e2) {
 	//		return (e1->transform.position - camera->position).mag() < (e2->transform.position - camera->position).mag();
 	//	});
-
+	
 	u32 closeindex = -1;
 	f32 mint = -INFINITY;
-
+	
 	vec3 p0, p1, p2, normal, intersect;
 	mat4 rot, transform;
 	f32  t;
@@ -73,14 +73,14 @@ Entity* Editor::SelectEntityRaycast(){
 							DebugLinesCol(index, p0, intersect, -1, Color::BLUE);
 							DebugLinesCol(index, p1, intersect, -1, Color::BLUE);
 							DebugLinesCol(index, p2, intersect, -1, Color::BLUE);
-
+							
 							if (t > mint) {
 								closeindex = index;
 								mint = t;
 								done = true;
 								break;
 							}
-						
+							
 						}
 						if(done) break;
 					}
@@ -91,7 +91,7 @@ Entity* Editor::SelectEntityRaycast(){
 		done = false;
 		index++;
 	}
-
+	
 	if (closeindex != -1) return admin->entities[closeindex];
 	else return 0;
 }
@@ -1367,24 +1367,24 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 				
 				//physics
 				case ComponentType_Physics:
-					if (TreeNodeEx("Physics", tree_flags)) {
-						dyncast(d, Physics, c);
-						Text("Velocity     "); SameLine(); InputVector3("##phys_vel", &d->velocity);             Separator();
-						Text("Accelertaion "); SameLine(); InputVector3("##phys_accel", &d->acceleration);       Separator();
-						Text("Rot Velocity "); SameLine(); InputVector3("##phys_rotvel", &d->rotVelocity);       Separator();
-						Text("Rot Accel    "); SameLine(); InputVector3("##phys_rotaccel", &d->rotAcceleration); Separator();
-						Text("Elasticity   "); SameLine();
-						ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_elastic", &d->elasticity); Separator();
-						Text("Mass         "); SameLine();
-						ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->mass); Separator();
-						Text("Kinetic Fric "); SameLine();
-						ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->kineticFricCoef); Separator();
-						Checkbox("Static Position", &d->isStatic); Separator();
-						Checkbox("Static Rotation", &d->staticRotation);
-						Checkbox("2D Physics", &d->twoDphys);
-						TreePop();
-					}
-					break;
+				if (TreeNodeEx("Physics", tree_flags)) {
+					dyncast(d, Physics, c);
+					Text("Velocity     "); SameLine(); InputVector3("##phys_vel", &d->velocity);             Separator();
+					Text("Accelertaion "); SameLine(); InputVector3("##phys_accel", &d->acceleration);       Separator();
+					Text("Rot Velocity "); SameLine(); InputVector3("##phys_rotvel", &d->rotVelocity);       Separator();
+					Text("Rot Accel    "); SameLine(); InputVector3("##phys_rotaccel", &d->rotAcceleration); Separator();
+					Text("Elasticity   "); SameLine();
+					ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_elastic", &d->elasticity); Separator();
+					Text("Mass         "); SameLine();
+					ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->mass); Separator();
+					Text("Kinetic Fric "); SameLine();
+					ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->kineticFricCoef); Separator();
+					Checkbox("Static Position", &d->isStatic); Separator();
+					Checkbox("Static Rotation", &d->staticRotation);
+					Checkbox("2D Physics", &d->twoDphys);
+					TreePop();
+				}
+				break;
 				
 				//colliders
 				case ComponentType_Collider:{
@@ -1439,17 +1439,17 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 				
 				//light
 				case ComponentType_Light:
-					if (TreeNodeEx("Light", tree_flags)) {
-						dyncast(d, Light, c);
-						Text("Brightness   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-						InputFloat("brightness", &d->brightness); Separator();
-						Text("Position     "); SameLine(); InputVector3("position", &d->position); Separator();
-						Text("Direction    "); SameLine(); InputVector3("direction", &d->direction); Separator();
-
-
-						TreePop();
-					}
-					break;
+				if (TreeNodeEx("Light", tree_flags)) {
+					dyncast(d, Light, c);
+					Text("Brightness   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+					InputFloat("brightness", &d->brightness); Separator();
+					Text("Position     "); SameLine(); InputVector3("position", &d->position); Separator();
+					Text("Direction    "); SameLine(); InputVector3("direction", &d->direction); Separator();
+					
+					
+					TreePop();
+				}
+				break;
 				
 				//orb manager
 				case ComponentType_OrbManager:{
@@ -2360,7 +2360,7 @@ void Editor::DebugLayer() {
 void Editor::WorldGrid(Vector3 cpos) {
 	int lines = 30; //this should be 100, imgui can handle it, but Vulkan struggles?
 	cpos = Vector3::ZERO;
-		
+	
 	for (int i = 0; i < lines * 2 + 1; i++) {
 		Vector3 v1 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines);
 		Vector3 v2 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + lines);
@@ -2368,26 +2368,26 @@ void Editor::WorldGrid(Vector3 cpos) {
 		Vector3 v4 = Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i);
 		//
 		//DebugLinesStatic(i, v3, v4, -1);
-
+		
 		bool l1flag = false;
 		bool l2flag = false;
-
+		
 		if (floor(cpos.x) - lines + i == 0) {
 			l1flag = true;
 		}
 		if (floor(cpos.z) - lines + i == 0) {
 			l2flag = true;
 		}
-
+		
 		if (l1flag) { DebugLinesCol(i, v1, v2, -1, Color::BLUE); }
 		else { DebugLinesCol(i, v1, v2, -1, Color(50, 50, 50, 50)) };
-
+		
 		if (l2flag) { DebugLinesCol(i, v3, v4, -1, Color::RED); }
 		else { DebugLinesCol(i, v3, v4, -1, Color(50, 50, 50, 50)) };
-
-
-	}
 		
+		
+	}
+	
 }
 
 
@@ -2401,6 +2401,8 @@ void Editor::Init(EntityAdmin* a){
 	selected.reserve(8);
 	camera = new Camera(90.f, .01f, 1000.01f, true);
 	camera->admin = a;
+	DengRenderer->UpdateCameraViewMatrix(camera->viewMat);
+	DengRenderer->UpdateCameraPosition(camera->position);
 	undo_manager.Init();
 	
 	showDebugTools      = true;
@@ -2507,11 +2509,11 @@ void Editor::Update(){
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1)); {
 			if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
 		}ImGui::PopStyleColor();
-
+		
 		if (!showMenuBar)    menubarheight = 0;
 		if (!showDebugBar)   debugbarheight = 0;
 		if (!showDebugTools) debugtoolswidth = 0;
-
+		
 		Vector3 cpos = camera->position;
 		static Vector3 lastcpos = camera->position;
 		static bool first = true;
@@ -2552,4 +2554,6 @@ void Editor::Update(){
 void Editor::Reset(){
 	selected.clear();
 	undo_manager.Reset();
+	g_debug->meshes.clear();
+	WorldGrid(camera->position);
 }

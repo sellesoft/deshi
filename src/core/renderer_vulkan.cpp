@@ -251,11 +251,38 @@ Reset() {
 	SUCCESS("Resetting renderer (Vulkan)");
 	vkDeviceWaitIdle(device); //wait before cleanup
 	
+	//vertex buffer
 	vertexBuffer.clear();
+	
+	//index buffer
 	indexBuffer.clear();
+	
+	//textures
+	for(auto& tex : textures){
+		vkDestroyImage(device, tex.image, nullptr);
+		vkFreeMemory(device, tex.imageMemory, nullptr);
+		vkDestroyImageView(device, tex.view, nullptr);
+		vkDestroySampler(device, tex.sampler, nullptr);
+	}
 	textures.clear();
+	
+	//meshes
 	meshes.clear();
+	
+	//materials
+	for(auto& mat : materials){
+		vkFreeDescriptorSets(device, descriptorPool, 1, &mat.descriptorSet);
+	}
 	materials.clear();
+	
+	//mesh brushes
+	for(auto& mesh : meshBrushes){
+		vkDestroyBuffer(device, mesh.vertexBuffer, nullptr);
+		vkFreeMemory(device, mesh.vertexBufferMemory, nullptr);
+		vkDestroyBuffer(device, mesh.indexBuffer, nullptr);
+		vkFreeMemory(device, mesh.indexBufferMemory, nullptr);
+	}
+	meshBrushes.clear();
 	
 	LoadDefaultAssets();
 }
@@ -321,7 +348,7 @@ UpdateDebugLine(u32 id, Vector3 start, Vector3 end, Color color) {
 	meshBrushes[id].vertices[0].color = glm::make_vec3(&color.r);
 	meshBrushes[id].vertices[1].color = glm::make_vec3(&color.r);
 	UpdateMeshBrushBuffers(id);
-
+	
 }
 
 u32 Renderer::
@@ -474,11 +501,14 @@ UpdateMeshBrushBuffers(u32 meshBrushIdx){
 	vkFreeMemory(device, indexStaging.memory, nullptr);
 }
 
-//TODO(delle) free GPU resources in this func
 void Renderer::
 RemoveMeshBrush(u32 meshBrushIdx){
 	if(meshBrushIdx < meshBrushes.size()){
 		for(int i=meshBrushIdx; i<meshBrushes.size(); ++i) { --meshBrushes[i].id; } 
+		vkDestroyBuffer(device, meshBrushes[meshBrushIdx].vertexBuffer, nullptr);
+		vkFreeMemory(device, meshBrushes[meshBrushIdx].vertexBufferMemory, nullptr);
+		vkDestroyBuffer(device, meshBrushes[meshBrushIdx].indexBuffer, nullptr);
+		vkFreeMemory(device, meshBrushes[meshBrushIdx].indexBufferMemory, nullptr);
 		meshBrushes.erase(meshBrushes.begin() + meshBrushIdx);
 	}else{ ERROR_LOC("There is no mesh brush with id: ", meshBrushIdx); }
 }

@@ -38,6 +38,7 @@ struct OrbManager : public Component {
 	Mesh* mesh = nullptr;
 	std::vector<Orb*> orbs;
 	
+	OrbManager();
 	OrbManager(Mesh* mesh, int orbcount = 100);
 	
 	void Init() override;

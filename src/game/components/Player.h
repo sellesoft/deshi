@@ -14,8 +14,8 @@ struct Player : public Component {
 	
 	Movement* movement;
 	
+	Player();
 	Player(Movement* movement);
-	
 	Player(Movement* movement, int health);
 	
 	

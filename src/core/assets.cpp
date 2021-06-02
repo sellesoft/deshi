@@ -66,6 +66,36 @@ readFileBinary(const std::string& filepath, u32 bytes) {
 	return buffer;
 }
 
+char* deshi::
+readFileAsciiToArray(std::string filepath, u32 chars){
+	std::ifstream file(filepath, std::ifstream::in);
+	if(!file.is_open()) { ERROR("Failed to open file: ", filepath.c_str()); return 0; }
+	defer{ file.close(); };
+	
+	file.seekg(0, file.end);
+	if(chars == 0) chars = file.tellg();
+	
+	char* buffer = new char[chars];
+	file.seekg(0, file.beg);
+	file.read(buffer,chars);
+	return buffer;
+}
+
+char* deshi::
+readFileBinaryToArray(std::string filepath, u32 bytes){
+	std::ifstream file(filepath, std::ifstream::in | std::ios::binary);
+	if(!file.is_open()) { ERROR("Failed to open file: ", filepath.c_str()); return 0; }
+	defer{ file.close(); };
+	
+	file.seekg(0, file.end);
+	if(bytes == 0) bytes = file.tellg();
+	
+	char* buffer = new char[bytes];
+	file.seekg(0, file.beg);
+	file.read(buffer,bytes);
+	return buffer;
+}
+
 void deshi::
 writeFile(const std::string& filepath, std::vector<char>& data, u32 chars){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
@@ -181,6 +211,12 @@ std::string deshi::
 eat_spaces_trailing(std::string str){
 	size_t idx = str.find_last_not_of(' ');
 	return (idx != -1) ? str.substr(0, idx+1) : "";
+}
+
+std::string deshi::
+eat_comments(std::string str){
+	size_t idx = str.find_first_of('#');
+	return (idx != -1) ? str.substr(0, idx) : str;
 }
 
 std::vector<std::string> deshi::

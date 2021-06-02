@@ -498,6 +498,10 @@ COMMANDFUNC(flush) {
 	g_console->FlushBuffer(); return "";
 }
 
+COMMANDFUNC(level){
+	admin->LoadTEXT((args.size() > 0) ? args[0].c_str() : 0); return "";
+}
+
 CMDSTARTA(state, args.size() > 0){
 	if(args[0] == "play"){
 		admin->ChangeState(GameState_Play);
@@ -832,6 +836,7 @@ void Console::AddRandomCommands(){
 											   else return "engine_pause = false";
 										   }, "engine_pause", "toggles pausing the engine");
 	
+	CMDADD(level, "Loads a level from the levels folder");
 	CMDADD(save, "Saves the state of the editor");
 	CMDADD(daytime, "Logs the time in day-time format");
 	CMDADD(time_engine, "Logs the engine times");

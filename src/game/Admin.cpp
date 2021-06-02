@@ -97,15 +97,15 @@ void EntityAdmin::Update() {
 	if (!skip && !pause_sound && !paused) { sound.Update(); }
 	DengTime->sndSysTime =    TIMER_END(t_a);
 	ImGui::EndDebugLayer();
-
+	
 	for (int i = 0; i < 10; i++) {
 		if (fmod(DengTotalTime, 2) == 0) {
 			DebugLines(i,
-				Vector3(10 * sin(DengTotalTime), 0, 10 * cos(DengTotalTime + i * M_PI)),
-				Vector3(0, 10 * sin(DengTotalTime + i * M_PI), 10 * cos(DengTotalTime)), 5);
+					   Vector3(10 * sin(DengTotalTime), 0, 10 * cos(DengTotalTime + i * M_PI)),
+					   Vector3(0, 10 * sin(DengTotalTime + i * M_PI), 10 * cos(DengTotalTime)), 5);
 		}
 	}
-
+	
 }
 
 void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already happened
@@ -145,7 +145,7 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
 	for (int i = 0; i < 10; i++) {
 		if (i < scene.lights.size()) {
 			Vector3 p = scene.lights[i]->position;
-				DengRenderer->lights[i] = glm::vec4(p.x, p.y, p.z,
+			DengRenderer->lights[i] = glm::vec4(p.x, p.y, p.z,
 												(scene.lights[i]->active) ? scene.lights[i]->brightness : 0);
 		}
 		else {
@@ -280,19 +280,22 @@ void EntityAdmin::ChangeState(GameState new_state){
 
 void EntityAdmin::Reset(){
 	SUCCESS("Resetting admin");
+	TIMER_START(t_r);
 	for (Entity* e : entities) if(e) delete e;
 	entities.clear();
 	
 	for (auto& layer : freeCompLayers) { layer.clear(); }
-	editor.Reset();
 	scene.Reset();
 	DengRenderer->Reset();
 	DengRenderer->LoadScene(&scene);
+	editor.Reset();
+	SUCCESS("Finished resetting admin in ", TIMER_END(t_r), "ms");
 }
 
 //NOTE using a levels directory temporarily so it doesnt cause problems with the save directory
 //TODO(delle) this removes the entire level dir and recreates it, optimize by diffing for speed and comment preservation
 //TODO add safe-checking so you dont override another level accidentally
+//TODO add renderer stuffs saving
 void EntityAdmin::SaveTEXT(const char* level_name_cstr){
 	namespace fs = std::filesystem;
 	if(!level_name_cstr) return ERROR("Failed to create save text-file: no name passed");
@@ -349,7 +352,37 @@ void EntityAdmin::SaveTEXT(const char* level_name_cstr){
 }
 
 void EntityAdmin::LoadTEXT(const char* savename){
+	namespace fs = std::filesystem;
+	if(!savename) return ERROR("Failed to load text-file: no name passed");
+	Reset();
+	SUCCESS("Loading level: ", savename);
+	TIMER_START(t_l);
 	
+	std::string levels_dir = deshi::dirData() + "levels/";
+	std::string level_dir = levels_dir + savename + "/";
+	if(!fs::is_directory(level_dir)) return ERROR("Failed to find directory: ", level_dir);
+	
+	//parse level file //TODO parse level file, store level name on editor for quicksaving
+	
+	
+	//parse entity files
+	std::vector<Entity*> ents; ents.reserve(128); //TODO alter reserve amount after parsing level file
+	for(std::string& file : deshi::iterateDirectory(level_dir)){
+		if(file == "_") continue;
+		if(Entity* e = Entity::LoadTEXT(this, level_dir+file)){
+			ents.push_back(e);
+		}
+	}
+	
+	//events and connections
+	
+	//create entities
+	for(Entity* e : ents){
+		CreateEntity(e);
+	}
+	
+	SUCCESS("Finished loading level '", savename, "' in ", TIMER_END(t_l), "ms");
+	SkipUpdate();
 }
 
 struct SaveHeader{
