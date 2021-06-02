@@ -5,6 +5,14 @@
 #include "../../scene/Model.h"
 #include "../../scene/Scene.h"
 
+OrbManager::OrbManager(){
+	admin = g_admin;
+	cpystr(name, "OrbManager", 63);
+	layer = ComponentLayer_Physics;
+	comptype = ComponentType_OrbManager;
+	sender = new Sender();
+};
+
 OrbManager::OrbManager(Mesh* m, int orbcount){
 	admin = g_admin;
 	this->mesh = m;

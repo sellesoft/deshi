@@ -39,6 +39,14 @@ namespace deshi{
 	//reads a files contents in binary and returns it as a char vector
 	std::vector<char> readFileBinary(const std::string& filepath, u32 bytes = 0);
 	
+	//returns a char array of a file's contents in ASCII, returns 0 if failed
+	//NOTE the caller is responsible for freeing the array this allocates
+	char* readFileAsciiToArray(std::string filepath, u32 chars = 0);
+	
+	//returns a char array of a file's contents in binary, returns 0 if failed
+	//NOTE the caller is responsible for freeing the array this allocates
+	char* readFileBinaryToArray(std::string filepath, u32 bytes = 0);
+	
 	//truncates and writes a char vector to a file in ASCII format
 	void writeFile(const std::string& filepath, std::vector<char>& data, u32 chars = 0);
 	
@@ -76,6 +84,9 @@ namespace deshi{
 	
 	//returns a new string with the trailing spaces removed
 	std::string eat_spaces_trailing(std::string str);
+	
+	//returns a new string with the comments removed
+	std::string eat_comments(std::string str);
 	
 	//separates a string by spaces, ignores leading and trailing spaces
 	std::vector<std::string> space_delimit(std::string str);

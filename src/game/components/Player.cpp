@@ -3,6 +3,14 @@
 #include "Movement.h"
 #include "../admin.h"
 
+Player::Player() {
+	admin = g_admin;
+	layer = ComponentLayer_Physics;
+	comptype = ComponentType_Player;
+	cpystr(name, "Player", DESHI_NAME_SIZE);
+	sender = new Sender();
+}
+
 Player::Player(Movement* movement) {
 	admin = g_admin;
 	layer = ComponentLayer_Physics;

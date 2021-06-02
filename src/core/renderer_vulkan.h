@@ -126,7 +126,7 @@ struct TextureVk {
 	VkImageView   view;
 	VkSampler     sampler;
 	VkImageLayout layout;
-	VkDescriptorImageInfo imageInfo;
+	VkDescriptorImageInfo imageInfo; //just a combo of the previous three vars
 };
 
 //a primitive contains the information for one draw call (a batch)
@@ -212,7 +212,7 @@ struct Renderer{
 	//and other various dynamically sized things for things and such
 	glm::vec4 lights[10]{ glm::vec4(0,0,0,-1) };
 	bool generatingWorldGrid = false; //this area is my random var test area now :)
-
+	
 	//////////////////////////
 	//// render interface ////
 	//////////////////////////

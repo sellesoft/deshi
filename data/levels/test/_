@@ -1,0 +1,9 @@
+>level
+name         "test"
+entity_count 3
+last_updated "06/01/2021 00:08::38"
+
+>entities
+0_aabb0
+1_bmonkey
+2_sphere2

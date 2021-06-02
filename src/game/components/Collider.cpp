@@ -42,7 +42,7 @@ void BoxCollider::RecalculateTensor(f32 mass) {
 
 std::string BoxCollider::SaveTEXT(){
 	return TOSTRING("\n>collider"
-					"\ntype      ", type,
+					"\ntype      box"
 					"\nhalf_dims (",halfDims.x,",",halfDims.y,",",halfDims.z,")"
 					"\n");
 }
@@ -163,7 +163,7 @@ void AABBCollider::RecalculateTensor(f32 mass) {
 
 std::string AABBCollider::SaveTEXT(){
 	return TOSTRING("\n>collider"
-					"\ntype      ", type,
+					"\ntype      aabb"
 					"\nhalf_dims (",halfDims.x,",",halfDims.y,",",halfDims.z,")"
 					"\n");
 }
@@ -230,7 +230,7 @@ void SphereCollider::RecalculateTensor(f32 mass) {
 
 std::string SphereCollider::SaveTEXT(){
 	return TOSTRING("\n>collider"
-					"\ntype   ", type,
+					"\ntype   sphere"
 					"\nradius ",radius,
 					"\n");
 }
@@ -291,7 +291,7 @@ LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Event event
 std::string LandscapeCollider::SaveTEXT(){
 	ERROR_LOC("LandscapeCollider saving not setup");
 	return TOSTRING("\n>collider"
-					"\ntype ", type,
+					"\ntype landscape"
 					"\n");
 }
 
@@ -309,6 +309,6 @@ ComplexCollider::ComplexCollider(Mesh* mesh, u32 collisionleyer, Event event, b3
 std::string ComplexCollider::SaveTEXT(){
 	ERROR_LOC("ComplexCollider saving not setup");
 	return TOSTRING("\n>collider"
-					"\ntype ", type,
+					"\ntype complex"
 					"\n");
 }

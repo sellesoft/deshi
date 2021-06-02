@@ -504,6 +504,10 @@ COMMANDFUNC(flush) {
 	g_console->FlushBuffer(); return "";
 }
 
+COMMANDFUNC(level){
+	admin->LoadTEXT((args.size() > 0) ? args[0].c_str() : 0); return "";
+}
+
 CMDSTARTA(state, args.size() > 0){
 	if(args[0] == "play"){
 		admin->ChangeState(GameState_Play);

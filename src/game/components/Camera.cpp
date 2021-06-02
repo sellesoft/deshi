@@ -6,6 +6,13 @@
 #include "../../math/Math.h"
 #include "../../scene/Scene.h"
 
+Camera::Camera(){
+	admin = g_admin;
+	cpystr(name, "Camera", DESHI_NAME_SIZE);
+	layer = ComponentLayer_NONE;
+	comptype = ComponentType_Camera;
+}
+
 Camera::Camera(float fov, float nearZ, float farZ, bool freeCam){
 	admin = g_admin;
 	cpystr(name, "Camera", DESHI_NAME_SIZE);
@@ -23,9 +30,6 @@ Camera::Camera(float fov, float nearZ, float farZ, bool freeCam){
 	
 	viewMat = Math::LookAtMatrix(position, position + forward).Inverse();
 	UpdateProjectionMatrix();
-	
-	DengRenderer->UpdateCameraViewMatrix(viewMat);
-	DengRenderer->UpdateCameraPosition(position);
 }
 
 void Camera::Update() {
