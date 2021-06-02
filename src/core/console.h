@@ -49,12 +49,7 @@ struct Console  {
 	Command* GetCommand(std::string command);
 	std::string ExecCommand(std::string command);
 	std::string ExecCommand(std::string command, std::string args);
-	void AddRandomCommands();
-	void AddRenderCommands();
-	void AddCameraCommands();
-	void AddConsoleCommands();
-	void AddSelectedEntityCommands();
-	void AddWindowCommands();
+	void AddCommands();
 	void AddAliases();
 	
 	void CleanUp();

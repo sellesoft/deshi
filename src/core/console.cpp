@@ -466,6 +466,12 @@ try{ func }catch(...){ return desc; }\
 //// various uncategorized commands ////
 ////////////////////////////////////////
 
+COMMANDFUNC(engine_pause) {
+	admin->paused = !admin->paused;
+	if (admin->paused) return "engine_pause = true";
+	else return "engine_pause = false";
+}
+
 COMMANDFUNC(save){
 	std::string path = (args.size() > 0) ? args[0] : "save.desh";
 	admin->SaveDESH(path.c_str());
@@ -720,8 +726,7 @@ CMDSTARTA(cam_vars, args.size() != 0){
 	return c->str();
 }CMDEND("cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)");
 
-COMMANDFUNC(add_player) {
-	if (args.size() > 0) {
+CMDSTARTA(add_player, args.size() > 0) {
 		std::cmatch m;
 		Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
 		float mass = 1.f;
@@ -789,13 +794,10 @@ COMMANDFUNC(add_player) {
 											   name, Transform(position, rotation, scale));
 		admin->controller.playermove = mov;
 		return TOSTRING("Added player.");
-	}
-	return "load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)";
-}
+}CMDEND("load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 
 
-COMMANDFUNC(add_force) {
-	if (args.size() > 0) {
+CMDSTARTA(add_force, args.size() > 0) {
 		std::cmatch m;
 		for (std::string s : args) {
 			if (std::regex_search(s.c_str(), m, Vec3Regex("force"))) {
@@ -808,17 +810,310 @@ COMMANDFUNC(add_force) {
 				}
 			}
 		}
+}CMDEND("add_force -force=(x,y,z)");
+
+COMMANDFUNC(cam_info) {
+	return admin->mainCamera->str();
+}
+
+COMMANDFUNC(cam_matrix_projection) {
+	return admin->mainCamera->projMat.str2f();
+}
+
+COMMANDFUNC(cam_matrix_view) {
+	return admin->mainCamera->viewMat.str2f();
+}
+
+COMMANDFUNC(cam_reset) {
+	admin->mainCamera->position = Vector3(4.f, 3.f, -4.f);
+	admin->mainCamera->rotation = Vector3(28.f, -45.f, 0.f);
+	return "reset camera";
+}
+
+COMMANDFUNC(listc) {
+	std::string allcommands = "";
+
+	for (std::pair<std::string, Command*> c : DengConsole->commands) {
+		allcommands += c.first + "\n";
 	}
-	return "add_force -force=(x,y,z)";
+
+	return allcommands;
 }
 
-COMMANDFUNC(engine_pause){
-	admin->paused = !admin->paused;
-	if (admin->paused) return "engine_pause = true";
-	else return "engine_pause = false";
+CMDSTARTA(help, args.size() != 0 && !(args.size() == 1 && args[0] == "")) {
+	if (DengConsole->commands.find(args[0]) != DengConsole->commands.end()) {
+		Command* c = DengConsole->commands.at(args[0]);
+		return TOSTRING(c->name, "\n", c->description);
+	}
+	else {
+		return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
+	}
+}CMDEND("help \nprints help about a specified command. \nuse listc to display avaliable commands");
+
+COMMANDFUNC(alias) {
+	if (args.size() == 0) {
+		return "alias \nassign an alias to another command to call it with a different name\n alias (alias name) (command name)";
+	}
+	else if (args.size() == 1) {
+		return "you must specify a command to assign to this alias.";
+	}
+	else if (args.size() == 2) {
+		Command* com;
+		try {
+			com = DengConsole->commands.at(args[1]);
+			DengConsole->commands.emplace(args[0], com);
+
+			std::string data = args[0] + " " + args[1] + "\n";
+			std::vector<char> datav;
+
+			for (auto c : data) {
+				datav.push_back(c);
+			}
+
+			deshi::appendFile(deshi::assetPath("aliases.cfg", AssetType_Config),
+				datav, datav.size());
+
+			return "[c:green]alias \"" + args[0] + "\" successfully assigned to command \"" + args[1] + "\"[c]";
+		}
+		catch (...) {
+			return "[c:red]command \"" + args[1] + "\" not found in the commands list[c]";
+		}
+	}
+	else {
+		return "too many arguments specified.";
+	}
+
 }
 
-void Console::AddRandomCommands(){
+COMMANDFUNC(bind) {
+	if (args.size() == 0) {
+		return "bind \nassign a command to a key\n bind (key) (command name)";
+	}
+	else if (args.size() == 1) {
+		return "you must specify a command to assign to this bind.";
+	}
+	else {
+		std::string s = "";
+		for (int i = 1; i < args.size(); i++) {
+			s += args[i] + " ";
+		}
+		Key::Key key;
+
+		try {
+			key = DengKeys.stk.at(args[0]);
+			DengInput->binds.push_back(std::pair<std::string, Key::Key>(s, key));
+			std::vector<char> datav;
+			for (auto c : args[0] + " " + s) {
+				datav.push_back(c);
+			}
+			datav.push_back('\n');
+			deshi::appendFile(deshi::assetPath("binds.cfg", AssetType_Config),
+				datav, datav.size());
+			return "[c:green]key \"" + args[0] + "\" successfully bound to \n" + s + "[c]";
+		}
+		catch (...) {
+			return "[c:red]key \"" + args[0] + "\" not found in the key list.[c]";
+		}
+
+
+	}
+}
+
+CMDSTARTA(window_display_mode, args.size() == 1) {
+	try {
+		int mode = std::stoi(args[0]);
+		switch (mode) {
+		case(0): {
+			DengWindow->UpdateDisplayMode(DisplayMode::WINDOWED);
+			return "display_mode=windowed"; }
+		case(1): {
+			DengWindow->UpdateDisplayMode(DisplayMode::BORDERLESS);
+			return "display_mode=borderless windowed"; }
+		case(2): {
+			DengWindow->UpdateDisplayMode(DisplayMode::FULLSCREEN);
+			return "display_mode=fullscreen"; }
+		default: {
+			return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen"; }
+		}
+	}
+	catch (...) {
+		return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen";
+	}
+}CMDEND("display_mode <mode: Int>");
+
+CMDSTARTA(window_cursor_mode, args.size() == 1) {
+	try {
+		int mode = std::stoi(args[0]);
+		switch (mode) {
+		case(0): {
+			DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+			return "cursor_mode=default"; }
+		case(1): {
+			DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
+			return "cursor_mode=first person"; }
+		case(2): {
+			DengWindow->UpdateCursorMode(CursorMode::HIDDEN);
+			return "cursor_mode=hidden"; }
+		default: { return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden"; }
+		}
+	}
+	catch (...) {
+		return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden";
+	}
+} CMDEND("cursor_mode <mode:Int>");
+
+CMDSTARTA(window_raw_input, args.size() == 1) {
+	try {
+		int mode = std::stoi(args[0]);
+		switch (mode) {
+		case(0): { DengWindow->UpdateRawInput(false); return "raw_input=false"; }
+		case(1): { DengWindow->UpdateRawInput(true); return "raw_input=true"; }
+		default: { return "raw_input: 0=false, 1=true"; }
+		}
+	}
+	catch (...) {
+		return "raw_input: 0=false, 1=true";
+	}
+}CMDEND("raw_input <input:Boolean>");
+
+CMDSTARTA(window_resizable, args.size() == 1) {
+	try {
+		int mode = std::stoi(args[0]);
+		switch (mode) {
+		case(0): { DengWindow->UpdateResizable(false); return "window_resizable=false"; }
+		case(1): { DengWindow->UpdateResizable(true); return "window_resizable=true"; }
+		default: { return "window_resizable: 0=false, 1=true"; }
+		}
+	}
+	catch (...) {
+		return "window_resizable: 0=false, 1=true";
+	}
+}CMDEND("window_resizable <resizable:Boolean>");
+
+COMMANDFUNC(window_info) {
+	return DengWindow->str();
+}
+
+COMMANDFUNC(render_stats) {
+	//TODO(delle,Cmd) this
+	return "";
+}
+
+CMDSTARTA(render_options, args.size() > 0) {
+		try {
+			DengRenderer->settings.wireframe = std::stoi(args[0]);
+			return (DengRenderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
+		}
+		catch (...) {
+			return "render_options <wireframe:Bool>";
+		}
+	return (DengRenderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
+}CMDEND("render_options <wireframe:Bool>");
+
+CMDSTARTA(mat_texture, args.size() == 3) {
+	int matID = std::stoi(args[0]);
+	int texType = std::stoi(args[1]);
+	int texID = std::stoi(args[2]);
+	DengRenderer->UpdateMaterialTexture(matID, texType, texID);
+	return TOSTRING("Updated material", matID, "'s texture", texType, " to ", texID);
+}CMDEND("mat_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>");
+
+CMDSTARTA(mat_shader, args.size() == 2) {
+	int matID = std::stoi(args[0]);
+	int shader = std::stoi(args[1]);
+	DengRenderer->UpdateMaterialShader(matID, shader);
+	return TOSTRING("Updated material", matID, "'s shader to ", shader);
+} CMDEND("mat_shader <materialID:Uint> <shaderID:Uint>");
+
+COMMANDFUNC(mat_list) {
+	Renderer* r = DengRenderer;
+	std::string out = "[c:yellow]Materials List:\nID  Shader  Albedo  Normal  Specular  Light[c]";
+	for (auto& mat : r->materials) {
+		out += TOSTRING("\n", mat.id, "  ", ShaderStrings[mat.shader], "  ",
+			mat.albedoID, ":", r->textures[mat.albedoID].filename, "  ",
+			mat.normalID, ":", r->textures[mat.normalID].filename, "  ",
+			mat.specularID, ":", r->textures[mat.specularID].filename, "  ",
+			mat.lightID, ":", r->textures[mat.lightID].filename);
+	}
+	return out;
+}
+
+CMDSTARTA(shader_reload, args.size() == 1) {
+	int id = std::stoi(args[0]);
+	if (id == -1) {
+		DengRenderer->ReloadAllShaders();
+		return "[c:magen]Reloading all shaders[c]";
+	}
+	else {
+		DengRenderer->ReloadShader(id);
+		return ""; //printed in renderer
+	}
+}CMDEND("shader_reload <shaderID:Uint>");
+
+COMMANDFUNC(shader_list) {
+	return TOSTRING("[c:yellow]ID    SHADER          Description[c]\n",
+		"0    Flat            Vertex color shading without normal/edge smoothing\n",
+		"1    Phong           Vertex color shading with normal smoothing (good with spheres)\n",
+		"2    TwoD            Vertex color shading with 2D position, rotation, and scale\n",
+		"3    PBR             Physically-based rendering; 4 textures per material\n",
+		"4    Wireframe       Vertex color shading with no polygon fill\n",
+		"5    Lavalamp        Sushi's experimental shader\n",
+		"6    Test0           Testing shader 1\n",
+		"7    Test1           Testing shader 2");
+}
+
+COMMANDFUNC(shader_freeze) {
+	DengRenderer->shaderData.freeze = !DengRenderer->shaderData.freeze;
+	return (DengRenderer->shaderData.freeze) ? "Shaders frozen" : "Shaders unfrozen";
+}
+
+CMDSTARTA(mesh_visible, args.size() == 2) {
+		try {
+			int meshID = std::stoi(args[0]);
+			bool vis = std::stoi(args[1]);
+			DengRenderer->UpdateMeshVisibility(meshID, vis);
+			return TOSTRING("Setting mesh", meshID, "'s visibility to ", vis);
+		}
+		catch (...) {
+			return "mesh_visible <meshID:Uint> <visible:Bool>";
+		}
+}CMDEND("mesh_visible <meshID:Uint> <visible:Bool>");
+
+CMDSTARTA(mesh_batch_material, args.size() == 3) {
+	int mesh = std::stoi(args[0]);
+	int batch = std::stoi(args[1]);
+	int mat = std::stoi(args[2]);
+	DengRenderer->UpdateMeshBatchMaterial(mesh, batch, mat);
+	return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s material to ", mat);
+} CMDEND("mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>");
+
+CMDSTARTA(texture_load, args.size() > 0) {
+		Texture tex(args[0].c_str());
+		if (args.size() == 2) { tex.type = u32(std::stoi(args[1])); }
+		u32 id = DengRenderer->LoadTexture(tex);
+		return TOSTRING("Loaded texture ", args[0], " to ID: ", id);
+}CMDEND("texture_load <texture.png:String> [type:Uint]");
+
+COMMANDFUNC(texture_list) {
+	return DengRenderer->ListTextures();
+}
+
+COMMANDFUNC(texture_type_list) {
+	return TOSTRING("[c:yellow]Texture Types: (can be combined)[c]\n"
+		"   0=Albedo, Color, Diffuse\n"
+		"   1=Normal, Bump\n"
+		"   2=Light, Ambient\n"
+		"   4=Specular, Reflective\n"
+		"   8=Cube      (not supported yet)\n"
+		"  16=Sphere    (not supported yet)");
+}
+
+COMMANDFUNC(quit) {
+	DengWindow->Close();
+	return("");
+}
+
+void Console::AddCommands(){
 	//TODO(sushi,Cmd) reimplement this at some point
 	//commands["debug_global"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 	//	GLOBAL_DEBUG = !GLOBAL_DEBUG;
@@ -826,12 +1121,13 @@ void Console::AddRandomCommands(){
 	//	else return "GLOBAL_DEBUG = false";
 	//}, "debug_global", "debug_global");
 	
-	commands["engine_pause"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
+	/*commands["engine_pause"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
 											   admin->paused = !admin->paused;
 											   if (admin->paused) return "engine_pause = true";
 											   else return "engine_pause = false";
-										   }, "engine_pause", "toggles pausing the engine");
+										   }, "engine_pause", "toggles pausing the engine");*/
 	
+	CMDADD(engine_pause, "Toggles pausing the engine");
 	CMDADD(save, "Saves the state of the editor");
 	CMDADD(daytime, "Logs the time in day-time format");
 	CMDADD(time_engine, "Logs the engine times");
@@ -849,362 +1145,35 @@ void Console::AddRandomCommands(){
 	CMDADD(state, "Changes the admin's gamestate");
 	CMDADD(flush, "Flushes the console's buffer to the log file.");
 	CMDADD(add_force, "Adds a force to the selected object.");
-	CMDADD(engine_pause, "Pauses/Unpauses the engine");
 	CMDADD(meshbrush_create_box, "Creates a mesh brush of a box");
-}
-
-////////////////////////////////////
-//// render commands and inputs ////
-////////////////////////////////////
-
-void Console::AddRenderCommands() {
-	//TODO(delle,Cmd) create material
+	CMDADD(cam_info, "Prints camera variables");
+	CMDADD(cam_matrix_projection, "Prints camera's projection matrix");
+	CMDADD(cam_matrix_view, "Prints camera's view matrix");
+	CMDADD(cam_reset, "Resets camera");
+	CMDADD(listc, "Lists all avaliable commands");
+	CMDADD(help, "Prints help about a specified command. \nignores any argument after the first");
+	CMDADD(alias, "Assign an alias to another command to call it with a different name");
+	CMDADD(bind, "Bind a command to a key");
+	CMDADD(window_display_mode, "Sets the window format to windowed, borderless, or fullscreen");
+	CMDADD(window_cursor_mode, "Switches between default, first person, or hidden cursor mode");
+	CMDADD(window_raw_input, "Only works in first person mode");
+	CMDADD(window_resizable, "Sets if the window is resizable");
+	CMDADD(window_info, "Prints window variables");
+	CMDADD(render_stats, "Lists different rendering stats for the previous frame");
+	CMDADD(render_options, "Set wireframe mode to true or false");
+	CMDADD(mat_texture, "Set material texture");
+	CMDADD(mat_shader, "Give a material a specific shader");
+	CMDADD(mat_list, "Shows the material list");
+	CMDADD(shader_reload, "Reloads selected shader");
+	CMDADD(shader_list, "Lists the shaders and their IDs");
+	CMDADD(shader_freeze, "Toggles shader data being uploaded to GPU");
+	CMDADD(mesh_visible, "Sets visibility of mesh");
+	CMDADD(mesh_batch_material, "Changes the material of a batch on a mesh"); 
+	CMDADD(texture_load, "Loads a specific texture");
+	CMDADD(texture_list, "Lists the textures and their info");
+	CMDADD(texture_type_list, "Lists the texture types and their IDs");
+	CMDADD(quit, "Exits the application");
 	
-	//TODO(delle,Cmd) create box 
-	
-	//TODO(delle,Cmd) create planarized box
-	
-	NEWCOMMAND("render_stats", "Lists different rendering stats for the previous frame", {
-				   //TODO(delle,Cmd) this
-				   return "";
-			   });
-	
-	NEWCOMMAND("render_options", "render_options <wireframe:Bool>", {
-				   if (args.size() > 0) {
-					   try {
-						   DengRenderer->settings.wireframe = std::stoi(args[0]);
-						   return (DengRenderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
-					   }
-					   catch (...) {
-						   return "render_options <wireframe:Bool>";
-					   }
-				   }
-				   return (DengRenderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
-			   });
-	
-	NEWCOMMAND("mat_texture", "mat_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>", {
-				   if (args.size() != 3) { return "material_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>"; }
-				   
-				   int matID = std::stoi(args[0]);
-				   int texType = std::stoi(args[1]);
-				   int texID = std::stoi(args[2]);
-				   DengRenderer->UpdateMaterialTexture(matID, texType, texID);
-				   return TOSTRING("Updated material", matID, "'s texture", texType, " to ", texID);
-			   });
-	
-	NEWCOMMAND("mat_shader", "mat_shader <materialID:Uint> <shaderID:Uint>", {
-				   if (args.size() != 2) { return "material_shader <materialID:Uint> <shaderID:Uint>"; }
-				   int matID = std::stoi(args[0]);
-				   int shader = std::stoi(args[1]);
-				   DengRenderer->UpdateMaterialShader(matID, shader);
-				   return TOSTRING("Updated material", matID, "'s shader to ", shader);
-			   });
-	
-	NEWCOMMAND("mat_list", "mat_list", {
-				   Renderer* r = DengRenderer;
-				   std::string out = "[c:yellow]Materials List:\nID  Shader  Albedo  Normal  Specular  Light[c]";
-				   for(auto& mat : r->materials){
-					   out += TOSTRING("\n", mat.id, "  ", ShaderStrings[mat.shader], "  ",
-									   mat.albedoID, ":", r->textures[mat.albedoID].filename, "  ",
-									   mat.normalID, ":", r->textures[mat.normalID].filename, "  ",
-									   mat.specularID, ":", r->textures[mat.specularID].filename, "  ",
-									   mat.lightID, ":", r->textures[mat.lightID].filename);
-				   }
-				   return out;
-			   });
-	
-	NEWCOMMAND("shader_reload", "shader_reload <shaderID:Uint>", {
-				   if (args.size() != 1) return "shader_reload <shaderID:Uint>";
-				   int id = std::stoi(args[0]);
-				   if (id == -1) {
-					   DengRenderer->ReloadAllShaders();
-					   return "[c:magen]Reloading all shaders[c]";
-				   }else{
-					   DengRenderer->ReloadShader(id);
-					   return ""; //printed in renderer
-				   }
-			   });
-	
-	//TODO(delle,ReCl) update this to be dynamic when shader loading is (if ever)
-	NEWCOMMAND("shader_list", "Lists the shaders and their IDs", {
-				   return TOSTRING("[c:yellow]ID    SHADER          Description[c]\n",
-								   "0    Flat            Vertex color shading without normal/edge smoothing\n",
-								   "1    Phong           Vertex color shading with normal smoothing (good with spheres)\n",
-								   "2    TwoD            Vertex color shading with 2D position, rotation, and scale\n",
-								   "3    PBR             Physically-based rendering; 4 textures per material\n",
-								   "4    Wireframe       Vertex color shading with no polygon fill\n",
-								   "5    Lavalamp        Sushi's experimental shader\n",
-								   "6    Test0           Testing shader 1\n",
-								   "7    Test1           Testing shader 2");
-			   });
-	NEWCOMMAND("shader_freeze", "Toggles shader data being uploaded to GPU", {
-				   DengRenderer->shaderData.freeze = !DengRenderer->shaderData.freeze;
-				   return (DengRenderer->shaderData.freeze)? "Shaders frozen" : "Shaders unfrozen";
-			   });
-	
-	NEWCOMMAND("mesh_visible", "mesh_visible <meshID:Uint> <visible:Bool>", {
-				   if (args.size() == 2) {
-					   try {
-						   int meshID = std::stoi(args[0]);
-						   bool vis = std::stoi(args[1]);
-						   DengRenderer->UpdateMeshVisibility(meshID, vis);
-						   return TOSTRING("Setting mesh", meshID, "'s visibility to ", vis);
-					   }
-					   catch (...) {
-						   return "mesh_visible <meshID:Uint> <visible:Bool>";
-					   }
-				   }
-				   return "mesh_visible <meshID:Uint> <visible:Bool>";
-			   });
-	
-	NEWCOMMAND("mesh_batch_material", "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>", {
-				   if (args.size() != 3) { return "mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>"; }
-				   int mesh = std::stoi(args[0]);
-				   int batch = std::stoi(args[1]);
-				   int mat = std::stoi(args[2]);
-				   DengRenderer->UpdateMeshBatchMaterial(mesh, batch, mat);
-				   return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s material to ", mat);
-			   });
-	
-	
-	NEWCOMMAND("texture_load", "texture_load <texture.png:String> [type:Uint]", {
-				   if (args.size() > 0) {
-					   Texture tex(args[0].c_str());
-					   if (args.size() == 2) { tex.type = u32(std::stoi(args[1])); }
-					   u32 id = DengRenderer->LoadTexture(tex);
-					   return TOSTRING("Loaded texture ", args[0], " to ID: ", id);
-				   }
-				   return "texture_load <texture.png:String> [type:Uint]";
-			   });
-	
-	NEWCOMMAND("texture_list", "Lists the textures and their info", {
-				   return DengRenderer->ListTextures();
-			   });
-	
-	NEWCOMMAND("texture_type_list", "Lists the texture types and their IDs", {
-				   return TOSTRING("[c:yellow]Texture Types: (can be combined)[c]\n"
-								   "   0=Albedo, Color, Diffuse\n"
-								   "   1=Normal, Bump\n"
-								   "   2=Light, Ambient\n"
-								   "   4=Specular, Reflective\n"
-								   "   8=Cube      (not supported yet)\n"
-								   "  16=Sphere    (not supported yet)");
-			   });
-}
-
-////////////////////////////////////
-//// camera commands and inputs ////
-////////////////////////////////////
-
-void Console::AddCameraCommands() {
-	NEWCOMMAND("cam_info", "Prints camera variables", {
-				   return admin->mainCamera->str();
-			   });
-	
-	NEWCOMMAND("cam_matrix_projection", "Prints camera's projection matrix", {
-				   return admin->mainCamera->projMat.str2f();
-			   });
-	
-	NEWCOMMAND("cam_matrix_view", "Prints camera's view matrix", {
-				   return admin->mainCamera->viewMat.str2f();
-			   });
-	
-	NEWCOMMAND("cam_reset", "Resets camera", {
-				   admin->mainCamera->position = Vector3(4.f, 3.f, -4.f);
-				   admin->mainCamera->rotation = Vector3(28.f, -45.f, 0.f);
-				   return "reset camera";
-			   });
-}
-
-void Console::AddConsoleCommands() {
-	commands["listc"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-										std::string allcommands = "";
-										
-										for (std::pair<std::string, Command*> c : DengConsole->commands) {
-											allcommands += c.first + "\n";
-										}
-										
-										return allcommands;
-									}, "listc", "lists all avaliable commands");
-	
-	commands["help"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-									   if (args.size() == 0 || (args.size() == 1 && args[0] == "")) {
-										   return "help \nprints help about a specified command. \nuse listc to display avaliable commands";
-									   }
-									   else if (DengConsole->commands.find(args[0]) != DengConsole->commands.end()) {
-										   Command* c = DengConsole->commands.at(args[0]);
-										   return TOSTRING(c->name, "\n", c->description);
-									   }
-									   else {
-										   return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
-									   }
-								   }, "help", "prints help about a specified command. \nignores any argument after the first.");
-	
-	commands["alias"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string 
-									{
-										
-										if (args.size() == 0) {
-											return "alias \nassign an alias to another command to call it with a different name\n alias (alias name) (command name)";
-										}
-										else if(args.size() == 1){
-											return "you must specify a command to assign to this alias.";
-										}
-										else if (args.size() == 2) {
-											Command* com;
-											try {
-												com = DengConsole->commands.at(args[1]);
-												DengConsole->commands.emplace(args[0], com);
-												
-												std::string data = args[0] + " " + args[1] + "\n";
-												std::vector<char> datav;
-												
-												for (auto c : data) {
-													datav.push_back(c);
-												}
-												
-												deshi::appendFile(deshi::assetPath("aliases.cfg", AssetType_Config), 
-																  datav, datav.size());
-												
-												return "[c:green]alias \"" + args[0] + "\" successfully assigned to command \"" + args[1] + "\"[c]";
-											}
-											catch (...) {
-												return "[c:red]command \"" + args[1] + "\" not found in the commands list[c]";
-											}
-										}
-										else {
-											return "too many arguments specified.";
-										}
-										
-									}, "alias", "assign an alias to another command to call it with a different name");
-	
-	commands["bind"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string 
-								   {
-									   
-									   if (args.size() == 0) {
-										   return "bind \nassign a command to a key\n bind (key) (command name)";
-									   }
-									   else if(args.size() == 1){
-										   return "you must specify a command to assign to this bind.";
-									   }
-									   else {
-										   std::string s = "";
-										   for (int i = 1; i < args.size(); i++) {
-											   s += args[i] + " ";
-										   }
-										   Key::Key key;
-										   
-										   try {
-											   key = DengKeys.stk.at(args[0]);
-											   DengInput->binds.push_back(std::pair<std::string, Key::Key>(s, key));
-											   std::vector<char> datav;
-											   for (auto c : args[0] + " " + s) {
-												   datav.push_back(c);
-											   }
-											   datav.push_back('\n');
-											   deshi::appendFile(deshi::assetPath("binds.cfg", AssetType_Config), 
-																 datav, datav.size());
-											   return "[c:green]key \"" + args[0] + "\" successfully bound to \n" + s + "[c]";
-										   }
-										   catch(...){
-											   return "[c:red]key \"" + args[0] + "\" not found in the key list.[c]";
-										   }
-										   
-										   
-									   }
-									   
-								   }, "bind", "bind a command to a key");
-	
-	
-	
-}
-
-void Console::AddWindowCommands() {
-	NEWCOMMAND("quit", "exits the application", {
-				   DengWindow->Close();
-				   return("");
-			   });
-	
-	commands["window_display_mode"] =
-		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-						if (args.size() != 1) { return "display_mode <mode: Int>"; }
-						try {
-							int mode = std::stoi(args[0]);
-							switch (mode) {
-								case(0): {
-									DengWindow->UpdateDisplayMode(DisplayMode::WINDOWED);
-									return "display_mode=windowed"; }
-								case(1): {
-									DengWindow->UpdateDisplayMode(DisplayMode::BORDERLESS);
-									return "display_mode=borderless windowed"; }
-								case(2): {
-									DengWindow->UpdateDisplayMode(DisplayMode::FULLSCREEN);
-									return "display_mode=fullscreen"; }
-								default: {
-									return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen"; }
-							}
-						}
-						catch (...) {
-							return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen";
-						}
-					}, "window_display_mode", "window_display_mode <mode:Int>");
-	
-	commands["window_cursor_mode"] =
-		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-						if (args.size() != 1) { return "cursor_mode <mode:Int>"; }
-						try {
-							int mode = std::stoi(args[0]);
-							switch (mode) {
-								case(0): {
-									DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
-									return "cursor_mode=default"; }
-								case(1): {
-									DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
-									return "cursor_mode=first person"; }
-								case(2): {
-									DengWindow->UpdateCursorMode(CursorMode::HIDDEN);
-									return "cursor_mode=hidden"; }
-								default: { return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden"; }
-							}
-						}
-						catch (...) {
-							return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden";
-						}
-					}, "window_cursor_mode", "window_cursor_mode <mode:Int>");
-	
-	commands["window_raw_input"] =
-		new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-						if (args.size() != 1) { return "raw_input <input:Boolean>"; }
-						try {
-							int mode = std::stoi(args[0]);
-							switch (mode) {
-								case(0): { DengWindow->UpdateRawInput(false); return "raw_input=false"; }
-								case(1): { DengWindow->UpdateRawInput(true); return "raw_input=true"; }
-								default: { return "raw_input: 0=false, 1=true"; }
-							}
-						}
-						catch (...) {
-							return "raw_input: 0=false, 1=true";
-						}
-					}, "window_raw_input", "raw_input <input:Boolean>; Only works in firstperson cursor mode");
-	
-	NEWCOMMAND("window_resizable", "window_resizable <resizable:Boolean>", {
-				   if (args.size() != 1) { return "window_resizable <resizable:Boolean>"; }
-				   try {
-					   int mode = std::stoi(args[0]);
-					   switch (mode) {
-						   case(0): { DengWindow->UpdateResizable(false); return "window_resizable=false"; }
-						   case(1): { DengWindow->UpdateResizable(true); return "window_resizable=true"; }
-						   default: { return "window_resizable: 0=false, 1=true"; }
-					   }
-				   }
-				   catch (...) {
-					   return "window_resizable: 0=false, 1=true";
-				   }
-			   });
-	
-	NEWCOMMAND("window_info", "Prints window variables", {
-				   return DengWindow->str();
-			   });
 }
 
 void Console::AddAliases() {
@@ -1260,11 +1229,7 @@ void Console::Init() {
 		   "> (maybe) rewrite to use characters in the buffer rather than whole strings\n"
 		   "> (maybe) implement showing autocomplete as you type");
 	
-	AddRandomCommands();
-	AddRenderCommands();
-	AddCameraCommands();
-	AddConsoleCommands();
-	AddWindowCommands();
+	AddCommands();
 	AddAliases();
 }
 
@@ -1301,3 +1266,5 @@ void Console::CleanUp() {
 	//	}
 	//} commands.clear();
 }
+//Old format for console/old code
+
