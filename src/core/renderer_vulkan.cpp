@@ -374,8 +374,8 @@ CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool visibl
 
 
 u32 Renderer::
-CreateMeshBrush(Mesh* m, Matrix4 matrix){
-	PRINTVK(3, "    Creating mesh brush based on: ", m->name);
+CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation){
+	if(log_creation) PRINTVK(3, "    Creating mesh brush based on: ", m->name);
 	
 	if(m->vertexCount == 0 || m->indexCount == 0 || m->batchCount == 0) {  //early out if empty buffers
 		ERROR("CreateMeshBrush: A mesh was passed in with no vertices or indices or batches");
@@ -584,41 +584,43 @@ LoadBaseMesh(Mesh* m, bool visible) {
 }
 
 u32 Renderer::
-CreateMesh(Scene* scene, const char* filename){
+CreateMesh(Scene* scene, const char* filename, b32 new_material){
 	//check if Mesh was already created
 	for(auto& model : scene->models){ 
 		if(strcmp(model.mesh->name, filename) == 0){ 
-			return CreateMesh(model.mesh, Matrix4::IDENTITY);
+			return CreateMesh(model.mesh, Matrix4::IDENTITY, new_material);
 		} 
 	}
 	PRINTVK(3, "    Creating mesh: ", filename);
 	
 	scene->models.emplace_back(Mesh::CreateMeshFromOBJ(filename));
-	return CreateMesh(scene->models[scene->models.size()-1].mesh, Matrix4::IDENTITY);
+	return CreateMesh(scene->models[scene->models.size()-1].mesh, Matrix4::IDENTITY, new_material);
 }
 
 u32 Renderer::
-CreateMesh(Mesh* m, Matrix4 matrix){
+CreateMesh(Mesh* m, Matrix4 matrix, b32 new_material){
 	//check if MeshVk was already created
 	for(auto& mesh : meshes){ 
 		if(strcmp(mesh.name, m->name) == 0){ 
-			return CreateMesh(mesh.id, matrix);
+			return CreateMesh(mesh.id, matrix, new_material);
 		} 
 	}
-	PRINTVK(3, "    Creating mesh: ", m->name);
 	
-	return CreateMesh(LoadBaseMesh(m), matrix);
+	PRINTVK(3, "    Creating mesh: ", m->name);
+	return CreateMesh(LoadBaseMesh(m), matrix, new_material);
 }
 
 u32 Renderer::
-CreateMesh(u32 meshID, Matrix4 matrix){
+CreateMesh(u32 meshID, Matrix4 matrix, b32 new_material){
 	if(meshID < meshes.size()){
 		PRINTVK(3, "    Creating Mesh: ", meshes[meshID].ptr->name);
 		MeshVk mesh; mesh.base = false; 
 		mesh.ptr = meshes[meshID].ptr; mesh.visible = true;
 		mesh.primitives = std::vector(meshes[meshID].primitives);
-		for_n(i, meshes[meshID].primitives.size()){
-			mesh.primitives[i].materialIndex = CopyMaterial(meshes[meshID].primitives[i].materialIndex);
+		if(new_material){
+			for_n(i, meshes[meshID].primitives.size()){
+				mesh.primitives[i].materialIndex = CopyMaterial(meshes[meshID].primitives[i].materialIndex);
+			}
 		}
 		mesh.modelMatrix = glm::make_mat4(matrix.data);
 		cpystr(mesh.name, meshes[meshID].name, DESHI_NAME_SIZE);
@@ -891,7 +893,7 @@ ListTextures(){
 
 u32 Renderer::
 CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID, const char* name){
-	PRINTVK(3, "    Creating material");
+	PRINTVK(3, "    Creating material: ", (name) ? name : "?");
 	MaterialVk mat; mat.id = u32(materials.size());
 	mat.shader = shader; mat.pipeline = GetPipelineFromShader(shader);
 	mat.albedoID = albedoTextureID; mat.normalID = normalTextureID;

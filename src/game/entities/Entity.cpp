@@ -145,20 +145,17 @@ auto get_vec3(std::string& str) {
 enum struct Header{
 	INVALID, ENTITY, AUDIO_LISTENER, AUDIO_SOURCE, CAMERA, COLLIDER, DOOR, LIGHT, MESH, MOVEMENT, ORB_MANAGER, PHYSICS, PLAYER
 };
-
-
 #define InvalidHeaderKeyError(header) ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid key '",kv.first,"' for header '"header"'.")
-
 //TODO(delle) support multiple components of a type on an entity
-Entity* Entity::LoadTEXT(EntityAdmin* admin, std::string& filepath){
+Entity* Entity::LoadTEXT(EntityAdmin* admin, std::string& filepath, std::vector<pair<u32,u32>>& mesh_id_diffs){
 	//load file into char array
 	char* buffer = deshi::readFileAsciiToArray(filepath);
 	if(!buffer) return 0;
 	defer{ delete[] buffer; };
 	
 	//creation vars
-	Header header = Header::INVALID;
 	b32 coll_made = false;
+	b32 mesh_found = false;
 	Entity* e = 0;
 	AudioListener* al = 0; AudioSource* as = 0; Camera* cam = 0;    Door* door = 0;
 	Light* light = 0;      MeshComp* mesh = 0;  Movement* move = 0; OrbManager* orbman = 0;
@@ -167,6 +164,7 @@ Entity* Entity::LoadTEXT(EntityAdmin* admin, std::string& filepath){
 	AABBCollider* aabb = 0; ComplexCollider* complex = 0;
 	
 	//parse file
+	Header header = Header::INVALID;
 	std::string line;
 	char* new_line = buffer-1;
 	char* line_start;
@@ -220,7 +218,10 @@ Entity* Entity::LoadTEXT(EntityAdmin* admin, std::string& filepath){
 		}
 		
 		//key-value pairs
-		if(header == Header::INVALID) continue; //skip pairs with an invalid header
+		if(header == Header::INVALID) {
+			ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid header; skipping line");
+			continue; //skip if an invalid header
+		}
 		pair<std::string,std::string> kv = deshi::split_keyValue(line);
 		if(kv.second == ""){
 			ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Unable to extract key-value pair from: ", line);
@@ -308,9 +309,20 @@ Entity* Entity::LoadTEXT(EntityAdmin* admin, std::string& filepath){
 				else{ InvalidHeaderKeyError("light"); }
 			}break;
 			case(Header::MESH):{
-				if(kv.first == "name"){ 
-					mesh->meshID = DengRenderer->CreateMesh(&admin->scene, kv.second.c_str());
-					mesh->mesh = DengRenderer->GetMeshPtr(mesh->meshID);
+				if(kv.first == "id"){
+					for(auto& diff : mesh_id_diffs){
+						if(diff.first == std::stoi(kv.second)){
+							mesh->meshID = diff.second;
+							mesh->mesh = DengRenderer->GetMeshPtr(mesh->meshID);
+							mesh_found = true;
+						}
+					}
+				}
+				else if(kv.first == "name"){
+					if(!mesh_found){ //NOTE only make if ID failed to make it
+						mesh->meshID = DengRenderer->CreateMesh(&admin->scene, kv.second.c_str());
+						mesh->mesh = DengRenderer->GetMeshPtr(mesh->meshID);
+					}
 				}
 				else if(kv.first == "visible"){ 
 					if(kv.second == "true" || kv.second == "1"){
@@ -371,6 +383,23 @@ Entity* Entity::LoadTEXT(EntityAdmin* admin, std::string& filepath){
 		}
 	}
 	
+	if(phys){
+		if     (box)     box->RecalculateTensor(phys->mass);
+		else if(aabb)    aabb->RecalculateTensor(phys->mass);
+		else if(sphere)  sphere->RecalculateTensor(phys->mass);
+		else if(land)    land->RecalculateTensor(phys->mass);
+		else if(complex) complex->RecalculateTensor(phys->mass);
+		if(move) {
+			move->phys = phys;
+			if(player) {
+				player->movement = move;
+				admin->player = e;
+				admin->controller.playermove = move;
+				move->camera = admin->mainCamera;
+			}
+		}
+	}
 	if(e) e->AddComponents({al, as, cam, door, light, mesh, move, orbman, phys, player, box, aabb, sphere, land, complex});
 	return e;
 }
+#undef InvalidHeaderKeyError

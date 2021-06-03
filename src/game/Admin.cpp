@@ -295,7 +295,6 @@ void EntityAdmin::Reset(){
 //NOTE using a levels directory temporarily so it doesnt cause problems with the save directory
 //TODO(delle) this removes the entire level dir and recreates it, optimize by diffing for speed and comment preservation
 //TODO add safe-checking so you dont override another level accidentally
-//TODO add renderer stuffs saving
 void EntityAdmin::SaveTEXT(const char* level_name_cstr){
 	namespace fs = std::filesystem;
 	if(!level_name_cstr) return ERROR("Failed to create save text-file: no name passed");
@@ -306,25 +305,44 @@ void EntityAdmin::SaveTEXT(const char* level_name_cstr){
 	std::string levels_dir = deshi::dirData() + "levels/";
 	if(!fs::is_directory(levels_dir)) fs::create_directory(levels_dir);
 	
-	//replace spaces with underscores
 	std::string level_name(level_name_cstr);
-	//for_n(c, level_name.size()){ if(level_name[c] == ' ') level_name[c] = '_'; }
-	
 	std::string level_dir = levels_dir + std::string(level_name) + "/";
 	if(fs::is_directory(level_dir)) fs::remove_all(level_dir);
 	fs::create_directory(level_dir);
 	SUCCESS("  Created level directory '", level_dir, "'");
 	
-	//// level header file ////
+	//// level file ////
 	std::string level_text; level_text.reserve(2048);
 	level_text.append(TOSTRING(">level"
 							   "\nname         \"", level_name_cstr, "\""
 							   "\nentity_count ", entities.size(),
-							   "\nlast_updated \"", DengTime->FormatDateTime("{M}/{d}/{y} {h}:{m}::{s}"), "\""
-							   "\n"
-							   "\n>entities"));
+							   "\nlast_updated \"", DengTime->FormatDateTime("{M}/{d}/{y} {h}:{m}:{s}"), "\""));
+	
+	//materials
+	level_text.append("\n"
+					  "\n>materials");
+	for(MaterialVk& mat : DengRenderer->materials){
+		level_text.append(TOSTRING("\n",mat.id," \"",mat.name,"\" ",mat.shader," \"",
+								   DengRenderer->textures[mat.albedoID].filename,"\" \"",
+								   DengRenderer->textures[mat.normalID].filename,"\" \"",
+								   DengRenderer->textures[mat.specularID].filename,"\" \"",
+								   DengRenderer->textures[mat.lightID].filename,"\""));
+	}
+	
+	//models
+	level_text.append("\n"
+					  "\n>meshes");
+	for(MeshVk& mesh : DengRenderer->meshes){
+		if(!mesh.base){
+			level_text.append(TOSTRING("\n",mesh.id," \"",mesh.name,"\" ",mesh.visible," \"", mesh.primitives[0].materialIndex));
+			for(u32 i=1; i<mesh.primitives.size(); ++i){ level_text.append(TOSTRING(" ", mesh.primitives[i].materialIndex)); }
+			level_text.append("\"");
+		}
+	}
 	
 	//// entities files ////
+	level_text.append("\n"
+					  "\n>entities");
 	u32   entity_idx_digits   = u32(log10(entities.size())) + 1;
 	u32   entity_idx_str_size = sizeof(char) * (entity_idx_digits + 2); //+2 because of _ and null-terminator
 	char* entity_idx_str      = (char*)malloc(entity_idx_str_size);
@@ -334,9 +352,8 @@ void EntityAdmin::SaveTEXT(const char* level_name_cstr){
 	
 	for_n(idx, entities.size()){
 		snprintf(entity_idx_str, entity_idx_str_size, "%0*u_", entity_idx_digits, idx);
-		
 		entity_file_name = TOSTRING(entity_idx_str, entities[idx]->name);
-		//for_n(c, entity_file_name.size()){ if(entity_file_name[c] == ' ') entity_file_name[c] = '_'; }
+		
 		level_text.append(1, '\n');
 		level_text.append(entity_file_name);
 		
@@ -351,6 +368,10 @@ void EntityAdmin::SaveTEXT(const char* level_name_cstr){
 	SUCCESS("Finished saving level '", level_name, "' in ", TIMER_END(t_s), "ms");
 }
 
+#define ParsingError "Error parsing '",level_dir,"_' on line '",line_number
+enum struct LevelHeader{
+	INVALID, LEVEL, MATERIALS, MESHES, ENTITIES
+};
 void EntityAdmin::LoadTEXT(const char* savename){
 	namespace fs = std::filesystem;
 	if(!savename) return ERROR("Failed to load text-file: no name passed");
@@ -362,21 +383,111 @@ void EntityAdmin::LoadTEXT(const char* savename){
 	std::string level_dir = levels_dir + savename + "/";
 	if(!fs::is_directory(level_dir)) return ERROR("Failed to find directory: ", level_dir);
 	
-	//parse level file //TODO parse level file, store level name on editor for quicksaving
+	u32 entity_count = 0;
+	std::vector<pair<u32,u32>> material_id_diffs;
+	std::vector<pair<u32,u32>> mesh_id_diffs;
+	{//// parse level file ////
+		char* buffer = deshi::readFileAsciiToArray(level_dir+"_");
+		if(!buffer) return;
+		defer{ delete[] buffer; };
+		
+		//parsing
+		LevelHeader header = LevelHeader::INVALID;
+		std::string line;
+		char* new_line = buffer-1;
+		char* line_start;
+		for(u32 line_number = 1; ;line_number++){
+			//get the next line
+			line_start = new_line+1;
+			if((new_line = strchr(line_start, '\n')) == 0) break; //end of file if cant find '\n'
+			line = std::string(line_start, new_line-line_start);
+			
+			line = deshi::eat_comments(line);
+			line = deshi::eat_spaces_leading(line);
+			line = deshi::eat_spaces_trailing(line);
+			if(line.empty()) continue;
+			
+			//headers
+			if(line[0] == '>'){
+				if     (line == ">level")    { header = LevelHeader::LEVEL;     }
+				else if(line == ">materials"){ header = LevelHeader::MATERIALS; }
+				else if(line == ">meshes")   { header = LevelHeader::MESHES;    }
+				else if(line == ">entities") { header = LevelHeader::ENTITIES;  }
+				else{
+					header = LevelHeader::INVALID;
+					ERROR(ParsingError,"'! Unknown header: ", line);
+				}
+				continue;
+			}
+			
+			//header values (skip if an invalid header)
+			if(header == LevelHeader::INVALID) { ERROR(ParsingError,"'! Invalid header; skipping line"); continue; }
+			std::vector<std::string> split = deshi::space_delimit_ignore_strings(line);
+			
+			switch(header){
+				case(LevelHeader::LEVEL):{
+					if(split.size() != 2){ ERROR(ParsingError,"'! Level lines should have 2 values"); continue; }
+					
+					if(split[0] == "name"){ editor.level_name = split[1]; }
+					//TODO maybe compare entity_count with the number of entities loaded?
+				}break;
+				case(LevelHeader::MATERIALS):{
+					if(split.size() != 7){ ERROR(ParsingError,"'! Material lines should have 7 values"); continue; }
+					
+					u32 old_id = std::stoi(split[0]);
+					u32 new_id = DengRenderer->CreateMaterial(std::stoi(split[2]), 
+															  DengRenderer->LoadTexture(split[3].c_str()),
+															  DengRenderer->LoadTexture(split[4].c_str()),
+															  DengRenderer->LoadTexture(split[5].c_str()),
+															  DengRenderer->LoadTexture(split[6].c_str()),
+															  split[1].c_str());
+					material_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
+				}break;
+				case(LevelHeader::MESHES):{
+					if(split.size() != 4){ ERROR(ParsingError,"'! Mesh lines should have 4 values"); continue; }
+					
+					u32 old_id = std::stoi(split[0]);
+					u32 new_id = DengRenderer->CreateMesh(&scene, split[1].c_str(), false);
+					mesh_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
+					
+					if(split[2] == "true" || split[2] == "1"){
+						DengRenderer->meshes[new_id].visible = true;
+					}else if(split[2] == "false" || split[2] == "0"){
+						DengRenderer->meshes[new_id].visible = false;
+					}else{
+						ERROR(ParsingError,"'! Invalid boolean value for the third item in a mesh"); continue;
+					}
+					
+					std::vector<std::string> mat_ids = deshi::space_delimit(split[3]); 
+					for_n(i, DengRenderer->meshes[new_id].primitives.size()){
+						u32 old_mat = std::stoi(mat_ids[i]);
+						for(auto& diff : material_id_diffs){
+							if(diff.first == old_mat){
+								DengRenderer->meshes[new_id].primitives[i].materialIndex = diff.second;
+							}
+						}
+					}
+				}break;
+				case(LevelHeader::ENTITIES):{
+					entity_count += 1;
+					//TODO maybe can conditionally load entities?
+				}break;
+			}
+		}
+	}
 	
-	
-	//parse entity files
-	std::vector<Entity*> ents; ents.reserve(128); //TODO alter reserve amount after parsing level file
+	//// parse entity files ////
+	std::vector<Entity*> ents; ents.reserve(entity_count);
 	for(std::string& file : deshi::iterateDirectory(level_dir)){
 		if(file == "_") continue;
-		if(Entity* e = Entity::LoadTEXT(this, level_dir+file)){
+		if(Entity* e = Entity::LoadTEXT(this, level_dir+file, mesh_id_diffs)){
 			ents.push_back(e);
 		}
 	}
 	
 	//events and connections
 	
-	//create entities
+	//// create entities ////
 	for(Entity* e : ents){
 		CreateEntity(e);
 	}
@@ -384,6 +495,7 @@ void EntityAdmin::LoadTEXT(const char* savename){
 	SUCCESS("Finished loading level '", savename, "' in ", TIMER_END(t_l), "ms");
 	SkipUpdate();
 }
+#undef ParsingError
 
 struct SaveHeader{
 	u32 magic;

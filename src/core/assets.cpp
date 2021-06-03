@@ -220,6 +220,39 @@ eat_comments(std::string str){
 }
 
 std::vector<std::string> deshi::
+character_delimit(std::string str, char character){
+	std::vector<std::string> out;
+	
+	int prev = 0;
+	for(int i=0; i < str.size(); ++i){
+		if(str[i] == character){
+			out.push_back(str.substr(prev, i-prev));
+    		prev = i+1;
+		}
+	}
+	out.push_back(str.substr(prev, -1));
+	
+	return out;
+}
+
+std::vector<std::string> deshi::
+character_delimit_ignore_repeat(std::string str, char character){
+	std::vector<std::string> out;
+	
+	int prev = 0;
+	for(int i=0; i < str.size(); ++i){
+		if(str[i] == character){
+			out.push_back(str.substr(prev, i-prev));
+			while(str[i+1] == ' ') ++i;
+    		prev = i+1;
+		}
+	}
+	out.push_back(str.substr(prev, -1));
+	
+	return out;
+}
+
+std::vector<std::string> deshi::
 space_delimit(std::string str){
 	std::vector<std::string> out;
 	str = eat_spaces_leading(str);
@@ -250,7 +283,7 @@ space_delimit_ignore_strings(std::string str){
 			out.push_back(str.substr(prev, i-prev));
 			while(str[i+1] == ' ') ++i;
 			prev = i+1;
-    		if(str[prev] == '\"'){
+    		while(str[prev] == '\"'){
     		    end_quote = str.find_first_of('\"', prev+1);
     		    if(end_quote != -1){
     		        out.push_back(str.substr(prev+1, end_quote-prev-1));

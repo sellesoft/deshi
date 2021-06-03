@@ -23,7 +23,7 @@ ____and maybe look into setting it up to be more streamlined somehow
 
 Minor Ungrouped TODOs
 ---------------------
-detach camera from the renderer so that the camera component calling the renderer
+detach camera from the renderer so that the camera component isnt calling the renderer
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
 ____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
 ____to update it's canvas system.

@@ -88,6 +88,13 @@ namespace deshi{
 	//returns a new string with the comments removed
 	std::string eat_comments(std::string str);
 	
+	//separates a string by specified character
+	std::vector<std::string> character_delimit(std::string str, char character);
+	
+	//separates a string by specified character, ignores sequences of the character
+	//eg: 1,,,,2,3 is the same as 1,2,3
+	std::vector<std::string> character_delimit_ignore_repeat(std::string str, char character);
+	
 	//separates a string by spaces, ignores leading and trailing spaces
 	std::vector<std::string> space_delimit(std::string str);
 	

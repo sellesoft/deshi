@@ -2404,6 +2404,7 @@ void Editor::Init(EntityAdmin* a){
 	DengRenderer->UpdateCameraViewMatrix(camera->viewMat);
 	DengRenderer->UpdateCameraPosition(camera->position);
 	undo_manager.Init();
+	level_name = "";
 	
 	showDebugTools      = true;
 	showTimes           = true;
