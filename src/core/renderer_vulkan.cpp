@@ -316,10 +316,11 @@ CreateDebugLine(Vector3 start, Vector3 end, Color color, bool visible){
 
 void Renderer::
 UpdateDebugLine(u32 id, Vector3 start, Vector3 end, Color color) {
+	Vector3 c = Vector3(color.r, color.g, color.b) / 255.f;
 	meshBrushes[id].vertices[0].pos = glm::make_vec3(&start.x);
 	meshBrushes[id].vertices[1].pos = glm::make_vec3(&end.x);
-	meshBrushes[id].vertices[0].color = glm::make_vec3(&color.r);
-	meshBrushes[id].vertices[1].color = glm::make_vec3(&color.r);
+	meshBrushes[id].vertices[0].color = glm::make_vec3(&c.x);
+	meshBrushes[id].vertices[1].color = glm::make_vec3(&c.x);
 	UpdateMeshBrushBuffers(id);
 
 }

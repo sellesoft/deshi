@@ -59,13 +59,13 @@ Entity* Editor::SelectEntityRaycast(){
 						//NOTE sushi: our normal here is now based on whatever the vertices normal is when we load the model
 						//			  so if we end up loading models and combining vertices again, this will break
 						
-						intersect = Math::VectorPlaneIntersect(p0, normal, ray->p[0], ray->p[1], t);
+						intersect = Math::VectorPlaneIntersect(p0, normal, pos, camera->position, t);
 						rot = Matrix4::AxisAngleRotationMatrix(90, Vector4(normal, 0));
 						
-						if(
-						   ((p1 - p0) * rot).dot(p0 - intersect) < 0 &&
-						   ((p2 - p1) * rot).dot(p1 - intersect) < 0 &&
-						   ((p0 - p2) * rot).dot(p2 - intersect) < 0 && t < 0) {
+						if(t < 0 &&
+						   ((p1 - p0) * rot).dot(intersect - p0) > 0 &&
+						   ((p2 - p1) * rot).dot(intersect - p1) > 0 &&
+						   ((p0 - p2) * rot).dot(intersect - p2) > 0) {
 							DebugLines(index, camera->position, intersect, -1);
 							DebugLinesCol(index, p0 + (p1 - p0) * rot, p0, -1, Color::RED);
 							DebugLinesCol(index, p1 + (p2 - p1) * rot, p1, -1, Color::RED);
@@ -2358,7 +2358,7 @@ void Editor::DebugLayer() {
 
 
 void Editor::WorldGrid(Vector3 cpos) {
-	int lines = 30; //this should be 100, imgui can handle it, but Vulkan struggles?
+	int lines = 20;
 	cpos = Vector3::ZERO;
 		
 	for (int i = 0; i < lines * 2 + 1; i++) {
