@@ -3,6 +3,7 @@
 #define GAME_ENTITY_H
 
 #include "../../utils/defines.h"
+#include "../../utils/tuple.h" //TODO(delle,Cl) forward declare pair<> somehow
 #include "../Transform.h"
 
 #include <string>
@@ -32,9 +33,6 @@ struct Entity {
 	
 	virtual void Init();
 	
-	virtual std::string SaveTEXT();
-	//virtual void LoadDESH(const char* filename);
-	
 	void SetName(const char* name);
 	//adds a component to the end of the components vector
 	//returns the position in the vector
@@ -42,6 +40,10 @@ struct Entity {
 	void AddComponents(std::vector<Component*> components);
 	void RemoveComponent(Component* component);
 	void RemoveComponents(std::vector<Component*> components);
+	
+	virtual std::string SaveTEXT();
+	static Entity* LoadTEXT(EntityAdmin* admin, std::string& filepath, std::vector<pair<u32,u32>>& mesh_id_diffs);
+	//virtual void LoadDESH(const char* filename);
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
 	template<class T>

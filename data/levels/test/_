@@ -1,7 +1,51 @@
 >level
 name         "test"
-entity_count 1
-last_updated "05/31/2021 13:34::24"
+entity_count 4
+last_updated "06/03/2021 07:27:29"
+
+>materials
+0 "unnamed_material" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+1 "unnamed_material" 1 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+2 "planarbox_batch" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+3 "box_batch" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+4 "planarbox_batch" 3 "UV_Grid_Sm.jpg" "black1024.png" "black1024.png" "black1024.png"
+5 "Sphere" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+6 "arrow" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+7 "unnamed_material" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+8 "unnamed_material" 1 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+9 "planarbox_batch" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+10 "box_batch" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+11 "planarbox_batch" 3 "UV_Grid_Sm.jpg" "black1024.png" "black1024.png" "black1024.png"
+12 "Sphere" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+13 "arrow" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+14 "unnamed_material" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+15 "unnamed_material" 1 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+16 "planarbox_batch" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+17 "box_batch" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+18 "planarbox_batch" 3 "UV_Grid_Sm.jpg" "black1024.png" "black1024.png" "black1024.png"
+19 "Sphere" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+20 "arrow" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+21 "planarbox_batch" 3 "deshi_icon.png" "black1024.png" "black1024.png" "black1024.png"
+22 "Suzanne" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+23 "Suzanne" 5 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+24 "Sphere" 7 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+25 "Cube" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+26 "Cube" 3 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+27 "Suzanne" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+28 "Cube" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+29 "Suzanne" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+30 "Cube" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+31 "Suzanne" 3 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+
+>meshes
+5 "default_planarbox" 1 "21"
+7 "bmonkey.obj" 1 "23"
+8 "sphere.obj" 1 "24"
+10 "box.obj" 0 "26"
+11 "bmonkey.obj" 1 "31"
 
 >entities
-0_box
+0_floor
+1_bmonkey
+2_phys sphere
+3_bmonkey

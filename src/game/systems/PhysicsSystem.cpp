@@ -51,18 +51,18 @@ inline std::vector<PhysicsTuple> GetPhysicsTuples(EntityAdmin* admin) {
 //https://gafferongames.com/post/physics_in_3d/
 inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	//// translation ////
-
+	
 	//add input forces
 	t.physics->inputVector.normalize();
 	t.physics->AddForce(nullptr, t.physics->inputVector);
 	t.physics->inputVector = Vector3::ZERO;
-
+	
 	//add gravity 
 	t.physics->acceleration += Vector3(0, -ps->gravity, 0);
-
+	
 	//add temp air friction force
 	t.physics->AddFrictionForce(nullptr, ps->frictionAir);
-
+	
 	//contacts is the various contact states it has with each object while
 	//contactState is the overall state of the object, regardless of what object its touching
 	bool contactMoving = false;
@@ -70,7 +70,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	for (auto c : t.physics->contacts) {
 		if (c.second == ContactMoving) {
 			if (t.physics->velocity.mag() > 0.01) {
-
+				
 				for (auto& m : t.physics->manifolds) {
 					Vector3 norm = m.second.norm.normalized();
 					Vector3 vPerpNorm = t.physics->velocity - t.physics->velocity.dot(norm) * norm;
@@ -79,7 +79,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 					float primedweight = weight.dot(norm);
 					t.physics->forces.push_back(-vPerpNorm.normalized() * t.physics->kineticFricCoef * primedweight);
 				}
-
+				
 				//t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
 			}
 			else
@@ -88,18 +88,18 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 		}
 		else if (c.second == ContactStationary) contactStationary = true;
 	}
-
+	
 	if      (contactMoving)     t.physics->contactState = ContactMoving;
 	else if (contactStationary) t.physics->contactState = ContactStationary;
 	else                        t.physics->contactState = ContactNONE;
-
+	
 	//sum up forces to calculate acceleration
 	Vector3 netForce;
 	for (auto& f : t.physics->forces) {
 		netForce += f;
 	}
 	t.physics->acceleration += netForce / t.physics->mass;
-
+	
 	//update linear movement and clamp it to min/max velocity
 	if (!t.physics->isStatic) {
 		t.physics->velocity += t.physics->acceleration * time->fixedDeltaTime;
@@ -114,14 +114,14 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 		}
 		t.physics->position += t.physics->velocity * time->fixedDeltaTime;
 	}
-
+	
 	//// rotation ////
-
+	
 	//make fake rotational friction
 	if (t.physics->rotVelocity != Vector3::ZERO) {
 		t.physics->rotAcceleration = Vector3(t.physics->rotVelocity.x > 0 ? -1 : 1, t.physics->rotVelocity.y > 0 ? -1 : 1, t.physics->rotVelocity.z > 0 ? -1 : 1) * ps->frictionAir * t.physics->mass * 100;
 	}
-
+	
 	//update rotational movement and scuffed vector rotational clamping
 	t.physics->rotVelocity += t.physics->rotAcceleration * time->fixedDeltaTime;
 	//if(t.physics->rotVelocity.x > ps->maxRotVelocity) {
@@ -149,14 +149,14 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	//	t.physics->rotAcceleration.z = 0;
 	//}
 	t.physics->rotation += t.physics->rotVelocity * time->fixedDeltaTime;
-
+	
 	//reset forces
 	t.physics->forces.clear();
-
+	
 	//ImGui::DebugDrawText3(t.physics->position.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(180, 150, 130));
 	//ImGui::DebugDrawText3(t.physics->velocity.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(130, 150, 180), Vector2(0, 20));
 	//ImGui::DebugDrawText3(t.physics->acceleration.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(150, 130, 180), Vector2(0, 40));
-
+	
 	t.physics->acceleration = Vector3::ZERO;
 }
 
@@ -179,9 +179,9 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		(min1.x <= max2.x && max1.x >= min2.x) &&
 		(min1.y <= max2.y && max1.y >= min2.y) &&
 		(min1.z <= max2.z && max1.z >= min2.z)) {
-
 		
-
+		
+		
 		
 		//triggers and no collision
 		if (obj1Col->collided.find(obj2Col) == obj1Col->collided.end()) {
@@ -191,13 +191,13 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		
 		obj1Col->collided.clear();
 		obj2Col->collided.clear();
-
+		
 		//store entity
 		obj1Col->collided.insert(obj2Col);
 		obj2Col->collided.insert(obj1Col);
-
+		
 		if(obj1Col->noCollide || obj2Col->noCollide) return false;
-
+		
 		float xover, yover, zover;
 		
 		//we need to know which box is in front over each axis so
@@ -211,7 +211,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		
 		Manifold3 m1;
 		Manifold3 m2;
-
+		
 		//static resolution
 		Vector3 norm;
 		if (xover < yover && xover < zover) {
@@ -229,16 +229,16 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			if(!obj2->isStatic) obj2->position.z -= zover / 2;
 			norm = Vector3::BACK;
 		}
-
+		
 		m1.norm = norm;
 		m2.norm = norm;
-
+		
 		
 		//dynamic resolution
 		Vector3 rv = obj2->velocity - obj1->velocity;
-
+		
 		//PRINTLN(TOSTRING(rv));
-
+		
 		float vAlongNorm = rv.dot(norm);
 		if (vAlongNorm < 0) {
 			//TODO(sushi, Ph) do better elasticity later
@@ -250,7 +250,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			if (!obj2->isStatic) obj2->velocity += impulse / obj2->mass;
 			//PRINTLN(obj2->velocity.mag());
 			
-
+			
 			//setting contact state depending on movement
 			if (fabs(obj1->velocity.normalized().dot(norm)) != 1) {
 				if (!obj1->isStatic) {
@@ -270,7 +270,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 				obj2->contacts[obj1] = ContactStationary;
 			}
 		}
-
+		
 		//all of this probably isnt nececssary but i'm trying to get it to wo rkr kr k r
 		//the player checking is so i can point the normal in the proper direction when trying 
 		//to figure out if the player is on the floor or a wall/ceiling
@@ -287,7 +287,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			Vector3 pto = obj2->position - obj1->position;
 			if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
 			else                                { m1.player = 0; m2.player = 1; }
-		
+			
 			obj1->manifolds[obj2] = m2;
 			obj2->manifolds[obj1] = m1;
 		}
@@ -295,7 +295,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			obj1->manifolds[obj2] = m2;
 			obj2->manifolds[obj1] = m1;
 		}
-
+		
 		return true;
 	}	
 	obj1->contacts[obj2] = ContactNONE;
@@ -613,7 +613,7 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 			
 			if (p1->isStatic) p1->vel = Vector2::ZERO;
 			if (p2->isStatic) p2->vel = Vector2::ZERO;
-
+			
 			Vector2 rv = p1->vel - p2->vel;
 			
 			float vAlongNorm = rv.dot(m.norm);
@@ -815,7 +815,8 @@ void PhysicsSystem::Update() {
 		t.transform->prevRotation = t.transform->rotation;
 		t.transform->position = t.transform->position * (1.f - alpha) + t.physics->position * alpha;
 		t.transform->rotation = t.transform->rotation * (1.f - alpha) + t.physics->rotation * alpha;
-		t.collider->sentEvent = false;
+		if(t.collider) t.collider->sentEvent = false;
+		
 		//t.transform->rotation = Quaternion::QuatSlerp(t.transform->rotation, t.transform->prevRotation, alpha).ToVector3();
 		//t.transform->rotation *= Matrix4::RotationMatrixAroundPoint(t.transform->position, t.transform->rotation*(1.f - alpha) + t.physics->rotation*alpha);
 		//TODO(delle,Ph) look into better rotational interpolation once we switch to quaternions

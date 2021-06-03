@@ -3,6 +3,13 @@
 #include "../admin.h"
 #include "../systems/CanvasSystem.h"
 
+Movement::Movement() {
+	admin = g_admin;
+	layer = ComponentLayer_NONE;
+	comptype = ComponentType_Movement;
+	cpystr(name, "Movement", DESHI_NAME_SIZE);
+}
+
 Movement::Movement(Physics* phys) {
 	admin = g_admin;
 	layer = ComponentLayer_NONE;
@@ -42,7 +49,7 @@ void Movement::DecideContactState() {
 		}
 		else if (c.second == ContactStationary) contactStationary = true;
 	}
-
+	
 	if (contactMoving)          phys->contactState = ContactMoving;
 	else if (contactStationary) phys->contactState = ContactStationary;
 	else                        phys->contactState = ContactNONE;
@@ -50,7 +57,7 @@ void Movement::DecideContactState() {
 
 void Movement::DecideMovementState() {
 	Vector3 norm;
-
+	
 	//check if were on the ground
 	if (phys->contactState == ContactNONE) { moveState = InAirNoInput; inAir = true; }
 	else {
@@ -68,14 +75,14 @@ void Movement::DecideMovementState() {
 				if (DengInput->KeyDownAnyMod(Key::LCTRL))  moveState = OnGroundCrouching;
 				else if (DengInput->KeyDownAnyMod(Key::LSHIFT)) moveState = OnGroundRunning;
 				else if (inputs != Vector3::ZERO)               moveState = OnGroundWalking;
-
+				
 			}
 			else moveState = OnGroundNoInput;
 			inAir = false;
 		}
 		else { moveState = InAirNoInput; inAir = true; }
 	}
-
+	
 	switch (moveState) {
 		case OnGroundNoInput:   ImGui::DebugDrawText("onGroundNoInput", g_window->dimensions / 2); break;
 		case OnGroundCrouching: ImGui::DebugDrawText("onGroundCrouching", g_window->dimensions / 2); break;
@@ -84,23 +91,23 @@ void Movement::DecideMovementState() {
 		case InAirNoInput:      ImGui::DebugDrawText("InAirNoInput", g_window->dimensions / 2); break;
 		case InAirCrouching:    ImGui::DebugDrawText("InAirCrouching", g_window->dimensions / 2); break;
 	}
-
+	
 }
 
 void Movement::GrabObject() {
 	static bool grabbing = false;
 	static bool initial = true;
-
+	
 	//interpolation vars
 	static float timer = 0;
 	static float timetocenter = 0.2;
-
+	
 	static Vector3 ogpos;
-
+	
 	if (initial) {
-
+		
 	}
-
+	
 }
 
 
@@ -109,21 +116,21 @@ void Movement::GrabObject() {
 //	meaning that its updated inside of PhysicsSystem, so it doesn't update once per frame and updates as many
 //	times as you have physics updating (default 300 times per second)
 void Movement::Update() {
-
+	
 	DecideContactState();
 	DecideMovementState();
-
+	
 	/////////////////////
 	//    Crouching    //
 	/////////////////////
-
-
+	
+	
 	Vector3 standpos = admin->player->transform.position + Vector3::UP * 2;
 	Vector3 crouchpos = admin->player->transform.position + Vector3::UP * 0.5;
 	static Vector3 cpos = standpos;
 	static float timer = 0;
 	float ttc = 0.2;
-
+	
 	if (DengInput->KeyDownAnyMod(DengKeys.movementCrouch)) {
 		if (timer < 0.2) timer += DengTime->fixedDeltaTime;
 	}
@@ -131,15 +138,15 @@ void Movement::Update() {
 		if (timer > 0) timer -= DengTime->fixedDeltaTime;
 	}
 	
-
+	
 	///////////////////////////////////
 	//    Running/Walking/Jumping    //
 	///////////////////////////////////
-
-
+	
+	
 	//apply gravity
 	phys->velocity += Vector3(0, -9.81, 0) * DengTime->fixedDeltaTime;
-
+	
 	if (jump) {
 		phys->velocity += Vector3(0, 10, 0);
 		jump = false;
@@ -208,12 +215,12 @@ void Movement::Update() {
 	}
 	
 	phys->position += phys->velocity * DengTime->fixedDeltaTime;
-
+	
 	phys->manifolds.clear();
 	phys->acceleration = Vector3::ZERO;
-
+	
 	camera->position = Math::lerpv(standpos, crouchpos, timer / ttc);
-
+	
 }
 
 std::string Movement::SaveTEXT(){

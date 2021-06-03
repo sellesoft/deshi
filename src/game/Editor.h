@@ -28,6 +28,7 @@ struct Editor{
 	std::vector<Entity*> selected;
 	Camera* camera;
 	UndoManager undo_manager;
+	std::string level_name;
 	
 	bool showDebugTools;
 	bool showTimes;

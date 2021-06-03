@@ -21,7 +21,7 @@ struct Camera;
 struct Movement : public Component {
 	Vector3 inputs;
 	Physics* phys;
-
+	
 	Camera* camera;
 	
 	bool inAir;
@@ -38,15 +38,15 @@ struct Movement : public Component {
 	
 	bool jump = false;
 	
+	Movement();
 	Movement(Physics* phys);
-	
 	Movement(Physics* phys, float gndAccel, float airAccel, float maxWalkingSpeed, float maxRunningSpeed, float maxCrouchingSpeed, bool jump, float jumpImpulse);
 	
 	void Update() override;
-
+	
 	void DecideContactState();
 	void DecideMovementState();
-
+	
 	void GrabObject();
 	
 	std::string SaveTEXT() override;

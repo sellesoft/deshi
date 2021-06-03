@@ -23,6 +23,7 @@ ____and maybe look into setting it up to be more streamlined somehow
 
 Minor Ungrouped TODOs
 ---------------------
+detach camera from the renderer so that the camera component isnt calling the renderer
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
 ____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
 ____to update it's canvas system.
@@ -169,6 +170,8 @@ ____temp fix by checking if minimized, but need to find root cause
 program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
 ____read this to try to fix: http://www.debuginfo.com/tips/userbpntdll.html
 some UI can be clicked thru and select the entity
+the program crashes if default asset files are not present
+____we can store the text in the actual code and create the file from the code, like keybinds.cfg
 
 */
 
@@ -216,7 +219,7 @@ struct DeshiEngine {
 		renderer.Init(&time, &input, &window, &imgui); //inits imgui as well
 		g_renderer = &renderer;
 		g_debug = &debug;
-
+		
 		//init game admin
 		admin.Init();
 		g_admin = &admin;

@@ -34,6 +34,7 @@ struct Camera : public Component {
 	Matrix4 viewMat;
 	Matrix4 projMat;
 	
+	Camera();
 	Camera(float fov, float nearZ = .01f, float farZ = 1000.01f, bool freeCam = true);
 	
 	void Update() override;

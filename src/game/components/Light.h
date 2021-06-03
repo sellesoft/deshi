@@ -13,6 +13,7 @@ struct Light : public Component {
 	
 	bool active = true;
 	
+	Light();
 	Light(const Vector3& position, const Vector3& direction, float strength = 1.f);
 	
 	void Update() override;

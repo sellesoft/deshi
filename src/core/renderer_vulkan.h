@@ -126,7 +126,7 @@ struct TextureVk {
 	VkImageView   view;
 	VkSampler     sampler;
 	VkImageLayout layout;
-	VkDescriptorImageInfo imageInfo;
+	VkDescriptorImageInfo imageInfo; //just a combo of the previous three vars
 };
 
 //a primitive contains the information for one draw call (a batch)
@@ -212,7 +212,7 @@ struct Renderer{
 	//and other various dynamically sized things for things and such
 	glm::vec4 lights[10]{ glm::vec4(0,0,0,-1) };
 	bool generatingWorldGrid = false; //this area is my random var test area now :)
-
+	
 	//////////////////////////
 	//// render interface ////
 	//////////////////////////
@@ -248,9 +248,9 @@ struct Renderer{
 	//returns the ID of the mesh
 	u32 LoadBaseMesh(Mesh* m, bool visible = false);
 	u32 GetBaseMeshID(const char* name);
-	u32 CreateMesh(Scene* scene, const char* filename);
-	u32 CreateMesh(Mesh* mesh, Matrix4 matrix);
-	u32 CreateMesh(u32 meshID, Matrix4 matrix);
+	u32 CreateMesh(Scene* scene, const char* filename, b32 new_material = true);
+	u32 CreateMesh(Mesh* mesh, Matrix4 matrix, b32 new_material = true);
+	u32 CreateMesh(u32 meshID, Matrix4 matrix, b32 new_material = true);
 	void UnloadBaseMesh(u32 meshID);
 	void RemoveMesh(u32 meshID);
 	Matrix4 GetMeshMatrix(u32 meshID);
@@ -266,7 +266,7 @@ struct Renderer{
 	void RemoveSelectedMesh(u32 meshID);
 	
 	//creates a mesh with editable vertices
-	u32 CreateMeshBrush(Mesh* m, Matrix4 matrix);
+	u32 CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation = false);
 	void UpdateMeshBrushBuffers(u32 meshBrushIdx);
 	void RemoveMeshBrush(u32 meshBrushIdx);
 	//returns a base mesh ID
