@@ -1125,12 +1125,7 @@ void Console::AddCommands(){
 	//	else return "GLOBAL_DEBUG = false";
 	//}, "debug_global", "debug_global");
 	
-	/*commands["engine_pause"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-											   admin->paused = !admin->paused;
-											   if (admin->paused) return "engine_pause = true";
-											   else return "engine_pause = false";
-										   }, "engine_pause", "toggles pausing the engine");*/
-	
+	CMDADD(level, "Loads a level from the levels directory");
 	CMDADD(engine_pause, "Toggles pausing the engine");
 	CMDADD(save, "Saves the state of the editor");
 	CMDADD(daytime, "Logs the time in day-time format");
