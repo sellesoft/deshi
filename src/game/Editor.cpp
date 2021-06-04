@@ -25,62 +25,58 @@
 
 Entity* Editor::SelectEntityRaycast(){
 	vec3 pos = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions);
-	RenderedEdge3D* ray = new RenderedEdge3D(pos, camera->position);
-	
-	//NOTE sushi: this sort of works, but fails sometimes since the position of a larger obj
-	//			  can be closer than a smaller one even though the small one appears in front
-	//			  this can be mediated by sorting triangles in
-	//std::vector<Entity*> sorted_ents = admin->entities;
-	//std::sort(sorted_ents.begin(), sorted_ents.end(),
-	//	[&](Entity* e1, Entity* e2) {
-	//		return (e1->transform.position - camera->position).mag() < (e2->transform.position - camera->position).mag();
-	//	});
-	
-	u32 closeindex = -1;
-	f32 mint = -INFINITY;
+
+	int closeindex = -1;
+	f32 mint = INFINITY;
 	
 	vec3 p0, p1, p2, normal, intersect;
-	mat4 rot, transform;
+	mat4 transform, rotation;
 	f32  t;
 	int  index = 0;
 	bool done = false;
 	for(Entity* e : admin->entities) {
+		transform = e->transform.TransformMatrix();
+		rotation = Matrix4::RotationMatrix(e->transform.rotation);
 		if(MeshComp* mc = e->GetComponent<MeshComp>()) {
 			if(mc->mesh_visible) {
 				Mesh* m = mc->mesh;
 				for(Batch& b : m->batchArray){
 					for(u32 i = 0; i < b.indexArray.size(); i += 3){
-						transform = e->transform.TransformMatrix();
+					//NOTE sushi: our normal here is now based on whatever the vertices normal is when we load the model
+					//			  so if we end up loading models and combining vertices again, this will break
 						p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
 						p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
 						p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
-						normal = b.vertexArray[b.indexArray[i + 0]].normal * transform;
-						
-						//NOTE sushi: our normal here is now based on whatever the vertices normal is when we load the model
-						//			  so if we end up loading models and combining vertices again, this will break
-						
-						intersect = Math::VectorPlaneIntersect(p0, normal, pos, camera->position, t);
-						rot = Matrix4::AxisAngleRotationMatrix(90, Vector4(normal, 0));
-						
-						if(t < 0 &&
-						   ((p1 - p0) * rot).dot(intersect - p0) > 0 &&
-						   ((p2 - p1) * rot).dot(intersect - p1) > 0 &&
-						   ((p0 - p2) * rot).dot(intersect - p2) > 0) {
-							DebugLines(index, camera->position, intersect, -1);
-							DebugLinesCol(index, p0 + (p1 - p0) * rot, p0, -1, Color::RED);
-							DebugLinesCol(index, p1 + (p2 - p1) * rot, p1, -1, Color::RED);
-							DebugLinesCol(index, p2 + (p0 - p2) * rot, p2, -1, Color::RED);
-							DebugLinesCol(index, p0, intersect, -1, Color::BLUE);
-							DebugLinesCol(index, p1, intersect, -1, Color::BLUE);
-							DebugLinesCol(index, p2, intersect, -1, Color::BLUE);
+						normal = b.vertexArray[b.indexArray[i + 0]].normal * rotation;
+
+						//early out if triangle is not facing us
+						if (normal.dot(p0 - camera->position) < 0) {
+							//find where on the plane defined by the triangle our raycast intersects
+							intersect = Math::VectorPlaneIntersect(p0, normal, camera->position, pos, t);
 							
-							if (t > mint) {
-								closeindex = index;
-								mint = t;
-								done = true;
-								break;
+							//early out if intersection is behind us
+							if (t > 0) {
+								//make vectors perpendicular to each edge of the triangle
+								Vector3 perp0 = normal.cross(p1 - p0).yInvert().normalized();
+								Vector3 perp1 = normal.cross(p2 - p1).yInvert().normalized();
+								Vector3 perp2 = normal.cross(p0 - p2).yInvert().normalized();
+
+								//check that the intersection point is within the triangle and its the closest triangle found so far
+								if (
+									perp0.dot(intersect - p0) > 0 &&
+									perp1.dot(intersect - p1) > 0 &&
+									perp2.dot(intersect - p2) > 0) {
+
+									//if its the closest triangle so far we store its index
+									if (t < mint) {
+										closeindex = index;
+										mint = t;
+										done = true;
+										break;
+									}
+
+								}
 							}
-							
 						}
 						if(done) break;
 					}
@@ -611,7 +607,8 @@ namespace ImGui {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //// interface (and some nasty global stuff that should prob get compressed out)
-
+////			its not nasty cause it prevents having to pass these variables around in functions
+////			and/or recaling them in functions, not sure if the 2,3,4th ones are necessary though
 
 
 bool  WinHovFlag = false;
@@ -2390,6 +2387,36 @@ void Editor::WorldGrid(Vector3 cpos) {
 	
 }
 
+void Editor::ShowSelectedEntityNormals() {
+	vec3 p0, p1, p2, normal, intersect;
+	mat4 rot, transform;
+	f32  t;
+	int  index = 0;
+	for (Entity* e : selected) {
+		if (MeshComp* mc = e->GetComponent<MeshComp>()) {
+			if (mc->mesh_visible) {
+				Mesh* m = mc->mesh;
+				for (Batch& b : m->batchArray) {
+					for (u32 i = 0; i < b.indexArray.size(); i += 3) {
+						transform = e->transform.TransformMatrix();
+						p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
+						p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
+						p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
+						normal = b.vertexArray[b.indexArray[i + 0]].normal * transform;
+
+						Vector3 perp = normal.cross(p1 - p0).yInvert();
+						Vector3 mid = (p0 + p1 + p2) / 3;
+
+						DebugLinesCol(i, mid, mid + normal, -1, Color::CYAN);
+						DebugLinesCol(i, p0, p0 + perp, -1, Color::YELLOW);
+						DebugLinesCol(i, mid, p0, -1, Color::MAGENTA);
+					}
+				}
+			}
+		}
+		index++;
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// editor struct
@@ -2550,6 +2577,12 @@ void Editor::Update(){
 			}
 		}
 	}
+
+	////////////////////////////////
+	////  selected entity debug ////
+	////////////////////////////////
+	//ShowSelectedEntityNormals();
+
 }
 
 void Editor::Reset(){

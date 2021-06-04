@@ -21,6 +21,9 @@ struct Keybinds{
 	Key::Key movementJump = Key::SPACE;
 	Key::Key movementCrouch = Key::LCTRL;
 	Key::Key movementRun = Key::LSHIFT;
+
+	//player controls
+	Key::Key use = Key::E;
 	
 	//camera controls
 	Key::Key cameraRotateUp    = Key::UP;

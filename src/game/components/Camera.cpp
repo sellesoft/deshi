@@ -43,7 +43,7 @@ void Camera::Update() {
 		static int wheight = window->height;
 		
 		//clamp camera rotation
-		rotation.x = Math::clamp(rotation.x, -89.9f, 89.9f);
+		Math::clamp(rotation.x, -89.9f, 89.9f);
 		if(rotation.y > 1440.f || rotation.y < -1440.f){ rotation.y = 0.f; }
 		
 		//update direction vectors

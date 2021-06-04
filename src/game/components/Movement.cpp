@@ -2,6 +2,8 @@
 #include "Physics.h"
 #include "../admin.h"
 #include "../systems/CanvasSystem.h"
+#include "MeshComp.h"
+#include "../../scene/Model.h"
 
 Movement::Movement() {
 	admin = g_admin;
@@ -95,19 +97,127 @@ void Movement::DecideMovementState() {
 }
 
 void Movement::GrabObject() {
+	//TODO(sushi) grabbing objs needs polished
+	//-prevent obj from colliding with player
+	//-change the objs velocity as the player moves it around
+	//-clean up the logic
 	static bool grabbing = false;
-	static bool initial = true;
+	static int frame = DengTime->updateCount;
 	
 	//interpolation vars
 	static float timer = 0;
-	static float timetocenter = 0.2;
+	static float timetocenter = 0.07;
 	
 	static Vector3 ogpos;
+
+	//static Entity* grabee = nullptr;
+	static Physics* grabeephys = nullptr;
 	
-	if (initial) {
-		
+	//grab object or drop it if already holding one
+	//frame is necessary to avoid this being ran multiple times due to
+	//movement being within physics update
+	if (DengInput->KeyPressed(DengKeys.use) && DengTime->updateCount != frame) {
+		if (!grabbing) {
+			//find obj to pick up
+			//TODO(sushi, Cl) make this a function somewhere, maybe geometry, and make the editor and this call it 
+			vec3 pos = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions);
+
+			int closeindex = -1;
+			f32 mint = INFINITY;
+
+			vec3 p0, p1, p2, normal, intersect;
+			mat4 transform, rotation;
+			f32  t;
+			int  index = 0;
+			bool done = false;
+			for (Entity* e : admin->entities) {
+				transform = e->transform.TransformMatrix();
+				rotation = Matrix4::RotationMatrix(e->transform.rotation);
+				if (MeshComp* mc = e->GetComponent<MeshComp>()) {
+					if (mc->mesh_visible) {
+						Mesh* m = mc->mesh;
+						for (Batch& b : m->batchArray) {
+							for (u32 i = 0; i < b.indexArray.size(); i += 3) {
+								//NOTE sushi: our normal here is now based on whatever the vertices normal is when we load the model
+								//			  so if we end up loading models and combining vertices again, this will break
+								p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
+								p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
+								p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
+								normal = b.vertexArray[b.indexArray[i + 0]].normal * rotation;
+
+								//early out if triangle is not facing us
+								if (normal.dot(p0 - camera->position) < 0) {
+									//find where on the plane defined by the triangle our raycast intersects
+									intersect = Math::VectorPlaneIntersect(p0, normal, camera->position, pos, t);
+
+									//early out if intersection is behind us
+									if (t > 0) {
+										//make vectors perpendicular to each edge of the triangle
+										Vector3 perp0 = normal.cross(p1 - p0).yInvert().normalized();
+										Vector3 perp1 = normal.cross(p2 - p1).yInvert().normalized();
+										Vector3 perp2 = normal.cross(p0 - p2).yInvert().normalized();
+
+										//check that the intersection point is within the triangle and its the closest triangle found so far
+										if (
+											perp0.dot(intersect - p0) > 0 &&
+											perp1.dot(intersect - p1) > 0 &&
+											perp2.dot(intersect - p2) > 0) {
+
+											//if its the closest triangle so far we store its index
+											if (t < mint) {
+												closeindex = index;
+												mint = t;
+												done = true;
+												break;
+											}
+
+										}
+									}
+								}
+								if (done) break;
+							}
+							if (done) break;
+						}
+					}
+				}
+				done = false;
+				index++;
+			}
+
+			if (closeindex != -1) {
+				grabeephys = admin->entities[closeindex]->GetComponent<Physics>();
+				if (t <= maxGrabbingDistance
+					&& grabeephys && !grabeephys->isStatic) {
+					grabbing = true;
+					ogpos = grabeephys->position;
+				}
+				timer = 0;
+			}
+		}//if !grabbing
+		else {
+			grabbing = false;
+			grabeephys = 0;
+			timer = 0;
+		}
+		frame = DengTime->updateCount;
 	}
 	
+	//if we are grabbing an object, iterpolate it to the center of the screen and make it follow it as well.
+	if (grabeephys && grabbing) {
+		//TODO(sushi) make the grabbing distance relative to the size of the object
+		Vector3 cenpos = 
+			Math::ScreenToWorld(DengWindow->dimensions / 2, camera->projMat, camera->viewMat, DengWindow->dimensions)
+			+ camera->forward * 3;
+		Math::clamp(timer, 0, timetocenter);
+		if (timer < timetocenter) {
+			timer += DengTime->fixedDeltaTime;
+			grabeephys->position = Math::lerpv(ogpos, cenpos, timer / timetocenter);
+		}
+		else {
+			grabeephys->position = cenpos;
+		}
+	}
+
 }
 
 
@@ -220,7 +330,15 @@ void Movement::Update() {
 	phys->acceleration = Vector3::ZERO;
 	
 	camera->position = Math::lerpv(standpos, crouchpos, timer / ttc);
+
+	////////////////////
+	//    Grabbing    // This will eventually be set up for using objects, but maybe that should be in controller/player?
+	////////////////////
 	
+	
+	GrabObject();
+	
+
 }
 
 std::string Movement::SaveTEXT(){

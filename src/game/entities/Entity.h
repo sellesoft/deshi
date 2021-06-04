@@ -47,7 +47,7 @@ struct Entity {
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
 	template<class T>
-		T* GetComponent() {
+	T* GetComponent() {
 		T* t = nullptr;
 		for (Component* c : components) {
 			if (T* temp = dynamic_cast<T*>(c)) {
@@ -55,6 +55,16 @@ struct Entity {
 			}
 		}
 		return t;
+	}
+	//returns if a component exists on the entitiy
+	template<class T>
+	bool hasComponent() {
+		for (Component* c : components) {
+			if (T* temp = dynamic_cast<T*>(c)) {
+				return true;
+			}
+		}
+		return false;
 	}
 };
 

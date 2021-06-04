@@ -53,6 +53,7 @@ struct Editor{
 	void DebugTools();
 	void DrawTimes();
 	void WorldGrid(Vector3 cpos);
+	void ShowSelectedEntityNormals();
 };
 
 namespace ImGui {

@@ -21,5 +21,4 @@ namespace Geometry {
 					   fmaxf(center.y - halfDims.y, fminf(target.y, center.y + halfDims.y)),
 					   fmaxf(center.y - halfDims.z, fminf(target.z, center.z + halfDims.z)));
 	}
-	
 };

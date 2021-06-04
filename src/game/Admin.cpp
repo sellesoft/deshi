@@ -97,7 +97,6 @@ void EntityAdmin::Update() {
 	if (!skip && !pause_sound && !paused) { sound.Update(); }
 	DengTime->sndSysTime =    TIMER_END(t_a);
 	ImGui::EndDebugLayer();
-
 }
 
 void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already happened
