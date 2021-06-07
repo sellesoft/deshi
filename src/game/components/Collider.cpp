@@ -304,6 +304,8 @@ ComplexCollider::ComplexCollider(Mesh* mesh, u32 collisionleyer, Event event, b3
 	admin = g_admin;
 	cpystr(name, "ComplexCollider", DESHI_NAME_SIZE);
 	comptype = ComponentType_Collider;
+
+	this->mesh = mesh;
 }
 
 std::string ComplexCollider::SaveTEXT(){

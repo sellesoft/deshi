@@ -586,7 +586,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 		} else if (std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
 			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		} else if (std::regex_search(s->c_str(), m, StringRegex("collider"))) {
-			if(m[1] == "aabb") ctype = ColliderType_AABB;
+			if     (m[1] == "aabb")      ctype = ColliderType_AABB;
 			else if(m[1] == "sphere")    ctype = ColliderType_Sphere;
 			else if(m[1] == "landscape") ctype = ColliderType_Landscape;
 			else if(m[1] == "box")       ctype = ColliderType_Box;

@@ -1,0 +1,30 @@
+>level
+name         "2dboxtesting"
+entity_count 4
+last_updated "06/06/2021 17:35:55"
+
+>materials
+0 "unnamed_material" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+1 "unnamed_material" 1 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+2 "planarbox_batch" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+3 "box_batch" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+4 "planarbox_batch" 3 "UV_Grid_Sm.jpg" "black1024.png" "black1024.png" "black1024.png"
+5 "Sphere" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+6 "arrow" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+7 "Cube" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+8 "Cube" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+9 "Cube" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+10 "Cube" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+11 "Cube" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+
+>meshes
+6 "box.obj" 1 "8"
+7 "box.obj" 1 "9"
+8 "box.obj" 1 "10"
+9 "box.obj" 1 "11"
+
+>entities
+0_box
+1_box
+2_box
+3_box

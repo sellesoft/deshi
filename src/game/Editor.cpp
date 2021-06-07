@@ -689,6 +689,25 @@ void Editor::MenuBar() {
 				}
 				ImGui::EndMenu();
 			}
+
+			if (BeginMenu("Load Level")) {
+				WinHovCheck;
+				static bool fopen = false;
+				static std::vector<std::string> saves;
+
+				if (!fopen) {
+					saves = deshi::iterateDirectory(deshi::dirLevels());
+					fopen = false;
+				}
+
+				for_n(i, saves.size()) {
+					if (MenuItem(saves[i].c_str())) {
+						admin->LoadTEXT(saves[i].c_str());
+					}
+				}
+				ImGui::EndMenu();
+			}
+
 			ImGui::EndMenu();
 		}
 		if(BeginMenu("Spawn")) { WinHovCheck; 

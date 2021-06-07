@@ -116,7 +116,7 @@ void Movement::GrabObject() {
 	//grab object or drop it if already holding one
 	//frame is necessary to avoid this being ran multiple times due to
 	//movement being within physics update
-	if (DengInput->KeyPressed(DengKeys.use) && DengTime->updateCount != frame) {
+	if (DengInput->KeyPressed(DengKeys.use | INPUTMOD_ANY) && DengTime->updateCount != frame) {
 		if (!grabbing) {
 			//find obj to pick up
 			//TODO(sushi, Cl) make this a function somewhere, maybe geometry, and make the editor and this call it 
@@ -212,9 +212,11 @@ void Movement::GrabObject() {
 		if (timer < timetocenter) {
 			timer += DengTime->fixedDeltaTime;
 			grabeephys->position = Math::lerpv(ogpos, cenpos, timer / timetocenter);
+			grabeephys->velocity = Vector3::ZERO;
 		}
 		else {
 			grabeephys->position = cenpos;
+			grabeephys->velocity = Vector3::ZERO;
 		}
 	}
 
