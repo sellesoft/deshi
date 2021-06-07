@@ -19,7 +19,7 @@ A game engine for 3D physics and graphics building on [P3DPGE](https://github.co
 * Scripting/event system
 
 ### Build Dependencies
-* [GLFW 3.3.2](https://www.glfw.org/download.html)
+* [GLFW 3.3.2](https://github.com/glfw/glfw/releases/tag/3.3.2)
 * [VulkanSDK 1.2.162.1](https://vulkan.lunarg.com/sdk/home)
 * [GLM 0.9.9.8](https://github.com/g-truc/glm/releases/tag/0.9.9.8)
 * [OpenAL 1.1](https://www.openal.org/downloads/)
