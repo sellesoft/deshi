@@ -566,7 +566,15 @@ LoadBaseMesh(Mesh* m, bool visible) {
 				case TextureType_Specular:{ specularID = idx; }break;
 			}
 		}
-		matID = CreateMaterial(batch.shader, albedoID, normalID, specularID, lightID, batch.name);
+		if(batch.shader == 0){
+			matID = CreateMaterial("flat", batch.shader, albedoID, normalID, specularID, lightID);
+		}else if(batch.shader == 1){
+			matID = CreateMaterial("phong", batch.shader, albedoID, normalID, specularID, lightID);
+		}else if(batch.shader == 2){
+			matID = CreateMaterial("two", batch.shader, albedoID, normalID, specularID, lightID);
+		}else{
+			matID = CreateMaterial(batch.name, batch.shader, albedoID, normalID, specularID, lightID);
+		}
 		
 		//primitive
 		PrimitiveVk primitive;
@@ -660,12 +668,8 @@ RemoveMesh(u32 meshID){
 			//meshes.erase(meshes.begin() + meshID);
 			meshes[meshID].visible = false;
 			ERROR_LOC("RemoveMesh: Not implemented yet");
-		}else{
-			ERROR_LOC("Only a child/non-base mesh can be removed");
-		}
-	}else{
-		ERROR_LOC("There is no mesh with id: ", meshID);
-	}
+		}else{ ERROR_LOC("Only a child/non-base mesh can be removed"); }
+	}else{ ERROR_LOC("There is no mesh with id: ", meshID); }
 }
 
 Matrix4 Renderer::
@@ -892,14 +896,18 @@ ListTextures(){
 	return out;
 }
 
+//TODO(delle,ReVu) dont create image samplers for non-image materials
 u32 Renderer::
-CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID, const char* name){
-	PRINTVK(3, "    Creating material: ", (name) ? name : "?");
+CreateMaterial(const char* name, u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID){
+	if(!name) { ERROR("No name passed on material creation"); return 0; }
+	//for(auto& mat : materials){ if(strcmp(mat.name, name) == 0){ return mat.id; } }
+	
+	PRINTVK(3, "    Creating material: ", name);
 	MaterialVk mat; mat.id = u32(materials.size());
 	mat.shader = shader; mat.pipeline = GetPipelineFromShader(shader);
 	mat.albedoID = albedoTextureID; mat.normalID = normalTextureID;
 	mat.specularID = specTextureID; mat.lightID = lightTextureID;
-	cpystr(mat.name, (name) ? name : "unnamed_material", DESHI_NAME_SIZE);
+	cpystr(mat.name, name, DESHI_NAME_SIZE);
 	
 	//allocate and write descriptor set for material
 	VkDescriptorSetAllocateInfo allocInfo{};
@@ -939,8 +947,10 @@ CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTex
 
 u32 Renderer::
 CopyMaterial(u32 materialID){
-	PRINTVK(3, "    Copying material");
-	MaterialVk mat = materials[materialID]; 
+	if(materialID >= materials.size()) { ERROR("Invalid material ID passed to CopyMaterial"); return 0; }
+	
+	MaterialVk mat = materials[materialID];
+	PRINTVK(3, "    Copying material: ", mat.name);
 	mat.id = u32(materials.size());
 	
 	//allocate and write descriptor set for material
@@ -1046,15 +1056,16 @@ GetMaterialIDs(u32 meshID) {
 //TODO(delle,Vu) this leaks in the GPU b/c the descriptor sets are not deallocated, figure that out
 void Renderer::
 RemoveMaterial(u32 matID){
-	if(matID < materials.size()) return ERROR_LOC("RemoveMaterial: There is no material with id: ", matID);
-	
+	if(matID >= materials.size()) return ERROR_LOC("RemoveMaterial: There is no material with id: ", matID);
 	for(MeshVk& mesh : meshes){
 		for(PrimitiveVk& prim : mesh.primitives){
 			if(prim.materialIndex == matID) prim.materialIndex = 0;
 		}
 	}
-	
-	
+	for(int i=matID; i < materials.size(); ++i){
+		materials[i].id -= 1;
+	}
+	materials.erase(materials.begin()+matID);
 }
 
 void Renderer::
@@ -1067,10 +1078,11 @@ LoadDefaultAssets(){
 	Texture blackTex  ("black1024.png");   LoadTexture(blackTex);
 	Texture whiteTex  ("white1024.png");   LoadTexture(whiteTex);
 	
-	materials.reserve(8);
+	materials.reserve(16);
 	//create default materials
-	CreateMaterial(0); //flat
-	CreateMaterial(1); //phong
+	CreateMaterial("flat", 0);
+	CreateMaterial("phong", 1);
+	CreateMaterial("twod", 2);
 }
 
 //ref: gltfscenerendering.cpp:350

@@ -221,7 +221,8 @@ void EntityAdmin::ChangeState(GameState new_state){
 				pause_phys = pause_sound = true;
 				controller.playermove = nullptr;
 				SaveDESH("auto.desh");
-				LoadDESH("temp.desh");
+				//LoadDESH("temp.desh");
+				LoadTEXT(editor.level_name.c_str());
 				if(player) player->GetComponent<MeshComp>()->Visible(true);
 				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
 			}break;
@@ -239,7 +240,8 @@ void EntityAdmin::ChangeState(GameState new_state){
 			case GameState_Editor:{ to = "EDITOR";
 				pause_phys = pause_sound = true;
 				SaveDESH("auto.desh");
-				LoadDESH("temp.desh");
+				//LoadDESH("temp.desh");
+				LoadTEXT(editor.level_name.c_str());
 				if(player) player->GetComponent<MeshComp>()->Visible(true);
 				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
 			}break;
@@ -251,7 +253,8 @@ void EntityAdmin::ChangeState(GameState new_state){
 			case GameState_Play: 
 			case GameState_Debug:{  to = "PLAY/DEBUG";
 				pause_phys = pause_sound = false;
-				SaveDESH("temp.desh");
+				//SaveDESH("temp.desh");
+				SaveTEXT(editor.level_name.c_str());
 				if(player) {
 					player->GetComponent<MeshComp>()->Visible(false);
 				}else{
@@ -260,7 +263,8 @@ void EntityAdmin::ChangeState(GameState new_state){
 				DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
 			}break;
 			case GameState_Menu:{   to = "MENU";
-				SaveDESH("save.desh");
+				//SaveDESH("save.desh");
+				SaveTEXT(editor.level_name.c_str());
 				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
 			}break;
 		}break;
@@ -365,14 +369,15 @@ enum struct LevelHeader{
 };
 void EntityAdmin::LoadTEXT(const char* savename){
 	namespace fs = std::filesystem;
-	if(!savename) return ERROR("Failed to load text-file: no name passed");
-	Reset();
-	SUCCESS("Loading level: ", savename);
-	TIMER_START(t_l);
 	
+	if(!savename) return ERROR("Failed to load text-file: no name passed");
 	std::string levels_dir = deshi::dirData() + "levels/";
 	std::string level_dir = levels_dir + savename + "/";
 	if(!fs::is_directory(level_dir)) return ERROR("Failed to find directory: ", level_dir);
+	
+	Reset();
+	SUCCESS("Loading level: ", savename);
+	TIMER_START(t_l);
 	
 	u32 entity_count = 0;
 	std::vector<pair<u32,u32>> material_id_diffs;
@@ -426,12 +431,11 @@ void EntityAdmin::LoadTEXT(const char* savename){
 					if(split.size() != 7){ ERROR(ParsingError,"'! Material lines should have 7 values"); continue; }
 					
 					u32 old_id = std::stoi(split[0]);
-					u32 new_id = DengRenderer->CreateMaterial(std::stoi(split[2]), 
+					u32 new_id = DengRenderer->CreateMaterial(split[1].c_str(), std::stoi(split[2]), 
 															  DengRenderer->LoadTexture(split[3].c_str()),
 															  DengRenderer->LoadTexture(split[4].c_str()),
 															  DengRenderer->LoadTexture(split[5].c_str()),
-															  DengRenderer->LoadTexture(split[6].c_str()),
-															  split[1].c_str());
+															  DengRenderer->LoadTexture(split[6].c_str()));
 					material_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
 				}break;
 				case(LevelHeader::MESHES):{
@@ -863,7 +867,7 @@ void EntityAdmin::LoadDESH(const char* filename) {
 		memcpy(&specularId, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		memcpy(&lightID,    data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		memcpy(matName,     data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
-		if(i>5) DengRenderer->CreateMaterial(shader, albedoID, normalID, specularId, lightID, matName);
+		if(i>5) DengRenderer->CreateMaterial(matName, shader, albedoID, normalID, specularId, lightID);
 	}
 	
 	//// parse and load/create meshes ////

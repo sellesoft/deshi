@@ -291,7 +291,7 @@ struct Renderer{
 	void UnloadTexture(u32 textureID);
 	std::string ListTextures();
 	
-	u32 CreateMaterial(u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2, const char* name = 0);
+	u32 CreateMaterial(const char* name, u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2);
 	u32  CopyMaterial(u32 materialID);
 	void UpdateMaterialTexture(u32 matID, u32 textureSlot, u32 textureID);
 	void UpdateMaterialShader(u32 matID, u32 shader);

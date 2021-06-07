@@ -82,4 +82,8 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define xx_STRINGIZE(x) #x
 #define STRINGIZE(x) xx_STRINGIZE(x)
 
+//size of c-style array; dont use on a pointer
+//ref: DearImGui imgui.h
+#define carraysize(_ARR) ((int)(sizeof(_ARR) / sizeof(*(_ARR))))
+
 #endif //DESHI_DEFINES_H
