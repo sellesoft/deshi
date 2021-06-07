@@ -647,79 +647,98 @@ std::vector<std::string> textures;
 
 
 void Editor::MenuBar() {
-    using namespace ImGui;
-    ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-    ImGui::PushStyleColor(ImGuiCol_PopupBg,   ColToVec4(Color(20, 20, 20, 255)));
-    ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ColToVec4(Color(20, 20, 20, 255)));
-    
-    if(BeginMainMenuBar()) { WinHovCheck; 
-        menubarheight = GetWindowHeight();
-        if(BeginMenu("File")) { WinHovCheck; 
-            
-            if (MenuItem("New"))  admin->Reset();
-            if (MenuItem("Save")) admin->SaveDESH("save.desh");
-            if (BeginMenu("Save As")) {
-                static char buff[255] = {};
-                if(ImGui::InputText("##saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
-                    std::string s(buff); s += ".desh";
-                    admin->SaveDESH(s.c_str());
-                }
-                EndMenu();
-            }
-            if (BeginMenu("Save Level")) {
-                static char buff[255] = {};
-                if(ImGui::InputText("##savelevelas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
-                    admin->SaveTEXT(buff);
-                }
-                EndMenu();
-            }
-            if (BeginMenu("Load")) { WinHovCheck;
-                static bool fopen = false;
-                static std::vector<std::string> saves;
-                
-                if (!fopen) {
-                    saves = deshi::iterateDirectory(deshi::dirSaves());
-                    fopen = false;
-                }
-                
-                for_n(i, saves.size()) {
-                    if (MenuItem(saves[i].c_str())) {
-                        admin->LoadDESH(saves[i].c_str());
-                    }
-                }
-                ImGui::EndMenu();
-            }
-            ImGui::EndMenu();
-        }
-        if(BeginMenu("Spawn")) { WinHovCheck; 
-            for (int i = 0; i < files.size(); i++) {
-                if (files[i].find(".obj") != std::string::npos) {
-                    if(MenuItem(files[i].c_str())) { DengConsole->ExecCommand("load_obj", files[i]); }
-                }
-            }
-            EndMenu();
-        }//agh
-        if (BeginMenu("Window")) { WinHovCheck; 
-            if (MenuItem("Entity Inspector")) showDebugTools = !showDebugTools;
-            if (MenuItem("Debug Bar"))        showDebugBar = !showDebugBar;
-            if (MenuItem("DebugLayer"))       showDebugLayer = !showDebugLayer;
-            if (MenuItem("Timers"))           showTimes = !showTimes;
-            if (MenuItem("ImGui Demo"))       showImGuiDemoWindow = !showImGuiDemoWindow;
-            EndMenu();
-        }
-        if (BeginMenu("State")) { WinHovCheck;
-            if (MenuItem("Play"))   admin->ChangeState(GameState_Play);
-            if (MenuItem("Debug"))  admin->ChangeState(GameState_Debug);
-            if (MenuItem("Editor")) admin->ChangeState(GameState_Editor);
-            if (MenuItem("Menu"))   admin->ChangeState(GameState_Menu);
-            EndMenu();
-        }
-        EndMainMenuBar();
-    }
-    
-    PopStyleColor(2);
-    PopStyleVar(2);
+	using namespace ImGui;
+	ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+	ImGui::PushStyleColor(ImGuiCol_PopupBg,   ColToVec4(Color(20, 20, 20, 255)));
+	ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ColToVec4(Color(20, 20, 20, 255)));
+	
+	if(BeginMainMenuBar()) { WinHovCheck; 
+		menubarheight = GetWindowHeight();
+		if(BeginMenu("File")) { WinHovCheck; 
+			
+			if (MenuItem("New"))  admin->Reset();
+			if (MenuItem("Save")) admin->SaveDESH("save.desh");
+			if (BeginMenu("Save As")) {
+				static char buff[255] = {};
+				if(ImGui::InputText("##saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
+					std::string s(buff); s += ".desh";
+					admin->SaveDESH(s.c_str());
+				}
+				EndMenu();
+			}
+			if (BeginMenu("Save Level")) {
+				static char buff[255] = {};
+				if(ImGui::InputText("##savelevelas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
+					admin->SaveTEXT(buff);
+				}
+				EndMenu();
+			}
+			if (BeginMenu("Load")) { WinHovCheck;
+				static bool fopen = false;
+				static std::vector<std::string> saves;
+				
+				if (!fopen) {
+					saves = deshi::iterateDirectory(deshi::dirSaves());
+					fopen = false;
+				}
+				
+				for_n(i, saves.size()) {
+					if (MenuItem(saves[i].c_str())) {
+						admin->LoadDESH(saves[i].c_str());
+					}
+				}
+				ImGui::EndMenu();
+			}
+
+			if (BeginMenu("Load Level")) {
+				WinHovCheck;
+				static bool fopen = false;
+				static std::vector<std::string> saves;
+
+				if (!fopen) {
+					saves = deshi::iterateDirectory(deshi::dirLevels());
+					fopen = false;
+				}
+
+				for_n(i, saves.size()) {
+					if (MenuItem(saves[i].c_str())) {
+						admin->LoadTEXT(saves[i].c_str());
+					}
+				}
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMenu();
+		}
+		if(BeginMenu("Spawn")) { WinHovCheck; 
+			for (int i = 0; i < files.size(); i++) {
+				if (files[i].find(".obj") != std::string::npos) {
+					if(MenuItem(files[i].c_str())) { DengConsole->ExecCommand("load_obj", files[i]); }
+				}
+			}
+			EndMenu();
+		}//agh
+		if (BeginMenu("Window")) { WinHovCheck; 
+			if (MenuItem("Entity Inspector")) showDebugTools = !showDebugTools;
+			if (MenuItem("Debug Bar"))        showDebugBar = !showDebugBar;
+			if (MenuItem("DebugLayer"))       showDebugLayer = !showDebugLayer;
+			if (MenuItem("Timers"))           showTimes = !showTimes;
+			if (MenuItem("ImGui Demo"))       showImGuiDemoWindow = !showImGuiDemoWindow;
+			EndMenu();
+		}
+		if (BeginMenu("State")) { WinHovCheck;
+			if (MenuItem("Play"))   admin->ChangeState(GameState_Play);
+			if (MenuItem("Debug"))  admin->ChangeState(GameState_Debug);
+			if (MenuItem("Editor")) admin->ChangeState(GameState_Editor);
+			if (MenuItem("Menu"))   admin->ChangeState(GameState_Menu);
+			EndMenu();
+		}
+		EndMainMenuBar();
+	}
+	
+	PopStyleColor(2);
+	PopStyleVar(2);
 }
 
 

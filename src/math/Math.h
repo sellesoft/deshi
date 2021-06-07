@@ -383,14 +383,19 @@ namespace Math {
 
 	//where a line intersects with a plane
 	static Vector3 VectorPlaneIntersect(Vector3 plane_p, Vector3 plane_n, Vector3 line_start, Vector3 line_end) {
-		//plane_n.normalize();
-		float plane_d = -plane_n.dot(plane_p);
-		float ad = line_start.dot(plane_n);
-		float bd = line_end.dot(plane_n);
-		float t = (-plane_d - ad) / (bd - ad);
-		Vector3 line_start_to_end = line_end - line_start;
-		Vector3 line_to_intersect = line_start_to_end * t;
-		return line_start + line_to_intersect;
+		////plane_n.normalize();
+		//float plane_d = -plane_n.dot(plane_p);
+		//float ad = line_start.dot(plane_n);
+		//float bd = line_end.dot(plane_n);
+		//float t = (-plane_d - ad) / (bd - ad);
+		//Vector3 line_start_to_end = line_end - line_start;
+		//Vector3 line_to_intersect = line_start_to_end * t;
+		//return line_start + line_to_intersect;
+
+		Vector3 lstole = (line_end - line_start).normalized();
+		Vector3 lptopp = plane_p - line_start;
+		float t = lptopp.dot(plane_n) / lstole.dot(plane_n);
+		return line_start + t * lstole;
 	}
 	
 	//return where two lines intersect on the x axis with slope and the y-intercept

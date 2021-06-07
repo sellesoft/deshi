@@ -26,6 +26,7 @@ namespace deshi{
 	inline static std::string dirLogs()    { return dirData() + "logs/"; }
 	inline static std::string dirModels()  { return dirData() + "models/"; }
 	inline static std::string dirSaves()   { return dirData() + "saves/"; }
+	inline static std::string dirLevels()  { return dirData() + "levels/"; }
 	inline static std::string dirShaders() { return dirData() + "shaders/"; }
 	inline static std::string dirSounds()  { return dirData() + "sounds/"; }
 	inline static std::string dirTextures(){ return dirData() + "textures/"; }

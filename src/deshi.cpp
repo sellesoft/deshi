@@ -23,6 +23,8 @@ ____and maybe look into setting it up to be more streamlined somehow
 
 Minor Ungrouped TODOs
 ---------------------
+create a hot-loadable global vars file
+____doesnt need to be hotloadable, could just be a text file we edit through console/ui
 detach camera from the renderer so that the camera component isnt calling the renderer
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
 ____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
@@ -35,7 +37,6 @@ ____get rid of event on every component or just only let u choose that event on 
 change undo's to never use pointers and have undos that can act like linked lists to chain them
 figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
 settings file(s) [keybinds, video, audio, etc]
-____create a hot-loadable global vars file
 add a general logging system with log levels and locations (for filtering)
 add a component_state command to print state of a component (add str methods to all components/systems)
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
@@ -97,6 +98,7 @@ add showing axis lines through object when axis grabbing once we have lines in V
 keybind to move camera to object (like Blender's NPMINUS)
 implement orthographic grabbing 
 add level_name var to editor.h for ease of saving (and have a modal when none is set)
+moving entities around in the entities list
 
 Physics/Atmos TODOs
 -------------

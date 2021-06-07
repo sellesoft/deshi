@@ -1,0 +1,40 @@
+>entity
+id       1
+name     "box"
+position (15.443073,0.000000,0.000000)
+rotation (0.000000,0.000000,0.000000)
+scale    (1.000000,1.000000,1.000000)
+
+>mesh
+id      7
+name    "box.obj"
+visible true
+
+>physics
+velocity           (0.000000,0.000000,0.000000)
+acceleration       (0.000000,0.000000,0.000000)
+rot_velocity       (0.000000,0.000000,0.000000)
+rot_acceleration   (0.000000,0.000000,0.000000)
+elasticity         0.000000
+mass               10.000000
+friction_kinetic   4.000000
+friction_static    0.420000
+static_position    false
+static_rotation    false
+
+>audio source
+
+>collider
+type      aabb
+half_dims (0.500000,1.000000,0.500000)
+
+>movement
+ground_accel 100.000000
+air_accel    1000.000000
+jump_impulse 10.000000
+walk_speed   5.000000
+run_speed    12.000000
+crouch_speed 2.500000
+
+>player
+health -842150451

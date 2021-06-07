@@ -9,22 +9,20 @@ layout(location = 4) in vec3 worldPosition;
 layout(location = 5) in vec3 viewPosition;
 layout(location = 6) in vec4 lights[10];
 
-
 layout(location = 0) out vec4 outColor;
 
 vec4 calcLight(vec3 lightPos, vec3 worldPos, float brightness, vec3 normal){
 	float r = length(lightPos - worldPos);
 	float ang = brightness * dot(normalize(lightPos - worldPos), normal);
-	float light = clamp(ang/(r * r),0, 1);
+	float light = clamp(ang/(r * r), 0, 1);
 
 	return  vec4(light, light, light, 1);
 }
 
-
 vec4 calcLight(vec3 lightPos, vec3 worldPos, float brightness, vec3 normal, vec3 color){
 	float r = length(lightPos - worldPos);
 	float ang = brightness * dot(normalize(lightPos - worldPos), normal);
-	float light = clamp(ang/(r * r),0, 1);
+	float light = clamp(ang/(r * r), 0, 1);
 
 	return  vec4(light, light, light, 1) * vec4(color, 1);
 }
