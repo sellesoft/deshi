@@ -1282,6 +1282,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
         }
         
         //// components ////
+        //TODO(delle,Ui) all should be open by default
         for(Component* c : sel->components){
             switch(c->comptype){
                 //mesh
@@ -1525,7 +1526,11 @@ inline void MaterialsTab(EntityAdmin* admin){
                 //// delete button ////
                 TableSetColumnIndex(2);
                 if(Button("X", ImVec2(-FLT_MIN, 0.0f))){
-                    if(mat_idx == selected_mat) selected_mat = -1;
+                    if(mat_idx == selected_mat) {
+                        selected_mat = -1;
+                    }else if(selected_mat != -1 && selected_mat > mat_idx) {
+                        selected_mat -= 1;
+                    }
                     DengRenderer->RemoveMaterial(mat_idx);
                 }
                 PopID();

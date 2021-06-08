@@ -5,8 +5,10 @@ position (0.000000,-5.000000,0.000000)
 rotation (0.000000,0.000000,0.000000)
 scale    (100.000000,0.500000,100.000000)
 
+>audio source
+
 >mesh
-id      6
+id      5
 name    "box.obj"
 visible true
 
@@ -21,8 +23,7 @@ friction_kinetic   0.300000
 friction_static    0.420000
 static_position    true
 static_rotation    false
-
->audio source
+twod               false
 
 >collider
 type      aabb

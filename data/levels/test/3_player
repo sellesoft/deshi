@@ -8,7 +8,7 @@ scale    (1.000000,1.000000,1.000000)
 >audio source
 
 >mesh
-id      11
+id      10
 name    "bmonkey.obj"
 visible true
 
@@ -31,6 +31,7 @@ friction_kinetic   4.000000
 friction_static    0.420000
 static_position    false
 static_rotation    false
+twod               false
 
 >player
 health -842150451

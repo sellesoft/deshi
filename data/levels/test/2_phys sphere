@@ -18,7 +18,7 @@ direction  (0.000000,0.000000,0.000000)
 brightness 10.000000
 
 >mesh
-id      8
+id      7
 name    "sphere.obj"
 visible true
 
@@ -33,6 +33,7 @@ friction_kinetic   0.300000
 friction_static    0.420000
 static_position    false
 static_rotation    false
+twod               false
 
 >collider
 type   sphere

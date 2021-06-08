@@ -6,7 +6,7 @@ rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)
 
 >mesh
-id      15
+id      14
 name    "box.obj"
 visible true
 
@@ -21,6 +21,7 @@ friction_kinetic   0.300000
 friction_static    0.420000
 static_position    false
 static_rotation    false
+twod               true
 
 >collider
 type      aabb

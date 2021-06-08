@@ -566,12 +566,12 @@ LoadBaseMesh(Mesh* m, bool visible) {
 				case TextureType_Specular:{ specularID = idx; }break;
 			}
 		}
-		if(batch.shader == 0){
-			matID = CreateMaterial("flat", batch.shader, albedoID, normalID, specularID, lightID);
-		}else if(batch.shader == 1){
-			matID = CreateMaterial("phong", batch.shader, albedoID, normalID, specularID, lightID);
-		}else if(batch.shader == 2){
-			matID = CreateMaterial("two", batch.shader, albedoID, normalID, specularID, lightID);
+		if(batch.shader == Shader_Flat){
+			matID = CreateMaterial(ShaderStrings[Shader_Flat], Shader_Flat, 0, 0, 0, 0);
+		}else if(batch.shader == Shader_Phong){
+			matID = CreateMaterial(ShaderStrings[Shader_Phong], Shader_Phong, 0, 0, 0, 0);
+		}else if(batch.shader == Shader_Twod){
+			matID = CreateMaterial(ShaderStrings[Shader_Twod], Shader_Twod, 0, 0, 0, 0);
 		}else{
 			matID = CreateMaterial(batch.name, batch.shader, albedoID, normalID, specularID, lightID);
 		}
@@ -667,7 +667,7 @@ RemoveMesh(u32 meshID){
 			//for(int i=meshID; i<meshes.size(); ++i) { --meshes[i].id;  } 
 			//meshes.erase(meshes.begin() + meshID);
 			meshes[meshID].visible = false;
-			ERROR_LOC("RemoveMesh: Not implemented yet");
+			WARNING_LOC("RemoveMesh: Not implemented yet");
 		}else{ ERROR_LOC("Only a child/non-base mesh can be removed"); }
 	}else{ ERROR_LOC("There is no mesh with id: ", meshID); }
 }
@@ -900,7 +900,11 @@ ListTextures(){
 u32 Renderer::
 CreateMaterial(const char* name, u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID){
 	if(!name) { ERROR("No name passed on material creation"); return 0; }
-	//for(auto& mat : materials){ if(strcmp(mat.name, name) == 0){ return mat.id; } }
+	for(auto& mat : materials){ //avoid duplicate if not PBR
+		if(strcmp(mat.name, name) == 0 && mat.shader == shader && shader != Shader_PBR){ 
+			return mat.id; 
+		} 
+	}
 	
 	PRINTVK(3, "    Creating material: ", name);
 	MaterialVk mat; mat.id = u32(materials.size());
@@ -1060,6 +1064,7 @@ RemoveMaterial(u32 matID){
 	for(MeshVk& mesh : meshes){
 		for(PrimitiveVk& prim : mesh.primitives){
 			if(prim.materialIndex == matID) prim.materialIndex = 0;
+			if(prim.materialIndex > matID) prim.materialIndex -= 1;
 		}
 	}
 	for(int i=matID; i < materials.size(); ++i){
@@ -1071,18 +1076,19 @@ RemoveMaterial(u32 matID){
 void Renderer::
 LoadDefaultAssets(){
 	PRINTVK(2, "  Loading default assets");
+
 	//load default textures
-	textures.reserve(8);
-	Texture nullTex   ("null128.png");     LoadTexture(nullTex);
-	Texture defaultTex("default1024.png"); LoadTexture(defaultTex);
-	Texture blackTex  ("black1024.png");   LoadTexture(blackTex);
-	Texture whiteTex  ("white1024.png");   LoadTexture(whiteTex);
+	textures.reserve(16);
+	LoadTexture("null128.png", 0);
+	LoadTexture("default1024.png", 0);
+	LoadTexture("black1024.png", 0);
+	LoadTexture("white1024.png", 0);
 	
 	materials.reserve(16);
 	//create default materials
-	CreateMaterial("flat", 0);
-	CreateMaterial("phong", 1);
-	CreateMaterial("twod", 2);
+	CreateMaterial(ShaderStrings[Shader_Flat], Shader_Flat);
+	CreateMaterial(ShaderStrings[Shader_Phong], Shader_Phong);
+	CreateMaterial(ShaderStrings[Shader_Twod], Shader_Twod);
 }
 
 //ref: gltfscenerendering.cpp:350
