@@ -159,7 +159,8 @@ Fun TODOs
 look into implementing Lua 
 look into making a function that takes in the types on a component and formats binary for saving and what not 
 ____like what were currently doing for typeHeader in EntityAdmin Save()
-write a preprocessing/postprocessing compiler that 
+write a shader that displays textures like it would on a monitor, so like you have an array of
+____rgb lights that make up a single pixel of a texture and stuff 
 
 Bug Board
 ---------
