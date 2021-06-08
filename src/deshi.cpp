@@ -90,7 +90,6 @@ copy/pasting objects
 typing numbers while grabbing/rotating/scaling for precise manipulation (like in Blender)
 adding components
 manipulating component/entity data through UI
-changing materials/textures through UI
 implement grabbing/rotating/scaling with a visual tool thing (like in Unreal)
 world axis in top right (like we used to have)
 orthographic side views

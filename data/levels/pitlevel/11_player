@@ -5,14 +5,18 @@ position (0.000000,0.000000,13.093034)
 rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)
 
->collider
-type      aabb
-half_dims (0.500000,1.000000,0.500000)
-
 >mesh
 id      16
 name    "box.obj"
 visible true
+
+>movement
+ground_accel 100.000000
+air_accel    1000.000000
+jump_impulse 12.000062
+walk_speed   5.000000
+run_speed    12.000000
+crouch_speed 2.500000
 
 >physics
 velocity           (0.000000,0.000000,0.000000)
@@ -26,13 +30,9 @@ friction_static    0.420000
 static_position    false
 static_rotation    false
 
->movement
-ground_accel 100.000000
-air_accel    1000.000000
-jump_impulse 12.000062
-walk_speed   5.000000
-run_speed    12.000000
-crouch_speed 2.500000
-
 >player
 health -842150451
+
+>collider
+type      aabb
+half_dims (0.500000,1.000000,0.500000)
