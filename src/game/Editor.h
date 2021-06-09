@@ -29,6 +29,10 @@ struct Editor{
 	Camera* camera;
 	UndoManager undo_manager;
 	
+	std::string level_name;
+	vec3 camera_pos;
+	vec3 camera_rot;
+	
 	bool showDebugTools;
 	bool showTimes;
 	bool showDebugBar;
@@ -52,6 +56,7 @@ struct Editor{
 	void DebugTools();
 	void DrawTimes();
 	void WorldGrid(Vector3 cpos);
+	void ShowSelectedEntityNormals();
 };
 
 namespace ImGui {

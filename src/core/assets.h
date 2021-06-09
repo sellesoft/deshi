@@ -26,6 +26,7 @@ namespace deshi{
 	inline static std::string dirLogs()    { return dirData() + "logs/"; }
 	inline static std::string dirModels()  { return dirData() + "models/"; }
 	inline static std::string dirSaves()   { return dirData() + "saves/"; }
+	inline static std::string dirLevels()  { return dirData() + "levels/"; }
 	inline static std::string dirShaders() { return dirData() + "shaders/"; }
 	inline static std::string dirSounds()  { return dirData() + "sounds/"; }
 	inline static std::string dirTextures(){ return dirData() + "textures/"; }
@@ -88,6 +89,13 @@ namespace deshi{
 	//returns a new string with the comments removed
 	std::string eat_comments(std::string str);
 	
+	//separates a string by specified character
+	std::vector<std::string> character_delimit(std::string str, char character);
+	
+	//separates a string by specified character, ignores sequences of the character
+	//eg: 1,,,,2,3 is the same as 1,2,3
+	std::vector<std::string> character_delimit_ignore_repeat(std::string str, char character);
+	
 	//separates a string by spaces, ignores leading and trailing spaces
 	std::vector<std::string> space_delimit(std::string str);
 	
@@ -102,6 +110,8 @@ namespace deshi{
 	//iterates a config file and returns a map of keys and values (see keybinds.cfg)
 	std::map<std::string, std::string> extractConfig(const std::string& filepath);
 	
+	b32 parse_bool(std::string& str, const char* filepath = 0, u32 line_number = 0);
+
 } //namespace deshi
 
 #endif //DESHI_ASSETS_H

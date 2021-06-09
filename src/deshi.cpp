@@ -15,15 +15,14 @@ if you feel they would handle the problem better. It should generally be you tho
 Major Ungrouped TODOs
 ---------------------
 create a demo level
-have a talk about how we want to handle premade entity creation
-____specifically player. right now I just have it so i make a new PlayerEntity, set admin's player pointer to it
-____then use admin's CreateEntity function to set up the rest
-put instructions to set up saving and loading for a new component somewhere
-____and maybe look into setting it up to be more streamlined somehow
+sushi->rewrite the events menu
+____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
-detach camera from the renderer so that the camera component calling the renderer
+custom String8 and String16 types as a replacement to std::string
+create a hot-loadable global vars file
+detach camera from the renderer so that the camera component isnt calling the renderer
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
 ____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
 ____to update it's canvas system.
@@ -35,35 +34,41 @@ ____get rid of event on every component or just only let u choose that event on 
 change undo's to never use pointers and have undos that can act like linked lists to chain them
 figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
 settings file(s) [keybinds, video, audio, etc]
-____create a hot-loadable global vars file
 add a general logging system with log levels and locations (for filtering)
 add a component_state command to print state of a component (add str methods to all components/systems)
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
 ____also allow it to store up to 3 types
-add device info command (graphics card, sound device, monitor res, etc)
+add device_info command (graphics card, sound device, monitor res, etc)
 pool/arena components and entities for better performance
-replace/remove external dependencies/includes were possible (glm, tinyobj)
+replace/remove external dependencies/includes (glm, tinyobj, std)
 add Qol (quality of life) tag to TODOP
 add Camera tag to TODOP
 look into integrating TODOP with Discord
 begin reimplementing sound system and maybe rethink its design a bit
 replace std::pair with pair throughout the project
+move admin times from time.h to admin.h (and the format function)
+remove extra collider component types and use the collider one instead
+____ComponentType_AABBCollider vs ComponentType_Collider
+add 2d mesh component and component type for image and UI drawing
+rename isStatic in physics.h to staticPosition
+fix DESH material and event saving/loading
 
 Render TODOs
 ------------
 get debugPrintf extension to work
-add vertex editing interface functions
-ability to do transparency in a fragment shader eg. we can do outColor = vec4(1,1,1,0.5)
-___this would be for experimenting with volumetrics, making a window shader w/o need for textures, etc.
 debug normals
 ____https://github.com/SaschaWillems/Vulkan/blob/master/examples/geometryshader/geometryshader.cpp
 ____https://github.com/SaschaWillems/Vulkan/blob/master/data/shaders/glsl/geometryshader/normaldebug.geom
 ____you can test it through PHONG shader for now
+change UpdateMaterialTexture to take in a textureType
 look into getting info from shaders, or setting up compute shaders
 ____the primary reason being that we need to optimize outlining objects, which will
-____involve clipping triangles and stuff.
+____involve clipping triangles and stuff
 redo MeshVk so its only child meshes
 ____avoid having 3 copies of a mesh (model, meshVK, vulkan)
+ability to do transparency in a fragment shader eg. we can do outColor = vec4(1,1,1,0.5)
+___this would be for experimenting with volumetrics, making a window shader w/o need for textures, etc.
+add vertex editing interface functions
 add lighting and shadows
 add 2D shader and interface functions
 add face normal and tangents to vertex buffer
@@ -80,16 +85,14 @@ geometry shaders
 
 Level Editor TODOs
 ------------------
-add shader/texture seleciton on entity creation
+add material creation
+combine create tab into entities tab
 add transfering the player pointer between entities that have an actor comp
 orbitting camera for rotating around objects
 context menu when right clicking on an object 
 scaling objects
 copy/pasting objects
 typing numbers while grabbing/rotating/scaling for precise manipulation (like in Blender)
-adding components
-manipulating component/entity data through UI
-changing materials/textures through UI
 implement grabbing/rotating/scaling with a visual tool thing (like in Unreal)
 world axis in top right (like we used to have)
 orthographic side views
@@ -97,7 +100,9 @@ orthographic side views
 add showing axis lines through object when axis grabbing once we have lines in Vulkan
 keybind to move camera to object (like Blender's NPMINUS)
 implement orthographic grabbing 
-add level_name var to editor.h for ease of saving (and have a modal when none is set)
+entity filtering in entity list
+combine undo manager into editor file
+add editor camera properties and editing to globals tab
 
 Physics/Atmos TODOs
 -------------
@@ -157,7 +162,9 @@ Fun TODOs
 look into implementing Lua 
 look into making a function that takes in the types on a component and formats binary for saving and what not 
 ____like what were currently doing for typeHeader in EntityAdmin Save()
-write a preprocessing/postprocessing compiler that 
+write a shader that displays textures like it would on a monitor, so like you have an array of
+____rgb lights that make up a single pixel of a texture and stuff 
+write a preprocessing/postprocessing compiler that makes saving easier
 
 Bug Board
 ---------

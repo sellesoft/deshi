@@ -1,17 +1,15 @@
 >entity
-id       0    
-    name     "aabb0"
-position (0.000000,0.000000,0.000000) #yooo 
+id       3
+name     "twod_box2"
+position (0.000000,0.000000,0.000000)
 rotation (0.000000,0.000000,0.000000)
-scale    (50.000000,1.000000,50.000000)
-#aye
+scale    (1.000000,1.000000,1.000000)
 
->collider
-type      2
-half_dims (1.000000,1.000000,1.000000)
+>audio source
 
 >mesh
-name    "default_planarbox"
+id      8
+name    "box.obj"
 visible true
 
 >physics
@@ -23,5 +21,10 @@ elasticity         0.500000
 mass               1.000000
 friction_kinetic   0.300000
 friction_static    0.420000
-static_position    true
+static_position    false
 static_rotation    false
+twod               true
+
+>collider
+type      aabb
+half_dims (1.000000,1.000000,1.000000)

@@ -234,8 +234,8 @@ Render() {
 	ASSERTVK(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
 	//update stats
 	stats.drawnTriangles += stats.drawnIndices / 3;
-	stats.totalVertices += u32(vertexBuffer.size());
-	stats.totalIndices += u32(indexBuffer.size());
+	stats.totalVertices += (u32)vertexBuffer.size();
+	stats.totalIndices += (u32)indexBuffer.size();
 	stats.totalTriangles += stats.totalIndices / 3;
 	stats.renderTimeMS = TIMER_END(t_r);
 	
@@ -343,10 +343,11 @@ CreateDebugLine(Vector3 start, Vector3 end, Color color, bool visible){
 
 void Renderer::
 UpdateDebugLine(u32 id, Vector3 start, Vector3 end, Color color) {
+	Vector3 c = Vector3(color.r, color.g, color.b) / 255.f;
 	meshBrushes[id].vertices[0].pos = glm::make_vec3(&start.x);
 	meshBrushes[id].vertices[1].pos = glm::make_vec3(&end.x);
-	meshBrushes[id].vertices[0].color = glm::make_vec3(&color.r);
-	meshBrushes[id].vertices[1].color = glm::make_vec3(&color.r);
+	meshBrushes[id].vertices[0].color = glm::make_vec3(&c.x);
+	meshBrushes[id].vertices[1].color = glm::make_vec3(&c.x);
 	UpdateMeshBrushBuffers(id);
 	
 }
@@ -374,8 +375,8 @@ CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool visibl
 
 
 u32 Renderer::
-CreateMeshBrush(Mesh* m, Matrix4 matrix){
-	PRINTVK(3, "    Creating mesh brush based on: ", m->name);
+CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation){
+	if(log_creation) PRINTVK(3, "    Creating mesh brush based on: ", m->name);
 	
 	if(m->vertexCount == 0 || m->indexCount == 0 || m->batchCount == 0) {  //early out if empty buffers
 		ERROR("CreateMeshBrush: A mesh was passed in with no vertices or indices or batches");
@@ -391,8 +392,8 @@ CreateMeshBrush(Mesh* m, Matrix4 matrix){
 	mesh.indices.reserve(m->indexCount);
 	u32 batchVertexStart, batchIndexStart;
 	for(Batch& batch : m->batchArray){
-		batchVertexStart = u32(mesh.vertices.size());
-		batchIndexStart = u32(mesh.indices.size());
+		batchVertexStart = (u32)mesh.vertices.size();
+		batchIndexStart = (u32)mesh.indices.size();
 		
 		//vertices
 		for(int i=0; i<batch.vertexArray.size(); ++i){ 
@@ -454,6 +455,15 @@ CreateMeshBrush(Mesh* m, Matrix4 matrix){
 	//store mesh brush
 	meshBrushes.push_back(mesh);
 	return mesh.id;
+}
+
+void Renderer::
+UpdateMeshBrushMatrix(u32 index, Matrix4 transform) {
+	if (index >= meshBrushes.size()) return ERROR_LOC("There is no mesh with id: ", index);
+	
+	meshBrushes[index].matrix = glm::make_mat4(transform.data);
+	
+	UpdateMeshBrushBuffers(index);
 }
 
 void Renderer::
@@ -536,8 +546,8 @@ LoadBaseMesh(Mesh* m, bool visible) {
 	u32 batchVertexStart, batchIndexStart;
 	u32 matID, albedoID, normalID, lightID, specularID;
 	for(Batch& batch : m->batchArray){
-		batchVertexStart = u32(vertexBuffer.size());
-		batchIndexStart = u32(indexBuffer.size());
+		batchVertexStart = (u32)vertexBuffer.size();
+		batchIndexStart = (u32)indexBuffer.size();
 		
 		//vertices
 		for(int i=0; i<batch.vertexArray.size(); ++i){ 
@@ -565,7 +575,15 @@ LoadBaseMesh(Mesh* m, bool visible) {
 				case TextureType_Specular:{ specularID = idx; }break;
 			}
 		}
-		matID = CreateMaterial(batch.shader, albedoID, normalID, specularID, lightID, batch.name);
+		if(batch.shader == Shader_Flat){
+			matID = CreateMaterial(ShaderStrings[Shader_Flat], Shader_Flat, 0, 0, 0, 0);
+		}else if(batch.shader == Shader_Phong){
+			matID = CreateMaterial(ShaderStrings[Shader_Phong], Shader_Phong, 0, 0, 0, 0);
+		}else if(batch.shader == Shader_Twod){
+			matID = CreateMaterial(ShaderStrings[Shader_Twod], Shader_Twod, 0, 0, 0, 0);
+		}else{
+			matID = CreateMaterial(batch.name, batch.shader, albedoID, normalID, specularID, lightID);
+		}
 		
 		//primitive
 		PrimitiveVk primitive;
@@ -576,7 +594,7 @@ LoadBaseMesh(Mesh* m, bool visible) {
 	}
 	
 	//add mesh to scene
-	mesh.id = u32(meshes.size());
+	mesh.id = (u32)meshes.size();
 	meshes.push_back(mesh);
 	if(initialized){ CreateSceneBuffers(); }
 	if (visible) mesh.visible = true;
@@ -584,45 +602,47 @@ LoadBaseMesh(Mesh* m, bool visible) {
 }
 
 u32 Renderer::
-CreateMesh(Scene* scene, const char* filename){
+CreateMesh(Scene* scene, const char* filename, b32 new_material){
 	//check if Mesh was already created
 	for(auto& model : scene->models){ 
 		if(strcmp(model.mesh->name, filename) == 0){ 
-			return CreateMesh(model.mesh, Matrix4::IDENTITY);
+			return CreateMesh(model.mesh, Matrix4::IDENTITY, new_material);
 		} 
 	}
 	PRINTVK(3, "    Creating mesh: ", filename);
 	
 	scene->models.emplace_back(Mesh::CreateMeshFromOBJ(filename));
-	return CreateMesh(scene->models[scene->models.size()-1].mesh, Matrix4::IDENTITY);
+	return CreateMesh(scene->models[scene->models.size()-1].mesh, Matrix4::IDENTITY, new_material);
 }
 
 u32 Renderer::
-CreateMesh(Mesh* m, Matrix4 matrix){
+CreateMesh(Mesh* m, Matrix4 matrix, b32 new_material){
 	//check if MeshVk was already created
 	for(auto& mesh : meshes){ 
 		if(strcmp(mesh.name, m->name) == 0){ 
-			return CreateMesh(mesh.id, matrix);
+			return CreateMesh(mesh.id, matrix, new_material);
 		} 
 	}
-	PRINTVK(3, "    Creating mesh: ", m->name);
 	
-	return CreateMesh(LoadBaseMesh(m), matrix);
+	PRINTVK(3, "    Creating mesh: ", m->name);
+	return CreateMesh(LoadBaseMesh(m), matrix, new_material);
 }
 
 u32 Renderer::
-CreateMesh(u32 meshID, Matrix4 matrix){
+CreateMesh(u32 meshID, Matrix4 matrix, b32 new_material){
 	if(meshID < meshes.size()){
 		PRINTVK(3, "    Creating Mesh: ", meshes[meshID].ptr->name);
 		MeshVk mesh; mesh.base = false; 
 		mesh.ptr = meshes[meshID].ptr; mesh.visible = true;
 		mesh.primitives = std::vector(meshes[meshID].primitives);
-		for_n(i, meshes[meshID].primitives.size()){
-			mesh.primitives[i].materialIndex = CopyMaterial(meshes[meshID].primitives[i].materialIndex);
+		if(new_material){
+			for_n(i, meshes[meshID].primitives.size()){
+				mesh.primitives[i].materialIndex = CopyMaterial(meshes[meshID].primitives[i].materialIndex);
+			}
 		}
 		mesh.modelMatrix = glm::make_mat4(matrix.data);
 		cpystr(mesh.name, meshes[meshID].name, DESHI_NAME_SIZE);
-		mesh.id = u32(meshes.size());
+		mesh.id = (u32)meshes.size();
 		meshes.push_back(mesh);
 		meshes[meshID].children.push_back(mesh.id);
 		return mesh.id;
@@ -656,13 +676,9 @@ RemoveMesh(u32 meshID){
 			//for(int i=meshID; i<meshes.size(); ++i) { --meshes[i].id;  } 
 			//meshes.erase(meshes.begin() + meshID);
 			meshes[meshID].visible = false;
-			ERROR_LOC("RemoveMesh: Not implemented yet");
-		}else{
-			ERROR_LOC("Only a child/non-base mesh can be removed");
-		}
-	}else{
-		ERROR_LOC("There is no mesh with id: ", meshID);
-	}
+			WARNING_LOC("RemoveMesh: Not implemented yet");
+		}else{ ERROR_LOC("Only a child/non-base mesh can be removed"); }
+	}else{ ERROR_LOC("There is no mesh with id: ", meshID); }
 }
 
 Matrix4 Renderer::
@@ -808,7 +824,7 @@ LoadTexture(const char* filename, u32 type){
 	ASSERT(tex.pixels, "stb failed to load an image");
 	
 	tex.type = type;
-	tex.mipLevels = u32(std::floor(std::log2(std::max(tex.width, tex.height)))) + 1;
+	tex.mipLevels = (u32)std::floor(std::log2(std::max(tex.width, tex.height))) + 1;
 	tex.imageSize = tex.width * tex.height * 4;
 	
 	//copy the memory to a staging buffer
@@ -818,7 +834,7 @@ LoadTexture(const char* filename, u32 type){
 	//copy the staging buffer to the image and generate its mipmaps
 	createImage(tex.width, tex.height, tex.mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, tex.image, tex.imageMemory);
 	transitionImageLayout(tex.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, tex.mipLevels);
-	copyBufferToImage(staging.buffer, tex.image, u32(tex.width), u32(tex.height));
+	copyBufferToImage(staging.buffer, tex.image, (u32)tex.width, (u32)tex.height);
 	generateMipmaps(tex.image, VK_FORMAT_R8G8B8A8_SRGB, tex.width, tex.height, tex.mipLevels);
 	//image layout set to SHADER_READ_ONLY when generating mipmaps
 	tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -859,7 +875,7 @@ LoadTexture(const char* filename, u32 type){
 	tex.imageInfo.imageLayout = tex.layout;
 	
 	//add the texture to the scene and return its index
-	u32 idx = u32(textures.size());
+	u32 idx = (u32)textures.size();
 	tex.id = idx;
 	textures.push_back(tex);
 	return idx;
@@ -889,14 +905,22 @@ ListTextures(){
 	return out;
 }
 
+//TODO(delle,ReVu) dont create image samplers for non-image materials
 u32 Renderer::
-CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID, const char* name){
-	PRINTVK(3, "    Creating material");
-	MaterialVk mat; mat.id = u32(materials.size());
+CreateMaterial(const char* name, u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID){
+	if(!name) { ERROR("No name passed on material creation"); return 0; }
+	for(auto& mat : materials){ //avoid duplicate if not PBR
+		if(strcmp(mat.name, name) == 0 && mat.shader == shader && shader != Shader_PBR){ 
+			return mat.id; 
+		} 
+	}
+	
+	PRINTVK(3, "    Creating material: ", name);
+	MaterialVk mat; mat.id = (u32)materials.size();
 	mat.shader = shader; mat.pipeline = GetPipelineFromShader(shader);
 	mat.albedoID = albedoTextureID; mat.normalID = normalTextureID;
 	mat.specularID = specTextureID; mat.lightID = lightTextureID;
-	cpystr(mat.name, (name) ? name : "unnamed_material", DESHI_NAME_SIZE);
+	cpystr(mat.name, name, DESHI_NAME_SIZE);
 	
 	//allocate and write descriptor set for material
 	VkDescriptorSetAllocateInfo allocInfo{};
@@ -936,9 +960,11 @@ CreateMaterial(u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTex
 
 u32 Renderer::
 CopyMaterial(u32 materialID){
-	PRINTVK(3, "    Copying material");
-	MaterialVk mat = materials[materialID]; 
-	mat.id = u32(materials.size());
+	if(materialID >= materials.size()) { ERROR("Invalid material ID passed to CopyMaterial"); return 0; }
+	
+	MaterialVk mat = materials[materialID];
+	PRINTVK(3, "    Copying material: ", mat.name);
+	mat.id = (u32)materials.size();
 	
 	//allocate and write descriptor set for material
 	VkDescriptorSetAllocateInfo allocInfo{};
@@ -1043,31 +1069,35 @@ GetMaterialIDs(u32 meshID) {
 //TODO(delle,Vu) this leaks in the GPU b/c the descriptor sets are not deallocated, figure that out
 void Renderer::
 RemoveMaterial(u32 matID){
-	if(matID < materials.size()) return ERROR_LOC("RemoveMaterial: There is no material with id: ", matID);
-	
+	if(matID >= materials.size()) return ERROR_LOC("RemoveMaterial: There is no material with id: ", matID);
 	for(MeshVk& mesh : meshes){
 		for(PrimitiveVk& prim : mesh.primitives){
 			if(prim.materialIndex == matID) prim.materialIndex = 0;
+			if(prim.materialIndex > matID) prim.materialIndex -= 1;
 		}
 	}
-	
-	
+	for(int i=matID; i < materials.size(); ++i){
+		materials[i].id -= 1;
+	}
+	materials.erase(materials.begin()+matID);
 }
 
 void Renderer::
 LoadDefaultAssets(){
 	PRINTVK(2, "  Loading default assets");
+
 	//load default textures
-	textures.reserve(8);
-	Texture nullTex   ("null128.png");     LoadTexture(nullTex);
-	Texture defaultTex("default1024.png"); LoadTexture(defaultTex);
-	Texture blackTex  ("black1024.png");   LoadTexture(blackTex);
-	Texture whiteTex  ("white1024.png");   LoadTexture(whiteTex);
+	textures.reserve(16);
+	LoadTexture("null128.png", 0);
+	LoadTexture("default1024.png", 0);
+	LoadTexture("black1024.png", 0);
+	LoadTexture("white1024.png", 0);
 	
-	materials.reserve(8);
+	materials.reserve(16);
 	//create default materials
-	CreateMaterial(0); //flat
-	CreateMaterial(1); //phong
+	CreateMaterial(ShaderStrings[Shader_Flat], Shader_Flat);
+	CreateMaterial(ShaderStrings[Shader_Phong], Shader_Phong);
+	CreateMaterial(ShaderStrings[Shader_Twod], Shader_Twod);
 }
 
 //ref: gltfscenerendering.cpp:350
@@ -1712,7 +1742,7 @@ CreateRenderPass(){
 	std::array<VkAttachmentDescription, 3> attachments = {colorAttachment, depthAttachment, colorAttachmentResolve};
 	VkRenderPassCreateInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = u32(attachments.size());
+	renderPassInfo.attachmentCount = (u32)attachments.size();
 	renderPassInfo.pAttachments = attachments.data();
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
@@ -1767,7 +1797,7 @@ CreateRenderPass2(){
 	
 	//// create render pass ////
 	//https://renderdoc.org/vkspec_chunked/chap9.html#VkRenderPassCreateInfo
-	VkRenderPassCreateInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, 0, 0, u32(attachments.size()), attachments.data(), u32(subpasses.size()), subpasses.data(), u32(dependencies.size()), dependencies.data()};
+	VkRenderPassCreateInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, 0, 0, (u32)attachments.size(), attachments.data(), (u32)subpasses.size(), subpasses.data(), (u32)dependencies.size(), dependencies.data()};
 	
 	ASSERTVK(vkCreateRenderPass(device, &renderPassInfo, allocator, &renderPass), "failed to create render pass");
 }
@@ -1920,7 +1950,7 @@ CreateFrames2(){
 		if(frames[i].framebuffer){ vkDestroyFramebuffer(device, frames[i].framebuffer, nullptr); }
 		
 		//https://renderdoc.org/vkspec_chunked/chap9.html#VkFramebufferCreateInfo
-		VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, 0, 0, renderPass, u32(frameBufferAttachments.size()), frameBufferAttachments.data(), u32(width), u32(height), 1};
+		VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, 0, 0, renderPass, (u32)frameBufferAttachments.size(), frameBufferAttachments.data(), (u32)width, (u32)height, 1};
 		ASSERTVK(vkCreateFramebuffer(device, &info, allocator, &frames[i].framebuffer), "failed to create framebuffer");
 		
 		//// allocate command buffers ////
@@ -2338,7 +2368,7 @@ CreateLayouts2(){
 			{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, 0, iarDescriptorSet, 1, 0, 1, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &descriptors[1], 0, 0},
 		};
 		
-		vkUpdateDescriptorSets(device, u32(writeSets.size()), writeSets.data(), 0, nullptr);
+		vkUpdateDescriptorSets(device, (u32)writeSets.size(), writeSets.data(), 0, nullptr);
 	}
 }
 
@@ -2457,7 +2487,7 @@ SetupPipelineCreation(){
 		/*VK_DYNAMIC_STATE_LINE_WIDTH*/ 
 	};
 	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	dynamicState.dynamicStateCount = u32(dynamicStates.size());
+	dynamicState.dynamicStateCount = (u32)dynamicStates.size();
 	dynamicState.pDynamicStates = dynamicStates.data();
 	
 	//// vertex input flow control ////
@@ -2498,9 +2528,9 @@ SetupPipelineCreation(){
 	
 	vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputState.flags = 0;
-	vertexInputState.vertexBindingDescriptionCount = u32(vertexInputBindings.size());
+	vertexInputState.vertexBindingDescriptionCount = (u32)vertexInputBindings.size();
 	vertexInputState.pVertexBindingDescriptions = vertexInputBindings.data();
-	vertexInputState.vertexAttributeDescriptionCount = u32(vertexInputAttributes.size());
+	vertexInputState.vertexAttributeDescriptionCount = (u32)vertexInputAttributes.size();
 	vertexInputState.pVertexAttributeDescriptions = vertexInputAttributes.data();
 	
 	//base pipeline info and options
@@ -2515,7 +2545,7 @@ SetupPipelineCreation(){
 	pipelineCreateInfo.pDepthStencilState  = &depthStencilState;
 	pipelineCreateInfo.pDynamicState       = &dynamicState;
 	pipelineCreateInfo.pVertexInputState   = &vertexInputState;
-	pipelineCreateInfo.stageCount          = u32(shaderStages.size());
+	pipelineCreateInfo.stageCount          = (u32)shaderStages.size();
 	pipelineCreateInfo.pStages             = shaderStages.data();
 }
 
@@ -3046,7 +3076,7 @@ transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, V
 }
 
 void Renderer::
-generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth, i32 texHeight, u32 mipLevels) {
+generateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight, u32 mipLevels) {
 	PRINTVK(4, "      Creating Image Mipmaps");
 	// Check if image format supports linear blitting
 	VkFormatProperties formatProperties;
@@ -3067,8 +3097,8 @@ generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth, i32 texHeight
 	barrier.subresourceRange.layerCount = 1;
 	barrier.subresourceRange.levelCount = 1;
 	
-	i32 mipWidth = texWidth;
-	i32 mipHeight = texHeight;
+	s32 mipWidth = texWidth;
+	s32 mipHeight = texHeight;
 	for (u32 i = 1; i < mipLevels; i++) {
 		barrier.subresourceRange.baseMipLevel = i - 1;
 		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;

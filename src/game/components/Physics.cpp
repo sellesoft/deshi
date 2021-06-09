@@ -118,6 +118,7 @@ std::string Physics::SaveTEXT(){
 					"\nfriction_static    ", staticFricCoef,
 					"\nstatic_position    ", (isStatic) ? "true" : "false",
 					"\nstatic_rotation    ", (staticRotation) ? "true" : "false",
+					"\ntwod               ", (twoDphys) ? "true" : "false",
 					"\n");
 }
 

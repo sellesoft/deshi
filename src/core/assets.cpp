@@ -43,7 +43,7 @@ readFile(const std::string& filepath, u32 chars) {
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
 	defer{ file.close(); };
 	
-	if(chars == 0){ chars = u32(file.tellg()); }
+	if(chars == 0){ chars = (u32)file.tellg(); }
 	
 	std::vector<char> buffer(chars);
 	file.seekg(0);
@@ -58,7 +58,7 @@ readFileBinary(const std::string& filepath, u32 bytes) {
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
 	defer{ file.close(); };
 	
-	if(bytes == 0){ bytes = u32(file.tellg()); }
+	if(bytes == 0){ bytes = (u32)file.tellg(); }
 	std::vector<char> buffer(bytes);
 	file.seekg(0);
 	file.read(buffer.data(), bytes);
@@ -220,6 +220,39 @@ eat_comments(std::string str){
 }
 
 std::vector<std::string> deshi::
+character_delimit(std::string str, char character){
+	std::vector<std::string> out;
+	
+	int prev = 0;
+	for(int i=0; i < str.size(); ++i){
+		if(str[i] == character){
+			out.push_back(str.substr(prev, i-prev));
+    		prev = i+1;
+		}
+	}
+	out.push_back(str.substr(prev, -1));
+	
+	return out;
+}
+
+std::vector<std::string> deshi::
+character_delimit_ignore_repeat(std::string str, char character){
+	std::vector<std::string> out;
+	
+	int prev = 0;
+	for(int i=0; i < str.size(); ++i){
+		if(str[i] == character){
+			out.push_back(str.substr(prev, i-prev));
+			while(str[i+1] == ' ') ++i;
+    		prev = i+1;
+		}
+	}
+	out.push_back(str.substr(prev, -1));
+	
+	return out;
+}
+
+std::vector<std::string> deshi::
 space_delimit(std::string str){
 	std::vector<std::string> out;
 	str = eat_spaces_leading(str);
@@ -250,7 +283,7 @@ space_delimit_ignore_strings(std::string str){
 			out.push_back(str.substr(prev, i-prev));
 			while(str[i+1] == ' ') ++i;
 			prev = i+1;
-    		if(str[prev] == '\"'){
+    		while(str[prev] == '\"'){
     		    end_quote = str.find_first_of('\"', prev+1);
     		    if(end_quote != -1){
     		        out.push_back(str.substr(prev+1, end_quote-prev-1));
@@ -322,4 +355,20 @@ extractConfig(const std::string& filepath) {
 		out.emplace(m[1], m[2]);
 	}
 	return out;
+}
+
+b32 deshi::
+parse_bool(std::string& str, const char* filepath, u32 line_number){
+	if(str == "true" || str == "1"){
+		return true;
+	}else if(str == "false" || str == "0"){
+		return false;
+	}else{
+		if(filepath && line_number){
+			ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid boolean value: ", str);
+		}else{
+			ERROR("Failed to parse boolean value: ", str);
+		}
+		return false;
+	}
 }

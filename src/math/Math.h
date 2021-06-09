@@ -193,9 +193,14 @@ inline Quaternion Quaternion::QuatSlerp(Vector3 fromv, Vector3 tov, float t) {
 namespace Math {
 	
 	//ref: https://en.cppreference.com/w/cpp/algorithm/clamp
-	static float clamp(float v, float lo, float hi) {
+	//static float clamp(float v, float lo, float hi) {
+	//	ASSERT(lo < hi, "The low must be less than the high clamp");
+	//	return (v < lo) ? lo : (hi < v) ? hi : v;
+	//}
+
+	static void clamp(float& v, float lo, float hi) {
 		ASSERT(lo < hi, "The low must be less than the high clamp");
-		return (v < lo) ? lo : (hi < v) ? hi : v;
+		v = (v < lo) ? lo : (hi < v) ? hi : v;
 	}
 	
 	static Vector3 clamp(Vector3 v, float lo, float hi) {
@@ -361,26 +366,18 @@ namespace Math {
 	
 	//where a line intersects with a plane, 'returns' how far along line you were as t value
 	static Vector3 VectorPlaneIntersect(Vector3 plane_p, Vector3 plane_n, Vector3 line_start, Vector3 line_end, float& t) {
-		//plane_n.normalize();
-		float plane_d = -plane_n.dot(plane_p);
-		float ad = line_start.dot(plane_n);
-		float bd = line_end.dot(plane_n);
-		t = (-plane_d - ad) / (bd - ad);
-		Vector3 line_start_to_end = line_end - line_start;
-		Vector3 line_to_intersect = line_start_to_end * t;
-		return line_start + line_to_intersect;
+		Vector3 lstole = (line_end - line_start).normalized();
+		Vector3 lptopp = plane_p - line_start;
+		t = lptopp.dot(plane_n) / lstole.dot(plane_n);
+		return line_start + t * lstole;
 	}
 
 	//where a line intersects with a plane
 	static Vector3 VectorPlaneIntersect(Vector3 plane_p, Vector3 plane_n, Vector3 line_start, Vector3 line_end) {
-		//plane_n.normalize();
-		float plane_d = -plane_n.dot(plane_p);
-		float ad = line_start.dot(plane_n);
-		float bd = line_end.dot(plane_n);
-		float t = (-plane_d - ad) / (bd - ad);
-		Vector3 line_start_to_end = line_end - line_start;
-		Vector3 line_to_intersect = line_start_to_end * t;
-		return line_start + line_to_intersect;
+		Vector3 lstole = (line_end - line_start).normalized();
+		Vector3 lptopp = plane_p - line_start;
+		float t = lptopp.dot(plane_n) / lstole.dot(plane_n);
+		return line_start + t * lstole;
 	}
 	
 	//return where two lines intersect on the x axis with slope and the y-intercept
@@ -396,6 +393,12 @@ namespace Math {
 	//returns where two lines intersect in 3D space //TODO(sushi, MaGe) implement this
 	static Vector3 LineIntersect3(Vector3 adir, Vector3 ap, Vector3 bdir, Vector3 bp) {}
 	
+	static Vector3 Midpointv3(std::vector<Vector3> vectors) {
+		Vector3 sum = Vector3::ZERO;
+		for (Vector3 v : vectors) sum += v;
+		return sum / vectors.size();
+	}
+
 	//the input vectors should be in viewMat/camera space
 	//returns true if the line can be rendered after clipping, false otherwise
 	static bool ClipLineToZPlanes(Vector3& start, Vector3& end, Camera* camera) {

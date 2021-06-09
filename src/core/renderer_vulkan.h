@@ -248,9 +248,9 @@ struct Renderer{
 	//returns the ID of the mesh
 	u32 LoadBaseMesh(Mesh* m, bool visible = false);
 	u32 GetBaseMeshID(const char* name);
-	u32 CreateMesh(Scene* scene, const char* filename);
-	u32 CreateMesh(Mesh* mesh, Matrix4 matrix);
-	u32 CreateMesh(u32 meshID, Matrix4 matrix);
+	u32 CreateMesh(Scene* scene, const char* filename, b32 new_material = false);
+	u32 CreateMesh(Mesh* mesh, Matrix4 matrix, b32 new_material = false);
+	u32 CreateMesh(u32 meshID, Matrix4 matrix, b32 new_material = false);
 	void UnloadBaseMesh(u32 meshID);
 	void RemoveMesh(u32 meshID);
 	Matrix4 GetMeshMatrix(u32 meshID);
@@ -266,7 +266,8 @@ struct Renderer{
 	void RemoveSelectedMesh(u32 meshID);
 	
 	//creates a mesh with editable vertices
-	u32 CreateMeshBrush(Mesh* m, Matrix4 matrix);
+	u32 CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation = false);
+	void UpdateMeshBrushMatrix(u32 meshID, Matrix4 transform);
 	void UpdateMeshBrushBuffers(u32 meshBrushIdx);
 	void RemoveMeshBrush(u32 meshBrushIdx);
 	//returns a base mesh ID
@@ -291,7 +292,7 @@ struct Renderer{
 	void UnloadTexture(u32 textureID);
 	std::string ListTextures();
 	
-	u32 CreateMaterial(u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2, const char* name = 0);
+	u32 CreateMaterial(const char* name, u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2);
 	u32  CopyMaterial(u32 materialID);
 	void UpdateMaterialTexture(u32 matID, u32 textureSlot, u32 textureID);
 	void UpdateMaterialShader(u32 matID, u32 shader);
@@ -392,14 +393,14 @@ struct Renderer{
 	
 	//// swap chain ////
 	
-	i32 width  = 0;
-	i32 height = 0;
+	s32 width  = 0;
+	s32 height = 0;
 	VkSwapchainKHR          swapchain = VK_NULL_HANDLE; //ptr
 	SwapChainSupportDetails supportDetails{}; //struct
 	VkSurfaceFormatKHR      surfaceFormat{}; //struct
 	VkPresentModeKHR        presentMode; //flags
 	VkExtent2D              extent; //struct
-	i32                     minImageCount = 0;
+	s32                     minImageCount = 0;
 	
 	//destroy old swap chain and in-flight frames, create a new swap chain with new dimensions
 	void CreateSwapChain();
@@ -582,7 +583,7 @@ struct Renderer{
 	//converts a VkImage from one layout to another using an image memory barrier
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels);
 	//scans an image for max possible mipmaps and generates them
-	void generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth, i32 texHeight, u32 mipLevels);
+	void generateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight, u32 mipLevels);
 	//creates a buffer of defined usage and size on the device
 	void CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 	//creates a buffer and maps provided data to it

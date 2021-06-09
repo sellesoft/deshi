@@ -201,29 +201,21 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 		//fill batch texture array
 		if (hasMaterials && shape.mesh.material_ids.size() > 0) {
 			const tinyobj::material_t* mat = &materials[shape.mesh.material_ids[0]];
-			if (mat->diffuse_texname.length() > 0) {
-				if (mat->diffuse_texopt.type == 0) {
-					Texture tex(mat->diffuse_texname.substr(mat->diffuse_texname.find_last_of('\\') + 1).c_str(), TextureType_Albedo);
-					batch.textureArray.push_back(tex);
-				}
+			if (mat->diffuse_texname.length() > 0 && mat->diffuse_texopt.type == 0) {
+				Texture tex(mat->diffuse_texname.substr(mat->diffuse_texname.find_last_of('\\') + 1).c_str(), TextureType_Albedo);
+				batch.textureArray.push_back(tex);
 			}
-			if (mat->specular_texname.length() > 0) {
-				if (mat->specular_texopt.type == 0) {
-					Texture tex(mat->specular_texname.substr(mat->specular_texname.find_last_of('\\') + 1).c_str(), TextureType_Specular);
-					batch.textureArray.push_back(tex);
-				}
+			if (mat->specular_texname.length() > 0 && mat->specular_texopt.type == 0) {
+				Texture tex(mat->specular_texname.substr(mat->specular_texname.find_last_of('\\') + 1).c_str(), TextureType_Specular);
+				batch.textureArray.push_back(tex);
 			}
-			if (mat->bump_texname.length() > 0) {
-				if (mat->bump_texopt.type == 0) {
-					Texture tex(mat->bump_texname.substr(mat->bump_texname.find_last_of('\\') + 1).c_str(), TextureType_Normal);
-					batch.textureArray.push_back(tex);
-				}
+			if (mat->bump_texname.length() > 0 && mat->bump_texopt.type == 0) {
+				Texture tex(mat->bump_texname.substr(mat->bump_texname.find_last_of('\\') + 1).c_str(), TextureType_Normal);
+				batch.textureArray.push_back(tex);
 			}
-			if (mat->ambient_texname.length() > 0) {
-				if (mat->ambient_texopt.type == 0) {
-					Texture tex(mat->ambient_texname.substr(mat->ambient_texname.find_last_of('\\') + 1).c_str(), TextureType_Light);
-					batch.textureArray.push_back(tex);
-				}
+			if (mat->ambient_texname.length() > 0 && mat->ambient_texopt.type == 0) {
+				Texture tex(mat->ambient_texname.substr(mat->ambient_texname.find_last_of('\\') + 1).c_str(), TextureType_Light);
+				batch.textureArray.push_back(tex);
 			}
 		}
 		batch.textureCount = batch.textureArray.size();
@@ -256,7 +248,7 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 				vertex.color.z = attrib.colors[3 * idx.vertex_index + 2];
 			}
 			if (uniqueVertices.count(vertex) == 0) {
-				uniqueVertices[vertex] = u32(batch.vertexArray.size());
+				uniqueVertices[vertex] = (u32)batch.vertexArray.size();
 				batch.vertexArray.push_back(vertex);
 			}
 			else {
@@ -270,11 +262,9 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 		totalIndexCount += batch.indexCount;
 		
 		//TODO(delle,Re) parse different shader options here based on texture count
-		batch.shader = Shader_Flat;
+		batch.shader = (batch.textureArray.size() > 0) ? Shader_PBR : Shader_Flat;
 		batch.shaderFlags = ShaderFlags_NONE;
 		mesh->batchArray.push_back(batch);
-		
-		
 	}
 	
 	mesh->vertexCount = totalVertexCount;
@@ -380,10 +370,9 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename, Shader shader, Color color){
 			vertex.color.z = (f32)color.b / 255.f;
 			
 			if (uniqueVertices.count(vertex) == 0) {
-				uniqueVertices[vertex] = u32(batch.vertexArray.size());
+				uniqueVertices[vertex] = (u32)batch.vertexArray.size();
 				batch.vertexArray.push_back(vertex);
-			}
-			else {
+			} else {
 				batch.vertexArray[uniqueVertices[vertex]].normal = (vertex.normal + batch.vertexArray[uniqueVertices[vertex]].normal).normalized();
 			}
 			batch.indexArray.push_back(uniqueVertices[vertex]);

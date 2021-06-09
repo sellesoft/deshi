@@ -82,6 +82,8 @@ template<class... T>
 
 struct Vector3;
 struct Color;
+struct Matrix4;
+struct Mesh;
 
 struct MeshInfo {
 	u32 meshID;
@@ -90,7 +92,7 @@ struct MeshInfo {
 	b32 calledThisFrame;
 	b32 clearNextFrame;
 	b32 wasInvis;
-	Vector3* last[2];
+	Vector3* last[2]; //TODO(sushi, Op) figure out why checking if a line has changed doesnt work
 
 };
 
@@ -98,7 +100,9 @@ struct MeshInfo {
 struct Debug {
 	std::unordered_map<int, MeshInfo> meshes;
 	
+	//TODO(sushi) find a better solution than this, because this variable with eventually wrap around and cause issues after a long period of time
 	int miter = 0;
+
 
 	void Update();
 
@@ -106,6 +110,12 @@ struct Debug {
 	void DrawLine(Vector3 v1, Vector3 v2, int unique, float time, Color color);
 	void DrawLine(int i, Vector3 v1, Vector3 v2, int unique, Color color);
 	void DrawLine(int i, Vector3 v1, Vector3 v2, int unique, float time, Color color);
+
+	void DrawMesh(Mesh* mesh, Matrix4 transform, int unique, Color color);
+	void DrawMesh(Mesh* mesh, Matrix4 transform, int unique, float time, Color color);
+	void DrawMesh(int i, Mesh* mesh, Matrix4 transform, int unique, Color color);
+	void DrawMesh(int i, Mesh* mesh, Matrix4 transform, int unique, float time, Color color);
+
 };
 
 extern Debug* g_debug;

@@ -37,6 +37,8 @@ struct Movement : public Component {
 	float maxCrouchingSpeed = 2.5;
 	
 	bool jump = false;
+
+	float maxGrabbingDistance = 5;
 	
 	Movement();
 	Movement(Physics* phys);

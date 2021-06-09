@@ -17,7 +17,6 @@ struct pair<T,U> {
 		this->second = second;
 	}
 };
-
 template<typename T, typename U>
 inline pair<T,U> make_pair(T first, U second){
 	return pair<T,U>(first, second);
@@ -35,10 +34,30 @@ struct pair<T,U,V> {
 		this->third = third;
 	}
 };
-
 template<typename T, typename U, typename V>
 inline pair<T,U,V> make_pair(T first, U second, V third){
 	return pair<T,U,V>(first, second, third);
+}
+
+template<typename T, typename U, typename V, typename W, typename X>
+struct pair<T,U,V,W,X> {
+	union{ T first;  T _1; };
+	union{ U second; U _2; };
+	union{ V third;  V _3; };
+	union{ W fourth; W _4; };
+	union{ X fifth;  X _5; };
+
+	pair(T first, U second, V third, W fourth, X fifth) {
+		this->first = first;
+		this->second = second;
+		this->third = third;
+		this->fourth = fourth;
+		this->fifth = fifth;
+	}
+};
+template<typename T, typename U, typename V, typename W, typename X>
+inline pair<T,U,V,W,X> make_pair(T first, U second, V third, W fourth, X fifth){
+	return pair<T,U,V,W,X>(first, second, third, fourth, fifth);
 }
 
 template<class... T>

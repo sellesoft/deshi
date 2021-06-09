@@ -34,13 +34,10 @@ struct Manifold3 {
 	
 	//bool indicating which normal is the player's
 	b32 player = 0;
-	
-	//will be implemented later
-	// 
-	//int refID = 0;
-	//Vector2 colpoints[2];
-	//float depth[2];
-	//int nColPoints = 0;
+ 
+	int refID = 0;
+	std::vector<Vector3> colpoints;
+	std::vector<Vector3> depth;
 	
 	Vector3 norm;
 };

@@ -90,6 +90,7 @@ void MeshComp::Update() {
 
 std::string MeshComp::SaveTEXT(){
 	return TOSTRING("\n>mesh"
+					"\nid      ", DengRenderer->meshes[meshID].id,
 					"\nname    \"", DengRenderer->meshes[meshID].name, "\""
 					"\nvisible ", (mesh_visible) ? "true" : "false",
 					"\n");

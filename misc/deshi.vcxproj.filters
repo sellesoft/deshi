@@ -205,6 +205,9 @@
     <ClInclude Include="..\src\game\Editor.h">
       <Filter>src\game</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\game\entities\Trigger.h">
+      <Filter>src\game\entities\h</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -368,9 +371,6 @@
     <None Include="..\data\shaders\wireframe.vert">
       <Filter>shaders</Filter>
     </None>
-    <None Include="..\data\shaders\twod.vert">
-      <Filter>src\core</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\external\imgui\imgui_widgets.cpp">
@@ -486,6 +486,9 @@
     </ClCompile>
     <ClCompile Include="..\src\utils\Debug.cpp">
       <Filter>src\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\game\entities\Trigger.cpp">
+      <Filter>src\game\entities\cpp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
