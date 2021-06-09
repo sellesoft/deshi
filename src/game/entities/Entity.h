@@ -14,10 +14,25 @@
 struct EntityAdmin;
 struct Component;
 
+//necessary for loading
+#define NUMENTITYTYPES 4
+
+enum EntityType : u32 {
+	EntityType_Anonymous,
+	EntityType_Player,
+	EntityType_StaticMesh,
+	EntityType_Trigger
+};
+
+static const char* EntityTypeStrings[] = {
+	"Anonymous", "Player", "StaticMesh", "Trigger"
+};
+
 struct Entity {
 	EntityAdmin* admin; //reference to owning admin
 	u32 id;
 	char name[DESHI_NAME_SIZE];
+	EntityType type = EntityType_Anonymous;
 	Transform transform;
 	std::vector<Component*> components;
 	//std::unordered_map<Entity*, Entity*> connections; //connections to other entities through components

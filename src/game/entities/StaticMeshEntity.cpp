@@ -8,6 +8,7 @@
 
 StaticMesh::StaticMesh(Transform transform, const char* name){
 	this->transform = transform;
+	type = EntityType_StaticMesh;
 	if (name) cpystr(this->name, name, DESHI_NAME_SIZE);
 	
 	mesh = new MeshComp(0);
@@ -19,6 +20,7 @@ StaticMesh::StaticMesh(Transform transform, const char* name){
 
 StaticMesh::StaticMesh(u32 meshID, u32 colliderType, f32 mass, Transform transform, const char* name){
 	this->transform = transform;
+	type = EntityType_StaticMesh;
 	if (name) cpystr(this->name, name, DESHI_NAME_SIZE);
 	
 	mesh = new MeshComp(meshID);

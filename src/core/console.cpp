@@ -9,7 +9,7 @@
 #include "../game/components/MeshComp.h"
 #include "../game/components/Player.h"
 #include "../game/components/Movement.h"
-
+#include "../game/entities/Trigger.h"
 #include "../external/imgui/imgui_impl_glfw.h"
 #include "../external/imgui/imgui_impl_vulkan.h"
 
@@ -453,7 +453,7 @@ new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string
 try{ func }catch(...){ return desc; }\
 }, name, desc);
 
-#define COMMANDFUNC(name) std::string command_##name##_back(EntityAdmin* admin, std::vector<std::string> args)
+#define CMDFUNC(name) std::string command_##name##_back(EntityAdmin* admin, std::vector<std::string> args)
 #define ADDCOMMAND(name, desc) commands[#name] = new Command(command_##name##_back, #name, desc)
 
 #define CMDADD(name, desc) commands[#name] = new Command(command_##name##_back, #name, desc)
@@ -466,45 +466,45 @@ try{ func }catch(...){ return desc; }\
 //// various uncategorized commands ////
 ////////////////////////////////////////
 
-COMMANDFUNC(engine_pause) {
+CMDFUNC(engine_pause) {
 	admin->paused = !admin->paused;
 	if (admin->paused) return "engine_pause = true";
 	else return "engine_pause = false";
 }
 
-COMMANDFUNC(save){
+CMDFUNC(save){
 	std::string path = (args.size() > 0) ? args[0] : "save.desh";
 	admin->SaveDESH(path.c_str());
 	return "";
 }
 
-COMMANDFUNC(daytime){
+CMDFUNC(daytime){
 	return DengTime->FormatDateTime("{w} {M}/{d}/{y} {h}:{m}:{s}");
 }
 
-COMMANDFUNC(time_engine){
+CMDFUNC(time_engine){
 	return DengTime->FormatTickTime("Time:   {t}ms Window:{w}ms Input:{i}ms Admin:{a}ms\n"
 									"Console:{c}ms Render:{r}ms Frame:{f}ms Delta:{d}ms");
 }
 
-COMMANDFUNC(time_game){
+CMDFUNC(time_game){
 	return DengTime->FormatAdminTime("Layers:  Physics:{P}ms Canvas:{C}ms World:{W}ms Send:{S}ms Last:{L}ms\n"
 									 "Systems: Physics:{p}ms Canvas:{c}ms World:{w}ms Send:{s}ms");
 }
 
-COMMANDFUNC(undo){
+CMDFUNC(undo){
 	admin->editor.undo_manager.Undo(); return "";
 }
 
-COMMANDFUNC(redo){
+CMDFUNC(redo){
 	admin->editor.undo_manager.Redo(); return "";
 }
 
-COMMANDFUNC(flush) {
+CMDFUNC(flush) {
 	g_console->FlushBuffer(); return "";
 }
 
-COMMANDFUNC(level){
+CMDFUNC(level){
 	admin->LoadTEXT((args.size() > 0) ? args[0].c_str() : 0); return "";
 }
 
@@ -665,26 +665,29 @@ CMDSTART(spawn_box_uv){
 CMDSTART(mesh_create){
 	Vector3 pos{}, rot{}, scale = vec3::ONE;
 	for (auto s = args.begin(); s != args.end(); ++s) {
-		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
+		if (std::regex_search(s->c_str(), m, Vec3Regex("pos"))) {
 			pos = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
+		}
+		else if (std::regex_search(s->c_str(), m, Vec3Regex("rot"))) {
 			rot = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
+		}
+		else if (std::regex_search(s->c_str(), m, Vec3Regex("scale"))) {
 			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else{
+		}
+		else {
 			return "[c:red]Invalid parameter: " + *s + "[c]";
 		}
 	}
-	
+
 	u32 meshID = std::atoi(args[0].c_str());
 	u32 id = DengRenderer->CreateMesh(meshID, Matrix4::TransformationMatrix(pos, rot, scale));
-	Mesh* ptr = DengRenderer->GetMeshPtr(id); if(!ptr) CMDERROR;
-	
+	Mesh* ptr = DengRenderer->GetMeshPtr(id); if (!ptr) CMDERROR;
+
 	MeshComp* mc = new MeshComp(id);
 	Physics* p = new Physics(pos, rot);
 	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 	admin->CreateEntity({ mc, p, s });
-	
+
 	return TOSTRING("Created mesh with id: ", id, " based on mesh: ", meshID);
 }CMDEND("mesh_create <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 
@@ -816,25 +819,25 @@ CMDSTARTA(add_force, args.size() > 0) {
 		}
 }CMDEND("add_force -force=(x,y,z)");
 
-COMMANDFUNC(cam_info) {
+CMDFUNC(cam_info) {
 	return admin->mainCamera->str();
 }
 
-COMMANDFUNC(cam_matrix_projection) {
+CMDFUNC(cam_matrix_projection) {
 	return admin->mainCamera->projMat.str2f();
 }
 
-COMMANDFUNC(cam_matrix_view) {
+CMDFUNC(cam_matrix_view) {
 	return admin->mainCamera->viewMat.str2f();
 }
 
-COMMANDFUNC(cam_reset) {
+CMDFUNC(cam_reset) {
 	admin->mainCamera->position = Vector3(4.f, 3.f, -4.f);
 	admin->mainCamera->rotation = Vector3(28.f, -45.f, 0.f);
 	return "reset camera";
 }
 
-COMMANDFUNC(listc) {
+CMDFUNC(listc) {
 	std::string allcommands = "";
 
 	for (std::pair<std::string, Command*> c : DengConsole->commands) {
@@ -854,7 +857,7 @@ CMDSTARTA(help, args.size() != 0 && !(args.size() == 1 && args[0] == "")) {
 	}
 }CMDEND("help \nprints help about a specified command. \nuse listc to display avaliable commands");
 
-COMMANDFUNC(alias) {
+CMDFUNC(alias) {
 	if (args.size() == 0) {
 		return "alias \nassign an alias to another command to call it with a different name\n alias (alias name) (command name)";
 	}
@@ -889,7 +892,7 @@ COMMANDFUNC(alias) {
 
 }
 
-COMMANDFUNC(bind) {
+CMDFUNC(bind) {
 	if (args.size() == 0) {
 		return "bind \nassign a command to a key\n bind (key) (command name)";
 	}
@@ -994,11 +997,11 @@ CMDSTARTA(window_resizable, args.size() == 1) {
 	}
 }CMDEND("window_resizable <resizable:Boolean>");
 
-COMMANDFUNC(window_info) {
+CMDFUNC(window_info) {
 	return DengWindow->str();
 }
 
-COMMANDFUNC(render_stats) {
+CMDFUNC(render_stats) {
 	//TODO(delle,Cmd) this
 	return "";
 }
@@ -1029,7 +1032,7 @@ CMDSTARTA(mat_shader, args.size() == 2) {
 	return TOSTRING("Updated material", matID, "'s shader to ", shader);
 } CMDEND("mat_shader <materialID:Uint> <shaderID:Uint>");
 
-COMMANDFUNC(mat_list) {
+CMDFUNC(mat_list) {
 	Renderer* r = DengRenderer;
 	std::string out = "[c:yellow]Materials List:\nID  Shader  Albedo  Normal  Specular  Light[c]";
 	for (auto& mat : r->materials) {
@@ -1054,7 +1057,7 @@ CMDSTARTA(shader_reload, args.size() == 1) {
 	}
 }CMDEND("shader_reload <shaderID:Uint>");
 
-COMMANDFUNC(shader_list) {
+CMDFUNC(shader_list) {
 	return TOSTRING("[c:yellow]ID    SHADER          Description[c]\n",
 		"0    Flat            Vertex color shading without normal/edge smoothing\n",
 		"1    Phong           Vertex color shading with normal smoothing (good with spheres)\n",
@@ -1066,7 +1069,7 @@ COMMANDFUNC(shader_list) {
 		"7    Test1           Testing shader 2");
 }
 
-COMMANDFUNC(shader_freeze) {
+CMDFUNC(shader_freeze) {
 	DengRenderer->shaderData.freeze = !DengRenderer->shaderData.freeze;
 	return (DengRenderer->shaderData.freeze) ? "Shaders frozen" : "Shaders unfrozen";
 }
@@ -1098,11 +1101,11 @@ CMDSTARTA(texture_load, args.size() > 0) {
 		return TOSTRING("Loaded texture ", args[0], " to ID: ", id);
 }CMDEND("texture_load <texture.png:String> [type:Uint]");
 
-COMMANDFUNC(texture_list) {
+CMDFUNC(texture_list) {
 	return DengRenderer->ListTextures();
 }
 
-COMMANDFUNC(texture_type_list) {
+CMDFUNC(texture_type_list) {
 	return TOSTRING("[c:yellow]Texture Types: (can be combined)[c]\n"
 		"   0=Albedo, Color, Diffuse\n"
 		"   1=Normal, Bump\n"
@@ -1112,10 +1115,59 @@ COMMANDFUNC(texture_type_list) {
 		"  16=Sphere    (not supported yet)");
 }
 
-COMMANDFUNC(quit) {
+CMDFUNC(quit) {
 	DengWindow->Close();
 	return("");
 }
+
+CMDSTARTA(add_trigger, args.size() > 0) {
+	Vector3 pos{}, rot{}, scale = vec3::ONE;
+	ColliderType type = ColliderType_NONE;
+	Event event = 0;
+	for (auto s = args.begin(); s != args.end(); ++s) {
+		if (std::regex_search(s->c_str(), m, Vec3Regex("pos"))) {
+			pos = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}
+		else if (std::regex_search(s->c_str(), m, Vec3Regex("rot"))) {
+			rot = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}
+		else if (std::regex_search(s->c_str(), m, Vec3Regex("scale"))) {
+			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}
+		else if (std::regex_search(s->c_str(), m, StringRegex("type"))) {
+			if      (m[1] == "aabb")      type = ColliderType_AABB;
+			else if (m[1] == "sphere")    type = ColliderType_Sphere;
+			else if (m[1] == "landscape") type = ColliderType_Landscape;
+			else if (m[1] == "box")       type = ColliderType_Box;
+		}
+		else if (std::regex_search(s->c_str(), m, StringRegex("event"))) {
+			if (type == ColliderType_NONE) return "[c:red]Attempt to attach event with no collider[c]";
+			bool found = false;
+			for_n(i, sizeof(EventStrings))
+				if (m[1] == EventStrings[i]) {
+					found = true; event = (u32)i;  break;
+				}
+			if (!found) return TOSTRING("[c:red]Unknown event '", m[1], "'");
+		}
+		else {
+			return "[c:red]Invalid parameter: " + *s + "[c]";
+		}
+	}
+
+	Collider* col = nullptr;
+	switch (type) {
+		case ColliderType_AABB:   col = new AABBCollider(Vector3::ONE / 2, 1, 0U, event); break;
+		case ColliderType_Sphere: col = new SphereCollider(1, 1, 0U, event); break;
+		case ColliderType_Box:    col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
+	}
+
+	Trigger* te = new Trigger(Transform(pos, rot, scale), col);
+
+	admin->CreateEntity(te);
+
+	return TOSTRING("Created trigger");
+}CMDEND("add_trigger -type=[ColliderType] -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)")
+
 
 void Console::AddCommands(){
 	//TODO(sushi,Cmd) reimplement this at some point
@@ -1125,6 +1177,7 @@ void Console::AddCommands(){
 	//	else return "GLOBAL_DEBUG = false";
 	//}, "debug_global", "debug_global");
 	
+	CMDADD(add_trigger, "adds a trigger collider entity");
 	CMDADD(level, "Loads a level from the levels directory");
 	CMDADD(engine_pause, "Toggles pausing the engine");
 	CMDADD(save, "Saves the state of the editor");

@@ -11,6 +11,7 @@
 
 PlayerEntity::PlayerEntity(Transform transform) {
 	cpystr(name, "player", DESHI_NAME_SIZE);
+	type = EntityType_Player;
 	this->transform = transform;
 	physics = new Physics();
 	physics->elasticity = 0;
@@ -22,8 +23,6 @@ PlayerEntity::PlayerEntity(Transform transform) {
 	//source = new AudioSource()
 	AddComponents({ physics, movement, player, mesh, collider, listener });
 }
-
-
 
 void PlayerEntity::Init() {
 	

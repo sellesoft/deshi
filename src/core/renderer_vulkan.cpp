@@ -458,6 +458,15 @@ CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation){
 }
 
 void Renderer::
+UpdateMeshBrushMatrix(u32 index, Matrix4 transform) {
+	if (index >= meshBrushes.size()) return ERROR_LOC("There is no mesh with id: ", index);
+	
+	meshBrushes[index].matrix = glm::make_mat4(transform.data);
+	
+	UpdateMeshBrushBuffers(index);
+}
+
+void Renderer::
 UpdateMeshBrushBuffers(u32 meshBrushIdx){
 	if(meshBrushIdx >= meshBrushes.size()) return ERROR_LOC("There is no mesh with id: ", meshBrushIdx);
 	
