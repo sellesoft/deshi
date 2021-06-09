@@ -346,7 +346,18 @@ void EntityAdmin::SaveTEXT(const char* level_name_cstr){
     //events
     level_text.append("\n"
                       "\n>events");
-    
+    for(Entity* e : entities){
+        for(Component* c : e->components){
+            if(c->sender && c->sender->receivers.size() > 0){
+                for(Receiver* r : c->sender->receivers){
+                    if(Component* comp = dynamic_cast<Component*>(r)){
+                        level_text.append(TOSTRING("\n",e->id," \"",e->name,"\" ",c->comptype," ",c->event," -> ",
+                                                   comp->entity->id," \"",comp->entity->name,"\" ",comp->comptype));
+                    }
+                }
+            }
+        }
+    }
     
     //// entities files ////
     u32   entity_idx_digits   = u32(log10(entities.size())) + 1;
@@ -388,8 +399,9 @@ void EntityAdmin::LoadTEXT(const char* savename){
     TIMER_START(t_l);
     
     u32 entity_count = 0;
-    std::vector<pair<u32,u32>> material_id_diffs;
-    std::vector<pair<u32,u32>> mesh_id_diffs;
+    std::vector<pair<u32,u32>> material_id_diffs; //old_id, new_id
+    std::vector<pair<u32,u32>> mesh_id_diffs; //old_id, new_id
+    std::vector<pair<u32,u32,u32,u32,u32>> events; //send_ent_id, send_comp_type, event_type, receive_ent_id, receive_comp_type
     {//// parse level file ////
         char* buffer = deshi::readFileAsciiToArray(level_dir+"_");
         if(!buffer) return;
@@ -450,18 +462,15 @@ void EntityAdmin::LoadTEXT(const char* savename){
                 case(LevelHeader::MESHES):{
                     if(split.size() != 4){ ERROR(ParsingError,"'! Mesh lines should have 4 values"); continue; }
                     
+                    //id
                     u32 old_id = std::stoi(split[0]);
                     u32 new_id = DengRenderer->CreateMesh(&scene, split[1].c_str(), false);
                     mesh_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
                     
-                    if(split[2] == "true" || split[2] == "1"){
-                        DengRenderer->meshes[new_id].visible = true;
-                    }else if(split[2] == "false" || split[2] == "0"){
-                        DengRenderer->meshes[new_id].visible = false;
-                    }else{
-                        ERROR(ParsingError,"'! Invalid boolean value for the third item in a mesh"); continue;
-                    }
+                    //visible
+                    DengRenderer->meshes[new_id].visible = deshi::parse_bool(split[2], level_dir.c_str(), line_number);
                     
+                    //materials
                     std::vector<std::string> mat_ids = deshi::space_delimit(split[3]); 
                     for_n(i, DengRenderer->meshes[new_id].primitives.size()){
                         u32 old_mat = std::stoi(mat_ids[i]);
@@ -477,7 +486,18 @@ void EntityAdmin::LoadTEXT(const char* savename){
                     //TODO maybe can conditionally load entities?
                 }break;
                 case(LevelHeader::EVENTS):{
-                    
+                    if(split.size() != 8){ ERROR(ParsingError,"'! Material lines should have 8 values"); continue; }
+
+                    u32 send_ent_id = std::stoi(split[0]);
+                    std::string send_ent_name = split[1];
+                    u32 send_comp_type = std::stoi(split[2]);
+                    u32 event_type = std::stoi(split[3]);
+                    //dummy arrow split[4]
+                    u32 rec_ent_id = std::stoi(split[5]);
+                    std::string rec_ent_name = split[6];
+                    u32 rec_comp_type = std::stoi(split[7]);
+
+                    events.push_back(make_pair(send_ent_id,send_comp_type,event_type,rec_ent_id,rec_comp_type));
                 }break;
             }
         }
@@ -492,8 +512,41 @@ void EntityAdmin::LoadTEXT(const char* savename){
         }
     }
     
-    //events and connections
-    
+    //// events ////
+    for_n(i, events.size()){
+        //find receiving component
+        Component* rec_comp = 0;
+        for(Entity* e : ents){
+            if(e->id == events[i]._4){
+                for(Component* c : e->components){
+                    if(c->comptype == events[i]._5){
+                        rec_comp = c;
+                    }
+                }
+            }
+        }
+        if(!rec_comp){
+            ERROR("Unable to find component for event: ", i);
+            break;
+        }
+
+        //add event and receiver to sender component
+        for(Entity* e : ents){
+            if(e->id == events[i]._1){
+                for(Component* c : e->components){
+                    if(c->comptype == events[i]._2){
+                        c->event = events[i]._3;
+                        if(!c->sender) c->sender = new Sender;
+                        c->sender->AddReceiver(rec_comp);
+                        rec_comp->entity->connections.insert(e);
+                        SUCCESS("Added event '",EventStrings[events[i]._3],"': ",
+                                e->name," ",c->comptype," -> ",rec_comp->entity->name," ",rec_comp->comptype);
+                    }
+                }
+            }
+        }
+    }
+
     //// create entities ////
     for(Entity* e : ents){
         CreateEntity(e);

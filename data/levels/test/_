@@ -1,7 +1,7 @@
 >level
 name         "test"
-entity_count 4
-last_updated "06/08/2021 16:35:30"
+entity_count 6
+last_updated "06/09/2021 02:47:27"
 
 >materials
 0 "Flat" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
@@ -13,16 +13,19 @@ last_updated "06/08/2021 16:35:30"
 
 >meshes
 4 "default_planarbox" 1 "3"
-6 "bmonkey.obj" 0 "5"
-7 "sphere.obj" 1 "4"
-9 "box.obj" 0 "0"
-10 "bmonkey.obj" 1 "5"
-11 "box.obj" 1 "0"
+5 "sphere.obj" 1 "4"
+7 "bmonkey.obj" 1 "5"
+9 "box.obj" 1 "0"
+10 "box.obj" 1 "1"
+11 "arrow.obj" 0 "2"
 
 >entities
 0 "box"
 1 "floor"
 2 "phys sphere"
 3 "player"
+4 "wall"
+5 "light"
 
 >events
+4 "wall" 4 2 -> 5 "light" 1024

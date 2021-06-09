@@ -82,6 +82,7 @@ void Entity::AddComponents(std::vector<Component*> comps) {
         this->components.push_back(c);
         c->entityID = id;
         c->admin = this->admin;
+        c->entity = this;
     }
 }
 
@@ -140,21 +141,6 @@ auto get_vec3(std::string& str) {
     }catch (...) {
         ERROR("Failed to parse vector3: (", str, ")");
         return Vector3::ZERO;
-    }
-}
-
-b32 parse_bool(std::string& str, const char* filepath = 0, u32 line_number = 0){
-    if(str == "true" || str == "1"){
-        return true;
-    }else if(str == "false" || str == "0"){
-        return false;
-    }else{
-        if(filepath && line_number){
-            ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid boolean value: ", str);
-        }else{
-            ERROR("Failed to parse boolean value: ", str);
-        }
-        return false;
     }
 }
 
@@ -308,7 +294,7 @@ Entity* Entity::LoadTEXT(EntityAdmin* admin, std::string& filepath, std::vector<
             }break;
             case(Header::DOOR):{
                 if(kv.first == "open"){ 
-                    door->isOpen = parse_bool(kv.second, filepath.c_str(), line_number);
+                    door->isOpen = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else{ InvalidHeaderKeyError("door"); }
             }break;
@@ -316,6 +302,7 @@ Entity* Entity::LoadTEXT(EntityAdmin* admin, std::string& filepath, std::vector<
                 if     (kv.first == "position")  { light->position = get_vec3(kv.second); }
                 else if(kv.first == "direction") { light->direction = get_vec3(kv.second); }
                 else if(kv.first == "brightness"){ light->brightness = std::stof(kv.second); }
+                else if(kv.first == "active")    { light->active = deshi::parse_bool(kv.second); }
                 else{ InvalidHeaderKeyError("light"); }
             }break;
             case(Header::MESH):{
@@ -335,7 +322,7 @@ Entity* Entity::LoadTEXT(EntityAdmin* admin, std::string& filepath, std::vector<
                     }
                 }
                 else if(kv.first == "visible"){ 
-                    mesh->mesh_visible = parse_bool(kv.second, filepath.c_str(), line_number);
+                    mesh->mesh_visible = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else{ InvalidHeaderKeyError("mesh"); }
             }break;
@@ -361,13 +348,13 @@ Entity* Entity::LoadTEXT(EntityAdmin* admin, std::string& filepath, std::vector<
                 else if(kv.first == "friction_kinetic"){ phys->kineticFricCoef = std::stof(kv.second); }
                 else if(kv.first == "friction_static") { phys->staticFricCoef = std::stof(kv.second); }
                 else if(kv.first == "static_position"){ 
-                    phys->isStatic = parse_bool(kv.second, filepath.c_str(), line_number);
+                    phys->isStatic = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else if(kv.first == "static_rotation"){ 
-                    phys->staticRotation = parse_bool(kv.second, filepath.c_str(), line_number);
+                    phys->staticRotation = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else if(kv.first == "twod"){ 
-                    phys->twoDphys = parse_bool(kv.second, filepath.c_str(), line_number);
+                    phys->twoDphys = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else{ InvalidHeaderKeyError("physics"); }
             }break;

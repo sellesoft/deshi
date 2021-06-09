@@ -110,6 +110,8 @@ namespace deshi{
 	//iterates a config file and returns a map of keys and values (see keybinds.cfg)
 	std::map<std::string, std::string> extractConfig(const std::string& filepath);
 	
+	b32 parse_bool(std::string& str, const char* filepath = 0, u32 line_number = 0);
+
 } //namespace deshi
 
 #endif //DESHI_ASSETS_H

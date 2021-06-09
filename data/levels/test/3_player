@@ -8,14 +8,14 @@ scale    (1.000000,1.000000,1.000000)
 >audio source
 
 >mesh
-id      10
+id      7
 name    "bmonkey.obj"
 visible true
 
 >movement
 ground_accel 100.000000
 air_accel    1000.000000
-jump_impulse 10.000000
+jump_impulse 12.000000
 walk_speed   5.000000
 run_speed    12.000000
 crouch_speed 2.500000

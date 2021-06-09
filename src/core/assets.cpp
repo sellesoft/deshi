@@ -356,3 +356,19 @@ extractConfig(const std::string& filepath) {
 	}
 	return out;
 }
+
+b32 deshi::
+parse_bool(std::string& str, const char* filepath, u32 line_number){
+	if(str == "true" || str == "1"){
+		return true;
+	}else if(str == "false" || str == "0"){
+		return false;
+	}else{
+		if(filepath && line_number){
+			ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid boolean value: ", str);
+		}else{
+			ERROR("Failed to parse boolean value: ", str);
+		}
+		return false;
+	}
+}
