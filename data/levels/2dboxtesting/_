@@ -1,7 +1,7 @@
 >level
 name         "2dboxtesting"
 entity_count 4
-last_updated "06/09/2021 02:50:50"
+last_updated "06/09/2021 07:55:36"
 
 >materials
 0 "Flat" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
@@ -10,14 +10,14 @@ last_updated "06/09/2021 02:50:50"
 
 >meshes
 5 "box.obj" 1 "0"
-6 "box.obj" 1 "0"
+6 "box.obj" 1 "2"
 7 "box.obj" 1 "0"
 8 "box.obj" 1 "0"
 
 >entities
-0 "box"
-1 "box"
-2 "box"
-3 "box"
+0 "floor"
+1 "player"
+2 "twod_box1"
+3 "twod_box2"
 
 >events

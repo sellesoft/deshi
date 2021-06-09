@@ -234,8 +234,8 @@ Render() {
 	ASSERTVK(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
 	//update stats
 	stats.drawnTriangles += stats.drawnIndices / 3;
-	stats.totalVertices += u32(vertexBuffer.size());
-	stats.totalIndices += u32(indexBuffer.size());
+	stats.totalVertices += (u32)vertexBuffer.size();
+	stats.totalIndices += (u32)indexBuffer.size();
 	stats.totalTriangles += stats.totalIndices / 3;
 	stats.renderTimeMS = TIMER_END(t_r);
 	
@@ -392,8 +392,8 @@ CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation){
 	mesh.indices.reserve(m->indexCount);
 	u32 batchVertexStart, batchIndexStart;
 	for(Batch& batch : m->batchArray){
-		batchVertexStart = u32(mesh.vertices.size());
-		batchIndexStart = u32(mesh.indices.size());
+		batchVertexStart = (u32)mesh.vertices.size();
+		batchIndexStart = (u32)mesh.indices.size();
 		
 		//vertices
 		for(int i=0; i<batch.vertexArray.size(); ++i){ 
@@ -537,8 +537,8 @@ LoadBaseMesh(Mesh* m, bool visible) {
 	u32 batchVertexStart, batchIndexStart;
 	u32 matID, albedoID, normalID, lightID, specularID;
 	for(Batch& batch : m->batchArray){
-		batchVertexStart = u32(vertexBuffer.size());
-		batchIndexStart = u32(indexBuffer.size());
+		batchVertexStart = (u32)vertexBuffer.size();
+		batchIndexStart = (u32)indexBuffer.size();
 		
 		//vertices
 		for(int i=0; i<batch.vertexArray.size(); ++i){ 
@@ -585,7 +585,7 @@ LoadBaseMesh(Mesh* m, bool visible) {
 	}
 	
 	//add mesh to scene
-	mesh.id = u32(meshes.size());
+	mesh.id = (u32)meshes.size();
 	meshes.push_back(mesh);
 	if(initialized){ CreateSceneBuffers(); }
 	if (visible) mesh.visible = true;
@@ -633,7 +633,7 @@ CreateMesh(u32 meshID, Matrix4 matrix, b32 new_material){
 		}
 		mesh.modelMatrix = glm::make_mat4(matrix.data);
 		cpystr(mesh.name, meshes[meshID].name, DESHI_NAME_SIZE);
-		mesh.id = u32(meshes.size());
+		mesh.id = (u32)meshes.size();
 		meshes.push_back(mesh);
 		meshes[meshID].children.push_back(mesh.id);
 		return mesh.id;
@@ -815,7 +815,7 @@ LoadTexture(const char* filename, u32 type){
 	ASSERT(tex.pixels, "stb failed to load an image");
 	
 	tex.type = type;
-	tex.mipLevels = u32(std::floor(std::log2(std::max(tex.width, tex.height)))) + 1;
+	tex.mipLevels = (u32)std::floor(std::log2(std::max(tex.width, tex.height))) + 1;
 	tex.imageSize = tex.width * tex.height * 4;
 	
 	//copy the memory to a staging buffer
@@ -825,7 +825,7 @@ LoadTexture(const char* filename, u32 type){
 	//copy the staging buffer to the image and generate its mipmaps
 	createImage(tex.width, tex.height, tex.mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, tex.image, tex.imageMemory);
 	transitionImageLayout(tex.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, tex.mipLevels);
-	copyBufferToImage(staging.buffer, tex.image, u32(tex.width), u32(tex.height));
+	copyBufferToImage(staging.buffer, tex.image, (u32)tex.width, (u32)tex.height);
 	generateMipmaps(tex.image, VK_FORMAT_R8G8B8A8_SRGB, tex.width, tex.height, tex.mipLevels);
 	//image layout set to SHADER_READ_ONLY when generating mipmaps
 	tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -866,7 +866,7 @@ LoadTexture(const char* filename, u32 type){
 	tex.imageInfo.imageLayout = tex.layout;
 	
 	//add the texture to the scene and return its index
-	u32 idx = u32(textures.size());
+	u32 idx = (u32)textures.size();
 	tex.id = idx;
 	textures.push_back(tex);
 	return idx;
@@ -907,7 +907,7 @@ CreateMaterial(const char* name, u32 shader, u32 albedoTextureID, u32 normalText
 	}
 	
 	PRINTVK(3, "    Creating material: ", name);
-	MaterialVk mat; mat.id = u32(materials.size());
+	MaterialVk mat; mat.id = (u32)materials.size();
 	mat.shader = shader; mat.pipeline = GetPipelineFromShader(shader);
 	mat.albedoID = albedoTextureID; mat.normalID = normalTextureID;
 	mat.specularID = specTextureID; mat.lightID = lightTextureID;
@@ -955,7 +955,7 @@ CopyMaterial(u32 materialID){
 	
 	MaterialVk mat = materials[materialID];
 	PRINTVK(3, "    Copying material: ", mat.name);
-	mat.id = u32(materials.size());
+	mat.id = (u32)materials.size();
 	
 	//allocate and write descriptor set for material
 	VkDescriptorSetAllocateInfo allocInfo{};
@@ -1733,7 +1733,7 @@ CreateRenderPass(){
 	std::array<VkAttachmentDescription, 3> attachments = {colorAttachment, depthAttachment, colorAttachmentResolve};
 	VkRenderPassCreateInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = u32(attachments.size());
+	renderPassInfo.attachmentCount = (u32)attachments.size();
 	renderPassInfo.pAttachments = attachments.data();
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
@@ -1788,7 +1788,7 @@ CreateRenderPass2(){
 	
 	//// create render pass ////
 	//https://renderdoc.org/vkspec_chunked/chap9.html#VkRenderPassCreateInfo
-	VkRenderPassCreateInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, 0, 0, u32(attachments.size()), attachments.data(), u32(subpasses.size()), subpasses.data(), u32(dependencies.size()), dependencies.data()};
+	VkRenderPassCreateInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, 0, 0, (u32)attachments.size(), attachments.data(), (u32)subpasses.size(), subpasses.data(), (u32)dependencies.size(), dependencies.data()};
 	
 	ASSERTVK(vkCreateRenderPass(device, &renderPassInfo, allocator, &renderPass), "failed to create render pass");
 }
@@ -1941,7 +1941,7 @@ CreateFrames2(){
 		if(frames[i].framebuffer){ vkDestroyFramebuffer(device, frames[i].framebuffer, nullptr); }
 		
 		//https://renderdoc.org/vkspec_chunked/chap9.html#VkFramebufferCreateInfo
-		VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, 0, 0, renderPass, u32(frameBufferAttachments.size()), frameBufferAttachments.data(), u32(width), u32(height), 1};
+		VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, 0, 0, renderPass, (u32)frameBufferAttachments.size(), frameBufferAttachments.data(), (u32)width, (u32)height, 1};
 		ASSERTVK(vkCreateFramebuffer(device, &info, allocator, &frames[i].framebuffer), "failed to create framebuffer");
 		
 		//// allocate command buffers ////
@@ -2359,7 +2359,7 @@ CreateLayouts2(){
 			{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, 0, iarDescriptorSet, 1, 0, 1, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &descriptors[1], 0, 0},
 		};
 		
-		vkUpdateDescriptorSets(device, u32(writeSets.size()), writeSets.data(), 0, nullptr);
+		vkUpdateDescriptorSets(device, (u32)writeSets.size(), writeSets.data(), 0, nullptr);
 	}
 }
 
@@ -2478,7 +2478,7 @@ SetupPipelineCreation(){
 		/*VK_DYNAMIC_STATE_LINE_WIDTH*/ 
 	};
 	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-	dynamicState.dynamicStateCount = u32(dynamicStates.size());
+	dynamicState.dynamicStateCount = (u32)dynamicStates.size();
 	dynamicState.pDynamicStates = dynamicStates.data();
 	
 	//// vertex input flow control ////
@@ -2519,9 +2519,9 @@ SetupPipelineCreation(){
 	
 	vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputState.flags = 0;
-	vertexInputState.vertexBindingDescriptionCount = u32(vertexInputBindings.size());
+	vertexInputState.vertexBindingDescriptionCount = (u32)vertexInputBindings.size();
 	vertexInputState.pVertexBindingDescriptions = vertexInputBindings.data();
-	vertexInputState.vertexAttributeDescriptionCount = u32(vertexInputAttributes.size());
+	vertexInputState.vertexAttributeDescriptionCount = (u32)vertexInputAttributes.size();
 	vertexInputState.pVertexAttributeDescriptions = vertexInputAttributes.data();
 	
 	//base pipeline info and options
@@ -2536,7 +2536,7 @@ SetupPipelineCreation(){
 	pipelineCreateInfo.pDepthStencilState  = &depthStencilState;
 	pipelineCreateInfo.pDynamicState       = &dynamicState;
 	pipelineCreateInfo.pVertexInputState   = &vertexInputState;
-	pipelineCreateInfo.stageCount          = u32(shaderStages.size());
+	pipelineCreateInfo.stageCount          = (u32)shaderStages.size();
 	pipelineCreateInfo.pStages             = shaderStages.data();
 }
 
@@ -3067,7 +3067,7 @@ transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, V
 }
 
 void Renderer::
-generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth, i32 texHeight, u32 mipLevels) {
+generateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight, u32 mipLevels) {
 	PRINTVK(4, "      Creating Image Mipmaps");
 	// Check if image format supports linear blitting
 	VkFormatProperties formatProperties;
@@ -3088,8 +3088,8 @@ generateMipmaps(VkImage image, VkFormat imageFormat, i32 texWidth, i32 texHeight
 	barrier.subresourceRange.layerCount = 1;
 	barrier.subresourceRange.levelCount = 1;
 	
-	i32 mipWidth = texWidth;
-	i32 mipHeight = texHeight;
+	s32 mipWidth = texWidth;
+	s32 mipHeight = texHeight;
 	for (u32 i = 1; i < mipLevels; i++) {
 		barrier.subresourceRange.baseMipLevel = i - 1;
 		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;

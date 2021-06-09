@@ -12,6 +12,7 @@
 *.spv
 *.cap
 *.rdbg
+*.tmp
 
 #folders
 .vs/

@@ -644,7 +644,7 @@ struct {
 
 std::vector<std::string> files;
 std::vector<std::string> textures;
-
+std::vector<std::string> levels;
 
 void Editor::MenuBar() {
 	using namespace ImGui;
@@ -656,59 +656,31 @@ void Editor::MenuBar() {
 	if(BeginMainMenuBar()) { WinHovCheck; 
 		menubarheight = GetWindowHeight();
 		if(BeginMenu("File")) { WinHovCheck; 
-			
-			if (MenuItem("New"))  admin->Reset();
-			if (MenuItem("Save")) admin->SaveDESH("save.desh");
-			if (BeginMenu("Save As")) {
+			if (MenuItem("New")) {
+                admin->Reset();
+            }
+            if (MenuItem("Save")) {
+                if(level_name == ""){
+                    ERROR("Level not saved before; Use 'Save As'");
+                }else{
+                    admin->SaveTEXT(level_name.c_str());
+                }
+            }
+			if (BeginMenu("Save As")) { WinHovCheck;
 				static char buff[255] = {};
-				if(ImGui::InputText("##saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
-					std::string s(buff); s += ".desh";
-					admin->SaveDESH(s.c_str());
-				}
-				EndMenu();
-			}
-			if (BeginMenu("Save Level")) {
-				static char buff[255] = {};
-				if(ImGui::InputText("##savelevelas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
+				if(InputText("##saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
 					admin->SaveTEXT(buff);
 				}
 				EndMenu();
 			}
 			if (BeginMenu("Load")) { WinHovCheck;
-				static bool fopen = false;
-				static std::vector<std::string> saves;
-				
-				if (!fopen) {
-					saves = deshi::iterateDirectory(deshi::dirSaves());
-					fopen = false;
-				}
-				
-				for_n(i, saves.size()) {
-					if (MenuItem(saves[i].c_str())) {
-						admin->LoadDESH(saves[i].c_str());
+				for_n(i, levels.size()) {
+					if (MenuItem(levels[i].c_str())) {
+						admin->LoadTEXT(levels[i].c_str());
 					}
 				}
 				ImGui::EndMenu();
 			}
-
-			if (BeginMenu("Load Level")) {
-				WinHovCheck;
-				static bool fopen = false;
-				static std::vector<std::string> saves;
-
-				if (!fopen) {
-					saves = deshi::iterateDirectory(deshi::dirLevels());
-					fopen = false;
-				}
-
-				for_n(i, saves.size()) {
-					if (MenuItem(saves[i].c_str())) {
-						admin->LoadTEXT(saves[i].c_str());
-					}
-				}
-				ImGui::EndMenu();
-			}
-
 			ImGui::EndMenu();
 		}
 		if(BeginMenu("Spawn")) { WinHovCheck; 
@@ -965,143 +937,6 @@ inline void EventsMenu(Entity* current, bool reset = false) {
     End();
 }
 
-//TODO(delle,Cl) remove this once integrated into EntitiesTab
-inline void ComponentsMenu(Entity* sel) {
-    using namespace ImGui;
-    int tree_flags = ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_NoAutoOpenOnLog;
-    SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * 0.95)) / 2);
-    if (BeginChild("SelectedComponentsWindow", ImVec2(GetWindowWidth() * 0.95, 500), true)) { WinHovCheck;
-        //if (ImGui::BeginTable("SelectedComponents", 1)) {
-        //ImGui::TableSetupColumn("Comp", ImGuiTableColumnFlags_WidthFixed);
-        for (Component* c : sel->components) {
-            switch (c->comptype) {
-                case ComponentType_Physics:
-                if (TreeNodeEx("Physics", tree_flags)) {
-                    dyncast(d, Physics, c);
-                    Text("Velocity     "); SameLine(); InputVector3("##phys_vel", &d->velocity);             Separator();
-                    Text("Accelertaion "); SameLine(); InputVector3("##phys_accel", &d->acceleration);       Separator();
-                    Text("Rot Velocity "); SameLine(); InputVector3("##phys_rotvel", &d->rotVelocity);       Separator();
-                    Text("Rot Accel    "); SameLine(); InputVector3("##phys_rotaccel", &d->rotAcceleration); Separator();
-                    Text("Elasticity   "); SameLine();
-                    ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_elastic", &d->elasticity); Separator();
-                    Text("Mass         "); SameLine();
-                    ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->mass); Separator();
-                    Text("Kinetic Fric "); SameLine();
-                    ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->kineticFricCoef); Separator();
-                    Checkbox("Static Position", &d->isStatic); Separator();
-                    Checkbox("Static Rotation", &d->staticRotation);
-                    Checkbox("2D Physics", &d->twoDphys);
-                    TreePop();
-                }
-                break;
-                
-                case ComponentType_Collider: {
-                    dyncast(col, Collider, c);
-                    switch (col->type) {
-                        case ColliderType_Box: {
-                            if (TreeNodeEx("Box Collider", tree_flags)) {
-                                dyncast(d, BoxCollider, col);
-                                Text("Half Dims    "); SameLine(); InputVector3("coll_halfdims", &d->halfDims);
-                                TextWrapped("TODO sushi implement collider commands/events menu");
-                                TreePop();
-                            }
-                            break;
-                        }
-                        case ColliderType_AABB: {
-                            if (TreeNodeEx("AABB Collider", tree_flags)) {
-                                dyncast(d, AABBCollider, col);
-                                Text("Half Dims    "); SameLine(); InputVector3("coll_halfdims", &d->halfDims);
-                                TextWrapped("TODO sushi implement collider commands/events menu");
-                                TreePop();
-                            }
-                            break;
-                        }
-                        case ColliderType_Sphere: {
-                            if (TreeNodeEx("Sphere Collider", tree_flags)) {
-                                dyncast(d, SphereCollider, col);
-                                Text("Radius       "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-                                InputFloat("coll_radius", &d->radius);
-                                TextWrapped("TODO sushi implement collider commands/events menu");
-                                TreePop();
-                            }
-                            break;
-                        }
-                    }
-                    break;
-                }
-                
-                case ComponentType_AudioListener:
-                if (TreeNodeEx("Audio Listener", tree_flags)) {
-                    Text("TODO sushi implement audio listener editing");
-                    TreePop();
-                }
-                break;
-                
-                case ComponentType_AudioSource:
-                if (TreeNodeEx("Audio Source", tree_flags)) {
-                    Text("TODO sushi implement audio source editing");
-                    TreePop();
-                }
-                break;
-                
-                case ComponentType_Light:
-                if (TreeNodeEx("Light", tree_flags)) {
-                    dyncast(d, Light, c);
-                    Text("Brightness   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-                    InputFloat("brightness", &d->brightness); Separator();
-                    Text("Position     "); SameLine(); InputVector3("position", &d->position); Separator();
-                    Text("Direction    "); SameLine(); InputVector3("direction", &d->direction); Separator();
-                    
-                    
-                    TreePop();
-                }
-                break;
-                
-                case ComponentType_OrbManager:
-                if (TreeNodeEx("Orbs", tree_flags)) {
-                    dyncast(d, OrbManager, c);
-                    Text("Orb count   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-                    InputInt("orbcount", &d->orbcount);
-                    TreePop();
-                }
-                break;
-                
-                case ComponentType_Movement:
-                if (TreeNodeEx("Movement", tree_flags)) {
-                    dyncast(d, Movement, c);
-                    Text("Ground Accel  "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-                    InputFloat("gndaccel", &d->gndAccel);
-                    Text("Air Accel     "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-                    InputFloat("airaccel", &d->airAccel);
-                    Text("Max Walk Speed"); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                    InputFloat("maxwalk ", &d->maxWalkingSpeed);
-                    TreePop();
-                }
-                break;
-                
-                case ComponentType_MeshComp:
-                if (TreeNodeEx("Mesh", tree_flags)) {
-                    dyncast(d, MeshComp, c);
-                    Text(TOSTRING("Mesh ID: ", d->meshID).c_str());
-                    Text(TOSTRING("Visible: ", d->mesh_visible).c_str());
-                    TreePop();
-                }
-                break;
-            }
-            
-            //TableNextColumn(); //TableNextRow();
-            //SetPadding; Text(c->name);
-            //SameLine(CalcItemWidth() + 20);
-            //if (Button("Del")) {
-            //	sel->RemoveComponent(c);
-            //}
-        }
-        //ImGui::EndTable();
-        
-        EndChild();
-    }
-}
-
 inline void EntitiesTab(EntityAdmin* admin, float fontsize){
     using namespace ImGui;
     
@@ -1242,8 +1077,8 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
                                                           ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
         
         //// transform ////
-        int tree_flags = ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_NoAutoOpenOnLog;
-        SetNextItemOpen(true, ImGuiCond_Once);
+        int tree_flags = ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_NoAutoOpenOnLog | ImGuiTreeNodeFlags_DefaultOpen;
+        //SetNextItemOpen(true, ImGuiCond_Once);
         if (TreeNodeEx("Transform", tree_flags)){
             vec3 oldVec = sel->transform.position;
             
@@ -1282,14 +1117,19 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
         }
         
         //// components ////
-        //TODO(delle,Ui) all should be open by default
         for(Component* c : sel->components){
             switch(c->comptype){
                 //mesh
                 case ComponentType_MeshComp:{
-                    MeshComp* mc = dyncasta(MeshComp, c);
+                    MeshComp* mc = dyncast(MeshComp, c);
                     if(mc && TreeNodeEx("Mesh", tree_flags)){
                         MeshVk& mvk = DengRenderer->meshes[mc->meshID];
+
+                        Text("Visible  "); SameLine(); SetNextItemWidth(-1);
+                        if(Button((mvk.visible) ? "True" : "False")){
+                            mc->ToggleVisibility();
+                        }
+
                         Text("Mesh     "); SameLine(); SetNextItemWidth(-1); 
                         if(BeginCombo("##mesh_combo", mvk.name)){ WinHovCheck;
                             for_n(i, DengRenderer->meshes.size()){
@@ -1297,7 +1137,8 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
                                     mc->ChangeMesh(i);
                                 }
                             }
-                            EndCombo();}
+                            EndCombo();
+                        }
                         
                         u32 mesh_batch_idx = 0;
                         Text("Batch    "); SameLine(); SetNextItemWidth(-1); 
@@ -1324,23 +1165,23 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
                 }break;
                 
                 //mesh2D
-                //TODO() implement mesh2D component inspector
+                //TODO implement mesh2D component inspector
                 
                 //physics
                 case ComponentType_Physics:
                 if (TreeNodeEx("Physics", tree_flags)) {
-                    dyncast(d, Physics, c);
-                    Text("Velocity     "); SameLine(); InputVector3("##phys_vel", &d->velocity);             Separator();
-                    Text("Accelertaion "); SameLine(); InputVector3("##phys_accel", &d->acceleration);       Separator();
-                    Text("Rot Velocity "); SameLine(); InputVector3("##phys_rotvel", &d->rotVelocity);       Separator();
-                    Text("Rot Accel    "); SameLine(); InputVector3("##phys_rotaccel", &d->rotAcceleration); Separator();
+                    Physics* d = dyncast(Physics, c);
+                    Text("Velocity     "); SameLine(); InputVector3("##phys_vel", &d->velocity);
+                    Text("Accelertaion "); SameLine(); InputVector3("##phys_accel", &d->acceleration);
+                    Text("Rot Velocity "); SameLine(); InputVector3("##phys_rotvel", &d->rotVelocity);
+                    Text("Rot Accel    "); SameLine(); InputVector3("##phys_rotaccel", &d->rotAcceleration);
                     Text("Elasticity   "); SameLine();
-                    ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_elastic", &d->elasticity); Separator();
+                    SetNextItemWidth(-FLT_MIN); InputFloat("##phys_elastic", &d->elasticity);
                     Text("Mass         "); SameLine();
-                    ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->mass); Separator();
+                    SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->mass);
                     Text("Kinetic Fric "); SameLine();
-                    ImGui::SetNextItemWidth(-FLT_MIN); InputFloat("##phys_kinfric", &d->kineticFricCoef); Separator();
-                    Checkbox("Static Position", &d->isStatic); Separator();
+                    SetNextItemWidth(-FLT_MIN); InputFloat("##phys_kinfric", &d->kineticFricCoef);
+                    Checkbox("Static Position", &d->isStatic);
                     Checkbox("Static Rotation", &d->staticRotation);
                     Checkbox("2D Physics", &d->twoDphys);
                     TreePop();
@@ -1349,7 +1190,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
                 
                 //colliders
                 case ComponentType_Collider:{
-                    Collider* coll = dyncasta(Collider, c);
+                    Collider* coll = dyncast(Collider, c);
                     if(coll && TreeNodeEx("Collider", tree_flags)){
                         //Text("Shape "); SameLine(); SetNextItemWidth(-1);
                         //if(BeginCombo("##coll_type_combo", )){ WinHovCheck;
@@ -1360,89 +1201,117 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
                         //}
                         //EndCombo();
                         //}
-                        Text("Collider changing not setup");
+                        Text("Collider changing not setup; Updating properties doesnt work yet");
                         
                         switch(coll->type){
                             case ColliderType_Box:{
-                                BoxCollider* coll_box = dyncasta(BoxCollider, coll);
-                                Text("Half Dims "); SameLine(); InputVector3("##coll_halfdims", &coll_box->halfDims);
+                                BoxCollider* coll_box = dyncast(BoxCollider, coll);
+                                Text("Half Dims "); SameLine(); 
+                                if(InputVector3("##coll_halfdims", &coll_box->halfDims)){
+                                    //coll_box->RecalculateTensor();
+                                }
                             }break;
                             case ColliderType_AABB:{
-                                
+                                AABBCollider* coll_aabb = dyncast(AABBCollider, coll);
+                                Text("Half Dims "); SameLine(); 
+                                if(InputVector3("##coll_halfdims", &coll_aabb->halfDims)){
+                                    //coll_aabb->RecalculateTensor();
+                                }
                             }break;
                             case ColliderType_Sphere:{
-                                
-                            }break;
-                            case ColliderType_Landscape:{
-                                
+                                SphereCollider* coll_sphere = dyncast(SphereCollider, coll);
+                                Text("Radius    "); SameLine(); SetNextItemWidth(-FLT_MIN);
+                                if(InputFloat("##coll_sphere", &coll_sphere->radius)){
+                                    //coll_sphere->RecalculateTensor();
+                                }
                             }break;
                         }
-                        
-                        
                         TreePop();
                     }
                 }break;
                 
                 //audio listener
                 case ComponentType_AudioListener:{
-                    
+                    if (TreeNodeEx("Audio Listener", tree_flags)) {
+                        Text("TODO implement audio listener component editing");
+                        TreePop();
+                    }
                 }break;
                 
                 //audio source
                 case ComponentType_AudioSource:{
-                    
+                    if (TreeNodeEx("Audio Source", tree_flags)) {
+                        Text("TODO implement audio source component editing");
+                        TreePop();
+                    }
                 }break;
                 
                 //camera
                 case ComponentType_Camera:{
-                    
+                    if (TreeNodeEx("Camera", tree_flags)) {
+                        Text("TODO implement camera component editing");
+                        TreePop();
+                    }
                 }break;
                 
                 //light
                 case ComponentType_Light:
                 if (TreeNodeEx("Light", tree_flags)) {
-                    dyncast(d, Light, c);
+                    Light* d = dyncast(Light, c);
                     Text("Brightness   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                    InputFloat("brightness", &d->brightness); Separator();
-                    Text("Position     "); SameLine(); InputVector3("position", &d->position); Separator();
-                    Text("Direction    "); SameLine(); InputVector3("direction", &d->direction); Separator();
-                    
-                    
+                    InputFloat("##light_brightness", &d->brightness);
+                    Text("Position     "); SameLine(); 
+                    InputVector3("##light_position", &d->position);
+                    Text("Direction    "); SameLine(); 
+                    InputVector3("##light_direction", &d->direction);
                     TreePop();
                 }
                 break;
                 
                 //orb manager
                 case ComponentType_OrbManager:{
-                    
+                    if (TreeNodeEx("Orbs", tree_flags)) {
+                        OrbManager* d = dyncast(OrbManager, c);
+                        Text("Orb Count "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+                        InputInt("##orb_orbcount", &d->orbcount);
+                        TreePop();
+                    }
                 }break;
                 
                 //door
                 case ComponentType_Door:{
-                    
+                    if (TreeNodeEx("Door", tree_flags)) {
+                        Text("TODO implement door component editing");
+                        TreePop();
+                    }
                 }break;
                 
                 //player
                 case ComponentType_Player:{
-                    
+                    if (TreeNodeEx("Player", tree_flags)) {
+                        Player* d = dyncast(Player, c);
+                        Text("Health "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+                        InputInt("##player_health", &d->health);
+                        TreePop();
+                    }
                 }break;
                 
                 //movement
                 case ComponentType_Movement:{
                     if (TreeNodeEx("Movement", tree_flags)) {
-                        dyncast(d, Movement, c);
-                        Text("Ground Accel    "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                        InputFloat("gndaccel ", &d->gndAccel);
-                        Text("Air Accel       "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                        InputFloat("airaccel ", &d->airAccel);
-                        Text("Jump Impulse    "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                        InputFloat("jimp     ", &d->jumpImpulse);
-                        Text("Max Walk Speed  "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                        InputFloat("maxwalk  ", &d->maxWalkingSpeed);
-                        Text("Max Run Speed   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                        InputFloat("maxrun   ", &d->maxRunningSpeed);
-                        Text("Max Crouch Speed"); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                        InputFloat("maxcrouch", &d->maxCrouchingSpeed);
+                        Movement* d = dyncast(Movement, c);
+                        Text("Ground Accel    "); SameLine(); SetNextItemWidth(-FLT_MIN);
+                        InputFloat("##move_gndaccel", &d->gndAccel);
+                        Text("Air Accel       "); SameLine(); SetNextItemWidth(-FLT_MIN);
+                        InputFloat("##move_airaccel", &d->airAccel);
+                        Text("Jump Impulse    "); SameLine(); SetNextItemWidth(-FLT_MIN);
+                        InputFloat("##move_jimp", &d->jumpImpulse);
+                        Text("Max Walk Speed  "); SameLine(); SetNextItemWidth(-FLT_MIN);
+                        InputFloat("##move_maxwalk", &d->maxWalkingSpeed);
+                        Text("Max Run Speed   "); SameLine(); SetNextItemWidth(-FLT_MIN);
+                        InputFloat("##move_maxrun", &d->maxRunningSpeed);
+                        Text("Max Crouch Speed"); SameLine(); SetNextItemWidth(-FLT_MIN);
+                        InputFloat("##move_maxcrouch", &d->maxCrouchingSpeed);
                         TreePop();
                     }
                 }break;
@@ -1456,7 +1325,6 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
     }
     PopStyleVar(); //ImGuiStyleVar_IndentSpacing
 } //EntitiesTab
-
 
 inline void MaterialsTab(EntityAdmin* admin){
     using namespace ImGui;
@@ -1623,6 +1491,7 @@ enum TwodPresets : u32 {
     Twod_NONE = 0, Twod_Line, Twod_Triangle, Twod_Square, Twod_NGon, Twod_Image, 
 };
 
+//TODO(delle,Ui) combine this into the EntitiesTab
 inline void CreateTab(EntityAdmin* admin, float fontsize){
     using namespace ImGui;
     
@@ -1703,14 +1572,8 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
                 if(comp_player) { move = new Movement(phys); pl = new Player(move); }
             }
             
-            
-            
             admin->CreateEntity({ al, as, coll, mc, light, phys, move, pl }, entity_name,
                                 Transform(entity_pos, entity_rot, entity_scale));
-            
-            
-            
-            
         }Separator();
         
         //// premades ////
@@ -1806,8 +1669,8 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
             if(mesh_id < DengRenderer->meshes.size()) mesh_name = DengRenderer->meshes[mesh_id].name;
         }
         
-        SetPadding; Text("Name: "); 
-        SameLine(); SetNextItemWidth(-1); InputText("##unique_id", entity_name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | 
+        SetPadding; Text("Name: "); SameLine(); SetNextItemWidth(-1); 
+        InputText("##unique_id", entity_name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | 
                                                     ImGuiInputTextFlags_AutoSelectAll);
         
         //// transform ////
@@ -1910,13 +1773,13 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
             TreePop();
         }
         if(comp_physics && TreeNodeEx("Physics", tree_flags)){
-            Text("Velocity     "); SameLine(); InputVector3("##phys_vel",   &physics_velocity);    Separator();
-            Text("Accelertaion "); SameLine(); InputVector3("##phys_accel",   &physics_accel);     Separator();
-            Text("Rot Velocity "); SameLine(); InputVector3("##phys_rotvel", &physics_rotVel);     Separator();
-            Text("Rot Accel    "); SameLine(); InputVector3("##phys_rotaccel", &physics_rotAccel); Separator();
-            Text("Elasticity   "); SameLine(); InputFloat("##phys_elastic", &physics_elasticity);  Separator();
-            Text("Mass         "); SameLine(); InputFloat("##phys_mass", &physics_mass);           Separator();
-            Checkbox("Static Position", &physics_staticPosition);                                Separator();
+            Text("Velocity     "); SameLine(); InputVector3("##phys_vel", &physics_velocity);
+            Text("Accelertaion "); SameLine(); InputVector3("##phys_accel", &physics_accel);
+            Text("Rot Velocity "); SameLine(); InputVector3("##phys_rotvel", &physics_rotVel);
+            Text("Rot Accel    "); SameLine(); InputVector3("##phys_rotaccel", &physics_rotAccel);
+            Text("Elasticity   "); SameLine(); InputFloat("##phys_elastic", &physics_elasticity);
+            Text("Mass         "); SameLine(); InputFloat("##phys_mass", &physics_mass);
+            Checkbox("Static Position", &physics_staticPosition);
             Checkbox("Static Rotation", &physics_staticRotation);
             TreePop();
         }
@@ -1931,12 +1794,6 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
                 }break;
             }
             Checkbox("Don't Resolve Collisions", &collider_nocollide);
-            Checkbox("Trigger", &collider_trigger);
-            if(collider_trigger){
-                Text("Command: "); SameLine(); SetNextItemWidth(-1);
-                InputText("##collider_cmd", collider_command, 64, 
-                          ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-            }
             TreePop();
         }
         if(comp_audiolistener && TreeNodeEx("Audio Listener", tree_flags)){
@@ -1948,12 +1805,30 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
             TreePop();
         }
         if(comp_light && TreeNodeEx("Light", tree_flags)){
-            Text("Strength     "); SameLine(); InputFloat("strength", &physics_mass); Separator();
+            Text("Strength     "); SameLine(); 
+            InputFloat("##light_strength", &physics_mass);
             TreePop();
         }
         EndChild();
     }
     PopStyleVar();
+}
+
+inline void GlobalTab(EntityAdmin* admin){
+    using namespace ImGui;
+
+    SetPadding; 
+    if(BeginChild("##global_tab", ImVec2(GetWindowWidth() * 0.95, GetWindowHeight() * .9f), false)) { WinHovCheck; 
+        Text("Pause Physics "); SameLine(); SetNextItemWidth(-1);
+        if(Button((admin->pause_phys) ? "True" : "False")){
+            admin->pause_phys = !admin->pause_phys;
+        }    
+
+        Text("Gravity       "); SameLine();// SetNextItemWidth(-1);
+        InputFloat("##global_gravity", &admin->physics.gravity);
+
+        EndChild();
+    }
 }
 
 inline void BrushesTab(EntityAdmin* admin, float fontsize){
@@ -2048,10 +1923,13 @@ void Editor::DebugTools() {
     ImGui::PushStyleColor(ImGuiCol_Tab,                  ColToVec4(colors.c1));
     ImGui::PushStyleColor(ImGuiCol_Separator,            ColToVec4(Color::VERY_DARK_CYAN));
     
-    ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize/* | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse*/);
     
     //capture mouse if hovering over this window
     WinHovCheck; 
+    if(DengInput->mouseX < GetWindowPos().x + GetWindowWidth()){
+        WinHovFlag = true;
+    }
     
     SetPadding;
     if (BeginTabBar("MajorTabs")) {
@@ -2065,6 +1943,10 @@ void Editor::DebugTools() {
         }
         if (BeginTabItem("Materials")) {
             MaterialsTab(admin);
+            EndTabItem();
+        }
+        if (BeginTabItem("Global")) {
+            GlobalTab(admin);
             EndTabItem();
         }
         //if (BeginTabItem("Brushes")) {
@@ -2570,10 +2452,13 @@ void Editor::Init(EntityAdmin* a){
     showImGuiDemoWindow = false;
     showDebugLayer      = true;
     ConsoleHovFlag      = false;
+
     files = deshi::iterateDirectory(deshi::dirModels());
     textures = deshi::iterateDirectory(deshi::dirTextures());
+    levels = deshi::iterateDirectory(deshi::dirLevels());
+
     fonth = ImGui::GetFontSize();
-    fontw = fonth / 2;
+    fontw = fonth / 2.f;
 }
 
 void Editor::Update(){

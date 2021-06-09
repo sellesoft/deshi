@@ -248,7 +248,7 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 				vertex.color.z = attrib.colors[3 * idx.vertex_index + 2];
 			}
 			if (uniqueVertices.count(vertex) == 0) {
-				uniqueVertices[vertex] = u32(batch.vertexArray.size());
+				uniqueVertices[vertex] = (u32)batch.vertexArray.size();
 				batch.vertexArray.push_back(vertex);
 			}
 			else {
@@ -370,10 +370,9 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename, Shader shader, Color color){
 			vertex.color.z = (f32)color.b / 255.f;
 			
 			if (uniqueVertices.count(vertex) == 0) {
-				uniqueVertices[vertex] = u32(batch.vertexArray.size());
+				uniqueVertices[vertex] = (u32)batch.vertexArray.size();
 				batch.vertexArray.push_back(vertex);
-			}
-			else {
+			} else {
 				batch.vertexArray[uniqueVertices[vertex]].normal = (vertex.normal + batch.vertexArray[uniqueVertices[vertex]].normal).normalized();
 			}
 			batch.indexArray.push_back(uniqueVertices[vertex]);

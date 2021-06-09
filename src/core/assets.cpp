@@ -43,7 +43,7 @@ readFile(const std::string& filepath, u32 chars) {
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
 	defer{ file.close(); };
 	
-	if(chars == 0){ chars = u32(file.tellg()); }
+	if(chars == 0){ chars = (u32)file.tellg(); }
 	
 	std::vector<char> buffer(chars);
 	file.seekg(0);
@@ -58,7 +58,7 @@ readFileBinary(const std::string& filepath, u32 bytes) {
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
 	defer{ file.close(); };
 	
-	if(bytes == 0){ bytes = u32(file.tellg()); }
+	if(bytes == 0){ bytes = (u32)file.tellg(); }
 	std::vector<char> buffer(bytes);
 	file.seekg(0);
 	file.read(buffer.data(), bytes);

@@ -71,7 +71,7 @@ void Entity::AddComponent(Component* c) {
     c->entity = this;
     c->admin = this->admin;
     if (c->comptype == ComponentType_Light) {
-        DengAdmin->scene.lights.push_back(dyncasta(Light, c));
+        DengAdmin->scene.lights.push_back(dyncast(Light, c));
     }
 }
 

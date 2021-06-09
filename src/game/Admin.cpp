@@ -125,7 +125,7 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
             c->compID = compIDcount;
             c->entity = e;
             c->layer_index = freeCompLayers[c->layer].add(c);
-            if (c->comptype == ComponentType_Light) scene.lights.push_back(dyncasta(Light, c));
+            if (c->comptype == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
             compIDcount++;
         }
     }
@@ -179,7 +179,7 @@ Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const c
         c->compID = compIDcount;
         c->entity = e;
         c->layer_index = freeCompLayers[c->layer].add(c);
-        if (c->comptype == ComponentType_Light) scene.lights.push_back(dyncasta(Light, c));
+        if (c->comptype == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
         compIDcount++;
     }
     return e;
@@ -360,7 +360,7 @@ void EntityAdmin::SaveTEXT(const char* level_name_cstr){
     }
     
     //// entities files ////
-    u32   entity_idx_digits   = u32(log10(entities.size())) + 1;
+    u32   entity_idx_digits   = ((u32)log10(entities.size())) + 1;
     u32   entity_idx_str_size = sizeof(char) * (entity_idx_digits + 2); //+2 because of _ and null-terminator
     char* entity_idx_str      = (char*)malloc(entity_idx_str_size);
     defer{ free(entity_idx_str); };
@@ -617,23 +617,22 @@ void EntityAdmin::SaveDESH(const char* filename) {
         //sort components
         for (Component* c : e->components) {
             switch (c->comptype) {
-                case ComponentType_Physics:       compsPhysics.push_back(dyncasta(Physics, c)); break;
+                case ComponentType_Physics:       compsPhysics.push_back(dyncast(Physics, c)); break;
                 case ComponentType_Collider: {
-                    dyncast(col, Collider, c);
+                    Collider* col = dyncast(Collider, c);
                     switch (col->type) {
-                        case ColliderType_Box:    compsColliderBox.push_back(dyncasta(BoxCollider, col)); break;
-                        case ColliderType_AABB:   compsColliderAABB.push_back(dyncasta(AABBCollider, col)); break;
-                        case ColliderType_Sphere: compsColliderSphere.push_back(dyncasta(SphereCollider, col)); break;
+                        case ColliderType_Box:    compsColliderBox.push_back(dyncast(BoxCollider, col)); break;
+                        case ColliderType_AABB:   compsColliderAABB.push_back(dyncast(AABBCollider, col)); break;
+                        case ColliderType_Sphere: compsColliderSphere.push_back(dyncast(SphereCollider, col)); break;
                     }
-                    break;
-                }
-                case ComponentType_AudioListener: compsAudioListener.push_back(dyncasta(AudioListener, c)); break;
-                case ComponentType_AudioSource:   compsAudioSource.push_back(dyncasta(AudioSource, c)); break;
-                case ComponentType_Light:         compsLight.push_back(dyncasta(Light, c)); break;
+                } break;
+                case ComponentType_AudioListener: compsAudioListener.push_back(dyncast(AudioListener, c)); break;
+                case ComponentType_AudioSource:   compsAudioSource.push_back(dyncast(AudioSource, c)); break;
+                case ComponentType_Light:         compsLight.push_back(dyncast(Light, c)); break;
                 case ComponentType_OrbManager:    /*TODO(sushi) impl orb saving*/ break;
-                case ComponentType_Movement:      compsMovement.push_back(dyncasta(Movement, c)); break;
-                case ComponentType_MeshComp:      compsMeshComp.push_back(dyncasta(MeshComp, c)); break;
-                case ComponentType_Player:        compsPlayer.push_back(dyncasta(Player, c)); break;
+                case ComponentType_Movement:      compsMovement.push_back(dyncast(Movement, c)); break;
+                case ComponentType_MeshComp:      compsMeshComp.push_back(dyncast(MeshComp, c)); break;
+                case ComponentType_Player:        compsPlayer.push_back(dyncast(Player, c)); break;
             }
         }
     }

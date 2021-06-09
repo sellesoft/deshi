@@ -1093,7 +1093,7 @@ CMDSTARTA(mesh_batch_material, args.size() == 3) {
 
 CMDSTARTA(texture_load, args.size() > 0) {
 		Texture tex(args[0].c_str());
-		if (args.size() == 2) { tex.type = u32(std::stoi(args[1])); }
+		if (args.size() == 2) { tex.type = (u32)std::stoi(args[1]); }
 		u32 id = DengRenderer->LoadTexture(tex);
 		return TOSTRING("Loaded texture ", args[0], " to ID: ", id);
 }CMDEND("texture_load <texture.png:String> [type:Uint]");
