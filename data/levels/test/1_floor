@@ -6,7 +6,7 @@ rotation (0.000000,0.000000,0.000000)
 scale    (50.000000,1.000000,50.000000)
 
 >mesh
-id      5
+id      4
 name    "default_planarbox"
 visible true
 
@@ -15,12 +15,13 @@ velocity           (0.000000,0.000000,0.000000)
 acceleration       (0.000000,0.000000,0.000000)
 rot_velocity       (0.000000,0.000000,0.000000)
 rot_acceleration   (0.000000,0.000000,0.000000)
-elasticity         0.100000
-mass               0.300000
+elasticity         0.000000
+mass               100000.000000
 friction_kinetic   0.300000
 friction_static    0.420000
 static_position    true
 static_rotation    false
+twod               false
 
 >collider
 type      aabb

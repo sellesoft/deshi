@@ -40,6 +40,7 @@ std::string Light::SaveTEXT(){
 					"\nposition   (",position.x,",",position.y,",",position.z,")"
 					"\ndirection  (",direction.x,",",direction.y,",",direction.z,")"
 					"\nbrightness ", brightness,
+					"\nactive     ", (active) ? "true" : "false",
 					"\n");
 }
 

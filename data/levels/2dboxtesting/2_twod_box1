@@ -1,12 +1,14 @@
 >entity
-id       10
-name     "2dbox2"
-position (-39.001930,0.000000,0.000000)
+id       2
+name     "twod_box1"
+position (0.000000,0.000000,-14.024551)
 rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)
 
+>audio source
+
 >mesh
-id      14
+id      7
 name    "box.obj"
 visible true
 

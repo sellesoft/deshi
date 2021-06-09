@@ -20,7 +20,7 @@ void glfwError(int id, const char* description){
 }
 
 //thanks: https://github.com/OneLoneCoder/olcPixelGameEngine/pull/181
-void Window::Init(Input* input, i32 width, i32 height, i32 x, i32 y, DisplayMode displayMode){
+void Window::Init(Input* input, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	glfwSetErrorCallback(&glfwError);
 	if (!glfwInit()){ return; }
 	Window::input = input;

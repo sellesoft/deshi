@@ -6,7 +6,7 @@ rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)
 
 >mesh
-id      16
+id      15
 name    "box.obj"
 visible true
 
@@ -29,6 +29,7 @@ friction_kinetic   4.000000
 friction_static    0.420000
 static_position    false
 static_rotation    false
+twod               false
 
 >player
 health -842150451

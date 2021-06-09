@@ -1,9 +1,11 @@
 >entity
-id       2
-name     "box"
-position (0.000000,0.000000,-14.024551)
+id       3
+name     "twod_box2"
+position (0.000000,0.000000,0.000000)
 rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)
+
+>audio source
 
 >mesh
 id      8
@@ -21,8 +23,7 @@ friction_kinetic   0.300000
 friction_static    0.420000
 static_position    false
 static_rotation    false
-
->audio source
+twod               true
 
 >collider
 type      aabb
