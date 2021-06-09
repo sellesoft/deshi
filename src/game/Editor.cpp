@@ -1521,8 +1521,9 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 	local_persist char collider_command[64] = {};
 	local_persist const char* mesh_name;
 	local_persist u32  mesh_id = -1, mesh_instance_id = 0;
+	local_persist u32  mesh_batch_id = 0;
 	local_persist f32  light_strength = 1.f;
-	local_persist vec3 physics_velocity{}, physics_accel{}, physics_rotVel{}, physics_rotAccel{};
+	local_persist vec3  physics_velocity{}, physics_accel{}, physics_rotVel{}, physics_rotAccel{};
 	local_persist f32  physics_elasticity = .5f, physics_mass = 1.f;
 	local_persist bool physics_staticPosition{}, physics_staticRotation{};
 	local_persist const char* twods[] = {"None", "Line", "Triangle", "Square", "N-Gon", "Image"};
@@ -1535,67 +1536,68 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 	
 	//// create panel ////
 	PushStyleVar(ImGuiStyleVar_IndentSpacing, 5.0f);
-	SetPadding; if (BeginChild("CreateMenu", ImVec2(GetWindowWidth() * 0.95f, GetWindowHeight() * .9f), true)) { WinHovCheck;
-		if (Button("Create")){
+	SetPadding; if (BeginChild("CreateMenu", ImVec2(GetWindowWidth() * 0.95f, GetWindowHeight() * .9f), true)) {
+		WinHovCheck;
+		if (Button("Create")) {
 			//create components
 			AudioListener* al = 0;
-			if(comp_audiolistener){ 
-				al = new AudioListener(entity_pos, Vector3::ZERO, entity_rot); 
+			if (comp_audiolistener) {
+				al = new AudioListener(entity_pos, Vector3::ZERO, entity_rot);
 			}
 			AudioSource* as = 0;
-			if(comp_audiosource) {
+			if (comp_audiosource) {
 				as = new AudioSource();
 			}
 			Collider* coll = 0;
-			if(comp_collider){
-				switch(collider_type){
-					case ColliderType_Box:{
-						coll = new BoxCollider(collider_halfdims, physics_mass, 0, Event_NONE, collider_nocollide);
-					}break;
-					case ColliderType_AABB:{
-						coll = new AABBCollider(collider_halfdims, physics_mass, 0, Event_NONE, collider_nocollide);
-					}break;
-					case ColliderType_Sphere:{
-						coll = new SphereCollider(collider_radius, physics_mass, 0, Event_NONE, collider_nocollide);
-					}break;
+			if (comp_collider) {
+				switch (collider_type) {
+				case ColliderType_Box: {
+					coll = new BoxCollider(collider_halfdims, physics_mass, 0, Event_NONE, collider_nocollide);
+				}break;
+				case ColliderType_AABB: {
+					coll = new AABBCollider(collider_halfdims, physics_mass, 0, Event_NONE, collider_nocollide);
+				}break;
+				case ColliderType_Sphere: {
+					coll = new SphereCollider(collider_radius, physics_mass, 0, Event_NONE, collider_nocollide);
+				}break;
 				}
 			}
 			MeshComp* mc = 0;
-			if(comp_mesh){
+			if (comp_mesh) {
 				u32 new_mesh_id = DengRenderer->CreateMesh(mesh_id, mat4::TransformationMatrix(entity_pos, entity_rot, entity_scale));
 				mesh_name = DengRenderer->meshes[mesh_id].name;
 				mc = new MeshComp(new_mesh_id, mesh_instance_id);
 			}
 			Light* light = 0;
-			if(comp_light){
+			if (comp_light) {
 				light = new Light(entity_pos, entity_rot, light_strength);
 			}
 			Physics* phys = 0;
 			Movement* move = 0;
 			Player* pl = 0;
-			if(comp_physics){
+			if (comp_physics) {
 				phys = new Physics(entity_pos, entity_rot, physics_velocity, physics_accel, physics_rotVel,
-								   physics_rotAccel, physics_elasticity, physics_mass, physics_staticPosition);
-				if(comp_audiolistener) al->velocity = physics_velocity;
-				if(comp_player) { move = new Movement(phys); pl = new Player(move); }
+					physics_rotAccel, physics_elasticity, physics_mass, physics_staticPosition);
+				if (comp_audiolistener) al->velocity = physics_velocity;
+				if (comp_player) { move = new Movement(phys); pl = new Player(move); }
 			}
-			
-			
-			
+
+
+
 			admin->CreateEntity({ al, as, coll, mc, light, phys, move, pl }, entity_name,
-								Transform(entity_pos, entity_rot, entity_scale));
-			
-			
-			
-			
+				Transform(entity_pos, entity_rot, entity_scale));
+
+
+
+
 		}Separator();
-		
+
 		//// premades ////
 		SetPadding; Text("Premades   ");  SameLine(); SetNextItemWidth(-1);
 		if (BeginMenu("##premades")) {
 			WinHovCheck;
-			if(MenuItem("Player")){
-				
+			if (MenuItem("Player")) {
+
 				if (!admin->player) {
 					PlayerEntity* pl = new PlayerEntity(Transform(Vector3::ZERO, Vector3::ZERO, Vector3::ZERO));
 					admin->CreateEntity(pl);
@@ -1604,104 +1606,105 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 				else {
 					ERROR("Player has already been created.");
 				}
-				
+
 			}
-			
-			
+
+
 			EndCombo();
-			
+
 		}
-		
-		
+
+
 		//// presets ////
-		SetPadding; Text("Presets    "); SameLine(); SetNextItemWidth(-1); 
-		if(Combo("##preset_combo", &current_preset, presets, IM_ARRAYSIZE(presets))){ WinHovCheck;
-			switch(current_preset){
-				case(0):default:{
-					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_light = comp_physics = comp_player = false;
-					collider_type = ColliderType_NONE;
-					collider_halfdims = Vector3::ONE;
-					collider_radius  = 1.f;
-					mesh_id = mesh_instance_id = 0;
-					light_strength = 1.f;
-					physics_velocity = Vector3::ZERO; physics_accel    = Vector3::ZERO; 
-					physics_rotVel   = Vector3::ZERO; physics_rotAccel = Vector3::ZERO;
-					physics_elasticity = .5f; physics_mass = 1.f;
-					physics_staticPosition = physics_staticRotation = true;
-					cpystr(entity_name, TOSTRING("default", entity_id).c_str(), DESHI_NAME_SIZE);
-				}break;
-				case(1):{
-					comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
-					comp_collider = comp_mesh = comp_physics = true;
-					collider_type = ColliderType_AABB;
-					collider_halfdims = Vector3::ONE;
-					mesh_id = 0;
-					physics_staticPosition = physics_staticRotation = true;
-					cpystr(entity_name, TOSTRING("aabb", entity_id).c_str(), DESHI_NAME_SIZE);
-				}break;
-				case(2):{
-					comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
-					comp_collider = comp_mesh = comp_physics = true;
-					collider_type = ColliderType_Box;
-					collider_halfdims = Vector3::ONE;
-					mesh_id = 0;
-					physics_staticPosition = physics_staticRotation = true;
-					cpystr(entity_name, TOSTRING("box", entity_id).c_str(), DESHI_NAME_SIZE);
-				}break;
-				case(3):{
-					comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
-					comp_collider = comp_mesh = comp_physics = true;
-					collider_type = ColliderType_Sphere;
-					collider_radius = 1.f;
-					mesh_id = DengRenderer->GetBaseMeshID("sphere.obj");
-					physics_staticPosition = physics_staticRotation = true;
-					cpystr(entity_name, TOSTRING("sphere", entity_id).c_str(), DESHI_NAME_SIZE);
-				}break;
-				case(4):{
-					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = comp_light = comp_player = false;
-					comp_2d = true;
-					twod_id = -1;
-					twod_type = 2;
-					twod_vert_count = 3;
-					twod_radius = 25.f;
-					twod_verts.resize(3);
-					twod_verts[0] = {-100.f, 0.f}; twod_verts[1] = {0.f, 100.f}; twod_verts[2] = {100.f, 0.f};
-					entity_pos = {700.f, 400.f, 0};
-					cpystr(entity_name, "twod", DESHI_NAME_SIZE);
-				}break;
-				case(5):{
-					comp_light = false;
-					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = comp_player = true;
-					collider_type = ColliderType_AABB; //TODO(delle,PhCl) ideally cylinder/capsule collider
-					collider_halfdims = vec3(1, 2, 1);
-					mesh_id = DengRenderer->GetBaseMeshID("bmonkey.obj");
-					physics_staticPosition = physics_staticRotation = false;
-					physics_elasticity = 0.f;
-					cpystr(entity_name, "player", DESHI_NAME_SIZE);
-				}break;
+		SetPadding; Text("Presets    "); SameLine(); SetNextItemWidth(-1);
+		if (Combo("##preset_combo", &current_preset, presets, IM_ARRAYSIZE(presets))) {
+			WinHovCheck;
+			switch (current_preset) {
+			case(0):default: {
+				comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_light = comp_physics = comp_player = false;
+				collider_type = ColliderType_NONE;
+				collider_halfdims = Vector3::ONE;
+				collider_radius = 1.f;
+				mesh_id = mesh_instance_id = 0;
+				light_strength = 1.f;
+				physics_velocity = Vector3::ZERO; physics_accel = Vector3::ZERO;
+				physics_rotVel = Vector3::ZERO; physics_rotAccel = Vector3::ZERO;
+				physics_elasticity = .5f; physics_mass = 1.f;
+				physics_staticPosition = physics_staticRotation = true;
+				cpystr(entity_name, TOSTRING("default", entity_id).c_str(), DESHI_NAME_SIZE);
+			}break;
+			case(1): {
+				comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
+				comp_collider = comp_mesh = comp_physics = true;
+				collider_type = ColliderType_AABB;
+				collider_halfdims = Vector3::ONE;
+				mesh_id = 0;
+				physics_staticPosition = physics_staticRotation = true;
+				cpystr(entity_name, TOSTRING("aabb", entity_id).c_str(), DESHI_NAME_SIZE);
+			}break;
+			case(2): {
+				comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
+				comp_collider = comp_mesh = comp_physics = true;
+				collider_type = ColliderType_Box;
+				collider_halfdims = Vector3::ONE;
+				mesh_id = 0;
+				physics_staticPosition = physics_staticRotation = true;
+				cpystr(entity_name, TOSTRING("box", entity_id).c_str(), DESHI_NAME_SIZE);
+			}break;
+			case(3): {
+				comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
+				comp_collider = comp_mesh = comp_physics = true;
+				collider_type = ColliderType_Sphere;
+				collider_radius = 1.f;
+				mesh_id = DengRenderer->GetBaseMeshID("sphere.obj");
+				physics_staticPosition = physics_staticRotation = true;
+				cpystr(entity_name, TOSTRING("sphere", entity_id).c_str(), DESHI_NAME_SIZE);
+			}break;
+			case(4): {
+				comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = comp_light = comp_player = false;
+				comp_2d = true;
+				twod_id = -1;
+				twod_type = 2;
+				twod_vert_count = 3;
+				twod_radius = 25.f;
+				twod_verts.resize(3);
+				twod_verts[0] = { -100.f, 0.f }; twod_verts[1] = { 0.f, 100.f }; twod_verts[2] = { 100.f, 0.f };
+				entity_pos = { 700.f, 400.f, 0 };
+				cpystr(entity_name, "twod", DESHI_NAME_SIZE);
+			}break;
+			case(5): {
+				comp_light = false;
+				comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = comp_player = true;
+				collider_type = ColliderType_AABB; //TODO(delle,PhCl) ideally cylinder/capsule collider
+				collider_halfdims = vec3(1, 2, 1);
+				mesh_id = DengRenderer->GetBaseMeshID("bmonkey.obj");
+				physics_staticPosition = physics_staticRotation = false;
+				physics_elasticity = 0.f;
+				cpystr(entity_name, "player", DESHI_NAME_SIZE);
+			}break;
 			}
-			if(mesh_id < DengRenderer->meshes.size()) mesh_name = DengRenderer->meshes[mesh_id].name;
+			if (mesh_id < DengRenderer->meshes.size()) mesh_name = DengRenderer->meshes[mesh_id].name;
 		}
-		
-		SetPadding; Text("Name: "); 
-		SameLine(); SetNextItemWidth(-1); InputText("##unique_id", entity_name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | 
-													ImGuiInputTextFlags_AutoSelectAll);
-		
+
+		SetPadding; Text("Name: ");
+		SameLine(); SetNextItemWidth(-1); InputText("##unique_id", entity_name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue |
+			ImGuiInputTextFlags_AutoSelectAll);
+
 		//// transform ////
 		int tree_flags = ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_NoAutoOpenOnLog;
 		SetNextItemOpen(true, ImGuiCond_Once);
-		if (TreeNodeEx("Transform", tree_flags)){
-			Text("Position     "); SameLine(); InputVector3("entity_pos",   &entity_pos);   Separator();
-			Text("Rotation     "); SameLine(); InputVector3("entity_rot",   &entity_rot);   Separator();
+		if (TreeNodeEx("Transform", tree_flags)) {
+			Text("Position     "); SameLine(); InputVector3("entity_pos", &entity_pos);   Separator();
+			Text("Rotation     "); SameLine(); InputVector3("entity_rot", &entity_rot);   Separator();
 			Text("Scale        "); SameLine(); InputVector3("entity_scale", &entity_scale);
 			TreePop();
 		}
-		
+
 		//// toggle components ////
 		SetNextItemOpen(true, ImGuiCond_Once);
-		if (TreeNodeEx("Components", tree_flags)){
+		if (TreeNodeEx("Components", tree_flags)) {
 			Checkbox("Mesh", &comp_mesh);
-			SameLine(); Checkbox("Physics", &comp_physics); 
+			SameLine(); Checkbox("Physics", &comp_physics);
 			SameLine(); Checkbox("Collider", &comp_collider);
 			Checkbox("Audio Listener", &comp_audiolistener);
 			SameLine(); Checkbox("Light", &comp_light);
@@ -1710,18 +1713,107 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
 			Checkbox("Player", &comp_player);
 			TreePop();
 		}
-		
+
 		//// component headers ////
-		if(comp_mesh && TreeNodeEx("Mesh", tree_flags)){
+		if (comp_mesh && TreeNodeEx("Mesh", tree_flags)) {
 			Text(TOSTRING("MeshID: ", mesh_id).c_str());
-			SetNextItemWidth(-1); if(BeginCombo("##mesh_combo", mesh_name)){ WinHovCheck;
-				for_n(i, DengRenderer->meshes.size()){
-					if(DengRenderer->meshes[i].base && Selectable(DengRenderer->meshes[i].name, mesh_id == i)){
-						mesh_id = i; 
+			SetNextItemWidth(-1); if (BeginCombo("##mesh_combo", mesh_name)) {
+				WinHovCheck;
+				for_n(i, DengRenderer->meshes.size()) {
+					if (DengRenderer->meshes[i].base && Selectable(DengRenderer->meshes[i].name, mesh_id == i)) {
+						mesh_id = i;
 						mesh_name = DengRenderer->meshes[i].name;
 					}
 				}
 				EndCombo();
+			}
+
+			if (mesh_id != -1) {
+				MeshComp* mc = 0;
+				mc = new MeshComp(mesh_id, mesh_instance_id);
+				MeshVk& mvk = DengRenderer->meshes[mc->meshID];
+				Text("Batch    "); SameLine(); SetNextItemWidth(-1);
+				if (BeginCombo("##mesh_batch_combo", mc->mesh->batchArray[mesh_batch_id].name)) {
+					WinHovCheck;
+					for_n(i, mc->mesh->batchArray.size()) {
+						if (Selectable(mc->mesh->batchArray[i].name, mesh_batch_id == i)) {
+							mesh_batch_id = i;
+						}
+					}
+					EndCombo();
+				}
+
+				Text("Material "); SameLine(); SetNextItemWidth(-1);
+				if (BeginCombo("##mesh_mat_combo", DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].name)) {
+					WinHovCheck;
+					for_n(i, DengRenderer->materials.size()) {
+						if (Selectable(DengRenderer->materials[i].name, mvk.primitives[mesh_batch_id].materialIndex == i)) {
+							DengRenderer->UpdateMeshBatchMaterial(mc->meshID, mesh_batch_id, i);
+						}
+					}
+					EndCombo();
+				}
+				Indent(); {
+					Text("Shader "); SameLine(); SetNextItemWidth(-1);
+					if (BeginCombo("##mesh_shader_combo", ShaderStrings[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].shader])) {
+						WinHovCheck;
+						for_n(i, IM_ARRAYSIZE(ShaderStrings)) {
+							if (Selectable(ShaderStrings[i], DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].shader == i)) {
+								DengRenderer->UpdateMaterialShader(mvk.primitives[mesh_batch_id].materialIndex, i);
+							}
+						}
+						EndCombo();
+					}
+
+					Text("Albedo   "); SameLine(); SetNextItemWidth(-1);
+					if (BeginCombo("##mesh_albedo_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].albedoID].filename)) {
+						WinHovCheck;
+						for_n(i, textures.size()) {
+							if (Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].albedoID].filename, textures[i].c_str()) == 0)) {
+								DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_id].materialIndex, 0,
+									DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Albedo));
+							}
+						}
+						EndCombo();
+					}
+
+					Text("Normal   "); SameLine(); SetNextItemWidth(-1);
+					if (BeginCombo("##mesh_normal_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].normalID].filename)) {
+						WinHovCheck;
+						for_n(i, textures.size()) {
+							if (Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].normalID].filename, textures[i].c_str()) == 0)) {
+								DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_id].materialIndex, 0,
+									DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Normal));
+							}
+						}
+						EndCombo();
+					}
+
+					Text("Specular "); SameLine(); SetNextItemWidth(-1);
+					if (BeginCombo("##mesh_specular_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].specularID].filename)) {
+						WinHovCheck;
+						for_n(i, textures.size()) {
+							if (Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].specularID].filename, textures[i].c_str()) == 0)) {
+								DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_id].materialIndex, 0,
+									DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Specular));
+							}
+						}
+						EndCombo();
+					}
+
+					Text("Light    "); SameLine(); SetNextItemWidth(-1);
+					if (BeginCombo("##mesh_light_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].lightID].filename)) {
+						WinHovCheck;
+						for_n(i, textures.size()) {
+							if (Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].lightID].filename, textures[i].c_str()) == 0)) {
+								DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_id].materialIndex, 0,
+									DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Light));
+							}
+						}
+						EndCombo();
+					}
+
+				}Unindent();
 			}
 			TreePop();
 		}
