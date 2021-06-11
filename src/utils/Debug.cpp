@@ -138,6 +138,86 @@ void Debug::DrawLine(int i, Vector3 v1, Vector3 v2, int unique, float time = -2,
 	}
 }
 
+void Debug::DrawMesh(Mesh* mesh, Matrix4 transform, int unique, Color color = Color::WHITE) {
+	if (meshes.find(unique) != meshes.end()) {
+		u32 id = meshes[unique].meshID;
+		meshes[unique].calledThisFrame = true;
+		DengRenderer->UpdateMeshBrushMatrix(id, transform);
+	}
+	else {
+		MeshInfo mi;
+		mi.meshID = DengRenderer->CreateMeshBrush(mesh, transform);
+		mi.idleTime = 0;
+		mi.allowedTime = -1;
+		mi.calledThisFrame = true;
+		meshes[unique] = mi;
+	}
+}
+
+void Debug::DrawMesh(Mesh* mesh, Matrix4 transform, int unique, float time = -2, Color color = Color::WHITE) {
+	if (meshes.find(unique) != meshes.end()) {
+		u32 id = meshes[unique].meshID;
+		meshes[unique].calledThisFrame = true;
+		DengRenderer->UpdateMeshBrushMatrix(id, transform);
+	}
+	else {
+		MeshInfo mi;
+		mi.meshID = DengRenderer->CreateMeshBrush(mesh, transform);
+		mi.idleTime = 0;
+		mi.allowedTime = -1;
+		mi.calledThisFrame = true;
+		meshes[unique] = mi;
+	}
+}
+
+void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, int unique, Color color = Color::WHITE) {
+	if (i == -1) { //if i = -1 then the user is requesting a new line everytime the function is called, regardless of a loop
+		unique = unique + miter;
+		miter++;
+	}
+	else {
+		unique = unique + i;
+	}
+
+	if (meshes.find(unique) != meshes.end()) {
+		u32 id = meshes[unique].meshID;
+		meshes[unique].calledThisFrame = true;
+		DengRenderer->UpdateMeshBrushMatrix(id, transform);
+	}
+	else {
+		MeshInfo mi;
+		mi.meshID = DengRenderer->CreateMeshBrush(mesh, transform);
+		mi.idleTime = 0;
+		mi.allowedTime = -1;
+		mi.calledThisFrame = true;
+		meshes[unique] = mi;
+	}
+}
+
+void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, int unique, float time = -2, Color color = Color::WHITE) {
+	if (i == -1) { //if i = -1 then the user is requesting a new line everytime the function is called, regardless of a loop
+		unique = unique + miter;
+		miter++;
+	}
+	else {
+		unique = unique + i;
+	}
+
+	if (meshes.find(unique) != meshes.end()) {
+		u32 id = meshes[unique].meshID;
+		meshes[unique].calledThisFrame = true;
+		DengRenderer->UpdateMeshBrushMatrix(id, transform);
+	}
+	else {
+		MeshInfo mi;
+		mi.meshID = DengRenderer->CreateMeshBrush(mesh, transform);
+		mi.idleTime = 0;
+		mi.allowedTime = time;
+		mi.calledThisFrame = true;
+		meshes[unique] = mi;
+	}
+}
+
 void Debug::Update() {
 
 	for (auto& c : meshes) {

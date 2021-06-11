@@ -2,7 +2,7 @@
 #ifndef GAME_ENTITY_STATICMESH_H
 #define GAME_ENTITY_STATICMESH_H
 
-#include "entity.h"
+#include "Entity.h"
 
 struct MeshComp;
 struct Physics;

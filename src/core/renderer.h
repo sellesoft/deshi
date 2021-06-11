@@ -30,9 +30,14 @@ g_debug->DrawLine(i, v1, v2, ((s64)this << __LINE__ ^ (s64)__FUNCTION__ >> (s64)
 #define DebugLinesStatic(i, v1, v2, time)\
 g_debug->DrawLine(i, v1, v2, (__LINE__ ^ (s64)__FUNCTION__ >> (s64)__FILENAME__), time, Color::WHITE);
 
-
 #define DebugLinesCol(i, v1, v2, time, color)\
 g_debug->DrawLine(i, v1, v2, ((s64)this << __LINE__ ^ (s64)__FUNCTION__ >> (s64)__FILENAME__), time, color);
+
+#define DebugTriggerStatic(mesh, transform, time)\
+g_debug->DrawMesh(mesh, transform, (__LINE__ ^ (s64)__FUNCTION__ >> (s64)__FILENAME__), time, Color::WHITE);
+
+#define DebugTriggersStatic(i, mesh, transform, time)\
+g_debug->DrawMesh(i, mesh, transform, (__LINE__ ^ (s64)__FUNCTION__ >> (s64)__FILENAME__), time, Color::WHITE);
 
 #define DeshDebugTrisCol(name, i, v1, v2, v3, color)\
 static std::vector<u32> name; \

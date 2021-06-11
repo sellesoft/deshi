@@ -267,6 +267,7 @@ struct Renderer{
 	
 	//creates a mesh with editable vertices
 	u32 CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation = false);
+	void UpdateMeshBrushMatrix(u32 meshID, Matrix4 transform);
 	void UpdateMeshBrushBuffers(u32 meshBrushIdx);
 	void RemoveMeshBrush(u32 meshBrushIdx);
 	//returns a base mesh ID

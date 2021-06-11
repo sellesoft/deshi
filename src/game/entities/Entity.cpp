@@ -121,6 +121,7 @@ std::string Entity::SaveTEXT(){
     std::string result; result.reserve(2048);
     result.append(TOSTRING(">entity",
                            "\nid       ", id,
+                           "\ntype     ", EntityTypeStrings[type],
                            "\nname     \"",name,"\"",
                            "\nposition (",transform.position.x,",",transform.position.y,",",transform.position.z,")",
                            "\nrotation (",transform.rotation.x,",",transform.rotation.y,",",transform.rotation.z,")",
@@ -234,6 +235,7 @@ Entity* Entity::LoadTEXT(EntityAdmin* admin, std::string& filepath, std::vector<
             case(Header::ENTITY):{
                 if     (kv.first == "name")    { e->SetName(kv.second.c_str()); }
                 else if(kv.first == "id")      { e->id = std::stoi(kv.second); }
+                else if(kv.first == "type")    { for (int i = 0; i < NUMENTITYTYPES; i++) if (kv.second == EntityTypeStrings[i]) { e->type = (EntityType)i; break; } }
                 else if(kv.first == "position"){ e->transform.position = get_vec3(kv.second); }
                 else if(kv.first == "rotation"){ e->transform.rotation = get_vec3(kv.second); }
                 else if(kv.first == "scale")   { e->transform.scale = get_vec3(kv.second); }

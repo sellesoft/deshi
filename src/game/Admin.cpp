@@ -517,9 +517,9 @@ void EntityAdmin::LoadTEXT(const char* savename){
         //find receiving component
         Component* rec_comp = 0;
         for(Entity* e : ents){
-            if(e->id == events[i]._4){
+            if(e->id == events[i].fourth){
                 for(Component* c : e->components){
-                    if(c->comptype == events[i]._5){
+                    if(c->comptype == events[i].fifth){
                         rec_comp = c;
                     }
                 }
@@ -532,14 +532,14 @@ void EntityAdmin::LoadTEXT(const char* savename){
 
         //add event and receiver to sender component
         for(Entity* e : ents){
-            if(e->id == events[i]._1){
+            if(e->id == events[i].first){
                 for(Component* c : e->components){
-                    if(c->comptype == events[i]._2){
-                        c->event = events[i]._3;
+                    if(c->comptype == events[i].second){
+                        c->event = events[i].third;
                         if(!c->sender) c->sender = new Sender;
                         c->sender->AddReceiver(rec_comp);
                         rec_comp->entity->connections.insert(e);
-                        SUCCESS("Added event '",EventStrings[events[i]._3],"': ",
+                        SUCCESS("Added event '",EventStrings[events[i].third],"': ",
                                 e->name," ",c->comptype," -> ",rec_comp->entity->name," ",rec_comp->comptype);
                     }
                 }

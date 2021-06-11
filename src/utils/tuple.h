@@ -47,15 +47,13 @@ template<typename... Dummy> struct pair;
 
 template<typename T, typename U>
 struct pair<T,U> {
-	union{ T first;  T _1; };
-	union{ U second; U _2; };
+	T first;
+	U second;
 
 	pair(T first, U second) {
 		this->first = first;
 		this->second = second;
 	}
-
-	~pair(){} //dumb c++ requires this here but not on the 5arg version?
 };
 template<typename T, typename U>
 inline pair<T,U> make_pair(T first, U second){
@@ -64,9 +62,9 @@ inline pair<T,U> make_pair(T first, U second){
 
 template<typename T, typename U, typename V>
 struct pair<T,U,V> {
-	union{ T first;  T _1; };
-	union{ U second; U _2; };
-	union{ V third;  V _3; };
+	T first;
+	U second;
+	V third;
 
 	pair(T first, U second, V third) {
 		this->first = first;
@@ -81,11 +79,11 @@ inline pair<T,U,V> make_pair(T first, U second, V third){
 
 template<typename T, typename U, typename V, typename W, typename X>
 struct pair<T,U,V,W,X> {
-	union{ T first;  T _1; };
-	union{ U second; U _2; };
-	union{ V third;  V _3; };
-	union{ W fourth; W _4; };
-	union{ X fifth;  X _5; };
+	T first;
+	U second;
+	V third;
+	W fourth;
+	X fifth;
 
 	pair(T first, U second, V third, W fourth, X fifth) {
 		this->first = first;

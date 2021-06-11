@@ -15,17 +15,13 @@ if you feel they would handle the problem better. It should generally be you tho
 Major Ungrouped TODOs
 ---------------------
 create a demo level
-have a talk about how we want to handle premade entity creation
-____specifically player. right now I just have it so i make a new PlayerEntity, set admin's player pointer to it
-____then use admin's CreateEntity function to set up the rest
-put instructions to set up saving and loading for a new component somewhere
-____and maybe look into setting it up to be more streamlined somehow
+sushi->rewrite the events menu
+____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
 custom String8 and String16 types as a replacement to std::string
 create a hot-loadable global vars file
-____doesnt need to be hotloadable, could just be a text file we edit through console/ui
 detach camera from the renderer so that the camera component isnt calling the renderer
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
 ____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
@@ -166,6 +162,8 @@ Fun TODOs
 look into implementing Lua 
 look into making a function that takes in the types on a component and formats binary for saving and what not 
 ____like what were currently doing for typeHeader in EntityAdmin Save()
+write a shader that displays textures like it would on a monitor, so like you have an array of
+____rgb lights that make up a single pixel of a texture and stuff 
 write a preprocessing/postprocessing compiler that makes saving easier
 
 Bug Board

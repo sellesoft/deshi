@@ -242,6 +242,7 @@
     <ClInclude Include="..\src\game\entities\Entity.h" />
     <ClInclude Include="..\src\game\entities\PlayerEntity.h" />
     <ClInclude Include="..\src\game\entities\StaticMeshEntity.h" />
+    <ClInclude Include="..\src\game\entities\Trigger.h" />
     <ClInclude Include="..\src\game\Event.h" />
     <ClInclude Include="..\src\game\Keybinds.h" />
     <ClInclude Include="..\src\game\systems\CanvasSystem.h" />
@@ -268,6 +269,7 @@
     <ClInclude Include="..\src\utils\Debug.h" />
     <ClInclude Include="..\src\utils\defines.h" />
     <ClInclude Include="..\src\utils\optional.h" />
+    <ClInclude Include="..\src\utils\pair.h" />
     <ClInclude Include="..\src\utils\PhysicsWorld.h" />
     <ClInclude Include="..\src\utils\tuple.h" />
   </ItemGroup>
@@ -332,6 +334,7 @@
     <ClCompile Include="..\src\game\entities\Entity.cpp" />
     <ClCompile Include="..\src\game\entities\PlayerEntity.cpp" />
     <ClCompile Include="..\src\game\entities\StaticMeshEntity.cpp" />
+    <ClCompile Include="..\src\game\entities\Trigger.cpp" />
     <ClCompile Include="..\src\game\Event.cpp" />
     <ClCompile Include="..\src\game\Keybinds.cpp" />
     <ClCompile Include="..\src\game\systems\CanvasSystem.cpp" />
