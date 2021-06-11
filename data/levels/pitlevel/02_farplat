@@ -1,5 +1,6 @@
 >entity
 id       2
+type     Anonymous
 name     "farplat"
 position (-40.000000,-5.000000,0.000000)
 rotation (0.000000,0.000000,0.000000)

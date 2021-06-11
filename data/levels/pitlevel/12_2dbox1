@@ -1,5 +1,6 @@
 >entity
 id       12
+type     Anonymous
 name     "2dbox1"
 position (0.000000,0.000000,0.000000)
 rotation (0.000000,0.000000,0.000000)

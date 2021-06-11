@@ -1,11 +1,10 @@
 >entity
 id       0
+type     Anonymous
 name     "box"
 position (21.455870,6.080621,4.731744)
 rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)
-
->audio source
 
 >mesh
 id      9
@@ -28,3 +27,5 @@ twod               false
 >collider
 type      aabb
 half_dims (1.000000,1.000000,1.000000)
+
+>audio source

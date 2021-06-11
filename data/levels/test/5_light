@@ -1,5 +1,6 @@
 >entity
 id       5
+type     Anonymous
 name     "light"
 position (-1.981749,7.923470,15.622007)
 rotation (0.000000,0.000000,0.000000)

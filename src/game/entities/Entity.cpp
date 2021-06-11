@@ -127,7 +127,19 @@ std::string Entity::SaveTEXT(){
                            "\nrotation (",transform.rotation.x,",",transform.rotation.y,",",transform.rotation.z,")",
                            "\nscale    (",transform.scale.x,",",transform.scale.y,",",transform.scale.z,")"
                            "\n"));
-    for(Component* c : components) result.append(c->SaveTEXT());
+
+    //sort components by ComponentType for consistent saving order
+    std::vector<Component*> sorted_components = components;
+    Component* temp;
+    for(int i = 1; i < sorted_components.size(); ++i){
+        if(sorted_components[i]->comptype < sorted_components[i-1]->comptype){
+            temp = sorted_components[i];
+            sorted_components[i] = sorted_components[i-1];
+            sorted_components[i-1] = temp;
+        }
+    }
+
+    for(Component* c : sorted_components) result.append(c->SaveTEXT());
     result.shrink_to_fit();
     return result;
 }

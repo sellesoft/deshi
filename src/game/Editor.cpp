@@ -1417,7 +1417,7 @@ inline void MaterialsTab(EntityAdmin* admin){
     Separator();
 
     //// create new material button ////
-    SetCursorPosX(GetWindowWidth()*0.025);
+    SetCursorPosX(GetWindowWidth()*0.025); //half of 1 - 0.95
     if(Button("Create New Material", ImVec2(GetWindowWidth()*0.95, 0.0f))){
         selected_mat = DengRenderer->CreateMaterial(TOSTRING("material", DengRenderer->materials.size()).c_str(), Shader_PBR);
     }

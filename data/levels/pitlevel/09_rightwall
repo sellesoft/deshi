@@ -1,5 +1,6 @@
 >entity
 id       9
+type     Anonymous
 name     "rightwall"
 position (-50.000000,-5.000000,0.000000)
 rotation (0.000000,0.000000,0.000000)

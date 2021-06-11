@@ -1,5 +1,6 @@
 >entity
 id       5
+type     Anonymous
 name     "pitwall1"
 position (-9.500000,-7.500000,0.000000)
 rotation (0.000000,0.000000,0.000000)

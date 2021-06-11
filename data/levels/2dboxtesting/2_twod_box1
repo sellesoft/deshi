@@ -1,11 +1,10 @@
 >entity
 id       2
+type     Anonymous
 name     "twod_box1"
 position (0.000000,0.000000,-14.024551)
 rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)
-
->audio source
 
 >mesh
 id      7
@@ -28,3 +27,5 @@ twod               true
 >collider
 type      aabb
 half_dims (1.000000,1.000000,1.000000)
+
+>audio source
