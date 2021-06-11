@@ -87,11 +87,12 @@ find a way to forward declare vulkan stuff and move the include to the cpp
 SSBOs in shaders so we can pass variable length arrays to it 
 geometry shaders
 
-Level Editor TODOs
+Level Editor and Inspector TODOs
 ------------------
-add material creation
+convert entity list to be more like materials list
+add material creation in materials tab
 combine create tab into entities tab
-add transfering the player pointer between entities that have an actor comp
+add transfering the player pointer between entities that have an actor comp (combo in Global Tab)
 orbitting camera for rotating around objects
 context menu when right clicking on an object 
 scaling objects
@@ -147,7 +148,6 @@ ____https://github.com/ocornut/imgui/issues/52
 2D shader (and handle ImGui ourselves)
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
-renaming entities from entity list
 redo debug bar to be more informative and have different modes
 (maybe) implement a way to push data to something in the DebugLayer
 ____sort of how we had before with BufferLog so you can see it without opening console

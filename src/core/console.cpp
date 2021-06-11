@@ -448,19 +448,14 @@ void Console::FlushBuffer() {
 // command creation functions
 //////////////////////////////////////////////////////////////////////
 
-#define NEWCOMMAND(name, desc, func) commands[name] =\
-new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {\
-try{ func }catch(...){ return desc; }\
-}, name, desc);
-
 #define COMMANDFUNC(name) std::string command_##name##_back(EntityAdmin* admin, std::vector<std::string> args)
-#define ADDCOMMAND(name, desc) commands[#name] = new Command(command_##name##_back, #name, desc)
 
-#define CMDADD(name, desc) commands[#name] = new Command(command_##name##_back, #name, desc)
 #define CMDERROR args.at(-1) = ""
 #define CMDSTART(name) std::string command_##name##_back(EntityAdmin* admin, std::vector<std::string> args){ try{std::cmatch m;
 #define CMDSTARTA(name,assert) CMDSTART(name) if(!(assert)){CMDERROR;}
 #define CMDEND(error) CMDERROR; return ""; }catch(...){ ERROR(error); return ""; }}
+
+#define CMDADD(name, desc) commands[#name] = new Command(command_##name##_back, #name, desc)
 
 ////////////////////////////////////////
 //// various uncategorized commands ////

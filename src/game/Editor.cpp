@@ -1358,7 +1358,7 @@ inline void MaterialsTab(EntityAdmin* admin){
         //selected_mat = -1;
     }
 
-    //// entity list panel ////
+    //// material list panel ////
     SetPadding; 
     if(BeginChild("##mat_list", ImVec2(GetWindowWidth()*0.95, GetWindowHeight()*.14f), false)) {
         if(BeginTable("##mat_table", 3, ImGuiTableFlags_BordersInner)) {
@@ -1409,8 +1409,16 @@ inline void MaterialsTab(EntityAdmin* admin){
     }
     
     Separator();
+
+    //// create new material button ////
+    SetCursorPosX(GetWindowWidth()*0.025);
+    if(Button("Create New Material", ImVec2(GetWindowWidth()*0.95, 0.0f))){
+        selected_mat = DengRenderer->CreateMaterial(TOSTRING("material", DengRenderer->materials.size()).c_str(), Shader_PBR);
+    }
+
+    Separator();
     
-    //// selected entity inspector panel ////
+    //// selected material inspector panel ////
     if(selected_mat == -1) return;
     SetPadding;
     if(BeginChild("##mat_inspector", ImVec2(GetWindowWidth()*.95f, GetWindowHeight()*.8f), false)) {

@@ -65,25 +65,6 @@ const bool enableValidationLayers = true;
 void Renderer::
 LoadRenderSettings(){
 	
-	//std::map<std::string, std::string> in = deshi::extractConfig("render.cfg");
-	//
-	//
-	//
-	//enum RenderSettingsEnum {
-	//	vsync, reduceBuffering, brightness, gamma, presetLevel, anisotropicFiltering, 
-	//	antiAliasing, shadowQuality, modelQuality, textureQuality, reflectionQuality,
-	//	lightQuality, shaderQuality, wireframe, wireframeOnly, globalAxis
-	//};
-	//
-	//std::map<std::string, RenderSettingsEnum> strs{
-	//	{"vsync", vsync}, {"reduceBuffering", reduceBuffering},{"brightness", brightness},{"gamma", gamma},{"presetLevel", presetLevel},{"anistrophicFiltering",  anistrophicFiltering},
-	//	{"antiAliasing", antiAliasing}, {"shadowQuality", shadowQuality},{"modelQuality",  modelQuality},{"textureQuality", textureQuality},{"reflectionQuality",  reflectionQuality},
-	//	{"lightQuality", lightQuality}, {"shaderQuality", shaderQuality},{"wireframe", wireframe},{"wireframeOnly", wireframeOnly}, {"globalAxis", globalAxis}
-	//};
-	//
-	//for (int i = 0; i < in.size(); i++) {
-	//
-	//}
 	
 	msaaSamples = maxMsaaSamples;
 }
@@ -98,9 +79,6 @@ Init(Time* time, Input* input, Window* window, deshiImGui* imgui) {
 	
 	width = window->width;
 	height = window->height;
-	//glfwGetFramebufferSize(window->window, &width, &height);
-	//glfwSetWindowUserPointer(window->window, this);
-	//glfwSetFramebufferSizeCallback(window->window, framebufferResizeCallback);
 	
 	TIMER_START(t_temp);
 	CreateInstance();
@@ -3331,6 +3309,8 @@ BuildCommandBuffers() {
 	//TODO(delle,ReVu) figure out why we are doing it for all images
 	for(int i = 0; i < imageCount; ++i){
 		renderPassInfo.framebuffer = frames[i].framebuffer;
+		VkDeviceSize offsets[1] = { 0 };
+
 		ASSERTVK(vkBeginCommandBuffer(frames[i].commandBuffer, &cmdBufferInfo), "failed to begin recording command buffer");
 		vkCmdBeginRenderPass(frames[i].commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdSetViewport(frames[i].commandBuffer, 0, 1, &viewport);
@@ -3338,7 +3318,6 @@ BuildCommandBuffers() {
 		//bind scene matrices descriptor to set 0
 		vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboDescriptorSet, 0, nullptr);
 		//// draw stuff below here ////
-		VkDeviceSize offsets[1] = { 0 };
 		
 		//draw mesh brushes
 		if (!generatingWorldGrid) {
