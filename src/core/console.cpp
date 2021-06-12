@@ -75,6 +75,7 @@ void Console::AddLog(std::string input) {
 				if (m[1] == "error") {
 					cons_error_warn = true;
 					last_error = m[2].str();
+					error_count++;
 				}
 			}
 			else {
@@ -1294,7 +1295,9 @@ void Console::Update() {
 		buffersize = 0;
 	}
 	
-	if (dispcon && cons_error_warn) cons_error_warn = false;
+	if (dispcon && cons_error_warn) {
+		cons_error_warn = false; error_count = 0;
+	}
 }
 
 //Flush the buffer at program close and clean up commands

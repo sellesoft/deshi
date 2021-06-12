@@ -2321,7 +2321,12 @@ void Editor::DebugBar() {
                 ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, GetColorU32(ColToVec4(Color(255 * (sin(2 * M_PI * time + cos(2 * M_PI * time)) + 1)/2, 0, 0, 255))));
                 
                 PushItemWidth(-1);
-                std::string str6 = DengConsole->last_error;
+                std::string str6;
+                if(DengConsole->error_count > 1) {
+                    str6 = TOSTRING("(",DengConsole->error_count,") ",DengConsole->last_error);
+                }else{
+                    str6 = DengConsole->last_error;
+                }
                 float strlen6 = (fontsize - (fontsize / 2)) * str6.size();
                 ImGui::SameLine((GetColumnWidth() - strlen6) / 2);
                 ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(Color(255 * -(sin(2 * M_PI * time + cos(2 * M_PI * time)) - 1)/2, 0, 0, 255)));

@@ -127,7 +127,6 @@ implement command chaining
 add console flag for showing text in bottom right message bar like error does
 command to print all avaliable keys for binding
 command to print all keybinds, with (maybe) an option for printing only contextual keybinds
-if multiple errors are sent to the console before the user opens it, show a number in the debug bar indicating how many
 make binds and aliases check if one already exists for a key or a command. if a key already exists probably just overwrite it?
 implement filtering console buffer by function and file name (add __FILENAME__ and __FUNCTION__ or whatever it is to the defines)
 fix regex match variable to be smatch instead of cmatch, so we don't have to keep turning every string into a c string

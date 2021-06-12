@@ -19,14 +19,14 @@ struct Console  {
 	std::vector<std::pair<std::string, Color>> buffer; //text, color
 	std::vector<std::string> history;
 	int historyPos = -1;
+
+	u32 error_count = 0;
+	std::string last_error;
+	bool cons_error_warn = false;
 	
 	bool dispcon = false;
 	bool autoScroll = true;
 	bool scrollToBottom = false;
-	
-	//console error warn flag and last error
-	bool cons_error_warn = false;
-	std::string last_error;
 	
 	//imgui capture flags
 	bool IMGUI_KEY_CAPTURE = false;
