@@ -20,17 +20,16 @@ enum OrthoViews {
 struct Camera : public Component {
 	Vector3 position{4.f, 3.f, -4.f};
 	Vector3 rotation{28.f, -45.f, 0.f};
-	Vector3 target;
-	Vector3 forward = Vector3::ZERO;
-	Vector3 right   = Vector3::ZERO;
-	Vector3 up      = Vector3::ZERO;
+	float nearZ; //the distance from the camera's position to screen plane
+	float farZ; //the maximum render distance
+	float fov; //horizontal field of view
 	bool freeCamera = true; //whether the camera can move or not (no need to update if false)
 	CameraType type = CameraType_Perspective;
 	OrthoViews orthoview = FRONT; //TODO(sushi, Cl) combine this with type using bit masking if this is how i decide to keep doing ortho views
 	
-	float nearZ; //the distance from the camera's position to screen plane
-	float farZ; //the maximum render distance
-	float fov;
+	Vector3 forward;
+	Vector3 right;
+	Vector3 up;
 	Matrix4 viewMat;
 	Matrix4 projMat;
 	

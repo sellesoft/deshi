@@ -85,8 +85,6 @@ geometry shaders
 
 Level Editor and Inspector TODOs
 ------------------
-convert entity list to be more like materials list
-add material creation in materials tab
 combine create tab into entities tab
 add transfering the player pointer between entities that have an actor comp (combo in Global Tab)
 orbitting camera for rotating around objects
@@ -99,11 +97,9 @@ world axis in top right (like we used to have)
 orthographic side views
 (maybe) multiple viewports
 add showing axis lines through object when axis grabbing once we have lines in Vulkan
-keybind to move camera to object (like Blender's NPMINUS)
 implement orthographic grabbing 
 entity filtering in entity list
 combine undo manager into editor file
-add editor camera properties and editing to globals tab
 
 Physics/Atmos TODOs
 -------------
@@ -117,7 +113,7 @@ add physics collision sweeping
 add physics based collision resolution for remaining collider primitives
 add physics interaction functions
 implement collision manifold generation
-implement Complex Colliders 
+implement Complex Colliders
 
 Console TODOs
 -------------

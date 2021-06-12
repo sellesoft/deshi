@@ -14,13 +14,13 @@ struct Keybinds{
 	Key::Key movementFlyingLeft    = Key::A;
 
 	//walking movement
-	Key::Key movementWalkingForward = Key::W;
+	Key::Key movementWalkingForward  = Key::W;
 	Key::Key movementWalkingBackward = Key::S;
-	Key::Key movementWalkingRight = Key::D;
-	Key::Key movementWalkingLeft = Key::A;
-	Key::Key movementJump = Key::SPACE;
-	Key::Key movementCrouch = Key::LCTRL;
-	Key::Key movementRun = Key::LSHIFT;
+	Key::Key movementWalkingRight    = Key::D;
+	Key::Key movementWalkingLeft     = Key::A;
+	Key::Key movementJump            = Key::SPACE;
+	Key::Key movementCrouch          = Key::LCTRL;
+	Key::Key movementRun             = Key::LSHIFT;
 
 	//player controls
 	Key::Key use = Key::E;
@@ -41,6 +41,7 @@ struct Keybinds{
 	Key::Key orthoTopDownView  = Key::NUMPAD1;
 	Key::Key orthoBottomUpView = Key::NUMPAD3;
 	Key::Key perspectiveToggle = Key::NUMPAD0;
+	Key::Key gotoSelected      = Key::NUMPADENTER;
 	
 	//debug menu stuff
 	Key::Key toggleConsole   = Key::TILDE;

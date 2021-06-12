@@ -7,6 +7,7 @@
 #include <string>
 #include <iostream>
 #include <unordered_map>
+#include <assert.h>
 
 //std::cout short form
 #define PRINTLN(x) std::cout << x << std::endl;

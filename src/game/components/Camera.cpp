@@ -51,12 +51,7 @@ void Camera::Update() {
 		right = Vector3::UP.cross(forward).normalized();
 		up = right.cross(forward).normalized();
 		
-		
-		
-		
-		target = position + forward;
-		
-		viewMat = Math::LookAtMatrix(position, target).Inverse();
+		viewMat = Math::LookAtMatrix(position, position + forward).Inverse();
 		
 		//update renderer camera properties
 		if (type == CameraType_Orthographic) {
