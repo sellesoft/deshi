@@ -586,8 +586,9 @@ CMDSTARTA(load_obj, args.size() > 0){
 			else if(m[1] == "sphere")    ctype = ColliderType_Sphere;
 			else if(m[1] == "landscape") ctype = ColliderType_Landscape;
 			else if(m[1] == "box")       ctype = ColliderType_Box;
+			else if(m[1] == "complex")   ctype = ColliderType_Complex;
 		} else if (std::regex_search(s->c_str(), m, FloatRegex("mass"))) {
-			if(std::stof(m[1]) == 0) return "[c:red]Mass can't be zero[c]";
+			if(std::stof(m[1]) <= 0) return "[c:red]Mass can't be zero or less than zero[c]";
 			mass = std::stof(m[1]);
 		} else if (std::regex_search(s->c_str(), m, FloatRegex("elasticity"))) {
 			elasticity = std::stof(m[1]);
@@ -626,6 +627,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 		case ColliderType_Sphere:    col = new SphereCollider(1, 1, 0U, event); break;
 		case ColliderType_Landscape: col = new LandscapeCollider(mesh, 0U, event); break;
 		case ColliderType_Box:       col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
+		case ColliderType_Complex:   col = new ComplexCollider(mesh, 0, event); break;
 	}
 	
 	MeshComp* mc = new MeshComp(id);
