@@ -335,14 +335,14 @@ void EntityAdmin::SaveTEXT(const char* level_name_cstr){
             level_text.append("\"");
         }
     }
-
+	
     //entities
     level_text.append("\n"
                       "\n>entities");
     for_n(i, entities.size()){
         level_text.append(TOSTRING("\n",i," \"",entities[i]->name,"\""));
     }
-
+	
     //events
     level_text.append("\n"
                       "\n>events");
@@ -487,7 +487,7 @@ void EntityAdmin::LoadTEXT(const char* savename){
                 }break;
                 case(LevelHeader::EVENTS):{
                     if(split.size() != 8){ ERROR(ParsingError,"'! Material lines should have 8 values"); continue; }
-
+					
                     u32 send_ent_id = std::stoi(split[0]);
                     std::string send_ent_name = split[1];
                     u32 send_comp_type = std::stoi(split[2]);
@@ -496,8 +496,8 @@ void EntityAdmin::LoadTEXT(const char* savename){
                     u32 rec_ent_id = std::stoi(split[5]);
                     std::string rec_ent_name = split[6];
                     u32 rec_comp_type = std::stoi(split[7]);
-
-                    events.push_back(make_pair(send_ent_id,send_comp_type,event_type,rec_ent_id,rec_comp_type));
+					
+                    events.push_back(pair<u32,u32,u32,u32,u32>(send_ent_id,send_comp_type,event_type,rec_ent_id,rec_comp_type));
                 }break;
             }
         }
@@ -529,7 +529,7 @@ void EntityAdmin::LoadTEXT(const char* savename){
             ERROR("Unable to find component for event: ", i);
             break;
         }
-
+		
         //add event and receiver to sender component
         for(Entity* e : ents){
             if(e->id == events[i].first){
@@ -546,7 +546,7 @@ void EntityAdmin::LoadTEXT(const char* savename){
             }
         }
     }
-
+	
     //// create entities ////
     for(Entity* e : ents){
         CreateEntity(e);

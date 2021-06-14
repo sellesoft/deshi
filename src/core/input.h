@@ -15,7 +15,7 @@
 #define MAX_MOUSE_BUTTONS 7
 
 namespace Key {
-	typedef enum KeyBits {
+	enum KeyBits : u32{
 		NONE,
 		A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 		K0, K1, K2, K3, K4, K5, K6, K7, K8, K9,
@@ -28,23 +28,21 @@ namespace Key {
 		NUMPAD0, NUMPAD1, NUMPAD2, NUMPAD3, NUMPAD4, NUMPAD5, NUMPAD6, NUMPAD7, NUMPAD8, NUMPAD9,
 		NUMPADMULTIPLY, NUMPADDIVIDE, NUMPADPLUS, NUMPADMINUS, NUMPADPERIOD, NUMPADENTER, NUMLOCK,
 		MBLEFT, MBRIGHT, MBMIDDLE, MBFOUR, MBFIVE, MBSIX, MBSEVEN, MBEIGHT, MBSCROLLDOWN, MBSCROLLUP
-	} KeyBits;
-	typedef u32 Key;
+	}; typedef u32 Key;
 };
 
 namespace MouseButton{
-	typedef enum MouseButtonBits{
+	enum MouseButtonBits : u32{
 		LEFT = Key::MBLEFT, RIGHT = Key::MBRIGHT, MIDDLE = Key::MBMIDDLE, 
 		FOUR = Key::MBFOUR, FIVE = Key::MBFIVE, 
 		SIX = Key::MBSIX, SEVEN = Key::MBSEVEN, 
 		EIGHT = Key::MBEIGHT,
 		SCROLLDOWN = Key::MBSCROLLDOWN, SCROLLUP = Key::MBSCROLLUP
-	} MouseButtonBits;
-	typedef u32 MouseButton;
+	}; typedef u32 MouseButton;
 }
 
 //TODO(sushi, In) add right and left differenciation and a middle term for both
-typedef enum InputModFlagBits{
+enum InputModFlagBits : u32{
 	INPUTMOD_NONE          = 0,
 	INPUTMOD_ANY           = 256,
 	INPUTMOD_CTRL          = 512,
@@ -54,8 +52,7 @@ typedef enum InputModFlagBits{
 	INPUTMOD_CTRLALT       = 2560,
 	INPUTMOD_SHIFTALT      = 3072,
 	INPUTMOD_CTRLSHIFTALT  = 3584,
-} InputModFlagBits;
-typedef u32 InputModFlags;
+}; typedef u32 InputModFlags;
 
 struct Input{
 	std::map<size_t, u8> mapKeys;
@@ -85,7 +82,7 @@ struct Input{
 	
 	//caches values so they are consistent thru the frame
 	void Update(){
-		memcpy(&oldKeyState, &newKeyState, sizeof(bool) * MAX_KEYBOARD_KEYS);
+		memcpy(&oldKeyState, &newKeyState,  sizeof(bool) * MAX_KEYBOARD_KEYS);
 		memcpy(&newKeyState, &realKeyState, sizeof(bool) * MAX_KEYBOARD_KEYS);
 		//mouseX = realMouseX; mouseY = realMouseY; //NOTE this doesnt work, idk why
 		mousePos.x = mouseX; mousePos.y = mouseY;
@@ -127,7 +124,10 @@ struct Input{
 	//mod_key & 0x000000FF extract the key
 	//mod_key & 0xFFFFFF00 extract the mods
 	
-	inline bool KeyDownAnyMod(u32 mod_key){ return newKeyState[mod_key & 0x000000FF]; }
+	inline bool KeyDownAnyMod(u32 mod_key){ 
+		u32 key = mod_key & 0x000000FF;
+		return newKeyState[key]; 
+	}
 	
 	inline bool KeyDown(u32 mod_key) { 
 		u32 key = mod_key & 0x000000FF;
@@ -136,7 +136,12 @@ struct Input{
 	
 	inline bool KeyUp(u32 mod_key) {
 		u32 key = mod_key & 0x000000FF;
-		return newKeyState[key] && ModsDown(mod_key & 0xFFFFFF00);
+		return !newKeyState[key] && ModsDown(mod_key & 0xFFFFFF00);
+	}
+	
+	inline bool KeyPressedAnyMod(u32 mod_key){ 
+		u32 key = mod_key & 0x000000FF;
+		return newKeyState[key] && !oldKeyState[key];
 	}
 	
 	inline bool KeyPressed(u32 mod_key) {
@@ -152,9 +157,6 @@ struct Input{
 	inline void AddBind(std::string command, Key::Key key) {
 		
 	}
-	
-	
-	
 };
 
 //global input pointer

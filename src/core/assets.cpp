@@ -305,7 +305,7 @@ space_delimit_ignore_strings(std::string str){
 pair<std::string, std::string> deshi::
 split_keyValue(std::string str){
 	size_t idx = str.find_first_of(' ');
-	if (idx == -1) return make_pair<std::string, std::string>(str, std::string(""));
+	if (idx == -1) return pair<std::string, std::string>(str, std::string(""));
 	
 	std::string key = str.substr(0, idx);
 	std::string val;
@@ -325,7 +325,7 @@ split_keyValue(std::string str){
 		val = str.substr(start, end - start);
 	}
 	
-	return make_pair<std::string, std::string>(key, val);
+	return pair<std::string, std::string>(key, val);
 }
 
 std::map<std::string, std::string> deshi::

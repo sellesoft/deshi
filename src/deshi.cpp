@@ -179,6 +179,7 @@ ____we can store the text in the actual code and create the file from the code, 
 
 #include "core.h"
 #include "game/admin.h"
+#include "core/console2.h"
 
 Time*		 g_time;
 Window*		 g_window;
@@ -249,6 +250,16 @@ struct DeshiEngine {
 		imgui.NewFrame();                                                              //place imgui calls after this
 		TIMER_RESET(t_d); admin.Update();           time.adminTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); console.Update();         time.consoleTime = TIMER_END(t_d);
+		
+		if(input.KeyPressedAnyMod(Key::F1)){
+			if(input.ShiftDown()){
+				Console2::Toggle(ConsoleState_OpenSmall);
+			}else{
+				Console2::Toggle(ConsoleState_OpenBig);
+			}
+		}
+		Console2::Draw();
+		
 		TIMER_RESET(t_d); renderer.Render();        time.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time.adminTime += TIMER_END(t_d);
 		g_debug->Update(); //TODO(sushi) put a timer on this

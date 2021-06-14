@@ -20,9 +20,10 @@ struct Console  {
 	std::vector<std::string> history;
 	int historyPos = -1;
 
-	u32 error_count = 0;
-	std::string last_error;
-	bool cons_error_warn = false;
+	u32 alert_count = 0;
+	std::string alert_message;
+	Color alert_color = Color::RED;
+	bool show_alert = false;
 	
 	bool dispcon = false;
 	bool autoScroll = true;

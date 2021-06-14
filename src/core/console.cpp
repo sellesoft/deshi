@@ -73,9 +73,9 @@ void Console::AddLog(std::string input) {
 				buffer.push_back(std::pair<std::string, Color>(m[2].str(), colstrmap.at(m[1])));
 				buffersize += m[2].str().size();
 				if (m[1] == "error") {
-					cons_error_warn = true;
-					last_error = m[2].str();
-					error_count++;
+					show_alert = true;
+					alert_message = m[2].str();
+					alert_count++;
 				}
 			}
 			else {
@@ -87,6 +87,8 @@ void Console::AddLog(std::string input) {
 		}
 		buffer[buffer.size() - 1].first += "\n";
 	}
+
+
 }
 
 
@@ -94,7 +96,7 @@ Command* Console::GetCommand(std::string command) {
 	try {
 		return commands.at(command);
 	} catch (std::exception e) {
-		PushConsole(TOSTRING("[c:error]Command '", command, "' does not exist[c]"));
+		ERROR("Command, '",command,"' does not exist");
 		return 0;
 	}
 }
@@ -104,7 +106,8 @@ std::string Console::ExecCommand(std::string command) {
 		return commands.at(command)->Exec(g_admin, "");
 	}
 	else {
-		return "[c:red]Command[c] \"" + command + "\" [c:red]not found.[c]";
+		ERROR("Command, '",command,"' does not exist");
+		return "";
 	}
 }
 
@@ -113,7 +116,8 @@ std::string Console::ExecCommand(std::string command, std::string args) {
 		return commands.at(command)->Exec(g_admin, args);
 	}
 	else {
-		return "[c:red]Command[c] \"" + command + "\" [c:red]not found.[c]";
+		ERROR("Command, '",command,"' does not exist");
+		return "";
 	}
 }
 
@@ -443,6 +447,98 @@ void Console::FlushBuffer() {
 	
 }
 
+void Console::AddAliases() {
+	std::ifstream aliases;
+
+	std::string path = deshi::assetPath("aliases.cfg", AssetType_Config, false);
+	if (path != "") {
+		aliases = std::ifstream(path, std::ios::in);
+
+		char* c = (char*)malloc(255);
+		aliases.getline(c, 255);
+		std::string s(c);
+
+		std::string alias = s.substr(0, s.find_first_of(" "));
+		std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
+
+		Command* com;
+
+		try {
+			com = commands.at(command);
+			commands.emplace(alias, com);
+		}
+		catch (...) {
+			ERROR("Unknown command \"", command, "\" was attempted to be aliased from aliases.cfg");
+		}
+	}
+	else {
+		LOG("Creating aliases file..");
+		deshi::writeFile(deshi::dirConfig() + "aliases.cfg", "", 0);
+
+		return;
+	}
+
+}
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////
+// console init and update
+//////////////////////////////////////////////////////////////////////
+
+void Console::Init() {
+	AddLog("[c:dcyan]Deshi Console ver. 0.5.1[c]");
+	AddLog("\"listc\" for a list of commands\n\"help {command}\" to view a commands help page");
+	AddLog("see console_release_notes.txt for version information");
+	AddLog("\n[c:dyellow]Console TODOS:[c]");
+	AddLog("> implement argument completion for commands\n"
+		"> implement arguments for commands that need them\n"
+		"> add help to commands that don't have a descriptive help yet\n"
+		"> fix tabcompletion when trying to complete the first word\n"
+		"> (maybe) rewrite to use characters in the buffer rather than whole strings\n"
+		"> (maybe) implement showing autocomplete as you type");
+
+	AddCommands();
+	AddAliases();
+}
+
+void Console::Update() {
+	if (dispcon) {
+		DrawConsole();
+		CONSOLE_KEY_CAPTURE = true;
+	}else{
+		CONSOLE_KEY_CAPTURE = false;
+	}
+
+	if (buffersize >= 120000) {
+		FlushBuffer();
+		buffer.clear();
+		buffersize = 0;
+	}
+
+	if (dispcon && show_alert) {
+		show_alert = false; alert_count = 0;
+	}
+}
+
+//Flush the buffer at program close and clean up commands
+//TODO(sushi, Con) fix this once we have new command system
+void Console::CleanUp() {
+	FlushBuffer();
+	//for (auto pair : commands) { 
+	//	if (pair.second) {
+	//		try {
+	//			delete pair.second; 
+	//			pair.second = nullptr; 
+	//		}
+	//		catch (...) {
+	//			pair.second = nullptr;
+	//		}
+	//	}
+	//} commands.clear();
+}
 
 
 ///////////////////////////////////////////////////////////////////////
@@ -1164,15 +1260,7 @@ CMDSTARTA(add_trigger, args.size() > 0) {
 	return TOSTRING("Created trigger");
 }CMDEND("add_trigger -type=[ColliderType] -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)")
 
-
 void Console::AddCommands(){
-	//TODO(sushi,Cmd) reimplement this at some point
-	//commands["debug_global"] = new Command([](EntityAdmin* admin, std::vector<std::string> args) -> std::string {
-	//	GLOBAL_DEBUG = !GLOBAL_DEBUG;
-	//	if (GLOBAL_DEBUG) return "GLOBAL_DEBUG = true";
-	//	else return "GLOBAL_DEBUG = false";
-	//}, "debug_global", "debug_global");
-	
 	CMDADD(add_trigger, "adds a trigger collider entity");
 	CMDADD(level, "Loads a level from the levels directory");
 	CMDADD(engine_pause, "Toggles pausing the engine");
@@ -1221,100 +1309,4 @@ void Console::AddCommands(){
 	CMDADD(texture_list, "Lists the textures and their info");
 	CMDADD(texture_type_list, "Lists the texture types and their IDs");
 	CMDADD(quit, "Exits the application");
-	
 }
-
-void Console::AddAliases() {
-	std::ifstream aliases;
-	
-	std::string path = deshi::assetPath("aliases.cfg", AssetType_Config, false);
-	if (path != "") {
-		aliases = std::ifstream(path, std::ios::in);
-		
-		char* c = (char*)malloc(255);
-		aliases.getline(c, 255);
-		std::string s(c);
-		
-		std::string alias = s.substr(0, s.find_first_of(" "));
-		std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
-		
-		Command* com;
-		
-		try {
-			com = commands.at(command);
-			commands.emplace(alias, com);
-		}
-		catch (...) {
-			ERROR("Unknown command \"", command, "\" was attempted to be aliased from aliases.cfg");
-		}
-	}
-	else {
-		LOG("Creating aliases file..");
-		deshi::writeFile(deshi::dirConfig() + "aliases.cfg", "", 0);
-		
-		return;
-	}
-	
-}
-
-
-
-
-
-///////////////////////////////////////////////////////////////////////
-// console init and update
-//////////////////////////////////////////////////////////////////////
-
-void Console::Init() {
-	AddLog("[c:dcyan]Deshi Console ver. 0.5.1[c]");
-	AddLog("\"listc\" for a list of commands\n\"help {command}\" to view a commands help page");
-	AddLog("see console_release_notes.txt for version information");
-	AddLog("\n[c:dyellow]Console TODOS:[c]");
-	AddLog("> implement argument completion for commands\n"
-		   "> implement arguments for commands that need them\n"
-		   "> add help to commands that don't have a descriptive help yet\n"
-		   "> fix tabcompletion when trying to complete the first word\n"
-		   "> (maybe) rewrite to use characters in the buffer rather than whole strings\n"
-		   "> (maybe) implement showing autocomplete as you type");
-	
-	AddCommands();
-	AddAliases();
-}
-
-void Console::Update() {
-	if (dispcon) {
-		DrawConsole();
-		CONSOLE_KEY_CAPTURE = true;
-	}else{
-		CONSOLE_KEY_CAPTURE = false;
-	}
-	
-	if (buffersize >= 120000) {
-		FlushBuffer();
-		buffer.clear();
-		buffersize = 0;
-	}
-	
-	if (dispcon && cons_error_warn) {
-		cons_error_warn = false; error_count = 0;
-	}
-}
-
-//Flush the buffer at program close and clean up commands
-//TODO(sushi, Con) fix this once we have new command system
-void Console::CleanUp() {
-	FlushBuffer();
-	//for (auto pair : commands) { 
-	//	if (pair.second) {
-	//		try {
-	//			delete pair.second; 
-	//			pair.second = nullptr; 
-	//		}
-	//		catch (...) {
-	//			pair.second = nullptr;
-	//		}
-	//	}
-	//} commands.clear();
-}
-//Old format for console/old code
-

@@ -208,6 +208,9 @@
     <ClInclude Include="..\src\game\entities\Trigger.h">
       <Filter>src\game\entities\h</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\core\console2.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -489,6 +492,9 @@
     </ClCompile>
     <ClCompile Include="..\src\game\entities\Trigger.cpp">
       <Filter>src\game\entities\cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\console2.cpp">
+      <Filter>src\core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

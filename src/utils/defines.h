@@ -5,6 +5,7 @@
 //math constants and macros
 #define M_EPSILON    0.001f
 #define M_PI         3.14159265359f
+#define M_2PI        6.28318530718f
 #define M_E          2.71828182846f
 #define M_SQRT_TWO   1.41421356237f
 #define M_SQRT_THREE 1.73205080757f

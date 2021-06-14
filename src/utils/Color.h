@@ -57,6 +57,14 @@ struct Color {
 	Color operator * (Color rhs) {
 		return Color(r * rhs.r, g * rhs.g, b * rhs.b);
 	}
+
+	Color operator * (float rhs) {
+		return Color(r*rhs, g*rhs, b*rhs, a*rhs);
+	}
+
+	void operator *= (float rhs) {
+		this->r *= rhs; this->g *= rhs; this->b *= rhs; this->a *= rhs;
+	}
 	
 	Color operator * (float& rhs) const {
 		return Color(r * rhs, g * rhs, b * rhs);
