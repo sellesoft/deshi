@@ -721,6 +721,7 @@ void Editor::MenuBar() {
 
 
 //NOTE sushi: this is really bad, but i just need it to work for now
+//TODO(sushi, ClUi) completely rewrite this menu
 inline void EventsMenu(Entity* current) {
     using namespace ImGui;
     
@@ -1967,7 +1968,9 @@ inline void GlobalTab(EntityAdmin* admin){
             admin->pause_phys = !admin->pause_phys;
         }    
         ImGui::Text("Gravity       "); ImGui::SameLine(); ImGui::InputFloat("##global_gravity", &admin->physics.gravity);
-		
+
+        //ImGui::Text("Phys TPS      "); ImGui::SameLine(); ImGui::InputFloat("##phys_tps", )
+
         //// camera properties ////
         ImGui::Separator();
         ImGui::Text("Camera"); ImGui::SameLine(); ImGui::SetCursorPosX(ImGui::GetWindowWidth()*.5f);

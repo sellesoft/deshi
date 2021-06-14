@@ -36,8 +36,8 @@ struct Manifold3 {
 	b32 player = 0;
  
 	int refID = 0;
-	std::vector<Vector3> colpoints;
-	std::vector<Vector3> depth;
+	//point then depth
+	std::vector<pair<Vector3, float>> colpoints;
 	
 	Vector3 norm;
 };

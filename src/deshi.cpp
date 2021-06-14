@@ -20,7 +20,8 @@ ____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
-custom String8 and String16 types as a replacement to std::string
+custom str8 and str16 types as a replacement to std::string
+____and maybe a string/str type as default?
 create a hot-loadable global vars file
 detach camera from the renderer so that the camera component isnt calling the renderer
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
@@ -86,6 +87,7 @@ geometry shaders
 Level Editor and Inspector TODOs
 ------------------
 combine create tab into entities tab
+orthographic grabbing/rotating
 add transfering the player pointer between entities that have an actor comp (combo in Global Tab)
 orbitting camera for rotating around objects
 context menu when right clicking on an object 
@@ -163,10 +165,12 @@ write a preprocessing/postprocessing compiler that makes saving easier
 
 Bug Board
 ---------
-after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and 
+rotating using R no longer seems to work, it wildly rotates the object and I feel
+____like it has something to do with our rotate by axis function
+look into scaling not rotating (scaling is probably being done in world not local)
+???after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and 
 ____the batchArray size of whatever mesh its checking is something like 400000000000
 	____it looks like some sort of corrupt mesh makes its way in there somehow?
-look into scaling not rotating (scaling is probably being done in world not local)
 sometimes MeshComp is assigned a nonexistant mesh
 ____temp fix by checking if minimized, but need to find root cause
 program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)

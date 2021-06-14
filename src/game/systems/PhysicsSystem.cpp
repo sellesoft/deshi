@@ -13,7 +13,11 @@
 
 u32 collCount;
 
-bool breakphys = false;
+bool breakphys = true;
+
+//counter for debugging where in the physics tick something happens
+//if something happens in 2 different ticks etc
+u32 physTickCounter = 0;
 
 struct PhysicsTuple { 
 	Transform* transform = nullptr; 
@@ -406,12 +410,14 @@ inline void BoxBoxCollision(Physics* box, BoxCollider* boxCol, Physics* other, B
 
 //This is currently done by SAT
 inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Physics* obj2, ComplexCollider* obj2Col) {
+	LOG("tick ", physTickCounter, " with ", obj1->entity->id, " against ", obj2->entity->id, " -------------------");
+	
 	Physics* o1 = obj1; Physics* o2 = obj2;
 	ComplexCollider* o1c = obj1Col; ComplexCollider* o2c = obj2Col;
 	Physics* refphys = nullptr;
 
-	mat4 o1transform = Matrix4::TransformationMatrix(obj1->position, obj1->rotation, obj1->scale);
-	mat4 o2transform = Matrix4::TransformationMatrix(obj2->position, obj2->rotation, obj2->scale);
+	mat4 o1transform = obj1->entity->transform.TransformMatrix();
+	mat4 o2transform = obj2->entity->transform.TransformMatrix();
 
 	mat4 o1rotation = Matrix4::RotationMatrix(obj1->rotation);
 	mat4 o2rotation = Matrix4::RotationMatrix(obj2->rotation);
@@ -428,39 +434,65 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	f32  t;
 	int  index = 0;
 	bool done = false;
+
+	float saved = 0;
+	float saved2 = 0;
+	
+	Vector3 save;
+	Vector3 save2;
+
+	Vector3 saven;
+	Vector3 saven2;
+
 	for (int shape = 0; shape < 2; shape++) {
 		if (shape == 1) { o1c = obj2Col; o2c = obj1Col; }
 
 		for (Batch& b : o1c->mesh->batchArray) {
 			for (u32 i = 0; i < b.indexArray.size(); i += 3) {
 				p0 = b.vertexArray[b.indexArray[i + 0]].pos * o1transform;
-				p1 = b.vertexArray[b.indexArray[i + 1]].pos * o1transform;
-				p2 = b.vertexArray[b.indexArray[i + 2]].pos * o1transform;
 				normal = b.vertexArray[b.indexArray[i + 0]].normal * o1rotation;
-
+				saven2 = normal;
 				float deepest = INFINITY;
-
 				for (Batch& b2 : o2c->mesh->batchArray) {
 					//this would maybe work better using just the indexarray, not sure yet tho
 					for (u32 j = 0; j < b2.vertexArray.size(); j++) {
 						Vector3 vert = b2.vertexArray[j].pos * o2transform;
-						float vertdepth = dist(p0, normal, vert);
-
+						float vertdepth = -dist(p0, normal, vert);
+						//ImGui::DebugDrawLine3(p0, p0 + normal * vertdepth, Color::VERY_DARK_MAGENTA);
+						saved = vertdepth;
+						save = vert;
+						saven = b2.vertexArray[j].normal * o2rotation;
 						if (vertdepth < deepest) deepest = vertdepth;
 					}
 				}
-				if (deepest > 0) return false;
+				//LOG(deepest);
+				if (deepest > 0) {
+					ImGui::DebugDrawLine3(p0, p0 + normal * saved, Color::GREEN);
+					ERROR("func failed with deepest ", deepest);
+					return false;
+				}
 				else if (deepest > minpen) {
 					minpen = deepest;
 					bestnorm = normal;
 					refphys = o1;
-				}
+					save2 = p0;
 
+				}
 			}
 		}
-
 	}
 
+	SUCCESS("func succeded with minpen ", minpen);
+
+	ImGui::DebugDrawLine3(save, save + minpen * saven, Color::BLACK);
+	//ImGui::DebugDrawLine3(save2, save2 + saved2 * saven2, Color::DARK_YELLOW);
+	ImGui::DebugDrawCircle3(save + minpen * saven, 5, Color::MAGENTA);
+
+	ImGui::DebugDrawLine3(save + minpen * saven, save2);
+
+	ImGui::DebugDrawLine3(obj1->position, obj2->position, Color::RED);
+
+	return true;
 
 }
 
@@ -797,6 +829,12 @@ inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other, std::vector
 				
 			}break;
 		}break;
+		case ColliderType_Complex:
+		switch (other.collider->type) {
+			case(ColliderType_Complex): {
+				ComplexComplexCollision(tuple.physics, (ComplexCollider*)tuple.collider, other.physics, (ComplexCollider*)other.collider);
+			}
+		}
 	}
 }
 
@@ -841,6 +879,7 @@ void PhysicsSystem::Update() {
 	TIMER_START(physLocalTime);
 	while(DengTime->fixedAccumulator >= DengTime->fixedDeltaTime) {
 		collCount = 0;
+		physTickCounter++;
 		for(auto& t : tuples) {
 			if (TIMER_END(physLocalTime) > 5000 && breakphys) {
 				admin->pause_phys = true;
@@ -851,13 +890,15 @@ void PhysicsSystem::Update() {
 				admin->player->GetComponent<Movement>()->Update();
 			}
 			
-			if(admin->player != t.physics->entity) PhysicsTick(t, this, DengTime);
+			if(admin->player != t.physics->entity) 
+				PhysicsTick(t, this, DengTime);
 			CollisionTick(tuples, t);
 		}
 		DengTime->fixedAccumulator -= DengTime->fixedDeltaTime;
 		DengTime->fixedTotalTime += DengTime->fixedDeltaTime;
 		collisionCount = collCount;
 	}
+	physTickCounter = 0;
 	physend:
 	//interpolate between new physics position and old transform position by the leftover time
 	float alpha = DengTime->fixedAccumulator / DengTime->fixedDeltaTime;
