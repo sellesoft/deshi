@@ -42,6 +42,7 @@ https://vkguide.dev/docs/extra-chapter/abstracting_descriptors/
 
 const std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 const std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME };
+const std::vector<VkValidationFeatureEnableEXT> validationFeaturesEnabled = { VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT };
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
@@ -1063,7 +1064,7 @@ RemoveMaterial(u32 matID){
 void Renderer::
 LoadDefaultAssets(){
 	PRINTVK(2, "  Loading default assets");
-
+	
 	//load default textures
 	textures.reserve(16);
 	LoadTexture("null128.png", 0);
@@ -1207,10 +1208,16 @@ CreateInstance() {
 	VkApplicationInfo appInfo{};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = "deshi";
-	appInfo.applicationVersion = VK_MAKE_VERSION(0,5,0);
+	appInfo.applicationVersion = VK_MAKE_VERSION(1,0,0);
 	appInfo.pEngineName = "deshi";
-	appInfo.engineVersion = VK_MAKE_VERSION(0,5,0);
+	appInfo.engineVersion = VK_MAKE_VERSION(1,0,0);
 	appInfo.apiVersion = VK_API_VERSION_1_0;
+	
+	VkValidationFeaturesEXT validationFeatures{VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT};
+	validationFeatures.disabledValidationFeatureCount = 0;
+	validationFeatures.pDisabledValidationFeatures = nullptr;
+	validationFeatures.enabledValidationFeatureCount = validationFeaturesEnabled.size();
+	validationFeatures.pEnabledValidationFeatures = validationFeaturesEnabled.data();
 	
 	std::vector<const char*> extensions = getRequiredExtensions();
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
@@ -1218,12 +1225,13 @@ CreateInstance() {
 	VkInstanceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pApplicationInfo = &appInfo;
-	createInfo.enabledExtensionCount = static_cast<u32>(extensions.size());
+	createInfo.enabledExtensionCount = (u32)extensions.size();
 	createInfo.ppEnabledExtensionNames = extensions.data();
 	if(enableValidationLayers) {
-		createInfo.enabledLayerCount = static_cast<u32>(validationLayers.size());
+		createInfo.enabledLayerCount = (u32)validationLayers.size();
 		createInfo.ppEnabledLayerNames = validationLayers.data();
 		populateDebugMessengerCreateInfo(debugCreateInfo);
+		debugCreateInfo.pNext = &validationFeatures;
 		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
 	} else {
 		createInfo.enabledLayerCount = 0;
@@ -1290,16 +1298,27 @@ populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 	PRINTVK(3, "    Populating Debug Messenger CreateInfo");
 	createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	createInfo.messageSeverity = /*VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |*/ VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	createInfo.messageSeverity = /*VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |*/ VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	createInfo.pfnUserCallback = debugCallback;
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL Renderer::
 debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-	//TODO(sushi, Con) fix console color formatting for this case
-	DengConsole->PushConsole(TOSTRING("[c:error]", pCallbackData->pMessage, "[c]"));
-	PRINTLN("/\\ "<< pCallbackData->pMessage);
+	switch(messageSeverity){
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT: {
+			ERROR("Vulkan: ", pCallbackData->pMessage); 
+		}break;
+		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: {
+			WARNING("Vulkan: ", pCallbackData->pMessage); 
+		}break;
+		default:{
+			LOG("Vulkan: ", pCallbackData->pMessage);
+		}break;
+	}
+	//PRINTLN("/\\ "<< pCallbackData->pMessage);
 	return VK_FALSE;
 }
 
@@ -3319,7 +3338,7 @@ BuildCommandBuffers() {
 	for(int i = 0; i < imageCount; ++i){
 		renderPassInfo.framebuffer = frames[i].framebuffer;
 		VkDeviceSize offsets[1] = { 0 };
-
+		
 		ASSERTVK(vkBeginCommandBuffer(frames[i].commandBuffer, &cmdBufferInfo), "failed to begin recording command buffer");
 		vkCmdBeginRenderPass(frames[i].commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdSetViewport(frames[i].commandBuffer, 0, 1, &viewport);
