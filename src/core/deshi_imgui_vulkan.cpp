@@ -16,8 +16,6 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
-#include <vector>
-
 void check_vk_result(VkResult err){
     if (err == 0)
         return;
@@ -41,7 +39,7 @@ void deshiImGui::Init(Renderer* renderer){
 	VkResult err;
 	
 	//Setup Platform/Renderer backends
-	ImGui_ImplGlfw_InitForVulkan(vkr->window->window, true);
+	ImGui_ImplGlfw_InitForVulkan(DengWindow->window, true);
 	ImGui_ImplVulkan_InitInfo init_info = {};
 	init_info.Instance = vkr->instance;
 	init_info.PhysicalDevice = vkr->physicalDevice;

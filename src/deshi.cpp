@@ -20,8 +20,7 @@ ____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
-custom str8 and str16 types as a replacement to std::string
-____and maybe a string/str type as default?
+make the engine runnable without the renderer
 create a hot-loadable global vars file
 detach camera from the renderer so that the camera component isnt calling the renderer
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
@@ -56,11 +55,7 @@ fix DESH material and event saving/loading
 
 Render TODOs
 ------------
-get debugPrintf extension to work
-debug normals
-____https://github.com/SaschaWillems/Vulkan/blob/master/examples/geometryshader/geometryshader.cpp
-____https://github.com/SaschaWillems/Vulkan/blob/master/data/shaders/glsl/geometryshader/normaldebug.geom
-____you can test it through PHONG shader for now
+add RenderSettings loading and usage
 change UpdateMaterialTexture to take in a textureType
 look into getting info from shaders, or setting up compute shaders
 ____the primary reason being that we need to optimize outlining objects, which will
@@ -69,20 +64,16 @@ redo MeshVk so its only child meshes
 ____avoid having 3 copies of a mesh (model, meshVK, vulkan)
 ability to do transparency in a fragment shader eg. we can do outColor = vec4(1,1,1,0.5)
 ___this would be for experimenting with volumetrics, making a window shader w/o need for textures, etc.
-add vertex editing interface functions
 add lighting and shadows
 add 2D shader and interface functions
 add face normal and tangents to vertex buffer
 fix texture transparency
-add RenderSettings loading and usage
 check those vulkan-tutorial links for the suggestions and optimizations
 add instancing
-look into adding volk for faster loading/function calls
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
 multi-threaded command buffers, shader loading, image loading
-find a way to forward declare vulkan stuff and move the include to the cpp
-SSBOs in shaders so we can pass variable length arrays to it 
-geometry shaders
+move interface functions out of vulkan files
+SSBOs in shaders so we can pass variable length arrays to it
 
 Level Editor and Inspector TODOs
 ------------------
@@ -170,7 +161,7 @@ ____like it has something to do with our rotate by axis function
 look into scaling not rotating (scaling is probably being done in world not local)
 ???after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and 
 ____the batchArray size of whatever mesh its checking is something like 400000000000
-	____it looks like some sort of corrupt mesh makes its way in there somehow?
+____it looks like some sort of corrupt mesh makes its way in there somehow?
 sometimes MeshComp is assigned a nonexistant mesh
 ____temp fix by checking if minimized, but need to find root cause
 program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
@@ -178,6 +169,7 @@ ____read this to try to fix: http://www.debuginfo.com/tips/userbpntdll.html
 some UI can be clicked thru and select the entity
 the program crashes if default asset files are not present
 ____we can store the text in the actual code and create the file from the code, like keybinds.cfg
+vulkan errors printed to stdout (works in our console) can infinite loop in another thread
 
 */
 
@@ -192,7 +184,6 @@ Console*	 g_console;
 Renderer*	 g_renderer;
 EntityAdmin* g_admin;
 Debug*       g_debug;
-
 
 struct DeshiEngine {
 	Time time;
@@ -211,19 +202,22 @@ struct DeshiEngine {
 	}
 	
 	void Start() {
-		//enforce deshi file system
+		//pre-init setup
 		deshi::enforceDirectories();
-		
-		//init core
 		LoadConfig();
+		
+		//init engine core
 		time.Init(300); //300 tps for physics
 		g_time = &time;
+
 		window.Init(&input, 1280, 720); //inits input as well
 		g_window = &window;
 		g_input = &input;
+
 		console.Init();
 		g_console = &console;
-		renderer.Init(&time, &input, &window, &imgui); //inits imgui as well
+
+		renderer.Init(&imgui); //inits imgui as well
 		g_renderer = &renderer;
 		g_debug = &debug;
 		

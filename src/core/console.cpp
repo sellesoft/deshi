@@ -29,6 +29,7 @@ std::regex Vec3Regex(const char* param)  { return std::regex(std::string("-")+ p
 
 using namespace ImGui;
 
+static_internal bool mirror_logging_to_stdout = false;
 int buffersize = 0;
 
 bool sel_com = false; //true when selecting an auto complete possibility
@@ -77,6 +78,8 @@ void Console::AddLog(std::string input) {
 					alert_message = m[2].str();
 					alert_count++;
 				}
+
+				
 			}
 			else {
 				//if we arent then just push the line into text vector
@@ -88,7 +91,7 @@ void Console::AddLog(std::string input) {
 		buffer[buffer.size() - 1].first += "\n";
 	}
 
-
+	if(mirror_logging_to_stdout) std::cout << input << std::endl;
 }
 
 
@@ -1163,11 +1166,6 @@ CMDFUNC(shader_list) {
 		"7    Test1           Testing shader 2");
 }
 
-CMDFUNC(shader_freeze) {
-	DengRenderer->shaderData.freeze = !DengRenderer->shaderData.freeze;
-	return (DengRenderer->shaderData.freeze) ? "Shaders frozen" : "Shaders unfrozen";
-}
-
 CMDSTARTA(mesh_visible, args.size() == 2) {
 		try {
 			int meshID = std::stoi(args[0]);
@@ -1304,7 +1302,6 @@ void Console::AddCommands(){
 	CMDADD(mat_list, "Shows the material list");
 	CMDADD(shader_reload, "Reloads selected shader");
 	CMDADD(shader_list, "Lists the shaders and their IDs");
-	CMDADD(shader_freeze, "Toggles shader data being uploaded to GPU");
 	CMDADD(mesh_visible, "Sets visibility of mesh");
 	CMDADD(mesh_batch_material, "Changes the material of a batch on a mesh"); 
 	CMDADD(texture_load, "Loads a specific texture");
