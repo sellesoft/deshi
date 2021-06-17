@@ -24,7 +24,7 @@ void Window::Init(Input* input, s32 width, s32 height, s32 x, s32 y, DisplayMode
 	glfwSetErrorCallback(&glfwError);
 	if (!glfwInit()){ return; }
 	Window::input = input;
-	
+
 	//TODO(delle,Wi) maybe we should not allow the window to be resizable in-game, but in-engine is fine
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

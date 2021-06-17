@@ -28,6 +28,7 @@ struct Console  {
 	bool dispcon = false;
 	bool autoScroll = true;
 	bool scrollToBottom = false;
+	bool window = false;
 	
 	//imgui capture flags
 	bool IMGUI_KEY_CAPTURE = false;

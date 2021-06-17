@@ -238,8 +238,10 @@ void Console::DrawConsole() {
 	io.BackendFlags = ImGuiBackendFlags_HasGamepad | ImGuiBackendFlags_HasMouseCursors | ImGuiBackendFlags_HasSetMousePos;
 	io.ConfigWindowsMoveFromTitleBarOnly = true;
 	io.ConfigWindowsResizeFromEdges = true;
+
 	
 	//window styling
+	
 	PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
 	PushStyleColor(ImGuiCol_Border, ColorToVec4(Color(0, 0, 0, 255)));
 	PushStyleColor(ImGuiCol_TitleBg, ColorToVec4(Color(0, 0, 0, 255)));
@@ -250,10 +252,12 @@ void Console::DrawConsole() {
 	PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColorToVec4(Color(48, 85, 90, 255)));
 	
 	//initialize console window
-	SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height / 1.5));
-	SetNextWindowPos(ImVec2(0, 0));
+	if (!window) {
+		SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height / 1.5));
+		SetNextWindowPos(ImVec2(0, 0));
+	}
 	
-	ImGui::Begin("Console!", 0, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove);
+	ImGui::Begin("Console!", 0);
 	
 	//capture mouse if hovering over this window
 	//TODO(sushi, InCon) this is working for some reason pls fix it 
@@ -315,7 +319,7 @@ void Console::DrawConsole() {
 	//TODO(sushi, Con) figure out why the scroll bar doesnt allow you to drag it
 	const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 	PushStyleColor(ImGuiCol_ChildBg, ColorToVec4(Color(4, 17, 21, 255)));
-	BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false);
+	BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve-20), false);
 	if (BeginPopupContextWindow()) {
 		if (ImGui::Selectable("hehe")) AddLog("hoho");
 		EndPopup();
@@ -356,6 +360,7 @@ void Console::DrawConsole() {
 	EndChild();
 	ImGui::PopStyleColor();
 	//get input from text box
+	
 	ImGuiInputTextFlags input_text_flags = 0;
 	if (!sel_com)  input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackAlways;
 	else  input_text_flags = 0;
@@ -364,6 +369,7 @@ void Console::DrawConsole() {
 	PushStyleColor(ImGuiCol_FrameBg, ColorToVec4(Color::VERY_DARK_CYAN));
 	SetNextItemWidth(ImGui::GetWindowWidth() - 15);
 	ImGui::SetItemDefaultFocus();
+	
 	if (InputText("", inputBuf, sizeof(inputBuf), input_text_flags, &TextEditCallbackStub, (void*)this)) {
 		
 		std::string s = inputBuf;
@@ -390,20 +396,24 @@ void Console::DrawConsole() {
 		memset(inputBuf, 0, sizeof(s)); //erase input from text box
 		
 		scrollToBottom = true; //scroll to bottom when we press enter
+		ImGui::SetKeyboardFocusHere(-1);
 	}
 	
-	
-	ImGui::SetKeyboardFocusHere(-1);
+	Checkbox("Window", &window);
+	//if (Button("Window")) {
+	//	window = !window;
+	//}
 	
 	reclaim_focus = false;
 	
 	//IMGUI_KEY_CAPTURE = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 	
-	ImGui::PopStyleColor();
-	ImGui::PopStyleColor();	    ImGui::PopStyleColor();
-	ImGui::PopStyleColor();	            ImGui::PopStyleColor();    ImGui::PopStyleVar();
-	ImGui::PopStyleColor();     ImGui::PopStyleColor();
-	ImGui::PopStyleColor();
+	ImGui::PopStyleColor(8);
+	ImGui::PopStyleVar();
+	//ImGui::PopStyleColor();	    ImGui::PopStyleColor();
+	//ImGui::PopStyleColor();	    ImGui::PopStyleColor();  
+	//ImGui::PopStyleColor();     ImGui::PopStyleColor();
+	//ImGui::PopStyleColor();
 	
 	//if we selected something from completion menu
 	//we have to do this here to prevent enter from sending a command

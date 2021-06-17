@@ -24,7 +24,7 @@ struct EditorSettings{
 struct Editor{
 	EntityAdmin* admin;
 	EditorSettings settings;
-	
+
 	std::vector<Entity*> selected;
 	Camera* camera;
 	UndoManager undo_manager;
@@ -33,6 +33,8 @@ struct Editor{
 	vec3 camera_pos;
 	vec3 camera_rot;
 	
+	bool showEditorWin;
+
 	bool showDebugTools;
 	bool showTimes;
 	bool showDebugBar;
@@ -50,6 +52,8 @@ struct Editor{
 	void TranslateEntity(Entity* e, TransformationAxis axis);
 	void RotateEntity(Entity* e, TransformationAxis axis);
 	
+	void CreateEditorWin();
+
 	void MenuBar();
 	void DebugLayer();
 	void DebugBar();

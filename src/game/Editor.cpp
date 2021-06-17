@@ -697,12 +697,14 @@ void Editor::MenuBar() {
             }
             EndMenu();
         }//agh
-        if (BeginMenu("Window")) { WinHovCheck; 
-            if (MenuItem("Entity Inspector")) showDebugTools = !showDebugTools;
-            if (MenuItem("Debug Bar"))        showDebugBar = !showDebugBar;
-            if (MenuItem("DebugLayer"))       showDebugLayer = !showDebugLayer;
-            if (MenuItem("Timers"))           showTimes = !showTimes;
-            if (MenuItem("ImGui Demo"))       showImGuiDemoWindow = !showImGuiDemoWindow;
+        if (BeginMenu("Window")) {
+            WinHovCheck;
+            if (MenuItem("Entity Inspector")) {  showDebugTools = !showDebugTools; showEditorWin = false;  }
+            if (MenuItem("Debug Bar"))           showDebugBar = !showDebugBar;
+            if (MenuItem("DebugLayer"))          showDebugLayer = !showDebugLayer;
+            if (MenuItem("Timers"))              showTimes = !showTimes;
+            if (MenuItem("ImGui Demo"))          showImGuiDemoWindow = !showImGuiDemoWindow;
+            if (MenuItem("Editor Window"))    {  showEditorWin = !showEditorWin; showDebugTools = false;  }
             EndMenu();
         }
         if (BeginMenu("State")) { WinHovCheck;
@@ -2636,6 +2638,8 @@ void Editor::Init(EntityAdmin* a){
     showImGuiDemoWindow = false;
     showDebugLayer      = true;
     ConsoleHovFlag      = false;
+
+    showEditorWin = false;
 	
     files = deshi::iterateDirectory(deshi::dirModels());
     textures = deshi::iterateDirectory(deshi::dirTextures());
@@ -2741,6 +2745,7 @@ void Editor::Update(){
         if (showDebugTools) DebugTools();
         if (showDebugBar)   DebugBar();
         if (showMenuBar)    MenuBar();
+        if (showEditorWin)  CreateEditorWin();
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1)); {
             if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
         }ImGui::PopStyleColor();
@@ -2801,4 +2806,73 @@ void Editor::Reset(){
     undo_manager.Reset();
     g_debug->meshes.clear();
     WorldGrid(camera->position);
+}
+
+void Editor::CreateEditorWin() {
+    using namespace ImGui;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+    ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
+    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 2));
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, ImVec2(1, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
+
+    ImGui::PushStyleColor(ImGuiCol_Border, ColToVec4(Color(0, 0, 0)));
+    ImGui::PushStyleColor(ImGuiCol_Button, ColToVec4(Color(40, 40, 40)));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ColToVec4(Color(48, 48, 48)));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ColToVec4(Color(60, 60, 60)));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ColToVec4(colors.c9));
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, ColToVec4(Color(20, 20, 20)));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, ColToVec4(Color(35, 45, 50)));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ColToVec4(Color(42, 54, 60)));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ColToVec4(Color(54, 68, 75)));
+    ImGui::PushStyleColor(ImGuiCol_TitleBg, ColToVec4(Color(0, 0, 0)));
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ColToVec4(Color(0, 0, 0)));
+    ImGui::PushStyleColor(ImGuiCol_Header, ColToVec4(Color(35, 45, 50)));
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ColToVec4(Color(0, 74, 74)));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ColToVec4(Color(0, 93, 93)));
+    ImGui::PushStyleColor(ImGuiCol_TableBorderLight, ColToVec4(Color(45, 45, 45)));
+    ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ColToVec4(Color(10, 10, 10)));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, ColToVec4(Color(10, 10, 10)));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, ColToVec4(Color(55, 55, 55)));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, ColToVec4(Color(75, 75, 75)));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColToVec4(Color(65, 65, 65)));
+    ImGui::PushStyleColor(ImGuiCol_TabActive, ColToVec4(Color::VERY_DARK_CYAN));
+    ImGui::PushStyleColor(ImGuiCol_TabHovered, ColToVec4(Color::DARK_CYAN));
+    ImGui::PushStyleColor(ImGuiCol_Tab, ColToVec4(colors.c1));
+    ImGui::PushStyleColor(ImGuiCol_Separator, ColToVec4(Color::VERY_DARK_CYAN));
+    ImGui::Begin("Editor Window", 0);
+    WinHovCheck;
+    if (DengInput->mouseX < GetWindowPos().x + GetWindowWidth()) {
+        WinHovFlag = true;
+    }
+    if (BeginTabBar("MajorTabs")) {
+        if (BeginTabItem("Entities")) {
+            EntitiesTab(admin, ImGui::GetFontSize());
+            EndTabItem();
+        }
+        if (BeginTabItem("Create")) {
+            CreateTab(admin, ImGui::GetFontSize());
+            EndTabItem();
+        }
+        if (BeginTabItem("Materials")) {
+            MaterialsTab(admin);
+            EndTabItem();
+        }
+        if (BeginTabItem("Global")) {
+            GlobalTab(admin);
+            EndTabItem();
+        }
+        //if (BeginTabItem("Brushes")) {
+        //BrushesTab(admin, ImGui::GetFontSize());
+        //EndTabItem();
+        //}
+        EndTabBar();
+    }
+    ImGui::PopStyleVar(8);
+    ImGui::PopStyleColor(24);
+    ImGui::End();
 }
