@@ -1,0 +1,40 @@
+>level
+name         "pitlevel"
+entity_count 13
+last_updated "06/11/2021 16:17:41"
+
+>materials
+0 "Flat" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+1 "Phong" 1 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+2 "TwoD" 2 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+
+>meshes
+5 "box.obj" 1 "1"
+6 "box.obj" 1 "1"
+7 "box.obj" 1 "1"
+8 "box.obj" 1 "1"
+9 "box.obj" 1 "1"
+10 "box.obj" 1 "1"
+11 "box.obj" 1 "1"
+12 "box.obj" 1 "1"
+13 "box.obj" 1 "1"
+14 "box.obj" 1 "0"
+15 "box.obj" 1 "0"
+16 "box.obj" 1 "0"
+
+>entities
+0 "pitfloor"
+1 "light1"
+2 "farplat"
+3 "playerplat"
+4 "pitwall2"
+5 "pitwall1"
+6 "frontwall"
+7 "backwall"
+8 "leftwall"
+9 "rightwall"
+10 "2dbox2"
+11 "player"
+12 "2dbox1"
+
+>events

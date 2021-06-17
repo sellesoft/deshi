@@ -259,8 +259,8 @@ void Console2::Draw(){
 				//RunCommand(input, args);
 				memset(input_buffer, 0, sizeof(input_buffer));
 			}
+			ImGui::SetKeyboardFocusHere(-1);
 		}
-		ImGui::SetKeyboardFocusHere(-1);
 		ImGui::PopStyleColor();
 		
 	}ImGui::End();
