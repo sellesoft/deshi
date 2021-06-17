@@ -12,6 +12,8 @@ https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-
 https://vkguide.dev/docs/extra-chapter/abstracting_descriptors/
 https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
 https://github.com/zeux/volk
+http://www.ludicon.com/castano/blog/2009/02/optimal-grid-rendering/
+http://gameangst.com/?p=9
 */
 
 #include "renderer_vulkan.h"
@@ -66,12 +68,67 @@ const bool CRASH_ON_ERROR = false;
 //// render interface ////
 //////////////////////////
 
-//TODO(delle,Re) load render settings from a file
 void Renderer::
-LoadRenderSettings(){
-    
-    
-    msaaSamples = maxMsaaSamples;
+SaveSettings(){
+    std::string text;
+	text = TOSTRING("#render settings config"
+					"\nvsync ", settings.vsync,
+					"\nmsaa  ", settings.msaa_samples,
+					"\n"
+					"\n#debug settings that require restart"
+					"\ndebugging ", (settings.debugging) ? "true" : "false",
+					"\nprintf    ", (settings.printf) ? "true" : "false",
+					"\n"
+					"\n#debug settings that can change at runtime"
+					"\nselected_color (",settings.selectedR,",",settings.selectedG,",",settings.selectedB,",",settings.selectedA,")"
+					"\ncollider_color (",settings.colliderR,",",settings.colliderG,",",settings.colliderB,",",settings.colliderA,")"
+					"\nwireframe      ", (settings.wireframe) ? "true" : "false",
+					"\nwireframeOnly  ", (settings.wireframeOnly) ? "true" : "false",
+					"\nglobalAxis     ", (settings.globalAxis) ? "true" : "false",
+					"\nnormals        ", (settings.normals) ? "true" : "false",
+					"\n");
+    deshi::writeFile(deshi::dirConfig() + "render.cfg", text.c_str(), text.size());
+}
+
+void Renderer::
+LoadSettings(){
+	std::string filepath = deshi::dirConfig() + "render.cfg";
+	char* buffer = deshi::readFileAsciiToArray(filepath);
+	if(!buffer) return SaveSettings();
+	defer{ delete[] buffer; };
+	
+	std::string line;
+	char* new_line = buffer-1;
+	char* line_start;
+	for(u32 line_number = 1; ;line_number++){
+		//get the next line
+		line_start = new_line+1;
+		if((new_line = strchr(line_start, '\n')) == 0) break; //end of file if cant find '\n'
+		line = std::string(line_start, new_line-line_start);
+		
+		line = deshi::eat_comments(line);
+		line = deshi::eat_spaces_leading(line);
+		line = deshi::eat_spaces_trailing(line);
+		if(line.empty()) continue;
+		
+		auto kv = deshi::split_keyValue(line);
+		
+		if     (kv.first == "vsync")    { settings.vsync        = std::stoi(kv.second); }
+		else if(kv.first == "msaa")     { settings.msaa_samples = std::stoi(kv.second); }
+		else if(kv.first == "debugging"){ settings.debugging    = deshi::parse_bool(kv.second, filepath.c_str(), line_number); }
+		else if(kv.first == "printf")   { settings.printf       = deshi::parse_bool(kv.second, filepath.c_str(), line_number); }
+		else if(kv.first == "selected_color"){ auto rgba = deshi::character_delimit(kv.second, ',');
+			settings.selectedR = std::stoi(rgba[0]); settings.selectedG = std::stoi(rgba[1]);
+			settings.selectedB = std::stoi(rgba[2]); settings.selectedA = std::stoi(rgba[3]); }
+		else if(kv.first == "collider_color"){ auto rgba = deshi::character_delimit(kv.second, ',');
+			settings.colliderR = std::stoi(rgba[0]); settings.colliderG = std::stoi(rgba[1]);
+			settings.colliderB = std::stoi(rgba[2]); settings.colliderA = std::stoi(rgba[3]); }
+		else if(kv.first == "wireframe")    { settings.wireframe     = deshi::parse_bool(kv.second, filepath.c_str(), line_number); }
+		else if(kv.first == "wireframeOnly"){ settings.wireframeOnly = deshi::parse_bool(kv.second, filepath.c_str(), line_number); }
+		else if(kv.first == "globalAxis")   { settings.globalAxis    = deshi::parse_bool(kv.second, filepath.c_str(), line_number); }
+		else if(kv.first == "normals")      { settings.normals       = deshi::parse_bool(kv.second, filepath.c_str(), line_number); }
+		else{ "Error parsing '",filepath,"' on line '",line_number,"'! Invalid key '",kv.first,"' for renderer config"; }
+	}
 }
 
 void Renderer::
@@ -82,6 +139,8 @@ Init(deshiImGui* imgui) {
     width = DengWindow->width;
     height = DengWindow->height;
     
+	LoadSettings();
+	
     TIMER_START(t_temp);
     CreateInstance();
     PRINTVK(3, "Finished creating instance in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
@@ -93,8 +152,10 @@ Init(deshiImGui* imgui) {
     PRINTVK(3, "Finished picking physical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreateLogicalDevice();
     PRINTVK(3, "Finished creating logical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-    
-    LoadRenderSettings();
+	
+	//NOTE currently disabled b/c of my resolve setup
+	//msaaSamples = (VkSampleCountFlagBits)(((1 << settings.msaa_samples) > maxMsaaSamples) ? settings.msaa_samples : 1 << settings.msaa_samples);
+	msaaSamples = maxMsaaSamples;
     
     CreateSwapChain();
     PRINTVK(3, "Finished creating swap chain in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
@@ -270,6 +331,8 @@ Reset() {
 void Renderer::
 Cleanup() {
     PRINTVK(1, "Initializing Cleanup\n");
+	
+	SaveSettings();
     
     //save pipeline cache to disk
     if(pipelineCache != VK_NULL_HANDLE){
@@ -1868,7 +1931,7 @@ CreateUniformBuffer(){
     uboVS.bufferDescriptor.buffer = uboVS.buffer;
     uboVS.bufferDescriptor.offset = 0;
     uboVS.bufferDescriptor.range  = sizeof(uboVS.values);
-
+	
     if(settings.debugging && enabledFeatures.geometryShader){
         //create geometry shader ubo
         CreateOrResizeBuffer(uboGS.buffer, uboGS.bufferMemory, uboGS.bufferSize, sizeof(uboGS.values), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -1884,18 +1947,18 @@ void Renderer::
 UpdateUniformBuffer(){
     ASSERT(rendererStage & RSVK_UNIFORMBUFFER, "UpdateUniformBuffer called before CreateUniformBuffer");
     //PRINTVK(2, "  Updating Uniform Buffer");
-
+	
     uboVS.values.time = DengTime->totalTime;
     uboVS.values.width = (glm::f32)extent.width;
     uboVS.values.height = (glm::f32)extent.height;
     std::copy(lights, lights + 10, uboVS.values.lights);
     uboVS.values.mousepos = glm::vec2(DengInput->mousePos.x, DengInput->mousePos.y);
-        
+	
     //get point projected out from mouse 
     if (initialized){
         Vector3 pos = Math::ScreenToWorld(DengInput->mousePos,
-                                            Matrix4(&uboVS.values.proj[0][0]),
-                                            Matrix4(&uboVS.values.view[0][0]), DengWindow->dimensions);
+										  Matrix4(&uboVS.values.proj[0][0]),
+										  Matrix4(&uboVS.values.view[0][0]), DengWindow->dimensions);
         uboVS.values.mouseWorld = glm::vec3(pos.x, pos.y, pos.z);
     }
     //map shader data to vertex shader uniform buffer
@@ -1903,12 +1966,12 @@ UpdateUniformBuffer(){
     vkMapMemory(device, uboVS.bufferMemory, 0, sizeof(uboVS.values), 0, &data);{
         memcpy(data, &uboVS.values, sizeof(uboVS.values));
     }vkUnmapMemory(device, uboVS.bufferMemory);
-
+	
     //update geometry shader's uniform buffer
     if(settings.debugging && enabledFeatures.geometryShader){
         uboGS.values.view = uboVS.values.view;
         uboGS.values.proj = uboVS.values.proj;
-
+		
         void* data;
         vkMapMemory(device, uboGS.bufferMemory, 0, sizeof(uboGS.values), 0, &data);{
             memcpy(data, &uboGS.values, sizeof(uboGS.values));
@@ -2062,13 +2125,13 @@ CreateLayouts(){
     descriptorSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
     descriptorSetLayoutCI.bindingCount = 1;
-
+	
     if(settings.debugging && enabledFeatures.geometryShader){
         setLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         setLayoutBindings[1].stageFlags = VK_SHADER_STAGE_GEOMETRY_BIT;
         setLayoutBindings[1].binding = 1;
         setLayoutBindings[1].descriptorCount = 1;
-
+		
         descriptorSetLayoutCI.bindingCount = 2;
     }
     
@@ -2128,7 +2191,7 @@ CreateLayouts(){
         allocInfo.descriptorPool = descriptorPool;
         allocInfo.pSetLayouts = &descriptorSetLayouts.ubos;
         allocInfo.descriptorSetCount = 1;
-
+		
         ASSERTVK(vkAllocateDescriptorSets(device, &allocInfo, &uboDescriptorSet), "failed to allocate uboDescriptorSet");
         
         std::array<VkWriteDescriptorSet, 2> writeDescriptorSets{};
@@ -2139,7 +2202,7 @@ CreateLayouts(){
         writeDescriptorSets[0].dstBinding = 0;
         writeDescriptorSets[0].pBufferInfo = &uboVS.bufferDescriptor;
         writeDescriptorSets[0].descriptorCount = 1;
-
+		
         if(settings.debugging && enabledFeatures.geometryShader){
             //binding 1: geometry shader ubo
             writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -2148,7 +2211,7 @@ CreateLayouts(){
             writeDescriptorSets[1].dstBinding = 1;
             writeDescriptorSets[1].pBufferInfo = &uboGS.bufferDescriptor;
             writeDescriptorSets[1].descriptorCount = 1;
-
+			
             vkUpdateDescriptorSets(device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
         }else{
             vkUpdateDescriptorSets(device, 1, writeDescriptorSets.data(), 0, nullptr);
@@ -2385,12 +2448,12 @@ CreatePipelines(){
     shaderStages[1] = loadShader("base.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
     pipelineCreateInfo.stageCount = 2;
     ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.base), "failed to create base graphics pipeline");
-
+	
     //all other pipelines are derivatives
     pipelineCreateInfo.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
     pipelineCreateInfo.basePipelineHandle = pipelines.base;
     pipelineCreateInfo.basePipelineIndex = -1; //can either use handle or index, not both (section 9.5 of vulkan spec)
-
+	
     //flat pipeline
     shaderStages[0] = loadShader("flat.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
     shaderStages[1] = loadShader("flat.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -2508,7 +2571,7 @@ CreatePipelines(){
     shaderStages[1] = loadShader("lavalamp.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
     pipelineCreateInfo.stageCount = 2;
     ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.lavalamp), "failed to create lavalamp graphics pipeline");
-
+	
     if(settings.debugging){
         //normal debugging
         shaderStages[0] = loadShader("base.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
@@ -2624,7 +2687,7 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
                                               filename.c_str(), "main", options);
         }else if(ext.compare(".geom") == 0){
             result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_geometry_shader, 
-                filename.c_str(), "main", options);
+											  filename.c_str(), "main", options);
         }else{ ASSERT(false, "unsupported shader"); }
         
         //check for errors
@@ -2684,7 +2747,7 @@ CompileAllShaders(bool optimize){
                                               filename.c_str(), "main", options);
         }else if(ext.compare(".geom") == 0){
             result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_geometry_shader, 
-                filename.c_str(), "main", options);
+											  filename.c_str(), "main", options);
         }else{ continue; }
         
         //check for errors
@@ -2734,7 +2797,7 @@ CompileShader(std::string& filename, bool optimize){
                                               filename.c_str(), "main", options);
         }else if(ext.compare(".geom") == 0){
             result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_geometry_shader, 
-                filename.c_str(), "main", options);
+											  filename.c_str(), "main", options);
         }else{ return; }
         
         //check for errors
@@ -3162,13 +3225,13 @@ BuildCommandBuffers() {
         vkCmdBeginRenderPass(frames[i].commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdSetViewport(frames[i].commandBuffer, 0, 1, &viewport);
         vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
-
+		
         //bind vertex shader ubo
         vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboDescriptorSet, 0, nullptr);
         
         //reset offsets
         VkDeviceSize offsets[1] = { 0 };
-
+		
         //draw mesh brushes
         if (!generatingWorldGrid) {
             vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe_depth);
@@ -3182,7 +3245,7 @@ BuildCommandBuffers() {
                 }
             }
         }
-
+		
         //draw meshes
         vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &vertices.buffer, offsets);
         vkCmdBindIndexBuffer(frames[i].commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
@@ -3247,7 +3310,7 @@ BuildCommandBuffers() {
                 }
             }
         }
-
+		
         //draw debugging normals
         if(settings.debugging && enabledFeatures.geometryShader && settings.normals){
             vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.normals);
@@ -3255,7 +3318,7 @@ BuildCommandBuffers() {
                 if(mesh.visible && mesh.primitives.size() > 0){
                     //push the mesh's model matrix to the shader
                     vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(glm::mat4), &mesh.modelMatrix);
-
+					
                     for (PrimitiveVk& primitive : mesh.primitives) {
                         if (primitive.indexCount > 0) {
                             vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);

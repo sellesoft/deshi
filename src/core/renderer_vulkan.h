@@ -30,35 +30,24 @@ struct Vector4; struct Vector3; struct Vector2; struct Color;
 typedef u8 stbi_uc;
 
 enum VSyncTypeBits : u32{
-    VSyncType_Fifo, VSyncType_FifoRelaxed, VSyncType_Mailbox, VSyncType_Immediate
+    VSyncType_Immediate, VSyncType_FifoRelaxed, VSyncType_Mailbox, VSyncType_Fifo
 }; typedef u32 VSyncType;
 
 struct RenderSettings{ //loaded from file
-    VSyncType vsync;
-    bool reduceBuffering;
-    f32  brightness;
-    f32  gamma;
-    u32  presetLevel;
-    u32  anisotropicFiltering;
-    u32  antiAliasing = 0;
-    u32  shadowQuality;
-    u32  modelQuality;
-    u32  textureQuality;
-    u32  reflectionQuality;
-    u32  lightQuality;
-    u32  shaderQuality;
+	VSyncType vsync  = VSyncType_Immediate;
+	u32 msaa_samples = 0;
     
     //debug settings that require restart
-    bool debugging = true;
-    bool printf = true;
-
+    b32 debugging = true;
+    b32 printf    = true;
+	
     //debug settings that can change at runtime
-    u8 selectedR = 204, selectedG = 125, selectedB = 41, selectedA = 255;
-    u8 colliderR = 116, colliderG = 186, colliderB = 67, colliderA = 255;
-    bool wireframe  = false;
-    bool wireframeOnly = false;
-    bool globalAxis = false;
-    bool normals = false;
+    u8  selectedR = 204, selectedG = 125, selectedB = 41, selectedA = 255;
+    u8  colliderR = 116, colliderG = 186, colliderB = 67, colliderA = 255;
+    b32 wireframe     = false;
+    b32 wireframeOnly = false;
+    b32 globalAxis    = false;
+    b32 normals       = false;
 };
 
 struct RenderStats{
@@ -218,7 +207,8 @@ struct Renderer{
     //////////////////////////
     //// render interface ////
     //////////////////////////
-    void LoadRenderSettings();
+    void SaveSettings();
+	void LoadSettings();
     //runs the vulkan functions necessary to start rendering
     void Init(deshiImGui* imgui);
     //acquires the next image from vulkan, resets the command buffers, 
@@ -240,7 +230,7 @@ struct Renderer{
     void UpdateMeshBrushMatrix(u32 meshID, Matrix4 transform);
     void UpdateMeshBrushBuffers(u32 meshBrushIdx);
     void RemoveMeshBrush(u32 meshBrushIdx);
-
+	
     //2d primitives where points are defined from -1 to 1, where -1 is the bottom/left and 1 is the top/right of the screen
     u32 CreateTwod(std::vector<Vector2> points);
     u32 CreateTwod(std::vector<Vector2> points, Vector2 position, Vector2 scale);
@@ -466,15 +456,15 @@ struct Renderer{
         VkDeviceMemory         bufferMemory;
         VkDeviceSize           bufferSize;
         VkDescriptorBufferInfo bufferDescriptor;
-
+		
         struct{
             glm::mat4 view; //camera view matrix
             glm::mat4 proj; //camera projection matrix
         } values;
     } uboGS{};
-
+	
     VkDescriptorSet uboDescriptorSet;
-
+	
     struct{ //vertices buffer
         VkBuffer       buffer;
         VkDeviceMemory bufferMemory;
@@ -495,7 +485,7 @@ struct Renderer{
     void UpdateVertexBuffer();
     void UpdateIndexBuffer();
     
-
+	
     //// pipelines setup ////
     
     
@@ -521,7 +511,7 @@ struct Renderer{
         VkDescriptorSetLayout textures;
         VkDescriptorSetLayout instances;
     } descriptorSetLayouts;
-
+	
     //initializes the color and depth used to clearing a frame
     void CreateClearValues();
     //creates a pool of descriptors of different types to be sent to shaders
@@ -597,7 +587,7 @@ struct Renderer{
     
     //// other ////
     
-
+	
     //recreates the swapchain and frames
     void ResizeWindow();
     //returns a command buffer that will only execute once

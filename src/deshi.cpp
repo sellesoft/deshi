@@ -20,6 +20,7 @@ ____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
+create string_view versions of string parsing in assets.h
 make the engine runnable without the renderer
 create a hot-loadable global vars file
 detach camera from the renderer so that the camera component isnt calling the renderer
@@ -55,15 +56,17 @@ fix DESH material and event saving/loading
 
 Render TODOs
 ------------
-add RenderSettings loading and usage
+add VK_EXT_debug_utils and label things
 change UpdateMaterialTexture to take in a textureType
 look into getting info from shaders, or setting up compute shaders
+____ref: https://github.com/SaschaWillems/Vulkan/blob/master/examples/computeparticles/computeparticles.cpp
 ____the primary reason being that we need to optimize outlining objects, which will
 ____involve clipping triangles and stuff
 redo MeshVk so its only child meshes
 ____avoid having 3 copies of a mesh (model, meshVK, vulkan)
 ability to do transparency in a fragment shader eg. we can do outColor = vec4(1,1,1,0.5)
 ___this would be for experimenting with volumetrics, making a window shader w/o need for textures, etc.
+add more render settings
 add lighting and shadows
 add 2D shader and interface functions
 add face normal and tangents to vertex buffer
@@ -210,14 +213,14 @@ struct DeshiEngine {
 		//init engine core
 		time.Init(300); //300 tps for physics
 		g_time = &time;
-
+		
 		window.Init(&input, 1280, 720); //inits input as well
 		g_window = &window;
 		g_input = &input;
-
+		
 		console.Init();
 		g_console = &console;
-
+		
 		renderer.Init(&imgui); //inits imgui as well
 		g_renderer = &renderer;
 		g_debug = &debug;
