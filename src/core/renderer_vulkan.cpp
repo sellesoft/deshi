@@ -51,7 +51,7 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
-const bool CRASH_ON_ERROR = true;
+const bool CRASH_ON_ERROR = false;
 
 #define ASSERTVK(func, message) ASSERT((func) == VK_SUCCESS, message);
 

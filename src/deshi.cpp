@@ -111,6 +111,7 @@ implement Complex Colliders
 Console TODOs
 -------------
 !!!implement console popout
+tabbing so we can sort different kinds of info into each tab like Errors and Warnings
 fix console color parsing regex to be able to match with brackets inside
 OR change how we format color to something less common than brackets
 reformat to use a single character buffer rather than the line/subline thing its doing now

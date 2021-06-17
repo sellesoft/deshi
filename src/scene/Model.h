@@ -90,15 +90,21 @@ struct Batch {
 	void SetName(const char* name);
 };
 
+struct Face;
+
 //primarily for caching triangles neighbors
 struct Triangle {
 	Vector3 p[3];
-	
+	Vector3 norm;
+
+	Face* face = nullptr;
+
 	//parallel vectors for storing the neighbors and their respective points
 	std::vector<Triangle*> nbrs;
 	std::vector<u8> sharededge; //index of first point where second is the first plus one
 	bool removed = false; //for checking if triangle was culled
 	
+	bool checked = false; //for findFaceNbrs
 	
 	Vector3 midpoint() {
 		return Vector3(
@@ -106,10 +112,10 @@ struct Triangle {
 					   (p[0].y + p[1].y + p[2].y) / 3,
 					   (p[0].z + p[1].z + p[2].z) / 3);
 	}
-	
-	Vector3 norm() {
-		return (p[1] - p[0]).cross(p[2] - p[0]);
-	}
+};
+
+struct Face {
+	std::vector<Triangle*> tris;
 };
 
 struct Mesh {
@@ -122,6 +128,7 @@ struct Mesh {
 	u32 batchCount = 0;
 	std::vector<Batch> batchArray;
 	std::vector<Triangle*> triangles;
+	std::vector<Face> faces;
 	
 	Mesh() {}
 	Mesh(const char* name, std::vector<Batch> batchArray);

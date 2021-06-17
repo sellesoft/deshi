@@ -1,8 +1,46 @@
 #pragma once
 #include "../math/Math.h"
+#include "../scene/Model.h"
 
 namespace Geometry {
 	
+	//returns the point that's furthest along a normal 
+	static u32 FurthestPointAlongNormal(std::vector<Vector3> p, Vector3 n) {
+		float furthest = -INFINITY;
+		u32 furthestid = 0;
+		for (int i = 0; i < p.size(); i++) {
+			float dist = n.dot(p[i]);
+			if (dist > furthest) {
+				furthest = dist;
+				furthestid = i;
+			}
+		}
+		return furthestid;
+	}
+
+	static u32 FurthestTriangleAlongNormal(Mesh* m, Matrix4 rotation, Vector3 n) {
+		float furthest = -INFINITY;
+		u32 furthestTriId = 0;
+		for (int i = 0; i < m->triangles.size(); i++) {
+			Triangle* t = m->triangles[i];
+			//std::vector<Vector3> points;
+			//points.assign(t->p, t->p + 3);
+			//float tf = FurthestPointAlongNormal(points, n);
+
+			Vector3 norm = t->norm * rotation;
+
+			float dp = norm.dot(n);
+			
+			if (dp > furthest) {
+				furthestTriId = i;
+				furthest = dp;
+			}
+		}
+		
+		return furthestTriId;
+	}
+
+
 	static Vector3 ClosestPointOnAABB(Vector3 center, Vector3 halfDims, Vector3 target) {
 		return Vector3(
 					   fmaxf(center.x - halfDims.x, fminf(target.x, center.x + halfDims.x)),
