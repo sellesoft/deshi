@@ -65,7 +65,7 @@ std::vector<Vector2> Mesh::GenerateOutlinePoints(Matrix4 transform, Matrix4 proj
 	std::vector<Triangle> nonculled;
 	for (Triangle* t : triangles) {
 		t->removed = false;
-		if (t->norm().yInvert().dot(camPosition - t->p[0] * transform) > 0) {
+		if (t->norm.dot(camPosition - t->p[0] * transform) > 0) {
 			Triangle tri = *t;
 			tri.p[0] = Math::WorldToScreen(t->p[0] * transform, proj, view, windimen);
 			tri.p[1] = Math::WorldToScreen(t->p[1] * transform, proj, view, windimen);
@@ -110,7 +110,8 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 			t->p[0] = b.vertexArray[b.indexArray[i]].pos;
 			t->p[1] = b.vertexArray[b.indexArray[i + 1]].pos;
 			t->p[2] = b.vertexArray[b.indexArray[i + 2]].pos;
-			
+			t->norm = b.vertexArray[b.indexArray[i]].normal;
+
 			triangles.push_back(t);
 		}
 	}
@@ -160,6 +161,8 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 	return triangles;
 	
 }
+
+
 
 //https://github.com/tinyobjloader/tinyobjloader
 Mesh* Mesh::CreateMeshFromOBJ(std::string filename){

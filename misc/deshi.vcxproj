@@ -277,12 +277,14 @@
     <None Include="..\cfg\aliases.cfg" />
     <None Include="..\cfg\binds.cfg" />
     <None Include="..\cfg\render.cfg" />
+    <None Include="..\data\shaders\base.frag" />
     <None Include="..\data\shaders\base.vert" />
     <None Include="..\data\shaders\fixedimguishader.vert" />
     <None Include="..\data\shaders\flat.frag" />
     <None Include="..\data\shaders\flat.vert" />
     <None Include="..\data\shaders\lavalamp.frag" />
     <None Include="..\data\shaders\lavalamp.vert" />
+    <None Include="..\data\shaders\normaldebug.geom" />
     <None Include="..\data\shaders\pbr.frag" />
     <None Include="..\data\shaders\pbr.vert" />
     <None Include="..\data\shaders\phong.frag" />
