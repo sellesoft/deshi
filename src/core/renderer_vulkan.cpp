@@ -64,6 +64,51 @@ const bool CRASH_ON_ERROR = false;
 #define PRINTVK(level, ...) if(LOGGING_LEVEL >= level){ LOG("[Vulkan] ", __VA_ARGS__); }
 #endif
 
+///////////////////////////
+//// utility functions ////
+///////////////////////////
+
+PFN_vkCmdBeginDebugUtilsLabelEXT func_vkCmdBeginDebugUtilsLabelEXT;
+static_internal void 
+DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, Vector4 color){
+	VkDebugUtilsLabelEXT label = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
+	label.pLabelName           = label_name;
+	label.color[0]             = color.x;
+	label.color[1]             = color.y;
+	label.color[2]             = color.z;
+	label.color[3]             = color.w;
+	func_vkCmdBeginDebugUtilsLabelEXT(command_buffer, &label);
+}
+
+PFN_vkCmdEndDebugUtilsLabelEXT func_vkCmdEndDebugUtilsLabelEXT;
+static_internal void 
+DebugEndLabelVk(VkCommandBuffer command_buffer){
+	func_vkCmdEndDebugUtilsLabelEXT(command_buffer);
+}
+
+PFN_vkCmdInsertDebugUtilsLabelEXT func_vkCmdInsertDebugUtilsLabelEXT;
+static_internal void 
+DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, Vector4 color){
+	VkDebugUtilsLabelEXT label = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
+	label.pLabelName           = label_name;
+	label.color[0]             = color.x;
+	label.color[1]             = color.y;
+	label.color[2]             = color.z;
+	label.color[3]             = color.w;
+	func_vkCmdInsertDebugUtilsLabelEXT(command_buffer, &label);
+}
+
+PFN_vkSetDebugUtilsObjectNameEXT func_vkSetDebugUtilsObjectNameEXT;
+static_internal void 
+DebugSetObjectNameVk(VkDevice device, VkObjectType object_type, uint64_t object_handle, const char *object_name){
+	if(!object_handle) return;
+	VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+	name_info.objectType                    = object_type;
+	name_info.objectHandle                  = object_handle;
+	name_info.pObjectName                   = object_name;
+	func_vkSetDebugUtilsObjectNameEXT(device, &name_info);
+}
+
 //////////////////////////
 //// render interface ////
 //////////////////////////
@@ -189,6 +234,9 @@ Init(deshiImGui* imgui) {
     
     PRINTVK(2, "  Initializing ImGui");
     imgui->Init(this);
+	
+	if(settings.debugging) DebugNameObjects();
+	
     initialized = true;
     
     PRINTVK(3, "Finished initializing Vulkan in ", TIMER_END(t_v), "ms");
@@ -1354,9 +1402,9 @@ VKAPI_ATTR VkBool32 VKAPI_CALL Renderer::
 debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
     switch(messageSeverity){
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT: {
+            ERROR("[Vulkan] ", pCallbackData->pMessage); 
             PRINTLN(pCallbackData->pMessage << "\n");
             if(CRASH_ON_ERROR) ASSERT(false, "");
-            ERROR("[Vulkan] ", pCallbackData->pMessage); 
         }break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: {
             WARNING("[Vulkan] ", pCallbackData->pMessage); 
@@ -2630,8 +2678,8 @@ GetUncompiledShaders(){
 }
 
 VkPipelineShaderStageCreateInfo Renderer::
-loadShader(std::string fileName, VkShaderStageFlagBits stage) {
-    PRINTVK(3, "    Loading shader: ", fileName);
+loadShader(std::string filename, VkShaderStageFlagBits stage) {
+    PRINTVK(3, "    Loading shader: ", filename);
     //setup shader stage create info
     VkPipelineShaderStageCreateInfo shaderStage{};
     shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -2640,14 +2688,14 @@ loadShader(std::string fileName, VkShaderStageFlagBits stage) {
     
     //check if shader has already been created
     for(auto& module : shaderModules){
-        if(fileName == module.first){
+        if(filename == module.first){
             shaderStage.module = module.second;
             break;
         }
     }
     
     //create shader module
-    std::vector<char> code = deshi::readFileBinary(deshi::dirShaders() + fileName);
+    std::vector<char> code = deshi::readFileBinary(deshi::dirShaders() + filename);
     VkShaderModuleCreateInfo moduleInfo{};
     moduleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     moduleInfo.codeSize = code.size();
@@ -2657,7 +2705,7 @@ loadShader(std::string fileName, VkShaderStageFlagBits stage) {
     ASSERTVK(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
     shaderStage.module = shaderModule;
     
-    shaderModules.push_back(std::make_pair(fileName, shaderStage.module));
+    shaderModules.push_back(pair<std::string,VkShaderModule>(filename, shaderStage.module));
     return shaderStage;
 }
 
@@ -3142,6 +3190,82 @@ copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
 
 
 void Renderer::
+DebugNameObjects(){
+#pragma warning(push)
+#pragma warning(disable : 4311)
+	func_vkSetDebugUtilsObjectNameEXT  = (PFN_vkSetDebugUtilsObjectNameEXT) vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
+	func_vkCmdBeginDebugUtilsLabelEXT  = (PFN_vkCmdBeginDebugUtilsLabelEXT) vkGetInstanceProcAddr(instance, "vkCmdBeginDebugUtilsLabelEXT");
+	func_vkCmdEndDebugUtilsLabelEXT    = (PFN_vkCmdEndDebugUtilsLabelEXT)   vkGetInstanceProcAddr(instance, "vkCmdEndDebugUtilsLabelEXT");
+	func_vkCmdInsertDebugUtilsLabelEXT = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdInsertDebugUtilsLabelEXT");
+	
+	//// render passes ////
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)renderPass, "Base render pass");
+	
+	//// images and samplers ////
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)attachments.colorImage, "Framebuffer color image");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)attachments.depthImage, "Framebuffer depth image");
+	for_n(i, frames.size()){
+		std::string name = "Frame image " + std::to_string(i);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)frames[i].image, name.c_str());
+	}
+	for_n(i, textures.size()){
+		std::string image_name = std::string("Texture image ") + textures[i].filename;
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)textures[i].image, image_name.c_str());
+		std::string sampler_name = std::string("Texture sampler ") + textures[i].filename;
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (uint64_t)textures[i].sampler, sampler_name.c_str());
+	}
+	
+	//// buffers ////
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)uboVS.buffer, "Vertex shader UBO");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)uboGS.buffer, "Geometry shader UBO");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)vertices.buffer, "Global vertex buffer");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)indices.buffer, "Global index buffer");
+	for_n(i, meshBrushes.size()){
+		std::string vb_name = "MeshBrush vertex buffer " + std::to_string(i);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)meshBrushes[i].vertexBuffer, vb_name.c_str());
+		std::string ib_name = "MeshBrush index buffer " + std::to_string(i);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)meshBrushes[i].indexBuffer, ib_name.c_str());
+	}
+	
+	//// descriptor sets ////
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (uint64_t)uboDescriptorSet, "UBO descriptor set");
+	for_n(i, materials.size()){
+		std::string name = std::string("Material descriptor set ") + materials[i].name;
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (uint64_t)materials[i].descriptorSet, name.c_str());
+	}
+	
+	//// descriptor set layouts ////
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (uint64_t)descriptorSetLayouts.ubos, "UBOs descriptor set layout");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (uint64_t)descriptorSetLayouts.textures, "Textures descriptor set layout");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (uint64_t)descriptorSetLayouts.instances, "Instances descriptor set layout");
+	
+	//// pipeline layouts ////
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (uint64_t)pipelineLayout, "Base pipeline layout");
+	
+	//// pipelines ////
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.base, "Base pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.flat, "Flat pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.phong, "Phong pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.twod, "TwoD pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.pbr, "PBR pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.lavalamp, "Lavalamp pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.wireframe, "Wireframe pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.wireframe_depth, "Wireframe Depth pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.selected, "Selected pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.collider, "Collider pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.normals, "Normals pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.testing0, "Testing0 pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.testing1, "Testing1 pipeline");
+	
+	//// shaders ////
+	for(auto& mod : shaderModules){
+		std::string name = "Shader " + mod.first;
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (uint64_t)mod.second, name.c_str());
+	}
+#pragma warning(pop)
+}
+
+void Renderer::
 ResizeWindow() {
     PRINTVK(1, "window resized");
     // Ensure all operations on the device have been finished before destroying resources
@@ -3226,13 +3350,17 @@ BuildCommandBuffers() {
         vkCmdSetViewport(frames[i].commandBuffer, 0, 1, &viewport);
         vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
 		
-        //bind vertex shader ubo
+		
+		
+		
+        //bind ubo descriptor set
         vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboDescriptorSet, 0, nullptr);
         
         //reset offsets
         VkDeviceSize offsets[1] = { 0 };
 		
         //draw mesh brushes
+		DebugBeginLabelVk(frames[i].commandBuffer, "Mesh brushes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
         if (!generatingWorldGrid) {
             vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe_depth);
             for (MeshBrushVk& mesh : meshBrushes) {
@@ -3240,13 +3368,16 @@ BuildCommandBuffers() {
                     vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &mesh.vertexBuffer, offsets);
                     vkCmdBindIndexBuffer(frames[i].commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
                     vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(glm::mat4), &mesh.matrix);
-                    vkCmdDrawIndexed(frames[i].commandBuffer, mesh.indices.size(), 1, 0, 0, 0);
+                    DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
+					vkCmdDrawIndexed(frames[i].commandBuffer, mesh.indices.size(), 1, 0, 0, 0);
                     stats.drawnIndices += mesh.indices.size();
                 }
             }
         }
+		DebugEndLabelVk(frames[i].commandBuffer);
 		
         //draw meshes
+		DebugBeginLabelVk(frames[i].commandBuffer, "Meshes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
         vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &vertices.buffer, offsets);
         vkCmdBindIndexBuffer(frames[i].commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
         
@@ -3259,6 +3390,7 @@ BuildCommandBuffers() {
                     
                     for (PrimitiveVk& primitive : mesh.primitives) {
                         if (primitive.indexCount > 0) {
+							DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
                             vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
                             stats.drawnIndices += primitive.indexCount;
                         }
@@ -3277,11 +3409,13 @@ BuildCommandBuffers() {
                             // Bind the pipeline for the primitive's material
                             vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material.pipeline);
                             vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material.descriptorSet, 0, nullptr);
+							DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
                             vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
                             stats.drawnIndices += primitive.indexCount;
                             
                             if(settings.wireframe && material.pipeline != pipelines.wireframe){
                                 vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
+								DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
                                 vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
                                 stats.drawnIndices += primitive.indexCount;
                             }
@@ -3290,8 +3424,10 @@ BuildCommandBuffers() {
                 }
             }
         }
+		DebugEndLabelVk(frames[i].commandBuffer);
         
         //draw selected meshes
+		DebugBeginLabelVk(frames[i].commandBuffer, "Selected Meshes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
         for(u32 id : selected){
             MeshVk& mesh = meshes[id];
             if(mesh.visible && mesh.primitives.size() > 0){
@@ -3304,14 +3440,17 @@ BuildCommandBuffers() {
                         // Bind the pipeline for the primitive's material
                         vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.selected);
                         vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material.descriptorSet, 0, nullptr);
+						DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
                         vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
                         stats.drawnIndices += primitive.indexCount;
                     }
                 }
             }
         }
+		DebugEndLabelVk(frames[i].commandBuffer);
 		
         //draw debugging normals
+		DebugBeginLabelVk(frames[i].commandBuffer, "Debugging Normals", vec4(0.5f, 0.76f, 0.34f, 1.0f));
         if(settings.debugging && enabledFeatures.geometryShader && settings.normals){
             vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.normals);
             for(MeshVk& mesh : meshes){
@@ -3321,6 +3460,7 @@ BuildCommandBuffers() {
 					
                     for (PrimitiveVk& primitive : mesh.primitives) {
                         if (primitive.indexCount > 0) {
+							DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
                             vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
                             stats.drawnIndices += primitive.indexCount;
                         }
@@ -3328,13 +3468,19 @@ BuildCommandBuffers() {
                 }
             }
         }
+		DebugEndLabelVk(frames[i].commandBuffer);
         
         //draw imgui stuff
+		DebugBeginLabelVk(frames[i].commandBuffer, "ImGui", vec4(0.5f, 0.76f, 0.34f, 1.0f));
         if(ImDrawData* imDrawData = ImGui::GetDrawData()){
             ImGui_ImplVulkan_RenderDrawData(imDrawData, frames[i].commandBuffer);
         }
+		DebugEndLabelVk(frames[i].commandBuffer);
         
-        ////draw stuff above here////
+		
+		
+		
+		
         vkCmdEndRenderPass(frames[i].commandBuffer);
         ASSERTVK(vkEndCommandBuffer(frames[i].commandBuffer), "failed to end recording command buffer");
     }

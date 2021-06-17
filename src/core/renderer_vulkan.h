@@ -5,6 +5,7 @@
 #include "../utils/defines.h"
 #include "../utils/debug.h"
 #include "../utils/optional.h"
+#include "../utils/tuple.h"
 
 #if defined(_MSC_VER)
 #pragma comment(lib,"vulkan-1.lib")
@@ -490,9 +491,9 @@ struct Renderer{
     
     
     std::array<VkClearValue, 3> clearValues{}; //struct
-    VkDescriptorPool descriptorPool{}; //ptr
-    VkPipelineLayout pipelineLayout{}; //ptr
-    VkPipelineCache  pipelineCache{}; //ptr
+    VkDescriptorPool descriptorPool = VK_NULL_HANDLE; //ptr
+    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE; //ptr
+    VkPipelineCache  pipelineCache  = VK_NULL_HANDLE; //ptr
     VkGraphicsPipelineCreateInfo           pipelineCreateInfo{}; //struct
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{}; //struct
     VkPipelineRasterizationStateCreateInfo rasterizationState{}; //struct
@@ -507,9 +508,9 @@ struct Renderer{
     std::vector<VkVertexInputBindingDescription>   vertexInputBindings; //struct
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributes; //struct
     struct { //descriptor set layouts for pipelines
-        VkDescriptorSetLayout ubos;
-        VkDescriptorSetLayout textures;
-        VkDescriptorSetLayout instances;
+        VkDescriptorSetLayout ubos       = VK_NULL_HANDLE;
+        VkDescriptorSetLayout textures   = VK_NULL_HANDLE;
+        VkDescriptorSetLayout instances  = VK_NULL_HANDLE;
     } descriptorSetLayouts;
 	
     //initializes the color and depth used to clearing a frame
@@ -543,7 +544,7 @@ struct Renderer{
     } pipelines{};
     
     std::array<VkPipelineShaderStageCreateInfo, 3> shaderStages;
-    std::vector<std::pair<std::string, VkShaderModule>>  shaderModules;
+    std::vector<pair<std::string, VkShaderModule>>  shaderModules;
     
     void CreatePipelines();
     void RemakePipeline(VkPipeline pipeline);
@@ -587,7 +588,8 @@ struct Renderer{
     
     //// other ////
     
-	
+	//give names to objects for debugging
+	void DebugNameObjects();
     //recreates the swapchain and frames
     void ResizeWindow();
     //returns a command buffer that will only execute once
