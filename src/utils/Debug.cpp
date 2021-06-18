@@ -4,7 +4,7 @@
 #include "../math/Math.h"
 #include "Color.h"
 
-void Debug::DrawLine(Vector3 v1, Vector3 v2, int unique, Color color = Color::WHITE) {
+void Debug::DrawLine(Vector3 v1, Vector3 v2, size_t unique, Color color = Color::WHITE) {
 	
 	if (meshes.find(unique) != meshes.end()) {
 		u32 id = meshes[unique].meshID;
@@ -33,7 +33,7 @@ void Debug::DrawLine(Vector3 v1, Vector3 v2, int unique, Color color = Color::WH
 	}
 }
 
-void Debug::DrawLine(Vector3 v1, Vector3 v2, int unique, float time = -2, Color color = Color::WHITE) {
+void Debug::DrawLine(Vector3 v1, Vector3 v2, size_t unique, float time = -2, Color color = Color::WHITE) {
 	if (meshes.find(unique) != meshes.end()) {
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
@@ -61,7 +61,7 @@ void Debug::DrawLine(Vector3 v1, Vector3 v2, int unique, float time = -2, Color 
 	}
 }
 
-void Debug::DrawLine(int i, Vector3 v1, Vector3 v2, int unique, Color color = Color::WHITE) {
+void Debug::DrawLine(int i, Vector3 v1, Vector3 v2, size_t unique, Color color = Color::WHITE) {
 	if (i == -1) { //if i = -1 then the user is requesting a new line everytime the function is called, regardless of a loop
 		unique = unique + miter;
 		miter++;
@@ -83,7 +83,7 @@ void Debug::DrawLine(int i, Vector3 v1, Vector3 v2, int unique, Color color = Co
 		else {
 			PRINTLN("dupe");
 		}
-
+		
 	}
 	else {
 		MeshInfo mi;
@@ -101,7 +101,7 @@ void Debug::DrawLine(int i, Vector3 v1, Vector3 v2, int unique, Color color = Co
 	}
 }
 
-void Debug::DrawLine(int i, Vector3 v1, Vector3 v2, int unique, float time = -2, Color color = Color::WHITE) {
+void Debug::DrawLine(int i, Vector3 v1, Vector3 v2, size_t unique, float time = -2, Color color = Color::WHITE) {
 	int uniqueInt;; //this has massive potential to break something hehe
 	if (i == -1) { //if i = -1 then the user is requesting a new line everytime the function is called, regardless of a loop
 		unique = unique + miter;
@@ -110,7 +110,7 @@ void Debug::DrawLine(int i, Vector3 v1, Vector3 v2, int unique, float time = -2,
 	else {
 		unique = unique + i;
 	}
-
+	
 	if (meshes.find(unique) != meshes.end()) {
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
@@ -138,7 +138,7 @@ void Debug::DrawLine(int i, Vector3 v1, Vector3 v2, int unique, float time = -2,
 	}
 }
 
-void Debug::DrawMesh(Mesh* mesh, Matrix4 transform, int unique, Color color = Color::WHITE) {
+void Debug::DrawMesh(Mesh* mesh, Matrix4 transform, size_t unique, Color color = Color::WHITE) {
 	if (meshes.find(unique) != meshes.end()) {
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
@@ -154,7 +154,7 @@ void Debug::DrawMesh(Mesh* mesh, Matrix4 transform, int unique, Color color = Co
 	}
 }
 
-void Debug::DrawMesh(Mesh* mesh, Matrix4 transform, int unique, float time = -2, Color color = Color::WHITE) {
+void Debug::DrawMesh(Mesh* mesh, Matrix4 transform, size_t unique, float time = -2, Color color = Color::WHITE) {
 	if (meshes.find(unique) != meshes.end()) {
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
@@ -170,7 +170,7 @@ void Debug::DrawMesh(Mesh* mesh, Matrix4 transform, int unique, float time = -2,
 	}
 }
 
-void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, int unique, Color color = Color::WHITE) {
+void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, size_t unique, Color color = Color::WHITE) {
 	if (i == -1) { //if i = -1 then the user is requesting a new line everytime the function is called, regardless of a loop
 		unique = unique + miter;
 		miter++;
@@ -178,7 +178,7 @@ void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, int unique, Color col
 	else {
 		unique = unique + i;
 	}
-
+	
 	if (meshes.find(unique) != meshes.end()) {
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
@@ -194,7 +194,7 @@ void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, int unique, Color col
 	}
 }
 
-void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, int unique, float time = -2, Color color = Color::WHITE) {
+void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, size_t unique, float time = -2, Color color = Color::WHITE) {
 	if (i == -1) { //if i = -1 then the user is requesting a new line everytime the function is called, regardless of a loop
 		unique = unique + miter;
 		miter++;
@@ -202,7 +202,7 @@ void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, int unique, float tim
 	else {
 		unique = unique + i;
 	}
-
+	
 	if (meshes.find(unique) != meshes.end()) {
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
@@ -219,7 +219,7 @@ void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, int unique, float tim
 }
 
 void Debug::Update() {
-
+	
 	for (auto& c : meshes) {
 		MeshInfo* mi = &c.second;
 		if (!mi->calledThisFrame) {

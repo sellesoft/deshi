@@ -54,27 +54,27 @@ struct has_str_method {
 	static constexpr bool value = decltype(test<T>(0))::value;
 };
 
-	
+
 //// Primarily for outputting to ingame console, but can return a string from any object that is a c++ number
 //// or any of our classes (or yours :) ) that has a .str() member
-	
+
 static std::string ToString(const char* str) { return std::string(str); }
 static std::string ToString(char* str)       { return std::string(str); }
-	
+
 static std::string ToString(const std::string& str) { return str; }
-	
+
 template<class T, typename std::enable_if<!has_str_method<T>::value, bool>::type = true>
-	static std::string ToString(T t) { return ToString(std::to_string(t)); }
-	
+static std::string ToString(T t) { return ToString(std::to_string(t)); }
+
 template<class T, typename std::enable_if<has_str_method<T>::value, bool>::type = true>
-	static std::string ToString(T t) { return ToString(t.str()); }
-	
+static std::string ToString(T t) { return ToString(t.str()); }
+
 template<class... T>
-	static std::string ToString(T... args) { 
+static std::string ToString(T... args) { 
 	std::string strings[] = { "", (ToString(std::forward<T>(args))) ... };
 	std::string str = "";
 	for (std::string s : strings) { str += s; }
-		
+	
 	return str;
 }
 
@@ -94,7 +94,7 @@ struct MeshInfo {
 	b32 clearNextFrame;
 	b32 wasInvis;
 	Vector3* last[2]; //TODO(sushi, Op) figure out why checking if a line has changed doesnt work
-
+	
 };
 
 //GPU debug mesh handler that could also end up being used for more stuff later, so i'll keep it named Debug
@@ -103,20 +103,20 @@ struct Debug {
 	
 	//TODO(sushi) find a better solution than this, because this variable with eventually wrap around and cause issues after a long period of time
 	int miter = 0;
-
-
+	
+	
 	void Update();
-
-	void DrawLine(Vector3 v1, Vector3 v2, int unique, Color color);
-	void DrawLine(Vector3 v1, Vector3 v2, int unique, float time, Color color);
-	void DrawLine(int i, Vector3 v1, Vector3 v2, int unique, Color color);
-	void DrawLine(int i, Vector3 v1, Vector3 v2, int unique, float time, Color color);
-
-	void DrawMesh(Mesh* mesh, Matrix4 transform, int unique, Color color);
-	void DrawMesh(Mesh* mesh, Matrix4 transform, int unique, float time, Color color);
-	void DrawMesh(int i, Mesh* mesh, Matrix4 transform, int unique, Color color);
-	void DrawMesh(int i, Mesh* mesh, Matrix4 transform, int unique, float time, Color color);
-
+	
+	void DrawLine(Vector3 v1, Vector3 v2, size_t unique, Color color);
+	void DrawLine(Vector3 v1, Vector3 v2, size_t unique, float time, Color color);
+	void DrawLine(int i, Vector3 v1, Vector3 v2, size_t unique, Color color);
+	void DrawLine(int i, Vector3 v1, Vector3 v2, size_t unique, float time, Color color);
+	
+	void DrawMesh(Mesh* mesh, Matrix4 transform, size_t unique, Color color);
+	void DrawMesh(Mesh* mesh, Matrix4 transform, size_t unique, float time, Color color);
+	void DrawMesh(int i, Mesh* mesh, Matrix4 transform, size_t unique, Color color);
+	void DrawMesh(int i, Mesh* mesh, Matrix4 transform, size_t unique, float time, Color color);
+	
 };
 
 extern Debug* g_debug;

@@ -64,9 +64,9 @@ const bool CRASH_ON_ERROR = false;
 #define PRINTVK(level, ...) if(LOGGING_LEVEL >= level){ LOG("[Vulkan] ", __VA_ARGS__); }
 #endif
 
-///////////////////////////
-//// utility functions ////
-///////////////////////////
+////////////////////////
+//// vulkan utility ////
+////////////////////////
 
 PFN_vkCmdBeginDebugUtilsLabelEXT func_vkCmdBeginDebugUtilsLabelEXT;
 static_internal void 
@@ -1067,8 +1067,8 @@ CopyMaterial(u32 materialID){
     return mat.id;
 }
 
-void Renderer:: //TODO(delle,Vu) add error logging
-UpdateMaterialTexture(u32 matID, u32 texSlot, u32 texID){
+void Renderer::
+UpdateMaterialTexture(u32 matID, u32 texType, u32 texID){
     if(matID < materials.size() && texID < textures.size()){
         VkWriteDescriptorSet writeDescriptorSet{};
         writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1077,23 +1077,23 @@ UpdateMaterialTexture(u32 matID, u32 texSlot, u32 texID){
         writeDescriptorSet.descriptorCount = 1;
         writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         
-        switch(texSlot){
-            case(0):{ 
+        switch(texType){
+            case(TextureType_Albedo):{ 
                 materials[matID].albedoID = texID; 
                 writeDescriptorSet.pImageInfo = &textures[materials[matID].albedoID].imageInfo;
                 writeDescriptorSet.dstBinding = 0;
             } break;
-            case(1):{ 
+            case(TextureType_Normal):{ 
                 materials[matID].normalID = texID; 
                 writeDescriptorSet.pImageInfo = &textures[materials[matID].normalID].imageInfo;
                 writeDescriptorSet.dstBinding = 1;
             } break;
-            case(2):{ 
+            case(TextureType_Specular):{ 
                 materials[matID].specularID = texID; 
                 writeDescriptorSet.pImageInfo = &textures[materials[matID].specularID].imageInfo;
                 writeDescriptorSet.dstBinding = 2;
             }  break;
-            case(3):{ 
+            case(TextureType_Light):{ 
                 materials[matID].lightID = texID; 
                 writeDescriptorSet.pImageInfo = &textures[materials[matID].lightID].imageInfo;
                 writeDescriptorSet.dstBinding = 3;

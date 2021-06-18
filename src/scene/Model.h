@@ -10,10 +10,10 @@
 #include <vector>
 
 enum TextureTypeBits : u32 { 
-	TextureType_Albedo   = 0,
-	TextureType_Normal   = 1 << 0,
-	TextureType_Specular = 1 << 1,
-	TextureType_Light    = 1 << 2,
+	TextureType_Albedo   = 0 << 0, //albedo, color, diffuse
+	TextureType_Normal   = 1 << 0, //normal, bump
+	TextureType_Specular = 1 << 1, //specular, metallic, roughness
+	TextureType_Light    = 1 << 2, //light, ambient
 	TextureType_Cube     = 1 << 3, //not supported yet
 	TextureType_Sphere   = 1 << 4, //not supported yet
 }; typedef u32 TextureType;
@@ -96,9 +96,9 @@ struct Face;
 struct Triangle {
 	Vector3 p[3];
 	Vector3 norm;
-
+	
 	Face* face = nullptr;
-
+	
 	//parallel vectors for storing the neighbors and their respective points
 	std::vector<Triangle*> nbrs;
 	std::vector<u8> sharededge; //index of first point where second is the first plus one

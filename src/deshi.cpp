@@ -57,7 +57,6 @@ fix DESH material and event saving/loading
 Render TODOs
 ------------
 redo mesh brush to be one large buffer that updates every frame
-change UpdateMaterialTexture to take in a textureType
 look into getting info from shaders, or setting up compute shaders
 ____ref: https://github.com/SaschaWillems/Vulkan/blob/master/examples/computeparticles/computeparticles.cpp
 ____the primary reason being that we need to optimize outlining objects, which will
@@ -174,7 +173,6 @@ ____read this to try to fix: http://www.debuginfo.com/tips/userbpntdll.html
 some UI can be clicked thru and select the entity
 the program crashes if default asset files are not present
 ____we can store the text in the actual code and create the file from the code, like keybinds.cfg
-vulkan errors printed to stdout (works in our console) can infinite loop in another thread
 
 */
 

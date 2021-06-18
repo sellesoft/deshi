@@ -221,12 +221,12 @@ struct Renderer{
     //saves the pipeline cache to disk
     void Cleanup();
     
-    //returns a base mesh ID
+    //returns a mesh brush ID
     u32 CreateDebugLine(Vector3 start, Vector3 end, Color color, bool visible = false);
     void UpdateDebugLine(u32 id, Vector3 start, Vector3 end, Color color);
-    //returns a base mesh ID
+    //returns a mesh brush ID
     u32 CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool visible = false);
-    //creates a mesh with editable vertices
+    //creates a mesh with editable vertices that requires getting its buffers updated
     u32 CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation = false);
     void UpdateMeshBrushMatrix(u32 meshID, Matrix4 transform);
     void UpdateMeshBrushBuffers(u32 meshBrushIdx);
@@ -284,7 +284,7 @@ struct Renderer{
     
     u32 CreateMaterial(const char* name, u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2);
     u32  CopyMaterial(u32 materialID);
-    void UpdateMaterialTexture(u32 matID, u32 textureSlot, u32 textureID);
+    void UpdateMaterialTexture(u32 matID, u32 textureType, u32 textureID);
     void UpdateMaterialShader(u32 matID, u32 shader);
     std::vector<u32> GetMaterialIDs(u32 MeshID);
     void RemoveMaterial(u32 materialID);
