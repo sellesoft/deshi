@@ -34,5 +34,5 @@ A game engine for 3D physics and graphics building on [P3DPGE](https://github.co
 * [dellevelled](https://github.com/DelleVelleD)
 * [e-sushi](https://github.com/e-sushi)
 
-### [License](LICENSE.txt)
+### [License](LICENSE)
 Public Domain or MIT licensed -- whichever you prefer
