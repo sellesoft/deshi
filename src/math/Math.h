@@ -360,8 +360,8 @@ namespace Math {
 					 (a.z - b.z) * (a.z - b.z));
 	}
 	
-	static float DistPointToPlane(Vector3 point, Vector3 plane_n, Vector3 plane_p) {
-		return (plane_n.x * point.x + plane_n.y * point.y + plane_n.z * point.z - plane_n.dot(plane_p));
+	static inline float DistPointToPlane(Vector3 point, Vector3 plane_n, Vector3 plane_p) {
+		return (point - plane_p).dot(plane_n);
 	}
 	
 	//where a line intersects with a plane, 'returns' how far along line you were as t value

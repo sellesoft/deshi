@@ -2591,23 +2591,25 @@ void Editor::ShowSelectedEntityNormals() {
     f32  t;
     int  index = 0;
     for (Entity* e : selected) {
+        transform = e->transform.TransformMatrix();
+        rot = Matrix4::RotationMatrix(e->transform.rotation);
         if (MeshComp* mc = e->GetComponent<MeshComp>()) {
             if (mc->mesh_visible) {
                 Mesh* m = mc->mesh;
                 for (Batch& b : m->batchArray) {
                     for (u32 i = 0; i < b.indexArray.size(); i += 3) {
-                        transform = e->transform.TransformMatrix();
+                        
                         p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
                         p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
                         p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
-                        normal = b.vertexArray[b.indexArray[i + 0]].normal * transform;
+                        normal = b.vertexArray[b.indexArray[i + 0]].normal * rot;
                         
                         Vector3 perp = normal.cross(p1 - p0).yInvert();
                         Vector3 mid = (p0 + p1 + p2) / 3;
                         
                         DebugLinesCol(i, mid, mid + normal, -1, Color::CYAN);
-                        DebugLinesCol(i, p0, p0 + perp, -1, Color::YELLOW);
-                        DebugLinesCol(i, mid, p0, -1, Color::MAGENTA);
+                       // DebugLinesCol(i, p0, p0 + perp, -1, Color::YELLOW);
+                       // DebugLinesCol(i, mid, p0, -1, Color::MAGENTA);
                     }
                 }
             }
@@ -2794,7 +2796,7 @@ void Editor::Update(){
     ////////////////////////////////
     ////  selected entity debug ////
     ////////////////////////////////
-    //ShowSelectedEntityNormals();
+    ShowSelectedEntityNormals();
     DisplayTriggers(admin);
     
 }
