@@ -1,4 +1,5 @@
 #include "console2.h"
+#include "input.h"          //scrolling
 #include "time.h"           //deltaTime
 #include "window.h"         //width, height
 #include "deshi_imgui.h"    //ImGui
@@ -27,6 +28,9 @@ static_internal f32 font_height = 0.0f;
 static_internal b32 scroll_to_bottom = false;
 static_internal b32 show_autocomplete = false;
 
+static_internal f32 console_scroll_y = 0;
+static_internal u32 console_rows_in_buffer = 0; 
+
 static_internal ConsoleState state = ConsoleState_Closed;
 
 static_internal char input_buffer[256] = {0};
@@ -34,6 +38,9 @@ static_internal ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | Im
 
 //TODO(delle,Op) ideally convert this to something better/contiguous
 static_internal std::vector<pair<Color, std::string>> history;
+
+static_internal std::vector<pair<Color, char>> historyc;
+static_internal std::vector<u32> lineindicies;
 
 std::map<std::string, Color> color_strings{
 	{"red", Color::RED},       {"dred", Color::DARK_RED},
@@ -109,66 +116,128 @@ void Console2::Toggle(ConsoleState new_state){
 
 //@Incomplete
 //this whole thing sucks, we should store one line as one thing
+//    ^c=cyan^/^c^^c=dcyan^\\^c^ - reference
 void Console2::Log(std::string message){
 	message += "\n";
-	
-	int special_start_idx = -1, special_stop_idx = -1;
-	int color_start_idx = -1, color_stop_idx = -1;
-	Color color_color;
-	int chunk_start = 0;
-	std::string temp;
-	
-	for_n(i, message.size()){
-		//check for special
-		if(message[i] == '^'){
-			if(special_start_idx != -1){
-				special_stop_idx = i;
-				chunk_start = i+1;
-			}else{
-				special_start_idx = i;
-				
-				if(color_start_idx == -1){
-					temp = message.substr(chunk_start, i-chunk_start);
-					if(temp.size()) history.push_back(pair<Color, std::string>(Color::WHITE, temp));
-				}
-			}
-		}
-		
-		//parse special
-		if(special_stop_idx != -1){
-			std::string special_text = message.substr(special_start_idx + 1, special_stop_idx - special_start_idx - 1);
-			if(special_text[0] == 'c'){ //color special
-				if(color_start_idx == -1){
-					color_start_idx = special_stop_idx+1;
-					
-					if(special_text.size() > 2){
-						color_color = color_strings.at(special_text.substr(2));
+
+	if (lineindicies.size() == 0) {
+		lineindicies.push_back(0);
+	}
+	else {
+		lineindicies.push_back(historyc.size());
+	}
+
+	Color currCol = Color::WHITE;
+
+	for (int i = 0; i < message.size(); i++) {
+		char ch = message[i];
+
+		//check for color formatting
+		if (ch == '^') { 
+			if (currCol == Color::WHITE) {
+				//char indicating our color formatting was found
+				//so we expect the next char to be c followed by =, then blah blah
+				//if any of these fail then we ignore it 
+				if (message[++i] == 'c') {
+					if (message[++i] == '=') {
+						//read name of color
+						ch = message[++i];
+						std::string col;
+						while (ch != '^') {
+							col += ch;
+							if (i + 1 != message.size()) ch = message[++i];
+							else { /*TODO(sushi) implement error checking here */ break; }
+						}
+
+						//set the color if it's known
+						try {
+							currCol = color_strings.at(col);
+						} catch(...) { /*unknown color*/ }
+
+						ch = message[++i];
 					}
-				}else{
-					color_stop_idx = special_start_idx;
-					
-					temp = message.substr(color_start_idx, color_stop_idx - color_start_idx);
-					if(temp.size()) history.push_back(pair<Color, std::string>(color_color, temp));
-					
-					color_start_idx = -1;
-					color_stop_idx = -1;
+					else i -= 2;
 				}
-			}else if(special_text[0] == 'a'){ //alert special
-				
-				
-			}else{ //unhandled special
+				else i--;
+			}
+			else {
+				//it may be the end of color formatting
+				if (message[++i] == 'c') {
+					if (message[++i] == '^') {
+						currCol = Color::WHITE;
+						ch = -1;
+					} else i -= 2;
+				} else i--;
 				
 			}
-			
-			special_start_idx = -1;
-			special_stop_idx = -1;
 		}
-		
-		if(message[i] == '\n'){
-			temp = message.substr(chunk_start, i-chunk_start+1);
-			if(temp.size()) history.push_back(pair<Color, std::string>(Color::WHITE, temp));
+
+		if (ch != -1) {
+			historyc.push_back(pair<Color, char>(currCol, ch));
 		}
 	}
+
+
+
+
+
+	//int special_start_idx = -1, special_stop_idx = -1;
+	//int color_start_idx = -1, color_stop_idx = -1;
+	//Color color_color;
+	//int chunk_start = 0;
+	//std::string temp;
+	//
+	//for_n(i, message.size()){
+	//	//check for special
+	//	if(message[i] == '^'){
+	//		if(special_start_idx != -1){
+	//			special_stop_idx = i;
+	//			chunk_start = i+1;
+	//		}else{
+	//			special_start_idx = i;
+	//			
+	//			if(color_start_idx == -1){
+	//				temp = message.substr(chunk_start, i-chunk_start);
+	//				if(temp.size()) history.push_back(pair<Color, std::string>(Color::WHITE, temp));
+	//			}
+	//		}
+	//	}
+	//	
+	//	//parse special
+	//	if(special_stop_idx != -1){
+	//		std::string special_text = message.substr(special_start_idx + 1, special_stop_idx - special_start_idx - 1);
+	//		if(special_text[0] == 'c'){ //color special
+	//			if(color_start_idx == -1){
+	//				color_start_idx = special_stop_idx+1;
+	//				
+	//				if(special_text.size() > 2){
+	//					color_color = color_strings.at(special_text.substr(2));
+	//				}
+	//			}else{
+	//				color_stop_idx = special_start_idx;
+	//				
+	//				temp = message.substr(color_start_idx, color_stop_idx - color_start_idx);
+	//				if(temp.size()) history.push_back(pair<Color, std::string>(color_color, temp));
+	//				
+	//				color_start_idx = -1;
+	//				color_stop_idx = -1;
+	//			}
+	//		}else if(special_text[0] == 'a'){ //alert special
+	//			
+	//			
+	//		}else{ //unhandled special
+	//			
+	//		}
+	//		
+	//		special_start_idx = -1;
+	//		special_stop_idx = -1;
+	//	}
+	//	
+	//	if(message[i] == '\n'){
+	//		temp = message.substr(chunk_start, i-chunk_start+1);
+	//		if(temp.size()) history.push_back(pair<Color, std::string>(Color::WHITE, temp));
+	//	}
+	//}
 }
 
 void Console2::Init(){
@@ -197,6 +266,9 @@ void Console2::Draw(){
 	//io.ConfigWindowsResizeFromEdges = true;
 	
 	font_height = ImGui::GetFontSize();
+	font_width = ceil(font_height / 2);
+
+	
 	
 	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
 	ImGui::PushStyleColor(ImGuiCol_Border,               ImVec4(  0.f,   0.f,   0.f, 1.f));
@@ -213,22 +285,61 @@ void Console2::Draw(){
 		//// history report region ////
 		f32 footer_height_to_reserve = style.ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(.016f, .067, .082f, 1.f));
-		ImGui::BeginChild("##console_report_region", ImVec2(0, -footer_height_to_reserve), false);{
-			//@Incomplete
-			ImGuiListClipper clipper; //this doesnt work b/c the way we store history sucks
-			clipper.Begin(history.size());
-			while(clipper.Step()) for(int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++){
-				ImGui::PushStyleColor(ImGuiCol_Text, ColorToVec4_(history[row_n].first));
-				ImGui::SameLine(0,0);
-				ImGui::TextWrapped("%s", history[row_n].second.c_str());
-				ImGui::PopStyleColor();
-				if(history[row_n].second[history[row_n].second.size() - 1] == '\n') ImGui::TextWrapped("\n");
-			}
+		ImGui::BeginChild("##console_report_region", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);{
 			
-			if(scroll_to_bottom) {
-				ImGui::SetScrollHereY(1); 
+			float winw = ImGui::GetWindowWidth();
+			float winh = ImGui::GetWindowHeight();
+
+			int chars_can_fit = winw / font_width;
+			int rows_can_fit = winh / font_height;
+
+			//manual scrolling since we implement our own clipper
+			if (DengInput->KeyDownAnyMod(MouseButton::SCROLLUP) && console_scroll_y > 0) {
+				console_scroll_y--;
+			}
+			if (DengInput->KeyDownAnyMod(MouseButton::SCROLLDOWN) && lineindicies.size() > rows_can_fit) {
+				console_scroll_y++;
+			}
+			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 0));
+			int rows = 0;
+			for (int i = 0, j = (lineindicies.size() > 0) ? lineindicies[console_scroll_y] : 0; j < historyc.size() && rows < rows_can_fit; i++, j++) {
+				ImGui::PushStyleColor(ImGuiCol_Text, ColorToVec4_(historyc[j].first));
+				
+				//we must wrap a command if it reaches the end of the screen or a newline is found
+				if (i == chars_can_fit || historyc[j].second == '\n') { 
+					ImGui::TextWrapped("\n");
+					i = 0;
+					rows++;
+				}
+				else {
+					ImGui::SameLine(0, 0);
+					char str[2]{ historyc[j].second, '\0' };
+					ImGui::Text(str);
+				}
+				ImGui::PopStyleColor();
+			}
+			if (console_scroll_y > lineindicies.size() - rows_can_fit) {
+				console_scroll_y = lineindicies.size() - rows_can_fit;
+			}
+
+			if (scroll_to_bottom && lineindicies.size() > rows_can_fit) {
+				console_scroll_y = lineindicies.size() - rows_can_fit;
 				scroll_to_bottom = false;
 			}
+
+			
+			////@Incomplete
+			//ImGuiListClipper clipper; //this doesnt work b/c the way we store history sucks
+			//clipper.Begin(history.size());
+			//while(clipper.Step()) for(int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++){
+			//	ImGui::PushStyleColor(ImGuiCol_Text, ColorToVec4_(history[row_n].first));
+			//	ImGui::SameLine(0,0);
+			//	ImGui::TextWrapped("%s", history[row_n].second.c_str());
+			//	ImGui::PopStyleColor();
+			//	if(history[row_n].second[history[row_n].second.size() - 1] == '\n') ImGui::TextWrapped("\n");
+			//}
+			ImGui::PopStyleVar();
+			
 		}ImGui::EndChild();
 		ImGui::PopStyleColor();
 		
