@@ -312,324 +312,325 @@ void EntityAdmin::SaveTEXT(const char* level_name_cstr){
     level_text.append(TOSTRING(">level"
                                "\nname         \"", level_name_cstr, "\""
                                "\nentity_count ", entities.size(),
-                               "\nlast_updated \"", DengTime->FormatDateTime("{M}/{d}/{y} {h}:{m}:{s}"), "\""));
-    
-    //materials
-    level_text.append("\n"
-                      "\n>materials");
-    for(MaterialVk& mat : DengRenderer->materials){
-        level_text.append(TOSTRING("\n",mat.id," \"",mat.name,"\" ",mat.shader," \"",
-                                   DengRenderer->textures[mat.albedoID].filename,"\" \"",
-                                   DengRenderer->textures[mat.normalID].filename,"\" \"",
-                                   DengRenderer->textures[mat.specularID].filename,"\" \"",
-                                   DengRenderer->textures[mat.lightID].filename,"\""));
-    }
-    
-    //models
-    level_text.append("\n"
-                      "\n>meshes");
-    for(MeshVk& mesh : DengRenderer->meshes){
-        if(!mesh.base){
-            level_text.append(TOSTRING("\n",mesh.id," \"",mesh.name,"\" ",mesh.visible," \"", mesh.primitives[0].materialIndex));
-            for(u32 i=1; i<mesh.primitives.size(); ++i){ level_text.append(TOSTRING(" ", mesh.primitives[i].materialIndex)); }
-            level_text.append("\"");
-        }
-    }
+							   "\nlast_updated \"", /*DengTime->FormatDateTime("{M}/{d}/{y} {h}:{m}:{s}"),*/ "\""));
+	//NOTE temp disable on last_updated until diff checking is setup
 	
-    //entities
-    level_text.append("\n"
-                      "\n>entities");
-    for_n(i, entities.size()){
-        level_text.append(TOSTRING("\n",i," \"",entities[i]->name,"\""));
-    }
+	//materials
+	level_text.append("\n"
+					  "\n>materials");
+	for(MaterialVk& mat : DengRenderer->materials){
+		level_text.append(TOSTRING("\n",mat.id," \"",mat.name,"\" ",mat.shader," \"",
+								   DengRenderer->textures[mat.albedoID].filename,"\" \"",
+								   DengRenderer->textures[mat.normalID].filename,"\" \"",
+								   DengRenderer->textures[mat.specularID].filename,"\" \"",
+								   DengRenderer->textures[mat.lightID].filename,"\""));
+	}
 	
-    //events
-    level_text.append("\n"
-                      "\n>events");
-    for(Entity* e : entities){
-        for(Component* c : e->components){
-            if(c->sender && c->sender->receivers.size() > 0){
-                for(Receiver* r : c->sender->receivers){
-                    if(Component* comp = dynamic_cast<Component*>(r)){
-                        level_text.append(TOSTRING("\n",e->id," \"",e->name,"\" ",c->comptype," ",c->event," -> ",
-                                                   comp->entity->id," \"",comp->entity->name,"\" ",comp->comptype));
-                    }
-                }
-            }
-        }
-    }
-    
-    //// entities files ////
-    u32   entity_idx_digits   = ((u32)log10(entities.size())) + 1;
-    u32   entity_idx_str_size = sizeof(char) * (entity_idx_digits + 2); //+2 because of _ and null-terminator
-    char* entity_idx_str      = (char*)malloc(entity_idx_str_size);
-    defer{ free(entity_idx_str); };
-    std::string entity_file_name;
-    
-    for_n(idx, entities.size()){
-        snprintf(entity_idx_str, entity_idx_str_size, "%0*u_", entity_idx_digits, idx);
-        entity_file_name = TOSTRING(entity_idx_str, entities[idx]->name);
-        
-        std::string entity_text = entities[idx]->SaveTEXT();
-        deshi::writeFile(level_dir + entity_file_name, entity_text.c_str(), entity_text.size());
-        SUCCESS("  Created entity file '", entity_file_name, "'");
-    }
-    
-    level_text.append("\n");
-    deshi::writeFile(level_dir + "_", level_text.c_str(), level_text.size());
-    SUCCESS("  Created level file '_'");
-    
-    SUCCESS("Finished saving level '", level_name, "' in ", TIMER_END(t_s), "ms");
+	//models
+	level_text.append("\n"
+					  "\n>meshes");
+	for(MeshVk& mesh : DengRenderer->meshes){
+		if(!mesh.base){
+			level_text.append(TOSTRING("\n",mesh.id," \"",mesh.name,"\" ",mesh.visible," \"", mesh.primitives[0].materialIndex));
+			for(u32 i=1; i<mesh.primitives.size(); ++i){ level_text.append(TOSTRING(" ", mesh.primitives[i].materialIndex)); }
+			level_text.append("\"");
+		}
+	}
+	
+	//entities
+	level_text.append("\n"
+					  "\n>entities");
+	for_n(i, entities.size()){
+		level_text.append(TOSTRING("\n",i," \"",entities[i]->name,"\""));
+	}
+	
+	//events
+	level_text.append("\n"
+					  "\n>events");
+	for(Entity* e : entities){
+		for(Component* c : e->components){
+			if(c->sender && c->sender->receivers.size() > 0){
+				for(Receiver* r : c->sender->receivers){
+					if(Component* comp = dynamic_cast<Component*>(r)){
+						level_text.append(TOSTRING("\n",e->id," \"",e->name,"\" ",c->comptype," ",c->event," -> ",
+												   comp->entity->id," \"",comp->entity->name,"\" ",comp->comptype));
+					}
+				}
+			}
+		}
+	}
+	
+	//// entities files ////
+	u32   entity_idx_digits   = ((u32)log10(entities.size())) + 1;
+	u32   entity_idx_str_size = sizeof(char) * (entity_idx_digits + 2); //+2 because of _ and null-terminator
+	char* entity_idx_str      = (char*)malloc(entity_idx_str_size);
+	defer{ free(entity_idx_str); };
+	std::string entity_file_name;
+	
+	for_n(idx, entities.size()){
+		snprintf(entity_idx_str, entity_idx_str_size, "%0*u_", entity_idx_digits, idx);
+		entity_file_name = TOSTRING(entity_idx_str, entities[idx]->name);
+		
+		std::string entity_text = entities[idx]->SaveTEXT();
+		deshi::writeFile(level_dir + entity_file_name, entity_text.c_str(), entity_text.size());
+		SUCCESS("  Created entity file '", entity_file_name, "'");
+	}
+	
+	level_text.append("\n");
+	deshi::writeFile(level_dir + "_", level_text.c_str(), level_text.size());
+	SUCCESS("  Created level file '_'");
+	
+	SUCCESS("Finished saving level '", level_name, "' in ", TIMER_END(t_s), "ms");
 }
 
 #define ParsingError "Error parsing '",level_dir,"_' on line '",line_number
 enum struct LevelHeader{
-    INVALID, LEVEL, MATERIALS, MESHES, ENTITIES, EVENTS
+	INVALID, LEVEL, MATERIALS, MESHES, ENTITIES, EVENTS
 };
 void EntityAdmin::LoadTEXT(const char* savename){
-    namespace fs = std::filesystem;
-    
-    if(!savename) return ERROR("Failed to load text-file: no name passed");
-    std::string levels_dir = deshi::dirData() + "levels/";
-    std::string level_dir = levels_dir + savename + "/";
-    if(!fs::is_directory(level_dir)) return ERROR("Failed to find directory: ", level_dir);
-    
-    Reset();
-    SUCCESS("Loading level: ", savename);
-    TIMER_START(t_l);
-    
-    u32 entity_count = 0;
-    std::vector<pair<u32,u32>> material_id_diffs; //old_id, new_id
-    std::vector<pair<u32,u32>> mesh_id_diffs; //old_id, new_id
-    std::vector<pair<u32,u32,u32,u32,u32>> events; //send_ent_id, send_comp_type, event_type, receive_ent_id, receive_comp_type
-    {//// parse level file ////
-        char* buffer = deshi::readFileAsciiToArray(level_dir+"_");
-        if(!buffer) return;
-        defer{ delete[] buffer; };
-        
-        //parsing
-        LevelHeader header = LevelHeader::INVALID;
-        std::string line;
-        char* new_line = buffer-1;
-        char* line_start;
-        for(u32 line_number = 1; ;line_number++){
-            //get the next line
-            line_start = new_line+1;
-            if((new_line = strchr(line_start, '\n')) == 0) break; //end of file if cant find '\n'
-            line = std::string(line_start, new_line-line_start);
-            
-            line = deshi::eat_comments(line);
-            line = deshi::eat_spaces_leading(line);
-            line = deshi::eat_spaces_trailing(line);
-            if(line.empty()) continue;
-            
-            //headers
-            if(line[0] == '>'){
-                if     (line == ">level")    { header = LevelHeader::LEVEL;     }
-                else if(line == ">materials"){ header = LevelHeader::MATERIALS; }
-                else if(line == ">meshes")   { header = LevelHeader::MESHES;    }
-                else if(line == ">entities") { header = LevelHeader::ENTITIES;  }
-                else if(line == ">events")   { header = LevelHeader::EVENTS;  }
-                else{
-                    header = LevelHeader::INVALID;
-                    ERROR(ParsingError,"'! Unknown header: ", line);
-                }
-                continue;
-            }
-            
-            //header values (skip if an invalid header)
-            if(header == LevelHeader::INVALID) { ERROR(ParsingError,"'! Invalid header; skipping line"); continue; }
-            std::vector<std::string> split = deshi::space_delimit_ignore_strings(line);
-            
-            switch(header){
-                case(LevelHeader::LEVEL):{
-                    if(split.size() != 2){ ERROR(ParsingError,"'! Level lines should have 2 values"); continue; }
-                    
-                    if(split[0] == "name"){ editor.level_name = split[1]; }
-                    //TODO maybe compare entity_count with the number of entities loaded?
-                }break;
-                case(LevelHeader::MATERIALS):{
-                    if(split.size() != 7){ ERROR(ParsingError,"'! Material lines should have 7 values"); continue; }
-                    
-                    u32 old_id = std::stoi(split[0]);
-                    u32 new_id = DengRenderer->CreateMaterial(split[1].c_str(), std::stoi(split[2]), 
-                                                              DengRenderer->LoadTexture(split[3].c_str()),
-                                                              DengRenderer->LoadTexture(split[4].c_str()),
-                                                              DengRenderer->LoadTexture(split[5].c_str()),
-                                                              DengRenderer->LoadTexture(split[6].c_str()));
-                    material_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
-                }break;
-                case(LevelHeader::MESHES):{
-                    if(split.size() != 4){ ERROR(ParsingError,"'! Mesh lines should have 4 values"); continue; }
-                    
-                    //id
-                    u32 old_id = std::stoi(split[0]);
-                    u32 new_id = DengRenderer->CreateMesh(&scene, split[1].c_str(), false);
-                    mesh_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
-                    
-                    //visible
-                    DengRenderer->meshes[new_id].visible = deshi::parse_bool(split[2], level_dir.c_str(), line_number);
-                    
-                    //materials
-                    std::vector<std::string> mat_ids = deshi::space_delimit(split[3]); 
-                    for_n(i, DengRenderer->meshes[new_id].primitives.size()){
-                        u32 old_mat = std::stoi(mat_ids[i]);
-                        for(auto& diff : material_id_diffs){
-                            if(diff.first == old_mat){
-                                DengRenderer->meshes[new_id].primitives[i].materialIndex = diff.second;
-                            }
-                        }
-                    }
-                }break;
-                case(LevelHeader::ENTITIES):{
-                    entity_count += 1;
-                    //TODO maybe can conditionally load entities?
-                }break;
-                case(LevelHeader::EVENTS):{
-                    if(split.size() != 8){ ERROR(ParsingError,"'! Material lines should have 8 values"); continue; }
-					
-                    u32 send_ent_id = std::stoi(split[0]);
-                    std::string send_ent_name = split[1];
-                    u32 send_comp_type = std::stoi(split[2]);
-                    u32 event_type = std::stoi(split[3]);
-                    //dummy arrow split[4]
-                    u32 rec_ent_id = std::stoi(split[5]);
-                    std::string rec_ent_name = split[6];
-                    u32 rec_comp_type = std::stoi(split[7]);
-					
-                    events.push_back(pair<u32,u32,u32,u32,u32>(send_ent_id,send_comp_type,event_type,rec_ent_id,rec_comp_type));
-                }break;
-            }
-        }
-    }
-    
-    //// parse entity files ////
-    std::vector<Entity*> ents; ents.reserve(entity_count);
-    for(std::string& file : deshi::iterateDirectory(level_dir)){
-        if(file == "_") continue;
-        if(Entity* e = Entity::LoadTEXT(this, level_dir+file, mesh_id_diffs)){
-            ents.push_back(e);
-        }
-    }
-    
-    //// events ////
-    for_n(i, events.size()){
-        //find receiving component
-        Component* rec_comp = 0;
-        for(Entity* e : ents){
-            if(e->id == events[i].fourth){
-                for(Component* c : e->components){
-                    if(c->comptype == events[i].fifth){
-                        rec_comp = c;
-                    }
-                }
-            }
-        }
-        if(!rec_comp){
-            ERROR("Unable to find component for event: ", i);
-            break;
-        }
-		
-        //add event and receiver to sender component
-        for(Entity* e : ents){
-            if(e->id == events[i].first){
-                for(Component* c : e->components){
-                    if(c->comptype == events[i].second){
-                        c->event = events[i].third;
-                        if(!c->sender) c->sender = new Sender;
-                        c->sender->AddReceiver(rec_comp);
-                        rec_comp->entity->connections.insert(e);
-                        SUCCESS("Added event '",EventStrings[events[i].third],"': ",
-                                e->name," ",c->comptype," -> ",rec_comp->entity->name," ",rec_comp->comptype);
-                    }
-                }
-            }
-        }
-    }
+	namespace fs = std::filesystem;
 	
-    //// create entities ////
-    for(Entity* e : ents){
-        CreateEntity(e);
-    }
-    
-    SUCCESS("Finished loading level '", savename, "' in ", TIMER_END(t_l), "ms");
-    SkipUpdate();
+	if(!savename) return ERROR("Failed to load text-file: no name passed");
+	std::string levels_dir = deshi::dirData() + "levels/";
+	std::string level_dir = levels_dir + savename + "/";
+	if(!fs::is_directory(level_dir)) return ERROR("Failed to find directory: ", level_dir);
+	
+	Reset();
+	SUCCESS("Loading level: ", savename);
+	TIMER_START(t_l);
+	
+	u32 entity_count = 0;
+	std::vector<pair<u32,u32>> material_id_diffs; //old_id, new_id
+	std::vector<pair<u32,u32>> mesh_id_diffs; //old_id, new_id
+	std::vector<pair<u32,u32,u32,u32,u32>> events; //send_ent_id, send_comp_type, event_type, receive_ent_id, receive_comp_type
+	{//// parse level file ////
+		char* buffer = deshi::readFileAsciiToArray(level_dir+"_");
+		if(!buffer) return;
+		defer{ delete[] buffer; };
+		
+		//parsing
+		LevelHeader header = LevelHeader::INVALID;
+		std::string line;
+		char* new_line = buffer-1;
+		char* line_start;
+		for(u32 line_number = 1; ;line_number++){
+			//get the next line
+			line_start = new_line+1;
+			if((new_line = strchr(line_start, '\n')) == 0) break; //end of file if cant find '\n'
+			line = std::string(line_start, new_line-line_start);
+			
+			line = deshi::eat_comments(line);
+			line = deshi::eat_spaces_leading(line);
+			line = deshi::eat_spaces_trailing(line);
+			if(line.empty()) continue;
+			
+			//headers
+			if(line[0] == '>'){
+				if     (line == ">level")    { header = LevelHeader::LEVEL;     }
+				else if(line == ">materials"){ header = LevelHeader::MATERIALS; }
+				else if(line == ">meshes")   { header = LevelHeader::MESHES;    }
+				else if(line == ">entities") { header = LevelHeader::ENTITIES;  }
+				else if(line == ">events")   { header = LevelHeader::EVENTS;  }
+				else{
+					header = LevelHeader::INVALID;
+					ERROR(ParsingError,"'! Unknown header: ", line);
+				}
+				continue;
+			}
+			
+			//header values (skip if an invalid header)
+			if(header == LevelHeader::INVALID) { ERROR(ParsingError,"'! Invalid header; skipping line"); continue; }
+			std::vector<std::string> split = deshi::space_delimit_ignore_strings(line);
+			
+			switch(header){
+				case(LevelHeader::LEVEL):{
+					if(split.size() != 2){ ERROR(ParsingError,"'! Level lines should have 2 values"); continue; }
+					
+					if(split[0] == "name"){ editor.level_name = split[1]; }
+					//TODO maybe compare entity_count with the number of entities loaded?
+				}break;
+				case(LevelHeader::MATERIALS):{
+					if(split.size() != 7){ ERROR(ParsingError,"'! Material lines should have 7 values"); continue; }
+					
+					u32 old_id = std::stoi(split[0]);
+					u32 new_id = DengRenderer->CreateMaterial(split[1].c_str(), std::stoi(split[2]), 
+															  DengRenderer->LoadTexture(split[3].c_str()),
+															  DengRenderer->LoadTexture(split[4].c_str()),
+															  DengRenderer->LoadTexture(split[5].c_str()),
+															  DengRenderer->LoadTexture(split[6].c_str()));
+					material_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
+				}break;
+				case(LevelHeader::MESHES):{
+					if(split.size() != 4){ ERROR(ParsingError,"'! Mesh lines should have 4 values"); continue; }
+					
+					//id
+					u32 old_id = std::stoi(split[0]);
+					u32 new_id = DengRenderer->CreateMesh(&scene, split[1].c_str(), false);
+					mesh_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
+					
+					//visible
+					DengRenderer->meshes[new_id].visible = deshi::parse_bool(split[2], level_dir.c_str(), line_number);
+					
+					//materials
+					std::vector<std::string> mat_ids = deshi::space_delimit(split[3]); 
+					for_n(i, DengRenderer->meshes[new_id].primitives.size()){
+						u32 old_mat = std::stoi(mat_ids[i]);
+						for(auto& diff : material_id_diffs){
+							if(diff.first == old_mat){
+								DengRenderer->meshes[new_id].primitives[i].materialIndex = diff.second;
+							}
+						}
+					}
+				}break;
+				case(LevelHeader::ENTITIES):{
+					entity_count += 1;
+					//TODO maybe can conditionally load entities?
+				}break;
+				case(LevelHeader::EVENTS):{
+					if(split.size() != 8){ ERROR(ParsingError,"'! Material lines should have 8 values"); continue; }
+					
+					u32 send_ent_id = std::stoi(split[0]);
+					std::string send_ent_name = split[1];
+					u32 send_comp_type = std::stoi(split[2]);
+					u32 event_type = std::stoi(split[3]);
+					//dummy arrow split[4]
+					u32 rec_ent_id = std::stoi(split[5]);
+					std::string rec_ent_name = split[6];
+					u32 rec_comp_type = std::stoi(split[7]);
+					
+					events.push_back(pair<u32,u32,u32,u32,u32>(send_ent_id,send_comp_type,event_type,rec_ent_id,rec_comp_type));
+				}break;
+			}
+		}
+	}
+	
+	//// parse entity files ////
+	std::vector<Entity*> ents; ents.reserve(entity_count);
+	for(std::string& file : deshi::iterateDirectory(level_dir)){
+		if(file == "_") continue;
+		if(Entity* e = Entity::LoadTEXT(this, level_dir+file, mesh_id_diffs)){
+			ents.push_back(e);
+		}
+	}
+	
+	//// events ////
+	for_n(i, events.size()){
+		//find receiving component
+		Component* rec_comp = 0;
+		for(Entity* e : ents){
+			if(e->id == events[i].fourth){
+				for(Component* c : e->components){
+					if(c->comptype == events[i].fifth){
+						rec_comp = c;
+					}
+				}
+			}
+		}
+		if(!rec_comp){
+			ERROR("Unable to find component for event: ", i);
+			break;
+		}
+		
+		//add event and receiver to sender component
+		for(Entity* e : ents){
+			if(e->id == events[i].first){
+				for(Component* c : e->components){
+					if(c->comptype == events[i].second){
+						c->event = events[i].third;
+						if(!c->sender) c->sender = new Sender;
+						c->sender->AddReceiver(rec_comp);
+						rec_comp->entity->connections.insert(e);
+						SUCCESS("Added event '",EventStrings[events[i].third],"': ",
+								e->name," ",c->comptype," -> ",rec_comp->entity->name," ",rec_comp->comptype);
+					}
+				}
+			}
+		}
+	}
+	
+	//// create entities ////
+	for(Entity* e : ents){
+		CreateEntity(e);
+	}
+	
+	SUCCESS("Finished loading level '", savename, "' in ", TIMER_END(t_l), "ms");
+	SkipUpdate();
 }
 #undef ParsingError
 
 struct SaveHeader{
-    u32 magic;
-    u32 flags;
-    u32 entityCount;
-    u32 entityArrayOffset;
-    u32 textureCount;
-    u32 textureArrayOffset;
-    u32 materialCount;
-    u32 materialArrayOffset;
-    u32 meshCount;
-    u32 meshArrayOffset;
-    u32 componentTypeCount;
-    u32 componentTypeHeaderArrayOffset;
+	u32 magic;
+	u32 flags;
+	u32 entityCount;
+	u32 entityArrayOffset;
+	u32 textureCount;
+	u32 textureArrayOffset;
+	u32 materialCount;
+	u32 materialArrayOffset;
+	u32 meshCount;
+	u32 meshArrayOffset;
+	u32 componentTypeCount;
+	u32 componentTypeHeaderArrayOffset;
 };
 
 void EntityAdmin::SaveDESH(const char* filename) {
-    //std::vector<char> save_data(16384);
-    
-    //open file
-    std::string filepath = deshi::dirSaves() + filename;
-    std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
-    if(!file.is_open()){ ERROR("Failed to open file '", filepath, "' when trying to save"); return; }
-    
-    SaveHeader header;
-    file.write((const char*)&header, sizeof(SaveHeader)); //fill header
-    header.magic = 1213416772; //DESH
-    header.flags = 0;
-    
-    //// entities ////
-    header.entityCount       = entities.size();
-    header.entityArrayOffset = sizeof(SaveHeader);
-    
-    //store sorted components and write entities
-    header.componentTypeCount = 10;
-    std::vector<AudioListener*>  compsAudioListener;
-    std::vector<AudioSource*>    compsAudioSource;
-    std::vector<BoxCollider*>    compsColliderBox;
-    std::vector<AABBCollider*>   compsColliderAABB;
-    std::vector<SphereCollider*> compsColliderSphere;
-    std::vector<Light*>          compsLight;
-    std::vector<MeshComp*>       compsMeshComp;
-    std::vector<Physics*>        compsPhysics;
-    std::vector<Movement*>       compsMovement;
-    std::vector<Player*>         compsPlayer;
-    //TODO(delle,Cl) convert these vectors to char vectors and when iterating thru entities
-    // and thier components, call the save function of an entity to add to the components
-    // vector and then use the final size of that vector for type header offsets
-    //Or, loop thru layers
-    
-    for(Entity* e : entities) {
-        //write entity
-        file.write((const char*)&e->id,                 sizeof(u32));
-        file.write(e->name,                             sizeof(char)*DESHI_NAME_SIZE);
-        file.write((const char*)&e->transform.position, sizeof(Vector3));
-        file.write((const char*)&e->transform.rotation, sizeof(Vector3));
-        file.write((const char*)&e->transform.scale,    sizeof(Vector3));
-        
-        //sort components
-        for (Component* c : e->components) {
-            switch (c->comptype) {
-                case ComponentType_Physics:       compsPhysics.push_back(dyncast(Physics, c)); break;
-                case ComponentType_Collider: {
-                    Collider* col = dyncast(Collider, c);
-                    switch (col->type) {
-                        case ColliderType_Box:    compsColliderBox.push_back(dyncast(BoxCollider, col)); break;
-                        case ColliderType_AABB:   compsColliderAABB.push_back(dyncast(AABBCollider, col)); break;
-                        case ColliderType_Sphere: compsColliderSphere.push_back(dyncast(SphereCollider, col)); break;
-                    }
-                } break;
-                case ComponentType_AudioListener: compsAudioListener.push_back(dyncast(AudioListener, c)); break;
-                case ComponentType_AudioSource:   compsAudioSource.push_back(dyncast(AudioSource, c)); break;
-                case ComponentType_Light:         compsLight.push_back(dyncast(Light, c)); break;
-                case ComponentType_OrbManager:    /*TODO(sushi) impl orb saving*/ break;
+	//std::vector<char> save_data(16384);
+	
+	//open file
+	std::string filepath = deshi::dirSaves() + filename;
+	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
+	if(!file.is_open()){ ERROR("Failed to open file '", filepath, "' when trying to save"); return; }
+	
+	SaveHeader header;
+	file.write((const char*)&header, sizeof(SaveHeader)); //fill header
+	header.magic = 1213416772; //DESH
+	header.flags = 0;
+	
+	//// entities ////
+	header.entityCount       = entities.size();
+	header.entityArrayOffset = sizeof(SaveHeader);
+	
+	//store sorted components and write entities
+	header.componentTypeCount = 10;
+	std::vector<AudioListener*>  compsAudioListener;
+	std::vector<AudioSource*>    compsAudioSource;
+	std::vector<BoxCollider*>    compsColliderBox;
+	std::vector<AABBCollider*>   compsColliderAABB;
+	std::vector<SphereCollider*> compsColliderSphere;
+	std::vector<Light*>          compsLight;
+	std::vector<MeshComp*>       compsMeshComp;
+	std::vector<Physics*>        compsPhysics;
+	std::vector<Movement*>       compsMovement;
+	std::vector<Player*>         compsPlayer;
+	//TODO(delle,Cl) convert these vectors to char vectors and when iterating thru entities
+	// and thier components, call the save function of an entity to add to the components
+	// vector and then use the final size of that vector for type header offsets
+	//Or, loop thru layers
+	
+	for(Entity* e : entities) {
+		//write entity
+		file.write((const char*)&e->id,                 sizeof(u32));
+		file.write(e->name,                             sizeof(char)*DESHI_NAME_SIZE);
+		file.write((const char*)&e->transform.position, sizeof(Vector3));
+		file.write((const char*)&e->transform.rotation, sizeof(Vector3));
+		file.write((const char*)&e->transform.scale,    sizeof(Vector3));
+		
+		//sort components
+		for (Component* c : e->components) {
+			switch (c->comptype) {
+				case ComponentType_Physics:       compsPhysics.push_back(dyncast(Physics, c)); break;
+				case ComponentType_Collider: {
+					Collider* col = dyncast(Collider, c);
+					switch (col->type) {
+						case ColliderType_Box:    compsColliderBox.push_back(dyncast(BoxCollider, col)); break;
+						case ColliderType_AABB:   compsColliderAABB.push_back(dyncast(AABBCollider, col)); break;
+						case ColliderType_Sphere: compsColliderSphere.push_back(dyncast(SphereCollider, col)); break;
+					}
+				} break;
+				case ComponentType_AudioListener: compsAudioListener.push_back(dyncast(AudioListener, c)); break;
+				case ComponentType_AudioSource:   compsAudioSource.push_back(dyncast(AudioSource, c)); break;
+				case ComponentType_Light:         compsLight.push_back(dyncast(Light, c)); break;
+				case ComponentType_OrbManager:    /*TODO(sushi) impl orb saving*/ break;
                 case ComponentType_Movement:      compsMovement.push_back(dyncast(Movement, c)); break;
                 case ComponentType_MeshComp:      compsMeshComp.push_back(dyncast(MeshComp, c)); break;
                 case ComponentType_Player:        compsPlayer.push_back(dyncast(Player, c)); break;
