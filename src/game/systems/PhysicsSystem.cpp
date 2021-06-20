@@ -12,7 +12,6 @@
 #include "../../utils/Command.h"
 
 u32 collCount;
-bool blah = true;
 
 bool breakphys = false;
 
@@ -416,6 +415,8 @@ bool is_in(T test, std::vector<T> vec) {
 	return false;
 }
 
+//TODO(sushi, Op) store face information eventually, these two functions could get really bad in some cases
+//				  doing that will also prevent us from checking a face several times if multiple triangles make it up
 //returns a faces neighbors as well as the triangles that make up the face
 inline pair<std::vector<Triangle*>, std::vector<Triangle*>>
 findFaceNbrs(Triangle* base) {
@@ -437,10 +438,26 @@ findFaceNbrs(Triangle* base) {
 	return pair<std::vector<Triangle*>, std::vector<Triangle*>>(ret, face);
 }
 
+//returns a vector of all triangles that make up a face
+//TODO(sushi, Cl) merge this function with the above or the other way around
+inline std::vector<Triangle*> findFace(Triangle* base) {
+	std::vector<Triangle*> face{ base };
+	for (int i = 0; i < face.size(); i++) {
+		for (Triangle* t : face[i]->nbrs) {
+			if (!is_in(t, face)) {
+				if (t->norm == base->norm) {
+					face.push_back(t);
+				}
+			}
+		}
+	}
+	return face;
+}
+
 
 //This is currently done by SAT
 inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Physics* obj2, ComplexCollider* obj2Col) {
-	//LOG("tick ", physTickCounter, " with ", obj1->entity->id, " against ", obj2->entity->id, " -------------------");
+	//LOG("tick ", physTickCounter, " with ", obj1->entity->id, " against ", obj2->entity->id, " ---------------------------------------------------------");
 	
 	Physics* o1 = obj1; Physics* o2 = obj2;
 	ComplexCollider* o1c = obj1Col; ComplexCollider* o2c = obj2Col;
@@ -459,19 +476,13 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 		return (p - plane_p).dot(plane_n);
 	};
 
-	vec3 p0, p1, p2, normal, intersect;
+	vec3 p0, p1, p2, normal, normal2, intersect;
 	f32  t;
 	int  index = 0;
 	bool done = false;
 
 	float saved = 0;
 	float saved2 = 0;
-	
-	Vector3 save;
-	Vector3 save2;
-
-	Vector3 saven;
-	Vector3 saven2;
 
 	for (int shape = 0; shape < 2; shape++) {
 		if (shape == 1) { 
@@ -479,31 +490,37 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 			o1 = obj2; o2 = obj1;
 		}
 
-		mat4 o1transform = o1->entity->transform.TransformMatrix();
-		mat4 o2transform = o2->entity->transform.TransformMatrix();
-
+		mat4 o1transform = Matrix4::TransformationMatrix(o1->position, o1->rotation, o1->entity->transform.scale);//o1->entity->transform.TransformMatrix();
+		mat4 o2transform = Matrix4::TransformationMatrix(o2->position, o2->rotation, o2->entity->transform.scale);//o2->entity->transform.TransformMatrix();
+		
 		mat4 o1rotation = Matrix4::RotationMatrix(o1->rotation);
 		mat4 o2rotation = Matrix4::RotationMatrix(o2->rotation);
 
-		for (Batch& b : o1c->mesh->batchArray) {
-			for (u32 i = 0; i < b.indexArray.size(); i += 3) {
-				p0 = b.vertexArray[b.indexArray[i]].pos * o1transform;
-				normal = b.vertexArray[b.indexArray[i]].normal * o1rotation;
-				saven2 = normal;
-				float deepest = INFINITY;
-				for (Batch& b2 : o2c->mesh->batchArray) {
-					//this would maybe work better using just the indexarray, not sure yet tho
-					for (u32 j = 0; j < b2.vertexArray.size(); j++) {
-						Vector3 vert = b2.vertexArray[j].pos * o2transform;
-						float vertdepth = -dist(p0, normal, vert);
-						//ImGui::DebugDrawLine3(p0, p0 + normal * vertdepth, (blah) ? Color::VERY_DARK_MAGENTA : Color::GREEN);
-						if (vertdepth < deepest) deepest = vertdepth;
+		//PRINTLN("o1 rot: " << o1->rotation.str());
+		//PRINTLN("o2 rot: " << o2->rotation.str());
+
+		Face* lastface;
+		for (Face* f : o1c->mesh->faces) {
+			p0 = f->points[0] * o1transform;
+			normal = f->norm * o1rotation;
+			float deepest = INFINITY;
+			for (Face* f2 : o2c->mesh->faces) {
+				for (int i = 0; i < f2->points.size(); i++) {
+					Vector3 v = f2->points[i] * o2transform;
+					p1 = v;
+					float vertdepth = Math::DistPointToPlane(v, normal, p0);
+					//ImGui::DebugDrawLine3(v, v - normal * vertdepth, Color(0, 255.0 * (i / (float)f2->points.size()), 0));
+					if (vertdepth < deepest) {
+						deepest = vertdepth;
 					}
+					lastface = f2;
 				}
-				//LOG(deepest);
 				if (deepest > 0) {
-					//ImGui::DebugDrawLine3(p0, p0 + normal * saved, Color::GREEN);
-					//ERROR("func failed with deepest ", deepest);
+					for (int i = 0; i < lastface->points.size(); i += 2) {
+						ImGui::DebugDrawLine3(lastface->points[i] * o2transform, lastface->points[i + 1] * o2transform, Color::MAGENTA);
+					}
+					ImGui::DebugDrawLine3(p1, p1 - normal * deepest, Color::BLACK);
+					ERROR("func failed with deepest ", deepest);
 					return false;
 				}
 				else if (deepest > minpen) {
@@ -513,10 +530,46 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 					incphys = o2;
 					refcol = o1c;
 					inccol = o2c;
-					save2 = p0;
 				}
 			}
+		
 		}
+
+
+		//for (Batch& b : o1c->mesh->batchArray) {
+		//	for (u32 i = 0; i < b.indexArray.size(); i += 3) {
+		//		p0 = b.vertexArray[b.indexArray[i]].pos * o1transform;
+		//		normal = b.vertexArray[b.indexArray[i]].normal * o1rotation;
+		//		//ImGui::DebugDrawLine3(p0, p0 + normal, Color(20, 50, 155));
+		//		//LOG("eid: ", o1->entityID, " shape: ", shape, normal);
+		//		float deepest = INFINITY;
+		//		for (Batch& b2 : o2c->mesh->batchArray) {
+		//			//this would maybe work better using just the indexarray, not sure yet tho
+		//			for (u32 j = 0; j < b2.vertexArray.size(); j++) {
+		//				Vector3 vert = b2.vertexArray[j].pos * o2transform;
+		//				normal2 = b2.vertexArray[j].normal * o2rotation;
+		//				float vertdepth = Math::DistPointToPlane(vert, normal, p0);
+		//				ImGui::DebugDrawLine3(vert, vert - normal * vertdepth, Color(0, 255, 0));
+		//				//ImGui::DebugDrawText3(TOSTRING(vertdepth).c_str(), p0 + normal2 * vertdepth, Color::BLACK);
+		//				if (vertdepth < deepest) deepest = vertdepth;
+		//			}
+		//		}
+		//		//LOG(deepest);
+		//		if (deepest > 0) {
+		//			//ImGui::DebugDrawLine3(p0, p0 + normal * saved, Color::GREEN);
+		//			//ERROR("func failed with deepest ", deepest);
+		//			return false;
+		//		}
+		//		else if (deepest > minpen) {
+		//			minpen = deepest;
+		//			bestnorm = normal;
+		//			refphys = o1;
+		//			incphys = o2;
+		//			refcol = o1c;
+		//			inccol = o2c;
+		//		}
+		//	}
+		//}
 	}
 
 	//SUCCESS("func succeded with minpen ", minpen);
@@ -534,6 +587,23 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	//////////////////
 
 
+	//float furthest = -INFINITY;
+	//Triangle* best;
+	//for (Triangle* t : refcol->mesh->triangles) {
+	//	u32 furthestid = 0;
+	//	for (int i = 0; i < t->p.size(); i++) {
+	//		float dist = bestnorm.dot(t->p[i]);
+	//		if (dist > furthest) {
+	//			furthest = dist;
+	//			best = t;
+	//		}
+	//	}
+	//}
+
+
+
+
+
 	//find triangle that's most aligned with normal
 	u32 furthestTriRef = Geometry::FurthestTriangleAlongNormal(refcol->mesh, Matrix4::RotationMatrix(refphys->rotation), bestnorm);
 	u32 furthestTriInc = Geometry::FurthestTriangleAlongNormal(inccol->mesh, Matrix4::RotationMatrix(incphys->rotation), -bestnorm);
@@ -542,16 +612,34 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	Triangle* triRef = refcol->mesh->triangles[furthestTriRef];
 	Triangle* triInc = inccol->mesh->triangles[furthestTriInc];
 
-	Matrix4 refTransform = refphys->entity->transform.TransformMatrix();
-	Matrix4 incTransform = incphys->entity->transform.TransformMatrix();
+	//ImGui::DebugDrawTriangle3(triRef->midpoint(), triRef->midpoint() + bestnorm, Color::YELLOW);
+
+
+	Matrix4 refTransform = Matrix4::TransformationMatrix(refphys->position, refphys->rotation, refphys->entity->transform.scale);
+	Matrix4 incTransform = Matrix4::TransformationMatrix(incphys->position, incphys->rotation, incphys->entity->transform.scale);
+	ImGui::DebugDrawLine3(triRef->midpoint() * refTransform, triRef->midpoint() * refTransform + bestnorm, Color::YELLOW);
 
 	Matrix4 refRotation = Matrix4::RotationMatrix(refphys->rotation);
 	Matrix4 incRotation = Matrix4::RotationMatrix(incphys->rotation);
+	ImGui::DebugDrawLine3(triInc->midpoint() * incTransform, triInc->midpoint() * incTransform + triInc->norm * incRotation,  Color::VERY_DARK_YELLOW);
 
 	std::vector<Vector3> colPoints;
 	//we need to find all nbrs to the face, not just the triangle
 	pair<std::vector<Triangle*>, std::vector<Triangle*>>
 		nbrs2check = findFaceNbrs(triRef); 
+
+	std::vector<Triangle*> incFace = findFace(triInc);
+
+	//for (Triangle* t : triInc->face->tris) {
+	//	ImGui::DebugDrawTriangle3(
+	//		t->p[0] * incphys->entity->transform.TransformMatrix(),
+	//		t->p[1] * incphys->entity->transform.TransformMatrix(),
+	//		t->p[2] * incphys->entity->transform.TransformMatrix(), Color::MAGENTA);
+	//}
+
+	for (int i = 0; i < triInc->face->points.size(); i += 2) {
+		ImGui::DebugDrawLine3(triInc->face->points[i] * incTransform, triInc->face->points[i + 1] * incTransform, Color::MAGENTA);
+	}
 
 	//for (Triangle* t : nbrs2check.first) {
 	//	ImGui::DebugDrawTriangle3(
@@ -560,60 +648,69 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	//		t->p[2] * refphys->entity->transform.TransformMatrix(), Color::MAGENTA);
 	//}
 	//
-	//for (Triangle* t : nbrs2check.second) {
-	//	ImGui::DebugDrawTriangle3(
-	//		t->p[0] * refphys->entity->transform.TransformMatrix(),
-	//		t->p[1] * refphys->entity->transform.TransformMatrix(),
-	//		t->p[2] * refphys->entity->transform.TransformMatrix(), Color::GREEN);
-	//}
+	for (Triangle* t : nbrs2check.second) {
+		ImGui::DebugDrawTriangle3(
+			t->p[0] * refphys->entity->transform.TransformMatrix(),
+			t->p[1] * refphys->entity->transform.TransformMatrix(),
+			t->p[2] * refphys->entity->transform.TransformMatrix(), Color::GREEN);
+	}
 
-	//clip inc triangle's points against ref's adjacent faces
+	//clip inc face's points against ref's adjacent faces
 	for (Triangle* t : nbrs2check.first) {
 		Vector3 refP = t->p[0] * refTransform;
-		for (int i = 0; i < 3; i++) {
-			Vector3 incP = triInc->p[i] * incTransform;
-			Vector3 incPLast = triInc->p[(i + 2) % 3] * incTransform;
+		for (Triangle* tInc : incFace) {
+			for (int i = 0; i < 3; i++) {
+				Vector3 incP = tInc->p[i] * incTransform;
+				Vector3 incPLast = tInc->p[(i + 2) % 3] * incTransform;
 
-			float dCurr = Math::DistPointToPlane(incP, t->norm * refRotation, refP);
-			float dLast = Math::DistPointToPlane(incPLast, t->norm * refRotation, refP);
-	
-			if (dCurr > 0 && dLast < 0) {
-				//ImGui::DebugDrawText3(TOSTRING(dCurr).c_str(), incP);
-				//ImGui::DebugDrawLine3(incP, incP - t->norm * dCurr, Color::GREEN);
-				ImGui::DebugDrawText3(TOSTRING(i).c_str(), incP, Color::BLACK);
-				ImGui::DebugDrawLine3(incPLast, incPLast - t->norm * dLast, Color::RED);
-				Vector3 inter = Math::VectorPlaneIntersect(refP, t->norm * refRotation, incPLast, incP);
-				
-				//PRINTLN();
-				
-				//ImGui::DebugDrawText3(TOSTRING(intersect).c_str(), intersect);
+				float dCurr = -Math::DistPointToPlane(incP, t->norm * refRotation, refP);
+				float dLast = -Math::DistPointToPlane(incPLast, t->norm * refRotation, refP);
 
-				//if (-dist(intersect, triRef->norm * refRotation, triRef->p[0] * refTransform) >= 0) {
+				if (dCurr < 0 && dLast > 0) {
+					//ImGui::DebugDrawText3(TOSTRING(dCurr).c_str(), incP);
+					//ImGui::DebugDrawLine3(incP, incP + t->norm * dCurr, Color::GREEN);
+					//ImGui::DebugDrawText3(TOSTRING(dLast).c_str(), incPLast);
+					//ImGui::DebugDrawLine3(incPLast, incPLast + t->norm * dLast, Color::RED);
+					Vector3 inter = Math::VectorPlaneIntersect(refP, t->norm * refRotation, incPLast, incP);
+
 					colPoints.push_back(inter);
-				//}
-				
-			}
-			else {
-				//colPoints.push_back(t->p[i]);
+
+				}
+				else {
+					//colPoints.push_back(t->p[i]);
+				}
 			}
 		}
 	}
 	
 	for (auto& v : colPoints) {
 		ImGui::DebugDrawCircle3(v, 5, Color(255, 255, 0));
-		
-		
 		float distance = Math::DistPointToPlane(v, triRef->norm * refRotation, triRef->p[0] * refTransform);
-		if (distance > 0) {
-			o1->position -= bestnorm * distance / 2;
-			o2->position += bestnorm * distance / 2;
+		
+		
+		
+		if (distance < 0) {
+		
+			ImGui::DebugDrawCircleFilled3(o1->position - bestnorm * distance / 2, 5, Color(0, 0, 255));
+			//ImGui::DebugDrawText3(TOSTRING(physTickCounter).c_str(), o1->position - bestnorm * distance / 2, Color::BLACK);
+			ImGui::DebugDrawCircleFilled3(o2->position + bestnorm * distance / 2, 5, Color(255, 0, 0));
+			//ImGui::DebugDrawText3(TOSTRING(physTickCounter).c_str(), o2->position + bestnorm * distance / 2, Color::BLACK);
+			ImGui::DebugDrawCircleFilled3(o2->position, 5, Color::GREEN);
+			ImGui::DebugDrawCircleFilled3(o1->position, 5, Color::GREEN);
+			ImGui::DebugDrawText3(TOSTRING(distance).c_str(), v, Color::BLACK);
+
+		//PRINTLN(physTickCounter << " ------------------------------------------ " << distance);
+		//PRINTLN(o1 << " before: " << TOSTRING(o1->position));
+			//o1->position -= bestnorm * distance / 2;
+		//PRINTLN(o1 << " change: " << TOSTRING(bestnorm * distance / 2));
+		//PRINTLN(o1 << " after:  " << TOSTRING(o1->position));
+		//PRINTLN(o2 << " before: " << TOSTRING(o2->position));
+		//PRINTLN(o2 << " change: " << TOSTRING(-bestnorm * distance / 2));
+			//o2->position += bestnorm * distance / 2;
+		//PRINTLN(o2 << " after:  " << TOSTRING(o2->position));
+
 		}
-		
-		
-		
-		
 	}
-	blah = !blah;
 	return true;
 }
 
@@ -992,7 +1089,6 @@ void PhysicsSystem::Init(EntityAdmin* a) {
 
 void PhysicsSystem::Update() {
 	std::vector<PhysicsTuple> tuples = GetPhysicsTuples(admin);
-	blah = true;
 	//update physics extra times per frame if frame time delta is larger than physics time delta
 	TIMER_START(physLocalTime);
 	while(DengTime->fixedAccumulator >= DengTime->fixedDeltaTime) {
@@ -1021,17 +1117,17 @@ void PhysicsSystem::Update() {
 	//interpolate between new physics position and old transform position by the leftover time
 	float alpha = DengTime->fixedAccumulator / DengTime->fixedDeltaTime;
 	for(auto& t : tuples) {
-		switch (t.physics->contactState) {
-			case ContactMoving:
-			ImGui::DebugDrawText3("ContactMoving", t.transform->position);
-			break;
-			case ContactStationary:
-			ImGui::DebugDrawText3("ContactStationary", t.transform->position);
-			break;
-			case ContactNONE:
-			ImGui::DebugDrawText3("ContactNONE", t.transform->position);
-			break;
-		}
+		//switch (t.physics->contactState) {
+		//	case ContactMoving:
+		//	ImGui::DebugDrawText3("ContactMoving", t.transform->position);
+		//	break;
+		//	case ContactStationary:
+		//	ImGui::DebugDrawText3("ContactStationary", t.transform->position);
+		//	break;
+		//	case ContactNONE:
+		//	ImGui::DebugDrawText3("ContactNONE", t.transform->position);
+		//	break;
+		//}
 		
 		if (t.physics->twoDpolygon) {
 			delete t.physics->twoDpolygon;

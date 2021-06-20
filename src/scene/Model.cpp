@@ -89,9 +89,51 @@ std::vector<Vector2> Mesh::GenerateOutlinePoints(Matrix4 transform, Matrix4 proj
 
 //TODO(sushi, Cl) move this to some utilities file eventually 
 template<class T>
-bool isthisin(T test, std::vector<T> vec) {
+bool is_in(T test, std::vector<T> vec) {
 	for (T t : vec) if (test == t) return true;
 	return false;
+}
+
+//inline std::vector<Triangle*> findFace(Triangle* base) {
+//	std::vector<Triangle*> face{ base };
+//	for (int i = 0; i < face.size(); i++) {
+//		for (Triangle* t : face[i]->nbrs) {
+//			if (!is_in(t, face)) {
+//				if (t->norm == base->norm) {
+//					face.push_back(t);
+//				}
+//			}
+//		}
+//	}
+//	return face;
+//}
+
+inline Face* findFace(Triangle* base) {
+	Face* face = new Face();
+	face->tris.push_back(base);
+	face->norm = base->norm;
+	std::vector<Triangle*> checkedTris{ base };
+	for (int i = 0; i < checkedTris.size(); i++) { 
+		Triangle* ch = checkedTris[i];
+		for (int o = 0; o < ch->nbrs.size(); o++) {
+			Triangle* ca = ch->nbrs[o];
+			if (!is_in(ca, checkedTris)) {
+				if (ca->norm == base->norm) {
+					checkedTris.push_back(ca);
+					face->tris.push_back(ca);
+				}
+				else {
+					Vector3 p1 = ch->p[ch->sharededge[o]];
+					Vector3 p2 = ch->p[(ch->sharededge[o] + 1) % 3];
+					if (!is_in(p1, face->points))
+						face->points.push_back(p1);
+					if (!is_in(p2, face->points))
+						face->points.push_back(p2);
+				}
+			}
+		}
+	}
+	return face;
 }
 
 
@@ -148,7 +190,7 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 		std::vector<Vector3> tip{ ti->p[0], ti->p[1], ti->p[2] };
 		for (int o = i + 1; o < triangles.size(); o++) {
 			to = triangles[o];
-			if (!isthisin(to, ti->nbrs)) {
+			if (!is_in(to, ti->nbrs)) {
 				if      (eqtoany(tip, to->p[0]) && eqtoany(tip, to->p[1])) jointris(ti, to, 0);
 				else if (eqtoany(tip, to->p[1]) && eqtoany(tip, to->p[2])) jointris(ti, to, 1);
 				else if (eqtoany(tip, to->p[2]) && eqtoany(tip, to->p[0])) jointris(ti, to, 2);
@@ -158,6 +200,23 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 	}
 	LOG("FindTriangleNeighbors on mesh '", m->name, "' took ", TIMER_END(tnf), "ms");
 	
+	//sorry ill make this better later
+	//find faces
+	std::vector<Face*> faces;
+	std::vector<Triangle*> checkedTris;
+	for (int i = 0; i < triangles.size(); i++) {
+		if (!is_in(triangles[i], checkedTris)) {
+			Face* f = findFace(triangles[i]);
+			for (Triangle* t : f->tris) {
+				checkedTris.push_back(t);
+				t->face = f;
+			}
+			faces.push_back(f);
+		}
+	}
+
+	m->faces = faces;
+
 	return triangles;
 	
 }

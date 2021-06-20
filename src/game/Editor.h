@@ -68,6 +68,7 @@ namespace ImGui {
 	void EndDebugLayer(); 
 	void DebugDrawCircle(Vector2 pos, float radius, Color color = Color::WHITE);
 	void DebugDrawCircle3(Vector3 pos, float radius, Color color = Color::WHITE);
+	void DebugDrawCircleFilled3(Vector3 pos, float radius, Color color = Color::WHITE);
 	void DebugDrawLine(Vector2 pos1, Vector2 pos2, Color color = Color::WHITE);
 	void DebugDrawLine3(Vector3 pos1, Vector3 pos2, Color color = Color::WHITE);
 	void DebugDrawText(const char* text, Vector2 pos, Color color = Color::WHITE);

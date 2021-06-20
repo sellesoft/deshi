@@ -62,6 +62,10 @@ struct Color {
 		return Color(r*rhs, g*rhs, b*rhs, a*rhs);
 	}
 
+	Color operator / (float rhs) {
+		return Color(r / rhs, g / rhs, b / rhs, a);
+	}
+
 	void operator *= (float rhs) {
 		this->r *= rhs; this->g *= rhs; this->b *= rhs; this->a *= rhs;
 	}

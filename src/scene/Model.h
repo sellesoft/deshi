@@ -116,6 +116,9 @@ struct Triangle {
 
 struct Face {
 	std::vector<Triangle*> tris;
+	std::vector<Face*> nbrs;
+	std::vector<Vector3> points; //every other point is followed by the next point of its edge
+	Vector3 norm;
 };
 
 struct Mesh {
@@ -128,7 +131,7 @@ struct Mesh {
 	u32 batchCount = 0;
 	std::vector<Batch> batchArray;
 	std::vector<Triangle*> triangles;
-	std::vector<Face> faces;
+	std::vector<Face*> faces;
 	
 	Mesh() {}
 	Mesh(const char* name, std::vector<Batch> batchArray);

@@ -23,10 +23,6 @@ namespace Geometry {
 		u32 furthestTriId = 0;
 		for (int i = 0; i < m->triangles.size(); i++) {
 			Triangle* t = m->triangles[i];
-			//std::vector<Vector3> points;
-			//points.assign(t->p, t->p + 3);
-			//float tf = FurthestPointAlongNormal(points, n);
-
 			Vector3 norm = t->norm * rotation;
 
 			float dp = norm.dot(n);

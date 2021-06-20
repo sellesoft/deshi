@@ -290,19 +290,31 @@ inline void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
             if (DengInput->KeyPressed(Key::X)) {
                 xaxis = true; yaxis = false; zaxis = false; 
                 sel->transform.rotation = initialObjRot;
+                if (Physics* p = sel->GetComponent<Physics>()) {
+                    p->rotation = initialObjRot;
+                }
             }
             if (DengInput->KeyPressed(Key::Y)) {
                 xaxis = false; yaxis = true; zaxis = false; 
                 sel->transform.rotation = initialObjRot;
+                if (Physics* p = sel->GetComponent<Physics>()) {
+                    p->rotation = initialObjRot;
+                }
             }
             if (DengInput->KeyPressed(Key::Z)) {
                 xaxis = false; yaxis = false; zaxis = true; 
                 sel->transform.rotation = initialObjRot;
+                if (Physics* p = sel->GetComponent<Physics>()) {
+                    p->rotation = initialObjRot;
+                }
             }
             if (!(xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
                 //stop rotating entirely if press esc or right click w no rotate mode on
                 xaxis = false; yaxis = false; zaxis = false; 
                 sel->transform.rotation = initialObjRot;
+                if (Physics* p = sel->GetComponent<Physics>()) {
+                    p->rotation = initialObjRot;
+                }
                 initialrot = true; rotatingObj = false;
                 admin->controller.cameraLocked = false;
                 return;
@@ -311,6 +323,9 @@ inline void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
                 //leave rotation mode if in one when pressing esc
                 xaxis = false; yaxis = false; zaxis = false; 
                 sel->transform.rotation = initialObjRot; initialrot = true;
+                if (Physics* p = sel->GetComponent<Physics>()) {
+                    p->rotation = initialObjRot;
+                }
             }
             if (DengInput->KeyPressed(MouseButton::LEFT)) {
                 //drop the object if left click
@@ -379,6 +394,9 @@ inline void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
                 }
                 
                 sel->transform.rotation.z = ang;
+                if (Physics* p = sel->GetComponent<Physics>()) {
+                    p->rotation.z = ang;
+                }
             }
             else if (yaxis) {
                 Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
@@ -393,6 +411,9 @@ inline void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
                 }
                 
                 sel->transform.rotation.y = ang;
+                if (Physics* p = sel->GetComponent<Physics>()) {
+                    p->rotation.y = ang;
+                }
             }
             else if (zaxis) {
                 Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
@@ -407,6 +428,9 @@ inline void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManag
                 }
                 
                 sel->transform.rotation.x = ang;
+                if (Physics* p = sel->GetComponent<Physics>()) {
+                    p->rotation.x = ang;
+                }
             }
         } //if(DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj)
     } //if(!admin->IMGUI_MOUSE_CAPTURE)
@@ -447,6 +471,13 @@ namespace ImGui {
         Vector2 windimen = DengWindow->dimensions;
         Vector2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
         ImGui::GetBackgroundDrawList()->AddCircle(pos2.ToImVec2(), radius, ImGui::GetColorU32(ColToVec4(color)));
+    }
+
+    void DebugDrawCircleFilled3(Vector3 pos, float radius, Color color) {
+        Camera* c = g_admin->mainCamera;
+        Vector2 windimen = DengWindow->dimensions;
+        Vector2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
+        ImGui::GetBackgroundDrawList()->AddCircleFilled(pos2.ToImVec2(), radius, ImGui::GetColorU32(ColToVec4(color)));
     }
     
     void DebugDrawLine(Vector2 pos1, Vector2 pos2, Color color) {
@@ -2796,7 +2827,7 @@ void Editor::Update(){
     ////////////////////////////////
     ////  selected entity debug ////
     ////////////////////////////////
-    ShowSelectedEntityNormals();
+    //ShowSelectedEntityNormals();
     DisplayTriggers(admin);
     
 }
