@@ -211,6 +211,9 @@
     <ClInclude Include="..\src\core\console2.h">
       <Filter>src\core</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\utils\RingArray.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">

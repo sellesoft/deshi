@@ -1501,7 +1501,7 @@ inline void MaterialsTab(EntityAdmin* admin){
         //// shader selection ////
         Text("Shader "); SameLine(); SetNextItemWidth(-1);
         if(BeginCombo("##mat_shader_combo", ShaderStrings[mat->shader])){
-            for_n(i, carraysize(ShaderStrings)){
+            for_n(i, ArrayCount(ShaderStrings)){
                 if(Selectable(ShaderStrings[i], mat->shader == i)){
                     DengRenderer->UpdateMaterialShader(mat->id, i);
                 }

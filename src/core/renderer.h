@@ -2,9 +2,9 @@
 #ifndef DESHI_RENDERER_H
 #define DESHI_RENDERER_H
 
-#if defined(VULKAN)
+#if DESHI_VULKAN
 #include "renderer_vulkan.h"
-#elif defined(DX12)
+#elif DESHI_DX12
 
 #else
 #include "renderer_vulkan.h"

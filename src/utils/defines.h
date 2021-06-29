@@ -60,8 +60,18 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define xx_STRINGIZE(x) #x
 #define STRINGIZE(x) xx_STRINGIZE(x)
 
-//size of c-style array; dont use on a pointer
-//ref: DearImGui imgui.h
-#define carraysize(_ARR) ((int)(sizeof(_ARR) / sizeof(*(_ARR))))
+//size of c-style array
+#define ArrayCount(_ARR) (sizeof((_ARR)) / sizeof(((_ARR))[0]))
+
+#define Kilobytes(x) ((x)*1024ULL)
+#define Megabytes(x) (Kilobytes((x))*1024ULL)
+#define Gigabytes(x) (Megabytes((x))*1024ULL)
+#define Terabytes(x) (Gigabytes((x))*1024ULL)
+
+#if DESHI_SLOW
+#define Assert(expression) if(!(expression)){*(int*)0 = 0;}
+#else
+#define Assert(expression)
+#endif //DEBUG
 
 #endif //DESHI_DEFINES_H

@@ -180,34 +180,28 @@ ____we can store the text in the actual code and create the file from the code, 
 #include "game/admin.h"
 #include "core/console2.h"
 
-Time*		 g_time;
-Window*		 g_window;
-Input*		 g_input;
-Console*	 g_console;
-Renderer*	 g_renderer;
+Time*        g_time;
+Window*      g_window;
+Input*       g_input;
+Console*     g_console;
+Renderer*    g_renderer;
 EntityAdmin* g_admin;
 Debug*       g_debug;
 
 struct DeshiEngine {
-	Time time;
-	Window window;
-	Input input;
+	Time        time;
+	Window      window;
+	Input       input;
 	EntityAdmin admin;
-	Console console;
-	Renderer renderer;
-	deshiImGui imgui;
-	Debug debug;
+	Console     console;
+	Renderer    renderer;
+	deshiImGui  imgui;
+	Debug       debug;
 	TIMER_START(t_d); TIMER_START(t_f);
-	
-	//TODO(delle,Fs) setup loading a config file to a config struct
-	void LoadConfig() {
-		
-	}
 	
 	void Start() {
 		//pre-init setup
 		deshi::enforceDirectories();
-		LoadConfig();
 		
 		//init engine core
 		time.Init(300); //300 tps for physics
@@ -217,6 +211,7 @@ struct DeshiEngine {
 		g_window = &window;
 		g_input = &input;
 		
+		Console2::Init();
 		console.Init();
 		g_console = &console;
 		
@@ -250,17 +245,7 @@ struct DeshiEngine {
 		TIMER_RESET(t_d); input.Update();           time.inputTime = TIMER_END(t_d);
 		imgui.NewFrame();                                                              //place imgui calls after this
 		TIMER_RESET(t_d); admin.Update();           time.adminTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); console.Update();         time.consoleTime = TIMER_END(t_d);
-		
-		if(input.KeyPressedAnyMod(Key::F1)){
-			if(input.ShiftDown()){
-				Console2::Toggle(ConsoleState_OpenSmall);
-			}else{
-				Console2::Toggle(ConsoleState_OpenBig);
-			}
-		}
-		Console2::Draw();
-		
+		TIMER_RESET(t_d); console.Update(); Console2::Update(); time.consoleTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); renderer.Render();        time.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time.adminTime += TIMER_END(t_d);
 		g_debug->Update(); //TODO(sushi) put a timer on this

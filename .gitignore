@@ -20,21 +20,26 @@ build/
 deshicheck-cppcheck-build-dir/
 docs/doxygen/
 
-#specific files
-imgui.ini
-TODOs.txt
-deshi_project_suppressions.cfg
-misc/4coder.bat
-misc/shell.bat
-misc/deshi.vcxproj.user
-
 #data ignores (large/binary/user files)
 data/*.*
 data/cfg/
+#data/commands
 #data/entities/
+#data/levels
 data/logs/
 data/models/
 data/saves/
 #data/shaders/
 data/sounds/
 data/textures/
+
+#specific files
+imgui.ini
+TODOs.txt
+deshi_project_suppressions.cfg
+misc/deshi.vcxproj.user
+
+#delle specifics
+misc/4coder.bat
+misc/shell.bat
+build.bat
