@@ -26,7 +26,7 @@ std::string Door::SaveTEXT(){
 void Door::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	b32 isOpen = 0;
-	for_n(i,count){
+	forI(count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		if(entityID >= admin->entities.size()) {
 			ERROR("Failed to load audio listener component at pos '", cursor-sizeof(u32),

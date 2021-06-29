@@ -123,7 +123,7 @@ void RedoDelete(EditAction* edit){
 }
 
 void UndoManager::Undo(u32 count){
-	for_n(i, ((count < undos.size()) ? count : undos.size())){
+	forI((count < undos.size()) ? count : undos.size()){
 		u32 n = undos.size()-i-1;
 		switch(undos[n].type){
 			case(EditActionType::SELECT):   { UndoSelect(&undos[n]);    }break;
@@ -139,7 +139,7 @@ void UndoManager::Undo(u32 count){
 }
 
 void UndoManager::Redo(u32 count){
-	for_n(i, ((count < redos.size()) ? count : redos.size())){
+	forI((count < redos.size()) ? count : redos.size()){
 		u32 n = redos.size()-i-1;
 		switch(redos[n].type){
 			case(EditActionType::SELECT):   { RedoSelect(&redos[n]);    }break;

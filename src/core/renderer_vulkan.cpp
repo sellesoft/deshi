@@ -733,7 +733,7 @@ CreateMesh(u32 meshID, Matrix4 matrix, b32 new_material){
         mesh.ptr = meshes[meshID].ptr; mesh.visible = true;
         mesh.primitives = std::vector(meshes[meshID].primitives);
         if(new_material){
-            for_n(i, meshes[meshID].primitives.size()){
+            forI(meshes[meshID].primitives.size()){
                 mesh.primitives[i].materialIndex = CopyMaterial(meshes[meshID].primitives[i].materialIndex);
             }
         }
@@ -798,7 +798,7 @@ GetMeshPtr(u32 meshID){
 
 u32 Renderer::
 GetBaseMeshID(const char* name){
-    for_n(i,meshes.size()){
+    forI(meshes.size()){
         if(meshes[i].base && strcmp(name, meshes[i].name) == 0) return i;
     }
     return -1;
@@ -871,7 +871,7 @@ RemoveSelectedMesh(u32 meshID){
         return; 
     }
     if(meshID < meshes.size()){
-        for_n(i, selected.size()){
+        forI(selected.size()){
             if(selected[i] == meshID){
                 selected.erase(selected.begin()+i);
                 return;
@@ -3204,11 +3204,11 @@ DebugNameObjects(){
 	//// images and samplers ////
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)attachments.colorImage, "Framebuffer color image");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)attachments.depthImage, "Framebuffer depth image");
-	for_n(i, frames.size()){
+	forI(frames.size()){
 		std::string name = "Frame image " + std::to_string(i);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)frames[i].image, name.c_str());
 	}
-	for_n(i, textures.size()){
+	forI(textures.size()){
 		std::string image_name = std::string("Texture image ") + textures[i].filename;
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)textures[i].image, image_name.c_str());
 		std::string sampler_name = std::string("Texture sampler ") + textures[i].filename;
@@ -3220,7 +3220,7 @@ DebugNameObjects(){
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)uboGS.buffer, "Geometry shader UBO");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)vertices.buffer, "Global vertex buffer");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)indices.buffer, "Global index buffer");
-	for_n(i, meshBrushes.size()){
+	forI(meshBrushes.size()){
 		std::string vb_name = "MeshBrush vertex buffer " + std::to_string(i);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (uint64_t)meshBrushes[i].vertexBuffer, vb_name.c_str());
 		std::string ib_name = "MeshBrush index buffer " + std::to_string(i);
@@ -3229,7 +3229,7 @@ DebugNameObjects(){
 	
 	//// descriptor sets ////
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (uint64_t)uboDescriptorSet, "UBO descriptor set");
-	for_n(i, materials.size()){
+	forI(materials.size()){
 		std::string name = std::string("Material descriptor set ") + materials[i].name;
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (uint64_t)materials[i].descriptorSet, name.c_str());
 	}

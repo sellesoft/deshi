@@ -368,7 +368,7 @@ namespace std{
 		inline size_t operator()(Matrix3 const& m) const{
 			size_t seed = 0;
 			hash<float> hasher; size_t hash;
-			for_n(i,9){
+			forI(9){
 				hash = hasher(m.data[i]);
 				hash += 0x9e3779b9 + (seed << 6) + (seed >> 2);
 				seed ^= hash;

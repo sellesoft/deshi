@@ -127,7 +127,7 @@ void Physics::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 co
 	vec3 position{}, rotation{}, velocity{}, accel{}, rotVel{}, rotAccel{};
 	f32 elasticity = 0.f, mass = 0.f, kineticFricCoef = 0.f, staticFricCoef = 0.f;
 	b32 staticPos = false, staticRot = false, twoDphys = false;
-	for_n(i,count){
+	forI(count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		if(entityID >= admin->entities.size()) {
 			ERROR("Failed to load physics component at pos '", cursor-sizeof(u32),

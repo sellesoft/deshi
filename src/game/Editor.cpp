@@ -711,7 +711,7 @@ void Editor::MenuBar() {
                 EndMenu();
             }
             if (BeginMenu("Load")) { WinHovCheck;
-                for_n(i, levels.size()) {
+                forI(levels.size()) {
                     if (MenuItem(levels[i].c_str())) {
                         admin->LoadTEXT(levels[i].c_str());
                     }
@@ -1044,7 +1044,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 3.5f); //events button
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);        //delete button
 			
-            for_n(ent_idx, admin->entities.size()){
+            forX(ent_idx, admin->entities.size()){
                 Entity* ent = admin->entities[ent_idx];
                 if(!ent) assert(!"NULL entity when creating entity list table");
                 ImGui::PushID(ent->id);
@@ -1070,7 +1070,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
                 char label[8];
                 sprintf(label, " %04d ", ent->id);
                 u32 selected_idx = -1;
-                for_n(i, selected.size()){ if(ent == selected[i]){ selected_idx = i; break; } }
+                forI(selected.size()){ if(ent == selected[i]){ selected_idx = i; break; } }
                 bool is_selected = selected_idx != -1;
                 if(ImGui::Selectable(label, is_selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
 					if(is_selected){
@@ -1202,7 +1202,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
 						
                         Text("Mesh     "); SameLine(); SetNextItemWidth(-1); 
                         if(BeginCombo("##mesh_combo", mvk.name)){ WinHovCheck;
-                            for_n(i, DengRenderer->meshes.size()){
+                            forI(DengRenderer->meshes.size()){
                                 if(DengRenderer->meshes[i].base && Selectable(DengRenderer->meshes[i].name, mc->meshID == i)){
                                     mc->ChangeMesh(i);
                                 }
@@ -1213,7 +1213,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
                         u32 mesh_batch_idx = 0;
                         Text("Batch    "); SameLine(); SetNextItemWidth(-1); 
                         if(BeginCombo("##mesh_batch_combo", mc->mesh->batchArray[mesh_batch_idx].name)){ WinHovCheck;
-                            for_n(i, mc->mesh->batchArray.size()){
+                            forI(mc->mesh->batchArray.size()){
                                 if(Selectable(mc->mesh->batchArray[i].name, mesh_batch_idx == i)){
                                     mesh_batch_idx = i; 
                                 }
@@ -1223,7 +1223,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
                         
                         Text("Material "); SameLine(); SetNextItemWidth(-1); 
                         if(BeginCombo("##mesh_mat_combo", DengRenderer->materials[mvk.primitives[mesh_batch_idx].materialIndex].name)){ WinHovCheck;
-                            for_n(i, DengRenderer->materials.size()){
+                            forI(DengRenderer->materials.size()){
                                 if(Selectable(DengRenderer->materials[i].name, mvk.primitives[mesh_batch_idx].materialIndex == i)){
                                     DengRenderer->UpdateMeshBatchMaterial(mc->meshID, mesh_batch_idx, i);
                                 }
@@ -1264,7 +1264,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
                     if(coll && TreeNodeEx("Collider", tree_flags)){
                         //Text("Shape "); SameLine(); SetNextItemWidth(-1);
                         //if(BeginCombo("##coll_type_combo", )){ WinHovCheck;
-                        //for_n(i, IM_ARRAYSIZE(ColliderTypeStrings)){
+                        //forI(IM_ARRAYSIZE(ColliderTypeStrings)){
                         //if(Selectable(ColliderTypeStrings[i], coll->type == i)){
                         //
                         //}
@@ -1436,7 +1436,7 @@ inline void MaterialsTab(EntityAdmin* admin){
             TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
             TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
             
-            for_n(mat_idx, DengRenderer->materials.size()) {
+            forX(mat_idx, DengRenderer->materials.size()) {
                 MaterialVk* mat = &DengRenderer->materials[mat_idx];
                 PushID(mat->id);
                 TableNextRow();
@@ -1501,7 +1501,7 @@ inline void MaterialsTab(EntityAdmin* admin){
         //// shader selection ////
         Text("Shader "); SameLine(); SetNextItemWidth(-1);
         if(BeginCombo("##mat_shader_combo", ShaderStrings[mat->shader])){
-            for_n(i, ArrayCount(ShaderStrings)){
+            forI(ArrayCount(ShaderStrings)){
                 if(Selectable(ShaderStrings[i], mat->shader == i)){
                     DengRenderer->UpdateMaterialShader(mat->id, i);
                 }
@@ -1524,7 +1524,7 @@ inline void MaterialsTab(EntityAdmin* admin){
             case Shader_PBR:{
                 Text("Albedo   "); SameLine(); SetNextItemWidth(-1);
                 if(BeginCombo("##mat_albedo_combo", DengRenderer->textures[mat->albedoID].filename)){
-                    for_n(i, textures.size()){
+                    forI(textures.size()){
                         if(Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->albedoID].filename, textures[i].c_str()) == 0)){
                             DengRenderer->UpdateMaterialTexture(mat->id, 0, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Albedo));
                         }
@@ -1533,7 +1533,7 @@ inline void MaterialsTab(EntityAdmin* admin){
                 }
                 Text("Normal   "); SameLine(); SetNextItemWidth(-1);
                 if(BeginCombo("##mat_normal_combo", DengRenderer->textures[mat->normalID].filename)){
-                    for_n(i, textures.size()){
+                    forI(textures.size()){
                         if(Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->normalID].filename, textures[i].c_str()) == 0)){
                             DengRenderer->UpdateMaterialTexture(mat->id, 1, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Normal));
                         }
@@ -1542,7 +1542,7 @@ inline void MaterialsTab(EntityAdmin* admin){
                 }
                 Text("Specular "); SameLine(); SetNextItemWidth(-1);
                 if(BeginCombo("##mat_spec_combo", DengRenderer->textures[mat->specularID].filename)){
-                    for_n(i, textures.size()){
+                    forI(textures.size()){
                         if(Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->specularID].filename, textures[i].c_str()) == 0)){
                             DengRenderer->UpdateMaterialTexture(mat->id, 2, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Specular));
                         }
@@ -1551,7 +1551,7 @@ inline void MaterialsTab(EntityAdmin* admin){
                 }
                 Text("Light    "); SameLine(); SetNextItemWidth(-1);
                 if(BeginCombo("##mat_light_combo", DengRenderer->textures[mat->lightID].filename)){
-                    for_n(i, textures.size()){
+                    forI(textures.size()){
                         if(Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->lightID].filename, textures[i].c_str()) == 0)){
                             DengRenderer->UpdateMaterialTexture(mat->id, 3, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Light));
                         }
@@ -1789,7 +1789,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
             Text(TOSTRING("MeshID: ", mesh_id).c_str());
             SetNextItemWidth(-1); if (BeginCombo("##mesh_combo", mesh_name)) {
                 WinHovCheck;
-                for_n(i, DengRenderer->meshes.size()) {
+                forI(DengRenderer->meshes.size()) {
                     if (DengRenderer->meshes[i].base && Selectable(DengRenderer->meshes[i].name, mesh_id == i)) {
                         mesh_id = i;
                         mesh_name = DengRenderer->meshes[i].name;
@@ -1805,7 +1805,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
                 Text("Batch    "); SameLine(); SetNextItemWidth(-1);
                 if (BeginCombo("##mesh_batch_combo", mc->mesh->batchArray[mesh_batch_id].name)) {
                     WinHovCheck;
-                    for_n(i, mc->mesh->batchArray.size()) {
+                    forI(mc->mesh->batchArray.size()) {
                         if (Selectable(mc->mesh->batchArray[i].name, mesh_batch_id == i)) {
                             mesh_batch_id = i;
                         }
@@ -1816,7 +1816,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
                 Text("Material "); SameLine(); SetNextItemWidth(-1);
                 if (BeginCombo("##mesh_mat_combo", DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].name)) {
                     WinHovCheck;
-                    for_n(i, DengRenderer->materials.size()) {
+                    forI(DengRenderer->materials.size()) {
                         if (Selectable(DengRenderer->materials[i].name, mvk.primitives[mesh_batch_id].materialIndex == i)) {
                             DengRenderer->UpdateMeshBatchMaterial(mc->meshID, mesh_batch_id, i);
                         }
@@ -1827,7 +1827,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
                     Text("Shader "); SameLine(); SetNextItemWidth(-1);
                     if (BeginCombo("##mesh_shader_combo", ShaderStrings[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].shader])) {
                         WinHovCheck;
-                        for_n(i, IM_ARRAYSIZE(ShaderStrings)) {
+                        forI(IM_ARRAYSIZE(ShaderStrings)) {
                             if (Selectable(ShaderStrings[i], DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].shader == i)) {
                                 DengRenderer->UpdateMaterialShader(mvk.primitives[mesh_batch_id].materialIndex, i);
                             }
@@ -1838,7 +1838,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
                     Text("Albedo   "); SameLine(); SetNextItemWidth(-1);
                     if (BeginCombo("##mesh_albedo_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].albedoID].filename)) {
                         WinHovCheck;
-                        for_n(i, textures.size()) {
+                        forI(textures.size()) {
                             if (Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].albedoID].filename, textures[i].c_str()) == 0)) {
                                 DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_id].materialIndex, 0,
 																	DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Albedo));
@@ -1850,7 +1850,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
                     Text("Normal   "); SameLine(); SetNextItemWidth(-1);
                     if (BeginCombo("##mesh_normal_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].normalID].filename)) {
                         WinHovCheck;
-                        for_n(i, textures.size()) {
+                        forI(textures.size()) {
                             if (Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].normalID].filename, textures[i].c_str()) == 0)) {
                                 DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_id].materialIndex, 0,
 																	DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Normal));
@@ -1862,7 +1862,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
                     Text("Specular "); SameLine(); SetNextItemWidth(-1);
                     if (BeginCombo("##mesh_specular_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].specularID].filename)) {
                         WinHovCheck;
-                        for_n(i, textures.size()) {
+                        forI(textures.size()) {
                             if (Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].specularID].filename, textures[i].c_str()) == 0)) {
                                 DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_id].materialIndex, 0,
 																	DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Specular));
@@ -1874,7 +1874,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
                     Text("Light    "); SameLine(); SetNextItemWidth(-1);
                     if (BeginCombo("##mesh_light_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].lightID].filename)) {
                         WinHovCheck;
-                        for_n(i, textures.size()) {
+                        forI(textures.size()) {
                             if (Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].lightID].filename, textures[i].c_str()) == 0)) {
                                 DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_id].materialIndex, 0,
 																	DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Light));
@@ -1939,7 +1939,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
             if(twod_vert_count > 1 && twod_vert_count < 5){
                 std::string point("Point 0     ");
                 SetNextItemWidth(-1); if(ListBoxHeader("##twod_verts", (int)twod_vert_count, 5)){
-                    for_n(i,twod_vert_count){
+                    forI(twod_vert_count){
                         point[6] = 49 + i;
                         Text(point.c_str()); SameLine(); InputVector2(point.c_str(), &twod_verts[0] + i);  Separator();
                     }
@@ -2047,7 +2047,7 @@ inline void BrushesTab(EntityAdmin* admin, float fontsize){
                 TableSetupColumn("Name");
                 TableSetupColumn("Delete");
                 
-                for_n(i, DengRenderer->meshBrushes.size()) {
+                forI(DengRenderer->meshBrushes.size()) {
                     PushID(i);
                     TableNextRow(); TableNextColumn();
                     std::string id = std::to_string(DengRenderer->meshBrushes[i].id);

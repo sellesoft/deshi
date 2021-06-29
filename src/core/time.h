@@ -92,7 +92,7 @@ inline std::string Time::FormatDateTime(std::string fmt){
 	}
 	
 	std::string out = ""; out.reserve(256);
-	for_n(i, fmt.size()){
+	forI(fmt.size()){
 		if(fmt[i] == '{'){
 			switch(fmt[i+1]){
 				case('y'):{
@@ -132,7 +132,7 @@ inline std::string Time::FormatDateTime(std::string fmt){
 //{t}:time, {w}:window, {i}:input, {a}:admin, {c}:console, {r}:render, {f}:frame, {d}:delta
 inline std::string Time::FormatTickTime(std::string fmt){
 	std::string out = ""; out.reserve(512);
-	for_n(i, fmt.size()){
+	forI(fmt.size()){
 		if(fmt[i] == '{'){
 			switch(fmt[i+1]){
 				case('t'):{
@@ -172,7 +172,7 @@ inline std::string Time::FormatTickTime(std::string fmt){
 //{p}:physics system, {c}:canvas system, {w}:world system, {s}:send system, 
 inline std::string Time::FormatAdminTime(std::string fmt){
 	std::string out = ""; out.reserve(512);
-	for_n(i, fmt.size()){
+	forI(fmt.size()){
 		if(fmt[i] == '{'){
 			switch(fmt[i+1]){
 				case('P'):{

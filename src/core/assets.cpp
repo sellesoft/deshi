@@ -278,7 +278,7 @@ space_delimit_ignore_strings(std::string str){
 	str = eat_spaces_trailing(str);
 	
 	size_t prev = 0, end_quote = 0;
-	for_n(i, str.size()){
+	forI(str.size()){
 		if(str[i] == ' '){
 			out.push_back(str.substr(prev, i-prev));
 			while(str[i+1] == ' ') ++i;

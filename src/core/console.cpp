@@ -711,7 +711,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 		} else if (std::regex_search(s->c_str(), m , StringRegex("event"))){
 			if (ctype == ColliderType_NONE) return "[c:red]Attempt to attach event with no collider[c]";
 			bool found = false;
-			for_n(i, sizeof(EventStrings)) 
+			forI(sizeof(EventStrings)) 
 				if (m[1] == EventStrings[i]) { 
 				found = true; event = (u32)i;  break;
 			}
@@ -1245,7 +1245,7 @@ CMDSTARTA(add_trigger, args.size() > 0) {
 		else if (std::regex_search(s->c_str(), m, StringRegex("event"))) {
 			if (type == ColliderType_NONE) return "[c:red]Attempt to attach event with no collider[c]";
 			bool found = false;
-			for_n(i, sizeof(EventStrings))
+			forI(sizeof(EventStrings))
 				if (m[1] == EventStrings[i]) {
 					found = true; event = (u32)i;  break;
 				}

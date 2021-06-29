@@ -40,7 +40,7 @@ void EntityAdmin::Init() {
     entities.reserve(1000);
     creationBuffer.reserve(100);
     deletionBuffer.reserve(100);
-    for_n(i, ComponentLayer_World+1) freeCompLayers.push_back(ContainerManager<Component*>());
+    forI(ComponentLayer_World+1) freeCompLayers.push_back(ContainerManager<Component*>());
     
     //init singletons
     physics.Init(this);
@@ -68,7 +68,7 @@ void EntityAdmin::Cleanup() {
 }
 
 void UpdateLayer(ContainerManager<Component*> cl) {
-    for_n(i, cl.size()) {
+    forI(cl.size()) {
         if (cl[i]) {
             cl[i].value->Update();
         }
@@ -340,7 +340,7 @@ void EntityAdmin::SaveTEXT(const char* level_name_cstr){
 	//entities
 	level_text.append("\n"
 					  "\n>entities");
-	for_n(i, entities.size()){
+	forI(entities.size()){
 		level_text.append(TOSTRING("\n",i," \"",entities[i]->name,"\""));
 	}
 	
@@ -367,7 +367,7 @@ void EntityAdmin::SaveTEXT(const char* level_name_cstr){
 	defer{ free(entity_idx_str); };
 	std::string entity_file_name;
 	
-	for_n(idx, entities.size()){
+	forX(idx, entities.size()){
 		snprintf(entity_idx_str, entity_idx_str_size, "%0*u_", entity_idx_digits, idx);
 		entity_file_name = TOSTRING(entity_idx_str, entities[idx]->name);
 		
@@ -473,7 +473,7 @@ void EntityAdmin::LoadTEXT(const char* savename){
 					
 					//materials
 					std::vector<std::string> mat_ids = deshi::space_delimit(split[3]); 
-					for_n(i, DengRenderer->meshes[new_id].primitives.size()){
+					forI(DengRenderer->meshes[new_id].primitives.size()){
 						u32 old_mat = std::stoi(mat_ids[i]);
 						for(auto& diff : material_id_diffs){
 							if(diff.first == old_mat){
@@ -514,7 +514,7 @@ void EntityAdmin::LoadTEXT(const char* savename){
 	}
 	
 	//// events ////
-	for_n(i, events.size()){
+	forI(events.size()){
 		//find receiving component
 		Component* rec_comp = 0;
 		for(Entity* e : ents){
@@ -900,7 +900,7 @@ void EntityAdmin::LoadDESH(const char* filename) {
                      "' when reading entities which start at '", header.entityArrayOffset, "'");
     }
     Transform entTrans{}; char entName[DESHI_NAME_SIZE];
-    for_n(i, header.entityCount){
+    forI(header.entityCount){
         cursor += sizeof(u32); //skipped
         memcpy(entName,   data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
         memcpy(&entTrans, data+cursor, sizeof(vec3)*3);  cursor += sizeof(vec3)*3;
@@ -913,7 +913,7 @@ void EntityAdmin::LoadDESH(const char* filename) {
                      "' when reading textures which start at '", header.textureArrayOffset, "'");
     }
     Texture tex{};
-    for_n(i, header.textureCount){
+    forI(header.textureCount){
         memcpy(&tex.type,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
         memcpy(tex.filename, data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
         if(i>3) DengRenderer->LoadTexture(tex);
@@ -925,7 +925,7 @@ void EntityAdmin::LoadDESH(const char* filename) {
                      "' when reading materials which start at '", header.materialArrayOffset, "'");
     }
     u32 shader = 0, albedoID = 0, normalID = 2, specularId = 2, lightID = 2; char matName[DESHI_NAME_SIZE];
-    for_n(i, header.materialCount){
+    forI(header.materialCount){
         memcpy(&shader,     data+cursor, sizeof(u32)); cursor += sizeof(u32);
         memcpy(&albedoID,   data+cursor, sizeof(u32)); cursor += sizeof(u32);
         memcpy(&normalID,   data+cursor, sizeof(u32)); cursor += sizeof(u32);
@@ -941,7 +941,7 @@ void EntityAdmin::LoadDESH(const char* filename) {
                      "' when reading meshes which start at '", header.meshArrayOffset, "'");
     }
     b32 matID = 0, baseMesh = 0; char meshName[DESHI_NAME_SIZE];
-    for_n(i, header.meshCount){
+    forI(header.meshCount){
         memcpy(&matID,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
         memcpy(&baseMesh, data+cursor, sizeof(b32));     cursor += sizeof(b32);
         memcpy(meshName,  data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
@@ -958,7 +958,7 @@ void EntityAdmin::LoadDESH(const char* filename) {
     }
     
     ComponentTypeHeader compHeader;
-    for_n(i, header.componentTypeCount){
+    forI(header.componentTypeCount){
         cursor = header.componentTypeHeaderArrayOffset + (sizeof(u32)*4)*i;
         memcpy(&compHeader, data+cursor, sizeof(u32)*4);
         cursor = compHeader.arrayOffset;

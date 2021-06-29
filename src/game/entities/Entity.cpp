@@ -57,7 +57,7 @@ void Entity::operator=(Entity& e) {
 }
 
 void Entity::Init(){
-    for_n(i,components.size()) components[i]->Init();
+    forI(components.size()) components[i]->Init();
 }
 
 inline void Entity::SetName(const char* name) {
@@ -88,7 +88,7 @@ void Entity::AddComponents(std::vector<Component*> comps) {
 
 void Entity::RemoveComponent(Component* c) {
     if (!c) return;
-    for_n(i, components.size()) {
+    forI(components.size()) {
         if (components[i] == c) {
             admin->freeCompLayers[c->layer].remove_from(c->layer_index);
             delete c;
@@ -100,7 +100,7 @@ void Entity::RemoveComponent(Component* c) {
 
 void Entity::RemoveComponents(std::vector<Component*> comps) {
     while (comps.size()) {
-        for_n(i, components.size()) {
+        forI(components.size()) {
             if (!comps[i]) continue;
             if (components[i] == comps[0]) {
                 admin->freeCompLayers[comps[i]->layer].remove_from(comps[i]->layer_index);

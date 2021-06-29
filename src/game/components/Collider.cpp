@@ -53,7 +53,7 @@ void BoxCollider::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u3
 	mat3 tensor{};
 	vec3 halfDimensions{};
 	
-	for_n(i,count){
+	forI(count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		if(entityID >= admin->entities.size()) {
 			ERROR("Failed to load box collider component at pos '", cursor-sizeof(u32),
@@ -174,7 +174,7 @@ void AABBCollider::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u
 	mat3 tensor{};
 	vec3 halfDimensions{};
 	
-	for_n(i,count){
+	forI(count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		if(entityID >= admin->entities.size()) {
 			ERROR("Failed to load aabb collider component at pos '", cursor-sizeof(u32),
@@ -241,7 +241,7 @@ void SphereCollider::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor,
 	mat3 tensor{};
 	f32 radius = 0.f;
 	
-	for_n(i,count){
+	forI(count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		if(entityID >= admin->entities.size()) {
 			ERROR("Failed to load sphere collider component at pos '", cursor-sizeof(u32),

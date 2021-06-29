@@ -360,7 +360,7 @@ void Movement::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 c
 	float gndAccel{}, airAccel{}, maxWalkingSpeed{}, maxRunningSpeed{}, maxCrouchingSpeed{}, jumpImpulse{};
 	bool jump = false;
 	
-	for_n(i, count) {
+	forI(count) {
 		memcpy(&entityID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
 		if (entityID >= admin->entities.size()) {
 			ERROR("Failed to load sphere collider component at pos '", cursor - sizeof(u32),

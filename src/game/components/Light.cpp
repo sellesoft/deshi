@@ -48,7 +48,7 @@ void Light::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 coun
 	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	Vector3 position{}, direction{};
 	float strength = 0.f;
-	for_n(i,count){
+	forI(count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); 
 		cursor += sizeof(u32);
 		if(entityID >= admin->entities.size()) {

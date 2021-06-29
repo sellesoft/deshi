@@ -46,7 +46,7 @@ std::string Player::SaveTEXT(){
 void Player::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = -1, compID = -1, event = -1;
 	int health = 0;
-	for_n(i, count) {
+	forI(count) {
 		memcpy(&entityID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
 		if (entityID >= admin->entities.size()) {
 			ERROR("Failed to load sphere collider component at pos '", cursor - sizeof(u32),

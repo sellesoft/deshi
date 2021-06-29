@@ -36,8 +36,9 @@ typedef s32                b32; //int-based boolean so c++ doesnt convert to 0 o
 //dynamic cast short-hand
 #define dyncast(child, base) dynamic_cast<child*>(base)
 
-//i: variable name; x: number of iterations 
-#define for_n(i,x) for(int i=0; i<x; ++i)
+//for-loop shorthands
+#define forX(var_name,iterations) for(int var_name=0; var_name<(iterations); ++var_name)
+#define forI(iterations) for(int i=0; i<(iterations); ++i)
 
 //dst: destination c-string; src: source c-string; bytes: number of characters to copy
 //NOTE the last character in the copy is replaced with a null-terminating character
@@ -72,6 +73,6 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define Assert(expression) if(!(expression)){*(int*)0 = 0;}
 #else
 #define Assert(expression)
-#endif //DEBUG
+#endif //DESHI_SLOW
 
 #endif //DESHI_DEFINES_H
