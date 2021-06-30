@@ -18,7 +18,7 @@ f32 MOUSE_SENS_FRACTION = .03f;
 
 bool moveOverride = false; //for moving when using arrow keys (cause i cant use mouse when remoting into my pc so)
 
-inline void AddBindings(EntityAdmin* admin) {
+inline void AddBindings(Admin* admin) {
 	std::ifstream binds;
 	
 	std::string path = deshi::assetPath("binds.cfg", AssetType_Config, false);
@@ -50,7 +50,7 @@ inline void AddBindings(EntityAdmin* admin) {
 	}
 }
 
-inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
+inline void CameraMovement(Admin* admin, MovementMode mode) {
 	Camera* camera = admin->mainCamera;
 	float deltaTime = DengTime->deltaTime;
 	Vector3 inputs;
@@ -73,7 +73,7 @@ inline void CameraMovement(EntityAdmin* admin, MovementMode mode) {
 	}
 }
 
-inline void PlayerMovement(EntityAdmin* admin, MovementMode mode, Movement* playermove) {
+inline void PlayerMovement(Admin* admin, MovementMode mode, Movement* playermove) {
 	Camera* camera = admin->mainCamera;
 	float deltaTime = DengTime->deltaTime;
 	Vector3 inputs;
@@ -105,7 +105,7 @@ inline void PlayerGrabbing() {
 
 }
 
-inline void CameraRotation(EntityAdmin* admin, float sens) {
+inline void CameraRotation(Admin* admin, float sens) {
 	Camera* camera = admin->mainCamera;
 	Keybinds* binds = &admin->keybinds;
 	float deltaTime = DengTime->deltaTime;
@@ -174,7 +174,7 @@ inline void CameraRotation(EntityAdmin* admin, float sens) {
 	}
 }
 
-inline void CameraZoom(EntityAdmin* admin){
+inline void CameraZoom(Admin* admin){
 	if (DengInput->KeyPressed(Key::NUMPADPLUS)) { 
 		admin->mainCamera->fov += 5;
 		admin->mainCamera->UpdateProjectionMatrix();
@@ -185,7 +185,7 @@ inline void CameraZoom(EntityAdmin* admin){
 	}
 }
 
-inline void CheckBinds(EntityAdmin* admin) {
+inline void CheckBinds(Admin* admin) {
 	if (DengInput->checkbinds) {
 		for (auto b : DengInput->binds) {
 			if (DengInput->KeyPressed(b.second)) {
@@ -203,7 +203,7 @@ inline void CheckBinds(EntityAdmin* admin) {
 	}
 }
 
-void Controller::Init(EntityAdmin* a, MovementMode m){
+void Controller::Init(Admin* a, MovementMode m){
 	this->admin = a; this->mode = m;
 	mouseSensitivity = 2.5f;
 	playermove = 0;

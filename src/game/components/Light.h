@@ -20,7 +20,7 @@ struct Light : public Component {
 	virtual void ReceiveEvent(Event event) override;
 	
 	std::string SaveTEXT() override;
-	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif //COMPONENT_LIGHT_H

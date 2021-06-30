@@ -9,6 +9,7 @@
 
 struct Command;
 struct Mesh;
+struct Admin;
 
 enum ColliderTypeBits : u32{
 	ColliderType_NONE, ColliderType_Box, ColliderType_AABB, ColliderType_Sphere, ColliderType_Landscape, ColliderType_Complex
@@ -39,7 +40,7 @@ struct BoxCollider : public Collider {
 	
 	void RecalculateTensor(f32 mass) override;
 	std::string SaveTEXT() override;
-	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //axis-aligned bounding box
@@ -52,7 +53,7 @@ struct AABBCollider : public Collider {
 	
 	void RecalculateTensor(f32 mass) override;
 	std::string SaveTEXT() override;
-	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 struct SphereCollider : public Collider {
@@ -63,7 +64,7 @@ struct SphereCollider : public Collider {
 	
 	void RecalculateTensor(f32 mass) override;
 	std::string SaveTEXT() override;
-	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //collider for terrain
@@ -73,7 +74,7 @@ struct LandscapeCollider : public Collider {
 	LandscapeCollider(Mesh* mesh, u32 collisionleyer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
 	std::string SaveTEXT() override;
-	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 
@@ -89,7 +90,7 @@ struct ComplexCollider : public Collider {
 	ComplexCollider(Mesh* mesh, u32 collisionleyer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
 	std::string SaveTEXT() override;
-	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //TODO(delle,Ph) implement convexPolyCollider

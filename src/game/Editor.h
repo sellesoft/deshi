@@ -9,7 +9,7 @@
 
 #include <vector>
 
-struct EntityAdmin;
+struct Admin;
 struct Entity;
 struct Camera;
 
@@ -22,7 +22,7 @@ struct EditorSettings{
 };
 
 struct Editor{
-	EntityAdmin* admin;
+	Admin* admin;
 	EditorSettings settings;
 
 	std::vector<Entity*> selected;
@@ -43,7 +43,7 @@ struct Editor{
 	bool showDebugLayer;
 	bool ConsoleHovFlag; //this can be done better
 	
-	void Init(EntityAdmin* a);
+	void Init(Admin* a);
 	void Update();
 	void Reset();
 	

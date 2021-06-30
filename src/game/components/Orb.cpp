@@ -129,6 +129,6 @@ std::string OrbManager::SaveTEXT(){
 					"\n");
 }
 
-void OrbManager::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void OrbManager::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
 	ERROR("OrbManager::Load not setup");
 }

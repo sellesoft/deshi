@@ -11,7 +11,7 @@ struct Door : public Component{
 	
 	void ReceiveEvent(Event event) override;
 	std::string SaveTEXT() override;
-	static void LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count);
+	static void LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count);
 };
 
 #endif //COMPONENT_DOOR_H

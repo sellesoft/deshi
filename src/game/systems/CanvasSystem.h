@@ -3,12 +3,12 @@
 #define SYSTEM_CANVAS_H
 #include "../../defines.h"
 
-struct EntityAdmin;
+struct Admin;
 
 struct CanvasSystem {
-	EntityAdmin* admin;
+	Admin* admin;
 	
-	void Init(EntityAdmin* admin);
+	void Init(Admin* admin);
 	void Update();
 };
 

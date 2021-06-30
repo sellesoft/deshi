@@ -9,10 +9,12 @@
 #include <unordered_map>
 
 typedef u32 ColliderType;
-
-//only used for 2D currently
 struct Physics;
 struct poly;
+struct Collider;
+struct Admin;
+
+//only used for 2D currently
 struct Manifold2 {
 	poly* a = nullptr;
 	poly* b = nullptr;
@@ -25,7 +27,6 @@ struct Manifold2 {
 	Vector2 norm;
 };
 
-struct Collider;
 struct Manifold3 {
 	Collider* a = nullptr;
 	Collider* b = nullptr;
@@ -157,7 +158,7 @@ struct Physics : public Component {
 	void AddImpulseNomass(Physics* creator, Vector3 impulse);
 	
 	std::string SaveTEXT() override;
-	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif //COMPONENT_PHYSICS_H

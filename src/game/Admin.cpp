@@ -24,7 +24,7 @@
 
 TIMER_START(t_a);
 
-void EntityAdmin::Init() {
+void Admin::Init() {
     //decide initial gamestate
 #if defined(DESHI_BUILD_PLAY)
     state = GameState_Play;
@@ -66,7 +66,7 @@ void EntityAdmin::Init() {
     debugTimes = true;
 }
 
-void EntityAdmin::Cleanup() {
+void Admin::Cleanup() {
     SaveDESH((state == GameState_Editor) ? "temp.desh" : "auto.desh");
 }
 
@@ -78,7 +78,7 @@ void UpdateLayer(ContainerManager<Component*> cl) {
     }
 }
 
-void EntityAdmin::Update() {
+void Admin::Update() {
     ImGui::BeginDebugLayer();
     if(!skip && (state == GameState_Editor || state == GameState_Debug)) editor.Update();
     if(!skip) controller.Update();
@@ -102,7 +102,7 @@ void EntityAdmin::Update() {
     ImGui::EndDebugLayer();
 }
 
-void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already happened
+void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already happened
     TIMER_RESET(t_a);
     if (!skip && !pause_world) UpdateLayer(freeCompLayers[ComponentLayer_World]); 
     worldLyrTime = TIMER_END(t_a); TIMER_RESET(t_a);
@@ -154,25 +154,25 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
     skip = false;
 }
 
-u32 EntityAdmin::CreateEntity(const char* name) {
+u32 Admin::CreateEntity(const char* name) {
     u32 id = entities.size() + creationBuffer.size() - 1;
     creationBuffer.push_back(new Entity(this, id, Transform(), name));
     return id;
 }
 
-u32 EntityAdmin::CreateEntity(std::vector<Component*> components, const char* name, Transform transform) {
+u32 Admin::CreateEntity(std::vector<Component*> components, const char* name, Transform transform) {
     u32 id = entities.size() + creationBuffer.size() - 1;
     creationBuffer.push_back(new Entity(this, id, transform, name, components));
     return id;
 }
 
-u32 EntityAdmin::CreateEntity(Entity* e) {
+u32 Admin::CreateEntity(Entity* e) {
     e->admin = this;
     creationBuffer.push_back(e);
     return entities.size() + creationBuffer.size() - 1;
 }
 
-Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const char* name, Transform transform) {
+Entity* Admin::CreateEntityNow(std::vector<Component*> components, const char* name, Transform transform) {
     Entity* e = new Entity(this, entities.size(), transform, name, components);
     entities.push_back(e);
     for (Component* c : e->components) {
@@ -186,7 +186,7 @@ Entity* EntityAdmin::CreateEntityNow(std::vector<Component*> components, const c
     return e;
 }
 
-void EntityAdmin::DeleteEntity(u32 id) {
+void Admin::DeleteEntity(u32 id) {
     if (id < entities.size()) {
         deletionBuffer.push_back(entities[id]);
     }
@@ -195,7 +195,7 @@ void EntityAdmin::DeleteEntity(u32 id) {
     }
 }
 
-void EntityAdmin::DeleteEntity(Entity* e) {
+void Admin::DeleteEntity(Entity* e) {
     if (e->id < entities.size()) {
         deletionBuffer.push_back(e);
     }
@@ -204,7 +204,7 @@ void EntityAdmin::DeleteEntity(Entity* e) {
     }
 }
 
-void EntityAdmin::ChangeState(GameState new_state){
+void Admin::ChangeState(GameState new_state){
     if(state == new_state) return;
     if(state >= GameState_COUNT) return ERROR("Admin attempted to switch to unhandled gamestate: ", new_state);
     
@@ -274,7 +274,7 @@ void EntityAdmin::ChangeState(GameState new_state){
     SUCCESS("Changed gamestate from ", from, " to ", to);
 }
 
-void EntityAdmin::Reset(){
+void Admin::Reset(){
     SUCCESS("Resetting admin");
     TIMER_START(t_r);
     for (Entity* e : entities) if(e) delete e;
@@ -292,7 +292,7 @@ void EntityAdmin::Reset(){
 //TODO(delle) this removes the entire level dir and recreates it, optimize by diffing for speed and comment preservation
 //TODO add safe-checking so you dont override another level accidentally
 //TODO maybe dont save materials that aren't being used
-void EntityAdmin::SaveTEXT(const char* level_name_cstr){
+void Admin::SaveTEXT(const char* level_name_cstr){
     namespace fs = std::filesystem;
     if(!level_name_cstr) return ERROR("Failed to create save text-file: no name passed");
     SUCCESS("Started saving level '", level_name_cstr, "'");
@@ -388,7 +388,7 @@ void EntityAdmin::SaveTEXT(const char* level_name_cstr){
 enum struct LevelHeader{
 	INVALID, LEVEL, MATERIALS, MESHES, ENTITIES, EVENTS
 };
-void EntityAdmin::LoadTEXT(const char* savename){
+void Admin::LoadTEXT(const char* savename){
 	namespace fs = std::filesystem;
 	
 	if(!savename) return ERROR("Failed to load text-file: no name passed");
@@ -574,7 +574,7 @@ struct SaveHeader{
 	u32 componentTypeHeaderArrayOffset;
 };
 
-void EntityAdmin::SaveDESH(const char* filename) {
+void Admin::SaveDESH(const char* filename) {
 	//std::vector<char> save_data(16384);
 	
 	//open file
@@ -876,7 +876,7 @@ void EntityAdmin::SaveDESH(const char* filename) {
     SUCCESS("Successfully saved to ", filename);
 }
 
-void EntityAdmin::LoadDESH(const char* filename) {
+void Admin::LoadDESH(const char* filename) {
     Reset();
     LOG("Loading level: ", deshi::dirSaves() + filename);
     TIMER_START(t_l);
@@ -990,7 +990,7 @@ void EntityAdmin::LoadDESH(const char* filename) {
 
 //{P}:physics layer,  {C}:canvas layer,  {W}:world layer,  {S}:send layer
 //{p}:physics system, {c}:canvas system, {w}:world system, {s}:send system, 
-std::string EntityAdmin::FormatAdminTime(std::string fmt){
+std::string Admin::FormatAdminTime(std::string fmt){
 	std::string out = ""; out.reserve(512);
 	forI(fmt.size()){
 		if(fmt[i] == '{'){

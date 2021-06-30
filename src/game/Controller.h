@@ -4,7 +4,7 @@
 
 #include "../defines.h"
 
-struct EntityAdmin;
+struct Admin;
 struct Movement;
 
 enum MovementMode : u32 {
@@ -14,14 +14,14 @@ enum MovementMode : u32 {
 };
 
 struct Controller{
-	EntityAdmin* admin;
+	Admin* admin;
 	MovementMode mode;
 	Movement* playermove;
 	
 	f32 mouseSensitivity;
 	b32 cameraLocked = false;
 	
-	void Init(EntityAdmin* a, MovementMode m = MOVEMENT_MODE_FLYING);
+	void Init(Admin* a, MovementMode m = MOVEMENT_MODE_FLYING);
 	void Update();
 };
 

@@ -47,7 +47,6 @@ add Camera tag to TODOP
 look into integrating TODOP with Discord
 begin reimplementing sound system and maybe rethink its design a bit
 replace std::pair with pair throughout the project
-move admin times from time.h to admin.h (and the format function)
 remove extra collider component types and use the collider one instead
 ____ComponentType_AABBCollider vs ComponentType_Collider
 add 2d mesh component and component type for image and UI drawing
@@ -147,7 +146,7 @@ Fun TODOs
 ---------
 look into implementing Lua 
 look into making a function that takes in the types on a component and formats binary for saving and what not 
-____like what were currently doing for typeHeader in EntityAdmin Save()
+____like what were currently doing for typeHeader in Admin Save()
 write a shader that displays textures like it would on a monitor, so like you have an array of
 ____rgb lights that make up a single pixel of a texture and stuff 
 write a preprocessing/postprocessing compiler that makes saving easier
@@ -185,7 +184,7 @@ static_internal Input       input;    Input*       g_input = &input;
 static_internal Console     console;  Console*     g_console = &console;
 static_internal Renderer    renderer; Renderer*    g_renderer = &renderer;
 static_internal deshiImGui  imgui;
-static_internal EntityAdmin admin;    EntityAdmin* g_admin = &admin;
+static_internal Admin admin;    Admin* g_admin = &admin;
 static_internal Debug       debug;    Debug*       g_debug = &debug;
 
 TIMER_START(t_d); TIMER_START(t_f);

@@ -47,7 +47,7 @@ std::string BoxCollider::SaveTEXT(){
 					"\n");
 }
 
-void BoxCollider::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void BoxCollider::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	u32 layer = -1;
 	mat3 tensor{};
@@ -168,7 +168,7 @@ std::string AABBCollider::SaveTEXT(){
 					"\n");
 }
 
-void AABBCollider::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void AABBCollider::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	u32 layer = -1;
 	mat3 tensor{};
@@ -235,7 +235,7 @@ std::string SphereCollider::SaveTEXT(){
 					"\n");
 }
 
-void SphereCollider::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void SphereCollider::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	u32 layer = -1;
 	mat3 tensor{};

@@ -34,7 +34,7 @@ struct PhysicsTuple {
 //// integration ////
 /////////////////////
 
-inline std::vector<PhysicsTuple> GetPhysicsTuples(EntityAdmin* admin) {
+inline std::vector<PhysicsTuple> GetPhysicsTuples(Admin* admin) {
 	std::vector<PhysicsTuple> out;
 	for(int i = 0; i < admin->entities.size(); i++) {
 		if (admin->entities[i]) {
@@ -1077,7 +1077,7 @@ inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 //// system functions ////
 //////////////////////////
 
-void PhysicsSystem::Init(EntityAdmin* a) {
+void PhysicsSystem::Init(Admin* a) {
 	admin = a;
 	integrationMode = IntegrationMode::EULER;
 	collisionMode   = CollisionDetectionMode::DISCRETE;

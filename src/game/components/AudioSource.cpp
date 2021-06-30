@@ -47,7 +47,7 @@ std::string AudioSource::SaveTEXT(){
 					"\n");
 }
 
-void AudioSource::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void AudioSource::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	forI(count){
 		memcpy(&entityID, data+cursor, sizeof(u32)); 

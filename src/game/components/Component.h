@@ -9,7 +9,7 @@
 #include <string>
 
 struct Entity;
-struct EntityAdmin;
+struct Admin;
 
 //suffix is the system that comes after the layer
 enum ComponentLayerBits : u32{
@@ -51,7 +51,7 @@ static const char* ComponentTypeStrings[] = {
 };
 
 struct Component : public Receiver {
-	EntityAdmin* admin;
+	Admin* admin;
 	u32 entityID;
 	u32 compID; //this should ONLY be used for saving/loading, not indexing anykind of array for now
 	char name[DESHI_NAME_SIZE];

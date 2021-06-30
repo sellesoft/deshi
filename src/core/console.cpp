@@ -561,10 +561,10 @@ void Console::CleanUp() {
 // command creation functions
 //////////////////////////////////////////////////////////////////////
 
-#define CMDFUNC(name) std::string command_##name##_back(EntityAdmin* admin, std::vector<std::string> args)
+#define CMDFUNC(name) std::string command_##name##_back(Admin* admin, std::vector<std::string> args)
 
 #define CMDERROR args.at(-1) = ""
-#define CMDSTART(name) std::string command_##name##_back(EntityAdmin* admin, std::vector<std::string> args){ try{std::cmatch m;
+#define CMDSTART(name) std::string command_##name##_back(Admin* admin, std::vector<std::string> args){ try{std::cmatch m;
 #define CMDSTARTA(name,assert) CMDSTART(name) if(!(assert)){CMDERROR;}
 #define CMDEND(error) CMDERROR; return ""; }catch(...){ ERROR(error); return ""; }}
 

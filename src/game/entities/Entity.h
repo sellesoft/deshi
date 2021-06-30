@@ -11,7 +11,7 @@
 #include <set>
 #include <unordered_map>
 
-struct EntityAdmin;
+struct Admin;
 struct Component;
 
 //necessary for loading
@@ -29,7 +29,7 @@ static const char* EntityTypeStrings[] = {
 };
 
 struct Entity {
-	EntityAdmin* admin; //reference to owning admin
+	Admin* admin; //reference to owning admin
 	u32 id;
 	char name[DESHI_NAME_SIZE];
 	EntityType type = EntityType_Anonymous;
@@ -40,7 +40,7 @@ struct Entity {
 	std::set<Entity*> connections;
 	
 	Entity();
-	Entity(EntityAdmin* admin, u32 id, Transform transform = Transform(),
+	Entity(Admin* admin, u32 id, Transform transform = Transform(),
 		   const char* name = 0, std::vector<Component*> components = {});
 	~Entity();
 	
@@ -57,7 +57,7 @@ struct Entity {
 	void RemoveComponents(std::vector<Component*> components);
 	
 	virtual std::string SaveTEXT();
-	static Entity* LoadTEXT(EntityAdmin* admin, std::string& filepath, std::vector<pair<u32,u32>>& mesh_id_diffs);
+	static Entity* LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u32,u32>>& mesh_id_diffs);
 	//virtual void LoadDESH(const char* filename);
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise

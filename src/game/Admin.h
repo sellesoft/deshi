@@ -27,7 +27,7 @@ enum GameStateBits : u32{
 	GameState_Play, GameState_Menu, GameState_Debug, GameState_Editor, GameState_COUNT
 }; typedef u32 GameState;
 
-struct EntityAdmin {
+struct Admin {
 	GameState state;
 	
 	//systems
@@ -105,7 +105,7 @@ struct EntityAdmin {
 
 
 //global admin pointer
-extern EntityAdmin* g_admin;
+extern Admin* g_admin;
 #define EntityAt(id) g_admin->entities[id]
 #define DengAdmin  g_admin
 #define DengKeys   g_admin->keybinds

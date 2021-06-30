@@ -122,7 +122,7 @@ std::string Physics::SaveTEXT(){
 					"\n");
 }
 
-void Physics::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void Physics::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	vec3 position{}, rotation{}, velocity{}, accel{}, rotVel{}, rotAccel{};
 	f32 elasticity = 0.f, mass = 0.f, kineticFricCoef = 0.f, staticFricCoef = 0.f;

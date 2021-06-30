@@ -29,7 +29,7 @@ Entity::Entity() {
     this->name[63] = '\0';
 }
 
-Entity::Entity(EntityAdmin* admin, u32 id, Transform transform, const char* name, std::vector<Component*> comps) {
+Entity::Entity(Admin* admin, u32 id, Transform transform, const char* name, std::vector<Component*> comps) {
     this->admin = admin;
     this->id = id;
     this->transform = transform;
@@ -164,7 +164,7 @@ enum struct Header{
 };
 #define InvalidHeaderKeyError(header) ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid key '",kv.first,"' for header '"header"'.")
 //TODO(delle) support multiple components of a type on an entity
-Entity* Entity::LoadTEXT(EntityAdmin* admin, std::string& filepath, std::vector<pair<u32,u32>>& mesh_id_diffs){
+Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u32,u32>>& mesh_id_diffs){
     //load file into char array
     char* buffer = deshi::readFileAsciiToArray(filepath);
     if(!buffer) return 0;

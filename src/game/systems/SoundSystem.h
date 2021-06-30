@@ -5,7 +5,7 @@
 #include "../../defines.h"
 #include <vector>
 
-struct EntityAdmin;
+struct Admin;
 typedef char ALCchar;
 typedef struct ALCdevice_struct ALCdevice;
 typedef struct ALCcontext_struct ALCcontext;
@@ -13,7 +13,7 @@ typedef void ALvoid;
 typedef unsigned int ALuint;
 
 struct SoundSystem{
-	EntityAdmin* admin;
+	Admin* admin;
 	const ALCchar* devices;
 	const ALCchar* defaultDeviceName;
 	int ret;
@@ -23,7 +23,7 @@ struct SoundSystem{
 	ALCcontext* context;
 	std::vector<ALuint*> buffers;
 	
-	void Init(EntityAdmin* admin);
+	void Init(Admin* admin);
 	void Update();
 };
 

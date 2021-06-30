@@ -1,6 +1,6 @@
 #include "CanvasSystem.h"
 
-void CanvasSystem::Init(EntityAdmin* a) {
+void CanvasSystem::Init(Admin* a) {
 	admin = a;
 	
 }

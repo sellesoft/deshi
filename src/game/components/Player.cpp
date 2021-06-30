@@ -43,7 +43,7 @@ std::string Player::SaveTEXT(){
 					"\n");
 }
 
-void Player::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void Player::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = -1, compID = -1, event = -1;
 	int health = 0;
 	forI(count) {

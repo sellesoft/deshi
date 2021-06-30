@@ -357,7 +357,7 @@ std::string Movement::SaveTEXT(){
 					"\n");
 }
 
-void Movement::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count) {
+void Movement::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count) {
 	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	Vector3 inputs{};
 	float gndAccel{}, airAccel{}, maxWalkingSpeed{}, maxRunningSpeed{}, maxCrouchingSpeed{}, jumpImpulse{};

@@ -17,8 +17,8 @@ struct AudioListener : public Component {
 	AudioListener(Vector3 position, Vector3 velocity = Vector3::ZERO, Vector3 orientation = Vector3::ZERO);
 	
 	std::string SaveTEXT() override;
-	//static void LoadTEXT(EntityAdmin* admin, std::string& text);
-	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	//static void LoadTEXT(Admin* admin, std::string& text);
+	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif //COMPONENT_AUDIOLISTENER_H

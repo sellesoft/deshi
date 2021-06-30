@@ -23,7 +23,7 @@ std::string Door::SaveTEXT(){
 					"\n");
 }
 
-void Door::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void Door::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = 0xFFFFFFFF, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
 	b32 isOpen = 0;
 	forI(count){

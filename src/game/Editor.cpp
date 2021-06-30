@@ -103,7 +103,7 @@ void Editor::TranslateEntity(Entity* e, TransformationAxis axis){
     
 }
 
-inline void HandleGrabbing(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um) {
+inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um) {
     static bool grabbingObj = false;
     
     if (!DengConsole->IMGUI_MOUSE_CAPTURE) { 
@@ -271,7 +271,7 @@ void Editor::RotateEntity(Entity* e, TransformationAxis axis){
     
 }
 
-inline void HandleRotating(Entity* sel, Camera* c, EntityAdmin* admin, UndoManager* um) {
+inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um) {
     static bool rotatingObj = false;
     
     if (!DengConsole->IMGUI_MOUSE_CAPTURE) { 
@@ -980,7 +980,7 @@ inline void EventsMenu(Entity* current) {
     End();
 }
 
-inline void EntitiesTab(EntityAdmin* admin, float fontsize){
+inline void EntitiesTab(Admin* admin, float fontsize){
     using namespace ImGui;
 	
     local_persist b32 rename_ent = false;
@@ -1400,7 +1400,7 @@ inline void EntitiesTab(EntityAdmin* admin, float fontsize){
     PopStyleVar(); //ImGuiStyleVar_IndentSpacing
 } //EntitiesTab
 
-inline void MaterialsTab(EntityAdmin* admin){
+inline void MaterialsTab(Admin* admin){
     using namespace ImGui;
     
     local_persist u32 selected_mat = -1;
@@ -1574,7 +1574,7 @@ enum TwodPresets : u32 {
 };
 
 //TODO(delle,Ui) combine this into the EntitiesTab
-inline void CreateTab(EntityAdmin* admin, float fontsize){
+inline void CreateTab(Admin* admin, float fontsize){
     using namespace ImGui;
     
     //// creation variables ////
@@ -1994,7 +1994,7 @@ inline void CreateTab(EntityAdmin* admin, float fontsize){
     PopStyleVar();
 }
 
-inline void GlobalTab(EntityAdmin* admin){
+inline void GlobalTab(Admin* admin){
     using namespace ImGui;
 	
     SetPadding; 
@@ -2028,7 +2028,7 @@ inline void GlobalTab(EntityAdmin* admin){
     }
 }
 
-inline void BrushesTab(EntityAdmin* admin, float fontsize){
+inline void BrushesTab(Admin* admin, float fontsize){
     using namespace ImGui;
     
     local_persist MeshBrushVk* selected_meshbrush = 0;
@@ -2078,7 +2078,7 @@ inline void BrushesTab(EntityAdmin* admin, float fontsize){
     
 }
 
-void DisplayTriggers(EntityAdmin* admin) {
+void DisplayTriggers(Admin* admin) {
     int i = 0;
     for (Entity* e : admin->entities) {
         if (e->type == EntityType_Trigger) {
@@ -2656,7 +2656,7 @@ void Editor::ShowSelectedEntityNormals() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// editor struct
 
-void Editor::Init(EntityAdmin* a){
+void Editor::Init(Admin* a){
     admin = a;
     settings = {};
     

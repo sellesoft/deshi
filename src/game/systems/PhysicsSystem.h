@@ -4,7 +4,7 @@
 
 #include "../../defines.h"
 
-struct EntityAdmin;
+struct Admin;
 
 enum struct CollisionDetectionMode {
 	DISCRETE, /*CONTINUOUS, GJK,*/ NONE
@@ -15,7 +15,7 @@ enum struct IntegrationMode {
 };
 
 struct PhysicsSystem{
-	EntityAdmin* admin;
+	Admin* admin;
 	IntegrationMode integrationMode;
 	CollisionDetectionMode collisionMode;
 	f32 gravity;
@@ -27,7 +27,7 @@ struct PhysicsSystem{
 	
 	u32 collisionCount;
 	
-	void Init(EntityAdmin* admin);
+	void Init(Admin* admin);
 	void Update();
 };
 

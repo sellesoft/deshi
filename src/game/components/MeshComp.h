@@ -29,7 +29,7 @@ struct MeshComp : public Component {
 	void Init() override;
 	void Update() override;
 	std::string SaveTEXT() override;
-	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 struct MeshComp2D : public Component {
@@ -44,7 +44,7 @@ struct MeshComp2D : public Component {
 	void Init() override;
 	void Update() override;
 	std::string SaveTEXT() override;
-	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 

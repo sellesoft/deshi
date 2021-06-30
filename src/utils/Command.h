@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 
-struct EntityAdmin;
+struct Admin;
 
-typedef std::string (*CommandAction)(EntityAdmin* admin, std::vector<std::string> args);
+typedef std::string (*CommandAction)(Admin* admin, std::vector<std::string> args);
 
 struct Command {
 	CommandAction action;
@@ -41,7 +41,7 @@ struct Command {
 	}
 	
 	//execute command action function
-	inline std::string Exec(EntityAdmin* admin, std::string args = "") {
+	inline std::string Exec(Admin* admin, std::string args = "") {
 		std::vector<std::string> argsl = ParseArgs(args);
 		return action(admin, argsl);
 	}

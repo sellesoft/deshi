@@ -13,7 +13,7 @@ struct Collider;
 struct MeshComp;
 struct Physics;
 struct Transform;
-struct EntityAdmin;
+struct Admin;
 
 struct PlayerEntity : public Entity {
 	Player* player;

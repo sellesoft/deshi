@@ -22,7 +22,7 @@ struct Player : public Component {
 	void Update() override;
 	
 	std::string SaveTEXT() override;
-	static void LoadDESH(EntityAdmin* admin, const char* fileData, u32& cursor, u32 countToLoad);
+	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 #endif

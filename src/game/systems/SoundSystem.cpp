@@ -41,7 +41,7 @@ static void list_audio_devices(const ALCchar* devices)
 }
 
 //checking OpenAL Errors. used with TEST_ERROR
-bool check_al_errors(const std::string& filename, const std::uint_fast32_t line, EntityAdmin* admin){
+bool check_al_errors(const std::string& filename, const std::uint_fast32_t line, Admin* admin){
 	ALenum error = alGetError();
 	if (error != AL_NO_ERROR){
 		ERROR("***ERROR*** (", filename, ": ", line, ")\n");
@@ -69,7 +69,7 @@ bool check_al_errors(const std::string& filename, const std::uint_fast32_t line,
 	return true;
 }
 
-ALenum to_al_format(int channels, int bitsPerSample, EntityAdmin* admin) {
+ALenum to_al_format(int channels, int bitsPerSample, Admin* admin) {
 	if (channels == 1 && bitsPerSample == 8)
 		return AL_FORMAT_MONO8;
 	else if (channels == 1 && bitsPerSample == 16)
@@ -113,7 +113,7 @@ void play_sound(AudioSource* s) {
 }
 
 //main sound thread that is constant
-void SoundThread(EntityAdmin* admin) {
+void SoundThread(Admin* admin) {
 	std::vector<AudioSource*> playingSources;
 	while (true) {
 		//if new sources are queued we add them
@@ -212,7 +212,7 @@ void SoundThread(EntityAdmin* admin) {
 	}
 }
 
-void SoundSystem::Init(EntityAdmin* a) {
+void SoundSystem::Init(Admin* a) {
 	admin = a;
 	devices = 0;
 	defaultDeviceName = 0;

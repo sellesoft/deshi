@@ -96,7 +96,7 @@ std::string MeshComp::SaveTEXT(){
 					"\n");
 }
 
-void MeshComp::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void MeshComp::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
 	u32 entityID = -1, compID = -1, event = -1;
 	u32 meshID = -1, instanceID = -1;
 	forI(count){
@@ -159,6 +159,6 @@ std::string MeshComp2D::SaveTEXT(){
 					"\n");
 }
 
-void MeshComp2D::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void MeshComp2D::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
 	ERROR("MeshComp2D::Load not setup");
 }

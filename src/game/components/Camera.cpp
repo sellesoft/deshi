@@ -192,6 +192,6 @@ std::string Camera::SaveTEXT(){
 					"\n");
 }
 
-void Camera::LoadDESH(EntityAdmin* admin, const char* data, u32& cursor, u32 count){
+void Camera::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
 	ERROR("Camera::LoadDESH not setup");
 }
