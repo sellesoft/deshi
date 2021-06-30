@@ -14,6 +14,9 @@
 #include "../utils/ContainerManager.h"
 #include "../scene/scene.h"
 
+#include <vector>
+#include <string>
+
 //struct Entity;
 struct System;
 struct Component;
@@ -54,8 +57,11 @@ struct EntityAdmin {
 	bool paused;
 	bool pause_command, pause_phys, pause_canvas, pause_world, pause_sound;
 	
-	//debug stuff
+	// debug stuff
 	bool debugTimes;
+	
+	f32 physLyrTime{}, canvasLyrTime{}, sndLyrTime{}, worldLyrTime{};
+	f32 physSysTime{}, canvasSysTime{}, sndSysTime{}, worldSysTime{};
 	
 	void Init();
 	void Update();
@@ -93,6 +99,8 @@ struct EntityAdmin {
 	
 	//adds an already initialized entity to the deletion buffer
 	void DeleteEntity(Entity* entity);
+	
+	std::string FormatAdminTime(std::string format);
 };
 
 

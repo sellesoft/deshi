@@ -179,7 +179,7 @@ ____we can store the text in the actual code and create the file from the code, 
 #include "core/window.h"
 #include "game/admin.h"
 
-static_internal Time        time_;     Time*       g_time = &time_; //time_ because there is a c-func time() D:
+static_internal Time        time_;    Time*       g_time = &time_; //time_ because there is a c-func time() D:
 static_internal Window      window;   Window*      g_window = &window;
 static_internal Input       input;    Input*       g_input = &input;
 static_internal Console     console;  Console*     g_console = &console;

@@ -81,7 +81,7 @@ void Console::AddLog(std::string input) {
 					alert_message = m[2].str();
 					alert_count++;
 				}
-
+				
 				
 			}
 			else {
@@ -93,7 +93,7 @@ void Console::AddLog(std::string input) {
 		}
 		buffer[buffer.size() - 1].first += "\n";
 	}
-
+	
 	if(mirror_logging_to_stdout) std::cout << input << std::endl;
 }
 
@@ -244,7 +244,7 @@ void Console::DrawConsole() {
 	io.BackendFlags = ImGuiBackendFlags_HasGamepad | ImGuiBackendFlags_HasMouseCursors | ImGuiBackendFlags_HasSetMousePos;
 	io.ConfigWindowsMoveFromTitleBarOnly = true;
 	io.ConfigWindowsResizeFromEdges = true;
-
+	
 	
 	//window styling
 	
@@ -465,20 +465,20 @@ void Console::FlushBuffer() {
 
 void Console::AddAliases() {
 	std::ifstream aliases;
-
+	
 	std::string path = deshi::assetPath("aliases.cfg", AssetType_Config, false);
 	if (path != "") {
 		aliases = std::ifstream(path, std::ios::in);
-
+		
 		char* c = (char*)malloc(255);
 		aliases.getline(c, 255);
 		std::string s(c);
-
+		
 		std::string alias = s.substr(0, s.find_first_of(" "));
 		std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
-
+		
 		Command* com;
-
+		
 		try {
 			com = commands.at(command);
 			commands.emplace(alias, com);
@@ -490,10 +490,10 @@ void Console::AddAliases() {
 	else {
 		LOG("Creating aliases file..");
 		deshi::writeFile(deshi::dirConfig() + "aliases.cfg", "", 0);
-
+		
 		return;
 	}
-
+	
 }
 
 
@@ -510,12 +510,12 @@ void Console::Init() {
 	AddLog("see console_release_notes.txt for version information");
 	AddLog("\n[c:dyellow]Console TODOS:[c]");
 	AddLog("> implement argument completion for commands\n"
-		"> implement arguments for commands that need them\n"
-		"> add help to commands that don't have a descriptive help yet\n"
-		"> fix tabcompletion when trying to complete the first word\n"
-		"> (maybe) rewrite to use characters in the buffer rather than whole strings\n"
-		"> (maybe) implement showing autocomplete as you type");
-
+		   "> implement arguments for commands that need them\n"
+		   "> add help to commands that don't have a descriptive help yet\n"
+		   "> fix tabcompletion when trying to complete the first word\n"
+		   "> (maybe) rewrite to use characters in the buffer rather than whole strings\n"
+		   "> (maybe) implement showing autocomplete as you type");
+	
 	AddCommands();
 	AddAliases();
 }
@@ -527,13 +527,13 @@ void Console::Update() {
 	}else{
 		CONSOLE_KEY_CAPTURE = false;
 	}
-
+	
 	if (buffersize >= 120000) {
 		FlushBuffer();
 		buffer.clear();
 		buffersize = 0;
 	}
-
+	
 	if (dispcon && show_alert) {
 		show_alert = false; alert_count = 0;
 	}
@@ -596,8 +596,8 @@ CMDFUNC(time_engine){
 }
 
 CMDFUNC(time_game){
-	return DengTime->FormatAdminTime("Layers:  Physics:{P}ms Canvas:{C}ms World:{W}ms Send:{S}ms Last:{L}ms\n"
-									 "Systems: Physics:{p}ms Canvas:{c}ms World:{w}ms Send:{s}ms");
+	return admin->FormatAdminTime("Layers:  Physics:{P}ms Canvas:{C}ms World:{W}ms Send:{S}ms Last:{L}ms\n"
+								  "Systems: Physics:{p}ms Canvas:{c}ms World:{w}ms Send:{s}ms");
 }
 
 CMDFUNC(undo){
@@ -788,16 +788,16 @@ CMDSTART(mesh_create){
 			return "[c:red]Invalid parameter: " + *s + "[c]";
 		}
 	}
-
+	
 	u32 meshID = std::atoi(args[0].c_str());
 	u32 id = DengRenderer->CreateMesh(meshID, Matrix4::TransformationMatrix(pos, rot, scale));
 	Mesh* ptr = DengRenderer->GetMeshPtr(id); if (!ptr) CMDERROR;
-
+	
 	MeshComp* mc = new MeshComp(id);
 	Physics* p = new Physics(pos, rot);
 	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 	admin->CreateEntity({ mc, p, s });
-
+	
 	return TOSTRING("Created mesh with id: ", id, " based on mesh: ", meshID);
 }CMDEND("mesh_create <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 
@@ -844,89 +844,89 @@ CMDSTARTA(cam_vars, args.size() != 0){
 }CMDEND("cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)");
 
 CMDSTARTA(add_player, args.size() > 0) {
-		std::cmatch m;
-		Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
-		float mass = 1.f;
-		float elasticity = 0;
-		bool staticc = true;
-		ColliderType ctype;
-		
-		//check for optional params after the first arg
-		for (auto s = args.begin() + 1; s != args.end(); ++s) {
-			if (std::regex_search(s->c_str(), m, Vec3Regex("pos"))) {
-				position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-			}
-			else if (std::regex_search(s->c_str(), m, Vec3Regex("rot"))) {
-				rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-			}
-			else if (std::regex_search(s->c_str(), m, Vec3Regex("scale"))) {
-				scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-			}
-			else if (std::regex_search(s->c_str(), m, StringRegex("collider"))) {
-				if (m[1] == "aabb") ctype = ColliderType_AABB;
-				else if (m[1] == "sphere") ctype = ColliderType_Sphere;
-				else if (m[1] == "landscape") ctype = ColliderType_Landscape;
-				else if (m[1] == "box") ctype = ColliderType_Box;
-			}
-			else if (std::regex_search(s->c_str(), m, FloatRegex("mass"))) {
-				if (std::stof(m[1]) < 0) return "[c:red]Mass must be greater than 0[c]";
-				mass = std::stof(m[1]);
-			}
-			else if (std::regex_search(s->c_str(), m, BoolRegex("static"))) {
-				if (m[1] == "0" || m[1] == "false") staticc = false;
-			}
-			else if (std::regex_search(s->c_str(), m, FloatRegex("elasticity"))) {
-				elasticity = std::stof(m[1]);
-			}
-			else {
-				return "[c:red]Invalid parameter: " + *s + "[c]";
-			}
+	std::cmatch m;
+	Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
+	float mass = 1.f;
+	float elasticity = 0;
+	bool staticc = true;
+	ColliderType ctype;
+	
+	//check for optional params after the first arg
+	for (auto s = args.begin() + 1; s != args.end(); ++s) {
+		if (std::regex_search(s->c_str(), m, Vec3Regex("pos"))) {
+			position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}
-		
-		//cut off the .obj extension for entity name
-		char name[DESHI_NAME_SIZE];
-		cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
-		
-		//create the mesh
-		u32 id = DengRenderer->CreateMesh(&admin->scene, args[0].c_str());
-		Mesh* mesh = DengRenderer->GetMeshPtr(id);
-		
-		//collider
-		Collider* col = nullptr;
-		switch (ctype) {
-			case ColliderType_AABB: col = new AABBCollider(Vector3(0.5, 1, 0.5), 2); break;
-			case ColliderType_Sphere: col = new SphereCollider(1, 1); break;
-			case ColliderType_Landscape: col = new LandscapeCollider(mesh); break;
-			case ColliderType_Box: col = new BoxCollider(Vector3(1, 1, 1), 1); break;
+		else if (std::regex_search(s->c_str(), m, Vec3Regex("rot"))) {
+			rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}
-		
-		MeshComp* mc = new MeshComp(id);
-		Physics* p = new Physics(position, rotation, Vector3::ZERO, Vector3::ZERO,
-								 Vector3::ZERO, Vector3::ZERO, elasticity, mass, staticc);
-		AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
-		Movement* mov = new Movement(p);
-		mov->camera = admin->mainCamera;
-		Player* pl = new Player(mov);
-		admin->player = admin->CreateEntityNow({ mc, p, s, col, mov, pl },
-											   name, Transform(position, rotation, scale));
-		admin->controller.playermove = mov;
-		return TOSTRING("Added player.");
+		else if (std::regex_search(s->c_str(), m, Vec3Regex("scale"))) {
+			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+		}
+		else if (std::regex_search(s->c_str(), m, StringRegex("collider"))) {
+			if (m[1] == "aabb") ctype = ColliderType_AABB;
+			else if (m[1] == "sphere") ctype = ColliderType_Sphere;
+			else if (m[1] == "landscape") ctype = ColliderType_Landscape;
+			else if (m[1] == "box") ctype = ColliderType_Box;
+		}
+		else if (std::regex_search(s->c_str(), m, FloatRegex("mass"))) {
+			if (std::stof(m[1]) < 0) return "[c:red]Mass must be greater than 0[c]";
+			mass = std::stof(m[1]);
+		}
+		else if (std::regex_search(s->c_str(), m, BoolRegex("static"))) {
+			if (m[1] == "0" || m[1] == "false") staticc = false;
+		}
+		else if (std::regex_search(s->c_str(), m, FloatRegex("elasticity"))) {
+			elasticity = std::stof(m[1]);
+		}
+		else {
+			return "[c:red]Invalid parameter: " + *s + "[c]";
+		}
+	}
+	
+	//cut off the .obj extension for entity name
+	char name[DESHI_NAME_SIZE];
+	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
+	
+	//create the mesh
+	u32 id = DengRenderer->CreateMesh(&admin->scene, args[0].c_str());
+	Mesh* mesh = DengRenderer->GetMeshPtr(id);
+	
+	//collider
+	Collider* col = nullptr;
+	switch (ctype) {
+		case ColliderType_AABB: col = new AABBCollider(Vector3(0.5, 1, 0.5), 2); break;
+		case ColliderType_Sphere: col = new SphereCollider(1, 1); break;
+		case ColliderType_Landscape: col = new LandscapeCollider(mesh); break;
+		case ColliderType_Box: col = new BoxCollider(Vector3(1, 1, 1), 1); break;
+	}
+	
+	MeshComp* mc = new MeshComp(id);
+	Physics* p = new Physics(position, rotation, Vector3::ZERO, Vector3::ZERO,
+							 Vector3::ZERO, Vector3::ZERO, elasticity, mass, staticc);
+	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
+	Movement* mov = new Movement(p);
+	mov->camera = admin->mainCamera;
+	Player* pl = new Player(mov);
+	admin->player = admin->CreateEntityNow({ mc, p, s, col, mov, pl },
+										   name, Transform(position, rotation, scale));
+	admin->controller.playermove = mov;
+	return TOSTRING("Added player.");
 }CMDEND("load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 
 
 CMDSTARTA(add_force, args.size() > 0) {
-		std::cmatch m;
-		for (std::string s : args) {
-			if (std::regex_search(s.c_str(), m, Vec3Regex("force"))) {
-				if(Physics* p = admin->editor.selected[0]->GetComponent<Physics>()){
-					p->AddForce(nullptr, Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3])));
-					return "";
-				}else{
-					ERROR("Selectesd object doesn't have a physics component");
-					return "";
-				}
+	std::cmatch m;
+	for (std::string s : args) {
+		if (std::regex_search(s.c_str(), m, Vec3Regex("force"))) {
+			if(Physics* p = admin->editor.selected[0]->GetComponent<Physics>()){
+				p->AddForce(nullptr, Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3])));
+				return "";
+			}else{
+				ERROR("Selectesd object doesn't have a physics component");
+				return "";
 			}
 		}
+	}
 }CMDEND("add_force -force=(x,y,z)");
 
 CMDFUNC(cam_info) {
@@ -949,11 +949,11 @@ CMDFUNC(cam_reset) {
 
 CMDFUNC(listc) {
 	std::string allcommands = "";
-
+	
 	for (std::pair<std::string, Command*> c : DengConsole->commands) {
 		allcommands += c.first + "\n";
 	}
-
+	
 	return allcommands;
 }
 
@@ -979,17 +979,17 @@ CMDFUNC(alias) {
 		try {
 			com = DengConsole->commands.at(args[1]);
 			DengConsole->commands.emplace(args[0], com);
-
+			
 			std::string data = args[0] + " " + args[1] + "\n";
 			std::vector<char> datav;
-
+			
 			for (auto c : data) {
 				datav.push_back(c);
 			}
-
+			
 			deshi::appendFile(deshi::assetPath("aliases.cfg", AssetType_Config),
-				datav, datav.size());
-
+							  datav, datav.size());
+			
 			return "[c:green]alias \"" + args[0] + "\" successfully assigned to command \"" + args[1] + "\"[c]";
 		}
 		catch (...) {
@@ -999,7 +999,7 @@ CMDFUNC(alias) {
 	else {
 		return "too many arguments specified.";
 	}
-
+	
 }
 
 CMDFUNC(bind) {
@@ -1015,7 +1015,7 @@ CMDFUNC(bind) {
 			s += args[i] + " ";
 		}
 		Key::Key key;
-
+		
 		try {
 			key = DengKeys.stk.at(args[0]);
 			DengInput->binds.push_back(std::pair<std::string, Key::Key>(s, key));
@@ -1025,14 +1025,14 @@ CMDFUNC(bind) {
 			}
 			datav.push_back('\n');
 			deshi::appendFile(deshi::assetPath("binds.cfg", AssetType_Config),
-				datav, datav.size());
+							  datav, datav.size());
 			return "[c:green]key \"" + args[0] + "\" successfully bound to \n" + s + "[c]";
 		}
 		catch (...) {
 			return "[c:red]key \"" + args[0] + "\" not found in the key list.[c]";
 		}
-
-
+		
+		
 	}
 }
 
@@ -1040,17 +1040,17 @@ CMDSTARTA(window_display_mode, args.size() == 1) {
 	try {
 		int mode = std::stoi(args[0]);
 		switch (mode) {
-		case(0): {
-			DengWindow->UpdateDisplayMode(DisplayMode::WINDOWED);
-			return "display_mode=windowed"; }
-		case(1): {
-			DengWindow->UpdateDisplayMode(DisplayMode::BORDERLESS);
-			return "display_mode=borderless windowed"; }
-		case(2): {
-			DengWindow->UpdateDisplayMode(DisplayMode::FULLSCREEN);
-			return "display_mode=fullscreen"; }
-		default: {
-			return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen"; }
+			case(0): {
+				DengWindow->UpdateDisplayMode(DisplayMode::WINDOWED);
+				return "display_mode=windowed"; }
+			case(1): {
+				DengWindow->UpdateDisplayMode(DisplayMode::BORDERLESS);
+				return "display_mode=borderless windowed"; }
+			case(2): {
+				DengWindow->UpdateDisplayMode(DisplayMode::FULLSCREEN);
+				return "display_mode=fullscreen"; }
+			default: {
+				return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen"; }
 		}
 	}
 	catch (...) {
@@ -1062,16 +1062,16 @@ CMDSTARTA(window_cursor_mode, args.size() == 1) {
 	try {
 		int mode = std::stoi(args[0]);
 		switch (mode) {
-		case(0): {
-			DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
-			return "cursor_mode=default"; }
-		case(1): {
-			DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
-			return "cursor_mode=first person"; }
-		case(2): {
-			DengWindow->UpdateCursorMode(CursorMode::HIDDEN);
-			return "cursor_mode=hidden"; }
-		default: { return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden"; }
+			case(0): {
+				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+				return "cursor_mode=default"; }
+			case(1): {
+				DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
+				return "cursor_mode=first person"; }
+			case(2): {
+				DengWindow->UpdateCursorMode(CursorMode::HIDDEN);
+				return "cursor_mode=hidden"; }
+			default: { return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden"; }
 		}
 	}
 	catch (...) {
@@ -1083,9 +1083,9 @@ CMDSTARTA(window_raw_input, args.size() == 1) {
 	try {
 		int mode = std::stoi(args[0]);
 		switch (mode) {
-		case(0): { DengWindow->UpdateRawInput(false); return "raw_input=false"; }
-		case(1): { DengWindow->UpdateRawInput(true); return "raw_input=true"; }
-		default: { return "raw_input: 0=false, 1=true"; }
+			case(0): { DengWindow->UpdateRawInput(false); return "raw_input=false"; }
+			case(1): { DengWindow->UpdateRawInput(true); return "raw_input=true"; }
+			default: { return "raw_input: 0=false, 1=true"; }
 		}
 	}
 	catch (...) {
@@ -1097,9 +1097,9 @@ CMDSTARTA(window_resizable, args.size() == 1) {
 	try {
 		int mode = std::stoi(args[0]);
 		switch (mode) {
-		case(0): { DengWindow->UpdateResizable(false); return "window_resizable=false"; }
-		case(1): { DengWindow->UpdateResizable(true); return "window_resizable=true"; }
-		default: { return "window_resizable: 0=false, 1=true"; }
+			case(0): { DengWindow->UpdateResizable(false); return "window_resizable=false"; }
+			case(1): { DengWindow->UpdateResizable(true); return "window_resizable=true"; }
+			default: { return "window_resizable: 0=false, 1=true"; }
 		}
 	}
 	catch (...) {
@@ -1117,13 +1117,13 @@ CMDFUNC(render_stats) {
 }
 
 CMDSTARTA(render_options, args.size() > 0) {
-		try {
-			DengRenderer->settings.wireframe = std::stoi(args[0]);
-			return (DengRenderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
-		}
-		catch (...) {
-			return "render_options <wireframe:Bool>";
-		}
+	try {
+		DengRenderer->settings.wireframe = std::stoi(args[0]);
+		return (DengRenderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
+	}
+	catch (...) {
+		return "render_options <wireframe:Bool>";
+	}
 	return (DengRenderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
 }CMDEND("render_options <wireframe:Bool>");
 
@@ -1147,10 +1147,10 @@ CMDFUNC(mat_list) {
 	std::string out = "[c:yellow]Materials List:\nID  Shader  Albedo  Normal  Specular  Light[c]";
 	for (auto& mat : r->materials) {
 		out += TOSTRING("\n", mat.id, "  ", ShaderStrings[mat.shader], "  ",
-			mat.albedoID, ":", r->textures[mat.albedoID].filename, "  ",
-			mat.normalID, ":", r->textures[mat.normalID].filename, "  ",
-			mat.specularID, ":", r->textures[mat.specularID].filename, "  ",
-			mat.lightID, ":", r->textures[mat.lightID].filename);
+						mat.albedoID, ":", r->textures[mat.albedoID].filename, "  ",
+						mat.normalID, ":", r->textures[mat.normalID].filename, "  ",
+						mat.specularID, ":", r->textures[mat.specularID].filename, "  ",
+						mat.lightID, ":", r->textures[mat.lightID].filename);
 	}
 	return out;
 }
@@ -1169,26 +1169,26 @@ CMDSTARTA(shader_reload, args.size() == 1) {
 
 CMDFUNC(shader_list) {
 	return TOSTRING("[c:yellow]ID    SHADER          Description[c]\n",
-		"0    Flat            Vertex color shading without normal/edge smoothing\n",
-		"1    Phong           Vertex color shading with normal smoothing (good with spheres)\n",
-		"2    TwoD            Vertex color shading with 2D position, rotation, and scale\n",
-		"3    PBR             Physically-based rendering; 4 textures per material\n",
-		"4    Wireframe       Vertex color shading with no polygon fill\n",
-		"5    Lavalamp        Sushi's experimental shader\n",
-		"6    Test0           Testing shader 1\n",
-		"7    Test1           Testing shader 2");
+					"0    Flat            Vertex color shading without normal/edge smoothing\n",
+					"1    Phong           Vertex color shading with normal smoothing (good with spheres)\n",
+					"2    TwoD            Vertex color shading with 2D position, rotation, and scale\n",
+					"3    PBR             Physically-based rendering; 4 textures per material\n",
+					"4    Wireframe       Vertex color shading with no polygon fill\n",
+					"5    Lavalamp        Sushi's experimental shader\n",
+					"6    Test0           Testing shader 1\n",
+					"7    Test1           Testing shader 2");
 }
 
 CMDSTARTA(mesh_visible, args.size() == 2) {
-		try {
-			int meshID = std::stoi(args[0]);
-			bool vis = std::stoi(args[1]);
-			DengRenderer->UpdateMeshVisibility(meshID, vis);
-			return TOSTRING("Setting mesh", meshID, "'s visibility to ", vis);
-		}
-		catch (...) {
-			return "mesh_visible <meshID:Uint> <visible:Bool>";
-		}
+	try {
+		int meshID = std::stoi(args[0]);
+		bool vis = std::stoi(args[1]);
+		DengRenderer->UpdateMeshVisibility(meshID, vis);
+		return TOSTRING("Setting mesh", meshID, "'s visibility to ", vis);
+	}
+	catch (...) {
+		return "mesh_visible <meshID:Uint> <visible:Bool>";
+	}
 }CMDEND("mesh_visible <meshID:Uint> <visible:Bool>");
 
 CMDSTARTA(mesh_batch_material, args.size() == 3) {
@@ -1200,10 +1200,10 @@ CMDSTARTA(mesh_batch_material, args.size() == 3) {
 } CMDEND("mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>");
 
 CMDSTARTA(texture_load, args.size() > 0) {
-		Texture tex(args[0].c_str());
-		if (args.size() == 2) { tex.type = (u32)std::stoi(args[1]); }
-		u32 id = DengRenderer->LoadTexture(tex);
-		return TOSTRING("Loaded texture ", args[0], " to ID: ", id);
+	Texture tex(args[0].c_str());
+	if (args.size() == 2) { tex.type = (u32)std::stoi(args[1]); }
+	u32 id = DengRenderer->LoadTexture(tex);
+	return TOSTRING("Loaded texture ", args[0], " to ID: ", id);
 }CMDEND("texture_load <texture.png:String> [type:Uint]");
 
 CMDFUNC(texture_list) {
@@ -1212,12 +1212,12 @@ CMDFUNC(texture_list) {
 
 CMDFUNC(texture_type_list) {
 	return TOSTRING("[c:yellow]Texture Types: (can be combined)[c]\n"
-		"   0=Albedo, Color, Diffuse\n"
-		"   1=Normal, Bump\n"
-		"   2=Light, Ambient\n"
-		"   4=Specular, Reflective\n"
-		"   8=Cube      (not supported yet)\n"
-		"  16=Sphere    (not supported yet)");
+					"   0=Albedo, Color, Diffuse\n"
+					"   1=Normal, Bump\n"
+					"   2=Light, Ambient\n"
+					"   4=Specular, Reflective\n"
+					"   8=Cube      (not supported yet)\n"
+					"  16=Sphere    (not supported yet)");
 }
 
 CMDFUNC(quit) {
@@ -1250,26 +1250,26 @@ CMDSTARTA(add_trigger, args.size() > 0) {
 			bool found = false;
 			forI(sizeof(EventStrings))
 				if (m[1] == EventStrings[i]) {
-					found = true; event = (u32)i;  break;
-				}
+				found = true; event = (u32)i;  break;
+			}
 			if (!found) return TOSTRING("[c:red]Unknown event '", m[1], "'");
 		}
 		else {
 			return "[c:red]Invalid parameter: " + *s + "[c]";
 		}
 	}
-
+	
 	Collider* col = nullptr;
 	switch (type) {
 		case ColliderType_AABB:   col = new AABBCollider(Vector3::ONE / 2, 1, 0U, event); break;
 		case ColliderType_Sphere: col = new SphereCollider(1, 1, 0U, event); break;
 		case ColliderType_Box:    col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
 	}
-
+	
 	Trigger* te = new Trigger(Transform(pos, rot, scale), col);
-
+	
 	admin->CreateEntity(te);
-
+	
 	return TOSTRING("Created trigger");
 }CMDEND("add_trigger -type=[ColliderType] -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)")
 

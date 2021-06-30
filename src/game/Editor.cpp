@@ -476,7 +476,7 @@ namespace ImGui {
         Vector2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
         ImGui::GetBackgroundDrawList()->AddCircle(pos2.ToImVec2(), radius, ImGui::GetColorU32(ColToVec4(color)));
     }
-
+	
     void DebugDrawCircleFilled3(Vector3 pos, float radius, Color color) {
         Camera* c = g_admin->mainCamera;
         Vector2 windimen = DengWindow->dimensions;
@@ -2440,21 +2440,21 @@ void Editor::DebugBar() {
 }
 
 void Editor::DrawTimes(){
-    std::string time1 = DengTime->FormatTickTime ("Time       : {t}\n"
-                                                  "Window     : {w}\n"
-                                                  "Input      : {i}\n");
-    time1            += DengTime->FormatAdminTime("Physics Lyr: {P}\n"
-                                                  "        Sys: {p}\n"
-                                                  "Canvas  Lyr: {C}\n"
-                                                  "        Sys: {c}\n"
-                                                  "World   Lyr: {W}\n"
-                                                  "        Sys: {w}\n"
-                                                  "Sound   Lyr: {S}\n"
-                                                  "        Sys: {s}\n");
-    time1            += DengTime->FormatTickTime ("Admin      : {a}\n"
-                                                  "Console    : {c}\n"
-                                                  "Render     : {r}\n"
-                                                  "Frame      : {f}");
+    std::string time1 = DengTime->FormatTickTime  ("Time       : {t}\n"
+												   "Window     : {w}\n"
+												   "Input      : {i}\n");
+    time1            += DengAdmin->FormatAdminTime("Physics Lyr: {P}\n"
+												   "        Sys: {p}\n"
+												   "Canvas  Lyr: {C}\n"
+												   "        Sys: {c}\n"
+												   "World   Lyr: {W}\n"
+												   "        Sys: {w}\n"
+												   "Sound   Lyr: {S}\n"
+												   "        Sys: {s}\n");
+    time1            += DengTime->FormatTickTime  ("Admin      : {a}\n"
+												   "Console    : {c}\n"
+												   "Render     : {r}\n"
+												   "Frame      : {f}");
     
     ImGui::SetCursorPos(ImVec2(DengWindow->width - 150, menubarheight));
     ImGui::Text(time1.c_str());
@@ -2643,8 +2643,8 @@ void Editor::ShowSelectedEntityNormals() {
                         Vector3 mid = (p0 + p1 + p2) / 3;
                         
                         DebugLinesCol(i, mid, mid + normal, -1, Color::CYAN);
-                       // DebugLinesCol(i, p0, p0 + perp, -1, Color::YELLOW);
-                       // DebugLinesCol(i, mid, p0, -1, Color::MAGENTA);
+						// DebugLinesCol(i, p0, p0 + perp, -1, Color::YELLOW);
+						// DebugLinesCol(i, mid, p0, -1, Color::MAGENTA);
                     }
                 }
             }
@@ -2675,7 +2675,7 @@ void Editor::Init(EntityAdmin* a){
     showImGuiDemoWindow = false;
     showDebugLayer      = true;
     ConsoleHovFlag      = false;
-
+	
     showEditorWin = false;
 	
     files = deshi::iterateDirectory(deshi::dirModels());
@@ -2848,7 +2848,7 @@ void Editor::Reset(){
 
 void Editor::CreateEditorWin() {
     using namespace ImGui;
-
+	
     ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
@@ -2857,7 +2857,7 @@ void Editor::CreateEditorWin() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, ImVec2(1, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
-
+	
     ImGui::PushStyleColor(ImGuiCol_Border, ColToVec4(Color(0, 0, 0)));
     ImGui::PushStyleColor(ImGuiCol_Button, ColToVec4(Color(40, 40, 40)));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ColToVec4(Color(48, 48, 48)));

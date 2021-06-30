@@ -87,25 +87,25 @@ void EntityAdmin::Update() {
     //NOTE sushi: we need to maybe make a pause_phys_layer thing, because things unrelated to physics in that layer arent getting updated in editor. eg. lights
     //			  or we can just have different update blocks for different game states
     TIMER_RESET(t_a); 
-    if (!skip && /*!pause_phys &&*/ !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_Physics]); }
-    DengTime->physLyrTime =   TIMER_END(t_a); TIMER_RESET(t_a);
-    if (!skip && !pause_phys && !paused)  { physics.Update(); }
-    DengTime->physSysTime =   TIMER_END(t_a); TIMER_RESET(t_a);
-    if (!skip && !pause_canvas)           { UpdateLayer(freeCompLayers[ComponentLayer_Canvas]); }
-    DengTime->canvasLyrTime = TIMER_END(t_a); TIMER_RESET(t_a);
-    if (!skip && !pause_canvas)           { canvas.Update(); }
-    DengTime->canvasSysTime = TIMER_END(t_a); TIMER_RESET(t_a);
-    if (!skip && !pause_sound && !paused) { UpdateLayer(freeCompLayers[ComponentLayer_Sound]); }
-    DengTime->sndLyrTime =    TIMER_END(t_a); TIMER_RESET(t_a);
-    if (!skip && !pause_sound && !paused) { sound.Update(); }
-    DengTime->sndSysTime =    TIMER_END(t_a);
+    if(!skip && /*!pause_phys &&*/ !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_Physics]); }
+    physLyrTime =   TIMER_END(t_a); TIMER_RESET(t_a);
+    if(!skip && !pause_phys && !paused) { physics.Update(); }
+    physSysTime =   TIMER_END(t_a); TIMER_RESET(t_a);
+    if(!skip && !pause_canvas)          { UpdateLayer(freeCompLayers[ComponentLayer_Canvas]); }
+    canvasLyrTime = TIMER_END(t_a); TIMER_RESET(t_a);
+    if(!skip && !pause_canvas)          { canvas.Update(); }
+    canvasSysTime = TIMER_END(t_a); TIMER_RESET(t_a);
+    if(!skip && !pause_sound && !paused){ UpdateLayer(freeCompLayers[ComponentLayer_Sound]); }
+    sndLyrTime =    TIMER_END(t_a); TIMER_RESET(t_a);
+    if(!skip && !pause_sound && !paused){ sound.Update(); }
+    sndSysTime =    TIMER_END(t_a);
     ImGui::EndDebugLayer();
 }
 
 void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already happened
     TIMER_RESET(t_a);
     if (!skip && !pause_world) UpdateLayer(freeCompLayers[ComponentLayer_World]); 
-    DengTime->worldLyrTime = TIMER_END(t_a); TIMER_RESET(t_a);
+    worldLyrTime = TIMER_END(t_a); TIMER_RESET(t_a);
     
     //deletion buffer
     for(Entity* e : deletionBuffer) {
@@ -133,7 +133,7 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
         }
     }
     creationBuffer.clear();
-    DengTime->worldSysTime = TIMER_END(t_a); TIMER_RESET(t_a);
+    worldSysTime = TIMER_END(t_a); TIMER_RESET(t_a);
     
     //light updating
     for (int i = 0; i < 10; i++) {
@@ -988,7 +988,41 @@ void EntityAdmin::LoadDESH(const char* filename) {
     SkipUpdate();
 }
 
-
-
-
-
+//{P}:physics layer,  {C}:canvas layer,  {W}:world layer,  {S}:send layer
+//{p}:physics system, {c}:canvas system, {w}:world system, {s}:send system, 
+std::string EntityAdmin::FormatAdminTime(std::string fmt){
+	std::string out = ""; out.reserve(512);
+	forI(fmt.size()){
+		if(fmt[i] == '{'){
+			switch(fmt[i+1]){
+				case('P'):{
+					out.append(std::to_string(physLyrTime));
+				}i+=2;continue;
+				case('p'):{
+					out.append(std::to_string(physSysTime));
+				}i+=2;continue;
+				case('C'):{
+					out.append(std::to_string(canvasLyrTime));
+				}i+=2;continue;
+				case('c'):{
+					out.append(std::to_string(canvasSysTime));
+				}i+=2;continue;
+				case('W'):{
+					out.append(std::to_string(worldLyrTime));
+				}i+=2;continue;
+				case('w'):{
+					out.append(std::to_string(worldSysTime));
+				}i+=2;continue;
+				case('S'):{
+					out.append(std::to_string(sndLyrTime));
+				}i+=2;continue;
+				case('s'):{
+					out.append(std::to_string(sndSysTime));
+				}i+=2;continue;
+			}
+		}
+		out.push_back(fmt[i]);
+	}
+	
+	out.shrink_to_fit(); return out;
+}
