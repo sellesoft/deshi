@@ -2,7 +2,7 @@
 #ifndef DESHI_TIME_H
 #define DESHI_TIME_H
 
-#include "../utils/defines.h"
+#include "../defines.h"
 
 #include <chrono>
 #include <ctime>

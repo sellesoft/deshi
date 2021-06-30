@@ -1,7 +1,7 @@
 #include "MeshComp.h"
-#include "../../core.h"
 #include "../admin.h"
 #include "../Transform.h"
+#include "../../core/renderer.h"
 #include "../../scene/Model.h"
 #include "../../scene/Scene.h"
 

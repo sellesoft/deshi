@@ -5,6 +5,7 @@
 #include "Component.h"
 
 struct Mesh;
+struct Vector3;
 
 struct MeshComp : public Component {
 	Mesh* mesh;

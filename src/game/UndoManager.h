@@ -2,7 +2,7 @@
 #ifndef GAME_UNDOMANAGER_H
 #define GAME_UNDOMANAGER_H
 
-#include "../utils/defines.h"
+#include "../defines.h"
 #include <deque>
 
 struct Transform;

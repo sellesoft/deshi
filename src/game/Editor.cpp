@@ -13,7 +13,11 @@
 #include "components/AudioListener.h"
 #include "entities/PlayerEntity.h"
 #include "entities/Trigger.h"
-#include "../core.h"
+#include "../core/assets.h"
+#include "../core/console.h"
+#include "../core/renderer.h"
+#include "../core/window.h"
+#include "../core/time.h"
 #include "../math/Math.h"
 #include "../scene/Scene.h"
 #include "../geometry/Edge.h"
@@ -492,7 +496,7 @@ namespace ImGui {
         Vector3 pos1n = Math::WorldToCamera3(pos1, c->viewMat);
         Vector3 pos2n = Math::WorldToCamera3(pos2, c->viewMat);
         
-        if (Math::ClipLineToZPlanes(pos1n, pos2n, c)) {
+        if (Math::ClipLineToZPlanes(pos1n, pos2n, c->nearZ, c->farZ)) {
             ImGui::GetBackgroundDrawList()->AddLine(
                                                     Math::CameraToScreen2(pos1n, c->projMat, windimen).ToImVec2(), 
                                                     Math::CameraToScreen2(pos2n, c->projMat, windimen).ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
@@ -512,7 +516,7 @@ namespace ImGui {
         Vector2 windimen = DengWindow->dimensions;
         
         Vector3 posc = Math::WorldToCamera3(pos, c->viewMat);
-        if(Math::ClipLineToZPlanes(posc, posc, c)){
+        if(Math::ClipLineToZPlanes(posc, posc, c->nearZ, c->farZ)){
             ImGui::SetCursorPos((Math::CameraToScreen2(posc, c->projMat, windimen) + twoDoffset).ToImVec2());
             ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(color));
             ImGui::Text(text);
@@ -2520,14 +2524,14 @@ void Editor::DebugLayer() {
         //Vector3 v4t = v4.ToVector3();
         
         
-        if (Math::ClipLineToZPlanes(v1, v2, c)) {
+        if (Math::ClipLineToZPlanes(v1, v2, c->nearZ, c->farZ)) {
             Vector2 v1s = Math::CameraToScreen2(v1, c->projMat, DengWindow->dimensions);
             Vector2 v2s = Math::CameraToScreen2(v2, c->projMat, DengWindow->dimensions);
             Math::ClipLineToBorderPlanes(v1s, v2s, DengWindow->dimensions);
             if (!l1flag) ImGui::GetBackgroundDrawList()->AddLine(v1s.ToImVec2(), v2s.ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
             else         ImGui::GetBackgroundDrawList()->AddLine(v1s.ToImVec2(), v2s.ToImVec2(), ImGui::GetColorU32(ImVec4(1, 0, 0, 1)));
         }
-        if (Math::ClipLineToZPlanes(v3, v4, c)) {
+        if (Math::ClipLineToZPlanes(v3, v4, c->nearZ, c->farZ)) {
             Vector2 v3s = Math::CameraToScreen2(v3, c->projMat, DengWindow->dimensions);
             Vector2 v4s = Math::CameraToScreen2(v4, c->projMat, DengWindow->dimensions);
             Math::ClipLineToBorderPlanes(v3s, v4s, DengWindow->dimensions);

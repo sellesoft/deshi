@@ -2,7 +2,7 @@
 #ifndef SYSTEM_PHYSICS_H
 #define SYSTEM_PHYSICS_H
 
-#include "../../utils/defines.h"
+#include "../../defines.h"
 
 struct EntityAdmin;
 

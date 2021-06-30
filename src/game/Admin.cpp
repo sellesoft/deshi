@@ -1,5 +1,8 @@
 #include "Admin.h"
-#include "../core.h"
+#include "../core/time.h"
+#include "../core/renderer.h"
+#include "../core/window.h"
+#include "../core/assets.h"
 #include "components/Orb.h"
 #include "components/door.h"
 #include "components/Light.h"
@@ -19,7 +22,7 @@
 #include <stdexcept>
 #include <filesystem>
 
-//// EntityAdmin ////
+TIMER_START(t_a);
 
 void EntityAdmin::Init() {
     //decide initial gamestate

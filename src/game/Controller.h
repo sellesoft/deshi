@@ -2,7 +2,7 @@
 #ifndef GAME_CONTROLLER_H
 #define GAME_CONTROLLER_H
 
-#include "../utils/defines.h"
+#include "../defines.h"
 
 struct EntityAdmin;
 struct Movement;

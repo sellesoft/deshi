@@ -201,7 +201,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\core.h" />
     <ClInclude Include="..\src\core\assets.h" />
     <ClInclude Include="..\src\core\console.h" />
     <ClInclude Include="..\src\core\console2.h" />
@@ -212,6 +211,7 @@
     <ClInclude Include="..\src\core\renderer_vulkan.h" />
     <ClInclude Include="..\src\core\time.h" />
     <ClInclude Include="..\src\core\window.h" />
+    <ClInclude Include="..\src\defines.h" />
     <ClInclude Include="..\src\external\draudio\dr_flac.h" />
     <ClInclude Include="..\src\external\draudio\dr_mp3.h" />
     <ClInclude Include="..\src\external\draudio\dr_wav.h" />
@@ -268,7 +268,6 @@
     <ClInclude Include="..\src\utils\Command.h" />
     <ClInclude Include="..\src\utils\ContainerManager.h" />
     <ClInclude Include="..\src\utils\Debug.h" />
-    <ClInclude Include="..\src\utils\defines.h" />
     <ClInclude Include="..\src\utils\optional.h" />
     <ClInclude Include="..\src\utils\RingArray.h" />
     <ClInclude Include="..\src\utils\tuple.h" />

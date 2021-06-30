@@ -2,8 +2,7 @@
 #ifndef DESHI_RENDERER_VULKAN_H
 #define DESHI_RENDERER_VULKAN_H
 
-#include "../utils/defines.h"
-#include "../utils/debug.h"
+#include "../defines.h"
 #include "../utils/optional.h"
 #include "../utils/tuple.h"
 
@@ -23,6 +22,7 @@
 
 #include <array>
 #include <vector>
+#include <string>
 
 struct deshiImGui;
 struct Scene; struct Mesh; struct Texture;
@@ -297,6 +297,8 @@ struct Renderer{
     void UpdateCameraPosition(Vector3 position);
     void UpdateCameraViewMatrix(Matrix4 m);
     void UpdateCameraProjectionMatrix(Matrix4 m);
+
+    pair<Vector3, Vector3> SceneBoundingBox(); 
     
     //signals vulkan to remake the pipelines
     void ReloadShader(u32 shaderID);

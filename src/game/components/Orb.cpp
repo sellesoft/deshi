@@ -1,7 +1,8 @@
 #include "Orb.h"
 #include "MeshComp.h"
 #include "../admin.h"
-#include "../../core.h"
+#include "../../core/renderer.h"
+#include "../../core/time.h"
 #include "../../scene/Model.h"
 #include "../../scene/Scene.h"
 

@@ -2,10 +2,6 @@
 #ifndef GAME_ADMIN_H
 #define GAME_ADMIN_H
 
-#include "../utils/defines.h"
-#include "../utils/debug.h"
-#include "../utils/ContainerManager.h"
-#include "../scene/scene.h"
 #include "Transform.h"
 #include "Keybinds.h"
 #include "Controller.h"
@@ -14,6 +10,9 @@
 #include "systems/CanvasSystem.h"
 #include "systems/SoundSystem.h"
 #include "entities/Entity.h"
+#include "../defines.h"
+#include "../utils/ContainerManager.h"
+#include "../scene/scene.h"
 
 //struct Entity;
 struct System;
@@ -57,7 +56,6 @@ struct EntityAdmin {
 	
 	//debug stuff
 	bool debugTimes;
-	TIMER_START(t_a);
 	
 	void Init();
 	void Update();

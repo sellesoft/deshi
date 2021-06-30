@@ -12,6 +12,7 @@
 #include "window.h" //width, height
 #include "deshi_imgui.h" //ImGui
 #include "assets.h" //eat_spaces_leading
+#include "../utils/Debug.h" //TOSTRING
 #include "../utils/RingArray.h" //RingArray
 #include "../utils/Color.h" //Color
 #include "../external/imgui/imgui_internal.h" //TextEx

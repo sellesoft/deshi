@@ -2,7 +2,7 @@
 #ifndef DESHI_CONSOLE2_H
 #define DESHI_CONSOLE2_H
 
-#include "../utils/defines.h"
+#include "../defines.h"
 #include <string>
 
 enum ConsoleStateBits : u32{

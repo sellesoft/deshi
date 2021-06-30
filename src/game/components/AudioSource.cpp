@@ -22,7 +22,7 @@ AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, fl
 		this->p = p;
 	}
 	else {
-		ASSERT(t != nullptr, "if no physics pointer is specified, tranform must be");
+		Assert(t != nullptr, "if no physics pointer is specified, tranform must be");
 		this->t = t;
 	}
 	

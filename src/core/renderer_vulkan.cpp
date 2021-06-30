@@ -17,7 +17,11 @@ http://gameangst.com/?p=9
 */
 
 #include "renderer_vulkan.h"
-#include "../core.h"
+#include "assets.h"
+#include "deshi_imgui.h"
+#include "input.h"
+#include "time.h"
+#include "window.h"
 #include "../scene/Scene.h"
 #include "../math/Math.h"
 
@@ -55,7 +59,7 @@ const bool enableValidationLayers = true;
 
 const bool CRASH_ON_ERROR = false;
 
-#define ASSERTVK(func, message) ASSERT((func) == VK_SUCCESS, message);
+#define ASSERTVK(func, message) Assert((func) == VK_SUCCESS, message);
 
 #define LOGGING_LEVEL 3
 #if LOGGING_LEVEL == 0
@@ -246,7 +250,7 @@ Init(deshiImGui* imgui) {
 void Renderer::
 Render() {
     //PRINTVK(1, "---------------new frame---------------");
-    ASSERT(rendererStage & (RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS) == (RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS), "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
+    Assert(rendererStage & (RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS) == (RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS), "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
     rendererStage = RSVK_RENDER;
     
     if(DengWindow->resized) remakeWindow = true;
@@ -270,7 +274,7 @@ Render() {
         remakeWindow = true;
         return;
     }else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){
-        ASSERT(false, "failed to acquire swap chain image");
+        Assert(!"failed to acquire swap chain image");
     }
     
     //render stuff
@@ -315,7 +319,7 @@ Render() {
         remakeWindow = false;
         ResizeWindow();
     } else if (result != VK_SUCCESS) {
-        ASSERT(false, "failed to present swap chain image");
+        Assert(!"failed to present swap chain image");
     }
     
     //iterate the frame index
@@ -891,7 +895,7 @@ LoadTexture(const char* filename, u32 type){
     std::string imagePath = deshi::assetPath(filename, AssetType_Texture);
     if(imagePath == ""){ return 0; }
     tex.pixels = stbi_load(imagePath.c_str(), &tex.width, &tex.height, &tex.channels, STBI_rgb_alpha);
-    ASSERT(tex.pixels, "stb failed to load an image");
+    Assert(tex.pixels != 0, "stb failed to load an image");
     
     tex.type = type;
     tex.mipLevels = (u32)std::floor(std::log2(std::max(tex.width, tex.height))) + 1;
@@ -1193,6 +1197,31 @@ UpdateCameraProjectionMatrix(Matrix4 m){
     uboVS.values.proj = glm::make_mat4(m.data);
 }
 
+pair<Vector3, Vector3> Renderer::
+SceneBoundingBox(){
+    float inf = std::numeric_limits<float>::max();
+    Vector3 max(-inf, -inf, -inf);
+    Vector3 min( inf,  inf,  inf);
+
+    Vector3 v;
+    for (MeshVk& mesh : DengRenderer->meshes) {
+        for (PrimitiveVk& p : mesh.primitives) {
+            for(int i = p.firstIndex; i < p.indexCount; i++){
+                v = vec3((float*)glm::value_ptr(DengRenderer->vertexBuffer[DengRenderer->indexBuffer[i]].pos)) +
+                    mat4((float*)glm::value_ptr(mesh.modelMatrix)).Translation();
+                if      (v.x < min.x) { min.x = v.x; }
+                else if (v.x > max.x) { max.x = v.x; }
+                if      (v.y < min.y) { min.y = v.y; }
+                else if (v.y > max.y) { max.y = v.y; }
+                if      (v.z < min.z) { min.z = v.z; }
+                else if (v.z > max.z) { max.z = v.z; }
+            }
+        }
+    }
+
+    return pair<Vector3, Vector3>(max, min);
+}
+
 void Renderer::
 ReloadShader(u32 shader) {
     switch(shader){
@@ -1290,11 +1319,11 @@ UpdateDebugOptions(bool wireframe, bool globalAxis, bool wireframeOnly) {
 void Renderer::
 CreateInstance() {
     PRINTVK(2, "  Creating Vulkan Instance");
-    ASSERT(rendererStage == RENDERERSTAGE_NONE, "renderer stage was not NONE at CreateInstance");
+    Assert(rendererStage == RENDERERSTAGE_NONE, "renderer stage was not NONE at CreateInstance");
     rendererStage |= RSVK_INSTANCE;
     
     if(enableValidationLayers && !checkValidationLayerSupport()) {
-        ASSERT(false, "validation layers requested, but not available");
+        Assert(!"validation layers requested, but not available");
     }
     
     VkApplicationInfo appInfo{};
@@ -1375,7 +1404,7 @@ getRequiredExtensions() {
 void Renderer::
 SetupDebugMessenger() {
     PRINTVK(2, "  Setting Up Debug Messenger");
-    ASSERT(rendererStage & RSVK_INSTANCE, "SetupDebugMessenger was called before CreateInstance");
+    Assert(rendererStage & RSVK_INSTANCE, "SetupDebugMessenger was called before CreateInstance");
     
     if(!enableValidationLayers) return;
     
@@ -1404,7 +1433,7 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT: {
             ERROR("[Vulkan] ", pCallbackData->pMessage); 
             PRINTLN(pCallbackData->pMessage << "\n");
-            if(CRASH_ON_ERROR) ASSERT(false, "");
+            if(CRASH_ON_ERROR) Assert(!"crashing because of error in vulkan");
         }break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: {
             WARNING("[Vulkan] ", pCallbackData->pMessage); 
@@ -1435,7 +1464,7 @@ CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCre
 void Renderer::
 CreateSurface() {
     PRINTVK(2, "  Creating GLFW-Vulkan Surface");
-    ASSERT(rendererStage & RSVK_INSTANCE, "CreateSurface called before CreateInstance");
+    Assert(rendererStage & RSVK_INSTANCE, "CreateSurface called before CreateInstance");
     rendererStage |= RSVK_SURFACE;
     
     ASSERTVK(glfwCreateWindowSurface(instance, DengWindow->window, allocator, &surface), "failed to create window surface");
@@ -1450,7 +1479,7 @@ CreateSurface() {
 void Renderer::
 PickPhysicalDevice() {
     PRINTVK(2, "  Picking Physical Device");
-    ASSERT(rendererStage & RSVK_SURFACE, "PickPhysicalDevice called before CreateSurface");
+    Assert(rendererStage & RSVK_SURFACE, "PickPhysicalDevice called before CreateSurface");
     rendererStage |= RSVK_PHYSICALDEVICE;
     
     u32 deviceCount = 0;
@@ -1459,7 +1488,7 @@ PickPhysicalDevice() {
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
     
     for(auto& device : devices) { if(isDeviceSuitable(device)) {physicalDevice = device; break; }}
-    ASSERT(physicalDevice != VK_NULL_HANDLE, "failed to find a suitable GPU that supports Vulkan");
+    Assert(physicalDevice != VK_NULL_HANDLE, "failed to find a suitable GPU that supports Vulkan");
     
     //get physical device capabilities
     maxMsaaSamples = getMaxUsableSampleCount();
@@ -1543,7 +1572,7 @@ getMaxUsableSampleCount() {
 void Renderer::
 CreateLogicalDevice() {
     PRINTVK(2, "  Creating Logical Device");
-    ASSERT(rendererStage & RSVK_PHYSICALDEVICE, "CreateLogicalDevice called before PickPhysicalDevice");
+    Assert(rendererStage & RSVK_PHYSICALDEVICE, "CreateLogicalDevice called before PickPhysicalDevice");
     rendererStage |= RSVK_LOGICALDEVICE;
     
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -1616,7 +1645,7 @@ CreateLogicalDevice() {
 void Renderer::
 CreateSwapChain() {
     PRINTVK(2, "  Creating Swapchain");
-    ASSERT(rendererStage & RSVK_LOGICALDEVICE, "CreateSwapChain called before CreateLogicalDevice");
+    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreateSwapChain called before CreateLogicalDevice");
     rendererStage |= RSVK_SWAPCHAIN;
     
     VkSwapchainKHR oldSwapChain = swapchain;
@@ -1776,7 +1805,7 @@ GetMinImageCountFromPresentMode(VkPresentModeKHR mode) {
 void Renderer::
 CreateRenderPass(){
     PRINTVK(2, "  Creating Render Pass");
-    ASSERT(rendererStage & RSVK_LOGICALDEVICE, "CreateRenderPass called before CreateLogicalDevice");
+    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreateRenderPass called before CreateLogicalDevice");
     rendererStage |= RSVK_RENDERPASS;
     
     if(renderPass) { vkDestroyRenderPass(device, renderPass, allocator); }
@@ -1858,7 +1887,7 @@ CreateRenderPass(){
 void Renderer::
 CreateCommandPool(){
     PRINTVK(2, "  Creating Command Pool");
-    ASSERT(rendererStage & RSVK_LOGICALDEVICE, "CreateCommandPool called before CreateLogicalDevice");
+    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreateCommandPool called before CreateLogicalDevice");
     rendererStage |= RSVK_COMMANDPOOL;
     
     VkCommandPoolCreateInfo poolInfo{};
@@ -1872,13 +1901,13 @@ CreateCommandPool(){
 void Renderer::
 CreateFrames(){
     PRINTVK(2, "  Creating Frames");
-    ASSERT(rendererStage & RSVK_COMMANDPOOL, "CreateFrames called before CreateCommandPool");
+    Assert(rendererStage & RSVK_COMMANDPOOL, "CreateFrames called before CreateCommandPool");
     rendererStage |= RSVK_FRAMES;
     
     //get swap chain images
     vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr); //gets the image count
-    ASSERT(imageCount >= minImageCount, "the window should always have at least the min image count");
-    ASSERT(imageCount < 16, "the window should have less than 16 images, around 2-3 is ideal");
+    Assert(imageCount >= minImageCount, "the window should always have at least the min image count");
+    Assert(imageCount < 16, "the window should have less than 16 images, around 2-3 is ideal");
     VkImage images[16] = {};
     vkGetSwapchainImagesKHR(device, swapchain, &imageCount, images); //assigns to images
     
@@ -1946,7 +1975,7 @@ CreateFrames(){
 void Renderer::
 CreateSyncObjects(){
     PRINTVK(2, "  Creating Sync Objects");
-    ASSERT(rendererStage & RSVK_FRAMES, "CreateSyncObjects called before CreateFrames");
+    Assert(rendererStage & RSVK_FRAMES, "CreateSyncObjects called before CreateFrames");
     rendererStage |= RSVK_SYNCOBJECTS;
     
     VkSemaphoreCreateInfo semaphoreInfo{};
@@ -1958,7 +1987,7 @@ CreateSyncObjects(){
     
     if(vkCreateSemaphore(device, &semaphoreInfo, allocator, &imageAcquiredSemaphore) ||
        vkCreateSemaphore(device, &semaphoreInfo, allocator, &renderCompleteSemaphore)){
-        ASSERT(false, "failed to create sync objects");
+        Assert(!"failed to create sync objects");
     }
 }
 
@@ -1971,7 +2000,7 @@ CreateSyncObjects(){
 void Renderer::
 CreateUniformBuffer(){
     PRINTVK(2, "  Creating uniform buffers");
-    ASSERT(rendererStage & RSVK_LOGICALDEVICE, "CreateUniformBuffer called before CreateLogicalDevice");
+    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreateUniformBuffer called before CreateLogicalDevice");
     rendererStage |= RSVK_UNIFORMBUFFER;
     
     //create vertex shader ubo
@@ -1993,7 +2022,7 @@ CreateUniformBuffer(){
 //TODO(delle,ReOpVu) maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
 void Renderer::
 UpdateUniformBuffer(){
-    ASSERT(rendererStage & RSVK_UNIFORMBUFFER, "UpdateUniformBuffer called before CreateUniformBuffer");
+    Assert(rendererStage & RSVK_UNIFORMBUFFER, "UpdateUniformBuffer called before CreateUniformBuffer");
     //PRINTVK(2, "  Updating Uniform Buffer");
 	
     uboVS.values.time = DengTime->totalTime;
@@ -2128,7 +2157,7 @@ CreateClearValues(){
 void Renderer::
 CreateDescriptorPool(){
     PRINTVK(2, "  Creating Descriptor Pool");
-    ASSERT(rendererStage & RSVK_LOGICALDEVICE, "CreateDescriptorPool called before CreateLogicalDevice");
+    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreateDescriptorPool called before CreateLogicalDevice");
     rendererStage |= RSVK_DESCRIPTORPOOL;
     
     const int types = 11;
@@ -2159,7 +2188,7 @@ CreateDescriptorPool(){
 void Renderer::
 CreateLayouts(){
     PRINTVK(2, "  Creating Layouts");
-    ASSERT(rendererStage & (RSVK_DESCRIPTORPOOL | RSVK_UNIFORMBUFFER) == (RSVK_DESCRIPTORPOOL | RSVK_UNIFORMBUFFER), "CreateLayouts called before CreateDescriptorPool or CreateUniformBuffer");
+    Assert(rendererStage & (RSVK_DESCRIPTORPOOL | RSVK_UNIFORMBUFFER) == (RSVK_DESCRIPTORPOOL | RSVK_UNIFORMBUFFER), "CreateLayouts called before CreateDescriptorPool or CreateUniformBuffer");
     rendererStage |= RSVK_LAYOUTS;
     
     //// shader ubos binding ////
@@ -2270,7 +2299,7 @@ CreateLayouts(){
 void Renderer::
 CreatePipelineCache(){
     PRINTVK(2, "  Creating Pipeline Cache");
-    ASSERT(rendererStage & RSVK_LOGICALDEVICE, "CreatePipelineCache called before CreateLogicalDevice");
+    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreatePipelineCache called before CreateLogicalDevice");
     
     VkPipelineCacheCreateInfo pipelineCacheCreateInfo{};
     pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
@@ -2291,7 +2320,7 @@ CreatePipelineCache(){
 void Renderer::
 SetupPipelineCreation(){
     PRINTVK(2, "  Setting up pipeline creation");
-    ASSERT(rendererStage & (RSVK_LAYOUTS | RSVK_RENDERPASS) == (RSVK_LAYOUTS | RSVK_RENDERPASS), "SetupPipelineCreation called before CreateLayouts or CreateRenderPass");
+    Assert(rendererStage & (RSVK_LAYOUTS | RSVK_RENDERPASS) == (RSVK_LAYOUTS | RSVK_RENDERPASS), "SetupPipelineCreation called before CreateLayouts or CreateRenderPass");
     rendererStage |= RSVK_PIPELINESETUP;
     
     //determines how to group vertices together
@@ -2453,7 +2482,7 @@ SetupPipelineCreation(){
 void Renderer::
 CreatePipelines(){
     PRINTVK(2, "  Creating Pipelines");
-    ASSERT(rendererStage & RSVK_PIPELINESETUP, "CreatePipelines called before SetupPipelineCreation");
+    Assert(rendererStage & RSVK_PIPELINESETUP, "CreatePipelines called before SetupPipelineCreation");
     rendererStage |= RSVK_PIPELINECREATE;
     
     TIMER_START(t_p);
@@ -2709,6 +2738,7 @@ loadShader(std::string filename, VkShaderStageFlagBits stage) {
     return shaderStage;
 }
 
+//TODO(delle,Re) maybe dont crash on failed shader compile?
 VkPipelineShaderStageCreateInfo Renderer::
 CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize) {
     PRINTVK(3, "    Compiling and loading shader: ", filename);
@@ -2736,12 +2766,16 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
         }else if(ext.compare(".geom") == 0){
             result = shaderc_compile_into_spv(compiler, code.data(), code.size(), shaderc_glsl_geometry_shader, 
 											  filename.c_str(), "main", options);
-        }else{ ASSERT(false, "unsupported shader"); }
+        }else{ Assert(!"unsupported shader"); }
         
         //check for errors
-        if(!result){ PRINTLN("[ERROR]"<< filename <<": Shader compiler returned a null result"); ASSERT(false, ""); }
+        if(!result){ 
+            PRINTLN("[ERROR]"<< filename <<": Shader compiler returned a null result"); 
+            Assert(!"crashing on shader compile error"); 
+        }
         if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
-            PRINTLN("[ERROR]"<< filename <<": "<< shaderc_result_get_error_message(result)); ASSERT(false, "");
+            PRINTLN("[ERROR]"<< filename <<": "<< shaderc_result_get_error_message(result));
+            Assert(!"crashing on shader compile error"); 
         }
         
         //create shader module
@@ -2764,7 +2798,7 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
         shaderc_result_release(result);
         return shaderStage;
     }
-    ASSERT(false, "failed to load shader module b/c file does not exist");
+    Assert(!"failed to load shader module b/c file does not exist");
     return VkPipelineShaderStageCreateInfo();
 }
 
@@ -2806,7 +2840,7 @@ CompileAllShaders(bool optimize){
         
         //create or overwrite .spv files
         std::ofstream outFile(entry.path().string() + ".spv", std::ios::out | std::ios::binary | std::ios::trunc);
-        ASSERT(outFile.is_open(), "failed to open file");
+        Assert(outFile.is_open(), "failed to open file");
         outFile.write(shaderc_result_get_bytes(result), shaderc_result_get_length(result));
         
         
@@ -2856,7 +2890,7 @@ CompileShader(std::string& filename, bool optimize){
         
         //create or overwrite .spv files
         std::ofstream outFile(entry.string() + ".spv", std::ios::out | std::ios::binary | std::ios::trunc);
-        ASSERT(outFile.is_open(), "failed to open file");
+        Assert(outFile.is_open(), "failed to open file");
         outFile.write(shaderc_result_get_bytes(result), shaderc_result_get_length(result));
         
         //cleanup file and compiler results
@@ -2884,7 +2918,7 @@ findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties) {
         }
     }
     
-    ASSERT(false, "failed to find suitable memory type"); //error out if no suitable memory found
+    Assert(!"failed to find suitable memory type");
     return 0;
 }
 
@@ -2907,7 +2941,7 @@ findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tilin
         }
     }
     
-    ASSERT(false, "failed to find supported format");
+    Assert(!"failed to find supported format");
     return VK_FORMAT_UNDEFINED;
 }
 
@@ -2995,7 +3029,7 @@ transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, V
         sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
         destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
     }else {
-        ASSERT(false, "unsupported layout transition");
+        Assert(!"unsupported layout transition");
     }
     
     vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
@@ -3010,7 +3044,7 @@ generateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight
     VkFormatProperties formatProperties;
     vkGetPhysicalDeviceFormatProperties(physicalDevice, imageFormat, &formatProperties);
     if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
-        ASSERT(false, "texture image format does not support linear blitting");
+        Assert(!"texture image format does not support linear blitting");
     }
     
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
@@ -3314,7 +3348,7 @@ endSingleTimeCommands(VkCommandBuffer commandBuffer) {
 void Renderer::
 BuildCommandBuffers() {
     //PRINTVK(2, "  Building Command Buffers");
-    ASSERT(rendererStage >= RSVK_PIPELINECREATE, "BuildCommandBuffers called before CreatePipelines");
+    Assert(rendererStage >= RSVK_PIPELINECREATE, "BuildCommandBuffers called before CreatePipelines");
     
     VkCommandBufferBeginInfo cmdBufferInfo{};
     cmdBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

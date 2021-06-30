@@ -2,7 +2,8 @@
 #include "../admin.h"
 #include "../Keybinds.h"
 #include "../systems/CanvasSystem.h"
-#include "../../core.h"
+#include "../../core/window.h"
+#include "../../core/renderer.h"
 #include "../../math/Math.h"
 #include "../../scene/Scene.h"
 

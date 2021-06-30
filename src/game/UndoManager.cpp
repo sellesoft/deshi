@@ -1,6 +1,7 @@
 #include "UndoManager.h"
 #include "Transform.h"
 #include "../core/input.h"
+#include "../core/console.h"
 
 void UndoManager::Init(){}
 
@@ -15,7 +16,7 @@ void UndoManager::Reset(){
 //0x08  void*      | old selection
 //0x10  void*      | new selection
 void UndoManager::AddUndoSelect(void** sel, void* oldEnt, void* newEnt){
-	ASSERT(sizeof(u32)*2 == sizeof(void*), "assume ptr is 8 bytes");
+	Assert(sizeof(u32)*2 == sizeof(void*), "assume ptr is 8 bytes");
 	EditAction edit; edit.type = EditActionType::SELECT;
 	memcpy(edit.data + 0, &sel,    sizeof(u32)*2);
 	memcpy(edit.data + 2, &oldEnt, sizeof(u32)*2);
@@ -39,7 +40,7 @@ void RedoSelect(EditAction* edit){
 //0x08  vec3       | old position
 //0x14  vec3       | new position
 void UndoManager::AddUndoTranslate(Transform* t, Vector3* oldPos, Vector3* newPos){
-	ASSERT(sizeof(u32)*2 == sizeof(void*), "assume ptr is 8 bytes");
+	Assert(sizeof(u32)*2 == sizeof(void*), "assume ptr is 8 bytes");
 	EditAction edit; edit.type = EditActionType::TRANSLATE;
 	memcpy(edit.data + 0, &t,     sizeof(u32)*2);
 	memcpy(edit.data + 2, oldPos, sizeof(u32)*3);
@@ -61,7 +62,7 @@ void RedoTranslate(EditAction* edit){
 //0x08  vec3       | old rotation
 //0x14  vec3       | new rotation
 void UndoManager::AddUndoRotate(Transform* t, Vector3* oldRot, Vector3* newRot){
-	ASSERT(sizeof(u32)*2 == sizeof(void*), "assume ptr is 8 bytes");
+	Assert(sizeof(u32)*2 == sizeof(void*), "assume ptr is 8 bytes");
 	EditAction edit; edit.type = EditActionType::ROTATE;
 	memcpy(edit.data + 0, &t,     sizeof(u32)*2);
 	memcpy(edit.data + 2, oldRot, sizeof(u32)*3);
@@ -83,7 +84,7 @@ void RedoRotate(EditAction* edit){
 //0x08  vec3       | old scale
 //0x14  vec3       | new scale
 void UndoManager::AddUndoScale(Transform* t, Vector3* oldScale, Vector3* newScale){
-	ASSERT(sizeof(u32)*2 == sizeof(void*), "assume ptr is 8 bytes");
+	Assert(sizeof(u32)*2 == sizeof(void*), "assume ptr is 8 bytes");
 	EditAction edit; edit.type = EditActionType::SCALE;
 	memcpy(edit.data + 0, &t,       sizeof(u32)*2);
 	memcpy(edit.data + 2, oldScale, sizeof(u32)*3);

@@ -2,13 +2,11 @@
 #ifndef DESHI_INPUT_H
 #define DESHI_INPUT_H
 
-#include "console.h"
-#include "../utils/defines.h"
-#include "../utils/debug.h"
+#include "../defines.h"
 #include "../math/Vector.h"
 
 #include <map>
-#include <iostream>
+#include <vector>
 
 //constants
 #define MAX_KEYBOARD_KEYS 256
@@ -113,7 +111,7 @@ struct Input{
 			case(INPUTMOD_CTRLALT):      return  CtrlDown() && !ShiftDown() &&  AltDown();
 			case(INPUTMOD_SHIFTALT):     return !CtrlDown() &&  ShiftDown() &&  AltDown();
 			case(INPUTMOD_CTRLSHIFTALT): return  CtrlDown() &&  ShiftDown() &&  AltDown();
-			default: ERROR("[ERROR] ModsDown called with invalid mod: ", mods, "; defaulting to any mod"); return true;
+			default: return true;
 		}
 	}
 	

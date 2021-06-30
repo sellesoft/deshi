@@ -79,7 +79,7 @@ ALenum to_al_format(int channels, int bitsPerSample, EntityAdmin* admin) {
 	else if (channels == 2 && bitsPerSample == 16)
 		return AL_FORMAT_STEREO16;
 	else {
-		ASSERT(false, "unrecognized audio file format");
+		Assert(!"unrecognized audio file format");
 	}
 }
 
@@ -238,7 +238,7 @@ void SoundSystem::Init(EntityAdmin* a) {
 	//attempt to choose a device
 	device = alcOpenDevice(defaultDeviceName);
 	TEST_ERROR;
-	ASSERT(device, "unable to open a device with OpenAL");
+	Assert(device, "unable to open a device with OpenAL");
 	
 	//display audio device selected in console
 	LOG("Audio device selected: ", alcGetString(device, ALC_DEVICE_SPECIFIER));
@@ -246,7 +246,7 @@ void SoundSystem::Init(EntityAdmin* a) {
 	//attempt to create OpenAL context
 	context = alcCreateContext(device, NULL);
 	TEST_ERROR;
-	ASSERT(alcMakeContextCurrent(context), "unable to make OpenAL context");
+	Assert(alcMakeContextCurrent(context), "unable to make OpenAL context");
 	
 	//collect all sources at startup
 	//TODO( sushi,So) if its necessary, make a way to collect new sources and to remove them

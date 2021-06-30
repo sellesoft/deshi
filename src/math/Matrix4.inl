@@ -51,13 +51,13 @@ inline const Matrix4 Matrix4::IDENTITY = Matrix4(1, 0, 0, 0,
 //element accessor: matrix(row,col)
 inline float& Matrix4::
 operator () (u32 row, u32 col) {
-	ASSERT(row < 4 && col < 4, "Matrix4 subscript out of bounds");
+	Assert(row < 4 && col < 4, "Matrix4 subscript out of bounds");
 	return data[4*row + col];
 }
 
 inline float Matrix4::
 operator () (u32 row, u32 col) const {
-	ASSERT(row < 4 && col < 4, "Matrix4 subscript out of bounds");
+	Assert(row < 4 && col < 4, "Matrix4 subscript out of bounds");
 	return data[4 * row + col];
 }
 
@@ -88,7 +88,7 @@ operator *= (const float& rhs) {
 //scalar division
 inline Matrix4 Matrix4::
 operator /  (const float& rhs) const {
-	ASSERT(rhs != 0, "Matrix4 elements cant be divided by zero");
+	Assert(rhs != 0, "Matrix4 elements cant be divided by zero");
 	Matrix4 newMatrix(*this);
 	for (int i = 0; i < 16; ++i) {
 		newMatrix.data[i] /= rhs;
@@ -99,7 +99,7 @@ operator /  (const float& rhs) const {
 //scalar division and assignment
 inline void Matrix4::
 operator /= (const float& rhs){
-	ASSERT(rhs != 0, "Matrix4 elements cant be divided by zero");
+	Assert(rhs != 0, "Matrix4 elements cant be divided by zero");
 	for (int i = 0; i < 16; ++i) {
 		data[i] /= rhs;
 	}
@@ -191,7 +191,7 @@ inline Matrix4 Matrix4::
 operator %  (const Matrix4& rhs) const{
 	Matrix4 newMatrix(*this);
 	for (int i = 0; i < 16; ++i) {
-		ASSERT(rhs.data[i] != 0, "Matrix4 element-wise division doesnt allow zeros in the right matrix");
+		Assert(rhs.data[i] != 0, "Matrix4 element-wise division doesnt allow zeros in the right matrix");
 		newMatrix.data[i] /= rhs.data[i];
 	}
 	return newMatrix;
@@ -201,7 +201,7 @@ operator %  (const Matrix4& rhs) const{
 inline void Matrix4::
 operator %= (const Matrix4& rhs){
 	for (int i = 0; i < 16; ++i) {
-		ASSERT(rhs.data[i] != 0, "Matrix4 element-wise division doesnt allow zeros in the right matrix");
+		Assert(rhs.data[i] != 0, "Matrix4 element-wise division doesnt allow zeros in the right matrix");
 		this->data[i] /= rhs.data[i];
 	}
 }
@@ -333,8 +333,9 @@ Adjoint() const {
 //returns the adjoint divided by the determinant
 inline Matrix4 Matrix4::
 Inverse() const {
-	ASSERT(this->Determinant(), "Matrix4 inverse does not exist if determinant is zero");
-	return this->Adjoint() / this->Determinant();
+	float det = this->Determinant();
+	Assert(det, "Matrix4 inverse does not exist if determinant is zero");
+	return this->Adjoint() / det;
 }
 
 //returns a LH rotation transformation matrix in degrees around the X axis

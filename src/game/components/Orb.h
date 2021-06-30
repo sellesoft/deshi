@@ -3,7 +3,6 @@
 #define COMPONENT_ORB_H
 
 #include "Component.h"
-#include "../../utils/defines.h"
 #include "../../math/VectorMatrix.h"
 
 struct MeshComp;

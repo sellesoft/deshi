@@ -1,7 +1,7 @@
 #pragma once
 #ifndef SYSTEM_CANVAS_H
 #define SYSTEM_CANVAS_H
-#include "../../utils/defines.h"
+#include "../../defines.h"
 
 struct EntityAdmin;
 

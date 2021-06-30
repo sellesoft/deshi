@@ -69,10 +69,20 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define Gigabytes(x) (Megabytes((x))*1024ULL)
 #define Terabytes(x) (Gigabytes((x))*1024ULL)
 
+//library-less assert
 #if DESHI_SLOW
-#define Assert(expression) if(!(expression)){*(int*)0 = 0;}
+//the ... is to allow the programmer to put some text to read when the assert fails
+//but it doesnt actually do affect the assertion expression
+#define Assert(expression, ...) if(!(expression)){*(volatile int*)0 = 0;}
 #else
-#define Assert(expression)
+#define Assert(expression, ...)
 #endif //DESHI_SLOW
+
+//debug breakpoint
+#ifdef _MSC_VER
+#define DEBUG_BREAK __debugbreak()
+#else
+#define DEBUG_BREAK (void)0
+#endif //_MSC_VER
 
 #endif //DESHI_DEFINES_H

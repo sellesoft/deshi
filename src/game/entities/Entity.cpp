@@ -14,6 +14,8 @@
 #include "../components/AudioSource.h"
 #include "../components/AudioListener.h"
 #include "../../core/assets.h"
+#include "../../core/renderer.h"
+#include "../../core/time.h"
 #include "../../utils/tuple.h"
 
 #include <iostream>

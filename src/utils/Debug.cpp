@@ -1,8 +1,9 @@
 #include "Debug.h"
-#include "../core.h"
-
-#include "../math/Math.h"
 #include "Color.h"
+#include "../core/renderer.h"
+#include "../core/time.h"
+#include "../math/Math.h"
+
 
 void Debug::DrawLine(Vector3 v1, Vector3 v2, size_t unique, Color color = Color::WHITE) {
 	

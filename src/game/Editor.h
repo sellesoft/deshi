@@ -1,9 +1,9 @@
 #pragma once
 #ifndef GAME_EDITOR_H
 #define GAME_EDITOR_H
-#include "../utils/defines.h"
 
 #include "UndoManager.h"
+#include "../defines.h"
 #include "../utils/color.h"
 #include "../math/vector.h"
 

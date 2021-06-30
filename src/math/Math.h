@@ -2,11 +2,10 @@
 #ifndef DESHI_MATH_H
 #define DESHI_MATH_H
 
-#include "../utils/defines.h"
 #include "VectorMatrix.h"
 #include "MatrixN.h"
 #include "Quaternion.h"
-#include "../game/components/Camera.h"
+#include "../defines.h"
 
 #include <math.h>
 #include <algorithm>
@@ -194,17 +193,17 @@ namespace Math {
 	
 	//ref: https://en.cppreference.com/w/cpp/algorithm/clamp
 	//static float clamp(float v, float lo, float hi) {
-	//	ASSERT(lo < hi, "The low must be less than the high clamp");
+	//	Assert(lo < hi, "The low must be less than the high clamp");
 	//	return (v < lo) ? lo : (hi < v) ? hi : v;
 	//}
 
 	static void clamp(float& v, float lo, float hi) {
-		ASSERT(lo < hi, "The low must be less than the high clamp");
+		Assert(lo < hi, "The low must be less than the high clamp");
 		v = (v < lo) ? lo : (hi < v) ? hi : v;
 	}
 	
 	static Vector3 clamp(Vector3 v, float lo, float hi) {
-		ASSERT(lo < hi, "The low must be less than the high clamp");
+		Assert(lo < hi, "The low must be less than the high clamp");
 		return v.clamp(lo, hi);
 	}
 	
@@ -401,9 +400,9 @@ namespace Math {
 
 	//the input vectors should be in viewMat/camera space
 	//returns true if the line can be rendered after clipping, false otherwise
-	static bool ClipLineToZPlanes(Vector3& start, Vector3& end, Camera* camera) {
+	static bool ClipLineToZPlanes(Vector3& start, Vector3& end, f32 nearZ, f32 farZ) {
 		//clip to the near plane
-		Vector3 planePoint = Vector3(0, 0, camera->nearZ);
+		Vector3 planePoint = Vector3(0, 0, nearZ);
 		Vector3 planeNormal = Vector3::FORWARD;
 		float d = planeNormal.dot(planePoint);
 		bool startBeyondPlane = planeNormal.dot(start) - d < 0;
@@ -419,7 +418,7 @@ namespace Math {
 		
 		
 		//clip to the far plane
-		planePoint = Vector3(0, 0, camera->farZ);
+		planePoint = Vector3(0, 0, farZ);
 		planeNormal = Vector3::BACK;
 		d = planeNormal.dot(planePoint);
 		startBeyondPlane = planeNormal.dot(start) - d < 0;

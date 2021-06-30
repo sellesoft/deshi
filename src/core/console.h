@@ -2,8 +2,9 @@
 #ifndef DESHI_CONSOLE_H
 #define DESHI_CONSOLE_H
 
-#include "../utils/defines.h"
+#include "../defines.h"
 #include "../utils/Color.h"
+#include "../utils/Debug.h"
 
 #include <vector>
 #include <string>     // std::string, std::stoi

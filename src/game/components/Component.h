@@ -2,7 +2,7 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
-#include "../../utils/defines.h"
+#include "../../defines.h"
 #include "../Event.h"
 
 #include <vector>

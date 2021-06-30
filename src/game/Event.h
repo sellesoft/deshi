@@ -2,7 +2,7 @@
 #ifndef DESHI_EVENT_H
 #define DESHI_EVENT_H
 
-#include "../core.h"
+#include "../defines.h"
 
 #include <set>
 

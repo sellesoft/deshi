@@ -2,7 +2,7 @@
 #ifndef DESHI_ASSETS_H
 #define DESHI_ASSETS_H
 
-#include "../utils/defines.h"
+#include "../defines.h"
 #include "../utils/tuple.h"
 
 #include <string>

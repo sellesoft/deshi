@@ -1,9 +1,12 @@
 #include "Movement.h"
 #include "Physics.h"
+#include "MeshComp.h"
+#include "Camera.h"
 #include "../admin.h"
 #include "../systems/CanvasSystem.h"
-#include "MeshComp.h"
 #include "../../scene/Model.h"
+#include "../../core/window.h"
+#include "../../core/time.h"
 
 Movement::Movement() {
 	admin = g_admin;
@@ -86,12 +89,12 @@ void Movement::DecideMovementState() {
 	}
 	
 	switch (moveState) {
-		case OnGroundNoInput:   ImGui::DebugDrawText("onGroundNoInput", g_window->dimensions / 2); break;
-		case OnGroundCrouching: ImGui::DebugDrawText("onGroundCrouching", g_window->dimensions / 2); break;
-		case OnGroundWalking:   ImGui::DebugDrawText("onGroundWalking", g_window->dimensions / 2); break;
-		case OnGroundRunning:   ImGui::DebugDrawText("onGroundRunning", g_window->dimensions / 2); break;
-		case InAirNoInput:      ImGui::DebugDrawText("InAirNoInput", g_window->dimensions / 2); break;
-		case InAirCrouching:    ImGui::DebugDrawText("InAirCrouching", g_window->dimensions / 2); break;
+		case OnGroundNoInput:   ImGui::DebugDrawText("onGroundNoInput", DengWindow->dimensions / 2); break;
+		case OnGroundCrouching: ImGui::DebugDrawText("onGroundCrouching", DengWindow->dimensions / 2); break;
+		case OnGroundWalking:   ImGui::DebugDrawText("onGroundWalking", DengWindow->dimensions / 2); break;
+		case OnGroundRunning:   ImGui::DebugDrawText("onGroundRunning", DengWindow->dimensions / 2); break;
+		case InAirNoInput:      ImGui::DebugDrawText("InAirNoInput", DengWindow->dimensions / 2); break;
+		case InAirCrouching:    ImGui::DebugDrawText("InAirCrouching", DengWindow->dimensions / 2); break;
 	}
 	
 }

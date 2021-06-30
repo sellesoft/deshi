@@ -4,6 +4,7 @@
 
 #include "Component.h"
 #include "../../math/Vector.h"
+#include "../../utils/tuple.h"
 
 #include <unordered_map>
 

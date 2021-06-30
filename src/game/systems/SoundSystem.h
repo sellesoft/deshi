@@ -2,7 +2,7 @@
 #ifndef SYSTEM_SOUND_H
 #define SYSTEM_SOUND_H
 
-#include "../../utils/defines.h"
+#include "../../defines.h"
 #include <vector>
 
 struct EntityAdmin;

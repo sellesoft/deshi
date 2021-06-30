@@ -2,7 +2,7 @@
 #ifndef DESHI_DEBUG_H
 #define DESHI_DEBUG_H
 
-#include "defines.h"
+#include "../defines.h"
 
 #include <string>
 #include <iostream>
@@ -13,27 +13,6 @@
 #define PRINTLN(x) std::cout << x << std::endl;
 
 #define __FILENAME__ (std::strrchr(__FILE__, '\\') ? std::strrchr(__FILE__, '\\') + 1 : __FILE__)
-
-//assert
-#ifndef NDEBUG
-#define ASSERT(condition, message) \
-do { \
-if (! (condition)) { \
-std::string file = __FILENAME__; \
-std::cout << "Assertion '" #condition "' failed in " + file + " line " + std::to_string(__LINE__) + ": \n" #message << std::endl;  \
-std::terminate(); \
-} \
-} while (false)
-#else
-#   define ASSERT(condition, message) condition;
-#endif
-
-//debug breakpoint
-#ifdef _MSC_VER
-#define DEBUG_BREAK __debugbreak()
-#else
-#define DEBUG_BREAK (void)0
-#endif
 
 #define TOSTRING(...) ToString(__VA_ARGS__)
 

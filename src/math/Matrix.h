@@ -27,7 +27,9 @@ The transformation matrix will follow the format to the below:
 #ifndef DESHI_MATRIX_H
 #define DESHI_MATRIX_H
 
-#include "../utils/debug.h"
+#include "../defines.h"
+
+#include <string>
 
 struct Vector2;
 struct Vector3;

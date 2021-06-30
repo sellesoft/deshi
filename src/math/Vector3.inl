@@ -165,7 +165,7 @@ mag() const {
 ////ref: https://betterexplained.com/articles/understanding-quakes-fast-inverse-square-root/
 //inline float Vector3::
 //mag() const {
-//	ASSERT(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
+//	Assert(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
 //	float k = x * x + y * y + z * z;
 //	float kHalf = .5f * k;
 //	int32 i = *(int32*)&k;
@@ -185,7 +185,7 @@ normalize() {
 //inline void Vector3::
 //normalize() {
 //	if (*this != Vector3(0, 0, 0)) {
-//		ASSERT(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
+//		Assert(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
 //		float k = x * x + y * y + z * z;
 //		float kHalf = .5f * k;
 //		int32 i = *(int32*)&k;
@@ -207,7 +207,7 @@ normalized() const {
 //inline Vector3 Vector3::
 //normalized() const {
 //	if (*this != Vector3(0, 0, 0)) {
-//		ASSERT(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
+//		Assert(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
 //		float k = x * x + y * y + z * z;
 //		float kHalf = .5f * k;
 //		int32 i = *(int32*)&k;

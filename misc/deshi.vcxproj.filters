@@ -19,9 +19,6 @@
     <ClInclude Include="..\src\utils\Debug.h">
       <Filter>src\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\utils\defines.h">
-      <Filter>src\utils</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\external\draudio\dr_flac.h">
       <Filter>src\external\draudio</Filter>
     </ClInclude>
@@ -78,9 +75,6 @@
     </ClInclude>
     <ClInclude Include="..\src\core\deshi_imgui.h">
       <Filter>src\core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\core.h">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\src\core\console.h">
       <Filter>src\core</Filter>
@@ -213,6 +207,9 @@
     </ClInclude>
     <ClInclude Include="..\src\utils\RingArray.h">
       <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\defines.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

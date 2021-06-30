@@ -2,7 +2,7 @@
 #ifndef DESHI_WINDOW_H
 #define DESHI_WINDOW_H
 
-#include "../utils/defines.h"
+#include "../defines.h"
 #include "../math/Vector.h"
 
 #include <iosfwd> //forward delcare: <string>

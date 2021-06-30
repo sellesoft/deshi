@@ -5,8 +5,9 @@
 #include "Entity.h"
 //#include "../../utils/defines.h"
 
-struct Collider;
 struct Physics;
+struct Collider;
+struct Mesh;
 
 struct Trigger : public Entity {
 	

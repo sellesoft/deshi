@@ -1,6 +1,7 @@
 #include "Model.h"
 #include "../core/assets.h"
 #include "../core/console.h"
+#include "../core/time.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "../external/tinyobjloader/tiny_obj_loader.h"
@@ -241,7 +242,7 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 	auto& attrib = reader.GetAttrib();
 	auto& shapes = reader.GetShapes();
 	auto& materials = reader.GetMaterials();
-	ASSERT(shapes[0].mesh.num_face_vertices[0] == 3, "OBJ must be triangulated");
+	Assert(shapes[0].mesh.num_face_vertices[0] == 3, "OBJ must be triangulated");
 	
 	//check which features it has
 	bool hasMaterials = materials.size() > 0;
@@ -355,7 +356,7 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename, Shader shader, Color color){
 	auto& attrib = reader.GetAttrib();
 	auto& shapes = reader.GetShapes();
 	auto& materials = reader.GetMaterials();
-	ASSERT(shapes[0].mesh.num_face_vertices[0] == 3, "OBJ must be triangulated");
+	Assert(shapes[0].mesh.num_face_vertices[0] == 3, "OBJ must be triangulated");
 	
 	//check which features it has
 	bool hasMaterials = materials.size() > 0;

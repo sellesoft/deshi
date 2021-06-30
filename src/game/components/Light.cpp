@@ -1,7 +1,7 @@
 #include "Light.h"
 
 #include "../admin.h"
-#include "../../core.h"
+
 
 Light::Light(){
 	admin = g_admin;

@@ -75,7 +75,6 @@ The transformation matrix will follow the format to the right:						|0,				0,			
 #ifndef DESHI_MATRIXN_H
 #define DESHI_MATRIXN_H
 
-#include "../utils/debug.h"
 #include "Vector.h"
 
 #include <vector>
@@ -142,16 +141,16 @@ struct MatrixN {
 //// Constructors ////
 
 inline MatrixN::MatrixN(u32 inRows, u32 inCols) : rows(inRows), cols(inCols) {
-	ASSERT(inRows != 0 && inCols != 0, "MatrixN constructor was given zero size");
+	Assert(inRows != 0 && inCols != 0, "MatrixN constructor was given zero size");
 	this->elementCount = inRows * inCols;
 	this->data = std::vector<float>(elementCount);
 }
 
 inline MatrixN::MatrixN(u32 inRows, u32 inCols, std::vector<float> list) : rows(inRows), cols(inCols) {
-	ASSERT(inRows != 0 && inCols != 0, "MatrixN constructor was given zero size");
+	Assert(inRows != 0 && inCols != 0, "MatrixN constructor was given zero size");
 	this->elementCount = inRows * inCols;
 	u32 inCount = list.size();
-	ASSERT(inCount <= elementCount, "MatrixN constructor was given too many elements for given dimensions");
+	Assert(inCount <= elementCount, "MatrixN constructor was given too many elements for given dimensions");
 	this->data = std::vector<float>(elementCount);
 	for (int i = 0; i < list.size(); ++i) {
 		this->data[i] = list[i];
@@ -168,12 +167,12 @@ inline MatrixN::MatrixN(const MatrixN& m) : rows(m.rows), cols(m.cols), elementC
 
 //element accessor: matrix(row,col)
 inline float& MatrixN::operator () (u32 row, u32 col) {
-	ASSERT(row < rows && col < cols, "MatrixN subscript out of bounds");
+	Assert(row < rows && col < cols, "MatrixN subscript out of bounds");
 	return data[(size_t)cols*row + col];
 }
 
 inline float  MatrixN::operator () (u32 row, u32 col) const {
-	ASSERT(row < rows && col < cols, "MatrixN subscript out of bounds");
+	Assert(row < rows && col < cols, "MatrixN subscript out of bounds");
 	return data[(size_t)cols * row + col];
 }
 
@@ -205,7 +204,7 @@ inline void    MatrixN::operator *= (const float& rhs) {
 
 //scalar division
 inline MatrixN  MatrixN::operator /  (const float& rhs) const {
-	ASSERT(rhs != 0, "MatrixN elements cant be divided by zero");
+	Assert(rhs != 0, "MatrixN elements cant be divided by zero");
 	MatrixN newMatrix(*this);
 	for (int i = 0; i < newMatrix.elementCount; ++i) {
 		newMatrix.data[i] /= rhs;
@@ -215,7 +214,7 @@ inline MatrixN  MatrixN::operator /  (const float& rhs) const {
 
 //scalar division and assignment
 inline void    MatrixN::operator /= (const float& rhs){
-	ASSERT(rhs != 0, "MatrixN elements cant be divided by zero");
+	Assert(rhs != 0, "MatrixN elements cant be divided by zero");
 	for (int i = 0; i < elementCount; ++i) {
 		this->data[i] /= rhs;
 	}
@@ -223,7 +222,7 @@ inline void    MatrixN::operator /= (const float& rhs){
 
 //element-wise addition
 inline MatrixN  MatrixN::operator +  (const MatrixN& rhs) const{
-	ASSERT(rows == rhs.rows && cols == rhs.cols, "MatrixN addition requires the same dimensions");
+	Assert(rows == rhs.rows && cols == rhs.cols, "MatrixN addition requires the same dimensions");
 	MatrixN newMatrix(*this);
 	for (int i = 0; i < newMatrix.elementCount; ++i) {
 		newMatrix.data[i] += rhs.data[i];
@@ -233,7 +232,7 @@ inline MatrixN  MatrixN::operator +  (const MatrixN& rhs) const{
 
 //element-wise addition and assignment
 inline void    MatrixN::operator += (const MatrixN& rhs){
-	ASSERT(rows == rhs.rows && cols == rhs.cols, "MatrixN addition requires the same dimensions");
+	Assert(rows == rhs.rows && cols == rhs.cols, "MatrixN addition requires the same dimensions");
 	for (int i = 0; i < elementCount; ++i) {
 		this->data[i] += rhs.data[i];
 	}
@@ -241,7 +240,7 @@ inline void    MatrixN::operator += (const MatrixN& rhs){
 
 //element-wise substraction
 inline MatrixN  MatrixN::operator -  (const MatrixN& rhs) const{
-	ASSERT(rows == rhs.rows && cols == rhs.cols, "MatrixN subtraction requires the same dimensions");
+	Assert(rows == rhs.rows && cols == rhs.cols, "MatrixN subtraction requires the same dimensions");
 	MatrixN newMatrix(*this);
 	for (int i = 0; i < newMatrix.elementCount; ++i) {
 		newMatrix.data[i] -= rhs.data[i];
@@ -251,7 +250,7 @@ inline MatrixN  MatrixN::operator -  (const MatrixN& rhs) const{
 
 //element-wise substraction and assignment
 inline void    MatrixN::operator -= (const MatrixN& rhs){
-	ASSERT(rows == rhs.rows && cols == rhs.cols, "MatrixN subtraction requires the same dimensions");
+	Assert(rows == rhs.rows && cols == rhs.cols, "MatrixN subtraction requires the same dimensions");
 	for (int i = 0; i < elementCount; ++i) {
 		this->data[i] -= rhs.data[i];
 	}
@@ -259,7 +258,7 @@ inline void    MatrixN::operator -= (const MatrixN& rhs){
 
 //TODO(delle,Op) look into optimizing this by transposing to remove a loop, see Unreal implementation
 inline MatrixN  MatrixN::operator *  (const MatrixN& rhs) const{
-	ASSERT(cols == rhs.rows, "MatrixN multiplication requires the columns of the left matrix to equal the rows of the right matrix");
+	Assert(cols == rhs.rows, "MatrixN multiplication requires the columns of the left matrix to equal the rows of the right matrix");
 	MatrixN newMatrix(rows, rhs.cols);
 	for (int i = 0; i < this->rows; ++i) { //i=m
 		for (int j = 0; j < rhs.cols; ++j) { //j=p
@@ -272,7 +271,7 @@ inline MatrixN  MatrixN::operator *  (const MatrixN& rhs) const{
 }
 
 inline void    MatrixN::operator *= (const MatrixN& rhs){
-	ASSERT(cols == rhs.rows, "MatrixN multiplication requires the columns of the left matrix to equal the rows of the right matrix");
+	Assert(cols == rhs.rows, "MatrixN multiplication requires the columns of the left matrix to equal the rows of the right matrix");
 	MatrixN newMatrix(rows, rhs.cols);
 	for (int i = 0; i < this->rows; ++i) { //i=m
 		for (int j = 0; j < rhs.cols; ++j) { //j=p
@@ -286,7 +285,7 @@ inline void    MatrixN::operator *= (const MatrixN& rhs){
 
 //element-wise multiplication
 inline MatrixN  MatrixN::operator ^  (const MatrixN& rhs) const{
-	ASSERT(rows == rhs.rows && cols == rhs.cols, "MatrixN element-wise multiplication requires the same dimensions");
+	Assert(rows == rhs.rows && cols == rhs.cols, "MatrixN element-wise multiplication requires the same dimensions");
 	MatrixN newMatrix(*this);
 	for (int i = 0; i < newMatrix.elementCount; ++i) {
 		newMatrix.data[i] *= rhs.data[i];
@@ -296,7 +295,7 @@ inline MatrixN  MatrixN::operator ^  (const MatrixN& rhs) const{
 
 //element-wise multiplication and assignment
 inline void    MatrixN::operator ^= (const MatrixN& rhs){
-	ASSERT(rows == rhs.rows && cols == rhs.cols, "MatrixN element-wise multiplication requires the same dimensions");
+	Assert(rows == rhs.rows && cols == rhs.cols, "MatrixN element-wise multiplication requires the same dimensions");
 	for (int i = 0; i < elementCount; ++i) {
 		this->data[i] *= rhs.data[i];
 	}
@@ -304,10 +303,10 @@ inline void    MatrixN::operator ^= (const MatrixN& rhs){
 
 //element-wise division
 inline MatrixN  MatrixN::operator %  (const MatrixN& rhs) const{
-	ASSERT(rows == rhs.rows && cols == rhs.cols, "MatrixN element-wise division requires the same dimensions");
+	Assert(rows == rhs.rows && cols == rhs.cols, "MatrixN element-wise division requires the same dimensions");
 	MatrixN newMatrix(*this);
 	for (int i = 0; i < newMatrix.elementCount; ++i) {
-		ASSERT(rhs.data[i] != 0, "MatrixN element-wise division doesnt allow zeros in the right matrix");
+		Assert(rhs.data[i] != 0, "MatrixN element-wise division doesnt allow zeros in the right matrix");
 		newMatrix.data[i] /= rhs.data[i];
 	}
 	return newMatrix;
@@ -315,9 +314,9 @@ inline MatrixN  MatrixN::operator %  (const MatrixN& rhs) const{
 
 //element-wise division and assignment
 inline void    MatrixN::operator %= (const MatrixN& rhs){
-	ASSERT(rows == rhs.rows && cols == rhs.cols, "MatrixN element-wise division requires the same dimensions");
+	Assert(rows == rhs.rows && cols == rhs.cols, "MatrixN element-wise division requires the same dimensions");
 	for (int i = 0; i < elementCount; ++i) {
-		ASSERT(rhs.data[i] != 0, "MatrixN element-wise division doesnt allow zeros in the right matrix");
+		Assert(rhs.data[i] != 0, "MatrixN element-wise division doesnt allow zeros in the right matrix");
 		this->data[i] /= rhs.data[i];
 	}
 }
@@ -423,7 +422,7 @@ inline MatrixN MatrixN::Transpose() const{
 //returns a matrix only with the specified rows and cols
 //NOTE 0...n-1 not 1...n
 inline MatrixN MatrixN::Submatrix(std::vector<u32> inRows, std::vector<u32> inCols) const{
-	ASSERT(inRows.size() != 0 && inCols.size() > 0, "MatrixN submatrix cant be performed with zero dimensions");
+	Assert(inRows.size() != 0 && inCols.size() > 0, "MatrixN submatrix cant be performed with zero dimensions");
 	MatrixN newMatrix(inRows.size(), inCols.size());
 	for (int i = 0; i < inRows.size(); ++i) {
 		for (int j = 0; j < inCols.size(); ++j) {
@@ -435,8 +434,8 @@ inline MatrixN MatrixN::Submatrix(std::vector<u32> inRows, std::vector<u32> inCo
 
 //returns the determinant of this matrix without the specified row and column
 inline float MatrixN::Minor(int row, int col) const {
-	ASSERT(rows == cols, "MatrixN minor can only be take of a square matrix");
-	ASSERT(elementCount > 1, "MatrixN minor cant be take of one-dimensional matrix");
+	Assert(rows == cols, "MatrixN minor can only be take of a square matrix");
+	Assert(elementCount > 1, "MatrixN minor cant be take of one-dimensional matrix");
 	MatrixN newMatrix(rows - 1, cols - 1);
 	int index = 0;
 	for (int i = 0; i < rows; ++i) {
@@ -460,7 +459,7 @@ inline float MatrixN::Cofactor(int row, int col) const{
 
 //returns the determinant of the matrix
 inline float MatrixN::Determinant() const{
-	ASSERT(rows == cols, "MatrixN determinant can only be found for square matrices");
+	Assert(rows == cols, "MatrixN determinant can only be found for square matrices");
 	switch (rows) {
 		case(1): { //a
 			return data[0];
@@ -505,7 +504,7 @@ inline float MatrixN::Determinant() const{
 
 //returns the transposed matrix of cofactors of this matrix
 inline MatrixN MatrixN::Adjoint() const {
-	ASSERT(rows == cols, "MatrixN adjoint can only be found for square matrices");
+	Assert(rows == cols, "MatrixN adjoint can only be found for square matrices");
 	MatrixN newMatrix(rows, cols);
 	int index = 0;
 	for (int i = 0; i < rows; ++i) {
@@ -519,7 +518,7 @@ inline MatrixN MatrixN::Adjoint() const {
 //returns the adjoint divided by the determinant
 inline MatrixN MatrixN::Inverse() const {
 	float determinant = this->Determinant();
-	ASSERT(determinant, "MatrixN inverse does not exist if determinant is zero");
+	Assert(determinant, "MatrixN inverse does not exist if determinant is zero");
 	if (elementCount > 1) {
 		return this->Adjoint() / determinant;
 	}
@@ -544,7 +543,7 @@ inline MatrixN MatrixN::Identity(u32 rows, u32 cols) {
 
 //returns a 4x4 matrix with the last element 1 from the provided 3x3 matrix
 inline MatrixN MatrixN::M3x3To4x4(const MatrixN& m) {
-	ASSERT(m.rows == 3 && m.cols == 3, "Cant convert 3x3 matrix to 4x4 if the matrix isnt 3x3");
+	Assert(m.rows == 3 && m.cols == 3, "Cant convert 3x3 matrix to 4x4 if the matrix isnt 3x3");
 	return MatrixN(4, 4,{m(0,0), m(0,1), m(0,2), 0,
 					   m(1,0), m(1,1), m(1,2), 0,
 					   m(2,0), m(2,1), m(2,2), 0,

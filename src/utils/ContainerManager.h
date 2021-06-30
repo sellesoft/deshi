@@ -71,7 +71,7 @@ struct ContainerManager {
 	//attempt to add element to specific index
 	//resize if index is over current size
 	void add_to_index(T t, int index) {
-		ASSERT(allocate_space(index), "Container was unable to allocate space at specified index");
+		Assert(allocate_space(index), "Container was unable to allocate space at specified index");
 		if (!container[index]) { real_size++; }
 		container[index] = t;
 		
@@ -79,8 +79,8 @@ struct ContainerManager {
 	
 	//attempt to remove element at index 
 	void remove_from(int index) {
-		ASSERT(index < container.size(), "Trying to access container at an index that doesn't exist.");
-		ASSERT(container[index].test(), "Container at index " + std::to_string(index) + " is already empty.");
+		Assert(index < container.size(), "Trying to access container at an index that doesn't exist.");
+		Assert(container[index].test(), "Container at index " + std::to_string(index) + " is already empty.");
 		
 		if (index == container.size() - 1) {
 			container.pop_back();

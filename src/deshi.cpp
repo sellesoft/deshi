@@ -176,87 +176,67 @@ ____we can store the text in the actual code and create the file from the code, 
 
 */
 
-#include "core.h"
-#include "game/admin.h"
+#include "defines.h"
+#include "core/assets.h"
+#include "core/console.h"
 #include "core/console2.h"
+#include "core/deshi_imgui.h"
+#include "core/input.h"
+#include "core/renderer.h"
+#include "core/time.h"
+#include "core/window.h"
+#include "game/admin.h"
 
-Time*        g_time;
-Window*      g_window;
-Input*       g_input;
-Console*     g_console;
-Renderer*    g_renderer;
-EntityAdmin* g_admin;
-Debug*       g_debug;
+static_internal Time        time_;     Time*       g_time = &time_; //time_ because there is a c-func time() D:
+static_internal Window      window;   Window*      g_window = &window;
+static_internal Input       input;    Input*       g_input = &input;
+static_internal Console     console;  Console*     g_console = &console;
+static_internal Renderer    renderer; Renderer*    g_renderer = &renderer;
+static_internal deshiImGui  imgui;
+static_internal EntityAdmin admin;    EntityAdmin* g_admin = &admin;
+static_internal Debug       debug;    Debug*       g_debug = &debug;
 
-struct DeshiEngine {
-	Time        time;
-	Window      window;
-	Input       input;
-	EntityAdmin admin;
-	Console     console;
-	Renderer    renderer;
-	deshiImGui  imgui;
-	Debug       debug;
-	TIMER_START(t_d); TIMER_START(t_f);
-	
-	void Start() {
-		//pre-init setup
-		deshi::enforceDirectories();
-		
-		//init engine core
-		time.Init(300); //300 tps for physics
-		g_time = &time;
-		
-		window.Init(&input, 1280, 720); //inits input as well
-		g_window = &window;
-		g_input = &input;
-		
-		Console2::Init();
-		console.Init();
-		g_console = &console;
-		
-		renderer.Init(&imgui); //inits imgui as well
-		g_renderer = &renderer;
-		g_debug = &debug;
-		
-		//init game admin
-		admin.Init();
-		g_admin = &admin;
-		
-		LOG("Finished deshi initialization in ", TIMER_END(t_d), "ms");
-		
-		//start main loop
-		while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
-			glfwPollEvents();
-			Update();
-		}
-		
-		//cleanup
-		admin.Cleanup();
-		imgui.Cleanup();
-		renderer.Cleanup();
-		window.Cleanup();
-		console.CleanUp();
-	}
-	
-	bool Update() {
-		TIMER_RESET(t_d); time.Update();            time.timeTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); window.Update();          time.windowTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); input.Update();           time.inputTime = TIMER_END(t_d);
-		imgui.NewFrame();                                                              //place imgui calls after this
-		TIMER_RESET(t_d); admin.Update();           time.adminTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); console.Update(); Console2::Update(); time.consoleTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); renderer.Render();        time.renderTime = TIMER_END(t_d);  //place imgui calls before this
-		TIMER_RESET(t_d); admin.PostRenderUpdate(); time.adminTime += TIMER_END(t_d);
-		g_debug->Update(); //TODO(sushi) put a timer on this
-		time.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
-		return true;
-	}
-};
+TIMER_START(t_d); TIMER_START(t_f);
 
 int main() {
-	DeshiEngine engine;
-	engine.Start();
+	//pre-init setup
+	deshi::enforceDirectories();
+
+	//init engine core
+	time_.Init(300); //300 tps for physics
+	window.Init(&input, 1280, 720); //inits input as well
+	Console2::Init();
+	console.Init();
+	renderer.Init(&imgui); //inits imgui as well
+
+	//init game admin
+	admin.Init();
+
+	LOG("Finished deshi initialization in ", TIMER_END(t_d), "ms\n");
+
+	//start main loop
+	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
+		glfwPollEvents();
+
+		TIMER_RESET(t_d); time_.Update();            time_.timeTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); window.Update();          time_.windowTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); input.Update();           time_.inputTime = TIMER_END(t_d);
+		imgui.NewFrame();                                                              //place imgui calls after this
+		TIMER_RESET(t_d); admin.Update();           time_.adminTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); console.Update(); Console2::Update(); time_.consoleTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); renderer.Render();        time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
+		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
+		g_debug->Update(); //TODO(sushi) put a timer on this
+		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
+	}
+
+	//cleanup
+	admin.Cleanup();
+	imgui.Cleanup();
+	renderer.Cleanup();
+	window.Cleanup();
+	console.CleanUp();
+	Console2::Cleanup();
 	
 	int debug_breakpoint = 0;
 }

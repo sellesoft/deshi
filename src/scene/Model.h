@@ -2,10 +2,11 @@
 #ifndef DESHI_MODEL_H
 #define DESHI_MODEL_H
 
-#include "../utils/defines.h"
+#include "Armature.h"
+#include "../defines.h"
 #include "../math/Matrix.h"
 #include "../math/Vector.h"
-#include "Armature.h"
+#include "../utils/Color.h"
 
 #include <vector>
 

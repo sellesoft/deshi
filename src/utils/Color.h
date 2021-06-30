@@ -2,7 +2,7 @@
 #ifndef DESHI_COLOR_H
 #define DESHI_COLOR_H
 
-#include "defines.h"
+#include "../defines.h"
 
 #include <string>
 
