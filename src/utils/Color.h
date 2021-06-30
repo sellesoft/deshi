@@ -12,7 +12,7 @@ struct Color {
 	u8 r, g, b, a;
 	
 	static const Color
-	GREY,    DARK_GREY,    VERY_DARK_GREY,
+		GREY,    DARK_GREY,    VERY_DARK_GREY,
 	RED,     DARK_RED,     VERY_DARK_RED,
 	YELLOW,  DARK_YELLOW,  VERY_DARK_YELLOW,
 	GREEN,   DARK_GREEN,   VERY_DARK_GREEN,
@@ -57,15 +57,15 @@ struct Color {
 	Color operator * (Color rhs) {
 		return Color(r * rhs.r, g * rhs.g, b * rhs.b);
 	}
-
+	
 	Color operator * (float rhs) {
 		return Color(r*rhs, g*rhs, b*rhs, a*rhs);
 	}
-
+	
 	Color operator / (float rhs) {
 		return Color(r / rhs, g / rhs, b / rhs, a);
 	}
-
+	
 	void operator *= (float rhs) {
 		this->r *= rhs; this->g *= rhs; this->b *= rhs; this->a *= rhs;
 	}
@@ -92,6 +92,7 @@ struct Color {
 	std::string str() {
 		return "C{" + std::to_string(r) + ", " + std::to_string(g) + ", " + std::to_string(b) + ", " + std::to_string(a) + "}";
 	}
+	
 };
 
 //// Static Constants ////

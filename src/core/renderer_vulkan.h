@@ -3,8 +3,10 @@
 #define DESHI_RENDERER_VULKAN_H
 
 #include "../defines.h"
+#include "../math/VectorMatrix.h"
 #include "../utils/optional.h"
 #include "../utils/tuple.h"
+#include "../utils/Color.h"
 
 #if defined(_MSC_VER)
 #pragma comment(lib,"vulkan-1.lib")
@@ -13,21 +15,12 @@
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-#define GLM_FORCE_LEFT_HANDED
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 #include <array>
 #include <vector>
 #include <string>
 
 struct deshiImGui;
 struct Scene; struct Mesh; struct Texture;
-struct Matrix4; struct Matrix3;
-struct Vector4; struct Vector3; struct Vector2; struct Color;
 typedef u8 stbi_uc;
 
 enum VSyncTypeBits : u32{
@@ -96,13 +89,13 @@ struct SwapChainSupportDetails {
 };
 
 struct VertexVk{
-    glm::vec3 pos;
-    glm::vec2 texCoord;
-    glm::vec3 color; //between 0 and 1
-    glm::vec3 normal;
+	vec4 pos;
+	vec4 uv;
+	vec4 color;
+	vec4 normal;
     
     bool operator==(const VertexVk& other) const {
-        return pos == other.pos && color == other.color && texCoord == other.texCoord && normal == other.normal;
+        return pos == other.pos && color == other.color && uv == other.uv && normal == other.normal;
     }
 };
 
@@ -137,7 +130,7 @@ struct MeshVk{
     b32 base    = false;
     Mesh* ptr   = nullptr;
     char name[DESHI_NAME_SIZE];
-    glm::mat4 modelMatrix = glm::mat4(1.f);
+    mat4 modelMatrix = mat4::IDENTITY;
     std::vector<PrimitiveVk> primitives;
     std::vector<u32> children;
 };
@@ -146,7 +139,7 @@ struct MeshBrushVk{
     u32  id = -1;
     char name[DESHI_NAME_SIZE];
     b32 visible = true;
-    glm::mat4 matrix = glm::mat4(1.f);
+    mat4 modelMatrix = mat4::IDENTITY;
     std::vector<VertexVk> vertices;
     std::vector<u32>      indices;
     VkBuffer       vertexBuffer       = 0;
@@ -202,7 +195,7 @@ struct Renderer{
     //this is temporary
     //TODO(sushi, Re) implement SSBOs so we can have a dynamically sized light array
     //and other various dynamically sized things for things and such
-    glm::vec4 lights[10]{ glm::vec4(0,0,0,-1) };
+    vec4 lights[10]{ vec4(0,0,0,-1) };
     bool generatingWorldGrid = false; //this area is my random var test area now :)
     
     //////////////////////////
@@ -297,7 +290,7 @@ struct Renderer{
     void UpdateCameraPosition(Vector3 position);
     void UpdateCameraViewMatrix(Matrix4 m);
     void UpdateCameraProjectionMatrix(Matrix4 m);
-
+	
     pair<Vector3, Vector3> SceneBoundingBox(); 
     
     //signals vulkan to remake the pipelines
@@ -442,16 +435,15 @@ struct Renderer{
         VkDeviceSize           bufferSize;
         VkDescriptorBufferInfo bufferDescriptor;
         
-        struct{ //TODO(delle,ReOp) size this so its a multiple of 16bytes
-            glm::mat4 view;        //camera view matrix
-            glm::mat4 proj;        //camera projection matrix
-            glm::vec4 lights[10];  //lights
-            glm::vec4 viewPos;     //camera pos
-            glm::f32  time;         //total time
-            glm::f32  width;		   //screen width
-            glm::f32  height;	   //screen height
-            glm::vec2 mousepos;    //mouse screen pos
-            glm::vec3 mouseWorld;  //point casted out from mouse 
+        struct{
+            mat4 view;        //camera view matrix
+            mat4 proj;        //camera projection matrix
+            vec4 lights[10];  //lights
+            vec4 viewPos;     //camera pos
+            vec2 screen;      //screen dimensions
+            vec2 mousepos;    //mouse screen pos
+            vec3 mouseWorld;  //point casted out from mouse 
+			f32  time;        //total time
         } values;
     } uboVS{};
     struct{ //uniform buffer for the geometry shaders
@@ -461,8 +453,8 @@ struct Renderer{
         VkDescriptorBufferInfo bufferDescriptor;
 		
         struct{
-            glm::mat4 view; //camera view matrix
-            glm::mat4 proj; //camera projection matrix
+            mat4 view; //camera view matrix
+            mat4 proj; //camera projection matrix
         } values;
     } uboGS{};
 	

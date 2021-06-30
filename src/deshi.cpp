@@ -41,7 +41,7 @@ make our own unordered_map and map that is contiguous (array of pairs basically,
 ____also allow it to store up to 3 types
 add device_info command (graphics card, sound device, monitor res, etc)
 pool/arena components and entities for better performance
-replace/remove external dependencies/includes (glm, tinyobj, std)
+replace/remove external dependencies/includes (tinyobj, std)
 add Qol (quality of life) tag to TODOP
 add Camera tag to TODOP
 look into integrating TODOP with Discord
@@ -115,19 +115,13 @@ Console TODOs
 -------------
 !!!implement console popout
 tabbing so we can sort different kinds of info into each tab like Errors and Warnings
-fix console color parsing regex to be able to match with brackets inside
-OR change how we format color to something less common than brackets
-reformat to use a single character buffer rather than the line/subline thing its doing now
-implement buffer clipping using ImGui's clipper
 implement command chaining
-(maybe) add auto complete for arguments of commands
+add auto complete for commands and arguments
 add console flag for showing text in bottom right message bar like error does
 command to print all avaliable keys for binding
 command to print all keybinds, with (maybe) an option for printing only contextual keybinds
 make binds and aliases check if one already exists for a key or a command. if a key already exists probably just overwrite it?
 implement filtering console buffer by function and file name (add __FILENAME__ and __FUNCTION__ or whatever it is to the defines)
-fix regex match variable to be smatch instead of cmatch, so we don't have to keep turning every string into a c string
-
 
 UI TODOs
 --------
@@ -145,9 +139,9 @@ Math TODOs
 add functions and members similar to what glsl/glm has where you can do stuff like 
 ____v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
 ____you probably just need to add a Vector2/3 for each permutation of each vector
+____glm/detail/_swizzle.hpp
 cleanup math library (remove redundant/old things, make functions more consistent, etc.)
 add quaternions and converions between them and other linear algebra primitives
-replace glm :)
 
 Fun TODOs
 ---------
@@ -169,8 +163,6 @@ ____it looks like some sort of corrupt mesh makes its way in there somehow?
 sometimes MeshComp is assigned a nonexistant mesh
 ____temp fix by checking if minimized, but need to find root cause
 program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
-____read this to try to fix: http://www.debuginfo.com/tips/userbpntdll.html
-some UI can be clicked thru and select the entity
 the program crashes if default asset files are not present
 ____we can store the text in the actual code and create the file from the code, like keybinds.cfg
 
@@ -201,23 +193,23 @@ TIMER_START(t_d); TIMER_START(t_f);
 int main() {
 	//pre-init setup
 	deshi::enforceDirectories();
-
+	
 	//init engine core
 	time_.Init(300); //300 tps for physics
 	window.Init(&input, 1280, 720); //inits input as well
 	Console2::Init();
 	console.Init();
 	renderer.Init(&imgui); //inits imgui as well
-
+	
 	//init game admin
 	admin.Init();
-
+	
 	LOG("Finished deshi initialization in ", TIMER_END(t_d), "ms\n");
-
+	
 	//start main loop
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
 		glfwPollEvents();
-
+		
 		TIMER_RESET(t_d); time_.Update();            time_.timeTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); window.Update();          time_.windowTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); input.Update();           time_.inputTime = TIMER_END(t_d);
@@ -229,7 +221,7 @@ int main() {
 		g_debug->Update(); //TODO(sushi) put a timer on this
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}
-
+	
 	//cleanup
 	admin.Cleanup();
 	imgui.Cleanup();

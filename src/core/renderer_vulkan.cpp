@@ -32,9 +32,6 @@ http://gameangst.com/?p=9
 #define STB_IMAGE_IMPLEMENTATION
 #include "../external/stb/stb_image.h"
 
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/matrix_access.hpp>
-
 #if defined(_MSC_VER)
 #pragma comment(lib,"shaderc_combined.lib")
 #endif
@@ -432,13 +429,14 @@ CreateDebugLine(Vector3 start, Vector3 end, Color color, bool visible){
     return id;
 }
 
+//@@
 void Renderer::
 UpdateDebugLine(u32 id, Vector3 start, Vector3 end, Color color) {
-    Vector3 c = Vector3(color.r, color.g, color.b) / 255.f;
-    meshBrushes[id].vertices[0].pos = glm::make_vec3(&start.x);
-    meshBrushes[id].vertices[1].pos = glm::make_vec3(&end.x);
-    meshBrushes[id].vertices[0].color = glm::make_vec3(&c.x);
-    meshBrushes[id].vertices[1].color = glm::make_vec3(&c.x);
+	vec4 c = vec4(vec3(color.r, color.g, color.b) / 255.f, 1.f);
+    meshBrushes[id].vertices[0].pos   = vec4(start, 1.f);
+    meshBrushes[id].vertices[1].pos   = vec4(end, 1.f);
+    meshBrushes[id].vertices[0].color = c;
+    meshBrushes[id].vertices[1].color = c;
     UpdateMeshBrushBuffers(id);
     
 }
@@ -477,7 +475,7 @@ CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation){
     //// mesh brush ////
     MeshBrushVk mesh; mesh.id = meshBrushes.size();
     cpystr(mesh.name, m->name, DESHI_NAME_SIZE);
-    mesh.matrix = glm::make_mat4(matrix.data);
+    mesh.modelMatrix = matrix;
     
     mesh.vertices.reserve(m->vertexCount);
     mesh.indices.reserve(m->indexCount);
@@ -489,10 +487,10 @@ CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation){
         //vertices
         for(int i=0; i<batch.vertexArray.size(); ++i){ 
             VertexVk vert;
-            vert.pos      = glm::make_vec3(&batch.vertexArray[i].pos.x);
-            vert.texCoord = glm::make_vec2(&batch.vertexArray[i].uv.x);
-            vert.color    = glm::make_vec3(&batch.vertexArray[i].color.x);
-            vert.normal   = glm::make_vec3(&batch.vertexArray[i].normal.x);
+            vert.pos      = vec4(batch.vertexArray[i].pos, 1.0f);
+            vert.uv       = vec4(batch.vertexArray[i].uv.x, batch.vertexArray[i].uv.y, 0.0f, 0.0f);
+            vert.color    = vec4(batch.vertexArray[i].color, 1.0f);
+            vert.normal   = vec4(batch.vertexArray[i].normal, 1.0f);
             mesh.vertices.push_back(vert);
         }
         
@@ -552,7 +550,7 @@ void Renderer::
 UpdateMeshBrushMatrix(u32 index, Matrix4 transform) {
     if (index >= meshBrushes.size()) return ERROR_LOC("There is no mesh with id: ", index);
     
-    meshBrushes[index].matrix = glm::make_mat4(transform.data);
+    meshBrushes[index].modelMatrix = transform;
     
     UpdateMeshBrushBuffers(index);
 }
@@ -653,10 +651,10 @@ LoadBaseMesh(Mesh* m, bool visible) {
         //vertices
         for(int i=0; i<batch.vertexArray.size(); ++i){ 
             VertexVk vert;
-            vert.pos      = glm::make_vec3(&batch.vertexArray[i].pos.x);
-            vert.texCoord = glm::make_vec2(&batch.vertexArray[i].uv.x);
-            vert.color    = glm::make_vec3(&batch.vertexArray[i].color.x);
-            vert.normal   = glm::make_vec3(&batch.vertexArray[i].normal.x);
+            vert.pos    = vec4(batch.vertexArray[i].pos, 1.0f);
+            vert.uv     = vec4(batch.vertexArray[i].uv.x, batch.vertexArray[i].uv.y, 0.0f, 0.0f);
+            vert.color  = vec4(batch.vertexArray[i].color, 1.0f);
+            vert.normal = vec4(batch.vertexArray[i].normal, 1.0f);
             vertexBuffer.push_back(vert);
         }
         
@@ -741,7 +739,7 @@ CreateMesh(u32 meshID, Matrix4 matrix, b32 new_material){
                 mesh.primitives[i].materialIndex = CopyMaterial(meshes[meshID].primitives[i].materialIndex);
             }
         }
-        mesh.modelMatrix = glm::make_mat4(matrix.data);
+        mesh.modelMatrix = matrix;
         cpystr(mesh.name, meshes[meshID].name, DESHI_NAME_SIZE);
         mesh.id = (u32)meshes.size();
         meshes.push_back(mesh);
@@ -785,7 +783,7 @@ RemoveMesh(u32 meshID){
 Matrix4 Renderer::
 GetMeshMatrix(u32 meshID){
     if(meshID < meshes.size()){
-        return Matrix4((float*)glm::value_ptr(meshes[meshID].modelMatrix));
+        return meshes[meshID].modelMatrix;
     }
     ERROR_LOC("There is no mesh with id: ", meshID);
     return Matrix4(0.f);
@@ -811,7 +809,7 @@ GetBaseMeshID(const char* name){
 void Renderer::
 UpdateMeshMatrix(u32 meshID, Matrix4 matrix){
     if(meshID < meshes.size()){
-        meshes[meshID].modelMatrix = glm::make_mat4(matrix.data);
+        meshes[meshID].modelMatrix = matrix;
     }else{
         ERROR_LOC("There is no mesh with id: ", meshID);
     }
@@ -820,7 +818,7 @@ UpdateMeshMatrix(u32 meshID, Matrix4 matrix){
 void Renderer::
 TransformMeshMatrix(u32 meshID, Matrix4 transform){
     if(meshID < meshes.size()){
-        meshes[meshID].modelMatrix = glm::make_mat4(transform.data) * meshes[meshID].modelMatrix;
+        meshes[meshID].modelMatrix = meshes[meshID].modelMatrix * transform;
     }else{
         ERROR_LOC("There is no mesh with id: ", meshID);
     }
@@ -1184,17 +1182,17 @@ LoadScene(Scene* sc){
 
 void Renderer::
 UpdateCameraPosition(Vector3 position){
-    uboVS.values.viewPos = glm::vec4(glm::make_vec3(&position.x), 1.f);
+    uboVS.values.viewPos = vec4(position, 1.f);
 }
 
 void Renderer::
 UpdateCameraViewMatrix(Matrix4 m){
-    uboVS.values.view = glm::make_mat4(m.data);
+    uboVS.values.view = m;
 }
 
 void Renderer::
 UpdateCameraProjectionMatrix(Matrix4 m){
-    uboVS.values.proj = glm::make_mat4(m.data);
+    uboVS.values.proj = m;
 }
 
 pair<Vector3, Vector3> Renderer::
@@ -1202,13 +1200,12 @@ SceneBoundingBox(){
     float inf = std::numeric_limits<float>::max();
     Vector3 max(-inf, -inf, -inf);
     Vector3 min( inf,  inf,  inf);
-
+	
     Vector3 v;
     for (MeshVk& mesh : DengRenderer->meshes) {
         for (PrimitiveVk& p : mesh.primitives) {
             for(int i = p.firstIndex; i < p.indexCount; i++){
-                v = vec3((float*)glm::value_ptr(DengRenderer->vertexBuffer[DengRenderer->indexBuffer[i]].pos)) +
-                    mat4((float*)glm::value_ptr(mesh.modelMatrix)).Translation();
+                v = DengRenderer->vertexBuffer[DengRenderer->indexBuffer[i]].pos.ToVector3() + mesh.modelMatrix.Translation();
                 if      (v.x < min.x) { min.x = v.x; }
                 else if (v.x > max.x) { max.x = v.x; }
                 if      (v.y < min.y) { min.y = v.y; }
@@ -1218,7 +1215,7 @@ SceneBoundingBox(){
             }
         }
     }
-
+	
     return pair<Vector3, Vector3>(max, min);
 }
 
@@ -2026,17 +2023,13 @@ UpdateUniformBuffer(){
     //PRINTVK(2, "  Updating Uniform Buffer");
 	
     uboVS.values.time = DengTime->totalTime;
-    uboVS.values.width = (glm::f32)extent.width;
-    uboVS.values.height = (glm::f32)extent.height;
+    uboVS.values.screen = vec2(extent.width, extent.height);
     std::copy(lights, lights + 10, uboVS.values.lights);
-    uboVS.values.mousepos = glm::vec2(DengInput->mousePos.x, DengInput->mousePos.y);
+    uboVS.values.mousepos = vec2(DengInput->mousePos.x, DengInput->mousePos.y);
 	
     //get point projected out from mouse 
     if (initialized){
-        Vector3 pos = Math::ScreenToWorld(DengInput->mousePos,
-										  Matrix4(&uboVS.values.proj[0][0]),
-										  Matrix4(&uboVS.values.view[0][0]), DengWindow->dimensions);
-        uboVS.values.mouseWorld = glm::vec3(pos.x, pos.y, pos.z);
+		uboVS.values.mouseWorld = Math::ScreenToWorld(DengInput->mousePos, uboVS.values.proj, uboVS.values.view, DengWindow->dimensions);
     }
     //map shader data to vertex shader uniform buffer
     void* data;
@@ -2250,7 +2243,7 @@ CreateLayouts(){
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(glm::mat4);
+    pushConstantRange.size = sizeof(mat4);
     
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -2430,8 +2423,8 @@ SetupPipelineCreation(){
     VkVertexInputAttributeDescription uvDesc{};
     uvDesc.binding      = 0;
     uvDesc.location     = 1;
-    uvDesc.format       = VK_FORMAT_R32G32_SFLOAT;
-    uvDesc.offset       = offsetof(VertexVk, texCoord);
+    uvDesc.format       = VK_FORMAT_R32G32B32_SFLOAT;
+    uvDesc.offset       = offsetof(VertexVk, uv);
     VkVertexInputAttributeDescription colorDesc{};
     colorDesc.binding   = 0;
     colorDesc.location  = 2;
@@ -3401,7 +3394,7 @@ BuildCommandBuffers() {
                 if (mesh.visible) {
                     vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &mesh.vertexBuffer, offsets);
                     vkCmdBindIndexBuffer(frames[i].commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-                    vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(glm::mat4), &mesh.matrix);
+                    vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
                     DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
 					vkCmdDrawIndexed(frames[i].commandBuffer, mesh.indices.size(), 1, 0, 0, 0);
                     stats.drawnIndices += mesh.indices.size();
@@ -3420,7 +3413,7 @@ BuildCommandBuffers() {
             for(MeshVk& mesh : meshes){
                 if(mesh.visible && mesh.primitives.size() > 0){
                     //push the mesh's model matrix to the vertex shader
-                    vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(glm::mat4), &mesh.modelMatrix);
+                    vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
                     
                     for (PrimitiveVk& primitive : mesh.primitives) {
                         if (primitive.indexCount > 0) {
@@ -3435,7 +3428,7 @@ BuildCommandBuffers() {
             for(MeshVk& mesh : meshes){
                 if(mesh.visible && mesh.primitives.size() > 0){
                     //push the mesh's model matrix to the vertex shader
-                    vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(glm::mat4), &mesh.modelMatrix);
+                    vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
                     
                     for (PrimitiveVk& primitive : mesh.primitives) {
                         if (primitive.indexCount > 0) {
@@ -3466,7 +3459,7 @@ BuildCommandBuffers() {
             MeshVk& mesh = meshes[id];
             if(mesh.visible && mesh.primitives.size() > 0){
                 //push the mesh's model matrix to the vertex shader
-                vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(glm::mat4), &mesh.modelMatrix);
+                vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
                 
                 for (PrimitiveVk& primitive : mesh.primitives) {
                     if (primitive.indexCount > 0) {
@@ -3490,7 +3483,7 @@ BuildCommandBuffers() {
             for(MeshVk& mesh : meshes){
                 if(mesh.visible && mesh.primitives.size() > 0){
                     //push the mesh's model matrix to the shader
-                    vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(glm::mat4), &mesh.modelMatrix);
+                    vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
 					
                     for (PrimitiveVk& primitive : mesh.primitives) {
                         if (primitive.indexCount > 0) {

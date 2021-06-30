@@ -2,10 +2,14 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 layout(set = 0, binding = 0) uniform UniformBufferObject{
-	mat4 view;
-	mat4 proj;
-	vec4 lights[10];
-	vec4 viewPos;
+	mat4  view;
+	mat4  proj;
+	vec4  lights[10];
+	vec4  viewPos;
+	vec2  screen;
+	vec2  mousepos;
+	vec3  mouseWorld;
+	float time;
 } ubo;
 
 layout(push_constant) uniform PushConsts{
@@ -26,7 +30,7 @@ layout(location = 5) out vec3 viewPosition;
 layout(location = 6) out vec4 outLights[10];
 
 void main() {
-
+	
 	viewPosition = (ubo.view * primitive.model * vec4(inPosition.xyz, 1.0)).xyz;
     gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
     outColor = inColor;

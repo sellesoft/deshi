@@ -137,13 +137,11 @@ void EntityAdmin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering alr
     
     //light updating
     for (int i = 0; i < 10; i++) {
-        if (i < scene.lights.size()) {
-            Vector3 p = scene.lights[i]->position;
-            DengRenderer->lights[i] = glm::vec4(p.x, p.y, p.z,
-                                                (scene.lights[i]->active) ? scene.lights[i]->brightness : 0);
-        }
-        else {
-            DengRenderer->lights[i] = glm::vec4(0, 0, 0, -1);
+        if(i < scene.lights.size()) {
+            DengRenderer->lights[i] = vec4(scene.lights[i]->position,
+										   (scene.lights[i]->active) ? scene.lights[i]->brightness : 0);
+        }else{
+            DengRenderer->lights[i] = vec4(0, 0, 0, -1);
         }
     }
     

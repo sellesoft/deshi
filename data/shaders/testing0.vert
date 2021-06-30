@@ -2,15 +2,14 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 layout(set = 0, binding = 0) uniform UniformBufferObject{
-	mat4 view;
-	mat4 proj;
-	vec4 lights[10];
-	vec4 viewPos;
-	float time;         
-	float width;		
-	float height;	  
-	vec2 mousepos; 
-	vec3 mouseWorld;
+	mat4  view;
+	mat4  proj;
+	vec4  lights[10];
+	vec4  viewPos;
+	vec2  screen;
+	vec2  mousepos;
+	vec3  mouseWorld;
+	float time;
 } ubo;
 
 layout(push_constant) uniform PushConsts{
@@ -26,23 +25,21 @@ layout(location = 0)  out vec3  outColor;
 layout(location = 1)  out vec2  outTexCoord;
 layout(location = 2)  out vec3  outNormal;
 layout(location = 3)  out float time;
-layout(location = 4)  out float width;
-layout(location = 5)  out float height;
-layout(location = 6)  out vec3  camerapos;
-layout(location = 7)  out vec3  fragPos;
-layout(location = 8)  out vec2  mousePos;
-layout(location = 9)  out vec3  mouseworld;
+layout(location = 4)  out vec2  screen;
+layout(location = 5)  out vec3  camerapos;
+layout(location = 6)  out vec3  fragPos;
+layout(location = 7)  out vec2  mousePos;
+layout(location = 8)  out vec3  mouseworld;
 
 mat4 translation(vec3 t){
-	return mat4(
-	1,   0,   0,   0,
-	0,   1,   0,   0,
-	0,   0,   1,   0,
-	t.x, t.y, t.z, 1);
+	return mat4(1,   0,   0,   0,
+				0,   1,   0,   0,
+				0,   0,   1,   0,
+				t.x, t.y, t.z, 1);
 }
 
 void main() {
-
+	
 	gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
 	//gl_Position.x = mouseworld.x;
 	//gl_Position.y = floor(gl_Position.y);
