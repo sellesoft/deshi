@@ -711,20 +711,22 @@ void Editor::MenuBar() {
                 if(level_name == ""){
                     ERROR("Level not saved before; Use 'Save As'");
                 }else{
-                    admin->SaveTEXT(level_name.c_str());
+                    admin->SaveTEXT(level_name);
                 }
             }
             if (ImGui::BeginMenu("Save As")) { WinHovCheck;
                 static char buff[255] = {};
                 if(ImGui::InputText("##saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
                     admin->SaveTEXT(buff);
+                    level_name = std::string(buff);
                 }
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Load")) { WinHovCheck;
                 forI(levels.size()) {
                     if (ImGui::MenuItem(levels[i].c_str())) {
-                        admin->LoadTEXT(levels[i].c_str());
+                        admin->LoadTEXT(levels[i]);
+                        level_name = levels[i];
                     }
                 }
                 ImGui::EndMenu();
@@ -2660,7 +2662,6 @@ void Editor::Reset(){
     undo_manager.Reset();
     g_debug->meshes.clear();
     WorldGrid(camera->position);
-    level_name = "";
 }
 
 void Editor::CreateEditorWin() {

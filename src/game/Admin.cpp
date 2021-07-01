@@ -232,7 +232,7 @@ void Admin::ChangeState(GameState new_state){
                 controller.playermove = nullptr;
                 SaveDESH("auto.desh");
                 //LoadDESH("temp.desh");
-                LoadTEXT(editor.level_name.c_str());
+                LoadTEXT(editor.level_name);
                 if(player) player->GetComponent<MeshComp>()->Visible(true);
                 DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
             }break;
@@ -251,7 +251,7 @@ void Admin::ChangeState(GameState new_state){
                 pause_phys = pause_sound = true;
                 SaveDESH("auto.desh");
                 //LoadDESH("temp.desh");
-                LoadTEXT(editor.level_name.c_str());
+                LoadTEXT(editor.level_name);
                 if(player) player->GetComponent<MeshComp>()->Visible(true);
                 DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
             }break;
@@ -264,7 +264,7 @@ void Admin::ChangeState(GameState new_state){
             case GameState_Debug:{  to = "PLAY/DEBUG";
                 pause_phys = pause_sound = false;
                 //SaveDESH("temp.desh");
-                SaveTEXT(editor.level_name.c_str());
+                SaveTEXT(editor.level_name);
                 if(player) {
                     player->GetComponent<MeshComp>()->Visible(false);
                 }else{
@@ -274,7 +274,7 @@ void Admin::ChangeState(GameState new_state){
             }break;
             case GameState_Menu:{   to = "MENU";
                 //SaveDESH("save.desh");
-                SaveTEXT(editor.level_name.c_str());
+                SaveTEXT(editor.level_name);
                 DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
             }break;
         }break;
@@ -301,17 +301,16 @@ void Admin::Reset(){
 //TODO(delle) this removes the entire level dir and recreates it, optimize by diffing for speed and comment preservation
 //TODO add safe-checking so you dont override another level accidentally
 //TODO maybe dont save materials that aren't being used
-void Admin::SaveTEXT(const char* level_name_cstr){
+void Admin::SaveTEXT(std::string level_name){
     namespace fs = std::filesystem;
-    if(!level_name_cstr) return ERROR("Failed to create save text-file: no name passed");
-    SUCCESS("Started saving level '", level_name_cstr, "'");
+    if(level_name.empty()) return ERROR("Failed to create save text-file: no name passed");
+    SUCCESS("Started saving level '", level_name, "'");
     TIMER_START(t_s);
     
     //// setup the level directory ////
     std::string levels_dir = deshi::dirData() + "levels/";
     if(!fs::is_directory(levels_dir)) fs::create_directory(levels_dir);
     
-    std::string level_name(level_name_cstr);
     std::string level_dir = levels_dir + std::string(level_name) + "/";
     if(fs::is_directory(level_dir)) fs::remove_all(level_dir);
     fs::create_directory(level_dir);
@@ -320,7 +319,7 @@ void Admin::SaveTEXT(const char* level_name_cstr){
     //// level file ////
     std::string level_text; level_text.reserve(2048);
     level_text.append(TOSTRING(">level"
-                               "\nname         \"", level_name_cstr, "\""
+                               "\nname         \"", level_name, "\""
                                "\nentity_count ", entities.size(),
 							   "\nlast_updated \"", /*DengTime->FormatDateTime("{M}/{d}/{y} {h}:{m}:{s}"),*/ "\""));
 	//NOTE temp disable on last_updated until diff checking is setup
@@ -397,10 +396,10 @@ void Admin::SaveTEXT(const char* level_name_cstr){
 enum struct LevelHeader{
 	INVALID, LEVEL, MATERIALS, MESHES, ENTITIES, EVENTS
 };
-void Admin::LoadTEXT(const char* savename){
+void Admin::LoadTEXT(std::string savename){
 	namespace fs = std::filesystem;
 	
-	if(!savename) return ERROR("Failed to load text-file: no name passed");
+	if(savename.empty()) return ERROR("Failed to load text-file: no name passed");
 	std::string levels_dir = deshi::dirData() + "levels/";
 	std::string level_dir = levels_dir + savename + "/";
 	if(!fs::is_directory(level_dir)) return ERROR("Failed to find directory: ", level_dir);

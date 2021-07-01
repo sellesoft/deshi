@@ -73,8 +73,8 @@ struct Admin {
 	std::string FormatAdminTime(std::string format);
 	
 	void Reset();
-	void SaveTEXT(const char* savename);
-	void LoadTEXT(const char* savename);
+	void SaveTEXT(std::string savename);
+	void LoadTEXT(std::string savename);
 	void SaveDESH(const char* filename);
 	void LoadDESH(const char* filename);
 	
