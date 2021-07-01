@@ -73,7 +73,7 @@
     <ClInclude Include="..\src\core\assets.h">
       <Filter>src\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\deshi_imgui.h">
+    <ClInclude Include="..\src\core\imgui.h">
       <Filter>src\core</Filter>
     </ClInclude>
     <ClInclude Include="..\src\core\console.h">
@@ -157,7 +157,7 @@
     <ClInclude Include="..\src\game\Transform.h">
       <Filter>src\game</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\deshi_imgui_vulkan.h">
+    <ClInclude Include="..\src\core\imgui_vulkan.h">
       <Filter>src\core</Filter>
     </ClInclude>
     <ClInclude Include="..\src\game\UndoManager.h">
@@ -454,7 +454,7 @@
     <ClCompile Include="..\src\core\assets.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\deshi_imgui_vulkan.cpp">
+    <ClCompile Include="..\src\core\imgui_vulkan.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
     <ClCompile Include="..\src\game\UndoManager.cpp">

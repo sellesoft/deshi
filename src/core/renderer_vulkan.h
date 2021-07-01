@@ -19,7 +19,7 @@
 #include <vector>
 #include <string>
 
-struct deshiImGui;
+struct DearImGui;
 struct Scene; struct Mesh; struct Texture;
 typedef u8 stbi_uc;
 
@@ -204,7 +204,7 @@ struct Renderer{
     void SaveSettings();
 	void LoadSettings();
     //runs the vulkan functions necessary to start rendering
-    void Init(deshiImGui* imgui);
+    void Init(DearImGui* imgui);
     //acquires the next image from vulkan, resets the command buffers, 
     //updates uploaded information, begins the command buffers, begins the render pass, 
     //runs the different shader draw methods, ends the render pass

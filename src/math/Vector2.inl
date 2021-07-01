@@ -2,8 +2,6 @@
 #ifndef DESHI_VECTOR2_INL
 #define DESHI_VECTOR2_INL
 
-#include "../external/imgui/imgui.h"
-
 //////////////////////
 //// constructors ////
 //////////////////////

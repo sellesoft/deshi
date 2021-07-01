@@ -7,15 +7,14 @@
 //TODO commands
 
 #include "console2.h"
-#include "input.h" //inputs
-#include "time.h" //deltaTime
-#include "window.h" //width, height
-#include "deshi_imgui.h" //ImGui
-#include "assets.h" //eat_spaces_leading
-#include "../utils/Debug.h" //TOSTRING
-#include "../utils/RingArray.h" //RingArray
-#include "../utils/Color.h" //Color
-#include "../external/imgui/imgui_internal.h" //TextEx
+#include "input.h"
+#include "time.h"
+#include "window.h"
+#include "imgui.h"
+#include "assets.h"
+#include "../utils/Debug.h"
+#include "../utils/RingArray.h"
+#include "../utils/Color.h"
 
 ////////////////////////////////////
 //// internal console variables ////

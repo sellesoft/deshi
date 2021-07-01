@@ -1,4 +1,4 @@
-#include "deshi_imgui_vulkan.h"
+#include "imgui_vulkan.h"
 #include "renderer.h"
 #include "assets.h"
 #include "window.h"
@@ -16,6 +16,10 @@
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
+#include <string>
+
+static_internal char iniFilepath[256] = {};
+
 void check_vk_result(VkResult err){
     if (err == 0)
         return;
@@ -24,12 +28,12 @@ void check_vk_result(VkResult err){
         abort();
 }
 
-void deshiImGui::Init(Renderer* renderer){
+void DearImGui::Init(Renderer* renderer){
 	//Setup Dear ImGui context
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
-	iniFilepath = deshi::dirConfig() + "imgui.ini";
-	io.IniFilename = iniFilepath.c_str();
+	cpystr(iniFilepath, (deshi::dirConfig() + "imgui.ini").c_str(), 256);
+	io.IniFilename = iniFilepath;
 	
 	//Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -85,7 +89,7 @@ void deshiImGui::Init(Renderer* renderer){
 	}
 }
 
-void deshiImGui::Cleanup(){
+void DearImGui::Cleanup(){
 	VkResult err = vkDeviceWaitIdle(vkr->device);
 	check_vk_result(err);
 	ImGui_ImplVulkan_Shutdown();
@@ -93,7 +97,7 @@ void deshiImGui::Cleanup(){
 	ImGui::DestroyContext();
 }
 
-void deshiImGui::NewFrame(){
+void DearImGui::NewFrame(){
 	// Start the Dear ImGui frame
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();

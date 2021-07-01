@@ -79,7 +79,6 @@ struct Vector2 {
 	Vector2(const Vector4& v);
 	Vector3 ToVector3() const;
 	Vector4 ToVector4() const;
-	ImVec2  ToImVec2() const;
 };
 typedef Vector2 vec2;
 #include "Vector2.inl"
@@ -239,11 +238,6 @@ Vector2(const Vector3& v){
 inline Vector2::
 Vector2(const Vector4& v){
 	x = v.x; y = v.y;
-}
-
-inline ImVec2 Vector2::
-ToImVec2() const {
-	return ImVec2(x, y);
 }
 
 inline Vector3 Vector2::

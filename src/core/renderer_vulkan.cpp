@@ -18,17 +18,15 @@ http://gameangst.com/?p=9
 
 #include "renderer_vulkan.h"
 #include "assets.h"
-#include "deshi_imgui.h"
+#include "imgui.h"
 #include "input.h"
 #include "time.h"
 #include "window.h"
 #include "../scene/Scene.h"
 #include "../math/Math.h"
 
-#include "../external/imgui/imgui.h"
 #include "../external/imgui/imgui_impl_glfw.h"
 #include "../external/imgui/imgui_impl_vulkan.h"
-
 #define STB_IMAGE_IMPLEMENTATION
 #include "../external/stb/stb_image.h"
 
@@ -178,7 +176,7 @@ LoadSettings(){
 }
 
 void Renderer::
-Init(deshiImGui* imgui) {
+Init(DearImGui* imgui) {
     PRINTVK(1, "Initializing Vulkan");
     TIMER_START(t_v);
     

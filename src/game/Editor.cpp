@@ -16,7 +16,7 @@
 #include "entities/Trigger.h"
 #include "../core/assets.h"
 #include "../core/console.h"
-#include "../core/deshi_imgui.h"
+#include "../core/imgui.h"
 #include "../core/renderer.h"
 #include "../core/window.h"
 #include "../core/time.h"
@@ -453,6 +453,10 @@ ImVec4 ColToVec4(Color p) {
     return ImVec4((float)p.r / 255, (float)p.g / 255, (float)p.b / 255, p.a / 255);
 }
 
+ImVec2 Vec2ToImVec2(Vector2 v){
+    return ImVec2(v.x, v.y);
+}
+
 //functions to simplify the usage of our DebugLayer
 namespace ImGui {
     void BeginDebugLayer() {
@@ -476,19 +480,19 @@ namespace ImGui {
         Camera* c = g_admin->mainCamera;
         Vector2 windimen = DengWindow->dimensions;
         Vector2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
-        ImGui::GetBackgroundDrawList()->AddCircle(pos2.ToImVec2(), radius, ImGui::GetColorU32(ColToVec4(color)));
+        ImGui::GetBackgroundDrawList()->AddCircle(Vec2ToImVec2(pos2), radius, ImGui::GetColorU32(ColToVec4(color)));
     }
     
     void DebugDrawCircleFilled3(Vector3 pos, float radius, Color color) {
         Camera* c = g_admin->mainCamera;
         Vector2 windimen = DengWindow->dimensions;
         Vector2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
-        ImGui::GetBackgroundDrawList()->AddCircleFilled(pos2.ToImVec2(), radius, ImGui::GetColorU32(ColToVec4(color)));
+        ImGui::GetBackgroundDrawList()->AddCircleFilled(Vec2ToImVec2(pos2), radius, ImGui::GetColorU32(ColToVec4(color)));
     }
     
     void DebugDrawLine(Vector2 pos1, Vector2 pos2, Color color) {
         Math::ClipLineToBorderPlanes(pos1, pos2, DengWindow->dimensions);
-        ImGui::GetBackgroundDrawList()->AddLine(pos1.ToImVec2(), pos2.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
+        ImGui::GetBackgroundDrawList()->AddLine(Vec2ToImVec2(pos1), Vec2ToImVec2(pos2), ImGui::GetColorU32(ColToVec4(color)));
     }
     
     void DebugDrawLine3(Vector3 pos1, Vector3 pos2, Color color) {
@@ -499,14 +503,14 @@ namespace ImGui {
         Vector3 pos2n = Math::WorldToCamera3(pos2, c->viewMat);
         
         if (Math::ClipLineToZPlanes(pos1n, pos2n, c->nearZ, c->farZ)) {
-            ImGui::GetBackgroundDrawList()->AddLine(
-                                                    Math::CameraToScreen2(pos1n, c->projMat, windimen).ToImVec2(), 
-                                                    Math::CameraToScreen2(pos2n, c->projMat, windimen).ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
+            ImGui::GetBackgroundDrawList()->AddLine(Vec2ToImVec2(Math::CameraToScreen2(pos1n, c->projMat, windimen)), 
+                                                    Vec2ToImVec2(Math::CameraToScreen2(pos2n, c->projMat, windimen)), 
+                                                    ImGui::GetColorU32(ColToVec4(color)));
         }
     }
     
     void DebugDrawText(const char* text, Vector2 pos, Color color) {		
-        ImGui::SetCursorPos(pos.ToImVec2());
+        ImGui::SetCursorPos(Vec2ToImVec2(pos));
         
         ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(color));
         ImGui::TextEx(text);
@@ -519,7 +523,7 @@ namespace ImGui {
         
         Vector3 posc = Math::WorldToCamera3(pos, c->viewMat);
         if(Math::ClipLineToZPlanes(posc, posc, c->nearZ, c->farZ)){
-            ImGui::SetCursorPos((Math::CameraToScreen2(posc, c->projMat, windimen) + twoDoffset).ToImVec2());
+            ImGui::SetCursorPos(Vec2ToImVec2(Math::CameraToScreen2(posc, c->projMat, windimen) + twoDoffset));
             ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(color));
             ImGui::TextEx(text);
             ImGui::PopStyleColor();
@@ -533,7 +537,8 @@ namespace ImGui {
     }
     
     void DebugFillTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color) {
-        ImGui::GetBackgroundDrawList()->AddTriangleFilled(p1.ToImVec2(), p2.ToImVec2(), p3.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
+        ImGui::GetBackgroundDrawList()->AddTriangleFilled(Vec2ToImVec2(p1), Vec2ToImVec2(p2), Vec2ToImVec2(p3), 
+                                                          ImGui::GetColorU32(ColToVec4(color)));
     }
     
     void DebugDrawTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color) {
@@ -548,7 +553,8 @@ namespace ImGui {
         Vector2 p2n = Math::WorldToScreen(p2, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
         Vector2 p3n = Math::WorldToScreen(p3, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
         
-        ImGui::GetBackgroundDrawList()->AddTriangleFilled(p1n.ToImVec2(), p2n.ToImVec2(), p3n.ToImVec2(), ImGui::GetColorU32(ColToVec4(color)));
+        ImGui::GetBackgroundDrawList()->AddTriangleFilled(Vec2ToImVec2(p1n), Vec2ToImVec2(p2n), Vec2ToImVec2(p3n), 
+                                                          ImGui::GetColorU32(ColToVec4(color)));
     }
     
     void DebugDrawGraphFloat(Vector2 pos, float inval, float sizex, float sizey) {
@@ -604,7 +610,7 @@ namespace ImGui {
         ImGui::PushStyleColor(ImGuiCol_PlotLines, ColToVec4(Color(0, 255, 200, 255)));
         ImGui::PushStyleColor(ImGuiCol_FrameBg, ColToVec4(Color(20, 20, 20, 255)));
         
-        ImGui::SetCursorPos(pos.ToImVec2());
+        ImGui::SetCursorPos(Vec2ToImVec2(pos));
         ImGui::PlotLines("", &pvalues[0], pvalues.size(), 0, 0, minval, maxval, ImVec2(sizex, sizey));
         
         ImGui::PopStyleColor();
@@ -2339,15 +2345,15 @@ void Editor::DebugLayer() {
             Vector2 v1s = Math::CameraToScreen2(v1, c->projMat, DengWindow->dimensions);
             Vector2 v2s = Math::CameraToScreen2(v2, c->projMat, DengWindow->dimensions);
             Math::ClipLineToBorderPlanes(v1s, v2s, DengWindow->dimensions);
-            if (!l1flag) ImGui::GetBackgroundDrawList()->AddLine(v1s.ToImVec2(), v2s.ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
-            else         ImGui::GetBackgroundDrawList()->AddLine(v1s.ToImVec2(), v2s.ToImVec2(), ImGui::GetColorU32(ImVec4(1, 0, 0, 1)));
+            if (!l1flag) ImGui::GetBackgroundDrawList()->AddLine(Vec2ToImVec2(v1s), Vec2ToImVec2(v2s), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
+            else         ImGui::GetBackgroundDrawList()->AddLine(Vec2ToImVec2(v1s), Vec2ToImVec2(v2s), ImGui::GetColorU32(ImVec4(1, 0, 0, 1)));
         }
         if (Math::ClipLineToZPlanes(v3, v4, c->nearZ, c->farZ)) {
             Vector2 v3s = Math::CameraToScreen2(v3, c->projMat, DengWindow->dimensions);
             Vector2 v4s = Math::CameraToScreen2(v4, c->projMat, DengWindow->dimensions);
             Math::ClipLineToBorderPlanes(v3s, v4s, DengWindow->dimensions);
-            if (!l2flag) ImGui::GetBackgroundDrawList()->AddLine(v3s.ToImVec2(), v4s.ToImVec2(), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
-            else         ImGui::GetBackgroundDrawList()->AddLine(v3s.ToImVec2(), v4s.ToImVec2(), ImGui::GetColorU32(ImVec4(0, 0, 1, 1)));
+            if (!l2flag) ImGui::GetBackgroundDrawList()->AddLine(Vec2ToImVec2(v3s), Vec2ToImVec2(v4s), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
+            else         ImGui::GetBackgroundDrawList()->AddLine(Vec2ToImVec2(v3s), Vec2ToImVec2(v4s), ImGui::GetColorU32(ImVec4(0, 0, 1, 1)));
         }
     }
     

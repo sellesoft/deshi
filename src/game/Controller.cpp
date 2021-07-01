@@ -6,6 +6,7 @@
 #include "components/Movement.h"
 #include "components/Player.h"
 #include "../core/assets.h"
+#include "../core/imgui.h"
 #include "../core/time.h"
 #include "../core/window.h"
 #include "../math/Math.h"

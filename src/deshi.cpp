@@ -170,7 +170,7 @@ ____we can store the text in the actual code and create the file from the code, 
 #include "core/assets.h"
 #include "core/console.h"
 #include "core/console2.h"
-#include "core/deshi_imgui.h"
+#include "core/imgui.h"
 #include "core/input.h"
 #include "core/renderer.h"
 #include "core/time.h"
@@ -182,7 +182,7 @@ static_internal Window     window;   Window*   g_window = &window;
 static_internal Input      input;    Input*    g_input = &input;
 static_internal Console    console;  Console*  g_console = &console;
 static_internal Renderer   renderer; Renderer* g_renderer = &renderer;
-static_internal deshiImGui imgui;
+static_internal DearImGui  imgui;
 static_internal Admin      admin;    Admin*    g_admin = &admin;
 static_internal Debug      debug;    Debug*    g_debug = &debug;
 
