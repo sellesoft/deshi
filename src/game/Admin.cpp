@@ -167,6 +167,8 @@ u32 Admin::CreateEntity(std::vector<Component*> components, const char* name, Tr
 }
 
 u32 Admin::CreateEntity(Entity* e) {
+    if(!e) return -1;
+
     e->admin = this;
     creationBuffer.push_back(e);
     return entities.size() + creationBuffer.size() - 1;
@@ -187,21 +189,28 @@ Entity* Admin::CreateEntityNow(std::vector<Component*> components, const char* n
 }
 
 void Admin::DeleteEntity(u32 id) {
-    if (id < entities.size()) {
+    if(id < entities.size()){
         deletionBuffer.push_back(entities[id]);
-    }
-    else {
+    }else{
         ERROR("Attempted to add entity '", id, "' to deletion buffer when it doesn't exist on the admin");
     }
 }
 
 void Admin::DeleteEntity(Entity* e) {
-    if (e->id < entities.size()) {
+    if(e && e->id < entities.size()){
         deletionBuffer.push_back(e);
-    }
-    else {
+    }else{
         ERROR("Attempted to add entity '", e->id, "' to deletion buffer when it doesn't exist on the admin");
     }
+}
+
+void Admin::AddComponentToLayers(Component* c){
+    if(!c) return;
+
+    c->compID = compIDcount;
+    c->layer_index = freeCompLayers[c->layer].add(c);
+    if(c->comptype == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
+    compIDcount++;
 }
 
 void Admin::ChangeState(GameState new_state){
@@ -277,10 +286,10 @@ void Admin::ChangeState(GameState new_state){
 void Admin::Reset(){
     SUCCESS("Resetting admin");
     TIMER_START(t_r);
-    for (Entity* e : entities) if(e) delete e;
+    for(Entity* e : entities) delete e;
     entities.clear();
     
-    for (auto& layer : freeCompLayers) { layer.clear(); }
+    for(auto& layer : freeCompLayers) layer.clear();
     scene.Reset();
     DengRenderer->Reset();
     DengRenderer->LoadScene(&scene);

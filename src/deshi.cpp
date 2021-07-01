@@ -79,7 +79,6 @@ SSBOs in shaders so we can pass variable length arrays to it
 
 Level Editor and Inspector TODOs
 ------------------
-combine create tab into entities tab
 orthographic grabbing/rotating
 add transfering the player pointer between entities that have an actor comp (combo in Global Tab)
 orbitting camera for rotating around objects
@@ -178,14 +177,14 @@ ____we can store the text in the actual code and create the file from the code, 
 #include "core/window.h"
 #include "game/admin.h"
 
-static_internal Time        time_;    Time*       g_time = &time_; //time_ because there is a c-func time() D:
-static_internal Window      window;   Window*      g_window = &window;
-static_internal Input       input;    Input*       g_input = &input;
-static_internal Console     console;  Console*     g_console = &console;
-static_internal Renderer    renderer; Renderer*    g_renderer = &renderer;
-static_internal deshiImGui  imgui;
-static_internal Admin admin;    Admin* g_admin = &admin;
-static_internal Debug       debug;    Debug*       g_debug = &debug;
+static_internal Time       time_;    Time*     g_time = &time_; //time_ because there is a c-func time() D:
+static_internal Window     window;   Window*   g_window = &window;
+static_internal Input      input;    Input*    g_input = &input;
+static_internal Console    console;  Console*  g_console = &console;
+static_internal Renderer   renderer; Renderer* g_renderer = &renderer;
+static_internal deshiImGui imgui;
+static_internal Admin      admin;    Admin*    g_admin = &admin;
+static_internal Debug      debug;    Debug*    g_debug = &debug;
 
 TIMER_START(t_d); TIMER_START(t_f);
 

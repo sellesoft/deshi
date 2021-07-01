@@ -101,14 +101,13 @@ void Entity::RemoveComponent(Component* c) {
 }
 
 void Entity::RemoveComponents(std::vector<Component*> comps) {
-    while (comps.size()) {
-        forI(components.size()) {
-            if (!comps[i]) continue;
-            if (components[i] == comps[0]) {
-                admin->freeCompLayers[comps[i]->layer].remove_from(comps[i]->layer_index);
-                delete comps[i];
+    while(comps.size()){
+        forI(components.size()){
+            if(components[i] == comps.back()){
+                admin->freeCompLayers[components[i]->layer].remove_from(components[i]->layer_index);
+                delete components[i];
                 components.erase(components.begin() + i);
-                comps.erase(components.begin());
+                comps.pop_back();
                 break;
             }
         }

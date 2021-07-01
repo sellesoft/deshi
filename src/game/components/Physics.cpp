@@ -15,7 +15,7 @@ Physics::Physics() {
 	acceleration = Vector3::ZERO;
 	rotVelocity = Vector3::ZERO;
 	rotAcceleration = Vector3::ZERO;
-	elasticity = 1;
+	elasticity = .2f;
 	mass = 1;
 	isStatic = false;
 }

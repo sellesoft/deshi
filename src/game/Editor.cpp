@@ -9,12 +9,14 @@
 #include "components/Movement.h"
 #include "components/Player.h"
 #include "components/Orb.h"
+#include "components/Door.h"
 #include "components/AudioSource.h"
 #include "components/AudioListener.h"
 #include "entities/PlayerEntity.h"
 #include "entities/Trigger.h"
 #include "../core/assets.h"
 #include "../core/console.h"
+#include "../core/deshi_imgui.h"
 #include "../core/renderer.h"
 #include "../core/window.h"
 #include "../core/time.h"
@@ -177,7 +179,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             if (Physics* p = sel->GetComponent<Physics>()) {
                 p->velocity = Vector3::ZERO;
             }
-			
+            
             if (!(xaxis || yaxis || zaxis)) {
                 
                 Vector3 nuworldpos = Math::ScreenToWorld(DengInput->mousePos, c->projMat,
@@ -476,7 +478,7 @@ namespace ImGui {
         Vector2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
         ImGui::GetBackgroundDrawList()->AddCircle(pos2.ToImVec2(), radius, ImGui::GetColorU32(ColToVec4(color)));
     }
-	
+    
     void DebugDrawCircleFilled3(Vector3 pos, float radius, Color color) {
         Camera* c = g_admin->mainCamera;
         Vector2 windimen = DengWindow->dimensions;
@@ -507,7 +509,7 @@ namespace ImGui {
         ImGui::SetCursorPos(pos.ToImVec2());
         
         ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(color));
-        ImGui::Text(text);
+        ImGui::TextEx(text);
         ImGui::PopStyleColor();
     }
     
@@ -519,7 +521,7 @@ namespace ImGui {
         if(Math::ClipLineToZPlanes(posc, posc, c->nearZ, c->farZ)){
             ImGui::SetCursorPos((Math::CameraToScreen2(posc, c->projMat, windimen) + twoDoffset).ToImVec2());
             ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(color));
-            ImGui::Text(text);
+            ImGui::TextEx(text);
             ImGui::PopStyleColor();
         }
     }
@@ -552,7 +554,7 @@ namespace ImGui {
     void DebugDrawGraphFloat(Vector2 pos, float inval, float sizex, float sizey) {
         //display in value
         ImGui::SetCursorPos(ImVec2(pos.x, pos.y - 10));
-        ImGui::Text(TOSTRING(inval).c_str());
+        ImGui::TextEx(TOSTRING(inval).c_str());
         
         //how much data we store
         static int prevstoresize = 100;
@@ -613,7 +615,7 @@ namespace ImGui {
         if(ImGui::Button("Copy")){ ImGui::LogToClipboard(); ImGui::LogText(text); ImGui::LogFinish(); }
     }
     
-    bool InputVector2(const char* id, Vector2* vecPtr, bool inputUpdate) {
+    bool ImGui::InputVector2(const char* id, Vector2* vecPtr, bool inputUpdate) {
         ImGui::SetNextItemWidth(-FLT_MIN);
         if(inputUpdate) {
             return ImGui::InputFloat2(id, (float*)vecPtr); 
@@ -622,7 +624,7 @@ namespace ImGui {
         }
     }
     
-    bool InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate) {
+    bool ImGui::InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate) {
         ImGui::SetNextItemWidth(-FLT_MIN);
         if(inputUpdate) {
             return ImGui::InputFloat3(id, (float*)vecPtr); 
@@ -663,9 +665,9 @@ float fonth = 0;
 
 //// defines to make repetitve things less ugly and more editable ////
 //check if mouse is over window so we can prevent mouse from being captured by engine
-#define WinHovCheck if (IsWindowHovered()) WinHovFlag = true 
+#define WinHovCheck if(ImGui::IsWindowHovered()) WinHovFlag = true 
 //allows me to manually set padding so i have a little more control than ImGui gives me (I think idk lol)
-#define SetPadding SetCursorPosX((GetWindowWidth() - (GetWindowWidth() * padding)) / 2)
+#define SetPadding ImGui::SetCursorPosX((ImGui::GetWindowWidth() - (ImGui::GetWindowWidth() * padding)) / 2)
 
 //current palette:
 //https://lospec.com/palette-list/slso8
@@ -688,35 +690,34 @@ std::vector<std::string> textures;
 std::vector<std::string> levels;
 
 void Editor::MenuBar() {
-    using namespace ImGui;
     ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     ImGui::PushStyleColor(ImGuiCol_PopupBg,   ColToVec4(Color(20, 20, 20, 255)));
     ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ColToVec4(Color(20, 20, 20, 255)));
     
-    if(BeginMainMenuBar()) { WinHovCheck; 
-        menubarheight = GetWindowHeight();
-        if(BeginMenu("File")) { WinHovCheck; 
-            if (MenuItem("New")) {
+    if(ImGui::BeginMainMenuBar()) { WinHovCheck; 
+        menubarheight = ImGui::GetWindowHeight();
+        if(ImGui::BeginMenu("File")) { WinHovCheck; 
+            if (ImGui::MenuItem("New")) {
                 admin->Reset();
             }
-            if (MenuItem("Save")) {
+            if (ImGui::MenuItem("Save")) {
                 if(level_name == ""){
                     ERROR("Level not saved before; Use 'Save As'");
                 }else{
                     admin->SaveTEXT(level_name.c_str());
                 }
             }
-            if (BeginMenu("Save As")) { WinHovCheck;
+            if (ImGui::BeginMenu("Save As")) { WinHovCheck;
                 static char buff[255] = {};
-                if(InputText("##saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
+                if(ImGui::InputText("##saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
                     admin->SaveTEXT(buff);
                 }
-                EndMenu();
+                ImGui::EndMenu();
             }
-            if (BeginMenu("Load")) { WinHovCheck;
+            if (ImGui::BeginMenu("Load")) { WinHovCheck;
                 forI(levels.size()) {
-                    if (MenuItem(levels[i].c_str())) {
+                    if (ImGui::MenuItem(levels[i].c_str())) {
                         admin->LoadTEXT(levels[i].c_str());
                     }
                 }
@@ -724,44 +725,42 @@ void Editor::MenuBar() {
             }
             ImGui::EndMenu();
         }
-        if(BeginMenu("Spawn")) { WinHovCheck; 
+        if(ImGui::BeginMenu("Spawn")) { WinHovCheck; 
             for (int i = 0; i < files.size(); i++) {
                 if (files[i].find(".obj") != std::string::npos) {
-                    if(MenuItem(files[i].c_str())) { DengConsole->ExecCommand("load_obj", files[i]); }
+                    if(ImGui::MenuItem(files[i].c_str())) { DengConsole->ExecCommand("load_obj", files[i]); }
                 }
             }
-            EndMenu();
+            ImGui::EndMenu();
         }//agh
-        if (BeginMenu("Window")) {
+        if (ImGui::BeginMenu("Window")) {
             WinHovCheck;
-            if (MenuItem("Entity Inspector")) {  showDebugTools = !showDebugTools; showEditorWin = false;  }
-            if (MenuItem("Debug Bar"))           showDebugBar = !showDebugBar;
-            if (MenuItem("DebugLayer"))          showDebugLayer = !showDebugLayer;
-            if (MenuItem("Timers"))              showTimes = !showTimes;
-            if (MenuItem("ImGui Demo"))          showImGuiDemoWindow = !showImGuiDemoWindow;
-            if (MenuItem("Editor Window"))    {  showEditorWin = !showEditorWin; showDebugTools = false;  }
-            EndMenu();
+            if (ImGui::MenuItem("Entity Inspector")) {  showDebugTools = !showDebugTools; showEditorWin = false;  }
+            if (ImGui::MenuItem("Debug Bar"))           showDebugBar = !showDebugBar;
+            if (ImGui::MenuItem("DebugLayer"))          showDebugLayer = !showDebugLayer;
+            if (ImGui::MenuItem("Timers"))              showTimes = !showTimes;
+            if (ImGui::MenuItem("ImGui Demo"))          showImGuiDemoWindow = !showImGuiDemoWindow;
+            if (ImGui::MenuItem("Editor Window"))    {  showEditorWin = !showEditorWin; showDebugTools = false;  }
+            ImGui::EndMenu();
         }
-        if (BeginMenu("State")) { WinHovCheck;
-            if (MenuItem("Play"))   admin->ChangeState(GameState_Play);
-            if (MenuItem("Debug"))  admin->ChangeState(GameState_Debug);
-            if (MenuItem("Editor")) admin->ChangeState(GameState_Editor);
-            if (MenuItem("Menu"))   admin->ChangeState(GameState_Menu);
-            EndMenu();
+        if (ImGui::BeginMenu("State")) { WinHovCheck;
+            if (ImGui::MenuItem("Play"))   admin->ChangeState(GameState_Play);
+            if (ImGui::MenuItem("Debug"))  admin->ChangeState(GameState_Debug);
+            if (ImGui::MenuItem("Editor")) admin->ChangeState(GameState_Editor);
+            if (ImGui::MenuItem("Menu"))   admin->ChangeState(GameState_Menu);
+            ImGui::EndMenu();
         }
-        EndMainMenuBar();
+        ImGui::EndMainMenuBar();
     }
     
-    PopStyleColor(2);
-    PopStyleVar(2);
+    ImGui::PopStyleColor(2);
+    ImGui::PopStyleVar(2);
 }
 
 
 //NOTE sushi: this is really bad, but i just need it to work for now
 //TODO(sushi, ClUi) completely rewrite this menu
 inline void EventsMenu(Entity* current) {
-    using namespace ImGui;
-    
     std::vector<Entity*> entities = g_admin->entities;
     static Entity* other = nullptr;
     static Component* selcompr = nullptr;
@@ -776,27 +775,27 @@ inline void EventsMenu(Entity* current) {
     
     ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 2, DengWindow->height / 2));
     ImGui::SetNextWindowPos(ImVec2(DengWindow->width / 4, DengWindow->height / 4));
-    Begin("##EventsMenu", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
+    ImGui::Begin("##EventsMenu", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar);
     ImVec2 winpos = ImGui::GetWindowPos();
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     WinHovCheck;
-    float padx = (GetWindowWidth() - (GetWindowWidth() * padding)) / 2;
-    float pady = (GetWindowHeight() - (GetWindowHeight() * padding)) / 2;
+    float padx = (ImGui::GetWindowWidth() - (ImGui::GetWindowWidth() * padding)) / 2;
+    float pady = (ImGui::GetWindowHeight() - (ImGui::GetWindowHeight() * padding)) / 2;
     
-    float width = GetWindowWidth();
-    float height = GetWindowHeight();
+    float width = ImGui::GetWindowWidth();
+    float height = ImGui::GetWindowHeight();
     
-    SetCursorPos(ImVec2(padx, pady));
-    if (BeginChild("ahahaha", ImVec2(width * padding, height * padding))) {
+    ImGui::SetCursorPos(ImVec2(padx, pady));
+    if (ImGui::BeginChild("ahahaha", ImVec2(width * padding, height * padding))) {
         ImDrawList* drawListc = ImGui::GetWindowDrawList();
         
-        float cwidth = GetWindowWidth();
-        float cheight = GetWindowHeight();
+        float cwidth = ImGui::GetWindowWidth();
+        float cheight = ImGui::GetWindowHeight();
         
-        winpos = GetWindowPos();
+        winpos = ImGui::GetWindowPos();
         
-        SetCursorPos(ImVec2(padx, (GetWindowHeight() - fonth) / 2));
-        Text(current->name);
+        ImGui::SetCursorPos(ImVec2(padx, (ImGui::GetWindowHeight() - fonth) / 2));
+        ImGui::TextEx(current->name);
         
         float maxlen = 0;
         
@@ -811,26 +810,26 @@ inline void EventsMenu(Entity* current) {
             int i = 1;
             for (Entity* e : entities) {
                 if (e != current) {
-                    PushID(i);
+                    ImGui::PushID(i);
                     if (e->connections.find(current) != e->connections.end()) {
-                        float lx = 1.2 * (padx + CalcTextSize(current->name).x);
+                        float lx = 1.2 * (padx + ImGui::CalcTextSize(current->name).x);
                         float ly = cheight / 2;
                         
-                        float rx = cwidth - maxlen * fontw * 1.2 - padx * 0.8 + CalcTextSize(e->name).x / 2;
-                        float ry = i * inc + CalcTextSize(e->name).y / 2;
+                        float rx = cwidth - maxlen * fontw * 1.2 - padx * 0.8 + ImGui::CalcTextSize(e->name).x / 2;
+                        float ry = i * inc + ImGui::CalcTextSize(e->name).y / 2;
                         
                         drawListc->AddLine(
                                            ImVec2(winpos.x + lx, winpos.y + ly),
                                            ImVec2(winpos.x + rx, winpos.y + ry),
-                                           GetColorU32(ColToVec4(Color::WHITE)));
+                                           ImGui::GetColorU32(ColToVec4(Color::WHITE)));
                     }
                     
-                    SetCursorPos(ImVec2(cwidth - maxlen * fontw * 1.2 - padx, i * inc));
-                    if (Button(e->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
+                    ImGui::SetCursorPos(ImVec2(cwidth - maxlen * fontw * 1.2 - padx, i * inc));
+                    if (ImGui::Button(e->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
                         other = e;
                     }
                     i++;
-                    PopID();
+                    ImGui::PopID();
                     
                 }
             }
@@ -843,13 +842,13 @@ inline void EventsMenu(Entity* current) {
             
             
             //display other entity and it's components
-            SetCursorPos(ImVec2(rightoffset, (cheight - fonth) / 2 ));
-            Text(other->name);
+            ImGui::SetCursorPos(ImVec2(rightoffset, (cheight - fonth) / 2 ));
+            ImGui::TextEx(other->name);
             
             //if we select a comp for each ent, show options for connecting an event
             if (selcompr && selcompl) {
                 int currevent = selcompl->event;
-                if (Combo("##events_combo2", &currevent, EventStrings, IM_ARRAYSIZE(EventStrings))) {
+                if (ImGui::Combo("##events_combo2", &currevent, EventStrings, ArrayCount(EventStrings))) {
                     switch (currevent) {
                         case Event_NONE:
                         selcompl->sender->RemoveReceiver(selcompr);
@@ -867,7 +866,7 @@ inline void EventsMenu(Entity* current) {
                 }
                 
                 if (selcompl->sender->HasReceiver(selcompr)) {
-                    float lx = 1.2 * (padx * 2 + CalcTextSize(current->name).x + CalcTextSize(selcompl->name).x) / 2;
+                    float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + ImGui::CalcTextSize(selcompl->name).x) / 2;
                     float ly = cheight / 2;
                     
                     float rx = rightoffset * 0.8 + ((float)std::string(selcompr->name).size() * fontw) / 2;
@@ -876,7 +875,7 @@ inline void EventsMenu(Entity* current) {
                     drawListc->AddLine(
                                        ImVec2(winpos.x + lx, winpos.y + ly),
                                        ImVec2(winpos.x + rx, winpos.y + ry),
-                                       GetColorU32(ColToVec4(Color::WHITE)));
+                                       ImGui::GetColorU32(ColToVec4(Color::WHITE)));
                 }
                 
             }
@@ -890,35 +889,35 @@ inline void EventsMenu(Entity* current) {
                 int o = 1;
                 
                 for (Component* c : other->components) {
-                    SetCursorPos(ImVec2(rightoffset * 0.8, o * inc));
-                    PushID(i);
+                    ImGui::SetCursorPos(ImVec2(rightoffset * 0.8, o * inc));
+                    ImGui::PushID(i);
                     if (selcompl && selcompl->sender->HasReceiver(c)) {
-                        float lx = 1.2 * (padx * 2 + CalcTextSize(current->name).x + (CalcTextSize(selcompl->name).x) / 2);
+                        float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + (ImGui::CalcTextSize(selcompl->name).x) / 2);
                         float ly = cheight / 2;
                         
-                        float rx = rightoffset * 0.8 + CalcTextSize(c->name).y / 2;
-                        float ry = o * inc + CalcTextSize(c->name).x / 2;
+                        float rx = rightoffset * 0.8 + ImGui::CalcTextSize(c->name).y / 2;
+                        float ry = o * inc + ImGui::CalcTextSize(c->name).x / 2;
                         
                         drawListc->AddLine(
                                            ImVec2(winpos.x + lx, winpos.y + ly),
                                            ImVec2(winpos.x + rx, winpos.y + ry),
-                                           GetColorU32(ColToVec4(Color::WHITE)));
+                                           ImGui::GetColorU32(ColToVec4(Color::WHITE)));
                     }
-                    if (Button(c->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
+                    if (ImGui::Button(c->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
                         selcompr = c;
                     }
                     i++; o++;
-                    PopID();
+                    ImGui::PopID();
                 }
             }
             else {
-                SetCursorPos(ImVec2(rightoffset * 0.8, (cheight - fonth) / 2));
-                PushID(i);
-                if (Button(selcompr->name)) {
+                ImGui::SetCursorPos(ImVec2(rightoffset * 0.8, (cheight - fonth) / 2));
+                ImGui::PushID(i);
+                if (ImGui::Button(selcompr->name)) {
                     selcompr = nullptr;
                 }
                 i++;
-                PopID();
+                ImGui::PopID();
             }
             
             maxlen = 0;
@@ -930,65 +929,63 @@ inline void EventsMenu(Entity* current) {
                 int o = 1;
                 
                 for (Component* c : current->components) {
-                    SetCursorPos(ImVec2(1.2 * (padx * 2 + (float)std::string(current->name).size() * fontw), o * inc));
-                    PushID(i);
+                    ImGui::SetCursorPos(ImVec2(1.2 * (padx * 2 + (float)std::string(current->name).size() * fontw), o * inc));
+                    ImGui::PushID(i);
                     if (selcompr && selcompr->sender->HasReceiver(c)) {
-                        float lx = 1.2 * (padx * 2 + CalcTextSize(current->name).x + CalcTextSize(selcompl->name).x / 2);
-                        float ly = o * inc + CalcTextSize(c->name).x / 2;
+                        float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + ImGui::CalcTextSize(selcompl->name).x / 2);
+                        float ly = o * inc + ImGui::CalcTextSize(c->name).x / 2;
                         
-                        float rx = rightoffset * 0.8 + CalcTextSize(c->name).y / 2;
+                        float rx = rightoffset * 0.8 + ImGui::CalcTextSize(c->name).y / 2;
                         float ry = cheight / 2;
                         
                         drawListc->AddLine(
                                            ImVec2(winpos.x + lx, winpos.y + ly),
                                            ImVec2(winpos.x + rx, winpos.y + ry),
-                                           GetColorU32(ColToVec4(Color::WHITE)));
+                                           ImGui::GetColorU32(ColToVec4(Color::WHITE)));
                     }
-                    if (Button(c->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
+                    if (ImGui::Button(c->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
                         selcompl = c;
                     }
                     i++; o++;
-                    PopID();
+                    ImGui::PopID();
                 }
             }
             else {
-                SetCursorPos(ImVec2(1.2 * (padx * 2 + (float)std::string(current->name).size() * fontw), cheight / 2 - fonth / 2));
-                PushID(i);
-                if (Button(selcompl->name)) {
+                ImGui::SetCursorPos(ImVec2(1.2 * (padx * 2 + (float)std::string(current->name).size() * fontw), cheight / 2 - fonth / 2));
+                ImGui::PushID(i);
+                if (ImGui::Button(selcompl->name)) {
                     selcompl = nullptr;
                 }
                 i++;
-                PopID();
+                ImGui::PopID();
             }
             
-            SetCursorPos(ImVec2(0, 0));
-            if (Button("Back")) { 
+            ImGui::SetCursorPos(ImVec2(0, 0));
+            if (ImGui::Button("Back")) { 
                 other = nullptr; 
                 selcompl = nullptr;
                 selcompr = nullptr;
             }
         }
-        EndChild();
+        ImGui::EndChild();
     }
     else {
         const char* sorry = "No other entities...";
-        SetCursorPos(ImVec2(width - sizeof("No other entities...") * fontw, height / 2));
-        Text(sorry);
+        ImGui::SetCursorPos(ImVec2(width - sizeof("No other entities...") * fontw, height / 2));
+        ImGui::TextEx(sorry);
     }
     
     
-    End();
+    ImGui::End();
 }
 
 inline void EntitiesTab(Admin* admin, float fontsize){
-    using namespace ImGui;
-	
     local_persist b32 rename_ent = false;
     local_persist char rename_buffer[DESHI_NAME_SIZE] = {};
     local_persist Entity* events_ent = 0;
-	
+    
     std::vector<Entity*>& selected = admin->editor.selected;
-	
+    
     //// selected entity keybinds ////
     //start renaming first selected entity
     if(selected.size() && DengInput->KeyPressed(Key::F2 | INPUTMOD_ANY)){
@@ -1012,401 +1009,653 @@ inline void EntitiesTab(Admin* admin, float fontsize){
     if(selected.size() && DengInput->KeyPressed(Key::DELETE | INPUTMOD_ANY)){
         //TODO(Ui) re-enable this with a popup to delete OR with undoing on delete
     }
-	
+    
     //// entity list panel ////
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
     if(ImGui::BeginChild("##entity_list", ImVec2(ImGui::GetWindowWidth() * 0.95f, 100))) {
-        //if no entities, draw empty list, draw create new button, and early out
+        //if no entities, draw empty list
         if (admin->entities.size() == 0) { 
             float time = DengTime->totalTime;
             std::string str1 = "Nothing yet...";
             float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
             for (int i = 0; i < str1.size(); i++) {
                 ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x - strlen1) / 2 + i * (fontsize / 2), (ImGui::GetWindowSize().y - fontsize) / 2 + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))));
-                ImGui::Text(str1.substr(i, 1).c_str());
+                ImGui::TextEx(str1.substr(i, 1).c_str());
             }
-			
-            ImGui::EndChild();
-            PopStyleColor();
-            ImGui::Separator();
-			
-            //// create new entity button ////
-            ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
-            if(ImGui::Button("Create New Entity", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
-                selected.clear();
-                //TODO(delle,Ui) setup create new entity button
-            }
-            ImGui::Separator();
-            return;
-        }
-        
-        if (ImGui::BeginTable("##entity_list_table", 5, ImGuiTableFlags_BordersInner)) {
-            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 2.f);  //visible button
-            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 3.f); //id
-            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);                  //name
-            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 3.5f); //events button
-            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);        //delete button
-			
-            forX(ent_idx, admin->entities.size()){
-                Entity* ent = admin->entities[ent_idx];
-                if(!ent) assert(!"NULL entity when creating entity list table");
-                ImGui::PushID(ent->id);
-                ImGui::TableNextRow(); 
-				
-                //// visible button ////
-                //TODO(sushi,UiEnt) implement visibility for things other than meshes like lights, etc.
-                ImGui::TableSetColumnIndex(0);
-                if(MeshComp* m = ent->GetComponent<MeshComp>()){
-                    if(ImGui::Button((m->mesh_visible) ? "(M)" : "( )", ImVec2(-FLT_MIN, 0.0f))){
-                        m->ToggleVisibility();
+        }else{
+            if (ImGui::BeginTable("##entity_list_table", 5, ImGuiTableFlags_BordersInner)) {
+                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 2.f);  //visible ImGui::Button
+                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 3.f);  //id
+                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);                  //name
+                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 3.5f); //events button
+                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);        //delete button
+            
+                forX(ent_idx, admin->entities.size()){
+                    Entity* ent = admin->entities[ent_idx];
+                    if(!ent) assert(!"NULL entity when creating entity list table");
+                    ImGui::PushID(ent->id);
+                    ImGui::TableNextRow(); 
+                
+                    //// visible button ////
+                    //TODO(sushi,UiEnt) implement visibility for things other than meshes like lights, etc.
+                    ImGui::TableSetColumnIndex(0);
+                    if(MeshComp* m = ent->GetComponent<MeshComp>()){
+                        if(ImGui::Button((m->mesh_visible) ? "(M)" : "( )", ImVec2(-FLT_MIN, 0.0f))){
+                            m->ToggleVisibility();
+                        }
+                    }else if(Light* l = ent->GetComponent<Light>()){
+                        if(ImGui::Button((l->active) ? "(L)" : "( )", ImVec2(-FLT_MIN, 0.0f))){
+                            l->active = !l->active;
+                        }
+                    }else{
+                        if(ImGui::Button("(?)", ImVec2(-FLT_MIN, 0.0f))){}
                     }
-                }else if(Light* l = ent->GetComponent<Light>()){
-                    if(ImGui::Button((l->active) ? "(L)" : "( )", ImVec2(-FLT_MIN, 0.0f))){
-                        l->active = !l->active;
+                
+                    //// id + label (selectable row) ////
+                    ImGui::TableSetColumnIndex(1);
+                    char label[8];
+                    sprintf(label, " %04d ", ent->id);
+                    u32 selected_idx = -1;
+                    forI(selected.size()){ if(ent == selected[i]){ selected_idx = i; break; } }
+                    bool is_selected = selected_idx != -1;
+                    if(ImGui::Selectable(label, is_selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
+                        if(is_selected){
+                            if(DengInput->CtrlDown()){
+                                selected.erase(selected.begin()+selected_idx);
+                            }else{
+                                selected.clear();
+                                selected.push_back(ent);
+                            }
+                        }else{
+                            if(DengInput->CtrlDown()){
+                                selected.push_back(ent);
+                            }else{
+                                selected.clear();
+                                selected.push_back(ent);
+                            }
+                        }
+                        rename_ent = false;
+                        DengConsole->IMGUI_KEY_CAPTURE = false;
                     }
-                }else{
-                    if(ImGui::Button("(?)", ImVec2(-FLT_MIN, 0.0f))){}
+                
+                    //// name text ////
+                    ImGui::TableSetColumnIndex(2);
+                    if(rename_ent && selected_idx == ent_idx){
+                        ImGui::PushStyleColor(ImGuiCol_FrameBg, ColToVec4(colors.c2));
+                        ImGui::InputText("##ent_rename_input", rename_buffer, DESHI_NAME_SIZE, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+                        ImGui::PopStyleColor();
+                    }else{
+                        ImGui::TextEx(ent->name);
+                    }
+                
+                    //// events button ////
+                    ImGui::TableSetColumnIndex(3);
+                    if (ImGui::Button("Events", ImVec2(-FLT_MIN, 0.0f))) {
+                        events_ent = (events_ent != ent) ? ent : 0;
+                    }
+                    EventsMenu(events_ent);
+                
+                    //// delete button ////
+                    ImGui::TableSetColumnIndex(4);
+                    if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))){
+                        if(is_selected) selected.erase(selected.begin()+selected_idx);
+                        admin->DeleteEntity(ent);
+                    }
+                    ImGui::PopID();
                 }
-				
-                //// id + label (selectable row) ////
-                ImGui::TableSetColumnIndex(1);
-                char label[8];
-                sprintf(label, " %04d ", ent->id);
-                u32 selected_idx = -1;
-                forI(selected.size()){ if(ent == selected[i]){ selected_idx = i; break; } }
-                bool is_selected = selected_idx != -1;
-                if(ImGui::Selectable(label, is_selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
-					if(is_selected){
-						if(DengInput->CtrlDown()){
-							selected.erase(selected.begin()+selected_idx);
-						}else{
-							selected.clear();
-							selected.push_back(ent);
-						}
-					}else{
-						if(DengInput->CtrlDown()){
-							selected.push_back(ent);
-						}else{
-							selected.clear();
-							selected.push_back(ent);
-						}
-					}
-                    rename_ent = false;
-                    DengConsole->IMGUI_KEY_CAPTURE = false;
-                }
-				
-                //// name text ////
-                ImGui::TableSetColumnIndex(2);
-                if(rename_ent && selected_idx == ent_idx){
-                    ImGui::PushStyleColor(ImGuiCol_FrameBg, ColToVec4(colors.c2));
-                    ImGui::InputText("##ent_rename_input", rename_buffer, DESHI_NAME_SIZE, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
-                    ImGui::PopStyleColor();
-                }else{
-                    ImGui::Text(ent->name);
-                }
-				
-                //// events button ////
-                ImGui::TableSetColumnIndex(3);
-                if (Button("Events", ImVec2(-FLT_MIN, 0.0f))) {
-                    events_ent = (events_ent != ent) ? ent : 0;
-                }
-                EventsMenu(events_ent);
-				
-                //// delete button ////
-                ImGui::TableSetColumnIndex(4);
-                if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))){
-                    if(is_selected) selected.erase(selected.begin()+selected_idx);
-                    admin->DeleteEntity(ent);
-                }
-                ImGui::PopID();
+                ImGui::EndTable();
             }
-            ImGui::EndTable();
         }
         ImGui::EndChild();
     }//Entity List Scroll child window
-    PopStyleColor();
+    ImGui::PopStyleColor();
     
-    Separator();
-	
-    //// create new entity button ////
-    SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
-    if(ImGui::Button("Create New Entity", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
+    ImGui::Separator();
+    
+    //// create new entity ////
+    local_persist const char* presets[] = {"Empty", "StaticMesh"};
+    local_persist int current_preset = 0;
+
+    ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
+    if(ImGui::Button("New Entity")){
+        Entity* ent = 0;
+        std::string ent_name = TOSTRING(presets[current_preset], admin->entities.size());
+        switch(current_preset){
+            case(0):default:{ //Empty
+                ent = admin->CreateEntityNow({}, ent_name.c_str());
+            }break;
+            case(1):{ //Static Mesh
+                u32 mesh_id = DengRenderer->CreateMesh(&admin->scene, "box.obj");
+                MeshComp* mc = new MeshComp(mesh_id);
+                Physics* phys = new Physics();
+                phys->isStatic = true;
+                Collider* coll = new AABBCollider(vec3{.5f, .5f, .5f}, phys->mass);
+
+                ent = admin->CreateEntityNow({mc, phys, coll}, ent_name.c_str());
+            }break;
+        }
+
         selected.clear();
-        //TODO(delle,Ui) setup create new entity button
+        if(ent) selected.push_back(ent);
     }
-	
-    Separator();
+    ImGui::SameLine(); ImGui::Combo("##preset_combo", &current_preset, presets, ArrayCount(presets));
+    
+    ImGui::Separator();
     
     //// selected entity inspector panel ////
     Entity* sel = admin->editor.selected.size() ? admin->editor.selected[0] : 0;
     if(!sel) return;
-    PushStyleVar(ImGuiStyleVar_IndentSpacing, 5.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 5.0f);
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
-    if(BeginChild("##ent_inspector", ImVec2(GetWindowWidth() * 0.95f, GetWindowHeight() * .9f), true, ImGuiWindowFlags_NoScrollbar)) {
+    if(ImGui::BeginChild("##ent_inspector", ImVec2(ImGui::GetWindowWidth() * 0.95f, ImGui::GetWindowHeight() * .9f), true, ImGuiWindowFlags_NoScrollbar)) {
         
         //// name ////
-        SetPadding; Text(TOSTRING(sel->id, ":").c_str()); 
-        SameLine(); SetNextItemWidth(-FLT_MIN); InputText("##ent_name_input", sel->name, DESHI_NAME_SIZE, 
+        SetPadding; ImGui::TextEx(TOSTRING(sel->id, ":").c_str()); 
+        ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); ImGui::InputText("##ent_name_input", sel->name, DESHI_NAME_SIZE, 
                                                           ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
         
         //// transform ////
-        int tree_flags = ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_NoAutoOpenOnLog | ImGuiTreeNodeFlags_DefaultOpen;
-        //SetNextItemOpen(true, ImGuiCond_Once);
-        if (TreeNodeEx("Transform", tree_flags)){
+        int tree_flags = ImGuiTreeNodeFlags_DefaultOpen;
+        if(ImGui::CollapsingHeader("Transform", 0, tree_flags)){
+            ImGui::Indent();
             vec3 oldVec = sel->transform.position;
             
-            Text("Position    "); SameLine();
-            if(InputVector3("##ent_pos", &sel->transform.position)){
+            ImGui::TextEx("Position    "); ImGui::SameLine();
+            if(ImGui::InputVector3("##ent_pos", &sel->transform.position)){
                 if(Physics* p = sel->GetComponent<Physics>()){
                     p->position = sel->transform.position;
                     admin->editor.undo_manager.AddUndoTranslate(&sel->transform, &oldVec, &p->position);
                 }else{
                     admin->editor.undo_manager.AddUndoTranslate(&sel->transform, &oldVec, &sel->transform.position);
                 }
-            }Separator();
+            }ImGui::Separator();
             
             oldVec = sel->transform.rotation;
-            Text("Rotation    "); SameLine(); 
-            if(InputVector3("##ent_rot", &sel->transform.rotation)){
+            ImGui::TextEx("Rotation    "); ImGui::SameLine(); 
+            if(ImGui::InputVector3("##ent_rot", &sel->transform.rotation)){
                 if(Physics* p = sel->GetComponent<Physics>()){
                     p->rotation = sel->transform.rotation;
                     admin->editor.undo_manager.AddUndoRotate(&sel->transform, &oldVec, &p->rotation);
                 }else{
                     admin->editor.undo_manager.AddUndoRotate(&sel->transform, &oldVec, &sel->transform.rotation);
                 }
-            }Separator();
+            }ImGui::Separator();
             
             oldVec = sel->transform.scale;
-            Text("Scale       "); SameLine(); 
-            if(InputVector3("##ent_scale",   &sel->transform.scale)){
+            ImGui::TextEx("Scale       "); ImGui::SameLine(); 
+            if(ImGui::InputVector3("##ent_scale",   &sel->transform.scale)){
                 if(Physics* p = sel->GetComponent<Physics>()){
                     p->scale = sel->transform.scale;
                     admin->editor.undo_manager.AddUndoScale(&sel->transform, &oldVec, &p->scale);
                 }else{
                     admin->editor.undo_manager.AddUndoScale(&sel->transform, &oldVec, &sel->transform.scale);
                 }
-            }Separator();
-            TreePop();
+            }ImGui::Separator();
+            ImGui::Unindent();
         }
         
         //// components ////
-        for(Component* c : sel->components){
+        std::vector<Component*> comp_deleted_queue;
+        forX(comp_idx, sel->components.size()){
+            Component* c = sel->components[comp_idx];
+            bool delete_button = true;
+            ImGui::PushID(c);
+
             switch(c->comptype){
-                //mesh
-                case ComponentType_MeshComp:{
+
+            //mesh
+            case ComponentType_MeshComp:{
+                if(ImGui::CollapsingHeader("Mesh", &delete_button, tree_flags)){
+                    ImGui::Indent();
+
                     MeshComp* mc = dyncast(MeshComp, c);
-                    if(mc && TreeNodeEx("Mesh", tree_flags)){
-                        MeshVk& mvk = DengRenderer->meshes[mc->meshID];
-						
-                        Text("Visible  "); SameLine();
-                        if(Button((mvk.visible) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
-                            mc->ToggleVisibility();
-                        }
-						
-                        Text("Mesh     "); SameLine(); SetNextItemWidth(-1); 
-                        if(BeginCombo("##mesh_combo", mvk.name)){ WinHovCheck;
-                            forI(DengRenderer->meshes.size()){
-                                if(DengRenderer->meshes[i].base && Selectable(DengRenderer->meshes[i].name, mc->meshID == i)){
-                                    mc->ChangeMesh(i);
-                                }
-                            }
-                            EndCombo();
-                        }
                         
-                        u32 mesh_batch_idx = 0;
-                        Text("Batch    "); SameLine(); SetNextItemWidth(-1); 
-                        if(BeginCombo("##mesh_batch_combo", mc->mesh->batchArray[mesh_batch_idx].name)){ WinHovCheck;
-                            forI(mc->mesh->batchArray.size()){
-                                if(Selectable(mc->mesh->batchArray[i].name, mesh_batch_idx == i)){
-                                    mesh_batch_idx = i; 
-                                }
-                            }
-                            EndCombo();
-                        }
-                        
-                        Text("Material "); SameLine(); SetNextItemWidth(-1); 
-                        if(BeginCombo("##mesh_mat_combo", DengRenderer->materials[mvk.primitives[mesh_batch_idx].materialIndex].name)){ WinHovCheck;
-                            forI(DengRenderer->materials.size()){
-                                if(Selectable(DengRenderer->materials[i].name, mvk.primitives[mesh_batch_idx].materialIndex == i)){
-                                    DengRenderer->UpdateMeshBatchMaterial(mc->meshID, mesh_batch_idx, i);
-                                }
-                            }
-                            EndCombo();
-                        }
-                        TreePop();
+                    ImGui::TextEx("Visible  "); ImGui::SameLine();
+                    if(ImGui::Button((DengRenderer->meshes[mc->meshID].visible) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
+                        mc->ToggleVisibility();
                     }
-                }break;
+                        
+                    ImGui::TextEx("Mesh     "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
+                    if(ImGui::BeginCombo("##mesh_combo", DengRenderer->meshes[mc->meshID].name)){ WinHovCheck;
+                        forI(DengRenderer->meshes.size()){
+                            if(DengRenderer->meshes[i].base && ImGui::Selectable(DengRenderer->meshes[i].name, mc->meshID == i)){
+                                mc->ChangeMesh(i);
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                        
+                    u32 mesh_batch_idx = 0;
+                    ImGui::TextEx("Batch    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
+                    if(ImGui::BeginCombo("##mesh_batch_combo", mc->mesh->batchArray[mesh_batch_idx].name)){ WinHovCheck;
+                        forI(mc->mesh->batchArray.size()){
+                            if(ImGui::Selectable(mc->mesh->batchArray[i].name, mesh_batch_idx == i)){
+                                mesh_batch_idx = i; 
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                        
+                    ImGui::TextEx("Material "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
+                    if(ImGui::BeginCombo("##mesh_mat_combo", DengRenderer->materials[DengRenderer->meshes[mc->meshID].primitives[mesh_batch_idx].materialIndex].name)){ WinHovCheck;
+                        forI(DengRenderer->materials.size()){
+                            if(ImGui::Selectable(DengRenderer->materials[i].name, DengRenderer->meshes[mc->meshID].primitives[mesh_batch_idx].materialIndex == i)){
+                                DengRenderer->UpdateMeshBatchMaterial(mc->meshID, mesh_batch_idx, i);
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+
+                    ImGui::Unindent();
+                    ImGui::Separator();
+                }
+            }break;
                 
-                //mesh2D
-                //TODO implement mesh2D component inspector
+            //mesh2D
+            //TODO(,Ui) implement mesh2D component inspector
+            /*
+            local_persist const char* twods[] = {"None", "Line", "Triangle", "Square", "N-Gon", "Image"};
+            local_persist int  twod_type = 0, twod_vert_count = 0;
+            local_persist u32  twod_id = -1;
+            local_persist vec4 twod_color = vec4::ONE;
+            local_persist f32  twod_radius = 1.f;
+            local_persist std::vector<vec2> twod_verts;
+            ImU32 color = ImGui::ColorConvertFloat4ToU32(ImVec4(twod_color.x, twod_color.y, twod_color.z, twod_color.w));
+            ImGui::SetNextItemWidth(-1); if(ImGui::Combo("##twod_combo", &twod_type, twods, ArrayCount(twods))){ WinHovCheck; 
+            twod_vert_count = twod_type + 1;
+            twod_verts.resize(twod_vert_count);
+            switch(twod_type){
+            case(Twod_Line):{
+                twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = {100.f, 100.f};
+            }break;
+            case(Twod_Triangle):{
+                twod_verts[0] = {-100.f, 0.f}; twod_verts[1] = {0.f, 100.f}; twod_verts[2] = {100.f, 0.f};
+            }break;
+            case(Twod_Square):{
+                twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = { 100.f, -100.f};
+                twod_verts[2] = { 100.f,  100.f}; twod_verts[3] = {-100.f,  100.f};
+            }break;
+            case(Twod_NGon):{
+
+            }break;
+            case(Twod_Image):{
+
+            }break;
+            }
+            }
+
+            ImGui::TextEx("Color "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); ImGui::ColorEdit4("##twod_color", (float*)&twod_color); ImGui::Separator();
+            ImDrawList* draw_list = ImGui::GetForegroundDrawList();
+            switch(twod_type){
+            case(Twod_Line):{
+                draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
+                draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), color, 3.f);
+            }break;
+            case(Twod_Triangle):{
+                draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
+            }break;
+            case(Twod_Square):{
+                draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
+                draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[2].x, entity_pos.y+twod_verts[2].y), ImVec2(entity_pos.x+twod_verts[3].x, entity_pos.y+twod_verts[3].y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
+            }break;
+            case(Twod_NGon):{
+                draw_list->AddNgon(ImVec2(entity_pos.x, entity_pos.y), twod_radius, color, twod_vert_count, 3.f);
+                ImGui::TextEx("Vertices "); ImGui::SameLine(); ImGui::SliderInt("##vert_cnt", &twod_vert_count, 5, 12); ImGui::Separator();
+                ImGui::TextEx("Radius   "); ImGui::SameLine(); ImGui::SliderFloat("##vert_rad", &twod_radius, .01f, 100.f); ImGui::Separator();
+            }break;
+            case(Twod_Image):{
+                ImGui::TextEx("Not implemented yet");
+            }break;
+            }
+
+            if(twod_vert_count > 1 && twod_vert_count < 5){
+                std::string point("Point 0     ");
+                ImGui::SetNextItemWidth(-1); if(ImGui::ListBoxHeader("##twod_verts", (int)twod_vert_count, 5)){
+                    forI(twod_vert_count){
+                        point[6] = 49 + i;
+                        ImGui::TextEx(point.c_str()); ImGui::SameLine(); ImGui::InputVector2(point.c_str(), &twod_verts[0] + i);  ImGui::Separator();
+                    }
+                    ImGui::ListBoxFooter();
+                }
+            }*/
                 
-                //physics
-                case ComponentType_Physics:
-                if (TreeNodeEx("Physics", tree_flags)) {
+            //physics
+            case ComponentType_Physics:
+                if(ImGui::CollapsingHeader("Physics", &delete_button, tree_flags)){
+                    ImGui::Indent();
+
                     Physics* d = dyncast(Physics, c);
-                    Text("Velocity     "); SameLine(); InputVector3("##phys_vel", &d->velocity);
-                    Text("Accelertaion "); SameLine(); InputVector3("##phys_accel", &d->acceleration);
-                    Text("Rot Velocity "); SameLine(); InputVector3("##phys_rotvel", &d->rotVelocity);
-                    Text("Rot Accel    "); SameLine(); InputVector3("##phys_rotaccel", &d->rotAcceleration);
-                    Text("Elasticity   "); SameLine();
-                    SetNextItemWidth(-FLT_MIN); InputFloat("##phys_elastic", &d->elasticity);
-                    Text("Mass         "); SameLine();
-                    SetNextItemWidth(-FLT_MIN); InputFloat("##phys_mass", &d->mass);
-                    Text("Kinetic Fric "); SameLine();
-                    SetNextItemWidth(-FLT_MIN); InputFloat("##phys_kinfric", &d->kineticFricCoef);
-                    Checkbox("Static Position", &d->isStatic);
-                    Checkbox("Static Rotation", &d->staticRotation);
-                    Checkbox("2D Physics", &d->twoDphys);
-                    TreePop();
+                    ImGui::TextEx("Velocity     "); ImGui::SameLine(); ImGui::InputVector3("##phys_vel", &d->velocity);
+                    ImGui::TextEx("Accelertaion "); ImGui::SameLine(); ImGui::InputVector3("##phys_accel", &d->acceleration);
+                    ImGui::TextEx("Rot Velocity "); ImGui::SameLine(); ImGui::InputVector3("##phys_rotvel", &d->rotVelocity);
+                    ImGui::TextEx("Rot Accel    "); ImGui::SameLine(); ImGui::InputVector3("##phys_rotaccel", &d->rotAcceleration);
+                    ImGui::TextEx("Elasticity   "); ImGui::SameLine();
+                    ImGui::SetNextItemWidth(-FLT_MIN); ImGui::InputFloat("##phys_elastic", &d->elasticity);
+                    ImGui::TextEx("Mass         "); ImGui::SameLine();
+                    ImGui::SetNextItemWidth(-FLT_MIN); ImGui::InputFloat("##phys_mass", &d->mass);
+                    ImGui::TextEx("Kinetic Fric "); ImGui::SameLine();
+                    ImGui::SetNextItemWidth(-FLT_MIN); ImGui::InputFloat("##phys_kinfric", &d->kineticFricCoef);
+                    ImGui::Checkbox("Static Position", &d->isStatic);
+                    ImGui::Checkbox("Static Rotation", &d->staticRotation);
+                    ImGui::Checkbox("2D Physics", &d->twoDphys);
+
+                    ImGui::Unindent();
+                    ImGui::Separator();
                 }
-                break;
+            break;
                 
-                //colliders
-                case ComponentType_Collider:{
+            //colliders
+            case ComponentType_Collider:{
+                if(ImGui::CollapsingHeader("Collider", &delete_button, tree_flags)){
+                    ImGui::Indent();
+
                     Collider* coll = dyncast(Collider, c);
-                    if(coll && TreeNodeEx("Collider", tree_flags)){
-                        //Text("Shape "); SameLine(); SetNextItemWidth(-1);
-                        //if(BeginCombo("##coll_type_combo", )){ WinHovCheck;
-                        //forI(IM_ARRAYSIZE(ColliderTypeStrings)){
-                        //if(Selectable(ColliderTypeStrings[i], coll->type == i)){
-                        //
-                        //}
-                        //}
-                        //EndCombo();
-                        //}
-                        Text("Collider changing not setup; Updating properties doesnt work yet");
-                        
-                        switch(coll->type){
-                            case ColliderType_Box:{
-                                BoxCollider* coll_box = dyncast(BoxCollider, coll);
-                                Text("Half Dims "); SameLine(); 
-                                if(InputVector3("##coll_halfdims", &coll_box->halfDims)){
-                                    //coll_box->RecalculateTensor();
+                    f32 mass = 1.0f;
+
+                    ImGui::TextEx("Shape "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+                    if(ImGui::BeginCombo("##coll_type_combo", ColliderTypeStrings[coll->type])){
+                        forI(ArrayCount(ColliderTypeStrings)){
+                            if(ImGui::Selectable(ColliderTypeStrings[i], coll->type == i) && (coll->type != i)){
+                                if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
+                                
+                                sel->RemoveComponent(coll);
+                                coll = 0;
+                                switch(i){
+                                    case ColliderType_AABB:{
+                                        coll = new AABBCollider(vec3{0.5f, 0.5f, 0.5f}, mass);
+                                    }break;
+                                    case ColliderType_Box:{
+                                        coll = new BoxCollider(vec3{0.5f, 0.5f, 0.5f}, mass);
+                                    }break;
+                                    case ColliderType_Sphere:{
+                                        coll = new SphereCollider(1.0f, mass);
+                                    }break;
+                                    case ColliderType_Landscape:{
+                                        //coll = new LandscapeCollider();
+                                        WARNING_LOC("Landscape collider not setup yet");
+                                    }break;
+                                    case ColliderType_Complex:{
+                                        //coll = new ComplexCollider();
+                                        WARNING_LOC("Complex collider not setup yet");
+                                    }break;
                                 }
-                            }break;
-                            case ColliderType_AABB:{
-                                AABBCollider* coll_aabb = dyncast(AABBCollider, coll);
-                                Text("Half Dims "); SameLine(); 
-                                if(InputVector3("##coll_halfdims", &coll_aabb->halfDims)){
-                                    //coll_aabb->RecalculateTensor();
+
+                                if(coll){
+                                    sel->AddComponent(coll);
+                                    admin->AddComponentToLayers(coll);
                                 }
-                            }break;
-                            case ColliderType_Sphere:{
-                                SphereCollider* coll_sphere = dyncast(SphereCollider, coll);
-                                Text("Radius    "); SameLine(); SetNextItemWidth(-FLT_MIN);
-                                if(InputFloat("##coll_sphere", &coll_sphere->radius)){
-                                    //coll_sphere->RecalculateTensor();
-                                }
-                            }break;
+                            }
                         }
-                        TreePop();
+                        ImGui::EndCombo();
                     }
-                }break;
-                
-                //audio listener
-                case ComponentType_AudioListener:{
-                    if (TreeNodeEx("Audio Listener", tree_flags)) {
-                        Text("TODO implement audio listener component editing");
-                        TreePop();
+                        
+                    switch(coll->type){
+                        case ColliderType_Box:{
+                            BoxCollider* coll_box = dyncast(BoxCollider, coll);
+                            ImGui::TextEx("Half Dims "); ImGui::SameLine(); 
+                            if(ImGui::InputVector3("##coll_halfdims", &coll_box->halfDims)){
+                                if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
+                                coll_box->RecalculateTensor(mass);
+                            }
+                        }break;
+                        case ColliderType_AABB:{
+                            AABBCollider* coll_aabb = dyncast(AABBCollider, coll);
+                            ImGui::TextEx("Half Dims "); ImGui::SameLine(); 
+                            if(ImGui::InputVector3("##coll_halfdims", &coll_aabb->halfDims)){
+                                if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
+                                coll_aabb->RecalculateTensor(mass);
+                            }
+                        }break;
+                        case ColliderType_Sphere:{
+                            SphereCollider* coll_sphere = dyncast(SphereCollider, coll);
+                            ImGui::TextEx("Radius    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+                            if(ImGui::InputFloat("##coll_sphere", &coll_sphere->radius)){
+                                if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
+                                coll_sphere->RecalculateTensor(mass);
+                            }
+                        }break;
+                        case ColliderType_Landscape:{
+                            ImGui::TextEx("Landscape collider has no settings yet");
+                        }break;
+                        case ColliderType_Complex:{
+                            ImGui::TextEx("Complex collider has no settings yet");
+                        }break;
                     }
-                }break;
-                
-                //audio source
-                case ComponentType_AudioSource:{
-                    if (TreeNodeEx("Audio Source", tree_flags)) {
-                        Text("TODO implement audio source component editing");
-                        TreePop();
-                    }
-                }break;
-                
-                //camera
-                case ComponentType_Camera:{
-                    if (TreeNodeEx("Camera", tree_flags)) {
-                        Text("TODO implement camera component editing");
-                        TreePop();
-                    }
-                }break;
-                
-                //light
-                case ComponentType_Light:
-                if (TreeNodeEx("Light", tree_flags)) {
-                    Light* d = dyncast(Light, c);
-                    Text("Brightness   "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                    InputFloat("##light_brightness", &d->brightness);
-                    Text("Position     "); SameLine(); 
-                    InputVector3("##light_position", &d->position);
-                    Text("Direction    "); SameLine(); 
-                    InputVector3("##light_direction", &d->direction);
-                    TreePop();
+
+                    ImGui::Checkbox("Don't Resolve Collisions", (bool*)&coll->noCollide);
+                    ImGui::TextEx("Collision Layer"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+                    static_internal u32 min = 0, max = 9;
+                    ImGui::SliderScalar("##coll_layer", ImGuiDataType_U32, &coll->collisionLayer, &min, &max, "%d");
+
+                    ImGui::Unindent();
+                    ImGui::Separator();
                 }
-                break;
+            }break;
                 
-                //orb manager
-                case ComponentType_OrbManager:{
-                    if (TreeNodeEx("Orbs", tree_flags)) {
-                        OrbManager* d = dyncast(OrbManager, c);
-                        Text("Orb Count "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-                        InputInt("##orb_orbcount", &d->orbcount);
-                        TreePop();
-                    }
+            //audio listener
+            case ComponentType_AudioListener:{
+                if(ImGui::CollapsingHeader("Audio Listener", &delete_button, tree_flags)){
+                    ImGui::Indent();
+
+                    ImGui::TextEx("TODO implement audio listener component editing");
+
+                    ImGui::Unindent();
+                    ImGui::Separator();
+                }
+            }break;
+                
+            //audio source
+            case ComponentType_AudioSource:{
+                if(ImGui::CollapsingHeader("Audio Source", &delete_button, tree_flags)){
+                    ImGui::Indent();
+
+                    ImGui::TextEx("TODO implement audio source component editing");
+
+                    ImGui::Unindent();
+                    ImGui::Separator();
+                }
+            }break;
+                
+            //camera
+            case ComponentType_Camera:{
+                if(ImGui::CollapsingHeader("Camera", &delete_button, tree_flags)){
+                    ImGui::Indent();
+
+                    ImGui::TextEx("TODO implement camera component editing");
+
+                    ImGui::Unindent();
+                    ImGui::Separator();
+                }
+            }break;
+                
+            //light
+            case ComponentType_Light:{
+                if(ImGui::CollapsingHeader("Light", &delete_button, tree_flags)){
+                    ImGui::Indent();
+
+                    Light* d = dyncast(Light, c);
+                    ImGui::TextEx("Brightness   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+                    ImGui::InputFloat("##light_brightness", &d->brightness);
+                    ImGui::TextEx("Position     "); ImGui::SameLine(); 
+                    ImGui::InputVector3("##light_position", &d->position);
+                    ImGui::TextEx("Direction    "); ImGui::SameLine(); 
+                    ImGui::InputVector3("##light_direction", &d->direction);
+                    
+                    ImGui::Unindent();
+                    ImGui::Separator();
+                }
+            }break;
+                
+            //orb manager
+            case ComponentType_OrbManager:{
+                if(ImGui::CollapsingHeader("Orbs", &delete_button, tree_flags)){
+                    ImGui::Indent();
+
+                    OrbManager* d = dyncast(OrbManager, c);
+                    ImGui::TextEx("Orb Count "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+                    ImGui::InputInt("##orb_orbcount", &d->orbcount);
+
+                    ImGui::Unindent();
+                    ImGui::Separator();
+                }
+            }break;
+                
+            //door
+            case ComponentType_Door:{
+                if(ImGui::CollapsingHeader("Door", &delete_button, tree_flags)){
+                    ImGui::Indent();
+
+                    ImGui::TextEx("TODO implement door component editing");
+
+                    ImGui::Unindent();
+                    ImGui::Separator();
+                }
+            }break;
+                
+            //player
+            case ComponentType_Player:{
+                if(ImGui::CollapsingHeader("Player", &delete_button, tree_flags)){
+                    ImGui::Indent();
+
+                    Player* d = dyncast(Player, c);
+                    ImGui::TextEx("Health "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+                    ImGui::InputInt("##player_health", &d->health);
+                    
+                    ImGui::Unindent();
+                    ImGui::Separator();
+                }
+            }break;
+                
+            //movement
+            case ComponentType_Movement:{
+                if(ImGui::CollapsingHeader("Movement", &delete_button, tree_flags)){
+                    ImGui::Indent();
+
+                    Movement* d = dyncast(Movement, c);
+                    ImGui::TextEx("Ground Accel    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+                    ImGui::InputFloat("##move_gndaccel", &d->gndAccel);
+                    ImGui::TextEx("Air Accel       "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+                    ImGui::InputFloat("##move_airaccel", &d->airAccel);
+                    ImGui::TextEx("Jump Impulse    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+                    ImGui::InputFloat("##move_jimp", &d->jumpImpulse);
+                    ImGui::TextEx("Max Walk Speed  "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+                    ImGui::InputFloat("##move_maxwalk", &d->maxWalkingSpeed);
+                    ImGui::TextEx("Max Run Speed   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+                    ImGui::InputFloat("##move_maxrun", &d->maxRunningSpeed);
+                    ImGui::TextEx("Max Crouch Speed"); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+                    ImGui::InputFloat("##move_maxcrouch", &d->maxCrouchingSpeed);
+                    
+                    ImGui::Unindent();
+                    ImGui::Separator();
+                }
+            }break;
+            }
+
+            if(!delete_button) comp_deleted_queue.push_back(c);
+            ImGui::PopID();
+        } //for(Component* c : sel->components)
+        sel->RemoveComponents(comp_deleted_queue);
+        
+        //// add component ////
+        local_persist int add_comp_index = 0;
+
+        ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
+        if(ImGui::Button("Add Component")){
+            switch(1 << (add_comp_index-1)){
+                case ComponentType_MeshComp:{
+                    Component* comp = new MeshComp(DengRenderer->CreateMesh(&admin->scene, "box.obj"));
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
                 }break;
-                
-                //door
+                case ComponentType_Physics:{
+                    Component* comp = new Physics();
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
+                }break;
+                case ComponentType_Collider:{
+                    Component* comp = new AABBCollider(vec3{.5f, .5f, .5f}, 1.f);
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
+                }break;
+                case ComponentType_ColliderBox:{
+                    Component* comp = new BoxCollider(vec3{.5f, .5f, .5f}, 1.f);
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
+                }break;
+                case ComponentType_ColliderAABB:{
+                    Component* comp = new AABBCollider(vec3{.5f, .5f, .5f}, 1.f);
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
+                }break;
+                case ComponentType_ColliderSphere:{
+                    Component* comp = new SphereCollider(1.f, 1.f);
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
+                }break;
+                case ComponentType_ColliderLandscape:{ //@Incomplete
+                    Component* comp = new LandscapeCollider(0);
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
+                }break;
+                case ComponentType_AudioListener:{
+                    Component* comp = new AudioListener(sel->transform.position, Vector3::ZERO, sel->transform.rotation);
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
+                }break;
+                case ComponentType_AudioSource:{ //@Incomplete
+                    Component* comp = new AudioSource();
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
+                }break;
+                case ComponentType_Camera:{
+                    Component* comp = new Camera(90.f);
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
+                }break;
+                case ComponentType_Light:{
+                    Component* comp = new Light(sel->transform.position, sel->transform.rotation);
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
+                }break;
+                case ComponentType_OrbManager:{ //@Incomplete
+                    Component* comp = new OrbManager(0);
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
+                }break;
                 case ComponentType_Door:{
-                    if (TreeNodeEx("Door", tree_flags)) {
-                        Text("TODO implement door component editing");
-                        TreePop();
-                    }
+                    Component* comp = new Door();
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
                 }break;
-                
-                //player
-                case ComponentType_Player:{
-                    if (TreeNodeEx("Player", tree_flags)) {
-                        Player* d = dyncast(Player, c);
-                        Text("Health "); SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-                        InputInt("##player_health", &d->health);
-                        TreePop();
-                    }
+                case ComponentType_Player:{ //@Incomplete
+                    Component* comp = new Player();
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
                 }break;
-                
-                //movement
-                case ComponentType_Movement:{
-                    if (TreeNodeEx("Movement", tree_flags)) {
-                        Movement* d = dyncast(Movement, c);
-                        Text("Ground Accel    "); SameLine(); SetNextItemWidth(-FLT_MIN);
-                        InputFloat("##move_gndaccel", &d->gndAccel);
-                        Text("Air Accel       "); SameLine(); SetNextItemWidth(-FLT_MIN);
-                        InputFloat("##move_airaccel", &d->airAccel);
-                        Text("Jump Impulse    "); SameLine(); SetNextItemWidth(-FLT_MIN);
-                        InputFloat("##move_jimp", &d->jumpImpulse);
-                        Text("Max Walk Speed  "); SameLine(); SetNextItemWidth(-FLT_MIN);
-                        InputFloat("##move_maxwalk", &d->maxWalkingSpeed);
-                        Text("Max Run Speed   "); SameLine(); SetNextItemWidth(-FLT_MIN);
-                        InputFloat("##move_maxrun", &d->maxRunningSpeed);
-                        Text("Max Crouch Speed"); SameLine(); SetNextItemWidth(-FLT_MIN);
-                        InputFloat("##move_maxcrouch", &d->maxCrouchingSpeed);
-                        TreePop();
-                    }
+                case ComponentType_Movement:{ //@Incomplete
+                    Component* comp = new Movement();
+                    sel->AddComponent(comp);
+                    admin->AddComponentToLayers(comp);
+                }break;
+                case(0):default:{ //None
+                    //do nothing
                 }break;
             }
         }
+        ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+        ImGui::Combo("##add_comp_combo", &add_comp_index, ComponentTypeStrings, ArrayCount(ComponentTypeStrings));
         
-        //// add/remove component ////
-        
-        
-        EndChild(); //CreateMenu
+        ImGui::EndChild(); //CreateMenu
     }
-    PopStyleVar(); //ImGuiStyleVar_IndentSpacing
+    ImGui::PopStyleVar(); //ImGuiStyleVar_IndentSpacing
 } //EntitiesTab
 
 inline void MaterialsTab(Admin* admin){
-    using namespace ImGui;
-    
     local_persist u32 selected_mat = -1;
     local_persist b32 rename_mat = false;
     local_persist char rename_buffer[DESHI_NAME_SIZE] = {};
-	
+    
     //// selected material keybinds ////
     //start renaming material
     if(selected_mat != -1 && DengInput->KeyPressed(Key::F2 | INPUTMOD_ANY)){
@@ -1431,43 +1680,43 @@ inline void MaterialsTab(Admin* admin){
         //DengRenderer->RemoveMaterial(selected_mat);
         //selected_mat = -1;
     }
-	
+    
     //// material list panel ////
     SetPadding; 
-    if(BeginChild("##mat_list", ImVec2(GetWindowWidth()*0.95, GetWindowHeight()*.14f), false)) {
-        if(BeginTable("##mat_table", 3, ImGuiTableFlags_BordersInner)) {
-            TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 2.5f);
-            TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
-            TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
+    if(ImGui::BeginChild("##mat_list", ImVec2(ImGui::GetWindowWidth()*0.95, ImGui::GetWindowHeight()*.14f), false)) {
+        if(ImGui::BeginTable("##mat_table", 3, ImGuiTableFlags_BordersInner)) {
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 2.5f);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
             
             forX(mat_idx, DengRenderer->materials.size()) {
                 MaterialVk* mat = &DengRenderer->materials[mat_idx];
-                PushID(mat->id);
-                TableNextRow();
-				
+                ImGui::PushID(mat->id);
+                ImGui::TableNextRow();
+                
                 //// id + label ////
-                TableSetColumnIndex(0);
+                ImGui::TableSetColumnIndex(0);
                 char label[8];
                 sprintf(label, " %03d", mat->id);
-                if(Selectable(label, selected_mat == mat_idx, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
+                if(ImGui::Selectable(label, selected_mat == mat_idx, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
                     selected_mat = (ImGui::GetIO().KeyCtrl) ? -1 : mat_idx; //deselect if CTRL held
                     rename_mat = false;
                     DengConsole->IMGUI_KEY_CAPTURE = false;
                 }
                 
-                //// name text ////
-                TableSetColumnIndex(1);
+                //// name ImGui::TextEx ////
+                ImGui::TableSetColumnIndex(1);
                 if(rename_mat && selected_mat == mat_idx){
-                    PushStyleColor(ImGuiCol_FrameBg, ColToVec4(colors.c2));
-                    InputText("##mat_rename_input", rename_buffer, DESHI_NAME_SIZE, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
-                    PopStyleColor();
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, ColToVec4(colors.c2));
+                    ImGui::InputText("##mat_rename_input", rename_buffer, DESHI_NAME_SIZE, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+                    ImGui::PopStyleColor();
                 }else{
-                    Text(mat->name);
+                    ImGui::TextEx(mat->name);
                 }
                 
-                //// delete button ////
-                TableSetColumnIndex(2);
-                if(Button("X", ImVec2(-FLT_MIN, 0.0f))){
+                //// delete ImGui::Button ////
+                ImGui::TableSetColumnIndex(2);
+                if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))){
                     if(mat_idx == selected_mat) {
                         selected_mat = -1;
                     }else if(selected_mat != -1 && selected_mat > mat_idx) {
@@ -1475,97 +1724,97 @@ inline void MaterialsTab(Admin* admin){
                     }
                     DengRenderer->RemoveMaterial(mat_idx);
                 }
-                PopID();
+                ImGui::PopID();
             }
-            EndTable(); //mat_table
+            ImGui::EndTable(); //mat_table
         }
-        EndChild(); //mat_list
+        ImGui::EndChild(); //mat_list
     }
     
-    Separator();
-	
-    //// create new material button ////
-    SetCursorPosX(GetWindowWidth()*0.025); //half of 1 - 0.95
-    if(Button("Create New Material", ImVec2(GetWindowWidth()*0.95, 0.0f))){
+    ImGui::Separator();
+    
+    //// create new material ImGui::Button ////
+    ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
+    if(ImGui::Button("Create New Material", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
         selected_mat = DengRenderer->CreateMaterial(TOSTRING("material", DengRenderer->materials.size()).c_str(), Shader_PBR);
     }
-	
-    Separator();
+    
+    ImGui::Separator();
     
     //// selected material inspector panel ////
     if(selected_mat == -1) return;
     SetPadding;
-    if(BeginChild("##mat_inspector", ImVec2(GetWindowWidth()*.95f, GetWindowHeight()*.8f), false)) {
+    if(ImGui::BeginChild("##mat_inspector", ImVec2(ImGui::GetWindowWidth()*.95f, ImGui::GetWindowHeight()*.8f), false)) {
         MaterialVk* mat = &DengRenderer->materials[selected_mat];
-		
+        
         //// name ////
-        Text("Name   "); SameLine(); SetNextItemWidth(-FLT_MIN); 
-        InputText("##mat_name_input", mat->name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-		
+        ImGui::TextEx("Name   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+        ImGui::InputText("##mat_name_input", mat->name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        
         //// shader selection ////
-        Text("Shader "); SameLine(); SetNextItemWidth(-1);
-        if(BeginCombo("##mat_shader_combo", ShaderStrings[mat->shader])){
+        ImGui::TextEx("Shader "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+        if(ImGui::BeginCombo("##mat_shader_combo", ShaderStrings[mat->shader])){
             forI(ArrayCount(ShaderStrings)){
-                if(Selectable(ShaderStrings[i], mat->shader == i)){
+                if(ImGui::Selectable(ShaderStrings[i], mat->shader == i)){
                     DengRenderer->UpdateMaterialShader(mat->id, i);
                 }
             }
-            EndCombo(); //mat_shader_combo
+            ImGui::EndCombo(); //mat_shader_combo
         }
-		
-        Separator();
-		
+        
+        ImGui::Separator();
+        
         //// material properties ////
         //TODO(Ui) setup material editing other than PBR once we have material parameters
         switch(mat->shader){
             //// flat shader ////
             case Shader_Flat:{
-				
+                
             }break;
-			
+            
             //// PBR shader ////
             //TODO(Ui) add texture image previews
             case Shader_PBR:{
-                Text("Albedo   "); SameLine(); SetNextItemWidth(-1);
-                if(BeginCombo("##mat_albedo_combo", DengRenderer->textures[mat->albedoID].filename)){
+                ImGui::TextEx("Albedo   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+                if(ImGui::BeginCombo("##mat_albedo_combo", DengRenderer->textures[mat->albedoID].filename)){
                     forI(textures.size()){
-                        if(Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->albedoID].filename, textures[i].c_str()) == 0)){
+                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->albedoID].filename, textures[i].c_str()) == 0)){
                             DengRenderer->UpdateMaterialTexture(mat->id, 0, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Albedo));
                         }
                     }
-                    EndCombo(); //mat_albedo_combo
+                    ImGui::EndCombo(); //mat_albedo_combo
                 }
-                Text("Normal   "); SameLine(); SetNextItemWidth(-1);
-                if(BeginCombo("##mat_normal_combo", DengRenderer->textures[mat->normalID].filename)){
+                ImGui::TextEx("Normal   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+                if(ImGui::BeginCombo("##mat_normal_combo", DengRenderer->textures[mat->normalID].filename)){
                     forI(textures.size()){
-                        if(Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->normalID].filename, textures[i].c_str()) == 0)){
+                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->normalID].filename, textures[i].c_str()) == 0)){
                             DengRenderer->UpdateMaterialTexture(mat->id, 1, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Normal));
                         }
                     }
-                    EndCombo(); //mat_normal_combo
+                    ImGui::EndCombo(); //mat_normal_combo
                 }
-                Text("Specular "); SameLine(); SetNextItemWidth(-1);
-                if(BeginCombo("##mat_spec_combo", DengRenderer->textures[mat->specularID].filename)){
+                ImGui::TextEx("Specular "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+                if(ImGui::BeginCombo("##mat_spec_combo", DengRenderer->textures[mat->specularID].filename)){
                     forI(textures.size()){
-                        if(Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->specularID].filename, textures[i].c_str()) == 0)){
+                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->specularID].filename, textures[i].c_str()) == 0)){
                             DengRenderer->UpdateMaterialTexture(mat->id, 2, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Specular));
                         }
                     }
-                    EndCombo(); //mat_spec_combo
+                    ImGui::EndCombo(); //mat_spec_combo
                 }
-                Text("Light    "); SameLine(); SetNextItemWidth(-1);
-                if(BeginCombo("##mat_light_combo", DengRenderer->textures[mat->lightID].filename)){
+                ImGui::TextEx("Light    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+                if(ImGui::BeginCombo("##mat_light_combo", DengRenderer->textures[mat->lightID].filename)){
                     forI(textures.size()){
-                        if(Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->lightID].filename, textures[i].c_str()) == 0)){
+                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->lightID].filename, textures[i].c_str()) == 0)){
                             DengRenderer->UpdateMaterialTexture(mat->id, 3, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Light));
                         }
                     }
-                    EndCombo(); //mat_light_combo
+                    ImGui::EndCombo(); //mat_light_combo
                 }
             }break;
         }
-		
-        EndChild(); //mat_inspector
+        
+        ImGui::EndChild(); //mat_inspector
     }
 } //MaterialsTab
 
@@ -1573,505 +1822,80 @@ enum TwodPresets : u32 {
     Twod_NONE = 0, Twod_Line, Twod_Triangle, Twod_Square, Twod_NGon, Twod_Image, 
 };
 
-//TODO(delle,Ui) combine this into the EntitiesTab
-inline void CreateTab(Admin* admin, float fontsize){
-    using namespace ImGui;
-    
-    //// creation variables ////
-    local_persist const char* presets[] = {"None", "AABB", "Box", "Sphere", "2D", "Player"};
-    local_persist const char* premades[] = { "Player" };
-    local_persist int current_preset = 0;
-    local_persist int current_premade = 0;
-    local_persist char entity_name[DESHI_NAME_SIZE] = {};
-    local_persist vec3 entity_pos{}, entity_rot{}, entity_scale = Vector3::ONE;
-    local_persist bool comp_audiolistener{}, comp_audiosource{}, comp_collider{}, comp_mesh{};
-    local_persist bool comp_light{}, comp_physics{}, comp_2d{}, comp_player{};
-    local_persist const char* colliders[] = {"None", "Box", "AABB", "Sphere"};
-    local_persist int  collider_type = ColliderType_NONE;
-    local_persist vec3 collider_halfdims = Vector3::ONE;
-    local_persist f32  collider_radius  = 1.f;
-    local_persist bool collider_trigger = false;
-    local_persist bool collider_nocollide = false;
-    local_persist char collider_command[64] = {};
-    local_persist const char* mesh_name;
-    local_persist u32  mesh_id = -1, mesh_instance_id = 0;
-    local_persist u32  mesh_batch_id = 0;
-    local_persist f32  light_strength = 1.f;
-    local_persist vec3  physics_velocity{}, physics_accel{}, physics_rotVel{}, physics_rotAccel{};
-    local_persist f32  physics_elasticity = .5f, physics_mass = 1.f;
-    local_persist bool physics_staticPosition{}, physics_staticRotation{};
-    local_persist const char* twods[] = {"None", "Line", "Triangle", "Square", "N-Gon", "Image"};
-    local_persist int  twod_type = 0, twod_vert_count = 0;
-    local_persist u32  twod_id = -1;
-    local_persist vec4 twod_color = vec4::ONE;
-    local_persist f32  twod_radius = 1.f;
-    local_persist std::vector<vec2> twod_verts;
-    u32 entity_id = admin->entities.size();
-    
-    //// create panel ////
-    PushStyleVar(ImGuiStyleVar_IndentSpacing, 5.0f);
-    SetPadding; if (BeginChild("CreateMenu", ImVec2(GetWindowWidth() * 0.95f, GetWindowHeight() * .9f), true)) {
-        WinHovCheck;
-        if (Button("Create")) {
-            //create components
-            AudioListener* al = 0;
-            if (comp_audiolistener) {
-                al = new AudioListener(entity_pos, Vector3::ZERO, entity_rot);
-            }
-            AudioSource* as = 0;
-            if (comp_audiosource) {
-                as = new AudioSource();
-            }
-            Collider* coll = 0;
-            if (comp_collider) {
-                switch (collider_type) {
-					case ColliderType_Box: {
-						coll = new BoxCollider(collider_halfdims, physics_mass, 0, Event_NONE, collider_nocollide);
-					}break;
-					case ColliderType_AABB: {
-						coll = new AABBCollider(collider_halfdims, physics_mass, 0, Event_NONE, collider_nocollide);
-					}break;
-					case ColliderType_Sphere: {
-						coll = new SphereCollider(collider_radius, physics_mass, 0, Event_NONE, collider_nocollide);
-					}break;
-                }
-            }
-            MeshComp* mc = 0;
-            if (comp_mesh) {
-                u32 new_mesh_id = DengRenderer->CreateMesh(mesh_id, mat4::TransformationMatrix(entity_pos, entity_rot, entity_scale));
-                mesh_name = DengRenderer->meshes[mesh_id].name;
-                mc = new MeshComp(new_mesh_id, mesh_instance_id);
-            }
-            Light* light = 0;
-            if (comp_light) {
-                light = new Light(entity_pos, entity_rot, light_strength);
-            }
-            Physics* phys = 0;
-            Movement* move = 0;
-            Player* pl = 0;
-            if (comp_physics) {
-                phys = new Physics(entity_pos, entity_rot, physics_velocity, physics_accel, physics_rotVel,
-								   physics_rotAccel, physics_elasticity, physics_mass, physics_staticPosition);
-                if (comp_audiolistener) al->velocity = physics_velocity;
-                if (comp_player) { move = new Movement(phys); pl = new Player(move); }
-            }
-            
-            
-            
-            admin->CreateEntity({ al, as, coll, mc, light, phys, move, pl }, entity_name,
-                                Transform(entity_pos, entity_rot, entity_scale));
-            
-            
-            
-            
-        }Separator();
-		
-        //// premades ////
-        SetPadding; Text("Premades   ");  SameLine(); SetNextItemWidth(-1);
-        if (BeginMenu("##premades")) {
-            WinHovCheck;
-            if (MenuItem("Player")) {
-				
-                if (!admin->player) {
-                    PlayerEntity* pl = new PlayerEntity(Transform(Vector3::ZERO, Vector3::ZERO, Vector3::ZERO));
-                    admin->CreateEntity(pl);
-                    admin->player = pl;
-                }
-                else {
-                    ERROR("Player has already been created.");
-                }
-				
-            }
-            
-            
-            EndCombo();
-            
-        }
-		
-		
-        //// presets ////
-        SetPadding; Text("Presets    "); SameLine(); SetNextItemWidth(-1);
-        if (Combo("##preset_combo", &current_preset, presets, IM_ARRAYSIZE(presets))) {
-            WinHovCheck;
-            switch (current_preset) {
-				case(0):default: {
-					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_light = comp_physics = comp_player = false;
-					collider_type = ColliderType_NONE;
-					collider_halfdims = Vector3::ONE;
-					collider_radius = 1.f;
-					mesh_id = mesh_instance_id = 0;
-					light_strength = 1.f;
-					physics_velocity = Vector3::ZERO; physics_accel = Vector3::ZERO;
-					physics_rotVel = Vector3::ZERO; physics_rotAccel = Vector3::ZERO;
-					physics_elasticity = .5f; physics_mass = 1.f;
-					physics_staticPosition = physics_staticRotation = true;
-					cpystr(entity_name, TOSTRING("default", entity_id).c_str(), DESHI_NAME_SIZE);
-				}break;
-				case(1): {
-					comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
-					comp_collider = comp_mesh = comp_physics = true;
-					collider_type = ColliderType_AABB;
-					collider_halfdims = Vector3::ONE;
-					mesh_id = 0;
-					physics_staticPosition = physics_staticRotation = true;
-					cpystr(entity_name, TOSTRING("aabb", entity_id).c_str(), DESHI_NAME_SIZE);
-				}break;
-				case(2): {
-					comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
-					comp_collider = comp_mesh = comp_physics = true;
-					collider_type = ColliderType_Box;
-					collider_halfdims = Vector3::ONE;
-					mesh_id = 0;
-					physics_staticPosition = physics_staticRotation = true;
-					cpystr(entity_name, TOSTRING("box", entity_id).c_str(), DESHI_NAME_SIZE);
-				}break;
-				case(3): {
-					comp_audiolistener = comp_audiosource = comp_light = comp_player = false;
-					comp_collider = comp_mesh = comp_physics = true;
-					collider_type = ColliderType_Sphere;
-					collider_radius = 1.f;
-					mesh_id = DengRenderer->GetBaseMeshID("sphere.obj");
-					physics_staticPosition = physics_staticRotation = true;
-					cpystr(entity_name, TOSTRING("sphere", entity_id).c_str(), DESHI_NAME_SIZE);
-				}break;
-				case(4): {
-					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = comp_light = comp_player = false;
-					comp_2d = true;
-					twod_id = -1;
-					twod_type = 2;
-					twod_vert_count = 3;
-					twod_radius = 25.f;
-					twod_verts.resize(3);
-					twod_verts[0] = { -100.f, 0.f }; twod_verts[1] = { 0.f, 100.f }; twod_verts[2] = { 100.f, 0.f };
-					entity_pos = { 700.f, 400.f, 0 };
-					cpystr(entity_name, "twod", DESHI_NAME_SIZE);
-				}break;
-				case(5): {
-					comp_light = false;
-					comp_audiolistener = comp_audiosource = comp_collider = comp_mesh = comp_physics = comp_player = true;
-					collider_type = ColliderType_AABB; //TODO(delle,PhCl) ideally cylinder/capsule collider
-					collider_halfdims = vec3(1, 2, 1);
-					mesh_id = DengRenderer->GetBaseMeshID("bmonkey.obj");
-					physics_staticPosition = physics_staticRotation = false;
-					physics_elasticity = 0.f;
-					cpystr(entity_name, "player", DESHI_NAME_SIZE);
-				}break;
-            }
-            if (mesh_id < DengRenderer->meshes.size()) mesh_name = DengRenderer->meshes[mesh_id].name;
-        }
-        
-        SetPadding; Text("Name: "); 
-        SameLine(); SetNextItemWidth(-1); InputText("##unique_id", entity_name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | 
-                                                    ImGuiInputTextFlags_AutoSelectAll);
-        
-        //// transform ////
-        int tree_flags = ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_NoAutoOpenOnLog;
-        SetNextItemOpen(true, ImGuiCond_Once);
-        if (TreeNodeEx("Transform", tree_flags)) {
-            Text("Position     "); SameLine(); InputVector3("entity_pos", &entity_pos);   Separator();
-            Text("Rotation     "); SameLine(); InputVector3("entity_rot", &entity_rot);   Separator();
-            Text("Scale        "); SameLine(); InputVector3("entity_scale", &entity_scale);
-            TreePop();
-        }
-		
-        //// toggle components ////
-        SetNextItemOpen(true, ImGuiCond_Once);
-        if (TreeNodeEx("Components", tree_flags)) {
-            Checkbox("Mesh", &comp_mesh);
-            SameLine(); Checkbox("Physics", &comp_physics);
-            SameLine(); Checkbox("Collider", &comp_collider);
-            Checkbox("Audio Listener", &comp_audiolistener);
-            SameLine(); Checkbox("Light", &comp_light);
-            Checkbox("Audio Source", &comp_audiosource);
-            SameLine(); Checkbox("Mesh2D", &comp_2d);
-            Checkbox("Player", &comp_player);
-            TreePop();
-        }
-		
-        //// component headers ////
-        if (comp_mesh && TreeNodeEx("Mesh", tree_flags)) {
-            Text(TOSTRING("MeshID: ", mesh_id).c_str());
-            SetNextItemWidth(-1); if (BeginCombo("##mesh_combo", mesh_name)) {
-                WinHovCheck;
-                forI(DengRenderer->meshes.size()) {
-                    if (DengRenderer->meshes[i].base && Selectable(DengRenderer->meshes[i].name, mesh_id == i)) {
-                        mesh_id = i;
-                        mesh_name = DengRenderer->meshes[i].name;
-                    }
-                }
-                EndCombo();
-            }
-			
-            if (mesh_id != -1) {
-                MeshComp* mc = 0;
-                mc = new MeshComp(mesh_id, mesh_instance_id);
-                MeshVk& mvk = DengRenderer->meshes[mc->meshID];
-                Text("Batch    "); SameLine(); SetNextItemWidth(-1);
-                if (BeginCombo("##mesh_batch_combo", mc->mesh->batchArray[mesh_batch_id].name)) {
-                    WinHovCheck;
-                    forI(mc->mesh->batchArray.size()) {
-                        if (Selectable(mc->mesh->batchArray[i].name, mesh_batch_id == i)) {
-                            mesh_batch_id = i;
-                        }
-                    }
-                    EndCombo();
-                }
-				
-                Text("Material "); SameLine(); SetNextItemWidth(-1);
-                if (BeginCombo("##mesh_mat_combo", DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].name)) {
-                    WinHovCheck;
-                    forI(DengRenderer->materials.size()) {
-                        if (Selectable(DengRenderer->materials[i].name, mvk.primitives[mesh_batch_id].materialIndex == i)) {
-                            DengRenderer->UpdateMeshBatchMaterial(mc->meshID, mesh_batch_id, i);
-                        }
-                    }
-                    EndCombo();
-                }
-                Indent(); {
-                    Text("Shader "); SameLine(); SetNextItemWidth(-1);
-                    if (BeginCombo("##mesh_shader_combo", ShaderStrings[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].shader])) {
-                        WinHovCheck;
-                        forI(IM_ARRAYSIZE(ShaderStrings)) {
-                            if (Selectable(ShaderStrings[i], DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].shader == i)) {
-                                DengRenderer->UpdateMaterialShader(mvk.primitives[mesh_batch_id].materialIndex, i);
-                            }
-                        }
-                        EndCombo();
-                    }
-					
-                    Text("Albedo   "); SameLine(); SetNextItemWidth(-1);
-                    if (BeginCombo("##mesh_albedo_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].albedoID].filename)) {
-                        WinHovCheck;
-                        forI(textures.size()) {
-                            if (Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].albedoID].filename, textures[i].c_str()) == 0)) {
-                                DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_id].materialIndex, 0,
-																	DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Albedo));
-                            }
-                        }
-                        EndCombo();
-                    }
-					
-                    Text("Normal   "); SameLine(); SetNextItemWidth(-1);
-                    if (BeginCombo("##mesh_normal_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].normalID].filename)) {
-                        WinHovCheck;
-                        forI(textures.size()) {
-                            if (Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].normalID].filename, textures[i].c_str()) == 0)) {
-                                DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_id].materialIndex, 0,
-																	DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Normal));
-                            }
-                        }
-                        EndCombo();
-                    }
-					
-                    Text("Specular "); SameLine(); SetNextItemWidth(-1);
-                    if (BeginCombo("##mesh_specular_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].specularID].filename)) {
-                        WinHovCheck;
-                        forI(textures.size()) {
-                            if (Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].specularID].filename, textures[i].c_str()) == 0)) {
-                                DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_id].materialIndex, 0,
-																	DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Specular));
-                            }
-                        }
-                        EndCombo();
-                    }
-					
-                    Text("Light    "); SameLine(); SetNextItemWidth(-1);
-                    if (BeginCombo("##mesh_light_combo", DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].lightID].filename)) {
-                        WinHovCheck;
-                        forI(textures.size()) {
-                            if (Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[DengRenderer->materials[mvk.primitives[mesh_batch_id].materialIndex].lightID].filename, textures[i].c_str()) == 0)) {
-                                DengRenderer->UpdateMaterialTexture(mvk.primitives[mesh_batch_id].materialIndex, 0,
-																	DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Light));
-                            }
-                        }
-                        EndCombo();
-                    }
-					
-                }Unindent();
-            }
-            TreePop();
-        }
-        if(comp_2d && TreeNodeEx("Mesh2D", tree_flags)){
-            ImU32 color = ColorConvertFloat4ToU32(ImVec4(twod_color.x, twod_color.y, twod_color.z, twod_color.w));
-            SetNextItemWidth(-1); if(Combo("##twod_combo", &twod_type, twods, IM_ARRAYSIZE(twods))){ WinHovCheck; 
-                twod_vert_count = twod_type + 1;
-                twod_verts.resize(twod_vert_count);
-                switch(twod_type){
-                    case(Twod_Line):{
-                        twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = {100.f, 100.f};
-                    }break;
-                    case(Twod_Triangle):{
-                        twod_verts[0] = {-100.f, 0.f}; twod_verts[1] = {0.f, 100.f}; twod_verts[2] = {100.f, 0.f};
-                    }break;
-                    case(Twod_Square):{
-                        twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = { 100.f, -100.f};
-                        twod_verts[2] = { 100.f,  100.f}; twod_verts[3] = {-100.f,  100.f};
-                    }break;
-                    case(Twod_NGon):{
-                        
-                    }break;
-                    case(Twod_Image):{
-                        
-                    }break;
-                }
-            }
-            
-            Text("Color "); SameLine(); SetNextItemWidth(-1); ColorEdit4("##twod_color", (float*)&twod_color); Separator();
-            ImDrawList* draw_list = ImGui::GetForegroundDrawList();
-            switch(twod_type){
-                case(Twod_Line):{
-                    draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
-                    draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), color, 3.f);
-                }break;
-                case(Twod_Triangle):{
-                    draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
-                }break;
-                case(Twod_Square):{
-                    draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
-                    draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[2].x, entity_pos.y+twod_verts[2].y), ImVec2(entity_pos.x+twod_verts[3].x, entity_pos.y+twod_verts[3].y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
-                }break;
-                case(Twod_NGon):{
-                    draw_list->AddNgon(ImVec2(entity_pos.x, entity_pos.y), twod_radius, color, twod_vert_count, 3.f);
-                    Text("Vertices "); SameLine(); SliderInt("##vert_cnt", &twod_vert_count, 5, 12); Separator();
-                    Text("Radius   "); SameLine(); SliderFloat("##vert_rad", &twod_radius, .01f, 100.f); Separator();
-                }break;
-                case(Twod_Image):{
-                    Text("Not implemented yet");
-                }break;
-            }
-            
-            if(twod_vert_count > 1 && twod_vert_count < 5){
-                std::string point("Point 0     ");
-                SetNextItemWidth(-1); if(ListBoxHeader("##twod_verts", (int)twod_vert_count, 5)){
-                    forI(twod_vert_count){
-                        point[6] = 49 + i;
-                        Text(point.c_str()); SameLine(); InputVector2(point.c_str(), &twod_verts[0] + i);  Separator();
-                    }
-                    ListBoxFooter();
-                }
-            }
-            TreePop();
-        }
-        if(comp_physics && TreeNodeEx("Physics", tree_flags)){
-            Text("Velocity     "); SameLine(); InputVector3("##phys_vel", &physics_velocity);
-            Text("Accelertaion "); SameLine(); InputVector3("##phys_accel", &physics_accel);
-            Text("Rot Velocity "); SameLine(); InputVector3("##phys_rotvel", &physics_rotVel);
-            Text("Rot Accel    "); SameLine(); InputVector3("##phys_rotaccel", &physics_rotAccel);
-            Text("Elasticity   "); SameLine(); InputFloat("##phys_elastic", &physics_elasticity);
-            Text("Mass         "); SameLine(); InputFloat("##phys_mass", &physics_mass);
-            Checkbox("Static Position", &physics_staticPosition);
-            Checkbox("Static Rotation", &physics_staticRotation);
-            TreePop();
-        }
-        if(comp_collider && TreeNodeEx("Collider", tree_flags)){ 
-            SetNextItemWidth(-1); Combo("##coll_combo", &collider_type, colliders, IM_ARRAYSIZE(colliders));
-            switch(collider_type){
-                case ColliderType_Box: case ColliderType_AABB:{
-                    Text("Half Dims    "); SameLine(); InputVector3("##coll_halfdims", &collider_halfdims);
-                }break;
-                case ColliderType_Sphere:{
-                    Text("Radius       "); SameLine(); InputFloat("##coll_radius", &collider_radius);
-                }break;
-            }
-            Checkbox("Don't Resolve Collisions", &collider_nocollide);
-            TreePop();
-        }
-        if(comp_audiolistener && TreeNodeEx("Audio Listener", tree_flags)){
-            //TODO(sushi,Ui) add audio listener create menu
-            TreePop();
-        }
-        if(comp_audiosource && TreeNodeEx("Audio Source", tree_flags)){
-            //TODO(sushi,Ui) add audio source create menu
-            TreePop();
-        }
-        if(comp_light && TreeNodeEx("Light", tree_flags)){
-            Text("Strength     "); SameLine(); 
-            InputFloat("##light_strength", &physics_mass);
-            TreePop();
-        }
-        EndChild();
-    }
-    PopStyleVar();
-}
-
 inline void GlobalTab(Admin* admin){
-    using namespace ImGui;
-	
     SetPadding; 
     if(ImGui::BeginChild("##global_tab", ImVec2(ImGui::GetWindowWidth()*0.95f, ImGui::GetWindowHeight()*.9f))) {
         //// physics properties ////
-        ImGui::Text("Pause Physics "); ImGui::SameLine();
+        ImGui::TextEx("Pause Physics "); ImGui::SameLine();
         if(ImGui::Button((admin->pause_phys) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
             admin->pause_phys = !admin->pause_phys;
         }    
-        ImGui::Text("Gravity       "); ImGui::SameLine(); ImGui::InputFloat("##global_gravity", &admin->physics.gravity);
-		
-        //ImGui::Text("Phys TPS      "); ImGui::SameLine(); ImGui::InputFloat("##phys_tps", )
-		
+        ImGui::TextEx("Gravity       "); ImGui::SameLine(); ImGui::InputFloat("##global_gravity", &admin->physics.gravity);
+        
+        //ImGui::TextEx("Phys TPS      "); ImGui::SameLine(); ImGui::InputFloat("##phys_tps", )
+        
         //// camera properties ////
         ImGui::Separator();
-        ImGui::Text("Camera"); ImGui::SameLine(); ImGui::SetCursorPosX(ImGui::GetWindowWidth()*.5f);
+        ImGui::TextEx("Camera"); ImGui::SameLine(); ImGui::SetCursorPosX(ImGui::GetWindowWidth()*.5f);
         if(ImGui::Button("Zero", ImVec2(ImGui::GetWindowWidth()*.225f, 0))){
             admin->editor.camera->position = Vector3::ZERO; admin->editor.camera->rotation = Vector3::ZERO;
         } ImGui::SameLine();
         if(ImGui::Button("Reset", ImVec2(ImGui::GetWindowWidth()*.25f, 0))){
             admin->editor.camera->position = {4.f,3.f,-4.f}; admin->editor.camera->rotation = {28.f,-45.f,0.f};
         }
-		
-        ImGui::Text("Position  "); ImGui::SameLine(); ImGui::InputVector3("##cam_pos", &admin->editor.camera->position);
-        ImGui::Text("Rotation  "); ImGui::SameLine(); ImGui::InputVector3("##cam_rot", &admin->editor.camera->rotation);
-        ImGui::Text("Near Clip "); ImGui::SameLine(); ImGui::InputFloat("##global_nearz", &admin->editor.camera->nearZ);
-        ImGui::Text("Far Clip  "); ImGui::SameLine(); ImGui::InputFloat("##global_farz", &admin->editor.camera->farZ);
-        ImGui::Text("FOV       "); ImGui::SameLine(); ImGui::InputFloat("##global_fov", &admin->editor.camera->fov);
-		
-        EndChild();
+        
+        ImGui::TextEx("Position  "); ImGui::SameLine(); ImGui::InputVector3("##cam_pos", &admin->editor.camera->position);
+        ImGui::TextEx("Rotation  "); ImGui::SameLine(); ImGui::InputVector3("##cam_rot", &admin->editor.camera->rotation);
+        ImGui::TextEx("Near Clip "); ImGui::SameLine(); ImGui::InputFloat("##global_nearz", &admin->editor.camera->nearZ);
+        ImGui::TextEx("Far Clip  "); ImGui::SameLine(); ImGui::InputFloat("##global_farz", &admin->editor.camera->farZ);
+        ImGui::TextEx("FOV       "); ImGui::SameLine(); ImGui::InputFloat("##global_fov", &admin->editor.camera->fov);
+        
+        ImGui::EndChild();
     }
 }
 
 inline void BrushesTab(Admin* admin, float fontsize){
-    using namespace ImGui;
-    
     local_persist MeshBrushVk* selected_meshbrush = 0;
     
     //// brush list ////
-    PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
     SetPadding; 
-    if(BeginChild("##meshbrush_tab", ImVec2(GetWindowWidth() * 0.95, 100), false)) { WinHovCheck; 
+    if(ImGui::BeginChild("##meshbrush_tab", ImVec2(ImGui::GetWindowWidth() * 0.95, 100), false)) { WinHovCheck; 
         if (DengRenderer->meshBrushes.size() == 0) {
             float time = DengTime->totalTime;
             std::string str1 = "Nothing yet...";
             float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
             for (int i = 0; i < str1.size(); i++) {
-                SetCursorPos(ImVec2((GetWindowSize().x - strlen1) / 2 + i * (fontsize / 2), (GetWindowSize().y - fontsize) / 2 + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))));
-                Text(str1.substr(i, 1).c_str());
+                ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x - strlen1) / 2 + i * (fontsize / 2), (ImGui::GetWindowSize().y - fontsize) / 2 + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))));
+                ImGui::TextEx(str1.substr(i, 1).c_str());
             }
         }else{
-            if (BeginTable("##meshbrush_table", 4, ImGuiTableFlags_BordersInner)) {
-                TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
-                TableSetupColumn("Name");
-                TableSetupColumn("Delete");
+            if (ImGui::BeginTable("##meshbrush_table", 4, ImGuiTableFlags_BordersInner)) {
+                ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Name");
+                ImGui::TableSetupColumn("Delete");
                 
                 forI(DengRenderer->meshBrushes.size()) {
-                    PushID(i);
-                    TableNextRow(); TableNextColumn();
+                    ImGui::PushID(i);
+                    ImGui::TableNextRow(); ImGui::TableNextColumn();
                     std::string id = std::to_string(DengRenderer->meshBrushes[i].id);
                     if (ImGui::Button(id.c_str())) selected_meshbrush = &DengRenderer->meshBrushes[i];
                     
-                    TableNextColumn();
-                    Text(DengRenderer->meshBrushes[i].name);
+                    ImGui::TableNextColumn();
+                    ImGui::TextEx(DengRenderer->meshBrushes[i].name);
                     
-                    TableNextColumn();
-                    if(SmallButton("X")) DengRenderer->RemoveMeshBrush(i);
-                    PopID();
+                    ImGui::TableNextColumn();
+                    if(ImGui::SmallButton("X")) DengRenderer->RemoveMeshBrush(i);
+                    ImGui::PopID();
                 }
-                EndTable();
+                ImGui::EndTable();
             }
         }
-        EndChild();
+        ImGui::EndChild();
     }
-    PopStyleColor();
+    ImGui::PopStyleColor();
     
-    Separator();
+    ImGui::Separator();
     
     //// brush inspector ////
     
@@ -2088,10 +1912,10 @@ void DisplayTriggers(Admin* admin) {
                     DebugTriggersStatic(i, t->mesh, e->transform.TransformMatrix(), 1);
                 }break;
                 case ColliderType_Sphere: {
-					
+                    
                 }break;
                 case ColliderType_Complex: {
-					
+                    
                 }break;
             }
         }
@@ -2100,8 +1924,6 @@ void DisplayTriggers(Admin* admin) {
 }
 
 void Editor::DebugTools() {
-    using namespace ImGui;
-    
     //resize tool menu if main menu bar is open
     ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - (menubarheight + debugbarheight)));
     ImGui::SetNextWindowPos(ImVec2(0, menubarheight));
@@ -2145,33 +1967,29 @@ void Editor::DebugTools() {
     
     //capture mouse if hovering over this window
     WinHovCheck; 
-    if(DengInput->mouseX < GetWindowPos().x + GetWindowWidth()){
+    if(DengInput->mouseX < ImGui::GetWindowPos().x + ImGui::GetWindowWidth()){
         WinHovFlag = true;
     }
     
     SetPadding;
-    if (BeginTabBar("MajorTabs")) {
-        if (BeginTabItem("Entities")) {
+    if (ImGui::BeginTabBar("MajorTabs")) {
+        if (ImGui::BeginTabItem("Entities")) {
             EntitiesTab(admin, ImGui::GetFontSize());
-            EndTabItem();
+            ImGui::EndTabItem();
         }
-        if (BeginTabItem("Create")) {
-            CreateTab(admin, ImGui::GetFontSize());
-            EndTabItem();
-        }
-        if (BeginTabItem("Materials")) {
+        if (ImGui::BeginTabItem("Materials")) {
             MaterialsTab(admin);
-            EndTabItem();
+            ImGui::EndTabItem();
         }
-        if (BeginTabItem("Global")) {
+        if (ImGui::BeginTabItem("Global")) {
             GlobalTab(admin);
-            EndTabItem();
+            ImGui::EndTabItem();
         }
-        //if (BeginTabItem("Brushes")) {
+        //if (ImGui::BeginTabItem("Brushes")) {
         //BrushesTab(admin, ImGui::GetFontSize());
-        //EndTabItem();
+        //ImGui::EndTabItem();
         //}
-        EndTabBar();
+        ImGui::EndTabBar();
     }
     
     ImGui::PopStyleVar(8);
@@ -2181,8 +1999,6 @@ void Editor::DebugTools() {
 
 
 void Editor::DebugBar() {
-    using namespace ImGui;
-    
     //for getting fps
     ImGuiIO& io = ImGui::GetIO();
     
@@ -2191,7 +2007,7 @@ void Editor::DebugBar() {
     //num of active columns
     int activecols = 7;
     
-    //font size for centering text
+    //font size for centering ImGui::TextEx
     float fontsize = ImGui::GetFontSize();
     
     //flags for showing different things
@@ -2220,7 +2036,7 @@ void Editor::DebugBar() {
     WinHovCheck; 
     
     activecols = show_fps + show_fps_graph + 3 * show_world_stats + 2 * show_selected_stats + show_time + 1;
-    if (BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)) {
+    if (ImGui::BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)) {
         
         //precalc strings and stuff so we can set column widths appropriately
         std::string str1 = TOSTRING("wents: ", admin->entities.size());
@@ -2247,24 +2063,24 @@ void Editor::DebugBar() {
         
         //FPS
         
-        if (TableNextColumn() && show_fps) {
+        if (ImGui::TableNextColumn() && show_fps) {
             //trying to keep it from changing width of column
             //actually not necessary anymore but im going to keep it cause 
             //it keeps the numbers right aligned
             if (FPS % 1000 == FPS) {
-                Text(TOSTRING("FPS:  ", FPS).c_str());
+                ImGui::TextEx(TOSTRING("FPS:  ", FPS).c_str());
             }
             else if (FPS % 100 == FPS) {
-                Text(TOSTRING("FPS:   ", FPS).c_str());
+                ImGui::TextEx(TOSTRING("FPS:   ", FPS).c_str());
             }
             else {
-                Text(TOSTRING("FPS: ", FPS).c_str());
+                ImGui::TextEx(TOSTRING("FPS: ", FPS).c_str());
             }
             
         }
         
         //FPS graph inline
-        if (TableNextColumn() && show_fps_graph) {
+        if (ImGui::TableNextColumn() && show_fps_graph) {
             //how much data we store
             static int prevstoresize = 100;
             static int storesize = 100;
@@ -2322,23 +2138,23 @@ void Editor::DebugBar() {
         //World stats
         
         //Entity Count
-        if (TableNextColumn() && show_world_stats) {
-            ImGui::SameLine((GetColumnWidth() - strlen1) / 2);
-            Text(str1.c_str());
+        if (ImGui::TableNextColumn() && show_world_stats) {
+            ImGui::SameLine((ImGui::GetColumnWidth() - strlen1) / 2);
+            ImGui::TextEx(str1.c_str());
         }
         
         //Triangle Count
-        if (TableNextColumn() && show_world_stats) {
+        if (ImGui::TableNextColumn() && show_world_stats) {
             //TODO( sushi,Ui) implement triangle count when its avaliable
-            ImGui::SameLine((GetColumnWidth() - strlen2) / 2);
-            Text(str2.c_str());
+            ImGui::SameLine((ImGui::GetColumnWidth() - strlen2) / 2);
+            ImGui::TextEx(str2.c_str());
         }
         
         //Vertice Count
-        if (TableNextColumn() && show_world_stats) {
+        if (ImGui::TableNextColumn() && show_world_stats) {
             //TODO( sushi,Ui) implement vertice count when its avaliable
-            ImGui::SameLine((GetColumnWidth() - strlen3) / 2);
-            Text(str3.c_str());
+            ImGui::SameLine((ImGui::GetColumnWidth() - strlen3) / 2);
+            ImGui::TextEx(str3.c_str());
         }
         
         
@@ -2348,30 +2164,30 @@ void Editor::DebugBar() {
         
         
         //Triangle Count
-        if (TableNextColumn() && show_selected_stats) {
+        if (ImGui::TableNextColumn() && show_selected_stats) {
             //TODO( sushi,Ui) implement triangle count when its avaliable
             //Entity* e = admin->selectedEntity;
-            ImGui::SameLine((GetColumnWidth() - strlen4) / 2);
-            Text(str4.c_str());
+            ImGui::SameLine((ImGui::GetColumnWidth() - strlen4) / 2);
+            ImGui::TextEx(str4.c_str());
         }
         
         //Vertice Count
-        if (TableNextColumn() && show_selected_stats) {
+        if (ImGui::TableNextColumn() && show_selected_stats) {
             //TODO( sushi,Ui) implement vertice count when its avaliable
             //Entity* e = admin->selectedEntity;
-            ImGui::SameLine((GetColumnWidth() - strlen5) / 2);
-            Text(str5.c_str());
+            ImGui::SameLine((ImGui::GetColumnWidth() - strlen5) / 2);
+            ImGui::TextEx(str5.c_str());
         }
         
-        //Middle Empty Separator (alert box)
-        if (TableNextColumn()) {
+        //Middle Empty ImGui::Separator (alert box)
+        if (ImGui::TableNextColumn()) {
             if (DengConsole->show_alert) {
                 f32 flicker = (sinf(M_2PI * DengTime->totalTime + cosf(M_2PI * DengTime->totalTime)) + 1)/2;
                 Color col_bg = DengConsole->alert_color * flicker;    col_bg.a = 255;
                 Color col_text = DengConsole->alert_color * -flicker; col_text.a = 255;
-				
-                ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, GetColorU32(ColToVec4(col_bg)));
-				
+                
+                ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ColToVec4(col_bg)));
+                
                 std::string str6;
                 if(DengConsole->alert_count > 1) {
                     str6 = TOSTRING("(",DengConsole->alert_count,") ",DengConsole->alert_message);
@@ -2379,25 +2195,24 @@ void Editor::DebugBar() {
                     str6 = DengConsole->alert_message;
                 }
                 float strlen6 = (font_width / 2) * str6.size();
-                ImGui::SameLine((GetColumnWidth() - strlen6) / 2); PushItemWidth(-1);
+                ImGui::SameLine((ImGui::GetColumnWidth() - strlen6) / 2); ImGui::PushItemWidth(-1);
                 ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(Color(col_text)));
-                Text(str6.c_str());
-                PopStyleColor();
+                ImGui::TextEx(str6.c_str());
+                ImGui::PopStyleColor();
             }
             
             
         }
         
         //Show Time
-        if (TableNextColumn()) {
+        if (ImGui::TableNextColumn()) {
             //https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
-            using namespace std::chrono;
-            
+
             //get current time
-            auto now = system_clock::now();
+            auto now = std::chrono::system_clock::now();
             
             //convert to std::time_t so we can convert to std::tm
-            auto timer = system_clock::to_time_t(now);
+            auto timer = std::chrono::system_clock::to_time_t(now);
             
             //convert to broken time
             std::tm bt = *std::localtime(&timer);
@@ -2410,54 +2225,50 @@ void Editor::DebugBar() {
             float strlen7 = (fontsize - (fontsize / 2)) * str7.size();
             ImGui::SameLine(32 - (strlen7 / 2));
             
-            Text(str7.c_str());
+            ImGui::TextEx(str7.c_str());
             
         }
         
         
         //Context menu for toggling parts of the bar
-        if (ImGui::IsMouseReleased(1) && IsWindowHovered()) OpenPopup("Context");
-        if (BeginPopup("Context")) {
+        if (ImGui::IsMouseReleased(1) && ImGui::IsWindowHovered()) ImGui::OpenPopup("Context");
+        if (ImGui::BeginPopup("Context")) {
             DengConsole->IMGUI_MOUSE_CAPTURE = true;
             ImGui::Separator();
-            if (Button("Open Debug Menu")) {
+            if (ImGui::Button("Open Debug Menu")) {
                 //showDebugTools = true;
-                CloseCurrentPopup();
+                ImGui::CloseCurrentPopup();
             }
             
-            EndPopup();
+            ImGui::EndPopup();
         }
         ImGui::EndTable();
     }
     
-    ImGui::PopStyleVar();
-    ImGui::PopStyleVar();
-    ImGui::PopStyleVar();
-    ImGui::PopStyleColor();
-    ImGui::PopStyleColor();
-    ImGui::PopStyleColor();
+    ImGui::PopStyleVar(3);
+    ImGui::PopStyleColor(3);
     ImGui::End();
 }
 
 void Editor::DrawTimes(){
     std::string time1 = DengTime->FormatTickTime  ("Time       : {t}\n"
-												   "Window     : {w}\n"
-												   "Input      : {i}\n");
+                                                   "Window     : {w}\n"
+                                                   "Input      : {i}\n");
     time1            += DengAdmin->FormatAdminTime("Physics Lyr: {P}\n"
-												   "        Sys: {p}\n"
-												   "Canvas  Lyr: {C}\n"
-												   "        Sys: {c}\n"
-												   "World   Lyr: {W}\n"
-												   "        Sys: {w}\n"
-												   "Sound   Lyr: {S}\n"
-												   "        Sys: {s}\n");
+                                                   "        Sys: {p}\n"
+                                                   "Canvas  Lyr: {C}\n"
+                                                   "        Sys: {c}\n"
+                                                   "World   Lyr: {W}\n"
+                                                   "        Sys: {w}\n"
+                                                   "Sound   Lyr: {S}\n"
+                                                   "        Sys: {s}\n");
     time1            += DengTime->FormatTickTime  ("Admin      : {a}\n"
-												   "Console    : {c}\n"
-												   "Render     : {r}\n"
-												   "Frame      : {f}");
+                                                   "Console    : {c}\n"
+                                                   "Render     : {r}\n"
+                                                   "Frame      : {f}");
     
     ImGui::SetCursorPos(ImVec2(DengWindow->width - 150, menubarheight));
-    ImGui::Text(time1.c_str());
+    ImGui::TextEx(time1.c_str());
 }
 
 //sort of sandbox for drawing ImGui stuff over the entire screen
@@ -2563,7 +2374,7 @@ void Editor::DebugLayer() {
                                        curpos.x + i * fontsize / 2,
                                        curpos.y + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))
                                        ));
-            ImGui::Text(str1.substr(i, 1).c_str());
+            ImGui::TextEx(str1.substr(i, 1).c_str());
         }
         
         if (f.first >= 5) {
@@ -2574,7 +2385,7 @@ void Editor::DebugLayer() {
         ImGui::PopStyleColor();
         index++;
     }
-    ImGui::Text("test");
+    ImGui::TextEx("test");
     
     
     if (admin->paused) {
@@ -2582,7 +2393,7 @@ void Editor::DebugLayer() {
         float strlen = (fontsize - (fontsize / 2)) * s.size();
         //ImGui::SameLine(32 - (strlen / 2));
         ImGui::SetCursorPos(ImVec2(DengWindow->width - strlen * 1.3, menubarheight));
-        ImGui::Text(s.c_str());
+        ImGui::TextEx(s.c_str());
     }
     
     ImGui::PopStyleColor();
@@ -2601,20 +2412,20 @@ void Editor::WorldGrid(Vector3 cpos) {
         Vector3 v4 = Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i);
         //
         //DebugLinesStatic(i, v3, v4, -1);
-		
+        
         bool l1flag = false;
         bool l2flag = false;
-		
+        
         if (floor(cpos.x) - lines + i == 0) {
             l1flag = true;
         }
         if (floor(cpos.z) - lines + i == 0) {
             l2flag = true;
         }
-		
+        
         if (l1flag) { DebugLinesCol(i, v1, v2, -1, Color::BLUE); }
         else { DebugLinesCol(i, v1, v2, -1, Color(50, 50, 50, 50)) };
-		
+        
         if (l2flag) { DebugLinesCol(i, v3, v4, -1, Color::RED); }
         else { DebugLinesCol(i, v3, v4, -1, Color(50, 50, 50, 50)) };
     }
@@ -2643,8 +2454,8 @@ void Editor::ShowSelectedEntityNormals() {
                         Vector3 mid = (p0 + p1 + p2) / 3;
                         
                         DebugLinesCol(i, mid, mid + normal, -1, Color::CYAN);
-						// DebugLinesCol(i, p0, p0 + perp, -1, Color::YELLOW);
-						// DebugLinesCol(i, mid, p0, -1, Color::MAGENTA);
+                        // DebugLinesCol(i, p0, p0 + perp, -1, Color::YELLOW);
+                        // DebugLinesCol(i, mid, p0, -1, Color::MAGENTA);
                     }
                 }
             }
@@ -2675,13 +2486,13 @@ void Editor::Init(Admin* a){
     showImGuiDemoWindow = false;
     showDebugLayer      = true;
     ConsoleHovFlag      = false;
-	
+    
     showEditorWin = false;
-	
+    
     files = deshi::iterateDirectory(deshi::dirModels());
     textures = deshi::iterateDirectory(deshi::dirTextures());
     levels = deshi::iterateDirectory(deshi::dirLevels());
-	
+    
     fonth = ImGui::GetFontSize();
     fontw = fonth / 2.f;
 }
@@ -2751,7 +2562,7 @@ void Editor::Update(){
         else if (DengInput->KeyPressed(DengKeys.orthoLeftView))     camera->orthoview = LEFT;
         else if (DengInput->KeyPressed(DengKeys.orthoTopDownView))  camera->orthoview = TOPDOWN;
         else if (DengInput->KeyPressed(DengKeys.orthoBottomUpView)) camera->orthoview = BOTTOMUP;
-		
+        
         //look at selected
         if(DengInput->KeyPressed(DengKeys.gotoSelected)){
             camera->position = selected[0]->transform.position + Vector3(4.f, 3.f, -4.f);
@@ -2771,12 +2582,12 @@ void Editor::Update(){
     ///////////////////////////////
     //// render user interface ////
     ///////////////////////////////
-	
+    
     //TODO(delle,Cl) program crashes somewhere in DebugTools() if minimized
     if (!DengWindow->minimized) {
         WinHovFlag = 0;
         font_width = ImGui::GetFontSize();
-		
+        
         if (showDebugLayer) DebugLayer();
         if (showTimes)      DrawTimes();
         if (showDebugTools) DebugTools();
@@ -2802,7 +2613,7 @@ void Editor::Update(){
             lastcpos = camera->position;
             first = false;
         }
-		
+        
         DengConsole->IMGUI_MOUSE_CAPTURE = (ConsoleHovFlag || WinHovFlag) ? true : false;
     }
     
@@ -2847,8 +2658,6 @@ void Editor::Reset(){
 }
 
 void Editor::CreateEditorWin() {
-    using namespace ImGui;
-	
     ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
@@ -2857,7 +2666,7 @@ void Editor::CreateEditorWin() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, ImVec2(1, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
-	
+    
     ImGui::PushStyleColor(ImGuiCol_Border, ColToVec4(Color(0, 0, 0)));
     ImGui::PushStyleColor(ImGuiCol_Button, ColToVec4(Color(40, 40, 40)));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ColToVec4(Color(48, 48, 48)));
@@ -2884,31 +2693,27 @@ void Editor::CreateEditorWin() {
     ImGui::PushStyleColor(ImGuiCol_Separator, ColToVec4(Color::VERY_DARK_CYAN));
     ImGui::Begin("Editor Window", 0);
     WinHovCheck;
-    if (DengInput->mouseX < GetWindowPos().x + GetWindowWidth()) {
+    if (DengInput->mouseX < ImGui::GetWindowPos().x + ImGui::GetWindowWidth()) {
         WinHovFlag = true;
     }
-    if (BeginTabBar("MajorTabs")) {
-        if (BeginTabItem("Entities")) {
+    if (ImGui::BeginTabBar("MajorTabs")) {
+        if (ImGui::BeginTabItem("Entities")) {
             EntitiesTab(admin, ImGui::GetFontSize());
-            EndTabItem();
+            ImGui::EndTabItem();
         }
-        if (BeginTabItem("Create")) {
-            CreateTab(admin, ImGui::GetFontSize());
-            EndTabItem();
-        }
-        if (BeginTabItem("Materials")) {
+        if (ImGui::BeginTabItem("Materials")) {
             MaterialsTab(admin);
-            EndTabItem();
+            ImGui::EndTabItem();
         }
-        if (BeginTabItem("Global")) {
+        if (ImGui::BeginTabItem("Global")) {
             GlobalTab(admin);
-            EndTabItem();
+            ImGui::EndTabItem();
         }
-        //if (BeginTabItem("Brushes")) {
+        //if (ImGui::BeginTabItem("Brushes")) {
         //BrushesTab(admin, ImGui::GetFontSize());
-        //EndTabItem();
+        //ImGui::EndTabItem();
         //}
-        EndTabBar();
+        ImGui::EndTabBar();
     }
     ImGui::PopStyleVar(8);
     ImGui::PopStyleColor(24);

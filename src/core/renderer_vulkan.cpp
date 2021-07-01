@@ -254,7 +254,10 @@ Render() {
     if(remakeWindow){
         int w, h;
         glfwGetFramebufferSize(DengWindow->window, &w, &h);
-        if(w <= 0 || h <= 0){  ImGui::EndFrame(); return;  }
+        if(w <= 0 || h <= 0){ 
+            ImGui::EndFrame(); 
+            return;  
+        }
         ResizeWindow();
         frameIndex = 0;
         remakeWindow = false;

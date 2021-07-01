@@ -70,6 +70,7 @@ struct Admin {
 	
 	inline void SkipUpdate(){ skip = true; };
 	void ChangeState(GameState state);
+	std::string FormatAdminTime(std::string format);
 	
 	void Reset();
 	void SaveTEXT(const char* savename);
@@ -77,7 +78,7 @@ struct Admin {
 	void SaveDESH(const char* filename);
 	void LoadDESH(const char* filename);
 	
-	//// Entity Storage Functions ////
+	//// entity and component storage functions ////
 	
 	//initializes an entity with no components and adds it to the creation buffer
 	//returns the eventual position in the admin's entities array
@@ -93,14 +94,14 @@ struct Admin {
 	//initializes an entity with a component vector and adds it to entities immedietly
 	//returns a pointer to the entitiy
 	Entity* CreateEntityNow(std::vector<Component*> components, const char* name = 0, Transform transform = Transform());
-	
+
 	//adds the entity at ID to the deletion buffer
 	void DeleteEntity(u32 id);
 	
 	//adds an already initialized entity to the deletion buffer
 	void DeleteEntity(Entity* entity);
-	
-	std::string FormatAdminTime(std::string format);
+
+	void AddComponentToLayers(Component* component);
 };
 
 
