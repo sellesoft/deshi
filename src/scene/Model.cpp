@@ -8,7 +8,7 @@
 
 #include <unordered_map>
 
-b32 find_triangle_neighbors = true;
+b32 find_triangle_neighbors = false;
 
 /////////////////
 //// Texture ////

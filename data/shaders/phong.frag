@@ -1,5 +1,6 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
+//#extension GL_EXT_debug_printf  : enable
 
 layout(location = 0) in vec3 inColor;
 layout(location = 1) in vec2 inTexCoord;
@@ -35,4 +36,7 @@ void main() {
 		   //outColor = clamp(outColor, vec4(0,0,0,0), vec4(1,1,1,1));
 	   }
    }
+
+   //debugPrintfEXT("test");
+
 }

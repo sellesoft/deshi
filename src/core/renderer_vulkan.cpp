@@ -56,7 +56,7 @@ const bool CRASH_ON_ERROR = false;
 
 #define ASSERTVK(func, message) Assert((func) == VK_SUCCESS, message);
 
-#define LOGGING_LEVEL 3
+#define LOGGING_LEVEL 4
 #if LOGGING_LEVEL == 0
 #define PRINTVK(level, message) (void)0
 #else
@@ -1437,6 +1437,7 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
             WARNING("[Vulkan] ", pCallbackData->pMessage); 
         }break;
         default:{
+            LOG(pCallbackData->pMessage);
             PRINTVK(4, pCallbackData->pMessage);
         }break;
     }
@@ -1652,7 +1653,7 @@ CreateSwapChain() {
     
     //update width and height
     glfwGetFramebufferSize(DengWindow->window, &width, &height);
-    
+
     //query GPUs supported features for the swap chain
     supportDetails = querySwapChainSupport(physicalDevice);
     surfaceFormat = chooseSwapSurfaceFormat(supportDetails.formats);

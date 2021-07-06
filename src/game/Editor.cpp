@@ -1776,6 +1776,46 @@ inline void MaterialsTab(Admin* admin){
         //TODO(Ui) setup material editing other than PBR once we have material parameters
         switch(mat->shader){
             //// flat shader ////
+
+            default: {
+                ImGui::TextEx("Albedo   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+                if (ImGui::BeginCombo("##mat_albedo_combo", DengRenderer->textures[mat->albedoID].filename)) {
+                    forI(textures.size()) {
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->albedoID].filename, textures[i].c_str()) == 0)) {
+                            DengRenderer->UpdateMaterialTexture(mat->id, 0, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Albedo));
+                        }
+                    }
+                    ImGui::EndCombo(); //mat_albedo_combo
+                }
+                ImGui::TextEx("Normal   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+                if (ImGui::BeginCombo("##mat_normal_combo", DengRenderer->textures[mat->normalID].filename)) {
+                    forI(textures.size()) {
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->normalID].filename, textures[i].c_str()) == 0)) {
+                            DengRenderer->UpdateMaterialTexture(mat->id, 1, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Normal));
+                        }
+                    }
+                    ImGui::EndCombo(); //mat_normal_combo
+                }
+                ImGui::TextEx("Specular "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+                if (ImGui::BeginCombo("##mat_spec_combo", DengRenderer->textures[mat->specularID].filename)) {
+                    forI(textures.size()) {
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->specularID].filename, textures[i].c_str()) == 0)) {
+                            DengRenderer->UpdateMaterialTexture(mat->id, 2, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Specular));
+                        }
+                    }
+                    ImGui::EndCombo(); //mat_spec_combo
+                }
+                ImGui::TextEx("Light    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+                if (ImGui::BeginCombo("##mat_light_combo", DengRenderer->textures[mat->lightID].filename)) {
+                    forI(textures.size()) {
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->lightID].filename, textures[i].c_str()) == 0)) {
+                            DengRenderer->UpdateMaterialTexture(mat->id, 3, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Light));
+                        }
+                    }
+                    ImGui::EndCombo(); //mat_light_combo
+                }
+            }break;
+
             case Shader_Flat:{
                 
             }break;
