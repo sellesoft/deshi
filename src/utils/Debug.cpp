@@ -220,6 +220,10 @@ void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, size_t unique, float 
 }
 
 void Debug::Update() {
+	//DebugLine(DengRenderer->lights[0].ToVector3(), DengRenderer->lights[0].ToVector3() - (Vector3::FORWARD * Math::LookAtMatrix(DengRenderer->lights[0].ToVector3(), Vector3::ZERO)).normalized(), DengTime->deltaTime);
+	
+	
+	
 	
 	for (auto& c : meshes) {
 		MeshInfo* mi = &c.second;

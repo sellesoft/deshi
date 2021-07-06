@@ -55,6 +55,15 @@ fix DESH material and event saving/loading
 
 Render TODOs
 ------------
+add directional shadow mapping
+add omnidirectional shadow mapping
+add not-on-screen object culling thru mesh AABBs
+add front-to-back sorting for perf gain (and maybe transparency?)
+setup more generalized material/pipeline creation
+ ____specialization constants
+____uber shaders
+____runtime pipeline creation/specialization
+redo how lights are stored
 redo mesh brush to be one large buffer that updates every frame
 look into getting info from shaders, or setting up compute shaders
 ____ref: https://github.com/SaschaWillems/Vulkan/blob/master/examples/computeparticles/computeparticles.cpp
@@ -63,10 +72,8 @@ ____involve clipping triangles and stuff
 redo MeshVk so its only child meshes
 ____avoid having 3 copies of a mesh (model, meshVK, vulkan)
 ability to do transparency in a fragment shader eg. we can do outColor = vec4(1,1,1,0.5)
-___this would be for experimenting with volumetrics, making a window shader w/o need for textures, etc.
-depth sorting and occlusion culling
-add more render settings
-add lighting and shadows
+____this would be for experimenting with volumetrics, making a window shader w/o need for textures, etc.
+add standard render/video settings
 add 2D shader and interface functions
 add face normal and tangents to vertex buffer
 fix texture transparency
@@ -75,6 +82,7 @@ add instancing
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
 multi-threaded command buffers, shader loading, image loading
 move interface functions out of vulkan files
+convert Renderer to namespace Render
 SSBOs in shaders so we can pass variable length arrays to it
 
 Level Editor and Inspector TODOs

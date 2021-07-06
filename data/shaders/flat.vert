@@ -1,5 +1,6 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
+//#extension GL_EXT_debug_printf : enable
 
 layout(set = 0, binding = 0) uniform UniformBufferObject{
 	mat4  view;
@@ -27,6 +28,8 @@ layout(location = 2) out vec3 outNormal;
 
 void main() {
     vec3 light = vec3(ubo.viewPos);
+	
+	//debugPrintfEXT("%f", ubo.time);
 	
 	vec3 normal = mat3(primitive.model) * inNormal;
 	vec3 position = primitive.model[3].xyz;

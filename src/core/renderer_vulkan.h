@@ -30,6 +30,14 @@ enum VSyncTypeBits : u32{
 struct RenderSettings{ //loaded from file
 	VSyncType vsync  = VSyncType_Immediate;
 	u32 msaa_samples = 0;
+	
+	//shadows
+	b32 shadowPCF = false;
+	u32 shadowResolution = 2048;
+	f32 shadowNearZ = 1.f;
+	f32 shadowFarZ = 96.f;
+	f32 depthBiasConstant = 1.25f;
+	f32 depthBiasSlope = 1.75f;
     
     //debug settings that require restart
     b32 debugging = true;
@@ -326,7 +334,7 @@ struct Renderer{
     //// instance ////
     
     
-    VkInstance instance = VK_NULL_HANDLE; //ptr
+    VkInstance instance = VK_NULL_HANDLE;
     
     void CreateInstance();
     bool checkValidationLayerSupport();
@@ -336,7 +344,7 @@ struct Renderer{
     //// debug messenger ////
     
     
-    VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE; //ptr
+    VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
     
     void SetupDebugMessenger();
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
@@ -348,7 +356,7 @@ struct Renderer{
     //// surface ////
     
     
-    VkSurfaceKHR surface; //ptr or struct; platform dependent
+    VkSurfaceKHR surface;
     
     void CreateSurface();
     
@@ -356,15 +364,15 @@ struct Renderer{
     //// device ////
     
     
-    VkPhysicalDevice         physicalDevice = VK_NULL_HANDLE; //ptr
-    VkSampleCountFlagBits    maxMsaaSamples = VK_SAMPLE_COUNT_1_BIT;  //flags
-    VkPhysicalDeviceFeatures deviceFeatures{}; //struct
-    VkPhysicalDeviceFeatures enabledFeatures{}; //struct
-    QueueFamilyIndices       physicalQueueFamilies; //struct
-    VkDevice                 device        = VK_NULL_HANDLE; //ptr
-    VkQueue                  graphicsQueue = VK_NULL_HANDLE; //ptr
-    VkQueue                  presentQueue  = VK_NULL_HANDLE; //ptr
-    VkDeviceSize             bufferMemoryAlignment = 256; //u64
+    VkPhysicalDevice         physicalDevice = VK_NULL_HANDLE;
+    VkSampleCountFlagBits    maxMsaaSamples = VK_SAMPLE_COUNT_1_BIT;
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    VkPhysicalDeviceFeatures enabledFeatures{};
+    QueueFamilyIndices       physicalQueueFamilies;
+    VkDevice                 device        = VK_NULL_HANDLE;
+    VkQueue                  graphicsQueue = VK_NULL_HANDLE;
+    VkQueue                  presentQueue  = VK_NULL_HANDLE; 
+    VkDeviceSize             bufferMemoryAlignment = 256;
     
     void PickPhysicalDevice();
     //checks whether the graphics card supports swapchains
@@ -380,11 +388,11 @@ struct Renderer{
     
     s32 width  = 0;
     s32 height = 0;
-    VkSwapchainKHR          swapchain = VK_NULL_HANDLE; //ptr
-    SwapChainSupportDetails supportDetails{}; //struct
-    VkSurfaceFormatKHR      surfaceFormat{}; //struct
-    VkPresentModeKHR        presentMode; //flags
-    VkExtent2D              extent; //struct
+    VkSwapchainKHR          swapchain = VK_NULL_HANDLE;
+    SwapChainSupportDetails supportDetails{};
+    VkSurfaceFormatKHR      surfaceFormat{};
+    VkPresentModeKHR        presentMode;
+    VkExtent2D              extent;
     s32                     minImageCount = 0;
     
     //destroy old swap chain and in-flight frames, create a new swap chain with new dimensions
@@ -403,9 +411,9 @@ struct Renderer{
     
     
     VkRenderPass renderPass = VK_NULL_HANDLE;
-    
-    void CreateRenderPass();
-    
+	
+	void CreateRenderpass();
+	
     
     //// frames ////
     
@@ -414,9 +422,9 @@ struct Renderer{
     u32 frameIndex = 0;
     std::vector<FrameVk> frames;
     FramebufferAttachmentsVk attachments{};
-    VkSemaphore   imageAcquiredSemaphore  = VK_NULL_HANDLE; //ptr
-    VkSemaphore   renderCompleteSemaphore = VK_NULL_HANDLE; //ptr
-    VkCommandPool commandPool = VK_NULL_HANDLE; //ptr
+    VkSemaphore   imageAcquiredSemaphore  = VK_NULL_HANDLE;
+    VkSemaphore   renderCompleteSemaphore = VK_NULL_HANDLE;
+    VkCommandPool commandPool = VK_NULL_HANDLE;
     
     //creates a pool for commands
     void CreateCommandPool();
@@ -424,8 +432,7 @@ struct Renderer{
     void CreateFrames();
     //creates semaphores indicating: image acquired, rendering complete
     void CreateSyncObjects();
-    
-    
+	
     //// global buffers ////
     
     
@@ -435,7 +442,7 @@ struct Renderer{
         VkDeviceSize           bufferSize;
         VkDescriptorBufferInfo bufferDescriptor;
         
-        struct{
+        struct{ //size: 101*4=404 bytes
             mat4 view;        //camera view matrix
             mat4 proj;        //camera projection matrix
             vec4 lights[10];  //lights
@@ -444,6 +451,8 @@ struct Renderer{
             vec2 mousepos;    //mouse screen pos
             vec3 mouseWorld;  //point casted out from mouse 
 			f32  time;        //total time
+			b32  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
+			mat4 depthMVP;    //MVP matrix for first light   //TODO(delle,ReVu) redo how lights are stored
         } values;
     } uboVS{};
     struct{ //uniform buffer for the geometry shaders
@@ -458,7 +467,7 @@ struct Renderer{
         } values;
     } uboGS{};
 	
-    VkDescriptorSet uboDescriptorSet;
+	VkDescriptorSet sceneDescriptorSet;
 	
     struct{ //vertices buffer
         VkBuffer       buffer;
@@ -484,25 +493,25 @@ struct Renderer{
     //// pipelines setup ////
     
     
-    std::array<VkClearValue, 3> clearValues{}; //struct
-    VkDescriptorPool descriptorPool = VK_NULL_HANDLE; //ptr
-    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE; //ptr
-    VkPipelineCache  pipelineCache  = VK_NULL_HANDLE; //ptr
-    VkGraphicsPipelineCreateInfo           pipelineCreateInfo{}; //struct
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{}; //struct
-    VkPipelineRasterizationStateCreateInfo rasterizationState{}; //struct
-    VkPipelineColorBlendAttachmentState    colorBlendAttachmentState{}; //struct
-    VkPipelineColorBlendStateCreateInfo    colorBlendState{}; //struct
-    VkPipelineDepthStencilStateCreateInfo  depthStencilState{}; //struct
-    VkPipelineViewportStateCreateInfo      viewportState{}; //struct
-    VkPipelineMultisampleStateCreateInfo   multisampleState{}; //struct
-    VkPipelineVertexInputStateCreateInfo   vertexInputState{}; //struct
-    VkPipelineDynamicStateCreateInfo       dynamicState{}; //struct
-    std::vector<VkDynamicState>                    dynamicStates; //struct
-    std::vector<VkVertexInputBindingDescription>   vertexInputBindings; //struct
-    std::vector<VkVertexInputAttributeDescription> vertexInputAttributes; //struct
-    struct { //descriptor set layouts for pipelines
-        VkDescriptorSetLayout ubos       = VK_NULL_HANDLE;
+    std::array<VkClearValue, 3> clearValues{};
+    VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+    VkPipelineCache  pipelineCache  = VK_NULL_HANDLE;
+    VkGraphicsPipelineCreateInfo           pipelineCreateInfo{};
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
+    VkPipelineRasterizationStateCreateInfo rasterizationState{};
+    VkPipelineColorBlendAttachmentState    colorBlendAttachmentState{};
+    VkPipelineColorBlendStateCreateInfo    colorBlendState{};
+    VkPipelineDepthStencilStateCreateInfo  depthStencilState{};
+    VkPipelineViewportStateCreateInfo      viewportState{};
+    VkPipelineMultisampleStateCreateInfo   multisampleState{};
+    VkPipelineVertexInputStateCreateInfo   vertexInputState{};
+    VkPipelineDynamicStateCreateInfo       dynamicState{};
+    std::vector<VkDynamicState>                    dynamicStates;
+    std::vector<VkVertexInputBindingDescription>   vertexInputBindings;
+    std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
+    struct{ //descriptor set layouts for pipelines
+        VkDescriptorSetLayout ubos       = VK_NULL_HANDLE; //TODO(delle,Vu) rename this to something more general
         VkDescriptorSetLayout textures   = VK_NULL_HANDLE;
         VkDescriptorSetLayout instances  = VK_NULL_HANDLE;
     } descriptorSetLayouts;
@@ -522,19 +531,28 @@ struct Renderer{
     
     
     struct { //pipelines
-        VkPipeline base;
-        VkPipeline flat;
-        VkPipeline phong;
-        VkPipeline twod;
-        VkPipeline pbr;
-        VkPipeline lavalamp;
-        VkPipeline wireframe;
-        VkPipeline wireframe_depth;
-        VkPipeline selected;
-        VkPipeline collider;
-        VkPipeline normals;
-        VkPipeline testing0;
-        VkPipeline testing1;
+		union{
+			VkPipeline array[14];
+			struct{
+				//game shaders
+				VkPipeline flat;
+				VkPipeline phong;
+				VkPipeline twod;
+				VkPipeline pbr;
+				VkPipeline lavalamp;
+				
+				//development shaders
+				VkPipeline base;
+				VkPipeline wireframe;
+				VkPipeline wireframe_depth;
+				VkPipeline selected;
+				VkPipeline collider;
+				VkPipeline normals;
+				VkPipeline testing0;
+				VkPipeline testing1;
+				VkPipeline offscreen;
+			};
+		};
     } pipelines{};
     
     std::array<VkPipelineShaderStageCreateInfo, 3> shaderStages;
@@ -579,9 +597,27 @@ struct Renderer{
     //copies a buffer, we use this to copy from CPU to GPU
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     
+	
+	//// offscreen rendering ////
+	
+	
+	struct{
+		s32 width, height;
+		VkImage               depthImage;
+		VkDeviceMemory        depthImageMemory;
+		VkImageView           depthImageView;
+		VkSampler             depthSampler;
+		VkDescriptorImageInfo depthDescriptor;
+		VkRenderPass          renderpass;
+		VkFramebuffer         framebuffer;
+	} offscreen{};
+	
+	void SetupOffscreenRendering();
     
+	
     //// other ////
     
+	
 	//give names to objects for debugging
 	void DebugNameObjects();
     //recreates the swapchain and frames

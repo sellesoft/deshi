@@ -3,7 +3,7 @@
 layout (triangles) in;
 layout (line_strip, max_vertices = 8) out;
 
-layout(set = 0, binding = 1) uniform UBO {
+layout(set = 0, binding = 2) uniform UBO {
 	mat4 view;
 	mat4 proj;
 } ubo;

@@ -10,6 +10,8 @@ layout(set = 0, binding = 0) uniform UniformBufferObject{
 	vec2  mousepos;
 	vec3  mouseWorld;
 	float time;
+	int   enablePCF;
+	mat4  depthMVP;
 } ubo;
 
 layout(push_constant) uniform PushConsts{
@@ -27,18 +29,30 @@ layout(location = 2) out vec3 outNormal;
 layout(location = 3) out float outLightBrightness;
 layout(location = 4) out vec3 outWorldPos;
 layout(location = 5) out vec3 viewPosition;
-layout(location = 6) out vec4 outLights[10];
+layout(location = 6) out int  outEnablePCF;
+layout(location = 7) out vec4 outShadowCoord;
+layout(location = 8) out vec3 outLightVec;
+layout(location = 9) out vec3 outViewVec;
+layout(location = 10) out vec4 outLights[10];
+
+const mat4 biasMat = mat4(0.5, 0.0, 0.0, 0.0,
+						  0.0, 0.5, 0.0, 0.0,
+						  0.0, 0.0, 1.0, 0.0,
+						  0.5, 0.5, 0.0, 1.0);
 
 void main() {
-	
-	viewPosition = (ubo.view * primitive.model * vec4(inPosition.xyz, 1.0)).xyz;
-    gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
+	gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
     outColor = inColor;
 	outTexCoord = inTexCoord;
 	outNormal = mat3(primitive.model) * inNormal;
-	//outLightPos = ubo.lightPos.xyz;
 	//outLightBrightness = ubo.lightPos.w;
-	outLights = ubo.lights;
-	
 	outWorldPos = vec3(primitive.model * vec4(inPosition.xyz, 1.0));
+	outLights = ubo.lights;
+	viewPosition = (ubo.view * primitive.model * vec4(inPosition.xyz, 1.0)).xyz;
+	
+	if(ubo.enablePCF != 0) outEnablePCF = 1;
+	outShadowCoord = (biasMat * ubo.depthMVP * primitive.model) * vec4(inPosition, 1.0);
+	outLightVec = normalize(ubo.lights[0].xyz - inPosition);
+	vec4 pos = primitive.model * vec4(inPosition.xyz, 1.0);
+	outViewVec = -pos.xyz;
 }

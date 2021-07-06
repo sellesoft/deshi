@@ -1038,13 +1038,13 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                 ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);                  //name
                 ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 3.5f); //events button
                 ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);        //delete button
-            
+				
                 forX(ent_idx, admin->entities.size()){
                     Entity* ent = admin->entities[ent_idx];
                     if(!ent) assert(!"NULL entity when creating entity list table");
                     ImGui::PushID(ent->id);
                     ImGui::TableNextRow(); 
-                
+					
                     //// visible button ////
                     //TODO(sushi,UiEnt) implement visibility for things other than meshes like lights, etc.
                     ImGui::TableSetColumnIndex(0);
@@ -1059,7 +1059,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                     }else{
                         if(ImGui::Button("(?)", ImVec2(-FLT_MIN, 0.0f))){}
                     }
-                
+					
                     //// id + label (selectable row) ////
                     ImGui::TableSetColumnIndex(1);
                     char label[8];
@@ -1086,7 +1086,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                         rename_ent = false;
                         DengConsole->IMGUI_KEY_CAPTURE = false;
                     }
-                
+					
                     //// name text ////
                     ImGui::TableSetColumnIndex(2);
                     if(rename_ent && selected_idx == ent_idx){
@@ -1096,14 +1096,14 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                     }else{
                         ImGui::TextEx(ent->name);
                     }
-                
+					
                     //// events button ////
                     ImGui::TableSetColumnIndex(3);
                     if (ImGui::Button("Events", ImVec2(-FLT_MIN, 0.0f))) {
                         events_ent = (events_ent != ent) ? ent : 0;
                     }
                     EventsMenu(events_ent);
-                
+					
                     //// delete button ////
                     ImGui::TableSetColumnIndex(4);
                     if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))){
@@ -1124,7 +1124,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
     //// create new entity ////
     local_persist const char* presets[] = {"Empty", "StaticMesh"};
     local_persist int current_preset = 0;
-
+	
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
     if(ImGui::Button("New Entity")){
         Entity* ent = 0;
@@ -1139,11 +1139,11 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                 Physics* phys = new Physics();
                 phys->isStatic = true;
                 Collider* coll = new AABBCollider(vec3{.5f, .5f, .5f}, phys->mass);
-
+				
                 ent = admin->CreateEntityNow({mc, phys, coll}, ent_name.c_str());
             }break;
         }
-
+		
         selected.clear();
         if(ent) selected.push_back(ent);
     }
@@ -1161,7 +1161,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
         //// name ////
         SetPadding; ImGui::TextEx(TOSTRING(sel->id, ":").c_str()); 
         ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); ImGui::InputText("##ent_name_input", sel->name, DESHI_NAME_SIZE, 
-                                                          ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+																			   ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
         
         //// transform ////
         int tree_flags = ImGuiTreeNodeFlags_DefaultOpen;
@@ -1209,130 +1209,130 @@ inline void EntitiesTab(Admin* admin, float fontsize){
             Component* c = sel->components[comp_idx];
             bool delete_button = true;
             ImGui::PushID(c);
-
+			
             switch(c->comptype){
-
-            //mesh
-            case ComponentType_MeshComp:{
-                if(ImGui::CollapsingHeader("Mesh", &delete_button, tree_flags)){
-                    ImGui::Indent();
-
-                    MeshComp* mc = dyncast(MeshComp, c);
+				
+				//mesh
+				case ComponentType_MeshComp:{
+					if(ImGui::CollapsingHeader("Mesh", &delete_button, tree_flags)){
+						ImGui::Indent();
+						
+						MeshComp* mc = dyncast(MeshComp, c);
                         
-                    ImGui::TextEx("Visible  "); ImGui::SameLine();
-                    if(ImGui::Button((DengRenderer->meshes[mc->meshID].visible) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
-                        mc->ToggleVisibility();
-                    }
+						ImGui::TextEx("Visible  "); ImGui::SameLine();
+						if(ImGui::Button((DengRenderer->meshes[mc->meshID].visible) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
+							mc->ToggleVisibility();
+						}
                         
-                    ImGui::TextEx("Mesh     "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-                    if(ImGui::BeginCombo("##mesh_combo", DengRenderer->meshes[mc->meshID].name)){ WinHovCheck;
-                        forI(DengRenderer->meshes.size()){
-                            if(DengRenderer->meshes[i].base && ImGui::Selectable(DengRenderer->meshes[i].name, mc->meshID == i)){
-                                mc->ChangeMesh(i);
-                            }
-                        }
-                        ImGui::EndCombo();
-                    }
+						ImGui::TextEx("Mesh     "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
+						if(ImGui::BeginCombo("##mesh_combo", DengRenderer->meshes[mc->meshID].name)){ WinHovCheck;
+							forI(DengRenderer->meshes.size()){
+								if(DengRenderer->meshes[i].base && ImGui::Selectable(DengRenderer->meshes[i].name, mc->meshID == i)){
+									mc->ChangeMesh(i);
+								}
+							}
+							ImGui::EndCombo();
+						}
                         
-                    u32 mesh_batch_idx = 0;
-                    ImGui::TextEx("Batch    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-                    if(ImGui::BeginCombo("##mesh_batch_combo", mc->mesh->batchArray[mesh_batch_idx].name)){ WinHovCheck;
-                        forI(mc->mesh->batchArray.size()){
-                            if(ImGui::Selectable(mc->mesh->batchArray[i].name, mesh_batch_idx == i)){
-                                mesh_batch_idx = i; 
-                            }
-                        }
-                        ImGui::EndCombo();
-                    }
+						u32 mesh_batch_idx = 0;
+						ImGui::TextEx("Batch    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
+						if(ImGui::BeginCombo("##mesh_batch_combo", mc->mesh->batchArray[mesh_batch_idx].name)){ WinHovCheck;
+							forI(mc->mesh->batchArray.size()){
+								if(ImGui::Selectable(mc->mesh->batchArray[i].name, mesh_batch_idx == i)){
+									mesh_batch_idx = i; 
+								}
+							}
+							ImGui::EndCombo();
+						}
                         
-                    ImGui::TextEx("Material "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-                    if(ImGui::BeginCombo("##mesh_mat_combo", DengRenderer->materials[DengRenderer->meshes[mc->meshID].primitives[mesh_batch_idx].materialIndex].name)){ WinHovCheck;
-                        forI(DengRenderer->materials.size()){
-                            if(ImGui::Selectable(DengRenderer->materials[i].name, DengRenderer->meshes[mc->meshID].primitives[mesh_batch_idx].materialIndex == i)){
-                                DengRenderer->UpdateMeshBatchMaterial(mc->meshID, mesh_batch_idx, i);
-                            }
-                        }
-                        ImGui::EndCombo();
-                    }
-
-                    ImGui::Unindent();
-                    ImGui::Separator();
-                }
-            }break;
+						ImGui::TextEx("Material "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
+						if(ImGui::BeginCombo("##mesh_mat_combo", DengRenderer->materials[DengRenderer->meshes[mc->meshID].primitives[mesh_batch_idx].materialIndex].name)){ WinHovCheck;
+							forI(DengRenderer->materials.size()){
+								if(ImGui::Selectable(DengRenderer->materials[i].name, DengRenderer->meshes[mc->meshID].primitives[mesh_batch_idx].materialIndex == i)){
+									DengRenderer->UpdateMeshBatchMaterial(mc->meshID, mesh_batch_idx, i);
+								}
+							}
+							ImGui::EndCombo();
+						}
+						
+						ImGui::Unindent();
+						ImGui::Separator();
+					}
+				}break;
                 
-            //mesh2D
-            //TODO(,Ui) implement mesh2D component inspector
-            /*
-            local_persist const char* twods[] = {"None", "Line", "Triangle", "Square", "N-Gon", "Image"};
-            local_persist int  twod_type = 0, twod_vert_count = 0;
-            local_persist u32  twod_id = -1;
-            local_persist vec4 twod_color = vec4::ONE;
-            local_persist f32  twod_radius = 1.f;
-            local_persist std::vector<vec2> twod_verts;
-            ImU32 color = ImGui::ColorConvertFloat4ToU32(ImVec4(twod_color.x, twod_color.y, twod_color.z, twod_color.w));
-            ImGui::SetNextItemWidth(-1); if(ImGui::Combo("##twod_combo", &twod_type, twods, ArrayCount(twods))){ WinHovCheck; 
-            twod_vert_count = twod_type + 1;
-            twod_verts.resize(twod_vert_count);
-            switch(twod_type){
-            case(Twod_Line):{
-                twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = {100.f, 100.f};
-            }break;
-            case(Twod_Triangle):{
-                twod_verts[0] = {-100.f, 0.f}; twod_verts[1] = {0.f, 100.f}; twod_verts[2] = {100.f, 0.f};
-            }break;
-            case(Twod_Square):{
-                twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = { 100.f, -100.f};
-                twod_verts[2] = { 100.f,  100.f}; twod_verts[3] = {-100.f,  100.f};
-            }break;
-            case(Twod_NGon):{
-
-            }break;
-            case(Twod_Image):{
-
-            }break;
-            }
-            }
-
-            ImGui::TextEx("Color "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); ImGui::ColorEdit4("##twod_color", (float*)&twod_color); ImGui::Separator();
-            ImDrawList* draw_list = ImGui::GetForegroundDrawList();
-            switch(twod_type){
-            case(Twod_Line):{
-                draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
-                draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), color, 3.f);
-            }break;
-            case(Twod_Triangle):{
-                draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
-            }break;
-            case(Twod_Square):{
-                draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
-                draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[2].x, entity_pos.y+twod_verts[2].y), ImVec2(entity_pos.x+twod_verts[3].x, entity_pos.y+twod_verts[3].y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
-            }break;
-            case(Twod_NGon):{
-                draw_list->AddNgon(ImVec2(entity_pos.x, entity_pos.y), twod_radius, color, twod_vert_count, 3.f);
-                ImGui::TextEx("Vertices "); ImGui::SameLine(); ImGui::SliderInt("##vert_cnt", &twod_vert_count, 5, 12); ImGui::Separator();
-                ImGui::TextEx("Radius   "); ImGui::SameLine(); ImGui::SliderFloat("##vert_rad", &twod_radius, .01f, 100.f); ImGui::Separator();
-            }break;
-            case(Twod_Image):{
-                ImGui::TextEx("Not implemented yet");
-            }break;
-            }
-
-            if(twod_vert_count > 1 && twod_vert_count < 5){
-                std::string point("Point 0     ");
-                ImGui::SetNextItemWidth(-1); if(ImGui::ListBoxHeader("##twod_verts", (int)twod_vert_count, 5)){
-                    forI(twod_vert_count){
-                        point[6] = 49 + i;
-                        ImGui::TextEx(point.c_str()); ImGui::SameLine(); ImGui::InputVector2(point.c_str(), &twod_verts[0] + i);  ImGui::Separator();
-                    }
-                    ImGui::ListBoxFooter();
-                }
-            }*/
+				//mesh2D
+				//TODO(,Ui) implement mesh2D component inspector
+				/*
+				local_persist const char* twods[] = {"None", "Line", "Triangle", "Square", "N-Gon", "Image"};
+				local_persist int  twod_type = 0, twod_vert_count = 0;
+				local_persist u32  twod_id = -1;
+				local_persist vec4 twod_color = vec4::ONE;
+				local_persist f32  twod_radius = 1.f;
+				local_persist std::vector<vec2> twod_verts;
+				ImU32 color = ImGui::ColorConvertFloat4ToU32(ImVec4(twod_color.x, twod_color.y, twod_color.z, twod_color.w));
+				ImGui::SetNextItemWidth(-1); if(ImGui::Combo("##twod_combo", &twod_type, twods, ArrayCount(twods))){ WinHovCheck; 
+				twod_vert_count = twod_type + 1;
+				twod_verts.resize(twod_vert_count);
+				switch(twod_type){
+				case(Twod_Line):{
+					twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = {100.f, 100.f};
+				}break;
+				case(Twod_Triangle):{
+					twod_verts[0] = {-100.f, 0.f}; twod_verts[1] = {0.f, 100.f}; twod_verts[2] = {100.f, 0.f};
+				}break;
+				case(Twod_Square):{
+					twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = { 100.f, -100.f};
+					twod_verts[2] = { 100.f,  100.f}; twod_verts[3] = {-100.f,  100.f};
+				}break;
+				case(Twod_NGon):{
+	
+				}break;
+				case(Twod_Image):{
+	
+				}break;
+				}
+				}
+	
+				ImGui::TextEx("Color "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); ImGui::ColorEdit4("##twod_color", (float*)&twod_color); ImGui::Separator();
+				ImDrawList* draw_list = ImGui::GetForegroundDrawList();
+				switch(twod_type){
+				case(Twod_Line):{
+					draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
+					draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), color, 3.f);
+				}break;
+				case(Twod_Triangle):{
+					draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
+				}break;
+				case(Twod_Square):{
+					draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
+					draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[2].x, entity_pos.y+twod_verts[2].y), ImVec2(entity_pos.x+twod_verts[3].x, entity_pos.y+twod_verts[3].y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
+				}break;
+				case(Twod_NGon):{
+					draw_list->AddNgon(ImVec2(entity_pos.x, entity_pos.y), twod_radius, color, twod_vert_count, 3.f);
+					ImGui::TextEx("Vertices "); ImGui::SameLine(); ImGui::SliderInt("##vert_cnt", &twod_vert_count, 5, 12); ImGui::Separator();
+					ImGui::TextEx("Radius   "); ImGui::SameLine(); ImGui::SliderFloat("##vert_rad", &twod_radius, .01f, 100.f); ImGui::Separator();
+				}break;
+				case(Twod_Image):{
+					ImGui::TextEx("Not implemented yet");
+				}break;
+				}
+	
+				if(twod_vert_count > 1 && twod_vert_count < 5){
+					std::string point("Point 0     ");
+					ImGui::SetNextItemWidth(-1); if(ImGui::ListBoxHeader("##twod_verts", (int)twod_vert_count, 5)){
+						forI(twod_vert_count){
+							point[6] = 49 + i;
+							ImGui::TextEx(point.c_str()); ImGui::SameLine(); ImGui::InputVector2(point.c_str(), &twod_verts[0] + i);  ImGui::Separator();
+						}
+						ImGui::ListBoxFooter();
+					}
+				}*/
                 
-            //physics
-            case ComponentType_Physics:
+				//physics
+				case ComponentType_Physics:
                 if(ImGui::CollapsingHeader("Physics", &delete_button, tree_flags)){
                     ImGui::Indent();
-
+					
                     Physics* d = dyncast(Physics, c);
                     ImGui::TextEx("Velocity     "); ImGui::SameLine(); ImGui::InputVector3("##phys_vel", &d->velocity);
                     ImGui::TextEx("Accelertaion "); ImGui::SameLine(); ImGui::InputVector3("##phys_accel", &d->acceleration);
@@ -1347,219 +1347,219 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                     ImGui::Checkbox("Static Position", &d->isStatic);
                     ImGui::Checkbox("Static Rotation", &d->staticRotation);
                     ImGui::Checkbox("2D Physics", &d->twoDphys);
-
+					
                     ImGui::Unindent();
                     ImGui::Separator();
                 }
-            break;
+				break;
                 
-            //colliders
-            case ComponentType_Collider:{
-                if(ImGui::CollapsingHeader("Collider", &delete_button, tree_flags)){
-                    ImGui::Indent();
-
-                    Collider* coll = dyncast(Collider, c);
-                    f32 mass = 1.0f;
-
-                    ImGui::TextEx("Shape "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                    if(ImGui::BeginCombo("##coll_type_combo", ColliderTypeStrings[coll->type])){
-                        forI(ArrayCount(ColliderTypeStrings)){
-                            if(ImGui::Selectable(ColliderTypeStrings[i], coll->type == i) && (coll->type != i)){
-                                if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
-                                
-                                sel->RemoveComponent(coll);
-                                coll = 0;
-                                switch(i){
-                                    case ColliderType_AABB:{
-                                        coll = new AABBCollider(vec3{0.5f, 0.5f, 0.5f}, mass);
-                                    }break;
-                                    case ColliderType_Box:{
-                                        coll = new BoxCollider(vec3{0.5f, 0.5f, 0.5f}, mass);
-                                    }break;
-                                    case ColliderType_Sphere:{
-                                        coll = new SphereCollider(1.0f, mass);
-                                    }break;
-                                    case ColliderType_Landscape:{
-                                        //coll = new LandscapeCollider();
-                                        WARNING_LOC("Landscape collider not setup yet");
-                                    }break;
-                                    case ColliderType_Complex:{
-                                        //coll = new ComplexCollider();
-                                        WARNING_LOC("Complex collider not setup yet");
-                                    }break;
-                                }
-
-                                if(coll){
-                                    sel->AddComponent(coll);
-                                    admin->AddComponentToLayers(coll);
-                                }
-                            }
-                        }
-                        ImGui::EndCombo();
-                    }
+				//colliders
+				case ComponentType_Collider:{
+					if(ImGui::CollapsingHeader("Collider", &delete_button, tree_flags)){
+						ImGui::Indent();
+						
+						Collider* coll = dyncast(Collider, c);
+						f32 mass = 1.0f;
+						
+						ImGui::TextEx("Shape "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+						if(ImGui::BeginCombo("##coll_type_combo", ColliderTypeStrings[coll->type])){
+							forI(ArrayCount(ColliderTypeStrings)){
+								if(ImGui::Selectable(ColliderTypeStrings[i], coll->type == i) && (coll->type != i)){
+									if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
+									
+									sel->RemoveComponent(coll);
+									coll = 0;
+									switch(i){
+										case ColliderType_AABB:{
+											coll = new AABBCollider(vec3{0.5f, 0.5f, 0.5f}, mass);
+										}break;
+										case ColliderType_Box:{
+											coll = new BoxCollider(vec3{0.5f, 0.5f, 0.5f}, mass);
+										}break;
+										case ColliderType_Sphere:{
+											coll = new SphereCollider(1.0f, mass);
+										}break;
+										case ColliderType_Landscape:{
+											//coll = new LandscapeCollider();
+											WARNING_LOC("Landscape collider not setup yet");
+										}break;
+										case ColliderType_Complex:{
+											//coll = new ComplexCollider();
+											WARNING_LOC("Complex collider not setup yet");
+										}break;
+									}
+									
+									if(coll){
+										sel->AddComponent(coll);
+										admin->AddComponentToLayers(coll);
+									}
+								}
+							}
+							ImGui::EndCombo();
+						}
                         
-                    switch(coll->type){
-                        case ColliderType_Box:{
-                            BoxCollider* coll_box = dyncast(BoxCollider, coll);
-                            ImGui::TextEx("Half Dims "); ImGui::SameLine(); 
-                            if(ImGui::InputVector3("##coll_halfdims", &coll_box->halfDims)){
-                                if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
-                                coll_box->RecalculateTensor(mass);
-                            }
-                        }break;
-                        case ColliderType_AABB:{
-                            AABBCollider* coll_aabb = dyncast(AABBCollider, coll);
-                            ImGui::TextEx("Half Dims "); ImGui::SameLine(); 
-                            if(ImGui::InputVector3("##coll_halfdims", &coll_aabb->halfDims)){
-                                if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
-                                coll_aabb->RecalculateTensor(mass);
-                            }
-                        }break;
-                        case ColliderType_Sphere:{
-                            SphereCollider* coll_sphere = dyncast(SphereCollider, coll);
-                            ImGui::TextEx("Radius    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                            if(ImGui::InputFloat("##coll_sphere", &coll_sphere->radius)){
-                                if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
-                                coll_sphere->RecalculateTensor(mass);
-                            }
-                        }break;
-                        case ColliderType_Landscape:{
-                            ImGui::TextEx("Landscape collider has no settings yet");
-                        }break;
-                        case ColliderType_Complex:{
-                            ImGui::TextEx("Complex collider has no settings yet");
-                        }break;
-                    }
-
-                    ImGui::Checkbox("Don't Resolve Collisions", (bool*)&coll->noCollide);
-                    ImGui::TextEx("Collision Layer"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                    static_internal u32 min = 0, max = 9;
-                    ImGui::SliderScalar("##coll_layer", ImGuiDataType_U32, &coll->collisionLayer, &min, &max, "%d");
-
-                    ImGui::Unindent();
-                    ImGui::Separator();
-                }
-            }break;
+						switch(coll->type){
+							case ColliderType_Box:{
+								BoxCollider* coll_box = dyncast(BoxCollider, coll);
+								ImGui::TextEx("Half Dims "); ImGui::SameLine(); 
+								if(ImGui::InputVector3("##coll_halfdims", &coll_box->halfDims)){
+									if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
+									coll_box->RecalculateTensor(mass);
+								}
+							}break;
+							case ColliderType_AABB:{
+								AABBCollider* coll_aabb = dyncast(AABBCollider, coll);
+								ImGui::TextEx("Half Dims "); ImGui::SameLine(); 
+								if(ImGui::InputVector3("##coll_halfdims", &coll_aabb->halfDims)){
+									if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
+									coll_aabb->RecalculateTensor(mass);
+								}
+							}break;
+							case ColliderType_Sphere:{
+								SphereCollider* coll_sphere = dyncast(SphereCollider, coll);
+								ImGui::TextEx("Radius    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+								if(ImGui::InputFloat("##coll_sphere", &coll_sphere->radius)){
+									if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
+									coll_sphere->RecalculateTensor(mass);
+								}
+							}break;
+							case ColliderType_Landscape:{
+								ImGui::TextEx("Landscape collider has no settings yet");
+							}break;
+							case ColliderType_Complex:{
+								ImGui::TextEx("Complex collider has no settings yet");
+							}break;
+						}
+						
+						ImGui::Checkbox("Don't Resolve Collisions", (bool*)&coll->noCollide);
+						ImGui::TextEx("Collision Layer"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+						static_internal u32 min = 0, max = 9;
+						ImGui::SliderScalar("##coll_layer", ImGuiDataType_U32, &coll->collisionLayer, &min, &max, "%d");
+						
+						ImGui::Unindent();
+						ImGui::Separator();
+					}
+				}break;
                 
-            //audio listener
-            case ComponentType_AudioListener:{
-                if(ImGui::CollapsingHeader("Audio Listener", &delete_button, tree_flags)){
-                    ImGui::Indent();
-
-                    ImGui::TextEx("TODO implement audio listener component editing");
-
-                    ImGui::Unindent();
-                    ImGui::Separator();
-                }
-            }break;
+				//audio listener
+				case ComponentType_AudioListener:{
+					if(ImGui::CollapsingHeader("Audio Listener", &delete_button, tree_flags)){
+						ImGui::Indent();
+						
+						ImGui::TextEx("TODO implement audio listener component editing");
+						
+						ImGui::Unindent();
+						ImGui::Separator();
+					}
+				}break;
                 
-            //audio source
-            case ComponentType_AudioSource:{
-                if(ImGui::CollapsingHeader("Audio Source", &delete_button, tree_flags)){
-                    ImGui::Indent();
-
-                    ImGui::TextEx("TODO implement audio source component editing");
-
-                    ImGui::Unindent();
-                    ImGui::Separator();
-                }
-            }break;
+				//audio source
+				case ComponentType_AudioSource:{
+					if(ImGui::CollapsingHeader("Audio Source", &delete_button, tree_flags)){
+						ImGui::Indent();
+						
+						ImGui::TextEx("TODO implement audio source component editing");
+						
+						ImGui::Unindent();
+						ImGui::Separator();
+					}
+				}break;
                 
-            //camera
-            case ComponentType_Camera:{
-                if(ImGui::CollapsingHeader("Camera", &delete_button, tree_flags)){
-                    ImGui::Indent();
-
-                    ImGui::TextEx("TODO implement camera component editing");
-
-                    ImGui::Unindent();
-                    ImGui::Separator();
-                }
-            }break;
+				//camera
+				case ComponentType_Camera:{
+					if(ImGui::CollapsingHeader("Camera", &delete_button, tree_flags)){
+						ImGui::Indent();
+						
+						ImGui::TextEx("TODO implement camera component editing");
+						
+						ImGui::Unindent();
+						ImGui::Separator();
+					}
+				}break;
                 
-            //light
-            case ComponentType_Light:{
-                if(ImGui::CollapsingHeader("Light", &delete_button, tree_flags)){
-                    ImGui::Indent();
-
-                    Light* d = dyncast(Light, c);
-                    ImGui::TextEx("Brightness   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                    ImGui::InputFloat("##light_brightness", &d->brightness);
-                    ImGui::TextEx("Position     "); ImGui::SameLine(); 
-                    ImGui::InputVector3("##light_position", &d->position);
-                    ImGui::TextEx("Direction    "); ImGui::SameLine(); 
-                    ImGui::InputVector3("##light_direction", &d->direction);
-                    
-                    ImGui::Unindent();
-                    ImGui::Separator();
-                }
-            }break;
+				//light
+				case ComponentType_Light:{
+					if(ImGui::CollapsingHeader("Light", &delete_button, tree_flags)){
+						ImGui::Indent();
+						
+						Light* d = dyncast(Light, c);
+						ImGui::TextEx("Brightness   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						ImGui::InputFloat("##light_brightness", &d->brightness);
+						ImGui::TextEx("Position     "); ImGui::SameLine(); 
+						ImGui::InputVector3("##light_position", &d->position);
+						ImGui::TextEx("Direction    "); ImGui::SameLine(); 
+						ImGui::InputVector3("##light_direction", &d->direction);
+						
+						ImGui::Unindent();
+						ImGui::Separator();
+					}
+				}break;
                 
-            //orb manager
-            case ComponentType_OrbManager:{
-                if(ImGui::CollapsingHeader("Orbs", &delete_button, tree_flags)){
-                    ImGui::Indent();
-
-                    OrbManager* d = dyncast(OrbManager, c);
-                    ImGui::TextEx("Orb Count "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-                    ImGui::InputInt("##orb_orbcount", &d->orbcount);
-
-                    ImGui::Unindent();
-                    ImGui::Separator();
-                }
-            }break;
+				//orb manager
+				case ComponentType_OrbManager:{
+					if(ImGui::CollapsingHeader("Orbs", &delete_button, tree_flags)){
+						ImGui::Indent();
+						
+						OrbManager* d = dyncast(OrbManager, c);
+						ImGui::TextEx("Orb Count "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+						ImGui::InputInt("##orb_orbcount", &d->orbcount);
+						
+						ImGui::Unindent();
+						ImGui::Separator();
+					}
+				}break;
                 
-            //door
-            case ComponentType_Door:{
-                if(ImGui::CollapsingHeader("Door", &delete_button, tree_flags)){
-                    ImGui::Indent();
-
-                    ImGui::TextEx("TODO implement door component editing");
-
-                    ImGui::Unindent();
-                    ImGui::Separator();
-                }
-            }break;
+				//door
+				case ComponentType_Door:{
+					if(ImGui::CollapsingHeader("Door", &delete_button, tree_flags)){
+						ImGui::Indent();
+						
+						ImGui::TextEx("TODO implement door component editing");
+						
+						ImGui::Unindent();
+						ImGui::Separator();
+					}
+				}break;
                 
-            //player
-            case ComponentType_Player:{
-                if(ImGui::CollapsingHeader("Player", &delete_button, tree_flags)){
-                    ImGui::Indent();
-
-                    Player* d = dyncast(Player, c);
-                    ImGui::TextEx("Health "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-                    ImGui::InputInt("##player_health", &d->health);
-                    
-                    ImGui::Unindent();
-                    ImGui::Separator();
-                }
-            }break;
+				//player
+				case ComponentType_Player:{
+					if(ImGui::CollapsingHeader("Player", &delete_button, tree_flags)){
+						ImGui::Indent();
+						
+						Player* d = dyncast(Player, c);
+						ImGui::TextEx("Health "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+						ImGui::InputInt("##player_health", &d->health);
+						
+						ImGui::Unindent();
+						ImGui::Separator();
+					}
+				}break;
                 
-            //movement
-            case ComponentType_Movement:{
-                if(ImGui::CollapsingHeader("Movement", &delete_button, tree_flags)){
-                    ImGui::Indent();
-
-                    Movement* d = dyncast(Movement, c);
-                    ImGui::TextEx("Ground Accel    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                    ImGui::InputFloat("##move_gndaccel", &d->gndAccel);
-                    ImGui::TextEx("Air Accel       "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                    ImGui::InputFloat("##move_airaccel", &d->airAccel);
-                    ImGui::TextEx("Jump Impulse    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                    ImGui::InputFloat("##move_jimp", &d->jumpImpulse);
-                    ImGui::TextEx("Max Walk Speed  "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                    ImGui::InputFloat("##move_maxwalk", &d->maxWalkingSpeed);
-                    ImGui::TextEx("Max Run Speed   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                    ImGui::InputFloat("##move_maxrun", &d->maxRunningSpeed);
-                    ImGui::TextEx("Max Crouch Speed"); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
-                    ImGui::InputFloat("##move_maxcrouch", &d->maxCrouchingSpeed);
-                    
-                    ImGui::Unindent();
-                    ImGui::Separator();
-                }
-            }break;
+				//movement
+				case ComponentType_Movement:{
+					if(ImGui::CollapsingHeader("Movement", &delete_button, tree_flags)){
+						ImGui::Indent();
+						
+						Movement* d = dyncast(Movement, c);
+						ImGui::TextEx("Ground Accel    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						ImGui::InputFloat("##move_gndaccel", &d->gndAccel);
+						ImGui::TextEx("Air Accel       "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						ImGui::InputFloat("##move_airaccel", &d->airAccel);
+						ImGui::TextEx("Jump Impulse    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						ImGui::InputFloat("##move_jimp", &d->jumpImpulse);
+						ImGui::TextEx("Max Walk Speed  "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						ImGui::InputFloat("##move_maxwalk", &d->maxWalkingSpeed);
+						ImGui::TextEx("Max Run Speed   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						ImGui::InputFloat("##move_maxrun", &d->maxRunningSpeed);
+						ImGui::TextEx("Max Crouch Speed"); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
+						ImGui::InputFloat("##move_maxcrouch", &d->maxCrouchingSpeed);
+						
+						ImGui::Unindent();
+						ImGui::Separator();
+					}
+				}break;
             }
-
+			
             if(!delete_button) comp_deleted_queue.push_back(c);
             ImGui::PopID();
         } //for(Component* c : sel->components)
@@ -1567,7 +1567,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
         
         //// add component ////
         local_persist int add_comp_index = 0;
-
+		
         ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
         if(ImGui::Button("Add Component")){
             switch(1 << (add_comp_index-1)){
@@ -2215,7 +2215,7 @@ void Editor::DebugBar() {
         //Show Time
         if (ImGui::TableNextColumn()) {
             //https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
-
+			
             //get current time
             auto now = std::chrono::system_clock::now();
             
@@ -2652,7 +2652,6 @@ void Editor::Update(){
     ////////////////////////////////
     //ShowSelectedEntityNormals();
     DisplayTriggers(admin);
-    
 }
 
 void Editor::Reset(){

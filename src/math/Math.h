@@ -196,7 +196,7 @@ namespace Math {
 	//	Assert(lo < hi, "The low must be less than the high clamp");
 	//	return (v < lo) ? lo : (hi < v) ? hi : v;
 	//}
-
+	
 	static void clamp(float& v, float lo, float hi) {
 		Assert(lo < hi, "The low must be less than the high clamp");
 		v = (v < lo) ? lo : (hi < v) ? hi : v;
@@ -245,7 +245,7 @@ namespace Math {
 	//round a float to two decimal places
 	static float round2f(float f) { return (float)((int)(f * 100 + .5)) / 100; }
 	static float round4f(float f) { return (float)((int)(f * 10000 + .5)) / 10000; }
-
+	
 	
 	static Vector3 round2v(Vector3 v) {
 		return Vector3(
@@ -267,24 +267,35 @@ namespace Math {
 	static Vector2 lerpv(Vector2 v1, Vector2 v2, float t) { return  v1 * (1.f - t) + v2 * t; }
 	
 	static Matrix4 lerpm4(Matrix4 m1, Matrix4 m2, float t) { return m1 * (1.f - t) + m2 * t; }
-
+	
 	//returns in degrees
 	//this doesn't really work in 3D but this function is here anyways
 	static float AngBetweenVectors(Vector3 v1, Vector3 v2) {
 		return DEGREES(acosf(v1.dot(v2) / (v1.mag() * v2.mag())));
 	}
-
+	
 	//returns in degrees
 	static float AngBetweenVectors(Vector2 v1, Vector2 v2) {
 		return DEGREES(atan2(v1.x * v2.y - v1.y * v2.x, v1.dot(v2)));
 	}
-
+	
 	//returns in degrees between 0 and 360
 	static float AngBetweenVectors360(Vector2 v1, Vector2 v2) {
 		float ang = DEGREES(atan2(v1.x * v2.y - v1.y * v2.x, v1.dot(v2)));
 		return (ang < 0) ? 360 + ang : ang;
 	}
-
+	
+	static Matrix4 PerspectiveProjectionMatrix(f32 width, f32 height, f32 hFOV, f32 nearZ, f32 farZ){
+		float renderDistance = farZ - nearZ;
+		float aspectRatio = (f32)height / (f32)width;
+		float fovRad = 1.0f / tanf(RADIANS(hFOV / 2.0f));
+		return Matrix4( //NOTE setting (1,1) to negative flips the y-axis
+					   aspectRatio * fovRad, 0,	   0,							  0,
+					   0,					-fovRad, 0,							  0,
+					   0,					0,	   farZ / renderDistance,		  1,
+					   0,					0,	   -(farZ*nearZ) / renderDistance, 0);
+	}
+	
 	//this function returns a matrix that tells a vector how to look at a specific point in space.
 	static Matrix4 LookAtMatrix(const Vector3& pos, const Vector3& target) {
 		if(pos == target) { return LookAtMatrix(pos, target + Vector3(.01f, 0, 0)); }
@@ -310,8 +321,6 @@ namespace Math {
 					   newFor.x,   newFor.y,   newFor.z,   0,
 					   pos.x,      pos.y,      pos.z,      1);
 	}
-
-
 	
 	//this ones for getting the up vector back for sound orientation
 	static Matrix4 LookAtMatrix(const Vector3& pos, const Vector3& target, Vector3& up) {
@@ -370,7 +379,7 @@ namespace Math {
 		t = lptopp.dot(plane_n) / lstole.dot(plane_n);
 		return line_start + t * lstole;
 	}
-
+	
 	//where a line intersects with a plane
 	static Vector3 VectorPlaneIntersect(Vector3 plane_p, Vector3 plane_n, Vector3 line_start, Vector3 line_end) {
 		Vector3 lstole = (line_end - line_start).normalized();
@@ -397,7 +406,7 @@ namespace Math {
 		for (Vector3 v : vectors) sum += v;
 		return sum / vectors.size();
 	}
-
+	
 	//the input vectors should be in viewMat/camera space
 	//returns true if the line can be rendered after clipping, false otherwise
 	static bool ClipLineToZPlanes(Vector3& start, Vector3& end, f32 nearZ, f32 farZ) {
@@ -513,7 +522,7 @@ namespace Math {
 	
 	//NOTE these triangle functions are quite useless I think but I put them here in case
 	//since I deleted Triangle.h
-
+	
 	//returns area of a triangle of sides a and b
 	static float TriangleArea(Vector3 a, Vector3 b) { return a.cross(b).mag() / 2; }
 	
@@ -521,11 +530,11 @@ namespace Math {
 	static Vector3 TriangleNormal(Vector3 p1, Vector3 p2, Vector3 p3) {
 		return (p3 - p1).cross(p2 - p1).normalized();
 	}
-
+	
 	static Vector3 TriangleMidpoint(Vector3 p1, Vector3 p2, Vector3 p3) {
 		return (p1 + p2 + p3) / 3;
 	}
-
+	
 	static Vector3 WorldToCamera3(Vector3 vertex, Matrix4 viewMat) {
 		return Math::ProjMult(vertex.ToVector4(), viewMat).ToVector3();
 	}

@@ -24,6 +24,7 @@ http://gameangst.com/?p=9
 #include "window.h"
 #include "../scene/Scene.h"
 #include "../math/Math.h"
+#include "../utils/debug.h"
 
 #include "../external/imgui/imgui_impl_glfw.h"
 #include "../external/imgui/imgui_impl_vulkan.h"
@@ -46,17 +47,18 @@ http://gameangst.com/?p=9
 std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME };
 std::vector<VkValidationFeatureEnableEXT> validationFeaturesEnabled = {};
-#if defined(DESHI_BUILD_PLAY)
-const bool enableValidationLayers = false;
-#else
+#if DESHI_INTERNAL
 const bool enableValidationLayers = true;
-#endif
-
+const bool CRASH_ON_ERROR = true;
+#else
+const bool enableValidationLayers = false;
 const bool CRASH_ON_ERROR = false;
+#endif //DESHI_INTERNAL
 
-#define ASSERTVK(func, message) Assert((func) == VK_SUCCESS, message);
+#define AssertVk(result, ...) Assert((result) == VK_SUCCESS)
+#define AssertRS(stages, ...) Assert((rendererStage & (stages)) == (stages))
 
-#define LOGGING_LEVEL 3
+#define LOGGING_LEVEL 4
 #if LOGGING_LEVEL == 0
 #define PRINTVK(level, message) (void)0
 #else
@@ -203,12 +205,14 @@ Init(DearImGui* imgui) {
     
     CreateSwapChain();
     PRINTVK(3, "Finished creating swap chain in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-    CreateRenderPass();
+    CreateRenderpass();
     PRINTVK(3, "Finished creating render pass in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreateCommandPool();
     PRINTVK(3, "Finished creating command pool in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreateFrames();
     PRINTVK(3, "Finished creating frames in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	SetupOffscreenRendering();
+    PRINTVK(3, "Finished setting up offscreen rendering in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreateSyncObjects();
     PRINTVK(3, "Finished creating sync objects in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreateClearValues();
@@ -298,7 +302,7 @@ Render() {
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
     
-    ASSERTVK(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "failed to submit draw command buffer");
+    AssertVk(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "failed to submit draw command buffer");
     
     if(remakeWindow){ return; }
     
@@ -322,7 +326,7 @@ Render() {
     
     //iterate the frame index
     frameIndex = (frameIndex + 1) % MAX_FRAMES; //loops back to zero after reaching max_frames
-    ASSERTVK(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
+    AssertVk(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
     //update stats
     stats.drawnTriangles += stats.drawnIndices / 3;
     stats.totalVertices += (u32)vertexBuffer.size();
@@ -389,11 +393,11 @@ Cleanup() {
         
         /* Get size of pipeline cache */
         size_t size{};
-        ASSERTVK(vkGetPipelineCacheData(device, pipelineCache, &size, nullptr), "failed to get pipeline cache data size");
+        AssertVk(vkGetPipelineCacheData(device, pipelineCache, &size, nullptr), "failed to get pipeline cache data size");
         
         /* Get data of pipeline cache */
         std::vector<char> data(size);
-        ASSERTVK(vkGetPipelineCacheData(device, pipelineCache, &size, data.data()), "failed to get pipeline cache data");
+        AssertVk(vkGetPipelineCacheData(device, pipelineCache, &size, data.data()), "failed to get pipeline cache data");
         
         /* Write pipeline cache data to a file in binary format */
         deshi::writeFileBinary(deshi::dirData() + "pipelines.cache", data);
@@ -937,7 +941,7 @@ LoadTexture(const char* filename, u32 type){
     samplerInfo.mipLodBias = 0.0f;
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = f32(tex.mipLevels);
-    ASSERTVK(vkCreateSampler(device, &samplerInfo, nullptr, &tex.sampler), "failed to create texture sampler");
+    AssertVk(vkCreateSampler(device, &samplerInfo, nullptr, &tex.sampler), "failed to create texture sampler");
     
     //create image view
     tex.view = createImageView(tex.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, tex.mipLevels);
@@ -996,7 +1000,7 @@ CreateMaterial(const char* name, u32 shader, u32 albedoTextureID, u32 normalText
     allocInfo.descriptorPool = descriptorPool;
     allocInfo.pSetLayouts = &descriptorSetLayouts.textures;
     allocInfo.descriptorSetCount = 1;
-    ASSERTVK(vkAllocateDescriptorSets(device, &allocInfo, &mat.descriptorSet), "failed to allocate materials descriptor sets");
+    AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &mat.descriptorSet), "failed to allocate materials descriptor sets");
     
     std::array<VkWriteDescriptorSet, 4> writeDescriptorSets{};
     writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1040,7 +1044,7 @@ CopyMaterial(u32 materialID){
     allocInfo.descriptorPool = descriptorPool;
     allocInfo.pSetLayouts = &descriptorSetLayouts.textures;
     allocInfo.descriptorSetCount = 1;
-    ASSERTVK(vkAllocateDescriptorSets(device, &allocInfo, &mat.descriptorSet), "failed to allocate materials descriptor sets");
+    AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &mat.descriptorSet), "failed to allocate materials descriptor sets");
     //TODO(delle,Vu) https://renderdoc.org/vkspec_chunked/chap15.html#VkCopyDescriptorSet
     std::array<VkWriteDescriptorSet, 4> writeDescriptorSets{};
     writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -1229,7 +1233,7 @@ ReloadShader(u32 shader) {
             vkDestroyPipeline(device, pipelines.flat, nullptr);
             shaderStages[0] = CompileAndLoadShader("flat.vert", VK_SHADER_STAGE_VERTEX_BIT);
             shaderStages[1] = CompileAndLoadShader("flat.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
-            ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.flat), "failed to create flat graphics pipeline");
+            AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.flat), "failed to create flat graphics pipeline");
             pipelineCreateInfo.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
             pipelineCreateInfo.basePipelineHandle = pipelines.flat;
         }break;
@@ -1241,7 +1245,7 @@ ReloadShader(u32 shader) {
                 depthStencilState.depthTestEnable = VK_FALSE;
                 shaderStages[0] = CompileAndLoadShader("wireframe.vert", VK_SHADER_STAGE_VERTEX_BIT);
                 shaderStages[1] = CompileAndLoadShader("wireframe.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
-                ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.wireframe), "failed to create wireframe graphics pipeline");
+                AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.wireframe), "failed to create wireframe graphics pipeline");
                 rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
                 rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
                 depthStencilState.depthTestEnable = VK_TRUE;
@@ -1251,37 +1255,37 @@ ReloadShader(u32 shader) {
             vkDestroyPipeline(device, pipelines.phong, nullptr);
             shaderStages[0] = CompileAndLoadShader("phong.vert", VK_SHADER_STAGE_VERTEX_BIT);
             shaderStages[1] = CompileAndLoadShader("phong.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
-            ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.phong), "failed to create phong graphics pipeline");
+            AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.phong), "failed to create phong graphics pipeline");
         }break;
         case(Shader_Twod):{
             vkDestroyPipeline(device, pipelines.twod, nullptr);
             shaderStages[0] = CompileAndLoadShader("twod.vert", VK_SHADER_STAGE_VERTEX_BIT);
             shaderStages[1] = CompileAndLoadShader("twod.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
-            ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.twod), "failed to create twod graphics pipeline");
+            AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.twod), "failed to create twod graphics pipeline");
         }break;
         case(Shader_PBR):{ 
             vkDestroyPipeline(device, pipelines.pbr, nullptr);
             shaderStages[0] = CompileAndLoadShader("pbr.vert", VK_SHADER_STAGE_VERTEX_BIT);
             shaderStages[1] = CompileAndLoadShader("pbr.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
-            ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.pbr), "failed to create pbr graphics pipeline");
+            AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.pbr), "failed to create pbr graphics pipeline");
         }break;
         case(Shader_Lavalamp):{ 
             vkDestroyPipeline(device, pipelines.lavalamp, nullptr);
             shaderStages[0] = CompileAndLoadShader("lavalamp.vert", VK_SHADER_STAGE_VERTEX_BIT);
             shaderStages[1] = CompileAndLoadShader("lavalamp.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
-            ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.lavalamp), "failed to create lavalamp graphics pipeline");
+            AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.lavalamp), "failed to create lavalamp graphics pipeline");
         }break;
         case(Shader_Testing0):{ 
             vkDestroyPipeline(device, pipelines.testing0, nullptr);
             shaderStages[0] = CompileAndLoadShader("testing0.vert", VK_SHADER_STAGE_VERTEX_BIT);
             shaderStages[1] = CompileAndLoadShader("testing0.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
-            ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.testing0), "failed to create testing0 graphics pipeline");
+            AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.testing0), "failed to create testing0 graphics pipeline");
         }break;
         case(Shader_Testing1):{ 
             vkDestroyPipeline(device, pipelines.testing1, nullptr);
             shaderStages[0] = CompileAndLoadShader("testing1.vert", VK_SHADER_STAGE_VERTEX_BIT);
             shaderStages[1] = CompileAndLoadShader("testing1.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
-            ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.testing1), "failed to create testing1 graphics pipeline");
+            AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.testing1), "failed to create testing1 graphics pipeline");
         }break;
         default:{
             ReloadAllShaders();
@@ -1358,7 +1362,7 @@ CreateInstance() {
         createInfo.pNext = nullptr;
     }
     
-    ASSERTVK(vkCreateInstance(&createInfo, allocator, &instance), "failed to create instance");
+    AssertVk(vkCreateInstance(&createInfo, allocator, &instance), "failed to create instance");
 }
 
 bool Renderer::
@@ -1409,7 +1413,7 @@ SetupDebugMessenger() {
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
     
-    ASSERTVK(CreateDebugUtilsMessengerEXT(instance, &createInfo, allocator, &debugMessenger), "failed to set up debug messenger");
+    AssertVk(CreateDebugUtilsMessengerEXT(instance, &createInfo, allocator, &debugMessenger), "failed to set up debug messenger");
     
 }
 
@@ -1465,7 +1469,7 @@ CreateSurface() {
     Assert(rendererStage & RSVK_INSTANCE, "CreateSurface called before CreateInstance");
     rendererStage |= RSVK_SURFACE;
     
-    ASSERTVK(glfwCreateWindowSurface(instance, DengWindow->window, allocator, &surface), "failed to create window surface");
+    AssertVk(glfwCreateWindowSurface(instance, DengWindow->window, allocator, &surface), "failed to create window surface");
 }
 
 
@@ -1628,7 +1632,7 @@ CreateLogicalDevice() {
         createInfo.enabledLayerCount = 0;
     }
     
-    ASSERTVK(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device), "failed to create logical device");
+    AssertVk(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device), "failed to create logical device");
     
     vkGetDeviceQueue(device, physicalQueueFamilies.graphicsFamily.value, 0, &graphicsQueue);
     vkGetDeviceQueue(device, physicalQueueFamilies.presentFamily.value, 0, &presentQueue);
@@ -1700,7 +1704,7 @@ CreateSwapChain() {
         info.imageExtent.height = height = extent.height;
     }
     
-    ASSERTVK(vkCreateSwapchainKHR(device, &info, allocator, &swapchain), "failed to create swap chain");
+    AssertVk(vkCreateSwapchainKHR(device, &info, allocator, &swapchain), "failed to create swap chain");
     
     //delete old swap chain
     if(oldSwapChain != VK_NULL_HANDLE) { vkDestroySwapchainKHR(device, oldSwapChain, allocator); }
@@ -1801,7 +1805,7 @@ GetMinImageCountFromPresentMode(VkPresentModeKHR mode) {
 
 
 void Renderer::
-CreateRenderPass(){
+CreateRenderpass(){
     PRINTVK(2, "  Creating Render Pass");
     Assert(rendererStage & RSVK_LOGICALDEVICE, "CreateRenderPass called before CreateLogicalDevice");
     rendererStage |= RSVK_RENDERPASS;
@@ -1873,7 +1877,7 @@ CreateRenderPass(){
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
     
-    ASSERTVK(vkCreateRenderPass(device, &renderPassInfo, allocator, &renderPass), "failed to create render pass");
+    AssertVk(vkCreateRenderPass(device, &renderPassInfo, allocator, &renderPass), "failed to create render pass");
 }
 
 
@@ -1893,7 +1897,7 @@ CreateCommandPool(){
     poolInfo.queueFamilyIndex = physicalQueueFamilies.graphicsFamily.value;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     
-    ASSERTVK(vkCreateCommandPool(device, &poolInfo, allocator, &commandPool), "failed to create command pool");
+    AssertVk(vkCreateCommandPool(device, &poolInfo, allocator, &commandPool), "failed to create command pool");
 }
 
 void Renderer::
@@ -1955,7 +1959,7 @@ CreateFrames(){
         info.width = width;
         info.height = height;
         info.layers = 1;
-        ASSERTVK(vkCreateFramebuffer(device, &info, allocator, &frames[i].framebuffer), "failed to create framebuffer");
+        AssertVk(vkCreateFramebuffer(device, &info, allocator, &frames[i].framebuffer), "failed to create framebuffer");
         
         //allocate command buffers
         if(frames[i].commandBuffer) { vkFreeCommandBuffers(device, commandPool, 1, &frames[i].commandBuffer); }
@@ -1964,7 +1968,7 @@ CreateFrames(){
         allocInfo.commandPool = commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = 1;
-        ASSERTVK(vkAllocateCommandBuffers(device, &allocInfo, &frames[i].commandBuffer), "failed to allocate command buffer");
+        AssertVk(vkAllocateCommandBuffers(device, &allocInfo, &frames[i].commandBuffer), "failed to allocate command buffer");
     }
 }
 
@@ -1988,7 +1992,6 @@ CreateSyncObjects(){
         Assert(!"failed to create sync objects");
     }
 }
-
 
 ////////////////////////
 //// global buffers ////
@@ -2028,8 +2031,15 @@ UpdateUniformBuffer(){
     std::copy(lights, lights + 10, uboVS.values.lights);
     uboVS.values.mousepos = vec2(DengInput->mousePos.x, DengInput->mousePos.y);
 	
+	{//update depth MVP for shadow map based on first light
+		uboVS.values.depthMVP = 
+			Matrix4::IDENTITY * 
+			Math::LookAtMatrix(lights[0].ToVector3(), Vector3::ZERO) * 
+			Math::PerspectiveProjectionMatrix(settings.shadowResolution, settings.shadowResolution, 90.0f, settings.shadowNearZ, settings.shadowFarZ);
+	}
+	
     //get point projected out from mouse 
-    if (initialized){
+    if(initialized){
 		uboVS.values.mouseWorld = Math::ScreenToWorld(DengInput->mousePos, uboVS.values.proj, uboVS.values.view, DengWindow->dimensions);
     }
     //map shader data to vertex shader uniform buffer
@@ -2176,7 +2186,7 @@ CreateDescriptorPool(){
     poolInfo.poolSizeCount = types;
     poolInfo.pPoolSizes = poolSizes;
     
-    ASSERTVK(vkCreateDescriptorPool(device, &poolInfo, allocator, &descriptorPool), "failed to create descriptor pool");
+    AssertVk(vkCreateDescriptorPool(device, &poolInfo, allocator, &descriptorPool), "failed to create descriptor pool");
 }
 
 void Renderer::
@@ -2185,107 +2195,123 @@ CreateLayouts(){
     Assert(rendererStage & (RSVK_DESCRIPTORPOOL | RSVK_UNIFORMBUFFER) == (RSVK_DESCRIPTORPOOL | RSVK_UNIFORMBUFFER), "CreateLayouts called before CreateDescriptorPool or CreateUniformBuffer");
     rendererStage |= RSVK_LAYOUTS;
     
-    //// shader ubos binding ////
-    std::array<VkDescriptorSetLayoutBinding, 4> setLayoutBindings{};
-    setLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    setLayoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    setLayoutBindings[0].binding = 0;
-    setLayoutBindings[0].descriptorCount = 1;
-    
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI{};
-    descriptorSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
-    descriptorSetLayoutCI.bindingCount = 1;
+	std::array<VkDescriptorSetLayoutBinding, 4> setLayoutBindings{};
+	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI{};
+	descriptorSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
+	descriptorSetLayoutCI.bindingCount = 0;
 	
-    if(settings.debugging && enabledFeatures.geometryShader){
-        setLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        setLayoutBindings[1].stageFlags = VK_SHADER_STAGE_GEOMETRY_BIT;
-        setLayoutBindings[1].binding = 1;
-        setLayoutBindings[1].descriptorCount = 1;
+    {//create generic descriptor set layout
+		//binding 0: vertex shader scene UBO
+		setLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		setLayoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		setLayoutBindings[0].binding = 0;
+		setLayoutBindings[0].descriptorCount = 1;
+		//binding 1: fragment shader shadow map image sampler
+		setLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		setLayoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		setLayoutBindings[1].binding = 1;
+		setLayoutBindings[1].descriptorCount = 1;
 		
-        descriptorSetLayoutCI.bindingCount = 2;
+		descriptorSetLayoutCI.bindingCount = 3;
+		
+		//binding 2: geometry shader UBO
+		if(settings.debugging && enabledFeatures.geometryShader){
+			setLayoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			setLayoutBindings[2].stageFlags = VK_SHADER_STAGE_GEOMETRY_BIT;
+			setLayoutBindings[2].binding = 2;
+			setLayoutBindings[2].descriptorCount = 1;
+			
+			descriptorSetLayoutCI.bindingCount = 3;
+		}
+		
+		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.ubos), "failed to create ubos descriptor set layout");
     }
-    
-    ASSERTVK(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.ubos), "failed to create ubos descriptor set layout");
-    
-    //// material textures bindings ////
-    // Color/albedo map
-    setLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    setLayoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    setLayoutBindings[0].binding = 0;
-    setLayoutBindings[0].descriptorCount = 1;
-    
-    // Normal map
-    setLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    setLayoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    setLayoutBindings[1].binding = 1;
-    setLayoutBindings[1].descriptorCount = 1;
-    
-    // Specular/reflective map
-    setLayoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    setLayoutBindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    setLayoutBindings[2].binding = 2;
-    setLayoutBindings[2].descriptorCount = 1;
-    
-    // Light/emissive map
-    setLayoutBindings[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    setLayoutBindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    setLayoutBindings[3].binding = 3;
-    setLayoutBindings[3].descriptorCount = 1;
-    
-    descriptorSetLayoutCI.bindingCount = 4;
-    ASSERTVK(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.textures), "failed to create textures descriptor set layout");
-    
-    std::vector<VkDescriptorSetLayout> setLayouts = { 
-        descriptorSetLayouts.ubos, descriptorSetLayouts.textures
-    };
-    
-    //push constants for passing model matrix
-    VkPushConstantRange pushConstantRange{};
-    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT;
-    pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(mat4);
-    
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = setLayouts.size();
-    pipelineLayoutInfo.pSetLayouts = setLayouts.data();
-    pipelineLayoutInfo.pushConstantRangeCount = 1;
-    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-    
-    ASSERTVK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout), "failed to create pipelineLayout");
-    
-    //allocate and write descriptor set for uniform buffers
-    {
+    {//create textures descriptor set layout
+		//binding 0: fragment shader color/albedo map
+		setLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		setLayoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		setLayoutBindings[0].binding = 0;
+		setLayoutBindings[0].descriptorCount = 1;
+		
+		//binding 1: fragment shader normal map
+		setLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		setLayoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		setLayoutBindings[1].binding = 1;
+		setLayoutBindings[1].descriptorCount = 1;
+		
+		//binding 2: fragment shader specular/reflective map
+		setLayoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		setLayoutBindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		setLayoutBindings[2].binding = 2;
+		setLayoutBindings[2].descriptorCount = 1;
+		
+		//binding 3: fragment shader light/emissive map
+		setLayoutBindings[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		setLayoutBindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		setLayoutBindings[3].binding = 3;
+		setLayoutBindings[3].descriptorCount = 1;
+		
+		descriptorSetLayoutCI.bindingCount = 4;
+		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.textures), "failed to create textures descriptor set layout");
+    }
+	{//create pipeline layout
+		//setup push constants for passing model matrix
+		VkPushConstantRange pushConstantRange{};
+		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT;
+		pushConstantRange.offset = 0;
+		pushConstantRange.size = sizeof(mat4);
+		
+		std::vector<VkDescriptorSetLayout> setLayouts = { 
+			descriptorSetLayouts.ubos, descriptorSetLayouts.textures
+		};
+		
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutInfo.setLayoutCount = setLayouts.size();
+		pipelineLayoutInfo.pSetLayouts = setLayouts.data();
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+		
+		AssertVk(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout), "failed to create pipelineLayout");
+    }
+    {//allocate and write descriptor set for uniform buffers
         VkDescriptorSetAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         allocInfo.descriptorPool = descriptorPool;
         allocInfo.pSetLayouts = &descriptorSetLayouts.ubos;
         allocInfo.descriptorSetCount = 1;
 		
-        ASSERTVK(vkAllocateDescriptorSets(device, &allocInfo, &uboDescriptorSet), "failed to allocate uboDescriptorSet");
+        AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &sceneDescriptorSet), "failed to allocate scene's descriptor set");
         
-        std::array<VkWriteDescriptorSet, 2> writeDescriptorSets{};
+        std::array<VkWriteDescriptorSet, 3> writeDescriptorSets{};
         //binding 0: vertex shader ubo
         writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorSets[0].dstSet = uboDescriptorSet;
+        writeDescriptorSets[0].dstSet = sceneDescriptorSet;
         writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         writeDescriptorSets[0].dstBinding = 0;
         writeDescriptorSets[0].pBufferInfo = &uboVS.bufferDescriptor;
         writeDescriptorSets[0].descriptorCount = 1;
+		//binding 1: fragment shader shadow sampler
+        writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writeDescriptorSets[1].dstSet = sceneDescriptorSet;
+        writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        writeDescriptorSets[1].dstBinding = 1;
+        writeDescriptorSets[1].pImageInfo = &offscreen.depthDescriptor;
+        writeDescriptorSets[1].descriptorCount = 1;
 		
         if(settings.debugging && enabledFeatures.geometryShader){
-            //binding 1: geometry shader ubo
-            writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptorSets[1].dstSet = uboDescriptorSet;
-            writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            writeDescriptorSets[1].dstBinding = 1;
-            writeDescriptorSets[1].pBufferInfo = &uboGS.bufferDescriptor;
-            writeDescriptorSets[1].descriptorCount = 1;
+            //binding 2: geometry shader ubo
+            writeDescriptorSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            writeDescriptorSets[2].dstSet = sceneDescriptorSet;
+            writeDescriptorSets[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            writeDescriptorSets[2].dstBinding = 2;
+            writeDescriptorSets[2].pBufferInfo = &uboGS.bufferDescriptor;
+            writeDescriptorSets[2].descriptorCount = 1;
 			
-            vkUpdateDescriptorSets(device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
+            vkUpdateDescriptorSets(device, 3, writeDescriptorSets.data(), 0, nullptr);
         }else{
-            vkUpdateDescriptorSets(device, 1, writeDescriptorSets.data(), 0, nullptr);
+            vkUpdateDescriptorSets(device, 2, writeDescriptorSets.data(), 0, nullptr);
         }
     }
 }
@@ -2308,7 +2334,7 @@ CreatePipelineCache(){
         pipelineCacheCreateInfo.pInitialData = data.data();
     }
     
-    ASSERTVK(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache), "failed to create pipeline cache");
+    AssertVk(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache), "failed to create pipeline cache");
 }
 
 void Renderer::
@@ -2402,7 +2428,6 @@ SetupPipelineCreation(){
     dynamicStates = {
         VK_DYNAMIC_STATE_VIEWPORT, 
         VK_DYNAMIC_STATE_SCISSOR, 
-        /*VK_DYNAMIC_STATE_LINE_WIDTH*/ 
     };
     dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dynamicState.dynamicStateCount = (u32)dynamicStates.size();
@@ -2482,19 +2507,9 @@ CreatePipelines(){
     TIMER_START(t_p);
     
     //destroy previous pipelines
-    if(pipelines.base)      vkDestroyPipeline(device, pipelines.base, nullptr);
-    if(pipelines.flat)      vkDestroyPipeline(device, pipelines.flat, nullptr);
-    if(pipelines.phong)     vkDestroyPipeline(device, pipelines.phong, nullptr); 
-    if(pipelines.twod)      vkDestroyPipeline(device, pipelines.twod, nullptr); 
-    if(pipelines.pbr)       vkDestroyPipeline(device, pipelines.pbr, nullptr); 
-    if(pipelines.lavalamp)  vkDestroyPipeline(device, pipelines.lavalamp, nullptr); 
-    if(pipelines.wireframe) vkDestroyPipeline(device, pipelines.wireframe, nullptr); 
-    if(pipelines.wireframe_depth) vkDestroyPipeline(device, pipelines.wireframe_depth, nullptr); 
-    if(pipelines.selected)  vkDestroyPipeline(device, pipelines.selected, nullptr); 
-    if(pipelines.collider)  vkDestroyPipeline(device, pipelines.collider, nullptr); 
-    if(pipelines.normals)   vkDestroyPipeline(device, pipelines.normals, nullptr); 
-    if(pipelines.testing0)  vkDestroyPipeline(device, pipelines.testing0, nullptr); 
-    if(pipelines.testing1)  vkDestroyPipeline(device, pipelines.testing1, nullptr); 
+	forI(ArrayCount(pipelines.array)){
+		if(pipelines.array[i]) vkDestroyPipeline(device, pipelines.array[i], nullptr);
+	}
     
     //destroy previous shader modules
     size_t oldCount = shaderModules.size();
@@ -2508,64 +2523,82 @@ CreatePipelines(){
     TIMER_START(t_s);
     for(auto& s : GetUncompiledShaders()){ CompileShader(s, false); }
     PRINTVK(3, "    Finished compiling shaders in ", TIMER_END(t_s), "ms");
-    
-    //flag that this pipelineCreateInfo will be used as a base
-    pipelineCreateInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
-    pipelineCreateInfo.basePipelineHandle  = VK_NULL_HANDLE;
-    pipelineCreateInfo.basePipelineIndex   = -1;
-    
-    //base pipeline
-    shaderStages[0] = loadShader("base.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-    shaderStages[1] = loadShader("base.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-    pipelineCreateInfo.stageCount = 2;
-    ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.base), "failed to create base graphics pipeline");
 	
-    //all other pipelines are derivatives
-    pipelineCreateInfo.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
-    pipelineCreateInfo.basePipelineHandle = pipelines.base;
-    pipelineCreateInfo.basePipelineIndex = -1; //can either use handle or index, not both (section 9.5 of vulkan spec)
+	//setup specialization constants
+	/*
+VkSpecializationMapEntry entryShadowPCF{};
+	entryShadowPCF.constantID = 0;
+	entryShadowPCF.offset = 0;
+	entryShadowPCF.size = sizeof(b32);
+	*/
 	
-    //flat pipeline
-    shaderStages[0] = loadShader("flat.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-    shaderStages[1] = loadShader("flat.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-    pipelineCreateInfo.stageCount = 2;
-    ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.flat), "failed to create flat graphics pipeline");
+	VkSpecializationInfo specializationInfo{};
+	/*
+specializationInfo.mapEntryCount = 1;
+	specializationInfo.pMapEntries = &entryShadowPCF;
+	specializationInfo.dataSize = sizeof(b32);
+	specializationInfo.pData = &settings.shadowPCF;
+*/
     
-    //phong
-    shaderStages[0] = loadShader("phong.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-    shaderStages[1] = loadShader("phong.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-    pipelineCreateInfo.stageCount = 2;
-    ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.phong), "failed to create phong graphics pipeline");
-    
-    //2d
-    shaderStages[0] = loadShader("twod.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-    shaderStages[1] = loadShader("twod.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-    pipelineCreateInfo.stageCount = 2;
-    ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.twod), "failed to create twod graphics pipeline");
-    
-    //pbr
-    {
+    {//base pipeline
+		//flag that this pipeline will be used as a base
+		pipelineCreateInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
+		pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+		pipelineCreateInfo.basePipelineIndex  = -1;
+		
+		shaderStages[0] = loadShader("base.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = loadShader("base.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		pipelineCreateInfo.stageCount = 2;
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.base), "failed to create base graphics pipeline");
+		
+		//flag that all other pipelines are derivatives
+		pipelineCreateInfo.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
+		pipelineCreateInfo.basePipelineHandle = pipelines.base;
+		pipelineCreateInfo.basePipelineIndex  = -1; //can either use handle or index, not both (section 9.5 of vulkan spec)
+	}
+    {//flat pipeline
+		shaderStages[0] = loadShader("flat.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = loadShader("flat.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[1].pSpecializationInfo = &specializationInfo;
+		pipelineCreateInfo.stageCount = 2;
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.flat), "failed to create flat graphics pipeline");
+    }
+    {//phong
+		shaderStages[0] = loadShader("phong.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = loadShader("phong.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[1].pSpecializationInfo = &specializationInfo;
+		pipelineCreateInfo.stageCount = 2;
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.phong), "failed to create phong graphics pipeline");
+	}
+    {//2d
+		shaderStages[0] = loadShader("twod.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = loadShader("twod.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		pipelineCreateInfo.stageCount = 2;
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.twod), "failed to create twod graphics pipeline");
+    }
+    {//pbr
         colorBlendAttachmentState.blendEnable = VK_TRUE;
         colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
         colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
         
         shaderStages[0] = loadShader("pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
         shaderStages[1] = loadShader("pbr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[1].pSpecializationInfo = &specializationInfo;
         pipelineCreateInfo.stageCount = 2;
-        ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.pbr), "failed to create pbr graphics pipeline");
+        AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.pbr), "failed to create pbr graphics pipeline");
         
         colorBlendAttachmentState.blendEnable = VK_FALSE;
         colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
         colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
     }
-    
-    //testing shaders //NOTE(delle) testing shaders should be removed on release
-    shaderStages[0] = loadShader("testing0.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-    shaderStages[1] = loadShader("testing0.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-    pipelineCreateInfo.stageCount = 2;
-    ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.testing0), "failed to create testing0 graphics pipeline");
-    
-    {//used for debug tris
+    {//testing0
+		shaderStages[0] = loadShader("testing0.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = loadShader("testing0.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[1].pSpecializationInfo = &specializationInfo;
+		pipelineCreateInfo.stageCount = 2;
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.testing0), "failed to create testing0 graphics pipeline");
+    }//NOTE(delle) testing shaders should be removed on release
+    {//testing1
         colorBlendAttachmentState.blendEnable = VK_TRUE;
         colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
         colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -2575,8 +2608,9 @@ CreatePipelines(){
         
         shaderStages[0] = loadShader("testing1.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
         shaderStages[1] = loadShader("testing1.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[1].pSpecializationInfo = &specializationInfo;
         pipelineCreateInfo.stageCount = 2;
-        ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.testing1), "failed to create testing1 graphics pipeline");
+        AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.testing1), "failed to create testing1 graphics pipeline");
         
         colorBlendAttachmentState.blendEnable = VK_FALSE;
         colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
@@ -2585,7 +2619,6 @@ CreatePipelines(){
         colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; 
         rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
     }
-    
     //wireframe
     if(deviceFeatures.fillModeNonSolid){
         rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
@@ -2595,12 +2628,12 @@ CreatePipelines(){
         shaderStages[0] = loadShader("wireframe.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
         shaderStages[1] = loadShader("wireframe.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
         pipelineCreateInfo.stageCount = 2;
-        ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.wireframe), "failed to create wireframe graphics pipeline");
+        AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.wireframe), "failed to create wireframe graphics pipeline");
         
         {//wireframe with depth test
             depthStencilState.depthTestEnable = VK_TRUE;
             
-            ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.wireframe_depth), "failed to create wireframe-depth graphics pipeline");
+            AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.wireframe_depth), "failed to create wireframe-depth graphics pipeline");
             
             depthStencilState.depthTestEnable = VK_FALSE;
         }
@@ -2614,14 +2647,14 @@ CreatePipelines(){
             colorBlendState.blendConstants[2] = (f32)settings.selectedB / 255.f;
             colorBlendState.blendConstants[3] = (f32)settings.selectedA / 255.f;;
             
-            ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.selected), "failed to create selected entity graphics pipeline");
+            AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.selected), "failed to create selected entity graphics pipeline");
             
             colorBlendState.blendConstants[0] = (f32)settings.colliderR / 255.f;
             colorBlendState.blendConstants[1] = (f32)settings.colliderG / 255.f;
             colorBlendState.blendConstants[2] = (f32)settings.colliderB / 255.f;
             colorBlendState.blendConstants[3] = (f32)settings.colliderA / 255.f;
             
-            ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.collider), "failed to create collider graphics pipeline");
+            AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.collider), "failed to create collider graphics pipeline");
             
             colorBlendAttachmentState.blendEnable = VK_FALSE;
             colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
@@ -2636,12 +2669,13 @@ CreatePipelines(){
         rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
         depthStencilState.depthTestEnable = VK_TRUE;
     }
-    
-    //lavalamp
-    shaderStages[0] = loadShader("lavalamp.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-    shaderStages[1] = loadShader("lavalamp.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-    pipelineCreateInfo.stageCount = 2;
-    ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.lavalamp), "failed to create lavalamp graphics pipeline");
+    {//lavalamp
+		shaderStages[0] = loadShader("lavalamp.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = loadShader("lavalamp.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[1].pSpecializationInfo = &specializationInfo;
+		pipelineCreateInfo.stageCount = 2;
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.lavalamp), "failed to create lavalamp graphics pipeline");
+	}
 	
     if(settings.debugging){
         //normal debugging
@@ -2649,13 +2683,37 @@ CreatePipelines(){
         shaderStages[1] = loadShader("base.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
         shaderStages[2] = loadShader("normaldebug.geom.spv", VK_SHADER_STAGE_GEOMETRY_BIT);
         pipelineCreateInfo.stageCount = 3;
-        ASSERTVK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.normals), "failed to create normals graphics pipeline");
+        AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.normals), "failed to create normals graphics pipeline");
     }
+	{//offscreen
+		colorBlendState.attachmentCount = 0; //no color attachments used
+		depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL; //cull front faces
+		rasterizationState.depthBiasEnable = VK_TRUE; //enable depth bias
+		multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		multisampleState.sampleShadingEnable = false;
+		dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS, };
+		dynamicState.dynamicStateCount = (u32)dynamicStates.size(); //add depth bias to dynamic state so
+		dynamicState.pDynamicStates = dynamicStates.data();         //it can be changed at runtime
+		pipelineCreateInfo.renderPass = offscreen.renderpass;
+		
+		shaderStages[0] = loadShader("offscreen.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		pipelineCreateInfo.stageCount = 1;
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.offscreen), "failed to create offscreen graphics pipeline");
+		
+		colorBlendState.attachmentCount = 1;
+		depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		rasterizationState.depthBiasEnable = VK_FALSE;
+		multisampleState.rasterizationSamples = msaaSamples;
+		multisampleState.sampleShadingEnable = VK_TRUE;
+		dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, };
+		dynamicState.dynamicStateCount = (u32)dynamicStates.size();
+		dynamicState.pDynamicStates = dynamicStates.data();
+		pipelineCreateInfo.renderPass = renderPass;
+	}
     
     PRINTVK(2, "  Finished creating pipelines in ", TIMER_END(t_p), "ms");
 }
 
-//TODO(delle,ReOp) maybe optimize this by simply doing: &pipelines + shader*sizeof(pipelines.flat)
 VkPipeline Renderer::
 GetPipelineFromShader(u32 shader){
     switch(shader){
@@ -2719,13 +2777,15 @@ loadShader(std::string filename, VkShaderStageFlagBits stage) {
     
     //create shader module
     std::vector<char> code = deshi::readFileBinary(deshi::dirShaders() + filename);
+	Assert(code.size(), "Unable to read shader file");
+	
     VkShaderModuleCreateInfo moduleInfo{};
     moduleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     moduleInfo.codeSize = code.size();
     moduleInfo.pCode = (u32*)code.data();
     
     VkShaderModule shaderModule;
-    ASSERTVK(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
+    AssertVk(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
     shaderStage.module = shaderModule;
     
     shaderModules.push_back(pair<std::string,VkShaderModule>(filename, shaderStage.module));
@@ -2748,6 +2808,7 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
         if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
         
         std::vector<char> code = deshi::readFileBinary(deshi::dirShaders() + filename); //read shader code
+		Assert(code.size(), "Unable to read shader file");
         
         //try compile from GLSL to SPIR-V binary
         shaderc_compilation_result_t result = 0;
@@ -2768,7 +2829,7 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
             Assert(!"crashing on shader compile error"); 
         }
         if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
-            PRINTLN("[ERROR]"<< filename <<": "<< shaderc_result_get_error_message(result));
+            PRINTLN("[ERROR] "<< shaderc_result_get_error_message(result));
             Assert(!"crashing on shader compile error"); 
         }
         
@@ -2779,7 +2840,7 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
         moduleInfo.pCode = (u32*)shaderc_result_get_bytes(result);
         
         VkShaderModule shaderModule;
-        ASSERTVK(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
+        AssertVk(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
         
         //setup shader stage create info
         VkPipelineShaderStageCreateInfo shaderStage{};
@@ -2811,6 +2872,7 @@ CompileAllShaders(bool optimize){
         
         if(ext.compare(".spv") == 0) continue; //early out if .spv
         std::vector<char> code = deshi::readFileBinary(entry.path().string()); //read shader code
+		Assert(code.size(), "Unable to read shader file");
         PRINTVK(4, "      Compiling shader: ", filename);
         
         //try compile from GLSL to SPIR-V binary
@@ -2827,9 +2889,14 @@ CompileAllShaders(bool optimize){
         }else{ continue; }
         
         //check for errors
-        if(!result){ ERROR_LOC(filename,": Shader compiler returned a null result"); continue; }
+        if(!result){ 
+			PRINTLN("[ERROR]"<< filename <<": Shader compiler returned a null result");
+			ERROR_LOC(filename,": Shader compiler returned a null result"); continue; 
+		}
         if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
-            ERROR(filename, ": ", shaderc_result_get_error_message(result)); continue;
+			PRINTLN("[ERROR] "<< shaderc_result_get_error_message(result));
+            ERROR(shaderc_result_get_error_message(result)); 
+			continue;
         }
         
         //create or overwrite .spv files
@@ -2862,6 +2929,7 @@ CompileShader(std::string& filename, bool optimize){
         if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
         
         std::vector<char> code = deshi::readFileBinary(deshi::dirShaders() + filename); //read shader code
+		Assert(code.size(), "Unable to read shader file");
         
         //try compile from GLSL to SPIR-V binary
         shaderc_compilation_result_t result;
@@ -2877,9 +2945,13 @@ CompileShader(std::string& filename, bool optimize){
         }else{ return; }
         
         //check for errors
-        if(!result){ ERROR_LOC(filename,": Shader compiler returned a null result"); return; }
+        if(!result){ 
+			PRINTLN("[ERROR]"<< filename <<": Shader compiler returned a null result");
+			ERROR_LOC(filename,": Shader compiler returned a null result");
+		}
         if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
-            ERROR(filename, ": ", shaderc_result_get_error_message(result)); return;
+			PRINTLN("[ERROR] "<< shaderc_result_get_error_message(result));
+            ERROR(shaderc_result_get_error_message(result)); 
         }
         
         //create or overwrite .spv files
@@ -2954,7 +3026,7 @@ createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, 
     viewInfo.subresourceRange.layerCount = 1;
     
     VkImageView imageView;
-    ASSERTVK(vkCreateImageView(device, &viewInfo, allocator, &imageView), "failed to create texture image view");
+    AssertVk(vkCreateImageView(device, &viewInfo, allocator, &imageView), "failed to create texture image view");
     return imageView;
 }
 
@@ -2975,7 +3047,7 @@ createImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSampl
     imageInfo.usage = usage;
     imageInfo.samples = numSamples;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    ASSERTVK(vkCreateImage(device, &imageInfo, allocator, &image), "failed to create image");
+    AssertVk(vkCreateImage(device, &imageInfo, allocator, &image), "failed to create image");
     
     VkMemoryRequirements memRequirements;
     vkGetImageMemoryRequirements(device, image, &memRequirements);
@@ -2984,7 +3056,7 @@ createImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSampl
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
     allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-    ASSERTVK(vkAllocateMemory(device, &allocInfo, allocator, &imageMemory), "failed to allocate image memory");
+    AssertVk(vkAllocateMemory(device, &allocInfo, allocator, &imageMemory), "failed to allocate image memory");
     
     vkBindImageMemory(device, image, imageMemory, 0);
 }
@@ -3115,7 +3187,7 @@ CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSiz
     bufferInfo.size = alignedBufferSize;
     bufferInfo.usage = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    ASSERTVK(vkCreateBuffer(device, &bufferInfo, allocator, &buffer), "failed to create buffer");
+    AssertVk(vkCreateBuffer(device, &bufferInfo, allocator, &buffer), "failed to create buffer");
     
     VkMemoryRequirements req;
     vkGetBufferMemoryRequirements(device, buffer, &req);
@@ -3126,7 +3198,7 @@ CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSiz
     allocInfo.allocationSize = req.size;
     allocInfo.memoryTypeIndex = findMemoryType(req.memoryTypeBits, properties);
     
-    ASSERTVK(vkAllocateMemory(device, &allocInfo, allocator, &bufferMemory), "failed to allocate buffer memory");
+    AssertVk(vkAllocateMemory(device, &allocInfo, allocator, &bufferMemory), "failed to allocate buffer memory");
     vkBindBufferMemory(device, buffer, bufferMemory, 0);
     bufferSize = newSize;
 }
@@ -3145,7 +3217,7 @@ CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize&
     bufferInfo.size = alignedBufferSize;
     bufferInfo.usage = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    ASSERTVK(vkCreateBuffer(device, &bufferInfo, allocator, &buffer), "failed to create buffer");
+    AssertVk(vkCreateBuffer(device, &bufferInfo, allocator, &buffer), "failed to create buffer");
     
     VkMemoryRequirements req;
     vkGetBufferMemoryRequirements(device, buffer, &req);
@@ -3157,12 +3229,12 @@ CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize&
     allocInfo.allocationSize = req.size;
     allocInfo.memoryTypeIndex = findMemoryType(req.memoryTypeBits, properties);
     
-    ASSERTVK(vkAllocateMemory(device, &allocInfo, allocator, &bufferMemory), "failed to allocate buffer memory");
+    AssertVk(vkAllocateMemory(device, &allocInfo, allocator, &bufferMemory), "failed to allocate buffer memory");
     
     //if data pointer, map buffer and copy data
     if(data != nullptr){
         void* mapped;
-        ASSERTVK(vkMapMemory(device, bufferMemory, 0, newSize, 0, &mapped), "couldnt map memory");{
+        AssertVk(vkMapMemory(device, bufferMemory, 0, newSize, 0, &mapped), "couldnt map memory");{
             memcpy(mapped, data, newSize);
             // If host coherency hasn't been requested, do a manual flush to make writes visible
             if ((properties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0){
@@ -3212,6 +3284,116 @@ copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
 }
 
 
+/////////////////////////////
+//// offscreen rendering ////
+/////////////////////////////
+
+
+void Renderer::
+SetupOffscreenRendering(){
+	PRINTVK(2, "  Creating offscreen render pass");
+    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreateOffscreenRenderPass called before CreateLogicalDevice");
+    rendererStage |= RSVK_RENDERPASS;
+	
+	//cleanup previous offscreen stuff
+	if(offscreen.framebuffer){
+		vkDestroyImageView(  device, offscreen.depthImageView,   allocator);
+        vkDestroyImage(      device, offscreen.depthImage,       allocator);
+        vkFreeMemory(        device, offscreen.depthImageMemory, allocator);
+		vkDestroySampler(    device, offscreen.depthSampler,     allocator);
+		vkDestroyRenderPass( device, offscreen.renderpass,       allocator);
+		vkDestroyFramebuffer(device, offscreen.framebuffer,      allocator);
+	}
+	
+	offscreen.width = settings.shadowResolution;
+	offscreen.height = settings.shadowResolution;
+	VkFormat depthFormat = VK_FORMAT_D16_UNORM; //16bits might be enough for a small scene
+	
+	{//create the depth image and image view to be used in a sampler
+		createImage(offscreen.width, offscreen.height, 1, VK_SAMPLE_COUNT_1_BIT, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+					offscreen.depthImage, offscreen.depthImageMemory);
+		offscreen.depthImageView = createImageView(offscreen.depthImage, VK_FORMAT_D16_UNORM, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+	}
+	{//create the sampler for the depth attachment used in frag shader for shadow mapping
+		VkSamplerCreateInfo sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+		sampler.magFilter     = VK_FILTER_LINEAR;
+		sampler.minFilter     = VK_FILTER_LINEAR;
+		sampler.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		sampler.addressModeU  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler.addressModeV  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler.addressModeW  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		sampler.mipLodBias    = 0.0f;
+		sampler.maxAnisotropy = 1.0f;
+		sampler.minLod        = 0.0f;
+		sampler.maxLod        = 1.0f;
+		sampler.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+		AssertVk(vkCreateSampler(device, &sampler, nullptr, &offscreen.depthSampler), "failed to create offscreen depth attachment sampler");
+	}
+	{//create image descriptor for depth attachment
+		offscreen.depthDescriptor.sampler = offscreen.depthSampler;
+		offscreen.depthDescriptor.imageView = offscreen.depthImageView;
+		offscreen.depthDescriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+	}
+	{//create the render pass
+		VkAttachmentDescription attachment{};
+		attachment.format         = depthFormat;
+		attachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+		attachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR; //clear depth at beginning of pass
+		attachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE; //store results so it can be read later
+		attachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED; //don't care about initial layout
+		attachment.finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL; //transition to shader read after pass
+		
+		VkAttachmentReference reference{};
+		reference.attachment = 0;
+		reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; //attachment will be used as depth/stencil during pass
+		
+		VkSubpassDescription subpass{};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 0;
+		subpass.pDepthStencilAttachment = &reference;
+		
+		//use subpass dependencies for layout transitions
+		std::array<VkSubpassDependency, 2> dependencies{};
+		dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
+		dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependencies[0].srcAccessMask   = VK_ACCESS_SHADER_READ_BIT;
+		dependencies[0].dstAccessMask   = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		dependencies[1].srcSubpass      = 0;
+		dependencies[1].dstSubpass      = VK_SUBPASS_EXTERNAL;
+		dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+		dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependencies[1].srcAccessMask   = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		dependencies[1].dstAccessMask   = VK_ACCESS_SHADER_READ_BIT;
+		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+		
+		VkRenderPassCreateInfo createInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+		createInfo.attachmentCount = 1;
+		createInfo.pAttachments = &attachment;
+		createInfo.subpassCount = 1;
+		createInfo.pSubpasses = &subpass;
+		createInfo.dependencyCount = (u32)dependencies.size();
+		createInfo.pDependencies = dependencies.data();
+		
+		AssertVk(vkCreateRenderPass(device, &createInfo, allocator, &offscreen.renderpass), "failed to create offscreen render pass");
+	}
+	{//create the framebuffer
+		VkFramebufferCreateInfo createInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+		createInfo.renderPass = offscreen.renderpass;
+        createInfo.attachmentCount = 1;
+        createInfo.pAttachments = &offscreen.depthImageView;
+        createInfo.width = offscreen.width;
+        createInfo.height = offscreen.height;
+        createInfo.layers = 1;
+		
+		AssertVk(vkCreateFramebuffer(device, &createInfo, allocator, &offscreen.framebuffer), "failed to create offscreen framebuffer");
+	}
+}
+
 ///////////////
 //// other ////
 ///////////////
@@ -3228,13 +3410,19 @@ DebugNameObjects(){
 	
 	//// render passes ////
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)renderPass, "Base render pass");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (uint64_t)offscreen.renderpass, "Offscreen render pass");
 	
-	//// images and samplers ////
+	//// images, samplers, framebuffers ////
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)attachments.colorImage, "Framebuffer color image");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)attachments.depthImage, "Framebuffer depth image");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)offscreen.depthImage, "Offscreen shadowmap depth image");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (uint64_t)offscreen.depthSampler, "Offscreen shadowmap sampler");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)offscreen.framebuffer, "Offscreen framebuffer");
 	forI(frames.size()){
 		std::string name = "Frame image " + std::to_string(i);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (uint64_t)frames[i].image, name.c_str());
+		name = "Frame buffer " + std::to_string(i);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (uint64_t)frames[i].framebuffer, name.c_str());
 	}
 	forI(textures.size()){
 		std::string image_name = std::string("Texture image ") + textures[i].filename;
@@ -3256,7 +3444,7 @@ DebugNameObjects(){
 	}
 	
 	//// descriptor sets ////
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (uint64_t)uboDescriptorSet, "UBO descriptor set");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (uint64_t)sceneDescriptorSet, "scene UBO descriptor set");
 	forI(materials.size()){
 		std::string name = std::string("Material descriptor set ") + materials[i].name;
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (uint64_t)materials[i].descriptorSet, name.c_str());
@@ -3284,6 +3472,7 @@ DebugNameObjects(){
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.normals, "Normals pipeline");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.testing0, "Testing0 pipeline");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.testing1, "Testing1 pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.offscreen, "Offscreen pipeline");
 	
 	//// shaders ////
 	for(auto& mod : shaderModules){
@@ -3344,172 +3533,222 @@ BuildCommandBuffers() {
     //PRINTVK(2, "  Building Command Buffers");
     Assert(rendererStage >= RSVK_PIPELINECREATE, "BuildCommandBuffers called before CreatePipelines");
     
-    VkCommandBufferBeginInfo cmdBufferInfo{};
-    cmdBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    cmdBufferInfo.flags = 0;
-    cmdBufferInfo.pInheritanceInfo = nullptr;
-    
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = extent;
-    renderPassInfo.clearValueCount = 2; //framebuffer attachment count
-    renderPassInfo.pClearValues = clearValues.data();
-    
+    VkCommandBufferBeginInfo cmdBufferInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+	VkRenderPassBeginInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
     VkViewport viewport{};
-    viewport.width    = (float)width;
-    viewport.height   = (float)height;
-    viewport.minDepth = 0.f;
-    viewport.maxDepth = 1.f;
-    
     VkRect2D scissor{}; //TODO(delle,Re) letterboxing settings here
-    scissor.extent.width  = width;
-    scissor.extent.height = height;
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
     
     //TODO(delle,ReVu) figure out why we are doing it for all images
     for(int i = 0; i < imageCount; ++i){
-        renderPassInfo.framebuffer = frames[i].framebuffer;
-        
-        ASSERTVK(vkBeginCommandBuffer(frames[i].commandBuffer, &cmdBufferInfo), "failed to begin recording command buffer");
-        vkCmdBeginRenderPass(frames[i].commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdSetViewport(frames[i].commandBuffer, 0, 1, &viewport);
-        vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
+        AssertVk(vkBeginCommandBuffer(frames[i].commandBuffer, &cmdBufferInfo), "failed to begin recording command buffer");
 		
-		
-		
-		
-        //bind ubo descriptor set
-        vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &uboDescriptorSet, 0, nullptr);
-        
-        //reset offsets
-        VkDeviceSize offsets[1] = { 0 };
-		
-        //draw mesh brushes
-		DebugBeginLabelVk(frames[i].commandBuffer, "Mesh brushes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-        if (!generatingWorldGrid) {
-            vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe_depth);
-            for (MeshBrushVk& mesh : meshBrushes) {
-                if (mesh.visible) {
-                    vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &mesh.vertexBuffer, offsets);
-                    vkCmdBindIndexBuffer(frames[i].commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-                    vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
-                    DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
-					vkCmdDrawIndexed(frames[i].commandBuffer, mesh.indices.size(), 1, 0, 0, 0);
-                    stats.drawnIndices += mesh.indices.size();
-                }
-            }
-        }
-		DebugEndLabelVk(frames[i].commandBuffer);
-		
-        //draw meshes
-		DebugBeginLabelVk(frames[i].commandBuffer, "Meshes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-        vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &vertices.buffer, offsets);
-        vkCmdBindIndexBuffer(frames[i].commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-        
-        if(settings.wireframeOnly){ //draw all with wireframe shader
-            vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
-            for(MeshVk& mesh : meshes){
-                if(mesh.visible && mesh.primitives.size() > 0){
-                    //push the mesh's model matrix to the vertex shader
-                    vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
-                    
-                    for (PrimitiveVk& primitive : mesh.primitives) {
-                        if (primitive.indexCount > 0) {
+		///////////////////////////
+		//// first render pass ////
+		///////////////////////////
+		{//generate shadow map by rendering the scene offscreen
+			clearValues[0].depthStencil = {1.0f, 0};
+			renderPassInfo.renderPass               = offscreen.renderpass;
+			renderPassInfo.framebuffer              = offscreen.framebuffer;
+			renderPassInfo.renderArea.offset        = {0, 0};
+			renderPassInfo.renderArea.extent.width  = offscreen.width;
+			renderPassInfo.renderArea.extent.height = offscreen.height;
+			renderPassInfo.clearValueCount          = 1;
+			renderPassInfo.pClearValues             = clearValues.data();
+			viewport.width    = (float)offscreen.width;
+			viewport.height   = (float)offscreen.height;
+			viewport.minDepth = 0.f;
+			viewport.maxDepth = 1.f;
+			scissor.extent.width  = offscreen.width;
+			scissor.extent.height = offscreen.width;
+			scissor.offset.x      = 0;
+			scissor.offset.y      = 0;
+			
+			DebugBeginLabelVk(frames[i].commandBuffer, "Offscreen Render Pass", vec4(0.78f, 0.54f, 0.12f, 1.0f));
+			vkCmdBeginRenderPass(frames[i].commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdSetViewport(frames[i].commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
+			vkCmdSetDepthBias(frames[i].commandBuffer, settings.depthBiasConstant, 0.0f, settings.depthBiasSlope); //set depth bias (polygon offset) to avoid shadow mapping artifacts
+			vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.offscreen);
+			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &sceneDescriptorSet, 0, nullptr); //bind scene ubo descriptor set
+			
+			//reset offsets
+			VkDeviceSize offsets[1] = { 0 };
+			
+			DebugBeginLabelVk(frames[i].commandBuffer, "Meshes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
+			vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &vertices.buffer, offsets);
+			vkCmdBindIndexBuffer(frames[i].commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+			for(MeshVk& mesh : meshes){
+				if(mesh.visible && mesh.primitives.size() > 0){
+					vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
+					for (PrimitiveVk& primitive : mesh.primitives) {
+						if (primitive.indexCount > 0) {
 							DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
-                            vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-                            stats.drawnIndices += primitive.indexCount;
-                        }
-                    }
-                }
-            }
-        }else{
-            for(MeshVk& mesh : meshes){
-                if(mesh.visible && mesh.primitives.size() > 0){
-                    //push the mesh's model matrix to the vertex shader
-                    vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
-                    
-                    for (PrimitiveVk& primitive : mesh.primitives) {
-                        if (primitive.indexCount > 0) {
-                            MaterialVk& material = materials[primitive.materialIndex];
-                            // Bind the pipeline for the primitive's material
-                            vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material.pipeline);
-                            vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material.descriptorSet, 0, nullptr);
-							DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
-                            vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-                            stats.drawnIndices += primitive.indexCount;
-                            
-                            if(settings.wireframe && material.pipeline != pipelines.wireframe){
-                                vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
-								DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
-                                vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-                                stats.drawnIndices += primitive.indexCount;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-		DebugEndLabelVk(frames[i].commandBuffer);
-        
-        //draw selected meshes
-		DebugBeginLabelVk(frames[i].commandBuffer, "Selected Meshes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-        for(u32 id : selected){
-            MeshVk& mesh = meshes[id];
-            if(mesh.visible && mesh.primitives.size() > 0){
-                //push the mesh's model matrix to the vertex shader
-                vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
-                
-                for (PrimitiveVk& primitive : mesh.primitives) {
-                    if (primitive.indexCount > 0) {
-                        MaterialVk& material = materials[primitive.materialIndex];
-                        // Bind the pipeline for the primitive's material
-                        vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.selected);
-                        vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material.descriptorSet, 0, nullptr);
+							vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+							stats.drawnIndices += primitive.indexCount;
+						}
+					}
+				}
+			}
+			DebugEndLabelVk(frames[i].commandBuffer);
+			
+			DebugEndLabelVk(frames[i].commandBuffer);
+			vkCmdEndRenderPass(frames[i].commandBuffer);
+		}
+		
+		//NOTE explicit synchronization is not required because it is done via the subpass dependenies
+		
+		////////////////////////////
+		//// second render pass ////
+		////////////////////////////
+		{//scene rendering with applied shadow map
+			clearValues[0].color = {.02f, .02f, .02f, 1.f};
+			clearValues[1].depthStencil = {1.0f, 0};
+			renderPassInfo.renderPass = renderPass;
+			renderPassInfo.framebuffer = frames[i].framebuffer;
+			renderPassInfo.renderArea.offset = {0, 0};
+			renderPassInfo.renderArea.extent = extent;
+			renderPassInfo.clearValueCount = 2; //should equal framebuffer attachment count
+			renderPassInfo.pClearValues = clearValues.data();
+			viewport.width    = (float)width;
+			viewport.height   = (float)height;
+			viewport.minDepth = 0.f;
+			viewport.maxDepth = 1.f;
+			scissor.extent.width  = width;
+			scissor.extent.height = height;
+			scissor.offset.x = 0;
+			scissor.offset.y = 0;
+			
+			DebugBeginLabelVk(frames[i].commandBuffer, "Scene Render Pass", vec4(0.78f, 0.54f, 0.12f, 1.0f));
+			vkCmdBeginRenderPass(frames[i].commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdSetViewport(frames[i].commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
+			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &sceneDescriptorSet, 0, nullptr); //bind scene ubo descriptor set
+			
+			//reset offsets
+			VkDeviceSize offsets[1] = { 0 };
+			
+			//draw mesh brushes
+			DebugBeginLabelVk(frames[i].commandBuffer, "Mesh brushes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
+			if (!generatingWorldGrid) {
+				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe_depth);
+				for (MeshBrushVk& mesh : meshBrushes) {
+					if (mesh.visible) {
+						vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &mesh.vertexBuffer, offsets);
+						vkCmdBindIndexBuffer(frames[i].commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
 						DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
-                        vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-                        stats.drawnIndices += primitive.indexCount;
-                    }
-                }
-            }
-        }
-		DebugEndLabelVk(frames[i].commandBuffer);
-		
-        //draw debugging normals
-		DebugBeginLabelVk(frames[i].commandBuffer, "Debugging Normals", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-        if(settings.debugging && enabledFeatures.geometryShader && settings.normals){
-            vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.normals);
-            for(MeshVk& mesh : meshes){
-                if(mesh.visible && mesh.primitives.size() > 0){
-                    //push the mesh's model matrix to the shader
-                    vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
+						vkCmdDrawIndexed(frames[i].commandBuffer, mesh.indices.size(), 1, 0, 0, 0);
+						stats.drawnIndices += mesh.indices.size();
+					}
+				}
+			}
+			DebugEndLabelVk(frames[i].commandBuffer);
+			
+			//draw meshes
+			DebugBeginLabelVk(frames[i].commandBuffer, "Meshes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
+			vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &vertices.buffer, offsets);
+			vkCmdBindIndexBuffer(frames[i].commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+			
+			if(settings.wireframeOnly){ //draw all with wireframe shader
+				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
+				for(MeshVk& mesh : meshes){
+					if(mesh.visible && mesh.primitives.size() > 0){
+						//push the mesh's model matrix to the vertex shader
+						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
+						
+						for (PrimitiveVk& primitive : mesh.primitives) {
+							if (primitive.indexCount > 0) {
+								DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
+								vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+								stats.drawnIndices += primitive.indexCount;
+							}
+						}
+					}
+				}
+			}else{
+				for(MeshVk& mesh : meshes){
+					if(mesh.visible && mesh.primitives.size() > 0){
+						//push the mesh's model matrix to the vertex shader
+						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
+						
+						for (PrimitiveVk& primitive : mesh.primitives) {
+							if (primitive.indexCount > 0) {
+								MaterialVk& material = materials[primitive.materialIndex];
+								// Bind the pipeline for the primitive's material
+								vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material.pipeline);
+								vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material.descriptorSet, 0, nullptr);
+								DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
+								vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+								stats.drawnIndices += primitive.indexCount;
+								
+								if(settings.wireframe && material.pipeline != pipelines.wireframe){
+									vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
+									DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
+									vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+									stats.drawnIndices += primitive.indexCount;
+								}
+							}
+						}
+					}
+				}
+			}
+			DebugEndLabelVk(frames[i].commandBuffer);
+			
+			//draw selected meshes
+			DebugBeginLabelVk(frames[i].commandBuffer, "Selected Meshes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
+			for(u32 id : selected){
+				MeshVk& mesh = meshes[id];
+				if(mesh.visible && mesh.primitives.size() > 0){
+					//push the mesh's model matrix to the vertex shader
+					vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
 					
-                    for (PrimitiveVk& primitive : mesh.primitives) {
-                        if (primitive.indexCount > 0) {
+					for (PrimitiveVk& primitive : mesh.primitives) {
+						if (primitive.indexCount > 0) {
+							MaterialVk& material = materials[primitive.materialIndex];
+							// Bind the pipeline for the primitive's material
+							vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.selected);
+							vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material.descriptorSet, 0, nullptr);
 							DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
-                            vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-                            stats.drawnIndices += primitive.indexCount;
-                        }
-                    }
-                }
-            }
-        }
-		DebugEndLabelVk(frames[i].commandBuffer);
-        
-        //draw imgui stuff
-		DebugBeginLabelVk(frames[i].commandBuffer, "ImGui", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-        if(ImDrawData* imDrawData = ImGui::GetDrawData()){
-            ImGui_ImplVulkan_RenderDrawData(imDrawData, frames[i].commandBuffer);
-        }
-		DebugEndLabelVk(frames[i].commandBuffer);
-        
+							vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+							stats.drawnIndices += primitive.indexCount;
+						}
+					}
+				}
+			}
+			DebugEndLabelVk(frames[i].commandBuffer);
+			
+			//draw debugging normals
+			DebugBeginLabelVk(frames[i].commandBuffer, "Debugging Normals", vec4(0.5f, 0.76f, 0.34f, 1.0f));
+			if(settings.debugging && enabledFeatures.geometryShader && settings.normals){
+				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.normals);
+				for(MeshVk& mesh : meshes){
+					if(mesh.visible && mesh.primitives.size() > 0){
+						//push the mesh's model matrix to the shader
+						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
+						
+						for (PrimitiveVk& primitive : mesh.primitives) {
+							if (primitive.indexCount > 0) {
+								DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
+								vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+								stats.drawnIndices += primitive.indexCount;
+							}
+						}
+					}
+				}
+			}
+			DebugEndLabelVk(frames[i].commandBuffer);
+			
+			//draw imgui stuff
+			DebugBeginLabelVk(frames[i].commandBuffer, "ImGui", vec4(0.5f, 0.76f, 0.34f, 1.0f));
+			if(ImDrawData* imDrawData = ImGui::GetDrawData()){
+				ImGui_ImplVulkan_RenderDrawData(imDrawData, frames[i].commandBuffer);
+			}
+			DebugEndLabelVk(frames[i].commandBuffer);
+			
+			DebugEndLabelVk(frames[i].commandBuffer);
+			vkCmdEndRenderPass(frames[i].commandBuffer);
+		}
 		
-		
-		
-		
-        vkCmdEndRenderPass(frames[i].commandBuffer);
-        ASSERTVK(vkEndCommandBuffer(frames[i].commandBuffer), "failed to end recording command buffer");
+        AssertVk(vkEndCommandBuffer(frames[i].commandBuffer), "failed to end recording command buffer");
     }
 }

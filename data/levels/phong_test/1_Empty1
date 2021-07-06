@@ -1,0 +1,18 @@
+>entity
+id       1
+type     Anonymous
+name     "Empty1"
+position (-0.401012,8.175316,-0.033274)
+rotation (0.000000,0.000000,0.000000)
+scale    (1.000000,1.000000,1.000000)
+
+>mesh
+id      10
+name    "box.obj"
+visible false
+
+>light
+position   (-0.401012,8.175316,-0.033274)
+direction  (0.000000,0.000000,0.000000)
+brightness 20.000000
+active     true
