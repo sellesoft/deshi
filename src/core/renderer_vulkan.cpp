@@ -1656,7 +1656,7 @@ CreateSwapChain() {
     
     //update width and height
     glfwGetFramebufferSize(DengWindow->window, &width, &height);
-    
+
     //query GPUs supported features for the swap chain
     supportDetails = querySwapChainSupport(physicalDevice);
     surfaceFormat = chooseSwapSurfaceFormat(supportDetails.formats);

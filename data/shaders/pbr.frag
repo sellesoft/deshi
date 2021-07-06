@@ -32,7 +32,7 @@ void main() {
 	fc.y /= screen.y;
 	
 	tc.y *= -1;
-	vec4 normal = texture(albedoSampler, tc);
+	vec4 normal = texture(normalSampler, tc);
 	vec4 tex = texture(albedoSampler, tc);
 	vec3 light = vec3(-8000, 2 ,2);
 	vec4 lightcolor = vec4(clamp(dot(normalize(light - inPosition), -vec3(normal)), 0, 1),

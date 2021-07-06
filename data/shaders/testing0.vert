@@ -21,22 +21,15 @@ layout(location = 1) in vec2 inTexCoord;
 layout(location = 2) in vec3 inColor;
 layout(location = 3) in vec3 inNormal;
 
-layout(location = 0)  out vec3  outColor;
-layout(location = 1)  out vec2  outTexCoord;
-layout(location = 2)  out vec3  outNormal;
-layout(location = 3)  out float time;
-layout(location = 4)  out vec2  screen;
-layout(location = 5)  out vec3  camerapos;
-layout(location = 6)  out vec3  fragPos;
-layout(location = 7)  out vec2  mousePos;
-layout(location = 8)  out vec3  mouseworld;
-
-mat4 translation(vec3 t){
-	return mat4(1,   0,   0,   0,
-				0,   1,   0,   0,
-				0,   0,   1,   0,
-				t.x, t.y, t.z, 1);
-}
+layout(location = 0) out vec3  outColor;
+layout(location = 1) out vec2  outTexCoord;
+layout(location = 2) out vec3  outNormal;
+layout(location = 3) out float time;
+layout(location = 4) out vec2  screen;
+layout(location = 5) out vec3  camerapos;
+layout(location = 6) out vec3  fragPos;
+layout(location = 7) out vec2  mousePos;
+layout(location = 8) out vec3  mouseworld;
 
 void main() {
 	

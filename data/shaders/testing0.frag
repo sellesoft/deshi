@@ -24,19 +24,15 @@ float pi = 3.1415926535;
 float quant(float v, float res){
 	return floor(v * res) / res;
 }
-
 vec2 quant2(vec2 v, float res){
 	return vec2(floor(v.x * res) / res, floor(v.y * res) / res);
 }
-
 vec3 quant3(vec3 v, float res){
 	return vec3(floor(v.x * res) / res, floor(v.y * res) / res, floor(v.z * res) / res);
 }
-
 vec4 quant4(vec4 v, float res){
 	return vec4(floor(v.x * res) / res,floor(v.y * res) / res, floor(v.z * res) / res, floor(v.w * res) / res);
 }
-
 float interp(float a, float b, float t){
 	return (1 - t) * a + t * b;
 }
@@ -52,7 +48,6 @@ vec3 VectorPlaneIntersect(vec3 planep, vec3 planen, vec3 ls, vec3 le){
 	return ls + line_to_intersect;
 	
 }
-
 
 
 /*
@@ -95,12 +90,12 @@ vec4 waves(vec3 pos, float radius){
 	
 	
 	mi = pos;
-	float ang = acos(dot(fragPos, vec3(0,0,1)) / (length(fragPos)));
+	//float ang = acos(dot(fragPos, vec3(0,0,1)) / (length(fragPos)));
 	//mi.x = fragPos.x / 2;
 	//mi.z = fragPos.z / 2;
 	
-	mi.x += fragPos.x + sin(fragPos.x * ang);
-	mi.z += fragPos.z + cos(fragPos.z * ang);
+	//mi.x += fragPos.x + sin(fragPos.x * ang);
+	//mi.z += fragPos.z + cos(fragPos.z * ang);
 	
 	
 	//mi.x = 10 * cos(fragPos.x);
@@ -132,55 +127,96 @@ vec4 waves(vec3 pos, float radius){
 	
 }
 
+vec4 fc = gl_FragCoord;
+vec2 tc = inTexCoord;
 
-vec4 transparency(){
-	return vec4(1, 0, 0.5, 0);
+vec4 fun(){
+
+	vec4 samp = texture(albedoSampler, tc);
+	vec4 sampr = vec4(samp.r, 0, 0, 1);
+	vec4 sampg = vec4(0, samp.g, 0, 1);
+	vec4 sampb = vec4(0, 0, samp.b, 1);
+
+	vec4 black = vec4(0,0,0,1);
+
+	float sot = (sin(time) + 1) / 2;
+
+	float res = 1000;
+
+	float ftcx = floor(tc.x * res) / res;
+	float ftcy = floor(tc.y * res) / res;
+
+	float ctcx = ceil(tc.x * res) / res;
+	float ctcy = ceil(tc.y * res) / res;
+
+	float xlen = ctcx - ftcx;
+	float ylen = ctcy - ftcy;
+
+	float tcmfy = tc.y - ftcy;
+	float tcmfx = tc.x - ftcx;
+
+	float hfay = tcmfy / ylen;
+	float hfax = tcmfx / xlen;
+
+	float border = 0.05;
+
+	if(hfay < border || hfax > 1 - border || hfay < border || hfax > 1 - border){
+		return black;
+	}
+	else if(hfax < 0.333){
+		return sampr;
+	}
+	else if(hfax > 0.333 && hfax < 0.666){
+		return sampg;
+	}
+	else if(hfax > 0.666){
+		return sampb;
+	}
+	else{
+		return black;
+	}
+
+	if(hfay < 0.01){
+		return vec4(0,0,0,1);
+	}
+	else if(hfay < 0.333){
+		return vec4(samp.r, 0, 0, 1);
+	}
+	else if(hfay > 0.333 && hfay < 0.666){
+		return vec4(0, samp.g, 0, 1);
+	}
+	else if(hfay > 0.99){
+		return vec4(0,0,0,1);
+	}
+	else{
+		return vec4(0, 0, samp.b, 1);
+	}
+
+	return texture(albedoSampler, tc);
 }
 
 
 
-vec4 fc = gl_FragCoord;
-vec2 tc = inTexCoord;
+
 
 void main() {
 	//outColor = mouseColor(vec3(0,-5,0), 500 * ((-sin(time + cos(time)) + 1.1)/2), 500 * ((-sin(time + cos(time)) + 1.1)/2));
 	
-	tc.x -= 0.5;
-	tc.y -= 0.5;
-	tc.x *= 2;
-	tc.y *= 2;
-	
-	fc.x /= screen.x;
-	fc.y /= screen.y;
-	
-	//outColor = 
-	//quant4(
-	//waves(vec3(-100 * cos(time * 5 ), -5, -100 * sin(time * 2 )), 10000, 150) + 
-	//waves(vec3(100 * cos(time * 2 ), -5, 100 * sin(time )), 10000, 0) +
-	////waves(vec3(-100 * cos(time * 3 ), -5, 100 * sin(time * 4 )), 10000, 0) +
-	//waves(vec3(100 * cos(time ), -5, 100 * sin(time * 3 )), 10000, 0), 2);// + mouseColor(vec3(75 * sin(time), -5, -75 * sin(time)));
+	//tc.x -= 0.5;
+	//tc.y -= 0.5;
+	//tc.x *= 2;
+	//tc.y *= 2;
 	//
-	//outColor = vec4(1, tc.y, tc.x, 1);
+	//fc.x /= screen.x;
+	//fc.y /= screen.y;
 	
 	outColor = vec4(0,0,0,1);
 	
-	//for(int i = 0; i < 10; i++){
-	//	outColor += waves(
-	//	vec3(
-	//	20 * i, 
-	//	-5, 
-	//	0)//100 * (2 * pi / 10 * i))
-	//	, 10 * i);
-	//}
-	
-	outColor = transparency();
-	
-	//outColor = quant4(outColor, 2);
-	
-	
 	outColor = mouseWaterDrop();
 	
-	
+	outColor = fun();
+
+	//outColor = waves(vec3(0,0,0), 100) + waves(vec3(10, 0, 10), 100);
 	
 	
 	
