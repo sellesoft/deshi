@@ -28,28 +28,40 @@ enum VSyncTypeBits : u32{
 }; typedef u32 VSyncType;
 
 struct RenderSettings{ //loaded from file
+	//// requires restart ////
+    b32 debugging = true;
+    b32 printf    = true;
+    b32 findMeshTriangleNeighbors = true; //TODO(delle,Cl) move this to a better location
+	
+	//// runtime changeable ////
 	VSyncType vsync  = VSyncType_Immediate;
 	u32 msaa_samples = 0;
 	
-	//shadows
-	b32 shadowPCF = false;
-	u32 shadowResolution = 2048;
-	f32 shadowNearZ = 1.f;
-	f32 shadowFarZ = 96.f;
-	f32 depthBiasConstant = 1.25f;
-	f32 depthBiasSlope = 1.75f;
-    
-    //debug settings that require restart
-    b32 debugging = true;
-    b32 printf    = true;
+	//shaders
+	b32 optimizeShaders     = false;
+	b32 recompileAllShaders = true;
 	
-    //debug settings that can change at runtime
-    u8  selectedR = 204, selectedG = 125, selectedB = 41, selectedA = 255;
-    u8  colliderR = 116, colliderG = 186, colliderB = 67, colliderA = 255;
-    b32 wireframe     = false;
+	//shadows
+	b32 shadowPCF         = false;
+	u32 shadowResolution  = 2048;
+	f32 shadowNearZ       = 1.f;
+	f32 shadowFarZ        = 96.f;
+	f32 depthBiasConstant = 1.25f;
+	f32 depthBiasSlope    = 1.75f;
+    b32 showShadowMap     = true;
+	
+    //colors
+	u8 clearR    =   5, clearG    =   5, clearB    =   5, clearA    = 255;
+    u8 selectedR = 204, selectedG = 125, selectedB =  41, selectedA = 255;
+    u8 colliderR = 116, colliderG = 186, colliderB =  67, colliderA = 255;
+	
+	//filters
     b32 wireframeOnly = false;
-    b32 globalAxis    = false;
-    b32 normals       = false;
+	
+    //overlays
+	b32 wireframe       = false;
+    b32 meshNormals     = false;
+    b32 lightFrustrums  = false;
 };
 
 struct RenderStats{
@@ -77,10 +89,11 @@ enum RendererStageBits : u32 {
     RSVK_FRAMES         = 1 << 7,
     RSVK_SYNCOBJECTS    = 1 << 8,
     RSVK_UNIFORMBUFFER  = 1 << 9,
-    RSVK_DESCRIPTORPOOL = 1 << 10,
-    RSVK_LAYOUTS        = 1 << 11,
-    RSVK_PIPELINESETUP  = 1 << 12,
-    RSVK_PIPELINECREATE = 1 << 13,
+    RSVK_LAYOUTS        = 1 << 10,
+	RSVK_DESCRIPTORPOOL = 1 << 11,
+    RSVK_DESCRIPTORSETS = 1 << 12,
+    RSVK_PIPELINESETUP  = 1 << 13,
+    RSVK_PIPELINECREATE = 1 << 14,
     RSVK_RENDER      = 0xFFFFFFFF,
 }; typedef u32 RendererStage;
 
@@ -304,7 +317,7 @@ struct Renderer{
     //signals vulkan to remake the pipelines
     void ReloadShader(u32 shaderID);
     void ReloadAllShaders();
-    void UpdateDebugOptions(bool wireframe, bool globalAxis, bool wireframeOnly);
+    void UpdateRenderSettings(RenderSettings settings);
     
     //scene //TODO(delle,ReOp) use container manager for arrays that remove elements
     std::vector<VertexVk>    vertexBuffer = std::vector<VertexVk>(0);
@@ -452,7 +465,7 @@ struct Renderer{
             vec3 mouseWorld;  //point casted out from mouse 
 			f32  time;        //total time
 			b32  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
-			mat4 depthMVP;    //MVP matrix for first light   //TODO(delle,ReVu) redo how lights are stored
+			mat4 lightVP;     //first light's view projection matrix //TODO(delle,ReVu) redo how lights are stored
         } values;
     } uboVS{};
     struct{ //uniform buffer for the geometry shaders
@@ -466,9 +479,16 @@ struct Renderer{
             mat4 proj; //camera projection matrix
         } values;
     } uboGS{};
-	
-	VkDescriptorSet sceneDescriptorSet;
-	
+	struct{
+		VkBuffer               buffer;
+        VkDeviceMemory         bufferMemory;
+        VkDeviceSize           bufferSize;
+        VkDescriptorBufferInfo bufferDescriptor;
+		
+		struct{
+			mat4 lightVP;
+		}values;
+	} uboVSoffscreen;
     struct{ //vertices buffer
         VkBuffer       buffer;
         VkDeviceMemory bufferMemory;
@@ -481,20 +501,30 @@ struct Renderer{
     } indices{};
     
     //creates and allocates the uniform buffer on VertexUBO
-    void CreateUniformBuffer();
+    void CreateUniformBuffers();
     //updates the uniform buffers sent to shaders
-    void UpdateUniformBuffer();
+    void UpdateUniformBuffers();
     //creates the vertex and index buffers on the GPU
-    void CreateSceneBuffers();
-    void UpdateVertexBuffer();
-    void UpdateIndexBuffer();
+    void CreateSceneMeshBuffers();
     
 	
     //// pipelines setup ////
     
     
-    std::array<VkClearValue, 3> clearValues{};
-    VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+	struct{ //descriptor set layouts for pipelines
+        VkDescriptorSetLayout ubos       = VK_NULL_HANDLE;
+        VkDescriptorSetLayout textures   = VK_NULL_HANDLE;
+        VkDescriptorSetLayout instances  = VK_NULL_HANDLE;
+    } descriptorSetLayouts;
+	
+	VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+	struct{
+		VkDescriptorSet scene;
+		VkDescriptorSet offscreen;
+		VkDescriptorSet shadowMap_debug;
+	} descriptorSets;
+	
+	std::array<VkClearValue, 3> clearValues{};
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     VkPipelineCache  pipelineCache  = VK_NULL_HANDLE;
     VkGraphicsPipelineCreateInfo           pipelineCreateInfo{};
@@ -510,20 +540,16 @@ struct Renderer{
     std::vector<VkDynamicState>                    dynamicStates;
     std::vector<VkVertexInputBindingDescription>   vertexInputBindings;
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
-    struct{ //descriptor set layouts for pipelines
-        VkDescriptorSetLayout ubos       = VK_NULL_HANDLE; //TODO(delle,Vu) rename this to something more general
-        VkDescriptorSetLayout textures   = VK_NULL_HANDLE;
-        VkDescriptorSetLayout instances  = VK_NULL_HANDLE;
-    } descriptorSetLayouts;
+	//TODO(delle,Vu) rename descriptorSetLayouts.ubo to something more general
 	
-    //initializes the color and depth used to clearing a frame
-    void CreateClearValues();
-    //creates a pool of descriptors of different types to be sent to shaders
-    void CreateDescriptorPool();
-    //create descriptor set layouts and a push constant for shaders,
-    //create pipeline layout, allocate and write to descriptor sets
+	
+    //creates descriptor set layouts, push constants for shaders, and the pipeline layout
     void CreateLayouts();
-    void CreatePipelineCache();
+	//creates a pool of descriptors of different types to be sent to shaders
+    void CreateDescriptorPool();
+	//allocates in the descriptor pool and creates the descriptor sets
+	void CreateDescriptorSets();
+	void CreatePipelineCache();
     void SetupPipelineCreation();
     
     
@@ -547,10 +573,12 @@ struct Renderer{
 				VkPipeline wireframe_depth;
 				VkPipeline selected;
 				VkPipeline collider;
-				VkPipeline normals;
 				VkPipeline testing0;
 				VkPipeline testing1;
 				VkPipeline offscreen;
+				
+				//debug shaders
+				VkPipeline normals_debug;
 			};
 		};
     } pipelines{};

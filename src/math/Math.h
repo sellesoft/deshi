@@ -285,6 +285,7 @@ namespace Math {
 		return (ang < 0) ? 360 + ang : ang;
 	}
 	
+	//NOTE 0-1 depth range
 	static Matrix4 PerspectiveProjectionMatrix(f32 width, f32 height, f32 hFOV, f32 nearZ, f32 farZ){
 		float renderDistance = farZ - nearZ;
 		float aspectRatio = (f32)height / (f32)width;

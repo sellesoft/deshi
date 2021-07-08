@@ -18,7 +18,7 @@ layout(location = 10) in vec4 lights[10];
 
 layout(location = 0) out vec4 outColor;
 
-#define ambient 0.1
+#define ambient 0.01
 
 //ref: https://github.com/SaschaWillems/Vulkan/blob/master/data/shaders/glsl/shadowmapping/scene.frag
 float textureProj(vec4 shadowCoord, vec2 off){

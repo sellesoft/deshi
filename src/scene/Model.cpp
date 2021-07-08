@@ -2,13 +2,12 @@
 #include "../core/assets.h"
 #include "../core/console.h"
 #include "../core/time.h"
+#include "../core/renderer.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "../external/tinyobjloader/tiny_obj_loader.h"
 
 #include <unordered_map>
-
-b32 find_triangle_neighbors = true;
 
 /////////////////
 //// Texture ////
@@ -144,6 +143,7 @@ inline Face* findFace(Triangle* base) {
 // on a model with ~240k triangles I left it running for over an hour and it had only gotten 30% of the way there
 // there really is no way around checking every triangle against every other triangle though.
 std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
+	if(!DengRenderer->settings.findMeshTriangleNeighbors) return std::vector<Triangle*>();
 	std::vector<Triangle*> triangles;
 	
 	//gather all triangles out of batch arrays
@@ -154,7 +154,7 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 			t->p[1] = b.vertexArray[b.indexArray[i + 1]].pos;
 			t->p[2] = b.vertexArray[b.indexArray[i + 2]].pos;
 			t->norm = b.vertexArray[b.indexArray[i]].normal;
-
+			
 			triangles.push_back(t);
 		}
 	}
@@ -215,9 +215,9 @@ std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
 			faces.push_back(f);
 		}
 	}
-
+	
 	m->faces = faces;
-
+	
 	return triangles;
 	
 }
@@ -334,7 +334,7 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 	mesh->indexCount = totalIndexCount;
 	mesh->textureCount = totalTextureCount;
 	mesh->batchCount = mesh->batchArray.size();
-	if(find_triangle_neighbors) mesh->triangles = FindTriangleNeighbors(mesh);
+	mesh->triangles = FindTriangleNeighbors(mesh);
 	
 	return mesh;
 }
@@ -454,7 +454,7 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename, Shader shader, Color color){
 	mesh->indexCount = totalIndexCount;
 	mesh->textureCount = totalTextureCount;
 	mesh->batchCount = mesh->batchArray.size();
-	if(find_triangle_neighbors) mesh->triangles = FindTriangleNeighbors(mesh);
+	mesh->triangles = FindTriangleNeighbors(mesh);
 	
 	return mesh;
 }
@@ -487,7 +487,7 @@ Mesh* Mesh::CreateBox(Vector3 halfDims, Color color) {
 	mesh->indexCount = 36;
 	mesh->textureCount = 0;
 	mesh->batchCount = 1;
-	if(find_triangle_neighbors) mesh->triangles = FindTriangleNeighbors(mesh);
+	mesh->triangles = FindTriangleNeighbors(mesh);
 	return mesh;
 }
 
@@ -543,7 +543,7 @@ Mesh* Mesh::CreatePlanarBox(Vector3 halfDims, Color color) {
 	mesh->indexCount = 36;
 	mesh->textureCount = 0;
 	mesh->batchCount = 1;
-	if(find_triangle_neighbors) mesh->triangles = FindTriangleNeighbors(mesh);
+	mesh->triangles = FindTriangleNeighbors(mesh);
 	return mesh;
 }
 
@@ -600,7 +600,7 @@ Mesh* Mesh::CreatePlanarBox(Vector3 halfDims, Texture texture) {
 	mesh->indexCount = 36;
 	mesh->textureCount = 1;
 	mesh->batchCount = 1;
-	if(find_triangle_neighbors) mesh->triangles = FindTriangleNeighbors(mesh);
+	mesh->triangles = FindTriangleNeighbors(mesh);
 	return mesh;
 }
 

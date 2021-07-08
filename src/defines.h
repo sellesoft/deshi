@@ -76,7 +76,7 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 //but it doesnt actually do affect the assertion expression
 #define Assert(expression, ...) if(!(expression)){*(volatile int*)0 = 0;}
 #else
-#define Assert(expression, ...)
+#define Assert(expression, ...) expression
 #endif //DESHI_SLOW
 
 //debug breakpoint

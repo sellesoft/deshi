@@ -37,41 +37,59 @@ http://gameangst.com/?p=9
 #include <shaderc/shaderc.h>
 
 #include <set>
-#include <array>
-#include <exception>
 #include <cstring>
 #include <filesystem>
 #include <iostream>
 #include <fstream>
 
-std::vector<const char*> validationLayers = { "VK_LAYER_KHRONOS_validation" };
-std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME };
-std::vector<VkValidationFeatureEnableEXT> validationFeaturesEnabled = {};
-#if DESHI_INTERNAL
-const bool enableValidationLayers = true;
-const bool CRASH_ON_ERROR = true;
-#else
-const bool enableValidationLayers = false;
-const bool CRASH_ON_ERROR = false;
-#endif //DESHI_INTERNAL
+
+////////////////////////////////
+//// vulkan utility structs ////
+////////////////////////////////
+
+
+
+
+
+//////////////////////////////////
+//// vulkan utility variables ////
+//////////////////////////////////
+
+
+static_internal std::vector<const char*> validationLayers = { 
+	"VK_LAYER_KHRONOS_validation" 
+};
+static_internal std::vector<const char*> deviceExtensions = { 
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
+	VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME 
+};
+static_internal std::vector<VkValidationFeatureEnableEXT> validationFeaturesEnabled = {};
+
+static_internal u32 logging_level = 0; //if printf is true in the config file, this will be set to 4
+static_internal u32 cfg_logging_level = 0; //this stores the logging_level from the config file if printf changed it
+static_internal b32 crash_on_error = false;
+
+
+//////////////////////////////////
+//// vulkan utility functions ////
+//////////////////////////////////
+
 
 #define AssertVk(result, ...) Assert((result) == VK_SUCCESS)
 #define AssertRS(stages, ...) Assert((rendererStage & (stages)) == (stages))
 
-#define LOGGING_LEVEL 4
-#if LOGGING_LEVEL == 0
-#define PRINTVK(level, message) (void)0
-#else
-#define PRINTVK(level, ...) if(LOGGING_LEVEL >= level){ LOG("[Vulkan] ", __VA_ARGS__); }
-#endif
-
-////////////////////////
-//// vulkan utility ////
-////////////////////////
+template<typename... Args>
+static_internal inline void
+PrintVk(u32 level, Args... args){
+	if(logging_level >= level){
+		LOG("[Vulkan] ", args...);
+	}
+}
 
 PFN_vkCmdBeginDebugUtilsLabelEXT func_vkCmdBeginDebugUtilsLabelEXT;
-static_internal void 
+static_internal inline void 
 DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, Vector4 color){
+#ifdef DESHI_SLOW
 	VkDebugUtilsLabelEXT label = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
 	label.pLabelName           = label_name;
 	label.color[0]             = color.x;
@@ -79,17 +97,21 @@ DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, Vector
 	label.color[2]             = color.z;
 	label.color[3]             = color.w;
 	func_vkCmdBeginDebugUtilsLabelEXT(command_buffer, &label);
+#endif //DESHI_SLOW
 }
 
 PFN_vkCmdEndDebugUtilsLabelEXT func_vkCmdEndDebugUtilsLabelEXT;
-static_internal void 
+static_internal inline void 
 DebugEndLabelVk(VkCommandBuffer command_buffer){
+#ifdef DESHI_SLOW
 	func_vkCmdEndDebugUtilsLabelEXT(command_buffer);
+#endif //DESHI_SLOW
 }
 
 PFN_vkCmdInsertDebugUtilsLabelEXT func_vkCmdInsertDebugUtilsLabelEXT;
-static_internal void 
+static_internal inline  void 
 DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, Vector4 color){
+#ifdef DESHI_SLOW
 	VkDebugUtilsLabelEXT label = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
 	label.pLabelName           = label_name;
 	label.color[0]             = color.x;
@@ -97,41 +119,69 @@ DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, Vecto
 	label.color[2]             = color.z;
 	label.color[3]             = color.w;
 	func_vkCmdInsertDebugUtilsLabelEXT(command_buffer, &label);
+#endif //DESHI_SLOW
 }
 
 PFN_vkSetDebugUtilsObjectNameEXT func_vkSetDebugUtilsObjectNameEXT;
-static_internal void 
+static_internal inline void 
 DebugSetObjectNameVk(VkDevice device, VkObjectType object_type, uint64_t object_handle, const char *object_name){
+#ifdef DESHI_SLOW
 	if(!object_handle) return;
 	VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
 	name_info.objectType                    = object_type;
 	name_info.objectHandle                  = object_handle;
 	name_info.pObjectName                   = object_name;
 	func_vkSetDebugUtilsObjectNameEXT(device, &name_info);
+#endif //DESHI_SLOW
 }
+
 
 //////////////////////////
 //// render interface ////
 //////////////////////////
 
+
 void Renderer::
 SaveSettings(){
     std::string text;
-	text = TOSTRING("#render settings config"
-					"\nvsync ", settings.vsync,
-					"\nmsaa  ", settings.msaa_samples,
+	text = TOSTRING("#render settings config file"
 					"\n"
-					"\n#debug settings that require restart"
+					"\n#    //// REQUIRES RESTART ////"
 					"\ndebugging ", (settings.debugging) ? "true" : "false",
 					"\nprintf    ", (settings.printf) ? "true" : "false",
+					"\nfind_mesh_triangle_neighbors ", (settings.findMeshTriangleNeighbors) ? "true" : "false",
 					"\n"
-					"\n#debug settings that can change at runtime"
+					"\n#    //// RUNTIME VARIABLES ////"
+					"\nlogging_level  ", cfg_logging_level,
+					"\ncrash_on_error ", (crash_on_error) ? "true" : "false",
+					"\nvsync          ", settings.vsync,
+					"\nmsaa           ", settings.msaa_samples,
+					"\n"
+					"\n# shaders"
+					"\noptimize_shaders      ", (settings.optimizeShaders) ? "true" : "false",
+					"\nrecompile_all_shaders ", (settings.recompileAllShaders) ? "true" : "false",
+					"\n"
+					"\n# shadows"
+					"\nshadow_pcf          ", (settings.shadowPCF) ? "true" : "false",
+					"\nshadow_resolution   ", settings.shadowResolution,
+					"\nshadow_nearz        ", settings.shadowNearZ,
+					"\nshadow_farz         ", settings.shadowFarZ,
+					"\ndepth_bias_constant ", settings.depthBiasConstant,
+					"\ndepth_bias_slope    ", settings.depthBiasSlope,
+					"\nshow_shadow_map     ", (settings.showShadowMap) ? "true" : "false",
+					"\n"
+					"\n# colors"
+					"\nclear_color    (",settings.clearR,",",settings.clearG,",",settings.clearB,",",settings.clearA,")"
 					"\nselected_color (",settings.selectedR,",",settings.selectedG,",",settings.selectedB,",",settings.selectedA,")"
 					"\ncollider_color (",settings.colliderR,",",settings.colliderG,",",settings.colliderB,",",settings.colliderA,")"
-					"\nwireframe      ", (settings.wireframe) ? "true" : "false",
-					"\nwireframeOnly  ", (settings.wireframeOnly) ? "true" : "false",
-					"\nglobalAxis     ", (settings.globalAxis) ? "true" : "false",
-					"\nnormals        ", (settings.normals) ? "true" : "false",
+					"\n"
+					"\n# filters"
+					"\nwireframe_only ", (settings.wireframeOnly) ? "true" : "false",
+					"\n"
+					"\n# overlays"
+					"\nwireframe       ", (settings.wireframe) ? "true" : "false",
+					"\nmesh_normals    ", (settings.meshNormals) ? "true" : "false",
+					"\nlight_frustrums ", (settings.lightFrustrums) ? "true" : "false",
 					"\n");
     deshi::writeFile(deshi::dirConfig() + "render.cfg", text.c_str(), text.size());
 }
@@ -159,27 +209,53 @@ LoadSettings(){
 		
 		auto kv = deshi::split_keyValue(line);
 		
-		if     (kv.first == "vsync")    { settings.vsync        = std::stoi(kv.second); }
-		else if(kv.first == "msaa")     { settings.msaa_samples = std::stoi(kv.second); }
-		else if(kv.first == "debugging"){ settings.debugging    = deshi::parse_bool(kv.second, filepath.c_str(), line_number); }
-		else if(kv.first == "printf")   { settings.printf       = deshi::parse_bool(kv.second, filepath.c_str(), line_number); }
+		//requires restart
+		if     (kv.first == "debugging"){ settings.debugging = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "printf")   { settings.printf    = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "find_mesh_triangle_neighbors") { settings.findMeshTriangleNeighbors = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		//runtime changeable
+		else if(kv.first == "logging_level") { logging_level         = std::stoi(kv.second); }
+		else if(kv.first == "crash_on_error"){ crash_on_error        = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "vsync")         { settings.vsync        = std::stoi(kv.second); }
+		else if(kv.first == "msaa")          { settings.msaa_samples = std::stoi(kv.second); }
+		//shaders
+		else if(kv.first == "optimize_shaders"){ settings.optimizeShaders = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "recompile_all_shaders"){ settings.recompileAllShaders = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		//shadows
+		else if(kv.first == "shadow_pcf")         { settings.shadowPCF = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "shadow_resolution")  { settings.shadowResolution = std::stoi(kv.second); }
+		else if(kv.first == "shadow_nearz")       { settings.shadowNearZ = std::stof(kv.second); }
+		else if(kv.first == "shadow_farz")        { settings.shadowFarZ = std::stof(kv.second); }
+		else if(kv.first == "depth_bias_constant"){ settings.depthBiasConstant = std::stof(kv.second); }
+		else if(kv.first == "depth_bias_slope")   { settings.depthBiasSlope = std::stof(kv.second); }
+		else if(kv.first == "show_shadow_map")    { settings.showShadowMap = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		//colors
 		else if(kv.first == "selected_color"){ auto rgba = deshi::character_delimit(kv.second, ',');
 			settings.selectedR = std::stoi(rgba[0]); settings.selectedG = std::stoi(rgba[1]);
 			settings.selectedB = std::stoi(rgba[2]); settings.selectedA = std::stoi(rgba[3]); }
 		else if(kv.first == "collider_color"){ auto rgba = deshi::character_delimit(kv.second, ',');
 			settings.colliderR = std::stoi(rgba[0]); settings.colliderG = std::stoi(rgba[1]);
 			settings.colliderB = std::stoi(rgba[2]); settings.colliderA = std::stoi(rgba[3]); }
-		else if(kv.first == "wireframe")    { settings.wireframe     = deshi::parse_bool(kv.second, filepath.c_str(), line_number); }
-		else if(kv.first == "wireframeOnly"){ settings.wireframeOnly = deshi::parse_bool(kv.second, filepath.c_str(), line_number); }
-		else if(kv.first == "globalAxis")   { settings.globalAxis    = deshi::parse_bool(kv.second, filepath.c_str(), line_number); }
-		else if(kv.first == "normals")      { settings.normals       = deshi::parse_bool(kv.second, filepath.c_str(), line_number); }
+		else if(kv.first == "clear_color")   { auto rgba = deshi::character_delimit(kv.second, ',');
+			settings.clearR = std::stoi(rgba[0]); settings.clearG = std::stoi(rgba[1]);
+			settings.clearB = std::stoi(rgba[2]); settings.clearA = std::stoi(rgba[3]); }
+		//filters
+		else if(kv.first == "wireframe_only"){ settings.wireframeOnly = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		//overlays
+		else if(kv.first == "wireframe")      { settings.wireframe      = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "mesh_normals")   { settings.meshNormals    = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "light_frustrums"){ settings.lightFrustrums = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
 		else{ "Error parsing '",filepath,"' on line '",line_number,"'! Invalid key '",kv.first,"' for renderer config"; }
 	}
+	
+	//update dependent settings
+	cfg_logging_level = logging_level;
+	if(settings.printf) logging_level = 4;
 }
 
 void Renderer::
 Init(DearImGui* imgui) {
-    PRINTVK(1, "Initializing Vulkan");
+    PrintVk(1, "Initializing Vulkan");
     TIMER_START(t_v);
     
     width = DengWindow->width;
@@ -189,67 +265,69 @@ Init(DearImGui* imgui) {
 	
     TIMER_START(t_temp);
     CreateInstance();
-    PRINTVK(3, "Finished creating instance in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished creating instance in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     SetupDebugMessenger();
-    PRINTVK(3, "Finished setting up debug messenger in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished setting up debug messenger in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreateSurface();
-    PRINTVK(3, "Finished creating surface in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished creating surface in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     PickPhysicalDevice();
-    PRINTVK(3, "Finished picking physical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished picking physical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreateLogicalDevice();
-    PRINTVK(3, "Finished creating logical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished creating logical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
 	//NOTE currently disabled b/c of my resolve setup
 	//msaaSamples = (VkSampleCountFlagBits)(((1 << settings.msaa_samples) > maxMsaaSamples) ? settings.msaa_samples : 1 << settings.msaa_samples);
 	msaaSamples = maxMsaaSamples;
     
     CreateSwapChain();
-    PRINTVK(3, "Finished creating swap chain in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished creating swap chain in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreateRenderpass();
-    PRINTVK(3, "Finished creating render pass in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished creating render pass in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreateCommandPool();
-    PRINTVK(3, "Finished creating command pool in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished creating command pool in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreateFrames();
-    PRINTVK(3, "Finished creating frames in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished creating frames in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	SetupOffscreenRendering();
-    PRINTVK(3, "Finished setting up offscreen rendering in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished setting up offscreen rendering in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreateSyncObjects();
-    PRINTVK(3, "Finished creating sync objects in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-    CreateClearValues();
-    PRINTVK(3, "Finished creating clear values in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-    CreateDescriptorPool();
-    PRINTVK(3, "Finished creating descriptor pool in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-    CreateUniformBuffer();
-    PRINTVK(3, "Finished creating uniform buffer in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished creating sync objects in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    CreateUniformBuffers();
+    PrintVk(3, "Finished creating uniform buffer in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreateLayouts();
-    PRINTVK(3, "Finished creating layouts in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished creating layouts in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	CreateDescriptorPool();
+    PrintVk(3, "Finished creating descriptor pool in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	CreateDescriptorSets();
+    PrintVk(3, "Finished creating descriptor sets in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreatePipelineCache();
-    PRINTVK(3, "Finished creating pipeline cache in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished creating pipeline cache in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     SetupPipelineCreation();
-    PRINTVK(3, "Finished setting up pipeline creation in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished setting up pipeline creation in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     CreatePipelines();
-    PRINTVK(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     
     LoadDefaultAssets();
-    PRINTVK(3, "Finished loading default assets in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-    CreateSceneBuffers();
-    PRINTVK(3, "Finished creating scene buffers in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    PrintVk(3, "Finished loading default assets in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+    CreateSceneMeshBuffers();
+    PrintVk(3, "Finished creating scene mesh buffers in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
     
-    PRINTVK(2, "  Initializing ImGui");
+    PrintVk(2, "  Initializing ImGui");
     imgui->Init(this);
 	
-	if(settings.debugging) DebugNameObjects();
+#ifdef DESHI_SLOW
+	DebugNameObjects();
+#endif //DESHI_INTERNAL
 	
     initialized = true;
     
-    PRINTVK(3, "Finished initializing Vulkan in ", TIMER_END(t_v), "ms");
-    PRINTVK(1, "Initializing Rendering");
+    PrintVk(3, "Finished initializing Vulkan in ", TIMER_END(t_v), "ms");
+    PrintVk(1, "Initializing Rendering");
 }
 
 void Renderer::
 Render() {
-    //PRINTVK(1, "---------------new frame---------------");
-    Assert(rendererStage & (RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS) == (RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS), "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
+    //PrintVk(1, "---------------new frame---------------");
+    AssertRS(RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS, "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
     rendererStage = RSVK_RENDER;
     
     if(DengWindow->resized) remakeWindow = true;
@@ -288,7 +366,7 @@ Render() {
     BuildCommandBuffers();
     
     //update uniform buffers
-    UpdateUniformBuffer();
+    UpdateUniformBuffers();
     
     //submit the command buffer to the queue
     VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -384,7 +462,7 @@ Reset() {
 
 void Renderer::
 Cleanup() {
-    PRINTVK(1, "Initializing Cleanup\n");
+    PrintVk(1, "Initializing Cleanup\n");
 	
 	SaveSettings();
     
@@ -470,7 +548,7 @@ CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool visibl
 
 u32 Renderer::
 CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation){
-    if(log_creation) PRINTVK(3, "    Creating mesh brush based on: ", m->name);
+    if(log_creation) PrintVk(3, "    Creating mesh brush based on: ", m->name);
     
     if(m->vertexCount == 0 || m->indexCount == 0 || m->batchCount == 0) {  //early out if empty buffers
         ERROR("CreateMeshBrush: A mesh was passed in with no vertices or indices or batches");
@@ -633,7 +711,7 @@ RemoveMeshBrush(u32 meshBrushIdx){
 
 u32 Renderer::
 LoadBaseMesh(Mesh* m, bool visible) {
-    PRINTVK(3, "    Loading base mesh: ", m->name);
+    PrintVk(3, "    Loading base mesh: ", m->name);
     
     MeshVk mesh;  mesh.base = true; 
     mesh.ptr = m; 
@@ -700,7 +778,7 @@ LoadBaseMesh(Mesh* m, bool visible) {
     //add mesh to scene
     mesh.id = (u32)meshes.size();
     meshes.push_back(mesh);
-    if(initialized){ CreateSceneBuffers(); }
+    if(initialized){ CreateSceneMeshBuffers(); }
     if (visible) mesh.visible = true;
     return mesh.id;
 }
@@ -713,7 +791,7 @@ CreateMesh(Scene* scene, const char* filename, b32 new_material){
             return CreateMesh(model.mesh, Matrix4::IDENTITY, new_material);
         } 
     }
-    PRINTVK(3, "    Creating mesh: ", filename);
+    PrintVk(3, "    Creating mesh: ", filename);
     
     scene->models.emplace_back(Mesh::CreateMeshFromOBJ(filename));
     return CreateMesh(scene->models[scene->models.size()-1].mesh, Matrix4::IDENTITY, new_material);
@@ -728,14 +806,14 @@ CreateMesh(Mesh* m, Matrix4 matrix, b32 new_material){
         } 
     }
     
-    PRINTVK(3, "    Creating mesh: ", m->name);
+    PrintVk(3, "    Creating mesh: ", m->name);
     return CreateMesh(LoadBaseMesh(m), matrix, new_material);
 }
 
 u32 Renderer::
 CreateMesh(u32 meshID, Matrix4 matrix, b32 new_material){
     if(meshID < meshes.size()){
-        PRINTVK(3, "    Creating Mesh: ", meshes[meshID].ptr->name);
+        PrintVk(3, "    Creating Mesh: ", meshes[meshID].ptr->name);
         MeshVk mesh; mesh.base = false; 
         mesh.ptr = meshes[meshID].ptr; mesh.visible = true;
         mesh.primitives = std::vector(meshes[meshID].primitives);
@@ -891,7 +969,7 @@ u32 Renderer::
 LoadTexture(const char* filename, u32 type){
     for(auto& tex : textures){ if(strcmp(tex.filename, filename) == 0){ return tex.id; } }
     
-    PRINTVK(3, "    Loading Texture: ", filename);
+    PrintVk(3, "    Loading Texture: ", filename);
     TextureVk tex; 
     cpystr(tex.filename, filename, DESHI_NAME_SIZE);
     
@@ -987,11 +1065,11 @@ CreateMaterial(const char* name, u32 shader, u32 albedoTextureID, u32 normalText
         } 
     }
     
-    PRINTVK(3, "    Creating material: ", name);
+    PrintVk(3, "    Creating material: ", name);
     MaterialVk mat; mat.id = (u32)materials.size();
-    mat.shader = shader; mat.pipeline = GetPipelineFromShader(shader);
-    mat.albedoID = albedoTextureID; mat.normalID = normalTextureID;
-    mat.specularID = specTextureID; mat.lightID = lightTextureID;
+    mat.shader     = shader;          mat.pipeline = GetPipelineFromShader(shader);
+    mat.albedoID   = albedoTextureID; mat.normalID = normalTextureID;
+    mat.specularID = specTextureID;   mat.lightID  = lightTextureID;
     cpystr(mat.name, name, DESHI_NAME_SIZE);
     
     //allocate and write descriptor set for material
@@ -1002,7 +1080,7 @@ CreateMaterial(const char* name, u32 shader, u32 albedoTextureID, u32 normalText
     allocInfo.descriptorSetCount = 1;
     AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &mat.descriptorSet), "failed to allocate materials descriptor sets");
     
-    std::array<VkWriteDescriptorSet, 4> writeDescriptorSets{};
+    VkWriteDescriptorSet writeDescriptorSets[4]{};
     writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptorSets[0].dstSet = mat.descriptorSet;
     writeDescriptorSets[0].dstArrayElement = 0;
@@ -1010,20 +1088,29 @@ CreateMaterial(const char* name, u32 shader, u32 albedoTextureID, u32 normalText
     writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     writeDescriptorSets[0].pImageInfo = &textures[mat.albedoID].imageInfo;
     writeDescriptorSets[0].dstBinding = 0;
-    
-    memcpy(&writeDescriptorSets[1], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
+	writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSets[1].dstSet = mat.descriptorSet;
+    writeDescriptorSets[1].dstArrayElement = 0;
+    writeDescriptorSets[1].descriptorCount = 1;
+    writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     writeDescriptorSets[1].pImageInfo = &textures[mat.normalID].imageInfo;
     writeDescriptorSets[1].dstBinding = 1;
-    
-    memcpy(&writeDescriptorSets[2], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
+	writeDescriptorSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSets[2].dstSet = mat.descriptorSet;
+    writeDescriptorSets[2].dstArrayElement = 0;
+    writeDescriptorSets[2].descriptorCount = 1;
+    writeDescriptorSets[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     writeDescriptorSets[2].pImageInfo = &textures[mat.specularID].imageInfo;
     writeDescriptorSets[2].dstBinding = 2;
-    
-    memcpy(&writeDescriptorSets[3], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
+	writeDescriptorSets[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSets[3].dstSet = mat.descriptorSet;
+    writeDescriptorSets[3].dstArrayElement = 0;
+    writeDescriptorSets[3].descriptorCount = 1;
+    writeDescriptorSets[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     writeDescriptorSets[3].pImageInfo = &textures[mat.lightID].imageInfo;
     writeDescriptorSets[3].dstBinding = 3;
     
-    vkUpdateDescriptorSets(device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
+    vkUpdateDescriptorSets(device, 4, writeDescriptorSets, 0, nullptr);
     
     //add to scene
     materials.push_back(mat);
@@ -1035,7 +1122,7 @@ CopyMaterial(u32 materialID){
     if(materialID >= materials.size()) { ERROR("Invalid material ID passed to CopyMaterial"); return 0; }
     
     MaterialVk mat = materials[materialID];
-    PRINTVK(3, "    Copying material: ", mat.name);
+    PrintVk(3, "    Copying material: ", mat.name);
     mat.id = (u32)materials.size();
     
     //allocate and write descriptor set for material
@@ -1046,7 +1133,8 @@ CopyMaterial(u32 materialID){
     allocInfo.descriptorSetCount = 1;
     AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &mat.descriptorSet), "failed to allocate materials descriptor sets");
     //TODO(delle,Vu) https://renderdoc.org/vkspec_chunked/chap15.html#VkCopyDescriptorSet
-    std::array<VkWriteDescriptorSet, 4> writeDescriptorSets{};
+    
+    VkWriteDescriptorSet writeDescriptorSets[4]{};
     writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptorSets[0].dstSet = mat.descriptorSet;
     writeDescriptorSets[0].dstArrayElement = 0;
@@ -1054,20 +1142,29 @@ CopyMaterial(u32 materialID){
     writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     writeDescriptorSets[0].pImageInfo = &textures[mat.albedoID].imageInfo;
     writeDescriptorSets[0].dstBinding = 0;
-    
-    memcpy(&writeDescriptorSets[1], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
+	writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSets[1].dstSet = mat.descriptorSet;
+    writeDescriptorSets[1].dstArrayElement = 0;
+    writeDescriptorSets[1].descriptorCount = 1;
+    writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     writeDescriptorSets[1].pImageInfo = &textures[mat.normalID].imageInfo;
     writeDescriptorSets[1].dstBinding = 1;
-    
-    memcpy(&writeDescriptorSets[2], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
+	writeDescriptorSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSets[2].dstSet = mat.descriptorSet;
+    writeDescriptorSets[2].dstArrayElement = 0;
+    writeDescriptorSets[2].descriptorCount = 1;
+    writeDescriptorSets[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     writeDescriptorSets[2].pImageInfo = &textures[mat.specularID].imageInfo;
     writeDescriptorSets[2].dstBinding = 2;
-    
-    memcpy(&writeDescriptorSets[3], &writeDescriptorSets[0], sizeof(VkWriteDescriptorSet));
+	writeDescriptorSets[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSets[3].dstSet = mat.descriptorSet;
+    writeDescriptorSets[3].dstArrayElement = 0;
+    writeDescriptorSets[3].descriptorCount = 1;
+    writeDescriptorSets[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     writeDescriptorSets[3].pImageInfo = &textures[mat.lightID].imageInfo;
     writeDescriptorSets[3].dstBinding = 3;
-    
-    vkUpdateDescriptorSets(device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
+	
+    vkUpdateDescriptorSets(device, 4, writeDescriptorSets, 0, nullptr);
     
     //add to scene
     materials.push_back(mat);
@@ -1156,7 +1253,7 @@ RemoveMaterial(u32 matID){
 
 void Renderer::
 LoadDefaultAssets(){
-    PRINTVK(2, "  Loading default assets");
+    PrintVk(2, "  Loading default assets");
     
     //load default textures
     textures.reserve(16);
@@ -1175,13 +1272,13 @@ LoadDefaultAssets(){
 //ref: gltfscenerendering.cpp:350
 void Renderer::
 LoadScene(Scene* sc){
-    PRINTVK(2, "  Loading Scene");
+    PrintVk(2, "  Loading Scene");
     initialized = false;
     
     //load meshes, materials, and textures
     for(Model& model : sc->models){ LoadBaseMesh(model.mesh); }
     
-    CreateSceneBuffers();
+    CreateSceneMeshBuffers();
     initialized = true;
 }
 
@@ -1207,10 +1304,10 @@ SceneBoundingBox(){
     Vector3 min( inf,  inf,  inf);
 	
     Vector3 v;
-    for (MeshVk& mesh : DengRenderer->meshes) {
+    for (MeshVk& mesh : meshes) {
         for (PrimitiveVk& p : mesh.primitives) {
             for(int i = p.firstIndex; i < p.indexCount; i++){
-                v = DengRenderer->vertexBuffer[DengRenderer->indexBuffer[i]].pos.ToVector3() + mesh.modelMatrix.Translation();
+                v = vertexBuffer[indexBuffer[i]].pos.ToVector3() + mesh.modelMatrix.Translation();
                 if      (v.x < min.x) { min.x = v.x; }
                 else if (v.x > max.x) { max.x = v.x; }
                 if      (v.y < min.y) { min.y = v.y; }
@@ -1300,13 +1397,9 @@ ReloadAllShaders() {
     remakePipelines = true;
 }
 
-//TODO(delle,Vu) add the rest of the debug settings
 void Renderer::
-UpdateDebugOptions(bool wireframe, bool globalAxis, bool wireframeOnly) {
-    settings.wireframe = wireframe; 
-    settings.wireframeOnly = wireframeOnly;
-    settings.globalAxis = globalAxis;
-    
+UpdateRenderSettings(RenderSettings new_settings) {
+    settings = new_settings;
 };
 
 
@@ -1320,11 +1413,11 @@ UpdateDebugOptions(bool wireframe, bool globalAxis, bool wireframeOnly) {
 
 void Renderer::
 CreateInstance() {
-    PRINTVK(2, "  Creating Vulkan Instance");
+    PrintVk(2, "  Creating Vulkan Instance");
     Assert(rendererStage == RENDERERSTAGE_NONE, "renderer stage was not NONE at CreateInstance");
     rendererStage |= RSVK_INSTANCE;
     
-    if(enableValidationLayers && !checkValidationLayerSupport()) {
+    if(settings.debugging && !checkValidationLayerSupport()) {
         Assert(!"validation layers requested, but not available");
     }
     
@@ -1351,7 +1444,7 @@ CreateInstance() {
     createInfo.pApplicationInfo = &appInfo;
     createInfo.enabledExtensionCount = (u32)extensions.size();
     createInfo.ppEnabledExtensionNames = extensions.data();
-    if(enableValidationLayers) {
+    if(settings.debugging) {
         createInfo.enabledLayerCount = (u32)validationLayers.size();
         createInfo.ppEnabledLayerNames = validationLayers.data();
         populateDebugMessengerCreateInfo(debugCreateInfo);
@@ -1367,7 +1460,7 @@ CreateInstance() {
 
 bool Renderer::
 checkValidationLayerSupport() {
-    PRINTVK(3, "    Checking Validation Layer Support");
+    PrintVk(3, "    Checking Validation Layer Support");
     u32 layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
     std::vector<VkLayerProperties> availableLayers(layerCount);
@@ -1388,12 +1481,12 @@ checkValidationLayerSupport() {
 
 std::vector<const char*> Renderer::
 getRequiredExtensions() {
-    PRINTVK(3, "    Getting Required Extensions");
+    PrintVk(3, "    Getting Required Extensions");
     u32 glfwExtensionCount = 0;
     const char** glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-    if(enableValidationLayers) { extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); }
+    if(settings.debugging) { extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); }
     return extensions;
 }
 
@@ -1405,10 +1498,10 @@ getRequiredExtensions() {
 
 void Renderer::
 SetupDebugMessenger() {
-    PRINTVK(2, "  Setting Up Debug Messenger");
-    Assert(rendererStage & RSVK_INSTANCE, "SetupDebugMessenger was called before CreateInstance");
+    PrintVk(2, "  Setting Up Debug Messenger");
+    AssertRS(RSVK_INSTANCE, "SetupDebugMessenger was called before CreateInstance");
     
-    if(!enableValidationLayers) return;
+    if(!settings.debugging) return;
     
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
@@ -1419,7 +1512,7 @@ SetupDebugMessenger() {
 
 void Renderer::
 populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
-    PRINTVK(3, "    Populating Debug Messenger CreateInfo");
+    PrintVk(3, "    Populating Debug Messenger CreateInfo");
     createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity = /*VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |*/ VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
@@ -1435,13 +1528,13 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT: {
             ERROR("[Vulkan] ", pCallbackData->pMessage); 
             PRINTLN(pCallbackData->pMessage << "\n");
-            if(CRASH_ON_ERROR) Assert(!"crashing because of error in vulkan");
+            if(crash_on_error) Assert(!"crashing because of error in vulkan");
         }break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: {
             WARNING("[Vulkan] ", pCallbackData->pMessage); 
         }break;
         default:{
-            PRINTVK(4, pCallbackData->pMessage);
+            PrintVk(4, pCallbackData->pMessage);
         }break;
     }
     return VK_FALSE;
@@ -1465,8 +1558,8 @@ CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCre
 
 void Renderer::
 CreateSurface() {
-    PRINTVK(2, "  Creating GLFW-Vulkan Surface");
-    Assert(rendererStage & RSVK_INSTANCE, "CreateSurface called before CreateInstance");
+    PrintVk(2, "  Creating GLFW-Vulkan Surface");
+    AssertRS(RSVK_INSTANCE, "CreateSurface called before CreateInstance");
     rendererStage |= RSVK_SURFACE;
     
     AssertVk(glfwCreateWindowSurface(instance, DengWindow->window, allocator, &surface), "failed to create window surface");
@@ -1480,8 +1573,8 @@ CreateSurface() {
 
 void Renderer::
 PickPhysicalDevice() {
-    PRINTVK(2, "  Picking Physical Device");
-    Assert(rendererStage & RSVK_SURFACE, "PickPhysicalDevice called before CreateSurface");
+    PrintVk(2, "  Picking Physical Device");
+    AssertRS(RSVK_SURFACE, "PickPhysicalDevice called before CreateSurface");
     rendererStage |= RSVK_PHYSICALDEVICE;
     
     u32 deviceCount = 0;
@@ -1500,7 +1593,7 @@ PickPhysicalDevice() {
 
 bool Renderer::
 isDeviceSuitable(VkPhysicalDevice device) {
-    PRINTVK(3, "    Checking Validation Layer Support");
+    PrintVk(3, "    Checking Validation Layer Support");
     QueueFamilyIndices indices = findQueueFamilies(device);
     bool extensionsSupported = checkDeviceExtensionSupport(device);
     bool swapChainAdequate = false;
@@ -1514,7 +1607,7 @@ isDeviceSuitable(VkPhysicalDevice device) {
 
 QueueFamilyIndices Renderer::
 findQueueFamilies(VkPhysicalDevice device) {
-    PRINTVK(3, "    Finding Queue Families");
+    PrintVk(3, "    Finding Queue Families");
     QueueFamilyIndices indices;
     
     u32 queueFamilyCount = 0;
@@ -1539,7 +1632,7 @@ findQueueFamilies(VkPhysicalDevice device) {
 
 bool Renderer::
 checkDeviceExtensionSupport(VkPhysicalDevice device) {
-    PRINTVK(3, "    Checking Device Extension Support");
+    PrintVk(3, "    Checking Device Extension Support");
     u32 extensionCount;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
@@ -1556,7 +1649,7 @@ checkDeviceExtensionSupport(VkPhysicalDevice device) {
 //TODO(delle,ReVu) add render settings here
 VkSampleCountFlagBits Renderer::
 getMaxUsableSampleCount() {
-    PRINTVK(3, "    Getting Max Usable Sample Count");
+    PrintVk(3, "    Getting Max Usable Sample Count");
     VkPhysicalDeviceProperties physicalDeviceProperties;
     vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
     
@@ -1573,8 +1666,8 @@ getMaxUsableSampleCount() {
 
 void Renderer::
 CreateLogicalDevice() {
-    PRINTVK(2, "  Creating Logical Device");
-    Assert(rendererStage & RSVK_PHYSICALDEVICE, "CreateLogicalDevice called before PickPhysicalDevice");
+    PrintVk(2, "  Creating Logical Device");
+    AssertRS(RSVK_PHYSICALDEVICE, "CreateLogicalDevice called before PickPhysicalDevice");
     rendererStage |= RSVK_LOGICALDEVICE;
     
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -1625,7 +1718,7 @@ CreateLogicalDevice() {
     createInfo.pEnabledFeatures = &enabledFeatures;
     createInfo.enabledExtensionCount = static_cast<u32>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
-    if(enableValidationLayers) {
+    if(settings.debugging) {
         createInfo.enabledLayerCount = static_cast<u32>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
     }else{
@@ -1646,8 +1739,8 @@ CreateLogicalDevice() {
 
 void Renderer::
 CreateSwapChain() {
-    PRINTVK(2, "  Creating Swapchain");
-    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreateSwapChain called before CreateLogicalDevice");
+    PrintVk(2, "  Creating Swapchain");
+    AssertRS(RSVK_LOGICALDEVICE, "CreateSwapChain called before CreateLogicalDevice");
     rendererStage |= RSVK_SWAPCHAIN;
     
     VkSwapchainKHR oldSwapChain = swapchain;
@@ -1656,7 +1749,7 @@ CreateSwapChain() {
     
     //update width and height
     glfwGetFramebufferSize(DengWindow->window, &width, &height);
-
+	
     //query GPUs supported features for the swap chain
     supportDetails = querySwapChainSupport(physicalDevice);
     surfaceFormat = chooseSwapSurfaceFormat(supportDetails.formats);
@@ -1712,7 +1805,7 @@ CreateSwapChain() {
 
 SwapChainSupportDetails Renderer::
 querySwapChainSupport(VkPhysicalDevice device) {
-    PRINTVK(3, "    Querying SwapChain Support");
+    PrintVk(3, "    Querying SwapChain Support");
     SwapChainSupportDetails details;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
     
@@ -1735,7 +1828,7 @@ querySwapChainSupport(VkPhysicalDevice device) {
 
 VkSurfaceFormatKHR Renderer::
 chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
-    PRINTVK(3, "    Choosing Swap Surface Format");
+    PrintVk(3, "    Choosing Swap Surface Format");
     for (const auto& availableFormat : availableFormats) {
         if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
             return availableFormat;
@@ -1747,7 +1840,7 @@ chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 //TODO(delle,ReVu) add render settings here (vsync)
 VkPresentModeKHR Renderer::
 chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
-    PRINTVK(3, "    Choosing Swap Present Mode");
+    PrintVk(3, "    Choosing Swap Present Mode");
     b32 immediate, fifo_relaxed, mailbox;
     immediate = fifo_relaxed = mailbox = false;
     
@@ -1774,7 +1867,7 @@ chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes
 
 VkExtent2D Renderer::
 chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
-    PRINTVK(3, "    Choosing Swap Extent");
+    PrintVk(3, "    Choosing Swap Extent");
     if (capabilities.currentExtent.width != UINT32_MAX) {
         return capabilities.currentExtent;
     } else {
@@ -1806,76 +1899,82 @@ GetMinImageCountFromPresentMode(VkPresentModeKHR mode) {
 
 void Renderer::
 CreateRenderpass(){
-    PRINTVK(2, "  Creating Render Pass");
-    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreateRenderPass called before CreateLogicalDevice");
+    PrintVk(2, "  Creating Render Pass");
+    AssertRS(RSVK_LOGICALDEVICE, "CreateRenderPass called before CreateLogicalDevice");
     rendererStage |= RSVK_RENDERPASS;
     
     if(renderPass) { vkDestroyRenderPass(device, renderPass, allocator); }
     
-    VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = surfaceFormat.format;
-    colorAttachment.samples = msaaSamples;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    
-    VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = findDepthFormat();
-    depthAttachment.samples = msaaSamples;
-    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    
-    VkAttachmentDescription colorAttachmentResolve{};
-    colorAttachmentResolve.format = surfaceFormat.format;
-    colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachmentResolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachmentResolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachmentResolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachmentResolve.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	VkAttachmentDescription attachments[3]{};
+	//color attachment
+    attachments[0].format         = surfaceFormat.format;
+    attachments[0].samples        = msaaSamples;
+    attachments[0].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[0].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    attachments[0].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[0].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[0].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	//depth attachment
+    attachments[1].format         = findDepthFormat();
+    attachments[1].samples        = msaaSamples;
+    attachments[1].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[1].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    attachments[1].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[1].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	//resolve attachment
+    attachments[2].format         = surfaceFormat.format;
+    attachments[2].samples        = VK_SAMPLE_COUNT_1_BIT;
+    attachments[2].loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[2].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    attachments[2].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[2].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[2].finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     
     VkAttachmentReference colorAttachmentRef{};
-    colorAttachmentRef.attachment = 0;
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachmentRef.attachment   = 0;
+    colorAttachmentRef.layout       = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     VkAttachmentReference depthAttachmentRef{};
-    depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    VkAttachmentReference colorAttachmentResolveRef{};
-    colorAttachmentResolveRef.attachment = 2;
-    colorAttachmentResolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    depthAttachmentRef.attachment   = 1;
+    depthAttachmentRef.layout       = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    VkAttachmentReference resolveAttachmentRef{};
+    resolveAttachmentRef.attachment = 2;
+    resolveAttachmentRef.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     
     VkSubpassDescription subpass{};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentRef;
+    subpass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount    = 1;
+    subpass.pColorAttachments       = &colorAttachmentRef;
     subpass.pDepthStencilAttachment = &depthAttachmentRef;
-    subpass.pResolveAttachments = &colorAttachmentResolveRef;
+    subpass.pResolveAttachments     = &resolveAttachmentRef;
     
-    VkSubpassDependency dependency{};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	VkSubpassDependency dependencies[2]{};
+	dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
+	dependencies[0].dstSubpass      = 0;
+	dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+	dependencies[1].srcSubpass      = 0;
+	dependencies[1].dstSubpass      = VK_SUBPASS_EXTERNAL;
+	dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[1].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
     
-    std::array<VkAttachmentDescription, 3> attachments = {colorAttachment, depthAttachment, colorAttachmentResolve};
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = (u32)attachments.size();
-    renderPassInfo.pAttachments = attachments.data();
+    renderPassInfo.attachmentCount = 3;
+    renderPassInfo.pAttachments = attachments;
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
+    renderPassInfo.dependencyCount = 2;
+    renderPassInfo.pDependencies = dependencies;
     
     AssertVk(vkCreateRenderPass(device, &renderPassInfo, allocator, &renderPass), "failed to create render pass");
 }
@@ -1888,8 +1987,8 @@ CreateRenderpass(){
 
 void Renderer::
 CreateCommandPool(){
-    PRINTVK(2, "  Creating Command Pool");
-    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreateCommandPool called before CreateLogicalDevice");
+    PrintVk(2, "  Creating Command Pool");
+    AssertRS(RSVK_LOGICALDEVICE, "CreateCommandPool called before CreateLogicalDevice");
     rendererStage |= RSVK_COMMANDPOOL;
     
     VkCommandPoolCreateInfo poolInfo{};
@@ -1902,8 +2001,8 @@ CreateCommandPool(){
 
 void Renderer::
 CreateFrames(){
-    PRINTVK(2, "  Creating Frames");
-    Assert(rendererStage & RSVK_COMMANDPOOL, "CreateFrames called before CreateCommandPool");
+    PrintVk(2, "  Creating Frames");
+    AssertRS(RSVK_COMMANDPOOL, "CreateFrames called before CreateCommandPool");
     rendererStage |= RSVK_FRAMES;
     
     //get swap chain images
@@ -1925,7 +2024,7 @@ CreateFrames(){
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, attachments.colorImage, attachments.colorImageMemory);
     attachments.colorImageView = createImageView(attachments.colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
     
-    //depth framebuffer attachments
+    //depth framebuffer attachment
     if(attachments.depthImage){
         vkDestroyImageView(device, attachments.depthImageView, nullptr);
         vkDestroyImage(device, attachments.depthImage, nullptr);
@@ -1950,12 +2049,14 @@ CreateFrames(){
         
         //create the framebuffers
         if(frames[i].framebuffer){ vkDestroyFramebuffer(device, frames[i].framebuffer, nullptr); }
-        std::array<VkImageView, 3> frameBufferAttachments = { attachments.colorImageView, attachments.depthImageView, frames[i].imageView };
+        VkImageView frameBufferAttachments[] = { 
+			attachments.colorImageView, attachments.depthImageView, frames[i].imageView 
+		};
         VkFramebufferCreateInfo info{};
         info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         info.renderPass = renderPass;
-        info.attachmentCount = (u32)frameBufferAttachments.size();
-        info.pAttachments = frameBufferAttachments.data();
+        info.attachmentCount = ArrayCount(frameBufferAttachments);
+        info.pAttachments = frameBufferAttachments;
         info.width = width;
         info.height = height;
         info.layers = 1;
@@ -1976,8 +2077,8 @@ CreateFrames(){
 //fences (CPU-GPU) are similar but are waited for in the code itself rather than threads
 void Renderer::
 CreateSyncObjects(){
-    PRINTVK(2, "  Creating Sync Objects");
-    Assert(rendererStage & RSVK_FRAMES, "CreateSyncObjects called before CreateFrames");
+    PrintVk(2, "  Creating Sync Objects");
+    AssertRS(RSVK_FRAMES, "CreateSyncObjects called before CreateFrames");
     rendererStage |= RSVK_SYNCOBJECTS;
     
     VkSemaphoreCreateInfo semaphoreInfo{};
@@ -1993,76 +2094,91 @@ CreateSyncObjects(){
     }
 }
 
+
 ////////////////////////
 //// global buffers ////
 ////////////////////////
 
 
 void Renderer::
-CreateUniformBuffer(){
-    PRINTVK(2, "  Creating uniform buffers");
-    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreateUniformBuffer called before CreateLogicalDevice");
+CreateUniformBuffers(){
+    PrintVk(2, "  Creating uniform buffers");
+    AssertRS(RSVK_LOGICALDEVICE, "CreateUniformBuffer called before CreateLogicalDevice");
     rendererStage |= RSVK_UNIFORMBUFFER;
     
-    //create vertex shader ubo
-    CreateOrResizeBuffer(uboVS.buffer, uboVS.bufferMemory, uboVS.bufferSize, sizeof(uboVS.values), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    uboVS.bufferDescriptor.buffer = uboVS.buffer;
-    uboVS.bufferDescriptor.offset = 0;
-    uboVS.bufferDescriptor.range  = sizeof(uboVS.values);
-	
+    {//create scene vertex shader ubo
+		CreateOrResizeBuffer(uboVS.buffer, uboVS.bufferMemory, uboVS.bufferSize, 
+							 sizeof(uboVS.values), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+							 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		uboVS.bufferDescriptor.buffer = uboVS.buffer;
+		uboVS.bufferDescriptor.offset = 0;
+		uboVS.bufferDescriptor.range  = sizeof(uboVS.values);
+	}
+	//create normals geometry shader ubo
     if(settings.debugging && enabledFeatures.geometryShader){
-        //create geometry shader ubo
-        CreateOrResizeBuffer(uboGS.buffer, uboGS.bufferMemory, uboGS.bufferSize, sizeof(uboGS.values), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        CreateOrResizeBuffer(uboGS.buffer, uboGS.bufferMemory, uboGS.bufferSize, 
+							 sizeof(uboGS.values), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+							 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         uboGS.bufferDescriptor.buffer = uboGS.buffer;
         uboGS.bufferDescriptor.offset = 0;
         uboGS.bufferDescriptor.range  = sizeof(uboGS.values);
     }
-    UpdateUniformBuffer();
+	{//create offscreen vertex shader ubo
+		CreateOrResizeBuffer(uboVSoffscreen.buffer, uboVSoffscreen.bufferMemory, uboVSoffscreen.bufferSize,
+							 sizeof(uboVSoffscreen.values), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+							 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		uboVSoffscreen.bufferDescriptor.buffer = uboVSoffscreen.buffer;
+		uboVSoffscreen.bufferDescriptor.offset = 0;
+		uboVSoffscreen.bufferDescriptor.range  = sizeof(uboVSoffscreen.values);
+	}
+    UpdateUniformBuffers();
 }
 
 //TODO(delle,ReOpVu) maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
 void Renderer::
-UpdateUniformBuffer(){
-    Assert(rendererStage & RSVK_UNIFORMBUFFER, "UpdateUniformBuffer called before CreateUniformBuffer");
-    //PRINTVK(2, "  Updating Uniform Buffer");
+UpdateUniformBuffers(){
+    AssertRS(RSVK_UNIFORMBUFFER, "UpdateUniformBuffer called before CreateUniformBuffer");
+    //PrintVk(2, "  Updating Uniform Buffer");
 	
-    uboVS.values.time = DengTime->totalTime;
-    uboVS.values.screen = vec2(extent.width, extent.height);
-    std::copy(lights, lights + 10, uboVS.values.lights);
-    uboVS.values.mousepos = vec2(DengInput->mousePos.x, DengInput->mousePos.y);
-	
-	{//update depth MVP for shadow map based on first light
-		uboVS.values.depthMVP = 
-			Matrix4::IDENTITY * 
-			Math::LookAtMatrix(lights[0].ToVector3(), Vector3::ZERO) * 
+	{//update offscreen vertex shader ubo
+		//calculate light ViewProjection for shadow map based on first light
+		uboVSoffscreen.values.lightVP = 
+			Math::LookAtMatrix(lights[0].ToVector3(), Vector3::ZERO).Inverse() * 
 			Math::PerspectiveProjectionMatrix(settings.shadowResolution, settings.shadowResolution, 90.0f, settings.shadowNearZ, settings.shadowFarZ);
+		void* data;
+		vkMapMemory(device, uboVSoffscreen.bufferMemory, 0, sizeof(uboVSoffscreen.values), 0, &data);{
+			memcpy(data, &uboVSoffscreen.values, sizeof(uboVSoffscreen.values));
+		}vkUnmapMemory(device, uboVSoffscreen.bufferMemory);
 	}
-	
-    //get point projected out from mouse 
-    if(initialized){
-		uboVS.values.mouseWorld = Math::ScreenToWorld(DengInput->mousePos, uboVS.values.proj, uboVS.values.view, DengWindow->dimensions);
-    }
-    //map shader data to vertex shader uniform buffer
-    void* data;
-    vkMapMemory(device, uboVS.bufferMemory, 0, sizeof(uboVS.values), 0, &data);{
-        memcpy(data, &uboVS.values, sizeof(uboVS.values));
-    }vkUnmapMemory(device, uboVS.bufferMemory);
-	
-    //update geometry shader's uniform buffer
-    if(settings.debugging && enabledFeatures.geometryShader){
-        uboGS.values.view = uboVS.values.view;
-        uboGS.values.proj = uboVS.values.proj;
+	{//update scene vertex shader ubo
+		uboVS.values.time = DengTime->totalTime;
+		std::copy(lights, lights + 10, uboVS.values.lights);
+		uboVS.values.screen = vec2(extent.width, extent.height);
+		uboVS.values.mousepos = vec2(DengInput->mousePos.x, DengInput->mousePos.y);
+		if(initialized) uboVS.values.mouseWorld = Math::ScreenToWorld(DengInput->mousePos, uboVS.values.proj, uboVS.values.view, DengWindow->dimensions);
+		uboVS.values.enablePCF = settings.shadowPCF;
+		uboVS.values.lightVP = uboVSoffscreen.values.lightVP;
 		
-        void* data;
-        vkMapMemory(device, uboGS.bufferMemory, 0, sizeof(uboGS.values), 0, &data);{
-            memcpy(data, &uboGS.values, sizeof(uboGS.values));
-        }vkUnmapMemory(device, uboGS.bufferMemory);
-    }
+		void* data;
+		vkMapMemory(device, uboVS.bufferMemory, 0, sizeof(uboVS.values), 0, &data);{
+			memcpy(data, &uboVS.values, sizeof(uboVS.values));
+		}vkUnmapMemory(device, uboVS.bufferMemory);
+	}
+	//update normals geometry shader ubo
+	if(settings.debugging && enabledFeatures.geometryShader){
+		uboGS.values.view = uboVS.values.view;
+		uboGS.values.proj = uboVS.values.proj;
+		
+		void* data;
+		vkMapMemory(device, uboGS.bufferMemory, 0, sizeof(uboGS.values), 0, &data);{
+			memcpy(data, &uboGS.values, sizeof(uboGS.values));
+		}vkUnmapMemory(device, uboGS.bufferMemory);
+	}
 }
 
 void Renderer::
-CreateSceneBuffers(){
-    PRINTVK(3, "    Creating Scene Buffers");
+CreateSceneMeshBuffers(){
+    PrintVk(3, "    Creating Scene Buffers");
     StagingBufferVk vertexStaging{}, indexStaging{};
     size_t vertexBufferSize = vertexBuffer.size() * sizeof(VertexVk);
     size_t indexBufferSize  = indexBuffer.size() * sizeof(u32);
@@ -2096,109 +2212,21 @@ CreateSceneBuffers(){
     vkFreeMemory(device, indexStaging.memory, nullptr);
 }
 
-void Renderer::
-UpdateVertexBuffer(){
-    PRINTVK(3, "    Updating vertex buffer");
-    StagingBufferVk vertexStaging{};
-    size_t vertexBufferSize = vertexBuffer.size() * sizeof(VertexVk);
-    
-    //create host visible vertex buffer (CPU/RAM)
-    CreateAndMapBuffer(vertexStaging.buffer, vertexStaging.memory, vertices.bufferSize, vertexBufferSize, vertexBuffer.data(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    
-    //create device local buffers (GPU)
-    CreateAndMapBuffer(vertices.buffer, vertices.bufferMemory, vertices.bufferSize, vertexBufferSize, nullptr, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    
-    //copy data from staging buffers to device local buffers
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands();{
-        VkBufferCopy copyRegion{};
-        copyRegion.size = vertexBufferSize;
-        vkCmdCopyBuffer(commandBuffer, vertexStaging.buffer, vertices.buffer, 1, &copyRegion);
-    }endSingleTimeCommands(commandBuffer);
-    
-    //free staging resources
-    vkDestroyBuffer(device, vertexStaging.buffer, nullptr);
-    vkFreeMemory(device, vertexStaging.memory, nullptr);
-}
-
-void Renderer::
-UpdateIndexBuffer(){
-    PRINTVK(3, "    Updating index buffer");
-    StagingBufferVk indexStaging{};
-    size_t indexBufferSize  = indexBuffer.size() * sizeof(u32);
-    
-    //create host visible index buffer (CPU/RAM)
-    CreateAndMapBuffer(indexStaging.buffer, indexStaging.memory, indices.bufferSize, indexBufferSize, indexBuffer.data(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    
-    //create device local buffers (GPU)
-    CreateAndMapBuffer(indices.buffer, indices.bufferMemory, indices.bufferSize, indexBufferSize, nullptr, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    
-    //copy data from staging buffers to device local buffers
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands();{
-        VkBufferCopy copyRegion{};
-        copyRegion.size = indexBufferSize;
-        vkCmdCopyBuffer(commandBuffer, indexStaging.buffer, indices.buffer, 1, &copyRegion);
-    }endSingleTimeCommands(commandBuffer);
-    
-    //free staging resources
-    vkDestroyBuffer(device, indexStaging.buffer, nullptr);
-    vkFreeMemory(device, indexStaging.memory, nullptr);
-}
-
-
 ///////////////////////// descriptor pool, layouts, pipeline cache
 //// pipelines setup //// pipeline create info structs
 ///////////////////////// (rasterizer, depth test, etc)
 
 
 void Renderer::
-CreateClearValues(){
-    PRINTVK(2, "  Creating Clear Values");
-    clearValues[0].color = {.02f, .02f, .02f, 1.f};
-    clearValues[1].depthStencil = {1.f, 0};
-}
-
-//TODO(delle,ReVu) find a better/more accurate way to do this, see gltfloading.cpp, line:592
-void Renderer::
-CreateDescriptorPool(){
-    PRINTVK(2, "  Creating Descriptor Pool");
-    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreateDescriptorPool called before CreateLogicalDevice");
-    rendererStage |= RSVK_DESCRIPTORPOOL;
-    
-    const int types = 11;
-    VkDescriptorPoolSize poolSizes[types] = {
-        { VK_DESCRIPTOR_TYPE_SAMPLER,                1000 },
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
-        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          1000 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          1000 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   1000 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,   1000 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         1000 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         1000 },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
-        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       1000 }
-    };
-    
-    VkDescriptorPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    poolInfo.maxSets = 1000 * types;
-    poolInfo.poolSizeCount = types;
-    poolInfo.pPoolSizes = poolSizes;
-    
-    AssertVk(vkCreateDescriptorPool(device, &poolInfo, allocator, &descriptorPool), "failed to create descriptor pool");
-}
-
-void Renderer::
 CreateLayouts(){
-    PRINTVK(2, "  Creating Layouts");
-    Assert(rendererStage & (RSVK_DESCRIPTORPOOL | RSVK_UNIFORMBUFFER) == (RSVK_DESCRIPTORPOOL | RSVK_UNIFORMBUFFER), "CreateLayouts called before CreateDescriptorPool or CreateUniformBuffer");
+    PrintVk(2, "  Creating Layouts");
+    AssertRS(RSVK_LOGICALDEVICE, "CreateLayouts called before CreateLogicalDevice");
     rendererStage |= RSVK_LAYOUTS;
     
-	std::array<VkDescriptorSetLayoutBinding, 4> setLayoutBindings{};
+	VkDescriptorSetLayoutBinding setLayoutBindings[4]{};
 	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCI{};
 	descriptorSetLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	descriptorSetLayoutCI.pBindings = setLayoutBindings.data();
+	descriptorSetLayoutCI.pBindings = setLayoutBindings;
 	descriptorSetLayoutCI.bindingCount = 0;
 	
     {//create generic descriptor set layout
@@ -2213,7 +2241,7 @@ CreateLayouts(){
 		setLayoutBindings[1].binding = 1;
 		setLayoutBindings[1].descriptorCount = 1;
 		
-		descriptorSetLayoutCI.bindingCount = 3;
+		descriptorSetLayoutCI.bindingCount = 2;
 		
 		//binding 2: geometry shader UBO
 		if(settings.debugging && enabledFeatures.geometryShader){
@@ -2262,39 +2290,79 @@ CreateLayouts(){
 		pushConstantRange.offset = 0;
 		pushConstantRange.size = sizeof(mat4);
 		
-		std::vector<VkDescriptorSetLayout> setLayouts = { 
+		VkDescriptorSetLayout setLayouts[] = { 
 			descriptorSetLayouts.ubos, descriptorSetLayouts.textures
 		};
 		
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = setLayouts.size();
-		pipelineLayoutInfo.pSetLayouts = setLayouts.data();
+		pipelineLayoutInfo.setLayoutCount = ArrayCount(setLayouts);
+		pipelineLayoutInfo.pSetLayouts = setLayouts;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 		
 		AssertVk(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout), "failed to create pipelineLayout");
     }
-    {//allocate and write descriptor set for uniform buffers
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = descriptorPool;
-        allocInfo.pSetLayouts = &descriptorSetLayouts.ubos;
-        allocInfo.descriptorSetCount = 1;
-		
-        AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &sceneDescriptorSet), "failed to allocate scene's descriptor set");
+}
+
+//TODO(delle,ReVu) find a better/more accurate way to do this, see gltfloading.cpp, line:592
+void Renderer::
+CreateDescriptorPool(){
+    PrintVk(2, "  Creating Descriptor Pool");
+    AssertRS(RSVK_LOGICALDEVICE, "CreateDescriptorPool called before CreateLogicalDevice");
+    rendererStage |= RSVK_DESCRIPTORPOOL;
+    
+    const int types = 11;
+    VkDescriptorPoolSize poolSizes[types] = {
+        { VK_DESCRIPTOR_TYPE_SAMPLER,                1000 },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,          1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          1000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,   1000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         1000 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,       1000 }
+    };
+    
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    poolInfo.maxSets = 1000 * types;
+    poolInfo.poolSizeCount = types;
+    poolInfo.pPoolSizes = poolSizes;
+    
+    AssertVk(vkCreateDescriptorPool(device, &poolInfo, allocator, &descriptorPool), "failed to create descriptor pool");
+}
+
+void Renderer::
+CreateDescriptorSets(){
+	AssertRS(RSVK_DESCRIPTORPOOL | RSVK_UNIFORMBUFFER, "CreateLayouts called before CreateDescriptorPool or CreateUniformBuffer");
+    rendererStage |= RSVK_DESCRIPTORSETS;
+	
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.pSetLayouts = &descriptorSetLayouts.ubos;
+	allocInfo.descriptorSetCount = 1;
+	
+	VkWriteDescriptorSet writeDescriptorSets[3]{};
+	
+	{//scene descriptor sets
+        AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets.scene), "failed to allocate scene descriptor sets");
         
-        std::array<VkWriteDescriptorSet, 3> writeDescriptorSets{};
         //binding 0: vertex shader ubo
         writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorSets[0].dstSet = sceneDescriptorSet;
+        writeDescriptorSets[0].dstSet = descriptorSets.scene;
         writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         writeDescriptorSets[0].dstBinding = 0;
         writeDescriptorSets[0].pBufferInfo = &uboVS.bufferDescriptor;
         writeDescriptorSets[0].descriptorCount = 1;
 		//binding 1: fragment shader shadow sampler
         writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptorSets[1].dstSet = sceneDescriptorSet;
+        writeDescriptorSets[1].dstSet = descriptorSets.scene;
         writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         writeDescriptorSets[1].dstBinding = 1;
         writeDescriptorSets[1].pImageInfo = &offscreen.depthDescriptor;
@@ -2303,23 +2371,26 @@ CreateLayouts(){
         if(settings.debugging && enabledFeatures.geometryShader){
             //binding 2: geometry shader ubo
             writeDescriptorSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            writeDescriptorSets[2].dstSet = sceneDescriptorSet;
+            writeDescriptorSets[2].dstSet = descriptorSets.scene;
             writeDescriptorSets[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             writeDescriptorSets[2].dstBinding = 2;
             writeDescriptorSets[2].pBufferInfo = &uboGS.bufferDescriptor;
             writeDescriptorSets[2].descriptorCount = 1;
 			
-            vkUpdateDescriptorSets(device, 3, writeDescriptorSets.data(), 0, nullptr);
+            vkUpdateDescriptorSets(device, 3, writeDescriptorSets, 0, nullptr);
         }else{
-            vkUpdateDescriptorSets(device, 2, writeDescriptorSets.data(), 0, nullptr);
+            vkUpdateDescriptorSets(device, 2, writeDescriptorSets, 0, nullptr);
         }
     }
+	{
+		
+	}
 }
 
 void Renderer::
 CreatePipelineCache(){
-    PRINTVK(2, "  Creating Pipeline Cache");
-    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreatePipelineCache called before CreateLogicalDevice");
+    PrintVk(2, "  Creating Pipeline Cache");
+    AssertRS(RSVK_LOGICALDEVICE, "CreatePipelineCache called before CreateLogicalDevice");
     
     VkPipelineCacheCreateInfo pipelineCacheCreateInfo{};
     pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
@@ -2339,8 +2410,8 @@ CreatePipelineCache(){
 
 void Renderer::
 SetupPipelineCreation(){
-    PRINTVK(2, "  Setting up pipeline creation");
-    Assert(rendererStage & (RSVK_LAYOUTS | RSVK_RENDERPASS) == (RSVK_LAYOUTS | RSVK_RENDERPASS), "SetupPipelineCreation called before CreateLayouts or CreateRenderPass");
+    PrintVk(2, "  Setting up pipeline creation");
+    AssertRS(RSVK_LAYOUTS | RSVK_RENDERPASS, "SetupPipelineCreation called before CreateLayouts or CreateRenderPass");
     rendererStage |= RSVK_PIPELINESETUP;
     
     //determines how to group vertices together
@@ -2500,11 +2571,9 @@ SetupPipelineCreation(){
 
 void Renderer::
 CreatePipelines(){
-    PRINTVK(2, "  Creating Pipelines");
-    Assert(rendererStage & RSVK_PIPELINESETUP, "CreatePipelines called before SetupPipelineCreation");
+    PrintVk(2, "  Creating Pipelines");
+    AssertRS(RSVK_PIPELINESETUP, "CreatePipelines called before SetupPipelineCreation");
     rendererStage |= RSVK_PIPELINECREATE;
-    
-    TIMER_START(t_p);
     
     //destroy previous pipelines
 	forI(ArrayCount(pipelines.array)){
@@ -2519,10 +2588,14 @@ CreatePipelines(){
     shaderModules.clear(); shaderModules.reserve(oldCount);
     
     //compile uncompiled shaders
-    PRINTVK(3, "    Compiling shaders");
+    PrintVk(3, "    Compiling shaders");
     TIMER_START(t_s);
-    for(auto& s : GetUncompiledShaders()){ CompileShader(s, false); }
-    PRINTVK(3, "    Finished compiling shaders in ", TIMER_END(t_s), "ms");
+	if(settings.recompileAllShaders){
+		CompileAllShaders(settings.optimizeShaders);
+	}else{
+		for(auto& s : GetUncompiledShaders()){ CompileShader(s, settings.optimizeShaders); }
+	}
+    PrintVk(3, "    Finished compiling shaders in ", TIMER_END(t_s), "ms");
 	
 	//setup specialization constants
 	/*
@@ -2573,6 +2646,7 @@ specializationInfo.mapEntryCount = 1;
     {//2d
 		shaderStages[0] = loadShader("twod.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("twod.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.twod), "failed to create twod graphics pipeline");
     }
@@ -2645,7 +2719,7 @@ specializationInfo.mapEntryCount = 1;
             colorBlendState.blendConstants[0] = (f32)settings.selectedR / 255.f;
             colorBlendState.blendConstants[1] = (f32)settings.selectedG / 255.f;
             colorBlendState.blendConstants[2] = (f32)settings.selectedB / 255.f;
-            colorBlendState.blendConstants[3] = (f32)settings.selectedA / 255.f;;
+            colorBlendState.blendConstants[3] = (f32)settings.selectedA / 255.f;
             
             AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.selected), "failed to create selected entity graphics pipeline");
             
@@ -2683,14 +2757,14 @@ specializationInfo.mapEntryCount = 1;
         shaderStages[1] = loadShader("base.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
         shaderStages[2] = loadShader("normaldebug.geom.spv", VK_SHADER_STAGE_GEOMETRY_BIT);
         pipelineCreateInfo.stageCount = 3;
-        AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.normals), "failed to create normals graphics pipeline");
+        AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.normals_debug), "failed to create normals_debug graphics pipeline");
     }
 	{//offscreen
 		colorBlendState.attachmentCount = 0; //no color attachments used
 		depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL; //cull front faces
 		rasterizationState.depthBiasEnable = VK_TRUE; //enable depth bias
 		multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-		multisampleState.sampleShadingEnable = false;
+		multisampleState.sampleShadingEnable = VK_FALSE;
 		dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS, };
 		dynamicState.dynamicStateCount = (u32)dynamicStates.size(); //add depth bias to dynamic state so
 		dynamicState.pDynamicStates = dynamicStates.data();         //it can be changed at runtime
@@ -2710,8 +2784,6 @@ specializationInfo.mapEntryCount = 1;
 		dynamicState.pDynamicStates = dynamicStates.data();
 		pipelineCreateInfo.renderPass = renderPass;
 	}
-    
-    PRINTVK(2, "  Finished creating pipelines in ", TIMER_END(t_p), "ms");
 }
 
 VkPipeline Renderer::
@@ -2730,7 +2802,7 @@ GetPipelineFromShader(u32 shader){
 
 void Renderer::
 UpdateMaterialPipelines(){
-    PRINTVK(4, "      Updating material pipelines");
+    PrintVk(4, "      Updating material pipelines");
     for(auto& mat : materials){
         mat.pipeline = GetPipelineFromShader(mat.shader);
     }
@@ -2748,19 +2820,22 @@ GetUncompiledShaders(){
     
     std::vector<std::string> files;
     for(auto& entry : std::filesystem::directory_iterator(deshi::dirShaders())){
-        if(entry.path().extension() == ".spv"){ continue; }
-        bool good = true;
-        for(auto& s : compiled){
-            if(entry.path().filename().string().compare(s) == 0){ good = false; break; }
-        }
-        if(good) files.push_back(entry.path().filename().string());
+		if(entry.path().extension() == ".vert" ||
+		   entry.path().extension() == ".frag" ||
+		   entry.path().extension() == ".geom"){
+			bool good = true;
+			for(auto& s : compiled){
+				if(entry.path().filename().string().compare(s) == 0){ good = false; break; }
+			}
+			if(good) files.push_back(entry.path().filename().string());
+		}
     }
     return files;
 }
 
 VkPipelineShaderStageCreateInfo Renderer::
 loadShader(std::string filename, VkShaderStageFlagBits stage) {
-    PRINTVK(3, "    Loading shader: ", filename);
+    PrintVk(3, "    Loading shader: ", filename);
     //setup shader stage create info
     VkPipelineShaderStageCreateInfo shaderStage{};
     shaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -2784,7 +2859,7 @@ loadShader(std::string filename, VkShaderStageFlagBits stage) {
     moduleInfo.codeSize = code.size();
     moduleInfo.pCode = (u32*)code.data();
     
-    VkShaderModule shaderModule;
+    VkShaderModule shaderModule{};
     AssertVk(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
     shaderStage.module = shaderModule;
     
@@ -2795,7 +2870,7 @@ loadShader(std::string filename, VkShaderStageFlagBits stage) {
 //TODO(delle,Re) maybe dont crash on failed shader compile?
 VkPipelineShaderStageCreateInfo Renderer::
 CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize) {
-    PRINTVK(3, "    Compiling and loading shader: ", filename);
+    PrintVk(3, "    Compiling and loading shader: ", filename);
     //check if file exists
     std::filesystem::path entry(deshi::dirShaders() + filename);
     if(std::filesystem::exists(entry)){
@@ -2839,7 +2914,7 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
         moduleInfo.codeSize = shaderc_result_get_length(result);
         moduleInfo.pCode = (u32*)shaderc_result_get_bytes(result);
         
-        VkShaderModule shaderModule;
+        VkShaderModule shaderModule{};
         AssertVk(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
         
         //setup shader stage create info
@@ -2873,7 +2948,7 @@ CompileAllShaders(bool optimize){
         if(ext.compare(".spv") == 0) continue; //early out if .spv
         std::vector<char> code = deshi::readFileBinary(entry.path().string()); //read shader code
 		Assert(code.size(), "Unable to read shader file");
-        PRINTVK(4, "      Compiling shader: ", filename);
+        PrintVk(4, "      Compiling shader: ", filename);
         
         //try compile from GLSL to SPIR-V binary
         shaderc_compilation_result_t result;
@@ -2917,7 +2992,7 @@ CompileAllShaders(bool optimize){
 
 void Renderer::
 CompileShader(std::string& filename, bool optimize){
-    PRINTVK(3, "    Compiling shader: ", filename);
+    PrintVk(3, "    Compiling shader: ", filename);
     std::filesystem::path entry(deshi::dirShaders() + filename);
     if(std::filesystem::exists(entry)){
         std::string ext = entry.extension().string();
@@ -2974,7 +3049,7 @@ CompileShader(std::string& filename, bool optimize){
 
 u32 Renderer::
 findMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties) {
-    PRINTVK(4, "      Finding Memory Types");
+    PrintVk(4, "      Finding Memory Types");
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
     
@@ -2995,7 +3070,7 @@ findDepthFormat() {
 
 VkFormat Renderer::
 findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
-    PRINTVK(4, "      Finding supported image formats");
+    PrintVk(4, "      Finding supported image formats");
     for (VkFormat format : candidates) {
         VkFormatProperties props;
         vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
@@ -3013,7 +3088,7 @@ findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tilin
 
 VkImageView Renderer::
 createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels) {
-    PRINTVK(4, "      Creating Image View");
+    PrintVk(4, "      Creating Image View");
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = image;
@@ -3025,14 +3100,14 @@ createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, 
     viewInfo.subresourceRange.baseArrayLayer = 0;
     viewInfo.subresourceRange.layerCount = 1;
     
-    VkImageView imageView;
+    VkImageView imageView{};
     AssertVk(vkCreateImageView(device, &viewInfo, allocator, &imageView), "failed to create texture image view");
     return imageView;
 }
 
 void Renderer::
 createImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
-    PRINTVK(4, "      Creating Image");
+    PrintVk(4, "      Creating Image");
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -3063,7 +3138,7 @@ createImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSampl
 
 void Renderer::
 transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels) {
-    PRINTVK(4, "      Transitioning Image Layout");
+    PrintVk(4, "      Transitioning Image Layout");
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
     
     VkImageMemoryBarrier barrier{};
@@ -3105,7 +3180,7 @@ transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, V
 
 void Renderer::
 generateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight, u32 mipLevels) {
-    PRINTVK(4, "      Creating Image Mipmaps");
+    PrintVk(4, "      Creating Image Mipmaps");
     // Check if image format supports linear blitting
     VkFormatProperties formatProperties;
     vkGetPhysicalDeviceFormatProperties(physicalDevice, imageFormat, &formatProperties);
@@ -3176,7 +3251,7 @@ generateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight
 
 void Renderer::
 CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
-    PRINTVK(4, "      Creating or Resizing Buffer");
+    PrintVk(4, "      Creating or Resizing Buffer");
     //delete old buffer
     if(buffer != VK_NULL_HANDLE){ vkDestroyBuffer(device, buffer, allocator); }
     if (bufferMemory != VK_NULL_HANDLE){ vkFreeMemory(device, bufferMemory, allocator); }
@@ -3205,7 +3280,7 @@ CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSiz
 
 void Renderer::
 CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, void* data, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
-    PRINTVK(4, "      Creating and Mapping Buffer");
+    PrintVk(4, "      Creating and Mapping Buffer");
     //delete old buffer
     if(buffer != VK_NULL_HANDLE){ vkDestroyBuffer(device, buffer, allocator); }
     if (bufferMemory != VK_NULL_HANDLE){ vkFreeMemory(device, bufferMemory, allocator); }
@@ -3233,7 +3308,7 @@ CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize&
     
     //if data pointer, map buffer and copy data
     if(data != nullptr){
-        void* mapped;
+        void* mapped = 0;
         AssertVk(vkMapMemory(device, bufferMemory, 0, newSize, 0, &mapped), "couldnt map memory");{
             memcpy(mapped, data, newSize);
             // If host coherency hasn't been requested, do a manual flush to make writes visible
@@ -3254,7 +3329,7 @@ CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize&
 
 void Renderer::
 copyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height) {
-    PRINTVK(4, "      Copying Buffer To Image");
+    PrintVk(4, "      Copying Buffer To Image");
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
     
     VkBufferImageCopy region{};
@@ -3291,8 +3366,8 @@ copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
 
 void Renderer::
 SetupOffscreenRendering(){
-	PRINTVK(2, "  Creating offscreen render pass");
-    Assert(rendererStage & RSVK_LOGICALDEVICE, "CreateOffscreenRenderPass called before CreateLogicalDevice");
+	PrintVk(2, "  Creating offscreen render pass");
+    AssertRS(RSVK_LOGICALDEVICE, "CreateOffscreenRenderPass called before CreateLogicalDevice");
     rendererStage |= RSVK_RENDERPASS;
 	
 	//cleanup previous offscreen stuff
@@ -3305,7 +3380,7 @@ SetupOffscreenRendering(){
 		vkDestroyFramebuffer(device, offscreen.framebuffer,      allocator);
 	}
 	
-	offscreen.width = settings.shadowResolution;
+	offscreen.width  = settings.shadowResolution;
 	offscreen.height = settings.shadowResolution;
 	VkFormat depthFormat = VK_FORMAT_D16_UNORM; //16bits might be enough for a small scene
 	
@@ -3356,8 +3431,9 @@ SetupOffscreenRendering(){
 		subpass.pDepthStencilAttachment = &reference;
 		
 		//use subpass dependencies for layout transitions
-		std::array<VkSubpassDependency, 2> dependencies{};
+		VkSubpassDependency dependencies[2]{};
 		dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
+		dependencies[0].dstSubpass      = 0;
 		dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 		dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 		dependencies[0].srcAccessMask   = VK_ACCESS_SHADER_READ_BIT;
@@ -3373,23 +3449,21 @@ SetupOffscreenRendering(){
 		
 		VkRenderPassCreateInfo createInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
 		createInfo.attachmentCount = 1;
-		createInfo.pAttachments = &attachment;
-		createInfo.subpassCount = 1;
-		createInfo.pSubpasses = &subpass;
-		createInfo.dependencyCount = (u32)dependencies.size();
-		createInfo.pDependencies = dependencies.data();
-		
+		createInfo.pAttachments    = &attachment;
+		createInfo.subpassCount    = 1;
+		createInfo.pSubpasses      = &subpass;
+		createInfo.dependencyCount = 2;
+		createInfo.pDependencies   = dependencies;
 		AssertVk(vkCreateRenderPass(device, &createInfo, allocator, &offscreen.renderpass), "failed to create offscreen render pass");
 	}
 	{//create the framebuffer
 		VkFramebufferCreateInfo createInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
-		createInfo.renderPass = offscreen.renderpass;
+		createInfo.renderPass      = offscreen.renderpass;
         createInfo.attachmentCount = 1;
-        createInfo.pAttachments = &offscreen.depthImageView;
-        createInfo.width = offscreen.width;
-        createInfo.height = offscreen.height;
-        createInfo.layers = 1;
-		
+        createInfo.pAttachments    = &offscreen.depthImageView;
+        createInfo.width           = offscreen.width;
+        createInfo.height          = offscreen.height;
+        createInfo.layers          = 1;
 		AssertVk(vkCreateFramebuffer(device, &createInfo, allocator, &offscreen.framebuffer), "failed to create offscreen framebuffer");
 	}
 }
@@ -3444,7 +3518,7 @@ DebugNameObjects(){
 	}
 	
 	//// descriptor sets ////
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (uint64_t)sceneDescriptorSet, "scene UBO descriptor set");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (uint64_t)descriptorSets.scene, "scene UBO descriptor set");
 	forI(materials.size()){
 		std::string name = std::string("Material descriptor set ") + materials[i].name;
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (uint64_t)materials[i].descriptorSet, name.c_str());
@@ -3469,7 +3543,7 @@ DebugNameObjects(){
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.wireframe_depth, "Wireframe Depth pipeline");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.selected, "Selected pipeline");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.collider, "Collider pipeline");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.normals, "Normals pipeline");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.normals_debug, "DEBUG Normals pipeline");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.testing0, "Testing0 pipeline");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.testing1, "Testing1 pipeline");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (uint64_t)pipelines.offscreen, "Offscreen pipeline");
@@ -3484,7 +3558,7 @@ DebugNameObjects(){
 
 void Renderer::
 ResizeWindow() {
-    PRINTVK(1, "window resized");
+    PrintVk(1, "window resized");
     // Ensure all operations on the device have been finished before destroying resources
     vkDeviceWaitIdle(device);
     
@@ -3530,8 +3604,8 @@ endSingleTimeCommands(VkCommandBuffer commandBuffer) {
 //NOTE ref: gltfscenerendering.cpp:310
 void Renderer::
 BuildCommandBuffers() {
-    //PRINTVK(2, "  Building Command Buffers");
-    Assert(rendererStage >= RSVK_PIPELINECREATE, "BuildCommandBuffers called before CreatePipelines");
+    //PrintVk(2, "  Building Command Buffers");
+    AssertRS(RSVK_DESCRIPTORSETS | RSVK_PIPELINECREATE, "BuildCommandBuffers called before CreateDescriptorSets or CreatePipelines");
     
     VkCommandBufferBeginInfo cmdBufferInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 	VkRenderPassBeginInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -3569,7 +3643,7 @@ BuildCommandBuffers() {
 			vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
 			vkCmdSetDepthBias(frames[i].commandBuffer, settings.depthBiasConstant, 0.0f, settings.depthBiasSlope); //set depth bias (polygon offset) to avoid shadow mapping artifacts
 			vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.offscreen);
-			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &sceneDescriptorSet, 0, nullptr); //bind scene ubo descriptor set
+			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets.scene, 0, nullptr); //bind scene ubo descriptor set
 			
 			//reset offsets
 			VkDeviceSize offsets[1] = { 0 };
@@ -3591,8 +3665,8 @@ BuildCommandBuffers() {
 			}
 			DebugEndLabelVk(frames[i].commandBuffer);
 			
-			DebugEndLabelVk(frames[i].commandBuffer);
 			vkCmdEndRenderPass(frames[i].commandBuffer);
+			DebugEndLabelVk(frames[i].commandBuffer);
 		}
 		
 		//NOTE explicit synchronization is not required because it is done via the subpass dependenies
@@ -3601,7 +3675,7 @@ BuildCommandBuffers() {
 		//// second render pass ////
 		////////////////////////////
 		{//scene rendering with applied shadow map
-			clearValues[0].color = {.02f, .02f, .02f, 1.f};
+			clearValues[0].color = {settings.clearR/255.0f, settings.clearG/255.0f, settings.clearB/255.0f, settings.clearA/255.0f};
 			clearValues[1].depthStencil = {1.0f, 0};
 			renderPassInfo.renderPass = renderPass;
 			renderPassInfo.framebuffer = frames[i].framebuffer;
@@ -3622,7 +3696,7 @@ BuildCommandBuffers() {
 			vkCmdBeginRenderPass(frames[i].commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdSetViewport(frames[i].commandBuffer, 0, 1, &viewport);
 			vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
-			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &sceneDescriptorSet, 0, nullptr); //bind scene ubo descriptor set
+			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets.scene, 0, nullptr); //bind scene ubo descriptor set
 			
 			//reset offsets
 			VkDeviceSize offsets[1] = { 0 };
@@ -3717,10 +3791,10 @@ BuildCommandBuffers() {
 			}
 			DebugEndLabelVk(frames[i].commandBuffer);
 			
-			//draw debugging normals
-			DebugBeginLabelVk(frames[i].commandBuffer, "Debugging Normals", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-			if(settings.debugging && enabledFeatures.geometryShader && settings.normals){
-				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.normals);
+			//DEBUG draw mesh normals
+			DebugBeginLabelVk(frames[i].commandBuffer, "DEBUG Mesh Normals", vec4(0.5f, 0.76f, 0.34f, 1.0f));
+			if(settings.debugging && enabledFeatures.geometryShader && settings.meshNormals){
+				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.normals_debug);
 				for(MeshVk& mesh : meshes){
 					if(mesh.visible && mesh.primitives.size() > 0){
 						//push the mesh's model matrix to the shader
@@ -3745,8 +3819,8 @@ BuildCommandBuffers() {
 			}
 			DebugEndLabelVk(frames[i].commandBuffer);
 			
-			DebugEndLabelVk(frames[i].commandBuffer);
 			vkCmdEndRenderPass(frames[i].commandBuffer);
+			DebugEndLabelVk(frames[i].commandBuffer);
 		}
 		
         AssertVk(vkEndCommandBuffer(frames[i].commandBuffer), "failed to end recording command buffer");

@@ -80,6 +80,7 @@ ALenum to_al_format(int channels, int bitsPerSample, Admin* admin) {
 		return AL_FORMAT_STEREO16;
 	else {
 		Assert(!"unrecognized audio file format");
+		return 0;
 	}
 }
 

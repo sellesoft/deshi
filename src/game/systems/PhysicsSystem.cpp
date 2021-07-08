@@ -502,7 +502,7 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 		//PRINTLN("o1 rot: " << o1->rotation.str());
 		//PRINTLN("o2 rot: " << o2->rotation.str());
 
-		Face* lastface;
+		Face* lastface = 0;
 		for (Face* f : o1c->mesh->faces) {
 			p0 = f->points[0] * o1transform;
 			normal = f->norm * o1rotation;

@@ -20,6 +20,7 @@ ____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
+make a generalized config file parser (see #ideas)
 create string_view versions of string parsing in assets.h
 make the engine runnable without the renderer
 create a hot-loadable global vars file
@@ -56,6 +57,7 @@ fix DESH material and event saving/loading
 Render TODOs
 ------------
 add directional shadow mapping
+add temporary meshes (get reset every frame like imgui)
 add omnidirectional shadow mapping
 add not-on-screen object culling thru mesh AABBs
 add front-to-back sorting for perf gain (and maybe transparency?)

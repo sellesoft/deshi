@@ -95,7 +95,7 @@ struct Debug {
 	void DrawMesh(Mesh* mesh, Matrix4 transform, size_t unique, float time, Color color);
 	void DrawMesh(int i, Mesh* mesh, Matrix4 transform, size_t unique, Color color);
 	void DrawMesh(int i, Mesh* mesh, Matrix4 transform, size_t unique, float time, Color color);
-	
+	void DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, f32 time, Color color);
 };
 
 extern Debug* g_debug;

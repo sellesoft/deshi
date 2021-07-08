@@ -1,13 +1,13 @@
 >entity
-id       4
+id       2
 type     Anonymous
-name     "StaticMesh4"
-position (-5.901005,4.620281,-6.644873)
+name     "box1"
+position (9.552532,4.074704,-9.627048)
 rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)
 
 >mesh
-id      13
+id      11
 name    "box.obj"
 visible true
 

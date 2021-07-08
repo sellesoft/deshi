@@ -21,11 +21,11 @@ last_updated ""
 14 "box.obj" 1 "1"
 
 >entities
-0 "StaticMesh0"
-1 "Empty1"
-2 "StaticMesh2"
-3 "StaticMesh3"
-4 "StaticMesh4"
-5 "StaticMesh5"
+0 "floor"
+1 "light"
+2 "box1"
+3 "box2"
+4 "box3"
+5 "box4"
 
 >events

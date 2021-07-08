@@ -219,8 +219,55 @@ void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, size_t unique, float 
 	}
 }
 
+void Debug::DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, f32 time = 0, Color color = Color::WHITE){
+	f32 y = tanf(RADIANS(fovx / 2.0f));
+	f32 x = y * aspectRatio;
+	f32 nearX = x * nearZ;
+	f32 farX  = x * farZ;
+	f32 nearY = y * nearZ;
+	f32 farY  = y * farZ;
+	
+	vec4 faces[8] = {
+		//near face
+		{ nearX,  nearY, nearZ, 1},
+		{-nearX,  nearY, nearZ, 1},
+		{ nearX, -nearY, nearZ, 1},
+		{-nearX, -nearY, nearZ, 1},
+		
+		//far face
+		{ farX,  farY, farZ, 1},
+		{-farX,  farY, farZ, 1},
+		{ farX, -farY, farZ, 1},
+		{-farX, -farY, farZ, 1},
+	};
+	
+	mat4 mat = Math::LookAtMatrix(position, target);
+	vec3 v[8];
+	forI(8){
+		vec4 temp = faces[i] * mat;
+		v[i].x = temp.x / temp.w;
+		v[i].y = temp.y / temp.w;
+		v[i].z = temp.z / temp.w;
+	}
+	
+	if(time == 0) time = DengTime->deltaTime;
+	DrawLine(v[0], v[1], (size_t)&mat.data[0], time, color);
+	DrawLine(v[0], v[2], (size_t)&mat.data[1], time, color);
+	DrawLine(v[3], v[1], (size_t)&mat.data[2], time, color);
+	DrawLine(v[3], v[2], (size_t)&mat.data[3], time, color);
+	DrawLine(v[4], v[5], (size_t)&mat.data[4], time, color);
+	DrawLine(v[4], v[6], (size_t)&mat.data[5], time, color);
+	DrawLine(v[7], v[5], (size_t)&mat.data[6], time, color);
+	DrawLine(v[7], v[6], (size_t)&mat.data[7], time, color);
+	DrawLine(v[0], v[4], (size_t)&mat.data[8], time, color);
+	DrawLine(v[1], v[5], (size_t)&mat.data[9], time, color);
+	DrawLine(v[2], v[6], (size_t)&mat.data[10], time, color);
+	DrawLine(v[3], v[7], (size_t)&mat.data[11], time, color);
+}
+
 void Debug::Update() {
-	//DebugLine(DengRenderer->lights[0].ToVector3(), DengRenderer->lights[0].ToVector3() - (Vector3::FORWARD * Math::LookAtMatrix(DengRenderer->lights[0].ToVector3(), Vector3::ZERO)).normalized(), DengTime->deltaTime);
+	//DrawFrustrum(DengRenderer->uboVS.values.lights[0].ToVector3(), Vector3::ZERO, 1, 90, 1, 96);
+	
 	
 	
 	

@@ -1,7 +1,6 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-
 layout(set = 0, binding = 0) uniform UniformBufferObject{
 	mat4  view;
 	mat4  proj;
@@ -53,6 +52,7 @@ void main() {
 	
 	if(ubo.enablePCF != 0) outEnablePCF = 1;
 	outShadowCoord = (biasMat * ubo.depthMVP * primitive.model) * vec4(inPosition, 1.0);
+	//outShadowCoord = (ubo.depthMVP * primitive.model) * vec4(inPosition, 1.0);
 	outLightVec = normalize(ubo.lights[0].xyz - inPosition);
 	vec4 pos = primitive.model * vec4(inPosition.xyz, 1.0);
 	outViewVec = -pos.xyz;
