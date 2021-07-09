@@ -4,6 +4,7 @@
 
 #include "Component.h"
 #include "../../math/VectorMatrix.h"
+#include "../../utils/tuple.h"
 
 #include <set>
 
@@ -69,7 +70,7 @@ struct SphereCollider : public Collider {
 
 //collider for terrain
 struct LandscapeCollider : public Collider {
-	std::vector<std::pair<AABBCollider, Vector3>> aabbcols; //aabb colliders and their local positions
+	std::vector<pair<AABBCollider, Vector3>> aabbcols; //aabb colliders and their local positions
 	
 	LandscapeCollider(Mesh* mesh, u32 collisionleyer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	

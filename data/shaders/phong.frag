@@ -18,12 +18,12 @@ layout(location = 10) in vec4 lights[10];
 
 layout(location = 0) out vec4 outColor;
 
-#define ambient 0.01
+#define ambient 0.1
 
 //ref: https://github.com/SaschaWillems/Vulkan/blob/master/data/shaders/glsl/shadowmapping/scene.frag
 float textureProj(vec4 shadowCoord, vec2 off){
 	float shadow = 1.0;
-	if(shadowCoord.z > -1.0 && shadowCoord.z < 1.0){
+	if(shadowCoord.z > -1.0 && shadowCoord.z < 1.0){ //check if coords are within the texture's bounds
 		float dist = texture(shadowMap, shadowCoord.st + off).r; //st == xy
 		if(shadowCoord.w > 0.0 && dist < shadowCoord.z){
 			shadow = ambient;
@@ -76,6 +76,7 @@ void main() {
 		}
 	}
 	*/
+	
 	float shadow = (inEnablePCF == 1) ? filterPCF(inShadowCoord / inShadowCoord.w) : textureProj(inShadowCoord / inShadowCoord.w, vec2(0.0));
 	
 	//outColor = vec4(outColor.xyz * shadow, 1.0);
@@ -86,5 +87,4 @@ void main() {
 	vec3 R = normalize(-reflect(L, N));
 	vec3 diffuse = max(dot(N, L), ambient) * inColor;
 	outColor = vec4(diffuse * shadow, 1.0);
-	
 }

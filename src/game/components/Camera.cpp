@@ -97,7 +97,7 @@ Matrix4 Camera::MakePerspectiveProjection(){
 }
 
 Matrix4 Camera::MakeOrthographicProjection() {
-	//std::pair<Vector3, Vector3> bbox = admin->scene.SceneBoundingBox();
+	//pair<Vector3, Vector3> bbox = admin->scene.SceneBoundingBox();
 	//convert bounding box to camera space
 	static float zoom = 10;
 	Vector3 maxcam = Math::WorldToCamera3(Vector3( zoom, zoom, zoom),  admin->mainCamera->viewMat);

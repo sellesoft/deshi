@@ -13,7 +13,7 @@ REM ____________________________________________________________________________
 REM                                      Compiler and Linker Flags
 REM _____________________________________________________________________________________________________
 
-@set WARNINGS=/W1 /wd4201 /wd4100 /wd4189 /wd4706
+@set WARNINGS=/W1 /wd4201 /wd4100 /wd4189 /wd4706 /wd4311
 @set COMPILE_FLAGS=/EHsc /nologo /MD /MP /Oi /Gm- /Fm /std:c++17 %WARNINGS%
 @set LINK_FLAGS=/nologo /opt:ref
 @set OUT_EXE=deshi.exe

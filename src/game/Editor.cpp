@@ -443,26 +443,16 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
 }
 
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// imgui debug funcs
 
-
-
-ImVec4 ColToVec4(Color p) {
-    return ImVec4((float)p.r / 255, (float)p.g / 255, (float)p.b / 255, p.a / 255);
-}
-
-ImVec2 Vec2ToImVec2(Vector2 v){
-    return ImVec2(v.x, v.y);
-}
 
 //functions to simplify the usage of our DebugLayer
 namespace ImGui {
     void BeginDebugLayer() {
         //ImGui::SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height));
         ImGui::SetNextWindowPos(ImVec2(0, 0));
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, ColToVec4(Color(0, 0, 0, 0)));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::ColorToImVec4(Color(0, 0, 0, 0)));
         ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
     }
     
@@ -473,26 +463,26 @@ namespace ImGui {
     }
     
     void DebugDrawCircle(Vector2 pos, float radius, Color color) {
-        ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(pos.x, pos.y), radius, ImGui::GetColorU32(ColToVec4(color)));
+        ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(pos.x, pos.y), radius, ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
     void DebugDrawCircle3(Vector3 pos, float radius, Color color) {
         Camera* c = g_admin->mainCamera;
         Vector2 windimen = DengWindow->dimensions;
         Vector2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
-        ImGui::GetBackgroundDrawList()->AddCircle(Vec2ToImVec2(pos2), radius, ImGui::GetColorU32(ColToVec4(color)));
+        ImGui::GetBackgroundDrawList()->AddCircle(ImGui::Vector2ToImVec2(pos2), radius, ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
     void DebugDrawCircleFilled3(Vector3 pos, float radius, Color color) {
         Camera* c = g_admin->mainCamera;
         Vector2 windimen = DengWindow->dimensions;
         Vector2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
-        ImGui::GetBackgroundDrawList()->AddCircleFilled(Vec2ToImVec2(pos2), radius, ImGui::GetColorU32(ColToVec4(color)));
+        ImGui::GetBackgroundDrawList()->AddCircleFilled(ImGui::Vector2ToImVec2(pos2), radius, ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
     void DebugDrawLine(Vector2 pos1, Vector2 pos2, Color color) {
         Math::ClipLineToBorderPlanes(pos1, pos2, DengWindow->dimensions);
-        ImGui::GetBackgroundDrawList()->AddLine(Vec2ToImVec2(pos1), Vec2ToImVec2(pos2), ImGui::GetColorU32(ColToVec4(color)));
+        ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(pos1), ImGui::Vector2ToImVec2(pos2), ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
     void DebugDrawLine3(Vector3 pos1, Vector3 pos2, Color color) {
@@ -503,16 +493,16 @@ namespace ImGui {
         Vector3 pos2n = Math::WorldToCamera3(pos2, c->viewMat);
         
         if (Math::ClipLineToZPlanes(pos1n, pos2n, c->nearZ, c->farZ)) {
-            ImGui::GetBackgroundDrawList()->AddLine(Vec2ToImVec2(Math::CameraToScreen2(pos1n, c->projMat, windimen)), 
-                                                    Vec2ToImVec2(Math::CameraToScreen2(pos2n, c->projMat, windimen)), 
-                                                    ImGui::GetColorU32(ColToVec4(color)));
+            ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(Math::CameraToScreen2(pos1n, c->projMat, windimen)), 
+                                                    ImGui::Vector2ToImVec2(Math::CameraToScreen2(pos2n, c->projMat, windimen)), 
+                                                    ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
         }
     }
     
     void DebugDrawText(const char* text, Vector2 pos, Color color) {		
-        ImGui::SetCursorPos(Vec2ToImVec2(pos));
+        ImGui::SetCursorPos(ImGui::Vector2ToImVec2(pos));
         
-        ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(color));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(color));
         ImGui::TextEx(text);
         ImGui::PopStyleColor();
     }
@@ -523,8 +513,8 @@ namespace ImGui {
         
         Vector3 posc = Math::WorldToCamera3(pos, c->viewMat);
         if(Math::ClipLineToZPlanes(posc, posc, c->nearZ, c->farZ)){
-            ImGui::SetCursorPos(Vec2ToImVec2(Math::CameraToScreen2(posc, c->projMat, windimen) + twoDoffset));
-            ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(color));
+            ImGui::SetCursorPos(ImGui::Vector2ToImVec2(Math::CameraToScreen2(posc, c->projMat, windimen) + twoDoffset));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(color));
             ImGui::TextEx(text);
             ImGui::PopStyleColor();
         }
@@ -537,8 +527,8 @@ namespace ImGui {
     }
     
     void DebugFillTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color) {
-        ImGui::GetBackgroundDrawList()->AddTriangleFilled(Vec2ToImVec2(p1), Vec2ToImVec2(p2), Vec2ToImVec2(p3), 
-                                                          ImGui::GetColorU32(ColToVec4(color)));
+        ImGui::GetBackgroundDrawList()->AddTriangleFilled(ImGui::Vector2ToImVec2(p1), ImGui::Vector2ToImVec2(p2), ImGui::Vector2ToImVec2(p3), 
+                                                          ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
     void DebugDrawTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color) {
@@ -553,8 +543,8 @@ namespace ImGui {
         Vector2 p2n = Math::WorldToScreen(p2, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
         Vector2 p3n = Math::WorldToScreen(p3, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
         
-        ImGui::GetBackgroundDrawList()->AddTriangleFilled(Vec2ToImVec2(p1n), Vec2ToImVec2(p2n), Vec2ToImVec2(p3n), 
-                                                          ImGui::GetColorU32(ColToVec4(color)));
+        ImGui::GetBackgroundDrawList()->AddTriangleFilled(ImGui::Vector2ToImVec2(p1n), ImGui::Vector2ToImVec2(p2n), ImGui::Vector2ToImVec2(p3n), 
+                                                          ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
     void DebugDrawGraphFloat(Vector2 pos, float inval, float sizex, float sizey) {
@@ -607,51 +597,20 @@ namespace ImGui {
             frame_count = 0;
         }
         
-        ImGui::PushStyleColor(ImGuiCol_PlotLines, ColToVec4(Color(0, 255, 200, 255)));
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, ColToVec4(Color(20, 20, 20, 255)));
+        ImGui::PushStyleColor(ImGuiCol_PlotLines, ImGui::ColorToImVec4(Color(0, 255, 200, 255)));
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
         
-        ImGui::SetCursorPos(Vec2ToImVec2(pos));
+        ImGui::SetCursorPos(ImGui::Vector2ToImVec2(pos));
         ImGui::PlotLines("", &pvalues[0], pvalues.size(), 0, 0, minval, maxval, ImVec2(sizex, sizey));
         
         ImGui::PopStyleColor();
         ImGui::PopStyleColor();
     }
     
-    void CopyButton(const char* text) {
-        if(ImGui::Button("Copy")){ ImGui::LogToClipboard(); ImGui::LogText(text); ImGui::LogFinish(); }
-    }
-    
-    bool ImGui::InputVector2(const char* id, Vector2* vecPtr, bool inputUpdate) {
-        ImGui::SetNextItemWidth(-FLT_MIN);
-        if(inputUpdate) {
-            return ImGui::InputFloat2(id, (float*)vecPtr); 
-        } else {
-            return ImGui::InputFloat2(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
-        }
-    }
-    
-    bool ImGui::InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate) {
-        ImGui::SetNextItemWidth(-FLT_MIN);
-        if(inputUpdate) {
-            return ImGui::InputFloat3(id, (float*)vecPtr); 
-        } else {
-            return ImGui::InputFloat3(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue); 
-        }
-    }
-    
-    bool InputVector4(const char* id, Vector4* vecPtr, bool inputUpdate) {
-        ImGui::SetNextItemWidth(-FLT_MIN);
-        if(inputUpdate) {
-            return ImGui::InputFloat4(id, (float*)vecPtr);
-        } else {
-            return ImGui::InputFloat4(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue); 
-        }
-    }
-    
     void AddPadding(float x){
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + x);
     }
-    
+	
 } //namespace ImGui
 
 
@@ -698,8 +657,8 @@ std::vector<std::string> levels;
 void Editor::MenuBar() {
     ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-    ImGui::PushStyleColor(ImGuiCol_PopupBg,   ColToVec4(Color(20, 20, 20, 255)));
-    ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ColToVec4(Color(20, 20, 20, 255)));
+    ImGui::PushStyleColor(ImGuiCol_PopupBg,   ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
+    ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
     
     if(ImGui::BeginMainMenuBar()) { WinHovCheck; 
         menubarheight = ImGui::GetWindowHeight();
@@ -829,7 +788,7 @@ inline void EventsMenu(Entity* current) {
                         drawListc->AddLine(
                                            ImVec2(winpos.x + lx, winpos.y + ly),
                                            ImVec2(winpos.x + rx, winpos.y + ry),
-                                           ImGui::GetColorU32(ColToVec4(Color::WHITE)));
+                                           ImGui::GetColorU32(ImGui::ColorToImVec4(Color::WHITE)));
                     }
                     
                     ImGui::SetCursorPos(ImVec2(cwidth - maxlen * fontw * 1.2 - padx, i * inc));
@@ -883,7 +842,7 @@ inline void EventsMenu(Entity* current) {
                     drawListc->AddLine(
                                        ImVec2(winpos.x + lx, winpos.y + ly),
                                        ImVec2(winpos.x + rx, winpos.y + ry),
-                                       ImGui::GetColorU32(ColToVec4(Color::WHITE)));
+                                       ImGui::GetColorU32(ImGui::ColorToImVec4(Color::WHITE)));
                 }
                 
             }
@@ -909,7 +868,7 @@ inline void EventsMenu(Entity* current) {
                         drawListc->AddLine(
                                            ImVec2(winpos.x + lx, winpos.y + ly),
                                            ImVec2(winpos.x + rx, winpos.y + ry),
-                                           ImGui::GetColorU32(ColToVec4(Color::WHITE)));
+                                           ImGui::GetColorU32(ImGui::ColorToImVec4(Color::WHITE)));
                     }
                     if (ImGui::Button(c->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
                         selcompr = c;
@@ -949,7 +908,7 @@ inline void EventsMenu(Entity* current) {
                         drawListc->AddLine(
                                            ImVec2(winpos.x + lx, winpos.y + ly),
                                            ImVec2(winpos.x + rx, winpos.y + ry),
-                                           ImGui::GetColorU32(ColToVec4(Color::WHITE)));
+                                           ImGui::GetColorU32(ImGui::ColorToImVec4(Color::WHITE)));
                     }
                     if (ImGui::Button(c->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
                         selcompl = c;
@@ -1019,7 +978,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
     }
     
     //// entity list panel ////
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorToImVec4(Color(25, 25, 25)));
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
     if(ImGui::BeginChild("##entity_list", ImVec2(ImGui::GetWindowWidth() * 0.95f, 100))) {
         //if no entities, draw empty list
@@ -1090,7 +1049,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                     //// name text ////
                     ImGui::TableSetColumnIndex(2);
                     if(rename_ent && selected_idx == ent_idx){
-                        ImGui::PushStyleColor(ImGuiCol_FrameBg, ColToVec4(colors.c2));
+                        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::ColorToImVec4(colors.c2));
                         ImGui::InputText("##ent_rename_input", rename_buffer, DESHI_NAME_SIZE, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
                         ImGui::PopStyleColor();
                     }else{
@@ -1137,7 +1096,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                 u32 mesh_id = DengRenderer->CreateMesh(&admin->scene, "box.obj");
                 MeshComp* mc = new MeshComp(mesh_id);
                 Physics* phys = new Physics();
-                phys->isStatic = true;
+                phys->staticPosition = true;
                 Collider* coll = new AABBCollider(vec3{.5f, .5f, .5f}, phys->mass);
 				
                 ent = admin->CreateEntityNow({mc, phys, coll}, ent_name.c_str());
@@ -1344,7 +1303,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                     ImGui::SetNextItemWidth(-FLT_MIN); ImGui::InputFloat("##phys_mass", &d->mass);
                     ImGui::TextEx("Kinetic Fric "); ImGui::SameLine();
                     ImGui::SetNextItemWidth(-FLT_MIN); ImGui::InputFloat("##phys_kinfric", &d->kineticFricCoef);
-                    ImGui::Checkbox("Static Position", &d->isStatic);
+                    ImGui::Checkbox("Static Position", &d->staticPosition);
                     ImGui::Checkbox("Static Rotation", &d->staticRotation);
                     ImGui::Checkbox("2D Physics", &d->twoDphys);
 					
@@ -1715,7 +1674,7 @@ inline void MaterialsTab(Admin* admin){
                 //// name ImGui::TextEx ////
                 ImGui::TableSetColumnIndex(1);
                 if(rename_mat && selected_mat == mat_idx){
-                    ImGui::PushStyleColor(ImGuiCol_FrameBg, ColToVec4(colors.c2));
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::ColorToImVec4(colors.c2));
                     ImGui::InputText("##mat_rename_input", rename_buffer, DESHI_NAME_SIZE, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
                     ImGui::PopStyleColor();
                 }else{
@@ -1776,7 +1735,7 @@ inline void MaterialsTab(Admin* admin){
         //TODO(Ui) setup material editing other than PBR once we have material parameters
         switch(mat->shader){
             //// flat shader ////
-
+			
             default: {
                 ImGui::TextEx("Albedo   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
                 if (ImGui::BeginCombo("##mat_albedo_combo", DengRenderer->textures[mat->albedoID].filename)) {
@@ -1815,7 +1774,7 @@ inline void MaterialsTab(Admin* admin){
                     ImGui::EndCombo(); //mat_light_combo
                 }
             }break;
-
+			
             case Shader_Flat:{
                 
             }break;
@@ -1870,33 +1829,94 @@ enum TwodPresets : u32 {
     Twod_NONE = 0, Twod_Line, Twod_Triangle, Twod_Square, Twod_NGon, Twod_Image, 
 };
 
+//TODO(,Ui) convert this to use collapsing headers
 inline void GlobalTab(Admin* admin){
     SetPadding; 
     if(ImGui::BeginChild("##global_tab", ImVec2(ImGui::GetWindowWidth()*0.95f, ImGui::GetWindowHeight()*.9f))) {
         //// physics properties ////
-        ImGui::TextEx("Pause Physics "); ImGui::SameLine();
-        if(ImGui::Button((admin->pause_phys) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
-            admin->pause_phys = !admin->pause_phys;
-        }    
-        ImGui::TextEx("Gravity       "); ImGui::SameLine(); ImGui::InputFloat("##global_gravity", &admin->physics.gravity);
-        
-        //ImGui::TextEx("Phys TPS      "); ImGui::SameLine(); ImGui::InputFloat("##phys_tps", )
-        
-        //// camera properties ////
-        ImGui::Separator();
-        ImGui::TextEx("Camera"); ImGui::SameLine(); ImGui::SetCursorPosX(ImGui::GetWindowWidth()*.5f);
-        if(ImGui::Button("Zero", ImVec2(ImGui::GetWindowWidth()*.225f, 0))){
-            admin->editor.camera->position = Vector3::ZERO; admin->editor.camera->rotation = Vector3::ZERO;
-        } ImGui::SameLine();
-        if(ImGui::Button("Reset", ImVec2(ImGui::GetWindowWidth()*.25f, 0))){
-            admin->editor.camera->position = {4.f,3.f,-4.f}; admin->editor.camera->rotation = {28.f,-45.f,0.f};
+        {
+			ImGui::TextEx("Pause Physics "); ImGui::SameLine();
+			if(ImGui::Button((admin->pause_phys) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
+				admin->pause_phys = !admin->pause_phys;
+			}    
+			ImGui::TextEx("Gravity       "); ImGui::SameLine(); ImGui::InputFloat("##global_gravity", &admin->physics.gravity);
+			
+			//ImGui::TextEx("Phys TPS      "); ImGui::SameLine(); ImGui::InputFloat("##phys_tps", )
         }
-        
-        ImGui::TextEx("Position  "); ImGui::SameLine(); ImGui::InputVector3("##cam_pos", &admin->editor.camera->position);
-        ImGui::TextEx("Rotation  "); ImGui::SameLine(); ImGui::InputVector3("##cam_rot", &admin->editor.camera->rotation);
-        ImGui::TextEx("Near Clip "); ImGui::SameLine(); ImGui::InputFloat("##global_nearz", &admin->editor.camera->nearZ);
-        ImGui::TextEx("Far Clip  "); ImGui::SameLine(); ImGui::InputFloat("##global_farz", &admin->editor.camera->farZ);
-        ImGui::TextEx("FOV       "); ImGui::SameLine(); ImGui::InputFloat("##global_fov", &admin->editor.camera->fov);
+		
+        //// camera properties ////
+        {
+			ImGui::Separator();
+			ImGui::TextEx("Camera"); ImGui::SameLine(); ImGui::SetCursorPosX(ImGui::GetWindowWidth()*.5f);
+			if(ImGui::Button("Zero", ImVec2(ImGui::GetWindowWidth()*.225f, 0))){
+				admin->editor.camera->position = Vector3::ZERO; admin->editor.camera->rotation = Vector3::ZERO;
+			} ImGui::SameLine();
+			if(ImGui::Button("Reset", ImVec2(ImGui::GetWindowWidth()*.25f, 0))){
+				admin->editor.camera->position = {4.f,3.f,-4.f}; admin->editor.camera->rotation = {28.f,-45.f,0.f};
+			}
+			
+			ImGui::TextEx("Position  "); ImGui::SameLine(); ImGui::InputVector3("##cam_pos", &admin->editor.camera->position);
+			ImGui::TextEx("Rotation  "); ImGui::SameLine(); ImGui::InputVector3("##cam_rot", &admin->editor.camera->rotation);
+			ImGui::TextEx("Near Clip "); ImGui::SameLine(); ImGui::InputFloat("##global_nearz", &admin->editor.camera->nearZ);
+			ImGui::TextEx("Far Clip  "); ImGui::SameLine(); ImGui::InputFloat("##global_farz", &admin->editor.camera->farZ);
+			ImGui::TextEx("FOV       "); ImGui::SameLine(); ImGui::InputFloat("##global_fov", &admin->editor.camera->fov);
+		}
+		
+		//// render settings ////
+		{
+			ImGui::Separator();
+			static_internal RenderSettings* settings = Render::GetSettings();
+			static_internal const char* resolution_strings[] = { "128", "256", "512", "1024", "2048", "4096" };
+			static_internal u32 resolution_values[] = { 128, 256, 512, 1024, 2048, 4096 };
+			static_internal u32 shadow_resolution_index = 4;
+			static_internal f32 clear_color[3] = {settings->clearColor.r,settings->clearColor.g,settings->clearColor.b};
+			static_internal f32 selected_color[3] = {settings->selectedColor.r,settings->selectedColor.g,settings->selectedColor.b};
+			static_internal f32 collider_color[3] = {settings->colliderColor.r,settings->colliderColor.g,settings->colliderColor.b};
+			
+			ImGui::TextCentered("Render Settings");
+			ImGui::TextEx("Logging level"); ImGui::SameLine(); ImGui::SliderUInt32("##rs_logging_level", &settings->loggingLevel, 0, 4);
+			ImGui::Checkbox("Crash on error", (bool*)&settings->crashOnError);
+			ImGui::Checkbox("Compile shaders with optimization", (bool*)&settings->optimizeShaders);
+			ImGui::Checkbox("Shadow PCF", (bool*)&settings->shadowPCF);
+			ImGui::TextEx("Shadowmap resolution"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+			if(ImGui::BeginCombo("##rs_shadowres_combo", resolution_strings[shadow_resolution_index])){
+				forI(ArrayCount(resolution_strings)){
+					if(ImGui::Selectable(resolution_strings[i], shadow_resolution_index == i)){
+						DengRenderer->remakeOffscreen = true;
+						settings->shadowResolution = resolution_values[i];
+						shadow_resolution_index = i;
+					}
+				}
+				ImGui::EndCombo(); //rs_shadowres_combo
+			}
+			ImGui::TextEx("Shadow near clip"); ImGui::SameLine(); ImGui::InputFloat("##rs_shadow_nearz", &settings->shadowNearZ);
+			ImGui::TextEx("Shadow far clip"); ImGui::SameLine(); ImGui::InputFloat("##rs_shadow_farz", &settings->shadowFarZ);
+			ImGui::TextEx("Shadow depth bias constant"); ImGui::SameLine(); ImGui::InputFloat("##rs_shadow_depthconstant", &settings->depthBiasConstant);
+			ImGui::TextEx("Shadow depth bias slope"); ImGui::SameLine(); ImGui::InputFloat("##rs_shadow_depthslope", &settings->depthBiasSlope);
+			ImGui::Checkbox("Show shadowmap texture", (bool*)&settings->showShadowMap);
+			ImGui::TextEx("Clear color"); ImGui::SameLine();
+			if(ImGui::ColorEdit3("##rs_clear_color", clear_color)){
+				settings->clearColor.r = clear_color[0];
+				settings->clearColor.g = clear_color[1]; 
+				settings->clearColor.b = clear_color[2]; 
+			}
+			ImGui::TextEx("Selected color"); ImGui::SameLine();
+			if(ImGui::ColorEdit3("##rs_selected_color", selected_color)){
+				settings->selectedColor.r = selected_color[0];
+				settings->selectedColor.g = selected_color[1]; 
+				settings->selectedColor.b = selected_color[2]; 
+			}
+			ImGui::TextEx("Collider color"); ImGui::SameLine();
+			if(ImGui::ColorEdit3("##rs_collider_color", collider_color)){
+				settings->colliderColor.r = collider_color[0];
+				settings->colliderColor.g = collider_color[1]; 
+				settings->colliderColor.b = collider_color[2]; 
+			}
+			ImGui::Checkbox("Only show wireframe", (bool*)&settings->wireframeOnly);
+			ImGui::Checkbox("Draw mesh wireframes", (bool*)&settings->meshWireframes);
+			ImGui::Checkbox("Draw mesh normals", (bool*)&settings->meshNormals);
+			ImGui::Checkbox("Draw light frustrums", (bool*)&settings->lightFrustrums);
+		}
         
         ImGui::EndChild();
     }
@@ -1906,7 +1926,7 @@ inline void BrushesTab(Admin* admin, float fontsize){
     local_persist MeshBrushVk* selected_meshbrush = 0;
     
     //// brush list ////
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, ColToVec4(Color(25, 25, 25)));
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorToImVec4(Color(25, 25, 25)));
     SetPadding; 
     if(ImGui::BeginChild("##meshbrush_tab", ImVec2(ImGui::GetWindowWidth() * 0.95, 100), false)) { WinHovCheck; 
         if (DengRenderer->meshBrushes.size() == 0) {
@@ -1986,30 +2006,30 @@ void Editor::DebugTools() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, ImVec2(1, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
     
-    ImGui::PushStyleColor(ImGuiCol_Border,               ColToVec4(Color( 0,  0,  0)));
-    ImGui::PushStyleColor(ImGuiCol_Button,               ColToVec4(Color(40, 40, 40)));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,         ColToVec4(Color(48, 48, 48)));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,        ColToVec4(Color(60, 60, 60)));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg,             ColToVec4(colors.c9));
-    ImGui::PushStyleColor(ImGuiCol_PopupBg,              ColToVec4(Color(20, 20, 20)));
-    ImGui::PushStyleColor(ImGuiCol_FrameBg,              ColToVec4(Color(35, 45, 50)));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive,        ColToVec4(Color(42, 54, 60)));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,       ColToVec4(Color(54, 68, 75)));
-    ImGui::PushStyleColor(ImGuiCol_TitleBg,              ColToVec4(Color(0,   0,  0)));
-    ImGui::PushStyleColor(ImGuiCol_TitleBgActive,        ColToVec4(Color(0,   0,  0)));
-    ImGui::PushStyleColor(ImGuiCol_Header,               ColToVec4(Color(35, 45, 50)));
-    ImGui::PushStyleColor(ImGuiCol_HeaderActive,         ColToVec4(Color( 0, 74, 74)));
-    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,        ColToVec4(Color( 0, 93, 93)));
-    ImGui::PushStyleColor(ImGuiCol_TableBorderLight,     ColToVec4(Color(45, 45, 45)));
-    ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,        ColToVec4(Color(10, 10, 10)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg,          ColToVec4(Color(10, 10, 10)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab,        ColToVec4(Color(55, 55, 55)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,  ColToVec4(Color(75, 75, 75)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColToVec4(Color(65, 65, 65)));
-    ImGui::PushStyleColor(ImGuiCol_TabActive,            ColToVec4(Color::VERY_DARK_CYAN));
-    ImGui::PushStyleColor(ImGuiCol_TabHovered,           ColToVec4(Color::DARK_CYAN));
-    ImGui::PushStyleColor(ImGuiCol_Tab,                  ColToVec4(colors.c1));
-    ImGui::PushStyleColor(ImGuiCol_Separator,            ColToVec4(Color::VERY_DARK_CYAN));
+    ImGui::PushStyleColor(ImGuiCol_Border,               ImGui::ColorToImVec4(Color( 0,  0,  0)));
+    ImGui::PushStyleColor(ImGuiCol_Button,               ImGui::ColorToImVec4(Color(40, 40, 40)));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,         ImGui::ColorToImVec4(Color(48, 48, 48)));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,        ImGui::ColorToImVec4(Color(60, 60, 60)));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg,             ImGui::ColorToImVec4(colors.c9));
+    ImGui::PushStyleColor(ImGuiCol_PopupBg,              ImGui::ColorToImVec4(Color(20, 20, 20)));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg,              ImGui::ColorToImVec4(Color(35, 45, 50)));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive,        ImGui::ColorToImVec4(Color(42, 54, 60)));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,       ImGui::ColorToImVec4(Color(54, 68, 75)));
+    ImGui::PushStyleColor(ImGuiCol_TitleBg,              ImGui::ColorToImVec4(Color(0,   0,  0)));
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive,        ImGui::ColorToImVec4(Color(0,   0,  0)));
+    ImGui::PushStyleColor(ImGuiCol_Header,               ImGui::ColorToImVec4(Color(35, 45, 50)));
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive,         ImGui::ColorToImVec4(Color( 0, 74, 74)));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,        ImGui::ColorToImVec4(Color( 0, 93, 93)));
+    ImGui::PushStyleColor(ImGuiCol_TableBorderLight,     ImGui::ColorToImVec4(Color(45, 45, 45)));
+    ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,        ImGui::ColorToImVec4(Color(10, 10, 10)));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg,          ImGui::ColorToImVec4(Color(10, 10, 10)));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab,        ImGui::ColorToImVec4(Color(55, 55, 55)));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,  ImGui::ColorToImVec4(Color(75, 75, 75)));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ImGui::ColorToImVec4(Color(65, 65, 65)));
+    ImGui::PushStyleColor(ImGuiCol_TabActive,            ImGui::ColorToImVec4(Color::VERY_DARK_CYAN));
+    ImGui::PushStyleColor(ImGuiCol_TabHovered,           ImGui::ColorToImVec4(Color::DARK_CYAN));
+    ImGui::PushStyleColor(ImGuiCol_Tab,                  ImGui::ColorToImVec4(colors.c1));
+    ImGui::PushStyleColor(ImGuiCol_Separator,            ImGui::ColorToImVec4(Color::VERY_DARK_CYAN));
     
     ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     
@@ -2074,9 +2094,9 @@ void Editor::DebugBar() {
     ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::PushStyleColor(ImGuiCol_Border,           ColToVec4(Color(0, 0, 0, 255)));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg,         ColToVec4(Color(20, 20, 20, 255)));
-    ImGui::PushStyleColor(ImGuiCol_TableBorderLight, ColToVec4(Color(45, 45, 45, 255)));
+    ImGui::PushStyleColor(ImGuiCol_Border,           ImGui::ColorToImVec4(Color(0, 0, 0, 255)));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg,         ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
+    ImGui::PushStyleColor(ImGuiCol_TableBorderLight, ImGui::ColorToImVec4(Color(45, 45, 45, 255)));
     
     ImGui::Begin("DebugBar", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
     debugbarheight = 20;
@@ -2173,8 +2193,8 @@ void Editor::DebugBar() {
                 frame_count = 0;
             }
             
-            ImGui::PushStyleColor(ImGuiCol_PlotLines, ColToVec4(Color(0, 255, 200, 255)));
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, ColToVec4(Color(20, 20, 20, 255)));
+            ImGui::PushStyleColor(ImGuiCol_PlotLines, ImGui::ColorToImVec4(Color(0, 255, 200, 255)));
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
             
             ImGui::PlotLines("", &pvalues[0], pvalues.size(), 0, 0, 0, maxval, ImVec2(64, 20));
             
@@ -2234,7 +2254,7 @@ void Editor::DebugBar() {
                 Color col_bg = DengConsole->alert_color * flicker;    col_bg.a = 255;
                 Color col_text = DengConsole->alert_color * -flicker; col_text.a = 255;
                 
-                ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ColToVec4(col_bg)));
+                ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGui::ColorToImVec4(col_bg)));
                 
                 std::string str6;
                 if(DengConsole->alert_count > 1) {
@@ -2244,7 +2264,7 @@ void Editor::DebugBar() {
                 }
                 float strlen6 = (font_width / 2) * str6.size();
                 ImGui::SameLine((ImGui::GetColumnWidth() - strlen6) / 2); ImGui::PushItemWidth(-1);
-                ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(Color(col_text)));
+                ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(Color(col_text)));
                 ImGui::TextEx(str6.c_str());
                 ImGui::PopStyleColor();
             }
@@ -2324,11 +2344,11 @@ void Editor::DebugLayer() {
     ImGui::SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height));
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ColToVec4(Color(0, 0, 0, 0)));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::ColorToImVec4(Color(0, 0, 0, 0)));
     Camera* c = admin->mainCamera;
     float time = DengTime->totalTime;
     
-    static std::vector<std::pair<float, Vector2>> times;
+    static std::vector<pair<float, Vector2>> times;
     
     static std::vector<Vector3> spots;
     
@@ -2387,25 +2407,25 @@ void Editor::DebugLayer() {
             Vector2 v1s = Math::CameraToScreen2(v1, c->projMat, DengWindow->dimensions);
             Vector2 v2s = Math::CameraToScreen2(v2, c->projMat, DengWindow->dimensions);
             Math::ClipLineToBorderPlanes(v1s, v2s, DengWindow->dimensions);
-            if (!l1flag) ImGui::GetBackgroundDrawList()->AddLine(Vec2ToImVec2(v1s), Vec2ToImVec2(v2s), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
-            else         ImGui::GetBackgroundDrawList()->AddLine(Vec2ToImVec2(v1s), Vec2ToImVec2(v2s), ImGui::GetColorU32(ImVec4(1, 0, 0, 1)));
+            if (!l1flag) ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(v1s), ImGui::Vector2ToImVec2(v2s), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
+            else         ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(v1s), ImGui::Vector2ToImVec2(v2s), ImGui::GetColorU32(ImVec4(1, 0, 0, 1)));
         }
         if (Math::ClipLineToZPlanes(v3, v4, c->nearZ, c->farZ)) {
             Vector2 v3s = Math::CameraToScreen2(v3, c->projMat, DengWindow->dimensions);
             Vector2 v4s = Math::CameraToScreen2(v4, c->projMat, DengWindow->dimensions);
             Math::ClipLineToBorderPlanes(v3s, v4s, DengWindow->dimensions);
-            if (!l2flag) ImGui::GetBackgroundDrawList()->AddLine(Vec2ToImVec2(v3s), Vec2ToImVec2(v4s), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
-            else         ImGui::GetBackgroundDrawList()->AddLine(Vec2ToImVec2(v3s), Vec2ToImVec2(v4s), ImGui::GetColorU32(ImVec4(0, 0, 1, 1)));
+            if (!l2flag) ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(v3s), ImGui::Vector2ToImVec2(v4s), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
+            else         ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(v3s), ImGui::Vector2ToImVec2(v4s), ImGui::GetColorU32(ImVec4(0, 0, 1, 1)));
         }
     }
     
     if (DengInput->KeyPressed(MouseButton::LEFT) && rand() % 100 + 1 == 80) {
-        times.push_back(std::pair<float, Vector2>(0.f, mp));
+        times.push_back(pair<float, Vector2>(0.f, mp));
     }
     
     int index = 0;
     for (auto& f : times) {
-        ImGui::PushStyleColor(ImGuiCol_Text, ColToVec4(Color(255. * fabs(sinf(time)), 255. * fabs(cosf(time)), 255, 255)));
+        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(Color(255. * fabs(sinf(time)), 255. * fabs(cosf(time)), 255, 255)));
         
         f.first += DengTime->deltaTime;
         
@@ -2675,7 +2695,7 @@ void Editor::Update(){
     DengRenderer->RemoveSelectedMesh(-1);
     for(Entity* e : selected){
         if(MeshComp* mc = e->GetComponent<MeshComp>()){
-            if(settings.fast_outline){
+            if(!Render::GetSettings()->findMeshTriangleNeighbors){
                 DengRenderer->AddSelectedMesh(mc->meshID);
             }else{
                 std::vector<Vector2> outline = mc->mesh->GenerateOutlinePoints(e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
@@ -2713,30 +2733,30 @@ void Editor::CreateEditorWin() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, ImVec2(1, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
     
-    ImGui::PushStyleColor(ImGuiCol_Border, ColToVec4(Color(0, 0, 0)));
-    ImGui::PushStyleColor(ImGuiCol_Button, ColToVec4(Color(40, 40, 40)));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ColToVec4(Color(48, 48, 48)));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ColToVec4(Color(60, 60, 60)));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ColToVec4(colors.c9));
-    ImGui::PushStyleColor(ImGuiCol_PopupBg, ColToVec4(Color(20, 20, 20)));
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, ColToVec4(Color(35, 45, 50)));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ColToVec4(Color(42, 54, 60)));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ColToVec4(Color(54, 68, 75)));
-    ImGui::PushStyleColor(ImGuiCol_TitleBg, ColToVec4(Color(0, 0, 0)));
-    ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ColToVec4(Color(0, 0, 0)));
-    ImGui::PushStyleColor(ImGuiCol_Header, ColToVec4(Color(35, 45, 50)));
-    ImGui::PushStyleColor(ImGuiCol_HeaderActive, ColToVec4(Color(0, 74, 74)));
-    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ColToVec4(Color(0, 93, 93)));
-    ImGui::PushStyleColor(ImGuiCol_TableBorderLight, ColToVec4(Color(45, 45, 45)));
-    ImGui::PushStyleColor(ImGuiCol_TableHeaderBg, ColToVec4(Color(10, 10, 10)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, ColToVec4(Color(10, 10, 10)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, ColToVec4(Color(55, 55, 55)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, ColToVec4(Color(75, 75, 75)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColToVec4(Color(65, 65, 65)));
-    ImGui::PushStyleColor(ImGuiCol_TabActive, ColToVec4(Color::VERY_DARK_CYAN));
-    ImGui::PushStyleColor(ImGuiCol_TabHovered, ColToVec4(Color::DARK_CYAN));
-    ImGui::PushStyleColor(ImGuiCol_Tab, ColToVec4(colors.c1));
-    ImGui::PushStyleColor(ImGuiCol_Separator, ColToVec4(Color::VERY_DARK_CYAN));
+    ImGui::PushStyleColor(ImGuiCol_Border,               ImGui::ColorToImVec4(Color(0, 0, 0)));
+    ImGui::PushStyleColor(ImGuiCol_Button,               ImGui::ColorToImVec4(Color(40, 40, 40)));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,         ImGui::ColorToImVec4(Color(48, 48, 48)));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,        ImGui::ColorToImVec4(Color(60, 60, 60)));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg,             ImGui::ColorToImVec4(colors.c9));
+    ImGui::PushStyleColor(ImGuiCol_PopupBg,              ImGui::ColorToImVec4(Color(20, 20, 20)));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg,              ImGui::ColorToImVec4(Color(35, 45, 50)));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive,        ImGui::ColorToImVec4(Color(42, 54, 60)));
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,       ImGui::ColorToImVec4(Color(54, 68, 75)));
+    ImGui::PushStyleColor(ImGuiCol_TitleBg,              ImGui::ColorToImVec4(Color(0, 0, 0)));
+    ImGui::PushStyleColor(ImGuiCol_TitleBgActive,        ImGui::ColorToImVec4(Color(0, 0, 0)));
+    ImGui::PushStyleColor(ImGuiCol_Header,               ImGui::ColorToImVec4(Color(35, 45, 50)));
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive,         ImGui::ColorToImVec4(Color(0, 74, 74)));
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,        ImGui::ColorToImVec4(Color(0, 93, 93)));
+    ImGui::PushStyleColor(ImGuiCol_TableBorderLight,     ImGui::ColorToImVec4(Color(45, 45, 45)));
+    ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,        ImGui::ColorToImVec4(Color(10, 10, 10)));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg,          ImGui::ColorToImVec4(Color(10, 10, 10)));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab,        ImGui::ColorToImVec4(Color(55, 55, 55)));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,  ImGui::ColorToImVec4(Color(75, 75, 75)));
+    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ImGui::ColorToImVec4(Color(65, 65, 65)));
+    ImGui::PushStyleColor(ImGuiCol_TabActive,            ImGui::ColorToImVec4(Color::VERY_DARK_CYAN));
+    ImGui::PushStyleColor(ImGuiCol_TabHovered,           ImGui::ColorToImVec4(Color::DARK_CYAN));
+    ImGui::PushStyleColor(ImGuiCol_Tab,                  ImGui::ColorToImVec4(colors.c1));
+    ImGui::PushStyleColor(ImGuiCol_Separator,            ImGui::ColorToImVec4(Color::VERY_DARK_CYAN));
     ImGui::Begin("Editor Window", 0);
     WinHovCheck;
     if (DengInput->mouseX < ImGui::GetWindowPos().x + ImGui::GetWindowWidth()) {

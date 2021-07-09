@@ -363,7 +363,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
                 else if(kv.first == "friction_kinetic"){ phys->kineticFricCoef = std::stof(kv.second); }
                 else if(kv.first == "friction_static") { phys->staticFricCoef = std::stof(kv.second); }
                 else if(kv.first == "static_position"){ 
-                    phys->isStatic = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
+                    phys->staticPosition = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else if(kv.first == "static_rotation"){ 
                     phys->staticRotation = deshi::parse_bool(kv.second, filepath.c_str(), line_number);

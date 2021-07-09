@@ -17,11 +17,11 @@ Physics::Physics() {
 	rotAcceleration = Vector3::ZERO;
 	elasticity = .2f;
 	mass = 1;
-	isStatic = false;
+	staticPosition = false;
 }
 
 Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy,
-				 Vector3 rotAcceleration, float elasticity, float mass, bool isStatic) {
+				 Vector3 rotAcceleration, float elasticity, float mass, bool staticPosition) {
 	admin = g_admin;
 	cpystr(name, "Physics", DESHI_NAME_SIZE);
 	layer = SystemLayer_Physics;
@@ -36,12 +36,12 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	this->rotAcceleration = rotAcceleration;
 	this->elasticity = elasticity;
 	this->mass = mass;
-	this->isStatic = isStatic;
+	this->staticPosition = staticPosition;
 }
 
 //for loading only really
 Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy, Vector3 rotAcceleration, float elasticity,
-				 float mass, bool isStatic, bool staticRotation, bool twoDphys, float kineticFricCoef, float staticFricCoef) {
+				 float mass, bool staticPosition, bool staticRotation, bool twoDphys, float kineticFricCoef, float staticFricCoef) {
 	
 	admin = g_admin;
 	cpystr(name, "Physics", DESHI_NAME_SIZE);
@@ -57,7 +57,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	this->rotAcceleration = rotAcceleration;
 	this->elasticity = elasticity;
 	this->mass = mass;
-	this->isStatic = isStatic;
+	this->staticPosition = staticPosition;
 	this->staticRotation = staticRotation;
 	this->twoDphys = twoDphys;
 	this->kineticFricCoef = kineticFricCoef;
@@ -116,7 +116,7 @@ std::string Physics::SaveTEXT(){
 					"\nmass               ", mass,
 					"\nfriction_kinetic   ", kineticFricCoef,
 					"\nfriction_static    ", staticFricCoef,
-					"\nstatic_position    ", (isStatic) ? "true" : "false",
+					"\nstatic_position    ", (staticPosition) ? "true" : "false",
 					"\nstatic_rotation    ", (staticRotation) ? "true" : "false",
 					"\ntwod               ", (twoDphys) ? "true" : "false",
 					"\n");

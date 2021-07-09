@@ -4,7 +4,6 @@
 #include "../core/time.h"
 #include "../math/Math.h"
 
-
 void Debug::DrawLine(Vector3 v1, Vector3 v2, size_t unique, Color color = Color::WHITE) {
 	
 	if (meshes.find(unique) != meshes.end()) {
@@ -266,8 +265,10 @@ void Debug::DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 
 }
 
 void Debug::Update() {
-	//DrawFrustrum(DengRenderer->uboVS.values.lights[0].ToVector3(), Vector3::ZERO, 1, 90, 1, 96);
-	
+	//TODO(delle,Re) move this to the renderer
+	if(Render::GetSettings()->lightFrustrums){
+		DrawFrustrum(DengRenderer->uboVS.values.lights[0].ToVector3(), Vector3::ZERO, 1, 90, 1, 96);
+	}
 	
 	
 	

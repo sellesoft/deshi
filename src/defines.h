@@ -70,6 +70,8 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define Gigabytes(x) (Megabytes((x))*1024ULL)
 #define Terabytes(x) (Gigabytes((x))*1024ULL)
 
+#define Clamp(value, min, max) (((value) < min) ? min : (((value) > max) ? max : (value)))
+
 //library-less assert
 #if DESHI_SLOW
 //the ... is to allow the programmer to put some text to read when the assert fails

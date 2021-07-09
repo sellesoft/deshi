@@ -7,7 +7,7 @@ rotation (0.000000,0.000000,0.000000)
 scale    (20.000000,1.000000,20.000000)
 
 >mesh
-id      5
+id      16
 name    "box.obj"
 visible true
 

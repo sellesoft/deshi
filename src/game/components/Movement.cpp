@@ -190,7 +190,7 @@ void Movement::GrabObject() {
 			if (closeindex != -1) {
 				grabeephys = admin->entities[closeindex]->GetComponent<Physics>();
 				if (t <= maxGrabbingDistance
-					&& grabeephys && !grabeephys->isStatic) {
+					&& grabeephys && !grabeephys->staticPosition) {
 					grabbing = true;
 					ogpos = grabeephys->position;
 				}

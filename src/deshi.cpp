@@ -20,6 +20,8 @@ ____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
+add a setting for a limit to the number of log files
+redo Debug::DrawLine calling to take in an id for uniqueness like ImGui
 make a generalized config file parser (see #ideas)
 create string_view versions of string parsing in assets.h
 make the engine runnable without the renderer
@@ -47,20 +49,21 @@ add Qol (quality of life) tag to TODOP
 add Camera tag to TODOP
 look into integrating TODOP with Discord
 begin reimplementing sound system and maybe rethink its design a bit
-replace std::pair with pair throughout the project
 remove extra collider component types and use the collider one instead
 ____ComponentType_AABBCollider vs ComponentType_Collider
 add 2d mesh component and component type for image and UI drawing
-rename isStatic in physics.h to staticPosition
 fix DESH material and event saving/loading
 
 Render TODOs
 ------------
 add directional shadow mapping
+rework lights
 add temporary meshes (get reset every frame like imgui)
+extract normal debug geometry shader descriptor from generic layout and sets
 add omnidirectional shadow mapping
 add not-on-screen object culling thru mesh AABBs
 add front-to-back sorting for perf gain (and maybe transparency?)
+delete shader .spv if failed to compile it after printing error messages
 setup more generalized material/pipeline creation
  ____specialization constants
 ____uber shaders

@@ -830,7 +830,7 @@ void Admin::SaveDESH(const char* filename) {
     
     //physics
     for(auto c : compsPhysics){
-        b32 isStatic = c->isStatic;
+        b32 staticPosition = c->staticPosition;
         b32 staticRotation = c->staticRotation;
         b32 twoDphys = c->twoDphys;
         file.write((const char*)&c->entityID,        sizeof(u32));
@@ -844,7 +844,7 @@ void Admin::SaveDESH(const char* filename) {
         file.write((const char*)&c->rotAcceleration, sizeof(Vector3));
         file.write((const char*)&c->elasticity,      sizeof(float));
         file.write((const char*)&c->mass,            sizeof(float));
-        file.write((const char*)&isStatic,           sizeof(b32));
+        file.write((const char*)&staticPosition,           sizeof(b32));
         file.write((const char*)&staticRotation,     sizeof(b32));
         file.write((const char*)&twoDphys,           sizeof(b32));
         file.write((const char*)&c->kineticFricCoef, sizeof(float));

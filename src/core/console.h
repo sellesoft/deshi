@@ -5,6 +5,7 @@
 #include "../defines.h"
 #include "../utils/Color.h"
 #include "../utils/Debug.h"
+#include "../utils/tuple.h"
 
 #include <vector>
 #include <string>     // std::string, std::stoi
@@ -17,10 +18,10 @@ struct Console  {
 	std::map<std::string, Command*> commands;
 	
 	char inputBuf[256]{};
-	std::vector<std::pair<std::string, Color>> buffer; //text, color
+	std::vector<pair<std::string, Color>> buffer; //text, color
 	std::vector<std::string> history;
 	int historyPos = -1;
-
+	
 	u32 alert_count = 0;
 	std::string alert_message;
 	Color alert_color = Color::RED;

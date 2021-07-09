@@ -9,7 +9,7 @@ last_updated ""
 2 "TwoD" 2 "null128.png" "black1024.png" "black1024.png" "black1024.png"
 
 >meshes
-5 "box.obj" 1 "1"
+5 "box.obj" 0 "1"
 6 "box.obj" 0 "0"
 7 "arrow.obj" 0 "0"
 8 "sphere.obj" 0 "0"
@@ -19,6 +19,8 @@ last_updated ""
 12 "box.obj" 1 "1"
 13 "box.obj" 1 "1"
 14 "box.obj" 1 "1"
+15 "default_planarbox" 0 "1"
+16 "box.obj" 1 "1"
 
 >entities
 0 "floor"

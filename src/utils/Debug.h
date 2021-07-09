@@ -99,6 +99,7 @@ struct Debug {
 };
 
 extern Debug* g_debug;
+#define DengDebug g_debug
 
 //((size_t)this << __LINE__ ^ (size_t)__FUNCTION__ >> (size_t)__FILENAME__)
 //this is trying to make the identifier for the line as unique as possible, taking into account

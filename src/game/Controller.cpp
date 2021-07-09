@@ -35,7 +35,7 @@ inline void AddBindings(Admin* admin) {
 				std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
 				
 				try {
-					DengInput->binds.push_back(std::pair<std::string, Key::Key>(command, admin->keybinds.stk.at(key)));
+					DengInput->binds.push_back(pair<std::string, Key::Key>(command, admin->keybinds.stk.at(key)));
 				}
 				catch (...) {
 					ERROR("Unknown key '", key, "' attempted to bind to command '", command, "'");
@@ -81,8 +81,8 @@ inline void PlayerMovement(Admin* admin, MovementMode mode, Movement* playermove
 	
 	//TEMP CROSSHAIR
 	ImGui::DebugDrawCircle(DengWindow->dimensions / 2, 2.5, Color::DARK_GREY);
-
-
+	
+	
 	if (mode == MOVEMENT_MODE_WALKING) {
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingForward))  { inputs += Vector3(camera->forward.x, 0, camera->forward.z); }
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingBackward)) { inputs -= Vector3(camera->forward.x, 0, camera->forward.z); }
@@ -103,7 +103,7 @@ inline void PlayerMovement(Admin* admin, MovementMode mode, Movement* playermove
 
 //NOTE sushi: this can probably be implemented somewhere else, dunno yet
 inline void PlayerGrabbing() {
-
+	
 }
 
 inline void CameraRotation(Admin* admin, float sens) {

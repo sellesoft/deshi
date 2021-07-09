@@ -19,7 +19,8 @@ struct Vertex;
 //////////////////////
 
 struct Vector2 {
-	float x{}, y{};
+	union{ float x = 0; float r; float w; };
+	union{ float y = 0; float g; float h; };
 	
 	Vector2(){};
 	Vector2(float inX, float inY);
@@ -84,7 +85,9 @@ typedef Vector2 vec2;
 #include "Vector2.inl"
 
 struct Vector3 {
-	float x{}, y{}, z{};
+	union{ float x = 0; float r; };
+	union{ float y = 0; float g; };
+	union{ float z = 0; float b; };
 	
 	Vector3(){};
 	Vector3(float inX, float inY, float inZ);
@@ -167,7 +170,10 @@ typedef Vector3 vec3;
 #include "Vector3.inl"
 
 struct Vector4 {
-	float x{}, y{}, z{}, w{};
+	union{ float x = 0; float r; };
+	union{ float y = 0; float g; };
+	union{ float z = 0; float b; };
+	union{ float w = 0; float a; };
 	
 	Vector4(){};
 	Vector4(float inX, float inY, float inZ, float inW);

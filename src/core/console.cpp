@@ -74,7 +74,7 @@ void Console::AddLog(std::string input) {
 			//check if were dealing with a formatted part of the string
 			if (std::regex_search(m[0].str(), std::regex("\\[c:[^\\]]+\\]"))) {
 				//if we are, push the actual text with its color into text vector
-				buffer.push_back(std::pair<std::string, Color>(m[2].str(), colstrmap.at(m[1])));
+				buffer.push_back(pair<std::string, Color>(m[2].str(), colstrmap.at(m[1])));
 				buffersize += m[2].str().size();
 				if (m[1] == "error") {
 					show_alert = true;
@@ -86,7 +86,7 @@ void Console::AddLog(std::string input) {
 			}
 			else {
 				//if we arent then just push the line into text vector
-				buffer.push_back(std::pair<std::string, Color>(m[0].str(), Color::BLANK));
+				buffer.push_back(pair<std::string, Color>(m[0].str(), Color::BLANK));
 				buffersize += m[2].str().size();
 			}
 			input = m.suffix();
@@ -142,7 +142,7 @@ int Console::TextEditCallback(ImGuiInputTextCallbackData* data) {
 			
 			std::regex e("^" + input + ".*");
 			std::vector<std::string> posi;
-			for (std::pair<std::string, Command*> c : commands) {
+			for (auto& c : commands) {
 				if (std::regex_search(c.first, e)) {
 					posi.push_back(c.first);
 				}
@@ -336,7 +336,7 @@ void Console::DrawConsole() {
 	//ImGuiListClipper clipper;
 	//clipper.Begin(buffer.size());
 	//while (clipper.Step()) {
-	for (std::pair<std::string, Color> p : buffer) {
+	for (pair<std::string, Color> p : buffer) {
 		//for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
 		//color formatting is "[c:red]text[c] text text"
 		//TODO( sushi,OpCon) maybe optimize by only drawing what we know will be displayed on screen instead of parsing through all of it
@@ -438,7 +438,7 @@ void Console::PushConsole(std::string s) {
 //flushes the buffer to a file once it reaches a certain size
 void Console::FlushBuffer() {
 	std::string output = "";
-	for (std::pair<std::string, Color> a : buffer) {
+	for (pair<std::string, Color> a : buffer) {
 		output += a.first;
 	}
 	
@@ -464,36 +464,43 @@ void Console::FlushBuffer() {
 }
 
 void Console::AddAliases() {
-	std::ifstream aliases;
+	std::string filepath = deshi::dirConfig() + "aliases.cfg";
+	char* buffer = deshi::readFileAsciiToArray(filepath);
+	if(!buffer){
+		LOG("Creating new aliases file");
+		deshi::writeFile(filepath, "", 0);
+		return;
+	}
+	defer{ delete[] buffer; };
 	
-	std::string path = deshi::assetPath("aliases.cfg", AssetType_Config, false);
-	if (path != "") {
-		aliases = std::ifstream(path, std::ios::in);
+	std::string line;
+	char* new_line = buffer-1;
+	char* line_start;
+	for(u32 line_number = 1; ;line_number++){
+		//get the next line
+		line_start = new_line+1;
+		if((new_line = strchr(line_start, '\n')) == 0) break; //end of file if cant find '\n'
+		line = std::string(line_start, new_line-line_start);
 		
-		char* c = (char*)malloc(255);
-		aliases.getline(c, 255);
-		std::string s(c);
+		//format the line
+		line = deshi::eat_comments(line);
+		line = deshi::eat_spaces_leading(line);
+		line = deshi::eat_spaces_trailing(line);
+		if(line.empty()) continue;
 		
-		std::string alias = s.substr(0, s.find_first_of(" "));
-		std::string command = s.substr(s.find_first_of(" ") + 1, s.length());
+		//parse alias
+		size_t first_space  = line.find_first_of(" ");
+		std::string alias   = line.substr(0, first_space);
+		std::string command = line.substr(first_space + 1, line.length());
 		
-		Command* com;
-		
-		try {
+		try{
+			Command* com = 0;
 			com = commands.at(command);
 			commands.emplace(alias, com);
-		}
-		catch (...) {
+		}catch(...){
 			ERROR("Unknown command \"", command, "\" was attempted to be aliased from aliases.cfg");
 		}
 	}
-	else {
-		LOG("Creating aliases file..");
-		deshi::writeFile(deshi::dirConfig() + "aliases.cfg", "", 0);
-		
-		return;
-	}
-	
 }
 
 
@@ -950,7 +957,7 @@ CMDFUNC(cam_reset) {
 CMDFUNC(listc) {
 	std::string allcommands = "";
 	
-	for (std::pair<std::string, Command*> c : DengConsole->commands) {
+	for (auto& c : DengConsole->commands) {
 		allcommands += c.first + "\n";
 	}
 	
@@ -1018,7 +1025,7 @@ CMDFUNC(bind) {
 		
 		try {
 			key = DengKeys.stk.at(args[0]);
-			DengInput->binds.push_back(std::pair<std::string, Key::Key>(s, key));
+			DengInput->binds.push_back(pair<std::string, Key::Key>(s, key));
 			std::vector<char> datav;
 			for (auto c : args[0] + " " + s) {
 				datav.push_back(c);
@@ -1110,22 +1117,6 @@ CMDSTARTA(window_resizable, args.size() == 1) {
 CMDFUNC(window_info) {
 	return DengWindow->str();
 }
-
-CMDFUNC(render_stats) {
-	//TODO(delle,Cmd) this
-	return "";
-}
-
-CMDSTARTA(render_options, args.size() > 0) {
-	try {
-		DengRenderer->settings.wireframe = std::stoi(args[0]);
-		return (DengRenderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
-	}
-	catch (...) {
-		return "render_options <wireframe:Bool>";
-	}
-	return (DengRenderer->settings.wireframe) ? "wireframe=1" : "wireframe=0";
-}CMDEND("render_options <wireframe:Bool>");
 
 CMDSTARTA(mat_texture, args.size() == 3) {
 	int matID = std::stoi(args[0]);
@@ -1308,8 +1299,8 @@ void Console::AddCommands(){
 	CMDADD(window_raw_input, "Only works in first person mode");
 	CMDADD(window_resizable, "Sets if the window is resizable");
 	CMDADD(window_info, "Prints window variables");
-	CMDADD(render_stats, "Lists different rendering stats for the previous frame");
-	CMDADD(render_options, "Set wireframe mode to true or false");
+	//CMDADD(render_stats, "Lists different rendering stats for the previous frame"); //TODO(delle,Re) this
+	//CMDADD(render_options, "Set wireframe mode to true or false"); //TODO(delle,Re) this
 	CMDADD(mat_texture, "Set material texture");
 	CMDADD(mat_shader, "Give a material a specific shader");
 	CMDADD(mat_list, "Shows the material list");

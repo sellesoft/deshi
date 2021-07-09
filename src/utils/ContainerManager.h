@@ -3,6 +3,7 @@
 #define DESHI_CONTAINERMANAGER_H
 
 #include "optional.h"
+#include "tuple.h"
 
 #include <string>
 #include <vector>
@@ -21,19 +22,19 @@
 
 template<class T>
 struct ContainerManager {
-	//std::vector<std::pair<std::optional<T>, int>> container;
+	//std::vector<pair<std::optional<T>, int>> container;
 	std::vector<Optional<T>> container;
 	std::vector<int> empties;
 	
 	ContainerManager() {}
 	
 	Optional<T>& operator [](int i) { return container[i]; }
-
+	
 	//TODO(sushi) figure this out sometime :)
 	//T* operator &() {
 	//	return &T;
 	//}
-
+	
 	int real_size() {
 		return container.size() - empties.size();
 	}
@@ -113,7 +114,7 @@ struct ContainerManager {
 		container.clear();
 		empties.clear();
 	}
-
+	
 	//if reserve gets used when the container isn't empty this will probably fuck up
 	//so if you're here because somethings broken thats why
 	void reserve(int i) {
@@ -121,16 +122,16 @@ struct ContainerManager {
 			empties.push_back(o);
 			Optional<T> op;
 			container.push_back(op);
-
+			
 		}
 	}
-
+	
 	using iterator = typename std::vector<Optional<T>>::iterator;
 	
 	iterator begin() {
 		return container.begin();
 	}
-
+	
 	iterator end() {
 		return container.end();
 	}

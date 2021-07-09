@@ -60,7 +60,7 @@ struct poly {
 	
 	Physics* ogphys;
 	
-	bool isStatic = false;
+	bool staticPosition = false;
 	
 	bool PointInside(Vector2 point) {
 		int s = p.size();
@@ -117,7 +117,7 @@ struct Physics : public Component {
 	std::vector<Vector3> forces;
 	Vector3 inputVector = Vector3::ZERO;
 	
-	bool isStatic = false;
+	bool staticPosition = false;
 	bool staticRotation = false;
 	//TODO(delle,Ph) separate static movement and rotation
 	bool twoDphys = false;
@@ -137,9 +137,9 @@ struct Physics : public Component {
 	Physics();
 	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO,
 			Vector3 rotVeloctiy = Vector3::ZERO,Vector3 rotAcceleration = Vector3::ZERO, float elasticity = .2f, 
-			float mass = 1.f, bool isStatic = false);
+			float mass = 1.f, bool staticPosition = false);
 	Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy, Vector3 rotAcceleration, 
-			float elasticity, float mass, bool isStatic, bool staticRotation, bool twoDphys, 
+			float elasticity, float mass, bool staticPosition, bool staticRotation, bool twoDphys, 
 			float kineticFricCoef, float staticFricCoef);
 	Physics(Vector3 position, Vector3 rotation, float mass, float elasticity);
 	

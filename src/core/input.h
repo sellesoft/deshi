@@ -4,6 +4,7 @@
 
 #include "../defines.h"
 #include "../math/Vector.h"
+#include "../utils/tuple.h"
 
 #include <map>
 #include <vector>
@@ -57,8 +58,8 @@ struct Input{
 	std::map<size_t, u8> mapMouse;
 	
 	//TODO(delle,OpIn) look into storing these as vector<bool> instead
-	bool oldKeyState[MAX_KEYBOARD_KEYS]   = {0};
-	bool newKeyState[MAX_KEYBOARD_KEYS]   = {0};
+	bool oldKeyState[MAX_KEYBOARD_KEYS] = {0};
+	bool newKeyState[MAX_KEYBOARD_KEYS] = {0};
 	double mouseX,       mouseY;
 	double screenMouseX, screenMouseY;
 	double scrollX,      scrollY;
@@ -66,7 +67,7 @@ struct Input{
 	
 	//NOTE sushi: I was going to put this on keybinds, but I wanted it to only check binds if some input occured, and it seems easiest to do that here
 	//for console command binding
-	std::vector<std::pair<std::string, Key::Key>> binds;
+	std::vector<pair<std::string, Key::Key>> binds;
 	bool checkbinds = false; //needed bc glfw callbacks would call the function too early
 	
 	//real values are updated through GLFW callbacks

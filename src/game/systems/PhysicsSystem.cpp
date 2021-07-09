@@ -108,7 +108,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	t.physics->acceleration += netForce / t.physics->mass;
 	
 	//update linear movement and clamp it to min/max velocity
-	if (!t.physics->isStatic) {
+	if (!t.physics->staticPosition) {
 		t.physics->velocity += t.physics->acceleration * time->fixedDeltaTime;
 		float velMag = t.physics->velocity.mag();
 		if (velMag > ps->maxVelocity) {
@@ -222,18 +222,18 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		//static resolution
 		Vector3 norm;
 		if (xover < yover && xover < zover) {
-			if(!obj1->isStatic) obj1->position.x += xover / 2;
-			if(!obj2->isStatic) obj2->position.x -= xover / 2;
+			if(!obj1->staticPosition) obj1->position.x += xover / 2;
+			if(!obj2->staticPosition) obj2->position.x -= xover / 2;
 			norm = Vector3::LEFT;
 		}	
 		else if (yover < xover && yover < zover) {
-			if(!obj1->isStatic) obj1->position.y += yover / 2;
-			if(!obj2->isStatic) obj2->position.y -= yover / 2;
+			if(!obj1->staticPosition) obj1->position.y += yover / 2;
+			if(!obj2->staticPosition) obj2->position.y -= yover / 2;
 			norm = Vector3::DOWN;
 		}
 		else if (zover < yover && zover < xover) {
-			if(!obj1->isStatic) obj1->position.z += zover / 2;
-			if(!obj2->isStatic) obj2->position.z -= zover / 2;
+			if(!obj1->staticPosition) obj1->position.z += zover / 2;
+			if(!obj2->staticPosition) obj2->position.z -= zover / 2;
 			norm = Vector3::BACK;
 		}
 		
@@ -253,14 +253,14 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			j /= 1 / obj1->mass + 1 / obj2->mass;
 			
 			Vector3 impulse = j * norm;
-			if (!obj1->isStatic) obj1->velocity -= impulse / obj1->mass;
-			if (!obj2->isStatic) obj2->velocity += impulse / obj2->mass;
+			if (!obj1->staticPosition) obj1->velocity -= impulse / obj1->mass;
+			if (!obj2->staticPosition) obj2->velocity += impulse / obj2->mass;
 			//PRINTLN(obj2->velocity.mag());
 			
 			
 			//setting contact state depending on movement
 			if (fabs(obj1->velocity.normalized().dot(norm)) != 1) {
-				if (!obj1->isStatic) {
+				if (!obj1->staticPosition) {
 					obj1->contacts[obj2] = ContactMoving;
 				}
 				else obj1->contacts[obj2] = ContactStationary;
@@ -269,7 +269,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 				obj1->contacts[obj2] = ContactStationary;
 			}
 			if (fabs(obj2->velocity.normalized().dot(norm)) != 1) {
-				if (!obj2->isStatic) 
+				if (!obj2->staticPosition) 
 					obj2->contacts[obj1] = ContactMoving;
 				else obj2->contacts[obj1] = ContactStationary;
 			}
@@ -330,9 +330,9 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 		float overlap = .5f * (sphereCol->radius - distanceBetween);
 		Vector3 normal = -vectorBetween.normalized();
 		vectorBetween = -normal * overlap;
-		if(aabb->isStatic){
+		if(aabb->staticPosition){
 			sphere->position -= vectorBetween;
-		}else if(sphere->isStatic){
+		}else if(sphere->staticPosition){
 			aabb->position += vectorBetween;
 		}else{
 			aabb->position += vectorBetween / 2.f;
@@ -379,8 +379,8 @@ inline bool SphereSphereCollision(Physics* s1, SphereCollider* sc1, Physics* s2,
 		
 		Vector3 s1t2 = s2->position - s1->position;
 		float overlap = (rsum - dist) / 2;
-		if (!s1->isStatic) s1->position -= s1t2.normalized() * overlap;
-		if (!s2->isStatic) s2->position += s1t2.normalized() * overlap;
+		if (!s1->staticPosition) s1->position -= s1t2.normalized() * overlap;
+		if (!s2->staticPosition) s2->position += s1t2.normalized() * overlap;
 		
 		//dynamic resolution
 		//from https://www.gamasutra.com/view/feature./131424/pool_hall_lessons_fast_accurate_.php?print=1
@@ -915,11 +915,11 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 		
 		if (p1 && p2) {
 			
-			//if (!p1->isStatic && m.depth[0] < 0) p1->pos -= m.norm * m.depth[0] / 2;
-			//if (!p1->isStatic && m.depth[1] < 0) p1->pos -= m.norm * m.depth[1] / 2;
+			//if (!p1->staticPosition && m.depth[0] < 0) p1->pos -= m.norm * m.depth[0] / 2;
+			//if (!p1->staticPosition && m.depth[1] < 0) p1->pos -= m.norm * m.depth[1] / 2;
 			//
-			//if (!p2->isStatic && m.depth[0] < 0) p2->pos += m.norm * m.depth[0] / 2;
-			//if (!p2->isStatic && m.depth[1] < 0) p2->pos += m.norm * m.depth[1] / 2;
+			//if (!p2->staticPosition && m.depth[0] < 0) p2->pos += m.norm * m.depth[0] / 2;
+			//if (!p2->staticPosition && m.depth[1] < 0) p2->pos += m.norm * m.depth[1] / 2;
 			//
 			//PRINTLN(TOSTRING("depth1: ", m.norm * m.depth[0] / 2));
 			//PRINTLN(TOSTRING("depth2: ", m.norm * m.depth[1] / 2));
@@ -932,8 +932,8 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 			//p2->ogphys->position = Math::VectorPlaneIntersect(p2->ogphys->position, DengCamera->position - p2->ogphys->position, DengCamera->position, nupos2);
 			
 
-			//if (p1->isStatic) p1->vel = Vector2::ZERO;
-			//if (p2->isStatic) p2->vel = Vector2::ZERO;
+			//if (p1->staticPosition) p1->vel = Vector2::ZERO;
+			//if (p2->staticPosition) p2->vel = Vector2::ZERO;
 			
 			Vector2 rv = p1->vel - p2->vel;
 			
@@ -945,14 +945,14 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 				j /= 1 / p1->mass + 1 / p2->mass;
 				
 				Vector2 impulse = j * m.norm;
-				if (!p1->isStatic) {
+				if (!p1->staticPosition) {
 					
 					Vector3 impworld = Math::ScreenToWorld(p1->pos + p1->vel + impulse, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 					Vector3 impworldpr = Math::VectorPlaneIntersect(p1->ogphys->position, DengCamera->position - p1->ogphys->position, DengCamera->position, impworld);
 					
 					p1->ogphys->velocity -= (impworldpr - p1->ogphys->position);
 				}
-				if (!p2->isStatic) {
+				if (!p2->staticPosition) {
 					
 					Vector3 impworld = Math::ScreenToWorld(p2->pos + p2->vel + impulse, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 					Vector3 impworldpr = Math::VectorPlaneIntersect(p2->ogphys->position, DengCamera->position - p2->ogphys->position, DengCamera->position, impworld);
@@ -987,7 +987,7 @@ poly GeneratePoly(Physics* p) {
 	//maybe make a nicer way of calculating this
 	poly.mass = p->mass;
 	
-	poly.isStatic = p->isStatic;
+	poly.staticPosition = p->staticPosition;
 	
 	poly.ogphys = p;
 	
@@ -1063,7 +1063,7 @@ inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 		for(auto& t2 : tuples) {
 			if(&t != &t2 && t2.collider && 
 			   t.collider->collisionLayer == t2.collider->collisionLayer &&
-			   (!t.physics->isStatic || !t2.physics->isStatic)) {
+			   (!t.physics->staticPosition || !t2.physics->staticPosition)) {
 				CheckCollision(t, t2, polys);
 				collCount++;
 			}

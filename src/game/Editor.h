@@ -18,13 +18,13 @@ enum TransformationAxis : u32{
 };
 
 struct EditorSettings{
-	b32 fast_outline;
+	
 };
 
 struct Editor{
 	Admin* admin;
 	EditorSettings settings;
-
+	
 	std::vector<Entity*> selected;
 	Camera* camera;
 	UndoManager undo_manager;
@@ -34,7 +34,7 @@ struct Editor{
 	vec3 camera_rot;
 	
 	bool showEditorWin;
-
+	
 	bool showDebugTools;
 	bool showTimes;
 	bool showDebugBar;
@@ -53,7 +53,7 @@ struct Editor{
 	void RotateEntity(Entity* e, TransformationAxis axis);
 	
 	void CreateEditorWin();
-
+	
 	void MenuBar();
 	void DebugLayer();
 	void DebugBar();
@@ -78,10 +78,6 @@ namespace ImGui {
 	void DebugDrawTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color = Color::WHITE);
 	void DebugFillTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color = Color::WHITE);
 	void DebugDrawGraphFloat(Vector2 pos, float inval, float sizex = 100, float sizey = 100);
-	void CopyButton(const char* text);
-	bool InputVector2(const char* id, Vector2* vecPtr, bool inputUpdate = false);
-	bool InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate = false);
-	bool InputVector4(const char* id, Vector4* vecPtr, bool inputUpdate = false);
 	void AddPadding(float x);
 }
 

@@ -30,16 +30,18 @@ enum VSyncTypeBits : u32{
 struct RenderSettings{ //loaded from file
 	//// requires restart ////
     b32 debugging = true;
-    b32 printf    = true;
+    b32 printf    = false;
+	b32 recompileAllShaders = true;
     b32 findMeshTriangleNeighbors = true; //TODO(delle,Cl) move this to a better location
 	
 	//// runtime changeable ////
+	u32 loggingLevel = 1; //if printf is true in the config file, this will be set to 4
+	b32 crashOnError = false;
 	VSyncType vsync  = VSyncType_Immediate;
-	u32 msaa_samples = 0;
+	u32 msaaSamples  = 0;
 	
 	//shaders
 	b32 optimizeShaders     = false;
-	b32 recompileAllShaders = true;
 	
 	//shadows
 	b32 shadowPCF         = false;
@@ -48,18 +50,18 @@ struct RenderSettings{ //loaded from file
 	f32 shadowFarZ        = 96.f;
 	f32 depthBiasConstant = 1.25f;
 	f32 depthBiasSlope    = 1.75f;
-    b32 showShadowMap     = true;
+    b32 showShadowMap     = false;
 	
     //colors
-	u8 clearR    =   5, clearG    =   5, clearB    =   5, clearA    = 255;
-    u8 selectedR = 204, selectedG = 125, selectedB =  41, selectedA = 255;
-    u8 colliderR = 116, colliderG = 186, colliderB =  67, colliderA = 255;
+	Vector4 clearColor   {0.02f,0.02f,0.02f,1.00f};
+	Vector4 selectedColor{0.80f,0.49f,0.16f,1.00f};
+	Vector4 colliderColor{0.46f,0.71f,0.26f,1.00f};
 	
 	//filters
     b32 wireframeOnly = false;
 	
     //overlays
-	b32 wireframe       = false;
+	b32 meshWireframes  = false;
     b32 meshNormals     = false;
     b32 lightFrustrums  = false;
 };
@@ -205,11 +207,16 @@ struct StagingBufferVk {
     VkDeviceMemory memory;
 };
 
+namespace Render{
+	
+	RenderSettings* GetSettings();
+	
+}; //namespace Render
+
 struct Renderer{
     ////////////////////////////
     //// renderer variables ////
     ////////////////////////////
-    RenderSettings settings;
     RenderStats    stats{};
     RendererStage  rendererStage{};
     
@@ -337,6 +344,7 @@ struct Renderer{
     bool initialized     = false;
     bool remakeWindow    = false;
     bool remakePipelines = false;
+    bool remakeOffscreen = false;
     
     //render settings
     VkSampleCountFlagBits msaaSamples{};
@@ -506,6 +514,24 @@ struct Renderer{
     void UpdateUniformBuffers();
     //creates the vertex and index buffers on the GPU
     void CreateSceneMeshBuffers();
+	
+	
+	//// offscreen rendering ////
+	
+	
+	//TODO(delle,Vu) distribute these variables around
+	struct{
+		s32 width, height;
+		VkImage               depthImage;
+		VkDeviceMemory        depthImageMemory;
+		VkImageView           depthImageView;
+		VkSampler             depthSampler;
+		VkDescriptorImageInfo depthDescriptor;
+		VkRenderPass          renderpass;
+		VkFramebuffer         framebuffer;
+	} offscreen{};
+	
+	void SetupOffscreenRendering();
     
 	
     //// pipelines setup ////
@@ -524,19 +550,18 @@ struct Renderer{
 		VkDescriptorSet shadowMap_debug;
 	} descriptorSets;
 	
-	std::array<VkClearValue, 3> clearValues{};
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     VkPipelineCache  pipelineCache  = VK_NULL_HANDLE;
-    VkGraphicsPipelineCreateInfo           pipelineCreateInfo{};
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
-    VkPipelineRasterizationStateCreateInfo rasterizationState{};
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+    VkPipelineRasterizationStateCreateInfo rasterizationState{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
     VkPipelineColorBlendAttachmentState    colorBlendAttachmentState{};
-    VkPipelineColorBlendStateCreateInfo    colorBlendState{};
-    VkPipelineDepthStencilStateCreateInfo  depthStencilState{};
-    VkPipelineViewportStateCreateInfo      viewportState{};
-    VkPipelineMultisampleStateCreateInfo   multisampleState{};
-    VkPipelineVertexInputStateCreateInfo   vertexInputState{};
-    VkPipelineDynamicStateCreateInfo       dynamicState{};
+    VkPipelineColorBlendStateCreateInfo    colorBlendState{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+    VkPipelineDepthStencilStateCreateInfo  depthStencilState{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+    VkPipelineViewportStateCreateInfo      viewportState{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+    VkPipelineMultisampleStateCreateInfo   multisampleState{VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+	VkPipelineVertexInputStateCreateInfo   vertexInputState{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+	VkPipelineDynamicStateCreateInfo       dynamicState{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+	VkGraphicsPipelineCreateInfo           pipelineCreateInfo{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
     std::vector<VkDynamicState>                    dynamicStates;
     std::vector<VkVertexInputBindingDescription>   vertexInputBindings;
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
@@ -579,6 +604,7 @@ struct Renderer{
 				
 				//debug shaders
 				VkPipeline normals_debug;
+				VkPipeline shadowmap_debug;
 			};
 		};
     } pipelines{};
@@ -626,28 +652,9 @@ struct Renderer{
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     
 	
-	//// offscreen rendering ////
-	
-	
-	struct{
-		s32 width, height;
-		VkImage               depthImage;
-		VkDeviceMemory        depthImageMemory;
-		VkImageView           depthImageView;
-		VkSampler             depthSampler;
-		VkDescriptorImageInfo depthDescriptor;
-		VkRenderPass          renderpass;
-		VkFramebuffer         framebuffer;
-	} offscreen{};
-	
-	void SetupOffscreenRendering();
-    
-	
     //// other ////
     
 	
-	//give names to objects for debugging
-	void DebugNameObjects();
     //recreates the swapchain and frames
     void ResizeWindow();
     //returns a command buffer that will only execute once

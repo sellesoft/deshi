@@ -35,6 +35,7 @@ layout(location = 8) out vec3 outLightVec;
 layout(location = 9) out vec3 outViewVec;
 layout(location = 10) out vec4 outLights[10];
 
+//translation to shadow map space [-1...1] -> [0...1]: (xy*0.5 + 0.5)
 const mat4 biasMat = mat4(0.5, 0.0, 0.0, 0.0,
 						  0.0, 0.5, 0.0, 0.0,
 						  0.0, 0.0, 1.0, 0.0,
@@ -51,8 +52,7 @@ void main() {
 	viewPosition = (ubo.view * primitive.model * vec4(inPosition.xyz, 1.0)).xyz;
 	
 	if(ubo.enablePCF != 0) outEnablePCF = 1;
-	outShadowCoord = (biasMat * ubo.depthMVP * primitive.model) * vec4(inPosition, 1.0);
-	//outShadowCoord = (ubo.depthMVP * primitive.model) * vec4(inPosition, 1.0);
+	outShadowCoord = (biasMat * ubo.depthMVP * primitive.model) * vec4(inPosition.xyz, 1.0);
 	outLightVec = normalize(ubo.lights[0].xyz - inPosition);
 	vec4 pos = primitive.model * vec4(inPosition.xyz, 1.0);
 	outViewVec = -pos.xyz;
