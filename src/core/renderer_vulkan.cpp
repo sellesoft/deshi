@@ -2204,6 +2204,7 @@ UpdateUniformBuffers(){
 		uboVSoffscreen.values.lightVP = 
 			Math::LookAtMatrix(lights[0].ToVector3(), Vector3::ZERO).Inverse() * 
 			Math::PerspectiveProjectionMatrix(settings.shadowResolution, settings.shadowResolution, 90.0f, settings.shadowNearZ, settings.shadowFarZ);
+		
 		void* data;
 		vkMapMemory(device, uboVSoffscreen.bufferMemory, 0, sizeof(uboVSoffscreen.values), 0, &data);{
 			memcpy(data, &uboVSoffscreen.values, sizeof(uboVSoffscreen.values));

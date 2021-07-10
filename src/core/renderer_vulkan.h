@@ -47,7 +47,7 @@ struct RenderSettings{ //loaded from file
 	b32 shadowPCF         = false;
 	u32 shadowResolution  = 2048;
 	f32 shadowNearZ       = 1.f;
-	f32 shadowFarZ        = 96.f;
+	f32 shadowFarZ        = 70.f;
 	f32 depthBiasConstant = 1.25f;
 	f32 depthBiasSlope    = 1.75f;
     b32 showShadowMap     = false;
@@ -472,8 +472,8 @@ struct Renderer{
             vec2 mousepos;    //mouse screen pos
             vec3 mouseWorld;  //point casted out from mouse 
 			f32  time;        //total time
-			b32  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
 			mat4 lightVP;     //first light's view projection matrix //TODO(delle,ReVu) redo how lights are stored
+			b32  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
         } values;
     } uboVS{};
     struct{ //uniform buffer for the geometry shaders

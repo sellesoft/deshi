@@ -1,13 +1,13 @@
 >entity
-id       5
+id       8
 type     Anonymous
-name     "box4"
-position (12.942689,3.740871,11.296762)
+name     "wall_S"
+position (0.000000,9.000000,-20.000000)
 rotation (0.000000,0.000000,0.000000)
-scale    (1.000000,1.000000,1.000000)
+scale    (21.000000,11.000000,1.000000)
 
 >mesh
-id      14
+id      19
 name    "box.obj"
 visible true
 

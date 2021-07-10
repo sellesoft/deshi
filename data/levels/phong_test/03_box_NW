@@ -1,7 +1,7 @@
 >entity
 id       3
 type     Anonymous
-name     "box2"
+name     "box_NW"
 position (-4.735697,5.643273,10.099706)
 rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)

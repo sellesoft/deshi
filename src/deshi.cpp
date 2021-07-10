@@ -56,7 +56,7 @@ fix DESH material and event saving/loading
 
 Render TODOs
 ------------
-add directional shadow mapping
+fix directional shadow mapping's (projection?) errors
 rework lights
 add temporary meshes (get reset every frame like imgui)
 extract normal debug geometry shader descriptor from generic layout and sets
