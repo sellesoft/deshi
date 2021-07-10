@@ -85,15 +85,15 @@ void Keybinds::Init(){
 	
 	//read keys from keybinds.cfg
 	std::fstream kf;
-	kf.open(deshi::dirConfig() + "keybinds.cfg", std::fstream::in);
+	kf.open(Assets::dirConfig() + "keybinds.cfg", std::fstream::in);
 	if (kf.is_open()) { //file exists
 		ReloadKeybinds(kf);
 		kf.close();
 	}else{              //file doesnt exist
 		kf.close();
 		LOG("No keybinds file found, generating a new one in the cfg directory");
-		deshi::writeFile(deshi::dirConfig() + "keybinds.cfg", default_keybinds.c_str(), default_keybinds.size());
-		kf.open(deshi::dirConfig() + "keybinds.cfg", std::fstream::in);
+		Assets::writeFile(Assets::dirConfig() + "keybinds.cfg", default_keybinds.c_str(), default_keybinds.size());
+		kf.open(Assets::dirConfig() + "keybinds.cfg", std::fstream::in);
 		ReloadKeybinds(kf);
 		kf.close();
 	}

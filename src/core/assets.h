@@ -18,7 +18,26 @@ enum AssetTypeBits : u32{
 	AssetType_LAST
 }; typedef u32 AssetType;
 
-namespace deshi{
+enum ConfigValueTypeBits : u32{
+	ConfigValueType_NONE = 0,
+	ConfigValueType_S32,
+	ConfigValueType_U32,
+	ConfigValueType_U8,
+	ConfigValueType_F32, 
+	ConfigValueType_F64, 
+	ConfigValueType_F32Vec2, 
+	ConfigValueType_F32Vec3,
+	ConfigValueType_F32Vec4,
+	ConfigValueType_String, 
+	ConfigValueType_Int     = ConfigValueType_S32,
+	ConfigValueType_Float   = ConfigValueType_F32,
+	ConfigValueType_Vector2 = ConfigValueType_F32Vec2,
+	ConfigValueType_Vector3 = ConfigValueType_F32Vec3,
+	ConfigValueType_Vector4 = ConfigValueType_F32Vec4,
+	ConfigValueType_COUNT,
+}; typedef u32 ConfigValueType;
+
+namespace Assets{
 	
 	inline static std::string dirData()    { return "data/"; }
 	inline static std::string dirConfig()  { return dirData() + "cfg/"; }
@@ -80,29 +99,6 @@ namespace deshi{
 	//// parsing utilities ////
 	///////////////////////////
 	
-	//returns a new string with the leading spaces removed
-	std::string eat_spaces_leading(std::string str);
-	
-	//returns a new string with the trailing spaces removed
-	std::string eat_spaces_trailing(std::string str);
-	
-	//returns a new string with the comments removed
-	std::string eat_comments(std::string str);
-	
-	//separates a string by specified character
-	std::vector<std::string> character_delimit(std::string str, char character);
-	
-	//separates a string by specified character, ignores sequences of the character
-	//eg: 1,,,,2,3 is the same as 1,2,3
-	std::vector<std::string> character_delimit_ignore_repeat(std::string str, char character);
-	
-	//separates a string by spaces, ignores leading and trailing spaces
-	std::vector<std::string> space_delimit(std::string str);
-	
-	//separates a string by spaces, ignores leading and trailing spaces
-	//also ignores spaces between double quotes
-	std::vector<std::string> space_delimit_ignore_strings(std::string str);
-	
 	//splits a string by space and does special case checking for comments, strings, and parenthesis
 	//for use in deshi text-file parsing, ignores leading and trailing spaces
 	pair<std::string, std::string> split_keyValue(std::string str);
@@ -111,7 +107,7 @@ namespace deshi{
 	std::map<std::string, std::string> extractConfig(const std::string& filepath);
 	
 	b32 parse_bool(std::string& str, const char* filepath = 0, u32 line_number = 0);
-
-} //namespace deshi
+	
+} //namespace Assets
 
 #endif //DESHI_ASSETS_H

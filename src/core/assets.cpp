@@ -11,7 +11,7 @@
 //// file paths ////
 ////////////////////
 
-std::string deshi::
+std::string Assets::
 assetPath(const char* filename, AssetType type, b32 logError){
 	std::string file;
 	switch(type){
@@ -37,7 +37,7 @@ assetPath(const char* filename, AssetType type, b32 logError){
 //// file read-write ////
 /////////////////////////
 
-std::vector<char> deshi::
+std::vector<char> Assets::
 readFile(const std::string& filepath, u32 chars) {
 	std::ifstream file(filepath, std::ios::ate);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
@@ -52,7 +52,7 @@ readFile(const std::string& filepath, u32 chars) {
 	return buffer;
 }
 
-std::vector<char> deshi::
+std::vector<char> Assets::
 readFileBinary(const std::string& filepath, u32 bytes) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
@@ -66,7 +66,7 @@ readFileBinary(const std::string& filepath, u32 bytes) {
 	return buffer;
 }
 
-char* deshi::
+char* Assets::
 readFileAsciiToArray(std::string filepath, u32 chars){
 	std::ifstream file(filepath, std::ifstream::in);
 	if(!file.is_open()) { ERROR("Failed to open file: ", filepath.c_str()); return 0; }
@@ -81,7 +81,7 @@ readFileAsciiToArray(std::string filepath, u32 chars){
 	return buffer;
 }
 
-char* deshi::
+char* Assets::
 readFileBinaryToArray(std::string filepath, u32 bytes){
 	std::ifstream file(filepath, std::ifstream::in | std::ios::binary);
 	if(!file.is_open()) { ERROR("Failed to open file: ", filepath.c_str()); return 0; }
@@ -96,7 +96,7 @@ readFileBinaryToArray(std::string filepath, u32 bytes){
 	return buffer;
 }
 
-void deshi::
+void Assets::
 writeFile(const std::string& filepath, std::vector<char>& data, u32 chars){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
@@ -106,7 +106,7 @@ writeFile(const std::string& filepath, std::vector<char>& data, u32 chars){
 	file.write(reinterpret_cast<const char*>(data.data()), chars);
 }
 
-void deshi::
+void Assets::
 writeFile(const std::string& filepath, const char* data, u32 chars){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
@@ -115,7 +115,7 @@ writeFile(const std::string& filepath, const char* data, u32 chars){
 	file.write(data, chars);
 }
 
-void deshi::
+void Assets::
 appendFile(const std::string& filepath, std::vector<char>& data, u32 chars){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
@@ -125,7 +125,7 @@ appendFile(const std::string& filepath, std::vector<char>& data, u32 chars){
 	file.write(reinterpret_cast<const char*>(data.data()), chars);
 }
 
-void deshi::
+void Assets::
 appendFile(const std::string& filepath, const char* data, u32 chars){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
@@ -134,7 +134,7 @@ appendFile(const std::string& filepath, const char* data, u32 chars){
 	file.write(data, chars);
 }
 
-void deshi::
+void Assets::
 writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
@@ -144,7 +144,7 @@ writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes)
 	file.write(reinterpret_cast<const char*>(data.data()), bytes);
 }
 
-void deshi::
+void Assets::
 writeFileBinary(const std::string& filepath, const char* data, u32 bytes){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
@@ -153,7 +153,7 @@ writeFileBinary(const std::string& filepath, const char* data, u32 bytes){
 	file.write(data, bytes);
 }
 
-void deshi::
+void Assets::
 appendFileBinary(const std::string& filepath, const char* data, u32 bytes){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::app);
 	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
@@ -162,7 +162,7 @@ appendFileBinary(const std::string& filepath, const char* data, u32 bytes){
 	file.write(data, bytes);
 }
 
-std::vector<std::string> deshi::
+std::vector<std::string> Assets::
 iterateDirectory(const std::string& filepath) {
 	using namespace std::filesystem;
 	std::vector<std::string> files;
@@ -172,7 +172,7 @@ iterateDirectory(const std::string& filepath) {
 	return files;
 }
 
-void deshi::
+void Assets::
 enforceDirectories() {
 	using namespace std::filesystem;
 	if (!is_directory(dirData())) {
@@ -201,108 +201,7 @@ enforceDirectories() {
 //// parsing utilities ////
 ///////////////////////////
 
-std::string deshi::
-eat_spaces_leading(std::string str){
-	size_t idx = str.find_first_not_of(' ');
-	return (idx != -1) ? str.substr(idx) : "";
-}
-
-std::string deshi::
-eat_spaces_trailing(std::string str){
-	size_t idx = str.find_last_not_of(' ');
-	return (idx != -1) ? str.substr(0, idx+1) : "";
-}
-
-std::string deshi::
-eat_comments(std::string str){
-	size_t idx = str.find_first_of('#');
-	return (idx != -1) ? str.substr(0, idx) : str;
-}
-
-std::vector<std::string> deshi::
-character_delimit(std::string str, char character){
-	std::vector<std::string> out;
-	
-	int prev = 0;
-	for(int i=0; i < str.size(); ++i){
-		if(str[i] == character){
-			out.push_back(str.substr(prev, i-prev));
-    		prev = i+1;
-		}
-	}
-	out.push_back(str.substr(prev, -1));
-	
-	return out;
-}
-
-std::vector<std::string> deshi::
-character_delimit_ignore_repeat(std::string str, char character){
-	std::vector<std::string> out;
-	
-	int prev = 0;
-	for(int i=0; i < str.size(); ++i){
-		if(str[i] == character){
-			out.push_back(str.substr(prev, i-prev));
-			while(str[i+1] == ' ') ++i;
-    		prev = i+1;
-		}
-	}
-	out.push_back(str.substr(prev, -1));
-	
-	return out;
-}
-
-std::vector<std::string> deshi::
-space_delimit(std::string str){
-	std::vector<std::string> out;
-	str = eat_spaces_leading(str);
-	str = eat_spaces_trailing(str);
-	
-	int prev = 0;
-	for(int i=0; i < str.size(); ++i){
-		if(str[i] == ' '){
-			out.push_back(str.substr(prev, i-prev));
-			while(str[i+1] == ' ') ++i;
-    		prev = i+1;
-		}
-	}
-	out.push_back(str.substr(prev, -1));
-	
-	return out;
-}
-
-std::vector<std::string> deshi::
-space_delimit_ignore_strings(std::string str){
-	std::vector<std::string> out;
-	str = eat_spaces_leading(str);
-	str = eat_spaces_trailing(str);
-	
-	size_t prev = 0, end_quote = 0;
-	forI(str.size()){
-		if(str[i] == ' '){
-			out.push_back(str.substr(prev, i-prev));
-			while(str[i+1] == ' ') ++i;
-			prev = i+1;
-    		while(str[prev] == '\"'){
-    		    end_quote = str.find_first_of('\"', prev+1);
-    		    if(end_quote != -1){
-    		        out.push_back(str.substr(prev+1, end_quote-prev-1));
-    		        i = end_quote+1;
-					if(i >= str.size()) return out;
-    		        prev = i+1;
-    		    }else{
-    		        ERROR_LOC("Opening quote did not have a closing quote in string:\n\t", str);
-    		        return std::vector<std::string>();
-    		    }
-    		}
-		}
-	}
-	out.push_back(str.substr(prev, -1));
-	
-	return out;
-}
-
-pair<std::string, std::string> deshi::
+pair<std::string, std::string> Assets::
 split_keyValue(std::string str){
 	size_t idx = str.find_first_of(' ');
 	if (idx == -1) return pair<std::string, std::string>(str, std::string(""));
@@ -328,11 +227,11 @@ split_keyValue(std::string str){
 	return pair<std::string, std::string>(key, val);
 }
 
-std::map<std::string, std::string> deshi::
+std::map<std::string, std::string> Assets::
 extractConfig(const std::string& filepath) {
 	std::map<std::string, std::string> out;
 	
-	std::fstream in(deshi::dirConfig() + filepath, std::fstream::in);
+	std::fstream in(Assets::dirConfig() + filepath, std::fstream::in);
 	if(!in.is_open()){ ERROR("Failed to open file: ", filepath); out.emplace("FileNotFound", ""); return out; }
 	defer{ in.close(); };
 	
@@ -357,7 +256,7 @@ extractConfig(const std::string& filepath) {
 	return out;
 }
 
-b32 deshi::
+b32 Assets::
 parse_bool(std::string& str, const char* filepath, u32 line_number){
 	if(str == "true" || str == "1"){
 		return true;

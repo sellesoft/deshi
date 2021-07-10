@@ -12,6 +12,7 @@
 #include "window.h"
 #include "imgui.h"
 #include "assets.h"
+#include "../utils/utils.h"
 #include "../utils/Debug.h"
 #include "../utils/RingArray.h"
 #include "../utils/Color.h"
@@ -463,7 +464,7 @@ void Console2::Update(){
 			//TODO(delle,OpCl) this can be optimized by reducing the amount of string copies
 			if(ImGui::InputText("##console_input_text", input_buffer, input_max_size, input_text_flags, &TextEditCallback, 0)) {
 				//add input to history
-				std::string input = deshi::eat_spaces_leading(input_buffer);
+				std::string input = Utils::eatSpacesLeading(input_buffer);
 				Log(TOSTRING("^c=cyan^/^c^^c=dcyan^\\^c^ ", input));
 				scroll_to_bottom = true;
 				

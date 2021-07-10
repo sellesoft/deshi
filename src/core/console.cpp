@@ -3,6 +3,7 @@
 #include "time.h"
 #include "renderer.h"
 #include "window.h"
+#include "../utils/utils.h"
 #include "../utils/Command.h"
 #include "../game/admin.h"
 #include "../game/components/Camera.h"
@@ -442,7 +443,7 @@ void Console::FlushBuffer() {
 		output += a.first;
 	}
 	
-	static std::string filename = deshi::dirLogs() + DengTime->FormatDateTime("deshiLog_{M}-{d}-{y}_{h}.{m}.{s}.txt");
+	static std::string filename = Assets::dirLogs() + DengTime->FormatDateTime("deshiLog_{M}-{d}-{y}_{h}.{m}.{s}.txt");
 	static bool session = false;
 	
 	std::ofstream file;
@@ -464,11 +465,11 @@ void Console::FlushBuffer() {
 }
 
 void Console::AddAliases() {
-	std::string filepath = deshi::dirConfig() + "aliases.cfg";
-	char* buffer = deshi::readFileAsciiToArray(filepath);
+	std::string filepath = Assets::dirConfig() + "aliases.cfg";
+	char* buffer = Assets::readFileAsciiToArray(filepath);
 	if(!buffer){
 		LOG("Creating new aliases file");
-		deshi::writeFile(filepath, "", 0);
+		Assets::writeFile(filepath, "", 0);
 		return;
 	}
 	defer{ delete[] buffer; };
@@ -483,9 +484,9 @@ void Console::AddAliases() {
 		line = std::string(line_start, new_line-line_start);
 		
 		//format the line
-		line = deshi::eat_comments(line);
-		line = deshi::eat_spaces_leading(line);
-		line = deshi::eat_spaces_trailing(line);
+		line = Utils::eatComments(line, "#");
+		line = Utils::eatSpacesLeading(line);
+		line = Utils::eatSpacesTrailing(line);
 		if(line.empty()) continue;
 		
 		//parse alias
@@ -994,8 +995,8 @@ CMDFUNC(alias) {
 				datav.push_back(c);
 			}
 			
-			deshi::appendFile(deshi::assetPath("aliases.cfg", AssetType_Config),
-							  datav, datav.size());
+			Assets::appendFile(Assets::assetPath("aliases.cfg", AssetType_Config),
+							   datav, datav.size());
 			
 			return "[c:green]alias \"" + args[0] + "\" successfully assigned to command \"" + args[1] + "\"[c]";
 		}
@@ -1031,8 +1032,8 @@ CMDFUNC(bind) {
 				datav.push_back(c);
 			}
 			datav.push_back('\n');
-			deshi::appendFile(deshi::assetPath("binds.cfg", AssetType_Config),
-							  datav, datav.size());
+			Assets::appendFile(Assets::assetPath("binds.cfg", AssetType_Config),
+							   datav, datav.size());
 			return "[c:green]key \"" + args[0] + "\" successfully bound to \n" + s + "[c]";
 		}
 		catch (...) {

@@ -23,7 +23,6 @@ Minor Ungrouped TODOs
 add a setting for a limit to the number of log files
 redo Debug::DrawLine calling to take in an id for uniqueness like ImGui
 make a generalized config file parser (see #ideas)
-create string_view versions of string parsing in assets.h
 make the engine runnable without the renderer
 create a hot-loadable global vars file
 detach camera from the renderer so that the camera component isnt calling the renderer
@@ -36,7 +35,6 @@ ____so maybe have a UI option that allows the comps update function to handle it
 ____actually having an option for anything other than collider is kind of useless soooo maybe 
 ____get rid of event on every component or just only let u choose that event on colliders
 change undo's to never use pointers and have undos that can act like linked lists to chain them
-figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
 settings file(s) [keybinds, video, audio, etc]
 add a general logging system with log levels and locations (for filtering)
 add a component_state command to print state of a component (add str methods to all components/systems)
@@ -163,19 +161,21 @@ write a shader that displays textures like it would on a monitor, so like you ha
 ____rgb lights that make up a single pixel of a texture and stuff 
 write a preprocessing/postprocessing compiler that makes saving easier
 
-Bug Board
+Bug Board       //NOTE mark these with a last-known active date (M/D/Y)
 ---------
-rotating using R no longer seems to work, it wildly rotates the object and I feel
-____like it has something to do with our rotate by axis function
-look into scaling not rotating (scaling is probably being done in world not local)
-???after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and 
-____the batchArray size of whatever mesh its checking is something like 400000000000
-____it looks like some sort of corrupt mesh makes its way in there somehow?
-sometimes MeshComp is assigned a nonexistant mesh
-____temp fix by checking if minimized, but need to find root cause
-program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
-the program crashes if default asset files are not present
-____we can store the text in the actual code and create the file from the code, like keybinds.cfg
+(04/20/21) sometimes MeshComp is assigned a nonexistant mesh
+__________ temp fix by checking if minimized, but need to find root cause
+(04/28/21) selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
+(06/13/21) rotating using R no longer seems to work, it wildly rotates the object
+__________ it might have something to do with our rotate by axis function
+(06/13/21) after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and
+__________ the batchArray size of whatever mesh its checking is something like 400000000000
+__________ it looks like some sort of corrupt mesh makes its way in there somehow?
+ (07/10/21) scaling and rotating produces a sheared object
+__________ scaling might be being done in world and not local space
+(07/10/21) program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
+(07/10/21) the program crashes if default asset files are not present
+__________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
 
 */
 
@@ -203,7 +203,7 @@ TIMER_START(t_d); TIMER_START(t_f);
 
 int main() {
 	//pre-init setup
-	deshi::enforceDirectories();
+	Assets::enforceDirectories();
 	
 	//init engine core
 	time_.Init(300); //300 tps for physics

@@ -24,6 +24,7 @@ http://gameangst.com/?p=9
 #include "window.h"
 #include "../scene/Scene.h"
 #include "../math/Math.h"
+#include "../utils/utils.h"
 #include "../utils/debug.h"
 
 #include "../external/imgui/imgui_impl_glfw.h"
@@ -187,13 +188,13 @@ SaveSettings(){
 					"\nmesh_normals    ", (settings.meshNormals) ? "true" : "false",
 					"\nlight_frustrums ", (settings.lightFrustrums) ? "true" : "false",
 					"\n");
-    deshi::writeFile(deshi::dirConfig() + "render.cfg", text.c_str(), text.size());
+    Assets::writeFile(Assets::dirConfig() + "render.cfg", text.c_str(), text.size());
 }
 
 void Renderer::
 LoadSettings(){
-	std::string filepath = deshi::dirConfig() + "render.cfg";
-	char* buffer = deshi::readFileAsciiToArray(filepath);
+	std::string filepath = Assets::dirConfig() + "render.cfg";
+	char* buffer = Assets::readFileAsciiToArray(filepath);
 	if(!buffer) return SaveSettings();
 	defer{ delete[] buffer; };
 	
@@ -206,55 +207,55 @@ LoadSettings(){
 		if((new_line = strchr(line_start, '\n')) == 0) break; //end of file if cant find '\n'
 		line = std::string(line_start, new_line-line_start);
 		
-		line = deshi::eat_comments(line);
-		line = deshi::eat_spaces_leading(line);
-		line = deshi::eat_spaces_trailing(line);
+		line = Utils::eatComments(line, "#");
+		line = Utils::eatSpacesLeading(line);
+		line = Utils::eatSpacesTrailing(line);
 		if(line.empty()) continue;
 		
-		auto kv = deshi::split_keyValue(line);
+		auto kv = Assets::split_keyValue(line);
 		
 		//requires restart
-		if     (kv.first == "debugging"){ settings.debugging = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
-		else if(kv.first == "printf")   { settings.printf    = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
-		else if(kv.first == "find_mesh_triangle_neighbors") { settings.findMeshTriangleNeighbors = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		if     (kv.first == "debugging"){ settings.debugging = Assets::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "printf")   { settings.printf    = Assets::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "find_mesh_triangle_neighbors") { settings.findMeshTriangleNeighbors = Assets::parse_bool(kv.second,filepath.c_str(),line_number); }
 		//runtime changeable
 		else if(kv.first == "logging_level") { settings.loggingLevel  = std::stoi(kv.second); }
-		else if(kv.first == "crash_on_error"){ settings.crashOnError = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "crash_on_error"){ settings.crashOnError = Assets::parse_bool(kv.second,filepath.c_str(),line_number); }
 		else if(kv.first == "vsync")         { settings.vsync          = std::stoi(kv.second); }
 		else if(kv.first == "msaa")          { settings.msaaSamples   = std::stoi(kv.second); }
 		//shaders
-		else if(kv.first == "optimize_shaders"){ settings.optimizeShaders = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
-		else if(kv.first == "recompile_all_shaders"){ settings.recompileAllShaders = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "optimize_shaders"){ settings.optimizeShaders = Assets::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "recompile_all_shaders"){ settings.recompileAllShaders = Assets::parse_bool(kv.second,filepath.c_str(),line_number); }
 		//shadows
-		else if(kv.first == "shadow_pcf")         { settings.shadowPCF = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "shadow_pcf")         { settings.shadowPCF = Assets::parse_bool(kv.second,filepath.c_str(),line_number); }
 		else if(kv.first == "shadow_resolution")  { settings.shadowResolution = std::stoi(kv.second); }
 		else if(kv.first == "shadow_nearz")       { settings.shadowNearZ = std::stof(kv.second); }
 		else if(kv.first == "shadow_farz")        { settings.shadowFarZ = std::stof(kv.second); }
 		else if(kv.first == "depth_bias_constant"){ settings.depthBiasConstant = std::stof(kv.second); }
 		else if(kv.first == "depth_bias_slope")   { settings.depthBiasSlope = std::stof(kv.second); }
-		else if(kv.first == "show_shadow_map")    { settings.showShadowMap = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "show_shadow_map")    { settings.showShadowMap = Assets::parse_bool(kv.second,filepath.c_str(),line_number); }
 		//colors
-		else if(kv.first == "selected_color"){ auto rgba = deshi::character_delimit(kv.second, ',');
+		else if(kv.first == "selected_color"){ auto rgba = Utils::characterDelimit(kv.second, ',');
 			settings.selectedColor.r = Clamp(std::stof(rgba[0]), 0.0f, 1.0f); 
 			settings.selectedColor.g = Clamp(std::stof(rgba[1]), 0.0f, 1.0f);
 			settings.selectedColor.b = Clamp(std::stof(rgba[2]), 0.0f, 1.0f); 
 			settings.selectedColor.a = Clamp(std::stof(rgba[3]), 0.0f, 1.0f); }
-		else if(kv.first == "collider_color"){ auto rgba = deshi::character_delimit(kv.second, ',');
+		else if(kv.first == "collider_color"){ auto rgba = Utils::characterDelimit(kv.second, ',');
 			settings.colliderColor.r = Clamp(std::stof(rgba[0]), 0.0f, 1.0f); 
 			settings.colliderColor.g = Clamp(std::stof(rgba[1]), 0.0f, 1.0f);
 			settings.colliderColor.b = Clamp(std::stof(rgba[2]), 0.0f, 1.0f); 
 			settings.colliderColor.a = Clamp(std::stof(rgba[3]), 0.0f, 1.0f); }
-		else if(kv.first == "clear_color")   { auto rgba = deshi::character_delimit(kv.second, ',');
+		else if(kv.first == "clear_color")   { auto rgba = Utils::characterDelimit(kv.second, ',');
 			settings.clearColor.r = Clamp(std::stof(rgba[0]), 0.0f, 1.0f); 
 			settings.clearColor.g = Clamp(std::stof(rgba[1]), 0.0f, 1.0f);
 			settings.clearColor.b = Clamp(std::stof(rgba[2]), 0.0f, 1.0f); 
 			settings.clearColor.a = Clamp(std::stof(rgba[3]), 0.0f, 1.0f); }
 		//filters
-		else if(kv.first == "wireframe_only"){ settings.wireframeOnly = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "wireframe_only"){ settings.wireframeOnly = Assets::parse_bool(kv.second,filepath.c_str(),line_number); }
 		//overlays
-		else if(kv.first == "wireframe")      { settings.meshWireframes = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
-		else if(kv.first == "mesh_normals")   { settings.meshNormals    = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
-		else if(kv.first == "light_frustrums"){ settings.lightFrustrums = deshi::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "wireframe")      { settings.meshWireframes = Assets::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "mesh_normals")   { settings.meshNormals    = Assets::parse_bool(kv.second,filepath.c_str(),line_number); }
+		else if(kv.first == "light_frustrums"){ settings.lightFrustrums = Assets::parse_bool(kv.second,filepath.c_str(),line_number); }
 		else{ "Error parsing '",filepath,"' on line '",line_number,"'! Invalid key '",kv.first,"' for renderer config"; }
 	}
 	
@@ -501,7 +502,7 @@ Cleanup() {
         AssertVk(vkGetPipelineCacheData(device, pipelineCache, &size, data.data()), "failed to get pipeline cache data");
         
         /* Write pipeline cache data to a file in binary format */
-        deshi::writeFileBinary(deshi::dirData() + "pipelines.cache", data);
+        Assets::writeFileBinary(Assets::dirData() + "pipelines.cache", data);
     }
     
     //write pre-pipeline data
@@ -1008,7 +1009,7 @@ LoadTexture(const char* filename, u32 type){
     TextureVk tex; 
     cpystr(tex.filename, filename, DESHI_NAME_SIZE);
     
-    std::string imagePath = deshi::assetPath(filename, AssetType_Texture);
+    std::string imagePath = Assets::assetPath(filename, AssetType_Texture);
     if(imagePath == ""){ return 0; }
     tex.pixels = stbi_load(imagePath.c_str(), &tex.width, &tex.height, &tex.channels, STBI_rgb_alpha);
     Assert(tex.pixels != 0, "stb failed to load an image");
@@ -2611,10 +2612,10 @@ CreatePipelineCache(){
     pipelineCacheCreateInfo.flags = 0;
     
     //try to read pipeline cache file if exists
-    std::string path = deshi::assetPath("pipelines.cache", AssetType_Data, false);
+    std::string path = Assets::assetPath("pipelines.cache", AssetType_Data, false);
     std::vector<char> data;
     if(path != ""){
-        data = deshi::readFileBinary(path);
+        data = Assets::readFileBinary(path);
         pipelineCacheCreateInfo.initialDataSize = data.size();
         pipelineCacheCreateInfo.pInitialData = data.data();
     }
@@ -3052,14 +3053,14 @@ UpdateMaterialPipelines(){
 std::vector<std::string> Renderer::
 GetUncompiledShaders(){
     std::vector<std::string> compiled;
-    for(auto& entry : std::filesystem::directory_iterator(deshi::dirShaders())){
+    for(auto& entry : std::filesystem::directory_iterator(Assets::dirShaders())){
         if(entry.path().extension() == ".spv"){
             compiled.push_back(entry.path().stem().string());
         }
     }
     
     std::vector<std::string> files;
-    for(auto& entry : std::filesystem::directory_iterator(deshi::dirShaders())){
+    for(auto& entry : std::filesystem::directory_iterator(Assets::dirShaders())){
 		if(entry.path().extension() == ".vert" ||
 		   entry.path().extension() == ".frag" ||
 		   entry.path().extension() == ".geom"){
@@ -3091,7 +3092,7 @@ loadShader(std::string filename, VkShaderStageFlagBits stage) {
     }
     
     //create shader module
-    std::vector<char> code = deshi::readFileBinary(deshi::dirShaders() + filename);
+    std::vector<char> code = Assets::readFileBinary(Assets::dirShaders() + filename);
 	Assert(code.size(), "Unable to read shader file");
 	
     VkShaderModuleCreateInfo moduleInfo{};
@@ -3113,7 +3114,7 @@ VkPipelineShaderStageCreateInfo Renderer::
 CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize) {
     PrintVk(3, "    Compiling and loading shader: ", filename);
     //check if file exists
-    std::filesystem::path entry(deshi::dirShaders() + filename);
+    std::filesystem::path entry(Assets::dirShaders() + filename);
     if(std::filesystem::exists(entry)){
         std::string ext = entry.extension().string();
         std::string filename = entry.filename().string();
@@ -3123,7 +3124,7 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
         shaderc_compile_options_t options = shaderc_compile_options_initialize();
         if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
         
-        std::vector<char> code = deshi::readFileBinary(deshi::dirShaders() + filename); //read shader code
+        std::vector<char> code = Assets::readFileBinary(Assets::dirShaders() + filename); //read shader code
 		Assert(code.size(), "Unable to read shader file");
         
         //try compile from GLSL to SPIR-V binary
@@ -3183,12 +3184,12 @@ CompileAllShaders(bool optimize){
     if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
     
     //loop thru all files in the shaders dir, compile the shaders, write them to .spv files
-    for(auto& entry : std::filesystem::directory_iterator(deshi::dirShaders())){
+    for(auto& entry : std::filesystem::directory_iterator(Assets::dirShaders())){
         std::string ext = entry.path().extension().string();
         std::string filename = entry.path().filename().string();
         
         if(ext.compare(".spv") == 0) continue; //early out if .spv
-        std::vector<char> code = deshi::readFileBinary(entry.path().string()); //read shader code
+        std::vector<char> code = Assets::readFileBinary(entry.path().string()); //read shader code
 		Assert(code.size(), "Unable to read shader file");
         PrintVk(4, "      Compiling shader: ", filename);
         
@@ -3235,7 +3236,7 @@ CompileAllShaders(bool optimize){
 void Renderer::
 CompileShader(std::string& filename, bool optimize){
     PrintVk(3, "    Compiling shader: ", filename);
-    std::filesystem::path entry(deshi::dirShaders() + filename);
+    std::filesystem::path entry(Assets::dirShaders() + filename);
     if(std::filesystem::exists(entry)){
         std::string ext = entry.extension().string();
         std::string filename = entry.filename().string();
@@ -3245,7 +3246,7 @@ CompileShader(std::string& filename, bool optimize){
         shaderc_compile_options_t options = shaderc_compile_options_initialize();
         if(optimize) shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
         
-        std::vector<char> code = deshi::readFileBinary(deshi::dirShaders() + filename); //read shader code
+        std::vector<char> code = Assets::readFileBinary(Assets::dirShaders() + filename); //read shader code
 		Assert(code.size(), "Unable to read shader file");
         
         //try compile from GLSL to SPIR-V binary

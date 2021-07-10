@@ -22,7 +22,7 @@ bool moveOverride = false; //for moving when using arrow keys (cause i cant use 
 inline void AddBindings(Admin* admin) {
 	std::ifstream binds;
 	
-	std::string path = deshi::assetPath("binds.cfg", AssetType_Config, false);
+	std::string path = Assets::assetPath("binds.cfg", AssetType_Config, false);
 	if (path != "") {
 		binds = std::ifstream(path, std::ios::in);
 		while (!binds.eof()) {
@@ -45,7 +45,7 @@ inline void AddBindings(Admin* admin) {
 	}
 	else {
 		LOG("Creating binds file..");
-		deshi::writeFile(deshi::dirConfig() + "binds.cfg", "", 0);
+		Assets::writeFile(Assets::dirConfig() + "binds.cfg", "", 0);
 		
 		return;
 	}

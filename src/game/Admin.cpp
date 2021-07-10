@@ -1,8 +1,4 @@
 #include "Admin.h"
-#include "../core/time.h"
-#include "../core/renderer.h"
-#include "../core/window.h"
-#include "../core/assets.h"
 #include "components/Orb.h"
 #include "components/door.h"
 #include "components/Light.h"
@@ -15,6 +11,11 @@
 #include "components/Component.h"
 #include "components/AudioSource.h"
 #include "components/AudioListener.h"
+#include "../core/time.h"
+#include "../core/renderer.h"
+#include "../core/window.h"
+#include "../core/assets.h"
+#include "../utils/utils.h"
 
 #include <iostream>
 #include <fstream>
@@ -168,7 +169,7 @@ u32 Admin::CreateEntity(std::vector<Component*> components, const char* name, Tr
 
 u32 Admin::CreateEntity(Entity* e) {
     if(!e) return -1;
-
+	
     e->admin = this;
     creationBuffer.push_back(e);
     return entities.size() + creationBuffer.size() - 1;
@@ -206,7 +207,7 @@ void Admin::DeleteEntity(Entity* e) {
 
 void Admin::AddComponentToLayers(Component* c){
     if(!c) return;
-
+	
     c->compID = compIDcount;
     c->layer_index = freeCompLayers[c->layer].add(c);
     if(c->comptype == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
@@ -308,7 +309,7 @@ void Admin::SaveTEXT(std::string level_name){
     TIMER_START(t_s);
     
     //// setup the level directory ////
-    std::string levels_dir = deshi::dirData() + "levels/";
+    std::string levels_dir = Assets::dirData() + "levels/";
     if(!fs::is_directory(levels_dir)) fs::create_directory(levels_dir);
     
     std::string level_dir = levels_dir + std::string(level_name) + "/";
@@ -381,12 +382,12 @@ void Admin::SaveTEXT(std::string level_name){
 		entity_file_name = TOSTRING(entity_idx_str, entities[idx]->name);
 		
 		std::string entity_text = entities[idx]->SaveTEXT();
-		deshi::writeFile(level_dir + entity_file_name, entity_text.c_str(), entity_text.size());
+		Assets::writeFile(level_dir + entity_file_name, entity_text.c_str(), entity_text.size());
 		SUCCESS("  Created entity file '", entity_file_name, "'");
 	}
 	
 	level_text.append("\n");
-	deshi::writeFile(level_dir + "_", level_text.c_str(), level_text.size());
+	Assets::writeFile(level_dir + "_", level_text.c_str(), level_text.size());
 	SUCCESS("  Created level file '_'");
 	
 	SUCCESS("Finished saving level '", level_name, "' in ", TIMER_END(t_s), "ms");
@@ -400,7 +401,7 @@ void Admin::LoadTEXT(std::string savename){
 	namespace fs = std::filesystem;
 	
 	if(savename.empty()) return ERROR("Failed to load text-file: no name passed");
-	std::string levels_dir = deshi::dirData() + "levels/";
+	std::string levels_dir = Assets::dirData() + "levels/";
 	std::string level_dir = levels_dir + savename + "/";
 	if(!fs::is_directory(level_dir)) return ERROR("Failed to find directory: ", level_dir);
 	
@@ -413,7 +414,7 @@ void Admin::LoadTEXT(std::string savename){
 	std::vector<pair<u32,u32>> mesh_id_diffs; //old_id, new_id
 	std::vector<pair<u32,u32,u32,u32,u32>> events; //send_ent_id, send_comp_type, event_type, receive_ent_id, receive_comp_type
 	{//// parse level file ////
-		char* buffer = deshi::readFileAsciiToArray(level_dir+"_");
+		char* buffer = Assets::readFileAsciiToArray(level_dir+"_");
 		if(!buffer) return;
 		defer{ delete[] buffer; };
 		
@@ -428,9 +429,9 @@ void Admin::LoadTEXT(std::string savename){
 			if((new_line = strchr(line_start, '\n')) == 0) break; //end of file if cant find '\n'
 			line = std::string(line_start, new_line-line_start);
 			
-			line = deshi::eat_comments(line);
-			line = deshi::eat_spaces_leading(line);
-			line = deshi::eat_spaces_trailing(line);
+			line = Utils::eatComments(line, "#");
+			line = Utils::eatSpacesLeading(line);
+			line = Utils::eatSpacesTrailing(line);
 			if(line.empty()) continue;
 			
 			//headers
@@ -449,7 +450,7 @@ void Admin::LoadTEXT(std::string savename){
 			
 			//header values (skip if an invalid header)
 			if(header == LevelHeader::INVALID) { ERROR(ParsingError,"'! Invalid header; skipping line"); continue; }
-			std::vector<std::string> split = deshi::space_delimit_ignore_strings(line);
+			std::vector<std::string> split = Utils::spaceDelimitIgnoreStrings(line);
 			
 			switch(header){
 				case(LevelHeader::LEVEL):{
@@ -478,10 +479,10 @@ void Admin::LoadTEXT(std::string savename){
 					mesh_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
 					
 					//visible
-					DengRenderer->meshes[new_id].visible = deshi::parse_bool(split[2], level_dir.c_str(), line_number);
+					DengRenderer->meshes[new_id].visible = Assets::parse_bool(split[2], level_dir.c_str(), line_number);
 					
 					//materials
-					std::vector<std::string> mat_ids = deshi::space_delimit(split[3]); 
+					std::vector<std::string> mat_ids = Utils::spaceDelimit(split[3]); 
 					forI(DengRenderer->meshes[new_id].primitives.size()){
 						u32 old_mat = std::stoi(mat_ids[i]);
 						for(auto& diff : material_id_diffs){
@@ -515,7 +516,7 @@ void Admin::LoadTEXT(std::string savename){
 	
 	//// parse entity files ////
 	std::vector<Entity*> ents; ents.reserve(entity_count);
-	for(std::string& file : deshi::iterateDirectory(level_dir)){
+	for(std::string& file : Assets::iterateDirectory(level_dir)){
 		if(file == "_") continue;
 		if(Entity* e = Entity::LoadTEXT(this, level_dir+file, mesh_id_diffs)){
 			ents.push_back(e);
@@ -586,7 +587,7 @@ void Admin::SaveDESH(const char* filename) {
 	//std::vector<char> save_data(16384);
 	
 	//open file
-	std::string filepath = deshi::dirSaves() + filename;
+	std::string filepath = Assets::dirSaves() + filename;
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file '", filepath, "' when trying to save"); return; }
 	
@@ -886,12 +887,12 @@ void Admin::SaveDESH(const char* filename) {
 
 void Admin::LoadDESH(const char* filename) {
     Reset();
-    LOG("Loading level: ", deshi::dirSaves() + filename);
+    LOG("Loading level: ", Assets::dirSaves() + filename);
     TIMER_START(t_l);
     
     //// read file to char array ////
     u32 cursor = 0;
-    std::vector<char> file = deshi::readFileBinary(deshi::dirSaves() + filename);
+    std::vector<char> file = Assets::readFileBinary(Assets::dirSaves() + filename);
     const char* data = file.data();
     if(!data) return;
     

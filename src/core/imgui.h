@@ -2,9 +2,9 @@
 #ifndef DESHI_IMGUI_H
 #define DESHI_IMGUI_H
 
-//keeping this include here so i can just include this header to get imgui stuff
 #include "../external/imgui/imgui.h" //includes <float.h>,<stdarg.h>,<stddef.h>,<string.h>
 #include "../external/imgui/imgui_internal.h" //includes <stdio.h>,<stdlib.h>,<math.h>,<limits.h>
+
 #include "../math/Vector.h"
 #include "../utils/Color.h"
 

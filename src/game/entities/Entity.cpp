@@ -16,6 +16,7 @@
 #include "../../core/assets.h"
 #include "../../core/renderer.h"
 #include "../../core/time.h"
+#include "../../utils/utils.h"
 #include "../../utils/tuple.h"
 
 #include <iostream>
@@ -128,7 +129,7 @@ std::string Entity::SaveTEXT(){
                            "\nrotation (",transform.rotation.x,",",transform.rotation.y,",",transform.rotation.z,")",
                            "\nscale    (",transform.scale.x,",",transform.scale.y,",",transform.scale.z,")"
                            "\n"));
-
+	
     //sort components by ComponentType for consistent saving order
     std::vector<Component*> sorted_components = components;
     Component* temp;
@@ -139,7 +140,7 @@ std::string Entity::SaveTEXT(){
             sorted_components[i-1] = temp;
         }
     }
-
+	
     for(Component* c : sorted_components) result.append(c->SaveTEXT());
     result.shrink_to_fit();
     return result;
@@ -165,7 +166,7 @@ enum struct Header{
 //TODO(delle) support multiple components of a type on an entity
 Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u32,u32>>& mesh_id_diffs){
     //load file into char array
-    char* buffer = deshi::readFileAsciiToArray(filepath);
+    char* buffer = Assets::readFileAsciiToArray(filepath);
     if(!buffer) return 0;
     defer{ delete[] buffer; };
     
@@ -191,11 +192,11 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
         line = std::string(line_start, new_line-line_start);
         
         //cleanup the line
-        //NOTE could maybe check for empty after each of these for more performance or
+        //TODO(delle,Op) could maybe check for empty after each of these for more performance or
         //only running these if conditions are met, but this is easier to read/work with for now
-        line = deshi::eat_comments(line);
-        line = deshi::eat_spaces_leading(line);
-        line = deshi::eat_spaces_trailing(line);
+        line = Utils::eatComments(line, "#");
+        line = Utils::eatSpacesLeading(line);
+        line = Utils::eatSpacesTrailing(line);
         if(line.empty()) continue;
         
         //headers
@@ -238,7 +239,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
             ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid header; skipping line");
             continue; //skip if an invalid header
         }
-        pair<std::string,std::string> kv = deshi::split_keyValue(line);
+        pair<std::string,std::string> kv = Assets::split_keyValue(line);
         if(kv.second == ""){
             ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Unable to extract key-value pair from: ", line);
             continue;
@@ -309,7 +310,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
             }break;
             case(Header::DOOR):{
                 if(kv.first == "open"){ 
-                    door->isOpen = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
+                    door->isOpen = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else{ InvalidHeaderKeyError("door"); }
             }break;
@@ -317,7 +318,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
                 if     (kv.first == "position")  { light->position = get_vec3(kv.second); }
                 else if(kv.first == "direction") { light->direction = get_vec3(kv.second); }
                 else if(kv.first == "brightness"){ light->brightness = std::stof(kv.second); }
-                else if(kv.first == "active")    { light->active = deshi::parse_bool(kv.second); }
+                else if(kv.first == "active")    { light->active = Assets::parse_bool(kv.second); }
                 else{ InvalidHeaderKeyError("light"); }
             }break;
             case(Header::MESH):{
@@ -337,7 +338,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
                     }
                 }
                 else if(kv.first == "visible"){ 
-                    mesh->mesh_visible = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
+                    mesh->mesh_visible = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else{ InvalidHeaderKeyError("mesh"); }
             }break;
@@ -363,13 +364,13 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
                 else if(kv.first == "friction_kinetic"){ phys->kineticFricCoef = std::stof(kv.second); }
                 else if(kv.first == "friction_static") { phys->staticFricCoef = std::stof(kv.second); }
                 else if(kv.first == "static_position"){ 
-                    phys->staticPosition = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
+                    phys->staticPosition = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else if(kv.first == "static_rotation"){ 
-                    phys->staticRotation = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
+                    phys->staticRotation = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else if(kv.first == "twod"){ 
-                    phys->twoDphys = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
+                    phys->twoDphys = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else{ InvalidHeaderKeyError("physics"); }
             }break;

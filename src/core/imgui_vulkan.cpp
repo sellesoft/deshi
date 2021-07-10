@@ -32,7 +32,7 @@ void DearImGui::Init(Renderer* renderer){
 	//Setup Dear ImGui context
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
-	cpystr(iniFilepath, (deshi::dirConfig() + "imgui.ini").c_str(), 256);
+	cpystr(iniFilepath, (Assets::dirConfig() + "imgui.ini").c_str(), 256);
 	io.IniFilename = iniFilepath;
 	
 	//Setup Dear ImGui style

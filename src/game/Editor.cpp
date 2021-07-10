@@ -2557,9 +2557,9 @@ void Editor::Init(Admin* a){
     
     showEditorWin = false;
     
-    files = deshi::iterateDirectory(deshi::dirModels());
-    textures = deshi::iterateDirectory(deshi::dirTextures());
-    levels = deshi::iterateDirectory(deshi::dirLevels());
+    files = Assets::iterateDirectory(Assets::dirModels());
+    textures = Assets::iterateDirectory(Assets::dirTextures());
+    levels = Assets::iterateDirectory(Assets::dirLevels());
     
     fonth = ImGui::GetFontSize();
     fontw = fonth / 2.f;

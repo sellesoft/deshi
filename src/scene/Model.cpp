@@ -230,9 +230,9 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename){
 	tinyobj::ObjReaderConfig reader_config;
 	reader_config.triangulate = true;
 	reader_config.vertex_color = true;
-	reader_config.mtl_search_path = deshi::dirModels(); // Path to material files
+	reader_config.mtl_search_path = Assets::dirModels(); // Path to material files
 	tinyobj::ObjReader reader;
-	if (!reader.ParseFromFile(deshi::dirModels() + filename, reader_config)) {
+	if (!reader.ParseFromFile(Assets::dirModels() + filename, reader_config)) {
 		ERROR("Failed to read OBJ file: ", filename);
 		if (!reader.Error().empty()) ERROR("TinyObjReader: ", reader.Error());
 		return 0;
@@ -344,9 +344,9 @@ Mesh* Mesh::CreateMeshFromOBJ(std::string filename, Shader shader, Color color){
 	tinyobj::ObjReaderConfig reader_config;
 	reader_config.triangulate = true;
 	reader_config.vertex_color = true;
-	reader_config.mtl_search_path = deshi::dirModels(); // Path to material files
+	reader_config.mtl_search_path = Assets::dirModels(); // Path to material files
 	tinyobj::ObjReader reader;
-	if (!reader.ParseFromFile(deshi::dirModels() + filename, reader_config)) {
+	if (!reader.ParseFromFile(Assets::dirModels() + filename, reader_config)) {
 		ERROR("Failed to read OBJ file: ", filename);
 		if (!reader.Error().empty()) ERROR("TinyObjReader: ", reader.Error());
 		return 0;
