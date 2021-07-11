@@ -57,36 +57,34 @@ namespace Utils{
 	////////////////////////////
 	
 	
-	//returns a pointer to the first character that is not a space
-	char* skipSpacesLeading(const char* text, const char* text_stop = 0);
+	//returns the index of the first character that is not a space
+	size_t skipSpacesLeading(const char* text, size_t text_size = 0);
 	
-	//returns a pointer to the last character that is not a space
-	char* skipSpacesTrailing(const char* text, const char* text_stop = 0);
+	//returns the index of the last character that is not a space
+	size_t skipSpacesTrailing(const char* text, size_t text_size = 0);
 	
-	//returns a start-stop pointer pair to the characters which are not commented out
-	pair<char*,char*> skipComments(const char* text, const char* comment_chararacters);
-	pair<char*,char*> skipComments(const char* text, const char* text_stop, const char* comment_chararacters);
+	//returns a start-stop index pair to the characters which are not commented out
+	pair<size_t,size_t> skipComments(const char* text, const char* comment_chararacters, size_t text_size = 0);
 	
-	//returns an array of start-stop pointer pairs to characters separated by the specified character
+	//returns an array of start-stop index pairs to characters separated by the specified character
 	//NOTE the caller is responsible for freeing the array this allocates
-	pair<char*,char*>* characterDelimit(const char* text, char character);
+	pair<size_t,size_t>* characterDelimit(const char* text, char character, size_t text_size = 0);
 	
-	//returns an array of start-stop pointer pairs to characters separated by any number of the specified character
+	//returns an array of start-stop index pairs to characters separated by any number of the specified character
 	//eg: 1,,,,2,3 is treated the same as 1,2,3
 	//NOTE the caller is responsible for freeing the array this allocates
-	pair<char*,char*>* characterDelimitIgnoreRepeat(const char* text, char character);
+	pair<size_t,size_t>* characterDelimitIgnoreRepeat(const char* text, char character, size_t text_size = 0);
 	
-	//returns an array of the characters separated by spaces
+	//returns an array of start-stop index pairs to characters separated by spaces
 	//ignores leading and trailing spaces
 	//NOTE the caller is responsible for freeing the array this allocates
-	pair<char*,char*>* spaceDelimit(const char* text);
+	pair<size_t,size_t>* spaceDelimit(const char* text, size_t text_size = 0);
 	
-	//returns an array of the characters separated by spaces
-	//ignores leading, trailing, and double-quotes-encapsulated spaces 
+	//returns an array of start-stop index pairs to characters separated by spaces
+	//ignores leading, trailing, and double quotes encapsulated spaces 
 	//eg: '1 2 "3 4" 5' creates 4 items: ["1", "2", "3 4", "5"]
 	//NOTE the caller is responsible for freeing the array this allocates
-	pair<char*,char*>* spaceDelimitIgnoreStrings(const char* text);
-	
+	pair<size_t,size_t>* spaceDelimitIgnoreStrings(const char* text, size_t text_size = 0);
 	
 }; //namespace Utils
 
@@ -129,7 +127,7 @@ stringHash32(const char* _data, size_t data_size, u32 seed){
 		}
 	}else{
 		while(u8 c = *data++){
-			seed ^= *data++;
+			seed ^= c;
 			seed *= 16777619; //32bit FNV_prime
 		}
 	}
@@ -146,7 +144,7 @@ stringHash64(const char* _data, size_t data_size, u64 seed){
 		}
 	}else{
 		while(u8 c = *data++){
-			seed ^= *data++;
+			seed ^= c;
 			seed *= 1099511628211; //64bit FNV_prime
 		}
 	}
@@ -173,7 +171,7 @@ eatSpacesTrailing(std::string text){
 
 inline std::string Utils::
 eatComments(std::string text, const char* comment_characters){
-	size_t idx = text.find_first_of(comment_characters);
+	size_t idx = text.find(comment_characters);
 	return (idx != -1) ? text.substr(0, idx) : text;
 }
 
@@ -260,22 +258,74 @@ spaceDelimitIgnoreStrings(std::string text){
 	return out;
 }
 
+
+////////////////////////////
+//// c-string functions ////
+////////////////////////////
+
+
+//returns the index of the first character that is not a space
+inline size_t Utils::
+skipSpacesLeading(const char* text, size_t text_size){
+    const char* cursor = text;
+    if(text_size){
+        while(*cursor == ' '){
+            if(text_size-- == 0) break;
+            cursor++;
+        }
+    }else{
+        while(*cursor == ' '){
+            if(*cursor == '\0') break;
+            cursor++;
+        }
+    }
+    return cursor-text;
+}
+
+//returns the index of the last character that is not a space
+inline size_t Utils::
+skipSpacesTrailing(const char* text, size_t text_size){
+    const char* cursor = text;
+    if(text_size){
+        cursor += text_size-1;
+        while(*cursor == ' '){
+            if(cursor == text) return 0;
+            cursor--;
+        }
+        cursor--;
+    }else{
+        cursor += strlen(text)-1;
+        while(*cursor == ' '){
+            if(cursor == text) return 0;
+            cursor--;
+        }
+        cursor++;
+    }
+    return cursor-text;
+}
+
+inline pair<size_t,size_t> Utils::
+skipComments(const char* text, const char* comment_characters, size_t text_size){
+    const char* cursor = text;
+    size_t comment_char_count = strlen(comment_characters);
+    size_t stop = 0;
+    if(text_size){
+        while(strncmp(comment_characters, cursor, comment_char_count) != 0){
+            if(text_size-- == 0) return pair<size_t,size_t>(0, stop);
+            cursor++;
+            stop++;
+        }
+    }else{
+        while(strncmp(comment_characters, cursor, comment_char_count) != 0){
+            if(*cursor == '\0') return pair<size_t,size_t>(0, stop);
+            cursor++;
+            stop++;
+        }
+    }
+    return pair<size_t,size_t>(0, stop);
+}
+
 /*
-inline char* Utils::
-skipSpacesLeading(const char* text, const char* text_stop){
-
-}
-
-inline char* Utils::
-skipSpacesTrailing(const char* text, const char* text_stop){
-
-}
-
-inline pair<char*,char*> Utils::
-skipComments(const char* text, const char* comment_chararacters){
-
-}
-
 inline pair<char*,char*> Utils::
 skipComments(const char* text, const char* text_stop, const char* comment_chararacters){
 

@@ -211,6 +211,9 @@
     <ClInclude Include="..\src\defines.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\utils\utils.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">

@@ -271,6 +271,7 @@
     <ClInclude Include="..\src\utils\optional.h" />
     <ClInclude Include="..\src\utils\RingArray.h" />
     <ClInclude Include="..\src\utils\tuple.h" />
+    <ClInclude Include="..\src\utils\utils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore" />
