@@ -9,8 +9,6 @@
 #include <vector>
 #include <map>
 
-struct Console;
-
 enum AssetTypeBits : u32{
 	AssetType_NONE, 
 	AssetType_Data,  AssetType_Entity, AssetType_Model,  AssetType_Texture, 
@@ -19,23 +17,35 @@ enum AssetTypeBits : u32{
 }; typedef u32 AssetType;
 
 enum ConfigValueTypeBits : u32{
-	ConfigValueType_NONE = 0,
+	ConfigValueType_NONE = 0, //can be used for comments/padding
 	ConfigValueType_S32,
+	ConfigValueType_B32,
 	ConfigValueType_U32,
 	ConfigValueType_U8,
 	ConfigValueType_F32, 
 	ConfigValueType_F64, 
-	ConfigValueType_F32Vec2, 
-	ConfigValueType_F32Vec3,
-	ConfigValueType_F32Vec4,
-	ConfigValueType_String, 
-	ConfigValueType_Int     = ConfigValueType_S32,
-	ConfigValueType_Float   = ConfigValueType_F32,
-	ConfigValueType_Vector2 = ConfigValueType_F32Vec2,
-	ConfigValueType_Vector3 = ConfigValueType_F32Vec3,
-	ConfigValueType_Vector4 = ConfigValueType_F32Vec4,
+	ConfigValueType_FV2, 
+	ConfigValueType_FV3,
+	ConfigValueType_FV4,
+	ConfigValueType_CString, 
+	ConfigValueType_StdString, 
+	ConfigValueType_Key,
+	
+	//control enums
+	ConfigValueType_PADSECTION,
 	ConfigValueType_COUNT,
+	
+	//enum renames
+	ConfigValueType_Int     = ConfigValueType_S32,
+	ConfigValueType_Bool    = ConfigValueType_B32,
+	ConfigValueType_Float   = ConfigValueType_F32,
+	ConfigValueType_Double  = ConfigValueType_F64,
+	ConfigValueType_Vector2 = ConfigValueType_FV2,
+	ConfigValueType_Vector3 = ConfigValueType_FV3,
+	ConfigValueType_Vector4 = ConfigValueType_FV4,
 }; typedef u32 ConfigValueType;
+
+typedef std::vector<pair<const char*,ConfigValueType,void*>> ConfigMap;
 
 namespace Assets{
 	
@@ -107,6 +117,10 @@ namespace Assets{
 	std::map<std::string, std::string> extractConfig(const std::string& filepath);
 	
 	b32 parse_bool(std::string& str, const char* filepath = 0, u32 line_number = 0);
+	
+	void saveConfig(const char* filename, const ConfigMap& configMap);
+	
+	void loadConfig(const char* filename, ConfigMap configMap);
 	
 } //namespace Assets
 

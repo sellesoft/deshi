@@ -22,7 +22,6 @@ Minor Ungrouped TODOs
 ---------------------
 add a setting for a limit to the number of log files
 redo Debug::DrawLine calling to take in an id for uniqueness like ImGui
-make a generalized config file parser (see #ideas)
 make the engine runnable without the renderer
 create a hot-loadable global vars file
 detach camera from the renderer so that the camera component isnt calling the renderer
@@ -242,4 +241,5 @@ int main() {
 	Console2::Cleanup();
 	
 	int debug_breakpoint = 0;
+	return 0;
 }

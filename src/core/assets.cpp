@@ -1,6 +1,9 @@
 #include "assets.h"
-#include "../utils/debug.h"
+#include "input.h"
 #include "console.h"
+#include "../utils/utils.h"
+#include "../utils/debug.h"
+#include "../math/vector.h"
 
 #include <iostream>
 #include <fstream>
@@ -269,5 +272,193 @@ parse_bool(std::string& str, const char* filepath, u32 line_number){
 			ERROR("Failed to parse boolean value: ", str);
 		}
 		return false;
+	}
+}
+
+void Assets::
+saveConfig(const char* filename, const ConfigMap& configMap){
+	std::string filepath = Assets::dirConfig() + filename;
+	std::ofstream out(filepath, std::ios::out | std::ios::trunc); //flushes on destruction
+	if(!out.is_open()) { ERROR("Failed to open file: ", filepath); return; }
+	
+	size_t pad_amount = 1;
+	for(auto& config : configMap){
+		//print key
+		out << config.first;
+		
+		//print padding
+		size_t key_len = strlen(config.first);
+		if(pad_amount > key_len){
+			out << std::string(pad_amount - key_len, ' ');
+		}else{
+			out << ' ';
+		}
+		
+		//print value
+		switch(config.second){
+			case ConfigValueType_NONE:{
+				//do nothing
+			}break;
+			case ConfigValueType_PADSECTION:{
+				pad_amount = (config.third) ? (size_t)config.third : 1;
+			}break;
+			case ConfigValueType_S32:{
+				out << *(s32*)config.third;
+			}break;
+			case ConfigValueType_B32:{
+				out << ((*(b32*)config.third) ? "true" : "false");
+			}break;
+			case ConfigValueType_U32:{
+				out << *(u32*)config.third;
+			}break;
+			case ConfigValueType_U8:{
+				out << (u32)(*(u8*)config.third);
+			}break;
+			case ConfigValueType_F32:{
+				out << std::to_string(*(f32*)config.third);
+			}break;
+			case ConfigValueType_F64:{
+				out << std::to_string(*(f64*)config.third);
+			}break;
+			case ConfigValueType_FV2:{
+				out << ((vec2*)config.third)->str();
+			}break;
+			case ConfigValueType_FV3:{
+				out << ((vec3*)config.third)->str();
+			}break;
+			case ConfigValueType_FV4:{
+				out << ((vec4*)config.third)->str();
+			}break;
+			case ConfigValueType_CString:{
+				out << '\"' << (const char*)config.third << '\"';
+			}break;
+			case ConfigValueType_StdString:{
+				out << '\"' << *(std::string*)config.third << '\"';
+			}break;
+			case ConfigValueType_Key:{
+				//out << KeyStrings[*(u32*)config.third & 0x000000FF];
+				
+			}break;
+			default:{
+				ERROR("Unknown value type when saving config: ", filename);
+			}break;
+		}
+		out << '\n';
+	}
+}
+
+//NOTE this copies the config map so it can remove keys when found
+void Assets::
+loadConfig(const char* filename, ConfigMap configMap){
+	std::string filepath = Assets::dirConfig() + filename;
+	char* buffer = Assets::readFileAsciiToArray(filepath);
+	if(!buffer){ saveConfig(filename, configMap); return; }
+	defer{ delete[] buffer; };
+	
+	char* line_start;
+	char* line_end = buffer - 1;
+	char* info_start;
+	char* info_end;
+	char* key_start;
+	char* key_end;
+	char* value_start;
+	char* value_end;
+	for(u32 line_number = 1; ;line_number++){
+		//get the next line
+		line_start = line_end+1;
+		if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
+		if(line_start == line_end) continue;
+		
+		//format the line
+		info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);
+		if(info_start == line_end) continue;
+		info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);
+		if(info_start == info_end) continue;
+		info_end   = info_start + Utils::skipSpacesTrailing(info_start, info_end-info_start);
+		if(info_start == info_end) continue;
+		
+		{//split the key-value pair
+			key_start = info_start;
+			key_end   = key_start;
+			while(key_end != info_end && *key_end++ != ' '){}
+			if(key_end == info_end) { ERROR("Error parsing '",filepath,"' on line '",line_number,"'! No value passed"); break; }
+			key_end--;
+			
+			value_end   = info_end;
+			value_start = value_end;
+			while(*value_start-- != ' '){}
+			value_start += 2;
+			if(value_end == value_start) { ERROR("Error parsing '",filepath,"' on line '",line_number,"'! No value passed"); break; }
+		}
+		
+		//parse the key-value pair
+		for(auto& config : configMap){
+			//check if type is valid
+			if(config.second == ConfigValueType_NONE || config.second == ConfigValueType_PADSECTION) continue;
+			
+			if(strncmp(config.first, key_start, key_end-key_start) == 0){
+				switch(config.second){
+					case ConfigValueType_S32:{
+						*(s32*)config.third = atoi(value_start);
+					}break;
+					case ConfigValueType_B32:{
+						b32* b = (b32*)config.third;
+						if     (strncmp("true",  value_start, 4) == 0) *b = true;
+						else if(strncmp("1",     value_start, 1) == 0) *b = true;
+						else if(strncmp("false", value_start, 5) == 0) *b = false;
+						else if(strncmp("0",     value_start, 1) == 0) *b = false;
+						else ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid boolean value: ", value_start);
+					}break;
+					case ConfigValueType_U32:{
+						*(u32*)config.third = (u32)atoi(value_start);
+					}break;
+					case ConfigValueType_U8:{
+						*(u8*)config.third = (u8)atoi(value_start);
+					}break;
+					case ConfigValueType_F32:{
+						*(f32*)config.third = (f32)atof(value_start);
+					}break;
+					case ConfigValueType_F64:{
+						*(f64*)config.third = atof(value_start);
+					}break;
+					case ConfigValueType_FV2:{
+						vec2* vec = (vec2*)config.third;
+						char* cursor;
+						vec->x = strtof(value_start+1, &cursor);
+						vec->y = strtof(cursor+1, 0);
+					}break;
+					case ConfigValueType_FV3:{
+						vec3* vec = (vec3*)config.third;
+						char* cursor;
+						vec->x = strtof(value_start+1, &cursor);
+						vec->y = strtof(cursor+1, &cursor);
+						vec->z = strtof(cursor+1, 0);
+					}break;
+					case ConfigValueType_FV4:{
+						vec4* vec = (vec4*)config.third;
+						char* cursor;
+						vec->x = strtof(value_start+1, &cursor);
+						vec->y = strtof(cursor+1, &cursor);
+						vec->z = strtof(cursor+1, &cursor);
+						vec->w = strtof(cursor+1, 0);
+					}break;
+					case ConfigValueType_CString:{
+						free(config.third); //TODO(delle) test this
+						size_t len = value_end-value_start-1; //1 extra for \0
+						config.third = malloc(len*sizeof(char));
+						cpystr((char*)config.third, value_start, len);
+					}break;
+					case ConfigValueType_StdString:{
+						*(std::string*)config.third = std::string(value_start+1, value_end-value_start-2);
+					}break;
+					default:{
+						ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid key: ", key_start);
+					}break;
+				}
+				
+				//set type to NONE so it wont get checked again
+				config.second = ConfigValueType_NONE;
+			}
+		}
 	}
 }

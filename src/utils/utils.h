@@ -63,8 +63,8 @@ namespace Utils{
 	//returns the index of the last character that is not a space
 	size_t skipSpacesTrailing(const char* text, size_t text_size = 0);
 	
-	//returns a start-stop index pair to the characters which are not commented out
-	pair<size_t,size_t> skipComments(const char* text, const char* comment_chararacters, size_t text_size = 0);
+	//returns the index of the last character which is not commented out
+	size_t skipComments(const char* text, const char* comment_chararacters, size_t text_size = 0);
 	
 	//returns an array of start-stop index pairs to characters separated by the specified character
 	//NOTE the caller is responsible for freeing the array this allocates
@@ -292,7 +292,7 @@ skipSpacesTrailing(const char* text, size_t text_size){
             if(cursor == text) return 0;
             cursor--;
         }
-        cursor--;
+        cursor++;
     }else{
         cursor += strlen(text)-1;
         while(*cursor == ' '){
@@ -304,52 +304,25 @@ skipSpacesTrailing(const char* text, size_t text_size){
     return cursor-text;
 }
 
-inline pair<size_t,size_t> Utils::
+inline size_t Utils::
 skipComments(const char* text, const char* comment_characters, size_t text_size){
     const char* cursor = text;
     size_t comment_char_count = strlen(comment_characters);
     size_t stop = 0;
     if(text_size){
         while(strncmp(comment_characters, cursor, comment_char_count) != 0){
-            if(text_size-- == 0) return pair<size_t,size_t>(0, stop);
+            if(text_size-- == 0) return stop;
             cursor++;
             stop++;
         }
     }else{
         while(strncmp(comment_characters, cursor, comment_char_count) != 0){
-            if(*cursor == '\0') return pair<size_t,size_t>(0, stop);
+            if(*cursor == '\0') return stop;
             cursor++;
             stop++;
         }
     }
-    return pair<size_t,size_t>(0, stop);
+    return stop;
 }
-
-/*
-inline pair<char*,char*> Utils::
-skipComments(const char* text, const char* text_stop, const char* comment_chararacters){
-
-}
-
-inline pair<char*,char*>* Utils::
-characterDelimit(const char* text, char character){
-
-}
-
-inline pair<char*,char*>* Utils::
-characterDelimitIgnoreRepeat(const char* text, char character){
-
-}
-
-inline pair<char*,char*>* Utils::
-spaceDelimit(const char* text){
-
-}
-
-inline pair<char*,char*>* Utils::
-spaceDelimitIgnoreStrings(const char* text){
-
-}
-*/
 
 #endif //UTILS_H

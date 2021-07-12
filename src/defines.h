@@ -43,7 +43,7 @@ typedef s32                b32; //int-based boolean so c++ doesnt convert to 0 o
 
 //dst: destination c-string; src: source c-string; bytes: number of characters to copy
 //NOTE the last character in the copy is replaced with a null-terminating character
-#define cpystr(dst, src, bytes) strncpy_s(dst, src, bytes); dst[bytes-1] = '\0'
+#define cpystr(dst, src, bytes) strncpy((dst), (src), (bytes)); (dst)[(bytes)-1] = '\0'
 
 //compile-time print sizeof()
 //char (*__kaboom)[sizeof( YourTypeHere )] = 1;
