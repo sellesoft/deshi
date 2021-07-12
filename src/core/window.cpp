@@ -24,7 +24,7 @@ void Window::Init(Input* input, s32 width, s32 height, s32 x, s32 y, DisplayMode
 	glfwSetErrorCallback(&glfwError);
 	if (!glfwInit()){ return; }
 	Window::input = input;
-
+	
 	//TODO(delle,Wi) maybe we should not allow the window to be resizable in-game, but in-engine is fine
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -67,7 +67,7 @@ void Window::Init(Input* input, s32 width, s32 height, s32 x, s32 y, DisplayMode
 	UpdateDisplayMode(displayMode);
 	
 	//keyboard mappings
-	input->mapKeys[0x00] = Key::NONE;
+	input->mapKeys[0x00] = Key::Key_NONE;
 	input->mapKeys['A'] = Key::A; input->mapKeys['B'] = Key::B; input->mapKeys['C'] = Key::C;
 	input->mapKeys['D'] = Key::D; input->mapKeys['E'] = Key::E; input->mapKeys['F'] = Key::F;
 	input->mapKeys['G'] = Key::G; input->mapKeys['H'] = Key::H; input->mapKeys['I'] = Key::I;

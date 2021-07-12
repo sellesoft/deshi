@@ -285,7 +285,7 @@ void Console2::Update(){
 	{//// handle inputs ////
 		//open and close console
 		if(DengInput->KeyPressedAnyMod(Key::F1)){
-			if(DengInput->ShiftDown()){
+			if(DengInput->LShiftDown()){
 				Toggle(ConsoleState_OpenBig);
 			}else{
 				Toggle(ConsoleState_OpenSmall);

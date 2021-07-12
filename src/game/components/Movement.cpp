@@ -112,22 +112,22 @@ void Movement::GrabObject() {
 	static float timetocenter = 0.07;
 	
 	static Vector3 ogpos;
-
+	
 	//static Entity* grabee = nullptr;
 	static Physics* grabeephys = nullptr;
 	
 	//grab object or drop it if already holding one
 	//frame is necessary to avoid this being ran multiple times due to
 	//movement being within physics update
-	if (DengInput->KeyPressed(DengKeys.use | INPUTMOD_ANY) && DengTime->updateCount != frame) {
+	if (DengInput->KeyPressedAnyMod(DengKeys.use) && DengTime->updateCount != frame) {
 		if (!grabbing) {
 			//find obj to pick up
 			//TODO(sushi, Cl) make this a function somewhere, maybe geometry, and make the editor and this call it 
 			vec3 pos = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions);
-
+			
 			int closeindex = -1;
 			f32 mint = INFINITY;
-
+			
 			vec3 p0, p1, p2, normal, intersect;
 			mat4 transform, rotation;
 			f32  t;
@@ -147,25 +147,25 @@ void Movement::GrabObject() {
 								p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
 								p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
 								normal = b.vertexArray[b.indexArray[i + 0]].normal * rotation;
-
+								
 								//early out if triangle is not facing us
 								if (normal.dot(p0 - camera->position) < 0) {
 									//find where on the plane defined by the triangle our raycast intersects
 									intersect = Math::VectorPlaneIntersect(p0, normal, camera->position, pos, t);
-
+									
 									//early out if intersection is behind us
 									if (t > 0) {
 										//make vectors perpendicular to each edge of the triangle
 										Vector3 perp0 = normal.cross(p1 - p0).yInvert().normalized();
 										Vector3 perp1 = normal.cross(p2 - p1).yInvert().normalized();
 										Vector3 perp2 = normal.cross(p0 - p2).yInvert().normalized();
-
+										
 										//check that the intersection point is within the triangle and its the closest triangle found so far
 										if (
 											perp0.dot(intersect - p0) > 0 &&
 											perp1.dot(intersect - p1) > 0 &&
 											perp2.dot(intersect - p2) > 0) {
-
+											
 											//if its the closest triangle so far we store its index
 											if (t < mint) {
 												closeindex = index;
@@ -173,7 +173,7 @@ void Movement::GrabObject() {
 												done = true;
 												break;
 											}
-
+											
 										}
 									}
 								}
@@ -186,7 +186,7 @@ void Movement::GrabObject() {
 				done = false;
 				index++;
 			}
-
+			
 			if (closeindex != -1) {
 				grabeephys = admin->entities[closeindex]->GetComponent<Physics>();
 				if (t <= maxGrabbingDistance
@@ -222,7 +222,7 @@ void Movement::GrabObject() {
 			grabeephys->velocity = Vector3::ZERO;
 		}
 	}
-
+	
 }
 
 
@@ -335,7 +335,7 @@ void Movement::Update() {
 	phys->acceleration = Vector3::ZERO;
 	
 	camera->position = Math::lerpv(standpos, crouchpos, timer / ttc);
-
+	
 	////////////////////
 	//    Grabbing    // This will eventually be set up for using objects, but maybe that should be in controller/player?
 	////////////////////
@@ -343,7 +343,7 @@ void Movement::Update() {
 	
 	GrabObject();
 	
-
+	
 }
 
 std::string Movement::SaveTEXT(){

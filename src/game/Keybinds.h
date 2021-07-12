@@ -12,7 +12,7 @@ struct Keybinds{
 	Key::Key movementFlyingBack    = Key::S;
 	Key::Key movementFlyingRight   = Key::D;
 	Key::Key movementFlyingLeft    = Key::A;
-
+	
 	//walking movement
 	Key::Key movementWalkingForward  = Key::W;
 	Key::Key movementWalkingBackward = Key::S;
@@ -21,7 +21,7 @@ struct Keybinds{
 	Key::Key movementJump            = Key::SPACE;
 	Key::Key movementCrouch          = Key::LCTRL;
 	Key::Key movementRun             = Key::LSHIFT;
-
+	
 	//player controls
 	Key::Key use = Key::E;
 	
@@ -45,8 +45,8 @@ struct Keybinds{
 	
 	//debug menu stuff
 	Key::Key toggleConsole   = Key::TILDE;
-	Key::Key toggleDebugMenu = Key::TILDE | INPUTMOD_CTRL;
-	Key::Key toggleDebugBar  = Key::TILDE | INPUTMOD_SHIFT;
+	Key::Key toggleDebugMenu = Key::TILDE | InputMod_Lctrl;
+	Key::Key toggleDebugBar  = Key::TILDE | InputMod_Lshift;
 	
 	//main menu bar
 	Key::Key toggleMenuBar = Key::TILDE | Key::LALT;
@@ -56,8 +56,8 @@ struct Keybinds{
 	Key::Key rotateSelectedObject = Key::R;
 	Key::Key scaleSelectedObject  = Key::S;
 	
-	Key::Key undo = Key::Z | INPUTMOD_CTRL;
-	Key::Key redo = Key::Y | INPUTMOD_CTRL;
+	Key::Key undo = Key::Z | InputMod_Lctrl;
+	Key::Key redo = Key::Y | InputMod_Lctrl;
 	
 	//mapping enum names to strings
 	std::map<std::string, Key::Key>  stk;

@@ -15,7 +15,7 @@
 
 namespace Key {
 	enum KeyBits : u32{
-		NONE,
+		Key_NONE,
 		A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 		K0, K1, K2, K3, K4, K5, K6, K7, K8, K9,
 		F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
@@ -26,8 +26,23 @@ namespace Key {
 		INSERT, DELETE, HOME, END, PAGEUP, PAGEDOWN, PAUSE, SCROLL,
 		NUMPAD0, NUMPAD1, NUMPAD2, NUMPAD3, NUMPAD4, NUMPAD5, NUMPAD6, NUMPAD7, NUMPAD8, NUMPAD9,
 		NUMPADMULTIPLY, NUMPADDIVIDE, NUMPADPLUS, NUMPADMINUS, NUMPADPERIOD, NUMPADENTER, NUMLOCK,
-		MBLEFT, MBRIGHT, MBMIDDLE, MBFOUR, MBFIVE, MBSIX, MBSEVEN, MBEIGHT, MBSCROLLDOWN, MBSCROLLUP
+		MBLEFT, MBRIGHT, MBMIDDLE, MBFOUR, MBFIVE, MBSIX, MBSEVEN, MBEIGHT, MBSCROLLDOWN, MBSCROLLUP,
+		Key_COUNT
 	}; typedef u32 Key;
+};
+global_variable const char* KeyStrings[] = {
+	"NONE",
+	"A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
+	"K0","K1","K2","K3","K4","K5","K6","K7","K8","K9",
+	"F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12",
+	"UP","DOWN","LEFT","RIGHT",
+	"ESCAPE","TILDE","TAB","CAPSLOCK","LSHIFT","LCTRL","LALT",
+	"BACKSPACE","ENTER","RSHIFT","RCTRL","RALT","MINUS","EQUALS","LBRACKET","RBRACKET",
+	"SLASH","SEMICOLON","APOSTROPHE","COMMA","PERIOD","BACKSLASH","SPACE",
+	"INSERT","DELETE","HOME","END","PAGEUP","PAGEDOWN","PAUSE","SCROLL",
+	"NUMPAD0","NUMPAD1","NUMPAD2","NUMPAD3","NUMPAD4","NUMPAD5","NUMPAD6","NUMPAD7","NUMPAD8","NUMPAD9",
+	"NUMPADMULTIPLY","NUMPADDIVIDE","NUMPADPLUS","NUMPADMINUS","NUMPADPERIOD","NUMPADENTER","NUMLOCK",
+	"MBLEFT","MBRIGHT","MBMIDDLE","MBFOUR","MBFIVE","MBSIX","MBSEVEN","MBEIGHT","MBSCROLLDOWN","MBSCROLLUP"
 };
 
 namespace MouseButton{
@@ -40,24 +55,42 @@ namespace MouseButton{
 	}; typedef u32 MouseButton;
 }
 
-//TODO(sushi, In) add right and left differenciation and a middle term for both
-enum InputModFlagBits : u32{
-	INPUTMOD_NONE          = 0,
-	INPUTMOD_ANY           = 256,
-	INPUTMOD_CTRL          = 512,
-	INPUTMOD_SHIFT         = 1024,
-	INPUTMOD_ALT           = 2048,
-	INPUTMOD_CTRLSHIFT     = 1536,
-	INPUTMOD_CTRLALT       = 2560,
-	INPUTMOD_SHIFTALT      = 3072,
-	INPUTMOD_CTRLSHIFTALT  = 3584,
-}; typedef u32 InputModFlags;
+//NOTE the first 8bits of a keymod are reserved for the Key enum
+enum InputModBits : u32{
+	InputMod_NONE   = 0,
+	InputMod_Any    = 1 << 8,
+	InputMod_Lctrl  = 1 << 9,
+	InputMod_Rctrl  = 1 << 10,
+	InputMod_Lshift = 1 << 11,
+	InputMod_Rshift = 1 << 12,
+	InputMod_Lalt   = 1 << 13,
+	InputMod_Ralt   = 1 << 14,
+	InputMod_LctrlLshift     = InputMod_Lctrl  | InputMod_Lshift,
+	InputMod_LctrlRshift     = InputMod_Lctrl  | InputMod_Rshift,
+	InputMod_RctrlLshift     = InputMod_Rctrl  | InputMod_Lshift,
+	InputMod_RctrlRshift     = InputMod_Rctrl  | InputMod_Rshift,
+	InputMod_LctrlLalt       = InputMod_Lctrl  | InputMod_Lalt,
+	InputMod_LctrlRalt       = InputMod_Lctrl  | InputMod_Ralt,
+	InputMod_RctrlLalt       = InputMod_Rctrl  | InputMod_Lalt,
+	InputMod_RctrlRalt       = InputMod_Rctrl  | InputMod_Ralt,
+	InputMod_LshiftLalt      = InputMod_Lshift | InputMod_Lalt,
+	InputMod_LshiftRalt      = InputMod_Lshift | InputMod_Ralt,
+	InputMod_RshiftLalt      = InputMod_Rshift | InputMod_Lalt,
+	InputMod_RshiftRalt      = InputMod_Rshift | InputMod_Ralt,
+	InputMod_LctrlLshiftLalt = InputMod_Lctrl  | InputMod_Lshift | InputMod_Lalt,
+	InputMod_LctrlLshiftRalt = InputMod_Lctrl  | InputMod_Lshift | InputMod_Ralt,
+	InputMod_LctrlRshiftLalt = InputMod_Lctrl  | InputMod_Rshift | InputMod_Lalt,
+	InputMod_LctrlRshiftRalt = InputMod_Lctrl  | InputMod_Rshift | InputMod_Ralt,
+	InputMod_RctrlLshiftLalt = InputMod_Rctrl  | InputMod_Lshift | InputMod_Lalt,
+	InputMod_RctrlLshiftRalt = InputMod_Rctrl  | InputMod_Lshift | InputMod_Ralt,
+	InputMod_RctrlRshiftLalt = InputMod_Rctrl  | InputMod_Rshift | InputMod_Lalt,
+	InputMod_RctrlRshiftRalt = InputMod_Rctrl  | InputMod_Rshift | InputMod_Ralt,
+}; typedef u32 InputMod;
 
 struct Input{
 	std::map<size_t, u8> mapKeys;
 	std::map<size_t, u8> mapMouse;
 	
-	//TODO(delle,OpIn) look into storing these as vector<bool> instead
 	bool oldKeyState[MAX_KEYBOARD_KEYS] = {0};
 	bool newKeyState[MAX_KEYBOARD_KEYS] = {0};
 	double mouseX,       mouseY;
@@ -97,23 +130,33 @@ struct Input{
 	//// input helper functions /////
 	/////////////////////////////////
 	
-	inline bool CtrlDown(){ return newKeyState[Key::LCTRL] || newKeyState[Key::RCTRL]; }
-	inline bool ShiftDown(){ return newKeyState[Key::LSHIFT] || newKeyState[Key::RSHIFT]; }
-	inline bool AltDown(){ return newKeyState[Key::LALT] || newKeyState[Key::RALT]; }
+	inline bool LCtrlDown() { return newKeyState[Key::LCTRL]; }
+	inline bool RCtrlDown() { return newKeyState[Key::RCTRL]; }
+	inline bool LShiftDown(){ return newKeyState[Key::LSHIFT]; }
+	inline bool RShiftDown(){ return newKeyState[Key::RSHIFT]; }
+	inline bool LAltDown()  { return newKeyState[Key::LALT]; }
+	inline bool RAltDown()  { return newKeyState[Key::RALT]; }
 	
 	bool ModsDown(u32 mods){
 		switch(mods){
-			case(INPUTMOD_ANY):          return true;
-			case(INPUTMOD_NONE):         return !CtrlDown() && !ShiftDown() && !AltDown();
-			case(INPUTMOD_CTRL):         return  CtrlDown() && !ShiftDown() && !AltDown();
-			case(INPUTMOD_SHIFT):        return !CtrlDown() &&  ShiftDown() && !AltDown();
-			case(INPUTMOD_ALT):          return !CtrlDown() && !ShiftDown() &&  AltDown();
-			case(INPUTMOD_CTRLSHIFT):    return  CtrlDown() &&  ShiftDown() && !AltDown();
-			case(INPUTMOD_CTRLALT):      return  CtrlDown() && !ShiftDown() &&  AltDown();
-			case(INPUTMOD_SHIFTALT):     return !CtrlDown() &&  ShiftDown() &&  AltDown();
-			case(INPUTMOD_CTRLSHIFTALT): return  CtrlDown() &&  ShiftDown() &&  AltDown();
-			default: return true;
-		}
+			case(InputMod_Any):            return true;
+			case(InputMod_NONE):           return !LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
+			case(InputMod_Lctrl):          return  LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
+			case(InputMod_Rctrl):          return !LCtrlDown() &&  RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
+			case(InputMod_Lshift):         return !LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
+			case(InputMod_Rshift):         return !LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() && !RAltDown();
+			case(InputMod_Lalt):           return !LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
+			case(InputMod_Ralt):           return !LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
+			case(InputMod_LctrlLshiftLalt):return  LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
+			case(InputMod_LctrlLshiftRalt):return  LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
+			case(InputMod_LctrlRshiftLalt):return  LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() &&  LAltDown() && !RAltDown();
+			case(InputMod_LctrlRshiftRalt):return  LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() &&  RAltDown();
+			case(InputMod_RctrlLshiftLalt):return !LCtrlDown() &&  RCtrlDown() &&  LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
+			case(InputMod_RctrlLshiftRalt):return !LCtrlDown() &&  RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
+			case(InputMod_RctrlRshiftLalt):return !LCtrlDown() &&  RCtrlDown() && !LShiftDown() &&  RShiftDown() &&  LAltDown() && !RAltDown();
+			case(InputMod_RctrlRshiftRalt):return !LCtrlDown() &&  RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() &&  RAltDown();
+			default: return false;
+		} 
 	}
 	
 	/////////////////////////////
@@ -151,6 +194,11 @@ struct Input{
 	inline bool KeyReleased(u32 mod_key) {
 		u32 key = mod_key & 0x000000FF;
 		return !newKeyState[key] && oldKeyState[key] && ModsDown(mod_key & 0xFFFFFF00);
+	}
+	
+	inline bool KeyReleasedAnyMod(u32 mod_key) {
+		u32 key = mod_key & 0x000000FF;
+		return !newKeyState[key] && oldKeyState[key];
 	}
 	
 	inline void AddBind(std::string command, Key::Key key) {

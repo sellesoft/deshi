@@ -19,6 +19,7 @@
 #include "../core/imgui.h"
 #include "../core/renderer.h"
 #include "../core/window.h"
+#include "../core/input.h"
 #include "../core/time.h"
 #include "../math/Math.h"
 #include "../scene/Scene.h"
@@ -955,25 +956,25 @@ inline void EntitiesTab(Admin* admin, float fontsize){
     
     //// selected entity keybinds ////
     //start renaming first selected entity
-    if(selected.size() && DengInput->KeyPressed(Key::F2 | INPUTMOD_ANY)){
+    if(selected.size() && DengInput->KeyPressedAnyMod(Key::F2)){
         rename_ent = true;
         DengConsole->IMGUI_KEY_CAPTURE = true;
         if(selected.size() > 1) selected.erase(selected.begin()+1, selected.end());
         cpystr(rename_buffer, selected[0]->name, DESHI_NAME_SIZE);
     }
     //submit renaming entity
-    if(rename_ent && DengInput->KeyPressed(Key::ENTER | INPUTMOD_ANY)){
+    if(rename_ent && DengInput->KeyPressedAnyMod(Key::ENTER)){
         rename_ent = false;
         DengConsole->IMGUI_KEY_CAPTURE = false;
         cpystr(selected[0]->name, rename_buffer, DESHI_NAME_SIZE);
     }
     //stop renaming entity
-    if(rename_ent && DengInput->KeyPressed(Key::ESCAPE | INPUTMOD_ANY)){
+    if(rename_ent && DengInput->KeyPressedAnyMod(Key::ESCAPE)){
         rename_ent = false;
         DengConsole->IMGUI_KEY_CAPTURE = false;
     }
     //delete selected entities
-    if(selected.size() && DengInput->KeyPressed(Key::DELETE | INPUTMOD_ANY)){
+    if(selected.size() && DengInput->KeyPressedAnyMod(Key::DELETE)){
         //TODO(Ui) re-enable this with a popup to delete OR with undoing on delete
     }
     
@@ -1028,14 +1029,14 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                     bool is_selected = selected_idx != -1;
                     if(ImGui::Selectable(label, is_selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
                         if(is_selected){
-                            if(DengInput->CtrlDown()){
+                            if(DengInput->LCtrlDown()){
                                 selected.erase(selected.begin()+selected_idx);
                             }else{
                                 selected.clear();
                                 selected.push_back(ent);
                             }
                         }else{
-                            if(DengInput->CtrlDown()){
+                            if(DengInput->LCtrlDown()){
                                 selected.push_back(ent);
                             }else{
                                 selected.clear();
@@ -1625,24 +1626,24 @@ inline void MaterialsTab(Admin* admin){
     
     //// selected material keybinds ////
     //start renaming material
-    if(selected_mat != -1 && DengInput->KeyPressed(Key::F2 | INPUTMOD_ANY)){
+    if(selected_mat != -1 && DengInput->KeyPressedAnyMod(Key::F2)){
         rename_mat = true;
         DengConsole->IMGUI_KEY_CAPTURE = true;
         cpystr(rename_buffer, DengRenderer->materials[selected_mat].name, DESHI_NAME_SIZE);
     }
     //submit renaming material
-    if(rename_mat && DengInput->KeyPressed(Key::ENTER | INPUTMOD_ANY)){
+    if(rename_mat && DengInput->KeyPressedAnyMod(Key::ENTER)){
         rename_mat = false;
         DengConsole->IMGUI_KEY_CAPTURE = false;
         cpystr(DengRenderer->materials[selected_mat].name, rename_buffer, DESHI_NAME_SIZE);
     }
     //stop renaming material
-    if(rename_mat && DengInput->KeyPressed(Key::ESCAPE | INPUTMOD_ANY)){
+    if(rename_mat && DengInput->KeyPressedAnyMod(Key::ESCAPE)){
         rename_mat = false;
         DengConsole->IMGUI_KEY_CAPTURE = false;
     }
     //delete material
-    if(selected_mat != -1 && DengInput->KeyPressed(Key::DELETE | INPUTMOD_ANY)){
+    if(selected_mat != -1 && DengInput->KeyPressedAnyMod(Key::DELETE)){
         //TODO(Ui) re-enable this with a popup to delete OR with undoing on delete
         //DengRenderer->RemoveMaterial(selected_mat);
         //selected_mat = -1;
@@ -2571,7 +2572,7 @@ void Editor::Update(){
     ////////////////////////////
     
     {//// general ////
-        if (DengInput->KeyPressed(Key::P | INPUTMOD_CTRL)) {
+        if (DengInput->KeyPressed(Key::P | InputMod_Lctrl)) {
             admin->paused = !admin->paused;
         }
     }
@@ -2579,7 +2580,7 @@ void Editor::Update(){
         if (!DengConsole->IMGUI_MOUSE_CAPTURE && !admin->controller.cameraLocked) {
             if (DengInput->KeyPressed(MouseButton::LEFT)) {
                 Entity* e = SelectEntityRaycast();
-                if(!DengInput->ShiftDown()) selected.clear(); 
+                if(!DengInput->LShiftDown()) selected.clear(); 
                 if(e) selected.push_back(e);
             }
         }
