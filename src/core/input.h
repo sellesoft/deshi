@@ -147,6 +147,18 @@ struct Input{
 			case(InputMod_Rshift):         return !LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() && !RAltDown();
 			case(InputMod_Lalt):           return !LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
 			case(InputMod_Ralt):           return !LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
+			case(InputMod_LctrlLshift):    return  LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
+			case(InputMod_LctrlRshift):    return  LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() && !RAltDown();
+			case(InputMod_RctrlLshift):    return !LCtrlDown() &&  RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
+			case(InputMod_RctrlRshift):    return !LCtrlDown() &&  RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() && !RAltDown();
+			case(InputMod_LctrlLalt):      return  LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
+			case(InputMod_LctrlRalt):      return  LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
+			case(InputMod_RctrlLalt):      return !LCtrlDown() &&  RCtrlDown() && !LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
+			case(InputMod_RctrlRalt):      return !LCtrlDown() &&  RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
+			case(InputMod_LshiftLalt):     return !LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
+			case(InputMod_LshiftRalt):     return !LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
+			case(InputMod_RshiftLalt):     return !LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() &&  LAltDown() && !RAltDown();
+			case(InputMod_RshiftRalt):     return !LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() &&  RAltDown();
 			case(InputMod_LctrlLshiftLalt):return  LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
 			case(InputMod_LctrlLshiftRalt):return  LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
 			case(InputMod_LctrlRshiftLalt):return  LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() &&  LAltDown() && !RAltDown();

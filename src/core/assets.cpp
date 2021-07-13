@@ -41,9 +41,12 @@ assetPath(const char* filename, AssetType type, b32 logError){
 /////////////////////////
 
 std::vector<char> Assets::
-readFile(const std::string& filepath, u32 chars) {
+readFile(const std::string& filepath, u32 chars, b32 logError) {
 	std::ifstream file(filepath, std::ios::ate);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return {}; 
+	}
 	defer{ file.close(); };
 	
 	if(chars == 0){ chars = (u32)file.tellg(); }
@@ -56,9 +59,12 @@ readFile(const std::string& filepath, u32 chars) {
 }
 
 std::vector<char> Assets::
-readFileBinary(const std::string& filepath, u32 bytes) {
+readFileBinary(const std::string& filepath, u32 bytes, b32 logError) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return {}; 
+	}
 	defer{ file.close(); };
 	
 	if(bytes == 0){ bytes = (u32)file.tellg(); }
@@ -70,9 +76,12 @@ readFileBinary(const std::string& filepath, u32 bytes) {
 }
 
 char* Assets::
-readFileAsciiToArray(std::string filepath, u32 chars){
+readFileAsciiToArray(std::string filepath, u32 chars, b32 logError){
 	std::ifstream file(filepath, std::ifstream::in);
-	if(!file.is_open()) { ERROR("Failed to open file: ", filepath.c_str()); return 0; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return 0; 
+	}
 	defer{ file.close(); };
 	
 	file.seekg(0, file.end);
@@ -85,9 +94,12 @@ readFileAsciiToArray(std::string filepath, u32 chars){
 }
 
 char* Assets::
-readFileBinaryToArray(std::string filepath, u32 bytes){
+readFileBinaryToArray(std::string filepath, u32 bytes, b32 logError){
 	std::ifstream file(filepath, std::ifstream::in | std::ios::binary);
-	if(!file.is_open()) { ERROR("Failed to open file: ", filepath.c_str()); return 0; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return 0; 
+	}
 	defer{ file.close(); };
 	
 	file.seekg(0, file.end);
@@ -100,9 +112,12 @@ readFileBinaryToArray(std::string filepath, u32 bytes){
 }
 
 void Assets::
-writeFile(const std::string& filepath, std::vector<char>& data, u32 chars){
+writeFile(const std::string& filepath, std::vector<char>& data, u32 chars, b32 logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	if(chars == 0){ chars = data.size(); }
@@ -110,18 +125,24 @@ writeFile(const std::string& filepath, std::vector<char>& data, u32 chars){
 }
 
 void Assets::
-writeFile(const std::string& filepath, const char* data, u32 chars){
+writeFile(const std::string& filepath, const char* data, u32 chars, b32 logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	file.write(data, chars);
 }
 
 void Assets::
-appendFile(const std::string& filepath, std::vector<char>& data, u32 chars){
+appendFile(const std::string& filepath, std::vector<char>& data, u32 chars, b32 logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	if(chars == 0){ chars = data.size(); }
@@ -129,18 +150,24 @@ appendFile(const std::string& filepath, std::vector<char>& data, u32 chars){
 }
 
 void Assets::
-appendFile(const std::string& filepath, const char* data, u32 chars){
+appendFile(const std::string& filepath, const char* data, u32 chars, b32 logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	file.write(data, chars);
 }
 
 void Assets::
-writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes){
+writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes, b32 logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	if(bytes == 0){ bytes = data.size(); }
@@ -148,18 +175,24 @@ writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes)
 }
 
 void Assets::
-writeFileBinary(const std::string& filepath, const char* data, u32 bytes){
+writeFileBinary(const std::string& filepath, const char* data, u32 bytes, b32 logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	file.write(data, bytes);
 }
 
 void Assets::
-appendFileBinary(const std::string& filepath, const char* data, u32 bytes){
+appendFileBinary(const std::string& filepath, const char* data, u32 bytes, b32 logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::app);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	file.write(data, bytes);
@@ -279,7 +312,7 @@ void Assets::
 saveConfig(const char* filename, const ConfigMap& configMap){
 	std::string filepath = Assets::dirConfig() + filename;
 	std::ofstream out(filepath, std::ios::out | std::ios::trunc); //flushes on destruction
-	if(!out.is_open()) { ERROR("Failed to open file: ", filepath); return; }
+	if(!out.is_open()) { ERROR_LOC("Failed to open file: ", filepath); return; }
 	
 	size_t pad_amount = 1;
 	for(auto& config : configMap){
@@ -330,14 +363,45 @@ saveConfig(const char* filename, const ConfigMap& configMap){
 				out << ((vec4*)config.third)->str();
 			}break;
 			case ConfigValueType_CString:{
-				out << '\"' << (const char*)config.third << '\"';
+				out << '\"' << *(const char**)config.third << '\"';
 			}break;
 			case ConfigValueType_StdString:{
 				out << '\"' << *(std::string*)config.third << '\"';
 			}break;
 			case ConfigValueType_Key:{
-				//out << KeyStrings[*(u32*)config.third & 0x000000FF];
-				
+				u32 keymod = *(Key::Key*)config.third;
+				out << KeyStrings[keymod & 0x000000FF];
+				switch(keymod & 0xFFFFFF00){
+					case(InputMod_NONE):           break; //do nothing
+					case(InputMod_Any):            out << ",Any"; break;
+					case(InputMod_Lctrl):          out << ",LCTRL"; break;
+					case(InputMod_Rctrl):          out << ",RCTRL"; break;
+					case(InputMod_Lshift):         out << ",LSHIFT"; break;
+					case(InputMod_Rshift):         out << ",RSHIFT"; break;
+					case(InputMod_Lalt):           out << ",LALT"; break;
+					case(InputMod_Ralt):           out << ",RALT"; break;
+					case(InputMod_LctrlLshift):    out << ",LCTRL,LSHIFT"; break;
+					case(InputMod_LctrlRshift):    out << ",LCTRL,RSHIFT"; break;
+					case(InputMod_RctrlLshift):    out << ",RCTRL,LSHIFT"; break;
+					case(InputMod_RctrlRshift):    out << ",RCTRL,RSHIFT"; break;
+					case(InputMod_LctrlLalt):      out << ",LCTRL,LALT"; break;
+					case(InputMod_LctrlRalt):      out << ",LCTRL,RALT"; break;
+					case(InputMod_RctrlLalt):      out << ",RCTRL,LALT"; break;
+					case(InputMod_RctrlRalt):      out << ",RCTRL,RALT"; break;
+					case(InputMod_LshiftLalt):     out << ",LSHIFT,LALT"; break;
+					case(InputMod_LshiftRalt):     out << ",LSHIFT,RALT"; break;
+					case(InputMod_RshiftLalt):     out << ",RSHIFT,LALT"; break;
+					case(InputMod_RshiftRalt):     out << ",RSHIFT,RALT"; break;
+					case(InputMod_LctrlLshiftLalt):out << ",LCTRL,LSHIFT,LALT"; break;
+					case(InputMod_LctrlLshiftRalt):out << ",LCTRL,LSHIFT,RALT"; break;
+					case(InputMod_LctrlRshiftLalt):out << ",LCTRL,RSHIFT,LALT"; break;
+					case(InputMod_LctrlRshiftRalt):out << ",LCTRL,RSHIFT,RALT"; break;
+					case(InputMod_RctrlLshiftLalt):out << ",RCTRL,LSHIFT,LALT"; break;
+					case(InputMod_RctrlLshiftRalt):out << ",RCTRL,LSHIFT,RALT"; break;
+					case(InputMod_RctrlRshiftLalt):out << ",RCTRL,RSHIFT,LALT"; break;
+					case(InputMod_RctrlRshiftRalt):out << ",RCTRL,RSHIFT,RALT"; break;
+					default: ERROR("Unknown key-modifier combination \'",keymod,"\' when saving config: ", filename);
+				} 
 			}break;
 			default:{
 				ERROR("Unknown value type when saving config: ", filename);
@@ -351,7 +415,7 @@ saveConfig(const char* filename, const ConfigMap& configMap){
 void Assets::
 loadConfig(const char* filename, ConfigMap configMap){
 	std::string filepath = Assets::dirConfig() + filename;
-	char* buffer = Assets::readFileAsciiToArray(filepath);
+	char* buffer = Assets::readFileAsciiToArray(filepath, 0, false);
 	if(!buffer){ saveConfig(filename, configMap); return; }
 	defer{ delete[] buffer; };
 	
@@ -385,7 +449,7 @@ loadConfig(const char* filename, ConfigMap configMap){
 			key_end--;
 			
 			value_end   = info_end;
-			value_start = value_end;
+			value_start = value_end-1;
 			while(*value_start-- != ' '){}
 			value_start += 2;
 			if(value_end == value_start) { ERROR("Error parsing '",filepath,"' on line '",line_number,"'! No value passed"); break; }
@@ -443,20 +507,78 @@ loadConfig(const char* filename, ConfigMap configMap){
 						vec->w = strtof(cursor+1, 0);
 					}break;
 					case ConfigValueType_CString:{
-						free(config.third); //TODO(delle) test this
+						//@Leak
+						//TODO(delle,Cl) figure out a way to prevent a leak here
+						//    compile time strings shouldnt be free'd but
+						//    runtime strings should be...
+						//free(cstr);
 						size_t len = value_end-value_start-1; //1 extra for \0
-						config.third = malloc(len*sizeof(char));
-						cpystr((char*)config.third, value_start, len);
+						*(char**)config.third = (char*)malloc(len*sizeof(char));
+						cpystr(*(char**)config.third, value_start+1, len);
 					}break;
 					case ConfigValueType_StdString:{
 						*(std::string*)config.third = std::string(value_start+1, value_end-value_start-2);
+					}break;
+					case ConfigValueType_Key:{ 
+						//TODO(delle,OpAs) improve perf by not using std::string
+						//    just do a pseudo binary split against all mod cases at once after
+						//    extracting the key, kinda like how im doing already but without a loop
+						Key::Key* keybind = (Key::Key*)config.third;
+						
+						//parse key
+						auto keys = Utils::characterDelimit(std::string(value_start, value_end-value_start), ',');
+						u32 key_number = -1; //stored for Any edge-case where we want to override other mods
+						forI(ArrayCount(KeyStrings)){
+							if(strcmp(KeyStrings[i], keys[0].c_str()) == 0){
+								*keybind = (Key::Key)i;
+								key_number = i;
+								break;
+							}
+						}
+						if(key_number == -1) { 
+							ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid keybind: ",keys[0]);
+							continue;
+						}
+						
+						//parse mods
+						if(keys.size() > 1){
+							for(int i = 1; i < keys.size(); ++i){
+								if(keys[i][0] == 'L'){
+									if      (keys[i][1] == 'C'){
+										*keybind |= InputMod_Lctrl;
+									}else if(keys[i][1] == 'S'){
+										*keybind |= InputMod_Lshift;
+									}else if(keys[i][1] == 'A'){
+										*keybind |= InputMod_Lalt;
+									}else{
+										ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Unknown keybind mod: ",keys[i]);
+									}
+								}else if(keys[i][0] == 'R'){
+									if      (keys[i][1] == 'C'){
+										*keybind |= InputMod_Rctrl;
+									}else if(keys[i][1] == 'S'){
+										*keybind |= InputMod_Rshift;
+									}else if(keys[i][1] == 'A'){
+										*keybind |= InputMod_Ralt;
+									}else{
+										ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Unknown keybind mod: ",keys[i]);
+									}
+								}else if(keys[i] == "Any"){
+									//overwrite and ignore other mods with Any
+									*keybind = (Key::Key)(key_number | InputMod_Any);
+									break;
+								}else{
+									ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Unknown keybind mod: ",keys[i]);
+								}
+							}
+						}
 					}break;
 					default:{
 						ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid key: ", key_start);
 					}break;
 				}
 				
-				//set type to NONE so it wont get checked again
+				//set type to NONE so key wont get checked again
 				config.second = ConfigValueType_NONE;
 			}
 		}

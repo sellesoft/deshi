@@ -339,7 +339,6 @@
     <ClCompile Include="..\src\game\entities\StaticMeshEntity.cpp" />
     <ClCompile Include="..\src\game\entities\Trigger.cpp" />
     <ClCompile Include="..\src\game\Event.cpp" />
-    <ClCompile Include="..\src\game\Keybinds.cpp" />
     <ClCompile Include="..\src\game\systems\CanvasSystem.cpp" />
     <ClCompile Include="..\src\game\systems\PhysicsSystem.cpp" />
     <ClCompile Include="..\src\game\systems\SoundSystem.cpp" />

@@ -27,7 +27,7 @@ enum ConfigValueTypeBits : u32{
 	ConfigValueType_FV2, 
 	ConfigValueType_FV3,
 	ConfigValueType_FV4,
-	ConfigValueType_CString, 
+	ConfigValueType_CString, //NOTE pointer to 'const char*'; also, this doesnt free allocated memory when set to a new value
 	ConfigValueType_StdString, 
 	ConfigValueType_Key,
 	
@@ -64,39 +64,39 @@ namespace Assets{
 	std::string assetPath(const char* filename, AssetType type, b32 logError = true);
 	
 	//reads a files contents in ASCII and returns it as a char vector
-	std::vector<char> readFile(const std::string& filepath, u32 chars = 0);
+	std::vector<char> readFile(const std::string& filepath, u32 chars = 0, b32 logError = true);
 	
 	//reads a files contents in binary and returns it as a char vector
-	std::vector<char> readFileBinary(const std::string& filepath, u32 bytes = 0);
+	std::vector<char> readFileBinary(const std::string& filepath, u32 bytes = 0, b32 logError = true);
 	
 	//returns a char array of a file's contents in ASCII, returns 0 if failed
 	//NOTE the caller is responsible for freeing the array this allocates
-	char* readFileAsciiToArray(std::string filepath, u32 chars = 0);
+	char* readFileAsciiToArray(std::string filepath, u32 chars = 0, b32 logError = true);
 	
 	//returns a char array of a file's contents in binary, returns 0 if failed
 	//NOTE the caller is responsible for freeing the array this allocates
-	char* readFileBinaryToArray(std::string filepath, u32 bytes = 0);
+	char* readFileBinaryToArray(std::string filepath, u32 bytes = 0, b32 logError = true);
 	
 	//truncates and writes a char vector to a file in ASCII format
-	void writeFile(const std::string& filepath, std::vector<char>& data, u32 chars = 0);
+	void writeFile(const std::string& filepath, std::vector<char>& data, u32 chars = 0, b32 logError = true);
 	
 	//truncates and writes a char array to a file in ASCII format
-	void writeFile(const std::string& filepath, const char* data, u32 chars);
+	void writeFile(const std::string& filepath, const char* data, u32 chars, b32 logError = true);
 	
 	//appends and writes a char array to a file in ASCII format
-	void appendFile(const std::string& filepath, const char* data, u32 chars);
+	void appendFile(const std::string& filepath, const char* data, u32 chars, b32 logError = true);
 	
 	//appends and writes a char vector array to a file in ASCII format
-	void appendFile(const std::string& filepath, std::vector<char>& data, u32 chars);
+	void appendFile(const std::string& filepath, std::vector<char>& data, u32 chars, b32 logError = true);
 	
 	//truncates and writes a char vector to a file in binary
-	void writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes = 0);
+	void writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes = 0, b32 logError = true);
 	
 	//truncates and writes a char array to a file in binary
-	void writeFileBinary(const std::string& filepath, const char* data, u32 bytes);
+	void writeFileBinary(const std::string& filepath, const char* data, u32 bytes, b32 logError = true);
 	
 	//appends and writes a char array to a file in binary
-	void appendFileBinary(const std::string& filepath, const char* data, u32 bytes);
+	void appendFileBinary(const std::string& filepath, const char* data, u32 bytes, b32 logError = true);
 	
 	//iterates directory and returns a list of files in it
 	//probably return something other than a vector of strings but thts how it is for now

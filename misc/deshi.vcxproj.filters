@@ -442,9 +442,6 @@
     <ClCompile Include="..\src\game\systems\SoundSystem.cpp">
       <Filter>src\game\systems\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\game\Keybinds.cpp">
-      <Filter>src\game</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\scene\Model.cpp">
       <Filter>src\scene</Filter>
     </ClCompile>

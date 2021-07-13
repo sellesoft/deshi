@@ -3,6 +3,7 @@
 #define GAME_KEYBINDS_H
 
 #include "../core/input.h"
+#include "../core/assets.h"
 
 struct Keybinds{
 	//flying movement
@@ -63,9 +64,62 @@ struct Keybinds{
 	std::map<std::string, Key::Key>  stk;
 	std::map<std::string, Key::Key&> keys;
 	
-	void Init();
-	//Reads through a keybinds file and fills keybind struct with provided keys
-	void ReloadKeybinds(std::fstream& kf);
+	ConfigMap keybindMap;
+	
+	void init();
+	void save();
+	void load();
 };
+
+inline void Keybinds::init(){
+	keybindMap = {
+		{"#keybinds config file",0,0},
+		{"\n#movement",ConfigValueType_PADSECTION,(void*)24},
+		{"movement_flying_up",      ConfigValueType_Key, &movementFlyingUp},
+		{"movement_flying_down",    ConfigValueType_Key, &movementFlyingDown},
+		{"movement_flying_forward", ConfigValueType_Key, &movementFlyingForward},
+		{"movement_flying_back",    ConfigValueType_Key, &movementFlyingBack},
+		{"movement_flying_left",    ConfigValueType_Key, &movementFlyingRight},
+		{"movement_flying_right",   ConfigValueType_Key, &movementFlyingLeft},
+		{"\n#camera",ConfigValueType_PADSECTION,(void*)27},
+		{"camera_rotate_up",           ConfigValueType_Key, &cameraRotateUp},
+		{"camera_rotate_down",         ConfigValueType_Key, &cameraRotateDown},
+		{"camera_rotate_left",         ConfigValueType_Key, &cameraRotateLeft},
+		{"camera_rotate_right",        ConfigValueType_Key, &cameraRotateRight},
+		{"camera_perspective_toggle",  ConfigValueType_Key, &perspectiveToggle},
+		{"camera_goto_selected",       ConfigValueType_Key, &gotoSelected},
+		{"camera_ortho_offset",        ConfigValueType_Key, &orthoOffset},
+		{"camera_ortho_reset_offset",  ConfigValueType_Key, &orthoResetOffset},
+		{"camera_ortho_zoom_in",       ConfigValueType_Key, &orthoZoomIn},
+		{"camera_ortho_zoom_out",      ConfigValueType_Key, &orthoZoomOut},
+		{"camera_ortho_right_view",    ConfigValueType_Key, &orthoRightView},
+		{"camera_ortho_left_view",     ConfigValueType_Key, &orthoLeftView},
+		{"camera_ortho_front_view",    ConfigValueType_Key, &orthoFrontView},
+		{"camera_ortho_back_view",     ConfigValueType_Key, &orthoBackView},
+		{"camera_ortho_topdown_view",  ConfigValueType_Key, &orthoTopDownView},
+		{"camera_ortho_bottomup_view", ConfigValueType_Key, &orthoBottomUpView},
+		{"\n#editor",ConfigValueType_PADSECTION,(void*)26},
+		{"editor_undo",               ConfigValueType_Key, &undo},
+		{"editor_redo",               ConfigValueType_Key, &redo},
+		{"editor_translate_selected", ConfigValueType_Key, &grabSelectedObject},
+		{"editor_rotate_selected",    ConfigValueType_Key, &rotateSelectedObject},
+		{"editor_scale_selected",     ConfigValueType_Key, &scaleSelectedObject},
+		{"\n#gui",ConfigValueType_PADSECTION,(void*)21},
+		{"gui_console_toggle",   ConfigValueType_Key, &toggleConsole},
+		{"gui_debugmenu_toggle", ConfigValueType_Key, &toggleDebugMenu},
+		{"gui_debugbar_toggle",  ConfigValueType_Key, &toggleDebugBar},
+		{"gui_menubar_toggle",   ConfigValueType_Key, &toggleMenuBar},
+	};
+	
+	load();
+}
+
+inline void Keybinds::save(){
+	Assets::saveConfig("keybinds.cfg", keybindMap);
+}
+
+inline void Keybinds::load(){
+	Assets::loadConfig("keybinds.cfg", keybindMap);
+}
 
 #endif //GAME_KEYBINDS_H

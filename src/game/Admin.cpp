@@ -52,7 +52,7 @@ void Admin::Init() {
     sound.Init(this);
     scene.Init();
     DengRenderer->LoadScene(&scene);
-    keybinds.Init();
+    keybinds.init();
     controller.Init(this);
     editor.Init(this);
     mainCamera = editor.camera;//TODO(delle) remove this eventually
@@ -69,6 +69,7 @@ void Admin::Init() {
 
 void Admin::Cleanup() {
     SaveDESH((state == GameState_Editor) ? "temp.desh" : "auto.desh");
+	keybinds.save();
 }
 
 void UpdateLayer(ContainerManager<Component*> cl) {
