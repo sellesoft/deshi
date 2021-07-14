@@ -51,7 +51,7 @@ void Admin::Init() {
     canvas.Init(this);
     sound.Init(this);
     scene.Init();
-    DengRenderer->LoadScene(&scene);
+    Render::LoadScene(&scene);
     keybinds.init();
     controller.Init(this);
     editor.Init(this);
@@ -140,10 +140,10 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
     //light updating
     for (int i = 0; i < 10; i++) {
         if(i < scene.lights.size()) {
-            DengRenderer->lights[i] = vec4(scene.lights[i]->position,
-										   (scene.lights[i]->active) ? scene.lights[i]->brightness : 0);
+			Render::UpdateLight(i, vec4(scene.lights[i]->position,
+										(scene.lights[i]->active) ? scene.lights[i]->brightness : 0));
         }else{
-            DengRenderer->lights[i] = vec4(0, 0, 0, -1);
+            Render::UpdateLight(i, vec4(0, 0, 0, -1));
         }
     }
     
@@ -293,8 +293,8 @@ void Admin::Reset(){
     
     for(auto& layer : freeCompLayers) layer.clear();
     scene.Reset();
-    DengRenderer->Reset();
-    DengRenderer->LoadScene(&scene);
+    Render::reset();
+    Render::LoadScene(&scene);
     editor.Reset();
     SUCCESS("Finished resetting admin in ", TIMER_END(t_r), "ms");
 }
@@ -329,18 +329,18 @@ void Admin::SaveTEXT(std::string level_name){
 	//materials
 	level_text.append("\n"
 					  "\n>materials");
-	for(MaterialVk& mat : DengRenderer->materials){
+	for(MaterialVk& mat : *Render::materialArray()){
 		level_text.append(TOSTRING("\n",mat.id," \"",mat.name,"\" ",mat.shader," \"",
-								   DengRenderer->textures[mat.albedoID].filename,"\" \"",
-								   DengRenderer->textures[mat.normalID].filename,"\" \"",
-								   DengRenderer->textures[mat.specularID].filename,"\" \"",
-								   DengRenderer->textures[mat.lightID].filename,"\""));
+								   (*Render::textureArray())[mat.albedoID].filename,"\" \"",
+								   (*Render::textureArray())[mat.normalID].filename,"\" \"",
+								   (*Render::textureArray())[mat.specularID].filename,"\" \"",
+								   (*Render::textureArray())[mat.lightID].filename,"\""));
 	}
 	
 	//models
 	level_text.append("\n"
 					  "\n>meshes");
-	for(MeshVk& mesh : DengRenderer->meshes){
+	for(MeshVk& mesh : *Render::meshArray()){
 		if(!mesh.base){
 			level_text.append(TOSTRING("\n",mesh.id," \"",mesh.name,"\" ",mesh.visible," \"", mesh.primitives[0].materialIndex));
 			for(u32 i=1; i<mesh.primitives.size(); ++i){ level_text.append(TOSTRING(" ", mesh.primitives[i].materialIndex)); }
@@ -464,11 +464,11 @@ void Admin::LoadTEXT(std::string savename){
 					if(split.size() != 7){ ERROR(ParsingError,"'! Material lines should have 7 values"); continue; }
 					
 					u32 old_id = std::stoi(split[0]);
-					u32 new_id = DengRenderer->CreateMaterial(split[1].c_str(), std::stoi(split[2]), 
-															  DengRenderer->LoadTexture(split[3].c_str()),
-															  DengRenderer->LoadTexture(split[4].c_str()),
-															  DengRenderer->LoadTexture(split[5].c_str()),
-															  DengRenderer->LoadTexture(split[6].c_str()));
+					u32 new_id = Render::CreateMaterial(split[1].c_str(), std::stoi(split[2]), 
+														Render::LoadTexture(split[3].c_str()),
+														Render::LoadTexture(split[4].c_str()),
+														Render::LoadTexture(split[5].c_str()),
+														Render::LoadTexture(split[6].c_str()));
 					material_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
 				}break;
 				case(LevelHeader::MESHES):{
@@ -476,19 +476,19 @@ void Admin::LoadTEXT(std::string savename){
 					
 					//id
 					u32 old_id = std::stoi(split[0]);
-					u32 new_id = DengRenderer->CreateMesh(&scene, split[1].c_str(), false);
+					u32 new_id = Render::CreateMesh(&scene, split[1].c_str(), false);
 					mesh_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
 					
 					//visible
-					DengRenderer->meshes[new_id].visible = Assets::parse_bool(split[2], level_dir.c_str(), line_number);
+					(*Render::meshArray())[new_id].visible = Assets::parse_bool(split[2], level_dir.c_str(), line_number);
 					
 					//materials
 					std::vector<std::string> mat_ids = Utils::spaceDelimit(split[3]); 
-					forI(DengRenderer->meshes[new_id].primitives.size()){
+					forI((*Render::meshArray())[new_id].primitives.size()){
 						u32 old_mat = std::stoi(mat_ids[i]);
 						for(auto& diff : material_id_diffs){
 							if(diff.first == old_mat){
-								DengRenderer->meshes[new_id].primitives[i].materialIndex = diff.second;
+								(*Render::meshArray())[new_id].primitives[i].materialIndex = diff.second;
 							}
 						}
 					}
@@ -650,17 +650,17 @@ void Admin::SaveDESH(const char* filename) {
     }
     
     //// write textures ////
-    header.textureCount = DengRenderer->textures.size();
+    header.textureCount = Render::TextureCount();;
     header.textureArrayOffset = file.tellp();
-    for(auto& t : DengRenderer->textures){
+    for(auto& t : *Render::textureArray()){
         file.write((const char*)&t.type, sizeof(u32));
         file.write(t.filename,           sizeof(char)*DESHI_NAME_SIZE);
     }
     
     //// write materials ////
-    header.materialCount = DengRenderer->materials.size();
+    header.materialCount = Render::MaterialCount();
     header.materialArrayOffset = file.tellp();
-    for(auto& m : DengRenderer->materials){
+    for(auto& m : *Render::materialArray()){
         file.write((const char*)&m.shader,     sizeof(u32));
         file.write((const char*)&m.albedoID,   sizeof(u32));
         file.write((const char*)&m.normalID,   sizeof(u32));
@@ -670,9 +670,9 @@ void Admin::SaveDESH(const char* filename) {
     }
     
     //// write meshes //// //TODO(delle) support multiple materials per mesh
-    header.meshCount = DengRenderer->meshes.size();
+    header.meshCount = Render::MeshCount();
     header.meshArrayOffset = file.tellp();
-    for(auto& m : DengRenderer->meshes){
+    for(auto& m : *Render::meshArray()){
         b32 base = m.base;
         file.write((const char*)&m.primitives[0].materialIndex, sizeof(u32));
         file.write((const char*)&base,                          sizeof(b32));
@@ -927,7 +927,7 @@ void Admin::LoadDESH(const char* filename) {
     forI(header.textureCount){
         memcpy(&tex.type,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
         memcpy(tex.filename, data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
-        if(i>3) DengRenderer->LoadTexture(tex);
+        if(i>3) Render::LoadTexture(tex);
     }
     
     //// parse and create materials ////
@@ -943,7 +943,7 @@ void Admin::LoadDESH(const char* filename) {
         memcpy(&specularId, data+cursor, sizeof(u32)); cursor += sizeof(u32);
         memcpy(&lightID,    data+cursor, sizeof(u32)); cursor += sizeof(u32);
         memcpy(matName,     data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
-        if(i>5) DengRenderer->CreateMaterial(matName, shader, albedoID, normalID, specularId, lightID);
+        if(i>5) Render::CreateMaterial(matName, shader, albedoID, normalID, specularId, lightID);
     }
     
     //// parse and load/create meshes ////
@@ -957,8 +957,8 @@ void Admin::LoadDESH(const char* filename) {
         memcpy(&baseMesh, data+cursor, sizeof(b32));     cursor += sizeof(b32);
         memcpy(meshName,  data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
         if(!baseMesh) {
-            u32 meshID = DengRenderer->CreateMesh(&scene, meshName);
-            DengRenderer->UpdateMeshBatchMaterial(meshID, 0, matID);
+            u32 meshID = Render::CreateMesh(&scene, meshName);
+            Render::UpdateMeshBatchMaterial(meshID, 0, matID);
         }
     }
     

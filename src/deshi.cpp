@@ -62,7 +62,7 @@ add not-on-screen object culling thru mesh AABBs
 add front-to-back sorting for perf gain (and maybe transparency?)
 delete shader .spv if failed to compile it after printing error messages
 setup more generalized material/pipeline creation
- ____specialization constants
+____specialization constants
 ____uber shaders
 ____runtime pipeline creation/specialization
 redo how lights are stored
@@ -83,8 +83,6 @@ check those vulkan-tutorial links for the suggestions and optimizations
 add instancing
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
 multi-threaded command buffers, shader loading, image loading
-move interface functions out of vulkan files
-convert Renderer to namespace Render
 SSBOs in shaders so we can pass variable length arrays to it
 
 Level Editor and Inspector TODOs
@@ -170,7 +168,7 @@ __________ it might have something to do with our rotate by axis function
 (06/13/21) after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and
 __________ the batchArray size of whatever mesh its checking is something like 400000000000
 __________ it looks like some sort of corrupt mesh makes its way in there somehow?
- (07/10/21) scaling and rotating produces a sheared object
+(07/10/21) scaling and rotating produces a sheared object
 __________ scaling might be being done in world and not local space
 (07/10/21) program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
 (07/10/21) the program crashes if default asset files are not present
@@ -193,8 +191,6 @@ static_internal Time       time_;    Time*     g_time = &time_; //time_ because 
 static_internal Window     window;   Window*   g_window = &window;
 static_internal Input      input;    Input*    g_input = &input;
 static_internal Console    console;  Console*  g_console = &console;
-static_internal Renderer   renderer; Renderer* g_renderer = &renderer;
-static_internal DearImGui  imgui;
 static_internal Admin      admin;    Admin*    g_admin = &admin;
 static_internal Debug      debug;    Debug*    g_debug = &debug;
 
@@ -209,7 +205,8 @@ int main() {
 	window.Init(&input, 1280, 720); //inits input as well
 	Console2::Init();
 	console.Init();
-	renderer.Init(&imgui); //inits imgui as well
+	Render::init();
+	DeshiImGui::init();
 	
 	//init game admin
 	admin.Init();
@@ -220,13 +217,13 @@ int main() {
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
 		glfwPollEvents();
 		
-		TIMER_RESET(t_d); time_.Update();            time_.timeTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); time_.Update();           time_.timeTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); window.Update();          time_.windowTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); input.Update();           time_.inputTime = TIMER_END(t_d);
-		imgui.NewFrame();                                                              //place imgui calls after this
+		DeshiImGui::newFrame();                                                         //place imgui calls after this
 		TIMER_RESET(t_d); admin.Update();           time_.adminTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); console.Update(); Console2::Update(); time_.consoleTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); renderer.Render();        time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
+		TIMER_RESET(t_d); Render::update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		g_debug->Update(); //TODO(sushi) put a timer on this
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
@@ -234,12 +231,13 @@ int main() {
 	
 	//cleanup
 	admin.Cleanup();
-	imgui.Cleanup();
-	renderer.Cleanup();
+	DeshiImGui::cleanup();
+	Render::cleanup();
 	window.Cleanup();
-	console.CleanUp();
-	Console2::Cleanup();
+	console.CleanUp(); Console2::Cleanup();
 	
-	int debug_breakpoint = 0;
+#if 0
+	DEBUG_BREAK;
+#endif
 	return 0;
 }

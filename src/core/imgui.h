@@ -8,13 +8,13 @@
 #include "../math/Vector.h"
 #include "../utils/Color.h"
 
-#if DESHI_VULKAN
-#include "imgui_vulkan.h"
-#elif DESHI_DX12
-
-#else
-#include "imgui_vulkan.h"
-#endif
+namespace DeshiImGui{
+	
+	void init();
+	void cleanup();
+	void newFrame();
+	
+}; //namespace DeshiImGui
 
 namespace ImGui{
 	

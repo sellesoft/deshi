@@ -27,21 +27,21 @@ MeshComp::MeshComp(u32 meshID, u32 instanceID) {
 	
 	this->meshID = meshID;
 	this->instanceID = instanceID;
-	this->mesh = DengRenderer->GetMeshPtr(meshID);
+	this->mesh = Render::GetMeshPtr(meshID);
 }
 
 MeshComp::~MeshComp() {
-	DengRenderer->RemoveMesh(meshID);
+	Render::RemoveMesh(meshID);
 }
 
 void MeshComp::ToggleVisibility() {
 	mesh_visible = !mesh_visible;
-	DengRenderer->UpdateMeshVisibility(meshID, mesh_visible);
+	Render::UpdateMeshVisibility(meshID, mesh_visible);
 }
 
 void MeshComp::Visible(bool visible) {
 	mesh_visible = visible;
-	DengRenderer->UpdateMeshVisibility(meshID, mesh_visible);
+	Render::UpdateMeshVisibility(meshID, mesh_visible);
 }
 
 void MeshComp::ReceiveEvent(Event event) {
@@ -50,48 +50,48 @@ void MeshComp::ReceiveEvent(Event event) {
 
 //this should only be used when the entity is not controlling the Mesh
 void MeshComp::UpdateMeshTransform(Vector3 position, Vector3 rotation, Vector3 scale) {
-	DengRenderer->UpdateMeshMatrix(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
+	Render::UpdateMeshMatrix(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
 }
 
 void MeshComp::ChangeMesh(u32 newMeshIdx){
 	if(newMeshIdx == meshID) return;
-	if(newMeshIdx > DengRenderer->meshes.size()) return ERROR("ChangeMesh: There is no mesh with index: ", newMeshIdx);
-	if(!DengRenderer->meshes[newMeshIdx].base) return ERROR("ChangeMesh: You can only change the mesh to a base mesh");
+	if(newMeshIdx > Render::MeshCount()) return ERROR("ChangeMesh: There is no mesh with index: ", newMeshIdx);
+	if(!Render::IsBaseMesh(newMeshIdx)) return ERROR("ChangeMesh: You can only change the mesh to a base mesh");
 	
-	Matrix4 oldMat = DengRenderer->GetMeshMatrix(meshID);
-	DengRenderer->RemoveMesh(meshID);
-	meshID = DengRenderer->CreateMesh(newMeshIdx, oldMat);
-	mesh = DengRenderer->GetMeshPtr(meshID);
+	Matrix4 oldMat = Render::GetMeshMatrix(meshID);
+	Render::RemoveMesh(meshID);
+	meshID = Render::CreateMesh(newMeshIdx, oldMat);
+	mesh = Render::GetMeshPtr(meshID);
 }
 
 void MeshComp::ChangeMaterialShader(u32 s) {
-	std::vector<u32> ids = DengRenderer->GetMaterialIDs(meshID);
+	std::vector<u32> ids = Render::GetMaterialIDs(meshID);
 	for (u32 id : ids) {
-		DengRenderer->UpdateMaterialShader(id, s);
+		Render::UpdateMaterialShader(id, s);
 	}
 }
 
 void MeshComp::ChangeMaterialTexture(u32 t) {
-	std::vector<u32> ids = DengRenderer->GetMaterialIDs(meshID);
+	std::vector<u32> ids = Render::GetMaterialIDs(meshID);
 	
 	for (u32 id : ids) {
-		DengRenderer->UpdateMaterialTexture(id, 0, t);
+		Render::UpdateMaterialTexture(id, 0, t);
 	}
 }
 
 void MeshComp::Init() {
-	DengRenderer->UpdateMeshVisibility(meshID, mesh_visible);
+	Render::UpdateMeshVisibility(meshID, mesh_visible);
 }
 
 void MeshComp::Update() {
 	//update mesh's transform with entities tranform
-	if(ENTITY_CONTROL) DengRenderer->UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
+	if(ENTITY_CONTROL) Render::UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
 }
 
 std::string MeshComp::SaveTEXT(){
 	return TOSTRING("\n>mesh"
-					"\nid      ", DengRenderer->meshes[meshID].id,
-					"\nname    \"", DengRenderer->meshes[meshID].name, "\""
+					"\nid      ", meshID,
+					"\nname    \"", Render::MeshName(meshID) , "\""
 					"\nvisible ", (mesh_visible) ? "true" : "false",
 					"\n");
 }
@@ -110,7 +110,7 @@ void MeshComp::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
 		
 		memcpy(&instanceID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
 		memcpy(&meshID,     data+cursor, sizeof(u32)); cursor += sizeof(u32);
-		if(meshID >= DengRenderer->meshes.size()){
+		if(meshID >= Render::MeshCount()){
 			ERROR("Failed to load mesh component at pos '", cursor-sizeof(u32),
 				  "' because it has an invalid mesh ID: ", meshID); continue;
 		}
@@ -140,12 +140,12 @@ MeshComp2D::MeshComp2D(u32 id) {
 }
 
 void MeshComp2D::Init() {
-	DengRenderer->UpdateMeshVisibility(twodID, visible);
+	Render::UpdateMeshVisibility(twodID, visible);
 }
 
 void MeshComp2D::ToggleVisibility() {
 	visible = !visible;
-	DengRenderer->UpdateMeshVisibility(twodID, visible);
+	Render::UpdateMeshVisibility(twodID, visible);
 }
 
 void MeshComp2D::ReceiveEvent(Event event) {}
@@ -154,7 +154,7 @@ void MeshComp2D::Update() {}
 
 std::string MeshComp2D::SaveTEXT(){
 	return TOSTRING("\n>mesh"
-					"\nname    \"", DengRenderer->meshes[twodID].name, "\""
+					"\nname    \"", Render::MeshName(twodID), "\""
 					"\nvisible ", (visible) ? "true" : "false",
 					"\n");
 }

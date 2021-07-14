@@ -637,7 +637,7 @@ CMDSTARTA(state, args.size() > 0){
 }CMDEND("state <new_state:String>{play|menu|debug|editor}");
 
 CMDSTART(meshbrush_create_box){
-	u32 id = DengRenderer->CreateMeshBrush(admin->scene.models[0].mesh, Matrix4::IDENTITY);
+	u32 id = Render::CreateMeshBrush(admin->scene.models[0].mesh, Matrix4::IDENTITY);
 	SUCCESS("Created mesh brush with id: ", id);
 	return "";
 }CMDEND("meshbrush_create_box");
@@ -659,8 +659,8 @@ CMDSTARTA(draw_line, args.size() > 1){
 			   (color.y > 255) ? 255 : (u8)color.y,
 			   (color.z > 255) ? 255 : (u8)color.z);
 	
-	u32 id = DengRenderer->CreateDebugLine(pos1, pos2, temp);
-	DengRenderer->UpdateMeshVisibility(id, true);
+	u32 id = Render::CreateDebugLine(pos1, pos2, temp);
+	Render::UpdateMeshVisibility(id, true);
 	return TOSTRING("Created debug line with meshID: ", id);
 }CMDEND("draw_line <-start=(x,y,z)> <-end=(x,y,z)> -color=(r,g,b){0..255}");
 
@@ -683,8 +683,8 @@ CMDSTARTA(draw_triangle, args.size() > 2){
 			   (color.y > 255) ? 255 : (u8)color.y,
 			   (color.z > 255) ? 255 : (u8)color.z);
 	
-	u32 id = DengRenderer->CreateDebugTriangle(pos1, pos2, pos3, temp);
-	DengRenderer->UpdateMeshVisibility(id, true);
+	u32 id = Render::CreateDebugTriangle(pos1, pos2, pos3, temp);
+	Render::UpdateMeshVisibility(id, true);
 	return TOSTRING("Created debug triangle with meshID: ", id);
 }CMDEND("draw_triangle <-v1=(x,y,z)> <-v2=(x,y,z)> <-v3=(x,y,z)> -color=(r,g,b){0..255}");
 
@@ -737,8 +737,8 @@ CMDSTARTA(load_obj, args.size() > 0){
 	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
 	
 	//create the mesh
-	u32 id = DengRenderer->CreateMesh(&admin->scene, args[0].c_str());
-	Mesh* mesh = DengRenderer->GetMeshPtr(id);
+	u32 id = Render::CreateMesh(&admin->scene, args[0].c_str());
+	Mesh* mesh = Render::GetMeshPtr(id);
 	
 	//collider
 	Collider* col = nullptr;
@@ -773,7 +773,7 @@ CMDSTART(spawn_box_uv){
 		}
 	}
 	
-	u32 id = DengRenderer->CreateMesh(2, Matrix4::TransformationMatrix(pos, rot, scale));
+	u32 id = Render::CreateMesh(2, Matrix4::TransformationMatrix(pos, rot, scale));
 	MeshComp* mc = new MeshComp(id);
 	admin->CreateEntity({ mc }, "uv_texture_box", Transform(pos, rot, scale));
 	
@@ -798,8 +798,8 @@ CMDSTART(mesh_create){
 	}
 	
 	u32 meshID = std::atoi(args[0].c_str());
-	u32 id = DengRenderer->CreateMesh(meshID, Matrix4::TransformationMatrix(pos, rot, scale));
-	Mesh* ptr = DengRenderer->GetMeshPtr(id); if (!ptr) CMDERROR;
+	u32 id = Render::CreateMesh(meshID, Matrix4::TransformationMatrix(pos, rot, scale));
+	Mesh* ptr = Render::GetMeshPtr(id); if (!ptr) CMDERROR;
 	
 	MeshComp* mc = new MeshComp(id);
 	Physics* p = new Physics(pos, rot);
@@ -825,7 +825,7 @@ CMDSTART(mesh_transform_matrix){
 		}
 	}
 	
-	DengRenderer->TransformMeshMatrix(std::stoi(args[0]), Matrix4::TransformationMatrix(pos, rot, scale));
+	Render::TransformMeshMatrix(std::stoi(args[0]), Matrix4::TransformationMatrix(pos, rot, scale));
 	return TOSTRING("Transforming mesh", args[0], "'s matrix");
 }CMDEND("mesh_transform_matrix <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 
@@ -896,8 +896,8 @@ CMDSTARTA(add_player, args.size() > 0) {
 	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
 	
 	//create the mesh
-	u32 id = DengRenderer->CreateMesh(&admin->scene, args[0].c_str());
-	Mesh* mesh = DengRenderer->GetMeshPtr(id);
+	u32 id = Render::CreateMesh(&admin->scene, args[0].c_str());
+	Mesh* mesh = Render::GetMeshPtr(id);
 	
 	//collider
 	Collider* col = nullptr;
@@ -1123,26 +1123,25 @@ CMDSTARTA(mat_texture, args.size() == 3) {
 	int matID = std::stoi(args[0]);
 	int texType = std::stoi(args[1]);
 	int texID = std::stoi(args[2]);
-	DengRenderer->UpdateMaterialTexture(matID, texType, texID);
+	Render::UpdateMaterialTexture(matID, texType, texID);
 	return TOSTRING("Updated material", matID, "'s texture", texType, " to ", texID);
 }CMDEND("mat_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>");
 
 CMDSTARTA(mat_shader, args.size() == 2) {
 	int matID = std::stoi(args[0]);
 	int shader = std::stoi(args[1]);
-	DengRenderer->UpdateMaterialShader(matID, shader);
+	Render::UpdateMaterialShader(matID, shader);
 	return TOSTRING("Updated material", matID, "'s shader to ", shader);
 } CMDEND("mat_shader <materialID:Uint> <shaderID:Uint>");
 
 CMDFUNC(mat_list) {
-	Renderer* r = DengRenderer;
 	std::string out = "[c:yellow]Materials List:\nID  Shader  Albedo  Normal  Specular  Light[c]";
-	for (auto& mat : r->materials) {
+	for (auto& mat : *Render::materialArray()) {
 		out += TOSTRING("\n", mat.id, "  ", ShaderStrings[mat.shader], "  ",
-						mat.albedoID, ":", r->textures[mat.albedoID].filename, "  ",
-						mat.normalID, ":", r->textures[mat.normalID].filename, "  ",
-						mat.specularID, ":", r->textures[mat.specularID].filename, "  ",
-						mat.lightID, ":", r->textures[mat.lightID].filename);
+						mat.albedoID,   ":", (*Render::textureArray())[mat.albedoID].filename, "  ",
+						mat.normalID,   ":", (*Render::textureArray())[mat.normalID].filename, "  ",
+						mat.specularID, ":", (*Render::textureArray())[mat.specularID].filename, "  ",
+						mat.lightID,    ":", (*Render::textureArray())[mat.lightID].filename);
 	}
 	return out;
 }
@@ -1150,11 +1149,11 @@ CMDFUNC(mat_list) {
 CMDSTARTA(shader_reload, args.size() == 1) {
 	int id = std::stoi(args[0]);
 	if (id == -1) {
-		DengRenderer->ReloadAllShaders();
+		Render::ReloadAllShaders();
 		return "[c:magen]Reloading all shaders[c]";
 	}
 	else {
-		DengRenderer->ReloadShader(id);
+		Render::ReloadShader(id);
 		return ""; //printed in renderer
 	}
 }CMDEND("shader_reload <shaderID:Uint>");
@@ -1175,7 +1174,7 @@ CMDSTARTA(mesh_visible, args.size() == 2) {
 	try {
 		int meshID = std::stoi(args[0]);
 		bool vis = std::stoi(args[1]);
-		DengRenderer->UpdateMeshVisibility(meshID, vis);
+		Render::UpdateMeshVisibility(meshID, vis);
 		return TOSTRING("Setting mesh", meshID, "'s visibility to ", vis);
 	}
 	catch (...) {
@@ -1187,19 +1186,19 @@ CMDSTARTA(mesh_batch_material, args.size() == 3) {
 	int mesh = std::stoi(args[0]);
 	int batch = std::stoi(args[1]);
 	int mat = std::stoi(args[2]);
-	DengRenderer->UpdateMeshBatchMaterial(mesh, batch, mat);
+	Render::UpdateMeshBatchMaterial(mesh, batch, mat);
 	return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s material to ", mat);
 } CMDEND("mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>");
 
 CMDSTARTA(texture_load, args.size() > 0) {
 	Texture tex(args[0].c_str());
 	if (args.size() == 2) { tex.type = (u32)std::stoi(args[1]); }
-	u32 id = DengRenderer->LoadTexture(tex);
+	u32 id = Render::LoadTexture(tex);
 	return TOSTRING("Loaded texture ", args[0], " to ID: ", id);
 }CMDEND("texture_load <texture.png:String> [type:Uint]");
 
 CMDFUNC(texture_list) {
-	return DengRenderer->ListTextures();
+	return Render::ListTextures();
 }
 
 CMDFUNC(texture_type_list) {

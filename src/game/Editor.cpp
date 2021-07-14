@@ -1094,7 +1094,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                 ent = admin->CreateEntityNow({}, ent_name.c_str());
             }break;
             case(1):{ //Static Mesh
-                u32 mesh_id = DengRenderer->CreateMesh(&admin->scene, "box.obj");
+                u32 mesh_id = Render::CreateMesh(&admin->scene, "box.obj");
                 MeshComp* mc = new MeshComp(mesh_id);
                 Physics* phys = new Physics();
                 phys->staticPosition = true;
@@ -1180,14 +1180,14 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 						MeshComp* mc = dyncast(MeshComp, c);
                         
 						ImGui::TextEx("Visible  "); ImGui::SameLine();
-						if(ImGui::Button((DengRenderer->meshes[mc->meshID].visible) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
+						if(ImGui::Button((Render::IsMeshVisible(mc->meshID)) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
 							mc->ToggleVisibility();
 						}
                         
 						ImGui::TextEx("Mesh     "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-						if(ImGui::BeginCombo("##mesh_combo", DengRenderer->meshes[mc->meshID].name)){ WinHovCheck;
-							forI(DengRenderer->meshes.size()){
-								if(DengRenderer->meshes[i].base && ImGui::Selectable(DengRenderer->meshes[i].name, mc->meshID == i)){
+						if(ImGui::BeginCombo("##mesh_combo", Render::MeshName(mc->meshID))){ WinHovCheck;
+							forI(Render::MeshCount()){
+								if(Render::IsBaseMesh(i) && ImGui::Selectable(Render::MeshName(i), mc->meshID == i)){
 									mc->ChangeMesh(i);
 								}
 							}
@@ -1206,10 +1206,10 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 						}
                         
 						ImGui::TextEx("Material "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-						if(ImGui::BeginCombo("##mesh_mat_combo", DengRenderer->materials[DengRenderer->meshes[mc->meshID].primitives[mesh_batch_idx].materialIndex].name)){ WinHovCheck;
-							forI(DengRenderer->materials.size()){
-								if(ImGui::Selectable(DengRenderer->materials[i].name, DengRenderer->meshes[mc->meshID].primitives[mesh_batch_idx].materialIndex == i)){
-									DengRenderer->UpdateMeshBatchMaterial(mc->meshID, mesh_batch_idx, i);
+						if(ImGui::BeginCombo("##mesh_mat_combo", (*Render::materialArray())[(*Render::meshArray())[mc->meshID].primitives[mesh_batch_idx].materialIndex].name)){ WinHovCheck;
+							forI(Render::MaterialCount()){
+								if(ImGui::Selectable(Render::MaterialName(i), (*Render::meshArray())[mc->meshID].primitives[mesh_batch_idx].materialIndex == i)){
+									Render::UpdateMeshBatchMaterial(mc->meshID, mesh_batch_idx, i);
 								}
 							}
 							ImGui::EndCombo();
@@ -1532,7 +1532,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
         if(ImGui::Button("Add Component")){
             switch(1 << (add_comp_index-1)){
                 case ComponentType_MeshComp:{
-                    Component* comp = new MeshComp(DengRenderer->CreateMesh(&admin->scene, "box.obj"));
+                    Component* comp = new MeshComp(Render::CreateMesh(&admin->scene, "box.obj"));
                     sel->AddComponent(comp);
                     admin->AddComponentToLayers(comp);
                 }break;
@@ -1629,13 +1629,13 @@ inline void MaterialsTab(Admin* admin){
     if(selected_mat != -1 && DengInput->KeyPressedAnyMod(Key::F2)){
         rename_mat = true;
         DengConsole->IMGUI_KEY_CAPTURE = true;
-        cpystr(rename_buffer, DengRenderer->materials[selected_mat].name, DESHI_NAME_SIZE);
+        cpystr(rename_buffer, Render::MaterialName(selected_mat), DESHI_NAME_SIZE);
     }
     //submit renaming material
     if(rename_mat && DengInput->KeyPressedAnyMod(Key::ENTER)){
         rename_mat = false;
         DengConsole->IMGUI_KEY_CAPTURE = false;
-        cpystr(DengRenderer->materials[selected_mat].name, rename_buffer, DESHI_NAME_SIZE);
+        cpystr(Render::MaterialName(selected_mat), rename_buffer, DESHI_NAME_SIZE);
     }
     //stop renaming material
     if(rename_mat && DengInput->KeyPressedAnyMod(Key::ESCAPE)){
@@ -1645,7 +1645,7 @@ inline void MaterialsTab(Admin* admin){
     //delete material
     if(selected_mat != -1 && DengInput->KeyPressedAnyMod(Key::DELETE)){
         //TODO(Ui) re-enable this with a popup to delete OR with undoing on delete
-        //DengRenderer->RemoveMaterial(selected_mat);
+        //Render::RemoveMaterial(selected_mat);
         //selected_mat = -1;
     }
     
@@ -1657,8 +1657,8 @@ inline void MaterialsTab(Admin* admin){
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
             
-            forX(mat_idx, DengRenderer->materials.size()) {
-                MaterialVk* mat = &DengRenderer->materials[mat_idx];
+            forX(mat_idx, Render::MaterialCount()) {
+                MaterialVk* mat = &(*Render::materialArray())[mat_idx];
                 ImGui::PushID(mat->id);
                 ImGui::TableNextRow();
                 
@@ -1690,7 +1690,7 @@ inline void MaterialsTab(Admin* admin){
                     }else if(selected_mat != -1 && selected_mat > mat_idx) {
                         selected_mat -= 1;
                     }
-                    DengRenderer->RemoveMaterial(mat_idx);
+                    Render::RemoveMaterial(mat_idx);
                 }
                 ImGui::PopID();
             }
@@ -1704,7 +1704,7 @@ inline void MaterialsTab(Admin* admin){
     //// create new material ImGui::Button ////
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
     if(ImGui::Button("Create New Material", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
-        selected_mat = DengRenderer->CreateMaterial(TOSTRING("material", DengRenderer->materials.size()).c_str(), Shader_PBR);
+        selected_mat = Render::CreateMaterial(TOSTRING("material", Render::MaterialCount()).c_str(), Shader_PBR);
     }
     
     ImGui::Separator();
@@ -1713,7 +1713,7 @@ inline void MaterialsTab(Admin* admin){
     if(selected_mat == -1) return;
     SetPadding;
     if(ImGui::BeginChild("##mat_inspector", ImVec2(ImGui::GetWindowWidth()*.95f, ImGui::GetWindowHeight()*.8f), false)) {
-        MaterialVk* mat = &DengRenderer->materials[selected_mat];
+        MaterialVk* mat = &(*Render::materialArray())[selected_mat];
         
         //// name ////
         ImGui::TextEx("Name   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
@@ -1724,7 +1724,7 @@ inline void MaterialsTab(Admin* admin){
         if(ImGui::BeginCombo("##mat_shader_combo", ShaderStrings[mat->shader])){
             forI(ArrayCount(ShaderStrings)){
                 if(ImGui::Selectable(ShaderStrings[i], mat->shader == i)){
-                    DengRenderer->UpdateMaterialShader(mat->id, i);
+                    Render::UpdateMaterialShader(mat->id, i);
                 }
             }
             ImGui::EndCombo(); //mat_shader_combo
@@ -1736,85 +1736,45 @@ inline void MaterialsTab(Admin* admin){
         //TODO(Ui) setup material editing other than PBR once we have material parameters
         switch(mat->shader){
             //// flat shader ////
-			
-            default: {
-                ImGui::TextEx("Albedo   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_albedo_combo", DengRenderer->textures[mat->albedoID].filename)) {
-                    forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->albedoID].filename, textures[i].c_str()) == 0)) {
-                            DengRenderer->UpdateMaterialTexture(mat->id, 0, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Albedo));
-                        }
-                    }
-                    ImGui::EndCombo(); //mat_albedo_combo
-                }
-                ImGui::TextEx("Normal   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_normal_combo", DengRenderer->textures[mat->normalID].filename)) {
-                    forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->normalID].filename, textures[i].c_str()) == 0)) {
-                            DengRenderer->UpdateMaterialTexture(mat->id, 1, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Normal));
-                        }
-                    }
-                    ImGui::EndCombo(); //mat_normal_combo
-                }
-                ImGui::TextEx("Specular "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_spec_combo", DengRenderer->textures[mat->specularID].filename)) {
-                    forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->specularID].filename, textures[i].c_str()) == 0)) {
-                            DengRenderer->UpdateMaterialTexture(mat->id, 2, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Specular));
-                        }
-                    }
-                    ImGui::EndCombo(); //mat_spec_combo
-                }
-                ImGui::TextEx("Light    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_light_combo", DengRenderer->textures[mat->lightID].filename)) {
-                    forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->lightID].filename, textures[i].c_str()) == 0)) {
-                            DengRenderer->UpdateMaterialTexture(mat->id, 3, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Light));
-                        }
-                    }
-                    ImGui::EndCombo(); //mat_light_combo
-                }
-            }break;
-			
             case Shader_Flat:{
                 
             }break;
             
             //// PBR shader ////
             //TODO(Ui) add texture image previews
-            case Shader_PBR:{
+            case Shader_PBR:default:{
                 ImGui::TextEx("Albedo   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if(ImGui::BeginCombo("##mat_albedo_combo", DengRenderer->textures[mat->albedoID].filename)){
-                    forI(textures.size()){
-                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->albedoID].filename, textures[i].c_str()) == 0)){
-                            DengRenderer->UpdateMaterialTexture(mat->id, 0, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Albedo));
+                if (ImGui::BeginCombo("##mat_albedo_combo", Render::TextureName(mat->albedoID))) {
+                    forI(textures.size()) {
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(mat->albedoID), textures[i].c_str()) == 0)) {
+                            Render::UpdateMaterialTexture(mat->id, 0, Render::LoadTexture(textures[i].c_str(), TextureType_Albedo));
                         }
                     }
                     ImGui::EndCombo(); //mat_albedo_combo
                 }
                 ImGui::TextEx("Normal   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if(ImGui::BeginCombo("##mat_normal_combo", DengRenderer->textures[mat->normalID].filename)){
-                    forI(textures.size()){
-                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->normalID].filename, textures[i].c_str()) == 0)){
-                            DengRenderer->UpdateMaterialTexture(mat->id, 1, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Normal));
+                if (ImGui::BeginCombo("##mat_normal_combo", Render::TextureName(mat->normalID))) {
+                    forI(textures.size()) {
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(mat->normalID), textures[i].c_str()) == 0)) {
+                            Render::UpdateMaterialTexture(mat->id, 1, Render::LoadTexture(textures[i].c_str(), TextureType_Normal));
                         }
                     }
                     ImGui::EndCombo(); //mat_normal_combo
                 }
                 ImGui::TextEx("Specular "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if(ImGui::BeginCombo("##mat_spec_combo", DengRenderer->textures[mat->specularID].filename)){
-                    forI(textures.size()){
-                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->specularID].filename, textures[i].c_str()) == 0)){
-                            DengRenderer->UpdateMaterialTexture(mat->id, 2, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Specular));
+                if (ImGui::BeginCombo("##mat_spec_combo", Render::TextureName(mat->specularID))) {
+                    forI(textures.size()) {
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(mat->specularID), textures[i].c_str()) == 0)) {
+                            Render::UpdateMaterialTexture(mat->id, 2, Render::LoadTexture(textures[i].c_str(), TextureType_Specular));
                         }
                     }
                     ImGui::EndCombo(); //mat_spec_combo
                 }
                 ImGui::TextEx("Light    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if(ImGui::BeginCombo("##mat_light_combo", DengRenderer->textures[mat->lightID].filename)){
-                    forI(textures.size()){
-                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->lightID].filename, textures[i].c_str()) == 0)){
-                            DengRenderer->UpdateMaterialTexture(mat->id, 3, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Light));
+                if (ImGui::BeginCombo("##mat_light_combo", Render::TextureName(mat->lightID))) {
+                    forI(textures.size()) {
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(mat->lightID), textures[i].c_str()) == 0)) {
+                            Render::UpdateMaterialTexture(mat->id, 3, Render::LoadTexture(textures[i].c_str(), TextureType_Light));
                         }
                     }
                     ImGui::EndCombo(); //mat_light_combo
@@ -1866,7 +1826,7 @@ inline void GlobalTab(Admin* admin){
 		//// render settings ////
 		{
 			ImGui::Separator();
-			static_internal RenderSettings* settings = Render::GetSettings();
+			static_internal RenderSettings* settings = Render::getSettings();
 			static_internal const char* resolution_strings[] = { "128", "256", "512", "1024", "2048", "4096" };
 			static_internal u32 resolution_values[] = { 128, 256, 512, 1024, 2048, 4096 };
 			static_internal u32 shadow_resolution_index = 4;
@@ -1883,7 +1843,7 @@ inline void GlobalTab(Admin* admin){
 			if(ImGui::BeginCombo("##rs_shadowres_combo", resolution_strings[shadow_resolution_index])){
 				forI(ArrayCount(resolution_strings)){
 					if(ImGui::Selectable(resolution_strings[i], shadow_resolution_index == i)){
-						DengRenderer->remakeOffscreen = true;
+						Render::remakeOffscreen();
 						settings->shadowResolution = resolution_values[i];
 						shadow_resolution_index = i;
 					}
@@ -1930,7 +1890,7 @@ inline void BrushesTab(Admin* admin, float fontsize){
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorToImVec4(Color(25, 25, 25)));
     SetPadding; 
     if(ImGui::BeginChild("##meshbrush_tab", ImVec2(ImGui::GetWindowWidth() * 0.95, 100), false)) { WinHovCheck; 
-        if (DengRenderer->meshBrushes.size() == 0) {
+        if (Render::MeshBrushCount() == 0) {
             float time = DengTime->totalTime;
             std::string str1 = "Nothing yet...";
             float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
@@ -1944,17 +1904,17 @@ inline void BrushesTab(Admin* admin, float fontsize){
                 ImGui::TableSetupColumn("Name");
                 ImGui::TableSetupColumn("Delete");
                 
-                forI(DengRenderer->meshBrushes.size()) {
+                forI(Render::MeshBrushCount()) {
                     ImGui::PushID(i);
                     ImGui::TableNextRow(); ImGui::TableNextColumn();
-                    std::string id = std::to_string(DengRenderer->meshBrushes[i].id);
-                    if (ImGui::Button(id.c_str())) selected_meshbrush = &DengRenderer->meshBrushes[i];
+                    std::string id = std::to_string((*Render::meshBrushArray())[i].id);
+                    if (ImGui::Button(id.c_str())) selected_meshbrush = &(*Render::meshBrushArray())[i];
                     
                     ImGui::TableNextColumn();
-                    ImGui::TextEx(DengRenderer->meshBrushes[i].name);
+                    ImGui::TextEx((*Render::meshBrushArray())[i].name);
                     
                     ImGui::TableNextColumn();
-                    if(ImGui::SmallButton("X")) DengRenderer->RemoveMeshBrush(i);
+                    if(ImGui::SmallButton("X")) Render::RemoveMeshBrush(i);
                     ImGui::PopID();
                 }
                 ImGui::EndTable();
@@ -2110,9 +2070,9 @@ void Editor::DebugBar() {
         //precalc strings and stuff so we can set column widths appropriately
         std::string str1 = TOSTRING("wents: ", admin->entities.size());
         float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-        std::string str2 = TOSTRING("wtris: ", g_renderer->stats.totalTriangles);
+        std::string str2 = TOSTRING("wtris: ", Render::getStats()->totalTriangles);
         float strlen2 = (fontsize - (fontsize / 2)) * str2.size();
-        std::string str3 = TOSTRING("wverts: ", g_renderer->stats.totalVertices);
+        std::string str3 = TOSTRING("wverts: ",Render::getStats()->totalVertices);
         float strlen3 = (fontsize - (fontsize / 2)) * str3.size();
         std::string str4 = TOSTRING("stris: ", "0");
         float strlen4 = (fontsize - (fontsize / 2)) * str4.size();
@@ -2493,10 +2453,10 @@ void Editor::WorldGrid(Vector3 cpos) {
         }
         
         if (l1flag) { DebugLinesCol(i, v1, v2, -1, Color::BLUE); }
-        else { DebugLinesCol(i, v1, v2, -1, Color(50, 50, 50, 50)) };
+        else { DebugLinesCol(i, v1, v2, -1, Color(50, 50, 50, 50)); };
         
         if (l2flag) { DebugLinesCol(i, v3, v4, -1, Color::RED); }
-        else { DebugLinesCol(i, v3, v4, -1, Color(50, 50, 50, 50)) };
+        else { DebugLinesCol(i, v3, v4, -1, Color(50, 50, 50, 50)); };
     }
 }
 
@@ -2543,8 +2503,8 @@ void Editor::Init(Admin* a){
     selected.reserve(8);
     camera = new Camera(90.f, .01f, 1000.01f, true);
     camera->admin = a;
-    DengRenderer->UpdateCameraViewMatrix(camera->viewMat);
-    DengRenderer->UpdateCameraPosition(camera->position);
+    Render::UpdateCameraViewMatrix(camera->viewMat);
+    Render::UpdateCameraPosition(camera->position);
     undo_manager.Init();
     level_name = "";
     
@@ -2693,11 +2653,11 @@ void Editor::Update(){
     //TODO(delle,Cl) possibly clean up  the renderer's selected mesh stuff by having the 
     //renderer take a pointer of u32 that's stored here, or just dont have the renderer know about
     //selected entities since thats a game thing
-    DengRenderer->RemoveSelectedMesh(-1);
+    Render::RemoveSelectedMesh(-1);
     for(Entity* e : selected){
         if(MeshComp* mc = e->GetComponent<MeshComp>()){
-            if(!Render::GetSettings()->findMeshTriangleNeighbors){
-                DengRenderer->AddSelectedMesh(mc->meshID);
+            if(!Render::getSettings()->findMeshTriangleNeighbors){
+                Render::AddSelectedMesh(mc->meshID);
             }else{
                 std::vector<Vector2> outline = mc->mesh->GenerateOutlinePoints(e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
                                                                                DengWindow->dimensions, camera->position);

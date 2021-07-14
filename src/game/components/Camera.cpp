@@ -35,13 +35,10 @@ Camera::Camera(float fov, float nearZ, float farZ, bool freeCam){
 
 void Camera::Update() {
 	if(freeCamera){
-		Window* window = DengWindow;
-		Renderer* renderer = DengRenderer;
-		
 		//NOTE this can happen whether the camera is free or not so move it out
 		//of this scope once we implement that
-		static int wwidth = window->width; 
-		static int wheight = window->height;
+		static int wwidth = DengWindow->width; 
+		static int wheight = DengWindow->height;
 		
 		//clamp camera rotation
 		Math::clamp(rotation.x, -89.9f, 89.9f);
@@ -59,25 +56,25 @@ void Camera::Update() {
 			float fw = ImGui::GetFontSize() / 2;
 			
 			switch (orthoview) {
-				case FRONT:    position = Vector3(0, 0, -999); rotation = Vector3(0, 0, 0);     ImGui::DebugDrawText("FRONT (+Z)",  Vector2(window->width - fw * 1.3 * sizeof("FRONT (+Z)"), window->height - 50));  break;
-				case BACK:     position = Vector3(0, 0, 999);  rotation = Vector3(0, 180, 0);   ImGui::DebugDrawText("BACK (-Z)",   Vector2(window->width - fw * 1.3 * sizeof("BACK (-Z)"), window->height - 50));   break;
-				case RIGHT:    position = Vector3(999, 0, 0);  rotation = Vector3(0, -90, 0);   ImGui::DebugDrawText("RIGHT (+X)",  Vector2(window->width - fw * 1.3 * sizeof("RIGHT (+X)"), window->height - 50));  break;
-				case LEFT:     position = Vector3(-999, 0, 0); rotation = Vector3(0, 90, 0);    ImGui::DebugDrawText("LEFT (-X)",   Vector2(window->width - fw * 1.3 * sizeof("LEFT (-X)"), window->height - 50));   break;
-				case TOPDOWN:  position = Vector3(0, 999, 0);  rotation = Vector3(89.9, 0, 0);  ImGui::DebugDrawText("TOP (-Y)",    Vector2(window->width - fw * 1.3 * sizeof("TOP (-Y)"), window->height - 50));    break;
-				case BOTTOMUP: position = Vector3(0, -999, 0); rotation = Vector3(-89.9, 0, 0); ImGui::DebugDrawText("BOTTOM (+Y)", Vector2(window->width - fw * 1.3 * sizeof("BOTTOM (+Y)"), window->height - 50)); break;
+				case FRONT:    position = Vector3(0, 0, -999); rotation = Vector3(0, 0, 0);     ImGui::DebugDrawText("FRONT (+Z)",  Vector2(DengWindow->width - fw * 1.3 * sizeof("FRONT (+Z)"), DengWindow->height - 50));  break;
+				case BACK:     position = Vector3(0, 0, 999);  rotation = Vector3(0, 180, 0);   ImGui::DebugDrawText("BACK (-Z)",   Vector2(DengWindow->width - fw * 1.3 * sizeof("BACK (-Z)"), DengWindow->height - 50));   break;
+				case RIGHT:    position = Vector3(999, 0, 0);  rotation = Vector3(0, -90, 0);   ImGui::DebugDrawText("RIGHT (+X)",  Vector2(DengWindow->width - fw * 1.3 * sizeof("RIGHT (+X)"), DengWindow->height - 50));  break;
+				case LEFT:     position = Vector3(-999, 0, 0); rotation = Vector3(0, 90, 0);    ImGui::DebugDrawText("LEFT (-X)",   Vector2(DengWindow->width - fw * 1.3 * sizeof("LEFT (-X)"), DengWindow->height - 50));   break;
+				case TOPDOWN:  position = Vector3(0, 999, 0);  rotation = Vector3(89.9, 0, 0);  ImGui::DebugDrawText("TOP (-Y)",    Vector2(DengWindow->width - fw * 1.3 * sizeof("TOP (-Y)"), DengWindow->height - 50));    break;
+				case BOTTOMUP: position = Vector3(0, -999, 0); rotation = Vector3(-89.9, 0, 0); ImGui::DebugDrawText("BOTTOM (+Y)", Vector2(DengWindow->width - fw * 1.3 * sizeof("BOTTOM (+Y)"), DengWindow->height - 50)); break;
 			}
 			UpdateProjectionMatrix();
 		}
 		
 		//redo projection matrix is window size changes
-		if (window->width != wwidth || window->height != wheight) {
-			wwidth = window->width;
-			wheight = window->height;
+		if (DengWindow->width != wwidth || DengWindow->height != wheight) {
+			wwidth = DengWindow->width;
+			wheight = DengWindow->height;
 			UpdateProjectionMatrix();
 		}
 		
-		renderer->UpdateCameraViewMatrix(viewMat);
-		renderer->UpdateCameraPosition(position);
+		Render::UpdateCameraViewMatrix(viewMat);
+		Render::UpdateCameraPosition(position);
 		
 	}
 }
@@ -163,7 +160,7 @@ void Camera::UpdateProjectionMatrix(){
 		case(CameraType_Perspective):default:{ projMat = MakePerspectiveProjection(); } break;
 		case(CameraType_Orthographic):{ projMat = MakeOrthographicProjection(); }break;
 	}
-	DengRenderer->UpdateCameraProjectionMatrix(projMat);
+	Render::UpdateCameraProjectionMatrix(projMat);
 }
 
 std::string Camera::str(){

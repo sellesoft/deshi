@@ -10,7 +10,7 @@ void Debug::DrawLine(Vector3 v1, Vector3 v2, size_t unique, Color color = Color:
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
 		if(*meshes[unique].last[0] != v1 || *meshes[unique].last[1] != v2){
-			DengRenderer->UpdateDebugLine(id, v1, v2, color);
+			Render::UpdateDebugLine(id, v1, v2, color);
 			//meshes[unique].last[0] = v1;
 			memcpy(meshes[unique].last[0], (void*)&v1, sizeof(Vector3));
 			//meshes[unique].last[1] = v2;
@@ -21,7 +21,7 @@ void Debug::DrawLine(Vector3 v1, Vector3 v2, size_t unique, Color color = Color:
 		MeshInfo mi;
 		mi.last[0] = new Vector3();
 		mi.last[1] = new Vector3();
-		mi.meshID = DengRenderer->CreateDebugLine(v1, v2, color, true);
+		mi.meshID = Render::CreateDebugLine(v1, v2, color, true);
 		mi.idleTime = 0;
 		mi.allowedTime = -1;
 		mi.calledThisFrame = true;
@@ -38,7 +38,7 @@ void Debug::DrawLine(Vector3 v1, Vector3 v2, size_t unique, float time = -2, Col
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
 		if(*meshes[unique].last[0] != v1 || *meshes[unique].last[1] != v2){
-			DengRenderer->UpdateDebugLine(id, v1, v2, color);
+			Render::UpdateDebugLine(id, v1, v2, color);
 			//meshes[unique].last[0] = v1;
 			memcpy(meshes[unique].last[0], (void*)&v1, sizeof(Vector3));
 			//meshes[unique].last[1] = v2;
@@ -49,7 +49,7 @@ void Debug::DrawLine(Vector3 v1, Vector3 v2, size_t unique, float time = -2, Col
 		MeshInfo mi;
 		mi.last[0] = new Vector3();
 		mi.last[1] = new Vector3();
-		mi.meshID = DengRenderer->CreateDebugLine(v1, v2, color, true);
+		mi.meshID = Render::CreateDebugLine(v1, v2, color, true);
 		mi.idleTime = 0;
 		mi.allowedTime = time;
 		mi.calledThisFrame = true;
@@ -74,7 +74,7 @@ void Debug::DrawLine(int i, Vector3 v1, Vector3 v2, size_t unique, Color color =
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
 		if(*meshes[unique].last[0] != v1 || *meshes[unique].last[1] != v2){
-			DengRenderer->UpdateDebugLine(id, v1, v2, color);
+			Render::UpdateDebugLine(id, v1, v2, color);
 			//meshes[unique].last[0] = v1;
 			memcpy(meshes[unique].last[0], (void*)&v1, sizeof(Vector3));
 			//meshes[unique].last[1] = v2;
@@ -89,7 +89,7 @@ void Debug::DrawLine(int i, Vector3 v1, Vector3 v2, size_t unique, Color color =
 		MeshInfo mi;
 		mi.last[0] = new Vector3();
 		mi.last[1] = new Vector3();
-		mi.meshID = DengRenderer->CreateDebugLine(v1, v2, color, true);
+		mi.meshID = Render::CreateDebugLine(v1, v2, color, true);
 		mi.idleTime = 0;
 		mi.allowedTime = -1;
 		mi.calledThisFrame = true;
@@ -115,7 +115,7 @@ void Debug::DrawLine(int i, Vector3 v1, Vector3 v2, size_t unique, float time = 
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
 		if (*meshes[unique].last[0] != v1 || *meshes[unique].last[1] != v2) {
-			DengRenderer->UpdateDebugLine(id, v1, v2, color);
+			Render::UpdateDebugLine(id, v1, v2, color);
 			//meshes[unique].last[0] = v1;
 			memcpy(meshes[unique].last[0], (void*)&v1, sizeof(Vector3));
 			//meshes[unique].last[1] = v2;
@@ -126,7 +126,7 @@ void Debug::DrawLine(int i, Vector3 v1, Vector3 v2, size_t unique, float time = 
 		MeshInfo mi;
 		mi.last[0] = new Vector3();
 		mi.last[1] = new Vector3();
-		mi.meshID = DengRenderer->CreateDebugLine(v1, v2, color, true);
+		mi.meshID = Render::CreateDebugLine(v1, v2, color, true);
 		mi.idleTime = 0;
 		mi.allowedTime = time;
 		mi.calledThisFrame = true;
@@ -142,11 +142,11 @@ void Debug::DrawMesh(Mesh* mesh, Matrix4 transform, size_t unique, Color color =
 	if (meshes.find(unique) != meshes.end()) {
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
-		DengRenderer->UpdateMeshBrushMatrix(id, transform);
+		Render::UpdateMeshBrushMatrix(id, transform);
 	}
 	else {
 		MeshInfo mi;
-		mi.meshID = DengRenderer->CreateMeshBrush(mesh, transform);
+		mi.meshID = Render::CreateMeshBrush(mesh, transform);
 		mi.idleTime = 0;
 		mi.allowedTime = -1;
 		mi.calledThisFrame = true;
@@ -158,11 +158,11 @@ void Debug::DrawMesh(Mesh* mesh, Matrix4 transform, size_t unique, float time = 
 	if (meshes.find(unique) != meshes.end()) {
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
-		DengRenderer->UpdateMeshBrushMatrix(id, transform);
+		Render::UpdateMeshBrushMatrix(id, transform);
 	}
 	else {
 		MeshInfo mi;
-		mi.meshID = DengRenderer->CreateMeshBrush(mesh, transform);
+		mi.meshID = Render::CreateMeshBrush(mesh, transform);
 		mi.idleTime = 0;
 		mi.allowedTime = -1;
 		mi.calledThisFrame = true;
@@ -182,11 +182,11 @@ void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, size_t unique, Color 
 	if (meshes.find(unique) != meshes.end()) {
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
-		DengRenderer->UpdateMeshBrushMatrix(id, transform);
+		Render::UpdateMeshBrushMatrix(id, transform);
 	}
 	else {
 		MeshInfo mi;
-		mi.meshID = DengRenderer->CreateMeshBrush(mesh, transform);
+		mi.meshID = Render::CreateMeshBrush(mesh, transform);
 		mi.idleTime = 0;
 		mi.allowedTime = -1;
 		mi.calledThisFrame = true;
@@ -206,11 +206,11 @@ void Debug::DrawMesh(int i, Mesh* mesh, Matrix4 transform, size_t unique, float 
 	if (meshes.find(unique) != meshes.end()) {
 		u32 id = meshes[unique].meshID;
 		meshes[unique].calledThisFrame = true;
-		DengRenderer->UpdateMeshBrushMatrix(id, transform);
+		Render::UpdateMeshBrushMatrix(id, transform);
 	}
 	else {
 		MeshInfo mi;
-		mi.meshID = DengRenderer->CreateMeshBrush(mesh, transform);
+		mi.meshID = Render::CreateMeshBrush(mesh, transform);
 		mi.idleTime = 0;
 		mi.allowedTime = time;
 		mi.calledThisFrame = true;
@@ -266,9 +266,9 @@ void Debug::DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 
 
 void Debug::Update() {
 	//TODO(delle,Re) move this to the renderer
-	RenderSettings* settings = Render::GetSettings();
+	RenderSettings* settings = Render::getSettings();
 	if(settings->lightFrustrums){
-		DrawFrustrum(DengRenderer->uboVS.values.lights[0].ToVector3(), Vector3::ZERO, 1, 90, settings->shadowNearZ, settings->shadowFarZ);
+		DrawFrustrum((*Render::lightArray()).ToVector3(), Vector3::ZERO, 1, 90, settings->shadowNearZ, settings->shadowFarZ);
 	}
 	
 	
@@ -280,19 +280,19 @@ void Debug::Update() {
 			mi->idleTime += DengTime->deltaTime;
 			if (mi->allowedTime == -1) { /*indefinite*/ }
 			else if (mi->allowedTime == -2) {
-				if (mi->clearNextFrame) DengRenderer->UpdateMeshBrushVisibility(mi->meshID, false);
+				if (mi->clearNextFrame) Render::UpdateMeshBrushVisibility(mi->meshID, false);
 				else mi->clearNextFrame = true;
 			}
 			else if (mi->idleTime < mi->allowedTime) {
-				if (mi->wasInvis) { DengRenderer->UpdateMeshBrushVisibility(mi->meshID, true);  mi->wasInvis = false; }
+				if (mi->wasInvis) { Render::UpdateMeshBrushVisibility(mi->meshID, true);  mi->wasInvis = false; }
 			}
 			else {
-				if (!mi->wasInvis) { DengRenderer->UpdateMeshBrushVisibility(mi->meshID, false);  mi->wasInvis = true; }
+				if (!mi->wasInvis) { Render::UpdateMeshBrushVisibility(mi->meshID, false);  mi->wasInvis = true; }
 			}
 		}
 		else {
 			mi->idleTime = 0;
-			if (mi->wasInvis) { DengRenderer->UpdateMeshBrushVisibility(mi->meshID, true); mi->wasInvis = false; }
+			if (mi->wasInvis) { Render::UpdateMeshBrushVisibility(mi->meshID, true); mi->wasInvis = false; }
 			mi->calledThisFrame = false;
 			mi->clearNextFrame = true;
 		}

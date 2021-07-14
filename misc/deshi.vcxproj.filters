@@ -127,9 +127,6 @@
     <ClInclude Include="..\src\utils\optional.h">
       <Filter>src\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\renderer_vulkan.h">
-      <Filter>src\core</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\game\components\Orb.h">
       <Filter>src\game\components\h</Filter>
     </ClInclude>
@@ -156,9 +153,6 @@
     </ClInclude>
     <ClInclude Include="..\src\game\Transform.h">
       <Filter>src\game</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\core\imgui_vulkan.h">
-      <Filter>src\core</Filter>
     </ClInclude>
     <ClInclude Include="..\src\game\UndoManager.h">
       <Filter>src\game</Filter>
@@ -452,9 +446,6 @@
       <Filter>src\game\components\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\core\assets.cpp">
-      <Filter>src\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\core\imgui_vulkan.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
     <ClCompile Include="..\src\game\UndoManager.cpp">

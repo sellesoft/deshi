@@ -326,15 +326,15 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
                     for(auto& diff : mesh_id_diffs){
                         if(diff.first == std::stoi(kv.second)){
                             mesh->meshID = diff.second;
-                            mesh->mesh = DengRenderer->GetMeshPtr(mesh->meshID);
+                            mesh->mesh = Render::GetMeshPtr(mesh->meshID);
                             mesh_found = true;
                         }
                     }
                 }
                 else if(kv.first == "name"){
                     if(!mesh_found){ //NOTE only make if ID failed to make it
-                        mesh->meshID = DengRenderer->CreateMesh(&admin->scene, kv.second.c_str());
-                        mesh->mesh = DengRenderer->GetMeshPtr(mesh->meshID);
+                        mesh->meshID = Render::CreateMesh(&admin->scene, kv.second.c_str());
+                        mesh->mesh = Render::GetMeshPtr(mesh->meshID);
                     }
                 }
                 else if(kv.first == "visible"){ 

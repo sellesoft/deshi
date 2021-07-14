@@ -205,10 +205,8 @@
     <ClInclude Include="..\src\core\console.h" />
     <ClInclude Include="..\src\core\console2.h" />
     <ClInclude Include="..\src\core\imgui.h" />
-    <ClInclude Include="..\src\core\imgui_vulkan.h" />
     <ClInclude Include="..\src\core\input.h" />
     <ClInclude Include="..\src\core\renderer.h" />
-    <ClInclude Include="..\src\core\renderer_vulkan.h" />
     <ClInclude Include="..\src\core\time.h" />
     <ClInclude Include="..\src\core\window.h" />
     <ClInclude Include="..\src\defines.h" />
@@ -309,7 +307,6 @@
     <ClCompile Include="..\src\core\assets.cpp" />
     <ClCompile Include="..\src\core\console.cpp" />
     <ClCompile Include="..\src\core\console2.cpp" />
-    <ClCompile Include="..\src\core\imgui_vulkan.cpp" />
     <ClCompile Include="..\src\core\renderer_vulkan.cpp" />
     <ClCompile Include="..\src\core\window.cpp" />
     <ClCompile Include="..\src\deshi.cpp" />
