@@ -41,6 +41,7 @@ struct Editor{
 	bool showMenuBar;
 	bool showImGuiDemoWindow;
 	bool showDebugLayer;
+	bool showWorldGrid;
 	bool ConsoleHovFlag; //this can be done better
 	
 	void Init(Admin* a);

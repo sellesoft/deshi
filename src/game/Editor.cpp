@@ -707,6 +707,7 @@ void Editor::MenuBar() {
             if (ImGui::MenuItem("Debug Bar"))           showDebugBar = !showDebugBar;
             if (ImGui::MenuItem("DebugLayer"))          showDebugLayer = !showDebugLayer;
             if (ImGui::MenuItem("Timers"))              showTimes = !showTimes;
+            if (ImGui::MenuItem("World Grid"))          showWorldGrid = !showWorldGrid;
             if (ImGui::MenuItem("ImGui Demo"))          showImGuiDemoWindow = !showImGuiDemoWindow;
             if (ImGui::MenuItem("Editor Window"))    {  showEditorWin = !showEditorWin; showDebugTools = false;  }
             ImGui::EndMenu();
@@ -2321,65 +2322,6 @@ void Editor::DebugLayer() {
     float fontsize = ImGui::GetFontSize();
     
     
-    
-    
-    //psuedo grid
-    int lines = 0;
-    for (int i = 0; i < lines * 2; i++) {
-        Vector3 cpos = c->position;
-        Vector3 v1 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines), c->viewMat).ToVector3();
-        Vector3 v2 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + lines), c->viewMat).ToVector3();
-        Vector3 v3 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.z) + -lines + i), c->viewMat).ToVector3();
-        Vector3 v4 = Math::WorldToCamera4(Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i), c->viewMat).ToVector3();
-        
-        
-        
-        //TODO(sushi, CamMa) make grid lines appear properly when in different orthographic views
-        //if (c->type == CameraType::ORTHOGRAPHIC) {
-        //
-        //	if (c->orthoview == FRONT) {
-        //		v1 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.y) + -lines), c->viewMat).ToVector3();
-        //		v2 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.y) + lines), c->viewMat).ToVector3();
-        //		v3 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.y) + -lines + i), c->viewMat).ToVector3();
-        //		v4 = Math::WorldToCamera4(Vector3(floor(cpos.x) + lines, 0, floor(cpos.y) + -lines + i), c->viewMat).ToVector3();
-        //
-        //	}
-        //	
-        //
-        //
-        //}
-        
-        bool l1flag = false;
-        bool l2flag = false;
-        
-        if (floor(cpos.x) - lines + i == 0) {
-            l1flag = true;
-        }
-        if (floor(cpos.z) - lines + i == 0) {
-            l2flag = true;
-        }
-        //Vector3 v1t = v1.ToVector3();
-        //Vector3 v2t = v2.ToVector3();
-        //Vector3 v3t = v3.ToVector3();
-        //Vector3 v4t = v4.ToVector3();
-        
-        
-        if (Math::ClipLineToZPlanes(v1, v2, c->nearZ, c->farZ)) {
-            Vector2 v1s = Math::CameraToScreen2(v1, c->projMat, DengWindow->dimensions);
-            Vector2 v2s = Math::CameraToScreen2(v2, c->projMat, DengWindow->dimensions);
-            Math::ClipLineToBorderPlanes(v1s, v2s, DengWindow->dimensions);
-            if (!l1flag) ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(v1s), ImGui::Vector2ToImVec2(v2s), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
-            else         ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(v1s), ImGui::Vector2ToImVec2(v2s), ImGui::GetColorU32(ImVec4(1, 0, 0, 1)));
-        }
-        if (Math::ClipLineToZPlanes(v3, v4, c->nearZ, c->farZ)) {
-            Vector2 v3s = Math::CameraToScreen2(v3, c->projMat, DengWindow->dimensions);
-            Vector2 v4s = Math::CameraToScreen2(v4, c->projMat, DengWindow->dimensions);
-            Math::ClipLineToBorderPlanes(v3s, v4s, DengWindow->dimensions);
-            if (!l2flag) ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(v3s), ImGui::Vector2ToImVec2(v4s), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
-            else         ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(v3s), ImGui::Vector2ToImVec2(v4s), ImGui::GetColorU32(ImVec4(0, 0, 1, 1)));
-        }
-    }
-    
     if (DengInput->KeyPressed(MouseButton::LEFT) && rand() % 100 + 1 == 80) {
         times.push_back(pair<float, Vector2>(0.f, mp));
     }
@@ -2399,10 +2341,8 @@ void Editor::DebugLayer() {
         std::string str1 = "hehe!!!!";
         float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
         for (int i = 0; i < str1.size(); i++) {
-            ImGui::SetCursorPos(ImVec2(
-                                       curpos.x + i * fontsize / 2,
-                                       curpos.y + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))
-                                       ));
+            ImGui::SetCursorPos(ImVec2(curpos.x + i * fontsize / 2,
+                                       curpos.y + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))));
             ImGui::TextEx(str1.substr(i, 1).c_str());
         }
         
@@ -2414,7 +2354,6 @@ void Editor::DebugLayer() {
         ImGui::PopStyleColor();
         index++;
     }
-    ImGui::TextEx("test");
     
     
     if (admin->paused) {
@@ -2432,15 +2371,15 @@ void Editor::DebugLayer() {
 
 void Editor::WorldGrid(Vector3 cpos) {
     int lines = 20;
-    cpos = Vector3::ZERO;
+	cpos.x = ((int)(cpos.x / 20.f)) * 20.f;
+	cpos.y = ((int)(cpos.y / 20.f)) * 20.f;
+	cpos.z = ((int)(cpos.z / 20.f)) * 20.f;
     
     for (int i = 0; i < lines * 2 + 1; i++) {
         Vector3 v1 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines);
-        Vector3 v2 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + lines);
-        Vector3 v3 = Vector3(floor(cpos.x) + -lines, 0, floor(cpos.z) + -lines + i);
-        Vector3 v4 = Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i);
-        //
-        //DebugLinesStatic(i, v3, v4, -1);
+        Vector3 v2 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) +  lines);
+        Vector3 v3 = Vector3(floor(cpos.x) + -lines,     0, floor(cpos.z) + -lines + i);
+        Vector3 v4 = Vector3(floor(cpos.x) +  lines,     0, floor(cpos.z) + -lines + i);
         
         bool l1flag = false;
         bool l2flag = false;
@@ -2452,44 +2391,11 @@ void Editor::WorldGrid(Vector3 cpos) {
             l2flag = true;
         }
         
-        if (l1flag) { DebugLinesCol(i, v1, v2, -1, Color::BLUE); }
-        else { DebugLinesCol(i, v1, v2, -1, Color(50, 50, 50, 50)); };
+        if (l1flag) { DebugLinesCol(i, v1, v2, DengTime->deltaTime, Color::BLUE); }
+        else { DebugLinesCol(i, v1, v2, DengTime->deltaTime, Color(50, 50, 50, 50)); };
         
-        if (l2flag) { DebugLinesCol(i, v3, v4, -1, Color::RED); }
-        else { DebugLinesCol(i, v3, v4, -1, Color(50, 50, 50, 50)); };
-    }
-}
-
-void Editor::ShowSelectedEntityNormals() {
-    vec3 p0, p1, p2, normal, intersect;
-    mat4 rot, transform;
-    f32  t;
-    int  index = 0;
-    for (Entity* e : selected) {
-        transform = e->transform.TransformMatrix();
-        rot = Matrix4::RotationMatrix(e->transform.rotation);
-        if (MeshComp* mc = e->GetComponent<MeshComp>()) {
-            if (mc->mesh_visible) {
-                Mesh* m = mc->mesh;
-                for (Batch& b : m->batchArray) {
-                    for (u32 i = 0; i < b.indexArray.size(); i += 3) {
-                        
-                        p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
-                        p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
-                        p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
-                        normal = b.vertexArray[b.indexArray[i + 0]].normal * rot;
-                        
-                        Vector3 perp = normal.cross(p1 - p0).yInvert();
-                        Vector3 mid = (p0 + p1 + p2) / 3;
-                        
-                        DebugLinesCol(i, mid, mid + normal, -1, Color::CYAN);
-                        // DebugLinesCol(i, p0, p0 + perp, -1, Color::YELLOW);
-                        // DebugLinesCol(i, mid, p0, -1, Color::MAGENTA);
-                    }
-                }
-            }
-        }
-        index++;
+        if (l2flag) { DebugLinesCol(i, v3, v4, DengTime->deltaTime, Color::RED); }
+        else { DebugLinesCol(i, v3, v4, DengTime->deltaTime, Color(50, 50, 50, 50)); };
     }
 }
 
@@ -2514,6 +2420,7 @@ void Editor::Init(Admin* a){
     showMenuBar         = true;
     showImGuiDemoWindow = false;
     showDebugLayer      = true;
+	showWorldGrid       = true;
     ConsoleHovFlag      = false;
     
     showEditorWin = false;
@@ -2623,6 +2530,7 @@ void Editor::Update(){
         if (showDebugBar)   DebugBar();
         if (showMenuBar)    MenuBar();
         if (showEditorWin)  CreateEditorWin();
+		if (showWorldGrid)  WorldGrid(camera->position);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1)); {
             if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
         }ImGui::PopStyleColor();
@@ -2630,19 +2538,7 @@ void Editor::Update(){
         if (!showMenuBar)    menubarheight = 0;
         if (!showDebugBar)   debugbarheight = 0;
         if (!showDebugTools) debugtoolswidth = 0;
-        
-        Vector3 cpos = camera->position;
-        static Vector3 lastcpos = camera->position;
-        static bool first = true;
-        if ((lastcpos - cpos).mag() > 10000 || first) {
-            //TODO(sushi, Op) look into if we can some how load/change things on the GPU in a different thread 
-            //std::thread worldgrid(WorldGrid, cpos);
-            WorldGrid(cpos);
-            //worldgrid.detach();
-            lastcpos = camera->position;
-            first = false;
-        }
-        
+		
         DengConsole->IMGUI_MOUSE_CAPTURE = (ConsoleHovFlag || WinHovFlag) ? true : false;
     }
     
@@ -2671,7 +2567,6 @@ void Editor::Update(){
     ////////////////////////////////
     ////  selected entity debug ////
     ////////////////////////////////
-    //ShowSelectedEntityNormals();
     DisplayTriggers(admin);
 }
 
