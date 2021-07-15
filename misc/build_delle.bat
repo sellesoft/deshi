@@ -22,13 +22,13 @@ REM ____________________________________________________________________________
 REM                                            Defines
 REM _____________________________________________________________________________________________________
 
-REM  DESHI_WIN64:    0 = not 64-bit windows        1 = build for 64-bit windows
+REM  DESHI_WINDOWS:  0 = not 64-bit windows        1 = build for 64-bit windows
 REM  DESHI_SLOW:     0 = no slow code allowed      1 = slow code allowed
 REM  DESHI_INTERNAL: 0 = build for public release  1 = build for developer only
 
 @set DEFINES_DEBUG=/D"DESHI_INTERNAL=1" /D"DESHI_SLOW=1" 
 @set DEFINES_RELEASE=
-@set DEFINES_GENERIC=/D"DESHI_VULKAN=1" /D"DESHI_WIN64=1"
+@set DEFINES_GENERIC=/D"DESHI_VULKAN=1" /D"DESHI_WINDOWS=1"
 
 REM _____________________________________________________________________________________________________
 REM                                    Command Line Arguments

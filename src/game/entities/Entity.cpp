@@ -164,7 +164,7 @@ enum struct Header{
 };
 #define InvalidHeaderKeyError(header) ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid key '",kv.first,"' for header '"header"'.")
 //TODO(delle) support multiple components of a type on an entity
-Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u32,u32>>& mesh_id_diffs){
+Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u32,u32>>& mesh_id_diffs){
     //load file into char array
     char* buffer = Assets::readFileAsciiToArray(filepath);
     if(!buffer) return 0;

@@ -266,7 +266,7 @@ void Debug::DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 
 
 void Debug::Update() {
 	//TODO(delle,Re) move this to the renderer
-	RenderSettings* settings = Render::getSettings();
+	RenderSettings* settings = Render::GetSettings();
 	if(settings->lightFrustrums){
 		DrawFrustrum((*Render::lightArray()).ToVector3(), Vector3::ZERO, 1, 90, settings->shadowNearZ, settings->shadowFarZ);
 	}

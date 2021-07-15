@@ -293,7 +293,7 @@ void Admin::Reset(){
     
     for(auto& layer : freeCompLayers) layer.clear();
     scene.Reset();
-    Render::reset();
+    Render::Reset();
     Render::LoadScene(&scene);
     editor.Reset();
     SUCCESS("Finished resetting admin in ", TIMER_END(t_r), "ms");

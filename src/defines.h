@@ -71,6 +71,8 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define Terabytes(x) (Gigabytes((x))*1024ULL)
 
 #define Clamp(value, min, max) (((value) < min) ? min : (((value) > max) ? max : (value)))
+#define Max(a, b) (((a) > (b)) ? (a) : (b))
+#define Min(a, b) (((a) < (b)) ? (a) : (b))
 
 //library-less assert
 #if DESHI_SLOW

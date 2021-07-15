@@ -1,20 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug|x64">
-      <Configuration>Debug</Configuration>
+    <ProjectConfiguration Include="DebugWindowsVulkan|x64">
+      <Configuration>DebugWindowsVulkan</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|x64">
-      <Configuration>Release</Configuration>
+    <ProjectConfiguration Include="ReleaseWindowsVulkan|x64">
+      <Configuration>ReleaseWindowsVulkan</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
@@ -26,119 +18,44 @@
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)build\Debug</OutDir>
-    <IntDir>$(SolutionDir)build\Debug</IntDir>
+    <OutDir>$(SolutionDir)build\debug</OutDir>
+    <IntDir>$(SolutionDir)build\debug</IntDir>
     <SourcePath>$(SolutionDir)src;$(VC_SourcePath)</SourcePath>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)build\Release</OutDir>
-    <IntDir>$(SolutionDir)build\Release</IntDir>
+    <OutDir>$(SolutionDir)build\release</OutDir>
+    <IntDir>$(SolutionDir)build\release</IntDir>
     <SourcePath>$(SolutionDir)src;$(VC_SourcePath)</SourcePath>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)build\Debug</OutDir>
-    <IntDir>$(SolutionDir)build\Debug</IntDir>
-    <SourcePath>$(SolutionDir)src;$(VC_SourcePath)</SourcePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)build\Release</OutDir>
-    <IntDir>$(SolutionDir)build\Release</IntDir>
-    <SourcePath>$(SolutionDir)src;$(VC_SourcePath)</SourcePath>
-  </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\src\OpenAL1.1\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\src\boost_1_74_0;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalOptions>/permissive %(AdditionalOptions)</AdditionalOptions>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <DisableSpecificWarnings>26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\src\OpenAL1.1\libs\Win64;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win64;C:\VulkanSDK\1.2.162.1\Lib;C:\src\glfw-3.3.2.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>OpenAL32.lib;opengl32.lib;gdi32.lib;shell32.lib;vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\src\OpenAL1.1\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\src\boost_1_74_0;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalOptions>/permissive %(AdditionalOptions)</AdditionalOptions>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <DisableSpecificWarnings>26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\src\OpenAL1.1\libs\Win64;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win64;C:\VulkanSDK\1.2.162.1\Lib;C:\src\glfw-3.3.2.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>OpenAL32.lib;opengl32.lib;gdi32.lib;shell32.lib;vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">
     <ClCompile>
       <WarningLevel>
       </WarningLevel>
@@ -148,24 +65,33 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\src\OpenAL1.1\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glfw-3.3.2.bin.WIN64\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalOptions>/permissive /D"DESHI_INTERNAL=1" /D"DESHI_SLOW=1"</AdditionalOptions>
+      <AdditionalOptions>/D"DESHI_INTERNAL=1" /D"DESHI_SLOW=1" /D"DESHI_VULKAN=1" /D"DESHI_WINDOWS=1"</AdditionalOptions>
       <SupportJustMyCode>false</SupportJustMyCode>
-      <ModuleOutputFile />
+      <ModuleOutputFile>
+      </ModuleOutputFile>
       <BufferSecurityCheck>
       </BufferSecurityCheck>
-      <TreatWChar_tAsBuiltInType />
-      <ForceConformanceInForLoopScope />
-      <RemoveUnreferencedCodeData />
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <MinimalRebuild />
-      <Optimization />
-      <FloatingPointModel />
-      <ErrorReporting />
-      <TreatWarningAsError />
-      <BasicRuntimeChecks />
-      <CallingConvention />
+      <TreatWChar_tAsBuiltInType>
+      </TreatWChar_tAsBuiltInType>
+      <ForceConformanceInForLoopScope>
+      </ForceConformanceInForLoopScope>
+      <RemoveUnreferencedCodeData>
+      </RemoveUnreferencedCodeData>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <MinimalRebuild>false</MinimalRebuild>
+      <Optimization>
+      </Optimization>
+      <FloatingPointModel>
+      </FloatingPointModel>
+      <ErrorReporting>
+      </ErrorReporting>
+      <TreatWarningAsError>
+      </TreatWarningAsError>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <CallingConvention>
+      </CallingConvention>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <DiagnosticsFormat />
+      <DiagnosticsFormat>Column</DiagnosticsFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DisableSpecificWarnings>26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -176,28 +102,48 @@
       <AdditionalDependencies>OpenAL32.lib;opengl32.lib;gdi32.lib;shell32.lib;vulkan-1.lib;glfw3.lib;shaderc_combinedd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>
+      </SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\src\OpenAL1.1\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\src\boost_1_74_0;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glm;C:\src\glfw-3.3.2.bin.WIN64\include</AdditionalIncludeDirectories>
+      <ConformanceMode>Default</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\src\OpenAL1.1\include;C:\Program Files %28x86%29\OpenAL 1.1 SDK\include;C:\src\stb-master;C:\VulkanSDK\1.2.162.1\Include;C:\src\glfw-3.3.2.bin.WIN64\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalOptions>/permissive %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/D"DESHI_VULKAN=1" /D"DESHI_WINDOWS=1"</AdditionalOptions>
+      <SupportJustMyCode>false</SupportJustMyCode>
+      <ModuleOutputFile>
+      </ModuleOutputFile>
+      <BufferSecurityCheck>
+      </BufferSecurityCheck>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <ForceConformanceInForLoopScope>true</ForceConformanceInForLoopScope>
+      <RemoveUnreferencedCodeData>true</RemoveUnreferencedCodeData>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <MinimalRebuild>false</MinimalRebuild>
+      <Optimization>MaxSpeed</Optimization>
+      <FloatingPointModel>
+      </FloatingPointModel>
+      <ErrorReporting>
+      </ErrorReporting>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <CallingConvention>
+      </CallingConvention>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <DiagnosticsFormat>Column</DiagnosticsFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <DisableSpecificWarnings>26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\src\OpenAL1.1\libs\Win64;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win64;C:\VulkanSDK\1.2.162.1\Lib;C:\src\glfw-3.3.2.bin.WIN64\lib-vc2019;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>OpenAL32.lib;opengl32.lib;gdi32.lib;shell32.lib;vulkan-1.lib;glfw3.lib;shaderc_combined.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

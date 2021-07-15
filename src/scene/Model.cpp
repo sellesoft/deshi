@@ -143,7 +143,7 @@ inline Face* findFace(Triangle* base) {
 // on a model with ~240k triangles I left it running for over an hour and it had only gotten 30% of the way there
 // there really is no way around checking every triangle against every other triangle though.
 std::vector<Triangle*> FindTriangleNeighbors(Mesh* m) {
-	if(!Render::getSettings()->findMeshTriangleNeighbors) return std::vector<Triangle*>();
+	if(!Render::GetSettings()->findMeshTriangleNeighbors) return std::vector<Triangle*>();
 	std::vector<Triangle*> triangles;
 	
 	//gather all triangles out of batch arrays

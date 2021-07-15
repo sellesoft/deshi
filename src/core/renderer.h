@@ -178,17 +178,17 @@ struct MaterialVk{
 
 namespace Render{
 	
-	void init();
-	void update();
-	void reset();
-	void cleanup();
+	void Init();
+	void Update();
+	void Reset();
+	void Cleanup();
 	
-	void loadSettings();
-	void saveSettings();
+    void LoadSettings();
+    void SaveSettings();
 	
-	RenderSettings* getSettings();
-	RenderStats*    getStats();
-	RendererStage*  getStage();
+	RenderSettings* GetSettings();
+    RenderStats*    GetStats();
+    RendererStage*  GetStage();
 	
     //returns a mesh brush ID
     u32 CreateDebugLine(Vector3 start, Vector3 end, Color color, bool visible = false);
@@ -268,7 +268,7 @@ namespace Render{
 	u32 MaterialCount();
 	char* MaterialName(u32 materialIdx);
     
-    void loadDefaultAssets();
+    void LoadDefaultAssets();
     //loads a new scene to the GPU
     void LoadScene(Scene* scene);
     

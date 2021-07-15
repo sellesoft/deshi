@@ -12,8 +12,8 @@ AudioSource::AudioSource() {
 	sender = new Sender();
 }
 
-AudioSource::AudioSource(char* snd_file, Physics* p, Transform* t, bool loop, float gain, float pitch) {
-	this->snd_file = snd_file;
+AudioSource::AudioSource(const char* snd_file, Physics* p, Transform* t, bool loop, float gain, float pitch) {
+	this->snd_file = (char*)snd_file;
 	this->loop = loop;
 	this->gain = gain;
 	this->pitch = pitch;

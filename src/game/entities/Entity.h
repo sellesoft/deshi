@@ -57,7 +57,7 @@ struct Entity {
 	void RemoveComponents(std::vector<Component*> components);
 	
 	virtual std::string SaveTEXT();
-	static Entity* LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u32,u32>>& mesh_id_diffs);
+	static Entity* LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u32,u32>>& mesh_id_diffs);
 	//virtual void LoadDESH(const char* filename);
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise

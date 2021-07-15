@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
-
+#include <algorithm>
 
 
 //this is meant to be a wrapper around vector.
@@ -72,7 +72,8 @@ struct ContainerManager {
 	//attempt to add element to specific index
 	//resize if index is over current size
 	void add_to_index(T t, int index) {
-		Assert(allocate_space(index), "Container was unable to allocate space at specified index");
+		//TODO(sushi) allocate_space was removed?
+		//Assert(allocate_space(index), "Container was unable to allocate space at specified index");
 		if (!container[index]) { real_size++; }
 		container[index] = t;
 		

@@ -1826,7 +1826,7 @@ inline void GlobalTab(Admin* admin){
 		//// render settings ////
 		{
 			ImGui::Separator();
-			static_internal RenderSettings* settings = Render::getSettings();
+			static_internal RenderSettings* settings = Render::GetSettings();
 			static_internal const char* resolution_strings[] = { "128", "256", "512", "1024", "2048", "4096" };
 			static_internal u32 resolution_values[] = { 128, 256, 512, 1024, 2048, 4096 };
 			static_internal u32 shadow_resolution_index = 4;
@@ -2070,9 +2070,9 @@ void Editor::DebugBar() {
         //precalc strings and stuff so we can set column widths appropriately
         std::string str1 = TOSTRING("wents: ", admin->entities.size());
         float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-        std::string str2 = TOSTRING("wtris: ", Render::getStats()->totalTriangles);
+        std::string str2 = TOSTRING("wtris: ", Render::GetStats()->totalTriangles);
         float strlen2 = (fontsize - (fontsize / 2)) * str2.size();
-        std::string str3 = TOSTRING("wverts: ",Render::getStats()->totalVertices);
+        std::string str3 = TOSTRING("wverts: ",Render::GetStats()->totalVertices);
         float strlen3 = (fontsize - (fontsize / 2)) * str3.size();
         std::string str4 = TOSTRING("stris: ", "0");
         float strlen4 = (fontsize - (fontsize / 2)) * str4.size();
@@ -2656,7 +2656,7 @@ void Editor::Update(){
     Render::RemoveSelectedMesh(-1);
     for(Entity* e : selected){
         if(MeshComp* mc = e->GetComponent<MeshComp>()){
-            if(!Render::getSettings()->findMeshTriangleNeighbors){
+            if(!Render::GetSettings()->findMeshTriangleNeighbors){
                 Render::AddSelectedMesh(mc->meshID);
             }else{
                 std::vector<Vector2> outline = mc->mesh->GenerateOutlinePoints(e->transform.TransformMatrix(), camera->projMat, camera->viewMat,

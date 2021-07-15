@@ -173,6 +173,7 @@ __________ scaling might be being done in world and not local space
 (07/10/21) program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
 (07/10/21) the program crashes if default asset files are not present
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
+(07/14/21) the config parser sometimes throws a console error that its unable to parse the final empty line of configs
 
 */
 
@@ -205,7 +206,7 @@ int main() {
 	window.Init(&input, 1280, 720); //inits input as well
 	Console2::Init();
 	console.Init();
-	Render::init();
+	Render::Init();
 	DeshiImGui::init();
 	
 	//init game admin
@@ -223,7 +224,7 @@ int main() {
 		DeshiImGui::newFrame();                                                         //place imgui calls after this
 		TIMER_RESET(t_d); admin.Update();           time_.adminTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); console.Update(); Console2::Update(); time_.consoleTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); Render::update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
+		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		g_debug->Update(); //TODO(sushi) put a timer on this
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
@@ -232,7 +233,7 @@ int main() {
 	//cleanup
 	admin.Cleanup();
 	DeshiImGui::cleanup();
-	Render::cleanup();
+	Render::Cleanup();
 	window.Cleanup();
 	console.CleanUp(); Console2::Cleanup();
 	
