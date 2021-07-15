@@ -151,10 +151,7 @@ static_internal std::vector<const char*> deviceExtensions = {
 };
 static_internal std::vector<VkValidationFeatureEnableEXT> validationFeaturesEnabled = {};
 
-//this is temporary
-//TODO(sushi, Re) implement SSBOs so we can have a dynamically sized light array
-//and other various dynamically sized things for things and such
-static_internal bool generatingWorldGrid = false; //this area is my random var test area now :)
+static_internal bool generatingWorldGrid = false; //TODO(sushi) this is temporary
 
 static_internal const int MAX_FRAMES = 2;
 static_internal VkAllocationCallbacks* allocator = 0;
@@ -882,47 +879,47 @@ PickPhysicalDevice(){
 		{//find device's queue families
 			physicalQueueFamilies.graphicsFamily.reset();
 			physicalQueueFamilies.presentFamily.reset();
-
+			
 			u32 queueFamilyCount = 0;
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 			std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 			vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
+			
 			for(u32 family_idx = 0; family_idx < queueFamilyCount; ++family_idx){
 				if(queueFamilies[family_idx].queueFlags & VK_QUEUE_GRAPHICS_BIT) physicalQueueFamilies.graphicsFamily = family_idx;
-
+				
 				VkBool32 presentSupport = false;
 				vkGetPhysicalDeviceSurfaceSupportKHR(device, family_idx, surface, &presentSupport);
 				if(presentSupport) physicalQueueFamilies.presentFamily = family_idx;
-
+				
 				if(physicalQueueFamilies.isComplete()) break;
 			}
-
+			
 			if(!physicalQueueFamilies.isComplete()) continue;
 		}
-
+		
 		{//check if device supports enabled/required extensions
 			u32 extensionCount;
 			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 			std::vector<VkExtensionProperties> availableExtensions(extensionCount);
 			vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
-		
+			
 			std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 			for(VkExtensionProperties extension : availableExtensions){
 				requiredExtensions.erase(extension.extensionName);
 			}
 			if(!requiredExtensions.empty()) continue;
 		}
-
+		
 		{//check if the device's swapchain is valid
 			u32 formatCount;
 			u32 presentModeCount;
 			vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
 			vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
-
+			
 			if(formatCount == 0 || presentModeCount == 0) continue;
 		}
-
+		
 		physicalDevice = device; 
 		break; 
 	}
@@ -939,7 +936,7 @@ PickPhysicalDevice(){
 	else if(counts & VK_SAMPLE_COUNT_4_BIT)  { maxMsaaSamples = VK_SAMPLE_COUNT_4_BIT;  }
 	else if(counts & VK_SAMPLE_COUNT_2_BIT)  { maxMsaaSamples = VK_SAMPLE_COUNT_2_BIT;  }
 	else                                     { maxMsaaSamples = VK_SAMPLE_COUNT_1_BIT;  }
-
+	
 	//get physical device capabilities
 	vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 }
@@ -977,7 +974,7 @@ CreateLogicalDevice(){
 			enabledFeatures.wideLines = VK_TRUE; //wide lines (anime/toon style)
 		}
 	}
-
+	
 	//enable debugging features
 	if(settings.debugging){
 		if(deviceFeatures.geometryShader){
@@ -987,12 +984,12 @@ CreateLogicalDevice(){
 	
 	VkDeviceCreateInfo createInfo{VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
 	createInfo.pQueueCreateInfos       = queueCreateInfos.data();
-	createInfo.queueCreateInfoCount    = static_cast<u32>(queueCreateInfos.size());
+	createInfo.queueCreateInfoCount    = (u32)queueCreateInfos.size();
 	createInfo.pEnabledFeatures        = &enabledFeatures;
-	createInfo.enabledExtensionCount   = static_cast<u32>(deviceExtensions.size());
+	createInfo.enabledExtensionCount   = (u32)deviceExtensions.size();
 	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	if(settings.debugging){
-		createInfo.enabledLayerCount   = static_cast<u32>(validationLayers.size());
+		createInfo.enabledLayerCount   = (u32)validationLayers.size();
 		createInfo.ppEnabledLayerNames = validationLayers.data();
 	}else{
 		createInfo.enabledLayerCount   = 0;
@@ -1026,14 +1023,14 @@ CreateSwapChain(){
 	
 	{//check GPU's features/capabilities for the new swapchain
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &supportDetails.capabilities);
-
+		
 		u32 formatCount;
 		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
 		if(formatCount != 0){
 			supportDetails.formats.resize(formatCount);
 			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, supportDetails.formats.data());
 		}
-
+		
 		u32 presentModeCount;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
 		if(presentModeCount != 0){
@@ -1041,7 +1038,7 @@ CreateSwapChain(){
 			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, supportDetails.presentModes.data());
 		}
 	}
-
+	
 	{//choose swapchain's surface format
 		surfaceFormat = supportDetails.formats[0];
 		for(VkSurfaceFormatKHR availableFormat : supportDetails.formats){
@@ -1051,19 +1048,19 @@ CreateSwapChain(){
 			}
 		}
 	}
-
+	
 	{//choose the swapchain's present mode
 		//TODO(delle,ReVu) add render settings here (vsync)
 		b32 immediate    = false;
 		b32 fifo_relaxed = false;
 		b32 mailbox      = false;
-
+		
 		for(VkPresentModeKHR availablePresentMode : supportDetails.presentModes){
 			if(availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)    immediate    = true;
 			if(availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)      mailbox      = true;
 			if(availablePresentMode == VK_PRESENT_MODE_FIFO_RELAXED_KHR) fifo_relaxed = true;
 		}
-
+		
 		//NOTE immediate is forced false b/c ImGui requires minImageCount to be at least 2
 		if      (immediate && false){
 			settings.vsync = VSyncType_Immediate;
@@ -1079,7 +1076,7 @@ CreateSwapChain(){
 			presentMode    = VK_PRESENT_MODE_FIFO_KHR;
 		}
 	}
-
+	
 	//find the actual extent of the swapchain
 	if(supportDetails.capabilities.currentExtent.width != UINT32_MAX){
 		extent = supportDetails.capabilities.currentExtent;
@@ -1302,7 +1299,7 @@ CreateFrames(){
 		attachments.colorImageView = CreateImageView(attachments.colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)attachments.colorImageView, "Framebuffer color imageview");
 	}
-
+	
 	{//depth framebuffer attachment
 		if(attachments.depthImage){
 			vkDestroyImageView(device, attachments.depthImageView, nullptr);
@@ -1379,9 +1376,9 @@ CreateSyncObjects(){
 }
 
 
-////////////////////////
+/////////////////////////
 //// @global buffers ////
-////////////////////////
+/////////////////////////
 
 
 //TODO(delle,ReOpVu) maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
@@ -1401,7 +1398,7 @@ UpdateUniformBuffers(){
 			memcpy(data, &uboVSoffscreen.values, sizeof(uboVSoffscreen.values));
 		}vkUnmapMemory(device, uboVSoffscreen.bufferMemory);
 	}
-
+	
 	{//update scene vertex shader ubo
 		uboVS.values.time = DengTime->totalTime;
 		std::copy(lights, lights+10, uboVS.values.lights);
@@ -1416,7 +1413,7 @@ UpdateUniformBuffers(){
 			memcpy(data, &uboVS.values, sizeof(uboVS.values));
 		}vkUnmapMemory(device, uboVS.bufferMemory);
 	}
-
+	
 	//update normals geometry shader ubo
 	if(settings.debugging && enabledFeatures.geometryShader){
 		uboGS.values.view = uboVS.values.view;
@@ -1444,7 +1441,7 @@ CreateUniformBuffers(){
 		uboVS.bufferDescriptor.range  = sizeof(uboVS.values);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uboVS.buffer, "Scene vertex shader UBO");
 	}
-
+	
 	//create normals geometry shader ubo
 	if(settings.debugging && enabledFeatures.geometryShader){
 		CreateOrResizeBuffer(uboGS.buffer, uboGS.bufferMemory, uboGS.bufferSize, 
@@ -1455,7 +1452,7 @@ CreateUniformBuffers(){
 		uboGS.bufferDescriptor.range  = sizeof(uboGS.values);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uboGS.buffer, "Geometry shader UBO");
 	}
-
+	
 	{//create offscreen vertex shader ubo
 		CreateOrResizeBuffer(uboVSoffscreen.buffer, uboVSoffscreen.bufferMemory, uboVSoffscreen.bufferSize,
 							 sizeof(uboVSoffscreen.values), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -1465,7 +1462,7 @@ CreateUniformBuffers(){
 		uboVSoffscreen.bufferDescriptor.range  = sizeof(uboVSoffscreen.values);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uboVSoffscreen.buffer, "Offscreen vertex shader UBO");
 	}
-
+	
 	UpdateUniformBuffers();
 }
 
@@ -1544,7 +1541,7 @@ SetupOffscreenRendering(){
 		offscreen.depthImageView = CreateImageView(offscreen.depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)offscreen.depthImageView, "Offscreen shadowmap depth image view");
 	}
-
+	
 	{//create the sampler for the depth attachment used in frag shader for shadow mapping
 		VkSamplerCreateInfo sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
 		sampler.magFilter     = VK_FILTER_LINEAR;
@@ -1561,13 +1558,13 @@ SetupOffscreenRendering(){
 		AssertVk(vkCreateSampler(device, &sampler, nullptr, &offscreen.depthSampler), "failed to create offscreen depth attachment sampler");
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)offscreen.depthSampler, "Offscreen shadowmap sampler");
 	}
-
+	
 	{//create image descriptor for depth attachment
 		offscreen.depthDescriptor.sampler = offscreen.depthSampler;
 		offscreen.depthDescriptor.imageView = offscreen.depthImageView;
 		offscreen.depthDescriptor.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
 	}
-
+	
 	{//create the render pass
 		VkAttachmentDescription attachments[1]{};
 		attachments[0].format         = depthFormat;
@@ -1615,7 +1612,7 @@ SetupOffscreenRendering(){
 		AssertVk(vkCreateRenderPass(device, &createInfo, allocator, &offscreen.renderpass), "failed to create offscreen render pass");
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (u64)offscreen.renderpass, "Offscreen render pass");
 	}
-
+	
 	{//create the framebuffer
 		VkFramebufferCreateInfo createInfo{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
 		createInfo.renderPass      = offscreen.renderpass;
@@ -1947,16 +1944,16 @@ SetupPipelineCreation(){
 	
 	//how to combine colors; alpha: options to allow alpha blending
 	//https://renderdoc.org/vkspec_chunked/chap30.html#VkPipelineColorBlendAttachmentState
-	colorBlendAttachmentState.blendEnable         = VK_FALSE;
-	colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachmentState.blendEnable         = VK_TRUE;
+	colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	colorBlendAttachmentState.colorBlendOp        = VK_BLEND_OP_ADD;
 	colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 	colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	colorBlendAttachmentState.alphaBlendOp        = VK_BLEND_OP_ADD;
 	colorBlendAttachmentState.colorWriteMask      = 0xF; //RGBA
 	
-	//container struct for color blend attachments with overall blending constants
+	//container struct for color blend attachments with overall blending constants; global settings
 	//https://renderdoc.org/vkspec_chunked/chap30.html#VkPipelineColorBlendStateCreateInfo
 	colorBlendState.pNext             = 0;
 	colorBlendState.flags             = 0;
@@ -2002,9 +1999,9 @@ SetupPipelineCreation(){
 } //SetupPipelineCreation
 
 
-////////////////////////////
-//// pipelines creation ////
-////////////////////////////
+/////////////////////////////
+//// @pipelines creation ////
+/////////////////////////////
 
 
 //TODO(delle,ReCl) clean this up
@@ -2324,26 +2321,19 @@ specializationInfo.mapEntryCount = 1;
 	}
 	
 	{//pbr
-		colorBlendAttachmentState.blendEnable = VK_TRUE;
-		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		
 		shaderStages[0] = loadShader("pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("pbr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.pbr), "failed to create pbr graphics pipeline");
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.pbr, "PBR pipeline");
-		
-		colorBlendAttachmentState.blendEnable = VK_FALSE;
-		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
 	}
 	
 	//wireframe
 	if(deviceFeatures.fillModeNonSolid){
+		colorBlendAttachmentState.blendEnable = VK_FALSE;
 		rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
-		rasterizationState.cullMode = VK_CULL_MODE_NONE;
+		rasterizationState.cullMode    = VK_CULL_MODE_NONE;
 		depthStencilState.depthTestEnable = VK_FALSE;
 		
 		shaderStages[0] = loadShader("wireframe.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
@@ -2362,7 +2352,7 @@ specializationInfo.mapEntryCount = 1;
 		}
 		
 		{ //selected entity and collider gets a specific colored wireframe
-			colorBlendAttachmentState.blendEnable = VK_TRUE;
+			colorBlendAttachmentState.blendEnable         = VK_TRUE;
 			colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
 			colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
 			colorBlendState.blendConstants[0] = (f32)settings.selectedColor.r;
@@ -2381,17 +2371,18 @@ specializationInfo.mapEntryCount = 1;
 			AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.collider), "failed to create collider graphics pipeline");
 			DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.collider, "Collider pipeline");
 			
-			colorBlendAttachmentState.blendEnable = VK_FALSE;
-			colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-			colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			colorBlendAttachmentState.blendEnable         = VK_FALSE;
+			colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 			colorBlendState.blendConstants[0] = 0.f;
 			colorBlendState.blendConstants[1] = 0.f;
 			colorBlendState.blendConstants[2] = 0.f;
 			colorBlendState.blendConstants[3] = 1.0f;
 		}
 		
+		colorBlendAttachmentState.blendEnable = VK_TRUE;
 		rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizationState.cullMode    = VK_CULL_MODE_BACK_BIT;
 		depthStencilState.depthTestEnable = VK_TRUE;
 	}
 	
@@ -2442,26 +2433,12 @@ specializationInfo.mapEntryCount = 1;
 	}
 	
 	{//testing1
-		colorBlendAttachmentState.blendEnable = VK_TRUE;
-		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-		rasterizationState.cullMode = VK_CULL_MODE_NONE;
-		
 		shaderStages[0] = loadShader("testing1.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("testing1.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.testing1), "failed to create testing1 graphics pipeline");
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.testing1, "Testing1 pipeline");
-		
-		colorBlendAttachmentState.blendEnable = VK_FALSE;
-		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-		colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; 
-		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
 	}
 	
 	//DEBUG mesh normals
@@ -2493,14 +2470,14 @@ specializationInfo.mapEntryCount = 1;
 static_internal VkPipeline 
 GetPipelineFromShader(u32 shader){
 	switch(shader){
-		case(Shader_Flat):default: { return pipelines.flat;      };
-		case(Shader_Phong):        { return pipelines.phong;     };
-		case(Shader_Twod):         { return pipelines.twod;      };
-		case(Shader_PBR):          { return pipelines.pbr;       };
-		case(Shader_Wireframe):    { return pipelines.wireframe; };
-		case(Shader_Lavalamp):     { return pipelines.lavalamp;  };
-		case(Shader_Testing0):     { return pipelines.testing0;  };
-		case(Shader_Testing1):     { return pipelines.testing1;  };
+		case(Shader_Flat):default:{ return pipelines.flat;      }
+		case(Shader_Phong):       { return pipelines.phong;     }
+		case(Shader_Twod):        { return pipelines.twod;      }
+		case(Shader_PBR):         { return pipelines.pbr;       }
+		case(Shader_Wireframe):   { return pipelines.wireframe; }
+		case(Shader_Lavalamp):    { return pipelines.lavalamp;  }
+		case(Shader_Testing0):    { return pipelines.testing0;  }
+		case(Shader_Testing1):    { return pipelines.testing1;  }
 	}
 }
 
@@ -2513,9 +2490,9 @@ UpdateMaterialPipelines(){
 }
 
 
-///////////////
-//// other ////
-///////////////
+/////////////////
+//// @render ////
+/////////////////
 
 
 //we define a call order to command buffers so they can be executed by vkSubmitQueue()
@@ -2527,10 +2504,9 @@ BuildCommandBuffers(){
 	VkClearValue clearValues[2]{};
 	VkCommandBufferBeginInfo cmdBufferInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 	VkRenderPassBeginInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-	VkViewport viewport{};
-	VkRect2D scissor{}; //TODO(delle,Re) letterboxing settings here
+	VkViewport viewport{}; //scales the image
+	VkRect2D scissor{};    //cuts the scaled image //TODO(delle,Re) letterboxing settings here
 	
-	//TODO(delle,ReVu) figure out why we are doing it for all images
 	for(int i = 0; i < imageCount; ++i){
 		AssertVk(vkBeginCommandBuffer(frames[i].commandBuffer, &cmdBufferInfo), "failed to begin recording command buffer");
 		
@@ -2855,6 +2831,7 @@ Init(){
 	LoadSettings();
 	if(settings.debugging && settings.printf){
 		validationFeaturesEnabled.push_back(VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT);
+		settings.loggingLevel = 4;
 	}
 	
 	TIMER_START(t_temp);
@@ -2976,29 +2953,27 @@ Update(){
 	
 	//submit the command buffer to the queue
 	VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	VkSubmitInfo submitInfo = {};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &imageAcquiredSemaphore;
-	submitInfo.pWaitDstStageMask = &wait_stage;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &frames[imageIndex].commandBuffer;
+	VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+	submitInfo.waitSemaphoreCount   = 1;
+	submitInfo.pWaitSemaphores      = &imageAcquiredSemaphore;
+	submitInfo.pWaitDstStageMask    = &wait_stage;
+	submitInfo.commandBufferCount   = 1;
+	submitInfo.pCommandBuffers      = &frames[imageIndex].commandBuffer;
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
+	submitInfo.pSignalSemaphores    = &renderCompleteSemaphore;
 	
 	AssertVk(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "failed to submit draw command buffer");
 	
 	if(remakeWindow){ return; }
 	
 	//present the image
-	VkPresentInfoKHR presentInfo{};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	VkPresentInfoKHR presentInfo{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = &renderCompleteSemaphore;
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &swapchain;
-	presentInfo.pImageIndices = &imageIndex;
-	presentInfo.pResults = nullptr;
+	presentInfo.pWaitSemaphores    = &renderCompleteSemaphore;
+	presentInfo.swapchainCount     = 1;
+	presentInfo.pSwapchains        = &swapchain;
+	presentInfo.pImageIndices      = &imageIndex;
+	presentInfo.pResults           = 0;
 	result = vkQueuePresentKHR(presentQueue, &presentInfo);
 	
 	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow){
@@ -3018,10 +2993,10 @@ Update(){
 	AssertVk(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
 	//update stats
 	stats.drawnTriangles += stats.drawnIndices / 3;
-	stats.totalVertices += (u32)vertexBuffer.size();
-	stats.totalIndices += (u32)indexBuffer.size();
+	stats.totalVertices  += (u32)vertexBuffer.size();
+	stats.totalIndices   += (u32)indexBuffer.size();
 	stats.totalTriangles += stats.totalIndices / 3;
-	stats.renderTimeMS = TIMER_END(t_r);
+	stats.renderTimeMS    = TIMER_END(t_r);
 	
 	if(remakePipelines){ 
 		CreatePipelines(); 
@@ -3105,9 +3080,6 @@ SaveSettings(){
 void Render::
 LoadSettings(){
 	Assets::loadConfig("render.cfg", configMap);
-	
-	//update dependent settings
-	if(settings.printf) settings.loggingLevel = 4;
 }
 
 RenderSettings* Render::
@@ -3148,9 +3120,9 @@ remakeOffscreen(){
 	_remakeOffscreen = true;
 }
 
-/////////////////////
-//// debug stuff ////
-/////////////////////
+//////////////////////
+//// @debug stuff ////
+//////////////////////
 
 
 u32 Render::
@@ -3368,17 +3340,17 @@ RemoveMeshBrush(u32 meshBrushIdx){
 }
 
 
-//////////////////
-//// 2D stuff ////
-//////////////////
+///////////////////
+//// @2D stuff ////
+///////////////////
 
 
 
 
 
-///////////////////////
-//// trimesh stuff ////
-///////////////////////
+////////////////////////
+//// @trimesh stuff ////
+////////////////////////
 
 
 u32 Render::
@@ -3650,13 +3622,13 @@ LoadTexture(const char* filename, u32 type){
 	tex.pixels = stbi_load(imagePath.c_str(), &tex.width, &tex.height, &tex.channels, STBI_rgb_alpha);
 	Assert(tex.pixels != 0, "stb failed to load an image");
 	
-	tex.type = type;
+	tex.type      = type;
 	tex.mipLevels = (u32)std::floor(std::log2(std::max(tex.width, tex.height))) + 1;
 	tex.imageSize = tex.width * tex.height * 4;
 	
 	//copy the memory to a staging buffer
 	StagingBufferVk staging{};
-	CreateAndMapBuffer(staging.buffer, staging.memory, tex.imageSize, static_cast<size_t>(tex.imageSize), tex.pixels, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	CreateAndMapBuffer(staging.buffer, staging.memory, tex.imageSize, (size_t)tex.imageSize, tex.pixels, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	
 	//copy the staging buffer to the image and generate its mipmaps
 	CreateImage(tex.width, tex.height, tex.mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, tex.image, tex.imageMemory);
@@ -3667,30 +3639,29 @@ LoadTexture(const char* filename, u32 type){
 	tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	
 	//cleanup staging memory
-	vkDestroyBuffer(device, staging.buffer, nullptr);
-	vkFreeMemory(device, staging.memory, nullptr);
-	stbi_image_free(tex.pixels); tex.pixels = nullptr;
+	vkDestroyBuffer(device, staging.buffer, allocator);
+	vkFreeMemory(device, staging.memory, allocator);
+	stbi_image_free(tex.pixels); tex.pixels = 0;
 	
 	//create sampler
-	VkSamplerCreateInfo samplerInfo{};
-	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	samplerInfo.magFilter = VK_FILTER_LINEAR;
-	samplerInfo.minFilter = VK_FILTER_LINEAR;
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; //TODO(delle,ReOp) VK_SAMPLER_MIPMAP_MODE_NEAREST for more performance
-	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	VkSamplerCreateInfo samplerInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+	samplerInfo.magFilter        = VK_FILTER_LINEAR;
+	samplerInfo.minFilter        = VK_FILTER_LINEAR;
+	samplerInfo.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR; //TODO(delle,ReOp) VK_SAMPLER_MIPMAP_MODE_NEAREST for more performance
+	samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.anisotropyEnable = enabledFeatures.samplerAnisotropy;
 	VkPhysicalDeviceProperties properties{};
 	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-	samplerInfo.maxAnisotropy = enabledFeatures.samplerAnisotropy ?  properties.limits.maxSamplerAnisotropy : 1.0f;
-	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerInfo.maxAnisotropy    = enabledFeatures.samplerAnisotropy ?  properties.limits.maxSamplerAnisotropy : 1.0f;
+	samplerInfo.borderColor      = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	samplerInfo.unnormalizedCoordinates = VK_FALSE;
-	samplerInfo.compareEnable = VK_FALSE;
-	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-	samplerInfo.mipLodBias = 0.0f;
-	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = f32(tex.mipLevels);
+	samplerInfo.compareEnable    = VK_FALSE;
+	samplerInfo.compareOp        = VK_COMPARE_OP_ALWAYS;
+	samplerInfo.mipLodBias       = 0.0f;
+	samplerInfo.minLod           = 0.0f;
+	samplerInfo.maxLod           = (f32)tex.mipLevels;
 	AssertVk(vkCreateSampler(device, &samplerInfo, nullptr, &tex.sampler), "failed to create texture sampler");
 	
 	//create image view

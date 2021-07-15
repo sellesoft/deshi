@@ -6,7 +6,7 @@ Ma  Math      Oth Other            Op  Optimization    Ph  Physics     Re  Rende
 Sh  Shader    So  Sound            Ui  UI              Vu  Vulkan      Wi  Window
 
 TODO Style: TODO(person,tags) description
-	  eg: TODO(delle) no tag or date 
+  eg: TODO(delle) no tag or date 
 eg: TODO(sushi,ReOp) render,optimization tags for sushi
 
 The person listed doesn't necessarily have to be you, and can be someone else
@@ -34,7 +34,6 @@ ____so maybe have a UI option that allows the comps update function to handle it
 ____actually having an option for anything other than collider is kind of useless soooo maybe 
 ____get rid of event on every component or just only let u choose that event on colliders
 change undo's to never use pointers and have undos that can act like linked lists to chain them
-settings file(s) [keybinds, video, audio, etc]
 add a general logging system with log levels and locations (for filtering)
 add a component_state command to print state of a component (add str methods to all components/systems)
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
@@ -73,8 +72,6 @@ ____the primary reason being that we need to optimize outlining objects, which w
 ____involve clipping triangles and stuff
 redo MeshVk so its only child meshes
 ____avoid having 3 copies of a mesh (model, meshVK, vulkan)
-ability to do transparency in a fragment shader eg. we can do outColor = vec4(1,1,1,0.5)
-____this would be for experimenting with volumetrics, making a window shader w/o need for textures, etc.
 add standard render/video settings
 add 2D shader and interface functions
 add face normal and tangents to vertex buffer
