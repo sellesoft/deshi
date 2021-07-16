@@ -15,11 +15,11 @@
 
 #include <fstream>
 
-f32 MOUSE_SENS_FRACTION = .03f;
+local f32 MOUSE_SENS_FRACTION = .03f;
 
-bool moveOverride = false; //for moving when using arrow keys (cause i cant use mouse when remoting into my pc so)
+local bool moveOverride = false; //for moving when using arrow keys (cause i cant use mouse when remoting into my pc so)
 
-inline void AddBindings(Admin* admin) {
+local inline void AddBindings(Admin* admin) {
 	std::ifstream binds;
 	
 	std::string path = Assets::assetPath("binds.cfg", AssetType_Config, false);
@@ -51,7 +51,7 @@ inline void AddBindings(Admin* admin) {
 	}
 }
 
-inline void CameraMovement(Admin* admin, MovementMode mode) {
+local inline void CameraMovement(Admin* admin, MovementMode mode) {
 	Camera* camera = admin->mainCamera;
 	float deltaTime = DengTime->deltaTime;
 	Vector3 inputs;
@@ -102,11 +102,11 @@ inline void PlayerMovement(Admin* admin, MovementMode mode, Movement* playermove
 }
 
 //NOTE sushi: this can probably be implemented somewhere else, dunno yet
-inline void PlayerGrabbing() {
+local inline void PlayerGrabbing() {
 	
 }
 
-inline void CameraRotation(Admin* admin, float sens) {
+local inline void CameraRotation(Admin* admin, float sens) {
 	Camera* camera = admin->mainCamera;
 	Keybinds* binds = &admin->keybinds;
 	float deltaTime = DengTime->deltaTime;
@@ -141,7 +141,7 @@ inline void CameraRotation(Admin* admin, float sens) {
 	
 	if (!DengConsole->IMGUI_MOUSE_CAPTURE && !admin->controller.cameraLocked){
 		if(admin->state == GameState_Play || admin->state == GameState_Debug){
-			static bool debugmouse = false;
+			persist bool debugmouse = false;
 			
 			if (!debugmouse) {
 				camera->rotation.y += (DengInput->mouseX - DengWindow->centerX) * sens * MOUSE_SENS_FRACTION;
@@ -175,7 +175,7 @@ inline void CameraRotation(Admin* admin, float sens) {
 	}
 }
 
-inline void CameraZoom(Admin* admin){
+local inline void CameraZoom(Admin* admin){
 	if (DengInput->KeyPressed(Key::NUMPADPLUS)) { 
 		admin->mainCamera->fov += 5;
 		admin->mainCamera->UpdateProjectionMatrix();
@@ -186,7 +186,7 @@ inline void CameraZoom(Admin* admin){
 	}
 }
 
-inline void CheckBinds(Admin* admin) {
+local inline void CheckBinds(Admin* admin) {
 	if (DengInput->checkbinds) {
 		for (auto b : DengInput->binds) {
 			if (DengInput->KeyPressed(b.second)) {

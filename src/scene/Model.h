@@ -34,7 +34,7 @@ typedef u32 ShaderFlags;
 enum ShaderBits : u32{ 
 	Shader_Flat, Shader_Phong, Shader_Twod, Shader_PBR, Shader_Wireframe, Shader_Lavalamp, Shader_Testing0, Shader_Testing1
 }; typedef u32 Shader;
-static const char* ShaderStrings[] = {
+global_ const char* ShaderStrings[] = {
 	"Flat", "Phong", "TwoD", "PBR", "Wireframe", "Lavalamp", "Testing0", "Testing1"
 };
 

@@ -28,7 +28,7 @@
 #include <iomanip> //std::put_time
 #include <thread>
 
-f32 font_width = 0;
+local f32 font_width = 0;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// inputs
@@ -107,7 +107,7 @@ void Editor::TranslateEntity(Entity* e, TransformationAxis axis){
 }
 
 inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um) {
-    static bool grabbingObj = false;
+	persist bool grabbingObj = false;
     
     if (!DengConsole->IMGUI_MOUSE_CAPTURE) { 
         if (DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj) {
@@ -116,15 +116,15 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             admin->controller.cameraLocked = true;
             
             //bools for if we're in an axis movement mode
-            static bool xaxis = false;
-            static bool yaxis = false;
-            static bool zaxis = false;
+            persist bool xaxis = false;
+            persist bool yaxis = false;
+            persist bool zaxis = false;
             
-            static bool initialgrab = true;
+            persist bool initialgrab = true;
             
-            static Vector3 initialObjPos;
-            static float initialdist; 
-            static Vector3 lastFramePos;
+            persist Vector3 initialObjPos;
+            persist float initialdist; 
+            persist Vector3 lastFramePos;
             
             //different cases for mode chaning
             if (DengInput->KeyPressed(Key::X)) {
@@ -275,7 +275,7 @@ void Editor::RotateEntity(Entity* e, TransformationAxis axis){
 }
 
 inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um) {
-    static bool rotatingObj = false;
+    persist bool rotatingObj = false;
     
     if (!DengConsole->IMGUI_MOUSE_CAPTURE) { 
         if (DengInput->KeyPressed(DengKeys.rotateSelectedObject) || rotatingObj) {
@@ -283,15 +283,15 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             admin->controller.cameraLocked = true;
             
             //bools for if we're in an axis movement mode
-            static bool xaxis = false;
-            static bool yaxis = false;
-            static bool zaxis = false;
+            persist bool xaxis = false;
+            persist bool yaxis = false;
+            persist bool zaxis = false;
             
-            static Vector2 origmousepos = DengInput->mousePos;
+            persist Vector2 origmousepos = DengInput->mousePos;
             
-            static bool initialrot = true;
+            persist bool initialrot = true;
             
-            static Vector3 initialObjRot;
+            persist Vector3 initialObjRot;
             
             //different cases for mode chaning
             if (DengInput->KeyPressed(Key::X)) {
@@ -554,15 +554,15 @@ namespace ImGui {
         ImGui::TextEx(TOSTRING(inval).c_str());
         
         //how much data we store
-        static int prevstoresize = 100;
-        static int storesize = 100;
+        persist int prevstoresize = 100;
+        persist int storesize = 100;
         
         //how often we update
-        static int fupdate = 1;
-        static int frame_count = 0;
+        persist int fupdate = 1;
+        persist int frame_count = 0;
         
-        static float maxval = inval + 5;
-        static float minval = inval - 5;
+        persist float maxval = inval + 5;
+        persist float minval = inval - 5;
         
         //if (inval > maxval) maxval = inval;
         //if (inval < minval) minval = inval;
@@ -572,8 +572,8 @@ namespace ImGui {
             minval = inval - 5;
         }
         //real values and printed values
-        static std::vector<float> values(storesize);
-        static std::vector<float> pvalues(storesize);
+        persist std::vector<float> values(storesize);
+        persist std::vector<float> pvalues(storesize);
         
         //if changing the amount of data we're storing we have to reverse
         //each data set twice to ensure the data stays in the right place when we move it
@@ -675,7 +675,7 @@ void Editor::MenuBar() {
                 }
             }
             if (ImGui::BeginMenu("Save As")) { WinHovCheck;
-                static char buff[255] = {};
+                persist char buff[255] = {};
                 if(ImGui::InputText("##saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
                     admin->SaveTEXT(buff);
                     level_name = std::string(buff);
@@ -731,9 +731,9 @@ void Editor::MenuBar() {
 //TODO(sushi, ClUi) completely rewrite this menu
 inline void EventsMenu(Entity* current) {
     std::vector<Entity*> entities = g_admin->entities;
-    static Entity* other = nullptr;
-    static Component* selcompr = nullptr;
-    static Component* selcompl = nullptr;
+    persist Entity* other = nullptr;
+    persist Component* selcompr = nullptr;
+    persist Component* selcompl = nullptr;
     
     if(!current) {
         other = nullptr;
@@ -949,9 +949,9 @@ inline void EventsMenu(Entity* current) {
 }
 
 inline void EntitiesTab(Admin* admin, float fontsize){
-    local_persist b32 rename_ent = false;
-    local_persist char rename_buffer[DESHI_NAME_SIZE] = {};
-    local_persist Entity* events_ent = 0;
+    persist b32 rename_ent = false;
+    persist char rename_buffer[DESHI_NAME_SIZE] = {};
+    persist Entity* events_ent = 0;
     
     std::vector<Entity*>& selected = admin->editor.selected;
     
@@ -1083,8 +1083,8 @@ inline void EntitiesTab(Admin* admin, float fontsize){
     ImGui::Separator();
     
     //// create new entity ////
-    local_persist const char* presets[] = {"Empty", "StaticMesh"};
-    local_persist int current_preset = 0;
+    persist const char* presets[] = {"Empty", "StaticMesh"};
+    persist int current_preset = 0;
 	
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
     if(ImGui::Button("New Entity")){
@@ -1224,12 +1224,12 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 				//mesh2D
 				//TODO(,Ui) implement mesh2D component inspector
 				/*
-				local_persist const char* twods[] = {"None", "Line", "Triangle", "Square", "N-Gon", "Image"};
-				local_persist int  twod_type = 0, twod_vert_count = 0;
-				local_persist u32  twod_id = -1;
-				local_persist vec4 twod_color = vec4::ONE;
-				local_persist f32  twod_radius = 1.f;
-				local_persist std::vector<vec2> twod_verts;
+				persist const char* twods[] = {"None", "Line", "Triangle", "Square", "N-Gon", "Image"};
+				persist int  twod_type = 0, twod_vert_count = 0;
+				persist u32  twod_id = -1;
+				persist vec4 twod_color = vec4::ONE;
+				persist f32  twod_radius = 1.f;
+				persist std::vector<vec2> twod_verts;
 				ImU32 color = ImGui::ColorConvertFloat4ToU32(ImVec4(twod_color.x, twod_color.y, twod_color.z, twod_color.w));
 				ImGui::SetNextItemWidth(-1); if(ImGui::Combo("##twod_combo", &twod_type, twods, ArrayCount(twods))){ WinHovCheck; 
 				twod_vert_count = twod_type + 1;
@@ -1394,7 +1394,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 						
 						ImGui::Checkbox("Don't Resolve Collisions", (bool*)&coll->noCollide);
 						ImGui::TextEx("Collision Layer"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-						static_internal u32 min = 0, max = 9;
+						local u32 min = 0, max = 9;
 						ImGui::SliderScalar("##coll_layer", ImGuiDataType_U32, &coll->collisionLayer, &min, &max, "%d");
 						
 						ImGui::Unindent();
@@ -1527,7 +1527,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
         sel->RemoveComponents(comp_deleted_queue);
         
         //// add component ////
-        local_persist int add_comp_index = 0;
+        persist int add_comp_index = 0;
 		
         ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
         if(ImGui::Button("Add Component")){
@@ -1621,9 +1621,9 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 } //EntitiesTab
 
 inline void MaterialsTab(Admin* admin){
-    local_persist u32 selected_mat = -1;
-    local_persist b32 rename_mat = false;
-    local_persist char rename_buffer[DESHI_NAME_SIZE] = {};
+    persist u32 selected_mat = -1;
+    persist b32 rename_mat = false;
+    persist char rename_buffer[DESHI_NAME_SIZE] = {};
     
     //// selected material keybinds ////
     //start renaming material
@@ -1794,14 +1794,14 @@ enum TwodPresets : u32 {
 //TODO(,Ui) convert this to use collapsing headers
 inline void GlobalTab(Admin* admin){
     SetPadding; 
-    if(ImGui::BeginChild("##global_tab", ImVec2(ImGui::GetWindowWidth()*0.95f, ImGui::GetWindowHeight()*.9f))) {
+    if(ImGui::BeginChild("##global__tab", ImVec2(ImGui::GetWindowWidth()*0.95f, ImGui::GetWindowHeight()*.9f))) {
         //// physics properties ////
         {
 			ImGui::TextEx("Pause Physics "); ImGui::SameLine();
 			if(ImGui::Button((admin->pause_phys) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
 				admin->pause_phys = !admin->pause_phys;
 			}    
-			ImGui::TextEx("Gravity       "); ImGui::SameLine(); ImGui::InputFloat("##global_gravity", &admin->physics.gravity);
+			ImGui::TextEx("Gravity       "); ImGui::SameLine(); ImGui::InputFloat("##global__gravity", &admin->physics.gravity);
 			
 			//ImGui::TextEx("Phys TPS      "); ImGui::SameLine(); ImGui::InputFloat("##phys_tps", )
         }
@@ -1819,21 +1819,21 @@ inline void GlobalTab(Admin* admin){
 			
 			ImGui::TextEx("Position  "); ImGui::SameLine(); ImGui::InputVector3("##cam_pos", &admin->editor.camera->position);
 			ImGui::TextEx("Rotation  "); ImGui::SameLine(); ImGui::InputVector3("##cam_rot", &admin->editor.camera->rotation);
-			ImGui::TextEx("Near Clip "); ImGui::SameLine(); ImGui::InputFloat("##global_nearz", &admin->editor.camera->nearZ);
-			ImGui::TextEx("Far Clip  "); ImGui::SameLine(); ImGui::InputFloat("##global_farz", &admin->editor.camera->farZ);
-			ImGui::TextEx("FOV       "); ImGui::SameLine(); ImGui::InputFloat("##global_fov", &admin->editor.camera->fov);
+			ImGui::TextEx("Near Clip "); ImGui::SameLine(); ImGui::InputFloat("##global__nearz", &admin->editor.camera->nearZ);
+			ImGui::TextEx("Far Clip  "); ImGui::SameLine(); ImGui::InputFloat("##global__farz", &admin->editor.camera->farZ);
+			ImGui::TextEx("FOV       "); ImGui::SameLine(); ImGui::InputFloat("##global__fov", &admin->editor.camera->fov);
 		}
 		
 		//// render settings ////
 		{
 			ImGui::Separator();
-			static_internal RenderSettings* settings = Render::GetSettings();
-			static_internal const char* resolution_strings[] = { "128", "256", "512", "1024", "2048", "4096" };
-			static_internal u32 resolution_values[] = { 128, 256, 512, 1024, 2048, 4096 };
-			static_internal u32 shadow_resolution_index = 4;
-			static_internal f32 clear_color[3] = {settings->clearColor.r,settings->clearColor.g,settings->clearColor.b};
-			static_internal f32 selected_color[3] = {settings->selectedColor.r,settings->selectedColor.g,settings->selectedColor.b};
-			static_internal f32 collider_color[3] = {settings->colliderColor.r,settings->colliderColor.g,settings->colliderColor.b};
+			local RenderSettings* settings = Render::GetSettings();
+			local const char* resolution_strings[] = { "128", "256", "512", "1024", "2048", "4096" };
+			local u32 resolution_values[] = { 128, 256, 512, 1024, 2048, 4096 };
+			local u32 shadow_resolution_index = 4;
+			local f32 clear_color[3] = {settings->clearColor.r,settings->clearColor.g,settings->clearColor.b};
+			local f32 selected_color[3] = {settings->selectedColor.r,settings->selectedColor.g,settings->selectedColor.b};
+			local f32 collider_color[3] = {settings->colliderColor.r,settings->colliderColor.g,settings->colliderColor.b};
 			
 			ImGui::TextCentered("Render Settings");
 			ImGui::TextEx("Logging level"); ImGui::SameLine(); ImGui::SliderUInt32("##rs_logging_level", &settings->loggingLevel, 0, 4);
@@ -1885,7 +1885,7 @@ inline void GlobalTab(Admin* admin){
 }
 
 inline void BrushesTab(Admin* admin, float fontsize){
-    local_persist MeshBrushVk* selected_meshbrush = 0;
+    persist MeshBrushVk* selected_meshbrush = 0;
     
     //// brush list ////
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorToImVec4(Color(25, 25, 25)));
@@ -2041,12 +2041,12 @@ void Editor::DebugBar() {
     float fontsize = ImGui::GetFontSize();
     
     //flags for showing different things
-    static bool show_fps = true;
-    static bool show_fps_graph = true;
-    static bool show_world_stats = true;
-    static bool show_selected_stats = true;
-    static bool show_floating_fps_graph = false;
-    static bool show_time = true;
+    persist bool show_fps = true;
+    persist bool show_fps_graph = true;
+    persist bool show_world_stats = true;
+    persist bool show_selected_stats = true;
+    persist bool show_floating_fps_graph = false;
+    persist bool show_time = true;
     
     ImGui::SetNextWindowSize(ImVec2(DengWindow->width, 20));
     ImGui::SetNextWindowPos(ImVec2(0, DengWindow->height - 20));
@@ -2112,19 +2112,19 @@ void Editor::DebugBar() {
         //FPS graph inline
         if (ImGui::TableNextColumn() && show_fps_graph) {
             //how much data we store
-            static int prevstoresize = 100;
-            static int storesize = 100;
+            persist int prevstoresize = 100;
+            persist int storesize = 100;
             
             //how often we update
-            static int fupdate = 20;
-            static int frame_count = 0;
+            persist int fupdate = 20;
+            persist int frame_count = 0;
             
             //maximum FPS
-            static int maxval = 0;
+            persist int maxval = 0;
             
             //real values and printed values
-            static std::vector<float> values(storesize);
-            static std::vector<float> pvalues(storesize);
+            persist std::vector<float> values(storesize);
+            persist std::vector<float> pvalues(storesize);
             
             //dynamic resizing that may get removed later if it sucks
             //if FPS finds itself as less than half of what the max used to be we lower the max
@@ -2310,9 +2310,9 @@ void Editor::DebugLayer() {
     Camera* c = admin->mainCamera;
     float time = DengTime->totalTime;
     
-    static std::vector<pair<float, Vector2>> times;
+    persist std::vector<pair<float, Vector2>> times;
     
-    static std::vector<Vector3> spots;
+    persist std::vector<Vector3> spots;
     
     
     ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
@@ -2471,8 +2471,8 @@ void Editor::Update(){
     }
     {//// camera ////
         //toggle ortho
-        static Vector3 ogpos;
-        static Vector3 ogrot;
+        persist Vector3 ogpos;
+        persist Vector3 ogrot;
         if (DengInput->KeyPressed(DengKeys.perspectiveToggle)) {
             switch (camera->type) {
                 case(CameraType_Perspective): {  

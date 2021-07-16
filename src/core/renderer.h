@@ -178,11 +178,6 @@ struct MaterialVk{
 
 namespace Render{
 	
-	void Init();
-	void Update();
-	void Reset();
-	void Cleanup();
-	
     void LoadSettings();
     void SaveSettings();
 	
@@ -298,7 +293,18 @@ namespace Render{
 	std::vector<u32>*         selectedArray();
 	vec4*                     lightArray();
 	
+	void Init();
+	void Update();
+	void Reset();
+	void Cleanup();
 	
 }; //namespace Render
+
+//functions in this namespace are Immediate Mode, so they only last 1 frame
+namespace UI{
+	
+	void DrawRect(vec2 position, vec2 dimensions, Color color = Color::WHITE);
+	
+}; //namespace UI
 
 #endif //DESHI_RENDERER_H

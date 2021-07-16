@@ -24,7 +24,7 @@ enum EntityType : u32 {
 	EntityType_Trigger
 };
 
-static const char* EntityTypeStrings[] = {
+global_ const char* EntityTypeStrings[] = {
 	"Anonymous", "Player", "StaticMesh", "Trigger"
 };
 
@@ -62,7 +62,7 @@ struct Entity {
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
 	template<class T>
-	T* GetComponent() {
+		T* GetComponent() {
 		T* t = nullptr;
 		for (Component* c : components) {
 			if (T* temp = dynamic_cast<T*>(c)) {
@@ -73,7 +73,7 @@ struct Entity {
 	}
 	//returns if a component exists on the entitiy
 	template<class T>
-	bool hasComponent() {
+		bool hasComponent() {
 		for (Component* c : components) {
 			if (T* temp = dynamic_cast<T*>(c)) {
 				return true;

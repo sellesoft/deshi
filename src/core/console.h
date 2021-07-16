@@ -59,7 +59,7 @@ struct Console  {
 	void CleanUp();
 };
 
-//global console pointer
+//global_ console pointer
 extern Console* g_console;
 #define DengConsole g_console
 

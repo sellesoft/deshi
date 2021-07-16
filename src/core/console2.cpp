@@ -21,47 +21,47 @@
 //// internal console variables ////
 ////////////////////////////////////
 
-static_internal f32 open_max_percent = 0.7f; //percentage of the height of the window to open to
-static_internal f32 open_amount      = 0.0f; //current opened amount
-static_internal f32 open_target      = 0.0f; //target opened amount
-static_internal f32 open_dt          = 2000.0f; //speed at which it opens
+local f32 open_max_percent = 0.7f; //percentage of the height of the window to open to
+local f32 open_amount      = 0.0f; //current opened amount
+local f32 open_target      = 0.0f; //target opened amount
+local f32 open_dt          = 2000.0f; //speed at which it opens
 
-static_internal f32 console_x = 0.0f;
-static_internal f32 console_y = 0.0f;
-static_internal f32 console_w = 0.0f;
-static_internal f32 console_h = 0.0f;
+local f32 console_x = 0.0f;
+local f32 console_y = 0.0f;
+local f32 console_w = 0.0f;
+local f32 console_h = 0.0f;
 
-static_internal f32 font_width  = 0.0f;
-static_internal f32 font_height = 0.0f;
+local f32 font_width  = 0.0f;
+local f32 font_height = 0.0f;
 
-static_internal b32 scroll_to_bottom = false;
-static_internal b32 show_autocomplete = false;
+local b32 scroll_to_bottom = false;
+local b32 show_autocomplete = false;
 
-static_internal f32 console_scroll_y = 0;
-static_internal u32 console_rows_in_buffer = 0; 
+local f32 console_scroll_y = 0;
+local u32 console_rows_in_buffer = 0; 
 
-static_internal ConsoleState state = ConsoleState_Closed;
-static_internal ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+local ConsoleState state = ConsoleState_Closed;
+local ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
 
 #define input_max_size       256
 #define input_history_length 8
-static_internal char input_buffer[256] = {0};
-static_internal char input_history[input_max_size*input_history_length] = {0};
-static_internal u32  input_history_index = 0;
-static_internal u32  input_history_select_index = 0;
+local char input_buffer[256] = {0};
+local char input_history[input_max_size*input_history_length] = {0};
+local u32  input_history_index = 0;
+local u32  input_history_select_index = 0;
 
 struct ColoredPstring{
     Color color;
     char* start;
     char* end;
 };
-static_internal RingArray<char>           history;
-static_internal RingArray<ColoredPstring> dictionary;
+local RingArray<char>           history;
+local RingArray<ColoredPstring> dictionary;
 
-static_internal std::vector<pair<Color, char>> historyc;
-static_internal std::vector<u32> lineindicies;
+local std::vector<pair<Color, char>> historyc;
+local std::vector<u32> lineindicies;
 
-static_internal std::map<std::string, Color> color_strings{
+local std::map<std::string, Color> color_strings{
     {"red", Color::RED},       {"dred", Color::DARK_RED},
     {"blue", Color::BLUE},     {"dblue", Color::DARK_BLUE},
     {"cyan", Color::CYAN},     {"dcyan", Color::DARK_CYAN},
@@ -76,11 +76,11 @@ static_internal std::map<std::string, Color> color_strings{
 //// internal functions ////
 ////////////////////////////
 
-static_internal void FlushBuffer(){
+local void FlushBuffer(){
     //@Incomplete
 }
 
-static_internal void UpdateOpenness(){
+local void UpdateOpenness(){
     f32 delta_open = DengTime->deltaTime * open_dt;
     
     if(open_amount < open_target){
@@ -92,11 +92,11 @@ static_internal void UpdateOpenness(){
     }
 }
 
-static_internal int TextEditCallback(ImGuiInputTextCallbackData* data) {
+local int TextEditCallback(ImGuiInputTextCallbackData* data) {
     return 0;
 }
 
-static_internal ImVec4 ColorToVec4(Color p) {
+local ImVec4 ColorToVec4(Color p) {
     return ImVec4((f32)p.r / 255.f, (f32)p.g / 255.f, (f32)p.b / 255.f, (f32)p.a / 255.f);
 }
 

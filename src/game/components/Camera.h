@@ -9,7 +9,7 @@
 enum CameraTypeBits : u32{
 	CameraType_Perspective, CameraType_Orthographic
 }; typedef u32 CameraType;
-static const char* CameraTypeStrings[] = {
+global_ const char* CameraTypeStrings[] = {
 	"Perspective", "Orthographic"
 };
 

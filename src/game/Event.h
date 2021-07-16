@@ -14,7 +14,7 @@ enum EventBits : u32 {
     Event_LightToggle
 }; typedef u32 Event;
 
-static const char* EventStrings[] = {
+global_ const char* EventStrings[] = {
     "NONE", "DoorToggle", "LightToggle"
 };
 

@@ -50,49 +50,14 @@ http://gameangst.com/?p=9
 
 
 //-------------------------------------------------------------------------------------------------
-// INTERFACE VARIABLES
-
-
-static_internal RenderSettings settings;
-static_internal ConfigMap configMap = {
-	{"#render settings config file",0,0},
-	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)10},
-	{"debugging", ConfigValueType_B32, &settings.debugging},
-	{"printf",    ConfigValueType_B32, &settings.printf},
-	{"recompile_all_shaders",        ConfigValueType_B32, &settings.recompileAllShaders},
-	{"find_mesh_triangle_neighbors", ConfigValueType_B32, &settings.findMeshTriangleNeighbors},
-	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
-	{"logging_level",  ConfigValueType_U32, &settings.loggingLevel},
-	{"crash_on_error", ConfigValueType_B32, &settings.crashOnError},
-	{"vsync_type",     ConfigValueType_U32, &settings.vsync},
-	{"msaa_samples",   ConfigValueType_U32, &settings.msaaSamples},
-	{"\n#shaders",                         ConfigValueType_PADSECTION,(void*)17},
-	{"optimize_shaders", ConfigValueType_B32, &settings.optimizeShaders},
-	{"\n#shadows",                         ConfigValueType_PADSECTION,(void*)20},
-	{"shadow_pcf",          ConfigValueType_B32, &settings.shadowPCF},
-	{"shadow_resolution",   ConfigValueType_U32, &settings.shadowResolution},
-	{"shadow_nearz",        ConfigValueType_F32, &settings.shadowNearZ},
-	{"shadow_farz",         ConfigValueType_F32, &settings.shadowFarZ},
-	{"depth_bias_constant", ConfigValueType_F32, &settings.depthBiasConstant},
-	{"depth_bias_slope",    ConfigValueType_F32, &settings.depthBiasSlope},
-	{"show_shadow_map",     ConfigValueType_B32, &settings.showShadowMap},
-	{"\n#colors",                          ConfigValueType_PADSECTION,(void*)15},
-	{"clear_color",    ConfigValueType_FV4, &settings.clearColor},
-	{"selected_color", ConfigValueType_FV4, &settings.selectedColor},
-	{"collider_color", ConfigValueType_FV4, &settings.colliderColor},
-	{"\n#filters",                         ConfigValueType_PADSECTION,(void*)15},
-	{"wireframe_only", ConfigValueType_B32, &settings.wireframeOnly},
-	{"\n#overlays",                        ConfigValueType_PADSECTION,(void*)16},
-	{"mesh_wireframes", ConfigValueType_B32, &settings.meshWireframes},
-	{"mesh_normals",    ConfigValueType_B32, &settings.meshNormals},
-	{"light_frustrums", ConfigValueType_B32, &settings.lightFrustrums},
-};
-
-static_internal RenderStats   stats{};
-static_internal RendererStage rendererStage = RENDERERSTAGE_NONE;
-
-//-------------------------------------------------------------------------------------------------
 // VULKAN STRUCTS
+
+
+struct Vertex2D{
+	vec2 pos;
+	vec2 uv;
+	u32  color;
+};
 
 struct QueueFamilyIndices{
     Optional<u32> graphicsFamily;
@@ -129,6 +94,56 @@ struct StagingBufferVk{
 
 
 //-------------------------------------------------------------------------------------------------
+// INTERFACE VARIABLES
+
+
+local RenderSettings settings;
+local ConfigMap configMap = {
+	{"#render settings config file",0,0},
+	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)10},
+	{"debugging", ConfigValueType_B32, &settings.debugging},
+	{"printf",    ConfigValueType_B32, &settings.printf},
+	{"recompile_all_shaders",        ConfigValueType_B32, &settings.recompileAllShaders},
+	{"find_mesh_triangle_neighbors", ConfigValueType_B32, &settings.findMeshTriangleNeighbors},
+	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
+	{"logging_level",  ConfigValueType_U32, &settings.loggingLevel},
+	{"crash_on_error", ConfigValueType_B32, &settings.crashOnError},
+	{"vsync_type",     ConfigValueType_U32, &settings.vsync},
+	{"msaa_samples",   ConfigValueType_U32, &settings.msaaSamples},
+	{"\n#shaders",                         ConfigValueType_PADSECTION,(void*)17},
+	{"optimize_shaders", ConfigValueType_B32, &settings.optimizeShaders},
+	{"\n#shadows",                         ConfigValueType_PADSECTION,(void*)20},
+	{"shadow_pcf",          ConfigValueType_B32, &settings.shadowPCF},
+	{"shadow_resolution",   ConfigValueType_U32, &settings.shadowResolution},
+	{"shadow_nearz",        ConfigValueType_F32, &settings.shadowNearZ},
+	{"shadow_farz",         ConfigValueType_F32, &settings.shadowFarZ},
+	{"depth_bias_constant", ConfigValueType_F32, &settings.depthBiasConstant},
+	{"depth_bias_slope",    ConfigValueType_F32, &settings.depthBiasSlope},
+	{"show_shadow_map",     ConfigValueType_B32, &settings.showShadowMap},
+	{"\n#colors",                          ConfigValueType_PADSECTION,(void*)15},
+	{"clear_color",    ConfigValueType_FV4, &settings.clearColor},
+	{"selected_color", ConfigValueType_FV4, &settings.selectedColor},
+	{"collider_color", ConfigValueType_FV4, &settings.colliderColor},
+	{"\n#filters",                         ConfigValueType_PADSECTION,(void*)15},
+	{"wireframe_only", ConfigValueType_B32, &settings.wireframeOnly},
+	{"\n#overlays",                        ConfigValueType_PADSECTION,(void*)16},
+	{"mesh_wireframes", ConfigValueType_B32, &settings.meshWireframes},
+	{"mesh_normals",    ConfigValueType_B32, &settings.meshNormals},
+	{"light_frustrums", ConfigValueType_B32, &settings.lightFrustrums},
+};
+
+local RenderStats   stats{};
+local RendererStage rendererStage = RENDERERSTAGE_NONE;
+
+#define MAX_UI_VERTICES 0xFFFF
+local u16 uiVertexCount = 0;
+local Vertex2D uiVertexArray[MAX_UI_VERTICES];
+
+#define MAX_UI_INDICES 3*MAX_UI_VERTICES
+local u32 uiIndexCount  = 0;
+local u16 uiIndexArray[MAX_UI_INDICES];
+
+//-------------------------------------------------------------------------------------------------
 // VULKAN VARIABLES
 
 //TODO(delle,ReOp) use container manager for arrays that remove elements
@@ -142,24 +157,24 @@ std::vector<u32>         selected     = std::vector<u32>(0);
 
 vec4 lights[10]{ vec4(0,0,0,-1) };
 
-static_internal std::vector<const char*> validationLayers = { 
+local std::vector<const char*> validationLayers = { 
 	"VK_LAYER_KHRONOS_validation" 
 };
-static_internal std::vector<const char*> deviceExtensions = { 
+local std::vector<const char*> deviceExtensions = { 
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
 	VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME 
 };
-static_internal std::vector<VkValidationFeatureEnableEXT> validationFeaturesEnabled = {};
+local std::vector<VkValidationFeatureEnableEXT> validationFeaturesEnabled = {};
 
-static_internal bool generatingWorldGrid = false; //TODO(sushi) this is temporary
+local bool generatingWorldGrid = false; //TODO(sushi) this is temporary
 
-static_internal const int MAX_FRAMES = 2;
-static_internal VkAllocationCallbacks* allocator = 0;
+local const int MAX_FRAMES = 2;
+local VkAllocationCallbacks* allocator = 0;
 
-static_internal bool initialized     = false;
-static_internal bool remakeWindow    = false;
-static_internal bool remakePipelines = false;
-static_internal bool _remakeOffscreen = false;
+local bool initialized     = false;
+local bool remakeWindow    = false;
+local bool remakePipelines = false;
+local bool _remakeOffscreen = false;
 
 VkSampleCountFlagBits msaaSamples{};
 
@@ -169,43 +184,43 @@ VkDebugUtilsMessageTypeFlagsEXT     callbackTypes      = VK_DEBUG_UTILS_MESSAGE_
 VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
 //// initialization ////
-static_internal VkInstance               instance = VK_NULL_HANDLE;
-static_internal VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
-static_internal VkSurfaceKHR             surface;
-static_internal VkPhysicalDevice         physicalDevice = VK_NULL_HANDLE;
-static_internal VkSampleCountFlagBits    maxMsaaSamples = VK_SAMPLE_COUNT_1_BIT;
-static_internal VkPhysicalDeviceFeatures deviceFeatures{};
-static_internal VkPhysicalDeviceFeatures enabledFeatures{};
-static_internal QueueFamilyIndices       physicalQueueFamilies;
-static_internal VkDevice                 device        = VK_NULL_HANDLE;
-static_internal VkQueue                  graphicsQueue = VK_NULL_HANDLE;
-static_internal VkQueue                  presentQueue  = VK_NULL_HANDLE; 
-static_internal VkDeviceSize             bufferMemoryAlignment = 256;
+local VkInstance               instance = VK_NULL_HANDLE;
+local VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
+local VkSurfaceKHR             surface;
+local VkPhysicalDevice         physicalDevice = VK_NULL_HANDLE;
+local VkSampleCountFlagBits    maxMsaaSamples = VK_SAMPLE_COUNT_1_BIT;
+local VkPhysicalDeviceFeatures deviceFeatures{};
+local VkPhysicalDeviceFeatures enabledFeatures{};
+local QueueFamilyIndices       physicalQueueFamilies;
+local VkDevice                 device        = VK_NULL_HANDLE;
+local VkQueue                  graphicsQueue = VK_NULL_HANDLE;
+local VkQueue                  presentQueue  = VK_NULL_HANDLE; 
+local VkDeviceSize             bufferMemoryAlignment = 256;
 
 //// swapchain ////
-static_internal s32                     width  = 0;
-static_internal s32                     height = 0;
-static_internal VkSwapchainKHR          swapchain = VK_NULL_HANDLE;
-static_internal SwapChainSupportDetails supportDetails{};
-static_internal VkSurfaceFormatKHR      surfaceFormat{};
-static_internal VkPresentModeKHR        presentMode;
-static_internal VkExtent2D              extent;
-static_internal s32                     minImageCount = 0;
+local s32                     width  = 0;
+local s32                     height = 0;
+local VkSwapchainKHR          swapchain = VK_NULL_HANDLE;
+local SwapChainSupportDetails supportDetails{};
+local VkSurfaceFormatKHR      surfaceFormat{};
+local VkPresentModeKHR        presentMode;
+local VkExtent2D              extent;
+local s32                     minImageCount = 0;
 
 //// renderpass ////
-static_internal VkRenderPass renderPass = VK_NULL_HANDLE;
+local VkRenderPass renderPass = VK_NULL_HANDLE;
 
 //// frames ////
-static_internal u32 imageCount = 0;
-static_internal u32 frameIndex = 0;
-static_internal std::vector<FrameVk> frames;
-static_internal FramebufferAttachmentsVk attachments{};
-static_internal VkSemaphore   imageAcquiredSemaphore  = VK_NULL_HANDLE;
-static_internal VkSemaphore   renderCompleteSemaphore = VK_NULL_HANDLE;
-static_internal VkCommandPool commandPool = VK_NULL_HANDLE;
+local u32 imageCount = 0;
+local u32 frameIndex = 0;
+local std::vector<FrameVk> frames;
+local FramebufferAttachmentsVk attachments{};
+local VkSemaphore   imageAcquiredSemaphore  = VK_NULL_HANDLE;
+local VkSemaphore   renderCompleteSemaphore = VK_NULL_HANDLE;
+local VkCommandPool commandPool = VK_NULL_HANDLE;
 
 //// buffers ////
-static_internal struct{ //uniform buffer for the vertex shaders
+local struct{ //uniform buffer for the vertex shaders
 	VkBuffer               buffer;
 	VkDeviceMemory         bufferMemory;
 	VkDeviceSize           bufferSize;
@@ -224,7 +239,8 @@ static_internal struct{ //uniform buffer for the vertex shaders
 		b32  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
 	} values;
 } uboVS{};
-static_internal struct{ //uniform buffer for the geometry shaders
+
+local struct{ //uniform buffer for the geometry shaders
 	VkBuffer               buffer;
 	VkDeviceMemory         bufferMemory;
 	VkDeviceSize           bufferSize;
@@ -235,7 +251,8 @@ static_internal struct{ //uniform buffer for the geometry shaders
 		mat4 proj; //camera projection matrix
 	} values;
 } uboGS{};
-static_internal struct{
+
+local struct{
 	VkBuffer               buffer;
 	VkDeviceMemory         bufferMemory;
 	VkDeviceSize           bufferSize;
@@ -245,19 +262,21 @@ static_internal struct{
 		mat4 lightVP;
 	} values;
 } uboVSoffscreen{};
-static_internal struct{ //vertices buffer
+
+local struct{ //vertices buffer
 	VkBuffer       buffer;
 	VkDeviceMemory bufferMemory;
 	VkDeviceSize   bufferSize;
 } vertices{};
-static_internal struct{ //indices buffer
+
+local struct{ //indices buffer
 	VkBuffer       buffer;
 	VkDeviceMemory bufferMemory;
 	VkDeviceSize   bufferSize;
 } indices{};
 
 //// offscreen rendering //// 
-static_internal struct{ //TODO(delle,Vu) distribute these variables around
+local struct{ //TODO(delle,Vu) distribute these variables around
 	s32 width, height;
 	VkImage               depthImage;
 	VkDeviceMemory        depthImageMemory;
@@ -269,36 +288,36 @@ static_internal struct{ //TODO(delle,Vu) distribute these variables around
 } offscreen{};
 
 //// pipelines ////
-static_internal struct{ //descriptor set layouts for pipelines
+local struct{ //descriptor set layouts for pipelines
 	VkDescriptorSetLayout ubos       = VK_NULL_HANDLE;
 	VkDescriptorSetLayout textures   = VK_NULL_HANDLE;
 	VkDescriptorSetLayout instances  = VK_NULL_HANDLE;
 } descriptorSetLayouts; //TODO(delle,Vu) rename descriptorSetLayouts.ubo to something more general
 
-static_internal VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
-static_internal struct{
+local VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+local struct{
 	VkDescriptorSet scene;
 	VkDescriptorSet offscreen;
 	VkDescriptorSet shadowMap_debug;
 } descriptorSets;
 
-static_internal VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-static_internal VkPipelineCache  pipelineCache  = VK_NULL_HANDLE;
-static_internal VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
-static_internal VkPipelineRasterizationStateCreateInfo rasterizationState{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
-static_internal VkPipelineColorBlendAttachmentState    colorBlendAttachmentState{};
-static_internal VkPipelineColorBlendStateCreateInfo    colorBlendState{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
-static_internal VkPipelineDepthStencilStateCreateInfo  depthStencilState{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
-static_internal VkPipelineViewportStateCreateInfo      viewportState{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
-static_internal VkPipelineMultisampleStateCreateInfo   multisampleState{VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
-static_internal VkPipelineVertexInputStateCreateInfo   vertexInputState{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
-static_internal VkPipelineDynamicStateCreateInfo       dynamicState{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
-static_internal VkGraphicsPipelineCreateInfo           pipelineCreateInfo{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
-static_internal std::vector<VkDynamicState>                    dynamicStates;
-static_internal std::vector<VkVertexInputBindingDescription>   vertexInputBindings;
-static_internal std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
+local VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+local VkPipelineCache  pipelineCache  = VK_NULL_HANDLE;
+local VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+local VkPipelineRasterizationStateCreateInfo rasterizationState{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
+local VkPipelineColorBlendAttachmentState    colorBlendAttachmentState{};
+local VkPipelineColorBlendStateCreateInfo    colorBlendState{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+local VkPipelineDepthStencilStateCreateInfo  depthStencilState{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+local VkPipelineViewportStateCreateInfo      viewportState{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+local VkPipelineMultisampleStateCreateInfo   multisampleState{VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+local VkPipelineVertexInputStateCreateInfo   vertexInputState{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+local VkPipelineDynamicStateCreateInfo       dynamicState{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+local VkGraphicsPipelineCreateInfo           pipelineCreateInfo{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+local std::vector<VkDynamicState>                    dynamicStates;
+local std::vector<VkVertexInputBindingDescription>   vertexInputBindings;
+local std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
 
-static_internal struct{ //pipelines
+local struct{ //pipelines
 	union{
 		VkPipeline array[15];
 		struct{
@@ -326,8 +345,8 @@ static_internal struct{ //pipelines
 	};
 } pipelines{};
 
-static_internal std::array<VkPipelineShaderStageCreateInfo, 3> shaderStages;
-static_internal std::vector<pair<std::string, VkShaderModule>> shaderModules;
+local std::array<VkPipelineShaderStageCreateInfo, 3> shaderStages;
+local std::vector<pair<std::string, VkShaderModule>> shaderModules;
 
 
 //-------------------------------------------------------------------------------------------------
@@ -341,7 +360,7 @@ static_internal std::vector<pair<std::string, VkShaderModule>> shaderModules;
 #define AssertRS(stages, ...) Assert((rendererStage & (stages)) == (stages))
 
 template<typename... Args>
-static_internal inline void
+local inline void
 PrintVk(u32 level, Args... args){
 	if(settings.loggingLevel >= level){
 		LOG("[Vulkan] ", args...);
@@ -349,7 +368,7 @@ PrintVk(u32 level, Args... args){
 }
 
 PFN_vkCmdBeginDebugUtilsLabelEXT func_vkCmdBeginDebugUtilsLabelEXT;
-static_internal inline void 
+local inline void 
 DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, Vector4 color){
 #ifdef DESHI_INTERNAL
 	VkDebugUtilsLabelEXT label{VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
@@ -363,7 +382,7 @@ DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, Vector
 }
 
 PFN_vkCmdEndDebugUtilsLabelEXT func_vkCmdEndDebugUtilsLabelEXT;
-static_internal inline void 
+local inline void 
 DebugEndLabelVk(VkCommandBuffer command_buffer){
 #ifdef DESHI_INTERNAL
 	func_vkCmdEndDebugUtilsLabelEXT(command_buffer);
@@ -371,7 +390,7 @@ DebugEndLabelVk(VkCommandBuffer command_buffer){
 }
 
 PFN_vkCmdInsertDebugUtilsLabelEXT func_vkCmdInsertDebugUtilsLabelEXT;
-static_internal inline  void 
+local inline  void 
 DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, Vector4 color){
 #ifdef DESHI_INTERNAL
 	VkDebugUtilsLabelEXT label{VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
@@ -385,7 +404,7 @@ DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, Vecto
 }
 
 PFN_vkSetDebugUtilsObjectNameEXT func_vkSetDebugUtilsObjectNameEXT;
-static_internal inline void 
+local inline void 
 DebugSetObjectNameVk(VkDevice device, VkObjectType object_type, u64 object_handle, const char *object_name){
 #ifdef DESHI_INTERNAL
 	if(!object_handle) return;
@@ -398,7 +417,7 @@ DebugSetObjectNameVk(VkDevice device, VkObjectType object_type, u64 object_handl
 }
 
 //returns a command buffer that will only execute once
-static_internal VkCommandBuffer
+local VkCommandBuffer
 BeginSingleTimeCommands(){
 	VkCommandBuffer commandBuffer;
 	
@@ -416,7 +435,7 @@ BeginSingleTimeCommands(){
 }
 
 //ends a command buffer and frees that buffers memory
-static_internal void
+local void
 EndSingleTimeCommands(VkCommandBuffer commandBuffer){
 	//TODO(delle,ReOpVu) maybe add a fence to ensure the buffer has finished executing
 	//instead of waiting for queue to be idle, see: sascha/VulkanDevice.cpp:508
@@ -431,7 +450,7 @@ EndSingleTimeCommands(VkCommandBuffer commandBuffer){
 	vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 }
 
-static_internal VKAPI_ATTR VkBool32 VKAPI_CALL 
+local VKAPI_ATTR VkBool32 VKAPI_CALL 
 DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData){
 	switch(messageSeverity){
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:{
@@ -456,7 +475,7 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 
 
 //finds which memory types the graphics card offers
-static_internal u32
+local u32
 FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties){
 	PrintVk(4, "      Finding Memory Types");
 	VkPhysicalDeviceMemoryProperties memProperties;
@@ -473,7 +492,7 @@ FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties){
 }
 
 //creates an image view specifying how to use an image
-static_internal VkImageView
+local VkImageView
 CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels){
 	PrintVk(4, "      Creating Image View");
 	VkImageViewCreateInfo viewInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
@@ -492,7 +511,7 @@ CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, 
 }
 
 //creates and binds a vulkan image to the GPU
-static_internal void 
+local void 
 CreateImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory){
 	PrintVk(4, "      Creating Image");
 	VkImageCreateInfo imageInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
@@ -522,7 +541,7 @@ CreateImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSampl
 }
 
 //converts a VkImage from one layout to another using an image memory barrier
-static_internal void 
+local void 
 TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels){
 	PrintVk(4, "      Transitioning Image Layout");
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
@@ -563,7 +582,7 @@ TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, V
 }
 
 //scans an image for max possible mipmaps and generates them
-static_internal void 
+local void 
 GenerateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight, u32 mipLevels){
 	PrintVk(4, "      Creating Image Mipmaps");
 	// Check if image format supports linear blitting
@@ -634,7 +653,7 @@ GenerateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight
 }
 
 //creates a buffer of defined usage and size on the device
-static_internal void 
+local void 
 CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
 	PrintVk(4, "      Creating or Resizing Buffer");
 	//delete old buffer
@@ -662,7 +681,7 @@ CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSiz
 }
 
 //creates a buffer and maps provided data to it
-static_internal void 
+local void 
 CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, void* data, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
 	PrintVk(4, "      Creating and Mapping Buffer");
 	//delete old buffer
@@ -709,7 +728,7 @@ CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize&
 }
 
 //uses commands to copy a buffer to an image
-static_internal void 
+local void 
 CopyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height){
 	PrintVk(4, "      Copying Buffer To Image");
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
@@ -728,7 +747,7 @@ CopyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height){
 }
 
 //copies a buffer, we use this to copy from CPU to GPU
-static_internal void 
+local void 
 CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size){
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
 		VkBufferCopy copyRegion{};
@@ -743,7 +762,7 @@ CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size){
 ///////////////////
 
 
-static_internal void 
+local void 
 CreateInstance(){
 	PrintVk(2, "  Creating Vulkan Instance");
 	Assert(rendererStage == RENDERERSTAGE_NONE, "renderer stage was not NONE at CreateInstance");
@@ -822,7 +841,7 @@ CreateInstance(){
 //////////////////////////
 
 
-static_internal void 
+local void 
 SetupDebugMessenger(){
 	PrintVk(2, "  Setting Up Debug Messenger");
 	AssertRS(RSVK_INSTANCE, "SetupDebugMessenger was called before CreateInstance");
@@ -848,7 +867,7 @@ SetupDebugMessenger(){
 //////////////////
 
 
-static_internal void 
+local void 
 CreateSurface(){
 	PrintVk(2, "  Creating GLFW-Vulkan Surface");
 	AssertRS(RSVK_INSTANCE, "CreateSurface called before CreateInstance");
@@ -863,7 +882,7 @@ CreateSurface(){
 /////////////////
 
 
-static_internal void 
+local void 
 PickPhysicalDevice(){
 	PrintVk(2, "  Picking Physical Device");
 	AssertRS(RSVK_SURFACE, "PickPhysicalDevice called before CreateSurface");
@@ -941,7 +960,7 @@ PickPhysicalDevice(){
 	vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 }
 
-static_internal void 
+local void 
 CreateLogicalDevice(){
 	PrintVk(2, "  Creating Logical Device");
 	AssertRS(RSVK_PHYSICALDEVICE, "CreateLogicalDevice called before PickPhysicalDevice");
@@ -1008,7 +1027,7 @@ CreateLogicalDevice(){
 
 
 //destroy old swap chain and in-flight frames, create a new swap chain with new dimensions
-static_internal void 
+local void 
 CreateSwapChain(){
 	PrintVk(2, "  Creating Swapchain");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateSwapChain called before CreateLogicalDevice");
@@ -1147,7 +1166,7 @@ CreateSwapChain(){
 /////////////////////
 
 
-static_internal VkFormat
+local VkFormat
 findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features){
 	PrintVk(4, "      Finding supported image formats");
 	for(VkFormat format : candidates){
@@ -1165,12 +1184,12 @@ findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tilin
 	return VK_FORMAT_UNDEFINED;
 }
 
-static_internal VkFormat
+local VkFormat
 findDepthFormat(){
 	return findSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-static_internal void 
+local void 
 CreateRenderpass(){
 	PrintVk(2, "  Creating Render Pass");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateRenderPass called before CreateLogicalDevice");
@@ -1258,7 +1277,7 @@ CreateRenderpass(){
 /////////////////
 
 
-static_internal void 
+local void 
 CreateCommandPool(){
 	PrintVk(2, "  Creating Command Pool");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateCommandPool called before CreateLogicalDevice");
@@ -1272,7 +1291,7 @@ CreateCommandPool(){
 }
 
 //creates image views, color/depth resources, framebuffers, commandbuffers
-static_internal void 
+local void 
 CreateFrames(){
 	PrintVk(2, "  Creating Frames");
 	AssertRS(RSVK_COMMANDPOOL, "CreateFrames called before CreateCommandPool");
@@ -1356,7 +1375,7 @@ CreateFrames(){
 //creates semaphores indicating: image acquired, rendering complete
 //semaphores (GPU-GPU) coordinate operations across command buffers so that they execute in a specified order
 //fences (CPU-GPU) are similar but are waited for in the code itself rather than threads
-static_internal void 
+local void 
 CreateSyncObjects(){
 	PrintVk(2, "  Creating Sync Objects");
 	AssertRS(RSVK_FRAMES, "CreateSyncObjects called before CreateFrames");
@@ -1377,12 +1396,12 @@ CreateSyncObjects(){
 
 
 /////////////////////////
-//// @global buffers ////
+//// @global_ buffers ////
 /////////////////////////
 
 
 //TODO(delle,ReOpVu) maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
-static_internal void 
+local void 
 UpdateUniformBuffers(){
 	AssertRS(RSVK_UNIFORMBUFFER, "UpdateUniformBuffer called before CreateUniformBuffer");
 	//PrintVk(2, "  Updating Uniform Buffer");
@@ -1426,7 +1445,7 @@ UpdateUniformBuffers(){
 	}
 }
 
-static_internal void 
+local void 
 CreateUniformBuffers(){
 	PrintVk(2, "  Creating uniform buffers");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateUniformBuffer called before CreateLogicalDevice");
@@ -1466,12 +1485,12 @@ CreateUniformBuffers(){
 	UpdateUniformBuffers();
 }
 
-static_internal void 
+local void 
 CreateSceneMeshBuffers(){
 	PrintVk(3, "    Creating Scene Buffers");
 	StagingBufferVk vertexStaging{}, indexStaging{};
 	size_t vertexBufferSize = vertexBuffer.size() * sizeof(VertexVk);
-	size_t indexBufferSize  = indexBuffer.size() * sizeof(u32);
+	size_t indexBufferSize  = indexBuffer.size()  * sizeof(u32);
 	if(vertexBufferSize == 0 || indexBufferSize == 0) return; //early out if empty buffers
 	
 	//create host visible vertex and index buffers (CPU/RAM)
@@ -1502,8 +1521,47 @@ CreateSceneMeshBuffers(){
 	vkFreeMemory(device, indexStaging.memory, nullptr);
 	
 	//name buffers for debugging
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)vertices.buffer, "Global vertex buffer");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)indices.buffer, "Global index buffer");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)vertices.buffer, "Meshes vertex buffer");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)indices.buffer, "Meshes index buffer");
+}
+
+local void
+CreateUIBuffers(){
+	StagingBufferVk vertexStaging{}, indexStaging{};
+	size_t vertexBufferSize = uiVertexCount * sizeof(VertexVk);
+	size_t indexBufferSize  = uiIndexCount  * sizeof(u16);
+	if(vertexBufferSize == 0 || indexBufferSize == 0) return; //early out if empty buffers
+	
+	//create host visible vertex and index buffers (CPU/RAM)
+	CreateAndMapBuffer(vertexStaging.buffer, vertexStaging.memory, vertices.bufferSize, vertexBufferSize, vertexBuffer.data(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	
+	CreateAndMapBuffer(indexStaging.buffer, indexStaging.memory, indices.bufferSize, indexBufferSize, indexBuffer.data(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	
+	//create device local buffers (GPU)
+	CreateAndMapBuffer(vertices.buffer, vertices.bufferMemory, vertices.bufferSize, vertexBufferSize, nullptr, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	
+	CreateAndMapBuffer(indices.buffer, indices.bufferMemory, indices.bufferSize, indexBufferSize, nullptr, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	
+	//copy data from staging buffers to device local buffers
+	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
+		VkBufferCopy copyRegion{};
+		
+		copyRegion.size = vertexBufferSize;
+		vkCmdCopyBuffer(commandBuffer, vertexStaging.buffer, vertices.buffer, 1, &copyRegion);
+		
+		copyRegion.size = indexBufferSize;
+		vkCmdCopyBuffer(commandBuffer, indexStaging.buffer, indices.buffer, 1, &copyRegion);
+	}EndSingleTimeCommands(commandBuffer);
+	
+	//free staging resources
+	vkDestroyBuffer(device, vertexStaging.buffer, nullptr);
+	vkFreeMemory(device, vertexStaging.memory, nullptr);
+	vkDestroyBuffer(device, indexStaging.buffer, nullptr);
+	vkFreeMemory(device, indexStaging.memory, nullptr);
+	
+	//name buffers for debugging
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)vertices.buffer, "2D vertex buffer");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)indices.buffer, "2D index buffer");
 }
 
 
@@ -1512,7 +1570,7 @@ CreateSceneMeshBuffers(){
 /////////////////////////////
 
 
-static_internal void 
+local void 
 SetupOffscreenRendering(){
 	PrintVk(2, "  Creating offscreen rendering stuffs");
 	AssertRS(RSVK_LOGICALDEVICE, "SetupOffscreenRendering called before CreateLogicalDevice");
@@ -1633,7 +1691,7 @@ SetupOffscreenRendering(){
 
 
 //creates descriptor set layouts, push constants for shaders, and the pipeline layout
-static_internal void 
+local void 
 CreateLayouts(){
 	PrintVk(2, "  Creating Layouts");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateLayouts called before CreateLogicalDevice");
@@ -1730,7 +1788,7 @@ CreateLayouts(){
 
 //creates a pool of descriptors of different types to be sent to shaders
 //TODO(delle,ReVu) find a better/more accurate way to do this, see gltfloading.cpp, line:592
-static_internal void 
+local void 
 CreateDescriptorPool(){
 	PrintVk(2, "  Creating Descriptor Pool");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateDescriptorPool called before CreateLogicalDevice");
@@ -1760,7 +1818,7 @@ CreateDescriptorPool(){
 }
 
 //allocates in the descriptor pool and creates the descriptor sets
-static_internal void 
+local void 
 CreateDescriptorSets(){
 	AssertRS(RSVK_DESCRIPTORPOOL | RSVK_UNIFORMBUFFER, "CreateLayouts called before CreateDescriptorPool or CreateUniformBuffer");
 	rendererStage |= RSVK_DESCRIPTORSETS;
@@ -1837,7 +1895,7 @@ CreateDescriptorSets(){
 	}
 }
 
-static_internal void 
+local void 
 CreatePipelineCache(){
 	PrintVk(2, "  Creating Pipeline Cache");
 	AssertRS(RSVK_LOGICALDEVICE, "CreatePipelineCache called before CreateLogicalDevice");
@@ -1856,7 +1914,7 @@ CreatePipelineCache(){
 	AssertVk(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache), "failed to create pipeline cache");
 }
 
-static_internal void 
+local void 
 SetupPipelineCreation(){
 	PrintVk(2, "  Setting up pipeline creation");
 	AssertRS(RSVK_LAYOUTS | RSVK_RENDERPASS, "SetupPipelineCreation called before CreateLayouts or CreateRenderPass");
@@ -1953,7 +2011,7 @@ SetupPipelineCreation(){
 	colorBlendAttachmentState.alphaBlendOp        = VK_BLEND_OP_ADD;
 	colorBlendAttachmentState.colorWriteMask      = 0xF; //RGBA
 	
-	//container struct for color blend attachments with overall blending constants; global settings
+	//container struct for color blend attachments with overall blending constants; global_ settings
 	//https://renderdoc.org/vkspec_chunked/chap30.html#VkPipelineColorBlendStateCreateInfo
 	colorBlendState.pNext             = 0;
 	colorBlendState.flags             = 0;
@@ -2005,7 +2063,7 @@ SetupPipelineCreation(){
 
 
 //TODO(delle,ReCl) clean this up
-static_internal std::vector<std::string> 
+local std::vector<std::string> 
 GetUncompiledShaders(){
 	std::vector<std::string> compiled;
 	for(auto& entry : std::filesystem::directory_iterator(Assets::dirShaders())){
@@ -2030,7 +2088,7 @@ GetUncompiledShaders(){
 }
 
 //creates a pipeline shader stage from the shader bytecode
-static_internal VkPipelineShaderStageCreateInfo 
+local VkPipelineShaderStageCreateInfo 
 loadShader(std::string filename, VkShaderStageFlagBits stage){
 	PrintVk(3, "    Loading shader: ", filename);
 	//setup shader stage create info
@@ -2064,7 +2122,7 @@ loadShader(std::string filename, VkShaderStageFlagBits stage){
 }
 
 //TODO(delle,Re) maybe dont crash on failed shader compile?
-static_internal VkPipelineShaderStageCreateInfo 
+local VkPipelineShaderStageCreateInfo 
 CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize = false){
 	PrintVk(3, "    Compiling and loading shader: ", filename);
 	//check if file exists
@@ -2127,7 +2185,7 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
 }
 
 
-static_internal void 
+local void 
 CompileAllShaders(bool optimize = false){
 	//setup shader compiler
 	shaderc_compiler_t compiler       = shaderc_compiler_initialize();
@@ -2181,7 +2239,7 @@ CompileAllShaders(bool optimize = false){
 	shaderc_compiler_release(compiler);
 }
 
-static_internal void
+local void
 CompileShader(std::string& filename, bool optimize){
 	PrintVk(3, "    Compiling shader: ", filename);
 	std::filesystem::path entry(Assets::dirShaders() + filename);
@@ -2231,7 +2289,7 @@ CompileShader(std::string& filename, bool optimize){
 	}
 }
 
-static_internal void 
+local void 
 CreatePipelines(){
 	PrintVk(2, "  Creating Pipelines");
 	AssertRS(RSVK_PIPELINESETUP, "CreatePipelines called before SetupPipelineCreation");
@@ -2467,7 +2525,7 @@ specializationInfo.mapEntryCount = 1;
 	}
 } //CreatePipelines
 
-static_internal VkPipeline 
+local VkPipeline 
 GetPipelineFromShader(u32 shader){
 	switch(shader){
 		case(Shader_Flat):default:{ return pipelines.flat;      }
@@ -2481,7 +2539,7 @@ GetPipelineFromShader(u32 shader){
 	}
 }
 
-static_internal void 
+local void 
 UpdateMaterialPipelines(){
 	PrintVk(4, "      Updating material pipelines");
 	for(auto& mat : materials){
@@ -2496,7 +2554,7 @@ UpdateMaterialPipelines(){
 
 
 //we define a call order to command buffers so they can be executed by vkSubmitQueue()
-static_internal void 
+local void 
 BuildCommandBuffers(){
 	//PrintVk(2, "  Building Command Buffers");
 	AssertRS(RSVK_DESCRIPTORSETS | RSVK_PIPELINECREATE, "BuildCommandBuffers called before CreateDescriptorSets or CreatePipelines");
@@ -2747,12 +2805,12 @@ BuildCommandBuffers(){
 // IMGUI FUNCTIONS
 
 
-static_internal void imguiCheckVkResult(VkResult err){
+local void imguiCheckVkResult(VkResult err){
 	// https://renderdoc.org/vkspec_chunked/chap4.html#VkResult
 	AssertVk(err, "imgui vulkan error");
 }
 
-static_internal char iniFilepath[256] = {};
+local char iniFilepath[256] = {};
 void DeshiImGui::
 init(){
 	//Setup Dear ImGui context
@@ -2819,258 +2877,10 @@ newFrame(){
 	ImGui::NewFrame();
 }
 
+
 //-------------------------------------------------------------------------------------------------
 // INTERFACE FUNCTIONS
 
-void Render::
-Init(){
-	PrintVk(1, "Initializing Vulkan");
-	TIMER_START(t_v);
-	
-	//// load RenderSettings ////
-	LoadSettings();
-	if(settings.debugging && settings.printf){
-		validationFeaturesEnabled.push_back(VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT);
-		settings.loggingLevel = 4;
-	}
-	
-	TIMER_START(t_temp);
-	//// setup Vulkan instance ////
-	CreateInstance();
-	PrintVk(3, "Finished creating instance in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	SetupDebugMessenger();
-	PrintVk(3, "Finished setting up debug messenger in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	
-	//// grab Vulkan extension functions ////
-#if DESHI_INTERNAL
-	func_vkSetDebugUtilsObjectNameEXT  = (PFN_vkSetDebugUtilsObjectNameEXT) vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
-	func_vkCmdBeginDebugUtilsLabelEXT  = (PFN_vkCmdBeginDebugUtilsLabelEXT) vkGetInstanceProcAddr(instance, "vkCmdBeginDebugUtilsLabelEXT");
-	func_vkCmdEndDebugUtilsLabelEXT    = (PFN_vkCmdEndDebugUtilsLabelEXT)   vkGetInstanceProcAddr(instance, "vkCmdEndDebugUtilsLabelEXT");
-	func_vkCmdInsertDebugUtilsLabelEXT = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdInsertDebugUtilsLabelEXT");
-#endif //DESHI_INTERNAL
-	
-	//// setup Vulkan-OperatingSystem interactions ////
-	CreateSurface();
-	PrintVk(3, "Finished creating surface in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	PickPhysicalDevice();
-	PrintVk(3, "Finished picking physical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreateLogicalDevice();
-	PrintVk(3, "Finished creating logical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	
-	//// limit RenderSettings to device capabilties ////
-	//NOTE currently disabled b/c of my resolve setup
-	//msaaSamples = (VkSampleCountFlagBits)(((1 << settings.msaaSamples) > maxMsaaSamples) ? settings.msaaSamples : 1 << settings.msaaSamples);
-	msaaSamples = maxMsaaSamples;
-	
-	//// setup unchanging Vulkan objects ////
-	CreateCommandPool();
-	PrintVk(3, "Finished creating command pool in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreateUniformBuffers();
-	PrintVk(3, "Finished creating uniform buffer in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreateLayouts();
-	PrintVk(3, "Finished creating layouts in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreateDescriptorPool();
-	PrintVk(3, "Finished creating descriptor pool in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	SetupOffscreenRendering();
-	PrintVk(3, "Finished setting up offscreen rendering in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	
-	//// setup window-specific Vulkan objects ////
-	CreateSwapChain();
-	PrintVk(3, "Finished creating swap chain in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreateRenderpass();
-	PrintVk(3, "Finished creating render pass in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreateFrames();
-	PrintVk(3, "Finished creating frames in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreateSyncObjects();
-	PrintVk(3, "Finished creating sync objects in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreateDescriptorSets();
-	PrintVk(3, "Finished creating descriptor sets in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreatePipelineCache();
-	PrintVk(3, "Finished creating pipeline cache in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	SetupPipelineCreation();
-	PrintVk(3, "Finished setting up pipeline creation in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreatePipelines();
-	PrintVk(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	
-	LoadDefaultAssets();
-	PrintVk(3, "Finished loading default assets in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreateSceneMeshBuffers();
-	PrintVk(3, "Finished creating scene mesh buffers in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	
-	initialized = true;
-	PrintVk(3, "Finished initializing Vulkan in ", TIMER_END(t_v), "ms");
-}
-
-void Render::
-Update(){
-	//PrintVk(1, "---------------new frame---------------");
-	AssertRS(RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS, "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
-	rendererStage = RSVK_RENDER;
-	
-	if(DengWindow->resized) remakeWindow = true;
-	if(remakeWindow){
-		int w, h;
-		glfwGetFramebufferSize(DengWindow->window, &w, &h);
-		if(w <= 0 || h <= 0){ 
-			ImGui::EndFrame(); 
-			return;  
-		}
-		
-		PrintVk(1, "window resized");
-		// Ensure all operations on the device have been finished before destroying resources
-		vkDeviceWaitIdle(device);
-		CreateSwapChain();
-		CreateFrames();
-		
-		frameIndex = 0;
-		remakeWindow = false;
-	}
-	
-	//reset frame stats
-	stats = {};
-	TIMER_START(t_r);
-	
-	//get next image from surface
-	u32 imageIndex;
-	VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &imageIndex);
-	if(result == VK_ERROR_OUT_OF_DATE_KHR){
-		remakeWindow = true;
-		return;
-	}else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){
-		Assert(!"failed to acquire swap chain image");
-	}
-	
-	//render stuff
-	ImGui::Render(); ImDrawData* drawData = ImGui::GetDrawData();
-	if(drawData){
-		stats.drawnIndices += drawData->TotalIdxCount;
-		stats.totalVertices += drawData->TotalVtxCount;
-	}
-	BuildCommandBuffers();
-	
-	//update uniform buffers
-	UpdateUniformBuffers();
-	
-	//submit the command buffer to the queue
-	VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
-	submitInfo.waitSemaphoreCount   = 1;
-	submitInfo.pWaitSemaphores      = &imageAcquiredSemaphore;
-	submitInfo.pWaitDstStageMask    = &wait_stage;
-	submitInfo.commandBufferCount   = 1;
-	submitInfo.pCommandBuffers      = &frames[imageIndex].commandBuffer;
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores    = &renderCompleteSemaphore;
-	
-	AssertVk(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "failed to submit draw command buffer");
-	
-	if(remakeWindow){ return; }
-	
-	//present the image
-	VkPresentInfoKHR presentInfo{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores    = &renderCompleteSemaphore;
-	presentInfo.swapchainCount     = 1;
-	presentInfo.pSwapchains        = &swapchain;
-	presentInfo.pImageIndices      = &imageIndex;
-	presentInfo.pResults           = 0;
-	result = vkQueuePresentKHR(presentQueue, &presentInfo);
-	
-	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow){
-		remakeWindow = false;
-		
-		PrintVk(1, "window resized");
-		// Ensure all operations on the device have been finished before destroying resources
-		vkDeviceWaitIdle(device);
-		CreateSwapChain();
-		CreateFrames();
-	} else if(result != VK_SUCCESS){
-		Assert(!"failed to present swap chain image");
-	}
-	
-	//iterate the frame index
-	frameIndex = (frameIndex + 1) % MAX_FRAMES; //loops back to zero after reaching max_frames
-	AssertVk(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
-	//update stats
-	stats.drawnTriangles += stats.drawnIndices / 3;
-	stats.totalVertices  += (u32)vertexBuffer.size();
-	stats.totalIndices   += (u32)indexBuffer.size();
-	stats.totalTriangles += stats.totalIndices / 3;
-	stats.renderTimeMS    = TIMER_END(t_r);
-	
-	if(remakePipelines){ 
-		CreatePipelines(); 
-		UpdateMaterialPipelines();
-		remakePipelines = false; 
-	}
-	if(_remakeOffscreen){
-		SetupOffscreenRendering();
-		_remakeOffscreen = true;
-	}
-}
-
-void Render::
-Reset(){
-	SUCCESS("Resetting renderer (Vulkan)");
-	vkDeviceWaitIdle(device); //wait before cleanup
-	
-	//vertex buffer
-	vertexBuffer.clear();
-	
-	//index buffer
-	indexBuffer.clear();
-	
-	//textures
-	for(auto& tex : textures){
-		vkDestroyImage(device, tex.image, nullptr);
-		vkFreeMemory(device, tex.imageMemory, nullptr);
-		vkDestroyImageView(device, tex.view, nullptr);
-		vkDestroySampler(device, tex.sampler, nullptr);
-	}
-	textures.clear();
-	
-	//meshes
-	meshes.clear();
-	
-	//materials
-	for(auto& mat : materials){
-		vkFreeDescriptorSets(device, descriptorPool, 1, &mat.descriptorSet);
-	}
-	materials.clear();
-	
-	//mesh brushes
-	for(auto& mesh : meshBrushes){
-		vkDestroyBuffer(device, mesh.vertexBuffer, nullptr);
-		vkFreeMemory(device, mesh.vertexBufferMemory, nullptr);
-		vkDestroyBuffer(device, mesh.indexBuffer, nullptr);
-		vkFreeMemory(device, mesh.indexBufferMemory, nullptr);
-	}
-	meshBrushes.clear();
-	
-	LoadDefaultAssets();
-}
-
-//TODO(delle,Vu) maybe cache pipeline creation vars?
-void Render::
-Cleanup(){
-	PrintVk(1, "Initializing Cleanup\n");
-	
-	Render::SaveSettings();
-	
-	//save pipeline cache to disk
-	if(pipelineCache != VK_NULL_HANDLE){
-		// Get size of pipeline cache
-		size_t size{};
-		AssertVk(vkGetPipelineCacheData(device, pipelineCache, &size, nullptr), "failed to get pipeline cache data size");
-		// Get data of pipeline cache
-		std::vector<char> data(size);
-		AssertVk(vkGetPipelineCacheData(device, pipelineCache, &size, data.data()), "failed to get pipeline cache data");
-		// Write pipeline cache data to a file in binary format
-		Assets::writeFileBinary(Assets::dirData() + "pipelines.cache", data);
-	}
-	
-	vkDeviceWaitIdle(device);
-}
 
 void Render::
 SaveSettings(){
@@ -4124,4 +3934,263 @@ MaterialName(u32 matIdx){
 char* Render::
 TextureName(u32 texIdx){
 	return textures[texIdx].filename;
+}
+
+void Render::
+Init(){
+	PrintVk(1, "Initializing Vulkan");
+	TIMER_START(t_v);
+	
+	//// load RenderSettings ////
+	LoadSettings();
+	if(settings.debugging && settings.printf){
+		validationFeaturesEnabled.push_back(VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT);
+		settings.loggingLevel = 4;
+	}
+	
+	TIMER_START(t_temp);
+	//// setup Vulkan instance ////
+	CreateInstance();
+	PrintVk(3, "Finished creating instance in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	SetupDebugMessenger();
+	PrintVk(3, "Finished setting up debug messenger in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	
+	//// grab Vulkan extension functions ////
+#if DESHI_INTERNAL
+	func_vkSetDebugUtilsObjectNameEXT  = (PFN_vkSetDebugUtilsObjectNameEXT) vkGetInstanceProcAddr(instance, "vkSetDebugUtilsObjectNameEXT");
+	func_vkCmdBeginDebugUtilsLabelEXT  = (PFN_vkCmdBeginDebugUtilsLabelEXT) vkGetInstanceProcAddr(instance, "vkCmdBeginDebugUtilsLabelEXT");
+	func_vkCmdEndDebugUtilsLabelEXT    = (PFN_vkCmdEndDebugUtilsLabelEXT)   vkGetInstanceProcAddr(instance, "vkCmdEndDebugUtilsLabelEXT");
+	func_vkCmdInsertDebugUtilsLabelEXT = (PFN_vkCmdInsertDebugUtilsLabelEXT)vkGetInstanceProcAddr(instance, "vkCmdInsertDebugUtilsLabelEXT");
+#endif //DESHI_INTERNAL
+	
+	//// setup Vulkan-OperatingSystem interactions ////
+	CreateSurface();
+	PrintVk(3, "Finished creating surface in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	PickPhysicalDevice();
+	PrintVk(3, "Finished picking physical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	CreateLogicalDevice();
+	PrintVk(3, "Finished creating logical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	
+	//// limit RenderSettings to device capabilties ////
+	//NOTE currently disabled b/c of my resolve setup
+	//msaaSamples = (VkSampleCountFlagBits)(((1 << settings.msaaSamples) > maxMsaaSamples) ? settings.msaaSamples : 1 << settings.msaaSamples);
+	msaaSamples = maxMsaaSamples;
+	
+	//// setup unchanging Vulkan objects ////
+	CreateCommandPool();
+	PrintVk(3, "Finished creating command pool in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	CreateUniformBuffers();
+	PrintVk(3, "Finished creating uniform buffer in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	CreateLayouts();
+	PrintVk(3, "Finished creating layouts in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	CreateDescriptorPool();
+	PrintVk(3, "Finished creating descriptor pool in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	SetupOffscreenRendering();
+	PrintVk(3, "Finished setting up offscreen rendering in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	
+	//// setup window-specific Vulkan objects ////
+	CreateSwapChain();
+	PrintVk(3, "Finished creating swap chain in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	CreateRenderpass();
+	PrintVk(3, "Finished creating render pass in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	CreateFrames();
+	PrintVk(3, "Finished creating frames in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	CreateSyncObjects();
+	PrintVk(3, "Finished creating sync objects in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	CreateDescriptorSets();
+	PrintVk(3, "Finished creating descriptor sets in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	CreatePipelineCache();
+	PrintVk(3, "Finished creating pipeline cache in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	SetupPipelineCreation();
+	PrintVk(3, "Finished setting up pipeline creation in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	CreatePipelines();
+	PrintVk(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	
+	LoadDefaultAssets();
+	PrintVk(3, "Finished loading default assets in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	CreateSceneMeshBuffers();
+	PrintVk(3, "Finished creating scene mesh buffers in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	
+	initialized = true;
+	PrintVk(3, "Finished initializing Vulkan in ", TIMER_END(t_v), "ms");
+}
+
+void Render::
+Update(){
+	//PrintVk(1, "---------------new frame---------------");
+	AssertRS(RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS, "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
+	rendererStage = RSVK_RENDER;
+	
+	if(DengWindow->resized) remakeWindow = true;
+	if(remakeWindow){
+		int w, h;
+		glfwGetFramebufferSize(DengWindow->window, &w, &h);
+		if(w <= 0 || h <= 0){ 
+			ImGui::EndFrame(); 
+			return;  
+		}
+		
+		PrintVk(1, "window resized");
+		// Ensure all operations on the device have been finished before destroying resources
+		vkDeviceWaitIdle(device);
+		CreateSwapChain();
+		CreateFrames();
+		
+		frameIndex = 0;
+		remakeWindow = false;
+	}
+	
+	//reset frame stats
+	stats = {};
+	TIMER_START(t_r);
+	
+	//get next image from surface
+	u32 imageIndex;
+	VkResult result = vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &imageIndex);
+	if(result == VK_ERROR_OUT_OF_DATE_KHR){
+		remakeWindow = true;
+		return;
+	}else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR){
+		Assert(!"failed to acquire swap chain image");
+	}
+	
+	//render stuff
+	ImGui::Render(); ImDrawData* drawData = ImGui::GetDrawData();
+	if(drawData){
+		stats.drawnIndices += drawData->TotalIdxCount;
+		stats.totalVertices += drawData->TotalVtxCount;
+	}
+	BuildCommandBuffers();
+	
+	//update uniform buffers
+	UpdateUniformBuffers();
+	
+	//submit the command buffer to the queue
+	VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+	submitInfo.waitSemaphoreCount   = 1;
+	submitInfo.pWaitSemaphores      = &imageAcquiredSemaphore;
+	submitInfo.pWaitDstStageMask    = &wait_stage;
+	submitInfo.commandBufferCount   = 1;
+	submitInfo.pCommandBuffers      = &frames[imageIndex].commandBuffer;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores    = &renderCompleteSemaphore;
+	
+	AssertVk(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "failed to submit draw command buffer");
+	
+	if(remakeWindow){ return; }
+	
+	//present the image
+	VkPresentInfoKHR presentInfo{VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores    = &renderCompleteSemaphore;
+	presentInfo.swapchainCount     = 1;
+	presentInfo.pSwapchains        = &swapchain;
+	presentInfo.pImageIndices      = &imageIndex;
+	presentInfo.pResults           = 0;
+	result = vkQueuePresentKHR(presentQueue, &presentInfo);
+	
+	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow){
+		remakeWindow = false;
+		
+		PrintVk(1, "window resized");
+		// Ensure all operations on the device have been finished before destroying resources
+		vkDeviceWaitIdle(device);
+		CreateSwapChain();
+		CreateFrames();
+	} else if(result != VK_SUCCESS){
+		Assert(!"failed to present swap chain image");
+	}
+	
+	//iterate the frame index
+	frameIndex = (frameIndex + 1) % MAX_FRAMES; //loops back to zero after reaching max_frames
+	AssertVk(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
+	//update stats
+	stats.drawnTriangles += stats.drawnIndices / 3;
+	stats.totalVertices  += (u32)vertexBuffer.size();
+	stats.totalIndices   += (u32)indexBuffer.size();
+	stats.totalTriangles += stats.totalIndices / 3;
+	stats.renderTimeMS    = TIMER_END(t_r);
+	
+	if(remakePipelines){ 
+		CreatePipelines(); 
+		UpdateMaterialPipelines();
+		remakePipelines = false; 
+	}
+	if(_remakeOffscreen){
+		SetupOffscreenRendering();
+		_remakeOffscreen = true;
+	}
+}
+
+void Render::
+Reset(){
+	SUCCESS("Resetting renderer (Vulkan)");
+	vkDeviceWaitIdle(device); //wait before cleanup
+	
+	//vertex buffer
+	vertexBuffer.clear();
+	
+	//index buffer
+	indexBuffer.clear();
+	
+	//textures
+	for(auto& tex : textures){
+		vkDestroyImage(device, tex.image, nullptr);
+		vkFreeMemory(device, tex.imageMemory, nullptr);
+		vkDestroyImageView(device, tex.view, nullptr);
+		vkDestroySampler(device, tex.sampler, nullptr);
+	}
+	textures.clear();
+	
+	//meshes
+	meshes.clear();
+	
+	//materials
+	for(auto& mat : materials){
+		vkFreeDescriptorSets(device, descriptorPool, 1, &mat.descriptorSet);
+	}
+	materials.clear();
+	
+	//mesh brushes
+	for(auto& mesh : meshBrushes){
+		vkDestroyBuffer(device, mesh.vertexBuffer, nullptr);
+		vkFreeMemory(device, mesh.vertexBufferMemory, nullptr);
+		vkDestroyBuffer(device, mesh.indexBuffer, nullptr);
+		vkFreeMemory(device, mesh.indexBufferMemory, nullptr);
+	}
+	meshBrushes.clear();
+	
+	LoadDefaultAssets();
+}
+
+//TODO(delle,Vu) maybe cache pipeline creation vars?
+void Render::
+Cleanup(){
+	PrintVk(1, "Initializing Cleanup\n");
+	
+	Render::SaveSettings();
+	
+	//save pipeline cache to disk
+	if(pipelineCache != VK_NULL_HANDLE){
+		// Get size of pipeline cache
+		size_t size{};
+		AssertVk(vkGetPipelineCacheData(device, pipelineCache, &size, nullptr), "failed to get pipeline cache data size");
+		// Get data of pipeline cache
+		std::vector<char> data(size);
+		AssertVk(vkGetPipelineCacheData(device, pipelineCache, &size, data.data()), "failed to get pipeline cache data");
+		// Write pipeline cache data to a file in binary format
+		Assets::writeFileBinary(Assets::dirData() + "pipelines.cache", data);
+	}
+	
+	vkDeviceWaitIdle(device);
+}
+
+
+//-------------------------------------------------------------------------------------------------
+// 2D INTERFACE
+
+void UI::
+DrawRect(vec2 position, vec2 dimensions, Color color){
+	
 }

@@ -94,18 +94,18 @@ struct Admin {
 	//initializes an entity with a component vector and adds it to entities immedietly
 	//returns a pointer to the entitiy
 	Entity* CreateEntityNow(std::vector<Component*> components, const char* name = 0, Transform transform = Transform());
-
+	
 	//adds the entity at ID to the deletion buffer
 	void DeleteEntity(u32 id);
 	
 	//adds an already initialized entity to the deletion buffer
 	void DeleteEntity(Entity* entity);
-
+	
 	void AddComponentToLayers(Component* component);
 };
 
 
-//global admin pointer
+//global_ admin pointer
 extern Admin* g_admin;
 #define EntityAt(id) g_admin->entities[id]
 #define DengAdmin  g_admin

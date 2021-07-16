@@ -18,7 +18,7 @@
 
 //makes a random number only once and then always returns that same number
 //if called by the same object
-#define PERM_RAND_INT ([]{ static int rint = rand() % 100000; return rint;}())
+#define PERM_RAND_INT ([]{ persist int rint = rand() % 100000; return rint;}())
 
 namespace Math { //forward declare average
 	template<class T>
@@ -135,7 +135,7 @@ g_debug->DrawMesh(mesh, transform, (__LINE__ ^ (size_t)__FUNCTION__ >> (size_t)_
 g_debug->DrawMesh(i, mesh, transform, (__LINE__ ^ (size_t)__FUNCTION__ >> (size_t)__FILENAME__), time, Color::WHITE)
 
 #define DeshDebugTrisCol(name, i, v1, v2, v3, color)\
-static std::vector<u32> name; \
+persist std::vector<u32> name; \
 if (name.size() < i) name.push_back(Render::CreateDebugTriangle(v1, v2, v3, color, true))
 
 #define DeshDebugTri(v1, v2, v3) Render::CreateDebugTriangle(v1, v2, v3, Color::WHITE, true)

@@ -46,10 +46,9 @@ void OrbManager::ReceiveEvent(Event event) {
 void OrbManager::Update() {
 	Time* t = DengTime;
 	
-	static bool lerping = false;
-	
-	static float timer = 0;
-	static float lerptime = 2;
+	persist bool lerping = false;
+	persist float timer = 0;
+	persist float lerptime = 2;
 	
 	std::vector<Vector2> vs{
 		Vector2(0, 0),

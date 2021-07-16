@@ -22,7 +22,7 @@
 
 // Message to beginner C/C++ programmers about the meaning of the 'static' keyword:
 // In this demo code, we frequently we use 'static' variables inside functions. A static variable persist across calls,
-// so it is essentially like a global variable but declared inside the scope of the function. We do this as a way to
+// so it is essentially like a global_ variable but declared inside the scope of the function. We do this as a way to
 // gather code and data in the same place, to make the demo source code faster to read, faster to write, and smaller
 // in size. It also happens to be a convenient way of storing simple UI related information as long as your function
 // doesn't need to be reentrant or used in multiple threads. This might be a pattern you will want to use in your code,
@@ -104,7 +104,7 @@ Index of this file:
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"        // warning: 'xx' is deprecated: The POSIX name for this..   // for strdup used in demo code (so user can copy & paste the code)
 #pragma clang diagnostic ignored "-Wint-to-void-pointer-cast"       // warning: cast to 'void *' from smaller integer type
 #pragma clang diagnostic ignored "-Wformat-security"                // warning: format string is not a string literal
-#pragma clang diagnostic ignored "-Wexit-time-destructors"          // warning: declaration requires an exit-time destructor    // exit-time destruction order is undefined. if MemFree() leads to users code that has been disabled before exit it might cause problems. ImGui coding style welcomes static/globals.
+#pragma clang diagnostic ignored "-Wexit-time-destructors"          // warning: declaration requires an exit-time destructor    // exit-time destruction order is undefined. if MemFree() leads to users code that has been disabled before exit it might cause problems. ImGui coding style welcomes static/global_s.
 #pragma clang diagnostic ignored "-Wunused-macros"                  // warning: macro is not used                               // we define snprintf/vsnprintf on Windows so they are available, but not always used.
 #pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"  // warning: zero as null pointer constant                   // some standard header variations use #define NULL 0
 #pragma clang diagnostic ignored "-Wdouble-promotion"               // warning: implicit conversion from 'float' to 'double' when passing argument to function  // using printf() is a misery with this as C++ va_arg ellipsis changes float to double.
@@ -3300,8 +3300,8 @@ namespace
 		// We have a problem which is affecting _only this demo_ and should not affect your code:
 		// As we don't rely on std:: or other third-party library to compile dear imgui, we only have reliable access to qsort(),
 		// however qsort doesn't allow passing user data to comparing function.
-		// As a workaround, we are storing the sort specs in a static/global for the comparing function to access.
-		// In your own use case you would probably pass the sort specs to your sorting/comparing functions directly and not use a global.
+		// As a workaround, we are storing the sort specs in a static/global_ for the comparing function to access.
+		// In your own use case you would probably pass the sort specs to your sorting/comparing functions directly and not use a global_.
 		// We could technically call ImGui::TableGetSortSpecs() in CompareWithSortSpecs(), but considering that this function is called
 		// very often by the sorting algorithm it would be a little wasteful.
 		static const ImGuiTableSortSpecs* s_current_sort_specs;
@@ -5965,7 +5965,7 @@ static void ShowDemoWindowTables()
 				static float window_scale = 1.0f;
 				if (ImGui::DragFloat("window scale", &window_scale, 0.005f, MIN_SCALE, MAX_SCALE, "%.2f", ImGuiSliderFlags_AlwaysClamp)) // Scale only this window
 					ImGui::SetWindowFontScale(window_scale);
-				ImGui::DragFloat("global scale", &io.FontGlobalScale, 0.005f, MIN_SCALE, MAX_SCALE, "%.2f", ImGuiSliderFlags_AlwaysClamp); // Scale everything
+				ImGui::DragFloat("global_ scale", &io.FontGlobalScale, 0.005f, MIN_SCALE, MAX_SCALE, "%.2f", ImGuiSliderFlags_AlwaysClamp); // Scale everything
 				ImGui::PopItemWidth();
 				
 				ImGui::EndTabItem();

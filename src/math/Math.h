@@ -12,9 +12,9 @@
 #include <numeric>
 
 #define F_AVG(i, f) ([&] { \
-static std::vector<float> floats; \
-static float nf; \
-static int iter = 0; \
+persist std::vector<float> floats; \
+persist float nf; \
+persist int iter = 0; \
 if(i == floats.size()){ \
 floats.erase(floats.begin()); \
 floats.push_back(f); \

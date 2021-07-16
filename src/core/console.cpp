@@ -33,7 +33,7 @@ std::regex Vec3Regex(const char* param)  { return std::regex(std::string("-")+ p
 
 using namespace ImGui;
 
-static_internal bool mirror_logging_to_stdout = false;
+local bool mirror_logging_to_stdout = false;
 int buffersize = 0;
 
 bool sel_com = false; //true when selecting an auto complete possibility
@@ -275,7 +275,7 @@ void Console::DrawConsole() {
 	
 	//display completion table
 	//this could probably be done in a better way but idc it works
-	static int match_sel = 0;
+	persist int match_sel = 0;
 	bool ok_flag = false;
 	if (sel_com) {
 		bool selected = false;
@@ -443,8 +443,8 @@ void Console::FlushBuffer() {
 		output += a.first;
 	}
 	
-	static std::string filename = Assets::dirLogs() + DengTime->FormatDateTime("deshiLog_{M}-{d}-{y}_{h}.{m}.{s}.txt");
-	static bool session = false;
+	persist std::string filename = Assets::dirLogs() + DengTime->FormatDateTime("deshiLog_{M}-{d}-{y}_{h}.{m}.{s}.txt");
+	persist bool session = false;
 	
 	std::ofstream file;
 	

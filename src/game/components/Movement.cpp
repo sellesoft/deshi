@@ -104,17 +104,17 @@ void Movement::GrabObject() {
 	//-prevent obj from colliding with player
 	//-change the objs velocity as the player moves it around
 	//-clean up the logic
-	static bool grabbing = false;
-	static int frame = DengTime->updateCount;
+	persist bool grabbing = false;
+	persist int frame = DengTime->updateCount;
 	
 	//interpolation vars
-	static float timer = 0;
-	static float timetocenter = 0.07;
+	persist float timer = 0;
+	persist float timetocenter = 0.07;
 	
-	static Vector3 ogpos;
+	persist Vector3 ogpos;
 	
 	//static Entity* grabee = nullptr;
-	static Physics* grabeephys = nullptr;
+	persist Physics* grabeephys = nullptr;
 	
 	//grab object or drop it if already holding one
 	//frame is necessary to avoid this being ran multiple times due to
@@ -242,8 +242,8 @@ void Movement::Update() {
 	
 	Vector3 standpos = admin->player->transform.position + Vector3::UP * 2;
 	Vector3 crouchpos = admin->player->transform.position + Vector3::UP * 0.5;
-	static Vector3 cpos = standpos;
-	static float timer = 0;
+	persist Vector3 cpos = standpos;
+	persist float timer = 0;
 	float ttc = 0.2;
 	
 	if (DengInput->KeyDownAnyMod(DengKeys.movementCrouch)) {

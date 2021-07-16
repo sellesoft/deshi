@@ -15,7 +15,7 @@ struct Admin;
 enum ColliderTypeBits : u32{
 	ColliderType_NONE, ColliderType_Box, ColliderType_AABB, ColliderType_Sphere, ColliderType_Landscape, ColliderType_Complex
 }; typedef u32 ColliderType;
-static const char* ColliderTypeStrings[] = {
+global_ const char* ColliderTypeStrings[] = {
 	"None", "Box", "AABB", "Sphere", "Landscape", "Complex"
 };
 

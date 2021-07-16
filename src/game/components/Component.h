@@ -46,7 +46,7 @@ enum ComponentTypeBits : u32{
 	ComponentType_Player            = 1 << 13,
 	ComponentType_Movement          = 1 << 14,
 }; typedef u32 ComponentType;
-static const char* ComponentTypeStrings[] = {
+global_ const char* ComponentTypeStrings[] = {
 	"None", "MeshComp", "Physics", "Collider", "ColliderBox", "ColliderAABB", "ColliderSphere", "ColliderLandscape", "AudioListener", "AudioSource", "Camera", "Light", "OrbManager", "Door", "Player", "Movement"
 };
 

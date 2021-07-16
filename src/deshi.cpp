@@ -23,7 +23,7 @@ Minor Ungrouped TODOs
 add a setting for a limit to the number of log files
 redo Debug::DrawLine calling to take in an id for uniqueness like ImGui
 make the engine runnable without the renderer
-create a hot-loadable global vars file
+create a hot-loadable global_ vars file
 detach camera from the renderer so that the camera component isnt calling the renderer
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
 ____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
@@ -185,12 +185,12 @@ __________ maybe store the text in the actual source and create the file from th
 #include "core/window.h"
 #include "game/admin.h"
 
-static_internal Time       time_;    Time*     g_time = &time_; //time_ because there is a c-func time() D:
-static_internal Window     window;   Window*   g_window = &window;
-static_internal Input      input;    Input*    g_input = &input;
-static_internal Console    console;  Console*  g_console = &console;
-static_internal Admin      admin;    Admin*    g_admin = &admin;
-static_internal Debug      debug;    Debug*    g_debug = &debug;
+local Time    time_;   Time*    g_time    = &time_; //time_ because there is a c-func time() D:
+local Window  window;  Window*  g_window  = &window;
+local Input   input;   Input*   g_input   = &input;
+local Console console; Console* g_console = &console;
+local Admin   admin;   Admin*   g_admin   = &admin;
+local Debug   debug;   Debug*   g_debug   = &debug;
 
 TIMER_START(t_d); TIMER_START(t_f);
 
@@ -200,7 +200,7 @@ int main() {
 	
 	//init engine core
 	time_.Init(300); //300 tps for physics
-	window.Init(&input, 1280, 720); //inits input as well
+	window.Init(1280, 720); //inits input as well
 	Console2::Init();
 	console.Init();
 	Render::Init();

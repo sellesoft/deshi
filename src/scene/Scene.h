@@ -9,7 +9,7 @@
 struct Light;
 struct RenderedEdge3D;
 
-//TODO(delle,Cl) move scene object to deshiEngine and maybe make it global
+//TODO(delle,Cl) move scene object to deshiEngine and maybe make it global_
 
 struct Scene{
 	std::vector<Model>   models;
@@ -26,7 +26,7 @@ inline void Scene::Init(){
 	models.emplace_back(Mesh::CreateMeshFromOBJ("sphere.obj"));
 	models.emplace_back(Mesh::CreateMeshFromOBJ("arrow.obj"));
 	
-	//TODO(delle,ReVu) add local axis, global axis, and grid meshes
+	//TODO(delle,ReVu) add local axis, global_ axis, and grid meshes
 }
 
 inline void Scene::Reset(){

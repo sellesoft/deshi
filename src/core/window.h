@@ -24,8 +24,6 @@ struct Window{
 	GLFWwindow* window;
 	GLFWmonitor* monitor;
 	
-	inline static Input* input; //TODO(delle,Cl) find a way to not do this static
-	
 	s32 x, y;
 	s32 width, height;
 	s32 screenWidth, screenHeight;
@@ -45,8 +43,7 @@ struct Window{
 	Vector2 dimensions;
 	
 	//NOTE(delle) vsync isnt handled in GLFW when using vulkan
-	void Init(Input* input, s32 width, s32 height, s32 x = 0, s32 y = 0,  
-			  DisplayMode displayMode = DisplayMode::WINDOWED);
+	void Init(s32 width, s32 height, s32 x = 0, s32 y = 0, DisplayMode displayMode = DisplayMode::WINDOWED);
 	void Update();
 	void Cleanup();
 	void UpdateDisplayMode(DisplayMode mode);
@@ -59,7 +56,7 @@ struct Window{
 	std::string str();
 };
 
-//global window pointer
+//global_ window pointer
 extern Window* g_window;
 #define DengWindow g_window
 

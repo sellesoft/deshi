@@ -37,8 +37,8 @@ void Camera::Update() {
 	if(freeCamera){
 		//NOTE this can happen whether the camera is free or not so move it out
 		//of this scope once we implement that
-		static int wwidth = DengWindow->width; 
-		static int wheight = DengWindow->height;
+		persist int wwidth = DengWindow->width; 
+		persist int wheight = DengWindow->height;
 		
 		//clamp camera rotation
 		Math::clamp(rotation.x, -89.9f, 89.9f);
@@ -96,7 +96,7 @@ Matrix4 Camera::MakePerspectiveProjection(){
 Matrix4 Camera::MakeOrthographicProjection() {
 	//pair<Vector3, Vector3> bbox = admin->scene.SceneBoundingBox();
 	//convert bounding box to camera space
-	static float zoom = 10;
+	persist float zoom = 10;
 	Vector3 maxcam = Math::WorldToCamera3(Vector3( zoom, zoom, zoom),  admin->mainCamera->viewMat);
 	Vector3 mincam = Math::WorldToCamera3(Vector3(-zoom,-zoom,-zoom), admin->mainCamera->viewMat); 
 	
@@ -109,12 +109,12 @@ Matrix4 Camera::MakeOrthographicProjection() {
 	float r = max * aspectRatio, t = max;
 	float l = -r, b = -t;
 	
-	static float oloffsetx = 0;
-	static float oloffsety = 0;
-	static float offsetx = 0;
-	static float offsety = 0;
-	static Vector2 initmouse;
-	static bool initoffset = false;
+	persist float oloffsetx = 0;
+	persist float oloffsety = 0;
+	persist float offsetx = 0;
+	persist float offsety = 0;
+	persist Vector2 initmouse;
+	persist bool initoffset = false;
 	
 	PRINTLN(zoom);
 	//orthographic view controls

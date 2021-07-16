@@ -29,9 +29,9 @@ typedef double             f64;
 typedef s32                b32; //int-based boolean so c++ doesnt convert to 0 or 1
 
 //static defines
-#define static_internal static
-#define local_persist   static
-#define global_variable static
+#define local   static
+#define persist static
+#define global_  static //dumb STL uses global in xlocale
 
 //dynamic cast short-hand
 #define dyncast(child, base) dynamic_cast<child*>(base)
