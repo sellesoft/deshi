@@ -59,6 +59,11 @@ struct Vertex2D{
 	u32  color;
 };
 
+struct Push2DVk{
+	vec2 scale;
+	vec2 translate;
+};
+
 struct QueueFamilyIndices{
     Optional<u32> graphicsFamily;
     Optional<u32> presentFamily;
@@ -90,6 +95,13 @@ struct FramebufferAttachmentsVk{
 struct StagingBufferVk{
     VkBuffer buffer;
     VkDeviceMemory memory;
+};
+
+struct BufferVk{
+	VkBuffer               buffer;
+	VkDeviceMemory         memory;
+	VkDeviceSize           size;
+	VkDescriptorBufferInfo descriptor;
 };
 
 
@@ -183,7 +195,9 @@ VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERIT
 VkDebugUtilsMessageTypeFlagsEXT     callbackTypes      = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
 VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
-//// initialization ////
+/////////////////////////
+//// @initialization ////
+/////////////////////////
 local VkInstance               instance = VK_NULL_HANDLE;
 local VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 local VkSurfaceKHR             surface;
@@ -197,7 +211,9 @@ local VkQueue                  graphicsQueue = VK_NULL_HANDLE;
 local VkQueue                  presentQueue  = VK_NULL_HANDLE; 
 local VkDeviceSize             bufferMemoryAlignment = 256;
 
-//// swapchain ////
+////////////////////
+//// @swapchain ////
+////////////////////
 local s32                     width  = 0;
 local s32                     height = 0;
 local VkSwapchainKHR          swapchain = VK_NULL_HANDLE;
@@ -207,10 +223,14 @@ local VkPresentModeKHR        presentMode;
 local VkExtent2D              extent;
 local s32                     minImageCount = 0;
 
-//// renderpass ////
+/////////////////////
+//// @renderpass ////
+/////////////////////
 local VkRenderPass renderPass = VK_NULL_HANDLE;
 
-//// frames ////
+/////////////////
+//// @frames ////
+/////////////////
 local u32 imageCount = 0;
 local u32 frameIndex = 0;
 local std::vector<FrameVk> frames;
@@ -219,7 +239,9 @@ local VkSemaphore   imageAcquiredSemaphore  = VK_NULL_HANDLE;
 local VkSemaphore   renderCompleteSemaphore = VK_NULL_HANDLE;
 local VkCommandPool commandPool = VK_NULL_HANDLE;
 
-//// buffers ////
+//////////////////
+//// @buffers ////
+//////////////////
 local struct{ //uniform buffer for the vertex shaders
 	VkBuffer               buffer;
 	VkDeviceMemory         bufferMemory;
@@ -275,23 +297,17 @@ local struct{ //indices buffer
 	VkDeviceSize   bufferSize;
 } indices{};
 
-//// offscreen rendering //// 
-local struct{ //TODO(delle,Vu) distribute these variables around
-	s32 width, height;
-	VkImage               depthImage;
-	VkDeviceMemory        depthImageMemory;
-	VkImageView           depthImageView;
-	VkSampler             depthSampler;
-	VkDescriptorImageInfo depthDescriptor;
-	VkRenderPass          renderpass;
-	VkFramebuffer         framebuffer;
-} offscreen{};
+local BufferVk uiVertexBuffer;
+local BufferVk uiIndexBuffer;
 
-//// pipelines ////
+////////////////////
+//// @pipelines ////
+////////////////////
 local struct{ //descriptor set layouts for pipelines
 	VkDescriptorSetLayout ubos       = VK_NULL_HANDLE;
 	VkDescriptorSetLayout textures   = VK_NULL_HANDLE;
 	VkDescriptorSetLayout instances  = VK_NULL_HANDLE;
+	VkDescriptorSetLayout twod       = VK_NULL_HANDLE;
 } descriptorSetLayouts; //TODO(delle,Vu) rename descriptorSetLayouts.ubo to something more general
 
 local VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
@@ -299,9 +315,14 @@ local struct{
 	VkDescriptorSet scene;
 	VkDescriptorSet offscreen;
 	VkDescriptorSet shadowMap_debug;
+	VkDescriptorSet ui;
 } descriptorSets;
 
-local VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+local struct{
+	VkPipelineLayout base = VK_NULL_HANDLE;
+	VkPipelineLayout twod = VK_NULL_HANDLE;
+} pipelineLayouts;
+
 local VkPipelineCache  pipelineCache  = VK_NULL_HANDLE;
 local VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
 local VkPipelineRasterizationStateCreateInfo rasterizationState{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
@@ -311,15 +332,18 @@ local VkPipelineDepthStencilStateCreateInfo  depthStencilState{VK_STRUCTURE_TYPE
 local VkPipelineViewportStateCreateInfo      viewportState{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
 local VkPipelineMultisampleStateCreateInfo   multisampleState{VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
 local VkPipelineVertexInputStateCreateInfo   vertexInputState{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+local VkPipelineVertexInputStateCreateInfo   twodVertexInputState{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
 local VkPipelineDynamicStateCreateInfo       dynamicState{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
 local VkGraphicsPipelineCreateInfo           pipelineCreateInfo{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
 local std::vector<VkDynamicState>                    dynamicStates;
 local std::vector<VkVertexInputBindingDescription>   vertexInputBindings;
 local std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
+local std::vector<VkVertexInputBindingDescription>   twodVertexInputBindings;
+local std::vector<VkVertexInputAttributeDescription> twodVertexInputAttributes;
 
 local struct{ //pipelines
 	union{
-		VkPipeline array[15];
+		VkPipeline array[16];
 		struct{
 			//game shaders
 			VkPipeline flat;
@@ -327,6 +351,7 @@ local struct{ //pipelines
 			VkPipeline twod;
 			VkPipeline pbr;
 			VkPipeline lavalamp;
+			VkPipeline ui;
 			
 			//development shaders
 			VkPipeline base;
@@ -345,17 +370,41 @@ local struct{ //pipelines
 	};
 } pipelines{};
 
+//////////////////
+//// @shaders ////
+//////////////////
 local std::array<VkPipelineShaderStageCreateInfo, 3> shaderStages;
 local std::vector<pair<std::string, VkShaderModule>> shaderModules;
 
+/////////////////
+//// @other  //// 
+/////////////////
+local struct{ //TODO(delle,Vu) distribute these variables around
+	s32 width, height;
+	VkImage               depthImage;
+	VkDeviceMemory        depthImageMemory;
+	VkImageView           depthImageView;
+	VkSampler             depthSampler;
+	VkDescriptorImageInfo depthDescriptor;
+	VkRenderPass          renderpass;
+	VkFramebuffer         framebuffer;
+} offscreen{};
+
+struct{
+	VkImage               image;
+	VkDeviceMemory        memory;
+	VkImageView           view;
+	VkSampler             sampler;
+	VkDescriptorImageInfo info;
+} fontTexture{};
 
 //-------------------------------------------------------------------------------------------------
 // VULKAN FUNCTIONS
 
+
 ////////////////////
 //// @utilities ////
 ////////////////////
-
 #define AssertVk(result, ...) Assert((result) == VK_SUCCESS)
 #define AssertRS(stages, ...) Assert((rendererStage & (stages)) == (stages))
 
@@ -451,7 +500,8 @@ EndSingleTimeCommands(VkCommandBuffer commandBuffer){
 }
 
 local VKAPI_ATTR VkBool32 VKAPI_CALL 
-DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData){
+DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType,
+			  const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData){
 	switch(messageSeverity){
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:{
 			ERROR("[Vulkan] ", pCallbackData->pMessage); 
@@ -472,8 +522,6 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 ////////////////////////
 //// @memory/images ////
 ////////////////////////
-
-
 //finds which memory types the graphics card offers
 local u32
 FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties){
@@ -757,11 +805,9 @@ CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size){
 }
 
 
-///////////////////
-//// @instance ////
-///////////////////
-
-
+/////////////////////////
+//// @initialization ////
+/////////////////////////
 local void 
 CreateInstance(){
 	PrintVk(2, "  Creating Vulkan Instance");
@@ -835,12 +881,6 @@ CreateInstance(){
 	AssertVk(vkCreateInstance(&createInfo, allocator, &instance), "failed to create instance");
 }
 
-
-//////////////////////////
-//// @debug messenger ////
-//////////////////////////
-
-
 local void 
 SetupDebugMessenger(){
 	PrintVk(2, "  Setting Up Debug Messenger");
@@ -861,12 +901,6 @@ SetupDebugMessenger(){
 	AssertVk(err, "failed to setup debug messenger");
 }
 
-
-//////////////////
-//// @surface ////
-//////////////////
-
-
 local void 
 CreateSurface(){
 	PrintVk(2, "  Creating GLFW-Vulkan Surface");
@@ -875,12 +909,6 @@ CreateSurface(){
 	
 	AssertVk(glfwCreateWindowSurface(instance, DengWindow->window, allocator, &surface), "failed to create window surface");
 }
-
-
-/////////////////  physical device = actual GPU
-//// @device ////  logical  device = interface to the GPU
-/////////////////
-
 
 local void 
 PickPhysicalDevice(){
@@ -1021,9 +1049,9 @@ CreateLogicalDevice(){
 }
 
 
-/////////////////////
-//// @swap chain ////
-/////////////////////
+////////////////////
+//// @swapchain ////
+////////////////////
 
 
 //destroy old swap chain and in-flight frames, create a new swap chain with new dimensions
@@ -1290,6 +1318,7 @@ CreateCommandPool(){
 	AssertVk(vkCreateCommandPool(device, &poolInfo, allocator, &commandPool), "failed to create command pool");
 }
 
+
 //creates image views, color/depth resources, framebuffers, commandbuffers
 local void 
 CreateFrames(){
@@ -1395,9 +1424,9 @@ CreateSyncObjects(){
 }
 
 
-/////////////////////////
-//// @global_ buffers ////
-/////////////////////////
+//////////////////
+//// @buffers ////
+//////////////////
 
 
 //TODO(delle,ReOpVu) maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
@@ -1515,59 +1544,19 @@ CreateSceneMeshBuffers(){
 	}EndSingleTimeCommands(commandBuffer);
 	
 	//free staging resources
-	vkDestroyBuffer(device, vertexStaging.buffer, nullptr);
-	vkFreeMemory(device, vertexStaging.memory, nullptr);
-	vkDestroyBuffer(device, indexStaging.buffer, nullptr);
-	vkFreeMemory(device, indexStaging.memory, nullptr);
+	vkDestroyBuffer(device, vertexStaging.buffer, allocator);
+	vkFreeMemory(device, vertexStaging.memory, allocator);
+	vkDestroyBuffer(device, indexStaging.buffer, allocator);
+	vkFreeMemory(device, indexStaging.memory, allocator);
 	
 	//name buffers for debugging
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)vertices.buffer, "Meshes vertex buffer");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)indices.buffer, "Meshes index buffer");
 }
 
-local void
-CreateUIBuffers(){
-	StagingBufferVk vertexStaging{}, indexStaging{};
-	size_t vertexBufferSize = uiVertexCount * sizeof(VertexVk);
-	size_t indexBufferSize  = uiIndexCount  * sizeof(u16);
-	if(vertexBufferSize == 0 || indexBufferSize == 0) return; //early out if empty buffers
-	
-	//create host visible vertex and index buffers (CPU/RAM)
-	CreateAndMapBuffer(vertexStaging.buffer, vertexStaging.memory, vertices.bufferSize, vertexBufferSize, vertexBuffer.data(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	
-	CreateAndMapBuffer(indexStaging.buffer, indexStaging.memory, indices.bufferSize, indexBufferSize, indexBuffer.data(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	
-	//create device local buffers (GPU)
-	CreateAndMapBuffer(vertices.buffer, vertices.bufferMemory, vertices.bufferSize, vertexBufferSize, nullptr, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	
-	CreateAndMapBuffer(indices.buffer, indices.bufferMemory, indices.bufferSize, indexBufferSize, nullptr, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	
-	//copy data from staging buffers to device local buffers
-	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
-		VkBufferCopy copyRegion{};
-		
-		copyRegion.size = vertexBufferSize;
-		vkCmdCopyBuffer(commandBuffer, vertexStaging.buffer, vertices.buffer, 1, &copyRegion);
-		
-		copyRegion.size = indexBufferSize;
-		vkCmdCopyBuffer(commandBuffer, indexStaging.buffer, indices.buffer, 1, &copyRegion);
-	}EndSingleTimeCommands(commandBuffer);
-	
-	//free staging resources
-	vkDestroyBuffer(device, vertexStaging.buffer, nullptr);
-	vkFreeMemory(device, vertexStaging.memory, nullptr);
-	vkDestroyBuffer(device, indexStaging.buffer, nullptr);
-	vkFreeMemory(device, indexStaging.memory, nullptr);
-	
-	//name buffers for debugging
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)vertices.buffer, "2D vertex buffer");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)indices.buffer, "2D index buffer");
-}
-
-
-/////////////////////////////
-//// @offscreen rendering ////
-/////////////////////////////
+////////////////
+//// @other ////
+////////////////
 
 
 local void 
@@ -1684,6 +1673,93 @@ SetupOffscreenRendering(){
 	}
 }
 
+local void
+SetupUIRendering(){
+	{//create UI font texture
+		//create the image and imageview
+		if(fontTexture.image){
+			vkDestroyImageView(  device, fontTexture.view,    allocator);
+			vkDestroyImage(      device, fontTexture.image,   allocator);
+			vkFreeMemory(        device, fontTexture.memory,  allocator);
+			vkDestroySampler(    device, fontTexture.sampler, allocator);
+		}
+		CreateImage(256, 256, 1, msaaSamples, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, 
+					VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 
+					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, fontTexture.image, fontTexture.memory);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)fontTexture.image, "UI font image");
+		fontTexture.view = CreateImageView(fontTexture.image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)fontTexture.view, "UI font imageview");
+		
+		//create the sampler
+		VkSamplerCreateInfo info{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+		info.magFilter     = VK_FILTER_LINEAR;
+		info.minFilter     = VK_FILTER_LINEAR;
+		info.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		info.addressModeU  = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		info.addressModeV  = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		info.addressModeW  = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		info.mipLodBias    = 0.0f;
+		info.maxAnisotropy = 1.0f;
+		info.minLod        = 0.0f;
+		info.maxLod        = 1.0f;
+		info.borderColor   = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+		AssertVk(vkCreateSampler(device, &info, nullptr, &fontTexture.sampler));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)fontTexture.sampler, "UI font sampler");
+		
+		
+		//create descriptor image info 
+		fontTexture.info.sampler     = fontTexture.sampler;
+		fontTexture.info.imageView   = fontTexture.view;
+		fontTexture.info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	}
+	
+	{//create UI vertex and index buffers
+		BufferVk stage_vb{}, stage_ib{};
+		size_t vb_size = uiVertexCount * sizeof(Vertex2D);
+		size_t ib_size = uiIndexCount  * sizeof(u16);
+		if(vb_size == 0 || ib_size == 0) return; //early out if empty buffers
+		
+		//create host visible vertex and index buffers (CPU/RAM)
+		CreateAndMapBuffer(stage_vb.buffer, stage_vb.memory, uiVertexBuffer.size, vb_size, uiVertexArray, 
+						   VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+						   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		
+		CreateAndMapBuffer(stage_ib.buffer, stage_ib.memory, uiIndexBuffer.size, ib_size, uiIndexArray,
+						   VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+						   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		
+		//create device local buffers (GPU)
+		CreateAndMapBuffer(uiVertexBuffer.buffer, uiVertexBuffer.memory, uiVertexBuffer.size, vb_size, nullptr,
+						   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+						   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		
+		CreateAndMapBuffer(uiIndexBuffer.buffer, uiIndexBuffer.memory, uiIndexBuffer.size, ib_size, nullptr,
+						   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+						   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+		
+		//copy data from staging buffers to device local buffers
+		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
+			VkBufferCopy copyRegion{};
+			
+			copyRegion.size = vb_size;
+			vkCmdCopyBuffer(commandBuffer, stage_vb.buffer, uiVertexBuffer.buffer, 1, &copyRegion);
+			
+			copyRegion.size = ib_size;
+			vkCmdCopyBuffer(commandBuffer, stage_ib.buffer, uiIndexBuffer.buffer, 1, &copyRegion);
+		}EndSingleTimeCommands(commandBuffer);
+		
+		//free staging resources
+		vkDestroyBuffer(device, stage_vb.buffer, allocator);
+		vkFreeMemory(device, stage_vb.memory, allocator);
+		vkDestroyBuffer(device, stage_ib.buffer, allocator);
+		vkFreeMemory(device, stage_ib.memory, allocator);
+		
+		//name buffers for debugging
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uiVertexBuffer.buffer, "2D vertex buffer");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uiIndexBuffer.buffer, "2D index buffer");
+	}
+}
+
 
 ////////////////////////// descriptor pool, layouts, pipeline cache
 //// @pipelines setup //// pipeline create info structs
@@ -1726,7 +1802,7 @@ CreateLayouts(){
 			descriptorSetLayoutCI.bindingCount = 3;
 		}
 		
-		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.ubos), "failed to create ubos descriptor set layout");
+		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.ubos));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.ubos, "UBOs descriptor set layout");
 	}
 	
@@ -1756,7 +1832,7 @@ CreateLayouts(){
 		setLayoutBindings[3].descriptorCount = 1;
 		
 		descriptorSetLayoutCI.bindingCount = 4;
-		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.textures), "failed to create textures descriptor set layout");
+		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.textures));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.textures, "Textures descriptor set layout");
 	}
 	
@@ -1769,8 +1845,8 @@ CreateLayouts(){
 		//setup push constants for passing model matrix
 		VkPushConstantRange pushConstantRange{};
 		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT;
-		pushConstantRange.offset = 0;
-		pushConstantRange.size = sizeof(mat4);
+		pushConstantRange.offset     = 0;
+		pushConstantRange.size       = sizeof(mat4);
 		
 		VkDescriptorSetLayout setLayouts[] = { 
 			descriptorSetLayouts.ubos, descriptorSetLayouts.textures
@@ -1781,8 +1857,36 @@ CreateLayouts(){
 		pipelineLayoutInfo.pSetLayouts            = setLayouts;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges    = &pushConstantRange;
-		AssertVk(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout), "failed to create pipelineLayout");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayout, "Base pipeline layout");
+		AssertVk(vkCreatePipelineLayout(device, &pipelineLayoutInfo, allocator, &pipelineLayouts.base));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.base, "Base pipeline layout");
+	}
+	
+	{//create twod descriptor set layout
+		//binding 1: fragment shader font image sampler
+		setLayoutBindings[0].descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		setLayoutBindings[0].stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT;
+		setLayoutBindings[0].binding         = 0;
+		setLayoutBindings[0].descriptorCount = 1;
+		
+		descriptorSetLayoutCI.bindingCount = 1;
+		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.twod));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.twod, "2D descriptor set layout");
+	}
+	
+	{//create twod pipeline layout
+		//setup push constants for passing scale and translate
+		VkPushConstantRange pushConstantRange{};
+		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		pushConstantRange.offset     = 0;
+		pushConstantRange.size       = sizeof(Push2DVk);
+		
+		VkPipelineLayoutCreateInfo createInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+		createInfo.setLayoutCount         = 1;
+		createInfo.pSetLayouts            = &descriptorSetLayouts.twod;
+		createInfo.pushConstantRangeCount = 1;
+		createInfo.pPushConstantRanges    = &pushConstantRange;
+		AssertVk(vkCreatePipelineLayout(device, &createInfo, allocator, &pipelineLayouts.twod));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.twod, "2D pipeline layout");
 	}
 }
 
@@ -1893,6 +1997,26 @@ CreateDescriptorSets(){
 		
 		vkUpdateDescriptorSets(device, 1, writeDescriptorSets, 0, nullptr);
 	}
+	
+	{//UI font atlas descriptor set
+		allocInfo.pSetLayouts = &descriptorSetLayouts.twod;
+		
+		AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets.ui));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)descriptorSets.ui, 
+							 "UI font atlas descriptor set");
+		
+		//binding 0: font atlas sampler
+		writeDescriptorSets[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptorSets[0].dstSet          = descriptorSets.ui;
+		writeDescriptorSets[0].descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		writeDescriptorSets[0].dstBinding      = 0;
+		writeDescriptorSets[0].pImageInfo      = &fontTexture.info;
+		writeDescriptorSets[0].descriptorCount = 1;
+		
+		vkUpdateDescriptorSets(device, 1, writeDescriptorSets, 0, nullptr);
+		
+		allocInfo.pSetLayouts = &descriptorSetLayouts.ubos;
+	}
 }
 
 local void 
@@ -1922,38 +2046,40 @@ SetupPipelineCreation(){
 	
 	//vertex input flow control
 	//https://renderdoc.org/vkspec_chunked/chap23.html#VkPipelineVertexInputStateCreateInfo
-	
-	//binding:u32, stride:u32, inputRate:VkVertexInputRate
-	vertexInputBindings = {
+	vertexInputBindings = { //binding:u32, stride:u32, inputRate:VkVertexInputRate
 		{0, sizeof(VertexVk), VK_VERTEX_INPUT_RATE_VERTEX},
 	};
-	
-	//location:u32, binding:u32, format:VkFormat, offset:u32
-	vertexInputAttributes = {
+	vertexInputAttributes = { //location:u32, binding:u32, format:VkFormat, offset:u32
 		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexVk, pos)},
 		{1, 0, VK_FORMAT_R32G32_SFLOAT,    offsetof(VertexVk, uv)},
 		{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexVk, color)},
 		{3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexVk, normal)},
 	};
-	
-	vertexInputState.pNext                           = 0;
-	vertexInputState.flags                           = 0;
 	vertexInputState.vertexBindingDescriptionCount   = (u32)vertexInputBindings.size();
 	vertexInputState.pVertexBindingDescriptions      = vertexInputBindings.data();
 	vertexInputState.vertexAttributeDescriptionCount = (u32)vertexInputAttributes.size();
 	vertexInputState.pVertexAttributeDescriptions    = vertexInputAttributes.data();
 	
+	twodVertexInputBindings = { //binding:u32, stride:u32, inputRate:VkVertexInputRate
+		{0, sizeof(Vertex2D), VK_VERTEX_INPUT_RATE_VERTEX},
+	};
+	twodVertexInputAttributes = { //location:u32, binding:u32, format:VkFormat, offset:u32
+		{0, 0, VK_FORMAT_R32G32_SFLOAT,  offsetof(Vertex2D, pos)},
+		{1, 0, VK_FORMAT_R32G32_SFLOAT,  offsetof(Vertex2D, uv)},
+		{2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(Vertex2D, color)},
+	};
+	twodVertexInputState.vertexBindingDescriptionCount   = (u32)twodVertexInputBindings.size();
+	twodVertexInputState.pVertexBindingDescriptions      = twodVertexInputBindings.data();
+	twodVertexInputState.vertexAttributeDescriptionCount = (u32)twodVertexInputAttributes.size();
+	twodVertexInputState.pVertexAttributeDescriptions    = twodVertexInputAttributes.data();
+	
 	//determines how to group vertices together
 	//https://renderdoc.org/vkspec_chunked/chap22.html#VkPipelineInputAssemblyStateCreateInfo
-	inputAssemblyState.pNext                  = 0;
-	inputAssemblyState.flags                  = 0;
 	inputAssemblyState.topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; 
 	inputAssemblyState.primitiveRestartEnable = VK_FALSE;
 	
 	//container for viewports and scissors
 	//https://renderdoc.org/vkspec_chunked/chap27.html#VkPipelineViewportStateCreateInfo
-	viewportState.pNext         = 0;
-	viewportState.flags         = 0;
 	viewportState.viewportCount = 1;
 	viewportState.pViewports    = 0;
 	viewportState.scissorCount  = 1;
@@ -1961,8 +2087,6 @@ SetupPipelineCreation(){
 	
 	//how to draw/cull/depth things
 	//https://renderdoc.org/vkspec_chunked/chap28.html#VkPipelineRasterizationStateCreateInfo
-	rasterizationState.pNext                   = 0;
-	rasterizationState.flags                   = 0;
 	rasterizationState.depthClampEnable        = VK_FALSE; //look into for shadowmapping
 	rasterizationState.rasterizerDiscardEnable = VK_FALSE;
 	rasterizationState.polygonMode             = VK_POLYGON_MODE_FILL; //draw mode: fill, wireframe, vertices
@@ -1976,8 +2100,6 @@ SetupPipelineCreation(){
 	
 	//useful for multisample anti-aliasing (MSAA)
 	//https://renderdoc.org/vkspec_chunked/chap28.html#VkPipelineMultisampleStateCreateInfo
-	multisampleState.pNext                 = 0;
-	multisampleState.flags                 = 0;
 	multisampleState.rasterizationSamples  = msaaSamples; //VK_SAMPLE_COUNT_1_BIT to disable anti-aliasing
 	multisampleState.sampleShadingEnable   = VK_TRUE; //enable sample shading in the pipeline, VK_FALSE to disable
 	multisampleState.minSampleShading      = .2f; //min fraction for sample shading; closer to one is smoother
@@ -1987,8 +2109,6 @@ SetupPipelineCreation(){
 	
 	//depth testing and discarding
 	//https://renderdoc.org/vkspec_chunked/chap29.html#VkPipelineDepthStencilStateCreateInfo
-	depthStencilState.pNext                 = 0;
-	depthStencilState.flags                 = 0;
 	depthStencilState.depthTestEnable       = VK_TRUE;
 	depthStencilState.depthWriteEnable      = VK_TRUE;
 	depthStencilState.depthCompareOp        = VK_COMPARE_OP_LESS_OR_EQUAL;
@@ -2013,8 +2133,6 @@ SetupPipelineCreation(){
 	
 	//container struct for color blend attachments with overall blending constants; global_ settings
 	//https://renderdoc.org/vkspec_chunked/chap30.html#VkPipelineColorBlendStateCreateInfo
-	colorBlendState.pNext             = 0;
-	colorBlendState.flags             = 0;
 	colorBlendState.logicOpEnable     = VK_FALSE;
 	colorBlendState.logicOp           = VK_LOGIC_OP_COPY; //TODO(delle) maybe VK_LOGIC_OP_CLEAR?
 	colorBlendState.attachmentCount   = 1;
@@ -2030,14 +2148,10 @@ SetupPipelineCreation(){
 		VK_DYNAMIC_STATE_VIEWPORT, 
 		VK_DYNAMIC_STATE_SCISSOR, 
 	};
-	dynamicState.pNext             = 0;
-	dynamicState.flags             = 0;
 	dynamicState.dynamicStateCount = (u32)dynamicStates.size();
 	dynamicState.pDynamicStates    = dynamicStates.data();
 	
 	//base pipeline info and options
-	pipelineCreateInfo.pNext               = 0;
-	pipelineCreateInfo.flags               = 0;
 	pipelineCreateInfo.stageCount          = 0;
 	pipelineCreateInfo.pStages             = shaderStages.data();
 	pipelineCreateInfo.pVertexInputState   = &vertexInputState;
@@ -2049,7 +2163,7 @@ SetupPipelineCreation(){
 	pipelineCreateInfo.pDepthStencilState  = &depthStencilState;
 	pipelineCreateInfo.pColorBlendState    = &colorBlendState;
 	pipelineCreateInfo.pDynamicState       = &dynamicState;
-	pipelineCreateInfo.layout              = pipelineLayout;
+	pipelineCreateInfo.layout              = pipelineLayouts.base;
 	pipelineCreateInfo.renderPass          = renderPass;
 	pipelineCreateInfo.subpass             = 0;
 	pipelineCreateInfo.basePipelineHandle  = VK_NULL_HANDLE;
@@ -2057,9 +2171,9 @@ SetupPipelineCreation(){
 } //SetupPipelineCreation
 
 
-/////////////////////////////
-//// @pipelines creation ////
-/////////////////////////////
+//////////////////
+//// @shaders ////
+//////////////////
 
 
 //TODO(delle,ReCl) clean this up
@@ -2289,6 +2403,12 @@ CompileShader(std::string& filename, bool optimize){
 	}
 }
 
+
+/////////////////////////////
+//// @pipelines creation ////
+/////////////////////////////
+
+
 local void 
 CreatePipelines(){
 	PrintVk(2, "  Creating Pipelines");
@@ -2308,14 +2428,20 @@ CreatePipelines(){
 	shaderModules.clear(); shaderModules.reserve(oldCount);
 	
 	//compile uncompiled shaders
-	PrintVk(3, "    Compiling shaders");
-	TIMER_START(t_s);
 	if(settings.recompileAllShaders){
+		PrintVk(3, "    Compiling shaders");
+		TIMER_START(t_s);
 		CompileAllShaders(settings.optimizeShaders);
+		PrintVk(3, "    Finished compiling shaders in ", TIMER_END(t_s), "ms");
 	}else{
-		for(auto& s : GetUncompiledShaders()){ CompileShader(s, settings.optimizeShaders); }
+		std::vector<std::string> uncompiled = GetUncompiledShaders();
+		if(uncompiled.size()){
+			PrintVk(3, "    Compiling shaders");
+			TIMER_START(t_s);
+			for(auto& s : uncompiled){ CompileShader(s, settings.optimizeShaders); }
+			PrintVk(3, "    Finished compiling shaders in ", TIMER_END(t_s), "ms");
+		}
 	}
-	PrintVk(3, "    Finished compiling shaders in ", TIMER_END(t_s), "ms");
 	
 	//setup specialization constants
 	/*
@@ -2342,7 +2468,7 @@ specializationInfo.mapEntryCount = 1;
 		shaderStages[0] = loadShader("base.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("base.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		pipelineCreateInfo.stageCount = 2;
-		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.base), "failed to create base graphics pipeline");
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.base));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.base, "Base pipeline");
 		
 		//flag that all other pipelines are derivatives
@@ -2356,7 +2482,7 @@ specializationInfo.mapEntryCount = 1;
 		shaderStages[1] = loadShader("flat.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
-		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.flat), "failed to create flat graphics pipeline");
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.flat));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.flat, "Flat pipeline");
 	}
 	
@@ -2365,17 +2491,32 @@ specializationInfo.mapEntryCount = 1;
 		shaderStages[1] = loadShader("phong.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
-		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.phong), "failed to create phong graphics pipeline");
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.phong));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.phong, "Phong pipeline");
 	}
 	
 	{//2d
+		pipelineCreateInfo.pVertexInputState = &twodVertexInputState;
+		pipelineCreateInfo.layout            = pipelineLayouts.twod;
+		
 		shaderStages[0] = loadShader("twod.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("twod.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
-		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.twod), "failed to create twod graphics pipeline");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.twod, "TwoD pipeline");
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.twod));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.twod, "2D pipeline");
+		
+		{//ui
+			shaderStages[0] = loadShader("ui.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = loadShader("ui.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+			shaderStages[1].pSpecializationInfo = &specializationInfo;
+			pipelineCreateInfo.stageCount = 2;
+			AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.ui));
+			DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.ui, "UI pipeline");
+		}
+		
+		pipelineCreateInfo.pVertexInputState = &vertexInputState;
+		pipelineCreateInfo.layout            = pipelineLayouts.base;
 	}
 	
 	{//pbr
@@ -2383,7 +2524,7 @@ specializationInfo.mapEntryCount = 1;
 		shaderStages[1] = loadShader("pbr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
-		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.pbr), "failed to create pbr graphics pipeline");
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.pbr));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.pbr, "PBR pipeline");
 	}
 	
@@ -2397,13 +2538,13 @@ specializationInfo.mapEntryCount = 1;
 		shaderStages[0] = loadShader("wireframe.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("wireframe.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		pipelineCreateInfo.stageCount = 2;
-		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.wireframe), "failed to create wireframe graphics pipeline");
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.wireframe));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.wireframe, "Wireframe pipeline");
 		
 		{//wireframe with depth test
 			depthStencilState.depthTestEnable = VK_TRUE;
 			
-			AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.wireframe_depth), "failed to create wireframe-depth graphics pipeline");
+			AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.wireframe_depth));
 			DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.wireframe_depth, "Wireframe Depth pipeline");
 			
 			depthStencilState.depthTestEnable = VK_FALSE;
@@ -2418,7 +2559,7 @@ specializationInfo.mapEntryCount = 1;
 			colorBlendState.blendConstants[2] = (f32)settings.selectedColor.b;
 			colorBlendState.blendConstants[3] = (f32)settings.selectedColor.a;
 			
-			AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.selected), "failed to create selected entity graphics pipeline");
+			AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.selected));
 			DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.selected, "Selected pipeline");
 			
 			colorBlendState.blendConstants[0] = (f32)settings.colliderColor.r;
@@ -2426,7 +2567,7 @@ specializationInfo.mapEntryCount = 1;
 			colorBlendState.blendConstants[2] = (f32)settings.colliderColor.b;
 			colorBlendState.blendConstants[3] = (f32)settings.colliderColor.a;
 			
-			AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.collider), "failed to create collider graphics pipeline");
+			AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.collider));
 			DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.collider, "Collider pipeline");
 			
 			colorBlendAttachmentState.blendEnable         = VK_FALSE;
@@ -2449,7 +2590,7 @@ specializationInfo.mapEntryCount = 1;
 		shaderStages[1] = loadShader("lavalamp.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
-		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.lavalamp), "failed to create lavalamp graphics pipeline");
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.lavalamp));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.lavalamp, "Lavalamp pipeline");
 	}
 	
@@ -2461,12 +2602,12 @@ specializationInfo.mapEntryCount = 1;
 		multisampleState.sampleShadingEnable  = VK_FALSE;
 		dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_DEPTH_BIAS, };
 		dynamicState.dynamicStateCount = (u32)dynamicStates.size(); //add depth bias to dynamic state so
-		dynamicState.pDynamicStates    = dynamicStates.data();         //it can be changed at runtime
+		dynamicState.pDynamicStates    = dynamicStates.data();      //it can be changed at runtime
 		pipelineCreateInfo.renderPass = offscreen.renderpass;
 		
 		shaderStages[0] = loadShader("offscreen.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		pipelineCreateInfo.stageCount = 1;
-		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.offscreen), "failed to create offscreen graphics pipeline");
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.offscreen));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.offscreen, "Offscreen pipeline");
 		
 		colorBlendState.attachmentCount = 1;
@@ -2486,7 +2627,7 @@ specializationInfo.mapEntryCount = 1;
 		shaderStages[1] = loadShader("testing0.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
-		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.testing0), "failed to create testing0 graphics pipeline");
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.testing0));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.testing0, "Testing0 pipeline");
 	}
 	
@@ -2495,7 +2636,7 @@ specializationInfo.mapEntryCount = 1;
 		shaderStages[1] = loadShader("testing1.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
-		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.testing1), "failed to create testing1 graphics pipeline");
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.testing1));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.testing1, "Testing1 pipeline");
 	}
 	
@@ -2505,7 +2646,7 @@ specializationInfo.mapEntryCount = 1;
 		shaderStages[1] = loadShader("base.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[2] = loadShader("normaldebug.geom.spv", VK_SHADER_STAGE_GEOMETRY_BIT);
 		pipelineCreateInfo.stageCount = 3;
-		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.normals_debug), "failed to create normals_debug graphics pipeline");
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.normals_debug));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.normals_debug, "DEBUG Mesh normals pipeline");
 	}
 	
@@ -2517,7 +2658,7 @@ specializationInfo.mapEntryCount = 1;
 		shaderStages[0] = loadShader("shadowmapDEBUG.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("shadowmapDEBUG.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		pipelineCreateInfo.stageCount = 2;
-		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.shadowmap_debug), "failed to create DEBUG shadowmap graphics pipeline");
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.shadowmap_debug));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.shadowmap_debug, "DEBUG Shadowmap pipeline");
 		
 		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
@@ -2530,7 +2671,6 @@ GetPipelineFromShader(u32 shader){
 	switch(shader){
 		case(Shader_Flat):default:{ return pipelines.flat;      }
 		case(Shader_Phong):       { return pipelines.phong;     }
-		case(Shader_Twod):        { return pipelines.twod;      }
 		case(Shader_PBR):         { return pipelines.pbr;       }
 		case(Shader_Wireframe):   { return pipelines.wireframe; }
 		case(Shader_Lavalamp):    { return pipelines.lavalamp;  }
@@ -2548,9 +2688,9 @@ UpdateMaterialPipelines(){
 }
 
 
-/////////////////
-//// @render ////
-/////////////////
+//////////////////
+//// @drawing ////
+//////////////////
 
 
 //we define a call order to command buffers so they can be executed by vkSubmitQueue()
@@ -2595,7 +2735,7 @@ BuildCommandBuffers(){
 			vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
 			vkCmdSetDepthBias(frames[i].commandBuffer, settings.depthBiasConstant, 0.0f, settings.depthBiasSlope); //set depth bias (polygon offset) to avoid shadow mapping artifacts
 			vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.offscreen);
-			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets.offscreen, 0, nullptr);
+			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.offscreen, 0, nullptr);
 			
 			VkDeviceSize offsets[1] = { 0 }; //reset vertex buffer offsets
 			
@@ -2604,7 +2744,7 @@ BuildCommandBuffers(){
 			vkCmdBindIndexBuffer(frames[i].commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 			for(MeshVk& mesh : meshes){
 				if(mesh.visible && mesh.primitives.size() > 0){
-					vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
+					vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
 					for(PrimitiveVk& primitive : mesh.primitives){
 						if(primitive.indexCount > 0){
 							DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
@@ -2650,7 +2790,7 @@ BuildCommandBuffers(){
 			vkCmdBeginRenderPass(frames[i].commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdSetViewport(frames[i].commandBuffer, 0, 1, &viewport);
 			vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
-			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets.scene, 0, nullptr);
+			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.scene, 0, nullptr);
 			VkDeviceSize offsets[1] = { 0 }; //reset vertex buffer offsets
 			
 			//draw mesh brushes
@@ -2661,7 +2801,7 @@ BuildCommandBuffers(){
 					if(mesh.visible){
 						vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &mesh.vertexBuffer, offsets);
 						vkCmdBindIndexBuffer(frames[i].commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
+						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
 						DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
 						vkCmdDrawIndexed(frames[i].commandBuffer, mesh.indices.size(), 1, 0, 0, 0);
 						stats.drawnIndices += mesh.indices.size();
@@ -2680,7 +2820,7 @@ BuildCommandBuffers(){
 				for(MeshVk& mesh : meshes){
 					if(mesh.visible && mesh.primitives.size() > 0){
 						//push the mesh's model matrix to the vertex shader
-						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
+						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
 						
 						for(PrimitiveVk& primitive : mesh.primitives){
 							if(primitive.indexCount > 0){
@@ -2695,14 +2835,14 @@ BuildCommandBuffers(){
 				for(MeshVk& mesh : meshes){
 					if(mesh.visible && mesh.primitives.size() > 0){
 						//push the mesh's model matrix to the vertex shader
-						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
+						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
 						
 						for(PrimitiveVk& primitive : mesh.primitives){
 							if(primitive.indexCount > 0){
 								MaterialVk& material = materials[primitive.materialIndex];
 								// Bind the pipeline for the primitive's material
 								vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material.pipeline);
-								vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material.descriptorSet, 0, nullptr);
+								vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 1, 1, &material.descriptorSet, 0, nullptr);
 								DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
 								vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 								stats.drawnIndices += primitive.indexCount;
@@ -2726,14 +2866,14 @@ BuildCommandBuffers(){
 				MeshVk& mesh = meshes[id];
 				if(mesh.primitives.size() > 0){
 					//push the mesh's model matrix to the vertex shader
-					vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
+					vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
 					
 					for(PrimitiveVk& primitive : mesh.primitives){
 						if(primitive.indexCount > 0){
 							MaterialVk& material = materials[primitive.materialIndex];
 							// Bind the pipeline for the primitive's material
 							vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.selected);
-							vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &material.descriptorSet, 0, nullptr);
+							vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 1, 1, &material.descriptorSet, 0, nullptr);
 							DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
 							vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
 							stats.drawnIndices += primitive.indexCount;
@@ -2750,7 +2890,7 @@ BuildCommandBuffers(){
 				for(MeshVk& mesh : meshes){
 					if(mesh.visible && mesh.primitives.size() > 0){
 						//push the mesh's model matrix to the shader
-						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
+						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
 						
 						for(PrimitiveVk& primitive : mesh.primitives){
 							if(primitive.indexCount > 0){
@@ -2763,6 +2903,13 @@ BuildCommandBuffers(){
 				}
 				DebugEndLabelVk(frames[i].commandBuffer);
 			}
+			
+			//draw UI stuff
+			DebugBeginLabelVk(frames[i].commandBuffer, "UI", vec4(0.5f, 0.76f, 0.34f, 1.0f));
+			vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui);
+			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &descriptorSets.ui, 0, nullptr);
+			
+			DebugEndLabelVk(frames[i].commandBuffer);
 			
 			//draw imgui stuff
 			if(ImDrawData* imDrawData = ImGui::GetDrawData()){
@@ -2781,7 +2928,7 @@ BuildCommandBuffers(){
 				vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
 				
 				DebugBeginLabelVk(frames[i].commandBuffer, "DEBUG Shadow map quad", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-				vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets.shadowMap_debug, 0, nullptr);
+				vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.shadowMap_debug, 0, nullptr);
 				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.shadowmap_debug);
 				vkCmdDraw(frames[i].commandBuffer, 3, 1, 0, 0);
 				DebugEndLabelVk(frames[i].commandBuffer);
@@ -2922,7 +3069,6 @@ LoadDefaultAssets(){
 	//create default materials
 	CreateMaterial(ShaderStrings[Shader_Flat], Shader_Flat);
 	CreateMaterial(ShaderStrings[Shader_Phong], Shader_Phong);
-	CreateMaterial(ShaderStrings[Shader_Twod], Shader_Twod);
 }
 
 void Render::
@@ -3215,8 +3361,6 @@ LoadBaseMesh(Mesh* m, bool visible){
 			matID = CreateMaterial(ShaderStrings[Shader_Flat], Shader_Flat, 0, 0, 0, 0);
 		}else if(batch.shader == Shader_Phong){
 			matID = CreateMaterial(ShaderStrings[Shader_Phong], Shader_Phong, 0, 0, 0, 0);
-		}else if(batch.shader == Shader_Twod){
-			matID = CreateMaterial(ShaderStrings[Shader_Twod], Shader_Twod, 0, 0, 0, 0);
 		}else{
 			matID = CreateMaterial(batch.name, batch.shader, albedoID, normalID, specularID, lightID);
 		}
@@ -3794,13 +3938,6 @@ ReloadShader(u32 shader){
 			pipelineCreateInfo.stageCount = 2;
 			AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.phong), "failed to create phong graphics pipeline");
 		}break;
-		case(Shader_Twod):{
-			vkDestroyPipeline(device, pipelines.twod, nullptr);
-			shaderStages[0] = CompileAndLoadShader("twod.vert", VK_SHADER_STAGE_VERTEX_BIT);
-			shaderStages[1] = CompileAndLoadShader("twod.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
-			pipelineCreateInfo.stageCount = 2;
-			AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.twod), "failed to create twod graphics pipeline");
-		}break;
 		case(Shader_PBR):{ 
 			vkDestroyPipeline(device, pipelines.pbr, nullptr);
 			shaderStages[0] = CompileAndLoadShader("pbr.vert", VK_SHADER_STAGE_VERTEX_BIT);
@@ -3987,6 +4124,8 @@ Init(){
 	PrintVk(3, "Finished creating descriptor pool in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	SetupOffscreenRendering();
 	PrintVk(3, "Finished setting up offscreen rendering in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
+	SetupUIRendering();
+	PrintVk(3, "Finished setting up UI rendering in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
 	//// setup window-specific Vulkan objects ////
 	CreateSwapChain();
