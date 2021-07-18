@@ -88,7 +88,7 @@ struct Color {
 		this->b = rand() % 255 + 1;
 	}
 	
-	u32 R8G8B8A8_UINT(){
+	u32 R8G8B8A8_UNORM(){
 		return ((u32)a << 24) | ((u32)b << 16) | ((u32)g << 8) | ((u32)r << 0);
 	}
 	

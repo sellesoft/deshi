@@ -4336,7 +4336,7 @@ void UI::
 FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
 	if(color.a == 0) return;
 	
-	u32 col = color.R8G8B8A8_UINT();
+	u32 col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
 	u16*      ip = uiIndexArray  + uiIndexCount;
 	

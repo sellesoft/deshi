@@ -20,6 +20,7 @@ ____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
+fix colorspace so we dont have to do the pow in shaders
 make a dynamic timers array on in time.h for cleaner timer stuffs
 add a setting for a limit to the number of log files
 redo Debug::DrawLine calling to take in an id for uniqueness like ImGui

@@ -32,6 +32,10 @@ local f32 console_y = 0.0f;
 local f32 console_w = 0.0f;
 local f32 console_h = 0.0f;
 
+local f32 pad   = 5.0f;
+local f32 pad2x = 10.0f;
+local f32 input_box_height = 20.0f;
+
 local f32 font_width  = 0.0f;
 local f32 font_height = 0.0f;
 
@@ -336,9 +340,8 @@ void Console2::Update(){
 		
 		if(test_swap){
 			UI::FillRect(console_x, console_y, console_w, console_h, Color::BLACK); //background
-			UI::FillRect(console_x+10, console_y+10, console_w-20, console_h-50, Color::RED); //report
-			UI::FillRect(console_x+10, console_h-30, console_w-20, 20, Color(0, 62, 62)); //input
-			
+			UI::FillRect(console_x+pad, console_y+pad, console_w-pad2x, console_h-pad2x-input_box_height, Color(0, 9, 13)); //report
+			UI::FillRect(console_x+pad, console_h-pad-input_box_height, console_w-pad2x, input_box_height, Color(0, 62, 62)); //input
 		}else{
 			ImGuiStyle& style = ImGui::GetStyle();
 			style.AntiAliasedFill = false;
