@@ -20,6 +20,7 @@ ____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
+make a dynamic timers array on in time.h for cleaner timer stuffs
 add a setting for a limit to the number of log files
 redo Debug::DrawLine calling to take in an id for uniqueness like ImGui
 make the engine runnable without the renderer
@@ -192,34 +193,32 @@ local Console console; Console* g_console = &console;
 local Admin   admin;   Admin*   g_admin   = &admin;
 local Debug   debug;   Debug*   g_debug   = &debug;
 
-TIMER_START(t_d); TIMER_START(t_f);
-
 int main() {
+	TIMER_START(t_d); TIMER_START(t_f); TIMER_START(t_s);
 	//pre-init setup
 	Assets::enforceDirectories();
 	
 	//init engine core
-	time_.Init(300); //300 tps for physics
-	window.Init(1280, 720); //inits input as well
-	Console2::Init();
-	console.Init();
-	Render::Init();
-	DeshiImGui::init();
+	TIMER_RESET(t_s); time_.Init(300);        SUCCESS("Finished time initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); DeshiImGui::init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
+	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
 	
 	//init game admin
-	admin.Init();
-	
-	LOG("Finished deshi initialization in ", TIMER_END(t_d), "ms\n");
+	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
+	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
 	
 	//start main loop
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
 		glfwPollEvents();
 		
-		TIMER_RESET(t_d); time_.Update();           time_.timeTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); window.Update();          time_.windowTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); input.Update();           time_.inputTime = TIMER_END(t_d);
 		DeshiImGui::newFrame();                                                         //place imgui calls after this
-		TIMER_RESET(t_d); admin.Update();           time_.adminTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); time_.Update();           time_.timeTime   = TIMER_END(t_d);
+		TIMER_RESET(t_d); window.Update();          time_.windowTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); input.Update();           time_.inputTime  = TIMER_END(t_d);
+		TIMER_RESET(t_d); admin.Update();           time_.adminTime  = TIMER_END(t_d);
 		TIMER_RESET(t_d); console.Update(); Console2::Update(); time_.consoleTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);

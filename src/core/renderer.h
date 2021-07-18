@@ -253,6 +253,8 @@ namespace Render{
     std::string ListTextures();
 	u32 TextureCount();
 	char* TextureName(u32 textureIdx);
+	
+	u32 CreateFont(u32 textureIdx);
     
     u32 CreateMaterial(const char* name, u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2);
     u32  CopyMaterial(u32 materialID);
@@ -303,7 +305,7 @@ namespace Render{
 //functions in this namespace are Immediate Mode, so they only last 1 frame
 namespace UI{
 	
-	void DrawRect(vec2 position, vec2 dimensions, Color color = Color::WHITE);
+	void FillRect(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
 	
 }; //namespace UI
 

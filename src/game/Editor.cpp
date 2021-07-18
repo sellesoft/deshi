@@ -2374,6 +2374,9 @@ void Editor::WorldGrid(Vector3 cpos) {
 	cpos.x = ((int)(cpos.x / 20.f)) * 20.f;
 	cpos.y = ((int)(cpos.y / 20.f)) * 20.f;
 	cpos.z = ((int)(cpos.z / 20.f)) * 20.f;
+    persist vec3 last_pos = vec3(FLT_MAX, FLT_MIN, FLT_MAX);
+    if(last_pos == cpos) return;
+    last_pos = cpos;
     
     for (int i = 0; i < lines * 2 + 1; i++) {
         Vector3 v1 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines);
@@ -2391,11 +2394,11 @@ void Editor::WorldGrid(Vector3 cpos) {
             l2flag = true;
         }
         
-        if (l1flag) { DebugLinesCol(i, v1, v2, DengTime->deltaTime, Color::BLUE); }
-        else { DebugLinesCol(i, v1, v2, DengTime->deltaTime, Color(50, 50, 50, 50)); };
+        if (l1flag) { DebugLinesCol(i, v1, v2, -1, Color::BLUE); }
+        else { DebugLinesCol(i, v1, v2, -1, Color(50, 50, 50, 50)); };
         
-        if (l2flag) { DebugLinesCol(i, v3, v4, DengTime->deltaTime, Color::RED); }
-        else { DebugLinesCol(i, v3, v4, DengTime->deltaTime, Color(50, 50, 50, 50)); };
+        if (l2flag) { DebugLinesCol(i, v3, v4, -1, Color::RED); }
+        else { DebugLinesCol(i, v3, v4, -1, Color(50, 50, 50, 50)); };
     }
 }
 

@@ -64,6 +64,13 @@ struct Push2DVk{
 	vec2 translate;
 };
 
+struct Cmd2DVk{
+	u32 fontIdx;
+	u32 vertexOffset;
+	u16 indexOffset;
+	u16 indexCount;
+};
+
 struct QueueFamilyIndices{
     Optional<u32> graphicsFamily;
     Optional<u32> presentFamily;
@@ -102,6 +109,12 @@ struct BufferVk{
 	VkDeviceMemory         memory;
 	VkDeviceSize           size;
 	VkDescriptorBufferInfo descriptor;
+};
+
+struct FontVk{
+	u32 id;
+	u32 textureIdx;
+	VkDescriptorSet descriptorSet;
 };
 
 
@@ -155,6 +168,11 @@ local Vertex2D uiVertexArray[MAX_UI_VERTICES];
 local u32 uiIndexCount  = 0;
 local u16 uiIndexArray[MAX_UI_INDICES];
 
+//arbitrary 1k limit, change if needed
+#define MAX_UI_CMDS 1000 
+local u16 uiCmdCount  = 1; //start with 1
+local Cmd2DVk uiCmdArray[MAX_UI_CMDS];
+
 //-------------------------------------------------------------------------------------------------
 // VULKAN VARIABLES
 
@@ -166,6 +184,7 @@ std::vector<MeshVk>      meshes       = std::vector<MeshVk>(0);
 std::vector<MaterialVk>  materials    = std::vector<MaterialVk>(0);
 std::vector<MeshBrushVk> meshBrushes  = std::vector<MeshBrushVk>(0);
 std::vector<u32>         selected     = std::vector<u32>(0);
+std::vector<FontVk>      fonts        = std::vector<FontVk>(0);
 
 vec4 lights[10]{ vec4(0,0,0,-1) };
 
@@ -297,8 +316,8 @@ local struct{ //indices buffer
 	VkDeviceSize   bufferSize;
 } indices{};
 
-local BufferVk uiVertexBuffer;
-local BufferVk uiIndexBuffer;
+local BufferVk uiVertexBuffer{};
+local BufferVk uiIndexBuffer{};
 
 ////////////////////
 //// @pipelines ////
@@ -390,13 +409,6 @@ local struct{ //TODO(delle,Vu) distribute these variables around
 	VkFramebuffer         framebuffer;
 } offscreen{};
 
-struct{
-	VkImage               image;
-	VkDeviceMemory        memory;
-	VkImageView           view;
-	VkSampler             sampler;
-	VkDescriptorImageInfo info;
-} fontTexture{};
 
 //-------------------------------------------------------------------------------------------------
 // VULKAN FUNCTIONS
@@ -708,12 +720,12 @@ CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSiz
 	if(buffer != VK_NULL_HANDLE) vkDestroyBuffer(device, buffer, allocator); 
 	if(bufferMemory != VK_NULL_HANDLE) vkFreeMemory(device, bufferMemory, allocator); 
 	
-	VkDeviceSize alignedBufferSize = ((newSize-1) / bufferMemoryAlignment + 1) * bufferMemoryAlignment;
+	VkDeviceSize alignedBufferSize = (((newSize - 1) / bufferMemoryAlignment) + 1) * bufferMemoryAlignment;
 	VkBufferCreateInfo bufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
 	bufferInfo.size        = alignedBufferSize;
 	bufferInfo.usage       = usage;
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	AssertVk(vkCreateBuffer(device, &bufferInfo, allocator, &buffer), "failed to create buffer");
+	AssertVk(vkCreateBuffer(device, &bufferInfo, allocator, &buffer));
 	
 	VkMemoryRequirements req;
 	vkGetBufferMemoryRequirements(device, buffer, &req);
@@ -723,8 +735,8 @@ CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSiz
 	allocInfo.allocationSize  = req.size;
 	allocInfo.memoryTypeIndex = FindMemoryType(req.memoryTypeBits, properties);
 	
-	AssertVk(vkAllocateMemory(device, &allocInfo, allocator, &bufferMemory), "failed to allocate buffer memory");
-	vkBindBufferMemory(device, buffer, bufferMemory, 0);
+	AssertVk(vkAllocateMemory(device, &allocInfo, allocator, &bufferMemory));
+	AssertVk(vkBindBufferMemory(device, buffer, bufferMemory, 0));
 	bufferSize = newSize;
 }
 
@@ -1673,93 +1685,6 @@ SetupOffscreenRendering(){
 	}
 }
 
-local void
-SetupUIRendering(){
-	{//create UI font texture
-		//create the image and imageview
-		if(fontTexture.image){
-			vkDestroyImageView(  device, fontTexture.view,    allocator);
-			vkDestroyImage(      device, fontTexture.image,   allocator);
-			vkFreeMemory(        device, fontTexture.memory,  allocator);
-			vkDestroySampler(    device, fontTexture.sampler, allocator);
-		}
-		CreateImage(256, 256, 1, msaaSamples, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, 
-					VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 
-					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, fontTexture.image, fontTexture.memory);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)fontTexture.image, "UI font image");
-		fontTexture.view = CreateImageView(fontTexture.image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)fontTexture.view, "UI font imageview");
-		
-		//create the sampler
-		VkSamplerCreateInfo info{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-		info.magFilter     = VK_FILTER_LINEAR;
-		info.minFilter     = VK_FILTER_LINEAR;
-		info.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		info.addressModeU  = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		info.addressModeV  = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		info.addressModeW  = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		info.mipLodBias    = 0.0f;
-		info.maxAnisotropy = 1.0f;
-		info.minLod        = 0.0f;
-		info.maxLod        = 1.0f;
-		info.borderColor   = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
-		AssertVk(vkCreateSampler(device, &info, nullptr, &fontTexture.sampler));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)fontTexture.sampler, "UI font sampler");
-		
-		
-		//create descriptor image info 
-		fontTexture.info.sampler     = fontTexture.sampler;
-		fontTexture.info.imageView   = fontTexture.view;
-		fontTexture.info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	}
-	
-	{//create UI vertex and index buffers
-		BufferVk stage_vb{}, stage_ib{};
-		size_t vb_size = uiVertexCount * sizeof(Vertex2D);
-		size_t ib_size = uiIndexCount  * sizeof(u16);
-		if(vb_size == 0 || ib_size == 0) return; //early out if empty buffers
-		
-		//create host visible vertex and index buffers (CPU/RAM)
-		CreateAndMapBuffer(stage_vb.buffer, stage_vb.memory, uiVertexBuffer.size, vb_size, uiVertexArray, 
-						   VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-						   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		
-		CreateAndMapBuffer(stage_ib.buffer, stage_ib.memory, uiIndexBuffer.size, ib_size, uiIndexArray,
-						   VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-						   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		
-		//create device local buffers (GPU)
-		CreateAndMapBuffer(uiVertexBuffer.buffer, uiVertexBuffer.memory, uiVertexBuffer.size, vb_size, nullptr,
-						   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
-						   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		
-		CreateAndMapBuffer(uiIndexBuffer.buffer, uiIndexBuffer.memory, uiIndexBuffer.size, ib_size, nullptr,
-						   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
-						   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		
-		//copy data from staging buffers to device local buffers
-		VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
-			VkBufferCopy copyRegion{};
-			
-			copyRegion.size = vb_size;
-			vkCmdCopyBuffer(commandBuffer, stage_vb.buffer, uiVertexBuffer.buffer, 1, &copyRegion);
-			
-			copyRegion.size = ib_size;
-			vkCmdCopyBuffer(commandBuffer, stage_ib.buffer, uiIndexBuffer.buffer, 1, &copyRegion);
-		}EndSingleTimeCommands(commandBuffer);
-		
-		//free staging resources
-		vkDestroyBuffer(device, stage_vb.buffer, allocator);
-		vkFreeMemory(device, stage_vb.memory, allocator);
-		vkDestroyBuffer(device, stage_ib.buffer, allocator);
-		vkFreeMemory(device, stage_ib.memory, allocator);
-		
-		//name buffers for debugging
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uiVertexBuffer.buffer, "2D vertex buffer");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uiIndexBuffer.buffer, "2D index buffer");
-	}
-}
-
 
 ////////////////////////// descriptor pool, layouts, pipeline cache
 //// @pipelines setup //// pipeline create info structs
@@ -1997,26 +1922,6 @@ CreateDescriptorSets(){
 		
 		vkUpdateDescriptorSets(device, 1, writeDescriptorSets, 0, nullptr);
 	}
-	
-	{//UI font atlas descriptor set
-		allocInfo.pSetLayouts = &descriptorSetLayouts.twod;
-		
-		AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets.ui));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)descriptorSets.ui, 
-							 "UI font atlas descriptor set");
-		
-		//binding 0: font atlas sampler
-		writeDescriptorSets[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptorSets[0].dstSet          = descriptorSets.ui;
-		writeDescriptorSets[0].descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		writeDescriptorSets[0].dstBinding      = 0;
-		writeDescriptorSets[0].pImageInfo      = &fontTexture.info;
-		writeDescriptorSets[0].descriptorCount = 1;
-		
-		vkUpdateDescriptorSets(device, 1, writeDescriptorSets, 0, nullptr);
-		
-		allocInfo.pSetLayouts = &descriptorSetLayouts.ubos;
-	}
 }
 
 local void 
@@ -2126,7 +2031,7 @@ SetupPipelineCreation(){
 	colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 	colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	colorBlendAttachmentState.colorBlendOp        = VK_BLEND_OP_ADD;
-	colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 	colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 	colorBlendAttachmentState.alphaBlendOp        = VK_BLEND_OP_ADD;
 	colorBlendAttachmentState.colorWriteMask      = 0xF; //RGBA
@@ -2498,6 +2403,9 @@ specializationInfo.mapEntryCount = 1;
 	{//2d
 		pipelineCreateInfo.pVertexInputState = &twodVertexInputState;
 		pipelineCreateInfo.layout            = pipelineLayouts.twod;
+		rasterizationState.cullMode  = VK_CULL_MODE_NONE;
+		rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		depthStencilState.depthTestEnable = VK_FALSE;
 		
 		shaderStages[0] = loadShader("twod.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("twod.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -2517,6 +2425,9 @@ specializationInfo.mapEntryCount = 1;
 		
 		pipelineCreateInfo.pVertexInputState = &vertexInputState;
 		pipelineCreateInfo.layout            = pipelineLayouts.base;
+		rasterizationState.cullMode  = VK_CULL_MODE_BACK_BIT;
+		rasterizationState.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		depthStencilState.depthTestEnable = VK_TRUE;
 	}
 	
 	{//pbr
@@ -2692,6 +2603,55 @@ UpdateMaterialPipelines(){
 //// @drawing ////
 //////////////////
 
+local void
+Setup2DDrawData(){
+	//create UI vertex and index buffers
+	size_t vb_size = uiVertexCount * sizeof(Vertex2D);
+	size_t ib_size = uiIndexCount  * sizeof(u16);
+	if(!vb_size || !ib_size) return; //skip if empty
+	
+	//create/resize buffers if they are too small
+	if(uiVertexBuffer.buffer == VK_NULL_HANDLE || uiVertexBuffer.size < vb_size){
+		CreateOrResizeBuffer(uiVertexBuffer.buffer, uiVertexBuffer.memory, uiVertexBuffer.size, vb_size,
+							 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	}
+	if(uiIndexBuffer.buffer == VK_NULL_HANDLE || uiIndexBuffer.size < ib_size){
+		CreateOrResizeBuffer(uiIndexBuffer.buffer, uiIndexBuffer.memory, uiIndexBuffer.size, ib_size,
+							 VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	}
+	
+	//copy memory to the GPU
+	void* vb_data; void* ib_data;
+	AssertVk(vkMapMemory(device, uiVertexBuffer.memory, 0, vb_size, 0, &vb_data));
+	AssertVk(vkMapMemory(device, uiIndexBuffer.memory,  0, ib_size, 0, &ib_data));
+	{
+		memcpy(vb_data, uiVertexArray, vb_size);
+		memcpy(ib_data, uiIndexArray,  ib_size);
+		
+		VkMappedMemoryRange range[2] = {};
+        range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        range[0].memory = uiVertexBuffer.memory;
+        range[0].size   = VK_WHOLE_SIZE;
+        range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        range[1].memory = uiIndexBuffer.memory;
+        range[1].size   = VK_WHOLE_SIZE;
+        AssertVk(vkFlushMappedMemoryRanges(device, 2, range));
+	}
+	vkUnmapMemory(device, uiVertexBuffer.memory);
+	vkUnmapMemory(device, uiIndexBuffer.memory);
+	
+	//name buffers for debugging
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uiVertexBuffer.buffer, "2D vertex buffer");
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uiIndexBuffer.buffer, "2D index buffer");
+}
+
+local void
+Reset2DDrawData(){
+	uiVertexCount = 0;
+	uiIndexCount  = 0;
+	uiCmdCount    = 1;
+	memset(&uiCmdArray[0], 0, sizeof(Cmd2DVk));
+}
 
 //we define a call order to command buffers so they can be executed by vkSubmitQueue()
 local void 
@@ -2905,11 +2865,27 @@ BuildCommandBuffers(){
 			}
 			
 			//draw UI stuff
-			DebugBeginLabelVk(frames[i].commandBuffer, "UI", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-			vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui);
-			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &descriptorSets.ui, 0, nullptr);
-			
-			DebugEndLabelVk(frames[i].commandBuffer);
+			if(uiVertexCount > 0 && uiIndexCount > 0){
+				DebugBeginLabelVk(frames[i].commandBuffer, "UI", vec4(0.5f, 0.76f, 0.34f, 1.0f));
+				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui);
+				VkDeviceSize offsets[1] = { 0 };
+				vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &uiVertexBuffer.buffer, offsets);
+				vkCmdBindIndexBuffer(frames[i].commandBuffer, uiIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
+				Push2DVk push{};
+				push.scale.x = 2.0f / (f32)width;
+				push.scale.y = 2.0f / (f32)height;
+				push.translate.x = -1.0f;
+				push.translate.y = -1.0f;
+				vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
+				
+				forX(cmd_idx, uiCmdCount){
+					vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].fontIdx].descriptorSet, 0, nullptr);
+					vkCmdDrawIndexed(frames[i].commandBuffer, uiCmdArray[cmd_idx].indexCount, 1, uiCmdArray[cmd_idx].indexOffset, 0, 0);
+				}
+				stats.drawnIndices += uiIndexCount;
+				
+				DebugEndLabelVk(frames[i].commandBuffer);
+			}
 			
 			//draw imgui stuff
 			if(ImDrawData* imDrawData = ImGui::GetDrawData()){
@@ -3058,7 +3034,6 @@ void Render::
 LoadDefaultAssets(){
 	PrintVk(2, "  Loading default assets");
 	
-	//load default textures
 	textures.reserve(16);
 	LoadTexture("null128.png", 0);
 	LoadTexture("default1024.png", 0);
@@ -3066,9 +3041,12 @@ LoadDefaultAssets(){
 	LoadTexture("white1024.png", 0);
 	
 	materials.reserve(16);
-	//create default materials
 	CreateMaterial(ShaderStrings[Shader_Flat], Shader_Flat);
 	CreateMaterial(ShaderStrings[Shader_Phong], Shader_Phong);
+	
+	fonts.reserve(8);
+	CreateFont(3);
+	uiCmdArray[0].fontIdx = 0;
 }
 
 void Render::
@@ -3657,6 +3635,34 @@ ListTextures(){
 	return out;
 }
 
+u32 Render::
+CreateFont(u32 textureIdx){
+	FontVk font{};
+	font.id = fonts.size();
+	font.textureIdx = textureIdx;
+	
+	//allocate and write descriptor set
+	VkDescriptorSetAllocateInfo allocInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+	allocInfo.descriptorPool     = descriptorPool;
+	allocInfo.pSetLayouts        = &descriptorSetLayouts.twod;
+	allocInfo.descriptorSetCount = 1;
+	AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &font.descriptorSet));
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)font.descriptorSet,
+						 TOSTRING("Font descriptor set ",font.id).c_str());
+	
+	VkWriteDescriptorSet writeDescriptorSet{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+	writeDescriptorSet.dstSet          = font.descriptorSet;
+	writeDescriptorSet.dstArrayElement = 0;
+	writeDescriptorSet.descriptorCount = 1;
+	writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	writeDescriptorSet.pImageInfo      = &textures[textureIdx].imageInfo;
+	writeDescriptorSet.dstBinding      = 0;
+	vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+	
+	fonts.push_back(font);
+	return font.id;
+}
+
 //TODO(delle,ReVu) dont create image samplers for non-image materials
 u32 Render::
 CreateMaterial(const char* name, u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID){
@@ -4073,9 +4079,9 @@ TextureName(u32 texIdx){
 	return textures[texIdx].filename;
 }
 
+//@init
 void Render::
 Init(){
-	PrintVk(1, "Initializing Vulkan");
 	TIMER_START(t_v);
 	
 	//// load RenderSettings ////
@@ -4124,8 +4130,6 @@ Init(){
 	PrintVk(3, "Finished creating descriptor pool in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	SetupOffscreenRendering();
 	PrintVk(3, "Finished setting up offscreen rendering in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	SetupUIRendering();
-	PrintVk(3, "Finished setting up UI rendering in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
 	//// setup window-specific Vulkan objects ////
 	CreateSwapChain();
@@ -4151,9 +4155,9 @@ Init(){
 	PrintVk(3, "Finished creating scene mesh buffers in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
 	initialized = true;
-	PrintVk(3, "Finished initializing Vulkan in ", TIMER_END(t_v), "ms");
 }
 
+//@update
 void Render::
 Update(){
 	//PrintVk(1, "---------------new frame---------------");
@@ -4194,15 +4198,12 @@ Update(){
 	}
 	
 	//render stuff
-	ImGui::Render(); ImDrawData* drawData = ImGui::GetDrawData();
-	if(drawData){
-		stats.drawnIndices += drawData->TotalIdxCount;
-		stats.totalVertices += drawData->TotalVtxCount;
-	}
-	BuildCommandBuffers();
-	
-	//update uniform buffers
+	ImGui::Render();
+	Setup2DDrawData();
 	UpdateUniformBuffers();
+	
+	//execute draw commands
+	BuildCommandBuffers();
 	
 	//submit the command buffer to the queue
 	VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -4214,7 +4215,6 @@ Update(){
 	submitInfo.pCommandBuffers      = &frames[imageIndex].commandBuffer;
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores    = &renderCompleteSemaphore;
-	
 	AssertVk(vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE), "failed to submit draw command buffer");
 	
 	if(remakeWindow){ return; }
@@ -4246,10 +4246,12 @@ Update(){
 	AssertVk(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
 	//update stats
 	stats.drawnTriangles += stats.drawnIndices / 3;
-	stats.totalVertices  += (u32)vertexBuffer.size();
-	stats.totalIndices   += (u32)indexBuffer.size();
+	stats.totalVertices  += (u32)vertexBuffer.size() + uiVertexCount;
+	stats.totalIndices   += (u32)indexBuffer.size() + uiIndexCount;
 	stats.totalTriangles += stats.totalIndices / 3;
 	stats.renderTimeMS    = TIMER_END(t_r);
+	
+	Reset2DDrawData();
 	
 	if(remakePipelines){ 
 		CreatePipelines(); 
@@ -4329,7 +4331,23 @@ Cleanup(){
 //-------------------------------------------------------------------------------------------------
 // 2D INTERFACE
 
+
 void UI::
-DrawRect(vec2 position, vec2 dimensions, Color color){
+FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
+	if(color.a == 0) return;
 	
+	u32 col = color.R8G8B8A8_UINT();
+	Vertex2D* vp = uiVertexArray + uiVertexCount;
+	u16*      ip = uiIndexArray  + uiIndexCount;
+	
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
+	vp[0].pos = {x+0,y+0}; vp[0].uv = {0,0}; vp[0].color = col;
+	vp[1].pos = {x+w,y+0}; vp[1].uv = {0,0}; vp[1].color = col;
+	vp[2].pos = {x+w,y+h}; vp[2].uv = {0,0}; vp[2].color = col;
+	vp[3].pos = {x+0,y+h}; vp[3].uv = {0,0}; vp[3].color = col;
+	
+	uiVertexCount += 4;
+	uiIndexCount  += 6;
+	uiCmdArray[uiCmdCount-1].indexCount += 6;
 }
