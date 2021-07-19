@@ -64,8 +64,8 @@ struct Push2DVk{
 	vec2 translate;
 };
 
-struct Cmd2DVk{
-	u32 fontIdx;
+struct ImmediateCmdVk{
+	u32 specialIdx;
 	u32 vertexOffset;
 	u16 indexOffset;
 	u16 indexCount;
@@ -160,31 +160,40 @@ local ConfigMap configMap = {
 local RenderStats   stats{};
 local RendererStage rendererStage = RENDERERSTAGE_NONE;
 
+//arbitray limits, change if needed
 #define MAX_UI_VERTICES 0xFFFF
 local u16 uiVertexCount = 0;
 local Vertex2D uiVertexArray[MAX_UI_VERTICES];
 
 #define MAX_UI_INDICES 3*MAX_UI_VERTICES
-local u32 uiIndexCount  = 0;
+local u32 uiIndexCount = 0;
 local u16 uiIndexArray[MAX_UI_INDICES];
 
-//arbitrary 1k limit, change if needed
 #define MAX_UI_CMDS 1000 
-local u16 uiCmdCount  = 1; //start with 1
-local Cmd2DVk uiCmdArray[MAX_UI_CMDS];
+local u16 uiCmdCount = 1; //start with 1
+local ImmediateCmdVk uiCmdArray[MAX_UI_CMDS];
+
+#define MAX_TEMP_VERTICES 0xFFFF
+local u16 tempVertexCount = 0;
+local Vertex tempVertexArray[MAX_TEMP_VERTICES];
+
+#define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
+local u32 tempIndexCount = 0;
+local u16 tempIndexArray[MAX_TEMP_INDICES];
+
 
 //-------------------------------------------------------------------------------------------------
 // VULKAN VARIABLES
 
 //TODO(delle,ReOp) use container manager for arrays that remove elements
-std::vector<VertexVk>    vertexBuffer = std::vector<VertexVk>(0);
-std::vector<u32>         indexBuffer  = std::vector<u32>(0);
-std::vector<TextureVk>   textures     = std::vector<TextureVk>(0);
-std::vector<MeshVk>      meshes       = std::vector<MeshVk>(0);
-std::vector<MaterialVk>  materials    = std::vector<MaterialVk>(0);
-std::vector<MeshBrushVk> meshBrushes  = std::vector<MeshBrushVk>(0);
-std::vector<u32>         selected     = std::vector<u32>(0);
-std::vector<FontVk>      fonts        = std::vector<FontVk>(0);
+std::vector<Vertex>    vertexBuffer;
+std::vector<u32>         indexBuffer;
+std::vector<TextureVk>   textures;
+std::vector<MeshVk>      meshes;
+std::vector<MaterialVk>  materials;
+std::vector<MeshBrushVk> meshBrushes;
+std::vector<u32>         selected;
+std::vector<FontVk>      fonts;
 
 vec4 lights[10]{ vec4(0,0,0,-1) };
 
@@ -196,8 +205,6 @@ local std::vector<const char*> deviceExtensions = {
 	VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME 
 };
 local std::vector<VkValidationFeatureEnableEXT> validationFeaturesEnabled = {};
-
-local bool generatingWorldGrid = false; //TODO(sushi) this is temporary
 
 local const int MAX_FRAMES = 2;
 local VkAllocationCallbacks* allocator = 0;
@@ -318,6 +325,8 @@ local struct{ //indices buffer
 
 local BufferVk uiVertexBuffer{};
 local BufferVk uiIndexBuffer{};
+local BufferVk tempVertexBuffer{};
+local BufferVk tempIndexBuffer{};
 
 ////////////////////
 //// @pipelines ////
@@ -1526,11 +1535,12 @@ CreateUniformBuffers(){
 	UpdateUniformBuffers();
 }
 
+//TODO(delle,Vu) update this to new style of buffer creation, see SetupImmediateData
 local void 
 CreateSceneMeshBuffers(){
 	PrintVk(3, "    Creating Scene Buffers");
 	StagingBufferVk vertexStaging{}, indexStaging{};
-	size_t vertexBufferSize = vertexBuffer.size() * sizeof(VertexVk);
+	size_t vertexBufferSize = vertexBuffer.size() * sizeof(Vertex);
 	size_t indexBufferSize  = indexBuffer.size()  * sizeof(u32);
 	if(vertexBufferSize == 0 || indexBufferSize == 0) return; //early out if empty buffers
 	
@@ -1952,13 +1962,13 @@ SetupPipelineCreation(){
 	//vertex input flow control
 	//https://renderdoc.org/vkspec_chunked/chap23.html#VkPipelineVertexInputStateCreateInfo
 	vertexInputBindings = { //binding:u32, stride:u32, inputRate:VkVertexInputRate
-		{0, sizeof(VertexVk), VK_VERTEX_INPUT_RATE_VERTEX},
+		{0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX},
 	};
 	vertexInputAttributes = { //location:u32, binding:u32, format:VkFormat, offset:u32
-		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexVk, pos)},
-		{1, 0, VK_FORMAT_R32G32_SFLOAT,    offsetof(VertexVk, uv)},
-		{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexVk, color)},
-		{3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexVk, normal)},
+		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)},
+		{1, 0, VK_FORMAT_R32G32_SFLOAT,    offsetof(Vertex, uv)},
+		{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
+		{3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
 	};
 	vertexInputState.vertexBindingDescriptionCount   = (u32)vertexInputBindings.size();
 	vertexInputState.pVertexBindingDescriptions      = vertexInputBindings.data();
@@ -2599,59 +2609,116 @@ UpdateMaterialPipelines(){
 }
 
 
+////////////////////
+//// @immediate ////
+////////////////////
+
+
+local void
+SetupImmediateData(){
+	//create UI vertex and index buffers
+	size_t ui_vb_size = uiVertexCount * sizeof(Vertex2D);
+	size_t ui_ib_size = uiIndexCount  * sizeof(u16);
+	if(uiVertexBuffer.size == 0) ui_vb_size = 1000*sizeof(Vertex2D);
+	if(uiIndexBuffer.size == 0)  ui_ib_size = 3000*sizeof(u16);
+	if(ui_vb_size && ui_ib_size){
+		//create/resize buffers if they are too small
+		if(uiVertexBuffer.buffer == VK_NULL_HANDLE || uiVertexBuffer.size < ui_vb_size){
+			CreateOrResizeBuffer(uiVertexBuffer.buffer, uiVertexBuffer.memory, uiVertexBuffer.size, ui_vb_size,
+								 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		}
+		if(uiIndexBuffer.buffer == VK_NULL_HANDLE || uiIndexBuffer.size < ui_ib_size){
+			CreateOrResizeBuffer(uiIndexBuffer.buffer, uiIndexBuffer.memory, uiIndexBuffer.size, ui_ib_size,
+								 VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		}
+		
+		//copy memory to the GPU
+		void* vb_data; void* ib_data;
+		AssertVk(vkMapMemory(device, uiVertexBuffer.memory, 0, ui_vb_size, 0, &vb_data));
+		AssertVk(vkMapMemory(device, uiIndexBuffer.memory,  0, ui_ib_size, 0, &ib_data));
+		{
+			memcpy(vb_data, uiVertexArray, ui_vb_size);
+			memcpy(ib_data, uiIndexArray,  ui_ib_size);
+			
+			VkMappedMemoryRange range[2] = {};
+			range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+			range[0].memory = uiVertexBuffer.memory;
+			range[0].size   = VK_WHOLE_SIZE;
+			range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+			range[1].memory = uiIndexBuffer.memory;
+			range[1].size   = VK_WHOLE_SIZE;
+			AssertVk(vkFlushMappedMemoryRanges(device, 2, range));
+		}
+		vkUnmapMemory(device, uiVertexBuffer.memory);
+		vkUnmapMemory(device, uiIndexBuffer.memory);
+		
+		//name buffers for debugging
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uiVertexBuffer.buffer, "2D vertex buffer");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uiIndexBuffer.buffer, "2D index buffer");
+	}
+	
+	//create temp mesh vertex and index buffers
+	size_t temp_vb_size = tempVertexCount * sizeof(Vertex);
+	size_t temp_ib_size = tempIndexCount  * sizeof(u16);
+	if(tempVertexBuffer.size == 0) temp_vb_size = 1000*sizeof(Vertex);
+	if(tempIndexBuffer.size == 0)  temp_ib_size = 3000*sizeof(u16);
+	if(temp_vb_size && temp_ib_size){
+		//create/resize buffers if they are too small
+		if(tempVertexBuffer.buffer == VK_NULL_HANDLE || tempVertexBuffer.size < temp_vb_size){
+			CreateOrResizeBuffer(tempVertexBuffer.buffer, tempVertexBuffer.memory, tempVertexBuffer.size, temp_vb_size,
+								 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		}
+		if(tempIndexBuffer.buffer == VK_NULL_HANDLE || tempIndexBuffer.size < temp_ib_size){
+			CreateOrResizeBuffer(tempIndexBuffer.buffer, tempIndexBuffer.memory, tempIndexBuffer.size, temp_ib_size,
+								 VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		}
+		
+		//copy memory to the GPU
+		void* vb_data; void* ib_data;
+		AssertVk(vkMapMemory(device, tempVertexBuffer.memory, 0, temp_vb_size, 0, &vb_data));
+		AssertVk(vkMapMemory(device, tempIndexBuffer.memory,  0, temp_ib_size, 0, &ib_data));
+		{
+			memcpy(vb_data, tempVertexArray, temp_vb_size);
+			memcpy(ib_data, tempIndexArray,  temp_ib_size);
+			
+			VkMappedMemoryRange range[2] = {};
+			range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+			range[0].memory = tempVertexBuffer.memory;
+			range[0].size   = VK_WHOLE_SIZE;
+			range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+			range[1].memory = tempIndexBuffer.memory;
+			range[1].size   = VK_WHOLE_SIZE;
+			AssertVk(vkFlushMappedMemoryRanges(device, 2, range));
+		}
+		vkUnmapMemory(device, tempVertexBuffer.memory);
+		vkUnmapMemory(device, tempIndexBuffer.memory);
+		
+		//name buffers for debugging
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)tempVertexBuffer.buffer, "Temp vertex buffer");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)tempIndexBuffer.buffer, "Temp index buffer");
+	}
+}
+
+local void
+ResetImmediateData(){
+	{//reset UI
+		uiVertexCount = 0;
+		uiIndexCount  = 0;
+		uiCmdCount    = 1;
+		memset(&uiCmdArray[0], 0, sizeof(ImmediateCmdVk));
+	}
+	
+	{//reset temp meshes
+		tempVertexCount = 0;
+		tempIndexCount  = 0;
+	}
+}
+
+
 //////////////////
 //// @drawing ////
 //////////////////
 
-local void
-Setup2DDrawData(){
-	//create UI vertex and index buffers
-	size_t vb_size = uiVertexCount * sizeof(Vertex2D);
-	size_t ib_size = uiIndexCount  * sizeof(u16);
-	if(!vb_size || !ib_size) return; //skip if empty
-	
-	//create/resize buffers if they are too small
-	if(uiVertexBuffer.buffer == VK_NULL_HANDLE || uiVertexBuffer.size < vb_size){
-		CreateOrResizeBuffer(uiVertexBuffer.buffer, uiVertexBuffer.memory, uiVertexBuffer.size, vb_size,
-							 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-	}
-	if(uiIndexBuffer.buffer == VK_NULL_HANDLE || uiIndexBuffer.size < ib_size){
-		CreateOrResizeBuffer(uiIndexBuffer.buffer, uiIndexBuffer.memory, uiIndexBuffer.size, ib_size,
-							 VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-	}
-	
-	//copy memory to the GPU
-	void* vb_data; void* ib_data;
-	AssertVk(vkMapMemory(device, uiVertexBuffer.memory, 0, vb_size, 0, &vb_data));
-	AssertVk(vkMapMemory(device, uiIndexBuffer.memory,  0, ib_size, 0, &ib_data));
-	{
-		memcpy(vb_data, uiVertexArray, vb_size);
-		memcpy(ib_data, uiIndexArray,  ib_size);
-		
-		VkMappedMemoryRange range[2] = {};
-        range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-        range[0].memory = uiVertexBuffer.memory;
-        range[0].size   = VK_WHOLE_SIZE;
-        range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-        range[1].memory = uiIndexBuffer.memory;
-        range[1].size   = VK_WHOLE_SIZE;
-        AssertVk(vkFlushMappedMemoryRanges(device, 2, range));
-	}
-	vkUnmapMemory(device, uiVertexBuffer.memory);
-	vkUnmapMemory(device, uiIndexBuffer.memory);
-	
-	//name buffers for debugging
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uiVertexBuffer.buffer, "2D vertex buffer");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)uiIndexBuffer.buffer, "2D index buffer");
-}
-
-local void
-Reset2DDrawData(){
-	uiVertexCount = 0;
-	uiIndexCount  = 0;
-	uiCmdCount    = 1;
-	memset(&uiCmdArray[0], 0, sizeof(Cmd2DVk));
-}
 
 //we define a call order to command buffers so they can be executed by vkSubmitQueue()
 local void 
@@ -2754,21 +2821,19 @@ BuildCommandBuffers(){
 			VkDeviceSize offsets[1] = { 0 }; //reset vertex buffer offsets
 			
 			//draw mesh brushes
-			if(!generatingWorldGrid){
-				DebugBeginLabelVk(frames[i].commandBuffer, "Mesh brushes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe_depth);
-				for(MeshBrushVk& mesh : meshBrushes){
-					if(mesh.visible){
-						vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &mesh.vertexBuffer, offsets);
-						vkCmdBindIndexBuffer(frames[i].commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
-						DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
-						vkCmdDrawIndexed(frames[i].commandBuffer, mesh.indices.size(), 1, 0, 0, 0);
-						stats.drawnIndices += mesh.indices.size();
-					}
+			DebugBeginLabelVk(frames[i].commandBuffer, "Mesh brushes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
+			vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe_depth);
+			for(MeshBrushVk& mesh : meshBrushes){
+				if(mesh.visible){
+					vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &mesh.vertexBuffer, offsets);
+					vkCmdBindIndexBuffer(frames[i].commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+					vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
+					DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
+					vkCmdDrawIndexed(frames[i].commandBuffer, mesh.indices.size(), 1, 0, 0, 0);
+					stats.drawnIndices += mesh.indices.size();
 				}
-				DebugEndLabelVk(frames[i].commandBuffer);
 			}
+			DebugEndLabelVk(frames[i].commandBuffer);
 			
 			//draw meshes
 			DebugBeginLabelVk(frames[i].commandBuffer, "Meshes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
@@ -2820,8 +2885,26 @@ BuildCommandBuffers(){
 			}
 			DebugEndLabelVk(frames[i].commandBuffer);
 			
+			//draw temporary stuff
+			if(tempVertexCount > 0 && tempIndexCount > 0){
+				DebugBeginLabelVk(frames[i].commandBuffer, "Temp", vec4(0.5f, 0.76f, 0.34f, 1.0f));
+				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe_depth);
+				VkDeviceSize offsets[1] = { 0 };
+				vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &tempVertexBuffer.buffer, offsets);
+				vkCmdBindIndexBuffer(frames[i].commandBuffer, tempIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
+				vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &Matrix4::IDENTITY);
+				vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.scene, 0, nullptr);
+				
+				vkCmdDrawIndexed(frames[i].commandBuffer, tempIndexCount, 1, 0, 0, 0);
+				stats.drawnIndices += tempIndexCount;
+				
+				DebugEndLabelVk(frames[i].commandBuffer);
+			}
+			
 			//draw selected meshes
 			DebugBeginLabelVk(frames[i].commandBuffer, "Selected Meshes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
+			vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &vertices.buffer, offsets);
+			vkCmdBindIndexBuffer(frames[i].commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
 			for(u32 id : selected){
 				MeshVk& mesh = meshes[id];
 				if(mesh.primitives.size() > 0){
@@ -2879,7 +2962,7 @@ BuildCommandBuffers(){
 				vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
 				forX(cmd_idx, uiCmdCount){
-					vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].fontIdx].descriptorSet, 0, nullptr);
+					vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].specialIdx].descriptorSet, 0, nullptr);
 					vkCmdDrawIndexed(frames[i].commandBuffer, uiCmdArray[cmd_idx].indexCount, 1, uiCmdArray[cmd_idx].indexOffset, 0, 0);
 				}
 				stats.drawnIndices += uiIndexCount;
@@ -3046,7 +3129,7 @@ LoadDefaultAssets(){
 	
 	fonts.reserve(8);
 	CreateFont(3);
-	uiCmdArray[0].fontIdx = 0;
+	uiCmdArray[0].specialIdx = 0;
 }
 
 void Render::
@@ -3111,7 +3194,6 @@ CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool visibl
 	return id;
 }
 
-
 u32 Render::
 CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation){
 	if(log_creation) PrintVk(3, "    Creating mesh brush based on: ", m->name);
@@ -3134,14 +3216,7 @@ CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation){
 		batchIndexStart = (u32)mesh.indices.size();
 		
 		//vertices
-		for(int i=0; i<batch.vertexArray.size(); ++i){ 
-			VertexVk vert;
-			vert.pos      = vec4(batch.vertexArray[i].pos, 1.0f);
-			vert.uv       = vec4(batch.vertexArray[i].uv.x, batch.vertexArray[i].uv.y, 0.0f, 0.0f);
-			vert.color    = vec4(batch.vertexArray[i].color, 1.0f);
-			vert.normal   = vec4(batch.vertexArray[i].normal, 1.0f);
-			mesh.vertices.push_back(vert);
-		}
+		mesh.vertices.insert(mesh.vertices.end(), batch.vertexArray.begin(), batch.vertexArray.end());
 		
 		//indices
 		for(u32 i : batch.indexArray){
@@ -3151,7 +3226,7 @@ CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation){
 	
 	{//// vulkan buffers ////
 		StagingBufferVk vertexStaging{}, indexStaging{};
-		size_t vbSize = mesh.vertices.size() * sizeof(VertexVk);
+		size_t vbSize = mesh.vertices.size() * sizeof(Vertex);
 		size_t ibSize = mesh.indices.size() * sizeof(u32);
 		
 		//create host visible vertex and index buffers (CPU/RAM)
@@ -3216,7 +3291,7 @@ UpdateMeshBrushBuffers(u32 meshBrushIdx){
 	
 	MeshBrushVk& mesh = meshBrushes[meshBrushIdx];
 	StagingBufferVk vertexStaging{}, indexStaging{};
-	size_t vbSize = mesh.vertices.size() * sizeof(VertexVk);
+	size_t vbSize = mesh.vertices.size() * sizeof(Vertex);
 	size_t ibSize = mesh.indices.size() * sizeof(u32);
 	
 	//create host visible vertex and index buffers (CPU/RAM)
@@ -3310,14 +3385,7 @@ LoadBaseMesh(Mesh* m, bool visible){
 		batchIndexStart = (u32)indexBuffer.size();
 		
 		//vertices
-		for(int i=0; i<batch.vertexArray.size(); ++i){ 
-			VertexVk vert;
-			vert.pos    = vec4(batch.vertexArray[i].pos, 1.0f);
-			vert.uv     = vec4(batch.vertexArray[i].uv.x, batch.vertexArray[i].uv.y, 0.0f, 0.0f);
-			vert.color  = vec4(batch.vertexArray[i].color, 1.0f);
-			vert.normal = vec4(batch.vertexArray[i].normal, 1.0f);
-			vertexBuffer.push_back(vert);
-		}
+		vertexBuffer.insert(vertexBuffer.end(), batch.vertexArray.begin(), batch.vertexArray.end());
 		
 		//indices
 		for(u32 i : batch.indexArray){
@@ -3541,6 +3609,12 @@ RemoveSelectedMesh(u32 meshID){
 	}else{ ERROR_LOC("There is no mesh with id: ", meshID); }
 }
 
+
+////////////////////////
+//// @texture stuff ////
+////////////////////////
+
+
 u32 Render::
 LoadTexture(const char* filename, u32 type){
 	for(auto& tex : textures){ if(strcmp(tex.filename, filename) == 0){ return tex.id; } }
@@ -3662,6 +3736,10 @@ CreateFont(u32 textureIdx){
 	fonts.push_back(font);
 	return font.id;
 }
+
+/////////////////////////
+//// @material stuff ////
+/////////////////////////
 
 //TODO(delle,ReVu) dont create image samplers for non-image materials
 u32 Render::
@@ -3860,6 +3938,33 @@ RemoveMaterial(u32 matID){
 	materials.erase(materials.begin()+matID);
 }
 
+/////////////////////
+//// @temp stuff ////
+/////////////////////
+
+
+void Render::
+TempLine(Vector3 start, Vector3 end, Color color){
+	if(color.a == 0) return;
+	
+	vec3 col((f32)color.r / 255.0f, (f32)color.g / 255.0f, (f32)color.b / 255.0f);
+	Vertex* vp = tempVertexArray + tempVertexCount;
+	u16*    ip = tempIndexArray  + tempIndexCount;
+	
+	ip[0] = tempVertexCount; 
+	ip[1] = tempVertexCount+1; 
+	ip[2] = tempVertexCount;
+	vp[0].pos = start; vp[0].color = col;
+	vp[1].pos = end;   vp[1].color = col;
+	
+	tempVertexCount += 2;
+	tempIndexCount  += 3;
+}
+
+//////////////////////
+//// @other stuff ////
+//////////////////////
+
 //ref: gltfscenerendering.cpp:350
 void Render::
 LoadScene(Scene* sc){
@@ -3898,7 +4003,7 @@ SceneBoundingBox(){
 	for(MeshVk& mesh : meshes){
 		for(PrimitiveVk& p : mesh.primitives){
 			for(int i = p.firstIndex; i < p.indexCount; i++){
-				v = vertexBuffer[indexBuffer[i]].pos.ToVector3() + mesh.modelMatrix.Translation();
+				v = vertexBuffer[indexBuffer[i]].pos + mesh.modelMatrix.Translation();
 				if      (v.x < min.x){ min.x = v.x; }
 				else if(v.x > max.x){ max.x = v.x; }
 				if      (v.y < min.y){ min.y = v.y; }
@@ -3990,7 +4095,7 @@ UpdateRenderSettings(RenderSettings new_settings){
 	settings = new_settings;
 };
 
-std::vector<VertexVk>* Render::
+std::vector<Vertex>* Render::
 vertexArray(){
 	return &vertexBuffer;
 }
@@ -4199,7 +4304,7 @@ Update(){
 	
 	//render stuff
 	ImGui::Render();
-	Setup2DDrawData();
+	SetupImmediateData();
 	UpdateUniformBuffers();
 	
 	//execute draw commands
@@ -4246,12 +4351,12 @@ Update(){
 	AssertVk(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
 	//update stats
 	stats.drawnTriangles += stats.drawnIndices / 3;
-	stats.totalVertices  += (u32)vertexBuffer.size() + uiVertexCount;
-	stats.totalIndices   += (u32)indexBuffer.size() + uiIndexCount;
+	stats.totalVertices  += (u32)vertexBuffer.size() + uiVertexCount + tempVertexCount;
+	stats.totalIndices   += (u32)indexBuffer.size() + uiIndexCount + tempIndexCount;
 	stats.totalTriangles += stats.totalIndices / 3;
 	stats.renderTimeMS    = TIMER_END(t_r);
 	
-	Reset2DDrawData();
+	ResetImmediateData();
 	
 	if(remakePipelines){ 
 		CreatePipelines(); 

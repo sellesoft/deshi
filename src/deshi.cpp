@@ -6,7 +6,7 @@ Ma  Math      Oth Other            Op  Optimization    Ph  Physics     Re  Rende
 Sh  Shader    So  Sound            Ui  UI              Vu  Vulkan      Wi  Window
 
 TODO Style: TODO(person,tags) description
-  eg: TODO(delle) no tag or date 
+  eg: TODO(delle) no tag or date for delle
 eg: TODO(sushi,ReOp) render,optimization tags for sushi
 
 The person listed doesn't necessarily have to be you, and can be someone else
@@ -20,6 +20,7 @@ ____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
+add editor settings and config
 change text-based saving so material shaders are text rather than ID
 rework and simplify entity creation so there is a distinction between development and gameplay creation
 fix colorspace so we dont have to do the pow in shaders
@@ -45,13 +46,10 @@ ____also allow it to store up to 3 types
 add device_info command (graphics card, sound device, monitor res, etc)
 pool/arena components and entities for better performance
 replace/remove external dependencies/includes (tinyobj, std)
-add Qol (quality of life) tag to TODOP
-add Camera tag to TODOP
 look into integrating TODOP with Discord
 begin reimplementing sound system and maybe rethink its design a bit
 remove extra collider component types and use the collider one instead
 ____ComponentType_AABBCollider vs ComponentType_Collider
-add 2d mesh component and component type for image and UI drawing
 fix DESH material and event saving/loading
 
 Render TODOs

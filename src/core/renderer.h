@@ -99,17 +99,6 @@ enum RendererStageBits : u32 {
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
-struct VertexVk{
-	vec4 pos;
-	vec4 uv;
-	vec4 color;
-	vec4 normal;
-    
-    bool operator==(const VertexVk& other) const {
-        return pos == other.pos && color == other.color && uv == other.uv && normal == other.normal;
-    }
-};
-
 typedef u8 stbi_uc;
 struct TextureVk {
     char filename[DESHI_NAME_SIZE];
@@ -152,7 +141,7 @@ struct MeshBrushVk{
     char name[DESHI_NAME_SIZE];
     b32 visible = true;
     mat4 modelMatrix = mat4::IDENTITY;
-    std::vector<VertexVk> vertices;
+    std::vector<Vertex> vertices;
     std::vector<u32>      indices;
     VkBuffer       vertexBuffer       = 0;
     VkDeviceMemory vertexBufferMemory = 0;
@@ -264,6 +253,8 @@ namespace Render{
     void RemoveMaterial(u32 materialID);
 	u32 MaterialCount();
 	char* MaterialName(u32 materialIdx);
+	
+	void TempLine(Vector3 start, Vector3 end, Color color = Color::WHITE);
     
     void LoadDefaultAssets();
     //loads a new scene to the GPU
@@ -286,7 +277,7 @@ namespace Render{
 	//TODO(delle,Re) make a better interface so other code doesnt need to access these directly
 	//temporary funcs
 	void remakeOffscreen();
-	std::vector<VertexVk>*    vertexArray();
+	std::vector<Vertex>*    vertexArray();
 	std::vector<u32>*         indexArray();
 	std::vector<TextureVk>*   textureArray();
 	std::vector<MeshVk>*      meshArray();

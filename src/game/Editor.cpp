@@ -2373,33 +2373,26 @@ void Editor::DebugLayer() {
 
 
 void Editor::WorldGrid(Vector3 cpos) {
-    int lines = 20;
-	cpos.x = ((int)(cpos.x / 20.f)) * 20.f;
-	cpos.y = ((int)(cpos.y / 20.f)) * 20.f;
-	cpos.z = ((int)(cpos.z / 20.f)) * 20.f;
+    int lines = 50;
+	f32 xp = floor(cpos.x) + lines;
+	f32 xn = floor(cpos.x) - lines;
+	f32 zp = floor(cpos.z) + lines;
+	f32 zn = floor(cpos.z) - lines;
     
-    for (int i = 0; i < lines * 2 + 1; i++) {
-        Vector3 v1 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines);
-        Vector3 v2 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) +  lines);
-        Vector3 v3 = Vector3(floor(cpos.x) + -lines,     0, floor(cpos.z) + -lines + i);
-        Vector3 v4 = Vector3(floor(cpos.x) +  lines,     0, floor(cpos.z) + -lines + i);
+	Color color(50, 50, 50);
+    for(int i = 0; i < lines * 2 + 1; i++){
+        Vector3 v1 = Vector3(xn+i, 0, zn);
+        Vector3 v2 = Vector3(xn+i, 0, zp);
+        Vector3 v3 = Vector3(xn,   0, zn+i);
+        Vector3 v4 = Vector3(xp,   0, zn+i);
         
-        bool l1flag = false;
-        bool l2flag = false;
-        
-        if (floor(cpos.x) - lines + i == 0) {
-            l1flag = true;
-        }
-        if (floor(cpos.z) - lines + i == 0) {
-            l2flag = true;
-        }
-        
-        if (l1flag) { DebugLinesCol(i, v1, v2, DengTime->deltaTime, Color::BLUE); }
-        else { DebugLinesCol(i, v1, v2, DengTime->deltaTime, Color(50, 50, 50, 50)); };
-        
-        if (l2flag) { DebugLinesCol(i, v3, v4, DengTime->deltaTime, Color::RED); }
-        else { DebugLinesCol(i, v3, v4, DengTime->deltaTime, Color(50, 50, 50, 50)); };
+		if(xn+i != 0) Render::TempLine(v1, v2, color);
+		if(zn+i != 0) Render::TempLine(v3, v4, color);
     }
+	
+	Render::TempLine(vec3{-1000,0,0}, vec3{1000,0,0}, Color::RED);
+	Render::TempLine(vec3{0,-1000,0}, vec3{0,1000,0}, Color::GREEN);
+	Render::TempLine(vec3{0,0,-1000}, vec3{0,0,1000}, Color::BLUE);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
