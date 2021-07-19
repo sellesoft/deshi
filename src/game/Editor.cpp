@@ -12,6 +12,7 @@
 #include "components/Door.h"
 #include "components/AudioSource.h"
 #include "components/AudioListener.h"
+#include "entities/Entity.h"
 #include "entities/PlayerEntity.h"
 #include "entities/Trigger.h"
 #include "../core/assets.h"
@@ -29,6 +30,13 @@
 #include <thread>
 
 local f32 font_width = 0;
+local std::string copy_path;
+local std::vector<pair<u32,u32>> copy_mesh_diffs;
+
+local void ClearCopiedEntities(){
+	Assets::deleteFile(copy_path, false);
+	copy_mesh_diffs.clear();
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// inputs
@@ -977,6 +985,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
     //delete selected entities
     if(selected.size() && DengInput->KeyPressedAnyMod(Key::DELETE)){
         //TODO(Ui) re-enable this with a popup to delete OR with undoing on delete
+		selected.clear();
     }
     
     //// entity list panel ////
@@ -1831,9 +1840,9 @@ inline void GlobalTab(Admin* admin){
 			local const char* resolution_strings[] = { "128", "256", "512", "1024", "2048", "4096" };
 			local u32 resolution_values[] = { 128, 256, 512, 1024, 2048, 4096 };
 			local u32 shadow_resolution_index = 4;
-			local f32 clear_color[3] = {settings->clearColor.r,settings->clearColor.g,settings->clearColor.b};
-			local f32 selected_color[3] = {settings->selectedColor.r,settings->selectedColor.g,settings->selectedColor.b};
-			local f32 collider_color[3] = {settings->colliderColor.r,settings->colliderColor.g,settings->colliderColor.b};
+			local vec3 clear_color    = settings->clearColor;
+			local vec4 selected_color = settings->selectedColor;
+			local vec4 collider_color = settings->colliderColor;
 			
 			ImGui::TextCentered("Render Settings");
 			ImGui::TextEx("Logging level"); ImGui::SameLine(); ImGui::SliderUInt32("##rs_logging_level", &settings->loggingLevel, 0, 4);
@@ -1856,23 +1865,17 @@ inline void GlobalTab(Admin* admin){
 			ImGui::TextEx("Shadow depth bias constant"); ImGui::SameLine(); ImGui::InputFloat("##rs_shadow_depthconstant", &settings->depthBiasConstant);
 			ImGui::TextEx("Shadow depth bias slope"); ImGui::SameLine(); ImGui::InputFloat("##rs_shadow_depthslope", &settings->depthBiasSlope);
 			ImGui::Checkbox("Show shadowmap texture", (bool*)&settings->showShadowMap);
-			ImGui::TextEx("Clear color"); ImGui::SameLine();
-			if(ImGui::ColorEdit3("##rs_clear_color", clear_color)){
-				settings->clearColor.r = clear_color[0];
-				settings->clearColor.g = clear_color[1]; 
-				settings->clearColor.b = clear_color[2]; 
+			ImGui::TextEx("Background"); ImGui::SameLine();
+			if(ImGui::ColorEdit3("##rs_clear_color", (f32*)&clear_color.r)){
+				settings->clearColor = vec4(clear_color, 1.0f);
 			}
-			ImGui::TextEx("Selected color"); ImGui::SameLine();
-			if(ImGui::ColorEdit3("##rs_selected_color", selected_color)){
-				settings->selectedColor.r = selected_color[0];
-				settings->selectedColor.g = selected_color[1]; 
-				settings->selectedColor.b = selected_color[2]; 
+			ImGui::TextEx("Selected  "); ImGui::SameLine();
+			if(ImGui::ColorEdit4("##rs_selected_color", (f32*)&selected_color.r)){
+				settings->selectedColor = selected_color;
 			}
-			ImGui::TextEx("Collider color"); ImGui::SameLine();
-			if(ImGui::ColorEdit3("##rs_collider_color", collider_color)){
-				settings->colliderColor.r = collider_color[0];
-				settings->colliderColor.g = collider_color[1]; 
-				settings->colliderColor.b = collider_color[2]; 
+			ImGui::TextEx("Collider  "); ImGui::SameLine();
+			if(ImGui::ColorEdit4("##rs_collider_color", (f32*)&collider_color.r)){
+				settings->colliderColor = collider_color;
 			}
 			ImGui::Checkbox("Only show wireframe", (bool*)&settings->wireframeOnly);
 			ImGui::Checkbox("Draw mesh wireframes", (bool*)&settings->meshWireframes);
@@ -2374,9 +2377,6 @@ void Editor::WorldGrid(Vector3 cpos) {
 	cpos.x = ((int)(cpos.x / 20.f)) * 20.f;
 	cpos.y = ((int)(cpos.y / 20.f)) * 20.f;
 	cpos.z = ((int)(cpos.z / 20.f)) * 20.f;
-    persist vec3 last_pos = vec3(FLT_MAX, FLT_MIN, FLT_MAX);
-    if(last_pos == cpos) return;
-    last_pos = cpos;
     
     for (int i = 0; i < lines * 2 + 1; i++) {
         Vector3 v1 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines);
@@ -2394,11 +2394,11 @@ void Editor::WorldGrid(Vector3 cpos) {
             l2flag = true;
         }
         
-        if (l1flag) { DebugLinesCol(i, v1, v2, -1, Color::BLUE); }
-        else { DebugLinesCol(i, v1, v2, -1, Color(50, 50, 50, 50)); };
+        if (l1flag) { DebugLinesCol(i, v1, v2, DengTime->deltaTime, Color::BLUE); }
+        else { DebugLinesCol(i, v1, v2, DengTime->deltaTime, Color(50, 50, 50, 50)); };
         
-        if (l2flag) { DebugLinesCol(i, v3, v4, -1, Color::RED); }
-        else { DebugLinesCol(i, v3, v4, -1, Color(50, 50, 50, 50)); };
+        if (l2flag) { DebugLinesCol(i, v3, v4, DengTime->deltaTime, Color::RED); }
+        else { DebugLinesCol(i, v3, v4, DengTime->deltaTime, Color(50, 50, 50, 50)); };
     }
 }
 
@@ -2446,6 +2446,7 @@ void Editor::Update(){
             admin->paused = !admin->paused;
         }
     }
+	
     {//// select ////
         if (!DengConsole->IMGUI_MOUSE_CAPTURE && !admin->controller.cameraLocked) {
             if (DengInput->KeyPressed(MouseButton::LEFT)) {
@@ -2459,6 +2460,7 @@ void Editor::Update(){
             HandleRotating(selected[0], camera, admin, &undo_manager);
         }
     }
+	
     {//// render ////
         //reload all shaders
         if (DengInput->KeyPressed(Key::F5)) { DengConsole->ExecCommand("shader_reload", "-1"); }
@@ -2472,6 +2474,7 @@ void Editor::Update(){
             }
         }
     }
+	
     {//// camera ////
         //toggle ortho
         persist Vector3 ogpos;
@@ -2508,69 +2511,119 @@ void Editor::Update(){
             camera->rotation = {28.f, -45.f, 0.f};
         }
     }
+	
     {//// undo/redo ////
         if (DengInput->KeyPressed(DengKeys.undo)) undo_manager.Undo();
         if (DengInput->KeyPressed(DengKeys.redo)) undo_manager.Redo();
     }
+	
     {//// interface ////
         if (DengInput->KeyPressed(DengKeys.toggleDebugMenu)) showDebugTools = !showDebugTools;
-        if (DengInput->KeyPressed(DengKeys.toggleDebugBar))  showDebugBar = !showDebugBar;
-        if (DengInput->KeyPressed(DengKeys.toggleMenuBar))   showMenuBar = !showMenuBar;
+        if (DengInput->KeyPressed(DengKeys.toggleDebugBar))  showDebugBar   = !showDebugBar;
+        if (DengInput->KeyPressed(DengKeys.toggleMenuBar))   showMenuBar    = !showMenuBar;
     }
-    
-    ///////////////////////////////
-    //// render user interface ////
-    ///////////////////////////////
-    
-    //TODO(delle,Cl) program crashes somewhere in DebugTools() if minimized
-    if (!DengWindow->minimized) {
-        WinHovFlag = 0;
-        font_width = ImGui::GetFontSize();
-        
-        if (showDebugLayer) DebugLayer();
-        if (showTimes)      DrawTimes();
-        if (showDebugTools) DebugTools();
-        if (showDebugBar)   DebugBar();
-        if (showMenuBar)    MenuBar();
-        if (showEditorWin)  CreateEditorWin();
-		if (showWorldGrid)  WorldGrid(camera->position);
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1)); {
-            if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
-        }ImGui::PopStyleColor();
-        
-        if (!showMenuBar)    menubarheight = 0;
-        if (!showDebugBar)   debugbarheight = 0;
-        if (!showDebugTools) debugtoolswidth = 0;
+	
+	//TODO(delle,Op) actually do a copy of memory once entities are less anonymous
+	//NOTE doesnt copy the events of an entity at the moment
+	{//// cut/copy/paste ////
+		if(DengInput->KeyPressed(DengKeys.cut)){
+			if(selected.size()){
+				//copy
+				Assets::deleteFile(copy_path, false);
+				std::string entity_text = selected[0]->SaveTEXT();
+				std::string filepath = Assets::dirTemp() + std::to_string(DengTime->totalTime) + "entcopy";
+				Assets::writeFile(filepath, entity_text.c_str(), entity_text.size());
+				
+				copy_path = filepath;
+				for(Component* c : selected[0]->components){
+					if(c->comptype == ComponentType_MeshComp){
+						copy_mesh_diffs.push_back(pair<u32,u32>(-1, ((MeshComp*)c)->meshID));
+					}
+				}
+				
+				//delete
+				DengAdmin->DeleteEntity(selected[0]);
+				selected.clear();
+			}
+		}
+		if(DengInput->KeyPressed(DengKeys.copy)){
+			if(selected.size()){
+				Assets::deleteFile(copy_path, false);
+				std::string entity_text = selected[0]->SaveTEXT();
+				std::string filepath = Assets::dirTemp() + std::to_string(DengTime->totalTime) + "entcopy";
+				Assets::writeFile(filepath, entity_text.c_str(), entity_text.size());
+				
+				copy_path = filepath;
+				for(Component* c : selected[0]->components){
+					if(c->comptype == ComponentType_MeshComp){
+						copy_mesh_diffs.push_back(pair<u32,u32>(-1, ((MeshComp*)c)->meshID));
+					}
+				}
+			}
+		}
+		if(DengInput->KeyPressed(DengKeys.paste)){
+			Entity* new_entity = Entity::LoadTEXT(DengAdmin, copy_path, copy_mesh_diffs);
+			if(new_entity){
+				DengAdmin->CreateEntity(new_entity);
+				selected.clear();
+				selected.push_back(new_entity);
+			}
+		}
+	}
+	
+	///////////////////////////////
+	//// render user interface ////
+	///////////////////////////////
+	
+	//TODO(delle,Cl) program crashes somewhere in DebugTools() if minimized
+	if (!DengWindow->minimized) {
+		WinHovFlag = 0;
+		font_width = ImGui::GetFontSize();
 		
-        DengConsole->IMGUI_MOUSE_CAPTURE = (ConsoleHovFlag || WinHovFlag) ? true : false;
-    }
-    
-    /////////////////////////////////////////
-    //// render selected entity outlines ////
-    /////////////////////////////////////////
-    
-    //TODO(delle,Cl) possibly clean up  the renderer's selected mesh stuff by having the 
-    //renderer take a pointer of u32 that's stored here, or just dont have the renderer know about
-    //selected entities since thats a game thing
-    Render::RemoveSelectedMesh(-1);
-    for(Entity* e : selected){
-        if(MeshComp* mc = e->GetComponent<MeshComp>()){
-            if(!Render::GetSettings()->findMeshTriangleNeighbors){
-                Render::AddSelectedMesh(mc->meshID);
-            }else{
-                std::vector<Vector2> outline = mc->mesh->GenerateOutlinePoints(e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
-                                                                               DengWindow->dimensions, camera->position);
-                for (int i = 0; i < outline.size(); i += 2) {
-                    ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
-                }
-            }
-        }
-    }
-    
-    ////////////////////////////////
-    ////  selected entity debug ////
-    ////////////////////////////////
-    DisplayTriggers(admin);
+		if (showDebugLayer) DebugLayer();
+		if (showTimes)      DrawTimes();
+		if (showDebugTools) DebugTools();
+		if (showDebugBar)   DebugBar();
+		if (showMenuBar)    MenuBar();
+		if (showEditorWin)  CreateEditorWin();
+		if (showWorldGrid)  WorldGrid(camera->position);
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1)); {
+			if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
+		}ImGui::PopStyleColor();
+		
+		if (!showMenuBar)    menubarheight = 0;
+		if (!showDebugBar)   debugbarheight = 0;
+		if (!showDebugTools) debugtoolswidth = 0;
+		
+		DengConsole->IMGUI_MOUSE_CAPTURE = (ConsoleHovFlag || WinHovFlag) ? true : false;
+	}
+	
+	/////////////////////////////////////////
+	//// render selected entity outlines ////
+	/////////////////////////////////////////
+	
+	//TODO(delle,Cl) possibly clean up  the renderer's selected mesh stuff by having the 
+	//renderer take a pointer of u32 that's stored here, or just dont have the renderer know about
+	//selected entities since thats a game thing
+	Render::RemoveSelectedMesh(-1);
+	for(Entity* e : selected){
+		if(MeshComp* mc = e->GetComponent<MeshComp>()){
+			if(!Render::GetSettings()->findMeshTriangleNeighbors){
+				Render::AddSelectedMesh(mc->meshID);
+			}else{
+				std::vector<Vector2> outline = mc->mesh->GenerateOutlinePoints(e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
+																			   DengWindow->dimensions, camera->position);
+				for (int i = 0; i < outline.size(); i += 2) {
+					ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
+				}
+			}
+		}
+	}
+	
+	////////////////////////////////
+	////  selected entity debug ////
+	////////////////////////////////
+	DisplayTriggers(admin);
 }
 
 void Editor::Reset(){
@@ -2579,7 +2632,11 @@ void Editor::Reset(){
     selected.clear();
     undo_manager.Reset();
     g_debug->meshes.clear();
-    WorldGrid(camera->position);
+	ClearCopiedEntities();
+}
+
+void Editor::Cleanup(){
+	Assets::deleteFile(copy_path, false);
 }
 
 void Editor::CreateEditorWin() {

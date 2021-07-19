@@ -47,6 +47,7 @@ struct Editor{
 	void Init(Admin* a);
 	void Update();
 	void Reset();
+	void Cleanup();
 	
 	//TODO(delle,Cl) move these to be local inside the .cpp
 	Entity* SelectEntityRaycast();

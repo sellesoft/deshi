@@ -20,6 +20,8 @@ ____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
+change text-based saving so material shaders are text rather than ID
+rework and simplify entity creation so there is a distinction between development and gameplay creation
 fix colorspace so we dont have to do the pow in shaders
 make a dynamic timers array on in time.h for cleaner timer stuffs
 add a setting for a limit to the number of log files

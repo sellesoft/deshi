@@ -101,6 +101,8 @@ struct Admin {
 	//adds an already initialized entity to the deletion buffer
 	void DeleteEntity(Entity* entity);
 	
+	void RemoveButDontDeleteEntity(Entity* entity);
+	
 	void AddComponentToLayers(Component* component);
 };
 

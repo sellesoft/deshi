@@ -70,6 +70,7 @@ void Admin::Init() {
 void Admin::Cleanup() {
     SaveDESH((state == GameState_Editor) ? "temp.desh" : "auto.desh");
 	keybinds.save();
+	editor.Cleanup();
 }
 
 void UpdateLayer(ContainerManager<Component*> cl) {
@@ -111,7 +112,10 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
     
     //deletion buffer
     for(Entity* e : deletionBuffer) {
-        for(Component* c : e->components) freeCompLayers[c->layer].remove_from(c->layer_index);
+        for(Component* c : e->components){
+			freeCompLayers[c->layer].remove_from(c->layer_index);
+			if(c->comptype == ComponentType_Light) scene.lights.clear();
+		}
         for(int i = e->id+1; i < entities.size(); ++i) entities[i]->id -= 1;
         entities.erase(entities.begin()+e->id);
         if (e == player) player = nullptr;
@@ -204,6 +208,15 @@ void Admin::DeleteEntity(Entity* e) {
     }else{
         ERROR("Attempted to add entity '", e->id, "' to deletion buffer when it doesn't exist on the admin");
     }
+}
+
+void Admin::RemoveButDontDeleteEntity(Entity* e){
+	if(!e) return;
+	
+	for(Component* c : e->components) freeCompLayers[c->layer].remove_from(c->layer_index);
+	for(int i = e->id+1; i < entities.size(); ++i) entities[i]->id -= 1;
+	entities.erase(entities.begin()+e->id);
+	if(e == player) player = nullptr;
 }
 
 void Admin::AddComponentToLayers(Component* c){
@@ -533,6 +546,7 @@ void Admin::LoadTEXT(std::string savename){
 				for(Component* c : e->components){
 					if(c->comptype == events[i].fifth){
 						rec_comp = c;
+						break;
 					}
 				}
 			}

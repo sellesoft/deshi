@@ -249,7 +249,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
             case(Header::ENTITY):{
                 if     (kv.first == "name")    { e->SetName(kv.second.c_str()); }
                 else if(kv.first == "id")      { e->id = std::stoi(kv.second); }
-                else if(kv.first == "type")    { for (int i = 0; i < NUMENTITYTYPES; i++) if (kv.second == EntityTypeStrings[i]) { e->type = (EntityType)i; break; } }
+                else if(kv.first == "type")    { for (int i = 0; i < EntityType_COUNT; i++) if (kv.second == EntityTypeStrings[i]) { e->type = (EntityType)i; break; } }
                 else if(kv.first == "position"){ e->transform.position = get_vec3(kv.second); }
                 else if(kv.first == "rotation"){ e->transform.rotation = get_vec3(kv.second); }
                 else if(kv.first == "scale")   { e->transform.scale = get_vec3(kv.second); }
@@ -328,7 +328,13 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
                             mesh->meshID = diff.second;
                             mesh->mesh = Render::GetMeshPtr(mesh->meshID);
                             mesh_found = true;
-                        }
+                        }else if(diff.first == -1){
+							mesh->meshID = Render::CreateMesh(std::stoi(kv.second));
+							if(mesh->meshID != -1){
+								mesh->mesh = Render::GetMeshPtr(mesh->meshID);
+								mesh_found = true;
+							}
+						}
                     }
                 }
                 else if(kv.first == "name"){

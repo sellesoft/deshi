@@ -57,8 +57,11 @@ struct Keybinds{
 	Key::Key rotateSelectedObject = Key::R;
 	Key::Key scaleSelectedObject  = Key::S;
 	
-	Key::Key undo = Key::Z | InputMod_Lctrl;
-	Key::Key redo = Key::Y | InputMod_Lctrl;
+	Key::Key undo  = Key::Z | InputMod_Lctrl;
+	Key::Key redo  = Key::Y | InputMod_Lctrl;
+	Key::Key cut   = Key::X | InputMod_Lctrl;
+	Key::Key copy  = Key::C | InputMod_Lctrl;
+	Key::Key paste = Key::V | InputMod_Lctrl;
 	
 	//mapping enum names to strings
 	std::map<std::string, Key::Key>  stk;

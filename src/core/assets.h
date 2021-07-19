@@ -58,10 +58,17 @@ namespace Assets{
 	inline static std::string dirLevels()  { return dirData() + "levels/"; }
 	inline static std::string dirShaders() { return dirData() + "shaders/"; }
 	inline static std::string dirSounds()  { return dirData() + "sounds/"; }
+	inline static std::string dirTemp()    { return dirData() + "temp/"; }
 	inline static std::string dirTextures(){ return dirData() + "textures/"; }
 	
 	//returns "" if file not found, and logs error to console
 	std::string assetPath(const char* filename, AssetType type, b32 logError = true);
+	
+	//returns true if the file was deleted
+	bool deleteFile(std::string& filepath, b32 logError = true);
+	
+	//returns the number of files (and dirs) deleted
+	u64 deleteDirectory(std::string& dirpath, b32 logError = true);
 	
 	//reads a files contents in ASCII and returns it as a char vector
 	std::vector<char> readFile(const std::string& filepath, u32 chars = 0, b32 logError = true);

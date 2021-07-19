@@ -14,14 +14,12 @@
 struct Admin;
 struct Component;
 
-//necessary for loading
-#define NUMENTITYTYPES 4
-
 enum EntityType : u32 {
 	EntityType_Anonymous,
 	EntityType_Player,
 	EntityType_StaticMesh,
-	EntityType_Trigger
+	EntityType_Trigger,
+	EntityType_COUNT,
 };
 
 global_ const char* EntityTypeStrings[] = {

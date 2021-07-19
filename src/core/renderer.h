@@ -216,8 +216,8 @@ namespace Render{
     u32 LoadBaseMesh(Mesh* m, bool visible = false);
     u32 GetBaseMeshID(const char* name);
     u32 CreateMesh(Scene* scene, const char* filename, b32 new_material = false);
-    u32 CreateMesh(Mesh* mesh, Matrix4 matrix, b32 new_material = false);
-    u32 CreateMesh(u32 meshID, Matrix4 matrix, b32 new_material = false);
+    u32 CreateMesh(Mesh* mesh, Matrix4 matrix = Matrix4::IDENTITY, b32 new_material = false);
+    u32 CreateMesh(u32 meshID, Matrix4 matrix = Matrix4::IDENTITY, b32 new_material = false);
     void UnloadBaseMesh(u32 meshID);
     void RemoveMesh(u32 meshID);
     Matrix4 GetMeshMatrix(u32 meshID);

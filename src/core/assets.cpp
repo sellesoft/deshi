@@ -36,6 +36,20 @@ assetPath(const char* filename, AssetType type, b32 logError){
 	}
 }
 
+bool Assets::
+deleteFile(std::string& filepath, b32 logError){
+	bool result = std::filesystem::remove(filepath);
+	if(logError && !result) ERROR("Failed to find file: ", filepath);
+	return result;
+}
+
+u64 Assets::
+deleteDirectory(std::string& dirpath, b32 logError){
+	auto result = std::filesystem::remove_all(dirpath);
+	if(logError && !result) ERROR("Failed to find directory: ", dirpath);
+	return (u64)result;
+}
+
 /////////////////////////
 //// file read-write ////
 /////////////////////////
@@ -211,7 +225,7 @@ iterateDirectory(const std::string& filepath) {
 void Assets::
 enforceDirectories() {
 	using namespace std::filesystem;
-	if (!is_directory(dirData())) {
+	if(!is_directory(dirData())){
 		create_directory(dirData());
 		create_directory(dirConfig());
 		create_directory(dirEntities());
@@ -221,15 +235,18 @@ enforceDirectories() {
 		create_directory(dirShaders());
 		create_directory(dirSounds());
 		create_directory(dirTextures());
-	} else {
-		if (!is_directory(dirConfig()))   create_directory(dirConfig());
-		if (!is_directory(dirEntities())) create_directory(dirEntities());
-		if (!is_directory(dirLogs()))     create_directory(dirLogs());
-		if (!is_directory(dirModels()))   create_directory(dirModels());
-		if (!is_directory(dirSaves()))    create_directory(dirSaves());
-		if (!is_directory(dirShaders()))  create_directory(dirShaders());
-		if (!is_directory(dirSounds()))   create_directory(dirSounds());
-		if (!is_directory(dirTextures())) create_directory(dirTextures());
+		create_directory(dirTemp());
+	}else{
+		if(!is_directory(dirConfig()))   create_directory(dirConfig());
+		if(!is_directory(dirEntities())) create_directory(dirEntities());
+		if(!is_directory(dirLogs()))     create_directory(dirLogs());
+		if(!is_directory(dirModels()))   create_directory(dirModels());
+		if(!is_directory(dirSaves()))    create_directory(dirSaves());
+		if(!is_directory(dirShaders()))  create_directory(dirShaders());
+		if(!is_directory(dirSounds()))   create_directory(dirSounds());
+		if(!is_directory(dirTextures())) create_directory(dirTextures());
+		if( is_directory(dirTemp()))     remove_all(dirTemp());
+		create_directory(dirTemp());
 	}
 }
 

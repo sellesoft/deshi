@@ -1,7 +1,7 @@
 >entity
 id       6
 type     Anonymous
-name     "StaticMesh6"
+name     "cube_with_sphere_coll"
 position (13.781107,14.158146,-9.225483)
 rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)
