@@ -636,58 +636,6 @@ CMDSTARTA(state, args.size() > 0){
 	}
 }CMDEND("state <new_state:String>{play|menu|debug|editor}");
 
-CMDSTART(meshbrush_create_box){
-	u32 id = Render::CreateMeshBrush(admin->scene.models[0].mesh, Matrix4::IDENTITY);
-	SUCCESS("Created mesh brush with id: ", id);
-	return "";
-}CMDEND("meshbrush_create_box");
-
-CMDSTARTA(draw_line, args.size() > 1){
-	Vector3 pos1{}, pos2{}, color = {255,255,255};
-	for (auto s = args.begin(); s != args.end(); ++s) {
-		if(std::regex_search(s->c_str(), m, Vec3Regex("start"))){
-			pos1  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("end"))){
-			pos2  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("color"))){
-			color = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else{
-			return "[c:red]Invalid parameter: " + *s + "[c]";
-		}
-	}
-	Color temp((color.x > 255) ? 255 : (u8)color.x, 
-			   (color.y > 255) ? 255 : (u8)color.y,
-			   (color.z > 255) ? 255 : (u8)color.z);
-	
-	u32 id = Render::CreateDebugLine(pos1, pos2, temp);
-	Render::UpdateMeshVisibility(id, true);
-	return TOSTRING("Created debug line with meshID: ", id);
-}CMDEND("draw_line <-start=(x,y,z)> <-end=(x,y,z)> -color=(r,g,b){0..255}");
-
-CMDSTARTA(draw_triangle, args.size() > 2){
-	Vector3 pos1{}, pos2{}, pos3{}, color = {255,255,255};
-	for (auto s = args.begin(); s != args.end(); ++s) {
-		if(std::regex_search(s->c_str(), m, Vec3Regex("v1"))){
-			pos1  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("v2"))){
-			pos2  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("v3"))){
-			pos3  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("color"))){
-			color = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else{
-			return "[c:red]Invalid parameter: " + *s + "[c]";
-		}
-	}
-	Color temp((color.x > 255) ? 255 : (u8)color.x, 
-			   (color.y > 255) ? 255 : (u8)color.y,
-			   (color.z > 255) ? 255 : (u8)color.z);
-	
-	u32 id = Render::CreateDebugTriangle(pos1, pos2, pos3, temp);
-	Render::UpdateMeshVisibility(id, true);
-	return TOSTRING("Created debug triangle with meshID: ", id);
-}CMDEND("draw_triangle <-v1=(x,y,z)> <-v2=(x,y,z)> <-v3=(x,y,z)> -color=(r,g,b){0..255}");
-
 CMDSTARTA(load_obj, args.size() > 0){
 	Vector3 pos{}, rot{}, scale = Vector3::ONE;
 	f32 mass = 1.f, elasticity = .5f; bool staticPosition = 1, twoDphys = false;
@@ -1275,8 +1223,6 @@ void Console::AddCommands(){
 	CMDADD(undo, "Undos previous level editor action");
 	CMDADD(redo, "Redos last undone level editor action");
 	CMDADD(add_player, "Adds a player to the world.");
-	CMDADD(draw_line, "Draws a line in 3D with desired color");
-	CMDADD(draw_triangle, "Draws a triangle in 3D with desired color");
 	CMDADD(load_obj, "Loads a .obj file from the models folder with desired options");
 	CMDADD(spawn_box_uv, "Creates a planarized box with the UV texture on it");
 	CMDADD(mesh_create, "Creates a mesh based on another mesh");
@@ -1285,7 +1231,6 @@ void Console::AddCommands(){
 	CMDADD(state, "Changes the admin's gamestate");
 	CMDADD(flush, "Flushes the console's buffer to the log file.");
 	CMDADD(add_force, "Adds a force to the selected object.");
-	CMDADD(meshbrush_create_box, "Creates a mesh brush of a box");
 	CMDADD(cam_info, "Prints camera variables");
 	CMDADD(cam_matrix_projection, "Prints camera's projection matrix");
 	CMDADD(cam_matrix_view, "Prints camera's view matrix");

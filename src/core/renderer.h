@@ -136,21 +136,6 @@ struct MeshVk{
     std::vector<u32> children;
 };
 
-struct MeshBrushVk{
-    u32  id = -1;
-    char name[DESHI_NAME_SIZE];
-    bool visible = true;
-    mat4 modelMatrix = mat4::IDENTITY;
-    std::vector<Vertex> vertices;
-    std::vector<u32>      indices;
-    VkBuffer       vertexBuffer       = 0;
-    VkDeviceMemory vertexBufferMemory = 0;
-    VkDeviceSize   vertexBufferSize   = 0;
-    VkBuffer       indexBuffer        = 0;
-    VkDeviceMemory indexBufferMemory  = 0;
-    VkDeviceSize   indexBufferSize    = 0;
-};
-
 struct MaterialVk{
     u32 id         = -1;
     u32 shader     = 0;
@@ -173,33 +158,7 @@ namespace Render{
 	RenderSettings* GetSettings();
     RenderStats*    GetStats();
     RendererStage*  GetStage();
-	
-    //returns a mesh brush ID
-    u32 CreateDebugLine(Vector3 start, Vector3 end, Color color, bool visible = false);
-    void UpdateDebugLine(u32 id, Vector3 start, Vector3 end, Color color);
-    //returns a mesh brush ID
-    u32 CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool visible = false);
-    //creates a mesh with editable vertices that requires getting its buffers updated
-    u32 CreateMeshBrush(Mesh* m, Matrix4 matrix, bool log_creation = false);
-    void UpdateMeshBrushMatrix(u32 meshID, Matrix4 transform);
-    void UpdateMeshBrushBuffers(u32 meshBrushIdx);
-    void RemoveMeshBrush(u32 meshBrushIdx);
-	void UpdateMeshBrushVisibility(u32 meshID, bool visible);
-	u32 MeshBrushCount();
-	
-    //2d primitives where points are defined from -1 to 1, where -1 is the bottom/left and 1 is the top/right of the screen
-    u32 CreateTwod(std::vector<Vector2> points);
-    u32 CreateTwod(std::vector<Vector2> points, Vector2 position, Vector2 scale);
-    u32 CreateTwod(std::vector<Vector2> points, Vector2 position, Vector2 scale, Color color, float rotation);
-    //position: center of the image
-    u32 CreateImage(Texture texture, Vector2 position);
-    //removes the twod with twodID from the 2d shader's vertex buffer
-    void RemoveTwod(u32 twodID);
-    void UpdateTwodColor(u32 twodID, Color color);
-    void UpdateTwodPosition(u32 twodID, Vector2 position);
-    void UpdateTwodRotation(u32 twodID, float rotation);
-    void UpdateTwodVisibility(u32 twodID, bool visible);
-    
+
     //loads a mesh to the different shaders specified in its batches
     //returns the ID of the mesh
     u32 LoadBaseMesh(Mesh* m, bool visible = false);
@@ -207,19 +166,19 @@ namespace Render{
     u32 CreateMesh(Scene* scene, const char* filename, bool new_material = false);
     u32 CreateMesh(Mesh* mesh, Matrix4 matrix = Matrix4::IDENTITY, bool new_material = false);
     u32 CreateMesh(u32 meshID, Matrix4 matrix = Matrix4::IDENTITY, bool new_material = false);
+    u32 MeshCount();
     void UnloadBaseMesh(u32 meshID);
     void RemoveMesh(u32 meshID);
-    Matrix4 GetMeshMatrix(u32 meshID);
-    Mesh* GetMeshPtr(u32 meshID);
     //updates a mesh's model matrix: translation, rotation, scale
     void UpdateMeshMatrix(u32 meshID, Matrix4 matrix);
     void TransformMeshMatrix(u32 meshID, Matrix4 transform);
     void UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID);
     void UpdateMeshVisibility(u32 meshID, bool visible);
-	u32 MeshCount();
-	bool IsBaseMesh(u32 meshIdx);
-	char* MeshName(u32 meshIdx);
-	bool IsMeshVisible(u32 meshIdx);
+    Matrix4 GetMeshMatrix(u32 meshID);
+    Mesh*   GetMeshPtr(u32 meshID);
+	bool    IsBaseMesh(u32 meshIdx);
+    bool    IsMeshVisible(u32 meshIdx);
+	char*   MeshName(u32 meshIdx);
 	
     void AddSelectedMesh(u32 meshID);
     //passing -1 will remove all
@@ -236,28 +195,29 @@ namespace Render{
     //returns the texture's id
     u32 LoadTexture(const char* filename, u32 type);
     u32 LoadTexture(Texture texure);
+    u32 TextureCount();
     //unloads a texture from the GPU
     //NOTE the previously used texture ID will not be used again
     void UnloadTexture(u32 textureID);
-    std::string ListTextures();
-	u32 TextureCount();
 	char* TextureName(u32 textureIdx);
+    std::string ListTextures();
 	
 	u32 CreateFont(u32 textureIdx);
     
     u32 CreateMaterial(const char* name, u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2);
-    u32  CopyMaterial(u32 materialID);
+    u32 CopyMaterial(u32 materialID);
+    u32 MaterialCount();
     void UpdateMaterialTexture(u32 matID, u32 textureType, u32 textureID);
     void UpdateMaterialShader(u32 matID, u32 shader);
-    std::vector<u32> GetMaterialIDs(u32 MeshID);
     void RemoveMaterial(u32 materialID);
-	u32 MaterialCount();
 	char* MaterialName(u32 materialIdx);
+    std::vector<u32> GetMaterialIDs(u32 MeshID);
 	
 	void TempLine(Vector3 start, Vector3 end, Color color = Color::WHITE);
+	void TempBox(Matrix4 transform, Color color = Color::WHITE);
+    void TempFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color = Color::WHITE);
     
     void LoadDefaultAssets();
-    //loads a new scene to the GPU
     void LoadScene(Scene* scene);
     
 	void UpdateLight(u32 lightIdx, Vector4 vec);
@@ -282,7 +242,6 @@ namespace Render{
 	std::vector<TextureVk>*   textureArray();
 	std::vector<MeshVk>*      meshArray();
 	std::vector<MaterialVk>*  materialArray();
-	std::vector<MeshBrushVk>* meshBrushArray();
 	std::vector<u32>*         selectedArray();
 	vec4*                     lightArray();
 	

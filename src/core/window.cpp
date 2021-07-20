@@ -12,6 +12,8 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#include <iostream>
+
 local bool _resized = false;
 local int _width, _height, _x, _y;
 

@@ -3,19 +3,17 @@
 #include "../components/Physics.h"
 #include "../../scene/Model.h"
 
-Trigger::Trigger(Transform transform) {
-	cpystr(name, "trigger", DESHI_NAME_SIZE);
+Trigger::Trigger(Transform _transform, const char* _name) {
+	cpystr(name, (_name) ? _name : "trigger", DESHI_NAME_SIZE); 
 	type = EntityType_Trigger;
-	this->transform = transform;
-	
+	transform = _transform;
 }
 
-Trigger::Trigger(Transform transform, Collider* collider) {
-	cpystr(name, "trigger", DESHI_NAME_SIZE);
+Trigger::Trigger(Transform _transform, Collider* _collider, const char* _name) {
+	cpystr(name, (_name) ? _name : "trigger", DESHI_NAME_SIZE); 
 	type = EntityType_Trigger;
-	this->transform = transform;
-	
-	this->collider = collider;
+	transform = _transform;
+	collider = _collider;
 	physics = new Physics(transform.position, transform.rotation,
 						  Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 0, 1, true);
 	collider->noCollide = true;

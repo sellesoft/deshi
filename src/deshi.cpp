@@ -186,7 +186,6 @@ local Window  window;  Window*  g_window  = &window;
 local Input   input;   Input*   g_input   = &input;
 local Console console; Console* g_console = &console;
 local Admin   admin;   Admin*   g_admin   = &admin;
-local Debug   debug;   Debug*   g_debug   = &debug;
 
 int main() {
 	TIMER_START(t_d); TIMER_START(t_f); TIMER_START(t_s);
@@ -217,7 +216,12 @@ int main() {
 		TIMER_RESET(t_d); console.Update(); Console2::Update(); time_.consoleTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
-		g_debug->Update(); //TODO(sushi) put a timer on this
+		{//debugging area
+			Transform t(vec3::ZERO, vec3{0, (f32)time_.totalTime * RADIANS(90.0f) * 10.0f, 0}, vec3{10,1,1});
+			mat4 temp = t.TransformMatrix();
+			PRINTLN(temp.str2f());
+			Render::TempBox(temp, Color::DARK_MAGENTA);
+		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}
 	

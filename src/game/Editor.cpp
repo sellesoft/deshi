@@ -1803,54 +1803,6 @@ inline void GlobalTab(Admin* admin){
     }
 }
 
-inline void BrushesTab(Admin* admin, float fontsize){
-    persist MeshBrushVk* selected_meshbrush = 0;
-    
-    //// brush list ////
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorToImVec4(Color(25, 25, 25)));
-    SetPadding; 
-    if(ImGui::BeginChild("##meshbrush_tab", ImVec2(ImGui::GetWindowWidth() * 0.95, 100), false)) { WinHovCheck; 
-        if (Render::MeshBrushCount() == 0) {
-            float time = DengTime->totalTime;
-            std::string str1 = "Nothing yet...";
-            float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-            for (int i = 0; i < str1.size(); i++) {
-                ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x - strlen1) / 2 + i * (fontsize / 2), (ImGui::GetWindowSize().y - fontsize) / 2 + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))));
-                ImGui::TextEx(str1.substr(i, 1).c_str());
-            }
-        }else{
-            if (ImGui::BeginTable("##meshbrush_table", 4, ImGuiTableFlags_BordersInner)) {
-                ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
-                ImGui::TableSetupColumn("Name");
-                ImGui::TableSetupColumn("Delete");
-                
-                forI(Render::MeshBrushCount()) {
-                    ImGui::PushID(i);
-                    ImGui::TableNextRow(); ImGui::TableNextColumn();
-                    std::string id = std::to_string((*Render::meshBrushArray())[i].id);
-                    if (ImGui::Button(id.c_str())) selected_meshbrush = &(*Render::meshBrushArray())[i];
-                    
-                    ImGui::TableNextColumn();
-                    ImGui::TextEx((*Render::meshBrushArray())[i].name);
-                    
-                    ImGui::TableNextColumn();
-                    if(ImGui::SmallButton("X")) Render::RemoveMeshBrush(i);
-                    ImGui::PopID();
-                }
-                ImGui::EndTable();
-            }
-        }
-        ImGui::EndChild();
-    }
-    ImGui::PopStyleColor();
-    
-    ImGui::Separator();
-    
-    //// brush inspector ////
-    
-    
-}
-
 void DisplayTriggers(Admin* admin) {
     int i = 0;
     for (Entity* e : admin->entities) {
@@ -1858,7 +1810,7 @@ void DisplayTriggers(Admin* admin) {
             Trigger* t = dyncast(Trigger, e);
             switch (t->collider->shape) {
                 case ColliderShape_AABB:{
-                    DebugTriggersStatic(i, t->mesh, e->transform.TransformMatrix(), 1);
+                    Render::TempBox(e->transform.TransformMatrix(), Color::DARK_MAGENTA);
                 }break;
                 case ColliderShape_Sphere: {
                     
@@ -2539,7 +2491,6 @@ void Editor::Reset(){
     //camera->rotation = camera_rot;
     selected.clear();
     undo_manager.Reset();
-    g_debug->meshes.clear();
 	ClearCopiedEntities();
 }
 
