@@ -21,7 +21,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <string_view>
 
 Entity::Entity() {
     this->admin = 0;
@@ -38,13 +37,12 @@ Entity::Entity(Admin* admin, u32 id, Transform transform, const char* name, std:
     for (Component* c : comps) {
         if (!c) continue;
         this->components.push_back(c);
-        c->entityID = id;
-        c->admin = admin;
+        c->entity = this;
     }
 }
 
 Entity::~Entity() {
-    for (Component* c : components) if(c) delete c;
+    for (Component* c : components) delete c;
 }
 
 void Entity::operator=(Entity& e) {
@@ -70,10 +68,8 @@ inline void Entity::SetName(const char* name) {
 void Entity::AddComponent(Component* c) {
     if (!c) return;
     components.push_back(c);
-    c->entityID = id;
     c->entity = this;
-    c->admin = this->admin;
-    if (c->comptype == ComponentType_Light) {
+    if (c->type == ComponentType_Light) {
         DengAdmin->scene.lights.push_back(dyncast(Light, c));
     }
 }
@@ -83,8 +79,6 @@ void Entity::AddComponents(std::vector<Component*> comps) {
     for (Component* c : comps) {
         if (!c) continue;
         this->components.push_back(c);
-        c->entityID = id;
-        c->admin = this->admin;
         c->entity = this;
     }
 }
@@ -134,7 +128,7 @@ std::string Entity::SaveTEXT(){
     std::vector<Component*> sorted_components = components;
     Component* temp;
     for(int i = 1; i < sorted_components.size(); ++i){
-        if(sorted_components[i]->comptype < sorted_components[i-1]->comptype){
+        if(sorted_components[i]->type < sorted_components[i-1]->type){
             temp = sorted_components[i];
             sorted_components[i] = sorted_components[i-1];
             sorted_components[i-1] = temp;
@@ -267,27 +261,32 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
             case(Header::CAMERA):{
                 if     (kv.first == "position"){ cam->position = get_vec3(kv.second); }
                 else if(kv.first == "rotation"){ cam->rotation = get_vec3(kv.second); }
-                else if(kv.first == "type")    { cam->type = std::stoi(kv.second); }
+                else if(kv.first == "mode")    { cam->mode = std::stoi(kv.second); }
                 else if(kv.first == "near_z")  { cam->nearZ = std::stof(kv.second); }
                 else if(kv.first == "far_z")   { cam->farZ = std::stof(kv.second); }
                 else if(kv.first == "fov")     { cam->fov = std::stof(kv.second); }
                 else{ InvalidHeaderKeyError("camera"); }
             }break;
             case(Header::COLLIDER):{
-                if(kv.first == "type" && !coll_made){ 
-                    if(kv.second == "aabb" || kv.second == "2"){
+                if(kv.first == "shape" && !coll_made){ 
+                    if(kv.second == ColliderShapeStrings[ColliderShape_AABB] 
+					   || kv.second == std::to_string((int)ColliderShape_AABB)){
                         aabb = new AABBCollider(Vector3::ZERO, 1.f);
                         coll_made = true;
-                    }else if(kv.second == "box" || kv.second == "1"){
+                    }else if(kv.second == ColliderShapeStrings[ColliderShape_Box] 
+							 || kv.second == std::to_string((int)ColliderShape_Box)){
                         box = new BoxCollider(Vector3::ZERO, 1.f);
                         coll_made = true;
-                    }else if(kv.second == "sphere" || kv.second == "3"){
+                    }else if(kv.second == ColliderShapeStrings[ColliderShape_Sphere] 
+							 || kv.second == std::to_string((int)ColliderShape_Sphere)){
                         sphere = new SphereCollider(1.f, 1.f);
                         coll_made = true;
-                    }else if(kv.second == "landscape" || kv.second == "4"){
+                    }else if(kv.second == ColliderShapeStrings[ColliderShape_Landscape] 
+							 || kv.second == std::to_string((int)ColliderShape_Landscape)){
                         ERROR_LOC("Landscape Collider loading not setup");
                         coll_made = true;
-                    }else if(kv.second == "complex" || kv.second == "5"){
+                    }else if(kv.second == ColliderShapeStrings[ColliderShape_Complex] 
+							 || kv.second == std::to_string((int)ColliderShape_Complex)){
                         ERROR_LOC("Complex Collider loading not setup");
                         coll_made = true;
                     }else{

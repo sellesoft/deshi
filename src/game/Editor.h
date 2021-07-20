@@ -13,9 +13,9 @@ struct Admin;
 struct Entity;
 struct Camera;
 
-enum TransformationAxis : u32{
+enum TransformationAxisBits{
 	TransformationAxis_Free, TransformationAxis_X, TransformationAxis_Y, TransformationAxis_Z
-};
+}; typedef u32 TransformationAxis;
 
 struct EditorSettings{
 	

@@ -23,7 +23,7 @@ struct Component;
 struct Command;
 struct Camera;
 
-enum GameStateBits : u32{
+enum GameStateBits{
 	GameState_Play, GameState_Menu, GameState_Debug, GameState_Editor, GameState_COUNT
 }; typedef u32 GameState;
 

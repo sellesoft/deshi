@@ -828,13 +828,13 @@ inline void EventsMenu(Entity* current) {
                 if (ImGui::Combo("##events_combo2", &currevent, EventStrings, ArrayCount(EventStrings))) {
                     switch (currevent) {
                         case Event_NONE:
-                        selcompl->sender->RemoveReceiver(selcompr);
+                        selcompl->sender.RemoveReceiver(selcompr);
                         selcompl->event = Event_NONE;
                         selcompl->entity->connections.erase(selcompr->entity);
                         selcompr->entity->connections.erase(selcompl->entity);
                         break;
                         default:
-                        selcompl->sender->AddReceiver(selcompr);
+                        selcompl->sender.AddReceiver(selcompr);
                         selcompl->event = (u32)currevent;
                         selcompr->entity->connections.insert(selcompl->entity);
                         selcompl->entity->connections.insert(selcompr->entity);
@@ -842,11 +842,11 @@ inline void EventsMenu(Entity* current) {
                     }
                 }
                 
-                if (selcompl->sender->HasReceiver(selcompr)) {
-                    float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + ImGui::CalcTextSize(selcompl->name).x) / 2;
+                if (selcompl->sender.HasReceiver(selcompr)) {
+                    float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + ImGui::CalcTextSize(ComponentTypeStrings[selcompl->type]).x) / 2;
                     float ly = cheight / 2;
                     
-                    float rx = rightoffset * 0.8 + ((float)std::string(selcompr->name).size() * fontw) / 2;
+                    float rx = rightoffset * 0.8 + ((float)std::string(ComponentTypeStrings[selcompl->type]).size() * fontw) / 2;
                     float ry = cheight / 2;
                     
                     drawListc->AddLine(
@@ -859,7 +859,7 @@ inline void EventsMenu(Entity* current) {
             
             //TODO(sushi, Op) make this run only when we first select the entity
             float maxlen = 0;
-            for (Component* c : other->components) maxlen = std::max(maxlen, (float)std::string(c->name).size());
+            for (Component* c : other->components) maxlen = std::max(maxlen, (float)std::string(ComponentTypeStrings[c->type]).size());
             int i = 0; //increment for IDs
             if (!selcompr) {
                 float inc = cheight / (other->components.size() + 1);
@@ -868,19 +868,19 @@ inline void EventsMenu(Entity* current) {
                 for (Component* c : other->components) {
                     ImGui::SetCursorPos(ImVec2(rightoffset * 0.8, o * inc));
                     ImGui::PushID(i);
-                    if (selcompl && selcompl->sender->HasReceiver(c)) {
-                        float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + (ImGui::CalcTextSize(selcompl->name).x) / 2);
+                    if (selcompl && selcompl->sender.HasReceiver(c)) {
+                        float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + (ImGui::CalcTextSize(ComponentTypeStrings[selcompl->type]).x) / 2);
                         float ly = cheight / 2;
                         
-                        float rx = rightoffset * 0.8 + ImGui::CalcTextSize(c->name).y / 2;
-                        float ry = o * inc + ImGui::CalcTextSize(c->name).x / 2;
+                        float rx = rightoffset * 0.8 + ImGui::CalcTextSize(ComponentTypeStrings[c->type]).y / 2;
+                        float ry = o * inc + ImGui::CalcTextSize(ComponentTypeStrings[c->type]).x / 2;
                         
                         drawListc->AddLine(
                                            ImVec2(winpos.x + lx, winpos.y + ly),
                                            ImVec2(winpos.x + rx, winpos.y + ry),
                                            ImGui::GetColorU32(ImGui::ColorToImVec4(Color::WHITE)));
                     }
-                    if (ImGui::Button(c->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
+                    if (ImGui::Button(ComponentTypeStrings[c->type], ImVec2(maxlen * fontw * 1.2, fonth))) {
                         selcompr = c;
                     }
                     i++; o++;
@@ -890,7 +890,7 @@ inline void EventsMenu(Entity* current) {
             else {
                 ImGui::SetCursorPos(ImVec2(rightoffset * 0.8, (cheight - fonth) / 2));
                 ImGui::PushID(i);
-                if (ImGui::Button(selcompr->name)) {
+                if (ImGui::Button(ComponentTypeStrings[selcompr->type])) {
                     selcompr = nullptr;
                 }
                 i++;
@@ -898,7 +898,7 @@ inline void EventsMenu(Entity* current) {
             }
             
             maxlen = 0;
-            for (Component* c : current->components) maxlen = std::max(maxlen, (float)std::string(c->name).size());
+            for (Component* c : current->components) maxlen = std::max(maxlen, (float)std::string(ComponentTypeStrings[c->type]).size());
             
             //display initial entities components
             if (!selcompl) {
@@ -908,11 +908,11 @@ inline void EventsMenu(Entity* current) {
                 for (Component* c : current->components) {
                     ImGui::SetCursorPos(ImVec2(1.2 * (padx * 2 + (float)std::string(current->name).size() * fontw), o * inc));
                     ImGui::PushID(i);
-                    if (selcompr && selcompr->sender->HasReceiver(c)) {
-                        float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + ImGui::CalcTextSize(selcompl->name).x / 2);
-                        float ly = o * inc + ImGui::CalcTextSize(c->name).x / 2;
+                    if (selcompr && selcompr->sender.HasReceiver(c)) {
+                        float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + ImGui::CalcTextSize(ComponentTypeStrings[selcompl->type]).x / 2);
+                        float ly = o * inc + ImGui::CalcTextSize(ComponentTypeStrings[c->type]).x / 2;
                         
-                        float rx = rightoffset * 0.8 + ImGui::CalcTextSize(c->name).y / 2;
+                        float rx = rightoffset * 0.8 + ImGui::CalcTextSize(ComponentTypeStrings[c->type]).y / 2;
                         float ry = cheight / 2;
                         
                         drawListc->AddLine(
@@ -920,7 +920,7 @@ inline void EventsMenu(Entity* current) {
                                            ImVec2(winpos.x + rx, winpos.y + ry),
                                            ImGui::GetColorU32(ImGui::ColorToImVec4(Color::WHITE)));
                     }
-                    if (ImGui::Button(c->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
+                    if (ImGui::Button(ComponentTypeStrings[c->type], ImVec2(maxlen * fontw * 1.2, fonth))) {
                         selcompl = c;
                     }
                     i++; o++;
@@ -930,7 +930,7 @@ inline void EventsMenu(Entity* current) {
             else {
                 ImGui::SetCursorPos(ImVec2(1.2 * (padx * 2 + (float)std::string(current->name).size() * fontw), cheight / 2 - fonth / 2));
                 ImGui::PushID(i);
-                if (ImGui::Button(selcompl->name)) {
+                if (ImGui::Button(ComponentTypeStrings[selcompl->type])) {
                     selcompl = nullptr;
                 }
                 i++;
@@ -1180,8 +1180,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
             bool delete_button = true;
             ImGui::PushID(c);
 			
-            switch(c->comptype){
-				
+            switch(c->type){
 				//mesh
 				case ComponentType_MeshComp:{
 					if(ImGui::CollapsingHeader("Mesh", &delete_button, tree_flags)){
@@ -1230,74 +1229,6 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 					}
 				}break;
                 
-				//mesh2D
-				//TODO(,Ui) implement mesh2D component inspector
-				/*
-				persist const char* twods[] = {"None", "Line", "Triangle", "Square", "N-Gon", "Image"};
-				persist int  twod_type = 0, twod_vert_count = 0;
-				persist u32  twod_id = -1;
-				persist vec4 twod_color = vec4::ONE;
-				persist f32  twod_radius = 1.f;
-				persist std::vector<vec2> twod_verts;
-				ImU32 color = ImGui::ColorConvertFloat4ToU32(ImVec4(twod_color.x, twod_color.y, twod_color.z, twod_color.w));
-				ImGui::SetNextItemWidth(-1); if(ImGui::Combo("##twod_combo", &twod_type, twods, ArrayCount(twods))){ WinHovCheck; 
-				twod_vert_count = twod_type + 1;
-				twod_verts.resize(twod_vert_count);
-				switch(twod_type){
-				case(Twod_Line):{
-					twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = {100.f, 100.f};
-				}break;
-				case(Twod_Triangle):{
-					twod_verts[0] = {-100.f, 0.f}; twod_verts[1] = {0.f, 100.f}; twod_verts[2] = {100.f, 0.f};
-				}break;
-				case(Twod_Square):{
-					twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = { 100.f, -100.f};
-					twod_verts[2] = { 100.f,  100.f}; twod_verts[3] = {-100.f,  100.f};
-				}break;
-				case(Twod_NGon):{
-	
-				}break;
-				case(Twod_Image):{
-	
-				}break;
-				}
-				}
-	
-				ImGui::TextEx("Color "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); ImGui::ColorEdit4("##twod_color", (float*)&twod_color); ImGui::Separator();
-				ImDrawList* draw_list = ImGui::GetForegroundDrawList();
-				switch(twod_type){
-				case(Twod_Line):{
-					draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
-					draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), color, 3.f);
-				}break;
-				case(Twod_Triangle):{
-					draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
-				}break;
-				case(Twod_Square):{
-					draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
-					draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[2].x, entity_pos.y+twod_verts[2].y), ImVec2(entity_pos.x+twod_verts[3].x, entity_pos.y+twod_verts[3].y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
-				}break;
-				case(Twod_NGon):{
-					draw_list->AddNgon(ImVec2(entity_pos.x, entity_pos.y), twod_radius, color, twod_vert_count, 3.f);
-					ImGui::TextEx("Vertices "); ImGui::SameLine(); ImGui::SliderInt("##vert_cnt", &twod_vert_count, 5, 12); ImGui::Separator();
-					ImGui::TextEx("Radius   "); ImGui::SameLine(); ImGui::SliderFloat("##vert_rad", &twod_radius, .01f, 100.f); ImGui::Separator();
-				}break;
-				case(Twod_Image):{
-					ImGui::TextEx("Not implemented yet");
-				}break;
-				}
-	
-				if(twod_vert_count > 1 && twod_vert_count < 5){
-					std::string point("Point 0     ");
-					ImGui::SetNextItemWidth(-1); if(ImGui::ListBoxHeader("##twod_verts", (int)twod_vert_count, 5)){
-						forI(twod_vert_count){
-							point[6] = 49 + i;
-							ImGui::TextEx(point.c_str()); ImGui::SameLine(); ImGui::InputVector2(point.c_str(), &twod_verts[0] + i);  ImGui::Separator();
-						}
-						ImGui::ListBoxFooter();
-					}
-				}*/
-                
 				//physics
 				case ComponentType_Physics:
                 if(ImGui::CollapsingHeader("Physics", &delete_button, tree_flags)){
@@ -1332,28 +1263,28 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 						f32 mass = 1.0f;
 						
 						ImGui::TextEx("Shape "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-						if(ImGui::BeginCombo("##coll_type_combo", ColliderTypeStrings[coll->type])){
-							forI(ArrayCount(ColliderTypeStrings)){
-								if(ImGui::Selectable(ColliderTypeStrings[i], coll->type == i) && (coll->type != i)){
+						if(ImGui::BeginCombo("##coll_type_combo", ColliderShapeStrings[coll->shape])){
+							forI(ArrayCount(ColliderShapeStrings)){
+								if(ImGui::Selectable(ColliderShapeStrings[i], coll->shape == i) && (coll->shape != i)){
 									if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
 									
 									sel->RemoveComponent(coll);
 									coll = 0;
 									switch(i){
-										case ColliderType_AABB:{
+										case ColliderShape_AABB:{
 											coll = new AABBCollider(vec3{0.5f, 0.5f, 0.5f}, mass);
 										}break;
-										case ColliderType_Box:{
+										case ColliderShape_Box:{
 											coll = new BoxCollider(vec3{0.5f, 0.5f, 0.5f}, mass);
 										}break;
-										case ColliderType_Sphere:{
+										case ColliderShape_Sphere:{
 											coll = new SphereCollider(1.0f, mass);
 										}break;
-										case ColliderType_Landscape:{
+										case ColliderShape_Landscape:{
 											//coll = new LandscapeCollider();
 											WARNING_LOC("Landscape collider not setup yet");
 										}break;
-										case ColliderType_Complex:{
+										case ColliderShape_Complex:{
 											//coll = new ComplexCollider();
 											WARNING_LOC("Complex collider not setup yet");
 										}break;
@@ -1368,8 +1299,8 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 							ImGui::EndCombo();
 						}
                         
-						switch(coll->type){
-							case ColliderType_Box:{
+						switch(coll->shape){
+							case ColliderShape_Box:{
 								BoxCollider* coll_box = dyncast(BoxCollider, coll);
 								ImGui::TextEx("Half Dims "); ImGui::SameLine(); 
 								if(ImGui::InputVector3("##coll_halfdims", &coll_box->halfDims)){
@@ -1377,7 +1308,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 									coll_box->RecalculateTensor(mass);
 								}
 							}break;
-							case ColliderType_AABB:{
+							case ColliderShape_AABB:{
 								AABBCollider* coll_aabb = dyncast(AABBCollider, coll);
 								ImGui::TextEx("Half Dims "); ImGui::SameLine(); 
 								if(ImGui::InputVector3("##coll_halfdims", &coll_aabb->halfDims)){
@@ -1385,7 +1316,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 									coll_aabb->RecalculateTensor(mass);
 								}
 							}break;
-							case ColliderType_Sphere:{
+							case ColliderShape_Sphere:{
 								SphereCollider* coll_sphere = dyncast(SphereCollider, coll);
 								ImGui::TextEx("Radius    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
 								if(ImGui::InputFloat("##coll_sphere", &coll_sphere->radius)){
@@ -1393,10 +1324,10 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 									coll_sphere->RecalculateTensor(mass);
 								}
 							}break;
-							case ColliderType_Landscape:{
+							case ColliderShape_Landscape:{
 								ImGui::TextEx("Landscape collider has no settings yet");
 							}break;
-							case ColliderType_Complex:{
+							case ColliderShape_Complex:{
 								ImGui::TextEx("Complex collider has no settings yet");
 							}break;
 						}
@@ -1404,7 +1335,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 						ImGui::Checkbox("Don't Resolve Collisions", (bool*)&coll->noCollide);
 						ImGui::TextEx("Collision Layer"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
 						local u32 min = 0, max = 9;
-						ImGui::SliderScalar("##coll_layer", ImGuiDataType_U32, &coll->collisionLayer, &min, &max, "%d");
+						ImGui::SliderScalar("##coll_layer", ImGuiDataType_U32, &coll->layer, &min, &max, "%d");
 						
 						ImGui::Unindent();
 						ImGui::Separator();
@@ -1553,26 +1484,6 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                 }break;
                 case ComponentType_Collider:{
                     Component* comp = new AABBCollider(vec3{.5f, .5f, .5f}, 1.f);
-                    sel->AddComponent(comp);
-                    admin->AddComponentToLayers(comp);
-                }break;
-                case ComponentType_ColliderBox:{
-                    Component* comp = new BoxCollider(vec3{.5f, .5f, .5f}, 1.f);
-                    sel->AddComponent(comp);
-                    admin->AddComponentToLayers(comp);
-                }break;
-                case ComponentType_ColliderAABB:{
-                    Component* comp = new AABBCollider(vec3{.5f, .5f, .5f}, 1.f);
-                    sel->AddComponent(comp);
-                    admin->AddComponentToLayers(comp);
-                }break;
-                case ComponentType_ColliderSphere:{
-                    Component* comp = new SphereCollider(1.f, 1.f);
-                    sel->AddComponent(comp);
-                    admin->AddComponentToLayers(comp);
-                }break;
-                case ComponentType_ColliderLandscape:{ //@Incomplete
-                    Component* comp = new LandscapeCollider(0);
                     sel->AddComponent(comp);
                     admin->AddComponentToLayers(comp);
                 }break;
@@ -1845,6 +1756,11 @@ inline void GlobalTab(Admin* admin){
 			local vec4 collider_color = settings->colliderColor;
 			
 			ImGui::TextCentered("Render Settings");
+            ImGui::Checkbox("Debugging", (bool*)&settings->debugging);
+            ImGui::Checkbox("Shader printf", (bool*)&settings->printf);
+            ImGui::Checkbox("Recompile all shaders", (bool*)&settings->recompileAllShaders);
+            ImGui::Checkbox("Find mesh tri-neighbors", (bool*)&settings->findMeshTriangleNeighbors);
+            ImGui::TextCentered("^ above settings require restart ^");
 			ImGui::TextEx("Logging level"); ImGui::SameLine(); ImGui::SliderUInt32("##rs_logging_level", &settings->loggingLevel, 0, 4);
 			ImGui::Checkbox("Crash on error", (bool*)&settings->crashOnError);
 			ImGui::Checkbox("Compile shaders with optimization", (bool*)&settings->optimizeShaders);
@@ -1940,14 +1856,14 @@ void DisplayTriggers(Admin* admin) {
     for (Entity* e : admin->entities) {
         if (e->type == EntityType_Trigger) {
             Trigger* t = dyncast(Trigger, e);
-            switch (t->collider->type) {
-                case ColliderType_AABB:{
+            switch (t->collider->shape) {
+                case ColliderShape_AABB:{
                     DebugTriggersStatic(i, t->mesh, e->transform.TransformMatrix(), 1);
                 }break;
-                case ColliderType_Sphere: {
+                case ColliderShape_Sphere: {
                     
                 }break;
-                case ColliderType_Complex: {
+                case ColliderShape_Complex: {
                     
                 }break;
             }
@@ -2404,7 +2320,6 @@ void Editor::Init(Admin* a){
     
     selected.reserve(8);
     camera = new Camera(90.f, .01f, 1000.01f, true);
-    camera->admin = a;
     Render::UpdateCameraViewMatrix(camera->viewMat);
     Render::UpdateCameraPosition(camera->position);
     undo_manager.Init();
@@ -2473,17 +2388,17 @@ void Editor::Update(){
         persist Vector3 ogpos;
         persist Vector3 ogrot;
         if (DengInput->KeyPressed(DengKeys.perspectiveToggle)) {
-            switch (camera->type) {
-                case(CameraType_Perspective): {  
+            switch (camera->mode) {
+                case(CameraMode_Perspective): {  
                     ogpos = camera->position;
                     ogrot = camera->rotation;
-                    camera->type = CameraType_Orthographic; 
+                    camera->type = CameraMode_Orthographic; 
                     camera->farZ = 1000000; 
                 } break;
-                case(CameraType_Orthographic): { 
+                case(CameraMode_Orthographic): { 
                     camera->position = ogpos; 
                     camera->rotation = ogrot;
-                    camera->type = CameraType_Perspective; 
+                    camera->mode = CameraMode_Perspective; 
                     camera->farZ = 1000; 
                     camera->UpdateProjectionMatrix(); 
                 } break;
@@ -2529,7 +2444,7 @@ void Editor::Update(){
 				
 				copy_path = filepath;
 				for(Component* c : selected[0]->components){
-					if(c->comptype == ComponentType_MeshComp){
+					if(c->type == ComponentType_MeshComp){
 						copy_mesh_diffs.push_back(pair<u32,u32>(-1, ((MeshComp*)c)->meshID));
 					}
 				}
@@ -2548,7 +2463,7 @@ void Editor::Update(){
 				
 				copy_path = filepath;
 				for(Component* c : selected[0]->components){
-					if(c->comptype == ComponentType_MeshComp){
+					if(c->type == ComponentType_MeshComp){
 						copy_mesh_diffs.push_back(pair<u32,u32>(-1, ((MeshComp*)c)->meshID));
 					}
 				}

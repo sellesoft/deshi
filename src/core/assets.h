@@ -9,14 +9,14 @@
 #include <vector>
 #include <map>
 
-enum AssetTypeBits : u32{
+enum AssetTypeBits{
 	AssetType_NONE, 
 	AssetType_Data,  AssetType_Entity, AssetType_Model,  AssetType_Texture, 
 	AssetType_Save,  AssetType_Sound,  AssetType_Shader, AssetType_Config,
 	AssetType_LAST
 }; typedef u32 AssetType;
 
-enum ConfigValueTypeBits : u32{
+enum ConfigValueTypeBits{
 	ConfigValueType_NONE = 0, //can be used for comments/padding
 	ConfigValueType_S32,
 	ConfigValueType_B32,

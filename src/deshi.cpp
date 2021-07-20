@@ -28,7 +28,7 @@ make a dynamic timers array on in time.h for cleaner timer stuffs
 add a setting for a limit to the number of log files
 redo Debug::DrawLine calling to take in an id for uniqueness like ImGui
 make the engine runnable without the renderer
-create a hot-loadable global_ vars file
+create a hot-loadable global vars file
 detach camera from the renderer so that the camera component isnt calling the renderer
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
 ____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
@@ -48,8 +48,6 @@ pool/arena components and entities for better performance
 replace/remove external dependencies/includes (tinyobj, std)
 look into integrating TODOP with Discord
 begin reimplementing sound system and maybe rethink its design a bit
-remove extra collider component types and use the collider one instead
-____ComponentType_AABBCollider vs ComponentType_Collider
 fix DESH material and event saving/loading
 
 Render TODOs
@@ -75,7 +73,6 @@ ____involve clipping triangles and stuff
 redo MeshVk so its only child meshes
 ____avoid having 3 copies of a mesh (model, meshVK, vulkan)
 add standard render/video settings
-add 2D shader and interface functions
 add face normal and tangents to vertex buffer
 fix texture transparency
 check those vulkan-tutorial links for the suggestions and optimizations
@@ -91,7 +88,6 @@ add transfering the player pointer between entities that have an actor comp (com
 orbitting camera for rotating around objects
 context menu when right clicking on an object 
 scaling objects
-copy/pasting objects
 typing numbers while grabbing/rotating/scaling for precise manipulation (like in Blender)
 implement grabbing/rotating/scaling with a visual tool thing (like in Unreal)
 world axis in top right (like we used to have)
@@ -132,7 +128,6 @@ UI TODOs
 --------
 look into easier hover checking and input intercepting for imgui
 ____https://github.com/ocornut/imgui/issues/52
-2D shader (and handle ImGui ourselves)
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
 redo debug bar to be more informative and have different modes
@@ -169,10 +164,10 @@ __________ the batchArray size of whatever mesh its checking is something like 4
 __________ it looks like some sort of corrupt mesh makes its way in there somehow?
 (07/10/21) scaling and rotating produces a sheared object
 __________ scaling might be being done in world and not local space
-(07/10/21) program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
 (07/10/21) the program crashes if default asset files are not present
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
 (07/14/21) the config parser sometimes throws a console error that its unable to parse the final empty line of configs
+(07/19/21) switching from a level that has a player to a level that doesnt and trying to play crashes rather than errors
 
 */
 

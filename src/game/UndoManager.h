@@ -8,9 +8,16 @@
 struct Transform;
 struct Vector3;
 
-enum struct EditActionType : u32{
-	NONE, SELECT, TRANSLATE, ROTATE, SCALE, CREATE, DELETE
-};
+enum EditActionTypeBits{
+	EditActionType_NONE, 
+	EditActionType_Select, 
+	EditActionType_Translate, 
+	EditActionType_Rotate, 
+	EditActionType_Scale, 
+	EditActionType_Create, 
+	EditActionType_Delete,
+	EditActionType_COUNT,
+}; typedef u32 EditActionType;
 
 struct EditAction{ //48 bytes
 	EditActionType type;

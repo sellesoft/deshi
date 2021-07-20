@@ -32,20 +32,4 @@ struct MeshComp : public Component {
 	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
-struct MeshComp2D : public Component {
-	u32 twodID;
-	b32 visible;
-	
-	MeshComp2D(u32 twodID);
-	
-	void ToggleVisibility();
-	
-	void ReceiveEvent(Event event) override;
-	void Init() override;
-	void Update() override;
-	std::string SaveTEXT() override;
-	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
-};
-
-
 #endif //COMPONENT_MESHCOMP_H

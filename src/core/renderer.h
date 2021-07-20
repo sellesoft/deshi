@@ -14,7 +14,7 @@ struct Scene;
 struct Mesh; 
 struct Texture;
 
-enum VSyncTypeBits : u32{
+enum VSyncTypeBits{
     VSyncType_Immediate,   //no image queue (necessary), display as soon as possible
 	VSyncType_Mailbox,     //image queue that replaces current pending image with new one, but waits to display on refresh
 	VSyncType_Fifo,        //image queue that only gets removed from on refresh, waits to display on refresh (regular Vsync)
@@ -69,7 +69,7 @@ struct RenderStats{
     f32 renderTimeMS;
 };
 
-enum RendererStageBits : u32 { 
+enum RendererStageBits{ 
     RENDERERSTAGE_NONE  = 0, 
     RSVK_INSTANCE       = 1 << 0,
     RSVK_SURFACE        = 1 << 1,

@@ -691,7 +691,7 @@ CMDSTARTA(draw_triangle, args.size() > 2){
 CMDSTARTA(load_obj, args.size() > 0){
 	Vector3 pos{}, rot{}, scale = Vector3::ONE;
 	f32 mass = 1.f, elasticity = .5f; b32 staticPosition = 1, twoDphys = false;
-	ColliderType ctype = ColliderType_NONE;
+	ColliderShape ctype = ColliderShape_NONE;
 	Event event = 0;
 	//check for optional params after the first arg
 	for (auto s = args.begin() + 1; s != args.end(); ++s) {
@@ -702,11 +702,11 @@ CMDSTARTA(load_obj, args.size() > 0){
 		} else if (std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
 			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		} else if (std::regex_search(s->c_str(), m, StringRegex("collider"))) {
-			if     (m[1] == "aabb")      ctype = ColliderType_AABB;
-			else if(m[1] == "sphere")    ctype = ColliderType_Sphere;
-			else if(m[1] == "landscape") ctype = ColliderType_Landscape;
-			else if(m[1] == "box")       ctype = ColliderType_Box;
-			else if(m[1] == "complex")   ctype = ColliderType_Complex;
+			if     (m[1] == "aabb")      ctype = ColliderShape_AABB;
+			else if(m[1] == "sphere")    ctype = ColliderShape_Sphere;
+			else if(m[1] == "landscape") ctype = ColliderShape_Landscape;
+			else if(m[1] == "box")       ctype = ColliderShape_Box;
+			else if(m[1] == "complex")   ctype = ColliderShape_Complex;
 		} else if (std::regex_search(s->c_str(), m, FloatRegex("mass"))) {
 			if(std::stof(m[1]) <= 0) return "[c:red]Mass can't be zero or less than zero[c]";
 			mass = std::stof(m[1]);
@@ -720,7 +720,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 		} else if (std::regex_search(s->c_str(), m, StringRegex("twoDphys"))){
 			if(m[1] == "1" || m[1] == "true") twoDphys = true;
 		} else if (std::regex_search(s->c_str(), m , StringRegex("event"))){
-			if (ctype == ColliderType_NONE) return "[c:red]Attempt to attach event with no collider[c]";
+			if (ctype == ColliderShape_NONE) return "[c:red]Attempt to attach event with no collider[c]";
 			bool found = false;
 			forI(sizeof(EventStrings)) 
 				if (m[1] == EventStrings[i]) { 
@@ -743,11 +743,11 @@ CMDSTARTA(load_obj, args.size() > 0){
 	//collider
 	Collider* col = nullptr;
 	switch (ctype) {
-		case ColliderType_AABB:      col = new AABBCollider(mesh, 1, 0U, event); break;
-		case ColliderType_Sphere:    col = new SphereCollider(1, 1, 0U, event); break;
-		case ColliderType_Landscape: col = new LandscapeCollider(mesh, 0U, event); break;
-		case ColliderType_Box:       col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
-		case ColliderType_Complex:   col = new ComplexCollider(mesh, 0, event); break;
+		case ColliderShape_AABB:      col = new AABBCollider(mesh, 1, 0U, event); break;
+		case ColliderShape_Sphere:    col = new SphereCollider(1, 1, 0U, event); break;
+		case ColliderShape_Landscape: col = new LandscapeCollider(mesh, 0U, event); break;
+		case ColliderShape_Box:       col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
+		case ColliderShape_Complex:   col = new ComplexCollider(mesh, 0, event); break;
 	}
 	
 	MeshComp* mc = new MeshComp(id);
@@ -857,7 +857,7 @@ CMDSTARTA(add_player, args.size() > 0) {
 	float mass = 1.f;
 	float elasticity = 0;
 	bool staticc = true;
-	ColliderType ctype;
+	ColliderShape ctype;
 	
 	//check for optional params after the first arg
 	for (auto s = args.begin() + 1; s != args.end(); ++s) {
@@ -871,10 +871,10 @@ CMDSTARTA(add_player, args.size() > 0) {
 			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}
 		else if (std::regex_search(s->c_str(), m, StringRegex("collider"))) {
-			if (m[1] == "aabb") ctype = ColliderType_AABB;
-			else if (m[1] == "sphere") ctype = ColliderType_Sphere;
-			else if (m[1] == "landscape") ctype = ColliderType_Landscape;
-			else if (m[1] == "box") ctype = ColliderType_Box;
+			if (m[1] == "aabb") ctype = ColliderShape_AABB;
+			else if (m[1] == "sphere") ctype = ColliderShape_Sphere;
+			else if (m[1] == "landscape") ctype = ColliderShape_Landscape;
+			else if (m[1] == "box") ctype = ColliderShape_Box;
 		}
 		else if (std::regex_search(s->c_str(), m, FloatRegex("mass"))) {
 			if (std::stof(m[1]) < 0) return "[c:red]Mass must be greater than 0[c]";
@@ -902,10 +902,10 @@ CMDSTARTA(add_player, args.size() > 0) {
 	//collider
 	Collider* col = nullptr;
 	switch (ctype) {
-		case ColliderType_AABB: col = new AABBCollider(Vector3(0.5, 1, 0.5), 2); break;
-		case ColliderType_Sphere: col = new SphereCollider(1, 1); break;
-		case ColliderType_Landscape: col = new LandscapeCollider(mesh); break;
-		case ColliderType_Box: col = new BoxCollider(Vector3(1, 1, 1), 1); break;
+		case ColliderShape_AABB: col = new AABBCollider(Vector3(0.5, 1, 0.5), 2); break;
+		case ColliderShape_Sphere: col = new SphereCollider(1, 1); break;
+		case ColliderShape_Landscape: col = new LandscapeCollider(mesh); break;
+		case ColliderShape_Box: col = new BoxCollider(Vector3(1, 1, 1), 1); break;
 	}
 	
 	MeshComp* mc = new MeshComp(id);
@@ -1218,7 +1218,7 @@ CMDFUNC(quit) {
 
 CMDSTARTA(add_trigger, args.size() > 0) {
 	Vector3 pos{}, rot{}, scale = vec3::ONE;
-	ColliderType type = ColliderType_NONE;
+	ColliderShape shape = ColliderShape_NONE;
 	Event event = 0;
 	for (auto s = args.begin(); s != args.end(); ++s) {
 		if (std::regex_search(s->c_str(), m, Vec3Regex("pos"))) {
@@ -1230,14 +1230,14 @@ CMDSTARTA(add_trigger, args.size() > 0) {
 		else if (std::regex_search(s->c_str(), m, Vec3Regex("scale"))) {
 			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}
-		else if (std::regex_search(s->c_str(), m, StringRegex("type"))) {
-			if      (m[1] == "aabb")      type = ColliderType_AABB;
-			else if (m[1] == "sphere")    type = ColliderType_Sphere;
-			else if (m[1] == "landscape") type = ColliderType_Landscape;
-			else if (m[1] == "box")       type = ColliderType_Box;
+		else if (std::regex_search(s->c_str(), m, StringRegex("shape"))) {
+			if      (m[1] == "aabb")      shape = ColliderShape_AABB;
+			else if (m[1] == "sphere")    shape = ColliderShape_Sphere;
+			else if (m[1] == "landscape") shape = ColliderShape_Landscape;
+			else if (m[1] == "box")       shape = ColliderShape_Box;
 		}
 		else if (std::regex_search(s->c_str(), m, StringRegex("event"))) {
-			if (type == ColliderType_NONE) return "[c:red]Attempt to attach event with no collider[c]";
+			if (shape == ColliderShape_NONE) return "[c:red]Attempt to attach event with no collider[c]";
 			bool found = false;
 			forI(sizeof(EventStrings))
 				if (m[1] == EventStrings[i]) {
@@ -1251,10 +1251,10 @@ CMDSTARTA(add_trigger, args.size() > 0) {
 	}
 	
 	Collider* col = nullptr;
-	switch (type) {
-		case ColliderType_AABB:   col = new AABBCollider(Vector3::ONE / 2, 1, 0U, event); break;
-		case ColliderType_Sphere: col = new SphereCollider(1, 1, 0U, event); break;
-		case ColliderType_Box:    col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
+	switch (shape) {
+		case ColliderShape_AABB:   col = new AABBCollider(Vector3::ONE / 2, 1, 0U, event); break;
+		case ColliderShape_Sphere: col = new SphereCollider(1, 1, 0U, event); break;
+		case ColliderShape_Box:    col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
 	}
 	
 	Trigger* te = new Trigger(Transform(pos, rot, scale), col);
@@ -1262,7 +1262,7 @@ CMDSTARTA(add_trigger, args.size() > 0) {
 	admin->CreateEntity(te);
 	
 	return TOSTRING("Created trigger");
-}CMDEND("add_trigger -type=[ColliderType] -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)")
+}CMDEND("add_trigger -shape=[ColliderType] -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)")
 
 void Console::AddCommands(){
 	CMDADD(add_trigger, "adds a trigger collider entity");

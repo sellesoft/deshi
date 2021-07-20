@@ -29,4 +29,3 @@ last_updated ""
 6 "cube_with_sphere_coll"
 
 >events
-4 "wall" 4 2 -> 5 "light" 1024

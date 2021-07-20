@@ -14,7 +14,7 @@ struct StaticMesh : public Entity{
 	Collider* collider;
 	
 	StaticMesh(Transform transform = Transform(), const char* name = 0);
-	StaticMesh(u32 meshID, u32 colliderType, f32 mass = 1.f, Transform transform = Transform(), const char* name = 0);
+	StaticMesh(u32 meshID, u32 colliderShape, f32 mass = 1.f, Transform transform = Transform(), const char* name = 0);
 };
 
 #endif //GAME_ENTITY_STATICMESH_H

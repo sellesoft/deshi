@@ -6,11 +6,8 @@
 #include "../../scene/Scene.h"
 
 MeshComp::MeshComp() {
-	admin = g_admin;
-	cpystr(name, "MeshComp", DESHI_NAME_SIZE);
-	sender = new Sender();
 	layer = ComponentLayer_Canvas;
-	comptype = ComponentType_MeshComp;
+	type  = ComponentType_MeshComp;
 	
 	this->mesh = 0;
 	this->meshID = 0;
@@ -18,11 +15,8 @@ MeshComp::MeshComp() {
 }
 
 MeshComp::MeshComp(u32 meshID, u32 instanceID) {
-	admin = g_admin;
-	cpystr(name, "MeshComp", DESHI_NAME_SIZE);
-	sender = new Sender();
 	layer = ComponentLayer_Canvas;
-	comptype = ComponentType_MeshComp;
+	type = ComponentType_MeshComp;
 	
 	
 	this->meshID = meshID;
@@ -97,68 +91,5 @@ std::string MeshComp::SaveTEXT(){
 }
 
 void MeshComp::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
-	u32 entityID = -1, compID = -1, event = -1;
-	u32 meshID = -1, instanceID = -1;
-	forI(count){
-		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
-		if(entityID >= admin->entities.size()) {
-			ERROR("Failed to load mesh component at pos '", cursor-sizeof(u32),
-				  "' because it has an invalid entity ID: ", entityID); continue;
-		}
-		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		
-		memcpy(&instanceID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
-		memcpy(&meshID,     data+cursor, sizeof(u32)); cursor += sizeof(u32);
-		if(meshID >= Render::MeshCount()){
-			ERROR("Failed to load mesh component at pos '", cursor-sizeof(u32),
-				  "' because it has an invalid mesh ID: ", meshID); continue;
-		}
-		
-		MeshComp* c = new MeshComp(meshID, instanceID);
-		memcpy(&c->mesh_visible,   data+cursor, sizeof(b32)); cursor += sizeof(b32);
-		memcpy(&c->ENTITY_CONTROL, data+cursor, sizeof(b32)); cursor += sizeof(b32);
-		EntityAt(entityID)->AddComponent(c);
-		c->SetCompID(compID);
-		c->SetEvent(event);
-		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-	}
-}
-
-////////////////////
-//// MeshComp2D ////
-////////////////////
-
-
-MeshComp2D::MeshComp2D(u32 id) {
-	admin = g_admin;
-	cpystr(name, "MeshComp", DESHI_NAME_SIZE);
-	sender = new Sender();
-	layer = ComponentLayer_Canvas;
-	
-	this->twodID = id;
-}
-
-void MeshComp2D::Init() {
-	Render::UpdateMeshVisibility(twodID, visible);
-}
-
-void MeshComp2D::ToggleVisibility() {
-	visible = !visible;
-	Render::UpdateMeshVisibility(twodID, visible);
-}
-
-void MeshComp2D::ReceiveEvent(Event event) {}
-
-void MeshComp2D::Update() {}
-
-std::string MeshComp2D::SaveTEXT(){
-	return TOSTRING("\n>mesh"
-					"\nname    \"", Render::MeshName(twodID), "\""
-					"\nvisible ", (visible) ? "true" : "false",
-					"\n");
-}
-
-void MeshComp2D::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
-	ERROR("MeshComp2D::Load not setup");
+	ERROR("MeshComp::LoadDESH not setup");
 }

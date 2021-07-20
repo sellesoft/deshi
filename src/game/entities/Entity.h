@@ -14,13 +14,13 @@
 struct Admin;
 struct Component;
 
-enum EntityType : u32 {
+enum EntityTypeBits{
 	EntityType_Anonymous,
 	EntityType_Player,
 	EntityType_StaticMesh,
 	EntityType_Trigger,
 	EntityType_COUNT,
-};
+}; typedef u32 EntityType;
 
 global_ const char* EntityTypeStrings[] = {
 	"Anonymous", "Player", "StaticMesh", "Trigger"

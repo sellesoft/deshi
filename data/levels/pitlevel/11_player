@@ -12,23 +12,23 @@ name    "box.obj"
 visible true
 
 >physics
-velocity           (0.000000,0.000000,0.000000)
-acceleration       (0.000000,0.000000,0.000000)
-rot_velocity       (0.000000,0.000000,0.000000)
-rot_acceleration   (0.000000,0.000000,0.000000)
-elasticity         0.000000
-mass               10.000000
-friction_kinetic   4.000000
-friction_static    0.420000
-static_position    false
-static_rotation    false
-twod               false
+velocity         (0.000000,0.000000,0.000000)
+acceleration     (0.000000,0.000000,0.000000)
+rot_velocity     (0.000000,0.000000,0.000000)
+rot_acceleration (0.000000,0.000000,0.000000)
+elasticity       0.000000
+mass             10.000000
+friction_kinetic 4.000000
+friction_static  0.420000
+static_position  false
+static_rotation  false
+twod             false
 
 >player
 health -842150451
 
 >collider
-type      aabb
+shape     AABB
 half_dims (0.500000,1.000000,0.500000)
 
 >movement

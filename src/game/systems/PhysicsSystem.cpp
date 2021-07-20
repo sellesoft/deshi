@@ -9,6 +9,7 @@
 #include "../components/Movement.h"
 #include "../../core/console.h"
 #include "../../core/time.h"
+#include "../../core/renderer.h" //temporary until we guarentee store trimesh neighbors on them
 #include "../../core/window.h"
 #include "../../math/Math.h"
 #include "../../geometry/Geometry.h"
@@ -192,8 +193,8 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		
 		//triggers and no collision
 		if (obj1Col->collided.find(obj2Col) == obj1Col->collided.end()) {
-			if (obj1Col->event != 0 && !obj1Col->sentEvent) { obj1Col->sender->SendEvent(obj1Col->event); obj1Col->sentEvent = true; }
-			if (obj2Col->event != 0 && !obj2Col->sentEvent) { obj2Col->sender->SendEvent(obj2Col->event); obj2Col->sentEvent = true; }
+			if (obj1Col->event != 0 && !obj1Col->sentEvent) { obj1Col->sender.SendEvent(obj1Col->event); obj1Col->sentEvent = true; }
+			if (obj2Col->event != 0 && !obj2Col->sentEvent) { obj2Col->sender.SendEvent(obj2Col->event); obj2Col->sentEvent = true; }
 		}
 		
 		obj1Col->collided.clear();
@@ -282,7 +283,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		//the player checking is so i can point the normal in the proper direction when trying 
 		//to figure out if the player is on the floor or a wall/ceiling
 		//TODO(sushi, PhCl) clean this up
-		if (g_admin->player == obj1->entity) {
+		if (DengAdmin->player == obj1->entity) {
 			Vector3 pto = obj2->position - obj1->position;
 			if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
 			else                                { m1.player = 0; m2.player = 1; }
@@ -290,7 +291,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			obj1->manifolds[obj2] = m1;
 			obj2->manifolds[obj1] = m2;
 		}
-		else if (g_admin->player == obj2->entity) {
+		else if (DengAdmin->player == obj2->entity) {
 			Vector3 pto = obj2->position - obj1->position;
 			if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
 			else                                { m1.player = 0; m2.player = 1; }
@@ -311,13 +312,13 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 }
 
 inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* sphere, SphereCollider* sphereCol) {
-	Vector3 aabbPoint = Geometry::ClosestPointOnAABB(aabb->position, (aabbCol->halfDims * EntityAt(aabb->entityID)->transform.scale), sphere->position);
+	Vector3 aabbPoint = Geometry::ClosestPointOnAABB(aabb->position, (aabbCol->halfDims * aabb->entity->transform.scale), sphere->position);
 	Vector3 vectorBetween = aabbPoint - sphere->position; //sphere towards aabb
 	float distanceBetween = vectorBetween.mag();
 	if(distanceBetween < sphereCol->radius) {
 		//triggers and no collision
-		if (aabbCol->event != 0)   aabbCol->sender->SendEvent(aabbCol->event);
-		if (sphereCol->event != 0) sphereCol->sender->SendEvent(sphereCol->event);
+		if (aabbCol->event != 0)   aabbCol->sender.SendEvent(aabbCol->event);
+		if (sphereCol->event != 0) sphereCol->sender.SendEvent(sphereCol->event);
 		if (aabbCol->noCollide || sphereCol->noCollide) return;
 		
 		//aabb->entity->GetComponent<AudioSource>()->request_play = true;
@@ -340,14 +341,14 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 		}
 		
 		//dynamic resolution
-		Matrix4 sphereInertiaTensorInverse = LocalToWorldInertiaTensor(sphere, sphereCol->inertiaTensor).Inverse();
+		Matrix4 sphereInertiaTensorInverse = LocalToWorldInertiaTensor(sphere, sphereCol->tensor).Inverse();
 		Vector3 ra = sphere->position + Geometry::ClosestPointOnSphere(sphere->position, sphereCol->radius, aabbPoint);
 		Vector3 sphereAngularVelocityChange = normal.cross(ra);
 		sphereAngularVelocityChange *= sphereInertiaTensorInverse;
 		float inverseMassA = 1.f / sphere->mass;
 		float scalar = inverseMassA + sphereAngularVelocityChange.cross(ra).dot(normal);
 		
-		Matrix4 aabbInertiaTensorInverse = LocalToWorldInertiaTensor(aabb, aabbCol->inertiaTensor).Inverse();
+		Matrix4 aabbInertiaTensorInverse = LocalToWorldInertiaTensor(aabb, aabbCol->tensor).Inverse();
 		Vector3 rb = aabb->position + aabbPoint;
 		Vector3 aabbAngularVelocityChange = normal.cross(rb);
 		aabbAngularVelocityChange *= aabbInertiaTensorInverse;
@@ -373,8 +374,8 @@ inline bool SphereSphereCollision(Physics* s1, SphereCollider* sc1, Physics* s2,
 	float rsum = sc1->radius + sc2->radius;
 	if (rsum > dist) {
 		//triggers and no collision
-		if(sc1->event != Event_NONE) sc1->sender->SendEvent(sc1->event);
-		if(sc2->event != Event_NONE) sc2->sender->SendEvent(sc2->event);
+		if(sc1->event != Event_NONE) sc1->sender.SendEvent(sc1->event);
+		if(sc2->event != Event_NONE) sc2->sender.SendEvent(sc2->event);
 		if(sc1->noCollide || sc2->noCollide) return false;
 		
 		Vector3 s1t2 = s2->position - s1->position;
@@ -892,6 +893,7 @@ bool ShapeOverlapSAT(poly& r1, poly& r2, Manifold2& m) {
 }
 
 void FillManis(std::vector<poly>& polys, std::vector<Manifold2>& manis) {
+	Assert(Render::GetSettings()->findMeshTriangleNeighbors, "findMeshTriangleNeighbors must be enabled for 2D-3D physics");
 	manis.clear();
 	for (int m = 0; m < polys.size(); m++) {
 		for (int n = m + 1; n < polys.size(); n++) {
@@ -966,18 +968,17 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 
 poly GeneratePoly(Physics* p) {
 	poly poly;
-	poly.o =
-		EntityAt(p->entityID)->GetComponent<MeshComp>()->mesh->
-		GenerateOutlinePoints(Matrix4::TransformationMatrix(p->position, p->rotation, EntityAt(p->entityID)->transform.scale),
-							  DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, g_admin->mainCamera->position);
+	poly.o = p->entity->GetComponent<MeshComp>()->mesh->
+		GenerateOutlinePoints(Matrix4::TransformationMatrix(p->position, p->rotation, p->entity->transform.scale),
+							  DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, DengAdmin->mainCamera->position);
 	poly.p = poly.o;
 	
 	poly.pos = Math::WorldToScreen2(p->position, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 	
 	//apply relative velocity if player exists and is moving
 	Vector3 relvel = Vector3::ZERO;
-	if (g_admin->player) {
-		relvel = p->velocity - g_admin->player->GetComponent<Physics>()->velocity;
+	if (DengAdmin->player) {
+		relvel = p->velocity - DengAdmin->player->GetComponent<Physics>()->velocity;
 	}
 	//translate objects 3D velocity into screen space
 	Vector3 opv = p->position + relvel;
@@ -1009,37 +1010,37 @@ inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other, std::vector
 		}
 	};
 	
-	switch(tuple.collider->type){
-		case(ColliderType_Box):
-		switch(other.collider->type){
-			case(ColliderType_Box):   { BoxBoxCollision   (tuple.physics, (BoxCollider*)   tuple.collider, 
-														   other.physics, (BoxCollider*)   other.collider); }break;
-			case(ColliderType_Sphere):{ SphereBoxCollision(other.physics, (SphereCollider*)other.collider, 
-														   tuple.physics, (BoxCollider*)   tuple.collider); }break;
-			case(ColliderType_AABB):  { AABBBoxCollision  (other.physics, (AABBCollider*)  other.collider, 
-														   tuple.physics, (BoxCollider*)   tuple.collider); }break;
+	switch(tuple.collider->shape){
+		case(ColliderShape_Box):
+		switch(other.collider->shape){
+			case(ColliderShape_Box):   { BoxBoxCollision   (tuple.physics, (BoxCollider*)   tuple.collider, 
+															other.physics, (BoxCollider*)   other.collider); }break;
+			case(ColliderShape_Sphere):{ SphereBoxCollision(other.physics, (SphereCollider*)other.collider, 
+															tuple.physics, (BoxCollider*)   tuple.collider); }break;
+			case(ColliderShape_AABB):  { AABBBoxCollision  (other.physics, (AABBCollider*)  other.collider, 
+															tuple.physics, (BoxCollider*)   tuple.collider); }break;
 		}break;
-		case(ColliderType_Sphere):
-		switch(other.collider->type){
-			case(ColliderType_Box):   { SphereBoxCollision   (tuple.physics, (SphereCollider*)tuple.collider, 
-															  other.physics, (BoxCollider*)   other.collider); }break;
-			case(ColliderType_Sphere):{ 
+		case(ColliderShape_Sphere):
+		switch(other.collider->shape){
+			case(ColliderShape_Box):   { SphereBoxCollision   (tuple.physics, (SphereCollider*)tuple.collider, 
+															   other.physics, (BoxCollider*)   other.collider); }break;
+			case(ColliderShape_Sphere):{ 
 				if (!SphereSphereCollision(tuple.physics, (SphereCollider*)tuple.collider,
 										   other.physics, (SphereCollider*)other.collider)) {
 					if (tuple.physics->twoDphys && other.physics->twoDphys) genpolys();
 				}
 				
 			}break;
-			case(ColliderType_AABB):  { AABBSphereCollision  (other.physics, (AABBCollider*)  other.collider, 
-															  tuple.physics, (SphereCollider*)tuple.collider); }break;
+			case(ColliderShape_AABB):  { AABBSphereCollision  (other.physics, (AABBCollider*)  other.collider, 
+															   tuple.physics, (SphereCollider*)tuple.collider); }break;
 		}break;
-		case(ColliderType_AABB):
-		switch(other.collider->type){
-			case(ColliderType_Box):   { AABBBoxCollision   (tuple.physics, (AABBCollider*)  tuple.collider, 
-															other.physics, (BoxCollider*)   other.collider); }break;
-			case(ColliderType_Sphere):{ AABBSphereCollision(tuple.physics, (AABBCollider*)  tuple.collider, 
-															other.physics, (SphereCollider*)other.collider); }break;
-			case(ColliderType_AABB):  { 
+		case(ColliderShape_AABB):
+		switch(other.collider->shape){
+			case(ColliderShape_Box):   { AABBBoxCollision   (tuple.physics, (AABBCollider*)  tuple.collider, 
+															 other.physics, (BoxCollider*)   other.collider); }break;
+			case(ColliderShape_Sphere):{ AABBSphereCollision(tuple.physics, (AABBCollider*)  tuple.collider, 
+															 other.physics, (SphereCollider*)other.collider); }break;
+			case(ColliderShape_AABB):  { 
 				if (!AABBAABBCollision(tuple.physics, (AABBCollider*)tuple.collider,
 									   other.physics, (AABBCollider*)other.collider)) {
 					if (tuple.physics->twoDphys && other.physics->twoDphys) genpolys();
@@ -1047,9 +1048,9 @@ inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other, std::vector
 				
 			}break;
 		}break;
-		case ColliderType_Complex:
-		switch (other.collider->type) {
-			case(ColliderType_Complex): {
+		case ColliderShape_Complex:
+		switch (other.collider->shape) {
+			case(ColliderShape_Complex): {
 				ComplexComplexCollision(tuple.physics, (ComplexCollider*)tuple.collider, other.physics, (ComplexCollider*)other.collider);
 			}
 		}
@@ -1061,9 +1062,9 @@ inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 	std::vector<poly> polys; 
 	if(t.collider) {
 		for(auto& t2 : tuples) {
-			if(&t != &t2 && t2.collider && 
-			   t.collider->collisionLayer == t2.collider->collisionLayer &&
-			   (!t.physics->staticPosition || !t2.physics->staticPosition)) {
+			if(&t != &t2 && t2.collider
+			   && t.collider->collLayer == t2.collider->collLayer
+			   && (!t.physics->staticPosition || !t2.physics->staticPosition)) {
 				CheckCollision(t, t2, polys);
 				collCount++;
 			}

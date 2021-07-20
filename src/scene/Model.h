@@ -10,7 +10,7 @@
 
 #include <vector>
 
-enum TextureTypeBits : u32 { 
+enum TextureTypeBits{ 
 	TextureType_Albedo   = 0 << 0, //albedo, color, diffuse
 	TextureType_Normal   = 1 << 0, //normal, bump
 	TextureType_Specular = 1 << 1, //specular, metallic, roughness
@@ -26,7 +26,7 @@ struct Texture {
 	Texture(const char* filename, TextureType textureType = TextureType_Albedo);
 };
 
-enum ShaderFlagsBits : u32 {
+enum ShaderFlagsBits{
 	ShaderFlags_NONE = 0,
 };
 typedef u32 ShaderFlags;

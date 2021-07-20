@@ -12,24 +12,31 @@ struct Command;
 struct Mesh;
 struct Admin;
 
-enum ColliderTypeBits : u32{
-	ColliderType_NONE, ColliderType_Box, ColliderType_AABB, ColliderType_Sphere, ColliderType_Landscape, ColliderType_Complex
-}; typedef u32 ColliderType;
-global_ const char* ColliderTypeStrings[] = {
+enum ColliderShapeBits{
+	ColliderShape_NONE, 
+	ColliderShape_Box, 
+	ColliderShape_AABB,
+	ColliderShape_Sphere, 
+	ColliderShape_Landscape, 
+	ColliderShape_Complex,
+	ColliderShape_COUNT,
+}; typedef u32 ColliderShape;
+global_ const char* ColliderShapeStrings[] = {
 	"None", "Box", "AABB", "Sphere", "Landscape", "Complex"
 };
 
 //TODO(delle,Ph) maybe add offset vec3
 struct Collider : public Component {
-	ColliderType type;
-	u32 collisionLayer;
-	Matrix3 inertiaTensor;
+	ColliderShape shape;
+	u32 collLayer;
+	Matrix3 tensor;
 	b32 noCollide;
 	b32 sentEvent = false;
 	
 	std::set<Collider*> collided;
 	
 	virtual void RecalculateTensor(f32 mass) {};
+	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //rotatable box
@@ -41,7 +48,6 @@ struct BoxCollider : public Collider {
 	
 	void RecalculateTensor(f32 mass) override;
 	std::string SaveTEXT() override;
-	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //axis-aligned bounding box
@@ -54,7 +60,6 @@ struct AABBCollider : public Collider {
 	
 	void RecalculateTensor(f32 mass) override;
 	std::string SaveTEXT() override;
-	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 struct SphereCollider : public Collider {
@@ -65,7 +70,6 @@ struct SphereCollider : public Collider {
 	
 	void RecalculateTensor(f32 mass) override;
 	std::string SaveTEXT() override;
-	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //collider for terrain
@@ -75,7 +79,6 @@ struct LandscapeCollider : public Collider {
 	LandscapeCollider(Mesh* mesh, u32 collisionleyer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
 	std::string SaveTEXT() override;
-	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 
@@ -91,7 +94,6 @@ struct ComplexCollider : public Collider {
 	ComplexCollider(Mesh* mesh, u32 collisionleyer = 0, Event event = Event_NONE, b32 noCollide = 0);
 	
 	std::string SaveTEXT() override;
-	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
 };
 
 //TODO(delle,Ph) implement convexPolyCollider

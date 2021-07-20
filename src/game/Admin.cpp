@@ -114,7 +114,7 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
     for(Entity* e : deletionBuffer) {
         for(Component* c : e->components){
 			freeCompLayers[c->layer].remove_from(c->layer_index);
-			if(c->comptype == ComponentType_Light) scene.lights.clear();
+			if(c->type == ComponentType_Light) scene.lights.clear();
 		}
         for(int i = e->id+1; i < entities.size(); ++i) entities[i]->id -= 1;
         entities.erase(entities.begin()+e->id);
@@ -129,12 +129,10 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
         e->admin = this;
         entities.push_back(e);
         for(Component* c : e->components){ 
-            c->admin = this;
-            c->entityID = e->id;
             c->compID = compIDcount;
             c->entity = e;
             c->layer_index = freeCompLayers[c->layer].add(c);
-            if (c->comptype == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
+            if(c->type == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
             compIDcount++;
         }
     }
@@ -184,11 +182,10 @@ Entity* Admin::CreateEntityNow(std::vector<Component*> components, const char* n
     Entity* e = new Entity(this, entities.size(), transform, name, components);
     entities.push_back(e);
     for (Component* c : e->components) {
-        c->entityID = e->id;
         c->compID = compIDcount;
         c->entity = e;
         c->layer_index = freeCompLayers[c->layer].add(c);
-        if (c->comptype == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
+        if (c->type == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
         compIDcount++;
     }
     return e;
@@ -224,7 +221,7 @@ void Admin::AddComponentToLayers(Component* c){
 	
     c->compID = compIDcount;
     c->layer_index = freeCompLayers[c->layer].add(c);
-    if(c->comptype == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
+    if(c->type == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
     compIDcount++;
 }
 
@@ -249,6 +246,7 @@ void Admin::ChangeState(GameState new_state){
                 //LoadDESH("temp.desh");
                 LoadTEXT(editor.level_name);
                 if(player) player->GetComponent<MeshComp>()->Visible(true);
+                player = nullptr;
                 DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
             }break;
         }break;
@@ -373,11 +371,11 @@ void Admin::SaveTEXT(std::string level_name){
 					  "\n>events");
 	for(Entity* e : entities){
 		for(Component* c : e->components){
-			if(c->sender && c->sender->receivers.size() > 0){
-				for(Receiver* r : c->sender->receivers){
+			if(c->sender.receivers.size() > 0){
+				for(Receiver* r : c->sender.receivers){
 					if(Component* comp = dynamic_cast<Component*>(r)){
-						level_text.append(TOSTRING("\n",e->id," \"",e->name,"\" ",c->comptype," ",c->event," -> ",
-												   comp->entity->id," \"",comp->entity->name,"\" ",comp->comptype));
+						level_text.append(TOSTRING("\n",e->id," \"",e->name,"\" ",c->type," ",c->event," -> ",
+												   comp->entity->id," \"",comp->entity->name,"\" ",comp->type));
 					}
 				}
 			}
@@ -544,7 +542,7 @@ void Admin::LoadTEXT(std::string savename){
 		for(Entity* e : ents){
 			if(e->id == events[i].fourth){
 				for(Component* c : e->components){
-					if(c->comptype == events[i].fifth){
+					if(c->type == events[i].fifth){
 						rec_comp = c;
 						break;
 					}
@@ -560,13 +558,12 @@ void Admin::LoadTEXT(std::string savename){
 		for(Entity* e : ents){
 			if(e->id == events[i].first){
 				for(Component* c : e->components){
-					if(c->comptype == events[i].second){
+					if(c->type == events[i].second){
 						c->event = events[i].third;
-						if(!c->sender) c->sender = new Sender;
-						c->sender->AddReceiver(rec_comp);
+						c->sender.AddReceiver(rec_comp);
 						rec_comp->entity->connections.insert(e);
 						SUCCESS("Added event '",EventStrings[events[i].third],"': ",
-								e->name," ",c->comptype," -> ",rec_comp->entity->name," ",rec_comp->comptype);
+								e->name," ",c->type," -> ",rec_comp->entity->name," ",rec_comp->type);
 					}
 				}
 			}
@@ -619,9 +616,7 @@ void Admin::SaveDESH(const char* filename) {
 	header.componentTypeCount = 10;
 	std::vector<AudioListener*>  compsAudioListener;
 	std::vector<AudioSource*>    compsAudioSource;
-	std::vector<BoxCollider*>    compsColliderBox;
-	std::vector<AABBCollider*>   compsColliderAABB;
-	std::vector<SphereCollider*> compsColliderSphere;
+	std::vector<Collider*>       compsCollider;
 	std::vector<Light*>          compsLight;
 	std::vector<MeshComp*>       compsMeshComp;
 	std::vector<Physics*>        compsPhysics;
@@ -642,16 +637,9 @@ void Admin::SaveDESH(const char* filename) {
 		
 		//sort components
 		for (Component* c : e->components) {
-			switch (c->comptype) {
+			switch (c->type) {
 				case ComponentType_Physics:       compsPhysics.push_back(dyncast(Physics, c)); break;
-				case ComponentType_Collider: {
-					Collider* col = dyncast(Collider, c);
-					switch (col->type) {
-						case ColliderType_Box:    compsColliderBox.push_back(dyncast(BoxCollider, col)); break;
-						case ColliderType_AABB:   compsColliderAABB.push_back(dyncast(AABBCollider, col)); break;
-						case ColliderType_Sphere: compsColliderSphere.push_back(dyncast(SphereCollider, col)); break;
-					}
-				} break;
+				case ComponentType_Collider:      compsCollider.push_back(dyncast(Collider, c)); break;
 				case ComponentType_AudioListener: compsAudioListener.push_back(dyncast(AudioListener, c)); break;
 				case ComponentType_AudioSource:   compsAudioSource.push_back(dyncast(AudioSource, c)); break;
 				case ComponentType_Light:         compsLight.push_back(dyncast(Light, c)); break;
@@ -711,25 +699,11 @@ void Admin::SaveDESH(const char* filename) {
     typeHeader.count       = compsAudioSource.size();
     file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
     
-    //collider box 2
-    typeHeader.type        = ComponentType_ColliderBox;
+    //collider 2
+    typeHeader.type        = ComponentType_Collider;
     typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
     typeHeader.size        = sizeof(u32) * 3 + sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
-    typeHeader.count       = compsColliderBox.size();
-    file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
-    
-    //collider aabb 3
-    typeHeader.type        = ComponentType_ColliderAABB;
-    typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
-    typeHeader.count       = compsColliderAABB.size();
-    file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
-    
-    //collider sphere 4
-    typeHeader.type        = ComponentType_ColliderSphere;
-    typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(u32) + sizeof(Matrix3) + sizeof(float);
-    typeHeader.count       = compsColliderSphere.size();
+    typeHeader.count       = compsCollider.size();
     file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
     
     //light 5
@@ -775,7 +749,7 @@ void Admin::SaveDESH(const char* filename) {
     
     //audio listener
     for(auto c : compsAudioListener){
-        file.write((const char*)&c->entityID,    sizeof(u32));
+        //file.write((const char*)&c->entityID,    sizeof(u32));
         file.write((const char*)&c->compID,      sizeof(u32));
         file.write((const char*)&c->event,       sizeof(u32));
         file.write((const char*)&c->position,    sizeof(Vector3));
@@ -785,45 +759,25 @@ void Admin::SaveDESH(const char* filename) {
     
     //audio source
     for(auto c : compsAudioSource){
-        file.write((const char*)&c->entityID, sizeof(u32));
+        //file.write((const char*)&c->entityID, sizeof(u32));
         file.write((const char*)&c->compID,   sizeof(u32));
         file.write((const char*)&c->event,    sizeof(u32));
         
     }
     
     //collider box
-    for(auto c : compsColliderBox){
-        file.write((const char*)&c->entityID,       sizeof(u32));
+    for(auto c : compsCollider){
+        //file.write((const char*)&c->entityID,       sizeof(u32));
         file.write((const char*)&c->compID,         sizeof(u32));
         file.write((const char*)&c->event,          sizeof(u32));
-        file.write((const char*)&c->collisionLayer, sizeof(u32));
-        file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
-        file.write((const char*)&c->halfDims,       sizeof(Vector3));
-    }
-    
-    //collider aabb
-    for(auto c : compsColliderAABB){
-        file.write((const char*)&c->entityID,       sizeof(u32));
-        file.write((const char*)&c->compID,         sizeof(u32));
-        file.write((const char*)&c->event,          sizeof(u32));
-        file.write((const char*)&c->collisionLayer, sizeof(u32));
-        file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
-        file.write((const char*)&c->halfDims,       sizeof(Vector3));
-    }
-    
-    //collider sphere
-    for(auto c : compsColliderSphere){
-        file.write((const char*)&c->entityID,       sizeof(u32));
-        file.write((const char*)&c->compID,         sizeof(u32));
-        file.write((const char*)&c->event,          sizeof(u32));
-        file.write((const char*)&c->collisionLayer, sizeof(u32));
-        file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
-        file.write((const char*)&c->radius,         sizeof(float));
+        file.write((const char*)&c->collLayer, sizeof(u32));
+        file.write((const char*)&c->tensor,  sizeof(Matrix3));
+        //file.write((const char*)&c->halfDims,       sizeof(Vector3));
     }
     
     //light
     for(auto c : compsLight){
-        file.write((const char*)&c->entityID,    sizeof(u32));
+        //file.write((const char*)&c->entityID,    sizeof(u32));
         file.write((const char*)&c->compID,      sizeof(u32));
         file.write((const char*)&c->event,       sizeof(u32));
         file.write((const char*)&c->position,    sizeof(Vector3));
@@ -835,7 +789,7 @@ void Admin::SaveDESH(const char* filename) {
     for(auto c : compsMeshComp){
         b32 bool1 = c->mesh_visible;
         b32 bool2 = c->ENTITY_CONTROL;
-        file.write((const char*)&c->entityID,   sizeof(u32));
+        //file.write((const char*)&c->entityID,   sizeof(u32));
         file.write((const char*)&c->compID,     sizeof(u32));
         file.write((const char*)&c->event,      sizeof(u32));
         file.write((const char*)&c->instanceID, sizeof(u32));
@@ -849,7 +803,7 @@ void Admin::SaveDESH(const char* filename) {
         b32 staticPosition = c->staticPosition;
         b32 staticRotation = c->staticRotation;
         b32 twoDphys = c->twoDphys;
-        file.write((const char*)&c->entityID,        sizeof(u32));
+        //file.write((const char*)&c->entityID,        sizeof(u32));
         file.write((const char*)&c->compID,          sizeof(u32));
         file.write((const char*)&c->event,           sizeof(u32));
         file.write((const char*)&c->position,        sizeof(Vector3));
@@ -870,7 +824,7 @@ void Admin::SaveDESH(const char* filename) {
     //movement
     for (auto c : compsMovement) {
         b32 jump = c->jump;
-        file.write((const char*)&c->entityID,          sizeof(u32));
+        //file.write((const char*)&c->entityID,          sizeof(u32));
         file.write((const char*)&c->compID,            sizeof(u32));
         file.write((const char*)&c->event,             sizeof(u32));
         file.write((const char*)&c->inputs,            sizeof(Vector3));
@@ -885,7 +839,7 @@ void Admin::SaveDESH(const char* filename) {
     
     //player
     for(auto c : compsPlayer){
-        file.write((const char*)&c->entityID, sizeof(u32));
+        //file.write((const char*)&c->entityID, sizeof(u32));
         file.write((const char*)&c->compID,   sizeof(u32));
         file.write((const char*)&c->event,    sizeof(u32));
         file.write((const char*)&c->health,   sizeof(int));
@@ -992,9 +946,7 @@ void Admin::LoadDESH(const char* filename) {
             case(ComponentType_AudioListener):  AudioListener ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_AudioSource):    AudioSource   ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_Camera):         Camera        ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_ColliderBox):    BoxCollider   ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_ColliderAABB):   AABBCollider  ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_ColliderSphere): SphereCollider::LoadDESH(this, data, cursor, compHeader.count); break;
+            case(ComponentType_Collider):       Collider      ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_Light):          Light         ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_MeshComp):       MeshComp      ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_OrbManager):     OrbManager    ::LoadDESH(this, data, cursor, compHeader.count); break;

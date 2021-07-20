@@ -7,11 +7,11 @@
 struct Admin;
 struct Movement;
 
-enum MovementMode : u32 {
+enum MovementModeBits{
 	MOVEMENT_MODE_FLYING,
 	MOVEMENT_MODE_WALKING,
 	MOVEMENT_MODE_SWIMMING,
-};
+}; typedef u32 MovementMode;
 
 struct Controller{
 	Admin* admin;

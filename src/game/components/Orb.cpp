@@ -7,22 +7,16 @@
 #include "../../scene/Scene.h"
 
 OrbManager::OrbManager(){
-	admin = g_admin;
-	cpystr(name, "OrbManager", 63);
 	layer = ComponentLayer_Physics;
-	comptype = ComponentType_OrbManager;
-	sender = new Sender();
+	type = ComponentType_OrbManager;
 };
 
 OrbManager::OrbManager(Mesh* m, int orbcount){
-	admin = g_admin;
 	this->mesh = m;
 	this->orbcount = orbcount;
 	
-	cpystr(name, "OrbManager", 63);
 	layer = ComponentLayer_Physics;
-	comptype = ComponentType_OrbManager;
-	sender = new Sender();
+	type = ComponentType_OrbManager;
 };
 
 void OrbManager::Init(){
@@ -34,7 +28,7 @@ void OrbManager::Init(){
 		MeshComp* mc = new MeshComp(id);
 		orb->mc = mc;
 		mc->ENTITY_CONTROL = false;
-		EntityAt(entityID)->AddComponent(mc);
+		entity->AddComponent(mc);
 		orbs.push_back(orb);
 	}
 }

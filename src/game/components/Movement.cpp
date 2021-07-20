@@ -9,30 +9,21 @@
 #include "../../core/time.h"
 
 Movement::Movement() {
-	admin = g_admin;
 	layer = ComponentLayer_NONE;
-	comptype = ComponentType_Movement;
-	cpystr(name, "Movement", DESHI_NAME_SIZE);
+	type  = ComponentType_Movement;
 }
 
 Movement::Movement(Physics* phys) {
-	admin = g_admin;
 	layer = ComponentLayer_NONE;
-	comptype = ComponentType_Movement;
-	cpystr(name, "Movement", DESHI_NAME_SIZE);
-	
+	type  = ComponentType_Movement;
 	this->phys = phys;
 	phys->kineticFricCoef = 4;
 }
 
 //for loading
 Movement::Movement(Physics* phys, float gndAccel, float airAccel, float maxWalkingSpeed, float maxRunningSpeed, float maxCrouchingSpeed, bool jump, float jumpImpulse) {
-	admin = g_admin;
 	layer = ComponentLayer_NONE;
-	comptype = ComponentType_Movement;
-	cpystr(name, "Movement", DESHI_NAME_SIZE);
-	sender = new Sender();
-	
+	type  = ComponentType_Movement;
 	this->phys = phys;
 	//phys->kineticFricCoef = 1;
 	//phys->physOverride = true;
@@ -133,7 +124,7 @@ void Movement::GrabObject() {
 			f32  t;
 			int  index = 0;
 			bool done = false;
-			for (Entity* e : admin->entities) {
+			for (Entity* e : DengAdmin->entities) {
 				transform = e->transform.TransformMatrix();
 				rotation = Matrix4::RotationMatrix(e->transform.rotation);
 				if (MeshComp* mc = e->GetComponent<MeshComp>()) {
@@ -188,7 +179,7 @@ void Movement::GrabObject() {
 			}
 			
 			if (closeindex != -1) {
-				grabeephys = admin->entities[closeindex]->GetComponent<Physics>();
+				grabeephys = DengAdmin->entities[closeindex]->GetComponent<Physics>();
 				if (t <= maxGrabbingDistance
 					&& grabeephys && !grabeephys->staticPosition) {
 					grabbing = true;
@@ -240,8 +231,8 @@ void Movement::Update() {
 	/////////////////////
 	
 	
-	Vector3 standpos = admin->player->transform.position + Vector3::UP * 2;
-	Vector3 crouchpos = admin->player->transform.position + Vector3::UP * 0.5;
+	Vector3 standpos = DengAdmin->player->transform.position + Vector3::UP * 2;
+	Vector3 crouchpos = DengAdmin->player->transform.position + Vector3::UP * 0.5;
 	persist Vector3 cpos = standpos;
 	persist float timer = 0;
 	float ttc = 0.2;
@@ -358,36 +349,6 @@ std::string Movement::SaveTEXT(){
 }
 
 void Movement::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count) {
-	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
-	Vector3 inputs{};
-	float gndAccel{}, airAccel{}, maxWalkingSpeed{}, maxRunningSpeed{}, maxCrouchingSpeed{}, jumpImpulse{};
-	bool jump = false;
-	
-	forI(count) {
-		memcpy(&entityID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		if (entityID >= admin->entities.size()) {
-			ERROR("Failed to load sphere collider component at pos '", cursor - sizeof(u32),
-				  "' because it has an invalid entity ID: ", entityID); continue;
-		}
-		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		
-		memcpy(&inputs,            data + cursor, sizeof(Vector3)); cursor += sizeof(Vector3);
-		memcpy(&gndAccel,          data + cursor, sizeof(float));   cursor += sizeof(float);
-		memcpy(&airAccel,          data + cursor, sizeof(float));   cursor += sizeof(float);
-		memcpy(&maxWalkingSpeed,   data + cursor, sizeof(float));   cursor += sizeof(float);
-		memcpy(&maxRunningSpeed,   data + cursor, sizeof(float));   cursor += sizeof(bool);
-		memcpy(&maxCrouchingSpeed, data + cursor, sizeof(float));   cursor += sizeof(bool);
-		memcpy(&jump,              data + cursor, sizeof(bool));    cursor += sizeof(bool);
-		memcpy(&jumpImpulse,       data + cursor, sizeof(float));   cursor += sizeof(bool);
-		
-		Movement* c = new Movement(EntityAt(entityID)->GetComponent<Physics>(), gndAccel, airAccel, maxWalkingSpeed, maxRunningSpeed, maxCrouchingSpeed, jump, jumpImpulse);
-		EntityAt(entityID)->AddComponent(c);
-		c->SetCompID(compID);
-		c->SetEvent(event);
-		c->camera = admin->mainCamera;
-		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-	}
-	
+	ERROR_LOC("LoadDESH not setup");
 }
 

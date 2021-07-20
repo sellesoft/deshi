@@ -8,27 +8,21 @@
 #include "../../scene/Scene.h"
 
 Camera::Camera(){
-	admin = g_admin;
-	cpystr(name, "Camera", DESHI_NAME_SIZE);
 	layer = ComponentLayer_NONE;
-	comptype = ComponentType_Camera;
+	type  = ComponentType_Camera;
 }
 
 Camera::Camera(float fov, float nearZ, float farZ, bool freeCam){
-	admin = g_admin;
-	cpystr(name, "Camera", DESHI_NAME_SIZE);
 	layer = ComponentLayer_NONE;
-	comptype = ComponentType_Camera;
-	
+	type  = ComponentType_Camera;
 	this->nearZ = nearZ;
 	this->farZ = farZ;
 	this->fov = fov;
 	this->freeCamera = freeCam;
 	
 	forward = (Vector3::FORWARD * Matrix4::RotationMatrix(rotation)).normalized();
-	right = Vector3::UP.cross(forward).normalized();
-	up = right.cross(forward).normalized();
-	
+	right   = Vector3::UP.cross(forward).normalized();
+	up      = right.cross(forward).normalized();
 	viewMat = Math::LookAtMatrix(position, position + forward).Inverse();
 	UpdateProjectionMatrix();
 }
@@ -52,7 +46,7 @@ void Camera::Update() {
 		viewMat = Math::LookAtMatrix(position, position + forward).Inverse();
 		
 		//update renderer camera properties
-		if (type == CameraType_Orthographic) {
+		if (type == CameraMode_Orthographic) {
 			float fw = ImGui::GetFontSize() / 2;
 			
 			switch (orthoview) {
@@ -97,8 +91,8 @@ Matrix4 Camera::MakeOrthographicProjection() {
 	//pair<Vector3, Vector3> bbox = admin->scene.SceneBoundingBox();
 	//convert bounding box to camera space
 	persist float zoom = 10;
-	Vector3 maxcam = Math::WorldToCamera3(Vector3( zoom, zoom, zoom),  admin->mainCamera->viewMat);
-	Vector3 mincam = Math::WorldToCamera3(Vector3(-zoom,-zoom,-zoom), admin->mainCamera->viewMat); 
+	Vector3 maxcam = Math::WorldToCamera3(Vector3( zoom, zoom, zoom),  DengAdmin->mainCamera->viewMat);
+	Vector3 mincam = Math::WorldToCamera3(Vector3(-zoom,-zoom,-zoom), DengAdmin->mainCamera->viewMat); 
 	
 	//make screen box from camera space bounding box
 	float maxx = std::max(fabs(mincam.x), fabs(maxcam.x));
@@ -146,8 +140,8 @@ Matrix4 Camera::MakeOrthographicProjection() {
 	t += zoom; b -= zoom;
 	t += offsety + oloffsety; b += offsety + oloffsety;
 	
-	float f = admin->mainCamera->farZ;
-	float n = admin->mainCamera->nearZ;
+	float f = DengAdmin->mainCamera->farZ;
+	float n = DengAdmin->mainCamera->nearZ;
 	
 	return Matrix4(2/(r-l),      0,            0,            0,
 				   0,            2/(b-t),      0,            0,
@@ -156,9 +150,9 @@ Matrix4 Camera::MakeOrthographicProjection() {
 }
 
 void Camera::UpdateProjectionMatrix(){
-	switch(type){
-		case(CameraType_Perspective):default:{ projMat = MakePerspectiveProjection(); } break;
-		case(CameraType_Orthographic):{ projMat = MakeOrthographicProjection(); }break;
+	switch(mode){
+		case(CameraMode_Perspective):default:{ projMat = MakePerspectiveProjection(); } break;
+		case(CameraMode_Orthographic):{ projMat = MakeOrthographicProjection(); }break;
 	}
 	Render::UpdateCameraProjectionMatrix(projMat);
 }
@@ -170,7 +164,7 @@ std::string Camera::str(){
 					"\nNear Plane: ", nearZ,
 					"\nFar Plane: ", farZ,
 					"\nHorizontal FOV: ", fov,
-					"\nType: ", CameraTypeStrings[type],
+					"\nMode: ", CameraModeStrings[mode],
 					"\nStatic: ", (freeCamera)? "false" : "true");
 }
 
@@ -182,7 +176,7 @@ std::string Camera::SaveTEXT(){
 	return TOSTRING("\n>camera"
 					"\nposition (",position.x,",",position.y,",",position.z,")"
 					"\nrotation (",rotation.x,",",rotation.y,",",rotation.z,")"
-					"\ntype     ", type,
+					"\nmode     ", mode,
 					"\nnear_z   ", nearZ,
 					"\nfar_z    ", farZ,
 					"\nfov      ", fov,
