@@ -26,7 +26,6 @@ rework and simplify entity creation so there is a distinction between developmen
 fix colorspace so we dont have to do the pow in shaders
 make a dynamic timers array on in time.h for cleaner timer stuffs
 add a setting for a limit to the number of log files
-redo Debug::DrawLine calling to take in an id for uniqueness like ImGui
 make the engine runnable without the renderer
 create a hot-loadable global vars file
 detach camera from the renderer so that the camera component isnt calling the renderer
@@ -65,7 +64,6 @@ ____specialization constants
 ____uber shaders
 ____runtime pipeline creation/specialization
 redo how lights are stored
-redo mesh brush to be one large buffer that updates every frame
 look into getting info from shaders, or setting up compute shaders
 ____ref: https://github.com/SaschaWillems/Vulkan/blob/master/examples/computeparticles/computeparticles.cpp
 ____the primary reason being that we need to optimize outlining objects, which will
@@ -167,6 +165,7 @@ __________ scaling might be being done in world and not local space
 (07/10/21) the program crashes if default asset files are not present
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
 (07/14/21) the config parser sometimes throws a console error that its unable to parse the final empty line of configs
+(07/20/21) copy/paste produces an extra mesh in the renderer sometimes
 
 */
 
@@ -217,10 +216,7 @@ int main() {
 		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
-			Transform t(vec3::ZERO, vec3{0, (f32)time_.totalTime * RADIANS(90.0f) * 10.0f, 0}, vec3{10,1,1});
-			mat4 temp = t.TransformMatrix();
-			PRINTLN(temp.str2f());
-			Render::TempBox(temp, Color::DARK_MAGENTA);
+
 		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

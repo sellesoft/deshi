@@ -148,9 +148,6 @@
     <ClInclude Include="..\src\math\Matrix.h">
       <Filter>src\math</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\math\MatrixN.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\game\Transform.h">
       <Filter>src\game</Filter>
     </ClInclude>
@@ -207,6 +204,9 @@
     </ClInclude>
     <ClInclude Include="..\src\utils\utils.h">
       <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\MatrixN.h">
+      <Filter>src\math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

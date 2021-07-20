@@ -1,14 +1,14 @@
 >entity
-id       1
+id       7
 type     Anonymous
-name     "floor"
-position (0.000000,-1.357981,0.000000)
-rotation (0.000000,0.000000,0.000000)
-scale    (50.000000,1.000000,50.000000)
+name     "wall"
+position (25.532593,5.671178,14.252563)
+rotation (0.000000,213.239532,0.000000)
+scale    (15.000000,10.000000,1.000000)
 
 >mesh
-id      4
-name    "default_planarbox"
+id      13
+name    "box.obj"
 visible true
 
 >physics
@@ -16,8 +16,8 @@ velocity         (0.000000,0.000000,0.000000)
 acceleration     (0.000000,0.000000,0.000000)
 rot_velocity     (0.000000,0.000000,0.000000)
 rot_acceleration (0.000000,0.000000,0.000000)
-elasticity       0.000000
-mass             100000.000000
+elasticity       0.500000
+mass             1.000000
 friction_kinetic 0.300000
 friction_static  0.420000
 static_position  true
