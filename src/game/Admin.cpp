@@ -83,7 +83,9 @@ void UpdateLayer(ContainerManager<Component*> cl) {
 
 void Admin::Update() {
     ImGui::BeginDebugLayer();
+	TIMER_RESET(t_a);
     if(!skip && (state == GameState_Editor || state == GameState_Debug)) editor.Update();
+	editorTime =   TIMER_END(t_a); TIMER_RESET(t_a);
     if(!skip) controller.Update();
     if(!skip) mainCamera->Update();
     
@@ -966,6 +968,7 @@ void Admin::LoadDESH(const char* filename) {
 
 //{P}:physics layer,  {C}:canvas layer,  {W}:world layer,  {S}:send layer
 //{p}:physics system, {c}:canvas system, {w}:world system, {s}:send system, 
+//{e}:editor
 std::string Admin::FormatAdminTime(std::string fmt){
 	std::string out = ""; out.reserve(512);
 	forI(fmt.size()){
@@ -994,6 +997,9 @@ std::string Admin::FormatAdminTime(std::string fmt){
 				}i+=2;continue;
 				case('s'):{
 					out.append(std::to_string(sndSysTime));
+				}i+=2;continue;
+				case('e'):{
+					out.append(std::to_string(editorTime));
 				}i+=2;continue;
 			}
 		}

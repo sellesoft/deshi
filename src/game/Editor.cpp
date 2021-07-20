@@ -228,6 +228,9 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 if (Physics* p = sel->GetComponent<Physics>()) {
                     p->position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
                 }
+				Render::TempLine(vec3{-1000,sel->transform.position.y,sel->transform.position.z}, 
+								 vec3{ 1000,sel->transform.position.y,sel->transform.position.z}, 
+								 Color::DARK_RED);
             }
             else if (yaxis) {
                 Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
@@ -249,7 +252,9 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 if (Physics* p = sel->GetComponent<Physics>()) {
                     p->position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
                 }	
-                
+                Render::TempLine(vec3{sel->transform.position.x,-1000,sel->transform.position.z}, 
+								 vec3{sel->transform.position.x, 1000,sel->transform.position.z}, 
+								 Color::DARK_GREEN);
             }
             else if (zaxis) {
                 Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
@@ -271,7 +276,9 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 if (Physics* p = sel->GetComponent<Physics>()) {
                     p->position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
                 }
-                
+                Render::TempLine(vec3{sel->transform.position.x,sel->transform.position.y,-1000}, 
+								 vec3{sel->transform.position.x,sel->transform.position.y, 1000}, 
+								 Color::DARK_BLUE);
             }
             lastFramePos = sel->transform.position;
         } //if(DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj)
@@ -2163,7 +2170,9 @@ void Editor::DrawTimes(){
                                                    "World   Lyr: {W}\n"
                                                    "        Sys: {w}\n"
                                                    "Sound   Lyr: {S}\n"
-                                                   "        Sys: {s}\n");
+                                                   "Sound   Lyr: {S}\n"
+                                                   "        Sys: {s}\n"
+												   "Editor     : {e}\n");
     time1            += DengTime->FormatTickTime  ("Admin      : {a}\n"
                                                    "Console    : {c}\n"
                                                    "Render     : {r}\n"

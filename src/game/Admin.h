@@ -66,6 +66,7 @@ struct Admin {
 	
 	f32 physLyrTime{}, canvasLyrTime{}, sndLyrTime{}, worldLyrTime{};
 	f32 physSysTime{}, canvasSysTime{}, sndSysTime{}, worldSysTime{};
+	f32 editorTime{};
 	
 	void Init();
 	void Update();
@@ -98,7 +99,7 @@ struct Admin {
 	//initializes an entity with a component vector and adds it to entities immedietly
 	//returns a pointer to the entitiy
 	Entity* CreateEntityNow(std::vector<Component*> components, const char* name = 0, Transform transform = Transform());
-
+	
 	//adds the entity at ID to the deletion buffer
 	void DeleteEntity(u32 id);
 	
