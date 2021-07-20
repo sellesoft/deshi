@@ -2,7 +2,7 @@
 #include "../admin.h"
 #include "../entities/Entity.h"
 
-Door::Door(b32 isOpen){
+Door::Door(bool isOpen){
 	layer = ComponentLayer_Physics;
 	type = ComponentType_Door;
 	this->isOpen = isOpen;

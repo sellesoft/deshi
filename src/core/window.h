@@ -38,7 +38,7 @@ struct Window{
 	bool resizable;
 	bool closeWindow;
 	
-	b32  resized;
+	bool  resized;
 	
 	Vector2 dimensions;
 	

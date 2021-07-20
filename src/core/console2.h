@@ -10,7 +10,7 @@ enum ConsoleStateBits : u32{
 };typedef u32 ConsoleState;
 
 namespace Console2{
-	local b32 intercepting_inputs = false;
+	local bool intercepting_inputs = false;
 	
 	bool IsOpen();
 	void Toggle(ConsoleState new_state);

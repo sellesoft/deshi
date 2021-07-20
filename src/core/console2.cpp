@@ -39,8 +39,8 @@ local f32 input_box_height = 20.0f;
 local f32 font_width  = 0.0f;
 local f32 font_height = 0.0f;
 
-local b32 scroll_to_bottom = false;
-local b32 show_autocomplete = false;
+local bool scroll_to_bottom = false;
+local bool show_autocomplete = false;
 
 local f32 console_scroll_y = 0;
 local u32 console_rows_in_buffer = 0; 
@@ -286,7 +286,7 @@ void Console2::Cleanup(){
     FlushBuffer();
 }
 
-local b32 test_swap = false;
+local bool test_swap = false;
 void Console2::Update(){
 	{//// handle inputs ////
 		//open and close console
@@ -493,7 +493,7 @@ void Console2::Update(){
 						
 						//@Incomplete
 						//add input to input_history if not already in it
-						b32 already_in_history = false;
+						bool already_in_history = false;
 						for(int i = 0; i < input_history_length; ++i){
 							if(strcmp(input_buffer, input_history+(input_max_size*i)) == 0){
 								already_in_history = true;

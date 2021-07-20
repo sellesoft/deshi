@@ -5,9 +5,9 @@
 #include "Component.h"
 
 struct Door : public Component{
-	b32 isOpen;
+	bool isOpen;
 	
-	Door(b32 isOpen = 0);
+	Door(bool isOpen = 0);
 	
 	void ReceiveEvent(Event event) override;
 	std::string SaveTEXT() override;

@@ -675,9 +675,9 @@ void Admin::SaveDESH(const char* filename) {
     header.meshCount = Render::MeshCount();
     header.meshArrayOffset = file.tellp();
     for(auto& m : *Render::meshArray()){
-        b32 base = m.base;
+        bool base = m.base;
         file.write((const char*)&m.primitives[0].materialIndex, sizeof(u32));
-        file.write((const char*)&base,                          sizeof(b32));
+        file.write((const char*)&base,                          sizeof(bool));
         file.write(m.name,                                      sizeof(char)*DESHI_NAME_SIZE);
     }
     
@@ -716,14 +716,14 @@ void Admin::SaveDESH(const char* filename) {
     //mesh comp 6
     typeHeader.type        = ComponentType_MeshComp;
     typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(u32)*2 + sizeof(b32)*2; //instanceID, meshID, visible, entity_control
+    typeHeader.size        = sizeof(u32) * 3 + sizeof(u32)*2 + sizeof(bool)*2; //instanceID, meshID, visible, entity_control
     typeHeader.count       = compsMeshComp.size();
     file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
     
     //physics 7
     typeHeader.type        = ComponentType_Physics;
     typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(b32) * 3 + sizeof(float) * 2;
+    typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(bool) * 3 + sizeof(float) * 2;
     typeHeader.count       = compsPhysics.size();
     file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
     
@@ -734,7 +734,7 @@ void Admin::SaveDESH(const char* filename) {
     //movement 8
     typeHeader.type        = ComponentType_Movement;
     typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3) + sizeof(float) * 6 + sizeof(b32);
+    typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3) + sizeof(float) * 6 + sizeof(bool);
     typeHeader.count       = compsMovement.size();
     file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
     
@@ -787,22 +787,22 @@ void Admin::SaveDESH(const char* filename) {
     
     //mesh comp
     for(auto c : compsMeshComp){
-        b32 bool1 = c->mesh_visible;
-        b32 bool2 = c->ENTITY_CONTROL;
+        bool bool1 = c->mesh_visible;
+        bool bool2 = c->ENTITY_CONTROL;
         //file.write((const char*)&c->entityID,   sizeof(u32));
         file.write((const char*)&c->compID,     sizeof(u32));
         file.write((const char*)&c->event,      sizeof(u32));
         file.write((const char*)&c->instanceID, sizeof(u32));
         file.write((const char*)&c->meshID,     sizeof(u32));
-        file.write((const char*)&bool1,         sizeof(b32));
-        file.write((const char*)&bool2,         sizeof(b32));
+        file.write((const char*)&bool1,         sizeof(bool));
+        file.write((const char*)&bool2,         sizeof(bool));
     }
     
     //physics
     for(auto c : compsPhysics){
-        b32 staticPosition = c->staticPosition;
-        b32 staticRotation = c->staticRotation;
-        b32 twoDphys = c->twoDphys;
+        bool staticPosition = c->staticPosition;
+        bool staticRotation = c->staticRotation;
+        bool twoDphys = c->twoDphys;
         //file.write((const char*)&c->entityID,        sizeof(u32));
         file.write((const char*)&c->compID,          sizeof(u32));
         file.write((const char*)&c->event,           sizeof(u32));
@@ -814,16 +814,16 @@ void Admin::SaveDESH(const char* filename) {
         file.write((const char*)&c->rotAcceleration, sizeof(Vector3));
         file.write((const char*)&c->elasticity,      sizeof(float));
         file.write((const char*)&c->mass,            sizeof(float));
-        file.write((const char*)&staticPosition,           sizeof(b32));
-        file.write((const char*)&staticRotation,     sizeof(b32));
-        file.write((const char*)&twoDphys,           sizeof(b32));
+        file.write((const char*)&staticPosition,           sizeof(bool));
+        file.write((const char*)&staticRotation,     sizeof(bool));
+        file.write((const char*)&twoDphys,           sizeof(bool));
         file.write((const char*)&c->kineticFricCoef, sizeof(float));
         file.write((const char*)&c->staticFricCoef,  sizeof(float));
     }
     
     //movement
     for (auto c : compsMovement) {
-        b32 jump = c->jump;
+        bool jump = c->jump;
         //file.write((const char*)&c->entityID,          sizeof(u32));
         file.write((const char*)&c->compID,            sizeof(u32));
         file.write((const char*)&c->event,             sizeof(u32));
@@ -833,7 +833,7 @@ void Admin::SaveDESH(const char* filename) {
         file.write((const char*)&c->maxWalkingSpeed,   sizeof(float));
         file.write((const char*)&c->maxRunningSpeed,   sizeof(float));
         file.write((const char*)&c->maxCrouchingSpeed, sizeof(float));
-        file.write((const char*)&jump,                 sizeof(b32));
+        file.write((const char*)&jump,                 sizeof(bool));
         file.write((const char*)&c->jumpImpulse,       sizeof(float));
     }
     
@@ -919,10 +919,10 @@ void Admin::LoadDESH(const char* filename) {
         return ERROR("Load failed because cursor was at '", cursor, 
                      "' when reading meshes which start at '", header.meshArrayOffset, "'");
     }
-    b32 matID = 0, baseMesh = 0; char meshName[DESHI_NAME_SIZE];
+    bool matID = 0, baseMesh = 0; char meshName[DESHI_NAME_SIZE];
     forI(header.meshCount){
         memcpy(&matID,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
-        memcpy(&baseMesh, data+cursor, sizeof(b32));     cursor += sizeof(b32);
+        memcpy(&baseMesh, data+cursor, sizeof(bool));     cursor += sizeof(bool);
         memcpy(meshName,  data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
         if(!baseMesh) {
             u32 meshID = Render::CreateMesh(&scene, meshName);

@@ -69,9 +69,9 @@ struct MeshInfo {
 	u32 meshID;
 	float idleTime;
 	float allowedTime = 0;
-	b32 calledThisFrame;
-	b32 clearNextFrame;
-	b32 wasInvis;
+	bool calledThisFrame;
+	bool clearNextFrame;
+	bool wasInvis;
 	Vector3* last[2]; //TODO(sushi, Op) figure out why checking if a line has changed doesnt work
 	
 };

@@ -165,8 +165,8 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
     defer{ delete[] buffer; };
     
     //creation vars
-    b32 coll_made = false;
-    b32 mesh_found = false;
+    bool coll_made = false;
+    bool mesh_found = false;
     Entity* e = 0;
     AudioListener* al = 0; AudioSource* as = 0; Camera* cam = 0;    Door* door = 0;
     Light* light = 0;      MeshComp* mesh = 0;  Movement* move = 0; OrbManager* orbman = 0;

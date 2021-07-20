@@ -12,7 +12,7 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-local b32 _resized = false;
+local bool _resized = false;
 local int _width, _height, _x, _y;
 
 void glfwError(int id, const char* description){

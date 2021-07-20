@@ -11,8 +11,8 @@ struct MeshComp : public Component {
 	Mesh* mesh;
 	u32 instanceID;
 	u32 meshID;
-	b32 mesh_visible = true;
-	b32 ENTITY_CONTROL = true;
+	bool mesh_visible = true;
+	bool ENTITY_CONTROL = true;
 	
 	MeshComp();
 	MeshComp(u32 meshID, u32 instanceID = 0);

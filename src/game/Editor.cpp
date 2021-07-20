@@ -957,7 +957,7 @@ inline void EventsMenu(Entity* current) {
 }
 
 inline void EntitiesTab(Admin* admin, float fontsize){
-    persist b32 rename_ent = false;
+    persist bool rename_ent = false;
     persist char rename_buffer[DESHI_NAME_SIZE] = {};
     persist Entity* events_ent = 0;
     
@@ -1542,7 +1542,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 
 inline void MaterialsTab(Admin* admin){
     persist u32 selected_mat = -1;
-    persist b32 rename_mat = false;
+    persist bool rename_mat = false;
     persist char rename_buffer[DESHI_NAME_SIZE] = {};
     
     //// selected material keybinds ////

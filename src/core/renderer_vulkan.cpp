@@ -126,35 +126,35 @@ local RenderSettings settings;
 local ConfigMap configMap = {
 	{"#render settings config file",0,0},
 	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)10},
-	{"debugging", ConfigValueType_B32, &settings.debugging},
-	{"printf",    ConfigValueType_B32, &settings.printf},
-	{"recompile_all_shaders",        ConfigValueType_B32, &settings.recompileAllShaders},
-	{"find_mesh_triangle_neighbors", ConfigValueType_B32, &settings.findMeshTriangleNeighbors},
+	{"debugging", ConfigValueType_Bool, &settings.debugging},
+	{"printf",    ConfigValueType_Bool, &settings.printf},
+	{"recompile_all_shaders",        ConfigValueType_Bool, &settings.recompileAllShaders},
+	{"find_mesh_triangle_neighbors", ConfigValueType_Bool, &settings.findMeshTriangleNeighbors},
 	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
-	{"logging_level",  ConfigValueType_U32, &settings.loggingLevel},
-	{"crash_on_error", ConfigValueType_B32, &settings.crashOnError},
-	{"vsync_type",     ConfigValueType_U32, &settings.vsync},
-	{"msaa_samples",   ConfigValueType_U32, &settings.msaaSamples},
+	{"logging_level",  ConfigValueType_U32,  &settings.loggingLevel},
+	{"crash_on_error", ConfigValueType_Bool, &settings.crashOnError},
+	{"vsync_type",     ConfigValueType_U32,  &settings.vsync},
+	{"msaa_samples",   ConfigValueType_U32,  &settings.msaaSamples},
 	{"\n#shaders",                         ConfigValueType_PADSECTION,(void*)17},
-	{"optimize_shaders", ConfigValueType_B32, &settings.optimizeShaders},
+	{"optimize_shaders", ConfigValueType_Bool, &settings.optimizeShaders},
 	{"\n#shadows",                         ConfigValueType_PADSECTION,(void*)20},
-	{"shadow_pcf",          ConfigValueType_B32, &settings.shadowPCF},
-	{"shadow_resolution",   ConfigValueType_U32, &settings.shadowResolution},
-	{"shadow_nearz",        ConfigValueType_F32, &settings.shadowNearZ},
-	{"shadow_farz",         ConfigValueType_F32, &settings.shadowFarZ},
-	{"depth_bias_constant", ConfigValueType_F32, &settings.depthBiasConstant},
-	{"depth_bias_slope",    ConfigValueType_F32, &settings.depthBiasSlope},
-	{"show_shadow_map",     ConfigValueType_B32, &settings.showShadowMap},
+	{"shadow_pcf",          ConfigValueType_Bool, &settings.shadowPCF},
+	{"shadow_resolution",   ConfigValueType_U32,  &settings.shadowResolution},
+	{"shadow_nearz",        ConfigValueType_F32,  &settings.shadowNearZ},
+	{"shadow_farz",         ConfigValueType_F32,  &settings.shadowFarZ},
+	{"depth_bias_constant", ConfigValueType_F32,  &settings.depthBiasConstant},
+	{"depth_bias_slope",    ConfigValueType_F32,  &settings.depthBiasSlope},
+	{"show_shadow_map",     ConfigValueType_Bool, &settings.showShadowMap},
 	{"\n#colors",                          ConfigValueType_PADSECTION,(void*)15},
 	{"clear_color",    ConfigValueType_FV4, &settings.clearColor},
 	{"selected_color", ConfigValueType_FV4, &settings.selectedColor},
 	{"collider_color", ConfigValueType_FV4, &settings.colliderColor},
 	{"\n#filters",                         ConfigValueType_PADSECTION,(void*)15},
-	{"wireframe_only", ConfigValueType_B32, &settings.wireframeOnly},
+	{"wireframe_only", ConfigValueType_Bool, &settings.wireframeOnly},
 	{"\n#overlays",                        ConfigValueType_PADSECTION,(void*)16},
-	{"mesh_wireframes", ConfigValueType_B32, &settings.meshWireframes},
-	{"mesh_normals",    ConfigValueType_B32, &settings.meshNormals},
-	{"light_frustrums", ConfigValueType_B32, &settings.lightFrustrums},
+	{"mesh_wireframes", ConfigValueType_Bool, &settings.meshWireframes},
+	{"mesh_normals",    ConfigValueType_Bool, &settings.meshNormals},
+	{"light_frustrums", ConfigValueType_Bool, &settings.lightFrustrums},
 };
 
 local RenderStats   stats{};
@@ -284,7 +284,7 @@ local struct{ //uniform buffer for the vertex shaders
 		vec3 mouseWorld;  //point casted out from mouse 
 		f32  time;        //total time
 		mat4 lightVP;     //first light's view projection matrix //TODO(delle,ReVu) redo how lights are stored
-		b32  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
+		bool  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
 	} values;
 } uboVS{};
 
@@ -838,7 +838,7 @@ CreateInstance(){
 	//check for validation layer support
 	if(settings.debugging){
 		PrintVk(3, "    Checking Validation Layer Support");
-		b32 has_support = true;
+		bool has_support = true;
 		
 		u32 layerCount;
 		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -1119,9 +1119,9 @@ CreateSwapChain(){
 	
 	{//choose the swapchain's present mode
 		//TODO(delle,ReVu) add render settings here (vsync)
-		b32 immediate    = false;
-		b32 fifo_relaxed = false;
-		b32 mailbox      = false;
+		bool immediate    = false;
+		bool fifo_relaxed = false;
+		bool mailbox      = false;
 		
 		for(VkPresentModeKHR availablePresentMode : supportDetails.presentModes){
 			if(availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)    immediate    = true;
@@ -2363,14 +2363,14 @@ CreatePipelines(){
 VkSpecializationMapEntry entryShadowPCF{};
 	entryShadowPCF.constantID = 0;
 	entryShadowPCF.offset = 0;
-	entryShadowPCF.size = sizeof(b32);
+	entryShadowPCF.size = sizeof(bool);
 	*/
 	
 	VkSpecializationInfo specializationInfo{};
 	/*
 specializationInfo.mapEntryCount = 1;
 	specializationInfo.pMapEntries = &entryShadowPCF;
-	specializationInfo.dataSize = sizeof(b32);
+	specializationInfo.dataSize = sizeof(bool);
 	specializationInfo.pData = &settings.shadowPCF;
 */
 	
@@ -3195,7 +3195,7 @@ CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool visibl
 }
 
 u32 Render::
-CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation){
+CreateMeshBrush(Mesh* m, Matrix4 matrix, bool log_creation){
 	if(log_creation) PrintVk(3, "    Creating mesh brush based on: ", m->name);
 	
 	if(m->vertexCount == 0 || m->indexCount == 0 || m->batchCount == 0){  //early out if empty buffers
@@ -3428,7 +3428,7 @@ LoadBaseMesh(Mesh* m, bool visible){
 }
 
 u32 Render::
-CreateMesh(Scene* scene, const char* filename, b32 new_material){
+CreateMesh(Scene* scene, const char* filename, bool new_material){
 	//check if Mesh was already created
 	for(auto& model : scene->models){ 
 		if(strcmp(model.mesh->name, filename) == 0){ 
@@ -3442,7 +3442,7 @@ CreateMesh(Scene* scene, const char* filename, b32 new_material){
 }
 
 u32 Render::
-CreateMesh(Mesh* m, Matrix4 matrix, b32 new_material){
+CreateMesh(Mesh* m, Matrix4 matrix, bool new_material){
 	//check if MeshVk was already created
 	for(auto& mesh : meshes){ 
 		if(strcmp(mesh.name, m->name) == 0){ 
@@ -3455,7 +3455,7 @@ CreateMesh(Mesh* m, Matrix4 matrix, b32 new_material){
 }
 
 u32 Render::
-CreateMesh(u32 meshID, Matrix4 matrix, b32 new_material){
+CreateMesh(u32 meshID, Matrix4 matrix, bool new_material){
 	if(meshID < meshes.size()){
 		PrintVk(3, "    Creating Mesh: ", meshes[meshID].ptr->name);
 		MeshVk mesh; mesh.base = false; 
@@ -4139,7 +4139,7 @@ MeshCount(){
 	return meshes.size();
 }
 
-b32 Render::
+bool Render::
 IsBaseMesh(u32 meshIdx){
 	return meshes[meshIdx].base;
 }
@@ -4169,7 +4169,7 @@ MeshBrushCount(){
 	return meshBrushes.size();
 }
 
-b32 Render::
+bool Render::
 IsMeshVisible(u32 meshIdx){
 	return meshes[meshIdx].visible;
 }

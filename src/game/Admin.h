@@ -53,7 +53,7 @@ struct Admin {
 	u32 compIDcount = 0;
 	
 	//pause flags
-	b32  skip;
+	bool  skip;
 	bool paused;
 	bool pause_command, pause_phys, pause_canvas, pause_world, pause_sound;
 	

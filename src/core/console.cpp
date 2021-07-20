@@ -690,7 +690,7 @@ CMDSTARTA(draw_triangle, args.size() > 2){
 
 CMDSTARTA(load_obj, args.size() > 0){
 	Vector3 pos{}, rot{}, scale = Vector3::ONE;
-	f32 mass = 1.f, elasticity = .5f; b32 staticPosition = 1, twoDphys = false;
+	f32 mass = 1.f, elasticity = .5f; bool staticPosition = 1, twoDphys = false;
 	ColliderShape ctype = ColliderShape_NONE;
 	Event event = 0;
 	//check for optional params after the first arg

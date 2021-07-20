@@ -15,7 +15,7 @@
 ////////////////////
 
 std::string Assets::
-assetPath(const char* filename, AssetType type, b32 logError){
+assetPath(const char* filename, AssetType type, bool logError){
 	std::string file;
 	switch(type){
 		case AssetType_Entity:  file = dirEntities() + filename; break;
@@ -37,14 +37,14 @@ assetPath(const char* filename, AssetType type, b32 logError){
 }
 
 bool Assets::
-deleteFile(std::string& filepath, b32 logError){
+deleteFile(std::string& filepath, bool logError){
 	bool result = std::filesystem::remove(filepath);
 	if(logError && !result) ERROR("Failed to find file: ", filepath);
 	return result;
 }
 
 u64 Assets::
-deleteDirectory(std::string& dirpath, b32 logError){
+deleteDirectory(std::string& dirpath, bool logError){
 	auto result = std::filesystem::remove_all(dirpath);
 	if(logError && !result) ERROR("Failed to find directory: ", dirpath);
 	return (u64)result;
@@ -55,7 +55,7 @@ deleteDirectory(std::string& dirpath, b32 logError){
 /////////////////////////
 
 std::vector<char> Assets::
-readFile(const std::string& filepath, u32 chars, b32 logError) {
+readFile(const std::string& filepath, u32 chars, bool logError) {
 	std::ifstream file(filepath, std::ios::ate);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
@@ -73,7 +73,7 @@ readFile(const std::string& filepath, u32 chars, b32 logError) {
 }
 
 std::vector<char> Assets::
-readFileBinary(const std::string& filepath, u32 bytes, b32 logError) {
+readFileBinary(const std::string& filepath, u32 bytes, bool logError) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
@@ -90,7 +90,7 @@ readFileBinary(const std::string& filepath, u32 bytes, b32 logError) {
 }
 
 char* Assets::
-readFileAsciiToArray(std::string filepath, u32 chars, b32 logError){
+readFileAsciiToArray(std::string filepath, u32 chars, bool logError){
 	std::ifstream file(filepath, std::ifstream::in);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
@@ -108,7 +108,7 @@ readFileAsciiToArray(std::string filepath, u32 chars, b32 logError){
 }
 
 char* Assets::
-readFileBinaryToArray(std::string filepath, u32 bytes, b32 logError){
+readFileBinaryToArray(std::string filepath, u32 bytes, bool logError){
 	std::ifstream file(filepath, std::ifstream::in | std::ios::binary);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
@@ -126,7 +126,7 @@ readFileBinaryToArray(std::string filepath, u32 bytes, b32 logError){
 }
 
 void Assets::
-writeFile(const std::string& filepath, std::vector<char>& data, u32 chars, b32 logError){
+writeFile(const std::string& filepath, std::vector<char>& data, u32 chars, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
@@ -139,7 +139,7 @@ writeFile(const std::string& filepath, std::vector<char>& data, u32 chars, b32 l
 }
 
 void Assets::
-writeFile(const std::string& filepath, const char* data, u32 chars, b32 logError){
+writeFile(const std::string& filepath, const char* data, u32 chars, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
@@ -151,7 +151,7 @@ writeFile(const std::string& filepath, const char* data, u32 chars, b32 logError
 }
 
 void Assets::
-appendFile(const std::string& filepath, std::vector<char>& data, u32 chars, b32 logError){
+appendFile(const std::string& filepath, std::vector<char>& data, u32 chars, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
@@ -164,7 +164,7 @@ appendFile(const std::string& filepath, std::vector<char>& data, u32 chars, b32 
 }
 
 void Assets::
-appendFile(const std::string& filepath, const char* data, u32 chars, b32 logError){
+appendFile(const std::string& filepath, const char* data, u32 chars, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
@@ -176,7 +176,7 @@ appendFile(const std::string& filepath, const char* data, u32 chars, b32 logErro
 }
 
 void Assets::
-writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes, b32 logError){
+writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
@@ -189,7 +189,7 @@ writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes,
 }
 
 void Assets::
-writeFileBinary(const std::string& filepath, const char* data, u32 bytes, b32 logError){
+writeFileBinary(const std::string& filepath, const char* data, u32 bytes, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
@@ -201,7 +201,7 @@ writeFileBinary(const std::string& filepath, const char* data, u32 bytes, b32 lo
 }
 
 void Assets::
-appendFileBinary(const std::string& filepath, const char* data, u32 bytes, b32 logError){
+appendFileBinary(const std::string& filepath, const char* data, u32 bytes, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::app);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
@@ -309,7 +309,7 @@ extractConfig(const std::string& filepath) {
 	return out;
 }
 
-b32 Assets::
+bool Assets::
 parse_bool(std::string& str, const char* filepath, u32 line_number){
 	if(str == "true" || str == "1"){
 		return true;
@@ -355,8 +355,8 @@ saveConfig(const char* filename, const ConfigMap& configMap){
 			case ConfigValueType_S32:{
 				out << *(s32*)config.third;
 			}break;
-			case ConfigValueType_B32:{
-				out << ((*(b32*)config.third) ? "true" : "false");
+			case ConfigValueType_Bool:{
+				out << ((*(bool*)config.third) ? "true" : "false");
 			}break;
 			case ConfigValueType_U32:{
 				out << *(u32*)config.third;
@@ -482,8 +482,8 @@ loadConfig(const char* filename, ConfigMap configMap){
 					case ConfigValueType_S32:{
 						*(s32*)config.third = atoi(value_start);
 					}break;
-					case ConfigValueType_B32:{
-						b32* b = (b32*)config.third;
+					case ConfigValueType_Bool:{
+						bool* b = (bool*)config.third;
 						if     (strncmp("true",  value_start, 4) == 0) *b = true;
 						else if(strncmp("1",     value_start, 1) == 0) *b = true;
 						else if(strncmp("false", value_start, 5) == 0) *b = false;

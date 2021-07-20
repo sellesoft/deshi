@@ -23,28 +23,28 @@ enum VSyncTypeBits{
 
 struct RenderSettings{ //loaded from file
 	//// requires restart ////
-    b32 debugging = true;
-    b32 printf    = false;
-	b32 recompileAllShaders = true;
-    b32 findMeshTriangleNeighbors = true; //TODO(delle,Cl) move this to a better location
+    bool debugging = true;
+    bool printf    = false;
+	bool recompileAllShaders = true;
+    bool findMeshTriangleNeighbors = true; //TODO(delle,Cl) move this to a better location
 	
 	//// runtime changeable ////
 	u32 loggingLevel = 1; //if printf is true in the config file, this will be set to 4
-	b32 crashOnError = false;
+	bool crashOnError = false;
 	VSyncType vsync  = VSyncType_Immediate;
 	u32 msaaSamples  = 0;
 	
 	//shaders
-	b32 optimizeShaders = false;
+	bool optimizeShaders = false;
 	
 	//shadows
-	b32 shadowPCF         = false;
+	bool shadowPCF         = false;
 	u32 shadowResolution  = 2048;
 	f32 shadowNearZ       = 1.f;
 	f32 shadowFarZ        = 70.f;
 	f32 depthBiasConstant = 1.25f;
 	f32 depthBiasSlope    = 1.75f;
-    b32 showShadowMap     = false;
+    bool showShadowMap     = false;
 	
     //colors
 	Vector4 clearColor   {0.02f,0.02f,0.02f,1.00f};
@@ -52,12 +52,12 @@ struct RenderSettings{ //loaded from file
 	Vector4 colliderColor{0.46f,0.71f,0.26f,1.00f};
 	
 	//filters
-    b32 wireframeOnly = false;
+    bool wireframeOnly = false;
 	
     //overlays
-	b32 meshWireframes  = false;
-    b32 meshNormals     = false;
-    b32 lightFrustrums  = false;
+	bool meshWireframes  = false;
+    bool meshNormals     = false;
+    bool lightFrustrums  = false;
 };
 
 struct RenderStats{
@@ -127,8 +127,8 @@ struct PrimitiveVk{
 
 struct MeshVk{
     u32 id      = -1;
-    b32 visible = true;
-    b32 base    = false;
+    bool visible = true;
+    bool base    = false;
     Mesh* ptr   = nullptr;
     char name[DESHI_NAME_SIZE];
     mat4 modelMatrix = mat4::IDENTITY;
@@ -139,7 +139,7 @@ struct MeshVk{
 struct MeshBrushVk{
     u32  id = -1;
     char name[DESHI_NAME_SIZE];
-    b32 visible = true;
+    bool visible = true;
     mat4 modelMatrix = mat4::IDENTITY;
     std::vector<Vertex> vertices;
     std::vector<u32>      indices;
@@ -180,7 +180,7 @@ namespace Render{
     //returns a mesh brush ID
     u32 CreateDebugTriangle(Vector3 v1, Vector3 v2, Vector3 v3, Color color, bool visible = false);
     //creates a mesh with editable vertices that requires getting its buffers updated
-    u32 CreateMeshBrush(Mesh* m, Matrix4 matrix, b32 log_creation = false);
+    u32 CreateMeshBrush(Mesh* m, Matrix4 matrix, bool log_creation = false);
     void UpdateMeshBrushMatrix(u32 meshID, Matrix4 transform);
     void UpdateMeshBrushBuffers(u32 meshBrushIdx);
     void RemoveMeshBrush(u32 meshBrushIdx);
@@ -198,15 +198,15 @@ namespace Render{
     void UpdateTwodColor(u32 twodID, Color color);
     void UpdateTwodPosition(u32 twodID, Vector2 position);
     void UpdateTwodRotation(u32 twodID, float rotation);
-    void UpdateTwodVisibility(u32 twodID, b32 visible);
+    void UpdateTwodVisibility(u32 twodID, bool visible);
     
     //loads a mesh to the different shaders specified in its batches
     //returns the ID of the mesh
     u32 LoadBaseMesh(Mesh* m, bool visible = false);
     u32 GetBaseMeshID(const char* name);
-    u32 CreateMesh(Scene* scene, const char* filename, b32 new_material = false);
-    u32 CreateMesh(Mesh* mesh, Matrix4 matrix = Matrix4::IDENTITY, b32 new_material = false);
-    u32 CreateMesh(u32 meshID, Matrix4 matrix = Matrix4::IDENTITY, b32 new_material = false);
+    u32 CreateMesh(Scene* scene, const char* filename, bool new_material = false);
+    u32 CreateMesh(Mesh* mesh, Matrix4 matrix = Matrix4::IDENTITY, bool new_material = false);
+    u32 CreateMesh(u32 meshID, Matrix4 matrix = Matrix4::IDENTITY, bool new_material = false);
     void UnloadBaseMesh(u32 meshID);
     void RemoveMesh(u32 meshID);
     Matrix4 GetMeshMatrix(u32 meshID);
@@ -217,9 +217,9 @@ namespace Render{
     void UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID);
     void UpdateMeshVisibility(u32 meshID, bool visible);
 	u32 MeshCount();
-	b32 IsBaseMesh(u32 meshIdx);
+	bool IsBaseMesh(u32 meshIdx);
 	char* MeshName(u32 meshIdx);
-	b32 IsMeshVisible(u32 meshIdx);
+	bool IsMeshVisible(u32 meshIdx);
 	
     void AddSelectedMesh(u32 meshID);
     //passing -1 will remove all

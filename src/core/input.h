@@ -110,7 +110,7 @@ struct Input{
 	double realScrollX,      realScrollY;
 	bool keyFocus, mouseFocus;
 	
-	b32 logInput = false;
+	bool logInput = false;
 	
 	//caches values so they are consistent thru the frame
 	void Update(){
