@@ -151,10 +151,11 @@ local ConfigMap configMap = {
 	{"collider_color", ConfigValueType_FV4, &settings.colliderColor},
 	{"\n#filters",                         ConfigValueType_PADSECTION,(void*)15},
 	{"wireframe_only", ConfigValueType_Bool, &settings.wireframeOnly},
-	{"\n#overlays",                        ConfigValueType_PADSECTION,(void*)16},
-	{"mesh_wireframes", ConfigValueType_Bool, &settings.meshWireframes},
-	{"mesh_normals",    ConfigValueType_Bool, &settings.meshNormals},
-	{"light_frustrums", ConfigValueType_Bool, &settings.lightFrustrums},
+	{"\n#overlays",                        ConfigValueType_PADSECTION,(void*)17},
+	{"mesh_wireframes",  ConfigValueType_Bool, &settings.meshWireframes},
+	{"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals},
+	{"light_frustrums",  ConfigValueType_Bool, &settings.lightFrustrums},
+	{"temp_mesh_on_top", ConfigValueType_Bool, &settings.tempMeshOnTop},
 };
 
 local RenderStats   stats{};
@@ -2818,7 +2819,7 @@ BuildCommandBuffers(){
 			vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
 			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.scene, 0, nullptr);
 			VkDeviceSize offsets[1] = { 0 }; //reset vertex buffer offsets
-
+			
 			//draw meshes
 			DebugBeginLabelVk(frames[i].commandBuffer, "Meshes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
 			vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &vertices.buffer, offsets);
@@ -2871,7 +2872,11 @@ BuildCommandBuffers(){
 			//draw temporary stuff
 			if(tempVertexCount > 0 && tempIndexCount > 0){
 				DebugBeginLabelVk(frames[i].commandBuffer, "Temp", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe_depth);
+				if(settings.tempMeshOnTop){
+					vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
+				}else{
+					vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe_depth);
+				}
 				VkDeviceSize offsets[1] = { 0 };
 				vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &tempVertexBuffer.buffer, offsets);
 				vkCmdBindIndexBuffer(frames[i].commandBuffer, tempIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
@@ -3715,7 +3720,7 @@ TempLine(Vector3 start, Vector3 end, Color color){
 void Render::
 TempBox(Matrix4 transform, Color color){
 	if(color.a == 0) return;
-
+	
 	vec3 p(0.5f, 0.5f, 0.5f);
 	vec3 points[8] = {
 		{-p.x, p.y, p.z},
@@ -3730,7 +3735,7 @@ TempBox(Matrix4 transform, Color color){
 	forI(8){
 		points[i] = points[i] * transform;
 	}
-
+	
 	Render::TempLine(points[3], points[1], color);
 	Render::TempLine(points[3], points[2], color);
 	Render::TempLine(points[3], points[7], color);
@@ -3748,28 +3753,28 @@ TempBox(Matrix4 transform, Color color){
 void Render::
 TempFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color){
 	if(color.a == 0) return;
-
+	
 	f32 y = tanf(RADIANS(fovx / 2.0f));
 	f32 x = y * aspectRatio;
 	f32 nearX = x * nearZ;
 	f32 farX  = x * farZ;
 	f32 nearY = y * nearZ;
 	f32 farY  = y * farZ;
-
+	
 	vec4 faces[8] = {
 		//near face
 		{ nearX,  nearY, nearZ, 1},
 		{-nearX,  nearY, nearZ, 1},
 		{ nearX, -nearY, nearZ, 1},
 		{-nearX, -nearY, nearZ, 1},
-
+		
 		//far face
 		{ farX,  farY, farZ, 1},
 		{-farX,  farY, farZ, 1},
 		{ farX, -farY, farZ, 1},
 		{-farX, -farY, farZ, 1},
 	};
-
+	
 	mat4 mat = Math::LookAtMatrix(position, target);
 	vec3 v[8];
 	forI(8){
@@ -3778,7 +3783,7 @@ TempFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 ne
 		v[i].y = temp.y / temp.w;
 		v[i].z = temp.z / temp.w;
 	}
-
+	
 	Render::TempLine(v[0], v[1], color);
 	Render::TempLine(v[0], v[2], color);
 	Render::TempLine(v[3], v[1], color);
@@ -4221,7 +4226,7 @@ Reset(){
 		vkFreeDescriptorSets(device, descriptorPool, 1, &mat.descriptorSet);
 	}
 	materials.clear();
-
+	
 	LoadDefaultAssets();
 }
 

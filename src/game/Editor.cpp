@@ -1797,6 +1797,7 @@ inline void GlobalTab(Admin* admin){
 			ImGui::Checkbox("Draw mesh wireframes", (bool*)&settings->meshWireframes);
 			ImGui::Checkbox("Draw mesh normals", (bool*)&settings->meshNormals);
 			ImGui::Checkbox("Draw light frustrums", (bool*)&settings->lightFrustrums);
+			ImGui::Checkbox("Draw temp meshes on top", (bool*)&settings->tempMeshOnTop);
 		}
         
         ImGui::EndChild();

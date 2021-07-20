@@ -160,8 +160,6 @@ __________ it might have something to do with our rotate by axis function
 (06/13/21) after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and
 __________ the batchArray size of whatever mesh its checking is something like 400000000000
 __________ it looks like some sort of corrupt mesh makes its way in there somehow?
-(07/10/21) scaling and rotating produces a sheared object
-__________ scaling might be being done in world and not local space
 (07/10/21) the program crashes if default asset files are not present
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
 (07/14/21) the config parser sometimes throws a console error that its unable to parse the final empty line of configs

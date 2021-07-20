@@ -58,6 +58,7 @@ struct RenderSettings{ //loaded from file
 	bool meshWireframes  = false;
     bool meshNormals     = false;
     bool lightFrustrums  = false;
+	bool tempMeshOnTop   = false;
 };
 
 struct RenderStats{
@@ -158,7 +159,7 @@ namespace Render{
 	RenderSettings* GetSettings();
     RenderStats*    GetStats();
     RendererStage*  GetStage();
-
+	
     //loads a mesh to the different shaders specified in its batches
     //returns the ID of the mesh
     u32 LoadBaseMesh(Mesh* m, bool visible = false);
