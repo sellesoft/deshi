@@ -930,8 +930,7 @@ CMDFUNC(alias) {
 				datav.push_back(c);
 			}
 			
-			Assets::appendFile(Assets::assetPath("aliases.cfg", AssetType_Config),
-							   datav, datav.size());
+			Assets::appendFile(Assets::dirConfig()+"aliases.cfg", datav, datav.size());
 			
 			return "[c:green]alias \"" + args[0] + "\" successfully assigned to command \"" + args[1] + "\"[c]";
 		}
@@ -967,8 +966,7 @@ CMDFUNC(bind) {
 				datav.push_back(c);
 			}
 			datav.push_back('\n');
-			Assets::appendFile(Assets::assetPath("binds.cfg", AssetType_Config),
-							   datav, datav.size());
+			Assets::appendFile(Assets::dirConfig()+"binds.cfg", datav, datav.size());
 			return "[c:green]key \"" + args[0] + "\" successfully bound to \n" + s + "[c]";
 		}
 		catch (...) {

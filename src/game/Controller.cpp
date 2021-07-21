@@ -20,11 +20,8 @@ local f32 MOUSE_SENS_FRACTION = .03f;
 local bool moveOverride = false; //for moving when using arrow keys (cause i cant use mouse when remoting into my pc so)
 
 local inline void AddBindings(Admin* admin) {
-	std::ifstream binds;
-	
-	std::string path = Assets::assetPath("binds.cfg", AssetType_Config, false);
-	if (path != "") {
-		binds = std::ifstream(path, std::ios::in);
+	std::ifstream binds = std::ifstream(Assets::dirConfig()+"binds.cfg", std::ios::in);
+	if(binds.is_open()){
 		while (!binds.eof()) {
 			char* c = (char*)malloc(255);
 			binds.getline(c, 255);
@@ -42,11 +39,9 @@ local inline void AddBindings(Admin* admin) {
 				}
 			}
 		}
-	}
-	else {
+	}else{
 		LOG("Creating binds file..");
 		Assets::writeFile(Assets::dirConfig() + "binds.cfg", "", 0);
-		
 		return;
 	}
 }

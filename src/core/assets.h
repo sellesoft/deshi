@@ -9,13 +9,6 @@
 #include <vector>
 #include <map>
 
-enum AssetTypeBits{
-	AssetType_NONE, 
-	AssetType_Data,  AssetType_Entity, AssetType_Model,  AssetType_Texture, 
-	AssetType_Save,  AssetType_Sound,  AssetType_Shader, AssetType_Config,
-	AssetType_LAST
-}; typedef u32 AssetType;
-
 enum ConfigValueTypeBits{
 	ConfigValueType_NONE = 0, //can be used for comments/padding
 	ConfigValueType_S32,
@@ -59,9 +52,6 @@ namespace Assets{
 	inline static std::string dirSounds()  { return dirData() + "sounds/"; }
 	inline static std::string dirTemp()    { return dirData() + "temp/"; }
 	inline static std::string dirTextures(){ return dirData() + "textures/"; }
-	
-	//returns "" if file not found, and logs error to console
-	std::string assetPath(const char* filename, AssetType type, bool logError = true);
 	
 	//returns true if the file was deleted
 	bool deleteFile(std::string& filepath, bool logError = true);

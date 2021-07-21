@@ -2,28 +2,6 @@
 //// file paths ////
 ////////////////////
 
-std::string Assets::
-assetPath(const char* filename, AssetType type, bool logError){
-	std::string file;
-	switch(type){
-		case AssetType_Entity:  file = dirEntities() + filename; break;
-		case AssetType_Model:   file = dirModels() + filename; break;
-		case AssetType_Texture: file = dirTextures() + filename; break;
-		case AssetType_Save:    file = dirSaves() + filename; break;
-		case AssetType_Sound:   file = dirSounds() + filename; break;
-		case AssetType_Shader:  file = dirShaders() + filename; break;
-		case AssetType_Config:  file = dirConfig() + filename; break;
-		case AssetType_NONE:    file = filename; break;
-		default:                file = dirData() + filename; break;
-	}
-	if(std::filesystem::exists(std::filesystem::path(file))){
-		return file;
-	}else{
-		if(logError) ERROR("Failed to find data: ", file);
-		return "";
-	}
-}
-
 bool Assets::
 deleteFile(std::string& filepath, bool logError){
 	bool result = std::filesystem::remove(filepath);

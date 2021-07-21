@@ -22,7 +22,7 @@ http://gameangst.com/?p=9
 
 struct TextureVk {
     char filename[DESHI_NAME_SIZE];
-    u32 id = 0xFFFFFFFF;
+    u32 id;
     int width, height, channels;
     stbi_uc* pixels;
     u32 mipLevels;
@@ -40,9 +40,9 @@ struct TextureVk {
 
 //a primitive contains the information for one draw call (a batch)
 struct PrimitiveVk{
-    u32 firstIndex    = 0;
-    u32 indexCount    = 0;
-    u32 materialIndex = 0;
+    u32 firstIndex;
+    u32 indexCount;
+    u32 materialIndex;
 };
 
 struct MeshVk{
@@ -1958,15 +1958,12 @@ CreatePipelineCache(){
 	VkPipelineCacheCreateInfo pipelineCacheCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
 	
 	//try to read pipeline cache file if exists
-	std::string path = Assets::assetPath("pipelines.cache", AssetType_Data, false);
-	std::vector<char> data;
-	if(path != ""){
-		data = Assets::readFileBinary(path);
+	std::vector<char> data = Assets::readFileBinary(Assets::dirData()+"pipelines.cache", 0, false);
+	if(data.size()){
 		pipelineCacheCreateInfo.initialDataSize = data.size();
 		pipelineCacheCreateInfo.pInitialData    = data.data();
+		AssertVk(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache), "failed to create pipeline cache");
 	}
-	
-	AssertVk(vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache), "failed to create pipeline cache");
 }
 
 local void 
@@ -3464,13 +3461,11 @@ LoadTexture(const char* filename, u32 type){
 	for(auto& tex : textures){ if(strcmp(tex.filename, filename) == 0){ return tex.id; } }
 	
 	PrintVk(3, "    Loading Texture: ", filename);
-	TextureVk tex; 
+	TextureVk tex{}; 
 	cpystr(tex.filename, filename, DESHI_NAME_SIZE);
 	
-	std::string imagePath = Assets::assetPath(filename, AssetType_Texture);
-	if(imagePath == ""){ return 0; }
-	tex.pixels = stbi_load(imagePath.c_str(), &tex.width, &tex.height, &tex.channels, STBI_rgb_alpha);
-	Assert(tex.pixels != 0, "stb failed to load an image");
+	tex.pixels = stbi_load((Assets::dirTextures()+filename).c_str(), &tex.width, &tex.height, &tex.channels, STBI_rgb_alpha);
+	if(tex.pixels == 0){ ERROR_LOC("Failed to load texture: ", filename); return 0; }
 	
 	tex.type      = type;
 	tex.mipLevels = (u32)std::floor(std::log2(std::max(tex.width, tex.height))) + 1;
