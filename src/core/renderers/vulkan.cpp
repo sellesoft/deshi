@@ -16,42 +16,58 @@ http://www.ludicon.com/castano/blog/2009/02/optimal-grid-rendering/
 http://gameangst.com/?p=9
 */
 
-#include "renderer.h"
-#include "assets.h"
-#include "imgui.h"
-#include "input.h"
-#include "time.h"
-#include "window.h"
-#include "../scene/Scene.h"
-#include "../math/Math.h"
-#include "../utils/utils.h"
-#include "../utils/optional.h"
-#include "../utils/tuple.h"
-#include "../utils/Color.h"
-#include "../utils/debug.h"
-
-#include "../external/imgui/imgui_impl_glfw.h"
-#include "../external/imgui/imgui_impl_vulkan.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include "../external/stb/stb_image.h"
-
-#if defined(_MSC_VER)
-#pragma comment(lib,"shaderc_combined.lib")
-#endif
-#include <shaderc/shaderc.h>
-
-#include <vector>
-#include <array>
-#include <set>
-#include <cstring>
-#include <filesystem>
-#include <iostream>
-#include <fstream>
-
-
 //-------------------------------------------------------------------------------------------------
 // VULKAN STRUCTS
 
+
+struct TextureVk {
+    char filename[DESHI_NAME_SIZE];
+    u32 id = 0xFFFFFFFF;
+    int width, height, channels;
+    stbi_uc* pixels;
+    u32 mipLevels;
+    u32 type;
+    
+    VkImage        image;
+    VkDeviceMemory imageMemory;
+    VkDeviceSize   imageSize;
+    
+    VkImageView   view;
+    VkSampler     sampler;
+    VkImageLayout layout;
+    VkDescriptorImageInfo imageInfo; //just a combo of the previous three vars
+};
+
+//a primitive contains the information for one draw call (a batch)
+struct PrimitiveVk{
+    u32 firstIndex    = 0;
+    u32 indexCount    = 0;
+    u32 materialIndex = 0;
+};
+
+struct MeshVk{
+    u32 id      = -1;
+    bool visible = true;
+    bool base    = false;
+    Mesh* ptr   = nullptr;
+    char name[DESHI_NAME_SIZE];
+    mat4 modelMatrix = mat4::IDENTITY;
+    std::vector<PrimitiveVk> primitives;
+    std::vector<u32> children;
+};
+
+struct MaterialVk{
+    u32 id         = -1;
+    u32 shader     = 0;
+    u32 albedoID   = 0;
+    u32 normalID   = 2;
+    u32 specularID = 2;
+    u32 lightID    = 2;
+    char name[DESHI_NAME_SIZE];
+    
+    VkDescriptorSet descriptorSet;
+    VkPipeline      pipeline = 0;
+};
 
 struct Vertex2D{
 	vec2 pos;
@@ -401,7 +417,7 @@ local struct{ //pipelines
 //////////////////
 //// @shaders ////
 //////////////////
-local std::array<VkPipelineShaderStageCreateInfo, 3> shaderStages;
+local VkPipelineShaderStageCreateInfo shaderStages[6];
 local std::vector<pair<std::string, VkShaderModule>> shaderModules;
 
 /////////////////
@@ -1025,7 +1041,7 @@ CreateLogicalDevice(){
 	for(int queueFamily : uniqueQueueFamilies){
 		VkDeviceQueueCreateInfo queueCreateInfo{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
 		queueCreateInfo.queueFamilyIndex = physicalQueueFamilies.graphicsFamily.value;
-		queueCreateInfo.queueCount = 1;
+		queueCreateInfo.queueCount       = 1;
 		queueCreateInfo.pQueuePriorities = &queuePriority;
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
@@ -2068,7 +2084,7 @@ SetupPipelineCreation(){
 	
 	//base pipeline info and options
 	pipelineCreateInfo.stageCount          = 0;
-	pipelineCreateInfo.pStages             = shaderStages.data();
+	pipelineCreateInfo.pStages             = shaderStages;
 	pipelineCreateInfo.pVertexInputState   = &vertexInputState;
 	pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
 	pipelineCreateInfo.pTessellationState  = 0;
@@ -2996,7 +3012,7 @@ BuildCommandBuffers(){
 
 
 //-------------------------------------------------------------------------------------------------
-// IMGUI FUNCTIONS
+// @IMGUI FUNCTIONS
 
 
 local void imguiCheckVkResult(VkResult err){
@@ -3073,7 +3089,32 @@ newFrame(){
 
 
 //-------------------------------------------------------------------------------------------------
-// INTERFACE FUNCTIONS
+// @UI INTERFACE
+
+
+void UI::
+FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
+	if(color.a == 0) return;
+	
+	u32 col = color.R8G8B8A8_UNORM();
+	Vertex2D* vp = uiVertexArray + uiVertexCount;
+	u16*      ip = uiIndexArray  + uiIndexCount;
+	
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
+	vp[0].pos = {x+0,y+0}; vp[0].uv = {0,0}; vp[0].color = col;
+	vp[1].pos = {x+w,y+0}; vp[1].uv = {0,0}; vp[1].color = col;
+	vp[2].pos = {x+w,y+h}; vp[2].uv = {0,0}; vp[2].color = col;
+	vp[3].pos = {x+0,y+h}; vp[3].uv = {0,0}; vp[3].color = col;
+	
+	uiVertexCount += 4;
+	uiIndexCount  += 6;
+	uiCmdArray[uiCmdCount-1].indexCount += 6;
+}
+
+
+//-------------------------------------------------------------------------------------------------
+// @INTERFACE FUNCTIONS
 
 
 void Render::
@@ -3123,6 +3164,35 @@ LoadDefaultAssets(){
 void Render::
 remakeOffscreen(){
 	_remakeOffscreen = true;
+}
+
+std::string Render::
+SaveMeshTEXT(u32 meshID){
+	std::string result; result.reserve(256);
+	if(meshID < meshes.size()){
+		result.append(TOSTRING("\n",meshes[meshID].id," \"",meshes[meshID].name,"\" ",meshes[meshID].visible," \"", meshes[meshID].primitives[0].materialIndex));
+		for(u32 i=1; i<meshes[meshID].primitives.size(); ++i){ result.append(TOSTRING(" ", meshes[meshID].primitives[i].materialIndex)); }
+		result.append("\"");
+	}else{
+		ERROR_LOC("There is no mesh with id: ", meshID);
+	}
+	result.shrink_to_fit();
+	return result;
+}
+
+std::string Render::
+SaveMaterialTEXT(u32 matID){
+	std::string result;
+	if(matID < materials.size()){
+		result = TOSTRING("\n",materials[matID].id," \"",materials[matID].name,"\" ",materials[matID].shader," \"",
+						  textures[materials[matID].albedoID].filename,  "\" \"",
+						  textures[materials[matID].normalID].filename,  "\" \"",
+						  textures[materials[matID].specularID].filename,"\" \"",
+						  textures[materials[matID].lightID].filename,   "\"");
+	}else{
+		ERROR_LOC("There is no material with id: ", matID);
+	}
+	return result;
 }
 
 
@@ -3340,6 +3410,24 @@ UpdateMeshVisibility(u32 meshID, bool visible){
 	}else{
 		ERROR_LOC("There is no mesh with id: ", meshID);
 	}
+}
+
+u32 Render::
+MeshBatchCount(u32 meshID){
+	if(meshID < meshes.size()){
+		return meshes[meshID].primitives.size();
+	}else{ ERROR_LOC("There is no mesh with id: ", meshID); }
+	return -1;
+}
+
+u32 Render::
+MeshBatchMaterial(u32 meshID, u32 batchIndex){
+	if(meshID < meshes.size()){
+		if(batchIndex < meshes[meshID].primitives.size()){
+			return meshes[meshID].primitives[batchIndex].materialIndex;
+		}else{ ERROR_LOC("There is no batch on the mesh with id: ", batchIndex); }
+	}else{ ERROR_LOC("There is no mesh with id: ", meshID); }
+	return -1;
 }
 
 void Render::
@@ -3803,7 +3891,7 @@ TempFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 ne
 //// @other stuff ////
 //////////////////////
 
-//ref: gltfscenerendering.cpp:350
+
 void Render::
 LoadScene(Scene* sc){
 	PrintVk(2, "  Loading Scene");
@@ -3831,28 +3919,26 @@ UpdateCameraProjectionMatrix(Matrix4 m){
 	uboVS.values.proj = m;
 }
 
-pair<Vector3, Vector3> Render::
-SceneBoundingBox(){
+void Render::
+SceneBoundingBox(Vector3* min, Vector3* max){
 	float inf = std::numeric_limits<float>::max();
-	Vector3 max(-inf, -inf, -inf);
-	Vector3 min( inf,  inf,  inf);
+	*max = vec3(-inf, -inf, -inf);
+	*min = vec3( inf,  inf,  inf);
 	
 	Vector3 v;
 	for(MeshVk& mesh : meshes){
 		for(PrimitiveVk& p : mesh.primitives){
 			for(int i = p.firstIndex; i < p.indexCount; i++){
 				v = vertexBuffer[indexBuffer[i]].pos + mesh.modelMatrix.Translation();
-				if      (v.x < min.x){ min.x = v.x; }
-				else if(v.x > max.x){ max.x = v.x; }
-				if      (v.y < min.y){ min.y = v.y; }
-				else if(v.y > max.y){ max.y = v.y; }
-				if      (v.z < min.z){ min.z = v.z; }
-				else if(v.z > max.z){ max.z = v.z; }
+				if     (v.x < min->x){ min->x = v.x; }
+				else if(v.x > max->x){ max->x = v.x; }
+				if     (v.y < min->y){ min->y = v.y; }
+				else if(v.y > max->y){ max->y = v.y; }
+				if     (v.z < min->z){ min->z = v.z; }
+				else if(v.z > max->z){ max->z = v.z; }
 			}
 		}
 	}
-	
-	return pair<Vector3, Vector3>(max, min);
 }
 
 void Render::
@@ -3933,40 +4019,6 @@ UpdateRenderSettings(RenderSettings new_settings){
 	settings = new_settings;
 };
 
-std::vector<Vertex>* Render::
-vertexArray(){
-	return &vertexBuffer;
-}
-
-std::vector<u32>* Render::
-indexArray(){
-	return &indexBuffer;
-}
-
-std::vector<TextureVk>* Render::
-textureArray(){
-	return &textures;
-}
-std::vector<MeshVk>* Render::
-meshArray(){
-	return &meshes;
-}
-
-std::vector<MaterialVk>* Render::
-materialArray(){
-	return &materials;
-}
-
-std::vector<u32>* Render::
-selectedArray(){
-	return &selected;
-}
-
-vec4* Render::
-lightArray(){
-	return lights;
-}
-
 u32 Render::
 MeshCount(){
 	return meshes.size();
@@ -3995,6 +4047,29 @@ TextureCount(){
 u32 Render::
 MaterialCount(){
 	return materials.size();
+}
+
+u32 Render::
+MaterialShader(u32 matID){
+	return materials[matID].shader;
+}
+
+std::vector<u32> Render::
+MaterialTextures(u32 matID){
+	return {materials[matID].albedoID, materials[matID].normalID, materials[matID].specularID, materials[matID].lightID};
+}
+
+std::string Render::
+ListMaterials(){
+	std::string result = "[c:yellow]Materials List:\nID\tShader\tAlbedo\tNormal\tSpecular\tLight[c]";
+	for (auto& mat : materials) {
+		result += TOSTRING("\n", mat.id, "\t", ShaderStrings[mat.shader], "\t",
+						   mat.albedoID,   ":", textures[mat.albedoID].filename, "\t",
+						   mat.normalID,   ":", textures[mat.normalID].filename, "\t",
+						   mat.specularID, ":", textures[mat.specularID].filename, "\t",
+						   mat.lightID,    ":", textures[mat.lightID].filename);
+	}
+	return result;
 }
 
 bool Render::
@@ -4250,29 +4325,4 @@ Cleanup(){
 	}
 	
 	vkDeviceWaitIdle(device);
-}
-
-
-//-------------------------------------------------------------------------------------------------
-// 2D INTERFACE
-
-
-void UI::
-FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
-	if(color.a == 0) return;
-	
-	u32 col = color.R8G8B8A8_UNORM();
-	Vertex2D* vp = uiVertexArray + uiVertexCount;
-	u16*      ip = uiIndexArray  + uiIndexCount;
-	
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
-	vp[0].pos = {x+0,y+0}; vp[0].uv = {0,0}; vp[0].color = col;
-	vp[1].pos = {x+w,y+0}; vp[1].uv = {0,0}; vp[1].color = col;
-	vp[2].pos = {x+w,y+h}; vp[2].uv = {0,0}; vp[2].color = col;
-	vp[3].pos = {x+0,y+h}; vp[3].uv = {0,0}; vp[3].color = col;
-	
-	uiVertexCount += 4;
-	uiIndexCount  += 6;
-	uiCmdArray[uiCmdCount-1].indexCount += 6;
 }

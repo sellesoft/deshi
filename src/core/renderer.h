@@ -5,7 +5,6 @@
 #include "../defines.h"
 #include "../math/VectorMatrix.h"
 #include "../utils/Color.h"
-#include "../utils/tuple.h"
 
 #include <vector>
 #include <string>
@@ -21,7 +20,36 @@ enum VSyncTypeBits{
 	VSyncType_FifoRelaxed, //same as Fifo, but if the image generates slower than refresh, dont wait to display on next refresh
 }; typedef u32 VSyncType;
 
-struct RenderSettings{ //loaded from file
+enum RendererStageBits{ 
+    RENDERERSTAGE_NONE  = 0, 
+    RSVK_INSTANCE       = 1 << 0,
+    RSVK_SURFACE        = 1 << 1,
+    RSVK_PHYSICALDEVICE = 1 << 2,
+    RSVK_LOGICALDEVICE  = 1 << 3,
+    RSVK_SWAPCHAIN      = 1 << 4,
+    RSVK_RENDERPASS     = 1 << 5,
+    RSVK_COMMANDPOOL    = 1 << 6,
+    RSVK_FRAMES         = 1 << 7,
+    RSVK_SYNCOBJECTS    = 1 << 8,
+    RSVK_UNIFORMBUFFER  = 1 << 9,
+    RSVK_LAYOUTS        = 1 << 10,
+	RSVK_DESCRIPTORPOOL = 1 << 11,
+    RSVK_DESCRIPTORSETS = 1 << 12,
+    RSVK_PIPELINESETUP  = 1 << 13,
+    RSVK_PIPELINECREATE = 1 << 14,
+    RSVK_RENDER      = 0xFFFFFFFF,
+}; typedef u32 RendererStage;
+
+struct RenderStats{
+    u32 totalTriangles;
+    u32 totalVertices;
+    u32 totalIndices;
+    u32 drawnTriangles;
+    u32 drawnIndices;
+    f32 renderTimeMS;
+};
+
+struct RenderSettings{
 	//// requires restart ////
     bool debugging = true;
     bool printf    = false;
@@ -61,96 +89,6 @@ struct RenderSettings{ //loaded from file
 	bool tempMeshOnTop   = false;
 };
 
-struct RenderStats{
-    u32 totalTriangles;
-    u32 totalVertices;
-    u32 totalIndices;
-    u32 drawnTriangles;
-    u32 drawnIndices;
-    f32 renderTimeMS;
-};
-
-enum RendererStageBits{ 
-    RENDERERSTAGE_NONE  = 0, 
-    RSVK_INSTANCE       = 1 << 0,
-    RSVK_SURFACE        = 1 << 1,
-    RSVK_PHYSICALDEVICE = 1 << 2,
-    RSVK_LOGICALDEVICE  = 1 << 3,
-    RSVK_SWAPCHAIN      = 1 << 4,
-    RSVK_RENDERPASS     = 1 << 5,
-    RSVK_COMMANDPOOL    = 1 << 6,
-    RSVK_FRAMES         = 1 << 7,
-    RSVK_SYNCOBJECTS    = 1 << 8,
-    RSVK_UNIFORMBUFFER  = 1 << 9,
-    RSVK_LAYOUTS        = 1 << 10,
-	RSVK_DESCRIPTORPOOL = 1 << 11,
-    RSVK_DESCRIPTORSETS = 1 << 12,
-    RSVK_PIPELINESETUP  = 1 << 13,
-    RSVK_PIPELINECREATE = 1 << 14,
-    RSVK_RENDER      = 0xFFFFFFFF,
-}; typedef u32 RendererStage;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-//TODO(delle,Re) move vulkan stuff to its cpp once we have a better interface for querying info about them
-
-#if defined(_MSC_VER)
-#pragma comment(lib,"vulkan-1.lib")
-#pragma comment(lib,"glfw3.lib")
-#endif
-#include <vulkan/vulkan.h>
-#include <GLFW/glfw3.h>
-
-typedef u8 stbi_uc;
-struct TextureVk {
-    char filename[DESHI_NAME_SIZE];
-    u32 id = 0xFFFFFFFF;
-    int width, height, channels;
-    stbi_uc* pixels;
-    u32 mipLevels;
-    u32 type;
-    
-    VkImage        image;
-    VkDeviceMemory imageMemory;
-    VkDeviceSize   imageSize;
-    
-    VkImageView   view;
-    VkSampler     sampler;
-    VkImageLayout layout;
-    VkDescriptorImageInfo imageInfo; //just a combo of the previous three vars
-};
-
-//a primitive contains the information for one draw call (a batch)
-struct PrimitiveVk{
-    u32 firstIndex    = 0;
-    u32 indexCount    = 0;
-    u32 materialIndex = 0;
-};
-
-struct MeshVk{
-    u32 id      = -1;
-    bool visible = true;
-    bool base    = false;
-    Mesh* ptr   = nullptr;
-    char name[DESHI_NAME_SIZE];
-    mat4 modelMatrix = mat4::IDENTITY;
-    std::vector<PrimitiveVk> primitives;
-    std::vector<u32> children;
-};
-
-struct MaterialVk{
-    u32 id         = -1;
-    u32 shader     = 0;
-    u32 albedoID   = 0;
-    u32 normalID   = 2;
-    u32 specularID = 2;
-    u32 lightID    = 2;
-    char name[DESHI_NAME_SIZE];
-    
-    VkDescriptorSet descriptorSet;
-    VkPipeline      pipeline = 0;
-};
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
 namespace Render{
 	
     void LoadSettings();
@@ -175,6 +113,8 @@ namespace Render{
     void TransformMeshMatrix(u32 meshID, Matrix4 transform);
     void UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID);
     void UpdateMeshVisibility(u32 meshID, bool visible);
+	u32  MeshBatchCount(u32 meshID);
+	u32  MeshBatchMaterial(u32 meshID, u32 batchIdx);
     Matrix4 GetMeshMatrix(u32 meshID);
     Mesh*   GetMeshPtr(u32 meshID);
 	bool    IsBaseMesh(u32 meshIdx);
@@ -208,11 +148,14 @@ namespace Render{
     u32 CreateMaterial(const char* name, u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2);
     u32 CopyMaterial(u32 materialID);
     u32 MaterialCount();
+	u32 MaterialShader(u32 matID);
     void UpdateMaterialTexture(u32 matID, u32 textureType, u32 textureID);
     void UpdateMaterialShader(u32 matID, u32 shader);
     void RemoveMaterial(u32 materialID);
 	char* MaterialName(u32 materialIdx);
     std::vector<u32> GetMaterialIDs(u32 MeshID);
+	std::vector<u32> MaterialTextures(u32 matID);
+	std::string ListMaterials();
 	
 	void TempLine(Vector3 start, Vector3 end, Color color = Color::WHITE);
 	void TempBox(Matrix4 transform, Color color = Color::WHITE);
@@ -227,24 +170,18 @@ namespace Render{
     void UpdateCameraViewMatrix(Matrix4 m);
     void UpdateCameraProjectionMatrix(Matrix4 m);
 	
-    pair<Vector3, Vector3> SceneBoundingBox(); 
+	//fills the min and max vec3's with the furthest vertices' positions in the scene
+	void SceneBoundingBox(Vector3* min, Vector3* max); 
     
     //signals vulkan to remake the pipelines
     void ReloadShader(u32 shaderID);
     void ReloadAllShaders();
     void UpdateRenderSettings(RenderSettings settings);
 	
-	
-	//TODO(delle,Re) make a better interface so other code doesnt need to access these directly
-	//temporary funcs
+	//temp funcs
 	void remakeOffscreen();
-	std::vector<Vertex>*    vertexArray();
-	std::vector<u32>*         indexArray();
-	std::vector<TextureVk>*   textureArray();
-	std::vector<MeshVk>*      meshArray();
-	std::vector<MaterialVk>*  materialArray();
-	std::vector<u32>*         selectedArray();
-	vec4*                     lightArray();
+	std::string SaveMeshTEXT(u32 meshID);
+	std::string SaveMaterialTEXT(u32 matID);
 	
 	void Init();
 	void Update();

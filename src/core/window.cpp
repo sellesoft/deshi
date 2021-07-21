@@ -1,19 +1,3 @@
-#include "window.h"
-#include "input.h"
-#include "console.h"
-#include "assets.h"
-#include "../utils/debug.h"
-
-#include "../external/stb/stb_image.h"
-
-#if defined(_MSC_VER)
-#pragma comment(lib,"glfw3.lib")
-#endif
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-
-#include <iostream>
-
 local bool _resized = false;
 local int _width, _height, _x, _y;
 
@@ -24,11 +8,21 @@ void glfwError(int id, const char* description){
 //thanks: https://github.com/OneLoneCoder/olcPixelGameEngine/pull/181
 void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	glfwSetErrorCallback(&glfwError);
-	if (!glfwInit()){ return; }
+	if(!glfwInit()){ return; }
 	
 	//TODO(delle,Wi) maybe we should not allow the window to be resizable in-game, but in-engine is fine
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+#if DESHI_OPENGL
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#if DESHI_MAC
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif //DESHI_MAC
+#endif //DESHI_OPENGL
+	
 	window = glfwCreateWindow(width, height, "deshi", NULL, NULL);
 	monitor = glfwGetPrimaryMonitor();
 	if(!window) { glfwTerminate(); return; }
@@ -306,6 +300,10 @@ void Window::UpdateResizable(bool resizable){
 
 void Window::Close() {
 	closeWindow = true;
+}
+
+void Window::UpdateTitle(const char* title){
+	glfwSetWindowTitle(this->window, title);
 }
 
 std::string Window::str(){

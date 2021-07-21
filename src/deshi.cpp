@@ -26,7 +26,6 @@ rework and simplify entity creation so there is a distinction between developmen
 fix colorspace so we dont have to do the pow in shaders
 make a dynamic timers array on in time.h for cleaner timer stuffs
 add a setting for a limit to the number of log files
-make the engine runnable without the renderer
 create a hot-loadable global vars file
 detach camera from the renderer so that the camera component isnt calling the renderer
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
@@ -167,7 +166,28 @@ __________ maybe store the text in the actual source and create the file from th
 
 */
 
+
+#include <iostream>
+#include <iomanip>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <regex>
+#include <vector>
+#include <set>
+
 #include "defines.h"
+#include "utils/color.h"
+#include "utils/tuple.h"
+#include "utils/containermanager.h"
+#include "utils/utils.h"
+#include "utils/optional.h"
+#include "utils/debug.h"
+#include "utils/ringarray.h"
+#include "utils/command.h"
+#include "math/math.h"
+#include "scene/Scene.h"
+
 #include "core/assets.h"
 #include "core/console.h"
 #include "core/console2.h"
@@ -177,6 +197,42 @@ __________ maybe store the text in the actual source and create the file from th
 #include "core/time.h"
 #include "core/window.h"
 #include "game/admin.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "external/stb/stb_image.h"
+#include "external/imgui/imgui_impl_glfw.h"
+
+#if   DESHI_VULKAN //DESHI_RENDERER
+#if defined(_MSC_VER)
+#pragma comment(lib,"vulkan-1.lib")
+#pragma comment(lib,"glfw3.lib")
+#pragma comment(lib,"shaderc_combined.lib")
+#endif
+#include <vulkan/vulkan.h>
+#include <GLFW/glfw3.h>
+#include <shaderc/shaderc.h>
+#include "external/imgui/imgui_impl_vulkan.h"
+
+#include "core/renderers/vulkan.cpp"
+#elif DESHI_OPENGL
+#if defined(_MSC_VER)
+#pragma comment(lib,"opengl32.lib")
+#pragma comment(lib,"glfw3.lib")
+#endif
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
+#include "core/renderers/opengl.cpp"
+#elif DESHI_DIRECTX
+
+#else
+Assert(!"no renderer selected");
+#endif //DESHI_RENDERER
+
+#include "core/window.cpp"
+#include "core/assets.cpp"
+#include "core/console.cpp"
+#include "core/console2.cpp"
 
 local Time    time_;   Time*    g_time    = &time_; //time_ because there is a c-func time() D:
 local Window  window;  Window*  g_window  = &window;
@@ -214,7 +270,7 @@ int main() {
 		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
-
+			
 		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

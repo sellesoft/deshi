@@ -285,6 +285,9 @@
     <Filter Include="src\game\entities\cpp">
       <UniqueIdentifier>{9f7fae91-62b0-48b1-9257-3ae72ccd99a3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\core\renderers">
+      <UniqueIdentifier>{b4b49f6e-8831-4ad6-8d8f-916345453348}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore">
@@ -400,9 +403,6 @@
     <ClCompile Include="..\src\external\imgui\imgui.cpp">
       <Filter>src\external\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\renderer_vulkan.cpp">
-      <Filter>src\core</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\core\window.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
@@ -489,6 +489,12 @@
     </ClCompile>
     <ClCompile Include="..\src\core\console2.cpp">
       <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\renderers\opengl.cpp">
+      <Filter>src\core\renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\renderers\vulkan.cpp">
+      <Filter>src\core\renderers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

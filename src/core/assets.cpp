@@ -1,15 +1,3 @@
-#include "assets.h"
-#include "input.h"
-#include "console.h"
-#include "../utils/utils.h"
-#include "../utils/debug.h"
-#include "../math/vector.h"
-
-#include <iostream>
-#include <fstream>
-#include <filesystem>
-#include <regex>
-
 ////////////////////
 //// file paths ////
 ////////////////////

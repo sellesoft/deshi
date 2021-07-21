@@ -38,7 +38,6 @@ typedef double             f64;
 //for-loop shorthands
 #define forX(var_name,iterations) for(int var_name=0; var_name<(iterations); ++var_name)
 #define forI(iterations) for(int i=0; i<(iterations); ++i)
-#define forR(start, stop) for(int i=stop; i>=stop; --i)
 
 //dst: destination c-string; src: source c-string; bytes: number of characters to copy
 //NOTE the last character in the copy is replaced with a null-terminating character

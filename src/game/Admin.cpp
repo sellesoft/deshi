@@ -342,23 +342,15 @@ void Admin::SaveTEXT(std::string level_name){
 	//materials
 	level_text.append("\n"
 					  "\n>materials");
-	for(MaterialVk& mat : *Render::materialArray()){
-		level_text.append(TOSTRING("\n",mat.id," \"",mat.name,"\" ",mat.shader," \"",
-								   (*Render::textureArray())[mat.albedoID].filename,"\" \"",
-								   (*Render::textureArray())[mat.normalID].filename,"\" \"",
-								   (*Render::textureArray())[mat.specularID].filename,"\" \"",
-								   (*Render::textureArray())[mat.lightID].filename,"\""));
+	forI(Render::MaterialCount()){
+		level_text.append(Render::SaveMaterialTEXT(i));
 	}
 	
 	//models
 	level_text.append("\n"
 					  "\n>meshes");
-	for(MeshVk& mesh : *Render::meshArray()){
-		if(!mesh.base){
-			level_text.append(TOSTRING("\n",mesh.id," \"",mesh.name,"\" ",mesh.visible," \"", mesh.primitives[0].materialIndex));
-			for(u32 i=1; i<mesh.primitives.size(); ++i){ level_text.append(TOSTRING(" ", mesh.primitives[i].materialIndex)); }
-			level_text.append("\"");
-		}
+	forI(Render::MeshCount()){
+		if(!Render::IsBaseMesh(i)) level_text.append(Render::SaveMeshTEXT(i));
 	}
 	
 	//entities
@@ -493,15 +485,15 @@ void Admin::LoadTEXT(std::string savename){
 					mesh_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
 					
 					//visible
-					(*Render::meshArray())[new_id].visible = Assets::parse_bool(split[2], level_dir.c_str(), line_number);
+					Render::UpdateMeshVisibility(new_id, Assets::parse_bool(split[2], level_dir.c_str(), line_number));
 					
 					//materials
 					std::vector<std::string> mat_ids = Utils::spaceDelimit(split[3]); 
-					forI((*Render::meshArray())[new_id].primitives.size()){
+					forI(Render::MeshBatchCount(new_id)){
 						u32 old_mat = std::stoi(mat_ids[i]);
 						for(auto& diff : material_id_diffs){
 							if(diff.first == old_mat){
-								(*Render::meshArray())[new_id].primitives[i].materialIndex = diff.second;
+								Render::UpdateMeshBatchMaterial(new_id, i, diff.second);
 							}
 						}
 					}
@@ -656,14 +648,17 @@ void Admin::SaveDESH(const char* filename) {
     //// write textures ////
     header.textureCount = Render::TextureCount();;
     header.textureArrayOffset = file.tellp();
+	/*
     for(auto& t : *Render::textureArray()){
         file.write((const char*)&t.type, sizeof(u32));
         file.write(t.filename,           sizeof(char)*DESHI_NAME_SIZE);
     }
+*/
     
     //// write materials ////
     header.materialCount = Render::MaterialCount();
     header.materialArrayOffset = file.tellp();
+	/*
     for(auto& m : *Render::materialArray()){
         file.write((const char*)&m.shader,     sizeof(u32));
         file.write((const char*)&m.albedoID,   sizeof(u32));
@@ -672,16 +667,19 @@ void Admin::SaveDESH(const char* filename) {
         file.write((const char*)&m.lightID,    sizeof(u32));
         file.write(m.name,                     sizeof(char)*DESHI_NAME_SIZE);
     }
+*/
     
     //// write meshes //// //TODO(delle) support multiple materials per mesh
     header.meshCount = Render::MeshCount();
     header.meshArrayOffset = file.tellp();
+	/*
     for(auto& m : *Render::meshArray()){
         bool base = m.base;
         file.write((const char*)&m.primitives[0].materialIndex, sizeof(u32));
         file.write((const char*)&base,                          sizeof(bool));
         file.write(m.name,                                      sizeof(char)*DESHI_NAME_SIZE);
     }
+*/
     
     //// write component type headers //// //TODO(delle) move these to thier respective files
     header.componentTypeHeaderArrayOffset = file.tellp();

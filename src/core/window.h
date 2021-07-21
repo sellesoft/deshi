@@ -5,7 +5,7 @@
 #include "../defines.h"
 #include "../math/Vector.h"
 
-#include <iosfwd> //forward delcare: <string>
+#include <string>
 
 struct Input;
 struct GLFWwindow;
@@ -52,6 +52,7 @@ struct Window{
 	void UpdateRawInput(bool rawInput);
 	void UpdateResizable(bool resizable);
 	void Close();
+	void UpdateTitle(const char* title);
 	
 	std::string str();
 };

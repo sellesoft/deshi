@@ -1222,9 +1222,9 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 						}
                         
 						ImGui::TextEx("Material "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-						if(ImGui::BeginCombo("##mesh_mat_combo", (*Render::materialArray())[(*Render::meshArray())[mc->meshID].primitives[mesh_batch_idx].materialIndex].name)){ WinHovCheck;
+						if(ImGui::BeginCombo("##mesh_mat_combo", Render::MaterialName(Render::MeshBatchMaterial(mc->meshID, mesh_batch_idx)))){ WinHovCheck;
 							forI(Render::MaterialCount()){
-								if(ImGui::Selectable(Render::MaterialName(i), (*Render::meshArray())[mc->meshID].primitives[mesh_batch_idx].materialIndex == i)){
+								if(ImGui::Selectable(Render::MaterialName(i), Render::MeshBatchMaterial(mc->meshID, mesh_batch_idx) == i)){
 									Render::UpdateMeshBatchMaterial(mc->meshID, mesh_batch_idx, i);
 								}
 							}
@@ -1586,14 +1586,13 @@ inline void MaterialsTab(Admin* admin){
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
             
             forX(mat_idx, Render::MaterialCount()) {
-                MaterialVk* mat = &(*Render::materialArray())[mat_idx];
-                ImGui::PushID(mat->id);
+                ImGui::PushID(mat_idx);
                 ImGui::TableNextRow();
                 
                 //// id + label ////
                 ImGui::TableSetColumnIndex(0);
                 char label[8];
-                sprintf(label, " %03d", mat->id);
+                sprintf(label, " %03d", mat_idx);
                 if(ImGui::Selectable(label, selected_mat == mat_idx, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
                     selected_mat = (ImGui::GetIO().KeyCtrl) ? -1 : mat_idx; //deselect if CTRL held
                     rename_mat = false;
@@ -1607,7 +1606,7 @@ inline void MaterialsTab(Admin* admin){
                     ImGui::InputText("##mat_rename_input", rename_buffer, DESHI_NAME_SIZE, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
                     ImGui::PopStyleColor();
                 }else{
-                    ImGui::TextEx(mat->name);
+                    ImGui::TextEx(Render::MaterialName(mat_idx));
                 }
                 
                 //// delete ImGui::Button ////
@@ -1641,18 +1640,16 @@ inline void MaterialsTab(Admin* admin){
     if(selected_mat == -1) return;
     SetPadding;
     if(ImGui::BeginChild("##mat_inspector", ImVec2(ImGui::GetWindowWidth()*.95f, ImGui::GetWindowHeight()*.8f), false)) {
-        MaterialVk* mat = &(*Render::materialArray())[selected_mat];
-        
         //// name ////
         ImGui::TextEx("Name   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-        ImGui::InputText("##mat_name_input", mat->name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        ImGui::InputText("##mat_name_input", Render::MaterialName(selected_mat), DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
         
         //// shader selection ////
         ImGui::TextEx("Shader "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-        if(ImGui::BeginCombo("##mat_shader_combo", ShaderStrings[mat->shader])){
+        if(ImGui::BeginCombo("##mat_shader_combo", ShaderStrings[Render::MaterialShader(selected_mat)])){
             forI(ArrayCount(ShaderStrings)){
-                if(ImGui::Selectable(ShaderStrings[i], mat->shader == i)){
-                    Render::UpdateMaterialShader(mat->id, i);
+                if(ImGui::Selectable(ShaderStrings[i], Render::MaterialShader(selected_mat) == i)){
+                    Render::UpdateMaterialShader(selected_mat, i);
                 }
             }
             ImGui::EndCombo(); //mat_shader_combo
@@ -1662,7 +1659,7 @@ inline void MaterialsTab(Admin* admin){
         
         //// material properties ////
         //TODO(Ui) setup material editing other than PBR once we have material parameters
-        switch(mat->shader){
+        switch(Render::MaterialShader(selected_mat)){
             //// flat shader ////
             case Shader_Flat:{
                 
@@ -1671,38 +1668,39 @@ inline void MaterialsTab(Admin* admin){
             //// PBR shader ////
             //TODO(Ui) add texture image previews
             case Shader_PBR:default:{
+				std::vector<u32> matTextures = Render::MaterialTextures(selected_mat);
                 ImGui::TextEx("Albedo   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_albedo_combo", Render::TextureName(mat->albedoID))) {
+                if (ImGui::BeginCombo("##mat_albedo_combo", Render::TextureName(matTextures[0]))) {
                     forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(mat->albedoID), textures[i].c_str()) == 0)) {
-                            Render::UpdateMaterialTexture(mat->id, 0, Render::LoadTexture(textures[i].c_str(), TextureType_Albedo));
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(matTextures[0]), textures[i].c_str()) == 0)) {
+                            Render::UpdateMaterialTexture(selected_mat, 0, Render::LoadTexture(textures[i].c_str(), TextureType_Albedo));
                         }
                     }
                     ImGui::EndCombo(); //mat_albedo_combo
                 }
                 ImGui::TextEx("Normal   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_normal_combo", Render::TextureName(mat->normalID))) {
+                if (ImGui::BeginCombo("##mat_normal_combo", Render::TextureName(matTextures[1]))) {
                     forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(mat->normalID), textures[i].c_str()) == 0)) {
-                            Render::UpdateMaterialTexture(mat->id, 1, Render::LoadTexture(textures[i].c_str(), TextureType_Normal));
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(matTextures[1]), textures[i].c_str()) == 0)) {
+                            Render::UpdateMaterialTexture(selected_mat, 1, Render::LoadTexture(textures[i].c_str(), TextureType_Normal));
                         }
                     }
                     ImGui::EndCombo(); //mat_normal_combo
                 }
                 ImGui::TextEx("Specular "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_spec_combo", Render::TextureName(mat->specularID))) {
+                if (ImGui::BeginCombo("##mat_spec_combo", Render::TextureName(matTextures[2]))) {
                     forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(mat->specularID), textures[i].c_str()) == 0)) {
-                            Render::UpdateMaterialTexture(mat->id, 2, Render::LoadTexture(textures[i].c_str(), TextureType_Specular));
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(matTextures[2]), textures[i].c_str()) == 0)) {
+                            Render::UpdateMaterialTexture(selected_mat, 2, Render::LoadTexture(textures[i].c_str(), TextureType_Specular));
                         }
                     }
                     ImGui::EndCombo(); //mat_spec_combo
                 }
                 ImGui::TextEx("Light    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_light_combo", Render::TextureName(mat->lightID))) {
+                if (ImGui::BeginCombo("##mat_light_combo", Render::TextureName(matTextures[3]))) {
                     forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(mat->lightID), textures[i].c_str()) == 0)) {
-                            Render::UpdateMaterialTexture(mat->id, 3, Render::LoadTexture(textures[i].c_str(), TextureType_Light));
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(matTextures[3]), textures[i].c_str()) == 0)) {
+                            Render::UpdateMaterialTexture(selected_mat, 3, Render::LoadTexture(textures[i].c_str(), TextureType_Light));
                         }
                     }
                     ImGui::EndCombo(); //mat_light_combo

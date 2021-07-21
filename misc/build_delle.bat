@@ -1,12 +1,15 @@
 @echo off
+
+ctime -begin misc\deshi.ctm
+
 pushd ..\src
 
 REM _____________________________________________________________________________________________________
 REM                                       Includes/Sources/Libs
 REM _____________________________________________________________________________________________________
 
-@set INCLUDES=/I..\src /IC:\src\glfw-3.3.2.bin.WIN64\include /IC:\src\OpenAL1.1\include /I%VULKAN_SDK%\include /IC:\src\glm
-@set SOURCES=*.cpp core\*.cpp external\imgui\*.cpp game\*.cpp game\components\*.cpp game\systems\*.cpp game\entities\*.cpp scene\*.cpp
+@set INCLUDES=/I..\src /IC:\src\glfw-3.3.2.bin.WIN64\include /IC:\src\OpenAL1.1\include /I%VULKAN_SDK%\include /IC:\src\glm /IC:\src\glad\include
+@set SOURCES=*.cpp external\imgui\*.cpp game\*.cpp game\components\*.cpp game\systems\*.cpp game\entities\*.cpp scene\*.cpp
 @set LIBS=/LIBPATH:C:\src\glfw-3.3.2.bin.WIN64\lib-vc2019 /LIBPATH:C:\src\OpenAL1.1\libs\Win64 /libpath:%VULKAN_SDK%\lib glfw3.lib OpenAL32.lib opengl32.lib gdi32.lib shell32.lib vulkan-1.lib shaderc_combined.lib
 
 REM _____________________________________________________________________________________________________
@@ -22,13 +25,18 @@ REM ____________________________________________________________________________
 REM                                            Defines
 REM _____________________________________________________________________________________________________
 
-REM  DESHI_WINDOWS:  0 = not 64-bit windows        1 = build for 64-bit windows
-REM  DESHI_SLOW:     0 = no slow code allowed      1 = slow code allowed
-REM  DESHI_INTERNAL: 0 = build for public release  1 = build for developer only
+REM  DESHI_WINDOWS:  build for 64-bit windows
+REM  DESHI_MAC:      build for Mac OS X
+REM  DESHI_LINUX:    build for Linux
+REM  DESHI_SLOW:     slow code allowed (Assert, etc)
+REM  DESHI_INTERNAL: build for developer only (Renderer debug, etc)
+REM  DESHI_VULKAN:   build for Vulkan
+REM  DESHI_OPENGL:   build for OpenGL
 
 @set DEFINES_DEBUG=/D"DESHI_INTERNAL=1" /D"DESHI_SLOW=1" 
 @set DEFINES_RELEASE=
-@set DEFINES_GENERIC=/D"DESHI_VULKAN=1" /D"DESHI_WINDOWS=1"
+@set DEFINES_OS=/D"DESHI_WINDOWS=1" /D"DESHI_MAC=0" /D"DESHI_LINUX=0"
+@set DEFINES_RENDERER=/D"DESHI_VULKAN=1" /D"DESHI_OPENGL=0"
 
 REM _____________________________________________________________________________________________________
 REM                                    Command Line Arguments
@@ -48,11 +56,11 @@ ECHO %DATE% %TIME%    Debug
 ECHO ---------------------------------
 @set OUT_DIR="..\build\debug"
 IF NOT EXIST %OUT_DIR% mkdir %OUT_DIR%
-cl /Z7 /Od %COMPILE_FLAGS% %DEFINES_DEBUG% %DEFINES_GENERIC% %INCLUDES% %SOURCES% /Fe%OUT_DIR%/%OUT_EXE% /Fo%OUT_DIR%/ /link %LINK_FLAGS% %LIBS%
+cl /Z7 /Od %COMPILE_FLAGS% %DEFINES_DEBUG% %DEFINES_OS% %DEFINES_RENDERER% %INCLUDES% %SOURCES% /Fe%OUT_DIR%/%OUT_EXE% /Fo%OUT_DIR%/ /link %LINK_FLAGS% %LIBS%
 GOTO DONE
 
 REM _____________________________________________________________________________________________________
-REM    ONE FILE (compiles just one file with debug options, links with previosly created .obj files)
+REM    ONE FILE (compiles just one file with debug options, links with previously created .obj files)
 REM _____________________________________________________________________________________________________
 
 :ONE_FILE
@@ -63,14 +71,14 @@ ECHO [93mWarning: debugging might not work with one-file compilation[0m
 
 @set OUT_DIR="..\build\debug"
 IF NOT EXIST %OUT_DIR% mkdir %OUT_DIR%
-cl /c /Z7 %COMPILE_FLAGS% %DEFINES_DEBUG% %DEFINES_GENERIC% %INCLUDES% %~2 /Fo%OUT_DIR%/
+cl /c /Z7 %COMPILE_FLAGS% %DEFINES_DEBUG% %DEFINES_OS% %DEFINES_RENDERER% %INCLUDES% %~2 /Fo%OUT_DIR%/
 pushd ..\build\Debug
 link %LINK_FLAGS% *.obj %LIBS% /OUT:%OUT_EXE% 
 popd
 GOTO DONE
 
 REM _____________________________________________________________________________________________________
-REM                           LINK ONLY (links with previosly created .obj files)
+REM                           LINK ONLY (links with previously created .obj files)
 REM _____________________________________________________________________________________________________
 
 :LINK_ONLY
@@ -89,9 +97,11 @@ REM ____________________________________________________________________________
 ECHO %DATE% %TIME%    Release
 @set OUT_DIR="..\build\release"
 IF NOT EXIST %OUT_DIR% mkdir %OUT_DIR%
-cl /O2 %COMPILE_FLAGS% %DEFINES_RELEASE% %DEFINES_GENERIC% %INCLUDES% %SOURCES% /Fe%OUT_DIR%/%OUT_EXE% /Fo%OUT_DIR%/ /link %LINK_FLAGS% %LIBS%
+cl /O2 %COMPILE_FLAGS% %DEFINES_RELEASE% %DEFINES_OS% %DEFINES_RENDERER% %INCLUDES% %SOURCES% /Fe%OUT_DIR%/%OUT_EXE% /Fo%OUT_DIR%/ /link %LINK_FLAGS% %LIBS%
 GOTO DONE
 
 :DONE
 ECHO ---------------------------------
 popd
+
+ctime -end misc\deshi.ctm

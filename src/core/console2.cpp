@@ -6,18 +6,6 @@
 //TODO input history from previous inputs on UP and DOWN arrows
 //TODO commands
 
-#include "console2.h"
-#include "input.h"
-#include "time.h"
-#include "window.h"
-#include "imgui.h"
-#include "assets.h"
-#include "renderer.h"
-#include "../utils/utils.h"
-#include "../utils/Debug.h"
-#include "../utils/RingArray.h"
-#include "../utils/Color.h"
-
 ////////////////////////////////////
 //// internal console variables ////
 ////////////////////////////////////
@@ -99,10 +87,6 @@ local void UpdateOpenness(){
 
 local int TextEditCallback(ImGuiInputTextCallbackData* data) {
     return 0;
-}
-
-local ImVec4 ColorToVec4(Color p) {
-    return ImVec4((f32)p.r / 255.f, (f32)p.g / 255.f, (f32)p.b / 255.f, (f32)p.a / 255.f);
 }
 
 /////////////////////////////

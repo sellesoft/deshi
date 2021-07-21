@@ -1,10 +1,3 @@
-#include "console.h"
-#include "assets.h"
-#include "time.h"
-#include "renderer.h"
-#include "window.h"
-#include "../utils/utils.h"
-#include "../utils/Command.h"
 #include "../game/admin.h"
 #include "../game/components/Camera.h"
 #include "../game/components/Physics.h"
@@ -16,12 +9,6 @@
 #include "../game/entities/Trigger.h"
 #include "../external/imgui/imgui_impl_glfw.h"
 #include "../external/imgui/imgui_impl_vulkan.h"
-
-#include <iomanip>
-#include <fstream>
-#include <sstream>
-#include <filesystem>
-#include <regex>
 
 //regex for checking paramaters
 std::regex RegColorFormat("(?:\\[c:([^\\]]*)\\]([^\\]]*)\\[c\\]|([^\\[]+))", std::regex::optimize);
@@ -1083,15 +1070,7 @@ CMDSTARTA(mat_shader, args.size() == 2) {
 } CMDEND("mat_shader <materialID:Uint> <shaderID:Uint>");
 
 CMDFUNC(mat_list) {
-	std::string out = "[c:yellow]Materials List:\nID  Shader  Albedo  Normal  Specular  Light[c]";
-	for (auto& mat : *Render::materialArray()) {
-		out += TOSTRING("\n", mat.id, "  ", ShaderStrings[mat.shader], "  ",
-						mat.albedoID,   ":", (*Render::textureArray())[mat.albedoID].filename, "  ",
-						mat.normalID,   ":", (*Render::textureArray())[mat.normalID].filename, "  ",
-						mat.specularID, ":", (*Render::textureArray())[mat.specularID].filename, "  ",
-						mat.lightID,    ":", (*Render::textureArray())[mat.lightID].filename);
-	}
-	return out;
+	return Render::ListMaterials();
 }
 
 CMDSTARTA(shader_reload, args.size() == 1) {
