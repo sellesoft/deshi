@@ -1767,6 +1767,7 @@ inline void GlobalTab(Admin* admin){
             ImGui::Checkbox("Shader printf", (bool*)&settings->printf);
             ImGui::Checkbox("Recompile all shaders", (bool*)&settings->recompileAllShaders);
             ImGui::Checkbox("Find mesh tri-neighbors", (bool*)&settings->findMeshTriangleNeighbors);
+			ImGui::TextEx("MSAA Samples"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
 			if(ImGui::BeginCombo("##rs_msaa_combo", msaa_strings[msaa_index])){
 				forI(ArrayCount(msaa_strings)){
 					if(ImGui::Selectable(msaa_strings[i], msaa_index == i)){
@@ -1779,7 +1780,8 @@ inline void GlobalTab(Admin* admin){
 			ImGui::Checkbox("Texture Filtering", (bool*)&settings->textureFiltering);
 			ImGui::Checkbox("Anistropic Filtering", (bool*)&settings->anistropicFiltering);
             ImGui::TextCentered("^ above settings require restart ^");
-			ImGui::TextEx("Logging level"); ImGui::SameLine(); ImGui::SliderUInt32("##rs_logging_level", &settings->loggingLevel, 0, 4);
+			ImGui::TextEx("Logging level"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+			ImGui::SliderUInt32("##rs_logging_level", &settings->loggingLevel, 0, 4);
 			ImGui::Checkbox("Crash on error", (bool*)&settings->crashOnError);
 			ImGui::Checkbox("Compile shaders with optimization", (bool*)&settings->optimizeShaders);
 			ImGui::Checkbox("Shadow PCF", (bool*)&settings->shadowPCF);
