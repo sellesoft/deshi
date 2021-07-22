@@ -1756,6 +1756,8 @@ inline void GlobalTab(Admin* admin){
 			local const char* resolution_strings[] = { "128", "256", "512", "1024", "2048", "4096" };
 			local u32 resolution_values[] = { 128, 256, 512, 1024, 2048, 4096 };
 			local u32 shadow_resolution_index = 4;
+			local const char* msaa_strings[] = { "1", "2", "4", "8", "16", "32", "64" };
+			local u32 msaa_index = settings->msaaSamples;
 			local vec3 clear_color    = settings->clearColor;
 			local vec4 selected_color = settings->selectedColor;
 			local vec4 collider_color = settings->colliderColor;
@@ -1765,6 +1767,17 @@ inline void GlobalTab(Admin* admin){
             ImGui::Checkbox("Shader printf", (bool*)&settings->printf);
             ImGui::Checkbox("Recompile all shaders", (bool*)&settings->recompileAllShaders);
             ImGui::Checkbox("Find mesh tri-neighbors", (bool*)&settings->findMeshTriangleNeighbors);
+			if(ImGui::BeginCombo("##rs_msaa_combo", msaa_strings[msaa_index])){
+				forI(ArrayCount(msaa_strings)){
+					if(ImGui::Selectable(msaa_strings[i], msaa_index == i)){
+						settings->msaaSamples = i;
+						msaa_index = i;
+					}
+				}
+				ImGui::EndCombo(); //rs_msaa_combo
+			}
+			ImGui::Checkbox("Texture Filtering", (bool*)&settings->textureFiltering);
+			ImGui::Checkbox("Anistropic Filtering", (bool*)&settings->anistropicFiltering);
             ImGui::TextCentered("^ above settings require restart ^");
 			ImGui::TextEx("Logging level"); ImGui::SameLine(); ImGui::SliderUInt32("##rs_logging_level", &settings->loggingLevel, 0, 4);
 			ImGui::Checkbox("Crash on error", (bool*)&settings->crashOnError);
@@ -1774,9 +1787,9 @@ inline void GlobalTab(Admin* admin){
 			if(ImGui::BeginCombo("##rs_shadowres_combo", resolution_strings[shadow_resolution_index])){
 				forI(ArrayCount(resolution_strings)){
 					if(ImGui::Selectable(resolution_strings[i], shadow_resolution_index == i)){
-						Render::remakeOffscreen();
 						settings->shadowResolution = resolution_values[i];
 						shadow_resolution_index = i;
+						Render::remakeOffscreen();
 					}
 				}
 				ImGui::EndCombo(); //rs_shadowres_combo

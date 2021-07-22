@@ -141,16 +141,18 @@ struct FontVk{
 local RenderSettings settings;
 local ConfigMap configMap = {
 	{"#render settings config file",0,0},
-	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)10},
-	{"debugging", ConfigValueType_Bool, &settings.debugging},
-	{"printf",    ConfigValueType_Bool, &settings.printf},
+	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)21},
+	{"debugging",            ConfigValueType_Bool, &settings.debugging},
+	{"printf",               ConfigValueType_Bool, &settings.printf},
+	{"texture_filtering",    ConfigValueType_Bool, &settings.textureFiltering},
+	{"anistropic_filtering", ConfigValueType_Bool, &settings.anistropicFiltering},
+	{"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples},
 	{"recompile_all_shaders",        ConfigValueType_Bool, &settings.recompileAllShaders},
 	{"find_mesh_triangle_neighbors", ConfigValueType_Bool, &settings.findMeshTriangleNeighbors},
 	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
 	{"logging_level",  ConfigValueType_U32,  &settings.loggingLevel},
 	{"crash_on_error", ConfigValueType_Bool, &settings.crashOnError},
 	{"vsync_type",     ConfigValueType_U32,  &settings.vsync},
-	{"msaa_samples",   ConfigValueType_U32,  &settings.msaaSamples},
 	{"\n#shaders",                         ConfigValueType_PADSECTION,(void*)17},
 	{"optimize_shaders", ConfigValueType_Bool, &settings.optimizeShaders},
 	{"\n#shadows",                         ConfigValueType_PADSECTION,(void*)20},
@@ -268,6 +270,8 @@ local s32                     minImageCount = 0;
 /////////////////////
 //// @renderpass ////
 /////////////////////
+local VkRenderPass baseRenderPass = VK_NULL_HANDLE;
+local VkRenderPass msaaRenderPass = VK_NULL_HANDLE;
 local VkRenderPass renderPass = VK_NULL_HANDLE;
 
 /////////////////
@@ -1255,12 +1259,13 @@ findDepthFormat(){
 }
 
 local void 
-CreateRenderpass(){
+CreateRenderpasses(){
 	PrintVk(2, "  Creating Render Pass");
-	AssertRS(RSVK_LOGICALDEVICE, "CreateRenderPass called before CreateLogicalDevice");
+	AssertRS(RSVK_LOGICALDEVICE, "CreateRenderPasses called before CreateLogicalDevice");
 	rendererStage |= RSVK_RENDERPASS;
 	
-	if(renderPass) vkDestroyRenderPass(device, renderPass, allocator);
+	if(baseRenderPass) vkDestroyRenderPass(device, baseRenderPass, allocator);
+	if(msaaRenderPass) vkDestroyRenderPass(device, msaaRenderPass, allocator);
 	
 	VkAttachmentDescription attachments[3]{};
 	//attachment 0: color 
@@ -1271,8 +1276,8 @@ CreateRenderpass(){
 	attachments[0].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachments[0].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-	attachments[0].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	//attachment 0: depth
+	attachments[0].finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	//attachment 1: depth
 	attachments[1].format         = findDepthFormat();
 	attachments[1].samples        = msaaSamples;
 	attachments[1].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -1281,7 +1286,7 @@ CreateRenderpass(){
 	attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachments[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
 	attachments[1].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	//attachment 0: color resolve
+	//attachment 2: color resolve
 	attachments[2].format         = surfaceFormat.format;
 	attachments[2].samples        = VK_SAMPLE_COUNT_1_BIT;
 	attachments[2].loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -1306,7 +1311,6 @@ CreateRenderpass(){
 	subpass.colorAttachmentCount    = 1;
 	subpass.pColorAttachments       = &colorAttachmentRef;
 	subpass.pDepthStencilAttachment = &depthAttachmentRef;
-	subpass.pResolveAttachments     = &resolveAttachmentRef;
 	
 	VkSubpassDependency dependencies[2]{};
 	dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
@@ -1325,15 +1329,29 @@ CreateRenderpass(){
 	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 	
 	VkRenderPassCreateInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
-	renderPassInfo.attachmentCount = 3;
+	renderPassInfo.attachmentCount = 2;
 	renderPassInfo.pAttachments    = attachments;
 	renderPassInfo.subpassCount    = 1;
 	renderPassInfo.pSubpasses      = &subpass;
 	renderPassInfo.dependencyCount = 2;
 	renderPassInfo.pDependencies   = dependencies;
 	
-	AssertVk(vkCreateRenderPass(device, &renderPassInfo, allocator, &renderPass), "failed to create render pass");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (u64)renderPass, "Base render pass");
+	//TODO(delle) fix this scuffed renderpass switch
+	if(msaaSamples != VK_SAMPLE_COUNT_1_BIT){
+		attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		subpass.pResolveAttachments = &resolveAttachmentRef;
+		renderPassInfo.attachmentCount = 3;
+		
+		AssertVk(vkCreateRenderPass(device, &renderPassInfo, allocator, &msaaRenderPass));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (u64)msaaRenderPass, "MSAA render pass");
+		
+		renderPass = msaaRenderPass;
+	}else{
+		AssertVk(vkCreateRenderPass(device, &renderPassInfo, allocator, &baseRenderPass));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (u64)baseRenderPass, "Base render pass");
+		
+		renderPass = baseRenderPass;
+	}
 }
 
 
@@ -1414,13 +1432,18 @@ CreateFrames(){
 		
 		//create the framebuffers
 		if(frames[i].framebuffer) vkDestroyFramebuffer(device, frames[i].framebuffer, nullptr);
-		VkImageView frameBufferAttachments[] = { 
-			attachments.colorImageView, attachments.depthImageView, frames[i].imageView 
-		};
+		
+		std::vector<VkImageView> frameBufferAttachments; //TODO(delle) fix scuffed msaa hack
+		if(msaaSamples != VK_SAMPLE_COUNT_1_BIT){
+			frameBufferAttachments = { attachments.colorImageView, attachments.depthImageView, frames[i].imageView };
+		}else{
+			frameBufferAttachments = { frames[i].imageView, attachments.depthImageView, };
+		}
+		
 		VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
 		info.renderPass      = renderPass;
-		info.attachmentCount = ArrayCount(frameBufferAttachments);
-		info.pAttachments    = frameBufferAttachments;
+		info.attachmentCount = frameBufferAttachments.size();
+		info.pAttachments    = frameBufferAttachments.data();
 		info.width           = width;
 		info.height          = height;
 		info.layers          = 1;
@@ -1629,9 +1652,9 @@ SetupOffscreenRendering(){
 	
 	{//create the sampler for the depth attachment used in frag shader for shadow mapping
 		VkSamplerCreateInfo sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-		sampler.magFilter     = VK_FILTER_LINEAR;
-		sampler.minFilter     = VK_FILTER_LINEAR;
-		sampler.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		sampler.magFilter     = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+		sampler.minFilter     = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+		sampler.mipmapMode    = (settings.textureFiltering) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		sampler.addressModeU  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		sampler.addressModeV  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		sampler.addressModeW  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
@@ -1969,7 +1992,7 @@ CreatePipelineCache(){
 local void 
 SetupPipelineCreation(){
 	PrintVk(2, "  Setting up pipeline creation");
-	AssertRS(RSVK_LAYOUTS | RSVK_RENDERPASS, "SetupPipelineCreation called before CreateLayouts or CreateRenderPass");
+	AssertRS(RSVK_LAYOUTS | RSVK_RENDERPASS, "SetupPipelineCreation called before CreateLayouts or CreateRenderPasses");
 	rendererStage |= RSVK_PIPELINESETUP;
 	
 	//vertex input flow control
@@ -2028,8 +2051,8 @@ SetupPipelineCreation(){
 	
 	//useful for multisample anti-aliasing (MSAA)
 	//https://renderdoc.org/vkspec_chunked/chap28.html#VkPipelineMultisampleStateCreateInfo
-	multisampleState.rasterizationSamples  = msaaSamples; //VK_SAMPLE_COUNT_1_BIT to disable anti-aliasing
-	multisampleState.sampleShadingEnable   = VK_TRUE; //enable sample shading in the pipeline, VK_FALSE to disable
+	multisampleState.rasterizationSamples  = msaaSamples;
+	multisampleState.sampleShadingEnable   = (msaaSamples != VK_SAMPLE_COUNT_1_BIT) ? VK_TRUE : VK_FALSE;
 	multisampleState.minSampleShading      = .2f; //min fraction for sample shading; closer to one is smoother
 	multisampleState.pSampleMask           = 0;
 	multisampleState.alphaToCoverageEnable = VK_FALSE;
@@ -2548,7 +2571,7 @@ specializationInfo.mapEntryCount = 1;
 		depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 		rasterizationState.depthBiasEnable = VK_FALSE;
 		multisampleState.rasterizationSamples = msaaSamples;
-		multisampleState.sampleShadingEnable  = VK_TRUE;
+		multisampleState.sampleShadingEnable  = (msaaSamples != VK_SAMPLE_COUNT_1_BIT) ? VK_TRUE : VK_FALSE;
 		dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, };
 		dynamicState.dynamicStateCount = (u32)dynamicStates.size();
 		dynamicState.pDynamicStates    = dynamicStates.data();
@@ -3490,16 +3513,16 @@ LoadTexture(const char* filename, u32 type){
 	
 	//create sampler
 	VkSamplerCreateInfo samplerInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-	samplerInfo.magFilter        = VK_FILTER_LINEAR;
-	samplerInfo.minFilter        = VK_FILTER_LINEAR;
-	samplerInfo.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR; //TODO(delle,ReOp) VK_SAMPLER_MIPMAP_MODE_NEAREST for more performance
+	samplerInfo.magFilter        = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+	samplerInfo.minFilter        = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+	samplerInfo.mipmapMode       = (settings.textureFiltering) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
 	samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.anisotropyEnable = enabledFeatures.samplerAnisotropy;
+	samplerInfo.anisotropyEnable = settings.anistropicFiltering;
 	VkPhysicalDeviceProperties properties{};
 	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-	samplerInfo.maxAnisotropy    = enabledFeatures.samplerAnisotropy ?  properties.limits.maxSamplerAnisotropy : 1.0f;
+	samplerInfo.maxAnisotropy    = (settings.anistropicFiltering) ?  properties.limits.maxSamplerAnisotropy : 1.0f;
 	samplerInfo.borderColor      = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 	samplerInfo.unnormalizedCoordinates = VK_FALSE;
 	samplerInfo.compareEnable    = VK_FALSE;
@@ -4118,9 +4141,8 @@ Init(){
 	PrintVk(3, "Finished creating logical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
 	//// limit RenderSettings to device capabilties ////
-	//NOTE currently disabled b/c of my resolve setup
-	//msaaSamples = (VkSampleCountFlagBits)(((1 << settings.msaaSamples) > maxMsaaSamples) ? settings.msaaSamples : 1 << settings.msaaSamples);
-	msaaSamples = maxMsaaSamples;
+	msaaSamples = (VkSampleCountFlagBits)(((1 << settings.msaaSamples) > maxMsaaSamples) ? maxMsaaSamples : 1 << settings.msaaSamples);
+	settings.anistropicFiltering = (enabledFeatures.samplerAnisotropy) ? settings.anistropicFiltering : false;
 	
 	//// setup unchanging Vulkan objects ////
 	CreateCommandPool();
@@ -4137,7 +4159,7 @@ Init(){
 	//// setup window-specific Vulkan objects ////
 	CreateSwapChain();
 	PrintVk(3, "Finished creating swap chain in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreateRenderpass();
+	CreateRenderpasses();
 	PrintVk(3, "Finished creating render pass in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	CreateFrames();
 	PrintVk(3, "Finished creating frames in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
