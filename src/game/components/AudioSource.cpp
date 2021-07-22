@@ -3,6 +3,7 @@
 #include "../admin.h"
 #include "../transform.h"
 #include "../../math/Vector.h"
+#include "../../core/console.h"
 
 AudioSource::AudioSource() {
 	layer = ComponentLayer_Sound;

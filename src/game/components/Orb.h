@@ -5,8 +5,8 @@
 #include "Component.h"
 #include "../../math/VectorMatrix.h"
 
-struct MeshComp;
-struct Mesh;
+struct ModelInstance;
+struct Model;
 
 struct Orb {
 	Vector3 pos;
@@ -19,7 +19,7 @@ struct Orb {
 	Vector3 rotvel;
 	Vector3 rotacc;
 	
-	MeshComp* mc;
+	ModelInstance* mc;
 	
 	Vector3 ito = Vector3(2, 0, 2);
 	
@@ -34,11 +34,11 @@ struct Orb {
 
 struct OrbManager : public Component {
 	int orbcount;
-	Mesh* mesh = nullptr;
+	Model* model = nullptr;
 	std::vector<Orb*> orbs;
 	
 	OrbManager();
-	OrbManager(Mesh* mesh, int orbcount = 100);
+	OrbManager(Model* model, int orbcount = 100);
 	
 	void Init() override;
 	void Update() override;

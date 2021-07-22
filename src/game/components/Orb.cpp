@@ -3,7 +3,7 @@
 #include "../admin.h"
 #include "../../core/renderer.h"
 #include "../../core/time.h"
-#include "../../core/mesh.h"
+#include "../../core/scene.h"
 #include "../../core/console.h"
 #include "../../utils/debug.h"
 #include "../../math/math.h"
@@ -11,14 +11,17 @@
 OrbManager::OrbManager(){
 	layer = ComponentLayer_Physics;
 	type = ComponentType_OrbManager;
+	
+	model = DengScene->NullModel();
+	orbcount = 100;
 };
 
-OrbManager::OrbManager(Mesh* m, int orbcount){
-	this->mesh = m;
-	this->orbcount = orbcount;
-	
+OrbManager::OrbManager(Model* m, int _orbcount){
 	layer = ComponentLayer_Physics;
 	type = ComponentType_OrbManager;
+	
+	model = m;
+	orbcount = _orbcount;
 };
 
 void OrbManager::Init(){
@@ -26,10 +29,8 @@ void OrbManager::Init(){
 	for (int i = 0; i < orbcount; i++) {
 		Orb* orb = new Orb(Vector3(10, 10, 10), Vector3::ONE * 0.1 * i, Vector3::ZERO, Vector3::ZERO);
 		
-		u32 id = Render::CreateMesh(mesh, Matrix4::TransformationMatrix(orb->pos, orb->rot, Vector3::ONE));
-		MeshComp* mc = new MeshComp(id);
+		ModelInstance* mc = new ModelInstance(model);
 		orb->mc = mc;
-		mc->ENTITY_CONTROL = false;
 		entity->AddComponent(mc);
 		orbs.push_back(orb);
 	}
@@ -111,7 +112,7 @@ void OrbManager::Update() {
 		
 		//o->pos.x += 10 * sin(t->totalTime + i);
 		//o->mc->UpdateMeshTransform(o->pos, Vector3(180 * sin(sin(i) * t->totalTime), 180 * cos(cos(i) * t->totalTime), 0), Vector3::ONE);
-		o->mc->UpdateMeshTransform(o->pos, Vector3::ZERO, Vector3::ONE);
+		//o->mc->UpdateMeshTransform(o->pos, Vector3::ZERO, Vector3::ONE);
 		
 		//ti += 0.00001;
 	}

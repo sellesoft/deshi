@@ -4,7 +4,7 @@
 #include "Camera.h"
 #include "../admin.h"
 #include "../systems/CanvasSystem.h"
-#include "../../core/mesh.h"
+#include "../../core/model.h"
 #include "../../core/window.h"
 #include "../../core/time.h"
 #include "../../core/console.h"
@@ -130,8 +130,8 @@ void Movement::GrabObject() {
 			for(Entity* e : DengAdmin->entities){
 				transform = e->transform.TransformMatrix();
 				rotation = Matrix4::RotationMatrix(e->transform.rotation);
-				if(MeshComp* mc = e->GetComponent<MeshComp>()){
-					if(mc->mesh_visible){
+				if(ModelInstance* mc = e->GetComponent<ModelInstance>()){
+					if(mc->visible){
 						Assert(mc->mesh, "MeshComp had a NULL mesh pointer");
 						forI(mc->mesh->triangleCount){
 							Mesh::Triangle& tri = mc->mesh->triangleArray[i];

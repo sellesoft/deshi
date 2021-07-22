@@ -2,95 +2,53 @@
 #include "../admin.h"
 #include "../Transform.h"
 #include "../../core/renderer.h"
-#include "../../core/mesh.h"
+#include "../../core/scene.h"
 #include "../../core/console.h"
 #include "../../utils/debug.h"
 
-MeshComp::MeshComp() {
+ModelInstance::ModelInstance(){
+	type  = ComponentType_ModelInstance;
 	layer = ComponentLayer_Canvas;
-	type  = ComponentType_MeshComp;
-	
-	this->mesh = 0;
-	this->meshID = 0;
-	this->instanceID = -1;
+	model    = DengScene->NullModel();
+	mesh     = model->mesh;
+	armature = model->armature;
+	visible  = true;
 }
 
-MeshComp::MeshComp(u32 meshID, u32 instanceID) {
+ModelInstance::ModelInstance(Model* _model){
+	type  = ComponentType_ModelInstance;
 	layer = ComponentLayer_Canvas;
-	type = ComponentType_MeshComp;
-	
-	
-	this->meshID = meshID;
-	this->instanceID = instanceID;
-	this->mesh = Render::GetMeshPtr(meshID);
+	model    = _model;
+	mesh     = model->mesh;
+	armature = model->armature;
+	visible  = true;
 }
 
-MeshComp::~MeshComp() {
-	Render::RemoveMesh(meshID);
+ModelInstance::~ModelInstance(){
+	DengScene->DeleteModel(model);
 }
 
-void MeshComp::ToggleVisibility() {
-	mesh_visible = !mesh_visible;
-	Render::UpdateMeshVisibility(meshID, mesh_visible);
+void ModelInstance::ToggleVisibility(){
+	visible = !visible;
 }
 
-void MeshComp::Visible(bool visible) {
-	mesh_visible = visible;
-	Render::UpdateMeshVisibility(meshID, mesh_visible);
-}
+void ModelInstance::ReceiveEvent(Event event){}
 
-void MeshComp::ReceiveEvent(Event event) {
-	switch (event) {}
-}
+void ModelInstance::Init(){}
 
-//this should only be used when the entity is not controlling the Mesh
-void MeshComp::UpdateMeshTransform(Vector3 position, Vector3 rotation, Vector3 scale) {
-	Render::UpdateMeshMatrix(meshID, Matrix4::TransformationMatrix(position, rotation, scale));
-}
-
-void MeshComp::ChangeMesh(u32 newMeshIdx){
-	if(newMeshIdx == meshID) return;
-	if(newMeshIdx > Render::MeshCount()) return ERROR("ChangeMesh: There is no mesh with index: ", newMeshIdx);
-	if(!Render::IsBaseMesh(newMeshIdx)) return ERROR("ChangeMesh: You can only change the mesh to a base mesh");
-	
-	Matrix4 oldMat = Render::GetMeshMatrix(meshID);
-	Render::RemoveMesh(meshID);
-	meshID = Render::CreateMesh(newMeshIdx, oldMat);
-	mesh = Render::GetMeshPtr(meshID);
-}
-
-void MeshComp::ChangeMaterialShader(u32 s) {
-	std::vector<u32> ids = Render::GetMaterialIDs(meshID);
-	for (u32 id : ids) {
-		Render::UpdateMaterialShader(id, s);
+void ModelInstance::Update(){
+	if(visible){
+		Render::DrawModel(model, entity->transform.TransformMatrix());
 	}
 }
 
-void MeshComp::ChangeMaterialTexture(u32 t) {
-	std::vector<u32> ids = Render::GetMaterialIDs(meshID);
-	
-	for (u32 id : ids) {
-		Render::UpdateMaterialTexture(id, 0, t);
-	}
-}
-
-void MeshComp::Init() {
-	Render::UpdateMeshVisibility(meshID, mesh_visible);
-}
-
-void MeshComp::Update() {
-	//update mesh's transform with entities tranform
-	if(ENTITY_CONTROL) Render::UpdateMeshMatrix(meshID, entity->transform.TransformMatrix());
-}
-
-std::string MeshComp::SaveTEXT(){
+std::string ModelInstance::SaveTEXT(){
 	return TOSTRING("\n>mesh"
-					"\nid      ", meshID,
-					"\nname    \"", Render::MeshName(meshID) , "\""
-					"\nvisible ", (mesh_visible) ? "true" : "false",
+					"\nname    \"", model->name , "\""
+					"\nvisible ", (visible) ? "true" : "false",
 					"\n");
 }
 
-void MeshComp::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
-	ERROR("MeshComp::LoadDESH not setup");
+void ModelInstance::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
+	ERROR("ModelInstance::LoadDESH not setup");
 }

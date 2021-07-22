@@ -22,8 +22,8 @@
 #include "../core/window.h"
 #include "../core/input.h"
 #include "../core/time.h"
+#include "../core/scene.h"
 #include "../math/Math.h"
-#include "../scene/Scene.h"
 #include "../geometry/Edge.h"
 
 #include <iomanip> //std::put_time

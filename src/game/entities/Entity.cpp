@@ -14,6 +14,7 @@
 #include "../components/AudioSource.h"
 #include "../components/AudioListener.h"
 #include "../../core/assets.h"
+#include "../../core/scene.h"
 #include "../../core/console.h"
 #include "../../core/renderer.h"
 #include "../../core/time.h"
@@ -71,7 +72,7 @@ void Entity::AddComponent(Component* c) {
     components.push_back(c);
     c->entity = this;
     if (c->type == ComponentType_Light) {
-        DengAdmin->scene.lights.push_back(dyncast(Light, c));
+        DengScene->lights.push_back(dyncast(Light, c));
     }
 }
 
@@ -155,7 +156,7 @@ auto get_vec3(std::string& str) {
 }
 
 enum struct Header{
-    INVALID, ENTITY, AUDIO_LISTENER, AUDIO_SOURCE, CAMERA, COLLIDER, DOOR, LIGHT, MESH, MOVEMENT, ORB_MANAGER, PHYSICS, PLAYER
+    INVALID, ENTITY, AUDIO_LISTENER, AUDIO_SOURCE, CAMERA, COLLIDER, DOOR, LIGHT, MODELINSTANCE, MOVEMENT, ORB_MANAGER, PHYSICS, PLAYER
 };
 #define InvalidHeaderKeyError(header) ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid key '",kv.first,"' for header '"header"'.")
 //TODO(delle) support multiple components of a type on an entity
@@ -167,11 +168,10 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
     
     //creation vars
     bool coll_made = false;
-    bool mesh_found = false;
     Entity* e = 0;
-    AudioListener* al = 0; AudioSource* as = 0; Camera* cam = 0;    Door* door = 0;
-    Light* light = 0;      MeshComp* mesh = 0;  Movement* move = 0; OrbManager* orbman = 0;
-    Physics* phys = 0;     Player* player = 0;
+    AudioListener* al = 0;  AudioSource* as = 0;          Camera* cam = 0;    Door* door = 0;
+    Light* light = 0;       ModelInstance* model = 0;     Movement* move = 0; OrbManager* orbman = 0;
+    Physics* phys = 0;      Player* player = 0;
     BoxCollider* box = 0;   SphereCollider* sphere = 0;   LandscapeCollider* land = 0; 
     AABBCollider* aabb = 0; ComplexCollider* complex = 0;
     
@@ -205,7 +205,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
                     return 0;
                 }
             }else{
-                if     (line == ">mesh")          { header = Header::MESH;           if(!mesh)  { mesh = new MeshComp(); } }
+                if     (line == ">mesh")          { header = Header::MODELINSTANCE;  if(!model)  { model = new ModelInstance(); } }
                 else if(line == ">physics")       { header = Header::PHYSICS;
                     if(!phys) phys = new Physics(e->transform.position, e->transform.rotation);
                 }
@@ -321,30 +321,13 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
                 else if(kv.first == "active")    { light->active = Assets::parse_bool(kv.second); }
                 else{ InvalidHeaderKeyError("light"); }
             }break;
-            case(Header::MESH):{
-                if(kv.first == "id"){
-                    for(auto& diff : mesh_id_diffs){
-                        if(diff.first == std::stoi(kv.second)){
-                            mesh->meshID = diff.second;
-                            mesh->mesh = Render::GetMeshPtr(mesh->meshID);
-                            mesh_found = true;
-                        }else if(diff.first == -1){
-							mesh->meshID = Render::CreateMesh(std::stoi(kv.second));
-							if(mesh->meshID != -1){
-								mesh->mesh = Render::GetMeshPtr(mesh->meshID);
-								mesh_found = true;
-							}
-						}
-                    }
-                }
-                else if(kv.first == "name"){
-                    if(!mesh_found){ //NOTE only make if ID failed to make it
-                        mesh->meshID = Render::CreateMesh(&admin->scene, kv.second.c_str());
-                        mesh->mesh = Render::GetMeshPtr(mesh->meshID);
-                    }
-                }
-                else if(kv.first == "visible"){ 
-                    mesh->mesh_visible = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
+            case(Header::MODELINSTANCE):{
+                if(kv.first == "name"){
+					model->model = DengScene->CreateModelFromOBJ(kv.second.c_str());
+					model->mesh = model->model->mesh;
+					model->armature = model->model->armature;
+                }else if(kv.first == "visible"){ 
+                    model->visible = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else{ InvalidHeaderKeyError("mesh"); }
             }break;
@@ -404,7 +387,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
             }
         }
     }
-    if(e) e->AddComponents({al, as, cam, door, light, mesh, move, orbman, phys, player, box, aabb, sphere, land, complex});
+    if(e) e->AddComponents({al, as, cam, door, light, model, move, orbman, phys, player, box, aabb, sphere, land, complex});
     return e;
 }
 #undef InvalidHeaderKeyError

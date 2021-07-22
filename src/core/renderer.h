@@ -85,27 +85,30 @@ struct RenderSettings{
 	bool tempMeshOnTop   = false;
 };
 
-struct Texture, Material, Mesh;
+struct Texture;
+struct Material;
+struct Model;
+struct Mesh;
+struct Font;
 namespace Render{
 	
     void LoadSettings();
     void SaveSettings();
-	void UpdateSettings(RenderSettings settings);
 	RenderSettings* GetSettings();
     RenderStats*    GetStats();
     RendererStage*  GetStage();
 	
-	void LoadFont();
+	void LoadFont(Font* font);
     void LoadTexture(Texture* texture);
 	void LoadMaterial(Material* material);
 	void LoadMesh(Mesh* mesh);
 	
-	void UnloadFont();
+	void UnloadFont(Font* font);
     void UnloadTexture(Texture* texture);
 	void UnloadMaterial(Material* material);
 	void UnloadMesh(Mesh* mesh);
     
-	void DrawModel(Model* mesh, Matrix4 matrix);
+	void DrawModel(Model* mesh, Matrix4 matrix, bool selected = false);
 	void DrawLine(Vector3 start, Vector3 end, Color color = Color::WHITE);
 	void DrawBox(Matrix4 transform, Color color = Color::WHITE);
     void DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color = Color::WHITE);

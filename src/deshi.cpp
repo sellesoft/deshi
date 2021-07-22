@@ -245,6 +245,7 @@ local Time    time_;   Time*    g_time    = &time_; //time_ because there is a c
 local Window  window;  Window*  g_window  = &window;
 local Input   input;   Input*   g_input   = &input;
 local Console console; Console* g_console = &console;
+local Scene   scene;   Scene*   g_scene   = &scene;
 local Admin   admin;   Admin*   g_admin   = &admin;
 
 int main() {
@@ -256,8 +257,9 @@ int main() {
 	TIMER_RESET(t_s); time_.Init(300);        SUCCESS("Finished time initialization in ", TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ", TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); scene.Init();           SUCCESS("Finished scene initialization in ", TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ", TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); DeshiImGui::init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); DeshiImGui::Init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
 	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
 	
 	//init game admin
@@ -268,7 +270,7 @@ int main() {
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
 		glfwPollEvents();
 		
-		DeshiImGui::newFrame();                                                         //place imgui calls after this
+		DeshiImGui::NewFrame();                                                         //place imgui calls after this
 		TIMER_RESET(t_d); time_.Update();           time_.timeTime   = TIMER_END(t_d);
 		TIMER_RESET(t_d); window.Update();          time_.windowTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); input.Update();           time_.inputTime  = TIMER_END(t_d);
@@ -284,7 +286,7 @@ int main() {
 	
 	//cleanup
 	admin.Cleanup();
-	DeshiImGui::cleanup();
+	DeshiImGui::Cleanup();
 	Render::Cleanup();
 	window.Cleanup();
 	console.CleanUp(); Console2::Cleanup();

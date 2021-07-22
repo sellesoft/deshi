@@ -12,6 +12,7 @@
 #include "components/AudioSource.h"
 #include "components/AudioListener.h"
 #include "../core/time.h"
+#include "../core/scene.h"
 #include "../core/renderer.h"
 #include "../core/window.h"
 #include "../core/assets.h"
@@ -52,8 +53,6 @@ void Admin::Init() {
     physics.Init(this);
     canvas.Init(this);
     sound.Init(this);
-    scene.Init();
-    Render::LoadScene(&scene);
     keybinds.init();
     controller.Init(this);
     editor.Init(this);
@@ -118,7 +117,7 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
     for(Entity* e : deletionBuffer) {
         for(Component* c : e->components){
 			freeCompLayers[c->layer].remove_from(c->layer_index);
-			if(c->type == ComponentType_Light) scene.lights.clear();
+			if(c->type == ComponentType_Light) DengScene->lights.clear();
 		}
         for(int i = e->id+1; i < entities.size(); ++i) entities[i]->id -= 1;
         entities.erase(entities.begin()+e->id);
@@ -136,7 +135,7 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
             c->compID = compIDcount;
             c->entity = e;
             c->layer_index = freeCompLayers[c->layer].add(c);
-            if(c->type == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
+            if(c->type == ComponentType_Light) DengScene->lights.push_back(dyncast(Light, c));
             compIDcount++;
         }
     }
@@ -145,9 +144,9 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
     
     //light updating
     for (int i = 0; i < 10; i++) {
-        if(i < scene.lights.size()) {
-			Render::UpdateLight(i, vec4(scene.lights[i]->position,
-										(scene.lights[i]->active) ? scene.lights[i]->brightness : 0));
+        if(i < DengScene->lights.size()) {
+			Render::UpdateLight(i, vec4(DengScene->lights[i]->position,
+										(DengScene->lights[i]->active) ? DengScene->lights[i]->brightness : 0));
         }else{
             Render::UpdateLight(i, vec4(0, 0, 0, -1));
         }
@@ -189,7 +188,7 @@ Entity* Admin::CreateEntityNow(std::vector<Component*> components, const char* n
         c->compID = compIDcount;
         c->entity = e;
         c->layer_index = freeCompLayers[c->layer].add(c);
-        if (c->type == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
+        if (c->type == ComponentType_Light) DengScene->lights.push_back(dyncast(Light, c));
         compIDcount++;
     }
     return e;
@@ -225,7 +224,7 @@ void Admin::AddComponentToLayers(Component* c){
 	
     c->compID = compIDcount;
     c->layer_index = freeCompLayers[c->layer].add(c);
-    if(c->type == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
+    if(c->type == ComponentType_Light) DengScene->lights.push_back(dyncast(Light, c));
     compIDcount++;
 }
 
@@ -249,7 +248,7 @@ void Admin::ChangeState(GameState new_state){
                 SaveDESH("auto.desh");
                 //LoadDESH("temp.desh");
                 LoadTEXT(editor.level_name);
-                if(player) player->GetComponent<MeshComp>()->Visible(true);
+                if(player) player->GetComponent<ModelInstance>()->visible = true;
                 player = nullptr;
                 DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
             }break;
@@ -269,7 +268,7 @@ void Admin::ChangeState(GameState new_state){
                 SaveDESH("auto.desh");
                 //LoadDESH("temp.desh");
                 LoadTEXT(editor.level_name);
-                if(player) player->GetComponent<MeshComp>()->Visible(true);
+                if(player) player->GetComponent<ModelInstance>()->visible = true;
                 DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
             }break;
         }break;
@@ -283,7 +282,7 @@ void Admin::ChangeState(GameState new_state){
                 //SaveDESH("temp.desh");
                 SaveTEXT(editor.level_name);
                 if(player) {
-                    player->GetComponent<MeshComp>()->Visible(false);
+                    player->GetComponent<ModelInstance>()->visible = false;
                 }else{
                     ERROR("No player on admin");
                 }
@@ -307,9 +306,8 @@ void Admin::Reset(){
     entities.clear();
     
     for(auto& layer : freeCompLayers) layer.clear();
-    scene.Reset();
+    DengScene->Reset();
     Render::Reset();
-    Render::LoadScene(&scene);
     editor.Reset();
     SUCCESS("Finished resetting admin in ", TIMER_END(t_r), "ms");
 }
@@ -344,15 +342,19 @@ void Admin::SaveTEXT(std::string level_name){
 	//materials
 	level_text.append("\n"
 					  "\n>materials");
-	forI(Render::MaterialCount()){
-		level_text.append(Render::SaveMaterialTEXT(i));
+	forI(DengScene->materials.size()){
+		Material* mat = DengScene->materials[i];
+		level_text.append(TOSTRING("\n",i," \"",mat->name,"\" ",mat->shader," "));
+		forI(mat->textureCount) level_text.append(TOSTRING('\"',mat->textureArray[i]->name,'\" '));
 	}
 	
 	//models
 	level_text.append("\n"
 					  "\n>meshes");
-	forI(Render::MeshCount()){
-		if(!Render::IsBaseMesh(i)) level_text.append(Render::SaveMeshTEXT(i));
+	forI(DengScene->models.size()){
+		Model* model = DengScene->models[i];
+		level_text.append(TOSTRING("\n",i," \"",model->name,"\" "));
+		forI(model->batchCount) level_text.append(TOSTRING('\"',model->batchArray[i].material->name,'\" '));
 	}
 	
 	//entities
@@ -468,36 +470,33 @@ void Admin::LoadTEXT(std::string savename){
 					//TODO maybe compare entity_count with the number of entities loaded?
 				}break;
 				case(LevelHeader::MATERIALS):{
-					if(split.size() != 7){ ERROR(ParsingError,"'! Material lines should have 7 values"); continue; }
-					
+					if(split.size() < 3){ ERROR(ParsingError,"'! Material lines should have at least 3 values"); continue; }
+					//id
 					u32 old_id = std::stoi(split[0]);
-					u32 new_id = Render::CreateMaterial(split[1].c_str(), std::stoi(split[2]), 
-														Render::LoadTexture(split[3].c_str()),
-														Render::LoadTexture(split[4].c_str()),
-														Render::LoadTexture(split[5].c_str()),
-														Render::LoadTexture(split[6].c_str()));
+					u32 new_id = DengScene->materials.size();
+					
+					//textures
+					std::vector<Texture*> textures;
+					for(int i = 3; i < split.size(); ++i){
+						textures.push_back(DengScene->CreateTexture(split[i].c_str(), TextureType_Albedo));
+					}
+					
+					//material
+					DengScene->CreateMaterial(split[1].c_str(), std::stoi(split[2]), MaterialFlags_NONE, textures);
 					material_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
 				}break;
 				case(LevelHeader::MESHES):{
-					if(split.size() != 4){ ERROR(ParsingError,"'! Mesh lines should have 4 values"); continue; }
+					if(split.size() < 3){ ERROR(ParsingError,"'! Mesh lines should have at least 3 values"); continue; }
 					
 					//id
 					u32 old_id = std::stoi(split[0]);
-					u32 new_id = Render::CreateMesh(&scene, split[1].c_str(), false);
+					u32 new_id = DengScene->models.size();
+					Model* model = DengScene->CreateModelFromOBJ(split[1].c_str());
 					mesh_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
 					
-					//visible
-					Render::UpdateMeshVisibility(new_id, Assets::parse_bool(split[2], level_dir.c_str(), line_number));
-					
 					//materials
-					std::vector<std::string> mat_ids = Utils::spaceDelimit(split[3]); 
-					forI(Render::MeshBatchCount(new_id)){
-						u32 old_mat = std::stoi(mat_ids[i]);
-						for(auto& diff : material_id_diffs){
-							if(diff.first == old_mat){
-								Render::UpdateMeshBatchMaterial(new_id, i, diff.second);
-							}
-						}
+					for(int i = 2; i < split.size(); ++i){
+						DengScene->UpdateModelBatchMaterial(model, i, DengScene->CreateMaterial(split[i].c_str()));
 					}
 				}break;
 				case(LevelHeader::ENTITIES):{
@@ -614,7 +613,7 @@ void Admin::SaveDESH(const char* filename) {
 	std::vector<AudioSource*>    compsAudioSource;
 	std::vector<Collider*>       compsCollider;
 	std::vector<Light*>          compsLight;
-	std::vector<MeshComp*>       compsMeshComp;
+	std::vector<ModelInstance*>  compsMeshComp;
 	std::vector<Physics*>        compsPhysics;
 	std::vector<Movement*>       compsMovement;
 	std::vector<Player*>         compsPlayer;
@@ -641,14 +640,14 @@ void Admin::SaveDESH(const char* filename) {
 				case ComponentType_Light:         compsLight.push_back(dyncast(Light, c)); break;
 				case ComponentType_OrbManager:    /*TODO(sushi) impl orb saving*/ break;
                 case ComponentType_Movement:      compsMovement.push_back(dyncast(Movement, c)); break;
-                case ComponentType_MeshComp:      compsMeshComp.push_back(dyncast(MeshComp, c)); break;
+                case ComponentType_ModelInstance: compsMeshComp.push_back(dyncast(ModelInstance, c)); break;
                 case ComponentType_Player:        compsPlayer.push_back(dyncast(Player, c)); break;
             }
         }
     }
     
     //// write textures ////
-    header.textureCount = Render::TextureCount();;
+    header.textureCount = DengScene->textures.size();
     header.textureArrayOffset = file.tellp();
 	/*
     for(auto& t : *Render::textureArray()){
@@ -658,7 +657,7 @@ void Admin::SaveDESH(const char* filename) {
 */
     
     //// write materials ////
-    header.materialCount = Render::MaterialCount();
+    header.materialCount = DengScene->materials.size();
     header.materialArrayOffset = file.tellp();
 	/*
     for(auto& m : *Render::materialArray()){
@@ -672,7 +671,7 @@ void Admin::SaveDESH(const char* filename) {
 */
     
     //// write meshes //// //TODO(delle) support multiple materials per mesh
-    header.meshCount = Render::MeshCount();
+    header.meshCount = DengScene->meshes.size();
     header.meshArrayOffset = file.tellp();
 	/*
     for(auto& m : *Render::meshArray()){
@@ -716,7 +715,7 @@ void Admin::SaveDESH(const char* filename) {
     file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
     
     //mesh comp 6
-    typeHeader.type        = ComponentType_MeshComp;
+    typeHeader.type        = ComponentType_ModelInstance;
     typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
     typeHeader.size        = sizeof(u32) * 3 + sizeof(u32)*2 + sizeof(bool)*2; //instanceID, meshID, visible, entity_control
     typeHeader.count       = compsMeshComp.size();
@@ -789,15 +788,11 @@ void Admin::SaveDESH(const char* filename) {
     
     //mesh comp
     for(auto c : compsMeshComp){
-        bool bool1 = c->mesh_visible;
-        bool bool2 = c->ENTITY_CONTROL;
         //file.write((const char*)&c->entityID,   sizeof(u32));
         file.write((const char*)&c->compID,     sizeof(u32));
         file.write((const char*)&c->event,      sizeof(u32));
-        file.write((const char*)&c->instanceID, sizeof(u32));
-        file.write((const char*)&c->meshID,     sizeof(u32));
-        file.write((const char*)&bool1,         sizeof(bool));
-        file.write((const char*)&bool2,         sizeof(bool));
+        //file.write((const char*)&c->meshID,     sizeof(u32));
+        file.write((const char*)&c->visible,         sizeof(bool));
     }
     
     //physics
@@ -893,11 +888,11 @@ void Admin::LoadDESH(const char* filename) {
         return ERROR("Load failed because cursor was at '", cursor, 
                      "' when reading textures which start at '", header.textureArrayOffset, "'");
     }
-    Texture tex{};
+    TextureType texType; char texName[DESHI_NAME_SIZE];
     forI(header.textureCount){
-        memcpy(&tex.type,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
-        memcpy(tex.filename, data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
-        if(i>3) Render::LoadTexture(tex);
+        memcpy(&texType, data+cursor, sizeof(u32));     cursor += sizeof(u32);
+        memcpy(texName,  data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
+		DengScene->CreateTexture(texName, texType);
     }
     
     //// parse and create materials ////
@@ -905,15 +900,16 @@ void Admin::LoadDESH(const char* filename) {
         return ERROR("Load failed because cursor was at '", cursor, 
                      "' when reading materials which start at '", header.materialArrayOffset, "'");
     }
-    u32 shader = 0, albedoID = 0, normalID = 2, specularId = 2, lightID = 2; char matName[DESHI_NAME_SIZE];
+    u32 shader = 0, albedoID = 0, normalID = 2, specularID = 2, lightID = 2; char matName[DESHI_NAME_SIZE];
     forI(header.materialCount){
         memcpy(&shader,     data+cursor, sizeof(u32)); cursor += sizeof(u32);
         memcpy(&albedoID,   data+cursor, sizeof(u32)); cursor += sizeof(u32);
         memcpy(&normalID,   data+cursor, sizeof(u32)); cursor += sizeof(u32);
-        memcpy(&specularId, data+cursor, sizeof(u32)); cursor += sizeof(u32);
+        memcpy(&specularID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
         memcpy(&lightID,    data+cursor, sizeof(u32)); cursor += sizeof(u32);
         memcpy(matName,     data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
-        if(i>5) Render::CreateMaterial(matName, shader, albedoID, normalID, specularId, lightID);
+		DengScene->CreateMaterial(matName, shader, MaterialFlags_NONE, {DengScene->textures[albedoID], 
+									  DengScene->textures[normalID], DengScene->textures[specularID], DengScene->textures[lightID]});
     }
     
     //// parse and load/create meshes ////
@@ -927,8 +923,8 @@ void Admin::LoadDESH(const char* filename) {
         memcpy(&baseMesh, data+cursor, sizeof(bool));     cursor += sizeof(bool);
         memcpy(meshName,  data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
         if(!baseMesh) {
-            u32 meshID = Render::CreateMesh(&scene, meshName);
-            Render::UpdateMeshBatchMaterial(meshID, 0, matID);
+			Model* model = DengScene->CreateModelFromOBJ(meshName);
+            DengScene->UpdateModelBatchMaterial(model, 0, DengScene->materials[matID]);
         }
     }
     
@@ -950,7 +946,7 @@ void Admin::LoadDESH(const char* filename) {
             case(ComponentType_Camera):         Camera        ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_Collider):       Collider      ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_Light):          Light         ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_MeshComp):       MeshComp      ::LoadDESH(this, data, cursor, compHeader.count); break;
+            case(ComponentType_ModelInstance):  ModelInstance ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_OrbManager):     OrbManager    ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_Physics):        Physics       ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_Movement):       Movement      ::LoadDESH(this, data, cursor, compHeader.count); break;

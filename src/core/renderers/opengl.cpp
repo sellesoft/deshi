@@ -66,17 +66,17 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 
 local char iniFilepath[256] = {};
 void DeshiImGui::
-init(){
+Init(){
 	
 }
 
 void DeshiImGui::
-cleanup(){
+Vleanup(){
 	
 }
 
 void DeshiImGui::
-newFrame(){
+NewFrame(){
 	
 }
 
@@ -96,6 +96,9 @@ FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
 // @INTERFACE FUNCTIONS
 
 
+///////////////////
+//// @settings ////
+///////////////////
 void Render::
 SaveSettings(){
 	Assets::saveConfig("render.cfg", configMap);
@@ -121,208 +124,80 @@ GetStage(){
 	return &rendererStage;
 }
 
+///////////////
+//// @load ////
+///////////////
 void Render::
-LoadDefaultAssets(){
-	//@Incomplete
-}
-
-void Render::
-remakeOffscreen(){
-	//@Incomplete
-}
-
-std::string Render::
-SaveMeshTEXT(u32 meshID){
-	//@Incomplete
-	return "";
-}
-
-std::string Render::
-SaveMaterialTEXT(u32 matID){
-	//@Incomplete
-	return "";
-}
-
-
-////////////////////////
-//// @trimesh stuff ////
-////////////////////////
-
-
-u32 Render::
-LoadBaseMesh(Mesh* m, bool visible){
-	//@Incomplete
-	return -1;
-}
-
-u32 Render::
-CreateMesh(Scene* scene, const char* filename, bool new_material){
-	//@Incomplete
-	return -1;
-}
-
-u32 Render::
-CreateMesh(Mesh* m, Matrix4 matrix, bool new_material){
-	//@Incomplete
-	return -1;
-}
-
-u32 Render::
-CreateMesh(u32 meshID, Matrix4 matrix, bool new_material){
-	//@Incomplete
-	return -1;
-}
-
-void Render::
-UnloadBaseMesh(u32 meshID){
+LoadFont(Font* font){
 	//@Incomplete
 }
 
 void Render::
-RemoveMesh(u32 meshID){
-	//@Incomplete
-}
-
-Matrix4 Render::
-GetMeshMatrix(u32 meshID){
-	//@Incomplete
-	return Matrix4(0.f);
-}
-
-Mesh* Render::
-GetMeshPtr(u32 meshID){
-	//@Incomplete
-	return nullptr;
-}
-
-u32 Render::
-GetBaseMeshID(const char* name){
-	//@Incomplete
-	return -1;
-}
-
-void Render::
-UpdateMeshMatrix(u32 meshID, Matrix4 matrix){
+LoadTexture(Texture* texture){
 	//@Incomplete
 }
 
 void Render::
-TransformMeshMatrix(u32 meshID, Matrix4 transform){
+LoadMaterial(Material* material){
 	//@Incomplete
 }
 
 void Render::
-UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID){
+LoadMesh(Mesh* mesh){
+	//@Incomplete
+}
+
+/////////////////
+//// @unload ////
+/////////////////
+void Render::
+UnloadFont(Font* font){
 	//@Incomplete
 }
 
 void Render::
-UpdateMeshVisibility(u32 meshID, bool visible){
-	//@Incomplete
-}
-
-u32 Render::
-MeshBatchCount(u32 meshID){
-	//@Incomplete
-	return -1;
-}
-
-u32 Render::
-MeshBatchMaterial(u32 meshID, u32 batchIndex){
-	//@Incomplete
-	return -1;
-}
-
-void Render::
-AddSelectedMesh(u32 meshID){
+UnloadTexture(Texture* texture){
 	//@Incomplete
 }
 
 void Render::
-RemoveSelectedMesh(u32 meshID){
-	//@Incomplete
-}
-
-
-////////////////////////
-//// @texture stuff ////
-////////////////////////
-
-
-u32 Render::
-LoadTexture(const char* filename, u32 type){
-	//@Incomplete
-	return -1;
-}
-
-u32 Render::
-LoadTexture(Texture texture){
-	//@Incomplete
-	return -1;
-}
-
-std::string Render::
-ListTextures(){
-	//@Incomplete
-	return "";
-}
-
-u32 Render::
-CreateFont(u32 textureIdx){
-	//@Incomplete
-	return -1;
-}
-
-/////////////////////////
-//// @material stuff ////
-/////////////////////////
-
-u32 Render::
-CreateMaterial(const char* name, u32 shader, u32 albedoTextureID, u32 normalTextureID, u32 specTextureID, u32 lightTextureID){
-	//@Incomplete
-	return -1;
-}
-
-u32 Render::
-CopyMaterial(u32 materialID){
-	//@Incomplete
-	return -1;
-}
-
-void Render::
-UpdateMaterialTexture(u32 matID, u32 texType, u32 texID){
+UnloadMaterial(Material* material){
 	//@Incomplete
 }
 
 void Render::
-UpdateMaterialShader(u32 matID, u32 shader){
+UnloadMesh(Mesh* mesh){
 	//@Incomplete
 }
 
-std::vector<u32> Render::
-GetMaterialIDs(u32 meshID){
-	//@Incomplete
-	return std::vector<u32>();
-}
-
+///////////////
+//// @draw ////
+///////////////
 void Render::
-RemoveMaterial(u32 matID){
-	//@Incomplete
-}
-
-
-/////////////////////
-//// @temp stuff ////
-/////////////////////
-
-
-void Render::
-TempLine(Vector3 start, Vector3 end, Color color){
+DrawModel(Model* mesh, Matrix4 matrix){
 	//@Incomplete
 }
 
 void Render::
-TempBox(Matrix4 transform, Color color){
+DrawLine(Vector3 start, Vector3 end, Color color){
+	if(color.a == 0) return;
+	
+	vec3 col((f32)color.r / 255.0f, (f32)color.g / 255.0f, (f32)color.b / 255.0f);
+	Vertex* vp = tempVertexArray + tempVertexCount;
+	u16*    ip = tempIndexArray  + tempIndexCount;
+	
+	ip[0] = tempVertexCount; 
+	ip[1] = tempVertexCount+1; 
+	ip[2] = tempVertexCount;
+	vp[0].pos = start; vp[0].color = col;
+	vp[1].pos = end;   vp[1].color = col;
+	
+	tempVertexCount += 2;
+	tempIndexCount  += 3;
+}
+
+void Render::
+DrawBox(Matrix4 transform, Color color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -340,22 +215,22 @@ TempBox(Matrix4 transform, Color color){
 		points[i] = points[i] * transform;
 	}
 	
-	Render::TempLine(points[3], points[1], color);
-	Render::TempLine(points[3], points[2], color);
-	Render::TempLine(points[3], points[7], color);
-	Render::TempLine(points[0], points[1], color);
-	Render::TempLine(points[0], points[2], color);
-	Render::TempLine(points[0], points[4], color);
-	Render::TempLine(points[5], points[1], color);
-	Render::TempLine(points[5], points[4], color);
-	Render::TempLine(points[5], points[7], color);
-	Render::TempLine(points[6], points[2], color);
-	Render::TempLine(points[6], points[4], color);
-	Render::TempLine(points[6], points[7], color);
+	DrawLine(points[3], points[1], color);
+	DrawLine(points[3], points[2], color);
+	DrawLine(points[3], points[7], color);
+	DrawLine(points[0], points[1], color);
+	DrawLine(points[0], points[2], color);
+	DrawLine(points[0], points[4], color);
+	DrawLine(points[5], points[1], color);
+	DrawLine(points[5], points[4], color);
+	DrawLine(points[5], points[7], color);
+	DrawLine(points[6], points[2], color);
+	DrawLine(points[6], points[4], color);
+	DrawLine(points[6], points[7], color);
 }
 
 void Render::
-TempFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color){
+DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color){
 	if(color.a == 0) return;
 	
 	f32 y = tanf(RADIANS(fovx / 2.0f));
@@ -388,31 +263,23 @@ TempFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 ne
 		v[i].z = temp.z / temp.w;
 	}
 	
-	Render::TempLine(v[0], v[1], color);
-	Render::TempLine(v[0], v[2], color);
-	Render::TempLine(v[3], v[1], color);
-	Render::TempLine(v[3], v[2], color);
-	Render::TempLine(v[4], v[5], color);
-	Render::TempLine(v[4], v[6], color);
-	Render::TempLine(v[7], v[5], color);
-	Render::TempLine(v[7], v[6], color);
-	Render::TempLine(v[0], v[4], color);
-	Render::TempLine(v[1], v[5], color);
-	Render::TempLine(v[2], v[6], color);
-	Render::TempLine(v[3], v[7], color);
+	DrawLine(v[0], v[1], color);
+	DrawLine(v[0], v[2], color);
+	DrawLine(v[3], v[1], color);
+	DrawLine(v[3], v[2], color);
+	DrawLine(v[4], v[5], color);
+	DrawLine(v[4], v[6], color);
+	DrawLine(v[7], v[5], color);
+	DrawLine(v[7], v[6], color);
+	DrawLine(v[0], v[4], color);
+	DrawLine(v[1], v[5], color);
+	DrawLine(v[2], v[6], color);
+	DrawLine(v[3], v[7], color);
 }
 
-
-//////////////////////
-//// @other stuff ////
-//////////////////////
-
-
-void Render::
-LoadScene(Scene* sc){
-	//@Incomplete
-}
-
+/////////////////
+//// @camera ////
+/////////////////
 void Render::
 UpdateCameraPosition(Vector3 position){
 	//@Incomplete
@@ -428,11 +295,9 @@ UpdateCameraProjectionMatrix(Matrix4 m){
 	//@Incomplete
 }
 
-void Render::
-SceneBoundingBox(Vector3* min, Vector3* max){
-	//@Incomplete
-}
-
+//////////////////
+//// @shaders ////
+//////////////////
 void Render::
 ReloadShader(u32 shader){
 	//@Incomplete
@@ -443,82 +308,22 @@ ReloadAllShaders(){
 	//@Incomplete
 }
 
-void Render::
-UpdateRenderSettings(RenderSettings new_settings){
-	settings = new_settings;
-};
-
-u32 Render::
-MeshCount(){
-	//@Incomplete
-	return -1;
-}
-
-bool Render::
-IsBaseMesh(u32 meshIdx){
-	//@Incomplete
-	return false;
-}
-
-char* Render::
-MeshName(u32 meshIdx){
-	//@Incomplete
-	return nullptr;
-}
-
+////////////////
+//// @fixme ////
+////////////////
 void Render::
 UpdateLight(u32 lightIdx, Vector4 vec){
+	lights[lightIdx] = vec;
+}
+
+void Render::
+remakeOffscreen(){
 	//@Incomplete
 }
 
-u32 Render::
-TextureCount(){
-	//@Incomplete
-	return -1;
-}
-
-u32 Render::
-MaterialCount(){
-	//@Incomplete
-	return -1;
-}
-
-u32 Render::
-MaterialShader(u32 matID){
-	//@Incomplete
-	return -1;
-}
-
-std::vector<u32> Render::
-MaterialTextures(u32 matID){
-	//@Incomplete
-	return {};
-}
-
-std::string Render::
-ListMaterials(){
-	//@Incomplete
-	return "";
-}
-
-bool Render::
-IsMeshVisible(u32 meshIdx){
-	//@Incomplete
-	return false;
-}
-
-char* Render::
-MaterialName(u32 matIdx){
-	//@Incomplete
-	return nullptr;
-}
-
-char* Render::
-TextureName(u32 texIdx){
-	//@Incomplete
-	return nullptr;
-}
-
+///////////////
+//// @init ////
+///////////////
 void Render::
 Init(){
 	//@Incomplete
@@ -529,16 +334,25 @@ Init(){
 	}
 }
 
+/////////////////
+//// @update ////
+/////////////////
 void Render::
 Update(){
 	//@Incomplete
 }
 
+////////////////
+//// @reset ////
+////////////////
 void Render::
 Reset(){
 	//@Incomplete
 }
 
+//////////////////
+//// @cleanup ////
+//////////////////
 void Render::
 Cleanup(){
 	//@Incomplete

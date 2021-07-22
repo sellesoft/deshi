@@ -3,29 +3,28 @@
 #define GAME_ENTITY_PLAYER_H
 
 #include "Entity.h"
-//#include "../../utils/defines.h"
 
 struct Player;
 struct Movement;
 struct AudioListener;
 struct AudioSource;
 struct Collider;
-struct MeshComp;
+struct ModelInstance;
 struct Physics;
 struct Transform;
 struct Admin;
 
 struct PlayerEntity : public Entity {
-	Player* player;
+	Physics* physics;
 	Movement* movement;
+	Player* player;
 	AudioListener* listener;
 	AudioSource* source;
 	Collider* collider;
-	MeshComp* mesh;
-	Physics* physics;
+	ModelInstance* model;
 	
 	PlayerEntity(Transform transform);
-
+	
 	void Init() override;
 	
 };

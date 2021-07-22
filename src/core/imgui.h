@@ -14,9 +14,9 @@
 
 namespace DeshiImGui{
 	
-	void init();
-	void cleanup();
-	void newFrame();
+	void Init();
+	void Cleanup();
+	void NewFrame();
 	
 }; //namespace DeshiImGui
 

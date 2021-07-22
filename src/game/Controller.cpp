@@ -6,11 +6,11 @@
 #include "components/Movement.h"
 #include "components/Player.h"
 #include "../core/assets.h"
+#include "../core/console.h"
 #include "../core/imgui.h"
 #include "../core/time.h"
 #include "../core/window.h"
 #include "../math/Math.h"
-#include "../scene/Scene.h"
 #include "../geometry/Edge.h"
 
 #include <fstream>

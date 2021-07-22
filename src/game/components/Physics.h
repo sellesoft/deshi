@@ -3,12 +3,11 @@
 #define COMPONENT_PHYSICS_H
 
 #include "Component.h"
-#include "../../math/Vector.h"
 #include "../../utils/tuple.h"
 
 #include <unordered_map>
 
-typedef u32 ColliderType;
+typedef u32 ColliderShape;
 struct Physics;
 struct poly;
 struct Collider;
@@ -31,12 +30,12 @@ struct Manifold3 {
 	Collider* a = nullptr;
 	Collider* b = nullptr;
 	
-	ColliderType coltypea;
-	ColliderType coltypeb;
+	ColliderShape coltypea;
+	ColliderShape coltypeb;
 	
 	//bool indicating which normal is the player's
 	bool player = 0;
- 
+	
 	int refID = 0;
 	//point then depth
 	std::vector<pair<Vector3, float>> colpoints;

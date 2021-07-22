@@ -1,29 +1,29 @@
 #include "StaticMeshEntity.h"
 #include "../admin.h"
-#include "../../core/console.h"
-
 #include "../components/MeshComp.h"
 #include "../components/Physics.h"
 #include "../components/Collider.h"
+#include "../../core/console.h"
+#include "../../core/model.h"
 
-StaticMesh::StaticMesh(Transform transform, const char* name){
-	this->transform = transform;
+StaticMesh::StaticMesh(Transform _transform, const char* _name){
 	type = EntityType_StaticMesh;
-	if (name) cpystr(this->name, name, DESHI_NAME_SIZE);
+	transform = _transform;
+	if(_name) cpystr(name, _name, DESHI_NAME_SIZE);
 	
-	mesh = new MeshComp(0);
-	physics = new Physics(transform.position, transform.rotation, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 
-						  .5f, 1.f, true, true, false, .3f, .42f);
+	model    = new ModelInstance();
+	physics  = new Physics(transform.position, transform.rotation, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 
+						   .5f, 1.f, true, true, false, .3f, .42f);
 	collider = new BoxCollider(Vector3(1,1,1), 1.f);
-	AddComponents({ physics, mesh });
+	AddComponents({ model, physics, collider });
 }
 
-StaticMesh::StaticMesh(u32 meshID, u32 colliderShape, f32 mass, Transform transform, const char* name){
-	this->transform = transform;
+StaticMesh::StaticMesh(Model* _model, ColliderShape colliderShape, f32 mass, Transform _transform, const char* _name){
 	type = EntityType_StaticMesh;
-	if (name) cpystr(this->name, name, DESHI_NAME_SIZE);
+	transform = _transform;
+	if(_name) cpystr(name, _name, DESHI_NAME_SIZE);
 	
-	mesh = new MeshComp(meshID);
+	model   = new ModelInstance(_model);
 	physics = new Physics(transform.position, transform.rotation, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 
 						  .5f, mass, true, true, false, .3f, .42f);
 	switch(colliderShape){
@@ -32,5 +32,5 @@ StaticMesh::StaticMesh(u32 meshID, u32 colliderShape, f32 mass, Transform transf
 		case ColliderShape_AABB:   collider = new AABBCollider(Vector3(1,1,1), mass); break;
 		default: ERROR("Invalid component type in StaticMesh creation: ", ColliderShapeStrings[colliderShape]); collider = 0; break;
 	}
-	AddComponents({ collider, mesh, physics });
+	AddComponents({ model, physics, collider });
 }

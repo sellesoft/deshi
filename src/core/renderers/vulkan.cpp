@@ -16,12 +16,13 @@ http://www.ludicon.com/castano/blog/2009/02/optimal-grid-rendering/
 http://gameangst.com/?p=9
 */
 
+
 //-------------------------------------------------------------------------------------------------
 // VULKAN STRUCTS
 
 
 struct TextureVk {
-    Mesh::Texture* base;
+    Texture* base;
     VkImage        image;
     VkDeviceMemory memory;
     VkDeviceSize   size;
@@ -31,16 +32,15 @@ struct TextureVk {
     VkDescriptorImageInfo descriptor;
 };
 
-struct MeshVk{
-	Mesh* base;
-    bool  visible;
-    mat4  matrix;
-};
-
 struct MaterialVk{
-	Mesh::Material* base;
+	Material* base;
     VkDescriptorSet descriptorSet;
     VkPipeline      pipeline;
+};
+
+struct MeshVk{
+	Mesh* base;
+	VkDeviceSize size;
 };
 
 struct Vertex2D{
@@ -49,14 +49,26 @@ struct Vertex2D{
 	u32  color;
 };
 
+struct ModelCmdVk{
+	u32   indexOffset;
+	u32   indexCount;
+	u32   materialIdx;
+	bool  selected;
+	char* name;
+	mat4  matrix;
+};
+
+struct FontVk{
+	VkDescriptorSet descriptorSet;
+};
+
 struct Push2DVk{
 	vec2 scale;
 	vec2 translate;
 };
 
-struct ImmediateCmdVk{
-	u32 specialIdx;
-	u32 vertexOffset;
+struct UICmdVk{
+	u32 fontIdx;
 	u16 indexOffset;
 	u16 indexCount;
 };
@@ -94,11 +106,6 @@ struct BufferVk{
 	VkDeviceMemory         memory;
 	VkDeviceSize           size;
 	VkDescriptorBufferInfo descriptor;
-};
-
-struct FontVk{
-	u32 textureIdx;
-	VkDescriptorSet descriptorSet;
 };
 
 
@@ -150,33 +157,35 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 local u16 uiVertexCount = 0;
 local Vertex2D uiVertexArray[MAX_UI_VERTICES];
 
+#define MAX_TEMP_VERTICES 0xFFFF
+local u16 tempVertexCount = 0;
+local Mesh::Vertex tempVertexArray[MAX_TEMP_VERTICES];
+
 #define MAX_UI_INDICES 3*MAX_UI_VERTICES
 local u32 uiIndexCount = 0;
 local u16 uiIndexArray[MAX_UI_INDICES];
-
-#define MAX_UI_CMDS 1000 
-local u16 uiCmdCount = 1; //start with 1
-local ImmediateCmdVk uiCmdArray[MAX_UI_CMDS];
-
-#define MAX_TEMP_VERTICES 0xFFFF
-local u16 tempVertexCount = 0;
-local Vertex tempVertexArray[MAX_TEMP_VERTICES];
 
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
 local u32 tempIndexCount = 0;
 local u16 tempIndexArray[MAX_TEMP_INDICES];
 
+//different UI cmd per font/texture
+#define MAX_UI_CMDS 256
+local u8 uiCmdCount = 1; //start with 1
+local UICmdVk uiCmdArray[MAX_UI_CMDS]; 
+
+#define MAX_MODEL_CMDS 10000 
+local u16 modelCmdCount = 0;
+local ModelCmdVk modelCmdArray[MAX_MODEL_CMDS];
+
 
 //-------------------------------------------------------------------------------------------------
 // VULKAN VARIABLES
 
-//TODO(delle,ReOp) use container manager for arrays that remove elements
-std::vector<Vertex>      vertexBuffer;
-std::vector<u32>         indexBuffer;
+
 std::vector<TextureVk>   textures;
-std::vector<MeshVk>      meshes;
 std::vector<MaterialVk>  materials;
-std::vector<u32>         selected;
+std::vector<MeshVk>      meshes;
 std::vector<FontVk>      fonts;
 
 vec4 lights[10]{ vec4(0,0,0,-1) };
@@ -190,8 +199,7 @@ local std::vector<const char*> deviceExtensions = {
 };
 local std::vector<VkValidationFeatureEnableEXT> validationFeaturesEnabled = {};
 
-local const int MAX_FRAMES = 2;
-local VkAllocationCallbacks* allocator = 0;
+local const int MAX_FRAMES = 2; //TODO(delle) remove this? minImageCount does same thing
 
 local bool initialized     = false;
 local bool remakeWindow    = false;
@@ -208,30 +216,31 @@ VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 /////////////////////////
 //// @initialization ////
 /////////////////////////
-local VkInstance               instance = VK_NULL_HANDLE;
-local VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
+local VkAllocationCallbacks*   allocator             = VK_NULL_HANDLE;
+local VkInstance               instance              = VK_NULL_HANDLE;
+local VkDebugUtilsMessengerEXT debugMessenger        = VK_NULL_HANDLE;
 local VkSurfaceKHR             surface;
-local VkPhysicalDevice         physicalDevice = VK_NULL_HANDLE;
-local VkSampleCountFlagBits    maxMsaaSamples = VK_SAMPLE_COUNT_1_BIT;
-local VkPhysicalDeviceFeatures deviceFeatures{};
-local VkPhysicalDeviceFeatures enabledFeatures{};
-local QueueFamilyIndices       physicalQueueFamilies;
-local VkDevice                 device        = VK_NULL_HANDLE;
-local VkQueue                  graphicsQueue = VK_NULL_HANDLE;
-local VkQueue                  presentQueue  = VK_NULL_HANDLE; 
+local VkPhysicalDevice         physicalDevice        = VK_NULL_HANDLE;
+local VkSampleCountFlagBits    maxMsaaSamples        = VK_SAMPLE_COUNT_1_BIT;
+local VkPhysicalDeviceFeatures deviceFeatures        = {};
+local VkPhysicalDeviceFeatures enabledFeatures       = {};
+local QueueFamilyIndices       physicalQueueFamilies = {};
+local VkDevice                 device                = VK_NULL_HANDLE;
+local VkQueue                  graphicsQueue         = VK_NULL_HANDLE;
+local VkQueue                  presentQueue          = VK_NULL_HANDLE; 
 local VkDeviceSize             bufferMemoryAlignment = 256;
 
 ////////////////////
 //// @swapchain ////
 ////////////////////
-local s32                     width  = 0;
-local s32                     height = 0;
-local VkSwapchainKHR          swapchain = VK_NULL_HANDLE;
-local SwapChainSupportDetails supportDetails{};
-local VkSurfaceFormatKHR      surfaceFormat{};
-local VkPresentModeKHR        presentMode;
-local VkExtent2D              extent;
-local s32                     minImageCount = 0;
+local s32                     width          = 0;
+local s32                     height         = 0;
+local VkSwapchainKHR          swapchain      = VK_NULL_HANDLE;
+local SwapChainSupportDetails supportDetails = {};
+local VkSurfaceFormatKHR      surfaceFormat  = {};
+local VkPresentModeKHR        presentMode    = VK_PRESENT_MODE_FIFO_KHR;
+local VkExtent2D              extent         = {};
+local s32                     minImageCount  = 0;
 
 /////////////////////
 //// @renderpass ////
@@ -315,25 +324,28 @@ local BufferVk tempIndexBuffer{};
 ////////////////////
 //// @pipelines ////
 ////////////////////
-local struct{ //descriptor set layouts for pipelines
-	VkDescriptorSetLayout ubos       = VK_NULL_HANDLE;
-	VkDescriptorSetLayout textures   = VK_NULL_HANDLE;
-	VkDescriptorSetLayout instances  = VK_NULL_HANDLE;
-	VkDescriptorSetLayout twod       = VK_NULL_HANDLE;
-} descriptorSetLayouts; //TODO(delle,Vu) rename descriptorSetLayouts.ubo to something more general
+local struct{
+	VkDescriptorSetLayout base;
+	VkDescriptorSetLayout textures;
+	VkDescriptorSetLayout instances;
+	VkDescriptorSetLayout twod;
+	VkDescriptorSetLayout geometry;
+} descriptorSetLayouts{};
 
 local VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 local struct{
-	VkDescriptorSet scene;
+	VkDescriptorSet base;
 	VkDescriptorSet offscreen;
-	VkDescriptorSet shadowMap_debug;
 	VkDescriptorSet ui;
-} descriptorSets;
+	VkDescriptorSet geometry;
+	VkDescriptorSet shadowMap_debug;
+} descriptorSets{};
 
 local struct{
-	VkPipelineLayout base = VK_NULL_HANDLE;
-	VkPipelineLayout twod = VK_NULL_HANDLE;
-} pipelineLayouts;
+	VkPipelineLayout base;
+	VkPipelineLayout twod;
+	VkPipelineLayout geometry;
+} pipelineLayouts{};
 
 local VkPipelineCache  pipelineCache  = VK_NULL_HANDLE;
 local VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
@@ -444,7 +456,7 @@ DebugEndLabelVk(VkCommandBuffer command_buffer){
 }
 
 PFN_vkCmdInsertDebugUtilsLabelEXT func_vkCmdInsertDebugUtilsLabelEXT;
-local inline  void 
+local inline void 
 DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, Vector4 color){
 #ifdef DESHI_INTERNAL
 	VkDebugUtilsLabelEXT label{VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
@@ -1057,8 +1069,6 @@ CreateLogicalDevice(){
 ////////////////////
 //// @swapchain ////
 ////////////////////
-
-
 //destroy old swap chain and in-flight frames, create a new swap chain with new dimensions
 local void 
 CreateSwapChain(){
@@ -1197,8 +1207,6 @@ CreateSwapChain(){
 /////////////////////
 //// @renderpass ////
 /////////////////////
-
-
 local VkFormat
 findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features){
 	PrintVk(4, "      Finding supported image formats");
@@ -1308,8 +1316,6 @@ CreateRenderpass(){
 /////////////////
 //// @frames ////
 /////////////////
-
-
 local void 
 CreateCommandPool(){
 	PrintVk(2, "  Creating Command Pool");
@@ -1432,8 +1438,6 @@ CreateSyncObjects(){
 //////////////////
 //// @buffers ////
 //////////////////
-
-
 //TODO(delle,ReOpVu) maybe only do one mapping at buffer creation, see: gltfscenerendering.cpp, line:600
 local void 
 UpdateUniformBuffers(){
@@ -1468,7 +1472,7 @@ UpdateUniformBuffers(){
 	}
 	
 	//update normals geometry shader ubo
-	if(settings.debugging && enabledFeatures.geometryShader){
+	if(enabledFeatures.geometryShader){
 		uboGS.values.view = uboVS.values.view;
 		uboGS.values.proj = uboVS.values.proj;
 		
@@ -1496,7 +1500,7 @@ CreateUniformBuffers(){
 	}
 	
 	//create normals geometry shader ubo
-	if(settings.debugging && enabledFeatures.geometryShader){
+	if(enabledFeatures.geometryShader){
 		CreateOrResizeBuffer(uboGS.buffer, uboGS.bufferMemory, uboGS.bufferSize, 
 							 sizeof(uboGS.values), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 							 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -1519,52 +1523,9 @@ CreateUniformBuffers(){
 	UpdateUniformBuffers();
 }
 
-//TODO(delle,Vu) update this to new style of buffer creation, see SetupImmediateData
-local void 
-CreateSceneMeshBuffers(){
-	PrintVk(3, "    Creating Scene Buffers");
-	BufferVk vertexStaging{}, indexStaging{};
-	size_t vertexBufferSize = vertexBuffer.size() * sizeof(Vertex);
-	size_t indexBufferSize  = indexBuffer.size()  * sizeof(u32);
-	if(vertexBufferSize == 0 || indexBufferSize == 0) return; //early out if empty buffers
-	
-	//create host visible vertex and index buffers (CPU/RAM)
-	CreateAndMapBuffer(vertexStaging.buffer, vertexStaging.memory, vertices.bufferSize, vertexBufferSize, vertexBuffer.data(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	
-	CreateAndMapBuffer(indexStaging.buffer, indexStaging.memory, indices.bufferSize, indexBufferSize, indexBuffer.data(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	
-	//create device local buffers (GPU)
-	CreateAndMapBuffer(vertices.buffer, vertices.bufferMemory, vertices.bufferSize, vertexBufferSize, nullptr, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	
-	CreateAndMapBuffer(indices.buffer, indices.bufferMemory, indices.bufferSize, indexBufferSize, nullptr, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	
-	//copy data from staging buffers to device local buffers
-	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
-		VkBufferCopy copyRegion{};
-		
-		copyRegion.size = vertexBufferSize;
-		vkCmdCopyBuffer(commandBuffer, vertexStaging.buffer, vertices.buffer, 1, &copyRegion);
-		
-		copyRegion.size = indexBufferSize;
-		vkCmdCopyBuffer(commandBuffer, indexStaging.buffer, indices.buffer, 1, &copyRegion);
-	}EndSingleTimeCommands(commandBuffer);
-	
-	//free staging resources
-	vkDestroyBuffer(device, vertexStaging.buffer, allocator);
-	vkFreeMemory(device, vertexStaging.memory, allocator);
-	vkDestroyBuffer(device, indexStaging.buffer, allocator);
-	vkFreeMemory(device, indexStaging.memory, allocator);
-	
-	//name buffers for debugging
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)vertices.buffer, "Meshes vertex buffer");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)indices.buffer, "Meshes index buffer");
-}
-
 ////////////////
 //// @other ////
 ////////////////
-
-
 local void 
 SetupOffscreenRendering(){
 	PrintVk(2, "  Creating offscreen rendering stuffs");
@@ -1683,8 +1644,6 @@ SetupOffscreenRendering(){
 ////////////////////////// descriptor pool, layouts, pipeline cache
 //// @pipelines setup //// pipeline create info structs
 ////////////////////////// (rasterizer, depth test, etc)
-
-
 //creates descriptor set layouts, push constants for shaders, and the pipeline layout
 local void 
 CreateLayouts(){
@@ -1697,7 +1656,7 @@ CreateLayouts(){
 	descriptorSetLayoutCI.pBindings    = setLayoutBindings;
 	descriptorSetLayoutCI.bindingCount = 0;
 	
-	{//create generic descriptor set layout
+	{//create base descriptor set layout
 		//binding 0: vertex shader scene UBO
 		setLayoutBindings[0].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		setLayoutBindings[0].stageFlags      = VK_SHADER_STAGE_VERTEX_BIT;
@@ -1710,19 +1669,8 @@ CreateLayouts(){
 		setLayoutBindings[1].descriptorCount = 1;
 		
 		descriptorSetLayoutCI.bindingCount = 2;
-		
-		//binding 2: geometry shader UBO
-		if(settings.debugging && enabledFeatures.geometryShader){
-			setLayoutBindings[2].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			setLayoutBindings[2].stageFlags      = VK_SHADER_STAGE_GEOMETRY_BIT;
-			setLayoutBindings[2].binding         = 2;
-			setLayoutBindings[2].descriptorCount = 1;
-			
-			descriptorSetLayoutCI.bindingCount = 3;
-		}
-		
-		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.ubos));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.ubos, "UBOs descriptor set layout");
+		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.base));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.base, "Base descriptor set layout");
 	}
 	
 	{//create textures descriptor set layout
@@ -1760,26 +1708,6 @@ CreateLayouts(){
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.instances, "Instances descriptor set layout");
 	}
 	
-	{//create pipeline layout
-		//setup push constants for passing model matrix
-		VkPushConstantRange pushConstantRange{};
-		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT;
-		pushConstantRange.offset     = 0;
-		pushConstantRange.size       = sizeof(mat4);
-		
-		VkDescriptorSetLayout setLayouts[] = { 
-			descriptorSetLayouts.ubos, descriptorSetLayouts.textures
-		};
-		
-		VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-		pipelineLayoutInfo.setLayoutCount         = ArrayCount(setLayouts);
-		pipelineLayoutInfo.pSetLayouts            = setLayouts;
-		pipelineLayoutInfo.pushConstantRangeCount = 1;
-		pipelineLayoutInfo.pPushConstantRanges    = &pushConstantRange;
-		AssertVk(vkCreatePipelineLayout(device, &pipelineLayoutInfo, allocator, &pipelineLayouts.base));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.base, "Base pipeline layout");
-	}
-	
 	{//create twod descriptor set layout
 		//binding 1: fragment shader font image sampler
 		setLayoutBindings[0].descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -1790,6 +1718,44 @@ CreateLayouts(){
 		descriptorSetLayoutCI.bindingCount = 1;
 		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.twod));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.twod, "2D descriptor set layout");
+	}
+	
+	//create geometry descriptor set layout
+	if(enabledFeatures.geometryShader){
+		//binding 0: vertex shader scene UBO
+		setLayoutBindings[0].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		setLayoutBindings[0].stageFlags      = VK_SHADER_STAGE_VERTEX_BIT;
+		setLayoutBindings[0].binding         = 0;
+		setLayoutBindings[0].descriptorCount = 1;
+		//binding 2: geometry shader UBO
+		setLayoutBindings[1].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		setLayoutBindings[1].stageFlags      = VK_SHADER_STAGE_GEOMETRY_BIT;
+		setLayoutBindings[1].binding         = 1;
+		setLayoutBindings[1].descriptorCount = 1;
+		
+		descriptorSetLayoutCI.bindingCount = 2;
+		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.base));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.base, "Base descriptor set layout");
+	}
+	
+	{//create base pipeline layout
+		//setup push constants for passing model matrix
+		VkPushConstantRange pushConstantRange{};
+		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		pushConstantRange.offset     = 0;
+		pushConstantRange.size       = sizeof(mat4);
+		
+		VkDescriptorSetLayout setLayouts[] = { 
+			descriptorSetLayouts.base, descriptorSetLayouts.textures
+		};
+		
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+		pipelineLayoutInfo.setLayoutCount         = ArrayCount(setLayouts);
+		pipelineLayoutInfo.pSetLayouts            = setLayouts;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges    = &pushConstantRange;
+		AssertVk(vkCreatePipelineLayout(device, &pipelineLayoutInfo, allocator, &pipelineLayouts.base));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.base, "Base pipeline layout");
 	}
 	
 	{//create twod pipeline layout
@@ -1806,6 +1772,21 @@ CreateLayouts(){
 		createInfo.pPushConstantRanges    = &pushConstantRange;
 		AssertVk(vkCreatePipelineLayout(device, &createInfo, allocator, &pipelineLayouts.twod));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.twod, "2D pipeline layout");
+	}
+	
+	{//create geometry shader pipeline layout
+		VkPushConstantRange pushConstantRange{};
+		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT;
+		pushConstantRange.offset     = 0;
+		pushConstantRange.size       = sizeof(mat4);
+		
+		VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+		pipelineLayoutInfo.setLayoutCount         = 1;
+		pipelineLayoutInfo.pSetLayouts            = &descriptorSetLayouts.geometry;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges    = &pushConstantRange;
+		AssertVk(vkCreatePipelineLayout(device, &pipelineLayoutInfo, allocator, &pipelineLayouts.geometry));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.geometry, "Geometry pipeline layout");
 	}
 }
 
@@ -1848,47 +1829,35 @@ CreateDescriptorSets(){
 	
 	VkDescriptorSetAllocateInfo allocInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
 	allocInfo.descriptorPool     = descriptorPool;
-	allocInfo.pSetLayouts        = &descriptorSetLayouts.ubos;
+	allocInfo.pSetLayouts        = &descriptorSetLayouts.base;
 	allocInfo.descriptorSetCount = 1;
 	
-	VkWriteDescriptorSet writeDescriptorSets[3]{};
+	VkWriteDescriptorSet writeDescriptorSets[2]{};
 	
-	{//scene descriptor sets
-		AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets.scene), "failed to allocate scene descriptor sets");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)descriptorSets.scene, "Scene descriptor set");
+	{//base descriptor sets
+		AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets.base));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)descriptorSets.base, "Base descriptor set");
 		
 		//binding 0: vertex shader ubo
 		writeDescriptorSets[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptorSets[0].dstSet          = descriptorSets.scene;
+		writeDescriptorSets[0].dstSet          = descriptorSets.base;
 		writeDescriptorSets[0].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		writeDescriptorSets[0].dstBinding      = 0;
 		writeDescriptorSets[0].pBufferInfo     = &uboVS.bufferDescriptor;
 		writeDescriptorSets[0].descriptorCount = 1;
 		//binding 1: fragment shader shadow sampler
 		writeDescriptorSets[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptorSets[1].dstSet          = descriptorSets.scene;
+		writeDescriptorSets[1].dstSet          = descriptorSets.base;
 		writeDescriptorSets[1].descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		writeDescriptorSets[1].dstBinding      = 1;
 		writeDescriptorSets[1].pImageInfo      = &offscreen.depthDescriptor;
 		writeDescriptorSets[1].descriptorCount = 1;
 		
-		if(settings.debugging && enabledFeatures.geometryShader){
-			//binding 2: geometry shader ubo
-			writeDescriptorSets[2].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[2].dstSet          = descriptorSets.scene;
-			writeDescriptorSets[2].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			writeDescriptorSets[2].dstBinding      = 2;
-			writeDescriptorSets[2].pBufferInfo     = &uboGS.bufferDescriptor;
-			writeDescriptorSets[2].descriptorCount = 1;
-			
-			vkUpdateDescriptorSets(device, 3, writeDescriptorSets, 0, nullptr);
-		}else{
-			vkUpdateDescriptorSets(device, 2, writeDescriptorSets, 0, nullptr);
-		}
+		vkUpdateDescriptorSets(device, 2, writeDescriptorSets, 0, nullptr);
 	}
 	
 	{//offscreen shadow map generation descriptor set
-		AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets.offscreen), "failed to allocate scene descriptor sets");
+		AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets.offscreen));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)descriptorSets.offscreen, "Offscreen descriptor set");
 		
 		//binding 0: vertex shader ubo
@@ -1902,8 +1871,33 @@ CreateDescriptorSets(){
 		vkUpdateDescriptorSets(device, 1, writeDescriptorSets, 0, nullptr);
 	}
 	
+	//geometry descriptor sets
+	if(enabledFeatures.geometryShader){
+		allocInfo.pSetLayouts = &descriptorSetLayouts.geometry;
+		AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets.geometry));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)descriptorSets.geometry, "Geometry descriptor set");
+		
+		//binding 0: vertex shader ubo
+		writeDescriptorSets[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptorSets[0].dstSet          = descriptorSets.geometry;
+		writeDescriptorSets[0].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writeDescriptorSets[0].dstBinding      = 0;
+		writeDescriptorSets[0].pBufferInfo     = &uboVS.bufferDescriptor;
+		writeDescriptorSets[0].descriptorCount = 1;
+		//binding 1: geometry shader ubo
+		writeDescriptorSets[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptorSets[1].dstSet          = descriptorSets.geometry;
+		writeDescriptorSets[1].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writeDescriptorSets[1].dstBinding      = 1;
+		writeDescriptorSets[1].pBufferInfo     = &uboGS.bufferDescriptor;
+		writeDescriptorSets[1].descriptorCount = 1;
+		
+		vkUpdateDescriptorSets(device, 2, writeDescriptorSets, 0, nullptr);
+		allocInfo.pSetLayouts = &descriptorSetLayouts.base;
+	}
+	
 	{//DEBUG show shadow map descriptor set
-		AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets.shadowMap_debug), "failed to allocate shadowMap descriptor sets");
+		AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &descriptorSets.shadowMap_debug));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)descriptorSets.shadowMap_debug, "DEBUG Shadowmap descriptor set");
 		
 		//binding 1: fragment shader shadow sampler
@@ -1943,13 +1937,13 @@ SetupPipelineCreation(){
 	//vertex input flow control
 	//https://renderdoc.org/vkspec_chunked/chap23.html#VkPipelineVertexInputStateCreateInfo
 	vertexInputBindings = { //binding:u32, stride:u32, inputRate:VkVertexInputRate
-		{0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX},
+		{0, sizeof(Mesh::Vertex), VK_VERTEX_INPUT_RATE_VERTEX},
 	};
 	vertexInputAttributes = { //location:u32, binding:u32, format:VkFormat, offset:u32
-		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)},
-		{1, 0, VK_FORMAT_R32G32_SFLOAT,    offsetof(Vertex, uv)},
-		{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
-		{3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
+		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Mesh::Vertex, pos)},
+		{1, 0, VK_FORMAT_R32G32_SFLOAT,    offsetof(Mesh::Vertex, uv)},
+		{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Mesh::Vertex, color)},
+		{3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Mesh::Vertex, normal)},
 	};
 	vertexInputState.vertexBindingDescriptionCount   = (u32)vertexInputBindings.size();
 	vertexInputState.pVertexBindingDescriptions      = vertexInputBindings.data();
@@ -2070,8 +2064,6 @@ SetupPipelineCreation(){
 //////////////////
 //// @shaders ////
 //////////////////
-
-
 //TODO(delle,ReCl) clean this up
 local std::vector<std::string> 
 GetUncompiledShaders(){
@@ -2303,8 +2295,6 @@ CompileShader(std::string& filename, bool optimize){
 /////////////////////////////
 //// @pipelines creation ////
 /////////////////////////////
-
-
 local void 
 CreatePipelines(){
 	PrintVk(2, "  Creating Pipelines");
@@ -2543,13 +2533,17 @@ specializationInfo.mapEntryCount = 1;
 	}
 	
 	//DEBUG mesh normals
-	if(settings.debugging){
+	if(enabledFeatures.geometryShader){
+		pipelineCreateInfo.layout = pipelineLayouts.geometry;
+		
 		shaderStages[0] = loadShader("base.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("base.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[2] = loadShader("normaldebug.geom.spv", VK_SHADER_STAGE_GEOMETRY_BIT);
 		pipelineCreateInfo.stageCount = 3;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.normals_debug));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.normals_debug, "DEBUG Mesh normals pipeline");
+		
+		pipelineCreateInfo.layout = pipelineLayouts.base;
 	}
 	
 	{//DEBUG shadow map
@@ -2585,18 +2579,15 @@ local void
 UpdateMaterialPipelines(){
 	PrintVk(4, "      Updating material pipelines");
 	for(auto& mat : materials){
-		mat.pipeline = GetPipelineFromShader(mat.shader);
+		mat.pipeline = GetPipelineFromShader(mat.base->shader);
 	}
 }
 
-
-////////////////////
-//// @immediate ////
-////////////////////
-
-
+///////////////////
+//// @commands ////
+///////////////////
 local void
-SetupImmediateData(){
+SetupCommands(){
 	//create UI vertex and index buffers
 	size_t ui_vb_size = uiVertexCount * sizeof(Vertex2D);
 	size_t ui_ib_size = uiIndexCount  * sizeof(u16);
@@ -2639,9 +2630,9 @@ SetupImmediateData(){
 	}
 	
 	//create temp mesh vertex and index buffers
-	size_t temp_vb_size = tempVertexCount * sizeof(Vertex);
+	size_t temp_vb_size = tempVertexCount * sizeof(Mesh::Vertex);
 	size_t temp_ib_size = tempIndexCount  * sizeof(u16);
-	if(tempVertexBuffer.size == 0) temp_vb_size = 1000*sizeof(Vertex);
+	if(tempVertexBuffer.size == 0) temp_vb_size = 1000*sizeof(Mesh::Vertex);
 	if(tempIndexBuffer.size == 0)  temp_ib_size = 3000*sizeof(u16);
 	if(temp_vb_size && temp_ib_size){
 		//create/resize buffers if they are too small
@@ -2681,29 +2672,34 @@ SetupImmediateData(){
 }
 
 local void
-ResetImmediateData(){
-	{//reset UI
+ResetCommands(){
+	{//UI commands
 		uiVertexCount = 0;
 		uiIndexCount  = 0;
 		uiCmdCount    = 1;
-		memset(&uiCmdArray[0], 0, sizeof(ImmediateCmdVk));
+		memset(&uiCmdArray[0], 0, sizeof(UICmdVk));
 	}
 	
-	{//reset temp meshes
+	{//temp commands
 		tempVertexCount = 0;
 		tempIndexCount  = 0;
 	}
+	
+	{//model commands
+		modelCmdCount = 0;
+	}
 }
 
-
-//////////////////
-//// @drawing ////
-//////////////////
-
+////////////////
+//// @build ////
+////////////////
+local vec4 render_pass_color = vec4(0.78f, 0.54f, 0.12f, 1.0f);
+local vec4 draw_group_color  = vec4(0.50f, 0.76f, 0.34f, 1.0f);
+local vec4 draw_cmd_color    = vec4(0.40f, 0.61f, 0.27f, 1.0f);
 
 //we define a call order to command buffers so they can be executed by vkSubmitQueue()
 local void 
-BuildCommandBuffers(){
+BuildCommands(){
 	//PrintVk(2, "  Building Command Buffers");
 	AssertRS(RSVK_DESCRIPTORSETS | RSVK_PIPELINECREATE, "BuildCommandBuffers called before CreateDescriptorSets or CreatePipelines");
 	
@@ -2711,10 +2707,13 @@ BuildCommandBuffers(){
 	VkCommandBufferBeginInfo cmdBufferInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 	VkRenderPassBeginInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
 	VkViewport viewport{}; //scales the image
-	VkRect2D scissor{};    //cuts the scaled image //TODO(delle,Re) letterboxing settings here
+	VkRect2D   scissor{};  //cuts the scaled image //TODO(delle,Re) letterboxing settings here
+	VkPipeline      pipeline      = VK_NULL_HANDLE;
+	VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
 	
-	for(int i = 0; i < imageCount; ++i){
-		AssertVk(vkBeginCommandBuffer(frames[i].commandBuffer, &cmdBufferInfo), "failed to begin recording command buffer");
+	forI(imageCount){
+		VkCommandBuffer cmdBuffer = frames[i].commandBuffer;
+		AssertVk(vkBeginCommandBuffer(cmdBuffer, &cmdBufferInfo), "failed to begin recording command buffer");
 		
 		///////////////////////////
 		//// first render pass ////
@@ -2737,35 +2736,30 @@ BuildCommandBuffers(){
 			scissor.extent.width  = offscreen.width;
 			scissor.extent.height = offscreen.width;
 			
-			DebugBeginLabelVk(frames[i].commandBuffer, "Offscreen Render Pass", vec4(0.78f, 0.54f, 0.12f, 1.0f));
-			vkCmdBeginRenderPass(frames[i].commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdSetViewport(frames[i].commandBuffer, 0, 1, &viewport);
-			vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
-			vkCmdSetDepthBias(frames[i].commandBuffer, settings.depthBiasConstant, 0.0f, settings.depthBiasSlope); //set depth bias (polygon offset) to avoid shadow mapping artifacts
-			vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.offscreen);
-			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.offscreen, 0, nullptr);
+			DebugBeginLabelVk(cmdBuffer, "Offscreen Render Pass", render_pass_color);
+			vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+			vkCmdSetDepthBias(cmdBuffer, settings.depthBiasConstant, 0.0f, settings.depthBiasSlope);
+			vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.offscreen);
+			vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.offscreen, 0, nullptr);
 			
-			VkDeviceSize offsets[1] = { 0 }; //reset vertex buffer offsets
-			
-			DebugBeginLabelVk(frames[i].commandBuffer, "Meshes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-			vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &vertices.buffer, offsets);
-			vkCmdBindIndexBuffer(frames[i].commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-			for(MeshVk& mesh : meshes){
-				if(mesh.visible && mesh.primitives.size() > 0){
-					vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
-					for(PrimitiveVk& primitive : mesh.primitives){
-						if(primitive.indexCount > 0){
-							DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
-							vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-							stats.drawnIndices += primitive.indexCount;
-						}
-					}
-				}
+			DebugBeginLabelVk(cmdBuffer, "Meshes", draw_group_color);
+			VkDeviceSize offsets[1] = {0}; //reset vertex buffer offsets
+			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertices.buffer, offsets);
+			vkCmdBindIndexBuffer(cmdBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+			forI(modelCmdCount){
+				ModelCmdVk& cmd = modelCmdArray[i];
+				MaterialVk& mat = materials[cmd.materialIdx];
+				DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
+				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &cmd.matrix);
+				vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
+				stats.drawnIndices += cmd.indexCount;
 			}
-			DebugEndLabelVk(frames[i].commandBuffer);
+			DebugEndLabelVk(cmdBuffer);
 			
-			vkCmdEndRenderPass(frames[i].commandBuffer);
-			DebugEndLabelVk(frames[i].commandBuffer);
+			vkCmdEndRenderPass(cmdBuffer);
+			DebugEndLabelVk(cmdBuffer);
 		}
 		
 		//NOTE explicit synchronization is not required because it is done via the subpass dependenies
@@ -2794,156 +2788,112 @@ BuildCommandBuffers(){
 			scissor.extent.height = height;
 			
 			
-			DebugBeginLabelVk(frames[i].commandBuffer, "Scene Render Pass", vec4(0.78f, 0.54f, 0.12f, 1.0f));
-			vkCmdBeginRenderPass(frames[i].commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdSetViewport(frames[i].commandBuffer, 0, 1, &viewport);
-			vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
-			vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.scene, 0, nullptr);
-			VkDeviceSize offsets[1] = { 0 }; //reset vertex buffer offsets
+			DebugBeginLabelVk(cmdBuffer, "Scene Render Pass", render_pass_color);
+			vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+			vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.base, 0, nullptr);
 			
 			//draw meshes
-			DebugBeginLabelVk(frames[i].commandBuffer, "Meshes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-			vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &vertices.buffer, offsets);
-			vkCmdBindIndexBuffer(frames[i].commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-			if(settings.wireframeOnly){ //draw all with wireframe shader
-				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
-				for(MeshVk& mesh : meshes){
-					if(mesh.visible && mesh.primitives.size() > 0){
-						//push the mesh's model matrix to the vertex shader
-						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
-						
-						for(PrimitiveVk& primitive : mesh.primitives){
-							if(primitive.indexCount > 0){
-								DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
-								vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-								stats.drawnIndices += primitive.indexCount;
-							}
-						}
+			DebugBeginLabelVk(cmdBuffer, "Meshes", draw_group_color);
+			VkDeviceSize offsets[1] = {0}; //reset vertex buffer offsets
+			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertices.buffer, offsets);
+			vkCmdBindIndexBuffer(cmdBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+			forI(modelCmdCount){
+				ModelCmdVk& cmd = modelCmdArray[i];
+				MaterialVk& mat = materials[cmd.materialIdx];
+				DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
+				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &cmd.matrix);
+				
+				if(settings.wireframeOnly){
+					if(pipeline != pipelines.wireframe){
+						pipeline = pipelines.wireframe;
+						vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+					}
+				}else{
+					if(pipeline != mat.pipeline){
+						pipeline = mat.pipeline;
+						vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+					}
+					if(descriptorSet != mat.descriptorSet){
+						descriptorSet = mat.descriptorSet;
+						vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 1, 1, &descriptorSet, 0, nullptr);
 					}
 				}
-			}else{
-				for(MeshVk& mesh : meshes){
-					if(mesh.visible && mesh.primitives.size() > 0){
-						//push the mesh's model matrix to the vertex shader
-						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
-						
-						for(PrimitiveVk& primitive : mesh.primitives){
-							if(primitive.indexCount > 0){
-								MaterialVk& material = materials[primitive.materialIndex];
-								// Bind the pipeline for the primitive's material
-								vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material.pipeline);
-								vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 1, 1, &material.descriptorSet, 0, nullptr);
-								DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
-								vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-								stats.drawnIndices += primitive.indexCount;
-								
-								if(settings.meshWireframes && material.pipeline != pipelines.wireframe){
-									vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
-									DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
-									vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-									stats.drawnIndices += primitive.indexCount;
-								}
-							}
-						}
-					}
+				vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
+				stats.drawnIndices += cmd.indexCount;
+				
+				//selected overlay
+				if(cmd.selected){
+					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.selected);
+					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
+					stats.drawnIndices += cmd.indexCount;
+				}
+				//wireframe overlay
+				if(settings.meshWireframes && pipeline != pipelines.wireframe){
+					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
+					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
+					stats.drawnIndices += cmd.indexCount;
+				}
+				//mesh normals overlay
+				if(enabledFeatures.geometryShader && settings.meshNormals){
+					vkCmdPushConstants(cmdBuffer, pipelineLayouts.geometry, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &cmd.matrix);
+					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.normals_debug);
+					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.geometry, 0, 1, &descriptorSets.geometry, 0, nullptr);
+					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
+					stats.drawnIndices += cmd.indexCount;
 				}
 			}
-			DebugEndLabelVk(frames[i].commandBuffer);
+			DebugEndLabelVk(cmdBuffer);
 			
 			//draw temporary stuff
 			if(tempVertexCount > 0 && tempIndexCount > 0){
-				DebugBeginLabelVk(frames[i].commandBuffer, "Temp", vec4(0.5f, 0.76f, 0.34f, 1.0f));
+				DebugBeginLabelVk(cmdBuffer, "Temp", draw_group_color);
 				if(settings.tempMeshOnTop){
-					vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
+					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
 				}else{
-					vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe_depth);
+					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe_depth);
 				}
-				VkDeviceSize offsets[1] = { 0 };
-				vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &tempVertexBuffer.buffer, offsets);
-				vkCmdBindIndexBuffer(frames[i].commandBuffer, tempIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
-				vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &Matrix4::IDENTITY);
-				vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.scene, 0, nullptr);
+				VkDeviceSize offsets[1] = {0};
+				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &tempVertexBuffer.buffer, offsets);
+				vkCmdBindIndexBuffer(cmdBuffer, tempIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
+				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &Matrix4::IDENTITY);
+				vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.base, 0, nullptr);
 				
-				vkCmdDrawIndexed(frames[i].commandBuffer, tempIndexCount, 1, 0, 0, 0);
+				vkCmdDrawIndexed(cmdBuffer, tempIndexCount, 1, 0, 0, 0);
 				stats.drawnIndices += tempIndexCount;
 				
-				DebugEndLabelVk(frames[i].commandBuffer);
-			}
-			
-			//draw selected meshes
-			DebugBeginLabelVk(frames[i].commandBuffer, "Selected Meshes", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-			vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &vertices.buffer, offsets);
-			vkCmdBindIndexBuffer(frames[i].commandBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
-			for(u32 id : selected){
-				MeshVk& mesh = meshes[id];
-				if(mesh.primitives.size() > 0){
-					//push the mesh's model matrix to the vertex shader
-					vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
-					
-					for(PrimitiveVk& primitive : mesh.primitives){
-						if(primitive.indexCount > 0){
-							MaterialVk& material = materials[primitive.materialIndex];
-							// Bind the pipeline for the primitive's material
-							vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.selected);
-							vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 1, 1, &material.descriptorSet, 0, nullptr);
-							DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
-							vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-							stats.drawnIndices += primitive.indexCount;
-						}
-					}
-				}
-			}
-			DebugEndLabelVk(frames[i].commandBuffer);
-			
-			//DEBUG draw mesh normals
-			if(settings.debugging && enabledFeatures.geometryShader && settings.meshNormals){
-				DebugBeginLabelVk(frames[i].commandBuffer, "DEBUG Mesh Normals", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.normals_debug);
-				for(MeshVk& mesh : meshes){
-					if(mesh.visible && mesh.primitives.size() > 0){
-						//push the mesh's model matrix to the shader
-						vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &mesh.modelMatrix);
-						
-						for(PrimitiveVk& primitive : mesh.primitives){
-							if(primitive.indexCount > 0){
-								DebugInsertLabelVk(frames[i].commandBuffer, mesh.name, vec4(0.4f, 0.61f, 0.27f, 1.0f));
-								vkCmdDrawIndexed(frames[i].commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-								stats.drawnIndices += primitive.indexCount;
-							}
-						}
-					}
-				}
-				DebugEndLabelVk(frames[i].commandBuffer);
+				DebugEndLabelVk(cmdBuffer);
 			}
 			
 			//draw UI stuff
 			if(uiVertexCount > 0 && uiIndexCount > 0){
-				DebugBeginLabelVk(frames[i].commandBuffer, "UI", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui);
-				VkDeviceSize offsets[1] = { 0 };
-				vkCmdBindVertexBuffers(frames[i].commandBuffer, 0, 1, &uiVertexBuffer.buffer, offsets);
-				vkCmdBindIndexBuffer(frames[i].commandBuffer, uiIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
+				DebugBeginLabelVk(cmdBuffer, "UI", draw_group_color);
+				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui);
+				VkDeviceSize offsets[1] = {0};
+				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &uiVertexBuffer.buffer, offsets);
+				vkCmdBindIndexBuffer(cmdBuffer, uiIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
 				Push2DVk push{};
 				push.scale.x = 2.0f / (f32)width;
 				push.scale.y = 2.0f / (f32)height;
 				push.translate.x = -1.0f;
 				push.translate.y = -1.0f;
-				vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
+				vkCmdPushConstants(cmdBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
 				forX(cmd_idx, uiCmdCount){
-					vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].specialIdx].descriptorSet, 0, nullptr);
-					vkCmdDrawIndexed(frames[i].commandBuffer, uiCmdArray[cmd_idx].indexCount, 1, uiCmdArray[cmd_idx].indexOffset, 0, 0);
+					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].fontIdx].descriptorSet, 0, nullptr);
+					vkCmdDrawIndexed(cmdBuffer, uiCmdArray[cmd_idx].indexCount, 1, uiCmdArray[cmd_idx].indexOffset, 0, 0);
 				}
 				stats.drawnIndices += uiIndexCount;
 				
-				DebugEndLabelVk(frames[i].commandBuffer);
+				DebugEndLabelVk(cmdBuffer);
 			}
 			
 			//draw imgui stuff
 			if(ImDrawData* imDrawData = ImGui::GetDrawData()){
-				DebugBeginLabelVk(frames[i].commandBuffer, "ImGui", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-				ImGui_ImplVulkan_RenderDrawData(imDrawData, frames[i].commandBuffer);
-				DebugEndLabelVk(frames[i].commandBuffer);
+				DebugBeginLabelVk(cmdBuffer, "ImGui", draw_group_color);
+				ImGui_ImplVulkan_RenderDrawData(imDrawData, cmdBuffer);
+				DebugEndLabelVk(cmdBuffer);
 			}
 			
 			//DEBUG draw shadow map
@@ -2952,14 +2902,14 @@ BuildCommandBuffers(){
 				viewport.y      = (float)(height - 400);
 				viewport.width  = 400.f;
 				viewport.height = 400.f;
-				vkCmdSetViewport(frames[i].commandBuffer, 0, 1, &viewport);
-				vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
+				vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+				vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 				
-				DebugBeginLabelVk(frames[i].commandBuffer, "DEBUG Shadow map quad", vec4(0.5f, 0.76f, 0.34f, 1.0f));
-				vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.shadowMap_debug, 0, nullptr);
-				vkCmdBindPipeline(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.shadowmap_debug);
-				vkCmdDraw(frames[i].commandBuffer, 3, 1, 0, 0);
-				DebugEndLabelVk(frames[i].commandBuffer);
+				DebugBeginLabelVk(cmdBuffer, "DEBUG Shadow map quad", draw_group_color);
+				vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.shadowMap_debug, 0, nullptr);
+				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.shadowmap_debug);
+				vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+				DebugEndLabelVk(cmdBuffer);
 				
 				viewport.x      = 0;
 				viewport.y      = 0;
@@ -2967,11 +2917,11 @@ BuildCommandBuffers(){
 				viewport.height = (float)height;
 			}
 			
-			vkCmdEndRenderPass(frames[i].commandBuffer);
-			DebugEndLabelVk(frames[i].commandBuffer);
+			vkCmdEndRenderPass(cmdBuffer);
+			DebugEndLabelVk(cmdBuffer);
 		}
 		
-		AssertVk(vkEndCommandBuffer(frames[i].commandBuffer), "failed to end recording command buffer");
+		AssertVk(vkEndCommandBuffer(cmdBuffer), "failed to end recording command buffer");
 	}
 }
 
@@ -2987,7 +2937,7 @@ local void imguiCheckVkResult(VkResult err){
 
 local char iniFilepath[256] = {};
 void DeshiImGui::
-init(){
+Init(){
 	//Setup Dear ImGui context
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
@@ -3038,7 +2988,7 @@ init(){
 }
 
 void DeshiImGui::
-cleanup(){
+Cleanup(){
 	AssertVk(vkDeviceWaitIdle(device));
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
@@ -3046,7 +2996,7 @@ cleanup(){
 }
 
 void DeshiImGui::
-newFrame(){
+NewFrame(){
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
@@ -3082,6 +3032,9 @@ FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
 // @INTERFACE FUNCTIONS
 
 
+///////////////////
+//// @settings ////
+///////////////////
 void Render::
 SaveSettings(){
 	Assets::saveConfig("render.cfg", configMap);
@@ -3107,24 +3060,67 @@ GetStage(){
 	return &rendererStage;
 }
 
+///////////////
+//// @load ////
+///////////////
 void Render::
-remakeOffscreen(){
-	_remakeOffscreen = true;
+LoadFont(Font* font){
+	//@Incomplete
 }
 
-
-/////////////////////
-//// @temp stuff ////
-/////////////////////
-
+void Render::
+LoadTexture(Texture* texture){
+	//@Incomplete
+}
 
 void Render::
-TempLine(Vector3 start, Vector3 end, Color color){
+LoadMaterial(Material* material){
+	//@Incomplete
+}
+
+void Render::
+LoadMesh(Mesh* mesh){
+	//@Incomplete
+}
+
+/////////////////
+//// @unload ////
+/////////////////
+void Render::
+UnloadFont(Font* font){
+	//@Incomplete
+}
+
+void Render::
+UnloadTexture(Texture* texture){
+	//@Incomplete
+}
+
+void Render::
+UnloadMaterial(Material* material){
+	//@Incomplete
+}
+
+void Render::
+UnloadMesh(Mesh* mesh){
+	//@Incomplete
+}
+
+///////////////
+//// @draw ////
+///////////////
+void Render::
+DrawModel(Model* mesh, Matrix4 matrix, bool selected){
+	//@Incomplete
+}
+
+void Render::
+DrawLine(Vector3 start, Vector3 end, Color color){
 	if(color.a == 0) return;
 	
 	vec3 col((f32)color.r / 255.0f, (f32)color.g / 255.0f, (f32)color.b / 255.0f);
-	Vertex* vp = tempVertexArray + tempVertexCount;
-	u16*    ip = tempIndexArray  + tempIndexCount;
+	Mesh::Vertex* vp = tempVertexArray + tempVertexCount;
+	u16* ip = tempIndexArray + tempIndexCount;
 	
 	ip[0] = tempVertexCount; 
 	ip[1] = tempVertexCount+1; 
@@ -3137,7 +3133,7 @@ TempLine(Vector3 start, Vector3 end, Color color){
 }
 
 void Render::
-TempBox(Matrix4 transform, Color color){
+DrawBox(Matrix4 transform, Color color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -3155,22 +3151,22 @@ TempBox(Matrix4 transform, Color color){
 		points[i] = points[i] * transform;
 	}
 	
-	Render::TempLine(points[3], points[1], color);
-	Render::TempLine(points[3], points[2], color);
-	Render::TempLine(points[3], points[7], color);
-	Render::TempLine(points[0], points[1], color);
-	Render::TempLine(points[0], points[2], color);
-	Render::TempLine(points[0], points[4], color);
-	Render::TempLine(points[5], points[1], color);
-	Render::TempLine(points[5], points[4], color);
-	Render::TempLine(points[5], points[7], color);
-	Render::TempLine(points[6], points[2], color);
-	Render::TempLine(points[6], points[4], color);
-	Render::TempLine(points[6], points[7], color);
+	DrawLine(points[3], points[1], color);
+	DrawLine(points[3], points[2], color);
+	DrawLine(points[3], points[7], color);
+	DrawLine(points[0], points[1], color);
+	DrawLine(points[0], points[2], color);
+	DrawLine(points[0], points[4], color);
+	DrawLine(points[5], points[1], color);
+	DrawLine(points[5], points[4], color);
+	DrawLine(points[5], points[7], color);
+	DrawLine(points[6], points[2], color);
+	DrawLine(points[6], points[4], color);
+	DrawLine(points[6], points[7], color);
 }
 
 void Render::
-TempFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color){
+DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color){
 	if(color.a == 0) return;
 	
 	f32 y = tanf(RADIANS(fovx / 2.0f));
@@ -3203,38 +3199,23 @@ TempFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 ne
 		v[i].z = temp.z / temp.w;
 	}
 	
-	Render::TempLine(v[0], v[1], color);
-	Render::TempLine(v[0], v[2], color);
-	Render::TempLine(v[3], v[1], color);
-	Render::TempLine(v[3], v[2], color);
-	Render::TempLine(v[4], v[5], color);
-	Render::TempLine(v[4], v[6], color);
-	Render::TempLine(v[7], v[5], color);
-	Render::TempLine(v[7], v[6], color);
-	Render::TempLine(v[0], v[4], color);
-	Render::TempLine(v[1], v[5], color);
-	Render::TempLine(v[2], v[6], color);
-	Render::TempLine(v[3], v[7], color);
+	DrawLine(v[0], v[1], color);
+	DrawLine(v[0], v[2], color);
+	DrawLine(v[3], v[1], color);
+	DrawLine(v[3], v[2], color);
+	DrawLine(v[4], v[5], color);
+	DrawLine(v[4], v[6], color);
+	DrawLine(v[7], v[5], color);
+	DrawLine(v[7], v[6], color);
+	DrawLine(v[0], v[4], color);
+	DrawLine(v[1], v[5], color);
+	DrawLine(v[2], v[6], color);
+	DrawLine(v[3], v[7], color);
 }
 
-
-//////////////////////
-//// @other stuff ////
-//////////////////////
-
-
-void Render::
-LoadScene(Scene* scene){
-	PrintVk(2, "  Loading Scene");
-	initialized = false;
-	
-	//load meshes, materials, and textures
-	for(Mesh& mesh : scene->meshes){ LoadBaseMesh(&mesh); }
-	
-	CreateSceneMeshBuffers();
-	initialized = true;
-}
-
+/////////////////
+//// @camera ////
+/////////////////
 void Render::
 UpdateCameraPosition(Vector3 position){
 	uboVS.values.viewPos = vec4(position, 1.f);
@@ -3250,28 +3231,9 @@ UpdateCameraProjectionMatrix(Matrix4 m){
 	uboVS.values.proj = m;
 }
 
-void Render::
-SceneBoundingBox(Vector3* min, Vector3* max){
-	float inf = std::numeric_limits<float>::max();
-	*max = vec3(-inf, -inf, -inf);
-	*min = vec3( inf,  inf,  inf);
-	
-	Vector3 v;
-	for(MeshVk& mesh : meshes){
-		for(PrimitiveVk& p : mesh.primitives){
-			for(int i = p.firstIndex; i < p.indexCount; i++){
-				v = vertexBuffer[indexBuffer[i]].pos + mesh.modelMatrix.Translation();
-				if     (v.x < min->x){ min->x = v.x; }
-				else if(v.x > max->x){ max->x = v.x; }
-				if     (v.y < min->y){ min->y = v.y; }
-				else if(v.y > max->y){ max->y = v.y; }
-				if     (v.z < min->z){ min->z = v.z; }
-				else if(v.z > max->z){ max->z = v.z; }
-			}
-		}
-	}
-}
-
+//////////////////
+//// @shaders ////
+//////////////////
 void Render::
 ReloadShader(u32 shader){
 	switch(shader){
@@ -3345,80 +3307,22 @@ ReloadAllShaders(){
 	remakePipelines = true;
 }
 
-void Render::
-UpdateRenderSettings(RenderSettings new_settings){
-	settings = new_settings;
-};
-
-u32 Render::
-MeshCount(){
-	return meshes.size();
-}
-
-bool Render::
-IsBaseMesh(u32 meshIdx){
-	return meshes[meshIdx].base;
-}
-
-char* Render::
-MeshName(u32 meshIdx){
-	return meshes[meshIdx].name;
-}
-
+////////////////
+//// @fixme ////
+////////////////
 void Render::
 UpdateLight(u32 lightIdx, Vector4 vec){
 	lights[lightIdx] = vec;
 }
 
-u32 Render::
-TextureCount(){
-	return textures.size();
+void Render::
+remakeOffscreen(){
+	_remakeOffscreen = true;
 }
 
-u32 Render::
-MaterialCount(){
-	return materials.size();
-}
-
-u32 Render::
-MaterialShader(u32 matID){
-	return materials[matID].shader;
-}
-
-std::vector<u32> Render::
-MaterialTextures(u32 matID){
-	return {materials[matID].albedoID, materials[matID].normalID, materials[matID].specularID, materials[matID].lightID};
-}
-
-std::string Render::
-ListMaterials(){
-	std::string result = "[c:yellow]Materials List:\nID\tShader\tAlbedo\tNormal\tSpecular\tLight[c]";
-	for (auto& mat : materials) {
-		result += TOSTRING("\n", mat.id, "\t", ShaderStrings[mat.shader], "\t",
-						   mat.albedoID,   ":", textures[mat.albedoID].filename, "\t",
-						   mat.normalID,   ":", textures[mat.normalID].filename, "\t",
-						   mat.specularID, ":", textures[mat.specularID].filename, "\t",
-						   mat.lightID,    ":", textures[mat.lightID].filename);
-	}
-	return result;
-}
-
-bool Render::
-IsMeshVisible(u32 meshIdx){
-	return meshes[meshIdx].visible;
-}
-
-char* Render::
-MaterialName(u32 matIdx){
-	return materials[matIdx].name;
-}
-
-char* Render::
-TextureName(u32 texIdx){
-	return textures[texIdx].filename;
-}
-
-//@init
+///////////////
+//// @init ////
+///////////////
 void Render::
 Init(){
 	TIMER_START(t_v);
@@ -3488,15 +3392,13 @@ Init(){
 	CreatePipelines();
 	PrintVk(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
-	LoadDefaultAssets();
-	PrintVk(3, "Finished loading default assets in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreateSceneMeshBuffers();
-	PrintVk(3, "Finished creating scene mesh buffers in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	
 	initialized = true;
 }
 
-//@update
+
+/////////////////
+//// @update ////
+/////////////////
 void Render::
 Update(){
 	//PrintVk(1, "---------------new frame---------------");
@@ -3512,12 +3414,9 @@ Update(){
 			return;  
 		}
 		
-		PrintVk(1, "window resized");
-		// Ensure all operations on the device have been finished before destroying resources
 		vkDeviceWaitIdle(device);
 		CreateSwapChain();
 		CreateFrames();
-		
 		frameIndex = 0;
 		remakeWindow = false;
 	}
@@ -3537,13 +3436,13 @@ Update(){
 	}
 	
 	//render stuff
-	if(settings.lightFrustrums) TempFrustrum(lights[0].ToVector3(), Vector3::ZERO, 1, 90, settings.shadowNearZ, settings.shadowFarZ);
+	if(settings.lightFrustrums) DrawFrustrum(lights[0].ToVector3(), Vector3::ZERO, 1, 90, settings.shadowNearZ, settings.shadowFarZ);
 	ImGui::Render();
-	SetupImmediateData();
 	UpdateUniformBuffers();
+	SetupCommands();
 	
 	//execute draw commands
-	BuildCommandBuffers();
+	BuildCommands();
 	
 	//submit the command buffer to the queue
 	VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -3570,28 +3469,26 @@ Update(){
 	result = vkQueuePresentKHR(presentQueue, &presentInfo);
 	
 	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow){
-		remakeWindow = false;
-		
-		PrintVk(1, "window resized");
-		// Ensure all operations on the device have been finished before destroying resources
 		vkDeviceWaitIdle(device);
 		CreateSwapChain();
 		CreateFrames();
-	} else if(result != VK_SUCCESS){
+		remakeWindow = false;
+	}else if(result != VK_SUCCESS){
 		Assert(!"failed to present swap chain image");
 	}
 	
 	//iterate the frame index
 	frameIndex = (frameIndex + 1) % MAX_FRAMES; //loops back to zero after reaching max_frames
 	AssertVk(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
+	
 	//update stats
 	stats.drawnTriangles += stats.drawnIndices / 3;
-	stats.totalVertices  += (u32)vertexBuffer.size() + uiVertexCount + tempVertexCount;
-	stats.totalIndices   += (u32)indexBuffer.size() + uiIndexCount + tempIndexCount;
+	//stats.totalVertices  += (u32)vertexBuffer.size() + uiVertexCount + tempVertexCount;
+	//stats.totalIndices   += (u32)indexBuffer.size()  + uiIndexCount  + tempIndexCount; //@Incomplete
 	stats.totalTriangles += stats.totalIndices / 3;
 	stats.renderTimeMS    = TIMER_END(t_r);
 	
-	ResetImmediateData();
+	ResetCommands();
 	
 	if(remakePipelines){ 
 		CreatePipelines(); 
@@ -3600,42 +3497,26 @@ Update(){
 	}
 	if(_remakeOffscreen){
 		SetupOffscreenRendering();
-		_remakeOffscreen = true;
+		_remakeOffscreen = false;
 	}
 }
 
+
+////////////////
+//// @reset ////
+////////////////
 void Render::
 Reset(){
 	SUCCESS("Resetting renderer (Vulkan)");
 	vkDeviceWaitIdle(device); //wait before cleanup
 	
-	//vertex buffer
-	vertexBuffer.clear();
 	
-	//index buffer
-	indexBuffer.clear();
-	
-	//textures
-	for(auto& tex : textures){
-		vkDestroyImage(device, tex.image, nullptr);
-		vkFreeMemory(device, tex.imageMemory, nullptr);
-		vkDestroyImageView(device, tex.view, nullptr);
-		vkDestroySampler(device, tex.sampler, nullptr);
-	}
-	textures.clear();
-	
-	//meshes
-	meshes.clear();
-	
-	//materials
-	for(auto& mat : materials){
-		vkFreeDescriptorSets(device, descriptorPool, 1, &mat.descriptorSet);
-	}
-	materials.clear();
-	
-	LoadDefaultAssets();
 }
 
+
+//////////////////
+//// @cleanup ////
+//////////////////
 //TODO(delle,Vu) maybe cache pipeline creation vars?
 void Render::
 Cleanup(){
@@ -3645,13 +3526,10 @@ Cleanup(){
 	
 	//save pipeline cache to disk
 	if(pipelineCache != VK_NULL_HANDLE){
-		// Get size of pipeline cache
 		size_t size{};
 		AssertVk(vkGetPipelineCacheData(device, pipelineCache, &size, nullptr), "failed to get pipeline cache data size");
-		// Get data of pipeline cache
 		std::vector<char> data(size);
 		AssertVk(vkGetPipelineCacheData(device, pipelineCache, &size, data.data()), "failed to get pipeline cache data");
-		// Write pipeline cache data to a file in binary format
 		Assets::writeFileBinary(Assets::dirData() + "pipelines.cache", data);
 	}
 	

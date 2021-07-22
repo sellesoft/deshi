@@ -16,10 +16,10 @@ namespace Utils{
 	///////////////////////////////
 	
 	
-	u32 dataHash32(const void* data, size_t data_size, u32 seed = 2166136261); //32bit FNV_offset_basis
-	u64 dataHash64(const void* data, size_t data_size, u64 seed = 14695981039346656037); //64bit FNV_offset_basis
-	u32 stringHash32(const char* data, size_t data_size = 0, u32 seed = 2166136261); //32bit FNV_offset_basis
-	u64 stringHash64(const char* data, size_t data_size = 0, u64 seed = 14695981039346656037); //64bit FNV_offset_basis
+	u32 dataHash32(void* data, size_t data_size, u32 seed = 2166136261); //32bit FNV_offset_basis
+	u64 dataHash64(void* data, size_t data_size, u64 seed = 14695981039346656037); //64bit FNV_offset_basis
+	u32 stringHash32(char* data, size_t data_size = 0, u32 seed = 2166136261); //32bit FNV_offset_basis
+	u64 stringHash64(char* data, size_t data_size = 0, u64 seed = 14695981039346656037); //64bit FNV_offset_basis
 	
 	
 	///////////////////////////////
@@ -98,7 +98,7 @@ namespace Utils{
 //ref: imgui.cpp ImHashData https://github.com/ocornut/imgui
 
 inline u32 Utils::
-dataHash32(const void* _data, size_t data_size, u32 seed){
+dataHash32(void* _data, size_t data_size, u32 seed){
 	const u8* data = (const u8*)_data;
 	while(data_size-- != 0){
 		seed ^= *data++;
@@ -108,7 +108,7 @@ dataHash32(const void* _data, size_t data_size, u32 seed){
 }
 
 inline u64 Utils::
-dataHash64(const void* _data, size_t data_size, u64 seed){
+dataHash64(void* _data, size_t data_size, u64 seed){
 	const u8* data = (const u8*)_data;
 	while(data_size-- != 0){
 		seed ^= *data++;
@@ -118,7 +118,7 @@ dataHash64(const void* _data, size_t data_size, u64 seed){
 }
 
 inline u32 Utils::
-stringHash32(const char* _data, size_t data_size, u32 seed){
+stringHash32(char* _data, size_t data_size, u32 seed){
 	const u8* data = (const u8*)_data;
 	if(data_size){
 		while(data_size-- != 0){
@@ -135,7 +135,7 @@ stringHash32(const char* _data, size_t data_size, u32 seed){
 }
 
 inline u64 Utils::
-stringHash64(const char* _data, size_t data_size, u64 seed){
+stringHash64(char* _data, size_t data_size, u64 seed){
 	const u8* data = (const u8*)_data;
 	if(data_size){
 		while(data_size-- != 0){

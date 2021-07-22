@@ -32,7 +32,7 @@ struct ComponentTypeHeader{
 
 enum ComponentTypeBits{
 	ComponentType_NONE,
-	ComponentType_MeshComp,
+	ComponentType_ModelInstance,
 	ComponentType_Physics,
 	ComponentType_Collider,
 	ComponentType_AudioListener,
@@ -46,7 +46,7 @@ enum ComponentTypeBits{
 	ComponentType_COUNT,
 }; typedef u32 ComponentType;
 global_ const char* ComponentTypeStrings[] = {
-	"None", "MeshComp", "Physics", "Collider", "AudioListener", "AudioSource", "Camera", "Light", "OrbManager", "Door", "Player", "Movement"
+	"None", "ModelInstance", "Physics", "Collider", "AudioListener", "AudioSource", "Camera", "Light", "OrbManager", "Door", "Player", "Movement"
 };
 
 struct Component : public Receiver {

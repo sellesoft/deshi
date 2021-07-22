@@ -1,6 +1,6 @@
 #pragma once
 #include "../math/math.h"
-#include "../core/mesh.h"
+#include "../core/model.h"
 
 namespace Geometry {
 	

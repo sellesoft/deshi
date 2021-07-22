@@ -1,6 +1,8 @@
 #include "AudioListener.h"
 
 #include "../admin.h"
+#include "../../core/console.h"
+#include "../../utils/debug.h"
 
 AudioListener::AudioListener(Vector3 _position, Vector3 _velocity, Vector3 _orientation) {
 	position    = _position;

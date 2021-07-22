@@ -12,7 +12,6 @@ struct Matrix3;
 struct Matrix4;
 struct ImVec2;
 struct Quaternion;
-struct Vertex;
 
 //////////////////////
 //// declarations ////
