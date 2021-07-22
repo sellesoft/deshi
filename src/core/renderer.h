@@ -55,12 +55,14 @@ struct RenderSettings{
     bool printf    = false;
 	bool recompileAllShaders = true;
     bool findMeshTriangleNeighbors = true; //TODO(delle,Cl) move this to a better location
+	u32  msaaSamples = 0;
+	bool textureFiltering = false;
+	bool anistropicFiltering = false;
 	
 	//// runtime changeable ////
 	u32 loggingLevel = 1; //if printf is true in the config file, this will be set to 4
 	bool crashOnError = false;
 	VSyncType vsync  = VSyncType_Immediate;
-	u32 msaaSamples  = 0;
 	
 	//shaders
 	bool optimizeShaders = false;
