@@ -33,11 +33,6 @@ layout(location = 8) out vec3  mouseworld;
 
 void main() {
 	
-	gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
-	//gl_Position.x = mouseworld.x;
-	//gl_Position.y = floor(gl_Position.y);
-	//gl_Position.z = floor(gl_Position.z);
-	
 	outColor = inColor;
 	outTexCoord = inTexCoord;
 	outNormal = mat3(primitive.model) * inNormal;
@@ -46,4 +41,8 @@ void main() {
 	camerapos = ubo.viewPos.xyz;
 	mouseworld = ubo.mouseWorld;
 	time = ubo.time;
+	screen = ubo.screen;
+
+	gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition, 1.0);
+
 }

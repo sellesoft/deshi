@@ -285,10 +285,13 @@
     <None Include="..\data\shaders\lavalamp.frag" />
     <None Include="..\data\shaders\lavalamp.vert" />
     <None Include="..\data\shaders\normaldebug.geom" />
+    <None Include="..\data\shaders\offscreen.vert" />
     <None Include="..\data\shaders\pbr.frag" />
     <None Include="..\data\shaders\pbr.vert" />
     <None Include="..\data\shaders\phong.frag" />
     <None Include="..\data\shaders\phong.vert" />
+    <None Include="..\data\shaders\shadowmapDEBUG.frag" />
+    <None Include="..\data\shaders\shadowmapDEBUG.vert" />
     <None Include="..\data\shaders\testing0.frag" />
     <None Include="..\data\shaders\testing0.vert" />
     <None Include="..\data\shaders\testing1.frag" />

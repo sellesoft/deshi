@@ -380,6 +380,15 @@
     <None Include="..\data\shaders\normaldebug.geom">
       <Filter>shaders</Filter>
     </None>
+    <None Include="..\data\shaders\shadowmapDEBUG.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\offscreen.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\shaders\shadowmapDEBUG.vert">
+      <Filter>shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\external\imgui\imgui_widgets.cpp">

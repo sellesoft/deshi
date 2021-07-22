@@ -1,5 +1,6 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
+#extension GL_KHR_vulkan_glsl : enable
 
 layout(set = 1, binding = 0) uniform sampler2D albedoSampler;
 layout(set = 1, binding = 1) uniform sampler2D normalSampler;
@@ -17,6 +18,9 @@ layout(location = 7)  in vec2  mousePos;
 layout(location = 8)  in vec3  mouseworld;
 
 layout(location = 0) out vec4 outColor;
+
+vec4 black = vec4(0,0,0,1);
+vec4 white = vec4(1,1,1,1);
 
 float pi = 3.1415926535;
 
@@ -130,21 +134,27 @@ vec4 waves(vec3 pos, float radius){
 vec4 fc = gl_FragCoord;
 vec2 tc = inTexCoord;
 
-vec4 fun(){
+vec4 monitor(){
 
-	vec4 samp = texture(albedoSampler, tc);
-	vec4 sampr = vec4(samp.r, 0, 0, 1);
-	vec4 sampg = vec4(0, samp.g, 0, 1);
-	vec4 sampb = vec4(0, 0, samp.b, 1);
+	vec2 texSize = textureSize(albedoSampler, 0);
+
+	vec2 texelSize = 1 / texSize;
+
+	tc.y *= -1;
 
 	vec4 black = vec4(0,0,0,1);
 
 	float sot = (sin(time) + 1) / 2;
 
-	float res = 1000;
+	float res = texSize.x;
 
 	float ftcx = floor(tc.x * res) / res;
 	float ftcy = floor(tc.y * res) / res;
+
+	vec4 samp = texture(albedoSampler, vec2(ftcx, ftcy));
+	vec4 sampr = vec4(samp.r, 0, 0, 1);
+	vec4 sampg = vec4(0, samp.g, 0, 1);
+	vec4 sampb = vec4(0, 0, samp.b, 1);
 
 	float ctcx = ceil(tc.x * res) / res;
 	float ctcy = ceil(tc.y * res) / res;
@@ -195,29 +205,52 @@ vec4 fun(){
 	return texture(albedoSampler, tc);
 }
 
+float lerpf(float p1, float p2, float t) { return (1.f - t) * p1 + t * p2; }
 
+float rand	 (vec2 st) {
+    return fract(sin(dot(st.xy,
+                         vec2(12.9898,78.233)))*
+        43758.5453123);
+}
+
+vec4 fog(){
+	float dist = distance(vec3(0,0,0), fragPos);
+	float distToFog = 5;
+	float distToFogBegin = 5;
+
+	vec2 texRez = textureSize(albedoSampler, 0);
+
+	vec4 col1 = vec4(1,1,1,1);
+	vec4 col2 = vec4(0,0,0,1);
+
+
+	vec4 noiseSamp = texture(albedoSampler, vec2(quant(tc.x * 9, texRez.x), quant(tc.y * 9, texRez.y)));
+
+
+	if(noiseSamp.r > 0.5){
+		return black;
+	}
+	else{
+		return white;
+	}
+}
+
+vec4 fragPosTest(){
+	float dist = length(vec3(0,0,0) - fragPos);
+
+	vec4 samp = texture(albedoSampler, tc);
+
+	return vec4(vec3(1 - (dist / 30)), 1) * samp;
+}
+
+vec4 dither(){
+	
+
+	return vec4(1,1,1,1);
+}
 
 
 
 void main() {
-	//outColor = mouseColor(vec3(0,-5,0), 500 * ((-sin(time + cos(time)) + 1.1)/2), 500 * ((-sin(time + cos(time)) + 1.1)/2));
-	
-	//tc.x -= 0.5;
-	//tc.y -= 0.5;
-	//tc.x *= 2;
-	//tc.y *= 2;
-	//
-	//fc.x /= screen.x;
-	//fc.y /= screen.y;
-	
-	outColor = vec4(0,0,0,1);
-	
-	outColor = mouseWaterDrop();
-	
-	outColor = fun();
-
-	//outColor = waves(vec3(0,0,0), 100) + waves(vec3(10, 0, 10), 100);
-	
-	
-	
+	outColor = fog();
 }
