@@ -267,7 +267,7 @@ int main() {
 		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
-			UI::FillRect(0, 0, 1000, 1000, Color(0, 62, 62));
+			//UI::FillRect(0, 0, 1000, 1000, Color(0, 62, 62));
 		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

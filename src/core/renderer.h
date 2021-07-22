@@ -196,6 +196,8 @@ namespace Render{
 namespace UI{
 	
 	void FillRect(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
+
+    void DrawText(const char* text);
 	
 }; //namespace UI
 

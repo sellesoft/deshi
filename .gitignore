@@ -24,6 +24,7 @@ docs/doxygen/
 #data ignores (large/binary/user files)
 data/*.*
 data/cfg/
+data/fonts/
 #data/commands
 #data/entities/
 #data/levels

@@ -2128,20 +2128,7 @@ void Editor::DebugBar() {
         if (ImGui::TableNextColumn()) {
             //https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
 			
-            //get current time
-            auto now = std::chrono::system_clock::now();
-            
-            //convert to std::time_t so we can convert to std::tm
-            auto timer = std::chrono::system_clock::to_time_t(now);
-            
-            //convert to broken time
-            std::tm bt = *std::localtime(&timer);
-            
-            std::ostringstream oss;
-            
-            oss << std::put_time(&bt, "%H:%M:%S");
-            
-            std::string str7 = oss.str();
+            std::string str7 = DengTime->FormatDateTime("{h}:{m}:{s}");
             float strlen7 = (fontsize - (fontsize / 2)) * str7.size();
             ImGui::SameLine(32 - (strlen7 / 2));
             
