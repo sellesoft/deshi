@@ -242,6 +242,8 @@
     <None Include="..\data\shaders\testing1.frag" />
     <None Include="..\data\shaders\testing1.vert" />
     <None Include="..\data\shaders\twod.frag" />
+    <None Include="..\data\shaders\ui.frag" />
+    <None Include="..\data\shaders\ui.vert" />
     <None Include="..\data\shaders\wireframe.frag" />
     <None Include="..\data\shaders\wireframe.vert" />
     <None Include="..\README.md" />

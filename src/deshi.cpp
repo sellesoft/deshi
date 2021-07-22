@@ -7,7 +7,7 @@ Sh  Shader    So  Sound            Ui  UI              Vu  Vulkan      Wi  Windo
 
 TODO Style: TODO(person,tags) description
   eg: TODO(delle) no tag or date for delle
-eg: TODO(sushi,ReOp) render,optimization tags for sushi
+  eg: TODO(sushi,ReOp) render,optimization tags for sushi
 
 The person listed doesn't necessarily have to be you, and can be someone else
 if you feel they would handle the problem better. It should generally be you though.
@@ -91,7 +91,6 @@ world axis in top right (like we used to have)
 orthographic side views
 (maybe) multiple viewports
 add showing axis lines through object when axis grabbing once we have lines in Vulkan
-implement orthographic grabbing 
 entity filtering in entity list
 combine undo manager into editor file
 
@@ -145,8 +144,6 @@ Fun TODOs
 look into implementing Lua 
 look into making a function that takes in the types on a component and formats binary for saving and what not 
 ____like what were currently doing for typeHeader in Admin Save()
-write a shader that displays textures like it would on a monitor, so like you have an array of
-____rgb lights that make up a single pixel of a texture and stuff 
 write a preprocessing/postprocessing compiler that makes saving easier
 
 Bug Board       //NOTE mark these with a last-known active date (M/D/Y)
@@ -270,7 +267,7 @@ int main() {
 		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
-			
+			UI::FillRect(0, 0, 1000, 1000, Color(0, 62, 62));
 		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

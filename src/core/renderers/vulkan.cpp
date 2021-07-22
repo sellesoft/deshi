@@ -1126,7 +1126,7 @@ CreateSwapChain(){
 	{//choose swapchain's surface format
 		surfaceFormat = supportDetails.formats[0];
 		for(VkSurfaceFormatKHR availableFormat : supportDetails.formats){
-			if(availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR){
+			if(availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT){
 				surfaceFormat = availableFormat;
 				break;
 			}
