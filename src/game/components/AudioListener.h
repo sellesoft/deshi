@@ -3,7 +3,6 @@
 #define COMPONENT_AUDIOLISTENER_H
 
 #include "Component.h"
-#include "../../math/Vector.h"
 
 //this is what OpenAL sees as the receiver of sounds in 3D space
 //there can only ever be one of them as far as I know.
@@ -13,7 +12,7 @@ struct AudioListener : public Component {
 	Vector3 velocity; //these may not be necessary
 	Vector3 orientation;
 	
-	AudioListener();
+	AudioListener(){}
 	AudioListener(Vector3 position, Vector3 velocity = Vector3::ZERO, Vector3 orientation = Vector3::ZERO);
 	
 	std::string SaveTEXT() override;

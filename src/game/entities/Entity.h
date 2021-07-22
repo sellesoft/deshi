@@ -14,17 +14,15 @@
 struct Admin;
 struct Component;
 
-//necessary for loading
-#define NUMENTITYTYPES 4
-
-enum EntityType : u32 {
+enum EntityTypeBits{
 	EntityType_Anonymous,
 	EntityType_Player,
 	EntityType_StaticMesh,
-	EntityType_Trigger
-};
+	EntityType_Trigger,
+	EntityType_COUNT,
+}; typedef u32 EntityType;
 
-static const char* EntityTypeStrings[] = {
+global_ const char* EntityTypeStrings[] = {
 	"Anonymous", "Player", "StaticMesh", "Trigger"
 };
 
@@ -57,12 +55,12 @@ struct Entity {
 	void RemoveComponents(std::vector<Component*> components);
 	
 	virtual std::string SaveTEXT();
-	static Entity* LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u32,u32>>& mesh_id_diffs);
+	static Entity* LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u32,u32>>& mesh_id_diffs);
 	//virtual void LoadDESH(const char* filename);
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
 	template<class T>
-	T* GetComponent() {
+		T* GetComponent() {
 		T* t = nullptr;
 		for (Component* c : components) {
 			if (T* temp = dynamic_cast<T*>(c)) {
@@ -73,7 +71,7 @@ struct Entity {
 	}
 	//returns if a component exists on the entitiy
 	template<class T>
-	bool hasComponent() {
+		bool hasComponent() {
 		for (Component* c : components) {
 			if (T* temp = dynamic_cast<T*>(c)) {
 				return true;

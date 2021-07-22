@@ -1,24 +1,26 @@
 >level
 name         "test"
-entity_count 7
+entity_count 9
 last_updated ""
 
 >materials
 0 "Flat" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
 1 "Phong" 1 "null128.png" "black1024.png" "black1024.png" "black1024.png"
-2 "TwoD" 2 "null128.png" "black1024.png" "black1024.png" "black1024.png"
-3 "floor_mat" 3 "deshi_icon.png" "black1024.png" "black1024.png" "black1024.png"
-4 "Sphere" 5 "null128.png" "black1024.png" "black1024.png" "black1024.png"
-5 "Suzanne" 3 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+2 "floor_mat" 2 "deshi_icon.png" "black1024.png" "black1024.png" "black1024.png"
+3 "Sphere" 4 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+4 "Suzanne" 2 "null128.png" "black1024.png" "black1024.png" "black1024.png"
 
 >meshes
-4 "default_planarbox" 1 "3"
-5 "sphere.obj" 1 "4"
-7 "bmonkey.obj" 1 "5"
+4 "default_planarbox" 1 "2"
+5 "sphere.obj" 1 "3"
+7 "bmonkey.obj" 1 "4"
 9 "box.obj" 1 "0"
 10 "box.obj" 1 "1"
-11 "arrow.obj" 0 "2"
+11 "arrow.obj" 0 "1"
 12 "box.obj" 1 "0"
+13 "box.obj" 1 "1"
+14 "box.obj" 1 "1"
+15 "box.obj" 1 "1"
 
 >entities
 0 "box"
@@ -27,7 +29,8 @@ last_updated ""
 3 "player"
 4 "wall"
 5 "light"
-6 "StaticMesh6"
+6 "cube_with_sphere_coll"
+7 "wall"
+8 "wall"
 
 >events
-4 "wall" 4 2 -> 5 "light" 1024

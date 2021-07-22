@@ -1,12 +1,11 @@
 >level
 name         "phong_test"
-entity_count 6
+entity_count 10
 last_updated ""
 
 >materials
 0 "Flat" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
 1 "Phong" 1 "null128.png" "black1024.png" "black1024.png" "black1024.png"
-2 "TwoD" 2 "null128.png" "black1024.png" "black1024.png" "black1024.png"
 
 >meshes
 5 "box.obj" 0 "1"
@@ -21,13 +20,23 @@ last_updated ""
 14 "box.obj" 1 "1"
 15 "default_planarbox" 0 "1"
 16 "box.obj" 1 "1"
+17 "box.obj" 1 "1"
+18 "box.obj" 1 "1"
+19 "box.obj" 1 "1"
+20 "box.obj" 1 "1"
+21 "arrow.obj" 0 "0"
+22 "sphere.obj" 0 "1"
 
 >entities
 0 "floor"
 1 "light"
-2 "box1"
-3 "box2"
-4 "box3"
-5 "box4"
+2 "box_SW"
+3 "box_NW"
+4 "box_SW"
+5 "box_NE"
+6 "wall_N"
+7 "wall_E"
+8 "wall_S"
+9 "wall_W"
 
 >events

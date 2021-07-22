@@ -87,10 +87,22 @@ struct Color {
 		this->g = rand() % 255 + 1;
 		this->b = rand() % 255 + 1;
 	}
+	
+	u32 R8G8B8A8_UNORM(){
+		return ((u32)a << 24) | ((u32)b << 16) | ((u32)g << 8) | ((u32)r << 0);
+	}
+	
 	Color getrandcol();
 	
 	std::string str() {
 		return "C{" + std::to_string(r) + ", " + std::to_string(g) + ", " + std::to_string(b) + ", " + std::to_string(a) + "}";
+	}
+	
+	static Color FloatsToColor(f32 r, f32 g, f32 b, f32 a){
+		return Color((u8)(r / 255.0f),
+					 (u8)(g / 255.0f),
+					 (u8)(b / 255.0f),
+					 (u8)(a / 255.0f));
 	}
 	
 };

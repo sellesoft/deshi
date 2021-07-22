@@ -76,10 +76,11 @@ void main() {
 		}
 	}
 	*/
+	//outColor = vec4(outColor.xyz * shadow, 1.0);
+	
+	
 	
 	float shadow = (inEnablePCF == 1) ? filterPCF(inShadowCoord / inShadowCoord.w) : textureProj(inShadowCoord / inShadowCoord.w, vec2(0.0));
-	
-	//outColor = vec4(outColor.xyz * shadow, 1.0);
 	
 	vec3 N = normalize(inNormal);
 	vec3 L = normalize(inLightVec);

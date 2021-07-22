@@ -15,8 +15,8 @@ struct Trigger : public Entity {
 	Collider* collider;
 	Mesh* mesh;
 
-	Trigger(Transform transform);
-	Trigger(Transform transform, Collider* collider);
+	Trigger(Transform transform, const char* name = 0);
+	Trigger(Transform transform, Collider* collider, const char* name = 0);
 
 	void Init() override;
 	

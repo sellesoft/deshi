@@ -26,12 +26,11 @@ typedef unsigned int       u32;
 typedef unsigned long long u64;
 typedef float              f32;
 typedef double             f64;
-typedef s32                b32; //int-based boolean so c++ doesnt convert to 0 or 1
 
 //static defines
-#define static_internal static
-#define local_persist   static
-#define global_variable static
+#define local   static
+#define persist static
+#define global_  static //dumb STL uses global in xlocale
 
 //dynamic cast short-hand
 #define dyncast(child, base) dynamic_cast<child*>(base)
@@ -39,11 +38,10 @@ typedef s32                b32; //int-based boolean so c++ doesnt convert to 0 o
 //for-loop shorthands
 #define forX(var_name,iterations) for(int var_name=0; var_name<(iterations); ++var_name)
 #define forI(iterations) for(int i=0; i<(iterations); ++i)
-#define forR(start, stop) for(int i=stop; i>=stop; --i)
 
 //dst: destination c-string; src: source c-string; bytes: number of characters to copy
 //NOTE the last character in the copy is replaced with a null-terminating character
-#define cpystr(dst, src, bytes) strncpy_s(dst, src, bytes); dst[bytes-1] = '\0'
+#define cpystr(dst, src, bytes) strncpy((dst), (src), (bytes)); (dst)[(bytes)-1] = '\0'
 
 //compile-time print sizeof()
 //char (*__kaboom)[sizeof( YourTypeHere )] = 1;
@@ -71,6 +69,8 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define Terabytes(x) (Gigabytes((x))*1024ULL)
 
 #define Clamp(value, min, max) (((value) < min) ? min : (((value) > max) ? max : (value)))
+#define Max(a, b) (((a) > (b)) ? (a) : (b))
+#define Min(a, b) (((a) < (b)) ? (a) : (b))
 
 //library-less assert
 #if DESHI_SLOW

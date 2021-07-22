@@ -1,8 +1,4 @@
 #include "Admin.h"
-#include "../core/time.h"
-#include "../core/renderer.h"
-#include "../core/window.h"
-#include "../core/assets.h"
 #include "components/Orb.h"
 #include "components/door.h"
 #include "components/Light.h"
@@ -15,6 +11,11 @@
 #include "components/Component.h"
 #include "components/AudioSource.h"
 #include "components/AudioListener.h"
+#include "../core/time.h"
+#include "../core/renderer.h"
+#include "../core/window.h"
+#include "../core/assets.h"
+#include "../utils/utils.h"
 
 #include <iostream>
 #include <fstream>
@@ -50,8 +51,8 @@ void Admin::Init() {
     canvas.Init(this);
     sound.Init(this);
     scene.Init();
-    DengRenderer->LoadScene(&scene);
-    keybinds.Init();
+    Render::LoadScene(&scene);
+    keybinds.init();
     controller.Init(this);
     editor.Init(this);
     mainCamera = editor.camera;//TODO(delle) remove this eventually
@@ -68,6 +69,8 @@ void Admin::Init() {
 
 void Admin::Cleanup() {
     SaveDESH((state == GameState_Editor) ? "temp.desh" : "auto.desh");
+	keybinds.save();
+	editor.Cleanup();
 }
 
 void UpdateLayer(ContainerManager<Component*> cl) {
@@ -80,7 +83,9 @@ void UpdateLayer(ContainerManager<Component*> cl) {
 
 void Admin::Update() {
     ImGui::BeginDebugLayer();
+	TIMER_RESET(t_a);
     if(!skip && (state == GameState_Editor || state == GameState_Debug)) editor.Update();
+	editorTime =   TIMER_END(t_a); TIMER_RESET(t_a);
     if(!skip) controller.Update();
     if(!skip) mainCamera->Update();
     
@@ -109,7 +114,10 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
     
     //deletion buffer
     for(Entity* e : deletionBuffer) {
-        for(Component* c : e->components) freeCompLayers[c->layer].remove_from(c->layer_index);
+        for(Component* c : e->components){
+			freeCompLayers[c->layer].remove_from(c->layer_index);
+			if(c->type == ComponentType_Light) scene.lights.clear();
+		}
         for(int i = e->id+1; i < entities.size(); ++i) entities[i]->id -= 1;
         entities.erase(entities.begin()+e->id);
         if (e == player) player = nullptr;
@@ -123,12 +131,10 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
         e->admin = this;
         entities.push_back(e);
         for(Component* c : e->components){ 
-            c->admin = this;
-            c->entityID = e->id;
             c->compID = compIDcount;
             c->entity = e;
             c->layer_index = freeCompLayers[c->layer].add(c);
-            if (c->comptype == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
+            if(c->type == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
             compIDcount++;
         }
     }
@@ -138,10 +144,10 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
     //light updating
     for (int i = 0; i < 10; i++) {
         if(i < scene.lights.size()) {
-            DengRenderer->lights[i] = vec4(scene.lights[i]->position,
-										   (scene.lights[i]->active) ? scene.lights[i]->brightness : 0);
+			Render::UpdateLight(i, vec4(scene.lights[i]->position,
+										(scene.lights[i]->active) ? scene.lights[i]->brightness : 0));
         }else{
-            DengRenderer->lights[i] = vec4(0, 0, 0, -1);
+            Render::UpdateLight(i, vec4(0, 0, 0, -1));
         }
     }
     
@@ -168,7 +174,7 @@ u32 Admin::CreateEntity(std::vector<Component*> components, const char* name, Tr
 
 u32 Admin::CreateEntity(Entity* e) {
     if(!e) return -1;
-
+	
     e->admin = this;
     creationBuffer.push_back(e);
     return entities.size() + creationBuffer.size() - 1;
@@ -178,11 +184,10 @@ Entity* Admin::CreateEntityNow(std::vector<Component*> components, const char* n
     Entity* e = new Entity(this, entities.size(), transform, name, components);
     entities.push_back(e);
     for (Component* c : e->components) {
-        c->entityID = e->id;
         c->compID = compIDcount;
         c->entity = e;
         c->layer_index = freeCompLayers[c->layer].add(c);
-        if (c->comptype == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
+        if (c->type == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
         compIDcount++;
     }
     return e;
@@ -204,12 +209,21 @@ void Admin::DeleteEntity(Entity* e) {
     }
 }
 
+void Admin::RemoveButDontDeleteEntity(Entity* e){
+	if(!e) return;
+	
+	for(Component* c : e->components) freeCompLayers[c->layer].remove_from(c->layer_index);
+	for(int i = e->id+1; i < entities.size(); ++i) entities[i]->id -= 1;
+	entities.erase(entities.begin()+e->id);
+	if(e == player) player = nullptr;
+}
+
 void Admin::AddComponentToLayers(Component* c){
     if(!c) return;
-
+	
     c->compID = compIDcount;
     c->layer_index = freeCompLayers[c->layer].add(c);
-    if(c->comptype == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
+    if(c->type == ComponentType_Light) scene.lights.push_back(dyncast(Light, c));
     compIDcount++;
 }
 
@@ -234,6 +248,7 @@ void Admin::ChangeState(GameState new_state){
                 //LoadDESH("temp.desh");
                 LoadTEXT(editor.level_name);
                 if(player) player->GetComponent<MeshComp>()->Visible(true);
+                player = nullptr;
                 DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
             }break;
         }break;
@@ -291,8 +306,8 @@ void Admin::Reset(){
     
     for(auto& layer : freeCompLayers) layer.clear();
     scene.Reset();
-    DengRenderer->Reset();
-    DengRenderer->LoadScene(&scene);
+    Render::Reset();
+    Render::LoadScene(&scene);
     editor.Reset();
     SUCCESS("Finished resetting admin in ", TIMER_END(t_r), "ms");
 }
@@ -308,7 +323,7 @@ void Admin::SaveTEXT(std::string level_name){
     TIMER_START(t_s);
     
     //// setup the level directory ////
-    std::string levels_dir = deshi::dirData() + "levels/";
+    std::string levels_dir = Assets::dirData() + "levels/";
     if(!fs::is_directory(levels_dir)) fs::create_directory(levels_dir);
     
     std::string level_dir = levels_dir + std::string(level_name) + "/";
@@ -327,23 +342,15 @@ void Admin::SaveTEXT(std::string level_name){
 	//materials
 	level_text.append("\n"
 					  "\n>materials");
-	for(MaterialVk& mat : DengRenderer->materials){
-		level_text.append(TOSTRING("\n",mat.id," \"",mat.name,"\" ",mat.shader," \"",
-								   DengRenderer->textures[mat.albedoID].filename,"\" \"",
-								   DengRenderer->textures[mat.normalID].filename,"\" \"",
-								   DengRenderer->textures[mat.specularID].filename,"\" \"",
-								   DengRenderer->textures[mat.lightID].filename,"\""));
+	forI(Render::MaterialCount()){
+		level_text.append(Render::SaveMaterialTEXT(i));
 	}
 	
 	//models
 	level_text.append("\n"
 					  "\n>meshes");
-	for(MeshVk& mesh : DengRenderer->meshes){
-		if(!mesh.base){
-			level_text.append(TOSTRING("\n",mesh.id," \"",mesh.name,"\" ",mesh.visible," \"", mesh.primitives[0].materialIndex));
-			for(u32 i=1; i<mesh.primitives.size(); ++i){ level_text.append(TOSTRING(" ", mesh.primitives[i].materialIndex)); }
-			level_text.append("\"");
-		}
+	forI(Render::MeshCount()){
+		if(!Render::IsBaseMesh(i)) level_text.append(Render::SaveMeshTEXT(i));
 	}
 	
 	//entities
@@ -358,11 +365,11 @@ void Admin::SaveTEXT(std::string level_name){
 					  "\n>events");
 	for(Entity* e : entities){
 		for(Component* c : e->components){
-			if(c->sender && c->sender->receivers.size() > 0){
-				for(Receiver* r : c->sender->receivers){
+			if(c->sender.receivers.size() > 0){
+				for(Receiver* r : c->sender.receivers){
 					if(Component* comp = dynamic_cast<Component*>(r)){
-						level_text.append(TOSTRING("\n",e->id," \"",e->name,"\" ",c->comptype," ",c->event," -> ",
-												   comp->entity->id," \"",comp->entity->name,"\" ",comp->comptype));
+						level_text.append(TOSTRING("\n",e->id," \"",e->name,"\" ",c->type," ",c->event," -> ",
+												   comp->entity->id," \"",comp->entity->name,"\" ",comp->type));
 					}
 				}
 			}
@@ -381,12 +388,12 @@ void Admin::SaveTEXT(std::string level_name){
 		entity_file_name = TOSTRING(entity_idx_str, entities[idx]->name);
 		
 		std::string entity_text = entities[idx]->SaveTEXT();
-		deshi::writeFile(level_dir + entity_file_name, entity_text.c_str(), entity_text.size());
+		Assets::writeFile(level_dir + entity_file_name, entity_text.c_str(), entity_text.size());
 		SUCCESS("  Created entity file '", entity_file_name, "'");
 	}
 	
 	level_text.append("\n");
-	deshi::writeFile(level_dir + "_", level_text.c_str(), level_text.size());
+	Assets::writeFile(level_dir + "_", level_text.c_str(), level_text.size());
 	SUCCESS("  Created level file '_'");
 	
 	SUCCESS("Finished saving level '", level_name, "' in ", TIMER_END(t_s), "ms");
@@ -400,7 +407,7 @@ void Admin::LoadTEXT(std::string savename){
 	namespace fs = std::filesystem;
 	
 	if(savename.empty()) return ERROR("Failed to load text-file: no name passed");
-	std::string levels_dir = deshi::dirData() + "levels/";
+	std::string levels_dir = Assets::dirData() + "levels/";
 	std::string level_dir = levels_dir + savename + "/";
 	if(!fs::is_directory(level_dir)) return ERROR("Failed to find directory: ", level_dir);
 	
@@ -413,7 +420,7 @@ void Admin::LoadTEXT(std::string savename){
 	std::vector<pair<u32,u32>> mesh_id_diffs; //old_id, new_id
 	std::vector<pair<u32,u32,u32,u32,u32>> events; //send_ent_id, send_comp_type, event_type, receive_ent_id, receive_comp_type
 	{//// parse level file ////
-		char* buffer = deshi::readFileAsciiToArray(level_dir+"_");
+		char* buffer = Assets::readFileAsciiToArray(level_dir+"_");
 		if(!buffer) return;
 		defer{ delete[] buffer; };
 		
@@ -428,9 +435,9 @@ void Admin::LoadTEXT(std::string savename){
 			if((new_line = strchr(line_start, '\n')) == 0) break; //end of file if cant find '\n'
 			line = std::string(line_start, new_line-line_start);
 			
-			line = deshi::eat_comments(line);
-			line = deshi::eat_spaces_leading(line);
-			line = deshi::eat_spaces_trailing(line);
+			line = Utils::eatComments(line, "#");
+			line = Utils::eatSpacesLeading(line);
+			line = Utils::eatSpacesTrailing(line);
 			if(line.empty()) continue;
 			
 			//headers
@@ -449,7 +456,7 @@ void Admin::LoadTEXT(std::string savename){
 			
 			//header values (skip if an invalid header)
 			if(header == LevelHeader::INVALID) { ERROR(ParsingError,"'! Invalid header; skipping line"); continue; }
-			std::vector<std::string> split = deshi::space_delimit_ignore_strings(line);
+			std::vector<std::string> split = Utils::spaceDelimitIgnoreStrings(line);
 			
 			switch(header){
 				case(LevelHeader::LEVEL):{
@@ -462,11 +469,11 @@ void Admin::LoadTEXT(std::string savename){
 					if(split.size() != 7){ ERROR(ParsingError,"'! Material lines should have 7 values"); continue; }
 					
 					u32 old_id = std::stoi(split[0]);
-					u32 new_id = DengRenderer->CreateMaterial(split[1].c_str(), std::stoi(split[2]), 
-															  DengRenderer->LoadTexture(split[3].c_str()),
-															  DengRenderer->LoadTexture(split[4].c_str()),
-															  DengRenderer->LoadTexture(split[5].c_str()),
-															  DengRenderer->LoadTexture(split[6].c_str()));
+					u32 new_id = Render::CreateMaterial(split[1].c_str(), std::stoi(split[2]), 
+														Render::LoadTexture(split[3].c_str()),
+														Render::LoadTexture(split[4].c_str()),
+														Render::LoadTexture(split[5].c_str()),
+														Render::LoadTexture(split[6].c_str()));
 					material_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
 				}break;
 				case(LevelHeader::MESHES):{
@@ -474,19 +481,19 @@ void Admin::LoadTEXT(std::string savename){
 					
 					//id
 					u32 old_id = std::stoi(split[0]);
-					u32 new_id = DengRenderer->CreateMesh(&scene, split[1].c_str(), false);
+					u32 new_id = Render::CreateMesh(&scene, split[1].c_str(), false);
 					mesh_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
 					
 					//visible
-					DengRenderer->meshes[new_id].visible = deshi::parse_bool(split[2], level_dir.c_str(), line_number);
+					Render::UpdateMeshVisibility(new_id, Assets::parse_bool(split[2], level_dir.c_str(), line_number));
 					
 					//materials
-					std::vector<std::string> mat_ids = deshi::space_delimit(split[3]); 
-					forI(DengRenderer->meshes[new_id].primitives.size()){
+					std::vector<std::string> mat_ids = Utils::spaceDelimit(split[3]); 
+					forI(Render::MeshBatchCount(new_id)){
 						u32 old_mat = std::stoi(mat_ids[i]);
 						for(auto& diff : material_id_diffs){
 							if(diff.first == old_mat){
-								DengRenderer->meshes[new_id].primitives[i].materialIndex = diff.second;
+								Render::UpdateMeshBatchMaterial(new_id, i, diff.second);
 							}
 						}
 					}
@@ -515,7 +522,7 @@ void Admin::LoadTEXT(std::string savename){
 	
 	//// parse entity files ////
 	std::vector<Entity*> ents; ents.reserve(entity_count);
-	for(std::string& file : deshi::iterateDirectory(level_dir)){
+	for(std::string& file : Assets::iterateDirectory(level_dir)){
 		if(file == "_") continue;
 		if(Entity* e = Entity::LoadTEXT(this, level_dir+file, mesh_id_diffs)){
 			ents.push_back(e);
@@ -529,8 +536,9 @@ void Admin::LoadTEXT(std::string savename){
 		for(Entity* e : ents){
 			if(e->id == events[i].fourth){
 				for(Component* c : e->components){
-					if(c->comptype == events[i].fifth){
+					if(c->type == events[i].fifth){
 						rec_comp = c;
+						break;
 					}
 				}
 			}
@@ -544,13 +552,12 @@ void Admin::LoadTEXT(std::string savename){
 		for(Entity* e : ents){
 			if(e->id == events[i].first){
 				for(Component* c : e->components){
-					if(c->comptype == events[i].second){
+					if(c->type == events[i].second){
 						c->event = events[i].third;
-						if(!c->sender) c->sender = new Sender;
-						c->sender->AddReceiver(rec_comp);
+						c->sender.AddReceiver(rec_comp);
 						rec_comp->entity->connections.insert(e);
 						SUCCESS("Added event '",EventStrings[events[i].third],"': ",
-								e->name," ",c->comptype," -> ",rec_comp->entity->name," ",rec_comp->comptype);
+								e->name," ",c->type," -> ",rec_comp->entity->name," ",rec_comp->type);
 					}
 				}
 			}
@@ -586,7 +593,7 @@ void Admin::SaveDESH(const char* filename) {
 	//std::vector<char> save_data(16384);
 	
 	//open file
-	std::string filepath = deshi::dirSaves() + filename;
+	std::string filepath = Assets::dirSaves() + filename;
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ ERROR("Failed to open file '", filepath, "' when trying to save"); return; }
 	
@@ -603,9 +610,7 @@ void Admin::SaveDESH(const char* filename) {
 	header.componentTypeCount = 10;
 	std::vector<AudioListener*>  compsAudioListener;
 	std::vector<AudioSource*>    compsAudioSource;
-	std::vector<BoxCollider*>    compsColliderBox;
-	std::vector<AABBCollider*>   compsColliderAABB;
-	std::vector<SphereCollider*> compsColliderSphere;
+	std::vector<Collider*>       compsCollider;
 	std::vector<Light*>          compsLight;
 	std::vector<MeshComp*>       compsMeshComp;
 	std::vector<Physics*>        compsPhysics;
@@ -626,16 +631,9 @@ void Admin::SaveDESH(const char* filename) {
 		
 		//sort components
 		for (Component* c : e->components) {
-			switch (c->comptype) {
+			switch (c->type) {
 				case ComponentType_Physics:       compsPhysics.push_back(dyncast(Physics, c)); break;
-				case ComponentType_Collider: {
-					Collider* col = dyncast(Collider, c);
-					switch (col->type) {
-						case ColliderType_Box:    compsColliderBox.push_back(dyncast(BoxCollider, col)); break;
-						case ColliderType_AABB:   compsColliderAABB.push_back(dyncast(AABBCollider, col)); break;
-						case ColliderType_Sphere: compsColliderSphere.push_back(dyncast(SphereCollider, col)); break;
-					}
-				} break;
+				case ComponentType_Collider:      compsCollider.push_back(dyncast(Collider, c)); break;
 				case ComponentType_AudioListener: compsAudioListener.push_back(dyncast(AudioListener, c)); break;
 				case ComponentType_AudioSource:   compsAudioSource.push_back(dyncast(AudioSource, c)); break;
 				case ComponentType_Light:         compsLight.push_back(dyncast(Light, c)); break;
@@ -648,17 +646,20 @@ void Admin::SaveDESH(const char* filename) {
     }
     
     //// write textures ////
-    header.textureCount = DengRenderer->textures.size();
+    header.textureCount = Render::TextureCount();;
     header.textureArrayOffset = file.tellp();
-    for(auto& t : DengRenderer->textures){
+	/*
+    for(auto& t : *Render::textureArray()){
         file.write((const char*)&t.type, sizeof(u32));
         file.write(t.filename,           sizeof(char)*DESHI_NAME_SIZE);
     }
+*/
     
     //// write materials ////
-    header.materialCount = DengRenderer->materials.size();
+    header.materialCount = Render::MaterialCount();
     header.materialArrayOffset = file.tellp();
-    for(auto& m : DengRenderer->materials){
+	/*
+    for(auto& m : *Render::materialArray()){
         file.write((const char*)&m.shader,     sizeof(u32));
         file.write((const char*)&m.albedoID,   sizeof(u32));
         file.write((const char*)&m.normalID,   sizeof(u32));
@@ -666,16 +667,19 @@ void Admin::SaveDESH(const char* filename) {
         file.write((const char*)&m.lightID,    sizeof(u32));
         file.write(m.name,                     sizeof(char)*DESHI_NAME_SIZE);
     }
+*/
     
     //// write meshes //// //TODO(delle) support multiple materials per mesh
-    header.meshCount = DengRenderer->meshes.size();
+    header.meshCount = Render::MeshCount();
     header.meshArrayOffset = file.tellp();
-    for(auto& m : DengRenderer->meshes){
-        b32 base = m.base;
+	/*
+    for(auto& m : *Render::meshArray()){
+        bool base = m.base;
         file.write((const char*)&m.primitives[0].materialIndex, sizeof(u32));
-        file.write((const char*)&base,                          sizeof(b32));
+        file.write((const char*)&base,                          sizeof(bool));
         file.write(m.name,                                      sizeof(char)*DESHI_NAME_SIZE);
     }
+*/
     
     //// write component type headers //// //TODO(delle) move these to thier respective files
     header.componentTypeHeaderArrayOffset = file.tellp();
@@ -695,25 +699,11 @@ void Admin::SaveDESH(const char* filename) {
     typeHeader.count       = compsAudioSource.size();
     file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
     
-    //collider box 2
-    typeHeader.type        = ComponentType_ColliderBox;
+    //collider 2
+    typeHeader.type        = ComponentType_Collider;
     typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
     typeHeader.size        = sizeof(u32) * 3 + sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
-    typeHeader.count       = compsColliderBox.size();
-    file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
-    
-    //collider aabb 3
-    typeHeader.type        = ComponentType_ColliderAABB;
-    typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
-    typeHeader.count       = compsColliderAABB.size();
-    file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
-    
-    //collider sphere 4
-    typeHeader.type        = ComponentType_ColliderSphere;
-    typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(u32) + sizeof(Matrix3) + sizeof(float);
-    typeHeader.count       = compsColliderSphere.size();
+    typeHeader.count       = compsCollider.size();
     file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
     
     //light 5
@@ -726,14 +716,14 @@ void Admin::SaveDESH(const char* filename) {
     //mesh comp 6
     typeHeader.type        = ComponentType_MeshComp;
     typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(u32)*2 + sizeof(b32)*2; //instanceID, meshID, visible, entity_control
+    typeHeader.size        = sizeof(u32) * 3 + sizeof(u32)*2 + sizeof(bool)*2; //instanceID, meshID, visible, entity_control
     typeHeader.count       = compsMeshComp.size();
     file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
     
     //physics 7
     typeHeader.type        = ComponentType_Physics;
     typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(b32) * 3 + sizeof(float) * 2;
+    typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(bool) * 3 + sizeof(float) * 2;
     typeHeader.count       = compsPhysics.size();
     file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
     
@@ -744,7 +734,7 @@ void Admin::SaveDESH(const char* filename) {
     //movement 8
     typeHeader.type        = ComponentType_Movement;
     typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3) + sizeof(float) * 6 + sizeof(b32);
+    typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3) + sizeof(float) * 6 + sizeof(bool);
     typeHeader.count       = compsMovement.size();
     file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
     
@@ -759,7 +749,7 @@ void Admin::SaveDESH(const char* filename) {
     
     //audio listener
     for(auto c : compsAudioListener){
-        file.write((const char*)&c->entityID,    sizeof(u32));
+        //file.write((const char*)&c->entityID,    sizeof(u32));
         file.write((const char*)&c->compID,      sizeof(u32));
         file.write((const char*)&c->event,       sizeof(u32));
         file.write((const char*)&c->position,    sizeof(Vector3));
@@ -769,45 +759,25 @@ void Admin::SaveDESH(const char* filename) {
     
     //audio source
     for(auto c : compsAudioSource){
-        file.write((const char*)&c->entityID, sizeof(u32));
+        //file.write((const char*)&c->entityID, sizeof(u32));
         file.write((const char*)&c->compID,   sizeof(u32));
         file.write((const char*)&c->event,    sizeof(u32));
         
     }
     
     //collider box
-    for(auto c : compsColliderBox){
-        file.write((const char*)&c->entityID,       sizeof(u32));
+    for(auto c : compsCollider){
+        //file.write((const char*)&c->entityID,       sizeof(u32));
         file.write((const char*)&c->compID,         sizeof(u32));
         file.write((const char*)&c->event,          sizeof(u32));
-        file.write((const char*)&c->collisionLayer, sizeof(u32));
-        file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
-        file.write((const char*)&c->halfDims,       sizeof(Vector3));
-    }
-    
-    //collider aabb
-    for(auto c : compsColliderAABB){
-        file.write((const char*)&c->entityID,       sizeof(u32));
-        file.write((const char*)&c->compID,         sizeof(u32));
-        file.write((const char*)&c->event,          sizeof(u32));
-        file.write((const char*)&c->collisionLayer, sizeof(u32));
-        file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
-        file.write((const char*)&c->halfDims,       sizeof(Vector3));
-    }
-    
-    //collider sphere
-    for(auto c : compsColliderSphere){
-        file.write((const char*)&c->entityID,       sizeof(u32));
-        file.write((const char*)&c->compID,         sizeof(u32));
-        file.write((const char*)&c->event,          sizeof(u32));
-        file.write((const char*)&c->collisionLayer, sizeof(u32));
-        file.write((const char*)&c->inertiaTensor,  sizeof(Matrix3));
-        file.write((const char*)&c->radius,         sizeof(float));
+        file.write((const char*)&c->collLayer, sizeof(u32));
+        file.write((const char*)&c->tensor,  sizeof(Matrix3));
+        //file.write((const char*)&c->halfDims,       sizeof(Vector3));
     }
     
     //light
     for(auto c : compsLight){
-        file.write((const char*)&c->entityID,    sizeof(u32));
+        //file.write((const char*)&c->entityID,    sizeof(u32));
         file.write((const char*)&c->compID,      sizeof(u32));
         file.write((const char*)&c->event,       sizeof(u32));
         file.write((const char*)&c->position,    sizeof(Vector3));
@@ -817,23 +787,23 @@ void Admin::SaveDESH(const char* filename) {
     
     //mesh comp
     for(auto c : compsMeshComp){
-        b32 bool1 = c->mesh_visible;
-        b32 bool2 = c->ENTITY_CONTROL;
-        file.write((const char*)&c->entityID,   sizeof(u32));
+        bool bool1 = c->mesh_visible;
+        bool bool2 = c->ENTITY_CONTROL;
+        //file.write((const char*)&c->entityID,   sizeof(u32));
         file.write((const char*)&c->compID,     sizeof(u32));
         file.write((const char*)&c->event,      sizeof(u32));
         file.write((const char*)&c->instanceID, sizeof(u32));
         file.write((const char*)&c->meshID,     sizeof(u32));
-        file.write((const char*)&bool1,         sizeof(b32));
-        file.write((const char*)&bool2,         sizeof(b32));
+        file.write((const char*)&bool1,         sizeof(bool));
+        file.write((const char*)&bool2,         sizeof(bool));
     }
     
     //physics
     for(auto c : compsPhysics){
-        b32 staticPosition = c->staticPosition;
-        b32 staticRotation = c->staticRotation;
-        b32 twoDphys = c->twoDphys;
-        file.write((const char*)&c->entityID,        sizeof(u32));
+        bool staticPosition = c->staticPosition;
+        bool staticRotation = c->staticRotation;
+        bool twoDphys = c->twoDphys;
+        //file.write((const char*)&c->entityID,        sizeof(u32));
         file.write((const char*)&c->compID,          sizeof(u32));
         file.write((const char*)&c->event,           sizeof(u32));
         file.write((const char*)&c->position,        sizeof(Vector3));
@@ -844,17 +814,17 @@ void Admin::SaveDESH(const char* filename) {
         file.write((const char*)&c->rotAcceleration, sizeof(Vector3));
         file.write((const char*)&c->elasticity,      sizeof(float));
         file.write((const char*)&c->mass,            sizeof(float));
-        file.write((const char*)&staticPosition,           sizeof(b32));
-        file.write((const char*)&staticRotation,     sizeof(b32));
-        file.write((const char*)&twoDphys,           sizeof(b32));
+        file.write((const char*)&staticPosition,           sizeof(bool));
+        file.write((const char*)&staticRotation,     sizeof(bool));
+        file.write((const char*)&twoDphys,           sizeof(bool));
         file.write((const char*)&c->kineticFricCoef, sizeof(float));
         file.write((const char*)&c->staticFricCoef,  sizeof(float));
     }
     
     //movement
     for (auto c : compsMovement) {
-        b32 jump = c->jump;
-        file.write((const char*)&c->entityID,          sizeof(u32));
+        bool jump = c->jump;
+        //file.write((const char*)&c->entityID,          sizeof(u32));
         file.write((const char*)&c->compID,            sizeof(u32));
         file.write((const char*)&c->event,             sizeof(u32));
         file.write((const char*)&c->inputs,            sizeof(Vector3));
@@ -863,13 +833,13 @@ void Admin::SaveDESH(const char* filename) {
         file.write((const char*)&c->maxWalkingSpeed,   sizeof(float));
         file.write((const char*)&c->maxRunningSpeed,   sizeof(float));
         file.write((const char*)&c->maxCrouchingSpeed, sizeof(float));
-        file.write((const char*)&jump,                 sizeof(b32));
+        file.write((const char*)&jump,                 sizeof(bool));
         file.write((const char*)&c->jumpImpulse,       sizeof(float));
     }
     
     //player
     for(auto c : compsPlayer){
-        file.write((const char*)&c->entityID, sizeof(u32));
+        //file.write((const char*)&c->entityID, sizeof(u32));
         file.write((const char*)&c->compID,   sizeof(u32));
         file.write((const char*)&c->event,    sizeof(u32));
         file.write((const char*)&c->health,   sizeof(int));
@@ -886,12 +856,12 @@ void Admin::SaveDESH(const char* filename) {
 
 void Admin::LoadDESH(const char* filename) {
     Reset();
-    LOG("Loading level: ", deshi::dirSaves() + filename);
+    LOG("Loading level: ", Assets::dirSaves() + filename);
     TIMER_START(t_l);
     
     //// read file to char array ////
     u32 cursor = 0;
-    std::vector<char> file = deshi::readFileBinary(deshi::dirSaves() + filename);
+    std::vector<char> file = Assets::readFileBinary(Assets::dirSaves() + filename);
     const char* data = file.data();
     if(!data) return;
     
@@ -925,7 +895,7 @@ void Admin::LoadDESH(const char* filename) {
     forI(header.textureCount){
         memcpy(&tex.type,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
         memcpy(tex.filename, data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
-        if(i>3) DengRenderer->LoadTexture(tex);
+        if(i>3) Render::LoadTexture(tex);
     }
     
     //// parse and create materials ////
@@ -941,7 +911,7 @@ void Admin::LoadDESH(const char* filename) {
         memcpy(&specularId, data+cursor, sizeof(u32)); cursor += sizeof(u32);
         memcpy(&lightID,    data+cursor, sizeof(u32)); cursor += sizeof(u32);
         memcpy(matName,     data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
-        if(i>5) DengRenderer->CreateMaterial(matName, shader, albedoID, normalID, specularId, lightID);
+        if(i>5) Render::CreateMaterial(matName, shader, albedoID, normalID, specularId, lightID);
     }
     
     //// parse and load/create meshes ////
@@ -949,14 +919,14 @@ void Admin::LoadDESH(const char* filename) {
         return ERROR("Load failed because cursor was at '", cursor, 
                      "' when reading meshes which start at '", header.meshArrayOffset, "'");
     }
-    b32 matID = 0, baseMesh = 0; char meshName[DESHI_NAME_SIZE];
+    bool matID = 0, baseMesh = 0; char meshName[DESHI_NAME_SIZE];
     forI(header.meshCount){
         memcpy(&matID,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
-        memcpy(&baseMesh, data+cursor, sizeof(b32));     cursor += sizeof(b32);
+        memcpy(&baseMesh, data+cursor, sizeof(bool));     cursor += sizeof(bool);
         memcpy(meshName,  data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
         if(!baseMesh) {
-            u32 meshID = DengRenderer->CreateMesh(&scene, meshName);
-            DengRenderer->UpdateMeshBatchMaterial(meshID, 0, matID);
+            u32 meshID = Render::CreateMesh(&scene, meshName);
+            Render::UpdateMeshBatchMaterial(meshID, 0, matID);
         }
     }
     
@@ -976,9 +946,7 @@ void Admin::LoadDESH(const char* filename) {
             case(ComponentType_AudioListener):  AudioListener ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_AudioSource):    AudioSource   ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_Camera):         Camera        ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_ColliderBox):    BoxCollider   ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_ColliderAABB):   AABBCollider  ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_ColliderSphere): SphereCollider::LoadDESH(this, data, cursor, compHeader.count); break;
+            case(ComponentType_Collider):       Collider      ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_Light):          Light         ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_MeshComp):       MeshComp      ::LoadDESH(this, data, cursor, compHeader.count); break;
             case(ComponentType_OrbManager):     OrbManager    ::LoadDESH(this, data, cursor, compHeader.count); break;
@@ -998,6 +966,7 @@ void Admin::LoadDESH(const char* filename) {
 
 //{P}:physics layer,  {C}:canvas layer,  {W}:world layer,  {S}:send layer
 //{p}:physics system, {c}:canvas system, {w}:world system, {s}:send system, 
+//{e}:editor
 std::string Admin::FormatAdminTime(std::string fmt){
 	std::string out = ""; out.reserve(512);
 	forI(fmt.size()){
@@ -1026,6 +995,9 @@ std::string Admin::FormatAdminTime(std::string fmt){
 				}i+=2;continue;
 				case('s'):{
 					out.append(std::to_string(sndSysTime));
+				}i+=2;continue;
+				case('e'):{
+					out.append(std::to_string(editorTime));
 				}i+=2;continue;
 			}
 		}

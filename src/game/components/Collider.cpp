@@ -5,85 +5,58 @@
 #include "../../math/math.h"
 #include "../../scene/Model.h"
 
+
+void Collider::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
+	ERROR_LOC("LoadDESH not setup");
+}
+
+
 //////////////////////
 //// Box Collider ////
 //////////////////////
 
-BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Event event, b32 nocollide) {
-	admin = g_admin;
-	cpystr(name, "BoxCollider", DESHI_NAME_SIZE);
-	comptype = ComponentType_Collider;
-	sender = new Sender();
-	this->type = ColliderType_Box;
-	this->collisionLayer = collisionLayer;
+BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Event event, bool nocollide) {
+	type = ComponentType_Collider;
+	this->shape = ColliderShape_Box;
+	this->collLayer = collisionLayer;
 	this->noCollide = nocollide;
 	this->event = event;
 	this->halfDims = halfDimensions;
-	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
+	this->tensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 	
 }
 
-BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Event event, b32 nocollide) {
-	admin = g_admin;
-	cpystr(name, "BoxCollider", 63);
-	comptype = ComponentType_Collider;
-	sender = new Sender();
-	this->type = ColliderType_Box;
-	this->collisionLayer = collisionLayer;
-	this->inertiaTensor = tensor;
+BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Event event, bool nocollide) {
+	type = ComponentType_Collider;
+	this->type = ColliderShape_Box;
+	this->collLayer = collisionLayer;
+	this->tensor = tensor;
 	this->noCollide = nocollide;
 	this->event = event;
 	this->halfDims = halfDimensions;
 }
 
 void BoxCollider::RecalculateTensor(f32 mass) {
-	inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
+	tensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 
 std::string BoxCollider::SaveTEXT(){
 	return TOSTRING("\n>collider"
-					"\ntype      box"
+					"\nshape     ",ColliderShapeStrings[shape],
 					"\nhalf_dims (",halfDims.x,",",halfDims.y,",",halfDims.z,")"
 					"\n");
 }
 
-void BoxCollider::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
-	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
-	u32 layer = -1;
-	mat3 tensor{};
-	vec3 halfDimensions{};
-	
-	forI(count){
-		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
-		if(entityID >= admin->entities.size()) {
-			ERROR("Failed to load box collider component at pos '", cursor-sizeof(u32),
-				  "' because it has an invalid entity ID: ", entityID); continue;
-		}
-		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		
-		memcpy(&layer,          data+cursor, sizeof(u32));  cursor += sizeof(u32);
-		memcpy(&tensor,         data+cursor, sizeof(mat3)); cursor += sizeof(mat3);
-		memcpy(&halfDimensions, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
-		BoxCollider* c = new BoxCollider(halfDimensions, tensor, layer);
-		EntityAt(entityID)->AddComponent(c);
-		c->SetCompID(compID);
-		c->SetEvent(event);
-		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-	}
-}
 
 ///////////////////////
 //// AABB Collider ////
 ///////////////////////
 
-AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Event event, b32 nocollide) {
-	admin = g_admin;
-	cpystr(name, "AABBCollider", DESHI_NAME_SIZE);
-	comptype = ComponentType_Collider;
-	sender = new Sender();
-	this->type = ColliderType_AABB;
-	this->collisionLayer = collisionLayer;
+
+AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Event event, bool nocollide) {
+	type = ComponentType_Collider;
+	this->shape = ColliderShape_AABB;
+	this->collLayer = collisionLayer;
 	this->noCollide = nocollide;
 	this->event = event;
 	
@@ -128,137 +101,75 @@ AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Event eve
 		this->halfDims *= midMag; //then unnormalize
 	}
 	
-	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
+	this->tensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 
-AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Event event, b32 nocollide) {
-	admin = g_admin;
-	cpystr(name, "AABBCollider", DESHI_NAME_SIZE);
-	comptype = ComponentType_Collider;
-	sender = new Sender();
-	this->type = ColliderType_AABB;
-	this->collisionLayer = collisionLayer;
+AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Event event, bool nocollide) {
+	type = ComponentType_Collider;
+	this->shape = ColliderShape_AABB;
+	this->collLayer = collisionLayer;
 	this->noCollide = nocollide;
 	this->event = event;
 	this->halfDims = halfDimensions;
-	this->inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
+	this->tensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 
-AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Event event, b32 nocollide) {
-	admin = g_admin;
-	cpystr(name, "AABBCollider", DESHI_NAME_SIZE);
-	comptype = ComponentType_Collider;
-	sender = new Sender();
-	this->type = ColliderType_AABB;
-	this->collisionLayer = collisionLayer;
-	this->inertiaTensor = tensor;
+AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Event event, bool nocollide) {
+	type = ComponentType_Collider;
+	this->shape = ColliderShape_AABB;
+	this->collLayer = collisionLayer;
+	this->tensor = tensor;
 	this->noCollide = nocollide;
 	this->event = event;
 	this->halfDims = halfDimensions;
 }
 
 void AABBCollider::RecalculateTensor(f32 mass) {
-	inertiaTensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
+	tensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 
 std::string AABBCollider::SaveTEXT(){
 	return TOSTRING("\n>collider"
-					"\ntype      aabb"
+					"\nshape     ",ColliderShapeStrings[shape],
 					"\nhalf_dims (",halfDims.x,",",halfDims.y,",",halfDims.z,")"
 					"\n");
 }
 
-void AABBCollider::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
-	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
-	u32 layer = -1;
-	mat3 tensor{};
-	vec3 halfDimensions{};
-	
-	forI(count){
-		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
-		if(entityID >= admin->entities.size()) {
-			ERROR("Failed to load aabb collider component at pos '", cursor-sizeof(u32),
-				  "' because it has an invalid entity ID: ", entityID); continue;
-		}
-		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		
-		memcpy(&layer, data+cursor,          sizeof(u32));  cursor += sizeof(u32);
-		memcpy(&tensor, data+cursor,         sizeof(mat3)); cursor += sizeof(mat3);
-		memcpy(&halfDimensions, data+cursor, sizeof(vec3)); cursor += sizeof(vec3);
-		AABBCollider* c = new AABBCollider(halfDimensions, tensor, layer);
-		EntityAt(entityID)->AddComponent(c);
-		c->SetCompID(compID);
-		c->SetEvent(event);
-		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-	}
-}
 
 /////////////////////////
 //// Sphere Collider ////
 /////////////////////////
 
-SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Event event, b32 nocollide) {
-	admin = g_admin;
-	cpystr(name, "SphereCollider", DESHI_NAME_SIZE);
-	comptype = ComponentType_Collider;
-	sender = new Sender();
-	this->type = ColliderType_Sphere;
-	this->collisionLayer = collisionLayer;
+
+SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Event event, bool nocollide) {
+	type = ComponentType_Collider;
+	this->shape = ColliderShape_Sphere;
+	this->collLayer = collisionLayer;
 	this->noCollide = nocollide;
 	this->event = event;
 	this->radius = radius;
-	this->inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
+	this->tensor = InertiaTensors::SolidSphere(radius, mass);
 }
 
-SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer, Event event, b32 nocollide) {
-	admin = g_admin;
-	cpystr(name, "SphereCollider", DESHI_NAME_SIZE);
-	comptype = ComponentType_Collider;
-	sender = new Sender();
-	this->type = ColliderType_Sphere;
-	this->collisionLayer = collisionLayer;
-	this->inertiaTensor = tensor;
+SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer, Event event, bool nocollide) {
+	type = ComponentType_Collider;
+	this->shape = ColliderShape_Sphere;
+	this->collLayer = collisionLayer;
+	this->tensor = tensor;
 	this->noCollide = nocollide;
 	this->event = event;
 	this->radius = radius;
 }
 
 void SphereCollider::RecalculateTensor(f32 mass) {
-	inertiaTensor = InertiaTensors::SolidSphere(radius, mass);
+	tensor = InertiaTensors::SolidSphere(radius, mass);
 }
 
 std::string SphereCollider::SaveTEXT(){
 	return TOSTRING("\n>collider"
-					"\ntype   sphere"
+					"\nshape  ",ColliderShapeStrings[shape],
 					"\nradius ",radius,
 					"\n");
-}
-
-void SphereCollider::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
-	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
-	u32 layer = -1;
-	mat3 tensor{};
-	f32 radius = 0.f;
-	
-	forI(count){
-		memcpy(&entityID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
-		if(entityID >= admin->entities.size()) {
-			ERROR("Failed to load sphere collider component at pos '", cursor-sizeof(u32),
-				  "' because it has an invalid entity ID: ", entityID); continue;
-		}
-		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		
-		memcpy(&layer,  data+cursor, sizeof(u32));  cursor += sizeof(u32);
-		memcpy(&tensor, data+cursor, sizeof(mat3)); cursor += sizeof(mat3);
-		memcpy(&radius, data+cursor, sizeof(f32));  cursor += sizeof(f32);
-		SphereCollider* c = new SphereCollider(radius, tensor, layer);
-		c->SetCompID(compID);
-		c->SetEvent(event);
-		EntityAt(entityID)->AddComponent(c);
-		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-	}
 }
 
 
@@ -267,13 +178,10 @@ void SphereCollider::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 c
 ////////////////////////////
 
 
-LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Event event, b32 nocollide) {
-	admin = g_admin;
-	cpystr(name, "LandscapeCollider", DESHI_NAME_SIZE);
-	comptype = ComponentType_Collider;
-	sender = new Sender();
-	this->type = ColliderType_Landscape;
-	this->collisionLayer = collisionLayer;
+LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionLayer, Event event, bool nocollide) {
+	type = ComponentType_Collider;
+	this->shape = ColliderShape_Landscape;
+	this->collLayer = collisionLayer;
 	this->noCollide = nocollide;
 	this->event = event;
 	
@@ -291,7 +199,7 @@ LandscapeCollider::LandscapeCollider(Mesh* mesh, u32 collisionleyer, Event event
 std::string LandscapeCollider::SaveTEXT(){
 	ERROR_LOC("LandscapeCollider saving not setup");
 	return TOSTRING("\n>collider"
-					"\ntype landscape"
+					"\nshape ",ColliderShapeStrings[shape],
 					"\n");
 }
 
@@ -300,19 +208,19 @@ std::string LandscapeCollider::SaveTEXT(){
 ///// Complex Collider /////
 ////////////////////////////
 
-ComplexCollider::ComplexCollider(Mesh* mesh, u32 collisionleyer, Event event, b32 nocollide) {
-	admin = g_admin;
-	cpystr(name, "ComplexCollider", DESHI_NAME_SIZE);
-	comptype = ComponentType_Collider;
-	this->type = ColliderType_Complex;
 
-
+ComplexCollider::ComplexCollider(Mesh* mesh, u32 collisionLayer, Event event, bool nocollide) {
+	type = ComponentType_Collider;
+	this->shape = ColliderShape_Complex;
+	this->collLayer = collisionLayer;
+	this->noCollide = nocollide;
+	this->event = event;
 	this->mesh = mesh;
 }
 
 std::string ComplexCollider::SaveTEXT(){
 	ERROR_LOC("ComplexCollider saving not setup");
 	return TOSTRING("\n>collider"
-					"\ntype complex"
+					"\nshape ",ColliderShapeStrings[shape],
 					"\n");
 }

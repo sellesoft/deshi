@@ -13,9 +13,9 @@ struct Admin;
 struct Entity;
 struct Camera;
 
-enum TransformationAxis : u32{
+enum TransformationAxisBits{
 	TransformationAxis_Free, TransformationAxis_X, TransformationAxis_Y, TransformationAxis_Z
-};
+}; typedef u32 TransformationAxis;
 
 struct EditorSettings{
 	
@@ -41,11 +41,13 @@ struct Editor{
 	bool showMenuBar;
 	bool showImGuiDemoWindow;
 	bool showDebugLayer;
+	bool showWorldGrid;
 	bool ConsoleHovFlag; //this can be done better
 	
 	void Init(Admin* a);
 	void Update();
 	void Reset();
+	void Cleanup();
 	
 	//TODO(delle,Cl) move these to be local inside the .cpp
 	Entity* SelectEntityRaycast();

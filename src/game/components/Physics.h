@@ -35,7 +35,7 @@ struct Manifold3 {
 	ColliderType coltypeb;
 	
 	//bool indicating which normal is the player's
-	b32 player = 0;
+	bool player = 0;
  
 	int refID = 0;
 	//point then depth

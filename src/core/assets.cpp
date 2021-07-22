@@ -1,46 +1,32 @@
-#include "assets.h"
-#include "../utils/debug.h"
-#include "console.h"
-
-#include <iostream>
-#include <fstream>
-#include <filesystem>
-#include <regex>
-
 ////////////////////
 //// file paths ////
 ////////////////////
 
-std::string deshi::
-assetPath(const char* filename, AssetType type, b32 logError){
-	std::string file;
-	switch(type){
-		case AssetType_Entity:  file = dirEntities() + filename; break;
-		case AssetType_Model:   file = dirModels() + filename; break;
-		case AssetType_Texture: file = dirTextures() + filename; break;
-		case AssetType_Save:    file = dirSaves() + filename; break;
-		case AssetType_Sound:   file = dirSounds() + filename; break;
-		case AssetType_Shader:  file = dirShaders() + filename; break;
-		case AssetType_Config:  file = dirConfig() + filename; break;
-		case AssetType_NONE:    file = filename; break;
-		default:                file = dirData() + filename; break;
-	}
-	if(std::filesystem::exists(std::filesystem::path(file))){
-		return file;
-	}else{
-		if(logError) ERROR("Failed to find data: ", file);
-		return "";
-	}
+bool Assets::
+deleteFile(std::string& filepath, bool logError){
+	bool result = std::filesystem::remove(filepath);
+	if(logError && !result) ERROR("Failed to find file: ", filepath);
+	return result;
+}
+
+u64 Assets::
+deleteDirectory(std::string& dirpath, bool logError){
+	auto result = std::filesystem::remove_all(dirpath);
+	if(logError && !result) ERROR("Failed to find directory: ", dirpath);
+	return (u64)result;
 }
 
 /////////////////////////
 //// file read-write ////
 /////////////////////////
 
-std::vector<char> deshi::
-readFile(const std::string& filepath, u32 chars) {
+std::vector<char> Assets::
+readFile(const std::string& filepath, u32 chars, bool logError) {
 	std::ifstream file(filepath, std::ios::ate);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return {}; 
+	}
 	defer{ file.close(); };
 	
 	if(chars == 0){ chars = (u32)file.tellg(); }
@@ -52,10 +38,13 @@ readFile(const std::string& filepath, u32 chars) {
 	return buffer;
 }
 
-std::vector<char> deshi::
-readFileBinary(const std::string& filepath, u32 bytes) {
+std::vector<char> Assets::
+readFileBinary(const std::string& filepath, u32 bytes, bool logError) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return {}; };
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return {}; 
+	}
 	defer{ file.close(); };
 	
 	if(bytes == 0){ bytes = (u32)file.tellg(); }
@@ -66,10 +55,13 @@ readFileBinary(const std::string& filepath, u32 bytes) {
 	return buffer;
 }
 
-char* deshi::
-readFileAsciiToArray(std::string filepath, u32 chars){
+char* Assets::
+readFileAsciiToArray(std::string filepath, u32 chars, bool logError){
 	std::ifstream file(filepath, std::ifstream::in);
-	if(!file.is_open()) { ERROR("Failed to open file: ", filepath.c_str()); return 0; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return 0; 
+	}
 	defer{ file.close(); };
 	
 	file.seekg(0, file.end);
@@ -81,10 +73,13 @@ readFileAsciiToArray(std::string filepath, u32 chars){
 	return buffer;
 }
 
-char* deshi::
-readFileBinaryToArray(std::string filepath, u32 bytes){
+char* Assets::
+readFileBinaryToArray(std::string filepath, u32 bytes, bool logError){
 	std::ifstream file(filepath, std::ifstream::in | std::ios::binary);
-	if(!file.is_open()) { ERROR("Failed to open file: ", filepath.c_str()); return 0; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return 0; 
+	}
 	defer{ file.close(); };
 	
 	file.seekg(0, file.end);
@@ -96,73 +91,94 @@ readFileBinaryToArray(std::string filepath, u32 bytes){
 	return buffer;
 }
 
-void deshi::
-writeFile(const std::string& filepath, std::vector<char>& data, u32 chars){
+void Assets::
+writeFile(const std::string& filepath, std::vector<char>& data, u32 chars, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	if(chars == 0){ chars = data.size(); }
 	file.write(reinterpret_cast<const char*>(data.data()), chars);
 }
 
-void deshi::
-writeFile(const std::string& filepath, const char* data, u32 chars){
+void Assets::
+writeFile(const std::string& filepath, const char* data, u32 chars, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	file.write(data, chars);
 }
 
-void deshi::
-appendFile(const std::string& filepath, std::vector<char>& data, u32 chars){
+void Assets::
+appendFile(const std::string& filepath, std::vector<char>& data, u32 chars, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	if(chars == 0){ chars = data.size(); }
 	file.write(reinterpret_cast<const char*>(data.data()), chars);
 }
 
-void deshi::
-appendFile(const std::string& filepath, const char* data, u32 chars){
+void Assets::
+appendFile(const std::string& filepath, const char* data, u32 chars, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	file.write(data, chars);
 }
 
-void deshi::
-writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes){
+void Assets::
+writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	if(bytes == 0){ bytes = data.size(); }
 	file.write(reinterpret_cast<const char*>(data.data()), bytes);
 }
 
-void deshi::
-writeFileBinary(const std::string& filepath, const char* data, u32 bytes){
+void Assets::
+writeFileBinary(const std::string& filepath, const char* data, u32 bytes, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	file.write(data, bytes);
 }
 
-void deshi::
-appendFileBinary(const std::string& filepath, const char* data, u32 bytes){
+void Assets::
+appendFileBinary(const std::string& filepath, const char* data, u32 bytes, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::app);
-	if(!file.is_open()){ ERROR("Failed to open file: ", filepath); return; }
+	if(!file.is_open()){ 
+		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
+		return; 
+	}
 	defer{ file.close(); };
 	
 	file.write(data, bytes);
 }
 
-std::vector<std::string> deshi::
+std::vector<std::string> Assets::
 iterateDirectory(const std::string& filepath) {
 	using namespace std::filesystem;
 	std::vector<std::string> files;
@@ -172,10 +188,10 @@ iterateDirectory(const std::string& filepath) {
 	return files;
 }
 
-void deshi::
+void Assets::
 enforceDirectories() {
 	using namespace std::filesystem;
-	if (!is_directory(dirData())) {
+	if(!is_directory(dirData())){
 		create_directory(dirData());
 		create_directory(dirConfig());
 		create_directory(dirEntities());
@@ -185,15 +201,18 @@ enforceDirectories() {
 		create_directory(dirShaders());
 		create_directory(dirSounds());
 		create_directory(dirTextures());
-	} else {
-		if (!is_directory(dirConfig()))   create_directory(dirConfig());
-		if (!is_directory(dirEntities())) create_directory(dirEntities());
-		if (!is_directory(dirLogs()))     create_directory(dirLogs());
-		if (!is_directory(dirModels()))   create_directory(dirModels());
-		if (!is_directory(dirSaves()))    create_directory(dirSaves());
-		if (!is_directory(dirShaders()))  create_directory(dirShaders());
-		if (!is_directory(dirSounds()))   create_directory(dirSounds());
-		if (!is_directory(dirTextures())) create_directory(dirTextures());
+		create_directory(dirTemp());
+	}else{
+		if(!is_directory(dirConfig()))   create_directory(dirConfig());
+		if(!is_directory(dirEntities())) create_directory(dirEntities());
+		if(!is_directory(dirLogs()))     create_directory(dirLogs());
+		if(!is_directory(dirModels()))   create_directory(dirModels());
+		if(!is_directory(dirSaves()))    create_directory(dirSaves());
+		if(!is_directory(dirShaders()))  create_directory(dirShaders());
+		if(!is_directory(dirSounds()))   create_directory(dirSounds());
+		if(!is_directory(dirTextures())) create_directory(dirTextures());
+		if( is_directory(dirTemp()))     remove_all(dirTemp());
+		create_directory(dirTemp());
 	}
 }
 
@@ -201,108 +220,7 @@ enforceDirectories() {
 //// parsing utilities ////
 ///////////////////////////
 
-std::string deshi::
-eat_spaces_leading(std::string str){
-	size_t idx = str.find_first_not_of(' ');
-	return (idx != -1) ? str.substr(idx) : "";
-}
-
-std::string deshi::
-eat_spaces_trailing(std::string str){
-	size_t idx = str.find_last_not_of(' ');
-	return (idx != -1) ? str.substr(0, idx+1) : "";
-}
-
-std::string deshi::
-eat_comments(std::string str){
-	size_t idx = str.find_first_of('#');
-	return (idx != -1) ? str.substr(0, idx) : str;
-}
-
-std::vector<std::string> deshi::
-character_delimit(std::string str, char character){
-	std::vector<std::string> out;
-	
-	int prev = 0;
-	for(int i=0; i < str.size(); ++i){
-		if(str[i] == character){
-			out.push_back(str.substr(prev, i-prev));
-    		prev = i+1;
-		}
-	}
-	out.push_back(str.substr(prev, -1));
-	
-	return out;
-}
-
-std::vector<std::string> deshi::
-character_delimit_ignore_repeat(std::string str, char character){
-	std::vector<std::string> out;
-	
-	int prev = 0;
-	for(int i=0; i < str.size(); ++i){
-		if(str[i] == character){
-			out.push_back(str.substr(prev, i-prev));
-			while(str[i+1] == ' ') ++i;
-    		prev = i+1;
-		}
-	}
-	out.push_back(str.substr(prev, -1));
-	
-	return out;
-}
-
-std::vector<std::string> deshi::
-space_delimit(std::string str){
-	std::vector<std::string> out;
-	str = eat_spaces_leading(str);
-	str = eat_spaces_trailing(str);
-	
-	int prev = 0;
-	for(int i=0; i < str.size(); ++i){
-		if(str[i] == ' '){
-			out.push_back(str.substr(prev, i-prev));
-			while(str[i+1] == ' ') ++i;
-    		prev = i+1;
-		}
-	}
-	out.push_back(str.substr(prev, -1));
-	
-	return out;
-}
-
-std::vector<std::string> deshi::
-space_delimit_ignore_strings(std::string str){
-	std::vector<std::string> out;
-	str = eat_spaces_leading(str);
-	str = eat_spaces_trailing(str);
-	
-	size_t prev = 0, end_quote = 0;
-	forI(str.size()){
-		if(str[i] == ' '){
-			out.push_back(str.substr(prev, i-prev));
-			while(str[i+1] == ' ') ++i;
-			prev = i+1;
-    		while(str[prev] == '\"'){
-    		    end_quote = str.find_first_of('\"', prev+1);
-    		    if(end_quote != -1){
-    		        out.push_back(str.substr(prev+1, end_quote-prev-1));
-    		        i = end_quote+1;
-					if(i >= str.size()) return out;
-    		        prev = i+1;
-    		    }else{
-    		        ERROR_LOC("Opening quote did not have a closing quote in string:\n\t", str);
-    		        return std::vector<std::string>();
-    		    }
-    		}
-		}
-	}
-	out.push_back(str.substr(prev, -1));
-	
-	return out;
-}
-
-pair<std::string, std::string> deshi::
+pair<std::string, std::string> Assets::
 split_keyValue(std::string str){
 	size_t idx = str.find_first_of(' ');
 	if (idx == -1) return pair<std::string, std::string>(str, std::string(""));
@@ -328,11 +246,11 @@ split_keyValue(std::string str){
 	return pair<std::string, std::string>(key, val);
 }
 
-std::map<std::string, std::string> deshi::
+std::map<std::string, std::string> Assets::
 extractConfig(const std::string& filepath) {
 	std::map<std::string, std::string> out;
 	
-	std::fstream in(deshi::dirConfig() + filepath, std::fstream::in);
+	std::fstream in(Assets::dirConfig() + filepath, std::fstream::in);
 	if(!in.is_open()){ ERROR("Failed to open file: ", filepath); out.emplace("FileNotFound", ""); return out; }
 	defer{ in.close(); };
 	
@@ -357,7 +275,7 @@ extractConfig(const std::string& filepath) {
 	return out;
 }
 
-b32 deshi::
+bool Assets::
 parse_bool(std::string& str, const char* filepath, u32 line_number){
 	if(str == "true" || str == "1"){
 		return true;
@@ -370,5 +288,282 @@ parse_bool(std::string& str, const char* filepath, u32 line_number){
 			ERROR("Failed to parse boolean value: ", str);
 		}
 		return false;
+	}
+}
+
+void Assets::
+saveConfig(const char* filename, const ConfigMap& configMap){
+	std::string filepath = Assets::dirConfig() + filename;
+	std::ofstream out(filepath, std::ios::out | std::ios::trunc); //flushes on destruction
+	if(!out.is_open()) { ERROR_LOC("Failed to open file: ", filepath); return; }
+	
+	size_t pad_amount = 1;
+	for(auto& config : configMap){
+		//print key
+		out << config.first;
+		
+		//print padding
+		size_t key_len = strlen(config.first);
+		if(pad_amount > key_len){
+			out << std::string(pad_amount - key_len, ' ');
+		}else{
+			out << ' ';
+		}
+		
+		//print value
+		switch(config.second){
+			case ConfigValueType_NONE:{
+				//do nothing
+			}break;
+			case ConfigValueType_PADSECTION:{
+				pad_amount = (config.third) ? (size_t)config.third : 1;
+			}break;
+			case ConfigValueType_S32:{
+				out << *(s32*)config.third;
+			}break;
+			case ConfigValueType_Bool:{
+				out << ((*(bool*)config.third) ? "true" : "false");
+			}break;
+			case ConfigValueType_U32:{
+				out << *(u32*)config.third;
+			}break;
+			case ConfigValueType_U8:{
+				out << (u32)(*(u8*)config.third);
+			}break;
+			case ConfigValueType_F32:{
+				out << std::to_string(*(f32*)config.third);
+			}break;
+			case ConfigValueType_F64:{
+				out << std::to_string(*(f64*)config.third);
+			}break;
+			case ConfigValueType_FV2:{
+				out << ((vec2*)config.third)->str();
+			}break;
+			case ConfigValueType_FV3:{
+				out << ((vec3*)config.third)->str();
+			}break;
+			case ConfigValueType_FV4:{
+				out << ((vec4*)config.third)->str();
+			}break;
+			case ConfigValueType_CString:{
+				out << '\"' << *(const char**)config.third << '\"';
+			}break;
+			case ConfigValueType_StdString:{
+				out << '\"' << *(std::string*)config.third << '\"';
+			}break;
+			case ConfigValueType_Key:{
+				u32 keymod = *(Key::Key*)config.third;
+				out << KeyStrings[keymod & 0x000000FF];
+				switch(keymod & 0xFFFFFF00){
+					case(InputMod_NONE):           break; //do nothing
+					case(InputMod_Any):            out << ",Any"; break;
+					case(InputMod_Lctrl):          out << ",LCTRL"; break;
+					case(InputMod_Rctrl):          out << ",RCTRL"; break;
+					case(InputMod_Lshift):         out << ",LSHIFT"; break;
+					case(InputMod_Rshift):         out << ",RSHIFT"; break;
+					case(InputMod_Lalt):           out << ",LALT"; break;
+					case(InputMod_Ralt):           out << ",RALT"; break;
+					case(InputMod_LctrlLshift):    out << ",LCTRL,LSHIFT"; break;
+					case(InputMod_LctrlRshift):    out << ",LCTRL,RSHIFT"; break;
+					case(InputMod_RctrlLshift):    out << ",RCTRL,LSHIFT"; break;
+					case(InputMod_RctrlRshift):    out << ",RCTRL,RSHIFT"; break;
+					case(InputMod_LctrlLalt):      out << ",LCTRL,LALT"; break;
+					case(InputMod_LctrlRalt):      out << ",LCTRL,RALT"; break;
+					case(InputMod_RctrlLalt):      out << ",RCTRL,LALT"; break;
+					case(InputMod_RctrlRalt):      out << ",RCTRL,RALT"; break;
+					case(InputMod_LshiftLalt):     out << ",LSHIFT,LALT"; break;
+					case(InputMod_LshiftRalt):     out << ",LSHIFT,RALT"; break;
+					case(InputMod_RshiftLalt):     out << ",RSHIFT,LALT"; break;
+					case(InputMod_RshiftRalt):     out << ",RSHIFT,RALT"; break;
+					case(InputMod_LctrlLshiftLalt):out << ",LCTRL,LSHIFT,LALT"; break;
+					case(InputMod_LctrlLshiftRalt):out << ",LCTRL,LSHIFT,RALT"; break;
+					case(InputMod_LctrlRshiftLalt):out << ",LCTRL,RSHIFT,LALT"; break;
+					case(InputMod_LctrlRshiftRalt):out << ",LCTRL,RSHIFT,RALT"; break;
+					case(InputMod_RctrlLshiftLalt):out << ",RCTRL,LSHIFT,LALT"; break;
+					case(InputMod_RctrlLshiftRalt):out << ",RCTRL,LSHIFT,RALT"; break;
+					case(InputMod_RctrlRshiftLalt):out << ",RCTRL,RSHIFT,LALT"; break;
+					case(InputMod_RctrlRshiftRalt):out << ",RCTRL,RSHIFT,RALT"; break;
+					default: ERROR("Unknown key-modifier combination \'",keymod,"\' when saving config: ", filename);
+				} 
+			}break;
+			default:{
+				ERROR("Unknown value type when saving config: ", filename);
+			}break;
+		}
+		out << '\n';
+	}
+}
+
+//NOTE this copies the config map so it can remove keys when found
+void Assets::
+loadConfig(const char* filename, ConfigMap configMap){
+	std::string filepath = Assets::dirConfig() + filename;
+	char* buffer = Assets::readFileAsciiToArray(filepath, 0, false);
+	if(!buffer){ saveConfig(filename, configMap); return; }
+	defer{ delete[] buffer; };
+	
+	char* line_start;
+	char* line_end = buffer - 1;
+	char* info_start;
+	char* info_end;
+	char* key_start;
+	char* key_end;
+	char* value_start;
+	char* value_end;
+	for(u32 line_number = 1; ;line_number++){
+		//get the next line
+		line_start = line_end+1;
+		if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
+		if(line_start == line_end) continue;
+		
+		//format the line
+		info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);
+		if(info_start == line_end) continue;
+		info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);
+		if(info_start == info_end) continue;
+		info_end   = info_start + Utils::skipSpacesTrailing(info_start, info_end-info_start);
+		if(info_start == info_end) continue;
+		
+		{//split the key-value pair
+			key_start = info_start;
+			key_end   = key_start;
+			while(key_end != info_end && *key_end++ != ' '){}
+			if(key_end == info_end) { ERROR("Error parsing '",filepath,"' on line '",line_number,"'! No value passed"); break; }
+			key_end--;
+			
+			value_end   = info_end;
+			value_start = value_end-1;
+			while(*value_start-- != ' '){}
+			value_start += 2;
+			if(value_end == value_start) { ERROR("Error parsing '",filepath,"' on line '",line_number,"'! No value passed"); break; }
+		}
+		
+		//parse the key-value pair
+		for(auto& config : configMap){
+			//check if type is valid
+			if(config.second == ConfigValueType_NONE || config.second == ConfigValueType_PADSECTION) continue;
+			
+			if(strncmp(config.first, key_start, key_end-key_start) == 0){
+				switch(config.second){
+					case ConfigValueType_S32:{
+						*(s32*)config.third = atoi(value_start);
+					}break;
+					case ConfigValueType_Bool:{
+						bool* b = (bool*)config.third;
+						if     (strncmp("true",  value_start, 4) == 0) *b = true;
+						else if(strncmp("1",     value_start, 1) == 0) *b = true;
+						else if(strncmp("false", value_start, 5) == 0) *b = false;
+						else if(strncmp("0",     value_start, 1) == 0) *b = false;
+						else ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid boolean value: ", value_start);
+					}break;
+					case ConfigValueType_U32:{
+						*(u32*)config.third = (u32)atoi(value_start);
+					}break;
+					case ConfigValueType_U8:{
+						*(u8*)config.third = (u8)atoi(value_start);
+					}break;
+					case ConfigValueType_F32:{
+						*(f32*)config.third = (f32)atof(value_start);
+					}break;
+					case ConfigValueType_F64:{
+						*(f64*)config.third = atof(value_start);
+					}break;
+					case ConfigValueType_FV2:{
+						vec2* vec = (vec2*)config.third;
+						char* cursor;
+						vec->x = strtof(value_start+1, &cursor);
+						vec->y = strtof(cursor+1, 0);
+					}break;
+					case ConfigValueType_FV3:{
+						vec3* vec = (vec3*)config.third;
+						char* cursor;
+						vec->x = strtof(value_start+1, &cursor);
+						vec->y = strtof(cursor+1, &cursor);
+						vec->z = strtof(cursor+1, 0);
+					}break;
+					case ConfigValueType_FV4:{
+						vec4* vec = (vec4*)config.third;
+						char* cursor;
+						vec->x = strtof(value_start+1, &cursor);
+						vec->y = strtof(cursor+1, &cursor);
+						vec->z = strtof(cursor+1, &cursor);
+						vec->w = strtof(cursor+1, 0);
+					}break;
+					case ConfigValueType_CString:{
+						//@Leak
+						//TODO(delle,Cl) figure out a way to prevent a leak here
+						//    compile time strings shouldnt be free'd but
+						//    runtime strings should be...
+						//free(cstr);
+						size_t len = value_end-value_start-1; //1 extra for \0
+						*(char**)config.third = (char*)malloc(len*sizeof(char));
+						cpystr(*(char**)config.third, value_start+1, len);
+					}break;
+					case ConfigValueType_StdString:{
+						*(std::string*)config.third = std::string(value_start+1, value_end-value_start-2);
+					}break;
+					case ConfigValueType_Key:{ 
+						//TODO(delle,OpAs) improve perf by not using std::string
+						//    just do a pseudo binary split against all mod cases at once after
+						//    extracting the key, kinda like how im doing already but without a loop
+						Key::Key* keybind = (Key::Key*)config.third;
+						
+						//parse key
+						auto keys = Utils::characterDelimit(std::string(value_start, value_end-value_start), ',');
+						u32 key_number = -1; //stored for Any edge-case where we want to override other mods
+						forI(ArrayCount(KeyStrings)){
+							if(strcmp(KeyStrings[i], keys[0].c_str()) == 0){
+								*keybind = (Key::Key)i;
+								key_number = i;
+								break;
+							}
+						}
+						if(key_number == -1) { 
+							ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid keybind: ",keys[0]);
+							continue;
+						}
+						
+						//parse mods
+						if(keys.size() > 1){
+							for(int i = 1; i < keys.size(); ++i){
+								if(keys[i][0] == 'L'){
+									if      (keys[i][1] == 'C'){
+										*keybind |= InputMod_Lctrl;
+									}else if(keys[i][1] == 'S'){
+										*keybind |= InputMod_Lshift;
+									}else if(keys[i][1] == 'A'){
+										*keybind |= InputMod_Lalt;
+									}else{
+										ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Unknown keybind mod: ",keys[i]);
+									}
+								}else if(keys[i][0] == 'R'){
+									if      (keys[i][1] == 'C'){
+										*keybind |= InputMod_Rctrl;
+									}else if(keys[i][1] == 'S'){
+										*keybind |= InputMod_Rshift;
+									}else if(keys[i][1] == 'A'){
+										*keybind |= InputMod_Ralt;
+									}else{
+										ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Unknown keybind mod: ",keys[i]);
+									}
+								}else if(keys[i] == "Any"){
+									//overwrite and ignore other mods with Any
+									*keybind = (Key::Key)(key_number | InputMod_Any);
+									break;
+								}else{
+									ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Unknown keybind mod: ",keys[i]);
+								}
+							}
+						}
+					}break;
+					default:{
+						ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid key: ", key_start);
+					}break;
+				}
+				
+				//set type to NONE so key wont get checked again
+				config.second = ConfigValueType_NONE;
+			}
+		}
 	}
 }

@@ -3,38 +3,36 @@
 #include "../components/Physics.h"
 #include "../../scene/Model.h"
 
-Trigger::Trigger(Transform transform) {
-	cpystr(name, "trigger", DESHI_NAME_SIZE);
+Trigger::Trigger(Transform _transform, const char* _name) {
+	cpystr(name, (_name) ? _name : "trigger", DESHI_NAME_SIZE); 
 	type = EntityType_Trigger;
-	this->transform = transform;
-
+	transform = _transform;
 }
 
-Trigger::Trigger(Transform transform, Collider* collider) {
-	cpystr(name, "trigger", DESHI_NAME_SIZE);
+Trigger::Trigger(Transform _transform, Collider* _collider, const char* _name) {
+	cpystr(name, (_name) ? _name : "trigger", DESHI_NAME_SIZE); 
 	type = EntityType_Trigger;
-	this->transform = transform;
-
-	this->collider = collider;
+	transform = _transform;
+	collider = _collider;
 	physics = new Physics(transform.position, transform.rotation,
-		Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 0, 1, true);
+						  Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 0, 1, true);
 	collider->noCollide = true;
-
-	switch (collider->type) {
-		case ColliderType_AABB: {
-			mesh = Mesh::CreateBox(dyncast(AABBCollider, collider)->halfDims);
+	
+	switch (collider->shape) {
+		case ColliderShape_AABB: {
+			mesh = Mesh::CreateBox(((AABBCollider*)collider)->halfDims);
 		}break;
-		case ColliderType_Sphere: {
-
+		case ColliderShape_Sphere: {
+			
 		}break;
-		case ColliderType_Complex: {
-
+		case ColliderShape_Complex: {
+			
 		}break;
 	}
-
+	
 	AddComponents({ physics, collider });
 }
 
 void Trigger::Init() {
-
+	
 }

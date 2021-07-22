@@ -7,22 +7,16 @@
 #include "../../scene/Scene.h"
 
 OrbManager::OrbManager(){
-	admin = g_admin;
-	cpystr(name, "OrbManager", 63);
 	layer = ComponentLayer_Physics;
-	comptype = ComponentType_OrbManager;
-	sender = new Sender();
+	type = ComponentType_OrbManager;
 };
 
 OrbManager::OrbManager(Mesh* m, int orbcount){
-	admin = g_admin;
 	this->mesh = m;
 	this->orbcount = orbcount;
 	
-	cpystr(name, "OrbManager", 63);
 	layer = ComponentLayer_Physics;
-	comptype = ComponentType_OrbManager;
-	sender = new Sender();
+	type = ComponentType_OrbManager;
 };
 
 void OrbManager::Init(){
@@ -30,11 +24,11 @@ void OrbManager::Init(){
 	for (int i = 0; i < orbcount; i++) {
 		Orb* orb = new Orb(Vector3(10, 10, 10), Vector3::ONE * 0.1 * i, Vector3::ZERO, Vector3::ZERO);
 		
-		u32 id = DengRenderer->CreateMesh(mesh, Matrix4::TransformationMatrix(orb->pos, orb->rot, Vector3::ONE));
+		u32 id = Render::CreateMesh(mesh, Matrix4::TransformationMatrix(orb->pos, orb->rot, Vector3::ONE));
 		MeshComp* mc = new MeshComp(id);
 		orb->mc = mc;
 		mc->ENTITY_CONTROL = false;
-		EntityAt(entityID)->AddComponent(mc);
+		entity->AddComponent(mc);
 		orbs.push_back(orb);
 	}
 }
@@ -46,10 +40,9 @@ void OrbManager::ReceiveEvent(Event event) {
 void OrbManager::Update() {
 	Time* t = DengTime;
 	
-	static bool lerping = false;
-	
-	static float timer = 0;
-	static float lerptime = 2;
+	persist bool lerping = false;
+	persist float timer = 0;
+	persist float lerptime = 2;
 	
 	std::vector<Vector2> vs{
 		Vector2(0, 0),

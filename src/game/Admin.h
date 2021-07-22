@@ -23,8 +23,12 @@ struct Component;
 struct Command;
 struct Camera;
 
-enum GameStateBits : u32{
-	GameState_Play, GameState_Menu, GameState_Debug, GameState_Editor, GameState_COUNT
+enum GameStateBits{
+	GameState_Play, 
+	GameState_Menu, 
+	GameState_Debug, 
+	GameState_Editor, 
+	GameState_COUNT
 }; typedef u32 GameState;
 
 struct Admin {
@@ -53,7 +57,7 @@ struct Admin {
 	u32 compIDcount = 0;
 	
 	//pause flags
-	b32  skip;
+	bool  skip;
 	bool paused;
 	bool pause_command, pause_phys, pause_canvas, pause_world, pause_sound;
 	
@@ -62,6 +66,7 @@ struct Admin {
 	
 	f32 physLyrTime{}, canvasLyrTime{}, sndLyrTime{}, worldLyrTime{};
 	f32 physSysTime{}, canvasSysTime{}, sndSysTime{}, worldSysTime{};
+	f32 editorTime{};
 	
 	void Init();
 	void Update();
@@ -94,18 +99,20 @@ struct Admin {
 	//initializes an entity with a component vector and adds it to entities immedietly
 	//returns a pointer to the entitiy
 	Entity* CreateEntityNow(std::vector<Component*> components, const char* name = 0, Transform transform = Transform());
-
+	
 	//adds the entity at ID to the deletion buffer
 	void DeleteEntity(u32 id);
 	
 	//adds an already initialized entity to the deletion buffer
 	void DeleteEntity(Entity* entity);
-
+	
+	void RemoveButDontDeleteEntity(Entity* entity);
+	
 	void AddComponentToLayers(Component* component);
 };
 
 
-//global admin pointer
+//global_ admin pointer
 extern Admin* g_admin;
 #define EntityAt(id) g_admin->entities[id]
 #define DengAdmin  g_admin

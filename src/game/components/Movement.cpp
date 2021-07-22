@@ -9,30 +9,21 @@
 #include "../../core/time.h"
 
 Movement::Movement() {
-	admin = g_admin;
 	layer = ComponentLayer_NONE;
-	comptype = ComponentType_Movement;
-	cpystr(name, "Movement", DESHI_NAME_SIZE);
+	type  = ComponentType_Movement;
 }
 
 Movement::Movement(Physics* phys) {
-	admin = g_admin;
 	layer = ComponentLayer_NONE;
-	comptype = ComponentType_Movement;
-	cpystr(name, "Movement", DESHI_NAME_SIZE);
-	
+	type  = ComponentType_Movement;
 	this->phys = phys;
 	phys->kineticFricCoef = 4;
 }
 
 //for loading
 Movement::Movement(Physics* phys, float gndAccel, float airAccel, float maxWalkingSpeed, float maxRunningSpeed, float maxCrouchingSpeed, bool jump, float jumpImpulse) {
-	admin = g_admin;
 	layer = ComponentLayer_NONE;
-	comptype = ComponentType_Movement;
-	cpystr(name, "Movement", DESHI_NAME_SIZE);
-	sender = new Sender();
-	
+	type  = ComponentType_Movement;
 	this->phys = phys;
 	//phys->kineticFricCoef = 1;
 	//phys->physOverride = true;
@@ -104,36 +95,36 @@ void Movement::GrabObject() {
 	//-prevent obj from colliding with player
 	//-change the objs velocity as the player moves it around
 	//-clean up the logic
-	static bool grabbing = false;
-	static int frame = DengTime->updateCount;
+	persist bool grabbing = false;
+	persist int frame = DengTime->updateCount;
 	
 	//interpolation vars
-	static float timer = 0;
-	static float timetocenter = 0.07;
+	persist float timer = 0;
+	persist float timetocenter = 0.07;
 	
-	static Vector3 ogpos;
-
+	persist Vector3 ogpos;
+	
 	//static Entity* grabee = nullptr;
-	static Physics* grabeephys = nullptr;
+	persist Physics* grabeephys = nullptr;
 	
 	//grab object or drop it if already holding one
 	//frame is necessary to avoid this being ran multiple times due to
 	//movement being within physics update
-	if (DengInput->KeyPressed(DengKeys.use | INPUTMOD_ANY) && DengTime->updateCount != frame) {
+	if (DengInput->KeyPressedAnyMod(DengKeys.use) && DengTime->updateCount != frame) {
 		if (!grabbing) {
 			//find obj to pick up
 			//TODO(sushi, Cl) make this a function somewhere, maybe geometry, and make the editor and this call it 
 			vec3 pos = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions);
-
+			
 			int closeindex = -1;
 			f32 mint = INFINITY;
-
+			
 			vec3 p0, p1, p2, normal, intersect;
 			mat4 transform, rotation;
 			f32  t;
 			int  index = 0;
 			bool done = false;
-			for (Entity* e : admin->entities) {
+			for (Entity* e : DengAdmin->entities) {
 				transform = e->transform.TransformMatrix();
 				rotation = Matrix4::RotationMatrix(e->transform.rotation);
 				if (MeshComp* mc = e->GetComponent<MeshComp>()) {
@@ -147,25 +138,25 @@ void Movement::GrabObject() {
 								p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
 								p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
 								normal = b.vertexArray[b.indexArray[i + 0]].normal * rotation;
-
+								
 								//early out if triangle is not facing us
 								if (normal.dot(p0 - camera->position) < 0) {
 									//find where on the plane defined by the triangle our raycast intersects
 									intersect = Math::VectorPlaneIntersect(p0, normal, camera->position, pos, t);
-
+									
 									//early out if intersection is behind us
 									if (t > 0) {
 										//make vectors perpendicular to each edge of the triangle
 										Vector3 perp0 = normal.cross(p1 - p0).yInvert().normalized();
 										Vector3 perp1 = normal.cross(p2 - p1).yInvert().normalized();
 										Vector3 perp2 = normal.cross(p0 - p2).yInvert().normalized();
-
+										
 										//check that the intersection point is within the triangle and its the closest triangle found so far
 										if (
 											perp0.dot(intersect - p0) > 0 &&
 											perp1.dot(intersect - p1) > 0 &&
 											perp2.dot(intersect - p2) > 0) {
-
+											
 											//if its the closest triangle so far we store its index
 											if (t < mint) {
 												closeindex = index;
@@ -173,7 +164,7 @@ void Movement::GrabObject() {
 												done = true;
 												break;
 											}
-
+											
 										}
 									}
 								}
@@ -186,9 +177,9 @@ void Movement::GrabObject() {
 				done = false;
 				index++;
 			}
-
+			
 			if (closeindex != -1) {
-				grabeephys = admin->entities[closeindex]->GetComponent<Physics>();
+				grabeephys = DengAdmin->entities[closeindex]->GetComponent<Physics>();
 				if (t <= maxGrabbingDistance
 					&& grabeephys && !grabeephys->staticPosition) {
 					grabbing = true;
@@ -222,7 +213,7 @@ void Movement::GrabObject() {
 			grabeephys->velocity = Vector3::ZERO;
 		}
 	}
-
+	
 }
 
 
@@ -240,10 +231,10 @@ void Movement::Update() {
 	/////////////////////
 	
 	
-	Vector3 standpos = admin->player->transform.position + Vector3::UP * 2;
-	Vector3 crouchpos = admin->player->transform.position + Vector3::UP * 0.5;
-	static Vector3 cpos = standpos;
-	static float timer = 0;
+	Vector3 standpos = DengAdmin->player->transform.position + Vector3::UP * 2;
+	Vector3 crouchpos = DengAdmin->player->transform.position + Vector3::UP * 0.5;
+	persist Vector3 cpos = standpos;
+	persist float timer = 0;
 	float ttc = 0.2;
 	
 	if (DengInput->KeyDownAnyMod(DengKeys.movementCrouch)) {
@@ -335,7 +326,7 @@ void Movement::Update() {
 	phys->acceleration = Vector3::ZERO;
 	
 	camera->position = Math::lerpv(standpos, crouchpos, timer / ttc);
-
+	
 	////////////////////
 	//    Grabbing    // This will eventually be set up for using objects, but maybe that should be in controller/player?
 	////////////////////
@@ -343,7 +334,7 @@ void Movement::Update() {
 	
 	GrabObject();
 	
-
+	
 }
 
 std::string Movement::SaveTEXT(){
@@ -358,36 +349,6 @@ std::string Movement::SaveTEXT(){
 }
 
 void Movement::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count) {
-	u32 entityID = -1, compID = 0xFFFFFFFF, event = 0xFFFFFFFF;
-	Vector3 inputs{};
-	float gndAccel{}, airAccel{}, maxWalkingSpeed{}, maxRunningSpeed{}, maxCrouchingSpeed{}, jumpImpulse{};
-	bool jump = false;
-	
-	forI(count) {
-		memcpy(&entityID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		if (entityID >= admin->entities.size()) {
-			ERROR("Failed to load sphere collider component at pos '", cursor - sizeof(u32),
-				  "' because it has an invalid entity ID: ", entityID); continue;
-		}
-		memcpy(&compID, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		memcpy(&event, data + cursor, sizeof(u32)); cursor += sizeof(u32);
-		
-		memcpy(&inputs,            data + cursor, sizeof(Vector3)); cursor += sizeof(Vector3);
-		memcpy(&gndAccel,          data + cursor, sizeof(float));   cursor += sizeof(float);
-		memcpy(&airAccel,          data + cursor, sizeof(float));   cursor += sizeof(float);
-		memcpy(&maxWalkingSpeed,   data + cursor, sizeof(float));   cursor += sizeof(float);
-		memcpy(&maxRunningSpeed,   data + cursor, sizeof(float));   cursor += sizeof(bool);
-		memcpy(&maxCrouchingSpeed, data + cursor, sizeof(float));   cursor += sizeof(bool);
-		memcpy(&jump,              data + cursor, sizeof(bool));    cursor += sizeof(bool);
-		memcpy(&jumpImpulse,       data + cursor, sizeof(float));   cursor += sizeof(bool);
-		
-		Movement* c = new Movement(EntityAt(entityID)->GetComponent<Physics>(), gndAccel, airAccel, maxWalkingSpeed, maxRunningSpeed, maxCrouchingSpeed, jump, jumpImpulse);
-		EntityAt(entityID)->AddComponent(c);
-		c->SetCompID(compID);
-		c->SetEvent(event);
-		c->camera = admin->mainCamera;
-		c->layer_index = admin->freeCompLayers[c->layer].add(c);
-	}
-	
+	ERROR_LOC("LoadDESH not setup");
 }
 

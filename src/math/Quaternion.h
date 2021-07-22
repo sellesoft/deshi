@@ -149,7 +149,7 @@ inline Quaternion Quaternion::operator - () {
 
 //Quaternion functions
 inline float Quaternion::mag() {
-	return std::sqrtf(x * x + y * y + z * z + w * w);
+	return sqrtf(x * x + y * y + z * z + w * w);
 }
 
 inline void Quaternion::normalize() {

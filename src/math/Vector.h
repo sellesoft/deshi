@@ -309,9 +309,9 @@ takeVec3(Vector3 v) {
 
 //averages a vector v over an interval i and returns that average
 #define V_AVG(i, v) ([&] { \
-static std::vector<Vector3> vectors; \
-static Vector3 nv; \
-static int iter = 0; \
+persist std::vector<Vector3> vectors; \
+persist Vector3 nv; \
+persist int iter = 0; \
 if(i == vectors.size()){ \
 vectors.erase(vectors.begin()); \
 vectors.push_back(v); \
@@ -330,8 +330,8 @@ return nv; \
 
 //averages vectors but consistently returns the value
 #define V_AVGCON(i, v) ([&] { \
-static std::vector<Vector3> vectors; \
-static Vector3 nv; \
+persist std::vector<Vector3> vectors; \
+persist Vector3 nv; \
 if(i == vectors.size()){ \
 vectors.erase(vectors.begin()); \
 vectors.push_back(v); \
@@ -346,7 +346,8 @@ return nv; \
 //this stores an input vector and returns the previously stored vector
 //if you pass true for the second param it will replace the stored vector and return it
 //else it just returns the stored vector
-#define V_STORE(v, t) ([&]()->Vector3{static Vector3 vect[1];\
+#define V_STORE(v, t) ([&]()->Vector3{\
+persist Vector3 vect[1];\
 Vector3 vr = vect[0];\
 if(t){ vect[0] = v; return vr; } \
 else return vr; }\

@@ -6,7 +6,7 @@ Ma  Math      Oth Other            Op  Optimization    Ph  Physics     Re  Rende
 Sh  Shader    So  Sound            Ui  UI              Vu  Vulkan      Wi  Window
 
 TODO Style: TODO(person,tags) description
-	  eg: TODO(delle) no tag or date 
+  eg: TODO(delle) no tag or date for delle
 eg: TODO(sushi,ReOp) render,optimization tags for sushi
 
 The person listed doesn't necessarily have to be you, and can be someone else
@@ -20,11 +20,12 @@ ____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
+add editor settings and config
+change text-based saving so material shaders are text rather than ID
+rework and simplify entity creation so there is a distinction between development and gameplay creation
+fix colorspace so we dont have to do the pow in shaders
+make a dynamic timers array on in time.h for cleaner timer stuffs
 add a setting for a limit to the number of log files
-redo Debug::DrawLine calling to take in an id for uniqueness like ImGui
-make a generalized config file parser (see #ideas)
-create string_view versions of string parsing in assets.h
-make the engine runnable without the renderer
 create a hot-loadable global vars file
 detach camera from the renderer so that the camera component isnt calling the renderer
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
@@ -36,8 +37,6 @@ ____so maybe have a UI option that allows the comps update function to handle it
 ____actually having an option for anything other than collider is kind of useless soooo maybe 
 ____get rid of event on every component or just only let u choose that event on colliders
 change undo's to never use pointers and have undos that can act like linked lists to chain them
-figure out why selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
-settings file(s) [keybinds, video, audio, etc]
 add a general logging system with log levels and locations (for filtering)
 add a component_state command to print state of a component (add str methods to all components/systems)
 make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
@@ -45,18 +44,13 @@ ____also allow it to store up to 3 types
 add device_info command (graphics card, sound device, monitor res, etc)
 pool/arena components and entities for better performance
 replace/remove external dependencies/includes (tinyobj, std)
-add Qol (quality of life) tag to TODOP
-add Camera tag to TODOP
 look into integrating TODOP with Discord
 begin reimplementing sound system and maybe rethink its design a bit
-remove extra collider component types and use the collider one instead
-____ComponentType_AABBCollider vs ComponentType_Collider
-add 2d mesh component and component type for image and UI drawing
 fix DESH material and event saving/loading
 
 Render TODOs
 ------------
-add directional shadow mapping
+fix directional shadow mapping's (projection?) errors
 rework lights
 add temporary meshes (get reset every frame like imgui)
 extract normal debug geometry shader descriptor from generic layout and sets
@@ -65,29 +59,23 @@ add not-on-screen object culling thru mesh AABBs
 add front-to-back sorting for perf gain (and maybe transparency?)
 delete shader .spv if failed to compile it after printing error messages
 setup more generalized material/pipeline creation
- ____specialization constants
+____specialization constants
 ____uber shaders
 ____runtime pipeline creation/specialization
 redo how lights are stored
-redo mesh brush to be one large buffer that updates every frame
 look into getting info from shaders, or setting up compute shaders
 ____ref: https://github.com/SaschaWillems/Vulkan/blob/master/examples/computeparticles/computeparticles.cpp
 ____the primary reason being that we need to optimize outlining objects, which will
 ____involve clipping triangles and stuff
 redo MeshVk so its only child meshes
 ____avoid having 3 copies of a mesh (model, meshVK, vulkan)
-ability to do transparency in a fragment shader eg. we can do outColor = vec4(1,1,1,0.5)
-____this would be for experimenting with volumetrics, making a window shader w/o need for textures, etc.
 add standard render/video settings
-add 2D shader and interface functions
 add face normal and tangents to vertex buffer
 fix texture transparency
 check those vulkan-tutorial links for the suggestions and optimizations
 add instancing
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
 multi-threaded command buffers, shader loading, image loading
-move interface functions out of vulkan files
-convert Renderer to namespace Render
 SSBOs in shaders so we can pass variable length arrays to it
 
 Level Editor and Inspector TODOs
@@ -97,7 +85,6 @@ add transfering the player pointer between entities that have an actor comp (com
 orbitting camera for rotating around objects
 context menu when right clicking on an object 
 scaling objects
-copy/pasting objects
 typing numbers while grabbing/rotating/scaling for precise manipulation (like in Blender)
 implement grabbing/rotating/scaling with a visual tool thing (like in Unreal)
 world axis in top right (like we used to have)
@@ -138,7 +125,6 @@ UI TODOs
 --------
 look into easier hover checking and input intercepting for imgui
 ____https://github.com/ocornut/imgui/issues/52
-2D shader (and handle ImGui ourselves)
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
 redo debug bar to be more informative and have different modes
@@ -163,23 +149,45 @@ write a shader that displays textures like it would on a monitor, so like you ha
 ____rgb lights that make up a single pixel of a texture and stuff 
 write a preprocessing/postprocessing compiler that makes saving easier
 
-Bug Board
+Bug Board       //NOTE mark these with a last-known active date (M/D/Y)
 ---------
-rotating using R no longer seems to work, it wildly rotates the object and I feel
-____like it has something to do with our rotate by axis function
-look into scaling not rotating (scaling is probably being done in world not local)
-???after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and 
-____the batchArray size of whatever mesh its checking is something like 400000000000
-____it looks like some sort of corrupt mesh makes its way in there somehow?
-sometimes MeshComp is assigned a nonexistant mesh
-____temp fix by checking if minimized, but need to find root cause
-program breakpoints when pressing F12 in a .dll on a different thread than main (even when we have no F12 binds)
-the program crashes if default asset files are not present
-____we can store the text in the actual code and create the file from the code, like keybinds.cfg
+(04/20/21) sometimes MeshComp is assigned a nonexistant mesh
+__________ temp fix by checking if minimized, but need to find root cause
+(04/28/21) selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
+(06/13/21) rotating using R no longer seems to work, it wildly rotates the object
+__________ it might have something to do with our rotate by axis function
+(06/13/21) after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and
+__________ the batchArray size of whatever mesh its checking is something like 400000000000
+__________ it looks like some sort of corrupt mesh makes its way in there somehow?
+(07/10/21) the program crashes if default asset files are not present
+__________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
+(07/14/21) the config parser sometimes throws a console error that its unable to parse the final empty line of configs
+(07/20/21) copy/paste produces an extra mesh in the renderer sometimes
 
 */
 
+
+#include <iostream>
+#include <iomanip>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <regex>
+#include <vector>
+#include <set>
+
 #include "defines.h"
+#include "utils/color.h"
+#include "utils/tuple.h"
+#include "utils/containermanager.h"
+#include "utils/utils.h"
+#include "utils/optional.h"
+#include "utils/debug.h"
+#include "utils/ringarray.h"
+#include "utils/command.h"
+#include "math/math.h"
+#include "scene/Scene.h"
+
 #include "core/assets.h"
 #include "core/console.h"
 #include "core/console2.h"
@@ -190,56 +198,92 @@ ____we can store the text in the actual code and create the file from the code, 
 #include "core/window.h"
 #include "game/admin.h"
 
-static_internal Time       time_;    Time*     g_time = &time_; //time_ because there is a c-func time() D:
-static_internal Window     window;   Window*   g_window = &window;
-static_internal Input      input;    Input*    g_input = &input;
-static_internal Console    console;  Console*  g_console = &console;
-static_internal Renderer   renderer; Renderer* g_renderer = &renderer;
-static_internal DearImGui  imgui;
-static_internal Admin      admin;    Admin*    g_admin = &admin;
-static_internal Debug      debug;    Debug*    g_debug = &debug;
+#define STB_IMAGE_IMPLEMENTATION
+#include "external/stb/stb_image.h"
+#include "external/imgui/imgui_impl_glfw.h"
 
-TIMER_START(t_d); TIMER_START(t_f);
+#if   DESHI_VULKAN //DESHI_RENDERER
+#if defined(_MSC_VER)
+#pragma comment(lib,"vulkan-1.lib")
+#pragma comment(lib,"glfw3.lib")
+#pragma comment(lib,"shaderc_combined.lib")
+#endif
+#include <vulkan/vulkan.h>
+#include <GLFW/glfw3.h>
+#include <shaderc/shaderc.h>
+#include "external/imgui/imgui_impl_vulkan.h"
+
+#include "core/renderers/vulkan.cpp"
+#elif DESHI_OPENGL
+#if defined(_MSC_VER)
+#pragma comment(lib,"opengl32.lib")
+#pragma comment(lib,"glfw3.lib")
+#endif
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
+#include "core/renderers/opengl.cpp"
+#elif DESHI_DIRECTX
+
+#else
+Assert(!"no renderer selected");
+#endif //DESHI_RENDERER
+
+#include "core/window.cpp"
+#include "core/assets.cpp"
+#include "core/console.cpp"
+#include "core/console2.cpp"
+
+local Time    time_;   Time*    g_time    = &time_; //time_ because there is a c-func time() D:
+local Window  window;  Window*  g_window  = &window;
+local Input   input;   Input*   g_input   = &input;
+local Console console; Console* g_console = &console;
+local Admin   admin;   Admin*   g_admin   = &admin;
 
 int main() {
+	TIMER_START(t_d); TIMER_START(t_f); TIMER_START(t_s);
 	//pre-init setup
-	deshi::enforceDirectories();
+	Assets::enforceDirectories();
 	
 	//init engine core
-	time_.Init(300); //300 tps for physics
-	window.Init(&input, 1280, 720); //inits input as well
-	Console2::Init();
-	console.Init();
-	renderer.Init(&imgui); //inits imgui as well
+	TIMER_RESET(t_s); time_.Init(300);        SUCCESS("Finished time initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); DeshiImGui::init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
+	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
 	
 	//init game admin
-	admin.Init();
-	
-	LOG("Finished deshi initialization in ", TIMER_END(t_d), "ms\n");
+	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
+	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
 	
 	//start main loop
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
 		glfwPollEvents();
 		
-		TIMER_RESET(t_d); time_.Update();            time_.timeTime = TIMER_END(t_d);
+		DeshiImGui::newFrame();                                                         //place imgui calls after this
+		TIMER_RESET(t_d); time_.Update();           time_.timeTime   = TIMER_END(t_d);
 		TIMER_RESET(t_d); window.Update();          time_.windowTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); input.Update();           time_.inputTime = TIMER_END(t_d);
-		imgui.NewFrame();                                                              //place imgui calls after this
-		TIMER_RESET(t_d); admin.Update();           time_.adminTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); input.Update();           time_.inputTime  = TIMER_END(t_d);
+		TIMER_RESET(t_d); admin.Update();           time_.adminTime  = TIMER_END(t_d);
 		TIMER_RESET(t_d); console.Update(); Console2::Update(); time_.consoleTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); renderer.Render();        time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
+		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
-		g_debug->Update(); //TODO(sushi) put a timer on this
+		{//debugging area
+			
+		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}
 	
 	//cleanup
 	admin.Cleanup();
-	imgui.Cleanup();
-	renderer.Cleanup();
+	DeshiImGui::cleanup();
+	Render::Cleanup();
 	window.Cleanup();
-	console.CleanUp();
-	Console2::Cleanup();
+	console.CleanUp(); Console2::Cleanup();
 	
-	int debug_breakpoint = 0;
+#if 0
+	DEBUG_BREAK;
+#endif
+	return 0;
 }

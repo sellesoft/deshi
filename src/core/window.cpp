@@ -1,33 +1,28 @@
-#include "window.h"
-#include "input.h"
-#include "console.h"
-#include "assets.h"
-#include "../utils/debug.h"
-
-#include "../external/stb/stb_image.h"
-
-#if defined(_MSC_VER)
-#pragma comment(lib,"glfw3.lib")
-#endif
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-
-b32 _resized = false;
-int _width, _height, _x, _y;
+local bool _resized = false;
+local int _width, _height, _x, _y;
 
 void glfwError(int id, const char* description){
 	std::cout << description << std::endl;
 }
 
 //thanks: https://github.com/OneLoneCoder/olcPixelGameEngine/pull/181
-void Window::Init(Input* input, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
+void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	glfwSetErrorCallback(&glfwError);
-	if (!glfwInit()){ return; }
-	Window::input = input;
-
+	if(!glfwInit()){ return; }
+	
 	//TODO(delle,Wi) maybe we should not allow the window to be resizable in-game, but in-engine is fine
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+#if DESHI_OPENGL
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#if DESHI_MAC
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif //DESHI_MAC
+#endif //DESHI_OPENGL
+	
 	window = glfwCreateWindow(width, height, "deshi", NULL, NULL);
 	monitor = glfwGetPrimaryMonitor();
 	if(!window) { glfwTerminate(); return; }
@@ -67,127 +62,127 @@ void Window::Init(Input* input, s32 width, s32 height, s32 x, s32 y, DisplayMode
 	UpdateDisplayMode(displayMode);
 	
 	//keyboard mappings
-	input->mapKeys[0x00] = Key::NONE;
-	input->mapKeys['A'] = Key::A; input->mapKeys['B'] = Key::B; input->mapKeys['C'] = Key::C;
-	input->mapKeys['D'] = Key::D; input->mapKeys['E'] = Key::E; input->mapKeys['F'] = Key::F;
-	input->mapKeys['G'] = Key::G; input->mapKeys['H'] = Key::H; input->mapKeys['I'] = Key::I;
-	input->mapKeys['J'] = Key::J; input->mapKeys['K'] = Key::K; input->mapKeys['L'] = Key::L; 
-	input->mapKeys['M'] = Key::M; input->mapKeys['N'] = Key::N; input->mapKeys['O'] = Key::O;
-	input->mapKeys['P'] = Key::P; input->mapKeys['Q'] = Key::Q; input->mapKeys['R'] = Key::R;
-	input->mapKeys['S'] = Key::S; input->mapKeys['T'] = Key::T; input->mapKeys['U'] = Key::U;
-	input->mapKeys['V'] = Key::V; input->mapKeys['W'] = Key::W; input->mapKeys['X'] = Key::X;
-	input->mapKeys['Y'] = Key::Y; input->mapKeys['Z'] = Key::Z;
+	DengInput->mapKeys[0x00] = Key::Key_NONE;
+	DengInput->mapKeys['A'] = Key::A; DengInput->mapKeys['B'] = Key::B; DengInput->mapKeys['C'] = Key::C;
+	DengInput->mapKeys['D'] = Key::D; DengInput->mapKeys['E'] = Key::E; DengInput->mapKeys['F'] = Key::F;
+	DengInput->mapKeys['G'] = Key::G; DengInput->mapKeys['H'] = Key::H; DengInput->mapKeys['I'] = Key::I;
+	DengInput->mapKeys['J'] = Key::J; DengInput->mapKeys['K'] = Key::K; DengInput->mapKeys['L'] = Key::L; 
+	DengInput->mapKeys['M'] = Key::M; DengInput->mapKeys['N'] = Key::N; DengInput->mapKeys['O'] = Key::O;
+	DengInput->mapKeys['P'] = Key::P; DengInput->mapKeys['Q'] = Key::Q; DengInput->mapKeys['R'] = Key::R;
+	DengInput->mapKeys['S'] = Key::S; DengInput->mapKeys['T'] = Key::T; DengInput->mapKeys['U'] = Key::U;
+	DengInput->mapKeys['V'] = Key::V; DengInput->mapKeys['W'] = Key::W; DengInput->mapKeys['X'] = Key::X;
+	DengInput->mapKeys['Y'] = Key::Y; DengInput->mapKeys['Z'] = Key::Z;
 	
-	input->mapKeys[GLFW_KEY_0] = Key::K0; input->mapKeys[GLFW_KEY_1] = Key::K1;
-	input->mapKeys[GLFW_KEY_2] = Key::K2; input->mapKeys[GLFW_KEY_3] = Key::K3; 
-	input->mapKeys[GLFW_KEY_4] = Key::K4; input->mapKeys[GLFW_KEY_5] = Key::K5;
-	input->mapKeys[GLFW_KEY_6] = Key::K6; input->mapKeys[GLFW_KEY_7] = Key::K7; 
-	input->mapKeys[GLFW_KEY_8] = Key::K8; input->mapKeys[GLFW_KEY_9] = Key::K9;
+	DengInput->mapKeys[GLFW_KEY_0] = Key::K0; DengInput->mapKeys[GLFW_KEY_1] = Key::K1;
+	DengInput->mapKeys[GLFW_KEY_2] = Key::K2; DengInput->mapKeys[GLFW_KEY_3] = Key::K3; 
+	DengInput->mapKeys[GLFW_KEY_4] = Key::K4; DengInput->mapKeys[GLFW_KEY_5] = Key::K5;
+	DengInput->mapKeys[GLFW_KEY_6] = Key::K6; DengInput->mapKeys[GLFW_KEY_7] = Key::K7; 
+	DengInput->mapKeys[GLFW_KEY_8] = Key::K8; DengInput->mapKeys[GLFW_KEY_9] = Key::K9;
 	
-	input->mapKeys[GLFW_KEY_F1]  = Key::F1;  input->mapKeys[GLFW_KEY_F2]  = Key::F2; 
-	input->mapKeys[GLFW_KEY_F3]  = Key::F3;  input->mapKeys[GLFW_KEY_F4]  = Key::F4; 
-	input->mapKeys[GLFW_KEY_F5]  = Key::F5;  input->mapKeys[GLFW_KEY_F6]  = Key::F6;
-	input->mapKeys[GLFW_KEY_F7]  = Key::F7;  input->mapKeys[GLFW_KEY_F8]  = Key::F8; 
-	input->mapKeys[GLFW_KEY_F9]  = Key::F9;  input->mapKeys[GLFW_KEY_F10] = Key::F10;
-	input->mapKeys[GLFW_KEY_F11] = Key::F11; input->mapKeys[GLFW_KEY_F12] = Key::F12;
+	DengInput->mapKeys[GLFW_KEY_F1]  = Key::F1;  DengInput->mapKeys[GLFW_KEY_F2]  = Key::F2; 
+	DengInput->mapKeys[GLFW_KEY_F3]  = Key::F3;  DengInput->mapKeys[GLFW_KEY_F4]  = Key::F4; 
+	DengInput->mapKeys[GLFW_KEY_F5]  = Key::F5;  DengInput->mapKeys[GLFW_KEY_F6]  = Key::F6;
+	DengInput->mapKeys[GLFW_KEY_F7]  = Key::F7;  DengInput->mapKeys[GLFW_KEY_F8]  = Key::F8; 
+	DengInput->mapKeys[GLFW_KEY_F9]  = Key::F9;  DengInput->mapKeys[GLFW_KEY_F10] = Key::F10;
+	DengInput->mapKeys[GLFW_KEY_F11] = Key::F11; DengInput->mapKeys[GLFW_KEY_F12] = Key::F12;
 	
-	input->mapKeys[GLFW_KEY_DOWN] = Key::DOWN; input->mapKeys[GLFW_KEY_UP]    = Key::UP;
-	input->mapKeys[GLFW_KEY_LEFT] = Key::LEFT; input->mapKeys[GLFW_KEY_RIGHT] = Key::RIGHT;
+	DengInput->mapKeys[GLFW_KEY_DOWN] = Key::DOWN; DengInput->mapKeys[GLFW_KEY_UP]    = Key::UP;
+	DengInput->mapKeys[GLFW_KEY_LEFT] = Key::LEFT; DengInput->mapKeys[GLFW_KEY_RIGHT] = Key::RIGHT;
 	
-	input->mapKeys[GLFW_KEY_ESCAPE]        = Key::ESCAPE; 
-	input->mapKeys[GLFW_KEY_GRAVE_ACCENT]  = Key::TILDE;
-	input->mapKeys[GLFW_KEY_TAB]           = Key::TAB; 
-	input->mapKeys[GLFW_KEY_CAPS_LOCK]     = Key::CAPSLOCK;
-	input->mapKeys[GLFW_KEY_LEFT_SHIFT]    = Key::LSHIFT; 
-	input->mapKeys[GLFW_KEY_RIGHT_SHIFT]   = Key::RSHIFT;
-	input->mapKeys[GLFW_KEY_LEFT_CONTROL]  = Key::LCTRL; 
-	input->mapKeys[GLFW_KEY_RIGHT_CONTROL] = Key::RCTRL;
-	input->mapKeys[GLFW_KEY_LEFT_ALT]      = Key::LALT; 
-	input->mapKeys[GLFW_KEY_RIGHT_ALT]     = Key::RALT; 
-	input->mapKeys[GLFW_KEY_BACKSPACE]     = Key::BACKSPACE; 
-	input->mapKeys[GLFW_KEY_ENTER]         = Key::ENTER;
-	input->mapKeys[GLFW_KEY_MINUS]         = Key::MINUS; 
-	input->mapKeys[GLFW_KEY_EQUAL]         = Key::EQUALS;
-	input->mapKeys[GLFW_KEY_LEFT_BRACKET]  = Key::LBRACKET; 
-	input->mapKeys[GLFW_KEY_RIGHT_BRACKET] = Key::RBRACKET;
-	input->mapKeys[GLFW_KEY_SLASH]         = Key::SLASH; 
-	input->mapKeys[GLFW_KEY_SEMICOLON]     = Key::SEMICOLON;
-	input->mapKeys[GLFW_KEY_APOSTROPHE]    = Key::APOSTROPHE; 
-	input->mapKeys[GLFW_KEY_COMMA]         = Key::COMMA;
-	input->mapKeys[GLFW_KEY_PERIOD]        = Key::PERIOD;
-	input->mapKeys[GLFW_KEY_BACKSLASH]     = Key::BACKSLASH;
-	input->mapKeys[GLFW_KEY_SPACE]         = Key::SPACE;
+	DengInput->mapKeys[GLFW_KEY_ESCAPE]        = Key::ESCAPE; 
+	DengInput->mapKeys[GLFW_KEY_GRAVE_ACCENT]  = Key::TILDE;
+	DengInput->mapKeys[GLFW_KEY_TAB]           = Key::TAB; 
+	DengInput->mapKeys[GLFW_KEY_CAPS_LOCK]     = Key::CAPSLOCK;
+	DengInput->mapKeys[GLFW_KEY_LEFT_SHIFT]    = Key::LSHIFT; 
+	DengInput->mapKeys[GLFW_KEY_RIGHT_SHIFT]   = Key::RSHIFT;
+	DengInput->mapKeys[GLFW_KEY_LEFT_CONTROL]  = Key::LCTRL; 
+	DengInput->mapKeys[GLFW_KEY_RIGHT_CONTROL] = Key::RCTRL;
+	DengInput->mapKeys[GLFW_KEY_LEFT_ALT]      = Key::LALT; 
+	DengInput->mapKeys[GLFW_KEY_RIGHT_ALT]     = Key::RALT; 
+	DengInput->mapKeys[GLFW_KEY_BACKSPACE]     = Key::BACKSPACE; 
+	DengInput->mapKeys[GLFW_KEY_ENTER]         = Key::ENTER;
+	DengInput->mapKeys[GLFW_KEY_MINUS]         = Key::MINUS; 
+	DengInput->mapKeys[GLFW_KEY_EQUAL]         = Key::EQUALS;
+	DengInput->mapKeys[GLFW_KEY_LEFT_BRACKET]  = Key::LBRACKET; 
+	DengInput->mapKeys[GLFW_KEY_RIGHT_BRACKET] = Key::RBRACKET;
+	DengInput->mapKeys[GLFW_KEY_SLASH]         = Key::SLASH; 
+	DengInput->mapKeys[GLFW_KEY_SEMICOLON]     = Key::SEMICOLON;
+	DengInput->mapKeys[GLFW_KEY_APOSTROPHE]    = Key::APOSTROPHE; 
+	DengInput->mapKeys[GLFW_KEY_COMMA]         = Key::COMMA;
+	DengInput->mapKeys[GLFW_KEY_PERIOD]        = Key::PERIOD;
+	DengInput->mapKeys[GLFW_KEY_BACKSLASH]     = Key::BACKSLASH;
+	DengInput->mapKeys[GLFW_KEY_SPACE]         = Key::SPACE;
 	
-	input->mapKeys[GLFW_KEY_INSERT]  = Key::INSERT; input->mapKeys[GLFW_KEY_DELETE]      = Key::DELETE;
-	input->mapKeys[GLFW_KEY_HOME]    = Key::HOME;   input->mapKeys[GLFW_KEY_END]         = Key::END;
-	input->mapKeys[GLFW_KEY_PAGE_UP] = Key::PAGEUP; input->mapKeys[GLFW_KEY_PAGE_DOWN]   = Key::PAGEDOWN;
-	input->mapKeys[GLFW_KEY_PAUSE]   = Key::PAUSE;  input->mapKeys[GLFW_KEY_SCROLL_LOCK] = Key::SCROLL;
+	DengInput->mapKeys[GLFW_KEY_INSERT]  = Key::INSERT; DengInput->mapKeys[GLFW_KEY_DELETE]      = Key::DELETE;
+	DengInput->mapKeys[GLFW_KEY_HOME]    = Key::HOME;   DengInput->mapKeys[GLFW_KEY_END]         = Key::END;
+	DengInput->mapKeys[GLFW_KEY_PAGE_UP] = Key::PAGEUP; DengInput->mapKeys[GLFW_KEY_PAGE_DOWN]   = Key::PAGEDOWN;
+	DengInput->mapKeys[GLFW_KEY_PAUSE]   = Key::PAUSE;  DengInput->mapKeys[GLFW_KEY_SCROLL_LOCK] = Key::SCROLL;
 	
-	input->mapKeys[GLFW_KEY_KP_0] = Key::NUMPAD0; input->mapKeys[GLFW_KEY_KP_1] = Key::NUMPAD1;
-	input->mapKeys[GLFW_KEY_KP_2] = Key::NUMPAD2; input->mapKeys[GLFW_KEY_KP_3] = Key::NUMPAD3;
-	input->mapKeys[GLFW_KEY_KP_4] = Key::NUMPAD4; input->mapKeys[GLFW_KEY_KP_5] = Key::NUMPAD5;
-	input->mapKeys[GLFW_KEY_KP_6] = Key::NUMPAD6; input->mapKeys[GLFW_KEY_KP_7] = Key::NUMPAD7;
-	input->mapKeys[GLFW_KEY_KP_8] = Key::NUMPAD8; input->mapKeys[GLFW_KEY_KP_9] = Key::NUMPAD9;
+	DengInput->mapKeys[GLFW_KEY_KP_0] = Key::NUMPAD0; DengInput->mapKeys[GLFW_KEY_KP_1] = Key::NUMPAD1;
+	DengInput->mapKeys[GLFW_KEY_KP_2] = Key::NUMPAD2; DengInput->mapKeys[GLFW_KEY_KP_3] = Key::NUMPAD3;
+	DengInput->mapKeys[GLFW_KEY_KP_4] = Key::NUMPAD4; DengInput->mapKeys[GLFW_KEY_KP_5] = Key::NUMPAD5;
+	DengInput->mapKeys[GLFW_KEY_KP_6] = Key::NUMPAD6; DengInput->mapKeys[GLFW_KEY_KP_7] = Key::NUMPAD7;
+	DengInput->mapKeys[GLFW_KEY_KP_8] = Key::NUMPAD8; DengInput->mapKeys[GLFW_KEY_KP_9] = Key::NUMPAD9;
 	
-	input->mapKeys[GLFW_KEY_KP_MULTIPLY] = Key::NUMPADMULTIPLY;
-	input->mapKeys[GLFW_KEY_KP_DIVIDE]   = Key::NUMPADDIVIDE;
-	input->mapKeys[GLFW_KEY_KP_ADD]      = Key::NUMPADPLUS; 
-	input->mapKeys[GLFW_KEY_KP_SUBTRACT] = Key::NUMPADMINUS;
-	input->mapKeys[GLFW_KEY_KP_DECIMAL]  = Key::NUMPADPERIOD; 
-	input->mapKeys[GLFW_KEY_KP_ENTER]    = Key::NUMPADENTER;
-	input->mapKeys[GLFW_KEY_NUM_LOCK]    = Key::NUMLOCK;
+	DengInput->mapKeys[GLFW_KEY_KP_MULTIPLY] = Key::NUMPADMULTIPLY;
+	DengInput->mapKeys[GLFW_KEY_KP_DIVIDE]   = Key::NUMPADDIVIDE;
+	DengInput->mapKeys[GLFW_KEY_KP_ADD]      = Key::NUMPADPLUS; 
+	DengInput->mapKeys[GLFW_KEY_KP_SUBTRACT] = Key::NUMPADMINUS;
+	DengInput->mapKeys[GLFW_KEY_KP_DECIMAL]  = Key::NUMPADPERIOD; 
+	DengInput->mapKeys[GLFW_KEY_KP_ENTER]    = Key::NUMPADENTER;
+	DengInput->mapKeys[GLFW_KEY_NUM_LOCK]    = Key::NUMLOCK;
 	
 	//mouse mappings
-	input->mapMouse[GLFW_MOUSE_BUTTON_1] = MouseButton::LEFT;
-	input->mapMouse[GLFW_MOUSE_BUTTON_2] = MouseButton::RIGHT;
-	input->mapMouse[GLFW_MOUSE_BUTTON_3] = MouseButton::MIDDLE;
-	input->mapMouse[GLFW_MOUSE_BUTTON_4] = MouseButton::FOUR;
-	input->mapMouse[GLFW_MOUSE_BUTTON_5] = MouseButton::FIVE;
-	input->mapMouse[GLFW_MOUSE_BUTTON_6] = MouseButton::SIX;
-	input->mapMouse[GLFW_MOUSE_BUTTON_7] = MouseButton::SEVEN;
-	input->mapMouse[GLFW_MOUSE_BUTTON_8] = MouseButton::EIGHT;
+	DengInput->mapMouse[GLFW_MOUSE_BUTTON_1] = MouseButton::LEFT;
+	DengInput->mapMouse[GLFW_MOUSE_BUTTON_2] = MouseButton::RIGHT;
+	DengInput->mapMouse[GLFW_MOUSE_BUTTON_3] = MouseButton::MIDDLE;
+	DengInput->mapMouse[GLFW_MOUSE_BUTTON_4] = MouseButton::FOUR;
+	DengInput->mapMouse[GLFW_MOUSE_BUTTON_5] = MouseButton::FIVE;
+	DengInput->mapMouse[GLFW_MOUSE_BUTTON_6] = MouseButton::SIX;
+	DengInput->mapMouse[GLFW_MOUSE_BUTTON_7] = MouseButton::SEVEN;
+	DengInput->mapMouse[GLFW_MOUSE_BUTTON_8] = MouseButton::EIGHT;
 	
 	//event callbacks
 	//void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	glfwSetMouseButtonCallback(window, 
 							   [](GLFWwindow* w, int button, int action, int mods)->void{
-								   std::map<size_t, u8>::iterator it = Window::input->mapMouse.find(button);
-								   if(it != Window::input->mapMouse.end()){
+								   std::map<size_t, u8>::iterator it = DengInput->mapMouse.find(button);
+								   if(it != DengInput->mapMouse.end()){
 									   if(action == GLFW_PRESS){
-										   Window::input->realKeyState[it->second] = true;
-										   Window::input->checkbinds = true;
-										   if(Window::input->logInput) { LOG("{m", it->second, "|", mods,"}"); }
+										   DengInput->realKeyState[it->second] = true;
+										   DengInput->checkbinds = true;
+										   if(DengInput->logInput) { LOG("{m", it->second, "|", mods,"}"); }
 									   }else if(action == GLFW_RELEASE){
-										   Window::input->realKeyState[it->second] = false;
+										   DengInput->realKeyState[it->second] = false;
 									   }
 								   }
 							   });
 	
-	//static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+	//void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 	glfwSetCursorPosCallback(window,
 							 [](GLFWwindow* window, double xpos, double ypos)->void{
 								 //mouse coords come in screen space, must convert to window space
 								 GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 								 int x, y, width, height;
 								 glfwGetMonitorWorkarea(monitor, &x, &y, &width, &height);
-								 Window::input->mouseFocus = true;
-								 Window::input->realMouseX = xpos - (double)x;
-								 Window::input->realMouseY = ypos - (double)y;
-								 Window::input->realScreenMouseX = xpos;
-								 Window::input->realScreenMouseY = ypos;
+								 DengInput->mouseFocus = true;
+								 DengInput->realMouseX = xpos - (double)x;
+								 DengInput->realMouseY = ypos - (double)y;
+								 DengInput->realScreenMouseX = xpos;
+								 DengInput->realScreenMouseY = ypos;
 							 });
 	
 	//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 	glfwSetKeyCallback(window,
 					   [](GLFWwindow* window, int key, int scancode, int action, int mods)->void{
-						   std::map<size_t, u8>::iterator it = Window::input->mapKeys.find(key);
-						   if(it != Window::input->mapKeys.end()){
+						   std::map<size_t, u8>::iterator it = DengInput->mapKeys.find(key);
+						   if(it != DengInput->mapKeys.end()){
 							   if(action == GLFW_PRESS){
-								   Window::input->realKeyState[it->second] = true;
-								   Window::input->checkbinds = true;
-								   if(Window::input->logInput) { LOG("{k", it->second, "|", mods,"}"); }
+								   DengInput->realKeyState[it->second] = true;
+								   DengInput->checkbinds = true;
+								   if(DengInput->logInput) { LOG("{k", it->second, "|", mods,"}"); }
 							   }else if(action == GLFW_RELEASE){
-								   Window::input->realKeyState[it->second] = false;
+								   DengInput->realKeyState[it->second] = false;
 							   }
 						   }
 					   });
@@ -195,14 +190,14 @@ void Window::Init(Input* input, s32 width, s32 height, s32 x, s32 y, DisplayMode
 	//void cursor_enter_callback(GLFWwindow* window, int entered)
 	glfwSetCursorEnterCallback(window, 
 							   [](GLFWwindow* w, int entered)->void{
-								   Window::input->keyFocus = entered;
+								   DengInput->keyFocus = entered;
 							   });
 	
 	//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	glfwSetScrollCallback(window, 
 						  [](GLFWwindow* window, double xoffset, double yoffset)->void{
-							  Window::input->realScrollX = xoffset;
-							  Window::input->realScrollY = yoffset;
+							  DengInput->realScrollX = xoffset;
+							  DengInput->realScrollY = yoffset;
 						  });
 	
 	//void function_name(GLFWwindow* window, int width, int height)
@@ -233,7 +228,7 @@ void Window::Update() {
 	centerX = width/2; centerY = height/2;
 	this->dimensions = Vector2(width, height);
 	
-	glfwGetCursorPos(window, &Window::input->mouseX, &Window::input->mouseY);
+	glfwGetCursorPos(window, &DengInput->mouseX, &DengInput->mouseY);
 	if(cursorMode == CursorMode::FIRSTPERSON){ glfwSetCursorPos(window, width/2, height/2); }
 }
 
@@ -278,7 +273,7 @@ void Window::UpdateCursorMode(CursorMode mode){
 			int w, h;
 			glfwGetWindowSize(window, &w, &h);
 			glfwSetCursorPos(window, w/2, h/2);
-			glfwGetCursorPos(window, &Window::input->mouseX, &Window::input->mouseY);
+			glfwGetCursorPos(window, &DengInput->mouseX, &DengInput->mouseY);
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		}break;
 		case(CursorMode::HIDDEN):{
@@ -305,6 +300,10 @@ void Window::UpdateResizable(bool resizable){
 
 void Window::Close() {
 	closeWindow = true;
+}
+
+void Window::UpdateTitle(const char* title){
+	glfwSetWindowTitle(this->window, title);
 }
 
 std::string Window::str(){

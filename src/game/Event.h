@@ -8,13 +8,13 @@
 
 struct Receiver;
 
-enum EventBits : u32 {
+enum EventBits{
 	Event_NONE = 0,
 	Event_DoorToggle,
     Event_LightToggle
 }; typedef u32 Event;
 
-static const char* EventStrings[] = {
+global_ const char* EventStrings[] = {
     "NONE", "DoorToggle", "LightToggle"
 };
 
@@ -33,7 +33,7 @@ struct Sender {
 
 struct Receiver {
     Receiver(Sender* s = 0);
-    virtual void ReceiveEvent(Event event) = 0;
+    virtual void ReceiveEvent(Event event){};
 };
 
 #endif //DESHI_EVENT_H

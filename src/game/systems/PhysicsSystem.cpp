@@ -9,6 +9,7 @@
 #include "../components/Movement.h"
 #include "../../core/console.h"
 #include "../../core/time.h"
+#include "../../core/renderer.h" //temporary until we guarentee store trimesh neighbors on them
 #include "../../core/window.h"
 #include "../../math/Math.h"
 #include "../../geometry/Geometry.h"
@@ -192,8 +193,8 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		
 		//triggers and no collision
 		if (obj1Col->collided.find(obj2Col) == obj1Col->collided.end()) {
-			if (obj1Col->event != 0 && !obj1Col->sentEvent) { obj1Col->sender->SendEvent(obj1Col->event); obj1Col->sentEvent = true; }
-			if (obj2Col->event != 0 && !obj2Col->sentEvent) { obj2Col->sender->SendEvent(obj2Col->event); obj2Col->sentEvent = true; }
+			if (obj1Col->event != 0 && !obj1Col->sentEvent) { obj1Col->sender.SendEvent(obj1Col->event); obj1Col->sentEvent = true; }
+			if (obj2Col->event != 0 && !obj2Col->sentEvent) { obj2Col->sender.SendEvent(obj2Col->event); obj2Col->sentEvent = true; }
 		}
 		
 		obj1Col->collided.clear();
@@ -282,7 +283,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		//the player checking is so i can point the normal in the proper direction when trying 
 		//to figure out if the player is on the floor or a wall/ceiling
 		//TODO(sushi, PhCl) clean this up
-		if (g_admin->player == obj1->entity) {
+		if (DengAdmin->player == obj1->entity) {
 			Vector3 pto = obj2->position - obj1->position;
 			if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
 			else                                { m1.player = 0; m2.player = 1; }
@@ -290,7 +291,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			obj1->manifolds[obj2] = m1;
 			obj2->manifolds[obj1] = m2;
 		}
-		else if (g_admin->player == obj2->entity) {
+		else if (DengAdmin->player == obj2->entity) {
 			Vector3 pto = obj2->position - obj1->position;
 			if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
 			else                                { m1.player = 0; m2.player = 1; }
@@ -311,13 +312,13 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 }
 
 inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* sphere, SphereCollider* sphereCol) {
-	Vector3 aabbPoint = Geometry::ClosestPointOnAABB(aabb->position, (aabbCol->halfDims * EntityAt(aabb->entityID)->transform.scale), sphere->position);
+	Vector3 aabbPoint = Geometry::ClosestPointOnAABB(aabb->position, (aabbCol->halfDims * aabb->entity->transform.scale), sphere->position);
 	Vector3 vectorBetween = aabbPoint - sphere->position; //sphere towards aabb
 	float distanceBetween = vectorBetween.mag();
 	if(distanceBetween < sphereCol->radius) {
 		//triggers and no collision
-		if (aabbCol->event != 0)   aabbCol->sender->SendEvent(aabbCol->event);
-		if (sphereCol->event != 0) sphereCol->sender->SendEvent(sphereCol->event);
+		if (aabbCol->event != 0)   aabbCol->sender.SendEvent(aabbCol->event);
+		if (sphereCol->event != 0) sphereCol->sender.SendEvent(sphereCol->event);
 		if (aabbCol->noCollide || sphereCol->noCollide) return;
 		
 		//aabb->entity->GetComponent<AudioSource>()->request_play = true;
@@ -340,14 +341,14 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 		}
 		
 		//dynamic resolution
-		Matrix4 sphereInertiaTensorInverse = LocalToWorldInertiaTensor(sphere, sphereCol->inertiaTensor).Inverse();
+		Matrix4 sphereInertiaTensorInverse = LocalToWorldInertiaTensor(sphere, sphereCol->tensor).Inverse();
 		Vector3 ra = sphere->position + Geometry::ClosestPointOnSphere(sphere->position, sphereCol->radius, aabbPoint);
 		Vector3 sphereAngularVelocityChange = normal.cross(ra);
 		sphereAngularVelocityChange *= sphereInertiaTensorInverse;
 		float inverseMassA = 1.f / sphere->mass;
 		float scalar = inverseMassA + sphereAngularVelocityChange.cross(ra).dot(normal);
 		
-		Matrix4 aabbInertiaTensorInverse = LocalToWorldInertiaTensor(aabb, aabbCol->inertiaTensor).Inverse();
+		Matrix4 aabbInertiaTensorInverse = LocalToWorldInertiaTensor(aabb, aabbCol->tensor).Inverse();
 		Vector3 rb = aabb->position + aabbPoint;
 		Vector3 aabbAngularVelocityChange = normal.cross(rb);
 		aabbAngularVelocityChange *= aabbInertiaTensorInverse;
@@ -373,8 +374,8 @@ inline bool SphereSphereCollision(Physics* s1, SphereCollider* sc1, Physics* s2,
 	float rsum = sc1->radius + sc2->radius;
 	if (rsum > dist) {
 		//triggers and no collision
-		if(sc1->event != Event_NONE) sc1->sender->SendEvent(sc1->event);
-		if(sc2->event != Event_NONE) sc2->sender->SendEvent(sc2->event);
+		if(sc1->event != Event_NONE) sc1->sender.SendEvent(sc1->event);
+		if(sc2->event != Event_NONE) sc2->sender.SendEvent(sc2->event);
 		if(sc1->noCollide || sc2->noCollide) return false;
 		
 		Vector3 s1t2 = s2->position - s1->position;
@@ -468,40 +469,40 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	Physics* incphys = nullptr;
 	ComplexCollider* refcol = nullptr;
 	ComplexCollider* inccol = nullptr;
-
 	
-
+	
+	
 	float minpen = -INFINITY;
 	Vector3 bestnorm;
-
+	
 	auto dist = [](vec3 p, vec3 plane_n, vec3 plane_p) {
 		//return (plane_n.x * p.x + plane_n.y * p.y + plane_n.z * p.z - plane_n.dot(plane_p));
 		return (p - plane_p).dot(plane_n);
 	};
-
+	
 	vec3 p0, p1, p2, normal, normal2, intersect;
 	f32  t;
 	int  index = 0;
 	bool done = false;
-
+	
 	float saved = 0;
 	float saved2 = 0;
-
+	
 	for (int shape = 0; shape < 2; shape++) {
 		if (shape == 1) { 
 			o1c = obj2Col; o2c = obj1Col; 
 			o1 = obj2; o2 = obj1;
 		}
-
+		
 		mat4 o1transform = Matrix4::TransformationMatrix(o1->position, o1->rotation, o1->entity->transform.scale);//o1->entity->transform.TransformMatrix();
 		mat4 o2transform = Matrix4::TransformationMatrix(o2->position, o2->rotation, o2->entity->transform.scale);//o2->entity->transform.TransformMatrix();
 		
 		mat4 o1rotation = Matrix4::RotationMatrix(o1->rotation);
 		mat4 o2rotation = Matrix4::RotationMatrix(o2->rotation);
-
+		
 		//PRINTLN("o1 rot: " << o1->rotation.str());
 		//PRINTLN("o2 rot: " << o2->rotation.str());
-
+		
 		Face* lastface = 0;
 		for (Face* f : o1c->mesh->faces) {
 			p0 = f->points[0] * o1transform;
@@ -535,10 +536,10 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 					inccol = o2c;
 				}
 			}
-		
+			
 		}
-
-
+		
+		
 		//for (Batch& b : o1c->mesh->batchArray) {
 		//	for (u32 i = 0; i < b.indexArray.size(); i += 3) {
 		//		p0 = b.vertexArray[b.indexArray[i]].pos * o1transform;
@@ -574,9 +575,9 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 		//	}
 		//}
 	}
-
+	
 	//SUCCESS("func succeded with minpen ", minpen);
-
+	
 	//ImGui::DebugDrawLine3(save, save + minpen * saven, Color::BLACK);
 	////ImGui::DebugDrawLine3(save2, save2 + saved2 * saven2, Color::DARK_YELLOW);
 	//ImGui::DebugDrawCircle3(save2 + minpen * bestnorm, 5, Color::MAGENTA);
@@ -584,12 +585,12 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	//
 	//ImGui::DebugDrawLine3(obj1->position, obj2->position, Color::RED);
 	
-
+	
 	//////////////////
 	//// Clipping ////
 	//////////////////
-
-
+	
+	
 	//float furthest = -INFINITY;
 	//Triangle* best;
 	//for (Triangle* t : refcol->mesh->triangles) {
@@ -602,48 +603,48 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	//		}
 	//	}
 	//}
-
-
-
-
-
+	
+	
+	
+	
+	
 	//find triangle that's most aligned with normal
 	u32 furthestTriRef = Geometry::FurthestTriangleAlongNormal(refcol->mesh, Matrix4::RotationMatrix(refphys->rotation), bestnorm);
 	u32 furthestTriInc = Geometry::FurthestTriangleAlongNormal(inccol->mesh, Matrix4::RotationMatrix(incphys->rotation), -bestnorm);
-
-
+	
+	
 	Triangle* triRef = refcol->mesh->triangles[furthestTriRef];
 	Triangle* triInc = inccol->mesh->triangles[furthestTriInc];
-
+	
 	//ImGui::DebugDrawTriangle3(triRef->midpoint(), triRef->midpoint() + bestnorm, Color::YELLOW);
-
-
+	
+	
 	Matrix4 refTransform = Matrix4::TransformationMatrix(refphys->position, refphys->rotation, refphys->entity->transform.scale);
 	Matrix4 incTransform = Matrix4::TransformationMatrix(incphys->position, incphys->rotation, incphys->entity->transform.scale);
 	ImGui::DebugDrawLine3(triRef->midpoint() * refTransform, triRef->midpoint() * refTransform + bestnorm, Color::YELLOW);
-
+	
 	Matrix4 refRotation = Matrix4::RotationMatrix(refphys->rotation);
 	Matrix4 incRotation = Matrix4::RotationMatrix(incphys->rotation);
 	ImGui::DebugDrawLine3(triInc->midpoint() * incTransform, triInc->midpoint() * incTransform + triInc->norm * incRotation,  Color::VERY_DARK_YELLOW);
-
+	
 	std::vector<Vector3> colPoints;
 	//we need to find all nbrs to the face, not just the triangle
 	pair<std::vector<Triangle*>, std::vector<Triangle*>>
 		nbrs2check = findFaceNbrs(triRef); 
-
+	
 	std::vector<Triangle*> incFace = findFace(triInc);
-
+	
 	//for (Triangle* t : triInc->face->tris) {
 	//	ImGui::DebugDrawTriangle3(
 	//		t->p[0] * incphys->entity->transform.TransformMatrix(),
 	//		t->p[1] * incphys->entity->transform.TransformMatrix(),
 	//		t->p[2] * incphys->entity->transform.TransformMatrix(), Color::MAGENTA);
 	//}
-
+	
 	for (int i = 0; i < triInc->face->points.size(); i += 2) {
 		ImGui::DebugDrawLine3(triInc->face->points[i] * incTransform, triInc->face->points[i + 1] * incTransform, Color::MAGENTA);
 	}
-
+	
 	//for (Triangle* t : nbrs2check.first) {
 	//	ImGui::DebugDrawTriangle3(
 	//		t->p[0] * refphys->entity->transform.TransformMatrix(),
@@ -653,11 +654,11 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	//
 	for (Triangle* t : nbrs2check.second) {
 		ImGui::DebugDrawTriangle3(
-			t->p[0] * refphys->entity->transform.TransformMatrix(),
-			t->p[1] * refphys->entity->transform.TransformMatrix(),
-			t->p[2] * refphys->entity->transform.TransformMatrix(), Color::GREEN);
+								  t->p[0] * refphys->entity->transform.TransformMatrix(),
+								  t->p[1] * refphys->entity->transform.TransformMatrix(),
+								  t->p[2] * refphys->entity->transform.TransformMatrix(), Color::GREEN);
 	}
-
+	
 	//clip inc face's points against ref's adjacent faces
 	for (Triangle* t : nbrs2check.first) {
 		Vector3 refP = t->p[0] * refTransform;
@@ -665,19 +666,19 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 			for (int i = 0; i < 3; i++) {
 				Vector3 incP = tInc->p[i] * incTransform;
 				Vector3 incPLast = tInc->p[(i + 2) % 3] * incTransform;
-
+				
 				float dCurr = -Math::DistPointToPlane(incP, t->norm * refRotation, refP);
 				float dLast = -Math::DistPointToPlane(incPLast, t->norm * refRotation, refP);
-
+				
 				if (dCurr < 0 && dLast > 0) {
 					//ImGui::DebugDrawText3(TOSTRING(dCurr).c_str(), incP);
 					//ImGui::DebugDrawLine3(incP, incP + t->norm * dCurr, Color::GREEN);
 					//ImGui::DebugDrawText3(TOSTRING(dLast).c_str(), incPLast);
 					//ImGui::DebugDrawLine3(incPLast, incPLast + t->norm * dLast, Color::RED);
 					Vector3 inter = Math::VectorPlaneIntersect(refP, t->norm * refRotation, incPLast, incP);
-
+					
 					colPoints.push_back(inter);
-
+					
 				}
 				else {
 					//colPoints.push_back(t->p[i]);
@@ -693,7 +694,7 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 		
 		
 		if (distance < 0) {
-		
+			
 			ImGui::DebugDrawCircleFilled3(o1->position - bestnorm * distance / 2, 5, Color(0, 0, 255));
 			//ImGui::DebugDrawText3(TOSTRING(physTickCounter).c_str(), o1->position - bestnorm * distance / 2, Color::BLACK);
 			ImGui::DebugDrawCircleFilled3(o2->position + bestnorm * distance / 2, 5, Color(255, 0, 0));
@@ -701,17 +702,17 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 			ImGui::DebugDrawCircleFilled3(o2->position, 5, Color::GREEN);
 			ImGui::DebugDrawCircleFilled3(o1->position, 5, Color::GREEN);
 			ImGui::DebugDrawText3(TOSTRING(distance).c_str(), v, Color::BLACK);
-
-		//PRINTLN(physTickCounter << " ------------------------------------------ " << distance);
-		//PRINTLN(o1 << " before: " << TOSTRING(o1->position));
+			
+			//PRINTLN(physTickCounter << " ------------------------------------------ " << distance);
+			//PRINTLN(o1 << " before: " << TOSTRING(o1->position));
 			//o1->position -= bestnorm * distance / 2;
-		//PRINTLN(o1 << " change: " << TOSTRING(bestnorm * distance / 2));
-		//PRINTLN(o1 << " after:  " << TOSTRING(o1->position));
-		//PRINTLN(o2 << " before: " << TOSTRING(o2->position));
-		//PRINTLN(o2 << " change: " << TOSTRING(-bestnorm * distance / 2));
+			//PRINTLN(o1 << " change: " << TOSTRING(bestnorm * distance / 2));
+			//PRINTLN(o1 << " after:  " << TOSTRING(o1->position));
+			//PRINTLN(o2 << " before: " << TOSTRING(o2->position));
+			//PRINTLN(o2 << " change: " << TOSTRING(-bestnorm * distance / 2));
 			//o2->position += bestnorm * distance / 2;
-		//PRINTLN(o2 << " after:  " << TOSTRING(o2->position));
-
+			//PRINTLN(o2 << " after:  " << TOSTRING(o2->position));
+			
 		}
 	}
 	return true;
@@ -832,7 +833,7 @@ void Clip(Manifold2& m) {
 
 bool ShapeOverlapSAT(poly& r1, poly& r2, Manifold2& m) {
 	//PRINTLN("SAT------------------------------")
-	static int depcount = 0;
+	persist int depcount = 0;
 	
 	poly* p1 = &r1;
 	poly* p2 = &r2;
@@ -892,6 +893,7 @@ bool ShapeOverlapSAT(poly& r1, poly& r2, Manifold2& m) {
 }
 
 void FillManis(std::vector<poly>& polys, std::vector<Manifold2>& manis) {
+	Assert(Render::GetSettings()->findMeshTriangleNeighbors, "findMeshTriangleNeighbors must be enabled for 2D-3D physics");
 	manis.clear();
 	for (int m = 0; m < polys.size(); m++) {
 		for (int n = m + 1; n < polys.size(); n++) {
@@ -931,7 +933,7 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 			//Vector3 nupos2 = Math::ScreenToWorld(p2->pos, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 			//p2->ogphys->position = Math::VectorPlaneIntersect(p2->ogphys->position, DengCamera->position - p2->ogphys->position, DengCamera->position, nupos2);
 			
-
+			
 			//if (p1->staticPosition) p1->vel = Vector2::ZERO;
 			//if (p2->staticPosition) p2->vel = Vector2::ZERO;
 			
@@ -966,18 +968,17 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 
 poly GeneratePoly(Physics* p) {
 	poly poly;
-	poly.o =
-		EntityAt(p->entityID)->GetComponent<MeshComp>()->mesh->
-		GenerateOutlinePoints(Matrix4::TransformationMatrix(p->position, p->rotation, EntityAt(p->entityID)->transform.scale),
-							  DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, g_admin->mainCamera->position);
+	poly.o = p->entity->GetComponent<MeshComp>()->mesh->
+		GenerateOutlinePoints(Matrix4::TransformationMatrix(p->position, p->rotation, p->entity->transform.scale),
+							  DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, DengAdmin->mainCamera->position);
 	poly.p = poly.o;
 	
 	poly.pos = Math::WorldToScreen2(p->position, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 	
 	//apply relative velocity if player exists and is moving
 	Vector3 relvel = Vector3::ZERO;
-	if (g_admin->player) {
-		relvel = p->velocity - g_admin->player->GetComponent<Physics>()->velocity;
+	if (DengAdmin->player) {
+		relvel = p->velocity - DengAdmin->player->GetComponent<Physics>()->velocity;
 	}
 	//translate objects 3D velocity into screen space
 	Vector3 opv = p->position + relvel;
@@ -1009,37 +1010,37 @@ inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other, std::vector
 		}
 	};
 	
-	switch(tuple.collider->type){
-		case(ColliderType_Box):
-		switch(other.collider->type){
-			case(ColliderType_Box):   { BoxBoxCollision   (tuple.physics, (BoxCollider*)   tuple.collider, 
-														   other.physics, (BoxCollider*)   other.collider); }break;
-			case(ColliderType_Sphere):{ SphereBoxCollision(other.physics, (SphereCollider*)other.collider, 
-														   tuple.physics, (BoxCollider*)   tuple.collider); }break;
-			case(ColliderType_AABB):  { AABBBoxCollision  (other.physics, (AABBCollider*)  other.collider, 
-														   tuple.physics, (BoxCollider*)   tuple.collider); }break;
+	switch(tuple.collider->shape){
+		case(ColliderShape_Box):
+		switch(other.collider->shape){
+			case(ColliderShape_Box):   { BoxBoxCollision   (tuple.physics, (BoxCollider*)   tuple.collider, 
+															other.physics, (BoxCollider*)   other.collider); }break;
+			case(ColliderShape_Sphere):{ SphereBoxCollision(other.physics, (SphereCollider*)other.collider, 
+															tuple.physics, (BoxCollider*)   tuple.collider); }break;
+			case(ColliderShape_AABB):  { AABBBoxCollision  (other.physics, (AABBCollider*)  other.collider, 
+															tuple.physics, (BoxCollider*)   tuple.collider); }break;
 		}break;
-		case(ColliderType_Sphere):
-		switch(other.collider->type){
-			case(ColliderType_Box):   { SphereBoxCollision   (tuple.physics, (SphereCollider*)tuple.collider, 
-															  other.physics, (BoxCollider*)   other.collider); }break;
-			case(ColliderType_Sphere):{ 
+		case(ColliderShape_Sphere):
+		switch(other.collider->shape){
+			case(ColliderShape_Box):   { SphereBoxCollision   (tuple.physics, (SphereCollider*)tuple.collider, 
+															   other.physics, (BoxCollider*)   other.collider); }break;
+			case(ColliderShape_Sphere):{ 
 				if (!SphereSphereCollision(tuple.physics, (SphereCollider*)tuple.collider,
 										   other.physics, (SphereCollider*)other.collider)) {
 					if (tuple.physics->twoDphys && other.physics->twoDphys) genpolys();
 				}
 				
 			}break;
-			case(ColliderType_AABB):  { AABBSphereCollision  (other.physics, (AABBCollider*)  other.collider, 
-															  tuple.physics, (SphereCollider*)tuple.collider); }break;
+			case(ColliderShape_AABB):  { AABBSphereCollision  (other.physics, (AABBCollider*)  other.collider, 
+															   tuple.physics, (SphereCollider*)tuple.collider); }break;
 		}break;
-		case(ColliderType_AABB):
-		switch(other.collider->type){
-			case(ColliderType_Box):   { AABBBoxCollision   (tuple.physics, (AABBCollider*)  tuple.collider, 
-															other.physics, (BoxCollider*)   other.collider); }break;
-			case(ColliderType_Sphere):{ AABBSphereCollision(tuple.physics, (AABBCollider*)  tuple.collider, 
-															other.physics, (SphereCollider*)other.collider); }break;
-			case(ColliderType_AABB):  { 
+		case(ColliderShape_AABB):
+		switch(other.collider->shape){
+			case(ColliderShape_Box):   { AABBBoxCollision   (tuple.physics, (AABBCollider*)  tuple.collider, 
+															 other.physics, (BoxCollider*)   other.collider); }break;
+			case(ColliderShape_Sphere):{ AABBSphereCollision(tuple.physics, (AABBCollider*)  tuple.collider, 
+															 other.physics, (SphereCollider*)other.collider); }break;
+			case(ColliderShape_AABB):  { 
 				if (!AABBAABBCollision(tuple.physics, (AABBCollider*)tuple.collider,
 									   other.physics, (AABBCollider*)other.collider)) {
 					if (tuple.physics->twoDphys && other.physics->twoDphys) genpolys();
@@ -1047,9 +1048,9 @@ inline void CheckCollision(PhysicsTuple& tuple, PhysicsTuple& other, std::vector
 				
 			}break;
 		}break;
-		case ColliderType_Complex:
-		switch (other.collider->type) {
-			case(ColliderType_Complex): {
+		case ColliderShape_Complex:
+		switch (other.collider->shape) {
+			case(ColliderShape_Complex): {
 				ComplexComplexCollision(tuple.physics, (ComplexCollider*)tuple.collider, other.physics, (ComplexCollider*)other.collider);
 			}
 		}
@@ -1061,9 +1062,9 @@ inline void CollisionTick(std::vector<PhysicsTuple>& tuples, PhysicsTuple& t){
 	std::vector<poly> polys; 
 	if(t.collider) {
 		for(auto& t2 : tuples) {
-			if(&t != &t2 && t2.collider && 
-			   t.collider->collisionLayer == t2.collider->collisionLayer &&
-			   (!t.physics->staticPosition || !t2.physics->staticPosition)) {
+			if(&t != &t2 && t2.collider
+			   && t.collider->collLayer == t2.collider->collLayer
+			   && (!t.physics->staticPosition || !t2.physics->staticPosition)) {
 				CheckCollision(t, t2, polys);
 				collCount++;
 			}

@@ -2,6 +2,9 @@
 #ifndef DESHI_TUPLE_H
 #define DESHI_TUPLE_H
 
+#include "../defines.h"
+#include <stdlib.h>
+
 template<class... T>
 struct tuple {
 	void* mem = 0;

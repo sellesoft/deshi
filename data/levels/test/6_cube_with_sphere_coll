@@ -1,0 +1,29 @@
+>entity
+id       6
+type     Anonymous
+name     "cube_with_sphere_coll"
+position (13.781107,14.158146,-9.225483)
+rotation (0.000000,0.000000,0.000000)
+scale    (1.000000,1.000000,1.000000)
+
+>mesh
+id      12
+name    "box.obj"
+visible true
+
+>physics
+velocity         (0.000000,0.000000,0.000000)
+acceleration     (0.000000,0.000000,0.000000)
+rot_velocity     (0.000000,0.000000,0.000000)
+rot_acceleration (0.000000,0.000000,0.000000)
+elasticity       1.000000
+mass             1.000000
+friction_kinetic 0.300000
+friction_static  0.420000
+static_position  false
+static_rotation  false
+twod             false
+
+>collider
+shape  Sphere
+radius 5.000000

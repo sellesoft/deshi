@@ -15,16 +15,13 @@
 
 #include <fstream>
 
-f32 MOUSE_SENS_FRACTION = .03f;
+local f32 MOUSE_SENS_FRACTION = .03f;
 
-bool moveOverride = false; //for moving when using arrow keys (cause i cant use mouse when remoting into my pc so)
+local bool moveOverride = false; //for moving when using arrow keys (cause i cant use mouse when remoting into my pc so)
 
-inline void AddBindings(Admin* admin) {
-	std::ifstream binds;
-	
-	std::string path = deshi::assetPath("binds.cfg", AssetType_Config, false);
-	if (path != "") {
-		binds = std::ifstream(path, std::ios::in);
+local inline void AddBindings(Admin* admin) {
+	std::ifstream binds = std::ifstream(Assets::dirConfig()+"binds.cfg", std::ios::in);
+	if(binds.is_open()){
 		while (!binds.eof()) {
 			char* c = (char*)malloc(255);
 			binds.getline(c, 255);
@@ -42,22 +39,20 @@ inline void AddBindings(Admin* admin) {
 				}
 			}
 		}
-	}
-	else {
+	}else{
 		LOG("Creating binds file..");
-		deshi::writeFile(deshi::dirConfig() + "binds.cfg", "", 0);
-		
+		Assets::writeFile(Assets::dirConfig() + "binds.cfg", "", 0);
 		return;
 	}
 }
 
-inline void CameraMovement(Admin* admin, MovementMode mode) {
+local inline void CameraMovement(Admin* admin, MovementMode mode) {
 	Camera* camera = admin->mainCamera;
 	float deltaTime = DengTime->deltaTime;
 	Vector3 inputs;
 	
 	//most likely temporary
-	if (DengInput->KeyPressed(Key::A | INPUTMOD_CTRL)) moveOverride = !moveOverride;
+	if (DengInput->KeyPressed(Key::A | InputMod_Lctrl)) moveOverride = !moveOverride;
 	
 	//TODO(sushi, Cl) figure out a nicer way to do all these conditions like right click down, game state, and whatever else shows up in here next
 	if(DengInput->KeyDownAnyMod(MouseButton::RIGHT) || moveOverride){
@@ -68,8 +63,8 @@ inline void CameraMovement(Admin* admin, MovementMode mode) {
 		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingRight))   { inputs += camera->right; }
 		if (DengInput->KeyDownAnyMod(DengKeys.movementFlyingLeft))    { inputs -= camera->right; }
 		
-		if     (DengInput->ShiftDown()) { camera->position += inputs.normalized() * 16 * deltaTime; }
-		else if(DengInput->CtrlDown())  { camera->position += inputs.normalized() *  4 * deltaTime; }
+		if     (DengInput->LShiftDown()){ camera->position += inputs.normalized() * 16 * deltaTime; }
+		else if(DengInput->LCtrlDown()) { camera->position += inputs.normalized() *  4 * deltaTime; }
 		else							{ camera->position += inputs.normalized() *  8 * deltaTime; }
 	}
 }
@@ -88,7 +83,7 @@ inline void PlayerMovement(Admin* admin, MovementMode mode, Movement* playermove
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingBackward)) { inputs -= Vector3(camera->forward.x, 0, camera->forward.z); }
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingRight))    { inputs += Vector3(camera->right.x, 0, camera->right.z); }
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingLeft))     { inputs -= Vector3(camera->right.x, 0, camera->right.z); }
-		if (DengInput->KeyPressed(DengKeys.movementJump | INPUTMOD_ANY)
+		if (DengInput->KeyPressedAnyMod(DengKeys.movementJump)
 			&& !playermove->inAir)                                      { playermove->jump = true; }
 		
 		if (playermove && admin->player) {
@@ -102,53 +97,53 @@ inline void PlayerMovement(Admin* admin, MovementMode mode, Movement* playermove
 }
 
 //NOTE sushi: this can probably be implemented somewhere else, dunno yet
-inline void PlayerGrabbing() {
+local inline void PlayerGrabbing() {
 	
 }
 
-inline void CameraRotation(Admin* admin, float sens) {
+local inline void CameraRotation(Admin* admin, float sens) {
 	Camera* camera = admin->mainCamera;
 	Keybinds* binds = &admin->keybinds;
 	float deltaTime = DengTime->deltaTime;
 	
 	//camera rotation up
 	if (DengInput->KeyDownAnyMod(binds->cameraRotateUp)) {
-		if (DengInput->ModsDown(INPUTMOD_SHIFT))     { camera->rotation.x -= 50 * deltaTime; }
-		else if (DengInput->ModsDown(INPUTMOD_CTRL)) { camera->rotation.x -= 5 * deltaTime; }
-		else										 { camera->rotation.x -= 25 * deltaTime; }
+		if (DengInput->LShiftDown())     { camera->rotation.x -= 50 * deltaTime; }
+		else if (DengInput->LCtrlDown()) { camera->rotation.x -= 5 * deltaTime; }
+		else							 { camera->rotation.x -= 25 * deltaTime; }
 	}
 	
 	//camera rotation down
 	if (DengInput->KeyDownAnyMod(binds->cameraRotateDown)) {
-		if (DengInput->ModsDown(INPUTMOD_SHIFT))     { camera->rotation.x += 50 * deltaTime; }
-		else if (DengInput->ModsDown(INPUTMOD_CTRL)) { camera->rotation.x += 5 * deltaTime; }
-		else										 { camera->rotation.x += 25 * deltaTime; }
+		if (DengInput->LShiftDown())     { camera->rotation.x += 50 * deltaTime; }
+		else if (DengInput->LCtrlDown()) { camera->rotation.x += 5 * deltaTime; }
+		else							 { camera->rotation.x += 25 * deltaTime; }
 	}
 	
 	//camera rotation right
 	if (DengInput->KeyDownAnyMod(binds->cameraRotateRight)) {
-		if (DengInput->ModsDown(INPUTMOD_SHIFT))	 { camera->rotation.y += 50 * deltaTime; }
-		else if (DengInput->ModsDown(INPUTMOD_CTRL)) { camera->rotation.y += 5 * deltaTime; }
-		else										 { camera->rotation.y += 25 * deltaTime; }
+		if (DengInput->LShiftDown())     { camera->rotation.y += 50 * deltaTime; }
+		else if (DengInput->LCtrlDown()) { camera->rotation.y += 5 * deltaTime; }
+		else							 { camera->rotation.y += 25 * deltaTime; }
 	}
 	
 	//camera rotation left
 	if (DengInput->KeyDownAnyMod(binds->cameraRotateLeft)) {
-		if (DengInput->ModsDown(INPUTMOD_SHIFT))	 { camera->rotation.y -= 50 * deltaTime; }
-		else if (DengInput->ModsDown(INPUTMOD_CTRL)) { camera->rotation.y -= 5 * deltaTime; }
-		else										 { camera->rotation.y -= 25 * deltaTime; }
+		if (DengInput->LShiftDown())     { camera->rotation.y -= 50 * deltaTime; }
+		else if (DengInput->LCtrlDown()) { camera->rotation.y -= 5 * deltaTime; }
+		else							 { camera->rotation.y -= 25 * deltaTime; }
 	}
 	
 	if (!DengConsole->IMGUI_MOUSE_CAPTURE && !admin->controller.cameraLocked){
 		if(admin->state == GameState_Play || admin->state == GameState_Debug){
-			static bool debugmouse = false;
+			persist bool debugmouse = false;
 			
 			if (!debugmouse) {
 				camera->rotation.y += (DengInput->mouseX - DengWindow->centerX) * sens * MOUSE_SENS_FRACTION;
 				camera->rotation.x += (DengInput->mouseY - DengWindow->centerY) * sens * MOUSE_SENS_FRACTION;
 			}
 			
-			if (DengInput->KeyPressed(Key::F1)) {
+			if (DengInput->KeyPressed(Key::F3)) {
 				if (debugmouse) {
 					DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
 					debugmouse = false;
@@ -161,21 +156,21 @@ inline void CameraRotation(Admin* admin, float sens) {
 			
 		}
 		else if(admin->state == GameState_Editor){
-			if(DengInput->KeyPressed(MouseButton::RIGHT | INPUTMOD_ANY)){
+			if(DengInput->KeyPressedAnyMod(MouseButton::RIGHT)){
 				DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
 			}
-			if(DengInput->KeyDown(MouseButton::RIGHT | INPUTMOD_ANY)){
+			if(DengInput->KeyDownAnyMod(MouseButton::RIGHT)){
 				camera->rotation.y += (DengInput->mouseX - DengWindow->centerX) * sens*MOUSE_SENS_FRACTION;
 				camera->rotation.x += (DengInput->mouseY - DengWindow->centerY) * sens*MOUSE_SENS_FRACTION;
 			}
-			if(DengInput->KeyReleased(MouseButton::RIGHT | INPUTMOD_ANY)){
+			if(DengInput->KeyReleasedAnyMod(MouseButton::RIGHT)){
 				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
 			}
 		}
 	}
 }
 
-inline void CameraZoom(Admin* admin){
+local inline void CameraZoom(Admin* admin){
 	if (DengInput->KeyPressed(Key::NUMPADPLUS)) { 
 		admin->mainCamera->fov += 5;
 		admin->mainCamera->UpdateProjectionMatrix();
@@ -186,7 +181,7 @@ inline void CameraZoom(Admin* admin){
 	}
 }
 
-inline void CheckBinds(Admin* admin) {
+local inline void CheckBinds(Admin* admin) {
 	if (DengInput->checkbinds) {
 		for (auto b : DengInput->binds) {
 			if (DengInput->KeyPressed(b.second)) {

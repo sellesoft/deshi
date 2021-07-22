@@ -6,10 +6,12 @@
 #include "../../math/Vector.h"
 #include "../../math/Matrix.h"
 
-enum CameraTypeBits : u32{
-	CameraType_Perspective, CameraType_Orthographic
-}; typedef u32 CameraType;
-static const char* CameraTypeStrings[] = {
+enum CameraModeBits{
+	CameraMode_Perspective, 
+	CameraMode_Orthographic,
+	CameraMode_COUNT,
+}; typedef u32 CameraMode;
+global_ const char* CameraModeStrings[] = {
 	"Perspective", "Orthographic"
 };
 
@@ -24,7 +26,7 @@ struct Camera : public Component {
 	float farZ; //the maximum render distance
 	float fov; //horizontal field of view
 	bool freeCamera = true; //whether the camera can move or not (no need to update if false)
-	CameraType type = CameraType_Perspective;
+	CameraMode mode = CameraMode_Perspective;
 	OrthoViews orthoview = FRONT; //TODO(sushi, Cl) combine this with type using bit masking if this is how i decide to keep doing ortho views
 	
 	Vector3 forward;

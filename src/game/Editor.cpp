@@ -12,6 +12,7 @@
 #include "components/Door.h"
 #include "components/AudioSource.h"
 #include "components/AudioListener.h"
+#include "entities/Entity.h"
 #include "entities/PlayerEntity.h"
 #include "entities/Trigger.h"
 #include "../core/assets.h"
@@ -19,6 +20,7 @@
 #include "../core/imgui.h"
 #include "../core/renderer.h"
 #include "../core/window.h"
+#include "../core/input.h"
 #include "../core/time.h"
 #include "../math/Math.h"
 #include "../scene/Scene.h"
@@ -27,7 +29,14 @@
 #include <iomanip> //std::put_time
 #include <thread>
 
-f32 font_width = 0;
+local f32 font_width = 0;
+local std::string copy_path;
+local std::vector<pair<u32,u32>> copy_mesh_diffs;
+
+local void ClearCopiedEntities(){
+	Assets::deleteFile(copy_path, false);
+	copy_mesh_diffs.clear();
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// inputs
@@ -106,7 +115,7 @@ void Editor::TranslateEntity(Entity* e, TransformationAxis axis){
 }
 
 inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um) {
-    static bool grabbingObj = false;
+	persist bool grabbingObj = false;
     
     if (!DengConsole->IMGUI_MOUSE_CAPTURE) { 
         if (DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj) {
@@ -115,15 +124,15 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             admin->controller.cameraLocked = true;
             
             //bools for if we're in an axis movement mode
-            static bool xaxis = false;
-            static bool yaxis = false;
-            static bool zaxis = false;
+            persist bool xaxis = false;
+            persist bool yaxis = false;
+            persist bool zaxis = false;
             
-            static bool initialgrab = true;
+            persist bool initialgrab = true;
             
-            static Vector3 initialObjPos;
-            static float initialdist; 
-            static Vector3 lastFramePos;
+            persist Vector3 initialObjPos;
+            persist float initialdist; 
+            persist Vector3 lastFramePos;
             
             //different cases for mode chaning
             if (DengInput->KeyPressed(Key::X)) {
@@ -219,6 +228,9 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 if (Physics* p = sel->GetComponent<Physics>()) {
                     p->position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
                 }
+				Render::TempLine(vec3{-1000,sel->transform.position.y,sel->transform.position.z}, 
+								 vec3{ 1000,sel->transform.position.y,sel->transform.position.z}, 
+								 Color::DARK_RED);
             }
             else if (yaxis) {
                 Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
@@ -240,7 +252,9 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 if (Physics* p = sel->GetComponent<Physics>()) {
                     p->position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
                 }	
-                
+                Render::TempLine(vec3{sel->transform.position.x,-1000,sel->transform.position.z}, 
+								 vec3{sel->transform.position.x, 1000,sel->transform.position.z}, 
+								 Color::DARK_GREEN);
             }
             else if (zaxis) {
                 Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
@@ -262,7 +276,9 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 if (Physics* p = sel->GetComponent<Physics>()) {
                     p->position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
                 }
-                
+                Render::TempLine(vec3{sel->transform.position.x,sel->transform.position.y,-1000}, 
+								 vec3{sel->transform.position.x,sel->transform.position.y, 1000}, 
+								 Color::DARK_BLUE);
             }
             lastFramePos = sel->transform.position;
         } //if(DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj)
@@ -274,7 +290,7 @@ void Editor::RotateEntity(Entity* e, TransformationAxis axis){
 }
 
 inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um) {
-    static bool rotatingObj = false;
+    persist bool rotatingObj = false;
     
     if (!DengConsole->IMGUI_MOUSE_CAPTURE) { 
         if (DengInput->KeyPressed(DengKeys.rotateSelectedObject) || rotatingObj) {
@@ -282,15 +298,15 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             admin->controller.cameraLocked = true;
             
             //bools for if we're in an axis movement mode
-            static bool xaxis = false;
-            static bool yaxis = false;
-            static bool zaxis = false;
+            persist bool xaxis = false;
+            persist bool yaxis = false;
+            persist bool zaxis = false;
             
-            static Vector2 origmousepos = DengInput->mousePos;
+            persist Vector2 origmousepos = DengInput->mousePos;
             
-            static bool initialrot = true;
+            persist bool initialrot = true;
             
-            static Vector3 initialObjRot;
+            persist Vector3 initialObjRot;
             
             //different cases for mode chaning
             if (DengInput->KeyPressed(Key::X)) {
@@ -553,15 +569,15 @@ namespace ImGui {
         ImGui::TextEx(TOSTRING(inval).c_str());
         
         //how much data we store
-        static int prevstoresize = 100;
-        static int storesize = 100;
+        persist int prevstoresize = 100;
+        persist int storesize = 100;
         
         //how often we update
-        static int fupdate = 1;
-        static int frame_count = 0;
+        persist int fupdate = 1;
+        persist int frame_count = 0;
         
-        static float maxval = inval + 5;
-        static float minval = inval - 5;
+        persist float maxval = inval + 5;
+        persist float minval = inval - 5;
         
         //if (inval > maxval) maxval = inval;
         //if (inval < minval) minval = inval;
@@ -571,8 +587,8 @@ namespace ImGui {
             minval = inval - 5;
         }
         //real values and printed values
-        static std::vector<float> values(storesize);
-        static std::vector<float> pvalues(storesize);
+        persist std::vector<float> values(storesize);
+        persist std::vector<float> pvalues(storesize);
         
         //if changing the amount of data we're storing we have to reverse
         //each data set twice to ensure the data stays in the right place when we move it
@@ -674,7 +690,7 @@ void Editor::MenuBar() {
                 }
             }
             if (ImGui::BeginMenu("Save As")) { WinHovCheck;
-                static char buff[255] = {};
+                persist char buff[255] = {};
                 if(ImGui::InputText("##saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
                     admin->SaveTEXT(buff);
                     level_name = std::string(buff);
@@ -706,6 +722,7 @@ void Editor::MenuBar() {
             if (ImGui::MenuItem("Debug Bar"))           showDebugBar = !showDebugBar;
             if (ImGui::MenuItem("DebugLayer"))          showDebugLayer = !showDebugLayer;
             if (ImGui::MenuItem("Timers"))              showTimes = !showTimes;
+            if (ImGui::MenuItem("World Grid"))          showWorldGrid = !showWorldGrid;
             if (ImGui::MenuItem("ImGui Demo"))          showImGuiDemoWindow = !showImGuiDemoWindow;
             if (ImGui::MenuItem("Editor Window"))    {  showEditorWin = !showEditorWin; showDebugTools = false;  }
             ImGui::EndMenu();
@@ -729,9 +746,9 @@ void Editor::MenuBar() {
 //TODO(sushi, ClUi) completely rewrite this menu
 inline void EventsMenu(Entity* current) {
     std::vector<Entity*> entities = g_admin->entities;
-    static Entity* other = nullptr;
-    static Component* selcompr = nullptr;
-    static Component* selcompl = nullptr;
+    persist Entity* other = nullptr;
+    persist Component* selcompr = nullptr;
+    persist Component* selcompl = nullptr;
     
     if(!current) {
         other = nullptr;
@@ -818,13 +835,13 @@ inline void EventsMenu(Entity* current) {
                 if (ImGui::Combo("##events_combo2", &currevent, EventStrings, ArrayCount(EventStrings))) {
                     switch (currevent) {
                         case Event_NONE:
-                        selcompl->sender->RemoveReceiver(selcompr);
+                        selcompl->sender.RemoveReceiver(selcompr);
                         selcompl->event = Event_NONE;
                         selcompl->entity->connections.erase(selcompr->entity);
                         selcompr->entity->connections.erase(selcompl->entity);
                         break;
                         default:
-                        selcompl->sender->AddReceiver(selcompr);
+                        selcompl->sender.AddReceiver(selcompr);
                         selcompl->event = (u32)currevent;
                         selcompr->entity->connections.insert(selcompl->entity);
                         selcompl->entity->connections.insert(selcompr->entity);
@@ -832,11 +849,11 @@ inline void EventsMenu(Entity* current) {
                     }
                 }
                 
-                if (selcompl->sender->HasReceiver(selcompr)) {
-                    float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + ImGui::CalcTextSize(selcompl->name).x) / 2;
+                if (selcompl->sender.HasReceiver(selcompr)) {
+                    float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + ImGui::CalcTextSize(ComponentTypeStrings[selcompl->type]).x) / 2;
                     float ly = cheight / 2;
                     
-                    float rx = rightoffset * 0.8 + ((float)std::string(selcompr->name).size() * fontw) / 2;
+                    float rx = rightoffset * 0.8 + ((float)std::string(ComponentTypeStrings[selcompl->type]).size() * fontw) / 2;
                     float ry = cheight / 2;
                     
                     drawListc->AddLine(
@@ -849,7 +866,7 @@ inline void EventsMenu(Entity* current) {
             
             //TODO(sushi, Op) make this run only when we first select the entity
             float maxlen = 0;
-            for (Component* c : other->components) maxlen = std::max(maxlen, (float)std::string(c->name).size());
+            for (Component* c : other->components) maxlen = std::max(maxlen, (float)std::string(ComponentTypeStrings[c->type]).size());
             int i = 0; //increment for IDs
             if (!selcompr) {
                 float inc = cheight / (other->components.size() + 1);
@@ -858,19 +875,19 @@ inline void EventsMenu(Entity* current) {
                 for (Component* c : other->components) {
                     ImGui::SetCursorPos(ImVec2(rightoffset * 0.8, o * inc));
                     ImGui::PushID(i);
-                    if (selcompl && selcompl->sender->HasReceiver(c)) {
-                        float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + (ImGui::CalcTextSize(selcompl->name).x) / 2);
+                    if (selcompl && selcompl->sender.HasReceiver(c)) {
+                        float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + (ImGui::CalcTextSize(ComponentTypeStrings[selcompl->type]).x) / 2);
                         float ly = cheight / 2;
                         
-                        float rx = rightoffset * 0.8 + ImGui::CalcTextSize(c->name).y / 2;
-                        float ry = o * inc + ImGui::CalcTextSize(c->name).x / 2;
+                        float rx = rightoffset * 0.8 + ImGui::CalcTextSize(ComponentTypeStrings[c->type]).y / 2;
+                        float ry = o * inc + ImGui::CalcTextSize(ComponentTypeStrings[c->type]).x / 2;
                         
                         drawListc->AddLine(
                                            ImVec2(winpos.x + lx, winpos.y + ly),
                                            ImVec2(winpos.x + rx, winpos.y + ry),
                                            ImGui::GetColorU32(ImGui::ColorToImVec4(Color::WHITE)));
                     }
-                    if (ImGui::Button(c->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
+                    if (ImGui::Button(ComponentTypeStrings[c->type], ImVec2(maxlen * fontw * 1.2, fonth))) {
                         selcompr = c;
                     }
                     i++; o++;
@@ -880,7 +897,7 @@ inline void EventsMenu(Entity* current) {
             else {
                 ImGui::SetCursorPos(ImVec2(rightoffset * 0.8, (cheight - fonth) / 2));
                 ImGui::PushID(i);
-                if (ImGui::Button(selcompr->name)) {
+                if (ImGui::Button(ComponentTypeStrings[selcompr->type])) {
                     selcompr = nullptr;
                 }
                 i++;
@@ -888,7 +905,7 @@ inline void EventsMenu(Entity* current) {
             }
             
             maxlen = 0;
-            for (Component* c : current->components) maxlen = std::max(maxlen, (float)std::string(c->name).size());
+            for (Component* c : current->components) maxlen = std::max(maxlen, (float)std::string(ComponentTypeStrings[c->type]).size());
             
             //display initial entities components
             if (!selcompl) {
@@ -898,11 +915,11 @@ inline void EventsMenu(Entity* current) {
                 for (Component* c : current->components) {
                     ImGui::SetCursorPos(ImVec2(1.2 * (padx * 2 + (float)std::string(current->name).size() * fontw), o * inc));
                     ImGui::PushID(i);
-                    if (selcompr && selcompr->sender->HasReceiver(c)) {
-                        float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + ImGui::CalcTextSize(selcompl->name).x / 2);
-                        float ly = o * inc + ImGui::CalcTextSize(c->name).x / 2;
+                    if (selcompr && selcompr->sender.HasReceiver(c)) {
+                        float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + ImGui::CalcTextSize(ComponentTypeStrings[selcompl->type]).x / 2);
+                        float ly = o * inc + ImGui::CalcTextSize(ComponentTypeStrings[c->type]).x / 2;
                         
-                        float rx = rightoffset * 0.8 + ImGui::CalcTextSize(c->name).y / 2;
+                        float rx = rightoffset * 0.8 + ImGui::CalcTextSize(ComponentTypeStrings[c->type]).y / 2;
                         float ry = cheight / 2;
                         
                         drawListc->AddLine(
@@ -910,7 +927,7 @@ inline void EventsMenu(Entity* current) {
                                            ImVec2(winpos.x + rx, winpos.y + ry),
                                            ImGui::GetColorU32(ImGui::ColorToImVec4(Color::WHITE)));
                     }
-                    if (ImGui::Button(c->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
+                    if (ImGui::Button(ComponentTypeStrings[c->type], ImVec2(maxlen * fontw * 1.2, fonth))) {
                         selcompl = c;
                     }
                     i++; o++;
@@ -920,7 +937,7 @@ inline void EventsMenu(Entity* current) {
             else {
                 ImGui::SetCursorPos(ImVec2(1.2 * (padx * 2 + (float)std::string(current->name).size() * fontw), cheight / 2 - fonth / 2));
                 ImGui::PushID(i);
-                if (ImGui::Button(selcompl->name)) {
+                if (ImGui::Button(ComponentTypeStrings[selcompl->type])) {
                     selcompl = nullptr;
                 }
                 i++;
@@ -947,34 +964,35 @@ inline void EventsMenu(Entity* current) {
 }
 
 inline void EntitiesTab(Admin* admin, float fontsize){
-    local_persist b32 rename_ent = false;
-    local_persist char rename_buffer[DESHI_NAME_SIZE] = {};
-    local_persist Entity* events_ent = 0;
+    persist bool rename_ent = false;
+    persist char rename_buffer[DESHI_NAME_SIZE] = {};
+    persist Entity* events_ent = 0;
     
     std::vector<Entity*>& selected = admin->editor.selected;
     
     //// selected entity keybinds ////
     //start renaming first selected entity
-    if(selected.size() && DengInput->KeyPressed(Key::F2 | INPUTMOD_ANY)){
+    if(selected.size() && DengInput->KeyPressedAnyMod(Key::F2)){
         rename_ent = true;
         DengConsole->IMGUI_KEY_CAPTURE = true;
         if(selected.size() > 1) selected.erase(selected.begin()+1, selected.end());
         cpystr(rename_buffer, selected[0]->name, DESHI_NAME_SIZE);
     }
     //submit renaming entity
-    if(rename_ent && DengInput->KeyPressed(Key::ENTER | INPUTMOD_ANY)){
+    if(rename_ent && DengInput->KeyPressedAnyMod(Key::ENTER)){
         rename_ent = false;
         DengConsole->IMGUI_KEY_CAPTURE = false;
         cpystr(selected[0]->name, rename_buffer, DESHI_NAME_SIZE);
     }
     //stop renaming entity
-    if(rename_ent && DengInput->KeyPressed(Key::ESCAPE | INPUTMOD_ANY)){
+    if(rename_ent && DengInput->KeyPressedAnyMod(Key::ESCAPE)){
         rename_ent = false;
         DengConsole->IMGUI_KEY_CAPTURE = false;
     }
     //delete selected entities
-    if(selected.size() && DengInput->KeyPressed(Key::DELETE | INPUTMOD_ANY)){
+    if(selected.size() && DengInput->KeyPressedAnyMod(Key::DELETE)){
         //TODO(Ui) re-enable this with a popup to delete OR with undoing on delete
+		selected.clear();
     }
     
     //// entity list panel ////
@@ -1028,14 +1046,14 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                     bool is_selected = selected_idx != -1;
                     if(ImGui::Selectable(label, is_selected, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
                         if(is_selected){
-                            if(DengInput->CtrlDown()){
+                            if(DengInput->LCtrlDown()){
                                 selected.erase(selected.begin()+selected_idx);
                             }else{
                                 selected.clear();
                                 selected.push_back(ent);
                             }
                         }else{
-                            if(DengInput->CtrlDown()){
+                            if(DengInput->LCtrlDown()){
                                 selected.push_back(ent);
                             }else{
                                 selected.clear();
@@ -1081,8 +1099,8 @@ inline void EntitiesTab(Admin* admin, float fontsize){
     ImGui::Separator();
     
     //// create new entity ////
-    local_persist const char* presets[] = {"Empty", "StaticMesh"};
-    local_persist int current_preset = 0;
+    persist const char* presets[] = {"Empty", "StaticMesh"};
+    persist int current_preset = 0;
 	
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
     if(ImGui::Button("New Entity")){
@@ -1093,7 +1111,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                 ent = admin->CreateEntityNow({}, ent_name.c_str());
             }break;
             case(1):{ //Static Mesh
-                u32 mesh_id = DengRenderer->CreateMesh(&admin->scene, "box.obj");
+                u32 mesh_id = Render::CreateMesh(&admin->scene, "box.obj");
                 MeshComp* mc = new MeshComp(mesh_id);
                 Physics* phys = new Physics();
                 phys->staticPosition = true;
@@ -1169,8 +1187,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
             bool delete_button = true;
             ImGui::PushID(c);
 			
-            switch(c->comptype){
-				
+            switch(c->type){
 				//mesh
 				case ComponentType_MeshComp:{
 					if(ImGui::CollapsingHeader("Mesh", &delete_button, tree_flags)){
@@ -1179,14 +1196,14 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 						MeshComp* mc = dyncast(MeshComp, c);
                         
 						ImGui::TextEx("Visible  "); ImGui::SameLine();
-						if(ImGui::Button((DengRenderer->meshes[mc->meshID].visible) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
+						if(ImGui::Button((Render::IsMeshVisible(mc->meshID)) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
 							mc->ToggleVisibility();
 						}
                         
 						ImGui::TextEx("Mesh     "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-						if(ImGui::BeginCombo("##mesh_combo", DengRenderer->meshes[mc->meshID].name)){ WinHovCheck;
-							forI(DengRenderer->meshes.size()){
-								if(DengRenderer->meshes[i].base && ImGui::Selectable(DengRenderer->meshes[i].name, mc->meshID == i)){
+						if(ImGui::BeginCombo("##mesh_combo", Render::MeshName(mc->meshID))){ WinHovCheck;
+							forI(Render::MeshCount()){
+								if(Render::IsBaseMesh(i) && ImGui::Selectable(Render::MeshName(i), mc->meshID == i)){
 									mc->ChangeMesh(i);
 								}
 							}
@@ -1205,10 +1222,10 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 						}
                         
 						ImGui::TextEx("Material "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-						if(ImGui::BeginCombo("##mesh_mat_combo", DengRenderer->materials[DengRenderer->meshes[mc->meshID].primitives[mesh_batch_idx].materialIndex].name)){ WinHovCheck;
-							forI(DengRenderer->materials.size()){
-								if(ImGui::Selectable(DengRenderer->materials[i].name, DengRenderer->meshes[mc->meshID].primitives[mesh_batch_idx].materialIndex == i)){
-									DengRenderer->UpdateMeshBatchMaterial(mc->meshID, mesh_batch_idx, i);
+						if(ImGui::BeginCombo("##mesh_mat_combo", Render::MaterialName(Render::MeshBatchMaterial(mc->meshID, mesh_batch_idx)))){ WinHovCheck;
+							forI(Render::MaterialCount()){
+								if(ImGui::Selectable(Render::MaterialName(i), Render::MeshBatchMaterial(mc->meshID, mesh_batch_idx) == i)){
+									Render::UpdateMeshBatchMaterial(mc->meshID, mesh_batch_idx, i);
 								}
 							}
 							ImGui::EndCombo();
@@ -1218,74 +1235,6 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 						ImGui::Separator();
 					}
 				}break;
-                
-				//mesh2D
-				//TODO(,Ui) implement mesh2D component inspector
-				/*
-				local_persist const char* twods[] = {"None", "Line", "Triangle", "Square", "N-Gon", "Image"};
-				local_persist int  twod_type = 0, twod_vert_count = 0;
-				local_persist u32  twod_id = -1;
-				local_persist vec4 twod_color = vec4::ONE;
-				local_persist f32  twod_radius = 1.f;
-				local_persist std::vector<vec2> twod_verts;
-				ImU32 color = ImGui::ColorConvertFloat4ToU32(ImVec4(twod_color.x, twod_color.y, twod_color.z, twod_color.w));
-				ImGui::SetNextItemWidth(-1); if(ImGui::Combo("##twod_combo", &twod_type, twods, ArrayCount(twods))){ WinHovCheck; 
-				twod_vert_count = twod_type + 1;
-				twod_verts.resize(twod_vert_count);
-				switch(twod_type){
-				case(Twod_Line):{
-					twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = {100.f, 100.f};
-				}break;
-				case(Twod_Triangle):{
-					twod_verts[0] = {-100.f, 0.f}; twod_verts[1] = {0.f, 100.f}; twod_verts[2] = {100.f, 0.f};
-				}break;
-				case(Twod_Square):{
-					twod_verts[0] = {-100.f, -100.f}; twod_verts[1] = { 100.f, -100.f};
-					twod_verts[2] = { 100.f,  100.f}; twod_verts[3] = {-100.f,  100.f};
-				}break;
-				case(Twod_NGon):{
-	
-				}break;
-				case(Twod_Image):{
-	
-				}break;
-				}
-				}
-	
-				ImGui::TextEx("Color "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); ImGui::ColorEdit4("##twod_color", (float*)&twod_color); ImGui::Separator();
-				ImDrawList* draw_list = ImGui::GetForegroundDrawList();
-				switch(twod_type){
-				case(Twod_Line):{
-					draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
-					draw_list->AddLine(ImVec2(entity_pos.x, entity_pos.y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), color, 3.f);
-				}break;
-				case(Twod_Triangle):{
-					draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
-				}break;
-				case(Twod_Square):{
-					draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[0].x, entity_pos.y+twod_verts[0].y), ImVec2(entity_pos.x+twod_verts[1].x, entity_pos.y+twod_verts[1].y), ImVec2(entity_pos.x+twod_verts[2].x, entity_pos.y+twod_verts[2].y), color, 3.f);
-					draw_list->AddTriangle(ImVec2(entity_pos.x + twod_verts[2].x, entity_pos.y+twod_verts[2].y), ImVec2(entity_pos.x+twod_verts[3].x, entity_pos.y+twod_verts[3].y), ImVec2(entity_pos.x+twod_verts[0].x, entity_pos.y+twod_verts[0].y), color, 3.f);
-				}break;
-				case(Twod_NGon):{
-					draw_list->AddNgon(ImVec2(entity_pos.x, entity_pos.y), twod_radius, color, twod_vert_count, 3.f);
-					ImGui::TextEx("Vertices "); ImGui::SameLine(); ImGui::SliderInt("##vert_cnt", &twod_vert_count, 5, 12); ImGui::Separator();
-					ImGui::TextEx("Radius   "); ImGui::SameLine(); ImGui::SliderFloat("##vert_rad", &twod_radius, .01f, 100.f); ImGui::Separator();
-				}break;
-				case(Twod_Image):{
-					ImGui::TextEx("Not implemented yet");
-				}break;
-				}
-	
-				if(twod_vert_count > 1 && twod_vert_count < 5){
-					std::string point("Point 0     ");
-					ImGui::SetNextItemWidth(-1); if(ImGui::ListBoxHeader("##twod_verts", (int)twod_vert_count, 5)){
-						forI(twod_vert_count){
-							point[6] = 49 + i;
-							ImGui::TextEx(point.c_str()); ImGui::SameLine(); ImGui::InputVector2(point.c_str(), &twod_verts[0] + i);  ImGui::Separator();
-						}
-						ImGui::ListBoxFooter();
-					}
-				}*/
                 
 				//physics
 				case ComponentType_Physics:
@@ -1321,28 +1270,28 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 						f32 mass = 1.0f;
 						
 						ImGui::TextEx("Shape "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-						if(ImGui::BeginCombo("##coll_type_combo", ColliderTypeStrings[coll->type])){
-							forI(ArrayCount(ColliderTypeStrings)){
-								if(ImGui::Selectable(ColliderTypeStrings[i], coll->type == i) && (coll->type != i)){
+						if(ImGui::BeginCombo("##coll_type_combo", ColliderShapeStrings[coll->shape])){
+							forI(ArrayCount(ColliderShapeStrings)){
+								if(ImGui::Selectable(ColliderShapeStrings[i], coll->shape == i) && (coll->shape != i)){
 									if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
 									
 									sel->RemoveComponent(coll);
 									coll = 0;
 									switch(i){
-										case ColliderType_AABB:{
+										case ColliderShape_AABB:{
 											coll = new AABBCollider(vec3{0.5f, 0.5f, 0.5f}, mass);
 										}break;
-										case ColliderType_Box:{
+										case ColliderShape_Box:{
 											coll = new BoxCollider(vec3{0.5f, 0.5f, 0.5f}, mass);
 										}break;
-										case ColliderType_Sphere:{
+										case ColliderShape_Sphere:{
 											coll = new SphereCollider(1.0f, mass);
 										}break;
-										case ColliderType_Landscape:{
+										case ColliderShape_Landscape:{
 											//coll = new LandscapeCollider();
 											WARNING_LOC("Landscape collider not setup yet");
 										}break;
-										case ColliderType_Complex:{
+										case ColliderShape_Complex:{
 											//coll = new ComplexCollider();
 											WARNING_LOC("Complex collider not setup yet");
 										}break;
@@ -1357,8 +1306,8 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 							ImGui::EndCombo();
 						}
                         
-						switch(coll->type){
-							case ColliderType_Box:{
+						switch(coll->shape){
+							case ColliderShape_Box:{
 								BoxCollider* coll_box = dyncast(BoxCollider, coll);
 								ImGui::TextEx("Half Dims "); ImGui::SameLine(); 
 								if(ImGui::InputVector3("##coll_halfdims", &coll_box->halfDims)){
@@ -1366,7 +1315,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 									coll_box->RecalculateTensor(mass);
 								}
 							}break;
-							case ColliderType_AABB:{
+							case ColliderShape_AABB:{
 								AABBCollider* coll_aabb = dyncast(AABBCollider, coll);
 								ImGui::TextEx("Half Dims "); ImGui::SameLine(); 
 								if(ImGui::InputVector3("##coll_halfdims", &coll_aabb->halfDims)){
@@ -1374,7 +1323,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 									coll_aabb->RecalculateTensor(mass);
 								}
 							}break;
-							case ColliderType_Sphere:{
+							case ColliderShape_Sphere:{
 								SphereCollider* coll_sphere = dyncast(SphereCollider, coll);
 								ImGui::TextEx("Radius    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
 								if(ImGui::InputFloat("##coll_sphere", &coll_sphere->radius)){
@@ -1382,18 +1331,18 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 									coll_sphere->RecalculateTensor(mass);
 								}
 							}break;
-							case ColliderType_Landscape:{
+							case ColliderShape_Landscape:{
 								ImGui::TextEx("Landscape collider has no settings yet");
 							}break;
-							case ColliderType_Complex:{
+							case ColliderShape_Complex:{
 								ImGui::TextEx("Complex collider has no settings yet");
 							}break;
 						}
 						
 						ImGui::Checkbox("Don't Resolve Collisions", (bool*)&coll->noCollide);
 						ImGui::TextEx("Collision Layer"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-						static_internal u32 min = 0, max = 9;
-						ImGui::SliderScalar("##coll_layer", ImGuiDataType_U32, &coll->collisionLayer, &min, &max, "%d");
+						local u32 min = 0, max = 9;
+						ImGui::SliderScalar("##coll_layer", ImGuiDataType_U32, &coll->layer, &min, &max, "%d");
 						
 						ImGui::Unindent();
 						ImGui::Separator();
@@ -1525,13 +1474,13 @@ inline void EntitiesTab(Admin* admin, float fontsize){
         sel->RemoveComponents(comp_deleted_queue);
         
         //// add component ////
-        local_persist int add_comp_index = 0;
+        persist int add_comp_index = 0;
 		
         ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
         if(ImGui::Button("Add Component")){
             switch(1 << (add_comp_index-1)){
                 case ComponentType_MeshComp:{
-                    Component* comp = new MeshComp(DengRenderer->CreateMesh(&admin->scene, "box.obj"));
+                    Component* comp = new MeshComp(Render::CreateMesh(&admin->scene, "box.obj"));
                     sel->AddComponent(comp);
                     admin->AddComponentToLayers(comp);
                 }break;
@@ -1542,26 +1491,6 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                 }break;
                 case ComponentType_Collider:{
                     Component* comp = new AABBCollider(vec3{.5f, .5f, .5f}, 1.f);
-                    sel->AddComponent(comp);
-                    admin->AddComponentToLayers(comp);
-                }break;
-                case ComponentType_ColliderBox:{
-                    Component* comp = new BoxCollider(vec3{.5f, .5f, .5f}, 1.f);
-                    sel->AddComponent(comp);
-                    admin->AddComponentToLayers(comp);
-                }break;
-                case ComponentType_ColliderAABB:{
-                    Component* comp = new AABBCollider(vec3{.5f, .5f, .5f}, 1.f);
-                    sel->AddComponent(comp);
-                    admin->AddComponentToLayers(comp);
-                }break;
-                case ComponentType_ColliderSphere:{
-                    Component* comp = new SphereCollider(1.f, 1.f);
-                    sel->AddComponent(comp);
-                    admin->AddComponentToLayers(comp);
-                }break;
-                case ComponentType_ColliderLandscape:{ //@Incomplete
-                    Component* comp = new LandscapeCollider(0);
                     sel->AddComponent(comp);
                     admin->AddComponentToLayers(comp);
                 }break;
@@ -1619,32 +1548,32 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 } //EntitiesTab
 
 inline void MaterialsTab(Admin* admin){
-    local_persist u32 selected_mat = -1;
-    local_persist b32 rename_mat = false;
-    local_persist char rename_buffer[DESHI_NAME_SIZE] = {};
+    persist u32 selected_mat = -1;
+    persist bool rename_mat = false;
+    persist char rename_buffer[DESHI_NAME_SIZE] = {};
     
     //// selected material keybinds ////
     //start renaming material
-    if(selected_mat != -1 && DengInput->KeyPressed(Key::F2 | INPUTMOD_ANY)){
+    if(selected_mat != -1 && DengInput->KeyPressedAnyMod(Key::F2)){
         rename_mat = true;
         DengConsole->IMGUI_KEY_CAPTURE = true;
-        cpystr(rename_buffer, DengRenderer->materials[selected_mat].name, DESHI_NAME_SIZE);
+        cpystr(rename_buffer, Render::MaterialName(selected_mat), DESHI_NAME_SIZE);
     }
     //submit renaming material
-    if(rename_mat && DengInput->KeyPressed(Key::ENTER | INPUTMOD_ANY)){
+    if(rename_mat && DengInput->KeyPressedAnyMod(Key::ENTER)){
         rename_mat = false;
         DengConsole->IMGUI_KEY_CAPTURE = false;
-        cpystr(DengRenderer->materials[selected_mat].name, rename_buffer, DESHI_NAME_SIZE);
+        cpystr(Render::MaterialName(selected_mat), rename_buffer, DESHI_NAME_SIZE);
     }
     //stop renaming material
-    if(rename_mat && DengInput->KeyPressed(Key::ESCAPE | INPUTMOD_ANY)){
+    if(rename_mat && DengInput->KeyPressedAnyMod(Key::ESCAPE)){
         rename_mat = false;
         DengConsole->IMGUI_KEY_CAPTURE = false;
     }
     //delete material
-    if(selected_mat != -1 && DengInput->KeyPressed(Key::DELETE | INPUTMOD_ANY)){
+    if(selected_mat != -1 && DengInput->KeyPressedAnyMod(Key::DELETE)){
         //TODO(Ui) re-enable this with a popup to delete OR with undoing on delete
-        //DengRenderer->RemoveMaterial(selected_mat);
+        //Render::RemoveMaterial(selected_mat);
         //selected_mat = -1;
     }
     
@@ -1656,15 +1585,14 @@ inline void MaterialsTab(Admin* admin){
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
             
-            forX(mat_idx, DengRenderer->materials.size()) {
-                MaterialVk* mat = &DengRenderer->materials[mat_idx];
-                ImGui::PushID(mat->id);
+            forX(mat_idx, Render::MaterialCount()) {
+                ImGui::PushID(mat_idx);
                 ImGui::TableNextRow();
                 
                 //// id + label ////
                 ImGui::TableSetColumnIndex(0);
                 char label[8];
-                sprintf(label, " %03d", mat->id);
+                sprintf(label, " %03d", mat_idx);
                 if(ImGui::Selectable(label, selected_mat == mat_idx, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
                     selected_mat = (ImGui::GetIO().KeyCtrl) ? -1 : mat_idx; //deselect if CTRL held
                     rename_mat = false;
@@ -1678,7 +1606,7 @@ inline void MaterialsTab(Admin* admin){
                     ImGui::InputText("##mat_rename_input", rename_buffer, DESHI_NAME_SIZE, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
                     ImGui::PopStyleColor();
                 }else{
-                    ImGui::TextEx(mat->name);
+                    ImGui::TextEx(Render::MaterialName(mat_idx));
                 }
                 
                 //// delete ImGui::Button ////
@@ -1689,7 +1617,7 @@ inline void MaterialsTab(Admin* admin){
                     }else if(selected_mat != -1 && selected_mat > mat_idx) {
                         selected_mat -= 1;
                     }
-                    DengRenderer->RemoveMaterial(mat_idx);
+                    Render::RemoveMaterial(mat_idx);
                 }
                 ImGui::PopID();
             }
@@ -1703,7 +1631,7 @@ inline void MaterialsTab(Admin* admin){
     //// create new material ImGui::Button ////
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
     if(ImGui::Button("Create New Material", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
-        selected_mat = DengRenderer->CreateMaterial(TOSTRING("material", DengRenderer->materials.size()).c_str(), Shader_PBR);
+        selected_mat = Render::CreateMaterial(TOSTRING("material", Render::MaterialCount()).c_str(), Shader_PBR);
     }
     
     ImGui::Separator();
@@ -1712,18 +1640,16 @@ inline void MaterialsTab(Admin* admin){
     if(selected_mat == -1) return;
     SetPadding;
     if(ImGui::BeginChild("##mat_inspector", ImVec2(ImGui::GetWindowWidth()*.95f, ImGui::GetWindowHeight()*.8f), false)) {
-        MaterialVk* mat = &DengRenderer->materials[selected_mat];
-        
         //// name ////
         ImGui::TextEx("Name   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-        ImGui::InputText("##mat_name_input", mat->name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        ImGui::InputText("##mat_name_input", Render::MaterialName(selected_mat), DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
         
         //// shader selection ////
         ImGui::TextEx("Shader "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-        if(ImGui::BeginCombo("##mat_shader_combo", ShaderStrings[mat->shader])){
+        if(ImGui::BeginCombo("##mat_shader_combo", ShaderStrings[Render::MaterialShader(selected_mat)])){
             forI(ArrayCount(ShaderStrings)){
-                if(ImGui::Selectable(ShaderStrings[i], mat->shader == i)){
-                    DengRenderer->UpdateMaterialShader(mat->id, i);
+                if(ImGui::Selectable(ShaderStrings[i], Render::MaterialShader(selected_mat) == i)){
+                    Render::UpdateMaterialShader(selected_mat, i);
                 }
             }
             ImGui::EndCombo(); //mat_shader_combo
@@ -1733,87 +1659,48 @@ inline void MaterialsTab(Admin* admin){
         
         //// material properties ////
         //TODO(Ui) setup material editing other than PBR once we have material parameters
-        switch(mat->shader){
+        switch(Render::MaterialShader(selected_mat)){
             //// flat shader ////
-			
-            default: {
-                ImGui::TextEx("Albedo   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_albedo_combo", DengRenderer->textures[mat->albedoID].filename)) {
-                    forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->albedoID].filename, textures[i].c_str()) == 0)) {
-                            DengRenderer->UpdateMaterialTexture(mat->id, 0, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Albedo));
-                        }
-                    }
-                    ImGui::EndCombo(); //mat_albedo_combo
-                }
-                ImGui::TextEx("Normal   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_normal_combo", DengRenderer->textures[mat->normalID].filename)) {
-                    forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->normalID].filename, textures[i].c_str()) == 0)) {
-                            DengRenderer->UpdateMaterialTexture(mat->id, 1, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Normal));
-                        }
-                    }
-                    ImGui::EndCombo(); //mat_normal_combo
-                }
-                ImGui::TextEx("Specular "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_spec_combo", DengRenderer->textures[mat->specularID].filename)) {
-                    forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->specularID].filename, textures[i].c_str()) == 0)) {
-                            DengRenderer->UpdateMaterialTexture(mat->id, 2, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Specular));
-                        }
-                    }
-                    ImGui::EndCombo(); //mat_spec_combo
-                }
-                ImGui::TextEx("Light    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_light_combo", DengRenderer->textures[mat->lightID].filename)) {
-                    forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->lightID].filename, textures[i].c_str()) == 0)) {
-                            DengRenderer->UpdateMaterialTexture(mat->id, 3, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Light));
-                        }
-                    }
-                    ImGui::EndCombo(); //mat_light_combo
-                }
-            }break;
-			
             case Shader_Flat:{
                 
             }break;
             
             //// PBR shader ////
             //TODO(Ui) add texture image previews
-            case Shader_PBR:{
+            case Shader_PBR:default:{
+				std::vector<u32> matTextures = Render::MaterialTextures(selected_mat);
                 ImGui::TextEx("Albedo   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if(ImGui::BeginCombo("##mat_albedo_combo", DengRenderer->textures[mat->albedoID].filename)){
-                    forI(textures.size()){
-                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->albedoID].filename, textures[i].c_str()) == 0)){
-                            DengRenderer->UpdateMaterialTexture(mat->id, 0, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Albedo));
+                if (ImGui::BeginCombo("##mat_albedo_combo", Render::TextureName(matTextures[0]))) {
+                    forI(textures.size()) {
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(matTextures[0]), textures[i].c_str()) == 0)) {
+                            Render::UpdateMaterialTexture(selected_mat, 0, Render::LoadTexture(textures[i].c_str(), TextureType_Albedo));
                         }
                     }
                     ImGui::EndCombo(); //mat_albedo_combo
                 }
                 ImGui::TextEx("Normal   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if(ImGui::BeginCombo("##mat_normal_combo", DengRenderer->textures[mat->normalID].filename)){
-                    forI(textures.size()){
-                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->normalID].filename, textures[i].c_str()) == 0)){
-                            DengRenderer->UpdateMaterialTexture(mat->id, 1, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Normal));
+                if (ImGui::BeginCombo("##mat_normal_combo", Render::TextureName(matTextures[1]))) {
+                    forI(textures.size()) {
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(matTextures[1]), textures[i].c_str()) == 0)) {
+                            Render::UpdateMaterialTexture(selected_mat, 1, Render::LoadTexture(textures[i].c_str(), TextureType_Normal));
                         }
                     }
                     ImGui::EndCombo(); //mat_normal_combo
                 }
                 ImGui::TextEx("Specular "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if(ImGui::BeginCombo("##mat_spec_combo", DengRenderer->textures[mat->specularID].filename)){
-                    forI(textures.size()){
-                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->specularID].filename, textures[i].c_str()) == 0)){
-                            DengRenderer->UpdateMaterialTexture(mat->id, 2, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Specular));
+                if (ImGui::BeginCombo("##mat_spec_combo", Render::TextureName(matTextures[2]))) {
+                    forI(textures.size()) {
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(matTextures[2]), textures[i].c_str()) == 0)) {
+                            Render::UpdateMaterialTexture(selected_mat, 2, Render::LoadTexture(textures[i].c_str(), TextureType_Specular));
                         }
                     }
                     ImGui::EndCombo(); //mat_spec_combo
                 }
                 ImGui::TextEx("Light    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if(ImGui::BeginCombo("##mat_light_combo", DengRenderer->textures[mat->lightID].filename)){
-                    forI(textures.size()){
-                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengRenderer->textures[mat->lightID].filename, textures[i].c_str()) == 0)){
-                            DengRenderer->UpdateMaterialTexture(mat->id, 3, DengRenderer->LoadTexture(textures[i].c_str(), TextureType_Light));
+                if (ImGui::BeginCombo("##mat_light_combo", Render::TextureName(matTextures[3]))) {
+                    forI(textures.size()) {
+                        if (ImGui::Selectable(textures[i].c_str(), strcmp(Render::TextureName(matTextures[3]), textures[i].c_str()) == 0)) {
+                            Render::UpdateMaterialTexture(selected_mat, 3, Render::LoadTexture(textures[i].c_str(), TextureType_Light));
                         }
                     }
                     ImGui::EndCombo(); //mat_light_combo
@@ -1832,14 +1719,14 @@ enum TwodPresets : u32 {
 //TODO(,Ui) convert this to use collapsing headers
 inline void GlobalTab(Admin* admin){
     SetPadding; 
-    if(ImGui::BeginChild("##global_tab", ImVec2(ImGui::GetWindowWidth()*0.95f, ImGui::GetWindowHeight()*.9f))) {
+    if(ImGui::BeginChild("##global__tab", ImVec2(ImGui::GetWindowWidth()*0.95f, ImGui::GetWindowHeight()*.9f))) {
         //// physics properties ////
         {
 			ImGui::TextEx("Pause Physics "); ImGui::SameLine();
 			if(ImGui::Button((admin->pause_phys) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
 				admin->pause_phys = !admin->pause_phys;
 			}    
-			ImGui::TextEx("Gravity       "); ImGui::SameLine(); ImGui::InputFloat("##global_gravity", &admin->physics.gravity);
+			ImGui::TextEx("Gravity       "); ImGui::SameLine(); ImGui::InputFloat("##global__gravity", &admin->physics.gravity);
 			
 			//ImGui::TextEx("Phys TPS      "); ImGui::SameLine(); ImGui::InputFloat("##phys_tps", )
         }
@@ -1857,23 +1744,28 @@ inline void GlobalTab(Admin* admin){
 			
 			ImGui::TextEx("Position  "); ImGui::SameLine(); ImGui::InputVector3("##cam_pos", &admin->editor.camera->position);
 			ImGui::TextEx("Rotation  "); ImGui::SameLine(); ImGui::InputVector3("##cam_rot", &admin->editor.camera->rotation);
-			ImGui::TextEx("Near Clip "); ImGui::SameLine(); ImGui::InputFloat("##global_nearz", &admin->editor.camera->nearZ);
-			ImGui::TextEx("Far Clip  "); ImGui::SameLine(); ImGui::InputFloat("##global_farz", &admin->editor.camera->farZ);
-			ImGui::TextEx("FOV       "); ImGui::SameLine(); ImGui::InputFloat("##global_fov", &admin->editor.camera->fov);
+			ImGui::TextEx("Near Clip "); ImGui::SameLine(); ImGui::InputFloat("##global__nearz", &admin->editor.camera->nearZ);
+			ImGui::TextEx("Far Clip  "); ImGui::SameLine(); ImGui::InputFloat("##global__farz", &admin->editor.camera->farZ);
+			ImGui::TextEx("FOV       "); ImGui::SameLine(); ImGui::InputFloat("##global__fov", &admin->editor.camera->fov);
 		}
 		
 		//// render settings ////
 		{
 			ImGui::Separator();
-			static_internal RenderSettings* settings = Render::GetSettings();
-			static_internal const char* resolution_strings[] = { "128", "256", "512", "1024", "2048", "4096" };
-			static_internal u32 resolution_values[] = { 128, 256, 512, 1024, 2048, 4096 };
-			static_internal u32 shadow_resolution_index = 4;
-			static_internal f32 clear_color[3] = {settings->clearColor.r,settings->clearColor.g,settings->clearColor.b};
-			static_internal f32 selected_color[3] = {settings->selectedColor.r,settings->selectedColor.g,settings->selectedColor.b};
-			static_internal f32 collider_color[3] = {settings->colliderColor.r,settings->colliderColor.g,settings->colliderColor.b};
+			local RenderSettings* settings = Render::GetSettings();
+			local const char* resolution_strings[] = { "128", "256", "512", "1024", "2048", "4096" };
+			local u32 resolution_values[] = { 128, 256, 512, 1024, 2048, 4096 };
+			local u32 shadow_resolution_index = 4;
+			local vec3 clear_color    = settings->clearColor;
+			local vec4 selected_color = settings->selectedColor;
+			local vec4 collider_color = settings->colliderColor;
 			
 			ImGui::TextCentered("Render Settings");
+            ImGui::Checkbox("Debugging", (bool*)&settings->debugging);
+            ImGui::Checkbox("Shader printf", (bool*)&settings->printf);
+            ImGui::Checkbox("Recompile all shaders", (bool*)&settings->recompileAllShaders);
+            ImGui::Checkbox("Find mesh tri-neighbors", (bool*)&settings->findMeshTriangleNeighbors);
+            ImGui::TextCentered("^ above settings require restart ^");
 			ImGui::TextEx("Logging level"); ImGui::SameLine(); ImGui::SliderUInt32("##rs_logging_level", &settings->loggingLevel, 0, 4);
 			ImGui::Checkbox("Crash on error", (bool*)&settings->crashOnError);
 			ImGui::Checkbox("Compile shaders with optimization", (bool*)&settings->optimizeShaders);
@@ -1882,7 +1774,7 @@ inline void GlobalTab(Admin* admin){
 			if(ImGui::BeginCombo("##rs_shadowres_combo", resolution_strings[shadow_resolution_index])){
 				forI(ArrayCount(resolution_strings)){
 					if(ImGui::Selectable(resolution_strings[i], shadow_resolution_index == i)){
-						DengRenderer->remakeOffscreen = true;
+						Render::remakeOffscreen();
 						settings->shadowResolution = resolution_values[i];
 						shadow_resolution_index = i;
 					}
@@ -1894,80 +1786,27 @@ inline void GlobalTab(Admin* admin){
 			ImGui::TextEx("Shadow depth bias constant"); ImGui::SameLine(); ImGui::InputFloat("##rs_shadow_depthconstant", &settings->depthBiasConstant);
 			ImGui::TextEx("Shadow depth bias slope"); ImGui::SameLine(); ImGui::InputFloat("##rs_shadow_depthslope", &settings->depthBiasSlope);
 			ImGui::Checkbox("Show shadowmap texture", (bool*)&settings->showShadowMap);
-			ImGui::TextEx("Clear color"); ImGui::SameLine();
-			if(ImGui::ColorEdit3("##rs_clear_color", clear_color)){
-				settings->clearColor.r = clear_color[0];
-				settings->clearColor.g = clear_color[1]; 
-				settings->clearColor.b = clear_color[2]; 
+			ImGui::TextEx("Background"); ImGui::SameLine();
+			if(ImGui::ColorEdit3("##rs_clear_color", (f32*)&clear_color.r)){
+				settings->clearColor = vec4(clear_color, 1.0f);
 			}
-			ImGui::TextEx("Selected color"); ImGui::SameLine();
-			if(ImGui::ColorEdit3("##rs_selected_color", selected_color)){
-				settings->selectedColor.r = selected_color[0];
-				settings->selectedColor.g = selected_color[1]; 
-				settings->selectedColor.b = selected_color[2]; 
+			ImGui::TextEx("Selected  "); ImGui::SameLine();
+			if(ImGui::ColorEdit4("##rs_selected_color", (f32*)&selected_color.r)){
+				settings->selectedColor = selected_color;
 			}
-			ImGui::TextEx("Collider color"); ImGui::SameLine();
-			if(ImGui::ColorEdit3("##rs_collider_color", collider_color)){
-				settings->colliderColor.r = collider_color[0];
-				settings->colliderColor.g = collider_color[1]; 
-				settings->colliderColor.b = collider_color[2]; 
+			ImGui::TextEx("Collider  "); ImGui::SameLine();
+			if(ImGui::ColorEdit4("##rs_collider_color", (f32*)&collider_color.r)){
+				settings->colliderColor = collider_color;
 			}
 			ImGui::Checkbox("Only show wireframe", (bool*)&settings->wireframeOnly);
 			ImGui::Checkbox("Draw mesh wireframes", (bool*)&settings->meshWireframes);
 			ImGui::Checkbox("Draw mesh normals", (bool*)&settings->meshNormals);
 			ImGui::Checkbox("Draw light frustrums", (bool*)&settings->lightFrustrums);
+			ImGui::Checkbox("Draw temp meshes on top", (bool*)&settings->tempMeshOnTop);
 		}
         
         ImGui::EndChild();
     }
-}
-
-inline void BrushesTab(Admin* admin, float fontsize){
-    local_persist MeshBrushVk* selected_meshbrush = 0;
-    
-    //// brush list ////
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorToImVec4(Color(25, 25, 25)));
-    SetPadding; 
-    if(ImGui::BeginChild("##meshbrush_tab", ImVec2(ImGui::GetWindowWidth() * 0.95, 100), false)) { WinHovCheck; 
-        if (DengRenderer->meshBrushes.size() == 0) {
-            float time = DengTime->totalTime;
-            std::string str1 = "Nothing yet...";
-            float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-            for (int i = 0; i < str1.size(); i++) {
-                ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x - strlen1) / 2 + i * (fontsize / 2), (ImGui::GetWindowSize().y - fontsize) / 2 + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))));
-                ImGui::TextEx(str1.substr(i, 1).c_str());
-            }
-        }else{
-            if (ImGui::BeginTable("##meshbrush_table", 4, ImGuiTableFlags_BordersInner)) {
-                ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_WidthFixed);
-                ImGui::TableSetupColumn("Name");
-                ImGui::TableSetupColumn("Delete");
-                
-                forI(DengRenderer->meshBrushes.size()) {
-                    ImGui::PushID(i);
-                    ImGui::TableNextRow(); ImGui::TableNextColumn();
-                    std::string id = std::to_string(DengRenderer->meshBrushes[i].id);
-                    if (ImGui::Button(id.c_str())) selected_meshbrush = &DengRenderer->meshBrushes[i];
-                    
-                    ImGui::TableNextColumn();
-                    ImGui::TextEx(DengRenderer->meshBrushes[i].name);
-                    
-                    ImGui::TableNextColumn();
-                    if(ImGui::SmallButton("X")) DengRenderer->RemoveMeshBrush(i);
-                    ImGui::PopID();
-                }
-                ImGui::EndTable();
-            }
-        }
-        ImGui::EndChild();
-    }
-    ImGui::PopStyleColor();
-    
-    ImGui::Separator();
-    
-    //// brush inspector ////
-    
-    
 }
 
 void DisplayTriggers(Admin* admin) {
@@ -1975,14 +1814,14 @@ void DisplayTriggers(Admin* admin) {
     for (Entity* e : admin->entities) {
         if (e->type == EntityType_Trigger) {
             Trigger* t = dyncast(Trigger, e);
-            switch (t->collider->type) {
-                case ColliderType_AABB:{
-                    DebugTriggersStatic(i, t->mesh, e->transform.TransformMatrix(), 1);
+            switch (t->collider->shape) {
+                case ColliderShape_AABB:{
+                    Render::TempBox(e->transform.TransformMatrix(), Color::DARK_MAGENTA);
                 }break;
-                case ColliderType_Sphere: {
+                case ColliderShape_Sphere: {
                     
                 }break;
-                case ColliderType_Complex: {
+                case ColliderShape_Complex: {
                     
                 }break;
             }
@@ -2079,12 +1918,12 @@ void Editor::DebugBar() {
     float fontsize = ImGui::GetFontSize();
     
     //flags for showing different things
-    static bool show_fps = true;
-    static bool show_fps_graph = true;
-    static bool show_world_stats = true;
-    static bool show_selected_stats = true;
-    static bool show_floating_fps_graph = false;
-    static bool show_time = true;
+    persist bool show_fps = true;
+    persist bool show_fps_graph = true;
+    persist bool show_world_stats = true;
+    persist bool show_selected_stats = true;
+    persist bool show_floating_fps_graph = false;
+    persist bool show_time = true;
     
     ImGui::SetNextWindowSize(ImVec2(DengWindow->width, 20));
     ImGui::SetNextWindowPos(ImVec2(0, DengWindow->height - 20));
@@ -2109,9 +1948,9 @@ void Editor::DebugBar() {
         //precalc strings and stuff so we can set column widths appropriately
         std::string str1 = TOSTRING("wents: ", admin->entities.size());
         float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-        std::string str2 = TOSTRING("wtris: ", g_renderer->stats.totalTriangles);
+        std::string str2 = TOSTRING("wtris: ", Render::GetStats()->totalTriangles);
         float strlen2 = (fontsize - (fontsize / 2)) * str2.size();
-        std::string str3 = TOSTRING("wverts: ", g_renderer->stats.totalVertices);
+        std::string str3 = TOSTRING("wverts: ",Render::GetStats()->totalVertices);
         float strlen3 = (fontsize - (fontsize / 2)) * str3.size();
         std::string str4 = TOSTRING("stris: ", "0");
         float strlen4 = (fontsize - (fontsize / 2)) * str4.size();
@@ -2150,19 +1989,19 @@ void Editor::DebugBar() {
         //FPS graph inline
         if (ImGui::TableNextColumn() && show_fps_graph) {
             //how much data we store
-            static int prevstoresize = 100;
-            static int storesize = 100;
+            persist int prevstoresize = 100;
+            persist int storesize = 100;
             
             //how often we update
-            static int fupdate = 20;
-            static int frame_count = 0;
+            persist int fupdate = 20;
+            persist int frame_count = 0;
             
             //maximum FPS
-            static int maxval = 0;
+            persist int maxval = 0;
             
             //real values and printed values
-            static std::vector<float> values(storesize);
-            static std::vector<float> pvalues(storesize);
+            persist std::vector<float> values(storesize);
+            persist std::vector<float> pvalues(storesize);
             
             //dynamic resizing that may get removed later if it sucks
             //if FPS finds itself as less than half of what the max used to be we lower the max
@@ -2329,7 +2168,9 @@ void Editor::DrawTimes(){
                                                    "World   Lyr: {W}\n"
                                                    "        Sys: {w}\n"
                                                    "Sound   Lyr: {S}\n"
-                                                   "        Sys: {s}\n");
+                                                   "Sound   Lyr: {S}\n"
+                                                   "        Sys: {s}\n"
+												   "Editor     : {e}\n");
     time1            += DengTime->FormatTickTime  ("Admin      : {a}\n"
                                                    "Console    : {c}\n"
                                                    "Render     : {r}\n"
@@ -2348,9 +2189,9 @@ void Editor::DebugLayer() {
     Camera* c = admin->mainCamera;
     float time = DengTime->totalTime;
     
-    static std::vector<pair<float, Vector2>> times;
+    persist std::vector<pair<float, Vector2>> times;
     
-    static std::vector<Vector3> spots;
+    persist std::vector<Vector3> spots;
     
     
     ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
@@ -2359,65 +2200,6 @@ void Editor::DebugLayer() {
     
     float fontsize = ImGui::GetFontSize();
     
-    
-    
-    
-    //psuedo grid
-    int lines = 0;
-    for (int i = 0; i < lines * 2; i++) {
-        Vector3 cpos = c->position;
-        Vector3 v1 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines), c->viewMat).ToVector3();
-        Vector3 v2 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + lines), c->viewMat).ToVector3();
-        Vector3 v3 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.z) + -lines + i), c->viewMat).ToVector3();
-        Vector3 v4 = Math::WorldToCamera4(Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i), c->viewMat).ToVector3();
-        
-        
-        
-        //TODO(sushi, CamMa) make grid lines appear properly when in different orthographic views
-        //if (c->type == CameraType::ORTHOGRAPHIC) {
-        //
-        //	if (c->orthoview == FRONT) {
-        //		v1 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.y) + -lines), c->viewMat).ToVector3();
-        //		v2 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.y) + lines), c->viewMat).ToVector3();
-        //		v3 = Math::WorldToCamera4(Vector3(floor(cpos.x) + -lines, 0, floor(cpos.y) + -lines + i), c->viewMat).ToVector3();
-        //		v4 = Math::WorldToCamera4(Vector3(floor(cpos.x) + lines, 0, floor(cpos.y) + -lines + i), c->viewMat).ToVector3();
-        //
-        //	}
-        //	
-        //
-        //
-        //}
-        
-        bool l1flag = false;
-        bool l2flag = false;
-        
-        if (floor(cpos.x) - lines + i == 0) {
-            l1flag = true;
-        }
-        if (floor(cpos.z) - lines + i == 0) {
-            l2flag = true;
-        }
-        //Vector3 v1t = v1.ToVector3();
-        //Vector3 v2t = v2.ToVector3();
-        //Vector3 v3t = v3.ToVector3();
-        //Vector3 v4t = v4.ToVector3();
-        
-        
-        if (Math::ClipLineToZPlanes(v1, v2, c->nearZ, c->farZ)) {
-            Vector2 v1s = Math::CameraToScreen2(v1, c->projMat, DengWindow->dimensions);
-            Vector2 v2s = Math::CameraToScreen2(v2, c->projMat, DengWindow->dimensions);
-            Math::ClipLineToBorderPlanes(v1s, v2s, DengWindow->dimensions);
-            if (!l1flag) ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(v1s), ImGui::Vector2ToImVec2(v2s), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
-            else         ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(v1s), ImGui::Vector2ToImVec2(v2s), ImGui::GetColorU32(ImVec4(1, 0, 0, 1)));
-        }
-        if (Math::ClipLineToZPlanes(v3, v4, c->nearZ, c->farZ)) {
-            Vector2 v3s = Math::CameraToScreen2(v3, c->projMat, DengWindow->dimensions);
-            Vector2 v4s = Math::CameraToScreen2(v4, c->projMat, DengWindow->dimensions);
-            Math::ClipLineToBorderPlanes(v3s, v4s, DengWindow->dimensions);
-            if (!l2flag) ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(v3s), ImGui::Vector2ToImVec2(v4s), ImGui::GetColorU32(ImVec4(1, 1, 1, 0.3)));
-            else         ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(v3s), ImGui::Vector2ToImVec2(v4s), ImGui::GetColorU32(ImVec4(0, 0, 1, 1)));
-        }
-    }
     
     if (DengInput->KeyPressed(MouseButton::LEFT) && rand() % 100 + 1 == 80) {
         times.push_back(pair<float, Vector2>(0.f, mp));
@@ -2438,10 +2220,8 @@ void Editor::DebugLayer() {
         std::string str1 = "hehe!!!!";
         float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
         for (int i = 0; i < str1.size(); i++) {
-            ImGui::SetCursorPos(ImVec2(
-                                       curpos.x + i * fontsize / 2,
-                                       curpos.y + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))
-                                       ));
+            ImGui::SetCursorPos(ImVec2(curpos.x + i * fontsize / 2,
+                                       curpos.y + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))));
             ImGui::TextEx(str1.substr(i, 1).c_str());
         }
         
@@ -2453,7 +2233,6 @@ void Editor::DebugLayer() {
         ImGui::PopStyleColor();
         index++;
     }
-    ImGui::TextEx("test");
     
     
     if (admin->paused) {
@@ -2470,66 +2249,26 @@ void Editor::DebugLayer() {
 
 
 void Editor::WorldGrid(Vector3 cpos) {
-    int lines = 20;
-    cpos = Vector3::ZERO;
+    int lines = 50;
+	f32 xp = floor(cpos.x) + lines;
+	f32 xn = floor(cpos.x) - lines;
+	f32 zp = floor(cpos.z) + lines;
+	f32 zn = floor(cpos.z) - lines;
     
-    for (int i = 0; i < lines * 2 + 1; i++) {
-        Vector3 v1 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + -lines);
-        Vector3 v2 = Vector3(floor(cpos.x) + -lines + i, 0, floor(cpos.z) + lines);
-        Vector3 v3 = Vector3(floor(cpos.x) + -lines, 0, floor(cpos.z) + -lines + i);
-        Vector3 v4 = Vector3(floor(cpos.x) + lines, 0, floor(cpos.z) + -lines + i);
-        //
-        //DebugLinesStatic(i, v3, v4, -1);
+	Color color(50, 50, 50);
+    for(int i = 0; i < lines * 2 + 1; i++){
+        Vector3 v1 = Vector3(xn+i, 0, zn);
+        Vector3 v2 = Vector3(xn+i, 0, zp);
+        Vector3 v3 = Vector3(xn,   0, zn+i);
+        Vector3 v4 = Vector3(xp,   0, zn+i);
         
-        bool l1flag = false;
-        bool l2flag = false;
-        
-        if (floor(cpos.x) - lines + i == 0) {
-            l1flag = true;
-        }
-        if (floor(cpos.z) - lines + i == 0) {
-            l2flag = true;
-        }
-        
-        if (l1flag) { DebugLinesCol(i, v1, v2, -1, Color::BLUE); }
-        else { DebugLinesCol(i, v1, v2, -1, Color(50, 50, 50, 50)) };
-        
-        if (l2flag) { DebugLinesCol(i, v3, v4, -1, Color::RED); }
-        else { DebugLinesCol(i, v3, v4, -1, Color(50, 50, 50, 50)) };
+		if(xn+i != 0) Render::TempLine(v1, v2, color);
+		if(zn+i != 0) Render::TempLine(v3, v4, color);
     }
-}
-
-void Editor::ShowSelectedEntityNormals() {
-    vec3 p0, p1, p2, normal, intersect;
-    mat4 rot, transform;
-    f32  t;
-    int  index = 0;
-    for (Entity* e : selected) {
-        transform = e->transform.TransformMatrix();
-        rot = Matrix4::RotationMatrix(e->transform.rotation);
-        if (MeshComp* mc = e->GetComponent<MeshComp>()) {
-            if (mc->mesh_visible) {
-                Mesh* m = mc->mesh;
-                for (Batch& b : m->batchArray) {
-                    for (u32 i = 0; i < b.indexArray.size(); i += 3) {
-                        
-                        p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
-                        p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
-                        p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
-                        normal = b.vertexArray[b.indexArray[i + 0]].normal * rot;
-                        
-                        Vector3 perp = normal.cross(p1 - p0).yInvert();
-                        Vector3 mid = (p0 + p1 + p2) / 3;
-                        
-                        DebugLinesCol(i, mid, mid + normal, -1, Color::CYAN);
-                        // DebugLinesCol(i, p0, p0 + perp, -1, Color::YELLOW);
-                        // DebugLinesCol(i, mid, p0, -1, Color::MAGENTA);
-                    }
-                }
-            }
-        }
-        index++;
-    }
+	
+	Render::TempLine(vec3{-1000,0,0}, vec3{1000,0,0}, Color::RED);
+	Render::TempLine(vec3{0,-1000,0}, vec3{0,1000,0}, Color::GREEN);
+	Render::TempLine(vec3{0,0,-1000}, vec3{0,0,1000}, Color::BLUE);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2541,9 +2280,8 @@ void Editor::Init(Admin* a){
     
     selected.reserve(8);
     camera = new Camera(90.f, .01f, 1000.01f, true);
-    camera->admin = a;
-    DengRenderer->UpdateCameraViewMatrix(camera->viewMat);
-    DengRenderer->UpdateCameraPosition(camera->position);
+    Render::UpdateCameraViewMatrix(camera->viewMat);
+    Render::UpdateCameraPosition(camera->position);
     undo_manager.Init();
     level_name = "";
     
@@ -2553,13 +2291,14 @@ void Editor::Init(Admin* a){
     showMenuBar         = true;
     showImGuiDemoWindow = false;
     showDebugLayer      = true;
+	showWorldGrid       = true;
     ConsoleHovFlag      = false;
     
     showEditorWin = false;
     
-    files = deshi::iterateDirectory(deshi::dirModels());
-    textures = deshi::iterateDirectory(deshi::dirTextures());
-    levels = deshi::iterateDirectory(deshi::dirLevels());
+    files = Assets::iterateDirectory(Assets::dirModels());
+    textures = Assets::iterateDirectory(Assets::dirTextures());
+    levels = Assets::iterateDirectory(Assets::dirLevels());
     
     fonth = ImGui::GetFontSize();
     fontw = fonth / 2.f;
@@ -2571,15 +2310,16 @@ void Editor::Update(){
     ////////////////////////////
     
     {//// general ////
-        if (DengInput->KeyPressed(Key::P | INPUTMOD_CTRL)) {
+        if (DengInput->KeyPressed(Key::P | InputMod_Lctrl)) {
             admin->paused = !admin->paused;
         }
     }
+	
     {//// select ////
         if (!DengConsole->IMGUI_MOUSE_CAPTURE && !admin->controller.cameraLocked) {
             if (DengInput->KeyPressed(MouseButton::LEFT)) {
                 Entity* e = SelectEntityRaycast();
-                if(!DengInput->ShiftDown()) selected.clear(); 
+                if(!DengInput->LShiftDown()) selected.clear(); 
                 if(e) selected.push_back(e);
             }
         }
@@ -2588,6 +2328,7 @@ void Editor::Update(){
             HandleRotating(selected[0], camera, admin, &undo_manager);
         }
     }
+	
     {//// render ////
         //reload all shaders
         if (DengInput->KeyPressed(Key::F5)) { DengConsole->ExecCommand("shader_reload", "-1"); }
@@ -2601,22 +2342,23 @@ void Editor::Update(){
             }
         }
     }
+	
     {//// camera ////
         //toggle ortho
-        static Vector3 ogpos;
-        static Vector3 ogrot;
+        persist Vector3 ogpos;
+        persist Vector3 ogrot;
         if (DengInput->KeyPressed(DengKeys.perspectiveToggle)) {
-            switch (camera->type) {
-                case(CameraType_Perspective): {  
+            switch (camera->mode) {
+                case(CameraMode_Perspective): {  
                     ogpos = camera->position;
                     ogrot = camera->rotation;
-                    camera->type = CameraType_Orthographic; 
+                    camera->type = CameraMode_Orthographic; 
                     camera->farZ = 1000000; 
                 } break;
-                case(CameraType_Orthographic): { 
+                case(CameraMode_Orthographic): { 
                     camera->position = ogpos; 
                     camera->rotation = ogrot;
-                    camera->type = CameraType_Perspective; 
+                    camera->mode = CameraMode_Perspective; 
                     camera->farZ = 1000; 
                     camera->UpdateProjectionMatrix(); 
                 } break;
@@ -2637,81 +2379,119 @@ void Editor::Update(){
             camera->rotation = {28.f, -45.f, 0.f};
         }
     }
+	
     {//// undo/redo ////
         if (DengInput->KeyPressed(DengKeys.undo)) undo_manager.Undo();
         if (DengInput->KeyPressed(DengKeys.redo)) undo_manager.Redo();
     }
+	
     {//// interface ////
         if (DengInput->KeyPressed(DengKeys.toggleDebugMenu)) showDebugTools = !showDebugTools;
-        if (DengInput->KeyPressed(DengKeys.toggleDebugBar))  showDebugBar = !showDebugBar;
-        if (DengInput->KeyPressed(DengKeys.toggleMenuBar))   showMenuBar = !showMenuBar;
+        if (DengInput->KeyPressed(DengKeys.toggleDebugBar))  showDebugBar   = !showDebugBar;
+        if (DengInput->KeyPressed(DengKeys.toggleMenuBar))   showMenuBar    = !showMenuBar;
     }
-    
-    ///////////////////////////////
-    //// render user interface ////
-    ///////////////////////////////
-    
-    //TODO(delle,Cl) program crashes somewhere in DebugTools() if minimized
-    if (!DengWindow->minimized) {
-        WinHovFlag = 0;
-        font_width = ImGui::GetFontSize();
-        
-        if (showDebugLayer) DebugLayer();
-        if (showTimes)      DrawTimes();
-        if (showDebugTools) DebugTools();
-        if (showDebugBar)   DebugBar();
-        if (showMenuBar)    MenuBar();
-        if (showEditorWin)  CreateEditorWin();
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1)); {
-            if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
-        }ImGui::PopStyleColor();
-        
-        if (!showMenuBar)    menubarheight = 0;
-        if (!showDebugBar)   debugbarheight = 0;
-        if (!showDebugTools) debugtoolswidth = 0;
-        
-        Vector3 cpos = camera->position;
-        static Vector3 lastcpos = camera->position;
-        static bool first = true;
-        if ((lastcpos - cpos).mag() > 10000 || first) {
-            //TODO(sushi, Op) look into if we can some how load/change things on the GPU in a different thread 
-            //std::thread worldgrid(WorldGrid, cpos);
-            WorldGrid(cpos);
-            //worldgrid.detach();
-            lastcpos = camera->position;
-            first = false;
-        }
-        
-        DengConsole->IMGUI_MOUSE_CAPTURE = (ConsoleHovFlag || WinHovFlag) ? true : false;
-    }
-    
-    /////////////////////////////////////////
-    //// render selected entity outlines ////
-    /////////////////////////////////////////
-    
-    //TODO(delle,Cl) possibly clean up  the renderer's selected mesh stuff by having the 
-    //renderer take a pointer of u32 that's stored here, or just dont have the renderer know about
-    //selected entities since thats a game thing
-    DengRenderer->RemoveSelectedMesh(-1);
-    for(Entity* e : selected){
-        if(MeshComp* mc = e->GetComponent<MeshComp>()){
-            if(!Render::GetSettings()->findMeshTriangleNeighbors){
-                DengRenderer->AddSelectedMesh(mc->meshID);
-            }else{
-                std::vector<Vector2> outline = mc->mesh->GenerateOutlinePoints(e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
-                                                                               DengWindow->dimensions, camera->position);
-                for (int i = 0; i < outline.size(); i += 2) {
-                    ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
-                }
-            }
-        }
-    }
-    
-    ////////////////////////////////
-    ////  selected entity debug ////
-    ////////////////////////////////
-    //ShowSelectedEntityNormals();
-    DisplayTriggers(admin);
+	
+	//TODO(delle,Op) actually do a copy of memory once entities are less anonymous
+	//NOTE doesnt copy the events of an entity at the moment
+	{//// cut/copy/paste ////
+		if(DengInput->KeyPressed(DengKeys.cut)){
+			if(selected.size()){
+				//copy
+				Assets::deleteFile(copy_path, false);
+				std::string entity_text = selected[0]->SaveTEXT();
+				std::string filepath = Assets::dirTemp() + std::to_string(DengTime->totalTime) + "entcopy";
+				Assets::writeFile(filepath, entity_text.c_str(), entity_text.size());
+				
+				copy_path = filepath;
+				for(Component* c : selected[0]->components){
+					if(c->type == ComponentType_MeshComp){
+						copy_mesh_diffs.push_back(pair<u32,u32>(-1, ((MeshComp*)c)->meshID));
+					}
+				}
+				
+				//delete
+				DengAdmin->DeleteEntity(selected[0]);
+				selected.clear();
+			}
+		}
+		if(DengInput->KeyPressed(DengKeys.copy)){
+			if(selected.size()){
+				Assets::deleteFile(copy_path, false);
+				std::string entity_text = selected[0]->SaveTEXT();
+				std::string filepath = Assets::dirTemp() + std::to_string(DengTime->totalTime) + "entcopy";
+				Assets::writeFile(filepath, entity_text.c_str(), entity_text.size());
+				
+				copy_path = filepath;
+				for(Component* c : selected[0]->components){
+					if(c->type == ComponentType_MeshComp){
+						copy_mesh_diffs.push_back(pair<u32,u32>(-1, ((MeshComp*)c)->meshID));
+					}
+				}
+			}
+		}
+		if(DengInput->KeyPressed(DengKeys.paste)){
+			Entity* new_entity = Entity::LoadTEXT(DengAdmin, copy_path, copy_mesh_diffs);
+			if(new_entity){
+				DengAdmin->CreateEntity(new_entity);
+				selected.clear();
+				selected.push_back(new_entity);
+			}
+		}
+	}
+	
+	///////////////////////////////
+	//// render user interface ////
+	///////////////////////////////
+	
+	//TODO(delle,Cl) program crashes somewhere in DebugTools() if minimized
+	if (!DengWindow->minimized) {
+		WinHovFlag = 0;
+		font_width = ImGui::GetFontSize();
+		
+		if (showDebugLayer) DebugLayer();
+		if (showTimes)      DrawTimes();
+		if (showDebugTools) DebugTools();
+		if (showDebugBar)   DebugBar();
+		if (showMenuBar)    MenuBar();
+		if (showEditorWin)  CreateEditorWin();
+		if (showWorldGrid)  WorldGrid(camera->position);
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1)); {
+			if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
+		}ImGui::PopStyleColor();
+		
+		if (!showMenuBar)    menubarheight = 0;
+		if (!showDebugBar)   debugbarheight = 0;
+		if (!showDebugTools) debugtoolswidth = 0;
+		
+		DengConsole->IMGUI_MOUSE_CAPTURE = (ConsoleHovFlag || WinHovFlag) ? true : false;
+	}
+	
+	/////////////////////////////////////////
+	//// render selected entity outlines ////
+	/////////////////////////////////////////
+	
+	//TODO(delle,Cl) possibly clean up  the renderer's selected mesh stuff by having the 
+	//renderer take a pointer of u32 that's stored here, or just dont have the renderer know about
+	//selected entities since thats a game thing
+	Render::RemoveSelectedMesh(-1);
+	for(Entity* e : selected){
+		if(MeshComp* mc = e->GetComponent<MeshComp>()){
+			if(!Render::GetSettings()->findMeshTriangleNeighbors){
+				Render::AddSelectedMesh(mc->meshID);
+			}else{
+				std::vector<Vector2> outline = mc->mesh->GenerateOutlinePoints(e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
+																			   DengWindow->dimensions, camera->position);
+				for (int i = 0; i < outline.size(); i += 2) {
+					ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
+				}
+			}
+		}
+	}
+	
+	////////////////////////////////
+	////  selected entity debug ////
+	////////////////////////////////
+	DisplayTriggers(admin);
 }
 
 void Editor::Reset(){
@@ -2719,8 +2499,11 @@ void Editor::Reset(){
     //camera->rotation = camera_rot;
     selected.clear();
     undo_manager.Reset();
-    g_debug->meshes.clear();
-    WorldGrid(camera->position);
+	ClearCopiedEntities();
+}
+
+void Editor::Cleanup(){
+	Assets::deleteFile(copy_path, false);
 }
 
 void Editor::CreateEditorWin() {

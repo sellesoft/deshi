@@ -127,9 +127,6 @@
     <ClInclude Include="..\src\utils\optional.h">
       <Filter>src\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\renderer_vulkan.h">
-      <Filter>src\core</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\game\components\Orb.h">
       <Filter>src\game\components\h</Filter>
     </ClInclude>
@@ -151,14 +148,8 @@
     <ClInclude Include="..\src\math\Matrix.h">
       <Filter>src\math</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\math\MatrixN.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\game\Transform.h">
       <Filter>src\game</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\core\imgui_vulkan.h">
-      <Filter>src\core</Filter>
     </ClInclude>
     <ClInclude Include="..\src\game\UndoManager.h">
       <Filter>src\game</Filter>
@@ -210,6 +201,12 @@
     </ClInclude>
     <ClInclude Include="..\src\defines.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\utils.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\MatrixN.h">
+      <Filter>src\math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -287,6 +284,9 @@
     </Filter>
     <Filter Include="src\game\entities\cpp">
       <UniqueIdentifier>{9f7fae91-62b0-48b1-9257-3ae72ccd99a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\core\renderers">
+      <UniqueIdentifier>{b4b49f6e-8831-4ad6-8d8f-916345453348}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -412,9 +412,6 @@
     <ClCompile Include="..\src\external\imgui\imgui.cpp">
       <Filter>src\external\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\renderer_vulkan.cpp">
-      <Filter>src\core</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\core\window.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
@@ -448,9 +445,6 @@
     <ClCompile Include="..\src\game\systems\SoundSystem.cpp">
       <Filter>src\game\systems\cpp</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\game\Keybinds.cpp">
-      <Filter>src\game</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\scene\Model.cpp">
       <Filter>src\scene</Filter>
     </ClCompile>
@@ -461,9 +455,6 @@
       <Filter>src\game\components\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\core\assets.cpp">
-      <Filter>src\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\core\imgui_vulkan.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
     <ClCompile Include="..\src\game\UndoManager.cpp">
@@ -502,14 +493,17 @@
     <ClCompile Include="..\src\game\Editor.cpp">
       <Filter>src\game</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\utils\Debug.cpp">
-      <Filter>src\utils</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\game\entities\Trigger.cpp">
       <Filter>src\game\entities\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\core\console2.cpp">
       <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\renderers\opengl.cpp">
+      <Filter>src\core\renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\renderers\vulkan.cpp">
+      <Filter>src\core\renderers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

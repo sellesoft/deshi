@@ -16,11 +16,11 @@
 #include "../../core/assets.h"
 #include "../../core/renderer.h"
 #include "../../core/time.h"
+#include "../../utils/utils.h"
 #include "../../utils/tuple.h"
 
 #include <iostream>
 #include <fstream>
-#include <string_view>
 
 Entity::Entity() {
     this->admin = 0;
@@ -37,13 +37,12 @@ Entity::Entity(Admin* admin, u32 id, Transform transform, const char* name, std:
     for (Component* c : comps) {
         if (!c) continue;
         this->components.push_back(c);
-        c->entityID = id;
-        c->admin = admin;
+        c->entity = this;
     }
 }
 
 Entity::~Entity() {
-    for (Component* c : components) if(c) delete c;
+    for (Component* c : components) delete c;
 }
 
 void Entity::operator=(Entity& e) {
@@ -69,10 +68,8 @@ inline void Entity::SetName(const char* name) {
 void Entity::AddComponent(Component* c) {
     if (!c) return;
     components.push_back(c);
-    c->entityID = id;
     c->entity = this;
-    c->admin = this->admin;
-    if (c->comptype == ComponentType_Light) {
+    if (c->type == ComponentType_Light) {
         DengAdmin->scene.lights.push_back(dyncast(Light, c));
     }
 }
@@ -82,8 +79,6 @@ void Entity::AddComponents(std::vector<Component*> comps) {
     for (Component* c : comps) {
         if (!c) continue;
         this->components.push_back(c);
-        c->entityID = id;
-        c->admin = this->admin;
         c->entity = this;
     }
 }
@@ -128,18 +123,18 @@ std::string Entity::SaveTEXT(){
                            "\nrotation (",transform.rotation.x,",",transform.rotation.y,",",transform.rotation.z,")",
                            "\nscale    (",transform.scale.x,",",transform.scale.y,",",transform.scale.z,")"
                            "\n"));
-
+	
     //sort components by ComponentType for consistent saving order
     std::vector<Component*> sorted_components = components;
     Component* temp;
     for(int i = 1; i < sorted_components.size(); ++i){
-        if(sorted_components[i]->comptype < sorted_components[i-1]->comptype){
+        if(sorted_components[i]->type < sorted_components[i-1]->type){
             temp = sorted_components[i];
             sorted_components[i] = sorted_components[i-1];
             sorted_components[i-1] = temp;
         }
     }
-
+	
     for(Component* c : sorted_components) result.append(c->SaveTEXT());
     result.shrink_to_fit();
     return result;
@@ -163,15 +158,15 @@ enum struct Header{
 };
 #define InvalidHeaderKeyError(header) ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid key '",kv.first,"' for header '"header"'.")
 //TODO(delle) support multiple components of a type on an entity
-Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u32,u32>>& mesh_id_diffs){
+Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u32,u32>>& mesh_id_diffs){
     //load file into char array
-    char* buffer = deshi::readFileAsciiToArray(filepath);
+    char* buffer = Assets::readFileAsciiToArray(filepath);
     if(!buffer) return 0;
     defer{ delete[] buffer; };
     
     //creation vars
-    b32 coll_made = false;
-    b32 mesh_found = false;
+    bool coll_made = false;
+    bool mesh_found = false;
     Entity* e = 0;
     AudioListener* al = 0; AudioSource* as = 0; Camera* cam = 0;    Door* door = 0;
     Light* light = 0;      MeshComp* mesh = 0;  Movement* move = 0; OrbManager* orbman = 0;
@@ -191,11 +186,11 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
         line = std::string(line_start, new_line-line_start);
         
         //cleanup the line
-        //NOTE could maybe check for empty after each of these for more performance or
+        //TODO(delle,Op) could maybe check for empty after each of these for more performance or
         //only running these if conditions are met, but this is easier to read/work with for now
-        line = deshi::eat_comments(line);
-        line = deshi::eat_spaces_leading(line);
-        line = deshi::eat_spaces_trailing(line);
+        line = Utils::eatComments(line, "#");
+        line = Utils::eatSpacesLeading(line);
+        line = Utils::eatSpacesTrailing(line);
         if(line.empty()) continue;
         
         //headers
@@ -238,7 +233,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
             ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid header; skipping line");
             continue; //skip if an invalid header
         }
-        pair<std::string,std::string> kv = deshi::split_keyValue(line);
+        pair<std::string,std::string> kv = Assets::split_keyValue(line);
         if(kv.second == ""){
             ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Unable to extract key-value pair from: ", line);
             continue;
@@ -248,7 +243,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
             case(Header::ENTITY):{
                 if     (kv.first == "name")    { e->SetName(kv.second.c_str()); }
                 else if(kv.first == "id")      { e->id = std::stoi(kv.second); }
-                else if(kv.first == "type")    { for (int i = 0; i < NUMENTITYTYPES; i++) if (kv.second == EntityTypeStrings[i]) { e->type = (EntityType)i; break; } }
+                else if(kv.first == "type")    { for (int i = 0; i < EntityType_COUNT; i++) if (kv.second == EntityTypeStrings[i]) { e->type = (EntityType)i; break; } }
                 else if(kv.first == "position"){ e->transform.position = get_vec3(kv.second); }
                 else if(kv.first == "rotation"){ e->transform.rotation = get_vec3(kv.second); }
                 else if(kv.first == "scale")   { e->transform.scale = get_vec3(kv.second); }
@@ -266,27 +261,32 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
             case(Header::CAMERA):{
                 if     (kv.first == "position"){ cam->position = get_vec3(kv.second); }
                 else if(kv.first == "rotation"){ cam->rotation = get_vec3(kv.second); }
-                else if(kv.first == "type")    { cam->type = std::stoi(kv.second); }
+                else if(kv.first == "mode")    { cam->mode = std::stoi(kv.second); }
                 else if(kv.first == "near_z")  { cam->nearZ = std::stof(kv.second); }
                 else if(kv.first == "far_z")   { cam->farZ = std::stof(kv.second); }
                 else if(kv.first == "fov")     { cam->fov = std::stof(kv.second); }
                 else{ InvalidHeaderKeyError("camera"); }
             }break;
             case(Header::COLLIDER):{
-                if(kv.first == "type" && !coll_made){ 
-                    if(kv.second == "aabb" || kv.second == "2"){
+                if(kv.first == "shape" && !coll_made){ 
+                    if(kv.second == ColliderShapeStrings[ColliderShape_AABB] 
+					   || kv.second == std::to_string((int)ColliderShape_AABB)){
                         aabb = new AABBCollider(Vector3::ZERO, 1.f);
                         coll_made = true;
-                    }else if(kv.second == "box" || kv.second == "1"){
+                    }else if(kv.second == ColliderShapeStrings[ColliderShape_Box] 
+							 || kv.second == std::to_string((int)ColliderShape_Box)){
                         box = new BoxCollider(Vector3::ZERO, 1.f);
                         coll_made = true;
-                    }else if(kv.second == "sphere" || kv.second == "3"){
+                    }else if(kv.second == ColliderShapeStrings[ColliderShape_Sphere] 
+							 || kv.second == std::to_string((int)ColliderShape_Sphere)){
                         sphere = new SphereCollider(1.f, 1.f);
                         coll_made = true;
-                    }else if(kv.second == "landscape" || kv.second == "4"){
+                    }else if(kv.second == ColliderShapeStrings[ColliderShape_Landscape] 
+							 || kv.second == std::to_string((int)ColliderShape_Landscape)){
                         ERROR_LOC("Landscape Collider loading not setup");
                         coll_made = true;
-                    }else if(kv.second == "complex" || kv.second == "5"){
+                    }else if(kv.second == ColliderShapeStrings[ColliderShape_Complex] 
+							 || kv.second == std::to_string((int)ColliderShape_Complex)){
                         ERROR_LOC("Complex Collider loading not setup");
                         coll_made = true;
                     }else{
@@ -309,7 +309,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
             }break;
             case(Header::DOOR):{
                 if(kv.first == "open"){ 
-                    door->isOpen = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
+                    door->isOpen = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else{ InvalidHeaderKeyError("door"); }
             }break;
@@ -317,7 +317,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
                 if     (kv.first == "position")  { light->position = get_vec3(kv.second); }
                 else if(kv.first == "direction") { light->direction = get_vec3(kv.second); }
                 else if(kv.first == "brightness"){ light->brightness = std::stof(kv.second); }
-                else if(kv.first == "active")    { light->active = deshi::parse_bool(kv.second); }
+                else if(kv.first == "active")    { light->active = Assets::parse_bool(kv.second); }
                 else{ InvalidHeaderKeyError("light"); }
             }break;
             case(Header::MESH):{
@@ -325,19 +325,25 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
                     for(auto& diff : mesh_id_diffs){
                         if(diff.first == std::stoi(kv.second)){
                             mesh->meshID = diff.second;
-                            mesh->mesh = DengRenderer->GetMeshPtr(mesh->meshID);
+                            mesh->mesh = Render::GetMeshPtr(mesh->meshID);
                             mesh_found = true;
-                        }
+                        }else if(diff.first == -1){
+							mesh->meshID = Render::CreateMesh(std::stoi(kv.second));
+							if(mesh->meshID != -1){
+								mesh->mesh = Render::GetMeshPtr(mesh->meshID);
+								mesh_found = true;
+							}
+						}
                     }
                 }
                 else if(kv.first == "name"){
                     if(!mesh_found){ //NOTE only make if ID failed to make it
-                        mesh->meshID = DengRenderer->CreateMesh(&admin->scene, kv.second.c_str());
-                        mesh->mesh = DengRenderer->GetMeshPtr(mesh->meshID);
+                        mesh->meshID = Render::CreateMesh(&admin->scene, kv.second.c_str());
+                        mesh->mesh = Render::GetMeshPtr(mesh->meshID);
                     }
                 }
                 else if(kv.first == "visible"){ 
-                    mesh->mesh_visible = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
+                    mesh->mesh_visible = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else{ InvalidHeaderKeyError("mesh"); }
             }break;
@@ -363,13 +369,13 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string& filepath, std::vector<pair<u
                 else if(kv.first == "friction_kinetic"){ phys->kineticFricCoef = std::stof(kv.second); }
                 else if(kv.first == "friction_static") { phys->staticFricCoef = std::stof(kv.second); }
                 else if(kv.first == "static_position"){ 
-                    phys->staticPosition = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
+                    phys->staticPosition = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else if(kv.first == "static_rotation"){ 
-                    phys->staticRotation = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
+                    phys->staticRotation = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else if(kv.first == "twod"){ 
-                    phys->twoDphys = deshi::parse_bool(kv.second, filepath.c_str(), line_number);
+                    phys->twoDphys = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else{ InvalidHeaderKeyError("physics"); }
             }break;

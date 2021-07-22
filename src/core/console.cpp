@@ -1,9 +1,3 @@
-#include "console.h"
-#include "assets.h"
-#include "time.h"
-#include "renderer.h"
-#include "window.h"
-#include "../utils/Command.h"
 #include "../game/admin.h"
 #include "../game/components/Camera.h"
 #include "../game/components/Physics.h"
@@ -16,12 +10,6 @@
 #include "../external/imgui/imgui_impl_glfw.h"
 #include "../external/imgui/imgui_impl_vulkan.h"
 
-#include <iomanip>
-#include <fstream>
-#include <sstream>
-#include <filesystem>
-#include <regex>
-
 //regex for checking paramaters
 std::regex RegColorFormat("(?:\\[c:([^\\]]*)\\]([^\\]]*)\\[c\\]|([^\\[]+))", std::regex::optimize);
 std::regex StringRegex(const char* param){ return std::regex(std::string("-")+ param +"=([A-z]+)", std::regex::optimize|std::regex::icase); }
@@ -32,7 +20,7 @@ std::regex Vec3Regex(const char* param)  { return std::regex(std::string("-")+ p
 
 using namespace ImGui;
 
-static_internal bool mirror_logging_to_stdout = false;
+local bool mirror_logging_to_stdout = false;
 int buffersize = 0;
 
 bool sel_com = false; //true when selecting an auto complete possibility
@@ -274,7 +262,7 @@ void Console::DrawConsole() {
 	
 	//display completion table
 	//this could probably be done in a better way but idc it works
-	static int match_sel = 0;
+	persist int match_sel = 0;
 	bool ok_flag = false;
 	if (sel_com) {
 		bool selected = false;
@@ -442,8 +430,8 @@ void Console::FlushBuffer() {
 		output += a.first;
 	}
 	
-	static std::string filename = deshi::dirLogs() + DengTime->FormatDateTime("deshiLog_{M}-{d}-{y}_{h}.{m}.{s}.txt");
-	static bool session = false;
+	persist std::string filename = Assets::dirLogs() + DengTime->FormatDateTime("deshiLog_{M}-{d}-{y}_{h}.{m}.{s}.txt");
+	persist bool session = false;
 	
 	std::ofstream file;
 	
@@ -464,11 +452,11 @@ void Console::FlushBuffer() {
 }
 
 void Console::AddAliases() {
-	std::string filepath = deshi::dirConfig() + "aliases.cfg";
-	char* buffer = deshi::readFileAsciiToArray(filepath);
+	std::string filepath = Assets::dirConfig() + "aliases.cfg";
+	char* buffer = Assets::readFileAsciiToArray(filepath);
 	if(!buffer){
 		LOG("Creating new aliases file");
-		deshi::writeFile(filepath, "", 0);
+		Assets::writeFile(filepath, "", 0);
 		return;
 	}
 	defer{ delete[] buffer; };
@@ -483,9 +471,9 @@ void Console::AddAliases() {
 		line = std::string(line_start, new_line-line_start);
 		
 		//format the line
-		line = deshi::eat_comments(line);
-		line = deshi::eat_spaces_leading(line);
-		line = deshi::eat_spaces_trailing(line);
+		line = Utils::eatComments(line, "#");
+		line = Utils::eatSpacesLeading(line);
+		line = Utils::eatSpacesTrailing(line);
 		if(line.empty()) continue;
 		
 		//parse alias
@@ -635,62 +623,10 @@ CMDSTARTA(state, args.size() > 0){
 	}
 }CMDEND("state <new_state:String>{play|menu|debug|editor}");
 
-CMDSTART(meshbrush_create_box){
-	u32 id = DengRenderer->CreateMeshBrush(admin->scene.models[0].mesh, Matrix4::IDENTITY);
-	SUCCESS("Created mesh brush with id: ", id);
-	return "";
-}CMDEND("meshbrush_create_box");
-
-CMDSTARTA(draw_line, args.size() > 1){
-	Vector3 pos1{}, pos2{}, color = {255,255,255};
-	for (auto s = args.begin(); s != args.end(); ++s) {
-		if(std::regex_search(s->c_str(), m, Vec3Regex("start"))){
-			pos1  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("end"))){
-			pos2  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("color"))){
-			color = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else{
-			return "[c:red]Invalid parameter: " + *s + "[c]";
-		}
-	}
-	Color temp((color.x > 255) ? 255 : (u8)color.x, 
-			   (color.y > 255) ? 255 : (u8)color.y,
-			   (color.z > 255) ? 255 : (u8)color.z);
-	
-	u32 id = DengRenderer->CreateDebugLine(pos1, pos2, temp);
-	DengRenderer->UpdateMeshVisibility(id, true);
-	return TOSTRING("Created debug line with meshID: ", id);
-}CMDEND("draw_line <-start=(x,y,z)> <-end=(x,y,z)> -color=(r,g,b){0..255}");
-
-CMDSTARTA(draw_triangle, args.size() > 2){
-	Vector3 pos1{}, pos2{}, pos3{}, color = {255,255,255};
-	for (auto s = args.begin(); s != args.end(); ++s) {
-		if(std::regex_search(s->c_str(), m, Vec3Regex("v1"))){
-			pos1  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("v2"))){
-			pos2  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("v3"))){
-			pos3  = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("color"))){
-			color = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else{
-			return "[c:red]Invalid parameter: " + *s + "[c]";
-		}
-	}
-	Color temp((color.x > 255) ? 255 : (u8)color.x, 
-			   (color.y > 255) ? 255 : (u8)color.y,
-			   (color.z > 255) ? 255 : (u8)color.z);
-	
-	u32 id = DengRenderer->CreateDebugTriangle(pos1, pos2, pos3, temp);
-	DengRenderer->UpdateMeshVisibility(id, true);
-	return TOSTRING("Created debug triangle with meshID: ", id);
-}CMDEND("draw_triangle <-v1=(x,y,z)> <-v2=(x,y,z)> <-v3=(x,y,z)> -color=(r,g,b){0..255}");
-
 CMDSTARTA(load_obj, args.size() > 0){
 	Vector3 pos{}, rot{}, scale = Vector3::ONE;
-	f32 mass = 1.f, elasticity = .5f; b32 staticPosition = 1, twoDphys = false;
-	ColliderType ctype = ColliderType_NONE;
+	f32 mass = 1.f, elasticity = .5f; bool staticPosition = 1, twoDphys = false;
+	ColliderShape ctype = ColliderShape_NONE;
 	Event event = 0;
 	//check for optional params after the first arg
 	for (auto s = args.begin() + 1; s != args.end(); ++s) {
@@ -701,11 +637,11 @@ CMDSTARTA(load_obj, args.size() > 0){
 		} else if (std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
 			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		} else if (std::regex_search(s->c_str(), m, StringRegex("collider"))) {
-			if     (m[1] == "aabb")      ctype = ColliderType_AABB;
-			else if(m[1] == "sphere")    ctype = ColliderType_Sphere;
-			else if(m[1] == "landscape") ctype = ColliderType_Landscape;
-			else if(m[1] == "box")       ctype = ColliderType_Box;
-			else if(m[1] == "complex")   ctype = ColliderType_Complex;
+			if     (m[1] == "aabb")      ctype = ColliderShape_AABB;
+			else if(m[1] == "sphere")    ctype = ColliderShape_Sphere;
+			else if(m[1] == "landscape") ctype = ColliderShape_Landscape;
+			else if(m[1] == "box")       ctype = ColliderShape_Box;
+			else if(m[1] == "complex")   ctype = ColliderShape_Complex;
 		} else if (std::regex_search(s->c_str(), m, FloatRegex("mass"))) {
 			if(std::stof(m[1]) <= 0) return "[c:red]Mass can't be zero or less than zero[c]";
 			mass = std::stof(m[1]);
@@ -719,7 +655,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 		} else if (std::regex_search(s->c_str(), m, StringRegex("twoDphys"))){
 			if(m[1] == "1" || m[1] == "true") twoDphys = true;
 		} else if (std::regex_search(s->c_str(), m , StringRegex("event"))){
-			if (ctype == ColliderType_NONE) return "[c:red]Attempt to attach event with no collider[c]";
+			if (ctype == ColliderShape_NONE) return "[c:red]Attempt to attach event with no collider[c]";
 			bool found = false;
 			forI(sizeof(EventStrings)) 
 				if (m[1] == EventStrings[i]) { 
@@ -736,17 +672,17 @@ CMDSTARTA(load_obj, args.size() > 0){
 	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
 	
 	//create the mesh
-	u32 id = DengRenderer->CreateMesh(&admin->scene, args[0].c_str());
-	Mesh* mesh = DengRenderer->GetMeshPtr(id);
+	u32 id = Render::CreateMesh(&admin->scene, args[0].c_str());
+	Mesh* mesh = Render::GetMeshPtr(id);
 	
 	//collider
 	Collider* col = nullptr;
 	switch (ctype) {
-		case ColliderType_AABB:      col = new AABBCollider(mesh, 1, 0U, event); break;
-		case ColliderType_Sphere:    col = new SphereCollider(1, 1, 0U, event); break;
-		case ColliderType_Landscape: col = new LandscapeCollider(mesh, 0U, event); break;
-		case ColliderType_Box:       col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
-		case ColliderType_Complex:   col = new ComplexCollider(mesh, 0, event); break;
+		case ColliderShape_AABB:      col = new AABBCollider(mesh, 1, 0U, event); break;
+		case ColliderShape_Sphere:    col = new SphereCollider(1, 1, 0U, event); break;
+		case ColliderShape_Landscape: col = new LandscapeCollider(mesh, 0U, event); break;
+		case ColliderShape_Box:       col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
+		case ColliderShape_Complex:   col = new ComplexCollider(mesh, 0, event); break;
 	}
 	
 	MeshComp* mc = new MeshComp(id);
@@ -772,7 +708,7 @@ CMDSTART(spawn_box_uv){
 		}
 	}
 	
-	u32 id = DengRenderer->CreateMesh(2, Matrix4::TransformationMatrix(pos, rot, scale));
+	u32 id = Render::CreateMesh(2, Matrix4::TransformationMatrix(pos, rot, scale));
 	MeshComp* mc = new MeshComp(id);
 	admin->CreateEntity({ mc }, "uv_texture_box", Transform(pos, rot, scale));
 	
@@ -797,8 +733,8 @@ CMDSTART(mesh_create){
 	}
 	
 	u32 meshID = std::atoi(args[0].c_str());
-	u32 id = DengRenderer->CreateMesh(meshID, Matrix4::TransformationMatrix(pos, rot, scale));
-	Mesh* ptr = DengRenderer->GetMeshPtr(id); if (!ptr) CMDERROR;
+	u32 id = Render::CreateMesh(meshID, Matrix4::TransformationMatrix(pos, rot, scale));
+	Mesh* ptr = Render::GetMeshPtr(id); if (!ptr) CMDERROR;
 	
 	MeshComp* mc = new MeshComp(id);
 	Physics* p = new Physics(pos, rot);
@@ -824,7 +760,7 @@ CMDSTART(mesh_transform_matrix){
 		}
 	}
 	
-	DengRenderer->TransformMeshMatrix(std::stoi(args[0]), Matrix4::TransformationMatrix(pos, rot, scale));
+	Render::TransformMeshMatrix(std::stoi(args[0]), Matrix4::TransformationMatrix(pos, rot, scale));
 	return TOSTRING("Transforming mesh", args[0], "'s matrix");
 }CMDEND("mesh_transform_matrix <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 
@@ -856,7 +792,7 @@ CMDSTARTA(add_player, args.size() > 0) {
 	float mass = 1.f;
 	float elasticity = 0;
 	bool staticc = true;
-	ColliderType ctype;
+	ColliderShape ctype;
 	
 	//check for optional params after the first arg
 	for (auto s = args.begin() + 1; s != args.end(); ++s) {
@@ -870,10 +806,10 @@ CMDSTARTA(add_player, args.size() > 0) {
 			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}
 		else if (std::regex_search(s->c_str(), m, StringRegex("collider"))) {
-			if (m[1] == "aabb") ctype = ColliderType_AABB;
-			else if (m[1] == "sphere") ctype = ColliderType_Sphere;
-			else if (m[1] == "landscape") ctype = ColliderType_Landscape;
-			else if (m[1] == "box") ctype = ColliderType_Box;
+			if (m[1] == "aabb") ctype = ColliderShape_AABB;
+			else if (m[1] == "sphere") ctype = ColliderShape_Sphere;
+			else if (m[1] == "landscape") ctype = ColliderShape_Landscape;
+			else if (m[1] == "box") ctype = ColliderShape_Box;
 		}
 		else if (std::regex_search(s->c_str(), m, FloatRegex("mass"))) {
 			if (std::stof(m[1]) < 0) return "[c:red]Mass must be greater than 0[c]";
@@ -895,16 +831,16 @@ CMDSTARTA(add_player, args.size() > 0) {
 	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
 	
 	//create the mesh
-	u32 id = DengRenderer->CreateMesh(&admin->scene, args[0].c_str());
-	Mesh* mesh = DengRenderer->GetMeshPtr(id);
+	u32 id = Render::CreateMesh(&admin->scene, args[0].c_str());
+	Mesh* mesh = Render::GetMeshPtr(id);
 	
 	//collider
 	Collider* col = nullptr;
 	switch (ctype) {
-		case ColliderType_AABB: col = new AABBCollider(Vector3(0.5, 1, 0.5), 2); break;
-		case ColliderType_Sphere: col = new SphereCollider(1, 1); break;
-		case ColliderType_Landscape: col = new LandscapeCollider(mesh); break;
-		case ColliderType_Box: col = new BoxCollider(Vector3(1, 1, 1), 1); break;
+		case ColliderShape_AABB: col = new AABBCollider(Vector3(0.5, 1, 0.5), 2); break;
+		case ColliderShape_Sphere: col = new SphereCollider(1, 1); break;
+		case ColliderShape_Landscape: col = new LandscapeCollider(mesh); break;
+		case ColliderShape_Box: col = new BoxCollider(Vector3(1, 1, 1), 1); break;
 	}
 	
 	MeshComp* mc = new MeshComp(id);
@@ -994,8 +930,7 @@ CMDFUNC(alias) {
 				datav.push_back(c);
 			}
 			
-			deshi::appendFile(deshi::assetPath("aliases.cfg", AssetType_Config),
-							  datav, datav.size());
+			Assets::appendFile(Assets::dirConfig()+"aliases.cfg", datav, datav.size());
 			
 			return "[c:green]alias \"" + args[0] + "\" successfully assigned to command \"" + args[1] + "\"[c]";
 		}
@@ -1031,8 +966,7 @@ CMDFUNC(bind) {
 				datav.push_back(c);
 			}
 			datav.push_back('\n');
-			deshi::appendFile(deshi::assetPath("binds.cfg", AssetType_Config),
-							  datav, datav.size());
+			Assets::appendFile(Assets::dirConfig()+"binds.cfg", datav, datav.size());
 			return "[c:green]key \"" + args[0] + "\" successfully bound to \n" + s + "[c]";
 		}
 		catch (...) {
@@ -1122,38 +1056,29 @@ CMDSTARTA(mat_texture, args.size() == 3) {
 	int matID = std::stoi(args[0]);
 	int texType = std::stoi(args[1]);
 	int texID = std::stoi(args[2]);
-	DengRenderer->UpdateMaterialTexture(matID, texType, texID);
+	Render::UpdateMaterialTexture(matID, texType, texID);
 	return TOSTRING("Updated material", matID, "'s texture", texType, " to ", texID);
 }CMDEND("mat_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>");
 
 CMDSTARTA(mat_shader, args.size() == 2) {
 	int matID = std::stoi(args[0]);
 	int shader = std::stoi(args[1]);
-	DengRenderer->UpdateMaterialShader(matID, shader);
+	Render::UpdateMaterialShader(matID, shader);
 	return TOSTRING("Updated material", matID, "'s shader to ", shader);
 } CMDEND("mat_shader <materialID:Uint> <shaderID:Uint>");
 
 CMDFUNC(mat_list) {
-	Renderer* r = DengRenderer;
-	std::string out = "[c:yellow]Materials List:\nID  Shader  Albedo  Normal  Specular  Light[c]";
-	for (auto& mat : r->materials) {
-		out += TOSTRING("\n", mat.id, "  ", ShaderStrings[mat.shader], "  ",
-						mat.albedoID, ":", r->textures[mat.albedoID].filename, "  ",
-						mat.normalID, ":", r->textures[mat.normalID].filename, "  ",
-						mat.specularID, ":", r->textures[mat.specularID].filename, "  ",
-						mat.lightID, ":", r->textures[mat.lightID].filename);
-	}
-	return out;
+	return Render::ListMaterials();
 }
 
 CMDSTARTA(shader_reload, args.size() == 1) {
 	int id = std::stoi(args[0]);
 	if (id == -1) {
-		DengRenderer->ReloadAllShaders();
+		Render::ReloadAllShaders();
 		return "[c:magen]Reloading all shaders[c]";
 	}
 	else {
-		DengRenderer->ReloadShader(id);
+		Render::ReloadShader(id);
 		return ""; //printed in renderer
 	}
 }CMDEND("shader_reload <shaderID:Uint>");
@@ -1174,7 +1099,7 @@ CMDSTARTA(mesh_visible, args.size() == 2) {
 	try {
 		int meshID = std::stoi(args[0]);
 		bool vis = std::stoi(args[1]);
-		DengRenderer->UpdateMeshVisibility(meshID, vis);
+		Render::UpdateMeshVisibility(meshID, vis);
 		return TOSTRING("Setting mesh", meshID, "'s visibility to ", vis);
 	}
 	catch (...) {
@@ -1186,19 +1111,19 @@ CMDSTARTA(mesh_batch_material, args.size() == 3) {
 	int mesh = std::stoi(args[0]);
 	int batch = std::stoi(args[1]);
 	int mat = std::stoi(args[2]);
-	DengRenderer->UpdateMeshBatchMaterial(mesh, batch, mat);
+	Render::UpdateMeshBatchMaterial(mesh, batch, mat);
 	return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s material to ", mat);
 } CMDEND("mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>");
 
 CMDSTARTA(texture_load, args.size() > 0) {
 	Texture tex(args[0].c_str());
 	if (args.size() == 2) { tex.type = (u32)std::stoi(args[1]); }
-	u32 id = DengRenderer->LoadTexture(tex);
+	u32 id = Render::LoadTexture(tex);
 	return TOSTRING("Loaded texture ", args[0], " to ID: ", id);
 }CMDEND("texture_load <texture.png:String> [type:Uint]");
 
 CMDFUNC(texture_list) {
-	return DengRenderer->ListTextures();
+	return Render::ListTextures();
 }
 
 CMDFUNC(texture_type_list) {
@@ -1218,7 +1143,7 @@ CMDFUNC(quit) {
 
 CMDSTARTA(add_trigger, args.size() > 0) {
 	Vector3 pos{}, rot{}, scale = vec3::ONE;
-	ColliderType type = ColliderType_NONE;
+	ColliderShape shape = ColliderShape_NONE;
 	Event event = 0;
 	for (auto s = args.begin(); s != args.end(); ++s) {
 		if (std::regex_search(s->c_str(), m, Vec3Regex("pos"))) {
@@ -1230,14 +1155,14 @@ CMDSTARTA(add_trigger, args.size() > 0) {
 		else if (std::regex_search(s->c_str(), m, Vec3Regex("scale"))) {
 			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}
-		else if (std::regex_search(s->c_str(), m, StringRegex("type"))) {
-			if      (m[1] == "aabb")      type = ColliderType_AABB;
-			else if (m[1] == "sphere")    type = ColliderType_Sphere;
-			else if (m[1] == "landscape") type = ColliderType_Landscape;
-			else if (m[1] == "box")       type = ColliderType_Box;
+		else if (std::regex_search(s->c_str(), m, StringRegex("shape"))) {
+			if      (m[1] == "aabb")      shape = ColliderShape_AABB;
+			else if (m[1] == "sphere")    shape = ColliderShape_Sphere;
+			else if (m[1] == "landscape") shape = ColliderShape_Landscape;
+			else if (m[1] == "box")       shape = ColliderShape_Box;
 		}
 		else if (std::regex_search(s->c_str(), m, StringRegex("event"))) {
-			if (type == ColliderType_NONE) return "[c:red]Attempt to attach event with no collider[c]";
+			if (shape == ColliderShape_NONE) return "[c:red]Attempt to attach event with no collider[c]";
 			bool found = false;
 			forI(sizeof(EventStrings))
 				if (m[1] == EventStrings[i]) {
@@ -1251,10 +1176,10 @@ CMDSTARTA(add_trigger, args.size() > 0) {
 	}
 	
 	Collider* col = nullptr;
-	switch (type) {
-		case ColliderType_AABB:   col = new AABBCollider(Vector3::ONE / 2, 1, 0U, event); break;
-		case ColliderType_Sphere: col = new SphereCollider(1, 1, 0U, event); break;
-		case ColliderType_Box:    col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
+	switch (shape) {
+		case ColliderShape_AABB:   col = new AABBCollider(Vector3::ONE / 2, 1, 0U, event); break;
+		case ColliderShape_Sphere: col = new SphereCollider(1, 1, 0U, event); break;
+		case ColliderShape_Box:    col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
 	}
 	
 	Trigger* te = new Trigger(Transform(pos, rot, scale), col);
@@ -1262,7 +1187,7 @@ CMDSTARTA(add_trigger, args.size() > 0) {
 	admin->CreateEntity(te);
 	
 	return TOSTRING("Created trigger");
-}CMDEND("add_trigger -type=[ColliderType] -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)")
+}CMDEND("add_trigger -shape=[ColliderType] -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)")
 
 void Console::AddCommands(){
 	CMDADD(add_trigger, "adds a trigger collider entity");
@@ -1275,8 +1200,6 @@ void Console::AddCommands(){
 	CMDADD(undo, "Undos previous level editor action");
 	CMDADD(redo, "Redos last undone level editor action");
 	CMDADD(add_player, "Adds a player to the world.");
-	CMDADD(draw_line, "Draws a line in 3D with desired color");
-	CMDADD(draw_triangle, "Draws a triangle in 3D with desired color");
 	CMDADD(load_obj, "Loads a .obj file from the models folder with desired options");
 	CMDADD(spawn_box_uv, "Creates a planarized box with the UV texture on it");
 	CMDADD(mesh_create, "Creates a mesh based on another mesh");
@@ -1285,7 +1208,6 @@ void Console::AddCommands(){
 	CMDADD(state, "Changes the admin's gamestate");
 	CMDADD(flush, "Flushes the console's buffer to the log file.");
 	CMDADD(add_force, "Adds a force to the selected object.");
-	CMDADD(meshbrush_create_box, "Creates a mesh brush of a box");
 	CMDADD(cam_info, "Prints camera variables");
 	CMDADD(cam_matrix_projection, "Prints camera's projection matrix");
 	CMDADD(cam_matrix_view, "Prints camera's view matrix");

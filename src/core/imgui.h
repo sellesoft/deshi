@@ -2,19 +2,23 @@
 #ifndef DESHI_IMGUI_H
 #define DESHI_IMGUI_H
 
-//keeping this include here so i can just include this header to get imgui stuff
 #include "../external/imgui/imgui.h" //includes <float.h>,<stdarg.h>,<stddef.h>,<string.h>
+#undef Max
+#undef Min 
 #include "../external/imgui/imgui_internal.h" //includes <stdio.h>,<stdlib.h>,<math.h>,<limits.h>
+#define Max(a, b) (((a) > (b)) ? (a) : (b))
+#define Min(a, b) (((a) < (b)) ? (a) : (b))
+
 #include "../math/Vector.h"
 #include "../utils/Color.h"
 
-#if DESHI_VULKAN
-#include "imgui_vulkan.h"
-#elif DESHI_DX12
-
-#else
-#include "imgui_vulkan.h"
-#endif
+namespace DeshiImGui{
+	
+	void init();
+	void cleanup();
+	void newFrame();
+	
+}; //namespace DeshiImGui
 
 namespace ImGui{
 	
