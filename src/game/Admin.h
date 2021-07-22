@@ -12,7 +12,6 @@
 #include "entities/Entity.h"
 #include "../defines.h"
 #include "../utils/ContainerManager.h"
-#include "../scene/scene.h"
 
 #include <vector>
 #include <string>
@@ -40,7 +39,6 @@ struct Admin {
 	SoundSystem   sound;
 	
 	//admin singletons
-	Scene       scene;
 	Keybinds    keybinds;
 	Controller  controller;
 	Editor      editor;

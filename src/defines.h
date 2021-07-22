@@ -30,7 +30,7 @@ typedef double             f64;
 //static defines
 #define local   static
 #define persist static
-#define global_  static //dumb STL uses global in xlocale
+#define global_  static //global_ because there is a c-func global() D:
 
 //dynamic cast short-hand
 #define dyncast(child, base) dynamic_cast<child*>(base)
@@ -75,7 +75,7 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 //library-less assert
 #if DESHI_SLOW
 //the ... is to allow the programmer to put some text to read when the assert fails
-//but it doesnt actually do affect the assertion expression
+//but it doesnt actually affect the assertion expression
 #define Assert(expression, ...) if(!(expression)){*(volatile int*)0 = 0;}
 #else
 #define Assert(expression, ...) expression

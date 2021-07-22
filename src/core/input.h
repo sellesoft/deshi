@@ -218,7 +218,7 @@ struct Input{
 	}
 };
 
-//global_ input pointer
+//global input pointer
 extern Input* g_input;
 #define DengInput g_input
 

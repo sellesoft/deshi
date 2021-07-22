@@ -167,15 +167,7 @@ __________ maybe store the text in the actual source and create the file from th
 */
 
 
-#include <iostream>
-#include <iomanip>
-#include <filesystem>
-#include <fstream>
-#include <sstream>
-#include <regex>
-#include <vector>
-#include <set>
-
+//// utility headers ////
 #include "defines.h"
 #include "utils/color.h"
 #include "utils/tuple.h"
@@ -186,8 +178,8 @@ __________ maybe store the text in the actual source and create the file from th
 #include "utils/ringarray.h"
 #include "utils/command.h"
 #include "math/math.h"
-#include "scene/Scene.h"
 
+//// core/game headers ////
 #include "core/assets.h"
 #include "core/console.h"
 #include "core/console2.h"
@@ -196,13 +188,27 @@ __________ maybe store the text in the actual source and create the file from th
 #include "core/renderer.h"
 #include "core/time.h"
 #include "core/window.h"
+#include "core/scene.h"
 #include "game/admin.h"
 
+//// external for core ////
 #define STB_IMAGE_IMPLEMENTATION
 #include "external/stb/stb_image.h"
 #include "external/imgui/imgui_impl_glfw.h"
 
-#if   DESHI_VULKAN //DESHI_RENDERER
+//// STL for core ////
+#include <iostream>
+#include <iomanip>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <regex>
+#include <vector>
+#include <set>
+#include <unordered_map>
+
+//// renderer cpp (and libs) ////
+#if   DESHI_VULKAN
 #if defined(_MSC_VER)
 #pragma comment(lib,"vulkan-1.lib")
 #pragma comment(lib,"glfw3.lib")
@@ -212,7 +218,6 @@ __________ maybe store the text in the actual source and create the file from th
 #include <GLFW/glfw3.h>
 #include <shaderc/shaderc.h>
 #include "external/imgui/imgui_impl_vulkan.h"
-
 #include "core/renderers/vulkan.cpp"
 #elif DESHI_OPENGL
 #if defined(_MSC_VER)
@@ -227,12 +232,14 @@ __________ maybe store the text in the actual source and create the file from th
 
 #else
 Assert(!"no renderer selected");
-#endif //DESHI_RENDERER
+#endif
 
+//// core cpp ////
 #include "core/window.cpp"
 #include "core/assets.cpp"
 #include "core/console.cpp"
 #include "core/console2.cpp"
+#include "core/scene.cpp"
 
 local Time    time_;   Time*    g_time    = &time_; //time_ because there is a c-func time() D:
 local Window  window;  Window*  g_window  = &window;

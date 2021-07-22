@@ -1,11 +1,11 @@
 #pragma once
-#include "../math/Math.h"
-#include "../scene/Model.h"
+#include "../math/math.h"
+#include "../core/mesh.h"
 
 namespace Geometry {
 	
 	//returns the point that's furthest along a normal 
-	static u32 FurthestPointAlongNormal(std::vector<Vector3> p, Vector3 n) {
+	static u32 FurthestPointAlongNormal(std::vector<Vector3>& p, Vector3 n) {
 		float furthest = -INFINITY;
 		u32 furthestid = 0;
 		for (int i = 0; i < p.size(); i++) {
@@ -17,14 +17,13 @@ namespace Geometry {
 		}
 		return furthestid;
 	}
-
+	
 	static u32 FurthestTriangleAlongNormal(Mesh* m, Matrix4 rotation, Vector3 n) {
 		float furthest = -INFINITY;
 		u32 furthestTriId = 0;
-		for (int i = 0; i < m->triangles.size(); i++) {
-			Triangle* t = m->triangles[i];
-			Vector3 norm = t->norm * rotation;
-
+		for (int i = 0; i < m->triangleCount; i++) {
+			Vector3 norm = m->triangleArray[i].normal * rotation;
+			
 			float dp = norm.dot(n);
 			
 			if (dp > furthest) {
@@ -35,11 +34,10 @@ namespace Geometry {
 		
 		return furthestTriId;
 	}
-
-
+	
+	
 	static Vector3 ClosestPointOnAABB(Vector3 center, Vector3 halfDims, Vector3 target) {
-		return Vector3(
-					   fmaxf(center.x - halfDims.x, fminf(target.x, center.x + halfDims.x)),
+		return Vector3(fmaxf(center.x - halfDims.x, fminf(target.x, center.x + halfDims.x)),
 					   fmaxf(center.y - halfDims.y, fminf(target.y, center.y + halfDims.y)),
 					   fmaxf(center.y - halfDims.z, fminf(target.z, center.z + halfDims.z)));
 	}
@@ -50,8 +48,7 @@ namespace Geometry {
 	
 	static Vector3 ClosestPointOnBox(Vector3 center, Vector3 halfDims, Vector3 rotation, Vector3 target) {
 		target *= Matrix4::RotationMatrixAroundPoint(center, rotation).Inverse(); //TODO(delle,Geo) test ClosestPointOnBox
-		return Vector3(
-					   fmaxf(center.x - halfDims.x, fminf(target.x, center.x + halfDims.x)),
+		return Vector3(fmaxf(center.x - halfDims.x, fminf(target.x, center.x + halfDims.x)),
 					   fmaxf(center.y - halfDims.y, fminf(target.y, center.y + halfDims.y)),
 					   fmaxf(center.y - halfDims.z, fminf(target.z, center.z + halfDims.z)));
 	}

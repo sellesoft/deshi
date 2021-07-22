@@ -1,7 +1,8 @@
 #include "Light.h"
 
 #include "../admin.h"
-
+#include "../../core/console.h"
+#include "../../utils/debug.h"
 
 Light::Light(){
 	type = ComponentType_Light;

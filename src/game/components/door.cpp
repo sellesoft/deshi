@@ -1,6 +1,8 @@
 #include "door.h"
 #include "../admin.h"
 #include "../entities/Entity.h"
+#include "../../core/console.h"
+#include "../../utils/debug.h"
 
 Door::Door(bool isOpen){
 	layer = ComponentLayer_Physics;

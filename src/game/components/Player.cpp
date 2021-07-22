@@ -2,6 +2,8 @@
 #include "Physics.h"
 #include "Movement.h"
 #include "../admin.h"
+#include "../../core/console.h"
+#include "../../utils/debug.h"
 
 Player::Player() {
 	layer = ComponentLayer_Physics;

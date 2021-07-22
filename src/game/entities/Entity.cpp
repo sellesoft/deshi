@@ -14,6 +14,7 @@
 #include "../components/AudioSource.h"
 #include "../components/AudioListener.h"
 #include "../../core/assets.h"
+#include "../../core/console.h"
 #include "../../core/renderer.h"
 #include "../../core/time.h"
 #include "../../utils/utils.h"

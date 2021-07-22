@@ -8,7 +8,6 @@
 #include "../components/AudioSource.h"
 #include "../components/AudioListener.h"
 
-
 PlayerEntity::PlayerEntity(Transform transform) {
 	cpystr(name, "player", DESHI_NAME_SIZE);
 	type = EntityType_Player;

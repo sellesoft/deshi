@@ -9,10 +9,6 @@
 #include <vector>
 #include <string>
 
-struct Scene; 
-struct Mesh; 
-struct Texture;
-
 enum VSyncTypeBits{
     VSyncType_Immediate,   //no image queue (necessary), display as soon as possible
 	VSyncType_Mailbox,     //image queue that replaces current pending image with new one, but waits to display on refresh
@@ -57,7 +53,7 @@ struct RenderSettings{
     bool findMeshTriangleNeighbors = true; //TODO(delle,Cl) move this to a better location
 	
 	//// runtime changeable ////
-	u32 loggingLevel = 1; //if printf is true in the config file, this will be set to 4
+	u32  loggingLevel = 1; //if printf is true in the config file, this will be set to 4
 	bool crashOnError = false;
 	VSyncType vsync  = VSyncType_Immediate;
 	u32 msaaSamples  = 0;
@@ -67,11 +63,11 @@ struct RenderSettings{
 	
 	//shadows
 	bool shadowPCF         = false;
-	u32 shadowResolution  = 2048;
-	f32 shadowNearZ       = 1.f;
-	f32 shadowFarZ        = 70.f;
-	f32 depthBiasConstant = 1.25f;
-	f32 depthBiasSlope    = 1.75f;
+	u32  shadowResolution  = 2048;
+	f32  shadowNearZ       = 1.f;
+	f32  shadowFarZ        = 70.f;
+	f32  depthBiasConstant = 1.25f;
+	f32  depthBiasSlope    = 1.75f;
     bool showShadowMap     = false;
 	
     //colors
@@ -89,99 +85,42 @@ struct RenderSettings{
 	bool tempMeshOnTop   = false;
 };
 
+struct Texture, Material, Mesh;
 namespace Render{
 	
     void LoadSettings();
     void SaveSettings();
-	
+	void UpdateSettings(RenderSettings settings);
 	RenderSettings* GetSettings();
     RenderStats*    GetStats();
     RendererStage*  GetStage();
 	
-    //loads a mesh to the different shaders specified in its batches
-    //returns the ID of the mesh
-    u32 LoadBaseMesh(Mesh* m, bool visible = false);
-    u32 GetBaseMeshID(const char* name);
-    u32 CreateMesh(Scene* scene, const char* filename, bool new_material = false);
-    u32 CreateMesh(Mesh* mesh, Matrix4 matrix = Matrix4::IDENTITY, bool new_material = false);
-    u32 CreateMesh(u32 meshID, Matrix4 matrix = Matrix4::IDENTITY, bool new_material = false);
-    u32 MeshCount();
-    void UnloadBaseMesh(u32 meshID);
-    void RemoveMesh(u32 meshID);
-    //updates a mesh's model matrix: translation, rotation, scale
-    void UpdateMeshMatrix(u32 meshID, Matrix4 matrix);
-    void TransformMeshMatrix(u32 meshID, Matrix4 transform);
-    void UpdateMeshBatchMaterial(u32 meshID, u32 batchIndex, u32 matID);
-    void UpdateMeshVisibility(u32 meshID, bool visible);
-	u32  MeshBatchCount(u32 meshID);
-	u32  MeshBatchMaterial(u32 meshID, u32 batchIdx);
-    Matrix4 GetMeshMatrix(u32 meshID);
-    Mesh*   GetMeshPtr(u32 meshID);
-	bool    IsBaseMesh(u32 meshIdx);
-    bool    IsMeshVisible(u32 meshIdx);
-	char*   MeshName(u32 meshIdx);
+	void LoadFont();
+    void LoadTexture(Texture* texture);
+	void LoadMaterial(Material* material);
+	void LoadMesh(Mesh* mesh);
 	
-    void AddSelectedMesh(u32 meshID);
-    //passing -1 will remove all
-    void RemoveSelectedMesh(u32 meshID);
+	void UnloadFont();
+    void UnloadTexture(Texture* texture);
+	void UnloadMaterial(Material* material);
+	void UnloadMesh(Mesh* mesh);
     
-    u32  MakeInstance(u32 meshID, Matrix4 matrix);
-    void RemoveInstance(u32 instanceID);
-    //updates an instance's model matrix: translation, rotation, scale
-    void UpdateInstanceMatrix(u32 instanceID, Matrix4 matrix);
-    void TransformInstanceMatrix(u32 instanceID, Matrix4 transform);
-    void UpdateInstanceVisibility(u32 instanceID, bool visible);
-    
-    //loads a texture onto the GPU
-    //returns the texture's id
-    u32 LoadTexture(const char* filename, u32 type);
-    u32 LoadTexture(Texture texure);
-    u32 TextureCount();
-    //unloads a texture from the GPU
-    //NOTE the previously used texture ID will not be used again
-    void UnloadTexture(u32 textureID);
-	char* TextureName(u32 textureIdx);
-    std::string ListTextures();
-	
-	u32 CreateFont(u32 textureIdx);
-    
-    u32 CreateMaterial(const char* name, u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2);
-    u32 CopyMaterial(u32 materialID);
-    u32 MaterialCount();
-	u32 MaterialShader(u32 matID);
-    void UpdateMaterialTexture(u32 matID, u32 textureType, u32 textureID);
-    void UpdateMaterialShader(u32 matID, u32 shader);
-    void RemoveMaterial(u32 materialID);
-	char* MaterialName(u32 materialIdx);
-    std::vector<u32> GetMaterialIDs(u32 MeshID);
-	std::vector<u32> MaterialTextures(u32 matID);
-	std::string ListMaterials();
-	
-	void TempLine(Vector3 start, Vector3 end, Color color = Color::WHITE);
-	void TempBox(Matrix4 transform, Color color = Color::WHITE);
-    void TempFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color = Color::WHITE);
-    
-    void LoadDefaultAssets();
-    void LoadScene(Scene* scene);
+	void DrawModel(Model* mesh, Matrix4 matrix);
+	void DrawLine(Vector3 start, Vector3 end, Color color = Color::WHITE);
+	void DrawBox(Matrix4 transform, Color color = Color::WHITE);
+    void DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color = Color::WHITE);
     
 	void UpdateLight(u32 lightIdx, Vector4 vec);
-	
     void UpdateCameraPosition(Vector3 position);
     void UpdateCameraViewMatrix(Matrix4 m);
     void UpdateCameraProjectionMatrix(Matrix4 m);
 	
-	//fills the min and max vec3's with the furthest vertices' positions in the scene
-	void SceneBoundingBox(Vector3* min, Vector3* max); 
-    
     //signals vulkan to remake the pipelines
     void ReloadShader(u32 shaderID);
     void ReloadAllShaders();
-    void UpdateRenderSettings(RenderSettings settings);
 	
 	//temp funcs
 	void remakeOffscreen();
-	std::string SaveMeshTEXT(u32 meshID);
-	std::string SaveMaterialTEXT(u32 matID);
 	
 	void Init();
 	void Update();

@@ -416,6 +416,12 @@ loadConfig(const char* filename, ConfigMap configMap){
 		if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
 		if(line_start == line_end) continue;
 		
+		//check for CRLF
+		bool has_cr = false;
+		if(*(line_end-1) == '\r') {
+			line_end -= 1;
+		}
+		
 		//format the line
 		info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);
 		if(info_start == line_end) continue;
@@ -565,5 +571,8 @@ loadConfig(const char* filename, ConfigMap configMap){
 				config.second = ConfigValueType_NONE;
 			}
 		}
+		
+		//reset line_end if CRLF
+		if(has_cr) line_end++;
 	}
 }

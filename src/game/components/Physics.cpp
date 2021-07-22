@@ -1,6 +1,8 @@
 #include "Physics.h"
 
 #include "../admin.h"
+#include "../../core/console.h"
+#include "../../utils/debug.h"
 
 Physics::Physics() {
 	layer = SystemLayer_Physics;

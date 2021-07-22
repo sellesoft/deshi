@@ -4,8 +4,9 @@
 #include "../../core/window.h"
 #include "../../core/imgui.h"
 #include "../../core/renderer.h"
+#include "../../core/console.h"
 #include "../../math/Math.h"
-#include "../../scene/Scene.h"
+#include "../../utils/debug.h"
 
 Camera::Camera(){
 	layer = ComponentLayer_NONE;
@@ -88,7 +89,6 @@ Matrix4 Camera::MakePerspectiveProjection(){
 }
 
 Matrix4 Camera::MakeOrthographicProjection() {
-	//pair<Vector3, Vector3> bbox = admin->scene.SceneBoundingBox();
 	//convert bounding box to camera space
 	persist float zoom = 10;
 	Vector3 maxcam = Math::WorldToCamera3(Vector3( zoom, zoom, zoom),  DengAdmin->mainCamera->viewMat);

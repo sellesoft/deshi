@@ -1,7 +1,6 @@
 #include "Trigger.h"
 #include "../components/Collider.h"
 #include "../components/Physics.h"
-#include "../../scene/Model.h"
 
 Trigger::Trigger(Transform _transform, const char* _name) {
 	cpystr(name, (_name) ? _name : "trigger", DESHI_NAME_SIZE); 
@@ -20,7 +19,7 @@ Trigger::Trigger(Transform _transform, Collider* _collider, const char* _name) {
 	
 	switch (collider->shape) {
 		case ColliderShape_AABB: {
-			mesh = Mesh::CreateBox(((AABBCollider*)collider)->halfDims);
+			//mesh = Mesh::CreateBox(((AABBCollider*)collider)->halfDims);
 		}break;
 		case ColliderShape_Sphere: {
 			

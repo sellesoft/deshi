@@ -3,8 +3,10 @@
 #include "../admin.h"
 #include "../../core/renderer.h"
 #include "../../core/time.h"
-#include "../../scene/Model.h"
-#include "../../scene/Scene.h"
+#include "../../core/mesh.h"
+#include "../../core/console.h"
+#include "../../utils/debug.h"
+#include "../../math/math.h"
 
 OrbManager::OrbManager(){
 	layer = ComponentLayer_Physics;

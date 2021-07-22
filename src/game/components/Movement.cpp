@@ -4,9 +4,12 @@
 #include "Camera.h"
 #include "../admin.h"
 #include "../systems/CanvasSystem.h"
-#include "../../scene/Model.h"
+#include "../../core/mesh.h"
 #include "../../core/window.h"
 #include "../../core/time.h"
+#include "../../core/console.h"
+#include "../../utils/debug.h"
+#include "../../math/math.h"
 
 Movement::Movement() {
 	layer = ComponentLayer_NONE;
@@ -124,53 +127,46 @@ void Movement::GrabObject() {
 			f32  t;
 			int  index = 0;
 			bool done = false;
-			for (Entity* e : DengAdmin->entities) {
+			for(Entity* e : DengAdmin->entities){
 				transform = e->transform.TransformMatrix();
 				rotation = Matrix4::RotationMatrix(e->transform.rotation);
-				if (MeshComp* mc = e->GetComponent<MeshComp>()) {
-					if (mc->mesh_visible) {
-						Mesh* m = mc->mesh;
-						for (Batch& b : m->batchArray) {
-							for (u32 i = 0; i < b.indexArray.size(); i += 3) {
-								//NOTE sushi: our normal here is now based on whatever the vertices normal is when we load the model
-								//			  so if we end up loading models and combining vertices again, this will break
-								p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
-								p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
-								p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
-								normal = b.vertexArray[b.indexArray[i + 0]].normal * rotation;
+				if(MeshComp* mc = e->GetComponent<MeshComp>()){
+					if(mc->mesh_visible){
+						Assert(mc->mesh, "MeshComp had a NULL mesh pointer");
+						forI(mc->mesh->triangleCount){
+							Mesh::Triangle& tri = mc->mesh->triangleArray[i];
+							p0 = tri.vertex0->pos * transform;
+							p1 = tri.vertex1->pos * transform;
+							p2 = tri.vertex1->pos * transform;
+							normal = tri.normal * rotation;
+							
+							//early out if triangle is not facing us
+							if(normal.dot(p0 - camera->position) < 0){
+								//find where on the plane defined by the triangle our raycast intersects
+								intersect = Math::VectorPlaneIntersect(p0, normal, camera->position, pos, t);
 								
-								//early out if triangle is not facing us
-								if (normal.dot(p0 - camera->position) < 0) {
-									//find where on the plane defined by the triangle our raycast intersects
-									intersect = Math::VectorPlaneIntersect(p0, normal, camera->position, pos, t);
+								//early out if intersection is behind us
+								if(t > 0){
+									//make vectors perpendicular to each edge of the triangle
+									Vector3 perp0 = normal.cross(p1 - p0).yInvert().normalized();
+									Vector3 perp1 = normal.cross(p2 - p1).yInvert().normalized();
+									Vector3 perp2 = normal.cross(p0 - p2).yInvert().normalized();
 									
-									//early out if intersection is behind us
-									if (t > 0) {
-										//make vectors perpendicular to each edge of the triangle
-										Vector3 perp0 = normal.cross(p1 - p0).yInvert().normalized();
-										Vector3 perp1 = normal.cross(p2 - p1).yInvert().normalized();
-										Vector3 perp2 = normal.cross(p0 - p2).yInvert().normalized();
+									//check that the intersection point is within the triangle and its the closest triangle found so far
+									if(perp0.dot(intersect - p0) > 0 &&
+									   perp1.dot(intersect - p1) > 0 &&
+									   perp2.dot(intersect - p2) > 0){
 										
-										//check that the intersection point is within the triangle and its the closest triangle found so far
-										if (
-											perp0.dot(intersect - p0) > 0 &&
-											perp1.dot(intersect - p1) > 0 &&
-											perp2.dot(intersect - p2) > 0) {
-											
-											//if its the closest triangle so far we store its index
-											if (t < mint) {
-												closeindex = index;
-												mint = t;
-												done = true;
-												break;
-											}
-											
+										//if its the closest triangle so far we store its index
+										if(t < mint){
+											closeindex = index;
+											mint = t;
+											done = true;
+											break;
 										}
 									}
 								}
-								if (done) break;
 							}
-							if (done) break;
 						}
 					}
 				}

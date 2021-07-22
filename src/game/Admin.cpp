@@ -15,7 +15,9 @@
 #include "../core/renderer.h"
 #include "../core/window.h"
 #include "../core/assets.h"
+#include "../core/console.h"
 #include "../utils/utils.h"
+#include "../utils/debug.h"
 
 #include <iostream>
 #include <fstream>

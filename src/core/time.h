@@ -37,7 +37,7 @@ struct Time{
 	std::string FormatTickTime(std::string format);
 };
 
-//global_ time pointer
+//global time pointer
 extern Time* g_time;
 #define DengTime g_time
 #define DengTotalTime g_time->totalTime

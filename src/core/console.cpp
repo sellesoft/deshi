@@ -1116,9 +1116,9 @@ CMDSTARTA(mesh_batch_material, args.size() == 3) {
 } CMDEND("mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>");
 
 CMDSTARTA(texture_load, args.size() > 0) {
-	Texture tex(args[0].c_str());
-	if (args.size() == 2) { tex.type = (u32)std::stoi(args[1]); }
-	u32 id = Render::LoadTexture(tex);
+	TextureType type = TextureType_Albedo;
+	if(args.size() == 2) type = (TextureType)std::stoi(args[1]);
+	u32 id = Render::LoadTexture(args[0].c_str(), type);
 	return TOSTRING("Loaded texture ", args[0], " to ID: ", id);
 }CMDEND("texture_load <texture.png:String> [type:Uint]");
 
@@ -1127,13 +1127,11 @@ CMDFUNC(texture_list) {
 }
 
 CMDFUNC(texture_type_list) {
-	return TOSTRING("[c:yellow]Texture Types: (can be combined)[c]\n"
-					"   0=Albedo, Color, Diffuse\n"
-					"   1=Normal, Bump\n"
-					"   2=Light, Ambient\n"
-					"   4=Specular, Reflective\n"
-					"   8=Cube      (not supported yet)\n"
-					"  16=Sphere    (not supported yet)");
+	return TOSTRING("[c:yellow]Texture Types:[c]\n"
+					"   0=Albedo,   Color, Diffuse\n"
+					"   1=Normal,   Bump\n"
+					"   3=Specular, Reflective\n"
+					"   4=Light,    Ambient");
 }
 
 CMDFUNC(quit) {
