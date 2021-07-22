@@ -45,3 +45,4 @@ misc/deshi.vcxproj.user
 misc/4coder.bat
 misc/shell.bat
 build.bat
+misc/data/cfg/render.cfg
