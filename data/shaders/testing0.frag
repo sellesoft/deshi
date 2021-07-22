@@ -243,14 +243,88 @@ vec4 fragPosTest(){
 	return vec4(vec3(1 - (dist / 30)), 1) * samp;
 }
 
+float modulus(float x, float y){
+	return x - y * (x/y);;
+}
+
 vec4 dither(){
 	
+	
 
-	return vec4(1,1,1,1);
+	vec2 texSize = vec2(550, 550);//textureSize(albedoSampler, 0);
+	vec2 texInc = vec2(1 / texSize.x, 1/ texSize.y);
+
+	tc = vec2(quant(tc.x, texSize.x), quant(tc.y, texSize.y));
+	vec2 randControl = vec2(tc.x + quant(time, 5), tc.y + quant(time, 5));
+	float random = floor(rand(randControl) * 5);
+	//return texture(albedoSampler, tc);
+
+	vec2 tcm = floor(tc * texSize);
+
+
+	if(mod(tcm.y, 2.0) == 0 && mod(tcm.x, 2.0) == 0 && mod(random, 2) == 0){
+		vec2 nextSamp = tc;
+		if(mod(random, 4) == 0){
+			nextSamp += texInc ;
+
+		}else{
+			nextSamp -= texInc ;
+		}
+		vec4 currCol = texture(albedoSampler, tc);
+		vec4 nextCol = texture(albedoSampler, nextSamp);
+
+		if(nextCol != currCol){
+			return nextCol;
+		}
+		else {
+			return currCol;
+		}
+	}
+	else{
+		vec2 nextSamp = tc;
+		if(mod(random, 2) == 0){
+			nextSamp += texInc ;
+
+		}else{
+			nextSamp -= texInc ;
+		}
+		vec4 currCol = texture(albedoSampler, tc);
+		vec4 nextCol = texture(albedoSampler, nextSamp);
+
+		if(nextCol != currCol){
+			return nextCol;
+		}
+		else {
+			return currCol;
+		}
+	}
+
 }
 
 
+vec4 edge(){
+	
+	vec2 texSize = textureSize(albedoSampler, 0);
+	vec2 texInc = vec2(1 / texSize.x, 1/ texSize.y);
+
+	tc = vec2(quant(tc.x, texSize.x), quant(tc.y, texSize.y));
+	vec4 currCol = texture(albedoSampler, tc);
+
+	for(int x = 0; x < 3; x++){
+		for(int y = 0; y < 3; y++){
+			if(x != y ){
+				vec4 samp = texture(albedoSampler, tc - vec2(1 + x * texInc.x ,1 + y * texInc.y));
+				if(currCol != samp){
+					return vec4(0);
+				}
+			}
+		}	
+	}
+	return vec4(1);
+
+}
+
 
 void main() {
-	outColor = fog();
+	outColor = dither();
 }
