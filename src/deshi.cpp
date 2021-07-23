@@ -182,6 +182,7 @@ __________ maybe store the text in the actual source and create the file from th
 #include "utils/debug.h"
 #include "utils/ringarray.h"
 #include "utils/command.h"
+#include "utils/font.h"
 #include "math/math.h"
 #include "scene/Scene.h"
 
@@ -254,6 +255,10 @@ int main() {
 	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
 	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
 	
+	Font font;
+
+	font.load_bdf_font("gohufont-11.bdf");
+
 	//start main loop
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
 		glfwPollEvents();

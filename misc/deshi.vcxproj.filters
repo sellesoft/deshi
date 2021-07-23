@@ -208,6 +208,15 @@
     <ClInclude Include="..\src\math\MatrixN.h">
       <Filter>src\math</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\utils\font.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\string.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\utils\array.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -287,6 +296,9 @@
     </Filter>
     <Filter Include="src\core\renderers">
       <UniqueIdentifier>{b4b49f6e-8831-4ad6-8d8f-916345453348}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="fonts">
+      <UniqueIdentifier>{65411276-8752-4cb2-8428-7d9175a1c4b9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -394,6 +406,12 @@
     </None>
     <None Include="..\data\shaders\ui.vert">
       <Filter>shaders</Filter>
+    </None>
+    <None Include="..\data\fonts\gohufont.otb">
+      <Filter>fonts</Filter>
+    </None>
+    <None Include="..\data\fonts\gohufont-11.bdf">
+      <Filter>fonts</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -511,10 +529,18 @@
     <ClCompile Include="..\src\core\renderers\vulkan.cpp">
       <Filter>src\core\renderers</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\utils\string.cpp">
+      <Filter>src\utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\cfg\keybinds.txt">
       <Filter>cfg</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="..\data\fonts\Paskowy.ttf">
+      <Filter>fonts</Filter>
+    </Font>
   </ItemGroup>
 </Project>

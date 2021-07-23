@@ -52,6 +52,7 @@ namespace Assets{
 	inline static std::string dirSounds()  { return dirData() + "sounds/"; }
 	inline static std::string dirTemp()    { return dirData() + "temp/"; }
 	inline static std::string dirTextures(){ return dirData() + "textures/"; }
+	inline static std::string dirFonts()   { return dirData() + "fonts/"; }
 	
 	//returns true if the file was deleted
 	bool deleteFile(std::string& filepath, bool logError = true);
@@ -100,7 +101,9 @@ namespace Assets{
 	
 	//creates base deshi directories if they dont already exist
 	void enforceDirectories();
-	
+
+
+
 	///////////////////////////
 	//// parsing utilities ////
 	///////////////////////////

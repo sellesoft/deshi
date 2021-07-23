@@ -208,12 +208,15 @@
     <ClInclude Include="..\src\scene\Bone.h" />
     <ClInclude Include="..\src\scene\Model.h" />
     <ClInclude Include="..\src\scene\Scene.h" />
+    <ClInclude Include="..\src\utils\array.h" />
     <ClInclude Include="..\src\utils\Color.h" />
     <ClInclude Include="..\src\utils\Command.h" />
     <ClInclude Include="..\src\utils\ContainerManager.h" />
     <ClInclude Include="..\src\utils\Debug.h" />
+    <ClInclude Include="..\src\utils\font.h" />
     <ClInclude Include="..\src\utils\optional.h" />
     <ClInclude Include="..\src\utils\RingArray.h" />
+    <ClInclude Include="..\src\utils\string.h" />
     <ClInclude Include="..\src\utils\tuple.h" />
     <ClInclude Include="..\src\utils\utils.h" />
   </ItemGroup>
@@ -222,6 +225,8 @@
     <None Include="..\cfg\aliases.cfg" />
     <None Include="..\cfg\binds.cfg" />
     <None Include="..\cfg\render.cfg" />
+    <None Include="..\data\fonts\gohufont-11.bdf" />
+    <None Include="..\data\fonts\gohufont.otb" />
     <None Include="..\data\shaders\base.frag" />
     <None Include="..\data\shaders\base.vert" />
     <None Include="..\data\shaders\fixedimguishader.vert" />
@@ -311,9 +316,13 @@
     <ClCompile Include="..\src\game\systems\SoundSystem.cpp" />
     <ClCompile Include="..\src\game\UndoManager.cpp" />
     <ClCompile Include="..\src\scene\Model.cpp" />
+    <ClCompile Include="..\src\utils\string.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\cfg\keybinds.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="..\data\fonts\Paskowy.ttf" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
