@@ -18,16 +18,17 @@ global_ const char* TextureTypeStrings[] = {
 };
 
 enum Shader_{ 
-	Shader_Flat, 
-	Shader_Phong, 
-	Shader_PBR, 
-	Shader_Wireframe, 
-	Shader_Lavalamp, 
-	Shader_Testing0, 
+	Shader_NULL,
+	Shader_Flat,
+	Shader_Phong,
+	Shader_PBR,
+	Shader_Wireframe,
+	Shader_Lavalamp,
+	Shader_Testing0,
 	Shader_Testing1,
 }; typedef u32 Shader;
 global_ const char* ShaderStrings[] = {
-	"Flat", "Phong", "PBR", "Wireframe", "Lavalamp", "Testing0", "Testing1"
+	"NULL", "Flat", "Phong", "PBR", "Wireframe", "Lavalamp", "Testing0", "Testing1"
 };
 
 enum MaterialFlags_{

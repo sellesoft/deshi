@@ -17,9 +17,9 @@ struct ModelInstance : public Component {
 	
 	ModelInstance();
 	ModelInstance(Model* model);
-	~ModelInstance();
 	
 	void ToggleVisibility();
+	void ChangeModel(Model* model);
 	
 	void ReceiveEvent(Event event) override;
 	void Init() override;

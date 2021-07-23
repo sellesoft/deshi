@@ -23,7 +23,6 @@ Minor Ungrouped TODOs
 add editor settings and config
 change text-based saving so material shaders are text rather than ID
 rework and simplify entity creation so there is a distinction between development and gameplay creation
-fix colorspace so we dont have to do the pow in shaders
 make a dynamic timers array on in time.h for cleaner timer stuffs
 add a setting for a limit to the number of log files
 create a hot-loadable global vars file
@@ -62,13 +61,10 @@ setup more generalized material/pipeline creation
 ____specialization constants
 ____uber shaders
 ____runtime pipeline creation/specialization
-redo how lights are stored
 look into getting info from shaders, or setting up compute shaders
 ____ref: https://github.com/SaschaWillems/Vulkan/blob/master/examples/computeparticles/computeparticles.cpp
 ____the primary reason being that we need to optimize outlining objects, which will
 ____involve clipping triangles and stuff
-redo MeshVk so its only child meshes
-____avoid having 3 copies of a mesh (model, meshVK, vulkan)
 add standard render/video settings
 add face normal and tangents to vertex buffer
 fix texture transparency
@@ -84,13 +80,11 @@ orthographic grabbing/rotating
 add transfering the player pointer between entities that have an actor comp (combo in Global Tab)
 orbitting camera for rotating around objects
 context menu when right clicking on an object 
-scaling objects
 typing numbers while grabbing/rotating/scaling for precise manipulation (like in Blender)
 implement grabbing/rotating/scaling with a visual tool thing (like in Unreal)
 world axis in top right (like we used to have)
 orthographic side views
 (maybe) multiple viewports
-add showing axis lines through object when axis grabbing once we have lines in Vulkan
 implement orthographic grabbing 
 entity filtering in entity list
 combine undo manager into editor file

@@ -3,6 +3,24 @@
 
 
 ///////////////
+//// @init ////
+///////////////
+void Scene::
+Init(){
+	//null assets      //TODO(delle) store null.png and null shader in a .cpp
+	CreateBoxMesh(1.0f, 1.0f, 1.0f);
+	CreateTexture("null128.png");
+	CreateMaterial("null_material", Shader_NULL, MaterialFlags_NONE, {NullTexture()});
+	CreateModelFromMesh(NullMesh(), Shader_NULL);
+}
+
+void Scene::
+Reset(){
+	//@Incomplete
+}
+
+
+///////////////
 //// @mesh ////
 ///////////////
 local Mesh* 
@@ -33,11 +51,6 @@ AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 planarVertexCou
 local void 
 DeallocateMesh(Mesh* mesh){
 	free(mesh);
-}
-
-Mesh* Scene::
-NullMesh(){
-	return meshes[0];
 }
 
 Mesh* Scene::
@@ -131,11 +144,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 
 void Scene::
 DeleteMesh(Mesh* mesh){
-	forI(meshes.size()){
-		if(mesh == meshes[i]){
-			//@Incomplete
-		}
-	}
+	//@Incomplete
 }
 
 
@@ -143,14 +152,14 @@ DeleteMesh(Mesh* mesh){
 //// @texture ////
 //////////////////
 Texture* Scene::
-NullTexture(){
-	return textures[0];
-}
-
-Texture* Scene::
 CreateTexture(const char* filename, TextureType type){
 	//@Incomplete
 	return 0;
+}
+
+void Scene::
+DeleteTexture(Texture* texture){
+	//@Incomplete
 }
 
 
@@ -158,25 +167,20 @@ CreateTexture(const char* filename, TextureType type){
 //// @material ////
 ///////////////////
 Material* Scene::
-NullMaterial(){
-	return materials[0];
-}
-
-Material* Scene::
 CreateMaterial(const char* name, Shader shader, MaterialFlags flags, std::vector<Texture*> textures){
 	//@Incomplete
 	return 0;
+}
+
+void Scene::
+DeleteMaterial(Material* material){
+	//@Incomplete
 }
 
 
 ////////////////
 //// @model ////
 ////////////////
-Model* Scene::
-NullModel(){
-	return models[0];
-}
-
 //TODO(delle,Op) speed this up with tinyobj::LoadOBJWithCallback to not parse twice
 Model* Scene::
 CreateModelFromOBJ(const char* filename, Shader shader, Color color, bool planarize){
@@ -225,26 +229,5 @@ CreateModelFromMesh(Mesh* mesh, Shader shader, Color color){
 
 void Scene::
 DeleteModel(Model* model){
-	//@Incomplete
-}
-
-void Scene::
-UpdateModelBatchMaterial(Model* model, u32 batchIdx, Material* material){
-	//@Incomplete
-}
-
-
-///////////////
-//// @init ////
-///////////////
-void Scene::
-Init(){
-	CreateModelFromMesh(CreateBoxMesh(1.0f, 1.0f, 1.0f));
-	CreateModelFromOBJ("sphere.obj");
-	CreateModelFromOBJ("arrow.obj");
-}
-
-void Scene::
-Reset(){
 	//@Incomplete
 }

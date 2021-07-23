@@ -24,12 +24,14 @@ ModelInstance::ModelInstance(Model* _model){
 	visible  = true;
 }
 
-ModelInstance::~ModelInstance(){
-	DengScene->DeleteModel(model);
-}
-
 void ModelInstance::ToggleVisibility(){
 	visible = !visible;
+}
+
+void ModelInstance::ChangeModel(Model* _model){
+	model    = _model;
+	mesh     = model->mesh;
+	armature = model->armature;
 }
 
 void ModelInstance::ReceiveEvent(Event event){}
