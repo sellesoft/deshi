@@ -3553,6 +3553,77 @@ LoadTexture(const char* filename, u32 type){
 }
 
 u32 Render::
+LoadTexture(u32* texture, u32 width, u32 height, u32 type) {
+	Assert(texture, "Attempt to nullptr as texture")
+
+	PrintVk(3, "    Loading Texture");
+	TextureVk tex{};
+	tex.   pixels = (stbi_uc*)texture;
+	tex.    width = width;
+	tex.   height = height;
+	tex. channels = 4;
+	tex.     type = type;
+	tex.mipLevels = 1;
+	tex.imageSize = tex.width * tex.height * 4;
+
+	//copy the memory to a staging buffer
+	StagingBufferVk staging{};
+	CreateAndMapBuffer(staging.buffer, staging.memory, tex.imageSize, (size_t)tex.imageSize, tex.pixels, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	//copy the staging buffer to the image and generate its mipmaps
+	CreateImage(tex.width, tex.height, tex.mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, tex.image, tex.imageMemory);
+	TransitionImageLayout(tex.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, tex.mipLevels);
+	CopyBufferToImage(staging.buffer, tex.image, (u32)tex.width, (u32)tex.height);
+	GenerateMipmaps(tex.image, VK_FORMAT_R8G8B8A8_SRGB, tex.width, tex.height, tex.mipLevels);
+	//image layout set to SHADER_READ_ONLY when generating mipmaps
+	tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	//cleanup staging memory
+	vkDestroyBuffer(device, staging.buffer, allocator);
+	vkFreeMemory(device, staging.memory, allocator);
+
+	//create sampler
+	VkSamplerCreateInfo samplerInfo{ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
+	samplerInfo.magFilter = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+	samplerInfo.minFilter = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+	samplerInfo.mipmapMode = (settings.textureFiltering) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.anisotropyEnable = settings.anistropicFiltering;
+	VkPhysicalDeviceProperties properties{};
+	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+	samplerInfo.maxAnisotropy = (settings.anistropicFiltering) ? properties.limits.maxSamplerAnisotropy : 1.0f;
+	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;
+	samplerInfo.compareEnable = VK_FALSE;
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.minLod = 0.0f;
+	samplerInfo.maxLod = (f32)tex.mipLevels;
+	AssertVk(vkCreateSampler(device, &samplerInfo, nullptr, &tex.sampler), "failed to create texture sampler");
+
+	//create image view
+	tex.view = CreateImageView(tex.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, tex.mipLevels);
+
+	//fill descriptor image info
+	tex.imageInfo.imageView = tex.view;
+	tex.imageInfo.sampler = tex.sampler;
+	tex.imageInfo.imageLayout = tex.layout;
+
+	//name image, image view, and sampler for debugging
+	//DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)tex.image, TOSTRING("Texture image ", filename).c_str());
+	//DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)tex.view, TOSTRING("Texture imageview ", filename).c_str());
+	//DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)tex.sampler, TOSTRING("Texture sampler ", filename).c_str());
+
+	//add the texture to the scene and return its index
+	u32 idx = (u32)textures.size();
+	tex.id = idx;
+	textures.push_back(tex);
+	return idx;
+}
+
+u32 Render::
 LoadTexture(Texture texture){
 	for(auto& tex : textures){ if(strcmp(tex.filename, texture.filename) == 0){ return tex.id; } }
 	return LoadTexture(texture.filename, texture.type);

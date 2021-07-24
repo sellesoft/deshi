@@ -20,11 +20,6 @@ string::string(const char* s) {
 	}
 }
 
-string::string(const char* s, int size) {
-	this->size = size;
-
-}
-
 string::string(const string& s) {
 	size = s.size;
 	if (size != 0) {
@@ -38,7 +33,7 @@ string::string(const string& s) {
 }
 
 string::~string() {
-	if (str && do_i_own_this) free(str);
+	if (str) free(str);
 	str = nullptr;
 	size = 0;
 }

@@ -326,5 +326,6 @@ vec4 edge(){
 
 
 void main() {
-	outColor = dither();
+	//tc = vec2(mod(tc.x, 6), mod(tc.y, 11));
+	outColor = texture(albedoSampler, tc);
 }

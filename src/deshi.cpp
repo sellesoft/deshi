@@ -259,6 +259,16 @@ int main() {
 
 	font.load_bdf_font("gohufont-11.bdf");
 
+
+	//for (auto& p : font.textures) {
+	//	Render::LoadTexture(p.second.items, font.width, font.height, 0);
+	//}
+
+
+
+	Render::LoadTexture(font.texture_sheet, font.width, font.height * font.char_count, 0);
+
+
 	//start main loop
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
 		glfwPollEvents();

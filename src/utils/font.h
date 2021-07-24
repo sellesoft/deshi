@@ -11,27 +11,33 @@
 #include "../core/console.h"
 #include "../math/Math.h"
 
-const char* hexCharToBin(char c) {
-	switch (toupper(c)) {
-		case '0': return "0000";
-		case '1': return "0001";
-		case '2': return "0010";
-		case '3': return "0011";
-		case '4': return "0100";
-		case '5': return "0101";
-		case '6': return "0110";
-		case '7': return "0111";
-		case '8': return "1000";
-		case '9': return "1001";
-		case 'A': return "1010";
-		case 'B': return "1011";
-		case 'C': return "1100";
-		case 'D': return "1101";
-		case 'E': return "1110";
-		case 'F': return "1111";
+string hexCharToBin(char c) {
+	switch (toupper(c)) { //TODO(sushi, Cl) make it so we can return a str literal in a function that returns string
+		case '0': return string("0000");
+		case '1': return string("0001");
+		case '2': return string("0010");
+		case '3': return string("0011");
+		case '4': return string("0100");
+		case '5': return string("0101");
+		case '6': return string("0110");
+		case '7': return string("0111");
+		case '8': return string("1000");
+		case '9': return string("1001");
+		case 'A': return string("1010");
+		case 'B': return string("1011");
+		case 'C': return string("1100");
+		case 'D': return string("1101");
+		case 'E': return string("1110");
+		case 'F': return string("1111");
 	}
 }
 
+u32 four_u8_to_u32(u8 a, u8 b, u8 c, u8 d) {
+	return ((u32)d << 24) | ((u32)c << 16) | ((u32)b << 8) | ((u32)a << 0);
+}
+
+
+const u32 white = ((u32)255 << 24) | ((u32)255 << 16) | ((u32)255 << 8) | ((u32)255 << 0);
 
 struct Font {
 	u32 width;
@@ -48,6 +54,8 @@ struct Font {
 	Vector4 bbx;
 
 	array<pair<u32, array<u32>>> textures;
+
+	u32* texture_sheet;
 
 	//this is currently set up to only support monospaced fonts
 	void load_bdf_font(const char* fontname) {
@@ -181,36 +189,85 @@ struct Font {
 
 						//move onto BBX
 						//this determines the smallest box that can enclose the glyph and it's offset from the origin
-						Vector4 glyphbbx;
+						Vector4 gbbx;
+
+						while (*currChar++ != ' ') {} //skip BBX key
+
 						//get glyph bounding box width
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
-						glyphbbx.x = string::stoi(value);
+						gbbx.x = string::stoi(value);
 
 						value.clear();
 
 						//get glyph bounding box height
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
-						glyphbbx.y = string::stoi(value);
+						gbbx.y = string::stoi(value);
 
 						value.clear();
 
 						//get lower left x
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
-						glyphbbx.z = string::stoi(value);
+						gbbx.z = string::stoi(value);
 
 						value.clear();
 
 						//get lower left y
 						currChar += Utils::skipSpacesLeading(currChar);
-						while (*currChar != ' ') { value += *currChar; currChar++; }
-						glyphbbx.w = string::stoi(value);
+						while (*currChar != '\n') { value += *currChar; currChar++; }
+						gbbx.w = string::stoi(value);
+
+						currChar++;
+						
+						//begin building the texture array for the character
+						array<u32> tex;
+
+						for (int i = 0; i < bbx.x * bbx.y; i++) {
+							tex.add(0);
+						}
+
+						//skip over BITMAP key
+						while (*++currChar != '\n') {}
+						currChar++;
+						line_number++;
 
 						
+						//decend down rows of pixels and turn their hex representation
+						//into binary, then into u32 representation for texture
+						for (int row = gbbx.y; row != 0; row--) {
+							//calculate where in the tex array we will be drawing this row of pixels
+							//NOTE: this may fail if a font has a positive y offset so be wary of that
+							int bbxrow = bbx.y - (gbbx.w + row - bbx.w);
+							if (*currChar == '\n') currChar++;
+							string binary = hexCharToBin(*currChar++) + hexCharToBin(*currChar++);
+							
+							//turn binary string into array of u8s
+							//TODO(sushi, OpCl) do this better
+							u8 binArr[8];
+							for (int stoa = 0; stoa < 8; stoa++) {
+								binArr[stoa] = (u8)string::stoi(binary[stoa]);
+							}
 
+							for (int col = gbbx.z, idx = 0; col < gbbx.z + gbbx.x; col++, idx++) {
+								if (binArr[idx]) {
+									tex[bbxrow * bbx.x + col] = white;
+								}
+							}
 
+							//PRINTLN(binary);
+						}
+						
+						/*
+						PRINTLN("");
+						for (int i = 1; i < tex.size() + 1; i++) {
+							std::cout << tex[i - 1];
+							if (i % (int)bbx.x == 0) std::cout << "\n";
+						}
+						*/
+
+						textures.add(pair<u32, array<u32>>(encoding, tex));
 					}
 					else {
 						//if we dont find any of the keys we need proceed to next line
@@ -228,8 +285,24 @@ struct Font {
 			line_number++;
 		}
 
+		//set up texture_sheet
+		//i try to align the characters in rows here and account for the remaining white space
+
+		//attempt to align into 4 rows
+
+
+
+		texture_sheet = (u32*)calloc(char_count, width * height * sizeof(u32));
+
+		for (int i = 0; i < textures.size(); i++) {
+			array<u32> tex = textures[i].second;
+			memcpy(texture_sheet + i * width * height, tex.items, width * height * sizeof(u32));
+		}
+
 	}	
 	
+	
+
 
 };
 

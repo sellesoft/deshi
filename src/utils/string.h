@@ -7,12 +7,10 @@
 struct string {
 	char* str;
 	int size = 0;
-	bool do_i_own_this = true;
 
 	string() {}
 	string(const char c);
 	string(const char* s);
-	string(const char* s, int size);
 	string(const string& s);
 
 	~string();

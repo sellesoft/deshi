@@ -136,7 +136,7 @@ struct array {
 			int osize = size();
 			space += 8;
 			items = (T*)realloc(items, (space) * itemsize);
-			assert(items); "realloc failed and returned nullptr. maybe we ran out of memory?";
+			Assert(items, "realloc failed and returned nullptr. maybe we ran out of memory?");
 			max = items + space - 1;
 			
 			first = items;

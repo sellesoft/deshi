@@ -137,6 +137,7 @@ namespace Render{
     //loads a texture onto the GPU
     //returns the texture's id
     u32 LoadTexture(const char* filename, u32 type);
+    u32 LoadTexture(u32* texture, u32 width, u32 height, u32 type);
     u32 LoadTexture(Texture texure);
     u32 TextureCount();
     //unloads a texture from the GPU

@@ -324,6 +324,9 @@
   <ItemGroup>
     <Font Include="..\data\fonts\Paskowy.ttf" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\customvis.natvis" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -543,4 +543,7 @@
       <Filter>fonts</Filter>
     </Font>
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\customvis.natvis" />
+  </ItemGroup>
 </Project>
