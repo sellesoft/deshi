@@ -558,6 +558,7 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 		}break;
 		default:{
 			PrintVk(4, pCallbackData->pMessage);
+			PRINTLN(pCallbackData->pMessage << "\n");
 		}break;
 	}
 	return VK_FALSE;
@@ -2987,10 +2988,9 @@ BuildCommandBuffers(){
 				push.scale.y = 2.0f / (f32)height;
 				push.translate.x = -1.0f;
 				push.translate.y = -1.0f;
+				vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
 				forX(cmd_idx, uiCmdCount){
-					push.font_offset = uiCmdArray[cmd_idx].fontIdx;
-					vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 					vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].fontIdx].descriptorSet, 0, nullptr);
 					vkCmdDrawIndexed(frames[i].commandBuffer, uiCmdArray[cmd_idx].indexCount, 1, uiCmdArray[cmd_idx].indexOffset, 0, 0);
 				}
@@ -3120,7 +3120,7 @@ newFrame(){
 void UI::
 FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
 	if(color.a == 0) return;
-	
+
 	u32 col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
 	u16*      ip = uiIndexArray  + uiIndexCount;
@@ -3140,7 +3140,7 @@ FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
 void UI::
 DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	if (color.a == 0) return;
-	
+
 	u32 col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
 	u16* ip      = uiIndexArray + uiIndexCount;
@@ -3163,69 +3163,33 @@ DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+
 }
 
 void UI::
 DrawText(const char* text, vec2 pos, Color color) {
 	if (color.a == 0) return;
-	
-	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2D* vp = uiVertexArray + uiVertexCount;
-	u16*      ip = uiIndexArray + uiIndexCount;
-	
-	u32 w = fonts[1].width;
-	u32 h = fonts[1].height;
-	
-	float dx = 1.f / w;
-	float dy = 1.f / (h * fonts[1].char_count);
-	
-	char c = *text;
-	
-	int idx = c - 33;
-	
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
-	vp[0].pos = {pos.x+0,pos.y+0}; vp[0].uv = {0,idx*dy};     vp[0].color = col;
-	vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,idx*dy};     vp[1].color = col;
-	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,(idx+1)*dy}; vp[2].color = col;
-	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,(idx+1)*dy}; vp[3].color = col;
-	
-	
-	//while (text != '\0') {
-	//	char c = *text;
-	//
-	//
-	//
-	//	text++;
-	//}
-	
-	uiVertexCount += 4;
-	uiIndexCount += 6;
-	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].fontIdx = 1;
-}
 
+	f32 w = fonts[1].width;
+	do {
+		char c = *text;
+		pos.x += w;
+		DrawChar(c, pos, vec2::ONE, color);
+	} while (*text++ != '\0');
+}
 
 void UI::
 DrawChar(u32 character, vec2 pos, vec2 scale, Color color) {
 	if (color.a == 0) return;
-	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
 	u16*      ip = uiIndexArray  + uiIndexCount;
 	
+	f32 w = fonts[1].width;
 	f32 h = fonts[1].height;
 	f32 dy = 1.f / (f32)fonts[1].char_count; 
-	//NOTE the fix was that we were doing: dy = 1 / (h * char_count); instead of: dy = 1 / char_count
-	//     which is wrong b/c dy is supposed to be the scaling factor on an index and since
-	//     UV space is 0...1 and idx space is 0...char_count, dys need to be representitive of those maxes
-	//NOTE i found this out by looking at the UV values in the vertex shader inputs and while
-	//     they did look right at first, i noticed that the Y values were scaled by about a 1/10 so i
-	//     tested multiplying the uv.y in the vert shader by 10 and got the correct render just off by 1 pixel
-	//     which led me to the 11 scale, which i knew was the font height, so i looked for the wrong math
-	//TODO(sushi) delete this NOTE block once youve read it and fix the missing SPACE character too :)
 	
-	f32 idx = character - 33; //NOTE this should be 32 because SPACE is the first one, not EXCLAMATION
+	f32 idx = character - 32; 
 	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;

@@ -149,7 +149,7 @@ struct Font {
 						string value = "";
 						
 						currChar += Utils::skipSpacesLeading(currChar);
-						while (*currChar != ' ') { if (*currChar != '"') value += *currChar; currChar++; }
+						while (*currChar != ' ' && *currChar != '\n') { if (*currChar != '"') value += *currChar; currChar++; }
 						char_count = string::stoi(value);
 					}
 					else if (buff == "STARTCHAR") {
