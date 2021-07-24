@@ -3132,6 +3132,34 @@ FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
 	uiCmdArray[uiCmdCount-1].indexCount += 6;
 }
 
+void UI::
+DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
+	if (color.a == 0) return;
+
+	u32 col = color.R8G8B8A8_UNORM();
+	Vertex2D* vp = uiVertexArray + uiVertexCount;
+	u16* ip      = uiIndexArray + uiIndexCount;
+
+	vec2 ott = vec2(x2, y2) - vec2(x1, y1) ;
+	vec2 norm = vec2(ott.y, -ott.x).normalized();
+
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
+	vp[0].pos = {x1,y1}; vp[0].uv = {0,0}; vp[0].color = col;
+	vp[1].pos = {x2,y2}; vp[1].uv = {0,0}; vp[1].color = col;
+	vp[2].pos = {x2,y2}; vp[2].uv = {0,0}; vp[2].color = col;
+	vp[3].pos = {x1,y1}; vp[3].uv = {0,0}; vp[3].color = col;
+
+	vp[0].pos += norm * thickness;
+	vp[1].pos += norm * thickness;
+	vp[2].pos -= norm * thickness;
+	vp[3].pos -= norm * thickness;
+
+	uiVertexCount += 4;
+	uiIndexCount += 6;
+	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+}
+
 
 //-------------------------------------------------------------------------------------------------
 // @INTERFACE FUNCTIONS
