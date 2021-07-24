@@ -41,75 +41,6 @@ local void ClearCopiedEntities(){
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// inputs
 
-Entity* Editor::SelectEntityRaycast(){
-    vec3 pos = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions);
-    
-    int closeindex = -1;
-    f32 mint = INFINITY;
-    
-    vec3 p0, p1, p2, normal, intersect;
-    mat4 transform, rotation;
-    f32  t;
-    int  index = 0;
-    bool done = false;
-    for(Entity* e : admin->entities) {
-        transform = e->transform.TransformMatrix();
-        rotation = Matrix4::RotationMatrix(e->transform.rotation);
-        if(MeshComp* mc = e->GetComponent<MeshComp>()) {
-            if(mc->mesh_visible) {
-                Mesh* m = mc->mesh;
-                for(Batch& b : m->batchArray){
-                    for(u32 i = 0; i < b.indexArray.size(); i += 3){
-                        //NOTE sushi: our normal here is now based on whatever the vertices normal is when we load the model
-                        //			  so if we end up loading models and combining vertices again, this will break
-                        p0 = b.vertexArray[b.indexArray[i + 0]].pos * transform;
-                        p1 = b.vertexArray[b.indexArray[i + 1]].pos * transform;
-                        p2 = b.vertexArray[b.indexArray[i + 2]].pos * transform;
-                        normal = b.vertexArray[b.indexArray[i + 0]].normal * rotation;
-                        
-                        //early out if triangle is not facing us
-                        if (normal.dot(p0 - camera->position) < 0) {
-                            //find where on the plane defined by the triangle our raycast intersects
-                            intersect = Math::VectorPlaneIntersect(p0, normal, camera->position, pos, t);
-                            
-                            //early out if intersection is behind us
-                            if (t > 0) {
-                                //make vectors perpendicular to each edge of the triangle
-                                Vector3 perp0 = normal.cross(p1 - p0).yInvert().normalized();
-                                Vector3 perp1 = normal.cross(p2 - p1).yInvert().normalized();
-                                Vector3 perp2 = normal.cross(p0 - p2).yInvert().normalized();
-                                
-                                //check that the intersection point is within the triangle and its the closest triangle found so far
-                                if (
-                                    perp0.dot(intersect - p0) > 0 &&
-                                    perp1.dot(intersect - p1) > 0 &&
-                                    perp2.dot(intersect - p2) > 0) {
-                                    
-                                    //if its the closest triangle so far we store its index
-                                    if (t < mint) {
-                                        closeindex = index;
-                                        mint = t;
-                                        done = true;
-                                        break;
-                                    }
-                                    
-                                }
-                            }
-                        }
-                        if(done) break;
-                    }
-                    if (done) break;
-                }
-            }
-        }
-        done = false;
-        index++;
-    }
-    
-    if (closeindex != -1) return admin->entities[closeindex];
-    else return 0;
-}
-
 void Editor::TranslateEntity(Entity* e, TransformationAxis axis){
     
 }
@@ -228,7 +159,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 if (Physics* p = sel->GetComponent<Physics>()) {
                     p->position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
                 }
-				Render::TempLine(vec3{-1000,sel->transform.position.y,sel->transform.position.z}, 
+				Render::DrawLine(vec3{-1000,sel->transform.position.y,sel->transform.position.z}, 
 								 vec3{ 1000,sel->transform.position.y,sel->transform.position.z}, 
 								 Color::DARK_RED);
             }
@@ -252,7 +183,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 if (Physics* p = sel->GetComponent<Physics>()) {
                     p->position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
                 }	
-                Render::TempLine(vec3{sel->transform.position.x,-1000,sel->transform.position.z}, 
+                Render::DrawLine(vec3{sel->transform.position.x,-1000,sel->transform.position.z}, 
 								 vec3{sel->transform.position.x, 1000,sel->transform.position.z}, 
 								 Color::DARK_GREEN);
             }
@@ -276,7 +207,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 if (Physics* p = sel->GetComponent<Physics>()) {
                     p->position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
                 }
-                Render::TempLine(vec3{sel->transform.position.x,sel->transform.position.y,-1000}, 
+                Render::DrawLine(vec3{sel->transform.position.x,sel->transform.position.y,-1000}, 
 								 vec3{sel->transform.position.x,sel->transform.position.y, 1000}, 
 								 Color::DARK_BLUE);
             }
@@ -1025,8 +956,8 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                     //// visible button ////
                     //TODO(sushi,UiEnt) implement visibility for things other than meshes like lights, etc.
                     ImGui::TableSetColumnIndex(0);
-                    if(MeshComp* m = ent->GetComponent<MeshComp>()){
-                        if(ImGui::Button((m->mesh_visible) ? "(M)" : "( )", ImVec2(-FLT_MIN, 0.0f))){
+                    if(ModelInstance* m = ent->GetComponent<ModelInstance>()){
+                        if(ImGui::Button((m->visible) ? "(M)" : "( )", ImVec2(-FLT_MIN, 0.0f))){
                             m->ToggleVisibility();
                         }
                     }else if(Light* l = ent->GetComponent<Light>()){
@@ -1111,8 +1042,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                 ent = admin->CreateEntityNow({}, ent_name.c_str());
             }break;
             case(1):{ //Static Mesh
-                u32 mesh_id = Render::CreateMesh(&admin->scene, "box.obj");
-                MeshComp* mc = new MeshComp(mesh_id);
+                ModelInstance* mc = new ModelInstance();
                 Physics* phys = new Physics();
                 phys->staticPosition = true;
                 Collider* coll = new AABBCollider(vec3{.5f, .5f, .5f}, phys->mass);
@@ -1192,41 +1122,29 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 				case ComponentType_ModelInstance:{
 					if(ImGui::CollapsingHeader("Model", &delete_button, tree_flags)){
 						ImGui::Indent();
-						
 						ModelInstance* mc = dyncast(ModelInstance, c);
-						u32 modelIdx = DengScene->ModelIndex(mc->model);
                         
 						ImGui::TextEx("Visible  "); ImGui::SameLine();
 						if(ImGui::Button((mc->visible) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
 							mc->ToggleVisibility();
 						}
                         
-						ImGui::TextEx("Mesh     "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-						if(ImGui::BeginCombo("##mesh_combo", DengScene->ModelName(modelIdx))){ WinHovCheck;
-							forI(DengScene->MeshCount()){
-								if(ImGui::Selectable(DengScene->MeshName(i), mc->mesh == DengScene->MeshAt(i))){
-									mc->ChangeMesh(i); //@Incomplete
+						ImGui::TextEx("Model     "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
+						if(ImGui::BeginCombo("##model_combo", mc->model->name)){
+							forI(DengScene->ModelCount()){
+								if(ImGui::Selectable(DengScene->ModelName(i), mc->model == DengScene->ModelAt(i))){
+									mc->ChangeModel(DengScene->ModelAt(i));
 								}
 							}
 							ImGui::EndCombo();
 						}
                         
-						u32 mesh_batch_idx = 0;
-						ImGui::TextEx("Batch    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-						if(ImGui::BeginCombo("##mesh_batch_combo", mc->mesh->batchArray[mesh_batch_idx].name)){ WinHovCheck;
-							forI(mc->mesh->batchArray.size()){
-								if(ImGui::Selectable(mc->mesh->batchArray[i].name, mesh_batch_idx == i)){
-									mesh_batch_idx = i; 
-								}
-							}
-							ImGui::EndCombo();
-						}
-                        
+						//TODO(delle) implement an actual model batch editor; this only lets u change the first batch atm
 						ImGui::TextEx("Material "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-						if(ImGui::BeginCombo("##mesh_mat_combo", DengScene->ModelBatchMaterial(mc->meshID, mesh_batch_idx))){ WinHovCheck;
+						if(ImGui::BeginCombo("##model_mat_combo", mc->model->batchArray[0].material->name)){
 							forI(DengScene->MaterialCount()){
-								if(ImGui::Selectable(DengScene->MaterialName(i), Render::MeshBatchMaterial(mc->meshID, mesh_batch_idx) == i)){
-									Render::UpdateMeshBatchMaterial(mc->meshID, mesh_batch_idx, i);
+								if(ImGui::Selectable(DengScene->MaterialName(i), DengScene->MaterialAt(i) == mc->model->batchArray[0].material)){
+									mc->model->batchArray[0].material = DengScene->MaterialAt(i);
 								}
 							}
 							ImGui::EndCombo();
@@ -1574,7 +1492,7 @@ inline void MaterialsTab(Admin* admin){
     //delete material
     if(selected_mat != -1 && DengInput->KeyPressedAnyMod(Key::DELETE)){
         //TODO(Ui) re-enable this with a popup to delete OR with undoing on delete
-        //Render::RemoveMaterial(selected_mat);
+        //DengScene->DeleteMaterial(selected_mat);
         //selected_mat = -1;
     }
     
@@ -1670,13 +1588,12 @@ inline void MaterialsTab(Admin* admin){
             //// PBR shader ////
             //TODO(Ui) add texture image previews
             case Shader_PBR:default:{
-				std::vector<u32> matTextures = Render::MaterialTextures(selected_mat);
 				Texture** matTextures = DengScene->MaterialAt(selected_mat)->textureArray;
 				ImGui::TextEx("Albedo   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
                 if (ImGui::BeginCombo("##mat_albedo_combo", matTextures[0]->name)) {
                     forI(textures.size()) {
                         if (ImGui::Selectable(textures[i].c_str(), strcmp(matTextures[0]->name, textures[i].c_str()) == 0)) {
-                            DengScene->MaterialTexture(selected_mat, 0) = DengScene->CreateTexture(textures[i].c_str(), TextureType_Albedo);
+                            DengScene->MaterialTexture(selected_mat, 0) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Albedo);
                         }
                     }
                     ImGui::EndCombo(); //mat_albedo_combo
@@ -1685,7 +1602,7 @@ inline void MaterialsTab(Admin* admin){
                 if (ImGui::BeginCombo("##mat_normal_combo", matTextures[1]->name)) {
                     forI(textures.size()) {
                         if (ImGui::Selectable(textures[i].c_str(), strcmp(matTextures[1]->name, textures[i].c_str()) == 0)) {
-							DengScene->MaterialTexture(selected_mat, 1) = DengScene->CreateTexture(textures[i].c_str(), TextureType_Normal);
+							DengScene->MaterialTexture(selected_mat, 1) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Normal);
                         }
                     }
                     ImGui::EndCombo(); //mat_normal_combo
@@ -1694,7 +1611,7 @@ inline void MaterialsTab(Admin* admin){
                 if (ImGui::BeginCombo("##mat_spec_combo", matTextures[2]->name)) {
                     forI(textures.size()) {
                         if (ImGui::Selectable(textures[i].c_str(), strcmp(matTextures[2]->name, textures[i].c_str()) == 0)) {
-							DengScene->MaterialTexture(selected_mat, 2) = DengScene->CreateTexture(textures[i].c_str(), TextureType_Specular);
+							DengScene->MaterialTexture(selected_mat, 2) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Specular);
                         }
                     }
                     ImGui::EndCombo(); //mat_spec_combo
@@ -1703,7 +1620,7 @@ inline void MaterialsTab(Admin* admin){
                 if (ImGui::BeginCombo("##mat_light_combo", matTextures[3]->name)) {
                     forI(textures.size()) {
                         if (ImGui::Selectable(textures[i].c_str(), strcmp(matTextures[3]->name, textures[i].c_str()) == 0)) {
-							DengScene->MaterialTexture(selected_mat, 3) = DengScene->CreateTexture(textures[i].c_str(), TextureType_Light);
+							DengScene->MaterialTexture(selected_mat, 3) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Light);
                         }
                     }
                     ImGui::EndCombo(); //mat_light_combo
@@ -1819,7 +1736,7 @@ void DisplayTriggers(Admin* admin) {
             Trigger* t = dyncast(Trigger, e);
             switch (t->collider->shape) {
                 case ColliderShape_AABB:{
-                    Render::TempBox(e->transform.TransformMatrix(), Color::DARK_MAGENTA);
+                    Render::DrawBox(e->transform.TransformMatrix(), Color::DARK_MAGENTA);
                 }break;
                 case ColliderShape_Sphere: {
                     
@@ -2250,7 +2167,6 @@ void Editor::DebugLayer() {
     ImGui::End();
 }
 
-
 void Editor::WorldGrid(Vector3 cpos) {
     int lines = 50;
 	f32 xp = floor(cpos.x) + lines;
@@ -2265,13 +2181,13 @@ void Editor::WorldGrid(Vector3 cpos) {
         Vector3 v3 = Vector3(xn,   0, zn+i);
         Vector3 v4 = Vector3(xp,   0, zn+i);
         
-		if(xn+i != 0) Render::TempLine(v1, v2, color);
-		if(zn+i != 0) Render::TempLine(v3, v4, color);
+		if(xn+i != 0) Render::DrawLine(v1, v2, color);
+		if(zn+i != 0) Render::DrawLine(v3, v4, color);
     }
 	
-	Render::TempLine(vec3{-1000,0,0}, vec3{1000,0,0}, Color::RED);
-	Render::TempLine(vec3{0,-1000,0}, vec3{0,1000,0}, Color::GREEN);
-	Render::TempLine(vec3{0,0,-1000}, vec3{0,0,1000}, Color::BLUE);
+	Render::DrawLine(vec3{-1000,0,0}, vec3{1000,0,0}, Color::RED);
+	Render::DrawLine(vec3{0,-1000,0}, vec3{0,1000,0}, Color::GREEN);
+	Render::DrawLine(vec3{0,0,-1000}, vec3{0,0,1000}, Color::BLUE);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2321,7 +2237,8 @@ void Editor::Update(){
     {//// select ////
         if (!DengConsole->IMGUI_MOUSE_CAPTURE && !admin->controller.cameraLocked) {
             if (DengInput->KeyPressed(MouseButton::LEFT)) {
-                Entity* e = SelectEntityRaycast();
+				vec3 ray = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions) - camera->position;
+                Entity* e = DengAdmin->EntityRaycast(camera->position, ray.normalized(), ray.mag());
                 if(!DengInput->LShiftDown()) selected.clear(); 
                 if(e) selected.push_back(e);
             }
@@ -2334,7 +2251,7 @@ void Editor::Update(){
 	
     {//// render ////
         //reload all shaders
-        if (DengInput->KeyPressed(Key::F5)) { DengConsole->ExecCommand("shader_reload", "-1"); }
+        if (DengInput->KeyPressed(Key::F5)) { Render::ReloadAllShaders(); }
         
         //fullscreen toggle
         if (DengInput->KeyPressed(Key::F11)) {
@@ -2427,7 +2344,7 @@ void Editor::Update(){
 				copy_path = filepath;
 				for(Component* c : selected[0]->components){
 					if(c->type == ComponentType_MeshComp){
-						copy_mesh_diffs.push_back(pair<u32,u32>(-1, ((MeshComp*)c)->meshID));
+						copy_mesh_diffs.push_back(pair<u32,u32>(-1, ((ModelInstance*)c)->meshID));
 					}
 				}
 			}
@@ -2473,14 +2390,10 @@ void Editor::Update(){
 	//// render selected entity outlines ////
 	/////////////////////////////////////////
 	
-	//TODO(delle,Cl) possibly clean up  the renderer's selected mesh stuff by having the 
-	//renderer take a pointer of u32 that's stored here, or just dont have the renderer know about
-	//selected entities since thats a game thing
-	Render::RemoveSelectedMesh(-1);
 	for(Entity* e : selected){
-		if(MeshComp* mc = e->GetComponent<MeshComp>()){
+		if(ModelInstance* mc = e->GetComponent<ModelInstance>()){
 			if(!Render::GetSettings()->findMeshTriangleNeighbors){
-				Render::AddSelectedMesh(mc->meshID);
+				Render::DrawModelSelected(mc->model, mc->transform);
 			}else{
 				std::vector<Vector2> outline = mc->mesh->GenerateOutlinePoints(e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
 																			   DengWindow->dimensions, camera->position);

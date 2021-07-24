@@ -113,81 +113,22 @@ void Movement::GrabObject() {
 	//grab object or drop it if already holding one
 	//frame is necessary to avoid this being ran multiple times due to
 	//movement being within physics update
-	if (DengInput->KeyPressedAnyMod(DengKeys.use) && DengTime->updateCount != frame) {
-		if (!grabbing) {
-			//find obj to pick up
-			//TODO(sushi, Cl) make this a function somewhere, maybe geometry, and make the editor and this call it 
-			vec3 pos = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions);
-			
-			int closeindex = -1;
-			f32 mint = INFINITY;
-			
-			vec3 p0, p1, p2, normal, intersect;
-			mat4 transform, rotation;
-			f32  t;
-			int  index = 0;
-			bool done = false;
-			for(Entity* e : DengAdmin->entities){
-				transform = e->transform.TransformMatrix();
-				rotation = Matrix4::RotationMatrix(e->transform.rotation);
-				if(ModelInstance* mc = e->GetComponent<ModelInstance>()){
-					if(mc->visible){
-						Assert(mc->mesh, "MeshComp had a NULL mesh pointer");
-						forI(mc->mesh->triangleCount){
-							Mesh::Triangle& tri = mc->mesh->triangleArray[i];
-							p0 = tri.vertex0->pos * transform;
-							p1 = tri.vertex1->pos * transform;
-							p2 = tri.vertex1->pos * transform;
-							normal = tri.normal * rotation;
-							
-							//early out if triangle is not facing us
-							if(normal.dot(p0 - camera->position) < 0){
-								//find where on the plane defined by the triangle our raycast intersects
-								intersect = Math::VectorPlaneIntersect(p0, normal, camera->position, pos, t);
-								
-								//early out if intersection is behind us
-								if(t > 0){
-									//make vectors perpendicular to each edge of the triangle
-									Vector3 perp0 = normal.cross(p1 - p0).yInvert().normalized();
-									Vector3 perp1 = normal.cross(p2 - p1).yInvert().normalized();
-									Vector3 perp2 = normal.cross(p0 - p2).yInvert().normalized();
-									
-									//check that the intersection point is within the triangle and its the closest triangle found so far
-									if(perp0.dot(intersect - p0) > 0 &&
-									   perp1.dot(intersect - p1) > 0 &&
-									   perp2.dot(intersect - p2) > 0){
-										
-										//if its the closest triangle so far we store its index
-										if(t < mint){
-											closeindex = index;
-											mint = t;
-											done = true;
-											break;
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-				done = false;
-				index++;
-			}
-			
-			if (closeindex != -1) {
-				grabeephys = DengAdmin->entities[closeindex]->GetComponent<Physics>();
-				if (t <= maxGrabbingDistance
-					&& grabeephys && !grabeephys->staticPosition) {
-					grabbing = true;
-					ogpos = grabeephys->position;
-				}
-				timer = 0;
-			}
-		}//if !grabbing
-		else {
+	if(DengInput->KeyPressedAnyMod(DengKeys.use) && DengTime->updateCount != frame){ //!TestMe
+		if(grabbing){
 			grabbing = false;
 			grabeephys = 0;
 			timer = 0;
+		}else{
+			vec3 ray = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions) - camera->position;
+			if(Entity* e = DengAdmin->EntityRaycast(camera->position, ray.normalized(), maxGrabbingDistance)){
+				if(grabeephys = e->GetComponent<Physics>()){
+					if(!grabeephys->staticPosition){
+						grabbing = true;
+						ogpos = grabeephys->position;
+					}
+					timer = 0;
+				}
+			}
 		}
 		frame = DengTime->updateCount;
 	}
@@ -209,7 +150,6 @@ void Movement::GrabObject() {
 			grabeephys->velocity = Vector3::ZERO;
 		}
 	}
-	
 }
 
 

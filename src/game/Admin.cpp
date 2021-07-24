@@ -161,72 +161,11 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
     skip = false;
 }
 
-u32 Admin::CreateEntity(const char* name) {
-    u32 id = entities.size() + creationBuffer.size() - 1;
-    creationBuffer.push_back(new Entity(this, id, Transform(), name));
-    return id;
-}
 
-u32 Admin::CreateEntity(std::vector<Component*> components, const char* name, Transform transform) {
-    u32 id = entities.size() + creationBuffer.size() - 1;
-    creationBuffer.push_back(new Entity(this, id, transform, name, components));
-    return id;
-}
+//////////////////////////////////
+//// @serialization functions ////
+//////////////////////////////////
 
-u32 Admin::CreateEntity(Entity* e) {
-    if(!e) return -1;
-	
-    e->admin = this;
-    creationBuffer.push_back(e);
-    return entities.size() + creationBuffer.size() - 1;
-}
-
-Entity* Admin::CreateEntityNow(std::vector<Component*> components, const char* name, Transform transform) {
-    Entity* e = new Entity(this, entities.size(), transform, name, components);
-    entities.push_back(e);
-    for (Component* c : e->components) {
-        c->compID = compIDcount;
-        c->entity = e;
-        c->layer_index = freeCompLayers[c->layer].add(c);
-        if (c->type == ComponentType_Light) DengScene->lights.push_back(dyncast(Light, c));
-        compIDcount++;
-    }
-    return e;
-}
-
-void Admin::DeleteEntity(u32 id) {
-    if(id < entities.size()){
-        deletionBuffer.push_back(entities[id]);
-    }else{
-        ERROR("Attempted to add entity '", id, "' to deletion buffer when it doesn't exist on the admin");
-    }
-}
-
-void Admin::DeleteEntity(Entity* e) {
-    if(e && e->id < entities.size()){
-        deletionBuffer.push_back(e);
-    }else{
-        ERROR("Attempted to add entity '", e->id, "' to deletion buffer when it doesn't exist on the admin");
-    }
-}
-
-void Admin::RemoveButDontDeleteEntity(Entity* e){
-	if(!e) return;
-	
-	for(Component* c : e->components) freeCompLayers[c->layer].remove_from(c->layer_index);
-	for(int i = e->id+1; i < entities.size(); ++i) entities[i]->id -= 1;
-	entities.erase(entities.begin()+e->id);
-	if(e == player) player = nullptr;
-}
-
-void Admin::AddComponentToLayers(Component* c){
-    if(!c) return;
-	
-    c->compID = compIDcount;
-    c->layer_index = freeCompLayers[c->layer].add(c);
-    if(c->type == ComponentType_Light) DengScene->lights.push_back(dyncast(Light, c));
-    compIDcount++;
-}
 
 void Admin::ChangeState(GameState new_state){
     if(state == new_state) return;
@@ -311,6 +250,55 @@ void Admin::Reset(){
     editor.Reset();
     SUCCESS("Finished resetting admin in ", TIMER_END(t_r), "ms");
 }
+
+//{P}:physics layer,  {C}:canvas layer,  {W}:world layer,  {S}:send layer
+//{p}:physics system, {c}:canvas system, {w}:world system, {s}:send system, 
+//{e}:editor
+std::string Admin::FormatAdminTime(std::string fmt){
+	std::string out = ""; out.reserve(512);
+	forI(fmt.size()){
+		if(fmt[i] == '{'){
+			switch(fmt[i+1]){
+				case('P'):{
+					out.append(std::to_string(physLyrTime));
+				}i+=2;continue;
+				case('p'):{
+					out.append(std::to_string(physSysTime));
+				}i+=2;continue;
+				case('C'):{
+					out.append(std::to_string(canvasLyrTime));
+				}i+=2;continue;
+				case('c'):{
+					out.append(std::to_string(canvasSysTime));
+				}i+=2;continue;
+				case('W'):{
+					out.append(std::to_string(worldLyrTime));
+				}i+=2;continue;
+				case('w'):{
+					out.append(std::to_string(worldSysTime));
+				}i+=2;continue;
+				case('S'):{
+					out.append(std::to_string(sndLyrTime));
+				}i+=2;continue;
+				case('s'):{
+					out.append(std::to_string(sndSysTime));
+				}i+=2;continue;
+				case('e'):{
+					out.append(std::to_string(editorTime));
+				}i+=2;continue;
+			}
+		}
+		out.push_back(fmt[i]);
+	}
+	
+	out.shrink_to_fit(); return out;
+}
+
+
+////////////////////////
+//// @serialization ////
+////////////////////////
+
 
 //NOTE using a levels directory temporarily so it doesnt cause problems with the save directory
 //TODO(delle) this removes the entire level dir and recreates it, optimize by diffing for speed and comment preservation
@@ -962,45 +950,140 @@ void Admin::LoadDESH(const char* filename) {
     SkipUpdate();
 }
 
-//{P}:physics layer,  {C}:canvas layer,  {W}:world layer,  {S}:send layer
-//{p}:physics system, {c}:canvas system, {w}:world system, {s}:send system, 
-//{e}:editor
-std::string Admin::FormatAdminTime(std::string fmt){
-	std::string out = ""; out.reserve(512);
-	forI(fmt.size()){
-		if(fmt[i] == '{'){
-			switch(fmt[i+1]){
-				case('P'):{
-					out.append(std::to_string(physLyrTime));
-				}i+=2;continue;
-				case('p'):{
-					out.append(std::to_string(physSysTime));
-				}i+=2;continue;
-				case('C'):{
-					out.append(std::to_string(canvasLyrTime));
-				}i+=2;continue;
-				case('c'):{
-					out.append(std::to_string(canvasSysTime));
-				}i+=2;continue;
-				case('W'):{
-					out.append(std::to_string(worldLyrTime));
-				}i+=2;continue;
-				case('w'):{
-					out.append(std::to_string(worldSysTime));
-				}i+=2;continue;
-				case('S'):{
-					out.append(std::to_string(sndLyrTime));
-				}i+=2;continue;
-				case('s'):{
-					out.append(std::to_string(sndSysTime));
-				}i+=2;continue;
-				case('e'):{
-					out.append(std::to_string(editorTime));
-				}i+=2;continue;
-			}
-		}
-		out.push_back(fmt[i]);
-	}
+
+//////////////////
+//// @storage ////
+//////////////////
+
+
+u32 Admin::CreateEntity(const char* name) {
+    u32 id = entities.size() + creationBuffer.size() - 1;
+    creationBuffer.push_back(new Entity(this, id, Transform(), name));
+    return id;
+}
+
+u32 Admin::CreateEntity(std::vector<Component*> components, const char* name, Transform transform) {
+    u32 id = entities.size() + creationBuffer.size() - 1;
+    creationBuffer.push_back(new Entity(this, id, transform, name, components));
+    return id;
+}
+
+u32 Admin::CreateEntity(Entity* e) {
+    if(!e) return -1;
 	
-	out.shrink_to_fit(); return out;
+    e->admin = this;
+    creationBuffer.push_back(e);
+    return entities.size() + creationBuffer.size() - 1;
+}
+
+Entity* Admin::CreateEntityNow(std::vector<Component*> components, const char* name, Transform transform) {
+    Entity* e = new Entity(this, entities.size(), transform, name, components);
+    entities.push_back(e);
+    for (Component* c : e->components) {
+        c->compID = compIDcount;
+        c->entity = e;
+        c->layer_index = freeCompLayers[c->layer].add(c);
+        if (c->type == ComponentType_Light) DengScene->lights.push_back(dyncast(Light, c));
+        compIDcount++;
+    }
+    return e;
+}
+
+void Admin::DeleteEntity(u32 id) {
+    if(id < entities.size()){
+        deletionBuffer.push_back(entities[id]);
+    }else{
+        ERROR("Attempted to add entity '", id, "' to deletion buffer when it doesn't exist on the admin");
+    }
+}
+
+void Admin::DeleteEntity(Entity* e) {
+    if(e && e->id < entities.size()){
+        deletionBuffer.push_back(e);
+    }else{
+        ERROR("Attempted to add entity '", e->id, "' to deletion buffer when it doesn't exist on the admin");
+    }
+}
+
+void Admin::RemoveButDontDeleteEntity(Entity* e){
+	if(!e) return;
+	
+	for(Component* c : e->components) freeCompLayers[c->layer].remove_from(c->layer_index);
+	for(int i = e->id+1; i < entities.size(); ++i) entities[i]->id -= 1;
+	entities.erase(entities.begin()+e->id);
+	if(e == player) player = nullptr;
+}
+
+void Admin::AddComponentToLayers(Component* c){
+    if(!c) return;
+	
+    c->compID = compIDcount;
+    c->layer_index = freeCompLayers[c->layer].add(c);
+    if(c->type == ComponentType_Light) DengScene->lights.push_back(dyncast(Light, c));
+    compIDcount++;
+}
+
+
+////////////////
+//// @query ////
+////////////////
+
+
+Entity* Admin::EntityRaycast(Vector3 origin, Vector3 direction, f32 maxDistance){ //!TestMe
+	Entity* result = 0;
+    f32 min_depth = INFINITY;
+    f32 depth;
+    vec3 p0, p1, p2, normal;
+	vec3 intersect;
+	vec3 perp01, perp12, perp20;
+    mat4 transform, rotation;
+	Mesh::Triangle* tri;
+    for(Entity* e : entities){
+        transform = e->transform.TransformMatrix();
+        rotation = Matrix4::RotationMatrix(e->transform.rotation);
+        if(ModelInstance* mc = e->GetComponent<ModelInstance>()){
+            if(!mc->visible) continue;
+			forX(tri_idx, mc->mesh->triangleCount){
+				tri = mc->mesh->triangleArray[tri_idx];
+				p0 = tri->v0->pos * transform;
+				p1 = tri->v1->pos * transform;
+				p2 = tri->v2->pos * transform;
+				normal = tri->normal * rotation;
+				
+				//early out if triangle is not facing us
+				if(normal.dot(p0 - origin) >= 0) continue;
+				
+				//find where on the plane defined by the triangle our raycast intersects
+				depth     = (p0 - origin).dot(normal) / direction.dot(normal);
+				intersect = line_start + (direction * depth);
+				
+				//early out if intersection is behind us
+				if(depth <= 0) continue;
+				
+				//make vectors perpendicular to each edge of the triangle
+				perp01 = normal.cross(p1 - p0).yInvert().normalized();
+				perp12 = normal.cross(p2 - p1).yInvert().normalized();
+				perp20 = normal.cross(p0 - p2).yInvert().normalized();
+				
+				//check that the intersection point is within the triangle and its the closest triangle found so far
+				if(perp01.dot(intersect - p0) > 0 &&
+				   perp12.dot(intersect - p1) > 0 &&
+				   perp20.dot(intersect - p2) > 0){
+					
+					//if its the closest triangle so far we store its index
+					if(depth < min_depth){
+						result = e;
+						min_depth = depth;
+						break;
+					}
+				}
+			}
+        }
+    }
+    
+    if(result && depth <= maxDistance){
+		return result;
+	}else{
+		return 0;
+	}
 }

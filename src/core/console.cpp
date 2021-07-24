@@ -976,7 +976,7 @@ CMDSTARTA(mat_texture, args.size() == 3){
 	int texSlot = std::stoi(args[1]);
 	int texID = std::stoi(args[2]);
 	DengScene->materials[matID]->textureArray[texSlot] = DengScene->textures[texID];
-	LOG("Updated material ",DengScene->materials[matID].name,"'s texture",texSlot," to ",DengScene->textures[texID]->name);
+	LOG("Updated material ",DengScene->materials[matID]->name,"'s texture",texSlot," to ",DengScene->textures[texID]->name);
 	return "";
 }CMDEND("mat_texture <materialID:Uint> <textureSlot:Uint> <textureID:Uint>");
 
@@ -984,7 +984,7 @@ CMDSTARTA(mat_shader, args.size() == 2){
 	int matID = std::stoi(args[0]);
 	int shader = std::stoi(args[1]);
 	DengScene->materials[matID]->shader = (Shader)shader;
-	LOG("Updated material ",DengScene->materials[matID].name,"'s shader to ", ShaderStrings[shader]);
+	LOG("Updated material ",DengScene->materials[matID]->name,"'s shader to ", ShaderStrings[shader]);
 	return "";
 } CMDEND("mat_shader <materialID:Uint> <shaderID:Uint>");
 
@@ -1026,7 +1026,7 @@ CMDSTARTA(texture_load, args.size() > 0){
 	TIMER_START(t_l);
 	TextureType type = TextureType_Albedo;
 	if(args.size() == 2) type = (TextureType)std::stoi(args[1]);
-	DengScene->CreateTexture(args[0].c_str(), type);
+	DengScene->CreateTextureFromFile(args[0].c_str(), type);
 	SUCCESS("Loaded texture '",args[0],"' in ",TIMER_END(t_l),"ms");
 	return "";
 }CMDEND("texture_load <texture.png:String> [type:Uint]");

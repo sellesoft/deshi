@@ -3110,7 +3110,12 @@ UnloadMesh(Mesh* mesh){
 //// @draw ////
 ///////////////
 void Render::
-DrawModel(Model* mesh, Matrix4 matrix, bool selected){
+DrawModel(Model* mesh, Matrix4 matrix){
+	//@Incomplete
+}
+
+void Render::
+DrawModelSelected(Model* mesh, Matrix4 matrix){
 	//@Incomplete
 }
 

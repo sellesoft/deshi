@@ -39,6 +39,7 @@ enum ModelFlags_{
 	ModelFlags_NONE,
 }; typedef u32 ModelFlags;
 
+//NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
 struct Mesh{
 	u64 bytes;
 	u32 checksum;
@@ -65,11 +66,10 @@ struct Mesh{
 	u32 vertexCount;
 	
 	struct Triangle{
-		Vertex* vertex0;
-		Vertex* vertex1;
-		Vertex* vertex2;
+		Vertex* v0;
+		Vertex* v1;
+		Vertex* v2;
 		vec3    normal;
-		vec3    midpoint;
 	}  *triangleArray;
 	u32 triangleCount;
 	

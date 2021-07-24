@@ -9,7 +9,7 @@ void Scene::
 Init(){
 	//null assets      //TODO(delle) store null.png and null shader in a .cpp
 	CreateBoxMesh(1.0f, 1.0f, 1.0f);
-	CreateTexture("null128.png");
+	CreateTextureFromFile("null128.png");
 	CreateMaterial("null_material", Shader_NULL, MaterialFlags_NONE, {NullTexture()});
 	CreateModelFromMesh(NullMesh(), Shader_NULL);
 }
@@ -84,18 +84,12 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 		ia[24]=0; ia[25]=3; ia[26]=1;    ia[27]=0; ia[28]=2; ia[29]=3; // -x face
 		ia[30]=4; ia[31]=1; ia[32]=5;    ia[33]=4; ia[35]=0; ia[35]=1; // +z face
 	}{//triangle array
-		ta[ 0]={va+4,va+2,va+0,vec3::UP,     {-.333f,   1.f,-.333f}}; // +y
-		ta[ 1]={va+4,va+6,va+2,vec3::UP,     { .333f,   1.f, .333f}}; // +y
-		ta[ 2]={va+2,va+7,va+3,vec3::BACK,   {-.333f,-.333f,   1.f}}; // -z
-		ta[ 3]={va+2,va+6,va+7,vec3::BACK,   { .333f, .333f,   1.f}}; // -z
-		ta[ 4]={va+6,va+5,va+7,vec3::RIGHT,  {   1.f,-.333f, .333f}}; // +x
-		ta[ 5]={va+6,va+4,va+5,vec3::RIGHT,  {   1.f, .333f,-.333f}}; // +x
-		ta[ 6]={va+1,va+7,va+5,vec3::DOWN,   { .333f,  -1.f,-.333f}}; // -y
-		ta[ 7]={va+1,va+3,va+7,vec3::DOWN,   {-.333f,   1.f, .333f}}; // -y
-		ta[ 8]={va+0,va+3,va+1,vec3::LEFT,   {  -1.f,-.333f,-.333f}}; // -x 
-		ta[ 9]={va+0,va+2,va+3,vec3::LEFT,   {  -1.f, .333f, .333f}}; // -x
-		ta[10]={va+4,va+1,va+5,vec3::FORWARD,{ .333f,-.333f,  -1.f}}; // +z
-		ta[11]={va+4,va+0,va+1,vec3::FORWARD,{-.333f, .333f,  -1.f}}; // +z
+		ta[ 0]={va+4,va+2,va+0,vec3::UP};      ta[ 1]={va+4,va+6,va+2,vec3::UP}; // +y
+		ta[ 2]={va+2,va+7,va+3,vec3::BACK};    ta[ 3]={va+2,va+6,va+7,vec3::BACK}; // -z
+		ta[ 4]={va+6,va+5,va+7,vec3::RIGHT};   ta[ 5]={va+6,va+4,va+5,vec3::RIGHT}; // +x
+		ta[ 6]={va+1,va+7,va+5,vec3::DOWN};    ta[ 7]={va+1,va+3,va+7,vec3::DOWN}; // -y
+		ta[ 8]={va+0,va+3,va+1,vec3::LEFT};    ta[ 9]={va+0,va+2,va+3,vec3::LEFT}; // -x
+		ta[10]={va+4,va+1,va+5,vec3::FORWARD}; ta[11]={va+4,va+0,va+1,vec3::FORWARD}; // +z
 	}{//face array
 		fa[0].triangleCount = 2;   fa[0].vertexCount = 4; // +y
 		fa[1].triangleCount = 2;   fa[1].vertexCount = 4; // -z
@@ -142,6 +136,18 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	return mesh;
 }
 
+Mesh* Scene::
+CreateMeshFromFile(const char* filename){
+	//@Incomplete
+	return 0;
+}
+
+Mesh* Scene::
+CreateMeshFromMemory(void* data){
+	//@Incomplete
+	return 0;
+}
+
 void Scene::
 DeleteMesh(Mesh* mesh){
 	//@Incomplete
@@ -152,7 +158,13 @@ DeleteMesh(Mesh* mesh){
 //// @texture ////
 //////////////////
 Texture* Scene::
-CreateTexture(const char* filename, TextureType type){
+CreateTextureFromFile(const char* filename, TextureType type){
+	//@Incomplete
+	return 0;
+}
+
+Texture* Scene::
+CreateTextureFromMemory(void* data, TextureType type){
 	//@Incomplete
 	return 0;
 }
@@ -219,6 +231,11 @@ CreateModelFromOBJ(const char* filename, Shader shader, Color color, bool planar
 	
 	//return model pointer
 	return model;
+}
+
+Model* Scene::
+CopyModel(Model* model){
+	
 }
 
 Model* Scene::

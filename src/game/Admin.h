@@ -55,7 +55,7 @@ struct Admin {
 	u32 compIDcount = 0;
 	
 	//pause flags
-	bool  skip;
+	bool skip;
 	bool paused;
 	bool pause_command, pause_phys, pause_canvas, pause_world, pause_sound;
 	
@@ -69,44 +69,39 @@ struct Admin {
 	void Init();
 	void Update();
 	void PostRenderUpdate();
+	void Reset();
 	void Cleanup();
 	
 	inline void SkipUpdate(){ skip = true; };
 	void ChangeState(GameState state);
 	std::string FormatAdminTime(std::string format);
 	
-	void Reset();
+	//// @serialization functions ////
 	void SaveTEXT(std::string savename);
 	void LoadTEXT(std::string savename);
 	void SaveDESH(const char* filename);
 	void LoadDESH(const char* filename);
 	
-	//// entity and component storage functions ////
-	
+	//// @storage functions ////
 	//initializes an entity with no components and adds it to the creation buffer
-	//returns the eventual position in the admin's entities array
 	u32 CreateEntity(const char* name = 0);
-	
 	//initializes an entity with a component vector and adds it to the creation buffer
-	//returns the eventual position in the admin's entities array
 	u32 CreateEntity(std::vector<Component*> components, const char* name = 0, Transform transform = Transform());
-	
 	//adds an already initialized entity to the creation buffer
 	u32 CreateEntity(Entity* entity);
-	
 	//initializes an entity with a component vector and adds it to entities immedietly
-	//returns a pointer to the entitiy
 	Entity* CreateEntityNow(std::vector<Component*> components, const char* name = 0, Transform transform = Transform());
 	
 	//adds the entity at ID to the deletion buffer
 	void DeleteEntity(u32 id);
-	
-	//adds an already initialized entity to the deletion buffer
+	//adds the entity to the deletion buffer
 	void DeleteEntity(Entity* entity);
-	
 	void RemoveButDontDeleteEntity(Entity* entity);
 	
 	void AddComponentToLayers(Component* component);
+	
+	//// @query functions ////
+	Entity* EntityRaycast(Vector3 origin, Vector3 direction, f32 maxDistance);
 };
 
 

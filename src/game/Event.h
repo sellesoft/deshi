@@ -11,11 +11,12 @@ struct Receiver;
 enum EventBits{
 	Event_NONE = 0,
 	Event_DoorToggle,
-    Event_LightToggle
+    Event_LightToggle,
+    Event_ModelVisibleToggle,
 }; typedef u32 Event;
 
 global_ const char* EventStrings[] = {
-    "NONE", "DoorToggle", "LightToggle"
+    "NONE", "DoorToggle", "LightToggle", "ModelVisibleToggle",
 };
 
 //object stored on a component that wants to send a signal
