@@ -331,4 +331,5 @@ void main() {
 	//tc = vec2(mod(tc.x, 6), mod(tc.y, 11));
 
 	outColor = dither();
+	outColor = vec4(1,1,1,0.5);
 }

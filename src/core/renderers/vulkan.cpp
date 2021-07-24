@@ -82,7 +82,7 @@ struct Push2DVk{
 };
 
 struct ImmediateCmdVk{
-	u32 fontIdx;
+	u32 texIdx;
 	u32 vertexOffset;
 	u16 indexOffset;
 	u16 indexCount;
@@ -145,6 +145,7 @@ struct FontVk{
 local RenderSettings settings;
 local ConfigMap configMap = {
 	{"#render settings config file",0,0},
+
 	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)21},
 	{"debugging",            ConfigValueType_Bool, &settings.debugging},
 	{"printf",               ConfigValueType_Bool, &settings.printf},
@@ -153,12 +154,15 @@ local ConfigMap configMap = {
 	{"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples},
 	{"recompile_all_shaders",        ConfigValueType_Bool, &settings.recompileAllShaders},
 	{"find_mesh_triangle_neighbors", ConfigValueType_Bool, &settings.findMeshTriangleNeighbors},
+
 	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
 	{"logging_level",  ConfigValueType_U32,  &settings.loggingLevel},
 	{"crash_on_error", ConfigValueType_Bool, &settings.crashOnError},
 	{"vsync_type",     ConfigValueType_U32,  &settings.vsync},
+
 	{"\n#shaders",                         ConfigValueType_PADSECTION,(void*)17},
 	{"optimize_shaders", ConfigValueType_Bool, &settings.optimizeShaders},
+
 	{"\n#shadows",                         ConfigValueType_PADSECTION,(void*)20},
 	{"shadow_pcf",          ConfigValueType_Bool, &settings.shadowPCF},
 	{"shadow_resolution",   ConfigValueType_U32,  &settings.shadowResolution},
@@ -167,12 +171,15 @@ local ConfigMap configMap = {
 	{"depth_bias_constant", ConfigValueType_F32,  &settings.depthBiasConstant},
 	{"depth_bias_slope",    ConfigValueType_F32,  &settings.depthBiasSlope},
 	{"show_shadow_map",     ConfigValueType_Bool, &settings.showShadowMap},
+
 	{"\n#colors",                          ConfigValueType_PADSECTION,(void*)15},
 	{"clear_color",    ConfigValueType_FV4, &settings.clearColor},
 	{"selected_color", ConfigValueType_FV4, &settings.selectedColor},
 	{"collider_color", ConfigValueType_FV4, &settings.colliderColor},
+
 	{"\n#filters",                         ConfigValueType_PADSECTION,(void*)15},
 	{"wireframe_only", ConfigValueType_Bool, &settings.wireframeOnly},
+
 	{"\n#overlays",                        ConfigValueType_PADSECTION,(void*)17},
 	{"mesh_wireframes",  ConfigValueType_Bool, &settings.meshWireframes},
 	{"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals},
@@ -2745,8 +2752,8 @@ ResetImmediateData(){
 	{//reset UI
 		uiVertexCount = 0;
 		uiIndexCount  = 0;
+		memset(&uiCmdArray[0], 0, sizeof(ImmediateCmdVk) * uiCmdCount);
 		uiCmdCount    = 1;
-		memset(&uiCmdArray[0], 0, sizeof(ImmediateCmdVk));
 	}
 	
 	{//reset temp meshes
@@ -2991,7 +2998,7 @@ BuildCommandBuffers(){
 				vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
 				forX(cmd_idx, uiCmdCount){
-					vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].fontIdx].descriptorSet, 0, nullptr);
+					vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].texIdx].descriptorSet, 0, nullptr);
 					vkCmdDrawIndexed(frames[i].commandBuffer, uiCmdArray[cmd_idx].indexCount, 1, uiCmdArray[cmd_idx].indexOffset, 0, 0);
 				}
 				stats.drawnIndices += uiIndexCount;
@@ -3116,12 +3123,19 @@ newFrame(){
 //-------------------------------------------------------------------------------------------------
 // @UI INTERFACE
 
-
-
+enum texTypes : u32 {
+	UITEX_WHITE,
+	UITEX_FONT
+};
 
 void UI::
 FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
 	if(color.a == 0) return;
+
+	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
 
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
@@ -3136,12 +3150,19 @@ FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
 	
 	uiVertexCount += 4;
 	uiIndexCount  += 6;
-	uiCmdArray[uiCmdCount-1].indexCount += 6;
+	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+	
+	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
 }
 
 void UI::
 DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	if (color.a == 0) return;
+
+	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
 
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
@@ -3165,7 +3186,7 @@ DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-
+	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
 }
 
 void UI::
@@ -3173,16 +3194,23 @@ DrawText(const char* text, vec2 pos, Color color) {
 	if (color.a == 0) return;
 
 	f32 w = fonts[1].width;
-	do {
+	while (*text != '\0'){
 		char c = *text;
 		pos.x += w;
 		DrawChar(c, pos, vec2::ONE, color);
-	} while (*text++ != '\0');
+		text++;
+	} 
 }
 
 void UI::
 DrawChar(u32 character, vec2 pos, vec2 scale, Color color) {
 	if (color.a == 0) return;
+
+	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT) {
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
 	u16*      ip = uiIndexArray  + uiIndexCount;
@@ -3203,7 +3231,7 @@ DrawChar(u32 character, vec2 pos, vec2 scale, Color color) {
 	uiVertexCount += 4;
 	uiIndexCount  += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].fontIdx = 1;
+	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_FONT;
 }
 
 void UI::
@@ -3256,7 +3284,7 @@ LoadDefaultAssets(){
 	
 	fonts.reserve(8);
 	CreateFont(3, 0, 0, 0);
-	uiCmdArray[0].fontIdx = 0;
+	uiCmdArray[0].texIdx = 0;
 }
 
 void Render::

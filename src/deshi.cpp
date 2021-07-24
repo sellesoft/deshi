@@ -273,13 +273,15 @@ int main() {
 		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
-			UI::DrawText("wow", window.dimensions / 2);
-			//u32 x = 0; u32 y = 0;
-			//for(u32 i = 32; i < 192; ++i){
-			//	UI::DrawChar(i, vec2(window.width/2 + x*7, window.height/2 + y*12));
-			//	if(++x % 20 == 0){ y++; x=0; }
-			//}
-			//UI::FillRect(500, 500, 100, 100);
+			//UI::DrawText("wow", window.dimensions / 2);
+			//UI::FillRect(500, 300, 100, 100);
+			//UI::DrawText("yep", window.dimensions / 4);
+			//UI::DrawText("yep", window.dimensions / 8);
+			//UI::DrawText("yep", window.dimensions / 16);
+			//UI::DrawText("yep", window.dimensions / 32);
+			//UI::DrawText("yep", window.dimensions / 64);
+			//UI::FillRect(200, 150, 10, 500);
+			//UI::DrawLine(100, 500, 500, 100, 1);
 		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

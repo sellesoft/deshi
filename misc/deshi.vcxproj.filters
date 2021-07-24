@@ -529,9 +529,6 @@
     <ClCompile Include="..\src\core\renderers\vulkan.cpp">
       <Filter>src\core\renderers</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\utils\string.cpp">
-      <Filter>src\utils</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\cfg\keybinds.txt">
