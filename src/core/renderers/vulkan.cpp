@@ -3117,11 +3117,13 @@ newFrame(){
 // @UI INTERFACE
 
 
+
+
 void UI::
 FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
 	if(color.a == 0) return;
 
-	u32 col = color.R8G8B8A8_UNORM();
+	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
 	u16*      ip = uiIndexArray  + uiIndexCount;
 	
@@ -3141,9 +3143,9 @@ void UI::
 DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	if (color.a == 0) return;
 
-	u32 col = color.R8G8B8A8_UNORM();
+	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
-	u16* ip      = uiIndexArray + uiIndexCount;
+	u16*      ip = uiIndexArray + uiIndexCount;
 	
 	vec2 ott = vec2(x2, y2) - vec2(x1, y1) ;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
@@ -3202,6 +3204,11 @@ DrawChar(u32 character, vec2 pos, vec2 scale, Color color) {
 	uiIndexCount  += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 	uiCmdArray[uiCmdCount - 1].fontIdx = 1;
+}
+
+void UI::
+BeginWindow(const char* name, vec2 pos, vec2 dimentions) {
+
 }
 
 //-------------------------------------------------------------------------------------------------

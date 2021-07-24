@@ -196,11 +196,16 @@ namespace Render{
 //functions in this namespace are Immediate Mode, so they only last 1 frame
 namespace UI{
 	
+    //primitives
 	void FillRect(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
     void DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
     void DrawText(const char* text, vec2 pos, Color color = Color::WHITE);
     void DrawChar(u32 character, vec2 pos, vec2 scale = vec2::ONE, Color color = Color::WHITE);
-	
+   
+    //windows
+    void BeginWindow(const char* name, vec2 pos, vec2 dimentions);
+
+
 }; //namespace UI
 
 #endif //DESHI_RENDERER_H
