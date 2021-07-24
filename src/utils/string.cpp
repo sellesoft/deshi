@@ -77,7 +77,8 @@ bool string::operator == (const char* s) {
 }
 
 bool string::operator == (char c) {
-	if (*str == c) return true;
+	if(*str == c) return true;
+	return false;
 }
 
 

@@ -18,6 +18,6 @@ layout(location = 1) out vec4 outColor;
 
 void main() {
     gl_Position = vec4(push.scale * inPos + push.translate, 0.0, 1.0);
-    outUV = inUV;
+	outUV = inUV;
 	outColor = inColor;
 }

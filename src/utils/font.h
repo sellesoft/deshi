@@ -30,6 +30,7 @@ string hexCharToBin(char c) {
 		case 'E': return string("1110");
 		case 'F': return string("1111");
 	}
+	return string("");
 }
 
 u32 four_u8_to_u32(u8 a, u8 b, u8 c, u8 d) {
@@ -42,21 +43,21 @@ const u32 white = ((u32)255 << 24) | ((u32)255 << 16) | ((u32)255 << 8) | ((u32)
 struct Font {
 	u32 width;
 	u32 height;
-
+	
 	u32 char_count = 0;
-
+	
 	string name = "";
 	string weight = "";
-
+	
 	u32 font_size;
 	Vector2 dpi;
-
+	
 	Vector4 bbx;
-
+	
 	array<pair<u32, array<u32>>> textures;
-
+	
 	u32* texture_sheet;
-
+	
 	//this is currently set up to only support monospaced fonts
 	void load_bdf_font(const char* fontname) {
 		char* file = Assets::readFileAsciiToArray(Assets::dirFonts() + fontname);
@@ -65,14 +66,14 @@ struct Font {
 		
 		string buff = "";
 		char* currChar = file;
-
+		
 		u32 line_number = 0;
-
+		
 		while (*currChar != 0) {
 			while (*currChar != '\n') {
 				buff += *currChar;
 				currChar++;
-
+				
 				//key has stopped and we're getting values
 				if (*currChar == ' ') {
 					if (!line_number) {
@@ -83,58 +84,58 @@ struct Font {
 					}
 					else if (buff == "SIZE") {
 						string value = "";
-
+						
 						//get the font pixel size
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ' && *currChar != '\n') { value += *currChar; currChar++; }
 						font_size = string::stoi(value);
-
+						
 						value.clear();
-
+						
 						//get x dpi
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ' && *currChar != '\n') { value += *currChar; currChar++; }
 						dpi.x = string::stoi(value);
-
+						
 						value.clear();
-
+						
 						//get y dpi
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ' && *currChar != '\n') { value += *currChar; currChar++; }
 						dpi.y = string::stoi(value);
-
+						
 					}
 					else if (buff == "FONTBOUNDINGBOX") {
 						string value = "";
-
+						
 						//get font bounding box width
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
 						bbx.x = string::stoi(value);
 						width = bbx.x;
-
+						
 						value.clear();
-
+						
 						//get font bounding box height
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
 						bbx.y = string::stoi(value);
 						height = bbx.y;
-
+						
 						value.clear();
-
+						
 						//get lower left x
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
 						bbx.z = string::stoi(value);
-
+						
 						value.clear();
-
+						
 						//get lower left y
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
 						bbx.w = string::stoi(value);
-
+						
 					}
 					else if (buff == "FONT_NAME") {
 						currChar += Utils::skipSpacesLeading(currChar);
@@ -146,7 +147,7 @@ struct Font {
 					}
 					else if (buff == "CHARS") {
 						string value = "";
-
+						
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { if (*currChar != '"') value += *currChar; currChar++; }
 						char_count = string::stoi(value);
@@ -156,83 +157,83 @@ struct Font {
 						while (*++currChar != '\n') {}
 						currChar++;
 						line_number++;
-
+						
 						string value = "";
-
+						
 						//get encoding
 						u32 encoding = 0;
 						while (*currChar++ != ' ') {} //skip ENCODING key
-
+						
 						while (*currChar != ' ') { if (*currChar != '"') value += *currChar; currChar++; }
 						encoding = string::stoi(value);
-
+						
 						value.clear();
-
+						
 						//move onto SWIDTH, which we dont use so we skip it
 						while (*++currChar != '\n') {}
 						currChar++;
 						line_number++;
-
+						
 						//move onto DWIDTH
 						//since this only supports monospace fonts this should always be the same
 						//and sets the width variable for the font
 						while (*currChar++ != ' ') {} //skip DWIDTH key
-
+						
 						while (*currChar != ' ') { if (*currChar != '"') value += *currChar; currChar++; }
-
+						
 						//we ignore the second value of DWIDTH for now
 						while (*++currChar != '\n') {}
 						currChar++;
 						line_number++;
-
+						
 						value.clear();
-
+						
 						//move onto BBX
 						//this determines the smallest box that can enclose the glyph and it's offset from the origin
 						Vector4 gbbx;
-
+						
 						while (*currChar++ != ' ') {} //skip BBX key
-
+						
 						//get glyph bounding box width
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
 						gbbx.x = string::stoi(value);
-
+						
 						value.clear();
-
+						
 						//get glyph bounding box height
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
 						gbbx.y = string::stoi(value);
-
+						
 						value.clear();
-
+						
 						//get lower left x
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
 						gbbx.z = string::stoi(value);
-
+						
 						value.clear();
-
+						
 						//get lower left y
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != '\n') { value += *currChar; currChar++; }
 						gbbx.w = string::stoi(value);
-
+						
 						currChar++;
 						
 						//begin building the texture array for the character
 						array<u32> tex;
-
+						
 						for (int i = 0; i < bbx.x * bbx.y; i++) {
 							tex.add(0);
 						}
-
+						
 						//skip over BITMAP key
 						while (*++currChar != '\n') {}
 						currChar++;
 						line_number++;
-
+						
 						
 						//decend down rows of pixels and turn their hex representation
 						//into binary, then into u32 representation for texture
@@ -249,13 +250,13 @@ struct Font {
 							for (int stoa = 0; stoa < 8; stoa++) {
 								binArr[stoa] = (u8)string::stoi(binary[stoa]);
 							}
-
+							
 							for (int col = gbbx.z, idx = 0; col < gbbx.z + gbbx.x; col++, idx++) {
 								if (binArr[idx]) {
 									tex[bbxrow * bbx.x + col] = white;
 								}
 							}
-
+							
 							//PRINTLN(binary);
 						}
 						
@@ -266,7 +267,7 @@ struct Font {
 							if (i % (int)bbx.x == 0) std::cout << "\n";
 						}
 						*/
-
+						
 						textures.add(pair<u32, array<u32>>(encoding, tex));
 					}
 					else {
@@ -275,35 +276,35 @@ struct Font {
 						currChar++;
 						line_number++;
 					}
-
+					
 					buff.clear();
 				}
-
+				
 			}
 			buff.clear();
 			currChar++;
 			line_number++;
 		}
-
+		
 		//set up texture_sheet
 		//i try to align the characters in rows here and account for the remaining white space
-
+		
 		//attempt to align into 4 rows
-
-
-
+		
+		
+		
 		texture_sheet = (u32*)calloc(char_count, width * height * sizeof(u32));
-
+		
 		for (int i = 0; i < textures.size(); i++) {
 			array<u32> tex = textures[i].second;
 			memcpy(texture_sheet + i * width * height, tex.items, width * height * sizeof(u32));
 		}
-
+		
 	}	
 	
 	
-
-
+	
+	
 };
 
 

@@ -3140,26 +3140,26 @@ FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
 void UI::
 DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	if (color.a == 0) return;
-
+	
 	u32 col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
 	u16* ip      = uiIndexArray + uiIndexCount;
-
+	
 	vec2 ott = vec2(x2, y2) - vec2(x1, y1) ;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
-
+	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
 	vp[0].pos = {x1,y1}; vp[0].uv = {0,0}; vp[0].color = col;
 	vp[1].pos = {x2,y2}; vp[1].uv = {0,0}; vp[1].color = col;
 	vp[2].pos = {x2,y2}; vp[2].uv = {0,0}; vp[2].color = col;
 	vp[3].pos = {x1,y1}; vp[3].uv = {0,0}; vp[3].color = col;
-
+	
 	vp[0].pos += norm * thickness;
 	vp[1].pos += norm * thickness;
 	vp[2].pos -= norm * thickness;
 	vp[3].pos -= norm * thickness;
-
+	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -3167,31 +3167,30 @@ DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 
 void UI::
 DrawText(const char* text, vec2 pos, Color color) {
-
 	if (color.a == 0) return;
-
+	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
 	u16*      ip = uiIndexArray + uiIndexCount;
-
+	
 	u32 w = fonts[1].width;
 	u32 h = fonts[1].height;
-
+	
 	float dx = 1.f / w;
 	float dy = 1.f / (h * fonts[1].char_count);
-
+	
 	char c = *text;
-
+	
 	int idx = c - 33;
-
+	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
-	vp[0].pos = pos;               vp[0].uv = {0,idx*dy};     vp[0].color = col;
+	vp[0].pos = {pos.x+0,pos.y+0}; vp[0].uv = {0,idx*dy};     vp[0].color = col;
 	vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,idx*dy};     vp[1].color = col;
 	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,(idx+1)*dy}; vp[2].color = col;
 	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,(idx+1)*dy}; vp[3].color = col;
-
-
+	
+	
 	//while (text != '\0') {
 	//	char c = *text;
 	//
@@ -3199,14 +3198,47 @@ DrawText(const char* text, vec2 pos, Color color) {
 	//
 	//	text++;
 	//}
-
+	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 	uiCmdArray[uiCmdCount - 1].fontIdx = 1;
-
 }
 
+
+void UI::
+DrawChar(u32 character, vec2 pos, vec2 scale, Color color) {
+	if (color.a == 0) return;
+	
+	u32      col = color.R8G8B8A8_UNORM();
+	Vertex2D* vp = uiVertexArray + uiVertexCount;
+	u16*      ip = uiIndexArray  + uiIndexCount;
+	
+	f32 h = fonts[1].height;
+	f32 dy = 1.f / (f32)fonts[1].char_count; 
+	//NOTE the fix was that we were doing: dy = 1 / (h * char_count); instead of: dy = 1 / char_count
+	//     which is wrong b/c dy is supposed to be the scaling factor on an index and since
+	//     UV space is 0...1 and idx space is 0...char_count, dys need to be representitive of those maxes
+	//NOTE i found this out by looking at the UV values in the vertex shader inputs and while
+	//     they did look right at first, i noticed that the Y values were scaled by about a 1/10 so i
+	//     tested multiplying the uv.y in the vert shader by 10 and got the correct render just off by 1 pixel
+	//     which led me to the 11 scale, which i knew was the font height, so i looked for the wrong math
+	//TODO(sushi) delete this NOTE block once youve read it and fix the missing SPACE character too :)
+	
+	f32 idx = character - 33; //NOTE this should be 32 because SPACE is the first one, not EXCLAMATION
+	
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
+	vp[0].pos = {pos.x+0,pos.y+0}; vp[0].uv = {0,idx*dy};     vp[0].color = col;
+	vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,idx*dy};     vp[1].color = col;
+	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,(idx+1)*dy}; vp[2].color = col;
+	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,(idx+1)*dy}; vp[3].color = col;
+	
+	uiVertexCount += 4;
+	uiIndexCount  += 6;
+	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+	uiCmdArray[uiCmdCount - 1].fontIdx = 1;
+}
 
 //-------------------------------------------------------------------------------------------------
 // @INTERFACE FUNCTIONS
@@ -3630,8 +3662,8 @@ LoadTexture(const char* filename, u32 type){
 u32 Render::
 LoadTexture(u32* texture, u32 width, u32 height, u32 type) {
 	Assert(texture, "Attempt to nullptr as texture")
-
-	PrintVk(3, "    Loading Texture");
+		
+		PrintVk(3, "    Loading Texture");
 	TextureVk tex{};
 	tex.   pixels = (stbi_uc*)texture;
 	tex.    width = width;
@@ -3640,11 +3672,11 @@ LoadTexture(u32* texture, u32 width, u32 height, u32 type) {
 	tex.     type = type;
 	tex.mipLevels = 1;
 	tex.imageSize = tex.width * tex.height * 4;
-
+	
 	//copy the memory to a staging buffer
 	StagingBufferVk staging{};
 	CreateAndMapBuffer(staging.buffer, staging.memory, tex.imageSize, (size_t)tex.imageSize, tex.pixels, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
+	
 	//copy the staging buffer to the image and generate its mipmaps
 	CreateImage(tex.width, tex.height, tex.mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, tex.image, tex.imageMemory);
 	TransitionImageLayout(tex.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, tex.mipLevels);
@@ -3652,11 +3684,11 @@ LoadTexture(u32* texture, u32 width, u32 height, u32 type) {
 	GenerateMipmaps(tex.image, VK_FORMAT_R8G8B8A8_SRGB, tex.width, tex.height, tex.mipLevels);
 	//image layout set to SHADER_READ_ONLY when generating mipmaps
 	tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
+	
 	//cleanup staging memory
 	vkDestroyBuffer(device, staging.buffer, allocator);
 	vkFreeMemory(device, staging.memory, allocator);
-
+	
 	//create sampler
 	VkSamplerCreateInfo samplerInfo{ VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
 	samplerInfo.magFilter = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
@@ -3677,20 +3709,20 @@ LoadTexture(u32* texture, u32 width, u32 height, u32 type) {
 	samplerInfo.minLod = -1000.f;
 	samplerInfo.maxLod = 1000.f;
 	AssertVk(vkCreateSampler(device, &samplerInfo, nullptr, &tex.sampler), "failed to create texture sampler");
-
+	
 	//create image view
 	tex.view = CreateImageView(tex.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, tex.mipLevels);
-
+	
 	//fill descriptor image info
 	tex.imageInfo.imageView = tex.view;
 	tex.imageInfo.sampler = tex.sampler;
 	tex.imageInfo.imageLayout = tex.layout;
-
+	
 	//name image, image view, and sampler for debugging
 	//DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)tex.image, TOSTRING("Texture image ", filename).c_str());
 	//DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)tex.view, TOSTRING("Texture imageview ", filename).c_str());
 	//DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)tex.sampler, TOSTRING("Texture sampler ", filename).c_str());
-
+	
 	//add the texture to the scene and return its index
 	u32 idx = (u32)textures.size();
 	tex.id = idx;
