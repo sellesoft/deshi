@@ -135,6 +135,8 @@ vec4 fc = gl_FragCoord;
 vec2 tc = inTexCoord;
 
 vec4 monitor(){
+	
+	//this could maybe be antialaised by using dFdx on the fragments world position
 
 	vec2 texSize = textureSize(albedoSampler, 0);
 
@@ -327,5 +329,6 @@ vec4 edge(){
 
 void main() {
 	//tc = vec2(mod(tc.x, 6), mod(tc.y, 11));
-	outColor = texture(albedoSampler, tc);
+
+	outColor = dither();
 }

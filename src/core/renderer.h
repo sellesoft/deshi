@@ -146,7 +146,7 @@ namespace Render{
 	char* TextureName(u32 textureIdx);
     std::string ListTextures();
 	
-	u32 CreateFont(u32 textureIdx);
+	u32 CreateFont(u32 textureIdx, u32 width, u32 height, u32 char_count);
     
     u32 CreateMaterial(const char* name, u32 shader, u32 albedoTextureID = 0, u32 normalTextureID = 2, u32 specTextureID = 2, u32 lightTextureID = 2);
     u32 CopyMaterial(u32 materialID);
@@ -198,7 +198,7 @@ namespace UI{
 	
 	void FillRect(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
     void DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
-    void DrawText(const char* text);
+    void DrawText(const char* text, vec2 pos, Color color = Color::WHITE);
 	
 }; //namespace UI
 

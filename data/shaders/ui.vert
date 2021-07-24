@@ -4,6 +4,7 @@
 layout(push_constant) uniform PushConsts{
 	vec2 scale;
 	vec2 translate;
+	int  fontIdx;
 } push;
 
 layout(location = 0) in vec2 inPos;
@@ -14,8 +15,9 @@ out gl_PerVertex { vec4 gl_Position; };
 layout(location = 0) out vec2 outUV;
 layout(location = 1) out vec4 outColor;
 
+
 void main() {
     gl_Position = vec4(push.scale * inPos + push.translate, 0.0, 1.0);
     outUV = inUV;
-	outColor = inColor;//pow(inColor, vec4(2.2f, 2.2f, 2.2f, 2.2f));
+	outColor = inColor;
 }

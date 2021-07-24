@@ -1744,9 +1744,18 @@ inline void GlobalTab(Admin* admin){
 			
 			ImGui::TextEx("Position  "); ImGui::SameLine(); ImGui::InputVector3("##cam_pos", &admin->editor.camera->position);
 			ImGui::TextEx("Rotation  "); ImGui::SameLine(); ImGui::InputVector3("##cam_rot", &admin->editor.camera->rotation);
-			ImGui::TextEx("Near Clip "); ImGui::SameLine(); ImGui::InputFloat("##global__nearz", &admin->editor.camera->nearZ);
-			ImGui::TextEx("Far Clip  "); ImGui::SameLine(); ImGui::InputFloat("##global__farz", &admin->editor.camera->farZ);
-			ImGui::TextEx("FOV       "); ImGui::SameLine(); ImGui::InputFloat("##global__fov", &admin->editor.camera->fov);
+			ImGui::TextEx("Near Clip "); ImGui::SameLine(); 
+            if (ImGui::InputFloat("##global__nearz", &admin->editor.camera->nearZ)) {
+                admin->editor.camera->UpdateProjectionMatrix();
+            }
+            ImGui::TextEx("Far Clip  "); ImGui::SameLine(); 
+            if (ImGui::InputFloat("##global__farz", &admin->editor.camera->farZ)) {
+                admin->editor.camera->UpdateProjectionMatrix();
+            };
+            ImGui::TextEx("FOV       "); ImGui::SameLine(); 
+            if (ImGui::InputFloat("##global__fov", &admin->editor.camera->fov)) {
+                admin->editor.camera->UpdateProjectionMatrix();
+            };
 		}
 		
 		//// render settings ////

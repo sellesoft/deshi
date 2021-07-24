@@ -78,10 +78,11 @@ struct Vertex2D{
 struct Push2DVk{
 	vec2 scale;
 	vec2 translate;
+	int font_offset;
 };
 
 struct ImmediateCmdVk{
-	u32 specialIdx;
+	u32 fontIdx;
 	u32 vertexOffset;
 	u16 indexOffset;
 	u16 indexCount;
@@ -130,6 +131,9 @@ struct BufferVk{
 struct FontVk{
 	u32 id;
 	u32 textureIdx;
+	u32 width;
+	u32 height;
+	u32 char_count;
 	VkDescriptorSet descriptorSet;
 };
 
@@ -2983,10 +2987,11 @@ BuildCommandBuffers(){
 				push.scale.y = 2.0f / (f32)height;
 				push.translate.x = -1.0f;
 				push.translate.y = -1.0f;
-				vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
 				forX(cmd_idx, uiCmdCount){
-					vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].specialIdx].descriptorSet, 0, nullptr);
+					push.font_offset = uiCmdArray[cmd_idx].fontIdx;
+					vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
+					vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].fontIdx].descriptorSet, 0, nullptr);
 					vkCmdDrawIndexed(frames[i].commandBuffer, uiCmdArray[cmd_idx].indexCount, 1, uiCmdArray[cmd_idx].indexOffset, 0, 0);
 				}
 				stats.drawnIndices += uiIndexCount;
@@ -3160,6 +3165,48 @@ DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 }
 
+void UI::
+DrawText(const char* text, vec2 pos, Color color) {
+
+	if (color.a == 0) return;
+
+	u32      col = color.R8G8B8A8_UNORM();
+	Vertex2D* vp = uiVertexArray + uiVertexCount;
+	u16*      ip = uiIndexArray + uiIndexCount;
+
+	u32 w = fonts[1].width;
+	u32 h = fonts[1].height;
+
+	float dx = 1.f / w;
+	float dy = 1.f / (h * fonts[1].char_count);
+
+	char c = *text;
+
+	int idx = c - 33;
+
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
+	vp[0].pos = pos;               vp[0].uv = {0,idx*dy};     vp[0].color = col;
+	vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,idx*dy};     vp[1].color = col;
+	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,(idx+1)*dy}; vp[2].color = col;
+	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,(idx+1)*dy}; vp[3].color = col;
+
+
+	//while (text != '\0') {
+	//	char c = *text;
+	//
+	//
+	//
+	//	text++;
+	//}
+
+	uiVertexCount += 4;
+	uiIndexCount += 6;
+	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+	uiCmdArray[uiCmdCount - 1].fontIdx = 1;
+
+}
+
 
 //-------------------------------------------------------------------------------------------------
 // @INTERFACE FUNCTIONS
@@ -3205,8 +3252,8 @@ LoadDefaultAssets(){
 	CreateMaterial(ShaderStrings[Shader_Phong], Shader_Phong);
 	
 	fonts.reserve(8);
-	CreateFont(3);
-	uiCmdArray[0].specialIdx = 0;
+	CreateFont(3, 0, 0, 0);
+	uiCmdArray[0].fontIdx = 0;
 }
 
 void Render::
@@ -3622,13 +3669,13 @@ LoadTexture(u32* texture, u32 width, u32 height, u32 type) {
 	VkPhysicalDeviceProperties properties{};
 	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 	samplerInfo.maxAnisotropy = (settings.anistropicFiltering) ? properties.limits.maxSamplerAnisotropy : 1.0f;
-	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 	samplerInfo.unnormalizedCoordinates = VK_FALSE;
 	samplerInfo.compareEnable = VK_FALSE;
-	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+	samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
 	samplerInfo.mipLodBias = 0.0f;
-	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = (f32)tex.mipLevels;
+	samplerInfo.minLod = -1000.f;
+	samplerInfo.maxLod = 1000.f;
 	AssertVk(vkCreateSampler(device, &samplerInfo, nullptr, &tex.sampler), "failed to create texture sampler");
 
 	//create image view
@@ -3671,10 +3718,13 @@ ListTextures(){
 }
 
 u32 Render::
-CreateFont(u32 textureIdx){
+CreateFont(u32 textureIdx, u32 width, u32 height, u32 char_count) {
 	FontVk font{};
-	font.id = fonts.size();
+	font.        id = fonts.size();
 	font.textureIdx = textureIdx;
+	font.     width = width;
+	font.    height = height;
+	font.char_count = char_count;
 	
 	//allocate and write descriptor set
 	VkDescriptorSetAllocateInfo allocInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};

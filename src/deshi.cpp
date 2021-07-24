@@ -256,18 +256,8 @@ int main() {
 	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
 	
 	Font font;
-
 	font.load_bdf_font("gohufont-11.bdf");
-
-
-	//for (auto& p : font.textures) {
-	//	Render::LoadTexture(p.second.items, font.width, font.height, 0);
-	//}
-
-
-
-	Render::LoadTexture(font.texture_sheet, font.width, font.height * font.char_count, 0);
-
+	Render::CreateFont(Render::LoadTexture(font.texture_sheet, font.width, font.height * font.char_count, 0), font.width, font.height, font.char_count);
 
 	//start main loop
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
@@ -282,10 +272,9 @@ int main() {
 		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
-			
-			UI::DrawLine(100, 100, 500, 500, 2, Color::CYAN);
-
-			
+			UI::DrawText("!", window.dimensions / 2);
+			UI::DrawText("#", window.dimensions / 2 + vec2(10, 10));
+			UI::FillRect(500, 500, 100, 100);
 		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}
