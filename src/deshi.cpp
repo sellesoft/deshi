@@ -145,6 +145,7 @@ look into implementing Lua
 look into making a function that takes in the types on a component and formats binary for saving and what not 
 ____like what were currently doing for typeHeader in Admin Save()
 write a preprocessing/postprocessing compiler that makes saving easier
+hotloadable UI
 
 Bug Board       //NOTE mark these with a last-known active date (M/D/Y)
 ---------
@@ -273,15 +274,7 @@ int main() {
 		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
-			//UI::DrawText("wow", window.dimensions / 2);
-			//UI::FillRect(500, 300, 100, 100);
-			//UI::DrawText("yep", window.dimensions / 4);
-			//UI::DrawText("yep", window.dimensions / 8);
-			//UI::DrawText("yep", window.dimensions / 16);
-			//UI::DrawText("yep", window.dimensions / 32);
-			//UI::DrawText("yep", window.dimensions / 64);
-			//UI::FillRect(200, 150, 10, 500);
-			//UI::DrawLine(100, 500, 500, 100, 1);
+
 		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

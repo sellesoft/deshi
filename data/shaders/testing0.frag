@@ -135,8 +135,8 @@ vec4 fc = gl_FragCoord;
 vec2 tc = inTexCoord;
 
 vec4 monitor(){
+
 	
-	//this could maybe be antialaised by using dFdx on the fragments world position
 
 	vec2 texSize = textureSize(albedoSampler, 0);
 
@@ -148,7 +148,7 @@ vec4 monitor(){
 
 	float sot = (sin(time) + 1) / 2;
 
-	float res = texSize.x;
+	float res = 1000;//texSize.x;
 
 	float ftcx = floor(tc.x * res) / res;
 	float ftcy = floor(tc.y * res) / res;
@@ -251,9 +251,7 @@ float modulus(float x, float y){
 
 vec4 dither(){
 	
-	
-
-	vec2 texSize = vec2(550, 550);//textureSize(albedoSampler, 0);
+	vec2 texSize = textureSize(albedoSampler, 0);
 	vec2 texInc = vec2(1 / texSize.x, 1/ texSize.y);
 
 	tc = vec2(quant(tc.x, texSize.x), quant(tc.y, texSize.y));
@@ -328,8 +326,5 @@ vec4 edge(){
 
 
 void main() {
-	//tc = vec2(mod(tc.x, 6), mod(tc.y, 11));
-
-	outColor = dither();
-	outColor = vec4(1,1,1,0.5);
+	outColor = monitor();
 }

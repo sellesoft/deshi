@@ -18,6 +18,10 @@ namespace Geometry {
 		return furthestid;
 	}
 
+	//incase i forget
+	//this function is set up to work specifically with convex meshes, because it literally 
+	//just finds the triangle with the closest normal which we can safely assume is farthest along it, 
+	//this would not work with concave meshes
 	static u32 FurthestTriangleAlongNormal(Mesh* m, Matrix4 rotation, Vector3 n) {
 		float furthest = -INFINITY;
 		u32 furthestTriId = 0;
