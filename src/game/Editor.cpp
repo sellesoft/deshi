@@ -2282,6 +2282,26 @@ void Editor::WorldGrid(Vector3 cpos) {
 	Render::TempLine(vec3{0,0,-1000}, vec3{0,0,1000}, Color::BLUE);
 }
 
+
+void Editor::ShowWorldAxis() {
+    vec3 
+    x = camera->position + camera->forward + vec3::RIGHT   * 0.1,
+    y = camera->position + camera->forward + vec3::UP      * 0.1,
+    z = camera->position + camera->forward + vec3::FORWARD * 0.1;
+
+    vec2 
+    spx = Math::WorldToScreen2(x, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2,
+    spy = Math::WorldToScreen2(y, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2,
+    spz = Math::WorldToScreen2(z, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2;
+
+    vec2 offset = vec2(DengWindow->width - 50, DengWindow->height - debugbarheight - 50);
+   
+    UI::DrawLine(offset, spx + offset, 1, Color::RED);
+    UI::DrawLine(offset, spy + offset, 1, Color::GREEN);
+    UI::DrawLine(offset, spz + offset, 1, Color::BLUE);
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// editor struct
 
@@ -2470,6 +2490,8 @@ void Editor::Update(){
 			if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
 		}ImGui::PopStyleColor();
 		
+        ShowWorldAxis();
+
 		if (!showMenuBar)    menubarheight = 0;
 		if (!showDebugBar)   debugbarheight = 0;
 		if (!showDebugTools) debugtoolswidth = 0;

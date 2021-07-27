@@ -670,14 +670,14 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 				Vector3 incP = tInc->p[i] * incTransform;
 				Vector3 incPLast = tInc->p[(i + 2) % 3] * incTransform;
 				
-				float dCurr = Math::DistPointToPlane(incP, t->norm * refRotation, refP);
-				float dLast = Math::DistPointToPlane(incPLast, t->norm * refRotation, refP);
+				float dCurr = -Math::DistPointToPlane(incP, t->norm * refRotation, refP);
+				float dLast = -Math::DistPointToPlane(incPLast, t->norm * refRotation, refP);
 				
 				if (dCurr < 0 && dLast > 0) {
 					//ImGui::DebugDrawText3(TOSTRING(dCurr).c_str(), incP);
-					//ImGui::DebugDrawLine3(incP, incP + t->norm * dCurr, Color::GREEN);
+					ImGui::DebugDrawLine3(incP, incP + t->norm * dCurr, Color::GREEN);
 					//ImGui::DebugDrawText3(TOSTRING(dLast).c_str(), incPLast);
-					//ImGui::DebugDrawLine3(incPLast, incPLast + t->norm * dLast, Color::RED);
+					ImGui::DebugDrawLine3(incPLast, incPLast + t->norm * dLast, Color::RED);
 					Vector3 inter = Math::VectorPlaneIntersect(refP, t->norm * refRotation, incPLast, incP);
 					
 					colPoints.push_back(inter);
@@ -691,8 +691,6 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	}
 	
 	for (auto& v : colPoints) {
-
-
 		refTransform = Matrix4::TransformationMatrix(refphys->position, refphys->rotation, refphys->entity->transform.scale);
 		incTransform = Matrix4::TransformationMatrix(incphys->position, incphys->rotation, incphys->entity->transform.scale);
 

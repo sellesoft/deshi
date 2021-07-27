@@ -47,7 +47,7 @@ global_ const char* KeyStrings[] = {
 
 namespace MouseButton{
 	enum MouseButtonBits{
-		LEFT = Key::MBLEFT, RIGHT = Key::MBRIGHT, MIDDLE = Key::MBMIDDLE, 
+		LEFT  = Key::MBLEFT, RIGHT = Key::MBRIGHT, MIDDLE = Key::MBMIDDLE, 
 		FOUR  = Key::MBFOUR, FIVE  = Key::MBFIVE, 
 		SIX   = Key::MBSIX,  SEVEN = Key::MBSEVEN, 
 		EIGHT = Key::MBEIGHT,
