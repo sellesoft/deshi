@@ -154,6 +154,7 @@
     <ClInclude Include="..\src\core\input.h" />
     <ClInclude Include="..\src\core\renderer.h" />
     <ClInclude Include="..\src\core\time.h" />
+    <ClInclude Include="..\src\core\ui.h" />
     <ClInclude Include="..\src\core\window.h" />
     <ClInclude Include="..\src\defines.h" />
     <ClInclude Include="..\src\external\draudio\dr_flac.h" />
@@ -277,6 +278,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src\core\renderers\vulkan.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\src\core\ui.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
     </ClCompile>

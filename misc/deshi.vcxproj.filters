@@ -217,6 +217,9 @@
     <ClInclude Include="..\src\utils\array.h">
       <Filter>src\utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\core\ui.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -528,6 +531,9 @@
     </ClCompile>
     <ClCompile Include="..\src\core\renderers\vulkan.cpp">
       <Filter>src\core\renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\ui.cpp">
+      <Filter>src\core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -166,9 +166,16 @@ struct array {
 		}
 	}
 
+	//removes last element
+	void pop() {
+		Assert(size() > 0, "attempt to pop with nothing in array");
+		memset(last, 0, itemsize);
+		last--;
+	}	
+
 	void remove(int i) {
-		assert(size() > 0); "can't remove element from empty vector";
-		assert(i < size()); "index is out of bounds";
+		Assert(size() > 0, "can't remove element from empty vector");
+		Assert(i < size(), "index is out of bounds");
 		memset(items + i, 0, itemsize);
 		for (int o = i; o < size(); o++) {
 			items[o] = items[o + 1];

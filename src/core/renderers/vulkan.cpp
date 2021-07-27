@@ -3128,8 +3128,8 @@ enum texTypes : u32 {
 	UITEX_FONT
 };
 
-void UI::
-FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
+void Render::
+FillRectUI(f32 x, f32 y, f32 w, f32 h, Color color){
 	if(color.a == 0) return;
 
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
@@ -3155,8 +3155,8 @@ FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
 }
 
-void UI::
-DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
+void Render::
+DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	if (color.a == 0) return;
 
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
@@ -3189,8 +3189,8 @@ DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
 }
 
-void UI::
-DrawLine(vec2 start, vec2 end, float thickness, Color color) {
+void Render::
+DrawLineUI(vec2 start, vec2 end, float thickness, Color color) {
 	if (color.a == 0) return;
 
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
@@ -3223,21 +3223,19 @@ DrawLine(vec2 start, vec2 end, float thickness, Color color) {
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
 }
 
-void UI::
-DrawText(const char* text, vec2 pos, Color color) {
+void Render::
+DrawTextUI(string text, vec2 pos, Color color) {
 	if (color.a == 0) return;
 
 	f32 w = fonts[1].width;
-	while (*text != '\0'){
-		char c = *text;
+	for (int i = 0; i < text.size; i++) {
+		DrawCharUI((u32)text[i], pos, vec2::ONE, color);
 		pos.x += w;
-		DrawChar(c, pos, vec2::ONE, color);
-		text++;
-	} 
+	}
 }
 
-void UI::
-DrawChar(u32 character, vec2 pos, vec2 scale, Color color) {
+void Render::
+DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color) {
 	if (color.a == 0) return;
 
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT) {
@@ -3268,10 +3266,6 @@ DrawChar(u32 character, vec2 pos, vec2 scale, Color color) {
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_FONT;
 }
 
-void UI::
-BeginWindow(const char* name, vec2 pos, vec2 dimentions) {
-
-}
 
 //-------------------------------------------------------------------------------------------------
 // @INTERFACE FUNCTIONS

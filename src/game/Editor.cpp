@@ -2296,9 +2296,9 @@ void Editor::ShowWorldAxis() {
 
     vec2 offset = vec2(DengWindow->width - 50, DengWindow->height - debugbarheight - 50);
    
-    UI::DrawLine(offset, spx + offset, 1, Color::RED);
-    UI::DrawLine(offset, spy + offset, 1, Color::GREEN);
-    UI::DrawLine(offset, spz + offset, 1, Color::BLUE);
+    Render::DrawLineUI(offset, spx + offset, 1, Color::RED);
+    Render::DrawLineUI(offset, spy + offset, 1, Color::GREEN);
+    Render::DrawLineUI(offset, spz + offset, 1, Color::BLUE);
 }
 
 

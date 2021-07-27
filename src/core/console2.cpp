@@ -323,9 +323,9 @@ void Console2::Update(){
 		if(!open_amount) return; //early out if fully closed
 		
 		if(test_swap){
-			UI::FillRect(console_x, console_y, console_w, console_h, Color::BLACK); //background
-			UI::FillRect(console_x+pad, console_y+pad, console_w-pad2x, console_h-pad2x-input_box_height, Color(0, 9, 13)); //report
-			UI::FillRect(console_x+pad, console_h-pad-input_box_height, console_w-pad2x, input_box_height, Color(0, 62, 62)); //input
+			Render::FillRectUI(console_x, console_y, console_w, console_h, Color::BLACK); //background
+			Render::FillRectUI(console_x+pad, console_y+pad, console_w-pad2x, console_h-pad2x-input_box_height, Color(0, 9, 13)); //report
+			Render::FillRectUI(console_x+pad, console_h-pad-input_box_height, console_w-pad2x, input_box_height, Color(0, 62, 62)); //input
 		}else{
 			ImGuiStyle& style = ImGui::GetStyle();
 			style.AntiAliasedFill = false;

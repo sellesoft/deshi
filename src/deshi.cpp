@@ -177,6 +177,7 @@ __________ maybe store the text in the actual source and create the file from th
 #include "utils/ringarray.h"
 #include "utils/command.h"
 #include "utils/font.h"
+#include "utils/array.h"
 #include "math/math.h"
 #include "scene/Scene.h"
 
@@ -187,6 +188,7 @@ __________ maybe store the text in the actual source and create the file from th
 #include "core/input.h"
 #include "core/renderer.h"
 #include "core/time.h"
+#include "core/ui.h"
 #include "core/window.h"
 #include "game/admin.h"
 
@@ -225,6 +227,7 @@ Assert(!"no renderer selected");
 #include "core/assets.cpp"
 #include "core/console.cpp"
 #include "core/console2.cpp"
+#include "core/ui.cpp"
 
 local Time    time_;   Time*    g_time    = &time_; //time_ because there is a c-func time() D:
 local Window  window;  Window*  g_window  = &window;
@@ -243,6 +246,7 @@ int main() {
 	TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ", TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); DeshiImGui::init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ", TIMER_END(t_s), "ms");
 	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
 	
 	//init game admin
@@ -267,7 +271,7 @@ int main() {
 		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
-
+			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300), UIWindowFlags_NoBorder | UIWindowFlags_NoTitleBar);
 		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

@@ -5,6 +5,7 @@
 #include "../defines.h"
 #include "../math/VectorMatrix.h"
 #include "../utils/Color.h"
+#include "../utils/string.h"
 
 #include <vector>
 #include <string>
@@ -164,6 +165,13 @@ namespace Render{
 	void TempBox(Matrix4 transform, Color color = Color::WHITE);
     void TempFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color = Color::WHITE);
     
+    //ui drawing functions
+    void FillRectUI(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
+    void DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
+    void DrawLineUI(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
+    void DrawTextUI(string text, vec2 pos, Color color = Color::WHITE);
+    void DrawCharUI(u32 character, vec2 pos, vec2 scale = vec2::ONE, Color color = Color::WHITE);
+
     void LoadDefaultAssets();
     void LoadScene(Scene* scene);
     
@@ -193,20 +201,6 @@ namespace Render{
 	
 }; //namespace Render
 
-//functions in this namespace are Immediate Mode, so they only last 1 frame
-namespace UI{
-	
-    //primitives
-	void FillRect(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
-    void DrawLine(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
-    void DrawLine(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
-    void DrawText(const char* text, vec2 pos, Color color = Color::WHITE);
-    void DrawChar(u32 character, vec2 pos, vec2 scale = vec2::ONE, Color color = Color::WHITE);
-   
-    //windows
-    void BeginWindow(const char* name, vec2 pos, vec2 dimentions);
 
-
-}; //namespace UI
 
 #endif //DESHI_RENDERER_H

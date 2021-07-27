@@ -183,7 +183,7 @@ inline std::ostream& operator<<(std::ostream& os, string& m) {
 	return os << m.str;
 }
 
-string operator + (const char* c, string s) {
+inline string operator + (const char* c, string s) {
 	if (s.size == 0) {
 		string why_do_i_have_to_do_this(c);
 		return why_do_i_have_to_do_this;
