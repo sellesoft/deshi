@@ -178,6 +178,8 @@ __________ maybe store the text in the actual source and create the file from th
 #include "utils/command.h"
 #include "utils/font.h"
 #include "utils/array.h"
+#include "utils/map.h"
+#include "utils/hash.h"
 #include "math/math.h"
 #include "scene/Scene.h"
 
@@ -252,12 +254,12 @@ int main() {
 	//init game admin
 	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
 	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
-	
-	Font font;
-	font.load_bdf_font("gohufont-14.bdf");
-	Render::CreateFont(Render::LoadTexture(font.texture_sheet, font.width, font.height * font.char_count, 0), 
-					   font.width, font.height, font.char_count);
-	
+
+	map<string, u32> test;
+
+	test["agh"] = 2;
+
+
 	//start main loop
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
 		glfwPollEvents();
@@ -271,7 +273,7 @@ int main() {
 		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
-			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300), UIWindowFlags_NoBorder | UIWindowFlags_NoTitleBar);
+			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
 		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

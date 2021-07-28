@@ -58,21 +58,21 @@ struct UIWindow {
 namespace UI {
 
 	//primitives
-	void RectFilled(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
+	static void RectFilled(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
 
-	void Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
-	void Line(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
+	static void Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
+	static void Line(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
 
-	void Text(string text);
-	void Text(string text, vec2 pos);
-	void Text(string text, Color color);
-	void Text(string text, vec2 pos, Color color);
+	static void Text(string text);
+	static void Text(string text, vec2 pos);
+	static void Text(string text, Color color);
+	static void Text(string text, vec2 pos, Color color);
 
 	//windows
-	void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
-	void EndWindow();
+	static void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
+	static void EndWindow();
 
-	void Init();
+	static void Init();
 
 }; //namespace UI
 

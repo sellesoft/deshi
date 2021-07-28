@@ -28,9 +28,9 @@ struct VarMod {
 
 UIWindow workingWin; //by default a window that takes up the entire screen
  
-array<UIWindow> windows;    //window stack
-array<ColorMod> colorStack; 
-array<VarMod>   styleStack; 
+map<string, UIWindow> windows;    //window map
+array<ColorMod>       colorStack; 
+array<VarMod>         styleStack; 
 
 void UI::RectFilled(f32 x, f32 y, f32 width, f32 height, Color color) {
 	Render::FillRectUI(workingWin.position.x + x, workingWin.position.y + y, width, height, color);
@@ -76,14 +76,14 @@ void UI::Text(string text, vec2 pos, Color color) {
 
 //Windows
 
-bool CheckWindowExists(string name) {
-
-}
+//bool CheckWindowExists(string name) {
+//	string::hash(name);
+//}
 
 
 void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
 	//save previous window
-	windows.add(workingWin);
+	//windows.add(workingWin);
 
 	workingWin.name = name;
 	workingWin.position = pos;
@@ -129,8 +129,8 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 
 void UI::EndWindow() {
 	Assert(windows.size() > 1, "Attempted to end the base window");
-	workingWin = *windows.last;
-	windows.pop();
+	//workingWin = *windows.last;
+	//windows.pop();
 }
 
 
@@ -147,7 +147,12 @@ void UI::Init() {
 	//load font
 	style.font.load_bdf_font("gohufont-14.bdf");
 
-	style.windowBorderSize = 10.f;
+	Render::CreateFont(
+		Render::LoadTexture(
+			style.font.texture_sheet, style.font.width, style.font.height * style.font.char_count, 0),
+			style.font.width, style.font.height, style.font.char_count);
+
+	style.windowBorderSize = 1.f;
 	style.titleBarHeight = style.font.height + 6;
 
 	style.colors[UIStyleCol_Border]   = Color::GREY;

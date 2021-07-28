@@ -157,7 +157,7 @@ struct string {
 
 
 	//https://cp-algorithms.com/string/string-hashing.html
-	u64 hash(string str) {
+	static u64 hash(string str) {
 		const int p = 31;
 		const int m = 1e9 + 9;
 		u64 hash_value = 0;

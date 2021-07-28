@@ -43,8 +43,6 @@ struct tuple {
 	
 };
 
-//TODO(delle) make_pair function that doesnt require specifying the template
-
 //base case, never instantiated
 template<typename... Dummy> struct pair;
 
@@ -103,5 +101,11 @@ struct pair<T,U,V,W,X> {
 		this->fifth = fifth;
 	}
 };
+
+template<typename T, typename U>
+static pair<T, U> make_pair(T first, U second) {
+	return pair<T, U>(first, second);
+}
+
 
 #endif //DESHI_TUPLE_H

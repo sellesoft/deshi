@@ -1,4 +1,7 @@
 #pragma once
+#ifndef DESHI_ARRAY_H
+#define DESHI_ARRAY_H
+
 #include <initializer_list>
 #include "../defines.h"
 
@@ -260,3 +263,5 @@ struct array {
 
 
 };
+
+#endif
