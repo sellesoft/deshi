@@ -59,7 +59,7 @@ struct Entity {
 	//virtual void LoadDESH(const char* filename);
 	
 	//returns a component pointer from the entity of provided type, nullptr otherwise
-	template<class T>
+	template<class T> //TODO(delle,Op) use ComponentType here
 		T* GetComponent() {
 		T* t = nullptr;
 		for (Component* c : components) {

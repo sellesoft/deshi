@@ -70,7 +70,7 @@ local std::map<std::string, Color> color_strings{
 ////////////////////////////
 
 local void FlushBuffer(){
-    //@Incomplete
+    //!Incomplete
 }
 
 local void UpdateOpenness(){
@@ -118,12 +118,12 @@ void Console2::Toggle(ConsoleState new_state){
         }break;
         case ConsoleState_Popout:{
             state = ConsoleState_Popout;
-            //@Incomplete
+            //!Incomplete
 			//create a moveable and resizable ImGui-style window
         }break;
         case ConsoleState_Window:{
             state = ConsoleState_Window;
-            //@Incomplete
+            //!Incomplete
 			//create a new GLFW window child of the deshi window
         }break;
     }
@@ -285,7 +285,7 @@ void Console2::Update(){
 		}
 		
 		if(intercepting_inputs){
-			//@Incomplete
+			//!Incomplete
 			//scrolling
 			if(DengInput->KeyDownAnyMod(MouseButton::SCROLLUP)) {
 				//console_scroll_y--;
@@ -294,7 +294,7 @@ void Console2::Update(){
 				//console_scroll_y++;
 			}
 			
-			//@Incomplete
+			//!Incomplete
 			//input history
 			if(DengInput->KeyDownAnyMod(Key::UP)) {
 				input_history_select_index += 1;
@@ -365,13 +365,13 @@ void Console2::Update(){
 						f32 y = ImGui::GetWindowHeight();
 						ImGui::PushTextWrapPos(0.0f);
 						
-						//@Incomplete
+						//!Incomplete
 						//handle scrolling
 						
 						u32 str_start = dictionary.end;
 						u32 str_end   = dictionary.end;
 						while(y > 0){
-							//@Incomplete
+							//!Incomplete
 							//crashes when going past max size
 							if((str_start != dictionary.start) && (*(dictionary[str_start-1].end - 1) != '\n')) { //skip until string end
 								str_start -= 1;
@@ -390,7 +390,7 @@ void Console2::Update(){
 								ImGui::TextEx(dictionary[i].start, dictionary[i].end, ImGuiTextFlags_NoWidthForLargeClippedText);
 								ImGui::PopStyleColor();
 								
-								//@Incomplete
+								//!Incomplete
 								//handle text wrapping
 								x += ImGui::CalcTextSize(dictionary[i].start, dictionary[i].end).x;
 								if(x > ImGui::GetWindowWidth()){
@@ -475,7 +475,7 @@ void Console2::Update(){
 							input.erase(t, input.size()-1);
 						}
 						
-						//@Incomplete
+						//!Incomplete
 						//add input to input_history if not already in it
 						bool already_in_history = false;
 						for(int i = 0; i < input_history_length; ++i){
@@ -489,7 +489,7 @@ void Console2::Update(){
 							input_history_index = (input_history_index + 1) % (input_history_length - 1);
 						}
 						
-						//@Incomplete
+						//!Incomplete
 						//RunCommand(input, args);
 						memset(input_buffer, 0, input_max_size);
 					}

@@ -88,7 +88,7 @@ NewFrame(){
 void UI::
 FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
 	if(color.a == 0) return;
-	//@Incomplete
+	//!Incomplete
 }
 
 
@@ -129,22 +129,22 @@ GetStage(){
 ///////////////
 void Render::
 LoadFont(Font* font){
-	//@Incomplete
+	//!Incomplete
 }
 
 void Render::
 LoadTexture(Texture* texture){
-	//@Incomplete
+	//!Incomplete
 }
 
 void Render::
 LoadMaterial(Material* material){
-	//@Incomplete
+	//!Incomplete
 }
 
 void Render::
 LoadMesh(Mesh* mesh){
-	//@Incomplete
+	//!Incomplete
 }
 
 /////////////////
@@ -152,22 +152,22 @@ LoadMesh(Mesh* mesh){
 /////////////////
 void Render::
 UnloadFont(Font* font){
-	//@Incomplete
+	//!Incomplete
 }
 
 void Render::
 UnloadTexture(Texture* texture){
-	//@Incomplete
+	//!Incomplete
 }
 
 void Render::
 UnloadMaterial(Material* material){
-	//@Incomplete
+	//!Incomplete
 }
 
 void Render::
 UnloadMesh(Mesh* mesh){
-	//@Incomplete
+	//!Incomplete
 }
 
 ///////////////
@@ -175,7 +175,7 @@ UnloadMesh(Mesh* mesh){
 ///////////////
 void Render::
 DrawModel(Model* mesh, Matrix4 matrix){
-	//@Incomplete
+	//!Incomplete
 }
 
 void Render::
@@ -282,17 +282,17 @@ DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 ne
 /////////////////
 void Render::
 UpdateCameraPosition(Vector3 position){
-	//@Incomplete
+	//!Incomplete
 }
 
 void Render::
 UpdateCameraViewMatrix(Matrix4 m){
-	//@Incomplete
+	//!Incomplete
 }
 
 void Render::
 UpdateCameraProjectionMatrix(Matrix4 m){
-	//@Incomplete
+	//!Incomplete
 }
 
 //////////////////
@@ -300,12 +300,12 @@ UpdateCameraProjectionMatrix(Matrix4 m){
 //////////////////
 void Render::
 ReloadShader(u32 shader){
-	//@Incomplete
+	//!Incomplete
 }
 
 void Render::
 ReloadAllShaders(){
-	//@Incomplete
+	//!Incomplete
 }
 
 ////////////////
@@ -318,7 +318,7 @@ UpdateLight(u32 lightIdx, Vector4 vec){
 
 void Render::
 remakeOffscreen(){
-	//@Incomplete
+	//!Incomplete
 }
 
 ///////////////
@@ -326,7 +326,7 @@ remakeOffscreen(){
 ///////////////
 void Render::
 Init(){
-	//@Incomplete
+	//!Incomplete
 	//// load RenderSettings ////
 	LoadSettings();
 	if(settings.debugging && settings.printf){
@@ -339,7 +339,7 @@ Init(){
 /////////////////
 void Render::
 Update(){
-	//@Incomplete
+	//!Incomplete
 }
 
 ////////////////
@@ -347,7 +347,7 @@ Update(){
 ////////////////
 void Render::
 Reset(){
-	//@Incomplete
+	//!Incomplete
 }
 
 //////////////////
@@ -355,5 +355,5 @@ Reset(){
 //////////////////
 void Render::
 Cleanup(){
-	//@Incomplete
+	//!Incomplete
 }

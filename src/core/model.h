@@ -40,6 +40,7 @@ enum ModelFlags_{
 }; typedef u32 ModelFlags;
 
 //NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
+struct Face;
 struct Mesh{
 	u64 bytes;
 	u32 checksum;
@@ -58,26 +59,52 @@ struct Mesh{
 		vec2 uv;
 		vec3 color;
 		vec3 normal;
-		//vec3 tangent;
-		//vec3 bitangent;
-		//u32 boneIndexes[4];
-		//f32 boneWeights[4];
 	}  *vertexArray;
+	//struct VertexEx{
+	//vec3 tangent;
+	//vec3 bitangent;
+	//u32 boneIndexes[4];
+	//f32 boneWeights[4];
+	//}  *vertexExArray;
 	u32 vertexCount;
 	
 	struct Triangle{
-		Vertex* v0;
-		Vertex* v1;
-		Vertex* v2;
-		vec3    normal;
+		vec3 normal;
+		
+		union{  
+			Vertex* v[3]; 
+			struct{
+				Vertex* v0;
+				Vertex* v1;
+				Vertex* v2;
+			};
+		};
+		
+		//NOTE neighbor info to be cleaned
+		u32 neighborCount;
+		Triangle** neighborArray;
+		u8*        edgeArray;
+		Face* face;
+		bool removed;
+		bool checked;
 	}  *triangleArray;
 	u32 triangleCount;
 	
 	struct Face{
+		vec3 normal;
+		
 		u32 triangleCount;
 		u32 vertexCount;
+		u32 outerVertexCount;
 		Triangle** triangleArray;
 		Vertex**   vertexArray;
+		Vertex**   outerVertexArray;
+		
+		//NOTE neighbor info to be cleaned
+		u32 neighborFaceCount;
+		u32 neighborTriangleCount;
+		Face**     neighborFaceArray;
+		Triangle** neighborTriangleArray;
 	}  *faceArray;
 	u32 faceCount;
 };

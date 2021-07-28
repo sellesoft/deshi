@@ -109,8 +109,9 @@ namespace Render{
 	void UnloadMesh(Mesh* mesh);
     
 	void DrawModel(Model* model, Matrix4 matrix);
-	void DrawModelSelected(Model* model, Matrix4 matrix);
+	void DrawModelWireframe(Model* model, Matrix4 matrix, Color color = Color::WHITE);
 	void DrawLine(Vector3 start, Vector3 end, Color color = Color::WHITE);
+	void DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color color = Color::WHITE);
 	void DrawBox(Matrix4 transform, Color color = Color::WHITE);
     void DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color = Color::WHITE);
     

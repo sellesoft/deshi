@@ -466,7 +466,7 @@ void Admin::LoadTEXT(std::string savename){
 					//textures
 					std::vector<Texture*> textures;
 					for(int i = 3; i < split.size(); ++i){
-						textures.push_back(DengScene->CreateTexture(split[i].c_str(), TextureType_Albedo));
+						textures.push_back(DengScene->CreateTextureFromFile(split[i].c_str(), TextureType_Albedo));
 					}
 					
 					//material
@@ -475,6 +475,7 @@ void Admin::LoadTEXT(std::string savename){
 				}break;
 				case(LevelHeader::MESHES):{
 					if(split.size() < 3){ ERROR(ParsingError,"'! Mesh lines should have at least 3 values"); continue; }
+					//!Incomplete update text level files to new formats
 					
 					//id
 					u32 old_id = std::stoi(split[0]);
@@ -484,7 +485,7 @@ void Admin::LoadTEXT(std::string savename){
 					
 					//materials
 					for(int i = 2; i < split.size(); ++i){
-						DengScene->UpdateModelBatchMaterial(model, i, DengScene->CreateMaterial(split[i].c_str()));
+						model->batchArray[i].material = DengScene->CreateMaterial(split[i].c_str());
 					}
 				}break;
 				case(LevelHeader::ENTITIES):{
@@ -563,391 +564,12 @@ void Admin::LoadTEXT(std::string savename){
 }
 #undef ParsingError
 
-struct SaveHeader{
-	u32 magic;
-	u32 flags;
-	u32 entityCount;
-	u32 entityArrayOffset;
-	u32 textureCount;
-	u32 textureArrayOffset;
-	u32 materialCount;
-	u32 materialArrayOffset;
-	u32 meshCount;
-	u32 meshArrayOffset;
-	u32 componentTypeCount;
-	u32 componentTypeHeaderArrayOffset;
-};
-
 void Admin::SaveDESH(const char* filename) {
-	//std::vector<char> save_data(16384);
 	
-	//open file
-	std::string filepath = Assets::dirSaves() + filename;
-	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
-	if(!file.is_open()){ ERROR("Failed to open file '", filepath, "' when trying to save"); return; }
-	
-	SaveHeader header;
-	file.write((const char*)&header, sizeof(SaveHeader)); //fill header
-	header.magic = 1213416772; //DESH
-	header.flags = 0;
-	
-	//// entities ////
-	header.entityCount       = entities.size();
-	header.entityArrayOffset = sizeof(SaveHeader);
-	
-	//store sorted components and write entities
-	header.componentTypeCount = 10;
-	std::vector<AudioListener*>  compsAudioListener;
-	std::vector<AudioSource*>    compsAudioSource;
-	std::vector<Collider*>       compsCollider;
-	std::vector<Light*>          compsLight;
-	std::vector<ModelInstance*>  compsMeshComp;
-	std::vector<Physics*>        compsPhysics;
-	std::vector<Movement*>       compsMovement;
-	std::vector<Player*>         compsPlayer;
-	//TODO(delle,Cl) convert these vectors to char vectors and when iterating thru entities
-	// and thier components, call the save function of an entity to add to the components
-	// vector and then use the final size of that vector for type header offsets
-	//Or, loop thru layers
-	
-	for(Entity* e : entities) {
-		//write entity
-		file.write((const char*)&e->id,                 sizeof(u32));
-		file.write(e->name,                             sizeof(char)*DESHI_NAME_SIZE);
-		file.write((const char*)&e->transform.position, sizeof(Vector3));
-		file.write((const char*)&e->transform.rotation, sizeof(Vector3));
-		file.write((const char*)&e->transform.scale,    sizeof(Vector3));
-		
-		//sort components
-		for (Component* c : e->components) {
-			switch (c->type) {
-				case ComponentType_Physics:       compsPhysics.push_back(dyncast(Physics, c)); break;
-				case ComponentType_Collider:      compsCollider.push_back(dyncast(Collider, c)); break;
-				case ComponentType_AudioListener: compsAudioListener.push_back(dyncast(AudioListener, c)); break;
-				case ComponentType_AudioSource:   compsAudioSource.push_back(dyncast(AudioSource, c)); break;
-				case ComponentType_Light:         compsLight.push_back(dyncast(Light, c)); break;
-				case ComponentType_OrbManager:    /*TODO(sushi) impl orb saving*/ break;
-                case ComponentType_Movement:      compsMovement.push_back(dyncast(Movement, c)); break;
-                case ComponentType_ModelInstance: compsMeshComp.push_back(dyncast(ModelInstance, c)); break;
-                case ComponentType_Player:        compsPlayer.push_back(dyncast(Player, c)); break;
-            }
-        }
-    }
-    
-    //// write textures ////
-    header.textureCount = DengScene->textures.size();
-    header.textureArrayOffset = file.tellp();
-	/*
-    for(auto& t : *Render::textureArray()){
-        file.write((const char*)&t.type, sizeof(u32));
-        file.write(t.filename,           sizeof(char)*DESHI_NAME_SIZE);
-    }
-*/
-    
-    //// write materials ////
-    header.materialCount = DengScene->materials.size();
-    header.materialArrayOffset = file.tellp();
-	/*
-    for(auto& m : *Render::materialArray()){
-        file.write((const char*)&m.shader,     sizeof(u32));
-        file.write((const char*)&m.albedoID,   sizeof(u32));
-        file.write((const char*)&m.normalID,   sizeof(u32));
-        file.write((const char*)&m.specularID, sizeof(u32));
-        file.write((const char*)&m.lightID,    sizeof(u32));
-        file.write(m.name,                     sizeof(char)*DESHI_NAME_SIZE);
-    }
-*/
-    
-    //// write meshes //// //TODO(delle) support multiple materials per mesh
-    header.meshCount = DengScene->meshes.size();
-    header.meshArrayOffset = file.tellp();
-	/*
-    for(auto& m : *Render::meshArray()){
-        bool base = m.base;
-        file.write((const char*)&m.primitives[0].materialIndex, sizeof(u32));
-        file.write((const char*)&base,                          sizeof(bool));
-        file.write(m.name,                                      sizeof(char)*DESHI_NAME_SIZE);
-    }
-*/
-    
-    //// write component type headers //// //TODO(delle) move these to thier respective files
-    header.componentTypeHeaderArrayOffset = file.tellp();
-    ComponentTypeHeader typeHeader;
-    
-    //audio listener 0
-    typeHeader.type        = ComponentType_AudioListener;
-    typeHeader.arrayOffset = header.componentTypeHeaderArrayOffset + sizeof(ComponentTypeHeader) * header.componentTypeCount;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3)*3;
-    typeHeader.count       = compsAudioListener.size();
-    file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
-    
-    //audio source 1
-    typeHeader.type        = ComponentType_AudioSource;
-    typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + 0; //TODO(sushi) tell delle what data is important to save on a source
-    typeHeader.count       = compsAudioSource.size();
-    file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
-    
-    //collider 2
-    typeHeader.type        = ComponentType_Collider;
-    typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(u32) + sizeof(Matrix3) + sizeof(Vector3);
-    typeHeader.count       = compsCollider.size();
-    file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
-    
-    //light 5
-    typeHeader.type        = ComponentType_Light;
-    typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3)*2 + sizeof(float);
-    typeHeader.count       = compsLight.size();
-    file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
-    
-    //mesh comp 6
-    typeHeader.type        = ComponentType_ModelInstance;
-    typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(u32)*2 + sizeof(bool)*2; //instanceID, meshID, visible, entity_control
-    typeHeader.count       = compsMeshComp.size();
-    file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
-    
-    //physics 7
-    typeHeader.type        = ComponentType_Physics;
-    typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3)*6 + sizeof(float)*2 + sizeof(bool) * 3 + sizeof(float) * 2;
-    typeHeader.count       = compsPhysics.size();
-    file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
-    
-    //NOTE sushi: this is kind of scuffed because movement has a pointer to physics, and player
-    // 			  has a pointer to movement so they have to be loaded in this order in order
-    //			  for movement, physics, and player to find the pointers they need on their entity
-    // 			  this should probably be done better at some point :). maybe it is already idk
-    //movement 8
-    typeHeader.type        = ComponentType_Movement;
-    typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(Vector3) + sizeof(float) * 6 + sizeof(bool);
-    typeHeader.count       = compsMovement.size();
-    file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
-    
-    //player 9
-    typeHeader.type        = ComponentType_Player;
-    typeHeader.arrayOffset = typeHeader.arrayOffset + typeHeader.size * typeHeader.count;
-    typeHeader.size        = sizeof(u32) * 3 + sizeof(int);
-    typeHeader.count       = compsPlayer.size();
-    file.write((const char*)&typeHeader, sizeof(ComponentTypeHeader));
-    
-    //// write components ////
-    
-    //audio listener
-    for(auto c : compsAudioListener){
-        //file.write((const char*)&c->entityID,    sizeof(u32));
-        file.write((const char*)&c->compID,      sizeof(u32));
-        file.write((const char*)&c->event,       sizeof(u32));
-        file.write((const char*)&c->position,    sizeof(Vector3));
-        file.write((const char*)&c->velocity,    sizeof(Vector3));
-        file.write((const char*)&c->orientation, sizeof(Vector3));
-    }
-    
-    //audio source
-    for(auto c : compsAudioSource){
-        //file.write((const char*)&c->entityID, sizeof(u32));
-        file.write((const char*)&c->compID,   sizeof(u32));
-        file.write((const char*)&c->event,    sizeof(u32));
-        
-    }
-    
-    //collider box
-    for(auto c : compsCollider){
-        //file.write((const char*)&c->entityID,       sizeof(u32));
-        file.write((const char*)&c->compID,         sizeof(u32));
-        file.write((const char*)&c->event,          sizeof(u32));
-        file.write((const char*)&c->collLayer, sizeof(u32));
-        file.write((const char*)&c->tensor,  sizeof(Matrix3));
-        //file.write((const char*)&c->halfDims,       sizeof(Vector3));
-    }
-    
-    //light
-    for(auto c : compsLight){
-        //file.write((const char*)&c->entityID,    sizeof(u32));
-        file.write((const char*)&c->compID,      sizeof(u32));
-        file.write((const char*)&c->event,       sizeof(u32));
-        file.write((const char*)&c->position,    sizeof(Vector3));
-        file.write((const char*)&c->direction,   sizeof(Vector3));
-        file.write((const char*)&c->brightness,  sizeof(float));
-    }
-    
-    //mesh comp
-    for(auto c : compsMeshComp){
-        //file.write((const char*)&c->entityID,   sizeof(u32));
-        file.write((const char*)&c->compID,     sizeof(u32));
-        file.write((const char*)&c->event,      sizeof(u32));
-        //file.write((const char*)&c->meshID,     sizeof(u32));
-        file.write((const char*)&c->visible,         sizeof(bool));
-    }
-    
-    //physics
-    for(auto c : compsPhysics){
-        bool staticPosition = c->staticPosition;
-        bool staticRotation = c->staticRotation;
-        bool twoDphys = c->twoDphys;
-        //file.write((const char*)&c->entityID,        sizeof(u32));
-        file.write((const char*)&c->compID,          sizeof(u32));
-        file.write((const char*)&c->event,           sizeof(u32));
-        file.write((const char*)&c->position,        sizeof(Vector3));
-        file.write((const char*)&c->rotation,        sizeof(Vector3));
-        file.write((const char*)&c->velocity,        sizeof(Vector3));
-        file.write((const char*)&c->acceleration,    sizeof(Vector3));
-        file.write((const char*)&c->rotVelocity,     sizeof(Vector3));
-        file.write((const char*)&c->rotAcceleration, sizeof(Vector3));
-        file.write((const char*)&c->elasticity,      sizeof(float));
-        file.write((const char*)&c->mass,            sizeof(float));
-        file.write((const char*)&staticPosition,           sizeof(bool));
-        file.write((const char*)&staticRotation,     sizeof(bool));
-        file.write((const char*)&twoDphys,           sizeof(bool));
-        file.write((const char*)&c->kineticFricCoef, sizeof(float));
-        file.write((const char*)&c->staticFricCoef,  sizeof(float));
-    }
-    
-    //movement
-    for (auto c : compsMovement) {
-        bool jump = c->jump;
-        //file.write((const char*)&c->entityID,          sizeof(u32));
-        file.write((const char*)&c->compID,            sizeof(u32));
-        file.write((const char*)&c->event,             sizeof(u32));
-        file.write((const char*)&c->inputs,            sizeof(Vector3));
-        file.write((const char*)&c->gndAccel,          sizeof(float));
-        file.write((const char*)&c->airAccel,          sizeof(float));
-        file.write((const char*)&c->maxWalkingSpeed,   sizeof(float));
-        file.write((const char*)&c->maxRunningSpeed,   sizeof(float));
-        file.write((const char*)&c->maxCrouchingSpeed, sizeof(float));
-        file.write((const char*)&jump,                 sizeof(bool));
-        file.write((const char*)&c->jumpImpulse,       sizeof(float));
-    }
-    
-    //player
-    for(auto c : compsPlayer){
-        //file.write((const char*)&c->entityID, sizeof(u32));
-        file.write((const char*)&c->compID,   sizeof(u32));
-        file.write((const char*)&c->event,    sizeof(u32));
-        file.write((const char*)&c->health,   sizeof(int));
-    }
-    
-    //finish header
-    file.seekp(0);
-    file.write((const char*)&header, sizeof(SaveHeader));
-    
-    //// close file ////
-    file.close();
-    SUCCESS("Successfully saved to ", filename);
 }
 
 void Admin::LoadDESH(const char* filename) {
-    Reset();
-    LOG("Loading level: ", Assets::dirSaves() + filename);
-    TIMER_START(t_l);
     
-    //// read file to char array ////
-    u32 cursor = 0;
-    std::vector<char> file = Assets::readFileBinary(Assets::dirSaves() + filename);
-    const char* data = file.data();
-    if(!data) return;
-    
-    //check for magic number
-    u32 magic = 1213416772; //DESH
-    if(memcmp(data, &magic, 4) != 0) return ERROR("Invalid magic number when loading save file: ", filename);
-    
-    //// parse header ////
-    SaveHeader header;
-    memcpy(&header, data+cursor, sizeof(SaveHeader)); cursor += sizeof(SaveHeader);
-    
-    //// parse and create entities ////
-    if(cursor != header.entityArrayOffset) {
-        return ERROR("Load failed because cursor was at '", cursor, 
-                     "' when reading entities which start at '", header.entityArrayOffset, "'");
-    }
-    Transform entTrans{}; char entName[DESHI_NAME_SIZE];
-    forI(header.entityCount){
-        cursor += sizeof(u32); //skipped
-        memcpy(entName,   data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
-        memcpy(&entTrans, data+cursor, sizeof(vec3)*3);  cursor += sizeof(vec3)*3;
-        entities.push_back(new Entity(this, entities.size(), entTrans, entName, {}));
-    }
-    
-    //// parse and load textures ////
-    if(cursor != header.textureArrayOffset) {
-        return ERROR("Load failed because cursor was at '", cursor, 
-                     "' when reading textures which start at '", header.textureArrayOffset, "'");
-    }
-    TextureType texType; char texName[DESHI_NAME_SIZE];
-    forI(header.textureCount){
-        memcpy(&texType, data+cursor, sizeof(u32));     cursor += sizeof(u32);
-        memcpy(texName,  data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
-		DengScene->CreateTexture(texName, texType);
-    }
-    
-    //// parse and create materials ////
-    if(cursor != header.materialArrayOffset) {
-        return ERROR("Load failed because cursor was at '", cursor, 
-                     "' when reading materials which start at '", header.materialArrayOffset, "'");
-    }
-    u32 shader = 0, albedoID = 0, normalID = 2, specularID = 2, lightID = 2; char matName[DESHI_NAME_SIZE];
-    forI(header.materialCount){
-        memcpy(&shader,     data+cursor, sizeof(u32)); cursor += sizeof(u32);
-        memcpy(&albedoID,   data+cursor, sizeof(u32)); cursor += sizeof(u32);
-        memcpy(&normalID,   data+cursor, sizeof(u32)); cursor += sizeof(u32);
-        memcpy(&specularID, data+cursor, sizeof(u32)); cursor += sizeof(u32);
-        memcpy(&lightID,    data+cursor, sizeof(u32)); cursor += sizeof(u32);
-        memcpy(matName,     data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
-		DengScene->CreateMaterial(matName, shader, MaterialFlags_NONE, {DengScene->textures[albedoID], 
-									  DengScene->textures[normalID], DengScene->textures[specularID], DengScene->textures[lightID]});
-    }
-    
-    //// parse and load/create meshes ////
-    if(cursor != header.meshArrayOffset) {
-        return ERROR("Load failed because cursor was at '", cursor, 
-                     "' when reading meshes which start at '", header.meshArrayOffset, "'");
-    }
-    bool matID = 0, baseMesh = 0; char meshName[DESHI_NAME_SIZE];
-    forI(header.meshCount){
-        memcpy(&matID,    data+cursor, sizeof(u32));     cursor += sizeof(u32);
-        memcpy(&baseMesh, data+cursor, sizeof(bool));     cursor += sizeof(bool);
-        memcpy(meshName,  data+cursor, sizeof(char)*DESHI_NAME_SIZE); cursor += sizeof(char)*DESHI_NAME_SIZE;
-        if(!baseMesh) {
-			Model* model = DengScene->CreateModelFromOBJ(meshName);
-            DengScene->UpdateModelBatchMaterial(model, 0, DengScene->materials[matID]);
-        }
-    }
-    
-    //// parse and create components ////
-    if(cursor != header.componentTypeHeaderArrayOffset) {
-        return ERROR("Load failed because cursor was at '", cursor, 
-                     "' when reading component headers which start at '", header.componentTypeHeaderArrayOffset, "'");
-    }
-    
-    ComponentTypeHeader compHeader;
-    forI(header.componentTypeCount){
-        cursor = header.componentTypeHeaderArrayOffset + (sizeof(u32)*4)*i;
-        memcpy(&compHeader, data+cursor, sizeof(u32)*4);
-        cursor = compHeader.arrayOffset;
-        
-        switch(compHeader.type){
-            case(ComponentType_AudioListener):  AudioListener ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_AudioSource):    AudioSource   ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_Camera):         Camera        ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_Collider):       Collider      ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_Light):          Light         ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_ModelInstance):  ModelInstance ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_OrbManager):     OrbManager    ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_Physics):        Physics       ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_Movement):       Movement      ::LoadDESH(this, data, cursor, compHeader.count); break;
-            case(ComponentType_Player):         Player        ::LoadDESH(this, data, cursor, compHeader.count); break;
-            default:{
-                ERROR("Failed to load a component array because of unknown component type '", 
-                      compHeader.type, "' at pos: ", cursor);
-            }break;
-        }
-    }
-    
-    SUCCESS("Finished loading level '", filename, "' in ", TIMER_END(t_l), "ms");
-    SkipUpdate();
 }
 
 
@@ -1044,7 +666,7 @@ Entity* Admin::EntityRaycast(Vector3 origin, Vector3 direction, f32 maxDistance)
         if(ModelInstance* mc = e->GetComponent<ModelInstance>()){
             if(!mc->visible) continue;
 			forX(tri_idx, mc->mesh->triangleCount){
-				tri = mc->mesh->triangleArray[tri_idx];
+				tri = &mc->mesh->triangleArray[tri_idx];
 				p0 = tri->v0->pos * transform;
 				p1 = tri->v1->pos * transform;
 				p2 = tri->v2->pos * transform;
@@ -1055,7 +677,7 @@ Entity* Admin::EntityRaycast(Vector3 origin, Vector3 direction, f32 maxDistance)
 				
 				//find where on the plane defined by the triangle our raycast intersects
 				depth     = (p0 - origin).dot(normal) / direction.dot(normal);
-				intersect = line_start + (direction * depth);
+				intersect = origin + (direction * depth);
 				
 				//early out if intersection is behind us
 				if(depth <= 0) continue;

@@ -1418,7 +1418,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                     sel->AddComponent(comp);
                     admin->AddComponentToLayers(comp);
                 }break;
-                case ComponentType_AudioSource:{ //@Incomplete
+                case ComponentType_AudioSource:{ //!Incomplete
                     Component* comp = new AudioSource();
                     sel->AddComponent(comp);
                     admin->AddComponentToLayers(comp);
@@ -1433,7 +1433,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                     sel->AddComponent(comp);
                     admin->AddComponentToLayers(comp);
                 }break;
-                case ComponentType_OrbManager:{ //@Incomplete
+                case ComponentType_OrbManager:{ //!Incomplete
                     Component* comp = new OrbManager(0);
                     sel->AddComponent(comp);
                     admin->AddComponentToLayers(comp);
@@ -1443,12 +1443,12 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                     sel->AddComponent(comp);
                     admin->AddComponentToLayers(comp);
                 }break;
-                case ComponentType_Player:{ //@Incomplete
+                case ComponentType_Player:{ //!Incomplete
                     Component* comp = new Player();
                     sel->AddComponent(comp);
                     admin->AddComponentToLayers(comp);
                 }break;
-                case ComponentType_Movement:{ //@Incomplete
+                case ComponentType_Movement:{ //!Incomplete
                     Component* comp = new Movement();
                     sel->AddComponent(comp);
                     admin->AddComponentToLayers(comp);
@@ -1593,7 +1593,7 @@ inline void MaterialsTab(Admin* admin){
                 if (ImGui::BeginCombo("##mat_albedo_combo", matTextures[0]->name)) {
                     forI(textures.size()) {
                         if (ImGui::Selectable(textures[i].c_str(), strcmp(matTextures[0]->name, textures[i].c_str()) == 0)) {
-                            DengScene->MaterialTexture(selected_mat, 0) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Albedo);
+                            *DengScene->MaterialTexture(selected_mat, 0) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Albedo);
                         }
                     }
                     ImGui::EndCombo(); //mat_albedo_combo
@@ -1602,7 +1602,7 @@ inline void MaterialsTab(Admin* admin){
                 if (ImGui::BeginCombo("##mat_normal_combo", matTextures[1]->name)) {
                     forI(textures.size()) {
                         if (ImGui::Selectable(textures[i].c_str(), strcmp(matTextures[1]->name, textures[i].c_str()) == 0)) {
-							DengScene->MaterialTexture(selected_mat, 1) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Normal);
+							*DengScene->MaterialTexture(selected_mat, 1) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Normal);
                         }
                     }
                     ImGui::EndCombo(); //mat_normal_combo
@@ -1611,7 +1611,7 @@ inline void MaterialsTab(Admin* admin){
                 if (ImGui::BeginCombo("##mat_spec_combo", matTextures[2]->name)) {
                     forI(textures.size()) {
                         if (ImGui::Selectable(textures[i].c_str(), strcmp(matTextures[2]->name, textures[i].c_str()) == 0)) {
-							DengScene->MaterialTexture(selected_mat, 2) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Specular);
+							*DengScene->MaterialTexture(selected_mat, 2) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Specular);
                         }
                     }
                     ImGui::EndCombo(); //mat_spec_combo
@@ -1620,7 +1620,7 @@ inline void MaterialsTab(Admin* admin){
                 if (ImGui::BeginCombo("##mat_light_combo", matTextures[3]->name)) {
                     forI(textures.size()) {
                         if (ImGui::Selectable(textures[i].c_str(), strcmp(matTextures[3]->name, textures[i].c_str()) == 0)) {
-							DengScene->MaterialTexture(selected_mat, 3) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Light);
+							*DengScene->MaterialTexture(selected_mat, 3) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Light);
                         }
                     }
                     ImGui::EndCombo(); //mat_light_combo
@@ -2324,8 +2324,9 @@ void Editor::Update(){
 				
 				copy_path = filepath;
 				for(Component* c : selected[0]->components){
-					if(c->type == ComponentType_MeshComp){
-						copy_mesh_diffs.push_back(pair<u32,u32>(-1, ((MeshComp*)c)->meshID));
+					if(c->type == ComponentType_ModelInstance){
+						u32 mesh_idx = DengScene->MeshIndex(((ModelInstance*)c)->mesh);
+						copy_mesh_diffs.push_back(pair<u32,u32>(-1, mesh_idx));
 					}
 				}
 				
@@ -2343,8 +2344,9 @@ void Editor::Update(){
 				
 				copy_path = filepath;
 				for(Component* c : selected[0]->components){
-					if(c->type == ComponentType_MeshComp){
-						copy_mesh_diffs.push_back(pair<u32,u32>(-1, ((ModelInstance*)c)->meshID));
+					if(c->type == ComponentType_ModelInstance){
+						u32 mesh_idx = DengScene->MeshIndex(((ModelInstance*)c)->mesh);
+						copy_mesh_diffs.push_back(pair<u32,u32>(-1, mesh_idx));
 					}
 				}
 			}
@@ -2395,8 +2397,8 @@ void Editor::Update(){
 			if(!Render::GetSettings()->findMeshTriangleNeighbors){
 				Render::DrawModelSelected(mc->model, mc->transform);
 			}else{
-				std::vector<Vector2> outline = mc->mesh->GenerateOutlinePoints(e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
-																			   DengWindow->dimensions, camera->position);
+				std::vector<Vector2> outline = DengScene->GenerateMeshOutlinePoints(mc->mesh, e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
+																					camera->position, DengWindow->dimensions);
 				for (int i = 0; i < outline.size(); i += 2) {
 					ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
 				}

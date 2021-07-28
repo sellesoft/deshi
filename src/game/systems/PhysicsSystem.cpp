@@ -11,6 +11,7 @@
 #include "../../core/time.h"
 #include "../../core/renderer.h" //temporary until we guarentee store trimesh neighbors on them
 #include "../../core/window.h"
+#include "../../core/scene.h"
 #include "../../math/Math.h"
 #include "../../geometry/Geometry.h"
 #include "../../utils/Command.h"
@@ -412,53 +413,6 @@ inline void BoxBoxCollision(Physics* box, BoxCollider* boxCol, Physics* other, B
 	ERROR("Box-Box collision not implemented in PhysicsSystem.cpp");
 }
 
-//TODO(sushi, Cl) move this to some utilities file eventually 
-template<class T>
-bool is_in(T test, std::vector<T> vec) {
-	for (T t : vec) if (test == t) return true;
-	return false;
-}
-
-//TODO(sushi, Op) store face information eventually, these two functions could get really bad in some cases
-//				  doing that will also prevent us from checking a face several times if multiple triangles make it up
-//returns a faces neighbors as well as the triangles that make up the face
-inline pair<std::vector<Triangle*>, std::vector<Triangle*>>
-findFaceNbrs(Triangle* base) {
-	std::vector<Triangle*> face{ base };
-	std::vector<Triangle*> ret;
-	//pair<std::vector<Triangle*>, std::vector<Triangle*>> p(face, ret)
-	for (int i = 0; i < face.size(); i++) {
-		for (Triangle* t : face[i]->nbrs) {
-			if (!is_in(t, face)) {
-				if (t->norm == base->norm) {
-					face.push_back(t);
-				}
-				else {
-					ret.push_back(t);
-				}
-			}
-		}
-	}
-	return pair<std::vector<Triangle*>, std::vector<Triangle*>>(ret, face);
-}
-
-//returns a vector of all triangles that make up a face
-//TODO(sushi, Cl) merge this function with the above or the other way around
-inline std::vector<Triangle*> findFace(Triangle* base) {
-	std::vector<Triangle*> face{ base };
-	for (int i = 0; i < face.size(); i++) {
-		for (Triangle* t : face[i]->nbrs) {
-			if (!is_in(t, face)) {
-				if (t->norm == base->norm) {
-					face.push_back(t);
-				}
-			}
-		}
-	}
-	return face;
-}
-
-
 //This is currently done by SAT
 inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Physics* obj2, ComplexCollider* obj2Col) {
 	//LOG("tick ", physTickCounter, " with ", obj1->entity->id, " against ", obj2->entity->id, " ---------------------------------------------------------");
@@ -503,25 +457,24 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 		//PRINTLN("o1 rot: " << o1->rotation.str());
 		//PRINTLN("o2 rot: " << o2->rotation.str());
 		
-		Face* lastface = 0;
-		for (Face* f : o1c->mesh->faces) {
-			p0 = f->points[0] * o1transform;
-			normal = f->norm * o1rotation;
+		Mesh::Face* lastface = 0;
+		forX(oc1Index, o1c->mesh->faceCount){ Mesh::Face* f = &o1c->mesh->faceArray[oc1Index];
+			p0 = f->vertexArray[0]->pos * o1transform;
+			normal = f->normal * o1rotation;
 			float deepest = INFINITY;
-			for (Face* f2 : o2c->mesh->faces) {
-				for (int i = 0; i < f2->points.size(); i++) {
-					Vector3 v = f2->points[i] * o2transform;
-					p1 = v;
-					float vertdepth = Math::DistPointToPlane(v, normal, p0);
-					//ImGui::DebugDrawLine3(v, v - normal * vertdepth, Color(0, 255.0 * (i / (float)f2->points.size()), 0));
+			forX(oc2Index, o2c->mesh->faceCount){ Mesh::Face* f2 = &o2c->mesh->faceArray[oc2Index];
+				forX(f2vIndex, f2->outerVertexCount){
+					p1 = f2->outerVertexArray[f2vIndex]->pos * o2transform;
+					float vertdepth = Math::DistPointToPlane(p1, normal, p0);
+					//ImGui::DebugDrawLine3(p1, p1 - normal * vertdepth, Color(0, 255.0 * (i / (float)f2->points.size()), 0));
 					if (vertdepth < deepest) {
 						deepest = vertdepth;
 					}
 					lastface = f2;
 				}
 				if (deepest > 0) {
-					for (int i = 0; i < lastface->points.size(); i += 2) {
-						ImGui::DebugDrawLine3(lastface->points[i] * o2transform, lastface->points[i + 1] * o2transform, Color::MAGENTA);
+					forX(lfvIndex, f2->outerVertexCount){
+						ImGui::DebugDrawLine3(lastface->outerVertexArray[lfvIndex]->pos * o2transform, lastface->outerVertexArray[lfvIndex + 1]->pos * o2transform, Color::MAGENTA);
 					}
 					ImGui::DebugDrawLine3(p1, p1 - normal * deepest, Color::BLACK);
 					ERROR("func failed with deepest ", deepest);
@@ -613,69 +566,74 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	u32 furthestTriInc = Geometry::FurthestTriangleAlongNormal(inccol->mesh, Matrix4::RotationMatrix(incphys->rotation), -bestnorm);
 	
 	
-	Triangle* triRef = refcol->mesh->triangles[furthestTriRef];
-	Triangle* triInc = inccol->mesh->triangles[furthestTriInc];
+	Mesh::Triangle* triRef = refcol->mesh->triangleArray[furthestTriRef];
+	Mesh::Triangle* triInc = inccol->mesh->triangleArray[furthestTriInc];
 	
-	//ImGui::DebugDrawTriangle3(triRef->midpoint(), triRef->midpoint() + bestnorm, Color::YELLOW);
+	//ImGui::DebugDrawTriangle3(Geometry::MeshTriangleMidpoint(triRef), Geometry::MeshTriangleMidpoint(triRef) + bestnorm, Color::YELLOW);
 	
 	
 	Matrix4 refTransform = Matrix4::TransformationMatrix(refphys->position, refphys->rotation, refphys->entity->transform.scale);
 	Matrix4 incTransform = Matrix4::TransformationMatrix(incphys->position, incphys->rotation, incphys->entity->transform.scale);
-	ImGui::DebugDrawLine3(triRef->midpoint() * refTransform, triRef->midpoint() * refTransform + bestnorm, Color::YELLOW);
+	ImGui::DebugDrawLine3(Geometry::MeshTriangleMidpoint(triRef) * refTransform, Geometry::MeshTriangleMidpoint(triRef) * refTransform + bestnorm, Color::YELLOW);
 	
 	Matrix4 refRotation = Matrix4::RotationMatrix(refphys->rotation);
 	Matrix4 incRotation = Matrix4::RotationMatrix(incphys->rotation);
-	ImGui::DebugDrawLine3(triInc->midpoint() * incTransform, triInc->midpoint() * incTransform + triInc->norm * incRotation,  Color::VERY_DARK_YELLOW);
+	ImGui::DebugDrawLine3(Geometry::MeshTriangleMidpoint(triRef) * incTransform, Geometry::MeshTriangleMidpoint(triRef) * incTransform + triInc->normal * incRotation,  Color::VERY_DARK_YELLOW);
 	
 	std::vector<Vector3> colPoints;
 	//we need to find all nbrs to the face, not just the triangle
 	pair<std::vector<Triangle*>, std::vector<Triangle*>>
 		nbrs2check = findFaceNbrs(triRef); 
 	
-	std::vector<Triangle*> incFace = findFace(triInc);
+	Mesh::Face* refFace = triRef->face;
+	Mesh::Face* incFace = triInc->face;
 	
+	//NOTE draw inclement face's triangles
 	//for (Triangle* t : triInc->face->tris) {
 	//	ImGui::DebugDrawTriangle3(
-	//		t->p[0] * incphys->entity->transform.TransformMatrix(),
-	//		t->p[1] * incphys->entity->transform.TransformMatrix(),
-	//		t->p[2] * incphys->entity->transform.TransformMatrix(), Color::MAGENTA);
+	//		t->v0->pos * incphys->entity->transform.TransformMatrix(),
+	//		t->v1->pos * incphys->entity->transform.TransformMatrix(),
+	//		t->v2->pos * incphys->entity->transform.TransformMatrix(), Color::MAGENTA);
 	//}
 	
-	for (int i = 0; i < triInc->face->points.size(); i += 2) {
-		ImGui::DebugDrawLine3(triInc->face->points[i] * incTransform, triInc->face->points[i + 1] * incTransform, Color::MAGENTA);
+	//NOTE draw inclement face's edges
+	for (int i = 0; i < triInc->face->outerVertexCount; i += 2) {
+		ImGui::DebugDrawLine3(triInc->face->outerVertexArray[i]->pos * incTransform,
+							  triInc->face->outerVertexArray[i + 1]->pos * incTransform, 
+							  Color::MAGENTA);
 	}
 	
-	//for (Triangle* t : nbrs2check.first) {
-	//	ImGui::DebugDrawTriangle3(
-	//		t->p[0] * refphys->entity->transform.TransformMatrix(),
-	//		t->p[1] * refphys->entity->transform.TransformMatrix(),
-	//		t->p[2] * refphys->entity->transform.TransformMatrix(), Color::MAGENTA);
+	//NOTE draw reference face's neighboring triangles
+	//for (Triangle* t : refFace->neighborTriangles) {
+	//ImGui::DebugDrawTriangle3(t->v0->pos * refphys->entity->transform.TransformMatrix(),
+	//t->v1->pos * refphys->entity->transform.TransformMatrix(),
+	//t->v2->pos * refphys->entity->transform.TransformMatrix(), Color::MAGENTA);
 	//}
-	//
-	for (Triangle* t : nbrs2check.second) {
-		ImGui::DebugDrawTriangle3(
-								  t->p[0] * refphys->entity->transform.TransformMatrix(),
-								  t->p[1] * refphys->entity->transform.TransformMatrix(),
-								  t->p[2] * refphys->entity->transform.TransformMatrix(), Color::GREEN);
+	
+	//NOTE draw reference face's triangles
+	for (Mesh::Triangle* t : nbrs2check.second) {
+		ImGui::DebugDrawTriangle3(t->v0->pos * refphys->entity->transform.TransformMatrix(),
+								  t->v1->pos * refphys->entity->transform.TransformMatrix(),
+								  t->v2->pos * refphys->entity->transform.TransformMatrix(), Color::GREEN);
 	}
 	
 	//clip inc face's points against ref's adjacent faces
-	for (Triangle* t : nbrs2check.first) {
-		Vector3 refP = t->p[0] * refTransform;
-		for (Triangle* tInc : incFace) {
+	for (Mesh::Triangle* t : nbrs2check.first) {
+		Vector3 refP = t->v0->pos * refTransform;
+		for (Mesh::Triangle* tInc : incFace) {
 			for (int i = 0; i < 3; i++) {
-				Vector3 incP = tInc->p[i] * incTransform;
-				Vector3 incPLast = tInc->p[(i + 2) % 3] * incTransform;
+				Vector3 incP = tInc->v[i]->pos * incTransform;
+				Vector3 incPLast = tInc->v[(i + 2) % 3]->pos * incTransform;
 				
-				float dCurr = -Math::DistPointToPlane(incP, t->norm * refRotation, refP);
-				float dLast = -Math::DistPointToPlane(incPLast, t->norm * refRotation, refP);
+				float dCurr = -Math::DistPointToPlane(incP, t->normal * refRotation, refP);
+				float dLast = -Math::DistPointToPlane(incPLast, t->normal * refRotation, refP);
 				
 				if (dCurr < 0 && dLast > 0) {
 					//ImGui::DebugDrawText3(TOSTRING(dCurr).c_str(), incP);
 					//ImGui::DebugDrawLine3(incP, incP + t->norm * dCurr, Color::GREEN);
 					//ImGui::DebugDrawText3(TOSTRING(dLast).c_str(), incPLast);
 					//ImGui::DebugDrawLine3(incPLast, incPLast + t->norm * dLast, Color::RED);
-					Vector3 inter = Math::VectorPlaneIntersect(refP, t->norm * refRotation, incPLast, incP);
+					Vector3 inter = Math::VectorPlaneIntersect(refP, t->normal * refRotation, incPLast, incP);
 					
 					colPoints.push_back(inter);
 					
@@ -689,7 +647,7 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	
 	for (auto& v : colPoints) {
 		ImGui::DebugDrawCircle3(v, 5, Color(255, 255, 0));
-		float distance = Math::DistPointToPlane(v, triRef->norm * refRotation, triRef->p[0] * refTransform);
+		float distance = Math::DistPointToPlane(v, triRef->normal * refRotation, triRef->v0->pos * refTransform);
 		
 		
 		
@@ -968,9 +926,10 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 
 poly GeneratePoly(Physics* p) {
 	poly poly;
-	poly.o = p->entity->GetComponent<MeshComp>()->mesh->
-		GenerateOutlinePoints(Matrix4::TransformationMatrix(p->position, p->rotation, p->entity->transform.scale),
-							  DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions, DengAdmin->mainCamera->position);
+	poly.o = DengScene->GenerateMeshOutlinePoints(p->entity->GetComponent<ModelInstance>()->mesh,
+												  Matrix4::TransformationMatrix(p->position, p->rotation, p->entity->transform.scale),
+												  DengCamera->projMat, DengCamera->viewMat, DengAdmin->mainCamera->position,
+												  DengWindow->dimensions);
 	poly.p = poly.o;
 	
 	poly.pos = Math::WorldToScreen2(p->position, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);

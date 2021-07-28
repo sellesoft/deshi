@@ -2,6 +2,10 @@
 #ifndef DESHI_DEFINES_H
 #define DESHI_DEFINES_H
 
+//deshi constants
+//NOTE arbitrarily chosen size, but its convenient to have a fixed size for names
+#define DESHI_NAME_SIZE 64
+
 //math constants and macros
 #define M_EPSILON    0.001f
 #define M_PI         3.14159265359f
@@ -11,9 +15,6 @@
 #define M_SQRT_THREE 1.73205080757f
 #define RADIANS(x) ((x) * (M_PI / 180.f))
 #define DEGREES(x) ((x) * (180.f / M_PI))
-
-//deshi constants
-#define DESHI_NAME_SIZE 64
 
 //number typedefs
 typedef signed char        s8;
@@ -30,12 +31,12 @@ typedef double             f64;
 //static defines
 #define local   static
 #define persist static
-#define global_  static //global_ because there is a c-func global() D:
+#define global_  static //global_ because there is a cpp-func global() D:
 
 //dynamic cast short-hand
 #define dyncast(child, base) dynamic_cast<child*>(base)
 
-//for-loop shorthands
+//for-loop shorthands for the simple,sequential iteration case
 #define forX(var_name,iterations) for(int var_name=0; var_name<(iterations); ++var_name)
 #define forI(iterations) for(int i=0; i<(iterations); ++i)
 
@@ -43,10 +44,13 @@ typedef double             f64;
 //NOTE the last character in the copy is replaced with a null-terminating character
 #define cpystr(dst, src, bytes) strncpy((dst), (src), (bytes)); (dst)[(bytes)-1] = '\0'
 
-//compile-time print sizeof()
+//compile-time print sizeof(); compiler will give an error with the size of the object
 //char (*__kaboom)[sizeof( YourTypeHere )] = 1;
 
 // https://stackoverflow.com/a/42060129
+//defers execution inside the block to the end of the current scope; this works by
+//placing that code in a lambda that a dummy object will call in its destructor
+//NOTE it is kept unique by its line number, so you can't call two on the same line
 #ifndef defer
 struct defer_dummy {};
 template <class F> struct deferrer { F f; ~deferrer() { f(); } };
@@ -57,10 +61,11 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #endif // defer
 
 // https://gcc.gnu.org/onlinedocs/cpp/Stringizing.html
+//two level so you can stringize the result of a macro expansion
 #define xx_STRINGIZE(x) #x
 #define STRINGIZE(x) xx_STRINGIZE(x)
 
-//size of c-style array
+//size of static c-style array
 #define ArrayCount(_ARR) (sizeof((_ARR)) / sizeof(((_ARR))[0]))
 
 #define Kilobytes(x) ((x)*1024ULL)
@@ -68,14 +73,17 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define Gigabytes(x) (Megabytes((x))*1024ULL)
 #define Terabytes(x) (Gigabytes((x))*1024ULL)
 
+//NOTE function calls in these macros can get executed for each time they are placed
+//eg: Min(5, sqrt(26)) expands to (5 < sqrt(26)) ? 5 : sqrt(26)
 #define Clamp(value, min, max) (((value) < min) ? min : (((value) > max) ? max : (value)))
 #define Max(a, b) (((a) > (b)) ? (a) : (b))
 #define Min(a, b) (((a) < (b)) ? (a) : (b))
 
-//library-less assert
 #if DESHI_SLOW
-//the ... is to allow the programmer to put some text to read when the assert fails
-//but it doesnt actually affect the assertion expression
+//assert that an expression is true
+//NOTE the ... is to allow the programmer to put some text to read when the assert fails
+//     but it doesnt actually affect the assertion expression
+//NOTE we dont place this under DESHI_INTERNAL so that crashes do happen outside of development
 #define Assert(expression, ...) if(!(expression)){*(volatile int*)0 = 0;}
 #else
 #define Assert(expression, ...) expression

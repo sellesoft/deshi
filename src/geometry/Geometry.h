@@ -52,4 +52,8 @@ namespace Geometry {
 					   fmaxf(center.y - halfDims.y, fminf(target.y, center.y + halfDims.y)),
 					   fmaxf(center.y - halfDims.z, fminf(target.z, center.z + halfDims.z)));
 	}
+	
+	static Vector3 MeshTriangleMidpoint(Mesh::Triangle* tri){
+		return (tri->v0->pos + tri->v1->pos + tri->v2->pos) / 3.f;
+	}
 };

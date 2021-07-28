@@ -23,6 +23,7 @@ struct Scene{
 	Mesh* CreateMeshFromFile(const char* filename);
 	Mesh* CreateMeshFromMemory(void* data);
 	void  DeleteMesh(Mesh* mesh);
+	std::vector<Vector2> GenerateMeshOutlinePoints(Mesh* mesh, Matrix4 transform, Matrix4 camProjection, Matrix4 camView, Vector3 camPosition, Vector2 screenDims);
 	
 	Texture* CreateTextureFromFile(const char* filename, TextureType type = TextureType_Albedo);
 	Texture* CreateTextureFromMemory(void* data, TextureType type = TextureType_Albedo);
@@ -58,7 +59,7 @@ struct Scene{
 	inline char*     MaterialName(u32 materialIdx){ return materials[materialIdx]->name; };
 	inline Shader*   MaterialShader(u32 materialIdx){ return &materials[materialIdx]->shader; };
 	inline u32       MaterialTextureCount(u32 materialIdx){ return materials[materialIdx]->textureCount; };
-	inline Texture*  MaterialTexture(u32 materialIdx, u32 textureIdx){ return materials[materialIdx]->textureArray[textureIdx]; };
+	inline Texture** MaterialTexture(u32 materialIdx, u32 textureIdx){ return &materials[materialIdx]->textureArray[textureIdx]; };
 	inline void      DeleteMaterial(u32 materialIdx){ DeleteMaterial(materials[materialIdx]); };
 	
 	inline Model*        NullModel(){ return models[0]; };
@@ -69,7 +70,7 @@ struct Scene{
 	inline u32           ModelBatchCount(u32 modelIdx){ return models[modelIdx]->batchCount; };
 	inline Model::Batch* ModelBatch(u32 modelIdx, u32 batchIdx){ return &models[modelIdx]->batchArray[batchIdx]; };
 	inline char*         ModelBatchName(u32 modelIdx, u32 batchIdx){ return models[modelIdx]->batchArray[batchIdx].name; };
-	inline Material*     ModelBatchMaterial(u32 modelIdx, u32 batchIdx){ return models[modelIdx]->batchArray[batchIdx].material; };
+	inline Material**    ModelBatchMaterial(u32 modelIdx, u32 batchIdx){ return &models[modelIdx]->batchArray[batchIdx].material; };
 	inline void          DeleteModel(u32 modelIdx){ DeleteModel(models[modelIdx]); };
 };
 

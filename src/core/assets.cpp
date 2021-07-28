@@ -495,8 +495,7 @@ loadConfig(const char* filename, ConfigMap configMap){
 						vec->z = strtof(cursor+1, &cursor);
 						vec->w = strtof(cursor+1, 0);
 					}break;
-					case ConfigValueType_CString:{
-						//@Leak
+					case ConfigValueType_CString:{ //!Leak
 						//TODO(delle,Cl) figure out a way to prevent a leak here
 						//    compile time strings shouldnt be free'd but
 						//    runtime strings should be...

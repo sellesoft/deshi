@@ -16,7 +16,7 @@ Init(){
 
 void Scene::
 Reset(){
-	//@Incomplete
+	//!Incomplete
 }
 
 
@@ -55,7 +55,7 @@ DeallocateMesh(Mesh* mesh){
 
 Mesh* Scene::
 CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
-	//@Incomplete check for existing mesh
+	//!Incomplete check for existing mesh
 	vec3 p{width, height, depth};
 	vec3 uv{0.0f, 0.0f};
 	vec3 c = vec3(color.r, color.g, color.b) / 255.f;
@@ -84,12 +84,12 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 		ia[24]=0; ia[25]=3; ia[26]=1;    ia[27]=0; ia[28]=2; ia[29]=3; // -x face
 		ia[30]=4; ia[31]=1; ia[32]=5;    ia[33]=4; ia[35]=0; ia[35]=1; // +z face
 	}{//triangle array
-		ta[ 0]={va+4,va+2,va+0,vec3::UP};      ta[ 1]={va+4,va+6,va+2,vec3::UP}; // +y
-		ta[ 2]={va+2,va+7,va+3,vec3::BACK};    ta[ 3]={va+2,va+6,va+7,vec3::BACK}; // -z
-		ta[ 4]={va+6,va+5,va+7,vec3::RIGHT};   ta[ 5]={va+6,va+4,va+5,vec3::RIGHT}; // +x
-		ta[ 6]={va+1,va+7,va+5,vec3::DOWN};    ta[ 7]={va+1,va+3,va+7,vec3::DOWN}; // -y
-		ta[ 8]={va+0,va+3,va+1,vec3::LEFT};    ta[ 9]={va+0,va+2,va+3,vec3::LEFT}; // -x
-		ta[10]={va+4,va+1,va+5,vec3::FORWARD}; ta[11]={va+4,va+0,va+1,vec3::FORWARD}; // +z
+		ta[ 0]={vec3::UP,     va+4,va+2,va+0}; ta[ 1]={vec3::UP,     va+4,va+6,va+2}; // +y
+		ta[ 2]={vec3::BACK,   va+2,va+7,va+3}; ta[ 3]={vec3::BACK,   va+2,va+6,va+7}; // -z
+		ta[ 4]={vec3::RIGHT,  va+6,va+5,va+7}; ta[ 5]={vec3::RIGHT,  va+6,va+4,va+5}; // +x
+		ta[ 6]={vec3::DOWN,   va+1,va+7,va+5}; ta[ 7]={vec3::DOWN,   va+1,va+3,va+7}; // -y
+		ta[ 8]={vec3::LEFT,   va+0,va+3,va+1}; ta[ 9]={vec3::LEFT,   va+0,va+2,va+3}; // -x
+		ta[10]={vec3::FORWARD,va+4,va+1,va+5}; ta[11]={vec3::FORWARD,va+4,va+0,va+1}; // +z
 	}{//face array
 		fa[0].triangleCount = 2;   fa[0].vertexCount = 4; // +y
 		fa[1].triangleCount = 2;   fa[1].vertexCount = 4; // -z
@@ -132,25 +132,48 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	mesh->checksum = Utils::dataHash32(mesh, mesh->bytes);
 	
 	meshes.push_back(mesh);
-	//@Incomplete check against existing checksums
+	//!Incomplete check against existing checksums
 	return mesh;
 }
 
 Mesh* Scene::
 CreateMeshFromFile(const char* filename){
-	//@Incomplete
+	//!Incomplete
 	return 0;
 }
 
 Mesh* Scene::
 CreateMeshFromMemory(void* data){
-	//@Incomplete
+	//!Incomplete
 	return 0;
 }
 
 void Scene::
 DeleteMesh(Mesh* mesh){
-	//@Incomplete
+	//!Incomplete
+}
+
+std::vector<Vector2> Scene::
+GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camView, vec3 camPosition, vec2 screenDims){ //!TestMe
+	std::vector<vec2> outline;
+	std::vector<Mesh::Triangle*> nonculled;
+	forI(mesh->triangleCount){ Mesh::Triangle* t = &mesh->triangleArray[i];
+		t->removed = false;
+		if(t->normal.dot(camPosition - (t->v0->pos * transform)) < 0){
+			nonculled.push_back(t);
+		}else{
+			t->removed = true;
+		}
+	}
+	for(Mesh::Triangle* t : nonculled){
+		forI(t->neighborCount){
+			if(t->neighborArray[i]->removed){
+				outline.push_back(Math::WorldToScreen(t->v[t->edgeArray[i]        ]->pos, camProjection, camView, screenDims).ToVector2());
+				outline.push_back(Math::WorldToScreen(t->v[(t->edgeArray[i]+1) % 3]->pos, camProjection, camView, screenDims).ToVector2());
+			}
+		}
+	}
+	return outline;
 }
 
 
@@ -159,19 +182,19 @@ DeleteMesh(Mesh* mesh){
 //////////////////
 Texture* Scene::
 CreateTextureFromFile(const char* filename, TextureType type){
-	//@Incomplete
+	//!Incomplete
 	return 0;
 }
 
 Texture* Scene::
 CreateTextureFromMemory(void* data, TextureType type){
-	//@Incomplete
+	//!Incomplete
 	return 0;
 }
 
 void Scene::
 DeleteTexture(Texture* texture){
-	//@Incomplete
+	//!Incomplete
 }
 
 
@@ -180,13 +203,13 @@ DeleteTexture(Texture* texture){
 ///////////////////
 Material* Scene::
 CreateMaterial(const char* name, Shader shader, MaterialFlags flags, std::vector<Texture*> textures){
-	//@Incomplete
+	//!Incomplete
 	return 0;
 }
 
 void Scene::
 DeleteMaterial(Material* material){
-	//@Incomplete
+	//!Incomplete
 }
 
 
@@ -220,11 +243,11 @@ CreateModelFromOBJ(const char* filename, Shader shader, Color color, bool planar
 	bool hasUVs = attrib.texcoords.size() > 0;
 	bool hasColors = attrib.colors.size() > 0;
 	
-	std::unordered_map<Mesh::Vertex, u32> uniqueVertexes{};
+	//std::unordered_map<Mesh::Vertex, u32> uniqueVertexes{};
 	
 	//if planarize, change all vertex normals to equal their face normal
 	if(planarize){
-		//@Incomplete
+		//!Incomplete
 	}
 	
 	Model* model = 0;
@@ -235,16 +258,17 @@ CreateModelFromOBJ(const char* filename, Shader shader, Color color, bool planar
 
 Model* Scene::
 CopyModel(Model* model){
-	
+	//!Incomplete
+	return 0;
 }
 
 Model* Scene::
 CreateModelFromMesh(Mesh* mesh, Shader shader, Color color){
-	//@Incomplete
+	//!Incomplete
 	return 0;
 }
 
 void Scene::
 DeleteModel(Model* model){
-	//@Incomplete
+	//!Incomplete
 }
