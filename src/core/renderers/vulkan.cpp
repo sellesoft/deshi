@@ -65,10 +65,12 @@ struct FontVk{
 struct Push2DVk{
 	vec2 scale;
 	vec2 translate;
+	int font_offset;
 };
 
-struct UICmdVk{
-	u32 fontIdx;
+struct ImmediateCmdVk{
+	u32 texIdx;
+	u32 vertexOffset;
 	u16 indexOffset;
 	u16 indexCount;
 };
@@ -108,6 +110,14 @@ struct BufferVk{
 	VkDescriptorBufferInfo descriptor;
 };
 
+struct FontVk{
+	u32 id;
+	u32 textureIdx;
+	u32 width;
+	u32 height;
+	u32 char_count;
+	VkDescriptorSet descriptorSet;
+};
 
 //-------------------------------------------------------------------------------------------------
 // INTERFACE VARIABLES
@@ -116,18 +126,24 @@ struct BufferVk{
 local RenderSettings settings;
 local ConfigMap configMap = {
 	{"#render settings config file",0,0},
-	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)10},
-	{"debugging", ConfigValueType_Bool, &settings.debugging},
-	{"printf",    ConfigValueType_Bool, &settings.printf},
+
+	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)21},
+	{"debugging",            ConfigValueType_Bool, &settings.debugging},
+	{"printf",               ConfigValueType_Bool, &settings.printf},
+	{"texture_filtering",    ConfigValueType_Bool, &settings.textureFiltering},
+	{"anistropic_filtering", ConfigValueType_Bool, &settings.anistropicFiltering},
+	{"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples},
 	{"recompile_all_shaders",        ConfigValueType_Bool, &settings.recompileAllShaders},
 	{"find_mesh_triangle_neighbors", ConfigValueType_Bool, &settings.findMeshTriangleNeighbors},
+
 	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
 	{"logging_level",  ConfigValueType_U32,  &settings.loggingLevel},
 	{"crash_on_error", ConfigValueType_Bool, &settings.crashOnError},
 	{"vsync_type",     ConfigValueType_U32,  &settings.vsync},
-	{"msaa_samples",   ConfigValueType_U32,  &settings.msaaSamples},
+
 	{"\n#shaders",                         ConfigValueType_PADSECTION,(void*)17},
 	{"optimize_shaders", ConfigValueType_Bool, &settings.optimizeShaders},
+
 	{"\n#shadows",                         ConfigValueType_PADSECTION,(void*)20},
 	{"shadow_pcf",          ConfigValueType_Bool, &settings.shadowPCF},
 	{"shadow_resolution",   ConfigValueType_U32,  &settings.shadowResolution},
@@ -136,12 +152,15 @@ local ConfigMap configMap = {
 	{"depth_bias_constant", ConfigValueType_F32,  &settings.depthBiasConstant},
 	{"depth_bias_slope",    ConfigValueType_F32,  &settings.depthBiasSlope},
 	{"show_shadow_map",     ConfigValueType_Bool, &settings.showShadowMap},
+
 	{"\n#colors",                          ConfigValueType_PADSECTION,(void*)15},
 	{"clear_color",    ConfigValueType_FV4, &settings.clearColor},
 	{"selected_color", ConfigValueType_FV4, &settings.selectedColor},
 	{"collider_color", ConfigValueType_FV4, &settings.colliderColor},
+
 	{"\n#filters",                         ConfigValueType_PADSECTION,(void*)15},
 	{"wireframe_only", ConfigValueType_Bool, &settings.wireframeOnly},
+
 	{"\n#overlays",                        ConfigValueType_PADSECTION,(void*)17},
 	{"mesh_wireframes",  ConfigValueType_Bool, &settings.meshWireframes},
 	{"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals},
@@ -245,6 +264,8 @@ local s32                     minImageCount  = 0;
 /////////////////////
 //// @renderpass ////
 /////////////////////
+local VkRenderPass baseRenderPass = VK_NULL_HANDLE;
+local VkRenderPass msaaRenderPass = VK_NULL_HANDLE;
 local VkRenderPass renderPass = VK_NULL_HANDLE;
 
 /////////////////
@@ -530,6 +551,7 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 		}break;
 		default:{
 			PrintVk(4, pCallbackData->pMessage);
+			PRINTLN(pCallbackData->pMessage << "\n");
 		}break;
 	}
 	return VK_FALSE;
@@ -1104,7 +1126,7 @@ CreateSwapChain(){
 	{//choose swapchain's surface format
 		surfaceFormat = supportDetails.formats[0];
 		for(VkSurfaceFormatKHR availableFormat : supportDetails.formats){
-			if(availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR){
+			if(availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT){
 				surfaceFormat = availableFormat;
 				break;
 			}
@@ -1231,12 +1253,13 @@ findDepthFormat(){
 }
 
 local void 
-CreateRenderpass(){
+CreateRenderpasses(){
 	PrintVk(2, "  Creating Render Pass");
-	AssertRS(RSVK_LOGICALDEVICE, "CreateRenderPass called before CreateLogicalDevice");
+	AssertRS(RSVK_LOGICALDEVICE, "CreateRenderPasses called before CreateLogicalDevice");
 	rendererStage |= RSVK_RENDERPASS;
 	
-	if(renderPass) vkDestroyRenderPass(device, renderPass, allocator);
+	if(baseRenderPass) vkDestroyRenderPass(device, baseRenderPass, allocator);
+	if(msaaRenderPass) vkDestroyRenderPass(device, msaaRenderPass, allocator);
 	
 	VkAttachmentDescription attachments[3]{};
 	//attachment 0: color 
@@ -1247,8 +1270,8 @@ CreateRenderpass(){
 	attachments[0].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachments[0].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-	attachments[0].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	//attachment 0: depth
+	attachments[0].finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	//attachment 1: depth
 	attachments[1].format         = findDepthFormat();
 	attachments[1].samples        = msaaSamples;
 	attachments[1].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -1257,7 +1280,7 @@ CreateRenderpass(){
 	attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachments[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
 	attachments[1].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	//attachment 0: color resolve
+	//attachment 2: color resolve
 	attachments[2].format         = surfaceFormat.format;
 	attachments[2].samples        = VK_SAMPLE_COUNT_1_BIT;
 	attachments[2].loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -1282,7 +1305,6 @@ CreateRenderpass(){
 	subpass.colorAttachmentCount    = 1;
 	subpass.pColorAttachments       = &colorAttachmentRef;
 	subpass.pDepthStencilAttachment = &depthAttachmentRef;
-	subpass.pResolveAttachments     = &resolveAttachmentRef;
 	
 	VkSubpassDependency dependencies[2]{};
 	dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
@@ -1301,15 +1323,29 @@ CreateRenderpass(){
 	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 	
 	VkRenderPassCreateInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
-	renderPassInfo.attachmentCount = 3;
+	renderPassInfo.attachmentCount = 2;
 	renderPassInfo.pAttachments    = attachments;
 	renderPassInfo.subpassCount    = 1;
 	renderPassInfo.pSubpasses      = &subpass;
 	renderPassInfo.dependencyCount = 2;
 	renderPassInfo.pDependencies   = dependencies;
 	
-	AssertVk(vkCreateRenderPass(device, &renderPassInfo, allocator, &renderPass), "failed to create render pass");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (u64)renderPass, "Base render pass");
+	//TODO(delle) fix this scuffed renderpass switch
+	if(msaaSamples != VK_SAMPLE_COUNT_1_BIT){
+		attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		subpass.pResolveAttachments = &resolveAttachmentRef;
+		renderPassInfo.attachmentCount = 3;
+		
+		AssertVk(vkCreateRenderPass(device, &renderPassInfo, allocator, &msaaRenderPass));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (u64)msaaRenderPass, "MSAA render pass");
+		
+		renderPass = msaaRenderPass;
+	}else{
+		AssertVk(vkCreateRenderPass(device, &renderPassInfo, allocator, &baseRenderPass));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_RENDER_PASS, (u64)baseRenderPass, "Base render pass");
+		
+		renderPass = baseRenderPass;
+	}
 }
 
 
@@ -1388,13 +1424,18 @@ CreateFrames(){
 		
 		//create the framebuffers
 		if(frames[i].framebuffer) vkDestroyFramebuffer(device, frames[i].framebuffer, nullptr);
-		VkImageView frameBufferAttachments[] = { 
-			attachments.colorImageView, attachments.depthImageView, frames[i].imageView 
-		};
+		
+		std::vector<VkImageView> frameBufferAttachments; //TODO(delle) fix scuffed msaa hack
+		if(msaaSamples != VK_SAMPLE_COUNT_1_BIT){
+			frameBufferAttachments = { attachments.colorImageView, attachments.depthImageView, frames[i].imageView };
+		}else{
+			frameBufferAttachments = { frames[i].imageView, attachments.depthImageView, };
+		}
+		
 		VkFramebufferCreateInfo info{VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
 		info.renderPass      = renderPass;
-		info.attachmentCount = ArrayCount(frameBufferAttachments);
-		info.pAttachments    = frameBufferAttachments;
+		info.attachmentCount = frameBufferAttachments.size();
+		info.pAttachments    = frameBufferAttachments.data();
 		info.width           = width;
 		info.height          = height;
 		info.layers          = 1;
@@ -1558,9 +1599,9 @@ SetupOffscreenRendering(){
 	
 	{//create the sampler for the depth attachment used in frag shader for shadow mapping
 		VkSamplerCreateInfo sampler{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-		sampler.magFilter     = VK_FILTER_LINEAR;
-		sampler.minFilter     = VK_FILTER_LINEAR;
-		sampler.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		sampler.magFilter     = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+		sampler.minFilter     = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+		sampler.mipmapMode    = (settings.textureFiltering) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		sampler.addressModeU  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		sampler.addressModeV  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		sampler.addressModeW  = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
@@ -1931,7 +1972,7 @@ CreatePipelineCache(){
 local void 
 SetupPipelineCreation(){
 	PrintVk(2, "  Setting up pipeline creation");
-	AssertRS(RSVK_LAYOUTS | RSVK_RENDERPASS, "SetupPipelineCreation called before CreateLayouts or CreateRenderPass");
+	AssertRS(RSVK_LAYOUTS | RSVK_RENDERPASS, "SetupPipelineCreation called before CreateLayouts or CreateRenderPasses");
 	rendererStage |= RSVK_PIPELINESETUP;
 	
 	//vertex input flow control
@@ -1990,8 +2031,8 @@ SetupPipelineCreation(){
 	
 	//useful for multisample anti-aliasing (MSAA)
 	//https://renderdoc.org/vkspec_chunked/chap28.html#VkPipelineMultisampleStateCreateInfo
-	multisampleState.rasterizationSamples  = msaaSamples; //VK_SAMPLE_COUNT_1_BIT to disable anti-aliasing
-	multisampleState.sampleShadingEnable   = VK_TRUE; //enable sample shading in the pipeline, VK_FALSE to disable
+	multisampleState.rasterizationSamples  = msaaSamples;
+	multisampleState.sampleShadingEnable   = (msaaSamples != VK_SAMPLE_COUNT_1_BIT) ? VK_TRUE : VK_FALSE;
 	multisampleState.minSampleShading      = .2f; //min fraction for sample shading; closer to one is smoother
 	multisampleState.pSampleMask           = 0;
 	multisampleState.alphaToCoverageEnable = VK_FALSE;
@@ -2506,7 +2547,7 @@ specializationInfo.mapEntryCount = 1;
 		depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 		rasterizationState.depthBiasEnable = VK_FALSE;
 		multisampleState.rasterizationSamples = msaaSamples;
-		multisampleState.sampleShadingEnable  = VK_TRUE;
+		multisampleState.sampleShadingEnable  = (msaaSamples != VK_SAMPLE_COUNT_1_BIT) ? VK_TRUE : VK_FALSE;
 		dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, };
 		dynamicState.dynamicStateCount = (u32)dynamicStates.size();
 		dynamicState.pDynamicStates    = dynamicStates.data();
@@ -2676,8 +2717,8 @@ ResetCommands(){
 	{//UI commands
 		uiVertexCount = 0;
 		uiIndexCount  = 0;
+		memset(&uiCmdArray[0], 0, sizeof(ImmediateCmdVk) * uiCmdCount);
 		uiCmdCount    = 1;
-		memset(&uiCmdArray[0], 0, sizeof(UICmdVk));
 	}
 	
 	{//temp commands
@@ -2881,7 +2922,7 @@ BuildCommands(){
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
 				forX(cmd_idx, uiCmdCount){
-					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].fontIdx].descriptorSet, 0, nullptr);
+					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].texIdx].descriptorSet, 0, nullptr);
 					vkCmdDrawIndexed(cmdBuffer, uiCmdArray[cmd_idx].indexCount, 1, uiCmdArray[cmd_idx].indexOffset, 0, 0);
 				}
 				stats.drawnIndices += uiIndexCount;
@@ -3006,12 +3047,21 @@ NewFrame(){
 //-------------------------------------------------------------------------------------------------
 // @UI INTERFACE
 
+enum texTypes : u32 {
+	UITEX_WHITE,
+	UITEX_FONT
+};
 
-void UI::
-FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
+void Render::
+FillRectUI(f32 x, f32 y, f32 w, f32 h, Color color){
 	if(color.a == 0) return;
-	
-	u32 col = color.R8G8B8A8_UNORM();
+
+	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+
+	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
 	u16*      ip = uiIndexArray  + uiIndexCount;
 	
@@ -3024,7 +3074,120 @@ FillRect(f32 x, f32 y, f32 w, f32 h, Color color){
 	
 	uiVertexCount += 4;
 	uiIndexCount  += 6;
-	uiCmdArray[uiCmdCount-1].indexCount += 6;
+	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+	
+	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+}
+
+void Render::
+DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
+	if (color.a == 0) return;
+
+	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+
+	u32      col = color.R8G8B8A8_UNORM();
+	Vertex2D* vp = uiVertexArray + uiVertexCount;
+	u16*      ip = uiIndexArray + uiIndexCount;
+	
+	vec2 ott = vec2(x2, y2) - vec2(x1, y1) ;
+	vec2 norm = vec2(ott.y, -ott.x).normalized();
+	
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
+	vp[0].pos = {x1,y1}; vp[0].uv = {0,0}; vp[0].color = col;
+	vp[1].pos = {x2,y2}; vp[1].uv = {0,0}; vp[1].color = col;
+	vp[2].pos = {x2,y2}; vp[2].uv = {0,0}; vp[2].color = col;
+	vp[3].pos = {x1,y1}; vp[3].uv = {0,0}; vp[3].color = col;
+	
+	vp[0].pos += norm * thickness;
+	vp[1].pos += norm * thickness;
+	vp[2].pos -= norm * thickness;
+	vp[3].pos -= norm * thickness;
+	
+	uiVertexCount += 4;
+	uiIndexCount += 6;
+	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+}
+
+void Render::
+DrawLineUI(vec2 start, vec2 end, float thickness, Color color) {
+	if (color.a == 0) return;
+
+	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+
+	u32      col = color.R8G8B8A8_UNORM();
+	Vertex2D* vp = uiVertexArray + uiVertexCount;
+	u16* ip = uiIndexArray + uiIndexCount;
+
+	vec2 ott = end - start;
+	vec2 norm = vec2(ott.y, -ott.x).normalized();
+
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = { end.x,  end.y };   vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
+
+	vp[0].pos += norm * thickness;
+	vp[1].pos += norm * thickness;
+	vp[2].pos -= norm * thickness;
+	vp[3].pos -= norm * thickness;
+
+	uiVertexCount += 4;
+	uiIndexCount += 6;
+	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+}
+
+void Render::
+DrawTextUI(string text, vec2 pos, Color color) {
+	if (color.a == 0) return;
+
+	f32 w = fonts[1].width;
+	for (int i = 0; i < text.size; i++) {
+		DrawCharUI((u32)text[i], pos, vec2::ONE, color);
+		pos.x += w;
+	}
+}
+
+void Render::
+DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color) {
+	if (color.a == 0) return;
+
+	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT) {
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+
+	u32      col = color.R8G8B8A8_UNORM();
+	Vertex2D* vp = uiVertexArray + uiVertexCount;
+	u16*      ip = uiIndexArray  + uiIndexCount;
+	
+	f32 w = fonts[1].width;
+	f32 h = fonts[1].height;
+	f32 dy = 1.f / (f32)fonts[1].char_count; 
+	
+	f32 idx = character - 32; 
+	
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
+	vp[0].pos = {pos.x+0,pos.y+0}; vp[0].uv = {0,idx*dy};     vp[0].color = col;
+	vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,idx*dy};     vp[1].color = col;
+	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,(idx+1)*dy}; vp[2].color = col;
+	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,(idx+1)*dy}; vp[3].color = col;
+	
+	uiVertexCount += 4;
+	uiIndexCount  += 6;
+	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_FONT;
 }
 
 
@@ -3363,9 +3526,8 @@ Init(){
 	PrintVk(3, "Finished creating logical device in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
 	//// limit RenderSettings to device capabilties ////
-	//NOTE currently disabled b/c of my resolve setup
-	//msaaSamples = (VkSampleCountFlagBits)(((1 << settings.msaaSamples) > maxMsaaSamples) ? settings.msaaSamples : 1 << settings.msaaSamples);
-	msaaSamples = maxMsaaSamples;
+	msaaSamples = (VkSampleCountFlagBits)(((1 << settings.msaaSamples) > maxMsaaSamples) ? maxMsaaSamples : 1 << settings.msaaSamples);
+	settings.anistropicFiltering = (enabledFeatures.samplerAnisotropy) ? settings.anistropicFiltering : false;
 	
 	//// setup unchanging Vulkan objects ////
 	CreateCommandPool();
@@ -3382,7 +3544,7 @@ Init(){
 	//// setup window-specific Vulkan objects ////
 	CreateSwapChain();
 	PrintVk(3, "Finished creating swap chain in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	CreateRenderpass();
+	CreateRenderpasses();
 	PrintVk(3, "Finished creating render pass in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	CreateFrames();
 	PrintVk(3, "Finished creating frames in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);

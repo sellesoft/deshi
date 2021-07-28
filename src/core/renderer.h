@@ -5,6 +5,7 @@
 #include "../defines.h"
 #include "../math/VectorMatrix.h"
 #include "../utils/Color.h"
+#include "../utils/string.h"
 
 #include <vector>
 #include <string>
@@ -51,12 +52,14 @@ struct RenderSettings{
     bool printf    = false;
 	bool recompileAllShaders = true;
     bool findMeshTriangleNeighbors = true; //TODO(delle,Cl) move this to a better location
+	u32  msaaSamples = 0;
+	bool textureFiltering = false;
+	bool anistropicFiltering = false;
 	
 	//// runtime changeable ////
 	u32  loggingLevel = 1; //if printf is true in the config file, this will be set to 4
 	bool crashOnError = false;
 	VSyncType vsync  = VSyncType_Immediate;
-	u32 msaaSamples  = 0;
 	
 	//shaders
 	bool optimizeShaders = false;
@@ -114,6 +117,14 @@ namespace Render{
 	void DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color color = Color::WHITE);
 	void DrawBox(Matrix4 transform, Color color = Color::WHITE);
     void DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color = Color::WHITE);
+
+    //ui drawing functions
+    void FillRectUI(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
+    void DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
+    void DrawLineUI(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
+    void DrawTextUI(string text, vec2 pos, Color color = Color::WHITE);
+    void DrawCharUI(u32 character, vec2 pos, vec2 scale = vec2::ONE, Color color = Color::WHITE);
+
     
 	void UpdateLight(u32 lightIdx, Vector4 vec);
     void UpdateCameraPosition(Vector3 position);
@@ -134,11 +145,6 @@ namespace Render{
 	
 }; //namespace Render
 
-//functions in this namespace are Immediate Mode, so they only last 1 frame
-namespace UI{
-	
-	void FillRect(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
-	
-}; //namespace UI
+
 
 #endif //DESHI_RENDERER_H

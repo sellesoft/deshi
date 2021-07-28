@@ -424,8 +424,6 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	ComplexCollider* refcol = nullptr;
 	ComplexCollider* inccol = nullptr;
 	
-	
-	
 	float minpen = -INFINITY;
 	Vector3 bestnorm;
 	
@@ -457,6 +455,7 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 		//PRINTLN("o1 rot: " << o1->rotation.str());
 		//PRINTLN("o2 rot: " << o2->rotation.str());
 		
+		/*
 		Mesh::Face* lastface = 0;
 		forX(oc1Index, o1c->mesh->faceCount){ Mesh::Face* f = &o1c->mesh->faceArray[oc1Index];
 			p0 = f->vertexArray[0]->pos * o1transform;
@@ -491,7 +490,7 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 			}
 			
 		}
-		
+		*/
 		
 		//for (Batch& b : o1c->mesh->batchArray) {
 		//	for (u32 i = 0; i < b.indexArray.size(); i += 3) {
@@ -510,11 +509,14 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 		//				//ImGui::DebugDrawText3(TOSTRING(vertdepth).c_str(), p0 + normal2 * vertdepth, Color::BLACK);
 		//				if (vertdepth < deepest) deepest = vertdepth;
 		//			}
+		//			lastface = f2;
 		//		}
-		//		//LOG(deepest);
 		//		if (deepest > 0) {
-		//			//ImGui::DebugDrawLine3(p0, p0 + normal * saved, Color::GREEN);
-		//			//ERROR("func failed with deepest ", deepest);
+		//			for (int i = 0; i < lastface->points.size(); i += 2) {
+		//				ImGui::DebugDrawLine3(lastface->points[i] * o2transform, lastface->points[i + 1] * o2transform, Color::MAGENTA);
+		//			}
+		//			ImGui::DebugDrawLine3(p1, p1 - normal * deepest, Color::BLACK);
+		//			ERROR("func failed with deepest ", deepest);
 		//			return false;
 		//		}
 		//		else if (deepest > minpen) {
@@ -526,6 +528,7 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 		//			inccol = o2c;
 		//		}
 		//	}
+		//	
 		//}
 	}
 	
@@ -556,10 +559,6 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	//		}
 	//	}
 	//}
-	
-	
-	
-	
 	
 	//find triangle that's most aligned with normal
 	u32 furthestTriRef = Geometry::FurthestTriangleAlongNormal(refcol->mesh, Matrix4::RotationMatrix(refphys->rotation), bestnorm);
@@ -597,11 +596,11 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	//}
 	
 	//NOTE draw inclement face's edges
-	for (int i = 0; i < triInc->face->outerVertexCount; i += 2) {
+	/*for (int i = 0; i < triInc->face->outerVertexCount; i += 2) {
 		ImGui::DebugDrawLine3(triInc->face->outerVertexArray[i]->pos * incTransform,
 							  triInc->face->outerVertexArray[i + 1]->pos * incTransform, 
 							  Color::MAGENTA);
-	}
+	}*/
 	
 	//NOTE draw reference face's neighboring triangles
 	//for (Triangle* t : refFace->neighborTriangles) {
@@ -630,9 +629,9 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 				
 				if (dCurr < 0 && dLast > 0) {
 					//ImGui::DebugDrawText3(TOSTRING(dCurr).c_str(), incP);
-					//ImGui::DebugDrawLine3(incP, incP + t->norm * dCurr, Color::GREEN);
+					ImGui::DebugDrawLine3(incP, incP + t->norm * dCurr, Color::GREEN);
 					//ImGui::DebugDrawText3(TOSTRING(dLast).c_str(), incPLast);
-					//ImGui::DebugDrawLine3(incPLast, incPLast + t->norm * dLast, Color::RED);
+					ImGui::DebugDrawLine3(incPLast, incPLast + t->norm * dLast, Color::RED);
 					Vector3 inter = Math::VectorPlaneIntersect(refP, t->normal * refRotation, incPLast, incP);
 					
 					colPoints.push_back(inter);
@@ -646,10 +645,14 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	}
 	
 	for (auto& v : colPoints) {
+		refTransform = Matrix4::TransformationMatrix(refphys->position, refphys->rotation, refphys->entity->transform.scale);
+		incTransform = Matrix4::TransformationMatrix(incphys->position, incphys->rotation, incphys->entity->transform.scale);
+
+		refRotation = Matrix4::RotationMatrix(refphys->rotation);
+		incRotation = Matrix4::RotationMatrix(incphys->rotation);
+		
 		ImGui::DebugDrawCircle3(v, 5, Color(255, 255, 0));
 		float distance = Math::DistPointToPlane(v, triRef->normal * refRotation, triRef->v0->pos * refTransform);
-		
-		
 		
 		if (distance < 0) {
 			
@@ -663,12 +666,12 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 			
 			//PRINTLN(physTickCounter << " ------------------------------------------ " << distance);
 			//PRINTLN(o1 << " before: " << TOSTRING(o1->position));
-			//o1->position -= bestnorm * distance / 2;
+			o1->position -= bestnorm * distance / 2;
 			//PRINTLN(o1 << " change: " << TOSTRING(bestnorm * distance / 2));
 			//PRINTLN(o1 << " after:  " << TOSTRING(o1->position));
 			//PRINTLN(o2 << " before: " << TOSTRING(o2->position));
 			//PRINTLN(o2 << " change: " << TOSTRING(-bestnorm * distance / 2));
-			//o2->position += bestnorm * distance / 2;
+			o2->position += bestnorm * distance / 2;
 			//PRINTLN(o2 << " after:  " << TOSTRING(o2->position));
 			
 		}

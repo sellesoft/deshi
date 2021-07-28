@@ -9,7 +9,7 @@ layout(location = 0) out struct { vec4 Color; vec2 UV; } Out;
 
 void main()
 {
-    Out.Color = pow(aColor, vec4(2.2, 2.2, 2.2, 2.2));
+    //Out.Color = pow(aColor, vec4(2.2, 2.2, 2.2, 2.2));
     Out.UV = aUV;
     gl_Position = vec4(aPos * pc.uScale + pc.uTranslate, 0, 1);
 }

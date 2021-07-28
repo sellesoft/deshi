@@ -154,6 +154,7 @@
     <ClInclude Include="..\src\core\input.h" />
     <ClInclude Include="..\src\core\renderer.h" />
     <ClInclude Include="..\src\core\time.h" />
+    <ClInclude Include="..\src\core\ui.h" />
     <ClInclude Include="..\src\core\window.h" />
     <ClInclude Include="..\src\defines.h" />
     <ClInclude Include="..\src\external\draudio\dr_flac.h" />
@@ -208,12 +209,15 @@
     <ClInclude Include="..\src\scene\Bone.h" />
     <ClInclude Include="..\src\scene\Model.h" />
     <ClInclude Include="..\src\scene\Scene.h" />
+    <ClInclude Include="..\src\utils\array.h" />
     <ClInclude Include="..\src\utils\Color.h" />
     <ClInclude Include="..\src\utils\Command.h" />
     <ClInclude Include="..\src\utils\ContainerManager.h" />
     <ClInclude Include="..\src\utils\Debug.h" />
+    <ClInclude Include="..\src\utils\font.h" />
     <ClInclude Include="..\src\utils\optional.h" />
     <ClInclude Include="..\src\utils\RingArray.h" />
+    <ClInclude Include="..\src\utils\string.h" />
     <ClInclude Include="..\src\utils\tuple.h" />
     <ClInclude Include="..\src\utils\utils.h" />
   </ItemGroup>
@@ -222,6 +226,8 @@
     <None Include="..\cfg\aliases.cfg" />
     <None Include="..\cfg\binds.cfg" />
     <None Include="..\cfg\render.cfg" />
+    <None Include="..\data\fonts\gohufont-11.bdf" />
+    <None Include="..\data\fonts\gohufont.otb" />
     <None Include="..\data\shaders\base.frag" />
     <None Include="..\data\shaders\base.vert" />
     <None Include="..\data\shaders\fixedimguishader.vert" />
@@ -230,15 +236,20 @@
     <None Include="..\data\shaders\lavalamp.frag" />
     <None Include="..\data\shaders\lavalamp.vert" />
     <None Include="..\data\shaders\normaldebug.geom" />
+    <None Include="..\data\shaders\offscreen.vert" />
     <None Include="..\data\shaders\pbr.frag" />
     <None Include="..\data\shaders\pbr.vert" />
     <None Include="..\data\shaders\phong.frag" />
     <None Include="..\data\shaders\phong.vert" />
+    <None Include="..\data\shaders\shadowmapDEBUG.frag" />
+    <None Include="..\data\shaders\shadowmapDEBUG.vert" />
     <None Include="..\data\shaders\testing0.frag" />
     <None Include="..\data\shaders\testing0.vert" />
     <None Include="..\data\shaders\testing1.frag" />
     <None Include="..\data\shaders\testing1.vert" />
     <None Include="..\data\shaders\twod.frag" />
+    <None Include="..\data\shaders\ui.frag" />
+    <None Include="..\data\shaders\ui.vert" />
     <None Include="..\data\shaders\wireframe.frag" />
     <None Include="..\data\shaders\wireframe.vert" />
     <None Include="..\README.md" />
@@ -252,12 +263,15 @@
   <ItemGroup>
     <ClCompile Include="..\src\core\assets.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src\core\console.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src\core\console2.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src\core\renderers\opengl.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
@@ -267,8 +281,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\src\core\ui.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\src\core\window.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src\deshi.cpp" />
     <ClCompile Include="..\src\external\imgui\imgui.cpp" />
@@ -305,6 +324,12 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\cfg\keybinds.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="..\data\fonts\Paskowy.ttf" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\customvis.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

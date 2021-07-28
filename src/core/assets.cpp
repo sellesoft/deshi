@@ -195,7 +195,9 @@ enforceDirectories() {
 		create_directory(dirData());
 		create_directory(dirConfig());
 		create_directory(dirEntities());
+		create_directory(dirFonts());
 		create_directory(dirLogs());
+		create_directory(dirLevels());
 		create_directory(dirModels());
 		create_directory(dirSaves());
 		create_directory(dirShaders());
@@ -206,6 +208,8 @@ enforceDirectories() {
 		if(!is_directory(dirConfig()))   create_directory(dirConfig());
 		if(!is_directory(dirEntities())) create_directory(dirEntities());
 		if(!is_directory(dirLogs()))     create_directory(dirLogs());
+		if(!is_directory(dirLevels()))     create_directory(dirLevels());
+		if(!is_directory(dirFonts()))    create_directory(dirFonts());
 		if(!is_directory(dirModels()))   create_directory(dirModels());
 		if(!is_directory(dirSaves()))    create_directory(dirSaves());
 		if(!is_directory(dirShaders()))  create_directory(dirShaders());

@@ -7,7 +7,7 @@ Sh  Shader    So  Sound            Ui  UI              Vu  Vulkan      Wi  Windo
 
 TODO Style: TODO(person,tags) description
   eg: TODO(delle) no tag or date for delle
-eg: TODO(sushi,ReOp) render,optimization tags for sushi
+  eg: TODO(sushi,ReOp) render,optimization tags for sushi
 
 The person listed doesn't necessarily have to be you, and can be someone else
 if you feel they would handle the problem better. It should generally be you though.
@@ -68,7 +68,7 @@ ____involve clipping triangles and stuff
 add standard render/video settings
 add face normal and tangents to vertex buffer
 fix texture transparency
-check those vulkan-tutorial links for the suggestions and optimizations
+____check those vulkan-tutorial links for the suggestions and optimizations
 add instancing
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
 multi-threaded command buffers, shader loading, image loading
@@ -139,20 +139,13 @@ Fun TODOs
 look into implementing Lua 
 look into making a function that takes in the types on a component and formats binary for saving and what not 
 ____like what were currently doing for typeHeader in Admin Save()
-write a shader that displays textures like it would on a monitor, so like you have an array of
-____rgb lights that make up a single pixel of a texture and stuff 
 write a preprocessing/postprocessing compiler that makes saving easier
+hotloadable UI
 
 Bug Board       //NOTE mark these with a last-known active date (M/D/Y)
 ---------
-(04/20/21) sometimes MeshComp is assigned a nonexistant mesh
-__________ temp fix by checking if minimized, but need to find root cause
-(04/28/21) selecting sometimes selects outside of an object and sometimes doesnt select inside of an object
 (06/13/21) rotating using R no longer seems to work, it wildly rotates the object
 __________ it might have something to do with our rotate by axis function
-(06/13/21) after spawning a decent amount of objects and clicking, HandleSelectEntity throws an exception and
-__________ the batchArray size of whatever mesh its checking is something like 400000000000
-__________ it looks like some sort of corrupt mesh makes its way in there somehow?
 (07/10/21) the program crashes if default asset files are not present
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
 (07/14/21) the config parser sometimes throws a console error that its unable to parse the final empty line of configs
@@ -171,6 +164,8 @@ __________ maybe store the text in the actual source and create the file from th
 #include "utils/debug.h"
 #include "utils/ringarray.h"
 #include "utils/command.h"
+#include "utils/font.h"
+#include "utils/array.h"
 #include "math/math.h"
 
 //// core/game headers ////
@@ -181,6 +176,7 @@ __________ maybe store the text in the actual source and create the file from th
 #include "core/input.h"
 #include "core/renderer.h"
 #include "core/time.h"
+#include "core/ui.h"
 #include "core/window.h"
 #include "core/scene.h"
 #include "game/admin.h"
@@ -234,6 +230,7 @@ Assert(!"no renderer selected");
 #include "core/console.cpp"
 #include "core/console2.cpp"
 #include "core/scene.cpp"
+#include "core/ui.cpp"
 
 local Time    time_;   Time*    g_time    = &time_; //time_ because there is a c-func time() D:
 local Window  window;  Window*  g_window  = &window;
@@ -248,17 +245,23 @@ int main() {
 	Assets::enforceDirectories();
 	
 	//init engine core
-	TIMER_RESET(t_s); time_.Init(300);        SUCCESS("Finished time initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); time_.Init(700);        SUCCESS("Finished time initialization in ", TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ", TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); scene.Init();           SUCCESS("Finished scene initialization in ", TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ", TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); DeshiImGui::Init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); DeshiImGui::init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ", TIMER_END(t_s), "ms");
 	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
 	
 	//init game admin
 	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
 	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
+	
+	Font font;
+	font.load_bdf_font("gohufont-14.bdf");
+	Render::CreateFont(Render::LoadTexture(font.texture_sheet, font.width, font.height * font.char_count, 0), 
+					   font.width, font.height, font.char_count);
 	
 	//start main loop
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
@@ -273,7 +276,7 @@ int main() {
 		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
-			
+			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300), UIWindowFlags_NoBorder | UIWindowFlags_NoTitleBar);
 		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

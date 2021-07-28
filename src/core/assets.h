@@ -44,10 +44,11 @@ namespace Assets{
 	inline static std::string dirData()    { return "data/"; }
 	inline static std::string dirConfig()  { return dirData() + "cfg/"; }
 	inline static std::string dirEntities(){ return dirData() + "entities/"; }
+	inline static std::string dirFonts()   { return dirData() + "fonts/"; }
+	inline static std::string dirLevels()  { return dirData() + "levels/"; }
 	inline static std::string dirLogs()    { return dirData() + "logs/"; }
 	inline static std::string dirModels()  { return dirData() + "models/"; }
 	inline static std::string dirSaves()   { return dirData() + "saves/"; }
-	inline static std::string dirLevels()  { return dirData() + "levels/"; }
 	inline static std::string dirShaders() { return dirData() + "shaders/"; }
 	inline static std::string dirSounds()  { return dirData() + "sounds/"; }
 	inline static std::string dirTemp()    { return dirData() + "temp/"; }

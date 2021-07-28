@@ -1664,9 +1664,18 @@ inline void GlobalTab(Admin* admin){
 			
 			ImGui::TextEx("Position  "); ImGui::SameLine(); ImGui::InputVector3("##cam_pos", &admin->editor.camera->position);
 			ImGui::TextEx("Rotation  "); ImGui::SameLine(); ImGui::InputVector3("##cam_rot", &admin->editor.camera->rotation);
-			ImGui::TextEx("Near Clip "); ImGui::SameLine(); ImGui::InputFloat("##global__nearz", &admin->editor.camera->nearZ);
-			ImGui::TextEx("Far Clip  "); ImGui::SameLine(); ImGui::InputFloat("##global__farz", &admin->editor.camera->farZ);
-			ImGui::TextEx("FOV       "); ImGui::SameLine(); ImGui::InputFloat("##global__fov", &admin->editor.camera->fov);
+			ImGui::TextEx("Near Clip "); ImGui::SameLine(); 
+            if (ImGui::InputFloat("##global__nearz", &admin->editor.camera->nearZ)) {
+                admin->editor.camera->UpdateProjectionMatrix();
+            }
+            ImGui::TextEx("Far Clip  "); ImGui::SameLine(); 
+            if (ImGui::InputFloat("##global__farz", &admin->editor.camera->farZ)) {
+                admin->editor.camera->UpdateProjectionMatrix();
+            };
+            ImGui::TextEx("FOV       "); ImGui::SameLine(); 
+            if (ImGui::InputFloat("##global__fov", &admin->editor.camera->fov)) {
+                admin->editor.camera->UpdateProjectionMatrix();
+            };
 		}
 		
 		//// render settings ////
@@ -1676,6 +1685,8 @@ inline void GlobalTab(Admin* admin){
 			local const char* resolution_strings[] = { "128", "256", "512", "1024", "2048", "4096" };
 			local u32 resolution_values[] = { 128, 256, 512, 1024, 2048, 4096 };
 			local u32 shadow_resolution_index = 4;
+			local const char* msaa_strings[] = { "1", "2", "4", "8", "16", "32", "64" };
+			local u32 msaa_index = settings->msaaSamples;
 			local vec3 clear_color    = settings->clearColor;
 			local vec4 selected_color = settings->selectedColor;
 			local vec4 collider_color = settings->colliderColor;
@@ -1685,8 +1696,21 @@ inline void GlobalTab(Admin* admin){
             ImGui::Checkbox("Shader printf", (bool*)&settings->printf);
             ImGui::Checkbox("Recompile all shaders", (bool*)&settings->recompileAllShaders);
             ImGui::Checkbox("Find mesh tri-neighbors", (bool*)&settings->findMeshTriangleNeighbors);
+			ImGui::TextEx("MSAA Samples"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+			if(ImGui::BeginCombo("##rs_msaa_combo", msaa_strings[msaa_index])){
+				forI(ArrayCount(msaa_strings)){
+					if(ImGui::Selectable(msaa_strings[i], msaa_index == i)){
+						settings->msaaSamples = i;
+						msaa_index = i;
+					}
+				}
+				ImGui::EndCombo(); //rs_msaa_combo
+			}
+			ImGui::Checkbox("Texture Filtering", (bool*)&settings->textureFiltering);
+			ImGui::Checkbox("Anistropic Filtering", (bool*)&settings->anistropicFiltering);
             ImGui::TextCentered("^ above settings require restart ^");
-			ImGui::TextEx("Logging level"); ImGui::SameLine(); ImGui::SliderUInt32("##rs_logging_level", &settings->loggingLevel, 0, 4);
+			ImGui::TextEx("Logging level"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+			ImGui::SliderUInt32("##rs_logging_level", &settings->loggingLevel, 0, 4);
 			ImGui::Checkbox("Crash on error", (bool*)&settings->crashOnError);
 			ImGui::Checkbox("Compile shaders with optimization", (bool*)&settings->optimizeShaders);
 			ImGui::Checkbox("Shadow PCF", (bool*)&settings->shadowPCF);
@@ -1694,9 +1718,9 @@ inline void GlobalTab(Admin* admin){
 			if(ImGui::BeginCombo("##rs_shadowres_combo", resolution_strings[shadow_resolution_index])){
 				forI(ArrayCount(resolution_strings)){
 					if(ImGui::Selectable(resolution_strings[i], shadow_resolution_index == i)){
-						Render::remakeOffscreen();
 						settings->shadowResolution = resolution_values[i];
 						shadow_resolution_index = i;
+						Render::remakeOffscreen();
 					}
 				}
 				ImGui::EndCombo(); //rs_shadowres_combo
@@ -2035,20 +2059,7 @@ void Editor::DebugBar() {
         if (ImGui::TableNextColumn()) {
             //https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
 			
-            //get current time
-            auto now = std::chrono::system_clock::now();
-            
-            //convert to std::time_t so we can convert to std::tm
-            auto timer = std::chrono::system_clock::to_time_t(now);
-            
-            //convert to broken time
-            std::tm bt = *std::localtime(&timer);
-            
-            std::ostringstream oss;
-            
-            oss << std::put_time(&bt, "%H:%M:%S");
-            
-            std::string str7 = oss.str();
+            std::string str7 = DengTime->FormatDateTime("{h}:{m}:{s}");
             float strlen7 = (fontsize - (fontsize / 2)) * str7.size();
             ImGui::SameLine(32 - (strlen7 / 2));
             
@@ -2189,6 +2200,26 @@ void Editor::WorldGrid(Vector3 cpos) {
 	Render::DrawLine(vec3{0,-1000,0}, vec3{0,1000,0}, Color::GREEN);
 	Render::DrawLine(vec3{0,0,-1000}, vec3{0,0,1000}, Color::BLUE);
 }
+
+
+void Editor::ShowWorldAxis() {
+    vec3 
+    x = camera->position + camera->forward + vec3::RIGHT   * 0.1,
+    y = camera->position + camera->forward + vec3::UP      * 0.1,
+    z = camera->position + camera->forward + vec3::FORWARD * 0.1;
+
+    vec2 
+    spx = Math::WorldToScreen2(x, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2,
+    spy = Math::WorldToScreen2(y, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2,
+    spz = Math::WorldToScreen2(z, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2;
+
+    vec2 offset = vec2(DengWindow->width - 50, DengWindow->height - debugbarheight - 50);
+   
+    Render::DrawLineUI(offset, spx + offset, 1, Color::RED);
+    Render::DrawLineUI(offset, spy + offset, 1, Color::GREEN);
+    Render::DrawLineUI(offset, spz + offset, 1, Color::BLUE);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //// editor struct
@@ -2381,6 +2412,8 @@ void Editor::Update(){
 			if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
 		}ImGui::PopStyleColor();
 		
+        ShowWorldAxis();
+
 		if (!showMenuBar)    menubarheight = 0;
 		if (!showDebugBar)   debugbarheight = 0;
 		if (!showDebugTools) debugtoolswidth = 0;
