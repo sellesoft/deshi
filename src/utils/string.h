@@ -8,7 +8,7 @@ struct string {
 	char* str;
 	int size = 0;
 
-	string(){};
+	string() { str = nullptr; };
 
 	string(const char c) {
 		size = 1;
@@ -46,7 +46,6 @@ struct string {
 		str = nullptr;
 		size = 0;
 	}
-
 
 	char& operator[](int i) {
 		//assert that index is less than str size

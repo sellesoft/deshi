@@ -75,7 +75,7 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 //library-less assert
 #if DESHI_SLOW
 //the ... is to allow the programmer to put some text to read when the assert fails
-//but it doesnt actually do affect the assertion expression
+//but it doesnt actually affect the assertion expression
 #define Assert(expression, ...) if(!(expression)){*(volatile int*)0 = 0;}
 #else
 #define Assert(expression, ...) expression

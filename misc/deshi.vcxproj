@@ -48,12 +48,14 @@
     <OutDir>$(SolutionDir)build\debug</OutDir>
     <IntDir>$(SolutionDir)build\debug</IntDir>
     <SourcePath>$(SolutionDir)src;$(VC_SourcePath)</SourcePath>
+    <TargetName>$(SolutionName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)build\release</OutDir>
     <IntDir>$(SolutionDir)build\release</IntDir>
     <SourcePath>$(SolutionDir)src;$(VC_SourcePath)</SourcePath>
+    <TargetName>$(SolutionName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">
     <ClCompile>

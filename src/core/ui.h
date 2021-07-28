@@ -13,6 +13,7 @@ enum UIStyleVar : u32 {
 	UIStyleVar_WindowPadding,
 	UIStyleVar_WindowBorderSize,
 	UIStyleVar_TitleBarHeight,
+	UIStyleVar_TitleTextAlign,   //how title text is aligned in title bar, default vec2(0, 0.5)
 	UIStyleVar_Font,
 	UIStyleVar_COUNT
 };
@@ -55,6 +56,10 @@ struct UIWindow {
 
 
 //functions in this namespace are Immediate Mode, so they only last 1 frame
+//UI was designed almost entirely after ImGui in order to allow us to use it like you would ImGui
+//but without all the stuff from ImGui we don't really need in an engine
+//most of the code is written using ImGui as reference however some design is different and I may
+//come back here and write out what is and isnt
 namespace UI {
 
 	//primitives
@@ -72,7 +77,18 @@ namespace UI {
 	static void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	static void EndWindow();
 
+	//push/pop functions
+	static void PushColor(UIStyleCol idx, Color color);
+	static void PushVar(UIStyleVar idx, float style);
+	static void PushVar(UIStyleVar idx, vec2 style);
+
+	static void PopColor(u32 count = 1);
+	static void PopStyle(u32 count = 1);
+
+
+
 	static void Init();
+	static void Update();
 
 }; //namespace UI
 

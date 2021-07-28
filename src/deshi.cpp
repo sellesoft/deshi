@@ -255,11 +255,6 @@ int main() {
 	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
 	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
 
-	map<string, u32> test;
-
-	test["agh"] = 2;
-
-
 	//start main loop
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
 		glfwPollEvents();
@@ -271,9 +266,14 @@ int main() {
 		TIMER_RESET(t_d); admin.Update();           time_.adminTime  = TIMER_END(t_d);
 		TIMER_RESET(t_d); console.Update(); Console2::Update(); time_.consoleTime = TIMER_END(t_d);
 		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
+		UI::Update();
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
 			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
+			UI::PushColor(UIStyleCol_Text, Color(144, 123, 132));
+			UI::Text("test");
+			UI::PopColor();
+			UI::EndWindow();
 		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

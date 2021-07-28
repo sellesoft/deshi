@@ -2260,7 +2260,7 @@ void Editor::DebugLayer() {
 
 
 void Editor::WorldGrid(Vector3 cpos) {
-    int lines = 50;
+    int lines = 100;
 	f32 xp = floor(cpos.x) + lines;
 	f32 xn = floor(cpos.x) - lines;
 	f32 zp = floor(cpos.z) + lines;
