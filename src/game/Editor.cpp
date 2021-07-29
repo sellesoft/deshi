@@ -1141,10 +1141,10 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                         
 						//TODO(delle) implement an actual model batch editor; this only lets u change the first batch atm
 						ImGui::TextEx("Material "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-						if(ImGui::BeginCombo("##model_mat_combo", mc->model->batchArray[0].material->name)){
+						if(ImGui::BeginCombo("##model_mat_combo", DengScene->MaterialName(mc->model->batches[0].material))){
 							forI(DengScene->MaterialCount()){
-								if(ImGui::Selectable(DengScene->MaterialName(i), DengScene->MaterialAt(i) == mc->model->batchArray[0].material)){
-									mc->model->batchArray[0].material = DengScene->MaterialAt(i);
+								if(ImGui::Selectable(DengScene->MaterialName(i), i == mc->model->batches[0].material)){
+									mc->model->batches[0].material = i;
 								}
 							}
 							ImGui::EndCombo();
@@ -1595,7 +1595,7 @@ inline void MaterialsTab(Admin* admin){
                 if(ImGui::BeginCombo("##mat_albedo_combo", DengScene->TextureName(selected->textures[0]))){
                     forI(textures.size()){
                         if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[0]), textures[i].c_str()) == 0)){
-							selected->textures[0] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Albedo);
+							selected->textures[0] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Albedo).first;
                         }
                     }
                     ImGui::EndCombo(); //mat_albedo_combo
@@ -1604,7 +1604,7 @@ inline void MaterialsTab(Admin* admin){
                 if(ImGui::BeginCombo("##mat_normal_combo", DengScene->TextureName(selected->textures[1]))){
                     forI(textures.size()){
                         if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[1]), textures[i].c_str()) == 0)){
-							selected->textures[1] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Normal);
+							selected->textures[1] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Normal).first;
                         }
                     }
                     ImGui::EndCombo(); //mat_normal_combo
@@ -1613,7 +1613,7 @@ inline void MaterialsTab(Admin* admin){
                 if(ImGui::BeginCombo("##mat_spec_combo", DengScene->TextureName(selected->textures[2]))){
                     forI(textures.size()){
                         if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[2]), textures[i].c_str()) == 0)){
-							selected->textures[2] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Specular);
+							selected->textures[2] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Specular).first;
                         }
                     }
                     ImGui::EndCombo(); //mat_spec_combo
@@ -1622,7 +1622,7 @@ inline void MaterialsTab(Admin* admin){
                 if(ImGui::BeginCombo("##mat_light_combo", DengScene->TextureName(selected->textures[3]))){
                     forI(textures.size()){
                         if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[3]), textures[i].c_str()) == 0)){
-							selected->textures[3] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Light);
+							selected->textures[3] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Light).first;
                         }
                     }
                     ImGui::EndCombo(); //mat_light_combo

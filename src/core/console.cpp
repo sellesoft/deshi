@@ -672,7 +672,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
 	
 	//create the model
-	Model* model = DengScene->CreateModelFromOBJ(args[0].c_str());
+	Model* model = DengScene->CreateModelFromOBJ(args[0].c_str()).second;
 	
 	//collider
 	Collider* col = nullptr;
@@ -760,7 +760,7 @@ CMDSTARTA(add_player, args.size() > 0){
 	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
 	
 	//create the model
-	Model* model = DengScene->CreateModelFromOBJ(args[0].c_str());
+	Model* model = DengScene->CreateModelFromOBJ(args[0].c_str()).second;
 	
 	//collider
 	Collider* col = nullptr;
@@ -975,7 +975,7 @@ CMDSTARTA(mat_texture, args.size() == 3){
 	int matID = std::stoi(args[0]);
 	int texSlot = std::stoi(args[1]);
 	int texID = std::stoi(args[2]);
-	DengScene->materials[matID]->textureArray[texSlot] = DengScene->textures[texID];
+	DengScene->materials[matID]->textureArray[texSlot] = texID;
 	LOG("Updated material ",DengScene->materials[matID]->name,"'s texture",texSlot," to ",DengScene->textures[texID]->name);
 	return "";
 }CMDEND("mat_texture <materialID:Uint> <textureSlot:Uint> <textureID:Uint>");
@@ -995,7 +995,7 @@ CMDFUNC(mat_list){
 		std::string text = TOSTRING(mat->name,'\t',ShaderStrings[mat->shader],'\t');
 		forI(mat->textureCount){
 			text += ' ';
-			text += mat->textureArray[i]->name;
+			text += DengScene->TextureName(mat->textureArray[i]);
 		}
 		LOG(text);
 	}

@@ -135,7 +135,7 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
             c->compID = compIDcount;
             c->entity = e;
             c->layer_index = freeCompLayers[c->layer].add(c);
-            if(c->type == ComponentType_Light) DengScene->lights.push_back(dyncast(Light, c));
+            if(c->type == ComponentType_Light) DengScene->lights.add(dyncast(Light, c));
             compIDcount++;
         }
     }
@@ -333,7 +333,7 @@ void Admin::SaveTEXT(std::string level_name){
 	forI(DengScene->materials.size()){
 		Material* mat = DengScene->materials[i];
 		level_text.append(TOSTRING("\n",i," \"",mat->name,"\" ",mat->shader," "));
-		forI(mat->textureCount) level_text.append(TOSTRING('\"',mat->textureArray[i]->name,'\" '));
+		forI(mat->textureCount) level_text.append(TOSTRING('\"',DengScene->TextureName(mat->textureArray[i]),'\" '));
 	}
 	
 	//models
@@ -342,7 +342,7 @@ void Admin::SaveTEXT(std::string level_name){
 	forI(DengScene->models.size()){
 		Model* model = DengScene->models[i];
 		level_text.append(TOSTRING("\n",i," \"",model->name,"\" "));
-		forI(model->batchCount) level_text.append(TOSTRING('\"',model->batchArray[i].material->name,'\" '));
+		forI(model->batchCount) level_text.append(TOSTRING('\"',DengScene->MaterialName(model->batches[i].material),'\" '));
 	}
 	
 	//entities
@@ -459,18 +459,14 @@ void Admin::LoadTEXT(std::string savename){
 				}break;
 				case(LevelHeader::MATERIALS):{
 					if(split.size() < 3){ ERROR(ParsingError,"'! Material lines should have at least 3 values"); continue; }
-					//id
-					u32 old_id = std::stoi(split[0]);
-					u32 new_id = DengScene->materials.size();
 					
-					//textures
-					std::vector<Texture*> textures;
+					std::vector<u32> textures;
 					for(int i = 3; i < split.size(); ++i){
-						textures.push_back(DengScene->CreateTextureFromFile(split[i].c_str(), TextureType_Albedo));
+						textures.push_back(DengScene->CreateTextureFromFile(split[i].c_str(), TextureType_Albedo).first);
 					}
 					
-					//material
-					DengScene->CreateMaterial(split[1].c_str(), std::stoi(split[2]), MaterialFlags_NONE, textures);
+					u32 old_id = std::stoi(split[0]);
+					u32 new_id = DengScene->CreateMaterial(split[1].c_str(), std::stoi(split[2]), MaterialFlags_NONE, textures).first;
 					material_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
 				}break;
 				case(LevelHeader::MESHES):{
@@ -480,12 +476,12 @@ void Admin::LoadTEXT(std::string savename){
 					//id
 					u32 old_id = std::stoi(split[0]);
 					u32 new_id = DengScene->models.size();
-					Model* model = DengScene->CreateModelFromOBJ(split[1].c_str());
+					Model* model = DengScene->CreateModelFromOBJ(split[1].c_str()).second;
 					mesh_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
 					
 					//materials
 					for(int i = 2; i < split.size(); ++i){
-						model->batchArray[i].material = DengScene->CreateMaterial(split[i].c_str());
+						model->batches[i].material = DengScene->CreateMaterial(split[i].c_str()).first;
 					}
 				}break;
 				case(LevelHeader::ENTITIES):{
@@ -605,7 +601,7 @@ Entity* Admin::CreateEntityNow(std::vector<Component*> components, const char* n
         c->compID = compIDcount;
         c->entity = e;
         c->layer_index = freeCompLayers[c->layer].add(c);
-        if (c->type == ComponentType_Light) DengScene->lights.push_back(dyncast(Light, c));
+        if (c->type == ComponentType_Light) DengScene->lights.add(dyncast(Light, c));
         compIDcount++;
     }
     return e;
@@ -641,7 +637,7 @@ void Admin::AddComponentToLayers(Component* c){
 	
     c->compID = compIDcount;
     c->layer_index = freeCompLayers[c->layer].add(c);
-    if(c->type == ComponentType_Light) DengScene->lights.push_back(dyncast(Light, c));
+    if(c->type == ComponentType_Light) DengScene->lights.add(dyncast(Light, c));
     compIDcount++;
 }
 
@@ -667,9 +663,9 @@ Entity* Admin::EntityRaycast(Vector3 origin, Vector3 direction, f32 maxDistance)
             if(!mc->visible) continue;
 			forX(tri_idx, mc->mesh->triangleCount){
 				tri = &mc->mesh->triangleArray[tri_idx];
-				p0 = tri->v0->pos * transform;
-				p1 = tri->v1->pos * transform;
-				p2 = tri->v2->pos * transform;
+				p0 = tri->p[0] * transform;
+				p1 = tri->p[1] * transform;
+				p2 = tri->p[2] * transform;
 				normal = tri->normal * rotation;
 				
 				//early out if triangle is not facing us

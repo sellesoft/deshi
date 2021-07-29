@@ -29,7 +29,7 @@ struct Scene{
 	pair<u32,Texture*> CreateTextureFromMemory(void* data, TextureType type = TextureType_Albedo);
 	void DeleteTexture(Texture* texture);
 	
-	pair<u32,Material*> CreateMaterial(const char* name, Shader shader = Shader_PBR, MaterialFlags flags = MaterialFlags_NONE, std::vector<Texture*> textures = {});
+	pair<u32,Material*> CreateMaterial(const char* name, Shader shader = Shader_PBR, MaterialFlags flags = MaterialFlags_NONE, std::vector<u32> textures = {});
 	void DeleteMaterial(Material* material);
 	
 	pair<u32,Model*> CreateModelFromOBJ(const char* filename, Shader shader = Shader_PBR, Color color = Color::WHITE);

@@ -191,6 +191,11 @@ struct array {
 		last--;
 	}
 	
+	//removes all elements
+	void clear(){
+		last = 0;
+	}
+	
 	void reserve(int nuspace) {
 		if (nuspace > space) {
 			space = nuspace;

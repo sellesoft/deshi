@@ -561,8 +561,8 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	Mesh::Triangle* triRef = &refMesh->triangleArray[furthestTriRef];
 	Mesh::Triangle* triInc = &incMesh->triangleArray[furthestTriInc];
 	
-	Mesh::Face* refFace = &refMesh->faces[triRef->faceIdx];
-	Mesh::Face* incFace = &incMesh->faces[triInc->faceIdx];
+	Mesh::Face* refFace = &refMesh->faces[triRef->face];
+	Mesh::Face* incFace = &incMesh->faces[triInc->face];
 	
 	//NOTE draw collision normal
 	//ImGui::DebugDrawTriangle3(Geometry::MeshTriangleMidpoint(triRef), Geometry::MeshTriangleMidpoint(triRef) + bestnorm, Color::YELLOW);

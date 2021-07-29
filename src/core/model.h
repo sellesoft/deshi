@@ -142,8 +142,9 @@ struct Model{
 		u32  indexOffset;
 		u32  indexCount;
 		u32  material;
-	};
-	array<Batch> batches;
+	}  *batchArray;
+	u32 batchCount;
+	array_view<Batch> batches;
 };
 
 #endif //DESHI_MODEL_H
