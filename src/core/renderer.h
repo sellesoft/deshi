@@ -167,6 +167,7 @@ namespace Render{
     
     //ui drawing functions
     void FillRectUI(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
+    void FillRectUI(vec2 pos, vec2 dimensions, Color color = Color::WHITE);
     void DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
     void DrawLineUI(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
     void DrawTextUI(string text, vec2 pos, Color color = Color::WHITE);

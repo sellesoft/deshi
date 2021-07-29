@@ -29,6 +29,20 @@ struct string {
 		}
 	}
 
+	string(const char* s, size_t size) {
+		this->size = size;
+		if (size != 0) {
+			str = new char[size + 1];
+			memcpy(str, s, size);
+			memset(str + size, '\0', 1);
+			//strcpy(str, s);
+		}
+		else {
+			str = new char[1];
+			memset(str, '\0', 1);
+		}
+	}
+
 	string(const string& s) {
 		size = s.size;
 		if (size != 0) {
@@ -146,6 +160,11 @@ struct string {
 		string s(c);
 		return this->operator+(s);
 	}
+	
+	//const func for getting a char in a string
+	char at(u32 idx) const {
+		return str[idx];
+	}
 
 	void clear() {
 		memset(str, 0, size + 1);
@@ -175,6 +194,86 @@ struct string {
 	}
 
 	friend string operator + (const char* c, string s);
+
+
+	//static helper functions
+
+	string substr(size_t first, size_t second) const {
+		Assert(first <= size && second <= size && second >= first, "check first/second variables");
+		return string(str + first, second - first + 1);
+	}
+
+	string substr(size_t idx) {
+		Assert(idx <= size, "idx greater than size");
+		return substr(idx, size);
+	}
+
+	//returned when something specified is not found in a fucntion
+	static const size_t npos = -1;
+
+	size_t find(const string& text) const {
+		for (int i = 0; i < size - (text.size - 1); i++) {
+			//dont use strcmp if text.size is only 1
+			if (text.size == 1)
+				if (str[i] == text.str[0])
+					return i;
+	
+			//early cont if char doesnt match first char of input
+			if (str[i] != text.str[0]) continue;
+			else if(!strcmp(substr(i, i + text.size - 1).str, text.str)) {
+				return i;
+			}
+		}
+		return npos;
+	}
+
+	size_t find_first_of(char c) const {
+		for (int i = 0; i < size; i++) {
+			if (c == str[i]) return i;
+		}
+		return npos;
+	}
+
+	size_t find_first_not_of(char c) const {
+		for (int i = 0; i < size; i++) {
+			if (c != str[i]) return i;
+		}
+		return npos;
+	}
+
+	size_t find_last_of(char c) const {
+		for (int i = size - 1; i != 0; i--) {
+			if (c == str[i]) return i;
+		}
+		return npos;
+	}
+
+	size_t find_last_not_of(char c) const {
+		for (int i = size - 1; i != 0; i--) {
+			if (c != str[i]) return i;
+		}
+		return npos;
+	}
+
+	inline string substrToChar(char c) const {
+		return string(str, find_first_of(c));
+	}
+
+	static inline string eatSpacesLeading(string text) {
+		size_t idx = text.find_first_of(' ');
+		return (idx != npos) ? text.substr(idx) : "";
+	}
+
+	static inline string eatSpacesTrailing(string text) {
+		size_t idx = text.find_last_not_of(' ');
+		return (idx != npos) ? text.substr(0, idx + 1) : "";
+	}
+
+
+
+
+
+
 };
 
 

@@ -43,8 +43,21 @@ enum UIWindowFlags_ {
 struct UIWindow {
 	string name;
 	
-	vec2 position;
-	vec2 dimensions;
+	union {
+		vec2 position;
+		struct {
+			float x;
+			float y;
+		};
+	};
+
+	union {
+		vec2 dimensions;
+		struct {
+			float width;
+			float height;
+		};
+	};
 	
 	//interior window cursor that's relative to its upper left corner
 	//if the window has a titlebar then the cursor's origin does not include the title bar
@@ -52,6 +65,24 @@ struct UIWindow {
 	vec2 cursor;
 
 	UIWindowFlags flags;
+
+	UIWindow() {};
+
+	//I have to do this because I'm using an anonymous struct inside a union and C++ sucks
+	UIWindow(const UIWindow& cop) {
+		this->operator=(cop);
+	}
+
+	UIWindow& operator= (const UIWindow& cop) {
+		name = cop.name;
+		position = cop.position;
+		dimensions = cop.dimensions;
+		cursor = cop.cursor;
+		flags = cop.flags;
+		return *this;
+	}
+
+
 };
 
 
@@ -61,6 +92,9 @@ struct UIWindow {
 //most of the code is written using ImGui as reference however some design is different and I may
 //come back here and write out what is and isnt
 namespace UI {
+
+	//helpers
+	static vec2 CalcTextSize(string text);
 
 	//primitives
 	static void RectFilled(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
@@ -83,7 +117,7 @@ namespace UI {
 	static void PushVar(UIStyleVar idx, vec2 style);
 
 	static void PopColor(u32 count = 1);
-	static void PopStyle(u32 count = 1);
+	static void PopVar(u32 count = 1);
 
 
 

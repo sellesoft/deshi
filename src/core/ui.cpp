@@ -56,15 +56,25 @@ static const UIStyleVarType uiStyleVarTypes[] = {
 //windows are primarily a way for the user to easily position things on screen relative to a parent
 //and to make detecting where text wraps and other things easier
 //by default a window that takes up the entire screen and is invisible
-UIWindow workingWin; 
+UIWindow workingWin;
  
 map<string, UIWindow> windows;     //window map which only stores known windows
 array<UIWindow>       windowStack; //window stack which allow us to use windows like we do colors and styles
 array<ColorMod>       colorStack; 
-array<VarMod>         styleStack; 
+array<VarMod>         varStack; 
 
 u32 initColorStackSize;
 u32 initStyleStackSize;
+
+
+//helper functions
+
+
+vec2 UI::CalcTextSize(string text) {
+	return vec2(text.size * style.font.width, style.font.height);
+}
+
+
 
 void UI::RectFilled(f32 x, f32 y, f32 width, f32 height, Color color) {
 	Render::FillRectUI(workingWin.position.x + x, workingWin.position.y + y, width, height, color);
@@ -94,7 +104,17 @@ void UI::Line(vec2 start, vec2 end, float thickness, Color color){
 
 
 void UI::Text(string text) {
+	//work out where we're going to draw the text and how much to advance the cursor by
+	vec2 textSize = CalcTextSize(text);
+
+	workingWin.width = 400;
+	if (textSize.y > workingWin.width) {
+
+	}
+
 	Render::DrawTextUI(text, workingWin.position + workingWin.cursor, style.colors[UIStyleCol_Text]);
+
+
 }
 
 void UI::Text(string text, vec2 pos) {
@@ -136,12 +156,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 		windows[name] = workingWin;
 	}
 	else {
-		UIWindow oldWin = windows[name];
-		workingWin.      name = name;
-		workingWin.  position = oldWin.position;
-		workingWin.dimensions = oldWin.dimensions;
-		workingWin.    cursor = oldWin.cursor;
-		workingWin.     flags = oldWin.flags;
+		workingWin = windows[name];
 	}
 
 	//if the window isn't invisible draw things that havent been disabled
@@ -149,29 +164,55 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 		
 		//draw background
 		if (!(flags & UIWindowFlags_NoBackground)) 
-			Render::FillRectUI(pos.x, pos.y, dimensions.x, dimensions.y, style.colors[UIStyleCol_WindowBg]);
+			Render::FillRectUI(workingWin.position, workingWin.dimensions, style.colors[UIStyleCol_WindowBg]);
 
 		//draw title bar
 		if (!(flags & UIWindowFlags_NoTitleBar)) {
-			Render::FillRectUI(pos.x, pos.y, dimensions.x, style.titleBarHeight, style.colors[UIStyleCol_TitleBg]);
+			Render::FillRectUI(workingWin.x, workingWin.y, workingWin.width, style.titleBarHeight, style.colors[UIStyleCol_TitleBg]);
+			
+			//draw text if it exists
 			if (name.size != 0) {
-				Render::DrawTextUI(name, vec2(dimensions.x + 2, dimensions.y + 3));
+				Render::DrawTextUI(
+					workingWin.name,
+					vec2(
+						workingWin.x + (workingWin.width - name.size * style.font.width) * style.titleTextAlign.x,
+						workingWin.y + (style.titleBarHeight - style.font.height) * style.titleTextAlign.y));
 			}
 		}
 
 		//draw border
 		if (!(flags & UIWindowFlags_NoBorder)) {
 			//left
-			Render::FillRectUI(pos.x - style.windowBorderSize, pos.y, style.windowBorderSize, dimensions.y, style.colors[UIStyleCol_Border]);
+			Render::FillRectUI(
+				workingWin.x - style.windowBorderSize, 
+				workingWin.y, 
+				style.windowBorderSize, 
+				workingWin.height, 
+				style.colors[UIStyleCol_Border]);
 			
 			//right 
-			Render::FillRectUI(pos.x + dimensions.x, pos.y, style.windowBorderSize, dimensions.y, style.colors[UIStyleCol_Border]);
+			Render::FillRectUI(
+				workingWin.x + workingWin.width, 
+				workingWin.y, 
+				style.windowBorderSize, 
+				workingWin.height, 
+				style.colors[UIStyleCol_Border]);
 		
 			//top
-			Render::FillRectUI(pos.x - style.windowBorderSize, pos.y - style.windowBorderSize, dimensions.x + 2 * style.windowBorderSize, style.windowBorderSize, style.colors[UIStyleCol_Border]);
+			Render::FillRectUI(
+				workingWin.x - style.windowBorderSize, 
+				workingWin.y - style.windowBorderSize, 
+				workingWin.width + 2 * style.windowBorderSize, 
+				style.windowBorderSize, 
+				style.colors[UIStyleCol_Border]);
 
 			//bottom
-			Render::FillRectUI(pos.x - style.windowBorderSize, pos.y + dimensions.y, dimensions.x + 2 * style.windowBorderSize, style.windowBorderSize, style.colors[UIStyleCol_Border]);
+			Render::FillRectUI(
+				workingWin.x - style.windowBorderSize, 
+				workingWin.y + dimensions.y, 
+				workingWin.width + 2 * style.windowBorderSize, 
+				style.windowBorderSize, 
+				style.colors[UIStyleCol_Border]);
 
 		}
 
@@ -180,6 +221,10 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 
 void UI::EndWindow() {
 	Assert(windowStack.size() > 1, "Attempted to end the base window");
+	//update stored window with new window state
+	//NOTE: I'm not sure if I want to keep doing this like this
+	//      or just make workingWin a pointer to a window in the list
+	windows[workingWin.name] = workingWin;
 	workingWin = *windowStack.last;
 	windowStack.pop();
 }
@@ -195,12 +240,14 @@ void UI::PushColor(UIStyleCol idx, Color color) {
 
 void UI::PushVar(UIStyleVar idx, float nuStyle){
 	Assert(uiStyleVarTypes[idx].count == 1, "Attempt to use a float on a vec2 style variable!");
+	varStack.add(VarMod(idx, nuStyle));
 	float* p = (float*)((u8*)&style + uiStyleVarTypes[idx].offset);
 	*p = nuStyle;
 }
 
 void UI::PushVar(UIStyleVar idx, vec2 nuStyle) {
 	Assert(uiStyleVarTypes[idx].count == 2, "Attempt to use a float on a vec2 style variable!");
+	varStack.add(VarMod(idx, nuStyle));
 	vec2* p = (vec2*)((u8*)&style + uiStyleVarTypes[idx].offset);
 	*p = nuStyle;
 }
@@ -214,8 +261,21 @@ void UI::PopColor(u32 count) {
 	}
 }
 
-void UI::PopStyle(u32 count){
-
+void UI::PopVar(u32 count){
+	while (count-- > 0) {
+		//TODO(sushi, UiCl) do this better
+		UIStyleVarType type = uiStyleVarTypes[varStack.last->var];
+		if (type.count == 1) {
+			float* p = (float*)((u8*)&style + type.offset);
+			*p = varStack.last->oldFloat[0];
+			varStack.pop();
+		}
+		else {
+			vec2* p = (vec2*)((u8*)&style + type.offset);
+			*p = vec2(varStack.last->oldFloat[0], varStack.last->oldFloat[1]);
+			varStack.pop();
+		}
+	}
 }
 
 
@@ -248,11 +308,11 @@ void UI::Init() {
 
 	//push default style variables
 	PushVar(UIStyleVar_WindowBorderSize, 1);
-	PushVar(UIStyleVar_TitleBarHeight, style.font.height + 6);
+	PushVar(UIStyleVar_TitleBarHeight, style.font.height * 1.5);
 	PushVar(UIStyleVar_TitleTextAlign, vec2(0, 0.5));
 
 	initColorStackSize = colorStack.size();
-	initStyleStackSize = styleStack.size();
+	initStyleStackSize = varStack.size();
 
 	windows["base"] = workingWin;
 	windowStack.add(workingWin);
@@ -265,8 +325,8 @@ void UI::Update() {
 	Assert(windowStack.size() == 1, 
 	"Frame ended with hanging windows in the stack, make sure you call EndWindow() if you call BeginWindow()!");
 	
-	Assert(styleStack.size() == initStyleStackSize, 
-	"Frame ended with hanging styles in the stack, make sure you pop styles if you push them!");
+	Assert(varStack.size() == initStyleStackSize, 
+	"Frame ended with hanging vars in the stack, make sure you pop vars if you push them!");
 	
 	Assert(colorStack.size() == initColorStackSize, 
 	"Frame ended with hanging colors in the stack, make sure you pop colors if you push them!");

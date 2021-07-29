@@ -271,7 +271,6 @@ int main() {
 		{//debugging area
 			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
 			UI::PushColor(UIStyleCol_Text, Color(144, 123, 132));
-			UI::Text("test");
 			UI::PopColor();
 			UI::EndWindow();
 		}
