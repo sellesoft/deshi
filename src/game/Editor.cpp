@@ -45,11 +45,11 @@ void Editor::TranslateEntity(Entity* e, TransformationAxis axis){
     
 }
 
-inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um) {
+inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um){
 	persist bool grabbingObj = false;
     
-    if (!DengConsole->IMGUI_MOUSE_CAPTURE) { 
-        if (DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj) {
+    if(!DengConsole->IMGUI_MOUSE_CAPTURE){ 
+        if(DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj){
             //Camera* c = admin->mainCamera;
             grabbingObj = true;
             admin->controller.cameraLocked = true;
@@ -66,19 +66,19 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             persist Vector3 lastFramePos;
             
             //different cases for mode chaning
-            if (DengInput->KeyPressed(Key::X)) {
+            if(DengInput->KeyPressed(Key::X)){
                 xaxis = true; yaxis = false; zaxis = false; 
                 sel->transform.position = initialObjPos;
             }
-            if (DengInput->KeyPressed(Key::Y)) {
+            if(DengInput->KeyPressed(Key::Y)){
                 xaxis = false; yaxis = true; zaxis = false; 
                 sel->transform.position = initialObjPos;
             }
-            if (DengInput->KeyPressed(Key::Z)) {
+            if(DengInput->KeyPressed(Key::Z)){
                 xaxis = false; yaxis = false; zaxis = true; 
                 sel->transform.position = initialObjPos;
             }
-            if (!(xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) { //|| DengInput->MousePressed(1)) {
+            if(!(xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)){ //|| DengInput->MousePressed(1)){
                 //stop grabbing entirely if press esc or right click w no grab mode on
                 //TODO(sushi, In) figure out why the camera rotates violently when rightlicking to leave grabbing. probably because of the mouse moving to the object?
                 xaxis = false; yaxis = false; zaxis = false; 
@@ -87,12 +87,12 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 admin->controller.cameraLocked= false;
                 return;
             }
-            if ((xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
+            if((xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)){
                 //leave grab mode if in one when pressing esc
                 xaxis = false; yaxis = false; zaxis = false; 
                 sel->transform.position = initialObjPos; initialgrab = true;
             }
-            if (DengInput->KeyPressed(MouseButton::LEFT)) {
+            if(DengInput->KeyPressed(MouseButton::LEFT)){
                 //drop the object if left click
                 xaxis = false; yaxis = false; zaxis = false;
                 initialgrab = true; grabbingObj = false;  
@@ -103,11 +103,11 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 return;
             }
             
-            if (DengInput->KeyPressed(MouseButton::SCROLLDOWN)) initialdist -= 1;
-            if (DengInput->KeyPressed(MouseButton::SCROLLUP))   initialdist += 1;
+            if(DengInput->KeyPressed(MouseButton::SCROLLDOWN)) initialdist -= 1;
+            if(DengInput->KeyPressed(MouseButton::SCROLLUP))   initialdist += 1;
             
             //set mouse to obj position on screen and save that position
-            if (initialgrab) {
+            if(initialgrab){
                 Vector2 screenPos = Math::WorldToScreen2(sel->transform.position, c->projMat, c->viewMat, DengWindow->dimensions);
                 DengWindow->SetCursorPos(screenPos);
                 initialObjPos = sel->transform.position;
@@ -116,11 +116,11 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             }
             
             //incase u grab in debug mode
-            if (Physics* p = sel->GetComponent<Physics>()) {
+            if(Physics* p = sel->GetComponent<Physics>()){
                 p->velocity = Vector3::ZERO;
             }
             
-            if (!(xaxis || yaxis || zaxis)) {
+            if(!(xaxis || yaxis || zaxis)){
                 
                 Vector3 nuworldpos = Math::ScreenToWorld(DengInput->mousePos, c->projMat,
                                                          c->viewMat, DengWindow->dimensions);
@@ -133,12 +133,12 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 newpos *= Math::LocalToWorld(admin->mainCamera->position);
                 
                 sel->transform.position = newpos;
-                if (Physics* p = sel->GetComponent<Physics>()) {
+                if(Physics* p = sel->GetComponent<Physics>()){
                     p->position = newpos;
                 }
                 
             }
-            else if (xaxis) {
+            else if(xaxis){
                 Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
                                                   admin->mainCamera->viewMat, DengWindow->dimensions);
                 pos *= Math::WorldToLocal(admin->mainCamera->position);
@@ -148,7 +148,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 
                 Vector3 planeinter;
                 
-                if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
+                if(Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60){
                     planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
                 }
                 else {
@@ -156,14 +156,14 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 }
                 
                 sel->transform.position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
-                if (Physics* p = sel->GetComponent<Physics>()) {
+                if(Physics* p = sel->GetComponent<Physics>()){
                     p->position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
                 }
 				Render::DrawLine(vec3{-1000,sel->transform.position.y,sel->transform.position.z}, 
 								 vec3{ 1000,sel->transform.position.y,sel->transform.position.z}, 
 								 Color::DARK_RED);
             }
-            else if (yaxis) {
+            else if(yaxis){
                 Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
                                                   admin->mainCamera->viewMat, DengWindow->dimensions);
                 pos *= Math::WorldToLocal(admin->mainCamera->position);
@@ -173,21 +173,21 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 
                 Vector3 planeinter;
                 
-                if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
+                if(Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60){
                     planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
                 }
                 else {
                     planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
                 }
                 sel->transform.position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
-                if (Physics* p = sel->GetComponent<Physics>()) {
+                if(Physics* p = sel->GetComponent<Physics>()){
                     p->position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
                 }	
                 Render::DrawLine(vec3{sel->transform.position.x,-1000,sel->transform.position.z}, 
 								 vec3{sel->transform.position.x, 1000,sel->transform.position.z}, 
 								 Color::DARK_GREEN);
             }
-            else if (zaxis) {
+            else if(zaxis){
                 Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
                                                   admin->mainCamera->viewMat, DengWindow->dimensions);
                 pos *= Math::WorldToLocal(admin->mainCamera->position);
@@ -197,14 +197,14 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 
                 Vector3 planeinter;
                 
-                if (Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60) {
+                if(Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60){
                     planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
                 }
                 else {
                     planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
                 }
                 sel->transform.position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
-                if (Physics* p = sel->GetComponent<Physics>()) {
+                if(Physics* p = sel->GetComponent<Physics>()){
                     p->position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
                 }
                 Render::DrawLine(vec3{sel->transform.position.x,sel->transform.position.y,-1000}, 
@@ -220,11 +220,11 @@ void Editor::RotateEntity(Entity* e, TransformationAxis axis){
     
 }
 
-inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um) {
+inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um){
     persist bool rotatingObj = false;
     
-    if (!DengConsole->IMGUI_MOUSE_CAPTURE) { 
-        if (DengInput->KeyPressed(DengKeys.rotateSelectedObject) || rotatingObj) {
+    if(!DengConsole->IMGUI_MOUSE_CAPTURE){ 
+        if(DengInput->KeyPressed(DengKeys.rotateSelectedObject) || rotatingObj){
             rotatingObj = true;
             admin->controller.cameraLocked = true;
             
@@ -240,47 +240,47 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             persist Vector3 initialObjRot;
             
             //different cases for mode chaning
-            if (DengInput->KeyPressed(Key::X)) {
+            if(DengInput->KeyPressed(Key::X)){
                 xaxis = true; yaxis = false; zaxis = false; 
                 sel->transform.rotation = initialObjRot;
-                if (Physics* p = sel->GetComponent<Physics>()) {
+                if(Physics* p = sel->GetComponent<Physics>()){
                     p->rotation = initialObjRot;
                 }
             }
-            if (DengInput->KeyPressed(Key::Y)) {
+            if(DengInput->KeyPressed(Key::Y)){
                 xaxis = false; yaxis = true; zaxis = false; 
                 sel->transform.rotation = initialObjRot;
-                if (Physics* p = sel->GetComponent<Physics>()) {
+                if(Physics* p = sel->GetComponent<Physics>()){
                     p->rotation = initialObjRot;
                 }
             }
-            if (DengInput->KeyPressed(Key::Z)) {
+            if(DengInput->KeyPressed(Key::Z)){
                 xaxis = false; yaxis = false; zaxis = true; 
                 sel->transform.rotation = initialObjRot;
-                if (Physics* p = sel->GetComponent<Physics>()) {
+                if(Physics* p = sel->GetComponent<Physics>()){
                     p->rotation = initialObjRot;
                 }
             }
-            if (!(xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
+            if(!(xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)){
                 //stop rotating entirely if press esc or right click w no rotate mode on
                 xaxis = false; yaxis = false; zaxis = false; 
                 sel->transform.rotation = initialObjRot;
-                if (Physics* p = sel->GetComponent<Physics>()) {
+                if(Physics* p = sel->GetComponent<Physics>()){
                     p->rotation = initialObjRot;
                 }
                 initialrot = true; rotatingObj = false;
                 admin->controller.cameraLocked = false;
                 return;
             }
-            if ((xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)) {
+            if((xaxis || yaxis || zaxis) && DengInput->KeyPressed(Key::ESCAPE)){
                 //leave rotation mode if in one when pressing esc
                 xaxis = false; yaxis = false; zaxis = false; 
                 sel->transform.rotation = initialObjRot; initialrot = true;
-                if (Physics* p = sel->GetComponent<Physics>()) {
+                if(Physics* p = sel->GetComponent<Physics>()){
                     p->rotation = initialObjRot;
                 }
             }
-            if (DengInput->KeyPressed(MouseButton::LEFT)) {
+            if(DengInput->KeyPressed(MouseButton::LEFT)){
                 //drop the object if left click
                 xaxis = false; yaxis = false; zaxis = false;
                 initialrot = true; rotatingObj = false;  
@@ -291,7 +291,7 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 return;
             }
             
-            if (initialrot) {
+            if(initialrot){
                 initialObjRot = sel->transform.rotation;
                 initialrot = false;
                 origmousepos = DengInput->mousePos;
@@ -299,7 +299,7 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             
             //TODO(sushi, InMa) implement rotating over an arbitrary axis in a nicer way everntually
             //TODO(sushi, In) make rotation controls a little more nice eg. probably just make it how far along the screen the mouse is to determine it.
-            if (!(xaxis || yaxis || zaxis)) {
+            if(!(xaxis || yaxis || zaxis)){
                 
                 Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
                 Vector2 mousepos = DengInput->mousePos;
@@ -323,7 +323,7 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 LOG(ang);
                 
                 //make angle go between 360 instead of -180 and 180
-                //if (ang < 0) {
+                //if(ang < 0){
                 //	ang = 180 + (180 + ang);
                 //}
                 
@@ -334,7 +334,7 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 sel->transform.rotation.z = DEGREES(sel->transform.rotation.z);
                 
             }
-            else if (xaxis) {
+            else if(xaxis){
                 Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
                 Vector2 mousepos = DengInput->mousePos;
                 
@@ -342,16 +342,16 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 
                 float ang = Math::AngBetweenVectors(ctm, origmousepos - center);
                 
-                if (ang < 0) {
+                if(ang < 0){
                     ang = 180 + (180 + ang);
                 }
                 
                 sel->transform.rotation.z = ang;
-                if (Physics* p = sel->GetComponent<Physics>()) {
+                if(Physics* p = sel->GetComponent<Physics>()){
                     p->rotation.z = ang;
                 }
             }
-            else if (yaxis) {
+            else if(yaxis){
                 Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
                 Vector2 mousepos = DengInput->mousePos;
                 
@@ -359,16 +359,16 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 
                 float ang = Math::AngBetweenVectors(ctm, origmousepos - center);
                 
-                if (ang < 0) {
+                if(ang < 0){
                     ang = 180 + (180 + ang);
                 }
                 
                 sel->transform.rotation.y = ang;
-                if (Physics* p = sel->GetComponent<Physics>()) {
+                if(Physics* p = sel->GetComponent<Physics>()){
                     p->rotation.y = ang;
                 }
             }
-            else if (zaxis) {
+            else if(zaxis){
                 Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
                 Vector2 mousepos = DengInput->mousePos;
                 
@@ -376,12 +376,12 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 
                 float ang = Math::AngBetweenVectors(ctm, origmousepos - center);
                 
-                if (ang < 0) {
+                if(ang < 0){
                     ang = 180 + (180 + ang);
                 }
                 
                 sel->transform.rotation.x = ang;
-                if (Physics* p = sel->GetComponent<Physics>()) {
+                if(Physics* p = sel->GetComponent<Physics>()){
                     p->rotation.x = ang;
                 }
             }
@@ -396,7 +396,7 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
 
 //functions to simplify the usage of our DebugLayer
 namespace ImGui {
-    void BeginDebugLayer() {
+    void BeginDebugLayer(){
         //ImGui::SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height));
         ImGui::SetNextWindowPos(ImVec2(0, 0));
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::ColorToImVec4(Color(0, 0, 0, 0)));
@@ -404,49 +404,49 @@ namespace ImGui {
     }
     
     //not necessary, but I'm adding it for clarity in code
-    void EndDebugLayer() {
+    void EndDebugLayer(){
         ImGui::PopStyleColor();
         ImGui::End();
     }
     
-    void DebugDrawCircle(Vector2 pos, float radius, Color color) {
+    void DebugDrawCircle(Vector2 pos, float radius, Color color){
         ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(pos.x, pos.y), radius, ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
-    void DebugDrawCircle3(Vector3 pos, float radius, Color color) {
+    void DebugDrawCircle3(Vector3 pos, float radius, Color color){
         Camera* c = g_admin->mainCamera;
         Vector2 windimen = DengWindow->dimensions;
         Vector2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
         ImGui::GetBackgroundDrawList()->AddCircle(ImGui::Vector2ToImVec2(pos2), radius, ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
-    void DebugDrawCircleFilled3(Vector3 pos, float radius, Color color) {
+    void DebugDrawCircleFilled3(Vector3 pos, float radius, Color color){
         Camera* c = g_admin->mainCamera;
         Vector2 windimen = DengWindow->dimensions;
         Vector2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
         ImGui::GetBackgroundDrawList()->AddCircleFilled(ImGui::Vector2ToImVec2(pos2), radius, ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
-    void DebugDrawLine(Vector2 pos1, Vector2 pos2, Color color) {
+    void DebugDrawLine(Vector2 pos1, Vector2 pos2, Color color){
         Math::ClipLineToBorderPlanes(pos1, pos2, DengWindow->dimensions);
         ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(pos1), ImGui::Vector2ToImVec2(pos2), ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
-    void DebugDrawLine3(Vector3 pos1, Vector3 pos2, Color color) {
+    void DebugDrawLine3(Vector3 pos1, Vector3 pos2, Color color){
         Camera* c = g_admin->mainCamera;
         Vector2 windimen = DengWindow->dimensions;
         
         Vector3 pos1n = Math::WorldToCamera3(pos1, c->viewMat);
         Vector3 pos2n = Math::WorldToCamera3(pos2, c->viewMat);
         
-        if (Math::ClipLineToZPlanes(pos1n, pos2n, c->nearZ, c->farZ)) {
+        if(Math::ClipLineToZPlanes(pos1n, pos2n, c->nearZ, c->farZ)){
             ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(Math::CameraToScreen2(pos1n, c->projMat, windimen)), 
                                                     ImGui::Vector2ToImVec2(Math::CameraToScreen2(pos2n, c->projMat, windimen)), 
                                                     ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
         }
     }
     
-    void DebugDrawText(const char* text, Vector2 pos, Color color) {		
+    void DebugDrawText(const char* text, Vector2 pos, Color color){		
         ImGui::SetCursorPos(ImGui::Vector2ToImVec2(pos));
         
         ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(color));
@@ -454,7 +454,7 @@ namespace ImGui {
         ImGui::PopStyleColor();
     }
     
-    void DebugDrawText3(const char* text, Vector3 pos, Color color, Vector2 twoDoffset) {
+    void DebugDrawText3(const char* text, Vector3 pos, Color color, Vector2 twoDoffset){
         Camera* c = g_admin->mainCamera;
         Vector2 windimen = DengWindow->dimensions;
         
@@ -467,25 +467,25 @@ namespace ImGui {
         }
     }
     
-    void DebugDrawTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color) {
+    void DebugDrawTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color){
         DebugDrawLine(p1, p2);
         DebugDrawLine(p2, p3);
         DebugDrawLine(p3, p1);
     }
     
-    void DebugFillTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color) {
+    void DebugFillTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color){
         ImGui::GetBackgroundDrawList()->AddTriangleFilled(ImGui::Vector2ToImVec2(p1), ImGui::Vector2ToImVec2(p2), ImGui::Vector2ToImVec2(p3), 
                                                           ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
-    void DebugDrawTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color) {
+    void DebugDrawTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color){
         DebugDrawLine3(p1, p2, color);
         DebugDrawLine3(p2, p3, color);
         DebugDrawLine3(p3, p1, color);
     }
     
     //TODO(sushi, Ui) add triangle clipping to this function
-    void DebugFillTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color) {
+    void DebugFillTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color){
         Vector2 p1n = Math::WorldToScreen(p1, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
         Vector2 p2n = Math::WorldToScreen(p2, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
         Vector2 p3n = Math::WorldToScreen(p3, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
@@ -494,7 +494,7 @@ namespace ImGui {
                                                           ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
-    void DebugDrawGraphFloat(Vector2 pos, float inval, float sizex, float sizey) {
+    void DebugDrawGraphFloat(Vector2 pos, float inval, float sizex, float sizey){
         //display in value
         ImGui::SetCursorPos(ImVec2(pos.x, pos.y - 10));
         ImGui::TextEx(TOSTRING(inval).c_str());
@@ -510,10 +510,10 @@ namespace ImGui {
         persist float maxval = inval + 5;
         persist float minval = inval - 5;
         
-        //if (inval > maxval) maxval = inval;
-        //if (inval < minval) minval = inval;
+        //if(inval > maxval) maxval = inval;
+        //if(inval < minval) minval = inval;
         
-        if (inval > maxval || inval < minval) {
+        if(inval > maxval || inval < minval){
             maxval = inval + 5;
             minval = inval - 5;
         }
@@ -523,7 +523,7 @@ namespace ImGui {
         
         //if changing the amount of data we're storing we have to reverse
         //each data set twice to ensure the data stays in the right place when we move it
-        if (prevstoresize != storesize) {
+        if(prevstoresize != storesize){
             std::reverse(values.begin(), values.end());    values.resize(storesize);  std::reverse(values.begin(), values.end());
             std::reverse(pvalues.begin(), pvalues.end());  pvalues.resize(storesize); std::reverse(pvalues.begin(), pvalues.end());
             prevstoresize = storesize;
@@ -532,7 +532,7 @@ namespace ImGui {
         std::rotate(values.begin(), values.begin() + 1, values.end());
         
         //update real set if we're not updating yet or update the graph if we are
-        if (frame_count < fupdate) {
+        if(frame_count < fupdate){
             values[values.size() - 1] = inval;
             frame_count++;
         }
@@ -601,36 +601,36 @@ std::vector<std::string> files;
 std::vector<std::string> textures;
 std::vector<std::string> levels;
 
-void Editor::MenuBar() {
+void Editor::MenuBar(){
     ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     ImGui::PushStyleColor(ImGuiCol_PopupBg,   ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
     ImGui::PushStyleColor(ImGuiCol_MenuBarBg, ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
     
-    if(ImGui::BeginMainMenuBar()) { WinHovCheck; 
+    if(ImGui::BeginMainMenuBar()){ WinHovCheck; 
         menubarheight = ImGui::GetWindowHeight();
-        if(ImGui::BeginMenu("File")) { WinHovCheck; 
-            if (ImGui::MenuItem("New")) {
+        if(ImGui::BeginMenu("File")){ WinHovCheck; 
+            if(ImGui::MenuItem("New")){
                 admin->Reset();
             }
-            if (ImGui::MenuItem("Save")) {
+            if(ImGui::MenuItem("Save")){
                 if(level_name == ""){
                     ERROR("Level not saved before; Use 'Save As'");
                 }else{
                     admin->SaveTEXT(level_name);
                 }
             }
-            if (ImGui::BeginMenu("Save As")) { WinHovCheck;
+            if(ImGui::BeginMenu("Save As")){ WinHovCheck;
                 persist char buff[255] = {};
-                if(ImGui::InputText("##saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)) {
+                if(ImGui::InputText("##saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)){
                     admin->SaveTEXT(buff);
                     level_name = std::string(buff);
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Load")) { WinHovCheck;
-                forI(levels.size()) {
-                    if (ImGui::MenuItem(levels[i].c_str())) {
+            if(ImGui::BeginMenu("Load")){ WinHovCheck;
+                forI(levels.size()){
+                    if(ImGui::MenuItem(levels[i].c_str())){
                         admin->LoadTEXT(levels[i]);
                         level_name = levels[i];
                     }
@@ -639,30 +639,30 @@ void Editor::MenuBar() {
             }
             ImGui::EndMenu();
         }
-        if(ImGui::BeginMenu("Spawn")) { WinHovCheck; 
-            for (int i = 0; i < files.size(); i++) {
-                if (files[i].find(".obj") != std::string::npos) {
-                    if(ImGui::MenuItem(files[i].c_str())) { DengConsole->ExecCommand("load_obj", files[i]); }
+        if(ImGui::BeginMenu("Spawn")){ WinHovCheck; 
+            for (int i = 0; i < files.size(); i++){
+                if(files[i].find(".obj") != std::string::npos){
+                    if(ImGui::MenuItem(files[i].c_str())){ DengConsole->ExecCommand("load_obj", files[i]); }
                 }
             }
             ImGui::EndMenu();
         }//agh
-        if (ImGui::BeginMenu("Window")) {
+        if(ImGui::BeginMenu("Window")){
             WinHovCheck;
-            if (ImGui::MenuItem("Entity Inspector")) {  showDebugTools = !showDebugTools; showEditorWin = false;  }
-            if (ImGui::MenuItem("Debug Bar"))           showDebugBar = !showDebugBar;
-            if (ImGui::MenuItem("DebugLayer"))          showDebugLayer = !showDebugLayer;
-            if (ImGui::MenuItem("Timers"))              showTimes = !showTimes;
-            if (ImGui::MenuItem("World Grid"))          showWorldGrid = !showWorldGrid;
-            if (ImGui::MenuItem("ImGui Demo"))          showImGuiDemoWindow = !showImGuiDemoWindow;
-            if (ImGui::MenuItem("Editor Window"))    {  showEditorWin = !showEditorWin; showDebugTools = false;  }
+            if(ImGui::MenuItem("Entity Inspector")){  showDebugTools = !showDebugTools; showEditorWin = false;  }
+            if(ImGui::MenuItem("Debug Bar"))           showDebugBar = !showDebugBar;
+            if(ImGui::MenuItem("DebugLayer"))          showDebugLayer = !showDebugLayer;
+            if(ImGui::MenuItem("Timers"))              showTimes = !showTimes;
+            if(ImGui::MenuItem("World Grid"))          showWorldGrid = !showWorldGrid;
+            if(ImGui::MenuItem("ImGui Demo"))          showImGuiDemoWindow = !showImGuiDemoWindow;
+            if(ImGui::MenuItem("Editor Window"))    {  showEditorWin = !showEditorWin; showDebugTools = false;  }
             ImGui::EndMenu();
         }
-        if (ImGui::BeginMenu("State")) { WinHovCheck;
-            if (ImGui::MenuItem("Play"))   admin->ChangeState(GameState_Play);
-            if (ImGui::MenuItem("Debug"))  admin->ChangeState(GameState_Debug);
-            if (ImGui::MenuItem("Editor")) admin->ChangeState(GameState_Editor);
-            if (ImGui::MenuItem("Menu"))   admin->ChangeState(GameState_Menu);
+        if(ImGui::BeginMenu("State")){ WinHovCheck;
+            if(ImGui::MenuItem("Play"))   admin->ChangeState(GameState_Play);
+            if(ImGui::MenuItem("Debug"))  admin->ChangeState(GameState_Debug);
+            if(ImGui::MenuItem("Editor")) admin->ChangeState(GameState_Editor);
+            if(ImGui::MenuItem("Menu"))   admin->ChangeState(GameState_Menu);
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
@@ -675,13 +675,13 @@ void Editor::MenuBar() {
 
 //NOTE sushi: this is really bad, but i just need it to work for now
 //TODO(sushi, ClUi) completely rewrite this menu
-inline void EventsMenu(Entity* current) {
+inline void EventsMenu(Entity* current){
     std::vector<Entity*> entities = g_admin->entities;
     persist Entity* other = nullptr;
     persist Component* selcompr = nullptr;
     persist Component* selcompl = nullptr;
     
-    if(!current) {
+    if(!current){
         other = nullptr;
         selcompr = nullptr;
         selcompl = nullptr;
@@ -701,7 +701,7 @@ inline void EventsMenu(Entity* current) {
     float height = ImGui::GetWindowHeight();
     
     ImGui::SetCursorPos(ImVec2(padx, pady));
-    if (ImGui::BeginChild("ahahaha", ImVec2(width * padding, height * padding))) {
+    if(ImGui::BeginChild("ahahaha", ImVec2(width * padding, height * padding))){
         ImDrawList* drawListc = ImGui::GetWindowDrawList();
         
         float cwidth = ImGui::GetWindowWidth();
@@ -720,13 +720,13 @@ inline void EventsMenu(Entity* current) {
         
         //PRINTLN(maxlen);
         //if we haven't selected an entity display other entities
-        if (other == nullptr) {
+        if(other == nullptr){
             float inc = cheight / (entities.size());
             int i = 1;
-            for (Entity* e : entities) {
-                if (e != current) {
+            for (Entity* e : entities){
+                if(e != current){
                     ImGui::PushID(i);
-                    if (e->connections.find(current) != e->connections.end()) {
+                    if(e->connections.find(current) != e->connections.end()){
                         float lx = 1.2 * (padx + ImGui::CalcTextSize(current->name).x);
                         float ly = cheight / 2;
                         
@@ -740,7 +740,7 @@ inline void EventsMenu(Entity* current) {
                     }
                     
                     ImGui::SetCursorPos(ImVec2(cwidth - maxlen * fontw * 1.2 - padx, i * inc));
-                    if (ImGui::Button(e->name, ImVec2(maxlen * fontw * 1.2, fonth))) {
+                    if(ImGui::Button(e->name, ImVec2(maxlen * fontw * 1.2, fonth))){
                         other = e;
                     }
                     i++;
@@ -761,10 +761,10 @@ inline void EventsMenu(Entity* current) {
             ImGui::TextEx(other->name);
             
             //if we select a comp for each ent, show options for connecting an event
-            if (selcompr && selcompl) {
+            if(selcompr && selcompl){
                 int currevent = selcompl->event;
-                if (ImGui::Combo("##events_combo2", &currevent, EventStrings, ArrayCount(EventStrings))) {
-                    switch (currevent) {
+                if(ImGui::Combo("##events_combo2", &currevent, EventStrings, ArrayCount(EventStrings))){
+                    switch (currevent){
                         case Event_NONE:
                         selcompl->sender.RemoveReceiver(selcompr);
                         selcompl->event = Event_NONE;
@@ -780,7 +780,7 @@ inline void EventsMenu(Entity* current) {
                     }
                 }
                 
-                if (selcompl->sender.HasReceiver(selcompr)) {
+                if(selcompl->sender.HasReceiver(selcompr)){
                     float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + ImGui::CalcTextSize(ComponentTypeStrings[selcompl->type]).x) / 2;
                     float ly = cheight / 2;
                     
@@ -799,14 +799,14 @@ inline void EventsMenu(Entity* current) {
             float maxlen = 0;
             for (Component* c : other->components) maxlen = std::max(maxlen, (float)std::string(ComponentTypeStrings[c->type]).size());
             int i = 0; //increment for IDs
-            if (!selcompr) {
+            if(!selcompr){
                 float inc = cheight / (other->components.size() + 1);
                 int o = 1;
                 
-                for (Component* c : other->components) {
+                for (Component* c : other->components){
                     ImGui::SetCursorPos(ImVec2(rightoffset * 0.8, o * inc));
                     ImGui::PushID(i);
-                    if (selcompl && selcompl->sender.HasReceiver(c)) {
+                    if(selcompl && selcompl->sender.HasReceiver(c)){
                         float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + (ImGui::CalcTextSize(ComponentTypeStrings[selcompl->type]).x) / 2);
                         float ly = cheight / 2;
                         
@@ -818,7 +818,7 @@ inline void EventsMenu(Entity* current) {
                                            ImVec2(winpos.x + rx, winpos.y + ry),
                                            ImGui::GetColorU32(ImGui::ColorToImVec4(Color::WHITE)));
                     }
-                    if (ImGui::Button(ComponentTypeStrings[c->type], ImVec2(maxlen * fontw * 1.2, fonth))) {
+                    if(ImGui::Button(ComponentTypeStrings[c->type], ImVec2(maxlen * fontw * 1.2, fonth))){
                         selcompr = c;
                     }
                     i++; o++;
@@ -828,7 +828,7 @@ inline void EventsMenu(Entity* current) {
             else {
                 ImGui::SetCursorPos(ImVec2(rightoffset * 0.8, (cheight - fonth) / 2));
                 ImGui::PushID(i);
-                if (ImGui::Button(ComponentTypeStrings[selcompr->type])) {
+                if(ImGui::Button(ComponentTypeStrings[selcompr->type])){
                     selcompr = nullptr;
                 }
                 i++;
@@ -839,14 +839,14 @@ inline void EventsMenu(Entity* current) {
             for (Component* c : current->components) maxlen = std::max(maxlen, (float)std::string(ComponentTypeStrings[c->type]).size());
             
             //display initial entities components
-            if (!selcompl) {
+            if(!selcompl){
                 float inc = cheight / (current->components.size() + 1);
                 int o = 1;
                 
-                for (Component* c : current->components) {
+                for (Component* c : current->components){
                     ImGui::SetCursorPos(ImVec2(1.2 * (padx * 2 + (float)std::string(current->name).size() * fontw), o * inc));
                     ImGui::PushID(i);
-                    if (selcompr && selcompr->sender.HasReceiver(c)) {
+                    if(selcompr && selcompr->sender.HasReceiver(c)){
                         float lx = 1.2 * (padx * 2 + ImGui::CalcTextSize(current->name).x + ImGui::CalcTextSize(ComponentTypeStrings[selcompl->type]).x / 2);
                         float ly = o * inc + ImGui::CalcTextSize(ComponentTypeStrings[c->type]).x / 2;
                         
@@ -858,7 +858,7 @@ inline void EventsMenu(Entity* current) {
                                            ImVec2(winpos.x + rx, winpos.y + ry),
                                            ImGui::GetColorU32(ImGui::ColorToImVec4(Color::WHITE)));
                     }
-                    if (ImGui::Button(ComponentTypeStrings[c->type], ImVec2(maxlen * fontw * 1.2, fonth))) {
+                    if(ImGui::Button(ComponentTypeStrings[c->type], ImVec2(maxlen * fontw * 1.2, fonth))){
                         selcompl = c;
                     }
                     i++; o++;
@@ -868,7 +868,7 @@ inline void EventsMenu(Entity* current) {
             else {
                 ImGui::SetCursorPos(ImVec2(1.2 * (padx * 2 + (float)std::string(current->name).size() * fontw), cheight / 2 - fonth / 2));
                 ImGui::PushID(i);
-                if (ImGui::Button(ComponentTypeStrings[selcompl->type])) {
+                if(ImGui::Button(ComponentTypeStrings[selcompl->type])){
                     selcompl = nullptr;
                 }
                 i++;
@@ -876,7 +876,7 @@ inline void EventsMenu(Entity* current) {
             }
             
             ImGui::SetCursorPos(ImVec2(0, 0));
-            if (ImGui::Button("Back")) { 
+            if(ImGui::Button("Back")){ 
                 other = nullptr; 
                 selcompl = nullptr;
                 selcompr = nullptr;
@@ -929,18 +929,18 @@ inline void EntitiesTab(Admin* admin, float fontsize){
     //// entity list panel ////
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorToImVec4(Color(25, 25, 25)));
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
-    if(ImGui::BeginChild("##entity_list", ImVec2(ImGui::GetWindowWidth() * 0.95f, 100))) {
+    if(ImGui::BeginChild("##entity_list", ImVec2(ImGui::GetWindowWidth() * 0.95f, 100))){
         //if no entities, draw empty list
-        if (admin->entities.size() == 0) { 
+        if(admin->entities.size() == 0){ 
             float time = DengTime->totalTime;
             std::string str1 = "Nothing yet...";
             float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-            for (int i = 0; i < str1.size(); i++) {
+            for (int i = 0; i < str1.size(); i++){
                 ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x - strlen1) / 2 + i * (fontsize / 2), (ImGui::GetWindowSize().y - fontsize) / 2 + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))));
                 ImGui::TextEx(str1.substr(i, 1).c_str());
             }
         }else{
-            if (ImGui::BeginTable("##entity_list_table", 5, ImGuiTableFlags_BordersInner)) {
+            if(ImGui::BeginTable("##entity_list_table", 5, ImGuiTableFlags_BordersInner)){
                 ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 2.f);  //visible ImGui::Button
                 ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 3.f);  //id
                 ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);                  //name
@@ -1007,7 +1007,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 					
                     //// events button ////
                     ImGui::TableSetColumnIndex(3);
-                    if (ImGui::Button("Events", ImVec2(-FLT_MIN, 0.0f))) {
+                    if(ImGui::Button("Events", ImVec2(-FLT_MIN, 0.0f))){
                         events_ent = (events_ent != ent) ? ent : 0;
                     }
                     EventsMenu(events_ent);
@@ -1063,7 +1063,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
     if(!sel) return;
     ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 5.0f);
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
-    if(ImGui::BeginChild("##ent_inspector", ImVec2(ImGui::GetWindowWidth() * 0.95f, ImGui::GetWindowHeight() * .9f), true, ImGuiWindowFlags_NoScrollbar)) {
+    if(ImGui::BeginChild("##ent_inspector", ImVec2(ImGui::GetWindowWidth() * 0.95f, ImGui::GetWindowHeight() * .9f), true, ImGuiWindowFlags_NoScrollbar)){
         
         //// name ////
         SetPadding; ImGui::TextEx(TOSTRING(sel->id, ":").c_str()); 
@@ -1467,22 +1467,24 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 } //EntitiesTab
 
 inline void MaterialsTab(Admin* admin){
-    persist u32 selected_mat = -1;
+    persist u32  sel_mat_idx = -1;
     persist bool rename_mat = false;
     persist char rename_buffer[DESHI_NAME_SIZE] = {};
-    
+    Material* selected = nullptr;
+	if(sel_mat_idx < DengScene->MaterialCount()) selected = DengScene->MaterialAt(sel_mat_idx);
+	
     //// selected material keybinds ////
     //start renaming material
-    if(selected_mat != -1 && DengInput->KeyPressedAnyMod(Key::F2)){
+    if(selected && DengInput->KeyPressedAnyMod(Key::F2)){
         rename_mat = true;
         DengConsole->IMGUI_KEY_CAPTURE = true;
-        cpystr(rename_buffer, DengScene->MaterialName(selected_mat), DESHI_NAME_SIZE);
+        cpystr(rename_buffer, selected->name, DESHI_NAME_SIZE);
     }
     //submit renaming material
-    if(rename_mat && DengInput->KeyPressedAnyMod(Key::ENTER)){
+    if(selected && rename_mat && DengInput->KeyPressedAnyMod(Key::ENTER)){
         rename_mat = false;
         DengConsole->IMGUI_KEY_CAPTURE = false;
-        cpystr(DengScene->MaterialName(selected_mat), rename_buffer, DESHI_NAME_SIZE);
+        cpystr(selected->name, rename_buffer, DESHI_NAME_SIZE);
     }
     //stop renaming material
     if(rename_mat && DengInput->KeyPressedAnyMod(Key::ESCAPE)){
@@ -1490,21 +1492,21 @@ inline void MaterialsTab(Admin* admin){
         DengConsole->IMGUI_KEY_CAPTURE = false;
     }
     //delete material
-    if(selected_mat != -1 && DengInput->KeyPressedAnyMod(Key::DELETE)){
+    if(selected && DengInput->KeyPressedAnyMod(Key::DELETE)){
         //TODO(Ui) re-enable this with a popup to delete OR with undoing on delete
-        //DengScene->DeleteMaterial(selected_mat);
-        //selected_mat = -1;
+        //DengScene->DeleteMaterial(sel_mat_idx);
+        //sel_mat_idx = -1;
     }
     
     //// material list panel ////
     SetPadding; 
-    if(ImGui::BeginChild("##mat_list", ImVec2(ImGui::GetWindowWidth()*0.95, ImGui::GetWindowHeight()*.14f), false)) {
-        if(ImGui::BeginTable("##mat_table", 3, ImGuiTableFlags_BordersInner)) {
+    if(ImGui::BeginChild("##mat_list", ImVec2(ImGui::GetWindowWidth()*0.95, ImGui::GetWindowHeight()*.14f), false)){
+        if(ImGui::BeginTable("##mat_table", 3, ImGuiTableFlags_BordersInner)){
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 2.5f);
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
             
-            forX(mat_idx, DengScene->MaterialCount()) {
+            forX(mat_idx, DengScene->MaterialCount()){
                 ImGui::PushID(mat_idx);
                 ImGui::TableNextRow();
                 
@@ -1512,15 +1514,15 @@ inline void MaterialsTab(Admin* admin){
                 ImGui::TableSetColumnIndex(0);
                 char label[8];
                 sprintf(label, " %03d", mat_idx);
-                if(ImGui::Selectable(label, selected_mat == mat_idx, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
-                    selected_mat = (ImGui::GetIO().KeyCtrl) ? -1 : mat_idx; //deselect if CTRL held
+                if(ImGui::Selectable(label, sel_mat_idx == mat_idx, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
+                    sel_mat_idx = (ImGui::GetIO().KeyCtrl) ? -1 : mat_idx; //deselect if CTRL held
                     rename_mat = false;
                     DengConsole->IMGUI_KEY_CAPTURE = false;
                 }
                 
                 //// name ImGui::TextEx ////
                 ImGui::TableSetColumnIndex(1);
-                if(rename_mat && selected_mat == mat_idx){
+                if(rename_mat && sel_mat_idx == mat_idx){
                     ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::ColorToImVec4(colors.c2));
                     ImGui::InputText("##mat_rename_input", rename_buffer, DESHI_NAME_SIZE, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
                     ImGui::PopStyleColor();
@@ -1531,10 +1533,10 @@ inline void MaterialsTab(Admin* admin){
                 //// delete ImGui::Button ////
                 ImGui::TableSetColumnIndex(2);
                 if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))){
-                    if(mat_idx == selected_mat) {
-                        selected_mat = -1;
-                    }else if(selected_mat != -1 && selected_mat > mat_idx) {
-                        selected_mat -= 1;
+                    if(mat_idx == sel_mat_idx){
+                        sel_mat_idx = -1;
+                    }else if(sel_mat_idx != -1 && sel_mat_idx > mat_idx){
+                        sel_mat_idx -= 1;
                     }
 					DengScene->DeleteMaterial(mat_idx);
                 }
@@ -1550,26 +1552,27 @@ inline void MaterialsTab(Admin* admin){
     //// create new material ImGui::Button ////
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
     if(ImGui::Button("Create New Material", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
-		selected_mat = DengScene->MaterialCount();
-		DengScene->CreateMaterial(TOSTRING("material", selected_mat).c_str(), Shader_PBR);
+		sel_mat_idx = DengScene->MaterialCount();
+		selected = DengScene->MaterialAt(sel_mat_idx);
+		DengScene->CreateMaterial(TOSTRING("material", sel_mat_idx).c_str(), Shader_PBR);
     }
     
     ImGui::Separator();
     
     //// selected material inspector panel ////
-    if(selected_mat == -1) return;
+    if(selected == nullptr) return;
     SetPadding;
-    if(ImGui::BeginChild("##mat_inspector", ImVec2(ImGui::GetWindowWidth()*.95f, ImGui::GetWindowHeight()*.8f), false)) {
+    if(ImGui::BeginChild("##mat_inspector", ImVec2(ImGui::GetWindowWidth()*.95f, ImGui::GetWindowHeight()*.8f), false)){
         //// name ////
         ImGui::TextEx("Name   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-        ImGui::InputText("##mat_name_input", DengScene->MaterialName(selected_mat), DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        ImGui::InputText("##mat_name_input", selected->name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
         
         //// shader selection ////
         ImGui::TextEx("Shader "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-        if(ImGui::BeginCombo("##mat_shader_combo", ShaderStrings[*DengScene->MaterialShader(selected_mat)])){
+        if(ImGui::BeginCombo("##mat_shader_combo", ShaderStrings[selected->shader])){
             forI(ArrayCount(ShaderStrings)){
-                if(ImGui::Selectable(ShaderStrings[i], *DengScene->MaterialShader(selected_mat) == i)){
-					*DengScene->MaterialShader(selected_mat) = i;
+                if(ImGui::Selectable(ShaderStrings[i], selected->shader == i)){
+					selected->shader = i;
                 }
             }
             ImGui::EndCombo(); //mat_shader_combo
@@ -1579,7 +1582,7 @@ inline void MaterialsTab(Admin* admin){
         
         //// material properties ////
         //TODO(delle) setup material editing other than PBR once we have material parameters
-        switch(*DengScene->MaterialShader(selected_mat)){
+        switch(selected->shader){
             //// flat shader ////
             case Shader_Flat:{
                 
@@ -1588,39 +1591,38 @@ inline void MaterialsTab(Admin* admin){
             //// PBR shader ////
             //TODO(Ui) add texture image previews
             case Shader_PBR:default:{
-				Texture** matTextures = DengScene->MaterialAt(selected_mat)->textureArray;
 				ImGui::TextEx("Albedo   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_albedo_combo", matTextures[0]->name)) {
-                    forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(matTextures[0]->name, textures[i].c_str()) == 0)) {
-                            *DengScene->MaterialTexture(selected_mat, 0) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Albedo);
+                if(ImGui::BeginCombo("##mat_albedo_combo", DengScene->TextureName(selected->textures[0]))){
+                    forI(textures.size()){
+                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[0]), textures[i].c_str()) == 0)){
+							selected->textures[0] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Albedo);
                         }
                     }
                     ImGui::EndCombo(); //mat_albedo_combo
                 }
                 ImGui::TextEx("Normal   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_normal_combo", matTextures[1]->name)) {
-                    forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(matTextures[1]->name, textures[i].c_str()) == 0)) {
-							*DengScene->MaterialTexture(selected_mat, 1) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Normal);
+                if(ImGui::BeginCombo("##mat_normal_combo", DengScene->TextureName(selected->textures[1]))){
+                    forI(textures.size()){
+                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[1]), textures[i].c_str()) == 0)){
+							selected->textures[1] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Normal);
                         }
                     }
                     ImGui::EndCombo(); //mat_normal_combo
                 }
                 ImGui::TextEx("Specular "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_spec_combo", matTextures[2]->name)) {
-                    forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(matTextures[2]->name, textures[i].c_str()) == 0)) {
-							*DengScene->MaterialTexture(selected_mat, 2) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Specular);
+                if(ImGui::BeginCombo("##mat_spec_combo", DengScene->TextureName(selected->textures[2]))){
+                    forI(textures.size()){
+                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[2]), textures[i].c_str()) == 0)){
+							selected->textures[2] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Specular);
                         }
                     }
                     ImGui::EndCombo(); //mat_spec_combo
                 }
                 ImGui::TextEx("Light    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##mat_light_combo", matTextures[3]->name)) {
-                    forI(textures.size()) {
-                        if (ImGui::Selectable(textures[i].c_str(), strcmp(matTextures[3]->name, textures[i].c_str()) == 0)) {
-							*DengScene->MaterialTexture(selected_mat, 3) = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Light);
+                if(ImGui::BeginCombo("##mat_light_combo", DengScene->TextureName(selected->textures[3]))){
+                    forI(textures.size()){
+                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[3]), textures[i].c_str()) == 0)){
+							selected->textures[3] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Light);
                         }
                     }
                     ImGui::EndCombo(); //mat_light_combo
@@ -1639,7 +1641,7 @@ enum TwodPresets : u32 {
 //TODO(,Ui) convert this to use collapsing headers
 inline void GlobalTab(Admin* admin){
     SetPadding; 
-    if(ImGui::BeginChild("##global__tab", ImVec2(ImGui::GetWindowWidth()*0.95f, ImGui::GetWindowHeight()*.9f))) {
+    if(ImGui::BeginChild("##global__tab", ImVec2(ImGui::GetWindowWidth()*0.95f, ImGui::GetWindowHeight()*.9f))){
         //// physics properties ////
         {
 			ImGui::TextEx("Pause Physics "); ImGui::SameLine();
@@ -1665,15 +1667,15 @@ inline void GlobalTab(Admin* admin){
 			ImGui::TextEx("Position  "); ImGui::SameLine(); ImGui::InputVector3("##cam_pos", &admin->editor.camera->position);
 			ImGui::TextEx("Rotation  "); ImGui::SameLine(); ImGui::InputVector3("##cam_rot", &admin->editor.camera->rotation);
 			ImGui::TextEx("Near Clip "); ImGui::SameLine(); 
-            if (ImGui::InputFloat("##global__nearz", &admin->editor.camera->nearZ)) {
+            if(ImGui::InputFloat("##global__nearz", &admin->editor.camera->nearZ)){
                 admin->editor.camera->UpdateProjectionMatrix();
             }
             ImGui::TextEx("Far Clip  "); ImGui::SameLine(); 
-            if (ImGui::InputFloat("##global__farz", &admin->editor.camera->farZ)) {
+            if(ImGui::InputFloat("##global__farz", &admin->editor.camera->farZ)){
                 admin->editor.camera->UpdateProjectionMatrix();
             };
             ImGui::TextEx("FOV       "); ImGui::SameLine(); 
-            if (ImGui::InputFloat("##global__fov", &admin->editor.camera->fov)) {
+            if(ImGui::InputFloat("##global__fov", &admin->editor.camera->fov)){
                 admin->editor.camera->UpdateProjectionMatrix();
             };
 		}
@@ -1753,12 +1755,12 @@ inline void GlobalTab(Admin* admin){
     }
 }
 
-void DisplayTriggers(Admin* admin) {
+void DisplayTriggers(Admin* admin){
     int i = 0;
-    for (Entity* e : admin->entities) {
-        if (e->type == EntityType_Trigger) {
+    for (Entity* e : admin->entities){
+        if(e->type == EntityType_Trigger){
             Trigger* t = dyncast(Trigger, e);
-            switch (t->collider->shape) {
+            switch (t->collider->shape){
                 case ColliderShape_AABB:{
                     Render::DrawBox(e->transform.TransformMatrix(), Color::DARK_MAGENTA);
                 }break;
@@ -1774,7 +1776,7 @@ void DisplayTriggers(Admin* admin) {
     }
 }
 
-void Editor::DebugTools() {
+void Editor::DebugTools(){
     //resize tool menu if main menu bar is open
     ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - (menubarheight + debugbarheight)));
     ImGui::SetNextWindowPos(ImVec2(0, menubarheight));
@@ -1823,20 +1825,20 @@ void Editor::DebugTools() {
     }
     
     SetPadding;
-    if (ImGui::BeginTabBar("MajorTabs")) {
-        if (ImGui::BeginTabItem("Entities")) {
+    if(ImGui::BeginTabBar("MajorTabs")){
+        if(ImGui::BeginTabItem("Entities")){
             EntitiesTab(admin, ImGui::GetFontSize());
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Materials")) {
+        if(ImGui::BeginTabItem("Materials")){
             MaterialsTab(admin);
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Global")) {
+        if(ImGui::BeginTabItem("Global")){
             GlobalTab(admin);
             ImGui::EndTabItem();
         }
-        //if (ImGui::BeginTabItem("Brushes")) {
+        //if(ImGui::BeginTabItem("Brushes")){
         //BrushesTab(admin, ImGui::GetFontSize());
         //ImGui::EndTabItem();
         //}
@@ -1849,7 +1851,7 @@ void Editor::DebugTools() {
 }
 
 
-void Editor::DebugBar() {
+void Editor::DebugBar(){
     //for getting fps
     ImGuiIO& io = ImGui::GetIO();
     
@@ -1887,7 +1889,7 @@ void Editor::DebugBar() {
     WinHovCheck; 
     
     activecols = show_fps + show_fps_graph + 3 * show_world_stats + 2 * show_selected_stats + show_time + 1;
-    if (ImGui::BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)) {
+    if(ImGui::BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)){
         
         //precalc strings and stuff so we can set column widths appropriately
         std::string str1 = TOSTRING("wents: ", admin->entities.size());
@@ -1914,14 +1916,14 @@ void Editor::DebugBar() {
         
         //FPS
         
-        if (ImGui::TableNextColumn() && show_fps) {
+        if(ImGui::TableNextColumn() && show_fps){
             //trying to keep it from changing width of column
             //actually not necessary anymore but im going to keep it cause 
             //it keeps the numbers right aligned
-            if (FPS % 1000 == FPS) {
+            if(FPS % 1000 == FPS){
                 ImGui::TextEx(TOSTRING("FPS:  ", FPS).c_str());
             }
-            else if (FPS % 100 == FPS) {
+            else if(FPS % 100 == FPS){
                 ImGui::TextEx(TOSTRING("FPS:   ", FPS).c_str());
             }
             else {
@@ -1931,7 +1933,7 @@ void Editor::DebugBar() {
         }
         
         //FPS graph inline
-        if (ImGui::TableNextColumn() && show_fps_graph) {
+        if(ImGui::TableNextColumn() && show_fps_graph){
             //how much data we store
             persist int prevstoresize = 100;
             persist int storesize = 100;
@@ -1949,13 +1951,13 @@ void Editor::DebugBar() {
             
             //dynamic resizing that may get removed later if it sucks
             //if FPS finds itself as less than half of what the max used to be we lower the max
-            if (FPS > maxval || FPS < maxval / 2) {
+            if(FPS > maxval || FPS < maxval / 2){
                 maxval = FPS;
             }
             
             //if changing the amount of data we're storing we have to reverse
             //each data set twice to ensure the data stays in the right place when we move it
-            if (prevstoresize != storesize) {
+            if(prevstoresize != storesize){
                 std::reverse(values.begin(), values.end());    values.resize(storesize);  std::reverse(values.begin(), values.end());
                 std::reverse(pvalues.begin(), pvalues.end());  pvalues.resize(storesize); std::reverse(pvalues.begin(), pvalues.end());
                 prevstoresize = storesize;
@@ -1964,7 +1966,7 @@ void Editor::DebugBar() {
             std::rotate(values.begin(), values.begin() + 1, values.end());
             
             //update real set if we're not updating yet or update the graph if we are
-            if (frame_count < fupdate) {
+            if(frame_count < fupdate){
                 values[values.size() - 1] = FPS;
                 frame_count++;
             }
@@ -1989,20 +1991,20 @@ void Editor::DebugBar() {
         //World stats
         
         //Entity Count
-        if (ImGui::TableNextColumn() && show_world_stats) {
+        if(ImGui::TableNextColumn() && show_world_stats){
             ImGui::SameLine((ImGui::GetColumnWidth() - strlen1) / 2);
             ImGui::TextEx(str1.c_str());
         }
         
         //Triangle Count
-        if (ImGui::TableNextColumn() && show_world_stats) {
+        if(ImGui::TableNextColumn() && show_world_stats){
             //TODO( sushi,Ui) implement triangle count when its avaliable
             ImGui::SameLine((ImGui::GetColumnWidth() - strlen2) / 2);
             ImGui::TextEx(str2.c_str());
         }
         
         //Vertice Count
-        if (ImGui::TableNextColumn() && show_world_stats) {
+        if(ImGui::TableNextColumn() && show_world_stats){
             //TODO( sushi,Ui) implement vertice count when its avaliable
             ImGui::SameLine((ImGui::GetColumnWidth() - strlen3) / 2);
             ImGui::TextEx(str3.c_str());
@@ -2015,7 +2017,7 @@ void Editor::DebugBar() {
         
         
         //Triangle Count
-        if (ImGui::TableNextColumn() && show_selected_stats) {
+        if(ImGui::TableNextColumn() && show_selected_stats){
             //TODO( sushi,Ui) implement triangle count when its avaliable
             //Entity* e = admin->selectedEntity;
             ImGui::SameLine((ImGui::GetColumnWidth() - strlen4) / 2);
@@ -2023,7 +2025,7 @@ void Editor::DebugBar() {
         }
         
         //Vertice Count
-        if (ImGui::TableNextColumn() && show_selected_stats) {
+        if(ImGui::TableNextColumn() && show_selected_stats){
             //TODO( sushi,Ui) implement vertice count when its avaliable
             //Entity* e = admin->selectedEntity;
             ImGui::SameLine((ImGui::GetColumnWidth() - strlen5) / 2);
@@ -2031,8 +2033,8 @@ void Editor::DebugBar() {
         }
         
         //Middle Empty ImGui::Separator (alert box)
-        if (ImGui::TableNextColumn()) {
-            if (DengConsole->show_alert) {
+        if(ImGui::TableNextColumn()){
+            if(DengConsole->show_alert){
                 f32 flicker = (sinf(M_2PI * DengTime->totalTime + cosf(M_2PI * DengTime->totalTime)) + 1)/2;
                 Color col_bg = DengConsole->alert_color * flicker;    col_bg.a = 255;
                 Color col_text = DengConsole->alert_color * -flicker; col_text.a = 255;
@@ -2040,7 +2042,7 @@ void Editor::DebugBar() {
                 ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGui::ColorToImVec4(col_bg)));
                 
                 std::string str6;
-                if(DengConsole->alert_count > 1) {
+                if(DengConsole->alert_count > 1){
                     str6 = TOSTRING("(",DengConsole->alert_count,") ",DengConsole->alert_message);
                 }else{
                     str6 = DengConsole->alert_message;
@@ -2056,7 +2058,7 @@ void Editor::DebugBar() {
         }
         
         //Show Time
-        if (ImGui::TableNextColumn()) {
+        if(ImGui::TableNextColumn()){
             //https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
 			
             std::string str7 = DengTime->FormatDateTime("{h}:{m}:{s}");
@@ -2069,11 +2071,11 @@ void Editor::DebugBar() {
         
         
         //Context menu for toggling parts of the bar
-        if (ImGui::IsMouseReleased(1) && ImGui::IsWindowHovered()) ImGui::OpenPopup("Context");
-        if (ImGui::BeginPopup("Context")) {
+        if(ImGui::IsMouseReleased(1) && ImGui::IsWindowHovered()) ImGui::OpenPopup("Context");
+        if(ImGui::BeginPopup("Context")){
             DengConsole->IMGUI_MOUSE_CAPTURE = true;
             ImGui::Separator();
-            if (ImGui::Button("Open Debug Menu")) {
+            if(ImGui::Button("Open Debug Menu")){
                 //showDebugTools = true;
                 ImGui::CloseCurrentPopup();
             }
@@ -2112,7 +2114,7 @@ void Editor::DrawTimes(){
 }
 
 //sort of sandbox for drawing ImGui stuff over the entire screen
-void Editor::DebugLayer() {
+void Editor::DebugLayer(){
     ImGui::SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height));
     ImGui::SetNextWindowPos(ImVec2(0, 0));
     
@@ -2132,12 +2134,12 @@ void Editor::DebugLayer() {
     float fontsize = ImGui::GetFontSize();
     
     
-    if (DengInput->KeyPressed(MouseButton::LEFT) && rand() % 100 + 1 == 80) {
+    if(DengInput->KeyPressed(MouseButton::LEFT) && rand() % 100 + 1 == 80){
         times.push_back(pair<float, Vector2>(0.f, mp));
     }
     
     int index = 0;
-    for (auto& f : times) {
+    for (auto& f : times){
         ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(Color(255. * fabs(sinf(time)), 255. * fabs(cosf(time)), 255, 255)));
         
         f.first += DengTime->deltaTime;
@@ -2150,13 +2152,13 @@ void Editor::DebugLayer() {
         
         std::string str1 = "hehe!!!!";
         float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-        for (int i = 0; i < str1.size(); i++) {
+        for (int i = 0; i < str1.size(); i++){
             ImGui::SetCursorPos(ImVec2(curpos.x + i * fontsize / 2,
                                        curpos.y + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))));
             ImGui::TextEx(str1.substr(i, 1).c_str());
         }
         
-        if (f.first >= 5) {
+        if(f.first >= 5){
             times.erase(times.begin() + index);
             index--;
         }
@@ -2166,7 +2168,7 @@ void Editor::DebugLayer() {
     }
     
     
-    if (admin->paused) {
+    if(admin->paused){
         std::string s = "ENGINE PAUSED";
         float strlen = (fontsize - (fontsize / 2)) * s.size();
         //ImGui::SameLine(32 - (strlen / 2));
@@ -2178,7 +2180,7 @@ void Editor::DebugLayer() {
     ImGui::End();
 }
 
-void Editor::WorldGrid(Vector3 cpos) {
+void Editor::WorldGrid(Vector3 cpos){
     int lines = 50;
 	f32 xp = floor(cpos.x) + lines;
 	f32 xn = floor(cpos.x) - lines;
@@ -2202,19 +2204,19 @@ void Editor::WorldGrid(Vector3 cpos) {
 }
 
 
-void Editor::ShowWorldAxis() {
+void Editor::ShowWorldAxis(){
     vec3 
-    x = camera->position + camera->forward + vec3::RIGHT   * 0.1,
+		x = camera->position + camera->forward + vec3::RIGHT   * 0.1,
     y = camera->position + camera->forward + vec3::UP      * 0.1,
     z = camera->position + camera->forward + vec3::FORWARD * 0.1;
-
+	
     vec2 
-    spx = Math::WorldToScreen2(x, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2,
+		spx = Math::WorldToScreen2(x, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2,
     spy = Math::WorldToScreen2(y, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2,
     spz = Math::WorldToScreen2(z, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2;
-
+	
     vec2 offset = vec2(DengWindow->width - 50, DengWindow->height - debugbarheight - 50);
-   
+	
     Render::DrawLineUI(offset, spx + offset, 1, Color::RED);
     Render::DrawLineUI(offset, spy + offset, 1, Color::GREEN);
     Render::DrawLineUI(offset, spz + offset, 1, Color::BLUE);
@@ -2260,21 +2262,21 @@ void Editor::Update(){
     ////////////////////////////
     
     {//// general ////
-        if (DengInput->KeyPressed(Key::P | InputMod_Lctrl)) {
+        if(DengInput->KeyPressed(Key::P | InputMod_Lctrl)){
             admin->paused = !admin->paused;
         }
     }
 	
     {//// select ////
-        if (!DengConsole->IMGUI_MOUSE_CAPTURE && !admin->controller.cameraLocked) {
-            if (DengInput->KeyPressed(MouseButton::LEFT)) {
+        if(!DengConsole->IMGUI_MOUSE_CAPTURE && !admin->controller.cameraLocked){
+            if(DengInput->KeyPressed(MouseButton::LEFT)){
 				vec3 ray = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions) - camera->position;
                 Entity* e = DengAdmin->EntityRaycast(camera->position, ray.normalized(), ray.mag());
                 if(!DengInput->LShiftDown()) selected.clear(); 
                 if(e) selected.push_back(e);
             }
         }
-        if (selected.size()) {
+        if(selected.size()){
             HandleGrabbing(selected[0], camera, admin, &undo_manager);
             HandleRotating(selected[0], camera, admin, &undo_manager);
         }
@@ -2282,10 +2284,10 @@ void Editor::Update(){
 	
     {//// render ////
         //reload all shaders
-        if (DengInput->KeyPressed(Key::F5)) { Render::ReloadAllShaders(); }
+        if(DengInput->KeyPressed(Key::F5)){ Render::ReloadAllShaders(); }
         
         //fullscreen toggle
-        if (DengInput->KeyPressed(Key::F11)) {
+        if(DengInput->KeyPressed(Key::F11)){
             if(DengWindow->displayMode == DisplayMode::WINDOWED || DengWindow->displayMode == DisplayMode::BORDERLESS){
                 DengWindow->UpdateDisplayMode(DisplayMode::FULLSCREEN);
             }else{
@@ -2298,8 +2300,8 @@ void Editor::Update(){
         //toggle ortho
         persist Vector3 ogpos;
         persist Vector3 ogrot;
-        if (DengInput->KeyPressed(DengKeys.perspectiveToggle)) {
-            switch (camera->mode) {
+        if(DengInput->KeyPressed(DengKeys.perspectiveToggle)){
+            switch (camera->mode){
                 case(CameraMode_Perspective): {  
                     ogpos = camera->position;
                     ogrot = camera->rotation;
@@ -2318,11 +2320,11 @@ void Editor::Update(){
         
         //ortho views
         if      (DengInput->KeyPressed(DengKeys.orthoFrontView))    camera->orthoview = FRONT;
-        else if (DengInput->KeyPressed(DengKeys.orthoBackView))     camera->orthoview = BACK;
-        else if (DengInput->KeyPressed(DengKeys.orthoRightView))    camera->orthoview = RIGHT;
-        else if (DengInput->KeyPressed(DengKeys.orthoLeftView))     camera->orthoview = LEFT;
-        else if (DengInput->KeyPressed(DengKeys.orthoTopDownView))  camera->orthoview = TOPDOWN;
-        else if (DengInput->KeyPressed(DengKeys.orthoBottomUpView)) camera->orthoview = BOTTOMUP;
+        else if(DengInput->KeyPressed(DengKeys.orthoBackView))     camera->orthoview = BACK;
+        else if(DengInput->KeyPressed(DengKeys.orthoRightView))    camera->orthoview = RIGHT;
+        else if(DengInput->KeyPressed(DengKeys.orthoLeftView))     camera->orthoview = LEFT;
+        else if(DengInput->KeyPressed(DengKeys.orthoTopDownView))  camera->orthoview = TOPDOWN;
+        else if(DengInput->KeyPressed(DengKeys.orthoBottomUpView)) camera->orthoview = BOTTOMUP;
         
         //look at selected
         if(DengInput->KeyPressed(DengKeys.gotoSelected)){
@@ -2332,14 +2334,14 @@ void Editor::Update(){
     }
 	
     {//// undo/redo ////
-        if (DengInput->KeyPressed(DengKeys.undo)) undo_manager.Undo();
-        if (DengInput->KeyPressed(DengKeys.redo)) undo_manager.Redo();
+        if(DengInput->KeyPressed(DengKeys.undo)) undo_manager.Undo();
+        if(DengInput->KeyPressed(DengKeys.redo)) undo_manager.Redo();
     }
 	
     {//// interface ////
-        if (DengInput->KeyPressed(DengKeys.toggleDebugMenu)) showDebugTools = !showDebugTools;
-        if (DengInput->KeyPressed(DengKeys.toggleDebugBar))  showDebugBar   = !showDebugBar;
-        if (DengInput->KeyPressed(DengKeys.toggleMenuBar))   showMenuBar    = !showMenuBar;
+        if(DengInput->KeyPressed(DengKeys.toggleDebugMenu)) showDebugTools = !showDebugTools;
+        if(DengInput->KeyPressed(DengKeys.toggleDebugBar))  showDebugBar   = !showDebugBar;
+        if(DengInput->KeyPressed(DengKeys.toggleMenuBar))   showMenuBar    = !showMenuBar;
     }
 	
 	//TODO(delle,Op) actually do a copy of memory once entities are less anonymous
@@ -2397,26 +2399,26 @@ void Editor::Update(){
 	///////////////////////////////
 	
 	//TODO(delle,Cl) program crashes somewhere in DebugTools() if minimized
-	if (!DengWindow->minimized) {
+	if(!DengWindow->minimized){
 		WinHovFlag = 0;
 		font_width = ImGui::GetFontSize();
 		
-		if (showDebugLayer) DebugLayer();
-		if (showTimes)      DrawTimes();
-		if (showDebugTools) DebugTools();
-		if (showDebugBar)   DebugBar();
-		if (showMenuBar)    MenuBar();
-		if (showEditorWin)  CreateEditorWin();
-		if (showWorldGrid)  WorldGrid(camera->position);
+		if(showDebugLayer) DebugLayer();
+		if(showTimes)      DrawTimes();
+		if(showDebugTools) DebugTools();
+		if(showDebugBar)   DebugBar();
+		if(showMenuBar)    MenuBar();
+		if(showEditorWin)  CreateEditorWin();
+		if(showWorldGrid)  WorldGrid(camera->position);
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1)); {
-			if (showImGuiDemoWindow) ImGui::ShowDemoWindow();
+			if(showImGuiDemoWindow) ImGui::ShowDemoWindow();
 		}ImGui::PopStyleColor();
 		
         ShowWorldAxis();
-
-		if (!showMenuBar)    menubarheight = 0;
-		if (!showDebugBar)   debugbarheight = 0;
-		if (!showDebugTools) debugtoolswidth = 0;
+		
+		if(!showMenuBar)    menubarheight = 0;
+		if(!showDebugBar)   debugbarheight = 0;
+		if(!showDebugTools) debugtoolswidth = 0;
 		
 		DengConsole->IMGUI_MOUSE_CAPTURE = (ConsoleHovFlag || WinHovFlag) ? true : false;
 	}
@@ -2428,11 +2430,11 @@ void Editor::Update(){
 	for(Entity* e : selected){
 		if(ModelInstance* mc = e->GetComponent<ModelInstance>()){
 			if(!Render::GetSettings()->findMeshTriangleNeighbors){
-				Render::DrawModelSelected(mc->model, mc->transform);
+				Render::DrawModelWireframe(mc->model, mc->transform);
 			}else{
 				std::vector<Vector2> outline = DengScene->GenerateMeshOutlinePoints(mc->mesh, e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
 																					camera->position, DengWindow->dimensions);
-				for (int i = 0; i < outline.size(); i += 2) {
+				for (int i = 0; i < outline.size(); i += 2){
 					ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
 				}
 			}
@@ -2457,7 +2459,7 @@ void Editor::Cleanup(){
 	Assets::deleteFile(copy_path, false);
 }
 
-void Editor::CreateEditorWin() {
+void Editor::CreateEditorWin(){
     ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
@@ -2493,23 +2495,23 @@ void Editor::CreateEditorWin() {
     ImGui::PushStyleColor(ImGuiCol_Separator,            ImGui::ColorToImVec4(Color::VERY_DARK_CYAN));
     ImGui::Begin("Editor Window", 0);
     WinHovCheck;
-    if (DengInput->mouseX < ImGui::GetWindowPos().x + ImGui::GetWindowWidth()) {
+    if(DengInput->mouseX < ImGui::GetWindowPos().x + ImGui::GetWindowWidth()){
         WinHovFlag = true;
     }
-    if (ImGui::BeginTabBar("MajorTabs")) {
-        if (ImGui::BeginTabItem("Entities")) {
+    if(ImGui::BeginTabBar("MajorTabs")){
+        if(ImGui::BeginTabItem("Entities")){
             EntitiesTab(admin, ImGui::GetFontSize());
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Materials")) {
+        if(ImGui::BeginTabItem("Materials")){
             MaterialsTab(admin);
             ImGui::EndTabItem();
         }
-        if (ImGui::BeginTabItem("Global")) {
+        if(ImGui::BeginTabItem("Global")){
             GlobalTab(admin);
             ImGui::EndTabItem();
         }
-        //if (ImGui::BeginTabItem("Brushes")) {
+        //if(ImGui::BeginTabItem("Brushes")){
         //BrushesTab(admin, ImGui::GetFontSize());
         //ImGui::EndTabItem();
         //}

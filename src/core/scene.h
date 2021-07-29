@@ -4,38 +4,38 @@
 
 #include "model.h"
 #include "../utils/color.h"
-
-#include <vector>
+#include "../utils/array.h"
+#include "../utils/tuple.h"
 
 struct Light;
 
 struct Scene{
-	std::vector<Texture*>  textures;
-	std::vector<Material*> materials;
-	std::vector<Mesh*>     meshes;
-	std::vector<Model*>    models;
-	std::vector<Light*>    lights;
+	array<Mesh*>     meshes;
+	array<Texture*>  textures;
+	array<Material*> materials;
+	array<Model*>    models;
+	array<Light*>    lights;
 	
 	void Init();
 	void Reset();
 	
-	Mesh* CreateBoxMesh(f32 width, f32 height, f32 depth, Color color = Color::WHITE);
-	Mesh* CreateMeshFromFile(const char* filename);
-	Mesh* CreateMeshFromMemory(void* data);
-	void  DeleteMesh(Mesh* mesh);
+	pair<u32,Mesh*> CreateBoxMesh(f32 width, f32 height, f32 depth, Color color = Color::WHITE);
+	pair<u32,Mesh*> CreateMeshFromFile(const char* filename);
+	pair<u32,Mesh*> CreateMeshFromMemory(void* data);
+	void             DeleteMesh(Mesh* mesh);
 	std::vector<Vector2> GenerateMeshOutlinePoints(Mesh* mesh, Matrix4 transform, Matrix4 camProjection, Matrix4 camView, Vector3 camPosition, Vector2 screenDims);
 	
-	Texture* CreateTextureFromFile(const char* filename, TextureType type = TextureType_Albedo);
-	Texture* CreateTextureFromMemory(void* data, TextureType type = TextureType_Albedo);
-	void     DeleteTexture(Texture* texture);
+	pair<u32,Texture*> CreateTextureFromFile(const char* filename, TextureType type = TextureType_Albedo);
+	pair<u32,Texture*> CreateTextureFromMemory(void* data, TextureType type = TextureType_Albedo);
+	void DeleteTexture(Texture* texture);
 	
-	Material* CreateMaterial(const char* name, Shader shader = Shader_PBR, MaterialFlags flags = MaterialFlags_NONE, std::vector<Texture*> textures = {});;
-	void      DeleteMaterial(Material* material);
+	pair<u32,Material*> CreateMaterial(const char* name, Shader shader = Shader_PBR, MaterialFlags flags = MaterialFlags_NONE, std::vector<Texture*> textures = {});
+	void DeleteMaterial(Material* material);
 	
-	Model* CreateModelFromOBJ(const char* filename, Shader shader = Shader_PBR, Color color = Color::WHITE, bool planarize = false);
-	Model* CreateModelFromMesh(Mesh* mesh, Shader shader = Shader_PBR, Color color = Color::WHITE);
-	Model* CopyModel(Model* model);
-	void   DeleteModel(Model* model);
+	pair<u32,Model*> CreateModelFromOBJ(const char* filename, Shader shader = Shader_PBR, Color color = Color::WHITE);
+	pair<u32,Model*> CreateModelFromMesh(Mesh* mesh, Shader shader = Shader_PBR, Color color = Color::WHITE);
+	pair<u32,Model*> CopyModel(Model* base);
+	void DeleteModel(Model* model);
 	
 	//// inline functions for working with indexes ////
 	inline Mesh* NullMesh(){ return meshes[0]; };
@@ -57,9 +57,9 @@ struct Scene{
 	inline Material* MaterialAt(u32 materialIdx){ return materials[materialIdx]; };
 	inline u32       MaterialIndex(Material* material){ forI(materials.size()){ if(material == materials[i]) return i; } return -1; };
 	inline char*     MaterialName(u32 materialIdx){ return materials[materialIdx]->name; };
-	inline Shader*   MaterialShader(u32 materialIdx){ return &materials[materialIdx]->shader; };
+	inline Shader    MaterialShader(u32 materialIdx){ return materials[materialIdx]->shader; };
 	inline u32       MaterialTextureCount(u32 materialIdx){ return materials[materialIdx]->textureCount; };
-	inline Texture** MaterialTexture(u32 materialIdx, u32 textureIdx){ return &materials[materialIdx]->textureArray[textureIdx]; };
+	inline Texture*  MaterialTexture(u32 materialIdx, u32 textureIdx){ return textures[materials[materialIdx]->textureArray[textureIdx]]; };
 	inline void      DeleteMaterial(u32 materialIdx){ DeleteMaterial(materials[materialIdx]); };
 	
 	inline Model*        NullModel(){ return models[0]; };
@@ -67,10 +67,7 @@ struct Scene{
 	inline Model*        ModelAt(u32 modelIdx){ return models[modelIdx]; };
 	inline u32           ModelIndex(Model* model){ forI(models.size()){ if(model == models[i]) return i; } return -1; };
 	inline char*         ModelName(u32 modelIdx){ return models[modelIdx]->name; };
-	inline u32           ModelBatchCount(u32 modelIdx){ return models[modelIdx]->batchCount; };
-	inline Model::Batch* ModelBatch(u32 modelIdx, u32 batchIdx){ return &models[modelIdx]->batchArray[batchIdx]; };
-	inline char*         ModelBatchName(u32 modelIdx, u32 batchIdx){ return models[modelIdx]->batchArray[batchIdx].name; };
-	inline Material**    ModelBatchMaterial(u32 modelIdx, u32 batchIdx){ return &models[modelIdx]->batchArray[batchIdx].material; };
+	inline u32           ModelBatchCount(u32 modelIdx){ return models[modelIdx]->batches.size(); };
 	inline void          DeleteModel(u32 modelIdx){ DeleteModel(models[modelIdx]); };
 };
 

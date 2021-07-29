@@ -58,19 +58,14 @@ struct ModelCmdVk{
 	mat4  matrix;
 };
 
-struct FontVk{
-	VkDescriptorSet descriptorSet;
-};
-
 struct Push2DVk{
 	vec2 scale;
 	vec2 translate;
 	int font_offset;
 };
 
-struct ImmediateCmdVk{
+struct UICmdVk{
 	u32 texIdx;
-	u32 vertexOffset;
 	u16 indexOffset;
 	u16 indexCount;
 };
@@ -126,7 +121,7 @@ struct FontVk{
 local RenderSettings settings;
 local ConfigMap configMap = {
 	{"#render settings config file",0,0},
-
+	
 	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)21},
 	{"debugging",            ConfigValueType_Bool, &settings.debugging},
 	{"printf",               ConfigValueType_Bool, &settings.printf},
@@ -135,15 +130,15 @@ local ConfigMap configMap = {
 	{"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples},
 	{"recompile_all_shaders",        ConfigValueType_Bool, &settings.recompileAllShaders},
 	{"find_mesh_triangle_neighbors", ConfigValueType_Bool, &settings.findMeshTriangleNeighbors},
-
+	
 	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
 	{"logging_level",  ConfigValueType_U32,  &settings.loggingLevel},
 	{"crash_on_error", ConfigValueType_Bool, &settings.crashOnError},
 	{"vsync_type",     ConfigValueType_U32,  &settings.vsync},
-
+	
 	{"\n#shaders",                         ConfigValueType_PADSECTION,(void*)17},
 	{"optimize_shaders", ConfigValueType_Bool, &settings.optimizeShaders},
-
+	
 	{"\n#shadows",                         ConfigValueType_PADSECTION,(void*)20},
 	{"shadow_pcf",          ConfigValueType_Bool, &settings.shadowPCF},
 	{"shadow_resolution",   ConfigValueType_U32,  &settings.shadowResolution},
@@ -152,15 +147,15 @@ local ConfigMap configMap = {
 	{"depth_bias_constant", ConfigValueType_F32,  &settings.depthBiasConstant},
 	{"depth_bias_slope",    ConfigValueType_F32,  &settings.depthBiasSlope},
 	{"show_shadow_map",     ConfigValueType_Bool, &settings.showShadowMap},
-
+	
 	{"\n#colors",                          ConfigValueType_PADSECTION,(void*)15},
 	{"clear_color",    ConfigValueType_FV4, &settings.clearColor},
 	{"selected_color", ConfigValueType_FV4, &settings.selectedColor},
 	{"collider_color", ConfigValueType_FV4, &settings.colliderColor},
-
+	
 	{"\n#filters",                         ConfigValueType_PADSECTION,(void*)15},
 	{"wireframe_only", ConfigValueType_Bool, &settings.wireframeOnly},
-
+	
 	{"\n#overlays",                        ConfigValueType_PADSECTION,(void*)17},
 	{"mesh_wireframes",  ConfigValueType_Bool, &settings.meshWireframes},
 	{"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals},
@@ -2717,7 +2712,7 @@ ResetCommands(){
 	{//UI commands
 		uiVertexCount = 0;
 		uiIndexCount  = 0;
-		memset(&uiCmdArray[0], 0, sizeof(ImmediateCmdVk) * uiCmdCount);
+		memset(&uiCmdArray[0], 0, sizeof(UICmdVk) * uiCmdCount);
 		uiCmdCount    = 1;
 	}
 	
@@ -3055,12 +3050,12 @@ enum texTypes : u32 {
 void Render::
 FillRectUI(f32 x, f32 y, f32 w, f32 h, Color color){
 	if(color.a == 0) return;
-
+	
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-
+	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
 	u16*      ip = uiIndexArray  + uiIndexCount;
@@ -3082,12 +3077,12 @@ FillRectUI(f32 x, f32 y, f32 w, f32 h, Color color){
 void Render::
 DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	if (color.a == 0) return;
-
+	
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-
+	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
 	u16*      ip = uiIndexArray + uiIndexCount;
@@ -3116,31 +3111,31 @@ DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 void Render::
 DrawLineUI(vec2 start, vec2 end, float thickness, Color color) {
 	if (color.a == 0) return;
-
+	
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-
+	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
 	u16* ip = uiIndexArray + uiIndexCount;
-
+	
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
-
+	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
 	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { end.x,  end.y };   vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
-
+	
 	vp[0].pos += norm * thickness;
 	vp[1].pos += norm * thickness;
 	vp[2].pos -= norm * thickness;
 	vp[3].pos -= norm * thickness;
-
+	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -3150,7 +3145,7 @@ DrawLineUI(vec2 start, vec2 end, float thickness, Color color) {
 void Render::
 DrawTextUI(string text, vec2 pos, Color color) {
 	if (color.a == 0) return;
-
+	
 	f32 w = fonts[1].width;
 	for (int i = 0; i < text.size; i++) {
 		DrawCharUI((u32)text[i], pos, vec2::ONE, color);
@@ -3161,12 +3156,12 @@ DrawTextUI(string text, vec2 pos, Color color) {
 void Render::
 DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color) {
 	if (color.a == 0) return;
-
+	
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT) {
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-
+	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2D* vp = uiVertexArray + uiVertexCount;
 	u16*      ip = uiIndexArray  + uiIndexCount;
@@ -3278,7 +3273,7 @@ DrawModel(Model* mesh, Matrix4 matrix){
 }
 
 void Render::
-DrawModelSelected(Model* mesh, Matrix4 matrix){
+DrawModelWireframe(Model* mesh, Matrix4 matrix, Color color){
 	//!Incomplete
 }
 

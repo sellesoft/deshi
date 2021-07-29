@@ -20,12 +20,14 @@ struct ModelInstance : public Component {
 	
 	ModelInstance();
 	ModelInstance(Model* model);
+	ModelInstance(Mesh* mesh);
 	~ModelInstance();
 	
 	void ToggleVisibility(){ visible = !visible; };
 	void ToggleOverride(){ override = !override; };
 	
 	void ChangeModel(Model* model);
+	void ChangeModel(Mesh* mesh);
 	
 	void Update() override;
 	void ReceiveEvent(Event event) override;

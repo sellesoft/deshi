@@ -9,7 +9,7 @@
 ModelInstance::ModelInstance(){
 	type  = ComponentType_ModelInstance;
 	layer = ComponentLayer_Canvas;
-	model     = DengScene->CopyModel(DengScene->NullModel());
+	model     = DengScene->CopyModel(DengScene->NullModel()).second;
 	mesh      = model->mesh;
 	armature  = model->armature;
 	transform = Matrix4::IDENTITY;
@@ -20,7 +20,18 @@ ModelInstance::ModelInstance(){
 ModelInstance::ModelInstance(Model* _model){
 	type  = ComponentType_ModelInstance;
 	layer = ComponentLayer_Canvas;
-	model     = DengScene->CopyModel(_model);
+	model     = DengScene->CopyModel(_model).second;
+	mesh      = model->mesh;
+	armature  = model->armature;
+	transform = Matrix4::IDENTITY;
+	visible   = true;
+	override  = false;
+}
+
+ModelInstance::ModelInstance(Mesh* _mesh){
+	type  = ComponentType_ModelInstance;
+	layer = ComponentLayer_Canvas;
+	model     = DengScene->CreateModelFromMesh(_mesh).second;
 	mesh      = model->mesh;
 	armature  = model->armature;
 	transform = Matrix4::IDENTITY;
@@ -34,7 +45,14 @@ ModelInstance::~ModelInstance(){
 
 void ModelInstance::ChangeModel(Model* _model){
 	DengScene->DeleteModel(model);
-	model    = DengScene->CopyModel(_model);
+	model    = DengScene->CopyModel(_model).second;
+	mesh     = model->mesh;
+	armature = model->armature;
+}
+
+void ModelInstance::ChangeModel(Mesh* _mesh){
+	DengScene->DeleteModel(model);
+	model    = DengScene->CreateModelFromMesh(_mesh).second;
 	mesh     = model->mesh;
 	armature = model->armature;
 }
@@ -52,11 +70,12 @@ void ModelInstance::Update(){
 
 std::string ModelInstance::SaveTEXT(){
 	return TOSTRING("\n>mesh"
-					"\nname    \"", model->name , "\""
+					"\nname     \"", model->name,"\""
+					"\nchecksum ", model->checksum,
 					"\nvisible  ", (visible) ? "true" : "false",
 					"\noverride ", (override) ? "true" : "false",
 					"\n");
-	//!Incomplete
+	//!Incomplete convert all meshcomp saves
 }
 
 void ModelInstance::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){

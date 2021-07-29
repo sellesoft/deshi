@@ -250,7 +250,7 @@ int main() {
 	TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); scene.Init();           SUCCESS("Finished scene initialization in ", TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ", TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); DeshiImGui::init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); DeshiImGui::Init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ", TIMER_END(t_s), "ms");
 	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
 	
@@ -260,8 +260,7 @@ int main() {
 	
 	Font font;
 	font.load_bdf_font("gohufont-14.bdf");
-	Render::CreateFont(Render::LoadTexture(font.texture_sheet, font.width, font.height * font.char_count, 0), 
-					   font.width, font.height, font.char_count);
+	Render::LoadFont(&font);
 	
 	//start main loop
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {

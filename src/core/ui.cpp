@@ -27,7 +27,7 @@ struct VarMod {
 };
 
 UIWindow workingWin; //by default a window that takes up the entire screen
- 
+
 array<UIWindow> windows;    //window stack
 array<ColorMod> colorStack; 
 array<VarMod>   styleStack; 
@@ -42,11 +42,11 @@ void UI::RectFilled(f32 x, f32 y, f32 width, f32 height, Color color) {
 
 void UI::Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	Render::DrawLineUI(
-		workingWin.position.x + x1, 
-		workingWin.position.y + y1, 
-		workingWin.position.x + x2, 
-		workingWin.position.y + y2, 
-		thickness, color);
+					   workingWin.position.x + x1, 
+					   workingWin.position.y + y1, 
+					   workingWin.position.x + x2, 
+					   workingWin.position.y + y2, 
+					   thickness, color);
 }
 
 void UI::Line(vec2 start, vec2 end, float thickness, Color color){
@@ -77,26 +77,26 @@ void UI::Text(string text, vec2 pos, Color color) {
 //Windows
 
 bool CheckWindowExists(string name) {
-
+	return 0;
 }
 
 
 void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
 	//save previous window
 	windows.add(workingWin);
-
+	
 	workingWin.name = name;
 	workingWin.position = pos;
 	workingWin.dimensions = dimensions;
 	workingWin.flags = flags;
-
+	
 	//if the window isn't invisible draw things that havent been disabled
 	if ((flags & UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
 		
 		//draw background
 		if (!(flags & UIWindowFlags_NoBackground)) 
 			Render::FillRectUI(pos.x, pos.y, dimensions.x, dimensions.y, style.colors[UIStyleCol_WindowBg]);
-
+		
 		//draw title bar
 		if (!(flags & UIWindowFlags_NoTitleBar)) {
 			Render::FillRectUI(pos.x, pos.y, dimensions.x, style.titleBarHeight, style.colors[UIStyleCol_TitleBg]);
@@ -104,7 +104,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 				Render::DrawTextUI(name, vec2(dimensions.x + 2, dimensions.y + 3));
 			}
 		}
-
+		
 		//draw border
 		if (!(flags & UIWindowFlags_NoBorder)) {
 			//left
@@ -112,19 +112,19 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			
 			//right 
 			Render::FillRectUI(pos.x + dimensions.x, pos.y, style.windowBorderSize, dimensions.y, style.colors[UIStyleCol_Border]);
-		
+			
 			//top
 			Render::FillRectUI(pos.x - style.windowBorderSize, pos.y - style.windowBorderSize, dimensions.x + 2 * style.windowBorderSize, style.windowBorderSize, style.colors[UIStyleCol_Border]);
-
+			
 			//bottom
 			Render::FillRectUI(pos.x - style.windowBorderSize, pos.y + dimensions.y, dimensions.x + 2 * style.windowBorderSize, style.windowBorderSize, style.colors[UIStyleCol_Border]);
-
+			
 		}
-
+		
 	}
-
-
-
+	
+	
+	
 }
 
 void UI::EndWindow() {
@@ -140,16 +140,16 @@ void UI::Init() {
 	workingWin.name = "Base";
 	workingWin.position = vec2(0,0);
 	workingWin.dimensions = DengWindow->dimensions;
-
+	
 	//set default style
 	//TODO(sushi, Ui) set up the initial stack once i have pushing and popping it set up 
-
+	
 	//load font
 	style.font.load_bdf_font("gohufont-14.bdf");
-
+	
 	style.windowBorderSize = 10.f;
 	style.titleBarHeight = style.font.height + 6;
-
+	
 	style.colors[UIStyleCol_Border]   = Color::GREY;
 	style.colors[UIStyleCol_WindowBg] = Color::VERY_DARK_CYAN;
 	style.colors[UIStyleCol_TitleBg]  = Color::RED;

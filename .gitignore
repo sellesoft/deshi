@@ -41,6 +41,7 @@ imgui.ini
 TODOs.txt
 deshi_project_suppressions.cfg
 misc/deshi.vcxproj.user
+customvis.natvis
 
 #delle specifics
 misc/4coder.bat

@@ -17,7 +17,7 @@ namespace Geometry {
 		}
 		return furthestid;
 	}
-
+	
 	//incase i forget
 	//this function is set up to work specifically with convex meshes, because it literally 
 	//just finds the triangle with the closest normal which we can safely assume is farthest along it, 
@@ -57,7 +57,7 @@ namespace Geometry {
 					   fmaxf(center.y - halfDims.z, fminf(target.z, center.z + halfDims.z)));
 	}
 	
-	static Vector3 MeshTriangleMidpoint(Mesh::Triangle* tri){
-		return (tri->v0->pos + tri->v1->pos + tri->v2->pos) / 3.f;
+	inline static Vector3 MeshTriangleMidpoint(Mesh::Triangle* tri){
+		return (tri->p[0] + tri->p[1] + tri->p[2]) / 3.f;
 	}
 };
