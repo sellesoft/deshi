@@ -43,7 +43,7 @@ struct MeshVk{
 	VkDeviceSize size;
 };
 
-struct Vertex2D{
+struct Vertex2{
 	vec2 pos;
 	vec2 uv;
 	u32  color;
@@ -3077,27 +3077,27 @@ FillRectUI(f32 x, f32 y, f32 w, f32 h, Color color){
 void Render::
 FillRectUI(vec2 pos, vec2 dimensions, Color color) {
 	if (color.a == 0) return;
-
+	
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-
+	
 	u32     col = color.R8G8B8A8_UNORM();
 	Vertex2* vp = uiVertexArray + uiVertexCount;
 	u16*     ip = uiIndexArray + uiIndexCount;
-
+	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
 	vp[0].pos = { pos.x + 0,           pos.y + 0 };            vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { pos.x + dimensions.w,pos.y + 0 };            vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { pos.x + dimensions.w,pos.y + dimensions.h }; vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { pos.x + 0,           pos.y + dimensions.h }; vp[3].uv = { 0,0 }; vp[3].color = col;
-
+	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-
+	
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
 }
 
@@ -3191,7 +3191,7 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color) {
 	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2* vp = uiVertexArray + uiVertexCount;
-	u16*      ip = uiIndexArray  + uiIndexCount;
+	u16*     ip = uiIndexArray  + uiIndexCount;
 	
 	f32 w = fonts[1].width;
 	f32 h = fonts[1].height;

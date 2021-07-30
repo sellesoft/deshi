@@ -40,7 +40,7 @@ struct Scene{
 	//// @texture ////
 	//////////////////
 	pair<u32,Texture*> CreateTextureFromFile(const char* filename, ImageFormat format = ImageFormat_RGBA, TextureFlags flags = TextureFlags_Default, bool keepLoaded = false, bool generateMipmaps = true);
-	pair<u32,Texture*> CreateTextureFromMemory(void* data, ImageFormat format, TextureFlags flags = TextureFlags_Default, bool keepLoaded = false, bool generateMipmaps = true);
+	pair<u32,Texture*> CreateTextureFromMemory(void* data, int width, int height, ImageFormat format, TextureFlags flags = TextureFlags_Default, bool keepLoaded = false, bool generateMipmaps = true);
 	void               DeleteTexture(Texture* texture);
 	
 	inline Texture*    NullTexture(){ return textures[0]; };

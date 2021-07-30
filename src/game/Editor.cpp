@@ -567,13 +567,13 @@ namespace ImGui {
 
 
 
-bool  WinHovFlag = false;
-float menubarheight   = 0;
-float debugbarheight  = 0;
-float debugtoolswidth = 0;
-float padding         = 0.95f;
-float fontw = 0;
-float fonth = 0;
+local bool  WinHovFlag = false;
+local float menubarheight   = 0;
+local float debugbarheight  = 0;
+local float debugtoolswidth = 0;
+local float padding         = 0.95f;
+local float fontw = 0;
+local float fonth = 0;
 
 //// defines to make repetitve things less ugly and more editable ////
 //check if mouse is over window so we can prevent mouse from being captured by engine
@@ -585,7 +585,7 @@ float fonth = 0;
 //https://lospec.com/palette-list/slso8
 //TODO(sushi, Ui) implement menu style file loading sort of stuff yeah
 //TODO(sushi, Ui) standardize what UI element each color belongs to
-struct {
+local struct {
     Color c1 = Color(0x0d2b45); //midnight blue
     Color c2 = Color(0x203c56); //dark gray blue
     Color c3 = Color(0x544e68); //purple gray
@@ -597,9 +597,9 @@ struct {
     Color c9 = Color(0x141414); //almost black
 }colors;
 
-std::vector<std::string> files;
-std::vector<std::string> textures;
-std::vector<std::string> levels;
+local std::vector<std::string> files;
+local std::vector<std::string> textures;
+local std::vector<std::string> levels;
 
 void Editor::MenuBar(){
     ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);

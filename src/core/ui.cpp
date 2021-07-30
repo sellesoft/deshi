@@ -1,5 +1,5 @@
 //global styling
-struct UIStyle {
+local struct UIStyle {
 	vec2  windowPadding;
 	float windowBorderSize;
 	float titleBarHeight;
@@ -13,7 +13,7 @@ struct UIStyle {
 //https://lospec.com/palette-list/slso8
 //TODO(sushi, Ui) implement menu style file loading sort of stuff yeah
 //TODO(sushi, Ui) standardize what UI element each color belongs to
-struct {
+local struct {
 	Color          midnight_blue = Color(0x0d2b45); //midnight blue
 	Color         dark_grey_blue = Color(0x203c56); //dark gray blue
 	Color            purple_gray = Color(0x544e68); //purple gray
@@ -45,7 +45,7 @@ struct UIStyleVarType {
 	u32 offset;
 };
 
-static const UIStyleVarType uiStyleVarTypes[] = {
+local const UIStyleVarType uiStyleVarTypes[] = {
 	{2, offsetof(UIStyle, windowPadding)},
 	{1, offsetof(UIStyle, windowBorderSize)},
 	{1, offsetof(UIStyle, titleBarHeight)},
@@ -56,21 +56,21 @@ static const UIStyleVarType uiStyleVarTypes[] = {
 //windows are primarily a way for the user to easily position things on screen relative to a parent
 //and to make detecting where text wraps and other things easier
 //by default a window that takes up the entire screen and is invisible
-UIWindow workingWin;
- 
-map<string, UIWindow> windows;     //window map which only stores known windows
-array<UIWindow>       windowStack; //window stack which allow us to use windows like we do colors and styles
-array<ColorMod>       colorStack; 
-array<VarMod>         varStack; 
+local UIWindow workingWin;
 
-u32 initColorStackSize;
-u32 initStyleStackSize;
+local map<string, UIWindow> windows;     //window map which only stores known windows
+local array<UIWindow>       windowStack; //window stack which allow us to use windows like we do colors and styles
+local array<ColorMod>       colorStack; 
+local array<VarMod>         varStack; 
+
+local u32 initColorStackSize;
+local u32 initStyleStackSize;
 
 
 //helper functions
 
 
-vec2 UI::CalcTextSize(string text) {
+local vec2 UI::CalcTextSize(string text) {
 	return vec2(text.size * style.font.width, style.font.height);
 }
 
@@ -106,15 +106,15 @@ void UI::Line(vec2 start, vec2 end, float thickness, Color color){
 void UI::Text(string text) {
 	//work out where we're going to draw the text and how much to advance the cursor by
 	vec2 textSize = CalcTextSize(text);
-
+	
 	workingWin.width = 400;
 	if (textSize.y > workingWin.width) {
-
+		
 	}
-
+	
 	Render::DrawTextUI(text, workingWin.position + workingWin.cursor, style.colors[UIStyleCol_Text]);
-
-
+	
+	
 }
 
 void UI::Text(string text, vec2 pos) {
@@ -133,7 +133,7 @@ void UI::Text(string text, vec2 pos, Color color) {
 //Windows
 
 
-bool CheckWindowExists(string name) {
+local bool CheckWindowExists(string name) {
 	if (windows.has(name)) {
 		return true;
 	}
@@ -144,7 +144,7 @@ bool CheckWindowExists(string name) {
 void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
 	//save previous window on stack
 	windowStack.add(workingWin);
-
+	
 	//check if were making a new window or working with one we already know
 	if (!windows.has(name)) {
 		//make new window if we dont know this one already
@@ -158,14 +158,14 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 	else {
 		workingWin = windows[name];
 	}
-
+	
 	//if the window isn't invisible draw things that havent been disabled
 	if ((flags & UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
 		
 		//draw background
 		if (!(flags & UIWindowFlags_NoBackground)) 
 			Render::FillRectUI(workingWin.position, workingWin.dimensions, style.colors[UIStyleCol_WindowBg]);
-
+		
 		//draw title bar
 		if (!(flags & UIWindowFlags_NoTitleBar)) {
 			Render::FillRectUI(workingWin.x, workingWin.y, workingWin.width, style.titleBarHeight, style.colors[UIStyleCol_TitleBg]);
@@ -173,10 +173,10 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			//draw text if it exists
 			if (name.size != 0) {
 				Render::DrawTextUI(
-					workingWin.name,
-					vec2(
-						workingWin.x + (workingWin.width - name.size * style.font.width) * style.titleTextAlign.x,
-						workingWin.y + (style.titleBarHeight - style.font.height) * style.titleTextAlign.y));
+								   workingWin.name,
+								   vec2(
+										workingWin.x + (workingWin.width - name.size * style.font.width) * style.titleTextAlign.x,
+										workingWin.y + (style.titleBarHeight - style.font.height) * style.titleTextAlign.y));
 			}
 		}
 		
@@ -184,38 +184,38 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 		if (!(flags & UIWindowFlags_NoBorder)) {
 			//left
 			Render::FillRectUI(
-				workingWin.x - style.windowBorderSize, 
-				workingWin.y, 
-				style.windowBorderSize, 
-				workingWin.height, 
-				style.colors[UIStyleCol_Border]);
+							   workingWin.x - style.windowBorderSize, 
+							   workingWin.y, 
+							   style.windowBorderSize, 
+							   workingWin.height, 
+							   style.colors[UIStyleCol_Border]);
 			
 			//right 
 			Render::FillRectUI(
-				workingWin.x + workingWin.width, 
-				workingWin.y, 
-				style.windowBorderSize, 
-				workingWin.height, 
-				style.colors[UIStyleCol_Border]);
-		
+							   workingWin.x + workingWin.width, 
+							   workingWin.y, 
+							   style.windowBorderSize, 
+							   workingWin.height, 
+							   style.colors[UIStyleCol_Border]);
+			
 			//top
 			Render::FillRectUI(
-				workingWin.x - style.windowBorderSize, 
-				workingWin.y - style.windowBorderSize, 
-				workingWin.width + 2 * style.windowBorderSize, 
-				style.windowBorderSize, 
-				style.colors[UIStyleCol_Border]);
-
+							   workingWin.x - style.windowBorderSize, 
+							   workingWin.y - style.windowBorderSize, 
+							   workingWin.width + 2 * style.windowBorderSize, 
+							   style.windowBorderSize, 
+							   style.colors[UIStyleCol_Border]);
+			
 			//bottom
 			Render::FillRectUI(
-				workingWin.x - style.windowBorderSize, 
-				workingWin.y + dimensions.y, 
-				workingWin.width + 2 * style.windowBorderSize, 
-				style.windowBorderSize, 
-				style.colors[UIStyleCol_Border]);
-
+							   workingWin.x - style.windowBorderSize, 
+							   workingWin.y + dimensions.y, 
+							   workingWin.width + 2 * style.windowBorderSize, 
+							   style.windowBorderSize, 
+							   style.colors[UIStyleCol_Border]);
+			
 		}
-
+		
 	}
 }
 
@@ -293,45 +293,42 @@ void UI::Init() {
 	
 	//load font
 	style.font.load_bdf_font("gohufont-11.bdf");
-
-	Render::CreateFont(
-		Render::LoadTexture(
-			style.font.texture_sheet, style.font.width, style.font.height * style.font.char_count, 0),
-			style.font.width, style.font.height, style.font.char_count);
-  
+	DengScene->CreateTextureFromMemory(style.font.texture_sheet, style.font.width, style.font.height * style.font.char_count, ImageFormat_BW, TextureFlags_Default, false, false);
+	Render::LoadFont(&style.font);
+	
 	//push default color scheme
 	//this is never meant to be popped
 	PushColor(UIStyleCol_Border,   colors.near_black);
 	PushColor(UIStyleCol_WindowBg, colors.midnight_blue);
 	PushColor(UIStyleCol_TitleBg,  colors.purple_gray);
 	PushColor(UIStyleCol_Text,     Color::WHITE);
-
+	
 	//push default style variables
 	PushVar(UIStyleVar_WindowBorderSize, 1);
 	PushVar(UIStyleVar_TitleBarHeight, style.font.height * 1.5);
 	PushVar(UIStyleVar_TitleTextAlign, vec2(0, 0.5));
-
+	
 	initColorStackSize = colorStack.size();
 	initStyleStackSize = varStack.size();
-
+	
 	windows["base"] = workingWin;
 	windowStack.add(workingWin);
-
+	
 }
 
 //for checking that certain things were taken care of eg, popping colors/styles/windows
 void UI::Update() {
 	//there should only be default stuff in the stacks
 	Assert(windowStack.size() == 1, 
-	"Frame ended with hanging windows in the stack, make sure you call EndWindow() if you call BeginWindow()!");
+		   "Frame ended with hanging windows in the stack, make sure you call EndWindow() if you call BeginWindow()!");
 	
 	Assert(varStack.size() == initStyleStackSize, 
-	"Frame ended with hanging vars in the stack, make sure you pop vars if you push them!");
+		   "Frame ended with hanging vars in the stack, make sure you pop vars if you push them!");
 	
 	Assert(colorStack.size() == initColorStackSize, 
-	"Frame ended with hanging colors in the stack, make sure you pop colors if you push them!");
-
-
-
+		   "Frame ended with hanging colors in the stack, make sure you pop colors if you push them!");
+	
+	
+	
 }
 

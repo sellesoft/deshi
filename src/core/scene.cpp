@@ -347,7 +347,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureFlags fla
 }
 
 pair<u32,Texture*> Scene::
-CreateTextureFromMemory(void* data, ImageFormat format, TextureFlags flags, bool keepLoaded, bool generateMipmaps){
+CreateTextureFromMemory(void* data, int width, int height, ImageFormat format, TextureFlags flags, bool keepLoaded, bool generateMipmaps){
 	pair<u32,Texture*> result(0, NullTexture());
 	return result;
 	//!Incomplete
