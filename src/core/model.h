@@ -7,12 +7,12 @@
 #include "../math/VectorMatrix.h"
 #include "../utils/array.h"
 
-enum ImageLayout_{
-	ImageLayout_RGBA,
-	ImageLayout_RGB,
-	ImageLayout_BW,
-	ImageLayout_BWA,
-}; typedef u32 ImageLayout;
+enum ImageFormat_{
+	ImageFormat_BW,
+	ImageFormat_BWA,
+	ImageFormat_RGB,
+	ImageFormat_RGBA,
+}; typedef u32 ImageFormat;
 
 enum TextureFlags_{ 
 	TextureFlags_NONE  = 0,
@@ -63,10 +63,7 @@ enum ModelFlags_{
 
 //NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
 struct Mesh{
-	u32 bytes;
-	u32 checksum;
 	char name[DESHI_NAME_SIZE];
-	
 	vec3 aabbMin;
 	vec3 aabbMax;
 	vec3 center;
@@ -132,7 +129,6 @@ struct Mesh{
 };
 
 struct Texture{
-	u32  checksum;
 	char name[DESHI_NAME_SIZE];
 	int  width;
 	int  height;
@@ -140,21 +136,20 @@ struct Texture{
 	int  mipmaps;
 	u8*  pixels;
 	bool loaded;
+	ImageFormat  format;
 	TextureFlags flags;
 };
 
 struct Material{
-	u32  checksum;
 	char name[DESHI_NAME_SIZE];
-	Shader        shader;
+	Shader shader;
 	MaterialFlags flags;
-	u32  textureCount;
 	u32* textureArray;
+	u32  textureCount;
 	array_view<u32> textures;
 };
 
 struct Model{
-	u32  checksum;
 	char name[DESHI_NAME_SIZE];
 	ModelFlags flags;
 	Mesh*      mesh;

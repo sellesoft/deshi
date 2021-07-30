@@ -9,9 +9,9 @@ void Scene::
 Init(){
 	//null assets      //TODO(delle) store null.png and null shader in a .cpp
 	CreateBoxMesh(1.0f, 1.0f, 1.0f); cpystr(NullMesh()->name, "null_mesh.mesh", DESHI_NAME_SIZE);
-	CreateTextureFromFile("null128.png"); cpystr(NullTexture()->name, "null_texture.mesh", DESHI_NAME_SIZE);
-	CreateMaterial("null_material", Shader_NULL, MaterialFlags_NONE, {0});
-	CreateModelFromMesh(NullMesh(), Shader_NULL); cpystr(NullTexture()->name, "null_model", DESHI_NAME_SIZE);
+	CreateTextureFromFile("null128.png"); cpystr(NullTexture()->name, "null_texture.tex", DESHI_NAME_SIZE);
+	CreateMaterial("null_material.mat", Shader_NULL, MaterialFlags_NONE, {0});
+	CreateModelFromMesh(NullMesh(), Shader_NULL); cpystr(NullTexture()->name, "null_model.model", DESHI_NAME_SIZE);
 }
 
 void Scene::
@@ -46,7 +46,6 @@ AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighb
 		+     facesNeighborFaceCount*sizeof(u32);
 	
 	Mesh* mesh = (Mesh*)calloc(1,bytes);   char* cursor = (char*)mesh + (1*sizeof(Mesh));
-	mesh->bytes         = bytes;
 	mesh->indexCount    = indexCount;
 	mesh->vertexCount   = vertexCount;
 	mesh->triangleCount = triangleCount;
@@ -81,21 +80,25 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	
 	//check if created already
 	forI(meshes.size()){
-		if((strcmp(meshes[i]->name, "box_mesh.mesh") == 0) && (meshes.aabbMax == vec3{width,height,depth})){
+		if((strcmp(meshes[i]->name, "box_mesh.mesh") == 0) && (meshes[i]->aabbMax == vec3{width,height,depth})){
 			return pair<u32,Mesh*>(i, meshes[i]);
 		}
 	}
 	
-	vec3 p{width, height, depth};
-	vec3 uv{0.0f, 0.0f};
-	vec3 c = vec3(color.r, color.g, color.b) / 255.f;
-	f32 ir3 = 1.0f / M_SQRT_THREE; // inverse root 3 (component of point on unit circle)
-	
 	Mesh* mesh = AllocateMesh(36, 8, 6, 36, 24, 24, 24, 24);
+	cpystr(mesh->name, "box_mesh.mesh", DESHI_NAME_SIZE);
+	mesh->aabbMin  = {-width,-height,-depth};
+	mesh->aabbMax  = { width, height, depth};
+	mesh->center   = {  0.0f,   0.0f,  0.0f};
+	
 	Mesh::Vertex*   va = mesh->vertexArray;
 	Mesh::Index*    ia = mesh->indexArray;
 	Mesh::Triangle* ta = mesh->triangleArray;
 	Mesh::Face*     fa = mesh->faceArray;
+	vec3 p{width, height, depth};
+	vec3 uv{0.0f, 0.0f};
+	vec3 c = vec3(color.r, color.g, color.b) / 255.f;
+	f32 ir3 = 1.0f / M_SQRT_THREE; // inverse root 3 (component of point on unit circle)
 	
 	//vertex array {pos, uv, color, normal(from center)}
 	va[0]={{-p.x, p.y, p.z}, uv, c, {-ir3, ir3, ir3}}; // -x, y, z  0
@@ -228,13 +231,6 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	fa[4].faceNeighbors[0]=0; fa[4].faceNeighbors[1]=1; fa[4].faceNeighbors[2]=3; fa[4].faceNeighbors[3]=5;
 	fa[5].faceNeighbors[0]=0; fa[5].faceNeighbors[1]=2; fa[5].faceNeighbors[2]=3; fa[5].faceNeighbors[3]=4;
 	
-	//mesh header
-	cpystr(mesh->name, "box_mesh.mesh", DESHI_NAME_SIZE);
-	mesh->aabbMin  = {-width,-height,-depth};
-	mesh->aabbMax  = { width, height, depth};
-	mesh->center   = {  0.0f,   0.0f,  0.0f};
-	mesh->checksum = Utils::dataHash32(mesh, mesh->bytes);
-	
 	result.first  = meshes.size();
 	result.second = mesh;
 	meshes.add(mesh);
@@ -294,12 +290,12 @@ AllocateTexture(){
 }
 
 local void 
-DeallocateMesh(Texture* texture){
+DeallocateTexture(Texture* texture){
 	free(texture);
 }
 
 pair<u32,Texture*> Scene::
-CreateTextureFromFile(const char* filename, TextureFlags flags, bool keepLoaded, bool generateMipmaps){
+CreateTextureFromFile(const char* filename, ImageFormat format, TextureFlags flags, bool keepLoaded, bool generateMipmaps){
 	pair<u32,Texture*> result(0, NullTexture());
 	
 	//check if created already
@@ -314,34 +310,34 @@ CreateTextureFromFile(const char* filename, TextureFlags flags, bool keepLoaded,
 	
 	Texture* texture = AllocateTexture();
 	cpystr(texture->name, filename, DESHI_NAME_SIZE);
-	texture->mipmaps  = (generateMipmaps) ? (int)log2(Max(tex.width, tex.height)) + 1 : 1;
 	texture->flags    = flags;
+	texture->format   = format;
 	
 	//not loaded before
 	if(previous == 0){
-		texture->pixels   = stbi_load((Assets::dirTextures()+filename).c_str(), &tex->width, &tex->height, &tex->depth, STBI_rgb_alpha);
-		if(tex.pixels == 0){ ERROR_LOC("Failed to load texture: ", filename); return result; }
+		texture->pixels   = stbi_load((Assets::dirTextures()+filename).c_str(), &texture->width, &texture->height, &texture->depth, format);
 		texture->loaded   = true;
-		texture->checksum = Utils::dataHash32(texture->pixels, tex->width * tex->height * 4);
+		if(texture->pixels == 0){ ERROR_LOC("Failed to create texture: ", filename); return result; }
 	}
 	//loaded before but with different flags
 	else{
 		texture->width    = previous->width;
 		texture->height   = previous->height;
 		texture->depth    = previous->depth;
-		texture->checksum = previous->checksum;
 		texture->flags   |= TextureFlags_Derivative;
 		
 		if(keepLoaded && previous->loaded == false){
-			texture->pixels = stbi_load((Assets::dirTextures()+filename).c_str(), 0, 0, 0, STBI_rgb_alpha);
-			if(tex.pixels == 0){ ERROR_LOC("Failed to load texture: ", filename); return result; }
+			texture->pixels = stbi_load((Assets::dirTextures()+filename).c_str(), 0, 0, 0, format);
 			texture->loaded = true;
+			if(texture->pixels == 0){ ERROR_LOC("Failed to create texture: ", filename); return result; }
 		}
 	}
 	
+	texture->mipmaps  = (generateMipmaps) ? (int)log2(Max(texture->width, texture->height)) + 1 : 1;
+	
 	Render::LoadTexture(texture);
 	if(!keepLoaded){
-		stbi_image_free(tex.pixels); tex.pixels = 0;
+		stbi_image_free(texture->pixels); texture->pixels = 0;
 	}
 	
 	result.first  = textures.size();
@@ -351,7 +347,7 @@ CreateTextureFromFile(const char* filename, TextureFlags flags, bool keepLoaded,
 }
 
 pair<u32,Texture*> Scene::
-CreateTextureFromMemory(void* data, ImageLayout layout, TextureFlags flags, bool keepLoaded, bool generateMipmaps){
+CreateTextureFromMemory(void* data, ImageFormat format, TextureFlags flags, bool keepLoaded, bool generateMipmaps){
 	pair<u32,Texture*> result(0, NullTexture());
 	return result;
 	//!Incomplete
@@ -366,11 +362,47 @@ DeleteTexture(Texture* texture){
 ///////////////////
 //// @material ////
 ///////////////////
+local Material* 
+AllocateMaterial(u32 textureCount){
+	Material* material = (Material*)calloc(1, sizeof(Material) + textureCount*sizeof(u32));
+	material->textureCount = textureCount;
+	material->textureArray = (u32*)(material+1);
+	material->textures = array_view<u32>(material->textureArray, textureCount, textureCount);
+	return material;
+}
+
+local void 
+DeallocateMaterial(Material* material){
+	free(material);
+}
+
 pair<u32,Material*> Scene::
-CreateMaterial(const char* name, Shader shader, MaterialFlags flags, std::vector<u32> textures){
+CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> textures){
 	pair<u32,Material*> result(0, NullMaterial());
+	
+	//check if created already
+	bool textures_equal;
+	forX(mi, materials.size()){
+		if((strcmp(materials[mi]->name, name) == 0) && (materials[mi]->flags == flags) 
+		   && (materials[mi]->shader == shader) && (materials[mi]->textureCount == textures.size())){
+			textures_equal = true;
+			forX(ti, textures.size()){ if(textures[ti] != materials[mi]->textures[ti]){ textures_equal = false; break; } }
+			if(textures_equal) return pair<u32,Material*>(mi,materials[mi]);
+		}
+	}
+	
+	Material* material = AllocateMaterial(textures.size());
+	cpystr(material->name, name, DESHI_NAME_SIZE);
+	material->shader = shader;
+	material->flags  = flags;
+	forI(textures.size()) material->textures[i] = textures[i];
+	
+	Render::LoadMaterial(material);
+	
+	result.first  = materials.size();
+	result.second = material;
+	materials.add(material);
 	return result;
-	//!Incomplete
 }
 
 void Scene::

@@ -71,7 +71,6 @@ void ModelInstance::Update(){
 std::string ModelInstance::SaveTEXT(){
 	return TOSTRING("\n>mesh"
 					"\nname     \"", model->name,"\""
-					"\nchecksum ", model->checksum,
 					"\nvisible  ", (visible) ? "true" : "false",
 					"\noverride ", (override) ? "true" : "false",
 					"\n");

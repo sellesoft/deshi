@@ -39,8 +39,8 @@ struct Scene{
 	//////////////////
 	//// @texture ////
 	//////////////////
-	pair<u32,Texture*> CreateTextureFromFile(const char* filename, TextureFlags flags = TextureFlags_Default, bool keepLoaded = false, bool generateMipmaps = true);
-	pair<u32,Texture*> CreateTextureFromMemory(void* data, ImageLayout layout, TextureFlags flags = TextureFlags_Default, bool keepLoaded = false, bool generateMipmaps = true);
+	pair<u32,Texture*> CreateTextureFromFile(const char* filename, ImageFormat format = ImageFormat_RGBA, TextureFlags flags = TextureFlags_Default, bool keepLoaded = false, bool generateMipmaps = true);
+	pair<u32,Texture*> CreateTextureFromMemory(void* data, ImageFormat format, TextureFlags flags = TextureFlags_Default, bool keepLoaded = false, bool generateMipmaps = true);
 	void               DeleteTexture(Texture* texture);
 	
 	inline Texture*    NullTexture(){ return textures[0]; };
@@ -53,7 +53,7 @@ struct Scene{
 	///////////////////
 	//// @material ////
 	///////////////////
-	pair<u32,Material*> CreateMaterial(const char* name, Shader shader = Shader_PBR, MaterialFlags flags = MaterialFlags_NONE, std::vector<u32> textures = {});
+	pair<u32,Material*> CreateMaterial(const char* name, Shader shader = Shader_PBR, MaterialFlags flags = MaterialFlags_NONE, array<u32> textures = {});
 	void                DeleteMaterial(Material* material);
 	
 	inline Material*    NullMaterial(){ return materials[0]; };

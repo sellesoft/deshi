@@ -19,6 +19,7 @@
 #include "../core/console.h"
 #include "../utils/utils.h"
 #include "../utils/debug.h"
+#include "../utils/array.h"
 
 #include <iostream>
 #include <fstream>
@@ -460,9 +461,9 @@ void Admin::LoadTEXT(std::string savename){
 				case(LevelHeader::MATERIALS):{
 					if(split.size() < 3){ ERROR(ParsingError,"'! Material lines should have at least 3 values"); continue; }
 					
-					std::vector<u32> textures;
+					array<u32> textures;
 					for(int i = 3; i < split.size(); ++i){
-						textures.push_back(DengScene->CreateTextureFromFile(split[i].c_str(), TextureFlags_Albedo).first);
+						textures.add(DengScene->CreateTextureFromFile(split[i].c_str(), TextureFlags_Albedo).first);
 					}
 					
 					u32 old_id = std::stoi(split[0]);

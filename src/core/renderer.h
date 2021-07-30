@@ -102,7 +102,7 @@ namespace Render{
     RendererStage*  GetStage();
 	
 	void LoadFont(Font* font);
-    void LoadTexture(Texture* texture, bool alreadyLoaded = false);
+    void LoadTexture(Texture* texture);
 	void LoadMaterial(Material* material);
 	void LoadMesh(Mesh* mesh);
 	

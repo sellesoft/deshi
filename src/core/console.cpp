@@ -1031,11 +1031,19 @@ CMDSTARTA(texture_load, args.size() > 0){
 	return "";
 }CMDEND("texture_load <texture.png:String> [type:Uint]");
 
+CMDFUNC(texture_flags){
+	LOG("Texture Flags:");
+	forI(TextureFlags_COUNT){
+		LOG('\n',TextureFlagsStrings[i]);
+	}
+	return "";
+}
+
 CMDFUNC(texture_list){
 	LOG("Texture List:"
-		"\nName\tWidth\tHeight\tDepth\tMipmaps\tType");
+		"\nName\tWidth\tHeight\tDepth\tMipmaps\tFlags");
 	for(Texture* tex : DengScene->textures){
-		LOG(tex->name,'\t',tex->width,'\t',tex->height,'\t',tex->depth,'\t',tex->mipmaps,'\t',tex->type);
+		LOG('\n',tex->name,'\t',tex->width,'\t',tex->height,'\t',tex->depth,'\t',tex->mipmaps,'\t',tex->flags);
 	}
 	return "";
 }
