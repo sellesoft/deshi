@@ -462,7 +462,7 @@ void Admin::LoadTEXT(std::string savename){
 					
 					std::vector<u32> textures;
 					for(int i = 3; i < split.size(); ++i){
-						textures.push_back(DengScene->CreateTextureFromFile(split[i].c_str(), TextureType_Albedo).first);
+						textures.push_back(DengScene->CreateTextureFromFile(split[i].c_str(), TextureFlags_Albedo).first);
 					}
 					
 					u32 old_id = std::stoi(split[0]);

@@ -8,8 +8,8 @@
 void Scene::
 Init(){
 	//null assets      //TODO(delle) store null.png and null shader in a .cpp
-	CreateBoxMesh(1.0f, 1.0f, 1.0f); cpystr(NullMesh()->name, "null_mesh", DESHI_NAME_SIZE);
-	CreateTextureFromFile("null128.png"); cpystr(NullTexture()->name, "null_texture", DESHI_NAME_SIZE);
+	CreateBoxMesh(1.0f, 1.0f, 1.0f); cpystr(NullMesh()->name, "null_mesh.mesh", DESHI_NAME_SIZE);
+	CreateTextureFromFile("null128.png"); cpystr(NullTexture()->name, "null_texture.mesh", DESHI_NAME_SIZE);
 	CreateMaterial("null_material", Shader_NULL, MaterialFlags_NONE, {0});
 	CreateModelFromMesh(NullMesh(), Shader_NULL); cpystr(NullTexture()->name, "null_model", DESHI_NAME_SIZE);
 }
@@ -74,35 +74,18 @@ DeallocateMesh(Mesh* mesh){
 	free(mesh);
 }
 
-local bool
-TrianglesShareEdge(){
-	
-}
-
-local void 
-GenerateMeshTriangleNeighbors(Mesh* mesh){
-	Mesh::Triangle* t1;
-	Mesh::Triangle* t2;
-	forX(t1i, mesh->triangleCount){ t1 = &mesh->triangleArray[t1i];
-		forX(t2i, mesh->triangleCount){ t2 = &mesh->triangleArray[t2i]; 
-			if(t1i != t2i){
-				for(u32 t1n : t1->neighbors){
-					if(t2i == t1n){
-						//@Incomplete
-					}
-				}
-			}
-		}
-	}
-}
-
-local void GenerateMeshFaces(Mesh* mesh){
-	
-}
-
+//TODO(delle) change this to take in 8 points
 pair<u32,Mesh*> Scene::
 CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	pair<u32,Mesh*> result(0, NullMesh());
+	
+	//check if created already
+	forI(meshes.size()){
+		if((strcmp(meshes[i]->name, "box_mesh.mesh") == 0) && (meshes.aabbMax == vec3{width,height,depth})){
+			return pair<u32,Mesh*>(i, meshes[i]);
+		}
+	}
+	
 	vec3 p{width, height, depth};
 	vec3 uv{0.0f, 0.0f};
 	vec3 c = vec3(color.r, color.g, color.b) / 255.f;
@@ -161,18 +144,32 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	}
 	
 	//triangle array neighbors array
-	ta[ 0].neighborArray[0]= 1; ta[ 0].neighborArray[1]=11; ta[ 0].neighborArray[2]= 9;
-	ta[ 1].neighborArray[0]= 0; ta[ 1].neighborArray[1]= 3; ta[ 1].neighborArray[2]= 5;
-	ta[ 2].neighborArray[0]= 3; ta[ 2].neighborArray[1]= 9; ta[ 2].neighborArray[2]= 7;
-	ta[ 3].neighborArray[0]= 2; ta[ 3].neighborArray[1]= 1; ta[ 3].neighborArray[2]= 4;
-	ta[ 4].neighborArray[0]= 5; ta[ 4].neighborArray[1]= 3; ta[ 4].neighborArray[2]= 6;
-	ta[ 5].neighborArray[0]= 4; ta[ 5].neighborArray[1]= 1; ta[ 5].neighborArray[2]=10;
-	ta[ 6].neighborArray[0]= 7; ta[ 6].neighborArray[1]= 4; ta[ 6].neighborArray[2]=10;
-	ta[ 7].neighborArray[0]= 6; ta[ 7].neighborArray[1]= 2; ta[ 7].neighborArray[2]= 8;
-	ta[ 8].neighborArray[0]= 9; ta[ 8].neighborArray[1]=11; ta[ 8].neighborArray[2]= 7;
-	ta[ 9].neighborArray[0]= 8; ta[ 9].neighborArray[1]= 0; ta[ 9].neighborArray[2]= 2;
-	ta[10].neighborArray[0]=11; ta[10].neighborArray[1]= 5; ta[10].neighborArray[2]= 6;
-	ta[11].neighborArray[0]=10; ta[11].neighborArray[1]= 0; ta[11].neighborArray[2]= 8;
+	ta[ 0].neighbors[0]= 1; ta[ 0].neighbors[1]=11; ta[ 0].neighbors[2]= 9;
+	ta[ 1].neighbors[0]= 0; ta[ 1].neighbors[1]= 3; ta[ 1].neighbors[2]= 5;
+	ta[ 2].neighbors[0]= 3; ta[ 2].neighbors[1]= 9; ta[ 2].neighbors[2]= 7;
+	ta[ 3].neighbors[0]= 2; ta[ 3].neighbors[1]= 1; ta[ 3].neighbors[2]= 4;
+	ta[ 4].neighbors[0]= 5; ta[ 4].neighbors[1]= 3; ta[ 4].neighbors[2]= 6;
+	ta[ 5].neighbors[0]= 4; ta[ 5].neighbors[1]= 1; ta[ 5].neighbors[2]=10;
+	ta[ 6].neighbors[0]= 7; ta[ 6].neighbors[1]= 4; ta[ 6].neighbors[2]=10;
+	ta[ 7].neighbors[0]= 6; ta[ 7].neighbors[1]= 2; ta[ 7].neighbors[2]= 8;
+	ta[ 8].neighbors[0]= 9; ta[ 8].neighbors[1]=11; ta[ 8].neighbors[2]= 7;
+	ta[ 9].neighbors[0]= 8; ta[ 9].neighbors[1]= 0; ta[ 9].neighbors[2]= 2;
+	ta[10].neighbors[0]=11; ta[10].neighbors[1]= 5; ta[10].neighbors[2]= 6;
+	ta[11].neighbors[0]=10; ta[11].neighbors[1]= 0; ta[11].neighbors[2]= 8;
+	
+	//triangle array edges array
+	ta[ 0].edges[0]=0; ta[ 0].edges[1]=2; ta[ 0].edges[2]=1;
+	ta[ 1].edges[0]=2; ta[ 1].edges[1]=1; ta[ 1].edges[2]=0;
+	ta[ 2].edges[0]=0; ta[ 2].edges[1]=2; ta[ 2].edges[2]=1;
+	ta[ 3].edges[0]=2; ta[ 3].edges[1]=0; ta[ 3].edges[2]=1;
+	ta[ 4].edges[0]=0; ta[ 4].edges[1]=2; ta[ 4].edges[2]=1;
+	ta[ 5].edges[0]=2; ta[ 5].edges[1]=0; ta[ 5].edges[2]=1;
+	ta[ 6].edges[0]=0; ta[ 6].edges[1]=1; ta[ 6].edges[2]=2;
+	ta[ 7].edges[0]=2; ta[ 7].edges[1]=1; ta[ 7].edges[2]=0;
+	ta[ 8].edges[0]=0; ta[ 8].edges[1]=2; ta[ 8].edges[2]=1;
+	ta[ 9].edges[0]=2; ta[ 9].edges[1]=0; ta[ 9].edges[2]=1;
+	ta[10].edges[0]=0; ta[10].edges[1]=2; ta[10].edges[2]=1;
+	ta[11].edges[0]=2; ta[11].edges[1]=0; ta[11].edges[2]=1;
 	
 	//face array  0=up, 1=back, 2=right, 3=down, 4=left, 5=forward
 	for(int i=0; i<6; ++i){
@@ -216,33 +213,29 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	}
 	
 	//face array neighbor triangle array
-	fa[0].neighborTriangleArray[0]= 9; fa[0].neighborTriangleArray[1]= 3;
-	fa[0].neighborTriangleArray[2]= 5; fa[0].neighborTriangleArray[3]=11;
-	fa[1].neighborTriangleArray[0]=; fa[1].neighborTriangleArray[1]=;
-	fa[1].neighborTriangleArray[2]=; fa[1].neighborTriangleArray[3]=;
-	fa[2].neighborTriangleArray[0]=; fa[2].neighborTriangleArray[1]=;
-	fa[2].neighborTriangleArray[2]=; fa[2].neighborTriangleArray[3]=;
-	fa[3].neighborTriangleArray[0]=; fa[3].neighborTriangleArray[1]=;
-	fa[3].neighborTriangleArray[2]=; fa[3].neighborTriangleArray[3]=;
-	fa[4].neighborTriangleArray[0]=; fa[4].neighborTriangleArray[1]=;
-	fa[4].neighborTriangleArray[2]=; fa[4].neighborTriangleArray[3]=;
-	fa[5].neighborTriangleArray[0]=; fa[5].neighborTriangleArray[1]=;
-	fa[5].neighborTriangleArray[2]=; fa[5].neighborTriangleArray[3]=;
+	fa[0].triangleNeighbors[0]= 9; fa[0].triangleNeighbors[1]= 3; fa[0].triangleNeighbors[2]= 5; fa[0].triangleNeighbors[3]=11;
+	fa[1].triangleNeighbors[0]= 1; fa[1].triangleNeighbors[1]= 4; fa[1].triangleNeighbors[2]= 7; fa[1].triangleNeighbors[3]= 9;
+	fa[2].triangleNeighbors[0]= 1; fa[2].triangleNeighbors[1]=10; fa[2].triangleNeighbors[2]= 6; fa[2].triangleNeighbors[3]= 3;
+	fa[3].triangleNeighbors[0]= 4; fa[3].triangleNeighbors[1]=10; fa[3].triangleNeighbors[2]= 8; fa[3].triangleNeighbors[3]= 2;
+	fa[4].triangleNeighbors[0]= 0; fa[4].triangleNeighbors[1]= 2; fa[4].triangleNeighbors[2]= 7; fa[4].triangleNeighbors[3]=11;
+	fa[5].triangleNeighbors[0]= 0; fa[5].triangleNeighbors[1]= 8; fa[5].triangleNeighbors[2]= 6; fa[5].triangleNeighbors[3]= 5;
 	
 	//face array neighbor face array
+	fa[0].faceNeighbors[0]=1; fa[0].faceNeighbors[1]=2; fa[0].faceNeighbors[2]=4; fa[0].faceNeighbors[3]=5;
+	fa[1].faceNeighbors[0]=0; fa[1].faceNeighbors[1]=2; fa[1].faceNeighbors[2]=3; fa[1].faceNeighbors[3]=4;
+	fa[2].faceNeighbors[0]=0; fa[2].faceNeighbors[1]=1; fa[2].faceNeighbors[2]=3; fa[2].faceNeighbors[3]=5;
+	fa[3].faceNeighbors[0]=1; fa[3].faceNeighbors[1]=2; fa[3].faceNeighbors[2]=4; fa[3].faceNeighbors[3]=5;
+	fa[4].faceNeighbors[0]=0; fa[4].faceNeighbors[1]=1; fa[4].faceNeighbors[2]=3; fa[4].faceNeighbors[3]=5;
+	fa[5].faceNeighbors[0]=0; fa[5].faceNeighbors[1]=2; fa[5].faceNeighbors[2]=3; fa[5].faceNeighbors[3]=4;
 	
 	//mesh header
-	cpystr(mesh->name, "box_mesh", DESHI_NAME_SIZE);
+	cpystr(mesh->name, "box_mesh.mesh", DESHI_NAME_SIZE);
 	mesh->aabbMin  = {-width,-height,-depth};
 	mesh->aabbMax  = { width, height, depth};
 	mesh->center   = {  0.0f,   0.0f,  0.0f};
 	mesh->checksum = Utils::dataHash32(mesh, mesh->bytes);
 	
-	//check if existing and return
-	forI(meshes.size()){
-		if(mesh->checksum == meshes[i]->checksum) return pair<u32,Mesh*>(i, meshes[i]);
-	}
-	result.first = meshes.size();
+	result.first  = meshes.size();
 	result.second = mesh;
 	meshes.add(mesh);
 	return result;
@@ -281,9 +274,9 @@ GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 c
 	}
 	for(Mesh::Triangle* t : nonculled){
 		forI(t->neighborCount){
-			if(mesh->triangleArray[t->neighborArray[i]].removed){
-				outline.push_back(Math::WorldToScreen(t->p[t->edgeArray[i]        ], camProjection, camView, screenDims).ToVector2());
-				outline.push_back(Math::WorldToScreen(t->p[(t->edgeArray[i]+1) % 3], camProjection, camView, screenDims).ToVector2());
+			if(mesh->triangles[t->neighbors[i]].removed){
+				outline.push_back(Math::WorldToScreen(t->p[t->edges[i]        ], camProjection, camView, screenDims).ToVector2());
+				outline.push_back(Math::WorldToScreen(t->p[(t->edges[i]+1) % 3], camProjection, camView, screenDims).ToVector2());
 			}
 		}
 	}
@@ -294,15 +287,71 @@ GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 c
 //////////////////
 //// @texture ////
 //////////////////
-pair<u32,Texture*> Scene::
-CreateTextureFromFile(const char* filename, TextureType type){
-	pair<u32,Texture*> result(0, NullTexture());
-	return result;
-	//!Incomplete
+local Texture* 
+AllocateTexture(){
+	Texture* texture = (Texture*)calloc(1,sizeof(Texture));
+	return texture;
+}
+
+local void 
+DeallocateMesh(Texture* texture){
+	free(texture);
 }
 
 pair<u32,Texture*> Scene::
-CreateTextureFromMemory(void* data, TextureType type){
+CreateTextureFromFile(const char* filename, TextureFlags flags, bool keepLoaded, bool generateMipmaps){
+	pair<u32,Texture*> result(0, NullTexture());
+	
+	//check if created already
+	Texture* previous = 0;
+	forI(textures.size()){
+		if(strcmp(textures[i]->name, filename) == 0){
+			previous = textures[i];
+			if(textures[i]->flags == flags) return pair<u32,Texture*>(i,textures[i]);
+			break;
+		}
+	}
+	
+	Texture* texture = AllocateTexture();
+	cpystr(texture->name, filename, DESHI_NAME_SIZE);
+	texture->mipmaps  = (generateMipmaps) ? (int)log2(Max(tex.width, tex.height)) + 1 : 1;
+	texture->flags    = flags;
+	
+	//not loaded before
+	if(previous == 0){
+		texture->pixels   = stbi_load((Assets::dirTextures()+filename).c_str(), &tex->width, &tex->height, &tex->depth, STBI_rgb_alpha);
+		if(tex.pixels == 0){ ERROR_LOC("Failed to load texture: ", filename); return result; }
+		texture->loaded   = true;
+		texture->checksum = Utils::dataHash32(texture->pixels, tex->width * tex->height * 4);
+	}
+	//loaded before but with different flags
+	else{
+		texture->width    = previous->width;
+		texture->height   = previous->height;
+		texture->depth    = previous->depth;
+		texture->checksum = previous->checksum;
+		texture->flags   |= TextureFlags_Derivative;
+		
+		if(keepLoaded && previous->loaded == false){
+			texture->pixels = stbi_load((Assets::dirTextures()+filename).c_str(), 0, 0, 0, STBI_rgb_alpha);
+			if(tex.pixels == 0){ ERROR_LOC("Failed to load texture: ", filename); return result; }
+			texture->loaded = true;
+		}
+	}
+	
+	Render::LoadTexture(texture);
+	if(!keepLoaded){
+		stbi_image_free(tex.pixels); tex.pixels = 0;
+	}
+	
+	result.first  = textures.size();
+	result.second = texture;
+	textures.add(texture);
+	return result;
+}
+
+pair<u32,Texture*> Scene::
+CreateTextureFromMemory(void* data, ImageLayout layout, TextureFlags flags, bool keepLoaded, bool generateMipmaps){
 	pair<u32,Texture*> result(0, NullTexture());
 	return result;
 	//!Incomplete

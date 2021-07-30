@@ -1595,7 +1595,7 @@ inline void MaterialsTab(Admin* admin){
                 if(ImGui::BeginCombo("##mat_albedo_combo", DengScene->TextureName(selected->textures[0]))){
                     forI(textures.size()){
                         if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[0]), textures[i].c_str()) == 0)){
-							selected->textures[0] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Albedo).first;
+							selected->textures[0] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureFlags_Albedo).first;
                         }
                     }
                     ImGui::EndCombo(); //mat_albedo_combo
@@ -1604,7 +1604,7 @@ inline void MaterialsTab(Admin* admin){
                 if(ImGui::BeginCombo("##mat_normal_combo", DengScene->TextureName(selected->textures[1]))){
                     forI(textures.size()){
                         if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[1]), textures[i].c_str()) == 0)){
-							selected->textures[1] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Normal).first;
+							selected->textures[1] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureFlags_Normal).first;
                         }
                     }
                     ImGui::EndCombo(); //mat_normal_combo
@@ -1613,7 +1613,7 @@ inline void MaterialsTab(Admin* admin){
                 if(ImGui::BeginCombo("##mat_spec_combo", DengScene->TextureName(selected->textures[2]))){
                     forI(textures.size()){
                         if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[2]), textures[i].c_str()) == 0)){
-							selected->textures[2] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Specular).first;
+							selected->textures[2] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureFlags_Specular).first;
                         }
                     }
                     ImGui::EndCombo(); //mat_spec_combo
@@ -1622,7 +1622,7 @@ inline void MaterialsTab(Admin* admin){
                 if(ImGui::BeginCombo("##mat_light_combo", DengScene->TextureName(selected->textures[3]))){
                     forI(textures.size()){
                         if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[3]), textures[i].c_str()) == 0)){
-							selected->textures[3] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureType_Light).first;
+							selected->textures[3] = DengScene->CreateTextureFromFile(textures[i].c_str(), TextureFlags_Light).first;
                         }
                     }
                     ImGui::EndCombo(); //mat_light_combo

@@ -7,15 +7,35 @@
 #include "../math/VectorMatrix.h"
 #include "../utils/array.h"
 
-enum TextureType_{ 
-	TextureType_Albedo,   //albedo, color, diffuse
-	TextureType_Normal,   //normal, bump
-	TextureType_Specular, //specular, metallic, roughness
-	TextureType_Light,    //light, ambient
-	TextureType_COUNT
-}; typedef u32 TextureType;
-global_ const char* TextureTypeStrings[] = {
-	"Albedo", "Normal", "Specular", "Light"
+enum ImageLayout_{
+	ImageLayout_RGBA,
+	ImageLayout_RGB,
+	ImageLayout_BW,
+	ImageLayout_BWA,
+}; typedef u32 ImageLayout;
+
+enum TextureFlags_{ 
+	TextureFlags_NONE  = 0,
+	TextureFlags_COUNT = 9,
+	
+	TextureFlags_Albedo   = 1,  //albedo, color, diffuse
+	TextureFlags_Normal   = 2,  //normal, bump
+	TextureFlags_Specular = 4,  //specular, metallic, roughness
+	TextureFlags_Light    = 8,  //light, ambient
+	
+	TextureFlags_1D = 128,
+	TextureFlags_2D = 256,
+	TextureFlags_3D = 512,
+	
+	TextureFlags_Derivative = 1024, //a copy of another texture with different flags
+	
+	TextureFlags_Default = TextureFlags_Albedo | TextureFlags_2D,
+}; typedef u32 TextureFlags;
+global_ const char* TextureFlagsStrings[] = {
+	"Albedo (1)", "Normal (2)", "Specular (4)", "Light (8)", 
+	"1D (128)", "2D (256)", "3D (512)", 
+	"Derivative (1024)",
+	"Default (Albedo|2D)",
 };
 
 enum Shader_{ 
@@ -27,17 +47,18 @@ enum Shader_{
 	Shader_Lavalamp,
 	Shader_Testing0,
 	Shader_Testing1,
+	Shader_COUNT,
 }; typedef u32 Shader;
 global_ const char* ShaderStrings[] = {
 	"NULL", "Flat", "Phong", "PBR", "Wireframe", "Lavalamp", "Testing0", "Testing1"
 };
 
 enum MaterialFlags_{
-	MaterialFlags_NONE,
+	MaterialFlags_NONE = 0,
 }; typedef u32 MaterialFlags;
 
 enum ModelFlags_{
-	ModelFlags_NONE,
+	ModelFlags_NONE = 0,
 }; typedef u32 ModelFlags;
 
 //NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
@@ -116,8 +137,10 @@ struct Texture{
 	int  width;
 	int  height;
 	int  depth;
-	u32  mipmaps;
-	TextureType type;
+	int  mipmaps;
+	u8*  pixels;
+	bool loaded;
+	TextureFlags flags;
 };
 
 struct Material{

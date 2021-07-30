@@ -1024,8 +1024,8 @@ CMDFUNC(shader_list){
 
 CMDSTARTA(texture_load, args.size() > 0){
 	TIMER_START(t_l);
-	TextureType type = TextureType_Albedo;
-	if(args.size() == 2) type = (TextureType)std::stoi(args[1]);
+	TextureFlags type = TextureFlags_Albedo;
+	if(args.size() == 2) type = (TextureFlags)std::stoi(args[1]);
 	DengScene->CreateTextureFromFile(args[0].c_str(), type);
 	SUCCESS("Loaded texture '",args[0],"' in ",TIMER_END(t_l),"ms");
 	return "";
@@ -1036,15 +1036,6 @@ CMDFUNC(texture_list){
 		"\nName\tWidth\tHeight\tDepth\tMipmaps\tType");
 	for(Texture* tex : DengScene->textures){
 		LOG(tex->name,'\t',tex->width,'\t',tex->height,'\t',tex->depth,'\t',tex->mipmaps,'\t',tex->type);
-	}
-	return "";
-}
-
-CMDFUNC(texture_type_list){
-	LOG("Texture Types:"
-		"\nID\tName");
-	forI(TextureType_COUNT){
-		LOG(i,'\t',TextureTypeStrings[i]);
 	}
 	return "";
 }
@@ -1140,6 +1131,5 @@ void Console::AddCommands(){
 	CMDADD(shader_list, "Lists the shaders and their IDs");
 	CMDADD(texture_load, "Loads a specific texture");
 	CMDADD(texture_list, "Lists the textures and their info");
-	CMDADD(texture_type_list, "Lists the texture types and their IDs");
 	CMDADD(quit, "Exits the application");
 }
