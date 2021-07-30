@@ -2180,8 +2180,9 @@ void Editor::DebugLayer(){
     ImGui::End();
 }
 
-void Editor::WorldGrid(Vector3 cpos){
-    int lines = 50;
+
+void Editor::WorldGrid(Vector3 cpos) {
+    int lines = 100;
 	f32 xp = floor(cpos.x) + lines;
 	f32 xn = floor(cpos.x) - lines;
 	f32 zp = floor(cpos.z) + lines;

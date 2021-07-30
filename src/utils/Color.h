@@ -12,7 +12,7 @@ struct Color {
 	u8 r, g, b, a;
 	
 	static const Color
-		GREY,    DARK_GREY,    VERY_DARK_GREY,
+	GREY,    DARK_GREY,    VERY_DARK_GREY,
 	RED,     DARK_RED,     VERY_DARK_RED,
 	YELLOW,  DARK_YELLOW,  VERY_DARK_YELLOW,
 	GREEN,   DARK_GREEN,   VERY_DARK_GREEN,

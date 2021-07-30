@@ -13,6 +13,7 @@ enum UIStyleVar : u32 {
 	UIStyleVar_WindowPadding,
 	UIStyleVar_WindowBorderSize,
 	UIStyleVar_TitleBarHeight,
+	UIStyleVar_TitleTextAlign,   //how title text is aligned in title bar, default vec2(0, 0.5)
 	UIStyleVar_Font,
 	UIStyleVar_COUNT
 };
@@ -42,8 +43,21 @@ enum UIWindowFlags_ {
 struct UIWindow {
 	string name;
 	
-	vec2 position;
-	vec2 dimensions;
+	union {
+		vec2 position;
+		struct {
+			float x;
+			float y;
+		};
+	};
+
+	union {
+		vec2 dimensions;
+		struct {
+			float width;
+			float height;
+		};
+	};
 	
 	//interior window cursor that's relative to its upper left corner
 	//if the window has a titlebar then the cursor's origin does not include the title bar
@@ -51,28 +65,64 @@ struct UIWindow {
 	vec2 cursor;
 
 	UIWindowFlags flags;
+
+	UIWindow() {};
+
+	//I have to do this because I'm using an anonymous struct inside a union and C++ sucks
+	UIWindow(const UIWindow& cop) {
+		this->operator=(cop);
+	}
+
+	UIWindow& operator= (const UIWindow& cop) {
+		name = cop.name;
+		position = cop.position;
+		dimensions = cop.dimensions;
+		cursor = cop.cursor;
+		flags = cop.flags;
+		return *this;
+	}
+
+
 };
 
 
 //functions in this namespace are Immediate Mode, so they only last 1 frame
+//UI was designed almost entirely after ImGui in order to allow us to use it like you would ImGui
+//but without all the stuff from ImGui we don't really need in an engine
+//most of the code is written using ImGui as reference however some design is different and I may
+//come back here and write out what is and isnt
 namespace UI {
 
+	//helpers
+	static vec2 CalcTextSize(string text);
+
 	//primitives
-	void RectFilled(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
+	static void RectFilled(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
 
-	void Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
-	void Line(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
+	static void Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
+	static void Line(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
 
-	void Text(string text);
-	void Text(string text, vec2 pos);
-	void Text(string text, Color color);
-	void Text(string text, vec2 pos, Color color);
+	static void Text(string text);
+	static void Text(string text, vec2 pos);
+	static void Text(string text, Color color);
+	static void Text(string text, vec2 pos, Color color);
 
 	//windows
-	void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
-	void EndWindow();
+	static void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
+	static void EndWindow();
 
-	void Init();
+	//push/pop functions
+	static void PushColor(UIStyleCol idx, Color color);
+	static void PushVar(UIStyleVar idx, float style);
+	static void PushVar(UIStyleVar idx, vec2 style);
+
+	static void PopColor(u32 count = 1);
+	static void PopVar(u32 count = 1);
+
+
+
+	static void Init();
+	static void Update();
 
 }; //namespace UI
 

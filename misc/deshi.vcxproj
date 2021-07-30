@@ -48,12 +48,14 @@
     <OutDir>$(SolutionDir)build\debug</OutDir>
     <IntDir>$(SolutionDir)build\debug</IntDir>
     <SourcePath>$(SolutionDir)src;$(VC_SourcePath)</SourcePath>
+    <TargetName>$(SolutionName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)build\release</OutDir>
     <IntDir>$(SolutionDir)build\release</IntDir>
     <SourcePath>$(SolutionDir)src;$(VC_SourcePath)</SourcePath>
+    <TargetName>$(SolutionName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">
     <ClCompile>
@@ -215,6 +217,8 @@
     <ClInclude Include="..\src\utils\ContainerManager.h" />
     <ClInclude Include="..\src\utils\Debug.h" />
     <ClInclude Include="..\src\utils\font.h" />
+    <ClInclude Include="..\src\utils\hash.h" />
+    <ClInclude Include="..\src\utils\map.h" />
     <ClInclude Include="..\src\utils\optional.h" />
     <ClInclude Include="..\src\utils\RingArray.h" />
     <ClInclude Include="..\src\utils\string.h" />

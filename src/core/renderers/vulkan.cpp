@@ -167,9 +167,9 @@ local RenderStats   stats{};
 local RendererStage rendererStage = RENDERERSTAGE_NONE;
 
 //arbitray limits, change if needed
-#define MAX_UI_VERTICES 0xFFFF
+#define MAX_UI_VERTICES 0xFFFF 
 local u16 uiVertexCount = 0;
-local Vertex2D uiVertexArray[MAX_UI_VERTICES];
+local Vertex2 uiVertexArray[MAX_UI_VERTICES];
 
 #define MAX_TEMP_VERTICES 0xFFFF
 local u16 tempVertexCount = 0;
@@ -184,8 +184,8 @@ local u32 tempIndexCount = 0;
 local u16 tempIndexArray[MAX_TEMP_INDICES];
 
 //different UI cmd per font/texture
-#define MAX_UI_CMDS 256
-local u8 uiCmdCount = 1; //start with 1
+#define MAX_UI_CMDS 1000
+local u16 uiCmdCount = 1; //start with 1
 local UICmdVk uiCmdArray[MAX_UI_CMDS]; 
 
 #define MAX_MODEL_CMDS 10000 
@@ -1987,12 +1987,12 @@ SetupPipelineCreation(){
 	vertexInputState.pVertexAttributeDescriptions    = vertexInputAttributes.data();
 	
 	twodVertexInputBindings = { //binding:u32, stride:u32, inputRate:VkVertexInputRate
-		{0, sizeof(Vertex2D), VK_VERTEX_INPUT_RATE_VERTEX},
+		{0, sizeof(Vertex2), VK_VERTEX_INPUT_RATE_VERTEX},
 	};
 	twodVertexInputAttributes = { //location:u32, binding:u32, format:VkFormat, offset:u32
-		{0, 0, VK_FORMAT_R32G32_SFLOAT,  offsetof(Vertex2D, pos)},
-		{1, 0, VK_FORMAT_R32G32_SFLOAT,  offsetof(Vertex2D, uv)},
-		{2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(Vertex2D, color)},
+		{0, 0, VK_FORMAT_R32G32_SFLOAT,  offsetof(Vertex2, pos)},
+		{1, 0, VK_FORMAT_R32G32_SFLOAT,  offsetof(Vertex2, uv)},
+		{2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(Vertex2, color)},
 	};
 	twodVertexInputState.vertexBindingDescriptionCount   = (u32)twodVertexInputBindings.size();
 	twodVertexInputState.pVertexBindingDescriptions      = twodVertexInputBindings.data();
@@ -2625,9 +2625,9 @@ UpdateMaterialPipelines(){
 local void
 SetupCommands(){
 	//create UI vertex and index buffers
-	size_t ui_vb_size = uiVertexCount * sizeof(Vertex2D);
+	size_t ui_vb_size = uiVertexCount * sizeof(Vertex2);
 	size_t ui_ib_size = uiIndexCount  * sizeof(u16);
-	if(uiVertexBuffer.size == 0) ui_vb_size = 1000*sizeof(Vertex2D);
+	if(uiVertexBuffer.size == 0) ui_vb_size = 1000*sizeof(Vertex2);
 	if(uiIndexBuffer.size == 0)  ui_ib_size = 3000*sizeof(u16);
 	if(ui_vb_size && ui_ib_size){
 		//create/resize buffers if they are too small
@@ -3057,7 +3057,7 @@ FillRectUI(f32 x, f32 y, f32 w, f32 h, Color color){
 	}
 	
 	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2D* vp = uiVertexArray + uiVertexCount;
+	Vertex2* vp = uiVertexArray + uiVertexCount;
 	u16*      ip = uiIndexArray  + uiIndexCount;
 	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
@@ -3075,6 +3075,33 @@ FillRectUI(f32 x, f32 y, f32 w, f32 h, Color color){
 }
 
 void Render::
+FillRectUI(vec2 pos, vec2 dimensions, Color color) {
+	if (color.a == 0) return;
+
+	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+
+	u32     col = color.R8G8B8A8_UNORM();
+	Vertex2* vp = uiVertexArray + uiVertexCount;
+	u16*     ip = uiIndexArray + uiIndexCount;
+
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+	vp[0].pos = { pos.x + 0,           pos.y + 0 };            vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = { pos.x + dimensions.w,pos.y + 0 };            vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = { pos.x + dimensions.w,pos.y + dimensions.h }; vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = { pos.x + 0,           pos.y + dimensions.h }; vp[3].uv = { 0,0 }; vp[3].color = col;
+
+	uiVertexCount += 4;
+	uiIndexCount += 6;
+	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+
+	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+}
+
+void Render::
 DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	if (color.a == 0) return;
 	
@@ -3084,7 +3111,7 @@ DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	}
 	
 	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2D* vp = uiVertexArray + uiVertexCount;
+	Vertex2* vp = uiVertexArray + uiVertexCount;
 	u16*      ip = uiIndexArray + uiIndexCount;
 	
 	vec2 ott = vec2(x2, y2) - vec2(x1, y1) ;
@@ -3118,7 +3145,7 @@ DrawLineUI(vec2 start, vec2 end, float thickness, Color color) {
 	}
 	
 	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2D* vp = uiVertexArray + uiVertexCount;
+	Vertex2* vp = uiVertexArray + uiVertexCount;
 	u16* ip = uiIndexArray + uiIndexCount;
 	
 	vec2 ott = end - start;
@@ -3163,7 +3190,7 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color) {
 	}
 	
 	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2D* vp = uiVertexArray + uiVertexCount;
+	Vertex2* vp = uiVertexArray + uiVertexCount;
 	u16*      ip = uiIndexArray  + uiIndexCount;
 	
 	f32 w = fonts[1].width;
