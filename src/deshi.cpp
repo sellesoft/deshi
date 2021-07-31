@@ -6,8 +6,8 @@ Ma  Math      Oth Other            Op  Optimization    Ph  Physics     Re  Rende
 Sh  Shader    So  Sound            Ui  UI              Vu  Vulkan      Wi  Window
 
 TODO Style: TODO(person,tags) description
-  eg: TODO(delle) no tag or date for delle
-  eg: TODO(sushi,ReOp) render,optimization tags for sushi
+eg: TODO(delle) no tag or date for delle
+eg: TODO(sushi,ReOp) render,optimization tags for sushi
 
 The person listed doesn't necessarily have to be you, and can be someone else
 if you feel they would handle the problem better. It should generally be you though.
@@ -168,6 +168,7 @@ __________ maybe store the text in the actual source and create the file from th
 #include "utils/array.h"
 #include "utils/hash.h"
 #include "utils/map.h"
+#include "utils/view.h"
 #include "math/math.h"
 
 //// core/game headers ////
@@ -243,55 +244,55 @@ local Scene   scene;   Scene*   g_scene   = &scene;
 local Admin   admin;   Admin*   g_admin   = &admin;
 
 int main() {
-	TIMER_START(t_d); TIMER_START(t_f); TIMER_START(t_s);
-	//pre-init setup
-	Assets::enforceDirectories();
+    TIMER_START(t_d); TIMER_START(t_f); TIMER_START(t_s);
+    //pre-init setup
+    Assets::enforceDirectories();
 	
-	//init engine core
-	TIMER_RESET(t_s); time_.Init(700);        SUCCESS("Finished time initialization in ", TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ", TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); scene.Init();           SUCCESS("Finished scene initialization in ", TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ", TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); DeshiImGui::Init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ", TIMER_END(t_s), "ms");
-	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
+    //init engine core
+    TIMER_RESET(t_s); time_.Init(700);        SUCCESS("Finished time initialization in ", TIMER_END(t_s), "ms");
+    TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ", TIMER_END(t_s), "ms");
+    TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
+    TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ", TIMER_END(t_s), "ms");
+    TIMER_RESET(t_s); scene.Init();           SUCCESS("Finished scene initialization in ", TIMER_END(t_s), "ms");
+    TIMER_RESET(t_s); DeshiImGui::Init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
+    TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ", TIMER_END(t_s), "ms");
+    SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
 	
-	//init game admin
-	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
-	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
+    //init game admin
+    TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
+    SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
 	
-	//start main loop
-	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
-		glfwPollEvents();
+    //start main loop
+    while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
+        glfwPollEvents();
 		
-		DeshiImGui::NewFrame();                                                         //place imgui calls after this
-		TIMER_RESET(t_d); time_.Update();           time_.timeTime   = TIMER_END(t_d);
-		TIMER_RESET(t_d); window.Update();          time_.windowTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); input.Update();           time_.inputTime  = TIMER_END(t_d);
-		TIMER_RESET(t_d); admin.Update();           time_.adminTime  = TIMER_END(t_d);
-		TIMER_RESET(t_d); console.Update(); Console2::Update(); time_.consoleTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
-		UI::Update();
-		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
-		{//debugging area
-			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
-			UI::PushColor(UIStyleCol_Text, Color(144, 123, 132));
-			UI::PopColor();
-			UI::EndWindow();
-		}
-		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
-	}
+        DeshiImGui::NewFrame();                                                         //place imgui calls after this
+        TIMER_RESET(t_d); time_.Update();           time_.timeTime   = TIMER_END(t_d);
+        TIMER_RESET(t_d); window.Update();          time_.windowTime = TIMER_END(t_d);
+        TIMER_RESET(t_d); input.Update();           time_.inputTime  = TIMER_END(t_d);
+        TIMER_RESET(t_d); admin.Update();           time_.adminTime  = TIMER_END(t_d);
+        TIMER_RESET(t_d); console.Update(); Console2::Update(); time_.consoleTime = TIMER_END(t_d);
+        TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
+        UI::Update();
+        TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
+        {//debugging area
+            //UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
+            //UI::PushColor(UIStyleCol_Text, Color(144, 123, 132));
+            //UI::PopColor();
+            //UI::EndWindow();
+        }
+        time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
+    }
 	
-	//cleanup
-	admin.Cleanup();
-	DeshiImGui::Cleanup();
-	Render::Cleanup();
-	window.Cleanup();
-	console.CleanUp(); Console2::Cleanup();
+    //cleanup
+    admin.Cleanup();
+    DeshiImGui::Cleanup();
+    Render::Cleanup();
+    window.Cleanup();
+    console.CleanUp(); Console2::Cleanup();
 	
 #if 0
-	DEBUG_BREAK;
+    DEBUG_BREAK;
 #endif
-	return 0;
+    return 0;
 }

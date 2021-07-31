@@ -154,7 +154,9 @@
     <ClInclude Include="..\src\core\console2.h" />
     <ClInclude Include="..\src\core\imgui.h" />
     <ClInclude Include="..\src\core\input.h" />
+    <ClInclude Include="..\src\core\model.h" />
     <ClInclude Include="..\src\core\renderer.h" />
+    <ClInclude Include="..\src\core\scene.h" />
     <ClInclude Include="..\src\core\time.h" />
     <ClInclude Include="..\src\core\ui.h" />
     <ClInclude Include="..\src\core\window.h" />
@@ -207,10 +209,6 @@
     <ClInclude Include="..\src\math\Quaternion.h" />
     <ClInclude Include="..\src\math\Vector.h" />
     <ClInclude Include="..\src\math\VectorMatrix.h" />
-    <ClInclude Include="..\src\scene\Armature.h" />
-    <ClInclude Include="..\src\scene\Bone.h" />
-    <ClInclude Include="..\src\scene\Model.h" />
-    <ClInclude Include="..\src\scene\Scene.h" />
     <ClInclude Include="..\src\utils\array.h" />
     <ClInclude Include="..\src\utils\Color.h" />
     <ClInclude Include="..\src\utils\Command.h" />
@@ -224,6 +222,7 @@
     <ClInclude Include="..\src\utils\string.h" />
     <ClInclude Include="..\src\utils\tuple.h" />
     <ClInclude Include="..\src\utils\utils.h" />
+    <ClInclude Include="..\src\utils\view.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\.gitignore" />
@@ -263,6 +262,7 @@
     <None Include="..\src\math\Vector3.inl" />
     <None Include="..\src\math\Vector4.inl" />
     <None Include="build.bat" />
+    <None Include="TODOP.py" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\core\assets.cpp">
@@ -282,6 +282,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\src\core\renderers\vulkan.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\src\core\scene.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
     </ClCompile>
@@ -324,7 +328,6 @@
     <ClCompile Include="..\src\game\systems\PhysicsSystem.cpp" />
     <ClCompile Include="..\src\game\systems\SoundSystem.cpp" />
     <ClCompile Include="..\src\game\UndoManager.cpp" />
-    <ClCompile Include="..\src\scene\Model.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\cfg\keybinds.txt" />
@@ -333,7 +336,9 @@
     <Font Include="..\data\fonts\Paskowy.ttf" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="..\customvis.natvis" />
+    <Natvis Include="customvis.natvis">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
+    </Natvis>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -109,18 +109,6 @@
     <ClInclude Include="..\src\game\Keybinds.h">
       <Filter>src\game</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\scene\Armature.h">
-      <Filter>src\scene</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\scene\Bone.h">
-      <Filter>src\scene</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\scene\Model.h">
-      <Filter>src\scene</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\scene\Scene.h">
-      <Filter>src\scene</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\game\components\MeshComp.h">
       <Filter>src\game\components\h</Filter>
     </ClInclude>
@@ -226,6 +214,15 @@
     <ClInclude Include="..\src\utils\hash.h">
       <Filter>src\utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\utils\view.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\model.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\scene.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -288,12 +285,6 @@
     <Filter Include="src\game\systems\h">
       <UniqueIdentifier>{b0b97b0f-958f-4711-bbab-fe685af843a0}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\scene">
-      <UniqueIdentifier>{1a054cbd-376e-4ecb-9e7b-e166da4b4673}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="entities">
-      <UniqueIdentifier>{8c839c22-d0ce-4f08-b477-e8abd74d5fc2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="src\game\entities">
       <UniqueIdentifier>{9823d188-a342-4244-917d-ab38574c391b}</UniqueIdentifier>
     </Filter>
@@ -308,6 +299,9 @@
     </Filter>
     <Filter Include="fonts">
       <UniqueIdentifier>{65411276-8752-4cb2-8428-7d9175a1c4b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="misc">
+      <UniqueIdentifier>{151d6d80-8b76-4a2d-ab94-8224742b54b7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -422,6 +416,9 @@
     <None Include="..\data\fonts\gohufont-11.bdf">
       <Filter>fonts</Filter>
     </None>
+    <None Include="TODOP.py">
+      <Filter>misc</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\external\imgui\imgui_widgets.cpp">
@@ -477,9 +474,6 @@
     </ClCompile>
     <ClCompile Include="..\src\game\systems\SoundSystem.cpp">
       <Filter>src\game\systems\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\scene\Model.cpp">
-      <Filter>src\scene</Filter>
     </ClCompile>
     <ClCompile Include="..\src\game\components\MeshComp.cpp">
       <Filter>src\game\components\cpp</Filter>
@@ -541,6 +535,9 @@
     <ClCompile Include="..\src\core\ui.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\core\scene.cpp">
+      <Filter>src\core</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\cfg\keybinds.txt">
@@ -553,6 +550,8 @@
     </Font>
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="..\customvis.natvis" />
+    <Natvis Include="customvis.natvis">
+      <Filter>misc</Filter>
+    </Natvis>
   </ItemGroup>
 </Project>

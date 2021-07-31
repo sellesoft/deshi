@@ -8,10 +8,10 @@
 void Scene::
 Init(){
 	//null assets      //TODO(delle) store null.png and null shader in a .cpp
-	CreateBoxMesh(1.0f, 1.0f, 1.0f); cpystr(NullMesh()->name, "null_mesh.mesh", DESHI_NAME_SIZE);
-	CreateTextureFromFile("null128.png"); cpystr(NullTexture()->name, "null_texture.tex", DESHI_NAME_SIZE);
+	CreateBoxMesh(1.0f, 1.0f, 1.0f);
+	CreateTextureFromFile("null128.png");
 	CreateMaterial("null_material.mat", Shader_NULL, MaterialFlags_NONE, {0});
-	CreateModelFromMesh(NullMesh(), Shader_NULL); cpystr(NullTexture()->name, "null_model.model", DESHI_NAME_SIZE);
+	CreateModelFromMesh(NullMesh(), Shader_NULL);
 }
 
 void Scene::
@@ -61,10 +61,10 @@ AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighb
 	mesh->faceArray[0].outerVertexArray      = (u32*)cursor; cursor +=      facesOuterVertexCount*sizeof(u32);
 	mesh->faceArray[0].neighborTriangleArray = (u32*)cursor; cursor += facesNeighborTriangleCount*sizeof(u32);
 	mesh->faceArray[0].neighborFaceArray     = (u32*)cursor; //cursor +=     facesNeighborFaceCount*sizeof(u32);
-	mesh->indexes   = array_view<Mesh::Index>   (mesh->indexArray,    indexCount,    indexCount);
-	mesh->vertexes  = array_view<Mesh::Vertex>  (mesh->vertexArray,   vertexCount,   vertexCount);
-	mesh->triangles = array_view<Mesh::Triangle>(mesh->triangleArray, triangleCount, triangleCount);
-	mesh->faces     = array_view<Mesh::Face>    (mesh->faceArray,     faceCount,     faceCount);
+	mesh->indexes   = View<Mesh::Index>   (mesh->indexArray,    indexCount);
+	mesh->vertexes  = View<Mesh::Vertex>  (mesh->vertexArray,   vertexCount);
+	mesh->triangles = View<Mesh::Triangle>(mesh->triangleArray, triangleCount);
+	mesh->faces     = View<Mesh::Face>    (mesh->faceArray,     faceCount);
 	return mesh;
 }
 
@@ -87,6 +87,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	
 	Mesh* mesh = AllocateMesh(36, 8, 6, 36, 24, 24, 24, 24);
 	cpystr(mesh->name, "box_mesh.mesh", DESHI_NAME_SIZE);
+	mesh->idx      = meshes.size();
 	mesh->aabbMin  = {-width,-height,-depth};
 	mesh->aabbMax  = { width, height, depth};
 	mesh->center   = {  0.0f,   0.0f,  0.0f};
@@ -137,13 +138,13 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	}
 	
 	//triangle array neighbor array offsets
-	ta[0].neighbors = array_view<u32>(ta[0].neighborArray, 3, 3);
-	ta[0].edges = array_view<u8>(ta[0].edgeArray, 3, 3);
+	ta[0].neighbors = View<u32>(ta[0].neighborArray, 3);
+	ta[0].edges     = View<u8>(ta[0].edgeArray, 3);
 	for(int i=1; i<12; ++i){
 		ta[i].neighborArray = ta[i-1].neighborArray+3;
 		ta[i].edgeArray     = ta[i-1].edgeArray+3;
-		ta[i].neighbors = array_view<u32>(ta[i].neighborArray, 3, 3);
-		ta[i].edges     = array_view<u8>(ta[i].edgeArray, 3, 3);
+		ta[i].neighbors = View<u32>(ta[i].neighborArray, 3);
+		ta[i].edges     = View<u8>(ta[i].edgeArray, 3);
 	}
 	
 	//triangle array neighbors array
@@ -185,8 +186,10 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	}
 	
 	//face array triangle array offsets
+	fa[0].triangles = View<u32>(fa[0].triangleArray, 2);
 	for(int i=1; i<6; ++i){
 		fa[i].triangleArray = fa[i-1].triangleArray+2;
+		fa[i].triangles = View<u32>(fa[i].triangleArray, 2);
 	}
 	
 	//face array triangle arrays
@@ -196,9 +199,13 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	}
 	
 	//face array vertex array offsets
+	fa[0].vertexes      = View<u32>(fa[0].vertexArray, 4);
+	fa[0].outerVertexes = View<u32>(fa[0].outerVertexArray, 4);
 	for(int i=1; i<6; ++i){
 		fa[i].vertexArray      = fa[i-1].vertexArray+4;
 		fa[i].outerVertexArray = fa[i-1].outerVertexArray+4;
+		fa[i].vertexes      = View<u32>(fa[i].vertexArray, 4);
+		fa[i].outerVertexes = View<u32>(fa[i].outerVertexArray, 4);
 	}
 	
 	//face array vertex arrays
@@ -210,9 +217,13 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	fa[5].vertexArray[0]=4; fa[5].vertexArray[1]=0; fa[5].vertexArray[2]=1; fa[5].vertexArray[3]=5; // +z
 	
 	//face array neighbor array offsets
+	fa[0].triangleNeighbors = View<u32>(fa[0].neighborTriangleArray, 4);
+	fa[0].faceNeighbors     = View<u32>(fa[0].neighborFaceArray, 4);
 	for(int i=1; i<6; ++i){
 		fa[i].neighborTriangleArray = fa[i-1].neighborTriangleArray+4;
 		fa[i].neighborFaceArray     = fa[i-1].neighborFaceArray+4;
+		fa[i].triangleNeighbors = View<u32>(fa[i].neighborTriangleArray, 4);
+		fa[i].faceNeighbors     = View<u32>(fa[i].neighborFaceArray, 4);
 	}
 	
 	//face array neighbor triangle array
@@ -233,7 +244,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	
 	Render::LoadMesh(mesh);
 	
-	result.first  = meshes.size();
+	result.first  = mesh->idx;
 	result.second = mesh;
 	meshes.add(mesh);
 	return result;
@@ -309,11 +320,16 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 	
 	Texture* texture = AllocateTexture();
 	cpystr(texture->name, filename, DESHI_NAME_SIZE);
+	texture->idx = textures.size();
 	texture->format  = format;
 	texture->type    = type;
 	texture->pixels  = stbi_load((Assets::dirTextures()+filename).c_str(), &texture->width, &texture->height, &texture->depth, format);
 	texture->loaded  = true;
-	if(texture->pixels == 0){ ERROR_LOC("Failed to create texture '",filename,"': ",stbi_failure_reason()); return result; }
+	if(texture->pixels == 0){ 
+		ERROR_LOC("Failed to create texture '",filename,"': ",stbi_failure_reason()); 
+		DeallocateTexture(texture);
+		return result; 
+	}
 	texture->mipmaps = (generateMipmaps) ? (int)log2(Max(texture->width, texture->height)) + 1 : 1;
 	
 	Render::LoadTexture(texture);
@@ -322,7 +338,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 		texture->pixels = 0;
 	}
 	
-	result.first  = textures.size();
+	result.first  = texture->idx;
 	result.second = texture;
 	textures.add(texture);
 	return result;
@@ -349,7 +365,7 @@ AllocateMaterial(u32 textureCount){
 	Material* material = (Material*)calloc(1, sizeof(Material) + textureCount*sizeof(u32));
 	material->textureCount = textureCount;
 	material->textureArray = (u32*)(material+1);
-	material->textures = array_view<u32>(material->textureArray, textureCount, textureCount);
+	material->textures = View<u32>(material->textureArray, textureCount);
 	return material;
 }
 
@@ -374,6 +390,7 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 	}
 	
 	Material* material = AllocateMaterial(textures.size());
+	material->idx = materials.size();
 	cpystr(material->name, name, DESHI_NAME_SIZE);
 	material->shader = shader;
 	material->flags  = flags;
@@ -399,7 +416,7 @@ DeleteMaterial(Material* material){
 local Model* 
 AllocateModel(u32 batchCount){
 	Model* model = (Model*)calloc(1, sizeof(Model));
-	model->batches = array<Model::Batch>(batchCount);
+	model->batches.resize(batchCount);
 	return model;
 }
 
@@ -456,7 +473,7 @@ CreateModelFromMesh(Mesh* mesh, ModelFlags flags){
 	pair<u32,Model*> result(0, NullModel());
 	
 	string mesh_name(mesh->name);
-	string model_name = mesh_name.substr(0, mesh_name.size-5) + ".model";
+	string model_name = mesh_name.substr(0, mesh_name.size-6) + ".model";
 	//check if created already
 	forX(mi, models.size()){
 		if((models[mi]->mesh == mesh) && (string(models[mi]->name) == model_name) && (models[mi]->flags == flags) 
@@ -468,12 +485,13 @@ CreateModelFromMesh(Mesh* mesh, ModelFlags flags){
 	
 	Model* model = AllocateModel(1);
 	cpystr(model->name, model_name.str, DESHI_NAME_SIZE);
+	model->idx = models.size();
 	model->mesh = mesh;
 	model->batches[0].indexOffset = 0;
 	model->batches[0].indexCount = mesh->indexCount;
 	model->batches[0].material = 0;
 	
-	result.first = models.size();
+	result.first  = model->idx;
 	result.second = model;
 	models.add(model);
 	return result;

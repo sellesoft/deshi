@@ -6,12 +6,13 @@
 #include "../defines.h"
 #include "../math/VectorMatrix.h"
 #include "../utils/array.h"
+#include "../utils/view.h"
 
-enum ImageFormat_{
-	ImageFormat_BW,
-	ImageFormat_BWA,
-	ImageFormat_RGB,
-	ImageFormat_RGBA,
+enum ImageFormat_{ //NOTE value = bytes per pixel
+	ImageFormat_BW   = 1,
+	ImageFormat_BWA  = 2,
+	ImageFormat_RGB  = 3,
+	ImageFormat_RGBA = 4,
 }; typedef u32 ImageFormat;
 
 enum TextureType_{
@@ -54,6 +55,7 @@ enum ModelFlags_{
 //NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
 struct Mesh{
 	char name[DESHI_NAME_SIZE];
+	u32  idx;
 	vec3 aabbMin;
 	vec3 aabbMax;
 	vec3 center;
@@ -71,12 +73,12 @@ struct Mesh{
 	//f32 boneWeights[4];
 	//}  *vertexExArray;
 	u32 vertexCount;
-	array_view<Vertex> vertexes;
+	View<Vertex> vertexes;
 	
 	typedef u32 Index;
 	u32    indexCount;
 	Index* indexArray;
-	array_view<u32> indexes;
+	View<u32> indexes;
 	
 	struct Triangle{
 		vec3 normal;
@@ -89,11 +91,11 @@ struct Mesh{
 		
 		u32* neighborArray;
 		u8*  edgeArray;
-		array_view<u32> neighbors;
-		array_view<u8>  edges;
+		View<u32> neighbors;
+		View<u8>  edges;
 	}  *triangleArray;
 	u32 triangleCount;
-	array_view<Triangle> triangles;
+	View<Triangle> triangles;
 	
 	struct Face{
 		vec3 normal;
@@ -108,18 +110,19 @@ struct Mesh{
 		u32* outerVertexArray;
 		u32* neighborTriangleArray;
 		u32* neighborFaceArray;
-		array_view<u32> triangles;
-		array_view<u32> vertexes;
-		array_view<u32> outerVertexes;
-		array_view<u32> triangleNeighbors;
-		array_view<u32> faceNeighbors;
+		View<u32> triangles;
+		View<u32> vertexes;
+		View<u32> outerVertexes;
+		View<u32> triangleNeighbors;
+		View<u32> faceNeighbors;
 	}  *faceArray;
 	u32 faceCount;
-	array_view<Face> faces;
+	View<Face> faces;
 };
 
 struct Texture{
 	char name[DESHI_NAME_SIZE];
+	u32  idx;
 	int  width;
 	int  height;
 	int  depth;
@@ -132,15 +135,17 @@ struct Texture{
 
 struct Material{
 	char name[DESHI_NAME_SIZE];
+	u32  idx;
 	Shader shader;
 	MaterialFlags flags;
 	u32* textureArray;
 	u32  textureCount;
-	array_view<u32> textures;
+	View<u32> textures;
 };
 
 struct Model{
 	char name[DESHI_NAME_SIZE];
+	u32  idx;
 	ModelFlags flags;
 	Mesh*      mesh;
 	Armature*  armature;

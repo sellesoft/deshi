@@ -199,6 +199,21 @@ struct array {
 		last = 0;
 	}
 	
+	//allocates space for count elements and zero-inits any new elements
+	void resize(int count){
+		if(count > space){
+			space = count;
+			int osize = size() - 1;
+			int iteroffset = iter - first;
+			items = (T*)realloc(items, space*sizeof(T));
+			memset(items+osize+1, 0, (count-osize)*sizeof(T));
+			first = items;
+			iter  = first + iteroffset;
+			last  = items + space - 1;
+			max   = items + space;
+		}
+	}
+	
 	void reserve(int nuspace) {
 		if (nuspace > space) {
 			space = nuspace;
@@ -274,20 +289,6 @@ struct array {
 	const_iterator end()   const { return &items[size()]; }
 	
 	
-};
-
-//NOTE non owning view over a set of data
-template<class T>
-struct array_view : public array<T>{
-	array_view(T* _items, int _count, int _max){
-		items    = first = iter = _items;
-		last     = _items + _count;
-		max      = _items + _max;
-		itemsize = sizeof(T);
-		space    = _count;
-	}
-	
-	~array_view() override {}
 };
 
 #endif

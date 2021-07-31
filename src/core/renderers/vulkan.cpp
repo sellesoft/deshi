@@ -21,6 +21,14 @@ http://gameangst.com/?p=9
 // VULKAN STRUCTS
 
 
+struct MeshVk{
+	Mesh* base;
+	VkDeviceSize vbOffset;
+	VkDeviceSize vbSize;
+	VkDeviceSize ibOffset;
+	VkDeviceSize ibSize;
+};
+
 struct TextureVk {
     Texture* base;
     VkImage        image;
@@ -37,12 +45,13 @@ struct MaterialVk{
     VkPipeline      pipeline;
 };
 
-struct MeshVk{
-	Mesh* base;
-	VkDeviceSize vbOffset;
-	VkDeviceSize vbSize;
-	VkDeviceSize ibOffset;
-	VkDeviceSize ibSize;
+struct FontVk{
+	Font* base;
+	u32 texture;
+	u32 characterWidth;
+	u32 characterHeight;
+	u32 characterCount;
+	VkDescriptorSet descriptorSet;
 };
 
 struct Vertex2{
@@ -54,7 +63,7 @@ struct Vertex2{
 struct ModelCmdVk{
 	u32   indexOffset;
 	u32   indexCount;
-	u32   materialIdx;
+	u32   material;
 	char* name;
 	mat4  matrix;
 };
@@ -104,15 +113,6 @@ struct BufferVk{
 	VkDeviceMemory         memory;
 	VkDeviceSize           size;
 	VkDescriptorBufferInfo descriptor;
-};
-
-struct FontVk{
-	u32 id;
-	u32 textureIdx;
-	u32 width;
-	u32 height;
-	u32 char_count;
-	VkDescriptorSet descriptorSet;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -198,9 +198,9 @@ local ModelCmdVk modelCmdArray[MAX_MODEL_CMDS];
 // VULKAN VARIABLES
 
 
+array<MeshVk>      meshes;
 array<TextureVk>   textures;
 array<MaterialVk>  materials;
-array<MeshVk>      meshes;
 array<FontVk>      fonts;
 
 vec4 lights[10]{ vec4(0,0,0,-1) };
@@ -378,6 +378,7 @@ local struct{ //pipelines
 		VkPipeline array[16];
 		struct{
 			//game shaders
+			VkPipeline null;
 			VkPipeline flat;
 			VkPipeline phong;
 			VkPipeline twod;
@@ -493,6 +494,7 @@ DebugSetObjectNameVk(VkDevice device, VkObjectType object_type, u64 object_handl
 //returns a command buffer that will only execute once
 local VkCommandBuffer
 BeginSingleTimeCommands(){
+	AssertRS(RSVK_COMMANDPOOL, "BeginSingleTimeCommands called before CreateCommandPool");
 	VkCommandBuffer commandBuffer;
 	
 	VkCommandBufferAllocateInfo allocInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
@@ -538,7 +540,7 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 		}break;
 		default:{
 			PrintVk(4, pCallbackData->pMessage);
-			PRINTLN(pCallbackData->pMessage << "\n");
+			if(settings.loggingLevel >= 4) PRINTLN(pCallbackData->pMessage << '\n'); //TODO(delle) make this a config
 		}break;
 	}
 	return VK_FALSE;
@@ -552,6 +554,7 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 local u32
 FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties){
 	PrintVk(4, "      Finding Memory Types");
+	AssertRS(RSVK_PHYSICALDEVICE, "FindMemoryType called before PickPhysicalDevice");
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 	
@@ -569,6 +572,7 @@ FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties){
 local VkImageView
 CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels){
 	PrintVk(4, "      Creating Image View");
+	AssertRS(RSVK_LOGICALDEVICE, "CreateImageView called before CreateLogicalDevice");
 	VkImageViewCreateInfo viewInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
 	viewInfo.image    = image;
 	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -588,6 +592,7 @@ CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, 
 local void 
 CreateImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory){
 	PrintVk(4, "      Creating Image");
+	AssertRS(RSVK_LOGICALDEVICE, "CreateImage called before CreateLogicalDevice");
 	VkImageCreateInfo imageInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
 	imageInfo.imageType     = VK_IMAGE_TYPE_2D;
 	imageInfo.extent.width  = width;
@@ -618,6 +623,7 @@ CreateImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSampl
 local void 
 TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels){
 	PrintVk(4, "      Transitioning Image Layout");
+	AssertRS(RSVK_LOGICALDEVICE, "TransitionImageLayout called before CreateLogicalDevice");
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 	
 	VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
@@ -1721,7 +1727,8 @@ CreateLayouts(){
 		
 		descriptorSetLayoutCI.bindingCount = 2;
 		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.base));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.base, "Base descriptor set layout");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.base, 
+							 "Base descriptor set layout");
 	}
 	
 	{//create textures descriptor set layout
@@ -1751,12 +1758,14 @@ CreateLayouts(){
 		
 		descriptorSetLayoutCI.bindingCount = 4;
 		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.textures));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.textures, "Textures descriptor set layout");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.textures, 
+							 "Textures descriptor set layout");
 	}
 	
 	{//create instances descriptor set layout
 		
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.instances, "Instances descriptor set layout");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.instances, 
+							 "Instances descriptor set layout");
 	}
 	
 	{//create twod descriptor set layout
@@ -1768,7 +1777,8 @@ CreateLayouts(){
 		
 		descriptorSetLayoutCI.bindingCount = 1;
 		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, nullptr, &descriptorSetLayouts.twod));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.twod, "2D descriptor set layout");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.twod, 
+							 "2D descriptor set layout");
 	}
 	
 	//create geometry descriptor set layout
@@ -1778,15 +1788,16 @@ CreateLayouts(){
 		setLayoutBindings[0].stageFlags      = VK_SHADER_STAGE_VERTEX_BIT;
 		setLayoutBindings[0].binding         = 0;
 		setLayoutBindings[0].descriptorCount = 1;
-		//binding 2: geometry shader UBO
+		//binding 1: geometry shader UBO
 		setLayoutBindings[1].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		setLayoutBindings[1].stageFlags      = VK_SHADER_STAGE_GEOMETRY_BIT;
 		setLayoutBindings[1].binding         = 1;
 		setLayoutBindings[1].descriptorCount = 1;
 		
 		descriptorSetLayoutCI.bindingCount = 2;
-		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.base));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.base, "Base descriptor set layout");
+		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.geometry));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.geometry, 
+							 "Geometry descriptor set layout");
 	}
 	
 	{//create base pipeline layout
@@ -1806,7 +1817,8 @@ CreateLayouts(){
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges    = &pushConstantRange;
 		AssertVk(vkCreatePipelineLayout(device, &pipelineLayoutInfo, allocator, &pipelineLayouts.base));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.base, "Base pipeline layout");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.base, 
+							 "Base pipeline layout");
 	}
 	
 	{//create twod pipeline layout
@@ -1822,7 +1834,8 @@ CreateLayouts(){
 		createInfo.pushConstantRangeCount = 1;
 		createInfo.pPushConstantRanges    = &pushConstantRange;
 		AssertVk(vkCreatePipelineLayout(device, &createInfo, allocator, &pipelineLayouts.twod));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.twod, "2D pipeline layout");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.twod, 
+							 "2D pipeline layout");
 	}
 	
 	{//create geometry shader pipeline layout
@@ -1837,7 +1850,8 @@ CreateLayouts(){
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges    = &pushConstantRange;
 		AssertVk(vkCreatePipelineLayout(device, &pipelineLayoutInfo, allocator, &pipelineLayouts.geometry));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.geometry, "Geometry pipeline layout");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE_LAYOUT, (u64)pipelineLayouts.geometry, 
+							 "Geometry pipeline layout");
 	}
 }
 
@@ -2414,6 +2428,15 @@ specializationInfo.mapEntryCount = 1;
 		pipelineCreateInfo.basePipelineIndex  = -1; //can either use handle or index, not both (section 9.5 of vulkan spec)
 	}
 	
+	{//null pipeline
+		shaderStages[0] = loadShader("null.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = loadShader("null.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[1].pSpecializationInfo = &specializationInfo;
+		pipelineCreateInfo.stageCount = 2;
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.null));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.null, "Null pipeline");
+	}
+	
 	{//flat pipeline
 		shaderStages[0] = loadShader("flat.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("flat.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -2616,7 +2639,8 @@ specializationInfo.mapEntryCount = 1;
 local VkPipeline 
 GetPipelineFromShader(u32 shader){
 	switch(shader){
-		case(Shader_Flat):default:{ return pipelines.flat;      }
+		case(Shader_NULL):default:{ return pipelines.null;      }
+		case(Shader_Flat):        { return pipelines.flat;      }
 		case(Shader_Phong):       { return pipelines.phong;     }
 		case(Shader_PBR):         { return pipelines.pbr;       }
 		case(Shader_Wireframe):   { return pipelines.wireframe; }
@@ -2792,6 +2816,8 @@ BuildCommands(){
 			vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
 			vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 			vkCmdSetDepthBias(cmdBuffer, settings.depthBiasConstant, 0.0f, settings.depthBiasSlope);
+			pipeline = pipelines.offscreen;
+			descriptorSet = descriptorSets.offscreen;
 			vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.offscreen);
 			vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.offscreen, 0, nullptr);
 			
@@ -2801,7 +2827,7 @@ BuildCommands(){
 			vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 			forI(modelCmdCount){
 				ModelCmdVk& cmd = modelCmdArray[i];
-				MaterialVk& mat = materials[cmd.materialIdx];
+				MaterialVk& mat = materials[cmd.material];
 				DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &cmd.matrix);
 				vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
@@ -2851,7 +2877,7 @@ BuildCommands(){
 			vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 			forI(modelCmdCount){
 				ModelCmdVk& cmd = modelCmdArray[i];
-				MaterialVk& mat = materials[cmd.materialIdx];
+				MaterialVk& mat = materials[cmd.material];
 				DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &cmd.matrix);
 				
@@ -3181,10 +3207,9 @@ void Render::
 DrawTextUI(string text, vec2 pos, Color color) {
 	if (color.a == 0) return;
 	
-	f32 w = fonts[1].width;
 	for (int i = 0; i < text.size; i++) {
 		DrawCharUI((u32)text[i], pos, vec2::ONE, color);
-		pos.x += w;
+		pos.x += fonts[1].characterWidth;
 	}
 }
 
@@ -3201,9 +3226,9 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color) {
 	Vertex2* vp = uiVertexArray + uiVertexCount;
 	u16*     ip = uiIndexArray  + uiIndexCount;
 	
-	f32 w = fonts[1].width;
-	f32 h = fonts[1].height;
-	f32 dy = 1.f / (f32)fonts[1].char_count; 
+	f32 w = fonts[1].characterWidth;
+	f32 h = fonts[1].characterHeight;
+	f32 dy = 1.f / (f32)fonts[1].characterCount; 
 	
 	f32 idx = character - 32; 
 	
@@ -3256,16 +3281,61 @@ GetStage(){
 ///////////////
 //// @load ////
 ///////////////
+//TODO(delle) upload extra mesh data to an SSBO
 void Render::
-LoadFont(Font* font){
-	//!Incomplete
+LoadMesh(Mesh* mesh){
+	AssertRS(RSVK_LOGICALDEVICE, "LoadMesh called before CreateLogicalDevice");
+	MeshVk mvk{};
+	mvk.base     = mesh;
+	mvk.vbOffset = meshVertexBuffer.size;
+	mvk.vbSize   = mesh->vertexCount*sizeof(Mesh::Vertex);
+	mvk.ibOffset = meshIndexBuffer.size;
+	mvk.ibSize   = mesh->indexCount*sizeof(Mesh::Index);
+	
+	u64 vb_size = mvk.vbOffset + mvk.vbSize;
+	u64 ib_size = mvk.ibOffset + mvk.ibSize;
+	
+	//create/resize buffers
+	if(meshVertexBuffer.buffer == VK_NULL_HANDLE || meshVertexBuffer.size < vb_size){
+		CreateOrResizeBuffer(&meshVertexBuffer, vb_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)meshVertexBuffer.buffer, "Mesh vertex buffer");
+	}
+	if(meshIndexBuffer.buffer == VK_NULL_HANDLE || meshIndexBuffer.size < ib_size){
+		CreateOrResizeBuffer(&meshIndexBuffer, ib_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)meshIndexBuffer.buffer, "Mesh index buffer");
+	}
+	
+	//copy memory to the GPU
+	void* vb_data; void* ib_data;
+	AssertVk(vkMapMemory(device, meshVertexBuffer.memory, mvk.vbOffset, mvk.vbSize, 0, &vb_data));
+	AssertVk(vkMapMemory(device, meshIndexBuffer.memory,  mvk.ibOffset, mvk.ibSize, 0, &ib_data));
+	{
+		memcpy(vb_data, mesh->vertexArray, mvk.vbSize);
+		memcpy(ib_data, mesh->indexArray,  mvk.ibSize);
+		
+		VkMappedMemoryRange range[2] = {};
+		range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range[0].memory = meshVertexBuffer.memory;
+		range[0].offset = mvk.vbOffset;
+		range[0].size   = VK_WHOLE_SIZE;
+		range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range[1].memory = meshIndexBuffer.memory;
+		range[1].offset = mvk.ibOffset;
+		range[1].size   = VK_WHOLE_SIZE;
+		AssertVk(vkFlushMappedMemoryRanges(device, 2, range));
+	}
+	vkUnmapMemory(device, meshVertexBuffer.memory);
+	vkUnmapMemory(device, meshIndexBuffer.memory);
+	
+	meshes.add(mvk);
 }
 
 void Render::
 LoadTexture(Texture* texture){
+	AssertRS(RSVK_COMMANDPOOL, "LoadTexture called before CreateCommandPool");
 	TextureVk tvk{};
 	tvk.base = texture;
-	tvk.size = texture->width * texture->height * texture->depth;
+	tvk.size = texture->width * texture->height * texture->format;
 	
 	//determine image format
 	VkFormat image_format;
@@ -3398,6 +3468,7 @@ LoadTexture(Texture* texture){
 
 void Render::
 LoadMaterial(Material* material){
+	AssertRS(RSVK_DESCRIPTORPOOL, "LoadMaterial called before CreateDescriptorPool");
 	MaterialVk mvk{};
 	mvk.base = material;
 	mvk.pipeline = GetPipelineFromShader(material->shader);
@@ -3428,52 +3499,36 @@ LoadMaterial(Material* material){
 	materials.add(mvk);
 }
 
-//TODO(delle) upload extra mesh data to an SSBO
 void Render::
-LoadMesh(Mesh* mesh){
-	MeshVk mvk{};
-	mvk.base     = mesh;
-	mvk.vbOffset = meshVertexBuffer.size;
-	mvk.vbSize   = mesh->vertexCount*sizeof(Mesh::Vertex);
-	mvk.ibOffset = meshIndexBuffer.size;
-	mvk.ibSize   = mesh->indexCount*sizeof(Mesh::Index);
+LoadFont(Font* font, Texture* texture){
+	AssertRS(RSVK_DESCRIPTORPOOL, "LoadFont called before CreateDescriptorPool");
+	FontVk fvk{};
+	fvk.base            = font;
+	fvk.texture         = texture->idx;
+	fvk.characterWidth  = font->width;
+	fvk.characterHeight = font->height;
+	fvk.characterCount  = font->char_count;
 	
-	u64 vb_size = mvk.vbOffset + mvk.vbSize;
-	u64 ib_size = mvk.ibOffset + mvk.ibSize;
+	//allocate descriptor set
+	VkDescriptorSetAllocateInfo allocInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+	allocInfo.descriptorPool     = descriptorPool;
+	allocInfo.pSetLayouts        = &descriptorSetLayouts.twod;
+	allocInfo.descriptorSetCount = 1;
+	AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &fvk.descriptorSet));
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)fvk.descriptorSet,
+						 TOSTRING("Font descriptor set ",font->name.str).c_str());
 	
-	//create/resize buffers
-	if(meshVertexBuffer.buffer == VK_NULL_HANDLE || meshVertexBuffer.size < vb_size){
-		CreateOrResizeBuffer(&meshVertexBuffer, vb_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)meshVertexBuffer.buffer, "Mesh vertex buffer");
-	}
-	if(meshIndexBuffer.buffer == VK_NULL_HANDLE || meshIndexBuffer.size < ib_size){
-		CreateOrResizeBuffer(&meshIndexBuffer, ib_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)meshIndexBuffer.buffer, "Mesh index buffer");
-	}
+	//write descriptor set
+	VkWriteDescriptorSet writeDescriptorSet{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+	writeDescriptorSet.dstSet          = fvk.descriptorSet;
+	writeDescriptorSet.dstArrayElement = 0;
+	writeDescriptorSet.descriptorCount = 1;
+	writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	writeDescriptorSet.pImageInfo      = &textures[fvk.texture].descriptor;
+	writeDescriptorSet.dstBinding      = 0;
+	vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 	
-	//copy memory to the GPU
-	void* vb_data; void* ib_data;
-	AssertVk(vkMapMemory(device, meshVertexBuffer.memory, mvk.vbOffset, mvk.vbSize, 0, &vb_data));
-	AssertVk(vkMapMemory(device, meshIndexBuffer.memory,  mvk.ibOffset, mvk.ibSize, 0, &ib_data));
-	{
-		memcpy(vb_data, mesh->vertexArray, mvk.vbSize);
-		memcpy(ib_data, mesh->indexArray,  mvk.ibSize);
-		
-		VkMappedMemoryRange range[2] = {};
-		range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-		range[0].memory = meshVertexBuffer.memory;
-		range[0].offset = mvk.vbOffset;
-		range[0].size   = VK_WHOLE_SIZE;
-		range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-		range[1].memory = meshIndexBuffer.memory;
-		range[1].offset = mvk.ibOffset;
-		range[1].size   = VK_WHOLE_SIZE;
-		AssertVk(vkFlushMappedMemoryRanges(device, 2, range));
-	}
-	vkUnmapMemory(device, meshVertexBuffer.memory);
-	vkUnmapMemory(device, meshIndexBuffer.memory);
-	
-	meshes.add(mvk);
+	fonts.add(fvk);
 }
 
 /////////////////
@@ -3502,10 +3557,26 @@ UnloadMesh(Mesh* mesh){
 ///////////////
 //// @draw ////
 ///////////////
-void Render::
+//TODO(delle) redo model drawing, i dont really like it, and i kinda want it to be cached if possible
+//    things that need to be fixed/better:
+//      1. the matrix is duplicated per batch
+//      2. most commands will be remade every frame the exact same with just the matrix differing
+//      3. this relies on scene mesh indexes matching renderer mesh indexes
+void Render:: 
 DrawModel(Model* model, Matrix4 matrix){
-	ModelCmdVk* cmd = modelCmdArray + modelCmdCount;
-	cmd->indexOffset
+	ModelCmdVk*  cmd      = modelCmdArray + modelCmdCount;
+	VkDeviceSize ibOffset = meshes[model->mesh->idx].ibOffset;
+	
+	Assert(modelCmdCount + model->batches.size() < MAX_MODEL_CMDS, "attempted to draw more than the maximum number of batches");
+	forI(model->batches.size()){
+		cmd[i].indexOffset = ibOffset + model->batches[i].indexOffset;
+		cmd[i].indexCount  = model->batches[i].indexCount;
+		cmd[i].material    = model->batches[i].material;
+		cmd[i].name        = model->name;
+		cmd[i].matrix      = matrix;
+	}
+	
+	modelCmdCount += model->batches.size();
 }
 
 void Render::
@@ -3636,6 +3707,13 @@ UpdateCameraProjectionMatrix(Matrix4 m){
 void Render::
 ReloadShader(u32 shader){
 	switch(shader){
+		case(Shader_NULL):{ 
+			vkDestroyPipeline(device, pipelines.null, nullptr);
+			shaderStages[0] = CompileAndLoadShader("null.vert", VK_SHADER_STAGE_VERTEX_BIT);
+			shaderStages[1] = CompileAndLoadShader("null.frag", VK_SHADER_STAGE_FRAGMENT_BIT);
+			pipelineCreateInfo.stageCount = 2;
+			AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipelines.null));
+		}break;
 		case(Shader_Flat):{ 
 			vkDestroyPipeline(device, pipelines.flat, nullptr);
 			shaderStages[0] = CompileAndLoadShader("flat.vert", VK_SHADER_STAGE_VERTEX_BIT);

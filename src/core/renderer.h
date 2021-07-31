@@ -88,11 +88,11 @@ struct RenderSettings{
 	bool tempMeshOnTop   = false;
 };
 
+struct Mesh;
 struct Texture;
 struct Material;
-struct Model;
-struct Mesh;
 struct Font;
+struct Model;
 namespace Render{
 	
     void LoadSettings();
@@ -101,10 +101,10 @@ namespace Render{
     RenderStats*    GetStats();
     RendererStage*  GetStage();
 	
-	void LoadFont(Font* font);
+	void LoadMesh(Mesh* mesh);
     void LoadTexture(Texture* texture);
 	void LoadMaterial(Material* material);
-	void LoadMesh(Mesh* mesh);
+	void LoadFont(Font* font, Texture* texture);
 	
 	void UnloadFont(Font* font);
     void UnloadTexture(Texture* texture);

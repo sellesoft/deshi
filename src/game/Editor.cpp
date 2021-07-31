@@ -1552,9 +1552,9 @@ inline void MaterialsTab(Admin* admin){
     //// create new material ImGui::Button ////
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
     if(ImGui::Button("Create New Material", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
-		sel_mat_idx = DengScene->MaterialCount();
-		selected = DengScene->MaterialAt(sel_mat_idx);
-		DengScene->CreateMaterial(TOSTRING("material", sel_mat_idx).c_str(), Shader_PBR);
+		auto new_mat = DengScene->CreateMaterial(TOSTRING("material", sel_mat_idx).c_str(), Shader_PBR);
+		sel_mat_idx = new_mat.first;
+		selected = new_mat.second;
     }
     
     ImGui::Separator();
@@ -1591,42 +1591,19 @@ inline void MaterialsTab(Admin* admin){
             //// PBR shader ////
             //TODO(Ui) add texture image previews
             case Shader_PBR:default:{
-				ImGui::TextEx("Albedo   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if(ImGui::BeginCombo("##mat_albedo_combo", DengScene->TextureName(selected->textures[0]))){
-                    forI(textures.size()){
-                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[0]), textures[i].c_str()) == 0)){
-							selected->textures[0] = DengScene->CreateTextureFromFile(textures[i].c_str()).first;
-                        }
-                    }
-                    ImGui::EndCombo(); //mat_albedo_combo
-                }
-                ImGui::TextEx("Normal   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if(ImGui::BeginCombo("##mat_normal_combo", DengScene->TextureName(selected->textures[1]))){
-                    forI(textures.size()){
-                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[1]), textures[i].c_str()) == 0)){
-							selected->textures[1] = DengScene->CreateTextureFromFile(textures[i].c_str()).first;
-                        }
-                    }
-                    ImGui::EndCombo(); //mat_normal_combo
-                }
-                ImGui::TextEx("Specular "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if(ImGui::BeginCombo("##mat_spec_combo", DengScene->TextureName(selected->textures[2]))){
-                    forI(textures.size()){
-                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[2]), textures[i].c_str()) == 0)){
-							selected->textures[2] = DengScene->CreateTextureFromFile(textures[i].c_str()).first;
-                        }
-                    }
-                    ImGui::EndCombo(); //mat_spec_combo
-                }
-                ImGui::TextEx("Light    "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-                if(ImGui::BeginCombo("##mat_light_combo", DengScene->TextureName(selected->textures[3]))){
-                    forI(textures.size()){
-                        if(ImGui::Selectable(textures[i].c_str(), strcmp(DengScene->TextureName(selected->textures[3]), textures[i].c_str()) == 0)){
-							selected->textures[3] = DengScene->CreateTextureFromFile(textures[i].c_str()).first;
-                        }
-                    }
-                    ImGui::EndCombo(); //mat_light_combo
-                }
+				forX(mti, selected->textureCount){
+					ImGui::TextEx(TOSTRING("Texture ",mti).c_str()); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+					if(ImGui::BeginCombo("##mat_texture_combo", DengScene->TextureName(selected->textures[mti]))){
+						ImGui::PushID(&selected->textures[mti]);
+						forX(ti, textures.size()){
+							if(ImGui::Selectable(textures[ti].c_str(), strcmp(DengScene->TextureName(selected->textures[mti]), textures[ti].c_str()) == 0)){
+								selected->textures[mti] = DengScene->CreateTextureFromFile(textures[ti].c_str()).first;
+							}
+						}
+						ImGui::PopID();
+						ImGui::EndCombo();
+					}
+				}
             }break;
         }
         
