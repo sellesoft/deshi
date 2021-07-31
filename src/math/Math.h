@@ -533,7 +533,7 @@ namespace Math {
     }
     
     static Vector3 TriangleMidpoint(Vector3 p1, Vector3 p2, Vector3 p3) {
-        return (p1 + p2 + p3) / 3;
+        return (p1 + p2 + p3) / 3.f;
     }
     
     static Vector3 WorldToCamera3(Vector3 vertex, Matrix4 viewMat) {

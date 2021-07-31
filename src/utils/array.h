@@ -275,10 +275,12 @@ struct array {
 	
 	//this is really only necessary for the copy constructor as far as i know
 	T& at(int i) {
+		if(i < 0) return items[size()+i];
 		return items[i];
 	}
 	
 	T& operator[](int i) {
+		if(i < 0) return items[size()+i];
 		return items[i];
 	}
 	

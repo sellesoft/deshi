@@ -10,9 +10,9 @@
 template<class Key, class Value>
 struct map {
 	array<pair<u32, Value>> data;
-
+	
 	u32 seed = 213;
-
+	
 	bool has(const Key& key) {
 		u32 hashed = hash<Key>{}(key);
 		for (auto& p : data) {
@@ -22,7 +22,7 @@ struct map {
 		}
 		return false;
 	}
-
+	
 	Value& operator[](const Key& key) {
 		u32 hashed = hash<Key>{}(key);
 		for (auto& p : data) {
@@ -34,19 +34,19 @@ struct map {
 		data.add(make_pair(hashed, v));
 		return data.last->second;
 	}
-
+	
 	u32 size() {
 		return data.size();
 	}
-
+	
 	void clear() {
 		data.clear();
 	}
-
+	
 	void erase(u32 idx) {
 		data.remove(idx);
 	}
-
+	
 };
 
 #endif

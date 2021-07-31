@@ -29,7 +29,7 @@ Reset(){
 ///////////////
 local Mesh* 
 AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighborCount, u32 facesVertexCount, u32 facesOuterVertexCount, u32 facesNeighborFaceCount, u32 facesNeighborTriangleCount){
-	Assert(indexCount && vertexCount && faceCount && trianglesNeighborCount && facesVertexCount && facesOuterVertexCount && facesNeighborFaceCount && facesNeighborTriangleCount);
+	//Assert(indexCount && vertexCount && faceCount && trianglesNeighborCount && facesVertexCount && facesOuterVertexCount && facesNeighborFaceCount && facesNeighborTriangleCount);
 	
 	u32 triangleCount = indexCount/3;
 	u32 bytes =                    1*sizeof(Mesh)
@@ -178,6 +178,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	//face array  0=up, 1=back, 2=right, 3=down, 4=left, 5=forward
 	for(int i=0; i<6; ++i){
 		fa[i].normal                = ta[i*2].normal;
+		fa[i].center                = ta[i*2].normal * p;
 		fa[i].triangleCount         = 2;
 		fa[i].vertexCount           = 4;
 		fa[i].outerVertexCount      = 4;
@@ -362,10 +363,8 @@ DeleteTexture(Texture* texture){
 ///////////////////
 local Material* 
 AllocateMaterial(u32 textureCount){
-	Material* material = (Material*)calloc(1, sizeof(Material) + textureCount*sizeof(u32));
-	material->textureCount = textureCount;
-	material->textureArray = (u32*)(material+1);
-	material->textures = View<u32>(material->textureArray, textureCount);
+	Material* material = (Material*)calloc(1, sizeof(Material));
+	material->textures.resize(textureCount);
 	return material;
 }
 
@@ -382,7 +381,7 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 	bool textures_equal;
 	forX(mi, materials.size()){
 		if((strcmp(materials[mi]->name, name) == 0) && (materials[mi]->flags == flags) 
-		   && (materials[mi]->shader == shader) && (materials[mi]->textureCount == textures.size())){
+		   && (materials[mi]->shader == shader) && (materials[mi]->textures.size() == textures.size())){
 			textures_equal = true;
 			forX(ti, textures.size()){ if(textures[ti] != materials[mi]->textures[ti]){ textures_equal = false; break; } }
 			if(textures_equal) return pair<u32,Material*>(mi,materials[mi]);
@@ -398,7 +397,7 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 	
 	Render::LoadMaterial(material);
 	
-	result.first  = materials.size();
+	result.first  = material->idx;
 	result.second = material;
 	materials.add(material);
 	return result;
@@ -442,29 +441,113 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags){
 	}
 	if(!reader.Warning().empty()) WARNING("TinyObjReader: " , reader.Warning());
 	
-	auto& attrib = reader.GetAttrib();
-	auto& shapes = reader.GetShapes();
-	auto& materials = reader.GetMaterials();
-	Assert(shapes[0].mesh.num_face_vertices[0] == 3, "OBJ must be triangulated");
+	auto& obj_attrib    = reader.GetAttrib();
+	auto& obj_shapes    = reader.GetShapes();
+	auto& obj_materials = reader.GetMaterials();
+	Assert(obj_shapes[0].mesh.num_face_vertices[0] == 3, "OBJ must be triangulated");
 	
 	//check which features it has
-	bool hasMaterials = materials.size() > 0;
-	bool hasNormals = attrib.normals.size() > 0;
-	bool hasUVs = attrib.texcoords.size() > 0;
-	bool hasColors = attrib.colors.size() > 0;
+	bool hasMaterials = obj_materials.size() > 0;
+	bool hasNormals   = obj_attrib.normals.size() > 0;
+	bool hasUVs       = obj_attrib.texcoords.size() > 0;
+	bool hasColors    = obj_attrib.colors.size() > 0;
 	
-	Model* model = AllocateModel(shapes.size());
+	Model* model = AllocateModel(obj_shapes.size());
+	cpystr(model->name, filename, DESHI_NAME_SIZE);
+	model->idx = models.size();
+	model->flags = flags;
 	
-	map<Mesh::Vertex,u32> uniqueVertexes;
-	for(auto& shape : shapes){
+	map<Mesh::Vertex,Mesh::Index> uniqueVertexes;
+	array<Mesh::Vertex>    vertexArray(obj_attrib.vertices.size());
+	array<Mesh::Index>     indexArray(obj_attrib.vertices.size());
+	array<Mesh::Triangle>  triangleArray(obj_attrib.vertices.size()/3);
+	for(const tinyobj::shape_t& shape : obj_shapes){
+		Model::Batch batch{};
+		batch.indexOffset = indexArray.size();
 		
+		//create batch material
+		Material* batch_material = 0;
+		if(hasMaterials && shape.mesh.material_ids.size() > 0){
+			array<u32> mat_textures;
+			const tinyobj::material_t* obj_mat = &obj_materials[shape.mesh.material_ids[0]];
+			if(obj_mat->diffuse_texname.length() > 0 && obj_mat->diffuse_texopt.type == 0){
+				mat_textures.add(CreateTextureFromFile(obj_mat->diffuse_texname.substr(obj_mat->diffuse_texname.find_last_of('\\') + 1).c_str()).first);
+			}
+			if(obj_mat->specular_texname.length() > 0 && obj_mat->specular_texopt.type == 0){
+				mat_textures.add(CreateTextureFromFile(obj_mat->specular_texname.substr(obj_mat->specular_texname.find_last_of('\\') + 1).c_str()).first);
+			}
+			if(obj_mat->bump_texname.length() > 0 && obj_mat->bump_texopt.type == 0){
+				mat_textures.add(CreateTextureFromFile(obj_mat->bump_texname.substr(obj_mat->bump_texname.find_last_of('\\') + 1).c_str()).first);
+			}
+			if(obj_mat->ambient_texname.length() > 0 && obj_mat->ambient_texopt.type == 0){
+				mat_textures.add(CreateTextureFromFile(obj_mat->ambient_texname.substr(obj_mat->ambient_texname.find_last_of('\\') + 1).c_str()).first);
+			}
+			batch_material = CreateMaterial(shape.name.c_str(), Shader_PBR, MaterialFlags_NONE, mat_textures).second;
+		}
+		
+		//collect vertices/indices from batch
+		for(const tinyobj::index_t& idx : shape.mesh.indices){
+			Mesh::Vertex vertex{};
+			vertex.pos.x = obj_attrib.vertices[3*idx.vertex_index + 0];
+			vertex.pos.y = obj_attrib.vertices[3*idx.vertex_index + 1];
+			vertex.pos.z = obj_attrib.vertices[3*idx.vertex_index + 2];
+			if(hasUVs){
+				vertex.uv.x = obj_attrib.texcoords[2*idx.texcoord_index + 0];
+				vertex.uv.y = obj_attrib.texcoords[2*idx.texcoord_index + 1];
+			}
+			if(hasColors){
+				vertex.color.x = obj_attrib.colors[3*idx.vertex_index + 0];
+				vertex.color.y = obj_attrib.colors[3*idx.vertex_index + 1];
+				vertex.color.z = obj_attrib.colors[3*idx.vertex_index + 2];
+			}
+			if(hasNormals){
+				vertex.normal.x = obj_attrib.normals[3*idx.normal_index + 0];
+				vertex.normal.y = obj_attrib.normals[3*idx.normal_index + 1];
+				vertex.normal.z = obj_attrib.normals[3*idx.normal_index + 2];
+			}
+			
+			if(!uniqueVertexes.has(vertex)){
+				uniqueVertexes[vertex] = (Mesh::Index)vertexArray.size();
+				vertexArray.add(vertex);
+			}
+			indexArray.add(uniqueVertexes[vertex]);
+			
+			if(indexArray.size() % 3 == 0){
+				Mesh::Triangle triangle{};
+				triangle.normal = (vertexArray[indexArray[-1]].normal + vertexArray[indexArray[-2]].normal +
+								   vertexArray[indexArray[-3]].normal).normalized();
+				triangle.p[0] = vertexArray[indexArray[-3]].pos;
+				triangle.p[1] = vertexArray[indexArray[-2]].pos;
+				triangle.p[2] = vertexArray[indexArray[-1]].pos;
+				triangle.v[0] = indexArray[-3];
+				triangle.v[1] = indexArray[-2];
+				triangle.v[2] = indexArray[-1];
+				triangleArray.add(triangle);
+			}
+		}
+		
+		batch.indexCount = indexArray.size() - batch.indexOffset;
+		batch.material   = (batch_material) ? batch_material->idx : 0;
+		model->batches.add(batch);
 	}
 	
-	//!Incomplete
+	//!Incomplete get triangle stuffs
 	
-	//result.first = models.size();
-	//result.second = model;
-	//models.add(model);
+	//!Incomplete get face stuffs
+	
+	Mesh* mesh = AllocateMesh(indexArray.size(), vertexArray.size(), 0, 0, 0, 0, 0, 0);
+	cpystr(mesh->name, string(filename).substr(0, strlen(filename)-5).str, DESHI_NAME_SIZE);
+	memcpy(mesh->vertexArray, vertexArray.items, mesh->vertexCount*sizeof(Mesh::Vertex));
+	memcpy(mesh->indexArray, indexArray.items, mesh->indexCount*sizeof(Mesh::Index));
+	Render::LoadMesh(mesh); //TODO(delle) check if mesh already loaded
+	meshes.add(mesh);
+	
+	model->mesh     = mesh;
+	model->armature = 0;
+	
+	result.first  = model->idx;
+	result.second = model;
+	models.add(model);
 	return result;
 }
 

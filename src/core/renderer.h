@@ -106,6 +106,8 @@ namespace Render{
 	void LoadMaterial(Material* material);
 	void LoadFont(Font* font, Texture* texture);
 	
+	void UpdateMaterial(Material* material);
+	
 	void UnloadFont(Font* font);
     void UnloadTexture(Texture* texture);
 	void UnloadMaterial(Material* material);
@@ -115,6 +117,7 @@ namespace Render{
 	void DrawModelWireframe(Model* model, Matrix4 matrix, Color color = Color::WHITE);
 	void DrawLine(Vector3 start, Vector3 end, Color color = Color::WHITE);
 	void DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color color = Color::WHITE);
+	void FillTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color color = Color::WHITE);
 	void DrawBox(Matrix4 transform, Color color = Color::WHITE);
     void DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color = Color::WHITE);
 	

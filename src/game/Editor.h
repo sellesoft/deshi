@@ -33,9 +33,9 @@ struct Editor{
 	vec3 camera_pos;
 	vec3 camera_rot;
 	
-	bool showEditorWin;
+	bool popoutInspector;
 	
-	bool showDebugTools;
+	bool showInspector;
 	bool showTimes;
 	bool showDebugBar;
 	bool showMenuBar;
@@ -50,16 +50,13 @@ struct Editor{
 	void Cleanup();
 	
 	//TODO(delle,Cl) move these to be local inside the .cpp
-	Entity* SelectEntityRaycast();
 	void TranslateEntity(Entity* e, TransformationAxis axis);
 	void RotateEntity(Entity* e, TransformationAxis axis);
-	
-	void CreateEditorWin();
 	
 	void MenuBar();
 	void DebugLayer();
 	void DebugBar();
-	void DebugTools();
+	void Inspector();
 	void DrawTimes();
 	void WorldGrid(Vector3 cpos);
 	void ShowWorldAxis();

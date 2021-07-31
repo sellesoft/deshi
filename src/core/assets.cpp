@@ -179,11 +179,17 @@ appendFileBinary(const std::string& filepath, const char* data, u32 bytes, bool 
 }
 
 std::vector<std::string> Assets::
-iterateDirectory(const std::string& filepath) {
+iterateDirectory(const std::string& filepath, const char* extension) {
 	using namespace std::filesystem;
 	std::vector<std::string> files;
 	for (auto& p : directory_iterator(filepath)) {
-		files.push_back(p.path().filename().string());
+		if(extension){
+			if(p.path().extension().string() == std::string(extension)){
+				files.push_back(p.path().filename().string());
+			}
+		}else{
+			files.push_back(p.path().filename().string());
+		}
 	}
 	return files;
 }

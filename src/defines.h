@@ -78,6 +78,7 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define Clamp(value, min, max) (((value) < min) ? min : (((value) > max) ? max : (value)))
 #define Max(a, b) (((a) > (b)) ? (a) : (b))
 #define Min(a, b) (((a) < (b)) ? (a) : (b))
+#define RoundUpTo(value, multiple) (((size_t)((value) + ((multiple)-1)) / (size_t)(multiple)) * (size_t)(multiple))
 
 #if DESHI_SLOW
 //assert that an expression is true

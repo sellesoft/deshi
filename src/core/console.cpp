@@ -975,8 +975,8 @@ CMDSTARTA(mat_texture, args.size() == 3){
 	int matID = std::stoi(args[0]);
 	int texSlot = std::stoi(args[1]);
 	int texID = std::stoi(args[2]);
-	DengScene->materials[matID]->textureArray[texSlot] = texID;
-	LOG("Updated material ",DengScene->materials[matID]->name,"'s texture",texSlot," to ",DengScene->textures[texID]->name);
+	DengScene->materials[matID]->textures[texSlot] = texID;
+	LOG("Updated material ",DengScene->materials[matID]->name,"'s texture",texSlot," to ",DengScene->TextureName(texID));
 	return "";
 }CMDEND("mat_texture <materialID:Uint> <textureSlot:Uint> <textureID:Uint>");
 
@@ -993,9 +993,9 @@ CMDFUNC(mat_list){
 		"\nName\tShader\tTextures");
 	for(Material* mat : DengScene->materials){
 		std::string text = TOSTRING(mat->name,'\t',ShaderStrings[mat->shader],'\t');
-		forI(mat->textureCount){
+		forI(mat->textures.size()){
 			text += ' ';
-			text += DengScene->TextureName(mat->textureArray[i]);
+			text += DengScene->TextureName(mat->textures[i]);
 		}
 		LOG(text);
 	}

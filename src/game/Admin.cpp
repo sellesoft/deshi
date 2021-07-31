@@ -334,7 +334,7 @@ void Admin::SaveTEXT(std::string level_name){
 	forI(DengScene->materials.size()){
 		Material* mat = DengScene->materials[i];
 		level_text.append(TOSTRING("\n",i," \"",mat->name,"\" ",mat->shader," "));
-		forI(mat->textureCount) level_text.append(TOSTRING('\"',DengScene->TextureName(mat->textureArray[i]),'\" '));
+		forI(mat->textures.size()) level_text.append(TOSTRING('\"',DengScene->TextureName(mat->textures[i]),'\" '));
 	}
 	
 	//models

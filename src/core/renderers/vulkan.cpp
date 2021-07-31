@@ -3305,6 +3305,7 @@ LoadMesh(Mesh* mesh){
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)meshIndexBuffer.buffer, "Mesh index buffer");
 	}
 	
+	//@@
 	//copy memory to the GPU
 	void* vb_data; void* ib_data;
 	AssertVk(vkMapMemory(device, meshVertexBuffer.memory, mvk.vbOffset, mvk.vbSize, 0, &vb_data));
@@ -3316,11 +3317,11 @@ LoadMesh(Mesh* mesh){
 		VkMappedMemoryRange range[2] = {};
 		range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		range[0].memory = meshVertexBuffer.memory;
-		range[0].offset = mvk.vbOffset;
+		range[0].offset = RoundUpTo(mvk.vbOffset, physicalDeviceProperties.limits.nonCoherentAtomSize);
 		range[0].size   = VK_WHOLE_SIZE;
 		range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		range[1].memory = meshIndexBuffer.memory;
-		range[1].offset = mvk.ibOffset;
+		range[1].offset = RoundUpTo(mvk.ibOffset, physicalDeviceProperties.limits.nonCoherentAtomSize);
 		range[1].size   = VK_WHOLE_SIZE;
 		AssertVk(vkFlushMappedMemoryRanges(device, 2, range));
 	}
@@ -3532,6 +3533,30 @@ LoadFont(Font* font, Texture* texture){
 }
 
 /////////////////
+//// @update ////
+/////////////////
+void Render::
+UpdateMaterial(Material* material){
+	MaterialVk* mvk = &materials[material->idx];
+	mvk->pipeline = GetPipelineFromShader(material->shader);
+	
+	//update descriptor set per texture
+	array<VkWriteDescriptorSet> sets;
+	for(u32 texIdx : material->textures){
+		VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+		set.dstSet          = mvk->descriptorSet;
+		set.dstArrayElement = 0;
+		set.descriptorCount = 1;
+		set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		set.pImageInfo      = &textures[texIdx].descriptor;
+		set.dstBinding      = sets.size();
+		sets.add(set);
+	}
+	vkUpdateDescriptorSets(device, sets.size(), sets.items, 0, nullptr);
+}
+
+
+/////////////////
 //// @unload ////
 /////////////////
 void Render::
@@ -3590,7 +3615,7 @@ DrawLine(Vector3 start, Vector3 end, Color color){
 	
 	vec3 col((f32)color.r / 255.0f, (f32)color.g / 255.0f, (f32)color.b / 255.0f);
 	Mesh::Vertex* vp = tempVertexArray + tempVertexCount;
-	u16* ip = tempIndexArray + tempIndexCount;
+	u16*          ip = tempIndexArray + tempIndexCount;
 	
 	ip[0] = tempVertexCount; 
 	ip[1] = tempVertexCount+1; 
@@ -3599,6 +3624,25 @@ DrawLine(Vector3 start, Vector3 end, Color color){
 	vp[1].pos = end;   vp[1].color = col;
 	
 	tempVertexCount += 2;
+	tempIndexCount  += 3;
+}
+
+void Render::
+DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color color){
+	if(color.a == 0) return;
+	
+	vec3 col((f32)color.r / 255.0f, (f32)color.g / 255.0f, (f32)color.b / 255.0f);
+	Mesh::Vertex* vp = tempVertexArray + tempVertexCount;
+	u16*          ip = tempIndexArray + tempIndexCount;
+	
+	ip[0] = tempVertexCount; 
+	ip[1] = tempVertexCount+1; 
+	ip[2] = tempVertexCount+2;
+	vp[0].pos = p0; vp[0].color = col;
+	vp[1].pos = p1; vp[1].color = col;
+	vp[2].pos = p2; vp[1].color = col;
+	
+	tempVertexCount += 3;
 	tempIndexCount  += 3;
 }
 

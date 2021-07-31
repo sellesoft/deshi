@@ -62,8 +62,8 @@ struct Scene{
 	inline u32          MaterialIndex(Material* material){ forI(materials.size()){ if(material == materials[i]) return i; } return -1; };
 	inline char*        MaterialName(u32 materialIdx){ return materials[materialIdx]->name; };
 	inline Shader       MaterialShader(u32 materialIdx){ return materials[materialIdx]->shader; };
-	inline u32          MaterialTextureCount(u32 materialIdx){ return materials[materialIdx]->textureCount; };
-	inline Texture*     MaterialTexture(u32 materialIdx, u32 textureIdx){ return textures[materials[materialIdx]->textureArray[textureIdx]]; };
+	inline u32          MaterialTextureCount(u32 materialIdx){ return materials[materialIdx]->textures.size(); };
+	inline Texture*     MaterialTexture(u32 materialIdx, u32 textureIdx){ return textures[materials[materialIdx]->textures[textureIdx]]; };
 	inline void         DeleteMaterial(u32 materialIdx){ DeleteMaterial(materials[materialIdx]); };
 	
 	////////////////

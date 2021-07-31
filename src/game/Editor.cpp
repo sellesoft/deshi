@@ -23,7 +23,9 @@
 #include "../core/input.h"
 #include "../core/time.h"
 #include "../core/scene.h"
+#include "../utils/array.h"
 #include "../math/Math.h"
+#include "../geometry/geometry.h"
 #include "../geometry/Edge.h"
 
 #include <iomanip> //std::put_time
@@ -597,9 +599,12 @@ local struct {
     Color c9 = Color(0x141414); //almost black
 }colors;
 
-local std::vector<std::string> files;
-local std::vector<std::string> textures;
-local std::vector<std::string> levels;
+local std::vector<std::string> directory_levels;
+local std::vector<std::string> directory_meshes;
+local std::vector<std::string> directory_textures;
+local std::vector<std::string> directory_materials;
+local std::vector<std::string> directory_models;
+local std::vector<std::string> directory_fonts;
 
 void Editor::MenuBar(){
     ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0);
@@ -609,7 +614,9 @@ void Editor::MenuBar(){
     
     if(ImGui::BeginMainMenuBar()){ WinHovCheck; 
         menubarheight = ImGui::GetWindowHeight();
-        if(ImGui::BeginMenu("File")){ WinHovCheck; 
+		
+		//// level menu options ////
+        if(ImGui::BeginMenu("Level")){ WinHovCheck; 
             if(ImGui::MenuItem("New")){
                 admin->Reset();
             }
@@ -622,42 +629,94 @@ void Editor::MenuBar(){
             }
             if(ImGui::BeginMenu("Save As")){ WinHovCheck;
                 persist char buff[255] = {};
-                if(ImGui::InputText("##saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)){
+                if(ImGui::InputText("##level_saveas_input", buff, 255, ImGuiInputTextFlags_EnterReturnsTrue)){
                     admin->SaveTEXT(buff);
                     level_name = std::string(buff);
                 }
                 ImGui::EndMenu();
             }
             if(ImGui::BeginMenu("Load")){ WinHovCheck;
-                forI(levels.size()){
-                    if(ImGui::MenuItem(levels[i].c_str())){
-                        admin->LoadTEXT(levels[i]);
-                        level_name = levels[i];
-                    }
+				directory_levels = Assets::iterateDirectory(Assets::dirLevels());
+                forX(di, directory_levels.size()){
+					if(ImGui::MenuItem(directory_levels[di].c_str())){
+						admin->LoadTEXT(directory_levels[di]);
+						level_name = directory_levels[di];
+					}
                 }
                 ImGui::EndMenu();
             }
             ImGui::EndMenu();
         }
-        if(ImGui::BeginMenu("Spawn")){ WinHovCheck; 
-            for (int i = 0; i < files.size(); i++){
-                if(files[i].find(".obj") != std::string::npos){
-                    if(ImGui::MenuItem(files[i].c_str())){ DengConsole->ExecCommand("load_obj", files[i]); }
+		
+		//// load menu options ////
+        if(ImGui::BeginMenu("Load")){ WinHovCheck; 
+			if(ImGui::BeginMenu("Meshes")){ WinHovCheck; 
+				directory_meshes = Assets::iterateDirectory(Assets::dirModels(), ".mesh");
+                forX(di, directory_meshes.size()){
+					bool loaded = false;
+					forX(li, DengScene->MeshCount()){ 
+						if(strcmp(DengScene->MeshName(li), directory_meshes[di].c_str()) == 0){ 
+							loaded = true;  break; 
+						} 
+					}
+					if(!loaded && ImGui::MenuItem(directory_meshes[di].c_str())){ WinHovCheck; 
+						DengScene->CreateMeshFromFile(directory_meshes[di].c_str());
+					}
                 }
-            }
-            ImGui::EndMenu();
-        }//agh
-        if(ImGui::BeginMenu("Window")){
-            WinHovCheck;
-            if(ImGui::MenuItem("Entity Inspector")){  showDebugTools = !showDebugTools; showEditorWin = false;  }
-            if(ImGui::MenuItem("Debug Bar"))           showDebugBar = !showDebugBar;
-            if(ImGui::MenuItem("DebugLayer"))          showDebugLayer = !showDebugLayer;
-            if(ImGui::MenuItem("Timers"))              showTimes = !showTimes;
-            if(ImGui::MenuItem("World Grid"))          showWorldGrid = !showWorldGrid;
-            if(ImGui::MenuItem("ImGui Demo"))          showImGuiDemoWindow = !showImGuiDemoWindow;
-            if(ImGui::MenuItem("Editor Window"))    {  showEditorWin = !showEditorWin; showDebugTools = false;  }
+                ImGui::EndMenu();
+			}
+			if(ImGui::BeginMenu("Textures")){ WinHovCheck; 
+				directory_textures = Assets::iterateDirectory(Assets::dirTextures());
+                forX(di, directory_textures.size()){
+					bool loaded = false;
+					forX(li, DengScene->TextureCount()){ 
+						if(strcmp(DengScene->TextureName(li), directory_textures[di].c_str()) == 0){ 
+							loaded = true;  break; 
+						} 
+					}
+					if(!loaded && ImGui::MenuItem(directory_textures[di].c_str())){ WinHovCheck; 
+						DengScene->CreateTextureFromFile(directory_textures[di].c_str());
+					}
+                }
+                ImGui::EndMenu();
+			}
+			if(ImGui::BeginMenu("Materials")){ WinHovCheck; 
+				
+                ImGui::EndMenu();
+			}
+			if(ImGui::BeginMenu("Models")){ WinHovCheck; 
+				directory_models = Assets::iterateDirectory(Assets::dirModels(), ".obj");
+                forX(di, directory_models.size()){
+					bool loaded = false;
+					forX(li, DengScene->ModelCount()){ 
+						if(strcmp(DengScene->ModelName(li), directory_models[di].c_str()) == 0){ 
+							loaded = true;  break; 
+						} 
+					}
+					if(!loaded && ImGui::MenuItem(directory_models[di].c_str())){ WinHovCheck; 
+						DengScene->CreateModelFromOBJ(directory_models[di].c_str());
+					}
+                }
+                ImGui::EndMenu();
+			}
+			
             ImGui::EndMenu();
         }
+		
+		//// window menu options ////
+        if(ImGui::BeginMenu("Window")){
+            WinHovCheck;
+            if(ImGui::MenuItem("Inspector"))        showInspector       = !showInspector; 
+            if(ImGui::MenuItem("Debug Bar"))        showDebugBar        = !showDebugBar;
+            if(ImGui::MenuItem("DebugLayer"))       showDebugLayer      = !showDebugLayer;
+            if(ImGui::MenuItem("Timers"))           showTimes           = !showTimes;
+            if(ImGui::MenuItem("World Grid"))       showWorldGrid       = !showWorldGrid;
+            if(ImGui::MenuItem("ImGui Demo"))       showImGuiDemoWindow = !showImGuiDemoWindow;
+            if(ImGui::MenuItem("Popout Inspector")) popoutInspector     = !popoutInspector;
+            ImGui::EndMenu();
+        }
+		
+		//// state menu options ////
         if(ImGui::BeginMenu("State")){ WinHovCheck;
             if(ImGui::MenuItem("Play"))   admin->ChangeState(GameState_Play);
             if(ImGui::MenuItem("Debug"))  admin->ChangeState(GameState_Debug);
@@ -1466,9 +1525,224 @@ inline void EntitiesTab(Admin* admin, float fontsize){
     ImGui::PopStyleVar(); //ImGuiStyleVar_IndentSpacing
 } //EntitiesTab
 
+inline void MeshesTab(Admin* admin){
+	persist bool rename_mesh = false;
+    persist char rename_buffer[DESHI_NAME_SIZE] = {};
+	persist u32  sel_mesh_idx = -1;
+    Mesh* selected = nullptr;
+	if(sel_mesh_idx < DengScene->MeshCount()) selected = DengScene->MeshAt(sel_mesh_idx);
+	
+	//// selected mesh keybinds ////
+	//start renaming mesh
+    if(selected && DengInput->KeyPressedAnyMod(Key::F2)){
+        rename_mesh = true;
+        DengConsole->IMGUI_KEY_CAPTURE = true;
+        cpystr(rename_buffer, selected->name, DESHI_NAME_SIZE);
+    }
+    //submit renaming mesh
+    if(selected && rename_mesh && DengInput->KeyPressedAnyMod(Key::ENTER)){
+        rename_mesh = false;
+        DengConsole->IMGUI_KEY_CAPTURE = false;
+        cpystr(selected->name, rename_buffer, DESHI_NAME_SIZE);
+    }
+    //stop renaming mesh
+    if(rename_mesh && DengInput->KeyPressedAnyMod(Key::ESCAPE)){
+        rename_mesh = false;
+        DengConsole->IMGUI_KEY_CAPTURE = false;
+    }
+    //delete mesh
+    if(selected && DengInput->KeyPressedAnyMod(Key::DELETE)){
+        //DengScene->DeleteMesh(sel_mesh_idx);
+        //sel_mat_idx = -1;
+    }
+    
+	//// mesh list panel ////
+	SetPadding; 
+    if(ImGui::BeginChild("##mesh_list", ImVec2(ImGui::GetWindowWidth()*0.95, ImGui::GetWindowHeight()*.14f), false)){
+        if(ImGui::BeginTable("##mesh_table", 3, ImGuiTableFlags_BordersInner)){
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 2.5f);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
+            
+            forX(mesh_idx, DengScene->MeshCount()){
+                ImGui::PushID(DengScene->MeshAt(mesh_idx));
+                ImGui::TableNextRow();
+                
+                //// id + label ////
+                ImGui::TableSetColumnIndex(0);
+                char label[8];
+                sprintf(label, " %03d", mesh_idx);
+                if(ImGui::Selectable(label, sel_mesh_idx == mesh_idx, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
+                    sel_mesh_idx = (ImGui::GetIO().KeyCtrl) ? -1 : mesh_idx; //deselect if CTRL held
+                    rename_mesh = false;
+                    DengConsole->IMGUI_KEY_CAPTURE = false;
+                }
+                
+                //// name text ////
+                ImGui::TableSetColumnIndex(1);
+                if(rename_mesh && sel_mesh_idx == mesh_idx){
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::ColorToImVec4(colors.c2));
+                    ImGui::InputText("##mesh_rename_input", rename_buffer, DESHI_NAME_SIZE, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+                    ImGui::PopStyleColor();
+                }else{
+                    ImGui::TextEx(DengScene->MeshName(mesh_idx));
+                }
+                
+                //// delete button ////
+                ImGui::TableSetColumnIndex(2);
+                if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))){
+                    //if(mesh_idx == sel_mesh_idx){
+					//sel_mesh_idx = -1;
+                    //}else if(sel_mesh_idx != -1 && sel_mesh_idx > mesh_idx){
+					//sel_mesh_idx -= 1;
+                    //}
+					//DengScene->DeleteMaterial(mesh_idx);
+					//!Incomplete
+                }
+                ImGui::PopID();
+            }
+            ImGui::EndTable(); //mesh_table
+        }
+        ImGui::EndChild(); //mesh_list
+    }
+    
+	ImGui::Separator();
+	
+	//// create new mesh button ////
+	ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
+    if(ImGui::Button("Load New Mesh", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
+		//!Incomplete
+    }
+    
+    ImGui::Separator();
+    if(selected == nullptr) return;
+	
+	//@@
+	//// selected mesh inspector panel ////
+	persist int  sel_vertex_idx   = -1;
+	persist int  sel_triangle_idx = -1;
+	persist int  sel_face_idx     = -1;
+	persist bool show_vertex_indexes   = false;
+	persist bool show_triangle_indexes = false;
+	persist bool show_face_indexes     = false;
+	persist bool show_triangle_centers = false;
+	persist bool show_face_centers     = false;
+	
+	SetPadding;
+    if(ImGui::BeginChild("##mesh_inspector", ImVec2(ImGui::GetWindowWidth()*.95f, ImGui::GetWindowHeight()*.8f), false)){
+		//// name ////
+        ImGui::TextEx("Name   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+        ImGui::InputText("##mat_name_input", selected->name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        
+		ImGui::Separator();
+		
+		//// stats ////
+		ImGui::Text("Vertex   Count: %d", selected->vertexCount);
+		ImGui::Text("Index    Count: %d", selected->indexCount);
+		ImGui::Text("Triangle Count: %d", selected->triangleCount);
+		ImGui::Text("Face     Count: %d", selected->faceCount);
+		int planar_vertex_count = 0;
+		forI(selected->faceCount){ planar_vertex_count += selected->faces[i].vertexCount; }
+		ImGui::Text("Planar Vertex Count: %d", planar_vertex_count);
+		
+		ImGui::Separator();
+		
+		//// overlays ////
+		ImGui::Checkbox("Vertex indexes  ", &show_vertex_indexes);
+		ImGui::Checkbox("Triangle indexes", &show_triangle_indexes);
+		ImGui::Checkbox("Face indexes    ", &show_face_indexes);
+		ImGui::Checkbox("Triangle centers", &show_triangle_centers);
+		ImGui::Checkbox("Face centers    ", &show_face_centers);
+		
+		ImGui::Separator();
+		
+        //// vertexes ////
+        ImGui::TextEx("Vertex   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+        if(ImGui::InputInt("##mi_vertex_input", &sel_vertex_idx, 0, 0)){
+			sel_vertex_idx = Clamp(sel_vertex_idx, -1, selected->vertexCount-1);
+		}
+		if(sel_vertex_idx != -1){
+			Mesh::Vertex* sel_vertex = &selected->vertexes[sel_vertex_idx];
+			Render::DrawBox(Matrix4::TransformationMatrix(sel_vertex->pos, vec3::ZERO, vec3{.01f,.01f,.01f}), Color::GREEN);
+		}
+		ImGui::BeginDebugLayer();
+		if(show_vertex_indexes){
+			forI(selected->vertexCount){
+				ImGui::DebugDrawText3(TOSTRING("V",i).c_str(), selected->vertexes[i].pos, Color::WHITE, vec2{-5,-5});
+				if(sel_vertex_idx == -1){
+					Render::DrawBox(Matrix4::TransformationMatrix(selected->vertexes[i].pos, vec3::ZERO, vec3{.01f,.01f,.01f}),
+									Color::GREEN);
+				}
+			}
+		}
+		ImGui::EndDebugLayer();
+		
+		//// triangles ////
+        ImGui::TextEx("Triangle "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+        if(ImGui::InputInt("##mi_tri_input", &sel_triangle_idx, 0, 0)){
+			sel_triangle_idx = Clamp(sel_triangle_idx, -1, selected->triangleCount-1);
+		}
+		if(sel_triangle_idx != -1){
+			Mesh::Triangle* sel_triangle = &selected->triangles[sel_triangle_idx];
+			Render::DrawTriangle(sel_triangle->p[0], sel_triangle->p[1], sel_triangle->p[2], Color::RED);
+		}
+		ImGui::BeginDebugLayer();
+		forI(selected->triangleCount){
+			if(show_triangle_indexes){
+				ImGui::DebugDrawText3(TOSTRING("T",i).c_str(), Geometry::MeshTriangleMidpoint(&selected->triangles[i]), 
+									  Color::WHITE, vec2{-5,-5});
+			}
+			if(show_triangle_centers){
+				Render::DrawBox(Matrix4::TransformationMatrix(Geometry::MeshTriangleMidpoint(&selected->triangles[i]), vec3::ZERO,
+															  vec3{.01f,.01f,.01f}), Color::DARK_RED);
+			}
+			if(sel_triangle_idx == -1){
+				Mesh::Triangle* sel_triangle = &selected->triangles[i];
+				Render::DrawTriangle(sel_triangle->p[0], sel_triangle->p[1], sel_triangle->p[2], Color::RED);
+			}
+		}
+		ImGui::EndDebugLayer();
+		
+		//// faces ////
+        ImGui::TextEx("Face     "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+        if(ImGui::InputInt("##mi_face_input", &sel_face_idx, 0, 0)){
+			sel_face_idx = Clamp(sel_face_idx, -1, selected->faceCount-1);
+		}
+		if(sel_face_idx != -1){
+			Mesh::Face* sel_face = &selected->faces[sel_face_idx];
+			for(int fvi = 1; fvi < sel_face->outerVertexCount; ++fvi){
+				Render::DrawLine(selected->vertexes[sel_face->outerVertexes[fvi-1]].pos,
+								 selected->vertexes[sel_face->outerVertexes[fvi  ]].pos, Color::BLUE);
+			}
+			
+		}
+		ImGui::BeginDebugLayer();
+		forI(selected->faceCount){
+			if(show_face_indexes){
+				ImGui::DebugDrawText3(TOSTRING("F",i).c_str(), selected->faces[i].center, Color::WHITE, vec2{-5,-5});
+			}
+			if(show_face_centers){
+				Render::DrawBox(Matrix4::TransformationMatrix(selected->faces[i].center, vec3::ZERO,
+															  vec3{.01f,.01f,.01f}), Color::DARK_BLUE);
+			}
+			if(sel_face_idx == -1){
+				Mesh::Face* sel_face = &selected->faces[i];
+				for(int fvi = 1; fvi < sel_face->outerVertexCount; ++fvi){
+					Render::DrawLine(selected->vertexes[sel_face->outerVertexes[fvi-1]].pos,
+									 selected->vertexes[sel_face->outerVertexes[fvi  ]].pos, Color::BLUE);
+				}
+				
+			}
+		}
+		ImGui::EndDebugLayer();
+		
+		ImGui::EndChild(); //mesh_inspector
+	}
+}
+
 inline void MaterialsTab(Admin* admin){
     persist u32  sel_mat_idx = -1;
-    persist bool rename_mat = false;
+    persist bool rename_mat  = false;
     persist char rename_buffer[DESHI_NAME_SIZE] = {};
     Material* selected = nullptr;
 	if(sel_mat_idx < DengScene->MaterialCount()) selected = DengScene->MaterialAt(sel_mat_idx);
@@ -1520,7 +1794,7 @@ inline void MaterialsTab(Admin* admin){
                     DengConsole->IMGUI_KEY_CAPTURE = false;
                 }
                 
-                //// name ImGui::TextEx ////
+                //// name text ////
                 ImGui::TableSetColumnIndex(1);
                 if(rename_mat && sel_mat_idx == mat_idx){
                     ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::ColorToImVec4(colors.c2));
@@ -1530,7 +1804,7 @@ inline void MaterialsTab(Admin* admin){
                     ImGui::TextEx(DengScene->MaterialName(mat_idx));
                 }
                 
-                //// delete ImGui::Button ////
+                //// delete button ////
                 ImGui::TableSetColumnIndex(2);
                 if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))){
                     if(mat_idx == sel_mat_idx){
@@ -1549,10 +1823,10 @@ inline void MaterialsTab(Admin* admin){
     
     ImGui::Separator();
     
-    //// create new material ImGui::Button ////
+    //// create new material button ////
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
     if(ImGui::Button("Create New Material", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
-		auto new_mat = DengScene->CreateMaterial(TOSTRING("material", sel_mat_idx).c_str(), Shader_PBR);
+		auto new_mat = DengScene->CreateMaterial(TOSTRING("material", DengScene->MaterialCount()).c_str(), Shader_PBR);
 		sel_mat_idx = new_mat.first;
 		selected = new_mat.second;
     }
@@ -1573,6 +1847,7 @@ inline void MaterialsTab(Admin* admin){
             forI(ArrayCount(ShaderStrings)){
                 if(ImGui::Selectable(ShaderStrings[i], selected->shader == i)){
 					selected->shader = i;
+					Render::UpdateMaterial(selected);
                 }
             }
             ImGui::EndCombo(); //mat_shader_combo
@@ -1591,13 +1866,15 @@ inline void MaterialsTab(Admin* admin){
             //// PBR shader ////
             //TODO(Ui) add texture image previews
             case Shader_PBR:default:{
-				forX(mti, selected->textureCount){
+				forX(mti, selected->textures.size()){
 					ImGui::TextEx(TOSTRING("Texture ",mti).c_str()); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
 					if(ImGui::BeginCombo("##mat_texture_combo", DengScene->TextureName(selected->textures[mti]))){
 						ImGui::PushID(&selected->textures[mti]);
-						forX(ti, textures.size()){
-							if(ImGui::Selectable(textures[ti].c_str(), strcmp(DengScene->TextureName(selected->textures[mti]), textures[ti].c_str()) == 0)){
-								selected->textures[mti] = DengScene->CreateTextureFromFile(textures[ti].c_str()).first;
+						directory_textures = Assets::iterateDirectory(Assets::dirTextures());
+						forX(ti, directory_textures.size()){
+							if(ImGui::Selectable(directory_textures[ti].c_str(), strcmp(DengScene->TextureName(selected->textures[mti]), directory_textures[ti].c_str()) == 0)){
+								selected->textures[mti] = DengScene->CreateTextureFromFile(directory_textures[ti].c_str()).first;
+								Render::UpdateMaterial(selected);
 							}
 						}
 						ImGui::PopID();
@@ -1615,29 +1892,28 @@ enum TwodPresets : u32 {
     Twod_NONE = 0, Twod_Line, Twod_Triangle, Twod_Square, Twod_NGon, Twod_Image, 
 };
 
-//TODO(,Ui) convert this to use collapsing headers
-inline void GlobalTab(Admin* admin){
+inline void SettingsTab(Admin* admin){
     SetPadding; 
-    if(ImGui::BeginChild("##global__tab", ImVec2(ImGui::GetWindowWidth()*0.95f, ImGui::GetWindowHeight()*.9f))){
+    if(ImGui::BeginChild("##settings_tab", ImVec2(ImGui::GetWindowWidth()*0.95f, ImGui::GetWindowHeight()*.9f))){
         //// physics properties ////
-        {
+        if(ImGui::CollapsingHeader("Physics", 0)){
 			ImGui::TextEx("Pause Physics "); ImGui::SameLine();
 			if(ImGui::Button((admin->pause_phys) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
 				admin->pause_phys = !admin->pause_phys;
 			}    
 			ImGui::TextEx("Gravity       "); ImGui::SameLine(); ImGui::InputFloat("##global__gravity", &admin->physics.gravity);
 			
-			//ImGui::TextEx("Phys TPS      "); ImGui::SameLine(); ImGui::InputFloat("##phys_tps", )
+			//ImGui::TextEx("Phys TPS      "); ImGui::SameLine(); ImGui::InputFloat("##phys_tps", );
+			
+			ImGui::Separator();
         }
 		
         //// camera properties ////
-        {
-			ImGui::Separator();
-			ImGui::TextEx("Camera"); ImGui::SameLine(); ImGui::SetCursorPosX(ImGui::GetWindowWidth()*.5f);
-			if(ImGui::Button("Zero", ImVec2(ImGui::GetWindowWidth()*.225f, 0))){
+        if(ImGui::CollapsingHeader("Camera", 0)){
+			if(ImGui::Button("Zero", ImVec2(ImGui::GetWindowWidth()*.45f, 0))){
 				admin->editor.camera->position = Vector3::ZERO; admin->editor.camera->rotation = Vector3::ZERO;
 			} ImGui::SameLine();
-			if(ImGui::Button("Reset", ImVec2(ImGui::GetWindowWidth()*.25f, 0))){
+			if(ImGui::Button("Reset", ImVec2(ImGui::GetWindowWidth()*.45f, 0))){
 				admin->editor.camera->position = {4.f,3.f,-4.f}; admin->editor.camera->rotation = {28.f,-45.f,0.f};
 			}
 			
@@ -1655,11 +1931,12 @@ inline void GlobalTab(Admin* admin){
             if(ImGui::InputFloat("##global__fov", &admin->editor.camera->fov)){
                 admin->editor.camera->UpdateProjectionMatrix();
             };
+			
+			ImGui::Separator();
 		}
 		
 		//// render settings ////
-		{
-			ImGui::Separator();
+		if(ImGui::CollapsingHeader("Rendering", 0)){
 			local RenderSettings* settings = Render::GetSettings();
 			local const char* resolution_strings[] = { "128", "256", "512", "1024", "2048", "4096" };
 			local u32 resolution_values[] = { 128, 256, 512, 1024, 2048, 4096 };
@@ -1670,7 +1947,6 @@ inline void GlobalTab(Admin* admin){
 			local vec4 selected_color = settings->selectedColor;
 			local vec4 collider_color = settings->colliderColor;
 			
-			ImGui::TextCentered("Render Settings");
             ImGui::Checkbox("Debugging", (bool*)&settings->debugging);
             ImGui::Checkbox("Shader printf", (bool*)&settings->printf);
             ImGui::Checkbox("Recompile all shaders", (bool*)&settings->recompileAllShaders);
@@ -1726,6 +2002,8 @@ inline void GlobalTab(Admin* admin){
 			ImGui::Checkbox("Draw mesh normals", (bool*)&settings->meshNormals);
 			ImGui::Checkbox("Draw light frustrums", (bool*)&settings->lightFrustrums);
 			ImGui::Checkbox("Draw temp meshes on top", (bool*)&settings->tempMeshOnTop);
+			
+			ImGui::Separator();
 		}
         
         ImGui::EndChild();
@@ -1753,11 +2031,7 @@ void DisplayTriggers(Admin* admin){
     }
 }
 
-void Editor::DebugTools(){
-    //resize tool menu if main menu bar is open
-    ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - (menubarheight + debugbarheight)));
-    ImGui::SetNextWindowPos(ImVec2(0, menubarheight));
-    
+void Editor::Inspector(){
     //window styling
     ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
@@ -1793,34 +2067,45 @@ void Editor::DebugTools(){
     ImGui::PushStyleColor(ImGuiCol_Tab,                  ImGui::ColorToImVec4(colors.c1));
     ImGui::PushStyleColor(ImGuiCol_Separator,            ImGui::ColorToImVec4(Color::VERY_DARK_CYAN));
     
-    ImGui::Begin("DebugTools", (bool*)1, ImGuiWindowFlags_NoFocusOnAppearing |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-    
+	ImGuiWindowFlags window_flags;
+	if(popoutInspector){
+		window_flags = ImGuiWindowFlags_None;
+	}else{
+		//resize tool menu if main menu bar is open
+		ImGui::SetNextWindowSize(ImVec2(DengWindow->width / 5, DengWindow->height - (menubarheight + debugbarheight)));
+		ImGui::SetNextWindowPos(ImVec2(0, menubarheight));
+		window_flags = ImGuiWindowFlags_NoFocusOnAppearing |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove 
+			| ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar 
+			| ImGuiWindowFlags_NoScrollWithMouse;
+	}
+    ImGui::Begin("Inspector", (bool*)1, window_flags);
+	
     //capture mouse if hovering over this window
     WinHovCheck; 
     if(DengInput->mouseX < ImGui::GetWindowPos().x + ImGui::GetWindowWidth()){
         WinHovFlag = true;
     }
     
-    SetPadding;
     if(ImGui::BeginTabBar("MajorTabs")){
         if(ImGui::BeginTabItem("Entities")){
             EntitiesTab(admin, ImGui::GetFontSize());
             ImGui::EndTabItem();
         }
-        if(ImGui::BeginTabItem("Materials")){
-            MaterialsTab(admin);
-            ImGui::EndTabItem();
-        }
-        if(ImGui::BeginTabItem("Global")){
-            GlobalTab(admin);
-            ImGui::EndTabItem();
-        }
-        //if(ImGui::BeginTabItem("Brushes")){
-        //BrushesTab(admin, ImGui::GetFontSize());
-        //ImGui::EndTabItem();
-        //}
-        ImGui::EndTabBar();
-    }
+		if(ImGui::BeginTabItem("Scene")){
+			SetPadding;
+			if(ImGui::BeginTabBar("SceneTabs")){
+				if(ImGui::BeginTabItem("Meshes"))   { MeshesTab(admin);    ImGui::EndTabItem(); }
+				if(ImGui::BeginTabItem("Materials")){ MaterialsTab(admin); ImGui::EndTabItem(); }
+				ImGui::EndTabBar();
+			}
+			ImGui::EndTabItem();
+		}
+		if(ImGui::BeginTabItem("Settings")){
+			SettingsTab(admin);
+			ImGui::EndTabItem();
+		}
+		ImGui::EndTabBar();
+	}
     
     ImGui::PopStyleVar(8);
     ImGui::PopStyleColor(24);
@@ -2214,8 +2499,9 @@ void Editor::Init(Admin* a){
     Render::UpdateCameraPosition(camera->position);
     undo_manager.Init();
     level_name = "";
-    
-    showDebugTools      = true;
+	
+    popoutInspector     = false;
+    showInspector       = true;
     showTimes           = true;
     showDebugBar        = true;
     showMenuBar         = true;
@@ -2223,12 +2509,12 @@ void Editor::Init(Admin* a){
     showDebugLayer      = true;
 	showWorldGrid       = true;
     ConsoleHovFlag      = false;
-    
-    showEditorWin = false;
-    
-    files = Assets::iterateDirectory(Assets::dirModels());
-    textures = Assets::iterateDirectory(Assets::dirTextures());
-    levels = Assets::iterateDirectory(Assets::dirLevels());
+	
+	directory_levels   = Assets::iterateDirectory(Assets::dirLevels());
+	directory_meshes   = Assets::iterateDirectory(Assets::dirModels(), ".mesh");
+	directory_textures = Assets::iterateDirectory(Assets::dirTextures());
+	directory_models   = Assets::iterateDirectory(Assets::dirModels(), ".obj");
+	directory_fonts    = Assets::iterateDirectory(Assets::dirFonts());
     
     fonth = ImGui::GetFontSize();
     fontw = fonth / 2.f;
@@ -2317,7 +2603,7 @@ void Editor::Update(){
     }
 	
     {//// interface ////
-        if(DengInput->KeyPressed(DengKeys.toggleDebugMenu)) showDebugTools = !showDebugTools;
+        if(DengInput->KeyPressed(DengKeys.toggleDebugMenu)) showInspector  = !showInspector;
         if(DengInput->KeyPressed(DengKeys.toggleDebugBar))  showDebugBar   = !showDebugBar;
         if(DengInput->KeyPressed(DengKeys.toggleMenuBar))   showMenuBar    = !showMenuBar;
     }
@@ -2376,17 +2662,16 @@ void Editor::Update(){
 	//// render user interface ////
 	///////////////////////////////
 	
-	//TODO(delle,Cl) program crashes somewhere in DebugTools() if minimized
+	//TODO(delle,Cl) program crashes somewhere in Inpector() if minimized
 	if(!DengWindow->minimized){
 		WinHovFlag = 0;
 		font_width = ImGui::GetFontSize();
 		
 		if(showDebugLayer) DebugLayer();
 		if(showTimes)      DrawTimes();
-		if(showDebugTools) DebugTools();
+		if(showInspector)  Inspector();
 		if(showDebugBar)   DebugBar();
 		if(showMenuBar)    MenuBar();
-		if(showEditorWin)  CreateEditorWin();
 		if(showWorldGrid)  WorldGrid(camera->position);
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1)); {
 			if(showImGuiDemoWindow) ImGui::ShowDemoWindow();
@@ -2396,7 +2681,7 @@ void Editor::Update(){
 		
 		if(!showMenuBar)    menubarheight = 0;
 		if(!showDebugBar)   debugbarheight = 0;
-		if(!showDebugTools) debugtoolswidth = 0;
+		if(!showInspector)  debugtoolswidth = 0;
 		
 		DengConsole->IMGUI_MOUSE_CAPTURE = (ConsoleHovFlag || WinHovFlag) ? true : false;
 	}
@@ -2435,67 +2720,4 @@ void Editor::Reset(){
 
 void Editor::Cleanup(){
 	Assets::deleteFile(copy_path, false);
-}
-
-void Editor::CreateEditorWin(){
-    ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-    ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
-    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding, ImVec2(0, 2));
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, ImVec2(1, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
-    
-    ImGui::PushStyleColor(ImGuiCol_Border,               ImGui::ColorToImVec4(Color(0, 0, 0)));
-    ImGui::PushStyleColor(ImGuiCol_Button,               ImGui::ColorToImVec4(Color(40, 40, 40)));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,         ImGui::ColorToImVec4(Color(48, 48, 48)));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,        ImGui::ColorToImVec4(Color(60, 60, 60)));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg,             ImGui::ColorToImVec4(colors.c9));
-    ImGui::PushStyleColor(ImGuiCol_PopupBg,              ImGui::ColorToImVec4(Color(20, 20, 20)));
-    ImGui::PushStyleColor(ImGuiCol_FrameBg,              ImGui::ColorToImVec4(Color(35, 45, 50)));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive,        ImGui::ColorToImVec4(Color(42, 54, 60)));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,       ImGui::ColorToImVec4(Color(54, 68, 75)));
-    ImGui::PushStyleColor(ImGuiCol_TitleBg,              ImGui::ColorToImVec4(Color(0, 0, 0)));
-    ImGui::PushStyleColor(ImGuiCol_TitleBgActive,        ImGui::ColorToImVec4(Color(0, 0, 0)));
-    ImGui::PushStyleColor(ImGuiCol_Header,               ImGui::ColorToImVec4(Color(35, 45, 50)));
-    ImGui::PushStyleColor(ImGuiCol_HeaderActive,         ImGui::ColorToImVec4(Color(0, 74, 74)));
-    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,        ImGui::ColorToImVec4(Color(0, 93, 93)));
-    ImGui::PushStyleColor(ImGuiCol_TableBorderLight,     ImGui::ColorToImVec4(Color(45, 45, 45)));
-    ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,        ImGui::ColorToImVec4(Color(10, 10, 10)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg,          ImGui::ColorToImVec4(Color(10, 10, 10)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab,        ImGui::ColorToImVec4(Color(55, 55, 55)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,  ImGui::ColorToImVec4(Color(75, 75, 75)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ImGui::ColorToImVec4(Color(65, 65, 65)));
-    ImGui::PushStyleColor(ImGuiCol_TabActive,            ImGui::ColorToImVec4(Color::VERY_DARK_CYAN));
-    ImGui::PushStyleColor(ImGuiCol_TabHovered,           ImGui::ColorToImVec4(Color::DARK_CYAN));
-    ImGui::PushStyleColor(ImGuiCol_Tab,                  ImGui::ColorToImVec4(colors.c1));
-    ImGui::PushStyleColor(ImGuiCol_Separator,            ImGui::ColorToImVec4(Color::VERY_DARK_CYAN));
-    ImGui::Begin("Editor Window", 0);
-    WinHovCheck;
-    if(DengInput->mouseX < ImGui::GetWindowPos().x + ImGui::GetWindowWidth()){
-        WinHovFlag = true;
-    }
-    if(ImGui::BeginTabBar("MajorTabs")){
-        if(ImGui::BeginTabItem("Entities")){
-            EntitiesTab(admin, ImGui::GetFontSize());
-            ImGui::EndTabItem();
-        }
-        if(ImGui::BeginTabItem("Materials")){
-            MaterialsTab(admin);
-            ImGui::EndTabItem();
-        }
-        if(ImGui::BeginTabItem("Global")){
-            GlobalTab(admin);
-            ImGui::EndTabItem();
-        }
-        //if(ImGui::BeginTabItem("Brushes")){
-        //BrushesTab(admin, ImGui::GetFontSize());
-        //ImGui::EndTabItem();
-        //}
-        ImGui::EndTabBar();
-    }
-    ImGui::PopStyleVar(8);
-    ImGui::PopStyleColor(24);
-    ImGui::End();
 }

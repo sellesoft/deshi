@@ -99,6 +99,7 @@ struct Mesh{
 	
 	struct Face{
 		vec3 normal;
+		vec3 center;
 		u32  triangleCount;
 		u32  vertexCount;
 		u32  outerVertexCount;
@@ -136,11 +137,9 @@ struct Texture{
 struct Material{
 	char name[DESHI_NAME_SIZE];
 	u32  idx;
-	Shader shader;
+	Shader        shader;
 	MaterialFlags flags;
-	u32* textureArray;
-	u32  textureCount;
-	View<u32> textures;
+	array<u32>    textures;
 };
 
 struct Model{

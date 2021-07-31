@@ -147,6 +147,11 @@ LoadMesh(Mesh* mesh){
 	//!Incomplete
 }
 
+void Render::
+UpdateMaterial(Material* material){
+	//!Incomplete
+}
+
 /////////////////
 //// @unload ////
 /////////////////
