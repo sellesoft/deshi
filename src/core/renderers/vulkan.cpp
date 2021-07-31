@@ -28,7 +28,6 @@ struct TextureVk {
     VkDeviceSize   size;
     VkImageView    view;
     VkSampler      sampler;
-    VkImageLayout  layout;
     VkDescriptorImageInfo descriptor;
 };
 
@@ -40,7 +39,10 @@ struct MaterialVk{
 
 struct MeshVk{
 	Mesh* base;
-	VkDeviceSize size;
+	VkDeviceSize vbOffset;
+	VkDeviceSize vbSize;
+	VkDeviceSize ibOffset;
+	VkDeviceSize ibSize;
 };
 
 struct Vertex2{
@@ -53,7 +55,6 @@ struct ModelCmdVk{
 	u32   indexOffset;
 	u32   indexCount;
 	u32   materialIdx;
-	bool  selected;
 	char* name;
 	mat4  matrix;
 };
@@ -197,10 +198,10 @@ local ModelCmdVk modelCmdArray[MAX_MODEL_CMDS];
 // VULKAN VARIABLES
 
 
-std::vector<TextureVk>   textures;
-std::vector<MaterialVk>  materials;
-std::vector<MeshVk>      meshes;
-std::vector<FontVk>      fonts;
+array<TextureVk>   textures;
+array<MaterialVk>  materials;
+array<MeshVk>      meshes;
+array<FontVk>      fonts;
 
 vec4 lights[10]{ vec4(0,0,0,-1) };
 
@@ -235,6 +236,7 @@ local VkInstance               instance              = VK_NULL_HANDLE;
 local VkDebugUtilsMessengerEXT debugMessenger        = VK_NULL_HANDLE;
 local VkSurfaceKHR             surface;
 local VkPhysicalDevice         physicalDevice        = VK_NULL_HANDLE;
+local VkPhysicalDeviceProperties physicalDeviceProperties{};
 local VkSampleCountFlagBits    maxMsaaSamples        = VK_SAMPLE_COUNT_1_BIT;
 local VkPhysicalDeviceFeatures deviceFeatures        = {};
 local VkPhysicalDeviceFeatures enabledFeatures       = {};
@@ -320,18 +322,8 @@ local struct{
 	} values;
 } uboVSoffscreen{};
 
-local struct{ //vertices buffer
-	VkBuffer       buffer;
-	VkDeviceMemory bufferMemory;
-	VkDeviceSize   bufferSize;
-} vertices{};
-
-local struct{ //indices buffer
-	VkBuffer       buffer;
-	VkDeviceMemory bufferMemory;
-	VkDeviceSize   bufferSize;
-} indices{};
-
+local BufferVk meshVertexBuffer{};
+local BufferVk meshIndexBuffer{};
 local BufferVk uiVertexBuffer{};
 local BufferVk uiIndexBuffer{};
 local BufferVk tempVertexBuffer{};
@@ -704,7 +696,7 @@ GenerateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight
 		blit.srcSubresource.baseArrayLayer = 0;
 		blit.srcSubresource.layerCount     = 1;
 		blit.dstOffsets[0] = { 0, 0, 0 };
-		blit.dstOffsets[1] = { mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1 };
+		blit.dstOffsets[1] = { (mipWidth > 1) ? mipWidth / 2 : 1, (mipHeight > 1) ? mipHeight / 2 : 1, 1 };
 		blit.dstSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
 		blit.dstSubresource.mipLevel       = i;
 		blit.dstSubresource.baseArrayLayer = 0;
@@ -719,7 +711,7 @@ GenerateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight
 		
 		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 		
-		if(mipWidth > 1)  mipWidth /= 2;
+		if(mipWidth  > 1) mipWidth  /= 2;
 		if(mipHeight > 1) mipHeight /= 2;
 	}
 	
@@ -737,7 +729,6 @@ GenerateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight
 //creates a buffer of defined usage and size on the device
 local void 
 CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
-	PrintVk(4, "      Creating or Resizing Buffer");
 	//delete old buffer
 	if(buffer != VK_NULL_HANDLE) vkDestroyBuffer(device, buffer, allocator); 
 	if(bufferMemory != VK_NULL_HANDLE) vkFreeMemory(device, bufferMemory, allocator); 
@@ -762,10 +753,35 @@ CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSiz
 	bufferSize = newSize;
 }
 
+local void 
+CreateOrResizeBuffer(BufferVk* buffer, size_t newSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
+	//delete old buffer
+	if(buffer->buffer != VK_NULL_HANDLE) vkDestroyBuffer(device, buffer->buffer, allocator); 
+	if(buffer->memory != VK_NULL_HANDLE) vkFreeMemory(device, buffer->memory, allocator); 
+	
+	VkDeviceSize alignedBufferSize = (((newSize - 1) / bufferMemoryAlignment) + 1) * bufferMemoryAlignment;
+	VkBufferCreateInfo bufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+	bufferInfo.size        = alignedBufferSize;
+	bufferInfo.usage       = usage;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	AssertVk(vkCreateBuffer(device, &bufferInfo, allocator, &buffer->buffer));
+	
+	VkMemoryRequirements req;
+	vkGetBufferMemoryRequirements(device, buffer->buffer, &req);
+	bufferMemoryAlignment = (bufferMemoryAlignment > req.alignment) ? bufferMemoryAlignment : req.alignment;
+	
+	VkMemoryAllocateInfo allocInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+	allocInfo.allocationSize  = req.size;
+	allocInfo.memoryTypeIndex = FindMemoryType(req.memoryTypeBits, properties);
+	
+	AssertVk(vkAllocateMemory(device, &allocInfo, allocator, &buffer->memory));
+	AssertVk(vkBindBufferMemory(device, buffer->buffer, buffer->memory, 0));
+	buffer->size = newSize;
+}
+
 //creates a buffer and maps provided data to it
 local void 
 CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, void* data, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
-	PrintVk(4, "      Creating and Mapping Buffer");
 	//delete old buffer
 	if(buffer != VK_NULL_HANDLE) vkDestroyBuffer(device, buffer, allocator); 
 	if(bufferMemory != VK_NULL_HANDLE) vkFreeMemory(device, bufferMemory, allocator); 
@@ -1007,7 +1023,6 @@ PickPhysicalDevice(){
 	Assert(physicalDevice != VK_NULL_HANDLE, "failed to find a suitable GPU that supports Vulkan");
 	
 	//get device's max msaa samples
-	VkPhysicalDeviceProperties physicalDeviceProperties;
 	vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 	VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
 	if     (counts & VK_SAMPLE_COUNT_64_BIT){ maxMsaaSamples = VK_SAMPLE_COUNT_64_BIT; }
@@ -2782,8 +2797,8 @@ BuildCommands(){
 			
 			DebugBeginLabelVk(cmdBuffer, "Meshes", draw_group_color);
 			VkDeviceSize offsets[1] = {0}; //reset vertex buffer offsets
-			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertices.buffer, offsets);
-			vkCmdBindIndexBuffer(cmdBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &meshVertexBuffer.buffer, offsets);
+			vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 			forI(modelCmdCount){
 				ModelCmdVk& cmd = modelCmdArray[i];
 				MaterialVk& mat = materials[cmd.materialIdx];
@@ -2823,7 +2838,6 @@ BuildCommands(){
 			scissor.extent.width  = width;
 			scissor.extent.height = height;
 			
-			
 			DebugBeginLabelVk(cmdBuffer, "Scene Render Pass", render_pass_color);
 			vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
@@ -2833,8 +2847,8 @@ BuildCommands(){
 			//draw meshes
 			DebugBeginLabelVk(cmdBuffer, "Meshes", draw_group_color);
 			VkDeviceSize offsets[1] = {0}; //reset vertex buffer offsets
-			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &vertices.buffer, offsets);
-			vkCmdBindIndexBuffer(cmdBuffer, indices.buffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &meshVertexBuffer.buffer, offsets);
+			vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 			forI(modelCmdCount){
 				ModelCmdVk& cmd = modelCmdArray[i];
 				MaterialVk& mat = materials[cmd.materialIdx];
@@ -2859,12 +2873,6 @@ BuildCommands(){
 				vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
 				stats.drawnIndices += cmd.indexCount;
 				
-				//selected overlay
-				if(cmd.selected){
-					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.selected);
-					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
-					stats.drawnIndices += cmd.indexCount;
-				}
 				//wireframe overlay
 				if(settings.meshWireframes && pipeline != pipelines.wireframe){
 					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
@@ -3255,17 +3263,217 @@ LoadFont(Font* font){
 
 void Render::
 LoadTexture(Texture* texture){
-	//!Incomplete
+	TextureVk tvk{};
+	tvk.base = texture;
+	tvk.size = texture->width * texture->height * texture->depth;
+	
+	//determine image format
+	VkFormat image_format;
+	switch(texture->format){
+		case ImageFormat_BW:   image_format = VK_FORMAT_R8_UNORM;      break;
+		case ImageFormat_BWA:  image_format = VK_FORMAT_R8G8_UNORM;    break;
+		case ImageFormat_RGB:  image_format = VK_FORMAT_R8G8B8_SRGB;   break;
+		case ImageFormat_RGBA: image_format = VK_FORMAT_R8G8B8A8_SRGB; break;
+		default: ERROR_LOC("Unhandled image format when loading texture: ", texture->name); return;
+	}
+	
+	//determine image type //TODO(delle) adjust image size?
+	VkImageType     image_type;
+	VkImageViewType view_type;
+	switch(texture->type){
+		case TextureType_1D:         image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_1D;         break;
+		case TextureType_2D:         image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_2D;         break;
+		case TextureType_3D:         image_type = VK_IMAGE_TYPE_3D; view_type = VK_IMAGE_VIEW_TYPE_3D;         break;
+		case TextureType_Cube:       image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_CUBE;       break;
+		case TextureType_Array_1D:   image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_1D_ARRAY;   break;
+		case TextureType_Array_2D:   image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_2D_ARRAY;   break;
+		case TextureType_Array_Cube: image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY; break;
+		default: ERROR_LOC("Uknown image type when loading texture: ", texture->name); return;
+	}
+	
+	//copy the image pixels to a staging buffer
+	BufferVk staging{};
+	CreateAndMapBuffer(staging.buffer, staging.memory, tvk.size, (size_t)tvk.size, texture->pixels, 
+					   VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	
+	//create the texture image
+	VkImageCreateInfo imageInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+	imageInfo.imageType     = image_type;
+	imageInfo.extent        = {(u32)texture->width, (u32)texture->height, 1};
+	imageInfo.mipLevels     = texture->mipmaps;
+	imageInfo.arrayLayers   = 1; //NOTE(delle) use image flags here?
+	imageInfo.format        = image_format;
+	imageInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageInfo.usage         = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	imageInfo.samples       = VK_SAMPLE_COUNT_1_BIT; //NOTE(delle) extra texture samples?
+	imageInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+	AssertVk(vkCreateImage(device, &imageInfo, allocator, &tvk.image), "failed to create image");
+	VkMemoryRequirements memRequirements;
+	vkGetImageMemoryRequirements(device, tvk.image, &memRequirements);
+	VkMemoryAllocateInfo allocInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	AssertVk(vkAllocateMemory(device, &allocInfo, allocator, &tvk.memory), "failed to allocate image memory");
+	vkBindImageMemory(device, tvk.image, tvk.memory, 0);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE,(u64)tvk.image, TOSTRING("Texture image ", texture->name).c_str());
+	
+	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
+		//transition image layout to accept memory transfers
+		VkImageMemoryBarrier barrier{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+		barrier.srcAccessMask       = 0;
+		barrier.dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
+		barrier.newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.image               = tvk.image;
+		barrier.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseMipLevel   = 0;
+		barrier.subresourceRange.levelCount     = texture->mipmaps;
+		barrier.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
+		barrier.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
+		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 
+							 0, 0, nullptr, 0, nullptr, 1, &barrier);
+		
+		//copy the staging buffer to the image
+		VkBufferImageCopy region{};
+		region.bufferOffset      = 0;
+		region.bufferRowLength   = 0;
+		region.bufferImageHeight = 0;
+		region.imageOffset       = {0, 0, 0};
+		region.imageExtent       = {(u32)texture->width, (u32)texture->height, 1};
+		region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.mipLevel       = 0;
+		region.imageSubresource.baseArrayLayer = 0; //NOTE(delle) use image flags here?
+		region.imageSubresource.layerCount     = 1; //NOTE(delle) use image flags here?
+		vkCmdCopyBufferToImage(commandBuffer, staging.buffer, tvk.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+	}EndSingleTimeCommands(commandBuffer);
+	
+	//cleanup staging memory
+	vkDestroyBuffer(device, staging.buffer, allocator);
+	vkFreeMemory(device, staging.memory, allocator);
+	
+	//generate texture mipmaps (image layout set to SHADER_READ_ONLY in GenerateMipmaps)
+	GenerateMipmaps(tvk.image, image_format, texture->width, texture->height, texture->mipmaps);
+	
+	//create texture imageview
+	VkImageViewCreateInfo viewInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+	viewInfo.image    = tvk.image;
+	viewInfo.viewType = view_type;
+	viewInfo.format   = image_format;
+	viewInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.baseMipLevel   = 0;
+	viewInfo.subresourceRange.levelCount     = texture->mipmaps;
+	viewInfo.subresourceRange.baseArrayLayer = 0; //NOTE(delle) use image flags here?
+	viewInfo.subresourceRange.layerCount     = 1; //NOTE(delle) use image flags here?
+	AssertVk(vkCreateImageView(device, &viewInfo, allocator, &tvk.view), "failed to create texture image view");
+	
+	//create texture sampler
+	VkSamplerCreateInfo samplerInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+	samplerInfo.magFilter        = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+	samplerInfo.minFilter        = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+	samplerInfo.mipmapMode       = (settings.textureFiltering) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.anisotropyEnable = settings.anistropicFiltering;
+	samplerInfo.maxAnisotropy    = (settings.anistropicFiltering) ?  physicalDeviceProperties.limits.maxSamplerAnisotropy : 1.0f;
+	samplerInfo.borderColor      = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;
+	samplerInfo.compareEnable    = VK_FALSE;
+	samplerInfo.compareOp        = VK_COMPARE_OP_ALWAYS;
+	samplerInfo.mipLodBias       = 0.0f;
+	samplerInfo.minLod           = 0.0f;
+	samplerInfo.maxLod           = (f32)texture->mipmaps;
+	AssertVk(vkCreateSampler(device, &samplerInfo, nullptr, &tvk.sampler), "failed to create texture sampler");
+	
+	//fill texture descriptor image info
+	tvk.descriptor.imageView   = tvk.view;
+	tvk.descriptor.sampler     = tvk.sampler;
+	tvk.descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	
+	textures.add(tvk);
 }
 
 void Render::
 LoadMaterial(Material* material){
-	//!Incomplete
+	MaterialVk mvk{};
+	mvk.base = material;
+	mvk.pipeline = GetPipelineFromShader(material->shader);
+	
+	//allocate descriptor set
+	VkDescriptorSetAllocateInfo allocInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+	allocInfo.descriptorPool     = descriptorPool;
+	allocInfo.pSetLayouts        = &descriptorSetLayouts.textures;
+	allocInfo.descriptorSetCount = 1;
+	AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &mvk.descriptorSet));
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)mvk.descriptorSet,
+						 TOSTRING("Material descriptor set ",material->name).c_str());
+	
+	//write descriptor set per texture
+	array<VkWriteDescriptorSet> sets;
+	for(u32 texIdx : material->textures){
+		VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+		set.dstSet          = mvk.descriptorSet;
+		set.dstArrayElement = 0;
+		set.descriptorCount = 1;
+		set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		set.pImageInfo      = &textures[texIdx].descriptor;
+		set.dstBinding      = sets.size();
+		sets.add(set);
+	}
+	vkUpdateDescriptorSets(device, sets.size(), sets.items, 0, nullptr);
+	
+	materials.add(mvk);
 }
 
+//TODO(delle) upload extra mesh data to an SSBO
 void Render::
 LoadMesh(Mesh* mesh){
-	//!Incomplete
+	MeshVk mvk{};
+	mvk.base     = mesh;
+	mvk.vbOffset = meshVertexBuffer.size;
+	mvk.vbSize   = mesh->vertexCount*sizeof(Mesh::Vertex);
+	mvk.ibOffset = meshIndexBuffer.size;
+	mvk.ibSize   = mesh->indexCount*sizeof(Mesh::Index);
+	
+	u64 vb_size = mvk.vbOffset + mvk.vbSize;
+	u64 ib_size = mvk.ibOffset + mvk.ibSize;
+	
+	//create/resize buffers
+	if(meshVertexBuffer.buffer == VK_NULL_HANDLE || meshVertexBuffer.size < vb_size){
+		CreateOrResizeBuffer(&meshVertexBuffer, vb_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)meshVertexBuffer.buffer, "Mesh vertex buffer");
+	}
+	if(meshIndexBuffer.buffer == VK_NULL_HANDLE || meshIndexBuffer.size < ib_size){
+		CreateOrResizeBuffer(&meshIndexBuffer, ib_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)meshIndexBuffer.buffer, "Mesh index buffer");
+	}
+	
+	//copy memory to the GPU
+	void* vb_data; void* ib_data;
+	AssertVk(vkMapMemory(device, meshVertexBuffer.memory, mvk.vbOffset, mvk.vbSize, 0, &vb_data));
+	AssertVk(vkMapMemory(device, meshIndexBuffer.memory,  mvk.ibOffset, mvk.ibSize, 0, &ib_data));
+	{
+		memcpy(vb_data, mesh->vertexArray, mvk.vbSize);
+		memcpy(ib_data, mesh->indexArray,  mvk.ibSize);
+		
+		VkMappedMemoryRange range[2] = {};
+		range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range[0].memory = meshVertexBuffer.memory;
+		range[0].offset = mvk.vbOffset;
+		range[0].size   = VK_WHOLE_SIZE;
+		range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range[1].memory = meshIndexBuffer.memory;
+		range[1].offset = mvk.ibOffset;
+		range[1].size   = VK_WHOLE_SIZE;
+		AssertVk(vkFlushMappedMemoryRanges(device, 2, range));
+	}
+	vkUnmapMemory(device, meshVertexBuffer.memory);
+	vkUnmapMemory(device, meshIndexBuffer.memory);
+	
+	meshes.add(mvk);
 }
 
 /////////////////
@@ -3295,8 +3503,9 @@ UnloadMesh(Mesh* mesh){
 //// @draw ////
 ///////////////
 void Render::
-DrawModel(Model* mesh, Matrix4 matrix){
-	//!Incomplete
+DrawModel(Model* model, Matrix4 matrix){
+	ModelCmdVk* cmd = modelCmdArray + modelCmdCount;
+	cmd->indexOffset
 }
 
 void Render::

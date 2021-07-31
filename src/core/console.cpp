@@ -1024,26 +1024,27 @@ CMDFUNC(shader_list){
 
 CMDSTARTA(texture_load, args.size() > 0){
 	TIMER_START(t_l);
-	TextureFlags type = TextureFlags_Albedo;
-	if(args.size() == 2) type = (TextureFlags)std::stoi(args[1]);
-	DengScene->CreateTextureFromFile(args[0].c_str(), type);
+	TextureType type = TextureType_2D;
+	if(args.size() == 2) type = (TextureType)std::stoi(args[1]);
+	DengScene->CreateTextureFromFile(args[0].c_str(), ImageFormat_RGBA, type);
 	SUCCESS("Loaded texture '",args[0],"' in ",TIMER_END(t_l),"ms");
 	return "";
 }CMDEND("texture_load <texture.png:String> [type:Uint]");
 
-CMDFUNC(texture_flags){
-	LOG("Texture Flags:");
-	forI(TextureFlags_COUNT){
-		LOG('\n',TextureFlagsStrings[i]);
+CMDFUNC(texture_type_list){
+	LOG("Texture Type List:"
+		"\nID\tName");
+	forI(TextureType_COUNT){
+		LOG(i,'\t',TextureTypeStrings[i]);
 	}
 	return "";
 }
 
 CMDFUNC(texture_list){
 	LOG("Texture List:"
-		"\nName\tWidth\tHeight\tDepth\tMipmaps\tFlags");
+		"\nName\tWidth\tHeight\tDepth\tMipmaps\tType");
 	for(Texture* tex : DengScene->textures){
-		LOG('\n',tex->name,'\t',tex->width,'\t',tex->height,'\t',tex->depth,'\t',tex->mipmaps,'\t',tex->flags);
+		LOG('\n',tex->name,'\t',tex->width,'\t',tex->height,'\t',tex->depth,'\t',tex->mipmaps,'\t',TextureTypeStrings[tex->type]);
 	}
 	return "";
 }
@@ -1139,5 +1140,6 @@ void Console::AddCommands(){
 	CMDADD(shader_list, "Lists the shaders and their IDs");
 	CMDADD(texture_load, "Loads a specific texture");
 	CMDADD(texture_list, "Lists the textures and their info");
+	CMDADD(texture_type_list, "Lists the texture types");
 	CMDADD(quit, "Exits the application");
 }

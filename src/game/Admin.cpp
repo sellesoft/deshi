@@ -343,7 +343,7 @@ void Admin::SaveTEXT(std::string level_name){
 	forI(DengScene->models.size()){
 		Model* model = DengScene->models[i];
 		level_text.append(TOSTRING("\n",i," \"",model->name,"\" "));
-		forI(model->batchCount) level_text.append(TOSTRING('\"',DengScene->MaterialName(model->batches[i].material),'\" '));
+		forI(model->batches.size()) level_text.append(TOSTRING('\"',DengScene->MaterialName(model->batches[i].material),'\" '));
 	}
 	
 	//entities
@@ -463,7 +463,7 @@ void Admin::LoadTEXT(std::string savename){
 					
 					array<u32> textures;
 					for(int i = 3; i < split.size(); ++i){
-						textures.add(DengScene->CreateTextureFromFile(split[i].c_str(), TextureFlags_Albedo).first);
+						textures.add(DengScene->CreateTextureFromFile(split[i].c_str()).first);
 					}
 					
 					u32 old_id = std::stoi(split[0]);

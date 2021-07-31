@@ -293,7 +293,7 @@ void UI::Init() {
 	
 	//load font
 	style.font.load_bdf_font("gohufont-11.bdf");
-	DengScene->CreateTextureFromMemory(style.font.texture_sheet, style.font.width, style.font.height * style.font.char_count, ImageFormat_BW, TextureFlags_Default, false, false);
+	DengScene->CreateTextureFromMemory(style.font.texture_sheet, style.font.width, style.font.height * style.font.char_count, ImageFormat_BW, TextureType_2D, false, false);
 	Render::LoadFont(&style.font);
 	
 	//push default color scheme

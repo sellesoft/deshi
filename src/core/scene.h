@@ -39,8 +39,8 @@ struct Scene{
 	//////////////////
 	//// @texture ////
 	//////////////////
-	pair<u32,Texture*> CreateTextureFromFile(const char* filename, ImageFormat format = ImageFormat_RGBA, TextureFlags flags = TextureFlags_Default, bool keepLoaded = false, bool generateMipmaps = true);
-	pair<u32,Texture*> CreateTextureFromMemory(void* data, int width, int height, ImageFormat format, TextureFlags flags = TextureFlags_Default, bool keepLoaded = false, bool generateMipmaps = true);
+	pair<u32,Texture*> CreateTextureFromFile(const char* filename, ImageFormat format = ImageFormat_RGBA, TextureType type = TextureType_2D, bool keepLoaded = false, bool generateMipmaps = true);
+	pair<u32,Texture*> CreateTextureFromMemory(void* data, int width, int height, ImageFormat format, TextureType type = TextureType_2D, bool keepLoaded = false, bool generateMipmaps = true);
 	void               DeleteTexture(Texture* texture);
 	
 	inline Texture*    NullTexture(){ return textures[0]; };
@@ -69,8 +69,8 @@ struct Scene{
 	////////////////
 	//// @model ////
 	////////////////
-	pair<u32,Model*> CreateModelFromOBJ(const char* filename, Shader shader = Shader_PBR, Color color = Color::WHITE);
-	pair<u32,Model*> CreateModelFromMesh(Mesh* mesh, Shader shader = Shader_PBR, Color color = Color::WHITE);
+	pair<u32,Model*> CreateModelFromOBJ(const char* filename, ModelFlags flags = ModelFlags_NONE);
+	pair<u32,Model*> CreateModelFromMesh(Mesh* mesh, ModelFlags flags = ModelFlags_NONE);
 	pair<u32,Model*> CopyModel(Model* base);
 	void             DeleteModel(Model* model);
 	

@@ -14,28 +14,18 @@ enum ImageFormat_{
 	ImageFormat_RGBA,
 }; typedef u32 ImageFormat;
 
-enum TextureFlags_{ 
-	TextureFlags_NONE  = 0,
-	TextureFlags_COUNT = 9,
-	
-	TextureFlags_Albedo   = 1,  //albedo, color, diffuse
-	TextureFlags_Normal   = 2,  //normal, bump
-	TextureFlags_Specular = 4,  //specular, metallic, roughness
-	TextureFlags_Light    = 8,  //light, ambient
-	
-	TextureFlags_1D = 128,
-	TextureFlags_2D = 256,
-	TextureFlags_3D = 512,
-	
-	TextureFlags_Derivative = 1024, //a copy of another texture with different flags
-	
-	TextureFlags_Default = TextureFlags_Albedo | TextureFlags_2D,
-}; typedef u32 TextureFlags;
-global_ const char* TextureFlagsStrings[] = {
-	"Albedo (1)", "Normal (2)", "Specular (4)", "Light (8)", 
-	"1D (128)", "2D (256)", "3D (512)", 
-	"Derivative (1024)",
-	"Default (Albedo|2D)",
+enum TextureType_{
+	TextureType_1D,
+	TextureType_2D,
+	TextureType_3D,
+	TextureType_Cube,
+	TextureType_Array_1D,
+	TextureType_Array_2D,
+	TextureType_Array_Cube,
+	TextureType_COUNT
+}; typedef u32 TextureType;
+global_ const char* TextureTypeStrings[] = {
+	"1D", "2D", "3D", "Cube", "1D Array", "2D Array", "Cube Array",
 };
 
 enum Shader_{ 
@@ -136,8 +126,8 @@ struct Texture{
 	int  mipmaps;
 	u8*  pixels;
 	bool loaded;
-	ImageFormat  format;
-	TextureFlags flags;
+	ImageFormat format;
+	TextureType type;
 };
 
 struct Material{
@@ -156,13 +146,11 @@ struct Model{
 	Armature*  armature;
 	
 	struct Batch{
-		char name[DESHI_NAME_SIZE];
 		u32  indexOffset;
 		u32  indexCount;
 		u32  material;
-	}  *batchArray;
-	u32 batchCount;
-	array_view<Batch> batches;
+	};
+	array<Batch> batches;
 };
 
 #endif //DESHI_MODEL_H

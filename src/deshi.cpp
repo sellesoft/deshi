@@ -166,8 +166,8 @@ __________ maybe store the text in the actual source and create the file from th
 #include "utils/command.h"
 #include "utils/font.h"
 #include "utils/array.h"
-#include "utils/map.h"
 #include "utils/hash.h"
+#include "utils/map.h"
 #include "math/math.h"
 
 //// core/game headers ////
@@ -185,6 +185,7 @@ __________ maybe store the text in the actual source and create the file from th
 
 //// external for core ////
 #define STB_IMAGE_IMPLEMENTATION
+#define STBI_FAILURE_USERMSG
 #include "external/stb/stb_image.h"
 #include "external/imgui/imgui_impl_glfw.h"
 
@@ -259,7 +260,7 @@ int main() {
 	//init game admin
 	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
 	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
-
+	
 	//start main loop
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
 		glfwPollEvents();

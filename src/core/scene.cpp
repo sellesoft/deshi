@@ -231,6 +231,8 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	fa[4].faceNeighbors[0]=0; fa[4].faceNeighbors[1]=1; fa[4].faceNeighbors[2]=3; fa[4].faceNeighbors[3]=5;
 	fa[5].faceNeighbors[0]=0; fa[5].faceNeighbors[1]=2; fa[5].faceNeighbors[2]=3; fa[5].faceNeighbors[3]=4;
 	
+	Render::LoadMesh(mesh);
+	
 	result.first  = meshes.size();
 	result.second = mesh;
 	meshes.add(mesh);
@@ -295,49 +297,29 @@ DeallocateTexture(Texture* texture){
 }
 
 pair<u32,Texture*> Scene::
-CreateTextureFromFile(const char* filename, ImageFormat format, TextureFlags flags, bool keepLoaded, bool generateMipmaps){
+CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps){
 	pair<u32,Texture*> result(0, NullTexture());
 	
 	//check if created already
-	Texture* previous = 0;
 	forI(textures.size()){
 		if(strcmp(textures[i]->name, filename) == 0){
-			previous = textures[i];
-			if(textures[i]->flags == flags) return pair<u32,Texture*>(i,textures[i]);
-			break;
+			return pair<u32,Texture*>(i,textures[i]);
 		}
 	}
 	
 	Texture* texture = AllocateTexture();
 	cpystr(texture->name, filename, DESHI_NAME_SIZE);
-	texture->flags    = flags;
-	texture->format   = format;
-	
-	//not loaded before
-	if(previous == 0){
-		texture->pixels   = stbi_load((Assets::dirTextures()+filename).c_str(), &texture->width, &texture->height, &texture->depth, format);
-		texture->loaded   = true;
-		if(texture->pixels == 0){ ERROR_LOC("Failed to create texture: ", filename); return result; }
-	}
-	//loaded before but with different flags
-	else{
-		texture->width    = previous->width;
-		texture->height   = previous->height;
-		texture->depth    = previous->depth;
-		texture->flags   |= TextureFlags_Derivative;
-		
-		if(keepLoaded && previous->loaded == false){
-			texture->pixels = stbi_load((Assets::dirTextures()+filename).c_str(), 0, 0, 0, format);
-			texture->loaded = true;
-			if(texture->pixels == 0){ ERROR_LOC("Failed to create texture: ", filename); return result; }
-		}
-	}
-	
-	texture->mipmaps  = (generateMipmaps) ? (int)log2(Max(texture->width, texture->height)) + 1 : 1;
+	texture->format  = format;
+	texture->type    = type;
+	texture->pixels  = stbi_load((Assets::dirTextures()+filename).c_str(), &texture->width, &texture->height, &texture->depth, format);
+	texture->loaded  = true;
+	if(texture->pixels == 0){ ERROR_LOC("Failed to create texture '",filename,"': ",stbi_failure_reason()); return result; }
+	texture->mipmaps = (generateMipmaps) ? (int)log2(Max(texture->width, texture->height)) + 1 : 1;
 	
 	Render::LoadTexture(texture);
 	if(!keepLoaded){
-		stbi_image_free(texture->pixels); texture->pixels = 0;
+		stbi_image_free(texture->pixels); 
+		texture->pixels = 0;
 	}
 	
 	result.first  = textures.size();
@@ -347,7 +329,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureFlags fla
 }
 
 pair<u32,Texture*> Scene::
-CreateTextureFromMemory(void* data, int width, int height, ImageFormat format, TextureFlags flags, bool keepLoaded, bool generateMipmaps){
+CreateTextureFromMemory(void* data, int width, int height, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps){
 	pair<u32,Texture*> result(0, NullTexture());
 	return result;
 	//!Incomplete
@@ -414,9 +396,21 @@ DeleteMaterial(Material* material){
 ////////////////
 //// @model ////
 ////////////////
+local Model* 
+AllocateModel(u32 batchCount){
+	Model* model = (Model*)calloc(1, sizeof(Model));
+	model->batches = array<Model::Batch>(batchCount);
+	return model;
+}
+
+local void 
+DeallocateModel(Model* model){
+	free(model);
+}
+
 //TODO(delle,Op) speed this up with tinyobj::LoadOBJWithCallback to not parse twice
 pair<u32,Model*> Scene::
-CreateModelFromOBJ(const char* filename, Shader shader, Color color){
+CreateModelFromOBJ(const char* filename, ModelFlags flags){
 	pair<u32,Model*> result(0, NullModel());
 	//setup tinyobj and parse the OBJ file
 	tinyobj::ObjReaderConfig reader_config;
@@ -442,23 +436,47 @@ CreateModelFromOBJ(const char* filename, Shader shader, Color color){
 	bool hasUVs = attrib.texcoords.size() > 0;
 	bool hasColors = attrib.colors.size() > 0;
 	
-	//std::unordered_map<Mesh::Vertex, u32> uniqueVertexes{};
+	Model* model = AllocateModel(shapes.size());
+	
+	map<Mesh::Vertex,u32> uniqueVertexes;
+	for(auto& shape : shapes){
+		
+	}
 	
 	//!Incomplete
-	Model* model = 0;
 	
-	//add the scene and return
-	result.first = models.size();
-	result.second = model;
-	models.add(model);
+	//result.first = models.size();
+	//result.second = model;
+	//models.add(model);
 	return result;
 }
 
 pair<u32,Model*> Scene::
-CreateModelFromMesh(Mesh* mesh, Shader shader, Color color){
+CreateModelFromMesh(Mesh* mesh, ModelFlags flags){
 	pair<u32,Model*> result(0, NullModel());
+	
+	string mesh_name(mesh->name);
+	string model_name = mesh_name.substr(0, mesh_name.size-5) + ".model";
+	//check if created already
+	forX(mi, models.size()){
+		if((models[mi]->mesh == mesh) && (string(models[mi]->name) == model_name) && (models[mi]->flags == flags) 
+		   && (models[mi]->batches.size() == 1) && (models[mi]->batches[0].indexOffset == 0)
+		   && (models[mi]->batches[0].indexCount == mesh->indexCount) && (models[mi]->batches[0].material == 0)){
+			return pair<u32,Model*>(mi,models[mi]);
+		}
+	}
+	
+	Model* model = AllocateModel(1);
+	cpystr(model->name, model_name.str, DESHI_NAME_SIZE);
+	model->mesh = mesh;
+	model->batches[0].indexOffset = 0;
+	model->batches[0].indexCount = mesh->indexCount;
+	model->batches[0].material = 0;
+	
+	result.first = models.size();
+	result.second = model;
+	models.add(model);
 	return result;
-	//!Incomplete
 }
 
 pair<u32,Model*> Scene::
