@@ -58,7 +58,9 @@ static const UIStyleVarType uiStyleVarTypes[] = {
 //by default a window that takes up the entire screen and is invisible
 UIWindow workingWin;
  
-map<string, UIWindow> windows;     //window map which only stores known windows
+//window map which only stores known windows
+//and their order in layers eg. when one gets clicked it gets moved to be first if its set to
+map<string, UIWindow> windows;     
 array<UIWindow>       windowStack; //window stack which allow us to use windows like we do colors and styles
 array<ColorMod>       colorStack; 
 array<VarMod>         varStack; 
@@ -77,7 +79,13 @@ vec2 UI::CalcTextSize(string text) {
 
 
 void UI::RectFilled(f32 x, f32 y, f32 width, f32 height, Color color) {
-	Render::FillRectUI(workingWin.position.x + x, workingWin.position.y + y, width, height, color);
+	UIDrawCmd drawCmd;
+	drawCmd.      type = UIDrawType_Rectangle;
+	drawCmd.  position = vec2{ workingWin.position.x + x, workingWin.position.y + y };
+	drawCmd.dimensions = vec2{ width, height };
+	drawCmd.     color = color;
+
+	workingWin.drawCmds.add(drawCmd);
 }
 
 
@@ -85,16 +93,26 @@ void UI::RectFilled(f32 x, f32 y, f32 width, f32 height, Color color) {
 
 
 void UI::Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
-	Render::DrawLineUI(
-		workingWin.position.x + x1, 
-		workingWin.position.y + y1, 
-		workingWin.position.x + x2, 
-		workingWin.position.y + y2, 
-		thickness, color);
+	UIDrawCmd drawCmd;
+	drawCmd.     type = UIDrawType_Line;
+	drawCmd. position = vec2{ workingWin.position.x + x1, workingWin.position.y + y1 };
+	drawCmd.position2 = vec2{ workingWin.position.x + x2, workingWin.position.y + y2 };
+	drawCmd.thickness = thickness;
+	drawCmd.    color = color;
+
+	workingWin.drawCmds.add(drawCmd);
 }
 
 void UI::Line(vec2 start, vec2 end, float thickness, Color color){
 	Render::DrawLineUI(workingWin.position + start, workingWin.position + end, thickness, color);
+	UIDrawCmd drawCmd;
+	drawCmd.     type = UIDrawType_Line;
+	drawCmd. position = workingWin.position + start;
+	drawCmd.position2 = workingWin.position + start;
+	drawCmd.thickness = thickness;
+	drawCmd.    color = color;
+
+	workingWin.drawCmds.add(drawCmd);
 }
 
 
@@ -104,46 +122,51 @@ void UI::Line(vec2 start, vec2 end, float thickness, Color color){
 
 
 void UI::Text(string text) {
+
 	//work out where we're going to draw the text and how much to advance the cursor by
 	vec2 textSize = CalcTextSize(text);
 
-	workingWin.width = 400;
-	if (textSize.y > workingWin.width) {
+	//workingWin.width = 400;
+	//if (textSize.y > workingWin.width) {
+	//
+	//}
 
-	}
+	//Render::DrawTextUI(text, workingWin.position + workingWin.cursor, style.colors[UIStyleCol_Text]);
 
-	Render::DrawTextUI(text, workingWin.position + workingWin.cursor, style.colors[UIStyleCol_Text]);
-
+	Text(text, workingWin.position + workingWin.cursor, style.colors[UIStyleCol_Text]);
 
 }
 
 void UI::Text(string text, vec2 pos) {
-	Render::DrawTextUI(text, workingWin.position + pos, style.colors[UIStyleCol_Text]);
+	//Render::DrawTextUI(text, workingWin.position + pos, style.colors[UIStyleCol_Text]);
+
+	Text(text, workingWin.position + pos, style.colors[UIStyleCol_Text]);
 }
 
 void UI::Text(string text, Color color) {
-	Render::DrawTextUI(text, workingWin.position + workingWin.cursor, color);
+	//Render::DrawTextUI(text, workingWin.position + workingWin.cursor, color);
+	Text(text, workingWin.position + workingWin.cursor, color);
 }
 
 void UI::Text(string text, vec2 pos, Color color) {
-	Render::DrawTextUI(text, workingWin.position + pos, color);
+	UIDrawCmd drawCmd;
+	drawCmd.type = UIDrawType_Text;
+	drawCmd.text = text;
+	drawCmd.position = pos;
+	drawCmd.color = color;
+
+	workingWin.drawCmds.add(drawCmd);
 }
 
 
 //Windows
 
 
-bool CheckWindowExists(string name) {
-	if (windows.has(name)) {
-		return true;
-	}
-	return false;
-}
-
-
 void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
 	//save previous window on stack
 	windowStack.add(workingWin);
+
+	
 
 	//check if were making a new window or working with one we already know
 	if (!windows.has(name)) {
@@ -163,60 +186,71 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 	if ((flags & UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
 		
 		//draw background
-		if (!(flags & UIWindowFlags_NoBackground)) 
-			Render::FillRectUI(workingWin.position, workingWin.dimensions, style.colors[UIStyleCol_WindowBg]);
+		if (!(flags & UIWindowFlags_NoBackground)) {
+			UIDrawCmd drawCmd;
+			drawCmd.      type = UIDrawType_Rectangle;
+			drawCmd.  position = workingWin.position;
+			drawCmd.dimensions = workingWin.dimensions;
+			drawCmd.     color = style.colors[UIStyleCol_WindowBg];
+
+			workingWin.drawCmds.add(drawCmd);
+		}
 
 		//draw title bar
 		if (!(flags & UIWindowFlags_NoTitleBar)) {
-			Render::FillRectUI(workingWin.x, workingWin.y, workingWin.width, style.titleBarHeight, style.colors[UIStyleCol_TitleBg]);
-			
+			UIDrawCmd drawCmd;
+			drawCmd.type = UIDrawType_Rectangle;
+			drawCmd.position = workingWin.position;
+			drawCmd.dimensions = vec2{ workingWin.width, style.titleBarHeight };
+			drawCmd.color = style.colors[UIStyleCol_TitleBg];
+
+			workingWin.drawCmds.add(drawCmd);
+
+
 			//draw text if it exists
 			if (name.size != 0) {
-				Render::DrawTextUI(
-					workingWin.name,
+				UIDrawCmd drawCmd;
+				drawCmd.type = UIDrawType_Text;
+				drawCmd.text = workingWin.name;
+				drawCmd.position =
 					vec2(
 						workingWin.x + (workingWin.width - name.size * style.font.width) * style.titleTextAlign.x,
-						workingWin.y + (style.titleBarHeight - style.font.height) * style.titleTextAlign.y));
+						workingWin.y + (style.titleBarHeight - style.font.height) * style.titleTextAlign.y);
+				drawCmd.color = Color::WHITE;
+				//TODO(sushi, Ui) add title text coloring
+
+				workingWin.drawCmds.add(drawCmd);
 			}
 		}
 
 		//draw border
 		if (!(flags & UIWindowFlags_NoBorder)) {
+			UIDrawCmd drawCmd;
+			drawCmd.type = UIDrawType_Rectangle;
+			drawCmd.color = style.colors[UIStyleCol_Border];
+
 			//left
-			Render::FillRectUI(
-				workingWin.x - style.windowBorderSize, 
-				workingWin.y, 
-				style.windowBorderSize, 
-				workingWin.height, 
-				style.colors[UIStyleCol_Border]);
+			drawCmd.  position = vec2{ workingWin.x - style.windowBorderSize, workingWin.y };
+			drawCmd.dimensions = vec2{ style.windowBorderSize, workingWin.height };
+			workingWin.drawCmds.add(drawCmd);
 			
 			//right 
-			Render::FillRectUI(
-				workingWin.x + workingWin.width, 
-				workingWin.y, 
-				style.windowBorderSize, 
-				workingWin.height, 
-				style.colors[UIStyleCol_Border]);
+			drawCmd.  position = vec2{ workingWin.x + workingWin.width, workingWin.y };
+			drawCmd.dimensions = vec2{ style.windowBorderSize, workingWin.height };
+			workingWin.drawCmds.add(drawCmd);
 		
 			//top
-			Render::FillRectUI(
-				workingWin.x - style.windowBorderSize, 
-				workingWin.y - style.windowBorderSize, 
-				workingWin.width + 2 * style.windowBorderSize, 
-				style.windowBorderSize, 
-				style.colors[UIStyleCol_Border]);
+			drawCmd.  position = vec2{ workingWin.x - style.windowBorderSize, workingWin.y - style.windowBorderSize };
+			drawCmd.dimensions = vec2{ workingWin.width + 2 * style.windowBorderSize, style.windowBorderSize };
+			workingWin.drawCmds.add(drawCmd);
 
 			//bottom
-			Render::FillRectUI(
-				workingWin.x - style.windowBorderSize, 
-				workingWin.y + dimensions.y, 
-				workingWin.width + 2 * style.windowBorderSize, 
-				style.windowBorderSize, 
-				style.colors[UIStyleCol_Border]);
-
+			drawCmd.  position = vec2{ workingWin.x - style.windowBorderSize, workingWin.y + dimensions.y };
+			drawCmd.dimensions = vec2{ workingWin.width + 2 * style.windowBorderSize, style.windowBorderSize };
+			workingWin.drawCmds.add(drawCmd);
 		}
-
 	}
+	windows[name] = workingWin;
 }
 
 void UI::EndWindow() {
@@ -283,6 +317,9 @@ void UI::PopVar(u32 count){
 
 //initializes core UI with an invisible working window covering the entire screen
 //also initializes styles
+//the base window should never focus when clicking within it, so any widgets drawn within
+//it will not focus if theres a window in front of them.
+//I'm not sure how i want to fix it yet
 void UI::Init() {
 	workingWin.name = "Base";
 	workingWin.position = vec2(0,0);
@@ -331,7 +368,25 @@ void UI::Update() {
 	Assert(colorStack.size() == initColorStackSize, 
 	"Frame ended with hanging colors in the stack, make sure you pop colors if you push them!");
 
+	//draw windows in order with their drawCmds
+	for (auto& p : windows) {
+		UIWindow w = p.second;
+		for (UIDrawCmd drawCmd : w.drawCmds) {
+			switch (drawCmd.type) {
+				case UIDrawType_Rectangle: {
+					Render::FillRectUI(drawCmd.position, drawCmd.dimensions, drawCmd.color);
+				}break;
 
+				case UIDrawType_Line: {
+					Render::DrawLineUI(drawCmd.position, drawCmd.position2, drawCmd.thickness, drawCmd.color);
+				}break;
 
+				case UIDrawType_Text: {
+					Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.color);
+				}break;
+			}
+		}
+		p.second.drawCmds.clear();
+	}
 }
 

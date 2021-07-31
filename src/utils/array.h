@@ -111,7 +111,7 @@ struct array {
 		return (int)(last - first) + 1;
 	}
 
-	void operator = (array<T>& array) {
+	void operator = (const array<T>& array) {
 		itemsize = array.itemsize;
 		space = array.space;
 		items = (T*)calloc(array.space, itemsize);
@@ -145,9 +145,7 @@ struct array {
 			first = items;
 			iter = first + iteroffset;
 			last = first + osize;
-			for (T* i = last + 1; i <= max; i++) {
-				memset(i, 'A', itemsize);
-			}
+
 			new(last) T(t);
 		}
 		else {
@@ -160,12 +158,40 @@ struct array {
 				new(last) T(t);
 			}
 		}
-		return;
 	}
 
 	void add(array<T> t) {
 		for (T item : t) {
 			this->add(item);
+		}
+	}
+
+	//for taking in something without copying it
+	void emplace(const T& t) {
+		//if array is full, realloc the memory and extend it to accomodate the new item
+		if (max - last == 0) {
+			int iteroffset = iter - first;
+			int osize = size();
+			space += 8;
+			items = (T*)realloc(items, (space)*itemsize);
+			Assert(items, "realloc failed and returned nullptr. maybe we ran out of memory?");
+			max = items + space - 1;
+
+			first = items;
+			iter = first + iteroffset;
+			last = first + osize;
+
+			new(last) T(t);
+		}
+		else {
+			if (last == 0) {
+				new(items) T(t);
+				last = items;
+			}
+			else {
+				last++;
+				new(last) T(t);
+			}
 		}
 	}
 
@@ -198,6 +224,10 @@ struct array {
 			last = items + osize;
 			max = items + space;
 		}
+	}
+
+	void clear() {
+		last = 0;
 	}
 
 	//TODO add out of bounds checking for these functions

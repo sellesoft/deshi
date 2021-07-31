@@ -13,6 +13,9 @@ struct map {
 
 	u32 seed = 213;
 
+	typedef pair<u32, Value>* iterator;
+	typedef const pair<u32, Value>* const_iterator;
+
 	bool has(const Key& key) {
 		u32 hashed = hash<Key>{}(key);
 		for (auto& p : data) {
@@ -46,6 +49,11 @@ struct map {
 	void erase(u32 idx) {
 		data.remove(idx);
 	}
+
+	iterator begin() { return data.begin(); }
+	iterator end()   { return data.end(); }
+	const_iterator begin() const { return data.begin(); }
+	const_iterator end()   const { return data.end(); }
 
 };
 

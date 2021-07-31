@@ -39,6 +39,57 @@ enum UIWindowFlags_ {
 	UIWindowFlags_Invisible    = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground
 }; typedef u32 UIWindowFlags;
 
+enum UIDrawType : u32 {
+	UIDrawType_Rectangle,
+	UIDrawType_Line,
+	UIDrawType_Text
+};
+
+//draw commands store what kind of command it is, and info relative to that command
+//this is to be stored on an array on UIWindow and determines what elements it draws when
+//we do the rendering pass
+struct UIDrawCmd {
+	UIDrawType type;
+
+	//all draw commands have a position, this is also considered the start of a line cmd
+	vec2 position;
+
+	//all draw commands have a color
+	Color color;
+
+	union {
+		//rectangles have dimensions
+		vec2 dimensions;
+		//lines have a second position
+		vec2 position2;
+	};
+
+	//line thickness
+	float thickness;
+	
+	//for use by text draw call
+	string text;
+
+	//bc C++ sucks
+	//TODO(sushi, UiCl) get rid of unions on this so i dont have to do this for copying
+	UIDrawCmd() {};
+
+	UIDrawCmd(const UIDrawCmd& cop) {
+		this->operator=(cop);
+	}
+	
+	UIDrawCmd& operator= (const UIDrawCmd& cop) {
+		type = cop.type;
+		position = cop.position;
+		dimensions = cop.dimensions;
+		thickness = cop.thickness;
+		text = cop.text;
+		color = cop.color;
+		return *this;
+	}
+
+};
+
 //A window is meant to be a way to easily position widgets relative to a parent
 struct UIWindow {
 	string name;
@@ -66,6 +117,8 @@ struct UIWindow {
 
 	UIWindowFlags flags;
 
+	array<UIDrawCmd> drawCmds;
+
 	UIWindow() {};
 
 	//I have to do this because I'm using an anonymous struct inside a union and C++ sucks
@@ -79,6 +132,7 @@ struct UIWindow {
 		dimensions = cop.dimensions;
 		cursor = cop.cursor;
 		flags = cop.flags;
+		drawCmds = cop.drawCmds;
 		return *this;
 	}
 

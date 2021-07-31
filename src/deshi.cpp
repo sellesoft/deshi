@@ -269,9 +269,11 @@ int main() {
 		UI::Update();
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
+			UI::PushVar(UIStyleVar_TitleTextAlign, vec2(0.05, 0.5));
 			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
 			UI::PushColor(UIStyleCol_Text, Color(144, 123, 132));
 			UI::PopColor();
+			UI::PopVar();
 			UI::EndWindow();
 		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
