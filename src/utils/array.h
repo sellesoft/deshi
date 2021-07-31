@@ -211,6 +211,15 @@ struct array {
 			iter  = first + iteroffset;
 			last  = items + space - 1;
 			max   = items + space;
+		}else if(count < space){
+			space = count;
+			int osize = size() - 1;
+			int iteroffset = iter - first;
+			items = (T*)realloc(items, space*sizeof(T));
+			first = items;
+			iter  = first + iteroffset;
+			last  = items + space - 1;
+			max   = items + space;
 		}
 	}
 	

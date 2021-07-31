@@ -26,7 +26,6 @@ rework and simplify entity creation so there is a distinction between developmen
 make a dynamic timers array on in time.h for cleaner timer stuffs
 add a setting for a limit to the number of log files
 create a hot-loadable global vars file
-detach camera from the renderer so that the camera component isnt calling the renderer
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
 ____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
 ____to update it's canvas system.
@@ -38,8 +37,6 @@ ____get rid of event on every component or just only let u choose that event on 
 change undo's to never use pointers and have undos that can act like linked lists to chain them
 add a general logging system with log levels and locations (for filtering)
 add a component_state command to print state of a component (add str methods to all components/systems)
-make our own unordered_map and map that is contiguous (array of pairs basically, hash mapped keys)
-____also allow it to store up to 3 types
 add device_info command (graphics card, sound device, monitor res, etc)
 pool/arena components and entities for better performance
 replace/remove external dependencies/includes (tinyobj, std)
@@ -82,7 +79,6 @@ orbitting camera for rotating around objects
 context menu when right clicking on an object 
 typing numbers while grabbing/rotating/scaling for precise manipulation (like in Blender)
 implement grabbing/rotating/scaling with a visual tool thing (like in Unreal)
-world axis in top right (like we used to have)
 orthographic side views
 (maybe) multiple viewports
 implement orthographic grabbing 
@@ -181,7 +177,7 @@ __________ maybe store the text in the actual source and create the file from th
 #include "core/time.h"
 #include "core/ui.h"
 #include "core/window.h"
-#include "core/scene.h"
+#include "core/storage.h"
 #include "game/admin.h"
 
 //// external for core ////
@@ -233,39 +229,39 @@ Assert(!"no renderer selected");
 #include "core/assets.cpp"
 #include "core/console.cpp"
 #include "core/console2.cpp"
-#include "core/scene.cpp"
+#include "core/storage.cpp"
 #include "core/ui.cpp"
 
-local Time    time_;   Time*    g_time    = &time_; //time_ because there is a c-func time() D:
-local Window  window;  Window*  g_window  = &window;
-local Input   input;   Input*   g_input   = &input;
-local Console console; Console* g_console = &console;
-local Scene   scene;   Scene*   g_scene   = &scene;
-local Admin   admin;   Admin*   g_admin   = &admin;
+local Time     time_;   Time*     g_time    = &time_; //time_ because there is a c-func time() D:
+local Window   window;  Window*   g_window  = &window;
+local Input    input;   Input*    g_input   = &input;
+local Console  console; Console*  g_console = &console;
+local Storage_ storage; Storage_* g_storage = &storage;
+local Admin    admin;   Admin*    g_admin   = &admin;
 
 int main() {
     TIMER_START(t_d); TIMER_START(t_f); TIMER_START(t_s);
     //pre-init setup
     Assets::enforceDirectories();
-	
+    
     //init engine core
     TIMER_RESET(t_s); time_.Init(700);        SUCCESS("Finished time initialization in ", TIMER_END(t_s), "ms");
     TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ", TIMER_END(t_s), "ms");
     TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
     TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ", TIMER_END(t_s), "ms");
-    TIMER_RESET(t_s); scene.Init();           SUCCESS("Finished scene initialization in ", TIMER_END(t_s), "ms");
+    TIMER_RESET(t_s); Storage::Init();        SUCCESS("Finished storage initialization in ", TIMER_END(t_s), "ms");
     TIMER_RESET(t_s); DeshiImGui::Init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
     TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ", TIMER_END(t_s), "ms");
     SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
-	
+    
     //init game admin
     TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
     SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
-	
+    
     //start main loop
     while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
         glfwPollEvents();
-		
+        
         DeshiImGui::NewFrame();                                                         //place imgui calls after this
         TIMER_RESET(t_d); time_.Update();           time_.timeTime   = TIMER_END(t_d);
         TIMER_RESET(t_d); window.Update();          time_.windowTime = TIMER_END(t_d);
@@ -283,14 +279,14 @@ int main() {
         }
         time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
     }
-	
+    
     //cleanup
     admin.Cleanup();
     DeshiImGui::Cleanup();
     Render::Cleanup();
     window.Cleanup();
     console.CleanUp(); Console2::Cleanup();
-	
+    
 #if 0
     DEBUG_BREAK;
 #endif

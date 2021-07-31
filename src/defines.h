@@ -75,7 +75,7 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 
 //NOTE function calls in these macros can get executed for each time they are placed
 //eg: Min(5, sqrt(26)) expands to (5 < sqrt(26)) ? 5 : sqrt(26)
-#define Clamp(value, min, max) (((value) < min) ? min : (((value) > max) ? max : (value)))
+#define Clamp(value, min, max) (((signed)(value) < (signed)(min)) ? (min) : (((signed)(value) > (signed)(max)) ? (max) : (value)))
 #define Max(a, b) (((a) > (b)) ? (a) : (b))
 #define Min(a, b) (((a) < (b)) ? (a) : (b))
 #define RoundUpTo(value, multiple) (((size_t)((value) + ((multiple)-1)) / (size_t)(multiple)) * (size_t)(multiple))

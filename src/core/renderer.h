@@ -106,6 +106,7 @@ namespace Render{
 	void LoadMaterial(Material* material);
 	void LoadFont(Font* font, Texture* texture);
 	
+	void RemakeTextures();
 	void UpdateMaterial(Material* material);
 	
 	void UnloadFont(Font* font);

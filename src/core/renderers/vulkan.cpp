@@ -198,12 +198,11 @@ local ModelCmdVk modelCmdArray[MAX_MODEL_CMDS];
 // VULKAN VARIABLES
 
 
-array<MeshVk>      meshes;
-array<TextureVk>   textures;
-array<MaterialVk>  materials;
-array<FontVk>      fonts;
-
-vec4 lights[10]{ vec4(0,0,0,-1) };
+local array<MeshVk>      vkMeshes;
+local array<TextureVk>   vkTextures;
+local array<MaterialVk>  vkMaterials;
+local array<FontVk>      vkFonts;
+local vec4 vkLights[10]{ vec4(0,0,0,-1) };
 
 local std::vector<const char*> validationLayers = { 
 	"VK_LAYER_KHRONOS_validation" 
@@ -221,11 +220,11 @@ local bool remakeWindow    = false;
 local bool remakePipelines = false;
 local bool _remakeOffscreen = false;
 
-VkSampleCountFlagBits msaaSamples{};
+local VkSampleCountFlagBits msaaSamples{};
 
-VkDebugUtilsMessageSeverityFlagsEXT callbackSeverities = /*VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |*/ VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+local VkDebugUtilsMessageSeverityFlagsEXT callbackSeverities = /*VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |*/ VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
 VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-VkDebugUtilsMessageTypeFlagsEXT     callbackTypes      = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+local VkDebugUtilsMessageTypeFlagsEXT     callbackTypes      = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
 VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
 /////////////////////////
@@ -334,7 +333,7 @@ local BufferVk tempIndexBuffer{};
 ////////////////////
 local struct{
 	VkDescriptorSetLayout base;
-	VkDescriptorSetLayout textures;
+	VkDescriptorSetLayout vkTextures;
 	VkDescriptorSetLayout instances;
 	VkDescriptorSetLayout twod;
 	VkDescriptorSetLayout geometry;
@@ -1504,7 +1503,7 @@ UpdateUniformBuffers(){
 	{//update offscreen vertex shader ubo
 		//calculate light ViewProjection for shadow map based on first light
 		uboVSoffscreen.values.lightVP = 
-			Math::LookAtMatrix(lights[0].ToVector3(), Vector3::ZERO).Inverse() * 
+			Math::LookAtMatrix(vkLights[0].ToVector3(), Vector3::ZERO).Inverse() * 
 			Math::PerspectiveProjectionMatrix(settings.shadowResolution, settings.shadowResolution, 90.0f, settings.shadowNearZ, settings.shadowFarZ);
 		
 		void* data;
@@ -1515,7 +1514,7 @@ UpdateUniformBuffers(){
 	
 	{//update scene vertex shader ubo
 		uboVS.values.time = DengTime->totalTime;
-		std::copy(lights, lights+10, uboVS.values.lights);
+		std::copy(vkLights, vkLights+10, uboVS.values.lights);
 		uboVS.values.screen = vec2(extent.width, extent.height);
 		uboVS.values.mousepos = vec2(DengInput->mousePos.x, DengInput->mousePos.y);
 		if(initialized) uboVS.values.mouseWorld = Math::ScreenToWorld(DengInput->mousePos, uboVS.values.proj, uboVS.values.view, DengWindow->dimensions);
@@ -1757,8 +1756,8 @@ CreateLayouts(){
 		setLayoutBindings[3].descriptorCount = 1;
 		
 		descriptorSetLayoutCI.bindingCount = 4;
-		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.textures));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.textures, 
+		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.vkTextures));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.vkTextures, 
 							 "Textures descriptor set layout");
 	}
 	
@@ -1808,7 +1807,7 @@ CreateLayouts(){
 		pushConstantRange.size       = sizeof(mat4);
 		
 		VkDescriptorSetLayout setLayouts[] = { 
-			descriptorSetLayouts.base, descriptorSetLayouts.textures
+			descriptorSetLayouts.base, descriptorSetLayouts.vkTextures
 		};
 		
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
@@ -2653,7 +2652,7 @@ GetPipelineFromShader(u32 shader){
 local void 
 UpdateMaterialPipelines(){
 	PrintVk(4, "      Updating material pipelines");
-	for(auto& mat : materials){
+	for(auto& mat : vkMaterials){
 		mat.pipeline = GetPipelineFromShader(mat.base->shader);
 	}
 }
@@ -2827,7 +2826,7 @@ BuildCommands(){
 			vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 			forI(modelCmdCount){
 				ModelCmdVk& cmd = modelCmdArray[i];
-				MaterialVk& mat = materials[cmd.material];
+				MaterialVk& mat = vkMaterials[cmd.material];
 				DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &cmd.matrix);
 				vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
@@ -2877,7 +2876,7 @@ BuildCommands(){
 			vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 			forI(modelCmdCount){
 				ModelCmdVk& cmd = modelCmdArray[i];
-				MaterialVk& mat = materials[cmd.material];
+				MaterialVk& mat = vkMaterials[cmd.material];
 				DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &cmd.matrix);
 				
@@ -2887,12 +2886,10 @@ BuildCommands(){
 						vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 					}
 				}else{
-					if(pipeline != mat.pipeline){
-						pipeline = mat.pipeline;
-						vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-					}
-					if(descriptorSet != mat.descriptorSet){
+					if(pipeline != mat.pipeline || descriptorSet != mat.descriptorSet){
+						pipeline      = mat.pipeline;
 						descriptorSet = mat.descriptorSet;
+						vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 						vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 1, 1, &descriptorSet, 0, nullptr);
 					}
 				}
@@ -2951,7 +2948,7 @@ BuildCommands(){
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
 				forX(cmd_idx, uiCmdCount){
-					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].texIdx].descriptorSet, 0, nullptr);
+					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &vkFonts[uiCmdArray[cmd_idx].texIdx].descriptorSet, 0, nullptr);
 					vkCmdDrawIndexed(cmdBuffer, uiCmdArray[cmd_idx].indexCount, 1, uiCmdArray[cmd_idx].indexOffset, 0, 0);
 				}
 				stats.drawnIndices += uiIndexCount;
@@ -3209,7 +3206,7 @@ DrawTextUI(string text, vec2 pos, Color color) {
 	
 	for (int i = 0; i < text.size; i++) {
 		DrawCharUI((u32)text[i], pos, vec2::ONE, color);
-		pos.x += fonts[1].characterWidth;
+		pos.x += vkFonts[1].characterWidth;
 	}
 }
 
@@ -3226,9 +3223,9 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color) {
 	Vertex2* vp = uiVertexArray + uiVertexCount;
 	u16*     ip = uiIndexArray  + uiIndexCount;
 	
-	f32 w = fonts[1].characterWidth;
-	f32 h = fonts[1].characterHeight;
-	f32 dy = 1.f / (f32)fonts[1].characterCount; 
+	f32 w = vkFonts[1].characterWidth;
+	f32 h = vkFonts[1].characterHeight;
+	f32 dy = 1.f / (f32)vkFonts[1].characterCount; 
 	
 	f32 idx = character - 32; 
 	
@@ -3328,7 +3325,7 @@ LoadMesh(Mesh* mesh){
 	vkUnmapMemory(device, meshVertexBuffer.memory);
 	vkUnmapMemory(device, meshIndexBuffer.memory);
 	
-	meshes.add(mvk);
+	vkMeshes.add(mvk);
 }
 
 void Render::
@@ -3464,20 +3461,21 @@ LoadTexture(Texture* texture){
 	tvk.descriptor.sampler     = tvk.sampler;
 	tvk.descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	
-	textures.add(tvk);
+	vkTextures.add(tvk);
 }
 
+//TODO(delle) this currenty requires 4 textures, fix that
 void Render::
 LoadMaterial(Material* material){
 	AssertRS(RSVK_DESCRIPTORPOOL, "LoadMaterial called before CreateDescriptorPool");
 	MaterialVk mvk{};
-	mvk.base = material;
+	mvk.base     = material;
 	mvk.pipeline = GetPipelineFromShader(material->shader);
 	
 	//allocate descriptor set
 	VkDescriptorSetAllocateInfo allocInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
 	allocInfo.descriptorPool     = descriptorPool;
-	allocInfo.pSetLayouts        = &descriptorSetLayouts.textures;
+	allocInfo.pSetLayouts        = &descriptorSetLayouts.vkTextures;
 	allocInfo.descriptorSetCount = 1;
 	AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &mvk.descriptorSet));
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)mvk.descriptorSet,
@@ -3491,13 +3489,28 @@ LoadMaterial(Material* material){
 		set.dstArrayElement = 0;
 		set.descriptorCount = 1;
 		set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		set.pImageInfo      = &textures[texIdx].descriptor;
+		set.pImageInfo      = &vkTextures[texIdx].descriptor;
 		set.dstBinding      = sets.size();
 		sets.add(set);
 	}
 	vkUpdateDescriptorSets(device, sets.size(), sets.items, 0, nullptr);
 	
-	materials.add(mvk);
+	//HACK to fix materials with no textures
+	if(material->shader == Shader_PBR && material->textures.size() < 4){
+		forI(4 - sets.size()){
+			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+			set.dstSet          = mvk.descriptorSet;
+			set.dstArrayElement = 0;
+			set.descriptorCount = 1;
+			set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			set.pImageInfo      = &vkTextures[0].descriptor;
+			set.dstBinding      = sets.size();
+			sets.add(set);
+		}
+		vkUpdateDescriptorSets(device, sets.size(), sets.items, 0, nullptr);
+	}
+	
+	vkMaterials.add(mvk);
 }
 
 void Render::
@@ -3525,11 +3538,11 @@ LoadFont(Font* font, Texture* texture){
 	writeDescriptorSet.dstArrayElement = 0;
 	writeDescriptorSet.descriptorCount = 1;
 	writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	writeDescriptorSet.pImageInfo      = &textures[fvk.texture].descriptor;
+	writeDescriptorSet.pImageInfo      = &vkTextures[fvk.texture].descriptor;
 	writeDescriptorSet.dstBinding      = 0;
 	vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 	
-	fonts.add(fvk);
+	vkFonts.add(fvk);
 }
 
 /////////////////
@@ -3537,7 +3550,7 @@ LoadFont(Font* font, Texture* texture){
 /////////////////
 void Render::
 UpdateMaterial(Material* material){
-	MaterialVk* mvk = &materials[material->idx];
+	MaterialVk* mvk = &vkMaterials[material->idx];
 	mvk->pipeline = GetPipelineFromShader(material->shader);
 	
 	//update descriptor set per texture
@@ -3548,11 +3561,26 @@ UpdateMaterial(Material* material){
 		set.dstArrayElement = 0;
 		set.descriptorCount = 1;
 		set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		set.pImageInfo      = &textures[texIdx].descriptor;
+		set.pImageInfo      = &vkTextures[texIdx].descriptor;
 		set.dstBinding      = sets.size();
 		sets.add(set);
 	}
 	vkUpdateDescriptorSets(device, sets.size(), sets.items, 0, nullptr);
+	
+	//HACK to fix materials with no textures
+	if(material->shader == Shader_PBR && material->textures.size() < 4){
+		forI(4 - sets.size()){
+			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+			set.dstSet          = mvk->descriptorSet;
+			set.dstArrayElement = 0;
+			set.descriptorCount = 1;
+			set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			set.pImageInfo      = &vkTextures[0].descriptor;
+			set.dstBinding      = sets.size();
+			sets.add(set);
+		}
+		vkUpdateDescriptorSets(device, sets.size(), sets.items, 0, nullptr);
+	}
 }
 
 
@@ -3589,19 +3617,22 @@ UnloadMesh(Mesh* mesh){
 //      3. this relies on scene mesh indexes matching renderer mesh indexes
 void Render:: 
 DrawModel(Model* model, Matrix4 matrix){
+	Assert(modelCmdCount + model->batches.size() < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
 	ModelCmdVk*  cmd      = modelCmdArray + modelCmdCount;
-	VkDeviceSize ibOffset = meshes[model->mesh->idx].ibOffset;
+	VkDeviceSize ibOffset = vkMeshes[model->mesh->idx].ibOffset;
 	
-	Assert(modelCmdCount + model->batches.size() < MAX_MODEL_CMDS, "attempted to draw more than the maximum number of batches");
+	int new_cmd_count = 0;
 	forI(model->batches.size()){
+		if(!model->batches[i].indexCount) continue;
 		cmd[i].indexOffset = ibOffset + model->batches[i].indexOffset;
 		cmd[i].indexCount  = model->batches[i].indexCount;
 		cmd[i].material    = model->batches[i].material;
 		cmd[i].name        = model->name;
 		cmd[i].matrix      = matrix;
+		new_cmd_count += 1;
 	}
 	
-	modelCmdCount += model->batches.size();
+	modelCmdCount += new_cmd_count;
 }
 
 void Render::
@@ -3640,7 +3671,7 @@ DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color color){
 	ip[2] = tempVertexCount+2;
 	vp[0].pos = p0; vp[0].color = col;
 	vp[1].pos = p1; vp[1].color = col;
-	vp[2].pos = p2; vp[1].color = col;
+	vp[2].pos = p2; vp[2].color = col;
 	
 	tempVertexCount += 3;
 	tempIndexCount  += 3;
@@ -3833,7 +3864,7 @@ ReloadAllShaders(){
 ////////////////
 void Render::
 UpdateLight(u32 lightIdx, Vector4 vec){
-	lights[lightIdx] = vec;
+	vkLights[lightIdx] = vec;
 }
 
 void Render::
@@ -3956,7 +3987,7 @@ Update(){
 	}
 	
 	//render stuff
-	if(settings.lightFrustrums) DrawFrustrum(lights[0].ToVector3(), Vector3::ZERO, 1, 90, settings.shadowNearZ, settings.shadowFarZ);
+	if(settings.lightFrustrums) DrawFrustrum(vkLights[0].ToVector3(), Vector3::ZERO, 1, 90, settings.shadowNearZ, settings.shadowFarZ);
 	ImGui::Render();
 	UpdateUniformBuffers();
 	SetupCommands();

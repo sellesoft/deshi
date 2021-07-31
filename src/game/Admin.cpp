@@ -12,7 +12,7 @@
 #include "components/AudioSource.h"
 #include "components/AudioListener.h"
 #include "../core/time.h"
-#include "../core/scene.h"
+#include "../core/storage.h"
 #include "../core/renderer.h"
 #include "../core/window.h"
 #include "../core/assets.h"
@@ -118,7 +118,7 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
     for(Entity* e : deletionBuffer) {
         for(Component* c : e->components){
 			freeCompLayers[c->layer].remove_from(c->layer_index);
-			if(c->type == ComponentType_Light) DengScene->lights.clear();
+			if(c->type == ComponentType_Light) DengStorage->lights.clear();
 		}
         for(int i = e->id+1; i < entities.size(); ++i) entities[i]->id -= 1;
         entities.erase(entities.begin()+e->id);
@@ -136,7 +136,7 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
             c->compID = compIDcount;
             c->entity = e;
             c->layer_index = freeCompLayers[c->layer].add(c);
-            if(c->type == ComponentType_Light) DengScene->lights.add(dyncast(Light, c));
+            if(c->type == ComponentType_Light) DengStorage->lights.add(dyncast(Light, c));
             compIDcount++;
         }
     }
@@ -145,9 +145,9 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
     
     //light updating
     for (int i = 0; i < 10; i++) {
-        if(i < DengScene->lights.size()) {
-			Render::UpdateLight(i, vec4(DengScene->lights[i]->position,
-										(DengScene->lights[i]->active) ? DengScene->lights[i]->brightness : 0));
+        if(i < DengStorage->lights.size()) {
+			Render::UpdateLight(i, vec4(DengStorage->lights[i]->position,
+										(DengStorage->lights[i]->active) ? DengStorage->lights[i]->brightness : 0));
         }else{
             Render::UpdateLight(i, vec4(0, 0, 0, -1));
         }
@@ -246,7 +246,7 @@ void Admin::Reset(){
     entities.clear();
     
     for(auto& layer : freeCompLayers) layer.clear();
-    DengScene->Reset();
+    Storage::Reset();
     Render::Reset();
     editor.Reset();
     SUCCESS("Finished resetting admin in ", TIMER_END(t_r), "ms");
@@ -331,19 +331,19 @@ void Admin::SaveTEXT(std::string level_name){
 	//materials
 	level_text.append("\n"
 					  "\n>materials");
-	forI(DengScene->materials.size()){
-		Material* mat = DengScene->materials[i];
+	forI(DengStorage->materials.size()){
+		Material* mat = DengStorage->materials[i];
 		level_text.append(TOSTRING("\n",i," \"",mat->name,"\" ",mat->shader," "));
-		forI(mat->textures.size()) level_text.append(TOSTRING('\"',DengScene->TextureName(mat->textures[i]),'\" '));
+		forI(mat->textures.size()) level_text.append(TOSTRING('\"',Storage::TextureName(mat->textures[i]),'\" '));
 	}
 	
 	//models
 	level_text.append("\n"
 					  "\n>meshes");
-	forI(DengScene->models.size()){
-		Model* model = DengScene->models[i];
+	forI(DengStorage->models.size()){
+		Model* model = DengStorage->models[i];
 		level_text.append(TOSTRING("\n",i," \"",model->name,"\" "));
-		forI(model->batches.size()) level_text.append(TOSTRING('\"',DengScene->MaterialName(model->batches[i].material),'\" '));
+		forI(model->batches.size()) level_text.append(TOSTRING('\"',Storage::MaterialName(model->batches[i].material),'\" '));
 	}
 	
 	//entities
@@ -463,11 +463,11 @@ void Admin::LoadTEXT(std::string savename){
 					
 					array<u32> textures;
 					for(int i = 3; i < split.size(); ++i){
-						textures.add(DengScene->CreateTextureFromFile(split[i].c_str()).first);
+						textures.add(Storage::CreateTextureFromFile(split[i].c_str()).first);
 					}
 					
 					u32 old_id = std::stoi(split[0]);
-					u32 new_id = DengScene->CreateMaterial(split[1].c_str(), std::stoi(split[2]), MaterialFlags_NONE, textures).first;
+					u32 new_id = Storage::CreateMaterial(split[1].c_str(), std::stoi(split[2]), MaterialFlags_NONE, textures).first;
 					material_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
 				}break;
 				case(LevelHeader::MESHES):{
@@ -476,13 +476,13 @@ void Admin::LoadTEXT(std::string savename){
 					
 					//id
 					u32 old_id = std::stoi(split[0]);
-					u32 new_id = DengScene->models.size();
-					Model* model = DengScene->CreateModelFromOBJ(split[1].c_str()).second;
+					u32 new_id = DengStorage->models.size();
+					Model* model = Storage::CreateModelFromOBJ(split[1].c_str()).second;
 					mesh_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
 					
 					//materials
 					for(int i = 2; i < split.size(); ++i){
-						model->batches[i].material = DengScene->CreateMaterial(split[i].c_str()).first;
+						model->batches[i].material = Storage::CreateMaterial(split[i].c_str()).first;
 					}
 				}break;
 				case(LevelHeader::ENTITIES):{
@@ -602,7 +602,7 @@ Entity* Admin::CreateEntityNow(std::vector<Component*> components, const char* n
         c->compID = compIDcount;
         c->entity = e;
         c->layer_index = freeCompLayers[c->layer].add(c);
-        if (c->type == ComponentType_Light) DengScene->lights.add(dyncast(Light, c));
+        if (c->type == ComponentType_Light) DengStorage->lights.add(dyncast(Light, c));
         compIDcount++;
     }
     return e;
@@ -638,7 +638,7 @@ void Admin::AddComponentToLayers(Component* c){
 	
     c->compID = compIDcount;
     c->layer_index = freeCompLayers[c->layer].add(c);
-    if(c->type == ComponentType_Light) DengScene->lights.add(dyncast(Light, c));
+    if(c->type == ComponentType_Light) DengStorage->lights.add(dyncast(Light, c));
     compIDcount++;
 }
 

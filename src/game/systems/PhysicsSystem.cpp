@@ -11,7 +11,7 @@
 #include "../../core/time.h"
 #include "../../core/renderer.h" //temporary until we guarentee store trimesh neighbors on them
 #include "../../core/window.h"
-#include "../../core/scene.h"
+#include "../../core/storage.h"
 #include "../../math/Math.h"
 #include "../../geometry/Geometry.h"
 #include "../../utils/Command.h"
@@ -903,7 +903,7 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 
 poly GeneratePoly(Physics* p) {
 	poly poly;
-	poly.o = DengScene->GenerateMeshOutlinePoints(p->entity->GetComponent<ModelInstance>()->mesh,
+	poly.o = Storage::GenerateMeshOutlinePoints(p->entity->GetComponent<ModelInstance>()->mesh,
 												  Matrix4::TransformationMatrix(p->position, p->rotation, p->entity->transform.scale),
 												  DengCamera->projMat, DengCamera->viewMat, DengAdmin->mainCamera->position,
 												  DengWindow->dimensions);

@@ -672,7 +672,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
 	
 	//create the model
-	Model* model = DengScene->CreateModelFromOBJ(args[0].c_str()).second;
+	Model* model = Storage::CreateModelFromOBJ(args[0].c_str()).second;
 	
 	//collider
 	Collider* col = nullptr;
@@ -760,7 +760,7 @@ CMDSTARTA(add_player, args.size() > 0){
 	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
 	
 	//create the model
-	Model* model = DengScene->CreateModelFromOBJ(args[0].c_str()).second;
+	Model* model = Storage::CreateModelFromOBJ(args[0].c_str()).second;
 	
 	//collider
 	Collider* col = nullptr;
@@ -975,27 +975,28 @@ CMDSTARTA(mat_texture, args.size() == 3){
 	int matID = std::stoi(args[0]);
 	int texSlot = std::stoi(args[1]);
 	int texID = std::stoi(args[2]);
-	DengScene->materials[matID]->textures[texSlot] = texID;
-	LOG("Updated material ",DengScene->materials[matID]->name,"'s texture",texSlot," to ",DengScene->TextureName(texID));
+	Storage::MaterialAt(matID)->textures[texSlot] = texID;
+	LOG("Updated material ",Storage::MaterialName(matID),"'s texture",texSlot," to ",Storage::TextureName(texID));
 	return "";
 }CMDEND("mat_texture <materialID:Uint> <textureSlot:Uint> <textureID:Uint>");
 
 CMDSTARTA(mat_shader, args.size() == 2){
 	int matID = std::stoi(args[0]);
 	int shader = std::stoi(args[1]);
-	DengScene->materials[matID]->shader = (Shader)shader;
-	LOG("Updated material ",DengScene->materials[matID]->name,"'s shader to ", ShaderStrings[shader]);
+	Storage::MaterialAt(matID)->shader = (Shader)shader;
+	LOG("Updated material ",Storage::MaterialName(matID),"'s shader to ", ShaderStrings[shader]);
 	return "";
 } CMDEND("mat_shader <materialID:Uint> <shaderID:Uint>");
 
 CMDFUNC(mat_list){
 	LOG("Material List:"
 		"\nName\tShader\tTextures");
-	for(Material* mat : DengScene->materials){
+	forI(Storage::MaterialCount()){
+		Material* mat = Storage::MaterialAt(i);
 		std::string text = TOSTRING(mat->name,'\t',ShaderStrings[mat->shader],'\t');
 		forI(mat->textures.size()){
 			text += ' ';
-			text += DengScene->TextureName(mat->textures[i]);
+			text += Storage::TextureName(mat->textures[i]);
 		}
 		LOG(text);
 	}
@@ -1026,7 +1027,7 @@ CMDSTARTA(texture_load, args.size() > 0){
 	TIMER_START(t_l);
 	TextureType type = TextureType_2D;
 	if(args.size() == 2) type = (TextureType)std::stoi(args[1]);
-	DengScene->CreateTextureFromFile(args[0].c_str(), ImageFormat_RGBA, type);
+	Storage::CreateTextureFromFile(args[0].c_str(), ImageFormat_RGBA, type);
 	SUCCESS("Loaded texture '",args[0],"' in ",TIMER_END(t_l),"ms");
 	return "";
 }CMDEND("texture_load <texture.png:String> [type:Uint]");
@@ -1043,7 +1044,8 @@ CMDFUNC(texture_type_list){
 CMDFUNC(texture_list){
 	LOG("Texture List:"
 		"\nName\tWidth\tHeight\tDepth\tMipmaps\tType");
-	for(Texture* tex : DengScene->textures){
+	forI(Storage::TextureCount()){
+		Texture* tex = Storage::TextureAt(i);
 		LOG('\n',tex->name,'\t',tex->width,'\t',tex->height,'\t',tex->depth,'\t',tex->mipmaps,'\t',TextureTypeStrings[tex->type]);
 	}
 	return "";
@@ -1069,7 +1071,7 @@ CMDSTARTA(add_trigger, args.size() > 0){
 			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}
 		else if(std::regex_search(s->c_str(), m, StringRegex("shape"))){
-			if      (m[1] == "aabb")      shape = ColliderShape_AABB;
+			if     (m[1] == "aabb")      shape = ColliderShape_AABB;
 			else if(m[1] == "sphere")    shape = ColliderShape_Sphere;
 			else if(m[1] == "landscape") shape = ColliderShape_Landscape;
 			else if(m[1] == "box")       shape = ColliderShape_Box;

@@ -3,7 +3,7 @@
 #include "../admin.h"
 #include "../../core/renderer.h"
 #include "../../core/time.h"
-#include "../../core/scene.h"
+#include "../../core/storage.h"
 #include "../../core/console.h"
 #include "../../utils/debug.h"
 #include "../../math/math.h"
@@ -12,7 +12,7 @@ OrbManager::OrbManager(){
 	layer = ComponentLayer_Physics;
 	type = ComponentType_OrbManager;
 	
-	model = DengScene->NullModel();
+	model = Storage::NullModel();
 	orbcount = 100;
 };
 

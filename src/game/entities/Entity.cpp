@@ -14,7 +14,7 @@
 #include "../components/AudioSource.h"
 #include "../components/AudioListener.h"
 #include "../../core/assets.h"
-#include "../../core/scene.h"
+#include "../../core/storage.h"
 #include "../../core/console.h"
 #include "../../core/renderer.h"
 #include "../../core/time.h"
@@ -72,7 +72,7 @@ void Entity::AddComponent(Component* c) {
     components.push_back(c);
     c->entity = this;
     if (c->type == ComponentType_Light) {
-        DengScene->lights.add(dyncast(Light, c));
+        DengStorage->lights.add(dyncast(Light, c));
     }
 }
 
@@ -323,7 +323,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
             }break;
             case(Header::MODELINSTANCE):{
                 if(kv.first == "name"){
-					model->model = DengScene->CreateModelFromOBJ(kv.second.c_str()).second;
+					model->model = Storage::CreateModelFromOBJ(kv.second.c_str()).second;
 					model->mesh = model->model->mesh;
 					model->armature = model->model->armature;
                 }else if(kv.first == "visible"){ 

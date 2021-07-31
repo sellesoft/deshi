@@ -220,7 +220,7 @@
     <ClInclude Include="..\src\core\model.h">
       <Filter>src\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\core\scene.h">
+    <ClInclude Include="..\src\core\storage.h">
       <Filter>src\core</Filter>
     </ClInclude>
   </ItemGroup>
@@ -535,7 +535,7 @@
     <ClCompile Include="..\src\core\ui.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\scene.cpp">
+    <ClCompile Include="..\src\core\storage.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
   </ItemGroup>

@@ -156,7 +156,7 @@
     <ClInclude Include="..\src\core\input.h" />
     <ClInclude Include="..\src\core\model.h" />
     <ClInclude Include="..\src\core\renderer.h" />
-    <ClInclude Include="..\src\core\scene.h" />
+    <ClInclude Include="..\src\core\storage.h" />
     <ClInclude Include="..\src\core\time.h" />
     <ClInclude Include="..\src\core\ui.h" />
     <ClInclude Include="..\src\core\window.h" />
@@ -285,7 +285,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\src\core\scene.cpp">
+    <ClCompile Include="..\src\core\storage.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
     </ClCompile>

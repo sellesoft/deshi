@@ -2,14 +2,14 @@
 #include "../admin.h"
 #include "../Transform.h"
 #include "../../core/renderer.h"
-#include "../../core/scene.h"
+#include "../../core/storage.h"
 #include "../../core/console.h"
 #include "../../utils/debug.h"
 
 ModelInstance::ModelInstance(){
 	type  = ComponentType_ModelInstance;
 	layer = ComponentLayer_Canvas;
-	model     = DengScene->CopyModel(DengScene->NullModel()).second;
+	model     = Storage::CopyModel(Storage::NullModel()).second;
 	mesh      = model->mesh;
 	armature  = model->armature;
 	transform = Matrix4::IDENTITY;
@@ -20,7 +20,7 @@ ModelInstance::ModelInstance(){
 ModelInstance::ModelInstance(Model* _model){
 	type  = ComponentType_ModelInstance;
 	layer = ComponentLayer_Canvas;
-	model     = DengScene->CopyModel(_model).second;
+	model     = Storage::CopyModel(_model).second;
 	mesh      = model->mesh;
 	armature  = model->armature;
 	transform = Matrix4::IDENTITY;
@@ -31,7 +31,7 @@ ModelInstance::ModelInstance(Model* _model){
 ModelInstance::ModelInstance(Mesh* _mesh){
 	type  = ComponentType_ModelInstance;
 	layer = ComponentLayer_Canvas;
-	model     = DengScene->CreateModelFromMesh(_mesh).second;
+	model     = Storage::CreateModelFromMesh(_mesh).second;
 	mesh      = model->mesh;
 	armature  = model->armature;
 	transform = Matrix4::IDENTITY;
@@ -40,19 +40,19 @@ ModelInstance::ModelInstance(Mesh* _mesh){
 }
 
 ModelInstance::~ModelInstance(){
-	DengScene->DeleteModel(model);
+	Storage::DeleteModel(model);
 }
 
 void ModelInstance::ChangeModel(Model* _model){
-	DengScene->DeleteModel(model);
-	model    = DengScene->CopyModel(_model).second;
+	Storage::DeleteModel(model);
+	model    = Storage::CopyModel(_model).second;
 	mesh     = model->mesh;
 	armature = model->armature;
 }
 
 void ModelInstance::ChangeModel(Mesh* _mesh){
-	DengScene->DeleteModel(model);
-	model    = DengScene->CreateModelFromMesh(_mesh).second;
+	Storage::DeleteModel(model);
+	model    = Storage::CreateModelFromMesh(_mesh).second;
 	mesh     = model->mesh;
 	armature = model->armature;
 }

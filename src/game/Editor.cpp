@@ -22,7 +22,7 @@
 #include "../core/window.h"
 #include "../core/input.h"
 #include "../core/time.h"
-#include "../core/scene.h"
+#include "../core/storage.h"
 #include "../utils/array.h"
 #include "../math/Math.h"
 #include "../geometry/geometry.h"
@@ -654,13 +654,13 @@ void Editor::MenuBar(){
 				directory_meshes = Assets::iterateDirectory(Assets::dirModels(), ".mesh");
                 forX(di, directory_meshes.size()){
 					bool loaded = false;
-					forX(li, DengScene->MeshCount()){ 
-						if(strcmp(DengScene->MeshName(li), directory_meshes[di].c_str()) == 0){ 
+					forX(li, Storage::MeshCount()){ 
+						if(strcmp(Storage::MeshName(li), directory_meshes[di].c_str()) == 0){ 
 							loaded = true;  break; 
 						} 
 					}
 					if(!loaded && ImGui::MenuItem(directory_meshes[di].c_str())){ WinHovCheck; 
-						DengScene->CreateMeshFromFile(directory_meshes[di].c_str());
+						Storage::CreateMeshFromFile(directory_meshes[di].c_str());
 					}
                 }
                 ImGui::EndMenu();
@@ -669,13 +669,13 @@ void Editor::MenuBar(){
 				directory_textures = Assets::iterateDirectory(Assets::dirTextures());
                 forX(di, directory_textures.size()){
 					bool loaded = false;
-					forX(li, DengScene->TextureCount()){ 
-						if(strcmp(DengScene->TextureName(li), directory_textures[di].c_str()) == 0){ 
+					forX(li, Storage::TextureCount()){ 
+						if(strcmp(Storage::TextureName(li), directory_textures[di].c_str()) == 0){ 
 							loaded = true;  break; 
 						} 
 					}
 					if(!loaded && ImGui::MenuItem(directory_textures[di].c_str())){ WinHovCheck; 
-						DengScene->CreateTextureFromFile(directory_textures[di].c_str());
+						Storage::CreateTextureFromFile(directory_textures[di].c_str());
 					}
                 }
                 ImGui::EndMenu();
@@ -688,13 +688,13 @@ void Editor::MenuBar(){
 				directory_models = Assets::iterateDirectory(Assets::dirModels(), ".obj");
                 forX(di, directory_models.size()){
 					bool loaded = false;
-					forX(li, DengScene->ModelCount()){ 
-						if(strcmp(DengScene->ModelName(li), directory_models[di].c_str()) == 0){ 
+					forX(li, Storage::ModelCount()){ 
+						if(strcmp(Storage::ModelName(li), directory_models[di].c_str()) == 0){ 
 							loaded = true;  break; 
 						} 
 					}
 					if(!loaded && ImGui::MenuItem(directory_models[di].c_str())){ WinHovCheck; 
-						DengScene->CreateModelFromOBJ(directory_models[di].c_str());
+						Storage::CreateModelFromOBJ(directory_models[di].c_str());
 					}
                 }
                 ImGui::EndMenu();
@@ -1190,9 +1190,9 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                         
 						ImGui::TextEx("Model     "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
 						if(ImGui::BeginCombo("##model_combo", mc->model->name)){
-							forI(DengScene->ModelCount()){
-								if(ImGui::Selectable(DengScene->ModelName(i), mc->model == DengScene->ModelAt(i))){
-									mc->ChangeModel(DengScene->ModelAt(i));
+							forI(Storage::ModelCount()){
+								if(ImGui::Selectable(Storage::ModelName(i), mc->model == Storage::ModelAt(i))){
+									mc->ChangeModel(Storage::ModelAt(i));
 								}
 							}
 							ImGui::EndCombo();
@@ -1200,9 +1200,9 @@ inline void EntitiesTab(Admin* admin, float fontsize){
                         
 						//TODO(delle) implement an actual model batch editor; this only lets u change the first batch atm
 						ImGui::TextEx("Material "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-						if(ImGui::BeginCombo("##model_mat_combo", DengScene->MaterialName(mc->model->batches[0].material))){
-							forI(DengScene->MaterialCount()){
-								if(ImGui::Selectable(DengScene->MaterialName(i), i == mc->model->batches[0].material)){
+						if(ImGui::BeginCombo("##model_mat_combo", Storage::MaterialName(mc->model->batches[0].material))){
+							forI(Storage::MaterialCount()){
+								if(ImGui::Selectable(Storage::MaterialName(i), i == mc->model->batches[0].material)){
 									mc->model->batches[0].material = i;
 								}
 							}
@@ -1530,7 +1530,7 @@ inline void MeshesTab(Admin* admin){
     persist char rename_buffer[DESHI_NAME_SIZE] = {};
 	persist u32  sel_mesh_idx = -1;
     Mesh* selected = nullptr;
-	if(sel_mesh_idx < DengScene->MeshCount()) selected = DengScene->MeshAt(sel_mesh_idx);
+	if(sel_mesh_idx < Storage::MeshCount()) selected = Storage::MeshAt(sel_mesh_idx);
 	
 	//// selected mesh keybinds ////
 	//start renaming mesh
@@ -1552,7 +1552,7 @@ inline void MeshesTab(Admin* admin){
     }
     //delete mesh
     if(selected && DengInput->KeyPressedAnyMod(Key::DELETE)){
-        //DengScene->DeleteMesh(sel_mesh_idx);
+        //Storage::DeleteMesh(sel_mesh_idx);
         //sel_mat_idx = -1;
     }
     
@@ -1564,8 +1564,8 @@ inline void MeshesTab(Admin* admin){
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
             
-            forX(mesh_idx, DengScene->MeshCount()){
-                ImGui::PushID(DengScene->MeshAt(mesh_idx));
+            forX(mesh_idx, Storage::MeshCount()){
+                ImGui::PushID(Storage::MeshAt(mesh_idx));
                 ImGui::TableNextRow();
                 
                 //// id + label ////
@@ -1585,19 +1585,18 @@ inline void MeshesTab(Admin* admin){
                     ImGui::InputText("##mesh_rename_input", rename_buffer, DESHI_NAME_SIZE, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
                     ImGui::PopStyleColor();
                 }else{
-                    ImGui::TextEx(DengScene->MeshName(mesh_idx));
+                    ImGui::TextEx(Storage::MeshName(mesh_idx));
                 }
                 
                 //// delete button ////
                 ImGui::TableSetColumnIndex(2);
                 if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))){
-                    //if(mesh_idx == sel_mesh_idx){
-					//sel_mesh_idx = -1;
-                    //}else if(sel_mesh_idx != -1 && sel_mesh_idx > mesh_idx){
-					//sel_mesh_idx -= 1;
-                    //}
-					//DengScene->DeleteMaterial(mesh_idx);
-					//!Incomplete
+                    if(mesh_idx == sel_mesh_idx){
+						sel_mesh_idx = -1;
+                    }else if(sel_mesh_idx != -1 && sel_mesh_idx > mesh_idx){
+						sel_mesh_idx -= 1;
+                    }
+					Storage::DeleteMesh(mesh_idx);
                 }
                 ImGui::PopID();
             }
@@ -1612,12 +1611,12 @@ inline void MeshesTab(Admin* admin){
 	ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
     if(ImGui::Button("Load New Mesh", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
 		//!Incomplete
+		ImGui::TextEx("TODO    Editor::FileSelector");
     }
     
     ImGui::Separator();
     if(selected == nullptr) return;
 	
-	//@@
 	//// selected mesh inspector panel ////
 	persist int  sel_vertex_idx   = -1;
 	persist int  sel_triangle_idx = -1;
@@ -1738,14 +1737,92 @@ inline void MeshesTab(Admin* admin){
 		
 		ImGui::EndChild(); //mesh_inspector
 	}
-}
+} //MeshesTab
+
+inline void TexturesTab(Admin* admin){
+    persist u32 sel_tex_idx = -1;
+    Texture* selected = nullptr;
+	if(sel_tex_idx < Storage::TextureCount()) selected = Storage::TextureAt(sel_tex_idx);
+	
+    //// selected material keybinds ////
+    //delete material
+    if(selected && DengInput->KeyPressedAnyMod(Key::DELETE)){
+        //TODO(Ui) re-enable this with a popup to delete OR with undoing on delete
+        //Storage::DeleteTexture(sel_tex_idx);
+        //sel_tex_idx = -1;
+    }
+    
+    //// material list panel ////
+    SetPadding; 
+    if(ImGui::BeginChild("##tex_list", ImVec2(ImGui::GetWindowWidth()*0.95, ImGui::GetWindowHeight()*.14f), false)){
+        if(ImGui::BeginTable("##tex_table", 3, ImGuiTableFlags_BordersInner)){
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 2.5f);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
+            
+            forX(tex_idx, Storage::TextureCount()){
+                ImGui::PushID(tex_idx);
+                ImGui::TableNextRow();
+                
+                //// id + label ////
+                ImGui::TableSetColumnIndex(0);
+                char label[8];
+                sprintf(label, " %03d", tex_idx);
+                if(ImGui::Selectable(label, sel_tex_idx == tex_idx, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
+                    sel_tex_idx = (ImGui::GetIO().KeyCtrl) ? -1 : tex_idx; //deselect if CTRL held
+                }
+                
+                //// name text ////
+                ImGui::TableSetColumnIndex(1);
+				ImGui::TextEx(Storage::TextureName(tex_idx));
+                
+                //// delete button ////
+                ImGui::TableSetColumnIndex(2);
+                if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))){
+                    if(tex_idx == sel_tex_idx){
+                        sel_tex_idx = -1;
+                    }else if(sel_tex_idx != -1 && sel_tex_idx > tex_idx){
+                        sel_tex_idx -= 1;
+                    }
+					Storage::DeleteTexture(tex_idx);
+                }
+                ImGui::PopID();
+            }
+            ImGui::EndTable(); //tex_table
+        }
+        ImGui::EndChild(); //tex_list
+    }
+    
+    ImGui::Separator();
+    
+    //// create new texture button ////
+    ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
+    if(ImGui::Button("Load New Texture", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
+		//!Incomplete
+		ImGui::TextEx("TODO    Editor::FileSelector");
+    }
+    
+    ImGui::Separator();
+    
+    //// selected material inspector panel ////
+    if(selected == nullptr) return;
+    SetPadding;
+    if(ImGui::BeginChild("##tex_inspector", ImVec2(ImGui::GetWindowWidth()*.95f, ImGui::GetWindowHeight()*.8f), false)){
+        //// image preview ////
+        ImGui::TextCentered("Image Preview");
+        //!Incomplete
+		ImGui::TextEx("TODO    Render::DrawImage");
+		
+        ImGui::EndChild(); //tex_inspector
+    }
+} //TexturesTab
 
 inline void MaterialsTab(Admin* admin){
     persist u32  sel_mat_idx = -1;
     persist bool rename_mat  = false;
     persist char rename_buffer[DESHI_NAME_SIZE] = {};
     Material* selected = nullptr;
-	if(sel_mat_idx < DengScene->MaterialCount()) selected = DengScene->MaterialAt(sel_mat_idx);
+	if(sel_mat_idx < Storage::MaterialCount()) selected = Storage::MaterialAt(sel_mat_idx);
 	
     //// selected material keybinds ////
     //start renaming material
@@ -1768,7 +1845,7 @@ inline void MaterialsTab(Admin* admin){
     //delete material
     if(selected && DengInput->KeyPressedAnyMod(Key::DELETE)){
         //TODO(Ui) re-enable this with a popup to delete OR with undoing on delete
-        //DengScene->DeleteMaterial(sel_mat_idx);
+        //Storage::DeleteMaterial(sel_mat_idx);
         //sel_mat_idx = -1;
     }
     
@@ -1780,7 +1857,7 @@ inline void MaterialsTab(Admin* admin){
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
             
-            forX(mat_idx, DengScene->MaterialCount()){
+            forX(mat_idx, Storage::MaterialCount()){
                 ImGui::PushID(mat_idx);
                 ImGui::TableNextRow();
                 
@@ -1801,7 +1878,7 @@ inline void MaterialsTab(Admin* admin){
                     ImGui::InputText("##mat_rename_input", rename_buffer, DESHI_NAME_SIZE, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
                     ImGui::PopStyleColor();
                 }else{
-                    ImGui::TextEx(DengScene->MaterialName(mat_idx));
+                    ImGui::TextEx(Storage::MaterialName(mat_idx));
                 }
                 
                 //// delete button ////
@@ -1812,7 +1889,7 @@ inline void MaterialsTab(Admin* admin){
                     }else if(sel_mat_idx != -1 && sel_mat_idx > mat_idx){
                         sel_mat_idx -= 1;
                     }
-					DengScene->DeleteMaterial(mat_idx);
+					Storage::DeleteMaterial(mat_idx);
                 }
                 ImGui::PopID();
             }
@@ -1826,7 +1903,7 @@ inline void MaterialsTab(Admin* admin){
     //// create new material button ////
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
     if(ImGui::Button("Create New Material", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
-		auto new_mat = DengScene->CreateMaterial(TOSTRING("material", DengScene->MaterialCount()).c_str(), Shader_PBR);
+		auto new_mat = Storage::CreateMaterial(TOSTRING("material", Storage::MaterialCount()).c_str(), Shader_PBR);
 		sel_mat_idx = new_mat.first;
 		selected = new_mat.second;
     }
@@ -1868,48 +1945,257 @@ inline void MaterialsTab(Admin* admin){
             case Shader_PBR:default:{
 				forX(mti, selected->textures.size()){
 					ImGui::TextEx(TOSTRING("Texture ",mti).c_str()); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-					if(ImGui::BeginCombo("##mat_texture_combo", DengScene->TextureName(selected->textures[mti]))){
-						ImGui::PushID(&selected->textures[mti]);
+					if(ImGui::BeginCombo(TOSTRING("##mat_texture_combo",mti).c_str(), Storage::TextureName(selected->textures[mti]))){
 						directory_textures = Assets::iterateDirectory(Assets::dirTextures());
 						forX(ti, directory_textures.size()){
-							if(ImGui::Selectable(directory_textures[ti].c_str(), strcmp(DengScene->TextureName(selected->textures[mti]), directory_textures[ti].c_str()) == 0)){
-								selected->textures[mti] = DengScene->CreateTextureFromFile(directory_textures[ti].c_str()).first;
+							if(ImGui::Selectable(directory_textures[ti].c_str(), strcmp(Storage::TextureName(selected->textures[mti]), directory_textures[ti].c_str()) == 0)){
+								selected->textures[mti] = Storage::CreateTextureFromFile(directory_textures[ti].c_str()).first;
 								Render::UpdateMaterial(selected);
 							}
 						}
-						ImGui::PopID();
 						ImGui::EndCombo();
 					}
 				}
             }break;
         }
+		
+		if(ImGui::Button("Add Texture", ImVec2(-1, 0))){
+			selected->textures.add(0);
+			Render::UpdateMaterial(selected);
+		}
         
         ImGui::EndChild(); //mat_inspector
     }
 } //MaterialsTab
 
+inline void ModelsTab(Admin* admin){
+    persist u32  sel_model_idx = -1;
+	persist u32  sel_batch_idx = -1;
+    persist bool rename_model  = false;
+    persist char rename_buffer[DESHI_NAME_SIZE] = {};
+    Model* selected = nullptr;
+	if(sel_model_idx < Storage::ModelCount()) selected = Storage::ModelAt(sel_model_idx);
+	
+    //// selected model keybinds ////
+    //start renaming model
+    if(selected && DengInput->KeyPressedAnyMod(Key::F2)){
+        rename_model = true;
+        DengConsole->IMGUI_KEY_CAPTURE = true;
+        cpystr(rename_buffer, selected->name, DESHI_NAME_SIZE);
+    }
+    //submit renaming model
+    if(selected && rename_model && DengInput->KeyPressedAnyMod(Key::ENTER)){
+        rename_model = false;
+        DengConsole->IMGUI_KEY_CAPTURE = false;
+        cpystr(selected->name, rename_buffer, DESHI_NAME_SIZE);
+    }
+    //stop renaming model
+    if(rename_model && DengInput->KeyPressedAnyMod(Key::ESCAPE)){
+        rename_model = false;
+        DengConsole->IMGUI_KEY_CAPTURE = false;
+    }
+    //delete model
+    if(selected && DengInput->KeyPressedAnyMod(Key::DELETE)){
+        //TODO(Ui) re-enable this with a popup to delete OR with undoing on delete
+        //Storage::DeleteModel(sel_model_idx);
+        //sel_model_idx = -1;
+    }
+    
+    //// model list panel ////
+    SetPadding; 
+    if(ImGui::BeginChild("##model_list", ImVec2(ImGui::GetWindowWidth()*0.95, ImGui::GetWindowHeight()*.14f), false)){
+        if(ImGui::BeginTable("##model_table", 3, ImGuiTableFlags_BordersInner)){
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 2.5f);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
+            
+            forX(model_idx, Storage::ModelCount()){
+                ImGui::PushID(Storage::ModelAt(model_idx));
+                ImGui::TableNextRow();
+                
+                //// id + label ////
+                ImGui::TableSetColumnIndex(0);
+                char label[8];
+                sprintf(label, " %03d", model_idx);
+                if(ImGui::Selectable(label, sel_model_idx == model_idx, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
+                    sel_model_idx = (ImGui::GetIO().KeyCtrl) ? -1 : model_idx; //deselect if CTRL held
+                    rename_model = false;
+                    DengConsole->IMGUI_KEY_CAPTURE = false;
+                }
+                
+                //// name text ////
+                ImGui::TableSetColumnIndex(1);
+                if(rename_model && sel_model_idx == model_idx){
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::ColorToImVec4(colors.c2));
+                    ImGui::InputText("##model_rename_input", rename_buffer, DESHI_NAME_SIZE, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_EnterReturnsTrue);
+                    ImGui::PopStyleColor();
+                }else{
+                    ImGui::TextEx(Storage::ModelName(model_idx));
+                }
+                
+                //// delete button ////
+                ImGui::TableSetColumnIndex(2);
+                if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))){
+                    if(model_idx == sel_model_idx){
+                        sel_model_idx = -1;
+                    }else if(sel_model_idx != -1 && sel_model_idx > model_idx){
+                        sel_model_idx -= 1;
+                    }
+					Storage::DeleteModel(model_idx);
+                }
+                ImGui::PopID();
+            }
+            ImGui::EndTable(); //model_table
+        }
+        ImGui::EndChild(); //model_list
+    }
+    
+    ImGui::Separator();
+    
+    //// create new model button ////
+    ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
+    if(ImGui::Button("Create New Model", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
+		auto new_model = Storage::CopyModel(Storage::NullModel());
+		sel_model_idx = new_model.first;
+		selected      = new_model.second;
+		sel_batch_idx = -1;
+    }
+    
+    ImGui::Separator();
+    if(selected == nullptr) return;
+	
+    //// selected model inspector panel ////
+    SetPadding;
+    if(ImGui::BeginChild("##model_inspector", ImVec2(ImGui::GetWindowWidth()*.95f, ImGui::GetWindowHeight()*.8f), false)){
+        //// name ////
+        ImGui::TextEx("Name  "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
+        ImGui::InputText("##model_name_input", selected->name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+        
+        //// mesh selection ////
+        ImGui::TextEx("Mesh  "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+        if(ImGui::BeginCombo("##model_mesh_combo", selected->mesh->name)){
+            forI(Storage::MeshCount()){
+                if(ImGui::Selectable(Storage::MeshName(i), selected->mesh == Storage::MeshAt(i))){
+					selected->mesh = Storage::MeshAt(i);
+					forX(batch_idx, selected->batches.size()){
+						selected->batches[batch_idx].indexOffset = 0;
+						selected->batches[batch_idx].indexCount  = selected->mesh->indexCount;
+					}
+                }
+            }
+            ImGui::EndCombo(); //model_mesh_combo
+        }
+		
+		ImGui::Separator();
+		
+		//// batch selection ////
+		ImGui::TextCentered("Batches");
+        if(ImGui::BeginTable("##batch_table", 3, ImGuiTableFlags_None, ImVec2(-FLT_MIN, ImGui::GetWindowHeight()*.10f))){
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 2.5f);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
+            
+            forX(batch_idx, selected->batches.size()){
+                ImGui::PushID(&selected->batches[batch_idx]);
+                ImGui::TableNextRow();
+                
+                //// id + label ////
+                ImGui::TableSetColumnIndex(0);
+                char label[8];
+                sprintf(label, " %02d", batch_idx);
+                if(ImGui::Selectable(label, sel_batch_idx == batch_idx, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
+                    sel_batch_idx = (ImGui::GetIO().KeyCtrl) ? -1 : batch_idx; //deselect if CTRL held
+                    rename_model = false;
+                    DengConsole->IMGUI_KEY_CAPTURE = false;
+                }
+                
+                //// name text ////
+                ImGui::TableSetColumnIndex(1);
+				ImGui::Text("Batch %d", batch_idx);
+                
+                //// delete button ////
+                ImGui::TableSetColumnIndex(2); //NOTE there must be at least 1 batch on a model
+                if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f)) && selected->batches.size() > 1){
+                    if(batch_idx == sel_batch_idx){
+                        sel_batch_idx = -1;
+                    }else if(sel_batch_idx != -1 && sel_batch_idx > batch_idx){
+                        sel_batch_idx -= 1;
+                    }
+					selected->batches.remove(batch_idx);
+                }
+                ImGui::PopID();
+            }
+            ImGui::EndTable(); //batch_table
+		}
+		if(ImGui::Button("Add Batch", ImVec2(-1, 0))){
+			selected->batches.add(Model::Batch{});
+		}
+		
+		ImGui::Separator();
+		
+		//// batch properties ////
+		persist bool highlight_batch_triangles = false; 
+		ImGui::Checkbox("Highlight Triangles", &highlight_batch_triangles);
+		if(highlight_batch_triangles){
+			//!Incomplete
+			ImGui::TextEx("TODO    Render::FillTriangle");
+		}
+		
+		ImGui::TextEx("Index Offset "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+        if(ImGui::InputInt("##batch_index_offset_input", (int*)&selected->batches[sel_batch_idx].indexOffset, 0, 0)){
+			selected->batches[sel_batch_idx].indexOffset =
+				Clamp(selected->batches[sel_batch_idx].indexOffset, 0, selected->mesh->indexCount-1);
+		}
+		
+		ImGui::TextEx("Index Count  "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+        if(ImGui::InputInt("##batch_index_count_input", (int*)&selected->batches[sel_batch_idx].indexCount, 0, 0)){
+			selected->batches[sel_batch_idx].indexCount =
+				Clamp(selected->batches[sel_batch_idx].indexCount, 0, selected->mesh->indexCount);
+		}
+		
+		ImGui::TextEx("Material     "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+        if(ImGui::BeginCombo("##batch_mat_combo", Storage::MaterialName(selected->batches[sel_batch_idx].material))){
+            forI(Storage::MaterialCount()){
+                if(ImGui::Selectable(Storage::MaterialName(i), selected->batches[sel_batch_idx].material == i)){
+					selected->batches[sel_batch_idx].material = i;
+                }
+            }
+            ImGui::EndCombo(); //batch_mat_combo
+        }
+		
+		ImGui::EndChild(); //model_inspector
+	}
+} //ModelsTab
+
+inline void FontsTab(Admin* admin){
+    persist u32 sel_font_idx = -1;
+    Font* selected = nullptr;
+	//!Incomplete
+	ImGui::TextEx("TODO    Move fonts to storage");
+} //FontsTab
+
 enum TwodPresets : u32 {
-    Twod_NONE = 0, Twod_Line, Twod_Triangle, Twod_Square, Twod_NGon, Twod_Image, 
+	Twod_NONE = 0, Twod_Line, Twod_Triangle, Twod_Square, Twod_NGon, Twod_Image, 
 };
 
 inline void SettingsTab(Admin* admin){
-    SetPadding; 
-    if(ImGui::BeginChild("##settings_tab", ImVec2(ImGui::GetWindowWidth()*0.95f, ImGui::GetWindowHeight()*.9f))){
-        //// physics properties ////
-        if(ImGui::CollapsingHeader("Physics", 0)){
+	SetPadding; 
+	if(ImGui::BeginChild("##settings_tab", ImVec2(ImGui::GetWindowWidth()*0.95f, ImGui::GetWindowHeight()*.9f))){
+		//// physics properties ////
+		if(ImGui::CollapsingHeader("Physics", 0)){
 			ImGui::TextEx("Pause Physics "); ImGui::SameLine();
 			if(ImGui::Button((admin->pause_phys) ? "True" : "False", ImVec2(-FLT_MIN, 0))){
 				admin->pause_phys = !admin->pause_phys;
 			}    
-			ImGui::TextEx("Gravity       "); ImGui::SameLine(); ImGui::InputFloat("##global__gravity", &admin->physics.gravity);
+			ImGui::TextEx("Gravity       "); ImGui::SameLine(); ImGui::InputFloat("##phys_gravity", &admin->physics.gravity);
 			
 			//ImGui::TextEx("Phys TPS      "); ImGui::SameLine(); ImGui::InputFloat("##phys_tps", );
 			
 			ImGui::Separator();
-        }
+		}
 		
-        //// camera properties ////
-        if(ImGui::CollapsingHeader("Camera", 0)){
+		//// camera properties ////
+		if(ImGui::CollapsingHeader("Camera", 0)){
 			if(ImGui::Button("Zero", ImVec2(ImGui::GetWindowWidth()*.45f, 0))){
 				admin->editor.camera->position = Vector3::ZERO; admin->editor.camera->rotation = Vector3::ZERO;
 			} ImGui::SameLine();
@@ -1920,17 +2206,17 @@ inline void SettingsTab(Admin* admin){
 			ImGui::TextEx("Position  "); ImGui::SameLine(); ImGui::InputVector3("##cam_pos", &admin->editor.camera->position);
 			ImGui::TextEx("Rotation  "); ImGui::SameLine(); ImGui::InputVector3("##cam_rot", &admin->editor.camera->rotation);
 			ImGui::TextEx("Near Clip "); ImGui::SameLine(); 
-            if(ImGui::InputFloat("##global__nearz", &admin->editor.camera->nearZ)){
-                admin->editor.camera->UpdateProjectionMatrix();
-            }
-            ImGui::TextEx("Far Clip  "); ImGui::SameLine(); 
-            if(ImGui::InputFloat("##global__farz", &admin->editor.camera->farZ)){
-                admin->editor.camera->UpdateProjectionMatrix();
-            };
-            ImGui::TextEx("FOV       "); ImGui::SameLine(); 
-            if(ImGui::InputFloat("##global__fov", &admin->editor.camera->fov)){
-                admin->editor.camera->UpdateProjectionMatrix();
-            };
+			if(ImGui::InputFloat("##cam_nearz", &admin->editor.camera->nearZ)){
+				admin->editor.camera->UpdateProjectionMatrix();
+			}
+			ImGui::TextEx("Far Clip  "); ImGui::SameLine(); 
+			if(ImGui::InputFloat("##cam_farz", &admin->editor.camera->farZ)){
+				admin->editor.camera->UpdateProjectionMatrix();
+			};
+			ImGui::TextEx("FOV       "); ImGui::SameLine(); 
+			if(ImGui::InputFloat("##cam_fov", &admin->editor.camera->fov)){
+				admin->editor.camera->UpdateProjectionMatrix();
+			};
 			
 			ImGui::Separator();
 		}
@@ -1947,10 +2233,10 @@ inline void SettingsTab(Admin* admin){
 			local vec4 selected_color = settings->selectedColor;
 			local vec4 collider_color = settings->colliderColor;
 			
-            ImGui::Checkbox("Debugging", (bool*)&settings->debugging);
-            ImGui::Checkbox("Shader printf", (bool*)&settings->printf);
-            ImGui::Checkbox("Recompile all shaders", (bool*)&settings->recompileAllShaders);
-            ImGui::Checkbox("Find mesh tri-neighbors", (bool*)&settings->findMeshTriangleNeighbors);
+			ImGui::Checkbox("Debugging", (bool*)&settings->debugging);
+			ImGui::Checkbox("Shader printf", (bool*)&settings->printf);
+			ImGui::Checkbox("Recompile all shaders", (bool*)&settings->recompileAllShaders);
+			ImGui::Checkbox("Find mesh tri-neighbors", (bool*)&settings->findMeshTriangleNeighbors);
 			ImGui::TextEx("MSAA Samples"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
 			if(ImGui::BeginCombo("##rs_msaa_combo", msaa_strings[msaa_index])){
 				forI(ArrayCount(msaa_strings)){
@@ -1963,7 +2249,7 @@ inline void SettingsTab(Admin* admin){
 			}
 			ImGui::Checkbox("Texture Filtering", (bool*)&settings->textureFiltering);
 			ImGui::Checkbox("Anistropic Filtering", (bool*)&settings->anistropicFiltering);
-            ImGui::TextCentered("^ above settings require restart ^");
+			ImGui::TextCentered("^ above settings require restart ^");
 			ImGui::TextEx("Logging level"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
 			ImGui::SliderUInt32("##rs_logging_level", &settings->loggingLevel, 0, 4);
 			ImGui::Checkbox("Crash on error", (bool*)&settings->crashOnError);
@@ -2005,68 +2291,68 @@ inline void SettingsTab(Admin* admin){
 			
 			ImGui::Separator();
 		}
-        
-        ImGui::EndChild();
-    }
+		
+		ImGui::EndChild();
+	}
 }
 
 void DisplayTriggers(Admin* admin){
-    int i = 0;
-    for (Entity* e : admin->entities){
-        if(e->type == EntityType_Trigger){
-            Trigger* t = dyncast(Trigger, e);
-            switch (t->collider->shape){
-                case ColliderShape_AABB:{
-                    Render::DrawBox(e->transform.TransformMatrix(), Color::DARK_MAGENTA);
-                }break;
-                case ColliderShape_Sphere: {
-                    
-                }break;
-                case ColliderShape_Complex: {
-                    
-                }break;
-            }
-        }
-        i++;
-    }
+	int i = 0;
+	for (Entity* e : admin->entities){
+		if(e->type == EntityType_Trigger){
+			Trigger* t = dyncast(Trigger, e);
+			switch (t->collider->shape){
+				case ColliderShape_AABB:{
+					Render::DrawBox(e->transform.TransformMatrix(), Color::DARK_MAGENTA);
+				}break;
+				case ColliderShape_Sphere: {
+					
+				}break;
+				case ColliderShape_Complex: {
+					
+				}break;
+			}
+		}
+		i++;
+	}
 }
 
 void Editor::Inspector(){
-    //window styling
-    ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-    ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
-    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,      ImVec2(0, 2));
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,     ImVec2(2, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,    ImVec2(0, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, ImVec2(1, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
-    
-    ImGui::PushStyleColor(ImGuiCol_Border,               ImGui::ColorToImVec4(Color( 0,  0,  0)));
-    ImGui::PushStyleColor(ImGuiCol_Button,               ImGui::ColorToImVec4(Color(40, 40, 40)));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,         ImGui::ColorToImVec4(Color(48, 48, 48)));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,        ImGui::ColorToImVec4(Color(60, 60, 60)));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg,             ImGui::ColorToImVec4(colors.c9));
-    ImGui::PushStyleColor(ImGuiCol_PopupBg,              ImGui::ColorToImVec4(Color(20, 20, 20)));
-    ImGui::PushStyleColor(ImGuiCol_FrameBg,              ImGui::ColorToImVec4(Color(35, 45, 50)));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgActive,        ImGui::ColorToImVec4(Color(42, 54, 60)));
-    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,       ImGui::ColorToImVec4(Color(54, 68, 75)));
-    ImGui::PushStyleColor(ImGuiCol_TitleBg,              ImGui::ColorToImVec4(Color(0,   0,  0)));
-    ImGui::PushStyleColor(ImGuiCol_TitleBgActive,        ImGui::ColorToImVec4(Color(0,   0,  0)));
-    ImGui::PushStyleColor(ImGuiCol_Header,               ImGui::ColorToImVec4(Color(35, 45, 50)));
-    ImGui::PushStyleColor(ImGuiCol_HeaderActive,         ImGui::ColorToImVec4(Color( 0, 74, 74)));
-    ImGui::PushStyleColor(ImGuiCol_HeaderHovered,        ImGui::ColorToImVec4(Color( 0, 93, 93)));
-    ImGui::PushStyleColor(ImGuiCol_TableBorderLight,     ImGui::ColorToImVec4(Color(45, 45, 45)));
-    ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,        ImGui::ColorToImVec4(Color(10, 10, 10)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarBg,          ImGui::ColorToImVec4(Color(10, 10, 10)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab,        ImGui::ColorToImVec4(Color(55, 55, 55)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,  ImGui::ColorToImVec4(Color(75, 75, 75)));
-    ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ImGui::ColorToImVec4(Color(65, 65, 65)));
-    ImGui::PushStyleColor(ImGuiCol_TabActive,            ImGui::ColorToImVec4(Color::VERY_DARK_CYAN));
-    ImGui::PushStyleColor(ImGuiCol_TabHovered,           ImGui::ColorToImVec4(Color::DARK_CYAN));
-    ImGui::PushStyleColor(ImGuiCol_Tab,                  ImGui::ColorToImVec4(colors.c1));
-    ImGui::PushStyleColor(ImGuiCol_Separator,            ImGui::ColorToImVec4(Color::VERY_DARK_CYAN));
-    
+	//window styling
+	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarSize, 5);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+	ImGui::PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,      ImVec2(0, 2));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,     ImVec2(2, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,    ImVec2(0, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowTitleAlign, ImVec2(1, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_TabRounding, 0);
+	
+	ImGui::PushStyleColor(ImGuiCol_Border,               ImGui::ColorToImVec4(Color( 0,  0,  0)));
+	ImGui::PushStyleColor(ImGuiCol_Button,               ImGui::ColorToImVec4(Color(40, 40, 40)));
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive,         ImGui::ColorToImVec4(Color(48, 48, 48)));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered,        ImGui::ColorToImVec4(Color(60, 60, 60)));
+	ImGui::PushStyleColor(ImGuiCol_WindowBg,             ImGui::ColorToImVec4(colors.c9));
+	ImGui::PushStyleColor(ImGuiCol_PopupBg,              ImGui::ColorToImVec4(Color(20, 20, 20)));
+	ImGui::PushStyleColor(ImGuiCol_FrameBg,              ImGui::ColorToImVec4(Color(35, 45, 50)));
+	ImGui::PushStyleColor(ImGuiCol_FrameBgActive,        ImGui::ColorToImVec4(Color(42, 54, 60)));
+	ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,       ImGui::ColorToImVec4(Color(54, 68, 75)));
+	ImGui::PushStyleColor(ImGuiCol_TitleBg,              ImGui::ColorToImVec4(Color(0,   0,  0)));
+	ImGui::PushStyleColor(ImGuiCol_TitleBgActive,        ImGui::ColorToImVec4(Color(0,   0,  0)));
+	ImGui::PushStyleColor(ImGuiCol_Header,               ImGui::ColorToImVec4(Color(35, 45, 50)));
+	ImGui::PushStyleColor(ImGuiCol_HeaderActive,         ImGui::ColorToImVec4(Color( 0, 74, 74)));
+	ImGui::PushStyleColor(ImGuiCol_HeaderHovered,        ImGui::ColorToImVec4(Color( 0, 93, 93)));
+	ImGui::PushStyleColor(ImGuiCol_TableBorderLight,     ImGui::ColorToImVec4(Color(45, 45, 45)));
+	ImGui::PushStyleColor(ImGuiCol_TableHeaderBg,        ImGui::ColorToImVec4(Color(10, 10, 10)));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarBg,          ImGui::ColorToImVec4(Color(10, 10, 10)));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab,        ImGui::ColorToImVec4(Color(55, 55, 55)));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive,  ImGui::ColorToImVec4(Color(75, 75, 75)));
+	ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ImGui::ColorToImVec4(Color(65, 65, 65)));
+	ImGui::PushStyleColor(ImGuiCol_TabActive,            ImGui::ColorToImVec4(Color::VERY_DARK_CYAN));
+	ImGui::PushStyleColor(ImGuiCol_TabHovered,           ImGui::ColorToImVec4(Color::DARK_CYAN));
+	ImGui::PushStyleColor(ImGuiCol_Tab,                  ImGui::ColorToImVec4(colors.c1));
+	ImGui::PushStyleColor(ImGuiCol_Separator,            ImGui::ColorToImVec4(Color::VERY_DARK_CYAN));
+	
 	ImGuiWindowFlags window_flags;
 	if(popoutInspector){
 		window_flags = ImGuiWindowFlags_None;
@@ -2078,24 +2364,27 @@ void Editor::Inspector(){
 			| ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar 
 			| ImGuiWindowFlags_NoScrollWithMouse;
 	}
-    ImGui::Begin("Inspector", (bool*)1, window_flags);
+	ImGui::Begin("Inspector", (bool*)1, window_flags);
 	
-    //capture mouse if hovering over this window
-    WinHovCheck; 
-    if(DengInput->mouseX < ImGui::GetWindowPos().x + ImGui::GetWindowWidth()){
-        WinHovFlag = true;
-    }
-    
-    if(ImGui::BeginTabBar("MajorTabs")){
-        if(ImGui::BeginTabItem("Entities")){
-            EntitiesTab(admin, ImGui::GetFontSize());
-            ImGui::EndTabItem();
-        }
-		if(ImGui::BeginTabItem("Scene")){
+	//capture mouse if hovering over this window
+	WinHovCheck; 
+	if(DengInput->mouseX < ImGui::GetWindowPos().x + ImGui::GetWindowWidth()){
+		WinHovFlag = true;
+	}
+	
+	if(ImGui::BeginTabBar("MajorTabs")){
+		if(ImGui::BeginTabItem("Entities")){
+			EntitiesTab(admin, ImGui::GetFontSize());
+			ImGui::EndTabItem();
+		}
+		if(ImGui::BeginTabItem("Storage")){
 			SetPadding;
-			if(ImGui::BeginTabBar("SceneTabs")){
+			if(ImGui::BeginTabBar("StorageTabs")){
 				if(ImGui::BeginTabItem("Meshes"))   { MeshesTab(admin);    ImGui::EndTabItem(); }
+				if(ImGui::BeginTabItem("Textures")) { TexturesTab(admin);  ImGui::EndTabItem(); }
 				if(ImGui::BeginTabItem("Materials")){ MaterialsTab(admin); ImGui::EndTabItem(); }
+				if(ImGui::BeginTabItem("Models"))   { ModelsTab(admin);    ImGui::EndTabItem(); }
+				if(ImGui::BeginTabItem("Fonts"))    { FontsTab(admin);     ImGui::EndTabItem(); }
 				ImGui::EndTabBar();
 			}
 			ImGui::EndTabItem();
@@ -2106,360 +2395,360 @@ void Editor::Inspector(){
 		}
 		ImGui::EndTabBar();
 	}
-    
-    ImGui::PopStyleVar(8);
-    ImGui::PopStyleColor(24);
-    ImGui::End();
+	
+	ImGui::PopStyleVar(8);
+	ImGui::PopStyleColor(24);
+	ImGui::End();
 }
 
 
 void Editor::DebugBar(){
-    //for getting fps
-    ImGuiIO& io = ImGui::GetIO();
-    
-    int FPS = floor(io.Framerate);
-    
-    //num of active columns
-    int activecols = 7;
-    
-    //font size for centering ImGui::TextEx
-    float fontsize = ImGui::GetFontSize();
-    
-    //flags for showing different things
-    persist bool show_fps = true;
-    persist bool show_fps_graph = true;
-    persist bool show_world_stats = true;
-    persist bool show_selected_stats = true;
-    persist bool show_floating_fps_graph = false;
-    persist bool show_time = true;
-    
-    ImGui::SetNextWindowSize(ImVec2(DengWindow->width, 20));
-    ImGui::SetNextWindowPos(ImVec2(0, DengWindow->height - 20));
-    
-    
-    //window styling
-    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::PushStyleColor(ImGuiCol_Border,           ImGui::ColorToImVec4(Color(0, 0, 0, 255)));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg,         ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
-    ImGui::PushStyleColor(ImGuiCol_TableBorderLight, ImGui::ColorToImVec4(Color(45, 45, 45, 255)));
-    
-    ImGui::Begin("DebugBar", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
-    debugbarheight = 20;
-    //capture mouse if hovering over this window
-    WinHovCheck; 
-    
-    activecols = show_fps + show_fps_graph + 3 * show_world_stats + 2 * show_selected_stats + show_time + 1;
-    if(ImGui::BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)){
-        
-        //precalc strings and stuff so we can set column widths appropriately
-        std::string str1 = TOSTRING("wents: ", admin->entities.size());
-        float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-        std::string str2 = TOSTRING("wtris: ", Render::GetStats()->totalTriangles);
-        float strlen2 = (fontsize - (fontsize / 2)) * str2.size();
-        std::string str3 = TOSTRING("wverts: ",Render::GetStats()->totalVertices);
-        float strlen3 = (fontsize - (fontsize / 2)) * str3.size();
-        std::string str4 = TOSTRING("stris: ", "0");
-        float strlen4 = (fontsize - (fontsize / 2)) * str4.size();
-        std::string str5 = TOSTRING("sverts: ", "0");
-        float strlen5 = (fontsize - (fontsize / 2)) * str5.size();
-        
-        ImGui::TableSetupColumn("FPS",            ImGuiTableColumnFlags_WidthFixed, 64);
-        ImGui::TableSetupColumn("FPSGraphInline", ImGuiTableColumnFlags_WidthFixed, 64);
-        ImGui::TableSetupColumn("EntCount",       ImGuiTableColumnFlags_None, strlen1 * 1.3);
-        ImGui::TableSetupColumn("TriCount",       ImGuiTableColumnFlags_None, strlen2 * 1.3);
-        ImGui::TableSetupColumn("VerCount",       ImGuiTableColumnFlags_None, strlen3 * 1.3);
-        ImGui::TableSetupColumn("SelTriCount",    ImGuiTableColumnFlags_None, strlen4 * 1.3);
-        ImGui::TableSetupColumn("SelVerCount",    ImGuiTableColumnFlags_None, strlen5 * 1.3);
-        ImGui::TableSetupColumn("MiddleSep",      ImGuiTableColumnFlags_WidthStretch, 0);
-        ImGui::TableSetupColumn("Time",           ImGuiTableColumnFlags_WidthFixed, 64);
-        
-        
-        //FPS
-        
-        if(ImGui::TableNextColumn() && show_fps){
-            //trying to keep it from changing width of column
-            //actually not necessary anymore but im going to keep it cause 
-            //it keeps the numbers right aligned
-            if(FPS % 1000 == FPS){
-                ImGui::TextEx(TOSTRING("FPS:  ", FPS).c_str());
-            }
-            else if(FPS % 100 == FPS){
-                ImGui::TextEx(TOSTRING("FPS:   ", FPS).c_str());
-            }
-            else {
-                ImGui::TextEx(TOSTRING("FPS: ", FPS).c_str());
-            }
-            
-        }
-        
-        //FPS graph inline
-        if(ImGui::TableNextColumn() && show_fps_graph){
-            //how much data we store
-            persist int prevstoresize = 100;
-            persist int storesize = 100;
-            
-            //how often we update
-            persist int fupdate = 20;
-            persist int frame_count = 0;
-            
-            //maximum FPS
-            persist int maxval = 0;
-            
-            //real values and printed values
-            persist std::vector<float> values(storesize);
-            persist std::vector<float> pvalues(storesize);
-            
-            //dynamic resizing that may get removed later if it sucks
-            //if FPS finds itself as less than half of what the max used to be we lower the max
-            if(FPS > maxval || FPS < maxval / 2){
-                maxval = FPS;
-            }
-            
-            //if changing the amount of data we're storing we have to reverse
-            //each data set twice to ensure the data stays in the right place when we move it
-            if(prevstoresize != storesize){
-                std::reverse(values.begin(), values.end());    values.resize(storesize);  std::reverse(values.begin(), values.end());
-                std::reverse(pvalues.begin(), pvalues.end());  pvalues.resize(storesize); std::reverse(pvalues.begin(), pvalues.end());
-                prevstoresize = storesize;
-            }
-            
-            std::rotate(values.begin(), values.begin() + 1, values.end());
-            
-            //update real set if we're not updating yet or update the graph if we are
-            if(frame_count < fupdate){
-                values[values.size() - 1] = FPS;
-                frame_count++;
-            }
-            else {
-                float avg = Math::average(values.begin(), values.end(), storesize);
-                std::rotate(pvalues.begin(), pvalues.begin() + 1, pvalues.end());
-                pvalues[pvalues.size() - 1] = std::floorf(avg);
-                
-                frame_count = 0;
-            }
-            
-            ImGui::PushStyleColor(ImGuiCol_PlotLines, ImGui::ColorToImVec4(Color(0, 255, 200, 255)));
-            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
-            
-            ImGui::PlotLines("", &pvalues[0], pvalues.size(), 0, 0, 0, maxval, ImVec2(64, 20));
-            
-            ImGui::PopStyleColor();
-            ImGui::PopStyleColor();
-        }
-        
-        
-        //World stats
-        
-        //Entity Count
-        if(ImGui::TableNextColumn() && show_world_stats){
-            ImGui::SameLine((ImGui::GetColumnWidth() - strlen1) / 2);
-            ImGui::TextEx(str1.c_str());
-        }
-        
-        //Triangle Count
-        if(ImGui::TableNextColumn() && show_world_stats){
-            //TODO( sushi,Ui) implement triangle count when its avaliable
-            ImGui::SameLine((ImGui::GetColumnWidth() - strlen2) / 2);
-            ImGui::TextEx(str2.c_str());
-        }
-        
-        //Vertice Count
-        if(ImGui::TableNextColumn() && show_world_stats){
-            //TODO( sushi,Ui) implement vertice count when its avaliable
-            ImGui::SameLine((ImGui::GetColumnWidth() - strlen3) / 2);
-            ImGui::TextEx(str3.c_str());
-        }
-        
-        
-        
-        // Selected Stats
-        
-        
-        
-        //Triangle Count
-        if(ImGui::TableNextColumn() && show_selected_stats){
-            //TODO( sushi,Ui) implement triangle count when its avaliable
-            //Entity* e = admin->selectedEntity;
-            ImGui::SameLine((ImGui::GetColumnWidth() - strlen4) / 2);
-            ImGui::TextEx(str4.c_str());
-        }
-        
-        //Vertice Count
-        if(ImGui::TableNextColumn() && show_selected_stats){
-            //TODO( sushi,Ui) implement vertice count when its avaliable
-            //Entity* e = admin->selectedEntity;
-            ImGui::SameLine((ImGui::GetColumnWidth() - strlen5) / 2);
-            ImGui::TextEx(str5.c_str());
-        }
-        
-        //Middle Empty ImGui::Separator (alert box)
-        if(ImGui::TableNextColumn()){
-            if(DengConsole->show_alert){
-                f32 flicker = (sinf(M_2PI * DengTime->totalTime + cosf(M_2PI * DengTime->totalTime)) + 1)/2;
-                Color col_bg = DengConsole->alert_color * flicker;    col_bg.a = 255;
-                Color col_text = DengConsole->alert_color * -flicker; col_text.a = 255;
-                
-                ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGui::ColorToImVec4(col_bg)));
-                
-                std::string str6;
-                if(DengConsole->alert_count > 1){
-                    str6 = TOSTRING("(",DengConsole->alert_count,") ",DengConsole->alert_message);
-                }else{
-                    str6 = DengConsole->alert_message;
-                }
-                float strlen6 = (font_width / 2) * str6.size();
-                ImGui::SameLine((ImGui::GetColumnWidth() - strlen6) / 2); ImGui::PushItemWidth(-1);
-                ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(Color(col_text)));
-                ImGui::TextEx(str6.c_str());
-                ImGui::PopStyleColor();
-            }
-            
-            
-        }
-        
-        //Show Time
-        if(ImGui::TableNextColumn()){
-            //https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
+	//for getting fps
+	ImGuiIO& io = ImGui::GetIO();
+	
+	int FPS = floor(io.Framerate);
+	
+	//num of active columns
+	int activecols = 7;
+	
+	//font size for centering ImGui::TextEx
+	float fontsize = ImGui::GetFontSize();
+	
+	//flags for showing different things
+	persist bool show_fps = true;
+	persist bool show_fps_graph = true;
+	persist bool show_world_stats = true;
+	persist bool show_selected_stats = true;
+	persist bool show_floating_fps_graph = false;
+	persist bool show_time = true;
+	
+	ImGui::SetNextWindowSize(ImVec2(DengWindow->width, 20));
+	ImGui::SetNextWindowPos(ImVec2(0, DengWindow->height - 20));
+	
+	
+	//window styling
+	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+	ImGui::PushStyleColor(ImGuiCol_Border,           ImGui::ColorToImVec4(Color(0, 0, 0, 255)));
+	ImGui::PushStyleColor(ImGuiCol_WindowBg,         ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
+	ImGui::PushStyleColor(ImGuiCol_TableBorderLight, ImGui::ColorToImVec4(Color(45, 45, 45, 255)));
+	
+	ImGui::Begin("DebugBar", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+	debugbarheight = 20;
+	//capture mouse if hovering over this window
+	WinHovCheck; 
+	
+	activecols = show_fps + show_fps_graph + 3 * show_world_stats + 2 * show_selected_stats + show_time + 1;
+	if(ImGui::BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)){
+		
+		//precalc strings and stuff so we can set column widths appropriately
+		std::string str1 = TOSTRING("wents: ", admin->entities.size());
+		float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
+		std::string str2 = TOSTRING("wtris: ", Render::GetStats()->totalTriangles);
+		float strlen2 = (fontsize - (fontsize / 2)) * str2.size();
+		std::string str3 = TOSTRING("wverts: ",Render::GetStats()->totalVertices);
+		float strlen3 = (fontsize - (fontsize / 2)) * str3.size();
+		std::string str4 = TOSTRING("stris: ", "0");
+		float strlen4 = (fontsize - (fontsize / 2)) * str4.size();
+		std::string str5 = TOSTRING("sverts: ", "0");
+		float strlen5 = (fontsize - (fontsize / 2)) * str5.size();
+		
+		ImGui::TableSetupColumn("FPS",            ImGuiTableColumnFlags_WidthFixed, 64);
+		ImGui::TableSetupColumn("FPSGraphInline", ImGuiTableColumnFlags_WidthFixed, 64);
+		ImGui::TableSetupColumn("EntCount",       ImGuiTableColumnFlags_None, strlen1 * 1.3);
+		ImGui::TableSetupColumn("TriCount",       ImGuiTableColumnFlags_None, strlen2 * 1.3);
+		ImGui::TableSetupColumn("VerCount",       ImGuiTableColumnFlags_None, strlen3 * 1.3);
+		ImGui::TableSetupColumn("SelTriCount",    ImGuiTableColumnFlags_None, strlen4 * 1.3);
+		ImGui::TableSetupColumn("SelVerCount",    ImGuiTableColumnFlags_None, strlen5 * 1.3);
+		ImGui::TableSetupColumn("MiddleSep",      ImGuiTableColumnFlags_WidthStretch, 0);
+		ImGui::TableSetupColumn("Time",           ImGuiTableColumnFlags_WidthFixed, 64);
+		
+		
+		//FPS
+		
+		if(ImGui::TableNextColumn() && show_fps){
+			//trying to keep it from changing width of column
+			//actually not necessary anymore but im going to keep it cause 
+			//it keeps the numbers right aligned
+			if(FPS % 1000 == FPS){
+				ImGui::TextEx(TOSTRING("FPS:  ", FPS).c_str());
+			}
+			else if(FPS % 100 == FPS){
+				ImGui::TextEx(TOSTRING("FPS:   ", FPS).c_str());
+			}
+			else {
+				ImGui::TextEx(TOSTRING("FPS: ", FPS).c_str());
+			}
 			
-            std::string str7 = DengTime->FormatDateTime("{h}:{m}:{s}");
-            float strlen7 = (fontsize - (fontsize / 2)) * str7.size();
-            ImGui::SameLine(32 - (strlen7 / 2));
-            
-            ImGui::TextEx(str7.c_str());
-            
-        }
-        
-        
-        //Context menu for toggling parts of the bar
-        if(ImGui::IsMouseReleased(1) && ImGui::IsWindowHovered()) ImGui::OpenPopup("Context");
-        if(ImGui::BeginPopup("Context")){
-            DengConsole->IMGUI_MOUSE_CAPTURE = true;
-            ImGui::Separator();
-            if(ImGui::Button("Open Debug Menu")){
-                //showDebugTools = true;
-                ImGui::CloseCurrentPopup();
-            }
-            
-            ImGui::EndPopup();
-        }
-        ImGui::EndTable();
-    }
-    
-    ImGui::PopStyleVar(3);
-    ImGui::PopStyleColor(3);
-    ImGui::End();
+		}
+		
+		//FPS graph inline
+		if(ImGui::TableNextColumn() && show_fps_graph){
+			//how much data we store
+			persist int prevstoresize = 100;
+			persist int storesize = 100;
+			
+			//how often we update
+			persist int fupdate = 20;
+			persist int frame_count = 0;
+			
+			//maximum FPS
+			persist int maxval = 0;
+			
+			//real values and printed values
+			persist std::vector<float> values(storesize);
+			persist std::vector<float> pvalues(storesize);
+			
+			//dynamic resizing that may get removed later if it sucks
+			//if FPS finds itself as less than half of what the max used to be we lower the max
+			if(FPS > maxval || FPS < maxval / 2){
+				maxval = FPS;
+			}
+			
+			//if changing the amount of data we're storing we have to reverse
+			//each data set twice to ensure the data stays in the right place when we move it
+			if(prevstoresize != storesize){
+				std::reverse(values.begin(), values.end());    values.resize(storesize);  std::reverse(values.begin(), values.end());
+				std::reverse(pvalues.begin(), pvalues.end());  pvalues.resize(storesize); std::reverse(pvalues.begin(), pvalues.end());
+				prevstoresize = storesize;
+			}
+			
+			std::rotate(values.begin(), values.begin() + 1, values.end());
+			
+			//update real set if we're not updating yet or update the graph if we are
+			if(frame_count < fupdate){
+				values[values.size() - 1] = FPS;
+				frame_count++;
+			}
+			else {
+				float avg = Math::average(values.begin(), values.end(), storesize);
+				std::rotate(pvalues.begin(), pvalues.begin() + 1, pvalues.end());
+				pvalues[pvalues.size() - 1] = std::floorf(avg);
+				
+				frame_count = 0;
+			}
+			
+			ImGui::PushStyleColor(ImGuiCol_PlotLines, ImGui::ColorToImVec4(Color(0, 255, 200, 255)));
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
+			
+			ImGui::PlotLines("", &pvalues[0], pvalues.size(), 0, 0, 0, maxval, ImVec2(64, 20));
+			
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+		}
+		
+		
+		//World stats
+		
+		//Entity Count
+		if(ImGui::TableNextColumn() && show_world_stats){
+			ImGui::SameLine((ImGui::GetColumnWidth() - strlen1) / 2);
+			ImGui::TextEx(str1.c_str());
+		}
+		
+		//Triangle Count
+		if(ImGui::TableNextColumn() && show_world_stats){
+			//TODO( sushi,Ui) implement triangle count when its avaliable
+			ImGui::SameLine((ImGui::GetColumnWidth() - strlen2) / 2);
+			ImGui::TextEx(str2.c_str());
+		}
+		
+		//Vertice Count
+		if(ImGui::TableNextColumn() && show_world_stats){
+			//TODO( sushi,Ui) implement vertice count when its avaliable
+			ImGui::SameLine((ImGui::GetColumnWidth() - strlen3) / 2);
+			ImGui::TextEx(str3.c_str());
+		}
+		
+		
+		
+		// Selected Stats
+		
+		
+		
+		//Triangle Count
+		if(ImGui::TableNextColumn() && show_selected_stats){
+			//TODO( sushi,Ui) implement triangle count when its avaliable
+			//Entity* e = admin->selectedEntity;
+			ImGui::SameLine((ImGui::GetColumnWidth() - strlen4) / 2);
+			ImGui::TextEx(str4.c_str());
+		}
+		
+		//Vertice Count
+		if(ImGui::TableNextColumn() && show_selected_stats){
+			//TODO( sushi,Ui) implement vertice count when its avaliable
+			//Entity* e = admin->selectedEntity;
+			ImGui::SameLine((ImGui::GetColumnWidth() - strlen5) / 2);
+			ImGui::TextEx(str5.c_str());
+		}
+		
+		//Middle Empty ImGui::Separator (alert box)
+		if(ImGui::TableNextColumn()){
+			if(DengConsole->show_alert){
+				f32 flicker = (sinf(M_2PI * DengTime->totalTime + cosf(M_2PI * DengTime->totalTime)) + 1)/2;
+				Color col_bg = DengConsole->alert_color * flicker;    col_bg.a = 255;
+				Color col_text = DengConsole->alert_color * -flicker; col_text.a = 255;
+				
+				ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGui::ColorToImVec4(col_bg)));
+				
+				std::string str6;
+				if(DengConsole->alert_count > 1){
+					str6 = TOSTRING("(",DengConsole->alert_count,") ",DengConsole->alert_message);
+				}else{
+					str6 = DengConsole->alert_message;
+				}
+				float strlen6 = (font_width / 2) * str6.size();
+				ImGui::SameLine((ImGui::GetColumnWidth() - strlen6) / 2); ImGui::PushItemWidth(-1);
+				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(Color(col_text)));
+				ImGui::TextEx(str6.c_str());
+				ImGui::PopStyleColor();
+			}
+			
+			
+		}
+		
+		//Show Time
+		if(ImGui::TableNextColumn()){
+			//https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
+			
+			std::string str7 = DengTime->FormatDateTime("{h}:{m}:{s}");
+			float strlen7 = (fontsize - (fontsize / 2)) * str7.size();
+			ImGui::SameLine(32 - (strlen7 / 2));
+			
+			ImGui::TextEx(str7.c_str());
+			
+		}
+		
+		
+		//Context menu for toggling parts of the bar
+		if(ImGui::IsMouseReleased(1) && ImGui::IsWindowHovered()) ImGui::OpenPopup("Context");
+		if(ImGui::BeginPopup("Context")){
+			DengConsole->IMGUI_MOUSE_CAPTURE = true;
+			ImGui::Separator();
+			if(ImGui::Button("Open Debug Menu")){
+				//showDebugTools = true;
+				ImGui::CloseCurrentPopup();
+			}
+			
+			ImGui::EndPopup();
+		}
+		ImGui::EndTable();
+	}
+	
+	ImGui::PopStyleVar(3);
+	ImGui::PopStyleColor(3);
+	ImGui::End();
 }
 
 void Editor::DrawTimes(){
-    std::string time1 = DengTime->FormatTickTime  ("Time       : {t}\n"
-                                                   "Window     : {w}\n"
-                                                   "Input      : {i}\n");
-    time1            += DengAdmin->FormatAdminTime("Physics Lyr: {P}\n"
-                                                   "        Sys: {p}\n"
-                                                   "Canvas  Lyr: {C}\n"
-                                                   "        Sys: {c}\n"
-                                                   "World   Lyr: {W}\n"
-                                                   "        Sys: {w}\n"
-                                                   "Sound   Lyr: {S}\n"
-                                                   "Sound   Lyr: {S}\n"
-                                                   "        Sys: {s}\n"
+	std::string time1 = DengTime->FormatTickTime  ("Time       : {t}\n"
+												   "Window     : {w}\n"
+												   "Input      : {i}\n");
+	time1            += DengAdmin->FormatAdminTime("Physics Lyr: {P}\n"
+												   "        Sys: {p}\n"
+												   "Canvas  Lyr: {C}\n"
+												   "        Sys: {c}\n"
+												   "World   Lyr: {W}\n"
+												   "        Sys: {w}\n"
+												   "Sound   Lyr: {S}\n"
+												   "Sound   Lyr: {S}\n"
+												   "        Sys: {s}\n"
 												   "Editor     : {e}\n");
-    time1            += DengTime->FormatTickTime  ("Admin      : {a}\n"
-                                                   "Console    : {c}\n"
-                                                   "Render     : {r}\n"
-                                                   "Frame      : {f}");
-    
-    ImGui::SetCursorPos(ImVec2(DengWindow->width - 150, menubarheight));
-    ImGui::TextEx(time1.c_str());
+	time1            += DengTime->FormatTickTime  ("Admin      : {a}\n"
+												   "Console    : {c}\n"
+												   "Render     : {r}\n"
+												   "Frame      : {f}");
+	
+	ImGui::SetCursorPos(ImVec2(DengWindow->width - 150, menubarheight));
+	ImGui::TextEx(time1.c_str());
 }
 
 //sort of sandbox for drawing ImGui stuff over the entire screen
 void Editor::DebugLayer(){
-    ImGui::SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height));
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
-    
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::ColorToImVec4(Color(0, 0, 0, 0)));
-    Camera* c = admin->mainCamera;
-    float time = DengTime->totalTime;
-    
-    persist std::vector<pair<float, Vector2>> times;
-    
-    persist std::vector<Vector3> spots;
-    
-    
-    ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
-    
-    Vector2 mp = DengInput->mousePos;
-    
-    float fontsize = ImGui::GetFontSize();
-    
-    
-    if(DengInput->KeyPressed(MouseButton::LEFT) && rand() % 100 + 1 == 80){
-        times.push_back(pair<float, Vector2>(0.f, mp));
-    }
-    
-    int index = 0;
-    for (auto& f : times){
-        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(Color(255. * fabs(sinf(time)), 255. * fabs(cosf(time)), 255, 255)));
-        
-        f.first += DengTime->deltaTime;
-        
-        Vector2 p = f.second;
-        
-        ImGui::SetCursorPos(ImVec2(p.x + 20 * sin(2 * time), p.y - 200 * (f.first / 5)));
-        
-        Vector2 curpos = Vector2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY());
-        
-        std::string str1 = "hehe!!!!";
-        float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-        for (int i = 0; i < str1.size(); i++){
-            ImGui::SetCursorPos(ImVec2(curpos.x + i * fontsize / 2,
-                                       curpos.y + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))));
-            ImGui::TextEx(str1.substr(i, 1).c_str());
-        }
-        
-        if(f.first >= 5){
-            times.erase(times.begin() + index);
-            index--;
-        }
-        
-        ImGui::PopStyleColor();
-        index++;
-    }
-    
-    
-    if(admin->paused){
-        std::string s = "ENGINE PAUSED";
-        float strlen = (fontsize - (fontsize / 2)) * s.size();
-        //ImGui::SameLine(32 - (strlen / 2));
-        ImGui::SetCursorPos(ImVec2(DengWindow->width - strlen * 1.3, menubarheight));
-        ImGui::TextEx(s.c_str());
-    }
-    
-    ImGui::PopStyleColor();
-    ImGui::End();
+	ImGui::SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height));
+	ImGui::SetNextWindowPos(ImVec2(0, 0));
+	
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::ColorToImVec4(Color(0, 0, 0, 0)));
+	Camera* c = admin->mainCamera;
+	float time = DengTime->totalTime;
+	
+	persist std::vector<pair<float, Vector2>> times;
+	
+	persist std::vector<Vector3> spots;
+	
+	
+	ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
+	
+	Vector2 mp = DengInput->mousePos;
+	
+	float fontsize = ImGui::GetFontSize();
+	
+	
+	if(DengInput->KeyPressed(MouseButton::LEFT) && rand() % 100 + 1 == 80){
+		times.push_back(pair<float, Vector2>(0.f, mp));
+	}
+	
+	int index = 0;
+	for (auto& f : times){
+		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(Color(255. * fabs(sinf(time)), 255. * fabs(cosf(time)), 255, 255)));
+		
+		f.first += DengTime->deltaTime;
+		
+		Vector2 p = f.second;
+		
+		ImGui::SetCursorPos(ImVec2(p.x + 20 * sin(2 * time), p.y - 200 * (f.first / 5)));
+		
+		Vector2 curpos = Vector2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY());
+		
+		std::string str1 = "hehe!!!!";
+		float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
+		for (int i = 0; i < str1.size(); i++){
+			ImGui::SetCursorPos(ImVec2(curpos.x + i * fontsize / 2,
+									   curpos.y + sin(10 * time + cos(10 * time + (i * M_PI / 2)) + (i * M_PI / 2))));
+			ImGui::TextEx(str1.substr(i, 1).c_str());
+		}
+		
+		if(f.first >= 5){
+			times.erase(times.begin() + index);
+			index--;
+		}
+		
+		ImGui::PopStyleColor();
+		index++;
+	}
+	
+	
+	if(admin->paused){
+		std::string s = "ENGINE PAUSED";
+		float strlen = (fontsize - (fontsize / 2)) * s.size();
+		//ImGui::SameLine(32 - (strlen / 2));
+		ImGui::SetCursorPos(ImVec2(DengWindow->width - strlen * 1.3, menubarheight));
+		ImGui::TextEx(s.c_str());
+	}
+	
+	ImGui::PopStyleColor();
+	ImGui::End();
 }
 
 
 void Editor::WorldGrid(Vector3 cpos) {
-    int lines = 100;
+	int lines = 100;
 	f32 xp = floor(cpos.x) + lines;
 	f32 xn = floor(cpos.x) - lines;
 	f32 zp = floor(cpos.z) + lines;
 	f32 zn = floor(cpos.z) - lines;
-    
+	
 	Color color(50, 50, 50);
-    for(int i = 0; i < lines * 2 + 1; i++){
-        Vector3 v1 = Vector3(xn+i, 0, zn);
-        Vector3 v2 = Vector3(xn+i, 0, zp);
-        Vector3 v3 = Vector3(xn,   0, zn+i);
-        Vector3 v4 = Vector3(xp,   0, zn+i);
-        
+	for(int i = 0; i < lines * 2 + 1; i++){
+		Vector3 v1 = Vector3(xn+i, 0, zn);
+		Vector3 v2 = Vector3(xn+i, 0, zp);
+		Vector3 v3 = Vector3(xn,   0, zn+i);
+		Vector3 v4 = Vector3(xp,   0, zn+i);
+		
 		if(xn+i != 0) Render::DrawLine(v1, v2, color);
 		if(zn+i != 0) Render::DrawLine(v3, v4, color);
-    }
+	}
 	
 	Render::DrawLine(vec3{-1000,0,0}, vec3{1000,0,0}, Color::RED);
 	Render::DrawLine(vec3{0,-1000,0}, vec3{0,1000,0}, Color::GREEN);
@@ -2468,21 +2757,21 @@ void Editor::WorldGrid(Vector3 cpos) {
 
 
 void Editor::ShowWorldAxis(){
-    vec3 
+	vec3 
 		x = camera->position + camera->forward + vec3::RIGHT   * 0.1,
-    y = camera->position + camera->forward + vec3::UP      * 0.1,
-    z = camera->position + camera->forward + vec3::FORWARD * 0.1;
+	y = camera->position + camera->forward + vec3::UP      * 0.1,
+	z = camera->position + camera->forward + vec3::FORWARD * 0.1;
 	
-    vec2 
+	vec2 
 		spx = Math::WorldToScreen2(x, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2,
-    spy = Math::WorldToScreen2(y, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2,
-    spz = Math::WorldToScreen2(z, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2;
+	spy = Math::WorldToScreen2(y, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2,
+	spz = Math::WorldToScreen2(z, camera->projMat, camera->viewMat, DengWindow->dimensions) - DengWindow->dimensions / 2;
 	
-    vec2 offset = vec2(DengWindow->width - 50, DengWindow->height - debugbarheight - 50);
+	vec2 offset = vec2(DengWindow->width - 50, DengWindow->height - debugbarheight - 50);
 	
-    Render::DrawLineUI(offset, spx + offset, 1, Color::RED);
-    Render::DrawLineUI(offset, spy + offset, 1, Color::GREEN);
-    Render::DrawLineUI(offset, spz + offset, 1, Color::BLUE);
+	Render::DrawLineUI(offset, spx + offset, 1, Color::RED);
+	Render::DrawLineUI(offset, spy + offset, 1, Color::GREEN);
+	Render::DrawLineUI(offset, spz + offset, 1, Color::BLUE);
 }
 
 
@@ -2490,123 +2779,123 @@ void Editor::ShowWorldAxis(){
 //// editor struct
 
 void Editor::Init(Admin* a){
-    admin = a;
-    settings = {};
-    
-    selected.reserve(8);
-    camera = new Camera(90.f, .01f, 1000.01f, true);
-    Render::UpdateCameraViewMatrix(camera->viewMat);
-    Render::UpdateCameraPosition(camera->position);
-    undo_manager.Init();
-    level_name = "";
+	admin = a;
+	settings = {};
 	
-    popoutInspector     = false;
-    showInspector       = true;
-    showTimes           = true;
-    showDebugBar        = true;
-    showMenuBar         = true;
-    showImGuiDemoWindow = false;
-    showDebugLayer      = true;
+	selected.reserve(8);
+	camera = new Camera(90.f, .01f, 1000.01f, true);
+	Render::UpdateCameraViewMatrix(camera->viewMat);
+	Render::UpdateCameraPosition(camera->position);
+	undo_manager.Init();
+	level_name = "";
+	
+	popoutInspector     = false;
+	showInspector       = true;
+	showTimes           = true;
+	showDebugBar        = true;
+	showMenuBar         = true;
+	showImGuiDemoWindow = false;
+	showDebugLayer      = true;
 	showWorldGrid       = true;
-    ConsoleHovFlag      = false;
+	ConsoleHovFlag      = false;
 	
 	directory_levels   = Assets::iterateDirectory(Assets::dirLevels());
 	directory_meshes   = Assets::iterateDirectory(Assets::dirModels(), ".mesh");
 	directory_textures = Assets::iterateDirectory(Assets::dirTextures());
 	directory_models   = Assets::iterateDirectory(Assets::dirModels(), ".obj");
 	directory_fonts    = Assets::iterateDirectory(Assets::dirFonts());
-    
-    fonth = ImGui::GetFontSize();
-    fontw = fonth / 2.f;
+	
+	fonth = ImGui::GetFontSize();
+	fontw = fonth / 2.f;
 }
 
 void Editor::Update(){
-    ////////////////////////////
-    //// handle user inputs ////
-    ////////////////////////////
-    
-    {//// general ////
-        if(DengInput->KeyPressed(Key::P | InputMod_Lctrl)){
-            admin->paused = !admin->paused;
-        }
-    }
+	////////////////////////////
+	//// handle user inputs ////
+	////////////////////////////
 	
-    {//// select ////
-        if(!DengConsole->IMGUI_MOUSE_CAPTURE && !admin->controller.cameraLocked){
-            if(DengInput->KeyPressed(MouseButton::LEFT)){
+	{//// general ////
+		if(DengInput->KeyPressed(Key::P | InputMod_Lctrl)){
+			admin->paused = !admin->paused;
+		}
+	}
+	
+	{//// select ////
+		if(!DengConsole->IMGUI_MOUSE_CAPTURE && !admin->controller.cameraLocked){
+			if(DengInput->KeyPressed(MouseButton::LEFT)){
 				vec3 ray = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions) - camera->position;
-                Entity* e = DengAdmin->EntityRaycast(camera->position, ray.normalized(), ray.mag());
-                if(!DengInput->LShiftDown()) selected.clear(); 
-                if(e) selected.push_back(e);
-            }
-        }
-        if(selected.size()){
-            HandleGrabbing(selected[0], camera, admin, &undo_manager);
-            HandleRotating(selected[0], camera, admin, &undo_manager);
-        }
-    }
+				Entity* e = DengAdmin->EntityRaycast(camera->position, ray.normalized(), ray.mag());
+				if(!DengInput->LShiftDown()) selected.clear(); 
+				if(e) selected.push_back(e);
+			}
+		}
+		if(selected.size()){
+			HandleGrabbing(selected[0], camera, admin, &undo_manager);
+			HandleRotating(selected[0], camera, admin, &undo_manager);
+		}
+	}
 	
-    {//// render ////
-        //reload all shaders
-        if(DengInput->KeyPressed(Key::F5)){ Render::ReloadAllShaders(); }
-        
-        //fullscreen toggle
-        if(DengInput->KeyPressed(Key::F11)){
-            if(DengWindow->displayMode == DisplayMode::WINDOWED || DengWindow->displayMode == DisplayMode::BORDERLESS){
-                DengWindow->UpdateDisplayMode(DisplayMode::FULLSCREEN);
-            }else{
-                DengWindow->UpdateDisplayMode(DisplayMode::WINDOWED);
-            }
-        }
-    }
+	{//// render ////
+		//reload all shaders
+		if(DengInput->KeyPressed(Key::F5)){ Render::ReloadAllShaders(); }
+		
+		//fullscreen toggle
+		if(DengInput->KeyPressed(Key::F11)){
+			if(DengWindow->displayMode == DisplayMode::WINDOWED || DengWindow->displayMode == DisplayMode::BORDERLESS){
+				DengWindow->UpdateDisplayMode(DisplayMode::FULLSCREEN);
+			}else{
+				DengWindow->UpdateDisplayMode(DisplayMode::WINDOWED);
+			}
+		}
+	}
 	
-    {//// camera ////
-        //toggle ortho
-        persist Vector3 ogpos;
-        persist Vector3 ogrot;
-        if(DengInput->KeyPressed(DengKeys.perspectiveToggle)){
-            switch (camera->mode){
-                case(CameraMode_Perspective): {  
-                    ogpos = camera->position;
-                    ogrot = camera->rotation;
-                    camera->type = CameraMode_Orthographic; 
-                    camera->farZ = 1000000; 
-                } break;
-                case(CameraMode_Orthographic): { 
-                    camera->position = ogpos; 
-                    camera->rotation = ogrot;
-                    camera->mode = CameraMode_Perspective; 
-                    camera->farZ = 1000; 
-                    camera->UpdateProjectionMatrix(); 
-                } break;
-            }
-        }
-        
-        //ortho views
-        if      (DengInput->KeyPressed(DengKeys.orthoFrontView))    camera->orthoview = FRONT;
-        else if(DengInput->KeyPressed(DengKeys.orthoBackView))     camera->orthoview = BACK;
-        else if(DengInput->KeyPressed(DengKeys.orthoRightView))    camera->orthoview = RIGHT;
-        else if(DengInput->KeyPressed(DengKeys.orthoLeftView))     camera->orthoview = LEFT;
-        else if(DengInput->KeyPressed(DengKeys.orthoTopDownView))  camera->orthoview = TOPDOWN;
-        else if(DengInput->KeyPressed(DengKeys.orthoBottomUpView)) camera->orthoview = BOTTOMUP;
-        
-        //look at selected
-        if(DengInput->KeyPressed(DengKeys.gotoSelected)){
-            camera->position = selected[0]->transform.position + Vector3(4.f, 3.f, -4.f);
-            camera->rotation = {28.f, -45.f, 0.f};
-        }
-    }
+	{//// camera ////
+		//toggle ortho
+		persist Vector3 ogpos;
+		persist Vector3 ogrot;
+		if(DengInput->KeyPressed(DengKeys.perspectiveToggle)){
+			switch (camera->mode){
+				case(CameraMode_Perspective): {  
+					ogpos = camera->position;
+					ogrot = camera->rotation;
+					camera->type = CameraMode_Orthographic; 
+					camera->farZ = 1000000; 
+				} break;
+				case(CameraMode_Orthographic): { 
+					camera->position = ogpos; 
+					camera->rotation = ogrot;
+					camera->mode = CameraMode_Perspective; 
+					camera->farZ = 1000; 
+					camera->UpdateProjectionMatrix(); 
+				} break;
+			}
+		}
+		
+		//ortho views
+		if      (DengInput->KeyPressed(DengKeys.orthoFrontView))    camera->orthoview = FRONT;
+		else if(DengInput->KeyPressed(DengKeys.orthoBackView))     camera->orthoview = BACK;
+		else if(DengInput->KeyPressed(DengKeys.orthoRightView))    camera->orthoview = RIGHT;
+		else if(DengInput->KeyPressed(DengKeys.orthoLeftView))     camera->orthoview = LEFT;
+		else if(DengInput->KeyPressed(DengKeys.orthoTopDownView))  camera->orthoview = TOPDOWN;
+		else if(DengInput->KeyPressed(DengKeys.orthoBottomUpView)) camera->orthoview = BOTTOMUP;
+		
+		//look at selected
+		if(DengInput->KeyPressed(DengKeys.gotoSelected)){
+			camera->position = selected[0]->transform.position + Vector3(4.f, 3.f, -4.f);
+			camera->rotation = {28.f, -45.f, 0.f};
+		}
+	}
 	
-    {//// undo/redo ////
-        if(DengInput->KeyPressed(DengKeys.undo)) undo_manager.Undo();
-        if(DengInput->KeyPressed(DengKeys.redo)) undo_manager.Redo();
-    }
+	{//// undo/redo ////
+		if(DengInput->KeyPressed(DengKeys.undo)) undo_manager.Undo();
+		if(DengInput->KeyPressed(DengKeys.redo)) undo_manager.Redo();
+	}
 	
-    {//// interface ////
-        if(DengInput->KeyPressed(DengKeys.toggleDebugMenu)) showInspector  = !showInspector;
-        if(DengInput->KeyPressed(DengKeys.toggleDebugBar))  showDebugBar   = !showDebugBar;
-        if(DengInput->KeyPressed(DengKeys.toggleMenuBar))   showMenuBar    = !showMenuBar;
-    }
+	{//// interface ////
+		if(DengInput->KeyPressed(DengKeys.toggleDebugMenu)) showInspector  = !showInspector;
+		if(DengInput->KeyPressed(DengKeys.toggleDebugBar))  showDebugBar   = !showDebugBar;
+		if(DengInput->KeyPressed(DengKeys.toggleMenuBar))   showMenuBar    = !showMenuBar;
+	}
 	
 	//TODO(delle,Op) actually do a copy of memory once entities are less anonymous
 	//NOTE doesnt copy the events of an entity at the moment
@@ -2622,7 +2911,7 @@ void Editor::Update(){
 				copy_path = filepath;
 				for(Component* c : selected[0]->components){
 					if(c->type == ComponentType_ModelInstance){
-						u32 mesh_idx = DengScene->MeshIndex(((ModelInstance*)c)->mesh);
+						u32 mesh_idx = Storage::MeshIndex(((ModelInstance*)c)->mesh);
 						copy_mesh_diffs.push_back(pair<u32,u32>(-1, mesh_idx));
 					}
 				}
@@ -2642,7 +2931,7 @@ void Editor::Update(){
 				copy_path = filepath;
 				for(Component* c : selected[0]->components){
 					if(c->type == ComponentType_ModelInstance){
-						u32 mesh_idx = DengScene->MeshIndex(((ModelInstance*)c)->mesh);
+						u32 mesh_idx = Storage::MeshIndex(((ModelInstance*)c)->mesh);
 						copy_mesh_diffs.push_back(pair<u32,u32>(-1, mesh_idx));
 					}
 				}
@@ -2677,7 +2966,7 @@ void Editor::Update(){
 			if(showImGuiDemoWindow) ImGui::ShowDemoWindow();
 		}ImGui::PopStyleColor();
 		
-        ShowWorldAxis();
+		ShowWorldAxis();
 		
 		if(!showMenuBar)    menubarheight = 0;
 		if(!showDebugBar)   debugbarheight = 0;
@@ -2695,7 +2984,7 @@ void Editor::Update(){
 			if(!Render::GetSettings()->findMeshTriangleNeighbors){
 				Render::DrawModelWireframe(mc->model, mc->transform);
 			}else{
-				std::vector<Vector2> outline = DengScene->GenerateMeshOutlinePoints(mc->mesh, e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
+				std::vector<Vector2> outline = Storage::GenerateMeshOutlinePoints(mc->mesh, e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
 																					camera->position, DengWindow->dimensions);
 				for (int i = 0; i < outline.size(); i += 2){
 					ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
@@ -2711,10 +3000,10 @@ void Editor::Update(){
 }
 
 void Editor::Reset(){
-    //camera->position = camera_pos;
-    //camera->rotation = camera_rot;
-    selected.clear();
-    undo_manager.Reset();
+	//camera->position = camera_pos;
+	//camera->rotation = camera_rot;
+	selected.clear();
+	undo_manager.Reset();
 	ClearCopiedEntities();
 }
 

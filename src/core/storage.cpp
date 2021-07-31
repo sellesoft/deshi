@@ -1,11 +1,18 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "../external/tinyobjloader/tiny_obj_loader.h"
 
+namespace Storage{
+	local array<Mesh*>&     meshes    = DengStorage->meshes;
+	local array<Texture*>&  textures  = DengStorage->textures;
+	local array<Material*>& materials = DengStorage->materials;
+	local array<Model*>&    models    = DengStorage->models;
+	local array<Light*>&    lights    = DengStorage->lights;
+};
 
 ///////////////
 //// @init ////
 ///////////////
-void Scene::
+void Storage::
 Init(){
 	//null assets      //TODO(delle) store null.png and null shader in a .cpp
 	CreateBoxMesh(1.0f, 1.0f, 1.0f);
@@ -14,7 +21,7 @@ Init(){
 	CreateModelFromMesh(NullMesh(), Shader_NULL);
 }
 
-void Scene::
+void Storage::
 Reset(){
 	for(int i=meshes.size()-1;    i>0; --i){ DeleteMesh(meshes[i]);        meshes.pop(); } 
 	for(int i=materials.size()-1; i>0; --i){ DeleteMaterial(materials[i]); materials.pop(); } 
@@ -74,7 +81,7 @@ DeallocateMesh(Mesh* mesh){
 }
 
 //TODO(delle) change this to take in 8 points
-pair<u32,Mesh*> Scene::
+pair<u32,Mesh*> Storage::
 CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	pair<u32,Mesh*> result(0, NullMesh());
 	
@@ -251,26 +258,26 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	return result;
 }
 
-pair<u32,Mesh*> Scene::
+pair<u32,Mesh*> Storage::
 CreateMeshFromFile(const char* filename){
 	pair<u32,Mesh*> result(0, NullMesh());
 	return result;
 	//!Incomplete
 }
 
-pair<u32,Mesh*> Scene::
+pair<u32,Mesh*> Storage::
 CreateMeshFromMemory(void* data){
 	pair<u32,Mesh*> result(0, NullMesh());
 	return result;
 	//!Incomplete
 }
 
-void Scene::
+void Storage::
 DeleteMesh(Mesh* mesh){
 	//!Incomplete
 }
 
-std::vector<Vector2> Scene::
+std::vector<Vector2> Storage::
 GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camView, vec3 camPosition, vec2 screenDims){ //!TestMe
 	std::vector<vec2> outline;
 	std::vector<Mesh::Triangle*> nonculled;
@@ -308,7 +315,7 @@ DeallocateTexture(Texture* texture){
 	free(texture);
 }
 
-pair<u32,Texture*> Scene::
+pair<u32,Texture*> Storage::
 CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps){
 	pair<u32,Texture*> result(0, NullTexture());
 	
@@ -345,14 +352,14 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 	return result;
 }
 
-pair<u32,Texture*> Scene::
+pair<u32,Texture*> Storage::
 CreateTextureFromMemory(void* data, int width, int height, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps){
 	pair<u32,Texture*> result(0, NullTexture());
 	return result;
 	//!Incomplete
 }
 
-void Scene::
+void Storage::
 DeleteTexture(Texture* texture){
 	//!Incomplete
 }
@@ -373,7 +380,7 @@ DeallocateMaterial(Material* material){
 	free(material);
 }
 
-pair<u32,Material*> Scene::
+pair<u32,Material*> Storage::
 CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> textures){
 	pair<u32,Material*> result(0, NullMaterial());
 	
@@ -403,7 +410,7 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 	return result;
 }
 
-void Scene::
+void Storage::
 DeleteMaterial(Material* material){
 	//!Incomplete
 }
@@ -425,7 +432,7 @@ DeallocateModel(Model* model){
 }
 
 //TODO(delle,Op) speed this up with tinyobj::LoadOBJWithCallback to not parse twice
-pair<u32,Model*> Scene::
+pair<u32,Model*> Storage::
 CreateModelFromOBJ(const char* filename, ModelFlags flags){
 	pair<u32,Model*> result(0, NullModel());
 	//setup tinyobj and parse the OBJ file
@@ -531,14 +538,19 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags){
 		model->batches.add(batch);
 	}
 	
+	//@@
 	//!Incomplete get triangle stuffs
 	
 	//!Incomplete get face stuffs
 	
-	Mesh* mesh = AllocateMesh(indexArray.size(), vertexArray.size(), 0, 0, 0, 0, 0, 0);
+	Mesh* mesh = AllocateMesh(indexArray.size(), vertexArray.size(), triangleArray.size(), 0, 0, 0, 0, 0);
 	cpystr(mesh->name, string(filename).substr(0, strlen(filename)-5).str, DESHI_NAME_SIZE);
-	memcpy(mesh->vertexArray, vertexArray.items, mesh->vertexCount*sizeof(Mesh::Vertex));
-	memcpy(mesh->indexArray, indexArray.items, mesh->indexCount*sizeof(Mesh::Index));
+	memcpy(mesh->vertexArray,   vertexArray.items,   mesh->vertexCount*sizeof(Mesh::Vertex));
+	memcpy(mesh->indexArray,    indexArray.items,    mesh->indexCount*sizeof(Mesh::Index));
+	memcpy(mesh->triangleArray, triangleArray.items, mesh->triangleCount*sizeof(Mesh::Triangle));
+	mesh->triangleArray[0].neighborArray = (u32*)(mesh->faceArray + mesh->faceCount);
+	mesh->triangleArray[0].edgeArray     = (u8*)(mesh->triangleArray[0].neighborArray + 0);
+	
 	Render::LoadMesh(mesh); //TODO(delle) check if mesh already loaded
 	meshes.add(mesh);
 	
@@ -551,7 +563,7 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags){
 	return result;
 }
 
-pair<u32,Model*> Scene::
+pair<u32,Model*> Storage::
 CreateModelFromMesh(Mesh* mesh, ModelFlags flags){
 	pair<u32,Model*> result(0, NullModel());
 	
@@ -570,6 +582,7 @@ CreateModelFromMesh(Mesh* mesh, ModelFlags flags){
 	cpystr(model->name, model_name.str, DESHI_NAME_SIZE);
 	model->idx = models.size();
 	model->mesh = mesh;
+	model->armature = 0;
 	model->batches[0].indexOffset = 0;
 	model->batches[0].indexCount = mesh->indexCount;
 	model->batches[0].material = 0;
@@ -580,14 +593,29 @@ CreateModelFromMesh(Mesh* mesh, ModelFlags flags){
 	return result;
 }
 
-pair<u32,Model*> Scene::
-CopyModel(Model* model){
+pair<u32,Model*> Storage::
+CopyModel(Model* _model){
 	pair<u32,Model*> result(0, NullModel());
+	
+	Model* model = AllocateModel(_model->batches.size());
+	cpystr(model->name, _model->name, DESHI_NAME_SIZE);
+	model->idx      = models.size();
+	model->flags    = _model->flags;
+	model->mesh     = _model->mesh;
+	model->armature = _model->armature;
+	forI(model->batches.size()){
+		model->batches[i].indexOffset = _model->batches[i].indexOffset;
+		model->batches[i].indexCount  = _model->batches[i].indexCount;
+		model->batches[i].material    = _model->batches[i].material;
+	}
+	
+	result.first  = model->idx;
+	result.second = model;
+	models.add(model);
 	return result;
-	//!Incomplete
 }
 
-void Scene::
+void Storage::
 DeleteModel(Model* model){
 	//!Incomplete
 }

@@ -9,7 +9,7 @@ struct Model;
 struct Mesh;
 struct Armature;
 
-//NOTE model instance 'owns' a model in the scene
+//NOTE model instance 'owns' a model in the storage
 struct ModelInstance : public Component {
 	Model*    model;
 	Mesh*     mesh;
