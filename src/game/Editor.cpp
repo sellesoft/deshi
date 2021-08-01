@@ -1626,6 +1626,13 @@ inline void MeshesTab(Admin* admin){
 	persist bool show_face_indexes     = false;
 	persist bool show_triangle_centers = false;
 	persist bool show_face_centers     = false;
+	persist bool show_vertex_normals   = false;
+	persist bool show_triangle_normals = false;
+	persist bool show_face_normals     = false;
+	persist Color text_color     = Color::WHITE;
+	persist Color vertex_color   = Color::GREEN;
+	persist Color triangle_color = Color::RED;
+	persist Color face_color     = Color::BLUE;
 	
 	SetPadding;
     if(ImGui::BeginChild("##mesh_inspector", ImVec2(ImGui::GetWindowWidth()*.95f, ImGui::GetWindowHeight()*.8f), false)){
@@ -1652,6 +1659,9 @@ inline void MeshesTab(Admin* admin){
 		ImGui::Checkbox("Face indexes    ", &show_face_indexes);
 		ImGui::Checkbox("Triangle centers", &show_triangle_centers);
 		ImGui::Checkbox("Face centers    ", &show_face_centers);
+		ImGui::Checkbox("Vertex normals  ", &show_vertex_normals);
+		ImGui::Checkbox("Triangle normals", &show_triangle_normals);
+		ImGui::Checkbox("Face normals    ", &show_face_normals);
 		
 		ImGui::Separator();
 		
@@ -1660,18 +1670,19 @@ inline void MeshesTab(Admin* admin){
         if(ImGui::InputInt("##mi_vertex_input", &sel_vertex_idx, 0, 0)){
 			sel_vertex_idx = Clamp(sel_vertex_idx, -1, selected->vertexCount-1);
 		}
+		
+		ImGui::BeginDebugLayer();
 		if(sel_vertex_idx != -1){
 			Mesh::Vertex* sel_vertex = &selected->vertexes[sel_vertex_idx];
-			Render::DrawBox(Matrix4::TransformationMatrix(sel_vertex->pos, vec3::ZERO, vec3{.01f,.01f,.01f}), Color::GREEN);
-		}
-		ImGui::BeginDebugLayer();
-		if(show_vertex_indexes){
+			Render::DrawBox(Matrix4::TransformationMatrix(sel_vertex->pos, vec3::ZERO, vec3{.05f,.05f,.05f}), vertex_color);
+			if(show_vertex_indexes) ImGui::DebugDrawText3(TOSTRING("V",sel_vertex_idx).c_str(), sel_vertex->pos, text_color, vec2{-5,-5});
+			if(show_vertex_normals) Render::DrawLine(sel_vertex->pos, sel_vertex->pos + sel_vertex->normal, vertex_color);
+		}else{
 			forI(selected->vertexCount){
-				ImGui::DebugDrawText3(TOSTRING("V",i).c_str(), selected->vertexes[i].pos, Color::WHITE, vec2{-5,-5});
-				if(sel_vertex_idx == -1){
-					Render::DrawBox(Matrix4::TransformationMatrix(selected->vertexes[i].pos, vec3::ZERO, vec3{.01f,.01f,.01f}),
-									Color::GREEN);
-				}
+				Mesh::Vertex* sel_vertex = &selected->vertexes[i];
+				if(show_vertex_indexes) ImGui::DebugDrawText3(TOSTRING("V",i).c_str(), sel_vertex->pos, text_color, vec2{-5,-5});
+				Render::DrawBox(Matrix4::TransformationMatrix(sel_vertex->pos, vec3::ZERO, vec3{.03f,.03f,.03f}), vertex_color);
+				if(show_vertex_normals) Render::DrawLine(sel_vertex->pos, sel_vertex->pos + sel_vertex->normal, vertex_color);
 			}
 		}
 		ImGui::EndDebugLayer();
@@ -1681,23 +1692,23 @@ inline void MeshesTab(Admin* admin){
         if(ImGui::InputInt("##mi_tri_input", &sel_triangle_idx, 0, 0)){
 			sel_triangle_idx = Clamp(sel_triangle_idx, -1, selected->triangleCount-1);
 		}
+		
+		ImGui::BeginDebugLayer();
 		if(sel_triangle_idx != -1){
 			Mesh::Triangle* sel_triangle = &selected->triangles[sel_triangle_idx];
-			Render::DrawTriangle(sel_triangle->p[0], sel_triangle->p[1], sel_triangle->p[2], Color::RED);
-		}
-		ImGui::BeginDebugLayer();
-		forI(selected->triangleCount){
-			if(show_triangle_indexes){
-				ImGui::DebugDrawText3(TOSTRING("T",i).c_str(), Geometry::MeshTriangleMidpoint(&selected->triangles[i]), 
-									  Color::WHITE, vec2{-5,-5});
-			}
-			if(show_triangle_centers){
-				Render::DrawBox(Matrix4::TransformationMatrix(Geometry::MeshTriangleMidpoint(&selected->triangles[i]), vec3::ZERO,
-															  vec3{.01f,.01f,.01f}), Color::DARK_RED);
-			}
-			if(sel_triangle_idx == -1){
+			vec3 tri_center = Geometry::MeshTriangleMidpoint(sel_triangle);
+			Render::DrawTriangle(sel_triangle->p[0], sel_triangle->p[1], sel_triangle->p[2], triangle_color);
+			if(show_triangle_indexes) ImGui::DebugDrawText3(TOSTRING("T",sel_triangle_idx).c_str(), tri_center, text_color, vec2{-5,-5});
+			if(show_triangle_centers) Render::DrawBox(Matrix4::TransformationMatrix(tri_center, vec3::ZERO, vec3{.05f,.05f,.05f}), triangle_color);
+			if(show_triangle_normals) Render::DrawLine(tri_center, tri_center + sel_triangle->normal, triangle_color);
+		}else{
+			forI(selected->triangleCount){
 				Mesh::Triangle* sel_triangle = &selected->triangles[i];
-				Render::DrawTriangle(sel_triangle->p[0], sel_triangle->p[1], sel_triangle->p[2], Color::RED);
+				vec3 tri_center = Geometry::MeshTriangleMidpoint(sel_triangle);
+				Render::DrawTriangle(sel_triangle->p[0], sel_triangle->p[1], sel_triangle->p[2], triangle_color);
+				if(show_triangle_indexes) ImGui::DebugDrawText3(TOSTRING("T",i).c_str(), tri_center, text_color, vec2{-5,-5});
+				if(show_triangle_centers) Render::DrawBox(Matrix4::TransformationMatrix(tri_center, vec3::ZERO, vec3{.03f,.03f,.03f}), triangle_color);
+				if(show_triangle_normals) Render::DrawLine(tri_center, tri_center + sel_triangle->normal, triangle_color);
 			}
 		}
 		ImGui::EndDebugLayer();
@@ -1707,30 +1718,27 @@ inline void MeshesTab(Admin* admin){
         if(ImGui::InputInt("##mi_face_input", &sel_face_idx, 0, 0)){
 			sel_face_idx = Clamp(sel_face_idx, -1, selected->faceCount-1);
 		}
+		
+		ImGui::BeginDebugLayer();
 		if(sel_face_idx != -1){
 			Mesh::Face* sel_face = &selected->faces[sel_face_idx];
 			for(int fvi = 1; fvi < sel_face->outerVertexCount; ++fvi){
 				Render::DrawLine(selected->vertexes[sel_face->outerVertexes[fvi-1]].pos,
-								 selected->vertexes[sel_face->outerVertexes[fvi  ]].pos, Color::BLUE);
+								 selected->vertexes[sel_face->outerVertexes[fvi  ]].pos, face_color);
 			}
-			
-		}
-		ImGui::BeginDebugLayer();
-		forI(selected->faceCount){
-			if(show_face_indexes){
-				ImGui::DebugDrawText3(TOSTRING("F",i).c_str(), selected->faces[i].center, Color::WHITE, vec2{-5,-5});
-			}
-			if(show_face_centers){
-				Render::DrawBox(Matrix4::TransformationMatrix(selected->faces[i].center, vec3::ZERO,
-															  vec3{.01f,.01f,.01f}), Color::DARK_BLUE);
-			}
-			if(sel_face_idx == -1){
+			if(show_face_indexes) ImGui::DebugDrawText3(TOSTRING("F",sel_face_idx).c_str(), sel_face->center, text_color, vec2{-5,-5});
+			if(show_face_centers) Render::DrawBox(Matrix4::TransformationMatrix(sel_face->center, vec3::ZERO, vec3{.05f,.05f,.05f}), face_color);
+			if(show_face_normals) Render::DrawLine(sel_face->center, sel_face->center + sel_face->normal, face_color);
+		}else{
+			forI(selected->faceCount){
 				Mesh::Face* sel_face = &selected->faces[i];
 				for(int fvi = 1; fvi < sel_face->outerVertexCount; ++fvi){
 					Render::DrawLine(selected->vertexes[sel_face->outerVertexes[fvi-1]].pos,
-									 selected->vertexes[sel_face->outerVertexes[fvi  ]].pos, Color::BLUE);
+									 selected->vertexes[sel_face->outerVertexes[fvi  ]].pos, face_color);
 				}
-				
+				if(show_face_indexes) ImGui::DebugDrawText3(TOSTRING("F",i).c_str(), sel_face->center, text_color, vec2{-5,-5});
+				if(show_face_centers) Render::DrawBox(Matrix4::TransformationMatrix(sel_face->center, vec3::ZERO, vec3{.03f,.03f,.03f}), face_color);
+				if(show_face_normals) Render::DrawLine(sel_face->center, sel_face->center + sel_face->normal, face_color);
 			}
 		}
 		ImGui::EndDebugLayer();
@@ -2985,7 +2993,7 @@ void Editor::Update(){
 				Render::DrawModelWireframe(mc->model, mc->transform);
 			}else{
 				std::vector<Vector2> outline = Storage::GenerateMeshOutlinePoints(mc->mesh, e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
-																					camera->position, DengWindow->dimensions);
+																				  camera->position, DengWindow->dimensions);
 				for (int i = 0; i < outline.size(); i += 2){
 					ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
 				}

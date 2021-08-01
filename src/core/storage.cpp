@@ -431,43 +431,177 @@ DeallocateModel(Model* model){
 	free(model);
 }
 
-//TODO(delle,Op) speed this up with tinyobj::LoadOBJWithCallback to not parse twice
 pair<u32,Model*> Storage::
 CreateModelFromOBJ(const char* filename, ModelFlags flags){
 	pair<u32,Model*> result(0, NullModel());
-	//setup tinyobj and parse the OBJ file
-	tinyobj::ObjReaderConfig reader_config;
-	reader_config.triangulate     = true;
-	reader_config.vertex_color    = true;
-	reader_config.mtl_search_path = Assets::dirModels(); // Path to material files
-	tinyobj::ObjReader reader;
-	if(!reader.ParseFromFile(Assets::dirModels() + filename, reader_config)) {
-		ERROR("Failed to read OBJ file: ", filename);
-		if (!reader.Error().empty()) ERROR("TinyObjReader: ", reader.Error());
-		return result;
+	
+	struct OBJIndex{
+		u32 v0; u32 vt0; u32 vn0;
+		u32 v1; u32 vt1; u32 vn1;
+		u32 v2; u32 vt2; u32 vn2;
+	};
+	struct OBJOffsets{
+		u32 vOffset;
+		u32 vtOffset;
+		u32 vnOffset;
+		u32 fOffset;
+	};
+	
+	array<vec3> vArray;
+	array<vec2> vtArray;
+	array<vec3> vnArray;
+	array<OBJIndex> fArray;
+	array<pair<string,OBJOffsets>>     mArray;
+	array<pair<string,OBJOffsets>>     gArray;
+	array<pair<string,u32,OBJOffsets>> oArray;
+	bool mtllib_found = false;
+	string mtllib;
+	
+	//parse .obj
+	std::string filepath = Assets::dirModels() + filename;
+	char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
+	if(!buffer){  return result; }
+	defer{ delete[] buffer; };
+	char* line_start;
+	char* line_end = buffer - 1;
+	for(u32 line_number = 1; ;line_number++){
+		//get the next line
+		line_start = line_end+1;
+		if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
+		if(line_start == line_end) continue;
+		
+		//check for CRLF
+		bool has_cr = false;
+		if(*(line_end-1) == '\r') {
+			line_end -= 1;
+			if(line_start == line_end) continue;
+		}
+		
+		//TODO(delle) add parsing safety checks to strtof and strol
+		switch(*line_start){
+			case '\0': case '\n': case '\r': case '#': break; //skip empty and comment lines
+			//// vertex, normal, or uv ////
+			case 'v':{
+				switch(*(line_start+1)){
+					//// vertex ////
+					case ' ':{
+						char* next = 0;
+						vec3 pos{strtof(line_start+2, &next), strtof(next, &next), strtof(next, 0)};
+						vArray.add(pos);
+					}break;
+					//// uv ////
+					case 't':{
+						if(*(line_start+2) != ' '){ 
+							ERROR("Error parsing '",filepath,"' on line '",line_number,"'! No space after 'vt'"); return result; 
+						}
+						char* next = 0;
+						vtArray.add(vec2{strtof(line_start+2, &next), strtof(next, 0)});
+					}break;
+					//// normal ////
+					case 'n':{
+						if(*(line_start+2) != ' '){ 
+							ERROR("Error parsing '",filepath,"' on line '",line_number,"'! No space after 'vn'"); return result; 
+						}
+						char* next = 0;
+						vec3 normal{strtof(line_start+2, &next), strtof(next, &next), strtof(next, 0)};
+						vnArray.add(normal);
+					}break;
+					default:{
+						ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid character after 'v':",*(line_start+1));
+					}return result;
+				}
+			}break;
+			//// face ////
+			case 'f':{
+				if(*(line_start+1) != ' '){ 
+					ERROR("Error parsing '",filepath,"' on line '",line_number,"'! No space after 'f'"); return result; 
+				}
+				char* next = 0;
+				OBJIndex findex{};
+				findex.v0  = strtol(line_start+1, &next, 10);
+				findex.vt0 = strtol(next+1, &next, 10);
+				findex.vn0 = strtol(next+1, &next, 10);
+				findex.v1  = strtol(next, &next, 10);
+				findex.vt1 = strtol(next+1, &next, 10);
+				findex.vn1 = strtol(next+1, &next, 10);
+				findex.v2  = strtol(next, &next, 10);
+				findex.vt2 = strtol(next+1, &next, 10);
+				findex.vn2 = strtol(next+1, &next, 10);
+				PRINTLN("f "<<findex.v0<<" "<<findex.vt0<<" "<<findex.vn0<<" "<<findex.v1<<" "<<findex.vt1<<" "<<findex.vn1<<" "<<findex.v2<<" "<<findex.vt2<<" "<<findex.vn2);
+				fArray.add(findex);
+			}break;
+			//// use material ////
+			case 'u':{ //use material
+				if(strncmp(line_start, "usemtl ", 7) != 0){ 
+					ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Specifier started with 'u' but didn't equal 'usemtl '");
+					return result;
+				}
+				if(!mtllib_found){
+					ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Specifier 'usemtl' used before 'mtllib' specifier");
+					return result;
+				}
+				string mtl = string(line_start+7, line_end-line_start+7);
+				mtl = mtl.substrToChar(' ');
+				mArray.add(pair<string,OBJOffsets>(mtl,{(u32)vArray.size(),(u32)vtArray.size(),(u32)vnArray.size(),(u32)fArray.size()}));
+				PRINTLN("mtl found: '"<<mtl<<"' on line "<<line_number);
+			}break;
+			//// load material ////
+			case 'm':{
+				if(strncmp(line_start, "mtllib ", 7) != 0){ 
+					ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Specifier started with 'm' but didn't equal 'mtllib '");
+					return result;
+				}
+				mtllib_found = true;
+				mtllib = string(line_start+7, line_end-line_start+7);
+				mtllib = mtllib.substrToChar(' ');
+				PRINTLN("mtllib found: '"<<mtllib<<"' on line "<<line_number);
+			}break;
+			//// group (batch) ////
+			case 'g':{
+				if(*(line_start+1) != ' '){ 
+					ERROR("Error parsing '",filepath,"' on line '",line_number,"'! No space after 'g'"); return result; 
+				}
+				string group = string(line_start+2, line_end-line_start+2);
+				group= group.substrToChar(' ');
+				mArray.add(pair<string,OBJOffsets>(group,{(u32)vArray.size(),(u32)vtArray.size(),(u32)vnArray.size(),(u32)fArray.size()}));
+				PRINTLN("group found: '"<<group<<"' on line "<<line_number);
+			}break;
+			//// object ////
+			case 'o':{
+				if(*(line_start+1) != ' '){ 
+					ERROR("Error parsing '",filepath,"' on line '",line_number,"'! No space after 'o'"); return result; 
+				}
+				//NOTE not doing anything atm
+			}break;
+			case 's':{
+				if(*(line_start+1) != ' '){ 
+					ERROR("Error parsing '",filepath,"' on line '",line_number,"'! No space after 's'"); return result; 
+				}
+				//NOTE not doing anything atm
+			}break;
+			default:{
+				ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid starting character: ", *line_start);
+			}return result;
+		}
+		
+		//reset line_end if CRLF
+		if(has_cr) line_end++;
 	}
-	if(!reader.Warning().empty()) WARNING("TinyObjReader: " , reader.Warning());
-	
-	auto& obj_attrib    = reader.GetAttrib();
-	auto& obj_shapes    = reader.GetShapes();
-	auto& obj_materials = reader.GetMaterials();
-	Assert(obj_shapes[0].mesh.num_face_vertices[0] == 3, "OBJ must be triangulated");
-	
-	//check which features it has
-	bool hasMaterials = obj_materials.size() > 0;
-	bool hasNormals   = obj_attrib.normals.size() > 0;
-	bool hasUVs       = obj_attrib.texcoords.size() > 0;
-	bool hasColors    = obj_attrib.colors.size() > 0;
 	
 	Model* model = AllocateModel(obj_shapes.size());
 	cpystr(model->name, filename, DESHI_NAME_SIZE);
 	model->idx = models.size();
 	model->flags = flags;
 	
-	map<Mesh::Vertex,Mesh::Index> uniqueVertexes;
-	array<Mesh::Vertex>    vertexArray(obj_attrib.vertices.size());
+	//get unique vertexes
+	map<Vector3,Mesh::Index> uniqueVertexes;
+	array<Mesh::Vertex>      vertexArray(obj_attrib.vertices.size()/3);
+	for(int i=0; i<obj_attrib.vertices.size(); i+=3){
+		
+	}
+	
 	array<Mesh::Index>     indexArray(obj_attrib.vertices.size());
-	array<Mesh::Triangle>  triangleArray(obj_attrib.vertices.size()/3);
+	array<Mesh::Triangle>  triangleArray(obj_attrib.vertices.size()/9);
 	for(const tinyobj::shape_t& shape : obj_shapes){
 		Model::Batch batch{};
 		batch.indexOffset = indexArray.size();
@@ -513,16 +647,17 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags){
 				vertex.normal.z = obj_attrib.normals[3*idx.normal_index + 2];
 			}
 			
-			if(!uniqueVertexes.has(vertex)){
-				uniqueVertexes[vertex] = (Mesh::Index)vertexArray.size();
+			if(!uniqueVertexes.has(vertex.pos)){ //combine vertexes based on position
+				uniqueVertexes[vertex.pos] = (Mesh::Index)vertexArray.size();
 				vertexArray.add(vertex);
+			}else{                              //combine vertex normals
+				vertexArray[uniqueVertexes[vertex.pos]].normal =
+				(vertexArray[uniqueVertexes[vertex.pos]].normal + vertex.normal).normalized();
 			}
-			indexArray.add(uniqueVertexes[vertex]);
+			indexArray.add(uniqueVertexes[vertex.pos]);
 			
 			if(indexArray.size() % 3 == 0){
 				Mesh::Triangle triangle{};
-				triangle.normal = (vertexArray[indexArray[-1]].normal + vertexArray[indexArray[-2]].normal +
-								   vertexArray[indexArray[-3]].normal).normalized();
 				triangle.p[0] = vertexArray[indexArray[-3]].pos;
 				triangle.p[1] = vertexArray[indexArray[-2]].pos;
 				triangle.p[2] = vertexArray[indexArray[-1]].pos;
@@ -540,6 +675,7 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags){
 	
 	//@@
 	//!Incomplete get triangle stuffs
+	
 	
 	//!Incomplete get face stuffs
 	

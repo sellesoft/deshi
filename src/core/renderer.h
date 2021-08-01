@@ -129,7 +129,6 @@ namespace Render{
     void DrawLineUI(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
     void DrawTextUI(string text, vec2 pos, Color color = Color::WHITE);
     void DrawCharUI(u32 character, vec2 pos, vec2 scale = vec2::ONE, Color color = Color::WHITE);
-	
     
 	void UpdateLight(u32 lightIdx, Vector4 vec);
     void UpdateCameraPosition(Vector3 position);

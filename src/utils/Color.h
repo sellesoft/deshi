@@ -103,7 +103,6 @@ struct Color {
 					 (u8)(b / 255.0f),
 					 (u8)(a / 255.0f));
 	}
-	
 };
 
 //// Static Constants ////
