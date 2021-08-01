@@ -234,6 +234,25 @@ struct string {
 		return npos;
 	}
 
+	//find first of from offset
+	size_t find_first_of(char c, int offset) const {
+		Assert(offset < size, "attempt to parse string at offset greater than size");
+		for (int i = offset; i < size; i++) {
+			if (c == str[i]) return i;
+		}
+		return npos;
+	}
+
+	//find first of from offset backwards
+	//TODO(sushi) make this for the other functions
+	size_t find_first_of_lookback(char c, int offset) const {
+		Assert(offset < size, "attempt to parse string at offset greater than size");
+		for (int i = offset; i > 0; i--) {
+			if (c == str[i]) return i;
+		}
+		return npos;
+	}
+
 	size_t find_first_not_of(char c) const {
 		for (int i = 0; i < size; i++) {
 			if (c != str[i]) return i;

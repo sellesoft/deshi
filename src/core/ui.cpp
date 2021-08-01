@@ -1,12 +1,4 @@
-//global styling
-struct UIStyle {
-	vec2  windowPadding;
-	float windowBorderSize;
-	float titleBarHeight;
-	vec2  titleTextAlign;
-	Font  font;
-	Color colors[UIStyleCol_COUNT];
-} style;
+
 
 //color pallete 
 //current palette:
@@ -68,6 +60,8 @@ array<VarMod>         varStack;
 u32 initColorStackSize;
 u32 initStyleStackSize;
 
+//set if any window other than base is hovered
+bool globalHovered = false;
 
 //helper functions
 
@@ -117,35 +111,66 @@ void UI::Line(vec2 start, vec2 end, float thickness, Color color){
 
 
 //Text
-//every window has a cursor that tracks where some primitives are to be drawn
-//the cursor should be moved according to the primitive drawn 
 
-
-void UI::Text(string text) {
+//main function for wrapping, where position is starting position of text relative to the top left of the window
+inline void WrapText(string text, vec2 pos, Color color) {
+	using namespace UI;
+	workingWin.cursor = pos;
 
 	//work out where we're going to draw the text and how much to advance the cursor by
 	vec2 textSize = CalcTextSize(text);
 
-	//workingWin.width = 400;
-	//if (textSize.y > workingWin.width) {
-	//
-	//}
+	//TODO(sushi) decide how we wrap things 
 
-	//Render::DrawTextUI(text, workingWin.position + workingWin.cursor, style.colors[UIStyleCol_Text]);
+	//max characters we can place 
+	u32 maxChars = floor((workingWin.width - workingWin.cursor.x) / style.font.width);
 
-	Text(text, workingWin.position + workingWin.cursor, style.colors[UIStyleCol_Text]);
+	if (!maxChars) maxChars++;
 
+	//we need to see if the string goes beyond the width of the window and wrap if it does
+	if (maxChars < text.size) {
+		//find closest space to split by
+		size_t splitat = text.find_first_of_lookback(' ', maxChars);
+		string nustr = text.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+		Text(nustr, workingWin.position + workingWin.cursor, color);
+
+		text = text.substr(nustr.size);
+		workingWin.cursor.y += style.font.height + 1;
+
+		//continue to wrap if we need to
+		while (text.size > maxChars) {
+			splitat = text.find_first_of_lookback(' ', maxChars);
+			nustr = text.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+			Text(nustr, workingWin.position + workingWin.cursor, color);
+
+			text = text.substr(nustr.size);
+			workingWin.cursor.y += style.font.height + 1;
+			
+			if (!strlen(text.str)) break;
+		}
+
+		//write last bit of text
+		Text(text, workingWin.position + workingWin.cursor, color);
+		workingWin.cursor.y += style.font.height + 1;
+
+	}
+	else {
+		Text(text, workingWin.position + workingWin.cursor, color);
+		workingWin.cursor.y += style.font.height + 1;
+	}
+}
+
+
+void UI::Text(string text) {
+	WrapText(text, workingWin.position, style.colors[UIStyleCol_Text]);
 }
 
 void UI::Text(string text, vec2 pos) {
-	//Render::DrawTextUI(text, workingWin.position + pos, style.colors[UIStyleCol_Text]);
-
-	Text(text, workingWin.position + pos, style.colors[UIStyleCol_Text]);
+	WrapText(text, pos, style.colors[UIStyleCol_Text]);
 }
 
 void UI::Text(string text, Color color) {
-	//Render::DrawTextUI(text, workingWin.position + workingWin.cursor, color);
-	Text(text, workingWin.position + workingWin.cursor, color);
+	WrapText(text, workingWin.position, color);
 }
 
 void UI::Text(string text, vec2 pos, Color color) {
@@ -154,8 +179,11 @@ void UI::Text(string text, vec2 pos, Color color) {
 	drawCmd.text = text;
 	drawCmd.position = pos;
 	drawCmd.color = color;
+	drawCmd.style = style;
 
 	workingWin.drawCmds.add(drawCmd);
+	workingWin.first_text = 0;
+
 }
 
 
@@ -165,8 +193,6 @@ void UI::Text(string text, vec2 pos, Color color) {
 void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
 	//save previous window on stack
 	windowStack.add(workingWin);
-
-	
 
 	//check if were making a new window or working with one we already know
 	if (!windows.has(name)) {
@@ -180,6 +206,32 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 	}
 	else {
 		workingWin = windows[name];
+		workingWin.cursor = vec2(0, 0);
+	}
+	
+	//check if window is hovered
+	vec2 mp = DengInput->mousePos;
+	if (mp.x > workingWin.position.x &&
+		mp.y > workingWin.position.y &&
+		mp.x < workingWin.position.x + workingWin.dimensions.x &&
+		mp.y < workingWin.position.y + workingWin.dimensions.y) {
+		workingWin.hovered = 1;
+	}
+	else {
+		workingWin.hovered = 0;
+	}
+
+	//check if window's title is hovered (if were drawing it), so we can check for window movement by mouse later
+	if (!(workingWin.flags & UIWindowFlags_NoTitleBar)) {
+		if (mp.x > workingWin.position.x &&
+			mp.y > workingWin.position.y &&
+			mp.x < workingWin.position.x + workingWin.dimensions.x &&
+			mp.y < workingWin.position.y + style.titleBarHeight) {
+			workingWin.titleHovered = 1;
+		}
+		else {
+			workingWin.titleHovered = 0;
+		}
 	}
 
 	//if the window isn't invisible draw things that havent been disabled
@@ -192,6 +244,8 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			drawCmd.  position = workingWin.position;
 			drawCmd.dimensions = workingWin.dimensions;
 			drawCmd.     color = style.colors[UIStyleCol_WindowBg];
+			drawCmd.style = style;
+
 
 			workingWin.drawCmds.add(drawCmd);
 		}
@@ -199,10 +253,12 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 		//draw title bar
 		if (!(flags & UIWindowFlags_NoTitleBar)) {
 			UIDrawCmd drawCmd;
-			drawCmd.type = UIDrawType_Rectangle;
-			drawCmd.position = workingWin.position;
+			drawCmd.    type = UIDrawType_Rectangle;
+			drawCmd.  position = workingWin.position;
 			drawCmd.dimensions = vec2{ workingWin.width, style.titleBarHeight };
-			drawCmd.color = style.colors[UIStyleCol_TitleBg];
+			drawCmd.     color = style.colors[UIStyleCol_TitleBg];
+			drawCmd.style = style;
+
 
 			workingWin.drawCmds.add(drawCmd);
 
@@ -217,10 +273,14 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 						workingWin.x + (workingWin.width - name.size * style.font.width) * style.titleTextAlign.x,
 						workingWin.y + (style.titleBarHeight - style.font.height) * style.titleTextAlign.y);
 				drawCmd.color = Color::WHITE;
+				drawCmd.style = style;
+
 				//TODO(sushi, Ui) add title text coloring
 
 				workingWin.drawCmds.add(drawCmd);
 			}
+			//move cursor down by title bar height
+			workingWin.cursor.y = style.titleBarHeight;
 		}
 
 		//draw border
@@ -228,6 +288,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			UIDrawCmd drawCmd;
 			drawCmd.type = UIDrawType_Rectangle;
 			drawCmd.color = style.colors[UIStyleCol_Border];
+			drawCmd.style = style;
 
 			//left
 			drawCmd.  position = vec2{ workingWin.x - style.windowBorderSize, workingWin.y };
@@ -261,6 +322,11 @@ void UI::EndWindow() {
 	windows[workingWin.name] = workingWin;
 	workingWin = *windowStack.last;
 	windowStack.pop();
+}
+
+//checks if the current working window is hovered
+bool UI::IsWinHovered() {
+	return workingWin.hovered;
 }
 
 
@@ -382,11 +448,21 @@ void UI::Update() {
 				}break;
 
 				case UIDrawType_Text: {
-					Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.color);
+					//scissor out the titlebar area as well if we have one
+					if (w.flags & UIWindowFlags_NoTitleBar) {
+						Render::DrawTextUI(drawCmd.text, drawCmd.position, w.position, w.dimensions, drawCmd.color);
+					}
+					else {
+						Render::DrawTextUI(drawCmd.text, drawCmd.position,
+							vec2(w.position.x, w.position.y + drawCmd.style.titleBarHeight),
+							vec2(w.dimensions.x, w.dimensions.y - drawCmd.style.titleBarHeight),
+							drawCmd.color);
+					}
 				}break;
 			}
 		}
 		p.second.drawCmds.clear();
+		p.second.first_text = false;
 	}
 }
 

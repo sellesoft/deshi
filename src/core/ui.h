@@ -9,6 +9,8 @@
 #include "../utils/string.h"
 #include "../utils/font.h"
 
+
+
 enum UIStyleVar : u32 {
 	UIStyleVar_WindowPadding,
 	UIStyleVar_WindowBorderSize,
@@ -28,6 +30,16 @@ enum UIStyleCol : u32 {
 	UIStyleCol_TitleBgActive,
 	UIStyleCol_COUNT
 };
+
+//global styling
+struct UIStyle {
+	vec2  windowPadding;
+	float windowBorderSize;
+	float titleBarHeight;
+	vec2  titleTextAlign;
+	Font  font;
+	Color colors[UIStyleCol_COUNT];
+} style;
 
 enum UIWindowFlags_ {
 	UIWindowFlags_None         = 0,
@@ -70,6 +82,9 @@ struct UIDrawCmd {
 	//for use by text draw call
 	string text;
 
+	UIStyle style;
+	
+
 	//bc C++ sucks
 	//TODO(sushi, UiCl) get rid of unions on this so i dont have to do this for copying
 	UIDrawCmd() {};
@@ -85,6 +100,7 @@ struct UIDrawCmd {
 		thickness = cop.thickness;
 		text = cop.text;
 		color = cop.color;
+		style = cop.style;
 		return *this;
 	}
 
@@ -118,6 +134,13 @@ struct UIWindow {
 	UIWindowFlags flags;
 
 	array<UIDrawCmd> drawCmds;
+
+	bool hovered = false;
+	bool titleHovered = false;
+
+	//for knowing whether or not to increment text by font height yet
+	//TODO(sushi, UiCl) find nicer way to check this
+	bool first_text = true;
 
 	UIWindow() {};
 
@@ -164,6 +187,7 @@ namespace UI {
 	//windows
 	static void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	static void EndWindow();
+	static bool IsWinHovered();
 
 	//push/pop functions
 	static void PushColor(UIStyleCol idx, Color color);
@@ -172,8 +196,6 @@ namespace UI {
 
 	static void PopColor(u32 count = 1);
 	static void PopVar(u32 count = 1);
-
-
 
 	static void Init();
 	static void Update();

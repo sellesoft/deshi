@@ -86,6 +86,8 @@ struct ImmediateCmdVk{
 	u32 vertexOffset;
 	u16 indexOffset;
 	u16 indexCount;
+	vec2 scissorOffset;
+	vec2 scissorExtent;
 };
 
 struct QueueFamilyIndices{
@@ -2998,11 +3000,22 @@ BuildCommandBuffers(){
 				vkCmdPushConstants(frames[i].commandBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
 				forX(cmd_idx, uiCmdCount){
+					scissor.extent.height = uiCmdArray[cmd_idx].scissorExtent.y;
+					scissor.extent.width = uiCmdArray[cmd_idx].scissorExtent.x;
+					scissor.offset.x = uiCmdArray[cmd_idx].scissorOffset.x;
+					scissor.offset.y = uiCmdArray[cmd_idx].scissorOffset.y;
+					vkCmdSetScissor(frames[i].commandBuffer, 0, 1, &scissor);
+
 					vkCmdBindDescriptorSets(frames[i].commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &fonts[uiCmdArray[cmd_idx].texIdx].descriptorSet, 0, nullptr);
 					vkCmdDrawIndexed(frames[i].commandBuffer, uiCmdArray[cmd_idx].indexCount, 1, uiCmdArray[cmd_idx].indexOffset, 0, 0);
 				}
 				stats.drawnIndices += uiIndexCount;
 				
+				scissor.offset.x = 0;
+				scissor.offset.y = 0;
+				scissor.extent.width = width;
+				scissor.extent.height = height;
+
 				DebugEndLabelVk(frames[i].commandBuffer);
 			}
 			
@@ -3151,8 +3164,9 @@ FillRectUI(f32 x, f32 y, f32 w, f32 h, Color color){
 	uiVertexCount += 4;
 	uiIndexCount  += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+	uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+	uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
 }
 
 void Render::
@@ -3178,8 +3192,9 @@ FillRectUI(vec2 pos, vec2 dimensions, Color color) {
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+	uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+	uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
 }
 
 void Render::
@@ -3214,6 +3229,8 @@ DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+	uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+	uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
 }
 
 void Render::
@@ -3248,6 +3265,8 @@ DrawLineUI(vec2 start, vec2 end, float thickness, Color color) {
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+	uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+	uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
 }
 
 void Render::
@@ -3262,35 +3281,65 @@ DrawTextUI(string text, vec2 pos, Color color) {
 }
 
 void Render::
-DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color) {
+DrawTextUI(string text, vec2 pos, vec2 scissorOffset, vec2 scissorExtent, Color color) {
 	if (color.a == 0) return;
 
-	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT) {
+	f32 w = fonts[1].width;
+	for (int i = 0; i < text.size; i++) {
+		DrawCharUI((u32)text[i], pos, vec2::ONE, color, scissorOffset, scissorExtent);
+		pos.x += w;
+	}
+}
+
+//TODO(sushi) find a nicer way to keep track of this
+vec2 prevScissorOffset = vec2(0, 0);
+vec2 prevScissorExtent = vec2(-1, -1);
+
+void Render::
+DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color, vec2 scissorOffset, vec2 scissorExtent) {
+	if (color.a == 0) return;
+
+	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 
+		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+		scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
 
-	u32      col = color.R8G8B8A8_UNORM();
+	u32     col = color.R8G8B8A8_UNORM();
 	Vertex2* vp = uiVertexArray + uiVertexCount;
-	u16*      ip = uiIndexArray  + uiIndexCount;
+	u16*     ip = uiIndexArray  + uiIndexCount;
 	
 	f32 w = fonts[1].width;
 	f32 h = fonts[1].height;
 	f32 dy = 1.f / (f32)fonts[1].char_count; 
 	
 	f32 idx = character - 32; 
+	float topoff = idx * dy + dy / h;
+	float botoff = (idx + 1) * dy + dy / h;
 	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
-	vp[0].pos = {pos.x+0,pos.y+0}; vp[0].uv = {0,idx*dy};     vp[0].color = col;
-	vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,idx*dy};     vp[1].color = col;
-	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,(idx+1)*dy}; vp[2].color = col;
-	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,(idx+1)*dy}; vp[3].color = col;
+	vp[0].pos = {pos.x+0,pos.y+0}; vp[0].uv = {0,topoff}; vp[0].color = col;
+	vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,topoff}; vp[1].color = col;
+	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,botoff}; vp[2].color = col;
+	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,botoff}; vp[3].color = col;
 	
 	uiVertexCount += 4;
 	uiIndexCount  += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_FONT;
+	if(scissorExtent.x != -1){
+		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+	}
+	else {
+		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0,0);
+	}
+	
 }
 
 

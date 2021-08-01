@@ -171,7 +171,8 @@ namespace Render{
     void DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
     void DrawLineUI(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
     void DrawTextUI(string text, vec2 pos, Color color = Color::WHITE);
-    void DrawCharUI(u32 character, vec2 pos, vec2 scale = vec2::ONE, Color color = Color::WHITE);
+    void DrawTextUI(string text, vec2 pos, vec2 scissorOffset, vec2 scissorExtent, Color color = Color::WHITE);
+    void DrawCharUI(u32 character, vec2 pos, vec2 scale = vec2::ONE, Color color = Color::WHITE, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
 
     void LoadDefaultAssets();
     void LoadScene(Scene* scene);
