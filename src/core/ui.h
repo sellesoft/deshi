@@ -37,7 +37,7 @@ struct UIStyle {
 	float windowBorderSize;
 	float titleBarHeight;
 	vec2  titleTextAlign;
-	Font  font;
+	Font* font; //this is a pointer until I fix font to not store so much shit
 	Color colors[UIStyleCol_COUNT];
 } style;
 
@@ -83,6 +83,9 @@ struct UIDrawCmd {
 	string text;
 
 	UIStyle style;
+
+	vec2 scissorOffset = vec2(0, 0);
+	vec2 scissorExtent = vec2(-1,0);
 	
 
 	//bc C++ sucks
@@ -90,7 +93,15 @@ struct UIDrawCmd {
 	UIDrawCmd() {};
 
 	UIDrawCmd(const UIDrawCmd& cop) {
-		this->operator=(cop);
+		type = cop.type;
+		position = cop.position;
+		dimensions = cop.dimensions;
+		thickness = cop.thickness;
+		text = cop.text;
+		color = cop.color;
+		style = cop.style;
+		scissorExtent = cop.scissorExtent;
+		scissorOffset = cop.scissorOffset;
 	}
 	
 	UIDrawCmd& operator= (const UIDrawCmd& cop) {
@@ -101,6 +112,8 @@ struct UIDrawCmd {
 		text = cop.text;
 		color = cop.color;
 		style = cop.style;
+		scissorExtent = cop.scissorExtent;
+		scissorOffset = cop.scissorOffset;
 		return *this;
 	}
 
@@ -146,7 +159,12 @@ struct UIWindow {
 
 	//I have to do this because I'm using an anonymous struct inside a union and C++ sucks
 	UIWindow(const UIWindow& cop) {
-		this->operator=(cop);
+		name = cop.name;
+		position = cop.position;
+		dimensions = cop.dimensions;
+		cursor = cop.cursor;
+		flags = cop.flags;
+		drawCmds = cop.drawCmds;
 	}
 
 	UIWindow& operator= (const UIWindow& cop) {

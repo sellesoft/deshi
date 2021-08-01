@@ -271,7 +271,8 @@ int main() {
 		{//debugging area
 			UI::PushVar(UIStyleVar_TitleTextAlign, vec2(0.05, 0.5));
 			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
-			//UI::Text("this is a very long text to see how moving text wraps, i hope it looks cool");
+			UI::Text("this is a very long text to see how moving text wraps, i hope it looks cool",
+				500 * vec2((sinf(DengTotalTime)), (cosf(DengTotalTime) + 1) / 2));
 			
 			UI::PopVar();
 			UI::EndWindow();

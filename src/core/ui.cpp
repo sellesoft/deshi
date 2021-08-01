@@ -67,7 +67,7 @@ bool globalHovered = false;
 
 
 vec2 UI::CalcTextSize(string text) {
-	return vec2(text.size * style.font.width, style.font.height);
+	return vec2(text.size * style.font->width, style.font->height);
 }
 
 
@@ -123,7 +123,7 @@ inline void WrapText(string text, vec2 pos, Color color) {
 	//TODO(sushi) decide how we wrap things 
 
 	//max characters we can place 
-	u32 maxChars = floor((workingWin.width - workingWin.cursor.x) / style.font.width);
+	u32 maxChars = floor((workingWin.width - workingWin.cursor.x) / style.font->width);
 
 	if (!maxChars) maxChars++;
 
@@ -135,7 +135,7 @@ inline void WrapText(string text, vec2 pos, Color color) {
 		Text(nustr, workingWin.position + workingWin.cursor, color);
 
 		text = text.substr(nustr.size);
-		workingWin.cursor.y += style.font.height + 1;
+		workingWin.cursor.y += style.font->height + 1;
 
 		//continue to wrap if we need to
 		while (text.size > maxChars) {
@@ -144,25 +144,25 @@ inline void WrapText(string text, vec2 pos, Color color) {
 			Text(nustr, workingWin.position + workingWin.cursor, color);
 
 			text = text.substr(nustr.size);
-			workingWin.cursor.y += style.font.height + 1;
+			workingWin.cursor.y += style.font->height + 1;
 			
 			if (!strlen(text.str)) break;
 		}
 
 		//write last bit of text
 		Text(text, workingWin.position + workingWin.cursor, color);
-		workingWin.cursor.y += style.font.height + 1;
+		workingWin.cursor.y += style.font->height + 1;
 
 	}
 	else {
 		Text(text, workingWin.position + workingWin.cursor, color);
-		workingWin.cursor.y += style.font.height + 1;
+		workingWin.cursor.y += style.font->height + 1;
 	}
 }
 
 
 void UI::Text(string text) {
-	WrapText(text, workingWin.position, style.colors[UIStyleCol_Text]);
+	WrapText(text, workingWin.cursor, style.colors[UIStyleCol_Text]);
 }
 
 void UI::Text(string text, vec2 pos) {
@@ -170,7 +170,7 @@ void UI::Text(string text, vec2 pos) {
 }
 
 void UI::Text(string text, Color color) {
-	WrapText(text, workingWin.position, color);
+	WrapText(text, workingWin.cursor, color);
 }
 
 void UI::Text(string text, vec2 pos, Color color) {
@@ -180,6 +180,8 @@ void UI::Text(string text, vec2 pos, Color color) {
 	drawCmd.position = pos;
 	drawCmd.color = color;
 	drawCmd.style = style;
+	drawCmd.scissorOffset = vec2(workingWin.x, workingWin.y + style.titleBarHeight);
+	drawCmd.scissorExtent = vec2(workingWin.width, workingWin.height - style.titleBarHeight);
 
 	workingWin.drawCmds.add(drawCmd);
 	workingWin.first_text = 0;
@@ -259,9 +261,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			drawCmd.     color = style.colors[UIStyleCol_TitleBg];
 			drawCmd.style = style;
 
-
 			workingWin.drawCmds.add(drawCmd);
-
 
 			//draw text if it exists
 			if (name.size != 0) {
@@ -270,8 +270,8 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 				drawCmd.text = workingWin.name;
 				drawCmd.position =
 					vec2(
-						workingWin.x + (workingWin.width - name.size * style.font.width) * style.titleTextAlign.x,
-						workingWin.y + (style.titleBarHeight - style.font.height) * style.titleTextAlign.y);
+						workingWin.x + (workingWin.width - name.size * style.font->width) * style.titleTextAlign.x,
+						workingWin.y + (style.titleBarHeight - style.font->height) * style.titleTextAlign.y);
 				drawCmd.color = Color::WHITE;
 				drawCmd.style = style;
 
@@ -395,12 +395,13 @@ void UI::Init() {
 	//TODO(sushi, Ui) set up the initial stack once i have pushing and popping it set up 
 
 	//load font
-	style.font.load_bdf_font("gohufont-11.bdf");
+	style.font = new Font();
+	style.font->load_bdf_font("gohufont-11.bdf");
 
 	Render::CreateFont(
 		Render::LoadTexture(
-			style.font.texture_sheet, style.font.width, style.font.height * style.font.char_count, 0),
-			style.font.width, style.font.height, style.font.char_count);
+			style.font->texture_sheet, style.font->width, style.font->height * style.font->char_count, 0),
+			style.font->width, style.font->height, style.font->char_count);
   
 	//push default color scheme
 	//this is never meant to be popped
@@ -411,7 +412,7 @@ void UI::Init() {
 
 	//push default style variables
 	PushVar(UIStyleVar_WindowBorderSize, 1);
-	PushVar(UIStyleVar_TitleBarHeight, style.font.height * 1.5);
+	PushVar(UIStyleVar_TitleBarHeight, style.font->height * 1.5);
 	PushVar(UIStyleVar_TitleTextAlign, vec2(0, 0.5));
 
 	initColorStackSize = colorStack.size();
@@ -437,7 +438,7 @@ void UI::Update() {
 	//draw windows in order with their drawCmds
 	for (auto& p : windows) {
 		UIWindow w = p.second;
-		for (UIDrawCmd drawCmd : w.drawCmds) {
+		for (UIDrawCmd& drawCmd : w.drawCmds) {
 			switch (drawCmd.type) {
 				case UIDrawType_Rectangle: {
 					Render::FillRectUI(drawCmd.position, drawCmd.dimensions, drawCmd.color);
@@ -449,14 +450,11 @@ void UI::Update() {
 
 				case UIDrawType_Text: {
 					//scissor out the titlebar area as well if we have one
-					if (w.flags & UIWindowFlags_NoTitleBar) {
+					if (drawCmd.scissorExtent.x == -1) {
 						Render::DrawTextUI(drawCmd.text, drawCmd.position, w.position, w.dimensions, drawCmd.color);
 					}
 					else {
-						Render::DrawTextUI(drawCmd.text, drawCmd.position,
-							vec2(w.position.x, w.position.y + drawCmd.style.titleBarHeight),
-							vec2(w.dimensions.x, w.dimensions.y - drawCmd.style.titleBarHeight),
-							drawCmd.color);
+						Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.scissorOffset, drawCmd.scissorExtent, drawCmd.color);
 					}
 				}break;
 			}
