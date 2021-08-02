@@ -242,14 +242,17 @@ int main() {
 	//pre-init setup
 	Assets::enforceDirectories();
 	//init engine core
-	TIMER_RESET(t_s); time_.Init(700);        SUCCESS("Finished time initialization in ", TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); time_.Init(700);        SUCCESS("Finished time initialization in ",              TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ",  TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ", TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); DeshiImGui::init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ",            TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); DeshiImGui::init();     SUCCESS("Finished imgui initialization in ",             TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ",                TIMER_END(t_s), "ms");
 	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
-	
+
+	array<vec3> t{ vec3(1,2,3), vec3(3,2,1), vec3(2,1,3) };
+	t.swap(0, 1);
+	t.swap(1, 2);
 
 	//init game admin
 	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
@@ -273,12 +276,23 @@ int main() {
 			//setTrack();
 			UI::PushVar(UIStyleVar_TitleTextAlign, vec2(0.05, 0.5));
 			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
-			UI::Text("this is a very long text to see how moving text wraps, i hope it looks cool",
-				200 * vec2((sinf(DengTotalTime)), (cosf(DengTotalTime) + 1) / 2));
-			UI::Text("testing drawing text memory leak", vec2(0, 100)); //inst 127
-			UI::Text("memory leak is no more");
-			UI::PopVar();
+			UI::BeginWindow("test2", vec2(350, 350), vec2(300, 300));
+			
 			UI::EndWindow();
+			UI::BeginWindow("test300", vec2(400, 400), vec2(300, 300));
+
+			UI::EndWindow();
+			UI::BeginWindow("test400", vec2(450, 450), vec2(300, 300), UIWindowFlags_FocusOnHover);
+
+			UI::EndWindow();
+			UI::Text("text1 (positioned)", vec2(100, 150));
+			UI::Text("text2 (not positioned)");
+
+			UI::Text("text3 (positioned)", vec2(0, 50));
+			UI::Text("text4 (not positioned)");
+
+			UI::EndWindow();
+			UI::PopVar();
 		}
     	time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

@@ -55,6 +55,10 @@ struct pair<T,U> {
 		this->first = first;
 		this->second = second;
 	}
+
+	//pair(const pair<T, U>& p) { this->first = p.first; this->second = p.second; }
+	//pair<T, U>& operator=(const pair<T, U>& p) { this->first = p.first; this->second = p.second; return *this; }
+
 };
 
 template<typename T, typename U, typename V>

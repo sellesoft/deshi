@@ -7,7 +7,7 @@
 
 template<class T>
 struct array {
-	T* items;
+	T* data;
 	//int size = 0; //num items in array
 	int space = 0; //total space array has allocated
 	int itemsize = 0;
@@ -34,21 +34,21 @@ struct array {
 	array() {
 		space = 1;
 		itemsize = sizeof(T);
-		items = (T*)calloc(1, itemsize);
-		first = items;
+		data = (T*)calloc(1, itemsize);
+		first = data;
 		iter = first;
 		last = 0;
-		max = items;
+		max = data;
 	}
 
 	array(int size) {
 		space = size;
 		itemsize = sizeof(T);
-		items = (T*)calloc(size, itemsize);
-		first = items;
+		data = (T*)calloc(size, itemsize);
+		first = data;
 		iter = first;
 		last = 0; //could break things but it makes add work 
-		max = items + size - 1;
+		max = data + size - 1;
 	}
 
 	array(std::initializer_list<T> l) {
@@ -56,20 +56,20 @@ struct array {
 
 		itemsize = sizeof(T);
 		for (auto& v : l) size++;
-		items = (T*)calloc(size, itemsize);
+		data = (T*)calloc(size, itemsize);
 		space = size;
 
-		first = items;
+		first = data;
 		iter = first;
 
 		int index = 0;
 		for (auto& v : l) {
 			int he = index * itemsize;
-			T* nu = new(items + index) T(v);
+			T* nu = new(data + index) T(v);
 			index++;
 		}
 
-		last = &items[size - 1];
+		last = &data[size - 1];
 		max = last;
 	}
 
@@ -79,19 +79,19 @@ struct array {
 	array(const array<T>& array) {
 		itemsize = array.itemsize;
 		space = array.space;
-		items = (T*)calloc(array.space, itemsize);
+		data = (T*)calloc(array.space, itemsize);
 
-		first = items;
+		first = data;
 		iter = first;
 
-		last = (array.last == 0) ? 0 : items + array.size() - 1;
-		max = items + space - 1;
+		last = (array.last == 0) ? 0 : data + array.size() - 1;
+		max = data + space - 1;
 
 		//if last is 0 then the array is empty
 		if (array.last != 0) {
 			int i = 0;
 			for (T item : array) {
-				new(items + i) T(item);
+				new(data + i) T(item);
 				i++;
 			}
 		}
@@ -103,7 +103,7 @@ struct array {
 				i->~T();
 			}
 		}
-		free(items);
+		free(data);
 	}
 
 	int size() const {
@@ -117,19 +117,19 @@ struct array {
 
 		itemsize = array.itemsize;
 		space = array.space;
-		items = (T*)calloc(array.space, itemsize);
+		data = (T*)calloc(array.space, itemsize);
 
-		first = items;
+		first = data;
 		iter = first;
 
-		last = (array.last == 0) ? 0 : items + array.size() - 1;
-		max = items + space - 1;
+		last = (array.last == 0) ? 0 : data + array.size() - 1;
+		max = data + space - 1;
 
 		//if last is 0 then the array is empty
 		if (array.last != 0) {
 			int i = 0;
 			for (const T& item : array) {
-				new(items + i) T(item);
+				new(data + i) T(item);
 				i++;
 			}
 		}
@@ -141,11 +141,11 @@ struct array {
 			int iteroffset = iter - first;
 			int osize = size();
 			space += 8;
-			items = (T*)realloc(items, (space) * itemsize);
-			Assert(items, "realloc failed and returned nullptr. maybe we ran out of memory?");
-			max = items + space - 1;
+			data = (T*)realloc(data, (space) * itemsize);
+			Assert(data, "realloc failed and returned nullptr. maybe we ran out of memory?");
+			max = data + space - 1;
 			
-			first = items;
+			first = data;
 			iter = first + iteroffset;
 			last = first + osize;
 
@@ -153,8 +153,8 @@ struct array {
 		}
 		else {
 			if (last == 0) {
-				new(items) T(t);
-				last = items;
+				new(data) T(t);
+				last = data;
 			}
 			else {
 				last++;
@@ -176,11 +176,11 @@ struct array {
 			int iteroffset = iter - first;
 			int osize = size();
 			space += 8;
-			items = (T*)realloc(items, (space)*itemsize);
-			Assert(items, "realloc failed and returned nullptr. maybe we ran out of memory?");
-			max = items + space - 1;
+			data = (T*)realloc(data, (space)*itemsize);
+			Assert(data, "realloc failed and returned nullptr. maybe we ran out of memory?");
+			max = data + space - 1;
 
-			first = items;
+			first = data;
 			iter = first + iteroffset;
 			last = first + osize;
 
@@ -188,8 +188,8 @@ struct array {
 		}
 		else {
 			if (last == 0) {
-				new(items) T(t);
-				last = items;
+				new(data) T(t);
+				last = data;
 			}
 			else {
 				last++;
@@ -209,9 +209,9 @@ struct array {
 	void remove(int i) {
 		Assert(size() > 0, "can't remove element from empty vector");
 		Assert(i < size(), "index is out of bounds");
-		memset(items + i, 0, itemsize);
+		memset(data + i, 0, itemsize);
 		for (int o = i; o < size(); o++) {
-			items[o] = items[o + 1];
+			data[o] = data[o + 1];
 		}
 		memset(last, 0, itemsize);
 		last--;
@@ -222,11 +222,11 @@ struct array {
 			space = nuspace;
 			int osize = size() - 1;
 			int iteroffset = iter - first;
-			items = (T*)realloc(items, space * itemsize);
-			first = items;
+			data = (T*)realloc(data, space * itemsize);
+			first = data;
 			iter = first + iteroffset;
-			last = items + osize;
-			max = items + space;
+			last = data + osize;
+			max = data + space;
 		}
 	}
 
@@ -237,6 +237,15 @@ struct array {
 			}
 		}
 		last = 0;
+	}
+
+	//swaps two elements in the array
+	void swap(u32 idx1, u32 idx2) {
+		Assert(idx1 < size() && idx2 < size(), "index out of bounds");
+		Assert(idx1 != idx2, "can't swap an element with itself");
+		T save = data[idx1];
+		data[idx1] = data[idx2];
+		data[idx2] = save;
 	}
 
 	//TODO add out of bounds checking for these functions
@@ -287,18 +296,18 @@ struct array {
 
 	//this is really only necessary for the copy constructor as far as i know
 	T& at(int i) {
-		return items[i];
+		return data[i];
 	}
 
 	T& operator[](int i) {
-		return items[i];
+		return data[i];
 	}
 
 	//begin/end functions for for each loops
-	iterator begin() { return &items[0]; }
-	iterator end()   { return &items[size()]; }
-	const_iterator begin() const { return &items[0]; }
-	const_iterator end()   const { return &items[size()]; }
+	iterator begin() { return &data[0]; }
+	iterator end()   { return &data[size()]; }
+	const_iterator begin() const { return &data[0]; }
+	const_iterator end()   const { return &data[size()]; }
 
 
 };

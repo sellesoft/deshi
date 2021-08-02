@@ -11,7 +11,7 @@ template<class Key, class Value>
 struct map {
 	array<pair<u32, Value>> data;
 
-	u32 seed = 213;
+	u32 seed = 213213132133;
 
 	typedef pair<u32, Value>* iterator;
 	typedef const pair<u32, Value>* const_iterator;
@@ -24,6 +24,10 @@ struct map {
 			}
 		}
 		return false;
+	}
+
+	Value& operator[](u32 idx) {
+		return data[idx].second;
 	}
 
 	Value& operator[](const Key& key) {
@@ -48,6 +52,10 @@ struct map {
 
 	void erase(u32 idx) {
 		data.remove(idx);
+	}
+
+	void swap(u32 idx1, u32 idx2) {
+		data.swap(idx1, idx2);
 	}
 
 	iterator begin() { return data.begin(); }

@@ -112,15 +112,30 @@ void UI::Line(vec2 start, vec2 end, float thickness, Color color){
 
 //Text
 
+
+//internal function for actually making and adding the drawCmd
+void TextCall(string text, vec2 pos, Color color) {
+	UIDrawCmd drawCmd;
+	drawCmd.type = UIDrawType_Text;
+	drawCmd.text = text;
+	drawCmd.position = pos;
+	drawCmd.color = color;
+	drawCmd.style = style;
+	drawCmd.scissorOffset = vec2(workingWin.x, workingWin.y + style.titleBarHeight);
+	drawCmd.scissorExtent = vec2(workingWin.width, workingWin.height - style.titleBarHeight);
+
+	workingWin.drawCmds.add(drawCmd);
+}
+
 //main function for wrapping, where position is starting position of text relative to the top left of the window
-inline void WrapText(string text, vec2 pos, Color color) {
+inline void WrapText(string text, vec2 pos, Color color, bool move_cursor = true) {
 	using namespace UI;
+
+	vec2 ogpos = workingWin.cursor;
 	workingWin.cursor = pos;
 
 	//work out where we're going to draw the text and how much to advance the cursor by
 	vec2 textSize = CalcTextSize(text);
-
-	//TODO(sushi) decide how we wrap things 
 
 	//max characters we can place 
 	u32 maxChars = floor((workingWin.width - workingWin.cursor.x) / style.font->width);
@@ -132,7 +147,7 @@ inline void WrapText(string text, vec2 pos, Color color) {
 		//find closest space to split by
 		size_t splitat = text.find_first_of_lookback(' ', maxChars);
 		string nustr = text.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
-		Text(nustr, workingWin.position + workingWin.cursor, color);
+		TextCall(nustr, workingWin.position + workingWin.cursor, color);
 
 		text = text.substr(nustr.size);
 		workingWin.cursor.y += style.font->height + 1;
@@ -141,7 +156,7 @@ inline void WrapText(string text, vec2 pos, Color color) {
 		while (text.size > maxChars) {
 			splitat = text.find_first_of_lookback(' ', maxChars);
 			nustr = text.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
-			Text(nustr, workingWin.position + workingWin.cursor, color);
+			TextCall(nustr, workingWin.position + workingWin.cursor, color);
 
 			text = text.substr(nustr.size);
 			workingWin.cursor.y += style.font->height + 1;
@@ -150,14 +165,16 @@ inline void WrapText(string text, vec2 pos, Color color) {
 		}
 
 		//write last bit of text
-		Text(text, workingWin.position + workingWin.cursor, color);
+		TextCall(text, workingWin.position + workingWin.cursor, color);
 		workingWin.cursor.y += style.font->height + 1;
 
 	}
 	else {
-		Text(text, workingWin.position + workingWin.cursor, color);
+		TextCall(text, workingWin.position + workingWin.cursor, color);
 		workingWin.cursor.y += style.font->height + 1;
 	}
+
+	if (!move_cursor) workingWin.cursor = ogpos;
 }
 
 
@@ -166,7 +183,7 @@ void UI::Text(string text) {
 }
 
 void UI::Text(string text, vec2 pos) {
-	WrapText(text, pos, style.colors[UIStyleCol_Text]);
+	WrapText(text, pos, style.colors[UIStyleCol_Text], 0);
 }
 
 void UI::Text(string text, Color color) {
@@ -174,16 +191,7 @@ void UI::Text(string text, Color color) {
 }
 
 void UI::Text(string text, vec2 pos, Color color) {
-	UIDrawCmd drawCmd;
-	drawCmd.type = UIDrawType_Text;
-	drawCmd.text = text;
-	drawCmd.position = pos;
-	drawCmd.color = color;
-	drawCmd.style = style;
-	drawCmd.scissorOffset = vec2(workingWin.x, workingWin.y + style.titleBarHeight);
-	drawCmd.scissorExtent = vec2(workingWin.width, workingWin.height - style.titleBarHeight);
-
-	workingWin.drawCmds.add(drawCmd);
+	WrapText(text, workingWin.cursor, color, 0);
 }
 
 
@@ -309,8 +317,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			workingWin.drawCmds.add(drawCmd);//inst 85
 		}
 	}
-	windows[name] = workingWin; //creates a copy of workingWin and its strings inside of itself
-	//so inst 91, 94, 97, 100, 103, 106, 109, and 112 are now in the window stack
+	windows[name] = workingWin;
 }
 
 void UI::EndWindow() {
@@ -391,7 +398,6 @@ void UI::Init() {
 	workingWin.dimensions = DengWindow->dimensions;
 
 	//set default style
-	//TODO(sushi, Ui) set up the initial stack once i have pushing and popping it set up 
 
 	//load font
 	style.font = new Font();
@@ -433,6 +439,41 @@ void UI::Update() {
 	
 	Assert(colorStack.size() == initColorStackSize, 
 	"Frame ended with hanging colors in the stack, make sure you pop colors if you push them!");
+
+
+	//focusing and dragging
+	
+	//focus
+	for (int i = windows.size() - 1; i > 0; i--) {
+		UIWindow w = windows[i];
+		if (i == windows.size() - 1 && w.hovered) {
+			break;
+		}
+		else if(w.hovered && ((w.flags & UIWindowFlags_FocusOnHover) ? 1 : DengInput->KeyPressedAnyMod(MouseButton::LEFT))) {
+			for (int move = i; move < windows.size() - 1; move++)
+				windows.swap(move, move + 1);
+			break;
+		}
+	}
+
+	
+	{ //drag
+		UIWindow* focused = &windows[windows.size() - 1];
+		
+		static bool newDrag = true;
+		static vec2 mouseOffset = vec2(0, 0);
+
+		if (focused->titleHovered && DengInput->KeyDownAnyMod(MouseButton::LEFT)) {
+			if (newDrag) {
+				mouseOffset = focused->position - DengInput->mousePos;
+				newDrag = false;
+			}
+		}
+		if (!newDrag) 
+			focused->position = DengInput->mousePos + mouseOffset;
+		if (DengInput->KeyReleased(MouseButton::LEFT))
+			newDrag = true;
+	}
 
 	//draw windows in order with their drawCmds
 	for (auto& p : windows) {

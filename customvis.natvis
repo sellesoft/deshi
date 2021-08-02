@@ -17,7 +17,7 @@
       <Synthetic Name="ptrs">
         <DisplayString>first, last, max, and iteration pointers</DisplayString>
         <Expand>
-          <Item Name="items" ExcludeView="simple">items</Item>
+          <Item Name="data" ExcludeView="simple">data</Item>
           <Item Name="first" ExcludeView="simple">first</Item>
           <Item Name="last" ExcludeView="simple">last</Item>
           <Item Name="max" ExcludeView="simple">max</Item>

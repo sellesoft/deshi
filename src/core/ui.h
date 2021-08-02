@@ -48,6 +48,7 @@ enum UIWindowFlags_ {
 	UIWindowFlags_NoTitleBar   = 1 << 2,
 	UIWindowFlags_NoBorder     = 1 << 3,
 	UIWindowFlags_NoBackground = 1 << 4,
+	UIWindowFlags_FocusOnHover = 1 << 5,
 	UIWindowFlags_Invisible    = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground
 }; typedef u32 UIWindowFlags;
 
@@ -163,6 +164,9 @@ struct UIWindow {
 		cursor = cop.cursor;
 		flags = cop.flags;
 		drawCmds = cop.drawCmds;
+		hovered = cop.hovered;
+		titleHovered = cop.titleHovered;
+
 	}
 
 	~UIWindow() {
@@ -178,6 +182,8 @@ struct UIWindow {
 		flags = cop.flags;
 		//drawCmds.~array();
 		drawCmds = cop.drawCmds; //inst 139, 142, 145, 148, 151, 154, 157, 160 valid
+		hovered = cop.hovered;
+		titleHovered = cop.titleHovered;
 		return *this;
 	}
 
@@ -205,6 +211,7 @@ namespace UI {
 	static void Text(string text, vec2 pos);
 	static void Text(string text, Color color);
 	static void Text(string text, vec2 pos, Color color);
+
 
 	//windows
 	static void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
