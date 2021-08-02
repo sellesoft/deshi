@@ -112,6 +112,9 @@ struct array {
 	}
 
 	void operator = (const array<T>& array) {
+		
+		this->~array();
+
 		itemsize = array.itemsize;
 		space = array.space;
 		items = (T*)calloc(array.space, itemsize);
@@ -125,7 +128,7 @@ struct array {
 		//if last is 0 then the array is empty
 		if (array.last != 0) {
 			int i = 0;
-			for (T item : array) {
+			for (const T& item : array) {
 				new(items + i) T(item);
 				i++;
 			}
@@ -198,7 +201,8 @@ struct array {
 	//removes last element
 	void pop() {
 		Assert(size() > 0, "attempt to pop with nothing in array");
-		memset(last, 0, itemsize);
+		last->~T();
+		//memset(last, 0, itemsize);
 		last--;
 	}	
 
@@ -227,6 +231,11 @@ struct array {
 	}
 
 	void clear() {
+		if (last != 0) {
+			for (T* i = first; i <= last; i++) {
+				i->~T();
+			}
+		}
 		last = 0;
 	}
 

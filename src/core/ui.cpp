@@ -184,8 +184,6 @@ void UI::Text(string text, vec2 pos, Color color) {
 	drawCmd.scissorExtent = vec2(workingWin.width, workingWin.height - style.titleBarHeight);
 
 	workingWin.drawCmds.add(drawCmd);
-	workingWin.first_text = 0;
-
 }
 
 
@@ -194,17 +192,17 @@ void UI::Text(string text, vec2 pos, Color color) {
 
 void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
 	//save previous window on stack
-	windowStack.add(workingWin);
+	windowStack.add(workingWin); //6 inst then 188 on frame 2
 
 	//check if were making a new window or working with one we already know
-	if (!windows.has(name)) {
+	if (!windows.has(name)) { // adds no new inst
 		//make new window if we dont know this one already
-		workingWin.      name = name;
+		workingWin.      name = name; //11 inst - adds 'test' string
 		workingWin.  position = pos;
 		workingWin.dimensions = dimensions;
 		workingWin.    cursor = vec2(0, 0);
 		workingWin.     flags = flags;
-		windows[name] = workingWin;
+		windows[name] = workingWin; //28 inst
 	}
 	else {
 		workingWin = windows[name];
@@ -241,7 +239,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 		
 		//draw background
 		if (!(flags & UIWindowFlags_NoBackground)) {
-			UIDrawCmd drawCmd;
+			UIDrawCmd drawCmd; //inst 29
 			drawCmd.      type = UIDrawType_Rectangle;
 			drawCmd.  position = workingWin.position;
 			drawCmd.dimensions = workingWin.dimensions;
@@ -249,25 +247,25 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			drawCmd.style = style;
 
 
-			workingWin.drawCmds.add(drawCmd);
+			workingWin.drawCmds.add(drawCmd); //inst 35
 		}
 
 		//draw title bar
 		if (!(flags & UIWindowFlags_NoTitleBar)) {
-			UIDrawCmd drawCmd;
+			UIDrawCmd drawCmd; //inst 40
 			drawCmd.    type = UIDrawType_Rectangle;
 			drawCmd.  position = workingWin.position;
 			drawCmd.dimensions = vec2{ workingWin.width, style.titleBarHeight };
 			drawCmd.     color = style.colors[UIStyleCol_TitleBg];
 			drawCmd.style = style;
 
-			workingWin.drawCmds.add(drawCmd);
+			workingWin.drawCmds.add(drawCmd); //inst 44
 
 			//draw text if it exists
 			if (name.size != 0) {
-				UIDrawCmd drawCmd;
+				UIDrawCmd drawCmd; //inst 46
 				drawCmd.type = UIDrawType_Text;
-				drawCmd.text = workingWin.name;
+				drawCmd.text = workingWin.name; //inst 48
 				drawCmd.position =
 					vec2(
 						workingWin.x + (workingWin.width - name.size * style.font->width) * style.titleTextAlign.x,
@@ -277,7 +275,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 
 				//TODO(sushi, Ui) add title text coloring
 
-				workingWin.drawCmds.add(drawCmd);
+				workingWin.drawCmds.add(drawCmd); //inst 54
 			}
 			//move cursor down by title bar height
 			workingWin.cursor.y = style.titleBarHeight;
@@ -285,7 +283,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 
 		//draw border
 		if (!(flags & UIWindowFlags_NoBorder)) {
-			UIDrawCmd drawCmd;
+			UIDrawCmd drawCmd; //inst 58
 			drawCmd.type = UIDrawType_Rectangle;
 			drawCmd.color = style.colors[UIStyleCol_Border];
 			drawCmd.style = style;
@@ -293,25 +291,26 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			//left
 			drawCmd.  position = vec2{ workingWin.x - style.windowBorderSize, workingWin.y };
 			drawCmd.dimensions = vec2{ style.windowBorderSize, workingWin.height };
-			workingWin.drawCmds.add(drawCmd);
+			workingWin.drawCmds.add(drawCmd); //inst 64
 			
 			//right 
 			drawCmd.  position = vec2{ workingWin.x + workingWin.width, workingWin.y };
 			drawCmd.dimensions = vec2{ style.windowBorderSize, workingWin.height };
-			workingWin.drawCmds.add(drawCmd);
+			workingWin.drawCmds.add(drawCmd); //inst 71
 		
 			//top
 			drawCmd.  position = vec2{ workingWin.x - style.windowBorderSize, workingWin.y - style.windowBorderSize };
 			drawCmd.dimensions = vec2{ workingWin.width + 2 * style.windowBorderSize, style.windowBorderSize };
-			workingWin.drawCmds.add(drawCmd);
+			workingWin.drawCmds.add(drawCmd); //inst 78
 
 			//bottom
 			drawCmd.  position = vec2{ workingWin.x - style.windowBorderSize, workingWin.y + dimensions.y };
 			drawCmd.dimensions = vec2{ workingWin.width + 2 * style.windowBorderSize, style.windowBorderSize };
-			workingWin.drawCmds.add(drawCmd);
+			workingWin.drawCmds.add(drawCmd);//inst 85
 		}
 	}
-	windows[name] = workingWin;
+	windows[name] = workingWin; //creates a copy of workingWin and its strings inside of itself
+	//so inst 91, 94, 97, 100, 103, 106, 109, and 112 are now in the window stack
 }
 
 void UI::EndWindow() {
@@ -437,8 +436,7 @@ void UI::Update() {
 
 	//draw windows in order with their drawCmds
 	for (auto& p : windows) {
-		UIWindow w = p.second;
-		for (UIDrawCmd& drawCmd : w.drawCmds) {
+		for (UIDrawCmd& drawCmd : p.second.drawCmds) {
 			switch (drawCmd.type) {
 				case UIDrawType_Rectangle: {
 					Render::FillRectUI(drawCmd.position, drawCmd.dimensions, drawCmd.color);
@@ -451,7 +449,7 @@ void UI::Update() {
 				case UIDrawType_Text: {
 					//scissor out the titlebar area as well if we have one
 					if (drawCmd.scissorExtent.x == -1) {
-						Render::DrawTextUI(drawCmd.text, drawCmd.position, w.position, w.dimensions, drawCmd.color);
+						Render::DrawTextUI(drawCmd.text, drawCmd.position, p.second.position, p.second.dimensions, drawCmd.color);
 					}
 					else {
 						Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.scissorOffset, drawCmd.scissorExtent, drawCmd.color);
@@ -460,7 +458,6 @@ void UI::Update() {
 			}
 		}
 		p.second.drawCmds.clear();
-		p.second.first_text = false;
 	}
 }
 

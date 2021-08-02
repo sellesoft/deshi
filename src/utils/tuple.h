@@ -103,7 +103,7 @@ struct pair<T,U,V,W,X> {
 };
 
 template<typename T, typename U>
-static pair<T, U> make_pair(T first, U second) {
+static pair<T, U> make_pair(const T& first, const U& second) {
 	return pair<T, U>(first, second);
 }
 

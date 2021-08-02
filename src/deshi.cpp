@@ -241,7 +241,6 @@ int main() {
 	TIMER_START(t_d); TIMER_START(t_f); TIMER_START(t_s);
 	//pre-init setup
 	Assets::enforceDirectories();
-	
 	//init engine core
 	TIMER_RESET(t_s); time_.Init(700);        SUCCESS("Finished time initialization in ", TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ", TIMER_END(t_s), "ms");
@@ -251,12 +250,14 @@ int main() {
 	TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ", TIMER_END(t_s), "ms");
 	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
 	
+
 	//init game admin
 	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
 	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
-
 	//start main loop
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
+		
+
 		glfwPollEvents();
 		
 		DeshiImGui::newFrame();                                                         //place imgui calls after this
@@ -269,15 +270,17 @@ int main() {
 		UI::Update();
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
+			//setTrack();
 			UI::PushVar(UIStyleVar_TitleTextAlign, vec2(0.05, 0.5));
 			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
 			UI::Text("this is a very long text to see how moving text wraps, i hope it looks cool",
-				500 * vec2((sinf(DengTotalTime)), (cosf(DengTotalTime) + 1) / 2));
-			
+				200 * vec2((sinf(DengTotalTime)), (cosf(DengTotalTime) + 1) / 2));
+			UI::Text("testing drawing text memory leak", vec2(0, 100)); //inst 127
+			UI::Text("memory leak is no more");
 			UI::PopVar();
 			UI::EndWindow();
 		}
-		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
+    	time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}
 	
 	//cleanup

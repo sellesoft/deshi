@@ -69,12 +69,10 @@ struct UIDrawCmd {
 	//all draw commands have a color
 	Color color;
 
-	union {
-		//rectangles have dimensions
-		vec2 dimensions;
-		//lines have a second position
-		vec2 position2;
-	};
+	//rectangles have dimensions
+	vec2 dimensions;
+	//lines have a second position
+	vec2 position2;
 
 	//line thickness
 	float thickness;
@@ -90,7 +88,11 @@ struct UIDrawCmd {
 
 	//bc C++ sucks
 	//TODO(sushi, UiCl) get rid of unions on this so i dont have to do this for copying
-	UIDrawCmd() {};
+	UIDrawCmd() {}
+	
+	~UIDrawCmd() {
+
+	}
 
 	UIDrawCmd(const UIDrawCmd& cop) {
 		type = cop.type;
@@ -138,7 +140,7 @@ struct UIWindow {
 			float height;
 		};
 	};
-	
+
 	//interior window cursor that's relative to its upper left corner
 	//if the window has a titlebar then the cursor's origin does not include the title bar
 	//TODO(sushi, Ui) maybe make a window flag to change this
@@ -150,10 +152,6 @@ struct UIWindow {
 
 	bool hovered = false;
 	bool titleHovered = false;
-
-	//for knowing whether or not to increment text by font height yet
-	//TODO(sushi, UiCl) find nicer way to check this
-	bool first_text = true;
 
 	UIWindow() {};
 
@@ -167,13 +165,19 @@ struct UIWindow {
 		drawCmds = cop.drawCmds;
 	}
 
+	~UIWindow() {
+
+	}
+
 	UIWindow& operator= (const UIWindow& cop) {
-		name = cop.name;
+		//name.~string();
+		name = cop.name; //inst 136
 		position = cop.position;
 		dimensions = cop.dimensions;
 		cursor = cop.cursor;
 		flags = cop.flags;
-		drawCmds = cop.drawCmds;
+		//drawCmds.~array();
+		drawCmds = cop.drawCmds; //inst 139, 142, 145, 148, 151, 154, 157, 160 valid
 		return *this;
 	}
 
