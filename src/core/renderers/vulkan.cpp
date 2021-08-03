@@ -3295,6 +3295,7 @@ DrawTextUI(string text, vec2 pos, vec2 scissorOffset, vec2 scissorExtent, Color 
 vec2 prevScissorOffset = vec2(0, 0);
 vec2 prevScissorExtent = vec2(-1, -1);
 
+//NOTE: text scaling looks very ugly with bit map fonts as far as i know
 void Render::
 DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color, vec2 scissorOffset, vec2 scissorExtent) {
 	if (color.a == 0) return;
@@ -3327,6 +3328,8 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color, vec2 scissorOffset,
 	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,botoff}; vp[2].color = col;
 	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,botoff}; vp[3].color = col;
 	
+
+
 	uiVertexCount += 4;
 	uiIndexCount  += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;

@@ -39,6 +39,7 @@ struct UIStyleVarType {
 
 static const UIStyleVarType uiStyleVarTypes[] = {
 	{2, offsetof(UIStyle, windowPadding)},
+	{2, offsetof(UIStyle, itemSpacing)},
 	{1, offsetof(UIStyle, windowBorderSize)},
 	{1, offsetof(UIStyle, titleBarHeight)},
 	{2, offsetof(UIStyle, titleTextAlign)},
@@ -47,7 +48,7 @@ static const UIStyleVarType uiStyleVarTypes[] = {
 //this variable defines the space the user is working in when calling UI functions
 //windows are primarily a way for the user to easily position things on screen relative to a parent
 //and to make detecting where text wraps and other things easier
-//by default a window that takes up the entire screen and is invisible
+//by default a window that takes up the entire screen and is invisible is made on init
 UIWindow workingWin;
  
 //window map which only stores known windows
@@ -154,7 +155,7 @@ inline void WrapText(string text, vec2 pos, Color color, bool move_cursor = true
 		TextCall(nustr, workingWin.position + workcur, color);
 
 		text = text.substr(nustr.size);
-		workcur.y += style.font->height + 1;
+		workcur.y += style.font->height + style.itemSpacing.y;
 
 		//continue to wrap if we need to
 		while (text.size > maxChars) {
@@ -163,19 +164,19 @@ inline void WrapText(string text, vec2 pos, Color color, bool move_cursor = true
 			TextCall(nustr, workingWin.position + workcur, color);
 
 			text = text.substr(nustr.size);
-			workcur.y += style.font->height + 1;
+			workcur.y += style.font->height + style.itemSpacing.y;
 			
 			if (!strlen(text.str)) break;
 		}
 
 		//write last bit of text
 		TextCall(text, workingWin.position + workcur, color);
-		workcur.y += style.font->height + 1;
+		workcur.y += style.font->height + style.itemSpacing.y;
 
 	}
 	else {
 		TextCall(text, workingWin.position + workcur, color);
-		workcur.y += style.font->height + 1;
+		workcur.y += style.font->height + style.itemSpacing.y;
 	}
 
 	if (move_cursor) {
@@ -185,50 +186,102 @@ inline void WrapText(string text, vec2 pos, Color color, bool move_cursor = true
 }
 
 
-void UI::Text(string text) {
-	//we check for \n here and call WrapText on each as if they were separate text calls
-	//i could probably do this in wrap text, but i decided to do it here for now
-	size_t newline = text.find_first_of('\n');
-	if (newline != string::npos && newline != text.size - 1) {
-		string remainder = text.substr(newline + 1);
-		WrapText(text.substr(0, newline - 1), workingWin.cursor, style.colors[UIStyleCol_Text]);
-		newline = remainder.find_first_of('\n');
-		while (newline != string::npos) {
-			WrapText(remainder.substr(0, newline - 1), workingWin.cursor, style.colors[UIStyleCol_Text]);
-			remainder = remainder.substr(newline + 1);
-			newline = remainder.find_first_of('\n');
-		}
-		WrapText(remainder, workingWin.cursor, style.colors[UIStyleCol_Text]);
+void UI::Text(string text, UITextFlags flags) {
+	if (flags & UITextFlags_NoWrap) {
+		TextCall(text, workingWin.position + workingWin.cursor + style.windowPadding, style.colors[UIStyleCol_Text]);
+		workingWin.cursor.y += style.font->height + 1;
 	}
 	else {
-		WrapText(text, workingWin.cursor, style.colors[UIStyleCol_Text]);
+		//we check for \n here and call WrapText on each as if they were separate text calls
+		//i could probably do this in wrap text, but i decided to do it here for now
+		size_t newline = text.find_first_of('\n');
+		if (newline != string::npos && newline != text.size - 1) {
+			string remainder = text.substr(newline + 1);
+			WrapText(text.substr(0, newline - 1), workingWin.cursor, style.colors[UIStyleCol_Text]);
+			newline = remainder.find_first_of('\n');
+			while (newline != string::npos) {
+				WrapText(remainder.substr(0, newline - 1), workingWin.cursor, style.colors[UIStyleCol_Text]);
+				remainder = remainder.substr(newline + 1);
+				newline = remainder.find_first_of('\n');
+			}
+			WrapText(remainder, workingWin.cursor, style.colors[UIStyleCol_Text]);
+		}
+		else {
+			WrapText(text, workingWin.cursor, style.colors[UIStyleCol_Text]);
+		}
 	}
 }
 
-void UI::Text(string text, vec2 pos) {
-	WrapText(text, pos, style.colors[UIStyleCol_Text], 0);
-}
-
-void UI::Text(string text, Color color) {
-	size_t newline = text.find_first_of('\n');
-	if (newline != string::npos && newline != text.size - 1) {
-		string remainder = text.substr(newline + 1);
-		WrapText(text.substr(0, newline - 1), workingWin.cursor, color);
-		newline = remainder.find_first_of('\n');
-		while (newline != string::npos) {
-			WrapText(remainder.substr(0, newline - 1), workingWin.cursor, color);
-			remainder = remainder.substr(newline + 1);
-			newline = remainder.find_first_of('\n');
-		}
-		WrapText(remainder, workingWin.cursor, color);
+void UI::Text(string text, vec2 pos, UITextFlags flags) {
+	if (flags & UITextFlags_NoWrap) {
+		TextCall(text, workingWin.position + pos, style.colors[UIStyleCol_Text]);
 	}
 	else {
-		WrapText(text, workingWin.cursor, color);
+		size_t newline = text.find_first_of('\n');
+		if (newline != string::npos && newline != text.size - 1) {
+			string remainder = text.substr(newline + 1);
+			WrapText(text.substr(0, newline - 1), pos, style.colors[UIStyleCol_Text], 0);
+			newline = remainder.find_first_of('\n');
+			while (newline != string::npos) {
+				WrapText(remainder.substr(0, newline - 1), pos, style.colors[UIStyleCol_Text], 0);
+				remainder = remainder.substr(newline + 1);
+				newline = remainder.find_first_of('\n');
+			}
+			WrapText(remainder, pos, style.colors[UIStyleCol_Text], 0);
+		}
+		else {
+			WrapText(text, pos, style.colors[UIStyleCol_Text], 0);
+		}
+
 	}
 }
 
-void UI::Text(string text, vec2 pos, Color color) {
-	WrapText(text, workingWin.cursor, color, 0);
+void UI::Text(string text, Color color, UITextFlags flags) {
+	if (flags & UITextFlags_NoWrap) {
+		TextCall(text, workingWin.position + workingWin.cursor + style.windowPadding, color);
+		workingWin.cursor.y += style.font->height + 1;
+	}
+	else {
+		size_t newline = text.find_first_of('\n');
+		if (newline != string::npos && newline != text.size - 1) {
+			string remainder = text.substr(newline + 1);
+			WrapText(text.substr(0, newline - 1), workingWin.cursor, color);
+			newline = remainder.find_first_of('\n');
+			while (newline != string::npos) {
+				WrapText(remainder.substr(0, newline - 1), workingWin.cursor, color);
+				remainder = remainder.substr(newline + 1);
+				newline = remainder.find_first_of('\n');
+			}
+			WrapText(remainder, workingWin.cursor, color);
+		}
+		else {
+			WrapText(text, workingWin.cursor, color);
+		}
+	}
+	
+}
+
+void UI::Text(string text, vec2 pos, Color color, UITextFlags flags) {
+	if (flags & UITextFlags_NoWrap) {
+		TextCall(text, workingWin.position + pos, color);
+	}
+	else {
+		size_t newline = text.find_first_of('\n');
+		if (newline != string::npos && newline != text.size - 1) {
+			string remainder = text.substr(newline + 1);
+			WrapText(text.substr(0, newline - 1), pos, color);
+			newline = remainder.find_first_of('\n');
+			while (newline != string::npos) {
+				WrapText(remainder.substr(0, newline - 1), pos, color);
+				remainder = remainder.substr(newline + 1);
+				newline = remainder.find_first_of('\n');
+			}
+			WrapText(remainder, pos, color);
+		}
+		else {
+			WrapText(text, pos, color);
+		}
+	}
 }
 
 
@@ -289,7 +342,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			drawCmd.  position = workingWin.position;
 			drawCmd.dimensions = workingWin.dimensions;
 			drawCmd.     color = style.colors[UIStyleCol_WindowBg];
-			drawCmd.style = style;
+			drawCmd.     style = style;
 
 
 			workingWin.drawCmds.add(drawCmd); //inst 35
@@ -302,7 +355,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			drawCmd.  position = workingWin.position;
 			drawCmd.dimensions = vec2{ workingWin.width, style.titleBarHeight };
 			drawCmd.     color = style.colors[UIStyleCol_TitleBg];
-			drawCmd.style = style;
+			drawCmd.     style = style;
 
 			workingWin.drawCmds.add(drawCmd); //inst 44
 
@@ -547,6 +600,8 @@ void UI::Update() {
 				case UIDrawType_Text: {
 					//scissor out the titlebar area as well if we have one
 					if (drawCmd.scissorExtent.x == -1) {
+						//we must clamp the scissor to the edges of the screen so we dont get vulkan validation errors
+						//TODO(sushi, Ui) do that ^
 						Render::DrawTextUI(drawCmd.text, drawCmd.position, p.second.position, p.second.dimensions, drawCmd.color);
 					}
 					else {

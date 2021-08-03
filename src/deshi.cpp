@@ -154,8 +154,8 @@ __________ it might have something to do with our rotate by axis function
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
 (07/14/21) the config parser sometimes throws a console error that its unable to parse the final empty line of configs
 (07/20/21) copy/paste produces an extra mesh in the renderer sometimes
-(08/03/21) UI's text sometimes produces artifacts around some letters it seems like it depends
-__________ on the y level of each character and only seems to happen on a, b, i, j, q, r, and z
+(08/03/21) UI's text sometimes produces artifacts around some letters. it seems like it depends
+__________ on the y level of each character and only seems to happen on a, b, i, j, q, r, and z on gohufont-11
 
 */
 
@@ -276,18 +276,19 @@ int main() {
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
 			//setTrack();
-			UI::PushVar(UIStyleVar_TitleTextAlign, vec2(0.05, 0.5));
+			UI::PushVar(UIStyleVar_TitleTextAlign, vec2(0.01, 0.5));
+			UI::PushVar(UIStyleVar_ItemSpacing, vec2(10, 10));
 			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
 			
 			string tosend = "";
 			for (int i = 32; i < 191 + 32; i++) {
 				tosend += (char)i;
 			}
-
+			
 			UI::Text(tosend);
 
 			UI::EndWindow();
-			UI::PopVar();
+			UI::PopVar(2);
 		}
     	time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

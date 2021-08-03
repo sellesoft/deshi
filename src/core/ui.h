@@ -13,6 +13,7 @@
 
 enum UIStyleVar : u32 {
 	UIStyleVar_WindowPadding,
+	UIStyleVar_ItemSpacing,
 	UIStyleVar_WindowBorderSize,
 	UIStyleVar_TitleBarHeight,
 	UIStyleVar_TitleTextAlign,   //how title text is aligned in title bar, default vec2(0, 0.5)
@@ -34,12 +35,18 @@ enum UIStyleCol : u32 {
 //global styling
 struct UIStyle {
 	vec2  windowPadding;
+	vec2  itemSpacing;
 	float windowBorderSize;
 	float titleBarHeight;
 	vec2  titleTextAlign;
 	Font* font; //this is a pointer until I fix font to not store so much shit
 	Color colors[UIStyleCol_COUNT];
 } style;
+
+enum UITextFlags_ {
+	UITextFlags_None = 0,
+	UITextFlags_NoWrap = 1 << 0,
+}; typedef u32 UITextFlags;
 
 enum UIWindowFlags_ {
 	UIWindowFlags_None         = 0,
@@ -119,7 +126,7 @@ struct UIWindow {
 
 	bool hovered = false;
 	bool titleHovered = false;
-
+		    
 	UIWindow() {};
 
 	//I have to do this because I'm using an anonymous struct inside a union and C++ sucks
@@ -169,10 +176,10 @@ namespace UI {
 	static void Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
 	static void Line(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
 
-	static void Text(string text);
-	static void Text(string text, vec2 pos);
-	static void Text(string text, Color color);
-	static void Text(string text, vec2 pos, Color color);
+	static void Text(string text, UITextFlags flags = 0);
+	static void Text(string text, vec2 pos, UITextFlags flags = 0);
+	static void Text(string text, Color color, UITextFlags flags = 0);
+	static void Text(string text, vec2 pos, Color color, UITextFlags flags = 0);
 
 	//widgets
 	static bool Button(string text);
