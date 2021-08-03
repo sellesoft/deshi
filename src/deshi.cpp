@@ -154,6 +154,8 @@ __________ it might have something to do with our rotate by axis function
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
 (07/14/21) the config parser sometimes throws a console error that its unable to parse the final empty line of configs
 (07/20/21) copy/paste produces an extra mesh in the renderer sometimes
+(08/03/21) UI's text sometimes produces artifacts around some letters it seems like it depends
+__________ on the y level of each character and only seems to happen on a, b, i, j, q, r, and z
 
 */
 
@@ -276,20 +278,13 @@ int main() {
 			//setTrack();
 			UI::PushVar(UIStyleVar_TitleTextAlign, vec2(0.05, 0.5));
 			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
-			UI::BeginWindow("test2", vec2(350, 350), vec2(300, 300));
 			
-			UI::EndWindow();
-			UI::BeginWindow("test300", vec2(400, 400), vec2(300, 300));
+			string tosend = "";
+			for (int i = 32; i < 191 + 32; i++) {
+				tosend += (char)i;
+			}
 
-			UI::EndWindow();
-			UI::BeginWindow("test400", vec2(450, 450), vec2(300, 300), UIWindowFlags_FocusOnHover);
-
-			UI::EndWindow();
-			UI::Text("text1 (positioned)", vec2(100, 150));
-			UI::Text("text2 (not positioned)");
-
-			UI::Text("text3 (positioned)", vec2(0, 50));
-			UI::Text("text4 (not positioned)");
+			UI::Text(tosend);
 
 			UI::EndWindow();
 			UI::PopVar();

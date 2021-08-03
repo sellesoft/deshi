@@ -130,16 +130,20 @@ void TextCall(string text, vec2 pos, Color color) {
 //main function for wrapping, where position is starting position of text relative to the top left of the window
 inline void WrapText(string text, vec2 pos, Color color, bool move_cursor = true) {
 	using namespace UI;
+	vec2 workcur = pos;
 
-	vec2 ogpos = workingWin.cursor;
-	workingWin.cursor = pos;
+	//apply window padding if we're not manually positioning text
+	if (move_cursor) {
+		workcur += style.windowPadding;
+	}
 
 	//work out where we're going to draw the text and how much to advance the cursor by
 	vec2 textSize = CalcTextSize(text);
 
 	//max characters we can place 
-	u32 maxChars = floor((workingWin.width - workingWin.cursor.x) / style.font->width);
+	u32 maxChars = floor(((workingWin.width - style.windowPadding.x) - workcur.x) / style.font->width);
 
+	//make sure max chars never equals 0
 	if (!maxChars) maxChars++;
 
 	//we need to see if the string goes beyond the width of the window and wrap if it does
@@ -147,39 +151,58 @@ inline void WrapText(string text, vec2 pos, Color color, bool move_cursor = true
 		//find closest space to split by
 		size_t splitat = text.find_first_of_lookback(' ', maxChars);
 		string nustr = text.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
-		TextCall(nustr, workingWin.position + workingWin.cursor, color);
+		TextCall(nustr, workingWin.position + workcur, color);
 
 		text = text.substr(nustr.size);
-		workingWin.cursor.y += style.font->height + 1;
+		workcur.y += style.font->height + 1;
 
 		//continue to wrap if we need to
 		while (text.size > maxChars) {
 			splitat = text.find_first_of_lookback(' ', maxChars);
 			nustr = text.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
-			TextCall(nustr, workingWin.position + workingWin.cursor, color);
+			TextCall(nustr, workingWin.position + workcur, color);
 
 			text = text.substr(nustr.size);
-			workingWin.cursor.y += style.font->height + 1;
+			workcur.y += style.font->height + 1;
 			
 			if (!strlen(text.str)) break;
 		}
 
 		//write last bit of text
-		TextCall(text, workingWin.position + workingWin.cursor, color);
-		workingWin.cursor.y += style.font->height + 1;
+		TextCall(text, workingWin.position + workcur, color);
+		workcur.y += style.font->height + 1;
 
 	}
 	else {
-		TextCall(text, workingWin.position + workingWin.cursor, color);
-		workingWin.cursor.y += style.font->height + 1;
+		TextCall(text, workingWin.position + workcur, color);
+		workcur.y += style.font->height + 1;
 	}
 
-	if (!move_cursor) workingWin.cursor = ogpos;
+	if (move_cursor) {
+		workcur -= style.windowPadding;
+		workingWin.cursor = workcur;
+	}
 }
 
 
 void UI::Text(string text) {
-	WrapText(text, workingWin.cursor, style.colors[UIStyleCol_Text]);
+	//we check for \n here and call WrapText on each as if they were separate text calls
+	//i could probably do this in wrap text, but i decided to do it here for now
+	size_t newline = text.find_first_of('\n');
+	if (newline != string::npos && newline != text.size - 1) {
+		string remainder = text.substr(newline + 1);
+		WrapText(text.substr(0, newline - 1), workingWin.cursor, style.colors[UIStyleCol_Text]);
+		newline = remainder.find_first_of('\n');
+		while (newline != string::npos) {
+			WrapText(remainder.substr(0, newline - 1), workingWin.cursor, style.colors[UIStyleCol_Text]);
+			remainder = remainder.substr(newline + 1);
+			newline = remainder.find_first_of('\n');
+		}
+		WrapText(remainder, workingWin.cursor, style.colors[UIStyleCol_Text]);
+	}
+	else {
+		WrapText(text, workingWin.cursor, style.colors[UIStyleCol_Text]);
+	}
 }
 
 void UI::Text(string text, vec2 pos) {
@@ -187,7 +210,21 @@ void UI::Text(string text, vec2 pos) {
 }
 
 void UI::Text(string text, Color color) {
-	WrapText(text, workingWin.cursor, color);
+	size_t newline = text.find_first_of('\n');
+	if (newline != string::npos && newline != text.size - 1) {
+		string remainder = text.substr(newline + 1);
+		WrapText(text.substr(0, newline - 1), workingWin.cursor, color);
+		newline = remainder.find_first_of('\n');
+		while (newline != string::npos) {
+			WrapText(remainder.substr(0, newline - 1), workingWin.cursor, color);
+			remainder = remainder.substr(newline + 1);
+			newline = remainder.find_first_of('\n');
+		}
+		WrapText(remainder, workingWin.cursor, color);
+	}
+	else {
+		WrapText(text, workingWin.cursor, color);
+	}
 }
 
 void UI::Text(string text, vec2 pos, Color color) {
@@ -386,6 +423,25 @@ void UI::PopVar(u32 count){
 
 
 
+//widget stuff
+bool UI::Button(string text) {
+	UIDrawCmd drawCmd{ UIDrawType_Rectangle };
+}
+
+bool UI::Button(string text, vec2 pos){
+
+}
+
+bool UI::Button(string text, Color color){
+
+}
+
+bool UI::Button(string text, vec2 pos, Color color){
+
+}
+
+
+
 
 //initializes core UI with an invisible working window covering the entire screen
 //also initializes styles
@@ -419,6 +475,7 @@ void UI::Init() {
 	PushVar(UIStyleVar_WindowBorderSize, 1);
 	PushVar(UIStyleVar_TitleBarHeight, style.font->height * 1.5);
 	PushVar(UIStyleVar_TitleTextAlign, vec2(0, 0.5));
+	PushVar(UIStyleVar_WindowPadding, vec2(10, 10));
 
 	initColorStackSize = colorStack.size();
 	initStyleStackSize = varStack.size();

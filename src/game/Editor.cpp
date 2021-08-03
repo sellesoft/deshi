@@ -1005,7 +1005,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
             std::string str1 = "Nothing yet...";
             float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
             for (int i = 0; i < str1.size(); i++) {
-                ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x - strlen1) / 2 + i * (fontsize / 2), (ImGui::GetWindowSize().y - fontsize) / 2 - sin(10 * time + cos(10 * time + (i * M_PI / 2 /5)) + (i * M_PI / 2/5))));
+                ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x - strlen1) / 2 + i * (fontsize / 2), (ImGui::GetWindowSize().y - fontsize) / 2 - sin(10 * time + cos(10 * time + (i * M_PI / (10 * sin(DengTotalTime / 10)))) + (i * M_PI / (10 * sin(DengTotalTime/10))))));
                 ImGui::TextEx(str1.substr(i, 1).c_str());
             }
         }else{

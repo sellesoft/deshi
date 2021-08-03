@@ -85,40 +85,6 @@ struct UIDrawCmd {
 
 	vec2 scissorOffset = vec2(0, 0);
 	vec2 scissorExtent = vec2(-1,0);
-	
-
-	//bc C++ sucks
-	//TODO(sushi, UiCl) get rid of unions on this so i dont have to do this for copying
-	UIDrawCmd() {}
-	
-	~UIDrawCmd() {
-
-	}
-
-	UIDrawCmd(const UIDrawCmd& cop) {
-		type = cop.type;
-		position = cop.position;
-		dimensions = cop.dimensions;
-		thickness = cop.thickness;
-		text = cop.text;
-		color = cop.color;
-		style = cop.style;
-		scissorExtent = cop.scissorExtent;
-		scissorOffset = cop.scissorOffset;
-	}
-	
-	UIDrawCmd& operator= (const UIDrawCmd& cop) {
-		type = cop.type;
-		position = cop.position;
-		dimensions = cop.dimensions;
-		thickness = cop.thickness;
-		text = cop.text;
-		color = cop.color;
-		style = cop.style;
-		scissorExtent = cop.scissorExtent;
-		scissorOffset = cop.scissorOffset;
-		return *this;
-	}
 
 };
 
@@ -157,6 +123,7 @@ struct UIWindow {
 	UIWindow() {};
 
 	//I have to do this because I'm using an anonymous struct inside a union and C++ sucks
+	//actually i think its literally just cause im using a union, C++ blows 
 	UIWindow(const UIWindow& cop) {
 		name = cop.name;
 		position = cop.position;
@@ -166,11 +133,6 @@ struct UIWindow {
 		drawCmds = cop.drawCmds;
 		hovered = cop.hovered;
 		titleHovered = cop.titleHovered;
-
-	}
-
-	~UIWindow() {
-
 	}
 
 	UIWindow& operator= (const UIWindow& cop) {
@@ -211,6 +173,12 @@ namespace UI {
 	static void Text(string text, vec2 pos);
 	static void Text(string text, Color color);
 	static void Text(string text, vec2 pos, Color color);
+
+	//widgets
+	static bool Button(string text);
+	static bool Button(string text, vec2 pos);
+	static bool Button(string text, Color color);
+	static bool Button(string text, vec2 pos, Color color);
 
 
 	//windows
