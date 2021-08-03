@@ -30,7 +30,7 @@ void Light::ReceiveEvent(Event event) {
 }
 
 std::string Light::SaveTEXT(){
-	return TOSTRING("\n>light"
+	return TOSTDSTRING("\n>light"
 					"\nposition   (",position.x,",",position.y,",",position.z,")"
 					"\ndirection  (",direction.x,",",direction.y,",",direction.z,")"
 					"\nbrightness ", brightness,

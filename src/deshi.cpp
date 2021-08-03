@@ -252,9 +252,7 @@ int main() {
 	TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ",                TIMER_END(t_s), "ms");
 	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
 
-	array<vec3> t{ vec3(1,2,3), vec3(3,2,1), vec3(2,1,3) };
-	t.swap(0, 1);
-	t.swap(1, 2);
+	string s = string::toStr(12.2352459f);
 
 	//init game admin
 	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");

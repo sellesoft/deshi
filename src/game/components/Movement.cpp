@@ -338,7 +338,7 @@ void Movement::Update() {
 }
 
 std::string Movement::SaveTEXT(){
-	return TOSTRING("\n>movement"
+	return TOSTDSTRING("\n>movement"
 					"\nground_accel ", gndAccel,
 					"\nair_accel    ", airAccel,
 					"\njump_impulse ", jumpImpulse,

@@ -333,7 +333,7 @@ void Admin::SaveTEXT(std::string level_name){
     
     //// level file ////
     std::string level_text; level_text.reserve(2048);
-    level_text.append(TOSTRING(">level"
+    level_text.append(TOSTDSTRING(">level"
                                "\nname         \"", level_name, "\""
                                "\nentity_count ", entities.size(),
 							   "\nlast_updated \"", /*DengTime->FormatDateTime("{M}/{d}/{y} {h}:{m}:{s}"),*/ "\""));
@@ -357,7 +357,7 @@ void Admin::SaveTEXT(std::string level_name){
 	level_text.append("\n"
 					  "\n>entities");
 	forI(entities.size()){
-		level_text.append(TOSTRING("\n",i," \"",entities[i]->name,"\""));
+		level_text.append(TOSTDSTRING("\n",i," \"",entities[i]->name,"\""));
 	}
 	
 	//events
@@ -368,7 +368,7 @@ void Admin::SaveTEXT(std::string level_name){
 			if(c->sender.receivers.size() > 0){
 				for(Receiver* r : c->sender.receivers){
 					if(Component* comp = dynamic_cast<Component*>(r)){
-						level_text.append(TOSTRING("\n",e->id," \"",e->name,"\" ",c->type," ",c->event," -> ",
+						level_text.append(TOSTDSTRING("\n",e->id," \"",e->name,"\" ",c->type," ",c->event," -> ",
 												   comp->entity->id," \"",comp->entity->name,"\" ",comp->type));
 					}
 				}
@@ -385,7 +385,7 @@ void Admin::SaveTEXT(std::string level_name){
 	
 	forX(idx, entities.size()){
 		snprintf(entity_idx_str, entity_idx_str_size, "%0*u_", entity_idx_digits, idx);
-		entity_file_name = TOSTRING(entity_idx_str, entities[idx]->name);
+		entity_file_name = TOSTDSTRING(entity_idx_str, entities[idx]->name);
 		
 		std::string entity_text = entities[idx]->SaveTEXT();
 		Assets::writeFile(level_dir + entity_file_name, entity_text.c_str(), entity_text.size());

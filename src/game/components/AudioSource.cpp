@@ -37,7 +37,7 @@ void AudioSource::RequestPlay(float gain, float pitch) {
 ////////////////////////////
 
 std::string AudioSource::SaveTEXT(){
-	return TOSTRING("\n>audio source"
+	return TOSTDSTRING("\n>audio source"
 					"\n");
 }
 

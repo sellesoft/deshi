@@ -158,7 +158,7 @@ void Camera::UpdateProjectionMatrix(){
 }
 
 std::string Camera::str(){
-	return TOSTRING("[c:yellow]Camera Info:[c]",
+	return TOSTDSTRING("[c:yellow]Camera Info:[c]",
 					"\nPosition: ", position,
 					"\nRotation: ", rotation,
 					"\nNear Plane: ", nearZ,
@@ -173,7 +173,7 @@ std::string Camera::str(){
 ////////////////////////////
 
 std::string Camera::SaveTEXT(){
-	return TOSTRING("\n>camera"
+	return TOSTDSTRING("\n>camera"
 					"\nposition (",position.x,",",position.y,",",position.z,")"
 					"\nrotation (",rotation.x,",",rotation.y,",",rotation.z,")"
 					"\nmode     ", mode,

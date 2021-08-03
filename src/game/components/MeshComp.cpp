@@ -83,7 +83,7 @@ void MeshComp::Update() {
 }
 
 std::string MeshComp::SaveTEXT(){
-	return TOSTRING("\n>mesh"
+	return TOSTDSTRING("\n>mesh"
 					"\nid      ", meshID,
 					"\nname    \"", Render::MeshName(meshID) , "\""
 					"\nvisible ", (mesh_visible) ? "true" : "false",

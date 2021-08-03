@@ -16,7 +16,7 @@ AudioListener::AudioListener(Vector3 _position, Vector3 _velocity, Vector3 _orie
 ////////////////////////////
 
 std::string AudioListener::SaveTEXT(){
-	return TOSTRING("\n>audio listener"
+	return TOSTDSTRING("\n>audio listener"
 					"\nposition    (",position.x,",",position.y,",",position.z,")"
 					"\nvelocity    (",velocity.x,",",velocity.y,",",velocity.z,")"
 					"\norientation (",orientation.x,",",orientation.y,",",orientation.z,")"

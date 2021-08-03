@@ -463,7 +463,7 @@ void Console2::Update(){
 				if(ImGui::InputText("##console_input_text", input_buffer, input_max_size, input_text_flags, &TextEditCallback, 0)) {
 					//add input to history
 					std::string input = Utils::eatSpacesLeading(input_buffer);
-					Log(TOSTRING("^c=cyan^/^c^^c=dcyan^\\^c^ ", input));
+					Log(TOSTDSTRING("^c=cyan^/^c^^c=dcyan^\\^c^ ", input));
 					scroll_to_bottom = true;
 					
 					//send input to command system

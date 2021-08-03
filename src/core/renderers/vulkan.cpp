@@ -1437,12 +1437,12 @@ CreateFrames(){
 		//set the frame images to the swap chain images
 		//NOTE the previous image and its memory gets freed when the swapchain gets destroyed
 		frames[i].image = images[i];
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)frames[i].image, TOSTRING("Frame image ", i).c_str());
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE, (u64)frames[i].image, TOSTDSTRING("Frame image ", i).c_str());
 		
 		//create the image views
 		if(frames[i].imageView) vkDestroyImageView(device, frames[i].imageView, nullptr);
 		frames[i].imageView = CreateImageView(frames[i].image, surfaceFormat.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)frames[i].imageView, TOSTRING("Frame imageview ", i).c_str());
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)frames[i].imageView, TOSTDSTRING("Frame imageview ", i).c_str());
 		
 		//create the framebuffers
 		if(frames[i].framebuffer) vkDestroyFramebuffer(device, frames[i].framebuffer, nullptr);
@@ -1462,7 +1462,7 @@ CreateFrames(){
 		info.height          = height;
 		info.layers          = 1;
 		AssertVk(vkCreateFramebuffer(device, &info, allocator, &frames[i].framebuffer), "failed to create framebuffer");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)frames[i].framebuffer, TOSTRING("Frame framebuffer ", i).c_str());
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_FRAMEBUFFER, (u64)frames[i].framebuffer, TOSTDSTRING("Frame framebuffer ", i).c_str());
 		
 		//allocate command buffers
 		if(frames[i].commandBuffer) vkFreeCommandBuffers(device, commandPool, 1, &frames[i].commandBuffer);
@@ -1471,7 +1471,7 @@ CreateFrames(){
 		allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = 1;
 		AssertVk(vkAllocateCommandBuffers(device, &allocInfo, &frames[i].commandBuffer), "failed to allocate command buffer");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)frames[i].commandBuffer, TOSTRING("Frame command buffer ", i).c_str());
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_COMMAND_BUFFER, (u64)frames[i].commandBuffer, TOSTDSTRING("Frame command buffer ", i).c_str());
 	}
 }
 
@@ -2193,7 +2193,7 @@ loadShader(std::string filename, VkShaderStageFlagBits stage){
 	
 	VkShaderModule shaderModule{};
 	AssertVk(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, TOSTRING("Shader ", filename).c_str());
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, TOSTDSTRING("Shader ", filename).c_str());
 	
 	shaderStage.module = shaderModule;
 	shaderModules.push_back(pair<std::string,VkShaderModule>(filename, shaderStage.module));
@@ -2249,7 +2249,7 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
 		
 		VkShaderModule shaderModule{};
 		AssertVk(vkCreateShaderModule(device, &moduleInfo, allocator, &shaderModule), "failed to create shader module");
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, TOSTRING("Shader ", filename).c_str());
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SHADER_MODULE, (u64)shaderModule, TOSTDSTRING("Shader ", filename).c_str());
 		
 		//setup shader stage create info
 		VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
@@ -3403,8 +3403,8 @@ std::string Render::
 SaveMeshTEXT(u32 meshID){
 	std::string result; result.reserve(256);
 	if(meshID < meshes.size()){
-		result.append(TOSTRING("\n",meshes[meshID].id," \"",meshes[meshID].name,"\" ",meshes[meshID].visible," \"", meshes[meshID].primitives[0].materialIndex));
-		for(u32 i=1; i<meshes[meshID].primitives.size(); ++i){ result.append(TOSTRING(" ", meshes[meshID].primitives[i].materialIndex)); }
+		result.append(TOSTDSTRING("\n",meshes[meshID].id," \"",meshes[meshID].name,"\" ",meshes[meshID].visible," \"", meshes[meshID].primitives[0].materialIndex));
+		for(u32 i=1; i<meshes[meshID].primitives.size(); ++i){ result.append(TOSTDSTRING(" ", meshes[meshID].primitives[i].materialIndex)); }
 		result.append("\"");
 	}else{
 		ERROR_LOC("There is no mesh with id: ", meshID);
@@ -3417,7 +3417,7 @@ std::string Render::
 SaveMaterialTEXT(u32 matID){
 	std::string result;
 	if(matID < materials.size()){
-		result = TOSTRING("\n",materials[matID].id," \"",materials[matID].name,"\" ",materials[matID].shader," \"",
+		result = TOSTDSTRING("\n",materials[matID].id," \"",materials[matID].name,"\" ",materials[matID].shader," \"",
 						  textures[materials[matID].albedoID].filename,  "\" \"",
 						  textures[materials[matID].normalID].filename,  "\" \"",
 						  textures[materials[matID].specularID].filename,"\" \"",
@@ -3754,9 +3754,9 @@ LoadTexture(const char* filename, u32 type){
 	tex.imageInfo.imageLayout = tex.layout;
 	
 	//name image, image view, and sampler for debugging
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE,(u64)tex.image, TOSTRING("Texture image ", filename).c_str());
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)tex.view, TOSTRING("Texture imageview ", filename).c_str());
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)tex.sampler, TOSTRING("Texture sampler ", filename).c_str());
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE,(u64)tex.image, TOSTDSTRING("Texture image ", filename).c_str());
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE_VIEW, (u64)tex.view, TOSTDSTRING("Texture imageview ", filename).c_str());
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_SAMPLER, (u64)tex.sampler, TOSTDSTRING("Texture sampler ", filename).c_str());
 	
 	//add the texture to the scene and return its index
 	u32 idx = (u32)textures.size();
@@ -3847,9 +3847,9 @@ ListTextures(){
 	std::string out = "[c:yellow]ID  Filename  Width  Height  Depth  Type[c]\n";
 	for(auto& tex : textures){
 		if(tex.id < 10){
-			out += TOSTRING(" ", tex.id, "  ", tex.filename, "  ", tex.width, "  ", tex.height, "  ", tex.channels, "  ", tex.type, "\n");
+			out += TOSTDSTRING(" ", tex.id, "  ", tex.filename, "  ", tex.width, "  ", tex.height, "  ", tex.channels, "  ", tex.type, "\n");
 		}else{
-			out += TOSTRING(tex.id, "  ", tex.filename, "  ", tex.width, "  ", tex.height, "  ", tex.channels, "  ", tex.type, "\n");
+			out += TOSTDSTRING(tex.id, "  ", tex.filename, "  ", tex.width, "  ", tex.height, "  ", tex.channels, "  ", tex.type, "\n");
 		}
 	}
 	return out;
@@ -3871,7 +3871,7 @@ CreateFont(u32 textureIdx, u32 width, u32 height, u32 char_count) {
 	allocInfo.descriptorSetCount = 1;
 	AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &font.descriptorSet));
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)font.descriptorSet,
-						 TOSTRING("Font descriptor set ",font.id).c_str());
+						 TOSTDSTRING("Font descriptor set ",font.id).c_str());
 	
 	VkWriteDescriptorSet writeDescriptorSet{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 	writeDescriptorSet.dstSet          = font.descriptorSet;
@@ -3914,7 +3914,7 @@ CreateMaterial(const char* name, u32 shader, u32 albedoTextureID, u32 normalText
 	allocInfo.descriptorSetCount = 1;
 	AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &mat.descriptorSet), "failed to allocate materials descriptor sets");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)mat.descriptorSet,
-						 TOSTRING("Material descriptor set ",mat.id,":",mat.name).c_str());
+						 TOSTDSTRING("Material descriptor set ",mat.id,":",mat.name).c_str());
 	
 	VkWriteDescriptorSet writeDescriptorSets[4]{};
 	writeDescriptorSets[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -3969,7 +3969,7 @@ CopyMaterial(u32 materialID){
 	allocInfo.descriptorSetCount = 1;
 	AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &mat.descriptorSet), "failed to allocate materials descriptor sets");
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)mat.descriptorSet,
-						 TOSTRING("Material descriptor set ",mat.id,":",mat.name).c_str());
+						 TOSTDSTRING("Material descriptor set ",mat.id,":",mat.name).c_str());
 	
 	VkWriteDescriptorSet writeDescriptorSets[4]{};
 	writeDescriptorSets[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -4368,7 +4368,7 @@ std::string Render::
 ListMaterials(){
 	std::string result = "[c:yellow]Materials List:\nID\tShader\tAlbedo\tNormal\tSpecular\tLight[c]";
 	for (auto& mat : materials) {
-		result += TOSTRING("\n", mat.id, "\t", ShaderStrings[mat.shader], "\t",
+		result += TOSTDSTRING("\n", mat.id, "\t", ShaderStrings[mat.shader], "\t",
 						   mat.albedoID,   ":", textures[mat.albedoID].filename, "\t",
 						   mat.normalID,   ":", textures[mat.normalID].filename, "\t",
 						   mat.specularID, ":", textures[mat.specularID].filename, "\t",

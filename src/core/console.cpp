@@ -371,7 +371,7 @@ void Console::DrawConsole() {
 		
 		if (s.size() != 0) history.push_back(s);
 		
-		AddLog(TOSTRING("[c:cyan]/[c][c:dcyan]\\[c] ", s)); //print command typed
+		AddLog(TOSTDSTRING("[c:cyan]/[c][c:dcyan]\\[c] ", s)); //print command typed
 		
 		//cut off arguments into their own string
 		std::string args;
@@ -661,7 +661,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 				if (m[1] == EventStrings[i]) { 
 				found = true; event = (u32)i;  break;
 			}
-			if (!found) return TOSTRING("[c:red]Unknown event '", m[1], "'");
+			if (!found) return TOSTDSTRING("[c:red]Unknown event '", m[1], "'");
 		} else {
 			return "[c:red]Invalid parameter: " + *s + "[c]";
 		}
@@ -691,7 +691,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 	admin->CreateEntity({ mc, p, s, col }, name, Transform(pos, rot, scale));
 	
-	return TOSTRING("Loaded mesh ", args[0], " to ID: ", id);
+	return TOSTDSTRING("Loaded mesh ", args[0], " to ID: ", id);
 }CMDEND("load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z) -collider=String{aabb|sphere} -mass=Float -static=Bool");
 
 CMDSTART(spawn_box_uv){
@@ -712,7 +712,7 @@ CMDSTART(spawn_box_uv){
 	MeshComp* mc = new MeshComp(id);
 	admin->CreateEntity({ mc }, "uv_texture_box", Transform(pos, rot, scale));
 	
-	return TOSTRING("Created textured box with id: ", id);
+	return TOSTDSTRING("Created textured box with id: ", id);
 }CMDEND("spawn_box_uv -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 
 CMDSTART(mesh_create){
@@ -741,7 +741,7 @@ CMDSTART(mesh_create){
 	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 	admin->CreateEntity({ mc, p, s });
 	
-	return TOSTRING("Created mesh with id: ", id, " based on mesh: ", meshID);
+	return TOSTDSTRING("Created mesh with id: ", id, " based on mesh: ", meshID);
 }CMDEND("mesh_create <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 
 //mesh_update_matrix, a bit more difficult b/c it should only update the passed arguments
@@ -761,7 +761,7 @@ CMDSTART(mesh_transform_matrix){
 	}
 	
 	Render::TransformMeshMatrix(std::stoi(args[0]), Matrix4::TransformationMatrix(pos, rot, scale));
-	return TOSTRING("Transforming mesh", args[0], "'s matrix");
+	return TOSTDSTRING("Transforming mesh", args[0], "'s matrix");
 }CMDEND("mesh_transform_matrix <meshID:Uint> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 
 CMDSTARTA(cam_vars, args.size() != 0){
@@ -853,7 +853,7 @@ CMDSTARTA(add_player, args.size() > 0) {
 	admin->player = admin->CreateEntityNow({ mc, p, s, col, mov, pl },
 										   name, Transform(position, rotation, scale));
 	admin->controller.playermove = mov;
-	return TOSTRING("Added player.");
+	return TOSTDSTRING("Added player.");
 }CMDEND("load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 
 
@@ -903,7 +903,7 @@ CMDFUNC(listc) {
 CMDSTARTA(help, args.size() != 0 && !(args.size() == 1 && args[0] == "")) {
 	if (DengConsole->commands.find(args[0]) != DengConsole->commands.end()) {
 		Command* c = DengConsole->commands.at(args[0]);
-		return TOSTRING(c->name, "\n", c->description);
+		return TOSTDSTRING(c->name, "\n", c->description);
 	}
 	else {
 		return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
@@ -1057,14 +1057,14 @@ CMDSTARTA(mat_texture, args.size() == 3) {
 	int texType = std::stoi(args[1]);
 	int texID = std::stoi(args[2]);
 	Render::UpdateMaterialTexture(matID, texType, texID);
-	return TOSTRING("Updated material", matID, "'s texture", texType, " to ", texID);
+	return TOSTDSTRING("Updated material", matID, "'s texture", texType, " to ", texID);
 }CMDEND("mat_texture <materialID:Uint> <textureType:Uint> <textureID:Uint>");
 
 CMDSTARTA(mat_shader, args.size() == 2) {
 	int matID = std::stoi(args[0]);
 	int shader = std::stoi(args[1]);
 	Render::UpdateMaterialShader(matID, shader);
-	return TOSTRING("Updated material", matID, "'s shader to ", shader);
+	return TOSTDSTRING("Updated material", matID, "'s shader to ", shader);
 } CMDEND("mat_shader <materialID:Uint> <shaderID:Uint>");
 
 CMDFUNC(mat_list) {
@@ -1084,7 +1084,7 @@ CMDSTARTA(shader_reload, args.size() == 1) {
 }CMDEND("shader_reload <shaderID:Uint>");
 
 CMDFUNC(shader_list) {
-	return TOSTRING("[c:yellow]ID    SHADER          Description[c]\n",
+	return TOSTDSTRING("[c:yellow]ID    SHADER          Description[c]\n",
 					"0    Flat            Vertex color shading without normal/edge smoothing\n",
 					"1    Phong           Vertex color shading with normal smoothing (good with spheres)\n",
 					"2    TwoD            Vertex color shading with 2D position, rotation, and scale\n",
@@ -1100,7 +1100,7 @@ CMDSTARTA(mesh_visible, args.size() == 2) {
 		int meshID = std::stoi(args[0]);
 		bool vis = std::stoi(args[1]);
 		Render::UpdateMeshVisibility(meshID, vis);
-		return TOSTRING("Setting mesh", meshID, "'s visibility to ", vis);
+		return TOSTDSTRING("Setting mesh", meshID, "'s visibility to ", vis);
 	}
 	catch (...) {
 		return "mesh_visible <meshID:Uint> <visible:Bool>";
@@ -1112,14 +1112,14 @@ CMDSTARTA(mesh_batch_material, args.size() == 3) {
 	int batch = std::stoi(args[1]);
 	int mat = std::stoi(args[2]);
 	Render::UpdateMeshBatchMaterial(mesh, batch, mat);
-	return TOSTRING("Changed mesh", mesh, "'s batch", batch, "'s material to ", mat);
+	return TOSTDSTRING("Changed mesh", mesh, "'s batch", batch, "'s material to ", mat);
 } CMDEND("mesh_batch_material <meshID:Uint> <batchID:Uint> <materialID:Uint>");
 
 CMDSTARTA(texture_load, args.size() > 0) {
 	Texture tex(args[0].c_str());
 	if (args.size() == 2) { tex.type = (u32)std::stoi(args[1]); }
 	u32 id = Render::LoadTexture(tex);
-	return TOSTRING("Loaded texture ", args[0], " to ID: ", id);
+	return TOSTDSTRING("Loaded texture ", args[0], " to ID: ", id);
 }CMDEND("texture_load <texture.png:String> [type:Uint]");
 
 CMDFUNC(texture_list) {
@@ -1127,7 +1127,7 @@ CMDFUNC(texture_list) {
 }
 
 CMDFUNC(texture_type_list) {
-	return TOSTRING("[c:yellow]Texture Types: (can be combined)[c]\n"
+	return TOSTDSTRING("[c:yellow]Texture Types: (can be combined)[c]\n"
 					"   0=Albedo, Color, Diffuse\n"
 					"   1=Normal, Bump\n"
 					"   2=Light, Ambient\n"
@@ -1168,7 +1168,7 @@ CMDSTARTA(add_trigger, args.size() > 0) {
 				if (m[1] == EventStrings[i]) {
 				found = true; event = (u32)i;  break;
 			}
-			if (!found) return TOSTRING("[c:red]Unknown event '", m[1], "'");
+			if (!found) return TOSTDSTRING("[c:red]Unknown event '", m[1], "'");
 		}
 		else {
 			return "[c:red]Invalid parameter: " + *s + "[c]";
@@ -1186,7 +1186,7 @@ CMDSTARTA(add_trigger, args.size() > 0) {
 	
 	admin->CreateEntity(te);
 	
-	return TOSTRING("Created trigger");
+	return TOSTDSTRING("Created trigger");
 }CMDEND("add_trigger -shape=[ColliderType] -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)")
 
 void Console::AddCommands(){

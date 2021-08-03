@@ -258,6 +258,22 @@ struct string {
 		return x;
 	}
 
+	static string toStr(int i) {
+		string s;
+		s.size = (int)((floor(log10(i)) + 1) * sizeof(char));
+		s.str = (char*)malloc(s.size + 1);
+		sprintf(s.str, "%d", i);
+		return s;
+	}
+
+	static string toStr(float f) {
+		string s;
+		s.size = snprintf(nullptr, 0, "%f", f);
+		s.str = (char*)malloc(s.size + 1);
+		snprintf(s.str, s.size + 1, "%f", f);
+		return s;
+	}
+
 	friend string operator + (const char* c, string s);
 
 

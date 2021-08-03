@@ -122,7 +122,6 @@ void TextCall(string text, vec2 pos, Color color) {
 	drawCmd.text = text;
 	drawCmd.position = pos;
 	drawCmd.color = color;
-	drawCmd.style = style;
 	drawCmd.scissorOffset = vec2(workingWin.x, workingWin.y + style.titleBarHeight);
 	drawCmd.scissorExtent = vec2(workingWin.width, workingWin.height - style.titleBarHeight);
 
@@ -338,11 +337,11 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 
 	//check for scrolling inputs
 	if (workingWin.canScroll) {
-		if (workingWin.hovered && DengInput->KeyPressedAnyMod(MouseButton::SCROLLDOWN)) {
+		if (workingWin.hovered && DengInput->KeyPressedAnyMod(MouseButton::SCROLLUP)) {
 			workingWin.scy += style.scrollAmount.y;
 			Clamp(workingWin.scy, 0, workingWin.maxScroll.y);
 		}
-		else if (workingWin.hovered && DengInput->KeyPressedAnyMod(MouseButton::SCROLLUP)) {
+		else if (workingWin.hovered && DengInput->KeyPressedAnyMod(MouseButton::SCROLLDOWN)) {
 			workingWin.scy -= style.scrollAmount.y;
 			Clamp(workingWin.scy, 0, workingWin.maxScroll.y);
 		}

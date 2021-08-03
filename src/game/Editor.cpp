@@ -566,7 +566,7 @@ namespace ImGui {
     void DebugDrawGraphFloat(Vector2 pos, float inval, float sizex, float sizey) {
         //display in value
         ImGui::SetCursorPos(ImVec2(pos.x, pos.y - 10));
-        ImGui::TextEx(TOSTRING(inval).c_str());
+        ImGui::TextEx(TOSTDSTRING(inval).c_str());
         
         //how much data we store
         persist int prevstoresize = 100;
@@ -1105,7 +1105,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
     if(ImGui::Button("New Entity")){
         Entity* ent = 0;
-        std::string ent_name = TOSTRING(presets[current_preset], admin->entities.size());
+        std::string ent_name = TOSTDSTRING(presets[current_preset], admin->entities.size());
         switch(current_preset){
             case(0):default:{ //Empty
                 ent = admin->CreateEntityNow({}, ent_name.c_str());
@@ -1136,7 +1136,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
     if(ImGui::BeginChild("##ent_inspector", ImVec2(ImGui::GetWindowWidth() * 0.95f, ImGui::GetWindowHeight() * .9f), true, ImGuiWindowFlags_NoScrollbar)) {
         
         //// name ////
-        SetPadding; ImGui::TextEx(TOSTRING(sel->id, ":").c_str()); 
+        SetPadding; ImGui::TextEx(TOSTDSTRING(sel->id, ":").c_str()); 
         ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); ImGui::InputText("##ent_name_input", sel->name, DESHI_NAME_SIZE, 
 																			   ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
         
@@ -1631,7 +1631,7 @@ inline void MaterialsTab(Admin* admin){
     //// create new material ImGui::Button ////
     ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
     if(ImGui::Button("Create New Material", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
-        selected_mat = Render::CreateMaterial(TOSTRING("material", Render::MaterialCount()).c_str(), Shader_PBR);
+        selected_mat = Render::CreateMaterial(TOSTDSTRING("material", Render::MaterialCount()).c_str(), Shader_PBR);
     }
     
     ImGui::Separator();
@@ -1970,15 +1970,15 @@ void Editor::DebugBar() {
     if (ImGui::BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)) {
         
         //precalc strings and stuff so we can set column widths appropriately
-        std::string str1 = TOSTRING("wents: ", admin->entities.size());
+        std::string str1 = TOSTDSTRING("wents: ", admin->entities.size());
         float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-        std::string str2 = TOSTRING("wtris: ", Render::GetStats()->totalTriangles);
+        std::string str2 = TOSTDSTRING("wtris: ", Render::GetStats()->totalTriangles);
         float strlen2 = (fontsize - (fontsize / 2)) * str2.size();
-        std::string str3 = TOSTRING("wverts: ",Render::GetStats()->totalVertices);
+        std::string str3 = TOSTDSTRING("wverts: ",Render::GetStats()->totalVertices);
         float strlen3 = (fontsize - (fontsize / 2)) * str3.size();
-        std::string str4 = TOSTRING("stris: ", "0");
+        std::string str4 = TOSTDSTRING("stris: ", "0");
         float strlen4 = (fontsize - (fontsize / 2)) * str4.size();
-        std::string str5 = TOSTRING("sverts: ", "0");
+        std::string str5 = TOSTDSTRING("sverts: ", "0");
         float strlen5 = (fontsize - (fontsize / 2)) * str5.size();
         
         ImGui::TableSetupColumn("FPS",            ImGuiTableColumnFlags_WidthFixed, 64);
@@ -1999,13 +1999,13 @@ void Editor::DebugBar() {
             //actually not necessary anymore but im going to keep it cause 
             //it keeps the numbers right aligned
             if (FPS % 1000 == FPS) {
-                ImGui::TextEx(TOSTRING("FPS:  ", FPS).c_str());
+                ImGui::TextEx(TOSTDSTRING("FPS:  ", FPS).c_str());
             }
             else if (FPS % 100 == FPS) {
-                ImGui::TextEx(TOSTRING("FPS:   ", FPS).c_str());
+                ImGui::TextEx(TOSTDSTRING("FPS:   ", FPS).c_str());
             }
             else {
-                ImGui::TextEx(TOSTRING("FPS: ", FPS).c_str());
+                ImGui::TextEx(TOSTDSTRING("FPS: ", FPS).c_str());
             }
             
         }
@@ -2121,7 +2121,7 @@ void Editor::DebugBar() {
                 
                 std::string str6;
                 if(DengConsole->alert_count > 1) {
-                    str6 = TOSTRING("(",DengConsole->alert_count,") ",DengConsole->alert_message);
+                    str6 = TOSTDSTRING("(",DengConsole->alert_count,") ",DengConsole->alert_message);
                 }else{
                     str6 = DengConsole->alert_message;
                 }

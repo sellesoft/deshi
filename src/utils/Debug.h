@@ -6,11 +6,14 @@
 
 #include <string>
 
+#include "string.h"
+
 //std::cout short form
 #define PRINTLN(x) std::cout << x << std::endl;
 
 #define __FILENAME__ (std::strrchr(__FILE__, '\\') ? std::strrchr(__FILE__, '\\') + 1 : __FILE__)
 
+#define TOSTDSTRING(...) ToStdString(__VA_ARGS__)
 #define TOSTRING(...) ToString(__VA_ARGS__)
 
 //makes a random number only once and then always returns that same number
@@ -34,23 +37,43 @@ struct has_str_method {
 //// Primarily for outputting to ingame console, but can return a string from any object that is a c++ number
 //// or any of our classes (or yours :) ) that has a .str() member
 
-static std::string ToString(const char* str) { return std::string(str); }
-static std::string ToString(char* str)       { return std::string(str); }
+static std::string ToStdString(const char* str) { return std::string(str); }
+static std::string ToStdString(char* str)       { return std::string(str); }
 
-static std::string ToString(const std::string& str) { return str; }
+static std::string ToStdString(const std::string& str) { return str; }
 
 template<class T, typename std::enable_if<!has_str_method<T>::value, bool>::type = true>
-static std::string ToString(T t) { return ToString(std::to_string(t)); }
+static std::string ToStdString(T t) { return ToStdString(std::to_string(t)); }
 
 template<class T, typename std::enable_if<has_str_method<T>::value, bool>::type = true>
-static std::string ToString(T t) { return ToString(t.str()); }
+static std::string ToStdString(T t) { return ToStdString(t.str()); }
 
 template<class... T>
-static std::string ToString(T... args) { 
-	std::string strings[] = { "", (ToString(std::forward<T>(args))) ... };
+static std::string ToStdString(T... args) { 
+	std::string strings[] = { "", (ToStdString(std::forward<T>(args))) ... };
 	std::string str = "";
 	for (std::string s : strings) { str += s; }
 	
+	return str;
+}
+
+static string ToString(const char* str) { return string(str); }
+static string ToString(char* str) { return string(str); }
+
+static string ToString(const string& str) { return str; }
+
+template<class T, typename std::enable_if<!has_str_method<T>::value, bool>::type = true>
+static string ToString(T t) { return ToString(string::toStr(t)); }
+
+template<class T, typename std::enable_if<has_str_method<T>::value, bool>::type = true>
+static string ToString(T t) { return ToString(t.str()); }
+
+template<class... T>
+static std::string ToString(T... args) {
+	string strings[] = { "", (ToString(std::forward<T>(args))) ... };
+	string str = "";
+	for (std::string s : strings) { str += s; }
+
 	return str;
 }
 

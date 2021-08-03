@@ -331,7 +331,7 @@ std::string Window::str(){
 		case(CursorMode::FIRSTPERSON): { cursMode = "First Person"; }break;
 		case(CursorMode::HIDDEN):      { cursMode = "Hidden"; }break;
 	}
-	return TOSTRING("Window Info"
+	return TOSTDSTRING("Window Info"
 					"\n    Window Position: ", x, ",", y,
 					"\n    Window Dimensions: ", width, "x", height,
 					"\n    Screen Dimensions: ", screenWidth, "x", screenHeight,
