@@ -43,6 +43,7 @@ static const UIStyleVarType uiStyleVarTypes[] = {
 	{1, offsetof(UIStyle, windowBorderSize)},
 	{1, offsetof(UIStyle, titleBarHeight)},
 	{2, offsetof(UIStyle, titleTextAlign)},
+	{2, offsetof(UIStyle, scrollAmount)}
 };
 
 //this variable defines the space the user is working in when calling UI functions
@@ -134,9 +135,9 @@ inline void WrapText(string text, vec2 pos, Color color, bool move_cursor = true
 	vec2 workcur = pos;
 
 	//apply window padding if we're not manually positioning text
-	if (move_cursor) {
-		workcur += style.windowPadding;
-	}
+	if (move_cursor) 
+		workcur += style.windowPadding + workingWin.scroll;
+	
 
 	//work out where we're going to draw the text and how much to advance the cursor by
 	vec2 textSize = CalcTextSize(text);
@@ -180,7 +181,7 @@ inline void WrapText(string text, vec2 pos, Color color, bool move_cursor = true
 	}
 
 	if (move_cursor) {
-		workcur -= style.windowPadding;
+		workcur -= style.windowPadding + workingWin.scroll;
 		workingWin.cursor = workcur;
 	}
 }
@@ -189,11 +190,12 @@ inline void WrapText(string text, vec2 pos, Color color, bool move_cursor = true
 void UI::Text(string text, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
 		TextCall(text, workingWin.position + workingWin.cursor + style.windowPadding, style.colors[UIStyleCol_Text]);
-		workingWin.cursor.y += style.font->height + 1;
+		workingWin.cury += style.font->height + 1;
 	}
 	else {
 		//we check for \n here and call WrapText on each as if they were separate text calls
 		//i could probably do this in wrap text, but i decided to do it here for now
+
 		size_t newline = text.find_first_of('\n');
 		if (newline != string::npos && newline != text.size - 1) {
 			string remainder = text.substr(newline + 1);
@@ -239,7 +241,7 @@ void UI::Text(string text, vec2 pos, UITextFlags flags) {
 void UI::Text(string text, Color color, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
 		TextCall(text, workingWin.position + workingWin.cursor + style.windowPadding, color);
-		workingWin.cursor.y += style.font->height + 1;
+		workingWin.cury += style.font->height + 1;
 	}
 	else {
 		size_t newline = text.find_first_of('\n');
@@ -287,7 +289,9 @@ void UI::Text(string text, vec2 pos, Color color, UITextFlags flags) {
 
 //Windows
 
-
+//begins a window with a name, position, and dimensions along with some optional flags
+//if begin window is called with a name that was already called before it will work with
+//the data that window previously had
 void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
 	//save previous window on stack
 	windowStack.add(workingWin); //6 inst then 188 on frame 2
@@ -332,6 +336,19 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 		}
 	}
 
+	//check for scrolling inputs
+	if (workingWin.canScroll) {
+		if (workingWin.hovered && DengInput->KeyPressedAnyMod(MouseButton::SCROLLDOWN)) {
+			workingWin.scy += style.scrollAmount.y;
+			Clamp(workingWin.scy, 0, workingWin.maxScroll.y);
+		}
+		else if (workingWin.hovered && DengInput->KeyPressedAnyMod(MouseButton::SCROLLUP)) {
+			workingWin.scy -= style.scrollAmount.y;
+			Clamp(workingWin.scy, 0, workingWin.maxScroll.y);
+		}
+	} else workingWin.scroll = vec2::ZERO;
+
+
 	//if the window isn't invisible draw things that havent been disabled
 	if ((flags & UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
 		
@@ -342,7 +359,6 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			drawCmd.  position = workingWin.position;
 			drawCmd.dimensions = workingWin.dimensions;
 			drawCmd.     color = style.colors[UIStyleCol_WindowBg];
-			drawCmd.     style = style;
 
 
 			workingWin.drawCmds.add(drawCmd); //inst 35
@@ -355,7 +371,6 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			drawCmd.  position = workingWin.position;
 			drawCmd.dimensions = vec2{ workingWin.width, style.titleBarHeight };
 			drawCmd.     color = style.colors[UIStyleCol_TitleBg];
-			drawCmd.     style = style;
 
 			workingWin.drawCmds.add(drawCmd); //inst 44
 
@@ -369,7 +384,6 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 						workingWin.x + (workingWin.width - name.size * style.font->width) * style.titleTextAlign.x,
 						workingWin.y + (style.titleBarHeight - style.font->height) * style.titleTextAlign.y);
 				drawCmd.color = Color::WHITE;
-				drawCmd.style = style;
 
 				//TODO(sushi, Ui) add title text coloring
 
@@ -384,7 +398,6 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			UIDrawCmd drawCmd; //inst 58
 			drawCmd.type = UIDrawType_Rectangle;
 			drawCmd.color = style.colors[UIStyleCol_Border];
-			drawCmd.style = style;
 
 			//left
 			drawCmd.  position = vec2{ workingWin.x - style.windowBorderSize, workingWin.y };
@@ -412,6 +425,18 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 
 void UI::EndWindow() {
 	Assert(windowStack.size() > 1, "Attempted to end the base window");
+	
+	//check to see if the elements we have drawn so far have gone beyond the window's size
+	//and allow scrolling if it did, as well as define a max scrolling amount
+	if (workingWin.cury > workingWin.height) {
+		workingWin.canScroll = 1;
+		workingWin.maxScroll.y = workingWin.cury - workingWin.height;
+	}
+	else {
+		workingWin.canScroll = 0;
+		workingWin.maxScroll.y = 0;
+	}
+
 	//update stored window with new window state
 	//NOTE: I'm not sure if I want to keep doing this like this
 	//      or just make workingWin a pointer to a window in the list
@@ -425,6 +450,33 @@ bool UI::IsWinHovered() {
 	return workingWin.hovered;
 }
 
+//"injects" draw calls onto a window to have it show debug information pertaining to itself
+//if i dont do it now, this should eventually position the debug window to the left or right of it
+//according to how close it is to either side of the screen
+void UI::ShowDebugWindowOf(string name) {
+	UIWindow* debugee = &windows[name];
+	UIWindow staging;
+	
+	//save old working win for restoration later
+	UIWindow old = workingWin;
+	workingWin = staging;
+
+
+	{//draw background of debug window
+		UIDrawCmd drawCmd{ UIDrawType_Rectangle };
+		drawCmd.position = debugee->position;
+		drawCmd.position.x += debugee->width + 10;
+		drawCmd.dimensions = debugee->dimensions;
+		drawCmd.color = Color::BLACK;
+		staging.drawCmds.add(drawCmd);
+	}
+
+	{//draw debug info
+		//Text()
+	}
+
+
+}
 
 //Push/Pop functions
 void UI::PushColor(UIStyleCol idx, Color color) {
@@ -528,7 +580,9 @@ void UI::Init() {
 	PushVar(UIStyleVar_WindowBorderSize, 1);
 	PushVar(UIStyleVar_TitleBarHeight, style.font->height * 1.5);
 	PushVar(UIStyleVar_TitleTextAlign, vec2(0, 0.5));
-	PushVar(UIStyleVar_WindowPadding, vec2(10, 10));
+	PushVar(UIStyleVar_WindowPadding,  vec2(10, 10));
+	PushVar(UIStyleVar_ItemSpacing,    vec2(1, 1));
+	PushVar(UIStyleVar_ScrollAmount,   vec2(5, 5));
 
 	initColorStackSize = colorStack.size();
 	initStyleStackSize = varStack.size();

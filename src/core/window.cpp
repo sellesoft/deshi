@@ -11,6 +11,7 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	if(!glfwInit()){ return; }
 	
 	//TODO(delle,Wi) maybe we should not allow the window to be resizable in-game, but in-engine is fine
+	//i think its fine if its resizable in windowed mode during gameplay, i dont see any reason not to allow that
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
@@ -23,10 +24,12 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 #endif //DESHI_MAC
 #endif //DESHI_OPENGL
 	
-	window = glfwCreateWindow(width, height, "deshi", NULL, NULL);
+	window  = glfwCreateWindow(width, height, "deshi", NULL, NULL);
 	monitor = glfwGetPrimaryMonitor();
-	if(!window) { glfwTerminate(); return; }
+	cursor  = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+	if(!window)  { glfwTerminate(); return; }
 	if(!monitor) { glfwTerminate(); return; }
+	if(!cursor)  { glfwTerminate(); return; }
 	
 	//load and set icon
 	GLFWimage icon; int icon_channels;
@@ -37,6 +40,9 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 		PRINTLN("Failed to load texture: deshi_icon.png; Using default window icon");
 	}
 	
+	//set window's cursor
+	glfwSetCursor(window, cursor);
+
 	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 	int xpos, ypos;
 	glfwGetWindowPos(window, &xpos, &ypos);
@@ -191,6 +197,7 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	glfwSetCursorEnterCallback(window, 
 							   [](GLFWwindow* w, int entered)->void{
 								   DengInput->keyFocus = entered;
+								   glfwSetCursor(w, g_window->cursor);
 							   });
 	
 	//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -207,10 +214,13 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 								   });
 }//Init
 
+
 void Window::Update() {
 	glfwGetWindowPos(window, &_x, &_y);
 	x = _x; y = _y;
 	
+	
+
 	resized = false;
 	if(_resized) {
 		resized = true;
@@ -230,6 +240,8 @@ void Window::Update() {
 	
 	glfwGetCursorPos(window, &DengInput->mouseX, &DengInput->mouseY);
 	if(cursorMode == CursorMode::FIRSTPERSON){ glfwSetCursorPos(window, width/2, height/2); }
+
+	
 }
 
 void Window::Cleanup(){

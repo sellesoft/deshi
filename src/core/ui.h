@@ -12,12 +12,13 @@
 
 
 enum UIStyleVar : u32 {
-	UIStyleVar_WindowPadding,
-	UIStyleVar_ItemSpacing,
-	UIStyleVar_WindowBorderSize,
-	UIStyleVar_TitleBarHeight,
-	UIStyleVar_TitleTextAlign,   //how title text is aligned in title bar, default vec2(0, 0.5)
-	UIStyleVar_Font,
+	UIStyleVar_WindowPadding,	 // default vec2(10, 10)      spacing between every item and the edges of the window
+	UIStyleVar_ItemSpacing,      // default vec2(1, 1)	      spacing between items within a window
+	UIStyleVar_WindowBorderSize, // default 1                 border size in pixels                
+	UIStyleVar_TitleBarHeight,	 // default font.height * 1.5                                        
+	UIStyleVar_TitleTextAlign,   // default vec2(0, 0.5)	  how title text is aligned in title bar 
+	UIStyleVar_ScrollAmount,     // default vec2(5, 5)		  amount to scroll in pixels             
+	UIStyleVar_Font,			 // default "gohufont-11.bdf" currently not changable, as we dont support loading multiple fonts yet
 	UIStyleVar_COUNT
 };
 
@@ -39,6 +40,7 @@ struct UIStyle {
 	float windowBorderSize;
 	float titleBarHeight;
 	vec2  titleTextAlign;
+	vec2  scrollAmount;
 	Font* font; //this is a pointer until I fix font to not store so much shit
 	Color colors[UIStyleCol_COUNT];
 } style;
@@ -46,6 +48,7 @@ struct UIStyle {
 enum UITextFlags_ {
 	UITextFlags_None = 0,
 	UITextFlags_NoWrap = 1 << 0,
+	//UITextFlags_PositionAbsolute = 
 }; typedef u32 UITextFlags;
 
 enum UIWindowFlags_ {
@@ -88,8 +91,6 @@ struct UIDrawCmd {
 	//for use by text draw call
 	string text;
 
-	UIStyle style;
-
 	vec2 scissorOffset = vec2(0, 0);
 	vec2 scissorExtent = vec2(-1,0);
 
@@ -115,10 +116,26 @@ struct UIWindow {
 		};
 	};
 
+	union {
+		vec2 scroll;
+		struct {
+			float scx;
+			float scy;
+		};
+	};
+
+	vec2 maxScroll;
+
 	//interior window cursor that's relative to its upper left corner
 	//if the window has a titlebar then the cursor's origin does not include the title bar
 	//TODO(sushi, Ui) maybe make a window flag to change this
-	vec2 cursor;
+	union {
+		vec2 cursor;
+		struct {
+			float curx;
+			float cury;
+		};
+	};
 
 	UIWindowFlags flags;
 
@@ -126,6 +143,12 @@ struct UIWindow {
 
 	bool hovered = false;
 	bool titleHovered = false;
+
+	//set whenever a window's elements goes out of it's bounds
+	//with my current set up, this will only be set once elements go out of bounds for that
+	//frame, so there will be a 1 frame lag between not being able to scroll and being able to scroll I think
+	//idk if this is significant or not
+	bool canScroll = false; 
 		    
 	UIWindow() {};
 
@@ -135,6 +158,7 @@ struct UIWindow {
 		name = cop.name;
 		position = cop.position;
 		dimensions = cop.dimensions;
+		scroll = cop.scroll;
 		cursor = cop.cursor;
 		flags = cop.flags;
 		drawCmds = cop.drawCmds;
@@ -143,13 +167,12 @@ struct UIWindow {
 	}
 
 	UIWindow& operator= (const UIWindow& cop) {
-		//name.~string();
 		name = cop.name; //inst 136
 		position = cop.position;
 		dimensions = cop.dimensions;
+		scroll = cop.scroll;
 		cursor = cop.cursor;
 		flags = cop.flags;
-		//drawCmds.~array();
 		drawCmds = cop.drawCmds; //inst 139, 142, 145, 148, 151, 154, 157, 160 valid
 		hovered = cop.hovered;
 		titleHovered = cop.titleHovered;
@@ -192,6 +215,7 @@ namespace UI {
 	static void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	static void EndWindow();
 	static bool IsWinHovered();
+	static void ShowDebugWindowOf(string name);
 
 	//push/pop functions
 	static void PushColor(UIStyleCol idx, Color color);

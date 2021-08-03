@@ -277,18 +277,23 @@ int main() {
 		{//debugging area
 			//setTrack();
 			UI::PushVar(UIStyleVar_TitleTextAlign, vec2(0.01, 0.5));
-			UI::PushVar(UIStyleVar_ItemSpacing, vec2(10, 10));
 			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
 			
 			string tosend = "";
 			for (int i = 32; i < 191 + 32; i++) {
 				tosend += (char)i;
+				//tosend += '\n';
 			}
 			
 			UI::Text(tosend);
+			
+			for (int i = 0; i < 100; i++) {
+				UI::Text("wow");
+			}
 
+			
 			UI::EndWindow();
-			UI::PopVar(2);
+			UI::PopVar();
 		}
     	time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

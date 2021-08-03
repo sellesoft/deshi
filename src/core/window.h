@@ -10,6 +10,7 @@
 struct Input;
 struct GLFWwindow;
 struct GLFWmonitor;
+struct GLFWcursor;
 
 enum struct DisplayMode{
 	WINDOWED, BORDERLESS /*borderless windowed*/, FULLSCREEN
@@ -21,8 +22,9 @@ enum struct CursorMode{
 
 //TODO(delle,Wi) add window title updating
 struct Window{
-	GLFWwindow* window;
+	GLFWwindow*  window;
 	GLFWmonitor* monitor;
+	GLFWcursor*  cursor;
 	
 	s32 x, y;
 	s32 width, height;
