@@ -499,7 +499,7 @@ namespace ImGui {
     void DebugDrawGraphFloat(Vector2 pos, float inval, float sizex, float sizey){
         //display in value
         ImGui::SetCursorPos(ImVec2(pos.x, pos.y - 10));
-        ImGui::TextEx(TOSTRING(inval).c_str());
+        ImGui::TextEx(TOSTDSTRING(inval).c_str());
         
         //how much data we store
         persist int prevstoresize = 100;
@@ -1099,7 +1099,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 	ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
 	if(ImGui::Button("New Entity")){
 		Entity* ent = 0;
-		std::string ent_name = TOSTRING(presets[current_preset], admin->entities.size());
+		std::string ent_name = TOSTDSTRING(presets[current_preset], admin->entities.size());
 		switch(current_preset){
 			case(0):default:{ //Empty
 				ent = admin->CreateEntityNow({}, ent_name.c_str());
@@ -1114,23 +1114,23 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 			}break;
 		}
 		
-		selected.clear();
-		if(ent) selected.push_back(ent);
-	}
-	ImGui::SameLine(); ImGui::Combo("##preset_combo", &current_preset, presets, ArrayCount(presets));
-	
-	ImGui::Separator();
-	
-	//// selected entity inspector panel ////
-	Entity* sel = admin->editor.selected.size() ? admin->editor.selected[0] : 0;
-	if(!sel) return;
-	ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 5.0f);
-	ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
-	if(ImGui::BeginChild("##ent_inspector", ImVec2(ImGui::GetWindowWidth() * 0.95f, ImGui::GetWindowHeight() * .9f), true, ImGuiWindowFlags_NoScrollbar)){
-		
-		//// name ////
-		SetPadding; ImGui::TextEx(TOSTRING(sel->id, ":").c_str()); 
-		ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); ImGui::InputText("##ent_name_input", sel->name, DESHI_NAME_SIZE, 
+        selected.clear();
+        if(ent) selected.push_back(ent);
+    }
+    ImGui::SameLine(); ImGui::Combo("##preset_combo", &current_preset, presets, ArrayCount(presets));
+    
+    ImGui::Separator();
+    
+    //// selected entity inspector panel ////
+    Entity* sel = admin->editor.selected.size() ? admin->editor.selected[0] : 0;
+    if(!sel) return;
+    ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 5.0f);
+    ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025);
+    if(ImGui::BeginChild("##ent_inspector", ImVec2(ImGui::GetWindowWidth() * 0.95f, ImGui::GetWindowHeight() * .9f), true, ImGuiWindowFlags_NoScrollbar)) {
+        
+        //// name ////
+        SetPadding; ImGui::TextEx(TOSTDSTRING(sel->id, ":").c_str()); 
+        ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); ImGui::InputText("##ent_name_input", sel->name, DESHI_NAME_SIZE, 
 																			   ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
 		
 		//// transform ////
@@ -1680,7 +1680,7 @@ inline void MeshesTab(Admin* admin){
 										  "\nIndex    Count: ",selected->indexCount,
 										  "\nTriangle Count: ",selected->triangleCount,
 										  "\nFace     Count: ",selected->faceCount,
-										  "\nPlanar Vertex Count: ",planar_vertex_count).c_str());
+										  "\nPlanar Vertex Count: ",planar_vertex_count).str);
 		ImGui::TextEx("Draw Scale"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
 		ImGui::InputFloat("##mi_scale", &scale, 0, 0);
 		ImGui::TextEx("Normal Scale"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
@@ -1770,7 +1770,7 @@ inline void MeshesTab(Admin* admin){
 		if(sel_vertex_idx != -1){
 			Mesh::Vertex* sel_vertex = &selected->vertexes[sel_vertex_idx];
 			Render::DrawBoxFilled(Matrix4::TransformationMatrix(sel_vertex->pos*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), selected_color);
-			if(vertex_indexes) ImGui::DebugDrawText3(TOSTRING("V",sel_vertex_idx).c_str(), sel_vertex->pos*scale, text_color, vec2{-5,-5});
+			if(vertex_indexes) ImGui::DebugDrawText3(TOSTRING("V",sel_vertex_idx).str, sel_vertex->pos*scale, text_color, vec2{-5,-5});
 			if(vertex_normals) Render::DrawLine(sel_vertex->pos*scale, sel_vertex->pos*scale + sel_vertex->normal*normal_scale, selected_color);
 		}
 		if(vertex_all){
@@ -1778,7 +1778,7 @@ inline void MeshesTab(Admin* admin){
 				if(i == sel_vertex_idx) continue;
 				Mesh::Vertex* sel_vertex = &selected->vertexes[i];
 				if(vertex_draw) Render::DrawBoxFilled(Matrix4::TransformationMatrix(sel_vertex->pos*scale, vec3::ZERO, vec3{.03f,.03f,.03f}), vertex_color);
-				if(vertex_indexes) ImGui::DebugDrawText3(TOSTRING("V",i).c_str(), sel_vertex->pos, text_color, vec2{-5,-5});
+				if(vertex_indexes) ImGui::DebugDrawText3(TOSTRING("V",i).str, sel_vertex->pos, text_color, vec2{-5,-5});
 				if(vertex_normals) Render::DrawLine(sel_vertex->pos*scale, sel_vertex->pos*scale + sel_vertex->normal*normal_scale, vertex_color);
 			}
 		}
@@ -1788,16 +1788,16 @@ inline void MeshesTab(Admin* admin){
 			Mesh::Triangle* sel_triangle = &selected->triangles[sel_triangle_idx];
 			vec3 tri_center = Geometry::MeshTriangleMidpoint(sel_triangle)*scale;
 			Render::DrawTriangleFilled(sel_triangle->p[0]*scale, sel_triangle->p[1]*scale, sel_triangle->p[2]*scale, selected_color);
-			if(triangle_indexes) ImGui::DebugDrawText3(TOSTRING("T",sel_triangle_idx).c_str(), tri_center, text_color, vec2{-5,-5});
+			if(triangle_indexes) ImGui::DebugDrawText3(TOSTRING("T",sel_triangle_idx).str, tri_center, text_color, vec2{-5,-5});
 			if(triangle_centers) Render::DrawBoxFilled(Matrix4::TransformationMatrix(tri_center, vec3::ZERO, vec3{.05f,.05f,.05f}), selected_color);
 			if(triangle_normals) Render::DrawLine(tri_center, tri_center + sel_triangle->normal*normal_scale, selected_color);
 			forX(tni, sel_triangle->neighbors.count){
 				Mesh::Triangle* tri_nei = &selected->triangles[sel_triangle->neighbors[tni]];
-				if(trinei_indexes) ImGui::DebugDrawText3(TOSTRING("TN",tni).c_str(), Geometry::MeshTriangleMidpoint(tri_nei)*scale, text_color, vec2{-5,-5});
+				if(trinei_indexes) ImGui::DebugDrawText3(TOSTRING("TN",tni).str, Geometry::MeshTriangleMidpoint(tri_nei)*scale, text_color, vec2{-5,-5});
 				if(triangle_neighbors) Render::DrawTriangleFilled(tri_nei->p[0]*scale, tri_nei->p[1]*scale, tri_nei->p[2]*scale, neighbor_color);
 				int e0 = (sel_triangle->edges[tni] == 0) ? 0 : (sel_triangle->edges[tni] == 1) ? 1 : 2; 
 				int e1 = (sel_triangle->edges[tni] == 0) ? 1 : (sel_triangle->edges[tni] == 1) ? 2 : 0;
-				if(triedge_indexes) ImGui::DebugDrawText3(TOSTRING("TE",sel_triangle->edges[tni]).c_str(), Math::LineMidpoint(sel_triangle->p[e0], sel_triangle->p[e1])*scale, text_color, vec2{-5,-5});
+				if(triedge_indexes) ImGui::DebugDrawText3(TOSTRING("TE",sel_triangle->edges[tni]).str, Math::LineMidpoint(sel_triangle->p[e0], sel_triangle->p[e1])*scale, text_color, vec2{-5,-5});
 			}
 		}
 		if(triangle_all){
@@ -1806,7 +1806,7 @@ inline void MeshesTab(Admin* admin){
 				Mesh::Triangle* sel_triangle = &selected->triangles[i];
 				vec3 tri_center = Geometry::MeshTriangleMidpoint(sel_triangle)*scale;
 				if(triangle_draw) Render::DrawTriangle(sel_triangle->p[0]*scale, sel_triangle->p[1]*scale, sel_triangle->p[2]*scale, triangle_color);
-				if(triangle_indexes) ImGui::DebugDrawText3(TOSTRING("T",i).c_str(), tri_center, text_color, vec2{-5,-5});
+				if(triangle_indexes) ImGui::DebugDrawText3(TOSTRING("T",i).str, tri_center, text_color, vec2{-5,-5});
 				if(triangle_centers) Render::DrawBoxFilled(Matrix4::TransformationMatrix(tri_center, vec3::ZERO, vec3{.03f,.03f,.03f}), triangle_color);
 				if(triangle_normals) Render::DrawLine(tri_center, tri_center + sel_triangle->normal*normal_scale, triangle_color);
 			}
@@ -1815,29 +1815,29 @@ inline void MeshesTab(Admin* admin){
 		//// faces ////
 		if(sel_face_idx != -1){
 			Mesh::Face* sel_face = &selected->faces[sel_face_idx];
-			if(face_indexes) ImGui::DebugDrawText3(TOSTRING("F",sel_face_idx).c_str(), sel_face->center*scale, text_color, vec2{-5,-5});
+			if(face_indexes) ImGui::DebugDrawText3(TOSTRING("F",sel_face_idx).str, sel_face->center*scale, text_color, vec2{-5,-5});
 			if(face_centers) Render::DrawBoxFilled(Matrix4::TransformationMatrix(sel_face->center*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), selected_color);
 			if(face_normals) Render::DrawLine(sel_face->center*scale, sel_face->center*scale + sel_face->normal*normal_scale, selected_color);
 			forX(fvi, sel_face->vertexCount){
 				MeshVertex* fv = &selected->vertexes[sel_face->vertexes[fvi]];
 				if(face_vertexes) Render::DrawBoxFilled(Matrix4::TransformationMatrix(fv->pos*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), edge_color);
-				if(face_vertex_indexes) ImGui::DebugDrawText3(TOSTRING("FV",fvi).c_str(), fv->pos*scale, text_color, vec2{-5,-5});
+				if(face_vertex_indexes) ImGui::DebugDrawText3(TOSTRING("FV",fvi).str, fv->pos*scale, text_color, vec2{-5,-5});
 			}
 			forX(fvi, sel_face->outerVertexCount){
 				MeshVertex* fv = &selected->vertexes[sel_face->outerVertexes[fvi]];
 				if(face_outer_vertexes) Render::DrawBoxFilled(Matrix4::TransformationMatrix(fv->pos*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), edge_color);
-				if(face_outvertex_indexes) ImGui::DebugDrawText3(TOSTRING("FOV",fvi).c_str(), fv->pos*scale, text_color, vec2{-5,-5});
+				if(face_outvertex_indexes) ImGui::DebugDrawText3(TOSTRING("FOV",fvi).str, fv->pos*scale, text_color, vec2{-5,-5});
 			}
 			forX(fti, sel_face->triangleCount){
 				MeshTriangle* ft = &selected->triangles[sel_face->triangles[fti]];
 				Render::DrawTriangleFilled(ft->p[0]*scale, ft->p[1]*scale, ft->p[2]*scale, selected_color);
 				if(face_triangles) Render::DrawTriangle(ft->p[0]*scale, ft->p[1]*scale, ft->p[2]*scale, text_color);
-				if(face_triangle_indexes) ImGui::DebugDrawText3(TOSTRING("FT",fti).c_str(), Geometry::MeshTriangleMidpoint(ft)*scale, text_color, vec2{-5,-5});
+				if(face_triangle_indexes) ImGui::DebugDrawText3(TOSTRING("FT",fti).str, Geometry::MeshTriangleMidpoint(ft)*scale, text_color, vec2{-5,-5});
 			}
 			forX(fnti, sel_face->neighborTriangleCount){
 				MeshTriangle* ft = &selected->triangles[sel_face->triangleNeighbors[fnti]];
 				if(face_tri_neighbors) Render::DrawTriangleFilled(ft->p[0]*scale, ft->p[1]*scale, ft->p[2]*scale, neighbor_color);
-				if(face_trinei_indexes) ImGui::DebugDrawText3(TOSTRING("FTN",fnti).c_str(), Geometry::MeshTriangleMidpoint(ft)*scale, text_color, vec2{-5,-5});
+				if(face_trinei_indexes) ImGui::DebugDrawText3(TOSTRING("FTN",fnti).str, Geometry::MeshTriangleMidpoint(ft)*scale, text_color, vec2{-5,-5});
 			}
 			forX(fnfi, sel_face->neighborFaceCount){
 				MeshFace* ff = &selected->faces[sel_face->faceNeighbors[fnfi]];
@@ -1847,7 +1847,7 @@ inline void MeshesTab(Admin* admin){
 						Render::DrawTriangleFilled(fft->p[0]*scale, fft->p[1]*scale, fft->p[2]*scale, edge_color);
 					}
 				}
-				if(face_facenei_indexes) ImGui::DebugDrawText3(TOSTRING("FFN",fnfi).c_str(), ff->center*scale, text_color, vec2{-5,-5});
+				if(face_facenei_indexes) ImGui::DebugDrawText3(TOSTRING("FFN",fnfi).str, ff->center*scale, text_color, vec2{-5,-5});
 			}
 		}
 		if(face_all){
@@ -1864,7 +1864,7 @@ inline void MeshesTab(Admin* admin){
 						Render::DrawTriangle(ft->p[0]*scale-off, ft->p[1]*scale-off, ft->p[2]*scale-off, face_color);
 					}
 				}
-				if(face_indexes) ImGui::DebugDrawText3(TOSTRING("F",fi).c_str(), sel_face->center*scale, text_color, vec2{-5,-5});
+				if(face_indexes) ImGui::DebugDrawText3(TOSTRING("F",fi).str, sel_face->center*scale, text_color, vec2{-5,-5});
 				if(face_centers) Render::DrawBoxFilled(Matrix4::TransformationMatrix(sel_face->center*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), face_color);
 				if(face_normals) Render::DrawLine(sel_face->center*scale, sel_face->center*scale + sel_face->normal*normal_scale, face_color);
 			}
@@ -2040,7 +2040,7 @@ inline void MaterialsTab(Admin* admin){
 	//// create new material button ////
 	ImGui::SetCursorPosX(ImGui::GetWindowWidth()*0.025); //half of 1 - 0.95
 	if(ImGui::Button("Create New Material", ImVec2(ImGui::GetWindowWidth()*0.95, 0.0f))){
-		auto new_mat = Storage::CreateMaterial(TOSTRING("material", Storage::MaterialCount()).c_str(), Shader_PBR);
+		auto new_mat = Storage::CreateMaterial(TOSTRING("material", Storage::MaterialCount()).str, Shader_PBR);
 		sel_mat_idx = new_mat.first;
 		selected = new_mat.second;
 	}
@@ -2081,8 +2081,8 @@ inline void MaterialsTab(Admin* admin){
 			//TODO(Ui) add texture image previews
 			case Shader_PBR:default:{
 				forX(mti, selected->textures.size()){
-					ImGui::TextEx(TOSTRING("Texture ",mti).c_str()); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-					if(ImGui::BeginCombo(TOSTRING("##mat_texture_combo",mti).c_str(), Storage::TextureName(selected->textures[mti]))){
+					ImGui::TextEx(TOSTRING("Texture ",mti).str); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
+					if(ImGui::BeginCombo(TOSTRING("##mat_texture_combo",mti).str, Storage::TextureName(selected->textures[mti]))){
 						directory_textures = Assets::iterateDirectory(Assets::dirTextures());
 						forX(ti, directory_textures.size()){
 							if(ImGui::Selectable(directory_textures[ti].c_str(), strcmp(Storage::TextureName(selected->textures[mti]), directory_textures[ti].c_str()) == 0)){
@@ -2540,215 +2540,215 @@ void Editor::Inspector(){
 }
 
 
-void Editor::DebugBar(){
-	//for getting fps
-	ImGuiIO& io = ImGui::GetIO();
-	
-	int FPS = floor(io.Framerate);
-	
-	//num of active columns
-	int activecols = 7;
-	
-	//font size for centering ImGui::TextEx
-	float fontsize = ImGui::GetFontSize();
-	
-	//flags for showing different things
-	persist bool show_fps = true;
-	persist bool show_fps_graph = true;
-	persist bool show_world_stats = true;
-	persist bool show_selected_stats = true;
-	persist bool show_floating_fps_graph = false;
-	persist bool show_time = true;
-	
-	ImGui::SetNextWindowSize(ImVec2(DengWindow->width, 20));
-	ImGui::SetNextWindowPos(ImVec2(0, DengWindow->height - 20));
-	
-	
-	//window styling
-	ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
-	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-	ImGui::PushStyleColor(ImGuiCol_Border,           ImGui::ColorToImVec4(Color(0, 0, 0, 255)));
-	ImGui::PushStyleColor(ImGuiCol_WindowBg,         ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
-	ImGui::PushStyleColor(ImGuiCol_TableBorderLight, ImGui::ColorToImVec4(Color(45, 45, 45, 255)));
-	
-	ImGui::Begin("DebugBar", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
-	debugbarheight = 20;
-	//capture mouse if hovering over this window
-	WinHovCheck; 
-	
-	activecols = show_fps + show_fps_graph + 3 * show_world_stats + 2 * show_selected_stats + show_time + 1;
-	if(ImGui::BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)){
-		
-		//precalc strings and stuff so we can set column widths appropriately
-		std::string str1 = TOSTRING("wents: ", admin->entities.size());
-		float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
-		std::string str2 = TOSTRING("wtris: ", Render::GetStats()->totalTriangles);
-		float strlen2 = (fontsize - (fontsize / 2)) * str2.size();
-		std::string str3 = TOSTRING("wverts: ",Render::GetStats()->totalVertices);
-		float strlen3 = (fontsize - (fontsize / 2)) * str3.size();
-		std::string str4 = TOSTRING("stris: ", "0");
-		float strlen4 = (fontsize - (fontsize / 2)) * str4.size();
-		std::string str5 = TOSTRING("sverts: ", "0");
-		float strlen5 = (fontsize - (fontsize / 2)) * str5.size();
-		
-		ImGui::TableSetupColumn("FPS",            ImGuiTableColumnFlags_WidthFixed, 64);
-		ImGui::TableSetupColumn("FPSGraphInline", ImGuiTableColumnFlags_WidthFixed, 64);
-		ImGui::TableSetupColumn("EntCount",       ImGuiTableColumnFlags_None, strlen1 * 1.3);
-		ImGui::TableSetupColumn("TriCount",       ImGuiTableColumnFlags_None, strlen2 * 1.3);
-		ImGui::TableSetupColumn("VerCount",       ImGuiTableColumnFlags_None, strlen3 * 1.3);
-		ImGui::TableSetupColumn("SelTriCount",    ImGuiTableColumnFlags_None, strlen4 * 1.3);
-		ImGui::TableSetupColumn("SelVerCount",    ImGuiTableColumnFlags_None, strlen5 * 1.3);
-		ImGui::TableSetupColumn("MiddleSep",      ImGuiTableColumnFlags_WidthStretch, 0);
-		ImGui::TableSetupColumn("Time",           ImGuiTableColumnFlags_WidthFixed, 64);
-		
-		
-		//FPS
-		
-		if(ImGui::TableNextColumn() && show_fps){
-			//trying to keep it from changing width of column
-			//actually not necessary anymore but im going to keep it cause 
-			//it keeps the numbers right aligned
-			if(FPS % 1000 == FPS){
-				ImGui::TextEx(TOSTRING("FPS:  ", FPS).c_str());
-			}
-			else if(FPS % 100 == FPS){
-				ImGui::TextEx(TOSTRING("FPS:   ", FPS).c_str());
-			}
-			else {
-				ImGui::TextEx(TOSTRING("FPS: ", FPS).c_str());
-			}
-			
-		}
-		
-		//FPS graph inline
-		if(ImGui::TableNextColumn() && show_fps_graph){
-			//how much data we store
-			persist int prevstoresize = 100;
-			persist int storesize = 100;
-			
-			//how often we update
-			persist int fupdate = 20;
-			persist int frame_count = 0;
-			
-			//maximum FPS
-			persist int maxval = 0;
-			
-			//real values and printed values
-			persist std::vector<float> values(storesize);
-			persist std::vector<float> pvalues(storesize);
-			
-			//dynamic resizing that may get removed later if it sucks
-			//if FPS finds itself as less than half of what the max used to be we lower the max
-			if(FPS > maxval || FPS < maxval / 2){
-				maxval = FPS;
-			}
-			
-			//if changing the amount of data we're storing we have to reverse
-			//each data set twice to ensure the data stays in the right place when we move it
-			if(prevstoresize != storesize){
-				std::reverse(values.begin(), values.end());    values.resize(storesize);  std::reverse(values.begin(), values.end());
-				std::reverse(pvalues.begin(), pvalues.end());  pvalues.resize(storesize); std::reverse(pvalues.begin(), pvalues.end());
-				prevstoresize = storesize;
-			}
-			
-			std::rotate(values.begin(), values.begin() + 1, values.end());
-			
-			//update real set if we're not updating yet or update the graph if we are
-			if(frame_count < fupdate){
-				values[values.size() - 1] = FPS;
-				frame_count++;
-			}
-			else {
-				float avg = Math::average(values.begin(), values.end(), storesize);
-				std::rotate(pvalues.begin(), pvalues.begin() + 1, pvalues.end());
-				pvalues[pvalues.size() - 1] = std::floorf(avg);
-				
-				frame_count = 0;
-			}
-			
-			ImGui::PushStyleColor(ImGuiCol_PlotLines, ImGui::ColorToImVec4(Color(0, 255, 200, 255)));
-			ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
-			
-			ImGui::PlotLines("", &pvalues[0], pvalues.size(), 0, 0, 0, maxval, ImVec2(64, 20));
-			
-			ImGui::PopStyleColor();
-			ImGui::PopStyleColor();
-		}
-		
-		
-		//World stats
-		
-		//Entity Count
-		if(ImGui::TableNextColumn() && show_world_stats){
-			ImGui::SameLine((ImGui::GetColumnWidth() - strlen1) / 2);
-			ImGui::TextEx(str1.c_str());
-		}
-		
-		//Triangle Count
-		if(ImGui::TableNextColumn() && show_world_stats){
-			//TODO( sushi,Ui) implement triangle count when its avaliable
-			ImGui::SameLine((ImGui::GetColumnWidth() - strlen2) / 2);
-			ImGui::TextEx(str2.c_str());
-		}
-		
-		//Vertice Count
-		if(ImGui::TableNextColumn() && show_world_stats){
-			//TODO( sushi,Ui) implement vertice count when its avaliable
-			ImGui::SameLine((ImGui::GetColumnWidth() - strlen3) / 2);
-			ImGui::TextEx(str3.c_str());
-		}
-		
-		
-		
-		// Selected Stats
-		
-		
-		
-		//Triangle Count
-		if(ImGui::TableNextColumn() && show_selected_stats){
-			//TODO( sushi,Ui) implement triangle count when its avaliable
-			//Entity* e = admin->selectedEntity;
-			ImGui::SameLine((ImGui::GetColumnWidth() - strlen4) / 2);
-			ImGui::TextEx(str4.c_str());
-		}
-		
-		//Vertice Count
-		if(ImGui::TableNextColumn() && show_selected_stats){
-			//TODO( sushi,Ui) implement vertice count when its avaliable
-			//Entity* e = admin->selectedEntity;
-			ImGui::SameLine((ImGui::GetColumnWidth() - strlen5) / 2);
-			ImGui::TextEx(str5.c_str());
-		}
-		
-		//Middle Empty ImGui::Separator (alert box)
-		if(ImGui::TableNextColumn()){
-			if(DengConsole->show_alert){
-				f32 flicker = (sinf(M_2PI * DengTime->totalTime + cosf(M_2PI * DengTime->totalTime)) + 1)/2;
-				Color col_bg = DengConsole->alert_color * flicker;    col_bg.a = 255;
-				Color col_text = DengConsole->alert_color * -flicker; col_text.a = 255;
-				
-				ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGui::ColorToImVec4(col_bg)));
-				
-				std::string str6;
-				if(DengConsole->alert_count > 1){
-					str6 = TOSTRING("(",DengConsole->alert_count,") ",DengConsole->alert_message);
-				}else{
-					str6 = DengConsole->alert_message;
-				}
-				float strlen6 = (font_width / 2) * str6.size();
-				ImGui::SameLine((ImGui::GetColumnWidth() - strlen6) / 2); ImGui::PushItemWidth(-1);
-				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(Color(col_text)));
-				ImGui::TextEx(str6.c_str());
-				ImGui::PopStyleColor();
-			}
-			
-			
-		}
-		
-		//Show Time
-		if(ImGui::TableNextColumn()){
-			//https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
+void Editor::DebugBar() {
+    //for getting fps
+    ImGuiIO& io = ImGui::GetIO();
+    
+    int FPS = floor(io.Framerate);
+    
+    //num of active columns
+    int activecols = 7;
+    
+    //font size for centering ImGui::TextEx
+    float fontsize = ImGui::GetFontSize();
+    
+    //flags for showing different things
+    persist bool show_fps = true;
+    persist bool show_fps_graph = true;
+    persist bool show_world_stats = true;
+    persist bool show_selected_stats = true;
+    persist bool show_floating_fps_graph = false;
+    persist bool show_time = true;
+    
+    ImGui::SetNextWindowSize(ImVec2(DengWindow->width, 20));
+    ImGui::SetNextWindowPos(ImVec2(0, DengWindow->height - 20));
+    
+    
+    //window styling
+    ImGui::PushStyleVar(ImGuiStyleVar_CellPadding,   ImVec2(0, 2));
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,  ImVec2(2, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::PushStyleColor(ImGuiCol_Border,           ImGui::ColorToImVec4(Color(0, 0, 0, 255)));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg,         ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
+    ImGui::PushStyleColor(ImGuiCol_TableBorderLight, ImGui::ColorToImVec4(Color(45, 45, 45, 255)));
+    
+    ImGui::Begin("DebugBar", (bool*)1, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+    debugbarheight = 20;
+    //capture mouse if hovering over this window
+    WinHovCheck; 
+    
+    activecols = show_fps + show_fps_graph + 3 * show_world_stats + 2 * show_selected_stats + show_time + 1;
+    if (ImGui::BeginTable("DebugBarTable", activecols, ImGuiTableFlags_BordersV | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_ContextMenuInBody | ImGuiTableFlags_SizingFixedFit)) {
+        
+        //precalc strings and stuff so we can set column widths appropriately
+        std::string str1 = TOSTDSTRING("wents: ", admin->entities.size());
+        float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
+        std::string str2 = TOSTDSTRING("wtris: ", Render::GetStats()->totalTriangles);
+        float strlen2 = (fontsize - (fontsize / 2)) * str2.size();
+        std::string str3 = TOSTDSTRING("wverts: ",Render::GetStats()->totalVertices);
+        float strlen3 = (fontsize - (fontsize / 2)) * str3.size();
+        std::string str4 = TOSTDSTRING("stris: ", "0");
+        float strlen4 = (fontsize - (fontsize / 2)) * str4.size();
+        std::string str5 = TOSTDSTRING("sverts: ", "0");
+        float strlen5 = (fontsize - (fontsize / 2)) * str5.size();
+        
+        ImGui::TableSetupColumn("FPS",            ImGuiTableColumnFlags_WidthFixed, 64);
+        ImGui::TableSetupColumn("FPSGraphInline", ImGuiTableColumnFlags_WidthFixed, 64);
+        ImGui::TableSetupColumn("EntCount",       ImGuiTableColumnFlags_None, strlen1 * 1.3);
+        ImGui::TableSetupColumn("TriCount",       ImGuiTableColumnFlags_None, strlen2 * 1.3);
+        ImGui::TableSetupColumn("VerCount",       ImGuiTableColumnFlags_None, strlen3 * 1.3);
+        ImGui::TableSetupColumn("SelTriCount",    ImGuiTableColumnFlags_None, strlen4 * 1.3);
+        ImGui::TableSetupColumn("SelVerCount",    ImGuiTableColumnFlags_None, strlen5 * 1.3);
+        ImGui::TableSetupColumn("MiddleSep",      ImGuiTableColumnFlags_WidthStretch, 0);
+        ImGui::TableSetupColumn("Time",           ImGuiTableColumnFlags_WidthFixed, 64);
+        
+        
+        //FPS
+        
+        if (ImGui::TableNextColumn() && show_fps) {
+            //trying to keep it from changing width of column
+            //actually not necessary anymore but im going to keep it cause 
+            //it keeps the numbers right aligned
+            if (FPS % 1000 == FPS) {
+                ImGui::TextEx(TOSTDSTRING("FPS:  ", FPS).c_str());
+            }
+            else if (FPS % 100 == FPS) {
+                ImGui::TextEx(TOSTDSTRING("FPS:   ", FPS).c_str());
+            }
+            else {
+                ImGui::TextEx(TOSTDSTRING("FPS: ", FPS).c_str());
+            }
+            
+        }
+        
+        //FPS graph inline
+        if (ImGui::TableNextColumn() && show_fps_graph) {
+            //how much data we store
+            persist int prevstoresize = 100;
+            persist int storesize = 100;
+            
+            //how often we update
+            persist int fupdate = 20;
+            persist int frame_count = 0;
+            
+            //maximum FPS
+            persist int maxval = 0;
+            
+            //real values and printed values
+            persist std::vector<float> values(storesize);
+            persist std::vector<float> pvalues(storesize);
+            
+            //dynamic resizing that may get removed later if it sucks
+            //if FPS finds itself as less than half of what the max used to be we lower the max
+            if (FPS > maxval || FPS < maxval / 2) {
+                maxval = FPS;
+            }
+            
+            //if changing the amount of data we're storing we have to reverse
+            //each data set twice to ensure the data stays in the right place when we move it
+            if (prevstoresize != storesize) {
+                std::reverse(values.begin(), values.end());    values.resize(storesize);  std::reverse(values.begin(), values.end());
+                std::reverse(pvalues.begin(), pvalues.end());  pvalues.resize(storesize); std::reverse(pvalues.begin(), pvalues.end());
+                prevstoresize = storesize;
+            }
+            
+            std::rotate(values.begin(), values.begin() + 1, values.end());
+            
+            //update real set if we're not updating yet or update the graph if we are
+            if (frame_count < fupdate) {
+                values[values.size() - 1] = FPS;
+                frame_count++;
+            }
+            else {
+                float avg = Math::average(values.begin(), values.end(), storesize);
+                std::rotate(pvalues.begin(), pvalues.begin() + 1, pvalues.end());
+                pvalues[pvalues.size() - 1] = std::floorf(avg);
+                
+                frame_count = 0;
+            }
+            
+            ImGui::PushStyleColor(ImGuiCol_PlotLines, ImGui::ColorToImVec4(Color(0, 255, 200, 255)));
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
+            
+            ImGui::PlotLines("", &pvalues[0], pvalues.size(), 0, 0, 0, maxval, ImVec2(64, 20));
+            
+            ImGui::PopStyleColor();
+            ImGui::PopStyleColor();
+        }
+        
+        
+        //World stats
+        
+        //Entity Count
+        if (ImGui::TableNextColumn() && show_world_stats) {
+            ImGui::SameLine((ImGui::GetColumnWidth() - strlen1) / 2);
+            ImGui::TextEx(str1.c_str());
+        }
+        
+        //Triangle Count
+        if (ImGui::TableNextColumn() && show_world_stats) {
+            //TODO( sushi,Ui) implement triangle count when its avaliable
+            ImGui::SameLine((ImGui::GetColumnWidth() - strlen2) / 2);
+            ImGui::TextEx(str2.c_str());
+        }
+        
+        //Vertice Count
+        if (ImGui::TableNextColumn() && show_world_stats) {
+            //TODO( sushi,Ui) implement vertice count when its avaliable
+            ImGui::SameLine((ImGui::GetColumnWidth() - strlen3) / 2);
+            ImGui::TextEx(str3.c_str());
+        }
+        
+        
+        
+        // Selected Stats
+        
+        
+        
+        //Triangle Count
+        if (ImGui::TableNextColumn() && show_selected_stats) {
+            //TODO( sushi,Ui) implement triangle count when its avaliable
+            //Entity* e = admin->selectedEntity;
+            ImGui::SameLine((ImGui::GetColumnWidth() - strlen4) / 2);
+            ImGui::TextEx(str4.c_str());
+        }
+        
+        //Vertice Count
+        if (ImGui::TableNextColumn() && show_selected_stats) {
+            //TODO( sushi,Ui) implement vertice count when its avaliable
+            //Entity* e = admin->selectedEntity;
+            ImGui::SameLine((ImGui::GetColumnWidth() - strlen5) / 2);
+            ImGui::TextEx(str5.c_str());
+        }
+        
+        //Middle Empty ImGui::Separator (alert box)
+        if (ImGui::TableNextColumn()) {
+            if (DengConsole->show_alert) {
+                f32 flicker = (sinf(M_2PI * DengTime->totalTime + cosf(M_2PI * DengTime->totalTime)) + 1)/2;
+                Color col_bg = DengConsole->alert_color * flicker;    col_bg.a = 255;
+                Color col_text = DengConsole->alert_color * -flicker; col_text.a = 255;
+                
+                ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32(ImGui::ColorToImVec4(col_bg)));
+                
+                std::string str6;
+                if(DengConsole->alert_count > 1) {
+                    str6 = TOSTDSTRING("(",DengConsole->alert_count,") ",DengConsole->alert_message);
+                }else{
+                    str6 = DengConsole->alert_message;
+                }
+                float strlen6 = (font_width / 2) * str6.size();
+                ImGui::SameLine((ImGui::GetColumnWidth() - strlen6) / 2); ImGui::PushItemWidth(-1);
+                ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(Color(col_text)));
+                ImGui::TextEx(str6.c_str());
+                ImGui::PopStyleColor();
+            }
+            
+            
+        }
+        
+        //Show Time
+        if (ImGui::TableNextColumn()) {
+            //https://stackoverflow.com/questions/24686846/get-current-time-in-milliseconds-or-hhmmssmmm-format
 			
 			std::string str7 = DengTime->FormatDateTime("{h}:{m}:{s}");
 			float strlen7 = (fontsize - (fontsize / 2)) * str7.size();

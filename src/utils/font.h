@@ -297,9 +297,8 @@ struct Font {
 		
 		for (int i = 0; i < textures.size(); i++) {
 			array<u32> tex = textures[i].second;
-			memcpy(texture_sheet + i * width * height, tex.items, width * height * sizeof(u32));
+			memcpy(texture_sheet + i * width * height, tex.data, width * height * sizeof(u32));
 		}
-		
 	}	
 	
 	

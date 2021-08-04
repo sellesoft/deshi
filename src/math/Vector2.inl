@@ -233,6 +233,26 @@ yInvert() const {
 	return Vector2(x, -y);
 }
 
+inline Vector2 Vector2::
+xSet(float set) const {
+	return Vector2(set, y);
+}
+
+inline Vector2 Vector2::
+ySet(float set) const {
+	return Vector2(x, set);
+}
+
+inline Vector2 Vector2::
+xAdd(float add) const {
+	return Vector2(x + add, y);
+}
+
+inline Vector2 Vector2::
+yAdd(float add) const {
+	return Vector2(x, y + add);
+}
+
 inline const std::string Vector2::
 str() const {
 	return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + ")";

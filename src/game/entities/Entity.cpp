@@ -117,7 +117,7 @@ void Entity::RemoveComponents(std::vector<Component*> comps) {
 
 std::string Entity::SaveTEXT(){
     std::string result; result.reserve(2048);
-    result.append(TOSTRING(">entity",
+    result.append(TOSTDSTRING(">entity",
                            "\nid       ", id,
                            "\ntype     ", EntityTypeStrings[type],
                            "\nname     \"",name,"\"",

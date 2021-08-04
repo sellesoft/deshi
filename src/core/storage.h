@@ -35,7 +35,7 @@ namespace Storage{
 	
 	std::vector<Vector2> GenerateMeshOutlinePoints(Mesh* mesh, Matrix4 transform, Matrix4 camProjection, Matrix4 camView, Vector3 camPosition, Vector2 screenDims);
 	
-	inline Mesh*    NullMesh(){ return *DengStorage->meshes.items; };
+	inline Mesh*    NullMesh(){ return DengStorage->meshes.data[0]; };
 	inline u32      MeshCount(){ return DengStorage->meshes.size(); };
 	inline Mesh*    MeshAt(u32 meshIdx){ return DengStorage->meshes[meshIdx]; };
 	inline u32      MeshIndex(Mesh* mesh){ forI(DengStorage->meshes.size()){ if(mesh == DengStorage->meshes[i]) return i; } return -1; };
@@ -46,10 +46,10 @@ namespace Storage{
 	//// @texture ////
 	//////////////////
 	pair<u32,Texture*> CreateTextureFromFile(const char* filename, ImageFormat format = ImageFormat_RGBA, TextureType type = TextureType_2D, bool keepLoaded = false, bool generateMipmaps = true);
-	pair<u32,Texture*> CreateTextureFromMemory(void* data, int width, int height, ImageFormat format, TextureType type = TextureType_2D, bool keepLoaded = false, bool generateMipmaps = true);
+	pair<u32,Texture*> CreateTextureFromMemory(void* data, const char* name, int width, int height, ImageFormat format, TextureType type = TextureType_2D, bool keepLoaded = false, bool generateMipmaps = true);
 	void               DeleteTexture(Texture* texture);
 	
-	inline Texture*    NullTexture(){ return *DengStorage->textures.items; };
+	inline Texture*    NullTexture(){ return DengStorage->textures.data[0]; };
 	inline u32         TextureCount(){ return DengStorage->textures.size(); };
 	inline Texture*    TextureAt(u32 textureIdx){ return DengStorage->textures[textureIdx]; };
 	inline u32         TextureIndex(Texture* texture){ forI(DengStorage->textures.size()){ if(texture == DengStorage->textures[i]) return i; } return -1; };
@@ -62,7 +62,7 @@ namespace Storage{
 	pair<u32,Material*> CreateMaterial(const char* name, Shader shader = Shader_PBR, MaterialFlags flags = MaterialFlags_NONE, array<u32> textures = {});
 	void                DeleteMaterial(Material* material);
 	
-	inline Material*    NullMaterial(){ return *DengStorage->materials.items; };
+	inline Material*    NullMaterial(){ return DengStorage->materials.data[0]; };
 	inline u32          MaterialCount(){ return DengStorage->materials.size(); };
 	inline Material*    MaterialAt(u32 materialIdx){ return DengStorage->materials[materialIdx]; };
 	inline u32          MaterialIndex(Material* material){ forI(DengStorage->materials.size()){ if(material == DengStorage->materials[i]) return i; } return -1; };
@@ -80,7 +80,7 @@ namespace Storage{
 	pair<u32,Model*> CopyModel(Model* base);
 	void             DeleteModel(Model* model);
 	
-	inline Model*    NullModel(){ return *DengStorage->models.items; };
+	inline Model*    NullModel(){ return DengStorage->models.data[0]; };
 	inline u32       ModelCount(){ return DengStorage->models.size(); };
 	inline Model*    ModelAt(u32 modelIdx){ return DengStorage->models[modelIdx]; };
 	inline u32       ModelIndex(Model* model){ forI(DengStorage->models.size()){ if(model == DengStorage->models[i]) return i; } return -1; };

@@ -14,6 +14,7 @@
 #define COLORU32_GSHIFT 8
 #define COLORU32_BSHIFT 16
 #define COLORU32_ASHIFT 24
+#define PACKCOLORU32(R,G,B,A) (((u32)(A)<<COLORU32_ASHIFT) | ((u32)(B)<<COLORU32_BSHIFT) | ((u32)(G)<<COLORU32_GSHIFT) | ((u32)(R)<<COLORU32_RSHIFT))
 
 struct Color {
 	u8 r, g, b, a;
@@ -65,7 +66,7 @@ struct Color {
 	}
 	
 	Color operator * (float rhs) {
-		return Color(r*rhs, g*rhs, b*rhs, a*rhs);
+		return Color(r*rhs, g*rhs, b*rhs, a);
 	}
 	
 	Color operator / (float rhs) {

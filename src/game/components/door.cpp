@@ -17,7 +17,7 @@ void Door::ReceiveEvent(Event event){
 }
 
 std::string Door::SaveTEXT(){
-	return TOSTRING("\n>door"
+	return TOSTDSTRING("\n>door"
 					"\nopen ", (isOpen) ? "true" : "false",
 					"\n");
 }

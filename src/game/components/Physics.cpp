@@ -96,7 +96,7 @@ void Physics::AddImpulseNomass(Physics* creator, Vector3 impulse) {
 }
 
 std::string Physics::SaveTEXT(){
-	return TOSTRING("\n>physics"
+	return TOSTDSTRING("\n>physics"
 					"\nvelocity         (",velocity.x,",",velocity.y,",",velocity.z,")"
 					"\nacceleration     (",acceleration.x,",",acceleration.y,",",acceleration.z,")"
 					"\nrot_velocity     (",rotVelocity.x,",",rotVelocity.y,",",rotVelocity.z,")"

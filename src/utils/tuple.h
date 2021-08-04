@@ -56,6 +56,10 @@ struct pair<T,U> {
 		this->first = first;
 		this->second = second;
 	}
+
+	//pair(const pair<T, U>& p) { this->first = p.first; this->second = p.second; }
+	//pair<T, U>& operator=(const pair<T, U>& p) { this->first = p.first; this->second = p.second; return *this; }
+
 };
 
 template<typename T, typename U, typename V>
@@ -107,7 +111,7 @@ struct pair<T,U,V,W,X> {
 };
 
 template<typename T, typename U>
-static pair<T, U> make_pair(T first, U second) {
+static pair<T, U> make_pair(const T& first, const U& second) {
 	return pair<T, U>(first, second);
 }
 

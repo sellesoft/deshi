@@ -51,6 +51,15 @@ struct map {
 		count++;
 		return count-1;
 	}
+
+	void swap(u32 idx1, u32 idx2) {
+		data.swap(idx1, idx2);
+	}
+
+	Value* begin() { return data.begin(); }
+	Value* end()   { return data.end(); }
+	const Value* begin() const { return data.begin(); }
+	const Value* end()   const { return data.end(); }
 };
 
 template<typename Key, typename HashStruct = hash<Key>>

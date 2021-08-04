@@ -29,7 +29,7 @@ void Player::Update() {
 }
 
 std::string Player::SaveTEXT(){
-	return TOSTRING("\n>player"
+	return TOSTDSTRING("\n>player"
 					"\nhealth ", health,
 					"\n");
 }

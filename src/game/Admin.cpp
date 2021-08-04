@@ -322,7 +322,7 @@ void Admin::SaveTEXT(std::string level_name){
     
     //// level file ////
     std::string level_text; level_text.reserve(2048);
-    level_text.append(TOSTRING(">level"
+    level_text.append(TOSTDSTRING(">level"
                                "\nname         \"", level_name, "\""
                                "\nentity_count ", entities.size(),
 							   "\nlast_updated \"", /*DengTime->FormatDateTime("{M}/{d}/{y} {h}:{m}:{s}"),*/ "\""));
@@ -333,8 +333,8 @@ void Admin::SaveTEXT(std::string level_name){
 					  "\n>materials");
 	forI(DengStorage->materials.size()){
 		Material* mat = DengStorage->materials[i];
-		level_text.append(TOSTRING("\n",i," \"",mat->name,"\" ",mat->shader," "));
-		forI(mat->textures.size()) level_text.append(TOSTRING('\"',Storage::TextureName(mat->textures[i]),'\" '));
+		level_text.append(TOSTDSTRING("\n",i," \"",mat->name,"\" ",mat->shader," "));
+		forI(mat->textures.size()) level_text.append(TOSTDSTRING('\"',Storage::TextureName(mat->textures[i]),'\" '));
 	}
 	
 	//models
@@ -342,15 +342,15 @@ void Admin::SaveTEXT(std::string level_name){
 					  "\n>meshes");
 	forI(DengStorage->models.size()){
 		Model* model = DengStorage->models[i];
-		level_text.append(TOSTRING("\n",i," \"",model->name,"\" "));
-		forI(model->batches.size()) level_text.append(TOSTRING('\"',Storage::MaterialName(model->batches[i].material),'\" '));
+		level_text.append(TOSTDSTRING("\n",i," \"",model->name,"\" "));
+		forI(model->batches.size()) level_text.append(TOSTDSTRING('\"',Storage::MaterialName(model->batches[i].material),'\" '));
 	}
 	
 	//entities
 	level_text.append("\n"
 					  "\n>entities");
 	forI(entities.size()){
-		level_text.append(TOSTRING("\n",i," \"",entities[i]->name,"\""));
+		level_text.append(TOSTDSTRING("\n",i," \"",entities[i]->name,"\""));
 	}
 	
 	//events
@@ -361,7 +361,7 @@ void Admin::SaveTEXT(std::string level_name){
 			if(c->sender.receivers.size() > 0){
 				for(Receiver* r : c->sender.receivers){
 					if(Component* comp = dynamic_cast<Component*>(r)){
-						level_text.append(TOSTRING("\n",e->id," \"",e->name,"\" ",c->type," ",c->event," -> ",
+						level_text.append(TOSTDSTRING("\n",e->id," \"",e->name,"\" ",c->type," ",c->event," -> ",
 												   comp->entity->id," \"",comp->entity->name,"\" ",comp->type));
 					}
 				}
@@ -378,7 +378,7 @@ void Admin::SaveTEXT(std::string level_name){
 	
 	forX(idx, entities.size()){
 		snprintf(entity_idx_str, entity_idx_str_size, "%0*u_", entity_idx_digits, idx);
-		entity_file_name = TOSTRING(entity_idx_str, entities[idx]->name);
+		entity_file_name = TOSTDSTRING(entity_idx_str, entities[idx]->name);
 		
 		std::string entity_text = entities[idx]->SaveTEXT();
 		Assets::writeFile(level_dir + entity_file_name, entity_text.c_str(), entity_text.size());

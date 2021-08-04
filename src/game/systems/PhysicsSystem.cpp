@@ -638,7 +638,7 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 			//ImGui::DebugDrawText3(TOSTRING(physTickCounter).c_str(), o2->position + bestnorm * distance / 2, Color::BLACK);
 			ImGui::DebugDrawCircleFilled3(o2->position, 5, Color::GREEN);
 			ImGui::DebugDrawCircleFilled3(o1->position, 5, Color::GREEN);
-			ImGui::DebugDrawText3(TOSTRING(distance).c_str(), v, Color::BLACK);
+			ImGui::DebugDrawText3(TOSTDSTRING(distance).c_str(), v, Color::BLACK);
 			
 			//PRINTLN(physTickCounter << " ------------------------------------------ " << distance);
 			//PRINTLN(o1 << " before: " << TOSTRING(o1->position));

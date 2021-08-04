@@ -371,7 +371,7 @@ void Console::DrawConsole(){
 		
 		if(s.size() != 0) history.push_back(s);
 		
-		AddLog(TOSTRING("[c:cyan]/[c][c:dcyan]\\[c] ", s)); //print command typed
+		AddLog(TOSTDSTRING("[c:cyan]/[c][c:dcyan]\\[c] ", s)); //print command typed
 		
 		//cut off arguments into their own string
 		std::string args;
@@ -661,7 +661,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 				if(m[1] == EventStrings[i]){ 
 				found = true; event = (u32)i;  break;
 			}
-			if(!found) return TOSTRING("[c:red]Unknown event '", m[1], "'");
+			if (!found) return TOSTDSTRING("[c:red]Unknown event '", m[1], "'");
 		} else {
 			return "[c:red]Invalid parameter: " + *s + "[c]";
 		}
@@ -690,7 +690,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 	DengAdmin->CreateEntity({ mc, p, s, col }, name, Transform(pos, rot, scale));
 	
-	return TOSTRING("Loaded model ", args[0]);
+	return TOSTDSTRING("Loaded model ", args[0]);
 }CMDEND("load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z) -collider=String{aabb|sphere} -mass=Float -static=Bool");
 
 CMDSTARTA(cam_vars, args.size() != 0){
@@ -781,7 +781,7 @@ CMDSTARTA(add_player, args.size() > 0){
 	DengAdmin->player = DengAdmin->CreateEntityNow({ mc, p, s, col, mov, pl },
 												   name, Transform(position, rotation, scale));
 	DengAdmin->controller.playermove = mov;
-	return TOSTRING("Added player.");
+	return TOSTDSTRING("Added player.");
 }CMDEND("load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
 
 
@@ -831,7 +831,7 @@ CMDFUNC(listc){
 CMDSTARTA(help, args.size() != 0 && !(args.size() == 1 && args[0] == "")){
 	if(DengConsole->commands.find(args[0]) != DengConsole->commands.end()){
 		Command* c = DengConsole->commands.at(args[0]);
-		return TOSTRING(c->name, "\n", c->description);
+		return TOSTDSTRING(c->name, "\n", c->description);
 	}
 	else {
 		return "command \"" + args[0] + "\" not found. \n use \"listc\" to list all commands.";
@@ -993,7 +993,7 @@ CMDFUNC(mat_list){
 		"\nName\tShader\tTextures");
 	forI(Storage::MaterialCount()){
 		Material* mat = Storage::MaterialAt(i);
-		std::string text = TOSTRING(mat->name,'\t',ShaderStrings[mat->shader],'\t');
+		std::string text = TOSTDSTRING(mat->name,'\t',ShaderStrings[mat->shader],'\t');
 		forI(mat->textures.size()){
 			text += ' ';
 			text += Storage::TextureName(mat->textures[i]);
@@ -1083,7 +1083,7 @@ CMDSTARTA(add_trigger, args.size() > 0){
 				if(m[1] == EventStrings[i]){
 				found = true; event = (u32)i;  break;
 			}
-			if(!found) return TOSTRING("[c:red]Unknown event '", m[1], "'");
+			if (!found) return TOSTDSTRING("[c:red]Unknown event '", m[1], "'");
 		}
 		else {
 			return "[c:red]Invalid parameter: " + *s + "[c]";
@@ -1101,7 +1101,7 @@ CMDSTARTA(add_trigger, args.size() > 0){
 	
 	DengAdmin->CreateEntity(te);
 	
-	return TOSTRING("Created trigger");
+	return TOSTDSTRING("Created trigger");
 }CMDEND("add_trigger -shape=[ColliderType] -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)")
 
 void Console::AddCommands(){

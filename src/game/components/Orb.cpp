@@ -121,7 +121,7 @@ void OrbManager::Update() {
 }
 
 std::string OrbManager::SaveTEXT(){
-	return TOSTRING("\n>orb manager"
+	return TOSTDSTRING("\n>orb manager"
 					"\n");
 }
 

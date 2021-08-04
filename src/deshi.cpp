@@ -21,6 +21,9 @@ ____also, triggers need to be able to filter what causes them to activate
 Minor Ungrouped TODOs
 ---------------------
 add editor settings and config
+maybe redo UI to draw the window base into a special UIDrawCmds array for base window elements 
+____so we can defer drawing that stuff to EndWindow() so we can do window resizing and positioning within Begin and End calls
+convert std::string to our string throughout the project, primarily .str() methods so i can fully convert TOSTRING to use our string
 change text-based saving so material shaders are text rather than ID
 rework and simplify entity creation so there is a distinction between development and gameplay creation
 make a dynamic timers array on in time.h for cleaner timer stuffs
@@ -146,6 +149,8 @@ __________ it might have something to do with our rotate by axis function
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
 (07/14/21) the config parser sometimes throws a console error that its unable to parse the final empty line of configs
 (07/20/21) copy/paste produces an extra mesh in the renderer sometimes
+(08/03/21) UI's text sometimes produces artifacts around some letters. it seems like it depends
+__________ on the y level of each character and only seems to happen on a, b, i, j, q, r, and z on gohufont-11
 
 */
 
@@ -240,54 +245,63 @@ local Storage_ storage; Storage_* g_storage = &storage;
 local Admin    admin;   Admin*    g_admin   = &admin;
 
 int main() {
-    TIMER_START(t_d); TIMER_START(t_f); TIMER_START(t_s);
-    //pre-init setup
-    Assets::enforceDirectories();
-    
-    //init engine core
-    TIMER_RESET(t_s); time_.Init(700);        SUCCESS("Finished time initialization in ", TIMER_END(t_s), "ms");
-    TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ", TIMER_END(t_s), "ms");
-    TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
-    TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ", TIMER_END(t_s), "ms");
-    TIMER_RESET(t_s); Storage::Init();        SUCCESS("Finished storage initialization in ", TIMER_END(t_s), "ms");
-    TIMER_RESET(t_s); DeshiImGui::Init();     SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
-    TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ", TIMER_END(t_s), "ms");
-    SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
-    
-    //init game admin
-    TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
-    SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
-    
-    //start main loop
+	TIMER_START(t_d); TIMER_START(t_f); TIMER_START(t_s);
+	//pre-init setup
+	Assets::enforceDirectories();
+	
+	//init engine core
+	TIMER_RESET(t_s); time_.Init(700);        SUCCESS("Finished time initialization in ",              TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ",  TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ",            TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); Storage::Init();        SUCCESS("Finished storage initialization in ",           TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); DeshiImGui::Init();     SUCCESS("Finished imgui initialization in ",             TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ",                TIMER_END(t_s), "ms");
+	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
+	
+	//init game admin
+	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
+	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
+
+	//start main loop
 	glfwShowWindow(window.window);
-    while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
-        glfwPollEvents();
-        
-        DeshiImGui::NewFrame();                                                         //place imgui calls after this
-        TIMER_RESET(t_d); time_.Update();           time_.timeTime   = TIMER_END(t_d);
-        TIMER_RESET(t_d); window.Update();          time_.windowTime = TIMER_END(t_d);
-        TIMER_RESET(t_d); input.Update();           time_.inputTime  = TIMER_END(t_d);
-        TIMER_RESET(t_d); admin.Update();           time_.adminTime  = TIMER_END(t_d);
-        TIMER_RESET(t_d); console.Update(); Console2::Update(); time_.consoleTime = TIMER_END(t_d);
-        TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
-        UI::Update();
-        TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
-        {//debugging area
-            //UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
-            //UI::PushColor(UIStyleCol_Text, Color(144, 123, 132));
-            //UI::PopColor();
-            //UI::EndWindow();
-        }
-        time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
-    }
-    
-    //cleanup
-    admin.Cleanup();
-    DeshiImGui::Cleanup();
-    Render::Cleanup();
-    window.Cleanup();
-    console.CleanUp(); Console2::Cleanup();
-    
+	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
+		glfwPollEvents();
+		
+		DeshiImGui::NewFrame();                                                         //place imgui calls after this
+		TIMER_RESET(t_d); time_.Update();           time_.timeTime   = TIMER_END(t_d);
+		TIMER_RESET(t_d); window.Update();          time_.windowTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); input.Update();           time_.inputTime  = TIMER_END(t_d);
+		TIMER_RESET(t_d); admin.Update();           time_.adminTime  = TIMER_END(t_d);
+		TIMER_RESET(t_d); console.Update(); Console2::Update(); time_.consoleTime = TIMER_END(t_d);
+		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
+		UI::Update();
+		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
+		{//debugging area
+		 //setTrack();
+			UI::PushVar(UIStyleVar_TitleTextAlign, vec2(1, 0.5));
+			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
+
+			for (int i = 0; i < 40; i++) {
+				UI::Text(TOSTRING("wow ", i), UITextFlags_NoWrap);
+			}
+
+			UI::Text("unwrapped manually positioned text", vec2(150, 150), UITextFlags_NoWrap);
+
+			UI::EndWindow();
+			//UI::ShowDebugWindowOf("test");
+			UI::PopVar();
+		}
+		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
+	}
+	
+	//cleanup
+	admin.Cleanup();
+	DeshiImGui::Cleanup();
+	Render::Cleanup();
+	window.Cleanup();
+	console.CleanUp(); Console2::Cleanup();
+	
 #if 0
     DEBUG_BREAK;
 #endif

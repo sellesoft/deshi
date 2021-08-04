@@ -16,6 +16,7 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	glfwGetMonitorWorkarea(monitor, &work_xpos, &work_ypos, &work_width, &work_height);
 	
 	//TODO(delle,Wi) maybe we should not allow the window to be resizable in-game, but in-engine is fine
+	//i think its fine if its resizable in windowed mode during gameplay, i dont see any reason not to allow that
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
@@ -32,7 +33,7 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 #endif //DESHI_OPENGL
 	
 	window = glfwCreateWindow(width, height, "deshi", NULL, NULL);
-	if(!window) { PRINTLN("GLFW failed to create the window!");glfwTerminate(); return; }
+	if(!window) { PRINTLN("GLFW failed to create the window!"); glfwTerminate(); return; }
 	
 	//set initial window size
 	if(x == 0xFFFFFFFF || y == 0xFFFFFFFF){
@@ -40,6 +41,9 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	}else{
 		glfwSetWindowPos(window, work_xpos+x, work_ypos+y);
 	}
+
+	cursor  = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+	if(!cursor){ PRINTLN("GLFW failed to create the cursor!"); glfwTerminate(); return; }
 	
 	//load and set icon
 	GLFWimage icon; int icon_channels;
@@ -50,6 +54,9 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 		PRINTLN("Failed to load texture: deshi_icon.png; Using default window icon");
 	}
 	
+	//set window's cursor
+	glfwSetCursor(window, cursor);
+
 	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 	int xpos, ypos;
 	glfwGetWindowPos(window, &xpos, &ypos);
@@ -204,6 +211,7 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	glfwSetCursorEnterCallback(window, 
 							   [](GLFWwindow* w, int entered)->void{
 								   DengInput->keyFocus = entered;
+								   glfwSetCursor(w, g_window->cursor);
 							   });
 	
 	//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -332,7 +340,7 @@ std::string Window::str(){
 		case(CursorMode::FIRSTPERSON): { cursMode = "First Person"; }break;
 		case(CursorMode::HIDDEN):      { cursMode = "Hidden"; }break;
 	}
-	return TOSTRING("Window Info"
+	return TOSTDSTRING("Window Info"
 					"\n    Window Position: ", x, ",", y,
 					"\n    Window Dimensions: ", width, "x", height,
 					"\n    Screen Dimensions: ", screenWidth, "x", screenHeight,

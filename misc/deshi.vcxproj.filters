@@ -526,9 +526,6 @@
     <ClCompile Include="..\src\core\console2.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\core\renderers\opengl.cpp">
-      <Filter>src\core\renderers</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\core\renderers\vulkan.cpp">
       <Filter>src\core\renderers</Filter>
     </ClCompile>
@@ -537,6 +534,9 @@
     </ClCompile>
     <ClCompile Include="..\src\core\storage.cpp">
       <Filter>src\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\renderers\opengl.cpp">
+      <Filter>src\core\renderers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

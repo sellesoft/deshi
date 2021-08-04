@@ -336,7 +336,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 	texture->idx = textures.size();
 	texture->format  = format;
 	texture->type    = type;
-	texture->pixels  = stbi_load((Assets::dirTextures()+filename).c_str(), &texture->width, &texture->height, &texture->depth, format);
+	texture->pixels  = stbi_load((Assets::dirTextures()+filename).c_str(), &texture->width, &texture->height, &texture->depth, STBI_rgb_alpha);
 	texture->loaded  = true;
 	if(texture->pixels == 0){ 
 		ERROR_LOC("Failed to create texture '",filename,"': ",stbi_failure_reason()); 
@@ -358,10 +358,63 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 }
 
 pair<u32,Texture*> Storage::
-CreateTextureFromMemory(void* data, int width, int height, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps){
+CreateTextureFromMemory(void* data, const char* name, int width, int height, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps){
 	pair<u32,Texture*> result(0, NullTexture());
+	if(data == 0){ ERROR_LOC("Failed to create texture '",name,"': No memory passed!"); return result; }
+
+	//check if created already
+	forI(textures.size()){
+		if(strcmp(textures[i]->name, name) == 0){
+			return pair<u32,Texture*>(i,textures[i]);
+		}
+	}
+
+	Texture* texture = AllocateTexture();
+	cpystr(texture->name, name, DESHI_NAME_SIZE);
+	texture->idx     = textures.count;
+	texture->format  = format;
+	texture->type    = type;
+	texture->width   = width;
+	texture->height  = height;
+	texture->depth   = 4;
+	texture->loaded  = true;
+	texture->mipmaps = (generateMipmaps) ? (int)log2(Max(texture->width, texture->height)) + 1 : 1;
+
+	//reinterpret image as RGBA32
+	const u8* src = (u8*)data;
+	if(format != ImageFormat_RGBA){
+		texture->pixels = (u8*)malloc((size_t)width * (size_t)height * 4);
+		data = texture->pixels;
+		u8* dst = texture->pixels;
+		switch(format){
+			case ImageFormat_BW:{
+				for(int i = width*height; i > 0; i--){
+					u8 value = (u8)(*src++);
+					*dst++ = PACKCOLORU32(value, value, value, 255);
+				}
+			}break;
+			case ImageFormat_BWA:{
+				//!Incomplete
+			}break;
+			case ImageFormat_RGB:{
+				//!Incomplete
+			}break;
+		}
+	}else{
+		texture->pixels = (u8*)data;
+	}
+
+	Render::LoadTexture(texture);
+	if(!keepLoaded){
+		free(data);
+		data = 0;
+		texture->pixels = 0;
+	}
+
+	result.first  = texture->idx;
+	result.second = texture;
+	textures.add(texture);
 	return result;
-	//!Incomplete
 }
 
 void Storage::
@@ -704,7 +757,7 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		
 		//// calculate vertex normals ////
 		forI(vUnique.count){
-			vUnique.data.items[i].normal.normalize();
+			vUnique.data.data[i].normal.normalize();
 		}
 		
 		//// generate mesh faces ////
@@ -761,10 +814,10 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		mesh = AllocateMesh(indexes.count, vUnique.count, faces.count, totalTriNeighbors, 
 							totalFaceVertexes, totalFaceOuterVertexes, totalFaceTriNeighbors, totalFaceFaceNeighbors);
 		cpystr(mesh->name, string(filename).substr(0, strlen(filename)-5).str, DESHI_NAME_SIZE);
-		memcpy(mesh->vertexArray,   vUnique.data.items, vUnique.count*sizeof(Mesh::Vertex));
-		memcpy(mesh->indexArray,    indexes.items,      indexes.count*sizeof(Mesh::Index));
-		memcpy(mesh->triangleArray, triangles.items,    triangles.count*sizeof(Mesh::Triangle));
-		memcpy(mesh->faceArray,     faces.items,        faces.count*sizeof(Mesh::Face));
+		memcpy(mesh->vertexArray,   vUnique.data.data, vUnique.count*sizeof(Mesh::Vertex));
+		memcpy(mesh->indexArray,    indexes.data,      indexes.count*sizeof(Mesh::Index));
+		memcpy(mesh->triangleArray, triangles.data,    triangles.count*sizeof(Mesh::Triangle));
+		memcpy(mesh->faceArray,     faces.data,        faces.count*sizeof(Mesh::Face));
 		
 		//setup triangle pointers and fill triangle neighbors/edges
 		mesh->triangles[0].neighborArray = (u32*)(mesh->faceArray + mesh->faceCount);
