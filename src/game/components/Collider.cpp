@@ -71,9 +71,11 @@ AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Event _ev
 		return;
 	}
 	
-	halfDims.x = (mesh->aabbMin.x > mesh->aabbMax.x) ? mesh->aabbMin.x : mesh->aabbMax.x;
-	halfDims.y = (mesh->aabbMin.y > mesh->aabbMax.y) ? mesh->aabbMin.y : mesh->aabbMax.y;
-	halfDims.z = (mesh->aabbMin.z > mesh->aabbMax.z) ? mesh->aabbMin.z : mesh->aabbMax.z;
+	vec3 abs_min = mesh->aabbMin.absV();
+	vec3 abs_max = mesh->aabbMax.absV();
+	halfDims.x = (abs_min.x > abs_max.x) ? abs_min.x : abs_max.x;
+	halfDims.y = (abs_min.y > abs_max.y) ? abs_min.y : abs_max.y;
+	halfDims.z = (abs_min.z > abs_max.z) ? abs_min.z : abs_max.z;
 	tensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 

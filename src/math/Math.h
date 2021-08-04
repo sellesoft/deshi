@@ -407,6 +407,10 @@ namespace Math {
         for (Vector3 v : vectors) sum += v;
         return sum / vectors.size();
     }
+	
+	static Vector3 LineMidpoint(Vector3 start, Vector3 end){
+		return (start+end)/2.f;
+	}
     
     //the input vectors should be in viewMat/camera space
     //returns true if the line can be rendered after clipping, false otherwise

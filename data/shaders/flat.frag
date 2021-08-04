@@ -1,7 +1,7 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(location = 0) in vec3 inColor;
+layout(location = 0) in vec4 inColor;
 layout(location = 1) in vec3 inWorldPos;
 layout(location = 2) in vec3 inLightPos;
 layout(location = 3) in vec3 inViewPos;
@@ -16,5 +16,5 @@ void main() {
 					clamp(dot(normalize(inLightPos - inWorldPos), faceNormal) * 0.7, .1f, 1),
 					clamp(dot(normalize(inLightPos - inWorldPos), faceNormal) * 0.7, .1f, 1),
 					1.0f);
-	//outColor = vec4(inColor, 1);
+	//outColor = inColor;
 }

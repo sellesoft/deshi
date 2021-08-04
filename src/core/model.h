@@ -60,10 +60,10 @@ struct Mesh{
 	vec3 aabbMax;
 	vec3 center;
 	
-	struct Vertex{ //44bytes
+	struct Vertex{ //36 bytes
 		vec3 pos;
 		vec2 uv;
-		vec3 color;
+		u32  color;
 		vec3 normal;
 	}  *vertexArray;
 	//struct VertexEx{
@@ -120,6 +120,10 @@ struct Mesh{
 	u32 faceCount;
 	View<Face> faces;
 };
+typedef Mesh::Vertex   MeshVertex;
+typedef Mesh::Index    MeshIndex;
+typedef Mesh::Triangle MeshTriangle;
+typedef Mesh::Face     MeshFace;
 
 struct Texture{
 	char name[DESHI_NAME_SIZE];
@@ -156,5 +160,6 @@ struct Model{
 	};
 	array<Batch> batches;
 };
+typedef Model::Batch ModelBatch;
 
 #endif //DESHI_MODEL_H

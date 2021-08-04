@@ -8,12 +8,20 @@ void glfwError(int id, const char* description){
 //thanks: https://github.com/OneLoneCoder/olcPixelGameEngine/pull/181
 void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	glfwSetErrorCallback(&glfwError);
-	if(!glfwInit()){ return; }
+	if(!glfwInit()){ PRINTLN("GLFW failed to "); return; }
+	
+	monitor = glfwGetPrimaryMonitor();
+	if(!monitor) { PRINTLN("GLFW failed to get the monitor!"); return; }
+	int work_xpos, work_ypos, work_width, work_height;
+	glfwGetMonitorWorkarea(monitor, &work_xpos, &work_ypos, &work_width, &work_height);
 	
 	//TODO(delle,Wi) maybe we should not allow the window to be resizable in-game, but in-engine is fine
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+	glfwWindowHint(GLFW_CENTER_CURSOR, GLFW_FALSE);
+	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
 #if DESHI_OPENGL
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -24,9 +32,14 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 #endif //DESHI_OPENGL
 	
 	window = glfwCreateWindow(width, height, "deshi", NULL, NULL);
-	monitor = glfwGetPrimaryMonitor();
-	if(!window) { glfwTerminate(); return; }
-	if(!monitor) { glfwTerminate(); return; }
+	if(!window) { PRINTLN("GLFW failed to create the window!");glfwTerminate(); return; }
+	
+	//set initial window size
+	if(x == 0xFFFFFFFF || y == 0xFFFFFFFF){
+		glfwSetWindowPos(window, work_width-width, work_height-height);
+	}else{
+		glfwSetWindowPos(window, work_xpos+x, work_ypos+y);
+	}
 	
 	//load and set icon
 	GLFWimage icon; int icon_channels;

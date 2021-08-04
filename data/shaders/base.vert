@@ -18,12 +18,16 @@ layout(push_constant) uniform PushConsts{
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inUV;
-layout(location = 2) in vec3 inColor;
+layout(location = 2) in vec4 inColor;
 layout(location = 3) in vec3 inNormal;
 
-layout(location = 0) out vec3 outColor;
+layout(location = 0) out vec4 outColor;
+layout(location = 1) out vec2 outUV;
+layout(location = 2) out vec3 outNormal;
 
 void main() {
     gl_Position = ubo.proj * ubo.view * primitive.model * vec4(inPosition.xyz, 1.0);
-    outColor = inColor;
+    outColor    = inColor;
+	outUV       = inUV;
+	outNormal   = mat3(primitive.model) * inNormal;
 }

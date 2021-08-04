@@ -18,7 +18,7 @@ http://gameangst.com/?p=9
 
 
 //-------------------------------------------------------------------------------------------------
-// VULKAN STRUCTS
+// @VULKAN STRUCTS
 
 
 struct MeshVk{
@@ -116,7 +116,7 @@ struct BufferVk{
 };
 
 //-------------------------------------------------------------------------------------------------
-// INTERFACE VARIABLES
+// @INTERFACE VARIABLES
 
 
 local RenderSettings settings;
@@ -169,33 +169,36 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 
 //arbitray limits, change if needed
 #define MAX_UI_VERTICES 0xFFFF 
-local u16 uiVertexCount = 0;
-local Vertex2 uiVertexArray[MAX_UI_VERTICES];
+#define MAX_UI_INDICES  3*MAX_UI_VERTICES
+#define MAX_UI_CMDS     1000
+typedef u16 UI_Index;
+local UI_Index uiVertexCount = 0;
+local UI_Index uiIndexCount  = 0;
+local UI_Index uiCmdCount    = 1; //start with 1
+local Vertex2  uiVertexArray[MAX_UI_VERTICES];
+local UI_Index uiIndexArray [MAX_UI_INDICES];
+local UICmdVk  uiCmdArray   [MAX_UI_CMDS]; //different UI cmd per font/texture
 
 #define MAX_TEMP_VERTICES 0xFFFF
-local u16 tempVertexCount = 0;
-local Mesh::Vertex tempVertexArray[MAX_TEMP_VERTICES];
-
-#define MAX_UI_INDICES 3*MAX_UI_VERTICES
-local u32 uiIndexCount = 0;
-local u16 uiIndexArray[MAX_UI_INDICES];
-
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
-local u32 tempIndexCount = 0;
-local u16 tempIndexArray[MAX_TEMP_INDICES];
-
-//different UI cmd per font/texture
-#define MAX_UI_CMDS 1000
-local u16 uiCmdCount = 1; //start with 1
-local UICmdVk uiCmdArray[MAX_UI_CMDS]; 
+typedef u16 Temp_Index;
+local Temp_Index tempWireframeVertexCount = 0;
+local Temp_Index tempFilledVertexCount    = 0;
+local Temp_Index tempWireframeIndexCount  = 0;
+local Temp_Index tempFilledIndexCount     = 0;
+local Mesh::Vertex tempWireframeVertexArray[MAX_TEMP_VERTICES];
+local Mesh::Vertex tempFilledVertexArray   [MAX_TEMP_VERTICES];
+local Temp_Index   tempWireframeIndexArray [MAX_TEMP_INDICES];
+local Temp_Index   tempFilledIndexArray    [MAX_TEMP_INDICES];
 
 #define MAX_MODEL_CMDS 10000 
-local u16 modelCmdCount = 0;
-local ModelCmdVk modelCmdArray[MAX_MODEL_CMDS];
+typedef u16 Model_Index;
+local Model_Index modelCmdCount = 0;
+local ModelCmdVk  modelCmdArray[MAX_MODEL_CMDS];
 
 
 //-------------------------------------------------------------------------------------------------
-// VULKAN VARIABLES
+// @VULKAN VARIABLES
 
 
 local array<MeshVk>      vkMeshes;
@@ -380,9 +383,9 @@ local struct{ //pipelines
 			VkPipeline null;
 			VkPipeline flat;
 			VkPipeline phong;
-			VkPipeline twod;
 			VkPipeline pbr;
 			VkPipeline lavalamp;
+			VkPipeline twod;
 			VkPipeline ui;
 			
 			//development shaders
@@ -2006,7 +2009,7 @@ SetupPipelineCreation(){
 	vertexInputAttributes = { //location:u32, binding:u32, format:VkFormat, offset:u32
 		{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Mesh::Vertex, pos)},
 		{1, 0, VK_FORMAT_R32G32_SFLOAT,    offsetof(Mesh::Vertex, uv)},
-		{2, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Mesh::Vertex, color)},
+		{2, 0, VK_FORMAT_R8G8B8A8_UNORM,   offsetof(Mesh::Vertex, color)},
 		{3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Mesh::Vertex, normal)},
 	};
 	vertexInputState.vertexBindingDescriptionCount   = (u32)vertexInputBindings.size();
@@ -2493,6 +2496,19 @@ specializationInfo.mapEntryCount = 1;
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.pbr, "PBR pipeline");
 	}
 	
+	{//selected (base with no cull)
+		rasterizationState.cullMode = VK_CULL_MODE_NONE;
+		
+		shaderStages[0] = loadShader("base.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = loadShader("base.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[1].pSpecializationInfo = &specializationInfo;
+		pipelineCreateInfo.stageCount = 2;
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.selected));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.selected, "Selected pipeline");
+		
+		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+	}
+	
 	//wireframe
 	if(deviceFeatures.fillModeNonSolid){
 		colorBlendAttachmentState.blendEnable = VK_FALSE;
@@ -2515,17 +2531,10 @@ specializationInfo.mapEntryCount = 1;
 			depthStencilState.depthTestEnable = VK_FALSE;
 		}
 		
-		{ //selected entity and collider gets a specific colored wireframe
+		{ //collider gets a specific colored wireframe
 			colorBlendAttachmentState.blendEnable         = VK_TRUE;
 			colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
 			colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
-			colorBlendState.blendConstants[0] = (f32)settings.selectedColor.r;
-			colorBlendState.blendConstants[1] = (f32)settings.selectedColor.g;
-			colorBlendState.blendConstants[2] = (f32)settings.selectedColor.b;
-			colorBlendState.blendConstants[3] = (f32)settings.selectedColor.a;
-			
-			AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.selected));
-			DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.selected, "Selected pipeline");
 			
 			colorBlendState.blendConstants[0] = (f32)settings.colliderColor.r;
 			colorBlendState.blendConstants[1] = (f32)settings.colliderColor.g;
@@ -2609,8 +2618,8 @@ specializationInfo.mapEntryCount = 1;
 	if(enabledFeatures.geometryShader){
 		pipelineCreateInfo.layout = pipelineLayouts.geometry;
 		
-		shaderStages[0] = loadShader("base.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("base.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+		shaderStages[0] = loadShader("nothing.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = loadShader("nothing.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 		shaderStages[2] = loadShader("normaldebug.geom.spv", VK_SHADER_STAGE_GEOMETRY_BIT);
 		pipelineCreateInfo.stageCount = 3;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.normals_debug));
@@ -2664,9 +2673,9 @@ local void
 SetupCommands(){
 	//create UI vertex and index buffers
 	size_t ui_vb_size = uiVertexCount * sizeof(Vertex2);
-	size_t ui_ib_size = uiIndexCount  * sizeof(u16);
+	size_t ui_ib_size = uiIndexCount  * sizeof(UI_Index);
 	if(uiVertexBuffer.size == 0) ui_vb_size = 1000*sizeof(Vertex2);
-	if(uiIndexBuffer.size == 0)  ui_ib_size = 3000*sizeof(u16);
+	if(uiIndexBuffer.size == 0)  ui_ib_size = 3000*sizeof(UI_Index);
 	if(ui_vb_size && ui_ib_size){
 		//create/resize buffers if they are too small
 		if(uiVertexBuffer.buffer == VK_NULL_HANDLE || uiVertexBuffer.size < ui_vb_size){
@@ -2704,10 +2713,14 @@ SetupCommands(){
 	}
 	
 	//create temp mesh vertex and index buffers
-	size_t temp_vb_size = tempVertexCount * sizeof(Mesh::Vertex);
-	size_t temp_ib_size = tempIndexCount  * sizeof(u16);
+	size_t temp_wire_vb_size = tempWireframeVertexCount*sizeof(Mesh::Vertex);
+	size_t temp_fill_vb_size = tempFilledVertexCount*sizeof(Mesh::Vertex);
+	size_t temp_wire_ib_size = tempWireframeIndexCount*sizeof(Temp_Index);
+	size_t temp_fill_ib_size = tempFilledIndexCount*sizeof(Temp_Index);
+	size_t temp_vb_size = temp_wire_vb_size+temp_fill_vb_size;
+	size_t temp_ib_size = temp_wire_ib_size+temp_fill_ib_size;
 	if(tempVertexBuffer.size == 0) temp_vb_size = 1000*sizeof(Mesh::Vertex);
-	if(tempIndexBuffer.size == 0)  temp_ib_size = 3000*sizeof(u16);
+	if(tempIndexBuffer.size == 0)  temp_ib_size = 3000*sizeof(Temp_Index);
 	if(temp_vb_size && temp_ib_size){
 		//create/resize buffers if they are too small
 		if(tempVertexBuffer.buffer == VK_NULL_HANDLE || tempVertexBuffer.size < temp_vb_size){
@@ -2724,8 +2737,10 @@ SetupCommands(){
 		AssertVk(vkMapMemory(device, tempVertexBuffer.memory, 0, temp_vb_size, 0, &vb_data));
 		AssertVk(vkMapMemory(device, tempIndexBuffer.memory,  0, temp_ib_size, 0, &ib_data));
 		{
-			memcpy(vb_data, tempVertexArray, temp_vb_size);
-			memcpy(ib_data, tempIndexArray,  temp_ib_size);
+			memcpy(vb_data, tempWireframeVertexArray, temp_wire_vb_size);
+			memcpy(ib_data, tempWireframeIndexArray,  temp_wire_ib_size);
+			memcpy((char*)vb_data+temp_wire_vb_size, tempFilledVertexArray, temp_fill_vb_size);
+			memcpy((char*)ib_data+temp_wire_ib_size, tempFilledIndexArray,  temp_fill_ib_size);
 			
 			VkMappedMemoryRange range[2] = {};
 			range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
@@ -2755,8 +2770,10 @@ ResetCommands(){
 	}
 	
 	{//temp commands
-		tempVertexCount = 0;
-		tempIndexCount  = 0;
+		tempWireframeVertexCount = 0;
+		tempWireframeIndexCount  = 0;
+		tempFilledVertexCount = 0;
+		tempFilledIndexCount  = 0;
 	}
 	
 	{//model commands
@@ -2782,16 +2799,14 @@ BuildCommands(){
 	VkRenderPassBeginInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
 	VkViewport viewport{}; //scales the image
 	VkRect2D   scissor{};  //cuts the scaled image //TODO(delle,Re) letterboxing settings here
-	VkPipeline      pipeline      = VK_NULL_HANDLE;
-	VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
 	
 	forI(imageCount){
 		VkCommandBuffer cmdBuffer = frames[i].commandBuffer;
 		AssertVk(vkBeginCommandBuffer(cmdBuffer, &cmdBufferInfo), "failed to begin recording command buffer");
 		
-		///////////////////////////
-		//// first render pass ////
-		///////////////////////////
+		////////////////////////////
+		//// @first render pass ////
+		////////////////////////////
 		{//generate shadow map by rendering the scene offscreen
 			clearValues[0].depthStencil = {1.0f, 0};
 			renderPassInfo.renderPass               = offscreen.renderpass;
@@ -2815,8 +2830,6 @@ BuildCommands(){
 			vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
 			vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 			vkCmdSetDepthBias(cmdBuffer, settings.depthBiasConstant, 0.0f, settings.depthBiasSlope);
-			pipeline = pipelines.offscreen;
-			descriptorSet = descriptorSets.offscreen;
 			vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.offscreen);
 			vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.offscreen, 0, nullptr);
 			
@@ -2840,9 +2853,9 @@ BuildCommands(){
 		
 		//NOTE explicit synchronization is not required because it is done via the subpass dependenies
 		
-		////////////////////////////
-		//// second render pass ////
-		////////////////////////////
+		/////////////////////////////
+		//// @second render pass ////
+		/////////////////////////////
 		{//scene rendering with applied shadow map
 			clearValues[0].color        = {settings.clearColor.r, settings.clearColor.g, settings.clearColor.b, settings.clearColor.a};
 			clearValues[1].depthStencil = {1.0f, 0};
@@ -2881,23 +2894,16 @@ BuildCommands(){
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &cmd.matrix);
 				
 				if(settings.wireframeOnly){
-					if(pipeline != pipelines.wireframe){
-						pipeline = pipelines.wireframe;
-						vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-					}
+					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
 				}else{
-					if(pipeline != mat.pipeline || descriptorSet != mat.descriptorSet){
-						pipeline      = mat.pipeline;
-						descriptorSet = mat.descriptorSet;
-						vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-						vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 1, 1, &descriptorSet, 0, nullptr);
-					}
+					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mat.pipeline);
+					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 1, 1, &mat.descriptorSet, 0, nullptr);
 				}
 				vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
 				stats.drawnIndices += cmd.indexCount;
 				
 				//wireframe overlay
-				if(settings.meshWireframes && pipeline != pipelines.wireframe){
+				if(settings.meshWireframes){
 					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
 					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
 					stats.drawnIndices += cmd.indexCount;
@@ -2909,26 +2915,31 @@ BuildCommands(){
 					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.geometry, 0, 1, &descriptorSets.geometry, 0, nullptr);
 					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
 					stats.drawnIndices += cmd.indexCount;
+					
+					//rebind this b/c it was overwritten above
+					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.base, 0, nullptr);
 				}
 			}
 			DebugEndLabelVk(cmdBuffer);
 			
 			//draw temporary stuff
-			if(tempVertexCount > 0 && tempIndexCount > 0){
+			if(tempWireframeVertexCount > 0 && tempWireframeIndexCount > 0){
 				DebugBeginLabelVk(cmdBuffer, "Temp", draw_group_color);
-				if(settings.tempMeshOnTop){
-					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
-				}else{
-					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe_depth);
-				}
+				//wireframe
+				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,(settings.tempMeshOnTop) ? pipelines.wireframe : pipelines.wireframe_depth);
 				VkDeviceSize offsets[1] = {0};
 				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &tempVertexBuffer.buffer, offsets);
 				vkCmdBindIndexBuffer(cmdBuffer, tempIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &Matrix4::IDENTITY);
 				vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.base, 0, nullptr);
+				vkCmdDrawIndexed(cmdBuffer, tempWireframeIndexCount, 1, 0, 0, 0);
+				stats.drawnIndices += tempWireframeIndexCount;
 				
-				vkCmdDrawIndexed(cmdBuffer, tempIndexCount, 1, 0, 0, 0);
-				stats.drawnIndices += tempIndexCount;
+				//filled
+				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.selected);
+				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &Matrix4::IDENTITY);
+				vkCmdDrawIndexed(cmdBuffer, tempFilledIndexCount, 1, tempWireframeIndexCount, tempWireframeVertexCount, 0);
+				stats.drawnIndices += tempFilledIndexCount;
 				
 				DebugEndLabelVk(cmdBuffer);
 			}
@@ -3088,8 +3099,8 @@ FillRectUI(f32 x, f32 y, f32 w, f32 h, Color color){
 	}
 	
 	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2* vp = uiVertexArray + uiVertexCount;
-	u16*      ip = uiIndexArray  + uiIndexCount;
+	Vertex2*  vp = uiVertexArray + uiVertexCount;
+	UI_Index* ip = uiIndexArray  + uiIndexCount;
 	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
@@ -3114,9 +3125,9 @@ FillRectUI(vec2 pos, vec2 dimensions, Color color) {
 		uiCmdCount++;
 	}
 	
-	u32     col = color.R8G8B8A8_UNORM();
-	Vertex2* vp = uiVertexArray + uiVertexCount;
-	u16*     ip = uiIndexArray + uiIndexCount;
+	u32      col = color.R8G8B8A8_UNORM();
+	Vertex2*  vp = uiVertexArray + uiVertexCount;
+	UI_Index* ip = uiIndexArray + uiIndexCount;
 	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
@@ -3142,8 +3153,8 @@ DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	}
 	
 	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2* vp = uiVertexArray + uiVertexCount;
-	u16*      ip = uiIndexArray + uiIndexCount;
+	Vertex2*  vp = uiVertexArray + uiVertexCount;
+	UI_Index* ip = uiIndexArray + uiIndexCount;
 	
 	vec2 ott = vec2(x2, y2) - vec2(x1, y1) ;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
@@ -3176,8 +3187,8 @@ DrawLineUI(vec2 start, vec2 end, float thickness, Color color) {
 	}
 	
 	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2* vp = uiVertexArray + uiVertexCount;
-	u16* ip = uiIndexArray + uiIndexCount;
+	Vertex2*  vp = uiVertexArray + uiVertexCount;
+	UI_Index* ip = uiIndexArray + uiIndexCount;
 	
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
@@ -3220,8 +3231,8 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color) {
 	}
 	
 	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2* vp = uiVertexArray + uiVertexCount;
-	u16*     ip = uiIndexArray  + uiIndexCount;
+	Vertex2*  vp = uiVertexArray + uiVertexCount;
+	UI_Index* ip = uiIndexArray  + uiIndexCount;
 	
 	f32 w = vkFonts[1].characterWidth;
 	f32 h = vkFonts[1].characterHeight;
@@ -3302,7 +3313,6 @@ LoadMesh(Mesh* mesh){
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)meshIndexBuffer.buffer, "Mesh index buffer");
 	}
 	
-	//@@
 	//copy memory to the GPU
 	void* vb_data; void* ib_data;
 	AssertVk(vkMapMemory(device, meshVertexBuffer.memory, mvk.vbOffset, mvk.vbSize, 0, &vb_data));
@@ -3636,82 +3646,134 @@ DrawModel(Model* model, Matrix4 matrix){
 }
 
 void Render::
-DrawModelWireframe(Model* mesh, Matrix4 matrix, Color color){
+DrawModelWireframe(Model* mesh, Matrix4 matrix, Color& color){
 	//!Incomplete
 }
 
 void Render::
-DrawLine(Vector3 start, Vector3 end, Color color){
+DrawLine(Vector3 start, Vector3 end, Color& color){
 	if(color.a == 0) return;
 	
-	vec3 col((f32)color.r / 255.0f, (f32)color.g / 255.0f, (f32)color.b / 255.0f);
-	Mesh::Vertex* vp = tempVertexArray + tempVertexCount;
-	u16*          ip = tempIndexArray + tempIndexCount;
+	u32 col = Color::PackColorU32(color);
+	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
+	Temp_Index*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
-	ip[0] = tempVertexCount; 
-	ip[1] = tempVertexCount+1; 
-	ip[2] = tempVertexCount;
+	ip[0] = tempWireframeVertexCount; 
+	ip[1] = tempWireframeVertexCount+1; 
+	ip[2] = tempWireframeVertexCount;
 	vp[0].pos = start; vp[0].color = col;
 	vp[1].pos = end;   vp[1].color = col;
 	
-	tempVertexCount += 2;
-	tempIndexCount  += 3;
+	tempWireframeVertexCount += 2;
+	tempWireframeIndexCount  += 3;
 }
 
 void Render::
-DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color color){
+DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color& color){
 	if(color.a == 0) return;
 	
-	vec3 col((f32)color.r / 255.0f, (f32)color.g / 255.0f, (f32)color.b / 255.0f);
-	Mesh::Vertex* vp = tempVertexArray + tempVertexCount;
-	u16*          ip = tempIndexArray + tempIndexCount;
+	u32 col = Color::PackColorU32(color);
+	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
+	Temp_Index*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
-	ip[0] = tempVertexCount; 
-	ip[1] = tempVertexCount+1; 
-	ip[2] = tempVertexCount+2;
+	ip[0] = tempWireframeVertexCount; 
+	ip[1] = tempWireframeVertexCount+1; 
+	ip[2] = tempWireframeVertexCount+2;
 	vp[0].pos = p0; vp[0].color = col;
 	vp[1].pos = p1; vp[1].color = col;
 	vp[2].pos = p2; vp[2].color = col;
 	
-	tempVertexCount += 3;
-	tempIndexCount  += 3;
+	tempWireframeVertexCount += 3;
+	tempWireframeIndexCount  += 3;
 }
 
 void Render::
-DrawBox(Matrix4 transform, Color color){
+DrawTriangleFilled(Vector3 p0, Vector3 p1, Vector3 p2, Color& color){
+	if(color.a == 0) return;
+	
+	u32 col = Color::PackColorU32(color);
+	Mesh::Vertex* vp = tempFilledVertexArray + tempFilledVertexCount;
+	Temp_Index*   ip = tempFilledIndexArray + tempFilledIndexCount;
+	
+	ip[0] = tempFilledVertexCount; 
+	ip[1] = tempFilledVertexCount+1; 
+	ip[2] = tempFilledVertexCount+2;
+	vp[0].pos = p0; vp[0].color = col;
+	vp[1].pos = p1; vp[1].color = col;
+	vp[2].pos = p2; vp[2].color = col;
+	
+	tempFilledVertexCount += 3;
+	tempFilledIndexCount  += 3;
+}
+
+void Render::
+DrawQuad(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, Color& color){
+	if(color.a == 0) return;
+	DrawLine(p0, p1, color);
+	DrawLine(p1, p2, color);
+	DrawLine(p2, p3, color);
+	DrawLine(p3, p0, color);
+}
+
+inline void Render::
+DrawQuadFilled(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, Color& color){
+	if(color.a == 0) return;
+	DrawTriangleFilled(p0, p1, p2, color);
+	DrawTriangleFilled(p0, p2, p3, color);
+}
+
+void Render::
+DrawPoly(array<Vector3>& points, Color& color){
+	Assert(points.count > 2);
+	if(color.a == 0) return;
+	for(int i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
+	DrawLine(points[points.count-2], points[points.count-1], color);
+}
+
+void Render::
+DrawPolyFilled(array<Vector3>& points, Color& color){
+	Assert(points.count > 2);
+	if(color.a == 0) return;
+	for(int i=2; i<points.count-1; ++i) DrawTriangleFilled(points[i-2], points[i-1], points[i], color);
+	DrawTriangle(points[points.count-3], points[points.count-2], points[points.count-1], color);
+}
+
+void Render::
+DrawBox(Matrix4 transform, Color& color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
 	vec3 points[8] = {
-		{-p.x, p.y, p.z},
-		{-p.x,-p.y, p.z},
-		{-p.x, p.y,-p.z},
-		{-p.x,-p.y,-p.z},
-		{ p.x, p.y, p.z},
-		{ p.x,-p.y, p.z},
-		{ p.x, p.y,-p.z},
-		{ p.x,-p.y,-p.z},
+		{-p.x, p.y, p.z},{-p.x,-p.y, p.z},{-p.x, p.y,-p.z},{-p.x,-p.y,-p.z},
+		{ p.x, p.y, p.z},{ p.x,-p.y, p.z},{ p.x, p.y,-p.z},{ p.x,-p.y,-p.z},
 	};
-	forI(8){
-		points[i] = points[i] * transform;
-	}
-	
-	DrawLine(points[3], points[1], color);
-	DrawLine(points[3], points[2], color);
-	DrawLine(points[3], points[7], color);
-	DrawLine(points[0], points[1], color);
-	DrawLine(points[0], points[2], color);
-	DrawLine(points[0], points[4], color);
-	DrawLine(points[5], points[1], color);
-	DrawLine(points[5], points[4], color);
-	DrawLine(points[5], points[7], color);
-	DrawLine(points[6], points[2], color);
-	DrawLine(points[6], points[4], color);
-	DrawLine(points[6], points[7], color);
+	forI(8){ points[i] = points[i] * transform; }
+	DrawLine(points[3], points[1], color); DrawLine(points[3], points[2], color); DrawLine(points[3], points[7], color);
+	DrawLine(points[0], points[1], color); DrawLine(points[0], points[2], color); DrawLine(points[0], points[4], color);
+	DrawLine(points[5], points[1], color); DrawLine(points[5], points[4], color); DrawLine(points[5], points[7], color);
+	DrawLine(points[6], points[2], color); DrawLine(points[6], points[4], color); DrawLine(points[6], points[7], color);
 }
 
 void Render::
-DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color){
+DrawBoxFilled(Matrix4 transform, Color& color){
+	if(color.a == 0) return;
+	
+	vec3 p(0.5f, 0.5f, 0.5f);
+	vec3 points[8] = {
+		{-p.x, p.y, p.z},{-p.x,-p.y, p.z},{-p.x, p.y,-p.z},{-p.x,-p.y,-p.z},
+		{ p.x, p.y, p.z},{ p.x,-p.y, p.z},{ p.x, p.y,-p.z},{ p.x,-p.y,-p.z},
+	};
+	forI(8){ points[i] = points[i] * transform; }
+	DrawTriangleFilled(points[4], points[2], points[0], color); DrawTriangleFilled(points[4], points[6], points[2], color);
+	DrawTriangleFilled(points[2], points[7], points[3], color); DrawTriangleFilled(points[2], points[6], points[7], color);
+	DrawTriangleFilled(points[6], points[5], points[7], color); DrawTriangleFilled(points[6], points[4], points[5], color);
+	DrawTriangleFilled(points[1], points[7], points[5], color); DrawTriangleFilled(points[1], points[3], points[7], color);
+	DrawTriangleFilled(points[0], points[3], points[1], color); DrawTriangleFilled(points[0], points[2], points[3], color);
+	DrawTriangleFilled(points[4], points[1], points[5], color); DrawTriangleFilled(points[4], points[0], points[1], color);
+}
+
+void Render::
+DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color& color){
 	if(color.a == 0) return;
 	
 	f32 y = tanf(RADIANS(fovx / 2.0f));
@@ -4030,12 +4092,18 @@ Update(){
 	
 	//iterate the frame index
 	frameIndex = (frameIndex + 1) % MAX_FRAMES; //loops back to zero after reaching max_frames
-	AssertVk(vkQueueWaitIdle(graphicsQueue), "graphics queue failed to wait");
+	result = vkQueueWaitIdle(graphicsQueue);
+	switch(result){
+		case VK_ERROR_OUT_OF_HOST_MEMORY:   PRINTLN("[Vulkan] OUT_OF_HOST_MEMORY");   Assert(!"CPU ran out of memory"); break;
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY: PRINTLN("[Vulkan] OUT_OF_DEVICE_MEMORY"); Assert(!"GPU ran out of memory"); break;
+		case VK_ERROR_DEVICE_LOST:          PRINTLN("[Vulkan] DEVICE_LOST");          Assert(!"Bad Sync/Overheat/Drive Bug"); break;
+		case VK_SUCCESS:default: break;
+	}
 	
 	//update stats
 	stats.drawnTriangles += stats.drawnIndices / 3;
-	//stats.totalVertices  += (u32)vertexBuffer.size() + uiVertexCount + tempVertexCount;
-	//stats.totalIndices   += (u32)indexBuffer.size()  + uiIndexCount  + tempIndexCount; //!Incomplete
+	//stats.totalVertices  += (u32)vertexBuffer.size() + uiVertexCount + tempWireframeVertexCount;
+	//stats.totalIndices   += (u32)indexBuffer.size()  + uiIndexCount  + tempWireframeIndexCount; //!Incomplete
 	stats.totalTriangles += stats.totalIndices / 3;
 	stats.renderTimeMS    = TIMER_END(t_r);
 	

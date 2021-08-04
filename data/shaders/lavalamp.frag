@@ -9,7 +9,7 @@ layout(set = 1, binding = 0) uniform sampler2D lightSampler;
 //layout(constant_id = 0) const bool ALPHA_MASK = false;
 //layout(constant_id = 1) const float ALPHA_THRESHOLD = 0.0f;
 
-layout(location = 0) in vec3  inColor;
+layout(location = 0) in vec4  inColor;
 layout(location = 1) in vec2  inTexCoord;
 layout(location = 2) in vec3  inNormal;
 layout(location = 3) in float time;
@@ -69,5 +69,5 @@ void main() {
 	//outColor = vec4(1, 1, 1, 1);
 	//outColor = vec4(0.5, inTexCoord.x, inTexCoord.y, 1);
 	
-	//outColor = vec4(inColor, 1.0);
+	//outColor = inColor;
 }

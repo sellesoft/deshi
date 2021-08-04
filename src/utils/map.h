@@ -2,51 +2,58 @@
 #ifndef DESHI_MAP_H
 #define DESHI_MAP_H
 
-#include "array.h"
-#include "tuple.h"
-#include "utils.h"
 #include "hash.h"
+#include "array.h"
 
-template<class Key, class Value>
+//TODO(delle) make this sorted so its faster
+template<typename Key, typename Value, typename HashStruct = hash<Key>>
 struct map {
-	array<pair<u32, Value>> data;
+	array<u32>   hashes;
+	array<Value> data;
+	u32 count = 0;
 	
-	u32 seed = 213;
+	void clear() {
+		hashes.clear();
+		data.clear();
+		count = 0;
+	}
 	
 	bool has(const Key& key) {
-		u32 hashed = hash<Key>{}(key);
-		for (auto& p : data) {
-			if (hashed == p.first) {
-				return true;
-			}
-		}
+		u32 hashed = HashStruct{}(key);
+		forI(hashes.count){ if(hashed == hashes[i]){ return true; } }
 		return false;
 	}
 	
 	Value& operator[](const Key& key) {
-		u32 hashed = hash<Key>{}(key);
-		for (auto& p : data) {
-			if (hashed == p.first) {
-				return p.second;
-			}
-		}
-		Value v{};
-		data.add(make_pair(hashed, v));
-		return data.last->second;
+		u32 hashed = HashStruct{}(key);
+		forI(hashes.count){ if(hashed == hashes[i]){ return data[i]; } }
+		hashes.add(hashed);
+		data.add(Value{});
+		count++;
+		return *data.last;
 	}
 	
-	u32 size() {
-		return data.size();
+	//returns index of added or existing key
+	u32 add(const Key& key){
+		u32 hashed = HashStruct{}(key);
+		forI(hashes.count){ if(hashed == hashes[i]){ return i; } }
+		hashes.add(hashed);
+		data.add(Value{});
+		count++;
+		return count-1;
 	}
 	
-	void clear() {
-		data.clear();
+	u32 add(const Key& key, const Value& value){
+		u32 hashed = HashStruct{}(key);
+		forI(hashes.count){ if(hashed == hashes[i]){ return i; } }
+		hashes.add(hashed);
+		data.add(value);
+		count++;
+		return count-1;
 	}
-	
-	void erase(u32 idx) {
-		data.remove(idx);
-	}
-	
 };
+
+template<typename Key, typename HashStruct = hash<Key>>
+using Set = map<Key,Key,HashStruct>;
 
 #endif

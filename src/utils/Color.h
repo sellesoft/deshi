@@ -3,15 +3,22 @@
 #define DESHI_COLOR_H
 
 #include "../defines.h"
-
 #include <string>
 
 #define RANDCOLOR Color(rand() % 255 + 1, rand() % 255 + 1, rand() % 255 + 1)
+#define COLORU32_RMASK 0x000000FF
+#define COLORU32_GMASK 0x0000FF00
+#define COLORU32_BMASK 0x00FF0000
+#define COLORU32_AMASK 0xFF000000
+#define COLORU32_RSHIFT 0
+#define COLORU32_GSHIFT 8
+#define COLORU32_BSHIFT 16
+#define COLORU32_ASHIFT 24
 
 struct Color {
 	u8 r, g, b, a;
 	
-	static const Color BLANK, WHITE, BLACK,
+	static Color BLANK, WHITE, BLACK,
 	LIGHT_GREY,    GREY,    DARK_GREY,    VERY_DARK_GREY,
 	LIGHT_RED,     RED,     DARK_RED,     VERY_DARK_RED,
 	LIGHT_YELLOW,  YELLOW,  DARK_YELLOW,  VERY_DARK_YELLOW,
@@ -91,6 +98,19 @@ struct Color {
 		return ((u32)a << 24) | ((u32)b << 16) | ((u32)g << 8) | ((u32)r << 0);
 	}
 	
+	void FillFloat3(f32* floats){
+		*(floats+0) = (f32)r / 255.0f;
+		*(floats+1) = (f32)g / 255.0f;
+		*(floats+2) = (f32)b / 255.0f;
+	}
+	
+	void FillFloat4(f32* floats){
+		*(floats+0) = (f32)r / 255.0f;
+		*(floats+1) = (f32)g / 255.0f;
+		*(floats+2) = (f32)b / 255.0f;
+		*(floats+3) = (f32)a / 255.0f;
+	}
+	
 	Color getrandcol();
 	
 	std::string str() {
@@ -103,12 +123,29 @@ struct Color {
 					 (u8)(b / 255.0f),
 					 (u8)(a / 255.0f));
 	}
+	
+	static u32 PackColorU32(const Color& color){
+		return ((u32)color.a << 24) | ((u32)color.b << 16) | ((u32)color.g << 8) | ((u32)color.r << 0);
+	}
+	
+	static void FillFloat3FromU32(f32* floats, u32 color){
+		*(floats+0) = (f32)((color >> COLORU32_RSHIFT) & 0xFF) / 255.0f;
+		*(floats+1) = (f32)((color >> COLORU32_GSHIFT) & 0xFF) / 255.0f;
+		*(floats+2) = (f32)((color >> COLORU32_BSHIFT) & 0xFF) / 255.0f;
+	}
+	
+	static void FillFloat4FromU32(f32* floats, u32 color){
+		*(floats+0) = (f32)((color >> COLORU32_RSHIFT) & 0xFF) / 255.0f;
+		*(floats+1) = (f32)((color >> COLORU32_GSHIFT) & 0xFF) / 255.0f;
+		*(floats+2) = (f32)((color >> COLORU32_BSHIFT) & 0xFF) / 255.0f;
+		*(floats+3) = (f32)((color >> COLORU32_ASHIFT) & 0xFF) / 255.0f;
+	}
 };
 
 //// Static Constants ////
 
 //copied from pge see licence.txt so we dont get in twoubal!!!
-inline const Color
+inline Color
 Color::BLANK(0,0,0,0), Color::WHITE(255,255,255), Color::BLACK(0,0,0),
 Color::LIGHT_GREY   (230,230,230),Color::GREY   (192,192,192),Color::DARK_GREY   (128,128,128),Color::VERY_DARK_GREY   (64,64,64),
 Color::LIGHT_RED    (255,204,203),Color::RED    (255,  0,  0),Color::DARK_RED    (128,  0,  0),Color::VERY_DARK_RED    (64, 0, 0),

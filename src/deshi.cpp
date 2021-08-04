@@ -259,6 +259,7 @@ int main() {
     SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
     
     //start main loop
+	glfwShowWindow(window.window);
     while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
         glfwPollEvents();
         

@@ -4,7 +4,7 @@
 
 layout(binding = 1) uniform sampler2D shadowMap;
 
-layout(location = 0) in vec3 inColor;
+layout(location = 0) in vec4 inColor;
 layout(location = 1) in vec2 inTexCoord;
 layout(location = 2) in vec3 inNormal;
 layout(location = 3) in float lightBrightness;
@@ -86,6 +86,6 @@ void main() {
 	vec3 L = normalize(inLightVec);
 	vec3 V = normalize(inViewVec);
 	vec3 R = normalize(-reflect(L, N));
-	vec3 diffuse = max(dot(N, L), ambient) * inColor;
-	outColor = vec4(diffuse * shadow, 1.0);
+	vec4 diffuse = max(dot(N, L), ambient) * inColor;
+	outColor = shadow * diffuse;
 }

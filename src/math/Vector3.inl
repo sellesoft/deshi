@@ -175,11 +175,12 @@ mag() const {
 //	return 1.f / k;
 //}
 
-inline void Vector3::
+inline Vector3 Vector3::
 normalize() {
 	if (*this != Vector3(0, 0, 0)) {
 		*this /= this->mag();
 	}
+	return *this;
 }
 
 //inline void Vector3::
@@ -201,7 +202,7 @@ normalized() const {
 	if (*this != Vector3(0, 0, 0)) {
 		return *this / this->mag();
 	}
-	return Vector3(*this);
+	return *this;
 }
 
 //inline Vector3 Vector3::
@@ -262,9 +263,9 @@ inline void Vector3::round(int place) {
 //round to a decimal place
 inline Vector3 Vector3::rounded(int place) {
 	return Vector3(
-		floor(x * place * 10 + 0.5) / (place * 10),
-		floor(y * place * 10 + 0.5) / (place * 10),
-		floor(z * place * 10 + 0.5) / (place * 10));
+				   floor(x * place * 10 + 0.5) / (place * 10),
+				   floor(y * place * 10 + 0.5) / (place * 10),
+				   floor(z * place * 10 + 0.5) / (place * 10));
 }
 
 inline float Vector3::

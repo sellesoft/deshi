@@ -149,11 +149,12 @@ mag() const {
 	return sqrt(x * x + y * y);
 }
 
-inline void Vector2::
+inline Vector2 Vector2::
 normalize() {
 	if (*this != Vector2(0, 0)) {
 		*this /= this->mag();
 	}
+	return *this;
 }
 
 inline Vector2 Vector2::
@@ -161,7 +162,7 @@ normalized() const {
 	if (*this != Vector2(0, 0)) {
 		return *this / this->mag();
 	}
-	return Vector2(*this);
+	return *this;
 }
 
 inline void Vector2::

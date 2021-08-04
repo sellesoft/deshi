@@ -18,8 +18,8 @@ struct Quaternion;
 //////////////////////
 
 struct Vector2 {
-	union{ float x = 0; float r; float w; };
-	union{ float y = 0; float g; float h; };
+	union{ float x = 0; float r; float w; float u; };
+	union{ float y = 0; float g; float h; float v; };
 	
 	Vector2(){};
 	Vector2(float inX, float inY);
@@ -59,7 +59,7 @@ struct Vector2 {
 	Vector2 cross(const Vector2& rhs) const;
 	Vector2 perp() const;
 	float   mag() const;
-	void    normalize();
+	Vector2 normalize();
 	Vector2 normalized() const;
 	void    clampMag(float min, float max);
 	Vector2 clampedMag(float min, float max) const;
@@ -131,7 +131,7 @@ struct Vector3 {
 	float   dot(const Vector3& rhs) const;
 	Vector3 cross(const Vector3& rhs) const;
 	float   mag() const;
-	void	normalize();
+	Vector3 normalize();
 	Vector3 normalized() const;
 	Vector3 clamp(float lo, float hi);
 	void    clampMag(float min, float max);

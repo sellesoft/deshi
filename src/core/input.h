@@ -136,6 +136,9 @@ struct Input{
 	inline bool RShiftDown(){ return newKeyState[Key::RSHIFT]; }
 	inline bool LAltDown()  { return newKeyState[Key::LALT]; }
 	inline bool RAltDown()  { return newKeyState[Key::RALT]; }
+	inline bool CtrlDown()  { return newKeyState[Key::RCTRL] || newKeyState[Key::LCTRL]; }
+	inline bool ShiftDown() { return newKeyState[Key::RSHIFT] || newKeyState[Key::LSHIFT]; }
+	inline bool AltDown() { return newKeyState[Key::RALT] || newKeyState[Key::LALT]; }
 	
 	bool ModsDown(u32 mods){
 		switch(mods){

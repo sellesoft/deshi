@@ -18,10 +18,10 @@ layout(push_constant) uniform PushConsts{
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inTexCoord;
-layout(location = 2) in vec3 inColor;
+layout(location = 2) in vec4 inColor;
 layout(location = 3) in vec3 inNormal;
 
-layout(location = 0) out vec3 outColor;
+layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec2 outTexCoord;
 layout(location = 2) out vec3 outNormal;
 
@@ -77,11 +77,11 @@ void main() {
 	
 	
 	//gl_Position = vec4(quant3(gl_Position.xyz, 20), gl_Position.w);
-	outColor = vec3(clamp(dot(normalize(light - position), normal) * 0.9, .1f, 1),
+	outColor = vec4(clamp(dot(normalize(light - position), normal) * 0.9, .1f, 1),
 					clamp(dot(normalize(light - position), normal) * 0.9, .1f, 1),
-					clamp(dot(normalize(light - position), normal) * 0.9, .1f, 1));
+					clamp(dot(normalize(light - position), normal) * 0.9, .1f, 1), 1.0f);
 	
-	outColor *= normalize(inPosition.xyz) * 0.05 * sin(gl_VertexIndex * ubo.time / 2000) * vec3(1, 0.3, 0.2);
+	outColor *= vec4(normalize(inPosition.xyz) * 0.05 * sin(gl_VertexIndex * ubo.time / 2000) * vec3(1, 0.3, 0.2), 1.0f);
 	
 	//outColor = vec3(dist / 20);
 	

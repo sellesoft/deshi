@@ -20,7 +20,9 @@ vec4 dither(){
 	vec2 texSize = textureSize(nullSampler, 0);
 	vec2 texInc = vec2(1 / texSize.x, 1/ texSize.y);
 	
-	vec2 tc = inUV;
+	//vec2 tc = inUV;
+	float seed_float = rand(vec2(time,time/2.f));
+	vec2 tc = vec2(seed_float, -seed_float);
 	tc = vec2(quant(tc.x, texSize.x), quant(tc.y, texSize.y));
 	vec2 randControl = vec2(tc.x + quant(time, 5), tc.y + quant(time, 5));
 	float random = floor(rand(randControl) * 5);

@@ -420,16 +420,18 @@ loadConfig(const char* filename, ConfigMap configMap){
 	char* key_end;
 	char* value_start;
 	char* value_end;
+	bool has_cr = false;
 	for(u32 line_number = 1; ;line_number++){
 		//get the next line
-		line_start = line_end+1;
+		line_start = (has_cr) ? line_end+2 : line_end+1;
 		if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
 		if(line_start == line_end) continue;
 		
 		//check for CRLF
-		bool has_cr = false;
-		if(*(line_end-1) == '\r') {
+		if(has_cr || *(line_end-1) == '\r') {
+			has_cr = true;
 			line_end -= 1;
+			if(line_start == line_end) continue;
 		}
 		
 		//format the line
@@ -580,8 +582,5 @@ loadConfig(const char* filename, ConfigMap configMap){
 				config.second = ConfigValueType_NONE;
 			}
 		}
-		
-		//reset line_end if CRLF
-		if(has_cr) line_end++;
 	}
 }

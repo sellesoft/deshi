@@ -27,7 +27,6 @@ A game engine for 3D physics and graphics building on [P3DPGE](https://github.co
 * [Dear ImGui](https://github.com/ocornut/imgui)
 * [dr_libs](https://github.com/mackron/dr_libs)
 * [stb](https://github.com/nothings/stb)
-* [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader)
 
 ### Credits
 * [dellevelled](https://github.com/DelleVelleD)

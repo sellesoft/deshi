@@ -71,6 +71,17 @@ namespace ImGui{
 		return SliderScalar(label, ImGuiDataType_U32, v, &v_min, &v_max, format, flags);
 	}
 	
+	static void HelpMarker(const char* symbol, const char* desc){
+		ImGui::TextDisabled(symbol);
+		if (ImGui::IsItemHovered()){
+			ImGui::BeginTooltip();
+			ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+			ImGui::TextUnformatted(desc);
+			ImGui::PopTextWrapPos();
+			ImGui::EndTooltip();
+		}
+	}
+	
 }; //namespace ImGui
 
 #endif //DESHI_IMGUI_H

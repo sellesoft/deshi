@@ -6,9 +6,7 @@
 #include "../math/VectorMatrix.h"
 #include "../utils/Color.h"
 #include "../utils/string.h"
-
-#include <vector>
-#include <string>
+#include "../utils/array.h"
 
 enum VSyncTypeBits{
     VSyncType_Immediate,   //no image queue (necessary), display as soon as possible
@@ -91,8 +89,8 @@ struct RenderSettings{
 struct Mesh;
 struct Texture;
 struct Material;
-struct Font;
 struct Model;
+struct Font;
 namespace Render{
 	
     void LoadSettings();
@@ -115,12 +113,17 @@ namespace Render{
 	void UnloadMesh(Mesh* mesh);
     
 	void DrawModel(Model* model, Matrix4 matrix);
-	void DrawModelWireframe(Model* model, Matrix4 matrix, Color color = Color::WHITE);
-	void DrawLine(Vector3 start, Vector3 end, Color color = Color::WHITE);
-	void DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color color = Color::WHITE);
-	void FillTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color color = Color::WHITE);
-	void DrawBox(Matrix4 transform, Color color = Color::WHITE);
-    void DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color = Color::WHITE);
+	void DrawModelWireframe(Model* model, Matrix4 matrix, Color& color = Color::WHITE);
+	void DrawLine(Vector3 start, Vector3 end, Color& color = Color::WHITE);
+	void DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color& color = Color::WHITE);
+	void DrawTriangleFilled(Vector3 p0, Vector3 p1, Vector3 p2, Color& color = Color::WHITE);
+	void DrawQuad(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, Color& color = Color::WHITE);
+	void DrawQuadFilled(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, Color& color = Color::WHITE);
+	void DrawPoly(array<Vector3>& points, Color& color = Color::WHITE);
+	void DrawPolyFilled(array<Vector3>& points, Color& color = Color::WHITE);
+	void DrawBox(Matrix4 transform, Color& color = Color::WHITE);
+	void DrawBoxFilled(Matrix4 transform, Color& color = Color::WHITE);
+    void DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color& color = Color::WHITE);
 	
     //ui drawing functions
     void FillRectUI(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);

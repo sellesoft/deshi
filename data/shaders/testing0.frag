@@ -7,7 +7,7 @@ layout(set = 1, binding = 1) uniform sampler2D normalSampler;
 layout(set = 1, binding = 2) uniform sampler2D specularSampler;
 layout(set = 1, binding = 3) uniform sampler2D lightSampler;
 
-layout(location = 0)  in vec3  inColor;
+layout(location = 0)  in vec4  inColor;
 layout(location = 1)  in vec2  inTexCoord;
 layout(location = 2)  in vec3  inNormal;
 layout(location = 3)  in float time;
@@ -135,43 +135,43 @@ vec4 fc = gl_FragCoord;
 vec2 tc = inTexCoord;
 
 vec4 monitor(){
-
 	
-
+	
+	
 	vec2 texSize = textureSize(albedoSampler, 0);
-
+	
 	vec2 texelSize = 1 / texSize;
-
+	
 	tc.y *= -1;
-
+	
 	vec4 black = vec4(0,0,0,1);
-
+	
 	float sot = (sin(time) + 1) / 2;
-
+	
 	float res = 1000;//texSize.x;
-
+	
 	float ftcx = floor(tc.x * res) / res;
 	float ftcy = floor(tc.y * res) / res;
-
+	
 	vec4 samp = texture(albedoSampler, vec2(ftcx, ftcy));
 	vec4 sampr = vec4(samp.r, 0, 0, 1);
 	vec4 sampg = vec4(0, samp.g, 0, 1);
 	vec4 sampb = vec4(0, 0, samp.b, 1);
-
+	
 	float ctcx = ceil(tc.x * res) / res;
 	float ctcy = ceil(tc.y * res) / res;
-
+	
 	float xlen = ctcx - ftcx;
 	float ylen = ctcy - ftcy;
-
+	
 	float tcmfy = tc.y - ftcy;
 	float tcmfx = tc.x - ftcx;
-
+	
 	float hfay = tcmfy / ylen;
 	float hfax = tcmfx / xlen;
-
+	
 	float border = 0.05;
-
+	
 	if(hfay < border || hfax > 1 - border || hfay < border || hfax > 1 - border){
 		return black;
 	}
@@ -187,7 +187,7 @@ vec4 monitor(){
 	else{
 		return black;
 	}
-
+	
 	if(hfay < 0.01){
 		return vec4(0,0,0,1);
 	}
@@ -203,7 +203,7 @@ vec4 monitor(){
 	else{
 		return vec4(0, 0, samp.b, 1);
 	}
-
+	
 	return texture(albedoSampler, tc);
 }
 
@@ -212,23 +212,23 @@ float lerpf(float p1, float p2, float t) { return (1.f - t) * p1 + t * p2; }
 float rand	 (vec2 st) {
     return fract(sin(dot(st.xy,
                          vec2(12.9898,78.233)))*
-        43758.5453123);
+				 43758.5453123);
 }
 
 vec4 fog(){
 	float dist = distance(vec3(0,0,0), fragPos);
 	float distToFog = 5;
 	float distToFogBegin = 5;
-
+	
 	vec2 texRez = textureSize(albedoSampler, 0);
-
+	
 	vec4 col1 = vec4(1,1,1,1);
 	vec4 col2 = vec4(0,0,0,1);
-
-
+	
+	
 	vec4 noiseSamp = texture(albedoSampler, vec2(quant(tc.x * 9, texRez.x), quant(tc.y * 9, texRez.y)));
-
-
+	
+	
 	if(noiseSamp.r > 0.5){
 		return black;
 	}
@@ -239,9 +239,9 @@ vec4 fog(){
 
 vec4 fragPosTest(){
 	float dist = length(vec3(0,0,0) - fragPos);
-
+	
 	vec4 samp = texture(albedoSampler, tc);
-
+	
 	return vec4(vec3(1 - (dist / 30)), 1) * samp;
 }
 
@@ -253,26 +253,26 @@ vec4 dither(){
 	
 	vec2 texSize = textureSize(albedoSampler, 0);
 	vec2 texInc = vec2(1 / texSize.x, 1/ texSize.y);
-
+	
 	tc = vec2(quant(tc.x, texSize.x), quant(tc.y, texSize.y));
 	vec2 randControl = vec2(tc.x + quant(time, 5), tc.y + quant(time, 5));
 	float random = floor(rand(randControl) * 5);
 	//return texture(albedoSampler, tc);
-
+	
 	vec2 tcm = floor(tc * texSize);
-
-
+	
+	
 	if(mod(tcm.y, 2.0) == 0 && mod(tcm.x, 2.0) == 0 && mod(random, 2) == 0){
 		vec2 nextSamp = tc;
 		if(mod(random, 4) == 0){
 			nextSamp += texInc ;
-
+			
 		}else{
 			nextSamp -= texInc ;
 		}
 		vec4 currCol = texture(albedoSampler, tc);
 		vec4 nextCol = texture(albedoSampler, nextSamp);
-
+		
 		if(nextCol != currCol){
 			return nextCol;
 		}
@@ -284,13 +284,13 @@ vec4 dither(){
 		vec2 nextSamp = tc;
 		if(mod(random, 2) == 0){
 			nextSamp += texInc ;
-
+			
 		}else{
 			nextSamp -= texInc ;
 		}
 		vec4 currCol = texture(albedoSampler, tc);
 		vec4 nextCol = texture(albedoSampler, nextSamp);
-
+		
 		if(nextCol != currCol){
 			return nextCol;
 		}
@@ -298,7 +298,7 @@ vec4 dither(){
 			return currCol;
 		}
 	}
-
+	
 }
 
 
@@ -306,10 +306,10 @@ vec4 edge(){
 	
 	vec2 texSize = textureSize(albedoSampler, 0);
 	vec2 texInc = vec2(1 / texSize.x, 1/ texSize.y);
-
+	
 	tc = vec2(quant(tc.x, texSize.x), quant(tc.y, texSize.y));
 	vec4 currCol = texture(albedoSampler, tc);
-
+	
 	for(int x = 0; x < 3; x++){
 		for(int y = 0; y < 3; y++){
 			if(x != y ){
@@ -321,7 +321,7 @@ vec4 edge(){
 		}	
 	}
 	return vec4(1);
-
+	
 }
 
 
