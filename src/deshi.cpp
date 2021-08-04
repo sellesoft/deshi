@@ -285,7 +285,7 @@ int main() {
 			UI::Text("unwrapped manually positioned text", vec2(150, 150), UITextFlags_NoWrap);
 
 			UI::EndWindow();
-			UI::ShowDebugWindowOf("test");
+			//UI::ShowDebugWindowOf("test");
 			UI::PopVar();
 		}
     	time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);

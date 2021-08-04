@@ -15,7 +15,7 @@ enum UIStyleVar : u32 {
 	UIStyleVar_WindowPadding,	 // default vec2(10, 10)      spacing between every item and the edges of the window
 	UIStyleVar_ItemSpacing,      // default vec2(1, 1)	      spacing between items within a window
 	UIStyleVar_WindowBorderSize, // default 1                 border size in pixels                
-	UIStyleVar_TitleBarHeight,	 // default font.height * 1.5                                        
+	UIStyleVar_TitleBarHeight,	 // default font.height * 1.2                                        
 	UIStyleVar_TitleTextAlign,   // default vec2(0, 0.5)	  how title text is aligned in title bar 
 	UIStyleVar_ScrollAmount,     // default vec2(5, 5)		  amount to scroll in pixels             
 	UIStyleVar_Font,			 // default "gohufont-11.bdf" currently not changable, as we dont support loading multiple fonts yet
