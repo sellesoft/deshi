@@ -3400,10 +3400,10 @@ LoadTexture(Texture* texture){
 	//determine image format
 	VkFormat image_format;
 	switch(texture->format){
-		case ImageFormat_BW:   image_format = VK_FORMAT_R8G8B8A8_UNORM; break;
-		case ImageFormat_BWA:  image_format = VK_FORMAT_R8G8B8A8_UNORM; break;
-		case ImageFormat_RGB:  image_format = VK_FORMAT_R8G8B8A8_SRGB;  break;
-		case ImageFormat_RGBA: image_format = VK_FORMAT_R8G8B8A8_SRGB;  break;
+		case ImageFormat_BW:   image_format = VK_FORMAT_R8G8B8A8_SRGB; break;
+		case ImageFormat_BWA:  image_format = VK_FORMAT_R8G8B8A8_SRGB; break;
+		case ImageFormat_RGB:  image_format = VK_FORMAT_R8G8B8A8_SRGB; break;
+		case ImageFormat_RGBA: image_format = VK_FORMAT_R8G8B8A8_SRGB; break;
 		default: ERROR_LOC("Unhandled image format when loading texture: ", texture->name); return;
 	}
 	

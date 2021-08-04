@@ -325,10 +325,10 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 		workingWin.dimensions = dimensions;
 		workingWin.    cursor = vec2(0, 0);
 		workingWin.     flags = flags;
-		windows[name] = workingWin; 
+		windows.add(name, workingWin); 
 	}
 	else {
-		workingWin = windows[name];
+		workingWin = *windows.atKey(name);
 		workingWin.cursor = vec2(0, 0);
 		if (NextWinPos.x  != -1) workingWin.position   = NextWinPos;
 		if (NextWinSize.x != -1) workingWin.dimensions = NextWinSize;
@@ -472,7 +472,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			workingWin.baseDrawCmds.add(drawCmd);//inst 85
 		}
 	}
-	windows[name] = workingWin;
+	*windows.atKey(name) = workingWin;
 }
 
 void UI::EndWindow() {
@@ -490,7 +490,7 @@ void UI::EndWindow() {
 	//update stored window with new window state
 	//NOTE: I'm not sure if I want to keep doing this like this
 	//      or just make workingWin a pointer to a window in the list
-	windows[workingWin.name] = workingWin;
+	*windows.atKey(workingWin.name) = workingWin;
 	workingWin = *windowStack.last;
 	windowStack.pop();
 }
@@ -521,7 +521,7 @@ bool UI::IsWinHovered() {
 }
 
 void UI::ShowDebugWindowOf(string name) {
-	UIWindow* debugee = &windows[name];
+	UIWindow* debugee = windows.atKey(name);
 	
 	string info = 
 		TOSTRING("    position: ", debugee->position,                          "\n") + 
@@ -632,7 +632,7 @@ void UI::Init() {
 	
 	style.font = new Font();
 	style.font->load_bdf_font("gohufont-11.bdf");
-	Texture* font_texture = Storage::CreateTextureFromMemory(style.font->texture_sheet, "font_gohu", style.font->width, style.font->height * style.font->char_count, ImageFormat_BW, TextureType_2D, false, false).second;
+	Texture* font_texture = Storage::CreateTextureFromMemory(style.font->texture_sheet, "font_gohu", style.font->width, style.font->height * style.font->char_count, ImageFormat_RGBA, TextureType_2D, false, false).second;
 	Render::LoadFont(style.font, font_texture);
 	
 	//push default color scheme
@@ -653,7 +653,7 @@ void UI::Init() {
 	initColorStackSize = colorStack.size();
 	initStyleStackSize = varStack.size();
 	
-	windows["base"] = workingWin;
+	windows.add("base", workingWin);
 	windowStack.add(workingWin);
 	
 }
@@ -675,7 +675,7 @@ void UI::Update() {
 	
 	//focus
 	for (int i = windows.count - 1; i > 0; i--) {
-		UIWindow& w = windows[i];
+		UIWindow& w = windows.atIndex(i);
 		if (i == windows.count - 1 && w.hovered) {
 			break;
 		}
@@ -688,11 +688,10 @@ void UI::Update() {
 
 	
 	{ //drag
-		UIWindow* focused = &windows[windows.count - 1];
+		UIWindow* focused = &windows.atIndex(windows.count-1);
 		
 		static bool newDrag = true;
 		static vec2 mouseOffset = vec2(0, 0);
-
 		if (focused->titleHovered && DengInput->KeyDownAnyMod(MouseButton::LEFT)) {
 			if (newDrag) {
 				mouseOffset = focused->position - DengInput->mousePos;

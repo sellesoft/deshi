@@ -385,12 +385,12 @@ CreateTextureFromMemory(void* data, const char* name, int width, int height, Ima
 	if(format != ImageFormat_RGBA){
 		texture->pixels = (u8*)malloc((size_t)width * (size_t)height * 4);
 		data = texture->pixels;
-		u8* dst = texture->pixels;
+		u32* dst = (u32*)texture->pixels;
 		switch(format){
 			case ImageFormat_BW:{
 				for(int i = width*height; i > 0; i--){
-					u8 value = (u8)(*src++);
-					*dst++ = PACKCOLORU32(value, value, value, 255);
+					u32 value = (u32)(*src++);
+					*dst++ = PACKCOLORU32(value, value, value, value);
 				}
 			}break;
 			case ImageFormat_BWA:{

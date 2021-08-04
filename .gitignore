@@ -11,6 +11,7 @@
 *.4coder
 *.spv
 *.cap
+*.rdc
 *.rdbg
 *.tmp
 *.ctm

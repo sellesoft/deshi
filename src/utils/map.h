@@ -23,14 +23,15 @@ struct map {
 		forI(hashes.count){ if(hashed == hashes[i]){ return true; } }
 		return false;
 	}
-	
-	Value& operator[](const Key& key) {
+
+	Value* atKey(const Key& key) {
 		u32 hashed = HashStruct{}(key);
-		forI(hashes.count){ if(hashed == hashes[i]){ return data[i]; } }
-		hashes.add(hashed);
-		data.add(Value{});
-		count++;
-		return *data.last;
+		forI(hashes.count){ if(hashed == hashes[i]){ return &data[i]; } }
+		return 0;
+	}
+
+	Value& atIndex(u32 index){
+		return data[index];
 	}
 	
 	//returns index of added or existing key
