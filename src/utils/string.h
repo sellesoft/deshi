@@ -4,7 +4,8 @@
 
 #include "../defines.h"
 #include "tuple.h"
-#include <vector>
+#include <vector> //temp and should be removed
+#include <string> //temp and should be removed
 
 static std::vector<pair<u32, void*>> addrs;
 
@@ -109,6 +110,15 @@ struct string {
 			memset(str, '\0', 1);
 			//addrupdate((void*)str, size);
 		}
+	}
+
+	//temp
+	string(std::string s) {
+		free(str);
+		size = s.size();
+		str = (char*)malloc(size + 1);
+		memcpy(str, s.c_str(), size);
+		memset(str + size, '\0', 1);
 	}
 
 	~string() {
@@ -260,7 +270,7 @@ struct string {
 
 	static string toStr(int i) {
 		string s;
-		s.size = (int)((floor(log10(i)) + 1) * sizeof(char));
+		s.size = (i == 0) ? 1 : (int)((floor(log10(i)) + 1) * sizeof(char));
 		s.str = (char*)malloc(s.size + 1);
 		sprintf(s.str, "%d", i);
 		return s;
@@ -279,12 +289,12 @@ struct string {
 
 	//static helper functions
 
-	string substr(size_t first, size_t second) const {
+	inline string substr(size_t first, size_t second) const {
 		Assert(first <= size && second <= size && second >= first, "check first/second variables");
 		return string(str + first, second - first + 1);
 	}
 
-	string substr(size_t idx) {
+	inline string substr(size_t idx) {
 		Assert(idx <= size, "idx greater than size");
 		return substr(idx, size);
 	}
@@ -292,7 +302,7 @@ struct string {
 	//returned when something specified is not found in a fucntion
 	static const size_t npos = -1;
 
-	size_t find(const string& text) const {
+	inline size_t find(const string& text) const {
 		for (int i = 0; i < size - (text.size - 1); i++) {
 			//dont use strcmp if text.size is only 1
 			if (text.size == 1)
@@ -308,7 +318,7 @@ struct string {
 		return npos;
 	}
 
-	size_t find_first_of(char c) const {
+	inline size_t find_first_of(char c) const {
 		for (int i = 0; i < size; i++) {
 			if (c == str[i]) return i;
 		}
@@ -316,7 +326,7 @@ struct string {
 	}
 
 	//find first of from offset
-	size_t find_first_of(char c, int offset) const {
+	inline size_t find_first_of(char c, int offset) const {
 		Assert(offset < size, "attempt to parse string at offset greater than size");
 		for (int i = offset; i < size; i++) {
 			if (c == str[i]) return i;
@@ -326,7 +336,7 @@ struct string {
 
 	//find first of from offset backwards
 	//TODO(sushi) make this for the other functions
-	size_t find_first_of_lookback(char c, int offset) const {
+	inline size_t find_first_of_lookback(char c, int offset) const {
 		Assert(offset < size, "attempt to parse string at offset greater than size");
 		for (int i = offset; i > 0; i--) {
 			if (c == str[i]) return i;
@@ -334,25 +344,32 @@ struct string {
 		return npos;
 	}
 
-	size_t find_first_not_of(char c) const {
+	inline size_t find_first_not_of(char c) const {
 		for (int i = 0; i < size; i++) {
 			if (c != str[i]) return i;
 		}
 		return npos;
 	}
 
-	size_t find_last_of(char c) const {
+	inline size_t find_last_of(char c) const {
 		for (int i = size - 1; i != 0; i--) {
 			if (c == str[i]) return i;
 		}
 		return npos;
 	}
 
-	size_t find_last_not_of(char c) const {
+	inline size_t find_last_not_of(char c) const {
 		for (int i = size - 1; i != 0; i--) {
 			if (c != str[i]) return i;
 		}
 		return npos;
+	}
+
+	//counts how many characters are in the string
+	inline u32 count(char c) {
+		u32 sum = 0;
+		for (int i = 0; i < size; i++) if (str[i] == c) sum++;
+		return sum;
 	}
 
 	inline string substrToChar(char c) const {

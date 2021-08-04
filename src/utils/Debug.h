@@ -66,13 +66,14 @@ template<class T, typename std::enable_if<!has_str_method<T>::value, bool>::type
 static string ToString(T t) { return ToString(string::toStr(t)); }
 
 template<class T, typename std::enable_if<has_str_method<T>::value, bool>::type = true>
-static string ToString(T t) { return ToString(t.str()); }
+static string ToString(T t) { return ToString(string(t.str())); }
 
 template<class... T>
-static std::string ToString(T... args) {
+static string ToString(T... args) {
 	string strings[] = { "", (ToString(std::forward<T>(args))) ... };
+	//string strings[] = { ToString(args), ... };
 	string str = "";
-	for (std::string s : strings) { str += s; }
+	for (string& s : strings) { str += s; }
 
 	return str;
 }

@@ -72,6 +72,10 @@ struct Vector2 {
 	Vector2 yComp() const;
 	Vector2 xInvert() const;
 	Vector2 yInvert() const;
+	Vector2 xSet(float set) const; //for single line vector arithmetic eg. ShowDebugWindowOf() when I call BeginWindow
+	Vector2 ySet(float set) const; //for single line vector arithmetic eg. ShowDebugWindowOf() when I call BeginWindow
+	Vector2 xAdd(float set) const; //for single line vector arithmetic eg. ShowDebugWindowOf() when I call BeginWindow
+	Vector2 yAdd(float set) const; //for single line vector arithmetic eg. ShowDebugWindowOf() when I call BeginWindow
 	const std::string str() const;
 	const std::string str2f() const;
 	

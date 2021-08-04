@@ -59,7 +59,7 @@ struct Color {
 	}
 	
 	Color operator * (float rhs) {
-		return Color(r*rhs, g*rhs, b*rhs, a*rhs);
+		return Color(r*rhs, g*rhs, b*rhs, a);
 	}
 	
 	Color operator / (float rhs) {

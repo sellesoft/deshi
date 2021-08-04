@@ -21,6 +21,9 @@ ____also, triggers need to be able to filter what causes them to activate
 Minor Ungrouped TODOs
 ---------------------
 add editor settings and config
+maybe redo UI to draw the window base into a special UIDrawCmds array for base window elements 
+____so we can defer drawing that stuff to EndWindow() so we can do window resizing and positioning within Begin and End calls
+convert std::string to our string throughout the project, primarily .str() methods so i can fully convert TOSTRING to use our string
 change text-based saving so material shaders are text rather than ID
 rework and simplify entity creation so there is a distinction between development and gameplay creation
 make a dynamic timers array on in time.h for cleaner timer stuffs
@@ -252,8 +255,6 @@ int main() {
 	TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ",                TIMER_END(t_s), "ms");
 	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
 
-	string s = string::toStr(12.2352459f);
-
 	//init game admin
 	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
 	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
@@ -274,23 +275,17 @@ int main() {
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
 			//setTrack();
-			UI::PushVar(UIStyleVar_TitleTextAlign, vec2(0.01, 0.5));
+			UI::PushVar(UIStyleVar_TitleTextAlign, vec2(1, 0.5));
 			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
 			
-			string tosend = "";
-			for (int i = 32; i < 191 + 32; i++) {
-				tosend += (char)i;
-				//tosend += '\n';
-			}
-			
-			UI::Text(tosend);
-			
-			for (int i = 0; i < 100; i++) {
-				UI::Text("wow");
+			for (int i = 0; i < 40; i++) {
+				UI::Text(TOSTRING("wow ", i), UITextFlags_NoWrap);
 			}
 
-			
+			UI::Text("unwrapped manually positioned text", vec2(150, 150), UITextFlags_NoWrap);
+
 			UI::EndWindow();
+			UI::ShowDebugWindowOf("test");
 			UI::PopVar();
 		}
     	time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);

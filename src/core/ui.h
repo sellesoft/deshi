@@ -52,13 +52,18 @@ enum UITextFlags_ {
 }; typedef u32 UITextFlags;
 
 enum UIWindowFlags_ {
-	UIWindowFlags_None         = 0,
-	UIWindowFlags_NoResize     = 1 << 0,
-	UIWindowFlags_NoMove       = 1 << 1,
-	UIWindowFlags_NoTitleBar   = 1 << 2,
-	UIWindowFlags_NoBorder     = 1 << 3,
-	UIWindowFlags_NoBackground = 1 << 4,
-	UIWindowFlags_FocusOnHover = 1 << 5,
+	UIWindowFlags_None             = 0,
+	UIWindowFlags_NoResize         = 1 << 0,
+	UIWindowFlags_NoMove           = 1 << 1,
+	UIWindowFlags_NoTitleBar       = 1 << 2,
+	UIWindowFlags_NoBorder         = 1 << 3,
+	UIWindowFlags_NoBackground     = 1 << 4,
+	UIWindowFlags_NoScroll         = 1 << 5,
+	UIWindowFlags_FocusOnHover     = 1 << 6,
+	UIWindowFlags_NoFocus          = 1 << 7,
+	UIWindowFlags_NoMinimize       = 1 << 8,
+	UIWindowFlags_NoMinimizeButton = 1 << 9,
+
 	UIWindowFlags_Invisible    = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground
 }; typedef u32 UIWindowFlags;
 
@@ -139,17 +144,20 @@ struct UIWindow {
 
 	UIWindowFlags flags;
 
+	//the difference between these two is that baseDrawCmds holds the commands for drawing the 
+	//base of the window, eg the background, title, border, etc.
+	//this way I can regenerate the window's base properties if I need to
+	//TODO(sushi, Ui) maybe implement this ^
+	array<UIDrawCmd> baseDrawCmds;
 	array<UIDrawCmd> drawCmds;
 
 	bool hovered = false;
 	bool titleHovered = false;
 
-	//set whenever a window's elements goes out of it's bounds
-	//with my current set up, this will only be set once elements go out of bounds for that
-	//frame, so there will be a 1 frame lag between not being able to scroll and being able to scroll I think
-	//idk if this is significant or not
-	bool canScroll = false; 
-		    
+	bool minimized = false;
+	bool hidden = false;
+
+
 	UIWindow() {};
 
 	//I have to do this because I'm using an anonymous struct inside a union and C++ sucks
@@ -159,11 +167,15 @@ struct UIWindow {
 		position = cop.position;
 		dimensions = cop.dimensions;
 		scroll = cop.scroll;
+		maxScroll = cop.maxScroll;
 		cursor = cop.cursor;
 		flags = cop.flags;
 		drawCmds = cop.drawCmds;
+		baseDrawCmds = cop.baseDrawCmds;
 		hovered = cop.hovered;
 		titleHovered = cop.titleHovered;
+		minimized = cop.minimized;
+		hidden = cop.hidden;
 	}
 
 	UIWindow& operator= (const UIWindow& cop) {
@@ -171,11 +183,15 @@ struct UIWindow {
 		position = cop.position;
 		dimensions = cop.dimensions;
 		scroll = cop.scroll;
+		maxScroll = cop.maxScroll;
 		cursor = cop.cursor;
 		flags = cop.flags;
 		drawCmds = cop.drawCmds; //inst 139, 142, 145, 148, 151, 154, 157, 160 valid
+		baseDrawCmds = cop.baseDrawCmds;
 		hovered = cop.hovered;
 		titleHovered = cop.titleHovered;
+		minimized = cop.minimized;
+		hidden = cop.hidden;
 		return *this;
 	}
 
@@ -214,6 +230,11 @@ namespace UI {
 	//windows
 	static void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	static void EndWindow();
+	static void SetNextWindowPos(vec2 pos);
+	static void SetNextWindowPos(float x, float y);
+	static void SetNextWindowSize(vec2 size);		 //when you set a windows size through this you aren't supposed to take into account the titlebar!
+	static void SetNextWindowSize(float x, float y); //when you set a windows size through this you aren't supposed to take into account the titlebar!
+	static void SetWindowName(string name);
 	static bool IsWinHovered();
 	static void ShowDebugWindowOf(string name);
 
