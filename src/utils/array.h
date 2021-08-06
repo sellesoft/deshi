@@ -218,6 +218,19 @@ struct array {
 		last--;
 		count--;
 	}
+
+	//TODO(sushi) impl this
+	//void remove(u32 i1, u32 i2) {
+	//	Assert(count > 0, "can't remove element from empty vector");
+	//	Assert(i < count, "index is out of bounds");
+	//	data[i].~T();
+	//	for (u32 o = i2; o < size(); o++) {
+	//		data[o] = data[o + 1];
+	//	}
+	//	memset(last, 0, sizeof(T));
+	//	last--;
+	//	count--;
+	//}
 	
 	//removes all elements
 	void clear(){

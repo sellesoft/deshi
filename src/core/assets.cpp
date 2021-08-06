@@ -178,17 +178,17 @@ appendFileBinary(const std::string& filepath, void* data, u32 bytes, bool logErr
 	file.write((char*)data, bytes);
 }
 
-std::vector<std::string> Assets::
+array<string> Assets::
 iterateDirectory(const std::string& filepath, const char* extension) {
 	using namespace std::filesystem;
-	std::vector<std::string> files;
+	array<string> files;
 	for (auto& p : directory_iterator(filepath)) {
 		if(extension){
 			if(p.path().extension().string() == std::string(extension)){
-				files.push_back(p.path().filename().string());
+				files.add(string(p.path().filename().string()));
 			}
 		}else{
-			files.push_back(p.path().filename().string());
+			files.add(string(p.path().filename().string()));
 		}
 	}
 	return files;

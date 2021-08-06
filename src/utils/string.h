@@ -159,8 +159,8 @@ struct string {
 		strcpy(str, s);
 		addrupdate((void*)str, size);
 	}
-	
-	bool operator == (string& s) {
+
+	bool operator == (string s) {
 		return !strcmp(str, s.str);
 	}
 	
@@ -274,12 +274,29 @@ struct string {
 		sprintf(s.str, "%d", i);
 		return s;
 	}
+
+	static string toStr(u32 i) {
+		string s;
+		s.size = (i == 0) ? 1 : (int)((floor(log10(i)) + 1) * sizeof(char));
+		free(s.str);
+		s.str = (char*)malloc(s.size + 1);
+		sprintf(s.str, "%d", i);
+		return s;
+	}
 	
-	static string toStr(float& f) {
+	static string toStr(float f) {
 		string s;
 		s.size = snprintf(nullptr, 0, "%f", f);
 		s.str = (char*)malloc(s.size + 1);
 		snprintf(s.str, s.size + 1, "%f", f);
+		return s;
+	}
+
+	static string toStr(size_t f) {
+		string s;
+		s.size = snprintf(nullptr, 0, "%zu", f);
+		s.str = (char*)malloc(s.size + 1);
+		snprintf(s.str, s.size + 1, "%zu", f);
 		return s;
 	}
 	

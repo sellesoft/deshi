@@ -540,9 +540,9 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 	bool parse_obj_mesh     = true;
 	bool parse_obj_model    = true;
 	if(!forceLoadOBJ){
-		std::vector<std::string> files = Assets::iterateDirectory(Assets::dirModels());
-		for(std::string& file : files){
-			if(file == std::string(name.str)+".mesh"){
+		array<string> files = Assets::iterateDirectory(Assets::dirModels());
+		for(string& file : files){
+			if(file == string(name.str)+".mesh"){
 				
 			}
 		}

@@ -9,6 +9,10 @@
 #include <vector>
 #include <map>
 
+#include "../utils/string.h"
+#include "../utils/array.h"
+
+
 enum ConfigValueType_{
 	ConfigValueType_NONE = 0, //can be used for comments/padding
 	ConfigValueType_S32,
@@ -97,7 +101,7 @@ namespace Assets{
 	
 	//iterates directory and returns a list of files in it
 	//probably return something other than a vector of strings but thts how it is for now
-	std::vector<std::string> iterateDirectory(const std::string& filepath, const char* extension = 0);
+	array<string> iterateDirectory(const std::string& filepath, const char* extension = 0);
 	
 	//creates base deshi directories if they dont already exist
 	void enforceDirectories();
