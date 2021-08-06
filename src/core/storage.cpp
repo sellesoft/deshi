@@ -554,9 +554,9 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 	//parse OBJ file
 	if(parse_obj_mesh){ //load .obj and .mtl
 		map<vec3,Mesh::Vertex> vUnique;
-		Set<vec3> vnUnique;
-		Set<pair<u32,string>> oUnique, gUnique, uUnique, mUnique; //index offset, name
-		Set<pair<u32,vec3>> appliedUniqueNormals; //vertex applied on, normal
+		set<vec3> vnUnique;
+		set<pair<u32,string>> oUnique, gUnique, uUnique, mUnique; //index offset, name
+		set<pair<u32,vec3>> appliedUniqueNormals; //vertex applied on, normal
 		array<vec2> vtArray; //NOTE UV vertices arent expected to be unique
 		array<u32> vArray, vnArray, oArray, gArray,  uArray,  mArray; //index in unique array
 		array<Mesh::Index>    indexes;
@@ -564,7 +564,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		array<Mesh::Face>     faces;
 		array<array<pair<u32,u8>>> triNeighbors;
 		array<array<u32>> faceTriangles;
-		array<Set<u32>>   faceVertexes;
+		array<set<u32>>   faceVertexes;
 		array<array<u32>> faceOuterVertexes;
 		array<array<u32>> faceTriNeighbors;
 		array<array<u32>> faceFaceNeighbors;
