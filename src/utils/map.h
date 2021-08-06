@@ -64,6 +64,6 @@ struct map {
 };
 
 template<typename Key, typename HashStruct = hash<Key>>
-using Set = map<Key,Key,HashStruct>;
+using set = map<Key,Key,HashStruct>;
 
 #endif

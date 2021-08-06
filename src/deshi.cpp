@@ -115,10 +115,11 @@ implement filtering console buffer by function and file name (add __FILENAME__ a
 
 UI TODOs
 --------
-Input Text
-Buttons
-More styling options
-Popups
+input Text
+buttons
+tabs (vertical and horizontal)
+more styling options
+popups
 
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
