@@ -1689,7 +1689,7 @@ inline void MeshesTab(Admin* admin){
 		ImGui::Separator();
 		//// select part ////
 		ImGui::TextEx("Vertex   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-		if(ImGui::InputInt("##mi_vertex_input", &sel_vertex_idx, 0, 0)){
+		if(ImGui::InputInt("##mi_vertex_input", &sel_vertex_idx, 1, 10)){
 			sel_vertex_idx = Clamp(sel_vertex_idx, -1, selected->vertexCount-1);
 		}
 		if(sel_vertex_idx != -1){
@@ -1699,7 +1699,7 @@ inline void MeshesTab(Admin* admin){
 			ImGui::Text("UV     : (%.2f,%.2f)", sel_vertex->uv.u, sel_vertex->uv.v);
 		}
 		ImGui::TextEx("Triangle "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-		if(ImGui::InputInt("##mi_tri_input", &sel_triangle_idx, 0, 0)){
+		if(ImGui::InputInt("##mi_tri_input", &sel_triangle_idx, 1, 10)){
 			sel_triangle_idx = Clamp(sel_triangle_idx, -1, selected->triangleCount-1);
 		}
 		if(sel_triangle_idx != -1){
@@ -1712,7 +1712,7 @@ inline void MeshesTab(Admin* admin){
 			ImGui::Text("Center  : (%.2f,%.2f,%.2f)", tri_center.x, tri_center.y, tri_center.z);
 		}
 		ImGui::TextEx("Face     "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
-		if(ImGui::InputInt("##mi_face_input", &sel_face_idx, 0, 0)){
+		if(ImGui::InputInt("##mi_face_input", &sel_face_idx, 1, 10)){
 			sel_face_idx = Clamp(sel_face_idx, -1, selected->faceCount-1);
 		}
 		if(sel_face_idx != -1){

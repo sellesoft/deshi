@@ -677,9 +677,9 @@ Entity* Admin::EntityRaycast(vec3 origin, vec3 direction, f32 maxDistance){ //!F
 				if(depth <= 0) continue;
 				
 				//make vectors perpendicular to each edge of the triangle
-				perp01 = normal.cross(p1 - p0).yInvert().normalized();
-				perp12 = normal.cross(p2 - p1).yInvert().normalized();
-				perp20 = normal.cross(p0 - p2).yInvert().normalized();
+				perp01 = normal.cross(p1 - p0).normalized();
+				perp12 = normal.cross(p2 - p1).normalized();
+				perp20 = normal.cross(p0 - p2).normalized();
 				
 				//check that the intersection point is within the triangle and its the closest triangle found so far
 				if(perp01.dot(intersect - p0) > 0 &&

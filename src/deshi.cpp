@@ -1,5 +1,19 @@
 /* deshi
-TODO Tags:
+
+Style Guidelines
+----------------
+utlity:
+  lower_underscore_structs
+  lowerCamelMemberVars
+  lowerCamelMemberFuncs
+core:
+  UpperCamelStructs
+  lowerCamelMemberVars
+  UowerCamelMemberFuncs
+  UpperCamelNamespaces
+
+TODO Tags
+---------
 As  Assets    Cl  Clean Up Code    Cmd Command         Co  Core        Con Console
 En  Entity    Fu  Fun              Fs  Filesystem      Ge  Geometry    In  Input
 Ma  Math      Oth Other            Op  Optimization    Ph  Physics     Re  Render

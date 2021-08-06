@@ -688,7 +688,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 					u32 cti = triangles.count;
 					triangles.add(Mesh::Triangle{
 									  (vUnique.data[vArray[v0]].pos - vUnique.data[vArray[v1]].pos)
-										  .cross(vUnique.data[vArray[v0]].pos - vUnique.data[vArray[v2]].pos).normalized().yInvert(),
+										  .cross(vUnique.data[vArray[v0]].pos - vUnique.data[vArray[v2]].pos).normalized(),
 									  vUnique.data[vArray[v0]].pos, vUnique.data[vArray[v1]].pos, vUnique.data[vArray[v2]].pos,
 									  vArray[v0], vArray[v1], vArray[v2],
 									  0, (u32)-1
@@ -882,7 +882,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		}
 		mesh->faces[0].triangleArray         = (u32*)(mesh->triangles[0].edgeArray         + totalTriNeighbors);
 		mesh->faces[0].vertexArray           = (u32*)(mesh->faces[0].triangleArray         + triangles.count);
-		mesh->faces[0].outerVertexArray      = (u32*)(mesh->faces[0].triangleArray         + totalFaceVertexes);
+		mesh->faces[0].outerVertexArray      = (u32*)(mesh->faces[0].vertexArray           + totalFaceVertexes);
 		mesh->faces[0].neighborTriangleArray = (u32*)(mesh->faces[0].outerVertexArray      + totalFaceOuterVertexes);
 		mesh->faces[0].neighborFaceArray     = (u32*)(mesh->faces[0].neighborTriangleArray + totalFaceTriNeighbors);
 		mesh->faces[0].triangles         = View<u32>(mesh->faces[0].triangleArray,         faceTriangles[0].count);
