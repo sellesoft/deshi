@@ -24,7 +24,7 @@ struct Time{
 	u64 fixedUpdateCount = 0;
 	f32 fixedAccumulator = 0;
 	
-	f32 timeTime{}, windowTime{}, inputTime{}, adminTime{}, consoleTime{}, renderTime{}, frameTime{};
+	f32 timeTime{}, windowTime{}, inputTime{}, consoleTime{}, renderTime{}, frameTime{};
 	
 	bool paused{}, frame{}, phys_pause{};
 	
@@ -125,7 +125,7 @@ inline std::string Time::FormatDateTime(std::string fmt){
 	out.shrink_to_fit(); return out;
 }
 
-//{t}:time, {w}:window, {i}:input, {a}:admin, {c}:console, {r}:render, {f}:frame, {d}:delta
+//{t}:time, {w}:window, {i}:input, {c}:console, {r}:render, {f}:frame, {d}:delta
 inline std::string Time::FormatTickTime(std::string fmt){
 	std::string out = ""; out.reserve(512);
 	forI(fmt.size()){
@@ -139,9 +139,6 @@ inline std::string Time::FormatTickTime(std::string fmt){
 				}i+=2;continue;
 				case('i'):{
 					out.append(std::to_string(inputTime));
-				}i+=2;continue;
-				case('a'):{
-					out.append(std::to_string(adminTime));
 				}i+=2;continue;
 				case('c'):{
 					out.append(std::to_string(consoleTime));

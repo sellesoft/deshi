@@ -1,5 +1,3 @@
-
-
 //color pallete 
 //current palette:
 //https://lospec.com/palette-list/slso8
@@ -16,6 +14,18 @@ local struct {
 	Color      bright_skin_white = Color(0xffecd6); //even whiter skin
 	Color             near_black = Color(0x141414); //almost black
 }colors;
+
+//global styling
+struct UIStyle {
+	vec2  windowPadding;
+	vec2  itemSpacing;
+	float windowBorderSize;
+	float titleBarHeight;
+	vec2  titleTextAlign;
+	vec2  scrollAmount;
+	Font* font; //this is a pointer until I fix font to not store so much shit
+	Color colors[UIStyleCol_COUNT];
+} style;
 
 //for color stack, saves what element was changed and what it's old color was 
 struct ColorMod {
@@ -594,19 +604,19 @@ void UI::PopVar(u32 count){
 
 //widget stuff
 bool UI::Button(string text) {
-	UIDrawCmd drawCmd{ UIDrawType_Rectangle };
+	UIDrawCmd drawCmd{ UIDrawType_Rectangle }; return true;
 }
 
 bool UI::Button(string text, vec2 pos){
-
+	return true;
 }
 
 bool UI::Button(string text, Color color){
-
+	return true;
 }
 
 bool UI::Button(string text, vec2 pos, Color color){
-
+	return true;
 }
 
 

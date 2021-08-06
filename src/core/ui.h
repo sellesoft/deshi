@@ -33,17 +33,7 @@ enum UIStyleCol : u32 {
 	UIStyleCol_COUNT
 };
 
-//global styling
-struct UIStyle {
-	vec2  windowPadding;
-	vec2  itemSpacing;
-	float windowBorderSize;
-	float titleBarHeight;
-	vec2  titleTextAlign;
-	vec2  scrollAmount;
-	Font* font; //this is a pointer until I fix font to not store so much shit
-	Color colors[UIStyleCol_COUNT];
-} style;
+
 
 enum UITextFlags_ {
 	UITextFlags_None = 0,
@@ -207,47 +197,47 @@ struct UIWindow {
 namespace UI {
 
 	//helpers
-	static vec2 CalcTextSize(string text);
+	vec2 CalcTextSize(string text);
 
 	//primitives
-	static void RectFilled(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
+	void RectFilled(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
 
-	static void Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
-	static void Line(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
+	void Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
+	void Line(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
 
-	static void Text(string text, UITextFlags flags = 0);
-	static void Text(string text, vec2 pos, UITextFlags flags = 0);
-	static void Text(string text, Color color, UITextFlags flags = 0);
-	static void Text(string text, vec2 pos, Color color, UITextFlags flags = 0);
+	void Text(string text, UITextFlags flags = 0);
+	void Text(string text, vec2 pos, UITextFlags flags = 0);
+	void Text(string text, Color color, UITextFlags flags = 0);
+	void Text(string text, vec2 pos, Color color, UITextFlags flags = 0);
 
 	//widgets
-	static bool Button(string text);
-	static bool Button(string text, vec2 pos);
-	static bool Button(string text, Color color);
-	static bool Button(string text, vec2 pos, Color color);
+	bool Button(string text);
+	bool Button(string text, vec2 pos);
+	bool Button(string text, Color color);
+	bool Button(string text, vec2 pos, Color color);
 
 
 	//windows
-	static void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
-	static void EndWindow();
-	static void SetNextWindowPos(vec2 pos);
-	static void SetNextWindowPos(float x, float y);
-	static void SetNextWindowSize(vec2 size);		 //when you set a windows size through this you aren't supposed to take into account the titlebar!
-	static void SetNextWindowSize(float x, float y); //when you set a windows size through this you aren't supposed to take into account the titlebar!
-	static void SetWindowName(string name);
-	static bool IsWinHovered();
-	static void ShowDebugWindowOf(string name);
+	void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
+	void EndWindow();
+	void SetNextWindowPos(vec2 pos);
+	void SetNextWindowPos(float x, float y);
+	void SetNextWindowSize(vec2 size);		 //when you set a windows size through this you aren't supposed to take into account the titlebar!
+	void SetNextWindowSize(float x, float y); //when you set a windows size through this you aren't supposed to take into account the titlebar!
+	void SetWindowName(string name);
+	bool IsWinHovered();
+	void ShowDebugWindowOf(string name);
 
 	//push/pop functions
-	static void PushColor(UIStyleCol idx, Color color);
-	static void PushVar(UIStyleVar idx, float style);
-	static void PushVar(UIStyleVar idx, vec2 style);
+	void PushColor(UIStyleCol idx, Color color);
+	void PushVar(UIStyleVar idx, float style);
+	void PushVar(UIStyleVar idx, vec2 style);
 
-	static void PopColor(u32 count = 1);
-	static void PopVar(u32 count = 1);
+	void PopColor(u32 count = 1);
+	void PopVar(u32 count = 1);
 
-	static void Init();
-	static void Update();
+	void Init();
+	void Update();
 
 }; //namespace UI
 

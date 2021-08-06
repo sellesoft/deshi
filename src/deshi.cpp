@@ -154,36 +154,7 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 
 */
 
-
-//// utility headers ////
-#include "defines.h"
-#include "utils/color.h"
-#include "utils/tuple.h"
-#include "utils/containermanager.h"
-#include "utils/utils.h"
-#include "utils/optional.h"
-#include "utils/debug.h"
-#include "utils/ringarray.h"
-#include "utils/command.h"
-#include "utils/font.h"
-#include "utils/array.h"
-#include "utils/hash.h"
-#include "utils/map.h"
-#include "utils/view.h"
-#include "math/math.h"
-
-//// core/game headers ////
-#include "core/assets.h"
-#include "core/console.h"
-#include "core/console2.h"
-#include "core/imgui.h"
-#include "core/input.h"
-#include "core/renderer.h"
-#include "core/time.h"
-#include "core/ui.h"
-#include "core/window.h"
-#include "core/storage.h"
-#include "game/admin.h"
+#include "deshi.h"
 
 //// external for core ////
 #define STB_IMAGE_IMPLEMENTATION
@@ -240,70 +211,44 @@ Assert(!"no renderer selected");
 local Time     time_;   Time*     g_time    = &time_; //time_ because there is a c-func time() D:
 local Window   window;  Window*   g_window  = &window;
 local Input    input;   Input*    g_input   = &input;
+#ifndef DESHI_DISABLE_CONSOLE
 local Console  console; Console*  g_console = &console;
+#endif
 local Storage_ storage; Storage_* g_storage = &storage;
-local Admin    admin;   Admin*    g_admin   = &admin;
 
-int main() {
-	TIMER_START(t_d); TIMER_START(t_f); TIMER_START(t_s);
+void deshi::init() {
+	TIMER_START(t_d); TIMER_START(t_s);
+		
 	//pre-init setup
 	Assets::enforceDirectories();
-	
+
 	//init engine core
 	TIMER_RESET(t_s); time_.Init(700);        SUCCESS("Finished time initialization in ",              TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ",  TIMER_END(t_s), "ms");
+#ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
 	TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
+#endif
 	TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ",            TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); Storage::Init();        SUCCESS("Finished storage initialization in ",           TIMER_END(t_s), "ms");
+#ifndef DESHI_DISABLE_IMGUI
 	TIMER_RESET(t_s); DeshiImGui::Init();     SUCCESS("Finished imgui initialization in ",             TIMER_END(t_s), "ms");
+#endif
 	TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ",                TIMER_END(t_s), "ms");
-	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
-	
-	//init game admin
-	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
-	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
-
-	//start main loop
-	glfwShowWindow(window.window);
-	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
-		glfwPollEvents();
 		
-		DeshiImGui::NewFrame();                                                         //place imgui calls after this
-		TIMER_RESET(t_d); time_.Update();           time_.timeTime   = TIMER_END(t_d);
-		TIMER_RESET(t_d); window.Update();          time_.windowTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); input.Update();           time_.inputTime  = TIMER_END(t_d);
-		TIMER_RESET(t_d); admin.Update();           time_.adminTime  = TIMER_END(t_d);
-		TIMER_RESET(t_d); console.Update(); Console2::Update(); time_.consoleTime = TIMER_END(t_d);
-		TIMER_RESET(t_d); Render::Update();         time_.renderTime = TIMER_END(t_d);  //place imgui calls before this
-		UI::Update();
-		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
-		{//debugging area
-			//UI::PushVar(UIStyleVar_TitleTextAlign, vec2(1, 0.5));
-			//UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
-			//
-			////setTrack();
-			//for (int i = 0; i < 4; i++) {
-			//	UI::Text(TOSTRING("wow ", i), UITextFlags_NoWrap);
-			//}
-			//
-			//UI::Text("unwrapped manually positioned text", vec2(150, 150), UITextFlags_NoWrap);
-			//
-			//UI::EndWindow();
-			////UI::ShowDebugWindowOf("test");
-			//UI::PopVar();
-		}
-		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
-	}
-	
-	//cleanup
-	admin.Cleanup();
+	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
+
+	glfwShowWindow(window.window);
+}
+
+void deshi::cleanup() {
 	DeshiImGui::Cleanup();
 	Render::Cleanup();
 	window.Cleanup();
-	console.CleanUp(); Console2::Cleanup();
-	
-#if 0
-    DEBUG_BREAK;
-#endif
-    return 0;
+	console.CleanUp(); 
+	Console2::Cleanup();
+}
+
+bool deshi::shouldClose() {
+	glfwPollEvents(); //this maybe should be elsewhere, but i dont want to move glfw includes to deshi.h 
+	return glfwWindowShouldClose(window.window) || window.closeWindow;
 }

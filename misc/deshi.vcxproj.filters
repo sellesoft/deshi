@@ -79,44 +79,8 @@
     <ClInclude Include="..\src\core\console.h">
       <Filter>src\core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\game\components\AudioListener.h">
-      <Filter>src\game\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\components\AudioSource.h">
-      <Filter>src\game\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\components\Camera.h">
-      <Filter>src\game\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\components\Collider.h">
-      <Filter>src\game\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\components\Component.h">
-      <Filter>src\game\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\components\Light.h">
-      <Filter>src\game\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\components\Physics.h">
-      <Filter>src\game\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\systems\PhysicsSystem.h">
-      <Filter>src\game\systems\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\systems\SoundSystem.h">
-      <Filter>src\game\systems\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\Keybinds.h">
-      <Filter>src\game</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\components\MeshComp.h">
-      <Filter>src\game\components\h</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\utils\optional.h">
       <Filter>src\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\components\Orb.h">
-      <Filter>src\game\components\h</Filter>
     </ClInclude>
     <ClInclude Include="..\src\math\Quaternion.h">
       <Filter>src\math</Filter>
@@ -130,50 +94,8 @@
     <ClInclude Include="..\src\math\Math.h">
       <Filter>src\math</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\game\Transform.h">
-      <Filter>src\game</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\UndoManager.h">
-      <Filter>src\game</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\systems\CanvasSystem.h">
-      <Filter>src\game\systems\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\Controller.h">
-      <Filter>src\game</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\components\Movement.h">
-      <Filter>src\game\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\components\Player.h">
-      <Filter>src\game\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\components\door.h">
-      <Filter>src\game\components\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\entities\PlayerEntity.h">
-      <Filter>src\game\entities\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\entities\Entity.h">
-      <Filter>src\game\entities\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\Admin.h">
-      <Filter>src\game</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\entities\StaticMeshEntity.h">
-      <Filter>src\game\entities\h</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\Event.h">
-      <Filter>src\game</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\utils\tuple.h">
       <Filter>src\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\Editor.h">
-      <Filter>src\game</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\game\entities\Trigger.h">
-      <Filter>src\game\entities\h</Filter>
     </ClInclude>
     <ClInclude Include="..\src\core\console2.h">
       <Filter>src\core</Filter>
@@ -226,6 +148,9 @@
     <ClInclude Include="..\src\math\mat.h">
       <Filter>src\math</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\deshi.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -266,36 +191,6 @@
     </Filter>
     <Filter Include="cfg">
       <UniqueIdentifier>{ce9f1535-2538-4fc7-b08d-1fcdcfad596c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\game">
-      <UniqueIdentifier>{e64d365a-ac54-4505-80f2-d077244e3492}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\game\components">
-      <UniqueIdentifier>{d1eb4398-2a2f-4a7b-8332-24d8eb9b3094}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\game\components\cpp">
-      <UniqueIdentifier>{add1c6d0-87d3-494e-97c7-e9d536295f9d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\game\components\h">
-      <UniqueIdentifier>{ac3d7024-7202-4557-8232-cff3b1b89072}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\game\systems">
-      <UniqueIdentifier>{58bd71eb-8818-46b4-b1cb-3de512bc6e40}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\game\systems\cpp">
-      <UniqueIdentifier>{d47db1ce-863f-45d8-b13b-62ccb7ff8bed}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\game\systems\h">
-      <UniqueIdentifier>{b0b97b0f-958f-4711-bbab-fe685af843a0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\game\entities">
-      <UniqueIdentifier>{9823d188-a342-4244-917d-ab38574c391b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\game\entities\h">
-      <UniqueIdentifier>{f0316b0c-b7bb-43cd-8476-329d8527f029}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="src\game\entities\cpp">
-      <UniqueIdentifier>{9f7fae91-62b0-48b1-9257-3ae72ccd99a3}</UniqueIdentifier>
     </Filter>
     <Filter Include="src\core\renderers">
       <UniqueIdentifier>{b4b49f6e-8831-4ad6-8d8f-916345453348}</UniqueIdentifier>
@@ -454,77 +349,8 @@
     <ClCompile Include="..\src\core\console.cpp">
       <Filter>src\core</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\game\components\AudioListener.cpp">
-      <Filter>src\game\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\components\AudioSource.cpp">
-      <Filter>src\game\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\components\Camera.cpp">
-      <Filter>src\game\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\components\Collider.cpp">
-      <Filter>src\game\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\components\Light.cpp">
-      <Filter>src\game\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\components\Physics.cpp">
-      <Filter>src\game\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\systems\PhysicsSystem.cpp">
-      <Filter>src\game\systems\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\systems\SoundSystem.cpp">
-      <Filter>src\game\systems\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\components\MeshComp.cpp">
-      <Filter>src\game\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\components\Orb.cpp">
-      <Filter>src\game\components\cpp</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\core\assets.cpp">
       <Filter>src\core</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\UndoManager.cpp">
-      <Filter>src\game</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\Controller.cpp">
-      <Filter>src\game</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\systems\CanvasSystem.cpp">
-      <Filter>src\game\systems\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\components\Movement.cpp">
-      <Filter>src\game\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\components\Player.cpp">
-      <Filter>src\game\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\components\door.cpp">
-      <Filter>src\game\components\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\entities\Entity.cpp">
-      <Filter>src\game\entities\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\entities\PlayerEntity.cpp">
-      <Filter>src\game\entities\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\Admin.cpp">
-      <Filter>src\game</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\entities\StaticMeshEntity.cpp">
-      <Filter>src\game\entities\cpp</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\Event.cpp">
-      <Filter>src\game</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\Editor.cpp">
-      <Filter>src\game</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\game\entities\Trigger.cpp">
-      <Filter>src\game\entities\cpp</Filter>
     </ClCompile>
     <ClCompile Include="..\src\core\console2.cpp">
       <Filter>src\core</Filter>
@@ -540,6 +366,9 @@
     </ClCompile>
     <ClCompile Include="..\src\core\renderers\opengl.cpp">
       <Filter>src\core\renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\game.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

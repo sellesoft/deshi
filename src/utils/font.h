@@ -10,8 +10,9 @@
 #include "tuple.h"
 #include "../core/console.h"
 #include "../math/Math.h"
+#include "../utils/utils.h"
 
-string hexCharToBin(char c) {
+static string hexCharToBin(char c) {
 	switch (toupper(c)) { //TODO(sushi, Cl) make it so we can return a str literal in a function that returns string
 		case '0': return string("0000");
 		case '1': return string("0001");
@@ -33,7 +34,7 @@ string hexCharToBin(char c) {
 	return string("");
 }
 
-u32 four_u8_to_u32(u8 a, u8 b, u8 c, u8 d) {
+static u32 four_u8_to_u32(u8 a, u8 b, u8 c, u8 d) {
 	return ((u32)d << 24) | ((u32)c << 16) | ((u32)b << 8) | ((u32)a << 0);
 }
 

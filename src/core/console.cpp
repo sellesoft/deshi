@@ -1,12 +1,3 @@
-#include "../game/admin.h"
-#include "../game/components/Camera.h"
-#include "../game/components/Physics.h"
-#include "../game/components/Collider.h"
-#include "../game/components/AudioSource.h"
-#include "../game/components/MeshComp.h"
-#include "../game/components/Player.h"
-#include "../game/components/Movement.h"
-#include "../game/entities/Trigger.h"
 #include "../external/imgui/imgui_impl_glfw.h"
 #include "../external/imgui/imgui_impl_vulkan.h"
 
@@ -97,7 +88,7 @@ Command* Console::GetCommand(std::string command){
 
 std::string Console::ExecCommand(std::string command){
 	if(commands.find(command) != commands.end()){
-		return commands.at(command)->Exec(g_admin, "");
+		return "execcommand to be redone";//commands.at(command)->Exec(g_admin, "");
 	}
 	else {
 		ERROR("Command, '",command,"' does not exist");
@@ -107,7 +98,7 @@ std::string Console::ExecCommand(std::string command){
 
 std::string Console::ExecCommand(std::string command, std::string args){
 	if(commands.find(command) != commands.end()){
-		return commands.at(command)->Exec(g_admin, args);
+		return "exec command to be reimplemented in the brand new console 2";//commands.at(command)->Exec(g_admin, args);
 	}
 	else {
 		ERROR("Command, '",command,"' does not exist");
@@ -569,17 +560,6 @@ void Console::CleanUp(){
 //// various uncategorized commands ////
 ////////////////////////////////////////
 
-CMDFUNC(engine_pause){
-	DengAdmin->paused = !DengAdmin->paused;
-	if(DengAdmin->paused) return "engine_pause = true";
-	else return "engine_pause = false";
-}
-
-CMDFUNC(save){
-	std::string path = (args.size() > 0) ? args[0] : "save.desh";
-	DengAdmin->SaveDESH(path.c_str());
-	return "";
-}
 
 CMDFUNC(daytime){
 	return DengTime->FormatDateTime("{w} {M}/{d}/{y} {h}:{m}:{s}");
@@ -590,233 +570,13 @@ CMDFUNC(time_engine){
 									"Console:{c}ms Render:{r}ms Frame:{f}ms Delta:{d}ms");
 }
 
-CMDFUNC(time_game){
-	return DengAdmin->FormatAdminTime("Layers:  Physics:{P}ms Canvas:{C}ms World:{W}ms Send:{S}ms Last:{L}ms\n"
-									  "Systems: Physics:{p}ms Canvas:{c}ms World:{w}ms Send:{s}ms");
-}
 
-CMDFUNC(undo){
-	DengAdmin->editor.undo_manager.Undo(); return "";
-}
-
-CMDFUNC(redo){
-	DengAdmin->editor.undo_manager.Redo(); return "";
-}
 
 CMDFUNC(flush){
 	DengConsole->FlushBuffer(); return "";
 }
 
-CMDFUNC(level){
-	DengAdmin->LoadTEXT((args.size() > 0) ? args[0].c_str() : 0); return "";
-}
 
-CMDSTARTA(state, args.size() > 0){
-	if(args[0] == "play"){
-		DengAdmin->ChangeState(GameState_Play);
-	}else if(args[0] == "menu"){
-		DengAdmin->ChangeState(GameState_Menu);
-	}else if(args[0] == "debug"){
-		DengAdmin->ChangeState(GameState_Debug);
-	}else if(args[0] == "editor"){
-		DengAdmin->ChangeState(GameState_Editor);
-	}
-}CMDEND("state <new_state:String>{play|menu|debug|editor}");
-
-CMDSTARTA(load_obj, args.size() > 0){
-	vec3 pos{}, rot{}, scale = vec3::ONE;
-	f32 mass = 1.f, elasticity = .5f; bool staticPosition = 1, twoDphys = false;
-	ColliderShape ctype = ColliderShape_NONE;
-	Event event = 0;
-	//check for optional params after the first arg
-	for (auto s = args.begin() + 1; s != args.end(); ++s){
-		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
-			pos = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		} else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
-			rot = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		} else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
-			scale = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		} else if(std::regex_search(s->c_str(), m, StringRegex("collider"))){
-			if     (m[1] == "aabb")      ctype = ColliderShape_AABB;
-			else if(m[1] == "sphere")    ctype = ColliderShape_Sphere;
-			else if(m[1] == "landscape") ctype = ColliderShape_Landscape;
-			else if(m[1] == "box")       ctype = ColliderShape_Box;
-			else if(m[1] == "complex")   ctype = ColliderShape_Complex;
-		} else if(std::regex_search(s->c_str(), m, FloatRegex("mass"))){
-			if(std::stof(m[1]) <= 0) return "[c:red]Mass can't be zero or less than zero[c]";
-			mass = std::stof(m[1]);
-		} else if(std::regex_search(s->c_str(), m, FloatRegex("elasticity"))){
-			elasticity = std::stof(m[1]);
-		} else if(std::regex_search(s->c_str(), m, BoolRegex("static"))){
-			if(m[1] == "0" || m[1] == "false"){
-				staticPosition = false;
-				//mass = INFINITY;
-			}
-		} else if(std::regex_search(s->c_str(), m, StringRegex("twoDphys"))){
-			if(m[1] == "1" || m[1] == "true") twoDphys = true;
-		} else if(std::regex_search(s->c_str(), m , StringRegex("event"))){
-			if(ctype == ColliderShape_NONE) return "[c:red]Attempt to attach event with no collider[c]";
-			bool found = false;
-			forI(sizeof(EventStrings)) 
-				if(m[1] == EventStrings[i]){ 
-				found = true; event = (u32)i;  break;
-			}
-			if (!found) return TOSTDSTRING("[c:red]Unknown event '", m[1], "'");
-		} else {
-			return "[c:red]Invalid parameter: " + *s + "[c]";
-		}
-	}
-	
-	//cut off the .obj extension for entity name
-	char name[DESHI_NAME_SIZE];
-	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
-	
-	//create the model
-	Model* model = Storage::CreateModelFromOBJ(args[0].c_str()).second;
-	
-	//collider
-	Collider* col = nullptr;
-	switch(ctype){
-		case ColliderShape_AABB:      col = new AABBCollider(model->mesh, 1, 0U, event); break;
-		case ColliderShape_Sphere:    col = new SphereCollider(1, 1, 0U, event); break;
-		case ColliderShape_Landscape: col = new LandscapeCollider(model->mesh, 0U, event); break;
-		case ColliderShape_Box:       col = new BoxCollider(vec3(1, 1, 1), 1, 0U, event); break;
-		case ColliderShape_Complex:   col = new ComplexCollider(model->mesh, 0, event); break;
-	}
-	
-	ModelInstance* mc = new ModelInstance(model);
-	Physics* p = new Physics(pos, rot, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, elasticity, mass, staticPosition);
-	if(twoDphys) p->twoDphys = true;
-	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
-	DengAdmin->CreateEntity({ mc, p, s, col }, name, Transform(pos, rot, scale));
-	
-	return TOSTDSTRING("Loaded model ", args[0]);
-}CMDEND("load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z) -collider=String{aabb|sphere} -mass=Float -static=Bool");
-
-CMDSTARTA(cam_vars, args.size() != 0){
-	CameraInstance* c = DengAdmin->mainCamera;
-	for (auto s = args.begin(); s != args.end(); ++s){
-		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
-			c->position = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
-			c->rotation = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}else if(std::regex_search(s->c_str(), m, FloatRegex("nearZ"))){
-			c->nearZ = std::stof(m[1]);
-		}else if(std::regex_search(s->c_str(), m, FloatRegex("farZ"))){
-			c->farZ = std::stof(m[1]);
-		}else if(std::regex_search(s->c_str(), m, FloatRegex("fov"))){
-			c->fov = std::stof(m[1]);
-		}else{
-			return "[c:red]Invalid parameter: " + *s + "[c]";
-		}
-	}
-	
-	c->UpdateProjectionMatrix();
-	return c->str();
-}CMDEND("cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)");
-
-CMDSTARTA(add_player, args.size() > 0){
-	std::cmatch m;
-	vec3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
-	float mass = 1.f;
-	float elasticity = 0;
-	bool staticc = true;
-	ColliderShape ctype;
-	
-	//check for optional params after the first arg
-	for (auto s = args.begin() + 1; s != args.end(); ++s){
-		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
-			position = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}
-		else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
-			rotation = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}
-		else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
-			scale = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}
-		else if(std::regex_search(s->c_str(), m, StringRegex("collider"))){
-			if(m[1] == "aabb") ctype = ColliderShape_AABB;
-			else if(m[1] == "sphere") ctype = ColliderShape_Sphere;
-			else if(m[1] == "landscape") ctype = ColliderShape_Landscape;
-			else if(m[1] == "box") ctype = ColliderShape_Box;
-		}
-		else if(std::regex_search(s->c_str(), m, FloatRegex("mass"))){
-			if(std::stof(m[1]) < 0) return "[c:red]Mass must be greater than 0[c]";
-			mass = std::stof(m[1]);
-		}
-		else if(std::regex_search(s->c_str(), m, BoolRegex("static"))){
-			if(m[1] == "0" || m[1] == "false") staticc = false;
-		}
-		else if(std::regex_search(s->c_str(), m, FloatRegex("elasticity"))){
-			elasticity = std::stof(m[1]);
-		}
-		else {
-			return "[c:red]Invalid parameter: " + *s + "[c]";
-		}
-	}
-	
-	//cut off the .obj extension for entity name
-	char name[DESHI_NAME_SIZE];
-	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
-	
-	//create the model
-	Model* model = Storage::CreateModelFromOBJ(args[0].c_str()).second;
-	
-	//collider
-	Collider* col = nullptr;
-	switch(ctype){
-		case ColliderShape_AABB: col = new AABBCollider(vec3(0.5, 1, 0.5), 2); break;
-		case ColliderShape_Sphere: col = new SphereCollider(1, 1); break;
-		case ColliderShape_Landscape: col = new LandscapeCollider(model->mesh); break;
-		case ColliderShape_Box: col = new BoxCollider(vec3(1, 1, 1), 1); break;
-	}
-	
-	ModelInstance* mc = new ModelInstance(model);
-	Physics* p = new Physics(position, rotation, vec3::ZERO, vec3::ZERO,
-							 vec3::ZERO, vec3::ZERO, elasticity, mass, staticc);
-	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
-	Movement* mov = new Movement(p);
-	mov->camera = DengAdmin->mainCamera;
-	Player* pl = new Player(mov);
-	DengAdmin->player = DengAdmin->CreateEntityNow({ mc, p, s, col, mov, pl },
-												   name, Transform(position, rotation, scale));
-	DengAdmin->controller.playermove = mov;
-	return TOSTDSTRING("Added player.");
-}CMDEND("load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
-
-
-CMDSTARTA(add_force, args.size() > 0){
-	std::cmatch m;
-	for (std::string s : args){
-		if(std::regex_search(s.c_str(), m, Vec3Regex("force"))){
-			if(Physics* p = DengAdmin->editor.selected[0]->GetComponent<Physics>()){
-				p->AddForce(nullptr, vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3])));
-				return "";
-			}else{
-				ERROR("Selectesd object doesn't have a physics component");
-				return "";
-			}
-		}
-	}
-}CMDEND("add_force -force=(x,y,z)");
-
-CMDFUNC(cam_info){
-	return DengAdmin->mainCamera->str();
-}
-
-CMDFUNC(cam_matrix_projection){
-	return DengAdmin->mainCamera->projMat.str2f();
-}
-
-CMDFUNC(cam_matrix_view){
-	return DengAdmin->mainCamera->viewMat.str2f();
-}
-
-CMDFUNC(cam_reset){
-	DengAdmin->mainCamera->position = vec3(4.f, 3.f, -4.f);
-	DengAdmin->mainCamera->rotation = vec3(28.f, -45.f, 0.f);
-	return "reset camera";
-}
 
 CMDFUNC(listc){
 	std::string allcommands = "";
@@ -872,33 +632,7 @@ CMDFUNC(alias){
 	
 }
 
-CMDFUNC(bind){
-	if(args.size() == 0){
-		return "bind \nassign a command to a key\n bind (key) (command name)";
-	}else if(args.size() == 1){
-		return "you must specify a command to assign to this bind.";
-	}else{
-		std::string s = "";
-		for (int i = 1; i < args.size(); i++){
-			s += args[i] + " ";
-		}
-		Key::Key key;
-		
-		try{
-			key = DengKeys.stk.at(args[0]);
-			DengInput->binds.push_back(pair<std::string, Key::Key>(s, key));
-			std::vector<char> datav;
-			for (auto c : args[0] + " " + s){
-				datav.push_back(c);
-			}
-			datav.push_back('\n');
-			Assets::appendFile(Assets::dirConfig()+"binds.cfg", datav, datav.size());
-			return "[c:green]key \"" + args[0] + "\" successfully bound to \n" + s + "[c]";
-		}catch(...){
-			return "[c:red]key \"" + args[0] + "\" not found in the key list.[c]";
-		}
-	}
-}
+
 
 CMDSTARTA(window_display_mode, args.size() == 1){
 	try{
@@ -1056,78 +790,32 @@ CMDFUNC(quit){
 	return("");
 }
 
-CMDSTARTA(add_trigger, args.size() > 0){
-	vec3 pos{}, rot{}, scale = vec3::ONE;
-	ColliderShape shape = ColliderShape_NONE;
-	Event event = 0;
-	for (auto s = args.begin(); s != args.end(); ++s){
-		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
-			pos = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}
-		else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
-			rot = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}
-		else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
-			scale = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
-		}
-		else if(std::regex_search(s->c_str(), m, StringRegex("shape"))){
-			if     (m[1] == "aabb")      shape = ColliderShape_AABB;
-			else if(m[1] == "sphere")    shape = ColliderShape_Sphere;
-			else if(m[1] == "landscape") shape = ColliderShape_Landscape;
-			else if(m[1] == "box")       shape = ColliderShape_Box;
-		}
-		else if(std::regex_search(s->c_str(), m, StringRegex("event"))){
-			if(shape == ColliderShape_NONE) return "[c:red]Attempt to attach event with no collider[c]";
-			bool found = false;
-			forI(sizeof(EventStrings))
-				if(m[1] == EventStrings[i]){
-				found = true; event = (u32)i;  break;
-			}
-			if (!found) return TOSTDSTRING("[c:red]Unknown event '", m[1], "'");
-		}
-		else {
-			return "[c:red]Invalid parameter: " + *s + "[c]";
-		}
-	}
-	
-	Collider* col = nullptr;
-	switch(shape){
-		case ColliderShape_AABB:   col = new AABBCollider(vec3::ONE / 2, 1, 0U, event); break;
-		case ColliderShape_Sphere: col = new SphereCollider(1, 1, 0U, event); break;
-		case ColliderShape_Box:    col = new BoxCollider(vec3(1, 1, 1), 1, 0U, event); break;
-	}
-	
-	Trigger* te = new Trigger(Transform(pos, rot, scale), col);
-	
-	DengAdmin->CreateEntity(te);
-	
-	return TOSTDSTRING("Created trigger");
-}CMDEND("add_trigger -shape=[ColliderType] -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)")
+
 
 void Console::AddCommands(){
-	CMDADD(add_trigger, "adds a trigger collider entity");
-	CMDADD(level, "Loads a level from the levels directory");
-	CMDADD(engine_pause, "Toggles pausing the engine");
-	CMDADD(save, "Saves the state of the editor");
+	//CMDADD(add_trigger, "adds a trigger collider entity");
+	//CMDADD(level, "Loads a level from the levels directory");
+	//CMDADD(engine_pause, "Toggles pausing the engine");
+	//CMDADD(save, "Saves the state of the editor");
 	CMDADD(daytime, "Logs the time in day-time format");
 	CMDADD(time_engine, "Logs the engine times");
-	CMDADD(time_game, "Logs the game times");
-	CMDADD(undo, "Undos previous level editor action");
-	CMDADD(redo, "Redos last undone level editor action");
-	CMDADD(add_player, "Adds a player to the world.");
-	CMDADD(load_obj, "Loads a .obj file from the models folder with desired options");
-	CMDADD(cam_vars, "Allows editing to the camera variables");
-	CMDADD(state, "Changes the admin's gamestate");
+	//CMDADD(time_game, "Logs the game times");
+	//CMDADD(undo, "Undos previous level editor action");
+	//CMDADD(redo, "Redos last undone level editor action");
+	//CMDADD(add_player, "Adds a player to the world.");
+	//CMDADD(load_obj, "Loads a .obj file from the models folder with desired options");
+	//CMDADD(cam_vars, "Allows editing to the camera variables");
+	//CMDADD(state, "Changes the admin's gamestate");
 	CMDADD(flush, "Flushes the console's buffer to the log file.");
-	CMDADD(add_force, "Adds a force to the selected object.");
-	CMDADD(cam_info, "Prints camera variables");
-	CMDADD(cam_matrix_projection, "Prints camera's projection matrix");
-	CMDADD(cam_matrix_view, "Prints camera's view matrix");
-	CMDADD(cam_reset, "Resets camera");
+	//CMDADD(add_force, "Adds a force to the selected object.");
+	//CMDADD(cam_info, "Prints camera variables");
+	//CMDADD(cam_matrix_projection, "Prints camera's projection matrix");
+	//CMDADD(cam_matrix_view, "Prints camera's view matrix");
+	//CMDADD(cam_reset, "Resets camera");
 	CMDADD(listc, "Lists all avaliable commands");
 	CMDADD(help, "Prints help about a specified command. \nignores any argument after the first");
 	CMDADD(alias, "Assign an alias to another command to call it with a different name");
-	CMDADD(bind, "Bind a command to a key");
+	//CMDADD(bind, "Bind a command to a key");
 	CMDADD(window_display_mode, "Sets the window format to windowed, borderless, or fullscreen");
 	CMDADD(window_cursor_mode, "Switches between default, first person, or hidden cursor mode");
 	CMDADD(window_raw_input, "Only works in first person mode");
@@ -1145,3 +833,326 @@ void Console::AddCommands(){
 	CMDADD(texture_type_list, "Lists the texture types");
 	CMDADD(quit, "Exits the application");
 }
+
+
+
+//FUNCTIONS THAT DEALT WITH GAME AND SHOULD BE REIMPLEMENTED ONCE WE HAVE THE SEPARATION
+
+
+//CMDFUNC(bind) {
+//	if (args.size() == 0) {
+//		return "bind \nassign a command to a key\n bind (key) (command name)";
+//	}
+//	else if (args.size() == 1) {
+//		return "you must specify a command to assign to this bind.";
+//	}
+//	else {
+//		std::string s = "";
+//		for (int i = 1; i < args.size(); i++) {
+//			s += args[i] + " ";
+//		}
+//		Key::Key key;
+//
+//		try {
+//			key = DengKeys.stk.at(args[0]);
+//			DengInput->binds.push_back(pair<std::string, Key::Key>(s, key));
+//			std::vector<char> datav;
+//			for (auto c : args[0] + " " + s) {
+//				datav.push_back(c);
+//			}
+//			datav.push_back('\n');
+//			Assets::appendFile(Assets::dirConfig() + "binds.cfg", datav, datav.size());
+//			return "[c:green]key \"" + args[0] + "\" successfully bound to \n" + s + "[c]";
+//		}
+//		catch (...) {
+//			return "[c:red]key \"" + args[0] + "\" not found in the key list.[c]";
+//		}
+//	}
+//}
+
+
+
+//CMDFUNC(engine_pause) {
+//	DengAdmin->paused = !DengAdmin->paused;
+//	if (DengAdmin->paused) return "engine_pause = true";
+//	else return "engine_pause = false";
+//}
+//
+//CMDFUNC(save) {
+//	std::string path = (args.size() > 0) ? args[0] : "save.desh";
+//	DengAdmin->SaveDESH(path.c_str());
+//	return "";
+//}
+
+
+//CMDSTARTA(add_trigger, args.size() > 0) {
+//	vec3 pos{}, rot{}, scale = vec3::ONE;
+//	ColliderShape shape = ColliderShape_NONE;
+//	Event event = 0;
+//	for (auto s = args.begin(); s != args.end(); ++s) {
+//		if (std::regex_search(s->c_str(), m, Vec3Regex("pos"))) {
+//			pos = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+//		}
+//		else if (std::regex_search(s->c_str(), m, Vec3Regex("rot"))) {
+//			rot = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+//		}
+//		else if (std::regex_search(s->c_str(), m, Vec3Regex("scale"))) {
+//			scale = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+//		}
+//		else if (std::regex_search(s->c_str(), m, StringRegex("shape"))) {
+//			if (m[1] == "aabb")      shape = ColliderShape_AABB;
+//			else if (m[1] == "sphere")    shape = ColliderShape_Sphere;
+//			else if (m[1] == "landscape") shape = ColliderShape_Landscape;
+//			else if (m[1] == "box")       shape = ColliderShape_Box;
+//		}
+//		else if (std::regex_search(s->c_str(), m, StringRegex("event"))) {
+//			if (shape == ColliderShape_NONE) return "[c:red]Attempt to attach event with no collider[c]";
+//			bool found = false;
+//			forI(sizeof(EventStrings))
+//				if (m[1] == EventStrings[i]) {
+//					found = true; event = (u32)i;  break;
+//				}
+//			if (!found) return TOSTDSTRING("[c:red]Unknown event '", m[1], "'");
+//		}
+//		else {
+//			return "[c:red]Invalid parameter: " + *s + "[c]";
+//		}
+//	}
+//
+//	Collider* col = nullptr;
+//	switch (shape) {
+//	case ColliderShape_AABB:   col = new AABBCollider(vec3::ONE / 2, 1, 0U, event); break;
+//	case ColliderShape_Sphere: col = new SphereCollider(1, 1, 0U, event); break;
+//	case ColliderShape_Box:    col = new BoxCollider(vec3(1, 1, 1), 1, 0U, event); break;
+//	}
+//
+//	Trigger* te = new Trigger(Transform(pos, rot, scale), col);
+//
+//	DengAdmin->CreateEntity(te);
+//
+//	return TOSTDSTRING("Created trigger");
+//}CMDEND("add_trigger -shape=[ColliderType] -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)")
+
+//CMDFUNC(time_game) {
+//	return DengAdmin->FormatAdminTime("Layers:  Physics:{P}ms Canvas:{C}ms World:{W}ms Send:{S}ms Last:{L}ms\n"
+//		"Systems: Physics:{p}ms Canvas:{c}ms World:{w}ms Send:{s}ms");
+//}
+//
+//CMDFUNC(undo) {
+//	DengAdmin->editor.undo_manager.Undo(); return "";
+//}
+//
+//CMDFUNC(redo) {
+//	DengAdmin->editor.undo_manager.Redo(); return "";
+//}
+
+//CMDFUNC(level){
+//	DengAdmin->LoadTEXT((args.size() > 0) ? args[0].c_str() : 0); return "";
+//}
+//
+//CMDSTARTA(state, args.size() > 0){
+//	if(args[0] == "play"){
+//		DengAdmin->ChangeState(GameState_Play);
+//	}else if(args[0] == "menu"){
+//		DengAdmin->ChangeState(GameState_Menu);
+//	}else if(args[0] == "debug"){
+//		DengAdmin->ChangeState(GameState_Debug);
+//	}else if(args[0] == "editor"){
+//		DengAdmin->ChangeState(GameState_Editor);
+//	}
+//}CMDEND("state <new_state:String>{play|menu|debug|editor}");
+//
+//CMDSTARTA(load_obj, args.size() > 0){
+//	vec3 pos{}, rot{}, scale = vec3::ONE;
+//	f32 mass = 1.f, elasticity = .5f; bool staticPosition = 1, twoDphys = false;
+//	ColliderShape ctype = ColliderShape_NONE;
+//	Event event = 0;
+//	//check for optional params after the first arg
+//	for (auto s = args.begin() + 1; s != args.end(); ++s){
+//		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
+//			pos = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+//		} else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
+//			rot = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+//		} else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
+//			scale = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+//		} else if(std::regex_search(s->c_str(), m, StringRegex("collider"))){
+//			if     (m[1] == "aabb")      ctype = ColliderShape_AABB;
+//			else if(m[1] == "sphere")    ctype = ColliderShape_Sphere;
+//			else if(m[1] == "landscape") ctype = ColliderShape_Landscape;
+//			else if(m[1] == "box")       ctype = ColliderShape_Box;
+//			else if(m[1] == "complex")   ctype = ColliderShape_Complex;
+//		} else if(std::regex_search(s->c_str(), m, FloatRegex("mass"))){
+//			if(std::stof(m[1]) <= 0) return "[c:red]Mass can't be zero or less than zero[c]";
+//			mass = std::stof(m[1]);
+//		} else if(std::regex_search(s->c_str(), m, FloatRegex("elasticity"))){
+//			elasticity = std::stof(m[1]);
+//		} else if(std::regex_search(s->c_str(), m, BoolRegex("static"))){
+//			if(m[1] == "0" || m[1] == "false"){
+//				staticPosition = false;
+//				//mass = INFINITY;
+//			}
+//		} else if(std::regex_search(s->c_str(), m, StringRegex("twoDphys"))){
+//			if(m[1] == "1" || m[1] == "true") twoDphys = true;
+//		} else if(std::regex_search(s->c_str(), m , StringRegex("event"))){
+//			if(ctype == ColliderShape_NONE) return "[c:red]Attempt to attach event with no collider[c]";
+//			bool found = false;
+//			forI(sizeof(EventStrings)) 
+//				if(m[1] == EventStrings[i]){ 
+//				found = true; event = (u32)i;  break;
+//			}
+//			if (!found) return TOSTDSTRING("[c:red]Unknown event '", m[1], "'");
+//		} else {
+//			return "[c:red]Invalid parameter: " + *s + "[c]";
+//		}
+//	}
+//	
+//	//cut off the .obj extension for entity name
+//	char name[DESHI_NAME_SIZE];
+//	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
+//	
+//	//create the model
+//	Model* model = Storage::CreateModelFromOBJ(args[0].c_str()).second;
+//	
+//	//collider
+//	Collider* col = nullptr;
+//	switch(ctype){
+//		case ColliderShape_AABB:      col = new AABBCollider(model->mesh, 1, 0U, event); break;
+//		case ColliderShape_Sphere:    col = new SphereCollider(1, 1, 0U, event); break;
+//		case ColliderShape_Landscape: col = new LandscapeCollider(model->mesh, 0U, event); break;
+//		case ColliderShape_Box:       col = new BoxCollider(vec3(1, 1, 1), 1, 0U, event); break;
+//		case ColliderShape_Complex:   col = new ComplexCollider(model->mesh, 0, event); break;
+//	}
+//	
+//	ModelInstance* mc = new ModelInstance(model);
+//	Physics* p = new Physics(pos, rot, {0,0,0}, {0,0,0}, {0,0,0}, {0,0,0}, elasticity, mass, staticPosition);
+//	if(twoDphys) p->twoDphys = true;
+//	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
+//	DengAdmin->CreateEntity({ mc, p, s, col }, name, Transform(pos, rot, scale));
+//	
+//	return TOSTDSTRING("Loaded model ", args[0]);
+//}CMDEND("load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z) -collider=String{aabb|sphere} -mass=Float -static=Bool");
+//
+//CMDSTARTA(cam_vars, args.size() != 0){
+//	CameraInstance* c = DengAdmin->mainCamera;
+//	for (auto s = args.begin(); s != args.end(); ++s){
+//		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
+//			c->position = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+//		}else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
+//			c->rotation = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+//		}else if(std::regex_search(s->c_str(), m, FloatRegex("nearZ"))){
+//			c->nearZ = std::stof(m[1]);
+//		}else if(std::regex_search(s->c_str(), m, FloatRegex("farZ"))){
+//			c->farZ = std::stof(m[1]);
+//		}else if(std::regex_search(s->c_str(), m, FloatRegex("fov"))){
+//			c->fov = std::stof(m[1]);
+//		}else{
+//			return "[c:red]Invalid parameter: " + *s + "[c]";
+//		}
+//	}
+//	
+//	c->UpdateProjectionMatrix();
+//	return c->str();
+//}CMDEND("cam_vars -pos=(x,y,z) -rot=(x,y,z) -static=(Bool) -nearZ=(Float) -farZ=(Float) -fov=(Float)");
+//
+//CMDSTARTA(add_player, args.size() > 0){
+//	std::cmatch m;
+//	vec3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
+//	float mass = 1.f;
+//	float elasticity = 0;
+//	bool staticc = true;
+//	ColliderShape ctype;
+//	
+//	//check for optional params after the first arg
+//	for (auto s = args.begin() + 1; s != args.end(); ++s){
+//		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
+//			position = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+//		}
+//		else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
+//			rotation = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+//		}
+//		else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
+//			scale = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+//		}
+//		else if(std::regex_search(s->c_str(), m, StringRegex("collider"))){
+//			if(m[1] == "aabb") ctype = ColliderShape_AABB;
+//			else if(m[1] == "sphere") ctype = ColliderShape_Sphere;
+//			else if(m[1] == "landscape") ctype = ColliderShape_Landscape;
+//			else if(m[1] == "box") ctype = ColliderShape_Box;
+//		}
+//		else if(std::regex_search(s->c_str(), m, FloatRegex("mass"))){
+//			if(std::stof(m[1]) < 0) return "[c:red]Mass must be greater than 0[c]";
+//			mass = std::stof(m[1]);
+//		}
+//		else if(std::regex_search(s->c_str(), m, BoolRegex("static"))){
+//			if(m[1] == "0" || m[1] == "false") staticc = false;
+//		}
+//		else if(std::regex_search(s->c_str(), m, FloatRegex("elasticity"))){
+//			elasticity = std::stof(m[1]);
+//		}
+//		else {
+//			return "[c:red]Invalid parameter: " + *s + "[c]";
+//		}
+//	}
+//	
+//	//cut off the .obj extension for entity name
+//	char name[DESHI_NAME_SIZE];
+//	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
+//	
+//	//create the model
+//	Model* model = Storage::CreateModelFromOBJ(args[0].c_str()).second;
+//	
+//	//collider
+//	Collider* col = nullptr;
+//	switch(ctype){
+//		case ColliderShape_AABB: col = new AABBCollider(vec3(0.5, 1, 0.5), 2); break;
+//		case ColliderShape_Sphere: col = new SphereCollider(1, 1); break;
+//		case ColliderShape_Landscape: col = new LandscapeCollider(model->mesh); break;
+//		case ColliderShape_Box: col = new BoxCollider(vec3(1, 1, 1), 1); break;
+//	}
+//	
+//	ModelInstance* mc = new ModelInstance(model);
+//	Physics* p = new Physics(position, rotation, vec3::ZERO, vec3::ZERO,
+//							 vec3::ZERO, vec3::ZERO, elasticity, mass, staticc);
+//	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
+//	Movement* mov = new Movement(p);
+//	mov->camera = DengAdmin->mainCamera;
+//	Player* pl = new Player(mov);
+//	DengAdmin->player = DengAdmin->CreateEntityNow({ mc, p, s, col, mov, pl },
+//												   name, Transform(position, rotation, scale));
+//	DengAdmin->controller.playermove = mov;
+//	return TOSTDSTRING("Added player.");
+//}CMDEND("load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z)");
+//
+//
+//CMDSTARTA(add_force, args.size() > 0){
+//	std::cmatch m;
+//	for (std::string s : args){
+//		if(std::regex_search(s.c_str(), m, Vec3Regex("force"))){
+//			if(Physics* p = DengAdmin->editor.selected[0]->GetComponent<Physics>()){
+//				p->AddForce(nullptr, vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3])));
+//				return "";
+//			}else{
+//				ERROR("Selectesd object doesn't have a physics component");
+//				return "";
+//			}
+//		}
+//	}
+//}CMDEND("add_force -force=(x,y,z)");
+//
+//CMDFUNC(cam_info){
+//	return DengAdmin->mainCamera->str();
+//}
+//
+//CMDFUNC(cam_matrix_projection){
+//	return DengAdmin->mainCamera->projMat.str2f();
+//}
+//
+//CMDFUNC(cam_matrix_view){
+//	return DengAdmin->mainCamera->viewMat.str2f();
+//}
+//
+//CMDFUNC(cam_reset){
+//	DengAdmin->mainCamera->position = vec3(4.f, 3.f, -4.f);
+//	DengAdmin->mainCamera->rotation = vec3(28.f, -45.f, 0.f);
+//	return "reset camera";
+//}
