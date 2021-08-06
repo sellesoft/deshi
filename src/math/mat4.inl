@@ -304,11 +304,11 @@ Minor(int row, int col) const {
     
     //3x3 determinant
     return (arr[0] * arr[4] * arr[8]) 
-         + (arr[1] * arr[5] * arr[6]) 
-         + (arr[2] * arr[3] * arr[7]) 
-         - (arr[2] * arr[4] * arr[6]) 
-         - (arr[1] * arr[3] * arr[8]) 
-         - (arr[0] * arr[5] * arr[7]);
+		+ (arr[1] * arr[5] * arr[6]) 
+		+ (arr[2] * arr[3] * arr[7]) 
+		- (arr[2] * arr[4] * arr[6]) 
+		- (arr[1] * arr[3] * arr[8]) 
+		- (arr[0] * arr[5] * arr[7]);
 }
 
 //returns the cofactor (minor with adjusted sign based on location in matrix) at given row and column
@@ -409,24 +409,4 @@ ScaleMatrix(float x, float y, float z) {
                    0, 0, 0, 1);
 }
 
-//////////////
-//// hash ////
-//////////////
-
-namespace std{
-    template<> struct hash<mat4>{
-        inline size_t operator()(mat4 const& m) const{
-            size_t seed = 0;
-            hash<float> hasher; size_t hash;
-            forI(16){
-                hash = hasher(m.data[i]);
-                hash += 0x9e3779b9 + (seed << 6) + (seed >> 2);
-                seed ^= hash;
-            }
-            return seed;
-        }
-    };
-};
-
-
-#endif //DESHI_mat4_INL
+#endif //DESHI_MATRIX4_INL

@@ -4,14 +4,12 @@ entity_count 4
 last_updated ""
 
 >materials
-0 "Flat" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
-1 "Phong" 1 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+"Flat"
+"Phong"
 
->meshes
-5 "box.obj" 1 "0"
-6 "box.obj" 1 "1"
-7 "box.obj" 1 "0"
-8 "box.obj" 1 "0"
+>models
+"box_flat"
+"box_phong"
 
 >entities
 0 "floor"

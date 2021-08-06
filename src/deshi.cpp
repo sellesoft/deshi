@@ -1,5 +1,22 @@
 /* deshi
-TODO Tags:
+
+Style Guidelines
+----------------
+utlity: (headers only)
+  lower_underscore_structs
+  lowerCamelMemberVars
+  lowerCamelMemberFuncs
+core:
+  UpperCamelStructs
+  UpperCamelNamespaces
+  lowerCamelMemberVars
+  UowerCamelMemberFuncs
+  lower_underscore_unscoped_vars (.cpp only)
+  DowhateverLocal_vars (usually lowerCamel)
+  g_global_vars (defined in deshi.cpp only, declared in specific header)
+
+TODO Tags
+---------
 As  Assets    Cl  Clean Up Code    Cmd Command         Co  Core        Con Console
 En  Entity    Fu  Fun              Fs  Filesystem      Ge  Geometry    In  Input
 Ma  Math      Oth Other            Op  Optimization    Ph  Physics     Re  Render
@@ -20,11 +37,11 @@ ____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
+store fonts in storage
 add editor settings and config
 maybe redo UI to draw the window base into a special UIDrawCmds array for base window elements 
 ____so we can defer drawing that stuff to EndWindow() so we can do window resizing and positioning within Begin and End calls
 convert std::string to our string throughout the project, primarily .str() methods so i can fully convert TOSTRING to use our string
-change text-based saving so material shaders are text rather than ID
 rework and simplify entity creation so there is a distinction between development and gameplay creation
 make a dynamic timers array on in time.h for cleaner timer stuffs
 add a setting for a limit to the number of log files
@@ -51,8 +68,6 @@ Render TODOs
 ------------
 fix directional shadow mapping's (projection?) errors
 rework lights
-add temporary meshes (get reset every frame like imgui)
-extract normal debug geometry shader descriptor from generic layout and sets
 add omnidirectional shadow mapping
 add not-on-screen object culling thru mesh AABBs
 add front-to-back sorting for perf gain (and maybe transparency?)
@@ -129,6 +144,7 @@ ____sort of how we had before with BufferLog so you can see it without opening c
 
 Math TODOs
 ----------
+fix vector cross function, and anywhere it's used
 add functions and members similar to what glsl/glm has where you can do stuff like 
 ____v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
 ____you probably just need to add a vec2/3 for each permutation of each vector

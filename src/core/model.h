@@ -52,8 +52,10 @@ enum ModelFlags_{
 	ModelFlags_NONE = 0,
 }; typedef u32 ModelFlags;
 
+//TODO(delle) add versioning to this
 //NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
 struct Mesh{
+	u32  bytes;
 	char name[DESHI_NAME_SIZE];
 	u32  idx;
 	vec3 aabbMin;
@@ -139,17 +141,17 @@ struct Texture{
 };
 
 struct Material{
+	MaterialFlags flags;
 	char name[DESHI_NAME_SIZE];
 	u32  idx;
 	Shader        shader;
-	MaterialFlags flags;
 	array<u32>    textures;
 };
 
 struct Model{
+	ModelFlags flags;
 	char name[DESHI_NAME_SIZE];
 	u32  idx;
-	ModelFlags flags;
 	Mesh*      mesh;
 	Armature*  armature;
 	

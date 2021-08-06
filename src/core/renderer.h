@@ -8,14 +8,14 @@
 #include "../utils/string.h"
 #include "../utils/array.h"
 
-enum VSyncTypeBits{
+enum VSyncType_{
     VSyncType_Immediate,   //no image queue (necessary), display as soon as possible
 	VSyncType_Mailbox,     //image queue that replaces current pending image with new one, but waits to display on refresh
 	VSyncType_Fifo,        //image queue that only gets removed from on refresh, waits to display on refresh (regular Vsync)
 	VSyncType_FifoRelaxed, //same as Fifo, but if the image generates slower than refresh, dont wait to display on next refresh
 }; typedef u32 VSyncType;
 
-enum RendererStageBits{ 
+enum RendererStage_{ 
     RENDERERSTAGE_NONE  = 0, 
     RSVK_INSTANCE       = 1 << 0,
     RSVK_SURFACE        = 1 << 1,

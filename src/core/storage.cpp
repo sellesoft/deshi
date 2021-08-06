@@ -12,10 +12,10 @@ namespace Storage{
 void Storage::
 Init(){
 	//null assets      //TODO(delle) store null.png and null shader in a .cpp
-	CreateBoxMesh(1.0f, 1.0f, 1.0f);
+	CreateBoxMesh(1.0f, 1.0f, 1.0f); cpystr(NullMesh()->name, "null", DESHI_NAME_SIZE);
 	CreateTextureFromFile("null128.png");
-	CreateMaterial("null_material.mat", Shader_NULL, MaterialFlags_NONE, {0});
-	CreateModelFromMesh(NullMesh(), Shader_NULL);
+	CreateMaterial("null", Shader_NULL, MaterialFlags_NONE, {0});
+	CreateModelFromMesh(NullMesh(), Shader_NULL); cpystr(NullModel()->name, "null", DESHI_NAME_SIZE);
 }
 
 void Storage::
@@ -33,7 +33,7 @@ Reset(){
 ///////////////
 local Mesh* 
 AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighborCount, u32 facesVertexCount, u32 facesOuterVertexCount, u32 facesNeighborFaceCount, u32 facesNeighborTriangleCount){
-	//Assert(indexCount && vertexCount && faceCount && trianglesNeighborCount && facesVertexCount && facesOuterVertexCount && facesNeighborFaceCount && facesNeighborTriangleCount);
+	Assert(indexCount && vertexCount && faceCount);
 	
 	u32 triangleCount = indexCount/3;
 	u32 bytes =                    1*sizeof(Mesh)
@@ -50,6 +50,7 @@ AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighb
 		+     facesNeighborFaceCount*sizeof(u32);
 	
 	Mesh* mesh = (Mesh*)calloc(1,bytes);   char* cursor = (char*)mesh + (1*sizeof(Mesh));
+	mesh->bytes         = bytes;
 	mesh->indexCount    = indexCount;
 	mesh->vertexCount   = vertexCount;
 	mesh->triangleCount = triangleCount;
@@ -77,14 +78,14 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	
 	//check if created already
 	forI(meshes.size()){
-		if((strcmp(meshes[i]->name, "box_mesh.mesh") == 0) && (meshes[i]->aabbMax == vec3{width,height,depth})){
+		if((strcmp(meshes[i]->name, "box_mesh") == 0) && (meshes[i]->aabbMax == vec3{width,height,depth})){
 			return pair<u32,Mesh*>(i, meshes[i]);
 		}
 	}
 	
 	Mesh* mesh = AllocateMesh(36, 8, 6, 36, 24, 24, 24, 24);
-	cpystr(mesh->name, "box_mesh.mesh", DESHI_NAME_SIZE);
-	mesh->idx      = meshes.size();
+	cpystr(mesh->name, "box_mesh", DESHI_NAME_SIZE);
+	mesh->idx      = meshes.count;
 	mesh->aabbMin  = {-width,-height,-depth};
 	mesh->aabbMax  = { width, height, depth};
 	mesh->center   = {  0.0f,   0.0f,  0.0f};
@@ -361,14 +362,13 @@ pair<u32,Texture*> Storage::
 CreateTextureFromMemory(void* data, const char* name, int width, int height, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps){
 	pair<u32,Texture*> result(0, NullTexture());
 	if(data == 0){ ERROR_LOC("Failed to create texture '",name,"': No memory passed!"); return result; }
-
+	
 	//check if created already
-	forI(textures.size()){
-		if(strcmp(textures[i]->name, name) == 0){
+	forI(textures.size()){ if(strcmp(textures[i]->name, name) == 0){
 			return pair<u32,Texture*>(i,textures[i]);
 		}
 	}
-
+	
 	Texture* texture = AllocateTexture();
 	cpystr(texture->name, name, DESHI_NAME_SIZE);
 	texture->idx     = textures.count;
@@ -379,7 +379,7 @@ CreateTextureFromMemory(void* data, const char* name, int width, int height, Ima
 	texture->depth   = 4;
 	texture->loaded  = true;
 	texture->mipmaps = (generateMipmaps) ? (int)log2(Max(texture->width, texture->height)) + 1 : 1;
-
+	
 	//reinterpret image as RGBA32
 	const u8* src = (u8*)data;
 	if(format != ImageFormat_RGBA){
@@ -403,14 +403,14 @@ CreateTextureFromMemory(void* data, const char* name, int width, int height, Ima
 	}else{
 		texture->pixels = (u8*)data;
 	}
-
+	
 	Render::LoadTexture(texture);
 	if(!keepLoaded){
 		free(data);
 		data = 0;
 		texture->pixels = 0;
 	}
-
+	
 	result.first  = texture->idx;
 	result.second = texture;
 	textures.add(texture);
@@ -439,32 +439,46 @@ DeallocateMaterial(Material* material){
 }
 
 pair<u32,Material*> Storage::
-CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> textures){
+CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> mat_textures){
 	pair<u32,Material*> result(0, NullMaterial());
 	
 	//check if created already
-	bool textures_equal;
-	forX(mi, materials.size()){
-		if((strcmp(materials[mi]->name, name) == 0) && (materials[mi]->flags == flags) 
-		   && (materials[mi]->shader == shader) && (materials[mi]->textures.size() == textures.size())){
-			textures_equal = true;
-			forX(ti, textures.size()){ if(textures[ti] != materials[mi]->textures[ti]){ textures_equal = false; break; } }
-			if(textures_equal) return pair<u32,Material*>(mi,materials[mi]);
-		}
-	}
+	forX(mi, materials.count){ if(strcmp(materials[mi]->name, name) == 0){ return pair<u32,Material*>(mi,materials[mi]); } }
 	
-	Material* material = AllocateMaterial(textures.size());
-	material->idx = materials.size();
+	Material* material = AllocateMaterial(mat_textures.count);
+	material->idx = materials.count;
 	cpystr(material->name, name, DESHI_NAME_SIZE);
 	material->shader = shader;
 	material->flags  = flags;
-	forI(textures.size()) material->textures[i] = textures[i];
+	forI(mat_textures.count) material->textures[i] = mat_textures[i];
+	
+	{//write material to .mat file
+		std::string mat_text = TOSTDSTRING(">material"
+										   "\nname   ", material->name,
+										   "\nshader ", ShaderStrings[material->shader],
+										   "\nflags  ", material->flags,
+										   "\n"
+										   "\n>textures");
+		forI(material->textures.count){
+			mat_text.append(TOSTDSTRING("\n\"",textures[material->textures[i]]->name,"\""));
+		}
+		mat_text.append("\n");
+		Assets::writeFile(Assets::dirModels()+std::string(name)+".mat", mat_text.c_str(), mat_text.size());
+		LOG("Successfully created ",name,".mat");
+	}
 	
 	Render::LoadMaterial(material);
 	
 	result.first  = material->idx;
 	result.second = material;
 	materials.add(material);
+	return result;
+}
+
+pair<u32,Material*> Storage::
+CreateMaterialFromFile(const char* name, bool warnMissing){
+	pair<u32,Material*> result(0, NullMaterial());
+	//!Incomplete
 	return result;
 }
 
@@ -495,58 +509,85 @@ DeallocateModel(Model* model){
 #endif
 #define ParseError(...) ERROR("Error parsing '",filepath,"' on line '",line_number,"'! ",__VA_ARGS__)
 pair<u32,Model*> Storage::
-CreateModelFromOBJ(const char* filename, ModelFlags flags, bool forceLoadOBJ){
+CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 	pair<u32,Model*> result(0, NullModel());
 	TIMER_START(t_m);
 	
-	//!Incomplete check for .mesh and .model
-	bool mesh_found  = false;
-	bool model_found = false;
-	if(!forceLoadOBJ){
-		
+	bool has_extension;
+	string fullname(filename);
+	std::string filepath = Assets::dirModels() + filename;
+	string name;
+	string extension;
+	
+	size_t dot_idx = fullname.find_first_of_lookback('.', fullname.size-1);
+	if(dot_idx != -1){
+		has_extension = true;
+		name = fullname.substr(0, dot_idx-1);
+		extension = fullname.substr(dot_idx+1);
+	}else{
+		has_extension = false;
+		name = fullname;
 	}
 	
-	Mesh* mesh = NullMesh();
-	map<vec3,Mesh::Vertex> vUnique;
-	set<vec3> vnUnique;
-	set<pair<u32,string>> oUnique, gUnique, uUnique, mUnique; //index offset, name
-	set<pair<u32,vec3>> appliedUniqueNormals; //vertex applied on, normal
-	array<vec2> vtArray; //NOTE UV vertices arent expected to be unique
-	array<u32> vArray, vnArray, oArray, gArray,  uArray,  mArray; //index in unique array
-	array<Mesh::Index>    indexes;
-	array<Mesh::Triangle> triangles;
-	array<Mesh::Face>     faces;
-	array<array<pair<u32,u8>>> triNeighbors;
-	array<array<u32>> faceTriangles;
-	array<set<u32>>   faceVertexes;
-	array<array<u32>> faceOuterVertexes;
-	array<array<u32>> faceTriNeighbors;
-	array<array<u32>> faceFaceNeighbors;
+	//check if model is already loaded
+	forX(mi, models.count){
+		if((strcmp(models[mi]->name, name.str) == 0)){
+			return pair<u32,Model*>(mi,models[mi]);
+		}
+	}
 	
-	u32 totalTriNeighbors      = 0;
-	u32 totalFaceVertexes      = 0;
-	u32 totalFaceOuterVertexes = 0;
-	u32 totalFaceTriNeighbors  = 0;
-	u32 totalFaceFaceNeighbors = 0;
-	vec3 aabb_min{ FLT_MAX, FLT_MAX, FLT_MAX};
-	vec3 aabb_max{-FLT_MAX,-FLT_MAX,-FLT_MAX};
-	u32 default_color = Color::PackColorU32(Color::WHITE);
+	//!Incomplete check for .mesh and .model
+	bool parse_obj_mesh     = true;
+	bool parse_obj_model    = true;
+	if(!forceLoadOBJ){
+		std::vector<std::string> files = Assets::iterateDirectory(Assets::dirModels());
+		for(std::string& file : files){
+			if(file == std::string(name.str)+".mesh"){
+				
+			}
+		}
+	}
+	
+	Mesh*  mesh  = NullMesh();
+	Model* model = NullModel();
 	
 	//parse OBJ file
-	TIMER_START(t_l);
-	bool mtllib_found    = false;
-	bool s_warning       = false;
-	bool non_tri_warning = false;
-	bool fatal_error     = false;
-	
-	std::string filepath = Assets::dirModels() + filename;
-	char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
-	if(!buffer){  return result; }
-	defer{ delete[] buffer; };
-	char* line_start;
-	char* line_end = buffer - 1;
-	bool has_cr = false;
-	if(!mesh_found){
+	if(parse_obj_mesh){ //load .obj and .mtl
+		map<vec3,Mesh::Vertex> vUnique;
+		Set<vec3> vnUnique;
+		Set<pair<u32,string>> oUnique, gUnique, uUnique, mUnique; //index offset, name
+		Set<pair<u32,vec3>> appliedUniqueNormals; //vertex applied on, normal
+		array<vec2> vtArray; //NOTE UV vertices arent expected to be unique
+		array<u32> vArray, vnArray, oArray, gArray,  uArray,  mArray; //index in unique array
+		array<Mesh::Index>    indexes;
+		array<Mesh::Triangle> triangles;
+		array<Mesh::Face>     faces;
+		array<array<pair<u32,u8>>> triNeighbors;
+		array<array<u32>> faceTriangles;
+		array<Set<u32>>   faceVertexes;
+		array<array<u32>> faceOuterVertexes;
+		array<array<u32>> faceTriNeighbors;
+		array<array<u32>> faceFaceNeighbors;
+		u32 totalTriNeighbors      = 0;
+		u32 totalFaceVertexes      = 0;
+		u32 totalFaceOuterVertexes = 0;
+		u32 totalFaceTriNeighbors  = 0;
+		u32 totalFaceFaceNeighbors = 0;
+		vec3 aabb_min{ FLT_MAX, FLT_MAX, FLT_MAX};
+		vec3 aabb_max{-FLT_MAX,-FLT_MAX,-FLT_MAX};
+		u32 default_color = Color::PackColorU32(Color::WHITE);
+		bool mtllib_found    = false;
+		bool s_warning       = false;
+		bool non_tri_warning = false;
+		bool fatal_error     = false;
+		
+		TIMER_START(t_l);
+		char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
+		if(!buffer){  return result; }
+		defer{ delete[] buffer; };
+		char* line_start;
+		char* line_end = buffer - 1;
+		bool has_cr = false;
 		for(u32 line_number = 1; ;line_number++){
 			//get the next line
 			line_start = (has_cr) ? line_end+2 : line_end+1;
@@ -562,7 +603,6 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			//TODO(delle) handle non-triangle faces (maybe)
 			switch(*line_start){
 				case '\0': case '\n': case '\r': case '#': case ' ': continue; //skip empty and comment lines
-				
 				//// vertex, normal, or uv ////
 				case 'v':{
 					switch(*(line_start+1)){
@@ -648,7 +688,7 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 					u32 cti = triangles.count;
 					triangles.add(Mesh::Triangle{
 									  (vUnique.data[vArray[v0]].pos - vUnique.data[vArray[v1]].pos)
-										  .cross(vUnique.data[vArray[v0]].pos - vUnique.data[vArray[v2]].pos).normalized().yInvert(),
+										  .cross(vUnique.data[vArray[v0]].pos - vUnique.data[vArray[v2]].pos).normalized(),
 									  vUnique.data[vArray[v0]].pos, vUnique.data[vArray[v1]].pos, vUnique.data[vArray[v2]].pos,
 									  vArray[v0], vArray[v1], vArray[v2],
 									  0, (u32)-1
@@ -676,35 +716,35 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 							bool ct2_ot2 = (vArray[v2] == triangles[oti].v[2]);
 							
 							//current tri v0 && v1
-							if(ct0_ot0 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); continue;}
-							if(ct0_ot0 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); continue;}
-							if(ct0_ot0 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); continue;}
-							if(ct0_ot1 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); continue;}
-							if(ct0_ot1 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); continue;}
-							if(ct0_ot1 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); continue;}
-							if(ct0_ot2 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); continue;}
-							if(ct0_ot2 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); continue;}
-							if(ct0_ot2 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); continue;}
+							if(ct0_ot0 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+							if(ct0_ot0 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+							if(ct0_ot0 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+							if(ct0_ot1 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+							if(ct0_ot1 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+							if(ct0_ot1 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+							if(ct0_ot2 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+							if(ct0_ot2 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+							if(ct0_ot2 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
 							//current tri v1 && v2
-							if(ct1_ot0 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); continue;}
-							if(ct1_ot0 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); continue;}
-							if(ct1_ot0 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); continue;}
-							if(ct1_ot1 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); continue;}
-							if(ct1_ot1 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); continue;}
-							if(ct1_ot1 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); continue;}
-							if(ct1_ot2 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); continue;}
-							if(ct1_ot2 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); continue;}
-							if(ct1_ot2 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); continue;}
+							if(ct1_ot0 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+							if(ct1_ot0 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+							if(ct1_ot0 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+							if(ct1_ot1 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+							if(ct1_ot1 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+							if(ct1_ot1 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+							if(ct1_ot2 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+							if(ct1_ot2 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+							if(ct1_ot2 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
 							//current tri v2 && v0
-							if(ct2_ot0 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); continue;}
-							if(ct2_ot0 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); continue;}
-							if(ct2_ot0 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); continue;}
-							if(ct2_ot1 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); continue;}
-							if(ct2_ot1 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); continue;}
-							if(ct2_ot1 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); continue;}
-							if(ct2_ot2 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); continue;}
-							if(ct2_ot2 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); continue;}
-							if(ct2_ot2 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); continue;}
+							if(ct2_ot0 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+							if(ct2_ot0 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+							if(ct2_ot0 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
+							if(ct2_ot1 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+							if(ct2_ot1 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+							if(ct2_ot1 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+							if(ct2_ot2 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+							if(ct2_ot2 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+							if(ct2_ot2 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
 						}
 					}
 					triangles[cti].neighborCount = triNeighbors[cti].count;
@@ -753,11 +793,6 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 					ParseError("Invalid starting character: '",*line_start,"'");
 				}return result;
 			}
-		}
-		
-		//// calculate vertex normals ////
-		forI(vUnique.count){
-			vUnique.data.data[i].normal.normalize();
 		}
 		
 		//// generate mesh faces ////
@@ -810,16 +845,41 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			}
 		}
 		
+		//// calculate vertex normals ////
+		forI(vUnique.count){
+			aabb_min.x = Min(aabb_min.x, vUnique.data.data[i].pos.x);
+			aabb_max.x = Max(aabb_max.x, vUnique.data.data[i].pos.x);
+			aabb_min.y = Min(aabb_min.y, vUnique.data.data[i].pos.y);
+			aabb_max.y = Max(aabb_max.y, vUnique.data.data[i].pos.y);
+			aabb_min.z = Min(aabb_min.z, vUnique.data.data[i].pos.z);
+			aabb_max.z = Max(aabb_max.z, vUnique.data.data[i].pos.z);
+			vUnique.data.data[i].normal.normalize();
+		}
+		
+		//parsing warnings/errors
+		if(non_tri_warning) WARNING("The mesh was not triangulated before parsing; Expect missing triangles!");
+		if(s_warning) WARNING("There were 's' specifiers when parsing ",filename,", but those are not evaluated currently");
+		if(!vtArray.count){ WARNING_LOC("No vertex UVs 'vt' were parsed in ",filename); }
+		if(!vnArray.count){ WARNING_LOC("No vertex normals 'vn' were parsed in ",filename); }
+		if(fatal_error){ ERROR_LOC("OBJ parsing encountered a fatal error in ",filename); return result; }
+		if(!vArray.count){ ERROR_LOC("No vertex positions 'v' were parsed in ",filename); return result; }
+		if(!triangles.count){ ERROR_LOC("No faces 'f' were parsed in ",filename); return result; }
+		
 		//// create mesh ////
 		mesh = AllocateMesh(indexes.count, vUnique.count, faces.count, totalTriNeighbors, 
 							totalFaceVertexes, totalFaceOuterVertexes, totalFaceTriNeighbors, totalFaceFaceNeighbors);
-		cpystr(mesh->name, string(filename).substr(0, strlen(filename)-5).str, DESHI_NAME_SIZE);
+		//fill base arrays
+		cpystr(mesh->name, name.str, DESHI_NAME_SIZE);
+		mesh->idx = meshes.count;
+		mesh->aabbMin  = aabb_min;
+		mesh->aabbMax  = aabb_max;
+		mesh->center   = {(aabb_max.x+aabb_min.x)/2.0f, (aabb_max.y+aabb_min.y)/2.0f, (aabb_max.z+aabb_min.z)/2.0f};
 		memcpy(mesh->vertexArray,   vUnique.data.data, vUnique.count*sizeof(Mesh::Vertex));
 		memcpy(mesh->indexArray,    indexes.data,      indexes.count*sizeof(Mesh::Index));
 		memcpy(mesh->triangleArray, triangles.data,    triangles.count*sizeof(Mesh::Triangle));
 		memcpy(mesh->faceArray,     faces.data,        faces.count*sizeof(Mesh::Face));
 		
-		//setup triangle pointers and fill triangle neighbors/edges
+		//setup pointers
 		mesh->triangles[0].neighborArray = (u32*)(mesh->faceArray + mesh->faceCount);
 		mesh->triangles[0].edgeArray     = (u8*)(mesh->triangleArray[0].neighborArray + totalTriNeighbors);
 		mesh->triangles[0].neighbors = view<u32>(mesh->triangles[0].neighborArray, triNeighbors[0].count);
@@ -830,17 +890,9 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			mesh->triangles[ti].neighbors = view<u32>(mesh->triangles[ti].neighborArray, triNeighbors[ti].count);
 			mesh->triangles[ti].edges     = view<u8>(mesh->triangles[ti].edgeArray, triNeighbors[ti].count);
 		}
-		forX(ti, triangles.count){
-			forX(ni, triNeighbors[ti].count){
-				mesh->triangles[ti].neighbors[ni] = triNeighbors[ti][ni].first;
-				mesh->triangles[ti].edges[ni]     = triNeighbors[ti][ni].second;
-			}
-		}
-		
-		//setup face pointers and fill face tris/vertexes/neighbors
 		mesh->faces[0].triangleArray         = (u32*)(mesh->triangles[0].edgeArray         + totalTriNeighbors);
 		mesh->faces[0].vertexArray           = (u32*)(mesh->faces[0].triangleArray         + triangles.count);
-		mesh->faces[0].outerVertexArray      = (u32*)(mesh->faces[0].triangleArray         + totalFaceVertexes);
+		mesh->faces[0].outerVertexArray      = (u32*)(mesh->faces[0].vertexArray           + totalFaceVertexes);
 		mesh->faces[0].neighborTriangleArray = (u32*)(mesh->faces[0].outerVertexArray      + totalFaceOuterVertexes);
 		mesh->faces[0].neighborFaceArray     = (u32*)(mesh->faces[0].neighborTriangleArray + totalFaceTriNeighbors);
 		mesh->faces[0].triangles         = view<u32>(mesh->faces[0].triangleArray,         faceTriangles[0].count);
@@ -860,174 +912,99 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			mesh->faces[fi].triangleNeighbors = view<u32>(mesh->faces[fi].neighborTriangleArray, faceTriNeighbors[fi].count);
 			mesh->faces[fi].faceNeighbors     = view<u32>(mesh->faces[fi].neighborFaceArray,     faceFaceNeighbors[fi].count);
 		}
-		forX(fi, mesh->faces.count){
-			mesh->faces[fi].triangleCount = faceTriangles[fi].count;
-			mesh->faces[fi].vertexCount   = faceVertexes[fi].count;
-			mesh->faces[fi].outerVertexCount = faceOuterVertexes[fi].count;
-			mesh->faces[fi].center = faces[fi].center / (f32)faceVertexes[fi].count;
-			
-			forX(fti, mesh->faces[fi].triangles.count){
-				mesh->faces[fi].triangles[fti] = faceTriangles[fi][fti];
-			}
-			forX(fvi, mesh->faces[fi].vertexes.count){
-				mesh->faces[fi].vertexes[fvi] = faceVertexes[fi].data[fvi];
-			}
-			forX(fvi, mesh->faces[fi].outerVertexes.count){
-				mesh->faces[fi].outerVertexes[fvi] = faceOuterVertexes[fi][fvi];
+		
+		//fill triangle neighbors/edges
+		forX(ti, triangles.count){
+			forX(ni, triNeighbors[ti].count){
+				mesh->triangleArray[ti].neighborArray[ni] = triNeighbors[ti][ni].first;
+				mesh->triangleArray[ti].edgeArray[ni]     = triNeighbors[ti][ni].second;
 			}
 		}
+		
+		//fill face tris/vertexes/neighbors
+		forX(fi, mesh->faces.count){
+			mesh->faceArray[fi].triangleCount = faceTriangles[fi].count;
+			mesh->faceArray[fi].vertexCount   = faceVertexes[fi].count;
+			mesh->faceArray[fi].outerVertexCount = faceOuterVertexes[fi].count;
+			mesh->faceArray[fi].center = faces[fi].center / (f32)faceVertexes[fi].count;
+			forX(fti, mesh->faces[fi].triangles.count){
+				mesh->faceArray[fi].triangleArray[fti] = faceTriangles[fi][fti];
+			}
+			forX(fvi, mesh->faces[fi].vertexes.count){
+				mesh->faceArray[fi].vertexArray[fvi] = faceVertexes[fi].data[fvi];
+			}
+			forX(fvi, mesh->faces[fi].outerVertexes.count){
+				mesh->faceArray[fi].outerVertexArray[fvi] = faceOuterVertexes[fi][fvi];
+			}
+		}
+		
+		//// write mesh to .mesh file ////
+		Assets::writeFileBinary(Assets::dirModels()+std::string(name.str)+".mesh", mesh, mesh->bytes);
+		LOG("Successfully created ",name,".mesh");
 		
 		
 		Render::LoadMesh(mesh); //TODO(delle) check if mesh already loaded
 		meshes.add(mesh);
 		
-		
 		LOG("Parsing and loading OBJ '",filename,"' took ",TIMER_END(t_l),"ms");
-	}else{
-		//.mesh found
+		
+		//parse MTL files
+		if(mtllib_found){
+			TIMER_RESET(t_l);
+			
+			//!Incomplete
+			
+			LOG("Parsing and loading MTLs for OBJ '",filename,"' took ",TIMER_END(t_l),"ms");
+		}
+		
+		model = AllocateModel(mArray.count);
+		cpystr(model->name,name.str, DESHI_NAME_SIZE);
+		model->idx = models.count;
+		model->flags = flags;
+		model->mesh     = mesh;
+		model->armature = 0;
+		
+		//!Incomplete batch materials
+		if(mArray.count > 1){
+			model->batches[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
+			model->batches[mArray.count-1].indexCount  = indexes.count - model->batches[mArray.count-1].indexOffset;
+			model->batches[mArray.count-1].material    = 0;
+			for(u32 bi = mArray.count-2; bi >= 0; --bi){
+				model->batches[bi].indexOffset = mUnique.data[mArray[bi]].first;
+				model->batches[bi].indexCount  = model->batches[bi+1].indexOffset - model->batches[bi].indexOffset;
+				model->batches[bi].material    = 0;
+			}
+		}else{
+			model->batches[0].indexOffset = 0;
+			model->batches[0].indexCount  = indexes.count;
+			model->batches[0].material    = 0;
+		}
+		
+		//write model to .model file
+		std::string model_save = TOSTDSTRING(">model"
+											 "\nname     ", model->name,
+											 "\nflags    ", model->flags,
+											 "\nmesh     ", model->mesh->name,
+											 "\narmature ", 0,
+											 "\n"
+											 "\n>batches");
+		forI(model->batches.count){
+			model_save.append(TOSTDSTRING("\n\"",materials[model->batches[i].material]->name,"\" ",
+										  model->batches[i].indexOffset," ",model->batches[i].indexCount));
+		}
+		model_save.append("\n");
+		Assets::writeFile(Assets::dirModels()+std::string(name.str)+".model", model_save.c_str(), model_save.size());
+		LOG("Successfully created ",name,".model");
+	}else if(parse_obj_model){ //load .obj (batch info only), .mtl, and .mesh
 		//!Incomplete
-		
-		//.model found
-		if(model_found){
-			
-		}
-		
-		LOG("Loading .mesh and .model for '",filename,"' took ",TIMER_END(t_l),"ms");
-	}
-	
-	//parse MTL files
-	TIMER_RESET(t_l);
-	if(mtllib_found){
+	}else{ //load .model and .mesh
 		//!Incomplete
 	}
-	LOG("Parsing and loading MTLs for OBJ '",filename,"' took ",TIMER_END(t_l),"ms");
-	
-	//parsing warnings/errors
-	if(non_tri_warning) WARNING("The mesh was not triangulated before parsing; Expect missing triangles!");
-	if(s_warning) WARNING("There were 's' specifiers when parsing ",filename,", but those are not evaluated currently");
-	if(!vtArray.count){ WARNING_LOC("No vertex UVs 'vt' were parsed in ",filename); }
-	if(!vnArray.count){ WARNING_LOC("No vertex normals 'vn' were parsed in ",filename); }
-	if(fatal_error){ ERROR_LOC("OBJ parsing encountered a fatal error in ",filename); return result; }
-	if(!vArray.count){ ERROR_LOC("No vertex positions 'v' were parsed in ",filename); return result; }
-	if(!triangles.count){ ERROR_LOC("No faces 'f' were parsed in ",filename); return result; }
-	
-	Model* model = AllocateModel(mArray.count);
-	cpystr(model->name, filename, DESHI_NAME_SIZE);
-	model->idx = models.count;
-	model->flags = flags;
-	model->mesh     = mesh;
-	model->armature = 0;
-	
-	//!Incomplete batches
-	if(mArray.count > 1){
-		model->batches[mArray.count-1].indexOffset = mUnique.data[mArray[mArray.count-1]].first;
-		model->batches[mArray.count-1].indexCount  = indexes.count - model->batches[mArray.count-1].indexOffset;
-		model->batches[mArray.count-1].material    = 0;
-		for(u32 bi = mArray.count-2; bi >= 0; --bi){
-			model->batches[bi].indexOffset = mUnique.data[mArray[bi]].first;
-			model->batches[bi].indexCount  = model->batches[bi+1].indexOffset - model->batches[bi].indexOffset;
-			model->batches[bi].material    = 0;
-		}
-	}else{
-		model->batches[0].indexOffset = 0;
-		model->batches[0].indexCount  = indexes.count;
-		model->batches[0].material    = 0;
-	}
-	
-#if 0
-	map<vec3,Mesh::Index> uniqueVertexes;
-	array<Mesh::Index>     indexArray(obj_attrib.vertices.size());
-	array<Mesh::Triangle>  triangleArray(obj_attrib.vertices.size()/9);
-	for(const tinyobj::shape_t& shape : obj_shapes){
-		Model::Batch batch{};
-		batch.indexOffset = indexArray.size();
-		
-		//create batch material
-		Material* batch_material = 0;
-		if(hasMaterials && shape.mesh.material_ids.size() > 0){
-			array<u32> mat_textures;
-			const tinyobj::material_t* obj_mat = &obj_materials[shape.mesh.material_ids[0]];
-			if(obj_mat->diffuse_texname.length() > 0 && obj_mat->diffuse_texopt.type == 0){
-				mat_textures.add(CreateTextureFromFile(obj_mat->diffuse_texname.substr(obj_mat->diffuse_texname.find_last_of('\\') + 1).c_str()).first);
-			}
-			if(obj_mat->specular_texname.length() > 0 && obj_mat->specular_texopt.type == 0){
-				mat_textures.add(CreateTextureFromFile(obj_mat->specular_texname.substr(obj_mat->specular_texname.find_last_of('\\') + 1).c_str()).first);
-			}
-			if(obj_mat->bump_texname.length() > 0 && obj_mat->bump_texopt.type == 0){
-				mat_textures.add(CreateTextureFromFile(obj_mat->bump_texname.substr(obj_mat->bump_texname.find_last_of('\\') + 1).c_str()).first);
-			}
-			if(obj_mat->ambient_texname.length() > 0 && obj_mat->ambient_texopt.type == 0){
-				mat_textures.add(CreateTextureFromFile(obj_mat->ambient_texname.substr(obj_mat->ambient_texname.find_last_of('\\') + 1).c_str()).first);
-			}
-			batch_material = CreateMaterial(shape.name.c_str(), Shader_PBR, MaterialFlags_NONE, mat_textures).second;
-		}
-		
-		//collect vertices/indices from batch
-		for(const tinyobj::index_t& idx : shape.mesh.indices){
-			Mesh::Vertex vertex{};
-			vertex.pos.x = obj_attrib.vertices[3*idx.vertex_index + 0];
-			vertex.pos.y = obj_attrib.vertices[3*idx.vertex_index + 1];
-			vertex.pos.z = obj_attrib.vertices[3*idx.vertex_index + 2];
-			if(hasUVs){
-				vertex.uv.x = obj_attrib.texcoords[2*idx.texcoord_index + 0];
-				vertex.uv.y = obj_attrib.texcoords[2*idx.texcoord_index + 1];
-			}
-			if(hasColors){
-				vertex.color.x = obj_attrib.colors[3*idx.vertex_index + 0];
-				vertex.color.y = obj_attrib.colors[3*idx.vertex_index + 1];
-				vertex.color.z = obj_attrib.colors[3*idx.vertex_index + 2];
-			}
-			if(hasNormals){
-				vertex.normal.x = obj_attrib.normals[3*idx.normal_index + 0];
-				vertex.normal.y = obj_attrib.normals[3*idx.normal_index + 1];
-				vertex.normal.z = obj_attrib.normals[3*idx.normal_index + 2];
-			}
-			
-			if(!uniqueVertexes.has(vertex.pos)){ //combine vertexes based on position
-				uniqueVertexes[vertex.pos] = (Mesh::Index)vertexArray.size();
-				vertexArray.add(vertex);
-			}else{                              //combine vertex normals
-				vertexArray[uniqueVertexes[vertex.pos]].normal =
-				(vertexArray[uniqueVertexes[vertex.pos]].normal + vertex.normal).normalized();
-			}
-			indexArray.add(uniqueVertexes[vertex.pos]);
-			
-			if(indexArray.size() % 3 == 0){
-				Mesh::Triangle triangle{};
-				triangle.p[0] = vertexArray[indexArray<-3>[-3]].pos;
-				triangle.p[1] = vertexArray[indexArray<-2>[-2]].pos;
-				triangle.p[2] = vertexArray[indexArray<-1>[-1]].pos;
-				triangle.v[0] = indexArray<-3>[-3];
-				triangle.v[1] = indexArray<-2>[-2];
-				triangle.v[2] = indexArray<-1>[-1];
-				triangleArray.add(triangle);
-			}
-		}
-		
-		batch.indexCount = indexArray.size() - batch.indexOffset;
-		batch.material   = (batch_material) ? batch_material->idx : 0;
-		model->batches.add(batch);
-	}
-	
-	Mesh* mesh = AllocateMesh(indexArray.size(), vertexArray.size(), triangleArray.size(), 0, 0, 0, 0, 0);
-	cpystr(mesh->name, string(filename).substr(0, strlen(filename)-5).str, DESHI_NAME_SIZE);
-	memcpy(mesh->vertexArray,   vertexArray.items,   mesh->vertexCount*sizeof(Mesh::Vertex));
-	memcpy(mesh->indexArray,    indexArray.items,    mesh->indexCount*sizeof(Mesh::Index));
-	memcpy(mesh->triangleArray, triangleArray.items, mesh->triangleCount*sizeof(Mesh::Triangle));
-	mesh->triangleArray[0].neighborArray = (u32*)(mesh->faceArray + mesh->faceCount);
-	mesh->triangleArray[0].edgeArray     = (u8*)(mesh->triangleArray[0].neighborArray + 0);
-	
-	Render::LoadMesh(mesh);
-	meshes.add(mesh);
-	
-	model->mesh     = mesh;
-	model->armature = 0;
-#endif
 	
 	result.first  = model->idx;
 	result.second = model;
 	models.add(model);
-	SUCCESS("Finished loading model from OBJ '",filename,"' in ",TIMER_END(t_m),"ms");
+	SUCCESS("Finished loading model '",filename,"' in ",TIMER_END(t_m),"ms");
 	return result;
 }
 #undef ParseError
@@ -1040,8 +1017,7 @@ pair<u32,Model*> Storage::
 CreateModelFromMesh(Mesh* mesh, ModelFlags flags){
 	pair<u32,Model*> result(0, NullModel());
 	
-	string mesh_name(mesh->name);
-	string model_name = mesh_name.substr(0, mesh_name.size-6) + ".model";
+	string model_name(mesh->name);
 	//check if created already
 	forX(mi, models.size()){
 		if((models[mi]->mesh == mesh) && (string(models[mi]->name) == model_name) && (models[mi]->flags == flags) 

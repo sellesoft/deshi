@@ -1,19 +1,19 @@
 #pragma once
-#include <stdlib.h>
-#include <iostream>
-
 #include "../defines.h"
 #include "tuple.h"
+
+#include <stdlib.h>
+#include <iostream>
 #include <vector> //temp and should be removed
 #include <string> //temp and should be removed
 
-local std::vector<pair<u32, void*>> addrs;
-local bool track = false;
-local u32 inscount = 0;
+global_ std::vector<pair<u32, void*>> addrs;
+global_ bool track = false;
+global_ u32 inscount = 0;
 
-local void setTrack() { track = true; inscount = 0; }
+global_ void setTrack() { track = true; inscount = 0; }
 
-local void addrupdate(void* addr, u32 size, bool create = true) {
+global_ void addrupdate(void* addr, u32 size, bool create = true) {
 	if (track) {
 		std::cout << "\033c";
 		char* str = (char*)malloc(255);
@@ -32,9 +32,9 @@ local void addrupdate(void* addr, u32 size, bool create = true) {
 				}
 			}
 		}
-
+		
 		std::cout << "CURRENT ADDR LIST WITH " << inscount << " INSTRUCTIONS AND " << addrs.size() << " ADDRS:" << std::endl;
-
+		
 		for (int i = 0; i < addrs.size(); i++) {
 			std::cout << addrs[i].first << ".  " << (int)addrs[i].second << " ~ " << (char*)addrs[i].second << std::endl;
 		}
@@ -44,17 +44,21 @@ local void addrupdate(void* addr, u32 size, bool create = true) {
 	}
 }
 
+//TODO(delle) add reserved space on string for small strings, offset it to a proper padding
 struct string {
 	char* str = 0;
 	int size = 0;
-
+	
+	//returned when something specified is not found in a fucntion
+	static const size_t npos = -1;
+	
 	string() {
 		size = 0;
 		str = (char*)malloc(1);
 		memset(str, '\0', 1);
 		//addrupdate(str, 0);
 	};
-
+	
 	string(const char c) {
 		size = 1;
 		str = (char*)malloc(1 + 1);
@@ -94,7 +98,7 @@ struct string {
 	}
 	
 	string(const string& s) {
-
+		
 		size = s.size;
 		if (size != 0) {
 			free(str);
@@ -109,7 +113,7 @@ struct string {
 			addrupdate((void*)str, size);
 		}
 	}
-
+	
 	//temp
 	string(std::string s) {
 		free(str);
@@ -118,9 +122,9 @@ struct string {
 		memcpy(str, s.c_str(), size);
 		memset(str + size, '\0', 1);
 	}
-
+	
 	~string() {
-		addrupdate((void*)str, size, 0);
+		//addrupdate((void*)str, size, 0);
 		free(str);
 		str = nullptr;
 		size = 0;
@@ -138,9 +142,9 @@ struct string {
 		memset(str + 1, '\0', 1);
 		addrupdate((void*)str, size);
 	}
-
+	
 	void operator = (const string& s) {
-		addrupdate(str, size, 0);
+		//addrupdate(str, size, 0);
 		free(str);
 		size = s.size;
 		str = (char*)malloc(size + 1);
@@ -165,7 +169,7 @@ struct string {
 	}
 	
 	bool operator == (char c) {
-		if (*str == c) return true;
+		if(size == 1 && *str == c) return true;
 		return false;
 	}
 	
@@ -261,7 +265,7 @@ struct string {
 		sscanf(str.str, "%d", &x);
 		return x;
 	}
-
+	
 	static string toStr(int i) {
 		string s;
 		s.size = (i == 0) ? 1 : (int)((floor(log10(i)) + 1) * sizeof(char));
@@ -270,7 +274,7 @@ struct string {
 		sprintf(s.str, "%d", i);
 		return s;
 	}
-
+	
 	static string toStr(float& f) {
 		string s;
 		s.size = snprintf(nullptr, 0, "%f", f);
@@ -278,32 +282,22 @@ struct string {
 		snprintf(s.str, s.size + 1, "%f", f);
 		return s;
 	}
-
+	
 	friend string operator + (const char* c, string s);
 	
-	
-	//static helper functions
-
-	inline string substr(size_t first, size_t second) const {
+	inline string substr(size_t first, size_t second = npos) const {
+		if(second == npos) second = size;
 		Assert(first <= size && second <= size && second >= first, "check first/second variables");
 		return string(str + first, second - first + 1);
 	}
-
-	inline string substr(size_t idx) {
-		Assert(idx <= size, "idx greater than size");
-		return substr(idx, size);
-	}
 	
-	//returned when something specified is not found in a fucntion
-	static const size_t npos = -1;
-
 	inline size_t find(const string& text) const {
 		for (int i = 0; i < size - (text.size - 1); i++) {
 			//dont use strcmp if text.size is only 1
 			if (text.size == 1)
 				if (str[i] == text.str[0])
-					return i;
-	
+				return i;
+			
 			//early cont if char doesnt match first char of input
 			if (str[i] != text.str[0]) continue;
 			else if(!strcmp(substr(i, i + text.size - 1).str, text.str)) {
@@ -312,14 +306,14 @@ struct string {
 		}
 		return npos;
 	}
-
+	
 	inline size_t find_first_of(char c) const {
 		for (int i = 0; i < size; i++) {
 			if (c == str[i]) return i;
 		}
 		return npos;
 	}
-
+	
 	//find first of from offset
 	inline size_t find_first_of(char c, int offset) const {
 		Assert(offset < size, "attempt to parse string at offset greater than size");
@@ -328,45 +322,45 @@ struct string {
 		}
 		return npos;
 	}
-
+	
 	//find first of from offset backwards
 	//TODO(sushi) make this for the other functions
-	inline size_t find_first_of_lookback(char c, int offset) const {
+	inline size_t find_first_of_lookback(char c, int offset = 0) const {
 		Assert(offset < size, "attempt to parse string at offset greater than size");
 		for (int i = offset; i > 0; i--) {
 			if (c == str[i]) return i;
 		}
 		return npos;
 	}
-
+	
 	inline size_t find_first_not_of(char c) const {
 		for (int i = 0; i < size; i++) {
 			if (c != str[i]) return i;
 		}
 		return npos;
 	}
-
+	
 	inline size_t find_last_of(char c) const {
 		for (int i = size - 1; i != 0; i--) {
 			if (c == str[i]) return i;
 		}
 		return npos;
 	}
-
+	
 	inline size_t find_last_not_of(char c) const {
 		for (int i = size - 1; i != 0; i--) {
 			if (c != str[i]) return i;
 		}
 		return npos;
 	}
-
+	
 	//counts how many characters are in the string
 	inline u32 count(char c) {
 		u32 sum = 0;
 		for (int i = 0; i < size; i++) if (str[i] == c) sum++;
 		return sum;
 	}
-
+	
 	inline string substrToChar(char c) const {
 		size_t first = find_first_of(c);
 		if(first == npos){
