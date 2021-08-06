@@ -655,7 +655,7 @@ void UI::Init() {
 	//push default style variables
 	PushVar(UIStyleVar_WindowBorderSize, 1);
 	PushVar(UIStyleVar_TitleBarHeight, style.font->height * 1.2);
-	PushVar(UIStyleVar_TitleTextAlign, vec2(0, 0.5));
+	PushVar(UIStyleVar_TitleTextAlign, vec2(1, 0.5));
 	PushVar(UIStyleVar_WindowPadding,  vec2(10, 10));
 	PushVar(UIStyleVar_ItemSpacing,    vec2(1, 1));
 	PushVar(UIStyleVar_ScrollAmount,   vec2(5, 5));

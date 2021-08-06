@@ -507,6 +507,7 @@ void Console::Init(){
 }
 
 void Console::Update(){
+	TIMER_START(t_d);
 	if(dispcon){
 		DrawConsole();
 		CONSOLE_KEY_CAPTURE = true;
@@ -523,6 +524,7 @@ void Console::Update(){
 	if(dispcon && show_alert){
 		show_alert = false; alert_count = 0;
 	}
+	DengTime->consoleTime = TIMER_END(t_d);
 }
 
 //Flush the buffer at program close and clean up commands

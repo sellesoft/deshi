@@ -51,6 +51,7 @@ inline void Time::Init(float fixedUpdatesPerSecond){
 }
 
 inline void Time::Update(){
+	TIMER_START(t_d);
 	tp2 = std::chrono::system_clock::now();
 	std::chrono::duration<float> elapsedTime = tp2 - tp1;
 	tp1 = tp2;
@@ -70,6 +71,7 @@ inline void Time::Update(){
 	}else{
 		deltaTime = 0;
 	}
+	timeTime = TIMER_END(t_d);
 }
 
 //{y}:year, {M}:month, {d}:day, {h}:hour, {m}:minute, {s}:second, {w}:weekday

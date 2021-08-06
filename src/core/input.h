@@ -5,6 +5,7 @@
 #include "../defines.h"
 #include "../math/vec.h"
 #include "../utils/tuple.h"
+#include "time.h"
 
 #include <map>
 #include <vector>
@@ -114,6 +115,7 @@ struct Input{
 	
 	//caches values so they are consistent thru the frame
 	void Update(){
+		TIMER_START(t_d);
 		memcpy(&oldKeyState, &newKeyState,  sizeof(bool) * MAX_KEYBOARD_KEYS);
 		memcpy(&newKeyState, &realKeyState, sizeof(bool) * MAX_KEYBOARD_KEYS);
 		//mouseX = realMouseX; mouseY = realMouseY; //NOTE this doesnt work, idk why
@@ -124,6 +126,7 @@ struct Input{
 		else if (realScrollY > 0) newKeyState[MouseButton::SCROLLUP] = 1;
 		else    { newKeyState[MouseButton::SCROLLDOWN] = 0; newKeyState[MouseButton::SCROLLUP] = 0; }
 		realScrollY = 0;
+		DengTime->inputTime = TIMER_END(t_d);
 	}
 	
 	/////////////////////////////////

@@ -229,6 +229,7 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 }//Init
 
 void Window::Update() {
+	TIMER_START(t_d);
 	glfwGetWindowPos(window, &_x, &_y);
 	x = _x; y = _y;
 	
@@ -251,6 +252,7 @@ void Window::Update() {
 	
 	glfwGetCursorPos(window, &DengInput->mouseX, &DengInput->mouseY);
 	if(cursorMode == CursorMode::FIRSTPERSON){ glfwSetCursorPos(window, width/2, height/2); }
+	DengTime->windowTime = TIMER_END(t_d);
 }
 
 void Window::Cleanup(){
