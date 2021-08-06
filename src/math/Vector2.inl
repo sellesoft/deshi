@@ -269,16 +269,4 @@ str2f() const {
 //// hash ////
 //////////////
 
-namespace std{
-	template<> struct hash<Vector2>{
-		inline size_t operator()(Vector2 const& v) const{
-			size_t seed = 0;
-			hash<float> hasher; size_t hash;
-			hash = hasher(v.x); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
-			hash = hasher(v.y); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
-			return seed;
-		}
-	};
-};
-
 #endif //DESHI_VECTOR2_INL

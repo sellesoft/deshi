@@ -29,9 +29,9 @@ typedef float              f32;
 typedef double             f64;
 
 //static defines
-#define local   static
-#define persist static
-#define global_  static //global_ because there is a cpp-func global() D:
+#define local   static  //inside a .cpp
+#define persist static  //inside a function
+#define global_  static //inside a .h
 
 //dynamic cast short-hand
 #define dyncast(child, base) dynamic_cast<child*>(base)
@@ -62,8 +62,8 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 
 // https://gcc.gnu.org/onlinedocs/cpp/Stringizing.html
 //two level so you can stringize the result of a macro expansion
-#define xx_STRINGIZE(x) #x
-#define STRINGIZE(x) xx_STRINGIZE(x)
+#define STRINGIZE_(x) #x
+#define STRINGIZE(x) STRINGIZE_(x)
 
 //size of static c-style array
 #define ArrayCount(_ARR) (sizeof((_ARR)) / sizeof(((_ARR))[0]))
@@ -91,10 +91,19 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #endif //DESHI_SLOW
 
 //debug breakpoint
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 #define DEBUG_BREAK __debugbreak()
-#else
+#else //NOTE if not using MSVC, see https://github.com/scottt/debugbreak
 #define DEBUG_BREAK (void)0
 #endif //_MSC_VER
+
+//force inline
+#if   defined(_MSC_VER)
+#define FORCE_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+#define FORCE_INLINE inline __attribute__((always_inline))
+#else
+#define FORCE_INLINE inline
+#endif
 
 #endif //DESHI_DEFINES_H

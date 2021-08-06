@@ -695,9 +695,9 @@ void Editor::MenuBar(){
 					}
 					if(!loaded && ImGui::MenuItem(directory_models[di].c_str())){ WinHovCheck; 
 						if(DengInput->ShiftDown()){
-							Storage::CreateModelFromOBJ(directory_models[di].c_str(), ModelFlags_NONE, true);
+							Storage::CreateModelFromFile(directory_models[di].c_str(), ModelFlags_NONE, true);
 						}else{
-							Storage::CreateModelFromOBJ(directory_models[di].c_str(), ModelFlags_NONE, false);
+							Storage::CreateModelFromFile(directory_models[di].c_str(), ModelFlags_NONE, false);
 						}
 					}
 				}
@@ -1793,7 +1793,7 @@ inline void MeshesTab(Admin* admin){
 			if(triangle_normals) Render::DrawLine(tri_center, tri_center + sel_triangle->normal*normal_scale, selected_color);
 			forX(tni, sel_triangle->neighbors.count){
 				Mesh::Triangle* tri_nei = &selected->triangles[sel_triangle->neighbors[tni]];
-				if(trinei_indexes) ImGui::DebugDrawText3(TOSTRING("TN",tni).str, Geometry::MeshTriangleMidpoint(tri_nei)*scale, text_color, vec2{-5,-5});
+				if(trinei_indexes) ImGui::DebugDrawText3(TOSTRING("TN",tni).str, Geometry::MeshTriangleMidpoint(tri_nei)*scale, text_color, vec2{15,15});
 				if(triangle_neighbors) Render::DrawTriangleFilled(tri_nei->p[0]*scale, tri_nei->p[1]*scale, tri_nei->p[2]*scale, neighbor_color);
 				int e0 = (sel_triangle->edges[tni] == 0) ? 0 : (sel_triangle->edges[tni] == 1) ? 1 : 2; 
 				int e1 = (sel_triangle->edges[tni] == 0) ? 1 : (sel_triangle->edges[tni] == 1) ? 2 : 0;
@@ -1832,12 +1832,12 @@ inline void MeshesTab(Admin* admin){
 				MeshTriangle* ft = &selected->triangles[sel_face->triangles[fti]];
 				Render::DrawTriangleFilled(ft->p[0]*scale, ft->p[1]*scale, ft->p[2]*scale, selected_color);
 				if(face_triangles) Render::DrawTriangle(ft->p[0]*scale, ft->p[1]*scale, ft->p[2]*scale, text_color);
-				if(face_triangle_indexes) ImGui::DebugDrawText3(TOSTRING("FT",fti).str, Geometry::MeshTriangleMidpoint(ft)*scale, text_color, vec2{-5,-5});
+				if(face_triangle_indexes) ImGui::DebugDrawText3(TOSTRING("FT",fti).str, Geometry::MeshTriangleMidpoint(ft)*scale, text_color, vec2{-15,-15});
 			}
 			forX(fnti, sel_face->neighborTriangleCount){
 				MeshTriangle* ft = &selected->triangles[sel_face->triangleNeighbors[fnti]];
 				if(face_tri_neighbors) Render::DrawTriangleFilled(ft->p[0]*scale, ft->p[1]*scale, ft->p[2]*scale, neighbor_color);
-				if(face_trinei_indexes) ImGui::DebugDrawText3(TOSTRING("FTN",fnti).str, Geometry::MeshTriangleMidpoint(ft)*scale, text_color, vec2{-5,-5});
+				if(face_trinei_indexes) ImGui::DebugDrawText3(TOSTRING("FTN",fnti).str, Geometry::MeshTriangleMidpoint(ft)*scale, text_color, vec2{15,15});
 			}
 			forX(fnfi, sel_face->neighborFaceCount){
 				MeshFace* ff = &selected->faces[sel_face->faceNeighbors[fnfi]];
@@ -1847,7 +1847,7 @@ inline void MeshesTab(Admin* admin){
 						Render::DrawTriangleFilled(fft->p[0]*scale, fft->p[1]*scale, fft->p[2]*scale, edge_color);
 					}
 				}
-				if(face_facenei_indexes) ImGui::DebugDrawText3(TOSTRING("FFN",fnfi).str, ff->center*scale, text_color, vec2{-5,-5});
+				if(face_facenei_indexes) ImGui::DebugDrawText3(TOSTRING("FFN",fnfi).str, ff->center*scale, text_color, vec2{15,15});
 			}
 		}
 		if(face_all){
@@ -3010,12 +3010,12 @@ void Editor::Update(){
 		}
 		
 		//ortho views
-		if      (DengInput->KeyPressed(DengKeys.orthoFrontView))    camera->orthoview = FRONT;
-		else if(DengInput->KeyPressed(DengKeys.orthoBackView))     camera->orthoview = BACK;
-		else if(DengInput->KeyPressed(DengKeys.orthoRightView))    camera->orthoview = RIGHT;
-		else if(DengInput->KeyPressed(DengKeys.orthoLeftView))     camera->orthoview = LEFT;
-		else if(DengInput->KeyPressed(DengKeys.orthoTopDownView))  camera->orthoview = TOPDOWN;
-		else if(DengInput->KeyPressed(DengKeys.orthoBottomUpView)) camera->orthoview = BOTTOMUP;
+		if     (DengInput->KeyPressed(DengKeys.orthoFrontView))    camera->orthoview = OrthoView_Front;
+		else if(DengInput->KeyPressed(DengKeys.orthoBackView))     camera->orthoview = OrthoView_Back;
+		else if(DengInput->KeyPressed(DengKeys.orthoRightView))    camera->orthoview = OrthoView_Right;
+		else if(DengInput->KeyPressed(DengKeys.orthoLeftView))     camera->orthoview = OrthoView_Left;
+		else if(DengInput->KeyPressed(DengKeys.orthoTopDownView))  camera->orthoview = OrthoView_Top;
+		else if(DengInput->KeyPressed(DengKeys.orthoBottomUpView)) camera->orthoview = OrthoView_Bottom;
 		
 		//look at selected
 		if(DengInput->KeyPressed(DengKeys.gotoSelected)){
@@ -3076,7 +3076,7 @@ void Editor::Update(){
 			}
 		}
 		if(DengInput->KeyPressed(DengKeys.paste)){
-			Entity* new_entity = Entity::LoadTEXT(DengAdmin, copy_path, copy_mesh_diffs);
+			Entity* new_entity = Entity::LoadTEXT(DengAdmin, copy_path);
 			if(new_entity){
 				DengAdmin->CreateEntity(new_entity);
 				selected.clear();

@@ -155,7 +155,7 @@ writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes,
 }
 
 void Assets::
-writeFileBinary(const std::string& filepath, const char* data, u32 bytes, bool logError){
+writeFileBinary(const std::string& filepath, void* data, u32 bytes, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
@@ -163,11 +163,11 @@ writeFileBinary(const std::string& filepath, const char* data, u32 bytes, bool l
 	}
 	defer{ file.close(); };
 	
-	file.write(data, bytes);
+	file.write((char*)data, bytes);
 }
 
 void Assets::
-appendFileBinary(const std::string& filepath, const char* data, u32 bytes, bool logError){
+appendFileBinary(const std::string& filepath, void* data, u32 bytes, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::app);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
@@ -175,7 +175,7 @@ appendFileBinary(const std::string& filepath, const char* data, u32 bytes, bool 
 	}
 	defer{ file.close(); };
 	
-	file.write(data, bytes);
+	file.write((char*)data, bytes);
 }
 
 std::vector<std::string> Assets::
@@ -425,16 +425,14 @@ loadConfig(const char* filename, ConfigMap configMap){
 		//get the next line
 		line_start = (has_cr) ? line_end+2 : line_end+1;
 		if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
-		if(line_start == line_end) continue;
-		
 		//check for CRLF
 		if(has_cr || *(line_end-1) == '\r') {
 			has_cr = true;
 			line_end -= 1;
-			if(line_start == line_end) continue;
 		}
 		
 		//format the line
+		if(line_start == line_end) continue;
 		info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);
 		if(info_start == line_end) continue;
 		info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);

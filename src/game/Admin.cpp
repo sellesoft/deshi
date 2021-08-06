@@ -24,7 +24,6 @@
 #include <iostream>
 #include <fstream>
 #include <utility>
-#include <stdexcept>
 #include <filesystem>
 
 TIMER_START(t_a);
@@ -83,16 +82,21 @@ void UpdateLayer(ContainerManager<Component*> cl) {
     }
 }
 
+
+/////////////////
+//// @update ////
+/////////////////
 void Admin::Update() {
-    ImGui::BeginDebugLayer();
+	ImGui::BeginDebugLayer();
 	TIMER_RESET(t_a);
     if(!skip && (state == GameState_Editor || state == GameState_Debug)) editor.Update();
-	editorTime =   TIMER_END(t_a); TIMER_RESET(t_a);
+	editorTime =    TIMER_END(t_a); TIMER_RESET(t_a);
     if(!skip) controller.Update();
     if(!skip) mainCamera->Update();
     
-    //NOTE sushi: we need to maybe make a pause_phys_layer thing, because things unrelated to physics in that layer arent getting updated in editor. eg. lights
-    //			  or we can just have different update blocks for different game states
+    //NOTE sushi: we need to maybe make a pause_phys_layer thing, because things unrelated to physics in 
+	//    that layer arent getting updated in editor. eg. lights
+    //    or we can just have different update blocks for different game states
     TIMER_RESET(t_a); 
     if(!skip && /*!pause_phys &&*/ !paused)  { UpdateLayer(freeCompLayers[ComponentLayer_Physics]); }
     physLyrTime =   TIMER_END(t_a); TIMER_RESET(t_a);
@@ -163,11 +167,9 @@ void Admin::PostRenderUpdate(){ //no imgui stuff allowed b/c rendering already h
 }
 
 
-//////////////////////////////////
-//// @serialization functions ////
-//////////////////////////////////
-
-
+////////////////
+//// @state ////
+////////////////
 void Admin::ChangeState(GameState new_state){
     if(state == new_state) return;
     if(state >= GameState_COUNT) return ERROR("Admin attempted to switch to unhandled gamestate: ", new_state);
@@ -299,15 +301,13 @@ std::string Admin::FormatAdminTime(std::string fmt){
 ////////////////////////
 //// @serialization ////
 ////////////////////////
-
-
 //NOTE using a levels directory temporarily so it doesnt cause problems with the save directory
 //TODO(delle) this removes the entire level dir and recreates it, optimize by diffing for speed and comment preservation
 //TODO add safe-checking so you dont override another level accidentally
-//TODO maybe dont save materials that aren't being used
+//TODO maybe dont save things that aren't being used
 void Admin::SaveTEXT(std::string level_name){
     namespace fs = std::filesystem;
-    if(level_name.empty()) return ERROR("Failed to create save text-file: no name passed");
+    if(level_name.empty()) return ERROR("Failed to create TEXT save: no name passed");
     SUCCESS("Started saving level '", level_name, "'");
     TIMER_START(t_s);
     
@@ -323,46 +323,49 @@ void Admin::SaveTEXT(std::string level_name){
     //// level file ////
     std::string level_text; level_text.reserve(2048);
     level_text.append(TOSTDSTRING(">level"
-                               "\nname         \"", level_name, "\""
-                               "\nentity_count ", entities.size(),
-							   "\nlast_updated \"", /*DengTime->FormatDateTime("{M}/{d}/{y} {h}:{m}:{s}"),*/ "\""));
+								  "\nname         \"", level_name, "\""
+								  "\nentity_count ", entities.size(),
+								  "\nlast_updated \"", /*DengTime->FormatDateTime("{M}/{d}/{y} {h}:{m}:{s}"),*/ "\""));
 	//NOTE temp disable on last_updated until diff checking is setup
 	
-	//materials
-	level_text.append("\n"
-					  "\n>materials");
-	forI(DengStorage->materials.size()){
-		Material* mat = DengStorage->materials[i];
-		level_text.append(TOSTDSTRING("\n",i," \"",mat->name,"\" ",mat->shader," "));
-		forI(mat->textures.size()) level_text.append(TOSTDSTRING('\"',Storage::TextureName(mat->textures[i]),'\" '));
+	level_text.append("\n\n>meshes");
+	for(u32 i = 1; i < Storage::MeshCount(); ++i){ //NOTE skipping first null mesh
+		Mesh* mesh = Storage::MeshAt(i);
+		level_text.append(TOSTDSTRING("\n\"",mesh->name,"\""));
 	}
 	
-	//models
-	level_text.append("\n"
-					  "\n>meshes");
-	forI(DengStorage->models.size()){
+	level_text.append("\n\n>textures");
+	for(u32 i = 1; i < Storage::TextureCount(); ++i){ //NOTE skipping first null mesh
+		Texture* texture = Storage::TextureAt(i);
+		bool gen_mipmaps = (texture->mipmaps > 1);
+		level_text.append(TOSTDSTRING("\n\"",texture->name,"\" ",(texture->loaded)?"true":"false"," ",(gen_mipmaps)?"true":"false"));
+	}
+	
+	level_text.append("\n\n>materials");
+	for(int i = 1; i < Storage::MaterialCount(); ++i){ //NOTE skipping first null material
+		Material* mat = Storage::MaterialAt(i);
+		level_text.append(TOSTDSTRING("\n\"",mat->name,"\""));
+	}
+	
+	level_text.append("\n\n>models");
+	for(int i=1; i<DengStorage->models.count; ++i){ //NOTE skipping first null model
 		Model* model = DengStorage->models[i];
-		level_text.append(TOSTDSTRING("\n",i," \"",model->name,"\" "));
-		forI(model->batches.size()) level_text.append(TOSTDSTRING('\"',Storage::MaterialName(model->batches[i].material),'\" '));
+		level_text.append(TOSTDSTRING("\n\"",model->name,"\""));
 	}
 	
-	//entities
-	level_text.append("\n"
-					  "\n>entities");
+	level_text.append("\n\n>entities");
 	forI(entities.size()){
 		level_text.append(TOSTDSTRING("\n",i," \"",entities[i]->name,"\""));
 	}
 	
-	//events
-	level_text.append("\n"
-					  "\n>events");
+	level_text.append("\n\n>events");
 	for(Entity* e : entities){
 		for(Component* c : e->components){
 			if(c->sender.receivers.size() > 0){
 				for(Receiver* r : c->sender.receivers){
 					if(Component* comp = dynamic_cast<Component*>(r)){
 						level_text.append(TOSTDSTRING("\n",e->id," \"",e->name,"\" ",c->type," ",c->event," -> ",
-												   comp->entity->id," \"",comp->entity->name,"\" ",comp->type));
+													  comp->entity->id," \"",comp->entity->name,"\" ",comp->type));
 					}
 				}
 			}
@@ -394,7 +397,7 @@ void Admin::SaveTEXT(std::string level_name){
 
 #define ParsingError "Error parsing '",level_dir,"_' on line '",line_number
 enum struct LevelHeader{
-	INVALID, LEVEL, MATERIALS, MESHES, ENTITIES, EVENTS
+	INVALID, LEVEL, MESHES, TEXTURES, MATERIALS, MODELS, ENTITIES, EVENTS
 };
 void Admin::LoadTEXT(std::string savename){
 	namespace fs = std::filesystem;
@@ -408,102 +411,98 @@ void Admin::LoadTEXT(std::string savename){
 	SUCCESS("Loading level: ", savename);
 	TIMER_START(t_l);
 	
+	//// parse level file ////
 	u32 entity_count = 0;
-	std::vector<pair<u32,u32>> material_id_diffs; //old_id, new_id
-	std::vector<pair<u32,u32>> mesh_id_diffs; //old_id, new_id
 	std::vector<pair<u32,u32,u32,u32,u32>> events; //send_ent_id, send_comp_type, event_type, receive_ent_id, receive_comp_type
-	{//// parse level file ////
-		char* buffer = Assets::readFileAsciiToArray(level_dir+"_");
-		if(!buffer) return;
-		defer{ delete[] buffer; };
+	char* buffer = Assets::readFileAsciiToArray(level_dir+"_");
+	if(!buffer) return;
+	defer{ delete[] buffer; };
+	
+	LevelHeader header = LevelHeader::INVALID;
+	std::string line;
+	char* new_line = buffer-1;
+	char* line_start;
+	bool has_cr = false;
+	for(u32 line_number = 1; ;line_number++){
+		//get the next line
+		line_start = (has_cr) ? new_line+2 : new_line+1;
+		if((new_line = strchr(line_start, '\n')) == 0) break; //end of file if cant find '\n'
+		if(has_cr || *(new_line-1) == '\r'){ has_cr = true; new_line -= 1; }
+		if(line_start == new_line) continue;
 		
-		//parsing
-		LevelHeader header = LevelHeader::INVALID;
-		std::string line;
-		char* new_line = buffer-1;
-		char* line_start;
-		for(u32 line_number = 1; ;line_number++){
-			//get the next line
-			line_start = new_line+1;
-			if((new_line = strchr(line_start, '\n')) == 0) break; //end of file if cant find '\n'
-			line = std::string(line_start, new_line-line_start);
+		line = std::string(line_start, new_line-line_start);
+		line = Utils::eatComments(line, "#");
+		line = Utils::eatSpacesLeading(line);
+		line = Utils::eatSpacesTrailing(line);
+		if(line.empty()) continue;
+		
+		//headers
+		if(line[0] == '>'){
+			if     (line == ">level")    { header = LevelHeader::LEVEL;     }
+			else if(line == ">meshes")   { header = LevelHeader::MESHES; }
+			else if(line == ">textures") { header = LevelHeader::TEXTURES; }
+			else if(line == ">materials"){ header = LevelHeader::MATERIALS; }
+			else if(line == ">models")   { header = LevelHeader::MODELS;    }
+			else if(line == ">entities") { header = LevelHeader::ENTITIES;  }
+			else if(line == ">events")   { header = LevelHeader::EVENTS;  }
+			else{ header = LevelHeader::INVALID; ERROR(ParsingError,"'! Unknown header: ", line); }
+			continue;
+		}
+		
+		//header values (skip if an invalid header)
+		if(header == LevelHeader::INVALID) { ERROR(ParsingError,"'! Invalid header; skipping line"); continue; }
+		std::vector<std::string> split = Utils::spaceDelimitIgnoreStrings(line);
+		
+		switch(header){
+			case(LevelHeader::LEVEL):{
+				if(split.size() != 2){ ERROR(ParsingError,"'! Level lines should have 2 values"); continue; }
+				
+				if(split[0] == "name"){ editor.level_name = split[1]; }
+				//TODO maybe compare entity_count with the number of entities loaded?
+			}break;
 			
-			line = Utils::eatComments(line, "#");
-			line = Utils::eatSpacesLeading(line);
-			line = Utils::eatSpacesTrailing(line);
-			if(line.empty()) continue;
+			case(LevelHeader::MESHES):{
+				if(split.size() < 1){ ERROR(ParsingError,"'! Mesh lines should have at least 1 value"); continue; }
+				Storage::CreateMeshFromFile(split[0].c_str());
+			}break;
 			
-			//headers
-			if(line[0] == '>'){
-				if     (line == ">level")    { header = LevelHeader::LEVEL;     }
-				else if(line == ">materials"){ header = LevelHeader::MATERIALS; }
-				else if(line == ">meshes")   { header = LevelHeader::MESHES;    }
-				else if(line == ">entities") { header = LevelHeader::ENTITIES;  }
-				else if(line == ">events")   { header = LevelHeader::EVENTS;  }
-				else{
-					header = LevelHeader::INVALID;
-					ERROR(ParsingError,"'! Unknown header: ", line);
-				}
-				continue;
-			}
+			case(LevelHeader::TEXTURES):{
+				if(split.size() < 3){ ERROR(ParsingError,"'! Texture lines should have at least 3 values"); continue; }
+				
+				bool mipmap = Assets::parse_bool(split[2], level_dir.c_str(), line_number);
+				bool keep_loaded = Assets::parse_bool(split[1], level_dir.c_str(), line_number);
+				Storage::CreateTextureFromFile(split[0].c_str(), ImageFormat_RGBA, TextureType_2D, keep_loaded, mipmap);
+			}break;
 			
-			//header values (skip if an invalid header)
-			if(header == LevelHeader::INVALID) { ERROR(ParsingError,"'! Invalid header; skipping line"); continue; }
-			std::vector<std::string> split = Utils::spaceDelimitIgnoreStrings(line);
+			case(LevelHeader::MATERIALS):{
+				if(split.size() < 1){ ERROR(ParsingError,"'! Material lines should have at least 1 value"); continue; }
+				Storage::CreateMaterialFromFile(split[0].c_str());
+			}break;
 			
-			switch(header){
-				case(LevelHeader::LEVEL):{
-					if(split.size() != 2){ ERROR(ParsingError,"'! Level lines should have 2 values"); continue; }
-					
-					if(split[0] == "name"){ editor.level_name = split[1]; }
-					//TODO maybe compare entity_count with the number of entities loaded?
-				}break;
-				case(LevelHeader::MATERIALS):{
-					if(split.size() < 3){ ERROR(ParsingError,"'! Material lines should have at least 3 values"); continue; }
-					
-					array<u32> textures;
-					for(int i = 3; i < split.size(); ++i){
-						textures.add(Storage::CreateTextureFromFile(split[i].c_str()).first);
-					}
-					
-					u32 old_id = std::stoi(split[0]);
-					u32 new_id = Storage::CreateMaterial(split[1].c_str(), std::stoi(split[2]), MaterialFlags_NONE, textures).first;
-					material_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
-				}break;
-				case(LevelHeader::MESHES):{
-					if(split.size() < 3){ ERROR(ParsingError,"'! Mesh lines should have at least 3 values"); continue; }
-					//!Incomplete update text level files to new formats
-					
-					//id
-					u32 old_id = std::stoi(split[0]);
-					u32 new_id = DengStorage->models.size();
-					Model* model = Storage::CreateModelFromOBJ(split[1].c_str()).second;
-					mesh_id_diffs.push_back(pair<u32,u32>(old_id,new_id));
-					
-					//materials
-					for(int i = 2; i < split.size(); ++i){
-						model->batches[i].material = Storage::CreateMaterial(split[i].c_str()).first;
-					}
-				}break;
-				case(LevelHeader::ENTITIES):{
-					entity_count += 1;
-					//TODO maybe can conditionally load entities?
-				}break;
-				case(LevelHeader::EVENTS):{
-					if(split.size() != 8){ ERROR(ParsingError,"'! Material lines should have 8 values"); continue; }
-					
-					u32 send_ent_id = std::stoi(split[0]);
-					std::string send_ent_name = split[1];
-					u32 send_comp_type = std::stoi(split[2]);
-					u32 event_type = std::stoi(split[3]);
-					//dummy arrow split[4]
-					u32 rec_ent_id = std::stoi(split[5]);
-					std::string rec_ent_name = split[6];
-					u32 rec_comp_type = std::stoi(split[7]);
-					
-					events.push_back(pair<u32,u32,u32,u32,u32>(send_ent_id,send_comp_type,event_type,rec_ent_id,rec_comp_type));
-				}break;
-			}
+			case(LevelHeader::MODELS):{
+				if(split.size() < 1){ ERROR(ParsingError,"'! Model lines should have at least 1 value"); continue; }
+				Storage::CreateModelFromFile(split[1].c_str());
+			}break;
+			
+			case(LevelHeader::ENTITIES):{
+				entity_count += 1;
+				//TODO maybe can conditionally load entities?
+			}break;
+			
+			case(LevelHeader::EVENTS):{
+				if(split.size() != 8){ ERROR(ParsingError,"'! Material lines should have 8 values"); continue; }
+				
+				u32 send_ent_id = std::stoi(split[0]);
+				std::string send_ent_name = split[1];
+				u32 send_comp_type = std::stoi(split[2]);
+				u32 event_type = std::stoi(split[3]);
+				//dummy arrow split[4]
+				u32 rec_ent_id = std::stoi(split[5]);
+				std::string rec_ent_name = split[6];
+				u32 rec_comp_type = std::stoi(split[7]);
+				
+				events.push_back(pair<u32,u32,u32,u32,u32>(send_ent_id,send_comp_type,event_type,rec_ent_id,rec_comp_type));
+			}break;
 		}
 	}
 	
@@ -511,7 +510,7 @@ void Admin::LoadTEXT(std::string savename){
 	std::vector<Entity*> ents; ents.reserve(entity_count);
 	for(std::string& file : Assets::iterateDirectory(level_dir)){
 		if(file == "_") continue;
-		if(Entity* e = Entity::LoadTEXT(this, level_dir+file, mesh_id_diffs)){
+		if(Entity* e = Entity::LoadTEXT(this, level_dir+file)){
 			ents.push_back(e);
 		}
 	}
@@ -572,9 +571,7 @@ void Admin::LoadDESH(const char* filename) {
 
 //////////////////
 //// @storage ////
-//////////////////
-
-
+////////////////// //TODO(delle) error messages on invalid arguments
 u32 Admin::CreateEntity(const char* name) {
     u32 id = entities.size() + creationBuffer.size() - 1;
     creationBuffer.push_back(new Entity(this, id, Transform(), name));
@@ -646,9 +643,7 @@ void Admin::AddComponentToLayers(Component* c){
 ////////////////
 //// @query ////
 ////////////////
-
-
-Entity* Admin::EntityRaycast(Vector3 origin, Vector3 direction, f32 maxDistance){ //!TestMe
+Entity* Admin::EntityRaycast(Vector3 origin, Vector3 direction, f32 maxDistance){ //!FixMe
 	Entity* result = 0;
     f32 min_depth = INFINITY;
     f32 depth;

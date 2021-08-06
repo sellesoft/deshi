@@ -672,7 +672,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
 	
 	//create the model
-	Model* model = Storage::CreateModelFromOBJ(args[0].c_str()).second;
+	Model* model = Storage::CreateModelFromFile(args[0].c_str()).second;
 	
 	//collider
 	Collider* col = nullptr;
@@ -760,7 +760,7 @@ CMDSTARTA(add_player, args.size() > 0){
 	cpystr(name, args[0].substr(0, args[0].size() - 4).c_str(), DESHI_NAME_SIZE);
 	
 	//create the model
-	Model* model = Storage::CreateModelFromOBJ(args[0].c_str()).second;
+	Model* model = Storage::CreateModelFromFile(args[0].c_str()).second;
 	
 	//collider
 	Collider* col = nullptr;

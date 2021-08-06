@@ -5,8 +5,12 @@
 #include "../defines.h"
 #include <string>
 
-enum ConsoleStateBits : u32{
-	ConsoleState_Closed, ConsoleState_OpenSmall, ConsoleState_OpenBig, ConsoleState_Popout, ConsoleState_Window
+enum ConsoleState_{
+	ConsoleState_Closed, 
+	ConsoleState_OpenSmall, 
+	ConsoleState_OpenBig, 
+	ConsoleState_Popout, 
+	ConsoleState_Window
 };typedef u32 ConsoleState;
 
 namespace Console2{

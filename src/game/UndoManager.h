@@ -8,7 +8,7 @@
 struct Transform;
 struct Vector3;
 
-enum EditActionTypeBits{
+enum EditActionType_{
 	EditActionType_NONE, 
 	EditActionType_Select, 
 	EditActionType_Translate, 

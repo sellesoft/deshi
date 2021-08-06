@@ -170,33 +170,33 @@ local RenderStats   stats{};
 local RendererStage rendererStage = RENDERERSTAGE_NONE;
 
 //arbitray limits, change if needed
-#define MAX_UI_VERTICES 0xFFFF 
+#define MAX_UI_VERTICES 0xFFFF //max u16: 65535
 #define MAX_UI_INDICES  3*MAX_UI_VERTICES
 #define MAX_UI_CMDS     1000
-typedef u16 UI_Index;
-local UI_Index uiVertexCount = 0;
-local UI_Index uiIndexCount  = 0;
-local UI_Index uiCmdCount    = 1; //start with 1
-local Vertex2  uiVertexArray[MAX_UI_VERTICES];
-local UI_Index uiIndexArray [MAX_UI_INDICES];
-local UICmdVk  uiCmdArray   [MAX_UI_CMDS]; //different UI cmd per font/texture
+typedef u16 UIIndexVk;
+local UIIndexVk uiVertexCount = 0;
+local UIIndexVk uiIndexCount  = 0;
+local UIIndexVk uiCmdCount    = 1; //start with 1
+local Vertex2   uiVertexArray[MAX_UI_VERTICES];
+local UIIndexVk uiIndexArray [MAX_UI_INDICES];
+local UICmdVk   uiCmdArray   [MAX_UI_CMDS]; //different UI cmd per font/texture
 
-#define MAX_TEMP_VERTICES 0xFFFF
+#define MAX_TEMP_VERTICES 0xFFFF //max u16: 65535
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
-typedef u16 Temp_Index;
-local Temp_Index tempWireframeVertexCount = 0;
-local Temp_Index tempFilledVertexCount    = 0;
-local Temp_Index tempWireframeIndexCount  = 0;
-local Temp_Index tempFilledIndexCount     = 0;
+typedef u16 TempIndexVk;
+local TempIndexVk  tempWireframeVertexCount = 0;
+local TempIndexVk  tempFilledVertexCount    = 0;
+local TempIndexVk  tempWireframeIndexCount  = 0;
+local TempIndexVk  tempFilledIndexCount     = 0;
 local Mesh::Vertex tempWireframeVertexArray[MAX_TEMP_VERTICES];
 local Mesh::Vertex tempFilledVertexArray   [MAX_TEMP_VERTICES];
-local Temp_Index   tempWireframeIndexArray [MAX_TEMP_INDICES];
-local Temp_Index   tempFilledIndexArray    [MAX_TEMP_INDICES];
+local TempIndexVk  tempWireframeIndexArray [MAX_TEMP_INDICES];
+local TempIndexVk  tempFilledIndexArray    [MAX_TEMP_INDICES];
 
 #define MAX_MODEL_CMDS 10000 
-typedef u16 Model_Index;
-local Model_Index modelCmdCount = 0;
-local ModelCmdVk  modelCmdArray[MAX_MODEL_CMDS];
+typedef u16 ModelIndexVk;
+local ModelIndexVk modelCmdCount = 0;
+local ModelCmdVk   modelCmdArray[MAX_MODEL_CMDS];
 
 
 //-------------------------------------------------------------------------------------------------
@@ -2675,9 +2675,9 @@ local void
 SetupCommands(){
 	//create UI vertex and index buffers
 	size_t ui_vb_size = uiVertexCount * sizeof(Vertex2);
-	size_t ui_ib_size = uiIndexCount  * sizeof(UI_Index);
+	size_t ui_ib_size = uiIndexCount  * sizeof(UIIndexVk);
 	if(uiVertexBuffer.size == 0) ui_vb_size = 1000*sizeof(Vertex2);
-	if(uiIndexBuffer.size == 0)  ui_ib_size = 3000*sizeof(UI_Index);
+	if(uiIndexBuffer.size == 0)  ui_ib_size = 3000*sizeof(UIIndexVk);
 	if(ui_vb_size && ui_ib_size){
 		//create/resize buffers if they are too small
 		if(uiVertexBuffer.buffer == VK_NULL_HANDLE || uiVertexBuffer.size < ui_vb_size){
@@ -2717,12 +2717,12 @@ SetupCommands(){
 	//create temp mesh vertex and index buffers
 	size_t temp_wire_vb_size = tempWireframeVertexCount*sizeof(Mesh::Vertex);
 	size_t temp_fill_vb_size = tempFilledVertexCount*sizeof(Mesh::Vertex);
-	size_t temp_wire_ib_size = tempWireframeIndexCount*sizeof(Temp_Index);
-	size_t temp_fill_ib_size = tempFilledIndexCount*sizeof(Temp_Index);
+	size_t temp_wire_ib_size = tempWireframeIndexCount*sizeof(TempIndexVk);
+	size_t temp_fill_ib_size = tempFilledIndexCount*sizeof(TempIndexVk);
 	size_t temp_vb_size = temp_wire_vb_size+temp_fill_vb_size;
 	size_t temp_ib_size = temp_wire_ib_size+temp_fill_ib_size;
 	if(tempVertexBuffer.size == 0) temp_vb_size = 1000*sizeof(Mesh::Vertex);
-	if(tempIndexBuffer.size == 0)  temp_ib_size = 3000*sizeof(Temp_Index);
+	if(tempIndexBuffer.size == 0)  temp_ib_size = 3000*sizeof(TempIndexVk);
 	if(temp_vb_size && temp_ib_size){
 		//create/resize buffers if they are too small
 		if(tempVertexBuffer.buffer == VK_NULL_HANDLE || tempVertexBuffer.size < temp_vb_size){
@@ -2966,7 +2966,7 @@ BuildCommands(){
 					scissor.offset.x = uiCmdArray[cmd_idx].scissorOffset.x;
 					scissor.offset.y = uiCmdArray[cmd_idx].scissorOffset.y;
 					vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
-
+					
 					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &vkFonts[uiCmdArray[cmd_idx].texIdx].descriptorSet, 0, nullptr);
 					vkCmdDrawIndexed(cmdBuffer, uiCmdArray[cmd_idx].indexCount, 1, uiCmdArray[cmd_idx].indexOffset, 0, 0);
 				}
@@ -2976,7 +2976,7 @@ BuildCommands(){
 				scissor.offset.y = 0;
 				scissor.extent.width = width;
 				scissor.extent.height = height;
-
+				
 				DebugEndLabelVk(cmdBuffer);
 			}
 			
@@ -3113,7 +3113,7 @@ FillRectUI(f32 x, f32 y, f32 w, f32 h, Color color){
 	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2*  vp = uiVertexArray + uiVertexCount;
-	UI_Index* ip = uiIndexArray  + uiIndexCount;
+	UIIndexVk* ip = uiIndexArray  + uiIndexCount;
 	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
@@ -3141,7 +3141,7 @@ FillRectUI(vec2 pos, vec2 dimensions, Color color) {
 	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2*  vp = uiVertexArray + uiVertexCount;
-	UI_Index* ip = uiIndexArray + uiIndexCount;
+	UIIndexVk* ip = uiIndexArray + uiIndexCount;
 	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
@@ -3169,7 +3169,7 @@ DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2*  vp = uiVertexArray + uiVertexCount;
-	UI_Index* ip = uiIndexArray + uiIndexCount;
+	UIIndexVk* ip = uiIndexArray + uiIndexCount;
 	
 	vec2 ott = vec2(x2, y2) - vec2(x1, y1) ;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
@@ -3205,7 +3205,7 @@ DrawLineUI(vec2 start, vec2 end, float thickness, Color color) {
 	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2*  vp = uiVertexArray + uiVertexCount;
-	UI_Index* ip = uiIndexArray + uiIndexCount;
+	UIIndexVk* ip = uiIndexArray + uiIndexCount;
 	
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
@@ -3243,7 +3243,7 @@ DrawTextUI(string text, vec2 pos, Color color) {
 void Render::
 DrawTextUI(string text, vec2 pos, vec2 scissorOffset, vec2 scissorExtent, Color color) {
 	if (color.a == 0) return;
-
+	
 	f32 w = vkFonts[1].characterWidth;
 	for (int i = 0; i < text.size; i++) {
 		DrawCharUI((u32)text[i], pos, vec2::ONE, color, scissorOffset, scissorExtent);
@@ -3259,7 +3259,7 @@ vec2 prevScissorExtent = vec2(-1, -1);
 void Render::
 DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color, vec2 scissorOffset, vec2 scissorExtent) {
 	if (color.a == 0) return;
-
+	
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 
 		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
 		scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
@@ -3271,7 +3271,7 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color, vec2 scissorOffset,
 	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2*  vp = uiVertexArray + uiVertexCount;
-	UI_Index* ip = uiIndexArray  + uiIndexCount;
+	UIIndexVk* ip = uiIndexArray  + uiIndexCount;
 	
 	f32 w = vkFonts[1].characterWidth;
 	f32 h = vkFonts[1].characterHeight;
@@ -3288,8 +3288,8 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color, vec2 scissorOffset,
 	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,botoff}; vp[2].color = col;
 	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,botoff}; vp[3].color = col;
 	
-
-
+	
+	
 	uiVertexCount += 4;
 	uiIndexCount  += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -3708,7 +3708,7 @@ DrawLine(Vector3 start, Vector3 end, Color& color){
 	
 	u32 col = Color::PackColorU32(color);
 	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
-	Temp_Index*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
+	TempIndexVk*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
 	ip[0] = tempWireframeVertexCount; 
 	ip[1] = tempWireframeVertexCount+1; 
@@ -3726,7 +3726,7 @@ DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color& color){
 	
 	u32 col = Color::PackColorU32(color);
 	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
-	Temp_Index*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
+	TempIndexVk*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
 	ip[0] = tempWireframeVertexCount; 
 	ip[1] = tempWireframeVertexCount+1; 
@@ -3745,7 +3745,7 @@ DrawTriangleFilled(Vector3 p0, Vector3 p1, Vector3 p2, Color& color){
 	
 	u32 col = Color::PackColorU32(color);
 	Mesh::Vertex* vp = tempFilledVertexArray + tempFilledVertexCount;
-	Temp_Index*   ip = tempFilledIndexArray + tempFilledIndexCount;
+	TempIndexVk*   ip = tempFilledIndexArray + tempFilledIndexCount;
 	
 	ip[0] = tempFilledVertexCount; 
 	ip[1] = tempFilledVertexCount+1; 

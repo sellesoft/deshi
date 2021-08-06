@@ -12,7 +12,7 @@ struct Command;
 struct Mesh;
 struct Admin;
 
-enum ColliderShapeBits{
+enum ColliderShape_{
 	ColliderShape_NONE, 
 	ColliderShape_Box, 
 	ColliderShape_AABB,

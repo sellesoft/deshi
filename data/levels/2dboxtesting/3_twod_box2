@@ -7,9 +7,10 @@ rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)
 
 >mesh
-id      8
+id      4
 name    "box.obj"
 visible true
+control false
 
 >physics
 velocity         (0.000000,0.000000,0.000000)

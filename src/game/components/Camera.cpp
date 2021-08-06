@@ -51,12 +51,12 @@ void Camera::Update() {
 			float fw = ImGui::GetFontSize() / 2;
 			
 			switch (orthoview) {
-				case FRONT:    position = Vector3(0, 0, -999); rotation = Vector3(0, 0, 0);     ImGui::DebugDrawText("FRONT (+Z)",  Vector2(DengWindow->width - fw * 1.3 * sizeof("FRONT (+Z)"), DengWindow->height - 50));  break;
-				case BACK:     position = Vector3(0, 0, 999);  rotation = Vector3(0, 180, 0);   ImGui::DebugDrawText("BACK (-Z)",   Vector2(DengWindow->width - fw * 1.3 * sizeof("BACK (-Z)"), DengWindow->height - 50));   break;
-				case RIGHT:    position = Vector3(999, 0, 0);  rotation = Vector3(0, -90, 0);   ImGui::DebugDrawText("RIGHT (+X)",  Vector2(DengWindow->width - fw * 1.3 * sizeof("RIGHT (+X)"), DengWindow->height - 50));  break;
-				case LEFT:     position = Vector3(-999, 0, 0); rotation = Vector3(0, 90, 0);    ImGui::DebugDrawText("LEFT (-X)",   Vector2(DengWindow->width - fw * 1.3 * sizeof("LEFT (-X)"), DengWindow->height - 50));   break;
-				case TOPDOWN:  position = Vector3(0, 999, 0);  rotation = Vector3(89.9, 0, 0);  ImGui::DebugDrawText("TOP (-Y)",    Vector2(DengWindow->width - fw * 1.3 * sizeof("TOP (-Y)"), DengWindow->height - 50));    break;
-				case BOTTOMUP: position = Vector3(0, -999, 0); rotation = Vector3(-89.9, 0, 0); ImGui::DebugDrawText("BOTTOM (+Y)", Vector2(DengWindow->width - fw * 1.3 * sizeof("BOTTOM (+Y)"), DengWindow->height - 50)); break;
+				case OrthoView_Front:    position = Vector3(0, 0, -999); rotation = Vector3(0, 0, 0);     ImGui::DebugDrawText("FRONT (+Z)",  Vector2(DengWindow->width - fw * 1.3 * sizeof("FRONT (+Z)"), DengWindow->height - 50));  break;
+				case OrthoView_Back:     position = Vector3(0, 0, 999);  rotation = Vector3(0, 180, 0);   ImGui::DebugDrawText("BACK (-Z)",   Vector2(DengWindow->width - fw * 1.3 * sizeof("BACK (-Z)"), DengWindow->height - 50));   break;
+				case OrthoView_Right:    position = Vector3(999, 0, 0);  rotation = Vector3(0, -90, 0);   ImGui::DebugDrawText("RIGHT (+X)",  Vector2(DengWindow->width - fw * 1.3 * sizeof("RIGHT (+X)"), DengWindow->height - 50));  break;
+				case OrthoView_Left:     position = Vector3(-999, 0, 0); rotation = Vector3(0, 90, 0);    ImGui::DebugDrawText("LEFT (-X)",   Vector2(DengWindow->width - fw * 1.3 * sizeof("LEFT (-X)"), DengWindow->height - 50));   break;
+				case OrthoView_Top:  position = Vector3(0, 999, 0);  rotation = Vector3(89.9, 0, 0);  ImGui::DebugDrawText("TOP (-Y)",    Vector2(DengWindow->width - fw * 1.3 * sizeof("TOP (-Y)"), DengWindow->height - 50));    break;
+				case OrthoView_Bottom: position = Vector3(0, -999, 0); rotation = Vector3(-89.9, 0, 0); ImGui::DebugDrawText("BOTTOM (+Y)", Vector2(DengWindow->width - fw * 1.3 * sizeof("BOTTOM (+Y)"), DengWindow->height - 50)); break;
 			}
 			UpdateProjectionMatrix();
 		}
@@ -159,13 +159,13 @@ void Camera::UpdateProjectionMatrix(){
 
 std::string Camera::str(){
 	return TOSTDSTRING("[c:yellow]Camera Info:[c]",
-					"\nPosition: ", position,
-					"\nRotation: ", rotation,
-					"\nNear Plane: ", nearZ,
-					"\nFar Plane: ", farZ,
-					"\nHorizontal FOV: ", fov,
-					"\nMode: ", CameraModeStrings[mode],
-					"\nStatic: ", (freeCamera)? "false" : "true");
+					   "\nPosition: ", position,
+					   "\nRotation: ", rotation,
+					   "\nNear Plane: ", nearZ,
+					   "\nFar Plane: ", farZ,
+					   "\nHorizontal FOV: ", fov,
+					   "\nMode: ", CameraModeStrings[mode],
+					   "\nStatic: ", (freeCamera)? "false" : "true");
 }
 
 ////////////////////////////
@@ -174,13 +174,13 @@ std::string Camera::str(){
 
 std::string Camera::SaveTEXT(){
 	return TOSTDSTRING("\n>camera"
-					"\nposition (",position.x,",",position.y,",",position.z,")"
-					"\nrotation (",rotation.x,",",rotation.y,",",rotation.z,")"
-					"\nmode     ", mode,
-					"\nnear_z   ", nearZ,
-					"\nfar_z    ", farZ,
-					"\nfov      ", fov,
-					"\n");
+					   "\nposition (",position.x,",",position.y,",",position.z,")"
+					   "\nrotation (",rotation.x,",",rotation.y,",",rotation.z,")"
+					   "\nmode     ", mode,
+					   "\nnear_z   ", nearZ,
+					   "\nfar_z    ", farZ,
+					   "\nfov      ", fov,
+					   "\n");
 }
 
 void Camera::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){

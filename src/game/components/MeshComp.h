@@ -9,14 +9,14 @@ struct Model;
 struct Mesh;
 struct Armature;
 
-//NOTE model instance 'owns' a model in the storage
+//NOTE model instance references a model in storage
 struct ModelInstance : public Component {
 	Model*    model;
 	Mesh*     mesh;
 	Armature* armature;
 	Matrix4   transform;
 	bool      visible;
-	bool      override; //overrides entity transform
+	bool      control; //overrides entity transform
 	
 	ModelInstance();
 	ModelInstance(Model* model);
@@ -24,7 +24,7 @@ struct ModelInstance : public Component {
 	~ModelInstance();
 	
 	void ToggleVisibility(){ visible = !visible; };
-	void ToggleOverride(){ override = !override; };
+	void ToggleOverride(){ control = !control; };
 	
 	void ChangeModel(Model* model);
 	void ChangeModel(Mesh* mesh);

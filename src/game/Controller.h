@@ -7,7 +7,7 @@
 struct Admin;
 struct Movement;
 
-enum MovementModeBits{
+enum MovementMode_{
 	MOVEMENT_MODE_FLYING,
 	MOVEMENT_MODE_WALKING,
 	MOVEMENT_MODE_SWIMMING,

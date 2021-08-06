@@ -8,7 +8,7 @@
 
 struct Receiver;
 
-enum EventBits{
+enum Event_{
 	Event_NONE = 0,
 	Event_DoorToggle,
     Event_LightToggle,

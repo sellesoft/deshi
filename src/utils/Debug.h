@@ -41,6 +41,7 @@ static std::string ToStdString(const char* str) { return std::string(str); }
 static std::string ToStdString(char* str)       { return std::string(str); }
 
 static std::string ToStdString(const std::string& str) { return str; }
+static std::string ToStdString(string t) { return ToStdString(t.str); }
 
 template<class T, typename std::enable_if<!has_str_method<T>::value, bool>::type = true>
 static std::string ToStdString(T t) { return ToStdString(std::to_string(t)); }
@@ -70,11 +71,11 @@ static string ToString(T t) { return ToString(string(t.str())); }
 
 template<class... T>
 static string ToString(T... args) {
-	string strings[] = { "", (ToString(std::forward<T>(args))) ... };
+	array<string> strings({ "", (ToString(std::forward<T>(args))) ... });
 	//string strings[] = { ToString(args), ... };
 	string str = "";
 	for (string& s : strings) { str += s; }
-
+	
 	return str;
 }
 

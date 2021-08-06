@@ -13,7 +13,7 @@ struct Entity;
 struct Admin;
 
 //suffix is the system that comes after the layer
-enum ComponentLayerBits{
+enum ComponentLayer_{
 	ComponentLayer_NONE,
 	ComponentLayer_Physics,
 	ComponentLayer_Canvas,
@@ -30,7 +30,7 @@ struct ComponentTypeHeader{
 	u32 arrayOffset;
 };
 
-enum ComponentTypeBits{
+enum ComponentType_{
 	ComponentType_NONE,
 	ComponentType_ModelInstance,
 	ComponentType_Physics,

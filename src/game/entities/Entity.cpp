@@ -111,20 +111,19 @@ void Entity::RemoveComponents(std::vector<Component*> comps) {
     }
 }
 
-////////////////////////////
-//// saving and loading ////
-////////////////////////////
-
+////////////////////////
+//// @serialization ////
+////////////////////////
 std::string Entity::SaveTEXT(){
     std::string result; result.reserve(2048);
     result.append(TOSTDSTRING(">entity",
-                           "\nid       ", id,
-                           "\ntype     ", EntityTypeStrings[type],
-                           "\nname     \"",name,"\"",
-                           "\nposition (",transform.position.x,",",transform.position.y,",",transform.position.z,")",
-                           "\nrotation (",transform.rotation.x,",",transform.rotation.y,",",transform.rotation.z,")",
-                           "\nscale    (",transform.scale.x,",",transform.scale.y,",",transform.scale.z,")"
-                           "\n"));
+							  "\nid       ", id,
+							  "\ntype     ", EntityTypeStrings[type],
+							  "\nname     \"",name,"\"",
+							  "\nposition (",transform.position.x,",",transform.position.y,",",transform.position.z,")",
+							  "\nrotation (",transform.rotation.x,",",transform.rotation.y,",",transform.rotation.z,")",
+							  "\nscale    (",transform.scale.x,",",transform.scale.y,",",transform.scale.z,")"
+							  "\n"));
 	
     //sort components by ComponentType for consistent saving order
     std::vector<Component*> sorted_components = components;
@@ -160,7 +159,7 @@ enum struct Header{
 };
 #define InvalidHeaderKeyError(header) ERROR("Error parsing '",filepath,"' on line '",line_number,"'! Invalid key '",kv.first,"' for header '"header"'.")
 //TODO(delle) support multiple components of a type on an entity
-Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u32,u32>>& mesh_id_diffs){
+Entity* Entity::LoadTEXT(Admin* admin, std::string filepath){
     //load file into char array
     char* buffer = Assets::readFileAsciiToArray(filepath);
     if(!buffer) return 0;
@@ -205,7 +204,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
                     return 0;
                 }
             }else{
-                if     (line == ">mesh")          { header = Header::MODELINSTANCE;  if(!model)  { model = new ModelInstance(); } }
+                if     (line == ">mesh")          { header = Header::MODELINSTANCE;  if(!model) { model = new ModelInstance(); } }
                 else if(line == ">physics")       { header = Header::PHYSICS;
                     if(!phys) phys = new Physics(e->transform.position, e->transform.rotation);
                 }
@@ -323,11 +322,13 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
             }break;
             case(Header::MODELINSTANCE):{
                 if(kv.first == "name"){
-					model->model = Storage::CreateModelFromOBJ(kv.second.c_str()).second;
+					model->model = Storage::CreateModelFromFile(kv.second.c_str()).second;
 					model->mesh = model->model->mesh;
 					model->armature = model->model->armature;
                 }else if(kv.first == "visible"){ 
                     model->visible = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
+                }else if(kv.first == "control"){ 
+                    model->control = Assets::parse_bool(kv.second, filepath.c_str(), line_number);
                 }
                 else{ InvalidHeaderKeyError("mesh"); }
             }break;

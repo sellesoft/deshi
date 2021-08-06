@@ -8,14 +8,14 @@
 #include "../utils/string.h"
 #include "../utils/array.h"
 
-enum VSyncTypeBits{
+enum VSyncType_{
     VSyncType_Immediate,   //no image queue (necessary), display as soon as possible
 	VSyncType_Mailbox,     //image queue that replaces current pending image with new one, but waits to display on refresh
 	VSyncType_Fifo,        //image queue that only gets removed from on refresh, waits to display on refresh (regular Vsync)
 	VSyncType_FifoRelaxed, //same as Fifo, but if the image generates slower than refresh, dont wait to display on next refresh
 }; typedef u32 VSyncType;
 
-enum RendererStageBits{ 
+enum RendererStage_{ 
     RENDERERSTAGE_NONE  = 0, 
     RSVK_INSTANCE       = 1 << 0,
     RSVK_SURFACE        = 1 << 1,
@@ -133,7 +133,7 @@ namespace Render{
     void DrawTextUI(string text, vec2 pos, Color color = Color::WHITE);
 	void DrawTextUI(string text, vec2 pos, vec2 scissorOffset, vec2 scissorExtent, Color color = Color::WHITE);
 	void DrawCharUI(u32 character, vec2 pos, vec2 scale = vec2::ONE, Color color = Color::WHITE, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
-
+	
 	void UpdateLight(u32 lightIdx, Vector4 vec);
     void UpdateCameraPosition(Vector3 position);
     void UpdateCameraViewMatrix(Matrix4 m);

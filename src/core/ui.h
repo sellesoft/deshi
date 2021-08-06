@@ -63,7 +63,7 @@ enum UIWindowFlags_ {
 	UIWindowFlags_NoFocus          = 1 << 7,
 	UIWindowFlags_NoMinimize       = 1 << 8,
 	UIWindowFlags_NoMinimizeButton = 1 << 9,
-
+	
 	UIWindowFlags_Invisible    = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground
 }; typedef u32 UIWindowFlags;
 
@@ -78,27 +78,27 @@ enum UIDrawType : u32 {
 //we do the rendering pass
 struct UIDrawCmd {
 	UIDrawType type;
-
+	
 	//all draw commands have a position, this is also considered the start of a line cmd
 	vec2 position;
-
+	
 	//all draw commands have a color
 	Color color;
-
+	
 	//rectangles have dimensions
 	vec2 dimensions;
 	//lines have a second position
 	vec2 position2;
-
+	
 	//line thickness
 	float thickness;
 	
 	//for use by text draw call
 	string text;
-
+	
 	vec2 scissorOffset = vec2(0, 0);
 	vec2 scissorExtent = vec2(-1,0);
-
+	
 };
 
 //A window is meant to be a way to easily position widgets relative to a parent
@@ -112,7 +112,7 @@ struct UIWindow {
 			float y;
 		};
 	};
-
+	
 	union {
 		vec2 dimensions;
 		struct {
@@ -120,7 +120,7 @@ struct UIWindow {
 			float height;
 		};
 	};
-
+	
 	union {
 		vec2 scroll;
 		struct {
@@ -128,9 +128,9 @@ struct UIWindow {
 			float scy;
 		};
 	};
-
+	
 	vec2 maxScroll;
-
+	
 	//interior window cursor that's relative to its upper left corner
 	//if the window has a titlebar then the cursor's origin does not include the title bar
 	//TODO(sushi, Ui) maybe make a window flag to change this
@@ -141,25 +141,25 @@ struct UIWindow {
 			float cury;
 		};
 	};
-
+	
 	UIWindowFlags flags;
-
+	
 	//the difference between these two is that baseDrawCmds holds the commands for drawing the 
 	//base of the window, eg the background, title, border, etc.
 	//this way I can regenerate the window's base properties if I need to
 	//TODO(sushi, Ui) maybe implement this ^
 	array<UIDrawCmd> baseDrawCmds;
 	array<UIDrawCmd> drawCmds;
-
+	
 	bool hovered = false;
 	bool titleHovered = false;
-
+	
 	bool minimized = false;
 	bool hidden = false;
-
-
+	
+	
 	UIWindow() {};
-
+	
 	//I have to do this because I'm using an anonymous struct inside a union and C++ sucks
 	//actually i think its literally just cause im using a union, C++ blows 
 	UIWindow(const UIWindow& cop) {
@@ -177,7 +177,7 @@ struct UIWindow {
 		minimized = cop.minimized;
 		hidden = cop.hidden;
 	}
-
+	
 	UIWindow& operator= (const UIWindow& cop) {
 		name = cop.name; //inst 136
 		position = cop.position;
@@ -194,8 +194,8 @@ struct UIWindow {
 		hidden = cop.hidden;
 		return *this;
 	}
-
-
+	
+	
 };
 
 
@@ -205,28 +205,28 @@ struct UIWindow {
 //most of the code is written using ImGui as reference however some design is different and I may
 //come back here and write out what is and isnt
 namespace UI {
-
+	
 	//helpers
 	static vec2 CalcTextSize(string text);
-
+	
 	//primitives
 	static void RectFilled(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
-
+	
 	static void Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
 	static void Line(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
-
+	
 	static void Text(string text, UITextFlags flags = 0);
 	static void Text(string text, vec2 pos, UITextFlags flags = 0);
 	static void Text(string text, Color color, UITextFlags flags = 0);
 	static void Text(string text, vec2 pos, Color color, UITextFlags flags = 0);
-
+	
 	//widgets
 	static bool Button(string text);
 	static bool Button(string text, vec2 pos);
 	static bool Button(string text, Color color);
 	static bool Button(string text, vec2 pos, Color color);
-
-
+	
+	
 	//windows
 	static void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	static void EndWindow();
@@ -237,18 +237,18 @@ namespace UI {
 	static void SetWindowName(string name);
 	static bool IsWinHovered();
 	static void ShowDebugWindowOf(string name);
-
+	
 	//push/pop functions
 	static void PushColor(UIStyleCol idx, Color color);
 	static void PushVar(UIStyleVar idx, float style);
 	static void PushVar(UIStyleVar idx, vec2 style);
-
+	
 	static void PopColor(u32 count = 1);
 	static void PopVar(u32 count = 1);
-
+	
 	static void Init();
 	static void Update();
-
+	
 }; //namespace UI
 
 #endif //DESHI_UI_H

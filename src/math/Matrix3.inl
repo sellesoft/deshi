@@ -260,11 +260,11 @@ inline float Matrix3::
 Determinant() const{
     //aei + bfg + cdh - ceg - bdi - afh
     return  (data[0] * data[4] * data[8]) +		//aei
-        (data[1] * data[5] * data[6]) +		//bfg
-        (data[2] * data[3] * data[7]) -		//cdh
-        (data[2] * data[4] * data[6]) -		//ceg
-        (data[1] * data[3] * data[8]) -		//bdi
-        (data[0] * data[5] * data[7]);		//afh
+	(data[1] * data[5] * data[6]) +		//bfg
+	(data[2] * data[3] * data[7]) -		//cdh
+	(data[2] * data[4] * data[6]) -		//ceg
+	(data[1] * data[3] * data[8]) -		//bdi
+	(data[0] * data[5] * data[7]);		//afh
 }
 
 //returns the determinant of this matrix without the specified row and column
@@ -359,24 +359,5 @@ RotationMatrix(float x, float y, float z) {
                    r10, r11, r12,
                    r20, r21, r22);
 }
-
-//////////////
-//// hash ////
-//////////////
-
-namespace std{
-    template<> struct hash<Matrix3>{
-        inline size_t operator()(Matrix3 const& m) const{
-            size_t seed = 0;
-            hash<float> hasher; size_t hash;
-            forI(9){
-                hash = hasher(m.data[i]);
-                hash += 0x9e3779b9 + (seed << 6) + (seed >> 2);
-                seed ^= hash;
-            }
-            return seed;
-        }
-    };
-};
 
 #endif //DESHI_MATRIX3_INL

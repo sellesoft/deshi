@@ -22,7 +22,7 @@ struct Component;
 struct Command;
 struct Camera;
 
-enum GameStateBits{
+enum GameState_{
 	GameState_Play, 
 	GameState_Menu, 
 	GameState_Debug, 

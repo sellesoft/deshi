@@ -9,23 +9,23 @@
 ModelInstance::ModelInstance(){
 	type  = ComponentType_ModelInstance;
 	layer = ComponentLayer_Canvas;
-	model     = Storage::CopyModel(Storage::NullModel()).second;
+	model     = Storage::NullModel();
 	mesh      = model->mesh;
 	armature  = model->armature;
 	transform = Matrix4::IDENTITY;
 	visible   = true;
-	override  = false;
+	control   = false;
 }
 
 ModelInstance::ModelInstance(Model* _model){
 	type  = ComponentType_ModelInstance;
 	layer = ComponentLayer_Canvas;
-	model     = Storage::CopyModel(_model).second;
+	model     = _model;
 	mesh      = model->mesh;
 	armature  = model->armature;
 	transform = Matrix4::IDENTITY;
 	visible   = true;
-	override  = false;
+	control   = false;
 }
 
 ModelInstance::ModelInstance(Mesh* _mesh){
@@ -36,22 +36,18 @@ ModelInstance::ModelInstance(Mesh* _mesh){
 	armature  = model->armature;
 	transform = Matrix4::IDENTITY;
 	visible   = true;
-	override  = false;
+	control   = false;
 }
 
-ModelInstance::~ModelInstance(){
-	Storage::DeleteModel(model);
-}
+ModelInstance::~ModelInstance(){}
 
 void ModelInstance::ChangeModel(Model* _model){
-	Storage::DeleteModel(model);
-	model    = Storage::CopyModel(_model).second;
+	model    = _model;
 	mesh     = model->mesh;
 	armature = model->armature;
 }
 
 void ModelInstance::ChangeModel(Mesh* _mesh){
-	Storage::DeleteModel(model);
 	model    = Storage::CreateModelFromMesh(_mesh).second;
 	mesh     = model->mesh;
 	armature = model->armature;
@@ -64,17 +60,16 @@ void ModelInstance::ReceiveEvent(Event event){
 }
 
 void ModelInstance::Update(){
-	if(!override) transform = entity->transform.TransformMatrix();
-	if(visible) Render::DrawModel(model, transform);
+	if(!control) transform = entity->transform.TransformMatrix();
+	if(visible)  Render::DrawModel(model, transform);
 }
 
 std::string ModelInstance::SaveTEXT(){
 	return TOSTDSTRING("\n>mesh"
-					"\nname     \"", model->name,"\""
-					"\nvisible  ", (visible) ? "true" : "false",
-					"\noverride ", (override) ? "true" : "false",
-					"\n");
-	//!Incomplete convert all meshcomp saves
+					   "\nname    \"", model->name,"\""
+					   "\nvisible ", (visible) ? "true" : "false",
+					   "\ncontrol ", (control) ? "true" : "false",
+					   "\n");
 }
 
 void ModelInstance::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){

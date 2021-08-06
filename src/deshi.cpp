@@ -20,11 +20,11 @@ ____also, triggers need to be able to filter what causes them to activate
 
 Minor Ungrouped TODOs
 ---------------------
+store fonts in storage
 add editor settings and config
 maybe redo UI to draw the window base into a special UIDrawCmds array for base window elements 
 ____so we can defer drawing that stuff to EndWindow() so we can do window resizing and positioning within Begin and End calls
 convert std::string to our string throughout the project, primarily .str() methods so i can fully convert TOSTRING to use our string
-change text-based saving so material shaders are text rather than ID
 rework and simplify entity creation so there is a distinction between development and gameplay creation
 make a dynamic timers array on in time.h for cleaner timer stuffs
 add a setting for a limit to the number of log files
@@ -126,6 +126,7 @@ ____sort of how we had before with BufferLog so you can see it without opening c
 
 Math TODOs
 ----------
+fix vector cross function, and anywhere it's used
 add functions and members similar to what glsl/glm has where you can do stuff like 
 ____v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
 ____you probably just need to add a Vector2/3 for each permutation of each vector
@@ -262,7 +263,7 @@ int main() {
 	//init game admin
 	TIMER_RESET(t_s); admin.Init();           SUCCESS("Finished game initialization in ", TIMER_END(t_s), "ms");
 	SUCCESS("Finished total initialization in ", TIMER_END(t_d), "ms\n");
-
+	
 	//start main loop
 	glfwShowWindow(window.window);
 	while (!glfwWindowShouldClose(window.window) && !window.closeWindow) {
@@ -278,16 +279,16 @@ int main() {
 		UI::Update();
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
-		 //setTrack();
+			//setTrack();
 			UI::PushVar(UIStyleVar_TitleTextAlign, vec2(1, 0.5));
 			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
-
+			
 			for (int i = 0; i < 40; i++) {
 				UI::Text(TOSTRING("wow ", i), UITextFlags_NoWrap);
 			}
-
+			
 			UI::Text("unwrapped manually positioned text", vec2(150, 150), UITextFlags_NoWrap);
-
+			
 			UI::EndWindow();
 			//UI::ShowDebugWindowOf("test");
 			UI::PopVar();

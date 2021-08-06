@@ -6,25 +6,23 @@
 template<typename T>
 struct View{
 	T*  data;
-	int count;
+	size_t count;
 	
 	View(){
 		data  = 0;
 		count = 0;
 	}
 	
-	View(T* data, int count){
+	View(T* data, size_t count){
 		this->data  = data;
 		this->count = count;
 	}
 	
-	T& operator[](int index){
-		if(index < 0) return data[count+index];
+	T& operator[](size_t index){
 		return data[index];
 	}
 	
-	T* at(int index){
-		if(index < 0) return &data[count+index];
+	T* at(size_t index){
 		return &data[index];
 	}
 	
