@@ -270,7 +270,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\src\core\camera.cpp" />
     <ClCompile Include="..\src\core\console.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>

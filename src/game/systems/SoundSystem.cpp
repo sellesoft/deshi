@@ -260,7 +260,7 @@ void SoundSystem::Init(Admin* a) {
 }
 
 void SoundSystem::Update() {
-	Camera* c = admin->mainCamera;
+	CameraInstance* c = admin->mainCamera;
 	
 	vec3 ld = c->forward;
 	vec3 up = c->up;

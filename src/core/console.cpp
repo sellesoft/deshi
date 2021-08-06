@@ -694,7 +694,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 }CMDEND("load_obj <model.obj:String> -pos=(x,y,z) -rot=(x,y,z) -scale=(x,y,z) -collider=String{aabb|sphere} -mass=Float -static=Bool");
 
 CMDSTARTA(cam_vars, args.size() != 0){
-	Camera* c = DengAdmin->mainCamera;
+	CameraInstance* c = DengAdmin->mainCamera;
 	for (auto s = args.begin(); s != args.end(); ++s){
 		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
 			c->position = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));

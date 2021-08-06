@@ -8,34 +8,37 @@
 #include "../../math/Math.h"
 #include "../../utils/debug.h"
 
-Camera::Camera(){
+CameraInstance::CameraInstance(){
 	layer = ComponentLayer_NONE;
 	type  = ComponentType_Camera;
 }
 
-Camera::Camera(float fov, float nearZ, float farZ, bool freeCam){
+CameraInstance::CameraInstance(float fov, float nearZ, float farZ, bool freeCam) {
 	layer = ComponentLayer_NONE;
-	type  = ComponentType_Camera;
+	type = ComponentType_Camera;
 	this->nearZ = nearZ;
 	this->farZ = farZ;
 	this->fov = fov;
 	this->freeCamera = freeCam;
+
+	position = {  4.f,   3.f,-4.f };
+	rotation = { 28.f, -45.f, 0.f };
 	
-	forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
-	right   = vec3::UP.cross(forward).normalized();
-	up      = right.cross(forward).normalized();
-	viewMat = Math::LookAtMatrix(position, position + forward).Inverse();
+	this->forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
+	this->right   = vec3::UP.cross(forward).normalized();
+	this->up      = right.cross(forward).normalized();
+	this->viewMat = Math::LookAtMatrix(position, position + forward).Inverse();
 	UpdateProjectionMatrix();
 }
 
-void Camera::Update() {
+void CameraInstance::Update() {
 	if(freeCamera){
 		//NOTE this can happen whether the camera is free or not so move it out
 		//of this scope once we implement that
 		persist int wwidth = DengWindow->width; 
 		persist int wheight = DengWindow->height;
 		
-		//clamp camera rotation
+		//clamp camera crotation
 		Math::clamp(rotation.x, -89.9f, 89.9f);
 		if(rotation.y > 1440.f || rotation.y < -1440.f){ rotation.y = 0.f; }
 		
@@ -74,21 +77,11 @@ void Camera::Update() {
 	}
 }
 
-void Camera::UseOrthographicProjection() {
+mat4 CameraInstance::MakePerspectiveProjection(){
+	return Camera::MakePerspectiveProjectionMatrix(DengWindow->width, DengWindow->height, fov, farZ, nearZ);
 }
 
-mat4 Camera::MakePerspectiveProjection(){
-	float renderDistance = farZ - nearZ;
-	float aspectRatio = f32(DengWindow->height) / f32(DengWindow->width);
-	float fovRad = 1.f / tanf(RADIANS(fov * .5f));
-	return mat4( //NOTE setting (1,1) to negative flips the y-axis
-				   aspectRatio * fovRad, 0,	   0,							  0,
-				   0,					-fovRad, 0,							  0,
-				   0,					0,	   farZ / renderDistance,		  1,
-				   0,					0,	   -(farZ*nearZ) / renderDistance, 0);
-}
-
-mat4 Camera::MakeOrthographicProjection() {
+mat4 CameraInstance::MakeOrthographicProjection() {
 	//convert bounding box to camera space
 	persist float zoom = 10;
 	vec3 maxcam = Math::WorldToCamera3(vec3( zoom, zoom, zoom),  DengAdmin->mainCamera->viewMat);
@@ -140,25 +133,19 @@ mat4 Camera::MakeOrthographicProjection() {
 	t += zoom; b -= zoom;
 	t += offsety + oloffsety; b += offsety + oloffsety;
 	
-	float f = DengAdmin->mainCamera->farZ;
-	float n = DengAdmin->mainCamera->nearZ;
-	
-	return mat4(2/(r-l),      0,            0,            0,
-				   0,            2/(b-t),      0,            0,
-				   0,            0,            -2/(f-n),     0,
-				   -(r+l)/(r-l), -(t+b)/(b-t), -(f+n)/(n-f), 1);
+	return Camera::MakeOrthographicProjection(DengWindow->width, DengWindow->height, r, l, t, b, farZ, nearZ);
 }
 
-void Camera::UpdateProjectionMatrix(){
+void CameraInstance::UpdateProjectionMatrix(){
 	switch(mode){
 		case(CameraMode_Perspective):default:{ projMat = MakePerspectiveProjection(); } break;
-		case(CameraMode_Orthographic):{ projMat = MakeOrthographicProjection(); }break;
+		case(CameraMode_Orthographic):       { projMat = MakeOrthographicProjection(); }break;
 	}
 	Render::UpdateCameraProjectionMatrix(projMat);
 }
 
-std::string Camera::str(){
-	return TOSTDSTRING("[c:yellow]Camera Info:[c]",
+std::string CameraInstance::str(){
+	return TOSTDSTRING("[c:yellow]CameraInstance Info:[c]",
 					"\nPosition: ", position,
 					"\nRotation: ", rotation,
 					"\nNear Plane: ", nearZ,
@@ -172,7 +159,7 @@ std::string Camera::str(){
 //// saving and loading ////
 ////////////////////////////
 
-std::string Camera::SaveTEXT(){
+std::string CameraInstance::SaveTEXT(){
 	return TOSTDSTRING("\n>camera"
 					"\nposition (",position.x,",",position.y,",",position.z,")"
 					"\nrotation (",rotation.x,",",rotation.y,",",rotation.z,")"
@@ -183,6 +170,6 @@ std::string Camera::SaveTEXT(){
 					"\n");
 }
 
-void Camera::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
-	ERROR("Camera::LoadDESH not setup");
+void CameraInstance::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
+	ERROR("CameraInstance::LoadDESH not setup");
 }

@@ -16,13 +16,13 @@ enum MoveState : u32{
 };
 
 struct Physics;
-struct Camera;
+struct CameraInstance;
 
 struct Movement : public Component {
 	vec3 inputs;
 	Physics* phys;
 	
-	Camera* camera;
+	CameraInstance* camera;
 	
 	bool inAir;
 	MoveState moveState;

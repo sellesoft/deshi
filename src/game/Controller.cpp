@@ -47,7 +47,7 @@ local inline void AddBindings(Admin* admin) {
 }
 
 local inline void CameraMovement(Admin* admin, MovementMode mode) {
-	Camera* camera = admin->mainCamera;
+	CameraInstance* camera = admin->mainCamera;
 	float deltaTime = DengTime->deltaTime;
 	vec3 inputs;
 	
@@ -70,7 +70,7 @@ local inline void CameraMovement(Admin* admin, MovementMode mode) {
 }
 
 inline void PlayerMovement(Admin* admin, MovementMode mode, Movement* playermove) {
-	Camera* camera = admin->mainCamera;
+	CameraInstance* camera = admin->mainCamera;
 	float deltaTime = DengTime->deltaTime;
 	vec3 inputs;
 	
@@ -102,7 +102,7 @@ local inline void PlayerGrabbing() {
 }
 
 local inline void CameraRotation(Admin* admin, float sens) {
-	Camera* camera = admin->mainCamera;
+	CameraInstance* camera = admin->mainCamera;
 	Keybinds* binds = &admin->keybinds;
 	float deltaTime = DengTime->deltaTime;
 	

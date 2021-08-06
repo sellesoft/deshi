@@ -20,7 +20,7 @@
 struct System;
 struct Component;
 struct Command;
-struct Camera;
+struct CameraInstance;
 
 enum GameStateBits{
 	GameState_Play, 
@@ -43,7 +43,7 @@ struct Admin {
 	Controller  controller;
 	Editor      editor;
 	
-	Camera* mainCamera;
+	CameraInstance* mainCamera;
 	Entity* player;
 	
 	std::vector<Entity*> entities;

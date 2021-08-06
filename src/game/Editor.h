@@ -11,7 +11,7 @@
 
 struct Admin;
 struct Entity;
-struct Camera;
+struct CameraInstance;
 
 enum TransformationAxisBits{
 	TransformationAxis_Free, TransformationAxis_X, TransformationAxis_Y, TransformationAxis_Z
@@ -26,7 +26,7 @@ struct Editor{
 	EditorSettings settings;
 	
 	std::vector<Entity*> selected;
-	Camera* camera;
+	CameraInstance* camera;
 	UndoManager undo_manager;
 	
 	std::string level_name;

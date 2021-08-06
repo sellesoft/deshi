@@ -47,12 +47,12 @@ void Editor::TranslateEntity(Entity* e, TransformationAxis axis){
     
 }
 
-inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um){
+inline void HandleGrabbing(Entity* sel, CameraInstance* c, Admin* admin, UndoManager* um){
 	persist bool grabbingObj = false;
     
     if(!DengConsole->IMGUI_MOUSE_CAPTURE){ 
         if(DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj){
-            //Camera* c = admin->mainCamera;
+            //CameraInstance* c = admin->mainCamera;
             grabbingObj = true;
             admin->controller.cameraLocked = true;
             
@@ -222,7 +222,7 @@ void Editor::RotateEntity(Entity* e, TransformationAxis axis){
     
 }
 
-inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um){
+inline void HandleRotating(Entity* sel, CameraInstance* c, Admin* admin, UndoManager* um){
     persist bool rotatingObj = false;
     
     if(!DengConsole->IMGUI_MOUSE_CAPTURE){ 
@@ -416,14 +416,14 @@ namespace ImGui {
     }
     
     void DebugDrawCircle3(vec3 pos, float radius, Color color){
-        Camera* c = g_admin->mainCamera;
+        CameraInstance* c = g_admin->mainCamera;
         vec2 windimen = DengWindow->dimensions;
         vec2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
         ImGui::GetBackgroundDrawList()->AddCircle(ImGui::vec2ToImVec2(pos2), radius, ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
     void DebugDrawCircleFilled3(vec3 pos, float radius, Color color){
-        Camera* c = g_admin->mainCamera;
+        CameraInstance* c = g_admin->mainCamera;
         vec2 windimen = DengWindow->dimensions;
         vec2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
         ImGui::GetBackgroundDrawList()->AddCircleFilled(ImGui::vec2ToImVec2(pos2), radius, ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
@@ -435,7 +435,7 @@ namespace ImGui {
     }
     
     void DebugDrawLine3(vec3 pos1, vec3 pos2, Color color){
-        Camera* c = g_admin->mainCamera;
+        CameraInstance* c = g_admin->mainCamera;
         vec2 windimen = DengWindow->dimensions;
         
         vec3 pos1n = Math::WorldToCamera3(pos1, c->viewMat);
@@ -457,7 +457,7 @@ namespace ImGui {
     }
     
     void DebugDrawText3(const char* text, vec3 pos, Color color, vec2 twoDoffset){
-        Camera* c = g_admin->mainCamera;
+        CameraInstance* c = g_admin->mainCamera;
         vec2 windimen = DengWindow->dimensions;
         
         vec3 posc = Math::WorldToCamera3(pos, c->viewMat);
@@ -1357,7 +1357,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 				
 				//camera
 				case ComponentType_Camera:{
-					if(ImGui::CollapsingHeader("Camera", &delete_button, tree_flags)){
+					if(ImGui::CollapsingHeader("CameraInstance", &delete_button, tree_flags)){
 						ImGui::Indent();
 						
 						ImGui::TextEx("TODO implement camera component editing");
@@ -1487,7 +1487,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 					admin->AddComponentToLayers(comp);
 				}break;
 				case ComponentType_Camera:{
-					Component* comp = new Camera(90.f);
+					Component* comp = new CameraInstance(90.f);
 					sel->AddComponent(comp);
 					admin->AddComponentToLayers(comp);
 				}break;
@@ -2333,7 +2333,7 @@ inline void SettingsTab(Admin* admin){
 		}
 		
 		//// camera properties ////
-		if(ImGui::CollapsingHeader("Camera", 0)){
+		if(ImGui::CollapsingHeader("CameraInstance", 0)){
 			if(ImGui::Button("Zero", ImVec2(ImGui::GetWindowWidth()*.45f, 0))){
 				admin->editor.camera->position = vec3::ZERO; admin->editor.camera->rotation = vec3::ZERO;
 			} ImGui::SameLine();
@@ -2808,7 +2808,7 @@ void Editor::DebugLayer(){
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::ColorToImVec4(Color(0, 0, 0, 0)));
-	Camera* c = admin->mainCamera;
+	CameraInstance* c = admin->mainCamera;
 	float time = DengTime->totalTime;
 	
 	persist std::vector<pair<float, vec2>> times;
@@ -2921,7 +2921,7 @@ void Editor::Init(Admin* a){
 	settings = {};
 	
 	selected.reserve(8);
-	camera = new Camera(90.f, .01f, 1000.01f, true);
+	camera = new CameraInstance(90.f, .01f, 1000.01f, true);
 	Render::UpdateCameraViewMatrix(camera->viewMat);
 	Render::UpdateCameraPosition(camera->position);
 	undo_manager.Init();

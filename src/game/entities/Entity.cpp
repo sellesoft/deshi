@@ -169,7 +169,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
     //creation vars
     bool coll_made = false;
     Entity* e = 0;
-    AudioListener* al = 0;  AudioSource* as = 0;          Camera* cam = 0;    Door* door = 0;
+    AudioListener* al = 0;  AudioSource* as = 0;          CameraInstance* cam = 0;    Door* door = 0;
     Light* light = 0;       ModelInstance* model = 0;     Movement* move = 0; OrbManager* orbman = 0;
     Physics* phys = 0;      Player* player = 0;
     BoxCollider* box = 0;   SphereCollider* sphere = 0;   LandscapeCollider* land = 0; 
@@ -213,7 +213,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
                 else if(line == ">audio source")  { header = Header::AUDIO_SOURCE;   if(!as)    { as = new AudioSource(); } }
                 else if(line == ">light")         { header = Header::LIGHT;          if(!light) { light = new Light(); } }
                 else if(line == ">door")          { header = Header::DOOR;           if(!door)  { door = new Door(); } }
-                else if(line == ">camera")        { header = Header::CAMERA;         if(!cam)   { cam = new Camera(); } }
+                else if(line == ">camera")        { header = Header::CAMERA;         if(!cam)   { cam = new CameraInstance(); } }
                 else if(line == ">orb manager")   { header = Header::ORB_MANAGER;    if(!orbman){ orbman = new OrbManager(); } }
                 else if(line == ">audio listener"){ header = Header::AUDIO_LISTENER; if(!al)    { al = new AudioListener(); } }
                 else if(line == ">movement")      { header = Header::MOVEMENT;       if(!move)  { move = new Movement(); } }

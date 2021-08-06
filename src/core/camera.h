@@ -1,54 +1,65 @@
-//#pragma once
-//#ifndef DESHI_CAMERA_H
-//#define DESHI_CAMERA_H
-//
-//#include "../math/vec.h"
-//#include "../math/mat.h"
-//
-//enum CameraModeBits{
-//	CameraMode_Perspective, 
-//	CameraMode_Orthographic,
-//	CameraMode_COUNT,
-//}; typedef u32 CameraMode;
-//global_ const char* CameraModeStrings[] = {
-//	"Perspective", "Orthographic"
-//};
-//
-//enum OrthoViews {
-//	RIGHT, LEFT, TOPDOWN, BOTTOMUP, FRONT, BACK
-//};
-//
-//struct camera  {
-//	vec3 position{4.f, 3.f, -4.f};
-//	vec3 rotation{28.f, -45.f, 0.f};
-//	float nearZ; //the distance from the camera's position to screen plane
-//	float farZ; //the maximum render distance
-//	float fov; //horizontal field of view
-//	bool freeCamera = true; //whether the camera can move or not (no need to update if false)
-//	CameraMode mode = CameraMode_Perspective;
-//	OrthoViews orthoview = FRONT; //TODO(sushi, Cl) combine this with type using bit masking if this is how i decide to keep doing ortho views
-//	
-//	vec3 forward;
-//	vec3 right;
-//	vec3 up;
-//	mat4 viewMat;
-//	mat4 projMat;
-//	
-//	camera();
-//	camera(float fov, float nearZ = .01f, float farZ = 1000.01f, bool freeCam = true);
-//	
-//	void Update() override;
-//	
-//	//horizontal fov in degrees
-//	mat4 MakePerspectiveProjection();
-//	mat4 MakeOrthographicProjection();
-//	void UseOrthographicProjection();
-//	
-//	void UpdateProjectionMatrix();
-//	
-//	std::string str() override;
-//	std::string SaveTEXT() override;
-//	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);
-//};
-//
-//#endif //COMPONENT_CAMERA_H
+#pragma once
+#ifndef DESHI_CAMERA_H
+#define DESHI_CAMERA_H
+
+#include "../math/vec.h"
+#include "../math/mat.h"
+
+enum CameraModeBits{
+	CameraMode_Perspective, 
+	CameraMode_Orthographic,
+	CameraMode_COUNT,
+}; typedef u32 CameraMode;
+global_ const char* CameraModeStrings[] = {
+	"Perspective", "Orthographic"
+};
+
+enum OrthoViews {
+	RIGHT, LEFT, TOPDOWN, BOTTOMUP, FRONT, BACK
+};
+
+struct Camera  {
+	vec3 position{};
+	vec3 rotation{};
+
+	float nearZ; //the distance from the camera's position to screen plane
+	float farZ; //the maximum render distance
+	float fov; //horizontal field of view
+
+	bool freeCamera = true;
+
+	CameraMode mode = CameraMode_Perspective;
+	OrthoViews orthoview = FRONT;
+	
+	vec3 forward;
+	vec3 right;
+	vec3 up;
+
+	mat4 viewMat;
+	mat4 projMat;
+
+	static mat4 MakePerspectiveProjectionMatrix(float winWidth, float winHeight, float _fov, float _farZ, float _nearZ) {
+		float renderDistance = _farZ - _nearZ;
+		float aspectRatio = winHeight / winWidth;
+		float fovRad = 1.f / tanf(RADIANS(_fov * .5f));
+		return mat4( //NOTE setting (1,1) to negative flips the y-axis
+			aspectRatio * fovRad, 0, 0, 0,
+			0, -fovRad, 0, 0,
+			0, 0, _farZ / renderDistance, 1,
+			0, 0, -(_farZ * _nearZ) / renderDistance, 0);
+	}
+
+	static mat4 MakeOrthographicProjection(float width, float height, float r, float l, float t, float b, float _farZ, float _nearZ) {
+		float aspectRatio = width / height;
+
+		float f = _farZ;
+		float n = _nearZ;
+
+		return mat4(2 / (r - l), 0, 0, 0,
+			0, 2 / (b - t), 0, 0,
+			0, 0, -2 / (f - n), 0,
+			-(r + l) / (r - l), -(t + b) / (b - t), -(f + n) / (n - f), 1);
+	}
+};
+
+#endif //DESHI_CAMERA_H
