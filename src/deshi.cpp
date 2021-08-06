@@ -138,7 +138,7 @@ add quaternions and converions between them and other linear algebra primitives
 
 Fun TODOs
 ---------
-look into implementing Lua 
+look into implementing Lua (or finish su and make it an embeddable language!)
 look into making a function that takes in the types on a component and formats binary for saving and what not 
 ____like what were currently doing for typeHeader in Admin Save()
 write a preprocessing/postprocessing compiler that makes saving easier
