@@ -648,7 +648,7 @@ void Admin::AddComponentToLayers(Component* c){
 ////////////////
 
 
-Entity* Admin::EntityRaycast(Vector3 origin, Vector3 direction, f32 maxDistance){ //!TestMe
+Entity* Admin::EntityRaycast(vec3 origin, vec3 direction, f32 maxDistance){ //!TestMe
 	Entity* result = 0;
     f32 min_depth = INFINITY;
     f32 depth;
@@ -659,7 +659,7 @@ Entity* Admin::EntityRaycast(Vector3 origin, Vector3 direction, f32 maxDistance)
 	Mesh::Triangle* tri;
     for(Entity* e : entities){
         transform = e->transform.TransformMatrix();
-        rotation = Matrix4::RotationMatrix(e->transform.rotation);
+        rotation = mat4::RotationMatrix(e->transform.rotation);
         if(ModelInstance* mc = e->GetComponent<ModelInstance>()){
             if(!mc->visible) continue;
 			forX(tri_idx, mc->mesh->triangleCount){

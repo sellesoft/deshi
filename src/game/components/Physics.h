@@ -19,11 +19,11 @@ struct Manifold2 {
 	poly* b = nullptr;
 	
 	int refID = 0;
-	Vector2 colpoints[2];
+	vec2 colpoints[2];
 	float depth[2];
 	int nColPoints = 0;
 	
-	Vector2 norm;
+	vec2 norm;
 };
 
 struct Manifold3 {
@@ -38,36 +38,36 @@ struct Manifold3 {
 	
 	int refID = 0;
 	//point then depth
-	std::vector<pair<Vector3, float>> colpoints;
+	std::vector<pair<vec3, float>> colpoints;
 	
-	Vector3 norm;
+	vec3 norm;
 };
 
 //temp 2D polygon class 
 struct poly {
-	std::vector<Vector2> p;
-	Vector2 pos;
-	Vector2 vel;
-	Vector2 acc;
+	std::vector<vec2> p;
+	vec2 pos;
+	vec2 vel;
+	vec2 acc;
 	float rotvel = 0;
 	float rotacc = 0;
 	float angle = 0;
 	float mass;
 	float moi = 1;
-	std::vector<Vector2> o;
+	std::vector<vec2> o;
 	bool overlap = false;
 	
 	Physics* ogphys;
 	
 	bool staticPosition = false;
 	
-	bool PointInside(Vector2 point) {
+	bool PointInside(vec2 point) {
 		int s = p.size();
 		for (int i = 0; i < s; i++) {
-			Vector2 a = p[i];
-			Vector2 b = p[(i + 1) % s];
+			vec2 a = p[i];
+			vec2 b = p[(i + 1) % s];
 			
-			Vector2 n = (b - a).perp();
+			vec2 n = (b - a).perp();
 			
 			if (n.dot(point - a) > 0) {
 				return false;
@@ -80,7 +80,7 @@ struct poly {
 		
 		//rotate
 		float angler = angle * M_PI / 180;
-		for (Vector2 v : p) {
+		for (vec2 v : p) {
 			v.x = cosf(angler * v.x) - sinf(angler * v.y);
 			v.y = sinf(angler * v.x) + cosf(angler * v.y);
 		}
@@ -101,20 +101,20 @@ enum ContactState {
 };
 
 struct Physics : public Component {
-	Vector3 position;
-	Vector3 rotation;
-	Vector3 scale;
+	vec3 position;
+	vec3 rotation;
+	vec3 scale;
 	
-	Vector3 velocity;
-	Vector3 acceleration;
-	Vector3 rotVelocity;
-	Vector3 rotAcceleration;
+	vec3 velocity;
+	vec3 acceleration;
+	vec3 rotVelocity;
+	vec3 rotAcceleration;
 	
 	float elasticity; //less than 1 in most cases
 	float mass;
 	
-	std::vector<Vector3> forces;
-	Vector3 inputVector = Vector3::ZERO;
+	std::vector<vec3> forces;
+	vec3 inputVector = vec3::ZERO;
 	
 	bool staticPosition = false;
 	bool staticRotation = false;
@@ -134,27 +134,27 @@ struct Physics : public Component {
 	ContactState contactState;
 	
 	Physics();
-	Physics(Vector3 position, Vector3 rotation, Vector3 velocity = Vector3::ZERO, Vector3 acceleration = Vector3::ZERO,
-			Vector3 rotVeloctiy = Vector3::ZERO,Vector3 rotAcceleration = Vector3::ZERO, float elasticity = .2f, 
+	Physics(vec3 position, vec3 rotation, vec3 velocity = vec3::ZERO, vec3 acceleration = vec3::ZERO,
+			vec3 rotVeloctiy = vec3::ZERO,vec3 rotAcceleration = vec3::ZERO, float elasticity = .2f, 
 			float mass = 1.f, bool staticPosition = false);
-	Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy, Vector3 rotAcceleration, 
+	Physics(vec3 position, vec3 rotation, vec3 velocity, vec3 acceleration, vec3 rotVeloctiy, vec3 rotAcceleration, 
 			float elasticity, float mass, bool staticPosition, bool staticRotation, bool twoDphys, 
 			float kineticFricCoef, float staticFricCoef);
-	Physics(Vector3 position, Vector3 rotation, float mass, float elasticity);
+	Physics(vec3 position, vec3 rotation, float mass, float elasticity);
 	
 	//adds the input vector to the target's input vector
-	void AddInput(Vector3 input);
+	void AddInput(vec3 input);
 	
 	//changes acceleration by adding a force to target, target also applies the impulse to creator
-	void AddForce(Physics* creator, Vector3 force);
+	void AddForce(Physics* creator, vec3 force);
 	
 	//if no creator, assume air friction; if creator, assume sliding friction
 	//TODO(delle,Ph) change air friction to calculate for shape of object
 	void AddFrictionForce(Physics* creator, float frictionCoef, float grav = 9.807);
 	
 	//changes velocity by adding an impulse to target, target also applies the impulse to creator
-	void AddImpulse(Physics* creator, Vector3 impulse);
-	void AddImpulseNomass(Physics* creator, Vector3 impulse);
+	void AddImpulse(Physics* creator, vec3 impulse);
+	void AddImpulseNomass(Physics* creator, vec3 impulse);
 	
 	std::string SaveTEXT() override;
 	static void LoadDESH(Admin* admin, const char* fileData, u32& cursor, u32 countToLoad);

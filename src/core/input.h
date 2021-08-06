@@ -3,7 +3,7 @@
 #define DESHI_INPUT_H
 
 #include "../defines.h"
-#include "../math/Vector.h"
+#include "../math/vec.h"
 #include "../utils/tuple.h"
 
 #include <map>
@@ -96,7 +96,7 @@ struct Input{
 	double mouseX,       mouseY;
 	double screenMouseX, screenMouseY;
 	double scrollX,      scrollY;
-	Vector2 mousePos;
+	vec2 mousePos;
 	
 	//NOTE sushi: I was going to put this on keybinds, but I wanted it to only check binds if some input occured, and it seems easiest to do that here
 	//for console command binding

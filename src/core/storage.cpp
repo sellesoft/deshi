@@ -282,7 +282,7 @@ DeleteMesh(Mesh* mesh){
 	//!Incomplete
 }
 
-std::vector<Vector2> Storage::
+std::vector<vec2> Storage::
 GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camView, vec3 camPosition, vec2 screenDims){ //!TestMe
 	std::vector<vec2> outline;
 	std::vector<Mesh::Triangle*> nonculled;
@@ -297,8 +297,8 @@ GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 c
 	for(Mesh::Triangle* t : nonculled){
 		forI(t->neighborCount){
 			if(mesh->triangles[t->neighbors[i]].removed){
-				outline.push_back(Math::WorldToScreen(t->p[t->edges[i]        ]*transform, camProjection, camView, screenDims).ToVector2());
-				outline.push_back(Math::WorldToScreen(t->p[(t->edges[i]+1) % 3]*transform, camProjection, camView, screenDims).ToVector2());
+				outline.push_back(Math::WorldToScreen(t->p[t->edges[i]        ]*transform, camProjection, camView, screenDims).toVec2());
+				outline.push_back(Math::WorldToScreen(t->p[(t->edges[i]+1) % 3]*transform, camProjection, camView, screenDims).toVec2());
 			}
 		}
 	}
@@ -935,7 +935,7 @@ CreateModelFromOBJ(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 	}
 	
 #if 0
-	map<Vector3,Mesh::Index> uniqueVertexes;
+	map<vec3,Mesh::Index> uniqueVertexes;
 	array<Mesh::Index>     indexArray(obj_attrib.vertices.size());
 	array<Mesh::Triangle>  triangleArray(obj_attrib.vertices.size()/9);
 	for(const tinyobj::shape_t& shape : obj_shapes){

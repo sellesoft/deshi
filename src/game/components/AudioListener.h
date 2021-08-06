@@ -8,12 +8,12 @@
 //there can only ever be one of them as far as I know.
 //this will be implemented further later
 struct AudioListener : public Component {
-	Vector3 position;
-	Vector3 velocity; //these may not be necessary
-	Vector3 orientation;
+	vec3 position;
+	vec3 velocity; //these may not be necessary
+	vec3 orientation;
 	
 	AudioListener(){}
-	AudioListener(Vector3 position, Vector3 velocity = Vector3::ZERO, Vector3 orientation = Vector3::ZERO);
+	AudioListener(vec3 position, vec3 velocity = vec3::ZERO, vec3 orientation = vec3::ZERO);
 	
 	std::string SaveTEXT() override;
 	//static void LoadTEXT(Admin* admin, std::string& text);

@@ -3,7 +3,7 @@
 #define DESHI_WINDOW_H
 
 #include "../defines.h"
-#include "../math/Vector.h"
+#include "../math/vec.h"
 
 #include <string>
 
@@ -42,7 +42,7 @@ struct Window{
 	
 	bool  resized;
 	
-	Vector2 dimensions;
+	vec2 dimensions;
 	
 	//NOTE(delle) vsync isnt handled in GLFW when using vulkan
 	void Init(s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode displayMode = DisplayMode::WINDOWED);
@@ -50,7 +50,7 @@ struct Window{
 	void Cleanup();
 	void UpdateDisplayMode(DisplayMode mode);
 	void UpdateCursorMode(CursorMode mode); 
-	void SetCursorPos(Vector2 pos);
+	void SetCursorPos(vec2 pos);
 	void UpdateRawInput(bool rawInput);
 	void UpdateResizable(bool resizable);
 	void Close();

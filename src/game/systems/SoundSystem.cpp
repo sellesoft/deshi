@@ -95,8 +95,8 @@ void play_sound(AudioSource* s) {
 	
 	
 	while (s->source_state == AL_PLAYING) {
-		Vector3 pos;
-		Vector3 vel = Vector3::ZERO;
+		vec3 pos;
+		vec3 vel = vec3::ZERO;
 		
 		if (s->physpoint) {
 			pos = s->p->position;
@@ -122,8 +122,8 @@ void SoundThread(Admin* admin) {
 			for (AudioSource* s : sources) {
 				//make sure source doesn't already exist
 				if (!alIsSource(s->source)) {
-					Vector3 pos;
-					Vector3 vel = Vector3::ZERO;
+					vec3 pos;
+					vec3 vel = vec3::ZERO;
 					if (s->physpoint) {
 						pos = s->p->position;
 						vel = s->p->velocity;
@@ -195,8 +195,8 @@ void SoundThread(Admin* admin) {
 			}
 			else {
 				//else we update source's info
-				Vector3 pos;
-				Vector3 vel = Vector3::ZERO;
+				vec3 pos;
+				vec3 vel = vec3::ZERO;
 				
 				if (playingSources[i]->physpoint) {
 					pos = playingSources[i]->p->position;
@@ -262,8 +262,8 @@ void SoundSystem::Init(Admin* a) {
 void SoundSystem::Update() {
 	Camera* c = admin->mainCamera;
 	
-	Vector3 ld = c->forward;
-	Vector3 up = c->up;
+	vec3 ld = c->forward;
+	vec3 up = c->up;
 	ALfloat listenerOri[] = { ld.x, ld.z, ld.y, up.x, up.z, up.y };
 	//set OpenAL's listener to match our camera
 	//right now it's only position and orientation

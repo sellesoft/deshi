@@ -3,18 +3,18 @@
 #define COMPONENT_LIGHT_H
 
 #include "Component.h"
-#include "../../math/Vector.h"
+#include "../../math/vec.h"
 
 struct Light : public Component {
-	Vector3 position;
-	Vector3 direction;
+	vec3 position;
+	vec3 direction;
 	float brightness;
 	//TODO(delle) add color var
 	
 	bool active = true;
 	
 	Light();
-	Light(const Vector3& position, const Vector3& direction, float strength = 1.f);
+	Light(const vec3& position, const vec3& direction, float strength = 1.f);
 	
 	void Update() override;
 	virtual void ReceiveEvent(Event event) override;

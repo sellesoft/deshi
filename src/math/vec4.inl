@@ -1,23 +1,23 @@
 #pragma once
-#ifndef DESHI_VECTOR4_INL
-#define DESHI_VECTOR4_INL
+#ifndef DESHI_vec4_INL
+#define DESHI_vec4_INL
 
 //////////////////////
 //// constructors ////
 //////////////////////
 
-inline Vector4::
-Vector4(float inX, float inY, float inZ, float inW) {
+inline vec4::
+vec4(float inX, float inY, float inZ, float inW) {
 	this->x = inX; this->y = inY; this->z = inZ; this->w = inW;
 }
 
-inline Vector4::
-Vector4(const Vector4& v) {
+inline vec4::
+vec4(const vec4& v) {
 	this->x = v.x; this->y = v.y; this->z = v.z; this->w = v.w;
 }
 
-inline Vector4::
-Vector4(float* ptr){ 
+inline vec4::
+vec4(float* ptr){ 
 	memcpy(&x, ptr, 4*sizeof(float));
 }
 
@@ -25,91 +25,91 @@ Vector4(float* ptr){
 //// constants ////
 ///////////////////
 
-inline const Vector4 Vector4::ZERO = Vector4(0,0,0,0);
-inline const Vector4 Vector4::ONE  = Vector4(1,1,1,1);
+inline const vec4 vec4::ZERO = vec4(0,0,0,0);
+inline const vec4 vec4::ONE  = vec4(1,1,1,1);
 
 ///////////////////
 //// operators ////
 ///////////////////
 
-inline void Vector4::
-operator =  (const Vector4& rhs) {
+inline void vec4::
+operator =  (const vec4& rhs) {
 	this->x = rhs.x; this->y = rhs.y; this->z = rhs.z; this->w = rhs.w;
 }
 
-inline Vector4 Vector4::
+inline vec4 vec4::
 operator *  (const float& rhs) const {
-	return Vector4(this->x * rhs, this->y * rhs, this->z * rhs, this->w * rhs);
+	return vec4(this->x * rhs, this->y * rhs, this->z * rhs, this->w * rhs);
 }
 
-inline void Vector4::
+inline void vec4::
 operator *= (const float& rhs) {
 	this->x *= rhs; this->y *= rhs; this->z *= rhs; this->w *= rhs;
 }
 
-inline Vector4 Vector4::
+inline vec4 vec4::
 operator /  (const float& rhs) const {
-	return Vector4(this->x / rhs, this->y / rhs, this->z / rhs, this->w / rhs);
+	return vec4(this->x / rhs, this->y / rhs, this->z / rhs, this->w / rhs);
 }
 
-inline void Vector4::
+inline void vec4::
 operator /= (const float& rhs) {
 	this->x /= rhs; this->y /= rhs; this->z /= rhs; this->w /= rhs;
 }
 
-inline Vector4 Vector4::
-operator +  (const Vector4& rhs) const {
-	return Vector4(this->x + rhs.x, this->y + rhs.y, this->z + rhs.z, this->w + rhs.w);
+inline vec4 vec4::
+operator +  (const vec4& rhs) const {
+	return vec4(this->x + rhs.x, this->y + rhs.y, this->z + rhs.z, this->w + rhs.w);
 }
 
-inline void Vector4::
-operator += (const Vector4& rhs) {
+inline void vec4::
+operator += (const vec4& rhs) {
 	this->x += rhs.x; this->y += rhs.y; this->z += rhs.z;  this->w += rhs.w;
 }
 
-inline Vector4 Vector4::
-operator -  (const Vector4& rhs) const {
-	return Vector4(this->x - rhs.x, this->y - rhs.y, this->z - rhs.z, this->w - rhs.w);
+inline vec4 vec4::
+operator -  (const vec4& rhs) const {
+	return vec4(this->x - rhs.x, this->y - rhs.y, this->z - rhs.z, this->w - rhs.w);
 }
 
-inline void Vector4::
-operator -= (const Vector4& rhs) {
+inline void vec4::
+operator -= (const vec4& rhs) {
 	this->x -= rhs.x; this->y -= rhs.y; this->z -= rhs.z; this->w -= rhs.w;
 }
 
-inline Vector4 Vector4::
-operator *  (const Vector4& rhs) const {
-	return Vector4(this->x * rhs.x, this->y * rhs.y, this->z * rhs.z, this->w * rhs.w);
+inline vec4 vec4::
+operator *  (const vec4& rhs) const {
+	return vec4(this->x * rhs.x, this->y * rhs.y, this->z * rhs.z, this->w * rhs.w);
 }
 
-inline void Vector4::
-operator *= (const Vector4& rhs) {
+inline void vec4::
+operator *= (const vec4& rhs) {
 	this->x *= rhs.x; this->y *= rhs.y; this->z *= rhs.z; this->w *= rhs.w;
 }
 
-inline Vector4 Vector4::
-operator /  (const Vector4& rhs) const {
-	return Vector4(this->x / rhs.x, this->y / rhs.y, this->z / rhs.z,  this->w / rhs.w);
+inline vec4 vec4::
+operator /  (const vec4& rhs) const {
+	return vec4(this->x / rhs.x, this->y / rhs.y, this->z / rhs.z,  this->w / rhs.w);
 }
 
-inline void Vector4::
-operator /= (const Vector4& rhs) {
+inline void vec4::
+operator /= (const vec4& rhs) {
 	this->x /= rhs.x; this->y /= rhs.y; this->z /= rhs.z; this->w /= rhs.w;
 }
 
-inline Vector4 Vector4::
+inline vec4 vec4::
 operator -  () const {
-	return Vector4(-x, -y, -z, -w);
+	return vec4(-x, -y, -z, -w);
 }
 
-inline bool Vector4::
-operator == (const Vector4& rhs) const {
+inline bool vec4::
+operator == (const vec4& rhs) const {
 	return abs(this->x - rhs.x) < .001f && abs(this->y - rhs.y) < .001f && abs(this->z - rhs.z) < .001f && abs(this->w - rhs.w) < .001f;
 	//return this->x == rhs.x && this->y == rhs.y && this->z == rhs.z && this->w == rhs.w;
 }
 
-inline bool Vector4::
-operator != (const Vector4& rhs) const {
+inline bool vec4::
+operator != (const vec4& rhs) const {
 	return !(*this == rhs);
 }
 
@@ -117,82 +117,82 @@ operator != (const Vector4& rhs) const {
 //// functions ////
 ///////////////////
 
-inline Vector4 Vector4::
+inline vec4 vec4::
 absV() const{
-	return Vector4(abs(x), abs(y), abs(z), abs(w));
+	return vec4(abs(x), abs(y), abs(z), abs(w));
 }
 
 
-inline Vector4 Vector4::
+inline vec4 vec4::
 copy() const {
-	return Vector4(x, y, z, w);
+	return vec4(x, y, z, w);
 }
 
-inline float Vector4::
-dot(const Vector4& rhs) const {
+inline float vec4::
+dot(const vec4& rhs) const {
 	return this->x * rhs.x + this->y * rhs.y + this->z * rhs.z + this->w * rhs.w;
 }
 
-inline float Vector4::
+inline float vec4::
 mag() const {
 	return sqrtf(x * x + y * y + z * z + w * w);
 }
 
-//NOTE: normalizing a Vector4 means dividing all parts by W
-inline Vector4 Vector4::
+//NOTE: normalizing a vec4 means dividing all parts by W
+inline vec4 vec4::
 normalized() const {
 	if (w != 0) {
 		return *this / w;
 	}
-	return Vector4(*this);
+	return vec4(*this);
 }
 
-inline Vector4 Vector4::
+inline vec4 vec4::
 xComp() const {
-	return Vector4(x, 0, 0, 0);
+	return vec4(x, 0, 0, 0);
 }
 
-inline Vector4 Vector4::
+inline vec4 vec4::
 yComp() const {
-	return Vector4(0, y, 0, 0);
+	return vec4(0, y, 0, 0);
 }
 
-inline Vector4 Vector4::
+inline vec4 vec4::
 zComp() const {
-	return Vector4(0, 0, z, 0);
+	return vec4(0, 0, z, 0);
 }
 
-inline Vector4 Vector4::
+inline vec4 vec4::
 wComp() const {
-	return Vector4(0, 0, 0, w);
+	return vec4(0, 0, 0, w);
 }
 
-inline Vector4 Vector4::
+inline vec4 vec4::
 xInvert() const {
-	return Vector4(-x, y, z, w);
+	return vec4(-x, y, z, w);
 }
 
-inline Vector4 Vector4::
+inline vec4 vec4::
 yInvert() const {
-	return Vector4(x, -y, z, w);
+	return vec4(x, -y, z, w);
 }
 
-inline Vector4 Vector4::
+inline vec4 vec4::
 zInvert() const {
-	return Vector4(x, y, -z, w);
+	return vec4(x, y, -z, w);
 }
 
-inline Vector4 Vector4::
+inline vec4 vec4::
 wInvert() const {
-	return Vector4(x, y, z,-w);
+	return vec4(x, y, z,-w);
 }
 
-inline const std::string Vector4::
+inline const std::string vec4::
 str() const {
 	return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + "," + std::to_string(this->z) + "," + std::to_string(this->w) + ")";
 }
 
-inline const std::string Vector4::
+inline const std::string vec4::
 str2f() const {
 	char buffer[50];
 	std::snprintf(buffer, 50, "(%+.2f, %+.2f, %+.2f, %+.2f)", this->x, this->y, this->z, this->w);
@@ -204,8 +204,8 @@ str2f() const {
 //////////////
 
 namespace std{
-	template<> struct hash<Vector4>{
-		inline size_t operator()(Vector4 const& v) const{
+	template<> struct hash<vec4>{
+		inline size_t operator()(vec4 const& v) const{
 			size_t seed = 0;
 			hash<float> hasher; size_t hash;
 			hash = hasher(v.x); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
@@ -217,4 +217,4 @@ namespace std{
 	};
 };
 
-#endif //DESHI_VECTOR4_INL
+#endif //DESHI_vec4_INL

@@ -1,28 +1,28 @@
 #pragma once
-#ifndef DESHI_VECTOR3_INL
-#define DESHI_VECTOR3_INL
+#ifndef DESHI_vec3_INL
+#define DESHI_vec3_INL
 
 //////////////////////
 //// constructors ////
 //////////////////////
 
-inline Vector3::
-Vector3(float inX, float inY, float inZ) {
+inline vec3::
+vec3(float inX, float inY, float inZ) {
 	this->x = inX; this->y = inY; this->z = inZ;
 }
 
-inline Vector3::
-Vector3(float inX, float inY) {
+inline vec3::
+vec3(float inX, float inY) {
 	this->x = inX; this->y = inY; this->z = 0;
 }
 
-inline Vector3::
-Vector3(const Vector3& v) {
+inline vec3::
+vec3(const vec3& v) {
 	this->x = v.x; this->y = v.y; this->z = v.z;
 }
 
-inline Vector3::
-Vector3(float* ptr){ 
+inline vec3::
+vec3(float* ptr){ 
 	memcpy(&x, ptr, 3*sizeof(float));
 }
 
@@ -30,105 +30,105 @@ Vector3(float* ptr){
 //// constants ////
 ///////////////////
 
-inline const Vector3 Vector3::ZERO =    Vector3( 0, 0, 0);
-inline const Vector3 Vector3::ONE =     Vector3( 1, 1, 1);
-inline const Vector3 Vector3::RIGHT =   Vector3( 1, 0, 0);
-inline const Vector3 Vector3::LEFT =    Vector3(-1, 0, 0);
-inline const Vector3 Vector3::UP =      Vector3( 0, 1, 0);
-inline const Vector3 Vector3::DOWN =    Vector3( 0,-1, 0);
-inline const Vector3 Vector3::FORWARD = Vector3( 0, 0, 1);
-inline const Vector3 Vector3::BACK =    Vector3( 0, 0,-1);
-inline const Vector3 Vector3::UNITX =   Vector3( 1, 0, 0);
-inline const Vector3 Vector3::UNITY =   Vector3( 0, 1, 0);
-inline const Vector3 Vector3::UNITZ =   Vector3( 0, 0, 1);
+inline const vec3 vec3::ZERO =    vec3( 0, 0, 0);
+inline const vec3 vec3::ONE =     vec3( 1, 1, 1);
+inline const vec3 vec3::RIGHT =   vec3( 1, 0, 0);
+inline const vec3 vec3::LEFT =    vec3(-1, 0, 0);
+inline const vec3 vec3::UP =      vec3( 0, 1, 0);
+inline const vec3 vec3::DOWN =    vec3( 0,-1, 0);
+inline const vec3 vec3::FORWARD = vec3( 0, 0, 1);
+inline const vec3 vec3::BACK =    vec3( 0, 0,-1);
+inline const vec3 vec3::UNITX =   vec3( 1, 0, 0);
+inline const vec3 vec3::UNITY =   vec3( 0, 1, 0);
+inline const vec3 vec3::UNITZ =   vec3( 0, 0, 1);
 
 ///////////////////
 //// operators ////
 ///////////////////
 
-inline void Vector3::
-operator =  (const Vector3& rhs) {
+inline void vec3::
+operator =  (const vec3& rhs) {
 	this->x = rhs.x; this->y = rhs.y; this->z = rhs.z;
 }
 
-inline void Vector3::
-operator =  (Vector3& rhs) {
+inline void vec3::
+operator =  (vec3& rhs) {
 	this->x = rhs.x; this->y = rhs.y; this->z = rhs.z;
 }
 
-inline Vector3 Vector3::
+inline vec3 vec3::
 operator *  (float rhs) const {
-	return Vector3(this->x * rhs, this->y * rhs, this->z * rhs);
+	return vec3(this->x * rhs, this->y * rhs, this->z * rhs);
 }
 
-inline void Vector3::
+inline void vec3::
 operator *= (float rhs) {
 	this->x *= rhs; this->y *= rhs; this->z *= rhs;
 }
 
-inline Vector3 Vector3::operator /  (float rhs) const {
-	return Vector3(this->x / rhs, this->y / rhs, this->z / rhs);
+inline vec3 vec3::operator /  (float rhs) const {
+	return vec3(this->x / rhs, this->y / rhs, this->z / rhs);
 }
 
-inline void Vector3::
+inline void vec3::
 operator /= (float rhs) {
 	this->x /= rhs; this->y /= rhs; this->z /= rhs;
 }
 
-inline Vector3 Vector3::
-operator +  (const Vector3& rhs) const {
-	return Vector3(this->x + rhs.x, this->y + rhs.y, this->z + rhs.z);
+inline vec3 vec3::
+operator +  (const vec3& rhs) const {
+	return vec3(this->x + rhs.x, this->y + rhs.y, this->z + rhs.z);
 }
 
-inline void Vector3::
-operator += (const Vector3& rhs) {
+inline void vec3::
+operator += (const vec3& rhs) {
 	this->x += rhs.x; this->y += rhs.y; this->z += rhs.z;
 }
 
-inline Vector3 Vector3::
-operator -  (const Vector3& rhs) const {
-	return Vector3(this->x - rhs.x, this->y - rhs.y, this->z - rhs.z);
+inline vec3 vec3::
+operator -  (const vec3& rhs) const {
+	return vec3(this->x - rhs.x, this->y - rhs.y, this->z - rhs.z);
 }
 
-inline void Vector3::
-operator -= (const Vector3& rhs) {
+inline void vec3::
+operator -= (const vec3& rhs) {
 	this->x -= rhs.x; this->y -= rhs.y; this->z -= rhs.z;
 }
 
-inline Vector3 Vector3::
-operator *  (const Vector3& rhs) const {
-	return Vector3(this->x * rhs.x, this->y * rhs.y, this->z * rhs.z);
+inline vec3 vec3::
+operator *  (const vec3& rhs) const {
+	return vec3(this->x * rhs.x, this->y * rhs.y, this->z * rhs.z);
 }
 
-inline void Vector3::
-operator *= (const Vector3& rhs) {
+inline void vec3::
+operator *= (const vec3& rhs) {
 	this->x *= rhs.x; this->y *= rhs.y; this->z *= rhs.z;
 }
 
-inline Vector3 Vector3::
-operator /  (const Vector3& rhs) const {
-	return Vector3(this->x / rhs.x, this->y / rhs.y, this->z / rhs.z);
+inline vec3 vec3::
+operator /  (const vec3& rhs) const {
+	return vec3(this->x / rhs.x, this->y / rhs.y, this->z / rhs.z);
 }
 
-inline void Vector3::
-operator /= (const Vector3& rhs) {
+inline void vec3::
+operator /= (const vec3& rhs) {
 	this->x /= rhs.x; this->y /= rhs.y; this->z /= rhs.z;
 }
 
-inline Vector3 Vector3::
+inline vec3 vec3::
 operator -  () const {
-	return Vector3( -x, -y, -z );
+	return vec3( -x, -y, -z );
 }
 
 //floating point accuracy in our vectors is .001 :)
-inline bool Vector3::
-operator == (const Vector3& rhs) const {
+inline bool vec3::
+operator == (const vec3& rhs) const {
 	return abs(this->x - rhs.x) < .001f && abs(this->y - rhs.y) < .001f && abs(this->z - rhs.z) < .001f;
 	//return this->y == rhs.y  && this->y == rhs.y && this->z == rhs.z;
 }
 
-inline bool Vector3::
-operator != (const Vector3& rhs) const {
+inline bool vec3::
+operator != (const vec3& rhs) const {
 	return !(*this == rhs);
 }
 
@@ -136,34 +136,34 @@ operator != (const Vector3& rhs) const {
 //// functions ////
 ///////////////////
 
-inline Vector3 Vector3::
+inline vec3 vec3::
 absV() const{
-	return Vector3(abs(x), abs(y), abs(z));
+	return vec3(abs(x), abs(y), abs(z));
 }
 
-inline Vector3 Vector3::
+inline vec3 vec3::
 copy() const {
-	return Vector3(x, y, z);
+	return vec3(x, y, z);
 }
 
-inline float Vector3::
-dot(const Vector3& rhs) const {
+inline float vec3::
+dot(const vec3& rhs) const {
 	return this->x * rhs.x + this->y * rhs.y + this->z * rhs.z;
 }
 
 //left hand cross product
-inline Vector3 Vector3::
-cross(const Vector3& rhs) const {
-	return Vector3(this->y * rhs.z - rhs.y * this->z, this->z * rhs.x - rhs.z * this->x, this->x * rhs.y - rhs.x * this->y);
+inline vec3 vec3::
+cross(const vec3& rhs) const {
+	return vec3(this->y * rhs.z - rhs.y * this->z, this->z * rhs.x - rhs.z * this->x, this->x * rhs.y - rhs.x * this->y);
 }
 
-inline float Vector3::
+inline float vec3::
 mag() const {
 	return sqrt(x * x + y * y + z * z);
 }
 
 ////ref: https://betterexplained.com/articles/understanding-quakes-fast-inverse-square-root/
-//inline float Vector3::
+//inline float vec3::
 //mag() const {
 //	Assert(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
 //	float k = x * x + y * y + z * z;
@@ -175,17 +175,17 @@ mag() const {
 //	return 1.f / k;
 //}
 
-inline Vector3 Vector3::
+inline vec3 vec3::
 normalize() {
-	if (*this != Vector3(0, 0, 0)) {
+	if (*this != vec3(0, 0, 0)) {
 		*this /= this->mag();
 	}
 	return *this;
 }
 
-//inline void Vector3::
+//inline void vec3::
 //normalize() {
-//	if (*this != Vector3(0, 0, 0)) {
+//	if (*this != vec3(0, 0, 0)) {
 //		Assert(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
 //		float k = x * x + y * y + z * z;
 //		float kHalf = .5f * k;
@@ -197,17 +197,17 @@ normalize() {
 //	}
 //}
 
-inline Vector3 Vector3::
+inline vec3 vec3::
 normalized() const {
-	if (*this != Vector3(0, 0, 0)) {
+	if (*this != vec3(0, 0, 0)) {
 		return *this / this->mag();
 	}
 	return *this;
 }
 
-//inline Vector3 Vector3::
+//inline vec3 vec3::
 //normalized() const {
-//	if (*this != Vector3(0, 0, 0)) {
+//	if (*this != vec3(0, 0, 0)) {
 //		Assert(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
 //		float k = x * x + y * y + z * z;
 //		float kHalf = .5f * k;
@@ -217,19 +217,19 @@ normalized() const {
 //		k = k*(1.5f - kHalf*k*k);
 //		return *this * k;
 //	}
-//	return Vector3(*this);
+//	return vec3(*this);
 //}
 
-//clamps all values of a Vector3 between two floats
-inline Vector3 Vector3::
+//clamps all values of a vec3 between two floats
+inline vec3 vec3::
 clamp(float lo, float hi){
 	if(lo > hi) float temp = lo; lo = hi; hi = lo;
-	return Vector3((x < lo) ? lo : (hi < x) ? hi : x,
+	return vec3((x < lo) ? lo : (hi < x) ? hi : x,
 				   (y < lo) ? lo : (hi < y) ? hi : y,
 				   (z < lo) ? lo : (hi < z) ? hi : z);
 }
 
-inline void Vector3::
+inline void vec3::
 clampMag(float min, float max) {
 	float mag = this->mag();
 	if (mag < min) {
@@ -241,7 +241,7 @@ clampMag(float min, float max) {
 	}
 }
 
-inline Vector3 Vector3::
+inline vec3 vec3::
 clampedMag(float min, float max) const {
 	float mag = this->mag();
 	if (mag < min) {
@@ -249,82 +249,82 @@ clampedMag(float min, float max) const {
 	} else if(mag > max){ 
 		return normalized() * max; 
 	} else {
-		return Vector3(this->x, this->y, this->z);
+		return vec3(this->x, this->y, this->z);
 	}
 }
 
 //round to a decimal place
-inline void Vector3::round(int place) {
+inline void vec3::round(int place) {
 	x = floor(x * place * 10 + 0.5) / (place * 10);
 	y = floor(y * place * 10 + 0.5) / (place * 10);
 	z = floor(z * place * 10 + 0.5) / (place * 10);
 }
 
 //round to a decimal place
-inline Vector3 Vector3::rounded(int place) {
-	return Vector3(
+inline vec3 vec3::rounded(int place) {
+	return vec3(
 				   floor(x * place * 10 + 0.5) / (place * 10),
 				   floor(y * place * 10 + 0.5) / (place * 10),
 				   floor(z * place * 10 + 0.5) / (place * 10));
 }
 
-inline float Vector3::
-distanceTo(const Vector3& rhs) const {
+inline float vec3::
+distanceTo(const vec3& rhs) const {
 	return (*this - rhs).mag();
 }
 
-inline Vector3 Vector3::
-compOn(Vector3 rhs) {
+inline vec3 vec3::
+compOn(vec3 rhs) {
 	return rhs.normalized() * this->projectOn(rhs);
 }
 
-inline float Vector3::
-projectOn(Vector3 rhs) {
+inline float vec3::
+projectOn(vec3 rhs) {
 	if (this->mag() != 0) return this->dot(rhs) / rhs.mag();
 	else return 0;
 }
 
-inline Vector3 Vector3::
-midpoint(Vector3 rhs){
-	return Vector3((x+rhs.x)/2.f, (y+rhs.y)/2.f, (z+rhs.z)/2.f);
+inline vec3 vec3::
+midpoint(vec3 rhs){
+	return vec3((x+rhs.x)/2.f, (y+rhs.y)/2.f, (z+rhs.z)/2.f);
 }
 
-inline Vector3 Vector3::
+inline vec3 vec3::
 xComp() const {
-	return Vector3(x, 0, 0);
+	return vec3(x, 0, 0);
 }
 
-inline Vector3 Vector3::
+inline vec3 vec3::
 yComp() const {
-	return Vector3(0, y, 0);
+	return vec3(0, y, 0);
 }
 
-inline Vector3 Vector3::
+inline vec3 vec3::
 zComp() const {
-	return Vector3(0, 0, z);
+	return vec3(0, 0, z);
 }
 
-inline Vector3 Vector3::
+inline vec3 vec3::
 xInvert() const {
-	return Vector3(-x, y, z);
+	return vec3(-x, y, z);
 }
 
-inline Vector3 Vector3::
+inline vec3 vec3::
 yInvert() const {
-	return Vector3(x, -y, z);
+	return vec3(x, -y, z);
 }
 
-inline Vector3 Vector3::
+inline vec3 vec3::
 zInvert() const {
-	return Vector3(x, y, -z);
+	return vec3(x, y, -z);
 }
 
-inline const std::string Vector3::
+inline const std::string vec3::
 str() const {
 	return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + "," + std::to_string(this->z) + ")";
 }
 
-inline const std::string Vector3::
+inline const std::string vec3::
 str2f() const {
 	char buffer[50];
 	std::snprintf(buffer, 50, "(%+.2f, %+.2f, %+.2f)", this->x, this->y, this->z);
@@ -337,8 +337,8 @@ str2f() const {
 
 //ref: glm::hash
 namespace std{
-	template<> struct hash<Vector3>{
-		inline size_t operator()(Vector3 const& v) const{
+	template<> struct hash<vec3>{
+		inline size_t operator()(vec3 const& v) const{
 			size_t seed = 0;
 			hash<float> hasher; size_t hash;
 			hash = hasher(v.x); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
@@ -349,4 +349,4 @@ namespace std{
 	};
 };
 
-#endif //DESHI_VECTOR3_INL
+#endif //DESHI_vec3_INL

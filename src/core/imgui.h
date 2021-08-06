@@ -9,7 +9,7 @@
 #define Max(a, b) (((a) > (b)) ? (a) : (b))
 #define Min(a, b) (((a) < (b)) ? (a) : (b))
 
-#include "../math/Vector.h"
+#include "../math/vec.h"
 #include "../utils/Color.h"
 
 namespace DeshiImGui{
@@ -26,7 +26,7 @@ namespace ImGui{
 		return ImVec4((float)color.r / 255.0f, (float)color.g / 255.0f, (float)color.b / 255.0f, color.a / 255.0f);
 	}
 	
-	static ImVec2 Vector2ToImVec2(Vector2 v){
+	static ImVec2 vec2ToImVec2(vec2 v){
 		return ImVec2(v.x, v.y);
 	}
 	
@@ -40,7 +40,7 @@ namespace ImGui{
         if(ImGui::Button("Copy")){ ImGui::LogToClipboard(); ImGui::LogText(text); ImGui::LogFinish(); }
     }
     
-    static bool InputVector2(const char* id, Vector2* vecPtr, bool inputUpdate = false) {
+    static bool Inputvec2(const char* id, vec2* vecPtr, bool inputUpdate = false) {
         ImGui::SetNextItemWidth(-FLT_MIN);
         if(inputUpdate) {
             return ImGui::InputFloat2(id, (float*)vecPtr); 
@@ -49,7 +49,7 @@ namespace ImGui{
         }
     }
     
-    static bool InputVector3(const char* id, Vector3* vecPtr, bool inputUpdate = false) {
+    static bool Inputvec3(const char* id, vec3* vecPtr, bool inputUpdate = false) {
         ImGui::SetNextItemWidth(-FLT_MIN);
         if(inputUpdate) {
             return ImGui::InputFloat3(id, (float*)vecPtr); 
@@ -58,7 +58,7 @@ namespace ImGui{
         }
     }
     
-    static bool InputVector4(const char* id, Vector4* vecPtr, bool inputUpdate = false) {
+    static bool Inputvec4(const char* id, vec4* vecPtr, bool inputUpdate = false) {
         ImGui::SetNextItemWidth(-FLT_MIN);
         if(inputUpdate) {
             return ImGui::InputFloat4(id, (float*)vecPtr);

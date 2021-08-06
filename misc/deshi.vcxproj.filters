@@ -121,9 +121,6 @@
     <ClInclude Include="..\src\math\Quaternion.h">
       <Filter>src\math</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\math\Vector.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\math\VectorMatrix.h">
       <Filter>src\math</Filter>
     </ClInclude>
@@ -131,9 +128,6 @@
       <Filter>src\math</Filter>
     </ClInclude>
     <ClInclude Include="..\src\math\Math.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\math\Matrix.h">
       <Filter>src\math</Filter>
     </ClInclude>
     <ClInclude Include="..\src\game\Transform.h">
@@ -193,9 +187,6 @@
     <ClInclude Include="..\src\utils\utils.h">
       <Filter>src\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\math\MatrixN.h">
-      <Filter>src\math</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\utils\font.h">
       <Filter>src\utils</Filter>
     </ClInclude>
@@ -222,6 +213,18 @@
     </ClInclude>
     <ClInclude Include="..\src\core\storage.h">
       <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\core\camera.h">
+      <Filter>src\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\matN.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\vec.h">
+      <Filter>src\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\math\mat.h">
+      <Filter>src\math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -314,21 +317,6 @@
     <None Include="build.bat">
       <Filter>docs</Filter>
     </None>
-    <None Include="..\src\math\Vector2.inl">
-      <Filter>src\math</Filter>
-    </None>
-    <None Include="..\src\math\Vector3.inl">
-      <Filter>src\math</Filter>
-    </None>
-    <None Include="..\src\math\Vector4.inl">
-      <Filter>src\math</Filter>
-    </None>
-    <None Include="..\src\math\Matrix3.inl">
-      <Filter>src\math</Filter>
-    </None>
-    <None Include="..\src\math\Matrix4.inl">
-      <Filter>src\math</Filter>
-    </None>
     <None Include="..\cfg\render.cfg">
       <Filter>cfg</Filter>
     </None>
@@ -418,6 +406,21 @@
     </None>
     <None Include="TODOP.py">
       <Filter>misc</Filter>
+    </None>
+    <None Include="..\src\math\vec3.inl">
+      <Filter>src\math</Filter>
+    </None>
+    <None Include="..\src\math\vec4.inl">
+      <Filter>src\math</Filter>
+    </None>
+    <None Include="..\src\math\vec2.inl">
+      <Filter>src\math</Filter>
+    </None>
+    <None Include="..\src\math\mat3.inl">
+      <Filter>src\math</Filter>
+    </None>
+    <None Include="..\src\math\mat4.inl">
+      <Filter>src\math</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -537,6 +540,9 @@
     </ClCompile>
     <ClCompile Include="..\src\core\renderers\opengl.cpp">
       <Filter>src\core\renderers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\core\camera.cpp">
+      <Filter>src\core</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

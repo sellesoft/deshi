@@ -39,7 +39,7 @@ void RedoSelect(EditAction* edit){
 //0x00  Transform* | transform
 //0x08  vec3       | old position
 //0x14  vec3       | new position
-void UndoManager::AddUndoTranslate(Transform* t, Vector3* oldPos, Vector3* newPos){
+void UndoManager::AddUndoTranslate(Transform* t, vec3* oldPos, vec3* newPos){
 	Assert(sizeof(u32)*2 == sizeof(void*), "assume ptr is 8 bytes");
 	EditAction edit; edit.type = EditActionType_Translate;
 	memcpy(edit.data + 0, &t,     sizeof(u32)*2);
@@ -61,7 +61,7 @@ void RedoTranslate(EditAction* edit){
 //0x00  Transform* | transform
 //0x08  vec3       | old rotation
 //0x14  vec3       | new rotation
-void UndoManager::AddUndoRotate(Transform* t, Vector3* oldRot, Vector3* newRot){
+void UndoManager::AddUndoRotate(Transform* t, vec3* oldRot, vec3* newRot){
 	Assert(sizeof(u32)*2 == sizeof(void*), "assume ptr is 8 bytes");
 	EditAction edit; edit.type = EditActionType_Rotate;
 	memcpy(edit.data + 0, &t,     sizeof(u32)*2);
@@ -83,7 +83,7 @@ void RedoRotate(EditAction* edit){
 //0x00  Transform* | transform
 //0x08  vec3       | old scale
 //0x14  vec3       | new scale
-void UndoManager::AddUndoScale(Transform* t, Vector3* oldScale, Vector3* newScale){
+void UndoManager::AddUndoScale(Transform* t, vec3* oldScale, vec3* newScale){
 	Assert(sizeof(u32)*2 == sizeof(void*), "assume ptr is 8 bytes");
 	EditAction edit; edit.type = EditActionType_Scale;
 	memcpy(edit.data + 0, &t,       sizeof(u32)*2);

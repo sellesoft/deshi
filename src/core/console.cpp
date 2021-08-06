@@ -624,18 +624,18 @@ CMDSTARTA(state, args.size() > 0){
 }CMDEND("state <new_state:String>{play|menu|debug|editor}");
 
 CMDSTARTA(load_obj, args.size() > 0){
-	Vector3 pos{}, rot{}, scale = Vector3::ONE;
+	vec3 pos{}, rot{}, scale = vec3::ONE;
 	f32 mass = 1.f, elasticity = .5f; bool staticPosition = 1, twoDphys = false;
 	ColliderShape ctype = ColliderShape_NONE;
 	Event event = 0;
 	//check for optional params after the first arg
 	for (auto s = args.begin() + 1; s != args.end(); ++s){
 		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
-			pos = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+			pos = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		} else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
-			rot = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+			rot = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		} else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
-			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+			scale = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		} else if(std::regex_search(s->c_str(), m, StringRegex("collider"))){
 			if     (m[1] == "aabb")      ctype = ColliderShape_AABB;
 			else if(m[1] == "sphere")    ctype = ColliderShape_Sphere;
@@ -680,7 +680,7 @@ CMDSTARTA(load_obj, args.size() > 0){
 		case ColliderShape_AABB:      col = new AABBCollider(model->mesh, 1, 0U, event); break;
 		case ColliderShape_Sphere:    col = new SphereCollider(1, 1, 0U, event); break;
 		case ColliderShape_Landscape: col = new LandscapeCollider(model->mesh, 0U, event); break;
-		case ColliderShape_Box:       col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
+		case ColliderShape_Box:       col = new BoxCollider(vec3(1, 1, 1), 1, 0U, event); break;
 		case ColliderShape_Complex:   col = new ComplexCollider(model->mesh, 0, event); break;
 	}
 	
@@ -697,9 +697,9 @@ CMDSTARTA(cam_vars, args.size() != 0){
 	Camera* c = DengAdmin->mainCamera;
 	for (auto s = args.begin(); s != args.end(); ++s){
 		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
-			c->position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+			c->position = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
-			c->rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+			c->rotation = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}else if(std::regex_search(s->c_str(), m, FloatRegex("nearZ"))){
 			c->nearZ = std::stof(m[1]);
 		}else if(std::regex_search(s->c_str(), m, FloatRegex("farZ"))){
@@ -717,7 +717,7 @@ CMDSTARTA(cam_vars, args.size() != 0){
 
 CMDSTARTA(add_player, args.size() > 0){
 	std::cmatch m;
-	Vector3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
+	vec3 position{}, rotation{}, scale = { 1.f, 1.f, 1.f };
 	float mass = 1.f;
 	float elasticity = 0;
 	bool staticc = true;
@@ -726,13 +726,13 @@ CMDSTARTA(add_player, args.size() > 0){
 	//check for optional params after the first arg
 	for (auto s = args.begin() + 1; s != args.end(); ++s){
 		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
-			position = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+			position = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}
 		else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
-			rotation = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+			rotation = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}
 		else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
-			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+			scale = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}
 		else if(std::regex_search(s->c_str(), m, StringRegex("collider"))){
 			if(m[1] == "aabb") ctype = ColliderShape_AABB;
@@ -765,15 +765,15 @@ CMDSTARTA(add_player, args.size() > 0){
 	//collider
 	Collider* col = nullptr;
 	switch(ctype){
-		case ColliderShape_AABB: col = new AABBCollider(Vector3(0.5, 1, 0.5), 2); break;
+		case ColliderShape_AABB: col = new AABBCollider(vec3(0.5, 1, 0.5), 2); break;
 		case ColliderShape_Sphere: col = new SphereCollider(1, 1); break;
 		case ColliderShape_Landscape: col = new LandscapeCollider(model->mesh); break;
-		case ColliderShape_Box: col = new BoxCollider(Vector3(1, 1, 1), 1); break;
+		case ColliderShape_Box: col = new BoxCollider(vec3(1, 1, 1), 1); break;
 	}
 	
 	ModelInstance* mc = new ModelInstance(model);
-	Physics* p = new Physics(position, rotation, Vector3::ZERO, Vector3::ZERO,
-							 Vector3::ZERO, Vector3::ZERO, elasticity, mass, staticc);
+	Physics* p = new Physics(position, rotation, vec3::ZERO, vec3::ZERO,
+							 vec3::ZERO, vec3::ZERO, elasticity, mass, staticc);
 	AudioSource* s = new AudioSource("data/sounds/Kick.wav", p);
 	Movement* mov = new Movement(p);
 	mov->camera = DengAdmin->mainCamera;
@@ -790,7 +790,7 @@ CMDSTARTA(add_force, args.size() > 0){
 	for (std::string s : args){
 		if(std::regex_search(s.c_str(), m, Vec3Regex("force"))){
 			if(Physics* p = DengAdmin->editor.selected[0]->GetComponent<Physics>()){
-				p->AddForce(nullptr, Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3])));
+				p->AddForce(nullptr, vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3])));
 				return "";
 			}else{
 				ERROR("Selectesd object doesn't have a physics component");
@@ -813,8 +813,8 @@ CMDFUNC(cam_matrix_view){
 }
 
 CMDFUNC(cam_reset){
-	DengAdmin->mainCamera->position = Vector3(4.f, 3.f, -4.f);
-	DengAdmin->mainCamera->rotation = Vector3(28.f, -45.f, 0.f);
+	DengAdmin->mainCamera->position = vec3(4.f, 3.f, -4.f);
+	DengAdmin->mainCamera->rotation = vec3(28.f, -45.f, 0.f);
 	return "reset camera";
 }
 
@@ -1057,18 +1057,18 @@ CMDFUNC(quit){
 }
 
 CMDSTARTA(add_trigger, args.size() > 0){
-	Vector3 pos{}, rot{}, scale = vec3::ONE;
+	vec3 pos{}, rot{}, scale = vec3::ONE;
 	ColliderShape shape = ColliderShape_NONE;
 	Event event = 0;
 	for (auto s = args.begin(); s != args.end(); ++s){
 		if(std::regex_search(s->c_str(), m, Vec3Regex("pos"))){
-			pos = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+			pos = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}
 		else if(std::regex_search(s->c_str(), m, Vec3Regex("rot"))){
-			rot = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+			rot = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}
 		else if(std::regex_search(s->c_str(), m, Vec3Regex("scale"))){
-			scale = Vector3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
+			scale = vec3(std::stof(m[1]), std::stof(m[2]), std::stof(m[3]));
 		}
 		else if(std::regex_search(s->c_str(), m, StringRegex("shape"))){
 			if     (m[1] == "aabb")      shape = ColliderShape_AABB;
@@ -1092,9 +1092,9 @@ CMDSTARTA(add_trigger, args.size() > 0){
 	
 	Collider* col = nullptr;
 	switch(shape){
-		case ColliderShape_AABB:   col = new AABBCollider(Vector3::ONE / 2, 1, 0U, event); break;
+		case ColliderShape_AABB:   col = new AABBCollider(vec3::ONE / 2, 1, 0U, event); break;
 		case ColliderShape_Sphere: col = new SphereCollider(1, 1, 0U, event); break;
-		case ColliderShape_Box:    col = new BoxCollider(Vector3(1, 1, 1), 1, 0U, event); break;
+		case ColliderShape_Box:    col = new BoxCollider(vec3(1, 1, 1), 1, 0U, event); break;
 	}
 	
 	Trigger* te = new Trigger(Transform(pos, rot, scale), col);

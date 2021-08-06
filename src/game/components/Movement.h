@@ -3,7 +3,7 @@
 #define COMPONENT_MOVEMENT_H
 
 #include "Component.h"
-#include "../../math/Vector.h"
+#include "../../math/vec.h"
 
 enum MoveState : u32{
 	InAirNoInput, // this isn't necessary i dont think
@@ -19,7 +19,7 @@ struct Physics;
 struct Camera;
 
 struct Movement : public Component {
-	Vector3 inputs;
+	vec3 inputs;
 	Physics* phys;
 	
 	Camera* camera;

@@ -150,8 +150,8 @@ auto get_vec3(std::string& str) {
         f32 z = std::stof(str.substr(off), &sz);
         return vec3(x, y, z);
     }catch (...) {
-        ERROR("Failed to parse vector3: (", str, ")");
-        return Vector3::ZERO;
+        ERROR("Failed to parse vec3: (", str, ")");
+        return vec3::ZERO;
     }
 }
 
@@ -272,11 +272,11 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath, std::vector<pair<u3
                 if(kv.first == "shape" && !coll_made){ 
                     if(kv.second == ColliderShapeStrings[ColliderShape_AABB] 
 					   || kv.second == std::to_string((int)ColliderShape_AABB)){
-                        aabb = new AABBCollider(Vector3::ZERO, 1.f);
+                        aabb = new AABBCollider(vec3::ZERO, 1.f);
                         coll_made = true;
                     }else if(kv.second == ColliderShapeStrings[ColliderShape_Box] 
 							 || kv.second == std::to_string((int)ColliderShape_Box)){
-                        box = new BoxCollider(Vector3::ZERO, 1.f);
+                        box = new BoxCollider(vec3::ZERO, 1.f);
                         coll_made = true;
                     }else if(kv.second == ColliderShapeStrings[ColliderShape_Sphere] 
 							 || kv.second == std::to_string((int)ColliderShape_Sphere)){

@@ -448,7 +448,7 @@ PrintVk(u32 level, Args... args){
 
 PFN_vkCmdBeginDebugUtilsLabelEXT func_vkCmdBeginDebugUtilsLabelEXT;
 local inline void 
-DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, Vector4 color){
+DebugBeginLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 color){
 #ifdef DESHI_INTERNAL
 	VkDebugUtilsLabelEXT label{VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
 	label.pLabelName = label_name;
@@ -470,7 +470,7 @@ DebugEndLabelVk(VkCommandBuffer command_buffer){
 
 PFN_vkCmdInsertDebugUtilsLabelEXT func_vkCmdInsertDebugUtilsLabelEXT;
 local inline void 
-DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, Vector4 color){
+DebugInsertLabelVk(VkCommandBuffer command_buffer, const char* label_name, vec4 color){
 #ifdef DESHI_INTERNAL
 	VkDebugUtilsLabelEXT label{VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
 	label.pLabelName = label_name;
@@ -1508,7 +1508,7 @@ UpdateUniformBuffers(){
 	{//update offscreen vertex shader ubo
 		//calculate light ViewProjection for shadow map based on first light
 		uboVSoffscreen.values.lightVP = 
-			Math::LookAtMatrix(vkLights[0].ToVector3(), Vector3::ZERO).Inverse() * 
+			Math::LookAtMatrix(vkLights[0].toVec3(), vec3::ZERO).Inverse() * 
 			Math::PerspectiveProjectionMatrix(settings.shadowResolution, settings.shadowResolution, 90.0f, settings.shadowNearZ, settings.shadowFarZ);
 		
 		void* data;
@@ -2932,14 +2932,14 @@ BuildCommands(){
 				VkDeviceSize offsets[1] = {0};
 				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &tempVertexBuffer.buffer, offsets);
 				vkCmdBindIndexBuffer(cmdBuffer, tempIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
-				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &Matrix4::IDENTITY);
+				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &mat4::IDENTITY);
 				vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.base, 0, nullptr);
 				vkCmdDrawIndexed(cmdBuffer, tempWireframeIndexCount, 1, 0, 0, 0);
 				stats.drawnIndices += tempWireframeIndexCount;
 				
 				//filled
 				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.selected);
-				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &Matrix4::IDENTITY);
+				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &mat4::IDENTITY);
 				vkCmdDrawIndexed(cmdBuffer, tempFilledIndexCount, 1, tempWireframeIndexCount, tempWireframeVertexCount, 0);
 				stats.drawnIndices += tempFilledIndexCount;
 				
@@ -3678,7 +3678,7 @@ UnloadMesh(Mesh* mesh){
 //      2. most commands will be remade every frame the exact same with just the matrix differing
 //      3. this relies on scene mesh indexes matching renderer mesh indexes
 void Render:: 
-DrawModel(Model* model, Matrix4 matrix){
+DrawModel(Model* model, mat4 matrix){
 	Assert(modelCmdCount + model->batches.size() < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
 	ModelCmdVk*  cmd      = modelCmdArray + modelCmdCount;
 	VkDeviceSize ibOffset = vkMeshes[model->mesh->idx].ibOffset;
@@ -3698,12 +3698,12 @@ DrawModel(Model* model, Matrix4 matrix){
 }
 
 void Render::
-DrawModelWireframe(Model* mesh, Matrix4 matrix, Color& color){
+DrawModelWireframe(Model* mesh, mat4 matrix, Color& color){
 	//!Incomplete
 }
 
 void Render::
-DrawLine(Vector3 start, Vector3 end, Color& color){
+DrawLine(vec3 start, vec3 end, Color& color){
 	if(color.a == 0) return;
 	
 	u32 col = Color::PackColorU32(color);
@@ -3721,7 +3721,7 @@ DrawLine(Vector3 start, Vector3 end, Color& color){
 }
 
 void Render::
-DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color& color){
+DrawTriangle(vec3 p0, vec3 p1, vec3 p2, Color& color){
 	if(color.a == 0) return;
 	
 	u32 col = Color::PackColorU32(color);
@@ -3740,7 +3740,7 @@ DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color& color){
 }
 
 void Render::
-DrawTriangleFilled(Vector3 p0, Vector3 p1, Vector3 p2, Color& color){
+DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, Color& color){
 	if(color.a == 0) return;
 	
 	u32 col = Color::PackColorU32(color);
@@ -3759,7 +3759,7 @@ DrawTriangleFilled(Vector3 p0, Vector3 p1, Vector3 p2, Color& color){
 }
 
 void Render::
-DrawQuad(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, Color& color){
+DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, Color& color){
 	if(color.a == 0) return;
 	DrawLine(p0, p1, color);
 	DrawLine(p1, p2, color);
@@ -3768,14 +3768,14 @@ DrawQuad(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, Color& color){
 }
 
 inline void Render::
-DrawQuadFilled(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, Color& color){
+DrawQuadFilled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, Color& color){
 	if(color.a == 0) return;
 	DrawTriangleFilled(p0, p1, p2, color);
 	DrawTriangleFilled(p0, p2, p3, color);
 }
 
 void Render::
-DrawPoly(array<Vector3>& points, Color& color){
+DrawPoly(array<vec3>& points, Color& color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
 	for(int i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
@@ -3783,7 +3783,7 @@ DrawPoly(array<Vector3>& points, Color& color){
 }
 
 void Render::
-DrawPolyFilled(array<Vector3>& points, Color& color){
+DrawPolyFilled(array<vec3>& points, Color& color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
 	for(int i=2; i<points.count-1; ++i) DrawTriangleFilled(points[i-2], points[i-1], points[i], color);
@@ -3791,7 +3791,7 @@ DrawPolyFilled(array<Vector3>& points, Color& color){
 }
 
 void Render::
-DrawBox(Matrix4 transform, Color& color){
+DrawBox(mat4 transform, Color& color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -3807,7 +3807,7 @@ DrawBox(Matrix4 transform, Color& color){
 }
 
 void Render::
-DrawBoxFilled(Matrix4 transform, Color& color){
+DrawBoxFilled(mat4 transform, Color& color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -3825,7 +3825,7 @@ DrawBoxFilled(Matrix4 transform, Color& color){
 }
 
 void Render::
-DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color& color){
+DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color& color){
 	if(color.a == 0) return;
 	
 	f32 y = tanf(RADIANS(fovx / 2.0f));
@@ -3876,17 +3876,17 @@ DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 ne
 //// @camera ////
 /////////////////
 void Render::
-UpdateCameraPosition(Vector3 position){
+UpdateCameraPosition(vec3 position){
 	uboVS.values.viewPos = vec4(position, 1.f);
 }
 
 void Render::
-UpdateCameraViewMatrix(Matrix4 m){
+UpdateCameraViewMatrix(mat4 m){
 	uboVS.values.view = m;
 }
 
 void Render::
-UpdateCameraProjectionMatrix(Matrix4 m){
+UpdateCameraProjectionMatrix(mat4 m){
 	uboVS.values.proj = m;
 }
 
@@ -3977,7 +3977,7 @@ ReloadAllShaders(){
 //// @fixme ////
 ////////////////
 void Render::
-UpdateLight(u32 lightIdx, Vector4 vec){
+UpdateLight(u32 lightIdx, vec4 vec){
 	vkLights[lightIdx] = vec;
 }
 
@@ -4101,7 +4101,7 @@ Update(){
 	}
 	
 	//render stuff
-	if(settings.lightFrustrums) DrawFrustrum(vkLights[0].ToVector3(), Vector3::ZERO, 1, 90, settings.shadowNearZ, settings.shadowFarZ);
+	if(settings.lightFrustrums) DrawFrustrum(vkLights[0].toVec3(), vec3::ZERO, 1, 90, settings.shadowNearZ, settings.shadowFarZ);
 	ImGui::Render();
 	UpdateUniformBuffers();
 	SetupCommands();

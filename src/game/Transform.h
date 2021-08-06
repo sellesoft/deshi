@@ -5,22 +5,22 @@
 #include "../math/VectorMatrix.h"
 
 struct Transform {
-	Vector3 position;
-	Vector3 rotation;
-	Vector3 scale;
+	vec3 position;
+	vec3 rotation;
+	vec3 scale;
 	
-	Vector3 prevPosition;
-	Vector3 prevRotation;
+	vec3 prevPosition;
+	vec3 prevRotation;
 	
 	Transform(){
-		position = Vector3::ZERO;
-		rotation = Vector3::ZERO;
-		scale    = Vector3::ONE;
-		prevPosition = Vector3::ZERO;
-		prevRotation = Vector3::ZERO;
+		position = vec3::ZERO;
+		rotation = vec3::ZERO;
+		scale    = vec3::ONE;
+		prevPosition = vec3::ZERO;
+		prevRotation = vec3::ZERO;
 	}
 	
-	Transform(Vector3 _position, Vector3 _rotation, Vector3 _scale){
+	Transform(vec3 _position, vec3 _rotation, vec3 _scale){
 		position = _position;
 		rotation = _rotation;
 		scale    = _scale;
@@ -28,20 +28,20 @@ struct Transform {
 		prevRotation = rotation;
 	}
 	
-	inline Vector3 Up(){
-		return Vector3::UP * Matrix4::RotationMatrix(rotation);
+	inline vec3 Up(){
+		return vec3::UP * mat4::RotationMatrix(rotation);
 	}
 	
-	inline Vector3 Right(){
-		return Vector3::RIGHT * Matrix4::RotationMatrix(rotation);
+	inline vec3 Right(){
+		return vec3::RIGHT * mat4::RotationMatrix(rotation);
 	}
 	
-	inline Vector3 Forward(){
-		return Vector3::FORWARD * Matrix4::RotationMatrix(rotation);
+	inline vec3 Forward(){
+		return vec3::FORWARD * mat4::RotationMatrix(rotation);
 	}
 	
-	inline Matrix4 TransformMatrix(){
-		return Matrix4::TransformationMatrix(position, rotation, scale);
+	inline mat4 TransformMatrix(){
+		return mat4::TransformationMatrix(position, rotation, scale);
 	}
 };
 

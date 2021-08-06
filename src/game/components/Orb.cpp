@@ -27,7 +27,7 @@ OrbManager::OrbManager(Model* m, int _orbcount){
 void OrbManager::Init(){
 	//create the orbs and their mesh components
 	for (int i = 0; i < orbcount; i++) {
-		Orb* orb = new Orb(Vector3(10, 10, 10), Vector3::ONE * 0.1 * i, Vector3::ZERO, Vector3::ZERO);
+		Orb* orb = new Orb(vec3(10, 10, 10), vec3::ONE * 0.1 * i, vec3::ZERO, vec3::ZERO);
 		
 		ModelInstance* mc = new ModelInstance(model);
 		orb->mc = mc;
@@ -47,11 +47,11 @@ void OrbManager::Update() {
 	persist float timer = 0;
 	persist float lerptime = 2;
 	
-	std::vector<Vector2> vs{
-		Vector2(0, 0),
-		Vector2(0.30211, 0.32297),
-		Vector2(0.56835, 0.73619),
-		Vector2(1, 1)
+	std::vector<vec2> vs{
+		vec2(0, 0),
+		vec2(0.30211, 0.32297),
+		vec2(0.56835, 0.73619),
+		vec2(1, 1)
 	};
 	
 	if (lerping) {
@@ -69,11 +69,11 @@ void OrbManager::Update() {
 		Orb* o = orbs[i];
 		
 		if (DengInput->KeyPressed(Key::T)) {
-			o->ito = Vector3(10 * sin(i + cos(t->totalTime)), 10 * cos(i + cos(i + sin(t->totalTime))), 0);
+			o->ito = vec3(10 * sin(i + cos(t->totalTime)), 10 * cos(i + cos(i + sin(t->totalTime))), 0);
 		}
 		
 		if (DengInput->KeyPressed(Key::Y)) {
-			o->ito = Vector3(360 * sin(i + cos(t->totalTime)), 360 * cos(i + cos(i + sin(t->totalTime))),  360 * -cos(i + cos(i - sin(t->totalTime))));
+			o->ito = vec3(360 * sin(i + cos(t->totalTime)), 360 * cos(i + cos(i + sin(t->totalTime))),  360 * -cos(i + cos(i - sin(t->totalTime))));
 			lerping = true;
 			o->rotbflerp = o->rot;
 			o->posbflerp = o->pos;
@@ -92,27 +92,27 @@ void OrbManager::Update() {
 			//o->pos += o->vel * t->deltaTime;
 			
 			
-			//o->ito = Vector3(10 * sin(i + cos(t->totalTime)), 10 * cos(i + cos(i + sin(t->totalTime))), 0);
+			//o->ito = vec3(10 * sin(i + cos(t->totalTime)), 10 * cos(i + cos(i + sin(t->totalTime))), 0);
 			//lerping = true;
 			//o->posbflerp = o->pos;
 			
-			o->pos = o->origpos * Matrix4::RotationMatrixAroundPoint(Vector3::ZERO, o->rot);
+			o->pos = o->origpos * mat4::RotationMatrixAroundPoint(vec3::ZERO, o->rot);
 			//o->pos.x += sinf((1 / ti) * t->totalTime / 200 + cosf(t->totalTime / 200));
 			//o->pos.z += cosf((1 / ti) * t->totalTime / 200 + sinf(t->totalTime / 200));
 		}
 		else {
-			o->pos = o->origpos * Matrix4::RotationMatrixAroundPoint(Vector3::ZERO, Math::lerpv(o->rotbflerp, Vector3::ZERO, timer/lerptime));
+			o->pos = o->origpos * mat4::RotationMatrixAroundPoint(vec3::ZERO, Math::lerpv(o->rotbflerp, vec3::ZERO, timer/lerptime));
 			//o->pos = Math::lerpv(o->posbflerp, o->ito, Math::PolynomialCurveInterpolation(vs, timer / lerptime));
 			
 			
-			o->rot = Vector3::ZERO;
+			o->rot = vec3::ZERO;
 			
 			
 		}
 		
 		//o->pos.x += 10 * sin(t->totalTime + i);
-		//o->mc->UpdateMeshTransform(o->pos, Vector3(180 * sin(sin(i) * t->totalTime), 180 * cos(cos(i) * t->totalTime), 0), Vector3::ONE);
-		//o->mc->UpdateMeshTransform(o->pos, Vector3::ZERO, Vector3::ONE);
+		//o->mc->UpdateMeshTransform(o->pos, vec3(180 * sin(sin(i) * t->totalTime), 180 * cos(cos(i) * t->totalTime), 0), vec3::ONE);
+		//o->mc->UpdateMeshTransform(o->pos, vec3::ZERO, vec3::ONE);
 		
 		//ti += 0.00001;
 	}

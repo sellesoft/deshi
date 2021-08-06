@@ -49,7 +49,7 @@ local inline void AddBindings(Admin* admin) {
 local inline void CameraMovement(Admin* admin, MovementMode mode) {
 	Camera* camera = admin->mainCamera;
 	float deltaTime = DengTime->deltaTime;
-	Vector3 inputs;
+	vec3 inputs;
 	
 	//most likely temporary
 	if (DengInput->KeyPressed(Key::A | InputMod_Lctrl)) moveOverride = !moveOverride;
@@ -72,17 +72,17 @@ local inline void CameraMovement(Admin* admin, MovementMode mode) {
 inline void PlayerMovement(Admin* admin, MovementMode mode, Movement* playermove) {
 	Camera* camera = admin->mainCamera;
 	float deltaTime = DengTime->deltaTime;
-	Vector3 inputs;
+	vec3 inputs;
 	
 	//TEMP CROSSHAIR
 	ImGui::DebugDrawCircle(DengWindow->dimensions / 2, 2.5, Color::DARK_GREY);
 	
 	
 	if (mode == MOVEMENT_MODE_WALKING) {
-		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingForward))  { inputs += Vector3(camera->forward.x, 0, camera->forward.z); }
-		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingBackward)) { inputs -= Vector3(camera->forward.x, 0, camera->forward.z); }
-		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingRight))    { inputs += Vector3(camera->right.x, 0, camera->right.z); }
-		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingLeft))     { inputs -= Vector3(camera->right.x, 0, camera->right.z); }
+		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingForward))  { inputs += vec3(camera->forward.x, 0, camera->forward.z); }
+		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingBackward)) { inputs -= vec3(camera->forward.x, 0, camera->forward.z); }
+		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingRight))    { inputs += vec3(camera->right.x, 0, camera->right.z); }
+		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingLeft))     { inputs -= vec3(camera->right.x, 0, camera->right.z); }
 		if (DengInput->KeyPressedAnyMod(DengKeys.movementJump)
 			&& !playermove->inAir)                                      { playermove->jump = true; }
 		

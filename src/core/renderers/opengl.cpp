@@ -179,12 +179,12 @@ UnloadMesh(Mesh* mesh){
 //// @draw ////
 ///////////////
 void Render::
-DrawModel(Model* mesh, Matrix4 matrix){
+DrawModel(Model* mesh, mat4 matrix){
 	//!Incomplete
 }
 
 void Render::
-DrawLine(Vector3 start, Vector3 end, Color color){
+DrawLine(vec3 start, vec3 end, Color color){
 	if(color.a == 0) return;
 	
 	vec3 col((f32)color.r / 255.0f, (f32)color.g / 255.0f, (f32)color.b / 255.0f);
@@ -202,7 +202,7 @@ DrawLine(Vector3 start, Vector3 end, Color color){
 }
 
 void Render::
-DrawBox(Matrix4 transform, Color color){
+DrawBox(mat4 transform, Color color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -235,7 +235,7 @@ DrawBox(Matrix4 transform, Color color){
 }
 
 void Render::
-DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color){
+DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color color){
 	if(color.a == 0) return;
 	
 	f32 y = tanf(RADIANS(fovx / 2.0f));
@@ -286,17 +286,17 @@ DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 ne
 //// @camera ////
 /////////////////
 void Render::
-UpdateCameraPosition(Vector3 position){
+UpdateCameraPosition(vec3 position){
 	//!Incomplete
 }
 
 void Render::
-UpdateCameraViewMatrix(Matrix4 m){
+UpdateCameraViewMatrix(mat4 m){
 	//!Incomplete
 }
 
 void Render::
-UpdateCameraProjectionMatrix(Matrix4 m){
+UpdateCameraProjectionMatrix(mat4 m){
 	//!Incomplete
 }
 
@@ -317,7 +317,7 @@ ReloadAllShaders(){
 //// @fixme ////
 ////////////////
 void Render::
-UpdateLight(u32 lightIdx, Vector4 vec){
+UpdateLight(u32 lightIdx, vec4 vec){
 	lights[lightIdx] = vec;
 }
 

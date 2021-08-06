@@ -3,8 +3,8 @@
 #define COMPONENT_CAMERA_H
 
 #include "Component.h"
-#include "../../math/Vector.h"
-#include "../../math/Matrix.h"
+#include "../../math/vec.h"
+#include "../../math/mat.h"
 
 enum CameraModeBits{
 	CameraMode_Perspective, 
@@ -20,8 +20,8 @@ enum OrthoViews {
 };
 
 struct Camera : public Component {
-	Vector3 position{4.f, 3.f, -4.f};
-	Vector3 rotation{28.f, -45.f, 0.f};
+	vec3 position{4.f, 3.f, -4.f};
+	vec3 rotation{28.f, -45.f, 0.f};
 	float nearZ; //the distance from the camera's position to screen plane
 	float farZ; //the maximum render distance
 	float fov; //horizontal field of view
@@ -29,11 +29,11 @@ struct Camera : public Component {
 	CameraMode mode = CameraMode_Perspective;
 	OrthoViews orthoview = FRONT; //TODO(sushi, Cl) combine this with type using bit masking if this is how i decide to keep doing ortho views
 	
-	Vector3 forward;
-	Vector3 right;
-	Vector3 up;
-	Matrix4 viewMat;
-	Matrix4 projMat;
+	vec3 forward;
+	vec3 right;
+	vec3 up;
+	mat4 viewMat;
+	mat4 projMat;
 	
 	Camera();
 	Camera(float fov, float nearZ = .01f, float farZ = 1000.01f, bool freeCam = true);
@@ -41,8 +41,8 @@ struct Camera : public Component {
 	void Update() override;
 	
 	//horizontal fov in degrees
-	Matrix4 MakePerspectiveProjection();
-	Matrix4 MakeOrthographicProjection();
+	mat4 MakePerspectiveProjection();
+	mat4 MakeOrthographicProjection();
 	void UseOrthographicProjection();
 	
 	void UpdateProjectionMatrix();

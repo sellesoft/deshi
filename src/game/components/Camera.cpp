@@ -21,8 +21,8 @@ Camera::Camera(float fov, float nearZ, float farZ, bool freeCam){
 	this->fov = fov;
 	this->freeCamera = freeCam;
 	
-	forward = (Vector3::FORWARD * Matrix4::RotationMatrix(rotation)).normalized();
-	right   = Vector3::UP.cross(forward).normalized();
+	forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
+	right   = vec3::UP.cross(forward).normalized();
 	up      = right.cross(forward).normalized();
 	viewMat = Math::LookAtMatrix(position, position + forward).Inverse();
 	UpdateProjectionMatrix();
@@ -40,8 +40,8 @@ void Camera::Update() {
 		if(rotation.y > 1440.f || rotation.y < -1440.f){ rotation.y = 0.f; }
 		
 		//update direction vectors
-		forward = (Vector3::FORWARD * Matrix4::RotationMatrix(rotation)).normalized();
-		right = Vector3::UP.cross(forward).normalized();
+		forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
+		right = vec3::UP.cross(forward).normalized();
 		up = right.cross(forward).normalized();
 		
 		viewMat = Math::LookAtMatrix(position, position + forward).Inverse();
@@ -51,12 +51,12 @@ void Camera::Update() {
 			float fw = ImGui::GetFontSize() / 2;
 			
 			switch (orthoview) {
-				case FRONT:    position = Vector3(0, 0, -999); rotation = Vector3(0, 0, 0);     ImGui::DebugDrawText("FRONT (+Z)",  Vector2(DengWindow->width - fw * 1.3 * sizeof("FRONT (+Z)"), DengWindow->height - 50));  break;
-				case BACK:     position = Vector3(0, 0, 999);  rotation = Vector3(0, 180, 0);   ImGui::DebugDrawText("BACK (-Z)",   Vector2(DengWindow->width - fw * 1.3 * sizeof("BACK (-Z)"), DengWindow->height - 50));   break;
-				case RIGHT:    position = Vector3(999, 0, 0);  rotation = Vector3(0, -90, 0);   ImGui::DebugDrawText("RIGHT (+X)",  Vector2(DengWindow->width - fw * 1.3 * sizeof("RIGHT (+X)"), DengWindow->height - 50));  break;
-				case LEFT:     position = Vector3(-999, 0, 0); rotation = Vector3(0, 90, 0);    ImGui::DebugDrawText("LEFT (-X)",   Vector2(DengWindow->width - fw * 1.3 * sizeof("LEFT (-X)"), DengWindow->height - 50));   break;
-				case TOPDOWN:  position = Vector3(0, 999, 0);  rotation = Vector3(89.9, 0, 0);  ImGui::DebugDrawText("TOP (-Y)",    Vector2(DengWindow->width - fw * 1.3 * sizeof("TOP (-Y)"), DengWindow->height - 50));    break;
-				case BOTTOMUP: position = Vector3(0, -999, 0); rotation = Vector3(-89.9, 0, 0); ImGui::DebugDrawText("BOTTOM (+Y)", Vector2(DengWindow->width - fw * 1.3 * sizeof("BOTTOM (+Y)"), DengWindow->height - 50)); break;
+				case FRONT:    position = vec3(0, 0, -999); rotation = vec3(0, 0, 0);     ImGui::DebugDrawText("FRONT (+Z)",  vec2(DengWindow->width - fw * 1.3 * sizeof("FRONT (+Z)"), DengWindow->height - 50));  break;
+				case BACK:     position = vec3(0, 0, 999);  rotation = vec3(0, 180, 0);   ImGui::DebugDrawText("BACK (-Z)",   vec2(DengWindow->width - fw * 1.3 * sizeof("BACK (-Z)"), DengWindow->height - 50));   break;
+				case RIGHT:    position = vec3(999, 0, 0);  rotation = vec3(0, -90, 0);   ImGui::DebugDrawText("RIGHT (+X)",  vec2(DengWindow->width - fw * 1.3 * sizeof("RIGHT (+X)"), DengWindow->height - 50));  break;
+				case LEFT:     position = vec3(-999, 0, 0); rotation = vec3(0, 90, 0);    ImGui::DebugDrawText("LEFT (-X)",   vec2(DengWindow->width - fw * 1.3 * sizeof("LEFT (-X)"), DengWindow->height - 50));   break;
+				case TOPDOWN:  position = vec3(0, 999, 0);  rotation = vec3(89.9, 0, 0);  ImGui::DebugDrawText("TOP (-Y)",    vec2(DengWindow->width - fw * 1.3 * sizeof("TOP (-Y)"), DengWindow->height - 50));    break;
+				case BOTTOMUP: position = vec3(0, -999, 0); rotation = vec3(-89.9, 0, 0); ImGui::DebugDrawText("BOTTOM (+Y)", vec2(DengWindow->width - fw * 1.3 * sizeof("BOTTOM (+Y)"), DengWindow->height - 50)); break;
 			}
 			UpdateProjectionMatrix();
 		}
@@ -77,22 +77,22 @@ void Camera::Update() {
 void Camera::UseOrthographicProjection() {
 }
 
-Matrix4 Camera::MakePerspectiveProjection(){
+mat4 Camera::MakePerspectiveProjection(){
 	float renderDistance = farZ - nearZ;
 	float aspectRatio = f32(DengWindow->height) / f32(DengWindow->width);
 	float fovRad = 1.f / tanf(RADIANS(fov * .5f));
-	return Matrix4( //NOTE setting (1,1) to negative flips the y-axis
+	return mat4( //NOTE setting (1,1) to negative flips the y-axis
 				   aspectRatio * fovRad, 0,	   0,							  0,
 				   0,					-fovRad, 0,							  0,
 				   0,					0,	   farZ / renderDistance,		  1,
 				   0,					0,	   -(farZ*nearZ) / renderDistance, 0);
 }
 
-Matrix4 Camera::MakeOrthographicProjection() {
+mat4 Camera::MakeOrthographicProjection() {
 	//convert bounding box to camera space
 	persist float zoom = 10;
-	Vector3 maxcam = Math::WorldToCamera3(Vector3( zoom, zoom, zoom),  DengAdmin->mainCamera->viewMat);
-	Vector3 mincam = Math::WorldToCamera3(Vector3(-zoom,-zoom,-zoom), DengAdmin->mainCamera->viewMat); 
+	vec3 maxcam = Math::WorldToCamera3(vec3( zoom, zoom, zoom),  DengAdmin->mainCamera->viewMat);
+	vec3 mincam = Math::WorldToCamera3(vec3(-zoom,-zoom,-zoom), DengAdmin->mainCamera->viewMat); 
 	
 	//make screen box from camera space bounding box
 	float maxx = std::max(fabs(mincam.x), fabs(maxcam.x));
@@ -107,7 +107,7 @@ Matrix4 Camera::MakeOrthographicProjection() {
 	persist float oloffsety = 0;
 	persist float offsetx = 0;
 	persist float offsety = 0;
-	persist Vector2 initmouse;
+	persist vec2 initmouse;
 	persist bool initoffset = false;
 	
 	PRINTLN(zoom);
@@ -143,7 +143,7 @@ Matrix4 Camera::MakeOrthographicProjection() {
 	float f = DengAdmin->mainCamera->farZ;
 	float n = DengAdmin->mainCamera->nearZ;
 	
-	return Matrix4(2/(r-l),      0,            0,            0,
+	return mat4(2/(r-l),      0,            0,            0,
 				   0,            2/(b-t),      0,            0,
 				   0,            0,            -2/(f-n),     0,
 				   -(r+l)/(r-l), -(t+b)/(b-t), -(f+n)/(n-f), 1);

@@ -128,7 +128,7 @@ Math TODOs
 ----------
 add functions and members similar to what glsl/glm has where you can do stuff like 
 ____v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
-____you probably just need to add a Vector2/3 for each permutation of each vector
+____you probably just need to add a vec2/3 for each permutation of each vector
 ____glm/detail/_swizzle.hpp
 cleanup math library (remove redundant/old things, make functions more consistent, etc.)
 add quaternions and converions between them and other linear algebra primitives

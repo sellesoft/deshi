@@ -12,7 +12,7 @@ ModelInstance::ModelInstance(){
 	model     = Storage::CopyModel(Storage::NullModel()).second;
 	mesh      = model->mesh;
 	armature  = model->armature;
-	transform = Matrix4::IDENTITY;
+	transform = mat4::IDENTITY;
 	visible   = true;
 	override  = false;
 }
@@ -23,7 +23,7 @@ ModelInstance::ModelInstance(Model* _model){
 	model     = Storage::CopyModel(_model).second;
 	mesh      = model->mesh;
 	armature  = model->armature;
-	transform = Matrix4::IDENTITY;
+	transform = mat4::IDENTITY;
 	visible   = true;
 	override  = false;
 }
@@ -34,7 +34,7 @@ ModelInstance::ModelInstance(Mesh* _mesh){
 	model     = Storage::CreateModelFromMesh(_mesh).second;
 	mesh      = model->mesh;
 	armature  = model->armature;
-	transform = Matrix4::IDENTITY;
+	transform = mat4::IDENTITY;
 	visible   = true;
 	override  = false;
 }

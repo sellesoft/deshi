@@ -150,6 +150,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\src\core\assets.h" />
+    <ClInclude Include="..\src\core\camera.h" />
     <ClInclude Include="..\src\core\console.h" />
     <ClInclude Include="..\src\core\console2.h" />
     <ClInclude Include="..\src\core\imgui.h" />
@@ -203,11 +204,11 @@
     <ClInclude Include="..\src\geometry\Edge.h" />
     <ClInclude Include="..\src\geometry\Geometry.h" />
     <ClInclude Include="..\src\math\InertiaTensors.h" />
+    <ClInclude Include="..\src\math\mat.h" />
     <ClInclude Include="..\src\math\Math.h" />
-    <ClInclude Include="..\src\math\Matrix.h" />
-    <ClInclude Include="..\src\math\MatrixN.h" />
+    <ClInclude Include="..\src\math\matN.h" />
     <ClInclude Include="..\src\math\Quaternion.h" />
-    <ClInclude Include="..\src\math\Vector.h" />
+    <ClInclude Include="..\src\math\vec.h" />
     <ClInclude Include="..\src\math\VectorMatrix.h" />
     <ClInclude Include="..\src\utils\array.h" />
     <ClInclude Include="..\src\utils\Color.h" />
@@ -256,11 +257,11 @@
     <None Include="..\data\shaders\wireframe.frag" />
     <None Include="..\data\shaders\wireframe.vert" />
     <None Include="..\README.md" />
-    <None Include="..\src\math\Matrix3.inl" />
-    <None Include="..\src\math\Matrix4.inl" />
-    <None Include="..\src\math\Vector2.inl" />
-    <None Include="..\src\math\Vector3.inl" />
-    <None Include="..\src\math\Vector4.inl" />
+    <None Include="..\src\math\mat3.inl" />
+    <None Include="..\src\math\mat4.inl" />
+    <None Include="..\src\math\vec2.inl" />
+    <None Include="..\src\math\vec3.inl" />
+    <None Include="..\src\math\vec4.inl" />
     <None Include="build.bat" />
     <None Include="TODOP.py" />
   </ItemGroup>
@@ -269,6 +270,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\src\core\camera.cpp" />
     <ClCompile Include="..\src\core\console.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugWindowsVulkan|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseWindowsVulkan|x64'">true</ExcludedFromBuild>

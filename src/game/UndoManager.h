@@ -6,7 +6,7 @@
 #include <deque>
 
 struct Transform;
-struct Vector3;
+struct vec3;
 
 enum EditActionTypeBits{
 	EditActionType_NONE, 
@@ -36,9 +36,9 @@ struct UndoManager{
 	void Reset();
 	
 	void AddUndoSelect(void** sel, void* oldEnt, void* newEnt);
-	void AddUndoTranslate(Transform* t, Vector3* oldPos, Vector3* newPos);
-	void AddUndoRotate(Transform* t, Vector3* oldPos, Vector3* newPos);
-	void AddUndoScale(Transform* t, Vector3* oldPos, Vector3* newPos);
+	void AddUndoTranslate(Transform* t, vec3* oldPos, vec3* newPos);
+	void AddUndoRotate(Transform* t, vec3* oldPos, vec3* newPos);
+	void AddUndoScale(Transform* t, vec3* oldPos, vec3* newPos);
 	void AddUndoCreate();
 	void AddUndoDelete();
 	

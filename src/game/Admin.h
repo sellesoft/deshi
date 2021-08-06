@@ -101,7 +101,7 @@ struct Admin {
 	void AddComponentToLayers(Component* component);
 	
 	//// @query functions ////
-	Entity* EntityRaycast(Vector3 origin, Vector3 direction, f32 maxDistance);
+	Entity* EntityRaycast(vec3 origin, vec3 direction, f32 maxDistance);
 };
 
 
