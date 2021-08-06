@@ -60,6 +60,7 @@ namespace Storage{
 	//// @material ////
 	///////////////////
 	pair<u32,Material*> CreateMaterial(const char* name, Shader shader = Shader_PBR, MaterialFlags flags = MaterialFlags_NONE, array<u32> textures = {});
+	pair<u32,Material*> CreateMaterialFromFile(const char* name, bool warnMissing = true);
 	void                DeleteMaterial(Material* material);
 	
 	inline Material*    NullMaterial(){ return DeshStorage->materials.data[0]; };
@@ -75,7 +76,7 @@ namespace Storage{
 	////////////////
 	//// @model ////
 	////////////////
-	pair<u32,Model*> CreateModelFromOBJ(const char* filename, ModelFlags flags = ModelFlags_NONE, bool forceLoadOBJ = false);
+	pair<u32,Model*> CreateModelFromFile(const char* filename, ModelFlags flags = ModelFlags_NONE, bool forceLoadOBJ = false);
 	pair<u32,Model*> CreateModelFromMesh(Mesh* mesh, ModelFlags flags = ModelFlags_NONE);
 	pair<u32,Model*> CopyModel(Model* base);
 	void             DeleteModel(Model* model);

@@ -15,7 +15,7 @@
 #define MAX_MOUSE_BUTTONS 7
 
 namespace Key {
-	enum KeyBits{
+	enum Key_{
 		Key_NONE,
 		A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
 		K0, K1, K2, K3, K4, K5, K6, K7, K8, K9,
@@ -47,7 +47,7 @@ global_ const char* KeyStrings[] = {
 };
 
 namespace MouseButton{
-	enum MouseButtonBits{
+	enum MouseButton_{
 		LEFT  = Key::MBLEFT, RIGHT = Key::MBRIGHT, MIDDLE = Key::MBMIDDLE, 
 		FOUR  = Key::MBFOUR, FIVE  = Key::MBFIVE, 
 		SIX   = Key::MBSIX,  SEVEN = Key::MBSEVEN, 
@@ -57,7 +57,7 @@ namespace MouseButton{
 }
 
 //NOTE the first 8bits of a keymod are reserved for the Key enum
-enum InputModBits{
+enum InputMod_{
 	InputMod_NONE   = 0,
 	InputMod_Any    = 1 << 8,
 	InputMod_Lctrl  = 1 << 9,

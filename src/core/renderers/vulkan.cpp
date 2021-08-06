@@ -23,10 +23,10 @@ http://gameangst.com/?p=9
 
 struct MeshVk{
 	Mesh* base;
-	VkDeviceSize vbOffset;
-	VkDeviceSize vbSize;
-	VkDeviceSize ibOffset;
-	VkDeviceSize ibSize;
+	u32 vtxOffset;
+	u32 vtxCount;
+	u32 idxOffset;
+	u32 idxCount;
 };
 
 struct TextureVk {
@@ -61,6 +61,7 @@ struct Vertex2{
 };
 
 struct ModelCmdVk{
+	u32   vertexOffset;
 	u32   indexOffset;
 	u32   indexCount;
 	u32   material;
@@ -113,7 +114,7 @@ struct FramebufferAttachmentsVk{
 struct BufferVk{
 	VkBuffer               buffer;
 	VkDeviceMemory         memory;
-	VkDeviceSize           size;
+	VkDeviceSize           size; //size of data, not allocation
 	VkDescriptorBufferInfo descriptor;
 };
 
@@ -170,33 +171,33 @@ local RenderStats   stats{};
 local RendererStage rendererStage = RENDERERSTAGE_NONE;
 
 //arbitray limits, change if needed
-#define MAX_UI_VERTICES 0xFFFF 
+#define MAX_UI_VERTICES 0xFFFF //max u16: 65535
 #define MAX_UI_INDICES  3*MAX_UI_VERTICES
 #define MAX_UI_CMDS     1000
-typedef u16 UI_Index;
-local UI_Index uiVertexCount = 0;
-local UI_Index uiIndexCount  = 0;
-local UI_Index uiCmdCount    = 1; //start with 1
-local Vertex2  uiVertexArray[MAX_UI_VERTICES];
-local UI_Index uiIndexArray [MAX_UI_INDICES];
-local UICmdVk  uiCmdArray   [MAX_UI_CMDS]; //different UI cmd per font/texture
+typedef u16 UIIndexVk;
+local UIIndexVk uiVertexCount = 0;
+local UIIndexVk uiIndexCount  = 0;
+local UIIndexVk uiCmdCount    = 1; //start with 1
+local Vertex2   uiVertexArray[MAX_UI_VERTICES];
+local UIIndexVk uiIndexArray [MAX_UI_INDICES];
+local UICmdVk   uiCmdArray   [MAX_UI_CMDS]; //different UI cmd per font/texture
 
-#define MAX_TEMP_VERTICES 0xFFFF
+#define MAX_TEMP_VERTICES 0xFFFF //max u16: 65535
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
-typedef u16 Temp_Index;
-local Temp_Index tempWireframeVertexCount = 0;
-local Temp_Index tempFilledVertexCount    = 0;
-local Temp_Index tempWireframeIndexCount  = 0;
-local Temp_Index tempFilledIndexCount     = 0;
+typedef u16 TempIndexVk;
+local TempIndexVk  tempWireframeVertexCount = 0;
+local TempIndexVk  tempFilledVertexCount    = 0;
+local TempIndexVk  tempWireframeIndexCount  = 0;
+local TempIndexVk  tempFilledIndexCount     = 0;
 local Mesh::Vertex tempWireframeVertexArray[MAX_TEMP_VERTICES];
 local Mesh::Vertex tempFilledVertexArray   [MAX_TEMP_VERTICES];
-local Temp_Index   tempWireframeIndexArray [MAX_TEMP_INDICES];
-local Temp_Index   tempFilledIndexArray    [MAX_TEMP_INDICES];
+local TempIndexVk  tempWireframeIndexArray [MAX_TEMP_INDICES];
+local TempIndexVk  tempFilledIndexArray    [MAX_TEMP_INDICES];
 
 #define MAX_MODEL_CMDS 10000 
-typedef u16 Model_Index;
-local Model_Index modelCmdCount = 0;
-local ModelCmdVk  modelCmdArray[MAX_MODEL_CMDS];
+typedef u16 ModelIndexVk;
+local ModelIndexVk modelCmdCount = 0;
+local ModelCmdVk   modelCmdArray[MAX_MODEL_CMDS];
 
 
 //-------------------------------------------------------------------------------------------------
@@ -738,14 +739,13 @@ GenerateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight
 
 //creates a buffer of defined usage and size on the device
 local void 
-CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize& bufferSize, size_t newSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
-	//delete old buffer
-	if(buffer != VK_NULL_HANDLE) vkDestroyBuffer(device, buffer, allocator); 
-	if(bufferMemory != VK_NULL_HANDLE) vkFreeMemory(device, bufferMemory, allocator); 
+CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& buffer_memory, VkDeviceSize& buffer_size, size_t new_size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
+	VkBuffer old_buffer = buffer; buffer = VK_NULL_HANDLE;
+	VkDeviceMemory old_buffer_memory = buffer_memory; buffer_memory = VK_NULL_HANDLE;
 	
-	VkDeviceSize alignedBufferSize = (((newSize - 1) / bufferMemoryAlignment) + 1) * bufferMemoryAlignment;
+	VkDeviceSize aligned_buffer_size = RoundUpTo(new_size, bufferMemoryAlignment);
 	VkBufferCreateInfo bufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-	bufferInfo.size        = alignedBufferSize;
+	bufferInfo.size        = aligned_buffer_size;
 	bufferInfo.usage       = usage;
 	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	AssertVk(vkCreateBuffer(device, &bufferInfo, allocator, &buffer));
@@ -753,40 +753,39 @@ CreateOrResizeBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSiz
 	VkMemoryRequirements req;
 	vkGetBufferMemoryRequirements(device, buffer, &req);
 	bufferMemoryAlignment = (bufferMemoryAlignment > req.alignment) ? bufferMemoryAlignment : req.alignment;
-	
 	VkMemoryAllocateInfo allocInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
 	allocInfo.allocationSize  = req.size;
 	allocInfo.memoryTypeIndex = FindMemoryType(req.memoryTypeBits, properties);
+	AssertVk(vkAllocateMemory(device, &allocInfo, allocator, &buffer_memory));
+	AssertVk(vkBindBufferMemory(device, buffer, buffer_memory, 0));
 	
-	AssertVk(vkAllocateMemory(device, &allocInfo, allocator, &bufferMemory));
-	AssertVk(vkBindBufferMemory(device, buffer, bufferMemory, 0));
-	bufferSize = newSize;
+	if(buffer_size){
+		void* old_buffer_data; void* new_buffer_data;
+		AssertVk(vkMapMemory(device, old_buffer_memory, 0, buffer_size, 0, &old_buffer_data));
+		AssertVk(vkMapMemory(device, buffer_memory,     0, new_size,    0, &new_buffer_data));
+		
+		memcpy(new_buffer_data, old_buffer_data, buffer_size);
+		
+		VkMappedMemoryRange range{VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
+		range.memory = buffer_memory;
+		range.offset = 0;
+		range.size   = VK_WHOLE_SIZE;
+		AssertVk(vkFlushMappedMemoryRanges(device, 1, &range));
+		
+		vkUnmapMemory(device, old_buffer_memory);
+		vkUnmapMemory(device, buffer_memory);
+	}
+	
+	//delete old buffer
+	if(old_buffer        != VK_NULL_HANDLE) vkDestroyBuffer(device, old_buffer, allocator); 
+	if(old_buffer_memory != VK_NULL_HANDLE) vkFreeMemory(device, old_buffer_memory, allocator); 
+	
+	buffer_size = new_size;
 }
 
 local void 
-CreateOrResizeBuffer(BufferVk* buffer, size_t newSize, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
-	//delete old buffer
-	if(buffer->buffer != VK_NULL_HANDLE) vkDestroyBuffer(device, buffer->buffer, allocator); 
-	if(buffer->memory != VK_NULL_HANDLE) vkFreeMemory(device, buffer->memory, allocator); 
-	
-	VkDeviceSize alignedBufferSize = (((newSize - 1) / bufferMemoryAlignment) + 1) * bufferMemoryAlignment;
-	VkBufferCreateInfo bufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-	bufferInfo.size        = alignedBufferSize;
-	bufferInfo.usage       = usage;
-	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	AssertVk(vkCreateBuffer(device, &bufferInfo, allocator, &buffer->buffer));
-	
-	VkMemoryRequirements req;
-	vkGetBufferMemoryRequirements(device, buffer->buffer, &req);
-	bufferMemoryAlignment = (bufferMemoryAlignment > req.alignment) ? bufferMemoryAlignment : req.alignment;
-	
-	VkMemoryAllocateInfo allocInfo{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
-	allocInfo.allocationSize  = req.size;
-	allocInfo.memoryTypeIndex = FindMemoryType(req.memoryTypeBits, properties);
-	
-	AssertVk(vkAllocateMemory(device, &allocInfo, allocator, &buffer->memory));
-	AssertVk(vkBindBufferMemory(device, buffer->buffer, buffer->memory, 0));
-	buffer->size = newSize;
+CreateOrResizeBuffer(BufferVk* buffer, size_t new_size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
+	CreateOrResizeBuffer(buffer->buffer, buffer->memory, buffer->size, new_size, usage, properties);
 }
 
 //creates a buffer and maps provided data to it
@@ -2675,9 +2674,9 @@ local void
 SetupCommands(){
 	//create UI vertex and index buffers
 	size_t ui_vb_size = uiVertexCount * sizeof(Vertex2);
-	size_t ui_ib_size = uiIndexCount  * sizeof(UI_Index);
+	size_t ui_ib_size = uiIndexCount  * sizeof(UIIndexVk);
 	if(uiVertexBuffer.size == 0) ui_vb_size = 1000*sizeof(Vertex2);
-	if(uiIndexBuffer.size == 0)  ui_ib_size = 3000*sizeof(UI_Index);
+	if(uiIndexBuffer.size == 0)  ui_ib_size = 3000*sizeof(UIIndexVk);
 	if(ui_vb_size && ui_ib_size){
 		//create/resize buffers if they are too small
 		if(uiVertexBuffer.buffer == VK_NULL_HANDLE || uiVertexBuffer.size < ui_vb_size){
@@ -2717,12 +2716,12 @@ SetupCommands(){
 	//create temp mesh vertex and index buffers
 	size_t temp_wire_vb_size = tempWireframeVertexCount*sizeof(Mesh::Vertex);
 	size_t temp_fill_vb_size = tempFilledVertexCount*sizeof(Mesh::Vertex);
-	size_t temp_wire_ib_size = tempWireframeIndexCount*sizeof(Temp_Index);
-	size_t temp_fill_ib_size = tempFilledIndexCount*sizeof(Temp_Index);
+	size_t temp_wire_ib_size = tempWireframeIndexCount*sizeof(TempIndexVk);
+	size_t temp_fill_ib_size = tempFilledIndexCount*sizeof(TempIndexVk);
 	size_t temp_vb_size = temp_wire_vb_size+temp_fill_vb_size;
 	size_t temp_ib_size = temp_wire_ib_size+temp_fill_ib_size;
 	if(tempVertexBuffer.size == 0) temp_vb_size = 1000*sizeof(Mesh::Vertex);
-	if(tempIndexBuffer.size == 0)  temp_ib_size = 3000*sizeof(Temp_Index);
+	if(tempIndexBuffer.size == 0)  temp_ib_size = 3000*sizeof(TempIndexVk);
 	if(temp_vb_size && temp_ib_size){
 		//create/resize buffers if they are too small
 		if(tempVertexBuffer.buffer == VK_NULL_HANDLE || tempVertexBuffer.size < temp_vb_size){
@@ -2844,7 +2843,7 @@ BuildCommands(){
 				MaterialVk& mat = vkMaterials[cmd.material];
 				DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &cmd.matrix);
-				vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
+				vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, cmd.vertexOffset, 0);
 				stats.drawnIndices += cmd.indexCount;
 			}
 			DebugEndLabelVk(cmdBuffer);
@@ -2901,28 +2900,33 @@ BuildCommands(){
 					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mat.pipeline);
 					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 1, 1, &mat.descriptorSet, 0, nullptr);
 				}
-				vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
+				vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, cmd.vertexOffset, 0);
 				stats.drawnIndices += cmd.indexCount;
 				
 				//wireframe overlay
 				if(settings.meshWireframes){
 					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.wireframe);
-					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
+					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, cmd.vertexOffset, 0);
 					stats.drawnIndices += cmd.indexCount;
-				}
-				//mesh normals overlay
-				if(enabledFeatures.geometryShader && settings.meshNormals){
-					vkCmdPushConstants(cmdBuffer, pipelineLayouts.geometry, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &cmd.matrix);
-					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.normals_debug);
-					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.geometry, 0, 1, &descriptorSets.geometry, 0, nullptr);
-					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, 0, 0);
-					stats.drawnIndices += cmd.indexCount;
-					
-					//rebind this b/c it was overwritten above
-					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.base, 0, nullptr);
 				}
 			}
 			DebugEndLabelVk(cmdBuffer);
+			
+			//draw mesh normals overlay
+			if(enabledFeatures.geometryShader && settings.meshNormals){
+				DebugBeginLabelVk(cmdBuffer, "Debug Normals", draw_group_color);
+				forI(modelCmdCount){
+					ModelCmdVk& cmd = modelCmdArray[i];
+					MaterialVk& mat = vkMaterials[cmd.material];
+					DebugInsertLabelVk(cmdBuffer, cmd.name, draw_cmd_color);
+					vkCmdPushConstants(cmdBuffer, pipelineLayouts.geometry, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT, 0, sizeof(mat4), &cmd.matrix);
+					vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.normals_debug);
+					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.geometry, 0, 1, &descriptorSets.geometry, 0, nullptr);
+					vkCmdDrawIndexed(cmdBuffer, cmd.indexCount, 1, cmd.indexOffset, cmd.vertexOffset, 0);
+					stats.drawnIndices += cmd.indexCount;
+				}
+				DebugEndLabelVk(cmdBuffer);
+			}
 			
 			//draw temporary stuff
 			if(tempWireframeVertexCount > 0 && tempWireframeIndexCount > 0){
@@ -2966,7 +2970,7 @@ BuildCommands(){
 					scissor.offset.x = uiCmdArray[cmd_idx].scissorOffset.x;
 					scissor.offset.y = uiCmdArray[cmd_idx].scissorOffset.y;
 					vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
-
+					
 					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &vkFonts[uiCmdArray[cmd_idx].texIdx].descriptorSet, 0, nullptr);
 					vkCmdDrawIndexed(cmdBuffer, uiCmdArray[cmd_idx].indexCount, 1, uiCmdArray[cmd_idx].indexOffset, 0, 0);
 				}
@@ -2976,7 +2980,7 @@ BuildCommands(){
 				scissor.offset.y = 0;
 				scissor.extent.width = width;
 				scissor.extent.height = height;
-
+				
 				DebugEndLabelVk(cmdBuffer);
 			}
 			
@@ -3113,7 +3117,7 @@ FillRectUI(f32 x, f32 y, f32 w, f32 h, Color color){
 	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2*  vp = uiVertexArray + uiVertexCount;
-	UI_Index* ip = uiIndexArray  + uiIndexCount;
+	UIIndexVk* ip = uiIndexArray  + uiIndexCount;
 	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
@@ -3141,7 +3145,7 @@ FillRectUI(vec2 pos, vec2 dimensions, Color color) {
 	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2*  vp = uiVertexArray + uiVertexCount;
-	UI_Index* ip = uiIndexArray + uiIndexCount;
+	UIIndexVk* ip = uiIndexArray + uiIndexCount;
 	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
@@ -3169,7 +3173,7 @@ DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
 	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2*  vp = uiVertexArray + uiVertexCount;
-	UI_Index* ip = uiIndexArray + uiIndexCount;
+	UIIndexVk* ip = uiIndexArray + uiIndexCount;
 	
 	vec2 ott = vec2(x2, y2) - vec2(x1, y1) ;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
@@ -3205,7 +3209,7 @@ DrawLineUI(vec2 start, vec2 end, float thickness, Color color) {
 	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2*  vp = uiVertexArray + uiVertexCount;
-	UI_Index* ip = uiIndexArray + uiIndexCount;
+	UIIndexVk* ip = uiIndexArray + uiIndexCount;
 	
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
@@ -3243,7 +3247,7 @@ DrawTextUI(string text, vec2 pos, Color color) {
 void Render::
 DrawTextUI(string text, vec2 pos, vec2 scissorOffset, vec2 scissorExtent, Color color) {
 	if (color.a == 0) return;
-
+	
 	f32 w = vkFonts[1].characterWidth;
 	for (int i = 0; i < text.size; i++) {
 		DrawCharUI((u32)text[i], pos, vec2::ONE, color, scissorOffset, scissorExtent);
@@ -3259,7 +3263,7 @@ vec2 prevScissorExtent = vec2(-1, -1);
 void Render::
 DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color, vec2 scissorOffset, vec2 scissorExtent) {
 	if (color.a == 0) return;
-
+	
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 
 		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
 		scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
@@ -3271,7 +3275,7 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color, vec2 scissorOffset,
 	
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2*  vp = uiVertexArray + uiVertexCount;
-	UI_Index* ip = uiIndexArray  + uiIndexCount;
+	UIIndexVk* ip = uiIndexArray  + uiIndexCount;
 	
 	f32 w = vkFonts[1].characterWidth;
 	f32 h = vkFonts[1].characterHeight;
@@ -3288,8 +3292,8 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color, vec2 scissorOffset,
 	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,botoff}; vp[2].color = col;
 	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,botoff}; vp[3].color = col;
 	
-
-
+	
+	
 	uiVertexCount += 4;
 	uiIndexCount  += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -3346,41 +3350,50 @@ void Render::
 LoadMesh(Mesh* mesh){
 	AssertRS(RSVK_LOGICALDEVICE, "LoadMesh called before CreateLogicalDevice");
 	MeshVk mvk{};
-	mvk.base     = mesh;
-	mvk.vbOffset = meshVertexBuffer.size;
-	mvk.vbSize   = mesh->vertexCount*sizeof(Mesh::Vertex);
-	mvk.ibOffset = meshIndexBuffer.size;
-	mvk.ibSize   = mesh->indexCount*sizeof(Mesh::Index);
+	mvk.base = mesh;
+	mvk.vtxCount = mesh->vertexCount;
+	mvk.idxCount = mesh->indexCount;
+	if(vkMeshes.count){
+		mvk.vtxOffset = vkMeshes.last->vtxOffset + vkMeshes.last->vtxCount;
+		mvk.idxOffset = vkMeshes.last->idxOffset + vkMeshes.last->idxCount;
+	}else{
+		mvk.vtxOffset = 0;
+		mvk.idxOffset = 0;
+	}
 	
-	u64 vb_size = mvk.vbOffset + mvk.vbSize;
-	u64 ib_size = mvk.ibOffset + mvk.ibSize;
+	u64 mesh_vb_size   = mesh->vertexCount*sizeof(Mesh::Vertex);
+	u64 mesh_ib_size   = mesh->indexCount*sizeof(Mesh::Index);
+	u64 mesh_vb_offset = meshVertexBuffer.size;
+	u64 mesh_ib_offset = meshIndexBuffer.size;
+	u64 total_vb_size  = meshVertexBuffer.size + mesh_vb_size;
+	u64 total_ib_size  = meshIndexBuffer.size  + mesh_ib_size;
 	
 	//create/resize buffers
-	if(meshVertexBuffer.buffer == VK_NULL_HANDLE || meshVertexBuffer.size < vb_size){
-		CreateOrResizeBuffer(&meshVertexBuffer, vb_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	if(meshVertexBuffer.buffer == VK_NULL_HANDLE || meshVertexBuffer.size < total_vb_size){
+		CreateOrResizeBuffer(&meshVertexBuffer, total_vb_size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)meshVertexBuffer.buffer, "Mesh vertex buffer");
 	}
-	if(meshIndexBuffer.buffer == VK_NULL_HANDLE || meshIndexBuffer.size < ib_size){
-		CreateOrResizeBuffer(&meshIndexBuffer, ib_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	if(meshIndexBuffer.buffer == VK_NULL_HANDLE || meshIndexBuffer.size < total_ib_size){
+		CreateOrResizeBuffer(&meshIndexBuffer, total_ib_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)meshIndexBuffer.buffer, "Mesh index buffer");
 	}
 	
 	//copy memory to the GPU
 	void* vb_data; void* ib_data;
-	AssertVk(vkMapMemory(device, meshVertexBuffer.memory, mvk.vbOffset, mvk.vbSize, 0, &vb_data));
-	AssertVk(vkMapMemory(device, meshIndexBuffer.memory,  mvk.ibOffset, mvk.ibSize, 0, &ib_data));
+	AssertVk(vkMapMemory(device, meshVertexBuffer.memory, mesh_vb_offset, mesh_vb_size, 0, &vb_data));
+	AssertVk(vkMapMemory(device, meshIndexBuffer.memory,  mesh_ib_offset, mesh_ib_size, 0, &ib_data));
 	{
-		memcpy(vb_data, mesh->vertexArray, mvk.vbSize);
-		memcpy(ib_data, mesh->indexArray,  mvk.ibSize);
+		memcpy(vb_data, mesh->vertexArray, mesh_vb_size);
+		memcpy(ib_data, mesh->indexArray,  mesh_ib_size);
 		
 		VkMappedMemoryRange range[2] = {};
 		range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		range[0].memory = meshVertexBuffer.memory;
-		range[0].offset = RoundUpTo(mvk.vbOffset, physicalDeviceProperties.limits.nonCoherentAtomSize);
+		range[0].offset = RoundUpTo(mesh_vb_offset, physicalDeviceProperties.limits.nonCoherentAtomSize);
 		range[0].size   = VK_WHOLE_SIZE;
 		range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		range[1].memory = meshIndexBuffer.memory;
-		range[1].offset = RoundUpTo(mvk.ibOffset, physicalDeviceProperties.limits.nonCoherentAtomSize);
+		range[1].offset = RoundUpTo(mesh_ib_offset, physicalDeviceProperties.limits.nonCoherentAtomSize);
 		range[1].size   = VK_WHOLE_SIZE;
 		AssertVk(vkFlushMappedMemoryRanges(device, 2, range));
 	}
@@ -3680,13 +3693,13 @@ UnloadMesh(Mesh* mesh){
 void Render:: 
 DrawModel(Model* model, mat4 matrix){
 	Assert(modelCmdCount + model->batches.size() < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
-	ModelCmdVk*  cmd      = modelCmdArray + modelCmdCount;
-	VkDeviceSize ibOffset = vkMeshes[model->mesh->idx].ibOffset;
+	ModelCmdVk* cmd = modelCmdArray + modelCmdCount;
 	
 	int new_cmd_count = 0;
 	forI(model->batches.size()){
 		if(!model->batches[i].indexCount) continue;
-		cmd[i].indexOffset = ibOffset + model->batches[i].indexOffset;
+		cmd[i].vertexOffset = vkMeshes[model->mesh->idx].vtxOffset;
+		cmd[i].indexOffset = vkMeshes[model->mesh->idx].idxOffset + model->batches[i].indexOffset;
 		cmd[i].indexCount  = model->batches[i].indexCount;
 		cmd[i].material    = model->batches[i].material;
 		cmd[i].name        = model->name;
@@ -3708,7 +3721,7 @@ DrawLine(vec3 start, vec3 end, Color& color){
 	
 	u32 col = Color::PackColorU32(color);
 	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
-	Temp_Index*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
+	TempIndexVk*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
 	ip[0] = tempWireframeVertexCount; 
 	ip[1] = tempWireframeVertexCount+1; 
@@ -3726,7 +3739,7 @@ DrawTriangle(vec3 p0, vec3 p1, vec3 p2, Color& color){
 	
 	u32 col = Color::PackColorU32(color);
 	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
-	Temp_Index*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
+	TempIndexVk*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
 	ip[0] = tempWireframeVertexCount; 
 	ip[1] = tempWireframeVertexCount+1; 
@@ -3745,7 +3758,7 @@ DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, Color& color){
 	
 	u32 col = Color::PackColorU32(color);
 	Mesh::Vertex* vp = tempFilledVertexArray + tempFilledVertexCount;
-	Temp_Index*   ip = tempFilledIndexArray + tempFilledIndexCount;
+	TempIndexVk*   ip = tempFilledIndexArray + tempFilledIndexCount;
 	
 	ip[0] = tempFilledVertexCount; 
 	ip[1] = tempFilledVertexCount+1; 

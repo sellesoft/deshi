@@ -9,7 +9,7 @@
 #include <vector>
 #include <map>
 
-enum ConfigValueTypeBits{
+enum ConfigValueType_{
 	ConfigValueType_NONE = 0, //can be used for comments/padding
 	ConfigValueType_S32,
 	ConfigValueType_Bool,
@@ -41,18 +41,18 @@ typedef std::vector<pair<const char*,ConfigValueType,void*>> ConfigMap;
 
 namespace Assets{
 	
-	inline static std::string dirData()    { return "data/"; }
-	inline static std::string dirConfig()  { return dirData() + "cfg/"; }
-	inline static std::string dirEntities(){ return dirData() + "entities/"; }
-	inline static std::string dirFonts()   { return dirData() + "fonts/"; }
-	inline static std::string dirLevels()  { return dirData() + "levels/"; }
-	inline static std::string dirLogs()    { return dirData() + "logs/"; }
-	inline static std::string dirModels()  { return dirData() + "models/"; }
-	inline static std::string dirSaves()   { return dirData() + "saves/"; }
-	inline static std::string dirShaders() { return dirData() + "shaders/"; }
-	inline static std::string dirSounds()  { return dirData() + "sounds/"; }
-	inline static std::string dirTemp()    { return dirData() + "temp/"; }
-	inline static std::string dirTextures(){ return dirData() + "textures/"; }
+	inline global_ std::string dirData()    { return "data/"; }
+	inline global_ std::string dirConfig()  { return dirData() + "cfg/"; }
+	inline global_ std::string dirEntities(){ return dirData() + "entities/"; }
+	inline global_ std::string dirFonts()   { return dirData() + "fonts/"; }
+	inline global_ std::string dirLevels()  { return dirData() + "levels/"; }
+	inline global_ std::string dirLogs()    { return dirData() + "logs/"; }
+	inline global_ std::string dirModels()  { return dirData() + "models/"; }
+	inline global_ std::string dirSaves()   { return dirData() + "saves/"; }
+	inline global_ std::string dirShaders() { return dirData() + "shaders/"; }
+	inline global_ std::string dirSounds()  { return dirData() + "sounds/"; }
+	inline global_ std::string dirTemp()    { return dirData() + "temp/"; }
+	inline global_ std::string dirTextures(){ return dirData() + "textures/"; }
 	
 	//returns true if the file was deleted
 	bool deleteFile(std::string& filepath, bool logError = true);
@@ -90,10 +90,10 @@ namespace Assets{
 	void writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes = 0, bool logError = true);
 	
 	//truncates and writes a char array to a file in binary
-	void writeFileBinary(const std::string& filepath, const char* data, u32 bytes, bool logError = true);
+	void writeFileBinary(const std::string& filepath, void* data, u32 bytes, bool logError = true);
 	
 	//appends and writes a char array to a file in binary
-	void appendFileBinary(const std::string& filepath, const char* data, u32 bytes, bool logError = true);
+	void appendFileBinary(const std::string& filepath, void* data, u32 bytes, bool logError = true);
 	
 	//iterates directory and returns a list of files in it
 	//probably return something other than a vector of strings but thts how it is for now
