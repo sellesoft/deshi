@@ -61,7 +61,7 @@ struct Console  {
 
 //global_ console pointer
 extern Console* g_console;
-#define DengConsole g_console
+#define DeshConsole g_console
 
 #define LOG(...)     g_console->PushConsole(TOSTDSTRING(__VA_ARGS__))
 #define ERROR(...)   g_console->PushConsole(TOSTDSTRING("[c:error]", __VA_ARGS__, "[c]"))

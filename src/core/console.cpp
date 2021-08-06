@@ -206,7 +206,7 @@ int Console::TextEditCallback(ImGuiInputTextCallbackData* data){
 
 
 int Console::TextEditCallbackStub(ImGuiInputTextCallbackData* data){
-	return DengConsole->TextEditCallback(data);
+	return DeshConsole->TextEditCallback(data);
 }
 
 
@@ -238,7 +238,7 @@ void Console::DrawConsole(){
 	
 	//initialize console window
 	if(!window){
-		SetNextWindowSize(ImVec2(DengWindow->width, DengWindow->height / 1.5));
+		SetNextWindowSize(ImVec2(DeshWindow->width, DeshWindow->height / 1.5));
 		SetNextWindowPos(ImVec2(0, 0));
 	}
 	
@@ -258,10 +258,10 @@ void Console::DrawConsole(){
 	if(sel_com){
 		bool selected = false;
 		bool escape = false;
-		if(DengInput->KeyPressed(Key::DOWN) && match_sel < posis.size() - 1){ match_sel++; }
-		if(DengInput->KeyPressed(Key::UP) && match_sel > 0){ match_sel--; }
-		if(DengInput->KeyPressed(Key::ENTER)){ selected = true; reclaim_focus = true; }
-		if(DengInput->KeyPressed(Key::ESCAPE)){ escape = true; match_sel = 0; reclaim_focus = true; }
+		if(DeshInput->KeyPressed(Key::DOWN) && match_sel < posis.size() - 1){ match_sel++; }
+		if(DeshInput->KeyPressed(Key::UP) && match_sel > 0){ match_sel--; }
+		if(DeshInput->KeyPressed(Key::ENTER)){ selected = true; reclaim_focus = true; }
+		if(DeshInput->KeyPressed(Key::ESCAPE)){ escape = true; match_sel = 0; reclaim_focus = true; }
 		
 		if(escape){ ok_flag = true; }
 		else {
@@ -421,7 +421,7 @@ void Console::FlushBuffer(){
 		output += a.first;
 	}
 	
-	persist std::string filename = Assets::dirLogs() + DengTime->FormatDateTime("deshiLog_{M}-{d}-{y}_{h}.{m}.{s}.txt");
+	persist std::string filename = Assets::dirLogs() + DeshTime->FormatDateTime("deshiLog_{M}-{d}-{y}_{h}.{m}.{s}.txt");
 	persist bool session = false;
 	
 	std::ofstream file;
@@ -430,7 +430,7 @@ void Console::FlushBuffer(){
 	if(!session){
 		
 		file.open(filename);
-		file << DengTime->FormatDateTime("Deshi Console Log {w} {M}/{d}/{y} {h}:{m}:{s}") << std::endl;
+		file << DeshTime->FormatDateTime("Deshi Console Log {w} {M}/{d}/{y} {h}:{m}:{s}") << std::endl;
 		file << "\n" << output;
 		session = true;
 		
@@ -524,7 +524,7 @@ void Console::Update(){
 	if(dispcon && show_alert){
 		show_alert = false; alert_count = 0;
 	}
-	DengTime->consoleTime = TIMER_END(t_d);
+	DeshTime->consoleTime = TIMER_END(t_d);
 }
 
 //Flush the buffer at program close and clean up commands
@@ -564,18 +564,18 @@ void Console::CleanUp(){
 
 
 CMDFUNC(daytime){
-	return DengTime->FormatDateTime("{w} {M}/{d}/{y} {h}:{m}:{s}");
+	return DeshTime->FormatDateTime("{w} {M}/{d}/{y} {h}:{m}:{s}");
 }
 
 CMDFUNC(time_engine){
-	return DengTime->FormatTickTime("Time:   {t}ms Window:{w}ms Input:{i}ms Admin:{a}ms\n"
+	return DeshTime->FormatTickTime("Time:   {t}ms Window:{w}ms Input:{i}ms Admin:{a}ms\n"
 									"Console:{c}ms Render:{r}ms Frame:{f}ms Delta:{d}ms");
 }
 
 
 
 CMDFUNC(flush){
-	DengConsole->FlushBuffer(); return "";
+	DeshConsole->FlushBuffer(); return "";
 }
 
 
@@ -583,7 +583,7 @@ CMDFUNC(flush){
 CMDFUNC(listc){
 	std::string allcommands = "";
 	
-	for (auto& c : DengConsole->commands){
+	for (auto& c : DeshConsole->commands){
 		allcommands += c.first + "\n";
 	}
 	
@@ -591,8 +591,8 @@ CMDFUNC(listc){
 }
 
 CMDSTARTA(help, args.size() != 0 && !(args.size() == 1 && args[0] == "")){
-	if(DengConsole->commands.find(args[0]) != DengConsole->commands.end()){
-		Command* c = DengConsole->commands.at(args[0]);
+	if(DeshConsole->commands.find(args[0]) != DeshConsole->commands.end()){
+		Command* c = DeshConsole->commands.at(args[0]);
 		return TOSTDSTRING(c->name, "\n", c->description);
 	}
 	else {
@@ -610,8 +610,8 @@ CMDFUNC(alias){
 	else if(args.size() == 2){
 		Command* com;
 		try {
-			com = DengConsole->commands.at(args[1]);
-			DengConsole->commands.emplace(args[0], com);
+			com = DeshConsole->commands.at(args[1]);
+			DeshConsole->commands.emplace(args[0], com);
 			
 			std::string data = args[0] + " " + args[1] + "\n";
 			std::vector<char> datav;
@@ -641,13 +641,13 @@ CMDSTARTA(window_display_mode, args.size() == 1){
 		int mode = std::stoi(args[0]);
 		switch(mode){
 			case(0): {
-				DengWindow->UpdateDisplayMode(DisplayMode::WINDOWED);
+				DeshWindow->UpdateDisplayMode(DisplayMode::WINDOWED);
 				return "display_mode=windowed"; }
 			case(1): {
-				DengWindow->UpdateDisplayMode(DisplayMode::BORDERLESS);
+				DeshWindow->UpdateDisplayMode(DisplayMode::BORDERLESS);
 				return "display_mode=borderless windowed"; }
 			case(2): {
-				DengWindow->UpdateDisplayMode(DisplayMode::FULLSCREEN);
+				DeshWindow->UpdateDisplayMode(DisplayMode::FULLSCREEN);
 				return "display_mode=fullscreen"; }
 			default: {
 				return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen"; }
@@ -662,13 +662,13 @@ CMDSTARTA(window_cursor_mode, args.size() == 1){
 		int mode = std::stoi(args[0]);
 		switch(mode){
 			case(0): {
-				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+				DeshWindow->UpdateCursorMode(CursorMode::DEFAULT);
 				return "cursor_mode=default"; }
 			case(1): {
-				DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
+				DeshWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
 				return "cursor_mode=first person"; }
 			case(2): {
-				DengWindow->UpdateCursorMode(CursorMode::HIDDEN);
+				DeshWindow->UpdateCursorMode(CursorMode::HIDDEN);
 				return "cursor_mode=hidden"; }
 			default: { return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden"; }
 		}
@@ -681,8 +681,8 @@ CMDSTARTA(window_raw_input, args.size() == 1){
 	try{
 		int mode = std::stoi(args[0]);
 		switch(mode){
-			case(0): { DengWindow->UpdateRawInput(false); return "raw_input=false"; }
-			case(1): { DengWindow->UpdateRawInput(true); return "raw_input=true"; }
+			case(0): { DeshWindow->UpdateRawInput(false); return "raw_input=false"; }
+			case(1): { DeshWindow->UpdateRawInput(true); return "raw_input=true"; }
 			default: { return "raw_input: 0=false, 1=true"; }
 		}
 	}catch(...){
@@ -694,8 +694,8 @@ CMDSTARTA(window_resizable, args.size() == 1){
 	try{
 		int mode = std::stoi(args[0]);
 		switch(mode){
-			case(0): { DengWindow->UpdateResizable(false); return "window_resizable=false"; }
-			case(1): { DengWindow->UpdateResizable(true); return "window_resizable=true"; }
+			case(0): { DeshWindow->UpdateResizable(false); return "window_resizable=false"; }
+			case(1): { DeshWindow->UpdateResizable(true); return "window_resizable=true"; }
 			default: { return "window_resizable: 0=false, 1=true"; }
 		}
 	}catch(...){
@@ -704,7 +704,7 @@ CMDSTARTA(window_resizable, args.size() == 1){
 }CMDEND("window_resizable <resizable:Boolean>");
 
 CMDFUNC(window_info){
-	return DengWindow->str();
+	return DeshWindow->str();
 }
 
 CMDSTARTA(mat_texture, args.size() == 3){
@@ -788,7 +788,7 @@ CMDFUNC(texture_list){
 }
 
 CMDFUNC(quit){
-	DengWindow->Close();
+	DeshWindow->Close();
 	return("");
 }
 
@@ -857,7 +857,7 @@ void Console::AddCommands(){
 //
 //		try {
 //			key = DengKeys.stk.at(args[0]);
-//			DengInput->binds.push_back(pair<std::string, Key::Key>(s, key));
+//			DeshInput->binds.push_back(pair<std::string, Key::Key>(s, key));
 //			std::vector<char> datav;
 //			for (auto c : args[0] + " " + s) {
 //				datav.push_back(c);

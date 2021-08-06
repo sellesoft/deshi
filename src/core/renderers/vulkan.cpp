@@ -967,7 +967,7 @@ CreateSurface(){
 	AssertRS(RSVK_INSTANCE, "CreateSurface called before CreateInstance");
 	rendererStage |= RSVK_SURFACE;
 	
-	AssertVk(glfwCreateWindowSurface(instance, DengWindow->window, allocator, &surface), "failed to create window surface");
+	AssertVk(glfwCreateWindowSurface(instance, DeshWindow->window, allocator, &surface), "failed to create window surface");
 }
 
 local void 
@@ -1123,7 +1123,7 @@ CreateSwapChain(){
 	vkDeviceWaitIdle(device);
 	
 	//update width and height
-	glfwGetFramebufferSize(DengWindow->window, &width, &height);
+	glfwGetFramebufferSize(DeshWindow->window, &width, &height);
 	
 	{//check GPU's features/capabilities for the new swapchain
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &supportDetails.capabilities);
@@ -1518,11 +1518,11 @@ UpdateUniformBuffers(){
 	}
 	
 	{//update scene vertex shader ubo
-		uboVS.values.time = DengTime->totalTime;
+		uboVS.values.time = DeshTime->totalTime;
 		std::copy(vkLights, vkLights+10, uboVS.values.lights);
 		uboVS.values.screen = vec2(extent.width, extent.height);
-		uboVS.values.mousepos = vec2(DengInput->mousePos.x, DengInput->mousePos.y);
-		if(initialized) uboVS.values.mouseWorld = Math::ScreenToWorld(DengInput->mousePos, uboVS.values.proj, uboVS.values.view, DengWindow->dimensions);
+		uboVS.values.mousepos = vec2(DeshInput->mousePos.x, DeshInput->mousePos.y);
+		if(initialized) uboVS.values.mouseWorld = Math::ScreenToWorld(DeshInput->mousePos, uboVS.values.proj, uboVS.values.view, DeshWindow->dimensions);
 		uboVS.values.enablePCF = settings.shadowPCF;
 		uboVS.values.lightVP = uboVSoffscreen.values.lightVP;
 		
@@ -3040,7 +3040,7 @@ Init(){
 	//ImGui::StyleColorsClassic();
 	
 	//Setup Platform/Renderer backends
-	ImGui_ImplGlfw_InitForVulkan(DengWindow->window, true);
+	ImGui_ImplGlfw_InitForVulkan(DeshWindow->window, true);
 	ImGui_ImplVulkan_InitInfo init_info{};
 	init_info.Instance        = instance;
 	init_info.PhysicalDevice  = physicalDevice;
@@ -3897,7 +3897,7 @@ UseDefaultViewProjMatrix(vec3 position, vec3 rotation) {
 	vec3 up = right.cross(forward).normalized();
 	uboVS.values.view = Math::LookAtMatrix(position, position + forward).Inverse();
 
-	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix(DengWindow->width, DengWindow->height, 90, 1000, 0.1);
+	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix(DeshWindow->width, DeshWindow->height, 90, 1000, 0.1);
 }
 
 //////////////////
@@ -4081,10 +4081,10 @@ Update(){
 	AssertRS(RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS, "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
 	rendererStage = RSVK_RENDER;
 	
-	if(DengWindow->resized) remakeWindow = true;
+	if(DeshWindow->resized) remakeWindow = true;
 	if(remakeWindow){
 		int w, h;
-		glfwGetFramebufferSize(DengWindow->window, &w, &h);
+		glfwGetFramebufferSize(DeshWindow->window, &w, &h);
 		if(w <= 0 || h <= 0){ 
 			ImGui::EndFrame(); 
 			return;  
@@ -4181,7 +4181,7 @@ Update(){
 		SetupOffscreenRendering();
 		_remakeOffscreen = false;
 	}
-	DengTime->renderTime = TIMER_END(t_d);
+	DeshTime->renderTime = TIMER_END(t_d);
 }
 
 

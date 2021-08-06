@@ -346,7 +346,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 	}
 	
 	//check if window is hovered
-	vec2 mp = DengInput->mousePos;
+	vec2 mp = DeshInput->mousePos;
 	if (mp.x >= workingWin.position.x &&
 		mp.y >= workingWin.position.y &&
 		mp.x <= workingWin.position.x + workingWin.dimensions.x &&
@@ -372,11 +372,11 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 
 	//check for scrolling inputs
 	if (!(flags & UIWindowFlags_NoScroll)) {
-		if (workingWin.hovered && DengInput->KeyPressedAnyMod(MouseButton::SCROLLUP)) {
+		if (workingWin.hovered && DeshInput->KeyPressedAnyMod(MouseButton::SCROLLUP)) {
 			workingWin.scy -= style.scrollAmount.y;
 			Math::clamp(workingWin.scy, 0, workingWin.maxScroll.y);
 		}
-		else if (workingWin.hovered && DengInput->KeyPressedAnyMod(MouseButton::SCROLLDOWN)) {
+		else if (workingWin.hovered && DeshInput->KeyPressedAnyMod(MouseButton::SCROLLDOWN)) {
 			workingWin.scy += style.scrollAmount.y;
 			Math::clamp(workingWin.scy, 0, workingWin.maxScroll.y);
 		}
@@ -438,7 +438,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 						mp.x <= drawCmd.position.x + drawCmd.dimensions.x &&
 						mp.y <= drawCmd.position.y + drawCmd.dimensions.y) {
 						drawCmd.color = style.colors[UIStyleCol_TitleBg] * 0.7;
-						if (DengInput->KeyPressedAnyMod(MouseButton::LEFT)) {
+						if (DeshInput->KeyPressedAnyMod(MouseButton::LEFT)) {
 							workingWin.minimized = !workingWin.minimized;
 						}
 					}
@@ -630,7 +630,7 @@ bool UI::Button(string text, vec2 pos, Color color){
 void UI::Init() {
 	workingWin.name = "Base";
 	workingWin.position = vec2(0,0);
-	workingWin.dimensions = DengWindow->dimensions;
+	workingWin.dimensions = DeshWindow->dimensions;
 	
 	//set default style
 
@@ -689,7 +689,7 @@ void UI::Update() {
 		if (i == windows.count - 1 && w.hovered) {
 			break;
 		}
-		else if(w.hovered && ((w.flags & UIWindowFlags_FocusOnHover) ? 1 : DengInput->KeyPressedAnyMod(MouseButton::LEFT))) {
+		else if(w.hovered && ((w.flags & UIWindowFlags_FocusOnHover) ? 1 : DeshInput->KeyPressedAnyMod(MouseButton::LEFT))) {
 			for (int move = i; move < windows.count - 1; move++)
 				windows.swap(move, move + 1);
 			break;
@@ -702,15 +702,15 @@ void UI::Update() {
 		
 		static bool newDrag = true;
 		static vec2 mouseOffset = vec2(0, 0);
-		if (focused->titleHovered && DengInput->KeyDownAnyMod(MouseButton::LEFT)) {
+		if (focused->titleHovered && DeshInput->KeyDownAnyMod(MouseButton::LEFT)) {
 			if (newDrag) {
-				mouseOffset = focused->position - DengInput->mousePos;
+				mouseOffset = focused->position - DeshInput->mousePos;
 				newDrag = false;
 			}
 		}
 		if (!newDrag) 
-			focused->position = DengInput->mousePos + mouseOffset;
-		if (DengInput->KeyReleased(MouseButton::LEFT))
+			focused->position = DeshInput->mousePos + mouseOffset;
+		if (DeshInput->KeyReleased(MouseButton::LEFT))
 			newDrag = true;
 	}
 

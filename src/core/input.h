@@ -126,7 +126,7 @@ struct Input{
 		else if (realScrollY > 0) newKeyState[MouseButton::SCROLLUP] = 1;
 		else    { newKeyState[MouseButton::SCROLLDOWN] = 0; newKeyState[MouseButton::SCROLLUP] = 0; }
 		realScrollY = 0;
-		DengTime->inputTime = TIMER_END(t_d);
+		DeshTime->inputTime = TIMER_END(t_d);
 	}
 	
 	/////////////////////////////////
@@ -226,7 +226,7 @@ struct Input{
 
 //global input pointer
 extern Input* g_input;
-#define DengInput g_input
+#define DeshInput g_input
 
 
 #endif //DESHI_INPUT_H

@@ -19,7 +19,7 @@ struct Storage_{
 
 //global storage pointer
 extern Storage_* g_storage;
-#define DengStorage g_storage
+#define DeshStorage g_storage
 
 namespace Storage{
 	void Init();
@@ -35,12 +35,12 @@ namespace Storage{
 	
 	std::vector<vec2> GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camView, vec3 camPosition, vec2 screenDims);
 	
-	inline Mesh*    NullMesh(){ return DengStorage->meshes.data[0]; };
-	inline u32      MeshCount(){ return DengStorage->meshes.size(); };
-	inline Mesh*    MeshAt(u32 meshIdx){ return DengStorage->meshes[meshIdx]; };
-	inline u32      MeshIndex(Mesh* mesh){ forI(DengStorage->meshes.size()){ if(mesh == DengStorage->meshes[i]) return i; } return -1; };
-	inline char*    MeshName(u32 meshIdx){ return DengStorage->meshes[meshIdx]->name; };
-	inline void     DeleteMesh(u32 meshIdx){ DeleteMesh(DengStorage->meshes[meshIdx]); };
+	inline Mesh*    NullMesh(){ return DeshStorage->meshes.data[0]; };
+	inline u32      MeshCount(){ return DeshStorage->meshes.size(); };
+	inline Mesh*    MeshAt(u32 meshIdx){ return DeshStorage->meshes[meshIdx]; };
+	inline u32      MeshIndex(Mesh* mesh){ forI(DeshStorage->meshes.size()){ if(mesh == DeshStorage->meshes[i]) return i; } return -1; };
+	inline char*    MeshName(u32 meshIdx){ return DeshStorage->meshes[meshIdx]->name; };
+	inline void     DeleteMesh(u32 meshIdx){ DeleteMesh(DeshStorage->meshes[meshIdx]); };
 	
 	//////////////////
 	//// @texture ////
@@ -49,12 +49,12 @@ namespace Storage{
 	pair<u32,Texture*> CreateTextureFromMemory(void* data, const char* name, int width, int height, ImageFormat format, TextureType type = TextureType_2D, bool keepLoaded = false, bool generateMipmaps = true);
 	void               DeleteTexture(Texture* texture);
 	
-	inline Texture*    NullTexture(){ return DengStorage->textures.data[0]; };
-	inline u32         TextureCount(){ return DengStorage->textures.size(); };
-	inline Texture*    TextureAt(u32 textureIdx){ return DengStorage->textures[textureIdx]; };
-	inline u32         TextureIndex(Texture* texture){ forI(DengStorage->textures.size()){ if(texture == DengStorage->textures[i]) return i; } return -1; };
-	inline char*       TextureName(u32 textureIdx){ return DengStorage->textures[textureIdx]->name; };
-	inline void        DeleteTexture(u32 textureIdx){ DeleteTexture(DengStorage->textures[textureIdx]); };
+	inline Texture*    NullTexture(){ return DeshStorage->textures.data[0]; };
+	inline u32         TextureCount(){ return DeshStorage->textures.size(); };
+	inline Texture*    TextureAt(u32 textureIdx){ return DeshStorage->textures[textureIdx]; };
+	inline u32         TextureIndex(Texture* texture){ forI(DeshStorage->textures.size()){ if(texture == DeshStorage->textures[i]) return i; } return -1; };
+	inline char*       TextureName(u32 textureIdx){ return DeshStorage->textures[textureIdx]->name; };
+	inline void        DeleteTexture(u32 textureIdx){ DeleteTexture(DeshStorage->textures[textureIdx]); };
 	
 	///////////////////
 	//// @material ////
@@ -62,15 +62,15 @@ namespace Storage{
 	pair<u32,Material*> CreateMaterial(const char* name, Shader shader = Shader_PBR, MaterialFlags flags = MaterialFlags_NONE, array<u32> textures = {});
 	void                DeleteMaterial(Material* material);
 	
-	inline Material*    NullMaterial(){ return DengStorage->materials.data[0]; };
-	inline u32          MaterialCount(){ return DengStorage->materials.size(); };
-	inline Material*    MaterialAt(u32 materialIdx){ return DengStorage->materials[materialIdx]; };
-	inline u32          MaterialIndex(Material* material){ forI(DengStorage->materials.size()){ if(material == DengStorage->materials[i]) return i; } return -1; };
-	inline char*        MaterialName(u32 materialIdx){ return DengStorage->materials[materialIdx]->name; };
-	inline Shader       MaterialShader(u32 materialIdx){ return DengStorage->materials[materialIdx]->shader; };
-	inline u32          MaterialTextureCount(u32 materialIdx){ return DengStorage->materials[materialIdx]->textures.size(); };
-	inline Texture*     MaterialTexture(u32 materialIdx, u32 textureIdx){ return DengStorage->textures[DengStorage->materials[materialIdx]->textures[textureIdx]]; };
-	inline void         DeleteMaterial(u32 materialIdx){ DeleteMaterial(DengStorage->materials[materialIdx]); };
+	inline Material*    NullMaterial(){ return DeshStorage->materials.data[0]; };
+	inline u32          MaterialCount(){ return DeshStorage->materials.size(); };
+	inline Material*    MaterialAt(u32 materialIdx){ return DeshStorage->materials[materialIdx]; };
+	inline u32          MaterialIndex(Material* material){ forI(DeshStorage->materials.size()){ if(material == DeshStorage->materials[i]) return i; } return -1; };
+	inline char*        MaterialName(u32 materialIdx){ return DeshStorage->materials[materialIdx]->name; };
+	inline Shader       MaterialShader(u32 materialIdx){ return DeshStorage->materials[materialIdx]->shader; };
+	inline u32          MaterialTextureCount(u32 materialIdx){ return DeshStorage->materials[materialIdx]->textures.size(); };
+	inline Texture*     MaterialTexture(u32 materialIdx, u32 textureIdx){ return DeshStorage->textures[DeshStorage->materials[materialIdx]->textures[textureIdx]]; };
+	inline void         DeleteMaterial(u32 materialIdx){ DeleteMaterial(DeshStorage->materials[materialIdx]); };
 	
 	////////////////
 	//// @model ////
@@ -80,13 +80,13 @@ namespace Storage{
 	pair<u32,Model*> CopyModel(Model* base);
 	void             DeleteModel(Model* model);
 	
-	inline Model*    NullModel(){ return DengStorage->models.data[0]; };
-	inline u32       ModelCount(){ return DengStorage->models.size(); };
-	inline Model*    ModelAt(u32 modelIdx){ return DengStorage->models[modelIdx]; };
-	inline u32       ModelIndex(Model* model){ forI(DengStorage->models.size()){ if(model == DengStorage->models[i]) return i; } return -1; };
-	inline char*     ModelName(u32 modelIdx){ return DengStorage->models[modelIdx]->name; };
-	inline u32       ModelBatchCount(u32 modelIdx){ return DengStorage->models[modelIdx]->batches.size(); };
-	inline void      DeleteModel(u32 modelIdx){ DeleteModel(DengStorage->models[modelIdx]); };
+	inline Model*    NullModel(){ return DeshStorage->models.data[0]; };
+	inline u32       ModelCount(){ return DeshStorage->models.size(); };
+	inline Model*    ModelAt(u32 modelIdx){ return DeshStorage->models[modelIdx]; };
+	inline u32       ModelIndex(Model* model){ forI(DeshStorage->models.size()){ if(model == DeshStorage->models[i]) return i; } return -1; };
+	inline char*     ModelName(u32 modelIdx){ return DeshStorage->models[modelIdx]->name; };
+	inline u32       ModelBatchCount(u32 modelIdx){ return DeshStorage->models[modelIdx]->batches.size(); };
+	inline void      DeleteModel(u32 modelIdx){ DeleteModel(DeshStorage->models[modelIdx]); };
 };
 
 #endif //DESHI_STORAGE_H

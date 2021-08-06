@@ -1,9 +1,9 @@
 namespace Storage{
-	local array<Mesh*>&     meshes    = DengStorage->meshes;
-	local array<Texture*>&  textures  = DengStorage->textures;
-	local array<Material*>& materials = DengStorage->materials;
-	local array<Model*>&    models    = DengStorage->models;
-	local array<Light*>&    lights    = DengStorage->lights;
+	local array<Mesh*>&     meshes    = DeshStorage->meshes;
+	local array<Texture*>&  textures  = DeshStorage->textures;
+	local array<Material*>& materials = DeshStorage->materials;
+	local array<Model*>&    models    = DeshStorage->models;
+	local array<Light*>&    lights    = DeshStorage->lights;
 };
 
 ///////////////

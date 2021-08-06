@@ -74,7 +74,7 @@ local void FlushBuffer(){
 }
 
 local void UpdateOpenness(){
-    f32 delta_open = DengTime->deltaTime * open_dt;
+    f32 delta_open = DeshTime->deltaTime * open_dt;
     
     if(open_amount < open_target){
         open_amount += delta_open;
@@ -110,11 +110,11 @@ void Console2::Toggle(ConsoleState new_state){
         }break;
         case ConsoleState_OpenSmall:{
             state = ConsoleState_OpenSmall;
-            open_target = (f32)DengWindow->height * 0.2f;
+            open_target = (f32)DeshWindow->height * 0.2f;
         }break;
         case ConsoleState_OpenBig:{
             state = ConsoleState_OpenBig;
-            open_target = (f32)DengWindow->height * open_max_percent;
+            open_target = (f32)DeshWindow->height * open_max_percent;
         }break;
         case ConsoleState_Popout:{
             state = ConsoleState_Popout;
@@ -274,10 +274,10 @@ local bool test_swap = false;
 void Console2::Update(){
 	{//// handle inputs ////
 		//open and close console
-		if(DengInput->KeyPressedAnyMod(Key::F1)){
-			if(DengInput->LShiftDown()){
+		if(DeshInput->KeyPressedAnyMod(Key::F1)){
+			if(DeshInput->LShiftDown()){
 				Toggle(ConsoleState_OpenBig);
-			}else if(DengInput->LAltDown()){
+			}else if(DeshInput->LAltDown()){
 				test_swap = !test_swap;
 			}else{
 				Toggle(ConsoleState_OpenSmall);
@@ -287,16 +287,16 @@ void Console2::Update(){
 		if(intercepting_inputs){
 			//!Incomplete
 			//scrolling
-			if(DengInput->KeyDownAnyMod(MouseButton::SCROLLUP)) {
+			if(DeshInput->KeyDownAnyMod(MouseButton::SCROLLUP)) {
 				//console_scroll_y--;
 			}
-			if(DengInput->KeyDownAnyMod(MouseButton::SCROLLDOWN)) {
+			if(DeshInput->KeyDownAnyMod(MouseButton::SCROLLDOWN)) {
 				//console_scroll_y++;
 			}
 			
 			//!Incomplete
 			//input history
-			if(DengInput->KeyDownAnyMod(Key::UP)) {
+			if(DeshInput->KeyDownAnyMod(Key::UP)) {
 				input_history_select_index += 1;
 				if(input_history_select_index > input_history_length) input_history_select_index = 0;
 				if(input_history_select_index) {
@@ -305,7 +305,7 @@ void Console2::Update(){
 					memset(input_history, 0, input_max_size);
 				}
 			}
-			if(DengInput->KeyDownAnyMod(Key::DOWN)) {
+			if(DeshInput->KeyDownAnyMod(Key::DOWN)) {
 				input_history_select_index -= 1;
 				if(input_history_select_index < 0) input_history_select_index = input_history_length;
 				if(input_history_select_index) {
@@ -318,7 +318,7 @@ void Console2::Update(){
 	}
 	{//// draw console ////
 		UpdateOpenness(); 
-		console_w = (f32)DengWindow->width;
+		console_w = (f32)DeshWindow->width;
 		console_h = open_amount;
 		if(!open_amount) return; //early out if fully closed
 		
@@ -417,10 +417,10 @@ void Console2::Update(){
 					//int rows_can_fit = winh / font_height;
 					//
 					////manual scrolling since we implement our own clipper
-					//if (DengInput->KeyDownAnyMod(MouseButton::SCROLLUP) && console_scroll_y > 0) {
+					//if (DeshInput->KeyDownAnyMod(MouseButton::SCROLLUP) && console_scroll_y > 0) {
 					//console_scroll_y--;
 					//}
-					//if (DengInput->KeyDownAnyMod(MouseButton::SCROLLDOWN) && lineindicies.size() > rows_can_fit) {
+					//if (DeshInput->KeyDownAnyMod(MouseButton::SCROLLDOWN) && lineindicies.size() > rows_can_fit) {
 					//	console_scroll_y++;
 					//}
 					//ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8, 0));

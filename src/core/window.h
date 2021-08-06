@@ -61,6 +61,6 @@ struct Window{
 
 //global_ window pointer
 extern Window* g_window;
-#define DengWindow g_window
+#define DeshWindow g_window
 
 #endif //DESHI_WINDOW_H
