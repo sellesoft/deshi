@@ -17,21 +17,21 @@ struct quat {
 	quat(const vec3& rotation);
 	quat(const vec3& axis, float theta);
 	
-	void operator =			(const quat& rhs);
-	quat operator /	(const float& rhs);
-	void operator /=		(const float& rhs);
-	quat operator *	(const float& rhs);
-	void operator *=		(const float& rhs);
-	vec3 operator *      (const vec3& rhs);
-	quat operator +	(const quat& rhs);
-	void operator +=		(const quat& rhs);
-	quat operator -	(const quat& rhs);
-	void operator -=		(const quat& rhs);
-	quat operator *	(const quat& rhs);
-	void operator *=		(const quat& rhs);
-	quat operator /	(const quat& rhs);
-	void operator /=		(const quat& rhs);
-	quat operator - ();
+	void operator =	 (const quat& rhs);
+	quat operator /	 (const float& rhs);
+	void operator /= (const float& rhs);
+	quat operator *	 (const float& rhs);
+	void operator *= (const float& rhs);
+	vec3 operator *  (const vec3& rhs);
+	quat operator +	 (const quat& rhs);
+	void operator += (const quat& rhs);
+	quat operator -	 (const quat& rhs);
+	void operator -= (const quat& rhs);
+	quat operator *	 (const quat& rhs);
+	void operator *= (const quat& rhs);
+	quat operator /	 (const quat& rhs);
+	void operator /= (const quat& rhs);
+	quat operator -  ();
 	
 	float mag();
 	void normalize();

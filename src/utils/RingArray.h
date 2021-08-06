@@ -1,4 +1,4 @@
-// RingArray is implemented as a contiguous block of memory that does not automatically
+// ring_array is implemented as a contiguous block of memory that does not automatically
 // grow when adding past the initial 'capacity', instead it overwrites old data when full. 
 // The 'capacity' can be grown, which will relocate all items to a new location. The 'capacity' 
 // can also shrink which will simply reduce the 'capacity' variable but not actually re-allocate
@@ -12,7 +12,7 @@
 #include "../defines.h"
 
 template<typename T>
-struct RingArray{
+struct ring_array{
     T* data;      //pointer to the data allocated
     u32 start;    //index of the first item of the ring
     u32 end;      //index of the last item of the ring
@@ -63,7 +63,7 @@ struct RingArray{
 };
 
 template<typename T>
-inline void RingArray<T>::Init(u32 new_capacity){
+inline void ring_array<T>::Init(u32 new_capacity){
     data = (T*)calloc(new_capacity, sizeof(T));
     start = 0;
     end = -1;
@@ -72,12 +72,12 @@ inline void RingArray<T>::Init(u32 new_capacity){
 }
 
 template<typename T>
-inline void RingArray<T>::Free(){
+inline void ring_array<T>::Free(){
     free(data);
 }
 
 template<typename T>
-inline void RingArray<T>::Add(T item){
+inline void ring_array<T>::Add(T item){
     end += 1;
     if(end >= capacity) end = 0;
     data[end] = item;
@@ -91,7 +91,7 @@ inline void RingArray<T>::Add(T item){
 }
 
 template<typename T>
-inline void RingArray<T>::Add(T* items, u32 _count){
+inline void ring_array<T>::Add(T* items, u32 _count){
     s32 tail_wrap = (end + 1 + _count) - capacity;
 
     if(tail_wrap > 0){
@@ -118,7 +118,7 @@ inline void RingArray<T>::Add(T* items, u32 _count){
 }
 
 template<typename T>
-inline void RingArray<T>::Add(const T* items, u32 _count){
+inline void ring_array<T>::Add(const T* items, u32 _count){
     s32 tail_wrap = (end + 1 + _count) - capacity;
 
     if(tail_wrap > 0){
@@ -145,7 +145,7 @@ inline void RingArray<T>::Add(const T* items, u32 _count){
 }
 
 template<typename T>
-inline void RingArray<T>::Remove(u32 _count){
+inline void ring_array<T>::Remove(u32 _count){
     if(_count >= count) { Clear(); return; }
 
     s32 remove_wrap_count = (start + _count) - capacity;
@@ -162,7 +162,7 @@ inline void RingArray<T>::Remove(u32 _count){
 }
 
 template<typename T>
-inline T* RingArray<T>::At(u32 position){
+inline T* ring_array<T>::At(u32 position){
     if(position == -1) position = count-1;
 
     T* result = 0;
@@ -175,23 +175,23 @@ inline T* RingArray<T>::At(u32 position){
 }
 
 template<typename T>
-inline T& RingArray<T>::operator[](u32 position){
+inline T& ring_array<T>::operator[](u32 position){
     Assert(position < count);
     return data[position];
 }
 
 template<typename T>
-inline bool RingArray<T>::Full(){
+inline bool ring_array<T>::Full(){
     return count == capacity;
 }
 
 template<typename T>
-inline bool RingArray<T>::Empty(){
+inline bool ring_array<T>::Empty(){
     return count == 0;
 }
 
 template<typename T>
-inline void RingArray<T>::Clear(){
+inline void ring_array<T>::Clear(){
     memset(data, 0, sizeof(T)*capacity);
     count = 0;
     start = 0;
@@ -199,7 +199,7 @@ inline void RingArray<T>::Clear(){
 }
 
 template<typename T>
-inline void RingArray<T>::Grow(u32 new_capacity){
+inline void ring_array<T>::Grow(u32 new_capacity){
     if(new_capacity && new_capacity > capacity){
         T* temp = (T*)calloc(new_capacity, sizeof(T));
         if(count){
@@ -215,7 +215,7 @@ inline void RingArray<T>::Grow(u32 new_capacity){
 }
 
 template<typename T>
-inline void RingArray<T>::Shrink(u32 new_capacity){
+inline void ring_array<T>::Shrink(u32 new_capacity){
     if(new_capacity < count){          //new_capacity < count < capacity
         if(start) memcpy(data, data+start, sizeof(T)*new_capacity);
         memset(data+new_capacity, 0, capacity-new_capacity); //@Debug

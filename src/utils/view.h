@@ -2,18 +2,18 @@
 #ifndef DESHI_VIEW_H
 #define DESHI_VIEW_H
 
-//View is a non-owning 'view' over a set of data
+//view is a non-owning 'view' over a set of data
 template<typename T>
-struct View{
+struct view{
 	T*  data;
 	int count;
 	
-	View(){
+	view(){
 		data  = 0;
 		count = 0;
 	}
 	
-	View(T* data, int count){
+	view(T* data, int count){
 		this->data  = data;
 		this->count = count;
 	}
