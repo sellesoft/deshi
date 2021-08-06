@@ -17,4 +17,6 @@ int main() {
 		UI::Update();
 		DengTime->frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}
+
+	deshi::cleanup();
 }
