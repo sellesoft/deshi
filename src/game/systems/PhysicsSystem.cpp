@@ -12,6 +12,7 @@
 #include "../../core/renderer.h" //temporary until we guarentee store trimesh neighbors on them
 #include "../../core/window.h"
 #include "../../core/storage.h"
+#include "../../core/model.h"
 #include "../../math/Math.h"
 #include "../../geometry/Geometry.h"
 #include "../../utils/Command.h"
@@ -456,15 +457,23 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 		//PRINTLN("o2 rot: " << o2->rotation.str());
 		
 		//// Face implementation ////
-		/*
+		
 		Mesh::Face* lastface = 0;
-		forX(oc1Index, o1c->mesh->faceCount){ Mesh::Face* f = &o1c->mesh->faceArray[oc1Index];
-			p0 = f->vertexArray[0]->pos * o1transform;
+		for (int o1cidx = 0; o1cidx < o1c->mesh->faceCount; o1cidx++) {
+
+			Mesh* m = o1c->mesh;
+			Mesh::Face* f = &m->faces[o1cidx];
+			p0 = m->vertexArray[f->vertexes[0]].pos * o1transform;
 			normal = f->normal * o1rotation;
 			float deepest = INFINITY;
-			forX(oc2Index, o2c->mesh->faceCount){ Mesh::Face* f2 = &o2c->mesh->faceArray[oc2Index];
-				forX(f2vIndex, f2->outerVertexCount){
-					p1 = f2->outerVertexArray[f2vIndex]->pos * o2transform;
+
+			for (int o2cidx = 0; o2cidx < o2c->mesh->faceCount; o2cidx++) {
+
+				Mesh::Face* f2 = &o2c->mesh->faceArray[o2cidx];
+
+				for (int fvidx = 0; fvidx < f2->outerVertexCount; fvidx++) {
+
+					p1 = m->vertexArray[f2->outerVertexArray[fvidx]].pos * o2transform;
 					float vertdepth = Math::DistPointToPlane(p1, normal, p0);
 					//ImGui::DebugDrawLine3(p1, p1 - normal * vertdepth, Color(0, 255.0 * (i / (float)f2->points.size()), 0));
 					if (vertdepth < deepest) {
@@ -472,13 +481,16 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 					}
 					lastface = f2;
 				}
+
 				if (deepest > 0) {
-					forX(lfvIndex, f2->outerVertexCount){
-						ImGui::DebugDrawLine3(lastface->outerVertexArray[lfvIndex]->pos * o2transform, lastface->outerVertexArray[lfvIndex + 1]->pos * o2transform, Color::MAGENTA);
-					}
-					ImGui::DebugDrawLine3(p1, p1 - normal * deepest, Color::BLACK);
+
+					//forX(lfvIndex, f2->outerVertexCount){
+					//	ImGui::DebugDrawLine3(lastface->outerVertexArray[lfvIndex]->pos * o2transform, lastface->outerVertexArray[lfvIndex + 1]->pos * o2transform, Color::MAGENTA);
+					//}
+					//ImGui::DebugDrawLine3(p1, p1 - normal * deepest, Color::BLACK);
 					ERROR("func failed with deepest ", deepest);
 					return false;
+
 				}
 				else if (deepest > minpen) {
 					minpen = deepest;
@@ -491,9 +503,10 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 			}
 			
 		}
-		*/
 		
-		//// Triangle implementation ////
+		
+		//// Triangle implementation ///
+		/*
 		for(Mesh::Triangle& t1 : o1c->mesh->triangles){
 			p0     = t1.p[0]   * o1transform;
 			normal = t1.normal * o1rotation;
@@ -521,7 +534,7 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 				refcol = o1c;
 				inccol = o2c;
 			}
-		}
+		}*/
 	}
 	
 	Mesh* refMesh = refcol->mesh;

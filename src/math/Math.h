@@ -318,7 +318,7 @@ namespace Math {
         
         //make look-at matrix
         return Matrix4(newRight.x, newRight.y, newRight.z, 0,
-                       newUp.x,    -newUp.y,   newUp.z,    0,
+                       newUp.x,    newUp.y,   newUp.z,    0,
                        newFor.x,   newFor.y,   newFor.z,   0,
                        pos.x,      pos.y,      pos.z,      1);
     }

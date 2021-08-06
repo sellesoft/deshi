@@ -60,7 +60,7 @@ struct string {
 		str = (char*)malloc(1 + 1);
 		str[0] = c;
 		str[1] = '\0';
-		//addrupdate((void*)str, size);
+		addrupdate((void*)str, size);
 	}
 	
 	string(const char* s) {
@@ -68,13 +68,13 @@ struct string {
 		if (size != 0) {
 			str = (char*)malloc(size + 1);
 			strcpy(str, s);
-			//addrupdate((void*)str, size);
+			addrupdate((void*)str, size);
 		}
 		else {
 			//str = new char[1];
 			str = (char*)malloc(1);
 			memset(str, '\0', 1);
-			//addrupdate((void*)str, size);
+			addrupdate((void*)str, size);
 		}
 	}
 	
@@ -84,12 +84,12 @@ struct string {
 			str = (char*)malloc(size + 1);
 			memcpy(str, s, size);
 			memset(str + size, '\0', 1);
-			//addrupdate((void*)str, size);
+			addrupdate((void*)str, size);
 		}
 		else {
 			str = (char*)malloc(1);
 			memset(str, '\0', 1);
-			//addrupdate((void*)str, size);
+			addrupdate((void*)str, size);
 		}
 	}
 	
@@ -100,13 +100,13 @@ struct string {
 			free(str);
 			str = (char*)malloc(size + 1);
 			strcpy(str, s.str);
-			//addrupdate((void*)str, size);
+			addrupdate((void*)str, size);
 		}
 		else {
 			free(str);
 			str = (char*)malloc(1);
 			memset(str, '\0', 1);
-			//addrupdate((void*)str, size);
+			addrupdate((void*)str, size);
 		}
 	}
 
@@ -136,7 +136,7 @@ struct string {
 		str = (char*)malloc(size + 1);
 		memset(str, c, 2);
 		memset(str + 1, '\0', 1);
-		//addrupdate((void*)str, size);
+		addrupdate((void*)str, size);
 	}
 
 	void operator = (const string& s) {
@@ -146,14 +146,14 @@ struct string {
 		str = (char*)malloc(size + 1);
 		memcpy(str, s.str, size + 1);
 		memset(str + size, '\0', 1);
-		//addrupdate((void*)str, size);
+		addrupdate((void*)str, size);
 	}
 	
 	void operator = (const char* s) {
 		size = strlen(s);
 		str = (char*)malloc(size + 1);
 		strcpy(str, s);
-		//addrupdate((void*)str, size);
+		addrupdate((void*)str, size);
 	}
 	
 	bool operator == (string& s) {
@@ -179,7 +179,7 @@ struct string {
 		memcpy(str + size, &c, 1);
 		size = newsize;
 		memset(str + size, '\0', 1);
-		//addrupdate((void*)str, size);
+		addrupdate((void*)str, size);
 		delete old;
 	}
 	
@@ -187,15 +187,11 @@ struct string {
 	void operator += (string s) {
 		if (s.size == 0) return;
 		int newsize = size + s.size;
-		char* old = new char[size];
-		memcpy(old, str, size);
-		str = (char*)malloc(newsize + 1);
-		memcpy(str, old, size);
+		str = (char*)realloc(str, newsize + 1);
 		memcpy(str + size, s.str, s.size);
 		size = newsize;
 		memset(str + size, '\0', 1);
-		//addrupdate((void*)str, size);
-		delete old;
+		addrupdate((void*)str, size);
 	}
 	
 	//these could probably be better
@@ -210,7 +206,7 @@ struct string {
 		memcpy(str + size, s.str, s.size);
 		size = newsize;
 		memset(str + size, '\0', 1);
-		//addrupdate((void*)str, size);
+		addrupdate((void*)str, size);
 		delete old;
 	}
 	
@@ -269,6 +265,7 @@ struct string {
 	static string toStr(int i) {
 		string s;
 		s.size = (i == 0) ? 1 : (int)((floor(log10(i)) + 1) * sizeof(char));
+		free(s.str);
 		s.str = (char*)malloc(s.size + 1);
 		sprintf(s.str, "%d", i);
 		return s;

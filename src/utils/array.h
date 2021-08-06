@@ -88,7 +88,7 @@ struct array {
 		max   = data+(space-1);
 	}
 	
-	virtual ~array() {
+	~array() {
 		if (last != 0) {
 			for (T* i = first; i <= last; i++) {
 				i->~T();
