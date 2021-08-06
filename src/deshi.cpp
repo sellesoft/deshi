@@ -91,7 +91,6 @@ combine undo manager into editor file
 Physics/Atmos TODOs
 -------------
 make collider trigger latching a boolean, so it can continuous trigger an event while an obj is in it
-____dont forget that it's in a physics tick though, so you have to make sure it doesn't do it 300 times per frame
 figure out how to handle multi events being set for a collider. for other components its not really an issue
 ___because u just choose what event to send at run time, but i don't want to do this inside of the collider
 ___functions themselves, as it would be way too much clutter. maybe a helper function on collider to choose what to do 
@@ -116,8 +115,11 @@ implement filtering console buffer by function and file name (add __FILENAME__ a
 
 UI TODOs
 --------
-look into easier hover checking and input intercepting for imgui
-____https://github.com/ocornut/imgui/issues/52
+Input Text
+Buttons
+More styling options
+Popups
+
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
 redo debug bar to be more informative and have different modes

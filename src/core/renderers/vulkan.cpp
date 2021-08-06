@@ -3890,6 +3890,16 @@ UpdateCameraProjectionMatrix(mat4 m){
 	uboVS.values.proj = m;
 }
 
+void Render::
+UseDefaultViewProjMatrix(vec3 position, vec3 rotation) {
+	vec3 forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
+	vec3 right = vec3::UP.cross(forward).normalized();
+	vec3 up = right.cross(forward).normalized();
+	uboVS.values.view = Math::LookAtMatrix(position, position + forward).Inverse();
+
+	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix(DengWindow->width, DengWindow->height, 90, 1000, 0.1);
+}
+
 //////////////////
 //// @shaders ////
 //////////////////

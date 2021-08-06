@@ -138,6 +138,7 @@ namespace Render{
     void UpdateCameraPosition(vec3 position);
     void UpdateCameraViewMatrix(mat4 m);
     void UpdateCameraProjectionMatrix(mat4 m);
+	void UseDefaultViewProjMatrix(vec3 position = vec3::ZERO, vec3 rotation = vec3::ZERO);
 	
     //signals vulkan to remake the pipelines
     void ReloadShader(u32 shaderID);

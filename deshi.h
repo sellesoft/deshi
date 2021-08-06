@@ -8,6 +8,7 @@
 #ifndef DESHI_DISABLE_IMGUI
 #include "src/core/imgui.h"
 #endif
+#include "src/core/camera.h"
 #include "src/core/input.h"
 #include "src/core/renderer.h"
 #include "src/core/time.h"
