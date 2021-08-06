@@ -85,7 +85,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 	
 	Mesh* mesh = AllocateMesh(36, 8, 6, 36, 24, 24, 24, 24);
 	cpystr(mesh->name, "box_mesh", DESHI_NAME_SIZE);
-	mesh->idx      = meshes.size();
+	mesh->idx      = meshes.count;
 	mesh->aabbMin  = {-width,-height,-depth};
 	mesh->aabbMax  = { width, height, depth};
 	mesh->center   = {  0.0f,   0.0f,  0.0f};
@@ -443,10 +443,10 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 	pair<u32,Material*> result(0, NullMaterial());
 	
 	//check if created already
-	forX(mi, materials.size()){ if(strcmp(materials[mi]->name, name) == 0){ return pair<u32,Material*>(mi,materials[mi]); } }
+	forX(mi, materials.count){ if(strcmp(materials[mi]->name, name) == 0){ return pair<u32,Material*>(mi,materials[mi]); } }
 	
 	Material* material = AllocateMaterial(mat_textures.count);
-	material->idx = materials.size();
+	material->idx = materials.count;
 	cpystr(material->name, name, DESHI_NAME_SIZE);
 	material->shader = shader;
 	material->flags  = flags;
@@ -847,6 +847,12 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		
 		//// calculate vertex normals ////
 		forI(vUnique.count){
+			aabb_min.x = Min(aabb_min.x, vUnique.data.data[i].pos.x);
+			aabb_max.x = Max(aabb_max.x, vUnique.data.data[i].pos.x);
+			aabb_min.y = Min(aabb_min.y, vUnique.data.data[i].pos.y);
+			aabb_max.y = Max(aabb_max.y, vUnique.data.data[i].pos.y);
+			aabb_min.z = Min(aabb_min.z, vUnique.data.data[i].pos.z);
+			aabb_max.z = Max(aabb_max.z, vUnique.data.data[i].pos.z);
 			vUnique.data.data[i].normal.normalize();
 		}
 		
@@ -864,6 +870,10 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 							totalFaceVertexes, totalFaceOuterVertexes, totalFaceTriNeighbors, totalFaceFaceNeighbors);
 		//fill base arrays
 		cpystr(mesh->name, name.str, DESHI_NAME_SIZE);
+		mesh->idx = meshes.count;
+		mesh->aabbMin  = aabb_min;
+		mesh->aabbMax  = aabb_max;
+		mesh->center   = {(aabb_max.x+aabb_min.x)/2.0f, (aabb_max.y+aabb_min.y)/2.0f, (aabb_max.z+aabb_min.z)/2.0f};
 		memcpy(mesh->vertexArray,   vUnique.data.data, vUnique.count*sizeof(Mesh::Vertex));
 		memcpy(mesh->indexArray,    indexes.data,      indexes.count*sizeof(Mesh::Index));
 		memcpy(mesh->triangleArray, triangles.data,    triangles.count*sizeof(Mesh::Triangle));

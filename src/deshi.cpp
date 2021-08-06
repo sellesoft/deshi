@@ -2,15 +2,18 @@
 
 Style Guidelines
 ----------------
-utlity:
+utlity: (headers only)
   lower_underscore_structs
   lowerCamelMemberVars
   lowerCamelMemberFuncs
 core:
   UpperCamelStructs
+  UpperCamelNamespaces
   lowerCamelMemberVars
   UowerCamelMemberFuncs
-  UpperCamelNamespaces
+  lower_underscore_unscoped_vars (.cpp only)
+  DowhateverLocal_vars (usually lowerCamel)
+  g_global_vars (defined in deshi.cpp only, declared in specific header)
 
 TODO Tags
 ---------
@@ -65,8 +68,6 @@ Render TODOs
 ------------
 fix directional shadow mapping's (projection?) errors
 rework lights
-add temporary meshes (get reset every frame like imgui)
-extract normal debug geometry shader descriptor from generic layout and sets
 add omnidirectional shadow mapping
 add not-on-screen object culling thru mesh AABBs
 add front-to-back sorting for perf gain (and maybe transparency?)

@@ -1202,17 +1202,6 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 							ImGui::EndCombo();
 						}
 						
-						//TODO(delle) implement an actual model batch editor; this only lets u change the first batch atm
-						ImGui::TextEx("Material "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1); 
-						if(ImGui::BeginCombo("##model_mat_combo", Storage::MaterialName(mc->model->batches[0].material))){
-							forI(Storage::MaterialCount()){
-								if(ImGui::Selectable(Storage::MaterialName(i), i == mc->model->batches[0].material)){
-									mc->model->batches[0].material = i;
-								}
-							}
-							ImGui::EndCombo();
-						}
-						
 						ImGui::Unindent();
 						ImGui::Separator();
 					}
@@ -1533,6 +1522,9 @@ inline void MeshesTab(Admin* admin){
 	persist bool rename_mesh = false;
 	persist char rename_buffer[DESHI_NAME_SIZE] = {};
 	persist u32  sel_mesh_idx = -1;
+	persist int sel_vertex_idx   = -1;
+	persist int sel_triangle_idx = -1;
+	persist int sel_face_idx     = -1;
 	Mesh* selected = nullptr;
 	if(sel_mesh_idx < Storage::MeshCount()) selected = Storage::MeshAt(sel_mesh_idx);
 	
@@ -1580,6 +1572,9 @@ inline void MeshesTab(Admin* admin){
 					sel_mesh_idx = (ImGui::GetIO().KeyCtrl) ? -1 : mesh_idx; //deselect if CTRL held
 					rename_mesh = false;
 					DengConsole->IMGUI_KEY_CAPTURE = false;
+					sel_vertex_idx   = -1;
+					sel_triangle_idx = -1;
+					sel_face_idx     = -1;
 				}
 				
 				//// name text ////
@@ -1601,6 +1596,9 @@ inline void MeshesTab(Admin* admin){
 						sel_mesh_idx -= 1;
 					}
 					Storage::DeleteMesh(mesh_idx);
+					sel_vertex_idx   = -1;
+					sel_triangle_idx = -1;
+					sel_face_idx     = -1;
 				}
 				ImGui::PopID();
 			}
@@ -1619,12 +1617,8 @@ inline void MeshesTab(Admin* admin){
 	}
 	
 	ImGui::Separator();
-	if(selected == nullptr) return;
-	//@@
+	if(selected == nullptr || sel_mesh_idx == -1) return;
 	//// selected mesh inspector panel ////
-	persist int sel_vertex_idx   = -1;
-	persist int sel_triangle_idx = -1;
-	persist int sel_face_idx     = -1;
 	persist bool vertex_all     = true;
 	persist bool vertex_draw    = true;
 	persist bool vertex_indexes = false;
@@ -1793,7 +1787,7 @@ inline void MeshesTab(Admin* admin){
 			if(triangle_normals) Render::DrawLine(tri_center, tri_center + sel_triangle->normal*normal_scale, selected_color);
 			forX(tni, sel_triangle->neighbors.count){
 				Mesh::Triangle* tri_nei = &selected->triangles[sel_triangle->neighbors[tni]];
-				if(trinei_indexes) ImGui::DebugDrawText3(TOSTRING("TN",tni).str, Geometry::MeshTriangleMidpoint(tri_nei)*scale, text_color, vec2{15,15});
+				if(trinei_indexes) ImGui::DebugDrawText3(TOSTRING("TN",tni).str, Geometry::MeshTriangleMidpoint(tri_nei)*scale, text_color, vec2{10,10});
 				if(triangle_neighbors) Render::DrawTriangleFilled(tri_nei->p[0]*scale, tri_nei->p[1]*scale, tri_nei->p[2]*scale, neighbor_color);
 				int e0 = (sel_triangle->edges[tni] == 0) ? 0 : (sel_triangle->edges[tni] == 1) ? 1 : 2; 
 				int e1 = (sel_triangle->edges[tni] == 0) ? 1 : (sel_triangle->edges[tni] == 1) ? 2 : 0;
@@ -1826,18 +1820,18 @@ inline void MeshesTab(Admin* admin){
 			forX(fvi, sel_face->outerVertexCount){
 				MeshVertex* fv = &selected->vertexes[sel_face->outerVertexes[fvi]];
 				if(face_outer_vertexes) Render::DrawBoxFilled(mat4::TransformationMatrix(fv->pos*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), edge_color);
-				if(face_outvertex_indexes) ImGui::DebugDrawText3(TOSTRING("FOV",fvi).str, fv->pos*scale, text_color, vec2{15,15});
+				if(face_outvertex_indexes) ImGui::DebugDrawText3(TOSTRING("FOV",fvi).str, fv->pos*scale, text_color, vec2{10,10});
 			}
 			forX(fti, sel_face->triangleCount){
 				MeshTriangle* ft = &selected->triangles[sel_face->triangles[fti]];
 				Render::DrawTriangleFilled(ft->p[0]*scale, ft->p[1]*scale, ft->p[2]*scale, selected_color);
 				if(face_triangles) Render::DrawTriangle(ft->p[0]*scale, ft->p[1]*scale, ft->p[2]*scale, text_color);
-				if(face_triangle_indexes) ImGui::DebugDrawText3(TOSTRING("FT",fti).str, Geometry::MeshTriangleMidpoint(ft)*scale, text_color, vec2{-15,-15});
+				if(face_triangle_indexes) ImGui::DebugDrawText3(TOSTRING("FT",fti).str, Geometry::MeshTriangleMidpoint(ft)*scale, text_color, vec2{-10,-10});
 			}
 			forX(fnti, sel_face->neighborTriangleCount){
 				MeshTriangle* ft = &selected->triangles[sel_face->triangleNeighbors[fnti]];
 				if(face_tri_neighbors) Render::DrawTriangleFilled(ft->p[0]*scale, ft->p[1]*scale, ft->p[2]*scale, neighbor_color);
-				if(face_trinei_indexes) ImGui::DebugDrawText3(TOSTRING("FTN",fnti).str, Geometry::MeshTriangleMidpoint(ft)*scale, text_color, vec2{15,15});
+				if(face_trinei_indexes) ImGui::DebugDrawText3(TOSTRING("FTN",fnti).str, Geometry::MeshTriangleMidpoint(ft)*scale, text_color, vec2{10,10});
 			}
 			forX(fnfi, sel_face->neighborFaceCount){
 				MeshFace* ff = &selected->faces[sel_face->faceNeighbors[fnfi]];
@@ -1847,7 +1841,7 @@ inline void MeshesTab(Admin* admin){
 						Render::DrawTriangleFilled(fft->p[0]*scale, fft->p[1]*scale, fft->p[2]*scale, edge_color);
 					}
 				}
-				if(face_facenei_indexes) ImGui::DebugDrawText3(TOSTRING("FFN",fnfi).str, ff->center*scale, text_color, vec2{15,15});
+				if(face_facenei_indexes) ImGui::DebugDrawText3(TOSTRING("FFN",fnfi).str, ff->center*scale, text_color, vec2{10,10});
 			}
 		}
 		if(face_all){
