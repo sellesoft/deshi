@@ -83,8 +83,8 @@ struct UICmdVk{
 };
 
 struct QueueFamilyIndices{
-    Optional<u32> graphicsFamily;
-    Optional<u32> presentFamily;
+    optional<u32> graphicsFamily;
+    optional<u32> presentFamily;
     bool isComplete(){ return graphicsFamily.test() && presentFamily.test(); }
 };
 
@@ -575,7 +575,7 @@ FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties){
 //creates an image view specifying how to use an image
 local VkImageView
 CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels){
-	PrintVk(4, "      Creating Image View");
+	PrintVk(4, "      Creating Image view");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateImageView called before CreateLogicalDevice");
 	VkImageViewCreateInfo viewInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
 	viewInfo.image    = image;

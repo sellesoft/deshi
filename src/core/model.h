@@ -73,12 +73,12 @@ struct Mesh{
 	//f32 boneWeights[4];
 	//}  *vertexExArray;
 	u32 vertexCount;
-	View<Vertex> vertexes;
+	view<Vertex> vertexes;
 	
 	typedef u32 Index;
 	u32    indexCount;
 	Index* indexArray;
-	View<u32> indexes;
+	view<u32> indexes;
 	
 	struct Triangle{
 		vec3 normal;
@@ -91,11 +91,11 @@ struct Mesh{
 		
 		u32* neighborArray;
 		u8*  edgeArray;
-		View<u32> neighbors;
-		View<u8>  edges;
+		view<u32> neighbors;
+		view<u8>  edges;
 	}  *triangleArray;
 	u32 triangleCount;
-	View<Triangle> triangles;
+	view<Triangle> triangles;
 	
 	struct Face{
 		vec3 normal;
@@ -111,14 +111,14 @@ struct Mesh{
 		u32* outerVertexArray;
 		u32* neighborTriangleArray;
 		u32* neighborFaceArray;
-		View<u32> triangles;
-		View<u32> vertexes;
-		View<u32> outerVertexes;
-		View<u32> triangleNeighbors;
-		View<u32> faceNeighbors;
+		view<u32> triangles;
+		view<u32> vertexes;
+		view<u32> outerVertexes;
+		view<u32> triangleNeighbors;
+		view<u32> faceNeighbors;
 	}  *faceArray;
 	u32 faceCount;
-	View<Face> faces;
+	view<Face> faces;
 };
 typedef Mesh::Vertex   MeshVertex;
 typedef Mesh::Index    MeshIndex;

@@ -19,23 +19,24 @@
 //when placing an item it looks for the first empty spot and places it there
 
 //TODO(sushi, Cl) container manager needs some clean up, some redundant functions need removed, and some need fleshed out for stability
+//it also needs a better name
 
 template<class T>
-struct ContainerManager {
+struct container_manager {
 	//std::vector<pair<std::optional<T>, int>> container;
-	std::vector<Optional<T>> container;
+	std::vector<optional<T>> container;
 	std::vector<int> empties;
 	
-	ContainerManager() {}
+	container_manager() {}
 	
-	Optional<T>& operator [](int i) { return container[i]; }
+	optional<T>& operator [](int i) { return container[i]; }
 	
 	//TODO(sushi) figure this out sometime :)
 	//T* operator &() {
 	//	return &T;
 	//}
 	
-	int real_size() {
+	int realSize() {
 		return container.size() - empties.size();
 	}
 	
@@ -43,7 +44,7 @@ struct ContainerManager {
 	int add(T t) {
 		//if container is totally full add it to the end
 		if (empties.size() == 0) {
-			container.push_back(Optional<T>(t));
+			container.push_back(optional<T>(t));
 			return container.size() - 1;
 		}
 		//else place it at the first empty spot and return index
@@ -57,7 +58,7 @@ struct ContainerManager {
 	int add(T* t) {
 		//if container is totally full add it to the end
 		if (empties.size() == 0) {
-			container.push_back(Optional<T>(*t));
+			container.push_back(optional<T>(*t));
 			return container.size() - 1;
 		}
 		//else place it at the first empty spot and return index
@@ -71,16 +72,16 @@ struct ContainerManager {
 	
 	//attempt to add element to specific index
 	//resize if index is over current size
-	void add_to_index(T t, int index) {
+	void addToIndex(T t, int index) {
 		//TODO(sushi) allocate_space was removed?
 		//Assert(allocate_space(index), "Container was unable to allocate space at specified index");
-		if (!container[index]) { real_size++; }
+		if (!container[index]) { realSize++; }
 		container[index] = t;
 		
 	}
 	
 	//attempt to remove element at index 
-	void remove_from(int index) {
+	void removeFrom(int index) {
 		Assert(index < container.size(), "Trying to access container at an index that doesn't exist.");
 		Assert(container[index].test(), "Container at index " + std::to_string(index) + " is already empty.");
 		
@@ -98,7 +99,7 @@ struct ContainerManager {
 		return container.size();
 	}
 	
-	void operator =(ContainerManager<T> cm) {
+	void operator =(container_manager<T> cm) {
 		container = cm.container;
 		empties = cm.empties;
 	}
@@ -121,13 +122,13 @@ struct ContainerManager {
 	void reserve(int i) {
 		for (int o = 0; o < i; o++) {
 			empties.push_back(o);
-			Optional<T> op;
+			optional<T> op;
 			container.push_back(op);
 			
 		}
 	}
 	
-	using iterator = typename std::vector<Optional<T>>::iterator;
+	using iterator = typename std::vector<optional<T>>::iterator;
 	
 	iterator begin() {
 		return container.begin();

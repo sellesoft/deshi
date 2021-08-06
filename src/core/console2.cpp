@@ -48,8 +48,8 @@ struct ColoredPstring{
     char* start;
     char* end;
 };
-local RingArray<char>           history;
-local RingArray<ColoredPstring> dictionary;
+local ring_array<char>           history;
+local ring_array<ColoredPstring> dictionary;
 
 local std::vector<pair<Color, char>> historyc;
 local std::vector<u32> lineindicies;

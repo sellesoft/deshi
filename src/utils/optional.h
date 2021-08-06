@@ -3,15 +3,15 @@
 #define DESHI_OPTIONAL_H
 
 template <class T>
-struct Optional {
+struct optional {
 	T value;
 	bool has_value;
 	
-	Optional() {
+	optional() {
 		this->has_value = false;
 	};
 	
-	Optional(T& value) {
+	optional(T& value) {
 		this->value = value;
 		this->has_value = true;
 	}
@@ -25,7 +25,7 @@ struct Optional {
 		//memset(&value, 0xFFFFFFFF, sizeof(T));
 	}
 	
-	inline void operator=(Optional& rhs){
+	inline void operator=(optional& rhs){
 		has_value = true;
 		value = rhs.value;
 	}
@@ -35,11 +35,11 @@ struct Optional {
 		value = rhs;
 	}
 	
-	inline bool operator==(Optional& rhs){
+	inline bool operator==(optional& rhs){
 		return value == rhs.value;
 	}
 	
-	inline bool operator!=(Optional& rhs){
+	inline bool operator!=(optional& rhs){
 		return value != rhs.value;
 	}
 
