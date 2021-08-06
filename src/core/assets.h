@@ -32,9 +32,9 @@ enum ConfigValueType_{
 	ConfigValueType_Int     = ConfigValueType_S32,
 	ConfigValueType_Float   = ConfigValueType_F32,
 	ConfigValueType_Double  = ConfigValueType_F64,
-	ConfigValueType_Vector2 = ConfigValueType_FV2,
-	ConfigValueType_Vector3 = ConfigValueType_FV3,
-	ConfigValueType_Vector4 = ConfigValueType_FV4,
+	ConfigValueType_vec2 = ConfigValueType_FV2,
+	ConfigValueType_vec3 = ConfigValueType_FV3,
+	ConfigValueType_vec4 = ConfigValueType_FV4,
 }; typedef u32 ConfigValueType;
 
 typedef std::vector<pair<const char*,ConfigValueType,void*>> ConfigMap;

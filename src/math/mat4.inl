@@ -1,21 +1,21 @@
 #pragma once
-#ifndef DESHI_MATRIX4_INL
-#define DESHI_MATRIX4_INL
+#ifndef DESHI_mat4_INL
+#define DESHI_mat4_INL
 
 //////////////////////
 //// constructors ////
 //////////////////////
 
-inline Matrix4::
-Matrix4(float x) {
+inline mat4::
+mat4(float x) {
     data[0]  = x; data[1]  = x; data[2]  = x; data[3]  = x;
     data[4]  = x; data[5]  = x; data[6]  = x; data[7]  = x;
     data[8]  = x; data[9]  = x; data[10] = x; data[11] = x;
     data[12] = x; data[13] = x; data[14] = x; data[15] = x;
 }
 
-inline Matrix4::
-Matrix4(float _00, float _01, float _02, float _03,
+inline mat4::
+mat4(float _00, float _01, float _02, float _03,
         float _10, float _11, float _12, float _13,
         float _20, float _21, float _22, float _23,
         float _30, float _31, float _32, float _33) {
@@ -25,13 +25,13 @@ Matrix4(float _00, float _01, float _02, float _03,
     data[12] = _30; data[13] = _31; data[14] = _32; data[15] = _33;
 }
 
-inline Matrix4::
-Matrix4(const Matrix4& m) {
+inline mat4::
+mat4(const mat4& m) {
     memcpy(this->data, &m.data, 16*sizeof(float));
 }
 
-inline Matrix4::
-Matrix4(float* data){
+inline mat4::
+mat4(float* data){
     memcpy(this->data, data, 16*sizeof(float));
 }
 
@@ -39,38 +39,38 @@ Matrix4(float* data){
 //// constants ////
 ///////////////////
 
-inline const Matrix4 Matrix4::IDENTITY = Matrix4(1, 0, 0, 0, 
-                                                 0, 1, 0, 0, 
-                                                 0, 0, 1, 0, 
-                                                 0, 0, 0, 1);
+inline const mat4 mat4::IDENTITY = mat4(1, 0, 0, 0, 
+                                        0, 1, 0, 0, 
+                                        0, 0, 1, 0, 
+                                        0, 0, 0, 1);
 
 ///////////////////
 //// operators ////
 ///////////////////
 
 //element accessor: matrix(row,col)
-inline float& Matrix4::
+inline float& mat4::
 operator () (u32 row, u32 col) {
-    Assert(row < 4 && col < 4, "Matrix4 subscript out of bounds");
+    Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
     return data[4*row + col];
 }
 
-inline float Matrix4::
+inline float mat4::
 operator () (u32 row, u32 col) const {
-    Assert(row < 4 && col < 4, "Matrix4 subscript out of bounds");
+    Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
     return data[4 * row + col];
 }
 
 //creates the data from rhs
-inline void Matrix4::
-operator =  (const Matrix4& rhs) {
+inline void mat4::
+operator =  (const mat4& rhs) {
     memcpy(this->data, &rhs.data, 16*sizeof(float));
 }
 
 //scalar multiplication
-inline Matrix4 Matrix4::
+inline mat4 mat4::
 operator *  (const float& rhs) const {
-    Matrix4 newMatrix(*this);
+    mat4 newMatrix(*this);
     for (int i = 0; i < 16; ++i) {
         newMatrix.data[i] *= rhs;
     }
@@ -78,7 +78,7 @@ operator *  (const float& rhs) const {
 }
 
 //scalar multiplication and assignment
-inline void Matrix4::
+inline void mat4::
 operator *= (const float& rhs) {
     for (int i = 0; i < 16; ++i) {
         data[i] *= rhs;
@@ -86,10 +86,10 @@ operator *= (const float& rhs) {
 }
 
 //scalar division
-inline Matrix4 Matrix4::
+inline mat4 mat4::
 operator /  (const float& rhs) const {
-    Assert(rhs != 0, "Matrix4 elements cant be divided by zero");
-    Matrix4 newMatrix(*this);
+    Assert(rhs != 0, "mat4 elements cant be divided by zero");
+    mat4 newMatrix(*this);
     for (int i = 0; i < 16; ++i) {
         newMatrix.data[i] /= rhs;
     }
@@ -97,18 +97,18 @@ operator /  (const float& rhs) const {
 }
 
 //scalar division and assignment
-inline void Matrix4::
+inline void mat4::
 operator /= (const float& rhs){
-    Assert(rhs != 0, "Matrix4 elements cant be divided by zero");
+    Assert(rhs != 0, "mat4 elements cant be divided by zero");
     for (int i = 0; i < 16; ++i) {
         data[i] /= rhs;
     }
 }
 
 //element-wise addition
-inline Matrix4 Matrix4::
-operator +  (const Matrix4& rhs) const{
-    Matrix4 newMatrix(*this);
+inline mat4 mat4::
+operator +  (const mat4& rhs) const{
+    mat4 newMatrix(*this);
     for (int i = 0; i < 16; ++i) {
         newMatrix.data[i] += rhs.data[i];
     }
@@ -116,17 +116,17 @@ operator +  (const Matrix4& rhs) const{
 }
 
 //element-wise addition and assignment
-inline void Matrix4::
-operator += (const Matrix4& rhs){
+inline void mat4::
+operator += (const mat4& rhs){
     for (int i = 0; i < 16; ++i) {
         this->data[i] += rhs.data[i];
     }
 }
 
 //element-wise substraction
-inline Matrix4 Matrix4::
-operator -  (const Matrix4& rhs) const{
-    Matrix4 newMatrix(*this);
+inline mat4 mat4::
+operator -  (const mat4& rhs) const{
+    mat4 newMatrix(*this);
     for (int i = 0; i < 16; ++i) {
         newMatrix.data[i] -= rhs.data[i];
     }
@@ -134,17 +134,17 @@ operator -  (const Matrix4& rhs) const{
 }
 
 //element-wise substraction and assignment
-inline void Matrix4::
-operator -= (const Matrix4& rhs){
+inline void mat4::
+operator -= (const mat4& rhs){
     for (int i = 0; i < 16; ++i) {
         this->data[i] -= rhs.data[i];
     }
 }
 
 //TODO(delle,OpMa) look into optimizing this by transposing to remove a loop, see Unreal Matrix.h
-inline Matrix4 Matrix4::
-operator *  (const Matrix4& rhs) const{
-    Matrix4 newMatrix;
+inline mat4 mat4::
+operator *  (const mat4& rhs) const{
+    mat4 newMatrix;
     for (int i = 0; i < 4; ++i) { //i=m
         for (int j = 0; j < 4; ++j) { //j=p
             for (int k = 0; k < 4; ++k) { //k=n
@@ -155,9 +155,9 @@ operator *  (const Matrix4& rhs) const{
     return newMatrix;
 }
 
-inline void Matrix4::
-operator *= (const Matrix4& rhs){
-    Matrix4 newMatrix;
+inline void mat4::
+operator *= (const mat4& rhs){
+    mat4 newMatrix;
     for (int i = 0; i < 4; ++i) { //i=m
         for (int j = 0; j < 4; ++j) { //j=p
             for (int k = 0; k < 4; ++k) { //k=n
@@ -169,9 +169,9 @@ operator *= (const Matrix4& rhs){
 }
 
 //element-wise multiplication
-inline Matrix4 Matrix4::
-operator ^  (const Matrix4& rhs) const{
-    Matrix4 newMatrix(*this);
+inline mat4 mat4::
+operator ^  (const mat4& rhs) const{
+    mat4 newMatrix(*this);
     for (int i = 0; i < 16; ++i) {
         newMatrix.data[i] *= rhs.data[i];
     }
@@ -179,40 +179,40 @@ operator ^  (const Matrix4& rhs) const{
 } 
 
 //element-wise multiplication and assignment
-inline void Matrix4::
-operator ^= (const Matrix4& rhs){
+inline void mat4::
+operator ^= (const mat4& rhs){
     for (int i = 0; i < 16; ++i) {
         this->data[i] *= rhs.data[i];
     }
 }
 
 //element-wise division
-inline Matrix4 Matrix4::
-operator %  (const Matrix4& rhs) const{
-    Matrix4 newMatrix(*this);
+inline mat4 mat4::
+operator %  (const mat4& rhs) const{
+    mat4 newMatrix(*this);
     for (int i = 0; i < 16; ++i) {
-        Assert(rhs.data[i] != 0, "Matrix4 element-wise division doesnt allow zeros in the right matrix");
+        Assert(rhs.data[i] != 0, "mat4 element-wise division doesnt allow zeros in the right matrix");
         newMatrix.data[i] /= rhs.data[i];
     }
     return newMatrix;
 } 
 
 //element-wise division and assignment
-inline void Matrix4::
-operator %= (const Matrix4& rhs){
+inline void mat4::
+operator %= (const mat4& rhs){
     for (int i = 0; i < 16; ++i) {
-        Assert(rhs.data[i] != 0, "Matrix4 element-wise division doesnt allow zeros in the right matrix");
+        Assert(rhs.data[i] != 0, "mat4 element-wise division doesnt allow zeros in the right matrix");
         this->data[i] /= rhs.data[i];
     }
 }
 
-inline bool Matrix4::
-operator == (const Matrix4& rhs) const { 
+inline bool mat4::
+operator == (const mat4& rhs) const { 
     return memcmp(this->data, rhs.data, sizeof(f32)*16) == 0;
 }
 
-inline bool Matrix4::
-operator != (const Matrix4& rhs) const { 
+inline bool mat4::
+operator != (const mat4& rhs) const { 
     return !(*this == rhs); 
 }
 
@@ -220,10 +220,10 @@ operator != (const Matrix4& rhs) const {
 //// functions ////
 ///////////////////
 
-//TODO(delle,ClMa) clean up Matrix4.str() and Matrix4.str2F()
-inline const std::string Matrix4::
+//TODO(delle,ClMa) clean up mat4.str() and mat4.str2F()
+inline const std::string mat4::
 str() const {
-    std::string str = "Matrix4:\n|";
+    std::string str = "mat4:\n|";
     for (int i = 0; i < 15; ++i) {
         char buffer[15];
         std::snprintf(buffer, 15, "%+.6f", data[i]);
@@ -240,9 +240,9 @@ str() const {
     return str;
 };
 
-inline const std::string Matrix4::
+inline const std::string mat4::
 str2f() const {
-    std::string str = "Matrix4:\n|";
+    std::string str = "mat4:\n|";
     for (int i = 0; i < 15; ++i) {
         char buffer[15];
         std::snprintf(buffer, 15, "%+.2f", data[i]);
@@ -260,9 +260,9 @@ str2f() const {
 };
 
 //converts the rows into columns and vice-versa
-inline Matrix4 Matrix4::
+inline mat4 mat4::
 Transpose() const{
-    Matrix4 newMatrix;
+    mat4 newMatrix;
     for (int i = 0; i < 16; ++i) {
         newMatrix.data[i] = data[4 * (i%4) + (i/4)];
     }
@@ -270,7 +270,7 @@ Transpose() const{
 }
 
 //returns the determinant of the matrix
-inline float Matrix4::
+inline float mat4::
 Determinant() const{
     return data[0] * (data[ 5] * (data[10] * data[15] - data[11] * data[14]) -
                       data[ 9] * (data[ 6] * data[15] - data[ 7] * data[14]) + 
@@ -290,7 +290,7 @@ Determinant() const{
 }
 
 //returns the determinant of this matrix without the specified row and column
-inline float Matrix4::
+inline float mat4::
 Minor(int row, int col) const {
     float arr[9];
     int index = 0;
@@ -312,7 +312,7 @@ Minor(int row, int col) const {
 }
 
 //returns the cofactor (minor with adjusted sign based on location in matrix) at given row and column
-inline float Matrix4::
+inline float mat4::
 Cofactor(int row, int col) const{
     if ((row + col) % 2) {
         return -Minor(row, col);
@@ -322,9 +322,9 @@ Cofactor(int row, int col) const{
 }
 
 //returns the transposed matrix of cofactors of this matrix
-inline Matrix4 Matrix4::
+inline mat4 mat4::
 Adjoint() const {
-    Matrix4 newMatrix = Matrix4();
+    mat4 newMatrix = mat4();
     int index = 0;
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
@@ -335,48 +335,48 @@ Adjoint() const {
 }
 
 //returns the adjoint divided by the determinant
-inline Matrix4 Matrix4::
+inline mat4 mat4::
 Inverse() const {
     float det = this->Determinant();
-    Assert(det, "Matrix4 inverse does not exist if determinant is zero");
+    Assert(det, "mat4 inverse does not exist if determinant is zero");
     return this->Adjoint() / det;
 }
 
 //returns a LH rotation transformation matrix in degrees around the X axis
-inline Matrix4 Matrix4::
+inline mat4 mat4::
 RotationMatrixX(float angle) {
     angle = RADIANS(angle);
     float c = cosf(angle); float s = sinf(angle);
-    return Matrix4(1,  0, 0, 0,
+    return mat4(1,  0, 0, 0,
                    0,  c, s, 0,
                    0, -s, c, 0,
                    0,  0, 0, 1);
 }
 
 //returns a LH rotation transformation matrix in degrees around the Y axis
-inline Matrix4 Matrix4::
+inline mat4 mat4::
 RotationMatrixY(float angle) {
     angle = RADIANS(angle);
     float c = cosf(angle); float s = sinf(angle);
-    return Matrix4(c, 0, -s, 0,
+    return mat4(c, 0, -s, 0,
                    0, 1,  0, 0,
                    s, 0,  c, 0,
                    0, 0,  0, 1);
 }
 
 //returns a LH rotation transformation matrix in degrees around the Z axis
-inline Matrix4 Matrix4::
+inline mat4 mat4::
 RotationMatrixZ(float angle) {
     angle = RADIANS(angle);
     float c = cosf(angle); float s = sinf(angle);
-    return Matrix4(c,  s, 0, 0,
+    return mat4(c,  s, 0, 0,
                    -s, c, 0, 0,
                    0,  0, 1, 0,
                    0,  0, 0, 1);
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
-inline Matrix4 Matrix4::
+inline mat4 mat4::
 RotationMatrix(float x, float y, float z) {
     x = RADIANS(x); y = RADIANS(y); z = RADIANS(z);
     float cX = cosf(x); float sX = sinf(x);
@@ -385,25 +385,25 @@ RotationMatrix(float x, float y, float z) {
     float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
     float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
     float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
-    return Matrix4(r00, r01, r02, 0,
+    return mat4(r00, r01, r02, 0,
                    r10, r11, r12, 0,
                    r20, r21, r22, 0,
                    0,   0,   0,   1);
 }
 
 //returns a translation matrix where (0,3) = translation.x, (1,3) = translation.y, (2,3) = translation.z
-inline Matrix4 Matrix4::
+inline mat4 mat4::
 TranslationMatrix(float x, float y, float z) {
-    return Matrix4(1, 0, 0, 0,
+    return mat4(1, 0, 0, 0,
                    0, 1, 0, 0,
                    0, 0, 1, 0,
                    x, y, z, 1);
 }
 
 //returns a scale matrix where (0,0) = scale.x, (1,1) = scale.y, (2,2) = scale.z
-inline Matrix4 Matrix4::
+inline mat4 mat4::
 ScaleMatrix(float x, float y, float z) {
-    return Matrix4(x, 0, 0, 0,
+    return mat4(x, 0, 0, 0,
                    0, y, 0, 0,
                    0, 0, z, 0,
                    0, 0, 0, 1);

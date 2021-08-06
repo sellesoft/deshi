@@ -47,12 +47,12 @@ void Editor::TranslateEntity(Entity* e, TransformationAxis axis){
     
 }
 
-inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um){
+inline void HandleGrabbing(Entity* sel, CameraInstance* c, Admin* admin, UndoManager* um){
 	persist bool grabbingObj = false;
     
     if(!DengConsole->IMGUI_MOUSE_CAPTURE){ 
         if(DengInput->KeyPressed(DengKeys.grabSelectedObject) || grabbingObj){
-            //Camera* c = admin->mainCamera;
+            //CameraInstance* c = admin->mainCamera;
             grabbingObj = true;
             admin->controller.cameraLocked = true;
             
@@ -63,9 +63,9 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             
             persist bool initialgrab = true;
             
-            persist Vector3 initialObjPos;
+            persist vec3 initialObjPos;
             persist float initialdist; 
-            persist Vector3 lastFramePos;
+            persist vec3 lastFramePos;
             
             //different cases for mode chaning
             if(DengInput->KeyPressed(Key::X)){
@@ -110,7 +110,7 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             
             //set mouse to obj position on screen and save that position
             if(initialgrab){
-                Vector2 screenPos = Math::WorldToScreen2(sel->transform.position, c->projMat, c->viewMat, DengWindow->dimensions);
+                vec2 screenPos = Math::WorldToScreen2(sel->transform.position, c->projMat, c->viewMat, DengWindow->dimensions);
                 DengWindow->SetCursorPos(screenPos);
                 initialObjPos = sel->transform.position;
                 initialdist = (initialObjPos - c->position).mag();
@@ -119,15 +119,15 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             
             //incase u grab in debug mode
             if(Physics* p = sel->GetComponent<Physics>()){
-                p->velocity = Vector3::ZERO;
+                p->velocity = vec3::ZERO;
             }
             
             if(!(xaxis || yaxis || zaxis)){
                 
-                Vector3 nuworldpos = Math::ScreenToWorld(DengInput->mousePos, c->projMat,
-                                                         c->viewMat, DengWindow->dimensions);
+                vec3 nuworldpos = Math::ScreenToWorld(DengInput->mousePos, c->projMat,
+													  c->viewMat, DengWindow->dimensions);
                 
-                Vector3 newpos = nuworldpos;
+                vec3 newpos = nuworldpos;
                 
                 newpos *= Math::WorldToLocal(admin->mainCamera->position);
                 newpos.normalize();
@@ -141,73 +141,73 @@ inline void HandleGrabbing(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 
             }
             else if(xaxis){
-                Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
-                                                  admin->mainCamera->viewMat, DengWindow->dimensions);
+                vec3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
+											   admin->mainCamera->viewMat, DengWindow->dimensions);
                 pos *= Math::WorldToLocal(admin->mainCamera->position);
                 pos.normalize();
                 pos *= 1000;
                 pos *= Math::LocalToWorld(admin->mainCamera->position);
                 
-                Vector3 planeinter;
+                vec3 planeinter;
                 
-                if(Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60){
-                    planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
+                if(Math::AngBetweenVectors(vec3(c->forward.x, 0, c->forward.z), c->forward) > 60){
+                    planeinter = Math::VectorPlaneIntersect(initialObjPos, vec3::UP, c->position, pos);
                 }
                 else {
-                    planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
+                    planeinter = Math::VectorPlaneIntersect(initialObjPos, vec3::FORWARD, c->position, pos);
                 }
                 
-                sel->transform.position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
+                sel->transform.position = vec3(planeinter.x, initialObjPos.y, initialObjPos.z);
                 if(Physics* p = sel->GetComponent<Physics>()){
-                    p->position = Vector3(planeinter.x, initialObjPos.y, initialObjPos.z);
+                    p->position = vec3(planeinter.x, initialObjPos.y, initialObjPos.z);
                 }
 				Render::DrawLine(vec3{-1000,sel->transform.position.y,sel->transform.position.z}, 
 								 vec3{ 1000,sel->transform.position.y,sel->transform.position.z}, 
 								 Color::DARK_RED);
             }
             else if(yaxis){
-                Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
-                                                  admin->mainCamera->viewMat, DengWindow->dimensions);
+                vec3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
+											   admin->mainCamera->viewMat, DengWindow->dimensions);
                 pos *= Math::WorldToLocal(admin->mainCamera->position);
                 pos.normalize();
                 pos *= 1000;
                 pos *= Math::LocalToWorld(admin->mainCamera->position);
                 
-                Vector3 planeinter;
+                vec3 planeinter;
                 
-                if(Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60){
-                    planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
+                if(Math::AngBetweenVectors(vec3(c->forward.x, 0, c->forward.z), c->forward) > 60){
+                    planeinter = Math::VectorPlaneIntersect(initialObjPos, vec3::RIGHT, c->position, pos);
                 }
                 else {
-                    planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::FORWARD, c->position, pos);
+                    planeinter = Math::VectorPlaneIntersect(initialObjPos, vec3::FORWARD, c->position, pos);
                 }
-                sel->transform.position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
+                sel->transform.position = vec3(initialObjPos.x, planeinter.y, initialObjPos.z);
                 if(Physics* p = sel->GetComponent<Physics>()){
-                    p->position = Vector3(initialObjPos.x, planeinter.y, initialObjPos.z);
+                    p->position = vec3(initialObjPos.x, planeinter.y, initialObjPos.z);
                 }	
                 Render::DrawLine(vec3{sel->transform.position.x,-1000,sel->transform.position.z}, 
 								 vec3{sel->transform.position.x, 1000,sel->transform.position.z}, 
 								 Color::DARK_GREEN);
             }
             else if(zaxis){
-                Vector3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
-                                                  admin->mainCamera->viewMat, DengWindow->dimensions);
+                vec3 pos = Math::ScreenToWorld(DengInput->mousePos, admin->mainCamera->projMat,
+											   admin->mainCamera->viewMat, DengWindow->dimensions);
                 pos *= Math::WorldToLocal(admin->mainCamera->position);
                 pos.normalize();
                 pos *= 1000;
                 pos *= Math::LocalToWorld(admin->mainCamera->position);
                 
-                Vector3 planeinter;
+                vec3 planeinter;
                 
-                if(Math::AngBetweenVectors(Vector3(c->forward.x, 0, c->forward.z), c->forward) > 60){
-                    planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::UP, c->position, pos);
+                if(Math::AngBetweenVectors(vec3(c->forward.x, 0, c->forward.z), c->forward) > 60){
+                    planeinter = Math::VectorPlaneIntersect(initialObjPos, vec3::UP, c->position, pos);
                 }
                 else {
-                    planeinter = Math::VectorPlaneIntersect(initialObjPos, Vector3::RIGHT, c->position, pos);
+                    planeinter = Math::VectorPlaneIntersect(initialObjPos, vec3::RIGHT, c->position, pos);
                 }
-                sel->transform.position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
+                sel->transform.position = vec3(initialObjPos.x, initialObjPos.y, planeinter.z);
                 if(Physics* p = sel->GetComponent<Physics>()){
-                    p->position = Vector3(initialObjPos.x, initialObjPos.y, planeinter.z);
+                    p->position = vec3(initialObjPos.x, initialObjPos.y, planeinter.z);
                 }
                 Render::DrawLine(vec3{sel->transform.position.x,sel->transform.position.y,-1000}, 
 								 vec3{sel->transform.position.x,sel->transform.position.y, 1000}, 
@@ -222,7 +222,7 @@ void Editor::RotateEntity(Entity* e, TransformationAxis axis){
     
 }
 
-inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um){
+inline void HandleRotating(Entity* sel, CameraInstance* c, Admin* admin, UndoManager* um){
     persist bool rotatingObj = false;
     
     if(!DengConsole->IMGUI_MOUSE_CAPTURE){ 
@@ -235,11 +235,11 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             persist bool yaxis = false;
             persist bool zaxis = false;
             
-            persist Vector2 origmousepos = DengInput->mousePos;
+            persist vec2 origmousepos = DengInput->mousePos;
             
             persist bool initialrot = true;
             
-            persist Vector3 initialObjRot;
+            persist vec3 initialObjRot;
             
             //different cases for mode chaning
             if(DengInput->KeyPressed(Key::X)){
@@ -303,17 +303,17 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
             //TODO(sushi, In) make rotation controls a little more nice eg. probably just make it how far along the screen the mouse is to determine it.
             if(!(xaxis || yaxis || zaxis)){
                 
-                Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
-                Vector2 mousepos = DengInput->mousePos;
+                vec2 center = vec2(DengWindow->width / 2, DengWindow->height / 2);
+                vec2 mousepos = DengInput->mousePos;
                 
-                Vector2 ctm = mousepos - center;
+                vec2 ctm = mousepos - center;
                 
-                Vector2 cleft = Vector2(0, DengWindow->height / 2);
-                Vector2 cright = Vector2(DengWindow->width, DengWindow->height / 2);
+                vec2 cleft = vec2(0, DengWindow->height / 2);
+                vec2 cright = vec2(DengWindow->width, DengWindow->height / 2);
                 
-                Vector2 mp = DengInput->mousePos;
+                vec2 mp = DengInput->mousePos;
                 
-                Vector2 cltmp = mp - cleft;
+                vec2 cltmp = mp - cleft;
                 
                 float dist = (cleft - cright).normalized().dot(cltmp);
                 
@@ -329,7 +329,7 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 //	ang = 180 + (180 + ang);
                 //}
                 
-                sel->transform.rotation = Matrix4::AxisAngleRotationMatrix(ang, Vector4((sel->transform.position - c->position).normalized(), 0)).Rotation();
+                sel->transform.rotation = mat4::AxisAngleRotationMatrix(ang, vec4((sel->transform.position - c->position).normalized(), 0)).Rotation();
                 
                 sel->transform.rotation.x = DEGREES(sel->transform.rotation.x);
                 sel->transform.rotation.y = DEGREES(sel->transform.rotation.y);
@@ -337,10 +337,10 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 
             }
             else if(xaxis){
-                Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
-                Vector2 mousepos = DengInput->mousePos;
+                vec2 center = vec2(DengWindow->width / 2, DengWindow->height / 2);
+                vec2 mousepos = DengInput->mousePos;
                 
-                Vector2 ctm = mousepos - center;
+                vec2 ctm = mousepos - center;
                 
                 float ang = Math::AngBetweenVectors(ctm, origmousepos - center);
                 
@@ -354,10 +354,10 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 }
             }
             else if(yaxis){
-                Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
-                Vector2 mousepos = DengInput->mousePos;
+                vec2 center = vec2(DengWindow->width / 2, DengWindow->height / 2);
+                vec2 mousepos = DengInput->mousePos;
                 
-                Vector2 ctm = mousepos - center;
+                vec2 ctm = mousepos - center;
                 
                 float ang = Math::AngBetweenVectors(ctm, origmousepos - center);
                 
@@ -371,10 +371,10 @@ inline void HandleRotating(Entity* sel, Camera* c, Admin* admin, UndoManager* um
                 }
             }
             else if(zaxis){
-                Vector2 center = Vector2(DengWindow->width / 2, DengWindow->height / 2);
-                Vector2 mousepos = DengInput->mousePos;
+                vec2 center = vec2(DengWindow->width / 2, DengWindow->height / 2);
+                vec2 mousepos = DengInput->mousePos;
                 
-                Vector2 ctm = mousepos - center;
+                vec2 ctm = mousepos - center;
                 
                 float ang = Math::AngBetweenVectors(ctm, origmousepos - center);
                 
@@ -411,92 +411,92 @@ namespace ImGui {
         ImGui::End();
     }
     
-    void DebugDrawCircle(Vector2 pos, float radius, Color color){
+    void DebugDrawCircle(vec2 pos, float radius, Color color){
         ImGui::GetBackgroundDrawList()->AddCircle(ImVec2(pos.x, pos.y), radius, ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
-    void DebugDrawCircle3(Vector3 pos, float radius, Color color){
-        Camera* c = g_admin->mainCamera;
-        Vector2 windimen = DengWindow->dimensions;
-        Vector2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
-        ImGui::GetBackgroundDrawList()->AddCircle(ImGui::Vector2ToImVec2(pos2), radius, ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
+    void DebugDrawCircle3(vec3 pos, float radius, Color color){
+        CameraInstance* c = g_admin->mainCamera;
+        vec2 windimen = DengWindow->dimensions;
+        vec2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
+        ImGui::GetBackgroundDrawList()->AddCircle(ImGui::vec2ToImVec2(pos2), radius, ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
-    void DebugDrawCircleFilled3(Vector3 pos, float radius, Color color){
-        Camera* c = g_admin->mainCamera;
-        Vector2 windimen = DengWindow->dimensions;
-        Vector2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
-        ImGui::GetBackgroundDrawList()->AddCircleFilled(ImGui::Vector2ToImVec2(pos2), radius, ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
+    void DebugDrawCircleFilled3(vec3 pos, float radius, Color color){
+        CameraInstance* c = g_admin->mainCamera;
+        vec2 windimen = DengWindow->dimensions;
+        vec2 pos2 = Math::WorldToScreen2(pos, c->projMat, c->viewMat, windimen);
+        ImGui::GetBackgroundDrawList()->AddCircleFilled(ImGui::vec2ToImVec2(pos2), radius, ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
-    void DebugDrawLine(Vector2 pos1, Vector2 pos2, Color color){
+    void DebugDrawLine(vec2 pos1, vec2 pos2, Color color){
         Math::ClipLineToBorderPlanes(pos1, pos2, DengWindow->dimensions);
-        ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(pos1), ImGui::Vector2ToImVec2(pos2), ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
+        ImGui::GetBackgroundDrawList()->AddLine(ImGui::vec2ToImVec2(pos1), ImGui::vec2ToImVec2(pos2), ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
-    void DebugDrawLine3(Vector3 pos1, Vector3 pos2, Color color){
-        Camera* c = g_admin->mainCamera;
-        Vector2 windimen = DengWindow->dimensions;
+    void DebugDrawLine3(vec3 pos1, vec3 pos2, Color color){
+        CameraInstance* c = g_admin->mainCamera;
+        vec2 windimen = DengWindow->dimensions;
         
-        Vector3 pos1n = Math::WorldToCamera3(pos1, c->viewMat);
-        Vector3 pos2n = Math::WorldToCamera3(pos2, c->viewMat);
+        vec3 pos1n = Math::WorldToCamera3(pos1, c->viewMat);
+        vec3 pos2n = Math::WorldToCamera3(pos2, c->viewMat);
         
         if(Math::ClipLineToZPlanes(pos1n, pos2n, c->nearZ, c->farZ)){
-            ImGui::GetBackgroundDrawList()->AddLine(ImGui::Vector2ToImVec2(Math::CameraToScreen2(pos1n, c->projMat, windimen)), 
-                                                    ImGui::Vector2ToImVec2(Math::CameraToScreen2(pos2n, c->projMat, windimen)), 
+            ImGui::GetBackgroundDrawList()->AddLine(ImGui::vec2ToImVec2(Math::CameraToScreen2(pos1n, c->projMat, windimen)), 
+                                                    ImGui::vec2ToImVec2(Math::CameraToScreen2(pos2n, c->projMat, windimen)), 
                                                     ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
         }
     }
     
-    void DebugDrawText(const char* text, Vector2 pos, Color color){		
-        ImGui::SetCursorPos(ImGui::Vector2ToImVec2(pos));
+    void DebugDrawText(const char* text, vec2 pos, Color color){		
+        ImGui::SetCursorPos(ImGui::vec2ToImVec2(pos));
         
         ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(color));
         ImGui::TextEx(text);
         ImGui::PopStyleColor();
     }
     
-    void DebugDrawText3(const char* text, Vector3 pos, Color color, Vector2 twoDoffset){
-        Camera* c = g_admin->mainCamera;
-        Vector2 windimen = DengWindow->dimensions;
+    void DebugDrawText3(const char* text, vec3 pos, Color color, vec2 twoDoffset){
+        CameraInstance* c = g_admin->mainCamera;
+        vec2 windimen = DengWindow->dimensions;
         
-        Vector3 posc = Math::WorldToCamera3(pos, c->viewMat);
+        vec3 posc = Math::WorldToCamera3(pos, c->viewMat);
         if(Math::ClipLineToZPlanes(posc, posc, c->nearZ, c->farZ)){
-            ImGui::SetCursorPos(ImGui::Vector2ToImVec2(Math::CameraToScreen2(posc, c->projMat, windimen) + twoDoffset));
+            ImGui::SetCursorPos(ImGui::vec2ToImVec2(Math::CameraToScreen2(posc, c->projMat, windimen) + twoDoffset));
             ImGui::PushStyleColor(ImGuiCol_Text, ImGui::ColorToImVec4(color));
             ImGui::TextEx(text);
             ImGui::PopStyleColor();
         }
     }
     
-    void DebugDrawTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color){
+    void DebugDrawTriangle(vec2 p1, vec2 p2, vec2 p3, Color color){
         DebugDrawLine(p1, p2);
         DebugDrawLine(p2, p3);
         DebugDrawLine(p3, p1);
     }
     
-    void DebugFillTriangle(Vector2 p1, Vector2 p2, Vector2 p3, Color color){
-        ImGui::GetBackgroundDrawList()->AddTriangleFilled(ImGui::Vector2ToImVec2(p1), ImGui::Vector2ToImVec2(p2), ImGui::Vector2ToImVec2(p3), 
+    void DebugFillTriangle(vec2 p1, vec2 p2, vec2 p3, Color color){
+        ImGui::GetBackgroundDrawList()->AddTriangleFilled(ImGui::vec2ToImVec2(p1), ImGui::vec2ToImVec2(p2), ImGui::vec2ToImVec2(p3), 
                                                           ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
-    void DebugDrawTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color){
+    void DebugDrawTriangle3(vec3 p1, vec3 p2, vec3 p3, Color color){
         DebugDrawLine3(p1, p2, color);
         DebugDrawLine3(p2, p3, color);
         DebugDrawLine3(p3, p1, color);
     }
     
     //TODO(sushi, Ui) add triangle clipping to this function
-    void DebugFillTriangle3(Vector3 p1, Vector3 p2, Vector3 p3, Color color){
-        Vector2 p1n = Math::WorldToScreen(p1, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
-        Vector2 p2n = Math::WorldToScreen(p2, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
-        Vector2 p3n = Math::WorldToScreen(p3, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).ToVector2();
+    void DebugFillTriangle3(vec3 p1, vec3 p2, vec3 p3, Color color){
+        vec2 p1n = Math::WorldToScreen(p1, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).toVec2();
+        vec2 p2n = Math::WorldToScreen(p2, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).toVec2();
+        vec2 p3n = Math::WorldToScreen(p3, g_admin->mainCamera->projMat, g_admin->mainCamera->viewMat, DengWindow->dimensions).toVec2();
         
-        ImGui::GetBackgroundDrawList()->AddTriangleFilled(ImGui::Vector2ToImVec2(p1n), ImGui::Vector2ToImVec2(p2n), ImGui::Vector2ToImVec2(p3n), 
+        ImGui::GetBackgroundDrawList()->AddTriangleFilled(ImGui::vec2ToImVec2(p1n), ImGui::vec2ToImVec2(p2n), ImGui::vec2ToImVec2(p3n), 
                                                           ImGui::GetColorU32(ImGui::ColorToImVec4(color)));
     }
     
-    void DebugDrawGraphFloat(Vector2 pos, float inval, float sizex, float sizey){
+    void DebugDrawGraphFloat(vec2 pos, float inval, float sizex, float sizey){
         //display in value
         ImGui::SetCursorPos(ImVec2(pos.x, pos.y - 10));
         ImGui::TextEx(TOSTDSTRING(inval).c_str());
@@ -549,7 +549,7 @@ namespace ImGui {
         ImGui::PushStyleColor(ImGuiCol_PlotLines, ImGui::ColorToImVec4(Color(0, 255, 200, 255)));
         ImGui::PushStyleColor(ImGuiCol_FrameBg, ImGui::ColorToImVec4(Color(20, 20, 20, 255)));
         
-        ImGui::SetCursorPos(ImGui::Vector2ToImVec2(pos));
+        ImGui::SetCursorPos(ImGui::vec2ToImVec2(pos));
         ImGui::PlotLines("", &pvalues[0], pvalues.size(), 0, 0, minval, maxval, ImVec2(sizex, sizey));
         
         ImGui::PopStyleColor();
@@ -1140,7 +1140,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 			vec3 oldVec = sel->transform.position;
 			
 			ImGui::TextEx("Position    "); ImGui::SameLine();
-			if(ImGui::InputVector3("##ent_pos", &sel->transform.position)){
+			if(ImGui::Inputvec3("##ent_pos", &sel->transform.position)){
 				if(Physics* p = sel->GetComponent<Physics>()){
 					p->position = sel->transform.position;
 					admin->editor.undo_manager.AddUndoTranslate(&sel->transform, &oldVec, &p->position);
@@ -1151,7 +1151,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 			
 			oldVec = sel->transform.rotation;
 			ImGui::TextEx("Rotation    "); ImGui::SameLine(); 
-			if(ImGui::InputVector3("##ent_rot", &sel->transform.rotation)){
+			if(ImGui::Inputvec3("##ent_rot", &sel->transform.rotation)){
 				if(Physics* p = sel->GetComponent<Physics>()){
 					p->rotation = sel->transform.rotation;
 					admin->editor.undo_manager.AddUndoRotate(&sel->transform, &oldVec, &p->rotation);
@@ -1162,7 +1162,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 			
 			oldVec = sel->transform.scale;
 			ImGui::TextEx("Scale       "); ImGui::SameLine(); 
-			if(ImGui::InputVector3("##ent_scale",   &sel->transform.scale)){
+			if(ImGui::Inputvec3("##ent_scale",   &sel->transform.scale)){
 				if(Physics* p = sel->GetComponent<Physics>()){
 					p->scale = sel->transform.scale;
 					admin->editor.undo_manager.AddUndoScale(&sel->transform, &oldVec, &p->scale);
@@ -1224,10 +1224,10 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 					ImGui::Indent();
 					
 					Physics* d = dyncast(Physics, c);
-					ImGui::TextEx("Velocity     "); ImGui::SameLine(); ImGui::InputVector3("##phys_vel", &d->velocity);
-					ImGui::TextEx("Accelertaion "); ImGui::SameLine(); ImGui::InputVector3("##phys_accel", &d->acceleration);
-					ImGui::TextEx("Rot Velocity "); ImGui::SameLine(); ImGui::InputVector3("##phys_rotvel", &d->rotVelocity);
-					ImGui::TextEx("Rot Accel    "); ImGui::SameLine(); ImGui::InputVector3("##phys_rotaccel", &d->rotAcceleration);
+					ImGui::TextEx("Velocity     "); ImGui::SameLine(); ImGui::Inputvec3("##phys_vel", &d->velocity);
+					ImGui::TextEx("Accelertaion "); ImGui::SameLine(); ImGui::Inputvec3("##phys_accel", &d->acceleration);
+					ImGui::TextEx("Rot Velocity "); ImGui::SameLine(); ImGui::Inputvec3("##phys_rotvel", &d->rotVelocity);
+					ImGui::TextEx("Rot Accel    "); ImGui::SameLine(); ImGui::Inputvec3("##phys_rotaccel", &d->rotAcceleration);
 					ImGui::TextEx("Elasticity   "); ImGui::SameLine();
 					ImGui::SetNextItemWidth(-FLT_MIN); ImGui::InputFloat("##phys_elastic", &d->elasticity);
 					ImGui::TextEx("Mass         "); ImGui::SameLine();
@@ -1292,7 +1292,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 							case ColliderShape_Box:{
 								BoxCollider* coll_box = dyncast(BoxCollider, coll);
 								ImGui::TextEx("Half Dims "); ImGui::SameLine(); 
-								if(ImGui::InputVector3("##coll_halfdims", &coll_box->halfDims)){
+								if(ImGui::Inputvec3("##coll_halfdims", &coll_box->halfDims)){
 									if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
 									coll_box->RecalculateTensor(mass);
 								}
@@ -1300,7 +1300,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 							case ColliderShape_AABB:{
 								AABBCollider* coll_aabb = dyncast(AABBCollider, coll);
 								ImGui::TextEx("Half Dims "); ImGui::SameLine(); 
-								if(ImGui::InputVector3("##coll_halfdims", &coll_aabb->halfDims)){
+								if(ImGui::Inputvec3("##coll_halfdims", &coll_aabb->halfDims)){
 									if(Physics* p = sel->GetComponent<Physics>()) mass = p->mass;
 									coll_aabb->RecalculateTensor(mass);
 								}
@@ -1357,7 +1357,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 				
 				//camera
 				case ComponentType_Camera:{
-					if(ImGui::CollapsingHeader("Camera", &delete_button, tree_flags)){
+					if(ImGui::CollapsingHeader("CameraInstance", &delete_button, tree_flags)){
 						ImGui::Indent();
 						
 						ImGui::TextEx("TODO implement camera component editing");
@@ -1376,9 +1376,9 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 						ImGui::TextEx("Brightness   "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN);
 						ImGui::InputFloat("##light_brightness", &d->brightness);
 						ImGui::TextEx("Position     "); ImGui::SameLine(); 
-						ImGui::InputVector3("##light_position", &d->position);
+						ImGui::Inputvec3("##light_position", &d->position);
 						ImGui::TextEx("Direction    "); ImGui::SameLine(); 
-						ImGui::InputVector3("##light_direction", &d->direction);
+						ImGui::Inputvec3("##light_direction", &d->direction);
 						
 						ImGui::Unindent();
 						ImGui::Separator();
@@ -1477,7 +1477,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 					admin->AddComponentToLayers(comp);
 				}break;
 				case ComponentType_AudioListener:{
-					Component* comp = new AudioListener(sel->transform.position, Vector3::ZERO, sel->transform.rotation);
+					Component* comp = new AudioListener(sel->transform.position, vec3::ZERO, sel->transform.rotation);
 					sel->AddComponent(comp);
 					admin->AddComponentToLayers(comp);
 				}break;
@@ -1487,7 +1487,7 @@ inline void EntitiesTab(Admin* admin, float fontsize){
 					admin->AddComponentToLayers(comp);
 				}break;
 				case ComponentType_Camera:{
-					Component* comp = new Camera(90.f);
+					Component* comp = new CameraInstance(90.f);
 					sel->AddComponent(comp);
 					admin->AddComponentToLayers(comp);
 				}break;
@@ -1769,7 +1769,7 @@ inline void MeshesTab(Admin* admin){
 		//// vertexes ////
 		if(sel_vertex_idx != -1){
 			Mesh::Vertex* sel_vertex = &selected->vertexes[sel_vertex_idx];
-			Render::DrawBoxFilled(Matrix4::TransformationMatrix(sel_vertex->pos*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), selected_color);
+			Render::DrawBoxFilled(mat4::TransformationMatrix(sel_vertex->pos*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), selected_color);
 			if(vertex_indexes) ImGui::DebugDrawText3(TOSTRING("V",sel_vertex_idx).str, sel_vertex->pos*scale, text_color, vec2{-5,-5});
 			if(vertex_normals) Render::DrawLine(sel_vertex->pos*scale, sel_vertex->pos*scale + sel_vertex->normal*normal_scale, selected_color);
 		}
@@ -1777,8 +1777,8 @@ inline void MeshesTab(Admin* admin){
 			forI(selected->vertexCount){
 				if(i == sel_vertex_idx) continue;
 				Mesh::Vertex* sel_vertex = &selected->vertexes[i];
-				if(vertex_draw) Render::DrawBoxFilled(Matrix4::TransformationMatrix(sel_vertex->pos*scale, vec3::ZERO, vec3{.03f,.03f,.03f}), vertex_color);
-				if(vertex_indexes) ImGui::DebugDrawText3(TOSTRING("V",i).str, sel_vertex->pos, text_color, vec2{-5,-5});
+				if(vertex_draw) Render::DrawBoxFilled(mat4::TransformationMatrix(sel_vertex->pos*scale, vec3::ZERO, vec3{.03f,.03f,.03f}), vertex_color);
+				if(vertex_indexes) ImGui::DebugDrawText3(TOSTRING("V",i).str, sel_vertex->pos*scale, text_color, vec2{-5,-5});
 				if(vertex_normals) Render::DrawLine(sel_vertex->pos*scale, sel_vertex->pos*scale + sel_vertex->normal*normal_scale, vertex_color);
 			}
 		}
@@ -1789,7 +1789,7 @@ inline void MeshesTab(Admin* admin){
 			vec3 tri_center = Geometry::MeshTriangleMidpoint(sel_triangle)*scale;
 			Render::DrawTriangleFilled(sel_triangle->p[0]*scale, sel_triangle->p[1]*scale, sel_triangle->p[2]*scale, selected_color);
 			if(triangle_indexes) ImGui::DebugDrawText3(TOSTRING("T",sel_triangle_idx).str, tri_center, text_color, vec2{-5,-5});
-			if(triangle_centers) Render::DrawBoxFilled(Matrix4::TransformationMatrix(tri_center, vec3::ZERO, vec3{.05f,.05f,.05f}), selected_color);
+			if(triangle_centers) Render::DrawBoxFilled(mat4::TransformationMatrix(tri_center, vec3::ZERO, vec3{.05f,.05f,.05f}), selected_color);
 			if(triangle_normals) Render::DrawLine(tri_center, tri_center + sel_triangle->normal*normal_scale, selected_color);
 			forX(tni, sel_triangle->neighbors.count){
 				Mesh::Triangle* tri_nei = &selected->triangles[sel_triangle->neighbors[tni]];
@@ -1807,7 +1807,7 @@ inline void MeshesTab(Admin* admin){
 				vec3 tri_center = Geometry::MeshTriangleMidpoint(sel_triangle)*scale;
 				if(triangle_draw) Render::DrawTriangle(sel_triangle->p[0]*scale, sel_triangle->p[1]*scale, sel_triangle->p[2]*scale, triangle_color);
 				if(triangle_indexes) ImGui::DebugDrawText3(TOSTRING("T",i).str, tri_center, text_color, vec2{-5,-5});
-				if(triangle_centers) Render::DrawBoxFilled(Matrix4::TransformationMatrix(tri_center, vec3::ZERO, vec3{.03f,.03f,.03f}), triangle_color);
+				if(triangle_centers) Render::DrawBoxFilled(mat4::TransformationMatrix(tri_center, vec3::ZERO, vec3{.03f,.03f,.03f}), triangle_color);
 				if(triangle_normals) Render::DrawLine(tri_center, tri_center + sel_triangle->normal*normal_scale, triangle_color);
 			}
 		}
@@ -1816,17 +1816,17 @@ inline void MeshesTab(Admin* admin){
 		if(sel_face_idx != -1){
 			Mesh::Face* sel_face = &selected->faces[sel_face_idx];
 			if(face_indexes) ImGui::DebugDrawText3(TOSTRING("F",sel_face_idx).str, sel_face->center*scale, text_color, vec2{-5,-5});
-			if(face_centers) Render::DrawBoxFilled(Matrix4::TransformationMatrix(sel_face->center*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), selected_color);
+			if(face_centers) Render::DrawBoxFilled(mat4::TransformationMatrix(sel_face->center*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), selected_color);
 			if(face_normals) Render::DrawLine(sel_face->center*scale, sel_face->center*scale + sel_face->normal*normal_scale, selected_color);
 			forX(fvi, sel_face->vertexCount){
 				MeshVertex* fv = &selected->vertexes[sel_face->vertexes[fvi]];
-				if(face_vertexes) Render::DrawBoxFilled(Matrix4::TransformationMatrix(fv->pos*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), edge_color);
+				if(face_vertexes) Render::DrawBoxFilled(mat4::TransformationMatrix(fv->pos*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), edge_color);
 				if(face_vertex_indexes) ImGui::DebugDrawText3(TOSTRING("FV",fvi).str, fv->pos*scale, text_color, vec2{-5,-5});
 			}
 			forX(fvi, sel_face->outerVertexCount){
 				MeshVertex* fv = &selected->vertexes[sel_face->outerVertexes[fvi]];
-				if(face_outer_vertexes) Render::DrawBoxFilled(Matrix4::TransformationMatrix(fv->pos*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), edge_color);
-				if(face_outvertex_indexes) ImGui::DebugDrawText3(TOSTRING("FOV",fvi).str, fv->pos*scale, text_color, vec2{-5,-5});
+				if(face_outer_vertexes) Render::DrawBoxFilled(mat4::TransformationMatrix(fv->pos*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), edge_color);
+				if(face_outvertex_indexes) ImGui::DebugDrawText3(TOSTRING("FOV",fvi).str, fv->pos*scale, text_color, vec2{15,15});
 			}
 			forX(fti, sel_face->triangleCount){
 				MeshTriangle* ft = &selected->triangles[sel_face->triangles[fti]];
@@ -1865,7 +1865,7 @@ inline void MeshesTab(Admin* admin){
 					}
 				}
 				if(face_indexes) ImGui::DebugDrawText3(TOSTRING("F",fi).str, sel_face->center*scale, text_color, vec2{-5,-5});
-				if(face_centers) Render::DrawBoxFilled(Matrix4::TransformationMatrix(sel_face->center*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), face_color);
+				if(face_centers) Render::DrawBoxFilled(mat4::TransformationMatrix(sel_face->center*scale, vec3::ZERO, vec3{.05f,.05f,.05f}), face_color);
 				if(face_normals) Render::DrawLine(sel_face->center*scale, sel_face->center*scale + sel_face->normal*normal_scale, face_color);
 			}
 		}
@@ -2333,16 +2333,16 @@ inline void SettingsTab(Admin* admin){
 		}
 		
 		//// camera properties ////
-		if(ImGui::CollapsingHeader("Camera", 0)){
+		if(ImGui::CollapsingHeader("CameraInstance", 0)){
 			if(ImGui::Button("Zero", ImVec2(ImGui::GetWindowWidth()*.45f, 0))){
-				admin->editor.camera->position = Vector3::ZERO; admin->editor.camera->rotation = Vector3::ZERO;
+				admin->editor.camera->position = vec3::ZERO; admin->editor.camera->rotation = vec3::ZERO;
 			} ImGui::SameLine();
 			if(ImGui::Button("Reset", ImVec2(ImGui::GetWindowWidth()*.45f, 0))){
 				admin->editor.camera->position = {4.f,3.f,-4.f}; admin->editor.camera->rotation = {28.f,-45.f,0.f};
 			}
 			
-			ImGui::TextEx("Position  "); ImGui::SameLine(); ImGui::InputVector3("##cam_pos", &admin->editor.camera->position);
-			ImGui::TextEx("Rotation  "); ImGui::SameLine(); ImGui::InputVector3("##cam_rot", &admin->editor.camera->rotation);
+			ImGui::TextEx("Position  "); ImGui::SameLine(); ImGui::Inputvec3("##cam_pos", &admin->editor.camera->position);
+			ImGui::TextEx("Rotation  "); ImGui::SameLine(); ImGui::Inputvec3("##cam_rot", &admin->editor.camera->rotation);
 			ImGui::TextEx("Near Clip "); ImGui::SameLine(); 
 			if(ImGui::InputFloat("##cam_nearz", &admin->editor.camera->nearZ)){
 				admin->editor.camera->UpdateProjectionMatrix();
@@ -2808,23 +2808,23 @@ void Editor::DebugLayer(){
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImGui::ColorToImVec4(Color(0, 0, 0, 0)));
-	Camera* c = admin->mainCamera;
+	CameraInstance* c = admin->mainCamera;
 	float time = DengTime->totalTime;
 	
-	persist std::vector<pair<float, Vector2>> times;
+	persist std::vector<pair<float, vec2>> times;
 	
-	persist std::vector<Vector3> spots;
+	persist std::vector<vec3> spots;
 	
 	
 	ImGui::Begin("DebugLayer", 0, ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |  ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar);
 	
-	Vector2 mp = DengInput->mousePos;
+	vec2 mp = DengInput->mousePos;
 	
 	float fontsize = ImGui::GetFontSize();
 	
 	
 	if(DengInput->KeyPressed(MouseButton::LEFT) && rand() % 100 + 1 == 80){
-		times.push_back(pair<float, Vector2>(0.f, mp));
+		times.push_back(pair<float, vec2>(0.f, mp));
 	}
 	
 	int index = 0;
@@ -2833,11 +2833,11 @@ void Editor::DebugLayer(){
 		
 		f.first += DengTime->deltaTime;
 		
-		Vector2 p = f.second;
+		vec2 p = f.second;
 		
 		ImGui::SetCursorPos(ImVec2(p.x + 20 * sin(2 * time), p.y - 200 * (f.first / 5)));
 		
-		Vector2 curpos = Vector2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY());
+		vec2 curpos = vec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY());
 		
 		std::string str1 = "hehe!!!!";
 		float strlen1 = (fontsize - (fontsize / 2)) * str1.size();
@@ -2870,7 +2870,7 @@ void Editor::DebugLayer(){
 }
 
 
-void Editor::WorldGrid(Vector3 cpos) {
+void Editor::WorldGrid(vec3 cpos) {
 	int lines = 100;
 	f32 xp = floor(cpos.x) + lines;
 	f32 xn = floor(cpos.x) - lines;
@@ -2879,10 +2879,10 @@ void Editor::WorldGrid(Vector3 cpos) {
 	
 	Color color(50, 50, 50);
 	for(int i = 0; i < lines * 2 + 1; i++){
-		Vector3 v1 = Vector3(xn+i, 0, zn);
-		Vector3 v2 = Vector3(xn+i, 0, zp);
-		Vector3 v3 = Vector3(xn,   0, zn+i);
-		Vector3 v4 = Vector3(xp,   0, zn+i);
+		vec3 v1 = vec3(xn+i, 0, zn);
+		vec3 v2 = vec3(xn+i, 0, zp);
+		vec3 v3 = vec3(xn,   0, zn+i);
+		vec3 v4 = vec3(xp,   0, zn+i);
 		
 		if(xn+i != 0) Render::DrawLine(v1, v2, color);
 		if(zn+i != 0) Render::DrawLine(v3, v4, color);
@@ -2921,7 +2921,7 @@ void Editor::Init(Admin* a){
 	settings = {};
 	
 	selected.reserve(8);
-	camera = new Camera(90.f, .01f, 1000.01f, true);
+	camera = new CameraInstance(90.f, .01f, 1000.01f, true);
 	Render::UpdateCameraViewMatrix(camera->viewMat);
 	Render::UpdateCameraPosition(camera->position);
 	undo_manager.Init();
@@ -2989,8 +2989,8 @@ void Editor::Update(){
 	
 	{//// camera ////
 		//toggle ortho
-		persist Vector3 ogpos;
-		persist Vector3 ogrot;
+		persist vec3 ogpos;
+		persist vec3 ogrot;
 		if(DengInput->KeyPressed(DengKeys.perspectiveToggle)){
 			switch (camera->mode){
 				case(CameraMode_Perspective): {  
@@ -3019,7 +3019,7 @@ void Editor::Update(){
 		
 		//look at selected
 		if(DengInput->KeyPressed(DengKeys.gotoSelected)){
-			camera->position = selected[0]->transform.position + Vector3(4.f, 3.f, -4.f);
+			camera->position = selected[0]->transform.position + vec3(4.f, 3.f, -4.f);
 			camera->rotation = {28.f, -45.f, 0.f};
 		}
 	}
@@ -3122,8 +3122,8 @@ void Editor::Update(){
 			if(!Render::GetSettings()->findMeshTriangleNeighbors){
 				Render::DrawModelWireframe(mc->model, mc->transform);
 			}else{
-				std::vector<Vector2> outline = Storage::GenerateMeshOutlinePoints(mc->mesh, e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
-																				  camera->position, DengWindow->dimensions);
+				std::vector<vec2> outline = Storage::GenerateMeshOutlinePoints(mc->mesh, e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
+																			   camera->position, DengWindow->dimensions);
 				for (int i = 0; i < outline.size(); i += 2){
 					ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
 				}

@@ -12,6 +12,7 @@
 #include "../../core/renderer.h" //temporary until we guarentee store trimesh neighbors on them
 #include "../../core/window.h"
 #include "../../core/storage.h"
+#include "../../core/model.h"
 #include "../../math/Math.h"
 #include "../../geometry/Geometry.h"
 #include "../../utils/Command.h"
@@ -64,10 +65,10 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	//add input forces
 	t.physics->inputVector.normalize();
 	t.physics->AddForce(nullptr, t.physics->inputVector);
-	t.physics->inputVector = Vector3::ZERO;
+	t.physics->inputVector = vec3::ZERO;
 	
 	//add gravity 
-	t.physics->acceleration += Vector3(0, -ps->gravity, 0);
+	t.physics->acceleration += vec3(0, -ps->gravity, 0);
 	
 	//add temp air friction force
 	t.physics->AddFrictionForce(nullptr, ps->frictionAir);
@@ -81,10 +82,10 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 			if (t.physics->velocity.mag() > 0.01) {
 				
 				for (auto& m : t.physics->manifolds) {
-					Vector3 norm = m.second.norm.normalized();
-					Vector3 vPerpNorm = t.physics->velocity - t.physics->velocity.dot(norm) * norm;
+					vec3 norm = m.second.norm.normalized();
+					vec3 vPerpNorm = t.physics->velocity - t.physics->velocity.dot(norm) * norm;
 					//account for friction along ang surfaces
-					Vector3 weight = Vector3::DOWN * t.physics->mass * ps->gravity;
+					vec3 weight = vec3::DOWN * t.physics->mass * ps->gravity;
 					float primedweight = weight.dot(norm);
 					t.physics->forces.push_back(-vPerpNorm.normalized() * t.physics->kineticFricCoef * primedweight);
 				}
@@ -92,7 +93,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 				//t.physics->AddFrictionForce(nullptr, t.physics->kineticFricCoef, ps->gravity);
 			}
 			else
-				t.physics->velocity = Vector3::ZERO;
+				t.physics->velocity = vec3::ZERO;
 			contactMoving = true;
 		}
 		else if (c.second == ContactStationary) contactStationary = true;
@@ -103,7 +104,7 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	else                        t.physics->contactState = ContactNONE;
 	
 	//sum up forces to calculate acceleration
-	Vector3 netForce;
+	vec3 netForce;
 	for (auto& f : t.physics->forces) {
 		netForce += f;
 	}
@@ -118,8 +119,8 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 			t.physics->velocity *= ps->maxVelocity;
 		}
 		else if (velMag < ps->minVelocity) {
-			t.physics->velocity = Vector3::ZERO;
-			t.physics->acceleration = Vector3::ZERO;
+			t.physics->velocity = vec3::ZERO;
+			t.physics->acceleration = vec3::ZERO;
 		}
 		t.physics->position += t.physics->velocity * time->fixedDeltaTime;
 	}
@@ -127,8 +128,8 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	//// rotation ////
 	
 	//make fake rotational friction
-	if (t.physics->rotVelocity != Vector3::ZERO) {
-		t.physics->rotAcceleration = Vector3(t.physics->rotVelocity.x > 0 ? -1 : 1, t.physics->rotVelocity.y > 0 ? -1 : 1, t.physics->rotVelocity.z > 0 ? -1 : 1) * ps->frictionAir * t.physics->mass * 100;
+	if (t.physics->rotVelocity != vec3::ZERO) {
+		t.physics->rotAcceleration = vec3(t.physics->rotVelocity.x > 0 ? -1 : 1, t.physics->rotVelocity.y > 0 ? -1 : 1, t.physics->rotVelocity.z > 0 ? -1 : 1) * ps->frictionAir * t.physics->mass * 100;
 	}
 	
 	//update rotational movement and scuffed vector rotational clamping
@@ -163,18 +164,18 @@ inline void PhysicsTick(PhysicsTuple& t, PhysicsSystem* ps, Time* time) {
 	t.physics->forces.clear();
 	
 	//ImGui::DebugDrawText3(t.physics->position.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(180, 150, 130));
-	//ImGui::DebugDrawText3(t.physics->velocity.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(130, 150, 180), Vector2(0, 20));
-	//ImGui::DebugDrawText3(t.physics->acceleration.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(150, 130, 180), Vector2(0, 40));
+	//ImGui::DebugDrawText3(t.physics->velocity.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(130, 150, 180), vec2(0, 20));
+	//ImGui::DebugDrawText3(t.physics->acceleration.str().c_str(), t.physics->position, ad->mainCamera, DengWindow->dimensions, Color(150, 130, 180), vec2(0, 40));
 	
-	t.physics->acceleration = Vector3::ZERO;
+	t.physics->acceleration = vec3::ZERO;
 }
 
 /////////////////////
 //// collisions  ////
 /////////////////////
 
-Matrix4 LocalToWorldInertiaTensor(Physics* physics, Matrix3 inertiaTensor) {
-	Matrix4 inverseTransformation = Matrix4::TransformationMatrix(physics->position, physics->rotation, Vector3::ONE).Inverse();
+mat4 LocalToWorldInertiaTensor(Physics* physics, mat3 inertiaTensor) {
+	mat4 inverseTransformation = mat4::TransformationMatrix(physics->position, physics->rotation, vec3::ONE).Inverse();
 	return inverseTransformation.Transpose() * inertiaTensor.To4x4() * inverseTransformation;
 }
 
@@ -222,21 +223,21 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		Manifold3 m2;
 		
 		//static resolution
-		Vector3 norm;
+		vec3 norm;
 		if (xover < yover && xover < zover) {
 			if(!obj1->staticPosition) obj1->position.x += xover / 2;
 			if(!obj2->staticPosition) obj2->position.x -= xover / 2;
-			norm = Vector3::LEFT;
+			norm = vec3::LEFT;
 		}	
 		else if (yover < xover && yover < zover) {
 			if(!obj1->staticPosition) obj1->position.y += yover / 2;
 			if(!obj2->staticPosition) obj2->position.y -= yover / 2;
-			norm = Vector3::DOWN;
+			norm = vec3::DOWN;
 		}
 		else if (zover < yover && zover < xover) {
 			if(!obj1->staticPosition) obj1->position.z += zover / 2;
 			if(!obj2->staticPosition) obj2->position.z -= zover / 2;
-			norm = Vector3::BACK;
+			norm = vec3::BACK;
 		}
 		
 		m1.norm = norm;
@@ -244,7 +245,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		
 		
 		//dynamic resolution
-		Vector3 rv = obj2->velocity - obj1->velocity;
+		vec3 rv = obj2->velocity - obj1->velocity;
 		
 		//PRINTLN(TOSTRING(rv));
 		
@@ -254,7 +255,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			float j = -(1 + (obj1->elasticity + obj2->elasticity) / 2) * vAlongNorm;
 			j /= 1 / obj1->mass + 1 / obj2->mass;
 			
-			Vector3 impulse = j * norm;
+			vec3 impulse = j * norm;
 			if (!obj1->staticPosition) obj1->velocity -= impulse / obj1->mass;
 			if (!obj2->staticPosition) obj2->velocity += impulse / obj2->mass;
 			//PRINTLN(obj2->velocity.mag());
@@ -285,7 +286,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 		//to figure out if the player is on the floor or a wall/ceiling
 		//TODO(sushi, PhCl) clean this up
 		if (DengAdmin->player == obj1->entity) {
-			Vector3 pto = obj2->position - obj1->position;
+			vec3 pto = obj2->position - obj1->position;
 			if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
 			else                                { m1.player = 0; m2.player = 1; }
 			
@@ -293,7 +294,7 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 			obj2->manifolds[obj1] = m2;
 		}
 		else if (DengAdmin->player == obj2->entity) {
-			Vector3 pto = obj2->position - obj1->position;
+			vec3 pto = obj2->position - obj1->position;
 			if (pto.normalized().dot(norm) > 0) { m1.player = 1; m2.player = 0; }
 			else                                { m1.player = 0; m2.player = 1; }
 			
@@ -313,8 +314,8 @@ bool AABBAABBCollision(Physics* obj1, AABBCollider* obj1Col, Physics* obj2, AABB
 }
 
 inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* sphere, SphereCollider* sphereCol) {
-	Vector3 aabbPoint = Geometry::ClosestPointOnAABB(aabb->position, (aabbCol->halfDims * aabb->entity->transform.scale), sphere->position);
-	Vector3 vectorBetween = aabbPoint - sphere->position; //sphere towards aabb
+	vec3 aabbPoint = Geometry::ClosestPointOnAABB(aabb->position, (aabbCol->halfDims * aabb->entity->transform.scale), sphere->position);
+	vec3 vectorBetween = aabbPoint - sphere->position; //sphere towards aabb
 	float distanceBetween = vectorBetween.mag();
 	if(distanceBetween < sphereCol->radius) {
 		//triggers and no collision
@@ -330,7 +331,7 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 			vectorBetween = aabb->position - sphere->position;
 		}
 		float overlap = .5f * (sphereCol->radius - distanceBetween);
-		Vector3 normal = -vectorBetween.normalized();
+		vec3 normal = -vectorBetween.normalized();
 		vectorBetween = -normal * overlap;
 		if(aabb->staticPosition){
 			sphere->position -= vectorBetween;
@@ -342,23 +343,23 @@ inline void AABBSphereCollision(Physics* aabb, AABBCollider* aabbCol, Physics* s
 		}
 		
 		//dynamic resolution
-		Matrix4 sphereInertiaTensorInverse = LocalToWorldInertiaTensor(sphere, sphereCol->tensor).Inverse();
-		Vector3 ra = sphere->position + Geometry::ClosestPointOnSphere(sphere->position, sphereCol->radius, aabbPoint);
-		Vector3 sphereAngularVelocityChange = normal.cross(ra);
+		mat4 sphereInertiaTensorInverse = LocalToWorldInertiaTensor(sphere, sphereCol->tensor).Inverse();
+		vec3 ra = sphere->position + Geometry::ClosestPointOnSphere(sphere->position, sphereCol->radius, aabbPoint);
+		vec3 sphereAngularVelocityChange = normal.cross(ra);
 		sphereAngularVelocityChange *= sphereInertiaTensorInverse;
 		float inverseMassA = 1.f / sphere->mass;
 		float scalar = inverseMassA + sphereAngularVelocityChange.cross(ra).dot(normal);
 		
-		Matrix4 aabbInertiaTensorInverse = LocalToWorldInertiaTensor(aabb, aabbCol->tensor).Inverse();
-		Vector3 rb = aabb->position + aabbPoint;
-		Vector3 aabbAngularVelocityChange = normal.cross(rb);
+		mat4 aabbInertiaTensorInverse = LocalToWorldInertiaTensor(aabb, aabbCol->tensor).Inverse();
+		vec3 rb = aabb->position + aabbPoint;
+		vec3 aabbAngularVelocityChange = normal.cross(rb);
 		aabbAngularVelocityChange *= aabbInertiaTensorInverse;
 		float inverseMassB = 1.f / aabb->mass; 
 		scalar += inverseMassB + aabbAngularVelocityChange.cross(rb).dot(normal);
 		
 		float coefRest = (aabb->elasticity + sphere->elasticity) / 2; 
 		float impulseMod = (coefRest + 1) * (sphere->velocity - aabb->velocity).mag(); //this too :)
-		Vector3 impulse = normal * impulseMod;
+		vec3 impulse = normal * impulseMod;
 		aabb->AddImpulse(sphere, -impulse);
 		//sphere->rotVelocity -= sphereAngularVelocityChange;
 		//aabb->entity->rotVelocity -= aabbAngularVelocityChange; //we dont do this because AABB shouldnt rotate
@@ -379,14 +380,14 @@ inline bool SphereSphereCollision(Physics* s1, SphereCollider* sc1, Physics* s2,
 		if(sc2->event != Event_NONE) sc2->sender.SendEvent(sc2->event);
 		if(sc1->noCollide || sc2->noCollide) return false;
 		
-		Vector3 s1t2 = s2->position - s1->position;
+		vec3 s1t2 = s2->position - s1->position;
 		float overlap = (rsum - dist) / 2;
 		if (!s1->staticPosition) s1->position -= s1t2.normalized() * overlap;
 		if (!s2->staticPosition) s2->position += s1t2.normalized() * overlap;
 		
 		//dynamic resolution
 		//from https://www.gamasutra.com/view/feature./131424/pool_hall_lessons_fast_accurate_.php?print=1
-		Vector3 n = s1->position - s2->position;
+		vec3 n = s1->position - s2->position;
 		n.normalize();
 		
 		float a1 = s1->velocity.dot(n);
@@ -425,7 +426,7 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	ComplexCollider* inccol = nullptr;
 	
 	float minpen = -INFINITY;
-	Vector3 bestnorm;
+	vec3 bestnorm;
 	
 	auto dist = [](vec3 p, vec3 plane_n, vec3 plane_p) {
 		//return (plane_n.x * p.x + plane_n.y * p.y + plane_n.z * p.z - plane_n.dot(plane_p));
@@ -446,25 +447,33 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 			o1 = obj2; o2 = obj1;
 		}
 		
-		mat4 o1transform = Matrix4::TransformationMatrix(o1->position, o1->rotation, o1->entity->transform.scale);//o1->entity->transform.TransformMatrix();
-		mat4 o2transform = Matrix4::TransformationMatrix(o2->position, o2->rotation, o2->entity->transform.scale);//o2->entity->transform.TransformMatrix();
+		mat4 o1transform = mat4::TransformationMatrix(o1->position, o1->rotation, o1->entity->transform.scale);//o1->entity->transform.TransformMatrix();
+		mat4 o2transform = mat4::TransformationMatrix(o2->position, o2->rotation, o2->entity->transform.scale);//o2->entity->transform.TransformMatrix();
 		
-		mat4 o1rotation = Matrix4::RotationMatrix(o1->rotation);
-		mat4 o2rotation = Matrix4::RotationMatrix(o2->rotation);
+		mat4 o1rotation = mat4::RotationMatrix(o1->rotation);
+		mat4 o2rotation = mat4::RotationMatrix(o2->rotation);
 		
 		//PRINTLN("o1 rot: " << o1->rotation.str());
 		//PRINTLN("o2 rot: " << o2->rotation.str());
 		
 		//// Face implementation ////
-		/*
+		
 		Mesh::Face* lastface = 0;
-		forX(oc1Index, o1c->mesh->faceCount){ Mesh::Face* f = &o1c->mesh->faceArray[oc1Index];
-			p0 = f->vertexArray[0]->pos * o1transform;
+		for (int o1cidx = 0; o1cidx < o1c->mesh->faceCount; o1cidx++) {
+
+			Mesh* m = o1c->mesh;
+			Mesh::Face* f = &m->faces[o1cidx];
+			p0 = m->vertexArray[f->vertexes[0]].pos * o1transform;
 			normal = f->normal * o1rotation;
 			float deepest = INFINITY;
-			forX(oc2Index, o2c->mesh->faceCount){ Mesh::Face* f2 = &o2c->mesh->faceArray[oc2Index];
-				forX(f2vIndex, f2->outerVertexCount){
-					p1 = f2->outerVertexArray[f2vIndex]->pos * o2transform;
+
+			for (int o2cidx = 0; o2cidx < o2c->mesh->faceCount; o2cidx++) {
+
+				Mesh::Face* f2 = &o2c->mesh->faceArray[o2cidx];
+
+				for (int fvidx = 0; fvidx < f2->outerVertexCount; fvidx++) {
+
+					p1 = m->vertexArray[f2->outerVertexArray[fvidx]].pos * o2transform;
 					float vertdepth = Math::DistPointToPlane(p1, normal, p0);
 					//ImGui::DebugDrawLine3(p1, p1 - normal * vertdepth, Color(0, 255.0 * (i / (float)f2->points.size()), 0));
 					if (vertdepth < deepest) {
@@ -472,13 +481,16 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 					}
 					lastface = f2;
 				}
+
 				if (deepest > 0) {
-					forX(lfvIndex, f2->outerVertexCount){
-						ImGui::DebugDrawLine3(lastface->outerVertexArray[lfvIndex]->pos * o2transform, lastface->outerVertexArray[lfvIndex + 1]->pos * o2transform, Color::MAGENTA);
-					}
-					ImGui::DebugDrawLine3(p1, p1 - normal * deepest, Color::BLACK);
+
+					//forX(lfvIndex, f2->outerVertexCount){
+					//	ImGui::DebugDrawLine3(lastface->outerVertexArray[lfvIndex]->pos * o2transform, lastface->outerVertexArray[lfvIndex + 1]->pos * o2transform, Color::MAGENTA);
+					//}
+					//ImGui::DebugDrawLine3(p1, p1 - normal * deepest, Color::BLACK);
 					ERROR("func failed with deepest ", deepest);
 					return false;
+
 				}
 				else if (deepest > minpen) {
 					minpen = deepest;
@@ -491,9 +503,10 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 			}
 			
 		}
-		*/
 		
-		//// Triangle implementation ////
+		
+		//// Triangle implementation ///
+		/*
 		for(Mesh::Triangle& t1 : o1c->mesh->triangles){
 			p0     = t1.p[0]   * o1transform;
 			normal = t1.normal * o1rotation;
@@ -521,7 +534,7 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 				refcol = o1c;
 				inccol = o2c;
 			}
-		}
+		}*/
 	}
 	
 	Mesh* refMesh = refcol->mesh;
@@ -556,8 +569,8 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	//}
 	
 	//NOTE find triangle that's most aligned with normal
-	u32 furthestTriRef = Geometry::FurthestTriangleAlongNormal(refcol->mesh, Matrix4::RotationMatrix(refphys->rotation), bestnorm);
-	u32 furthestTriInc = Geometry::FurthestTriangleAlongNormal(inccol->mesh, Matrix4::RotationMatrix(incphys->rotation), -bestnorm);
+	u32 furthestTriRef = Geometry::FurthestTriangleAlongNormal(refcol->mesh, mat4::RotationMatrix(refphys->rotation), bestnorm);
+	u32 furthestTriInc = Geometry::FurthestTriangleAlongNormal(inccol->mesh, mat4::RotationMatrix(incphys->rotation), -bestnorm);
 	Mesh::Triangle* triRef = &refMesh->triangleArray[furthestTriRef];
 	Mesh::Triangle* triInc = &incMesh->triangleArray[furthestTriInc];
 	
@@ -567,12 +580,12 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 	//NOTE draw collision normal
 	//ImGui::DebugDrawTriangle3(Geometry::MeshTriangleMidpoint(triRef), Geometry::MeshTriangleMidpoint(triRef) + bestnorm, Color::YELLOW);
 	
-	Matrix4 refTransform = Matrix4::TransformationMatrix(refphys->position, refphys->rotation, refphys->entity->transform.scale);
-	Matrix4 incTransform = Matrix4::TransformationMatrix(incphys->position, incphys->rotation, incphys->entity->transform.scale);
+	mat4 refTransform = mat4::TransformationMatrix(refphys->position, refphys->rotation, refphys->entity->transform.scale);
+	mat4 incTransform = mat4::TransformationMatrix(incphys->position, incphys->rotation, incphys->entity->transform.scale);
 	ImGui::DebugDrawLine3(Geometry::MeshTriangleMidpoint(triRef) * refTransform, Geometry::MeshTriangleMidpoint(triRef) * refTransform + bestnorm, Color::YELLOW);
 	
-	Matrix4 refRotation = Matrix4::RotationMatrix(refphys->rotation);
-	Matrix4 incRotation = Matrix4::RotationMatrix(incphys->rotation);
+	mat4 refRotation = mat4::RotationMatrix(refphys->rotation);
+	mat4 incRotation = mat4::RotationMatrix(incphys->rotation);
 	ImGui::DebugDrawLine3(Geometry::MeshTriangleMidpoint(triRef) * incTransform, Geometry::MeshTriangleMidpoint(triRef) * incTransform + triInc->normal * incRotation,  Color::VERY_DARK_YELLOW);
 	
 	//NOTE draw inclement face's triangles
@@ -663,7 +676,7 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 
 
 //returns what point in a vector of 2D vectors is furthest along a normal
-int FurthestAlongNormal(std::vector<Vector2> p, Vector2 n) {
+int FurthestAlongNormal(std::vector<vec2> p, vec2 n) {
 	float furthest = -INFINITY;
 	int furthestID = 0;
 	for (int i = 0; i < p.size(); i++) {
@@ -676,7 +689,7 @@ int FurthestAlongNormal(std::vector<Vector2> p, Vector2 n) {
 	return furthestID;
 }
 
-int GetFaceID(poly* p, Vector2 n) {
+int GetFaceID(poly* p, vec2 n) {
 	int furthestPointID = FurthestAlongNormal(p->p, n);
 	float mostSimilar = -1;
 	int ID = 0;
@@ -684,11 +697,11 @@ int GetFaceID(poly* p, Vector2 n) {
 	for (int i = 0; i < p->p.size(); i++) {
 		int o = (i + 1) % p->p.size();
 		
-		Vector2 p1 = p->p[i];
-		Vector2 p2 = p->p[o];
+		vec2 p1 = p->p[i];
+		vec2 p2 = p->p[o];
 		
 		if (i == furthestPointID || o == furthestPointID) {
-			Vector2 norm = (p2 - p1).perp().normalized();
+			vec2 norm = (p2 - p1).perp().normalized();
 			float similarity = norm.dot(n);
 			if (similarity > mostSimilar) {
 				mostSimilar = similarity;
@@ -699,14 +712,14 @@ int GetFaceID(poly* p, Vector2 n) {
 	return ID;
 }
 
-void ClipSide(Vector2* colpoints, poly* p, int faceID) {
+void ClipSide(vec2* colpoints, poly* p, int faceID) {
 	
 	int outside = 0;
 	int inside = 0;
 	
-	Vector2 fp1 = p->p[faceID];
-	Vector2	fp2 = p->p[(faceID + 1) % p->p.size()];
-	Vector2 norm = (fp2 - fp1).perp().normalized();
+	vec2 fp1 = p->p[faceID];
+	vec2	fp2 = p->p[(faceID + 1) % p->p.size()];
+	vec2 norm = (fp2 - fp1).perp().normalized();
 	
 	float dists[2];
 	
@@ -723,8 +736,8 @@ void ClipSide(Vector2* colpoints, poly* p, int faceID) {
 		int insideID = (dists[0] > 0) ? 1 : 0;
 		int outsideID = !insideID;
 		float ratio = abs(dists[insideID]) / total;
-		Vector2 v = (colpoints[outsideID] - colpoints[insideID]) * ratio;
-		Vector2 np = colpoints[insideID] + v;
+		vec2 v = (colpoints[outsideID] - colpoints[insideID]) * ratio;
+		vec2 np = colpoints[insideID] + v;
 		colpoints[outsideID] = np;
 	}
 }
@@ -736,7 +749,7 @@ void Clip(Manifold2& m) {
 	int asize = m.a->p.size();
 	int bsize = m.b->p.size();
 	
-	Vector2 colpoints[2] = { m.b->p[incID], m.b->p[(incID + 1) % bsize] };
+	vec2 colpoints[2] = { m.b->p[incID], m.b->p[(incID + 1) % bsize] };
 	
 	//clip colpoints against adjacent faces of reference
 	ClipSide(colpoints, m.a, ((refID + (asize - 1)) % asize));
@@ -775,7 +788,7 @@ bool ShapeOverlapSAT(poly& r1, poly& r2, Manifold2& m) {
 	poly* refpoly = nullptr;
 	
 	float minpen = -INFINITY;
-	Vector2 bnorm;
+	vec2 bnorm;
 	
 	
 	for (int shape = 0; shape < 2; shape++) {
@@ -783,24 +796,24 @@ bool ShapeOverlapSAT(poly& r1, poly& r2, Manifold2& m) {
 		
 		for (int i = 0; i < p1->p.size(); i += 2) {
 			
-			Vector2 fp1 = p1->p[i];
-			//DrawString(Vector2(fp1.x, fp1.y - 20), std::to_string(i), olc::CYAN);
-			Vector2 fp2 = p1->p[i + 1];
-			//DrawString(Vector2(fp2.x + 10, fp2.y - 20), std::to_string(i), olc::CYAN);
+			vec2 fp1 = p1->p[i];
+			//DrawString(vec2(fp1.x, fp1.y - 20), std::to_string(i), olc::CYAN);
+			vec2 fp2 = p1->p[i + 1];
+			//DrawString(vec2(fp2.x + 10, fp2.y - 20), std::to_string(i), olc::CYAN);
 			
-			Vector2 norm = (fp2 - fp1).perp().normalized();
+			vec2 norm = (fp2 - fp1).perp().normalized();
 			float deepest = INFINITY;
 			
-			Vector2 vertp;
+			vec2 vertp;
 			
 			for (int j = 0; j < p2->p.size(); j++) {
 				
-				Vector2 vert = p2->p[j];
+				vec2 vert = p2->p[j];
 				vertp = vert;
 				float vertdepth = (fp1 - vert).dot(norm);
 				//if(shape == 0) DrawLine(vert, vert - norm * vertdepth, olc::Pixel(255 * (j+1)/p2->p.size(), 255 * (p2->p.size() - j) / p2->p.size(), 255 * (p1->p.size() - i) / p1->p.size()));
 				//if(shape == 0) DrawString(vert, std::to_string(j));
-				//if(shape == 0) DrawString(Vector2(0 + 300 * shape, GetWindowSize().y - (100 + 9 * depcount)), "dep face " + std::to_string(i) + " point " + std::to_string(j) + ": " + std::to_string(vertdepth), olc::Pixel(255 * (j + 1) / p2->p.size(), 255 * (p2->p.size() - j) / p2->p.size(), 255 * (p1->p.size() - i) / p1->p.size()));
+				//if(shape == 0) DrawString(vec2(0 + 300 * shape, GetWindowSize().y - (100 + 9 * depcount)), "dep face " + std::to_string(i) + " point " + std::to_string(j) + ": " + std::to_string(vertdepth), olc::Pixel(255 * (j + 1) / p2->p.size(), 255 * (p2->p.size() - j) / p2->p.size(), 255 * (p1->p.size() - i) / p1->p.size()));
 				depcount++;
 				if (vertdepth < deepest) deepest = vertdepth;
 			}
@@ -862,17 +875,17 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 			//PRINTLN(TOSTRING("depth2: ", m.norm * m.depth[1] / 2));
 			//
 			//
-			//Vector3 nupos1 = Math::ScreenToWorld(p1->pos, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
+			//vec3 nupos1 = Math::ScreenToWorld(p1->pos, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 			//p1->ogphys->position = Math::VectorPlaneIntersect(p1->ogphys->position, DengCamera->position - p1->ogphys->position, DengCamera->position, nupos1);
 			//
-			//Vector3 nupos2 = Math::ScreenToWorld(p2->pos, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
+			//vec3 nupos2 = Math::ScreenToWorld(p2->pos, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 			//p2->ogphys->position = Math::VectorPlaneIntersect(p2->ogphys->position, DengCamera->position - p2->ogphys->position, DengCamera->position, nupos2);
 			
 			
-			//if (p1->staticPosition) p1->vel = Vector2::ZERO;
-			//if (p2->staticPosition) p2->vel = Vector2::ZERO;
+			//if (p1->staticPosition) p1->vel = vec2::ZERO;
+			//if (p2->staticPosition) p2->vel = vec2::ZERO;
 			
-			Vector2 rv = p1->vel - p2->vel;
+			vec2 rv = p1->vel - p2->vel;
 			
 			float vAlongNorm = rv.dot(m.norm);
 			
@@ -881,18 +894,18 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 				float j = -(1 + e) * rv.dot(m.norm);
 				j /= 1 / p1->mass + 1 / p2->mass;
 				
-				Vector2 impulse = j * m.norm;
+				vec2 impulse = j * m.norm;
 				if (!p1->staticPosition) {
 					
-					Vector3 impworld = Math::ScreenToWorld(p1->pos + p1->vel + impulse, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
-					Vector3 impworldpr = Math::VectorPlaneIntersect(p1->ogphys->position, DengCamera->position - p1->ogphys->position, DengCamera->position, impworld);
+					vec3 impworld = Math::ScreenToWorld(p1->pos + p1->vel + impulse, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
+					vec3 impworldpr = Math::VectorPlaneIntersect(p1->ogphys->position, DengCamera->position - p1->ogphys->position, DengCamera->position, impworld);
 					
 					p1->ogphys->velocity -= (impworldpr - p1->ogphys->position);
 				}
 				if (!p2->staticPosition) {
 					
-					Vector3 impworld = Math::ScreenToWorld(p2->pos + p2->vel + impulse, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
-					Vector3 impworldpr = Math::VectorPlaneIntersect(p2->ogphys->position, DengCamera->position - p2->ogphys->position, DengCamera->position, impworld);
+					vec3 impworld = Math::ScreenToWorld(p2->pos + p2->vel + impulse, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
+					vec3 impworldpr = Math::VectorPlaneIntersect(p2->ogphys->position, DengCamera->position - p2->ogphys->position, DengCamera->position, impworld);
 					
 					p2->ogphys->velocity -= (impworldpr - p2->ogphys->position);
 				}
@@ -904,7 +917,7 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 poly GeneratePoly(Physics* p) {
 	poly poly;
 	poly.o = Storage::GenerateMeshOutlinePoints(p->entity->GetComponent<ModelInstance>()->mesh,
-												  Matrix4::TransformationMatrix(p->position, p->rotation, p->entity->transform.scale),
+												  mat4::TransformationMatrix(p->position, p->rotation, p->entity->transform.scale),
 												  DengCamera->projMat, DengCamera->viewMat, DengAdmin->mainCamera->position,
 												  DengWindow->dimensions);
 	poly.p = poly.o;
@@ -912,13 +925,13 @@ poly GeneratePoly(Physics* p) {
 	poly.pos = Math::WorldToScreen2(p->position, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 	
 	//apply relative velocity if player exists and is moving
-	Vector3 relvel = Vector3::ZERO;
+	vec3 relvel = vec3::ZERO;
 	if (DengAdmin->player) {
 		relvel = p->velocity - DengAdmin->player->GetComponent<Physics>()->velocity;
 	}
 	//translate objects 3D velocity into screen space
-	Vector3 opv = p->position + relvel;
-	Vector2 opvs = Math::WorldToScreen2(opv, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
+	vec3 opv = p->position + relvel;
+	vec2 opvs = Math::WorldToScreen2(opv, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);
 	poly.vel = opvs - poly.pos;
 	ImGui::DebugDrawLine(poly.pos, opvs, Color::CYAN);
 	//maybe make a nicer way of calculating this
@@ -1079,8 +1092,8 @@ void PhysicsSystem::Update() {
 		t.transform->rotation = t.transform->rotation * (1.f - alpha) + t.physics->rotation * alpha;
 		if(t.collider) t.collider->sentEvent = false;
 		
-		//t.transform->rotation = Quaternion::QuatSlerp(t.transform->rotation, t.transform->prevRotation, alpha).ToVector3();
-		//t.transform->rotation *= Matrix4::RotationMatrixAroundPoint(t.transform->position, t.transform->rotation*(1.f - alpha) + t.physics->rotation*alpha);
+		//t.transform->rotation = Quaternion::QuatSlerp(t.transform->rotation, t.transform->prevRotation, alpha).toVec3();
+		//t.transform->rotation *= mat4::RotationMatrixAroundPoint(t.transform->position, t.transform->rotation*(1.f - alpha) + t.physics->rotation*alpha);
 		//TODO(delle,Ph) look into better rotational interpolation once we switch to quaternions
 	}
 }

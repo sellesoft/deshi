@@ -7,6 +7,7 @@
 #include <string>
 
 #include "string.h"
+#include "array.h"
 
 //std::cout short form
 #define PRINTLN(x) std::cout << x << std::endl;
@@ -71,7 +72,8 @@ static string ToString(T t) { return ToString(string(t.str())); }
 
 template<class... T>
 static string ToString(T... args) {
-	array<string> strings({ "", (ToString(std::forward<T>(args))) ... });
+	//string strings[] = ;
+	array<string> strings{ "", (ToString(std::forward<T>(args))) ... };
 	//string strings[] = { ToString(args), ... };
 	string str = "";
 	for (string& s : strings) { str += s; }

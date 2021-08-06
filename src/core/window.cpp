@@ -68,7 +68,7 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	this->screenRefreshRate = mode->refreshRate;
 	this->displayMode = displayMode;
 	this->cursorMode = CursorMode::DEFAULT;
-	this->dimensions = Vector2(width, height);
+	this->dimensions = vec2(width, height);
 	
 	this->rawInput = false;
 	UpdateRawInput(true); //sets raw input to true if supported
@@ -247,7 +247,7 @@ void Window::Update() {
 	screenRefreshRate = mode->refreshRate; 
 	
 	centerX = width/2; centerY = height/2;
-	this->dimensions = Vector2(width, height);
+	this->dimensions = vec2(width, height);
 	
 	glfwGetCursorPos(window, &DengInput->mouseX, &DengInput->mouseY);
 	if(cursorMode == CursorMode::FIRSTPERSON){ glfwSetCursorPos(window, width/2, height/2); }
@@ -303,7 +303,7 @@ void Window::UpdateCursorMode(CursorMode mode){
 	}
 }
 
-void Window::SetCursorPos(Vector2 pos){
+void Window::SetCursorPos(vec2 pos){
 	glfwSetCursorPos(window, pos.x, pos.y);
 }
 

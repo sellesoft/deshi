@@ -72,9 +72,9 @@ struct RenderSettings{
     bool showShadowMap     = false;
 	
     //colors
-	Vector4 clearColor   {0.02f,0.02f,0.02f,1.00f};
-	Vector4 selectedColor{0.80f,0.49f,0.16f,1.00f};
-	Vector4 colliderColor{0.46f,0.71f,0.26f,1.00f};
+	vec4 clearColor   {0.02f,0.02f,0.02f,1.00f};
+	vec4 selectedColor{0.80f,0.49f,0.16f,1.00f};
+	vec4 colliderColor{0.46f,0.71f,0.26f,1.00f};
 	
 	//filters
     bool wireframeOnly = false;
@@ -112,18 +112,18 @@ namespace Render{
 	void UnloadMaterial(Material* material);
 	void UnloadMesh(Mesh* mesh);
     
-	void DrawModel(Model* model, Matrix4 matrix);
-	void DrawModelWireframe(Model* model, Matrix4 matrix, Color& color = Color::WHITE);
-	void DrawLine(Vector3 start, Vector3 end, Color& color = Color::WHITE);
-	void DrawTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Color& color = Color::WHITE);
-	void DrawTriangleFilled(Vector3 p0, Vector3 p1, Vector3 p2, Color& color = Color::WHITE);
-	void DrawQuad(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, Color& color = Color::WHITE);
-	void DrawQuadFilled(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, Color& color = Color::WHITE);
-	void DrawPoly(array<Vector3>& points, Color& color = Color::WHITE);
-	void DrawPolyFilled(array<Vector3>& points, Color& color = Color::WHITE);
-	void DrawBox(Matrix4 transform, Color& color = Color::WHITE);
-	void DrawBoxFilled(Matrix4 transform, Color& color = Color::WHITE);
-    void DrawFrustrum(Vector3 position, Vector3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color& color = Color::WHITE);
+	void DrawModel(Model* model, mat4 matrix);
+	void DrawModelWireframe(Model* model, mat4 matrix, Color& color = Color::WHITE);
+	void DrawLine(vec3 start, vec3 end, Color& color = Color::WHITE);
+	void DrawTriangle(vec3 p0, vec3 p1, vec3 p2, Color& color = Color::WHITE);
+	void DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, Color& color = Color::WHITE);
+	void DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, Color& color = Color::WHITE);
+	void DrawQuadFilled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, Color& color = Color::WHITE);
+	void DrawPoly(array<vec3>& points, Color& color = Color::WHITE);
+	void DrawPolyFilled(array<vec3>& points, Color& color = Color::WHITE);
+	void DrawBox(mat4 transform, Color& color = Color::WHITE);
+	void DrawBoxFilled(mat4 transform, Color& color = Color::WHITE);
+    void DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color& color = Color::WHITE);
 	
     //ui drawing functions
     void FillRectUI(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
@@ -133,11 +133,11 @@ namespace Render{
     void DrawTextUI(string text, vec2 pos, Color color = Color::WHITE);
 	void DrawTextUI(string text, vec2 pos, vec2 scissorOffset, vec2 scissorExtent, Color color = Color::WHITE);
 	void DrawCharUI(u32 character, vec2 pos, vec2 scale = vec2::ONE, Color color = Color::WHITE, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
-	
-	void UpdateLight(u32 lightIdx, Vector4 vec);
-    void UpdateCameraPosition(Vector3 position);
-    void UpdateCameraViewMatrix(Matrix4 m);
-    void UpdateCameraProjectionMatrix(Matrix4 m);
+
+	void UpdateLight(u32 lightIdx, vec4 vec);
+    void UpdateCameraPosition(vec3 position);
+    void UpdateCameraViewMatrix(mat4 m);
+    void UpdateCameraProjectionMatrix(mat4 m);
 	
     //signals vulkan to remake the pipelines
     void ReloadShader(u32 shaderID);

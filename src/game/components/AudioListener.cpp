@@ -4,7 +4,7 @@
 #include "../../core/console.h"
 #include "../../utils/debug.h"
 
-AudioListener::AudioListener(Vector3 _position, Vector3 _velocity, Vector3 _orientation) {
+AudioListener::AudioListener(vec3 _position, vec3 _velocity, vec3 _orientation) {
 	position    = _position;
 	velocity    = _velocity;
 	orientation = _orientation;

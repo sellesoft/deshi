@@ -16,7 +16,7 @@ void Collider::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
 //// Box Collider ////
 //////////////////////
 
-BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Event event, bool nocollide) {
+BoxCollider::BoxCollider(vec3 halfDimensions, float mass, u32 collisionLayer, Event event, bool nocollide) {
 	type = ComponentType_Collider;
 	this->shape = ColliderShape_Box;
 	this->collLayer = collisionLayer;
@@ -27,7 +27,7 @@ BoxCollider::BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer,
 	
 }
 
-BoxCollider::BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Event event, bool nocollide) {
+BoxCollider::BoxCollider(vec3 halfDimensions, mat3& tensor, u32 collisionLayer, Event event, bool nocollide) {
 	type = ComponentType_Collider;
 	this->type = ColliderShape_Box;
 	this->collLayer = collisionLayer;
@@ -62,7 +62,7 @@ AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Event _ev
 	event = _event;
 	
 	if(!mesh){
-		halfDims = Vector3::ZERO;
+		halfDims = vec3::ZERO;
 		ERROR("Null mesh passed during AABBCollider creation");
 		return;
 	}
@@ -79,7 +79,7 @@ AABBCollider::AABBCollider(Mesh* mesh, float mass, u32 collisionLayer, Event _ev
 	tensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 
-AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer, Event event, bool nocollide) {
+AABBCollider::AABBCollider(vec3 halfDimensions, float mass, u32 collisionLayer, Event event, bool nocollide) {
 	type = ComponentType_Collider;
 	this->shape = ColliderShape_AABB;
 	this->collLayer = collisionLayer;
@@ -89,7 +89,7 @@ AABBCollider::AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLaye
 	this->tensor = InertiaTensors::SolidCuboid(2 * abs(halfDims.x), 2 * abs(halfDims.y), 2 * abs(halfDims.z), mass);
 }
 
-AABBCollider::AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer, Event event, bool nocollide) {
+AABBCollider::AABBCollider(vec3 halfDimensions, mat3& tensor, u32 collisionLayer, Event event, bool nocollide) {
 	type = ComponentType_Collider;
 	this->shape = ColliderShape_AABB;
 	this->collLayer = collisionLayer;
@@ -126,7 +126,7 @@ SphereCollider::SphereCollider(float radius, float mass, u32 collisionLayer, Eve
 	this->tensor = InertiaTensors::SolidSphere(radius, mass);
 }
 
-SphereCollider::SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer, Event event, bool nocollide) {
+SphereCollider::SphereCollider(float radius, mat3& tensor, u32 collisionLayer, Event event, bool nocollide) {
 	type = ComponentType_Collider;
 	this->shape = ColliderShape_Sphere;
 	this->collLayer = collisionLayer;

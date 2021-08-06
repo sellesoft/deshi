@@ -55,7 +55,7 @@ void Movement::DecideContactState() {
 }
 
 void Movement::DecideMovementState() {
-	Vector3 norm;
+	vec3 norm;
 	
 	//check if were on the ground
 	if (phys->contactState == ContactNONE) { moveState = InAirNoInput; inAir = true; }
@@ -64,16 +64,16 @@ void Movement::DecideMovementState() {
 		for (auto& p : phys->manifolds) {
 			norm = p.second.norm.normalized();
 			if (!p.second.player) norm = -norm;
-			float ang = DEGREES(asin(norm.dot(Vector3::UP)));
+			float ang = DEGREES(asin(norm.dot(vec3::UP)));
 			if (ang > 45) {
 				bonGround = true;
 			}
 		}
 		if (bonGround) {
-			if (inputs != Vector3::ZERO) {
+			if (inputs != vec3::ZERO) {
 				if (DengInput->KeyDownAnyMod(Key::LCTRL))  moveState = OnGroundCrouching;
 				else if (DengInput->KeyDownAnyMod(Key::LSHIFT)) moveState = OnGroundRunning;
-				else if (inputs != Vector3::ZERO)               moveState = OnGroundWalking;
+				else if (inputs != vec3::ZERO)               moveState = OnGroundWalking;
 				
 			}
 			else moveState = OnGroundNoInput;
@@ -105,7 +105,7 @@ void Movement::GrabObject() {
 	persist float timer = 0;
 	persist float timetocenter = 0.07;
 	
-	persist Vector3 ogpos;
+	persist vec3 ogpos;
 	
 	//static Entity* grabee = nullptr;
 	persist Physics* grabeephys = nullptr;
@@ -136,18 +136,18 @@ void Movement::GrabObject() {
 	//if we are grabbing an object, iterpolate it to the center of the screen and make it follow it as well.
 	if (grabeephys && grabbing) {
 		//TODO(sushi) make the grabbing distance relative to the size of the object
-		Vector3 cenpos = 
+		vec3 cenpos = 
 			Math::ScreenToWorld(DengWindow->dimensions / 2, camera->projMat, camera->viewMat, DengWindow->dimensions)
 			+ camera->forward * 3;
 		Math::clamp(timer, 0, timetocenter);
 		if (timer < timetocenter) {
 			timer += DengTime->fixedDeltaTime;
 			grabeephys->position = Math::lerpv(ogpos, cenpos, timer / timetocenter);
-			grabeephys->velocity = Vector3::ZERO;
+			grabeephys->velocity = vec3::ZERO;
 		}
 		else {
 			grabeephys->position = cenpos;
-			grabeephys->velocity = Vector3::ZERO;
+			grabeephys->velocity = vec3::ZERO;
 		}
 	}
 }
@@ -167,9 +167,9 @@ void Movement::Update() {
 	/////////////////////
 	
 	
-	Vector3 standpos = DengAdmin->player->transform.position + Vector3::UP * 2;
-	Vector3 crouchpos = DengAdmin->player->transform.position + Vector3::UP * 0.5;
-	persist Vector3 cpos = standpos;
+	vec3 standpos = DengAdmin->player->transform.position + vec3::UP * 2;
+	vec3 crouchpos = DengAdmin->player->transform.position + vec3::UP * 0.5;
+	persist vec3 cpos = standpos;
 	persist float timer = 0;
 	float ttc = 0.2;
 	
@@ -187,10 +187,10 @@ void Movement::Update() {
 	
 	
 	//apply gravity
-	phys->velocity += Vector3(0, -9.81, 0) * DengTime->fixedDeltaTime;
+	phys->velocity += vec3(0, -9.81, 0) * DengTime->fixedDeltaTime;
 	
 	if (jump) {
-		phys->velocity += Vector3(0, 10, 0);
+		phys->velocity += vec3(0, 10, 0);
 		jump = false;
 	}
 	
@@ -218,9 +218,9 @@ void Movement::Update() {
 	//else if (maxWalkingSpeed - DengTime->deltaTime * gndAccel <= projVel && projVel < maxWalkingSpeed){
 	//	phys->velocity += (maxWalkingSpeed - phys->velocity.mag() * cosf(Math::AngBetweenVectors(phys->velocity, inputs))) * inputs;
 	//}
-	//else if (velMag < 0.12 && inputs != Vector3::ZERO) {
-	//	phys->velocity = Vector3::ZERO;
-	//	phys->acceleration = Vector3::ZERO;
+	//else if (velMag < 0.12 && inputs != vec3::ZERO) {
+	//	phys->velocity = vec3::ZERO;
+	//	phys->acceleration = vec3::ZERO;
 	//}
 	
 	switch (moveState) {
@@ -244,22 +244,22 @@ void Movement::Update() {
 	//apply ground friction
 	//TODO(sushi) implement friction scaling with velocity and eventually canceling out new velocity
 	if (moveState == OnGroundNoInput) {
-		if (phys->velocity != Vector3::ZERO) {
+		if (phys->velocity != vec3::ZERO) {
 			if (phys->velocity.mag() > 0.12) {
 				for (auto& m : phys->manifolds) {
-					Vector3 norm = m.second.norm.normalized();
-					Vector3 vPerpNorm = phys->velocity - phys->velocity.dot(norm) * norm;
+					vec3 norm = m.second.norm.normalized();
+					vec3 vPerpNorm = phys->velocity - phys->velocity.dot(norm) * norm;
 					phys->acceleration += vPerpNorm.normalized() * phys->kineticFricCoef * phys->mass * -9.81 / phys->mass;
 					phys->velocity += phys->acceleration * DengTime->fixedDeltaTime;
 				}
-			} else phys->velocity = Vector3::ZERO;
+			} else phys->velocity = vec3::ZERO;
 		}
 	}
 	
 	phys->position += phys->velocity * DengTime->fixedDeltaTime;
 	
 	phys->manifolds.clear();
-	phys->acceleration = Vector3::ZERO;
+	phys->acceleration = vec3::ZERO;
 	
 	camera->position = Math::lerpv(standpos, crouchpos, timer / ttc);
 	

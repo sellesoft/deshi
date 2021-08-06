@@ -9,7 +9,7 @@ Light::Light(){
 	layer = ComponentLayer_Physics;
 }
 
-Light::Light(const Vector3& position, const Vector3& direction, float brightness) {
+Light::Light(const vec3& position, const vec3& direction, float brightness) {
 	this->position = position;
 	this->direction = direction;
 	this->brightness = brightness;

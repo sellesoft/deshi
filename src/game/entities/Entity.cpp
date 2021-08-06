@@ -149,8 +149,8 @@ auto get_vec3(std::string& str) {
         f32 z = std::stof(str.substr(off), &sz);
         return vec3(x, y, z);
     }catch (...) {
-        ERROR("Failed to parse vector3: (", str, ")");
-        return Vector3::ZERO;
+        ERROR("Failed to parse vec3: (", str, ")");
+        return vec3::ZERO;
     }
 }
 
@@ -168,7 +168,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath){
     //creation vars
     bool coll_made = false;
     Entity* e = 0;
-    AudioListener* al = 0;  AudioSource* as = 0;          Camera* cam = 0;    Door* door = 0;
+    AudioListener* al = 0;  AudioSource* as = 0;          CameraInstance* cam = 0;    Door* door = 0;
     Light* light = 0;       ModelInstance* model = 0;     Movement* move = 0; OrbManager* orbman = 0;
     Physics* phys = 0;      Player* player = 0;
     BoxCollider* box = 0;   SphereCollider* sphere = 0;   LandscapeCollider* land = 0; 
@@ -212,7 +212,7 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath){
                 else if(line == ">audio source")  { header = Header::AUDIO_SOURCE;   if(!as)    { as = new AudioSource(); } }
                 else if(line == ">light")         { header = Header::LIGHT;          if(!light) { light = new Light(); } }
                 else if(line == ">door")          { header = Header::DOOR;           if(!door)  { door = new Door(); } }
-                else if(line == ">camera")        { header = Header::CAMERA;         if(!cam)   { cam = new Camera(); } }
+                else if(line == ">camera")        { header = Header::CAMERA;         if(!cam)   { cam = new CameraInstance(); } }
                 else if(line == ">orb manager")   { header = Header::ORB_MANAGER;    if(!orbman){ orbman = new OrbManager(); } }
                 else if(line == ">audio listener"){ header = Header::AUDIO_LISTENER; if(!al)    { al = new AudioListener(); } }
                 else if(line == ">movement")      { header = Header::MOVEMENT;       if(!move)  { move = new Movement(); } }
@@ -271,11 +271,11 @@ Entity* Entity::LoadTEXT(Admin* admin, std::string filepath){
                 if(kv.first == "shape" && !coll_made){ 
                     if(kv.second == ColliderShapeStrings[ColliderShape_AABB] 
 					   || kv.second == std::to_string((int)ColliderShape_AABB)){
-                        aabb = new AABBCollider(Vector3::ZERO, 1.f);
+                        aabb = new AABBCollider(vec3::ZERO, 1.f);
                         coll_made = true;
                     }else if(kv.second == ColliderShapeStrings[ColliderShape_Box] 
 							 || kv.second == std::to_string((int)ColliderShape_Box)){
-                        box = new BoxCollider(Vector3::ZERO, 1.f);
+                        box = new BoxCollider(vec3::ZERO, 1.f);
                         coll_made = true;
                     }else if(kv.second == ColliderShapeStrings[ColliderShape_Sphere] 
 							 || kv.second == std::to_string((int)ColliderShape_Sphere)){

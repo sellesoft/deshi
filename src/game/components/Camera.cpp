@@ -8,40 +8,43 @@
 #include "../../math/Math.h"
 #include "../../utils/debug.h"
 
-Camera::Camera(){
+CameraInstance::CameraInstance(){
 	layer = ComponentLayer_NONE;
 	type  = ComponentType_Camera;
 }
 
-Camera::Camera(float fov, float nearZ, float farZ, bool freeCam){
+CameraInstance::CameraInstance(float fov, float nearZ, float farZ, bool freeCam) {
 	layer = ComponentLayer_NONE;
-	type  = ComponentType_Camera;
+	type = ComponentType_Camera;
 	this->nearZ = nearZ;
 	this->farZ = farZ;
 	this->fov = fov;
 	this->freeCamera = freeCam;
 	
-	forward = (Vector3::FORWARD * Matrix4::RotationMatrix(rotation)).normalized();
-	right   = Vector3::UP.cross(forward).normalized();
-	up      = right.cross(forward).normalized();
-	viewMat = Math::LookAtMatrix(position, position + forward).Inverse();
+	position = {  4.f,   3.f,-4.f };
+	rotation = { 28.f, -45.f, 0.f };
+	
+	this->forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
+	this->right   = vec3::UP.cross(forward).normalized();
+	this->up      = right.cross(forward).normalized();
+	this->viewMat = Math::LookAtMatrix(position, position + forward).Inverse();
 	UpdateProjectionMatrix();
 }
 
-void Camera::Update() {
+void CameraInstance::Update() {
 	if(freeCamera){
 		//NOTE this can happen whether the camera is free or not so move it out
 		//of this scope once we implement that
 		persist int wwidth = DengWindow->width; 
 		persist int wheight = DengWindow->height;
 		
-		//clamp camera rotation
+		//clamp camera crotation
 		Math::clamp(rotation.x, -89.9f, 89.9f);
 		if(rotation.y > 1440.f || rotation.y < -1440.f){ rotation.y = 0.f; }
 		
 		//update direction vectors
-		forward = (Vector3::FORWARD * Matrix4::RotationMatrix(rotation)).normalized();
-		right = Vector3::UP.cross(forward).normalized();
+		forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
+		right = vec3::UP.cross(forward).normalized();
 		up = right.cross(forward).normalized();
 		
 		viewMat = Math::LookAtMatrix(position, position + forward).Inverse();
@@ -51,12 +54,12 @@ void Camera::Update() {
 			float fw = ImGui::GetFontSize() / 2;
 			
 			switch (orthoview) {
-				case OrthoView_Front:    position = Vector3(0, 0, -999); rotation = Vector3(0, 0, 0);     ImGui::DebugDrawText("FRONT (+Z)",  Vector2(DengWindow->width - fw * 1.3 * sizeof("FRONT (+Z)"), DengWindow->height - 50));  break;
-				case OrthoView_Back:     position = Vector3(0, 0, 999);  rotation = Vector3(0, 180, 0);   ImGui::DebugDrawText("BACK (-Z)",   Vector2(DengWindow->width - fw * 1.3 * sizeof("BACK (-Z)"), DengWindow->height - 50));   break;
-				case OrthoView_Right:    position = Vector3(999, 0, 0);  rotation = Vector3(0, -90, 0);   ImGui::DebugDrawText("RIGHT (+X)",  Vector2(DengWindow->width - fw * 1.3 * sizeof("RIGHT (+X)"), DengWindow->height - 50));  break;
-				case OrthoView_Left:     position = Vector3(-999, 0, 0); rotation = Vector3(0, 90, 0);    ImGui::DebugDrawText("LEFT (-X)",   Vector2(DengWindow->width - fw * 1.3 * sizeof("LEFT (-X)"), DengWindow->height - 50));   break;
-				case OrthoView_Top:  position = Vector3(0, 999, 0);  rotation = Vector3(89.9, 0, 0);  ImGui::DebugDrawText("TOP (-Y)",    Vector2(DengWindow->width - fw * 1.3 * sizeof("TOP (-Y)"), DengWindow->height - 50));    break;
-				case OrthoView_Bottom: position = Vector3(0, -999, 0); rotation = Vector3(-89.9, 0, 0); ImGui::DebugDrawText("BOTTOM (+Y)", Vector2(DengWindow->width - fw * 1.3 * sizeof("BOTTOM (+Y)"), DengWindow->height - 50)); break;
+				case OrthoView_Front:    position = vec3(0, 0, -999); rotation = vec3(0, 0, 0);     ImGui::DebugDrawText("FRONT (+Z)",  vec2(DengWindow->width - fw * 1.3 * sizeof("FRONT (+Z)"), DengWindow->height - 50));  break;
+				case OrthoView_Back:     position = vec3(0, 0, 999);  rotation = vec3(0, 180, 0);   ImGui::DebugDrawText("BACK (-Z)",   vec2(DengWindow->width - fw * 1.3 * sizeof("BACK (-Z)"), DengWindow->height - 50));   break;
+				case OrthoView_Right:    position = vec3(999, 0, 0);  rotation = vec3(0, -90, 0);   ImGui::DebugDrawText("RIGHT (+X)",  vec2(DengWindow->width - fw * 1.3 * sizeof("RIGHT (+X)"), DengWindow->height - 50));  break;
+				case OrthoView_Left:     position = vec3(-999, 0, 0); rotation = vec3(0, 90, 0);    ImGui::DebugDrawText("LEFT (-X)",   vec2(DengWindow->width - fw * 1.3 * sizeof("LEFT (-X)"), DengWindow->height - 50));   break;
+				case OrthoView_Top:  position = vec3(0, 999, 0);  rotation = vec3(89.9, 0, 0);  ImGui::DebugDrawText("TOP (-Y)",    vec2(DengWindow->width - fw * 1.3 * sizeof("TOP (-Y)"), DengWindow->height - 50));    break;
+				case OrthoView_Bottom: position = vec3(0, -999, 0); rotation = vec3(-89.9, 0, 0); ImGui::DebugDrawText("BOTTOM (+Y)", vec2(DengWindow->width - fw * 1.3 * sizeof("BOTTOM (+Y)"), DengWindow->height - 50)); break;
 			}
 			UpdateProjectionMatrix();
 		}
@@ -74,25 +77,15 @@ void Camera::Update() {
 	}
 }
 
-void Camera::UseOrthographicProjection() {
+mat4 CameraInstance::MakePerspectiveProjection(){
+	return Camera::MakePerspectiveProjectionMatrix(DengWindow->width, DengWindow->height, fov, farZ, nearZ);
 }
 
-Matrix4 Camera::MakePerspectiveProjection(){
-	float renderDistance = farZ - nearZ;
-	float aspectRatio = f32(DengWindow->height) / f32(DengWindow->width);
-	float fovRad = 1.f / tanf(RADIANS(fov * .5f));
-	return Matrix4( //NOTE setting (1,1) to negative flips the y-axis
-				   aspectRatio * fovRad, 0,	   0,							  0,
-				   0,					-fovRad, 0,							  0,
-				   0,					0,	   farZ / renderDistance,		  1,
-				   0,					0,	   -(farZ*nearZ) / renderDistance, 0);
-}
-
-Matrix4 Camera::MakeOrthographicProjection() {
+mat4 CameraInstance::MakeOrthographicProjection() {
 	//convert bounding box to camera space
 	persist float zoom = 10;
-	Vector3 maxcam = Math::WorldToCamera3(Vector3( zoom, zoom, zoom),  DengAdmin->mainCamera->viewMat);
-	Vector3 mincam = Math::WorldToCamera3(Vector3(-zoom,-zoom,-zoom), DengAdmin->mainCamera->viewMat); 
+	vec3 maxcam = Math::WorldToCamera3(vec3( zoom, zoom, zoom),  DengAdmin->mainCamera->viewMat);
+	vec3 mincam = Math::WorldToCamera3(vec3(-zoom,-zoom,-zoom), DengAdmin->mainCamera->viewMat); 
 	
 	//make screen box from camera space bounding box
 	float maxx = std::max(fabs(mincam.x), fabs(maxcam.x));
@@ -107,7 +100,7 @@ Matrix4 Camera::MakeOrthographicProjection() {
 	persist float oloffsety = 0;
 	persist float offsetx = 0;
 	persist float offsety = 0;
-	persist Vector2 initmouse;
+	persist vec2 initmouse;
 	persist bool initoffset = false;
 	
 	PRINTLN(zoom);
@@ -140,25 +133,19 @@ Matrix4 Camera::MakeOrthographicProjection() {
 	t += zoom; b -= zoom;
 	t += offsety + oloffsety; b += offsety + oloffsety;
 	
-	float f = DengAdmin->mainCamera->farZ;
-	float n = DengAdmin->mainCamera->nearZ;
-	
-	return Matrix4(2/(r-l),      0,            0,            0,
-				   0,            2/(b-t),      0,            0,
-				   0,            0,            -2/(f-n),     0,
-				   -(r+l)/(r-l), -(t+b)/(b-t), -(f+n)/(n-f), 1);
+	return Camera::MakeOrthographicProjection(DengWindow->width, DengWindow->height, r, l, t, b, farZ, nearZ);
 }
 
-void Camera::UpdateProjectionMatrix(){
+void CameraInstance::UpdateProjectionMatrix(){
 	switch(mode){
 		case(CameraMode_Perspective):default:{ projMat = MakePerspectiveProjection(); } break;
-		case(CameraMode_Orthographic):{ projMat = MakeOrthographicProjection(); }break;
+		case(CameraMode_Orthographic):       { projMat = MakeOrthographicProjection(); }break;
 	}
 	Render::UpdateCameraProjectionMatrix(projMat);
 }
 
-std::string Camera::str(){
-	return TOSTDSTRING("[c:yellow]Camera Info:[c]",
+std::string CameraInstance::str(){
+	return TOSTDSTRING("[c:yellow]CameraInstance Info:[c]",
 					   "\nPosition: ", position,
 					   "\nRotation: ", rotation,
 					   "\nNear Plane: ", nearZ,
@@ -172,7 +159,7 @@ std::string Camera::str(){
 //// saving and loading ////
 ////////////////////////////
 
-std::string Camera::SaveTEXT(){
+std::string CameraInstance::SaveTEXT(){
 	return TOSTDSTRING("\n>camera"
 					   "\nposition (",position.x,",",position.y,",",position.z,")"
 					   "\nrotation (",rotation.x,",",rotation.y,",",rotation.z,")"
@@ -183,6 +170,6 @@ std::string Camera::SaveTEXT(){
 					   "\n");
 }
 
-void Camera::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
-	ERROR("Camera::LoadDESH not setup");
+void CameraInstance::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){
+	ERROR("CameraInstance::LoadDESH not setup");
 }

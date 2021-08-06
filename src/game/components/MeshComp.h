@@ -3,7 +3,7 @@
 #define COMPONENT_MODELINSTANCE_H
 
 #include "Component.h"
-#include "../../math/matrix.h"
+#include "../../math/mat.h"
 
 struct Model;
 struct Mesh;
@@ -14,7 +14,7 @@ struct ModelInstance : public Component {
 	Model*    model;
 	Mesh*     mesh;
 	Armature* armature;
-	Matrix4   transform;
+	mat4   transform;
 	bool      visible;
 	bool      control; //overrides entity transform
 	

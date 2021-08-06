@@ -50,9 +50,9 @@ struct Font {
 	string weight = "";
 	
 	u32 font_size;
-	Vector2 dpi;
+	vec2 dpi;
 	
-	Vector4 bbx;
+	vec4 bbx;
 	
 	array<pair<u32, array<u32>>> textures;
 	
@@ -190,7 +190,7 @@ struct Font {
 						
 						//move onto BBX
 						//this determines the smallest box that can enclose the glyph and it's offset from the origin
-						Vector4 gbbx;
+						vec4 gbbx;
 						
 						while (*currChar++ != ' ') {} //skip BBX key
 						

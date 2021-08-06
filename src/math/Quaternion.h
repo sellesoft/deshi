@@ -1,100 +1,100 @@
 #pragma once
 #include "../utils/debug.h"
 
-struct Vector3;
-struct Matrix4;
-struct Matrix3;
+struct vec3;
+struct mat4;
+struct mat3;
 
 //TODO(delle,Ma) implement quaternions
 // https://github.com/erich666/GraphicsGems/blob/master/gemsiv/euler_angle/EulerAngles.c
-struct Quaternion {
+struct quat {
 	float x{}, y{}, z{}, w{};
 	
-	Quaternion() : x(0), y(0), z(0), w(1) {}
-	Quaternion(float inX, float inY, float inZ, float inW) : x(inX), y(inY), z(inZ), w(inW) {}
+	quat() : x(0), y(0), z(0), w(1) {}
+	quat(float inX, float inY, float inZ, float inW) : x(inX), y(inY), z(inZ), w(inW) {}
 	
 	//Non-Quat vs Quat interactions defined in Math.h
-	Quaternion(const Vector3& rotation);
-	Quaternion(const Vector3& axis, float theta);
+	quat(const vec3& rotation);
+	quat(const vec3& axis, float theta);
 	
-	void operator =			(const Quaternion& rhs);
-	Quaternion operator /	(const float& rhs);
+	void operator =			(const quat& rhs);
+	quat operator /	(const float& rhs);
 	void operator /=		(const float& rhs);
-	Quaternion operator *	(const float& rhs);
+	quat operator *	(const float& rhs);
 	void operator *=		(const float& rhs);
-	Vector3 operator *      (const Vector3& rhs);
-	Quaternion operator +	(const Quaternion& rhs);
-	void operator +=		(const Quaternion& rhs);
-	Quaternion operator -	(const Quaternion& rhs);
-	void operator -=		(const Quaternion& rhs);
-	Quaternion operator *	(const Quaternion& rhs);
-	void operator *=		(const Quaternion& rhs);
-	Quaternion operator /	(const Quaternion& rhs);
-	void operator /=		(const Quaternion& rhs);
-	Quaternion operator - ();
+	vec3 operator *      (const vec3& rhs);
+	quat operator +	(const quat& rhs);
+	void operator +=		(const quat& rhs);
+	quat operator -	(const quat& rhs);
+	void operator -=		(const quat& rhs);
+	quat operator *	(const quat& rhs);
+	void operator *=		(const quat& rhs);
+	quat operator /	(const quat& rhs);
+	void operator /=		(const quat& rhs);
+	quat operator - ();
 	
 	float mag();
 	void normalize();
-	Quaternion normalized();
-	Quaternion conjugate();
-	Quaternion inverse();
-	float dot(Quaternion q);
-	Vector3 ToVector3();
+	quat normalized();
+	quat conjugate();
+	quat inverse();
+	float dot(quat q);
+	vec3 toVec3();
 	
-	static Quaternion AxisAngleToQuat(float angle, Vector3 axis);
-	static Quaternion RotVecToQuat(Vector3 rotation);
+	static quat AxisAngleToQuat(float angle, vec3 axis);
+	static quat RotVecToQuat(vec3 rotation);
 	
-	static Quaternion QuatSlerp(Quaternion from, Quaternion to, float t);
-	static Quaternion QuatSlerp(Vector3 from, Vector3 to, float t);
+	static quat QuatSlerp(quat from, quat to, float t);
+	static quat QuatSlerp(vec3 from, vec3 to, float t);
 	
 };
 
 
 
-inline void Quaternion::operator = (const Quaternion& rhs) {
+inline void quat::operator = (const quat& rhs) {
 	x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
 }
 
 
 
-//Quaternion vs float
-inline Quaternion Quaternion::operator / (const float& rhs) {
-	return Quaternion(x / rhs, y / rhs, z / rhs, w / rhs);
+//quat vs float
+inline quat quat::operator / (const float& rhs) {
+	return quat(x / rhs, y / rhs, z / rhs, w / rhs);
 }
 
-inline void Quaternion::operator /= (const float& rhs) {
+inline void quat::operator /= (const float& rhs) {
 	x /= rhs; y /= rhs; z /= rhs; w /= rhs;
 }
 
-inline Quaternion Quaternion::operator * (const float& rhs) {
+inline quat quat::operator * (const float& rhs) {
 	
-	return Quaternion(x * rhs, y * rhs, z * rhs, w * rhs);
+	return quat(x * rhs, y * rhs, z * rhs, w * rhs);
 }
 
-inline void Quaternion::operator *= (const float& rhs) {
+inline void quat::operator *= (const float& rhs) {
 	x *= rhs; y *= rhs; z *= rhs; w *= rhs;
 }
 
 
 
-//Quaternion vs Quaternion
-inline Quaternion Quaternion::operator + (const Quaternion& rhs) {
-	return Quaternion(rhs.x + x, rhs.y + y, rhs.z + z, rhs.w + w);
+//quat vs quat
+inline quat quat::operator + (const quat& rhs) {
+	return quat(rhs.x + x, rhs.y + y, rhs.z + z, rhs.w + w);
 }
 
-inline void Quaternion::operator += (const Quaternion& rhs) {
+inline void quat::operator += (const quat& rhs) {
 	x += rhs.x; y += rhs.y; z += rhs.z; w += rhs.w;
 }
 
-inline Quaternion Quaternion::operator - (const Quaternion& rhs) {
-	return Quaternion(rhs.x - x, rhs.y - y, rhs.z - z, rhs.w - w);
+inline quat quat::operator - (const quat& rhs) {
+	return quat(rhs.x - x, rhs.y - y, rhs.z - z, rhs.w - w);
 }
 
-inline void Quaternion::operator -= (const Quaternion& rhs) {
+inline void quat::operator -= (const quat& rhs) {
 	x -= rhs.x; y -= rhs.y; z -= rhs.z; w -= rhs.w;
 }
 
-inline Quaternion Quaternion::operator * (const Quaternion& rhs) {
+inline quat quat::operator * (const quat& rhs) {
 	//efficient quaternion multiplication from https://www.gamasutra.com/view/feature/131686/rotating_objects_using_quaternions.php?page=2
 	float A, B, C, D, E, F, G, H;
 	A = (w + x) * (rhs.w + rhs.x);
@@ -105,14 +105,14 @@ inline Quaternion Quaternion::operator * (const Quaternion& rhs) {
 	F = (x - z) * (rhs.x - rhs.y);
 	G = (w + y) * (rhs.w - rhs.z);
 	H = (w - y) * (rhs.w + rhs.z);
-	return Quaternion(
+	return quat(
 					  A - (E + F + G + H) / 2,
 					  C + (E - F + G - H) / 2,
 					  D + (E - F - G + H) / 2,
 					  B + (-E - F + G + H) / 2);
 }
 
-inline void Quaternion::operator *= (const Quaternion& rhs) {
+inline void quat::operator *= (const quat& rhs) {
 	x *= rhs.x; y *= rhs.y; z *= rhs.z; w *= rhs.w;
 	
 	float A, B, C, D, E, F, G, H;
@@ -133,49 +133,49 @@ inline void Quaternion::operator *= (const Quaternion& rhs) {
 
 //this probably isn't how this works considering how multiplication works
 //idk if there is division with quaternions
-inline Quaternion Quaternion::operator / (const Quaternion& rhs) {
-	return Quaternion(rhs.x * x, rhs.y * y, rhs.z * z, rhs.w * w);
+inline quat quat::operator / (const quat& rhs) {
+	return quat(rhs.x * x, rhs.y * y, rhs.z * z, rhs.w * w);
 }
 
-inline void Quaternion::operator /= (const Quaternion& rhs) {
+inline void quat::operator /= (const quat& rhs) {
 	x /= rhs.x; y /= rhs.y; z /= rhs.z; w /= rhs.w;
 }
 
-inline Quaternion Quaternion::operator - () {
-	return Quaternion(-x, -y, -z, -w);
+inline quat quat::operator - () {
+	return quat(-x, -y, -z, -w);
 }
 
 
 
-//Quaternion functions
-inline float Quaternion::mag() {
+//quat functions
+inline float quat::mag() {
 	return sqrtf(x * x + y * y + z * z + w * w);
 }
 
-inline void Quaternion::normalize() {
+inline void quat::normalize() {
 	*this / this->mag();
 }
 
-inline Quaternion Quaternion::normalized() {
+inline quat quat::normalized() {
 	return *this / this->mag();
 }
 
-inline Quaternion Quaternion::conjugate() {
-	return Quaternion(-x, -y, -z, w);
+inline quat quat::conjugate() {
+	return quat(-x, -y, -z, w);
 }
 
-inline Quaternion Quaternion::inverse() {
+inline quat quat::inverse() {
 	return this->conjugate() / this->normalized();
 }
 
-inline float Quaternion::dot(Quaternion q) {
+inline float quat::dot(quat q) {
 	return x * q.x + y * q.y + z * q.z + w * q.w;
 }
 
-inline Quaternion Quaternion::QuatSlerp(Quaternion from, Quaternion to, float t) {
+inline quat quat::QuatSlerp(quat from, quat to, float t) {
 	//this implements Spherical Linear intERPoplation
 	//it interpolates between two quaternions along the shortest arc on a sphere formed by them
-	//taken from https://www.wikiwand.com/en/Slerp#/Quaternion_Slerp
+	//taken from https://www.wikiwand.com/en/Slerp#/quat_Slerp
 	
 	from.normalize();
 	to.normalize();
@@ -192,7 +192,7 @@ inline Quaternion Quaternion::QuatSlerp(Quaternion from, Quaternion to, float t)
 	// calculate coefficients
 	if (dot > dot_thresh) {
 		// standard case (slerp)
-		Quaternion result = from + ((to - from) * t);
+		quat result = from + ((to - from) * t);
 		result.normalize();
 		return result;
 	}

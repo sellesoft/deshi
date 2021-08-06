@@ -14,7 +14,7 @@ Trigger::Trigger(Transform _transform, Collider* _collider, const char* _name) {
 	transform = _transform;
 	collider = _collider;
 	physics = new Physics(transform.position, transform.rotation,
-						  Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, Vector3::ZERO, 0, 1, true);
+						  vec3::ZERO, vec3::ZERO, vec3::ZERO, vec3::ZERO, 0, 1, true);
 	collider->noCollide = true;
 	
 	switch (collider->shape) {

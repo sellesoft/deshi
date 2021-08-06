@@ -33,7 +33,7 @@ namespace Storage{
 	pair<u32,Mesh*> CreateMeshFromMemory(void* data);
 	void            DeleteMesh(Mesh* mesh);
 	
-	std::vector<Vector2> GenerateMeshOutlinePoints(Mesh* mesh, Matrix4 transform, Matrix4 camProjection, Matrix4 camView, Vector3 camPosition, Vector2 screenDims);
+	std::vector<vec2> GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camView, vec3 camPosition, vec2 screenDims);
 	
 	inline Mesh*    NullMesh(){ return DengStorage->meshes.data[0]; };
 	inline u32      MeshCount(){ return DengStorage->meshes.size(); };

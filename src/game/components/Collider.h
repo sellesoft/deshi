@@ -29,7 +29,7 @@ global_ const char* ColliderShapeStrings[] = {
 struct Collider : public Component {
 	ColliderShape shape;
 	u32 collLayer;
-	Matrix3 tensor;
+	mat3 tensor;
 	bool noCollide;
 	bool sentEvent = false;
 	
@@ -41,10 +41,10 @@ struct Collider : public Component {
 
 //rotatable box
 struct BoxCollider : public Collider {
-	Vector3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
+	vec3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
 	
-	BoxCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Event event = Event_NONE, bool noCollide = 0);
-	BoxCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Event event = Event_NONE, bool noCollide = 0);
+	BoxCollider(vec3 halfDimensions, mat3& tensor, u32 collisionLayer = 0, Event event = Event_NONE, bool noCollide = 0);
+	BoxCollider(vec3 halfDimensions, float mass, u32 collisionLayer = 0, Event event = Event_NONE, bool noCollide = 0);
 	
 	void RecalculateTensor(f32 mass) override;
 	std::string SaveTEXT() override;
@@ -52,11 +52,11 @@ struct BoxCollider : public Collider {
 
 //axis-aligned bounding box
 struct AABBCollider : public Collider {
-	Vector3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
+	vec3 halfDims; //half dimensions, entity's position to the bounding box's locally positive corner
 	
 	AABBCollider(Mesh* mesh, float mass, u32 collisionLayer = 0, Event event = Event_NONE, bool noCollide = 0);
-	AABBCollider(Vector3 halfDimensions, Matrix3& tensor, u32 collisionLayer = 0, Event event = Event_NONE, bool noCollide = 0);
-	AABBCollider(Vector3 halfDimensions, float mass, u32 collisionLayer = 0, Event event = Event_NONE, bool noCollide = 0);
+	AABBCollider(vec3 halfDimensions, mat3& tensor, u32 collisionLayer = 0, Event event = Event_NONE, bool noCollide = 0);
+	AABBCollider(vec3 halfDimensions, float mass, u32 collisionLayer = 0, Event event = Event_NONE, bool noCollide = 0);
 	
 	void RecalculateTensor(f32 mass) override;
 	std::string SaveTEXT() override;
@@ -65,7 +65,7 @@ struct AABBCollider : public Collider {
 struct SphereCollider : public Collider {
 	float radius;
 	
-	SphereCollider(float radius, Matrix3& tensor, u32 collisionLayer = 0, Event event = Event_NONE, bool noCollide = 0);
+	SphereCollider(float radius, mat3& tensor, u32 collisionLayer = 0, Event event = Event_NONE, bool noCollide = 0);
 	SphereCollider(float radius, float mass, u32 collisionLayer = 0, Event event = Event_NONE, bool noCollide = 0);
 	
 	void RecalculateTensor(f32 mass) override;
@@ -74,7 +74,7 @@ struct SphereCollider : public Collider {
 
 //collider for terrain
 struct LandscapeCollider : public Collider {
-	std::vector<pair<AABBCollider, Vector3>> aabbcols; //aabb colliders and their local positions
+	std::vector<pair<AABBCollider, vec3>> aabbcols; //aabb colliders and their local positions
 	
 	LandscapeCollider(Mesh* mesh, u32 collisionleyer = 0, Event event = Event_NONE, bool noCollide = 0);
 	

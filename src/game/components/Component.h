@@ -46,7 +46,7 @@ enum ComponentType_{
 	ComponentType_COUNT,
 }; typedef u32 ComponentType;
 global_ const char* ComponentTypeStrings[] = {
-	"None", "ModelInstance", "Physics", "Collider", "AudioListener", "AudioSource", "Camera", "Light", "OrbManager", "Door", "Player", "Movement"
+	"None", "ModelInstance", "Physics", "Collider", "AudioListener", "AudioSource", "CameraInstance", "Light", "OrbManager", "Door", "Player", "Movement"
 };
 
 struct Component : public Receiver {

@@ -3,7 +3,7 @@
 #define COMPONENT_PLAYER_H
 
 #include "Component.h"
-#include "../../math/Vector.h"
+#include "../../math/vec.h"
 
 struct Movement;
 

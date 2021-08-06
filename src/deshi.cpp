@@ -129,7 +129,7 @@ Math TODOs
 fix vector cross function, and anywhere it's used
 add functions and members similar to what glsl/glm has where you can do stuff like 
 ____v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
-____you probably just need to add a Vector2/3 for each permutation of each vector
+____you probably just need to add a vec2/3 for each permutation of each vector
 ____glm/detail/_swizzle.hpp
 cleanup math library (remove redundant/old things, make functions more consistent, etc.)
 add quaternions and converions between them and other linear algebra primitives
@@ -279,19 +279,19 @@ int main() {
 		UI::Update();
 		TIMER_RESET(t_d); admin.PostRenderUpdate(); time_.adminTime += TIMER_END(t_d);
 		{//debugging area
-			//setTrack();
-			UI::PushVar(UIStyleVar_TitleTextAlign, vec2(1, 0.5));
-			UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
-			
-			for (int i = 0; i < 40; i++) {
-				UI::Text(TOSTRING("wow ", i), UITextFlags_NoWrap);
-			}
-			
-			UI::Text("unwrapped manually positioned text", vec2(150, 150), UITextFlags_NoWrap);
-			
-			UI::EndWindow();
-			//UI::ShowDebugWindowOf("test");
-			UI::PopVar();
+			//UI::PushVar(UIStyleVar_TitleTextAlign, vec2(1, 0.5));
+			//UI::BeginWindow("test", vec2(300, 300), vec2(300, 300));
+			//
+			////setTrack();
+			//for (int i = 0; i < 4; i++) {
+			//	UI::Text(TOSTRING("wow ", i), UITextFlags_NoWrap);
+			//}
+			//
+			//UI::Text("unwrapped manually positioned text", vec2(150, 150), UITextFlags_NoWrap);
+			//
+			//UI::EndWindow();
+			////UI::ShowDebugWindowOf("test");
+			//UI::PopVar();
 		}
 		time_.frameTime = TIMER_END(t_f); TIMER_RESET(t_f);
 	}

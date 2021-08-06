@@ -9,21 +9,21 @@ struct ModelInstance;
 struct Model;
 
 struct Orb {
-	Vector3 pos;
-	Vector3 posbflerp;
-	Vector3 origpos;
-	Vector3 vel;
-	Vector3 acc;
-	Vector3 rotbflerp;
-	Vector3 rot;
-	Vector3 rotvel;
-	Vector3 rotacc;
+	vec3 pos;
+	vec3 posbflerp;
+	vec3 origpos;
+	vec3 vel;
+	vec3 acc;
+	vec3 rotbflerp;
+	vec3 rot;
+	vec3 rotvel;
+	vec3 rotacc;
 	
 	ModelInstance* mc;
 	
-	Vector3 ito = Vector3(2, 0, 2);
+	vec3 ito = vec3(2, 0, 2);
 	
-	Orb(Vector3 pos, Vector3 rot, Vector3 rotvel, Vector3 rotacc) {
+	Orb(vec3 pos, vec3 rot, vec3 rotvel, vec3 rotacc) {
 		this->pos = pos;
 		origpos = pos;
 		this->rot = rot;

@@ -8,19 +8,19 @@ Physics::Physics() {
 	layer = SystemLayer_Physics;
 	type = ComponentType_Physics;
 	
-	position = Vector3::ZERO;
-	rotation = Vector3::ZERO;
-	velocity = Vector3::ZERO;
-	acceleration = Vector3::ZERO;
-	rotVelocity = Vector3::ZERO;
-	rotAcceleration = Vector3::ZERO;
+	position = vec3::ZERO;
+	rotation = vec3::ZERO;
+	velocity = vec3::ZERO;
+	acceleration = vec3::ZERO;
+	rotVelocity = vec3::ZERO;
+	rotAcceleration = vec3::ZERO;
 	elasticity = .2f;
 	mass = 1;
 	staticPosition = false;
 }
 
-Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy,
-				 Vector3 rotAcceleration, float elasticity, float mass, bool staticPosition) {
+Physics::Physics(vec3 position, vec3 rotation, vec3 velocity, vec3 acceleration, vec3 rotVeloctiy,
+				 vec3 rotAcceleration, float elasticity, float mass, bool staticPosition) {
 	layer = SystemLayer_Physics;
 	type = ComponentType_Physics;
 	
@@ -36,7 +36,7 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 }
 
 //for loading only really
-Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 acceleration, Vector3 rotVeloctiy, Vector3 rotAcceleration, float elasticity,
+Physics::Physics(vec3 position, vec3 rotation, vec3 velocity, vec3 acceleration, vec3 rotVeloctiy, vec3 rotAcceleration, float elasticity,
 				 float mass, bool staticPosition, bool staticRotation, bool twoDphys, float kineticFricCoef, float staticFricCoef) {
 	layer = SystemLayer_Physics;
 	type = ComponentType_Physics;
@@ -58,25 +58,25 @@ Physics::Physics(Vector3 position, Vector3 rotation, Vector3 velocity, Vector3 a
 	
 }
 
-Physics::Physics(Vector3 position, Vector3 rotation, float mass, float elasticity) {
+Physics::Physics(vec3 position, vec3 rotation, float mass, float elasticity) {
 	layer = SystemLayer_Physics;
 	type = ComponentType_Physics;
 	
 	this->position = position;
 	this->rotation = rotation;
-	this->velocity = Vector3::ZERO;
-	this->acceleration = Vector3::ZERO;
-	this->rotVelocity = Vector3::ZERO;
-	this->rotAcceleration = Vector3::ZERO;
+	this->velocity = vec3::ZERO;
+	this->acceleration = vec3::ZERO;
+	this->rotVelocity = vec3::ZERO;
+	this->rotAcceleration = vec3::ZERO;
 	this->mass = mass;
 	this->elasticity = elasticity;
 }
 
-void Physics::AddInput(Vector3 input) {
+void Physics::AddInput(vec3 input) {
 	inputVector += input;
 }
 
-void Physics::AddForce(Physics* creator, Vector3 force) {
+void Physics::AddForce(Physics* creator, vec3 force) {
 	forces.push_back(force);
 	if(creator) { creator->forces.push_back(-force); }
 }
@@ -85,12 +85,12 @@ void Physics::AddFrictionForce(Physics* creator, float frictionCoef, float grav)
 	forces.push_back(-velocity.normalized() * frictionCoef * mass * grav);
 }
 
-void Physics::AddImpulse(Physics* creator, Vector3 impulse) {
+void Physics::AddImpulse(Physics* creator, vec3 impulse) {
 	velocity += impulse / mass;
 	if (creator) { creator->velocity -= impulse / creator->mass; }
 }
 
-void Physics::AddImpulseNomass(Physics* creator, Vector3 impulse) {
+void Physics::AddImpulseNomass(Physics* creator, vec3 impulse) {
 	velocity += impulse;
 	if (creator) { creator->velocity -= impulse; }
 }
