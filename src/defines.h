@@ -7,7 +7,7 @@
 #define DESHI_NAME_SIZE 64
 
 //math constants and macros
-#define M_EPSILON    0.001f
+#define M_EPSILON    0.00001f
 #define M_PI         3.14159265359f
 #define M_2PI        6.28318530718f
 #define M_E          2.71828182846f

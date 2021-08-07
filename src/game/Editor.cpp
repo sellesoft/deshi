@@ -2329,24 +2329,29 @@ inline void SettingsTab(Admin* admin){
 		//// camera properties ////
 		if(ImGui::CollapsingHeader("CameraInstance", 0)){
 			if(ImGui::Button("Zero", ImVec2(ImGui::GetWindowWidth()*.45f, 0))){
-				admin->editor.camera->position = vec3::ZERO; admin->editor.camera->rotation = vec3::ZERO;
+				admin->editor.camera->position = vec3::ZERO; 
+				admin->editor.camera->rotation = vec3::ZERO;
 			} ImGui::SameLine();
 			if(ImGui::Button("Reset", ImVec2(ImGui::GetWindowWidth()*.45f, 0))){
-				admin->editor.camera->position = {4.f,3.f,-4.f}; admin->editor.camera->rotation = {28.f,-45.f,0.f};
+				admin->editor.camera->position = {4.f,3.f,-4.f}; 
+				admin->editor.camera->rotation = {28.f,-45.f,0.f};
 			}
 			
 			ImGui::TextEx("Position  "); ImGui::SameLine(); ImGui::Inputvec3("##cam_pos", &admin->editor.camera->position);
 			ImGui::TextEx("Rotation  "); ImGui::SameLine(); ImGui::Inputvec3("##cam_rot", &admin->editor.camera->rotation);
 			ImGui::TextEx("Near Clip "); ImGui::SameLine(); 
-			if(ImGui::InputFloat("##cam_nearz", &admin->editor.camera->nearZ)){
+			if(ImGui::InputFloat("##cam_nearz", &admin->editor.camera->nearZ, 0, 0, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue)){
+				admin->editor.camera->nearZ = Max(0.0001f, admin->editor.camera->nearZ);
 				admin->editor.camera->UpdateProjectionMatrix();
 			}
 			ImGui::TextEx("Far Clip  "); ImGui::SameLine(); 
-			if(ImGui::InputFloat("##cam_farz", &admin->editor.camera->farZ)){
+			if(ImGui::InputFloat("##cam_farz", &admin->editor.camera->farZ, 0, 0, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue)){
+				admin->editor.camera->nearZ = Max(1.0f, admin->editor.camera->farZ);
 				admin->editor.camera->UpdateProjectionMatrix();
 			};
 			ImGui::TextEx("FOV       "); ImGui::SameLine(); 
-			if(ImGui::InputFloat("##cam_fov", &admin->editor.camera->fov)){
+			if(ImGui::InputFloat("##cam_fov", &admin->editor.camera->fov, 0, 0, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue)){
+				admin->editor.camera->fov = Max(1.0f, admin->editor.camera->fov);
 				admin->editor.camera->UpdateProjectionMatrix();
 			};
 			
@@ -2955,8 +2960,12 @@ void Editor::Update(){
 	{//// select ////
 		if(!DengConsole->IMGUI_MOUSE_CAPTURE && !admin->controller.cameraLocked){
 			if(DengInput->KeyPressed(MouseButton::LEFT)){
-				vec3 ray = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions) - camera->position;
-				Entity* e = DengAdmin->EntityRaycast(camera->position, ray.normalized(), ray.mag());
+				//NOTE adjusting the projection matrix so the nearZ is at least .1, produces bad results if less
+				mat4 adjusted_proj = Camera::MakePerspectiveProjectionMatrix(DengWindow->width, DengWindow->height, camera->fov, 
+																			 camera->farZ, Max(.1, camera->nearZ));
+				vec3 direction = (Math::ScreenToWorld(DengInput->mousePos, adjusted_proj, camera->viewMat, DengWindow->dimensions) 
+								  - camera->position).normalized();
+				Entity* e = DengAdmin->EntityRaycast(camera->position, direction, camera->farZ);
 				if(!DengInput->LShiftDown()) selected.clear(); 
 				if(e) selected.push_back(e);
 			}

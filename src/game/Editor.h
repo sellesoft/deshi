@@ -5,7 +5,7 @@
 #include "UndoManager.h"
 #include "../defines.h"
 #include "../utils/color.h"
-#include "../math/vec.h"
+#include "../math/vector.h"
 
 #include <vector>
 

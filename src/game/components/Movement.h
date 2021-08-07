@@ -3,7 +3,7 @@
 #define COMPONENT_MOVEMENT_H
 
 #include "Component.h"
-#include "../../math/vec.h"
+#include "../../math/vector.h"
 
 enum MoveState : u32{
 	InAirNoInput, // this isn't necessary i dont think
@@ -37,7 +37,7 @@ struct Movement : public Component {
 	float maxCrouchingSpeed = 2.5;
 	
 	bool jump = false;
-
+	
 	float maxGrabbingDistance = 5;
 	
 	Movement();

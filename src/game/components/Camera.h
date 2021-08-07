@@ -2,11 +2,9 @@
 #ifndef COMPONENT_CAMERA_H
 #define COMPONENT_CAMERA_H
 
-#include "../../core/camera.h"
-
 #include "Component.h"
-#include "../../math/vec.h"
-#include "../../math/mat.h"
+#include "../../core/camera.h"
+#include "../../math/vectormatrix.h"
 
 struct CameraInstance : public Component, public Camera {
 	CameraInstance();

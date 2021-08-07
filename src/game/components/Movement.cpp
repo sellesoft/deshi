@@ -119,8 +119,12 @@ void Movement::GrabObject() {
 			grabeephys = 0;
 			timer = 0;
 		}else{
-			vec3 ray = Math::ScreenToWorld(DengInput->mousePos, camera->projMat, camera->viewMat, DengWindow->dimensions) - camera->position;
-			if(Entity* e = DengAdmin->EntityRaycast(camera->position, ray.normalized(), maxGrabbingDistance)){
+			//NOTE adjusting the projection matrix so the nearZ is at least .1, produces bad results if less
+			mat4 adjusted_proj = Camera::MakePerspectiveProjectionMatrix(DengWindow->width, DengWindow->height, camera->fov, 
+																		 camera->farZ, Max(.1, camera->nearZ));
+			vec3 direction = (Math::ScreenToWorld(DengInput->mousePos, adjusted_proj, camera->viewMat, DengWindow->dimensions) 
+							  - camera->position).normalized();
+			if(Entity* e = DengAdmin->EntityRaycast(camera->position, direction, maxGrabbingDistance)){
 				if(grabeephys = e->GetComponent<Physics>()){
 					if(!grabeephys->staticPosition){
 						grabbing = true;
@@ -275,13 +279,13 @@ void Movement::Update() {
 
 std::string Movement::SaveTEXT(){
 	return TOSTDSTRING("\n>movement"
-					"\nground_accel ", gndAccel,
-					"\nair_accel    ", airAccel,
-					"\njump_impulse ", jumpImpulse,
-					"\nwalk_speed   ", maxWalkingSpeed,
-					"\nrun_speed    ", maxRunningSpeed,
-					"\ncrouch_speed ", maxCrouchingSpeed,
-					"\n");
+					   "\nground_accel ", gndAccel,
+					   "\nair_accel    ", airAccel,
+					   "\njump_impulse ", jumpImpulse,
+					   "\nwalk_speed   ", maxWalkingSpeed,
+					   "\nrun_speed    ", maxRunningSpeed,
+					   "\ncrouch_speed ", maxCrouchingSpeed,
+					   "\n");
 }
 
 void Movement::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count) {

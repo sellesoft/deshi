@@ -645,7 +645,7 @@ void Admin::AddComponentToLayers(Component* c){
 ////////////////
 
 
-Entity* Admin::EntityRaycast(vec3 origin, vec3 direction, f32 maxDistance){ //!FixMe
+Entity* Admin::EntityRaycast(vec3 origin, vec3 direction, f32 maxDistance){
 	Entity* result = 0;
     f32 min_depth = INFINITY;
     f32 depth;
@@ -654,6 +654,7 @@ Entity* Admin::EntityRaycast(vec3 origin, vec3 direction, f32 maxDistance){ //!F
 	vec3 perp01, perp12, perp20;
     mat4 transform, rotation;
 	Mesh::Triangle* tri;
+	
     for(Entity* e : entities){
         transform = e->transform.TransformMatrix();
         rotation = mat4::RotationMatrix(e->transform.rotation);

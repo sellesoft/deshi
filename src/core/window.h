@@ -3,7 +3,7 @@
 #define DESHI_WINDOW_H
 
 #include "../defines.h"
-#include "../math/vec.h"
+#include "../math/vector.h"
 
 #include <string>
 

@@ -2,7 +2,7 @@
 #include "Physics.h"
 #include "../admin.h"
 #include "../transform.h"
-#include "../../math/vec.h"
+#include "../../math/vector.h"
 #include "../../core/console.h"
 
 AudioSource::AudioSource() {
@@ -39,7 +39,7 @@ void AudioSource::RequestPlay(float gain, float pitch) {
 
 std::string AudioSource::SaveTEXT(){
 	return TOSTDSTRING("\n>audio source"
-					"\n");
+					   "\n");
 }
 
 void AudioSource::LoadDESH(Admin* admin, const char* data, u32& cursor, u32 count){

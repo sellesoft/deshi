@@ -3,7 +3,7 @@
 #define COMPONENT_MODELINSTANCE_H
 
 #include "Component.h"
-#include "../../math/mat.h"
+#include "../../math/matrix.h"
 
 struct Model;
 struct Mesh;

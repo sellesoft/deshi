@@ -10,12 +10,13 @@ struct vec4;
 struct matN;
 struct mat3;
 struct mat4;
-struct ImVec2;
 struct quat;
 
 //////////////////////
 //// declarations ////
 //////////////////////
+
+static constexpr float VEC_EPSILON = 0.00001f;
 
 struct vec2 {
 	union{ float x = 0; float r; float w; float u; };
@@ -59,7 +60,7 @@ struct vec2 {
 	vec2  cross(const vec2& rhs) const;
 	vec2  perp() const;
 	float mag() const;
-	vec2  normalize();
+	void  normalize();
 	vec2  normalized() const;
 	void  clampMag(float min, float max);
 	vec2  clampedMag(float min, float max) const;
@@ -129,28 +130,28 @@ struct vec3 {
 	bool operator != (const vec3& rhs) const;
 	friend vec3 operator * (float lhs, const vec3& rhs) { return   rhs * lhs; }
 	
-	vec3 absV() const;
-	vec3 copy() const;
-	float   dot(const vec3& rhs) const;
-	vec3 cross(const vec3& rhs) const;
-	float   mag() const;
-	vec3 normalize();
-	vec3 normalized() const;
-	vec3 clamp(float lo, float hi);
-	void    clampMag(float min, float max);
-	vec3 clampedMag(float min, float max) const;
-	void round(int place);
-	vec3 rounded(int place);
-	float   distanceTo(const vec3& rhs) const;
-	vec3 compOn(vec3 rhs);
-	float   projectOn(vec3 rhs);
-	vec3 midpoint(vec3 rhs);
-	vec3 xComp() const;
-	vec3 yComp() const;
-	vec3 zComp() const;
-	vec3 xInvert() const;
-	vec3 yInvert() const;
-	vec3 zInvert() const;
+	vec3  absV() const;
+	vec3  copy() const;
+	float dot(const vec3& rhs) const;
+	vec3  cross(const vec3& rhs) const;
+	float mag() const;
+	void  normalize();
+	vec3  normalized() const;
+	vec3  clamp(float lo, float hi);
+	void  clampMag(float min, float max);
+	vec3  clampedMag(float min, float max) const;
+	void  round(int place);
+	vec3  rounded(int place);
+	float distanceTo(const vec3& rhs) const;
+	vec3  compOn(vec3 rhs);
+	float projectOn(vec3 rhs);
+	vec3  midpoint(vec3 rhs);
+	vec3  xComp() const;
+	vec3  yComp() const;
+	vec3  zComp() const;
+	vec3  xInvert() const;
+	vec3  yInvert() const;
+	vec3  zInvert() const;
 	const std::string str() const;
 	const std::string str2f() const;
 	
@@ -206,7 +207,7 @@ struct vec4 {
 	vec4  copy() const;
 	float dot(const vec4& rhs) const;
 	float mag() const;
-	vec4  normalized() const;
+	vec4  wnormalized() const;
 	vec4  xComp() const;
 	vec4  yComp() const;
 	vec4  zComp() const;
