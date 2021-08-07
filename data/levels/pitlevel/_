@@ -4,22 +4,12 @@ entity_count 13
 last_updated ""
 
 >materials
-0 "Flat" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
-1 "Phong" 1 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+"flat"
+"phong"
 
 >meshes
-5 "box.obj" 1 "1"
-6 "box.obj" 1 "1"
-7 "box.obj" 1 "1"
-8 "box.obj" 1 "1"
-9 "box.obj" 1 "1"
-10 "box.obj" 1 "1"
-11 "box.obj" 1 "1"
-12 "box.obj" 1 "1"
-13 "box.obj" 1 "1"
-14 "box.obj" 1 "0"
-15 "box.obj" 1 "0"
-16 "box.obj" 1 "0"
+"box_flat"
+"box_phong"
 
 >entities
 0 "pitfloor"

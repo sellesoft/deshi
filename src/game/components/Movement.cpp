@@ -113,7 +113,7 @@ void Movement::GrabObject() {
 	//grab object or drop it if already holding one
 	//frame is necessary to avoid this being ran multiple times due to
 	//movement being within physics update
-	if(DengInput->KeyPressedAnyMod(DengKeys.use) && DengTime->updateCount != frame){ //!TestMe
+	if(DengInput->KeyPressedAnyMod(DengKeys.use) && DengTime->updateCount != frame){
 		if(grabbing){
 			grabbing = false;
 			grabeephys = 0;

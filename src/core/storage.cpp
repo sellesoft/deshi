@@ -32,13 +32,13 @@ Reset(){
 //// @mesh ////
 ///////////////
 local Mesh* 
-AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighborCount, u32 facesVertexCount, u32 facesOuterVertexCount, u32 facesNeighborFaceCount, u32 facesNeighborTriangleCount){
+AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighborCount, u32 facesVertexCount, u32 facesOuterVertexCount, u32 facesNeighborTriangleCount, u32 facesNeighborFaceCount){
 	Assert(indexCount && vertexCount && faceCount);
 	
 	u32 triangleCount = indexCount/3;
 	u32 bytes =                    1*sizeof(Mesh)
-		+                 indexCount*sizeof(Mesh::Index)
 		+                vertexCount*sizeof(Mesh::Vertex)
+		+                 indexCount*sizeof(Mesh::Index)
 		+              triangleCount*sizeof(Mesh::Triangle)
 		+                  faceCount*sizeof(Mesh::Face)
 		+     trianglesNeighborCount*sizeof(u32) //triangle neighbors
@@ -55,8 +55,13 @@ AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighb
 	mesh->vertexCount   = vertexCount;
 	mesh->triangleCount = triangleCount;
 	mesh->faceCount     = faceCount;
-	mesh->indexArray    = (Mesh::Index*)cursor;    cursor +=    indexCount*sizeof(Mesh::Index);
+	mesh->totalTriNeighborCount      = trianglesNeighborCount;
+	mesh->totalFaceVertexCount       = facesVertexCount;
+	mesh->totalFaceOuterVertexCount  = facesOuterVertexCount;
+	mesh->totalFaceTriNeighborCount  = facesNeighborTriangleCount;
+	mesh->totalFaceFaceNeighborCount = facesNeighborFaceCount;
 	mesh->vertexArray   = (Mesh::Vertex*)cursor;   cursor +=   vertexCount*sizeof(Mesh::Vertex);
+	mesh->indexArray    = (Mesh::Index*)cursor;    cursor +=    indexCount*sizeof(Mesh::Index);
 	mesh->triangleArray = (Mesh::Triangle*)cursor; cursor += triangleCount*sizeof(Mesh::Triangle);
 	mesh->faceArray     = (Mesh::Face*)cursor;     cursor +=     faceCount*sizeof(Mesh::Face);
 	mesh->indexes   = View<Mesh::Index>   (mesh->indexArray,    indexCount);
@@ -64,11 +69,6 @@ AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighb
 	mesh->triangles = View<Mesh::Triangle>(mesh->triangleArray, triangleCount);
 	mesh->faces     = View<Mesh::Face>    (mesh->faceArray,     faceCount);
 	return mesh;
-}
-
-local void 
-DeallocateMesh(Mesh* mesh){
-	free(mesh);
 }
 
 //TODO(delle) change this to take in 8 points
@@ -267,39 +267,133 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
 pair<u32,Mesh*> Storage::
 CreateMeshFromFile(const char* filename){
 	pair<u32,Mesh*> result(0, NullMesh());
-	return result;
-	//!Incomplete
+	if(strcmp(filename, "null") == 0) return result;
+	
+	//split filename into name and extension
+	std::string filepath = Assets::dirModels()+filename;
+	string fullname(filename);
+	string name, extension;
+	bool has_extension;
+	size_t dot_idx = fullname.find_first_of_lookback('.', fullname.size-1);
+	if(dot_idx != -1){
+		has_extension = true;
+		name = fullname.substr(0, dot_idx-1);
+		extension = fullname.substr(dot_idx+1);
+	}else{
+		has_extension = false;
+		name = fullname;
+	}
+	if(!has_extension){
+		filepath += ".mesh";
+	}
+	
+	//check if mesh is already loaded
+	forX(mi, meshes.count){
+		if((strcmp(meshes[mi]->name, name.str) == 0)){
+			return pair<u32,Mesh*>(mi,meshes[mi]);
+		}
+	}
+	
+	//load .mesh file
+	char* buffer = Assets::readFileBinaryToArray(filepath, 0, true);
+	if(!buffer){  return result; }
+	defer{ delete[] buffer; };
+	
+	return CreateMeshFromMemory(buffer);
 }
 
 pair<u32,Mesh*> Storage::
 CreateMeshFromMemory(void* data){
 	pair<u32,Mesh*> result(0, NullMesh());
+	
+	u32 bytes = *((u32*)data);
+	if(bytes < sizeof(Mesh)){
+		ERROR("Mesh size was too small when trying to load it from memory");
+		return result;
+	}
+	
+	//allocate
+	Mesh* mesh = (Mesh*)malloc(bytes);           char* cursor = (char*)mesh + (1*sizeof(Mesh));
+	memcpy(mesh, data, bytes);
+	
+	//fixup pointers
+	mesh->vertexArray   = (Mesh::Vertex*)cursor;       cursor +=   mesh->vertexCount*sizeof(Mesh::Vertex);
+	mesh->indexArray    = (Mesh::Index*)cursor;        cursor +=    mesh->indexCount*sizeof(Mesh::Index);
+	mesh->triangleArray = (Mesh::Triangle*)cursor;     cursor += mesh->triangleCount*sizeof(Mesh::Triangle);
+	mesh->faceArray     = (Mesh::Face*)cursor;         cursor +=     mesh->faceCount*sizeof(Mesh::Face);
+	mesh->indexes   = View<Mesh::Index>   (mesh->indexArray,    mesh->indexCount);
+	mesh->vertexes  = View<Mesh::Vertex>  (mesh->vertexArray,   mesh->vertexCount);
+	mesh->triangles = View<Mesh::Triangle>(mesh->triangleArray, mesh->triangleCount);
+	mesh->faces     = View<Mesh::Face>    (mesh->faceArray,     mesh->faceCount);
+	mesh->triangles[0].neighborArray = (u32*)(mesh->faceArray + mesh->faceCount);
+	mesh->triangles[0].edgeArray     = (u8*) (mesh->triangleArray[0].neighborArray + mesh->totalTriNeighborCount);
+	mesh->triangles[0].neighbors = View<u32> (mesh->triangles[0].neighborArray, mesh->triangles[0].neighborCount);
+	mesh->triangles[0].edges     = View<u8>  (mesh->triangles[0].edgeArray, mesh->triangles[0].neighborCount);
+	for(int ti=1; ti<mesh->triangles.count; ++ti){
+		mesh->triangles[ti].neighborArray = (u32*)(mesh->triangles[ti-1].neighborArray + mesh->triangles[ti-1].neighborCount);
+		mesh->triangles[ti].edgeArray     = (u8*) (mesh->triangles[ti-1].edgeArray + mesh->triangles[ti-1].neighborCount);
+		mesh->triangles[ti].neighbors = View<u32> (mesh->triangles[ti].neighborArray, mesh->triangles[ti].neighborCount);
+		mesh->triangles[ti].edges     = View<u8>  (mesh->triangles[ti].edgeArray, mesh->triangles[ti].neighborCount);
+	}
+	mesh->faces[0].triangleArray         = (u32*)(mesh->triangles[0].edgeArray         + mesh->totalTriNeighborCount);
+	mesh->faces[0].vertexArray           = (u32*)(mesh->faces[0].triangleArray         + mesh->triangles.count);
+	mesh->faces[0].outerVertexArray      = (u32*)(mesh->faces[0].vertexArray           + mesh->totalFaceVertexCount);
+	mesh->faces[0].neighborTriangleArray = (u32*)(mesh->faces[0].outerVertexArray      + mesh->totalFaceOuterVertexCount);
+	mesh->faces[0].neighborFaceArray     = (u32*)(mesh->faces[0].neighborTriangleArray + mesh->totalFaceTriNeighborCount);
+	mesh->faces[0].triangles         = View<u32>(mesh->faces[0].triangleArray,         mesh->faces[0].triangleCount);
+	mesh->faces[0].vertexes          = View<u32>(mesh->faces[0].vertexArray,           mesh->faces[0].vertexCount);
+	mesh->faces[0].outerVertexes     = View<u32>(mesh->faces[0].outerVertexArray,      mesh->faces[0].outerVertexCount);
+	mesh->faces[0].triangleNeighbors = View<u32>(mesh->faces[0].neighborTriangleArray, mesh->faces[0].neighborTriangleCount);
+	mesh->faces[0].faceNeighbors     = View<u32>(mesh->faces[0].neighborFaceArray,     mesh->faces[0].neighborFaceCount);
+	for(int fi=1; fi<mesh->faces.count; ++fi){
+		mesh->faces[fi].triangleArray         = (u32*)(mesh->faces[fi-1].triangleArray         + mesh->faces[fi-1].triangleCount);
+		mesh->faces[fi].vertexArray           = (u32*)(mesh->faces[fi-1].vertexArray           + mesh->faces[fi-1].vertexCount);
+		mesh->faces[fi].outerVertexArray      = (u32*)(mesh->faces[fi-1].outerVertexArray      + mesh->faces[fi-1].outerVertexCount);
+		mesh->faces[fi].neighborTriangleArray = (u32*)(mesh->faces[fi-1].neighborTriangleArray + mesh->faces[fi-1].neighborTriangleCount);
+		mesh->faces[fi].neighborFaceArray     = (u32*)(mesh->faces[fi-1].neighborFaceArray     + mesh->faces[fi-1].neighborFaceCount);
+		mesh->faces[fi].triangles         = View<u32>(mesh->faces[fi].triangleArray,         mesh->faces[fi].triangleCount);
+		mesh->faces[fi].vertexes          = View<u32>(mesh->faces[fi].vertexArray,           mesh->faces[fi].vertexCount);
+		mesh->faces[fi].outerVertexes     = View<u32>(mesh->faces[fi].outerVertexArray,      mesh->faces[fi].outerVertexCount);
+		mesh->faces[fi].triangleNeighbors = View<u32>(mesh->faces[fi].neighborTriangleArray, mesh->faces[fi].neighborTriangleCount);
+		mesh->faces[fi].faceNeighbors     = View<u32>(mesh->faces[fi].neighborFaceArray,     mesh->faces[fi].neighborFaceCount);
+	}
+	
+	result.first  = meshes.count;
+	result.second = mesh;
+	meshes.add(mesh);
 	return result;
-	//!Incomplete
+}
+
+void Storage::
+SaveMesh(Mesh* mesh){
+	Assets::writeFileBinary(Assets::dirModels()+std::string(mesh->name)+".mesh", mesh, mesh->bytes);
+	LOG("Successfully created ",mesh->name,".mesh");
 }
 
 void Storage::
 DeleteMesh(Mesh* mesh){
 	//!Incomplete
+	Assert(!"not setup yet");
+	free(mesh);
 }
 
-std::vector<vec2> Storage::
-GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camView, vec3 camPosition, vec2 screenDims){ //!TestMe
-	std::vector<vec2> outline;
-	std::vector<Mesh::Triangle*> nonculled;
-	forI(mesh->triangleCount){ Mesh::Triangle* t = &mesh->triangleArray[i];
-		t->removed = false;
-		if(t->normal.dot(camPosition - (t->p[0] * transform)) > 0){
-			nonculled.push_back(t);
+array<vec2> Storage::
+GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camView, vec3 camPosition, vec2 screenDims){ //!FixMe
+	array<vec2> outline;
+	array<Mesh::Triangle*> nonculled;
+	for(Mesh::Triangle& t :mesh->triangles){
+		t.removed = false;
+		if(t.normal.dot(camPosition - (t.p[0] * transform)) > 0){
+			nonculled.add(&t);
 		}else{
-			t->removed = true;
+			t.removed = true;
 		}
 	}
 	for(Mesh::Triangle* t : nonculled){
 		forI(t->neighborCount){
 			if(mesh->triangles[t->neighbors[i]].removed){
-				outline.push_back(Math::WorldToScreen(t->p[t->edges[i]        ]*transform, camProjection, camView, screenDims).toVec2());
-				outline.push_back(Math::WorldToScreen(t->p[(t->edges[i]+1) % 3]*transform, camProjection, camView, screenDims).toVec2());
+				outline.add(Math::WorldToScreen(t->p[ t->edges[i]       ]*transform, camProjection, camView, screenDims).toVec2());
+				outline.add(Math::WorldToScreen(t->p[(t->edges[i]+1) % 3]*transform, camProjection, camView, screenDims).toVec2());
 			}
 		}
 	}
@@ -316,14 +410,10 @@ AllocateTexture(){
 	return texture;
 }
 
-local void 
-DeallocateTexture(Texture* texture){
-	free(texture);
-}
-
 pair<u32,Texture*> Storage::
 CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps){
 	pair<u32,Texture*> result(0, NullTexture());
+	if(strcmp(filename, "null") == 0) return result;
 	
 	//check if created already
 	forI(textures.size()){
@@ -337,11 +427,12 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 	texture->idx = textures.size();
 	texture->format  = format;
 	texture->type    = type;
-	texture->pixels  = stbi_load((Assets::dirTextures()+filename).c_str(), &texture->width, &texture->height, &texture->depth, STBI_rgb_alpha);
+	texture->pixels  = stbi_load((Assets::dirTextures()+filename).c_str(), &texture->width, &texture->height, 
+								 &texture->depth, STBI_rgb_alpha);
 	texture->loaded  = true;
 	if(texture->pixels == 0){ 
 		ERROR_LOC("Failed to create texture '",filename,"': ",stbi_failure_reason()); 
-		DeallocateTexture(texture);
+		free(texture);
 		return result; 
 	}
 	texture->mipmaps = (generateMipmaps) ? (int)log2(Max(texture->width, texture->height)) + 1 : 1;
@@ -395,9 +486,11 @@ CreateTextureFromMemory(void* data, const char* name, int width, int height, Ima
 			}break;
 			case ImageFormat_BWA:{
 				//!Incomplete
+				Assert(!"not setup yet");
 			}break;
 			case ImageFormat_RGB:{
 				//!Incomplete
+				Assert(!"not setup yet");
 			}break;
 		}
 	}else{
@@ -420,6 +513,8 @@ CreateTextureFromMemory(void* data, const char* name, int width, int height, Ima
 void Storage::
 DeleteTexture(Texture* texture){
 	//!Incomplete
+	Assert(!"not setup yet");
+	free(texture);
 }
 
 
@@ -431,11 +526,6 @@ AllocateMaterial(u32 textureCount){
 	Material* material = (Material*)calloc(1, sizeof(Material));
 	material->textures.resize(textureCount);
 	return material;
-}
-
-local void 
-DeallocateMaterial(Material* material){
-	free(material);
 }
 
 pair<u32,Material*> Storage::
@@ -452,21 +542,6 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 	material->flags  = flags;
 	forI(mat_textures.count) material->textures[i] = mat_textures[i];
 	
-	{//write material to .mat file
-		std::string mat_text = TOSTDSTRING(">material"
-										   "\nname   ", material->name,
-										   "\nshader ", ShaderStrings[material->shader],
-										   "\nflags  ", material->flags,
-										   "\n"
-										   "\n>textures");
-		forI(material->textures.count){
-			mat_text.append(TOSTDSTRING("\n\"",textures[material->textures[i]]->name,"\""));
-		}
-		mat_text.append("\n");
-		Assets::writeFile(Assets::dirModels()+std::string(name)+".mat", mat_text.c_str(), mat_text.size());
-		LOG("Successfully created ",name,".mat");
-	}
-	
 	Render::LoadMaterial(material);
 	
 	result.first  = material->idx;
@@ -476,15 +551,36 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 }
 
 pair<u32,Material*> Storage::
-CreateMaterialFromFile(const char* name, bool warnMissing){
+CreateMaterialFromFile(const char* filename, bool warnMissing){
 	pair<u32,Material*> result(0, NullMaterial());
+	if(strcmp(filename, "null") == 0) return result;
+	
 	//!Incomplete
+	Assert(!"not setup yet");
 	return result;
+}
+
+void Storage::
+SaveMaterial(Material* material){
+	std::string mat_text = TOSTDSTRING(">material"
+									   "\nname   ", material->name,
+									   "\nshader ", ShaderStrings[material->shader],
+									   "\nflags  ", material->flags,
+									   "\n"
+									   "\n>textures");
+	forI(material->textures.count){
+		mat_text.append(TOSTDSTRING("\n\"",textures[material->textures[i]]->name,"\""));
+	}
+	mat_text.append("\n");
+	Assets::writeFile(Assets::dirModels()+std::string(material->name)+".mat", mat_text.c_str(), mat_text.size());
+	LOG("Successfully created ",material->name,".mat");
 }
 
 void Storage::
 DeleteMaterial(Material* material){
 	//!Incomplete
+	Assert(!"not setup yet");
+	free(material);
 }
 
 
@@ -498,11 +594,6 @@ AllocateModel(u32 batchCount){
 	return model;
 }
 
-local void 
-DeallocateModel(Model* model){
-	free(model);
-}
-
 #ifdef ParseError
 #define TempParseError ParseError
 #undef ParseError
@@ -511,11 +602,12 @@ DeallocateModel(Model* model){
 pair<u32,Model*> Storage::
 CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 	pair<u32,Model*> result(0, NullModel());
-	TIMER_START(t_m);
+	if(strcmp(filename, "null") == 0) return result;
 	
+	TIMER_START(t_m);
 	bool has_extension;
-	string fullname(filename);
 	std::string filepath = Assets::dirModels() + filename;
+	string fullname(filename);
 	string name;
 	string extension;
 	
@@ -537,8 +629,8 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 	}
 	
 	//!Incomplete check for .mesh and .model
-	bool parse_obj_mesh     = true;
-	bool parse_obj_model    = true;
+	bool parse_obj_mesh  = true;
+	bool parse_obj_model = true;
 	if(!forceLoadOBJ){
 		std::vector<std::string> files = Assets::iterateDirectory(Assets::dirModels());
 		for(std::string& file : files){
@@ -817,7 +909,6 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 				cfi = triangles[cti].face;
 			}
 			
-			//@@
 			forX(ctni, triNeighbors[cti].count){
 				u32 oti = triNeighbors[cti][ctni].first;
 				if(triangles[oti].face == triangles[cti].face) continue;
@@ -919,6 +1010,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 				mesh->triangleArray[ti].neighborArray[ni] = triNeighbors[ti][ni].first;
 				mesh->triangleArray[ti].edgeArray[ni]     = triNeighbors[ti][ni].second;
 			}
+			mesh->triangleArray[ti].neighborCount = triNeighbors[ti].count;
 		}
 		
 		//fill face tris/vertexes/neighbors
@@ -938,14 +1030,8 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			}
 		}
 		
-		//// write mesh to .mesh file ////
-		Assets::writeFileBinary(Assets::dirModels()+std::string(name.str)+".mesh", mesh, mesh->bytes);
-		LOG("Successfully created ",name,".mesh");
-		
-		
 		Render::LoadMesh(mesh); //TODO(delle) check if mesh already loaded
 		meshes.add(mesh);
-		
 		LOG("Parsing and loading OBJ '",filename,"' took ",TIMER_END(t_l),"ms");
 		
 		//parse MTL files
@@ -979,22 +1065,6 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			model->batches[0].indexCount  = indexes.count;
 			model->batches[0].material    = 0;
 		}
-		
-		//write model to .model file
-		std::string model_save = TOSTDSTRING(">model"
-											 "\nname     ", model->name,
-											 "\nflags    ", model->flags,
-											 "\nmesh     ", model->mesh->name,
-											 "\narmature ", 0,
-											 "\n"
-											 "\n>batches");
-		forI(model->batches.count){
-			model_save.append(TOSTDSTRING("\n\"",materials[model->batches[i].material]->name,"\" ",
-										  model->batches[i].indexOffset," ",model->batches[i].indexCount));
-		}
-		model_save.append("\n");
-		Assets::writeFile(Assets::dirModels()+std::string(name.str)+".model", model_save.c_str(), model_save.size());
-		LOG("Successfully created ",name,".model");
 	}else if(parse_obj_model){ //load .obj (batch info only), .mtl, and .mesh
 		//!Incomplete
 	}else{ //load .model and .mesh
@@ -1065,6 +1135,26 @@ CopyModel(Model* _model){
 }
 
 void Storage::
+SaveModel(Model* model){
+	std::string model_save = TOSTDSTRING(">model"
+										 "\nname     ", model->name,
+										 "\nflags    ", model->flags,
+										 "\nmesh     ", model->mesh->name,
+										 "\narmature ", 0,
+										 "\n"
+										 "\n>batches");
+	forI(model->batches.count){
+		model_save.append(TOSTDSTRING("\n\"",materials[model->batches[i].material]->name,"\" ",
+									  model->batches[i].indexOffset," ",model->batches[i].indexCount));
+	}
+	model_save.append("\n");
+	Assets::writeFile(Assets::dirModels()+std::string(model->name)+".model", model_save.c_str(), model_save.size());
+	LOG("Successfully created ",model->name,".model");
+}
+
+void Storage::
 DeleteModel(Model* model){
 	//!Incomplete
+	Assert(!"not setup yet");
+	free(model);
 }

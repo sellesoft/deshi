@@ -133,7 +133,6 @@ local ConfigMap configMap = {
 	{"anistropic_filtering", ConfigValueType_Bool, &settings.anistropicFiltering},
 	{"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples},
 	{"recompile_all_shaders",        ConfigValueType_Bool, &settings.recompileAllShaders},
-	{"find_mesh_triangle_neighbors", ConfigValueType_Bool, &settings.findMeshTriangleNeighbors},
 	
 	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
 	{"logging_level",  ConfigValueType_U32,  &settings.loggingLevel},

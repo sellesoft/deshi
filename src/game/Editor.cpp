@@ -34,6 +34,9 @@
 local f32 font_width = 0;
 local std::string copy_path;
 local std::vector<pair<u32,u32>> copy_mesh_diffs;
+local array<bool> saved_meshes({true});
+local array<bool> saved_materials({true});
+local array<bool> saved_models({true});
 
 local void ClearCopiedEntities(){
 	Assets::deleteFile(copy_path, false);
@@ -604,6 +607,7 @@ local std::vector<std::string> directory_meshes;
 local std::vector<std::string> directory_textures;
 local std::vector<std::string> directory_materials;
 local std::vector<std::string> directory_models;
+local std::vector<std::string> directory_objs;
 local std::vector<std::string> directory_fonts;
 
 void Editor::MenuBar(){
@@ -660,11 +664,13 @@ void Editor::MenuBar(){
 						} 
 					}
 					if(!loaded && ImGui::MenuItem(directory_meshes[di].c_str())){ WinHovCheck; 
-						Storage::CreateMeshFromFile(directory_meshes[di].c_str());
+						u32 id = Storage::CreateMeshFromFile(directory_meshes[di].c_str()).first;
+						if(id) saved_meshes.add(true);
 					}
                 }
                 ImGui::EndMenu();
 			}
+			
 			if(ImGui::BeginMenu("Textures")){ WinHovCheck; 
 				directory_textures = Assets::iterateDirectory(Assets::dirTextures());
                 forX(di, directory_textures.size()){
@@ -680,12 +686,26 @@ void Editor::MenuBar(){
                 }
                 ImGui::EndMenu();
 			}
+			
 			if(ImGui::BeginMenu("Materials")){ WinHovCheck; 
-				
+				directory_materials = Assets::iterateDirectory(Assets::dirModels(), ".mat");
+                forX(di, directory_materials.size()){
+					bool loaded = false;
+					forX(li, Storage::MaterialCount()){ 
+						if(strcmp(Storage::MaterialName(li), directory_materials[di].c_str()) == 0){ 
+							loaded = true;  break; 
+						} 
+					}
+					if(!loaded && ImGui::MenuItem(directory_materials[di].c_str())){ WinHovCheck; 
+						u32 id = Storage::CreateMaterialFromFile(directory_materials[di].c_str()).first;
+						if(id) saved_materials.add(true);
+					}
+				}
                 ImGui::EndMenu();
 			}
+			
 			if(ImGui::BeginMenu("Models")){ WinHovCheck; 
-				directory_models = Assets::iterateDirectory(Assets::dirModels(), ".obj");
+				directory_models = Assets::iterateDirectory(Assets::dirModels(), ".model");
                 forX(di, directory_models.size()){
 					bool loaded = false;
 					forX(li, Storage::ModelCount()){ 
@@ -694,16 +714,43 @@ void Editor::MenuBar(){
 						} 
 					}
 					if(!loaded && ImGui::MenuItem(directory_models[di].c_str())){ WinHovCheck; 
-						if(DengInput->ShiftDown()){
-							Storage::CreateModelFromFile(directory_models[di].c_str(), ModelFlags_NONE, true);
-						}else{
-							Storage::CreateModelFromFile(directory_models[di].c_str(), ModelFlags_NONE, false);
-						}
+						u32 mesh_count = Storage::MeshCount();
+						u32 material_count = Storage::MaterialCount();
+						u32 id = Storage::CreateModelFromFile(directory_models[di].c_str(), ModelFlags_NONE, false).first;
+						if(id) saved_models.add(true);
+						forI(Storage::MeshCount() - mesh_count){ saved_meshes.add(true); }
+						forI(Storage::MaterialCount() - material_count){ saved_materials.add(true); }
 					}
 				}
 				ImGui::EndMenu();
 			}
 			
+			if(ImGui::BeginMenu("OBJs")){ WinHovCheck; 
+				directory_objs = Assets::iterateDirectory(Assets::dirModels(), ".obj");
+                forX(di, directory_objs.size()){
+					u32 loaded_idx = -1;
+					forX(li, Storage::ModelCount()){ 
+						if(strcmp(Storage::ModelName(li), directory_objs[di].c_str()) == 0){ 
+							loaded_idx = li;  break; 
+						} 
+					}
+					if(ImGui::MenuItem(directory_objs[di].c_str())){ WinHovCheck; 
+						if(loaded_idx != -1){
+							Storage::DeleteModel(loaded_idx);
+							saved_models.remove(loaded_idx);
+						}
+						u32 mesh_count = Storage::MeshCount();
+						u32 material_count = Storage::MaterialCount();
+						
+						u32 id = Storage::CreateModelFromFile(directory_objs[di].c_str(), ModelFlags_NONE, true).first;
+						if(id) saved_models.add(false);
+						
+						forI(Storage::MeshCount() - mesh_count){ saved_meshes.add(false); }
+						forI(Storage::MaterialCount() - material_count){ saved_materials.add(false); }
+					}
+				}
+				ImGui::EndMenu();
+			}
 			ImGui::EndMenu();
 		}
 		
@@ -1522,9 +1569,9 @@ inline void MeshesTab(Admin* admin){
 	persist bool rename_mesh = false;
 	persist char rename_buffer[DESHI_NAME_SIZE] = {};
 	persist u32  sel_mesh_idx = -1;
-	persist int sel_vertex_idx   = -1;
-	persist int sel_triangle_idx = -1;
-	persist int sel_face_idx     = -1;
+	persist int  sel_vertex_idx   = -1;
+	persist int  sel_triangle_idx = -1;
+	persist int  sel_face_idx     = -1;
 	Mesh* selected = nullptr;
 	if(sel_mesh_idx < Storage::MeshCount()) selected = Storage::MeshAt(sel_mesh_idx);
 	
@@ -1540,6 +1587,7 @@ inline void MeshesTab(Admin* admin){
 		rename_mesh = false;
 		DengConsole->IMGUI_KEY_CAPTURE = false;
 		cpystr(selected->name, rename_buffer, DESHI_NAME_SIZE);
+		saved_meshes[sel_mesh_idx] = false;
 	}
 	//stop renaming mesh
 	if(rename_mesh && DengInput->KeyPressedAnyMod(Key::ESCAPE)){
@@ -1555,9 +1603,10 @@ inline void MeshesTab(Admin* admin){
 	//// mesh list panel ////
 	SetPadding; 
 	if(ImGui::BeginChild("##mesh_list", ImVec2(ImGui::GetWindowWidth()*0.95, ImGui::GetWindowHeight()*.14f), false)){
-		if(ImGui::BeginTable("##mesh_table", 3, ImGuiTableFlags_BordersInner)){
+		if(ImGui::BeginTable("##mesh_table", 4, ImGuiTableFlags_BordersInner)){
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 2.5f);
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
 			
 			forX(mesh_idx, Storage::MeshCount()){
@@ -1587,8 +1636,15 @@ inline void MeshesTab(Admin* admin){
 					ImGui::TextEx(Storage::MeshName(mesh_idx));
 				}
 				
-				//// delete button ////
+				//// save button ////
 				ImGui::TableSetColumnIndex(2);
+				if(!saved_meshes[mesh_idx] && ImGui::Button("S##mesh_save", ImVec2(-FLT_MIN, 0.0f))){
+					Storage::SaveMesh(Storage::MeshAt(mesh_idx));
+					saved_meshes[mesh_idx] = true;
+				}
+				
+				//// delete button ////
+				ImGui::TableSetColumnIndex(3);
 				if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))){
 					if(mesh_idx == sel_mesh_idx){
 						sel_mesh_idx = -1;
@@ -1599,6 +1655,7 @@ inline void MeshesTab(Admin* admin){
 					sel_vertex_idx   = -1;
 					sel_triangle_idx = -1;
 					sel_face_idx     = -1;
+					saved_meshes.remove(mesh_idx);
 				}
 				ImGui::PopID();
 			}
@@ -1967,6 +2024,7 @@ inline void MaterialsTab(Admin* admin){
 		rename_mat = false;
 		DengConsole->IMGUI_KEY_CAPTURE = false;
 		cpystr(selected->name, rename_buffer, DESHI_NAME_SIZE);
+		saved_materials[sel_mat_idx] = false;
 	}
 	//stop renaming material
 	if(rename_mat && DengInput->KeyPressedAnyMod(Key::ESCAPE)){
@@ -1976,16 +2034,15 @@ inline void MaterialsTab(Admin* admin){
 	//delete material
 	if(selected && DengInput->KeyPressedAnyMod(Key::DELETE)){
 		//TODO(Ui) re-enable this with a popup to delete OR with undoing on delete
-		//Storage::DeleteMaterial(sel_mat_idx);
-		//sel_mat_idx = -1;
 	}
 	
 	//// material list panel ////
 	SetPadding; 
 	if(ImGui::BeginChild("##mat_list", ImVec2(ImGui::GetWindowWidth()*0.95, ImGui::GetWindowHeight()*.14f), false)){
-		if(ImGui::BeginTable("##mat_table", 3, ImGuiTableFlags_BordersInner)){
+		if(ImGui::BeginTable("##mat_table", 4, ImGuiTableFlags_BordersInner)){
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 2.5f);
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
 			
 			forX(mat_idx, Storage::MaterialCount()){
@@ -2012,8 +2069,15 @@ inline void MaterialsTab(Admin* admin){
 					ImGui::TextEx(Storage::MaterialName(mat_idx));
 				}
 				
-				//// delete button ////
+				//// save button ////
 				ImGui::TableSetColumnIndex(2);
+				if(!saved_materials[mat_idx] && ImGui::Button("S##mat_save", ImVec2(-FLT_MIN, 0.0f))){
+					Storage::SaveMaterial(Storage::MaterialAt(mat_idx));
+					saved_materials[mat_idx] = true;
+				}
+				
+				//// delete button ////
+				ImGui::TableSetColumnIndex(3);
 				if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))){
 					if(mat_idx == sel_mat_idx){
 						sel_mat_idx = -1;
@@ -2021,6 +2085,7 @@ inline void MaterialsTab(Admin* admin){
 						sel_mat_idx -= 1;
 					}
 					Storage::DeleteMaterial(mat_idx);
+					saved_materials.remove(mat_idx);
 				}
 				ImGui::PopID();
 			}
@@ -2037,6 +2102,7 @@ inline void MaterialsTab(Admin* admin){
 		auto new_mat = Storage::CreateMaterial(TOSTRING("material", Storage::MaterialCount()).str, Shader_PBR);
 		sel_mat_idx = new_mat.first;
 		selected = new_mat.second;
+		saved_materials.add(false);
 	}
 	
 	ImGui::Separator();
@@ -2056,6 +2122,7 @@ inline void MaterialsTab(Admin* admin){
 				if(ImGui::Selectable(ShaderStrings[i], selected->shader == i)){
 					selected->shader = i;
 					Render::UpdateMaterial(selected);
+					saved_materials[sel_mat_idx] = false;
 				}
 			}
 			ImGui::EndCombo(); //mat_shader_combo
@@ -2082,6 +2149,7 @@ inline void MaterialsTab(Admin* admin){
 							if(ImGui::Selectable(directory_textures[ti].c_str(), strcmp(Storage::TextureName(selected->textures[mti]), directory_textures[ti].c_str()) == 0)){
 								selected->textures[mti] = Storage::CreateTextureFromFile(directory_textures[ti].c_str()).first;
 								Render::UpdateMaterial(selected);
+								saved_materials[sel_mat_idx] = false;
 							}
 						}
 						ImGui::EndCombo();
@@ -2093,6 +2161,7 @@ inline void MaterialsTab(Admin* admin){
 		if(ImGui::Button("Add Texture", ImVec2(-1, 0))){
 			selected->textures.add(0);
 			Render::UpdateMaterial(selected);
+			saved_materials[sel_mat_idx] = false;
 		}
 		
 		ImGui::EndChild(); //mat_inspector
@@ -2119,6 +2188,7 @@ inline void ModelsTab(Admin* admin){
 		rename_model = false;
 		DengConsole->IMGUI_KEY_CAPTURE = false;
 		cpystr(selected->name, rename_buffer, DESHI_NAME_SIZE);
+		saved_models[sel_model_idx] = false;
 	}
 	//stop renaming model
 	if(rename_model && DengInput->KeyPressedAnyMod(Key::ESCAPE)){
@@ -2135,9 +2205,10 @@ inline void ModelsTab(Admin* admin){
 	//// model list panel ////
 	SetPadding; 
 	if(ImGui::BeginChild("##model_list", ImVec2(ImGui::GetWindowWidth()*0.95, ImGui::GetWindowHeight()*.14f), false)){
-		if(ImGui::BeginTable("##model_table", 3, ImGuiTableFlags_BordersInner)){
+		if(ImGui::BeginTable("##model_table", 4, ImGuiTableFlags_BordersInner)){
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width * 2.5f);
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, font_width);
 			
 			forX(model_idx, Storage::ModelCount()){
@@ -2164,8 +2235,15 @@ inline void ModelsTab(Admin* admin){
 					ImGui::TextEx(Storage::ModelName(model_idx));
 				}
 				
-				//// delete button ////
+				//// save button ////
 				ImGui::TableSetColumnIndex(2);
+				if(!saved_models[model_idx] && ImGui::Button("S##model_save", ImVec2(-FLT_MIN, 0.0f))){
+					Storage::SaveModel(Storage::ModelAt(model_idx));
+					saved_models[model_idx] = true;
+				}
+				
+				//// delete button ////
+				ImGui::TableSetColumnIndex(3);
 				if(ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))){
 					if(model_idx == sel_model_idx){
 						sel_model_idx = -1;
@@ -2173,6 +2251,7 @@ inline void ModelsTab(Admin* admin){
 						sel_model_idx -= 1;
 					}
 					Storage::DeleteModel(model_idx);
+					saved_models.remove(model_idx);
 				}
 				ImGui::PopID();
 			}
@@ -2190,6 +2269,7 @@ inline void ModelsTab(Admin* admin){
 		sel_model_idx = new_model.first;
 		selected      = new_model.second;
 		sel_batch_idx = -1;
+		saved_models.add(false);
 	}
 	
 	ImGui::Separator();
@@ -2200,7 +2280,9 @@ inline void ModelsTab(Admin* admin){
 	if(ImGui::BeginChild("##model_inspector", ImVec2(ImGui::GetWindowWidth()*.95f, ImGui::GetWindowHeight()*.8f), false)){
 		//// name ////
 		ImGui::TextEx("Name  "); ImGui::SameLine(); ImGui::SetNextItemWidth(-FLT_MIN); 
-		ImGui::InputText("##model_name_input", selected->name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+		if(ImGui::InputText("##model_name_input", selected->name, DESHI_NAME_SIZE, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll)){
+			saved_models[sel_model_idx] = false;
+		}
 		
 		//// mesh selection ////
 		ImGui::TextEx("Mesh  "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
@@ -2212,6 +2294,7 @@ inline void ModelsTab(Admin* admin){
 						selected->batches[batch_idx].indexOffset = 0;
 						selected->batches[batch_idx].indexCount  = selected->mesh->indexCount;
 					}
+					saved_models[sel_model_idx] = false;
 				}
 			}
 			ImGui::EndCombo(); //model_mesh_combo
@@ -2236,8 +2319,6 @@ inline void ModelsTab(Admin* admin){
 				sprintf(label, " %02d", batch_idx);
 				if(ImGui::Selectable(label, sel_batch_idx == batch_idx, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)){
 					sel_batch_idx = (ImGui::GetIO().KeyCtrl) ? -1 : batch_idx; //deselect if CTRL held
-					rename_model = false;
-					DengConsole->IMGUI_KEY_CAPTURE = false;
 				}
 				
 				//// name text ////
@@ -2253,6 +2334,7 @@ inline void ModelsTab(Admin* admin){
 						sel_batch_idx -= 1;
 					}
 					selected->batches.remove(batch_idx);
+					saved_models[sel_model_idx] = false;
 				}
 				ImGui::PopID();
 			}
@@ -2260,28 +2342,36 @@ inline void ModelsTab(Admin* admin){
 		}
 		if(ImGui::Button("Add Batch", ImVec2(-1, 0))){
 			selected->batches.add(Model::Batch{});
+			saved_models[sel_model_idx] = false;
 		}
 		
 		ImGui::Separator();
 		//// batch properties ////
+		persist bool highlight_batch_triangles = false; 
+		persist Color selected_color = Color(255, 255, 0, 128); //yellow half-alphs
+		
 		if(sel_batch_idx != -1){
-			persist bool highlight_batch_triangles = false; 
 			ImGui::Checkbox("Highlight Triangles", &highlight_batch_triangles);
 			if(highlight_batch_triangles){
-				//!Incomplete
-				ImGui::TextEx("TODO    Render::FillTriangle");
+				for(int i = selected->batches[sel_batch_idx].indexOffset; i < selected->batches[sel_batch_idx].indexCount; i+=3){
+					Render::DrawTriangleFilled(selected->mesh->vertexes[i+0].pos, 
+											   selected->mesh->vertexes[i+1].pos, 
+											   selected->mesh->vertexes[i+2].pos, selected_color);
+				}
 			}
 			
 			ImGui::TextEx("Index Offset "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
 			if(ImGui::InputInt("##batch_index_offset_input", (int*)&selected->batches[sel_batch_idx].indexOffset, 0, 0)){
 				selected->batches[sel_batch_idx].indexOffset =
-					Clamp(selected->batches[sel_batch_idx].indexOffset, 0, selected->mesh->indexCount-1);
+					Clamp(RoundUpTo(selected->batches[sel_batch_idx].indexOffset, 3), 0, selected->mesh->indexCount-1);
+				saved_models[sel_model_idx] = false;
 			}
 			
 			ImGui::TextEx("Index Count  "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
 			if(ImGui::InputInt("##batch_index_count_input", (int*)&selected->batches[sel_batch_idx].indexCount, 0, 0)){
 				selected->batches[sel_batch_idx].indexCount =
-					Clamp(selected->batches[sel_batch_idx].indexCount, 0, selected->mesh->indexCount);
+					Clamp(RoundUpTo(selected->batches[sel_batch_idx].indexCount, 3), 0, selected->mesh->indexCount);
+				saved_models[sel_model_idx] = false;
 			}
 			
 			ImGui::TextEx("Material     "); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
@@ -2289,6 +2379,7 @@ inline void ModelsTab(Admin* admin){
 				forI(Storage::MaterialCount()){
 					if(ImGui::Selectable(Storage::MaterialName(i), selected->batches[sel_batch_idx].material == i)){
 						selected->batches[sel_batch_idx].material = i;
+						saved_models[sel_model_idx] = false;
 					}
 				}
 				ImGui::EndCombo(); //batch_mat_combo
@@ -2373,7 +2464,6 @@ inline void SettingsTab(Admin* admin){
 			ImGui::Checkbox("Debugging", (bool*)&settings->debugging);
 			ImGui::Checkbox("Shader printf", (bool*)&settings->printf);
 			ImGui::Checkbox("Recompile all shaders", (bool*)&settings->recompileAllShaders);
-			ImGui::Checkbox("Find mesh tri-neighbors", (bool*)&settings->findMeshTriangleNeighbors);
 			ImGui::TextEx("MSAA Samples"); ImGui::SameLine(); ImGui::SetNextItemWidth(-1);
 			if(ImGui::BeginCombo("##rs_msaa_combo", msaa_strings[msaa_index])){
 				forI(ArrayCount(msaa_strings)){
@@ -3122,14 +3212,10 @@ void Editor::Update(){
 	
 	for(Entity* e : selected){
 		if(ModelInstance* mc = e->GetComponent<ModelInstance>()){
-			if(!Render::GetSettings()->findMeshTriangleNeighbors){
-				Render::DrawModelWireframe(mc->model, mc->transform);
-			}else{
-				std::vector<vec2> outline = Storage::GenerateMeshOutlinePoints(mc->mesh, e->transform.TransformMatrix(), camera->projMat, camera->viewMat,
-																			   camera->position, DengWindow->dimensions);
-				for (int i = 0; i < outline.size(); i += 2){
-					ImGui::DebugDrawLine(outline[i], outline[i + 1], Color::CYAN);
-				}
+			array<vec2> outline = Storage::GenerateMeshOutlinePoints(mc->mesh, e->transform.TransformMatrix(), camera->projMat, 
+																	 camera->viewMat, camera->position, DengWindow->dimensions);
+			for(int i = 0; i < outline.count; i += 2){
+				Render::DrawLineUI(outline[i], outline[i+1], 1, Color::CYAN);
 			}
 		}
 	}

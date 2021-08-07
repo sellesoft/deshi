@@ -31,9 +31,10 @@ namespace Storage{
 	pair<u32,Mesh*> CreateBoxMesh(f32 width, f32 height, f32 depth, Color color = Color::WHITE);
 	pair<u32,Mesh*> CreateMeshFromFile(const char* filename);
 	pair<u32,Mesh*> CreateMeshFromMemory(void* data);
+	void            SaveMesh(Mesh* mesh);
 	void            DeleteMesh(Mesh* mesh);
 	
-	std::vector<vec2> GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camView, vec3 camPosition, vec2 screenDims);
+	array<vec2> GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camView, vec3 camPosition, vec2 screenDims);
 	
 	inline Mesh*    NullMesh(){ return DengStorage->meshes.data[0]; };
 	inline u32      MeshCount(){ return DengStorage->meshes.size(); };
@@ -61,6 +62,7 @@ namespace Storage{
 	///////////////////
 	pair<u32,Material*> CreateMaterial(const char* name, Shader shader = Shader_PBR, MaterialFlags flags = MaterialFlags_NONE, array<u32> textures = {});
 	pair<u32,Material*> CreateMaterialFromFile(const char* name, bool warnMissing = true);
+	void                SaveMaterial(Material* material);
 	void                DeleteMaterial(Material* material);
 	
 	inline Material*    NullMaterial(){ return DengStorage->materials.data[0]; };
@@ -79,6 +81,7 @@ namespace Storage{
 	pair<u32,Model*> CreateModelFromFile(const char* filename, ModelFlags flags = ModelFlags_NONE, bool forceLoadOBJ = false);
 	pair<u32,Model*> CreateModelFromMesh(Mesh* mesh, ModelFlags flags = ModelFlags_NONE);
 	pair<u32,Model*> CopyModel(Model* base);
+	void             SaveModel(Model* model);
 	void             DeleteModel(Model* model);
 	
 	inline Model*    NullModel(){ return DengStorage->models.data[0]; };

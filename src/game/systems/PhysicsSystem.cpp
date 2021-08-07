@@ -460,19 +460,19 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 		
 		Mesh::Face* lastface = 0;
 		for (int o1cidx = 0; o1cidx < o1c->mesh->faceCount; o1cidx++) {
-
+			
 			Mesh* m = o1c->mesh;
 			Mesh::Face* f = &m->faces[o1cidx];
 			p0 = m->vertexArray[f->vertexes[0]].pos * o1transform;
 			normal = f->normal * o1rotation;
 			float deepest = INFINITY;
-
+			
 			for (int o2cidx = 0; o2cidx < o2c->mesh->faceCount; o2cidx++) {
-
+				
 				Mesh::Face* f2 = &o2c->mesh->faceArray[o2cidx];
-
+				
 				for (int fvidx = 0; fvidx < f2->outerVertexCount; fvidx++) {
-
+					
 					p1 = m->vertexArray[f2->outerVertexArray[fvidx]].pos * o2transform;
 					float vertdepth = Math::DistPointToPlane(p1, normal, p0);
 					//ImGui::DebugDrawLine3(p1, p1 - normal * vertdepth, Color(0, 255.0 * (i / (float)f2->points.size()), 0));
@@ -481,16 +481,16 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 					}
 					lastface = f2;
 				}
-
+				
 				if (deepest > 0) {
-
+					
 					//forX(lfvIndex, f2->outerVertexCount){
 					//	ImGui::DebugDrawLine3(lastface->outerVertexArray[lfvIndex]->pos * o2transform, lastface->outerVertexArray[lfvIndex + 1]->pos * o2transform, Color::MAGENTA);
 					//}
 					//ImGui::DebugDrawLine3(p1, p1 - normal * deepest, Color::BLACK);
 					ERROR("func failed with deepest ", deepest);
 					return false;
-
+					
 				}
 				else if (deepest > minpen) {
 					minpen = deepest;
@@ -676,7 +676,7 @@ inline bool ComplexComplexCollision(Physics* obj1, ComplexCollider* obj1Col, Phy
 
 
 //returns what point in a vector of 2D vectors is furthest along a normal
-int FurthestAlongNormal(std::vector<vec2> p, vec2 n) {
+int FurthestAlongNormal(array<vec2>& p, vec2 n) {
 	float furthest = -INFINITY;
 	int furthestID = 0;
 	for (int i = 0; i < p.size(); i++) {
@@ -841,7 +841,6 @@ bool ShapeOverlapSAT(poly& r1, poly& r2, Manifold2& m) {
 }
 
 void FillManis(std::vector<poly>& polys, std::vector<Manifold2>& manis) {
-	Assert(Render::GetSettings()->findMeshTriangleNeighbors, "findMeshTriangleNeighbors must be enabled for 2D-3D physics");
 	manis.clear();
 	for (int m = 0; m < polys.size(); m++) {
 		for (int n = m + 1; n < polys.size(); n++) {
@@ -917,9 +916,9 @@ void SolveManifolds(std::vector<Manifold2> manis) {
 poly GeneratePoly(Physics* p) {
 	poly poly;
 	poly.o = Storage::GenerateMeshOutlinePoints(p->entity->GetComponent<ModelInstance>()->mesh,
-												  mat4::TransformationMatrix(p->position, p->rotation, p->entity->transform.scale),
-												  DengCamera->projMat, DengCamera->viewMat, DengAdmin->mainCamera->position,
-												  DengWindow->dimensions);
+												mat4::TransformationMatrix(p->position, p->rotation, p->entity->transform.scale),
+												DengCamera->projMat, DengCamera->viewMat, DengAdmin->mainCamera->position,
+												DengWindow->dimensions);
 	poly.p = poly.o;
 	
 	poly.pos = Math::WorldToScreen2(p->position, DengCamera->projMat, DengCamera->viewMat, DengWindow->dimensions);

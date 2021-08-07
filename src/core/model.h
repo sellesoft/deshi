@@ -62,23 +62,31 @@ struct Mesh{
 	vec3 aabbMax;
 	vec3 center;
 	
+	u32 vertexCount;
+	u32 indexCount;
+	u32 triangleCount;
+	u32 faceCount;
+	u32 totalTriNeighborCount;
+	u32 totalFaceVertexCount;
+	u32 totalFaceOuterVertexCount;
+	u32 totalFaceTriNeighborCount;
+	u32 totalFaceFaceNeighborCount;
+	
 	struct Vertex{ //36 bytes
 		vec3 pos;
 		vec2 uv;
 		u32  color;
 		vec3 normal;
-	}  *vertexArray;
+	} *vertexArray;
+	View<Vertex> vertexes;
 	//struct VertexEx{
 	//vec3 tangent;
 	//vec3 bitangent;
 	//u32 boneIndexes[4];
 	//f32 boneWeights[4];
 	//}  *vertexExArray;
-	u32 vertexCount;
-	View<Vertex> vertexes;
 	
 	typedef u32 Index;
-	u32    indexCount;
 	Index* indexArray;
 	View<u32> indexes;
 	
@@ -95,8 +103,7 @@ struct Mesh{
 		u8*  edgeArray;
 		View<u32> neighbors;
 		View<u8>  edges;
-	}  *triangleArray;
-	u32 triangleCount;
+	} *triangleArray;
 	View<Triangle> triangles;
 	
 	struct Face{
@@ -118,8 +125,7 @@ struct Mesh{
 		View<u32> outerVertexes;
 		View<u32> triangleNeighbors;
 		View<u32> faceNeighbors;
-	}  *faceArray;
-	u32 faceCount;
+	} *faceArray;
 	View<Face> faces;
 };
 typedef Mesh::Vertex   MeshVertex;

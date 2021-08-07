@@ -4,6 +4,7 @@
 
 #include "Component.h"
 #include "../../utils/tuple.h"
+#include "../../utils/array.h"
 
 #include <unordered_map>
 
@@ -45,7 +46,7 @@ struct Manifold3 {
 
 //temp 2D polygon class 
 struct poly {
-	std::vector<vec2> p;
+	array<vec2> p;
 	vec2 pos;
 	vec2 vel;
 	vec2 acc;
@@ -54,7 +55,7 @@ struct poly {
 	float angle = 0;
 	float mass;
 	float moi = 1;
-	std::vector<vec2> o;
+	array<vec2> o;
 	bool overlap = false;
 	
 	Physics* ogphys;
@@ -118,7 +119,6 @@ struct Physics : public Component {
 	
 	bool staticPosition = false;
 	bool staticRotation = false;
-	//TODO(delle,Ph) separate static movement and rotation
 	bool twoDphys = false;
 	poly* twoDpolygon = nullptr;
 	

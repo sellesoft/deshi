@@ -49,7 +49,6 @@ struct RenderSettings{
     bool debugging = true;
     bool printf    = false;
 	bool recompileAllShaders = true;
-    bool findMeshTriangleNeighbors = true; //TODO(delle,Cl) move this to a better location
 	u32  msaaSamples = 0;
 	bool textureFiltering = false;
 	bool anistropicFiltering = false;
@@ -133,7 +132,7 @@ namespace Render{
     void DrawTextUI(string text, vec2 pos, Color color = Color::WHITE);
 	void DrawTextUI(string text, vec2 pos, vec2 scissorOffset, vec2 scissorExtent, Color color = Color::WHITE);
 	void DrawCharUI(u32 character, vec2 pos, vec2 scale = vec2::ONE, Color color = Color::WHITE, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
-
+	
 	void UpdateLight(u32 lightIdx, vec4 vec);
     void UpdateCameraPosition(vec3 position);
     void UpdateCameraViewMatrix(mat4 m);

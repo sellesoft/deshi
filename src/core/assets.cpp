@@ -180,6 +180,7 @@ appendFileBinary(const std::string& filepath, void* data, u32 bytes, bool logErr
 
 std::vector<std::string> Assets::
 iterateDirectory(const std::string& filepath, const char* extension) {
+	//TODO std::filesystem::recursive_directory_iterator
 	using namespace std::filesystem;
 	std::vector<std::string> files;
 	for (auto& p : directory_iterator(filepath)) {
