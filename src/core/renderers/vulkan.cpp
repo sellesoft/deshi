@@ -3570,7 +3570,7 @@ LoadMaterial(Material* material){
 	vkUpdateDescriptorSets(device, sets.size(), sets.data, 0, nullptr);
 	
 	//HACK to fix materials with no textures
-	if(material->shader == Shader_PBR && material->textures.size() < 4){
+	if(material->textures.size() < 4){
 		forI(4 - sets.size()){
 			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 			set.dstSet          = mvk.descriptorSet;

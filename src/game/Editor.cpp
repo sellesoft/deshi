@@ -659,7 +659,7 @@ void Editor::MenuBar(){
                 forX(di, directory_meshes.size()){
 					bool loaded = false;
 					forX(li, Storage::MeshCount()){ 
-						if(strcmp(Storage::MeshName(li), directory_meshes[di].c_str()) == 0){ 
+						if(strncmp(Storage::MeshName(li), directory_meshes[di].c_str(), directory_meshes[di].size()-5) == 0){ 
 							loaded = true;  break; 
 						} 
 					}
@@ -692,7 +692,7 @@ void Editor::MenuBar(){
                 forX(di, directory_materials.size()){
 					bool loaded = false;
 					forX(li, Storage::MaterialCount()){ 
-						if(strcmp(Storage::MaterialName(li), directory_materials[di].c_str()) == 0){ 
+						if(strncmp(Storage::MaterialName(li), directory_materials[di].c_str(), directory_materials[di].size()-4) == 0){ 
 							loaded = true;  break; 
 						} 
 					}
@@ -709,7 +709,7 @@ void Editor::MenuBar(){
                 forX(di, directory_models.size()){
 					bool loaded = false;
 					forX(li, Storage::ModelCount()){ 
-						if(strcmp(Storage::ModelName(li), directory_models[di].c_str()) == 0){ 
+						if(strncmp(Storage::ModelName(li), directory_models[di].c_str(), directory_models[di].size()-6) == 0){ 
 							loaded = true;  break; 
 						} 
 					}

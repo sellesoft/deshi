@@ -1,3 +1,9 @@
+#ifdef ParseError
+#define TempParseError ParseError
+#undef ParseError
+#endif
+#define ParseError(...) ERROR("Error parsing '",filepath,"' on line '",line_number,"'! ",__VA_ARGS__)
+
 namespace Storage{
 	local array<Mesh*>&     meshes    = DengStorage->meshes;
 	local array<Texture*>&  textures  = DengStorage->textures;
@@ -11,6 +17,7 @@ namespace Storage{
 ///////////////
 void Storage::
 Init(){
+	stbi_set_flip_vertically_on_load(true);
 	//null assets      //TODO(delle) store null.png and null shader in a .cpp
 	CreateBoxMesh(1.0f, 1.0f, 1.0f); cpystr(NullMesh()->name, "null", DESHI_NAME_SIZE);
 	CreateTextureFromFile("null128.png");
@@ -315,8 +322,7 @@ CreateMeshFromMemory(void* data){
 	//allocate
 	Mesh* mesh = (Mesh*)malloc(bytes);           char* cursor = (char*)mesh + (1*sizeof(Mesh));
 	memcpy(mesh, data, bytes);
-	
-	//fixup pointers
+	mesh->idx = meshes.count;
 	mesh->vertexArray   = (Mesh::Vertex*)cursor;       cursor +=   mesh->vertexCount*sizeof(Mesh::Vertex);
 	mesh->indexArray    = (Mesh::Index*)cursor;        cursor +=    mesh->indexCount*sizeof(Mesh::Index);
 	mesh->triangleArray = (Mesh::Triangle*)cursor;     cursor += mesh->triangleCount*sizeof(Mesh::Triangle);
@@ -358,7 +364,9 @@ CreateMeshFromMemory(void* data){
 		mesh->faces[fi].faceNeighbors     = View<u32>(mesh->faces[fi].neighborFaceArray,     mesh->faces[fi].neighborFaceCount);
 	}
 	
-	result.first  = meshes.count;
+	Render::LoadMesh(mesh);
+	
+	result.first  = mesh->idx;
 	result.second = mesh;
 	meshes.add(mesh);
 	return result;
@@ -524,7 +532,7 @@ DeleteTexture(Texture* texture){
 local Material* 
 AllocateMaterial(u32 textureCount){
 	Material* material = (Material*)calloc(1, sizeof(Material));
-	material->textures.resize(textureCount);
+	material->textures = array<u32>(textureCount);
 	return material;
 }
 
@@ -536,11 +544,11 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 	forX(mi, materials.count){ if(strcmp(materials[mi]->name, name) == 0){ return pair<u32,Material*>(mi,materials[mi]); } }
 	
 	Material* material = AllocateMaterial(mat_textures.count);
-	material->idx = materials.count;
 	cpystr(material->name, name, DESHI_NAME_SIZE);
+	material->idx = materials.count;
 	material->shader = shader;
 	material->flags  = flags;
-	forI(mat_textures.count) material->textures[i] = mat_textures[i];
+	forI(mat_textures.count) material->textures.add(mat_textures[i]);
 	
 	Render::LoadMaterial(material);
 	
@@ -555,15 +563,105 @@ CreateMaterialFromFile(const char* filename, bool warnMissing){
 	pair<u32,Material*> result(0, NullMaterial());
 	if(strcmp(filename, "null") == 0) return result;
 	
-	//!Incomplete
-	Assert(!"not setup yet");
+	//split filename into name and extension
+	std::string filepath = Assets::dirModels()+filename;
+	string fullname(filename);
+	string name, extension;
+	bool has_extension;
+	size_t dot_idx = fullname.find_first_of_lookback('.', fullname.size-1);
+	if(dot_idx != -1){
+		has_extension = true;
+		name = fullname.substr(0, dot_idx-1);
+		extension = fullname.substr(dot_idx+1);
+	}else{
+		has_extension = false;
+		name = fullname;
+	}
+	if(!has_extension){
+		filepath += ".mat";
+	}
+	
+	//check if created already
+	forX(mi, materials.count){ if(strcmp(materials[mi]->name, name.str) == 0){ return pair<u32,Material*>(mi,materials[mi]); } }
+	
+	//material storage
+	string mat_name;
+	Shader mat_shader;
+	MaterialFlags mat_flags;
+	array<string> mat_textures;
+	
+	//parse .mat file
+	enum MaterialHeader{ MATERIAL, TEXTURES, INVALID, };
+	persist const char* MaterialHeaderStrings[] = { "MATERIAL", "TEXTURES", "INVALID", };
+	u32 header = MaterialHeader::INVALID;
+	
+	char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
+	if(!buffer){ return result; }
+	defer{ delete[] buffer; };
+	char* line_start;  char* line_end = buffer - 1;
+	char* info_start;  char* info_end;
+	char* key_start;   char* key_end;
+	char* value_start; char* value_end;
+	bool has_cr = false;
+	for(u32 line_number = 1; ;line_number++){
+		//get the next line
+		line_start = (has_cr) ? line_end+2 : line_end+1;
+		if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
+		if(has_cr || *(line_end-1) == '\r'){ has_cr = true; line_end -= 1; }
+		if(line_start == line_end) continue;
+		
+		//format the line
+		info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);  if(info_start == line_end) continue;
+		info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);  if(info_start == info_end) continue;
+		info_end   = info_start + Utils::skipSpacesTrailing(info_start, info_end-info_start); if(info_start == info_end) continue;
+		
+		std::string line(info_start, info_end-info_start);
+		
+		//parse the key-value pair
+		if(*info_start == '>'){
+			if     (line == ">material"){ header = MaterialHeader::MATERIAL; }
+			else if(line == ">textures"){ header = MaterialHeader::TEXTURES; }
+			else{ header = MaterialHeader::INVALID; ParseError("Uknown header '",line,"'"); }
+			continue;
+		}
+		
+		if(header == MaterialHeader::INVALID) { ParseError("Invalid header; skipping line"); continue; }
+		std::vector<std::string> split = Utils::spaceDelimitIgnoreStrings(line);
+		
+		if(header == MaterialHeader::MATERIAL){
+			if(split.size() != 2){ ParseError("Material header attributes should have 2 values"); continue; }
+			if      (split[0] == "name")  { 
+				mat_name   = string(split[1].c_str(), split[1].size()); 
+			}else if(split[0] == "shader"){ 
+				forI(Shader_COUNT){ if(strcmp(ShaderStrings[i], split[1].c_str()) == 0){ mat_shader = i; break; } }
+			}else if(split[0] == "flags") { 
+				mat_flags  = (MaterialFlags)std::stoi(split[1]); 
+			}
+			else{ ParseError("Invalid key '",split[0],"' for header '",MaterialHeaderStrings[header],"'"); continue; }
+		}else{
+			mat_textures.add(string(split[0].c_str(), split[0].size()));
+		}
+	}
+	
+	Material* material = AllocateMaterial(mat_textures.count);
+	cpystr(material->name, mat_name.str, DESHI_NAME_SIZE);
+	material->idx = materials.count;
+	material->shader = mat_shader;
+	material->flags = mat_flags;
+	forI(mat_textures.count) material->textures.add(CreateTextureFromFile(mat_textures[i].str).first);
+	
+	Render::LoadMaterial(material);
+	
+	result.first  = material->idx;
+	result.second = material;
+	materials.add(material);
 	return result;
 }
 
 void Storage::
 SaveMaterial(Material* material){
 	std::string mat_text = TOSTDSTRING(">material"
-									   "\nname   ", material->name,
+									   "\nname   \"", material->name,"\""
 									   "\nshader ", ShaderStrings[material->shader],
 									   "\nflags  ", material->flags,
 									   "\n"
@@ -594,11 +692,6 @@ AllocateModel(u32 batchCount){
 	return model;
 }
 
-#ifdef ParseError
-#define TempParseError ParseError
-#undef ParseError
-#endif
-#define ParseError(...) ERROR("Error parsing '",filepath,"' on line '",line_number,"'! ",__VA_ARGS__)
 pair<u32,Model*> Storage::
 CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 	pair<u32,Model*> result(0, NullModel());
@@ -736,7 +829,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 				
 				//// face ////
 				case 'f':{
-					//TIMER_START(t_f);
+					TIMER_START(t_f);
 					if(*(line_start+1) != ' '){ ParseError("No space after 'f'"); return result; }
 					if(vArray.count == 0){ ParseError("Specifier 'f' before any 'v'"); return result; }
 					
@@ -840,7 +933,10 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 						}
 					}
 					triangles[cti].neighborCount = triNeighbors[cti].count;
-					//PRINTLN(TOSTRING(filename," face",triangles.count," finished creation in ",TIMER_END(t_f),"ms"));
+					if(((u64)(TIMER_END(t_l) / 1000.0) % 10 == 0) && ((u64)(TIMER_END(t_l) / 1000.0) != 0)){
+						PRINTLN(TOSTRING(filename," face ",triangles.count," on line ",line_number,
+										 "finished creation in ",TIMER_END(t_f),"ms"));
+					}
 				}continue;
 				
 				//// use material ////
@@ -1077,11 +1173,6 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 	SUCCESS("Finished loading model '",filename,"' in ",TIMER_END(t_m),"ms");
 	return result;
 }
-#undef ParseError
-#ifdef TempParseError
-#define ParseError TempParseError
-#undef TempParseError
-#endif
 
 pair<u32,Model*> Storage::
 CreateModelFromMesh(Mesh* mesh, ModelFlags flags){
@@ -1137,9 +1228,9 @@ CopyModel(Model* _model){
 void Storage::
 SaveModel(Model* model){
 	std::string model_save = TOSTDSTRING(">model"
-										 "\nname     ", model->name,
+										 "\nname     \"",model->name,"\""
 										 "\nflags    ", model->flags,
-										 "\nmesh     ", model->mesh->name,
+										 "\nmesh     \"", model->mesh->name,"\""
 										 "\narmature ", 0,
 										 "\n"
 										 "\n>batches");
@@ -1158,3 +1249,9 @@ DeleteModel(Model* model){
 	Assert(!"not setup yet");
 	free(model);
 }
+
+#undef ParseError
+#ifdef TempParseError
+#define ParseError TempParseError
+#undef TempParseError
+#endif

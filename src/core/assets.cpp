@@ -413,33 +413,22 @@ loadConfig(const char* filename, ConfigMap configMap){
 	if(!buffer){ saveConfig(filename, configMap); return; }
 	defer{ delete[] buffer; };
 	
-	char* line_start;
-	char* line_end = buffer - 1;
-	char* info_start;
-	char* info_end;
-	char* key_start;
-	char* key_end;
-	char* value_start;
-	char* value_end;
+	char* line_start;  char* line_end = buffer - 1;
+	char* info_start;  char* info_end;
+	char* key_start;   char* key_end;
+	char* value_start; char* value_end;
 	bool has_cr = false;
 	for(u32 line_number = 1; ;line_number++){
 		//get the next line
 		line_start = (has_cr) ? line_end+2 : line_end+1;
 		if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
-		//check for CRLF
-		if(has_cr || *(line_end-1) == '\r') {
-			has_cr = true;
-			line_end -= 1;
-		}
+		if(has_cr || *(line_end-1) == '\r'){ has_cr = true; line_end -= 1; }
+		if(line_start == line_end) continue;
 		
 		//format the line
-		if(line_start == line_end) continue;
-		info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);
-		if(info_start == line_end) continue;
-		info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);
-		if(info_start == info_end) continue;
-		info_end   = info_start + Utils::skipSpacesTrailing(info_start, info_end-info_start);
-		if(info_start == info_end) continue;
+		info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);  if(info_start == line_end) continue;
+		info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);  if(info_start == info_end) continue;
+		info_end   = info_start + Utils::skipSpacesTrailing(info_start, info_end-info_start); if(info_start == info_end) continue;
 		
 		{//split the key-value pair
 			key_start = info_start;

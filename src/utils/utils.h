@@ -239,18 +239,18 @@ spaceDelimitIgnoreStrings(std::string text){
 			out.push_back(text.substr(prev, i-prev));
 			while(text[i+1] == ' ') ++i;
 			prev = i+1;
-    		while(text[prev] == '\"'){
-    		    end_quote = text.find_first_of('\"', prev+1);
-    		    if(end_quote != -1){
-    		        out.push_back(text.substr(prev+1, end_quote-prev-1));
-    		        i = end_quote+1;
-					if(i >= text.size()) return out;
-    		        prev = i+1;
-    		    }else{
-					Assert(!"Opening quote did not have a closing quote in the text");
-    		        return std::vector<std::string>();
-    		    }
-    		}
+		}
+		while(text[prev] == '\"'){
+			end_quote = text.find_first_of('\"', prev+1);
+			if(end_quote != -1){
+				out.push_back(text.substr(prev+1, end_quote-prev-1));
+				i = end_quote+1;
+				if(i >= text.size()) return out;
+				prev = i+1;
+			}else{
+				Assert(!"Opening quote did not have a closing quote in the text");
+				return std::vector<std::string>();
+			}
 		}
 	}
 	out.push_back(text.substr(prev, -1));
