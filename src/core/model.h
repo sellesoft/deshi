@@ -52,7 +52,6 @@ enum ModelFlags_{
 	ModelFlags_NONE = 0,
 }; typedef u32 ModelFlags;
 
-//TODO(delle) add versioning to this
 //NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
 struct Mesh{
 	u32  bytes;

@@ -182,7 +182,7 @@ void Admin::ChangeState(GameState new_state){
         switch(new_state){
             case GameState_Menu:{   to = "MENU";
                 pause_phys = true;
-                DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+                DengWindow->UpdateCursorMode(CursorMode_Default);
             }break;
             case GameState_Editor:{ to = "EDITOR";
                 pause_phys = pause_sound = true;
@@ -192,7 +192,7 @@ void Admin::ChangeState(GameState new_state){
                 LoadTEXT(editor.level_name);
                 if(player) player->GetComponent<ModelInstance>()->visible = true;
                 player = nullptr;
-                DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+                DengWindow->UpdateCursorMode(CursorMode_Default);
             }break;
         }break;
         
@@ -203,7 +203,7 @@ void Admin::ChangeState(GameState new_state){
             case GameState_Debug:{  to = "PLAY/DEBUG";
                 pause_phys = false;
                 if(!player) ERROR("No player on admin");
-                DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
+                DengWindow->UpdateCursorMode(CursorMode_FirstPerson);
             }break;
             case GameState_Editor:{ to = "EDITOR";
                 pause_phys = pause_sound = true;
@@ -211,7 +211,7 @@ void Admin::ChangeState(GameState new_state){
                 //LoadDESH("temp.desh");
                 LoadTEXT(editor.level_name);
                 if(player) player->GetComponent<ModelInstance>()->visible = true;
-                DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+                DengWindow->UpdateCursorMode(CursorMode_Default);
             }break;
         }break;
         
@@ -228,12 +228,12 @@ void Admin::ChangeState(GameState new_state){
                 }else{
                     ERROR("No player on admin");
                 }
-                DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
+                DengWindow->UpdateCursorMode(CursorMode_FirstPerson);
             }break;
             case GameState_Menu:{   to = "MENU";
                 //SaveDESH("save.desh");
                 SaveTEXT(editor.level_name);
-                DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+                DengWindow->UpdateCursorMode(CursorMode_Default);
             }break;
         }break;
     }

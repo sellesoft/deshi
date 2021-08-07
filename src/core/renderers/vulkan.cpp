@@ -218,8 +218,6 @@ local std::vector<const char*> deviceExtensions = {
 };
 local std::vector<VkValidationFeatureEnableEXT> validationFeaturesEnabled = {};
 
-local const int MAX_FRAMES = 2; //TODO(delle) remove this? minImageCount does same thing
-
 local bool initialized     = false;
 local bool remakeWindow    = false;
 local bool remakePipelines = false;
@@ -298,8 +296,8 @@ local struct{ //uniform buffer for the vertex shaders
 		vec2 mousepos;    //mouse screen pos
 		vec3 mouseWorld;  //point casted out from mouse 
 		f32  time;        //total time
-		mat4 lightVP;     //first light's view projection matrix //TODO(delle,ReVu) redo how lights are stored
-		bool  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
+		mat4 lightVP;     //first light's view projection matrix
+		bool  enablePCF;   //whether to blur shadow edges //TODOf(delle,ReVu) convert to specialization constant
 	} values;
 } uboVS{};
 
@@ -4155,7 +4153,7 @@ Update(){
 	}
 	
 	//iterate the frame index
-	frameIndex = (frameIndex + 1) % MAX_FRAMES; //loops back to zero after reaching max_frames
+	frameIndex = (frameIndex + 1) % minImageCount; //loops back to zero after reaching minImageCount
 	result = vkQueueWaitIdle(graphicsQueue);
 	switch(result){
 		case VK_ERROR_OUT_OF_HOST_MEMORY:   PRINTLN("[Vulkan] OUT_OF_HOST_MEMORY");   Assert(!"CPU ran out of memory"); break;

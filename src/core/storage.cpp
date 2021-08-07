@@ -703,7 +703,6 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 	string fullname(filename);
 	string name;
 	string extension;
-	
 	size_t dot_idx = fullname.find_first_of_lookback('.', fullname.size-1);
 	if(dot_idx != -1){
 		has_extension = true;
@@ -713,13 +712,12 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		has_extension = false;
 		name = fullname;
 	}
+	std::string obj_name   = std::string(name.str)+".obj";
+	std::string mesh_name  = std::string(name.str)+".mesh";
+	std::string model_name = std::string(name.str)+".model";
 	
 	//check if model is already loaded
-	forX(mi, models.count){
-		if((strcmp(models[mi]->name, name.str) == 0)){
-			return pair<u32,Model*>(mi,models[mi]);
-		}
-	}
+	forX(mi, models.count){ if((strcmp(models[mi]->name, name.str) == 0)){ return pair<u32,Model*>(mi,models[mi]); } }
 	
 	//!Incomplete check for .mesh and .model
 	bool parse_obj_mesh  = true;
@@ -727,7 +725,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 	if(!forceLoadOBJ){
 		std::vector<std::string> files = Assets::iterateDirectory(Assets::dirModels());
 		for(std::string& file : files){
-			if(file == std::string(name.str)+".mesh"){
+			if(file == mesh_name){
 				
 			}
 		}

@@ -8,9 +8,9 @@ struct Admin;
 struct Movement;
 
 enum MovementMode_{
-	MOVEMENT_MODE_FLYING,
-	MOVEMENT_MODE_WALKING,
-	MOVEMENT_MODE_SWIMMING,
+	MovementMode_Flying,
+	MovementMode_Walking,
+	MovementMode_Swimming,
 }; typedef u32 MovementMode;
 
 struct Controller{
@@ -21,7 +21,7 @@ struct Controller{
 	f32 mouseSensitivity;
 	bool cameraLocked = false;
 	
-	void Init(Admin* a, MovementMode m = MOVEMENT_MODE_FLYING);
+	void Init(Admin* a, MovementMode m = MovementMode_Flying);
 	void Update();
 };
 

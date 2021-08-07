@@ -28,7 +28,6 @@ The transformation matrix will follow the format to the below:
 #define DESHI_MATRIX_H
 
 #include "../defines.h"
-
 #include <string>
 
 struct vec2;

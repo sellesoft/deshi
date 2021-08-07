@@ -2,6 +2,7 @@
 #ifndef DESHI_VECTOR_H
 #define DESHI_VECTOR_H
 
+#include "../defines.h"
 #include <string>
 
 struct vec2;

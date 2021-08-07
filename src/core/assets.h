@@ -10,7 +10,7 @@
 #include <map>
 
 enum ConfigValueType_{
-	ConfigValueType_NONE = 0, //can be used for comments/padding
+	ConfigValueType_NONE, //can be used for comments
 	ConfigValueType_S32,
 	ConfigValueType_Bool,
 	ConfigValueType_U32,
@@ -20,7 +20,6 @@ enum ConfigValueType_{
 	ConfigValueType_FV2, 
 	ConfigValueType_FV3,
 	ConfigValueType_FV4,
-	ConfigValueType_CString, //NOTE pointer to 'const char*'; also, this doesnt free allocated memory when set to a new value
 	ConfigValueType_StdString, 
 	ConfigValueType_Key,
 	

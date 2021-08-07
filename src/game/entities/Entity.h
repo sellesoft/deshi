@@ -3,7 +3,7 @@
 #define GAME_ENTITY_H
 
 #include "../../defines.h"
-#include "../../utils/tuple.h" //TODO(delle,Cl) forward declare pair<> somehow
+#include "../../utils/tuple.h"
 #include "../Transform.h"
 
 #include <string>

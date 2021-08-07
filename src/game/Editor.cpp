@@ -588,7 +588,6 @@ local float fonth = 0;
 
 //current palette:
 //https://lospec.com/palette-list/slso8
-//TODO(sushi, Ui) implement menu style file loading sort of stuff yeah
 //TODO(sushi, Ui) standardize what UI element each color belongs to
 local struct {
     Color c1 = Color(0x0d2b45); //midnight blue
@@ -3072,10 +3071,10 @@ void Editor::Update(){
 		
 		//fullscreen toggle
 		if(DengInput->KeyPressed(Key::F11)){
-			if(DengWindow->displayMode == DisplayMode::WINDOWED || DengWindow->displayMode == DisplayMode::BORDERLESS){
-				DengWindow->UpdateDisplayMode(DisplayMode::FULLSCREEN);
+			if(DengWindow->displayMode == DisplayMode_Windowed || DengWindow->displayMode == DisplayMode_Borderless){
+				DengWindow->UpdateDisplayMode(DisplayMode_Fullscreen);
 			}else{
-				DengWindow->UpdateDisplayMode(DisplayMode::WINDOWED);
+				DengWindow->UpdateDisplayMode(DisplayMode_Windowed);
 			}
 		}
 	}

@@ -135,7 +135,6 @@ int Console::TextEditCallback(ImGuiInputTextCallbackData* data){
 					posi.push_back(c.first);
 				}
 			}
-			//TODO( sushi,Cmd) implement showing a commands help if tab is pressed when the command is already typed
 			
 			if(posi.size() == 0){
 				AddLog("no matches found");
@@ -310,7 +309,6 @@ void Console::DrawConsole(){
 	}
 	
 	// Reserve enough left-over height for 1 separator + 1 input text
-	//TODO(sushi, Con) figure out why the scroll bar doesnt allow you to drag it
 	const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 	PushStyleColor(ImGuiCol_ChildBg, ColorToVec4(Color(4, 17, 21, 255)));
 	BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve-20), false);
@@ -905,13 +903,13 @@ CMDSTARTA(window_display_mode, args.size() == 1){
 		int mode = std::stoi(args[0]);
 		switch(mode){
 			case(0): {
-				DengWindow->UpdateDisplayMode(DisplayMode::WINDOWED);
+				DengWindow->UpdateDisplayMode(DisplayMode_Windowed);
 				return "display_mode=windowed"; }
 			case(1): {
-				DengWindow->UpdateDisplayMode(DisplayMode::BORDERLESS);
+				DengWindow->UpdateDisplayMode(DisplayMode_Borderless);
 				return "display_mode=borderless windowed"; }
 			case(2): {
-				DengWindow->UpdateDisplayMode(DisplayMode::FULLSCREEN);
+				DengWindow->UpdateDisplayMode(DisplayMode_Fullscreen);
 				return "display_mode=fullscreen"; }
 			default: {
 				return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen"; }
@@ -926,13 +924,13 @@ CMDSTARTA(window_cursor_mode, args.size() == 1){
 		int mode = std::stoi(args[0]);
 		switch(mode){
 			case(0): {
-				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+				DengWindow->UpdateCursorMode(CursorMode_Default);
 				return "cursor_mode=default"; }
 			case(1): {
-				DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
+				DengWindow->UpdateCursorMode(CursorMode_FirstPerson);
 				return "cursor_mode=first person"; }
 			case(2): {
-				DengWindow->UpdateCursorMode(CursorMode::HIDDEN);
+				DengWindow->UpdateCursorMode(CursorMode_Hidden);
 				return "cursor_mode=hidden"; }
 			default: { return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden"; }
 		}

@@ -15,57 +15,50 @@ core:
   DowhateverLocal_vars (usually lowerCamel)
   g_global_vars (defined in deshi.cpp only, declared in specific header)
 
-TODO Tags
----------
-As  Assets    Cl  Clean Up Code    Cmd Command         Co  Core        Con Console
-En  Entity    Fu  Fun              Fs  Filesystem      Ge  Geometry    In  Input
-Ma  Math      Oth Other            Op  Optimization    Ph  Physics     Re  Render
-Sh  Shader    So  Sound            Ui  UI              Vu  Vulkan      Wi  Window
-
-TODO Style: TODO(person,tags) description
-eg: TODO(delle) no tag or date for delle
-eg: TODO(sushi,ReOp) render,optimization tags for sushi
-
-The person listed doesn't necessarily have to be you, and can be someone else
-if you feel they would handle the problem better. It should generally be you though.
-
-Major Ungrouped TODOs
----------------------
-create a demo level
-sushi->rewrite the events menu
-____also, triggers need to be able to filter what causes them to activate
-
-Minor Ungrouped TODOs
----------------------
-store fonts in storage
-add editor settings and config
-maybe redo UI to draw the window base into a special UIDrawCmds array for base window elements 
-____so we can defer drawing that stuff to EndWindow() so we can do window resizing and positioning within Begin and End calls
-convert std::string to our string throughout the project, primarily .str() methods so i can fully convert TOSTRING to use our string
-rework and simplify entity creation so there is a distinction between development and gameplay creation
-make a dynamic timers array on in time.h for cleaner timer stuffs
-add a setting for a limit to the number of log files
-create a hot-loadable global vars file
-deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
-____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
-____to update it's canvas system.
-think of a way to implement different events being sent between comps as right now it's only one
-____is this necessary though? we can define these events at run time, but the connections must be made through UI
-____so maybe have a UI option that allows the comps update function to handle it and only connects them.
-____actually having an option for anything other than collider is kind of useless soooo maybe 
-____get rid of event on every component or just only let u choose that event on colliders
-change undo's to never use pointers and have undos that can act like linked lists to chain them
-add a general logging system with log levels and locations (for filtering)
+Command TODOs
+-------------
+move commands to their own files (separate for deshi and game)
+implement command chaining
+command to print all avaliable keys for binding
+command to print all keybinds, with (maybe) an option for printing only contextual keybinds
+make binds and aliases check if one already exists for a key or a command. if a key already exists probably just overwrite it?
 add a component_state command to print state of a component (add str methods to all components/systems)
 add device_info command (graphics card, sound device, monitor res, etc)
-pool/arena components and entities for better performance
-replace/remove external dependencies/includes (tinyobj, std)
-look into integrating TODOP with Discord
-begin reimplementing sound system and maybe rethink its design a bit
-fix DESH material and event saving/loading
+
+Console(2) TODOs
+-------------
+showing a commands help if tab is pressed when the command is already typed
+add a setting for a limit to the number of log files
+convert all ImGui stuff used in console to UI since console will be in final release
+input history from previous inputs on UP and DOWN arrows
+add scrolling and scrollbar (PAGEUP and PAGEDOWN binds (CTRL for max scroll))
+add a general logging system with log levels and locations (for filtering)
+popout and window console states
+tabbing so we can sort different kinds of info into each tab like Errors and Warnings
+add auto complete for commands and arguments
+add console flag for showing text in bottom right message bar like error does
+implement filtering console buffer by function and file name (add __FILENAME__ and __FUNCTION__ or whatever it is to the defines)
+
+Fun TODOs
+---------
+look into implementing Lua 
+look into making a function that takes in the types on a component and formats binary for saving and what not 
+____like what were currently doing for typeHeader in Admin Save()
+write a preprocessing/postprocessing compiler that makes saving easier
+hotloadable UI
+
+Math TODOs
+----------
+add functions and members similar to what glsl/glm has where you can do stuff like 
+____v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
+____you probably just need to add a vec2/3 for each permutation of each vector
+____glm/detail/_swizzle.hpp
+cleanup math library (remove redundant/old things, make functions more consistent, etc.)
+add quaternions and converions between them and other linear algebra primitives
 
 Render TODOs
 ------------
+revert phong shader so it is like it used to be, but keeps the shadows
 fix directional shadow mapping's (projection?) errors
 rework lights
 add omnidirectional shadow mapping
@@ -81,29 +74,65 @@ ____ref: https://github.com/SaschaWillems/Vulkan/blob/master/examples/computepar
 ____the primary reason being that we need to optimize outlining objects, which will
 ____involve clipping triangles and stuff
 add standard render/video settings
-add face normal and tangents to vertex buffer
+upload extra mesh info to an SSBO
 fix texture transparency
 ____check those vulkan-tutorial links for the suggestions and optimizations
 add instancing
+vulkan auto-cleanup so that it frees the unused parts of memory every now and then
 add buffer pre-allocation and arenas for vertices/indices/textures/etc
 multi-threaded command buffers, shader loading, image loading
 SSBOs in shaders so we can pass variable length arrays to it
 
-Level Editor and Inspector TODOs
-------------------
-orthographic grabbing/rotating
-add transfering the player pointer between entities that have an actor comp (combo in Global Tab)
-orbitting camera for rotating around objects
-context menu when right clicking on an object 
-typing numbers while grabbing/rotating/scaling for precise manipulation (like in Blender)
-implement grabbing/rotating/scaling with a visual tool thing (like in Unreal)
-orthographic side views
-(maybe) multiple viewports
-implement orthographic grabbing 
-entity filtering in entity list
-combine undo manager into editor file
+Storage TODOs
+-------------
+store null128.png and 
+add versionion to Mesh since its saved in a binary format
+speedup OBJ parsing and face generation
+store fonts in storage
 
-Physics/Atmos TODOs
+UI TODOs
+--------
+look into easier hover checking and input intercepting for imgui
+____https://github.com/ocornut/imgui/issues/52
+add a UI popup when reloading shaders
+add UI color palettes for easy color changing
+redo debug bar to be more informative and have different modes
+maybe redo UI to draw the window base into a special UIDrawCmds array for base window elements 
+____so we can defer drawing that stuff to EndWindow() so we can do window resizing and positioning within Begin and End calls
+
+Ungrouped TODOs
+---------------
+add the ability to limit framerate
+add a file abstraction so file parsing is simple and not so explicitly handed in different files
+memory namespace with arenas and memory management
+____funcs: alloc()=Allocate(), zalloc()=ZeroAllocate(), talloc()=TempAllocate()
+cleanup utils classes so that they are declaration at top and definition below
+centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
+update imgui (so we can get disabled items/text)
+convert std::string to our string throughout the project, primarily .str() methods so i can fully convert TOSTRING to use our string
+make a dynamic timers array in time.h for cleaner timer stuffs
+deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
+____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
+____to update it's canvas system.
+remake the sound system
+look into integrating TODOP with Discord
+
+
+
+Atmos TODOs (move these to atmos at some point)
+---------------------------------------------------------------------------------------------------
+create a demo level
+rework and simplify entity creation so there is a distinction between development and gameplay creation
+change entity and admin LoadTEXT to be character based rather than std::string based
+fix DESH material and event saving/loading
+think of a way to implement different events being sent between comps as right now it's only one
+____is this necessary though? we can define these events at run time, but the connections must be made through UI
+____so maybe have a UI option that allows the comps update function to handle it and only connects them.
+____actually having an option for anything other than collider is kind of useless soooo maybe 
+____get rid of event on every component or just only let u choose that event on colliders
+pool/arena components and entities for better performance
+
+Physics TODOs
 -------------
 make collider trigger latching a boolean, so it can continuous trigger an event while an obj is in it
 ____dont forget that it's in a physics tick though, so you have to make sure it doesn't do it 300 times per frame
@@ -117,45 +146,27 @@ add physics interaction functions
 implement collision manifold generation
 implement Complex Colliders
 
-Console TODOs
--------------
-!!!implement console popout
-tabbing so we can sort different kinds of info into each tab like Errors and Warnings
-implement command chaining
-add auto complete for commands and arguments
-add console flag for showing text in bottom right message bar like error does
-command to print all avaliable keys for binding
-command to print all keybinds, with (maybe) an option for printing only contextual keybinds
-make binds and aliases check if one already exists for a key or a command. if a key already exists probably just overwrite it?
-implement filtering console buffer by function and file name (add __FILENAME__ and __FUNCTION__ or whatever it is to the defines)
 
-UI TODOs
---------
-look into easier hover checking and input intercepting for imgui
-____https://github.com/ocornut/imgui/issues/52
-add a UI popup when reloading shaders
-add UI color palettes for easy color changing
-redo debug bar to be more informative and have different modes
-(maybe) implement a way to push data to something in the DebugLayer
-____sort of how we had before with BufferLog so you can see it without opening console
-
-Math TODOs
-----------
-fix vector cross function, and anywhere it's used
-add functions and members similar to what glsl/glm has where you can do stuff like 
-____v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
-____you probably just need to add a vec2/3 for each permutation of each vector
-____glm/detail/_swizzle.hpp
-cleanup math library (remove redundant/old things, make functions more consistent, etc.)
-add quaternions and converions between them and other linear algebra primitives
-
-Fun TODOs
----------
-look into implementing Lua 
-look into making a function that takes in the types on a component and formats binary for saving and what not 
-____like what were currently doing for typeHeader in Admin Save()
-write a preprocessing/postprocessing compiler that makes saving easier
-hotloadable UI
+Level Editor and Inspector TODOs
+------------------
+change undo's to never use pointers and have undos that can act like linked lists to chain them
+rewrite the events menu (triggers need to be able to filter what causes them to activate)
+add box select for mesh inspector and entity selection
+editor settings (world grid, colors, positions)
+add safety checks on renaming things so no two meshes/materials/models have the same name
+see folders inside different folders when loading things (leading into a asset viewer)
+orthographic grabbing/rotating
+add transfering the player pointer between entities that have an actor comp (combo in Global Tab)
+orbitting camera for rotating around objects
+context menu when right clicking on an object 
+typing numbers while grabbing/rotating/scaling for precise manipulation (like in Blender)
+implement grabbing/rotating/scaling with a visual tool thing (like in Unreal)
+orthographic side views
+(maybe) multiple viewports
+implement orthographic grabbing 
+entity filtering in entity list
+combine undo manager into editor file
+---------------------------------------------------------------------------------------------------
 
 Bug Board       //NOTE mark these with a last-known active date (M/D/Y)
 ---------

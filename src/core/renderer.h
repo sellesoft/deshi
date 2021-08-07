@@ -56,7 +56,7 @@ struct RenderSettings{
 	//// runtime changeable ////
 	u32  loggingLevel = 1; //if printf is true in the config file, this will be set to 4
 	bool crashOnError = false;
-	VSyncType vsync  = VSyncType_Immediate;
+	VSyncType vsync   = VSyncType_Immediate;
 	
 	//shaders
 	bool optimizeShaders = false;

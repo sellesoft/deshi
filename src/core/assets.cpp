@@ -356,9 +356,6 @@ saveConfig(const char* filename, const ConfigMap& configMap){
 			case ConfigValueType_FV4:{
 				out << ((vec4*)config.third)->str();
 			}break;
-			case ConfigValueType_CString:{
-				out << '\"' << *(const char**)config.third << '\"';
-			}break;
 			case ConfigValueType_StdString:{
 				out << '\"' << *(std::string*)config.third << '\"';
 			}break;
@@ -494,15 +491,6 @@ loadConfig(const char* filename, ConfigMap configMap){
 						vec->y = strtof(cursor+1, &cursor);
 						vec->z = strtof(cursor+1, &cursor);
 						vec->w = strtof(cursor+1, 0);
-					}break;
-					case ConfigValueType_CString:{ //!Leak
-						//TODO(delle,Cl) figure out a way to prevent a leak here
-						//    compile time strings shouldnt be free'd but
-						//    runtime strings should be...
-						//free(cstr);
-						size_t len = value_end-value_start-1; //1 extra for \0
-						*(char**)config.third = (char*)malloc(len*sizeof(char));
-						cpystr(*(char**)config.third, value_start+1, len);
 					}break;
 					case ConfigValueType_StdString:{
 						*(std::string*)config.third = std::string(value_start+1, value_end-value_start-2);

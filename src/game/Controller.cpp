@@ -78,7 +78,7 @@ inline void PlayerMovement(Admin* admin, MovementMode mode, Movement* playermove
 	ImGui::DebugDrawCircle(DengWindow->dimensions / 2, 2.5, Color::DARK_GREY);
 	
 	
-	if (mode == MOVEMENT_MODE_WALKING) {
+	if (mode == MovementMode_Walking) {
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingForward))  { inputs += vec3(camera->forward.x, 0, camera->forward.z); }
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingBackward)) { inputs -= vec3(camera->forward.x, 0, camera->forward.z); }
 		if (DengInput->KeyDownAnyMod(DengKeys.movementWalkingRight))    { inputs += vec3(camera->right.x, 0, camera->right.z); }
@@ -145,11 +145,11 @@ local inline void CameraRotation(Admin* admin, float sens) {
 			
 			if (DengInput->KeyPressed(Key::F3)) {
 				if (debugmouse) {
-					DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
+					DengWindow->UpdateCursorMode(CursorMode_FirstPerson);
 					debugmouse = false;
 				}
 				else {
-					DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+					DengWindow->UpdateCursorMode(CursorMode_Default);
 					debugmouse = true;
 				}
 			}
@@ -157,14 +157,14 @@ local inline void CameraRotation(Admin* admin, float sens) {
 		}
 		else if(admin->state == GameState_Editor){
 			if(DengInput->KeyPressedAnyMod(MouseButton::RIGHT)){
-				DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
+				DengWindow->UpdateCursorMode(CursorMode_FirstPerson);
 			}
 			if(DengInput->KeyDownAnyMod(MouseButton::RIGHT)){
 				camera->rotation.y += (DengInput->mouseX - DengWindow->centerX) * sens*MOUSE_SENS_FRACTION;
 				camera->rotation.x += (DengInput->mouseY - DengWindow->centerY) * sens*MOUSE_SENS_FRACTION;
 			}
 			if(DengInput->KeyReleasedAnyMod(MouseButton::RIGHT)){
-				DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+				DengWindow->UpdateCursorMode(CursorMode_Default);
 			}
 		}
 	}
@@ -205,9 +205,9 @@ void Controller::Init(Admin* a, MovementMode m){
 	playermove = 0;
 	
 	if(admin->state == GameState_Play || admin->state == GameState_Debug){
-		DengWindow->UpdateCursorMode(CursorMode::FIRSTPERSON);
+		DengWindow->UpdateCursorMode(CursorMode_FirstPerson);
 	}else{
-		DengWindow->UpdateCursorMode(CursorMode::DEFAULT);
+		DengWindow->UpdateCursorMode(CursorMode_Default);
 	}
 	
 	AddBindings(a);
@@ -230,18 +230,18 @@ void Controller::Update() {
 		
 		switch(admin->state){
 			case GameState_Play:{
-				PlayerMovement(admin, MOVEMENT_MODE_WALKING, playermove);
+				PlayerMovement(admin, MovementMode_Walking, playermove);
 				CameraRotation(admin, mouseSensitivity);
 			}break;
 			case GameState_Menu:{
 				
 			}break;
 			case GameState_Debug:{
-				PlayerMovement(admin, MOVEMENT_MODE_WALKING, playermove);
+				PlayerMovement(admin, MovementMode_Walking, playermove);
 				CameraRotation(admin, mouseSensitivity);
 			}break;
 			case GameState_Editor:{
-				CameraMovement(admin, MOVEMENT_MODE_FLYING);
+				CameraMovement(admin, MovementMode_Flying);
 				CameraRotation(admin, mouseSensitivity);
 				CameraZoom(admin);
 			}break;

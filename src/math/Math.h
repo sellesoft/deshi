@@ -3,8 +3,8 @@
 #define DESHI_MATH_H
 
 #include "VectorMatrix.h"
+#include "quaternion.h"
 #include "matN.h"
-#include "Quaternion.h"
 #include "../defines.h"
 
 #include <math.h>
