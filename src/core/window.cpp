@@ -80,6 +80,8 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	_width = width; _height = height;
 	
 	UpdateDisplayMode(displayMode);
+
+	glfwSetInputMode(window, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
 	
 	//keyboard mappings
 	DeshInput->mapKeys[0x00] = Key::Key_NONE;
@@ -196,6 +198,8 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	glfwSetKeyCallback(window,
 					   [](GLFWwindow* window, int key, int scancode, int action, int mods)->void{
 						   std::map<size_t, u8>::iterator it = DeshInput->mapKeys.find(key);
+						   if (mods & GLFW_MOD_CAPS_LOCK) DeshInput->capsLock = 1;
+						   else DeshInput->capsLock = 0;
 						   if(it != DeshInput->mapKeys.end()){
 							   if(action == GLFW_PRESS){
 								   DeshInput->realKeyState[it->second] = true;

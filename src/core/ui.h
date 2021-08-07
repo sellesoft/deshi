@@ -41,6 +41,12 @@ enum UITextFlags_ {
 	//UITextFlags_PositionAbsolute = 
 }; typedef u32 UITextFlags;
 
+enum UIInputTextFlags_ {
+	UIInputTextFlags_NONE             = 0,
+	UIInputTextFlags_EnterReturnsTrue = 1 << 0,
+	
+}; typedef u32 UIInputTextFlags;
+
 enum UIWindowFlags_ {
 	UIWindowFlags_None             = 0,
 	UIWindowFlags_NoResize         = 1 << 0,
@@ -54,8 +60,23 @@ enum UIWindowFlags_ {
 	UIWindowFlags_NoMinimize       = 1 << 8,
 	UIWindowFlags_NoMinimizeButton = 1 << 9,
 	
-	UIWindowFlags_Invisible    = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground
+	UIWindowFlags_Invisible    = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground | UIWindowFlags_NoFocus
 }; typedef u32 UIWindowFlags;
+
+
+struct UIInputTextState {
+	u32 id;                      //id the state belongs to
+	u32 cursor = 0;              //what character in the buffer the cursor is infront of, 0 being all the way to the left
+	f32 cursorBlinkTime;         //time it takes for the cursor to blink
+	f32 scroll;                  //scroll offset on x
+	string buffer;               //internal buffer, in case user buffer disappears
+	u32 selectStart;             //beginning of text selection
+	u32 selectEnd;	             //end of text selection
+	TIMER_START(timeSinceTyped); //timer to time how long its been since typing, for cursor
+
+
+};
+
 
 enum UIDrawType : u32 {
 	UIDrawType_Rectangle,
@@ -190,7 +211,7 @@ struct UIWindow {
 
 
 //functions in this namespace are Immediate Mode, so they only last 1 frame
-//UI was designed almost entirely after ImGui in order to allow us to use it like you would ImGui
+//UI was initially designed almost entirely after ImGui in order to allow us to use it like you would ImGui
 //but without all the stuff from ImGui we don't really need in an engine
 //most of the code is written using ImGui as reference however some design is different and I may
 //come back here and write out what is and isnt
@@ -201,6 +222,7 @@ namespace UI {
 
 	//primitives
 	void RectFilled(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
+	void RectFilled(vec2 pos, vec2 dimen, Color color = Color::WHITE);
 
 	void Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
 	void Line(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
@@ -215,6 +237,9 @@ namespace UI {
 	bool Button(string text, vec2 pos);
 	bool Button(string text, Color color);
 	bool Button(string text, vec2 pos, Color color);
+
+	bool InputText(string label, string& buffer, u32 maxChars = -1, UIInputTextFlags flags = 0);
+	bool InputText(string label, string& buffer, vec2 pos, u32 maxChars = -1, UIInputTextFlags flags = 0);
 
 
 	//windows

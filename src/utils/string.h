@@ -233,6 +233,21 @@ struct string {
 		string s(c);
 		return this->operator+(s);
 	}
+
+	string operator -- (int) {
+		if (size != 1) {
+			str = (char*)realloc(str, size - 1);
+			size--;
+			memset(str + size, '\0', 1);
+		}
+		else {
+			str = (char*)realloc(str, 1);
+			size = 0;
+			memset(str, '\0', 1);
+		}
+		return *this;
+
+	}	
 	
 	//const func for getting a char in a string
 	char at(u32 idx) const {
@@ -244,6 +259,34 @@ struct string {
 		str = (char*)realloc(str, 1);
 		str[0] = '\0';
 		size = 0;
+	}
+	
+	void erase(u32 idx) {
+		Assert(idx <= size && idx >= 0 && size != 0);
+		if (size - 1 != 0) {
+			for (int i = idx; i < size - 1; i++)
+				str[i] = str[i + 1];
+			size--;
+			str = (char*)realloc(str, size + 1);
+			memset(str + size, '\0', 1);
+		}
+		else {
+			size = 0;
+			str = (char*)realloc(str, 1);
+			memset(str, '\0', 1);
+		}
+	}
+
+	//inserts after specified idx, so an idx of -1 inserts at the begining
+	void insert(char c, s32 idx) {
+		Assert(idx <= size && idx >= -1);
+		
+		idx++;
+		size++;
+		str = (char*)realloc(str, size + 1);
+		for (s32 i = size - 1; i >= idx; i--)
+			str[i] = str[i - 1];
+		str[idx] = c;
 	}
 	
 	

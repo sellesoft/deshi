@@ -3,14 +3,13 @@
   
   <Type Name="array&lt;*&gt;">
     <Intrinsic Name="size"
-           Expression="(last == 0) ? 0 :(last - first) + 1" />
+           Expression="count" />
     <DisplayString Condition="last == 0">{{ empty }}</DisplayString>
     <DisplayString>{{ size={size()} }}</DisplayString>
     <Expand>
       <Synthetic Name="info">
-        <DisplayString>space = { space }, itemsize = {itemsize}</DisplayString>
+        <DisplayString>space = { space }</DisplayString>
         <Expand>
-          <Item Name="itemsize" ExcludeView="simple">itemsize</Item>
           <Item Name="space" ExcludeView="simple">space</Item>
         </Expand>
       </Synthetic>

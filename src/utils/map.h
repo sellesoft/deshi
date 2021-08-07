@@ -24,14 +24,14 @@ struct map {
 		return false;
 	}
 
-	Value* atKey(const Key& key) {
+	Value* at(const Key& key) {
 		u32 hashed = HashStruct{}(key);
 		forI(hashes.count){ if(hashed == hashes[i]){ return &data[i]; } }
 		return 0;
 	}
 
-	Value& atIndex(u32 index){
-		return data[index];
+	Value* atIdx(u32 index){
+		return &data[index];
 	}
 	
 	//returns index of added or existing key
@@ -54,6 +54,7 @@ struct map {
 	}
 
 	void swap(u32 idx1, u32 idx2) {
+		hashes.swap(idx1, idx2);
 		data.swap(idx1, idx2);
 	}
 

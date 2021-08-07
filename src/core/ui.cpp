@@ -1,3 +1,4 @@
+#include "ui.h"
 //color pallete 
 //current palette:
 //https://lospec.com/palette-list/slso8
@@ -60,7 +61,7 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 //windows are primarily a way for the user to easily position things on screen relative to a parent
 //and to make detecting where text wraps and other things easier
 //by default a window that takes up the entire screen and is invisible is made on init
-UIWindow workingWin;
+UIWindow workingWin; 
 
 local vec2 NextWinSize = vec2(-1, 0);
 local vec2 NextWinPos  = vec2(-1, 0);
@@ -68,10 +69,11 @@ local vec2 NextWinPos  = vec2(-1, 0);
 
 //window map which only stores known windows
 //and their order in layers eg. when one gets clicked it gets moved to be first if its set to
-local map<string, UIWindow> windows;     
-local array<UIWindow>       windowStack; //window stack which allow us to use windows like we do colors and styles
-local array<ColorMod>       colorStack; 
-local array<VarMod>         varStack; 
+local map<string, UIWindow>         windows;     
+local map<string, UIInputTextState> inputTexts;  //stores known input text labels and their state
+local array<UIWindow>               windowStack; //window stack which allow us to use windows like we do colors and styles
+local array<ColorMod>               colorStack; 
+local array<VarMod>                 varStack; 
 
 local u32 initColorStackSize;
 local u32 initStyleStackSize;
@@ -79,6 +81,7 @@ local u32 initStyleStackSize;
 //set if any window other than base is hovered
 local bool globalHovered = false;
 
+u32 activeId = -1; //the id of an active widget eg. input text
 
 //helper functions
 
@@ -102,6 +105,14 @@ inline local  vec2 UI::CalcTextSize(string text) {
 	return vec2(longest * style.font->width, style.font->height * (text.count('\n') + 1));
 }
 
+inline local bool PointInRectangle(vec2 point, vec2 rectPos, vec2 rectDims) {
+	return
+		point.x >= rectPos.x &&
+		point.y >= rectPos.y &&
+		point.x <= rectPos.x + rectDims.x &&
+		point.y <= rectPos.y + rectDims.y;
+}
+
 
 //rectangle
 
@@ -113,6 +124,16 @@ void UI::RectFilled(f32 x, f32 y, f32 width, f32 height, Color color) {
 	drawCmd.dimensions = vec2{ width, height };
 	drawCmd.     color = color;
 	
+	workingWin.drawCmds.add(drawCmd);
+}
+
+void UI::RectFilled(vec2 pos, vec2 dimen, Color color) {
+	UIDrawCmd drawCmd;
+	drawCmd.type = UIDrawType_Rectangle;
+	drawCmd.position = pos;
+	drawCmd.dimensions = dimen;
+	drawCmd.color = color;
+
 	workingWin.drawCmds.add(drawCmd);
 }
 
@@ -154,8 +175,8 @@ local void TextCall(string text, vec2 pos, Color color) {
 	drawCmd.text = text;
 	drawCmd.position = pos;
 	drawCmd.color = color;
-	drawCmd.scissorOffset = vec2(workingWin.x, workingWin.y + style.titleBarHeight);
-	drawCmd.scissorExtent = vec2(workingWin.width, workingWin.height - style.titleBarHeight);
+	drawCmd.scissorOffset = vec2(workingWin.x, workingWin.y + ((workingWin.flags & UIWindowFlags_NoTitleBar) ? 0 :style.titleBarHeight));
+	drawCmd.scissorExtent = vec2(workingWin.width, workingWin.height - ((workingWin.flags & UIWindowFlags_NoTitleBar) ? 0 : style.titleBarHeight));
 	
 	workingWin.drawCmds.add(drawCmd);
 }
@@ -338,7 +359,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 		windows.add(name, workingWin); 
 	}
 	else {
-		workingWin = *windows.atKey(name);
+		workingWin = *windows.at(name);
 		workingWin.cursor = vec2(0, 0);
 		if (NextWinPos.x  != -1) workingWin.position   = NextWinPos;
 		if (NextWinSize.x != -1) workingWin.dimensions = NextWinSize;
@@ -347,10 +368,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 	
 	//check if window is hovered
 	vec2 mp = DeshInput->mousePos;
-	if (mp.x >= workingWin.position.x &&
-		mp.y >= workingWin.position.y &&
-		mp.x <= workingWin.position.x + workingWin.dimensions.x &&
-		mp.y <= workingWin.position.y + workingWin.dimensions.y) {
+	if(PointInRectangle(mp, workingWin.position, workingWin.dimensions)){
 		workingWin.hovered = 1;
 	}
 	else {
@@ -359,10 +377,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 	
 	//check if window's title is hovered (if were drawing it), so we can check for window movement by mouse later
 	if (!(workingWin.flags & UIWindowFlags_NoTitleBar)) {
-		if (mp.x >= workingWin.position.x &&
-			mp.y >= workingWin.position.y &&
-			mp.x <= workingWin.position.x + workingWin.dimensions.x &&
-			mp.y <= workingWin.position.y + style.titleBarHeight) {
+		if(PointInRectangle(mp, workingWin.position, vec2(workingWin.width, style.titleBarHeight))){
 			workingWin.titleHovered = 1;
 		}
 		else {
@@ -482,7 +497,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			workingWin.baseDrawCmds.add(drawCmd);//inst 85
 		}
 	}
-	if(UIWindow* window = windows.atKey(name)){
+	if(UIWindow* window = windows.at(name)){
 		*window = workingWin;
 	}else{
 		windows.add(name, workingWin);
@@ -504,11 +519,7 @@ void UI::EndWindow() {
 	//update stored window with new window state
 	//NOTE: I'm not sure if I want to keep doing this like this
 	//      or just make workingWin a pointer to a window in the list
-	if(UIWindow* window = windows.atKey(workingWin.name)){
-		*window = workingWin;
-	}else{
-		windows.add(workingWin.name, workingWin);
-	}
+	*windows.at(workingWin.name) = workingWin;
 	windowStack.pop();
 }
 
@@ -538,7 +549,7 @@ bool UI::IsWinHovered() {
 }
 
 void UI::ShowDebugWindowOf(string name) {
-	UIWindow* debugee = windows.atKey(name);
+	UIWindow* debugee = windows.at(name);
 	
 	string info = 
 		TOSTRING("    position: ", debugee->position,                          "\n") + 
@@ -628,6 +639,171 @@ bool UI::Button(string text, vec2 pos, Color color){
 
 
 
+bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags flags) {	
+
+	UIInputTextState* state;
+
+	if (!(state = inputTexts.at(label))) {
+		state = inputTexts.atIdx(inputTexts.add(label));
+		state->buffer = buffer;
+		state->cursor = buffer.size;
+		state->id = inputTexts.count;
+		state->selectStart = 0;
+		state->selectEnd = 0;
+		state->cursorBlinkTime = 5;
+	}
+	else {
+		state->buffer = buffer;
+	}
+
+	if (DeshInput->KeyPressedAnyMod(Key::RIGHT) && state->cursor < buffer.size) state->cursor++;
+	if (DeshInput->KeyPressedAnyMod(Key::LEFT)  && state->cursor > 0) state->cursor--;
+
+
+
+
+	{//text box
+		UIDrawCmd drawCmd{ UIDrawType_Rectangle };
+		drawCmd.position = workingWin.position + workingWin.cursor + style.windowPadding;
+		drawCmd.dimensions = vec2(100, style.font->height * 1.3);
+		drawCmd.scissorOffset = drawCmd.position;
+		drawCmd.scissorExtent = drawCmd.dimensions;
+		drawCmd.color = Color::VERY_DARK_GREY;
+
+		workingWin.drawCmds.add(drawCmd);
+	}
+
+	//gather text into buffer from inputs
+	//make this only loop when a key has been pressed eventually
+
+	persist TIMER_START(hold);
+	persist TIMER_START(throttle);
+
+	//TODO(sushi) make this not count modifier keys
+	if (DeshInput->AnyKeyPressed()) { TIMER_RESET(hold); }
+
+	auto placeKey = [&](u32 i, u32 ins, char toPlace) {
+		if (i >= Key::A && i <= Key::Z) {
+			if (DeshInput->capsLock || DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT))
+				buffer.insert(toPlace, ins);
+			else
+				buffer.insert(toPlace + 32, ins);
+		}
+		else if (i >= Key::K0 && i <= Key::K9) {
+			if (DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT)) {
+				switch (i) {
+					case Key::K0: buffer.insert(')', ins); break;
+					case Key::K1: buffer.insert('!', ins); break;
+					case Key::K2: buffer.insert('@', ins); break;
+					case Key::K3: buffer.insert('#', ins); break;
+					case Key::K4: buffer.insert('$', ins); break;
+					case Key::K5: buffer.insert('%', ins); break;
+					case Key::K6: buffer.insert('^', ins); break;
+					case Key::K7: buffer.insert('&', ins); break;
+					case Key::K8: buffer.insert('*', ins); break;
+					case Key::K9: buffer.insert('(', ins); break;
+				}
+			}
+			else {
+				buffer.insert(KeyStringsLiteral[i], ins);
+			}
+		}
+		else {
+			if (DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT)) {
+				switch (i) {
+					case Key::SEMICOLON:  buffer.insert(':', ins);  break;
+					case Key::APOSTROPHE: buffer.insert('"', ins);  break;
+					case Key::LBRACKET:   buffer.insert('{', ins);  break;
+					case Key::RBRACKET:   buffer.insert('}', ins);  break;
+					case Key::BACKSLASH:  buffer.insert('\\', ins); break;
+					case Key::COMMA:      buffer.insert('<', ins);  break;
+					case Key::PERIOD:     buffer.insert('>', ins);  break;
+					case Key::SLASH:      buffer.insert('?', ins);  break;
+					case Key::MINUS:      buffer.insert('_', ins);  break;
+					case Key::EQUALS:     buffer.insert('+', ins);  break;
+					case Key::TILDE:      buffer.insert('~', ins);  break;
+				}
+			}
+			else {
+				buffer.insert(KeyStringsLiteral[i], ins);
+			}
+		}
+		TIMER_RESET(state->timeSinceTyped);
+	};
+
+	if (DeshInput->anyKeyDown) {
+		if (TIMER_END(hold) < 1000) {
+			if (DeshInput->KeyPressedAnyMod(Key::BACKSPACE) && buffer.size > 0 && state->cursor != 0) {
+				buffer.erase(--state->cursor);
+			}
+			else {
+				for (int i = 0; i < Key::Key_COUNT; i++) {
+					char toPlace = KeyStringsLiteral[i];
+					if (DeshInput->KeyPressedAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
+						u32 ins = state->cursor++ - 1;
+						placeKey(i, ins, toPlace);
+					}
+				}
+			}
+		}
+		else {
+			if (TIMER_END(throttle) > 50) {
+				if (DeshInput->KeyDownAnyMod(Key::BACKSPACE) && buffer.size > 0 && state->cursor != 0) {
+					buffer.erase(--state->cursor);
+				}
+				else {
+					for (int i = 0; i < Key::Key_COUNT; i++) {
+						char toPlace = KeyStringsLiteral[i];
+						if (DeshInput->KeyDownAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
+							u32 ins = state->cursor++ - 1;
+							placeKey(i, ins, toPlace);
+						}
+					}
+				}
+				TIMER_RESET(throttle);
+			}
+		}
+	}
+	
+
+	{//Text
+		UIDrawCmd drawCmd{ UIDrawType_Text };
+		drawCmd.position = workingWin.position + style.windowPadding + workingWin.cursor.yAdd((style.font->height * 1.3 - style.font->height) * 0.5);
+		drawCmd.text = buffer;
+		drawCmd.color = style.colors[UIStyleCol_Text];
+
+		workingWin.drawCmds.add(drawCmd);
+	}
+
+	//TODO(sushi, Ui) impl different text cursors
+	{//cursor
+		UIDrawCmd drawCmd{ UIDrawType_Line };
+		vec2 textStart = workingWin.position + style.windowPadding + workingWin.cursor.yAdd((style.font->height * 1.3 - style.font->height) * 0.5);
+		drawCmd.position  = textStart + vec2(state->cursor * style.font->width, -1);
+		drawCmd.position2 = textStart + vec2(state->cursor * style.font->width, style.font->height - 1);
+		drawCmd.color = 
+			Color(255,255,255, 
+			255 * (
+			cos((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000 -
+			sin((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000)) + 1) / 2);
+		drawCmd.thickness = 0.5;
+
+		workingWin.drawCmds.add(drawCmd);
+	}
+
+	workingWin.cursor.y += style.font->height * 1.3 + style.itemSpacing.y;
+
+	if (DeshInput->KeyPressedAnyMod(Key::ENTER) || DeshInput->KeyPressedAnyMod(Key::NUMPADENTER)) return true;
+
+	return false;
+}
+
+bool UI::InputText(string label, string& buffer, vec2 pos, u32 maxChars, UIInputTextFlags flags) {
+	return false;
+}
+
+
+
 
 //initializes core UI with an invisible working window covering the entire screen
 //also initializes styles
@@ -692,33 +868,42 @@ void UI::Update() {
 	
 	//focus
 	for (int i = windows.count - 1; i > 0; i--) {
-		UIWindow& w = windows.atIndex(i);
-		if (i == windows.count - 1 && w.hovered) {
-			break;
-		}
-		else if(w.hovered && ((w.flags & UIWindowFlags_FocusOnHover) ? 1 : DeshInput->KeyPressedAnyMod(MouseButton::LEFT))) {
-			for (int move = i; move < windows.count - 1; move++)
-				windows.swap(move, move + 1);
-			break;
+		UIWindow* w = windows.atIdx(i);
+		if (!(w->flags & UIWindowFlags_NoFocus)) {
+			if (i == windows.count - 1 && w->hovered) {
+				break;
+			}
+			else if (w->hovered && ((w->flags & UIWindowFlags_FocusOnHover) ? 1 : DeshInput->KeyPressedAnyMod(MouseButton::LEFT))) {
+				for (int move = i; move < windows.count - 1; move++)
+					windows.swap(move, move + 1);
+				break;
+			}
 		}
 	}
 	
 	
 	{ //drag
-		UIWindow* focused = &windows.atIndex(windows.count-1);
+		UIWindow* focused = windows.atIdx(windows.count-1);
 		
 		static bool newDrag = true;
 		static vec2 mouseOffset = vec2(0, 0);
+
+		static bool shouldDrag = true;
+
+		//dont drag if click didnt happen on title
+		if (DeshInput->KeyPressedAnyMod(MouseButton::LEFT) && !focused->titleHovered) shouldDrag = false;
+
 		if (focused->titleHovered && DeshInput->KeyDownAnyMod(MouseButton::LEFT)) {
 			if (newDrag) {
 				mouseOffset = focused->position - DeshInput->mousePos;
 				newDrag = false;
 			}
 		}
-		if (!newDrag) 
+		if (!newDrag && shouldDrag) 
 			focused->position = DeshInput->mousePos + mouseOffset;
-		if (DeshInput->KeyReleased(MouseButton::LEFT))
-			newDrag = true;
+		if (DeshInput->KeyReleased(MouseButton::LEFT)) {
+			newDrag = true; shouldDrag = true;
+		}
 	}
 	
 	//draw windows in order with their drawCmds

@@ -46,6 +46,21 @@ global_ const char* KeyStrings[] = {
 	"MBLEFT","MBRIGHT","MBMIDDLE","MBFOUR","MBFIVE","MBSIX","MBSEVEN","MBEIGHT","MBSCROLLDOWN","MBSCROLLUP"
 };
 
+global_ const char KeyStringsLiteral[] = { //for translating keys to what would appear in a str (for UI::InputText())
+	'\0',
+	'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+	'0','1','2','3','4','5','6','7','8','9',
+	'\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0','\0',
+	'\0','\0','\0','\0',
+	'\0','`','\t','\0','\0','\0','\0',
+	'\0','\0','\0','\0','\0','-','=','[',']',
+	'/',';','\'',',','.','\\',' ',
+	'\0','\0','\0','\0','\0','\0','\0','\0',
+	'0','1','2','3','4','5','6','7','8','9',
+	'*','/','+','-','.','\0','\0',
+	'\0','\0','\0','\0','\0','\0','\0','\0','\0','\0'
+};
+
 namespace MouseButton{
 	enum MouseButton_{
 		LEFT  = Key::MBLEFT, RIGHT = Key::MBRIGHT, MIDDLE = Key::MBMIDDLE, 
@@ -98,6 +113,12 @@ struct Input{
 	double screenMouseX, screenMouseY;
 	double scrollX,      scrollY;
 	vec2 mousePos;
+
+	bool zero[MAX_KEYBOARD_KEYS] = {0};
+
+	bool anyKeyDown = 0;
+
+	bool capsLock = false;
 	
 	//NOTE sushi: I was going to put this on keybinds, but I wanted it to only check binds if some input occured, and it seems easiest to do that here
 	//for console command binding
@@ -118,7 +139,15 @@ struct Input{
 		TIMER_START(t_d);
 		memcpy(&oldKeyState, &newKeyState,  sizeof(bool) * MAX_KEYBOARD_KEYS);
 		memcpy(&newKeyState, &realKeyState, sizeof(bool) * MAX_KEYBOARD_KEYS);
-		//mouseX = realMouseX; mouseY = realMouseY; //NOTE this doesnt work, idk why
+		
+		if (!memcmp(newKeyState, zero, MAX_KEYBOARD_KEYS)) {
+			newKeyState[0] = 1;
+			anyKeyDown = 0;
+		}
+		else {
+			anyKeyDown = 1;
+		}
+		
 		mousePos.x = mouseX; mousePos.y = mouseY;
 		screenMouseY = realScreenMouseX; screenMouseY = realScreenMouseY;
 		//bit scuffed mouse wheel stuff
@@ -219,9 +248,14 @@ struct Input{
 		return !newKeyState[key] && oldKeyState[key];
 	}
 	
-	inline void AddBind(std::string command, Key::Key key) {
-		
+	inline bool AnyKeyPressed() {
+		return KeyReleasedAnyMod(Key::Key_NONE);
 	}
+
+	inline bool AllKeysReleased() {
+		return KeyPressedAnyMod(Key::Key_NONE);
+	}
+
 };
 
 //global input pointer
