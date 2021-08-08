@@ -179,8 +179,8 @@ struct Input{
 	inline bool RMouseDown()    { return newKeyState[MouseButton::RIGHT]; }
 	inline bool LMousePressed() { return newKeyState[MouseButton::LEFT] && !oldKeyState[MouseButton::LEFT]; }
 	inline bool RMousePressed() { return newKeyState[MouseButton::RIGHT] && !oldKeyState[MouseButton::RIGHT]; }
-
-
+	inline bool ScrollUp()      { return newKeyState[MouseButton::SCROLLUP] && !oldKeyState[MouseButton::SCROLLUP]; }
+	inline bool ScrollDown()    { return newKeyState[MouseButton::SCROLLDOWN] && !oldKeyState[MouseButton::SCROLLDOWN]; }
 
 	bool ModsDown(u32 mods){
 		switch(mods){
