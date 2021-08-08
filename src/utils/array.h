@@ -101,7 +101,7 @@ struct array {
 		return count;
 	}
 	
-	void operator = (const array<T>& array) {
+	array<T>& operator = (const array<T>& array) {
 		this->~array();
 
 		space = array.space;
@@ -121,6 +121,7 @@ struct array {
 		iter  = first;
 		last  = (array.last == 0) ? 0 : data+(array.count-1);
 		max   = data+(space-1);
+		return *this;
 	}
 	
 	void add(T t) {
@@ -235,8 +236,13 @@ struct array {
 	//removes all elements
 	void clear(){
 		this->~array();
-		last  = 0;
+		space = 4;
 		count = 0;
+		data = (T*)calloc(space, sizeof(T));
+		first = data;
+		iter = first;
+		last = 0;
+		max = data + (space - 1);
 	}
 	
 	//allocates space for count elements and zero-inits any new elements
@@ -272,7 +278,8 @@ struct array {
 			data = (T*)realloc(data, space * sizeof(T));
 			first = data;
 			iter  = first + iteroffset;
-			last  = data + osize;
+			if(osize != 0)
+				last  = data + osize;
 			max   = data+(space-1);
 		}
 	}
