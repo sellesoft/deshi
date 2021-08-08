@@ -86,11 +86,13 @@ u32 activeId = -1; //the id of an active widget eg. input text
 
 //helper defines
 
+
 #define workingWinPositionPlusTitlebar vec2(workingWin.x, workingWin.y + ((workingWin.flags & UIWindowFlags_NoTitleBar) ? 0 :style.titleBarHeight));
 #define workingWinSizeMinusTitlebar    vec2(workingWin.width, workingWin.height - ((workingWin.flags & UIWindowFlags_NoTitleBar) ? 0 : style.titleBarHeight));
 
 
 //helper functions
+
 
 //this calculates text taking into account newlines, BUT NOT WRAPPING
 //useful for sizing a window to fit some text
@@ -396,11 +398,11 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 	if (!(flags & UIWindowFlags_NoScroll)) {
 		if (workingWin.hovered && DeshInput->KeyPressedAnyMod(MouseButton::SCROLLUP)) {
 			workingWin.scy -= style.scrollAmount.y;
-			Math::clamp(workingWin.scy, 0, workingWin.maxScroll.y);
+			Math::clampr(workingWin.scy, 0, workingWin.maxScroll.y);
 		}
 		else if (workingWin.hovered && DeshInput->KeyPressedAnyMod(MouseButton::SCROLLDOWN)) {
 			workingWin.scy += style.scrollAmount.y;
-			Math::clamp(workingWin.scy, 0, workingWin.maxScroll.y);
+			Math::clampr(workingWin.scy, 0, workingWin.maxScroll.y);
 		}
 	}
 	
@@ -577,7 +579,8 @@ void UI::ShowDebugWindowOf(string name) {
 	//show info about variables
 	Text(info);
 
-	
+	vec2 cursize = vec2::ONE * 3;
+	Render::DrawRectUI(debugee->position + (debugee->cursor - cursize / 2) - debugee->scroll, vec2::ONE * 10);
 	
 	EndWindow();
 	
@@ -710,7 +713,7 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags 
 	}
 
 	vec2 position = workingWin.position + workingWin.cursor + style.windowPadding - workingWin.scroll;
-	vec2 dimensions = vec2(100, style.font->height * 1.3);
+	vec2 dimensions = vec2(Math::clamp(100, 0, workingWin.x - style.windowPadding.x * 2), style.font->height * 1.3);
 
 	//check for mouse click to set active 
 	if (DeshInput->KeyPressedAnyMod(MouseButton::LEFT)) {
@@ -974,7 +977,7 @@ void UI::Update() {
 	//draw windows in order with their drawCmds
 	for (UIWindow& p : windows) {
 		vec2 winCorrectedPos = vec2(p.x, p.y + p.titleBarHeight);
-		vec2 winCorrectedSiz = p.dimensions + vec2(p.width, p.height - p.titleBarHeight);
+		vec2 winCorrectedSiz = vec2(p.width, p.height - p.titleBarHeight);
 		
 		//draw base cmds first
 		for (UIDrawCmd& drawCmd : p.baseDrawCmds) {

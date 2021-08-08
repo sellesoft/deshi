@@ -192,12 +192,12 @@ inline quat quat::QuatSlerp(vec3 fromv, vec3 tov, float t) {
 namespace Math {
     
     //ref: https://en.cppreference.com/w/cpp/algorithm/clamp
-    //static float clamp(float v, float lo, float hi) {
-    //	Assert(lo < hi, "The low must be less than the high clamp");
-    //	return (v < lo) ? lo : (hi < v) ? hi : v;
-    //}
+    static float clamp(float v, float lo, float hi) {
+    	Assert(lo < hi, "The low must be less than the high clamp");
+    	return (v < lo) ? lo : (hi < v) ? hi : v;
+    }
     
-    static void clamp(float& v, float lo, float hi) {
+    static void clampr(float& v, float lo, float hi) {
         Assert(lo <= hi, "The low must be less than the high clamp");
         v = (v < lo) ? lo : (hi < v) ? hi : v;
     }
