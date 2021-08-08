@@ -46,7 +46,6 @@ namespace Assets{
 	
 	inline global_ std::string dirData()    { return "data/"; }
 	inline global_ std::string dirConfig()  { return dirData() + "cfg/"; }
-	inline global_ std::string dirEntities(){ return dirData() + "entities/"; }
 	inline global_ std::string dirFonts()   { return dirData() + "fonts/"; }
 	inline global_ std::string dirLevels()  { return dirData() + "levels/"; }
 	inline global_ std::string dirLogs()    { return dirData() + "logs/"; }

@@ -218,7 +218,6 @@ enforceDirectories() {
 	if(!is_directory(dirData())){
 		create_directory(dirData());
 		create_directory(dirConfig());
-		create_directory(dirEntities());
 		create_directory(dirFonts());
 		create_directory(dirLogs());
 		create_directory(dirLevels());
@@ -230,7 +229,6 @@ enforceDirectories() {
 		create_directory(dirTemp());
 	}else{
 		if(!is_directory(dirConfig()))   create_directory(dirConfig());
-		if(!is_directory(dirEntities())) create_directory(dirEntities());
 		if(!is_directory(dirLogs()))     create_directory(dirLogs());
 		if(!is_directory(dirLevels()))     create_directory(dirLevels());
 		if(!is_directory(dirFonts()))    create_directory(dirFonts());
