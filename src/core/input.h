@@ -172,6 +172,16 @@ struct Input{
 	inline bool ShiftDown() { return newKeyState[Key::RSHIFT] || newKeyState[Key::LSHIFT]; }
 	inline bool AltDown() { return newKeyState[Key::RALT] || newKeyState[Key::LALT]; }
 	
+	inline bool AnyKeyPressed()   { return KeyReleasedAnyMod(Key::Key_NONE); }
+	inline bool AllKeysReleased() { return KeyPressedAnyMod(Key::Key_NONE); }
+
+	inline bool LMouseDown()    { return newKeyState[MouseButton::LEFT]; }
+	inline bool RMouseDown()    { return newKeyState[MouseButton::RIGHT]; }
+	inline bool LMousePressed() { return newKeyState[MouseButton::LEFT] && !oldKeyState[MouseButton::LEFT]; }
+	inline bool RMousePressed() { return newKeyState[MouseButton::RIGHT] && !oldKeyState[MouseButton::RIGHT]; }
+
+
+
 	bool ModsDown(u32 mods){
 		switch(mods){
 			case(InputMod_Any):            return true;
@@ -248,13 +258,7 @@ struct Input{
 		return !newKeyState[key] && oldKeyState[key];
 	}
 	
-	inline bool AnyKeyPressed() {
-		return KeyReleasedAnyMod(Key::Key_NONE);
-	}
 
-	inline bool AllKeysReleased() {
-		return KeyPressedAnyMod(Key::Key_NONE);
-	}
 
 };
 

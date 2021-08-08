@@ -167,6 +167,8 @@ struct UIWindow {
 	
 	bool minimized = false;
 	bool hidden = false;
+
+	float titleBarHeight = 0;
 	
 	
 	UIWindow() {};
@@ -187,6 +189,8 @@ struct UIWindow {
 		titleHovered = cop.titleHovered;
 		minimized = cop.minimized;
 		hidden = cop.hidden;
+		titleBarHeight = cop.titleBarHeight;
+
 	}
 	
 	UIWindow& operator= (const UIWindow& cop) {
@@ -203,6 +207,7 @@ struct UIWindow {
 		titleHovered = cop.titleHovered;
 		minimized = cop.minimized;
 		hidden = cop.hidden;
+		titleBarHeight = cop.titleBarHeight;
 		return *this;
 	}
 	

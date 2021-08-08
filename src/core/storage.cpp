@@ -327,41 +327,41 @@ CreateMeshFromMemory(void* data){
 	mesh->indexArray    = (Mesh::Index*)cursor;        cursor +=    mesh->indexCount*sizeof(Mesh::Index);
 	mesh->triangleArray = (Mesh::Triangle*)cursor;     cursor += mesh->triangleCount*sizeof(Mesh::Triangle);
 	mesh->faceArray     = (Mesh::Face*)cursor;         cursor +=     mesh->faceCount*sizeof(Mesh::Face);
-	mesh->indexes   = View<Mesh::Index>   (mesh->indexArray,    mesh->indexCount);
-	mesh->vertexes  = View<Mesh::Vertex>  (mesh->vertexArray,   mesh->vertexCount);
-	mesh->triangles = View<Mesh::Triangle>(mesh->triangleArray, mesh->triangleCount);
-	mesh->faces     = View<Mesh::Face>    (mesh->faceArray,     mesh->faceCount);
+	mesh->indexes   = view<Mesh::Index>   (mesh->indexArray,    mesh->indexCount);
+	mesh->vertexes  = view<Mesh::Vertex>  (mesh->vertexArray,   mesh->vertexCount);
+	mesh->triangles = view<Mesh::Triangle>(mesh->triangleArray, mesh->triangleCount);
+	mesh->faces     = view<Mesh::Face>    (mesh->faceArray,     mesh->faceCount);
 	mesh->triangles[0].neighborArray = (u32*)(mesh->faceArray + mesh->faceCount);
 	mesh->triangles[0].edgeArray     = (u8*) (mesh->triangleArray[0].neighborArray + mesh->totalTriNeighborCount);
-	mesh->triangles[0].neighbors = View<u32> (mesh->triangles[0].neighborArray, mesh->triangles[0].neighborCount);
-	mesh->triangles[0].edges     = View<u8>  (mesh->triangles[0].edgeArray, mesh->triangles[0].neighborCount);
+	mesh->triangles[0].neighbors = view<u32> (mesh->triangles[0].neighborArray, mesh->triangles[0].neighborCount);
+	mesh->triangles[0].edges     = view<u8>  (mesh->triangles[0].edgeArray, mesh->triangles[0].neighborCount);
 	for(int ti=1; ti<mesh->triangles.count; ++ti){
 		mesh->triangles[ti].neighborArray = (u32*)(mesh->triangles[ti-1].neighborArray + mesh->triangles[ti-1].neighborCount);
 		mesh->triangles[ti].edgeArray     = (u8*) (mesh->triangles[ti-1].edgeArray + mesh->triangles[ti-1].neighborCount);
-		mesh->triangles[ti].neighbors = View<u32> (mesh->triangles[ti].neighborArray, mesh->triangles[ti].neighborCount);
-		mesh->triangles[ti].edges     = View<u8>  (mesh->triangles[ti].edgeArray, mesh->triangles[ti].neighborCount);
+		mesh->triangles[ti].neighbors = view<u32> (mesh->triangles[ti].neighborArray, mesh->triangles[ti].neighborCount);
+		mesh->triangles[ti].edges     = view<u8>  (mesh->triangles[ti].edgeArray, mesh->triangles[ti].neighborCount);
 	}
 	mesh->faces[0].triangleArray         = (u32*)(mesh->triangles[0].edgeArray         + mesh->totalTriNeighborCount);
 	mesh->faces[0].vertexArray           = (u32*)(mesh->faces[0].triangleArray         + mesh->triangles.count);
 	mesh->faces[0].outerVertexArray      = (u32*)(mesh->faces[0].vertexArray           + mesh->totalFaceVertexCount);
 	mesh->faces[0].neighborTriangleArray = (u32*)(mesh->faces[0].outerVertexArray      + mesh->totalFaceOuterVertexCount);
 	mesh->faces[0].neighborFaceArray     = (u32*)(mesh->faces[0].neighborTriangleArray + mesh->totalFaceTriNeighborCount);
-	mesh->faces[0].triangles         = View<u32>(mesh->faces[0].triangleArray,         mesh->faces[0].triangleCount);
-	mesh->faces[0].vertexes          = View<u32>(mesh->faces[0].vertexArray,           mesh->faces[0].vertexCount);
-	mesh->faces[0].outerVertexes     = View<u32>(mesh->faces[0].outerVertexArray,      mesh->faces[0].outerVertexCount);
-	mesh->faces[0].triangleNeighbors = View<u32>(mesh->faces[0].neighborTriangleArray, mesh->faces[0].neighborTriangleCount);
-	mesh->faces[0].faceNeighbors     = View<u32>(mesh->faces[0].neighborFaceArray,     mesh->faces[0].neighborFaceCount);
+	mesh->faces[0].triangles         = view<u32>(mesh->faces[0].triangleArray,         mesh->faces[0].triangleCount);
+	mesh->faces[0].vertexes          = view<u32>(mesh->faces[0].vertexArray,           mesh->faces[0].vertexCount);
+	mesh->faces[0].outerVertexes     = view<u32>(mesh->faces[0].outerVertexArray,      mesh->faces[0].outerVertexCount);
+	mesh->faces[0].triangleNeighbors = view<u32>(mesh->faces[0].neighborTriangleArray, mesh->faces[0].neighborTriangleCount);
+	mesh->faces[0].faceNeighbors     = view<u32>(mesh->faces[0].neighborFaceArray,     mesh->faces[0].neighborFaceCount);
 	for(int fi=1; fi<mesh->faces.count; ++fi){
 		mesh->faces[fi].triangleArray         = (u32*)(mesh->faces[fi-1].triangleArray         + mesh->faces[fi-1].triangleCount);
 		mesh->faces[fi].vertexArray           = (u32*)(mesh->faces[fi-1].vertexArray           + mesh->faces[fi-1].vertexCount);
 		mesh->faces[fi].outerVertexArray      = (u32*)(mesh->faces[fi-1].outerVertexArray      + mesh->faces[fi-1].outerVertexCount);
 		mesh->faces[fi].neighborTriangleArray = (u32*)(mesh->faces[fi-1].neighborTriangleArray + mesh->faces[fi-1].neighborTriangleCount);
 		mesh->faces[fi].neighborFaceArray     = (u32*)(mesh->faces[fi-1].neighborFaceArray     + mesh->faces[fi-1].neighborFaceCount);
-		mesh->faces[fi].triangles         = View<u32>(mesh->faces[fi].triangleArray,         mesh->faces[fi].triangleCount);
-		mesh->faces[fi].vertexes          = View<u32>(mesh->faces[fi].vertexArray,           mesh->faces[fi].vertexCount);
-		mesh->faces[fi].outerVertexes     = View<u32>(mesh->faces[fi].outerVertexArray,      mesh->faces[fi].outerVertexCount);
-		mesh->faces[fi].triangleNeighbors = View<u32>(mesh->faces[fi].neighborTriangleArray, mesh->faces[fi].neighborTriangleCount);
-		mesh->faces[fi].faceNeighbors     = View<u32>(mesh->faces[fi].neighborFaceArray,     mesh->faces[fi].neighborFaceCount);
+		mesh->faces[fi].triangles         = view<u32>(mesh->faces[fi].triangleArray,         mesh->faces[fi].triangleCount);
+		mesh->faces[fi].vertexes          = view<u32>(mesh->faces[fi].vertexArray,           mesh->faces[fi].vertexCount);
+		mesh->faces[fi].outerVertexes     = view<u32>(mesh->faces[fi].outerVertexArray,      mesh->faces[fi].outerVertexCount);
+		mesh->faces[fi].triangleNeighbors = view<u32>(mesh->faces[fi].neighborTriangleArray, mesh->faces[fi].neighborTriangleCount);
+		mesh->faces[fi].faceNeighbors     = view<u32>(mesh->faces[fi].neighborFaceArray,     mesh->faces[fi].neighborFaceCount);
 	}
 	
 	Render::LoadMesh(mesh);
@@ -386,7 +386,7 @@ DeleteMesh(Mesh* mesh){
 }
 
 array<vec2> Storage::
-GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camView, vec3 camPosition, vec2 screenDims){ //!FixMe
+GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camview, vec3 camPosition, vec2 screenDims){ //!FixMe
 	array<vec2> outline;
 	array<Mesh::Triangle*> nonculled;
 	for(Mesh::Triangle& t :mesh->triangles){
@@ -400,8 +400,8 @@ GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 c
 	for(Mesh::Triangle* t : nonculled){
 		forI(t->neighborCount){
 			if(mesh->triangles[t->neighbors[i]].removed){
-				outline.add(Math::WorldToScreen(t->p[ t->edges[i]       ]*transform, camProjection, camView, screenDims).toVec2());
-				outline.add(Math::WorldToScreen(t->p[(t->edges[i]+1) % 3]*transform, camProjection, camView, screenDims).toVec2());
+				outline.add(Math::WorldToScreen(t->p[ t->edges[i]       ]*transform, camProjection, camview, screenDims).toVec2());
+				outline.add(Math::WorldToScreen(t->p[(t->edges[i]+1) % 3]*transform, camProjection, camview, screenDims).toVec2());
 			}
 		}
 	}
@@ -927,7 +927,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 					}
 					triangles[cti].neighborCount = triNeighbors[cti].count;
 					if(((u64)(TIMER_END(t_l) / 1000.0) % 10 == 0) && ((u64)(TIMER_END(t_l) / 1000.0) != 0)){
-						PRINTLN(TOSTRING(filename," face ",triangles.count," on line ",line_number,
+						PRINTLN(TOSTDSTRING(filename," face ",triangles.count," on line ",line_number,
 										 "finished creation in ",TIMER_END(t_f),"ms"));
 					}
 				}continue;
@@ -1159,7 +1159,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 	else if(parse_obj_model){
 		Mesh* mesh = CreateMeshFromFile(mesh_name.c_str()).second;
 		
-		Set<pair<u32,string>> oUnique, gUnique, uUnique, mUnique; //index offset, name
+		set<pair<u32,string>> oUnique, gUnique, uUnique, mUnique; //index offset, name
 		array<u32> oArray, gArray,  uArray,  mArray; //index in unique array
 		bool mtllib_found = false;
 		u32 index_count = 0;

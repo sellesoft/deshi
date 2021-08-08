@@ -639,13 +639,13 @@ CMDSTARTA(window_display_mode, args.size() == 1){
 		int mode = std::stoi(args[0]);
 		switch(mode){
 			case(0): {
-				DengWindow->UpdateDisplayMode(DisplayMode_Windowed);
+				DeshWindow->UpdateDisplayMode(DisplayMode_Windowed);
 				return "display_mode=windowed"; }
 			case(1): {
-				DengWindow->UpdateDisplayMode(DisplayMode_Borderless);
+				DeshWindow->UpdateDisplayMode(DisplayMode_Borderless);
 				return "display_mode=borderless windowed"; }
 			case(2): {
-				DengWindow->UpdateDisplayMode(DisplayMode_Fullscreen);
+				DeshWindow->UpdateDisplayMode(DisplayMode_Fullscreen);
 				return "display_mode=fullscreen"; }
 			default: {
 				return "display_mode: 0=Windowed, 1=BorderlessWindowed, 2=Fullscreen"; }
@@ -660,13 +660,13 @@ CMDSTARTA(window_cursor_mode, args.size() == 1){
 		int mode = std::stoi(args[0]);
 		switch(mode){
 			case(0): {
-				DengWindow->UpdateCursorMode(CursorMode_Default);
+				DeshWindow->UpdateCursorMode(CursorMode_Default);
 				return "cursor_mode=default"; }
 			case(1): {
-				DengWindow->UpdateCursorMode(CursorMode_FirstPerson);
+				DeshWindow->UpdateCursorMode(CursorMode_FirstPerson);
 				return "cursor_mode=first person"; }
 			case(2): {
-				DengWindow->UpdateCursorMode(CursorMode_Hidden);
+				DeshWindow->UpdateCursorMode(CursorMode_Hidden);
 				return "cursor_mode=hidden"; }
 			default: { return "cursor_mode: 0=Default, 1=FirstPerson, 2=Hidden"; }
 		}

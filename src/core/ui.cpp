@@ -407,7 +407,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 	
 	//if the window isn't invisible draw things that havent been disabled
 	if ((flags & UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
-		
+		workingWin.titleBarHeight = style.titleBarHeight;
 		//draw background
 		if (!(flags & UIWindowFlags_NoBackground) && !workingWin.minimized) {
 			UIDrawCmd drawCmd; //inst 29
@@ -476,6 +476,9 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 			//move cursor down by title bar height
 			workingWin.cursor.y = style.titleBarHeight;
 		}
+		else {
+			workingWin.titleBarHeight = 0;
+		}
 		
 		//draw border
 		if (!(flags & UIWindowFlags_NoBorder) && !workingWin.minimized) {
@@ -517,7 +520,7 @@ void UI::EndWindow() {
 	//check to see if the elements we have drawn so far have gone beyond the window's size
 	//and allow scrolling if it did, as well as define a max scrolling amount
 	if (workingWin.cury > workingWin.height)
-		workingWin.maxScroll.y = (workingWin.cury + style.windowPadding.y) - workingWin.height;
+		workingWin.maxScroll.y = (workingWin.cury + style.windowPadding.y * 2) - workingWin.height;
 	else
 		workingWin.maxScroll.y = 0;
 	
@@ -650,17 +653,42 @@ bool UI::Button(string text, vec2 pos, Color color){
 
 void UI::Checkbox(string label, bool* b) {
 
-	vec2 boxpos = workingWin.position + workingWin.cursor + style.windowPadding;
-	vec2 boxsiz = vec2(50, 50);
+	vec2 boxpos = workingWin.position + workingWin.cursor + style.windowPadding - workingWin.scroll;
+	vec2 boxsiz = vec2(16, 16);
 
 	{//box
 		UIDrawCmd drawCmd{ UIDrawType_Rectangle };
 		drawCmd.position = boxpos;
 		drawCmd.dimensions = boxsiz;
 		drawCmd.color = style.colors[UIStyleCol_FrameBg];
+
+		workingWin.drawCmds.add(drawCmd);
 	}
 
+	//fill if true
+	int fillPadding = 3;
+	if (*b) {
+		UIDrawCmd drawCmd{ UIDrawType_Rectangle };
+		drawCmd.position = boxpos + boxsiz * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y);
+		drawCmd.dimensions = boxsiz  * (vec2::ONE - 2 * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y));
+		drawCmd.color = style.colors[UIStyleCol_FrameBg] * 0.7;
 
+		workingWin.drawCmds.add(drawCmd);
+	}
+
+	{//label
+		UIDrawCmd drawCmd{ UIDrawType_Text };
+		drawCmd.position = boxpos + vec2(boxsiz.x + style.itemSpacing.x, (boxsiz.y - style.font->height) * 0.5);
+		drawCmd.text = label;
+		drawCmd.color = style.colors[UIStyleCol_Text];
+
+		workingWin.drawCmds.add(drawCmd);
+	}
+
+	if (DeshInput->LMousePressed() && PointInRectangle(DeshInput->mousePos, boxpos, boxsiz))
+		*b = !*b;
+
+	workingWin.cury += boxsiz.y + style.itemSpacing.y;
 }
 
 
@@ -681,7 +709,7 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags 
 		state->buffer = buffer;
 	}
 
-	vec2 position = workingWin.position + workingWin.cursor + style.windowPadding;
+	vec2 position = workingWin.position + workingWin.cursor + style.windowPadding - workingWin.scroll;
 	vec2 dimensions = vec2(100, style.font->height * 1.3);
 
 	//check for mouse click to set active 
@@ -793,7 +821,7 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags 
 	
 	{//text box
 		UIDrawCmd drawCmd{ UIDrawType_Rectangle };
-		drawCmd.position = workingWin.position + workingWin.cursor + style.windowPadding;
+		drawCmd.position = position;
 		drawCmd.dimensions = dimensions;
 		drawCmd.scissorOffset = workingWinPositionPlusTitlebar;
 		drawCmd.scissorExtent = workingWinSizeMinusTitlebar;
@@ -804,7 +832,7 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags 
 
 	{//Text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
-		drawCmd.position = workingWin.position + style.windowPadding + workingWin.cursor.yAdd((style.font->height * 1.3 - style.font->height) * 0.5);
+		drawCmd.position = position + vec2(0, (style.font->height * 1.3 - style.font->height) * 0.5);
 		drawCmd.text = buffer;
 		drawCmd.color = style.colors[UIStyleCol_Text];
 
@@ -814,7 +842,7 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags 
 	//TODO(sushi, Ui) impl different text cursors
 	if(activeId == state->id) {//cursor
 		UIDrawCmd drawCmd{ UIDrawType_Line };
-		vec2 textStart = workingWin.position + style.windowPadding + workingWin.cursor.yAdd((style.font->height * 1.3 - style.font->height) * 0.5);
+		vec2 textStart = position + vec2(0, (style.font->height * 1.3 - style.font->height) * 0.5);
 		drawCmd.position  = textStart + vec2(state->cursor * style.font->width, -1);
 		drawCmd.position2 = textStart + vec2(state->cursor * style.font->width, style.font->height - 1);
 		drawCmd.color = 
@@ -869,7 +897,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_Border,   colors.near_black);
 	PushColor(UIStyleCol_WindowBg, colors.midnight_blue);
 	PushColor(UIStyleCol_TitleBg,  colors.purple_gray);
-	PushColor(UIStyleCol_FrameBg, colors.pink_gray);
+	PushColor(UIStyleCol_FrameBg,  colors.pink_gray);
 	PushColor(UIStyleCol_Text,     Color::WHITE);
 	
 	//push default style variables
@@ -945,7 +973,8 @@ void UI::Update() {
 	
 	//draw windows in order with their drawCmds
 	for (UIWindow& p : windows) {
-		
+		vec2 winCorrectedPos = vec2(p.x, p.y + p.titleBarHeight);
+		vec2 winCorrectedSiz = p.dimensions + vec2(p.width, p.height - p.titleBarHeight);
 		
 		//draw base cmds first
 		for (UIDrawCmd& drawCmd : p.baseDrawCmds) {
@@ -961,11 +990,7 @@ void UI::Update() {
 				case UIDrawType_Text: {
 					//scissor out the titlebar area as well if we have one
 					if (drawCmd.scissorExtent.x == -1) {
-						//TODO(sushi, Ui) fix scissor clamping
-						//vec2 scissorOffset = vec2(
-						//	Clamp(p.second.position.x, 0, INFINITY),
-						//	Clamp(p.second.position.y, 0, INFINITY));
-						Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.color, p.position, p.dimensions);
+						Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.color, winCorrectedPos, winCorrectedSiz);
 					}
 					else {
 						Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.color, drawCmd.scissorOffset, drawCmd.scissorExtent);
@@ -979,25 +1004,25 @@ void UI::Update() {
 			for (UIDrawCmd& drawCmd : p.drawCmds) {
 				switch (drawCmd.type) {
 					case UIDrawType_Rectangle: {
-						Render::FillRectUI(drawCmd.position, drawCmd.dimensions, drawCmd.color);
+						if (drawCmd.scissorExtent.x == -1) 
+							Render::FillRectUI(drawCmd.position, drawCmd.dimensions, drawCmd.color, winCorrectedPos, winCorrectedSiz);
+						else 
+							Render::FillRectUI(drawCmd.position, drawCmd.dimensions, drawCmd.color, drawCmd.scissorOffset, drawCmd.scissorExtent);
+						
 					}break;
 					
 					case UIDrawType_Line: {
-						Render::DrawLineUI(drawCmd.position, drawCmd.position2, drawCmd.thickness, drawCmd.color);
+						if(drawCmd.scissorExtent.x == -1)
+							Render::DrawLineUI(drawCmd.position, drawCmd.position2, drawCmd.thickness, drawCmd.color, winCorrectedPos, winCorrectedSiz);
+						else
+							Render::DrawLineUI(drawCmd.position, drawCmd.position2, drawCmd.thickness, drawCmd.color, drawCmd.scissorOffset, drawCmd.scissorExtent);
 					}break;
 					
 					case UIDrawType_Text: {
-						//scissor out the titlebar area as well if we have one
-						if (drawCmd.scissorExtent.x == -1) {
-							//TODO(sushi, Ui) fix scissor clamping
-							//vec2 scissorOffset = vec2(
-							//	Clamp(p.second.position.x, 0, INFINITY),
-							//	Clamp(p.second.position.y, 0, INFINITY));
-							Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.color, p.position, p.dimensions );
-						}
-						else {
+						if (drawCmd.scissorExtent.x == -1)
+							Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.color, winCorrectedPos, winCorrectedSiz );
+						else 
 							Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.color, drawCmd.scissorOffset, drawCmd.scissorExtent);
-						}
 					}break;
 				}
 			}
