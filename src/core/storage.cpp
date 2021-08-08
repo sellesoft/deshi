@@ -687,7 +687,8 @@ DeleteMaterial(Material* material){
 local Model* 
 AllocateModel(u32 batchCount){
 	Model* model = (Model*)calloc(1, sizeof(Model));
-	model->batches = array<Model::Batch>((batchCount) ? batchCount : 1);
+	model->batches = array<Model::Batch>();
+	model->batches.resize((batchCount) ? batchCount : 1);
 	return model;
 }
 
@@ -1319,11 +1320,11 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		model->mesh     = CreateMeshFromFile(model_load_mesh.str).second;
 		model->armature = 0;
 		forI(model_load_batches.count){
-			model->batches.add(Model::Batch{
-								   model_load_batches[i].second,
-								   model_load_batches[i].third,
-								   CreateMaterialFromFile(model_load_batches[i].first.str).first
-							   });
+			model->batches[i] = Model::Batch{
+				model_load_batches[i].second,
+				model_load_batches[i].third,
+				CreateMaterialFromFile(model_load_batches[i].first.str).first
+			};
 		}
 		
 		LOG("Successfully loaded ",model->name,".model");
@@ -1355,7 +1356,7 @@ CreateModelFromMesh(Mesh* mesh, ModelFlags flags){
 	model->idx = models.size();
 	model->mesh = mesh;
 	model->armature = 0;
-	model->batches.add(Model::Batch{0, mesh->indexCount, 0});
+	model->batches[0] = {0, mesh->indexCount, 0};
 	
 	result.first  = model->idx;
 	result.second = model;
