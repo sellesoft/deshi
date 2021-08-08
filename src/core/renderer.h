@@ -126,12 +126,10 @@ namespace Render{
     void DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color& color = Color::WHITE);
 	
     //ui drawing functions
-    void FillRectUI(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
-    void FillRectUI(vec2 pos, vec2 dimensions, Color color = Color::WHITE);
-    void DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
-    void DrawLineUI(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
-    void DrawTextUI(string text, vec2 pos, Color color = Color::WHITE);
-	void DrawTextUI(string text, vec2 pos, vec2 scissorOffset, vec2 scissorExtent, Color color = Color::WHITE);
+	void FillRectUI(vec2 pos, vec2 dimensions, Color color = Color::WHITE, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
+	void DrawRectUI(vec2 pos, vec2 dimensions, Color color = Color::WHITE, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
+	void DrawLineUI(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
+	void DrawTextUI(string text, vec2 pos, Color color = Color::WHITE, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
 	void DrawCharUI(u32 character, vec2 pos, vec2 scale = vec2::ONE, Color color = Color::WHITE, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
 
 	void UpdateLight(u32 lightIdx, vec4 vec);

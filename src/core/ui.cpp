@@ -83,12 +83,19 @@ local bool globalHovered = false;
 
 u32 activeId = -1; //the id of an active widget eg. input text
 
+
+//helper defines
+
+#define workingWinPositionPlusTitlebar vec2(workingWin.x, workingWin.y + ((workingWin.flags & UIWindowFlags_NoTitleBar) ? 0 :style.titleBarHeight));
+#define workingWinSizeMinusTitlebar    vec2(workingWin.width, workingWin.height - ((workingWin.flags & UIWindowFlags_NoTitleBar) ? 0 : style.titleBarHeight));
+
+
 //helper functions
 
 //this calculates text taking into account newlines, BUT NOT WRAPPING
 //useful for sizing a window to fit some text
 //TODO(sushi, Ui) make a CalcTextSize that takes into account wrapping that would occur in a sized window
-inline local  vec2 UI::CalcTextSize(string text) {
+inline local vec2 UI::CalcTextSize(string text) {
 	string stage = text;
 	u32 longest = 0;
 	size_t nlp = stage.find_first_of('\n');
@@ -564,7 +571,10 @@ void UI::ShowDebugWindowOf(string name) {
 	SetNextWindowSize(CalcTextSize(info) + vec2(style.windowPadding.x * 2, style.windowPadding.y * 2));
 	BeginWindow(TOSTRING("#", name, " debug", "#"), debugee->position + debugee->dimensions.ySet(0).xAdd(10), debugee->dimensions, UIWindowFlags_NoFocus | UIWindowFlags_NoScroll);
 	
+	//show info about variables
 	Text(info);
+
+
 	
 	EndWindow();
 	
@@ -647,7 +657,7 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags 
 		state = inputTexts.atIdx(inputTexts.add(label));
 		state->buffer = buffer;
 		state->cursor = buffer.size;
-		state->id = inputTexts.count;
+		state->id = hash<string>{}(label);
 		state->selectStart = 0;
 		state->selectEnd = 0;
 		state->cursorBlinkTime = 5;
@@ -656,115 +666,126 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags 
 		state->buffer = buffer;
 	}
 
-	if (DeshInput->KeyPressedAnyMod(Key::RIGHT) && state->cursor < buffer.size) state->cursor++;
-	if (DeshInput->KeyPressedAnyMod(Key::LEFT)  && state->cursor > 0) state->cursor--;
+	vec2 position = workingWin.position + workingWin.cursor + style.windowPadding;
+	vec2 dimensions = vec2(100, style.font->height * 1.3);
 
-
-
-
-	{//text box
-		UIDrawCmd drawCmd{ UIDrawType_Rectangle };
-		drawCmd.position = workingWin.position + workingWin.cursor + style.windowPadding;
-		drawCmd.dimensions = vec2(100, style.font->height * 1.3);
-		drawCmd.scissorOffset = drawCmd.position;
-		drawCmd.scissorExtent = drawCmd.dimensions;
-		drawCmd.color = Color::VERY_DARK_GREY;
-
-		workingWin.drawCmds.add(drawCmd);
+	//check for mouse click to set active 
+	if (DeshInput->KeyPressedAnyMod(MouseButton::LEFT)) {
+		if (PointInRectangle(DeshInput->mousePos, position, dimensions) ) {
+			activeId = state->id;
+		}
+		else {
+			if(activeId == state->id) activeId = -1;
+		}
 	}
 
-	//gather text into buffer from inputs
-	//make this only loop when a key has been pressed eventually
+	if (activeId == state->id) {
+		if (DeshInput->KeyPressedAnyMod(Key::RIGHT) && state->cursor < buffer.size) state->cursor++;
+		if (DeshInput->KeyPressedAnyMod(Key::LEFT) && state->cursor > 0) state->cursor--;
 
-	persist TIMER_START(hold);
-	persist TIMER_START(throttle);
+		//gather text into buffer from inputs
+		//make this only loop when a key has been pressed eventually
 
-	//TODO(sushi) make this not count modifier keys
-	if (DeshInput->AnyKeyPressed()) { TIMER_RESET(hold); }
+		persist TIMER_START(hold);
+		persist TIMER_START(throttle);
 
-	auto placeKey = [&](u32 i, u32 ins, char toPlace) {
-		if (i >= Key::A && i <= Key::Z) {
-			if (DeshInput->capsLock || DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT))
-				buffer.insert(toPlace, ins);
-			else
-				buffer.insert(toPlace + 32, ins);
-		}
-		else if (i >= Key::K0 && i <= Key::K9) {
-			if (DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT)) {
-				switch (i) {
-					case Key::K0: buffer.insert(')', ins); break;
-					case Key::K1: buffer.insert('!', ins); break;
-					case Key::K2: buffer.insert('@', ins); break;
-					case Key::K3: buffer.insert('#', ins); break;
-					case Key::K4: buffer.insert('$', ins); break;
-					case Key::K5: buffer.insert('%', ins); break;
-					case Key::K6: buffer.insert('^', ins); break;
-					case Key::K7: buffer.insert('&', ins); break;
-					case Key::K8: buffer.insert('*', ins); break;
-					case Key::K9: buffer.insert('(', ins); break;
-				}
-			}
-			else {
-				buffer.insert(KeyStringsLiteral[i], ins);
-			}
-		}
-		else {
-			if (DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT)) {
-				switch (i) {
-					case Key::SEMICOLON:  buffer.insert(':', ins);  break;
-					case Key::APOSTROPHE: buffer.insert('"', ins);  break;
-					case Key::LBRACKET:   buffer.insert('{', ins);  break;
-					case Key::RBRACKET:   buffer.insert('}', ins);  break;
-					case Key::BACKSLASH:  buffer.insert('\\', ins); break;
-					case Key::COMMA:      buffer.insert('<', ins);  break;
-					case Key::PERIOD:     buffer.insert('>', ins);  break;
-					case Key::SLASH:      buffer.insert('?', ins);  break;
-					case Key::MINUS:      buffer.insert('_', ins);  break;
-					case Key::EQUALS:     buffer.insert('+', ins);  break;
-					case Key::TILDE:      buffer.insert('~', ins);  break;
-				}
-			}
-			else {
-				buffer.insert(KeyStringsLiteral[i], ins);
-			}
-		}
-		TIMER_RESET(state->timeSinceTyped);
-	};
+		//TODO(sushi) make this not count modifier keys
+		if (DeshInput->AnyKeyPressed()) { TIMER_RESET(hold); }
 
-	if (DeshInput->anyKeyDown) {
-		if (TIMER_END(hold) < 1000) {
-			if (DeshInput->KeyPressedAnyMod(Key::BACKSPACE) && buffer.size > 0 && state->cursor != 0) {
-				buffer.erase(--state->cursor);
+		auto placeKey = [&](u32 i, u32 ins, char toPlace) {
+			if (i >= Key::A && i <= Key::Z) {
+				if (DeshInput->capsLock || DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT))
+					buffer.insert(toPlace, ins);
+				else
+					buffer.insert(toPlace + 32, ins);
 			}
-			else {
-				for (int i = 0; i < Key::Key_COUNT; i++) {
-					char toPlace = KeyStringsLiteral[i];
-					if (DeshInput->KeyPressedAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
-						u32 ins = state->cursor++ - 1;
-						placeKey(i, ins, toPlace);
+			else if (i >= Key::K0 && i <= Key::K9) {
+				if (DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT)) {
+					switch (i) {
+						case Key::K0: buffer.insert(')', ins); break;
+						case Key::K1: buffer.insert('!', ins); break;
+						case Key::K2: buffer.insert('@', ins); break;
+						case Key::K3: buffer.insert('#', ins); break;
+						case Key::K4: buffer.insert('$', ins); break;
+						case Key::K5: buffer.insert('%', ins); break;
+						case Key::K6: buffer.insert('^', ins); break;
+						case Key::K7: buffer.insert('&', ins); break;
+						case Key::K8: buffer.insert('*', ins); break;
+						case Key::K9: buffer.insert('(', ins); break;
 					}
 				}
+				else {
+					buffer.insert(KeyStringsLiteral[i], ins);
+				}
 			}
-		}
-		else {
-			if (TIMER_END(throttle) > 50) {
-				if (DeshInput->KeyDownAnyMod(Key::BACKSPACE) && buffer.size > 0 && state->cursor != 0) {
+			else {
+				if (DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT)) {
+					switch (i) {
+						case Key::SEMICOLON:  buffer.insert(':', ins);  break;
+						case Key::APOSTROPHE: buffer.insert('"', ins);  break;
+						case Key::LBRACKET:   buffer.insert('{', ins);  break;
+						case Key::RBRACKET:   buffer.insert('}', ins);  break;
+						case Key::BACKSLASH:  buffer.insert('\\', ins); break;
+						case Key::COMMA:      buffer.insert('<', ins);  break;
+						case Key::PERIOD:     buffer.insert('>', ins);  break;
+						case Key::SLASH:      buffer.insert('?', ins);  break;
+						case Key::MINUS:      buffer.insert('_', ins);  break;
+						case Key::EQUALS:     buffer.insert('+', ins);  break;
+						case Key::TILDE:      buffer.insert('~', ins);  break;
+					}
+				}
+				else {
+					buffer.insert(KeyStringsLiteral[i], ins);
+				}
+			}
+			TIMER_RESET(state->timeSinceTyped);
+		};
+
+		if (DeshInput->anyKeyDown) {
+			if (TIMER_END(hold) < 1000) {
+				if (DeshInput->KeyPressedAnyMod(Key::BACKSPACE) && buffer.size > 0 && state->cursor != 0) {
 					buffer.erase(--state->cursor);
 				}
 				else {
 					for (int i = 0; i < Key::Key_COUNT; i++) {
 						char toPlace = KeyStringsLiteral[i];
-						if (DeshInput->KeyDownAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
+						if (DeshInput->KeyPressedAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
 							u32 ins = state->cursor++ - 1;
 							placeKey(i, ins, toPlace);
 						}
 					}
 				}
-				TIMER_RESET(throttle);
+			}
+			else {
+				if (TIMER_END(throttle) > 50) {
+					if (DeshInput->KeyDownAnyMod(Key::BACKSPACE) && buffer.size > 0 && state->cursor != 0) {
+						buffer.erase(--state->cursor);
+					}
+					else {
+						for (int i = 0; i < Key::Key_COUNT; i++) {
+							char toPlace = KeyStringsLiteral[i];
+							if (DeshInput->KeyDownAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
+								u32 ins = state->cursor++ - 1;
+								placeKey(i, ins, toPlace);
+							}
+						}
+					}
+					TIMER_RESET(throttle);
+				}
 			}
 		}
 	}
 	
+	{//text box
+		UIDrawCmd drawCmd{ UIDrawType_Rectangle };
+		drawCmd.position = workingWin.position + workingWin.cursor + style.windowPadding;
+		drawCmd.dimensions = dimensions;
+		drawCmd.scissorOffset = workingWinPositionPlusTitlebar;
+		drawCmd.scissorExtent = workingWinSizeMinusTitlebar;
+		drawCmd.color = Color::VERY_DARK_GREY;
+
+		workingWin.drawCmds.add(drawCmd);
+	}
 
 	{//Text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
@@ -776,7 +797,7 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags 
 	}
 
 	//TODO(sushi, Ui) impl different text cursors
-	{//cursor
+	if(activeId == state->id) {//cursor
 		UIDrawCmd drawCmd{ UIDrawType_Line };
 		vec2 textStart = workingWin.position + style.windowPadding + workingWin.cursor.yAdd((style.font->height * 1.3 - style.font->height) * 0.5);
 		drawCmd.position  = textStart + vec2(state->cursor * style.font->width, -1);
@@ -914,11 +935,11 @@ void UI::Update() {
 		for (UIDrawCmd& drawCmd : p.baseDrawCmds) {
 			switch (drawCmd.type) {
 				case UIDrawType_Rectangle: {
-					Render::FillRectUI(drawCmd.position, drawCmd.dimensions, drawCmd.color);
+					Render::FillRectUI(drawCmd.position, drawCmd.dimensions, drawCmd.color, drawCmd.scissorOffset, drawCmd.scissorExtent);
 				}break;
 				
 				case UIDrawType_Line: {
-					Render::DrawLineUI(drawCmd.position, drawCmd.position2, drawCmd.thickness, drawCmd.color);
+					Render::DrawLineUI(drawCmd.position, drawCmd.position2, drawCmd.thickness, drawCmd.color, drawCmd.scissorOffset, drawCmd.scissorExtent);
 				}break;
 				
 				case UIDrawType_Text: {
@@ -928,10 +949,10 @@ void UI::Update() {
 						//vec2 scissorOffset = vec2(
 						//	Clamp(p.second.position.x, 0, INFINITY),
 						//	Clamp(p.second.position.y, 0, INFINITY));
-						Render::DrawTextUI(drawCmd.text, drawCmd.position, p.position, p.dimensions, drawCmd.color);
+						Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.color, p.position, p.dimensions);
 					}
 					else {
-						Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.scissorOffset, drawCmd.scissorExtent, drawCmd.color);
+						Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.color, drawCmd.scissorOffset, drawCmd.scissorExtent);
 					}
 				}break;
 			}
@@ -956,10 +977,10 @@ void UI::Update() {
 							//vec2 scissorOffset = vec2(
 							//	Clamp(p.second.position.x, 0, INFINITY),
 							//	Clamp(p.second.position.y, 0, INFINITY));
-							Render::DrawTextUI(drawCmd.text, drawCmd.position, p.position, p.dimensions, drawCmd.color);
+							Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.color, p.position, p.dimensions );
 						}
 						else {
-							Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.scissorOffset, drawCmd.scissorExtent, drawCmd.color);
+							Render::DrawTextUI(drawCmd.text, drawCmd.position, drawCmd.color, drawCmd.scissorOffset, drawCmd.scissorExtent);
 						}
 					}break;
 				}

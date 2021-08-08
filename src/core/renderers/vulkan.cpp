@@ -1,3 +1,4 @@
+#include "..\renderer.h"
 /*
 Useful or Reading List Links:
 https://renderdoc.org/vkspec_chunked/index.html
@@ -3106,146 +3107,105 @@ enum texTypes : u32 {
 	UITEX_FONT
 };
 
-void Render::
-FillRectUI(f32 x, f32 y, f32 w, f32 h, Color color){
-	if(color.a == 0) return;
-	
-	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
-	}
-	
-	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2*  vp = uiVertexArray + uiVertexCount;
-	UIIndexVk* ip = uiIndexArray  + uiIndexCount;
-	
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
-	vp[0].pos = {x+0,y+0}; vp[0].uv = {0,0}; vp[0].color = col;
-	vp[1].pos = {x+w,y+0}; vp[1].uv = {0,0}; vp[1].color = col;
-	vp[2].pos = {x+w,y+h}; vp[2].uv = {0,0}; vp[2].color = col;
-	vp[3].pos = {x+0,y+h}; vp[3].uv = {0,0}; vp[3].color = col;
-	
-	uiVertexCount += 4;
-	uiIndexCount  += 6;
-	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-	uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-}
+//TODO(sushi) find a nicer way to keep track of this
+//NOTE im not sure yet if i should be keeping track of this for each primitive or not yet but i dont think i have to
+vec2 prevScissorOffset = vec2(0, 0);
+vec2 prevScissorExtent = vec2(-1, -1);
 
-void Render::
-FillRectUI(vec2 pos, vec2 dimensions, Color color) {
+void Render::FillRectUI(vec2 pos, vec2 dimensions, Color color, vec2 scissorOffset, vec2 scissorExtent) {
 	if (color.a == 0) return;
-	
-	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
+
+	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
+		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+		scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-	
+
 	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2*  vp = uiVertexArray + uiVertexCount;
+	Vertex2* vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
-	
+
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
 	vp[0].pos = { pos.x + 0,           pos.y + 0 };            vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { pos.x + dimensions.w,pos.y + 0 };            vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { pos.x + dimensions.w,pos.y + dimensions.h }; vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { pos.x + 0,           pos.y + dimensions.h }; vp[3].uv = { 0,0 }; vp[3].color = col;
-	
+
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-	uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+	if (scissorExtent.x != -1) {
+		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+	}
+	else {
+		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+	}
 }
 
-void Render::
-DrawLineUI(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, Color color) {
+void Render::DrawRectUI(vec2 pos, vec2 dimensions, Color color, vec2 scissorOffset, vec2 scissorExtent) {
 	if (color.a == 0) return;
-	
-	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
+
+	DrawLineUI(pos,              pos + dimensions.ySet(0), 1, color, scissorOffset, scissorExtent);
+	DrawLineUI(pos,              pos + dimensions.xSet(0), 1, color, scissorOffset, scissorExtent);
+	DrawLineUI(pos + dimensions, pos + dimensions.ySet(0), 1, color, scissorOffset, scissorExtent);
+	DrawLineUI(pos + dimensions, pos + dimensions.xSet(0), 1, color, scissorOffset, scissorExtent);
+}
+
+void Render::DrawLineUI(vec2 start, vec2 end, float thickness, Color color, vec2 scissorOffset, vec2 scissorExtent){
+	if (color.a == 0) return;
+
+	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
+		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+		scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-	
-	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2*  vp = uiVertexArray + uiVertexCount;
-	UIIndexVk* ip = uiIndexArray + uiIndexCount;
-	
-	vec2 ott = vec2(x2, y2) - vec2(x1, y1) ;
-	vec2 norm = vec2(ott.y, -ott.x).normalized();
-	
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
-	vp[0].pos = {x1,y1}; vp[0].uv = {0,0}; vp[0].color = col;
-	vp[1].pos = {x2,y2}; vp[1].uv = {0,0}; vp[1].color = col;
-	vp[2].pos = {x2,y2}; vp[2].uv = {0,0}; vp[2].color = col;
-	vp[3].pos = {x1,y1}; vp[3].uv = {0,0}; vp[3].color = col;
-	
-	vp[0].pos += norm * thickness;
-	vp[1].pos += norm * thickness;
-	vp[2].pos -= norm * thickness;
-	vp[3].pos -= norm * thickness;
-	
-	uiVertexCount += 4;
-	uiIndexCount += 6;
-	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-	uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-}
 
-void Render::
-DrawLineUI(vec2 start, vec2 end, float thickness, Color color) {
-	if (color.a == 0) return;
-	
-	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE) {
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
-	}
-	
+
 	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2*  vp = uiVertexArray + uiVertexCount;
+	Vertex2* vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
-	
+
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
-	
+
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
 	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { end.x,  end.y };   vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
-	
+
 	vp[0].pos += norm * thickness;
 	vp[1].pos += norm * thickness;
 	vp[2].pos -= norm * thickness;
 	vp[3].pos -= norm * thickness;
-	
+
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-	uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-}
-
-void Render::
-DrawTextUI(string text, vec2 pos, Color color) {
-	if (color.a == 0) return;
-	
-	for (int i = 0; i < text.size; i++) {
-		DrawCharUI((u32)text[i], pos, vec2::ONE, color);
-		pos.x += vkFonts[1].characterWidth;
+	if (scissorExtent.x != -1) {
+		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+	}
+	else {
+		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
 	}
 }
 
 void Render::
-DrawTextUI(string text, vec2 pos, vec2 scissorOffset, vec2 scissorExtent, Color color) {
+DrawTextUI(string text, vec2 pos, Color color, vec2 scissorOffset, vec2 scissorExtent) {
 	if (color.a == 0) return;
 	
 	f32 w = vkFonts[1].characterWidth;
@@ -3255,9 +3215,6 @@ DrawTextUI(string text, vec2 pos, vec2 scissorOffset, vec2 scissorExtent, Color 
 	}
 }
 
-//TODO(sushi) find a nicer way to keep track of this
-vec2 prevScissorOffset = vec2(0, 0);
-vec2 prevScissorExtent = vec2(-1, -1);
 
 //NOTE: text scaling looks very ugly with bit map fonts as far as i know
 void Render::
