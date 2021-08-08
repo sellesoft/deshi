@@ -4,8 +4,8 @@ entity_count 4
 last_updated ""
 
 >materials
-"Flat"
-"Phong"
+"flat"
+"phong"
 
 >models
 "box_flat"

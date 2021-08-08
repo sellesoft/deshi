@@ -75,7 +75,7 @@ The transformation matrix will follow the format to the right:                  
 #ifndef DESHI_matN_H
 #define DESHI_matN_H
 
-#include "vec.h"
+#include "vector.h"
 
 #include <vector>
 #include <string>
@@ -469,11 +469,11 @@ inline float matN::Determinant() const{
         }
         case(3): { //aei + bfg + cdh - ceg - bdi - afh
             return  (data[0] * data[4] * data[8]) +        //aei
-                (data[1] * data[5] * data[6]) +        //bfg
-                (data[2] * data[3] * data[7]) -        //cdh
-                (data[2] * data[4] * data[6]) -        //ceg
-                (data[1] * data[3] * data[8]) -        //bdi
-                (data[0] * data[5] * data[7]);        //afh
+			(data[1] * data[5] * data[6]) +        //bfg
+			(data[2] * data[3] * data[7]) -        //cdh
+			(data[2] * data[4] * data[6]) -        //ceg
+			(data[1] * data[3] * data[8]) -        //bdi
+			(data[0] * data[5] * data[7]);        //afh
         }
         case(4): { //not writing this out in letters
             return  data[ 0] * (data[ 5] * (data[10] * data[15] - data[11] * data[14]) -
@@ -545,9 +545,9 @@ inline matN matN::Identity(u32 rows, u32 cols) {
 inline matN matN::M3x3To4x4(const matN& m) {
     Assert(m.rows == 3 && m.cols == 3, "Cant convert 3x3 matrix to 4x4 if the matrix isnt 3x3");
     return matN(4, 4,{m(0,0), m(0,1), m(0,2), 0,
-                         m(1,0), m(1,1), m(1,2), 0,
-                         m(2,0), m(2,1), m(2,2), 0,
-                              0,      0,      0, 1});
+					m(1,0), m(1,1), m(1,2), 0,
+					m(2,0), m(2,1), m(2,2), 0,
+					0,      0,      0, 1});
 }
 
 //returns a 4x4 or 3x3 rotation transformation matrix depending on boolean argument
@@ -562,13 +562,13 @@ inline matN matN::RotationMatrix(vec3 rotation, bool _4x4) {
     float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
     if (_4x4) {
         return matN(4, 4, {r00, r01, r02, 0,
-                              r10, r11, r12, 0,
-                              r20, r21, r22, 0,
-                              0,   0,   0,   1});
+						r10, r11, r12, 0,
+						r20, r21, r22, 0,
+						0,   0,   0,   1});
     } else {
         return matN(3, 3, {r00, r01, r02,
-                              r10, r11, r12,
-                              r20, r21, r22});
+						r10, r11, r12,
+						r20, r21, r22});
     }
 }
 
@@ -578,8 +578,8 @@ inline matN matN::RotationMatrixX(float degrees, bool _4x4) {
     float r = degrees * (3.14159265359f / 180.f);
     float c = cosf(r);  float s = sinf(r);
     matN newMatrix(3, 3, {1,  0, 0,
-                             0,  c, s,
-                             0, -s, c});
+					   0,  c, s,
+					   0, -s, c});
     if (_4x4) {
         return matN::M3x3To4x4(newMatrix);
     } else {
@@ -593,8 +593,8 @@ inline matN matN::RotationMatrixY(float degrees, bool _4x4) {
     float r = degrees * (3.14159265359f / 180.f);
     float c = cosf(r); float s = sinf(r);
     matN newMatrix(3, 3, {c, 0, -s,
-                             0, 1,  0,
-                             s, 0,  c});
+					   0, 1,  0,
+					   s, 0,  c});
     if (_4x4) {
         return matN::M3x3To4x4(newMatrix);
     } else {
@@ -608,8 +608,8 @@ inline matN matN::RotationMatrixZ(float degrees, bool _4x4) {
     float r = degrees * (3.14159265359f / 180.f);
     float c = cosf(r); float s = sinf(r);
     matN newMatrix(3, 3, { c, s, 0,
-                             -s, c, 0,
-                              0, 0, 1});
+					   -s, c, 0,
+					   0, 0, 1});
     if (_4x4) {
         return matN::M3x3To4x4(newMatrix);
     } else {
@@ -647,9 +647,9 @@ inline matN matN::TransformationMatrix(vec3 tr, vec3 rot, vec3 scale) {
     float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
     float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
     return matN(4, 4, {scale.x*r00, scale.x*r01, scale.x*r02, 0,
-                          scale.y*r10, scale.y*r11, scale.y*r12, 0,
-                          scale.z*r20, scale.z*r21, scale.z*r22, 0,
-                                 tr.x,        tr.y,        tr.z, 1});
+					scale.y*r10, scale.y*r11, scale.y*r12, 0,
+					scale.z*r20, scale.z*r21, scale.z*r22, 0,
+					tr.x,        tr.y,        tr.z, 1});
 }
 
 //// Non-Vector vs Vector Interactions ////

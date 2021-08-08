@@ -8,8 +8,8 @@
 
 inline mat3::
 mat3(float _00, float _01, float _02,
-        float _10, float _11, float _12,
-        float _20, float _21, float _22) {
+	 float _10, float _11, float _12,
+	 float _20, float _21, float _22) {
     data[0] = _00; data[1] = _01; data[2] = _02;
     data[3] = _10; data[4] = _11; data[5] = _12;
     data[6] = _20; data[7] = _21; data[8] = _22;
@@ -193,7 +193,8 @@ operator %= (const mat3& rhs){
 
 inline bool mat3::
 operator == (const mat3& rhs) const { 
-    return memcmp(this->data, rhs.data, sizeof(f32)*9) == 0;
+	for(int i = 0; i < 9; ++i){ if(abs(this->data[i] - rhs.data[i]) > MAT_EPSILON) return false; }
+    return true;
 }
 
 inline bool mat3::
@@ -209,7 +210,7 @@ operator != (const mat3& rhs) const {
 //TODO(delle,ClMa) clean up mat3.str() and mat3.str2F()
 inline const std::string mat3::
 str() const {
-    std::string str = "mat3:\n|";
+    std::string str = "|";
     for (int i = 0; i < 8; ++i) {
         char buffer[15];
         std::snprintf(buffer, 15, "%+.6f", data[i]);
@@ -228,7 +229,7 @@ str() const {
 
 inline const std::string mat3::
 str2f() const {
-    std::string str = "mat3:\n|";
+    std::string str = "|";
     for (int i = 0; i < 8; ++i) {
         char buffer[15];
         std::snprintf(buffer, 15, "%+.2f", data[i]);
@@ -321,8 +322,8 @@ RotationMatrixX(float angle) {
     angle = RADIANS(angle);
     float c = cosf(angle); float s = sinf(angle);
     return mat3(1,  0, 0,
-                   0,  c, s,
-                   0, -s, c);
+				0,  c, s,
+				0, -s, c);
 }
 
 //returns a LH rotation transformation matrix based on input in degrees
@@ -331,8 +332,8 @@ RotationMatrixY(float angle) {
     angle = RADIANS(angle);
     float c = cosf(angle); float s = sinf(angle);
     return mat3(c, 0, -s,
-                   0, 1,  0,
-                   s, 0,  c);
+				0, 1,  0,
+				s, 0,  c);
 }
 
 //returns a LH rotation transformation matrix based on input in degrees
@@ -341,8 +342,8 @@ RotationMatrixZ(float angle) {
     angle = RADIANS(angle);
     float c = cosf(angle); float s = sinf(angle);
     return mat3(c,  s, 0,
-                   -s, c, 0,
-                   0,  0, 1);
+				-s, c, 0,
+				0,  0, 1);
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
@@ -356,8 +357,8 @@ RotationMatrix(float x, float y, float z) {
     float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
     float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
     return mat3(r00, r01, r02,
-                   r10, r11, r12,
-                   r20, r21, r22);
+				r10, r11, r12,
+				r20, r21, r22);
 }
 
 #endif //DESHI_MATRIX3_INL

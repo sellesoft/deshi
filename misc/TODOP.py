@@ -6,7 +6,10 @@ import github
 from flask import Flask, request, Response
 import json
 
-
+#As  Assets    Cl  Clean Up Code    Cmd Command         Co  Core        Con Console
+#En  Entity    Fu  Fun              Fs  Filesystem      Ge  Geometry    In  Input
+#Ma  Math      Oth Other            Op  Optimization    Ph  Physics     Re  Render
+#Sh  Shader    So  Sound            Ui  UI              Vu  Vulkan      Wi  Window
 
 
 src_dir = "../src"

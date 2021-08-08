@@ -3,8 +3,8 @@
 #define DESHI_MATH_H
 
 #include "VectorMatrix.h"
+#include "quaternion.h"
 #include "matN.h"
-#include "Quaternion.h"
 #include "../defines.h"
 
 #include <math.h>
@@ -249,9 +249,9 @@ namespace Math {
     
     static vec3 round2v(vec3 v) {
         return vec3(
-                       (float)((int)(v.x * 100 + .5)) / 100,
-                       (float)((int)(v.y * 100 + .5)) / 100,
-                       (float)((int)(v.z * 100 + .5)) / 100);
+					(float)((int)(v.x * 100 + .5)) / 100,
+					(float)((int)(v.y * 100 + .5)) / 100,
+					(float)((int)(v.z * 100 + .5)) / 100);
     }
     
     //average any std container probably
@@ -291,10 +291,10 @@ namespace Math {
         float aspectRatio = (f32)height / (f32)width;
         float fovRad = 1.0f / tanf(RADIANS(hFOV / 2.0f));
         return mat4( //NOTE setting (1,1) to negative flips the y-axis
-                       aspectRatio * fovRad, 0,	   0,							  0,
-                       0,					-fovRad, 0,							  0,
-                       0,					0,	   farZ / renderDistance,		  1,
-                       0,					0,	   -(farZ*nearZ) / renderDistance, 0);
+					aspectRatio * fovRad, 0,	   0,							  0,
+					0,					-fovRad, 0,							  0,
+					0,					0,	   farZ / renderDistance,		  1,
+					0,					0,	   -(farZ*nearZ) / renderDistance, 0);
     }
     
     //this function returns a matrix that tells a vector how to look at a specific point in space.
@@ -318,9 +318,9 @@ namespace Math {
         
         //make look-at matrix
         return mat4(newRight.x, newRight.y, newRight.z, 0,
-                       newUp.x,    newUp.y,   newUp.z,    0,
-                       newFor.x,   newFor.y,   newFor.z,   0,
-                       pos.x,      pos.y,      pos.z,      1);
+					newUp.x,    newUp.y,   newUp.z,    0,
+					newFor.x,   newFor.y,   newFor.z,   0,
+					pos.x,      pos.y,      pos.z,      1);
     }
     
     //this ones for getting the up vector back for sound orientation
@@ -342,9 +342,9 @@ namespace Math {
         
         //make look-at matrix
         return mat4(newRight.x, newRight.y, newRight.z, 0,
-                       up.x,       -up.y,      up.z,       0,
-                       newFor.x,   newFor.y,   newFor.z,   0,
-                       pos.x,      pos.y,      pos.z,      1);
+					up.x,       -up.y,      up.z,       0,
+					newFor.x,   newFor.y,   newFor.z,   0,
+					pos.x,      pos.y,      pos.z,      1);
     }
     
     //this assumes its in degrees
@@ -575,7 +575,7 @@ namespace Math {
     static vec3 CameraToScreen3(vec3 csVertex, mat4 projMat, vec2 screenDimensions, float& w) {
         vec4 bleh = csVertex.toVec4() * projMat;
         w = bleh.w;
-        vec3 vm = bleh.normalized().toVec3();
+        vec3 vm = bleh.wnormalized().toVec3();
         vm.x += 1.0f; vm.y += 1.0f;
         vm.x *= 0.5f * (float)screenDimensions.x;
         vm.y *= 0.5f * (float)screenDimensions.y;
@@ -591,7 +591,7 @@ namespace Math {
     }
     
     static vec4 CameraToScreen4(vec4 csVertex, mat4 projMat, vec2 screenDimensions) {
-        vec4 vm = (csVertex * projMat).normalized();
+        vec4 vm = (csVertex * projMat).wnormalized();
         vm.x += 1.0f; vm.y += 1.0f;
         vm.x *= 0.5f * (float)screenDimensions.x;
         vm.y *= 0.5f * (float)screenDimensions.y;
@@ -608,13 +608,15 @@ namespace Math {
     }
     
     static vec3 ScreenToWorld(vec2 pos, mat4 ProjMat, mat4 view, vec2 screenDimensions) {
-        vec3 out(pos);
-        out.x /= .5f * (float)screenDimensions.x;
-        out.y /= .5f * (float)screenDimensions.y;
-        out.x -= 1.f; out.y -= 1.f; out.z = -1.f;
-        out = Math::ProjMult(out.toVec4(), ProjMat.Inverse()).toVec3();
-        out = Math::ProjMult(out.toVec4(), view.Inverse()).toVec3();
-        return out;
+        vec4 out{
+			2.0f*(pos.x / screenDimensions.x) - 1.0f,
+			2.0f*(pos.y / screenDimensions.y) - 1.0f,
+			-1.0f,
+			1.0f
+		};
+        out = Math::ProjMult(out, ProjMat.Inverse());
+        out = Math::ProjMult(out, view.Inverse());
+        return out.toVec3();
     }
 };
 

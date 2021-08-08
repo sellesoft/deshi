@@ -4,28 +4,10 @@ entity_count 10
 last_updated ""
 
 >materials
-0 "Flat" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
-1 "Phong" 1 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+"phong"
 
 >meshes
-5 "box.obj" 0 "1"
-6 "box.obj" 0 "0"
-7 "arrow.obj" 0 "0"
-8 "sphere.obj" 0 "0"
-9 "arrow.obj" 0 "0"
-10 "box.obj" 0 "0"
-11 "box.obj" 1 "1"
-12 "box.obj" 1 "1"
-13 "box.obj" 1 "1"
-14 "box.obj" 1 "1"
-15 "default_planarbox" 0 "1"
-16 "box.obj" 1 "1"
-17 "box.obj" 1 "1"
-18 "box.obj" 1 "1"
-19 "box.obj" 1 "1"
-20 "box.obj" 1 "1"
-21 "arrow.obj" 0 "0"
-22 "sphere.obj" 0 "1"
+"box_phong"
 
 >entities
 0 "floor"

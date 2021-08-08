@@ -6,10 +6,10 @@ position (0.000000,-3.500001,13.093034)
 rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)
 
->mesh
-id      15
-name    "box.obj"
+>model
+name    "box_flat"
 visible true
+control false
 
 >physics
 velocity         (0.000000,0.000000,0.000000)

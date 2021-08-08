@@ -134,7 +134,6 @@ local ConfigMap configMap = {
 	{"anistropic_filtering", ConfigValueType_Bool, &settings.anistropicFiltering},
 	{"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples},
 	{"recompile_all_shaders",        ConfigValueType_Bool, &settings.recompileAllShaders},
-	{"find_mesh_triangle_neighbors", ConfigValueType_Bool, &settings.findMeshTriangleNeighbors},
 	
 	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
 	{"logging_level",  ConfigValueType_U32,  &settings.loggingLevel},
@@ -220,8 +219,6 @@ local std::vector<const char*> deviceExtensions = {
 };
 local std::vector<VkValidationFeatureEnableEXT> validationFeaturesEnabled = {};
 
-local const int MAX_FRAMES = 2; //TODO(delle) remove this? minImageCount does same thing
-
 local bool initialized     = false;
 local bool remakeWindow    = false;
 local bool remakePipelines = false;
@@ -300,8 +297,8 @@ local struct{ //uniform buffer for the vertex shaders
 		vec2 mousepos;    //mouse screen pos
 		vec3 mouseWorld;  //point casted out from mouse 
 		f32  time;        //total time
-		mat4 lightVP;     //first light's view projection matrix //TODO(delle,ReVu) redo how lights are stored
-		bool  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
+		mat4 lightVP;     //first light's view projection matrix
+		bool  enablePCF;   //whether to blur shadow edges //TODOf(delle,ReVu) convert to specialization constant
 	} values;
 } uboVS{};
 
@@ -3528,7 +3525,7 @@ LoadMaterial(Material* material){
 	vkUpdateDescriptorSets(device, sets.size(), sets.data, 0, nullptr);
 	
 	//HACK to fix materials with no textures
-	if(material->shader == Shader_PBR && material->textures.size() < 4){
+	if(material->textures.size() < 4){
 		forI(4 - sets.size()){
 			VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 			set.dstSet          = mvk.descriptorSet;
@@ -4124,7 +4121,7 @@ Update(){
 	}
 	
 	//iterate the frame index
-	frameIndex = (frameIndex + 1) % MAX_FRAMES; //loops back to zero after reaching max_frames
+	frameIndex = (frameIndex + 1) % minImageCount; //loops back to zero after reaching minImageCount
 	result = vkQueueWaitIdle(graphicsQueue);
 	switch(result){
 		case VK_ERROR_OUT_OF_HOST_MEMORY:   PRINTLN("[Vulkan] OUT_OF_HOST_MEMORY");   Assert(!"CPU ran out of memory"); break;

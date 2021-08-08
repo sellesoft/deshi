@@ -6,9 +6,8 @@ position (0.000000,0.000000,-14.024551)
 rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)
 
->mesh
-id      3
-name    "box.obj"
+>model
+name    "box_flat"
 visible true
 control false
 

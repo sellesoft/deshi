@@ -16,9 +16,9 @@ mat4(float x) {
 
 inline mat4::
 mat4(float _00, float _01, float _02, float _03,
-        float _10, float _11, float _12, float _13,
-        float _20, float _21, float _22, float _23,
-        float _30, float _31, float _32, float _33) {
+	 float _10, float _11, float _12, float _13,
+	 float _20, float _21, float _22, float _23,
+	 float _30, float _31, float _32, float _33) {
     data[0]  = _00; data[1]  = _01; data[2]  = _02; data[3]  = _03;
     data[4]  = _10; data[5]  = _11; data[6]  = _12; data[7]  = _13;
     data[8]  = _20; data[9]  = _21; data[10] = _22; data[11] = _23;
@@ -208,7 +208,8 @@ operator %= (const mat4& rhs){
 
 inline bool mat4::
 operator == (const mat4& rhs) const { 
-    return memcmp(this->data, rhs.data, sizeof(f32)*16) == 0;
+    for(int i = 0; i < 16; ++i){ if(abs(this->data[i] - rhs.data[i]) > MAT_EPSILON) return false; }
+	return true;
 }
 
 inline bool mat4::
@@ -223,7 +224,7 @@ operator != (const mat4& rhs) const {
 //TODO(delle,ClMa) clean up mat4.str() and mat4.str2F()
 inline const std::string mat4::
 str() const {
-    std::string str = "mat4:\n|";
+    std::string str = "|";
     for (int i = 0; i < 15; ++i) {
         char buffer[15];
         std::snprintf(buffer, 15, "%+.6f", data[i]);
@@ -242,7 +243,7 @@ str() const {
 
 inline const std::string mat4::
 str2f() const {
-    std::string str = "mat4:\n|";
+    std::string str = "|";
     for (int i = 0; i < 15; ++i) {
         char buffer[15];
         std::snprintf(buffer, 15, "%+.2f", data[i]);
@@ -348,9 +349,9 @@ RotationMatrixX(float angle) {
     angle = RADIANS(angle);
     float c = cosf(angle); float s = sinf(angle);
     return mat4(1,  0, 0, 0,
-                   0,  c, s, 0,
-                   0, -s, c, 0,
-                   0,  0, 0, 1);
+				0,  c, s, 0,
+				0, -s, c, 0,
+				0,  0, 0, 1);
 }
 
 //returns a LH rotation transformation matrix in degrees around the Y axis
@@ -359,9 +360,9 @@ RotationMatrixY(float angle) {
     angle = RADIANS(angle);
     float c = cosf(angle); float s = sinf(angle);
     return mat4(c, 0, -s, 0,
-                   0, 1,  0, 0,
-                   s, 0,  c, 0,
-                   0, 0,  0, 1);
+				0, 1,  0, 0,
+				s, 0,  c, 0,
+				0, 0,  0, 1);
 }
 
 //returns a LH rotation transformation matrix in degrees around the Z axis
@@ -370,9 +371,9 @@ RotationMatrixZ(float angle) {
     angle = RADIANS(angle);
     float c = cosf(angle); float s = sinf(angle);
     return mat4(c,  s, 0, 0,
-                   -s, c, 0, 0,
-                   0,  0, 1, 0,
-                   0,  0, 0, 1);
+				-s, c, 0, 0,
+				0,  0, 1, 0,
+				0,  0, 0, 1);
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
@@ -386,27 +387,27 @@ RotationMatrix(float x, float y, float z) {
     float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
     float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
     return mat4(r00, r01, r02, 0,
-                   r10, r11, r12, 0,
-                   r20, r21, r22, 0,
-                   0,   0,   0,   1);
+				r10, r11, r12, 0,
+				r20, r21, r22, 0,
+				0,   0,   0,   1);
 }
 
 //returns a translation matrix where (0,3) = translation.x, (1,3) = translation.y, (2,3) = translation.z
 inline mat4 mat4::
 TranslationMatrix(float x, float y, float z) {
     return mat4(1, 0, 0, 0,
-                   0, 1, 0, 0,
-                   0, 0, 1, 0,
-                   x, y, z, 1);
+				0, 1, 0, 0,
+				0, 0, 1, 0,
+				x, y, z, 1);
 }
 
 //returns a scale matrix where (0,0) = scale.x, (1,1) = scale.y, (2,2) = scale.z
 inline mat4 mat4::
 ScaleMatrix(float x, float y, float z) {
     return mat4(x, 0, 0, 0,
-                   0, y, 0, 0,
-                   0, 0, z, 0,
-                   0, 0, 0, 1);
+				0, y, 0, 0,
+				0, 0, z, 0,
+				0, 0, 0, 1);
 }
 
 #endif //DESHI_MATRIX4_INL

@@ -4,12 +4,10 @@ entity_count 1
 last_updated ""
 
 >materials
-0 "Flat" 0 "null128.png" "black1024.png" "black1024.png" "black1024.png"
-1 "Phong" 1 "null128.png" "black1024.png" "black1024.png" "black1024.png"
-2 "material2" 5 "null128.png" "black1024.png" "black1024.png" "black1024.png"
+"testing0"
 
->meshes
-5 "box.obj" 1 "2"
+>models
+"box_testing0"
 
 >entities
 0 "StaticMesh0"

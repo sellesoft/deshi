@@ -1,6 +1,6 @@
 #pragma once
-#ifndef DESHI_vec3_INL
-#define DESHI_vec3_INL
+#ifndef DESHI_VEC3_INL
+#define DESHI_VEC3_INL
 
 //////////////////////
 //// constructors ////
@@ -120,11 +120,11 @@ operator -  () const {
 	return vec3( -x, -y, -z );
 }
 
-//floating point accuracy in our vectors is .001 :)
 inline bool vec3::
 operator == (const vec3& rhs) const {
-	return abs(this->x - rhs.x) < .001f && abs(this->y - rhs.y) < .001f && abs(this->z - rhs.z) < .001f;
-	//return this->y == rhs.y  && this->y == rhs.y && this->z == rhs.z;
+	return abs(this->x - rhs.x) < VEC_EPSILON 
+		&& abs(this->y - rhs.y) < VEC_EPSILON 
+		&& abs(this->z - rhs.z) < VEC_EPSILON;
 }
 
 inline bool vec3::
@@ -148,18 +148,18 @@ copy() const {
 
 inline float vec3::
 dot(const vec3& rhs) const {
-	return this->x * rhs.x + this->y * rhs.y + this->z * rhs.z;
+	return this->x*rhs.x + this->y*rhs.y + this->z*rhs.z;
 }
 
 //left hand cross product
 inline vec3 vec3::
 cross(const vec3& rhs) const {
-	return vec3(this->y * rhs.z - rhs.y * this->z, this->z * rhs.x - rhs.z * this->x, this->x * rhs.y - rhs.x * this->y);
+	return vec3(this->y*rhs.z - rhs.y*this->z, this->z*rhs.x - rhs.z*this->x, this->x*rhs.y - rhs.x*this->y);
 }
 
 inline float vec3::
 mag() const {
-	return sqrt(x * x + y * y + z * z);
+	return sqrt(x*x + y*y + z*z);
 }
 
 ////ref: https://betterexplained.com/articles/understanding-quakes-fast-inverse-square-root/
@@ -175,12 +175,11 @@ mag() const {
 //	return 1.f / k;
 //}
 
-inline vec3 vec3::
+inline void vec3::
 normalize() {
-	if (*this != vec3(0, 0, 0)) {
+	if (*this != vec3::ZERO) {
 		*this /= this->mag();
 	}
-	return *this;
 }
 
 //inline void vec3::
@@ -199,7 +198,7 @@ normalize() {
 
 inline vec3 vec3::
 normalized() const {
-	if (*this != vec3(0, 0, 0)) {
+	if (*this != vec3::ZERO) {
 		return *this / this->mag();
 	}
 	return *this;
@@ -225,8 +224,8 @@ inline vec3 vec3::
 clamp(float lo, float hi){
 	if(lo > hi) float temp = lo; lo = hi; hi = lo;
 	return vec3((x < lo) ? lo : (hi < x) ? hi : x,
-				   (y < lo) ? lo : (hi < y) ? hi : y,
-				   (z < lo) ? lo : (hi < z) ? hi : z);
+				(y < lo) ? lo : (hi < y) ? hi : y,
+				(z < lo) ? lo : (hi < z) ? hi : z);
 }
 
 inline void vec3::
@@ -263,9 +262,9 @@ inline void vec3::round(int place) {
 //round to a decimal place
 inline vec3 vec3::rounded(int place) {
 	return vec3(
-				   floor(x * place * 10 + 0.5) / (place * 10),
-				   floor(y * place * 10 + 0.5) / (place * 10),
-				   floor(z * place * 10 + 0.5) / (place * 10));
+				floor(x * place * 10 + 0.5) / (place * 10),
+				floor(y * place * 10 + 0.5) / (place * 10),
+				floor(z * place * 10 + 0.5) / (place * 10));
 }
 
 inline float vec3::
@@ -331,4 +330,4 @@ str2f() const {
 	return std::string(buffer);
 }
 
-#endif //DESHI_VECTOR3_INL
+#endif //DESHI_VEC3_INL

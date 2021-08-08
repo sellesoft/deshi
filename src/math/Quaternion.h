@@ -1,5 +1,6 @@
 #pragma once
-#include "../utils/debug.h"
+
+#include "../defines.h"
 
 struct vec3;
 struct mat4;
@@ -106,10 +107,10 @@ inline quat quat::operator * (const quat& rhs) {
 	G = (w + y) * (rhs.w - rhs.z);
 	H = (w - y) * (rhs.w + rhs.z);
 	return quat(
-					  A - (E + F + G + H) / 2,
-					  C + (E - F + G - H) / 2,
-					  D + (E - F - G + H) / 2,
-					  B + (-E - F + G + H) / 2);
+				A - (E + F + G + H) / 2,
+				C + (E - F + G - H) / 2,
+				D + (E - F - G + H) / 2,
+				B + (-E - F + G + H) / 2);
 }
 
 inline void quat::operator *= (const quat& rhs) {

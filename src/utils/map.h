@@ -39,7 +39,7 @@ struct map {
 		u32 hashed = HashStruct{}(key);
 		forI(hashes.count){ if(hashed == hashes[i]){ return i; } }
 		hashes.add(hashed);
-		data.add(Value{});
+		data.add(Value());
 		count++;
 		return count-1;
 	}
@@ -52,12 +52,12 @@ struct map {
 		count++;
 		return count-1;
 	}
-
+	
 	void swap(u32 idx1, u32 idx2) {
 		hashes.swap(idx1, idx2);
 		data.swap(idx1, idx2);
 	}
-
+	
 	Value* begin() { return data.begin(); }
 	Value* end()   { return data.end(); }
 	const Value* begin() const { return data.begin(); }

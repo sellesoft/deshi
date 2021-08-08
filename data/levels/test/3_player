@@ -6,10 +6,10 @@ position (-1.906003,9.241510,-7.456299)
 rotation (0.000000,0.000000,0.000000)
 scale    (1.000000,1.000000,1.000000)
 
->mesh
-id      7
-name    "bmonkey.obj"
+>model
+name    "bmonkey_pbr"
 visible true
+control false
 
 >audio source
 

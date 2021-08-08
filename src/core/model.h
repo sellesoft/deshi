@@ -52,7 +52,6 @@ enum ModelFlags_{
 	ModelFlags_NONE = 0,
 }; typedef u32 ModelFlags;
 
-//TODO(delle) add versioning to this
 //NOTE a mesh is supposed to be 'fixed' in that no element should change post-load
 struct Mesh{
 	u32  bytes;
@@ -62,23 +61,31 @@ struct Mesh{
 	vec3 aabbMax;
 	vec3 center;
 	
+	u32 vertexCount;
+	u32 indexCount;
+	u32 triangleCount;
+	u32 faceCount;
+	u32 totalTriNeighborCount;
+	u32 totalFaceVertexCount;
+	u32 totalFaceOuterVertexCount;
+	u32 totalFaceTriNeighborCount;
+	u32 totalFaceFaceNeighborCount;
+	
 	struct Vertex{ //36 bytes
 		vec3 pos;
 		vec2 uv;
 		u32  color;
 		vec3 normal;
-	}  *vertexArray;
+	} *vertexArray;
+	view<Vertex> vertexes;
 	//struct VertexEx{
 	//vec3 tangent;
 	//vec3 bitangent;
 	//u32 boneIndexes[4];
 	//f32 boneWeights[4];
 	//}  *vertexExArray;
-	u32 vertexCount;
-	view<Vertex> vertexes;
 	
 	typedef u32 Index;
-	u32    indexCount;
 	Index* indexArray;
 	view<u32> indexes;
 	
@@ -95,8 +102,7 @@ struct Mesh{
 		u8*  edgeArray;
 		view<u32> neighbors;
 		view<u8>  edges;
-	}  *triangleArray;
-	u32 triangleCount;
+	} *triangleArray;
 	view<Triangle> triangles;
 	
 	struct Face{
@@ -118,8 +124,7 @@ struct Mesh{
 		view<u32> outerVertexes;
 		view<u32> triangleNeighbors;
 		view<u32> faceNeighbors;
-	}  *faceArray;
-	u32 faceCount;
+	} *faceArray;
 	view<Face> faces;
 };
 typedef Mesh::Vertex   MeshVertex;

@@ -3,25 +3,27 @@ name         "test"
 entity_count 9
 last_updated ""
 
->materials
-0 "null_material.mat" 0 "null128.png"
-1 "flat" 1
-2 "phong" 2
-3 "floor_mat" 3 "deshi_icon.png"
-4 "sphere" 5
-5 "suzanne" 3 "null128.png"
-
 >meshes
-4 "default_planarbox" "floor_mat"
-5 "sphere.obj" "sphere"
-7 "bmonkey.obj" "suzanne"
-9 "box.obj" "flat"
-10 "box.obj" "phong"
-11 "arrow.obj" "phong"
-12 "box.obj" "flat"
-13 "box.obj" "phong"
-14 "box.obj" "phong"
-15 "box.obj" "phong"
+"bmonkey"
+"sphere"
+"planar_box"
+
+>textures
+"deshi_icon.png" false true
+
+>materials
+"flat"
+"phong"
+"pbr_null"
+"lavalamp"
+"pbr_deshi_icon"
+
+>models
+"box_flat"
+"box_phong"
+"bmonkey_pbr"
+"sphere_lavalamp"
+"planar_box_deshi_icon"
 
 >entities
 0 "box"

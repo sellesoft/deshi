@@ -3,7 +3,7 @@
 #define DESHI_WINDOW_H
 
 #include "../defines.h"
-#include "../math/vec.h"
+#include "../math/vector.h"
 
 #include <string>
 
@@ -12,15 +12,18 @@ struct GLFWwindow;
 struct GLFWmonitor;
 struct GLFWcursor;
 
-enum struct DisplayMode{
-	WINDOWED, BORDERLESS /*borderless windowed*/, FULLSCREEN
-};
+enum DisplayMode_{
+	DisplayMode_Windowed, 
+	DisplayMode_Borderless, 
+	DisplayMode_Fullscreen
+}; typedef u32 DisplayMode;
 
-enum struct CursorMode{
-	DEFAULT, FIRSTPERSON, HIDDEN
-};
+enum CursorMode_{
+	CursorMode_Default, 
+	CursorMode_FirstPerson, 
+	CursorMode_Hidden,
+}; typedef u32 CursorMode;
 
-//TODO(delle,Wi) add window title updating
 struct Window{
 	GLFWwindow*  window;
 	GLFWmonitor* monitor;
@@ -45,7 +48,7 @@ struct Window{
 	vec2 dimensions;
 	
 	//NOTE(delle) vsync isnt handled in GLFW when using vulkan
-	void Init(s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode displayMode = DisplayMode::WINDOWED);
+	void Init(s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode displayMode = DisplayMode_Windowed);
 	void Update();
 	void Cleanup();
 	void UpdateDisplayMode(DisplayMode mode);

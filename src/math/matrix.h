@@ -28,7 +28,6 @@ The transformation matrix will follow the format to the below:
 #define DESHI_MATRIX_H
 
 #include "../defines.h"
-
 #include <string>
 
 struct vec2;
@@ -43,13 +42,15 @@ struct quat;
 //// declarations ////
 //////////////////////
 
+static constexpr float MAT_EPSILON = 0.00001f;
+
 struct mat3 {
     float data[9]{};
     
     mat3(){};
     mat3(float _00, float _01, float _02,
-            float _10, float _11, float _12,
-            float _20, float _21, float _22);
+		 float _10, float _11, float _12,
+		 float _20, float _21, float _22);
     mat3(const mat3& m);
     
     static const mat3 IDENTITY;
@@ -107,12 +108,12 @@ struct mat4 {
     mat4(){};
     mat4(float all);
     mat4(float _00, float _01, float _02, float _03,
-            float _10, float _11, float _12, float _13,
-            float _20, float _21, float _22, float _23,
-            float _30, float _31, float _32, float _33);
+		 float _10, float _11, float _12, float _13,
+		 float _20, float _21, float _22, float _23,
+		 float _30, float _31, float _32, float _33);
     mat4(const mat4& m);
     mat4(float* data);
-
+	
     static const mat4 IDENTITY;
     
     float&  operator () (u32 row, u32 col);
@@ -168,7 +169,7 @@ struct mat4 {
     static mat4 TranslationMatrix(vec3 translation);
     static mat4 ScaleMatrix(vec3 scale);
     static mat4 TransformationMatrix(vec3 translation, vec3 rotation, vec3 scale);
-
+	
 };
 #include "mat4.inl"
 
@@ -188,9 +189,9 @@ mat3(const mat4& m){
 inline mat4 mat3::
 To4x4() {
     return mat4(data[0], data[1], data[2], 0,
-                   data[3], data[4], data[5], 0,
-                   data[6], data[7], data[8], 0,
-                   0,       0,       0,       1);
+				data[3], data[4], data[5], 0,
+				data[6], data[7], data[8], 0,
+				0,       0,       0,       1);
 }
 
 //// mat4 ////
@@ -206,8 +207,8 @@ mat4(const mat3& m){
 inline mat3 mat4::
 To3x3() {
     return mat3(data[0], data[1], data[2],
-                   data[4], data[5], data[6],
-                   data[8], data[9], data[10]);
+				data[4], data[5], data[6],
+				data[8], data[9], data[10]);
 }
 
 #endif //DESHI_MATRIX_H
