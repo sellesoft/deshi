@@ -1,6 +1,6 @@
 #pragma once
-#ifndef DESHI_vec2_INL
-#define DESHI_vec2_INL
+#ifndef DESHI_VEC2_INL
+#define DESHI_VEC2_INL
 
 //////////////////////
 //// constructors ////
@@ -108,11 +108,10 @@ operator-() const {
 	return vec2(-x, -y);
 }
 
-//compares if the difference is greater than .001
 inline bool vec2::
 operator==(const vec2& rhs) const {
-	return abs(this->x - rhs.x) < .001f && abs(this->y - rhs.y) < .001f;
-	//return this->y == rhs.y  && this->y == rhs.y;
+	return abs(this->x - rhs.x) < VEC_EPSILON 
+		&& abs(this->y - rhs.y) < VEC_EPSILON;
 }
 
 inline bool vec2::
@@ -136,7 +135,7 @@ copy() const {
 
 inline float vec2::
 dot(const vec2& rhs) const {
-	return this->x * rhs.x + this->y * rhs.y ;
+	return (this->x * rhs.x) + (this->y * rhs.y);
 }
 
 inline vec2 vec2::
@@ -149,17 +148,16 @@ mag() const {
 	return sqrt(x * x + y * y);
 }
 
-inline vec2 vec2::
+inline void vec2::
 normalize() {
-	if (*this != vec2(0, 0)) {
+	if (*this != vec2::ZERO) {
 		*this /= this->mag();
 	}
-	return *this;
 }
 
 inline vec2 vec2::
 normalized() const {
-	if (*this != vec2(0, 0)) {
+	if (*this != vec2::ZERO) {
 		return *this / this->mag();
 	}
 	return *this;
@@ -204,8 +202,11 @@ compOn(vec2 rhs) {
 
 inline float vec2::
 projectOn(vec2 rhs) {
-	if (this->mag() != 0) return this->dot(rhs) / this->mag();
-	else return 0;
+	if(this->mag() > VEC_EPSILON){
+		return this->dot(rhs) / this->mag();
+	}else{
+		return 0;
+	}
 }
 
 inline vec2 vec2::
@@ -260,25 +261,9 @@ str() const {
 
 inline const std::string vec2::
 str2f() const {
-	char buffer[50];
+	char buffer[64];
 	std::snprintf(buffer, 50, "(%+.2f, %+.2f)", this->x, this->y);
 	return std::string(buffer);
 }
 
-//////////////
-//// hash ////
-//////////////
-
-namespace std{
-	template<> struct hash<vec2>{
-		inline size_t operator()(vec2 const& v) const{
-			size_t seed = 0;
-			hash<float> hasher; size_t hash;
-			hash = hasher(v.x); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
-			hash = hasher(v.y); hash += 0x9e3779b9 + (seed << 6) + (seed >> 2); seed ^= hash;
-			return seed;
-		}
-	};
-};
-
-#endif //DESHI_vec2_INL
+#endif //DESHI_VEC2_INL

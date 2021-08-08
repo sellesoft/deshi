@@ -3,7 +3,7 @@
 #define DESHI_INPUT_H
 
 #include "../defines.h"
-#include "../math/vec.h"
+#include "../math/vector.h"
 #include "../utils/tuple.h"
 #include "time.h"
 

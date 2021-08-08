@@ -2,13 +2,14 @@
 id       0
 type     Anonymous
 name     "StaticMesh0"
-position (-0.505066,7.794169,-0.866713)
+position (0.000000,2.000000,0.000000)
 rotation (0.000000,0.000000,0.000000)
-scale    (100.000000,100.000000,1.000000)
+scale    (1.000000,1.000000,1.000000)
 
->model
-name    "box_testing0"
+>mesh
+name    "null"
 visible true
+control false
 
 >physics
 velocity         (0.000000,0.000000,0.000000)

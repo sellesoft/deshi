@@ -15,8 +15,6 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	int work_xpos, work_ypos, work_width, work_height;
 	glfwGetMonitorWorkarea(monitor, &work_xpos, &work_ypos, &work_width, &work_height);
 	
-	//TODO(delle,Wi) maybe we should not allow the window to be resizable in-game, but in-engine is fine
-	//i think its fine if its resizable in windowed mode during gameplay, i dont see any reason not to allow that
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
@@ -41,7 +39,7 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	}else{
 		glfwSetWindowPos(window, work_xpos+x, work_ypos+y);
 	}
-
+	
 	cursor  = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
 	if(!cursor){ PRINTLN("GLFW failed to create the cursor!"); glfwTerminate(); return; }
 	
@@ -56,7 +54,7 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	
 	//set window's cursor
 	glfwSetCursor(window, cursor);
-
+	
 	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 	int xpos, ypos;
 	glfwGetWindowPos(window, &xpos, &ypos);
@@ -67,7 +65,7 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	this->screenWidth = mode->width; this->screenHeight = mode->height;
 	this->screenRefreshRate = mode->refreshRate;
 	this->displayMode = displayMode;
-	this->cursorMode = CursorMode::DEFAULT;
+	this->cursorMode = CursorMode_Default;
 	this->dimensions = vec2(width, height);
 	
 	this->rawInput = false;
@@ -255,7 +253,7 @@ void Window::Update() {
 	this->dimensions = vec2(width, height);
 	
 	glfwGetCursorPos(window, &DeshInput->mouseX, &DeshInput->mouseY);
-	if(cursorMode == CursorMode::FIRSTPERSON){ glfwSetCursorPos(window, width/2, height/2); }
+	if(cursorMode == CursorMode_FirstPerson){ glfwSetCursorPos(window, width/2, height/2); }
 	DeshTime->windowTime = TIMER_END(t_d);
 }
 
@@ -265,7 +263,7 @@ void Window::Cleanup(){
 
 void Window::UpdateDisplayMode(DisplayMode displayMode){
 	if(displayMode == this->displayMode){return;}
-	if(this->displayMode == DisplayMode::WINDOWED){
+	if(this->displayMode == DisplayMode_Windowed){
 		restoreX = x;  restoreY = y; 
 		restoreW = width; restoreH = height;
 	}
@@ -274,14 +272,14 @@ void Window::UpdateDisplayMode(DisplayMode displayMode){
 	
 	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 	switch(displayMode){
-		case(DisplayMode::FULLSCREEN):{
+		case(DisplayMode_Fullscreen):{
 			glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
 		}break;
-		case(DisplayMode::BORDERLESS):{
+		case(DisplayMode_Borderless):{
 			glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
 			glfwSetWindowMonitor(window, 0, 0, 0, mode->width, mode->height, mode->refreshRate);
 		}break;
-		case(DisplayMode::WINDOWED):default:{
+		case(DisplayMode_Windowed):default:{
 			glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_TRUE);
 			glfwSetWindowMonitor(window, 0, restoreX, restoreY, restoreW, restoreH, GLFW_DONT_CARE);
 		}break;
@@ -293,17 +291,17 @@ void Window::UpdateCursorMode(CursorMode mode){
 	this->cursorMode = mode;
 	
 	switch(mode){
-		case(CursorMode::DEFAULT):default:{
+		case(CursorMode_Default):default:{
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		}break;
-		case(CursorMode::FIRSTPERSON):{
+		case(CursorMode_FirstPerson):{
 			int w, h;
 			glfwGetWindowSize(window, &w, &h);
 			glfwSetCursorPos(window, w/2, h/2);
 			glfwGetCursorPos(window, &DeshInput->mouseX, &DeshInput->mouseY);
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		}break;
-		case(CursorMode::HIDDEN):{
+		case(CursorMode_Hidden):{
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 		}break;
 	}
@@ -336,25 +334,25 @@ void Window::UpdateTitle(const char* title){
 std::string Window::str(){
 	std::string dispMode;
 	switch (displayMode) {
-		case(DisplayMode::WINDOWED):   { dispMode = "Windowed"; }break;
-		case(DisplayMode::BORDERLESS): { dispMode = "Borderless Windowed"; }break;
-		case(DisplayMode::FULLSCREEN): { dispMode = "Fullscreen"; }break;
+		case(DisplayMode_Windowed):   { dispMode = "Windowed"; }break;
+		case(DisplayMode_Borderless): { dispMode = "Borderless Windowed"; }break;
+		case(DisplayMode_Fullscreen): { dispMode = "Fullscreen"; }break;
 	}
 	std::string cursMode;
 	switch (cursorMode) {
-		case(CursorMode::DEFAULT):     { cursMode = "Default"; }break;
-		case(CursorMode::FIRSTPERSON): { cursMode = "First Person"; }break;
-		case(CursorMode::HIDDEN):      { cursMode = "Hidden"; }break;
+		case(CursorMode_Default):     { cursMode = "Default"; }break;
+		case(CursorMode_FirstPerson): { cursMode = "First Person"; }break;
+		case(CursorMode_Hidden):      { cursMode = "Hidden"; }break;
 	}
 	return TOSTDSTRING("Window Info"
-					"\n    Window Position: ", x, ",", y,
-					"\n    Window Dimensions: ", width, "x", height,
-					"\n    Screen Dimensions: ", screenWidth, "x", screenHeight,
-					"\n    Refresh Rate: ", refreshRate,
-					"\n    Screen Refresh Rate: ", screenRefreshRate,
-					"\n    Display Mode: ", dispMode,
-					"\n    Cursor Mode: ", cursMode,
-					"\n    Raw Input: ", rawInput,
-					"\n    Resizable: ", resizable,
-					"\n    Restores: ", restoreX, ",", restoreY, " ", restoreW, "x", restoreH);
+					   "\n    Window Position: ", x, ",", y,
+					   "\n    Window Dimensions: ", width, "x", height,
+					   "\n    Screen Dimensions: ", screenWidth, "x", screenHeight,
+					   "\n    Refresh Rate: ", refreshRate,
+					   "\n    Screen Refresh Rate: ", screenRefreshRate,
+					   "\n    Display Mode: ", dispMode,
+					   "\n    Cursor Mode: ", cursMode,
+					   "\n    Raw Input: ", rawInput,
+					   "\n    Resizable: ", resizable,
+					   "\n    Restores: ", restoreX, ",", restoreY, " ", restoreW, "x", restoreH);
 }

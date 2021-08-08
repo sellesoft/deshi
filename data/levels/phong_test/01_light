@@ -6,10 +6,10 @@ position (-8.000000,6.000000,-8.000000)
 rotation (0.000000,0.000000,0.000000)
 scale    (0.250000,0.250000,0.250000)
 
->mesh
-id      22
-name    "sphere.obj"
-visible false
+>model
+name    "box_phong"
+visible true
+control false
 
 >light
 position   (-8.000000,6.000000,-8.000000)

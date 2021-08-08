@@ -1,0 +1,117 @@
+typedef uint32 u32;
+typedef uint16 u16;
+typedef uchar  u8;
+typedef float  f32;
+typedef uint64 u64;
+typedef int32  bool;
+
+typedef struct {
+    f32 x;
+    f32 y;
+} vec2<read=vec2Read>;
+
+string vec2Read( vec2 &v ) {
+    string s;
+    SPrintf(s, "x: %.2f, y: %.2f", v.x, v.y);
+    return s;
+}
+
+typedef struct {
+    f32 x;
+    f32 y;
+    f32 z;
+} vec3<read=vec3Read>;
+
+string vec3Read( vec3 &v ) {
+    string s;
+    SPrintf(s, "x: %.2f, y: %.2f, z: %.2f", v.x, v.y, v.z);
+    return s;
+}
+
+typedef struct {
+    u64 data_ptr;
+    u64 count;
+} view;
+
+struct{
+    u32  bytes;
+    char name[64];
+    u32  idx;
+    vec3 aabb_min;
+    vec3 aabb_max;
+    vec3 center;
+
+    u32 vertex_count;
+    u32 index_count;
+    u32 triangle_count;
+    u32 face_count;
+    u32 total_tri_neighbor_count;
+	u32 total_face_vertex_count;
+	u32 total_face_outer_vertex_count;
+	u32 total_face_tri_neighbor_count;
+	u32 total_face_face_neighbor_count;
+
+    u64  vertexes_ptr;
+    view vertex_view;
+    u64  indexes_ptr;
+    view index_view;
+    u64  triangles_ptr;
+    view triangle_view;
+    u64  faces_ptr;
+    view face_view;
+} header;
+
+
+typedef struct{
+    vec3 pos;
+    vec2 uv;
+    u32  color;
+    vec3 normal;
+} Vertex;
+Vertex vertexes[header.vertex_count];
+
+u32 indexes[header.index_count];
+
+typedef struct{
+    vec3 normal;
+    vec3 p[3];
+    u32  v[3];
+    u32  neighbor_count;
+    u32  face;
+    bool removed;
+    bool checked;
+    u64  neighbor_array_ptr;
+    u64  edge_array_ptr;
+    view neighbor_view;
+    view edge_view;
+} Triangle;
+Triangle triangles[header.triangle_count];
+
+typedef struct{
+    vec3 normal;
+    vec3 center;
+    u32 triangle_count;
+    u32 vertex_count;
+    u32 outer_vertex_count;
+    u32 neighbor_tri_count;
+    u32 neighbor_face_count;
+    u64 triangle_array_ptr;
+    u64 vertex_array_ptr;
+    u64 outer_vertex_array_ptr;
+    u64 neighbor_tri_array_ptr;
+    u64 neighbor_face_array_ptr;
+    view triangle_view;
+    view vertex_view;
+    view outer_vertex_view;
+    view neighbor_tri_view;
+    view neighbor_face_view;
+} Face;
+Face faces[header.face_count];
+
+u32 triangle_neighbors[header.total_tri_neighbor_count];
+u8  triangle_edges[header.total_tri_neighbor_count];
+u32 face_triangles[header.triangle_count];
+u32 face_vertexes[header.total_face_vertex_count];
+u32 face_outer_vertexes[header.total_face_outer_vertex_count];
+u32 face_triangle_neighbors[header.total_face_tri_neighbor_count];
+u32 face_face_neighbors[header.total_face_face_neighbor_count];

@@ -1,11 +1,3 @@
-//TODO remove all ImGui stuff from here and do it ourselves since this might be in final release
-//TODO setup popout and window console states
-//TODO add scrolling and scrollbar
-//TODO add PAGEUP and PAGEDOWN binds (CTRL for max scroll) 
-//TODO wrapped text inside a coloredpstring
-//TODO input history from previous inputs on UP and DOWN arrows
-//TODO commands
-
 ////////////////////////////////////
 //// internal console variables ////
 ////////////////////////////////////

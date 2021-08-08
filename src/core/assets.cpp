@@ -178,8 +178,26 @@ appendFileBinary(const std::string& filepath, void* data, u32 bytes, bool logErr
 	file.write((char*)data, bytes);
 }
 
+std::vector<std::string> Assets::
+iterateDirectory_(const std::string& filepath, const char* extension) {
+	//TODO std::filesystem::recursive_directory_iterator
+	using namespace std::filesystem;
+	std::vector<std::string> files;
+	for (auto& p : directory_iterator(filepath)) {
+		if(extension){
+			if(p.path().extension().string() == std::string(extension)){
+				files.push_back(p.path().filename().string());
+			}
+		}else{
+			files.push_back(p.path().filename().string());
+		}
+	}
+	return files;
+}
+
 array<string> Assets::
 iterateDirectory(const std::string& filepath, const char* extension) {
+	//TODO std::filesystem::recursive_directory_iterator
 	using namespace std::filesystem;
 	array<string> files;
 	for (auto& p : directory_iterator(filepath)) {
@@ -355,9 +373,6 @@ saveConfig(const char* filename, const ConfigMap& configMap){
 			case ConfigValueType_FV4:{
 				out << ((vec4*)config.third)->str();
 			}break;
-			case ConfigValueType_CString:{
-				out << '\"' << *(const char**)config.third << '\"';
-			}break;
 			case ConfigValueType_StdString:{
 				out << '\"' << *(std::string*)config.third << '\"';
 			}break;
@@ -412,33 +427,22 @@ loadConfig(const char* filename, ConfigMap configMap){
 	if(!buffer){ saveConfig(filename, configMap); return; }
 	defer{ delete[] buffer; };
 	
-	char* line_start;
-	char* line_end = buffer - 1;
-	char* info_start;
-	char* info_end;
-	char* key_start;
-	char* key_end;
-	char* value_start;
-	char* value_end;
+	char* line_start;  char* line_end = buffer - 1;
+	char* info_start;  char* info_end;
+	char* key_start;   char* key_end;
+	char* value_start; char* value_end;
 	bool has_cr = false;
 	for(u32 line_number = 1; ;line_number++){
 		//get the next line
 		line_start = (has_cr) ? line_end+2 : line_end+1;
 		if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
-		//check for CRLF
-		if(has_cr || *(line_end-1) == '\r') {
-			has_cr = true;
-			line_end -= 1;
-		}
+		if(has_cr || *(line_end-1) == '\r'){ has_cr = true; line_end -= 1; }
+		if(line_start == line_end) continue;
 		
 		//format the line
-		if(line_start == line_end) continue;
-		info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);
-		if(info_start == line_end) continue;
-		info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);
-		if(info_start == info_end) continue;
-		info_end   = info_start + Utils::skipSpacesTrailing(info_start, info_end-info_start);
-		if(info_start == info_end) continue;
+		info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);  if(info_start == line_end) continue;
+		info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);  if(info_start == info_end) continue;
+		info_end   = info_start + Utils::skipSpacesTrailing(info_start, info_end-info_start); if(info_start == info_end) continue;
 		
 		{//split the key-value pair
 			key_start = info_start;
@@ -504,15 +508,6 @@ loadConfig(const char* filename, ConfigMap configMap){
 						vec->y = strtof(cursor+1, &cursor);
 						vec->z = strtof(cursor+1, &cursor);
 						vec->w = strtof(cursor+1, 0);
-					}break;
-					case ConfigValueType_CString:{ //!Leak
-						//TODO(delle,Cl) figure out a way to prevent a leak here
-						//    compile time strings shouldnt be free'd but
-						//    runtime strings should be...
-						//free(cstr);
-						size_t len = value_end-value_start-1; //1 extra for \0
-						*(char**)config.third = (char*)malloc(len*sizeof(char));
-						cpystr(*(char**)config.third, value_start+1, len);
 					}break;
 					case ConfigValueType_StdString:{
 						*(std::string*)config.third = std::string(value_start+1, value_end-value_start-2);

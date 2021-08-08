@@ -13,10 +13,10 @@ orientation (0.000000,0.000000,0.000000)
 
 >audio source
 
->mesh
-id      5
-name    "sphere.obj"
+>model
+name    "sphere_lavalamp"
 visible true
+control false
 
 >physics
 velocity         (0.000000,0.000000,0.000000)

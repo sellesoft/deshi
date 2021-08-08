@@ -6,10 +6,10 @@ position (-25.012987,7.700043,18.258175)
 rotation (-6142.615723,-1294.561768,7463.778320)
 scale    (15.000000,10.000000,5.000000)
 
->mesh
-id      15
-name    "box.obj"
+>model
+name    "box_phong"
 visible true
+control false
 
 >physics
 velocity         (0.000000,0.000000,0.000000)

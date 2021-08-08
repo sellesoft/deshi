@@ -1,0 +1,24 @@
+>level
+name         "null boxes"
+entity_count 6
+last_updated ""
+
+>meshes
+
+>textures
+"font_white" true false
+"font_gohu" true false
+
+>materials
+
+>models
+
+>entities
+0 "StaticMesh0"
+1 "StaticMesh0"
+2 "StaticMesh0"
+3 "StaticMesh0"
+4 "StaticMesh0"
+5 "StaticMesh0"
+
+>events

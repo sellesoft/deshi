@@ -2,8 +2,8 @@
 #ifndef DESHI_VECTORMATRIX_H
 #define DESHI_VECTORMATRIX_H
 
-#include "vec.h"
-#include "mat.h"
+#include "vector.h"
+#include "matrix.h"
 
 //////////////////////
 //// interactions ////
@@ -14,29 +14,29 @@
 inline vec3 vec3::
 operator *  (const mat3& rhs) const {
     return vec3(x*rhs.data[0] + y*rhs.data[3] + z*rhs.data[6], 
-                   x*rhs.data[1] + y*rhs.data[4] + z*rhs.data[7], 
-                   x*rhs.data[2] + y*rhs.data[5] + z*rhs.data[8]);
+				x*rhs.data[1] + y*rhs.data[4] + z*rhs.data[7], 
+				x*rhs.data[2] + y*rhs.data[5] + z*rhs.data[8]);
 }
 
 inline void vec3::
 operator *= (const mat3& rhs) {
     *this = vec3(x*rhs.data[0] + y*rhs.data[3] + z*rhs.data[6],
-                    x*rhs.data[1] + y*rhs.data[4] + z*rhs.data[7],
-                    x*rhs.data[2] + y*rhs.data[5] + z*rhs.data[8]);
+				 x*rhs.data[1] + y*rhs.data[4] + z*rhs.data[7],
+				 x*rhs.data[2] + y*rhs.data[5] + z*rhs.data[8]);
 }
 
 inline vec3 vec3::
 operator *  (const mat4& rhs) const {
     return vec3(x*rhs.data[0] + y*rhs.data[4] + z*rhs.data[8]  + rhs.data[12],
-                   x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9]  + rhs.data[13],
-                   x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + rhs.data[14]);
+				x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9]  + rhs.data[13],
+				x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + rhs.data[14]);
 }
 
 inline void vec3::
 operator *= (const mat4& rhs) {
     *this = vec3(x*rhs.data[0] + y*rhs.data[4] + z*rhs.data[8]  + rhs.data[12],
-                    x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9]  + rhs.data[13],
-                    x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + rhs.data[14]);
+				 x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9]  + rhs.data[13],
+				 x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + rhs.data[14]);
 }
 
 //// vec4 ////
@@ -44,17 +44,17 @@ operator *= (const mat4& rhs) {
 inline vec4 vec4::
 operator *  (const mat4& rhs) const {
     return vec4(x*rhs.data[0] + y*rhs.data[4] + z*rhs.data[8]  + w*rhs.data[12],
-                   x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9]  + w*rhs.data[13],
-                   x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + w*rhs.data[14],
-                   x*rhs.data[3] + y*rhs.data[7] + z*rhs.data[11] + w*rhs.data[15]);
+				x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9]  + w*rhs.data[13],
+				x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + w*rhs.data[14],
+				x*rhs.data[3] + y*rhs.data[7] + z*rhs.data[11] + w*rhs.data[15]);
 }
 
 inline void vec4::
 operator *= (const mat4& rhs) {
     *this = vec4(x*rhs.data[0] + y*rhs.data[4] + z*rhs.data[8]  + w*rhs.data[12],
-                    x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9]  + w*rhs.data[13],
-                    x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + w*rhs.data[14],
-                    x*rhs.data[3] + y*rhs.data[7] + z*rhs.data[11] + w*rhs.data[15]);
+				 x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9]  + w*rhs.data[13],
+				 x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + w*rhs.data[14],
+				 x*rhs.data[3] + y*rhs.data[7] + z*rhs.data[11] + w*rhs.data[15]);
 }
 
 /////////////////////////////
@@ -86,16 +86,16 @@ RotationMatrix(vec3 rotation) {
     float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
     float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
     return mat3(r00, r01, r02,
-                   r10, r11, r12,
-                   r20, r21, r22);
+				r10, r11, r12,
+				r20, r21, r22);
 }
 
 //returns a scale matrix where (0,0) = scale.x, (1,1) = scale.y, (2,2) = scale.z
 inline mat3 mat3::
 ScaleMatrix(vec3 scale) {
     return mat3(scale.x, 0, 0,
-                   0, scale.y, 0,
-                   0, 0, scale.z);
+				0, scale.y, 0,
+				0, 0, scale.z);
 }
 
 //// mat4 ////
@@ -128,9 +128,9 @@ RotationMatrix(vec3 rotation) {
     float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
     float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
     return mat4(r00, r01, r02, 0,
-                   r10, r11, r12, 0,
-                   r20, r21, r22, 0,
-                   0,   0,   0,   1);
+				r10, r11, r12, 0,
+				r20, r21, r22, 0,
+				0,   0,   0,   1);
 }
 
 //https://github.com/microsoft/DirectXMath/blob/7c30ba5932e081ca4d64ba4abb8a8986a7444ec9/Inc/DirectXMathMatrix.inl
@@ -168,9 +168,9 @@ AxisAngleRotationMatrix(float angle, vec4 axis) {
     vec4 V2 = vec4(R1.y, R2.x, R1.y, R2.x);
     
     return mat4(V0.x, V1.x, V1.y, V0.w,
-                   V1.z, V0.y, V1.w, V0.w,
-                   V2.x, V2.y, V0.z, V0.w,
-                   0,    0,    0,    1);
+				V1.z, V0.y, V1.w, V0.w,
+				V2.x, V2.y, V0.z, V0.w,
+				0,    0,    0,    1);
 }
 
 //returns a transformation matrix of the combined translation, rotation, and scale matrices from input vectors
@@ -216,7 +216,7 @@ TransformationMatrix(vec3 tr, vec3 rot, vec3 scale) {
     return mat4(scale.x*r00, scale.x*r01, scale.x*r02, 0,
                 scale.y*r10, scale.y*r11, scale.y*r12, 0,
                 scale.z*r20, scale.z*r21, scale.z*r22, 0,
-                       tr.x,        tr.y,        tr.z, 1);
+				tr.x,        tr.y,        tr.z, 1);
 }
 
 //returns euler angles from a rotation matrix

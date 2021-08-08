@@ -28,7 +28,7 @@ struct array {
 	
 	array(u32 _count) {
 		space = RoundUpTo(_count, 4);
-		count = _count;
+		count = 0;
 		data  = (T*)calloc(_count, sizeof(T));
 		first = data;
 		iter  = first;
@@ -40,7 +40,7 @@ struct array {
 		space = RoundUpTo(l.size(), 4);
 		count = l.size();
 		data = (T*)calloc(space, sizeof(T));
-
+		
 		u32 index = 0;
 		for (T item : l) {
 			u32 he = index * sizeof(T);
@@ -70,7 +70,7 @@ struct array {
 				i++;
 			}
 		}
-
+		
 		first = data;
 		iter  = first;
 		last = (array.last == 0) ? 0 : data+(array.count-1);
@@ -103,7 +103,7 @@ struct array {
 	
 	array<T>& operator = (const array<T>& array) {
 		this->~array();
-
+		
 		space = array.space;
 		count = array.count;
 		data = (T*)calloc(space, sizeof(T));
@@ -116,7 +116,7 @@ struct array {
 				i++;
 			}
 		}
-
+		
 		first = data;
 		iter  = first;
 		last  = (array.last == 0) ? 0 : data+(array.count-1);
@@ -137,7 +137,7 @@ struct array {
 			iter  = first + iteroffset;
 			last  = first + osize;
 			max   = data+(space-1);
-
+			
 			new(last) T(t);
 		}
 		else {
@@ -158,7 +158,7 @@ struct array {
 			this->add(item);
 		}
 	}
-
+	
 	//for taking in something without copying it
 	void emplace(const T& t) {
 		//if array is full, realloc the memory and extend it to accomodate the new item
@@ -168,12 +168,12 @@ struct array {
 			space *= 2;
 			data = (T*)realloc(data, (space)*sizeof(T));
 			Assert(data, "realloc failed and returned nullptr. maybe we ran out of memory?");
-
+			
 			first = data;
 			iter  = first + iteroffset;
 			last  = first + osize;
 			max   = data+(space-1);
-
+			
 			new(last) T(t);
 		}
 		else {
@@ -188,7 +188,7 @@ struct array {
 		}
 		count++;
 	}
-
+	
 	//removes last element
 	void pop() {
 		Assert(count > 0, "attempt to pop with nothing in array");
@@ -283,7 +283,7 @@ struct array {
 			max   = data+(space-1);
 		}
 	}
-
+	
 	//swaps two elements in the array
 	void swap(u32 idx1, u32 idx2) {
 		Assert(idx1 < count && idx2 < count, "index out of bounds");

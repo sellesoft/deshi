@@ -1,6 +1,6 @@
 #pragma once
-#ifndef DESHI_vec4_INL
-#define DESHI_vec4_INL
+#ifndef DESHI_VEC4_INL
+#define DESHI_VEC4_INL
 
 //////////////////////
 //// constructors ////
@@ -104,8 +104,10 @@ operator -  () const {
 
 inline bool vec4::
 operator == (const vec4& rhs) const {
-	return abs(this->x - rhs.x) < .001f && abs(this->y - rhs.y) < .001f && abs(this->z - rhs.z) < .001f && abs(this->w - rhs.w) < .001f;
-	//return this->x == rhs.x && this->y == rhs.y && this->z == rhs.z && this->w == rhs.w;
+	return abs(this->x - rhs.x) < VEC_EPSILON 
+		&& abs(this->y - rhs.y) < VEC_EPSILON 
+		&& abs(this->z - rhs.z) < VEC_EPSILON 
+		&& abs(this->w - rhs.w) < VEC_EPSILON;
 }
 
 inline bool vec4::
@@ -130,17 +132,16 @@ copy() const {
 
 inline float vec4::
 dot(const vec4& rhs) const {
-	return this->x * rhs.x + this->y * rhs.y + this->z * rhs.z + this->w * rhs.w;
+	return this->x*rhs.x + this->y*rhs.y + this->z*rhs.z + this->w*rhs.w;
 }
 
 inline float vec4::
 mag() const {
-	return sqrtf(x * x + y * y + z * z + w * w);
+	return sqrtf(x*x + y*y + z*z + w*w);
 }
 
-//NOTE: normalizing a vec4 means dividing all parts by W
 inline vec4 vec4::
-normalized() const {
+wnormalized() const {
 	if (w != 0) {
 		return *this / w;
 	}
@@ -199,4 +200,4 @@ str2f() const {
 	return std::string(buffer);
 }
 
-#endif //DESHI_VECTOR4_INL
+#endif //DESHI_VEC4_INL
