@@ -33,7 +33,16 @@ enum UIStyleCol : u32 {
 	UIStyleCol_COUNT
 };
 
-
+struct UIStyle {
+	vec2  windowPadding;
+	vec2  itemSpacing;
+	float windowBorderSize;
+	float titleBarHeight;
+	vec2  titleTextAlign;
+	vec2  scrollAmount;
+	Font* font; //this is a pointer until I fix font to not store so much shit
+	Color colors[UIStyleCol_COUNT];
+};
 
 enum UITextFlags_ {
 	UITextFlags_None = 0,
@@ -73,8 +82,6 @@ struct UIInputTextState {
 	u32 selectStart;             //beginning of text selection
 	u32 selectEnd;	             //end of text selection
 	TIMER_START(timeSinceTyped); //timer to time how long its been since typing, for cursor
-
-
 };
 
 
@@ -169,7 +176,11 @@ struct UIWindow {
 	bool hidden = false;
 
 	float titleBarHeight = 0;
-	
+
+	//this is the state of style when EndWindow() is called for the window
+	//meaning the style for elements before the last bunch could be different
+	//if the user changes stuff before ending the window and therefore this should be used carefully!!
+	UIStyle style;
 	
 	UIWindow() {};
 	
@@ -190,7 +201,7 @@ struct UIWindow {
 		minimized = cop.minimized;
 		hidden = cop.hidden;
 		titleBarHeight = cop.titleBarHeight;
-
+		style = cop.style;
 	}
 	
 	UIWindow& operator= (const UIWindow& cop) {
@@ -208,6 +219,7 @@ struct UIWindow {
 		minimized = cop.minimized;
 		hidden = cop.hidden;
 		titleBarHeight = cop.titleBarHeight;
+		style = cop.style;
 		return *this;
 	}
 	

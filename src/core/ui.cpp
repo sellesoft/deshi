@@ -14,19 +14,10 @@ local struct {
 	Color             skin_white = Color(0xffd4a3); //skin white
 	Color      bright_skin_white = Color(0xffecd6); //even whiter skin
 	Color             near_black = Color(0x141414); //almost black
-}colors;
+} colors;
 
 //global styling
-struct UIStyle {
-	vec2  windowPadding;
-	vec2  itemSpacing;
-	float windowBorderSize;
-	float titleBarHeight;
-	vec2  titleTextAlign;
-	vec2  scrollAmount;
-	Font* font; //this is a pointer until I fix font to not store so much shit
-	Color colors[UIStyleCol_COUNT];
-} style;
+UIStyle style;
 
 //for color stack, saves what element was changed and what it's old color was 
 struct ColorMod {
@@ -519,9 +510,11 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 void UI::EndWindow() {
 	Assert(windowStack.size() > 1, "Attempted to end the base window");
 	
+	workingWin.style = style;
+
 	//check to see if the elements we have drawn so far have gone beyond the window's size
 	//and allow scrolling if it did, as well as define a max scrolling amount
-	if (workingWin.cury > workingWin.height)
+	if (workingWin.cury > workingWin.height - workingWin.titleBarHeight)
 		workingWin.maxScroll.y = (workingWin.cury + style.windowPadding.y * 2) - workingWin.height;
 	else
 		workingWin.maxScroll.y = 0;
@@ -579,8 +572,8 @@ void UI::ShowDebugWindowOf(string name) {
 	//show info about variables
 	Text(info);
 
-	vec2 cursize = vec2::ONE * 3;
-	Render::DrawRectUI(debugee->position + (debugee->cursor - cursize / 2) - debugee->scroll, vec2::ONE * 10);
+	vec2 cursize = vec2::ONE * 2;
+	Render::FillRectUI(debugee->position + (debugee->cursor - cursize / 2) - debugee->scroll + debugee->style.windowPadding, cursize);
 	
 	EndWindow();
 	
@@ -973,6 +966,8 @@ void UI::Update() {
 			newDrag = true; shouldDrag = true;
 		}
 	}
+
+	
 	
 	//draw windows in order with their drawCmds
 	for (UIWindow& p : windows) {
