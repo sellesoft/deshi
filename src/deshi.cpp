@@ -58,6 +58,7 @@ add quaternions and converions between them and other linear algebra primitives
 
 Render TODOs
 ------------
+add texture/material recreation without restart
 revert phong shader so it is like it used to be, but keeps the shadows
 fix directional shadow mapping's (projection?) errors
 rework lights
