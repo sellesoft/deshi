@@ -181,7 +181,7 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 
 */
 
-#include "../deshi.h"
+#include "deshi.h"
 
 //// utility headers ////
 #include "defines.h"
