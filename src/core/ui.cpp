@@ -574,7 +574,7 @@ void UI::ShowDebugWindowOf(string name) {
 	//show info about variables
 	Text(info);
 
-
+	
 	
 	EndWindow();
 	
@@ -647,6 +647,21 @@ bool UI::Button(string text, vec2 pos, Color color){
 	return true;
 }
 
+
+void UI::Checkbox(string label, bool* b) {
+
+	vec2 boxpos = workingWin.position + workingWin.cursor + style.windowPadding;
+	vec2 boxsiz = vec2(50, 50);
+
+	{//box
+		UIDrawCmd drawCmd{ UIDrawType_Rectangle };
+		drawCmd.position = boxpos;
+		drawCmd.dimensions = boxsiz;
+		drawCmd.color = style.colors[UIStyleCol_FrameBg];
+	}
+
+
+}
 
 
 bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags flags) {	
@@ -854,6 +869,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_Border,   colors.near_black);
 	PushColor(UIStyleCol_WindowBg, colors.midnight_blue);
 	PushColor(UIStyleCol_TitleBg,  colors.purple_gray);
+	PushColor(UIStyleCol_FrameBg, colors.pink_gray);
 	PushColor(UIStyleCol_Text,     Color::WHITE);
 	
 	//push default style variables

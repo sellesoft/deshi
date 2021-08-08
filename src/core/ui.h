@@ -238,6 +238,8 @@ namespace UI {
 	bool Button(string text, Color color);
 	bool Button(string text, vec2 pos, Color color);
 
+	void Checkbox(string label, bool* b);
+
 	bool InputText(string label, string& buffer, u32 maxChars = -1, UIInputTextFlags flags = 0);
 	bool InputText(string label, string& buffer, vec2 pos, u32 maxChars = -1, UIInputTextFlags flags = 0);
 
