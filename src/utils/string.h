@@ -105,7 +105,7 @@ struct string {
 		if (size != 0) {
 			free(str);
 			str = (char*)malloc(size + 1);
-			memcpy(str, s.str, s.size);
+			memcpy(str, s.str, s.size+1);
 			ADDRUPDATE(str, size, 1);
 		}
 		else {
@@ -162,7 +162,7 @@ struct string {
 		strcpy(str, s);
 		ADDRUPDATE(str, size, 1);
 	}
-
+	
 	bool operator == (string s) {
 		return !strcmp(str, s.str);
 	}
@@ -236,7 +236,7 @@ struct string {
 		string s(c);
 		return this->operator+(s);
 	}
-
+	
 	string operator -- (int) {
 		if (size != 1) {
 			str = (char*)realloc(str, size - 1);
@@ -249,7 +249,7 @@ struct string {
 			memset(str, '\0', 1);
 		}
 		return *this;
-
+		
 	}	
 	
 	//const func for getting a char in a string
@@ -278,7 +278,7 @@ struct string {
 			memset(str, '\0', 1);
 		}
 	}
-
+	
 	//inserts after specified idx, so an idx of -1 inserts at the begining
 	void insert(char c, s32 idx) {
 		Assert(idx <= size && idx >= -1);
@@ -320,7 +320,7 @@ struct string {
 		ADDRUPDATE(s.str, s.size, 1);
 		return s;
 	}
-
+	
 	static string toStr(u32 i) {
 		string s;
 		s.size = (i == 0) ? 1 : (int)((floor(log10(i)) + 1) * sizeof(char));
@@ -339,7 +339,7 @@ struct string {
 		ADDRUPDATE(s.str, s.size, 1);
 		return s;
 	}
-
+	
 	static string toStr(size_t f) {
 		string s;
 		s.size = snprintf(nullptr, 0, "%zu", f);
