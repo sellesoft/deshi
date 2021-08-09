@@ -105,7 +105,7 @@ struct string {
 		if (size != 0) {
 			free(str);
 			str = (char*)malloc(size + 1);
-			strcpy(str, s.str);
+			memcpy(str, s.str, s.size);
 			ADDRUPDATE(str, size, 1);
 		}
 		else {
@@ -258,7 +258,6 @@ struct string {
 	}
 	
 	void clear() {
-		memset(str, 0, size + 1);
 		str = (char*)realloc(str, 1);
 		str[0] = '\0';
 		size = 0;

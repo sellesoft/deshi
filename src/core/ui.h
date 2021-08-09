@@ -12,13 +12,15 @@
 
 
 enum UIStyleVar : u32 {
-	UIStyleVar_WindowPadding,	 // default vec2(10, 10)      spacing between every item and the edges of the window
-	UIStyleVar_ItemSpacing,      // default vec2(1, 1)	      spacing between items within a window
-	UIStyleVar_WindowBorderSize, // default 1                 border size in pixels                
-	UIStyleVar_TitleBarHeight,	 // default font.height * 1.2                                        
-	UIStyleVar_TitleTextAlign,   // default vec2(0, 0.5)	  how title text is aligned in title bar 
-	UIStyleVar_ScrollAmount,     // default vec2(5, 5)		  amount to scroll in pixels             
-	UIStyleVar_Font,			 // default "gohufont-11.bdf" currently not changable, as we dont support loading multiple fonts yet
+	UIStyleVar_WindowPadding,	    // default vec2(10, 10)       spacing between every item and the edges of the window
+	UIStyleVar_ItemSpacing,         // default vec2(1, 1)	      spacing between items within a window
+	UIStyleVar_WindowBorderSize,    // default 1                  border size in pixels                
+	UIStyleVar_TitleBarHeight,	    // default font.height * 1.2                                        
+	UIStyleVar_TitleTextAlign,      // default vec2(0, 0.5)  	  how title text is aligned in title bar 
+	UIStyleVar_ScrollAmount,        // default vec2(5, 5)		  amount to scroll in pixels             
+	UIStyleVar_CheckboxSize,        // default vec2(10, 10)      
+	UIStyleVar_CheckboxFillPadding, // default 2                 how far from the edge a checkbox's true filling is padding
+	UIStyleVar_Font,			    // default "gohufont-11.bdf" currently not changable, as we dont support loading multiple fonts yet
 	UIStyleVar_COUNT
 };
 
@@ -40,6 +42,8 @@ struct UIStyle {
 	float titleBarHeight;
 	vec2  titleTextAlign;
 	vec2  scrollAmount;
+	vec2  checkboxSize;
+	float checkboxFillPadding;
 	Font* font; //this is a pointer until I fix font to not store so much shit
 	Color colors[UIStyleCol_COUNT];
 };
@@ -63,30 +67,35 @@ enum UIWindowFlags_ {
 	UIWindowFlags_NoTitleBar       = 1 << 2,
 	UIWindowFlags_NoBorder         = 1 << 3,
 	UIWindowFlags_NoBackground     = 1 << 4,
-	UIWindowFlags_NoScroll         = 1 << 5,
-	UIWindowFlags_FocusOnHover     = 1 << 6,
+	UIWindowFlags_NoScrollX        = 1 << 5,
+	UIWindowFlags_NoScrollY        = 1 << 6,
+	UIWindowFlags_NoScroll         = UIWindowFlags_NoScrollX | UIWindowFlags_NoScrollY,
 	UIWindowFlags_NoFocus          = 1 << 7,
-	UIWindowFlags_NoMinimize       = 1 << 8,
-	UIWindowFlags_NoMinimizeButton = 1 << 9,
+	UIWindowFlags_FocusOnHover     = 1 << 8,
+	UIWindowFlags_NoMinimize       = 1 << 9,
+	UIWindowFlags_NoMinimizeButton = 1 << 10,
+	UIWindowFlags_FitAllElements   = 1 << 11, //attempts to fit the window's size to all called elements
 	
 	UIWindowFlags_Invisible    = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground | UIWindowFlags_NoFocus
 }; typedef u32 UIWindowFlags;
 
 
 struct UIInputTextState {
-	u32 id;                      //id the state belongs to
-	u32 cursor = 0;              //what character in the buffer the cursor is infront of, 0 being all the way to the left
-	f32 cursorBlinkTime;         //time it takes for the cursor to blink
-	f32 scroll;                  //scroll offset on x
+	u32    id;                   //id the state belongs to
+	u32    cursor = 0;           //what character in the buffer the cursor is infront of, 0 being all the way to the left
+	f32    cursorBlinkTime;      //time it takes for the cursor to blink
+	f32    scroll;               //scroll offset on x
 	string buffer;               //internal buffer, in case user buffer disappears
-	u32 selectStart;             //beginning of text selection
-	u32 selectEnd;	             //end of text selection
+	u32    selectStart;          //beginning of text selection
+	u32    selectEnd;	         //end of text selection
+	bool   enterPressed = 0;     //set if enter is pressed and enter returns to, so we can adjust the cursor for any changes the user might have made when we come back
 	TIMER_START(timeSinceTyped); //timer to time how long its been since typing, for cursor
 };
 
 
 enum UIDrawType : u32 {
 	UIDrawType_Rectangle,
+	UIDrawType_FilledRectangle,
 	UIDrawType_Line,
 	UIDrawType_Text
 };
@@ -113,6 +122,9 @@ struct UIDrawCmd {
 	
 	//for use by text draw call
 	string text;
+
+	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
+	bool trackedForFit = 1;
 	
 	vec2 scissorOffset = vec2(0, 0);
 	vec2 scissorExtent = vec2(-1,0);
@@ -233,6 +245,7 @@ namespace UI {
 	
 	//helpers
 	vec2 CalcTextSize(string text);
+	void SetNextItemActive();
 
 	//primitives
 	void RectFilled(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
@@ -247,6 +260,8 @@ namespace UI {
 	void Text(string text, vec2 pos, Color color, UITextFlags flags = 0);
 
 	//widgets
+	void SetNextItemSize(vec2 size);
+
 	bool Button(string text);
 	bool Button(string text, vec2 pos);
 	bool Button(string text, Color color);
@@ -255,8 +270,8 @@ namespace UI {
 	void Checkbox(string label, bool* b);
 
 	bool InputText(string label, string& buffer, u32 maxChars = -1, UIInputTextFlags flags = 0);
-	bool InputText(string label, string& buffer, vec2 pos, u32 maxChars = -1, UIInputTextFlags flags = 0);
-
+	bool InputText(string label, string& buffer, vec2 pos, vec2 size = vec2(-1, 0), u32 maxChars = -1, UIInputTextFlags flags = 0, bool moveCursor = false);
+	//TODO(sushi) make it so theres a hidden InputText function line TextCall so we dont see vars like moveCursor
 
 	//windows
 	void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);

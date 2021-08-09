@@ -174,7 +174,7 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 #define MAX_UI_VERTICES 0xFFFF //max u16: 65535
 #define MAX_UI_INDICES  3*MAX_UI_VERTICES
 #define MAX_UI_CMDS     1000
-typedef u16 UIIndexVk;
+typedef u32 UIIndexVk; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
 local UIIndexVk uiVertexCount = 0;
 local UIIndexVk uiIndexCount  = 0;
 local UIIndexVk uiCmdCount    = 1; //start with 1
@@ -195,7 +195,7 @@ local TempIndexVk  tempWireframeIndexArray [MAX_TEMP_INDICES];
 local TempIndexVk  tempFilledIndexArray    [MAX_TEMP_INDICES];
 
 #define MAX_MODEL_CMDS 10000 
-typedef u16 ModelIndexVk;
+typedef u32 ModelIndexVk;
 local ModelIndexVk modelCmdCount = 0;
 local ModelCmdVk   modelCmdArray[MAX_MODEL_CMDS];
 
@@ -2671,10 +2671,8 @@ UpdateMaterialPipelines(){
 local void
 SetupCommands(){
 	//create UI vertex and index buffers
-	size_t ui_vb_size = uiVertexCount * sizeof(Vertex2);
-	size_t ui_ib_size = uiIndexCount  * sizeof(UIIndexVk);
-	if(uiVertexBuffer.size == 0) ui_vb_size = 1000*sizeof(Vertex2);
-	if(uiIndexBuffer.size == 0)  ui_ib_size = 3000*sizeof(UIIndexVk);
+	size_t ui_vb_size = Max(1000*sizeof(Vertex2),   uiVertexCount * sizeof(Vertex2));
+	size_t ui_ib_size = Max(3000*sizeof(UIIndexVk), uiIndexCount  * sizeof(UIIndexVk));
 	if(ui_vb_size && ui_ib_size){
 		//create/resize buffers if they are too small
 		if(uiVertexBuffer.buffer == VK_NULL_HANDLE || uiVertexBuffer.size < ui_vb_size){
@@ -2954,7 +2952,7 @@ BuildCommands(){
 				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui);
 				VkDeviceSize offsets[1] = {0};
 				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &uiVertexBuffer.buffer, offsets);
-				vkCmdBindIndexBuffer(cmdBuffer, uiIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
+				vkCmdBindIndexBuffer(cmdBuffer, uiIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 				Push2DVk push{};
 				push.scale.x = 2.0f / (f32)width;
 				push.scale.y = 2.0f / (f32)height;
@@ -3146,13 +3144,15 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, Color color, vec2 scissorOffs
 	}
 }
 
+//default thickness 0.5 for now
 void Render::DrawRectUI(vec2 pos, vec2 dimensions, Color color, vec2 scissorOffset, vec2 scissorExtent) {
 	if (color.a == 0) return;
+	
+	DrawLineUI(pos.xAdd(-1),               pos + dimensions.ySet(0).xAdd(1),  1, color, scissorOffset, scissorExtent);
+	DrawLineUI(pos,                        pos + dimensions.xSet(0),          1, color, scissorOffset, scissorExtent);
+	DrawLineUI(pos + dimensions,           pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
+	DrawLineUI((pos + dimensions).xAdd(1), pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
 
-	DrawLineUI(pos,              pos + dimensions.ySet(0), 1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos,              pos + dimensions.xSet(0), 1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.ySet(0), 1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.xSet(0), 1, color, scissorOffset, scissorExtent);
 }
 
 void Render::DrawLineUI(vec2 start, vec2 end, float thickness, Color color, vec2 scissorOffset, vec2 scissorExtent){

@@ -93,13 +93,15 @@ store fonts in storage
 
 UI TODOs
 --------
-look into easier hover checking and input intercepting for imgui
-____https://github.com/ocornut/imgui/issues/52
+tabs (vertical and horizontal)
+buttons
+child windows
+defer drawing base window stuff to EndWindow(), so we can change base window properties after BeginWindow()
+____and so we can lookback at drawCmds to also be able to dynamically fit the window
+____this may also help with the row idea
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
 redo debug bar to be more informative and have different modes
-maybe redo UI to draw the window base into a special UIDrawCmds array for base window elements 
-____so we can defer drawing that stuff to EndWindow() so we can do window resizing and positioning within Begin and End calls
 
 Ungrouped TODOs
 ---------------
