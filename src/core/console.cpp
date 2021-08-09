@@ -11,7 +11,7 @@ std::regex Vec3Regex(const char* param)  { return std::regex(std::string("-")+ p
 
 using namespace ImGui;
 
-local bool mirror_logging_to_stdout = false;
+local bool mirror_logging_to_stdout = true;
 int buffersize = 0;
 
 bool sel_com = false; //true when selecting an auto complete possibility
@@ -44,6 +44,7 @@ ImVec4 ColorToVec4(Color p){
 }
 
 void Console::AddLog(std::string input){
+	if(mirror_logging_to_stdout) PRINTLN(input);
 	
 	if(this){
 		std::smatch m;
@@ -72,8 +73,6 @@ void Console::AddLog(std::string input){
 		}
 		buffer[buffer.size() - 1].first += "\n";
 	}
-	
-	if(mirror_logging_to_stdout) std::cout << input << std::endl;
 }
 
 

@@ -29,7 +29,7 @@ namespace Storage{
 		0x0A,0x2B,0x59,0xA3,0x46,0xD2,0x00,0x00,0x00,0x00,0x49,0x45,0x4E,0x44,0xAE,0x42,
 		0x60,0x82 
 	};
-
+	
 	local array<Mesh*>&     meshes    = DeshStorage->meshes;
 	local array<Texture*>&  textures  = DeshStorage->textures;
 	local array<Material*>& materials = DeshStorage->materials;
@@ -910,6 +910,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 						
 						//check for shared vertexes and mark the edges
 						if(!neighbor_already){
+							
 							bool ct0_ot0 = (vArray[v0] == triangles[oti].v[0]);
 							bool ct0_ot1 = (vArray[v0] == triangles[oti].v[1]);
 							bool ct0_ot2 = (vArray[v0] == triangles[oti].v[2]);
@@ -950,12 +951,25 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 							if(ct2_ot2 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
 							if(ct2_ot2 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
 							if(ct2_ot2 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+							
+							/*
+							bool ot0_ct0 = (vArray[v0] == triangles[oti].v[0]);
+							bool ot0_ct1 = (vArray[v1] == triangles[oti].v[0]);
+							bool ot0_ct2 = (vArray[v2] == triangles[oti].v[0]);
+							bool ot0_ct0 = (vArray[v0] == triangles[oti].v[1]);
+							bool ot1_ct1 = (vArray[v1] == triangles[oti].v[1]);
+							bool ot2_ct2 = (vArray[v2] == triangles[oti].v[1]);
+							bool ot0_ct0 = (vArray[v0] == triangles[oti].v[2]);
+							bool ot1_ct1 = (vArray[v1] == triangles[oti].v[2]);
+							bool ot2_ct2 = (vArray[v2] == triangles[oti].v[2]);
+							
+							*/
 						}
 					}
 					triangles[cti].neighborCount = triNeighbors[cti].count;
 					if(((u64)(TIMER_END(t_l) / 1000.0) % 10 == 0) && ((u64)(TIMER_END(t_l) / 1000.0) != 0)){
-						PRINTLN(TOSTDSTRING(filename," face ",triangles.count," on line ",line_number,
-										 "finished creation in ",TIMER_END(t_f),"ms"));
+						PRINTLN(TOSTDSTRING(filename," face ",faces.count," on line ",line_number,
+											"finished creation in ",TIMER_END(t_f),"ms"));
 					}
 				}continue;
 				
@@ -1017,14 +1031,15 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 				faces[cfi].normal = triangles[cti].normal;
 				triangles[cti].face = cfi;
 				faceTriangles[cfi].add(cti);
-				faceVertexes[cfi].add(triangles[cti].v[0],triangles[cti].v[0]); faces[cfi].center += triangles[cti].p[0];
-				faceVertexes[cfi].add(triangles[cti].v[1],triangles[cti].v[1]); faces[cfi].center += triangles[cti].p[1];
-				faceVertexes[cfi].add(triangles[cti].v[2],triangles[cti].v[2]); faces[cfi].center += triangles[cti].p[2];
+				faceVertexes[cfi].add(triangles[cti].v[0],triangles[cti].v[0]);
+				faceVertexes[cfi].add(triangles[cti].v[1],triangles[cti].v[1]);
+				faceVertexes[cfi].add(triangles[cti].v[2],triangles[cti].v[2]);
 				totalFaceVertexes += 3;
 			}else{
 				cfi = triangles[cti].face;
 			}
 			
+			//@@
 			forX(ctni, triNeighbors[cti].count){
 				u32 oti = triNeighbors[cti][ctni].first;
 				if(triangles[oti].face == triangles[cti].face) continue;
@@ -1033,9 +1048,9 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 				if(triangles[cti].normal == triangles[oti].normal){
 					triangles[oti].face = cfi;
 					faceTriangles[cfi].add(oti);
-					faceVertexes[cfi].add(triangles[oti].v[0],triangles[oti].v[0]); faces[cfi].center += triangles[oti].p[0];
-					faceVertexes[cfi].add(triangles[oti].v[1],triangles[oti].v[1]); faces[cfi].center += triangles[oti].p[1];
-					faceVertexes[cfi].add(triangles[oti].v[2],triangles[oti].v[2]); faces[cfi].center += triangles[oti].p[2];
+					faceVertexes[cfi].add(triangles[oti].v[0],triangles[oti].v[0]);
+					faceVertexes[cfi].add(triangles[oti].v[1],triangles[oti].v[1]);
+					faceVertexes[cfi].add(triangles[oti].v[2],triangles[oti].v[2]);
 					totalFaceVertexes += 3;
 				}else{ //if not, add vertexes to face's outer
 					u32 v1 = triangles[cti].v[ triNeighbors[cti][ctni].second       ];
@@ -1046,8 +1061,16 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 						if(!v2_already && faceOuterVertexes[cfi][fovi] == v2){ v2_already = true; }
 						if(v1_already && v2_already) break;
 					}
-					if(!v1_already){ faceOuterVertexes[cfi].add(v1); totalFaceOuterVertexes++; }
-					if(!v2_already){ faceOuterVertexes[cfi].add(v2); totalFaceOuterVertexes++; }
+					if(!v1_already){
+						faceOuterVertexes[cfi].add(v1); 
+						totalFaceOuterVertexes++;
+						faces[cfi].center += vUnique.atIdx(v1)->pos;
+					}
+					if(!v2_already){
+						faceOuterVertexes[cfi].add(v2);
+						totalFaceOuterVertexes++;
+						faces[cfi].center += vUnique.atIdx(v2)->pos;
+					}
 				}
 			}
 		}
@@ -1134,7 +1157,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			mesh->faceArray[fi].triangleCount = faceTriangles[fi].count;
 			mesh->faceArray[fi].vertexCount   = faceVertexes[fi].count;
 			mesh->faceArray[fi].outerVertexCount = faceOuterVertexes[fi].count;
-			mesh->faceArray[fi].center = faces[fi].center / (f32)faceVertexes[fi].count;
+			mesh->faceArray[fi].center = faces[fi].center / (f32)faceOuterVertexes[fi].count;
 			forX(fti, mesh->faces[fi].triangles.count){
 				mesh->faceArray[fi].triangleArray[fti] = faceTriangles[fi][fti];
 			}
