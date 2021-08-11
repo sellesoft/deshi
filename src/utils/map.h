@@ -4,6 +4,7 @@
 
 #include "hash.h"
 #include "array.h"
+#include "tuple.h"
 
 //TODO(delle) make this sorted so its faster
 template<typename Key, typename Value, typename HashStruct = hash<Key>>
@@ -12,6 +13,14 @@ struct map {
 	array<Value> data;
 	u32 count = 0;
 	
+	map() {}
+
+	map(std::initializer_list<pair<Key,Value>> list) {
+		for (auto p : list) {
+			add(p.first, p.second);
+		}
+	}
+
 	void clear() {
 		hashes.clear();
 		data.clear();

@@ -292,6 +292,13 @@ struct array {
 		data[idx1] = data[idx2];
 		data[idx2] = save;
 	}
+
+	bool has(const T& value) {
+		for (const T& blahabuasjdas : *this) 
+			if (blahabuasjdas == value) 
+				return true;
+		return false;
+	}
 	
 	//TODO add out of bounds checking for these functions
 	
