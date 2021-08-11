@@ -54,44 +54,62 @@ enum UITextFlags_ {
 	//UITextFlags_PositionAbsolute = 
 }; typedef u32 UITextFlags;
 
-enum UIInputTextFlags_ {
-	UIInputTextFlags_NONE             = 0,
-	UIInputTextFlags_EnterReturnsTrue = 1 << 0,
-	
-}; typedef u32 UIInputTextFlags;
-
 enum UIWindowFlags_ {
-	UIWindowFlags_None             = 0,
-	UIWindowFlags_NoResize         = 1 << 0,
-	UIWindowFlags_NoMove           = 1 << 1,
-	UIWindowFlags_NoTitleBar       = 1 << 2,
-	UIWindowFlags_NoBorder         = 1 << 3,
-	UIWindowFlags_NoBackground     = 1 << 4,
-	UIWindowFlags_NoScrollX        = 1 << 5,
-	UIWindowFlags_NoScrollY        = 1 << 6,
-	UIWindowFlags_NoScroll         = UIWindowFlags_NoScrollX | UIWindowFlags_NoScrollY,
-	UIWindowFlags_NoFocus          = 1 << 7,
-	UIWindowFlags_FocusOnHover     = 1 << 8,
-	UIWindowFlags_NoMinimize       = 1 << 9,
-	UIWindowFlags_NoMinimizeButton = 1 << 10,
-	UIWindowFlags_FitAllElements   = 1 << 11, //attempts to fit the window's size to all called elements
+	UIWindowFlags_None                   = 0,
+	UIWindowFlags_NoResize               = 1 << 0,
+	UIWindowFlags_NoMove                 = 1 << 1,
+	UIWindowFlags_NoTitleBar             = 1 << 2,
+	UIWindowFlags_NoBorder               = 1 << 3,
+	UIWindowFlags_NoBackground           = 1 << 4,
+	UIWindowFlags_NoScrollX              = 1 << 5,
+	UIWindowFlags_NoScrollY              = 1 << 6,
+	UIWindowFlags_NoScroll               = UIWindowFlags_NoScrollX | UIWindowFlags_NoScrollY,
+	UIWindowFlags_NoFocus                = 1 << 7,
+	UIWindowFlags_FocusOnHover           = 1 << 8,
+	UIWindowFlags_NoMinimize             = 1 << 9,
+	UIWindowFlags_NoMinimizeButton       = 1 << 10,
+	UIWindowFlags_DontSetGlobalHoverFlag = 1 << 11,
+	UIWindowFlags_FitAllElements         = 1 << 12, //attempts to fit the window's size to all called elements
 	
 	UIWindowFlags_Invisible    = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground | UIWindowFlags_NoFocus
 }; typedef u32 UIWindowFlags;
 
 
-struct UIInputTextState {
-	u32    id;                   //id the state belongs to
-	u32    cursor = 0;           //what character in the buffer the cursor is infront of, 0 being all the way to the left
-	f32    cursorBlinkTime;      //time it takes for the cursor to blink
-	f32    scroll;               //scroll offset on x
-	string buffer;               //internal buffer, in case user buffer disappears
-	u32    selectStart;          //beginning of text selection
-	u32    selectEnd;	         //end of text selection
-	bool   enterPressed = 0;     //set if enter is pressed and enter returns to, so we can adjust the cursor for any changes the user might have made when we come back
-	TIMER_START(timeSinceTyped); //timer to time how long its been since typing, for cursor
-};
+enum UIInputTextFlags_ {
+	UIInputTextFlags_NONE             = 0,
+	UIInputTextFlags_EnterReturnsTrue = 1 << 0,
+	UIInputFlags_CallbackTab          = 1 << 1,
+	UIInputFlags_CallbackEnter        = 1 << 2,
+	UIInputFlags_CallbackAlways       = 1 << 3,
+	UIInputFlags_CallbackUpDown       = 1 << 4,
 
+}; typedef u32 UIInputTextFlags;
+
+struct UIInputTextCallbackData {
+	UIInputTextFlags eventFlag; //the flag that caused the call back
+	UIInputTextFlags flags;    //the flags that the input text item has
+	void* userData;           //custom user data
+
+	u8       character;        //character that was input  | r
+	Key::Key eventKey;         //key pressed on callback   | r
+	string*  buffer;           //buffer pointer			   | r/w
+	u32      cursorPos;		   //cursor position		   | r/w
+	u32      selectionStart;   //                          | r/w -- == selection end when no selection
+	u32      selectionEnd;     //                          | r/w
+};
+typedef u32 (*UIInputTextCallback)(UIInputTextCallbackData* data);
+
+struct UIInputTextState {
+	u32    id;                    //id the state belongs to
+	u32    cursor = 0;            //what character in the buffer the cursor is infront of, 0 being all the way to the left
+	f32    cursorBlinkTime;       //time it takes for the cursor to blink
+	f32    scroll;                //scroll offset on x
+	string buffer;                //internal buffer, in case user buffer disappears
+	u32    selectStart;           //beginning of text selection
+	u32    selectEnd;	          //end of text selection
+	UIInputTextCallback callback;
+	TIMER_START(timeSinceTyped);  //timer to time how long its been since typing, for cursor
+};
 
 enum UIDrawType : u32 {
 	UIDrawType_Rectangle,
@@ -260,6 +278,7 @@ namespace UI {
 	void Text(string text, vec2 pos, Color color, UITextFlags flags = 0);
 
 	//widgets
+	//NOTE: I probably should make a SetNextItemPos as well, but I like being able to do posiiton inline, not sure yet
 	void SetNextItemSize(vec2 size);
 
 	bool Button(string text);
@@ -269,19 +288,22 @@ namespace UI {
 
 	void Checkbox(string label, bool* b);
 
-	bool InputText(string label, string& buffer, u32 maxChars = -1, UIInputTextFlags flags = 0);
-	bool InputText(string label, string& buffer, vec2 pos, vec2 size = vec2(-1, 0), u32 maxChars = -1, UIInputTextFlags flags = 0, bool moveCursor = false);
-	//TODO(sushi) make it so theres a hidden InputText function line TextCall so we dont see vars like moveCursor
+	//these overloads are kind of silly change them eventually
+	bool InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags flags = 0);
+	bool InputText(string label, string& buffer, u32 maxChars, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
+	bool InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextFlags flags = 0);
+	bool InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
 
 	//windows
 	void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	void EndWindow();
 	void SetNextWindowPos(vec2 pos);
 	void SetNextWindowPos(float x, float y);
-	void SetNextWindowSize(vec2 size);		 //when you set a windows size through this you aren't supposed to take into account the titlebar!
+	void SetNextWindowSize(vec2 size);		  //when you set a windows size through this you aren't supposed to take into account the titlebar!
 	void SetNextWindowSize(float x, float y); //when you set a windows size through this you aren't supposed to take into account the titlebar!
 	void SetWindowName(string name);
 	bool IsWinHovered();
+	bool AnyWinHovered();
 	void ShowDebugWindowOf(string name);
 
 	//push/pop functions

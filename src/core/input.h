@@ -173,14 +173,17 @@ struct Input{
 	inline bool AltDown() { return newKeyState[Key::RALT] || newKeyState[Key::LALT]; }
 	
 	inline bool AnyKeyPressed()   { return KeyReleasedAnyMod(Key::Key_NONE); }
+	inline bool AnyKeyDown()      { return !KeyDownAnyMod(Key::Key_NONE); }
 	inline bool AllKeysReleased() { return KeyPressedAnyMod(Key::Key_NONE); }
 
-	inline bool LMouseDown()    { return newKeyState[MouseButton::LEFT]; }
-	inline bool RMouseDown()    { return newKeyState[MouseButton::RIGHT]; }
-	inline bool LMousePressed() { return newKeyState[MouseButton::LEFT] && !oldKeyState[MouseButton::LEFT]; }
-	inline bool RMousePressed() { return newKeyState[MouseButton::RIGHT] && !oldKeyState[MouseButton::RIGHT]; }
-	inline bool ScrollUp()      { return newKeyState[MouseButton::SCROLLUP] && !oldKeyState[MouseButton::SCROLLUP]; }
-	inline bool ScrollDown()    { return newKeyState[MouseButton::SCROLLDOWN] && !oldKeyState[MouseButton::SCROLLDOWN]; }
+	inline bool LMouseDown()     { return newKeyState[MouseButton::LEFT]; }
+	inline bool RMouseDown()     { return newKeyState[MouseButton::RIGHT]; }
+	inline bool LMousePressed()  { return newKeyState[MouseButton::LEFT] && !oldKeyState[MouseButton::LEFT]; }
+	inline bool RMousePressed()  { return newKeyState[MouseButton::RIGHT] && !oldKeyState[MouseButton::RIGHT]; }
+	inline bool LMouseReleased() { return !newKeyState[MouseButton::LEFT] && oldKeyState[MouseButton::LEFT]; }
+	inline bool RMouseReleased() { return !newKeyState[MouseButton::RIGHT] && oldKeyState[MouseButton::RIGHT]; }
+	inline bool ScrollUp()       { return newKeyState[MouseButton::SCROLLUP] && !oldKeyState[MouseButton::SCROLLUP]; }
+	inline bool ScrollDown()     { return newKeyState[MouseButton::SCROLLDOWN] && !oldKeyState[MouseButton::SCROLLDOWN]; }
 
 	bool ModsDown(u32 mods){
 		switch(mods){

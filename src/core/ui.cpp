@@ -74,6 +74,7 @@ local u32 initStyleStackSize;
 
 //set if any window other than base is hovered
 local bool globalHovered = false;
+local bool draggingWin = false; //if a user moves their mouse too fast while dragging, the globalHover flag can be set to false
 
 u32 activeId = -1; //the id of an active widget eg. input text
 
@@ -83,7 +84,8 @@ u32 activeId = -1; //the id of an active widget eg. input text
 
 #define workingWinPositionPlusTitlebar vec2(workingWin.x, workingWin.y + ((workingWin.flags & UIWindowFlags_NoTitleBar) ? 0 :style.titleBarHeight));
 #define workingWinSizeMinusTitlebar    vec2(workingWin.width, workingWin.height - ((workingWin.flags & UIWindowFlags_NoTitleBar) ? 0 : style.titleBarHeight));
-
+#define workingHasFlag(flag) (workingWin.flags & flag)
+#define HasFlag(flag) (flags & flag)
 
 //helper functions
 
@@ -602,6 +604,10 @@ bool UI::IsWinHovered() {
 	return workingWin.hovered;
 }
 
+bool UI::AnyWinHovered() {
+	return globalHovered || draggingWin;
+}
+
 void UI::ShowDebugWindowOf(string name) {
 	if (UIWindow* debugee = windows.at(name)) {
 		
@@ -751,6 +757,10 @@ void UI::PopVar(u32 count){
 
 
 
+void UI::SetNextItemSize(vec2 size) {
+	NextItemSize = size;
+}
+
 //widget stuff
 bool UI::Button(string text) {
 	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle }; return true;
@@ -810,16 +820,8 @@ void UI::Checkbox(string label, bool* b) {
 }
 
 
-bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags flags) {	
-	vec2 position = workingWin.position + workingWin.cursor + style.windowPadding - workingWin.scroll;
-	vec2 dimensions = vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
-
-	if (InputText(label, buffer, position, dimensions, maxChars, flags, 1)) return true; 
-	return false;
-}
-
-bool UI::InputText(string label, string& buffer, vec2 position, vec2 dimensions, u32 maxChars, UIInputTextFlags flags, bool moveCursor) {
-	
+//final input text
+bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, vec2 dimensions, UIInputTextCallback callback, UIInputTextFlags flags, bool moveCursor) {
 
 	UIInputTextState* state;
 
@@ -833,12 +835,20 @@ bool UI::InputText(string label, string& buffer, vec2 position, vec2 dimensions,
 		state->cursorBlinkTime = 5;
 	}
 	else {
+		state->callback = callback;
 		state->buffer = buffer;
 	}
 
 	if (buffer.size < state->cursor)
 		state->cursor = buffer.size;
-	
+
+	//data for callback function
+	UIInputTextCallbackData data;
+	data.flags = flags;
+	data.buffer = &buffer;
+	data.selectionStart = state->selectStart;
+	data.selectionEnd = state->selectEnd;
+
 	//check for mouse click or next active to set active 
 	if (NextActive || DeshInput->KeyPressedAnyMod(MouseButton::LEFT)) {
 		if (NextActive || PointInRectangle(DeshInput->mousePos, position, dimensions)) {
@@ -854,6 +864,20 @@ bool UI::InputText(string label, string& buffer, vec2 position, vec2 dimensions,
 		if (DeshInput->KeyPressedAnyMod(Key::RIGHT) && state->cursor < buffer.size) state->cursor++;
 		if (DeshInput->KeyPressedAnyMod(Key::LEFT) && state->cursor > 0) state->cursor--;
 
+		data.cursorPos = state->cursor;
+
+		//check if the user used up/down keys
+		if (DeshInput->KeyPressedAnyMod(Key::UP) && (flags & UIInputFlags_CallbackUpDown)) {
+			data.eventFlag = UIInputFlags_CallbackUpDown;
+			data.eventKey = Key::UP;
+			callback(&data);
+		}
+		if (DeshInput->KeyPressedAnyMod(Key::DOWN) && (flags & UIInputFlags_CallbackUpDown)) {
+			data.eventFlag = UIInputFlags_CallbackUpDown;
+			data.eventKey = Key::DOWN;
+			callback(&data);
+		}
+
 		//gather text into buffer from inputs
 		//make this only loop when a key has been pressed eventually
 
@@ -861,8 +885,12 @@ bool UI::InputText(string label, string& buffer, vec2 position, vec2 dimensions,
 		persist TIMER_START(throttle);
 
 		//TODO(sushi) make this not count modifier keys
-		if (DeshInput->AnyKeyPressed()) { TIMER_RESET(hold); }
+		if (DeshInput->AnyKeyPressed()) { 
+			TIMER_RESET(hold); 
+			
+		}
 
+		char charPlaced;
 		auto placeKey = [&](u32 i, u32 ins, char toPlace) {
 			if (i >= Key::A && i <= Key::Z) {
 				if (DeshInput->capsLock || DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT))
@@ -873,43 +901,49 @@ bool UI::InputText(string label, string& buffer, vec2 position, vec2 dimensions,
 			else if (i >= Key::K0 && i <= Key::K9) {
 				if (DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT)) {
 					switch (i) {
-						case Key::K0: buffer.insert(')', ins); break;
-						case Key::K1: buffer.insert('!', ins); break;
-						case Key::K2: buffer.insert('@', ins); break;
-						case Key::K3: buffer.insert('#', ins); break;
-						case Key::K4: buffer.insert('$', ins); break;
-						case Key::K5: buffer.insert('%', ins); break;
-						case Key::K6: buffer.insert('^', ins); break;
-						case Key::K7: buffer.insert('&', ins); break;
-						case Key::K8: buffer.insert('*', ins); break;
-						case Key::K9: buffer.insert('(', ins); break;
+						case Key::K0: data.character = ')'; buffer.insert(')', ins); break;
+						case Key::K1: data.character = '!'; buffer.insert('!', ins); break;
+						case Key::K2: data.character = '@'; buffer.insert('@', ins); break;
+						case Key::K3: data.character = '#'; buffer.insert('#', ins); break;
+						case Key::K4: data.character = '$'; buffer.insert('$', ins); break;
+						case Key::K5: data.character = '%'; buffer.insert('%', ins); break;
+						case Key::K6: data.character = '^'; buffer.insert('^', ins); break;
+						case Key::K7: data.character = '&'; buffer.insert('&', ins); break;
+						case Key::K8: data.character = '*'; buffer.insert('*', ins); break;
+						case Key::K9: data.character = '('; buffer.insert('(', ins); break;
 					}
 				}
 				else {
+					data.character = KeyStringsLiteral[i];
 					buffer.insert(KeyStringsLiteral[i], ins);
 				}
 			}
 			else {
 				if (DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT)) {
 					switch (i) {
-						case Key::SEMICOLON:  buffer.insert(':', ins);  break;
-						case Key::APOSTROPHE: buffer.insert('"', ins);  break;
-						case Key::LBRACKET:   buffer.insert('{', ins);  break;
-						case Key::RBRACKET:   buffer.insert('}', ins);  break;
-						case Key::BACKSLASH:  buffer.insert('\\', ins); break;
-						case Key::COMMA:      buffer.insert('<', ins);  break;
-						case Key::PERIOD:     buffer.insert('>', ins);  break;
-						case Key::SLASH:      buffer.insert('?', ins);  break;
-						case Key::MINUS:      buffer.insert('_', ins);  break;
-						case Key::EQUALS:     buffer.insert('+', ins);  break;
-						case Key::TILDE:      buffer.insert('~', ins);  break;
+						case Key::SEMICOLON:  data.character = ':';  buffer.insert(':', ins);  break;
+						case Key::APOSTROPHE: data.character = '"';  buffer.insert('"', ins);  break;
+						case Key::LBRACKET:   data.character = '{';  buffer.insert('{', ins);  break;
+						case Key::RBRACKET:   data.character = '}';  buffer.insert('}', ins);  break;
+						case Key::BACKSLASH:  data.character = '\\'; buffer.insert('\\', ins); break;
+						case Key::COMMA:      data.character = '<';  buffer.insert('<', ins);  break;
+						case Key::PERIOD:     data.character = '>';  buffer.insert('>', ins);  break;
+						case Key::SLASH:      data.character = '?';  buffer.insert('?', ins);  break;
+						case Key::MINUS:      data.character = '_';  buffer.insert('_', ins);  break;
+						case Key::EQUALS:     data.character = '+';  buffer.insert('+', ins);  break;
+						case Key::TILDE:      data.character = '~';  buffer.insert('~', ins);  break;
 					}
 				}
 				else {
+					data.character = KeyStringsLiteral[i];
 					buffer.insert(KeyStringsLiteral[i], ins);
 				}
 			}
 			TIMER_RESET(state->timeSinceTyped);
+			if (flags & UIInputFlags_CallbackAlways) {
+				data.eventFlag = UIInputFlags_CallbackAlways;
+				callback(&data);
+			}
 		};
 
 		if (DeshInput->anyKeyDown) {
@@ -923,6 +957,7 @@ bool UI::InputText(string label, string& buffer, vec2 position, vec2 dimensions,
 						if (DeshInput->KeyPressedAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
 							u32 ins = state->cursor++ - 1;
 							placeKey(i, ins, toPlace);
+							break;
 						}
 					}
 				}
@@ -938,6 +973,7 @@ bool UI::InputText(string label, string& buffer, vec2 position, vec2 dimensions,
 							if (DeshInput->KeyDownAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
 								u32 ins = state->cursor++ - 1;
 								placeKey(i, ins, toPlace);
+								break;
 							}
 						}
 					}
@@ -958,7 +994,7 @@ bool UI::InputText(string label, string& buffer, vec2 position, vec2 dimensions,
 		workingWin.drawCmds.add(drawCmd);
 	}
 
-	{//Text
+	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
 		drawCmd.position = position + vec2(0, (style.font->height * 1.3 - style.font->height) * 0.5);
 		drawCmd.text = buffer;
@@ -983,16 +1019,51 @@ bool UI::InputText(string label, string& buffer, vec2 position, vec2 dimensions,
 		workingWin.drawCmds.add(drawCmd);
 	}
 
-	if(moveCursor)
+	if (moveCursor)
 		workingWin.cursor.y += style.font->height * 1.3 + style.itemSpacing.y;
 
 	if (DeshInput->KeyPressedAnyMod(Key::ENTER) || DeshInput->KeyPressedAnyMod(Key::NUMPADENTER)) {
-		state->enterPressed = 1;
 		return true;
 	}
 
+	return false;
+}
+
+bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags flags) {	
+	vec2 position = workingWin.position + workingWin.cursor + style.windowPadding - workingWin.scroll;
+	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
+
+	NextItemSize = vec2(-1, 0);
+
+	if (InputTextCall(label, buffer, maxChars, position, dimensions, nullptr, flags, 1)) return true; 
+	return false;
+}
+
+bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextCallback callback, UIInputTextFlags flags){
+	vec2 position = workingWin.position + workingWin.cursor + style.windowPadding - workingWin.scroll;
+	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
 	
+	NextItemSize = vec2(-1, 0);
+
+	if (InputTextCall(label, buffer, maxChars, position, dimensions, callback, flags, 1)) return true;
+	return false;
+}
+
+bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 position, UIInputTextFlags flags) {
+	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
 	
+	NextItemSize = vec2(-1, 0);
+
+	if (InputTextCall(label, buffer, maxChars, position, dimensions, nullptr, flags, 0)) return true;
+	return false;
+}
+
+bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 position, UIInputTextCallback callback, UIInputTextFlags flags ){
+	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
+	
+	NextItemSize = vec2(-1, 0);
+
+	if (InputTextCall(label, buffer, maxChars, position, dimensions, callback, flags, 0)) return true;
 	return false;
 }
 
@@ -1061,6 +1132,7 @@ void UI::Update() {
 	Assert(colorStack.size() == initColorStackSize, 
 		   "Frame ended with hanging colors in the stack, make sure you pop colors if you push them!");
 	
+	globalHovered = 0;
 	
 	//focusing and dragging
 	
@@ -1086,21 +1158,19 @@ void UI::Update() {
 		static bool newDrag = true;
 		static vec2 mouseOffset = vec2(0, 0);
 
-		static bool shouldDrag = true;
-
-		//dont drag if click didnt happen on title
-		if (DeshInput->KeyPressedAnyMod(MouseButton::LEFT) && !focused->titleHovered) shouldDrag = false;
-
-		if (focused->titleHovered && DeshInput->KeyDownAnyMod(MouseButton::LEFT)) {
-			if (newDrag) {
-				mouseOffset = focused->position - DeshInput->mousePos;
-				newDrag = false;
-			}
+		if (
+			!(focused->flags & UIWindowFlags_NoMove) &&
+			focused->titleHovered &&
+			DeshInput->KeyPressedAnyMod(MouseButton::LEFT)) {
+			draggingWin = 1;
+			mouseOffset = focused->position - DeshInput->mousePos;
+			newDrag = false;
 		}
-		if (!newDrag && shouldDrag) 
+		if (!newDrag) 
 			focused->position = DeshInput->mousePos + mouseOffset;
 		if (DeshInput->KeyReleased(MouseButton::LEFT)) {
-			newDrag = true; shouldDrag = true;
+			newDrag = true;
+			draggingWin = 0;
 		}
 	}
 	
@@ -1109,6 +1179,9 @@ void UI::Update() {
 		vec2 winCorrectedPos = vec2(p.x, p.y + p.titleBarHeight);
 		vec2 winCorrectedSiz = vec2(p.width, p.height - p.titleBarHeight);
 		
+		if (p.hovered && !(p.flags & UIWindowFlags_DontSetGlobalHoverFlag))
+			globalHovered = 1;
+
 		//draw base cmds first
 		for (UIDrawCmd& drawCmd : p.baseDrawCmds) {
 			switch (drawCmd.type) {
