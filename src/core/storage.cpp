@@ -922,48 +922,26 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 							bool ct2_ot2 = (vArray[v2] == triangles[oti].v[2]);
 							
 							//current tri v0 && v1
-							if(ct0_ot0 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
 							if(ct0_ot0 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
-							if(ct0_ot0 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
-							if(ct0_ot1 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
-							if(ct0_ot1 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+							if(ct0_ot0 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+							if(ct0_ot1 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
 							if(ct0_ot1 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
 							if(ct0_ot2 && ct1_ot0){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
-							if(ct0_ot2 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
-							if(ct0_ot2 && ct1_ot2){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+							if(ct0_ot2 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
 							//current tri v1 && v2
-							if(ct1_ot0 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
 							if(ct1_ot0 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
-							if(ct1_ot0 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
-							if(ct1_ot1 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
-							if(ct1_ot1 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+							if(ct1_ot0 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+							if(ct1_ot1 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
 							if(ct1_ot1 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
 							if(ct1_ot2 && ct2_ot0){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
-							if(ct1_ot2 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
-							if(ct1_ot2 && ct2_ot2){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+							if(ct1_ot2 && ct2_ot1){triNeighbors[cti].add({oti,1}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
 							//current tri v2 && v0
-							if(ct2_ot0 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
 							if(ct2_ot0 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
-							if(ct2_ot0 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
-							if(ct2_ot1 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
-							if(ct2_ot1 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
+							if(ct2_ot0 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
+							if(ct2_ot1 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
 							if(ct2_ot1 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
 							if(ct2_ot2 && ct0_ot0){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
-							if(ct2_ot2 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
-							if(ct2_ot2 && ct0_ot2){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,2}); totalTriNeighbors+=2; continue;}
-							
-							/*
-							bool ot0_ct0 = (vArray[v0] == triangles[oti].v[0]);
-							bool ot0_ct1 = (vArray[v1] == triangles[oti].v[0]);
-							bool ot0_ct2 = (vArray[v2] == triangles[oti].v[0]);
-							bool ot0_ct0 = (vArray[v0] == triangles[oti].v[1]);
-							bool ot1_ct1 = (vArray[v1] == triangles[oti].v[1]);
-							bool ot2_ct2 = (vArray[v2] == triangles[oti].v[1]);
-							bool ot0_ct0 = (vArray[v0] == triangles[oti].v[2]);
-							bool ot1_ct1 = (vArray[v1] == triangles[oti].v[2]);
-							bool ot2_ct2 = (vArray[v2] == triangles[oti].v[2]);
-							
-							*/
+							if(ct2_ot2 && ct0_ot1){triNeighbors[cti].add({oti,2}); triNeighbors[oti].add({cti,1}); totalTriNeighbors+=2; continue;}
 						}
 					}
 					triangles[cti].neighborCount = triNeighbors[cti].count;
@@ -1017,7 +995,70 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			}
 		}
 		
+        //@@
 		//// generate mesh faces ////
+        forX(bti, triangles.count){
+            if(triangles[bti].face != -1) continue;
+            
+            //create face and add base triange to it
+            u32 cfi = faces.count;
+            faces.add(Mesh::Face{});
+            faceTriangles.add(array<u32>());
+            faceVertexes.add(set<u32>());
+            faceOuterVertexes.add(array<u32>());
+            faceTriNeighbors.add(array<u32>());
+            faceFaceNeighbors.add(array<u32>());
+            faces[cfi].normal = triangles[bti].normal;
+            triangles[bti].face = cfi;
+            faceTriangles[cfi].add(bti);
+            faceVertexes[cfi].add(triangles[bti].v[0],triangles[bti].v[0]);
+            faceVertexes[cfi].add(triangles[bti].v[1],triangles[bti].v[1]);
+            faceVertexes[cfi].add(triangles[bti].v[2],triangles[bti].v[2]);
+            totalFaceVertexes += 3;
+            
+            array<u32> check_tris({(u32)bti});
+            forX(check_tri_idx, check_tris.count){
+                u32 cti = check_tris[check_tri_idx];
+                forX(nei_tri_idx, triNeighbors[cti].count){
+                    u32 nti = triNeighbors[cti][nei_tri_idx].first;
+                    bool checked = false;
+                    forI(check_tris.count){ if(check_tris[i] == nti){ checked = true; break; } }
+                    if(checked) continue;
+                    
+                    //check if neighbor triangle has same normal
+                    if(triangles[cti].normal == triangles[nti].normal){
+                        check_tris.add(nti);
+                        triangles[nti].face = cfi;
+                        faceTriangles[cfi].add(nti);
+                        faceVertexes[cfi].add(triangles[nti].v[0],triangles[nti].v[0]);
+                        faceVertexes[cfi].add(triangles[nti].v[1],triangles[nti].v[1]);
+                        faceVertexes[cfi].add(triangles[nti].v[2],triangles[nti].v[2]);
+                        totalFaceVertexes += 3;
+                    }else{
+                        u32 v1 = triangles[cti].v[ triNeighbors[cti][nei_tri_idx].second       ];
+                        u32 v2 = triangles[cti].v[(triNeighbors[cti][nei_tri_idx].second+1) % 3];
+                        bool v1_already = false; bool v2_already = false;
+                        forX(fovi, faceOuterVertexes[cfi].count){
+                            if(!v1_already && faceOuterVertexes[cfi][fovi] == v1){ v1_already = true; }
+                            if(!v2_already && faceOuterVertexes[cfi][fovi] == v2){ v2_already = true; }
+                            if(v1_already && v2_already) break;
+                        }
+                        if(!v1_already){
+                            faceOuterVertexes[cfi].add(v1); 
+                            totalFaceOuterVertexes++;
+                            faces[cfi].center += vUnique.atIdx(v1)->pos;
+                        }
+                        if(!v2_already){
+                            faceOuterVertexes[cfi].add(v2);
+                            totalFaceOuterVertexes++;
+                            faces[cfi].center += vUnique.atIdx(v2)->pos;
+                        }
+                    }
+                }
+            }
+        }
+        
+        /*
 		forX(cti, triangles.count){
 			u32 cfi = faces.count;
 			if(triangles[cti].face == -1){
@@ -1039,7 +1080,6 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 				cfi = triangles[cti].face;
 			}
 			
-			//@@
 			forX(ctni, triNeighbors[cti].count){
 				u32 oti = triNeighbors[cti][ctni].first;
 				if(triangles[oti].face == triangles[cti].face) continue;
@@ -1074,7 +1114,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 				}
 			}
 		}
-		
+        */
 		//// calculate vertex normals ////
 		forI(vUnique.count){
 			aabb_min.x = Min(aabb_min.x, vUnique.data.data[i].pos.x);
@@ -1086,7 +1126,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			vUnique.data.data[i].normal.normalize();
 		}
 		
-		//parsing warnings/errors
+		//// parsing warnings/errors ////
 		if(non_tri_warning) WARNING("The mesh was not triangulated before parsing; Expect missing triangles!");
 		if(s_warning) WARNING("There were 's' specifiers when parsing ",filename,", but those are not evaluated currently");
 		if(!vtArray.count){ WARNING_LOC("No vertex UVs 'vt' were parsed in ",filename); }
