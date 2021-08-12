@@ -20,26 +20,26 @@ std::string sel_com_str = ""; //the string we're replacing input with
 std::vector<std::string> posis;
 //int match_sel = 0;
 
-std::map<std::string, Color> colstrmap{
-	{"red", Color::RED},
-	{"dred", Color::DARK_RED},
-	{"blue", Color::BLUE},
-	{"dblue", Color::DARK_BLUE},
-	{"cyan", Color::CYAN},
-	{"dcyan", Color::DARK_CYAN},
-	{"grey", Color::GREY},
-	{"dgrey", Color::DARK_GREY},
-	{"green", Color::GREEN},
-	{"dgreen", Color::DARK_GREEN},
-	{"yellow", Color::YELLOW},
-	{"dyellow", Color::DARK_YELLOW},
-	{"magen", Color::MAGENTA},
-	{"dmagen", Color::DARK_MAGENTA},
-	{"black", Color::BLACK},
-	{"error", Color::RED} //special error color for the console to know when to flash the debug bar
+std::map<std::string, color> colstrmap{
+	{"red", color::RED},
+	{"dred", color::DARK_RED},
+	{"blue", color::BLUE},
+	{"dblue", color::DARK_BLUE},
+	{"cyan", color::CYAN},
+	{"dcyan", color::DARK_CYAN},
+	{"grey", color::GREY},
+	{"dgrey", color::DARK_GREY},
+	{"green", color::GREEN},
+	{"dgreen", color::DARK_GREEN},
+	{"yellow", color::YELLOW},
+	{"dyellow", color::DARK_YELLOW},
+	{"magen", color::MAGENTA},
+	{"dmagen", color::DARK_MAGENTA},
+	{"black", color::BLACK},
+	{"error", color::RED} //special error color for the console to know when to flash the debug bar
 };
 
-ImVec4 ColorToVec4(Color p){
+ImVec4 ColorToVec4(color p){
 	return ImVec4((float)p.r / 255, (float)p.g / 255, (float)p.b / 255, p.a / 255);
 }
 
@@ -54,7 +54,7 @@ void Console::AddLog(std::string input){
 			//check if were dealing with a formatted part of the string
 			if(std::regex_search(m[0].str(), std::regex("\\[c:[^\\]]+\\]"))){
 				//if we are, push the actual text with its color into text vector
-				buffer.push_back(pair<std::string, Color>(m[2].str(), colstrmap.at(m[1])));
+				buffer.push_back(pair<std::string, color>(m[2].str(), colstrmap.at(m[1])));
 				buffersize += m[2].str().size();
 				if(m[1] == "error"){
 					show_alert = true;
@@ -66,7 +66,7 @@ void Console::AddLog(std::string input){
 			}
 			else {
 				//if we arent then just push the line into text vector
-				buffer.push_back(pair<std::string, Color>(m[0].str(), Color::BLANK));
+				buffer.push_back(pair<std::string, color>(m[0].str(), color::BLANK));
 				buffersize += m[2].str().size();
 			}
 			input = m.suffix();
@@ -226,13 +226,13 @@ void Console::DrawConsole(){
 	//window styling
 	
 	PushStyleVar(ImGuiStyleVar_ScrollbarRounding, 0);
-	PushStyleColor(ImGuiCol_Border, ColorToVec4(Color(0, 0, 0, 255)));
-	PushStyleColor(ImGuiCol_TitleBg, ColorToVec4(Color(0, 0, 0, 255)));
-	PushStyleColor(ImGuiCol_WindowBg, ColorToVec4(Color(0, 0, 0, 255)));
-	PushStyleColor(ImGuiCol_TitleBgActive, ColorToVec4(Color(0, 0, 0, 255)));
-	PushStyleColor(ImGuiCol_ScrollbarGrab, ColorToVec4(Color(37, 36, 36, 255)));
-	PushStyleColor(ImGuiCol_ScrollbarGrabActive, ColorToVec4(Color(0, 94, 83, 255)));
-	PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColorToVec4(Color(48, 85, 90, 255)));
+	PushStyleColor(ImGuiCol_Border, ColorToVec4(color(0, 0, 0, 255)));
+	PushStyleColor(ImGuiCol_TitleBg, ColorToVec4(color(0, 0, 0, 255)));
+	PushStyleColor(ImGuiCol_WindowBg, ColorToVec4(color(0, 0, 0, 255)));
+	PushStyleColor(ImGuiCol_TitleBgActive, ColorToVec4(color(0, 0, 0, 255)));
+	PushStyleColor(ImGuiCol_ScrollbarGrab, ColorToVec4(color(37, 36, 36, 255)));
+	PushStyleColor(ImGuiCol_ScrollbarGrabActive, ColorToVec4(color(0, 94, 83, 255)));
+	PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ColorToVec4(color(48, 85, 90, 255)));
 	
 	//initialize console window
 	if(!window){
@@ -273,7 +273,7 @@ void Console::DrawConsole(){
 							TableNextColumn();
 							if(i == match_sel){
 								SetScrollHereY(0);
-								PushStyleColor(ImGuiCol_Text, ColorToVec4(Color::RED));
+								PushStyleColor(ImGuiCol_Text, ColorToVec4(color::RED));
 								Text(s.c_str());
 								ImGui::PopStyleColor();
 								if(selected){
@@ -300,7 +300,7 @@ void Console::DrawConsole(){
 	
 	// Reserve enough left-over height for 1 separator + 1 input text
 	const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
-	PushStyleColor(ImGuiCol_ChildBg, ColorToVec4(Color(4, 17, 21, 255)));
+	PushStyleColor(ImGuiCol_ChildBg, ColorToVec4(color(4, 17, 21, 255)));
 	BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve-20), false);
 	if(BeginPopupContextWindow()){
 		if(ImGui::Selectable("hehe")) AddLog("hoho");
@@ -312,12 +312,12 @@ void Console::DrawConsole(){
 	//ImGuiListClipper clipper;
 	//clipper.Begin(buffer.size());
 	//while(clipper.Step()){
-	for (pair<std::string, Color> p : buffer){
+	for (pair<std::string, color> p : buffer){
 		//for(int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++){
 		//color formatting is "[c:red]text[c] text text"
 		//TODO( sushi,OpCon) maybe optimize by only drawing what we know will be displayed on screen instead of parsing through all of it
 		
-		if(p.second == Color::BLANK){
+		if(p.second == color::BLANK){
 			SameLine(0, 0);
 			TextWrapped(p.first.c_str());
 		}
@@ -348,7 +348,7 @@ void Console::DrawConsole(){
 	else  input_text_flags = 0;
 	
 	
-	PushStyleColor(ImGuiCol_FrameBg, ColorToVec4(Color::VERY_DARK_CYAN));
+	PushStyleColor(ImGuiCol_FrameBg, ColorToVec4(color::VERY_DARK_CYAN));
 	SetNextItemWidth(ImGui::GetWindowWidth() - 15);
 	ImGui::SetItemDefaultFocus();
 	
@@ -414,7 +414,7 @@ void Console::PushConsole(std::string s){
 //flushes the buffer to a file once it reaches a certain size
 void Console::FlushBuffer(){
 	std::string output = "";
-	for (pair<std::string, Color> a : buffer){
+	for (pair<std::string, color> a : buffer){
 		output += a.first;
 	}
 	

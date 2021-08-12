@@ -5,11 +5,9 @@
 #include "renderer.h"
 #include "../defines.h"
 #include "../math/VectorMatrix.h"
-#include "../utils/Color.h"
+#include "../utils/color.h"
 #include "../utils/string.h"
 #include "../utils/font.h"
-
-
 
 enum UIStyleVar : u32 {
 	UIStyleVar_WindowPadding,	    // default vec2(10, 10)       spacing between every item and the edges of the window
@@ -45,7 +43,7 @@ struct UIStyle {
 	vec2  checkboxSize;
 	float checkboxFillPadding;
 	Font* font; //this is a pointer until I fix font to not store so much shit
-	Color colors[UIStyleCol_COUNT];
+	color colors[UIStyleCol_COUNT];
 };
 
 enum UITextFlags_ {
@@ -82,14 +80,14 @@ enum UIInputTextFlags_ {
 	UIInputFlags_CallbackEnter        = 1 << 2,
 	UIInputFlags_CallbackAlways       = 1 << 3,
 	UIInputFlags_CallbackUpDown       = 1 << 4,
-
+    
 }; typedef u32 UIInputTextFlags;
 
 struct UIInputTextCallbackData {
 	UIInputTextFlags eventFlag; //the flag that caused the call back
 	UIInputTextFlags flags;    //the flags that the input text item has
 	void* userData;           //custom user data
-
+    
 	u8       character;        //character that was input  | r
 	Key::Key eventKey;         //key pressed on callback   | r
 	string*  buffer;           //buffer pointer			   | r/w
@@ -128,7 +126,7 @@ struct UIDrawCmd {
 	vec2 position;
 	
 	//all draw commands have a color
-	Color color;
+	color color;
 	
 	//rectangles have dimensions
 	vec2 dimensions;
@@ -140,7 +138,7 @@ struct UIDrawCmd {
 	
 	//for use by text draw call
 	string text;
-
+    
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
 	bool trackedForFit = 1;
 	
@@ -203,14 +201,14 @@ struct UIWindow {
 	
 	bool minimized = false;
 	bool hidden = false;
-
+    
 	float titleBarHeight = 0;
 	
 	//this is the state of style when EndWindow() is called for the window
 	//meaning the style for elements before the last bunch could be different
 	//if the user changes stuff before ending the window and therefore this should be used carefully!!
 	UIStyle style;
-
+    
 	UIWindow() {};
 	
 	//I have to do this because I'm using an anonymous struct inside a union and C++ sucks
@@ -264,36 +262,36 @@ namespace UI {
 	//helpers
 	vec2 CalcTextSize(string text);
 	void SetNextItemActive();
-
+    
 	//primitives
-	void RectFilled(f32 x, f32 y, f32 width, f32 height, Color color = Color::WHITE);
-	void RectFilled(vec2 pos, vec2 dimen, Color color = Color::WHITE);
-
-	void Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, Color color = Color::WHITE);
-	void Line(vec2 start, vec2 end, float thickness = 1, Color color = Color::WHITE);
-
+	void RectFilled(f32 x, f32 y, f32 width, f32 height, color color = color::WHITE);
+	void RectFilled(vec2 pos, vec2 dimen, color color = color::WHITE);
+    
+	void Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, color color = color::WHITE);
+	void Line(vec2 start, vec2 end, float thickness = 1, color color = color::WHITE);
+    
 	void Text(string text, UITextFlags flags = 0);
 	void Text(string text, vec2 pos, UITextFlags flags = 0);
-	void Text(string text, Color color, UITextFlags flags = 0);
-	void Text(string text, vec2 pos, Color color, UITextFlags flags = 0);
-
+	void Text(string text, color color, UITextFlags flags = 0);
+	void Text(string text, vec2 pos, color color, UITextFlags flags = 0);
+    
 	//widgets
 	//NOTE: I probably should make a SetNextItemPos as well, but I like being able to do posiiton inline, not sure yet
 	void SetNextItemSize(vec2 size);
-
+    
 	bool Button(string text);
 	bool Button(string text, vec2 pos);
-	bool Button(string text, Color color);
-	bool Button(string text, vec2 pos, Color color);
-
+	bool Button(string text, color color);
+	bool Button(string text, vec2 pos, color color);
+    
 	void Checkbox(string label, bool* b);
-
+    
 	//these overloads are kind of silly change them eventually
 	bool InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags flags = 0);
 	bool InputText(string label, string& buffer, u32 maxChars, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
 	bool InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextFlags flags = 0);
 	bool InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
-
+    
 	//windows
 	void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	void EndWindow();
@@ -305,18 +303,18 @@ namespace UI {
 	bool IsWinHovered();
 	bool AnyWinHovered();
 	void ShowDebugWindowOf(string name);
-
+    
 	//push/pop functions
-	void PushColor(UIStyleCol idx, Color color);
+	void PushColor(UIStyleCol idx, color color);
 	void PushVar(UIStyleVar idx, float style);
 	void PushVar(UIStyleVar idx, vec2 style);
-
+    
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
-
+    
 	void Init();
 	void Update();
-
+    
 }; //namespace UI
 
 #endif //DESHI_UI_H

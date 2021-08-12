@@ -22,8 +22,8 @@ namespace DeshiImGui{
 
 namespace ImGui{
 	
-	static ImVec4 ColorToImVec4(Color color) {
-		return ImVec4((float)color.r / 255.0f, (float)color.g / 255.0f, (float)color.b / 255.0f, color.a / 255.0f);
+	static ImVec4 ColorToImVec4(color _color) {
+		return ImVec4((float)_color.r / 255.0f, (float)_color.g / 255.0f, (float)_color.b / 255.0f, _color.a / 255.0f);
 	}
 	
 	static ImVec2 vec2ToImVec2(vec2 v){

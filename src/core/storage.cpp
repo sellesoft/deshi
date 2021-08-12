@@ -106,7 +106,7 @@ AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighb
 
 //TODO(delle) change this to take in 8 points
 pair<u32,Mesh*> Storage::
-CreateBoxMesh(f32 width, f32 height, f32 depth, Color color){
+CreateBoxMesh(f32 width, f32 height, f32 depth, color color){
 	pair<u32,Mesh*> result(0, NullMesh());
 	
 	//check if created already
@@ -785,7 +785,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		u32 totalFaceFaceNeighbors = 0;
 		vec3 aabb_min{ FLT_MAX, FLT_MAX, FLT_MAX};
 		vec3 aabb_max{-FLT_MAX,-FLT_MAX,-FLT_MAX};
-		u32 default_color = Color::PackColorU32(Color::WHITE);
+		u32 default_color = color::PackColorU32(color::WHITE);
 		bool mtllib_found    = false;
 		bool s_warning       = false;
 		bool non_tri_warning = false;

@@ -1,4 +1,3 @@
-#include "..\renderer.h"
 /*
 Useful or Reading List Links:
 https://renderdoc.org/vkspec_chunked/index.html
@@ -3107,9 +3106,9 @@ enum texTypes : u32 {
 vec2 prevScissorOffset = vec2(0, 0);
 vec2 prevScissorExtent = vec2(-1, -1);
 
-void Render::FillRectUI(vec2 pos, vec2 dimensions, Color color, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	if (color.a == 0) return;
-
+    
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
 		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
 		scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
@@ -3118,18 +3117,18 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, Color color, vec2 scissorOffs
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-
+    
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2* vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
-
+    
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
 	vp[0].pos = { pos.x + 0,           pos.y + 0 };            vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { pos.x + dimensions.w,pos.y + 0 };            vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { pos.x + dimensions.w,pos.y + dimensions.h }; vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { pos.x + 0,           pos.y + dimensions.h }; vp[3].uv = { 0,0 }; vp[3].color = col;
-
+    
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -3145,48 +3144,48 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, Color color, vec2 scissorOffs
 }
 
 //default thickness 0.5 for now
-void Render::DrawRectUI(vec2 pos, vec2 dimensions, Color color, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	if (color.a == 0) return;
 	
 	DrawLineUI(pos.xAdd(-1),               pos + dimensions.ySet(0).xAdd(1),  1, color, scissorOffset, scissorExtent);
 	DrawLineUI(pos,                        pos + dimensions.xSet(0),          1, color, scissorOffset, scissorExtent);
 	DrawLineUI(pos + dimensions,           pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
 	DrawLineUI((pos + dimensions).xAdd(1), pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
-
+    
 }
 
-void Render::DrawLineUI(vec2 start, vec2 end, float thickness, Color color, vec2 scissorOffset, vec2 scissorExtent){
+void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
 	if (color.a == 0) return;
-
+    
 	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
-		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-		scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
+       scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+       scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-
-
+    
+    
 	u32      col = color.R8G8B8A8_UNORM();
 	Vertex2* vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
-
+    
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
-
+    
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
 	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { end.x,  end.y };   vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
-
+    
 	vp[0].pos += norm * thickness;
 	vp[1].pos += norm * thickness;
 	vp[2].pos -= norm * thickness;
 	vp[3].pos -= norm * thickness;
-
+    
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -3202,7 +3201,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, Color color, vec2
 }
 
 void Render::
-DrawTextUI(string text, vec2 pos, Color color, vec2 scissorOffset, vec2 scissorExtent) {
+DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	if (color.a == 0) return;
 	
 	f32 w = vkFonts[1].characterWidth;
@@ -3215,7 +3214,7 @@ DrawTextUI(string text, vec2 pos, Color color, vec2 scissorOffset, vec2 scissorE
 
 //NOTE: text scaling looks very ugly with bit map fonts as far as i know
 void Render::
-DrawCharUI(u32 character, vec2 pos, vec2 scale, Color color, vec2 scissorOffset, vec2 scissorExtent) {
+DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	if (color.a == 0) return;
 	
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 
@@ -3665,15 +3664,15 @@ DrawModel(Model* model, mat4 matrix){
 }
 
 void Render::
-DrawModelWireframe(Model* mesh, mat4 matrix, Color& color){
+DrawModelWireframe(Model* mesh, mat4 matrix, color& color){
 	//!Incomplete
 }
 
 void Render::
-DrawLine(vec3 start, vec3 end, Color& color){
+DrawLine(vec3 start, vec3 end, color& color){
 	if(color.a == 0) return;
 	
-	u32 col = Color::PackColorU32(color);
+	u32 col = color::PackColorU32(color);
 	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
 	TempIndexVk*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
@@ -3688,10 +3687,10 @@ DrawLine(vec3 start, vec3 end, Color& color){
 }
 
 void Render::
-DrawTriangle(vec3 p0, vec3 p1, vec3 p2, Color& color){
+DrawTriangle(vec3 p0, vec3 p1, vec3 p2, color& color){
 	if(color.a == 0) return;
 	
-	u32 col = Color::PackColorU32(color);
+	u32 col = color::PackColorU32(color);
 	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
 	TempIndexVk*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
@@ -3707,10 +3706,10 @@ DrawTriangle(vec3 p0, vec3 p1, vec3 p2, Color& color){
 }
 
 void Render::
-DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, Color& color){
+DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, color& color){
 	if(color.a == 0) return;
 	
-	u32 col = Color::PackColorU32(color);
+	u32 col = color::PackColorU32(color);
 	Mesh::Vertex* vp = tempFilledVertexArray + tempFilledVertexCount;
 	TempIndexVk*   ip = tempFilledIndexArray + tempFilledIndexCount;
 	
@@ -3726,7 +3725,7 @@ DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, Color& color){
 }
 
 void Render::
-DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, Color& color){
+DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color& color){
 	if(color.a == 0) return;
 	DrawLine(p0, p1, color);
 	DrawLine(p1, p2, color);
@@ -3735,14 +3734,14 @@ DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, Color& color){
 }
 
 inline void Render::
-DrawQuadFilled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, Color& color){
+DrawQuadFilled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color& color){
 	if(color.a == 0) return;
 	DrawTriangleFilled(p0, p1, p2, color);
 	DrawTriangleFilled(p0, p2, p3, color);
 }
 
 void Render::
-DrawPoly(array<vec3>& points, Color& color){
+DrawPoly(array<vec3>& points, color& color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
 	for(int i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
@@ -3750,7 +3749,7 @@ DrawPoly(array<vec3>& points, Color& color){
 }
 
 void Render::
-DrawPolyFilled(array<vec3>& points, Color& color){
+DrawPolyFilled(array<vec3>& points, color& color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
 	for(int i=2; i<points.count-1; ++i) DrawTriangleFilled(points[i-2], points[i-1], points[i], color);
@@ -3758,7 +3757,7 @@ DrawPolyFilled(array<vec3>& points, Color& color){
 }
 
 void Render::
-DrawBox(mat4 transform, Color& color){
+DrawBox(mat4 transform, color& color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -3774,7 +3773,7 @@ DrawBox(mat4 transform, Color& color){
 }
 
 void Render::
-DrawBoxFilled(mat4 transform, Color& color){
+DrawBoxFilled(mat4 transform, color& color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -3792,7 +3791,7 @@ DrawBoxFilled(mat4 transform, Color& color){
 }
 
 void Render::
-DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, Color& color){
+DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color& color){
 	if(color.a == 0) return;
 	
 	f32 y = tanf(RADIANS(fovx / 2.0f));
@@ -3863,7 +3862,7 @@ UseDefaultViewProjMatrix(vec3 position, vec3 rotation) {
 	vec3 right = vec3::UP.cross(forward).normalized();
 	vec3 up = right.cross(forward).normalized();
 	uboVS.values.view = Math::LookAtMatrix(position, position + forward).Inverse();
-
+    
 	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix(DeshWindow->width, DeshWindow->height, 90, 1000, 0.1);
 }
 

@@ -189,11 +189,11 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 #include "defines.h"
 #include "utils/color.h"
 #include "utils/tuple.h"
-#include "utils/containermanager.h"
+#include "utils/container_manager.h"
 #include "utils/utils.h"
 #include "utils/optional.h"
 #include "utils/debug.h"
-#include "utils/ringarray.h"
+#include "utils/ring_array.h"
 #include "utils/command.h"
 #include "utils/font.h"
 #include "utils/array.h"
@@ -264,10 +264,10 @@ local Storage_ storage; Storage_* g_storage = &storage;
 
 void deshi::init() {
 	TIMER_START(t_d); TIMER_START(t_s);
-		
+    
 	//pre-init setup
 	Assets::enforceDirectories();
-
+    
 	//init engine core
 	TIMER_RESET(t_s); time_.Init(700);        SUCCESS("Finished time initialization in ",              TIMER_END(t_s), "ms");
 	TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ",  TIMER_END(t_s), "ms");
@@ -280,9 +280,9 @@ void deshi::init() {
 	TIMER_RESET(t_s); DeshiImGui::Init();     SUCCESS("Finished imgui initialization in ",             TIMER_END(t_s), "ms");
 #endif
 	TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ",                TIMER_END(t_s), "ms");
-		
+    
 	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
-
+    
 	glfwShowWindow(window.window);
 }
 

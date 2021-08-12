@@ -18,13 +18,13 @@ struct Console  {
 	std::map<std::string, Command*> commands;
 	
 	char inputBuf[256]{};
-	std::vector<pair<std::string, Color>> buffer; //text, color
+	std::vector<pair<std::string, color>> buffer; //text, color
 	std::vector<std::string> history;
 	int historyPos = -1;
 	
 	u32 alert_count = 0;
 	std::string alert_message;
-	Color alert_color = Color::RED;
+	color alert_color = color::RED;
 	bool show_alert = false;
 	
 	bool dispcon = false;

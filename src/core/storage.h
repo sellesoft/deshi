@@ -28,7 +28,7 @@ namespace Storage{
 	///////////////
 	//// @mesh ////
 	///////////////
-	pair<u32,Mesh*> CreateBoxMesh(f32 width, f32 height, f32 depth, Color color = Color::WHITE);
+	pair<u32,Mesh*> CreateBoxMesh(f32 width, f32 height, f32 depth, color color = color::WHITE);
 	pair<u32,Mesh*> CreateMeshFromFile(const char* filename);
 	pair<u32,Mesh*> CreateMeshFromMemory(void* data);
 	void            SaveMesh(Mesh* mesh);

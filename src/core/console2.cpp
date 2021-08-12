@@ -36,25 +36,25 @@ local u32  input_history_index = 0;
 local u32  input_history_select_index = 0;
 
 struct ColoredPstring{
-    Color color;
+    color color;
     char* start;
     char* end;
 };
 local ring_array<char>           history;
 local ring_array<ColoredPstring> dictionary;
 
-local std::vector<pair<Color, char>> historyc;
+local std::vector<pair<color, char>> historyc;
 local std::vector<u32> lineindicies;
 
-local std::map<std::string, Color> color_strings{
-    {"red", Color::RED},       {"dred", Color::DARK_RED},
-    {"blue", Color::BLUE},     {"dblue", Color::DARK_BLUE},
-    {"cyan", Color::CYAN},     {"dcyan", Color::DARK_CYAN},
-    {"grey", Color::GREY},     {"dgrey", Color::DARK_GREY},
-    {"green", Color::GREEN},   {"dgreen", Color::DARK_GREEN},
-    {"yellow", Color::YELLOW}, {"dyellow", Color::DARK_YELLOW},
-    {"magen", Color::MAGENTA}, {"dmagen", Color::DARK_MAGENTA},
-    {"white", Color::WHITE},   {"black", Color::BLACK}
+local std::map<std::string, color> color_strings{
+    {"red", color::RED},       {"dred", color::DARK_RED},
+    {"blue", color::BLUE},     {"dblue", color::DARK_BLUE},
+    {"cyan", color::CYAN},     {"dcyan", color::DARK_CYAN},
+    {"grey", color::GREY},     {"dgrey", color::DARK_GREY},
+    {"green", color::GREEN},   {"dgreen", color::DARK_GREEN},
+    {"yellow", color::YELLOW}, {"dyellow", color::DARK_YELLOW},
+    {"magen", color::MAGENTA}, {"dmagen", color::DARK_MAGENTA},
+    {"white", color::WHITE},   {"black", color::BLACK}
 };
 
 ////////////////////////////
@@ -130,7 +130,7 @@ void Console2::Log(std::string message){
 	
     int special_start_idx = -1, special_stop_idx = -1;
     int color_start_idx = -1, color_stop_idx = -1;
-    Color color_color;
+    color color_color;
     int chunk_start = 0;
     std::string temp;
     
@@ -145,8 +145,8 @@ void Console2::Log(std::string message){
     			
     			if((color_start_idx == -1) && (i != chunk_start)){
                     u32 idx = history.count;
-                    history.Add(message.c_str()+chunk_start, i-chunk_start);
-                    dictionary.Add(ColoredPstring{Color::WHITE, history.At(idx), history.At(idx)+(i-chunk_start)});
+                    history.add(message.c_str()+chunk_start, i-chunk_start);
+                    dictionary.add(ColoredPstring{color::WHITE, history.at(idx), history.at(idx)+(i-chunk_start)});
     			}
     		}
     	}
@@ -166,8 +166,8 @@ void Console2::Log(std::string message){
     				
                     if(color_stop_idx != color_start_idx){
                         u32 idx = history.count;
-                        history.Add(message.c_str()+color_start_idx, color_stop_idx-color_start_idx);
-                        dictionary.Add(ColoredPstring{color_color, history.At(idx), history.At(idx)+(color_stop_idx-color_start_idx)});
+                        history.add(message.c_str()+color_start_idx, color_stop_idx-color_start_idx);
+                        dictionary.add(ColoredPstring{color_color, history.at(idx), history.at(idx)+(color_stop_idx-color_start_idx)});
                     }
     				
     				color_start_idx = -1;
@@ -187,8 +187,8 @@ void Console2::Log(std::string message){
     	if(message[i] == '\n'){
             if((i-chunk_start+1 - chunk_start) != 0){
                 u32 idx = history.count;
-                history.Add(message.c_str()+chunk_start, (i-chunk_start)+2); //+2 to copy the \0 as well
-                dictionary.Add(ColoredPstring{Color::WHITE, history.At(idx), history.At(idx)+((i-chunk_start)+1)});
+                history.add(message.c_str()+chunk_start, (i-chunk_start)+2); //+2 to copy the \0 as well
+                dictionary.add(ColoredPstring{color::WHITE, history.at(idx), history.at(idx)+((i-chunk_start)+1)});
             }
     	}
     }
@@ -202,14 +202,14 @@ void Console2::Log(std::string message){
     //	lineindicies.push_back(historyc.size());
     //}
     //
-    //Color currCol = Color::WHITE;
+    //color currCol = color::WHITE;
     //
     //for (int i = 0; i < message.size(); i++) {
     //	char ch = message[i];
     //
     //	//check for color formatting
     //	if (ch == '^') { 
-    //		if (currCol == Color::WHITE) {
+    //		if (currCol == color::WHITE) {
     //			//char indicating our color formatting was found
     //			//so we expect the next char to be c followed by =, then blah blah
     //			//if any of these fail then we ignore it 
@@ -239,7 +239,7 @@ void Console2::Log(std::string message){
     //			//it may be the end of color formatting
     //			if (message[++i] == 'c') {
     //				if (message[++i] == '^') {
-    //					currCol = Color::WHITE;
+    //					currCol = color::WHITE;
     //					ch = -1;
     //				} else i -= 2;
     //			} else i--;
@@ -248,14 +248,14 @@ void Console2::Log(std::string message){
     //	}
     //
     //	if (ch != -1) {
-    //		historyc.push_back(pair<Color, char>(currCol, ch));
+    //		historyc.push_back(pair<color, char>(currCol, ch));
     //	}
     //}
 }
 
 void Console2::Init(){
-    history.Init(8192);
-    dictionary.Init(512);
+    history.init(8192);
+    dictionary.init(512);
 }
 
 void Console2::Cleanup(){
@@ -315,9 +315,9 @@ void Console2::Update(){
 		if(!open_amount) return; //early out if fully closed
 		
 		if(test_swap){
-			Render::FillRectUI(vec2(console_x, console_y), vec2(console_w, console_h), Color::BLACK); //background
-			Render::FillRectUI(vec2(console_x+pad, console_y+pad), vec2(console_w-pad2x, console_h-pad2x-input_box_height), Color(0, 9, 13)); //report
-			Render::FillRectUI(vec2(console_x+pad, console_h-pad-input_box_height), vec2(console_w-pad2x, input_box_height), Color(0, 62, 62)); //input
+			Render::FillRectUI(vec2(console_x, console_y), vec2(console_w, console_h), color::BLACK); //background
+			Render::FillRectUI(vec2(console_x+pad, console_y+pad), vec2(console_w-pad2x, console_h-pad2x-input_box_height), color(0, 9, 13)); //report
+			Render::FillRectUI(vec2(console_x+pad, console_h-pad-input_box_height), vec2(console_w-pad2x, input_box_height), color(0, 62, 62)); //input
 		}else{
 			ImGuiStyle& style = ImGui::GetStyle();
 			style.AntiAliasedFill = false;
@@ -449,7 +449,7 @@ void Console2::Update(){
 				ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackAlways;
 				if(show_autocomplete) input_text_flags = ImGuiInputTextFlags_None;
 				
-				ImGui::PushStyleColor(ImGuiCol_FrameBg, ColorToVec4(Color::VERY_DARK_CYAN));
+				ImGui::PushStyleColor(ImGuiCol_FrameBg, ColorToVec4(color::VERY_DARK_CYAN));
 				ImGui::SetNextItemWidth(ImGui::GetWindowWidth() - 16);
 				//TODO(delle,OpCl) this can be optimized by reducing the amount of string copies
 				if(ImGui::InputText("##console_input_text", input_buffer, input_max_size, input_text_flags, &TextEditCallback, 0)) {
