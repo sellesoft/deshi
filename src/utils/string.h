@@ -70,8 +70,7 @@ struct string {
     char&  operator[](int i);
     void   operator= (char c);
     void   operator= (const string& s);
-    void   operator= (const char* s); //!FixMe doesnt free
-    //these += could probably be better
+    void   operator= (const char* s);
     void   operator+=(char& c);
     void   operator+=(const string& s);
     void   operator+=(const char* ss);
@@ -222,7 +221,7 @@ inline void string::operator= (const string& s){
 
 inline void string::operator= (const char* s){
     size = strlen(s);
-    str = (char*)malloc(size + 1);
+    str = (char*)realloc(str, size + 1);
     strcpy(str, s);
     ADDRUPDATE(str, size, 1);
 }
