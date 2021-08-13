@@ -166,6 +166,7 @@ inline string::string(const string& s){
         free(str);
         str = (char*)malloc(size + 1);
         memcpy(str, s.str, s.size+1);
+        memset(str + size, '\0', 1);
         ADDRUPDATE(str, size, 1);
     }
     else {
@@ -226,17 +227,16 @@ inline void string::operator= (const char* s){
     ADDRUPDATE(str, size, 1);
 }
 
+//i didnt test this
 inline void string::operator+=(char& c){
-    int newsize = size + 1;
-    char* old = new char[size];
-    memcpy(old, str, size);
-    str = (char*)malloc(newsize + 1);
-    memcpy(str, old, size);
-    memcpy(str + size, &c, 1);
-    size = newsize;
-    memset(str + size, '\0', 1);
-    ADDRUPDATE(str, size, 1);
-    delete old;
+    string s(c);
+    this->operator+=(s);
+    
+    //int newsize = size + 1;
+    //str = (char*)realloc(str, newsize + 1);
+    //memcpy(str + size, (char*)c, 1);
+    //size = newsize;
+    //memset(str + size, '\0', 1);
 }
 
 inline void string::operator+=(const string& s){
@@ -251,17 +251,19 @@ inline void string::operator+=(const string& s){
 
 inline void string::operator+=(const char* ss){
     string s(ss); //being lazy
-    if(s.size == 0) return;
-    int newsize = size + s.size;
-    char* old = new char[size];
-    memcpy(old, str, size);
-    str = (char*)malloc(newsize + 1);
-    memcpy(str, old, size);
-    memcpy(str + size, s.str, s.size);
-    size = newsize;
-    memset(str + size, '\0', 1);
-    ADDRUPDATE(str, size, 1);
-    delete old;
+    this->operator+=(s);
+                  
+     //if(s.size == 0) return;
+    //int newsize = size + s.size;
+    //char* old = new char[size];
+    //memcpy(old, str, size);
+    //str = (char*)malloc(newsize + 1);
+    //memcpy(str, old, size);
+    //memcpy(str + size, s.str, s.size);
+    //size = newsize;
+    //memset(str + size, '\0', 1);
+    //ADDRUPDATE(str, size, 1);
+    //delete old;
 }
 
 inline string string::operator+(const string& s){
