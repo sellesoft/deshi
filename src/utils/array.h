@@ -117,7 +117,7 @@ inline array<T>::array(std::initializer_list<T> l){
 }
 
 //TODO this can probably be much better
-//its necessary so when we return objs the entire array copies properly
+//its necessary so when we return elements the entire array copies properly
 //so we have to make sure everything in the array gets recreated
 template<class T>
 inline array<T>::array(const array<T>& array){

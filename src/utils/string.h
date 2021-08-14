@@ -354,7 +354,7 @@ inline void string::erase(u32 idx){
 }
 
 inline void string::insert(char c, s32 idx){
-    Assert(idx <= size && idx >= -1);
+    Assert(idx <= (s32)size && idx >= -1);
     
     idx++;
     size++;
@@ -370,7 +370,7 @@ inline char string::at(u32 idx) const{
 }
 
 inline string string::substr(size_t first, size_t second) const{
-    if(second == npos) second = size;
+    if(second == npos) second = size - 1;
     Assert(first <= size && second <= size && second >= first, "check first/second variables");
     return string(str + first, second - first + 1);
 }

@@ -110,13 +110,6 @@ inline vec2 UI::CalcTextSize(string text) {
 	return vec2(longest * style.font->width, style.font->height * (text.count('\n') + 1));
 }
 
-inline local bool PointInRectangle(vec2 point, vec2 rectPos, vec2 rectDims) {
-	return
-		point.x >= rectPos.x &&
-		point.y >= rectPos.y &&
-		point.x <= rectPos.x + rectDims.x &&
-		point.y <= rectPos.y + rectDims.y;
-}
 
 void UI::SetNextItemActive() {
 	NextActive = 1;
@@ -382,7 +375,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 	
 	//check if window is hovered
 	vec2 mp = DeshInput->mousePos;
-	if(PointInRectangle(mp, workingWin.position, workingWin.dimensions)){
+	if(Math::PointInRectangle(mp, workingWin.position, workingWin.dimensions)){
 		workingWin.hovered = 1;
 	}
 	else {
@@ -391,7 +384,7 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 	
 	//check if window's title is hovered (if were drawing it), so we can check for window movement by mouse later
 	if (!(workingWin.flags & UIWindowFlags_NoTitleBar)) {
-		if(PointInRectangle(mp, workingWin.position, vec2(workingWin.width, style.titleBarHeight))){
+		if(Math::PointInRectangle(mp, workingWin.position, vec2(workingWin.width, style.titleBarHeight))){
 			workingWin.titleHovered = 1;
 		}
 		else {
@@ -813,7 +806,7 @@ void UI::Checkbox(string label, bool* b) {
 		workingWin.drawCmds.add(drawCmd);
 	}
     
-	if (DeshInput->LMousePressed() && PointInRectangle(DeshInput->mousePos, boxpos, boxsiz))
+	if (DeshInput->LMousePressed() && Math::PointInRectangle(DeshInput->mousePos, boxpos, boxsiz))
 		*b = !*b;
     
 	workingWin.cury += boxsiz.y + style.itemSpacing.y;
@@ -851,7 +844,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
     
 	//check for mouse click or next active to set active 
 	if (NextActive || DeshInput->KeyPressedAnyMod(MouseButton::LEFT)) {
-		if (NextActive || PointInRectangle(DeshInput->mousePos, position, dimensions)) {
+		if (NextActive || Math::PointInRectangle(DeshInput->mousePos, position, dimensions)) {
 			activeId = state->id;
 			NextActive = 0;
 		}

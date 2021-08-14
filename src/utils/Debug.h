@@ -14,8 +14,8 @@
 
 #define __FILENAME__ (std::strrchr(__FILE__, '\\') ? std::strrchr(__FILE__, '\\') + 1 : __FILE__)
 
-#define TOSTDSTRING(...) ToStdString(__VA_ARGS__)
-#define TOSTRING(...) ToString(__VA_ARGS__)
+#define TOSTDSTRING(...) to_std_string(__VA_ARGS__)
+#define TOSTRING(...) to_string(__VA_ARGS__)
 
 //makes a random number only once and then always returns that same number
 //if called by the same object
@@ -38,43 +38,43 @@ struct has_str_method {
 //// Primarily for outputting to ingame console, but can return a string from any object that is a c++ number
 //// or any of our classes (or yours :) ) that has a .str() member
 
-static std::string ToStdString(const char* str) { return std::string(str); }
-static std::string ToStdString(char* str)       { return std::string(str); }
+static std::string to_std_string(const char* str) { return std::string(str); }
+static std::string to_std_string(char* str)       { return std::string(str); }
 
-static std::string ToStdString(const std::string& str) { return str; }
-static std::string ToStdString(string t) { return ToStdString(t.str); }
+static std::string to_std_string(const std::string& str) { return str; }
+static std::string to_std_string(string t) { return to_std_string(t.str); }
 
 template<class T, typename std::enable_if<!has_str_method<T>::value, bool>::type = true>
-static std::string ToStdString(T t) { return ToStdString(std::to_string(t)); }
+static std::string to_std_string(T t) { return to_std_string(std::to_string(t)); }
 
 template<class T, typename std::enable_if<has_str_method<T>::value, bool>::type = true>
-static std::string ToStdString(T t) { return ToStdString(t.str()); }
+static std::string to_std_string(T t) { return to_std_string(t.str()); }
 
 template<class... T>
-static std::string ToStdString(T... args) { 
-	std::string strings[] = { "", (ToStdString(std::forward<T>(args))) ... };
+static std::string to_std_string(T... args) { 
+	std::string strings[] = { "", (to_std_string(std::forward<T>(args))) ... };
 	std::string str = "";
 	for (std::string s : strings) { str += s; }
 	
 	return str;
 }
 
-static string ToString(const char* str) { return string(str); }
-static string ToString(char* str) { return string(str); }
+static string to_string(const char* str) { return string(str); }
+static string to_string(char* str) { return string(str); }
 
-static string ToString(const string& str) { return str; }
+static string to_string(const string& str) { return str; }
 
 template<class T, typename std::enable_if<!has_str_method<T>::value, bool>::type = true>
-static string ToString(T t) { return ToString(string::toStr(t)); }
+static string to_string(T t) { return to_string(string::toStr(t)); }
 
 template<class T, typename std::enable_if<has_str_method<T>::value, bool>::type = true>
-static string ToString(T t) { return ToString(string(t.str())); }
+static string to_string(T t) { return to_string(string(t.str())); }
 
 template<class... T>
-static string ToString(T... args) {
+static string to_string(T... args) {
 	//string strings[] = ;
-	array<string> strings{ "", (ToString(std::forward<T>(args))) ... };
-	//string strings[] = { ToString(args), ... };
+	array<string> strings{ "", (to_string(std::forward<T>(args))) ... };
+	//string strings[] = { to_string(args), ... };
 	string str = "";
 	for (string& s : strings) { str += s; }
 	
