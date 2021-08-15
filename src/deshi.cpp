@@ -188,7 +188,17 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 
 */
 
-#include "deshi.h"
+//// external for core ////
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_FAILURE_USERMSG
+#include "external/stb/stb_image.h"
+#include "external/imgui/imgui.cpp"
+#include "external/imgui/imgui_demo.cpp"
+#include "external/imgui/imgui_draw.cpp"
+#include "external/imgui/imgui_tables.cpp"
+#include "external/imgui/imgui_widgets.cpp"
+#undef ERROR
+#undef DELETE
 
 //// utility headers ////
 #include "defines.h"
@@ -207,12 +217,6 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 #include "utils/view.h"
 #include "math/math.h"
 
-//// external for core ////
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_FAILURE_USERMSG
-#include "external/stb/stb_image.h"
-#include "external/imgui/imgui_impl_glfw.h"
-
 //// STL for core ////
 #include <iostream>
 #include <iomanip>
@@ -224,6 +228,9 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 #include <set>
 #include <unordered_map>
 
+//// core headers ////
+#include "deshi.h"
+
 //// renderer cpp (and libs) ////
 #if   DESHI_VULKAN
 #if defined(_MSC_VER)
@@ -234,7 +241,8 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <shaderc/shaderc.h>
-#include "external/imgui/imgui_impl_vulkan.h"
+#include "external/imgui/imgui_impl_vulkan.cpp"
+#include "external/imgui/imgui_impl_glfw.cpp"
 #include "core/renderers/vulkan.cpp"
 #elif DESHI_OPENGL
 #if defined(_MSC_VER)

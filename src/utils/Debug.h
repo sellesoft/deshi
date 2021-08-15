@@ -15,7 +15,7 @@
 #define __FILENAME__ (std::strrchr(__FILE__, '\\') ? std::strrchr(__FILE__, '\\') + 1 : __FILE__)
 
 #define TOSTDSTRING(...) to_std_string(__VA_ARGS__)
-#define TOSTRING(...) to_string(__VA_ARGS__)
+#define TOSTRING(...) ToDeshiString(__VA_ARGS__)
 
 //makes a random number only once and then always returns that same number
 //if called by the same object
@@ -67,12 +67,8 @@ static string to_string(char* str) { return string(str); }
 static string to_string(const string& str) { return str; }
 static string to_string(const std::string& str) { return str.c_str(); }
 
-//template<class T, typename std::enable_if<!has_str_method<T>::value, bool>::type = true>
-template<class T>
-static string to_string(T t) { return to_string(to_string(t)); }
-
 template<class... T>
-static string to_string(T... args) {
+static string ToDeshiString(T... args) {
 	//string strings[] = ;
 	array<string> strings{ "", (to_string(std::forward<T>(args))) ... };
 	//string strings[] = { to_string(args), ... };

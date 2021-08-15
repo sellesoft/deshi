@@ -447,12 +447,12 @@ loadConfig(const char* filename, ConfigMap configMap){
 			key_end   = key_start;
 			while(key_end != info_end && *key_end++ != ' '){}
 			if(key_end == info_end) { ERROR("Error parsing '",filepath,"' on line '",line_number,"'! No value passed"); break; }
-			key_end--;
+			key_end -= 1;
 			
 			value_end   = info_end;
-			value_start = value_end-1;
-			while(*value_start-- != ' '){}
-			value_start += 2;
+			value_start = key_end;
+			while(*value_start++ == ' '){}
+			value_start -= 1;
 			if(value_end == value_start) { ERROR("Error parsing '",filepath,"' on line '",line_number,"'! No value passed"); break; }
 		}
 		

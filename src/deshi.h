@@ -7,6 +7,7 @@
 #include "core/console2.h"
 #endif
 #ifndef DESHI_DISABLE_IMGUI
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "core/imgui.h"
 #endif
 #include "core/camera.h"
