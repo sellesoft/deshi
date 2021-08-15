@@ -1,5 +1,6 @@
 
 //// core/game headers ////
+#include "defines.h"
 #include "core/assets.h"
 #ifndef DESHI_DISABLE_CONSOLE
 #include "core/console.h"
