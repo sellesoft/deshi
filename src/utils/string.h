@@ -274,12 +274,9 @@ inline void string::insert(char c, u32 idx){
     }else if(space < size+1){
         space = RoundUpTo(size+1, 4);
         Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
-        memmove(str+idx+1, str+idx, (size-idx)*CHAR_SIZE);
-        str[idx] = c;
-    }else{
-        memmove(str+idx+1, str+idx, (size-idx)*CHAR_SIZE);
-        str[idx] = c;
     }
+    memmove(str + idx + 1, str + idx, (size - idx) * CHAR_SIZE);
+    str[idx] = c;
 }
 
 inline char string::at(u32 idx) const{

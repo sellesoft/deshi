@@ -32,6 +32,7 @@ struct array {
     void add(const array<T>& t);
     //for taking in something without copying it
     void emplace(const T& t);
+    void insert(const T& t, u32 idx);
     //removes last element
     void pop();
     //removes _count elements from the end
@@ -266,6 +267,23 @@ inline void array<T>::emplace(const T& t){
         }
     }
     count++;
+}
+
+template<class T>
+inline void array<T>::insert(const T& t, u32 idx) {
+    Assert(idx <= count);
+    count += 1;
+    if (space == 0) {
+        space = 4;
+        Assert(data = (T*)calloc(space, sizeof(T)));
+        data[0] = t;
+    }
+    else if (space < size + 1) {
+        space = RoundUpTo(size + 1, 4);
+        Assert(data = (T*)calloc(space, sizeof(T)));
+    }
+    memmove(data + idx + 1, data + idx, (size - idx) * sizeof(T));
+    data[idx] = t;
 }
 
 template<class T>
