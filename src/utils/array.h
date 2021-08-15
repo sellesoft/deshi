@@ -281,9 +281,13 @@ inline void array<T>::insert(const T& t, u32 idx) {
     else if (space < size + 1) {
         space = RoundUpTo(size + 1, 4);
         Assert(data = (T*)calloc(space, sizeof(T)));
+        memmove(data + idx + 1, data + idx, (size - idx) * sizeof(T));
+        data[idx] = t;
     }
-    memmove(data + idx + 1, data + idx, (size - idx) * sizeof(T));
-    data[idx] = t;
+    else {
+        memmove(data + idx + 1, data + idx, (size - idx) * sizeof(T));
+        data[idx] = t;
+    }
 }
 
 template<class T>
