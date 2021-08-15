@@ -8,19 +8,16 @@
 
 #include <cstring>
 #include <cstdio>
-#include <ostream> //std::ostream operator<<
+#include <iostream> //std::ostream operator<<
 
-//NOTE i store the allocated number of characters in the first 4 bytes of the buffer when buffer is not being used
-//NOTE DEFAULTS: growth rate: 2x; min allocation: 20 bytes; struct size: 32 bytes
 struct string{
     typedef char CHAR;
 	static constexpr u32 NPOS = -1;
-    static constexpr u32 BUFFER_SIZE = 20; //number of characters, not bytes
     static constexpr u32 CHAR_SIZE = sizeof(CHAR);
     
-	CHAR* str;
     u32   size;
-    CHAR  buffer[BUFFER_SIZE];
+    u32   space;
+	CHAR* str;
 	
     string();
     string(char c);
@@ -72,62 +69,41 @@ struct string{
 //// @constructors ////
 ///////////////////////
 inline string::string(){
-    size = 0;
-    str = buffer;
-    memset(buffer, 0, BUFFER_SIZE*CHAR_SIZE);
+    size  = 0;
+    space = 0;
+    str   = 0;
 };
 
 inline string::string(char c){
-    size = 1;
-    str = buffer;
-    memset(buffer, 0, BUFFER_SIZE*CHAR_SIZE);
+    size  = 1;
+    space = 4;
+    Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
     str[0] = c;
 }
 
 inline string::string(const char* s){
-    size = strlen(s);
-    if(size > BUFFER_SIZE-1){
-        u32 alloc_size = RoundUpTo(size+1, BUFFER_SIZE);
-        Assert(str = (CHAR*)calloc(alloc_size, CHAR_SIZE));
-        memcpy(str, s, size*CHAR_SIZE);
-        *(u32*)buffer = alloc_size;
-    }else{
-        str = buffer;
-        memset(buffer, 0, BUFFER_SIZE*CHAR_SIZE);
-        memcpy(buffer, s, size*CHAR_SIZE);
-    }
+    size  = strlen(s);
+    space = RoundUpTo(size+1, 4);
+    Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+    memcpy(str, s, size*CHAR_SIZE);
 }
 
 inline string::string(const char* s, u32 _size){
-    size = _size;
-    if(size > BUFFER_SIZE-1){
-        u32 alloc_size = RoundUpTo(size+1, BUFFER_SIZE);
-        Assert(str = (CHAR*)calloc(alloc_size, CHAR_SIZE));
-        memcpy(str, s, size*CHAR_SIZE);
-        *(u32*)buffer = alloc_size;
-    }else{
-        str = buffer;
-        memset(buffer, 0, BUFFER_SIZE*CHAR_SIZE);
-        memcpy(buffer, s, size*CHAR_SIZE);
-    }
+    size  = _size;
+    space = RoundUpTo(size+1, 4);
+    Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+    memcpy(str, s, size*CHAR_SIZE);
 }
 
 inline string::string(const string& s){
     size = s.size;
-    if(size > BUFFER_SIZE-1){
-        Assert(str = (CHAR*)malloc((size+1)*CHAR_SIZE));
-        memcpy(str, s.str, (size+1)*CHAR_SIZE);
-    }else{
-        str = buffer;
-        memset(buffer, 0, BUFFER_SIZE*CHAR_SIZE);
-        memcpy(buffer, s.str, (size+1)*CHAR_SIZE);
-    }
+    space = RoundUpTo(size+1, 4);
+    Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+    memcpy(str, s.str, size*CHAR_SIZE);
 }
 
-//persist set<char*> test_string();
 inline string::~string(){
-    printf("deleted: %p    %s\n", str, str);
-    if(str != buffer) free(str);
+    free(str);
 }
 
 ////////////////////
@@ -139,64 +115,44 @@ inline string::CHAR& string::operator[](u32 idx){
 }
 
 inline void string::operator= (CHAR c){
-    if(str != buffer) free(str);
-    size = 1;
-    str = buffer;
-    memset(buffer, 0, BUFFER_SIZE*CHAR_SIZE);
+    free(str);
+    size  = 1;
+    space = 4;
+    Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
     str[0] = c;
 }
 
 inline void string::operator= (const char* s){
-    if(str != buffer) free(str);
-    size = strlen(s);
-    if(size > BUFFER_SIZE-1){
-        u32 alloc_size = RoundUpTo(size+1, BUFFER_SIZE);
-        Assert(str = (CHAR*)calloc(alloc_size, CHAR_SIZE));
-        memcpy(str, s, size*CHAR_SIZE);
-        *(u32*)buffer = alloc_size;
-    }else{
-        str = buffer;
-        memset(buffer, 0, BUFFER_SIZE*CHAR_SIZE);
-        memcpy(buffer, s, size*CHAR_SIZE);
-    }
+    free(str);
+    size  = strlen(s);
+    space = RoundUpTo(size+1, 4);
+    Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+    memcpy(str, s, size*CHAR_SIZE);
 }
 
 inline void string::operator= (const string& s){
-    if(str != buffer) free(str);
+    free(str);
     size = s.size;
-    if(size > BUFFER_SIZE-1){
-        Assert(str = (CHAR*)malloc((size+1)*CHAR_SIZE));
-        memcpy(str, s.str, (size+1)*CHAR_SIZE);
-    }else{
-        str = buffer;
-        memset(buffer, 0, BUFFER_SIZE*CHAR_SIZE);
-        memcpy(buffer, s.str, (size+1)*CHAR_SIZE);
-    }
+    space = RoundUpTo(size+1, 4);
+    Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+    memcpy(str, s.str, size*CHAR_SIZE);
 }
 
 inline void string::operator+=(CHAR c){
     size += 1;
-    if(str == buffer){
-        if(size > BUFFER_SIZE-1){
-            u32 alloc_size = RoundUpTo(size+1, BUFFER_SIZE); 
-            Assert(str = (CHAR*)calloc(alloc_size, CHAR_SIZE));
-            memcpy(str, buffer, size*CHAR_SIZE);
-            str[size-1] = c;
-            *(u32*)buffer = alloc_size;
-        }else{
-            str[size-1] = c;
-        }
+    if(space == 0){
+        space = 4;
+        Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+        str[0] = c;
+        return;
+    }else if(space < size+1){
+        space = RoundUpTo(space*2, 4);
+        Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+        str[size-1] = c;
+        str[size] = '\0';
     }else{
-        if(size+1 > *(u32*)buffer){
-            u32 alloc_size = RoundUpTo((*(u32*)buffer)+1, BUFFER_SIZE); 
-            Assert(str = (CHAR*)realloc(str, alloc_size*CHAR_SIZE));
-            str[size-1] = c;
-            str[size] = '\0';
-            *(u32*)buffer = alloc_size;
-        }else{
-            str[size-1] = c;
-            str[size] = '\0';
-        }
+        str[size-1] = c;
+        str[size] = '\0';
     }
 }
 
@@ -204,27 +160,18 @@ inline void string::operator+=(const char* s){
     u32 old_len = size;
     u32 str_len = strlen(s);
     if(str_len == 0) return;
-    
     size += str_len;
-    if(str == buffer){
-        if(size > BUFFER_SIZE-1){
-            u32 alloc_size = RoundUpTo(size+1, BUFFER_SIZE); 
-            Assert(str = (CHAR*)calloc(alloc_size, CHAR_SIZE));
-            memcpy(str,         buffer, size*CHAR_SIZE);
-            memcpy(str+old_len, s,      str_len*CHAR_SIZE);
-            *(u32*)buffer = alloc_size;
-        }else{
-            memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
-        }
+    
+    if(space == 0){
+        space = RoundUpTo(size+1, 4);
+        Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+        memcpy(str, s, size*CHAR_SIZE);
+    }else if(space < size+1){
+        space = RoundUpTo(size+1, 4);
+        Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+        memcpy(str+old_len, s, str_len*CHAR_SIZE);
     }else{
-        if(size+1 > *(u32*)buffer){
-            u32 alloc_size = RoundUpTo((*(u32*)buffer)*2, BUFFER_SIZE); 
-            Assert(str = (CHAR*)realloc(str, alloc_size*CHAR_SIZE));
-            memcpy(str+old_len, s, str_len*CHAR_SIZE);
-            *(u32*)buffer = alloc_size;
-        }else{
-            memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
-        }
+        memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
     }
 }
 
@@ -232,72 +179,50 @@ inline void string::operator+=(const string& s){
     u32 old_len = size;
     u32 str_len = s.size;
     if(str_len == 0) return;
-    
     size += str_len;
-    if(str == buffer){
-        if(size > BUFFER_SIZE-1){
-            u32 alloc_size = RoundUpTo(size+1, BUFFER_SIZE); 
-            Assert(str = (CHAR*)calloc(alloc_size, CHAR_SIZE), "calloc returned nullptr; maybe we ran out of memory?");
-            memcpy(str,         buffer, size*CHAR_SIZE);
-            memcpy(str+old_len, s.str,  str_len*CHAR_SIZE);
-            *(u32*)buffer = alloc_size;
-        }else{
-            memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
-        }
+    
+    if(space == 0){
+        space = RoundUpTo(size+1, 4);
+        Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+        memcpy(str, s.str, size*CHAR_SIZE);
+    }else if(space < size+1){
+        space = RoundUpTo(size+1, 4);
+        Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+        memcpy(str+old_len, s.str, str_len*CHAR_SIZE);
     }else{
-        if(size+1 > *(u32*)buffer){
-            u32 alloc_size = RoundUpTo((*(u32*)buffer)*2, BUFFER_SIZE); 
-            Assert(str = (CHAR*)realloc(str, alloc_size*CHAR_SIZE), "realloc returned nullptr; maybe we ran out of memory?");
-            memcpy(str+old_len, s.str, str_len*CHAR_SIZE);
-            *(u32*)buffer = alloc_size;
-        }else{
-            memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
-        }
+        memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
     }
 }
 
-inline string string::operator--(int){ //!TestMe
+inline string string::operator--(int){
     if(size == 0) return *this;
     str[--size] = '\0';
     return *this;
 }
 
 inline string string::operator+ (const char* c) const{
+    if(size == 0) return string(c);
     u32 str_len = strlen(c);
-    if(str_len == 0) return *this; //!TestMe
+    if(str_len == 0) return *this;
     
-    string result{};
-    result.size = size + str_len;
-    if(result.size > BUFFER_SIZE-1){
-        u32 alloc_size = RoundUpTo(result.size+1, BUFFER_SIZE);
-        Assert(result.str = (CHAR*)calloc(alloc_size, CHAR_SIZE));
-        memcpy(result.str,      str, size*CHAR_SIZE);
-        memcpy(result.str+size, c,   str_len*CHAR_SIZE);
-        *(u32*)result.buffer = alloc_size;
-    }else{
-        result.str = result.buffer;
-        memcpy(result.buffer,      str, size*CHAR_SIZE);
-        memcpy(result.buffer+size, c,   str_len*CHAR_SIZE);
-    }
+    string result;
+    result.size  = size + str_len;
+    result.space = RoundUpTo(result.size+1, 4);
+    Assert(result.str = (CHAR*)calloc(result.space, CHAR_SIZE));
+    memcpy(result.str,      str, size*CHAR_SIZE);
+    memcpy(result.str+size, c,   str_len*CHAR_SIZE);
     return result;
 }
 
 inline string string::operator+(const string& s) const{
-    if(s.size == 0) return *this; //!TestMe
+    if(s.size == 0) return *this;
     
-    string result{};
-    result.size = size + s.size;
-    if(result.size > BUFFER_SIZE-1){
-        u32 alloc_size = RoundUpTo(result.size+1, BUFFER_SIZE);
-        Assert(result.str = (CHAR*)calloc(alloc_size, CHAR_SIZE));
-        memcpy(result.str,      str,   size*CHAR_SIZE);
-        memcpy(result.str+size, s.str, s.size*CHAR_SIZE);
-        *(u32*)result.buffer = alloc_size;
-    }else{
-        result.str = result.buffer;
-        memcpy(result.buffer,      str,   size*CHAR_SIZE);
-        memcpy(result.buffer+size, s.str, s.size*CHAR_SIZE);
-    }
+    string result;
+    result.size  = size + s.size;
+    result.space = RoundUpTo(result.size+1, 4);
+    Assert(result.str = (CHAR*)calloc(result.space, CHAR_SIZE));
+    memcpy(result.str,      str,   size*CHAR_SIZE);
+    memcpy(result.str+size, s.str, s.size*CHAR_SIZE);
     return result;
 }
 
@@ -328,10 +253,10 @@ inline string operator+ (const char* c, const string& s){
 //// @functions ////
 ////////////////////
 inline void string::clear(){
-    if(str != buffer) free(str);
-    size = 0;
-    str = buffer;
-    memset(buffer, 0, BUFFER_SIZE*CHAR_SIZE);
+    free(str);
+    size  = 0;
+    space = 0;
+    str   = 0;
 }
 
 inline void string::erase(u32 idx){
@@ -342,31 +267,18 @@ inline void string::erase(u32 idx){
 inline void string::insert(char c, u32 idx){
     Assert(idx <= size);
     size += 1;
-    if(str == buffer){
-        if(size > BUFFER_SIZE-1){
-            u32 alloc_size = RoundUpTo(size+1, BUFFER_SIZE); 
-            str = (CHAR*)calloc(alloc_size, CHAR_SIZE);
-            Assert(str, "calloc failed and returned nullptr; maybe we ran out of memory?");
-            memcpy(str, buffer, idx*CHAR_SIZE);
-            memcpy(str+idx+1, buffer+idx, (size-idx)*CHAR_SIZE);
-            str[idx] = c;
-            *(u32*)buffer = alloc_size;
-        }else{
-            memmove(str+idx+1, str+idx, (size-idx)*CHAR_SIZE);
-            str[idx] = c;
-        }
+    if(space == 0){
+        space = 4;
+        Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+        str[0] = c;
+    }else if(space < size+1){
+        space = RoundUpTo(size+1, 4);
+        Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+        memmove(str+idx+1, str+idx, (size-idx)*CHAR_SIZE);
+        str[idx] = c;
     }else{
-        if(size+1 > *(u32*)buffer){
-            u32 alloc_size = RoundUpTo((*(u32*)buffer)+1, BUFFER_SIZE); 
-            str = (CHAR*)realloc(str, alloc_size*CHAR_SIZE);
-            Assert(str, "realloc failed and returned nullptr; maybe we ran out of memory?");
-            memmove(str+idx+1, str+idx, (size-idx)*CHAR_SIZE);
-            str[idx] = c;
-            *(u32*)buffer = alloc_size;
-        }else{
-            memmove(str+idx+1, str+idx, (size-idx)*CHAR_SIZE);
-            str[idx] = c;
-        }
+        memmove(str+idx+1, str+idx, (size-idx)*CHAR_SIZE);
+        str[idx] = c;
     }
 }
 
