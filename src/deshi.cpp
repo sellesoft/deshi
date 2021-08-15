@@ -86,6 +86,7 @@ SSBOs in shaders so we can pass variable length arrays to it
 
 Storage TODOs
 -------------
+add MTL parsing and extra face info
 store null128.png and 
 add versionion to Mesh since its saved in a binary format
 speedup OBJ parsing and face generation
@@ -151,6 +152,10 @@ implement Complex Colliders
 
 Level Editor and Inspector TODOs
 ------------------
+safety check on renaming things so no things have same name
+fix mesh viewing bools mixing?
+fix extra temp vertexes/indexes (when viewing triangle neighbors)
+fix normals viewing on big objects crash https://stackoverflow.com/questions/63092926/what-is-causing-vk-error-device-lost-when-calling-vkqueuesubmit
 change undo's to never use pointers and have undos that can act like linked lists to chain them
 rewrite the events menu (triggers need to be able to filter what causes them to activate)
 add box select for mesh inspector and entity selection

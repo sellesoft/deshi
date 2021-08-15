@@ -96,18 +96,18 @@ u32 activeId = -1; //the id of an active widget eg. input text
 inline vec2 UI::CalcTextSize(string text) {
 	string stage = text;
 	u32 longest = 0;
-	size_t nlp = stage.find_first_of('\n');
-	while (nlp != string::npos) {
+    u32 nlp = stage.findFirstChar('\n');
+	while (nlp != string::NPOS) {
 		if (nlp - 1 > longest)
 			longest = nlp - 1;
 		stage = stage.substr(nlp + 1);
-		nlp = stage.find_first_of('\n');
+		nlp = stage.findFirstChar('\n');
 	}
 	
 	if (stage.size > longest)
 		longest = stage.size;
 	
-	return vec2(longest * style.font->width, style.font->height * (text.count('\n') + 1));
+	return vec2(longest * style.font->width, style.font->height * (text.charCount('\n') + 1));
 }
 
 inline local bool PointInRectangle(vec2 point, vec2 rectPos, vec2 rectDims) {
@@ -212,8 +212,8 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 	//we need to see if the string goes beyond the width of the window and wrap if it does
 	if (maxChars < text.size) {
 		//find closest space to split by
-		size_t splitat = text.find_first_of_lookback(' ', maxChars);
-		string nustr = text.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+        u32 splitat = text.findLastChar(' ', maxChars);
+		string nustr = text.substr(0, (splitat == string::NPOS) ? maxChars - 1 : splitat);
 		TextCall(nustr, workingWin.position + workcur, color);
 		
 		text = text.substr(nustr.size);
@@ -221,8 +221,8 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 		
 		//continue to wrap if we need to
 		while (text.size > maxChars) {
-			splitat = text.find_first_of_lookback(' ', maxChars);
-			nustr = text.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+			splitat = text.findLastChar(' ', maxChars);
+			nustr = text.substr(0, (splitat == string::NPOS) ? maxChars - 1 : splitat);
 			TextCall(nustr, workingWin.position + workcur, color);
 			
 			text = text.substr(nustr.size);
@@ -257,15 +257,15 @@ void UI::Text(string text, UITextFlags flags) {
 		//we check for \n here and call WrapText on each as if they were separate text calls
 		//i could probably do this in wrap text, but i decided to do it here for now
 		
-		size_t newline = text.find_first_of('\n');
-		if (newline != string::npos && newline != text.size - 1) {
+        u32 newline = text.findFirstChar('\n');
+		if (newline != string::NPOS && newline != text.size - 1) {
 			string remainder = text.substr(newline + 1);
 			WrapText(text.substr(0, newline - 1), workingWin.cursor, style.colors[UIStyleCol_Text]);
-			newline = remainder.find_first_of('\n');
-			while (newline != string::npos) {
+			newline = remainder.findFirstChar('\n');
+			while (newline != string::NPOS) {
 				WrapText(remainder.substr(0, newline - 1), workingWin.cursor, style.colors[UIStyleCol_Text]);
 				remainder = remainder.substr(newline + 1);
-				newline = remainder.find_first_of('\n');
+				newline = remainder.findFirstChar('\n');
 			}
 			WrapText(remainder, workingWin.cursor, style.colors[UIStyleCol_Text]);
 		}
@@ -280,15 +280,15 @@ void UI::Text(string text, vec2 pos, UITextFlags flags) {
 		TextCall(text, workingWin.position + pos - workingWin.scroll, style.colors[UIStyleCol_Text]);
 	}
 	else {
-		size_t newline = text.find_first_of('\n');
-		if (newline != string::npos && newline != text.size - 1) {
+        u32 newline = text.findFirstChar('\n');
+		if (newline != string::NPOS && newline != text.size - 1) {
 			string remainder = text.substr(newline + 1);
 			WrapText(text.substr(0, newline - 1), pos, style.colors[UIStyleCol_Text], 0);
-			newline = remainder.find_first_of('\n');
-			while (newline != string::npos) {
+			newline = remainder.findFirstChar('\n');
+			while (newline != string::NPOS) {
 				WrapText(remainder.substr(0, newline - 1), pos, style.colors[UIStyleCol_Text], 0);
 				remainder = remainder.substr(newline + 1);
-				newline = remainder.find_first_of('\n');
+				newline = remainder.findFirstChar('\n');
 			}
 			WrapText(remainder, pos, style.colors[UIStyleCol_Text], 0);
 		}
@@ -305,15 +305,15 @@ void UI::Text(string text, color color, UITextFlags flags) {
 		workingWin.cury += style.font->height + 1;
 	}
 	else {
-		size_t newline = text.find_first_of('\n');
-		if (newline != string::npos && newline != text.size - 1) {
+        u32 newline = text.findFirstChar('\n');
+		if (newline != string::NPOS && newline != text.size - 1) {
 			string remainder = text.substr(newline + 1);
 			WrapText(text.substr(0, newline - 1), workingWin.cursor, color);
-			newline = remainder.find_first_of('\n');
-			while (newline != string::npos) {
+			newline = remainder.findFirstChar('\n');
+			while (newline != string::NPOS) {
 				WrapText(remainder.substr(0, newline - 1), workingWin.cursor, color);
 				remainder = remainder.substr(newline + 1);
-				newline = remainder.find_first_of('\n');
+				newline = remainder.findFirstChar('\n');
 			}
 			WrapText(remainder, workingWin.cursor, color);
 		}
@@ -329,15 +329,18 @@ void UI::Text(string text, vec2 pos, color color, UITextFlags flags) {
 		TextCall(text, workingWin.position + pos - workingWin.scroll, color);
 	}
 	else {
-		size_t newline = text.find_first_of('\n');
-		if (newline != string::npos && newline != text.size - 1) {
+        //we check for \n here and call WrapText on each as if they were separate text calls
+		//i could probably do this in wrap text, but i decided to do it here for now
+        
+        u32 newline = text.findFirstChar('\n');
+		if (newline != string::NPOS && newline != text.size - 1) {
 			string remainder = text.substr(newline + 1);
 			WrapText(text.substr(0, newline - 1), pos, color);
-			newline = remainder.find_first_of('\n');
-			while (newline != string::npos) {
+			newline = remainder.findFirstChar('\n');
+			while (newline != string::NPOS) {
 				WrapText(remainder.substr(0, newline - 1), pos, color);
 				remainder = remainder.substr(newline + 1);
-				newline = remainder.find_first_of('\n');
+				newline = remainder.findFirstChar('\n');
 			}
 			WrapText(remainder, pos, color);
 		}
@@ -955,7 +958,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 					for (int i = 0; i < Key::Key_COUNT; i++) {
 						char toPlace = KeyStringsLiteral[i];
 						if (DeshInput->KeyPressedAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
-							u32 ins = state->cursor++ - 1;
+							u32 ins = state->cursor++;
 							placeKey(i, ins, toPlace);
 							break;
 						}
@@ -971,7 +974,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 						for (int i = 0; i < Key::Key_COUNT; i++) {
 							char toPlace = KeyStringsLiteral[i];
 							if (DeshInput->KeyDownAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
-								u32 ins = state->cursor++ - 1;
+								u32 ins = state->cursor++;
 								placeKey(i, ins, toPlace);
 								break;
 							}

@@ -44,7 +44,7 @@ operator=(const vec2& rhs) {
 }
 
 inline vec2 vec2::
-operator*(float rhs) const {
+operator*(float rhs) const{
 	return vec2(this->x * rhs, this->y * rhs);
 }
 
@@ -54,7 +54,7 @@ operator*=(float rhs) {
 }
 
 inline vec2 vec2::
-operator/(float rhs) const {
+operator/(float rhs) const{
 	return vec2(this->x / rhs, this->y / rhs);
 }
 
@@ -64,7 +64,7 @@ operator/=(float rhs) {
 }
 
 inline vec2 vec2::
-operator+(const vec2& rhs) const {
+operator+(const vec2& rhs) const{
 	return vec2(this->x + rhs.x, this->y + rhs.y);
 }
 
@@ -74,7 +74,7 @@ operator+=(const vec2& rhs) {
 }
 
 inline vec2 vec2::
-operator-(const vec2& rhs) const {
+operator-(const vec2& rhs) const{
 	return vec2(this->x - rhs.x, this->y - rhs.y) ;
 }
 
@@ -84,7 +84,7 @@ operator-=(const vec2& rhs) {
 }
 
 inline vec2 vec2::
-operator*(const vec2& rhs) const {
+operator*(const vec2& rhs) const{
 	return vec2(this->x * rhs.x, this->y * rhs.y) ;
 }
 
@@ -94,7 +94,7 @@ operator*=(const vec2& rhs) {
 }
 
 inline vec2 vec2::
-operator/(const vec2& rhs) const {
+operator/(const vec2& rhs) const{
 	return vec2(this->x / rhs.x, this->y / rhs.y) ;
 }
 
@@ -104,18 +104,18 @@ operator/=(const vec2& rhs) {
 }
 
 inline vec2 vec2::
-operator-() const {
+operator-() const{
 	return vec2(-x, -y);
 }
 
 inline bool vec2::
-operator==(const vec2& rhs) const {
+operator==(const vec2& rhs) const{
 	return abs(this->x - rhs.x) < VEC_EPSILON 
 		&& abs(this->y - rhs.y) < VEC_EPSILON;
 }
 
 inline bool vec2::
-operator!=(const vec2& rhs) const {
+operator!=(const vec2& rhs) const{
 	return !(*this == rhs);
 }
 
@@ -129,22 +129,22 @@ absV() const{
 }
 
 inline vec2 vec2::
-copy() const {
+copy() const{
 	return vec2(x, y);
 }
 
 inline float vec2::
-dot(const vec2& rhs) const {
+dot(const vec2& rhs) const{
 	return (this->x * rhs.x) + (this->y * rhs.y);
 }
 
 inline vec2 vec2::
-perp() const {
+perp() const{
 	return vec2(-y, x);
 }
 
 inline float vec2::
-mag() const {
+mag() const{
 	return sqrt(x * x + y * y);
 }
 
@@ -156,8 +156,8 @@ normalize() {
 }
 
 inline vec2 vec2::
-normalized() const {
-	if (*this != vec2::ZERO) {
+normalized() const{
+	if(*this != vec2::ZERO){
 		return *this / this->mag();
 	}
 	return *this;
@@ -177,7 +177,7 @@ clampMag(float min, float max) {
 }
 
 inline vec2 vec2::
-clampedMag(float min, float max) const {
+clampedMag(float min, float max) const{
 	float mag = this->mag();
 	if (mag < min) {
 		return normalized() * min;
@@ -191,17 +191,17 @@ clampedMag(float min, float max) const {
 }
 
 inline float vec2::
-distanceTo(const vec2& rhs) const {
+distanceTo(const vec2& rhs) const{
 	return (*this - rhs).mag();
 }
 
 inline vec2 vec2::
-compOn(vec2 rhs) {
+compOn(const vec2& rhs) const{
 	return rhs.normalized() * this->projectOn(rhs);
 }
 
 inline float vec2::
-projectOn(vec2 rhs) {
+projectOn(const vec2& rhs) const{
 	if(this->mag() > VEC_EPSILON){
 		return this->dot(rhs) / this->mag();
 	}else{
@@ -210,60 +210,48 @@ projectOn(vec2 rhs) {
 }
 
 inline vec2 vec2::
-midpoint(vec2 rhs){
+midpoint(const vec2& rhs) const{
 	return vec2((x+rhs.x)/2.f, (y+rhs.y)/2.f);
 }
 
 inline vec2 vec2::
-xComp() const {
+xComp() const{
 	return vec2(x, 0);
 }
 
 inline vec2 vec2::
-yComp() const {
+yComp() const{
 	return vec2(0, y);
 }
 
 inline vec2 vec2::
-xInvert() const {
+xInvert() const{
 	return vec2(-x, y);
 }
 
 inline vec2 vec2::
-yInvert() const {
+yInvert() const{
 	return vec2(x, -y);
 }
 
 inline vec2 vec2::
-xSet(float set) const {
+xSet(float set) const{
 	return vec2(set, y);
 }
 
 inline vec2 vec2::
-ySet(float set) const {
+ySet(float set) const{
 	return vec2(x, set);
 }
 
 inline vec2 vec2::
-xAdd(float add) const {
+xAdd(float add) const{
 	return vec2(x + add, y);
 }
 
 inline vec2 vec2::
-yAdd(float add) const {
+yAdd(float add) const{
 	return vec2(x, y + add);
-}
-
-inline const std::string vec2::
-str() const {
-	return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + ")";
-}
-
-inline const std::string vec2::
-str2f() const {
-	char buffer[64];
-	std::snprintf(buffer, 50, "(%+.2f, %+.2f)", this->x, this->y);
-	return std::string(buffer);
 }
 
 #endif //DESHI_VEC2_INL

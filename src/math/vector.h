@@ -3,7 +3,6 @@
 #define DESHI_VECTOR_H
 
 #include "../defines.h"
-#include <string>
 
 struct vec2;
 struct vec3;
@@ -37,23 +36,23 @@ struct vec2 {
 	static const vec2 UNITX;
 	static const vec2 UNITY;
 	
-	void    operator =  (const vec2& rhs);
-	vec2 operator *  (float rhs) const;
-	void    operator *= (float rhs);
-	vec2 operator /  (float rhs) const;
-	void    operator /= (float rhs);
-	vec2 operator +  (const vec2& rhs) const;
-	void    operator += (const vec2& rhs);
-	vec2 operator -  (const vec2& rhs) const;
-	void    operator -= (const vec2& rhs);
-	vec2 operator *  (const vec2& rhs) const;
-	void    operator *= (const vec2& rhs);
-	vec2 operator /  (const vec2& rhs) const;
-	void    operator /= (const vec2& rhs);
-	vec2 operator -  () const;
-	bool    operator == (const vec2& rhs) const;
-	bool    operator != (const vec2& rhs) const;
-	friend vec2 operator * (float lhs, const vec2& rhs) { return   rhs * lhs; }
+	void operator= (const vec2& rhs);
+	vec2 operator* (float rhs) const;
+	void operator*=(float rhs);
+	vec2 operator/ (float rhs) const;
+	void operator/=(float rhs);
+	vec2 operator+ (const vec2& rhs) const;
+	void operator+=(const vec2& rhs);
+	vec2 operator- (const vec2& rhs) const;
+	void operator-=(const vec2& rhs);
+	vec2 operator* (const vec2& rhs) const;
+	void operator*=(const vec2& rhs);
+	vec2 operator/ (const vec2& rhs) const;
+	void operator/=(const vec2& rhs);
+	vec2 operator- () const;
+	bool operator==(const vec2& rhs) const;
+	bool operator!=(const vec2& rhs) const;
+	friend vec2 operator* (float lhs, const vec2& rhs){ return rhs * lhs; }
 	
 	vec2  absV() const;
 	vec2  copy() const;
@@ -66,9 +65,9 @@ struct vec2 {
 	void  clampMag(float min, float max);
 	vec2  clampedMag(float min, float max) const;
 	float distanceTo(const vec2& rhs) const;
-	vec2  compOn(vec2 rhs);
-	float projectOn(vec2 rhs);
-	vec2  midpoint(vec2 rhs);
+	vec2  compOn(const vec2& rhs) const;
+	float projectOn(const vec2& rhs) const;
+	vec2  midpoint(const vec2& rhs) const;
 	vec2  xComp() const;
 	vec2  yComp() const;
 	vec2  xInvert() const;
@@ -77,8 +76,6 @@ struct vec2 {
 	vec2  ySet(float set) const; //for single line vector arithmetic eg. ShowDebugWindowOf() when I call BeginWindow
 	vec2  xAdd(float set) const; //for single line vector arithmetic eg. ShowDebugWindowOf() when I call BeginWindow
 	vec2  yAdd(float set) const; //for single line vector arithmetic eg. ShowDebugWindowOf() when I call BeginWindow
-	const std::string str() const;
-	const std::string str2f() const;
 	
 	//vector interactions
 	vec2(const vec3& v);
@@ -111,25 +108,24 @@ struct vec3 {
 	static const vec3 UNITY;
 	static const vec3 UNITZ;
 	
-	void operator =  (const vec3& rhs);
-	void operator =  (vec3& rhs);
-	vec3 operator *  (float rhs) const;
-	void operator *= (float rhs);
-	vec3 operator /  (float rhs) const;
-	void operator /= (float rhs);
-	vec3 operator +  (const vec3& rhs) const;
-	void operator += (const vec3& rhs);
-	vec3 operator -  (const vec3& rhs) const;
-	void operator -= (const vec3& rhs);
-	vec3 operator *  (const vec3& rhs) const;
-	void operator *= (const vec3& rhs);
-	vec3 operator /  (const vec3& rhs) const;
-	void operator /= (const vec3& rhs);
-	vec3 operator *  (const quat& rhs) const;
-	vec3 operator -  () const;
-	bool operator == (const vec3& rhs) const;
-	bool operator != (const vec3& rhs) const;
-	friend vec3 operator * (float lhs, const vec3& rhs) { return   rhs * lhs; }
+	void operator= (const vec3& rhs);
+	void operator= (vec3& rhs);
+	vec3 operator* (float rhs) const;
+	void operator*=(float rhs);
+	vec3 operator/ (float rhs) const;
+	void operator/=(float rhs);
+	vec3 operator+ (const vec3& rhs) const;
+	void operator+=(const vec3& rhs);
+	vec3 operator- (const vec3& rhs) const;
+	void operator-=(const vec3& rhs);
+	vec3 operator* (const vec3& rhs) const;
+	void operator*=(const vec3& rhs);
+	vec3 operator/ (const vec3& rhs) const;
+	void operator/=(const vec3& rhs);
+	vec3 operator- () const;
+	bool operator==(const vec3& rhs) const;
+	bool operator!=(const vec3& rhs) const;
+	friend vec3 operator* (float lhs, const vec3& rhs){ return rhs * lhs; }
 	
 	vec3  absV() const;
 	vec3  copy() const;
@@ -138,23 +134,21 @@ struct vec3 {
 	float mag() const;
 	void  normalize();
 	vec3  normalized() const;
-	vec3  clamp(float lo, float hi);
+	vec3  clamp(float lo, float hi) const;
 	void  clampMag(float min, float max);
 	vec3  clampedMag(float min, float max) const;
 	void  round(int place);
-	vec3  rounded(int place);
+	vec3  rounded(int place) const;
 	float distanceTo(const vec3& rhs) const;
-	vec3  compOn(vec3 rhs);
-	float projectOn(vec3 rhs);
-	vec3  midpoint(vec3 rhs);
+	vec3  compOn(const vec3& rhs) const;
+	float projectOn(const vec3& rhs) const;
+	vec3  midpoint(const vec3& rhs) const;
 	vec3  xComp() const;
 	vec3  yComp() const;
 	vec3  zComp() const;
 	vec3  xInvert() const;
 	vec3  yInvert() const;
 	vec3  zInvert() const;
-	const std::string str() const;
-	const std::string str2f() const;
 	
 	//vector interactions
 	vec3(const vec2& v);
@@ -163,12 +157,15 @@ struct vec3 {
 	vec4 toVec4() const;
 	
 	//matrix interactions
-	vec3 operator *  (const mat3& rhs) const;
-	void operator *= (const mat3& rhs);
-	vec3 operator *  (const mat4& rhs) const;
-	void operator *= (const mat4& rhs);
+	vec3 operator* (const mat3& rhs) const;
+	void operator*=(const mat3& rhs);
+	vec3 operator* (const mat4& rhs) const;
+	void operator*=(const mat4& rhs);
 	matN ToM1x3() const;
 	matN ToM1x4(float w) const;
+	
+    //quaternion interactions
+    vec3 operator* (const quat& rhs) const;
 };
 #include "vec3.inl"
 
@@ -186,23 +183,23 @@ struct vec4 {
 	static const vec4 ZERO;
 	static const vec4 ONE;
 	
-	void operator =	 (const vec4& rhs);
-	vec4 operator *  (const float& rhs) const;
-	void operator *= (const float& rhs);
-	vec4 operator /  (const float& rhs) const;
-	void operator /= (const float& rhs);
-	vec4 operator +  (const vec4& rhs) const;
-	void operator += (const vec4& rhs);
-	vec4 operator -  (const vec4& rhs) const;
-	void operator -= (const vec4& rhs);
-	vec4 operator *  (const vec4& rhs) const;
-	void operator *= (const vec4& rhs);
-	vec4 operator /  (const vec4& rhs) const;
-	void operator /= (const vec4& rhs);
-	vec4 operator -  () const;
-	bool operator == (const vec4& rhs) const;
-	bool operator != (const vec4& rhs) const;
-	friend vec4 operator * (const float& lhs, const vec4& rhs) { return rhs * lhs; }
+	void operator= (const vec4& rhs);
+	vec4 operator* (const float& rhs) const;
+	void operator*=(const float& rhs);
+	vec4 operator/ (const float& rhs) const;
+	void operator/=(const float& rhs);
+	vec4 operator+ (const vec4& rhs) const;
+	void operator+=(const vec4& rhs);
+	vec4 operator- (const vec4& rhs) const;
+	void operator-=(const vec4& rhs);
+	vec4 operator* (const vec4& rhs) const;
+	void operator*=(const vec4& rhs);
+	vec4 operator/ (const vec4& rhs) const;
+	void operator/=(const vec4& rhs);
+	vec4 operator- () const;
+	bool operator==(const vec4& rhs) const;
+	bool operator!=(const vec4& rhs) const;
+	friend vec4 operator* (const float& lhs, const vec4& rhs){ return rhs * lhs; }
 	
 	vec4  absV() const;
 	vec4  copy() const;
@@ -217,18 +214,16 @@ struct vec4 {
 	vec4  yInvert() const;
 	vec4  zInvert() const;
 	vec4  wInvert() const;
-	const std::string str() const;
-	const std::string str2f() const;
 	
 	//vector interactions
 	vec4(const vec2& v, float z, float w);
 	vec4(const vec3& v, float w);
 	vec3 toVec3() const;
-	void takeVec3(vec3 v);
+	void takeVec3(const vec3& v);
 	
 	//matrix interactions
-	vec4 operator *  (const mat4& rhs) const;
-	void operator *= (const mat4& rhs);
+	vec4 operator* (const mat4& rhs) const;
+	void operator*=(const mat4& rhs);
 };
 #include "vec4.inl"
 
@@ -299,7 +294,7 @@ toVec3() const {
 
 //takes data from a vec3 and leaves w alone
 inline void vec4::
-takeVec3(vec3 v) {
+takeVec3(const vec3& v) {
 	x = v.x; y = v.y; z = v.z;
 }
 
@@ -310,7 +305,8 @@ takeVec3(vec3 v) {
 #define RANDVEC(a) vec3(rand() % a + 1, rand() % a + 1, rand() % a + 1)
 
 //averages a vector v over an interval i and returns that average
-#define V_AVG(i, v) ([&] { \
+#define V_AVG(i, v) \
+([&] { \
 persist std::vector<vec3> vectors; \
 persist vec3 nv; \
 persist int iter = 0; \
@@ -331,7 +327,8 @@ return nv; \
 }())
 
 //averages vectors but consistently returns the value
-#define V_AVGCON(i, v) ([&] { \
+#define V_AVGCON(i, v) \
+([&] { \
 persist std::vector<vec3> vectors; \
 persist vec3 nv; \
 if(i == vectors.size()){ \
@@ -348,7 +345,8 @@ return nv; \
 //this stores an input vector and returns the previously stored vector
 //if you pass true for the second param it will replace the stored vector and return it
 //else it just returns the stored vector
-#define V_STORE(v, t) ([&]()->vec3{\
+#define V_STORE(v, t) \
+([&]()->vec3{\
 persist vec3 vect[1];\
 vec3 vr = vect[0];\
 if(t){ vect[0] = v; return vr; } \

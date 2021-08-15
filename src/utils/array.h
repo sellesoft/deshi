@@ -3,6 +3,7 @@
 #define DESHI_ARRAY_H
 
 #include "../defines.h"
+#include <cstdlib>
 #include <initializer_list>
 
 template<class T>
@@ -27,8 +28,8 @@ struct array {
     T&        operator[](u32 i);
     
     u32  size();
-    void add(T t);
-    void add(array<T> t);
+    void add(const T& t);
+    void add(const array<T>& t);
     //for taking in something without copying it
     void emplace(const T& t);
     //removes last element
@@ -205,7 +206,7 @@ inline u32 array<T>::size(){
 }
 
 template<class T>
-inline void array<T>::add(T t){
+inline void array<T>::add(const T& t){
     //if array is full, realloc the memory and extend it to accomodate the new item
     if(max - last == 0){
         u32 iteroffset = iter - first;
@@ -233,8 +234,8 @@ inline void array<T>::add(T t){
 }
 
 template<class T>
-inline void array<T>::add(array<T> t){
-    for(T item : t){
+inline void array<T>::add(const array<T>& t){
+    for(T& item : t){
         this->add(item);
     }
 }
@@ -390,12 +391,14 @@ inline T& array<T>::at(u32 i){
 template<class T>
 inline T& array<T>::next(){
     if(last - iter + 1 >= 0) return *iter++;
+    return *iter;
 }
 
 //TODO come up with a better name for this and the corresponding previous overload
 template<class T>
 inline T& array<T>::peek(int i){
     if(last - iter + 1 >= 0) return *(iter + i);
+    return *iter;
 }
 
 template<class T>

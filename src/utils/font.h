@@ -3,11 +3,12 @@
 #ifndef DESHI_FONT_H
 #define DESHI_FONT_H
 
-#include "../core/assets.h"
-#include "../defines.h"
 #include "string.h"
+#include "string_conversion.h"
 #include "array.h"
 #include "tuple.h"
+#include "../defines.h"
+#include "../core/assets.h"
 #include "../core/console.h"
 #include "../math/Math.h"
 #include "../utils/utils.h"
@@ -89,21 +90,21 @@ struct Font {
 						//get the font pixel size
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ' && *currChar != '\n') { value += *currChar; currChar++; }
-						font_size = string::stoi(value);
+						font_size = stoi(value);
 						
 						value.clear();
 						
 						//get x dpi
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ' && *currChar != '\n') { value += *currChar; currChar++; }
-						dpi.x = string::stoi(value);
+						dpi.x = stoi(value);
 						
 						value.clear();
 						
 						//get y dpi
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ' && *currChar != '\n') { value += *currChar; currChar++; }
-						dpi.y = string::stoi(value);
+						dpi.y = stoi(value);
 						
 					}
 					else if (buff == "FONTBOUNDINGBOX") {
@@ -112,7 +113,7 @@ struct Font {
 						//get font bounding box width
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
-						bbx.x = string::stoi(value);
+						bbx.x = stoi(value);
 						width = bbx.x;
 						
 						value.clear();
@@ -120,7 +121,7 @@ struct Font {
 						//get font bounding box height
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
-						bbx.y = string::stoi(value);
+						bbx.y = stoi(value);
 						height = bbx.y;
 						
 						value.clear();
@@ -128,14 +129,14 @@ struct Font {
 						//get lower left x
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
-						bbx.z = string::stoi(value);
+						bbx.z = stoi(value);
 						
 						value.clear();
 						
 						//get lower left y
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
-						bbx.w = string::stoi(value);
+						bbx.w = stoi(value);
 						
 					}
 					else if (buff == "FONT_NAME") {
@@ -151,7 +152,7 @@ struct Font {
 						
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ' && *currChar != '\n') { if (*currChar != '"') value += *currChar; currChar++; }
-						char_count = string::stoi(value);
+						char_count = stoi(value);
 					}
 					else if (buff == "STARTCHAR") {
 						//begin creating the character's texture array 
@@ -166,7 +167,7 @@ struct Font {
 						while (*currChar++ != ' ') {} //skip ENCODING key
 						
 						while (*currChar != ' ') { if (*currChar != '"') value += *currChar; currChar++; }
-						encoding = string::stoi(value);
+						encoding = stoi(value);
 						
 						value.clear();
 						
@@ -198,28 +199,28 @@ struct Font {
 						//get glyph bounding box width
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
-						gbbx.x = string::stoi(value);
+						gbbx.x = stoi(value);
 						
 						value.clear();
 						
 						//get glyph bounding box height
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
-						gbbx.y = string::stoi(value);
+						gbbx.y = stoi(value);
 						
 						value.clear();
 						
 						//get lower left x
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != ' ') { value += *currChar; currChar++; }
-						gbbx.z = string::stoi(value);
+						gbbx.z = stoi(value);
 						
 						value.clear();
 						
 						//get lower left y
 						currChar += Utils::skipSpacesLeading(currChar);
 						while (*currChar != '\n') { value += *currChar; currChar++; }
-						gbbx.w = string::stoi(value);
+						gbbx.w = stoi(value);
 						
 						currChar++;
 						
@@ -249,7 +250,7 @@ struct Font {
 							//TODO(sushi, OpCl) do this better
 							u8 binArr[8];
 							for (int stoa = 0; stoa < 8; stoa++) {
-								binArr[stoa] = (u8)string::stoi(binary[stoa]);
+								binArr[stoa] = (u8)stoi(binary[stoa]);
 							}
 							
 							for (int col = gbbx.z, idx = 0; col < gbbx.z + gbbx.x; col++, idx++) {
@@ -307,6 +308,4 @@ struct Font {
 	
 };
 
-
-
-#endif
+#endif //DESHI_FONT_H

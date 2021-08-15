@@ -307,7 +307,7 @@ CreateMeshFromFile(const char* filename){
 	string fullname(filename);
 	string name, extension;
 	bool has_extension;
-	size_t dot_idx = fullname.find_first_of_lookback('.', fullname.size-1);
+    u32 dot_idx = fullname.findLastChar('.');
 	if(dot_idx != -1){
 		has_extension = true;
 		name = fullname.substr(0, dot_idx-1);
@@ -594,7 +594,7 @@ CreateMaterialFromFile(const char* filename, bool warnMissing){
 	string fullname(filename);
 	string name, extension;
 	bool has_extension;
-	size_t dot_idx = fullname.find_first_of_lookback('.', fullname.size-1);
+    u32 dot_idx = fullname.findLastChar('.');
 	if(dot_idx != -1){
 		has_extension = true;
 		name = fullname.substr(0, dot_idx-1);
@@ -729,7 +729,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 	string fullname(filename);
 	string name;
 	string extension;
-	size_t dot_idx = fullname.find_first_of_lookback('.', fullname.size-1);
+    u32 dot_idx = fullname.findLastChar('.');
 	if(dot_idx != -1){
 		has_extension = true;
 		name = fullname.substr(0, dot_idx-1);

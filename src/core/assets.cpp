@@ -203,10 +203,10 @@ iterateDirectory(const std::string& filepath, const char* extension) {
 	for (auto& p : directory_iterator(filepath)) {
 		if(extension){
 			if(p.path().extension().string() == std::string(extension)){
-				files.add(string(p.path().filename().string()));
+				files.add(string(p.path().filename().string().c_str()));
 			}
 		}else{
-			files.add(string(p.path().filename().string()));
+			files.add(string(p.path().filename().string().c_str()));
 		}
 	}
 	return files;
@@ -292,7 +292,7 @@ extractConfig(const std::string& filepath) {
 		std::smatch m;
 		std::regex_match(s, m, r);
 		if (m.size() == 1) {
-			ERROR_LOC(m[1], "\nConfig regex did not find a match for the string above.");
+			ERROR_LOC(m[1].str(), "\nConfig regex did not find a match for the string above.");
 			line++;
 			continue;
 		}
@@ -357,19 +357,19 @@ saveConfig(const char* filename, const ConfigMap& configMap){
 				out << (u32)(*(u8*)config.third);
 			}break;
 			case ConfigValueType_F32:{
-				out << std::to_string(*(f32*)config.third);
+				out << to_string(*(f32*)config.third);
 			}break;
 			case ConfigValueType_F64:{
-				out << std::to_string(*(f64*)config.third);
+				out << to_string(*(f64*)config.third);
 			}break;
 			case ConfigValueType_FV2:{
-				out << ((vec2*)config.third)->str();
+				out << to_string(*(vec2*)config.third);
 			}break;
 			case ConfigValueType_FV3:{
-				out << ((vec3*)config.third)->str();
+				out << to_string(*(vec3*)config.third);
 			}break;
 			case ConfigValueType_FV4:{
-				out << ((vec4*)config.third)->str();
+				out << to_string(*(vec4*)config.third);
 			}break;
 			case ConfigValueType_StdString:{
 				out << '\"' << *(std::string*)config.third << '\"';

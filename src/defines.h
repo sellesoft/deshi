@@ -2,6 +2,8 @@
 #ifndef DESHI_DEFINES_H
 #define DESHI_DEFINES_H
 
+#include <cstddef>
+
 //deshi constants
 //NOTE arbitrarily chosen size, but its convenient to have a fixed size for names
 #define DESHI_NAME_SIZE 64
@@ -21,10 +23,12 @@ typedef signed char        s8;
 typedef signed short       s16;
 typedef signed int         s32;
 typedef signed long long   s64;
+typedef ptrdiff_t          spt;
 typedef unsigned char      u8;
 typedef unsigned short     u16;
 typedef unsigned int       u32;
 typedef unsigned long long u64;
+typedef size_t             upt;
 typedef float              f32;
 typedef double             f64;
 

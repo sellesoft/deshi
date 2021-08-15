@@ -12,7 +12,7 @@ struct hash {
 	
 	hash() {};
 	
-	inline u32 operator()(const T v)const {
+	inline u32 operator()(const T& v)const {
 		u32 seed = 2166136261;
 		size_t data_size = sizeof(T);
 		const u8* data = (const u8*)&v;
@@ -39,11 +39,11 @@ struct hash {
 
 template<> 
 struct hash<string> {
-	inline u32 operator()(string s) {
+	inline u32 operator()(const string& s) {
 		u32 seed = 2166136261;
 		u32 size = s.size+1;
 		while (size-- != 0) {
-			seed ^= s[size];
+			seed ^= s.str[size];
 			seed *= 16777619;
 		}
 		return seed;

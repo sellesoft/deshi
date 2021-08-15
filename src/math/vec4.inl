@@ -188,16 +188,4 @@ wInvert() const {
 	return vec4(x, y, z,-w);
 }
 
-inline const std::string vec4::
-str() const {
-	return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + "," + std::to_string(this->z) + "," + std::to_string(this->w) + ")";
-}
-
-inline const std::string vec4::
-str2f() const {
-	char buffer[50];
-	std::snprintf(buffer, 50, "(%+.2f, %+.2f, %+.2f, %+.2f)", this->x, this->y, this->z, this->w);
-	return std::string(buffer);
-}
-
 #endif //DESHI_VEC4_INL

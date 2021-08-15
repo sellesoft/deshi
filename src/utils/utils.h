@@ -7,25 +7,26 @@
 
 #include <string>
 #include <vector>
+#include <cmath>
 
 namespace Utils{
 	
-	
+    inline upt roundUpToPow2(upt x){
+        return 1U << ((upt)log2(--x) + 1);
+    }
+    
 	///////////////////////////////
 	//// FNV-1a hash functions ////
 	///////////////////////////////
-	
 	
 	u32 dataHash32(void* data, size_t data_size, u32 seed = 2166136261); //32bit FNV_offset_basis
 	u64 dataHash64(void* data, size_t data_size, u64 seed = 14695981039346656037); //64bit FNV_offset_basis
 	u32 stringHash32(char* data, size_t data_size = 0, u32 seed = 2166136261); //32bit FNV_offset_basis
 	u64 stringHash64(char* data, size_t data_size = 0, u64 seed = 14695981039346656037); //64bit FNV_offset_basis
 	
-	
 	///////////////////////////////
 	//// std::string functions ////
 	///////////////////////////////
-	
 	
 	//returns a new string with the leading spaces removed
 	std::string eatSpacesLeading(std::string text);
@@ -51,11 +52,9 @@ namespace Utils{
 	//also ignores spaces between double quotes
 	std::vector<std::string> spaceDelimitIgnoreStrings(std::string text);
 	
-	
 	////////////////////////////
 	//// c-string functions ////
 	////////////////////////////
-	
 	
 	//returns the index of the first character that is not a space
 	size_t skipSpacesLeading(const char* text, size_t text_size = 0);
@@ -90,13 +89,8 @@ namespace Utils{
 
 
 ///////////////////////////////
-//// FNV-1a hash functions ////
-///////////////////////////////
-
-
-//ref: https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
-//ref: imgui.cpp ImHashData https://github.com/ocornut/imgui
-
+//// FNV-1a hash functions //// //ref: https://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+/////////////////////////////// //ref: imgui.cpp ImHashData https://github.com/ocornut/imgui
 inline u32 Utils::
 dataHash32(void* _data, size_t data_size, u32 seed){
 	const u8* data = (const u8*)_data;
@@ -155,11 +149,9 @@ stringHash64(char* _data, size_t data_size, u64 seed){
 ///////////////////////////////
 //// std::string functions ////
 ///////////////////////////////
-
-
 inline std::string Utils::
 eatSpacesLeading(std::string text){
-	size_t idx = text.find_first_not_of(' ');
+	size_t idx = text.find_last_not_of(' ');
 	return (idx != -1) ? text.substr(idx) : "";
 }
 
@@ -262,8 +254,6 @@ spaceDelimitIgnoreStrings(std::string text){
 ////////////////////////////
 //// c-string functions ////
 ////////////////////////////
-
-
 //returns the index of the first character that is not a space
 inline size_t Utils::
 skipSpacesLeading(const char* text, size_t text_size){

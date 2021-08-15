@@ -57,7 +57,7 @@ operator =  (vec3& rhs) {
 }
 
 inline vec3 vec3::
-operator *  (float rhs) const {
+operator *  (float rhs) const{
 	return vec3(this->x * rhs, this->y * rhs, this->z * rhs);
 }
 
@@ -66,7 +66,7 @@ operator *= (float rhs) {
 	this->x *= rhs; this->y *= rhs; this->z *= rhs;
 }
 
-inline vec3 vec3::operator /  (float rhs) const {
+inline vec3 vec3::operator /  (float rhs) const{
 	return vec3(this->x / rhs, this->y / rhs, this->z / rhs);
 }
 
@@ -76,7 +76,7 @@ operator /= (float rhs) {
 }
 
 inline vec3 vec3::
-operator +  (const vec3& rhs) const {
+operator +  (const vec3& rhs) const{
 	return vec3(this->x + rhs.x, this->y + rhs.y, this->z + rhs.z);
 }
 
@@ -86,7 +86,7 @@ operator += (const vec3& rhs) {
 }
 
 inline vec3 vec3::
-operator -  (const vec3& rhs) const {
+operator -  (const vec3& rhs) const{
 	return vec3(this->x - rhs.x, this->y - rhs.y, this->z - rhs.z);
 }
 
@@ -96,7 +96,7 @@ operator -= (const vec3& rhs) {
 }
 
 inline vec3 vec3::
-operator *  (const vec3& rhs) const {
+operator *  (const vec3& rhs) const{
 	return vec3(this->x * rhs.x, this->y * rhs.y, this->z * rhs.z);
 }
 
@@ -106,7 +106,7 @@ operator *= (const vec3& rhs) {
 }
 
 inline vec3 vec3::
-operator /  (const vec3& rhs) const {
+operator /  (const vec3& rhs) const{
 	return vec3(this->x / rhs.x, this->y / rhs.y, this->z / rhs.z);
 }
 
@@ -116,19 +116,19 @@ operator /= (const vec3& rhs) {
 }
 
 inline vec3 vec3::
-operator -  () const {
+operator -  () const{
 	return vec3( -x, -y, -z );
 }
 
 inline bool vec3::
-operator == (const vec3& rhs) const {
+operator == (const vec3& rhs) const{
 	return abs(this->x - rhs.x) < VEC_EPSILON 
 		&& abs(this->y - rhs.y) < VEC_EPSILON 
 		&& abs(this->z - rhs.z) < VEC_EPSILON;
 }
 
 inline bool vec3::
-operator != (const vec3& rhs) const {
+operator != (const vec3& rhs) const{
 	return !(*this == rhs);
 }
 
@@ -142,29 +142,29 @@ absV() const{
 }
 
 inline vec3 vec3::
-copy() const {
+copy() const{
 	return vec3(x, y, z);
 }
 
 inline float vec3::
-dot(const vec3& rhs) const {
+dot(const vec3& rhs) const{
 	return this->x*rhs.x + this->y*rhs.y + this->z*rhs.z;
 }
 
 //left hand cross product
 inline vec3 vec3::
-cross(const vec3& rhs) const {
+cross(const vec3& rhs) const{
 	return vec3(this->y*rhs.z - rhs.y*this->z, this->z*rhs.x - rhs.z*this->x, this->x*rhs.y - rhs.x*this->y);
 }
 
 inline float vec3::
-mag() const {
+mag() const{
 	return sqrt(x*x + y*y + z*z);
 }
 
 ////ref: https://betterexplained.com/articles/understanding-quakes-fast-inverse-square-root/
 //inline float vec3::
-//mag() const {
+//mag() const{
 //	Assert(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
 //	float k = x * x + y * y + z * z;
 //	float kHalf = .5f * k;
@@ -176,7 +176,7 @@ mag() const {
 //}
 
 inline void vec3::
-normalize() {
+normalize(){
 	if (*this != vec3::ZERO) {
 		*this /= this->mag();
 	}
@@ -197,7 +197,7 @@ normalize() {
 //}
 
 inline vec3 vec3::
-normalized() const {
+normalized() const{
 	if (*this != vec3::ZERO) {
 		return *this / this->mag();
 	}
@@ -205,7 +205,7 @@ normalized() const {
 }
 
 //inline vec3 vec3::
-//normalized() const {
+//normalized() const{
 //	if (*this != vec3(0, 0, 0)) {
 //		Assert(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
 //		float k = x * x + y * y + z * z;
@@ -221,7 +221,7 @@ normalized() const {
 
 //clamps all values of a vec3 between two floats
 inline vec3 vec3::
-clamp(float lo, float hi){
+clamp(float lo, float hi) const{
 	if(lo > hi) float temp = lo; lo = hi; hi = lo;
 	return vec3((x < lo) ? lo : (hi < x) ? hi : x,
 				(y < lo) ? lo : (hi < y) ? hi : y,
@@ -229,7 +229,7 @@ clamp(float lo, float hi){
 }
 
 inline void vec3::
-clampMag(float min, float max) {
+clampMag(float min, float max){
 	float mag = this->mag();
 	if (mag < min) {
 		this->normalize();
@@ -241,7 +241,7 @@ clampMag(float min, float max) {
 }
 
 inline vec3 vec3::
-clampedMag(float min, float max) const {
+clampedMag(float min, float max) const{
 	float mag = this->mag();
 	if (mag < min) {
 		return normalized() * min; 
@@ -253,81 +253,70 @@ clampedMag(float min, float max) const {
 }
 
 //round to a decimal place
-inline void vec3::round(int place) {
+inline void vec3::
+round(int place){
 	x = floor(x * place * 10 + 0.5) / (place * 10);
 	y = floor(y * place * 10 + 0.5) / (place * 10);
 	z = floor(z * place * 10 + 0.5) / (place * 10);
 }
 
 //round to a decimal place
-inline vec3 vec3::rounded(int place) {
-	return vec3(
-				floor(x * place * 10 + 0.5) / (place * 10),
-				floor(y * place * 10 + 0.5) / (place * 10),
-				floor(z * place * 10 + 0.5) / (place * 10));
+inline vec3 vec3::
+rounded(int place) const{
+    return vec3(floor(x * place * 10 + 0.5) / (place * 10),
+                floor(y * place * 10 + 0.5) / (place * 10),
+                floor(z * place * 10 + 0.5) / (place * 10));
 }
 
 inline float vec3::
-distanceTo(const vec3& rhs) const {
+distanceTo(const vec3& rhs) const{
 	return (*this - rhs).mag();
 }
 
 inline vec3 vec3::
-compOn(vec3 rhs) {
+compOn(const vec3& rhs) const{
 	return rhs.normalized() * this->projectOn(rhs);
 }
 
 inline float vec3::
-projectOn(vec3 rhs) {
+projectOn(const vec3& rhs) const{
 	if (this->mag() != 0) return this->dot(rhs) / rhs.mag();
 	else return 0;
 }
 
 inline vec3 vec3::
-midpoint(vec3 rhs){
+midpoint(const vec3& rhs) const{
 	return vec3((x+rhs.x)/2.f, (y+rhs.y)/2.f, (z+rhs.z)/2.f);
 }
 
 inline vec3 vec3::
-xComp() const {
+xComp() const{
 	return vec3(x, 0, 0);
 }
 
 inline vec3 vec3::
-yComp() const {
+yComp() const{
 	return vec3(0, y, 0);
 }
 
 inline vec3 vec3::
-zComp() const {
+zComp() const{
 	return vec3(0, 0, z);
 }
 
 inline vec3 vec3::
-xInvert() const {
+xInvert() const{
 	return vec3(-x, y, z);
 }
 
 inline vec3 vec3::
-yInvert() const {
+yInvert() const{
 	return vec3(x, -y, z);
 }
 
 inline vec3 vec3::
-zInvert() const {
+zInvert() const{
 	return vec3(x, y, -z);
-}
-
-inline const std::string vec3::
-str() const {
-	return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + "," + std::to_string(this->z) + ")";
-}
-
-inline const std::string vec3::
-str2f() const {
-	char buffer[50];
-	std::snprintf(buffer, 50, "(%+.2f, %+.2f, %+.2f)", this->x, this->y, this->z);
-	return std::string(buffer);
 }
 
 #endif //DESHI_VEC3_INL

@@ -16,7 +16,7 @@ struct map {
 	map() {}
 
 	map(std::initializer_list<pair<Key,Value>> list) {
-		for (auto p : list) {
+		for (auto& p : list) {
 			add(p.first, p.second);
 		}
 	}

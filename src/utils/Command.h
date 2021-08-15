@@ -31,9 +31,9 @@ struct Command{
 			if (args[0] == ' ') {
 				args.erase(0, 1);
 			}else{
-				size_t fc = args.find_first_not_of(" ");//first char
+				size_t fc = args.find_last_not_of(" ");//first char
 				size_t fs = args.find_first_of(" ");    //first space
-				argsl.push_back(args.substr(args.find_first_not_of(" "), args.find_first_of(" ")));
+				argsl.push_back(args.substr(args.find_last_not_of(" "), args.find_first_of(" ")));
 				args.erase(fc, fs - fc);
 			}
 		}

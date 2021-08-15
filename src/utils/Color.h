@@ -2,7 +2,6 @@
 #ifndef DESHI_COLOR_H
 #define DESHI_COLOR_H
 
-#include "string.h"
 #include "../defines.h"
 
 #define COLORU32_RMASK 0x000000FF
@@ -45,7 +44,6 @@ struct color{
     u32    R8G8B8A8_UNORM() const;
     void   FillFloat3(f32* floats) const;
     void   FillFloat4(f32* floats) const;
-    string str() const;
     
     static u32   PackColorU32(const color& color);
     static color FloatsToColor(f32 r, f32 g, f32 b, f32 a);
@@ -148,10 +146,6 @@ inline void color::FillFloat4(f32* floats) const{
     *(floats+1) = (f32)g / 255.0f;
     *(floats+2) = (f32)b / 255.0f;
     *(floats+3) = (f32)a / 255.0f;
-}
-
-inline string color::str() const{
-    return "C{" + string::toStr(r) + ", " + string::toStr(g) + ", " + string::toStr(b) + ", " + string::toStr(a) + "}";
 }
 
 ///////////////////////////
