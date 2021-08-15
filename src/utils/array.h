@@ -235,7 +235,7 @@ inline void array<T>::add(const T& t){
 
 template<class T>
 inline void array<T>::add(const array<T>& t){
-    for(T& item : t){
+    for(const T& item : t){
         this->add(item);
     }
 }

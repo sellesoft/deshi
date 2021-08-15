@@ -18,7 +18,7 @@ vec4(const vec4& v) {
 
 inline vec4::
 vec4(float* ptr){ 
-	memcpy(&x, ptr, 4*sizeof(float));
+	x = *ptr; y = *(ptr+1); z = *(ptr+2); z = *(ptr+3);
 }
 
 ///////////////////

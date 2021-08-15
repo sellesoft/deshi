@@ -4,6 +4,8 @@
 
 #include "../defines.h"
 
+#include <cmath>
+
 struct vec2;
 struct vec3;
 struct vec4;

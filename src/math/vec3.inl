@@ -23,7 +23,7 @@ vec3(const vec3& v) {
 
 inline vec3::
 vec3(float* ptr){ 
-	memcpy(&x, ptr, 3*sizeof(float));
+	x = *ptr; y = *(ptr+1); z = *(ptr+2);
 }
 
 ///////////////////
