@@ -81,6 +81,9 @@ enum InputMod_{
 	InputMod_Rshift = 1 << 12,
 	InputMod_Lalt   = 1 << 13,
 	InputMod_Ralt   = 1 << 14,
+	InputMod_AnyShift        = InputMod_Rshift | InputMod_Lshift,
+	InputMod_AnyAlt          = InputMod_Ralt   | InputMod_Lalt,
+	InputMod_AnyCtrl         = InputMod_Rctrl  | InputMod_Lctrl,
 	InputMod_LctrlLshift     = InputMod_Lctrl  | InputMod_Lshift,
 	InputMod_LctrlRshift     = InputMod_Lctrl  | InputMod_Rshift,
 	InputMod_RctrlLshift     = InputMod_Rctrl  | InputMod_Lshift,
@@ -170,7 +173,7 @@ struct Input{
 	inline bool RAltDown()  { return newKeyState[Key::RALT]; }
 	inline bool CtrlDown()  { return newKeyState[Key::RCTRL] || newKeyState[Key::LCTRL]; }
 	inline bool ShiftDown() { return newKeyState[Key::RSHIFT] || newKeyState[Key::LSHIFT]; }
-	inline bool AltDown() { return newKeyState[Key::RALT] || newKeyState[Key::LALT]; }
+	inline bool AltDown()   { return newKeyState[Key::RALT] || newKeyState[Key::LALT]; }
 	
 	inline bool AnyKeyPressed()   { return KeyReleasedAnyMod(Key::Key_NONE); }
 	inline bool AnyKeyDown()      { return !KeyDownAnyMod(Key::Key_NONE); }

@@ -73,6 +73,14 @@ namespace Math {
         angle = RADIANS(angle);
         return vec2(v.x * cosf(angle) - v.y * sinf(angle), v.x * sin(angle) + v.y * cos(angle));
     }
+
+    inline global_ bool PointInRectangle(vec2 point, vec2 rectPos, vec2 rectDims) {
+        return
+            point.x >= rectPos.x &&
+            point.y >= rectPos.y &&
+            point.x <= rectPos.x + rectDims.x &&
+            point.y <= rectPos.y + rectDims.y;
+    }
     
 }
 
