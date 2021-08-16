@@ -50,6 +50,19 @@ struct hash<string> {
 	}
 };
 
+template<> 
+struct hash<const char*> {
+	inline u32 operator()(const char* s) {
+		u32 seed = 2166136261;
+		u32 size = strlen(s)+1;
+		while (size-- != 0) {
+			seed ^= s[size];
+			seed *= 16777619;
+		}
+		return seed;
+	}
+};
+
 template<class T> 
 struct hash<array<T>> {
 	inline u32 operator()(array<T>* s) {

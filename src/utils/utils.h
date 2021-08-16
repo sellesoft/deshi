@@ -64,6 +64,8 @@ namespace Utils{
 	
 	//returns the index of the last character which is not commented out
 	size_t skipComments(const char* text, const char* comment_chararacters, size_t text_size = 0);
+    
+    u32 findCharFromLeft(char* text, char character, u32 offset = 0);
 	
 	//returns an array of start-stop index pairs to characters separated by the specified character
 	//NOTE the caller is responsible for freeing the array this allocates
@@ -264,8 +266,7 @@ skipSpacesLeading(const char* text, size_t text_size){
             cursor++;
         }
     }else{
-        while(*cursor == ' '){
-            if(*cursor == '\0') break;
+        while(*cursor == ' ' && *cursor != '\0'){
             cursor++;
         }
     }
@@ -313,6 +314,15 @@ skipComments(const char* text, const char* comment_characters, size_t text_size)
         }
     }
     return stop;
+}
+
+inline u32 Utils::
+findCharFromLeft(char* text, char character, u32 offset){
+    for(u32 i = offset; ;++i){
+        if(text[i] == character) return i;
+        if(text[i] == '\0') break;
+    }
+    return -1;
 }
 
 #endif //UTILS_H

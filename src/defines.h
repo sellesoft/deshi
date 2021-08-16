@@ -75,6 +75,12 @@ typedef double             f64;
 #define forX(var_name,iterations) for(int var_name=0; var_name<(iterations); ++var_name)
 #define forI(iterations) for(int i=0; i<(iterations); ++i)
 
+//for-each shorthand
+//#define FORE_(LINE) zz_forit##LINE
+//#define FORE(LINE) FORE_(LINE)
+#define forE(iterable) for(auto it = iterable.begin(), it_begin = iterable.begin(), it_end = iterable.end(); it != it_end; ++it)
+
+
 //dst: destination c-string; src: source c-string; bytes: number of characters to copy
 //NOTE the last character in the copy is replaced with a null-terminating character
 #define cpystr(dst, src, bytes) strncpy((dst), (src), (bytes)); (dst)[(bytes)-1] = '\0'

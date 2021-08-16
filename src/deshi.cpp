@@ -202,6 +202,8 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 
 //// utility headers ////
 #include "defines.h"
+#include "utils/string.h"
+#include "utils/cstring.h"
 #include "utils/color.h"
 #include "utils/tuple.h"
 #include "utils/container_manager.h"
@@ -210,12 +212,13 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 #include "utils/debug.h"
 #include "utils/ring_array.h"
 #include "utils/command.h"
-#include "utils/font.h"
 #include "utils/array.h"
 #include "utils/hash.h"
 #include "utils/map.h"
 #include "utils/view.h"
 #include "math/math.h"
+
+#include "utils/font.h"
 
 //// STL for core ////
 #include <iostream>
@@ -266,6 +269,7 @@ Assert(!"no renderer selected");
 #include "core/console2.cpp"
 #include "core/storage.cpp"
 #include "core/ui.cpp"
+#include "core/commands.cpp"
 
 local Time     time_;   Time*     g_time    = &time_; //time_ because there is a c-func time() D:
 local Window   window;  Window*   g_window  = &window;
@@ -292,7 +296,8 @@ void deshi::init() {
 #ifndef DESHI_DISABLE_IMGUI
 	TIMER_RESET(t_s); DeshiImGui::Init();     SUCCESS("Finished imgui initialization in ",             TIMER_END(t_s), "ms");
 #endif
-	TIMER_RESET(t_s); UI::Init();			  SUCCESS("Finished UI initialization in ",                TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); UI::Init();             SUCCESS("Finished UI initialization in ",                TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); Cmd::Init();            SUCCESS("Finished Cmd initialization in ",               TIMER_END(t_s), "ms");
     
 	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
     

@@ -789,6 +789,8 @@ CMDFUNC(quit){
 	return("");
 }
 
+#undef CMDSTART
+#undef CMDEND
 
 
 void Console::AddCommands(){

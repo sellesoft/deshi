@@ -77,7 +77,7 @@ struct array {
 //// @constructors ////
 ///////////////////////
 template<class T>
-inline array<T>::array(){
+inline array<T>::array(){ //TODO(delle) we should not allocate on default init
     space = 4;
     count = 0;
     data  = (T*)calloc(space, sizeof(T));

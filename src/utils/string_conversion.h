@@ -3,6 +3,7 @@
 #define DESHI_STRING_CONVERSION_H
 
 #include "string.h"
+#include "cstring.h"
 #include "color.h"
 #include "../defines.h"
 #include "../math/vectormatrix.h"
@@ -19,6 +20,10 @@ global_ int stoi(const string& s){
 ////////////////////
 //// @to_string ////
 ////////////////////
+global_ string to_string(cstring x){
+    return string(x.str, x.count);
+}
+
 global_ string to_string(s32 x){
     string s;
     s.size = (x == 0) ? 1 : (upt)((floor(log10(x)) + 1) * sizeof(char));

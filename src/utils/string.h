@@ -53,7 +53,7 @@ struct string{
     //returns first of char from offset
     u32    findFirstChar(CHAR c, u32 offset = 0) const;
     //returns first of char from offset backwards
-    u32    findFirstCharNot(CHAR c) const;
+    u32    findFirstCharNot(CHAR c, u32 offset = 0) const;
     u32    findLastChar(CHAR c, u32 offset = 0) const;
     u32    findLastCharNot(CHAR c) const;
     //returns how many times a char appears in the string
@@ -246,7 +246,7 @@ inline std::ostream& operator<<(std::ostream& os, const string& m){
 }
 
 inline string operator+ (const char* c, const string& s){
-    return s + c;
+    return string(c) + s;
 }
 
 ////////////////////
@@ -307,8 +307,8 @@ inline u32 string::findFirstChar(char c, u32 offset) const{
     return NPOS;
 }
 
-inline u32 string::findFirstCharNot(char c) const{
-    for(u32 i = 0; i < size; i++){
+inline u32 string::findFirstCharNot(char c, u32 offset) const{
+    for(u32 i = 0; i < size; ++i){
         if(str[i] != c) return i;
     }
     return NPOS;

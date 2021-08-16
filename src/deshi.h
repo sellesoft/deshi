@@ -17,6 +17,7 @@
 #include "core/ui.h"
 #include "core/window.h"
 #include "core/storage.h"
+#include "core/commands.h"
 
 namespace deshi {
 	void init();
