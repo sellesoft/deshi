@@ -192,7 +192,9 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 //// external for core ////
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
+
 #include "external/stb/stb_image.h"
+
 #include "external/imgui/imgui.cpp"
 #include "external/imgui/imgui_demo.cpp"
 #include "external/imgui/imgui_draw.cpp"

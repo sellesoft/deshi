@@ -1125,7 +1125,7 @@ void UI::Init() {
 	Render::LoadFont(&white_font, white_texture);
 	
 	style.font = new Font();
-	style.font->load_bdf_font("gohufont-11.bdf");
+	style.font->load_ttf_font("TerminusTTF-4.49.1.ttf");
 	Texture* font_texture = Storage::CreateTextureFromMemory(style.font->texture_sheet, "font_gohu", style.font->width, style.font->height * style.font->char_count, ImageFormat_RGBA, TextureType_2D, false, false).second;
 	Render::LoadFont(style.font, font_texture);
 	

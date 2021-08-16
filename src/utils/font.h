@@ -1,5 +1,4 @@
 #pragma once
-
 #ifndef DESHI_FONT_H
 #define DESHI_FONT_H
 
@@ -12,6 +11,10 @@
 #include "../core/console.h"
 #include "../math/Math.h"
 #include "../utils/utils.h"
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "../external/stb/stb_truetype.h"
+
 
 static string hexCharToBin(char c) {
 	switch (toupper(c)) { //TODO(sushi, Cl) make it so we can return a str literal in a function that returns string
@@ -287,9 +290,6 @@ struct Font {
 			currChar++;
 			line_number++;
 		}
-
-		
-		
 		
 		texture_sheet = (u32*)calloc(char_count, width * height * sizeof(u32));
 		
@@ -299,7 +299,25 @@ struct Font {
 		}
 	}	
 	
-	
+	void load_ttf_font(const char* fontname) {
+		stbtt_fontinfo info;
+		u8* bitmap;
+		u8 buffer[1 << 25];
+		
+		string path = string(Assets::dirFonts().c_str()) + fontname;
+		
+		//read the actual file into the buffer
+		fread(buffer, 1, 1 << 25, fopen(path.str, "rb"));
+		
+		stbtt_InitFont(&info, buffer, stbtt_GetFontOffsetForIndex(buffer, 0));
+		//
+		//int w = 6, h = 11;
+		//
+		//bitmap = stbtt_GetCodepointBitmap(&info, 0, stbtt_ScaleForPixelHeight(&info, 11), 0, &w, &h, 0, 0);
+
+
+
+	}
 	
 	
 };
