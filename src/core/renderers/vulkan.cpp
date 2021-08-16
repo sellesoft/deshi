@@ -3181,10 +3181,10 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
     
-	vp[0].pos += norm * thickness;
-	vp[1].pos += norm * thickness;
-	vp[2].pos -= norm * thickness;
-	vp[3].pos -= norm * thickness;
+	vp[0].pos += norm * thickness / 2;
+	vp[1].pos += norm * thickness / 2;
+	vp[2].pos -= norm * thickness / 2;
+	vp[3].pos -= norm * thickness / 2;
     
 	uiVertexCount += 4;
 	uiIndexCount += 6;

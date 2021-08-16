@@ -198,6 +198,9 @@ struct Input{
 			case(InputMod_Rshift):         return !LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() && !RAltDown();
 			case(InputMod_Lalt):           return !LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() &&  LAltDown() && !RAltDown();
 			case(InputMod_Ralt):           return !LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() &&  RAltDown();
+			case(InputMod_AnyShift):       return !LCtrlDown() && !RCtrlDown() &&  LShiftDown() ||  RShiftDown() && !LAltDown() && !RAltDown();
+			case(InputMod_AnyAlt):		   return !LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() &&  LAltDown() ||  RAltDown();
+			case(InputMod_AnyCtrl):		   return  LCtrlDown() ||  RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
 			case(InputMod_LctrlLshift):    return  LCtrlDown() && !RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
 			case(InputMod_LctrlRshift):    return  LCtrlDown() && !RCtrlDown() && !LShiftDown() &&  RShiftDown() && !LAltDown() && !RAltDown();
 			case(InputMod_RctrlLshift):    return !LCtrlDown() &&  RCtrlDown() &&  LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();

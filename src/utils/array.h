@@ -32,6 +32,7 @@ struct array {
     void add(const array<T>& t);
     //for taking in something without copying it
     void emplace(const T& t);
+    void insert(const T& t, u32 idx);
     //removes last element
     void pop();
     //removes _count elements from the end
@@ -269,6 +270,27 @@ inline void array<T>::emplace(const T& t){
 }
 
 template<class T>
+inline void array<T>::insert(const T& t, u32 idx) {
+    Assert(idx <= count);
+    count += 1;
+    if (space == 0) {
+        space = 4;
+        Assert(data = (T*)calloc(space, sizeof(T)));
+        data[0] = t;
+    }
+    else if (space < count + 1) {
+        space = RoundUpTo(count + 1, 4);
+        Assert(data = (T*)calloc(space, sizeof(T)));
+        memmove(data + idx + 1, data + idx, (count - idx) * sizeof(T));
+        data[idx] = t;
+    }
+    else {
+        memmove(data + idx + 1, data + idx, (count - idx) * sizeof(T));
+        data[idx] = t;
+    }
+}
+
+template<class T>
 inline void array<T>::pop(){
     Assert(count > 0, "attempt to pop with nothing in array");
     last->~T();
@@ -390,11 +412,10 @@ inline T& array<T>::at(u32 i){
 
 template<class T>
 inline T& array<T>::next(){
-    if(last - iter + 1 >= 0) return *iter++;
+    if(last - iter + 1 >= 0) return *++iter;
     return *iter;
 }
 
-//TODO come up with a better name for this and the corresponding previous overload
 template<class T>
 inline T& array<T>::peek(int i){
     if(last - iter + 1 >= 0) return *(iter + i);

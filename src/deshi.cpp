@@ -94,12 +94,13 @@ store fonts in storage
 
 UI TODOs
 --------
+turn ShowDebugWindowOf into a general metrics/debug window like imgui once we have drop downs and stuff
+add functionality for resetting certain maps like windows and inputtexts
+____maybe even removing certain labels from them
 tabs (vertical and horizontal)
 buttons
 child windows
-defer drawing base window stuff to EndWindow(), so we can change base window properties after BeginWindow()
-____and so we can lookback at drawCmds to also be able to dynamically fit the window
-____this may also help with the row idea
+add some markup to text like underlining, bold, etc.
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
 redo debug bar to be more informative and have different modes
@@ -191,7 +192,9 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 //// external for core ////
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
+
 #include "external/stb/stb_image.h"
+
 #include "external/imgui/imgui.cpp"
 #include "external/imgui/imgui_demo.cpp"
 #include "external/imgui/imgui_draw.cpp"

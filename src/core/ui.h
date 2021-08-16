@@ -10,14 +10,15 @@
 #include "../utils/font.h"
 
 enum UIStyleVar : u32 {
-	UIStyleVar_WindowPadding,	    // default vec2(10, 10)       spacing between every item and the edges of the window
-	UIStyleVar_ItemSpacing,         // default vec2(1, 1)	      spacing between items within a window
-	UIStyleVar_WindowBorderSize,    // default 1                  border size in pixels                
+	UIStyleVar_WindowPadding,	    // default vec2(10, 10)      spacing between every item and the edges of the window
+	UIStyleVar_ItemSpacing,         // default vec2(1, 1)	     spacing between items within a window
+	UIStyleVar_WindowBorderSize,    // default 1                 border size in pixels                
 	UIStyleVar_TitleBarHeight,	    // default font.height * 1.2                                        
-	UIStyleVar_TitleTextAlign,      // default vec2(0, 0.5)  	  how title text is aligned in title bar 
-	UIStyleVar_ScrollAmount,        // default vec2(5, 5)		  amount to scroll in pixels             
+	UIStyleVar_TitleTextAlign,      // default vec2(0, 0.5)  	 how title text is aligned in title bar 
+	UIStyleVar_ScrollAmount,        // default vec2(5, 5)		 amount to scroll in pixels             
 	UIStyleVar_CheckboxSize,        // default vec2(10, 10)      
 	UIStyleVar_CheckboxFillPadding, // default 2                 how far from the edge a checkbox's true filling is padding
+	UIStyleVar_InputTextTextAlign,  // default vec2(0, 0.5)      how text is aligned within InputText boxes
 	UIStyleVar_Font,			    // default "gohufont-11.bdf" currently not changable, as we dont support loading multiple fonts yet
 	UIStyleVar_COUNT
 };
@@ -42,6 +43,7 @@ struct UIStyle {
 	vec2  scrollAmount;
 	vec2  checkboxSize;
 	float checkboxFillPadding;
+	vec2  inputTextTextAlign;
 	Font* font; //this is a pointer until I fix font to not store so much shit
 	color colors[UIStyleCol_COUNT];
 };
@@ -74,12 +76,15 @@ enum UIWindowFlags_ {
 
 
 enum UIInputTextFlags_ {
-	UIInputTextFlags_NONE             = 0,
-	UIInputTextFlags_EnterReturnsTrue = 1 << 0,
-	UIInputFlags_CallbackTab          = 1 << 1,
-	UIInputFlags_CallbackEnter        = 1 << 2,
-	UIInputFlags_CallbackAlways       = 1 << 3,
-	UIInputFlags_CallbackUpDown       = 1 << 4,
+	UIInputTextFlags_NONE                  = 0,
+	UIInputTextFlags_EnterReturnsTrue      = 1 << 0,
+	UIInputTextFlags_AnyChangeReturnsTrue  = 1 << 1,
+	UIInputTextFlags_CallbackTab           = 1 << 2,
+	UIInputTextFlags_CallbackEnter         = 1 << 3,
+	UIInputTextFlags_CallbackAlways        = 1 << 4,
+	UIInputTextFlags_CallbackUpDown        = 1 << 5,
+	UIInputTextFlags_NoBackground          = 1 << 6,
+	UIInputTextFlags_SetCursorToEndOnEnter = 1 << 7,
     
 }; typedef u32 UIInputTextFlags;
 
@@ -264,7 +269,7 @@ namespace UI {
 	void SetNextItemActive();
     
 	//primitives
-	void RectFilled(f32 x, f32 y, f32 width, f32 height, color color = color::WHITE);
+	void Rect(vec2 pos, vec2 dimen, color color = color::WHITE);
 	void RectFilled(vec2 pos, vec2 dimen, color color = color::WHITE);
     
 	void Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, color color = color::WHITE);
@@ -287,10 +292,16 @@ namespace UI {
 	void Checkbox(string label, bool* b);
     
 	//these overloads are kind of silly change them eventually
+	//InputText takes in a buffer and modifies it according to input and works much like ImGui's InputText
+	//However there are overloads that will return it's UIInputTextState, allowing you to directly r/w some internal information of the
+	//InputText item. This should only be used if you have a good reason to!
 	bool InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags flags = 0);
 	bool InputText(string label, string& buffer, u32 maxChars, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
+	bool InputText(string label, string& buffer, u32 maxChars, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
 	bool InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextFlags flags = 0);
 	bool InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
+	bool InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
+
     
 	//windows
 	void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
