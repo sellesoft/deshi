@@ -12,7 +12,7 @@
 
 struct string{
     typedef char CHAR;
-	static constexpr u32 NPOS = -1;
+	static constexpr u32 npos = -1;
     static constexpr u32 CHAR_SIZE = sizeof(CHAR);
     
     u32   size;
