@@ -278,14 +278,14 @@ inline void array<T>::insert(const T& t, u32 idx) {
         Assert(data = (T*)calloc(space, sizeof(T)));
         data[0] = t;
     }
-    else if (space < size + 1) {
-        space = RoundUpTo(size + 1, 4);
+    else if (space < count + 1) {
+        space = RoundUpTo(count + 1, 4);
         Assert(data = (T*)calloc(space, sizeof(T)));
-        memmove(data + idx + 1, data + idx, (size - idx) * sizeof(T));
+        memmove(data + idx + 1, data + idx, (count - idx) * sizeof(T));
         data[idx] = t;
     }
     else {
-        memmove(data + idx + 1, data + idx, (size - idx) * sizeof(T));
+        memmove(data + idx + 1, data + idx, (count - idx) * sizeof(T));
         data[idx] = t;
     }
 }
@@ -412,11 +412,10 @@ inline T& array<T>::at(u32 i){
 
 template<class T>
 inline T& array<T>::next(){
-    if(last - iter + 1 >= 0) return *iter++;
+    if(last - iter + 1 >= 0) return *++iter;
     return *iter;
 }
 
-//TODO come up with a better name for this and the corresponding previous overload
 template<class T>
 inline T& array<T>::peek(int i){
     if(last - iter + 1 >= 0) return *(iter + i);

@@ -287,11 +287,7 @@ struct Font {
 			currChar++;
 			line_number++;
 		}
-		
-		//set up texture_sheet
-		//i try to align the characters in rows here and account for the remaining white space
-		
-		//attempt to align into 4 rows
+
 		
 		
 		
