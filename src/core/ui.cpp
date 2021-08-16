@@ -55,7 +55,7 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 //windows are primarily a way for the user to easily position things on screen relative to a parent
 //and to make detecting where text wraps and other things easier
 //by default a window that takes up the entire screen and is invisible is made on init
-UIWindow workingWin; 
+UIWindow* workingWin; 
 
 local vec2 NextWinSize  = vec2(-1, 0);
 local vec2 NextWinPos   = vec2(-1, 0);
@@ -64,9 +64,9 @@ local bool NextActive   = 0;
 
 //window map which only stores known windows
 //and their order in layers eg. when one gets clicked it gets moved to be first if its set to
-local map<string, UIWindow>         windows;     
+local map<string, UIWindow*>        windows;     
 local map<string, UIInputTextState> inputTexts;  //stores known input text labels and their state
-local array<UIWindow>               windowStack; //window stack which allow us to use windows like we do colors and styles
+local array<UIWindow*>              windowStack; //window stack which allow us to use windows like we do colors and styles
 local array<ColorMod>               colorStack; 
 local array<VarMod>                 varStack; 
 
@@ -83,9 +83,9 @@ u32 activeId = -1; //the id of an active widget eg. input text
 //helper defines
 
 
-#define workingWinPositionPlusTitlebar vec2(workingWin.x, workingWin.y + ((workingWin.flags & UIWindowFlags_NoTitleBar) ? 0 :style.titleBarHeight));
-#define workingWinSizeMinusTitlebar    vec2(workingWin.width, workingWin.height - ((workingWin.flags & UIWindowFlags_NoTitleBar) ? 0 : style.titleBarHeight));
-#define workingHasFlag(flag) (workingWin.flags & flag)
+#define workingWinPositionPlusTitlebar vec2(workingWin->x, workingWin->y + ((workingWin->flags & UIWindowFlags_NoTitleBar) ? 0 :style.titleBarHeight));
+#define workingWinSizeMinusTitlebar    vec2(workingWin->width, workingWin->height - ((workingWin->flags & UIWindowFlags_NoTitleBar) ? 0 : style.titleBarHeight));
+#define workingHasFlag(flag) (workingWin->flags & flag)
 #define HasFlag(flag) (flags & flag)
 
 //helper functions
@@ -116,6 +116,26 @@ void UI::SetNextItemActive() {
 	NextActive = 1;
 }
 
+UIStyle UI::GetStyle(){
+	return style;
+}
+
+
+//returns the cursor to the same line as the previous 
+void UI::SameLine(){
+
+}
+
+vec2 UI::GetLastItemPos() {
+	Assert(workingWin->drawCmds.count, "Attempt to get last item position without creating any items!");
+	return workingWin->drawCmds.last->position;
+}
+
+vec2 UI::GetLastItemSize() {
+	Assert(workingWin->drawCmds.count, "Attempt to get last item size without creating any items!");
+	return workingWin->drawCmds.last->dimensions;
+}
+
 
 //rectangle
 
@@ -126,7 +146,7 @@ void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	drawCmd.dimensions = dimen;
 	drawCmd.color = color;
 
-	workingWin.drawCmds.add(drawCmd);
+	workingWin->drawCmds.add(drawCmd);
 }
 
 void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
@@ -136,7 +156,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 	drawCmd.dimensions = dimen;
 	drawCmd.color = color;
     
-	workingWin.drawCmds.add(drawCmd);
+	workingWin->drawCmds.add(drawCmd);
 }
 
 
@@ -146,24 +166,24 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 void UI::Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness, color color) {
 	UIDrawCmd drawCmd;
 	drawCmd.     type = UIDrawType_Line;
-	drawCmd. position = vec2{ workingWin.position.x + x1, workingWin.position.y + y1 };
-	drawCmd.position2 = vec2{ workingWin.position.x + x2, workingWin.position.y + y2 };
+	drawCmd. position = vec2{ workingWin->position.x + x1, workingWin->position.y + y1 };
+	drawCmd.position2 = vec2{ workingWin->position.x + x2, workingWin->position.y + y2 };
 	drawCmd.thickness = thickness;
 	drawCmd.    color = color;
 	
-	workingWin.drawCmds.add(drawCmd);
+	workingWin->drawCmds.add(drawCmd);
 }
 
 void UI::Line(vec2 start, vec2 end, float thickness, color color){
-	Render::DrawLineUI(workingWin.position + start, workingWin.position + end, thickness, color);
+	Render::DrawLineUI(workingWin->position + start, workingWin->position + end, thickness, color);
 	UIDrawCmd drawCmd;
 	drawCmd.     type = UIDrawType_Line;
-	drawCmd. position = workingWin.position + start;
-	drawCmd.position2 = workingWin.position + start;
+	drawCmd. position = workingWin->position + start;
+	drawCmd.position2 = workingWin->position + start;
 	drawCmd.thickness = thickness;
 	drawCmd.    color = color;
 	
-	workingWin.drawCmds.add(drawCmd);
+	workingWin->drawCmds.add(drawCmd);
 }
 
 
@@ -177,10 +197,10 @@ local void TextCall(string text, vec2 pos, color color) {
 	drawCmd.text = text;
 	drawCmd.position = pos;
 	drawCmd.color = color;
-	drawCmd.scissorOffset = vec2(workingWin.x, workingWin.y + ((workingWin.flags & UIWindowFlags_NoTitleBar) ? 0 :style.titleBarHeight));
-	drawCmd.scissorExtent = vec2(workingWin.width, workingWin.height - ((workingWin.flags & UIWindowFlags_NoTitleBar) ? 0 : style.titleBarHeight));
+	drawCmd.scissorOffset = vec2(workingWin->x, workingWin->y + ((workingWin->flags & UIWindowFlags_NoTitleBar) ? 0 :style.titleBarHeight));
+	drawCmd.scissorExtent = vec2(workingWin->width, workingWin->height - ((workingWin->flags & UIWindowFlags_NoTitleBar) ? 0 : style.titleBarHeight));
 	
-	workingWin.drawCmds.add(drawCmd);
+	workingWin->drawCmds.add(drawCmd);
 }
 
 //main function for wrapping, where position is starting position of text relative to the top left of the window
@@ -190,14 +210,14 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 	
 	//apply window padding if we're not manually positioning text
 	if (move_cursor) 
-		workcur += style.windowPadding - workingWin.scroll;
+		workcur += style.windowPadding - workingWin->scroll;
 	
 	
 	//work out where we're going to draw the text and how much to advance the cursor by
 	vec2 textSize = CalcTextSize(text);
 	
 	//max characters we can place 
-	u32 maxChars = floor(((workingWin.width - style.windowPadding.x) - workcur.x) / style.font->width);
+	u32 maxChars = floor(((workingWin->width - style.windowPadding.x) - workcur.x) / style.font->width);
 	
 	//make sure max chars never equals 0
 	if (!maxChars) maxChars++;
@@ -207,7 +227,7 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 		//find closest space to split by
         u32 splitat = text.findLastChar(' ', maxChars);
 		string nustr = text.substr(0, (splitat == string::NPOS) ? maxChars - 1 : splitat);
-		TextCall(nustr, workingWin.position + workcur, color);
+		TextCall(nustr, workingWin->position + workcur, color);
 		
 		text = text.substr(nustr.size);
 		workcur.y += style.font->height + style.itemSpacing.y;
@@ -216,7 +236,7 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 		while (text.size > maxChars) {
 			splitat = text.findLastChar(' ', maxChars);
 			nustr = text.substr(0, (splitat == string::NPOS) ? maxChars - 1 : splitat);
-			TextCall(nustr, workingWin.position + workcur, color);
+			TextCall(nustr, workingWin->position + workcur, color);
 			
 			text = text.substr(nustr.size);
 			workcur.y += style.font->height + style.itemSpacing.y;
@@ -225,26 +245,26 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 		}
 		
 		//write last bit of text
-		TextCall(text, workingWin.position + workcur, color);
+		TextCall(text, workingWin->position + workcur, color);
 		workcur.y += style.font->height + style.itemSpacing.y;
 		
 	}
 	else {
-		TextCall(text, workingWin.position + workcur, color);
+		TextCall(text, workingWin->position + workcur, color);
 		workcur.y += style.font->height + style.itemSpacing.y;
 	}
 	
 	if (move_cursor) {
-		workcur -= style.windowPadding - workingWin.scroll;
-		workingWin.cursor = workcur;
+		workcur -= style.windowPadding - workingWin->scroll;
+		workingWin->cursor = workcur;
 	}
 }
 
 
 void UI::Text(string text, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
-		TextCall(text, workingWin.position + workingWin.cursor + style.windowPadding - workingWin.scroll, style.colors[UIStyleCol_Text]);
-		workingWin.cury += style.font->height + 1;
+		TextCall(text, workingWin->position + workingWin->cursor + style.windowPadding - workingWin->scroll, style.colors[UIStyleCol_Text]);
+		workingWin->cury += style.font->height + 1;
 	}
 	else {
 		//we check for \n here and call WrapText on each as if they were separate text calls
@@ -253,24 +273,24 @@ void UI::Text(string text, UITextFlags flags) {
         u32 newline = text.findFirstChar('\n');
 		if (newline != string::NPOS && newline != text.size - 1) {
 			string remainder = text.substr(newline + 1);
-			WrapText(text.substr(0, newline - 1), workingWin.cursor, style.colors[UIStyleCol_Text]);
+			WrapText(text.substr(0, newline - 1), workingWin->cursor, style.colors[UIStyleCol_Text]);
 			newline = remainder.findFirstChar('\n');
 			while (newline != string::NPOS) {
-				WrapText(remainder.substr(0, newline - 1), workingWin.cursor, style.colors[UIStyleCol_Text]);
+				WrapText(remainder.substr(0, newline - 1), workingWin->cursor, style.colors[UIStyleCol_Text]);
 				remainder = remainder.substr(newline + 1);
 				newline = remainder.findFirstChar('\n');
 			}
-			WrapText(remainder, workingWin.cursor, style.colors[UIStyleCol_Text]);
+			WrapText(remainder, workingWin->cursor, style.colors[UIStyleCol_Text]);
 		}
 		else {
-			WrapText(text, workingWin.cursor, style.colors[UIStyleCol_Text]);
+			WrapText(text, workingWin->cursor, style.colors[UIStyleCol_Text]);
 		}
 	}
 }
 
 void UI::Text(string text, vec2 pos, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
-		TextCall(text, workingWin.position + pos - workingWin.scroll, style.colors[UIStyleCol_Text]);
+		TextCall(text, workingWin->position + pos - workingWin->scroll, style.colors[UIStyleCol_Text]);
 	}
 	else {
         u32 newline = text.findFirstChar('\n');
@@ -294,24 +314,24 @@ void UI::Text(string text, vec2 pos, UITextFlags flags) {
 
 void UI::Text(string text, color color, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
-		TextCall(text, workingWin.position + workingWin.cursor + style.windowPadding - workingWin.scroll, color);
-		workingWin.cury += style.font->height + 1;
+		TextCall(text, workingWin->position + workingWin->cursor + style.windowPadding - workingWin->scroll, color);
+		workingWin->cury += style.font->height + 1;
 	}
 	else {
         u32 newline = text.findFirstChar('\n');
 		if (newline != string::NPOS && newline != text.size - 1) {
 			string remainder = text.substr(newline + 1);
-			WrapText(text.substr(0, newline - 1), workingWin.cursor, color);
+			WrapText(text.substr(0, newline - 1), workingWin->cursor, color);
 			newline = remainder.findFirstChar('\n');
 			while (newline != string::NPOS) {
-				WrapText(remainder.substr(0, newline - 1), workingWin.cursor, color);
+				WrapText(remainder.substr(0, newline - 1), workingWin->cursor, color);
 				remainder = remainder.substr(newline + 1);
 				newline = remainder.findFirstChar('\n');
 			}
-			WrapText(remainder, workingWin.cursor, color);
+			WrapText(remainder, workingWin->cursor, color);
 		}
 		else {
-			WrapText(text, workingWin.cursor, color);
+			WrapText(text, workingWin->cursor, color);
 		}
 	}
 	
@@ -319,7 +339,7 @@ void UI::Text(string text, color color, UITextFlags flags) {
 
 void UI::Text(string text, vec2 pos, color color, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
-		TextCall(text, workingWin.position + pos - workingWin.scroll, color);
+		TextCall(text, workingWin->position + pos - workingWin->scroll, color);
 	}
 	else {
         //we check for \n here and call WrapText on each as if they were separate text calls
@@ -356,79 +376,85 @@ void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags
 	//check if were making a new window or working with one we already know
 	if (!windows.has(name)) {
 		//make new window if we dont know this one already or if we arent saving it
-		workingWin.baseDrawCmds.clear();
-		workingWin.drawCmds.clear();
+		workingWin = new UIWindow();
+
+		workingWin->baseDrawCmds.clear();
+		workingWin->drawCmds.clear();
 		
-		workingWin.    scroll = vec2(0, 0);
-		workingWin.      name = name; 
-		workingWin.  position = pos;
-		workingWin.dimensions = dimensions;
-		workingWin.    cursor = vec2(0, 0);
-		workingWin.     flags = flags;
+		workingWin->    scroll = vec2(0, 0);
+		workingWin->      name = name; 
+		workingWin->  position = pos;
+		workingWin->dimensions = dimensions;
+		workingWin->    cursor = vec2(0, 0);
+		workingWin->     flags = flags;
 		
 		windows.add(name, workingWin); 
 	}
 	else {
-		workingWin = *windows.at(name);
-		workingWin.cursor = vec2(0, 0);
-		if (NextWinPos.x  != -1) workingWin.position   = NextWinPos;
-		if (NextWinSize.x != -1) workingWin.dimensions = NextWinSize;
+		workingWin = windows[name];
+		workingWin->cursor = vec2(0, 0);
+		if (NextWinPos.x  != -1) workingWin->position   = NextWinPos;
+		if (NextWinSize.x != -1) workingWin->dimensions = NextWinSize;
 		NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 	}
 	
 	//check if window is hovered
 	vec2 mp = DeshInput->mousePos;
-	if(Math::PointInRectangle(mp, workingWin.position, workingWin.dimensions)){
-		workingWin.hovered = 1;
+	if(Math::PointInRectangle(mp, workingWin->position, workingWin->dimensions)){
+		workingWin->hovered = 1;
 	}
 	else {
-		workingWin.hovered = 0;
+		workingWin->hovered = 0;
 	}
 	
 	//check if window's title is hovered (if were drawing it), so we can check for window movement by mouse later
-	if (!(workingWin.flags & UIWindowFlags_NoTitleBar)) {
-		if(Math::PointInRectangle(mp, workingWin.position, vec2(workingWin.width, style.titleBarHeight))){
-			workingWin.titleHovered = 1;
+	if (!(workingWin->flags & UIWindowFlags_NoTitleBar)) {
+		if(Math::PointInRectangle(mp, workingWin->position, vec2(workingWin->width, style.titleBarHeight))){
+			workingWin->titleHovered = 1;
 		}
 		else {
-			workingWin.titleHovered = 0;
+			workingWin->titleHovered = 0;
 		}
 	}
 	
 	//check for scrolling inputs
 	if (!(flags & UIWindowFlags_NoScroll)) {
-		if (workingWin.hovered && DeshInput->KeyPressedAnyMod(MouseButton::SCROLLUP)) {
-			workingWin.scy -= style.scrollAmount.y;
-			Math::clampr(workingWin.scy, 0, workingWin.maxScroll.y);
+		if (workingWin->hovered && DeshInput->KeyPressedAnyMod(MouseButton::SCROLLUP)) {
+			workingWin->scy -= style.scrollAmount.y;
+			Math::clampr(workingWin->scy, 0, workingWin->maxScroll.y);
 		}
-		else if (workingWin.hovered && DeshInput->KeyPressedAnyMod(MouseButton::SCROLLDOWN)) {
-			workingWin.scy += style.scrollAmount.y;
-			Math::clampr(workingWin.scy, 0, workingWin.maxScroll.y);
+		else if (workingWin->hovered && DeshInput->KeyPressedAnyMod(MouseButton::SCROLLDOWN)) {
+			workingWin->scy += style.scrollAmount.y;
+			Math::clampr(workingWin->scy, 0, workingWin->maxScroll.y);
 		}
 	}
-	if (!(workingWin.flags & UIWindowFlags_NoTitleBar)) {
-		workingWin.cursor.y = style.titleBarHeight;
-		workingWin.titleBarHeight = style.titleBarHeight;
+	if (!(workingWin->flags & UIWindowFlags_NoTitleBar)) {
+		workingWin->cursor.y = style.titleBarHeight;
+		workingWin->titleBarHeight = style.titleBarHeight;
 	}
 	else {
-		workingWin.titleBarHeight = 0;
+		workingWin->titleBarHeight = 0;
 	}
 	
-	if(UIWindow* window = windows.at(name)){
-		*window = workingWin;
-	}else{
-		windows.add(name, workingWin);
-	}
+	//try {
+	//	windows[name]
+	//}
+	//
+	//if(UIWindow* window = *windows.at(name)){
+	//	window = workingWin;
+	//}else{
+	//	windows.add(name, *workingWin);
+	//}
 }
 
 //calculates the minimum size a window can be to contain all drawn elements
 vec2 CalcWindowMinSize() {
 	using namespace UI;
 	vec2 max;
-	for (UIDrawCmd& drawCmd : workingWin.drawCmds) {
+	for (UIDrawCmd& drawCmd : workingWin->drawCmds) {
 		if (drawCmd.trackedForFit) {
-			float xbase = drawCmd.position.x + workingWin.style.windowPadding.x - workingWin.position.x + workingWin.scroll.x;
-			float ybase = drawCmd.position.y + workingWin.style.windowPadding.x - workingWin.position.y + workingWin.scroll.y;
+			float xbase = drawCmd.position.x + workingWin->style.windowPadding.x - workingWin->position.x + workingWin->scroll.x;
+			float ybase = drawCmd.position.y + workingWin->style.windowPadding.x - workingWin->position.y + workingWin->scroll.y;
 			switch (drawCmd.type) {
 				case UIDrawType_Text: {
 					vec2 textSize = CalcTextSize(drawCmd.text);
@@ -442,8 +468,8 @@ vec2 CalcWindowMinSize() {
 				case UIDrawType_Line: {
 					max.x = Max(max.x, (xbase));
 					max.y = Max(max.y, (ybase));
-					max.x = Max(max.x, (drawCmd.position2.x + workingWin.style.windowPadding.x - workingWin.position.x + workingWin.scroll.x));
-					max.y = Max(max.y, (drawCmd.position2.y + workingWin.style.windowPadding.x - workingWin.position.y + workingWin.scroll.y));
+					max.x = Max(max.x, (drawCmd.position2.x + workingWin->style.windowPadding.x - workingWin->position.x + workingWin->scroll.x));
+					max.y = Max(max.y, (drawCmd.position2.y + workingWin->style.windowPadding.x - workingWin->position.y + workingWin->scroll.y));
                     
 				}break;
 			}
@@ -457,122 +483,117 @@ void UI::EndWindow() {
 	
 	vec2 mp = DeshInput->mousePos;
     
-	if ((workingWin.flags & UIWindowFlags_FitAllElements)) {
-		workingWin.dimensions = CalcWindowMinSize();
+	if ((workingWin->flags & UIWindowFlags_FitAllElements)) {
+		workingWin->dimensions = CalcWindowMinSize();
 	}
     
 	//if the window isn't invisible draw things that havent been disabled
-	if ((workingWin.flags & UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
+	if ((workingWin->flags & UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
 		//draw background
-		if (!(workingWin.flags & UIWindowFlags_NoBackground) && !workingWin.minimized) {
+		if (!(workingWin->flags & UIWindowFlags_NoBackground) && !workingWin->minimized) {
 			UIDrawCmd drawCmd; //inst 29
 			drawCmd.type = UIDrawType_FilledRectangle;
-			drawCmd.position = workingWin.position;
-			drawCmd.dimensions = workingWin.dimensions;
+			drawCmd.position = workingWin->position;
+			drawCmd.dimensions = workingWin->dimensions;
 			drawCmd.color = style.colors[UIStyleCol_WindowBg];
             
-			workingWin.baseDrawCmds.add(drawCmd); //inst 35
+			workingWin->baseDrawCmds.add(drawCmd); //inst 35
 		}
         
 		//draw title bar
-		if (!(workingWin.flags & UIWindowFlags_NoTitleBar)) {
+		if (!(workingWin->flags & UIWindowFlags_NoTitleBar)) {
 			{
 				UIDrawCmd drawCmd; //inst 40
 				drawCmd.type = UIDrawType_FilledRectangle;
-				drawCmd.position = workingWin.position;
-				drawCmd.dimensions = vec2{ workingWin.width, style.titleBarHeight };
+				drawCmd.position = workingWin->position;
+				drawCmd.dimensions = vec2{ workingWin->width, style.titleBarHeight };
 				drawCmd.color = style.colors[UIStyleCol_TitleBg];
                 
-				workingWin.baseDrawCmds.add(drawCmd); //inst 44
+				workingWin->baseDrawCmds.add(drawCmd); //inst 44
 			}
             
 			{//draw text if it exists
-				if (workingWin.name.size) {
+				if (workingWin->name.size) {
 					UIDrawCmd drawCmd; //inst 46
 					drawCmd.type = UIDrawType_Text;
-					drawCmd.text = workingWin.name; //inst 48
+					drawCmd.text = workingWin->name; //inst 48
 					drawCmd.position = vec2(
-                                            workingWin.x + (workingWin.width - workingWin.name.size * style.font->width) * style.titleTextAlign.x,
-                                            workingWin.y + (style.titleBarHeight - style.font->height) * style.titleTextAlign.y);
+                                            workingWin->x + (workingWin->width - workingWin->name.size * style.font->width) * style.titleTextAlign.x,
+                                            workingWin->y + (style.titleBarHeight - style.font->height) * style.titleTextAlign.y);
 					drawCmd.color = color::WHITE;
-					drawCmd.scissorExtent = vec2{ workingWin.width, style.titleBarHeight };
-					drawCmd.scissorOffset = workingWin.position;
+					drawCmd.scissorExtent = vec2{ workingWin->width, style.titleBarHeight };
+					drawCmd.scissorOffset = workingWin->position;
                     
 					//TODO(sushi, Ui) add title text coloring
                     
-					workingWin.baseDrawCmds.add(drawCmd); //inst 54
+					workingWin->baseDrawCmds.add(drawCmd); //inst 54
 				}
 			}
             
 			{//draw titlebar minimize button and check for it being clicked
-				if (!((workingWin.flags & UIWindowFlags_NoMinimizeButton) || (workingWin.flags & UIWindowFlags_NoMinimizeButton))) {
+				if (!((workingWin->flags & UIWindowFlags_NoMinimizeButton) || (workingWin->flags & UIWindowFlags_NoMinimizeButton))) {
 					UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 					drawCmd.position = vec2(
-                                            workingWin.x + (workingWin.width - workingWin.name.size * style.font->width) * 0.01,
-                                            workingWin.y + (style.titleBarHeight * 0.5 - 2));
+                                            workingWin->x + (workingWin->width - workingWin->name.size * style.font->width) * 0.01,
+                                            workingWin->y + (style.titleBarHeight * 0.5 - 2));
 					drawCmd.dimensions = vec2(10, 4);
                     
-					if (mp.x >= drawCmd.position.x &&
-						mp.y >= drawCmd.position.y &&
-						mp.x <= drawCmd.position.x + drawCmd.dimensions.x &&
-						mp.y <= drawCmd.position.y + drawCmd.dimensions.y) {
+					if (Math::PointInRectangle(mp, drawCmd.position, drawCmd.dimensions)) {
 						drawCmd.color = style.colors[UIStyleCol_TitleBg] * 0.7;
 						if (DeshInput->KeyPressedAnyMod(MouseButton::LEFT)) {
-							workingWin.minimized = !workingWin.minimized;
+							workingWin->minimized = !workingWin->minimized;
 						}
 					}
 					else {
 						drawCmd.color = style.colors[UIStyleCol_TitleBg] * 0.3;
 					}
                     
-					workingWin.baseDrawCmds.add(drawCmd); //inst 54
+					workingWin->baseDrawCmds.add(drawCmd); //inst 54
 				}
 			}
 		}
         
 		//draw border
-		if (!(workingWin.flags & UIWindowFlags_NoBorder) && !workingWin.minimized) {
+		if (!(workingWin->flags & UIWindowFlags_NoBorder) && !workingWin->minimized) {
 			UIDrawCmd drawCmd; //inst 58
 			drawCmd.type = UIDrawType_FilledRectangle;
 			drawCmd.color = style.colors[UIStyleCol_Border];
             
 			//left
-			drawCmd.position = vec2{ workingWin.x - style.windowBorderSize, workingWin.y };
-			drawCmd.dimensions = vec2{ style.windowBorderSize, workingWin.height };
-			workingWin.baseDrawCmds.add(drawCmd); //inst 64
+			drawCmd.position = vec2{ workingWin->x - style.windowBorderSize, workingWin->y };
+			drawCmd.dimensions = vec2{ style.windowBorderSize, workingWin->height };
+			workingWin->baseDrawCmds.add(drawCmd); //inst 64
             
 			//right 
-			drawCmd.position = vec2{ workingWin.x + workingWin.width, workingWin.y };
-			drawCmd.dimensions = vec2{ style.windowBorderSize, workingWin.height };
-			workingWin.baseDrawCmds.add(drawCmd); //inst 71
+			drawCmd.position = vec2{ workingWin->x + workingWin->width, workingWin->y };
+			drawCmd.dimensions = vec2{ style.windowBorderSize, workingWin->height };
+			workingWin->baseDrawCmds.add(drawCmd); //inst 71
             
 			//top
-			drawCmd.position = vec2{ workingWin.x - style.windowBorderSize, workingWin.y - style.windowBorderSize };
-			drawCmd.dimensions = vec2{ workingWin.width + 2 * style.windowBorderSize, style.windowBorderSize };
-			workingWin.baseDrawCmds.add(drawCmd); //inst 78
+			drawCmd.position = vec2{ workingWin->x - style.windowBorderSize, workingWin->y - style.windowBorderSize };
+			drawCmd.dimensions = vec2{ workingWin->width + 2 * style.windowBorderSize, style.windowBorderSize };
+			workingWin->baseDrawCmds.add(drawCmd); //inst 78
             
 			//bottom
-			drawCmd.position = vec2{ workingWin.x - style.windowBorderSize, workingWin.y + workingWin.height };
-			drawCmd.dimensions = vec2{ workingWin.width + 2 * style.windowBorderSize, style.windowBorderSize };
-			workingWin.baseDrawCmds.add(drawCmd);//inst 85
+			drawCmd.position = vec2{ workingWin->x - style.windowBorderSize, workingWin->y + workingWin->height };
+			drawCmd.dimensions = vec2{ workingWin->width + 2 * style.windowBorderSize, style.windowBorderSize };
+			workingWin->baseDrawCmds.add(drawCmd);//inst 85
 		}
 	}
     
-	workingWin.style = style;
+	workingWin->style = style;
     
 	//check to see if the elements we have drawn so far have gone beyond the window's size
 	//and allow scrolling if it did, as well as define a max scrolling amount
-	if (workingWin.cury > workingWin.height - workingWin.titleBarHeight)
-		workingWin.maxScroll.y = (workingWin.cury + style.windowPadding.y * 2) - workingWin.height;
+	if (workingWin->cury > workingWin->height - workingWin->titleBarHeight)
+		workingWin->maxScroll.y = (workingWin->cury + style.windowPadding.y * 2) - workingWin->height;
 	else
-		workingWin.maxScroll.y = 0;
+		workingWin->maxScroll.y = 0;
 	
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 	
 	//update stored window with new window state
-	//NOTE: I'm not sure if I want to keep doing this like this
-	//      or just make workingWin a pointer to a window in the list
-	*windows.at(workingWin.name) = workingWin;
+	workingWin = *windowStack.last;
 	windowStack.pop();
 }
 
@@ -593,11 +614,11 @@ void UI::SetNextWindowSize(float x, float y) {
 }
 
 void UI::SetWindowName(string name) {
-	workingWin.name = name;
+	workingWin->name = name;
 }
 
 bool UI::IsWinHovered() {
-	return workingWin.hovered;
+	return workingWin->hovered;
 }
 
 bool UI::AnyWinHovered() {
@@ -605,7 +626,7 @@ bool UI::AnyWinHovered() {
 }
 
 void UI::ShowDebugWindowOf(string name) {
-	if (UIWindow* debugee = windows.at(name)) {
+	if (UIWindow* debugee = *windows.at(name)) {
 		
 		persist bool show_drawcall_pos      = 0;
 		persist bool show_drawcall_sizes    = 0;
@@ -641,7 +662,7 @@ void UI::ShowDebugWindowOf(string name) {
 			drawCmd.scissorExtent = DeshWindow->dimensions;
 			drawCmd.trackedForFit = 0;
             
-			workingWin.drawCmds.add(drawCmd);
+			workingWin->drawCmds.add(drawCmd);
 		}
         
 		if (show_drawcall_pos) {
@@ -652,7 +673,7 @@ void UI::ShowDebugWindowOf(string name) {
 			drawCmd.trackedForFit = 0;
 			for (UIDrawCmd& d : debugee->drawCmds) {
 				drawCmd.position = d.position;
-				workingWin.drawCmds.add(drawCmd);
+				workingWin->drawCmds.add(drawCmd);
 			}
 		}
         
@@ -678,7 +699,7 @@ void UI::ShowDebugWindowOf(string name) {
 						drawCmd.dimensions = CalcTextSize(d.text);
 					}break;
 				}
-				workingWin.drawCmds.add(drawCmd);
+				workingWin->drawCmds.add(drawCmd);
 			}
 		}
         
@@ -690,7 +711,7 @@ void UI::ShowDebugWindowOf(string name) {
 			for (UIDrawCmd& d : debugee->drawCmds) {
 				drawCmd.position = d.scissorOffset;
 				drawCmd.dimensions = d.scissorExtent;
-				workingWin.drawCmds.add(drawCmd);
+				workingWin->drawCmds.add(drawCmd);
 			}
 		}
         
@@ -777,7 +798,7 @@ bool UI::Button(string text, vec2 pos, color color){
 
 void UI::Checkbox(string label, bool* b) {
     
-	vec2 boxpos = workingWin.position + workingWin.cursor + style.windowPadding - workingWin.scroll;
+	vec2 boxpos = workingWin->position + workingWin->cursor + style.windowPadding - workingWin->scroll;
 	vec2 boxsiz = style.checkboxSize;
     
 	{//box
@@ -786,7 +807,7 @@ void UI::Checkbox(string label, bool* b) {
 		drawCmd.dimensions = boxsiz;
 		drawCmd.color = style.colors[UIStyleCol_FrameBg];
         
-		workingWin.drawCmds.add(drawCmd);
+		workingWin->drawCmds.add(drawCmd);
 	}
     
 	//fill if true
@@ -797,7 +818,7 @@ void UI::Checkbox(string label, bool* b) {
 		drawCmd.dimensions = boxsiz  * (vec2::ONE - 2 * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y));
 		drawCmd.color = style.colors[UIStyleCol_FrameBg] * 0.7;
         
-		workingWin.drawCmds.add(drawCmd);
+		workingWin->drawCmds.add(drawCmd);
 	}
     
 	{//label
@@ -806,13 +827,13 @@ void UI::Checkbox(string label, bool* b) {
 		drawCmd.text = label;
 		drawCmd.color = style.colors[UIStyleCol_Text];
         
-		workingWin.drawCmds.add(drawCmd);
+		workingWin->drawCmds.add(drawCmd);
 	}
     
 	if (DeshInput->LMousePressed() && Math::PointInRectangle(DeshInput->mousePos, boxpos, boxsiz))
 		*b = !*b;
     
-	workingWin.cury += boxsiz.y + style.itemSpacing.y;
+	workingWin->cury += boxsiz.y + style.itemSpacing.y;
 }
 
 
@@ -984,7 +1005,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 		}
 	}
     
-	vec2 dim = (dimensions.x == -1) ? vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3) : dimensions;
+	vec2 dim = (dimensions.x == -1) ? vec2(Math::clamp(100, 0, workingWin->width - style.windowPadding.x * 2), style.font->height * 1.3) : dimensions;
 
 	if(!(flags & UIInputTextFlags_NoBackground)){//text box
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
@@ -994,24 +1015,25 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 		drawCmd.scissorExtent = workingWinSizeMinusTitlebar;
 		drawCmd.color = color::VERY_DARK_GREY;
         
-		workingWin.drawCmds.add(drawCmd);
+		workingWin->drawCmds.add(drawCmd);
 	}
+
+	vec2 textStart = position +
+		vec2((dim.x - buffer.size * style.font->width) * style.inputTextTextAlign.x,
+			(style.font->height * 1.3 - style.font->height) * style.inputTextTextAlign.y);
     
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
-		drawCmd.position = position + 
-			vec2((dim.x - buffer.size * style.font->width) * style.inputTextTextAlign.x,
-				(style.font->height * 1.3 - style.font->height) * style.inputTextTextAlign.y);
+		drawCmd.position = textStart;
 		drawCmd.text = buffer;
 		drawCmd.color = style.colors[UIStyleCol_Text];
         
-		workingWin.drawCmds.add(drawCmd);
+		workingWin->drawCmds.add(drawCmd);
 	}
     
 	//TODO(sushi, Ui) impl different text cursors
 	if (activeId == state->id) {//cursor
 		UIDrawCmd drawCmd{ UIDrawType_Line };
-		vec2 textStart = position + vec2(0, (style.font->height * 1.3 - style.font->height) * 0.5);
 		drawCmd.position = textStart + vec2(state->cursor * style.font->width, -1);
 		drawCmd.position2 = textStart + vec2(state->cursor * style.font->width, style.font->height - 1);
 		drawCmd.color =
@@ -1021,11 +1043,11 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
                              sin((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000)) + 1) / 2);
 		drawCmd.thickness = 1;
         
-		workingWin.drawCmds.add(drawCmd);
+		workingWin->drawCmds.add(drawCmd);
 	}
     
 	if (moveCursor)
-		workingWin.cursor.y += style.font->height * 1.3 + style.itemSpacing.y;
+		workingWin->cursor.y += style.font->height * 1.3 + style.itemSpacing.y;
     
 	if (flags & UIInputTextFlags_EnterReturnsTrue && DeshInput->KeyPressedAnyMod(Key::ENTER) || DeshInput->KeyPressedAnyMod(Key::NUMPADENTER)) {
 		return true;
@@ -1038,8 +1060,8 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 }
 
 bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags flags) {	
-	vec2 position = workingWin.position + workingWin.cursor + style.windowPadding - workingWin.scroll;
-	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
+	vec2 position = workingWin->position + workingWin->cursor + style.windowPadding - workingWin->scroll;
+	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin->width - style.windowPadding.x * 2), style.font->height * 1.3);
     
 	NextItemSize = vec2(-1, 0);
     
@@ -1048,8 +1070,8 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags 
 }
 
 bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextCallback callback, UIInputTextFlags flags){
-	vec2 position = workingWin.position + workingWin.cursor + style.windowPadding - workingWin.scroll;
-	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
+	vec2 position = workingWin->position + workingWin->cursor + style.windowPadding - workingWin->scroll;
+	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin->width - style.windowPadding.x * 2), style.font->height * 1.3);
 	
 	NextItemSize = vec2(-1, 0);
     
@@ -1058,8 +1080,8 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextCallba
 }
 
 bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
-	vec2 position = workingWin.position + workingWin.cursor + style.windowPadding - workingWin.scroll;
-	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
+	vec2 position = workingWin->position + workingWin->cursor + style.windowPadding - workingWin->scroll;
+	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin->width - style.windowPadding.x * 2), style.font->height * 1.3);
 
 	NextItemSize = vec2(-1, 0);
 
@@ -1071,27 +1093,29 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextState*
 	return false;
 }
 
-bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 position, UIInputTextFlags flags) {
-	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
-	
-	NextItemSize = vec2(-1, 0);
-    
+bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextFlags flags) {
+	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, Math::clamp(workingWin->width - style.windowPadding.x * 2, 1, FLT_MAX)), style.font->height * 1.3);
+	pos += workingWin->position - workingWin->scroll;
 
-	if (InputTextCall(label, buffer, maxChars, position, dimensions, nullptr, flags, 0)) return true;
+	NextItemSize = vec2(-1, 0);
+
+	if (InputTextCall(label, buffer, maxChars, pos, dimensions, nullptr, flags, 0)) return true;
 	return false;
 }
 
-bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 position, UIInputTextCallback callback, UIInputTextFlags flags ){
-	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
-	
+bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextCallback callback, UIInputTextFlags flags) {
+	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin->width - style.windowPadding.x * 2), style.font->height * 1.3);
+	pos += workingWin->position - workingWin->scroll;
+
 	NextItemSize = vec2(-1, 0);
-    
-	if (InputTextCall(label, buffer, maxChars, position, dimensions, callback, flags, 0)) return true;
+
+	if (InputTextCall(label, buffer, maxChars, pos, dimensions, callback, flags, 0)) return true;
 	return false;
 }
 
-bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags){
-	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
+bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
+	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin->width - style.windowPadding.x * 2), style.font->height * 1.3);
+	pos += workingWin->position - workingWin->scroll;
 
 	NextItemSize = vec2(-1, 0);
 
@@ -1103,18 +1127,18 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInput
 	return false;
 }
 
-
-
-
 //initializes core UI with an invisible working window covering the entire screen
 //also initializes styles
 //the base window should never focus when clicking within it, so any widgets drawn within
 //it will not focus if theres a window in front of them.
 //I'm not sure how i want to fix it yet
 void UI::Init() {
-	workingWin.name = "Base";
-	workingWin.position = vec2(0,0);
-	workingWin.dimensions = DeshWindow->dimensions;
+
+	workingWin = new UIWindow();
+
+	workingWin->name = "Base";
+	workingWin->position = vec2(0,0);
+	workingWin->dimensions = DeshWindow->dimensions;
 	
 	//set default style
 	
@@ -1125,7 +1149,7 @@ void UI::Init() {
 	Render::LoadFont(&white_font, white_texture);
 	
 	style.font = new Font();
-	style.font->load_ttf_font("TerminusTTF-4.49.1.ttf");
+	style.font->load_bdf_font("gohufont-14.bdf");
 	Texture* font_texture = Storage::CreateTextureFromMemory(style.font->texture_sheet, "font_gohu", style.font->width, style.font->height * style.font->char_count, ImageFormat_RGBA, TextureType_2D, false, false).second;
 	Render::LoadFont(style.font, font_texture);
 	
@@ -1163,8 +1187,15 @@ void UI::Update() {
 	Assert(windowStack.size() == 1, 
 		   "Frame ended with hanging windows in the stack, make sure you call EndWindow() if you call BeginWindow()!");
 	
-	Assert(varStack.size() == initStyleStackSize, 
-		   "Frame ended with hanging vars in the stack, make sure you pop vars if you push them!");
+	//TODO(sushi) impl this for other stacks
+	if (varStack.count != initStyleStackSize) {
+		PRINTLN("Frame ended with hanging vars in the stack, make sure you pop vars if you push them!\nVars were:\n");
+		
+		for (u32 i = varStack.count - 1; i > initStyleStackSize - 1; i--)
+			PRINTLN(styleVarStr[varStack[i].var] << "\n");
+		
+		Assert(0);
+	}
 	
 	Assert(colorStack.size() == initColorStackSize, 
 		   "Frame ended with hanging colors in the stack, make sure you pop colors if you push them!");
@@ -1175,7 +1206,7 @@ void UI::Update() {
 	
 	//focus
 	for (int i = windows.count - 1; i > 0; i--) {
-		UIWindow* w = windows.atIdx(i);
+		UIWindow* w = *windows.atIdx(i);
 		if (!(w->flags & UIWindowFlags_NoFocus)) {
 			if (i == windows.count - 1 && w->hovered) {
 				break;
@@ -1190,7 +1221,7 @@ void UI::Update() {
 	
 	
 	{ //drag
-		UIWindow* focused = windows.atIdx(windows.count-1);
+		UIWindow* focused = *windows.atIdx(windows.count-1);
 		
 		static bool newDrag = true;
 		static vec2 mouseOffset = vec2(0, 0);
@@ -1212,15 +1243,15 @@ void UI::Update() {
 	}
 	
 	//draw windows in order with their drawCmds
-	for (UIWindow& p : windows) {
-		vec2 winCorrectedPos = vec2(p.x, p.y + p.titleBarHeight);
-		vec2 winCorrectedSiz = vec2(p.width, p.height - p.titleBarHeight);
+	for (UIWindow* p : windows) {
+		vec2 winCorrectedPos = vec2(p->x, p->y + p->titleBarHeight);
+		vec2 winCorrectedSiz = vec2(p->width, p->height - p->titleBarHeight);
 		
-		if (p.hovered && !(p.flags & UIWindowFlags_DontSetGlobalHoverFlag))
+		if (p->hovered && !(p->flags & UIWindowFlags_DontSetGlobalHoverFlag))
 			globalHovered = 1;
         
 		//draw base cmds first
-		for (UIDrawCmd& drawCmd : p.baseDrawCmds) {
+		for (UIDrawCmd& drawCmd : p->baseDrawCmds) {
 			switch (drawCmd.type) {
 				case UIDrawType_FilledRectangle: {
 					Render::FillRectUI(drawCmd.position, drawCmd.dimensions, drawCmd.color, drawCmd.scissorOffset, drawCmd.scissorExtent);
@@ -1249,8 +1280,8 @@ void UI::Update() {
 		}
 		
 		//dont draw non-base draw cmds if we're minimized
-		if (!p.minimized) {
-			for (UIDrawCmd& drawCmd : p.drawCmds) {
+		if (!p->minimized) {
+			for (UIDrawCmd& drawCmd : p->drawCmds) {
 				switch (drawCmd.type) {
 					case UIDrawType_FilledRectangle: {
 						if (drawCmd.scissorExtent.x == -1) 
@@ -1283,7 +1314,7 @@ void UI::Update() {
 				}
 			}
 		}
-		p.baseDrawCmds.clear();
-		p.drawCmds.clear();
+		p->baseDrawCmds.clear();
+		p->drawCmds.clear();
 	}
 }

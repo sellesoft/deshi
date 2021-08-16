@@ -23,6 +23,20 @@ enum UIStyleVar : u32 {
 	UIStyleVar_COUNT
 };
 
+global_ const char* styleVarStr[] = {
+	"UIStyleVar_WindowPadding",
+	"UIStyleVar_ItemSpacing",
+	"UIStyleVar_WindowBorderSize",
+	"UIStyleVar_TitleBarHeight",
+	"UIStyleVar_TitleTextAlign",
+	"UIStyleVar_ScrollAmount",
+	"UIStyleVar_CheckboxSize",
+	"UIStyleVar_CheckboxFillPadding",
+	"UIStyleVar_InputTextTextAlign",
+	"UIStyleVar_Font",
+	"UIStyleVar_COUNT"
+};
+
 enum UIStyleCol : u32 {
 	UIStyleCol_Text,
 	UIStyleCol_WindowBg,
@@ -151,6 +165,14 @@ struct UIDrawCmd {
 	vec2 scissorExtent = vec2(-1,0);
 };
 
+//stores information about an item such as a button, checkbox, or input text box
+struct UIItemInfo {
+	vec2 position;
+	vec2 size;
+
+
+};
+
 //A window is meant to be a way to easily position widgets relative to a parent
 struct UIWindow {
 	string name;
@@ -265,8 +287,14 @@ struct UIWindow {
 namespace UI {
 	
 	//helpers
-	vec2 CalcTextSize(string text);
-	void SetNextItemActive();
+	vec2    CalcTextSize(string text);
+	void    SetNextItemActive();
+	UIStyle GetStyle();
+	void    SameLine();
+	vec2    GetLastItemPos();
+	vec2    GetLastItemSize();
+
+
     
 	//primitives
 	void Rect(vec2 pos, vec2 dimen, color color = color::WHITE);
