@@ -47,7 +47,8 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 	{2, offsetof(UIStyle, titleTextAlign)},
 	{2, offsetof(UIStyle, scrollAmount)},
 	{2, offsetof(UIStyle, checkboxSize)},
-	{1, offsetof(UIStyle, checkboxFillPadding)}
+	{1, offsetof(UIStyle, checkboxFillPadding)},
+	{2, offsetof(UIStyle, inputTextTextAlign)},
 };
 
 //this variable defines the space the user is working in when calling UI functions
@@ -118,14 +119,13 @@ void UI::SetNextItemActive() {
 
 //rectangle
 
-
-void UI::RectFilled(f32 x, f32 y, f32 width, f32 height, color color) {
+void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	UIDrawCmd drawCmd;
-	drawCmd.      type = UIDrawType_FilledRectangle;
-	drawCmd.  position = vec2{ workingWin.position.x + x, workingWin.position.y + y };
-	drawCmd.dimensions = vec2{ width, height };
-	drawCmd.     color = color;
-	
+	drawCmd.type = UIDrawType_Rectangle;
+	drawCmd.position = pos;
+	drawCmd.dimensions = dimen;
+	drawCmd.color = color;
+
 	workingWin.drawCmds.add(drawCmd);
 }
 
@@ -856,6 +856,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 		}
 	}
     
+	bool bufferChanged = 0;
 	if (activeId == state->id) {
 		if (DeshInput->KeyPressedAnyMod(Key::RIGHT) && state->cursor < buffer.size) state->cursor++;
 		if (DeshInput->KeyPressedAnyMod(Key::LEFT) && state->cursor > 0) state->cursor--;
@@ -863,13 +864,13 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 		data.cursorPos = state->cursor;
         
 		//check if the user used up/down keys
-		if (DeshInput->KeyPressedAnyMod(Key::UP) && (flags & UIInputFlags_CallbackUpDown)) {
-			data.eventFlag = UIInputFlags_CallbackUpDown;
+		if (DeshInput->KeyPressedAnyMod(Key::UP) && (flags & UIInputTextFlags_CallbackUpDown)) {
+			data.eventFlag = UIInputTextFlags_CallbackUpDown;
 			data.eventKey = Key::UP;
 			callback(&data);
 		}
-		if (DeshInput->KeyPressedAnyMod(Key::DOWN) && (flags & UIInputFlags_CallbackUpDown)) {
-			data.eventFlag = UIInputFlags_CallbackUpDown;
+		if (DeshInput->KeyPressedAnyMod(Key::DOWN) && (flags & UIInputTextFlags_CallbackUpDown)) {
+			data.eventFlag = UIInputTextFlags_CallbackUpDown;
 			data.eventKey = Key::DOWN;
 			callback(&data);
 		}
@@ -936,8 +937,8 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 				}
 			}
 			TIMER_RESET(state->timeSinceTyped);
-			if (flags & UIInputFlags_CallbackAlways) {
-				data.eventFlag = UIInputFlags_CallbackAlways;
+			if (flags & UIInputTextFlags_CallbackAlways) {
+				data.eventFlag = UIInputTextFlags_CallbackAlways;
 				callback(&data);
 			}
 		};
@@ -946,6 +947,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 			if (TIMER_END(hold) < 1000) {
 				if (DeshInput->KeyPressedAnyMod(Key::BACKSPACE) && buffer.size > 0 && state->cursor != 0) {
 					buffer.erase(--state->cursor);
+					bufferChanged = 1;
 				}
 				else {
 					for (int i = 0; i < Key::Key_COUNT; i++) {
@@ -953,6 +955,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 						if (DeshInput->KeyPressedAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
 							u32 ins = state->cursor++;
 							placeKey(i, ins, toPlace);
+							bufferChanged = 1;
 							break;
 						}
 					}
@@ -962,6 +965,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 				if (TIMER_END(throttle) > 50) {
 					if (DeshInput->KeyDownAnyMod(Key::BACKSPACE) && buffer.size > 0 && state->cursor != 0) {
 						buffer.erase(--state->cursor);
+						bufferChanged = 1;
 					}
 					else {
 						for (int i = 0; i < Key::Key_COUNT; i++) {
@@ -969,6 +973,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 							if (DeshInput->KeyDownAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
 								u32 ins = state->cursor++;
 								placeKey(i, ins, toPlace);
+								bufferChanged = 1;
 								break;
 							}
 						}
@@ -979,10 +984,12 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 		}
 	}
     
-	{//text box
+	vec2 dim = (dimensions.x == -1) ? vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3) : dimensions;
+
+	if(!(flags & UIInputTextFlags_NoBackground)){//text box
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = position;
-		drawCmd.dimensions = (dimensions.x == -1) ? vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3) : dimensions;
+		drawCmd.dimensions = dim;
 		drawCmd.scissorOffset = workingWinPositionPlusTitlebar;
 		drawCmd.scissorExtent = workingWinSizeMinusTitlebar;
 		drawCmd.color = color::VERY_DARK_GREY;
@@ -992,7 +999,9 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
     
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
-		drawCmd.position = position + vec2(0, (style.font->height * 1.3 - style.font->height) * 0.5);
+		drawCmd.position = position + 
+			vec2((dim.x - buffer.size * style.font->width) * style.inputTextTextAlign.x,
+				(style.font->height * 1.3 - style.font->height) * style.inputTextTextAlign.y);
 		drawCmd.text = buffer;
 		drawCmd.color = style.colors[UIStyleCol_Text];
         
@@ -1010,7 +1019,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
                   255 * (
                          cos((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000 -
                              sin((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000)) + 1) / 2);
-		drawCmd.thickness = 0.5;
+		drawCmd.thickness = 1;
         
 		workingWin.drawCmds.add(drawCmd);
 	}
@@ -1018,7 +1027,10 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 	if (moveCursor)
 		workingWin.cursor.y += style.font->height * 1.3 + style.itemSpacing.y;
     
-	if (DeshInput->KeyPressedAnyMod(Key::ENTER) || DeshInput->KeyPressedAnyMod(Key::NUMPADENTER)) {
+	if (flags & UIInputTextFlags_EnterReturnsTrue && DeshInput->KeyPressedAnyMod(Key::ENTER) || DeshInput->KeyPressedAnyMod(Key::NUMPADENTER)) {
+		return true;
+	}
+	else if (flags & UIInputTextFlags_AnyChangeReturnsTrue && bufferChanged) {
 		return true;
 	}
     
@@ -1045,11 +1057,26 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextCallba
 	return false;
 }
 
+bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
+	vec2 position = workingWin.position + workingWin.cursor + style.windowPadding - workingWin.scroll;
+	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
+
+	NextItemSize = vec2(-1, 0);
+
+	if (InputTextCall(label, buffer, maxChars, position, dimensions, nullptr, flags, 1)) {
+		getInputTextState = inputTexts.at(label);
+		return true;
+	}
+	getInputTextState = inputTexts.at(label);
+	return false;
+}
+
 bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 position, UIInputTextFlags flags) {
 	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
 	
 	NextItemSize = vec2(-1, 0);
     
+
 	if (InputTextCall(label, buffer, maxChars, position, dimensions, nullptr, flags, 0)) return true;
 	return false;
 }
@@ -1060,6 +1087,19 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 position, UI
 	NextItemSize = vec2(-1, 0);
     
 	if (InputTextCall(label, buffer, maxChars, position, dimensions, callback, flags, 0)) return true;
+	return false;
+}
+
+bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags){
+	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, workingWin.width - style.windowPadding.x * 2), style.font->height * 1.3);
+
+	NextItemSize = vec2(-1, 0);
+
+	if (InputTextCall(label, buffer, maxChars, pos, dimensions, nullptr, flags, 0)) {
+		getInputTextState = inputTexts.at(label);
+		return true; 
+	}
+	getInputTextState = inputTexts.at(label);
 	return false;
 }
 
@@ -1106,6 +1146,7 @@ void UI::Init() {
 	PushVar(UIStyleVar_ScrollAmount,        vec2(5, 5));
 	PushVar(UIStyleVar_CheckboxSize,        vec2(10, 10));
 	PushVar(UIStyleVar_CheckboxFillPadding, 2);
+	PushVar(UIStyleVar_InputTextTextAlign,  vec2(0, 0.5));
     
 	
 	initColorStackSize = colorStack.size();
