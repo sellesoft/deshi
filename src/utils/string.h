@@ -47,8 +47,8 @@ struct string{
 	void   insert(CHAR c, u32 idx);
     //returns a copy of the character at idx
     CHAR   at(u32 idx) const;
-    //returns a string including the start and end characters, end equals the end of the string (size-1) if NPOS
-    string substr(u32 start, u32 end = NPOS) const;
+    //returns a string including the start and end characters, end equals the end of the string (size-1) if npos
+    string substr(u32 start, u32 end = npos) const;
     u32    findFirstStr(const string& s) const;
     //returns first of char from offset
     u32    findFirstChar(CHAR c, u32 offset = 0) const;
@@ -288,7 +288,7 @@ inline char string::at(u32 idx) const{
 }
 
 inline string string::substr(u32 start, u32 end) const{
-    if(end == NPOS) end = size-1;
+    if(end == npos) end = size-1;
     Assert(start <= size && end <= size && start <= end, "check start/end vars");
     return string(str+start, (end-start)+1);
 }
@@ -297,36 +297,36 @@ inline u32 string::findFirstStr(const string& s) const{
     for(u32 i = 0; i < size; ++i){
         if(strncmp(str+i, s.str, s.size) == 0) return i;
     }
-    return NPOS;
+    return npos;
 }
 
 inline u32 string::findFirstChar(char c, u32 offset) const{
     for(u32 i = offset; i < size; ++i){
         if(str[i] == c) return i;
     }
-    return NPOS;
+    return npos;
 }
 
 inline u32 string::findFirstCharNot(char c) const{
     for(u32 i = 0; i < size; i++){
         if(str[i] != c) return i;
     }
-    return NPOS;
+    return npos;
 }
 
 inline u32 string::findLastChar(char c, u32 offset) const{
     Assert(offset < size);
-    for(u32 i = (size-1)-offset; i != 0; --i){
+    for(u32 i = (offset != 0 ? offset : size - 1); i != 0; --i){
         if(str[i] == c) return i;
     }
-    return NPOS;
+    return npos;
 }
 
 inline u32 string::findLastCharNot(char c) const{
     for(u32 i = size-1; i != 0; --i){
         if(str[i] != c) return i;
     }
-    return NPOS;
+    return npos;
 }
 
 inline u32 string::charCount(char c) const{
@@ -337,7 +337,7 @@ inline u32 string::charCount(char c) const{
 
 inline string string::substrToChar(char c) const{
     u32 idx = findFirstChar(c);
-    return (idx != NPOS) ? *this : string(str, idx); //!TestMe
+    return (idx != npos) ? *this : string(str, idx); //!TestMe
 }
 
 ///////////////////////////
@@ -345,12 +345,12 @@ inline string string::substrToChar(char c) const{
 ///////////////////////////
 inline string string::eatSpacesLeading(const string& text){
     u32 idx = text.findFirstCharNot(' ');
-    return (idx != NPOS) ? text.substr(idx) : string();
+    return (idx != npos) ? text.substr(idx) : string();
 }
 
 inline string string::eatSpacesTrailing(const string& text){
     u32 idx = text.findLastCharNot(' ');
-    return (idx != NPOS) ? text.substr(0, idx+1) : string();
+    return (idx != npos) ? text.substr(0, idx+1) : string();
 }
 
 #endif //DESHI_STRING_H

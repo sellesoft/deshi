@@ -207,16 +207,37 @@ local void TextCall(string text, vec2 pos, color color) {
 }
 
 //main function for wrapping, where position is starting position of text relative to the top left of the window
+//TODO(sushi) clean this up 
 inline local void WrapText(string text, vec2 pos, color color, bool move_cursor = true) {
 	using namespace UI;
+
+	//we split string by newlines and put them into here 
+	//maybe make this into its own function
+	array<string> newlined;
+
+	u32 newline = text.findFirstChar('\n');
+	if (newline != string::npos && newline != text.size - 1) {
+		string remainder = text.substr(newline + 1);
+		newlined.add(text.substr(0, newline - 1));
+		newline = remainder.findFirstChar('\n');
+		while (newline != string::npos) {
+			newlined.add(remainder.substr(0, newline - 1));
+			remainder = remainder.substr(newline + 1);
+			newline = remainder.findFirstChar('\n');
+		}
+		newlined.add(remainder);
+	}
+	else {
+		newlined.add(text);
+	}
+
 	vec2 workcur = pos;
 	
 	//apply window padding if we're not manually positioning text
-	if (move_cursor) {
-		//curwin->lastItem.initialCurPos = workcur;
+	if (move_cursor)
 		workcur += style.windowPadding - curwin->scroll;
-		
-	}
+
+	curwin->lastItem.position = workcur;
 	
 	//max characters we can place 
 	u32 maxChars = floor(((curwin->width - style.windowPadding.x) - workcur.x) / style.font->width);
@@ -224,69 +245,66 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 	//make sure max chars never equals 0
 	if (!maxChars) maxChars++;
 	
-	//we need to see if the string goes beyond the width of the window and wrap if it does
-	if (maxChars < text.size) {
-		//find closest space to split by
-        u32 splitat = text.findLastChar(' ', maxChars);
-		string nustr = text.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
-		TextCall(nustr, curwin->position + workcur, color);
-		
-		text = text.substr(nustr.size);
-		workcur.y += style.font->height + style.itemSpacing.y;
-		
-		//continue to wrap if we need to
-		while (text.size > maxChars) {
-			splitat = text.findLastChar(' ', maxChars);
-			nustr = text.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+	//wrap each string in newline array
+	for (string& t : newlined) {
+		//we need to see if the string goes beyond the width of the window and wrap if it does
+		if (maxChars < t.size) {
+			//if this is true we know item's total width is just maxChars times font width
+			curwin->lastItem.size.x = maxChars * style.font->width;
+
+
+			//find closest space to split by
+			u32 splitat = t.findLastChar(' ', maxChars);
+			string nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
 			TextCall(nustr, curwin->position + workcur, color);
-			
-			text = text.substr(nustr.size);
+
+			t = t.substr(nustr.size);
 			workcur.y += style.font->height + style.itemSpacing.y;
-			
-			if (!strlen(text.str)) break;
+
+			//continue to wrap if we need to
+			while (t.size > maxChars) {
+				splitat = t.findLastChar(' ', maxChars);
+				nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+				TextCall(nustr, curwin->position + workcur, color);
+
+				t = t.substr(nustr.size);
+				workcur.y += style.font->height + style.itemSpacing.y;
+
+				if (!strlen(t.str)) break;
+			}
+
+			//write last bit of text
+			TextCall(t, curwin->position + workcur, color);
+			workcur.y += style.font->height + style.itemSpacing.y;
+
 		}
-		
-		//write last bit of text
-		TextCall(text, curwin->position + workcur, color);
-		workcur.y += style.font->height + style.itemSpacing.y;
-		
-	}
-	else {
-		TextCall(text, curwin->position + workcur, color);
-		workcur.y += style.font->height + style.itemSpacing.y;
+		else {
+			//we have to get max string length to determine item's width here
+			curwin->lastItem.size.x = Max(style.font->width * t.size, curwin->lastItem.size.x);
+
+			TextCall(t, curwin->position + workcur, color);
+			workcur.y += style.font->height + style.itemSpacing.y;
+		}
 	}
 	
+	curwin->lastItem.size.y = workcur.y - curwin->position.y;
+
 	if (move_cursor) {
 		workcur -= style.windowPadding - curwin->scroll;
 		curwin->cursor = workcur;
 	}
+
+	
 }
 
-
+//TODO(sushi) make the NoWrap also check for newlines
 void UI::Text(string text, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
 		TextCall(text, curwin->position + curwin->cursor + style.windowPadding - curwin->scroll, style.colors[UIStyleCol_Text]);
 		curwin->cury += style.font->height + 1;
 	}
 	else {
-		//we check for \n here and call WrapText on each as if they were separate text calls
-		//i could probably do this in wrap text, but i decided to do it here for now
-		
-        u32 newline = text.findFirstChar('\n');
-		if (newline != string::npos && newline != text.size - 1) {
-			string remainder = text.substr(newline + 1);
-			WrapText(text.substr(0, newline - 1), curwin->cursor, style.colors[UIStyleCol_Text]);
-			newline = remainder.findFirstChar('\n');
-			while (newline != string::npos) {
-				WrapText(remainder.substr(0, newline - 1), curwin->cursor, style.colors[UIStyleCol_Text]);
-				remainder = remainder.substr(newline + 1);
-				newline = remainder.findFirstChar('\n');
-			}
-			WrapText(remainder, curwin->cursor, style.colors[UIStyleCol_Text]);
-		}
-		else {
-			WrapText(text, curwin->cursor, style.colors[UIStyleCol_Text]);
-		}
+		WrapText(text, curwin->cursor, style.colors[UIStyleCol_Text]);
 	}
 }
 
@@ -295,22 +313,7 @@ void UI::Text(string text, vec2 pos, UITextFlags flags) {
 		TextCall(text, curwin->position + pos - curwin->scroll, style.colors[UIStyleCol_Text]);
 	}
 	else {
-        u32 newline = text.findFirstChar('\n');
-		if (newline != string::npos && newline != text.size - 1) {
-			string remainder = text.substr(newline + 1);
-			WrapText(text.substr(0, newline - 1), pos, style.colors[UIStyleCol_Text], 0);
-			newline = remainder.findFirstChar('\n');
-			while (newline != string::npos) {
-				WrapText(remainder.substr(0, newline - 1), pos, style.colors[UIStyleCol_Text], 0);
-				remainder = remainder.substr(newline + 1);
-				newline = remainder.findFirstChar('\n');
-			}
-			WrapText(remainder, pos, style.colors[UIStyleCol_Text], 0);
-		}
-		else {
-			WrapText(text, pos, style.colors[UIStyleCol_Text], 0);
-		}
-		
+		WrapText(text, pos, style.colors[UIStyleCol_Text], 0);
 	}
 }
 
@@ -320,21 +323,7 @@ void UI::Text(string text, color color, UITextFlags flags) {
 		curwin->cury += style.font->height + 1;
 	}
 	else {
-        u32 newline = text.findFirstChar('\n');
-		if (newline != string::npos && newline != text.size - 1) {
-			string remainder = text.substr(newline + 1);
-			WrapText(text.substr(0, newline - 1), curwin->cursor, color);
-			newline = remainder.findFirstChar('\n');
-			while (newline != string::npos) {
-				WrapText(remainder.substr(0, newline - 1), curwin->cursor, color);
-				remainder = remainder.substr(newline + 1);
-				newline = remainder.findFirstChar('\n');
-			}
-			WrapText(remainder, curwin->cursor, color);
-		}
-		else {
-			WrapText(text, curwin->cursor, color);
-		}
+		WrapText(text, curwin->cursor, color);
 	}
 	
 }
@@ -344,24 +333,7 @@ void UI::Text(string text, vec2 pos, color color, UITextFlags flags) {
 		TextCall(text, curwin->position + pos - curwin->scroll, color);
 	}
 	else {
-        //we check for \n here and call WrapText on each as if they were separate text calls
-		//i could probably do this in wrap text, but i decided to do it here for now
-        
-        u32 newline = text.findFirstChar('\n');
-		if (newline != string::npos && newline != text.size - 1) {
-			string remainder = text.substr(newline + 1);
-			WrapText(text.substr(0, newline - 1), pos, color);
-			newline = remainder.findFirstChar('\n');
-			while (newline != string::npos) {
-				WrapText(remainder.substr(0, newline - 1), pos, color);
-				remainder = remainder.substr(newline + 1);
-				newline = remainder.findFirstChar('\n');
-			}
-			WrapText(remainder, pos, color);
-		}
-		else {
-			WrapText(text, pos, color);
-		}
+		WrapText(text, pos, color);
 	}
 }
 
