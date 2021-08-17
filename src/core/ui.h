@@ -2,6 +2,19 @@
 #ifndef DESHI_UI_H
 #define DESHI_UI_H
 
+/*
+
+  
+  UI functions are Immediate Mode, so they only last 1 frame
+  UI was initially designed almost entirely after ImGui in order to allow us to use it like you would ImGui
+  but without all the stuff from ImGui we don't really need in an engine
+  most of the code is written using ImGui as reference however some design is different and I may
+  come back here and write out what is and isnt
+
+
+
+*/
+
 #include "renderer.h"
 #include "../defines.h"
 #include "../math/VectorMatrix.h"
@@ -270,11 +283,7 @@ enum UIRowFlags_ {
 }; typedef u32 UIRowFlags;
 
 
-//functions in this namespace are Immediate Mode, so they only last 1 frame
-//UI was initially designed almost entirely after ImGui in order to allow us to use it like you would ImGui
-//but without all the stuff from ImGui we don't really need in an engine
-//most of the code is written using ImGui as reference however some design is different and I may
-//come back here and write out what is and isnt
+
 namespace UI {
 	
 	//helpers
@@ -288,7 +297,6 @@ namespace UI {
 
 	//Row commands
 	void Row(u32 num_items, UIRowFlags flags = 0);
-
     
 	//primitives
 	void Rect(vec2 pos, vec2 dimen, color color = color::WHITE);
@@ -301,7 +309,7 @@ namespace UI {
 	void Text(string text, color color, UITextFlags flags = 0);
 	void Text(string text, vec2 pos, color color, UITextFlags flags = 0);
     
-	//widgets
+	//items
 	//NOTE: I probably should make a SetNextItemPos as well, but I like being able to do posiiton inline, not sure yet
 	void SetNextItemSize(vec2 size);
     
