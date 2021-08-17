@@ -9,42 +9,44 @@ namespace Cmd{
 #define CMDSTART(name, usage) last_cmd_usage = usage; auto deshi__cmd__##name = [](array<cstring>& args) -> void
 #define CMDEND(name, desc) ; commands.add({deshi__cmd__##name, #name, desc, last_cmd_usage})
         
-        CMDSTART(add, "add <int> <int>"){
-            if(args.count != 2){
-                Console2::Log("Error: 'add' requires exactly 2 arguments");
-                return;
-            }
-            
-            int i0 = atoi(args[0].str);
-            int i1 = atoi(args[1].str);
-            Console2::Log(TOSTRING(i0," + ",i1," = ", i0+i1));
-        }CMDEND(add, "Adds two numbers together");
-        
-        CMDSTART(daytime, "daytime"){
-            Console2::Log(DeshTime->FormatDateTime("{w} {M}/{d}/{y} {h}:{m}:{s}").c_str());
-        }CMDEND(daytime, "");
-        
-        CMDSTART(time_engine, "time_engine"){
-            Console2::Log(DeshTime->FormatTickTime("Time:   {t}ms Window:{w}ms Input:{i}ms Admin:{a}ms\n"
-                                                   "Console:{c}ms Render:{r}ms Frame:{f}ms Delta:{d}ms").c_str());
-        }CMDEND(time_engine, "");
-        
-        CMDSTART(list, "list"){
-            string commands_list;
-            forE(commands){
-                commands_list += it->name;
-                commands_list += "\n";
-            }
-            Console2::Log(commands_list);
-        }CMDEND(list, "");
-        
-        CMDSTART(help, "help <command>"){
-            if(args.count == 0){
-                Console2::Log("Use 'help <command>' to get a description and usage of the command");
-                return;
-            }
-            
-        }CMDEND(help, "");
+        //these were preventing me from compiling
+        // 
+        //CMDSTART(add, "add <int> <int>"){
+        //    if(args.count != 2){
+        //        Console2::Log("Error: 'add' requires exactly 2 arguments");
+        //        return;
+        //    }
+        //    
+        //    int i0 = atoi(args[0].str);
+        //    int i1 = atoi(args[1].str);
+        //    Console2::Log(TOSTRING(i0," + ",i1," = ", i0+i1));
+        //}CMDEND(add, "Adds two numbers together");
+        //
+        //CMDSTART(daytime, "daytime"){
+        //    Console2::Log(DeshTime->FormatDateTime("{w} {M}/{d}/{y} {h}:{m}:{s}").c_str());
+        //}CMDEND(daytime, "");
+        //
+        //CMDSTART(time_engine, "time_engine"){
+        //    Console2::Log(DeshTime->FormatTickTime("Time:   {t}ms Window:{w}ms Input:{i}ms Admin:{a}ms\n"
+        //                                           "Console:{c}ms Render:{r}ms Frame:{f}ms Delta:{d}ms").c_str());
+        //}CMDEND(time_engine, "");
+        //
+        //CMDSTART(list, "list"){
+        //    string commands_list;
+        //    forE(commands){
+        //        commands_list += it->name;
+        //        commands_list += "\n";
+        //    }
+        //    Console2::Log(commands_list);
+        //}CMDEND(list, "");
+        //
+        //CMDSTART(help, "help <command>"){
+        //    if(args.count == 0){
+        //        Console2::Log("Use 'help <command>' to get a description and usage of the command");
+        //        return;
+        //    }
+        //    
+        //}CMDEND(help, "");
         
 #undef CMDSTART
 #undef CMDEND

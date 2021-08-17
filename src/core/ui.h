@@ -149,6 +149,7 @@ struct UIDrawCmd {
 	
 	//rectangles have dimensions
 	vec2 dimensions;
+
 	//lines have a second position
 	vec2 position2;
 	
@@ -165,15 +166,35 @@ struct UIDrawCmd {
 	vec2 scissorExtent = vec2(-1,0);
 };
 
-//stores information about an item such as a button, checkbox, or input text box
-struct UIItemInfo {
-	vec2 position; // in screen space NOT window space
+enum UIItemType : u32 {
+	UIItemType_Base,      //base window draw commands
+	UIItemType_Abstract,  //any single drawcall such as a line, rectangle, circle, etc
+	UIItemType_Text,      //Text()
+	UIItemType_InputText, //InputText()
+	UIItemType_Button,    //Button()
+	UIItemType_Checkbox,  //Checkbox()
+};
+
+//an item such as a button, checkbox, or input text
+//this is meant to group draw commands and provide a bounding box for them, using a position
+//and overall size. 
+//this does have a drawback, in our final drawing loop we have to add one more for loop to loop
+//over all items and then their draw calls.
+//however this method of storing things shoudl help with positioning items and such later on
+struct UIItem {
+	//these 3 elements can always be initalized by simply doing
+	//UIItem item{ UIItemType_TYPE, curwin->cursor, style };
+	//when you create the item in the cpp
+	UIItemType type;
+	vec2       initialCurPos; //cursor position before this item moved it 
+	UIStyle    style;         //style at the time of making the item
+
+	
+	vec2 position; //relative to the window its being held in
 	vec2 size;
 
-	//cursor position before this item moved it 
-	vec2 initialCurPos;
-
-	u32 drawCmdCount = 0;
+	//all draw command positions are relative to the items position
+	array<UIDrawCmd> drawCmds;
 };
 
 //A window is meant to be a way to easily position widgets relative to a parent
@@ -182,46 +203,37 @@ struct UIWindow {
 	
 	union {
 		vec2 position;
-		struct {
-			float x;
-			float y;
-		};
+		struct { float x; float y; };
 	};
 	
 	union {
 		vec2 dimensions;
-		struct {
-			float width;
-			float height;
-		};
+		struct { float width; float height; };
 	};
 	
 	union {
 		vec2 scroll;
-		struct {
-			float scx;
-			float scy;
-		};
+		struct { float scx; float scy; };
 	};
 	
 	vec2 maxScroll;
 	
 	//interior window cursor that's relative to its upper left corner
-	//if the window has a titlebar then the cursor's origin does not include the title bar
-	//TODO(sushi, Ui) maybe make a window flag to change this
 	union {
 		vec2 cursor;
-		struct {
-			float curx;
-			float cury;
-		};
+		struct { float curx; float cury; };
 	};
 	
 	UIWindowFlags flags;
 	
-	//the difference between these two is that baseDrawCmds holds the commands for drawing the base of the window, eg the background, title, border, etc.
-	array<UIDrawCmd> baseDrawCmds;
-	array<UIDrawCmd> drawCmds;
+
+	//base items are always drawn before items and is just a way to defer drawing 
+	//base window stuff to EndWindow(), so we can do dynamic sizing
+	array<UIItem> items;
+	array<UIItem> baseItems;
+	
+	UIItem* hoveredItem = 0;
+	
 	
 	bool hovered = false;
 	bool titleHovered = false;
@@ -236,49 +248,8 @@ struct UIWindow {
 	//if the user changes stuff before ending the window and therefore this should be used carefully!!
 	UIStyle style;
 
-	//im not sure if i want to store a stack of these or not yet
-	UIItemInfo lastItem;
-    
 	UIWindow() {};
-	
-	//I have to do this because I'm using an anonymous struct inside a union and C++ sucks
-	//actually i think its literally just cause im using a union, C++ blows 
-	UIWindow(const UIWindow& cop) {
-		name = cop.name;
-		position = cop.position;
-		dimensions = cop.dimensions;
-		scroll = cop.scroll;
-		maxScroll = cop.maxScroll;
-		cursor = cop.cursor;
-		flags = cop.flags;
-		drawCmds = cop.drawCmds;
-		baseDrawCmds = cop.baseDrawCmds;
-		hovered = cop.hovered;
-		titleHovered = cop.titleHovered;
-		minimized = cop.minimized;
-		hidden = cop.hidden;
-		titleBarHeight = cop.titleBarHeight;
-		style = cop.style;
-	}
-	
-	UIWindow& operator= (const UIWindow& cop) {
-		name = cop.name; //inst 136
-		position = cop.position;
-		dimensions = cop.dimensions;
-		scroll = cop.scroll;
-		maxScroll = cop.maxScroll;
-		cursor = cop.cursor;
-		flags = cop.flags;
-		drawCmds = cop.drawCmds; //inst 139, 142, 145, 148, 151, 154, 157, 160 valid
-		baseDrawCmds = cop.baseDrawCmds;
-		hovered = cop.hovered;
-		titleHovered = cop.titleHovered;
-		minimized = cop.minimized;
-		hidden = cop.hidden;
-		titleBarHeight = cop.titleBarHeight;
-		style = cop.style;
-		return *this;
-	}
+
 };
 
 
@@ -303,7 +274,6 @@ namespace UI {
 	void Rect(vec2 pos, vec2 dimen, color color = color::WHITE);
 	void RectFilled(vec2 pos, vec2 dimen, color color = color::WHITE);
     
-	void Line(f32 x1, f32 y1, f32 x2, f32 y2, float thickness = 1, color color = color::WHITE);
 	void Line(vec2 start, vec2 end, float thickness = 1, color color = color::WHITE);
     
 	void Text(string text, UITextFlags flags = 0);
