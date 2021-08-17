@@ -175,12 +175,18 @@ enum UIItemType : u32 {
 	UIItemType_Checkbox,  //Checkbox()
 };
 
-//an item such as a button, checkbox, or input text
-//this is meant to group draw commands and provide a bounding box for them, using a position
-//and overall size. 
-//this does have a drawback, in our final drawing loop we have to add one more for loop to loop
-//over all items and then their draw calls.
-//however this method of storing things shoudl help with positioning items and such later on
+// an item such as a button, checkbox, or input text
+// this is meant to group draw commands and provide a bounding box for them, using a position
+// and overall size. an items position is relative to the window it was created in and all of its
+// drawcall positions are relative to itself
+// 
+// it also keeps track of certain things when it was created such as where the cursor 
+// was before it moved it and all the style options it used to create itself.
+// this is useful for when we have to look back at previous items to position a new one
+// 
+// this does have a drawback, in our final drawing loop we have to add one more for loop to loop
+// over all items and then their draw calls.
+// however this method of storing things shoudl help with positioning items and such later on
 struct UIItem {
 	//these 3 elements can always be initalized by simply doing
 	//UIItem item{ UIItemType_TYPE, curwin->cursor, style };
@@ -197,7 +203,9 @@ struct UIItem {
 	array<UIDrawCmd> drawCmds;
 };
 
-//A window is meant to be a way to easily position widgets relative to a parent
+// a window is a collection of items and items are a collection of drawcalls.
+// item positions are relative to the window's upper left corner.
+// drawcall positions are relative to the item's upper left corner.
 struct UIWindow {
 	string name;
 	
@@ -219,6 +227,7 @@ struct UIWindow {
 	vec2 maxScroll;
 	
 	//interior window cursor that's relative to its upper left corner
+	//this places items and not draw calls
 	union {
 		vec2 cursor;
 		struct { float curx; float cury; };
@@ -246,11 +255,19 @@ struct UIWindow {
 	//this is the state of style when EndWindow() is called for the window
 	//meaning the style for elements before the last bunch could be different
 	//if the user changes stuff before ending the window and therefore this should be used carefully!!
+
+	//TODO decide if this is necessary anymore or not since we have style on items now
 	UIStyle style;
 
 	UIWindow() {};
 
 };
+
+enum UIRowFlags_ {
+	UIRowFlags_NONE = 0,
+	UIRowFlags_Fit  = 1 << 0,
+
+}; typedef u32 UIRowFlags;
 
 
 //functions in this namespace are Immediate Mode, so they only last 1 frame
@@ -267,7 +284,10 @@ namespace UI {
 	void    SameLine();
 	vec2    GetLastItemPos();
 	vec2    GetLastItemSize();
+	vec2    GetLastItemScreenPos();
 
+	//Row commands
+	void Row(u32 num_items, UIRowFlags flags = 0);
 
     
 	//primitives
