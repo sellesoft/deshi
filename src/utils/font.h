@@ -12,10 +12,6 @@
 #include "../math/Math.h"
 #include "../utils/utils.h"
 
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "../external/stb/stb_truetype.h"
-
-
 static string hexCharToBin(char c) {
 	switch (toupper(c)) { //TODO(sushi, Cl) make it so we can return a str literal in a function that returns string
 		case '0': return string("0000");
@@ -300,16 +296,16 @@ struct Font {
 	}	
 	
 	void load_ttf_font(const char* fontname) {
-		stbtt_fontinfo info;
-		u8* bitmap;
-		u8 buffer[1 << 25];
-		
-		string path = string(Assets::dirFonts().c_str()) + fontname;
-		
-		//read the actual file into the buffer
-		fread(buffer, 1, 1 << 25, fopen(path.str, "rb"));
-		
-		stbtt_InitFont(&info, buffer, stbtt_GetFontOffsetForIndex(buffer, 0));
+		//stbtt_fontinfo info;
+		//u8* bitmap;
+		//u8 buffer[1 << 25];
+		//
+		//string path = string(Assets::dirFonts().c_str()) + fontname;
+		//
+		////read the actual file into the buffer
+		//fread(buffer, 1, 1 << 25, fopen(path.str, "rb"));
+		//
+		//stbtt_InitFont(&info, buffer, stbtt_GetFontOffsetForIndex(buffer, 0));
 		//
 		//int w = 6, h = 11;
 		//

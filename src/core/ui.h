@@ -23,6 +23,20 @@ enum UIStyleVar : u32 {
 	UIStyleVar_COUNT
 };
 
+global_ const char* styleVarStr[] = {
+	"UIStyleVar_WindowPadding",
+	"UIStyleVar_ItemSpacing",
+	"UIStyleVar_WindowBorderSize",
+	"UIStyleVar_TitleBarHeight",
+	"UIStyleVar_TitleTextAlign",
+	"UIStyleVar_ScrollAmount",
+	"UIStyleVar_CheckboxSize",
+	"UIStyleVar_CheckboxFillPadding",
+	"UIStyleVar_InputTextTextAlign",
+	"UIStyleVar_Font",
+	"UIStyleVar_COUNT"
+};
+
 enum UIStyleCol : u32 {
 	UIStyleCol_Text,
 	UIStyleCol_WindowBg,
@@ -151,6 +165,17 @@ struct UIDrawCmd {
 	vec2 scissorExtent = vec2(-1,0);
 };
 
+//stores information about an item such as a button, checkbox, or input text box
+struct UIItemInfo {
+	vec2 position; // in screen space NOT window space
+	vec2 size;
+
+	//cursor position before this item moved it 
+	vec2 initialCurPos;
+
+	u32 drawCmdCount = 0;
+};
+
 //A window is meant to be a way to easily position widgets relative to a parent
 struct UIWindow {
 	string name;
@@ -194,10 +219,7 @@ struct UIWindow {
 	
 	UIWindowFlags flags;
 	
-	//the difference between these two is that baseDrawCmds holds the commands for drawing the 
-	//base of the window, eg the background, title, border, etc.
-	//this way I can regenerate the window's base properties if I need to
-	//TODO(sushi, Ui) maybe implement this ^
+	//the difference between these two is that baseDrawCmds holds the commands for drawing the base of the window, eg the background, title, border, etc.
 	array<UIDrawCmd> baseDrawCmds;
 	array<UIDrawCmd> drawCmds;
 	
@@ -213,6 +235,9 @@ struct UIWindow {
 	//meaning the style for elements before the last bunch could be different
 	//if the user changes stuff before ending the window and therefore this should be used carefully!!
 	UIStyle style;
+
+	//im not sure if i want to store a stack of these or not yet
+	UIItemInfo lastItem;
     
 	UIWindow() {};
 	
@@ -265,8 +290,14 @@ struct UIWindow {
 namespace UI {
 	
 	//helpers
-	vec2 CalcTextSize(string text);
-	void SetNextItemActive();
+	vec2    CalcTextSize(string text);
+	void    SetNextItemActive();
+	UIStyle GetStyle();
+	void    SameLine();
+	vec2    GetLastItemPos();
+	vec2    GetLastItemSize();
+
+
     
 	//primitives
 	void Rect(vec2 pos, vec2 dimen, color color = color::WHITE);

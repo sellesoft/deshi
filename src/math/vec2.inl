@@ -1,3 +1,4 @@
+#include "vector.h"
 #pragma once
 #ifndef DESHI_VEC2_INL
 #define DESHI_VEC2_INL
@@ -253,5 +254,6 @@ inline vec2 vec2::
 yAdd(float add) const{
 	return vec2(x, y + add);
 }
+
 
 #endif //DESHI_VEC2_INL

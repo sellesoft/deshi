@@ -42,6 +42,12 @@ struct map {
 	Value* atIdx(u32 index){
 		return &data[index];
 	}
+
+	Value& operator[](const Key& key) {
+		u32 hashed = HashStruct{}(key);
+		forI(hashes.count) { if (hashed == hashes[i]) { return data[i]; } }
+		throw "nokey";
+	}
 	
 	//returns index of added or existing key
 	u32 add(const Key& key){

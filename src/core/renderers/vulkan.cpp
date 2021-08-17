@@ -3143,14 +3143,14 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 	}
 }
 
-//default thickness 0.5 for now
 void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	if (color.a == 0) return;
 	
-	DrawLineUI(pos.xAdd(-1),               pos + dimensions.ySet(0).xAdd(1),  1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos,                        pos + dimensions.xSet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions,           pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI((pos + dimensions).xAdd(1), pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
+	//top, left, right, bottom
+	DrawLineUI(pos.xAdd(-1),     pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
+	DrawLineUI(pos,              pos + dimensions.xSet(0),          1, color, scissorOffset, scissorExtent);
+	DrawLineUI(pos + dimensions, pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
+	DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
     
 }
 
