@@ -4,7 +4,7 @@ namespace Cmd{
     ///////////////////
     array<Command> commands;
     array<Alias> aliases;
-    char* last_cmd_desc;
+    const char* last_cmd_desc;
     
     void AddDeshiCommands(){
 #define CMDSTART(name, desc) last_cmd_desc = desc; auto deshi__cmd__##name = [](array<cstring>& args) -> void
@@ -70,7 +70,7 @@ namespace Cmd{
             
             //check if name is used by a command
             forE(commands){
-                if(strncmp(it->name.str, args[0].str, it->name.size) == 0){
+                if((it->name.size == args[0].count) && (strncmp(it->name.str, args[0].str, it->name.size) == 0)){
                     Console2::Log("Error: Aliases can't use the same name as an existing command");
                     return;
                 }
@@ -272,7 +272,7 @@ namespace Cmd{
         CMDSTART(quit, "Exits the application"){
             DeshWindow->Close();
         }CMDEND(quit);
-        
+ 
 #undef CMDSTART
 #undef CMDEND
     }

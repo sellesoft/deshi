@@ -3143,6 +3143,8 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 	}
 }
 
+//this func is kind of scuffed i think because of the line thickness stuff when trying to draw
+//straight lines, see below
 void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	if (color.a == 0) return;
 	
@@ -3154,6 +3156,8 @@ void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
     
 }
 
+//TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
+//when drawing them straight
 void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
 	if (color.a == 0) return;
     
