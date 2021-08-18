@@ -701,7 +701,8 @@ CMDSTARTA(window_resizable, args.size() == 1){
 }CMDEND("window_resizable <resizable:Boolean>");
 
 CMDFUNC(window_info){
-	return DeshWindow->str();
+	//return DeshWindow->str();
+    return "";
 }
 
 CMDSTARTA(mat_texture, args.size() == 3){

@@ -122,7 +122,8 @@ namespace Console2{
     //    ^c=cyan^/^c^^c=dcyan^\\^c^ - reference
     //    ^c=red^red^c^white^c=blue^blue^c^
     //TODO(delle) this might break if the string doesnt end with \n
-    void Log(string message){
+    void Log(const string& _message){
+        string message = _message;
         message += "\n";
         
         int special_start_idx = -1, special_stop_idx = -1;

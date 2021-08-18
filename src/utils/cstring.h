@@ -10,7 +10,7 @@ struct cstring{
     
     inline char operator[](u32 idx){ return str[idx]; }
     inline explicit operator bool(){ return count; }
-    inline bool operator==(cstring s){ return (str==s.str) && (count==s.count); }
+    inline bool operator==(cstring s){ return (count==s.count) && (strncmp(str, s.str, count) == 0); }
 };
 
 global_ inline void
@@ -21,6 +21,18 @@ advance(cstring* s, u64 count){
 global_ inline cstring 
 eat_until_char(cstring s, char c){
     for(u64 i=0; i<s.count; ++i){ if(s[i] == c){ return cstring{s.str, i}; } }
+    return cstring{};
+}
+
+global_ inline cstring 
+eat_until_char_skip_quotes(cstring s, char c){
+    bool in_quotes = false;
+    for(u64 i=0; i<s.count; ++i){ 
+        if(s[i] == '\"') in_quotes = !in_quotes;
+        if(!in_quotes && s[i] == c){ 
+            return cstring{s.str, i}; 
+        }
+    }
     return cstring{};
 }
 

@@ -5,8 +5,6 @@
 #include "../defines.h"
 #include "../math/vector.h"
 
-#include <string>
-
 struct Input;
 struct GLFWwindow;
 struct GLFWmonitor;
@@ -58,8 +56,6 @@ struct Window{
 	void UpdateResizable(bool resizable);
 	void Close();
 	void UpdateTitle(const char* title);
-	
-	std::string str();
 };
 
 //global_ window pointer

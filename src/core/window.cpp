@@ -78,7 +78,7 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	_width = width; _height = height;
 	
 	UpdateDisplayMode(displayMode);
-
+    
 	glfwSetInputMode(window, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
 	
 	//keyboard mappings
@@ -329,30 +329,4 @@ void Window::Close() {
 
 void Window::UpdateTitle(const char* title){
 	glfwSetWindowTitle(this->window, title);
-}
-
-std::string Window::str(){
-	std::string dispMode;
-	switch (displayMode) {
-		case(DisplayMode_Windowed):   { dispMode = "Windowed"; }break;
-		case(DisplayMode_Borderless): { dispMode = "Borderless Windowed"; }break;
-		case(DisplayMode_Fullscreen): { dispMode = "Fullscreen"; }break;
-	}
-	std::string cursMode;
-	switch (cursorMode) {
-		case(CursorMode_Default):     { cursMode = "Default"; }break;
-		case(CursorMode_FirstPerson): { cursMode = "First Person"; }break;
-		case(CursorMode_Hidden):      { cursMode = "Hidden"; }break;
-	}
-	return TOSTDSTRING("Window Info"
-					   "\n    Window Position: ", x, ",", y,
-					   "\n    Window Dimensions: ", width, "x", height,
-					   "\n    Screen Dimensions: ", screenWidth, "x", screenHeight,
-					   "\n    Refresh Rate: ", refreshRate,
-					   "\n    Screen Refresh Rate: ", screenRefreshRate,
-					   "\n    Display Mode: ", dispMode,
-					   "\n    Cursor Mode: ", cursMode,
-					   "\n    Raw Input: ", rawInput,
-					   "\n    Resizable: ", resizable,
-					   "\n    Restores: ", restoreX, ",", restoreY, " ", restoreW, "x", restoreH);
 }

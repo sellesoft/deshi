@@ -3,7 +3,6 @@
 #define DESHI_CONSOLE2_H
 
 #include "../defines.h"
-#include <string>
 
 enum ConsoleState_{
 	ConsoleState_Closed, 
@@ -18,7 +17,7 @@ namespace Console2{
 	
 	bool IsOpen();
 	void Toggle(ConsoleState new_state);
-	void Log(string message);
+	void Log(const string& message);
 	
 	void Init();
 	void Cleanup();

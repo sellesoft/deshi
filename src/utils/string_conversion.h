@@ -26,17 +26,17 @@ global_ string to_string(cstring x){
 
 global_ string to_string(s32 x){
     string s;
-    s.size = (x == 0) ? 1 : (upt)((floor(log10(x)) + 1) * sizeof(char));
-    s.str  = (char*)malloc(s.size+1);
-    sprintf(s.str, "%d", x);
+    s.size = snprintf(nullptr, 0, "%d", x);
+    s.str  = (char*)calloc(1, s.size+1);
+    snprintf(s.str, s.size, "%d", x);
     return s;
 }
 
 global_ string to_string(u32 x){
     string s;
-    s.size = (x == 0) ? 1 : (upt)((floor(log10(x)) + 1) * sizeof(char));
-    s.str  = (char*)malloc(s.size+1);
-    sprintf(s.str, "%d", x);
+    s.size = snprintf(nullptr, 0, "%d", x);
+    s.str  = (char*)calloc(1, s.size+1);
+    snprintf(s.str, s.size, "%d", x);
     return s;
 }
 
