@@ -565,7 +565,8 @@ vec2 CalcWindowMinSize() {
 	return max + style.windowPadding;
 }
 
-#if 0 Old titlebar code for when i reimplement it as its own call
+//Old titlebar code for when i reimplement it as its own call
+#if 0 
  
 
 		//draw title bar
