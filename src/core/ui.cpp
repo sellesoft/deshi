@@ -203,24 +203,31 @@ void UI::Row(u32 num_items, UIRowFlags flags){
 //  wether or not the cursor should be moved there or somewhere else based on certain conditions
 //  such as if we're placing items in a row
 //  it also (for now) repositions items into a row if that's supposed to be done
-void AdvanceCursor(vec2 nupos){
+inline void AdvanceCursor(vec2 nupos){
 	//if we're finished setting up a row we position everything according to the flag
 	if (rowCount && !rowItemsLeft) {
-		//f32 xOffset = 0;
 
-		for (int i = rowCount; i > 0; i--) {
-			UIItem* item = &curwin->items[curwin->items.count - i];
-			UIItem* litem = (i != rowCount ? &curwin->items[curwin->items.count - i - 1] : 0);
-			
-
-			if (litem) {
-				item->position.y = litem->position.y;
-				item->position.x = litem->position.x + litem->size.x + style.itemSpacing.x;
+		array<UIItem*> itemsToAlign;
+		
+	//TODO(sushi) find a way to combine these two for loops
+		//we have to look back and filter out any non-rowed item the user may have 
+		//used during the creation of the row such as lines or rectangles
+		for(int idx = 1; rowCount; idx++){
+			UIItem* item = &curwin->items[curwin->items.count - idx];
+			if (item->type != UIItemType_Abstract) {
+				itemsToAlign.insert(item,0);
+				rowCount--;
 			}
 		}
-		UIItem* item = &curwin->items[curwin->items.count - 1];
+
+		for (int i = 1; i < itemsToAlign.count; i++) {
+			itemsToAlign[i]->position.y = itemsToAlign[i - 1]->position.y;
+			itemsToAlign[i]->position.x = itemsToAlign[i-1]->position.x + itemsToAlign[i-1]->size.x + style.itemSpacing.x;
+		}
+
+		UIItem* item = itemsToAlign[0];
 	
-		curwin->cursor = vec2{ 0, item->position.y + item->size.y + style.itemSpacing.y - (item->style.windowPadding.y - curwin->scroll.y) };
+		curwin->cursor = vec2{ 0, item->position.y + item->size.y + style.itemSpacing.y - item->style.windowPadding.y + curwin->scroll.y };
 
 		rowCount = 0;
 	}
@@ -382,6 +389,11 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 	}
 	
 	item.size.y = workcur.y - curwin->position.y;
+
+	if (NextItemSize.x != -1)
+		item.size = NextItemSize;
+
+
 	CalcItemSize(item);
 	curwin->items.add(item);
 
@@ -391,18 +403,22 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 		AdvanceCursor(vec2{ curwin->cursor.x, curwin->cursor.y + item.size.y + style.itemSpacing.y });
 	}
 
+	NextItemSize = vec2{ -1, 0 };
 }
 
 //TODO(sushi) make NoWrap also check for newlines
 void UI::Text(string text, UITextFlags flags) {
-	
-	
 	if (flags & UITextFlags_NoWrap) {
 		UIItem item{ UIItemType_Text, curwin->cursor, style };
-		TextCall(text, curwin->position + curwin->cursor + style.windowPadding - curwin->scroll, style.colors[UIStyleCol_Text], item);
-		curwin->cury += style.font->height + style.itemSpacing.y;
-		curwin->curx = 0;
+		item.position = curwin->cursor + style.windowPadding - curwin->scroll;
 
+		if (NextItemSize.x != -1) item.size = NextItemSize;
+		else                      item.size = UI::CalcTextSize(text);
+		
+		TextCall(text, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
+		if (rowCount && rowItemsLeft) rowItemsLeft--;
+		curwin->items.add(item);
+		AdvanceCursor(vec2{ 0, curwin->cury + style.font->height + style.itemSpacing.y });
 	}
 	else {
 		WrapText(text, curwin->cursor, style.colors[UIStyleCol_Text]);
@@ -412,7 +428,13 @@ void UI::Text(string text, UITextFlags flags) {
 void UI::Text(string text, vec2 pos, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
 		UIItem item{ UIItemType_Text, curwin->cursor, style };
-		TextCall(text, curwin->position + pos - curwin->scroll, style.colors[UIStyleCol_Text], item);
+		item.position = pos - curwin->scroll;
+
+		if (NextItemSize.x != -1) item.size = NextItemSize;
+		else                      item.size = UI::CalcTextSize(text);
+
+		TextCall(text, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
+		curwin->items.add(item);
 	}
 	else {
 		WrapText(text, pos, style.colors[UIStyleCol_Text], 0);
@@ -422,21 +444,32 @@ void UI::Text(string text, vec2 pos, UITextFlags flags) {
 void UI::Text(string text, color color, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
 		UIItem item{ UIItemType_Text, curwin->cursor, style };
-		TextCall(text, curwin->position + curwin->cursor + style.windowPadding - curwin->scroll, color, item);
-		curwin->cury += style.font->height + style.itemSpacing.y;
-		curwin->curx = 0;
+		item.position = curwin->cursor + style.windowPadding - curwin->scroll;
+		
+		if (NextItemSize.x != -1) item.size = NextItemSize;
+		else                      item.size = UI::CalcTextSize(text);
 
+		TextCall(text, vec2{ 0,0 }, color, item);
+		if (rowCount && rowItemsLeft) rowItemsLeft--;
+		curwin->items.add(item);
+		AdvanceCursor(vec2{ 0, curwin->cury + style.font->height + style.itemSpacing.y });
 	}
 	else {
 		WrapText(text, curwin->cursor, color);
 	}
-	
+
 }
 
 void UI::Text(string text, vec2 pos, color color, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
 		UIItem item{ UIItemType_Text, curwin->cursor, style };
-		TextCall(text, curwin->position + pos - curwin->scroll, color, item);
+		item.position = pos - curwin->scroll;
+
+		if (NextItemSize.x != -1) item.size = NextItemSize;
+		else                      item.size = UI::CalcTextSize(text);
+
+		TextCall(text, vec2{ 0,0 }, color, item);
+		curwin->items.add(item);
 	}
 	else {
 		WrapText(text, pos, color);
@@ -870,10 +903,22 @@ void UI::Checkbox(string label, bool* b) {
 //@InputText
 
 //final input text
-bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, vec2 dimensions, UIInputTextCallback callback, UIInputTextFlags flags, bool moveCursor) {
+bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, UIInputTextCallback callback, UIInputTextFlags flags, bool moveCursor) {
 	UIItem item{ UIItemType_InputText, curwin->cursor, style };
 
 	UIInputTextState* state;
+
+	vec2 dim;
+	if (flags & UIInputTextFlags_FitSizeToText) {
+		dim = UI::CalcTextSize(buffer);
+	}
+	else if (NextItemSize.x != -1) {
+		dim = NextItemSize;
+		NextItemSize = vec2{ -1,0 };
+	}
+	else {
+		dim = vec2(Math::clamp(100, 0, Math::clamp(curwin->width - style.windowPadding.x * 2, 1, FLT_MAX)), style.font->height * 1.3);
+	}
     
 	if (!(state = inputTexts.at(label))) {
 		state = inputTexts.atIdx(inputTexts.add(label));
@@ -901,7 +946,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
     
 	//check for mouse click or next active to set active 
 	if (NextActive || DeshInput->KeyPressedAnyMod(MouseButton::LEFT)) {
-		if (NextActive || Math::PointInRectangle(DeshInput->mousePos, curwin->position + position, dimensions)) {
+		if (NextActive || Math::PointInRectangle(DeshInput->mousePos, curwin->position + position, dim)) {
 			activeId = state->id;
 			NextActive = 0;
 		}
@@ -1038,36 +1083,36 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 		}
 	}
 
+	
 
-	vec2 dim = (dimensions.x == -1) ? vec2(Math::clamp(100, 0, curwin->width - style.windowPadding.x * 2), style.font->height * 1.3) : dimensions;
 
 	item.size = dim;
 	item.position = position;
 
-	if(!(flags & UIInputTextFlags_NoBackground)){//text box
+	if (!(flags & UIInputTextFlags_NoBackground)) {//text box
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = dim;
 		//drawCmd.scissorOffset = workingWinPositionPlusTitlebar;
 		//drawCmd.scissorExtent = workingWinSizeMinusTitlebar;
 		drawCmd.color = color::VERY_DARK_GREY;
-        
+
 		item.drawCmds.add(drawCmd);
 	}
 
 	vec2 textStart =
 		vec2((dim.x - buffer.size * style.font->width) * style.inputTextTextAlign.x,
 			(style.font->height * 1.3 - style.font->height) * style.inputTextTextAlign.y);
-    
+
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
 		drawCmd.position = textStart;
 		drawCmd.text = buffer;
 		drawCmd.color = style.colors[UIStyleCol_Text];
-        
+
 		item.drawCmds.add(drawCmd);
 	}
-    
+
 	//TODO(sushi, Ui) impl different text cursors
 	if (activeId == state->id) {//cursor
 		UIDrawCmd drawCmd{ UIDrawType_Line };
@@ -1075,14 +1120,14 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 		drawCmd.position2 = textStart + vec2(state->cursor * style.font->width, style.font->height - 1);
 		drawCmd.color =
 			color(255, 255, 255,
-                  255 * (
-                  cos((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000 -
-                  sin((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000)) + 1) / 2);
+				255 * (
+					cos((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000 -
+						sin((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000)) + 1) / 2);
 		drawCmd.thickness = 1;
-        
+
 		item.drawCmds.add(drawCmd);
 	}
-    
+
 	curwin->items.add(item);
 	if (rowCount && rowItemsLeft) rowItemsLeft--;
 	if (moveCursor) {
@@ -1095,38 +1140,26 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, ve
 	else if (flags & UIInputTextFlags_AnyChangeReturnsTrue && bufferChanged) {
 		return true;
 	}
-    
+
 	return false;
 }
 
-bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags flags) {	
+bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags flags) {
 	vec2 position = curwin->cursor + style.windowPadding - curwin->scroll;
-	//position.y -= style.font->height * 1.3 / 4;
-	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, curwin->width - style.windowPadding.x * 2), style.font->height * 1.3);
-    
-	NextItemSize = vec2(-1, 0);
-    
-	return InputTextCall(label, buffer, maxChars, position, dimensions, nullptr, flags, 1);
+
+	return InputTextCall(label, buffer, maxChars, position, nullptr, flags, 1);
 }
 
-bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextCallback callback, UIInputTextFlags flags){
+bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextCallback callback, UIInputTextFlags flags) {
 	vec2 position = curwin->cursor + style.windowPadding - curwin->scroll;
-	//position.y -= style.font->height * 1.3 / 4;
-	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, curwin->width - style.windowPadding.x * 2), style.font->height * 1.3);
-	
-	NextItemSize = vec2(-1, 0);
-    
-	return InputTextCall(label, buffer, maxChars, position, dimensions, callback, flags, 1);
+
+	return InputTextCall(label, buffer, maxChars, position, callback, flags, 1);
 }
 
 bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
 	vec2 position = curwin->cursor + style.windowPadding - curwin->scroll;
-	//position.y -= style.font->height * 1.3 / 4;
-	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, curwin->width - style.windowPadding.x * 2), style.font->height * 1.3);
 
-	NextItemSize = vec2(-1, 0);
-
-	if (InputTextCall(label, buffer, maxChars, position, dimensions, nullptr, flags, 1)) {
+	if (InputTextCall(label, buffer, maxChars, position, nullptr, flags, 1)) {
 		getInputTextState = inputTexts.at(label);
 		return true;
 	}
@@ -1135,30 +1168,21 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextState*
 }
 
 bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextFlags flags) {
-	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, Math::clamp(curwin->width - style.windowPadding.x * 2, 1, FLT_MAX)), style.font->height * 1.3);
 	pos += curwin->position - curwin->scroll;
 
-	NextItemSize = vec2(-1, 0);
-
-	return InputTextCall(label, buffer, maxChars, pos, dimensions, nullptr, flags, 0);
+	return InputTextCall(label, buffer, maxChars, pos, nullptr, flags, 0);
 }
 
 bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextCallback callback, UIInputTextFlags flags) {
-	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, curwin->width - style.windowPadding.x * 2), style.font->height * 1.3);
 	pos += curwin->position - curwin->scroll;
 
-	NextItemSize = vec2(-1, 0);
-
-	return InputTextCall(label, buffer, maxChars, pos, dimensions, callback, flags, 0);
+	return InputTextCall(label, buffer, maxChars, pos, callback, flags, 0);
 }
 
 bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
-	vec2 dimensions = (NextItemSize.x != -1) ? NextItemSize : vec2(Math::clamp(100, 0, curwin->width - style.windowPadding.x * 2), style.font->height * 1.3);
 	pos += curwin->position - curwin->scroll;
 
-	NextItemSize = vec2(-1, 0);
-
-	if (InputTextCall(label, buffer, maxChars, pos, dimensions, nullptr, flags, 0)) {
+	if (InputTextCall(label, buffer, maxChars, pos, nullptr, flags, 0)) {
 		getInputTextState = inputTexts.at(label);
 		return true; 
 	}

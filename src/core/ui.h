@@ -111,7 +111,8 @@ enum UIInputTextFlags_ {
 	UIInputTextFlags_CallbackAlways        = 1 << 4,
 	UIInputTextFlags_CallbackUpDown        = 1 << 5,
 	UIInputTextFlags_NoBackground          = 1 << 6,
-	UIInputTextFlags_SetCursorToEndOnEnter = 1 << 7,
+	UIInputTextFlags_FitSizeToText = 1 << 7,
+	UIInputTextFlags_SetCursorToEndOnEnter = 1 << 8,
     
 }; typedef u32 UIInputTextFlags;
 
