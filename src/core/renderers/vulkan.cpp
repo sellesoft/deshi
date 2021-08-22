@@ -3230,17 +3230,17 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset,
 		uiCmdCount++;
 	}
 	
-	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2*  vp = uiVertexArray + uiVertexCount;
+	u32       col = color.R8G8B8A8_UNORM();
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray  + uiIndexCount;
 	
 	f32 w = vkFonts[1].characterWidth;
 	f32 h = vkFonts[1].characterHeight;
 	f32 dy = 1.f / (f32)vkFonts[1].characterCount; 
 	
-	f32 idx = character - 32; 
-	float topoff = idx * dy + dy / h;
-	float botoff = (idx + 1) * dy + dy / h;
+	f32 idx = character-32; 
+	f32 topoff = idx*dy;
+	f32 botoff = topoff+dy;
 	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
