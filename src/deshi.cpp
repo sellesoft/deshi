@@ -87,10 +87,9 @@ SSBOs in shaders so we can pass variable length arrays to it
 Storage TODOs
 -------------
 add MTL parsing and extra face info
-store null128.png and 
-add versionion to Mesh since its saved in a binary format
+store null128.png and null shader in code
+add versioning to Mesh since its saved in a binary format
 speedup OBJ parsing and face generation
-store fonts in storage
 
 UI TODOs
 --------
@@ -109,8 +108,7 @@ Ungrouped TODOs
 ---------------
 add the ability to limit framerate
 add a file abstraction so file parsing is simple and not so explicitly handed in different files
-memory namespace with arenas and memory management
-____funcs: alloc()=Allocate(), zalloc()=ZeroAllocate(), talloc()=TempAllocate()
+add a logging core separate from the console
 cleanup utils classes so that they are declaration at top and definition below
 centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
 update imgui (so we can get disabled items/text)
@@ -184,8 +182,6 @@ __________ it might have something to do with our rotate by axis function
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
 (07/14/21) the config parser sometimes throws a console error that its unable to parse the final empty line of configs
 (07/20/21) copy/paste produces an extra mesh in the renderer sometimes
-(08/03/21) UI's text sometimes produces artifacts around some letters. it seems like it depends
-__________ on the y level of each character and only seems to happen on a, b, i, j, q, r, and z on gohufont-11
 
 */
 
@@ -232,6 +228,7 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 #include <unordered_map>
 
 //// core headers ////
+#include "memory.h"
 #include "deshi.h"
 #include "core/font.h"
 
@@ -272,48 +269,42 @@ Assert(!"no renderer selected");
 #include "core/ui.cpp"
 #include "core/commands.cpp"
 
-local Time     time_;   Time*     g_time    = &time_; //time_ because there is a c-func time() D:
-local Window   window;  Window*   g_window  = &window;
-local Input    input;   Input*    g_input   = &input;
-#ifndef DESHI_DISABLE_CONSOLE
-local Console  console; Console*  g_console = &console;
-#endif
-local Storage_ storage; Storage_* g_storage = &storage;
+local Time     deshi_time;    Time*     g_time    = &deshi_time;
+local Window   deshi_window;  Window*   g_window  = &deshi_window;
+local Input    deshi_input;   Input*    g_input   = &deshi_input;
+local Console  deshi_console; Console*  g_console = &deshi_console;
+local Storage_ deshi_storage; Storage_* g_storage = &deshi_storage;
 
-void deshi::init() {
+void deshi::init(){
 	TIMER_START(t_d); TIMER_START(t_s);
-    
-	//pre-init setup
 	Assets::enforceDirectories();
-    
-	//init engine core
-	TIMER_RESET(t_s); time_.Init(700);        SUCCESS("Finished time initialization in ",              TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ",  TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); deshi_time.Init(300);         SUCCESS("Finished time initialization in ",              TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); deshi_window.Init(1280, 720); SUCCESS("Finished input and window initialization in ",  TIMER_END(t_s), "ms");
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
-	TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); deshi_console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
 #endif
-	TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ",            TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); Storage::Init();        SUCCESS("Finished storage initialization in ",           TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); Render::Init();               SUCCESS("Finished render initialization in ",            TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); Storage::Init();              SUCCESS("Finished storage initialization in ",           TIMER_END(t_s), "ms");
 #ifndef DESHI_DISABLE_IMGUI
-	TIMER_RESET(t_s); DeshiImGui::Init();     SUCCESS("Finished imgui initialization in ",             TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); DeshiImGui::Init();           SUCCESS("Finished imgui initialization in ",             TIMER_END(t_s), "ms");
 #endif
-	TIMER_RESET(t_s); UI::Init();             SUCCESS("Finished UI initialization in ",                TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); Cmd::Init();            SUCCESS("Finished Cmd initialization in ",               TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); UI::Init();                   SUCCESS("Finished UI initialization in ",                TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); Cmd::Init();                  SUCCESS("Finished commands initialization in ",          TIMER_END(t_s), "ms");
     
 	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
     
-	glfwShowWindow(window.window);
+	glfwShowWindow(deshi_window.window);
 }
 
-void deshi::cleanup() {
+void deshi::cleanup(){
 	DeshiImGui::Cleanup();
 	Render::Cleanup();
-	window.Cleanup();
-	console.CleanUp(); 
+	deshi_window.Cleanup();
+	deshi_console.CleanUp(); 
 	Console2::Cleanup();
 }
 
-bool deshi::shouldClose() {
+bool deshi::shouldClose(){
 	glfwPollEvents(); //this maybe should be elsewhere, but i dont want to move glfw includes to deshi.h 
-	return glfwWindowShouldClose(window.window) || window.closeWindow;
+	return glfwWindowShouldClose(deshi_window.window) || deshi_window.closeWindow;
 }

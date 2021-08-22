@@ -63,7 +63,7 @@ ishex(char c){
 }
 
 global_ inline u64
-b10tou64(cstring s, cstring* next = 0){ //!!TestMe
+b10tou64(cstring s, cstring* next = 0){
     u64 result = 0;
     u64 sign = 1;
     u32 idx = 0;
@@ -98,7 +98,7 @@ b10tou64(cstring s, cstring* next = 0){ //!!TestMe
 }
 
 global_ inline u64
-b16tou64(cstring s, cstring* next = 0){ //!!TestMe
+b16tou64(cstring s, cstring* next = 0){
     u64 result = 0;
     u64 sign = 1;
     u32 idx = 0;
