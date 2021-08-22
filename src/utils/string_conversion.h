@@ -43,13 +43,13 @@ global_ string to_string(u32 x){
 global_ string to_string(f32 x, bool trunc = false){
     string s;
     if(trunc){
-        s.size = snprintf(nullptr, 0, "%+.2f", x);
+        s.size = snprintf(nullptr, 0, "%.2f", x);
         s.str  = (char*)malloc(s.size+1);
-        snprintf(s.str, s.size+1, "%+.2f", x);
+        snprintf(s.str, s.size+1, "%.2f", x);
     }else{
-        s.size = snprintf(nullptr, 0, "%+f", x);
+        s.size = snprintf(nullptr, 0, "%f", x);
         s.str  = (char*)malloc(s.size+1);
-        snprintf(s.str, s.size+1, "%+f", x);
+        snprintf(s.str, s.size+1, "%f", x);
     }
     return s;
 }
@@ -57,13 +57,13 @@ global_ string to_string(f32 x, bool trunc = false){
 global_ string to_string(f64 x, bool trunc = false){
     string s;
     if(trunc){
-        s.size = snprintf(nullptr, 0, "%+.2f", x);
+        s.size = snprintf(nullptr, 0, "%.2f", x);
         s.str  = (char*)malloc(s.size+1);
-        snprintf(s.str, s.size+1, "%+.2f", x);
+        snprintf(s.str, s.size+1, "%.2f", x);
     }else{
-        s.size = snprintf(nullptr, 0, "%+f", x);
+        s.size = snprintf(nullptr, 0, "%f", x);
         s.str  = (char*)malloc(s.size+1);
-        snprintf(s.str, s.size+1, "%+f", x);
+        snprintf(s.str, s.size+1, "%f", x);
     }
     return s;
 }

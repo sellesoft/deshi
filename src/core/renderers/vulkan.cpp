@@ -3107,6 +3107,7 @@ vec2 prevScissorOffset = vec2(0, 0);
 vec2 prevScissorExtent = vec2(-1, -1);
 
 void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
+    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
     
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
@@ -3146,6 +3147,7 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
 //straight lines, see below
 void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
+    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
 	//top, left, right, bottom
@@ -3159,6 +3161,7 @@ void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
 //when drawing them straight
 void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
+    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
     
 	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
@@ -3206,6 +3209,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 
 void Render::
 DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent) {
+    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
 	f32 w = vkFonts[1].characterWidth;
@@ -3219,6 +3223,7 @@ DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorE
 //NOTE: text scaling looks very ugly with bit map fonts as far as i know
 void Render::
 DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent) {
+    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
 	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 

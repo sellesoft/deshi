@@ -1309,6 +1309,7 @@ void UI::Update() {
 	for (UIWindow* p : windows) {
 		//window position and size corrected for titlebar 
 		vec2 winpos = vec2(p->x, p->y + p->titleBarHeight);
+        vec2 winscissor{Max(0, winpos.x), Max(0, winpos.y)}; //NOTE scissor offset cant be negative
 		vec2 winsiz = vec2(p->width, p->height - p->titleBarHeight);
         
 		if (p->hovered && !(p->flags & UIWindowFlags_DontSetGlobalHoverFlag))
@@ -1325,6 +1326,7 @@ void UI::Update() {
 				vec2   dcsiz = drawCmd.dimensions;
 				vec2    dcse = drawCmd.scissorExtent;
 				vec2    dcso = itempos + drawCmd.scissorOffset;
+                dcso.x = Max(0, dcso.x); dcso.y = Max(0, dcso.y); //NOTE scissor offset cant be negative
 				color  dccol = drawCmd.color;
 				string dctex = drawCmd.text;
 				float    dct = drawCmd.thickness;
@@ -1340,7 +1342,7 @@ void UI::Update() {
                     
 					case UIDrawType_Text: {
 						if (drawCmd.scissorExtent.x == -1) {
-							Render::DrawTextUI(dctex, dcpos, dccol, winpos, winsiz);
+							Render::DrawTextUI(dctex, dcpos, dccol, winscissor, winsiz);
 						}
 						else {
 							Render::DrawTextUI(dctex, dcpos, dccol, dcso, dcse);
@@ -1348,7 +1350,7 @@ void UI::Update() {
 					}break;
 					case UIDrawType_Rectangle: {
 						if (drawCmd.scissorExtent.x == -1)
-							Render::DrawRectUI(dcpos, dcsiz, dccol, winpos, winsiz);
+							Render::DrawRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
 						else
 							Render::DrawRectUI(dcpos, dcsiz, dccol, dcso, dcse);
 					}break;
@@ -1368,6 +1370,7 @@ void UI::Update() {
 					vec2   dcsiz = drawCmd.dimensions;
 					vec2    dcse = drawCmd.scissorExtent;
 					vec2    dcso = itempos + drawCmd.scissorOffset;
+                    dcso.x = Max(0, dcso.x); dcso.y = Max(0, dcso.y); //NOTE scissor offset cant be negative
 					color  dccol = drawCmd.color;
 					string dctex = drawCmd.text;
 					float    dct = drawCmd.thickness;
@@ -1375,7 +1378,7 @@ void UI::Update() {
 					switch (drawCmd.type) {
 						case UIDrawType_FilledRectangle: {
 							if (drawCmd.scissorExtent.x == -1)
-								Render::FillRectUI(dcpos, dcsiz, dccol, winpos, winsiz);
+								Render::FillRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
 							else
 								Render::FillRectUI(dcpos, dcsiz, dccol, dcso, dcse);
                             
@@ -1383,21 +1386,21 @@ void UI::Update() {
                         
 						case UIDrawType_Line: {
 							if (drawCmd.scissorExtent.x == -1)
-								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, winpos, winsiz);
+								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, winscissor, winsiz);
 							else
 								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, dcso - itempos, dcse);
 						}break;
                         
 						case UIDrawType_Text: {
 							if (drawCmd.scissorExtent.x == -1)
-								Render::DrawTextUI(dctex, dcpos, dccol, winpos, winsiz);
+								Render::DrawTextUI(dctex, dcpos, dccol, winscissor, winsiz);
 							else
 								Render::DrawTextUI(dctex, dcpos, dccol, dcso, dcse);
 						}break;
                         
 						case UIDrawType_Rectangle: {
 							if (drawCmd.scissorExtent.x == -1)
-								Render::DrawRectUI(dcpos, dcsiz, dccol, winpos, winsiz);
+								Render::DrawRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
 							else
 								Render::DrawRectUI(dcpos, dcsiz, dccol, dcso, dcse);
 						}break;
@@ -1418,6 +1421,7 @@ void UI::Update() {
 		vec2   dcsiz = drawCmd.dimensions;
 		vec2    dcse = drawCmd.scissorExtent;
 		vec2    dcso = drawCmd.scissorOffset;
+        dcso.x = Max(0, dcso.x); dcso.y = Max(0, dcso.y); //NOTE scissor offset cant be negative
 		color  dccol = drawCmd.color;
 		string dctex = drawCmd.text;
 		float    dct = drawCmd.thickness;
