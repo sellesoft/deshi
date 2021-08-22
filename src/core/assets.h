@@ -4,14 +4,13 @@
 
 #include "../defines.h"
 #include "../utils/tuple.h"
+#include "../utils/string.h"
+#include "../utils/cstring.h"
+#include "../utils/array.h"
 
 #include <string>
 #include <vector>
 #include <map>
-
-#include "../utils/string.h"
-#include "../utils/array.h"
-
 
 enum ConfigValueType_{
 	ConfigValueType_NONE, //can be used for comments
@@ -71,6 +70,7 @@ namespace Assets{
 	//returns a char array of a file's contents in ASCII, returns 0 if failed
 	//NOTE the caller is responsible for freeing the array this allocates
 	char* readFileAsciiToArray(std::string filepath, u32 chars = 0, bool logError = true);
+	//cstring readFileAsciiToString(char* filepath, u32 chars = 0, bool logError = true);
 	
 	//returns a char array of a file's contents in binary, returns 0 if failed
 	//NOTE the caller is responsible for freeing the array this allocates

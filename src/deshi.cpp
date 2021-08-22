@@ -219,9 +219,8 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 #include "utils/view.h"
 #include "math/math.h"
 
-#include "utils/font.h"
-
 //// STL for core ////
+#include <cstdlib>
 #include <iostream>
 #include <iomanip>
 #include <filesystem>
@@ -234,6 +233,7 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 
 //// core headers ////
 #include "deshi.h"
+#include "core/font.h"
 
 //// renderer cpp (and libs) ////
 #if   DESHI_VULKAN

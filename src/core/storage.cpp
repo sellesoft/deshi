@@ -34,6 +34,7 @@ namespace Storage{
 	local array<Texture*>&  textures  = DeshStorage->textures;
 	local array<Material*>& materials = DeshStorage->materials;
 	local array<Model*>&    models    = DeshStorage->models;
+	local array<Font*>&     fonts     = DeshStorage->fonts;
 	local array<Light*>&    lights    = DeshStorage->lights;
 };
 
@@ -49,6 +50,7 @@ Init(){
 	CreateTextureFromFile("null128.png");
 	CreateMaterial("null", Shader_NULL, MaterialFlags_NONE, {0});
 	CreateModelFromMesh(NullMesh(), Shader_NULL); cpystr(NullModel()->name, "null", DESHI_NAME_SIZE);
+    CreateFontFromFileBDF("gohufont-14.bdf");
 }
 
 void Storage::
@@ -1498,6 +1500,169 @@ DeleteModel(Model* model){
 	//!Incomplete
 	Assert(!"not setup yet");
 	free(model);
+}
+
+
+///////////////
+//// @font ////
+///////////////
+pair<u32,Font*> Storage::
+CreateFontFromFileBDF(const char* filename){
+    pair<u32,Font*> result(0,NullFont());
+    
+    char* buffer = Assets::readFileAsciiToArray(Assets::dirFonts() + filename);
+    if(!buffer){ return result; }
+    defer{ delete[] buffer; };
+    
+    Assert(strncmp("STARTFONT", buffer, 9) == 0); //TODO(delle) error handling: incorrect file
+    Font* font = new Font;
+    bool in_char   = false;
+    bool in_bitmap = false;
+    u32 char_idx = 0;
+    u32 bitmap_row = 0;
+    u32 glyph_offset = 0;
+    u32 top_offset = 0;
+    u32 left_offset = 0;
+    vec4 current_bbx;
+    
+	char* line_start;  char* line_end = buffer-1;
+	char* info_start;  char* info_end;
+	char* key_start;   char* key_end;
+	char* value_start; char* value_end;
+	bool has_cr = false;
+	for(u32 line_number = 1; ;line_number++){
+		//get the next line
+		line_start = (has_cr) ? line_end+2 : line_end+1;
+		if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
+		if(has_cr || *(line_end-1) == '\r'){ has_cr = true; line_end -= 1; }
+		if(line_start == line_end) continue;
+		
+		//format the line
+		info_start = line_start + Utils::skipSpacesLeading (line_start, line_end-line_start); if(info_start == line_end) continue;
+		info_end   = info_start + Utils::skipSpacesTrailing(info_start, line_end-info_start); if(info_start == info_end) continue;
+		
+		{//split the key-value pair
+			key_start = info_start;
+			key_end   = key_start;
+			while(key_end != info_end && *key_end != ' '){ key_end++; }
+			
+			value_end   = info_end;
+			value_start = key_end;
+			while(*value_start == ' '){ value_start++; }
+		}
+        
+        if(in_bitmap){
+            if(strncmp("ENDCHAR", key_start, key_end-key_start) == 0){
+                in_char = false;
+                in_bitmap = false;
+                char_idx++;
+                bitmap_row = 0;
+                continue;
+            }
+            Assert(bitmap_row < current_bbx.y);
+            
+            int chars = (int)(info_end-info_start);
+            Assert(chars <= 4); //TODO(delle) error handling: max 16 pixel width
+            u8 scaled[16]{};
+            
+            //scale each byte to represent one pixel per bit then byteswap the u64 //TODO(delle) only byteswap if little-endian
+            //ref: https://stackoverflow.com/questions/9023129/algorithm-for-bit-expansion-duplication/9044057#9044057
+            //scale = 8 (1 bit to 1 byte)
+            //mask0 = 0x0000000f0000000f, mask1 = 0x0003000300030003, mask2 = 0x0101010101010101
+            //shift0 = (1 << 28) + 1, shift1 = (1 << 14) + 1, shift2 = (1 << 7) + 1
+            for(int i=0; i<chars; i+=2){
+                u64 reversed = (((b16tou64({info_start+i, 2}) * 0x10000001 & 0x0000000f0000000f) 
+                                 * 0x4001 & 0x0003000300030003) * 0x81 & 0x0101010101010101) * 255;
+                *(u64*)(scaled+i) = ByteSwap64(reversed);
+            }
+            memcpy(font->texture+(upt)(glyph_offset + (bitmap_row+top_offset)*font->width + left_offset), scaled, current_bbx.x*sizeof(u8));
+            
+            bitmap_row++;
+            continue;
+        }
+        
+        if(in_char){
+            if      (strncmp("ENCODING", key_start, key_end-key_start) == 0){
+                font->encodings[char_idx] = strtol(value_start, 0, 10);
+            }else if(strncmp("BITMAP", key_start, key_end-key_start) == 0){
+                in_bitmap = true;
+            }else if(strncmp("SWIDTH", key_start, key_end-key_start) == 0){
+                //unused
+            }else if(strncmp("DWIDTH", key_start, key_end-key_start) == 0){
+                //unused in monospace fonts
+            }else if(strncmp("BBX", key_start, key_end-key_start) == 0){
+                char* cursor = value_start;
+                current_bbx.x = strtol(cursor,   &cursor, 10); //width
+                current_bbx.y = strtol(cursor+1, &cursor, 10); //height
+                current_bbx.z = strtol(cursor+1, &cursor, 10); //lower-left x
+                current_bbx.w = strtol(cursor+1, &cursor, 10); //lower-left y
+                glyph_offset = char_idx*font->height*font->width;
+                top_offset   = font->height-(current_bbx.w-font->bbx.w)-current_bbx.y;
+                left_offset  = current_bbx.z-font->bbx.z;
+                
+                Assert(current_bbx.x <= font->bbx.x);
+                Assert(current_bbx.y <= font->bbx.y);
+                Assert(current_bbx.z >= font->bbx.z);
+                Assert(current_bbx.w >= font->bbx.w);
+            }else{
+                Assert(false); //finds cases where we are not handling things
+            }
+            continue;
+        }
+        
+        if      (strncmp("STARTCHAR", key_start, key_end-key_start) == 0){
+            in_char = true;
+        }else if(strncmp("SIZE", key_start, key_end-key_start) == 0){
+            char* cursor = value_start;
+            font->font_size = strtol(cursor,   &cursor, 10);
+            font->dpi.x     = strtol(cursor+1, &cursor, 10);
+            font->dpi.y     = strtol(cursor+1, &cursor, 10);
+        }else if(strncmp("FONTBOUNDINGBOX", key_start, key_end-key_start) == 0){
+            char* cursor = value_start;
+            font->bbx.x = strtol(cursor,   &cursor, 10); //width
+            font->bbx.y = strtol(cursor+1, &cursor, 10); //height
+            font->bbx.z = strtol(cursor+1, &cursor, 10); //lower-left x
+            font->bbx.w = strtol(cursor+1, &cursor, 10); //lower-left y
+            font->width  = font->bbx.x;
+            font->height = font->bbx.y;
+        }else if(strncmp("FONT_NAME", key_start, key_end-key_start) == 0){
+            font->name = string(value_start+1, value_end-value_start-2);
+        }else if(strncmp("WEIGHT_NAME", key_start, key_end-key_start) == 0){
+            font->weight = string(value_start+1, value_end-value_start-2);
+        }else if(strncmp("CHARS", key_start, key_end-key_start) == 0){
+            font->char_count = strtol(value_start, 0, 10);
+            Assert(font->width && font->height && font->char_count);
+            font->encodings = (u16*)calloc(font->char_count, sizeof(u16));
+            font->texture = (u8*)calloc(font->char_count, font->width*font->height*sizeof(u8));
+        }else{
+            continue;
+        }
+    }
+    
+    fonts.add(font);
+    return result;
+}
+
+pair<u32,Font*> Storage::
+CreateFontFromFileTTF(const char* filename){
+    pair<u32,Font*> result(0,NullFont());
+    
+    //stbtt_fontinfo info;
+    //u8* bitmap;
+    //u8 buffer[1 << 25];
+    //
+    //string path = string(Assets::dirFonts().c_str()) + fontname;
+    //
+    ////read the actual file into the buffer
+    //fread(buffer, 1, 1 << 25, fopen(path.str, "rb"));
+    //
+    //stbtt_InitFont(&info, buffer, stbtt_GetFontOffsetForIndex(buffer, 0));
+    //
+    //int w = 6, h = 11;
+    //
+    //bitmap = stbtt_GetCodepointBitmap(&info, 0, stbtt_ScaleForPixelHeight(&info, 11), 0, &w, &h, 0, 0);
+    
+    return result;
 }
 
 #undef ParseError

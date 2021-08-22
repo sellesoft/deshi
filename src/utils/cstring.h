@@ -49,4 +49,99 @@ to_c_string(cstring s){
     return cs;
 }
 
+global_ inline u64
+isnumber(char c){
+    return (c >= '0' && c <= '9') ? true : false;
+}
+
+global_ inline u64
+ishex(char c){
+    return ((c >= '0' && c <= '9') || 
+            (c >= 'A' && c <= 'F') || 
+            (c >= 'a' && c <= 'f') || 
+            (c == 'x' || c == 'X')) ? true : false;
+}
+
+global_ inline u64
+b10tou64(cstring s, cstring* next = 0){ //!!TestMe
+    u64 result = 0;
+    u64 sign = 1;
+    u32 idx = 0;
+    
+    //error cases
+    if(!s.str) return 0;
+    if(*s.str == '\0') return 0;
+    
+    //skip whitespace
+    while(*s.str == ' '){ s.str++; idx++; }
+    
+    //check for sign
+    if(*s.str == '-'){
+        sign = -1;
+        s.str++; idx--;
+    }
+    if(*s.str == '+'){
+        s.str++; idx--;
+    }
+    
+    while(*s.str != '\0' && idx < s.count){
+        if(!isnumber(*s.str)) break;
+        result = (result*10) + (*s.str - '0');
+        s.str++; idx++;
+    }
+    
+    if(next){
+        next->str = s.str;
+        next->count = s.count - idx;
+    }
+    return sign * result;
+}
+
+global_ inline u64
+b16tou64(cstring s, cstring* next = 0){ //!!TestMe
+    u64 result = 0;
+    u64 sign = 1;
+    u32 idx = 0;
+    
+    //error cases
+    if(!s.str) return 0;
+    if(*s.str == '\0') return 0;
+    
+    //skip whitespace
+    while(*s.str == ' '){ s.str++; idx++; }
+    
+    //check for sign
+    if(*s.str == '-'){
+        sign = -1;
+        s.str++; idx++;
+    }
+    if(*s.str == '+'){
+        s.str++; idx++;
+    }
+    
+    //check for 0x prefix
+    if(s.count > 2 && *s.str == '0' && *(s.str+1) == 'x'){
+        s.str+=2; idx+=2;
+    }
+    
+    while(*s.str != '\0' && idx < s.count){
+        if      (*s.str >= '0' && *s.str <= '9'){
+            result = (result*16) + (*s.str - '0');
+        }else if(*s.str >= 'A' && *s.str <= 'F'){
+            result = (result*16) + (*s.str - 'A') + 10;
+        }else if(*s.str >= 'a' && *s.str <= 'f'){
+            result = (result*16) + (*s.str - 'a') + 10;
+        }else{
+            break;
+        }
+        s.str++; idx++;
+    }
+    
+    if(next){
+        next->str = s.str;
+        next->count = s.count - idx;
+    }
+    return sign * result;
+}
+
 #endif //DESHI_CSTRING_H
