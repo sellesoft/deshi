@@ -176,15 +176,15 @@ namespace Cmd{
         CMDSTART(window_info, "Lists window's vars"){
             cstring dispMode;
             switch(DeshWindow->displayMode){
-                case(DisplayMode_Windowed):  { dispMode = "Windowed"; }break;
-                case(DisplayMode_Borderless):{ dispMode = "Borderless Windowed"; }break;
-                case(DisplayMode_Fullscreen):{ dispMode = "Fullscreen"; }break;
+                case(DisplayMode_Windowed):  { dispMode = cstring_lit("Windowed"); }break;
+                case(DisplayMode_Borderless):{ dispMode = cstring_lit("Borderless Windowed"); }break;
+                case(DisplayMode_Fullscreen):{ dispMode = cstring_lit("Fullscreen"); }break;
             }
             cstring cursMode;
             switch(DeshWindow->cursorMode){
-                case(CursorMode_Default):    { cursMode = "Default"; }break;
-                case(CursorMode_FirstPerson):{ cursMode = "First Person"; }break;
-                case(CursorMode_Hidden):     { cursMode = "Hidden"; }break;
+                case(CursorMode_Default):    { cursMode = cstring_lit("Default"); }break;
+                case(CursorMode_FirstPerson):{ cursMode = cstring_lit("First Person"); }break;
+                case(CursorMode_Hidden):     { cursMode = cstring_lit("Hidden"); }break;
             }
             Console2::Log(TOSTRING("Window Info"
                                    "\n    Window Position: ",DeshWindow->x,",",DeshWindow->y,
