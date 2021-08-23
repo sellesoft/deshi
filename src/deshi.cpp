@@ -238,7 +238,7 @@ __________ maybe store the text in the actual source and create the file from th
 #pragma comment(lib,"vulkan-1.lib")
 #pragma comment(lib,"glfw3.lib")
 #pragma comment(lib,"shaderc_combined.lib")
-#endif
+#endif //_MSC_VER
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <shaderc/shaderc.h>
@@ -249,7 +249,7 @@ __________ maybe store the text in the actual source and create the file from th
 #if defined(_MSC_VER)
 #pragma comment(lib,"opengl32.lib")
 #pragma comment(lib,"glfw3.lib")
-#endif
+#endif //_MSC_VER
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -257,8 +257,8 @@ __________ maybe store the text in the actual source and create the file from th
 #elif DESHI_DIRECTX
 
 #else
-Assert(!"no renderer selected");
-#endif
+#error "no renderer selected"
+#endif //DESHI_VULKAN
 
 //// core cpp ////
 #include "core/window.cpp"

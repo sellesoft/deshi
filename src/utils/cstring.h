@@ -8,6 +8,9 @@ struct cstring{
     char* str;
     u64   count;
     
+    inline cstring(){str=0; count=0;}
+    inline cstring(char* s, u64 c){str=s; count=c;}
+    inline cstring(const char* s){str=(char*)s; count=sizeof(s);}
     inline char operator[](u32 idx){ return str[idx]; }
     inline explicit operator bool(){ return count; }
     inline bool operator==(cstring s){ return (count==s.count) && (strncmp(str, s.str, count) == 0); }

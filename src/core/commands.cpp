@@ -63,7 +63,7 @@ namespace Cmd{
         
         CMDSTART(alias, "Gives an alias to specified command and arguments"){
             //check that alias name and command arent the same
-            if(args[0] == args[1]){ //!Robustness: this check doesnt compare inside args[1], so an alias could still be recursive
+            if(args[0] == args[1]){ //!!Robustness: this check doesnt compare inside args[1], so an alias could still be recursive
                 Console2::Log("Error: Aliases can't be recursive");
                 return;
             }
@@ -174,13 +174,13 @@ namespace Cmd{
         }CMDEND(window_resizable, Argument_S32);
         
         CMDSTART(window_info, "Lists window's vars"){
-            string dispMode;
+            cstring dispMode;
             switch(DeshWindow->displayMode){
                 case(DisplayMode_Windowed):  { dispMode = "Windowed"; }break;
                 case(DisplayMode_Borderless):{ dispMode = "Borderless Windowed"; }break;
                 case(DisplayMode_Fullscreen):{ dispMode = "Fullscreen"; }break;
             }
-            string cursMode;
+            cstring cursMode;
             switch(DeshWindow->cursorMode){
                 case(CursorMode_Default):    { cursMode = "Default"; }break;
                 case(CursorMode_FirstPerson):{ cursMode = "First Person"; }break;
@@ -272,7 +272,7 @@ namespace Cmd{
         CMDSTART(quit, "Exits the application"){
             DeshWindow->Close();
         }CMDEND(quit);
- 
+        
 #undef CMDSTART
 #undef CMDEND
     }
