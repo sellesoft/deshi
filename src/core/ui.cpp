@@ -589,7 +589,7 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
             drawCmd.position = vec2(
                                     curwin->x + (curwin->width - curwin->name.size * style.font->width) * style.titleTextAlign.x,
                                     curwin->y + (style.titleBarHeight - style.font->height) * style.titleTextAlign.y);
-            drawCmd.color = color::WHITE;
+            drawCmd.color = Color_White;
             drawCmd.scissorExtent = vec2{ curwin->width, style.titleBarHeight };
             drawCmd.scissorOffset = curwin->position;
             
@@ -742,7 +742,7 @@ void UI::ShowDebugWindowOf(string name) {
 		//	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		//	drawCmd.position = debugee->position + (debugee->cursor - cursize / 2) - debugee->scroll + debugee->style.windowPadding;
 		//	drawCmd.dimensions = cursize;
-		//	drawCmd.color = color::WHITE;
+		//	drawCmd.color = Color_White;
 		//	drawCmd.scissorExtent = DeshWindow->dimensions;
 		//	drawCmd.trackedForFit = 0;
         //    
@@ -752,7 +752,7 @@ void UI::ShowDebugWindowOf(string name) {
         
 		if (show_drawcall_sizes) {
 			UIDrawCmd drawCmd{ UIDrawType_Rectangle };
-			drawCmd.color = color::RED;
+			drawCmd.color = Color_Red;
 			drawCmd.scissorExtent = DeshWindow->dimensions;
 			drawCmd.trackedForFit = 0;
             
@@ -1096,7 +1096,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, UI
 		drawCmd.dimensions = dim;
 		//drawCmd.scissorOffset = workingWinPositionPlusTitlebar;
 		//drawCmd.scissorExtent = workingWinSizeMinusTitlebar;
-		drawCmd.color = color::VERY_DARK_GREY;
+		drawCmd.color = Color_DarkGrey;
         
 		item.drawCmds.add(drawCmd);
 	}
@@ -1222,7 +1222,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_WindowBg, colors.midnight_blue);
 	PushColor(UIStyleCol_TitleBg,  colors.purple_gray);
 	PushColor(UIStyleCol_FrameBg,  colors.pink_gray);
-	PushColor(UIStyleCol_Text,     color::WHITE);
+	PushColor(UIStyleCol_Text,     Color_White);
 	
 	//push default style variables
 	PushVar(UIStyleVar_WindowBorderSize,    1);

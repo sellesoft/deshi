@@ -21,22 +21,14 @@ std::vector<std::string> posis;
 //int match_sel = 0;
 
 std::map<std::string, color> colstrmap{
-	{"red", color::RED},
-	{"dred", color::DARK_RED},
-	{"blue", color::BLUE},
-	{"dblue", color::DARK_BLUE},
-	{"cyan", color::CYAN},
-	{"dcyan", color::DARK_CYAN},
-	{"grey", color::GREY},
-	{"dgrey", color::DARK_GREY},
-	{"green", color::GREEN},
-	{"dgreen", color::DARK_GREEN},
-	{"yellow", color::YELLOW},
-	{"dyellow", color::DARK_YELLOW},
-	{"magen", color::MAGENTA},
-	{"dmagen", color::DARK_MAGENTA},
-	{"black", color::BLACK},
-	{"error", color::RED} //special error color for the console to know when to flash the debug bar
+	{"red", Color_Red},       {"dred", Color_DarkRed},
+	{"blue", Color_Blue},     {"dblue", Color_DarkBlue},
+	{"cyan", Color_Cyan},     {"dcyan", Color_DarkCyan},
+	{"grey", Color_Grey},     {"dgrey", Color_DarkGrey},
+	{"green", Color_Green},   {"dgreen", Color_DarkGreen},
+	{"yellow", Color_Yellow}, {"dyellow", Color_DarkYellow},
+	{"magen", Color_Magenta}, {"dmagen", Color_DarkMagenta},
+	{"black", Color_Black},   {"error", Color_Red} //special error color for the console to know when to flash the debug bar
 };
 
 ImVec4 ColorToVec4(color p){
@@ -66,7 +58,7 @@ void Console::AddLog(std::string input){
 			}
 			else {
 				//if we arent then just push the line into text vector
-				buffer.push_back(pair<std::string, color>(m[0].str(), color::BLANK));
+				buffer.push_back(pair<std::string, color>(m[0].str(), Color_Clear));
 				buffersize += m[2].str().size();
 			}
 			input = m.suffix();
@@ -273,7 +265,7 @@ void Console::DrawConsole(){
 							TableNextColumn();
 							if(i == match_sel){
 								SetScrollHereY(0);
-								PushStyleColor(ImGuiCol_Text, ColorToVec4(color::RED));
+								PushStyleColor(ImGuiCol_Text, Color_Red);
 								Text(s.c_str());
 								ImGui::PopStyleColor();
 								if(selected){
@@ -317,7 +309,7 @@ void Console::DrawConsole(){
 		//color formatting is "[c:red]text[c] text text"
 		//TODO( sushi,OpCon) maybe optimize by only drawing what we know will be displayed on screen instead of parsing through all of it
 		
-		if(p.second == color::BLANK){
+		if(p.second == Color_Clear){
 			SameLine(0, 0);
 			TextWrapped(p.first.c_str());
 		}
@@ -348,7 +340,7 @@ void Console::DrawConsole(){
 	else  input_text_flags = 0;
 	
 	
-	PushStyleColor(ImGuiCol_FrameBg, ColorToVec4(color::VERY_DARK_CYAN));
+	PushStyleColor(ImGuiCol_FrameBg, Color_VeryDarkCyan);
 	SetNextItemWidth(ImGui::GetWindowWidth() - 15);
 	ImGui::SetItemDefaultFocus();
 	

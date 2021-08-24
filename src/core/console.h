@@ -24,7 +24,7 @@ struct Console  {
 	
 	u32 alert_count = 0;
 	std::string alert_message;
-	color alert_color = color::RED;
+	color alert_color = Color_Red;
 	bool show_alert = false;
 	
 	bool dispcon = false;

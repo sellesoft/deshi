@@ -145,7 +145,7 @@ struct Edge3D {
 struct RenderedEdge3D : public Edge3D {
 	color col;
     
-	RenderedEdge3D(vec3 point1, vec3 point2, color col = color::WHITE) {
+	RenderedEdge3D(vec3 point1, vec3 point2, color col = Color_White) {
 		p[0] = point1;
 		p[1] = point2;
 		if (point1.x > point2.x) { lead = false; }

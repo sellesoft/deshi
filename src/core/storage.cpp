@@ -131,7 +131,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){
 	Mesh::Face*     fa = mesh->faceArray;
 	vec3 p{width, height, depth};
 	vec3 uv{0.0f, 0.0f};
-	u32 c = color.R8G8B8A8_UNORM();
+	u32 c = color.rgba;
 	f32 ir3 = 1.0f / M_SQRT_THREE; // inverse root 3 (component of point on unit circle)
 	
 	//vertex array {pos, uv, color, normal(from center)}
@@ -517,7 +517,7 @@ CreateTextureFromMemory(void* data, const char* name, int width, int height, Ima
 			case ImageFormat_BW:{
 				for(int i = width*height; i > 0; i--){
 					u32 value = (u32)(*src++);
-					*dst++ = PACKCOLORU32(value, value, value, value);
+					*dst++ = PackColorU32(value, value, value, value);
 				}
 			}break;
 			case ImageFormat_BWA:{
@@ -787,7 +787,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		u32 totalFaceFaceNeighbors = 0;
 		vec3 aabb_min{ FLT_MAX, FLT_MAX, FLT_MAX};
 		vec3 aabb_max{-FLT_MAX,-FLT_MAX,-FLT_MAX};
-		u32 default_color = color::PackColorU32(color::WHITE);
+		u32 default_color = Color_White;
 		bool mtllib_found    = false;
 		bool s_warning       = false;
 		bool non_tri_warning = false;

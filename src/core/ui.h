@@ -300,10 +300,10 @@ namespace UI {
 	void Row(u32 num_items, UIRowFlags flags = 0);
     
 	//primitives
-	void Rect(vec2 pos, vec2 dimen, color color = color::WHITE);
-	void RectFilled(vec2 pos, vec2 dimen, color color = color::WHITE);
+	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
+	void RectFilled(vec2 pos, vec2 dimen, color color = Color_White);
     
-	void Line(vec2 start, vec2 end, float thickness = 1, color color = color::WHITE);
+	void Line(vec2 start, vec2 end, float thickness = 1, color color = Color_White);
     
 	void Text(string text, UITextFlags flags = 0);
 	void Text(string text, vec2 pos, UITextFlags flags = 0);

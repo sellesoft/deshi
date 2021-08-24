@@ -3119,8 +3119,8 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 		uiCmdCount++;
 	}
     
-	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2* vp = uiVertexArray + uiVertexCount;
+	u32       col = color.rgba;
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
     
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
@@ -3174,8 +3174,8 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	}
     
     
-	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2* vp = uiVertexArray + uiVertexCount;
+	u32       col = color.rgba;
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
     
 	vec2 ott = end - start;
@@ -3235,7 +3235,7 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset,
 		uiCmdCount++;
 	}
 	
-	u32       col = color.R8G8B8A8_UNORM();
+	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray  + uiIndexCount;
 	
@@ -3673,15 +3673,15 @@ DrawModel(Model* model, mat4 matrix){
 }
 
 void Render::
-DrawModelWireframe(Model* mesh, mat4 matrix, color& color){
+DrawModelWireframe(Model* mesh, mat4 matrix, color color){
 	//!Incomplete
 }
 
 void Render::
-DrawLine(vec3 start, vec3 end, color& color){
+DrawLine(vec3 start, vec3 end, color color){
 	if(color.a == 0) return;
 	
-	u32 col = color::PackColorU32(color);
+	u32 col = color.rgba;
 	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
 	TempIndexVk*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
@@ -3696,10 +3696,10 @@ DrawLine(vec3 start, vec3 end, color& color){
 }
 
 void Render::
-DrawTriangle(vec3 p0, vec3 p1, vec3 p2, color& color){
+DrawTriangle(vec3 p0, vec3 p1, vec3 p2, color color){
 	if(color.a == 0) return;
 	
-	u32 col = color::PackColorU32(color);
+	u32 col = color.rgba;
 	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
 	TempIndexVk*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
@@ -3715,10 +3715,10 @@ DrawTriangle(vec3 p0, vec3 p1, vec3 p2, color& color){
 }
 
 void Render::
-DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, color& color){
+DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, color color){
 	if(color.a == 0) return;
 	
-	u32 col = color::PackColorU32(color);
+	u32 col = color.rgba;
 	Mesh::Vertex* vp = tempFilledVertexArray + tempFilledVertexCount;
 	TempIndexVk*   ip = tempFilledIndexArray + tempFilledIndexCount;
 	
@@ -3734,7 +3734,7 @@ DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, color& color){
 }
 
 void Render::
-DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color& color){
+DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color color){
 	if(color.a == 0) return;
 	DrawLine(p0, p1, color);
 	DrawLine(p1, p2, color);
@@ -3743,14 +3743,14 @@ DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color& color){
 }
 
 inline void Render::
-DrawQuadFilled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color& color){
+DrawQuadFilled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color color){
 	if(color.a == 0) return;
 	DrawTriangleFilled(p0, p1, p2, color);
 	DrawTriangleFilled(p0, p2, p3, color);
 }
 
 void Render::
-DrawPoly(array<vec3>& points, color& color){
+DrawPoly(array<vec3>& points, color color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
 	for(int i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
@@ -3758,7 +3758,7 @@ DrawPoly(array<vec3>& points, color& color){
 }
 
 void Render::
-DrawPolyFilled(array<vec3>& points, color& color){
+DrawPolyFilled(array<vec3>& points, color color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
 	for(int i=2; i<points.count-1; ++i) DrawTriangleFilled(points[i-2], points[i-1], points[i], color);
@@ -3766,7 +3766,7 @@ DrawPolyFilled(array<vec3>& points, color& color){
 }
 
 void Render::
-DrawBox(mat4 transform, color& color){
+DrawBox(mat4 transform, color color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -3782,7 +3782,7 @@ DrawBox(mat4 transform, color& color){
 }
 
 void Render::
-DrawBoxFilled(mat4 transform, color& color){
+DrawBoxFilled(mat4 transform, color color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -3800,7 +3800,7 @@ DrawBoxFilled(mat4 transform, color& color){
 }
 
 void Render::
-DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color& color){
+DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color color){
 	if(color.a == 0) return;
 	
 	f32 y = tanf(RADIANS(fovx / 2.0f));
