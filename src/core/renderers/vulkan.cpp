@@ -169,6 +169,9 @@ local ConfigMap configMap = {
 local RenderStats   stats{};
 local RendererStage rendererStage = RENDERERSTAGE_NONE;
 
+
+//-------------------------------------------------------------------------------------------------
+// @VULKAN VARIABLES
 //arbitray limits, change if needed
 #define MAX_UI_VERTICES 0xFFFF //max u16: 65535
 #define MAX_UI_INDICES  3*MAX_UI_VERTICES
@@ -197,11 +200,6 @@ local TempIndexVk  tempFilledIndexArray    [MAX_TEMP_INDICES];
 typedef u32 ModelIndexVk;
 local ModelIndexVk modelCmdCount = 0;
 local ModelCmdVk   modelCmdArray[MAX_MODEL_CMDS];
-
-
-//-------------------------------------------------------------------------------------------------
-// @VULKAN VARIABLES
-
 
 local array<MeshVk>      vkMeshes;
 local array<TextureVk>   vkTextures;
@@ -427,9 +425,7 @@ local struct{ //TODO(delle,Vu) distribute these variables around
 
 
 //-------------------------------------------------------------------------------------------------
-// VULKAN FUNCTIONS
-
-
+// @VULKAN FUNCTIONS
 ////////////////////
 //// @utilities ////
 ////////////////////
@@ -3095,7 +3091,6 @@ NewFrame(){
 
 //-------------------------------------------------------------------------------------------------
 // @UI INTERFACE
-
 enum texTypes : u32 {
 	UITEX_WHITE,
 	UITEX_FONT
@@ -3103,23 +3098,24 @@ enum texTypes : u32 {
 
 //TODO(sushi) find a nicer way to keep track of this
 //NOTE im not sure yet if i should be keeping track of this for each primitive or not yet but i dont think i have to
-vec2 prevScissorOffset = vec2(0, 0);
+vec2 prevScissorOffset = vec2( 0,  0);
 vec2 prevScissorExtent = vec2(-1, -1);
 
-void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
-	if (color.a == 0) return;
+void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
+    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	if(color.a == 0) return;
     
-	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
-		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-		scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
+	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
+       scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+       scissorExtent != prevScissorExtent){ //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
     
-	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2* vp = uiVertexArray + uiVertexCount;
+	u32       col = color.rgba;
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
     
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
@@ -3133,11 +3129,10 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	if (scissorExtent.x != -1) {
+	if(scissorExtent.x != -1){
 		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
 		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}
-	else {
+	}else{
 		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
 		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
 	}
@@ -3145,34 +3140,34 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
 //straight lines, see below
-void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
-	if (color.a == 0) return;
+void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
+    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	if(color.a == 0) return;
 	
 	//top, left, right, bottom
 	DrawLineUI(pos.xAdd(-1),     pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
 	DrawLineUI(pos,              pos + dimensions.xSet(0),          1, color, scissorOffset, scissorExtent);
 	DrawLineUI(pos + dimensions, pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
 	DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
-    
 }
 
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
 //when drawing them straight
 void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
-	if (color.a == 0) return;
+    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	if(color.a == 0) return;
     
 	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
        scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-       scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
+       scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
     
-    
-	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2* vp = uiVertexArray + uiVertexCount;
+	u32       col = color.rgba;
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
     
 	vec2 ott = end - start;
@@ -3194,18 +3189,18 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	if (scissorExtent.x != -1) {
+	if(scissorExtent.x != -1){
 		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
 		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}
-	else {
+	}else{
 		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
 		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
 	}
 }
 
 void Render::
-DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent) {
+DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){
+    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
 	f32 w = vkFonts[1].characterWidth;
@@ -3215,32 +3210,32 @@ DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorE
 	}
 }
 
-
 //NOTE: text scaling looks very ugly with bit map fonts as far as i know
 void Render::
-DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent) {
-	if (color.a == 0) return;
+DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){
+    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	if(color.a == 0) return;
 	
-	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 
-		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-		scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
+	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 
+       scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+       scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
 	
-	u32      col = color.R8G8B8A8_UNORM();
-	Vertex2*  vp = uiVertexArray + uiVertexCount;
+	u32       col = color.rgba;
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray  + uiIndexCount;
 	
 	f32 w = vkFonts[1].characterWidth;
 	f32 h = vkFonts[1].characterHeight;
 	f32 dy = 1.f / (f32)vkFonts[1].characterCount; 
 	
-	f32 idx = character - 32; 
-	float topoff = idx * dy + dy / h;
-	float botoff = (idx + 1) * dy + dy / h;
+	f32 idx = character-32; 
+	f32 topoff = idx*dy;
+	f32 botoff = topoff+dy;
 	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
@@ -3249,8 +3244,6 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset,
 	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,botoff}; vp[2].color = col;
 	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,botoff}; vp[3].color = col;
 	
-	
-	
 	uiVertexCount += 4;
 	uiIndexCount  += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -3258,19 +3251,15 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset,
 	if(scissorExtent.x != -1){
 		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
 		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}
-	else {
+	}else{
 		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
 		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0,0);
 	}
-	
 }
 
 
 //-------------------------------------------------------------------------------------------------
 // @INTERFACE FUNCTIONS
-
-
 ///////////////////
 //// @settings ////
 ///////////////////
@@ -3668,17 +3657,17 @@ DrawModel(Model* model, mat4 matrix){
 }
 
 void Render::
-DrawModelWireframe(Model* mesh, mat4 matrix, color& color){
-	//!Incomplete
+DrawModelWireframe(Model* mesh, mat4 matrix, color color){
+	//!!Incomplete
 }
 
 void Render::
-DrawLine(vec3 start, vec3 end, color& color){
+DrawLine(vec3 start, vec3 end, color color){
 	if(color.a == 0) return;
 	
-	u32 col = color::PackColorU32(color);
+	u32 col = color.rgba;
 	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
-	TempIndexVk*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
+	TempIndexVk*  ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
 	ip[0] = tempWireframeVertexCount; 
 	ip[1] = tempWireframeVertexCount+1; 
@@ -3691,10 +3680,10 @@ DrawLine(vec3 start, vec3 end, color& color){
 }
 
 void Render::
-DrawTriangle(vec3 p0, vec3 p1, vec3 p2, color& color){
+DrawTriangle(vec3 p0, vec3 p1, vec3 p2, color color){
 	if(color.a == 0) return;
 	
-	u32 col = color::PackColorU32(color);
+	u32 col = color.rgba;
 	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
 	TempIndexVk*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
@@ -3710,10 +3699,10 @@ DrawTriangle(vec3 p0, vec3 p1, vec3 p2, color& color){
 }
 
 void Render::
-DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, color& color){
+DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, color color){
 	if(color.a == 0) return;
 	
-	u32 col = color::PackColorU32(color);
+	u32 col = color.rgba;
 	Mesh::Vertex* vp = tempFilledVertexArray + tempFilledVertexCount;
 	TempIndexVk*   ip = tempFilledIndexArray + tempFilledIndexCount;
 	
@@ -3729,7 +3718,7 @@ DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, color& color){
 }
 
 void Render::
-DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color& color){
+DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color color){
 	if(color.a == 0) return;
 	DrawLine(p0, p1, color);
 	DrawLine(p1, p2, color);
@@ -3738,14 +3727,14 @@ DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color& color){
 }
 
 inline void Render::
-DrawQuadFilled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color& color){
+DrawQuadFilled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color color){
 	if(color.a == 0) return;
 	DrawTriangleFilled(p0, p1, p2, color);
 	DrawTriangleFilled(p0, p2, p3, color);
 }
 
 void Render::
-DrawPoly(array<vec3>& points, color& color){
+DrawPoly(array<vec3>& points, color color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
 	for(int i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
@@ -3753,7 +3742,7 @@ DrawPoly(array<vec3>& points, color& color){
 }
 
 void Render::
-DrawPolyFilled(array<vec3>& points, color& color){
+DrawPolyFilled(array<vec3>& points, color color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
 	for(int i=2; i<points.count-1; ++i) DrawTriangleFilled(points[i-2], points[i-1], points[i], color);
@@ -3761,7 +3750,7 @@ DrawPolyFilled(array<vec3>& points, color& color){
 }
 
 void Render::
-DrawBox(mat4 transform, color& color){
+DrawBox(mat4 transform, color color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -3777,7 +3766,7 @@ DrawBox(mat4 transform, color& color){
 }
 
 void Render::
-DrawBoxFilled(mat4 transform, color& color){
+DrawBoxFilled(mat4 transform, color color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -3795,7 +3784,7 @@ DrawBoxFilled(mat4 transform, color& color){
 }
 
 void Render::
-DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color& color){
+DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color color){
 	if(color.a == 0) return;
 	
 	f32 y = tanf(RADIANS(fovx / 2.0f));

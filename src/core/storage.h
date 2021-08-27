@@ -3,6 +3,7 @@
 #define DESHI_STORAGE_H
 
 #include "model.h"
+#include "font.h"
 #include "../utils/color.h"
 #include "../utils/array.h"
 #include "../utils/tuple.h"
@@ -14,7 +15,8 @@ struct Storage_{
 	array<Texture*>  textures;
 	array<Material*> materials;
 	array<Model*>    models;
-	array<Light*>    lights;
+	array<Font*>     fonts;
+    array<Light*>    lights; //TODO(delle) move this elsewhere
 };
 
 //global storage pointer
@@ -28,7 +30,7 @@ namespace Storage{
 	///////////////
 	//// @mesh ////
 	///////////////
-	pair<u32,Mesh*> CreateBoxMesh(f32 width, f32 height, f32 depth, color color = color::WHITE);
+	pair<u32,Mesh*> CreateBoxMesh(f32 width, f32 height, f32 depth, color color = Color_White);
 	pair<u32,Mesh*> CreateMeshFromFile(const char* filename);
 	pair<u32,Mesh*> CreateMeshFromMemory(void* data);
 	void            SaveMesh(Mesh* mesh);
@@ -91,6 +93,18 @@ namespace Storage{
 	inline char*     ModelName(u32 modelIdx){ return DeshStorage->models[modelIdx]->name; };
 	inline u32       ModelBatchCount(u32 modelIdx){ return DeshStorage->models[modelIdx]->batches.size(); };
 	inline void      DeleteModel(u32 modelIdx){ DeleteModel(DeshStorage->models[modelIdx]); };
+    
+    ///////////////
+	//// @font ////
+	///////////////
+    pair<u32,Font*> CreateFontFromFileBDF(const char* filename);
+    pair<u32,Font*> CreateFontFromFileTTF(const char* filename);
+    
+    inline Font*    NullFont(){ return DeshStorage->fonts.data[0]; };
+	inline u32      FontCount(){ return DeshStorage->fonts.count; };
+	inline Font*    FontAt(u32 fontIdx){ return DeshStorage->fonts[fontIdx]; };
+	inline u32      FontIndex(Font* font){ forI(DeshStorage->fonts.count){ if(font == DeshStorage->fonts[i]) return i; } return -1; };
+	inline char*    FontName(u32 fontIdx){ return DeshStorage->fonts[fontIdx]->name.str; };
 };
 
 #endif //DESHI_STORAGE_H

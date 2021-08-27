@@ -27,9 +27,9 @@ add device_info command (graphics card, sound device, monitor res, etc)
 
 Console(2) TODOs
 -------------
+convert all ImGui stuff used in console to UI since console will be in final release
 showing a commands help if tab is pressed when the command is already typed
 add a setting for a limit to the number of log files
-convert all ImGui stuff used in console to UI since console will be in final release
 input history from previous inputs on UP and DOWN arrows
 add scrolling and scrollbar (PAGEUP and PAGEDOWN binds (CTRL for max scroll))
 add a general logging system with log levels and locations (for filtering)
@@ -87,10 +87,9 @@ SSBOs in shaders so we can pass variable length arrays to it
 Storage TODOs
 -------------
 add MTL parsing and extra face info
-store null128.png and 
-add versionion to Mesh since its saved in a binary format
+store null128.png and null shader in code
+add versioning to Mesh since its saved in a binary format
 speedup OBJ parsing and face generation
-store fonts in storage
 
 UI TODOs
 --------
@@ -109,8 +108,7 @@ Ungrouped TODOs
 ---------------
 add the ability to limit framerate
 add a file abstraction so file parsing is simple and not so explicitly handed in different files
-memory namespace with arenas and memory management
-____funcs: alloc()=Allocate(), zalloc()=ZeroAllocate(), talloc()=TempAllocate()
+add a logging core separate from the console
 cleanup utils classes so that they are declaration at top and definition below
 centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
 update imgui (so we can get disabled items/text)
@@ -122,82 +120,23 @@ ____to update it's canvas system.
 remake the sound system
 look into integrating TODOP with Discord
 
-
-
-Atmos TODOs (move these to atmos at some point)
----------------------------------------------------------------------------------------------------
-create a demo level
-rework and simplify entity creation so there is a distinction between development and gameplay creation
-change entity and admin LoadTEXT to be character based rather than std::string based
-fix DESH material and event saving/loading
-think of a way to implement different events being sent between comps as right now it's only one
-____is this necessary though? we can define these events at run time, but the connections must be made through UI
-____so maybe have a UI option that allows the comps update function to handle it and only connects them.
-____actually having an option for anything other than collider is kind of useless soooo maybe 
-____get rid of event on every component or just only let u choose that event on colliders
-pool/arena components and entities for better performance
-
-Physics TODOs
--------------
-make collider trigger latching a boolean, so it can continuous trigger an event while an obj is in it
-figure out how to handle multi events being set for a collider. for other components its not really an issue
-___because u just choose what event to send at run time, but i don't want to do this inside of the collider
-___functions themselves, as it would be way too much clutter. maybe a helper function on collider to choose what to do 
-redo main physics loop
-add physics collision sweeping
-add physics based collision resolution for remaining collider primitives
-add physics interaction functions
-implement collision manifold generation
-implement Complex Colliders
-
-
-Level Editor and Inspector TODOs
-------------------
-safety check on renaming things so no things have same name
-fix mesh viewing bools mixing?
-fix extra temp vertexes/indexes (when viewing triangle neighbors)
-fix normals viewing on big objects crash https://stackoverflow.com/questions/63092926/what-is-causing-vk-error-device-lost-when-calling-vkqueuesubmit
-change undo's to never use pointers and have undos that can act like linked lists to chain them
-rewrite the events menu (triggers need to be able to filter what causes them to activate)
-add box select for mesh inspector and entity selection
-editor settings (world grid, colors, positions)
-add safety checks on renaming things so no two meshes/materials/models have the same name
-see folders inside different folders when loading things (leading into a asset viewer)
-orthographic grabbing/rotating
-add transfering the player pointer between entities that have an actor comp (combo in Global Tab)
-orbitting camera for rotating around objects
-context menu when right clicking on an object 
-typing numbers while grabbing/rotating/scaling for precise manipulation (like in Blender)
-implement grabbing/rotating/scaling with a visual tool thing (like in Unreal)
-orthographic side views
-(maybe) multiple viewports
-implement orthographic grabbing 
-entity filtering in entity list
-combine undo manager into editor file
----------------------------------------------------------------------------------------------------
-
 Bug Board       //NOTE mark these with a last-known active date (M/D/Y)
 ---------
-(06/13/21) rotating using R no longer seems to work, it wildly rotates the object
-__________ it might have something to do with our rotate by axis function
 (07/10/21) the program crashes if default asset files are not present
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
 (07/14/21) the config parser sometimes throws a console error that its unable to parse the final empty line of configs
-(07/20/21) copy/paste produces an extra mesh in the renderer sometimes
-(08/03/21) UI's text sometimes produces artifacts around some letters. it seems like it depends
-__________ on the y level of each character and only seems to happen on a, b, i, j, q, r, and z on gohufont-11
 
 */
 
 //// external for core ////
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
-#include "external/stb/stb_image.h"
-#include "external/imgui/imgui.cpp"
-#include "external/imgui/imgui_demo.cpp"
-#include "external/imgui/imgui_draw.cpp"
-#include "external/imgui/imgui_tables.cpp"
-#include "external/imgui/imgui_widgets.cpp"
+#include <stb/stb_image.h>
+#include <imgui/imgui.cpp>
+#include <imgui/imgui_demo.cpp>
+#include <imgui/imgui_draw.cpp>
+#include <imgui/imgui_tables.cpp>
+#include <imgui/imgui_widgets.cpp>
 #undef ERROR
 #undef DELETE
 
@@ -219,9 +158,8 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 #include "utils/view.h"
 #include "math/math.h"
 
-#include "utils/font.h"
-
 //// STL for core ////
+#include <cstdlib>
 #include <iostream>
 #include <iomanip>
 #include <filesystem>
@@ -233,7 +171,9 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 #include <unordered_map>
 
 //// core headers ////
+#include "memory.h"
 #include "deshi.h"
+#include "core/font.h"
 
 //// renderer cpp (and libs) ////
 #if   DESHI_VULKAN
@@ -241,27 +181,33 @@ __________ on the y level of each character and only seems to happen on a, b, i,
 #pragma comment(lib,"vulkan-1.lib")
 #pragma comment(lib,"glfw3.lib")
 #pragma comment(lib,"shaderc_combined.lib")
-#endif
+#endif //_MSC_VER
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <shaderc/shaderc.h>
-#include "external/imgui/imgui_impl_vulkan.cpp"
-#include "external/imgui/imgui_impl_glfw.cpp"
+#include <imgui/imgui_impl_vulkan.cpp>
+#include <imgui/imgui_impl_glfw.cpp>
 #include "core/renderers/vulkan.cpp"
-#elif DESHI_OPENGL
+#elif DESHI_OPENGL //DESHI_VULKAN
 #if defined(_MSC_VER)
 #pragma comment(lib,"opengl32.lib")
 #pragma comment(lib,"glfw3.lib")
-#endif
-#include <glad/glad.h>
+#endif //_MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4551)
+#define GLAD_GL_IMPLEMENTATION
+#include <glad/gl.h>
+#pragma warning(pop)
 #include <GLFW/glfw3.h>
-
+#define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
+#include <imgui/imgui_impl_opengl3.cpp>
+#include <imgui/imgui_impl_glfw.cpp>
 #include "core/renderers/opengl.cpp"
-#elif DESHI_DIRECTX
+#elif DESHI_DIRECTX //DESHI_OPENGL
 
-#else
-Assert(!"no renderer selected");
-#endif
+#else  //DESHI_DIRECTX
+#error "no renderer selected"
+#endif //DESHI_VULKAN
 
 //// core cpp ////
 #include "core/window.cpp"
@@ -272,48 +218,42 @@ Assert(!"no renderer selected");
 #include "core/ui.cpp"
 #include "core/commands.cpp"
 
-local Time     time_;   Time*     g_time    = &time_; //time_ because there is a c-func time() D:
-local Window   window;  Window*   g_window  = &window;
-local Input    input;   Input*    g_input   = &input;
-#ifndef DESHI_DISABLE_CONSOLE
-local Console  console; Console*  g_console = &console;
-#endif
-local Storage_ storage; Storage_* g_storage = &storage;
+local Time     deshi_time;    Time*     g_time    = &deshi_time;
+local Window   deshi_window;  Window*   g_window  = &deshi_window;
+local Input    deshi_input;   Input*    g_input   = &deshi_input;
+local Console  deshi_console; Console*  g_console = &deshi_console;
+local Storage_ deshi_storage; Storage_* g_storage = &deshi_storage;
 
-void deshi::init() {
+void deshi::init(){
 	TIMER_START(t_d); TIMER_START(t_s);
-    
-	//pre-init setup
 	Assets::enforceDirectories();
-    
-	//init engine core
-	TIMER_RESET(t_s); time_.Init(700);        SUCCESS("Finished time initialization in ",              TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); window.Init(1280, 720); SUCCESS("Finished input and window initialization in ",  TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); deshi_time.Init(300);         SUCCESS("Finished time initialization in ",              TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); deshi_window.Init(1280, 720); SUCCESS("Finished input and window initialization in ",  TIMER_END(t_s), "ms");
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
-	TIMER_RESET(t_s); console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); deshi_console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
 #endif
-	TIMER_RESET(t_s); Render::Init();         SUCCESS("Finished render initialization in ",            TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); Storage::Init();        SUCCESS("Finished storage initialization in ",           TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); Render::Init();               SUCCESS("Finished render initialization in ",            TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); Storage::Init();              SUCCESS("Finished storage initialization in ",           TIMER_END(t_s), "ms");
 #ifndef DESHI_DISABLE_IMGUI
-	TIMER_RESET(t_s); DeshiImGui::Init();     SUCCESS("Finished imgui initialization in ",             TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); DeshiImGui::Init();           SUCCESS("Finished imgui initialization in ",             TIMER_END(t_s), "ms");
 #endif
-	TIMER_RESET(t_s); UI::Init();             SUCCESS("Finished UI initialization in ",                TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); Cmd::Init();            SUCCESS("Finished Cmd initialization in ",               TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); UI::Init();                   SUCCESS("Finished UI initialization in ",                TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); Cmd::Init();                  SUCCESS("Finished commands initialization in ",          TIMER_END(t_s), "ms");
     
 	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
     
-	glfwShowWindow(window.window);
+	glfwShowWindow(deshi_window.window);
 }
 
-void deshi::cleanup() {
+void deshi::cleanup(){
 	DeshiImGui::Cleanup();
 	Render::Cleanup();
-	window.Cleanup();
-	console.CleanUp(); 
+	deshi_window.Cleanup();
+	deshi_console.CleanUp(); 
 	Console2::Cleanup();
 }
 
-bool deshi::shouldClose() {
+bool deshi::shouldClose(){
 	glfwPollEvents(); //this maybe should be elsewhere, but i dont want to move glfw includes to deshi.h 
-	return glfwWindowShouldClose(window.window) || window.closeWindow;
+	return glfwWindowShouldClose(deshi_window.window) || deshi_window.closeWindow;
 }

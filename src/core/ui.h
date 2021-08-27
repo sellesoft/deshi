@@ -29,11 +29,11 @@
 */
 
 #include "renderer.h"
+#include "font.h"
 #include "../defines.h"
 #include "../math/VectorMatrix.h"
 #include "../utils/color.h"
 #include "../utils/string.h"
-#include "../utils/font.h"
 
 enum UIStyleVar : u32 {
 	UIStyleVar_WindowPadding,	    // default vec2(10, 10)      spacing between every item and the edges of the window
@@ -176,7 +176,7 @@ struct UIDrawCmd {
 	
 	//rectangles have dimensions
 	vec2 dimensions;
-
+    
 	//lines have a second position
 	vec2 position2;
 	
@@ -221,11 +221,11 @@ struct UIItem {
 	UIItemType type;
 	vec2       initialCurPos; //cursor position before this item moved it 
 	UIStyle    style;         //style at the time of making the item
-
+    
 	
 	vec2 position; //relative to the window its being held in
 	vec2 size;
-
+    
 	//all draw command positions are relative to the items position
 	array<UIDrawCmd> drawCmds;
 };
@@ -262,7 +262,7 @@ struct UIWindow {
 	
 	UIWindowFlags flags;
 	
-
+    
 	//base items are always drawn before items and is just a way to defer drawing 
 	//base window stuff to EndWindow(), so we can do dynamic sizing
 	array<UIItem> items;
@@ -282,18 +282,18 @@ struct UIWindow {
 	//this is the state of style when EndWindow() is called for the window
 	//meaning the style for elements before the last bunch could be different
 	//if the user changes stuff before ending the window and therefore this should be used carefully!!
-
+    
 	//TODO decide if this is necessary anymore or not since we have style on items now
 	UIStyle style;
-
+    
 	UIWindow() {};
-
+    
 };
 
 enum UIRowFlags_ {
 	UIRowFlags_NONE = 0,
 	UIRowFlags_Fit  = 1 << 0,
-
+    
 }; typedef u32 UIRowFlags;
 
 
@@ -308,15 +308,15 @@ namespace UI {
 	vec2    GetLastItemPos();
 	vec2    GetLastItemSize();
 	vec2    GetLastItemScreenPos();
-
+    
 	//Row commands
 	void Row(u32 num_items, UIRowFlags flags = 0);
     
 	//primitives
-	void Rect(vec2 pos, vec2 dimen, color color = color::WHITE);
-	void RectFilled(vec2 pos, vec2 dimen, color color = color::WHITE);
+	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
+	void RectFilled(vec2 pos, vec2 dimen, color color = Color_White);
     
-	void Line(vec2 start, vec2 end, float thickness = 1, color color = color::WHITE);
+	void Line(vec2 start, vec2 end, float thickness = 1, color color = Color_White);
     
 	void Text(string text, UITextFlags flags = 0);
 	void Text(string text, vec2 pos, UITextFlags flags = 0);
@@ -344,7 +344,7 @@ namespace UI {
 	bool InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextFlags flags = 0);
 	bool InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
 	bool InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
-
+    
     
 	//windows
 	void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);

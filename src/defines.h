@@ -3,6 +3,7 @@
 #define DESHI_DEFINES_H
 
 #include <cstddef>
+#include <cstdlib>
 
 //deshi constants
 //NOTE arbitrarily chosen size, but its convenient to have a fixed size for names
@@ -74,12 +75,7 @@ typedef double             f64;
 //for-loop shorthands for the simple,sequential iteration case
 #define forX(var_name,iterations) for(int var_name=0; var_name<(iterations); ++var_name)
 #define forI(iterations) for(int i=0; i<(iterations); ++i)
-
-//for-each shorthand
-//#define FORE_(LINE) zz_forit##LINE
-//#define FORE(LINE) FORE_(LINE)
 #define forE(iterable) for(auto it = iterable.begin(), it_begin = iterable.begin(), it_end = iterable.end(); it != it_end; ++it)
-
 
 //dst: destination c-string; src: source c-string; bytes: number of characters to copy
 //NOTE the last character in the copy is replaced with a null-terminating character
@@ -109,11 +105,26 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define Gigabytes(x) (Megabytes((x))*1024ULL)
 #define Terabytes(x) (Gigabytes((x))*1024ULL)
 
-//NOTE function calls in these macros can get executed for each time they are placed
+//NOTE function calls in these macros can get executed for each time they are placed if not optimized away
 //eg: Min(5, sqrt(26)) expands to (5 < sqrt(26)) ? 5 : sqrt(26)
 #define Clamp(value, min, max) (((signed)(value) < (signed)(min)) ? (min) : (((signed)(value) > (signed)(max)) ? (max) : (value)))
 #define Max(a, b) (((a) > (b)) ? (a) : (b))
 #define Min(a, b) (((a) < (b)) ? (a) : (b))
 #define RoundUpTo(value, multiple) (((size_t)((value) + (((size_t)(multiple))-1)) / (size_t)(multiple)) * (size_t)(multiple))
+
+#define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
+
+#if   defined(_MSC_VER)
+#define ByteSwap16(x) _byteswap_ushort(x)
+#define ByteSwap32(x) _byteswap_ulong(x)
+#define ByteSwap64(x) _byteswap_uint64(x)
+#elif defined(__GNUC__) || defined(__clang__)
+#define ByteSwap16(x) __builtin_bswap16(x)
+#define ByteSwap32(x) __builtin_bswap32(x)
+#define ByteSwap64(x) __builtin_bswap64(x)
+#else
+//TODO(delle) do actual bitmath here
+#error "Unhandled compiler"
+#endif
 
 #endif //DESHI_DEFINES_H

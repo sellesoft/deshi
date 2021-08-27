@@ -45,21 +45,20 @@ namespace Console2{
     local ring_array<ColoredPstring> dictionary;
     
     local map<const char*, color> color_strings{
-        {"red",    color::RED},     {"dred",    color::DARK_RED},
-        {"blue",   color::BLUE},    {"dblue",   color::DARK_BLUE},
-        {"cyan",   color::CYAN},    {"dcyan",   color::DARK_CYAN},
-        {"grey",   color::GREY},    {"dgrey",   color::DARK_GREY},
-        {"green",  color::GREEN},   {"dgreen",  color::DARK_GREEN},
-        {"yellow", color::YELLOW},  {"dyellow", color::DARK_YELLOW},
-        {"magen",  color::MAGENTA}, {"dmagen",  color::DARK_MAGENTA},
-        {"white",  color::WHITE},   {"black",   color::BLACK}
+        {"red",    Color_Red},     {"dred",    Color_DarkRed},
+        {"blue",   Color_Blue},    {"dblue",   Color_DarkBlue},
+        {"cyan",   Color_Cyan},    {"dcyan",   Color_DarkRed},
+        {"grey",   Color_Grey},    {"dgrey",   Color_DarkGrey},
+        {"green",  Color_Green},   {"dgreen",  Color_DarkGreen},
+        {"yellow", Color_Yellow},  {"dyellow", Color_DarkYellow},
+        {"magen",  Color_Magenta}, {"dmagen",  Color_DarkMagenta},
+        {"white",  Color_White},   {"black",   Color_Black}
     };
     
     
     ////////////////////////////
     //// internal functions ////
     ////////////////////////////
-    
     local void FlushBuffer(){
         //!Incomplete
     }
@@ -122,7 +121,8 @@ namespace Console2{
     //    ^c=cyan^/^c^^c=dcyan^\\^c^ - reference
     //    ^c=red^red^c^white^c=blue^blue^c^
     //TODO(delle) this might break if the string doesnt end with \n
-    void Log(string message){
+    void Log(const string& _message){
+        string message = _message;
         message += "\n";
         
         int special_start_idx = -1, special_stop_idx = -1;
@@ -142,7 +142,7 @@ namespace Console2{
                     if((color_start_idx == -1) && (i != chunk_start)){
                         u32 idx = history.count;
                         history.add(message.str+chunk_start, i-chunk_start);
-                        dictionary.add(ColoredPstring{color::WHITE, history.at(idx), history.at(idx)+(i-chunk_start)});
+                        dictionary.add(ColoredPstring{Color_White, history.at(idx), history.at(idx)+(i-chunk_start)});
                     }
                 }
             }
@@ -186,7 +186,7 @@ namespace Console2{
                 if((i-chunk_start+1 - chunk_start) != 0){
                     u32 idx = history.count;
                     history.add(message.str+chunk_start, (i-chunk_start)+2); //+2 to copy the \0 as well
-                    dictionary.add(ColoredPstring{color::WHITE, history.at(idx), history.at(idx)+((i-chunk_start)+1)});
+                    dictionary.add(ColoredPstring{Color_White, history.at(idx), history.at(idx)+((i-chunk_start)+1)});
                 }
             }
         }
@@ -254,9 +254,9 @@ namespace Console2{
             if(!open_amount) return; //early out if fully closed
             
             if(test_swap){
-                Render::FillRectUI(vec2(console_x, console_y), vec2(console_w, console_h), color::BLACK); //background
+                Render::FillRectUI(vec2(console_x, console_y), vec2(console_w, console_h), Color_Black); //background
                 Render::FillRectUI(vec2(console_x+pad, console_y+pad), vec2(console_w-pad2x, console_h-pad2x-input_box_height), color(0, 9, 13)); //report
-                Render::FillRectUI(vec2(console_x+pad, console_h-pad-input_box_height), vec2(console_w-pad2x, input_box_height), color(0, 62, 62)); //input
+                Render::FillRectUI(vec2(console_x+pad, console_h-pad-input_box_height), vec2(console_w-pad2x, input_box_height), Color_VeryDarkCyan); //input
             }else{
                 ImGuiStyle& style = ImGui::GetStyle();
                 style.AntiAliasedFill = false;
@@ -343,7 +343,7 @@ namespace Console2{
                     ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackAlways;
                     if(show_autocomplete) input_text_flags = ImGuiInputTextFlags_None;
                     
-                    ImGui::PushStyleColor(ImGuiCol_FrameBg, ColorToVec4(color::VERY_DARK_CYAN));
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, Color_VeryDarkCyan);
                     ImGui::SetNextItemWidth(ImGui::GetWindowWidth() - 16);
                     //TODO(delle,OpCl) this can be optimized by reducing the amount of string copies
                     if(ImGui::InputText("##console_input_text", input_buffer, input_max_size-1, input_text_flags, &TextEditCallback, 0)) {
