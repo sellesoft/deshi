@@ -131,12 +131,12 @@ __________ maybe store the text in the actual source and create the file from th
 //// external for core ////
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
-#include "external/stb/stb_image.h"
-#include "external/imgui/imgui.cpp"
-#include "external/imgui/imgui_demo.cpp"
-#include "external/imgui/imgui_draw.cpp"
-#include "external/imgui/imgui_tables.cpp"
-#include "external/imgui/imgui_widgets.cpp"
+#include <stb/stb_image.h>
+#include <imgui/imgui.cpp>
+#include <imgui/imgui_demo.cpp>
+#include <imgui/imgui_draw.cpp>
+#include <imgui/imgui_tables.cpp>
+#include <imgui/imgui_widgets.cpp>
 #undef ERROR
 #undef DELETE
 
@@ -185,21 +185,27 @@ __________ maybe store the text in the actual source and create the file from th
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <shaderc/shaderc.h>
-#include "external/imgui/imgui_impl_vulkan.cpp"
-#include "external/imgui/imgui_impl_glfw.cpp"
+#include <imgui/imgui_impl_vulkan.cpp>
+#include <imgui/imgui_impl_glfw.cpp>
 #include "core/renderers/vulkan.cpp"
-#elif DESHI_OPENGL
+#elif DESHI_OPENGL //DESHI_VULKAN
 #if defined(_MSC_VER)
 #pragma comment(lib,"opengl32.lib")
 #pragma comment(lib,"glfw3.lib")
 #endif //_MSC_VER
-#include <glad/glad.h>
+#pragma warning(push)
+#pragma warning(disable:4551)
+#define GLAD_GL_IMPLEMENTATION
+#include <glad/gl.h>
+#pragma warning(pop)
 #include <GLFW/glfw3.h>
-
+#define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
+#include <imgui/imgui_impl_opengl3.cpp>
+#include <imgui/imgui_impl_glfw.cpp>
 #include "core/renderers/opengl.cpp"
-#elif DESHI_DIRECTX
+#elif DESHI_DIRECTX //DESHI_OPENGL
 
-#else
+#else  //DESHI_DIRECTX
 #error "no renderer selected"
 #endif //DESHI_VULKAN
 

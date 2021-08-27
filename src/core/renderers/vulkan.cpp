@@ -169,6 +169,9 @@ local ConfigMap configMap = {
 local RenderStats   stats{};
 local RendererStage rendererStage = RENDERERSTAGE_NONE;
 
+
+//-------------------------------------------------------------------------------------------------
+// @VULKAN VARIABLES
 //arbitray limits, change if needed
 #define MAX_UI_VERTICES 0xFFFF //max u16: 65535
 #define MAX_UI_INDICES  3*MAX_UI_VERTICES
@@ -197,11 +200,6 @@ local TempIndexVk  tempFilledIndexArray    [MAX_TEMP_INDICES];
 typedef u32 ModelIndexVk;
 local ModelIndexVk modelCmdCount = 0;
 local ModelCmdVk   modelCmdArray[MAX_MODEL_CMDS];
-
-
-//-------------------------------------------------------------------------------------------------
-// @VULKAN VARIABLES
-
 
 local array<MeshVk>      vkMeshes;
 local array<TextureVk>   vkTextures;
@@ -427,9 +425,7 @@ local struct{ //TODO(delle,Vu) distribute these variables around
 
 
 //-------------------------------------------------------------------------------------------------
-// VULKAN FUNCTIONS
-
-
+// @VULKAN FUNCTIONS
 ////////////////////
 //// @utilities ////
 ////////////////////
@@ -3095,7 +3091,6 @@ NewFrame(){
 
 //-------------------------------------------------------------------------------------------------
 // @UI INTERFACE
-
 enum texTypes : u32 {
 	UITEX_WHITE,
 	UITEX_FONT
@@ -3103,16 +3098,16 @@ enum texTypes : u32 {
 
 //TODO(sushi) find a nicer way to keep track of this
 //NOTE im not sure yet if i should be keeping track of this for each primitive or not yet but i dont think i have to
-vec2 prevScissorOffset = vec2(0, 0);
+vec2 prevScissorOffset = vec2( 0,  0);
 vec2 prevScissorExtent = vec2(-1, -1);
 
-void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if (color.a == 0) return;
+	if(color.a == 0) return;
     
-	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
-		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-		scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
+	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
+       scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+       scissorExtent != prevScissorExtent){ //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
@@ -3134,11 +3129,10 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	if (scissorExtent.x != -1) {
+	if(scissorExtent.x != -1){
 		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
 		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}
-	else {
+	}else{
 		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
 		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
 	}
@@ -3146,33 +3140,31 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
 //straight lines, see below
-void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if (color.a == 0) return;
+	if(color.a == 0) return;
 	
 	//top, left, right, bottom
 	DrawLineUI(pos.xAdd(-1),     pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
 	DrawLineUI(pos,              pos + dimensions.xSet(0),          1, color, scissorOffset, scissorExtent);
 	DrawLineUI(pos + dimensions, pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
 	DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
-    
 }
 
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
 //when drawing them straight
 void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if (color.a == 0) return;
+	if(color.a == 0) return;
     
 	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
        scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-       scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
+       scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-    
     
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
@@ -3197,18 +3189,17 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	if (scissorExtent.x != -1) {
+	if(scissorExtent.x != -1){
 		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
 		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}
-	else {
+	}else{
 		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
 		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
 	}
 }
 
 void Render::
-DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent) {
+DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
@@ -3219,16 +3210,15 @@ DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorE
 	}
 }
 
-
 //NOTE: text scaling looks very ugly with bit map fonts as far as i know
 void Render::
-DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent) {
+DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if (color.a == 0) return;
+	if(color.a == 0) return;
 	
-	if (uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 
-		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-		scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
+	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 
+       scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+       scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
@@ -3254,8 +3244,6 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset,
 	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,botoff}; vp[2].color = col;
 	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,botoff}; vp[3].color = col;
 	
-	
-	
 	uiVertexCount += 4;
 	uiIndexCount  += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -3263,19 +3251,15 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset,
 	if(scissorExtent.x != -1){
 		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
 		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}
-	else {
+	}else{
 		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
 		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0,0);
 	}
-	
 }
 
 
 //-------------------------------------------------------------------------------------------------
 // @INTERFACE FUNCTIONS
-
-
 ///////////////////
 //// @settings ////
 ///////////////////
@@ -3674,7 +3658,7 @@ DrawModel(Model* model, mat4 matrix){
 
 void Render::
 DrawModelWireframe(Model* mesh, mat4 matrix, color color){
-	//!Incomplete
+	//!!Incomplete
 }
 
 void Render::
@@ -3683,7 +3667,7 @@ DrawLine(vec3 start, vec3 end, color color){
 	
 	u32 col = color.rgba;
 	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
-	TempIndexVk*   ip = tempWireframeIndexArray + tempWireframeIndexCount;
+	TempIndexVk*  ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
 	ip[0] = tempWireframeVertexCount; 
 	ip[1] = tempWireframeVertexCount+1; 
