@@ -26,6 +26,9 @@ struct ColorMod {
 	color oldCol;
 };
 
+static constexpr u32 CHAR_SIZE = sizeof(CHAR);
+
+
 //for style variable stack
 struct VarMod {
 	UIStyleVar var;
@@ -65,11 +68,11 @@ local bool NextActive   = 0;
 
 //window map which only stores known windows
 //and their order in layers eg. when one gets clicked it gets moved to be first if its set to
-local map<string, UIWindow*>        windows;     
-local map<string, UIInputTextState> inputTexts;  //stores known input text labels and their state
-local array<UIWindow*>              windowStack; //window stack which allow us to use windows like we do colors and styles
-local array<ColorMod>               colorStack; 
-local array<VarMod>                 varStack; 
+local map<const char*, UIWindow*>        windows;     
+local map<const char*, UIInputTextState> inputTexts;  //stores known input text labels and their state
+local array<UIWindow*>                   windowStack; //window stack which allow us to use windows like we do colors and styles
+local array<ColorMod>                    colorStack; 
+local array<VarMod>                      varStack; 
 
 local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
 
@@ -204,6 +207,8 @@ void UI::Row(u32 num_items, UIRowFlags flags){
 //  wether or not the cursor should be moved there or somewhere else based on certain conditions
 //  such as if we're placing items in a row
 //  it also (for now) repositions items into a row if that's supposed to be done
+//TODO(sushi) this should probably take in an item and decide how to move the cursor that way
+//			  that way cursor control is actually centralized here, whereas right now we are still determining how to move the cursor outside of this function
 inline void AdvanceCursor(vec2 nupos){
 	//if we're finished setting up a row we position everything according to the flag
 	if (rowCount && !rowItemsLeft) {
@@ -293,11 +298,11 @@ void UI::Line(vec2 start, vec2 end, float thickness, color color){
 
 
 //internal function for actually making and adding the drawCmd
-local void TextCall(string text, vec2 pos, color color, UIItem& item) {
+local void TextCall(const char* text, vec2 pos, color color, UIItem& item) {
 	
     
 	UIDrawCmd drawCmd{ UIDrawType_Text };
-	drawCmd.text = text;
+	drawCmd.text = string(text); 
 	drawCmd.position = pos;
 	drawCmd.color = color;
 	//drawCmd.scissorOffset = -item.position;
@@ -308,10 +313,12 @@ local void TextCall(string text, vec2 pos, color color, UIItem& item) {
 
 //main function for wrapping, where position is starting position of text relative to the top left of the window
 //TODO(sushi) clean this up 
-inline local void WrapText(string text, vec2 pos, color color, bool move_cursor = true) {
+inline local void WrapText(const char* in, vec2 pos, color color, bool move_cursor = true) {
 	using namespace UI;
 	UIItem item{ UIItemType_Text, curwin->cursor, style };
     
+	string text = in;
+
 	//we split string by newlines and put them into here 
 	//maybe make this into its own function
 	array<string> newlined;
@@ -358,7 +365,7 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 			//find closest space to split by
 			u32 splitat = t.findLastChar(' ', maxChars);
 			string nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
-			TextCall(nustr, workcur, color, item);
+			TextCall(nustr.str, workcur, color, item);
             
 			t = t.substr(nustr.size);
 			workcur.y += style.font->height + style.itemSpacing.y;
@@ -367,7 +374,7 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 			while (t.size > maxChars) {
 				splitat = t.findLastChar(' ', maxChars);
 				nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
-				TextCall(nustr, workcur, color, item);
+				TextCall(nustr.str, workcur, color, item);
                 
 				t = t.substr(nustr.size);
 				workcur.y += style.font->height + style.itemSpacing.y;
@@ -376,7 +383,7 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 			}
             
 			//write last bit of text
-			TextCall(t, workcur, color, item);
+			TextCall(t.str, workcur, color, item);
 			workcur.y += style.font->height + style.itemSpacing.y;
             
 		}
@@ -384,7 +391,7 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 			//we have to get max string length to determine item's width here
 			item.size.x = Max(style.font->width * t.size, item.size.x);
             
-			TextCall(t, workcur, color, item);
+			TextCall(t.str, workcur, color, item);
 			workcur.y += style.font->height + style.itemSpacing.y;
 		}
 	}
@@ -408,7 +415,7 @@ inline local void WrapText(string text, vec2 pos, color color, bool move_cursor 
 }
 
 //TODO(sushi) make NoWrap also check for newlines
-void UI::Text(string text, UITextFlags flags) {
+void UI::Text(const char* text, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
 		UIItem item{ UIItemType_Text, curwin->cursor, style };
 		item.position = curwin->cursor + style.windowPadding - curwin->scroll;
@@ -426,7 +433,7 @@ void UI::Text(string text, UITextFlags flags) {
 	}
 }
 
-void UI::Text(string text, vec2 pos, UITextFlags flags) {
+void UI::Text(const char* text, vec2 pos, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
 		UIItem item{ UIItemType_Text, curwin->cursor, style };
 		item.position = pos - curwin->scroll;
@@ -442,7 +449,7 @@ void UI::Text(string text, vec2 pos, UITextFlags flags) {
 	}
 }
 
-void UI::Text(string text, color color, UITextFlags flags) {
+void UI::Text(const char* text, color color, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
 		UIItem item{ UIItemType_Text, curwin->cursor, style };
 		item.position = curwin->cursor + style.windowPadding - curwin->scroll;
@@ -461,7 +468,7 @@ void UI::Text(string text, color color, UITextFlags flags) {
     
 }
 
-void UI::Text(string text, vec2 pos, color color, UITextFlags flags) {
+void UI::Text(const char* text, vec2 pos, color color, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
 		UIItem item{ UIItemType_Text, curwin->cursor, style };
 		item.position = pos - curwin->scroll;
@@ -484,7 +491,7 @@ void UI::Text(string text, vec2 pos, color color, UITextFlags flags) {
 //begins a window with a name, position, and dimensions along with some optional flags
 //if begin window is called with a name that was already called before it will work with
 //the data that window previously had
-void UI::BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
+void UI::BeginWindow(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
 	Assert(!rowCount, "Attempted to start a window without satifying a row quota (holy shit reword this)");
     
 	//save previous window on stack
@@ -699,7 +706,7 @@ void UI::SetNextWindowSize(float x, float y) {
 	NextWinSize = vec2(x, y);
 }
 
-void UI::SetWindowName(string name) {
+void UI::SetWindowName(const char* name) {
 	curwin->name = name;
 }
 
@@ -711,7 +718,7 @@ bool UI::AnyWinHovered() {
 	return globalHovered || draggingWin;
 }
 
-void UI::ShowDebugWindowOf(string name) {
+void UI::ShowDebugWindowOf(const char* name) {
 	if (UIWindow* debugee = *windows.at(name)) {
 		
 		persist bool show_drawcall_sizes    = 1;
@@ -729,9 +736,9 @@ void UI::ShowDebugWindowOf(string name) {
         
 		PushVar(UIStyleVar_ItemSpacing, vec2(5, 1));
 		SetNextWindowSize(CalcTextSize(info) + vec2(style.windowPadding.x * 2, style.windowPadding.y * 2));
-		BeginWindow(TOSTRING("#", name, " debug", "#"), debugee->position + vec2::ONE * 30, debugee->dimensions, UIWindowFlags_FitAllElements);
+		BeginWindow(TOSTRING("#", name, " debug", "#").str, debugee->position + vec2::ONE * 30, debugee->dimensions, UIWindowFlags_FitAllElements);
         
-		Text(info);
+		Text(info.str);
         
 		Checkbox("cursor",         &show_cursor);
 		Checkbox("Item boxes",     &show_drawcall_sizes);
@@ -840,19 +847,19 @@ void UI::SetNextItemSize(vec2 size) {
 }
 
 //widget stuff
-bool UI::Button(string text) {
+bool UI::Button(const char* text) {
 	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle }; return true;
 }
 
-bool UI::Button(string text, vec2 pos){
+bool UI::Button(const char* text, vec2 pos){
 	return true;
 }
 
-bool UI::Button(string text, color color){
+bool UI::Button(const char* text, color color){
 	return true;
 }
 
-bool UI::Button(string text, vec2 pos, color color){
+bool UI::Button(const char* text, vec2 pos, color color){
 	return true;
 }
 
@@ -905,14 +912,16 @@ void UI::Checkbox(string label, bool* b) {
 //@InputText
 
 //final input text
-bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, UIInputTextCallback callback, UIInputTextFlags flags, bool moveCursor) {
+bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UIInputTextCallback callback, UIInputTextFlags flags, bool moveCursor) {
 	UIItem item{ UIItemType_InputText, curwin->cursor, style };
     
 	UIInputTextState* state;
+
+	size_t charCount = strlen(buff);
     
 	vec2 dim;
 	if (flags & UIInputTextFlags_FitSizeToText) {
-		dim = UI::CalcTextSize(buffer);
+		dim = UI::CalcTextSize(string(buff));
 	}
 	else if (NextItemSize.x != -1) {
 		dim = NextItemSize;
@@ -924,8 +933,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, UI
     
 	if (!(state = inputTexts.at(label))) {
 		state = inputTexts.atIdx(inputTexts.add(label));
-		state->buffer = buffer;
-		state->cursor = buffer.size;
+		state->cursor = charCount;
 		state->id = hash<string>{}(label);
 		state->selectStart = 0;
 		state->selectEnd = 0;
@@ -933,16 +941,15 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, UI
 	}
 	else {
 		state->callback = callback;
-		state->buffer = buffer;
 	}
     
-	if (buffer.size < state->cursor)
-		state->cursor = buffer.size;
+	if (charCount < state->cursor)
+		state->cursor = charCount;
     
 	//data for callback function
 	UIInputTextCallbackData data;
 	data.flags = flags;
-	data.buffer = &buffer;
+	data.buffer = buff;
 	data.selectionStart = state->selectStart;
 	data.selectionEnd = state->selectEnd;
     
@@ -959,7 +966,7 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, UI
     
 	bool bufferChanged = 0;
 	if (activeId == state->id) {
-		if (DeshInput->KeyPressedAnyMod(Key::RIGHT) && state->cursor < buffer.size) state->cursor++;
+		if (DeshInput->KeyPressedAnyMod(Key::RIGHT) && state->cursor < charCount) state->cursor++;
 		if (DeshInput->KeyPressedAnyMod(Key::LEFT) && state->cursor > 0) state->cursor--;
         
 		data.cursorPos = state->cursor;
@@ -987,54 +994,63 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, UI
 			TIMER_RESET(hold); 
 			
 		}
-        
+
+		auto insert = [&](char c, u32 idx) {
+			memmove(buff + idx + 1, buff + idx, (buffSize - idx) * CHAR_SIZE);
+			buff[idx] = c;
+		};
+		
+		auto erase = [&](u32 idx) {
+			memmove(buff + idx, buff + idx + 1, (--charCount) * CHAR_SIZE);
+		};
+
 		char charPlaced;
 		auto placeKey = [&](u32 i, u32 ins, char toPlace) {
 			if (i >= Key::A && i <= Key::Z) {
 				if (DeshInput->capsLock || DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT))
-					buffer.insert(toPlace, ins);
+					insert(toPlace, ins);
 				else
-					buffer.insert(toPlace + 32, ins);
+					insert(toPlace + 32, ins);
 			}
 			else if (i >= Key::K0 && i <= Key::K9) {
 				if (DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT)) {
 					switch (i) {
-						case Key::K0: data.character = ')'; buffer.insert(')', ins); break;
-						case Key::K1: data.character = '!'; buffer.insert('!', ins); break;
-						case Key::K2: data.character = '@'; buffer.insert('@', ins); break;
-						case Key::K3: data.character = '#'; buffer.insert('#', ins); break;
-						case Key::K4: data.character = '$'; buffer.insert('$', ins); break;
-						case Key::K5: data.character = '%'; buffer.insert('%', ins); break;
-						case Key::K6: data.character = '^'; buffer.insert('^', ins); break;
-						case Key::K7: data.character = '&'; buffer.insert('&', ins); break;
-						case Key::K8: data.character = '*'; buffer.insert('*', ins); break;
-						case Key::K9: data.character = '('; buffer.insert('(', ins); break;
+						case Key::K0: data.character = ')'; insert(')', ins); break;
+						case Key::K1: data.character = '!'; insert('!', ins); break;
+						case Key::K2: data.character = '@'; insert('@', ins); break;
+						case Key::K3: data.character = '#'; insert('#', ins); break;
+						case Key::K4: data.character = '$'; insert('$', ins); break;
+						case Key::K5: data.character = '%'; insert('%', ins); break;
+						case Key::K6: data.character = '^'; insert('^', ins); break;
+						case Key::K7: data.character = '&'; insert('&', ins); break;
+						case Key::K8: data.character = '*'; insert('*', ins); break;
+						case Key::K9: data.character = '('; insert('(', ins); break;
 					}
 				}
 				else {
 					data.character = KeyStringsLiteral[i];
-					buffer.insert(KeyStringsLiteral[i], ins);
+					insert(KeyStringsLiteral[i], ins);
 				}
 			}
 			else {
 				if (DeshInput->KeyDownAnyMod(Key::LSHIFT) || DeshInput->KeyDownAnyMod(Key::RSHIFT)) {
 					switch (i) {
-						case Key::SEMICOLON:  data.character = ':';  buffer.insert(':', ins);  break;
-						case Key::APOSTROPHE: data.character = '"';  buffer.insert('"', ins);  break;
-						case Key::LBRACKET:   data.character = '{';  buffer.insert('{', ins);  break;
-						case Key::RBRACKET:   data.character = '}';  buffer.insert('}', ins);  break;
-						case Key::BACKSLASH:  data.character = '\\'; buffer.insert('\\', ins); break;
-						case Key::COMMA:      data.character = '<';  buffer.insert('<', ins);  break;
-						case Key::PERIOD:     data.character = '>';  buffer.insert('>', ins);  break;
-						case Key::SLASH:      data.character = '?';  buffer.insert('?', ins);  break;
-						case Key::MINUS:      data.character = '_';  buffer.insert('_', ins);  break;
-						case Key::EQUALS:     data.character = '+';  buffer.insert('+', ins);  break;
-						case Key::TILDE:      data.character = '~';  buffer.insert('~', ins);  break;
+						case Key::SEMICOLON:  data.character = ':';  insert(':', ins);  break;
+						case Key::APOSTROPHE: data.character = '"';  insert('"', ins);  break;
+						case Key::LBRACKET:   data.character = '{';  insert('{', ins);  break;
+						case Key::RBRACKET:   data.character = '}';  insert('}', ins);  break;
+						case Key::BACKSLASH:  data.character = '\\'; insert('\\', ins); break;
+						case Key::COMMA:      data.character = '<';  insert('<', ins);  break;
+						case Key::PERIOD:     data.character = '>';  insert('>', ins);  break;
+						case Key::SLASH:      data.character = '?';  insert('?', ins);  break;
+						case Key::MINUS:      data.character = '_';  insert('_', ins);  break;
+						case Key::EQUALS:     data.character = '+';  insert('+', ins);  break;
+						case Key::TILDE:      data.character = '~';  insert('~', ins);  break;
 					}
 				}
 				else {
 					data.character = KeyStringsLiteral[i];
-					buffer.insert(KeyStringsLiteral[i], ins);
+					insert(KeyStringsLiteral[i], ins);
 				}
 			}
 			TIMER_RESET(state->timeSinceTyped);
@@ -1046,14 +1062,14 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, UI
         
 		if (DeshInput->anyKeyDown) {
 			if (TIMER_END(hold) < 1000) {
-				if (DeshInput->KeyPressedAnyMod(Key::BACKSPACE) && buffer.size > 0 && state->cursor != 0) {
-					buffer.erase(--state->cursor);
+				if (DeshInput->KeyPressedAnyMod(Key::BACKSPACE) && charCount > 0 && state->cursor != 0) {
+					erase(--state->cursor);
 					bufferChanged = 1;
 				}
 				else {
 					for (int i = 0; i < Key::Key_COUNT; i++) {
 						char toPlace = KeyStringsLiteral[i];
-						if (DeshInput->KeyPressedAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
+						if (DeshInput->KeyPressedAnyMod(i) && charCount < buffSize && toPlace != '\0') {
 							u32 ins = state->cursor++;
 							placeKey(i, ins, toPlace);
 							bufferChanged = 1;
@@ -1064,14 +1080,14 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, UI
 			}
 			else {
 				if (TIMER_END(throttle) > 50) {
-					if (DeshInput->KeyDownAnyMod(Key::BACKSPACE) && buffer.size > 0 && state->cursor != 0) {
-						buffer.erase(--state->cursor);
+					if (DeshInput->KeyDownAnyMod(Key::BACKSPACE) && charCount > 0 && state->cursor != 0) {
+						erase(--state->cursor);
 						bufferChanged = 1;
 					}
 					else {
 						for (int i = 0; i < Key::Key_COUNT; i++) {
 							char toPlace = KeyStringsLiteral[i];
-							if (DeshInput->KeyDownAnyMod(i) && buffer.size < maxChars && toPlace != '\0') {
+							if (DeshInput->KeyDownAnyMod(i) && charCount < buffSize && toPlace != '\0') {
 								u32 ins = state->cursor++;
 								placeKey(i, ins, toPlace);
 								bufferChanged = 1;
@@ -1095,21 +1111,19 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, UI
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = dim;
-		//drawCmd.scissorOffset = workingWinPositionPlusTitlebar;
-		//drawCmd.scissorExtent = workingWinSizeMinusTitlebar;
 		drawCmd.color = Color_DarkGrey;
         
 		item.drawCmds.add(drawCmd);
 	}
     
 	vec2 textStart =
-		vec2((dim.x - buffer.size * style.font->width) * style.inputTextTextAlign.x,
+		vec2((dim.x - charCount * style.font->width) * style.inputTextTextAlign.x,
              (style.font->height * 1.3 - style.font->height) * style.inputTextTextAlign.y);
     
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
 		drawCmd.position = textStart;
-		drawCmd.text = buffer;
+		drawCmd.text = string(buff);
 		drawCmd.color = style.colors[UIStyleCol_Text];
         
 		item.drawCmds.add(drawCmd);
@@ -1146,22 +1160,22 @@ bool InputTextCall(string label, string& buffer, u32 maxChars, vec2 position, UI
 	return false;
 }
 
-bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags flags) {
+bool UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextFlags flags) {
 	vec2 position = curwin->cursor + style.windowPadding - curwin->scroll;
     
-	return InputTextCall(label, buffer, maxChars, position, nullptr, flags, 1);
+	return InputTextCall(label, buffer, buffSize, position, nullptr, flags, 1);
 }
 
-bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextCallback callback, UIInputTextFlags flags) {
+bool UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextCallback callback, UIInputTextFlags flags) {
 	vec2 position = curwin->cursor + style.windowPadding - curwin->scroll;
     
-	return InputTextCall(label, buffer, maxChars, position, callback, flags, 1);
+	return InputTextCall(label, buffer, buffSize, position, callback, flags, 1);
 }
 
-bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
+bool UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
 	vec2 position = curwin->cursor + style.windowPadding - curwin->scroll;
     
-	if (InputTextCall(label, buffer, maxChars, position, nullptr, flags, 1)) {
+	if (InputTextCall(label, buffer, buffSize, position, nullptr, flags, 1)) {
 		getInputTextState = inputTexts.at(label);
 		return true;
 	}
@@ -1169,22 +1183,22 @@ bool UI::InputText(string label, string& buffer, u32 maxChars, UIInputTextState*
 	return false;
 }
 
-bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextFlags flags) {
+bool UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextFlags flags) {
 	pos += curwin->position - curwin->scroll;
     
-	return InputTextCall(label, buffer, maxChars, pos, nullptr, flags, 0);
+	return InputTextCall(label, buffer, buffSize, pos, nullptr, flags, 0);
 }
 
-bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextCallback callback, UIInputTextFlags flags) {
+bool UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, UIInputTextFlags flags) {
 	pos += curwin->position - curwin->scroll;
     
-	return InputTextCall(label, buffer, maxChars, pos, callback, flags, 0);
+	return InputTextCall(label, buffer, buffSize, pos, callback, flags, 0);
 }
 
-bool UI::InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
+bool UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
 	pos += curwin->position - curwin->scroll;
     
-	if (InputTextCall(label, buffer, maxChars, pos, nullptr, flags, 0)) {
+	if (InputTextCall(label, buffer, buffSize, pos, nullptr, flags, 0)) {
 		getInputTextState = inputTexts.at(label);
 		return true; 
 	}

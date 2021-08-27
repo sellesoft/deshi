@@ -136,7 +136,8 @@ struct UIInputTextCallbackData {
     
 	u8       character;        //character that was input  | r
 	Key::Key eventKey;         //key pressed on callback   | r
-	string*  buffer;           //buffer pointer			   | r/w
+	char*    buffer;           //buffer pointer			   | r/w
+	size_t   bufferSize;       //                          | r
 	u32      cursorPos;		   //cursor position		   | r/w
 	u32      selectionStart;   //                          | r/w -- == selection end when no selection
 	u32      selectionEnd;     //                          | r/w
@@ -148,7 +149,6 @@ struct UIInputTextState {
 	u32    cursor = 0;            //what character in the buffer the cursor is infront of, 0 being all the way to the left
 	f32    cursorBlinkTime;       //time it takes for the cursor to blink
 	f32    scroll;                //scroll offset on x
-	string buffer;                //internal buffer, in case user buffer disappears
 	u32    selectStart;           //beginning of text selection
 	u32    selectEnd;	          //end of text selection
 	UIInputTextCallback callback;
@@ -184,6 +184,8 @@ struct UIDrawCmd {
 	float thickness;
 	
 	//for use by text draw call
+	//TODO(sushi) reformat this as a char*, as this is data that is used directly by render
+	//			  which never modifies the string
 	string text;
     
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
@@ -318,19 +320,19 @@ namespace UI {
     
 	void Line(vec2 start, vec2 end, float thickness = 1, color color = Color_White);
     
-	void Text(string text, UITextFlags flags = 0);
-	void Text(string text, vec2 pos, UITextFlags flags = 0);
-	void Text(string text, color color, UITextFlags flags = 0);
-	void Text(string text, vec2 pos, color color, UITextFlags flags = 0);
+	void Text(const char* text, UITextFlags flags = 0);
+	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
+	void Text(const char* text, color color, UITextFlags flags = 0);
+	void Text(const char* text, vec2 pos, color color, UITextFlags flags = 0);
     
 	//items
 	//NOTE: I probably should make a SetNextItemPos as well, but I like being able to do posiiton inline, not sure yet
 	void SetNextItemSize(vec2 size);
     
-	bool Button(string text);
-	bool Button(string text, vec2 pos);
-	bool Button(string text, color color);
-	bool Button(string text, vec2 pos, color color);
+	bool Button(const char* text);
+	bool Button(const char* text, vec2 pos);
+	bool Button(const char* text, color color);
+	bool Button(const char* text, vec2 pos, color color);
     
 	void Checkbox(string label, bool* b);
     
@@ -338,25 +340,25 @@ namespace UI {
 	//InputText takes in a buffer and modifies it according to input and works much like ImGui's InputText
 	//However there are overloads that will return it's UIInputTextState, allowing you to directly r/w some internal information of the
 	//InputText item. This should only be used if you have a good reason to!
-	bool InputText(string label, string& buffer, u32 maxChars, UIInputTextFlags flags = 0);
-	bool InputText(string label, string& buffer, u32 maxChars, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
-	bool InputText(string label, string& buffer, u32 maxChars, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
-	bool InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextFlags flags = 0);
-	bool InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
-	bool InputText(string label, string& buffer, u32 maxChars, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
+	bool InputText(const char* label, char* buffer, u32 buffSize, UIInputTextFlags flags = 0);
+	bool InputText(const char* label, char* buffer, u32 buffSize, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
+	bool InputText(const char* label, char* buffer, u32 buffSize, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
+	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextFlags flags = 0);
+	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
+	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
     
     
 	//windows
-	void BeginWindow(string name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
+	void BeginWindow(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	void EndWindow();
 	void SetNextWindowPos(vec2 pos);
 	void SetNextWindowPos(float x, float y);
 	void SetNextWindowSize(vec2 size);		  //when you set a windows size through this you aren't supposed to take into account the titlebar!
 	void SetNextWindowSize(float x, float y); //when you set a windows size through this you aren't supposed to take into account the titlebar!
-	void SetWindowName(string name);
+	void SetWindowName(const char* name);
 	bool IsWinHovered();
 	bool AnyWinHovered();
-	void ShowDebugWindowOf(string name);
+	void ShowDebugWindowOf(const char* name);
     
 	//push/pop functions
 	void PushColor(UIStyleCol idx, color color);
