@@ -12,6 +12,19 @@
   come back here and write out what is and isnt
 
 
+  some ui design guidelines im going to collect:
+
+	ui should never add items to a window internally, only the user adds items, and interally
+	we add drawcalls to build the items. basically, never use items to build other items
+
+
+
+  BIG TODOS:
+  
+	make Row adjust the position of objects after the first one is made,
+	currently it only adjusts positions after they have all been made
+
+
 
 */
 
@@ -111,7 +124,7 @@ enum UIInputTextFlags_ {
 	UIInputTextFlags_CallbackAlways        = 1 << 4,
 	UIInputTextFlags_CallbackUpDown        = 1 << 5,
 	UIInputTextFlags_NoBackground          = 1 << 6,
-	UIInputTextFlags_FitSizeToText = 1 << 7,
+	UIInputTextFlags_FitSizeToText         = 1 << 7,
 	UIInputTextFlags_SetCursorToEndOnEnter = 1 << 8,
     
 }; typedef u32 UIInputTextFlags;
