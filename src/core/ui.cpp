@@ -5,15 +5,16 @@
 //TODO(sushi, Ui) implement menu style file loading sort of stuff yeah
 //TODO(sushi, Ui) standardize what UI element each color belongs to
 local struct {
-	color          midnight_blue = color(0x0d2b45); //midnight blue
-	color         dark_grey_blue = color(0x203c56); //dark gray blue
-	color            purple_gray = color(0x544e68); //purple gray
-	color              pink_gray = color(0x8d697a); //pink gray
-	color        bleached_orange = color(0xd08159); //bleached orange
-	color bright_bleached_orange = color(0xffaa5e); //above but brighter
-	color             skin_white = color(0xffd4a3); //skin white
-	color      bright_skin_white = color(0xffecd6); //even whiter skin
-	color             near_black = color(0x141414); //almost black
+	//color          midnight_blue = color(0xff0d2b45); //midnight blue
+	color          midnight_blue = color(0x0d2b45ff); //midnight blue
+	color         dark_grey_blue = color(0x203c56ff); //dark gray blue
+	color            purple_gray = color(0x544e68ff); //purple gray
+	color              pink_gray = color(0x8d697aff); //pink gray
+	color        bleached_orange = color(0xd08159ff); //bleached orange
+	color bright_bleached_orange = color(0xffaa5eff); //above but brighter
+	color             skin_white = color(0xffd4a3ff); //skin white
+	color      bright_skin_white = color(0xffecd6ff); //even whiter skin
+	color             near_black = color(0x141414ff); //almost black
 } colors;
 
 //global styling
