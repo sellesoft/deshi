@@ -4036,7 +4036,6 @@ Init(){
 void Render::
 Update(){
 	TIMER_START(t_d);
-	//PrintVk(1, "---------------new frame---------------");
 	AssertRS(RSVK_PIPELINECREATE | RSVK_FRAMES | RSVK_SYNCOBJECTS, "Render called before CreatePipelines or CreateFrames or CreateSyncObjects");
 	rendererStage = RSVK_RENDER;
 	

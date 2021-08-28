@@ -113,11 +113,40 @@ local ModelCmdGl   modelCmdArray[MAX_MODEL_CMDS];
 
 local s32 width  = 0;
 local s32 height = 0;
-
+local bool initialized  = false;
+local bool remakeWindow = false;
 
 
 //-------------------------------------------------------------------------------------------------
 // @OPENGL FUNCTIONS
+template<typename... Args>
+local inline void
+PrintGl(u32 level, Args... args){
+	if(settings.loggingLevel >= level){
+		LOG("[OpenGL] ", args...);
+	}
+}
+
+local void
+ResetCommands(){
+	{//UI commands
+		uiVertexCount = 0;
+		uiIndexCount  = 0;
+		memset(&uiCmdArray[0], 0, sizeof(UICmdGl)*uiCmdCount);
+		uiCmdCount    = 1;
+	}
+	
+	{//temp commands
+		tempWireframeVertexCount = 0;
+		tempWireframeIndexCount  = 0;
+		tempFilledVertexCount = 0;
+		tempFilledIndexCount  = 0;
+	}
+	
+	{//model commands
+		modelCmdCount = 0;
+	}
+}
 
 
 
@@ -607,21 +636,55 @@ RemakeTextures(){
 //// @init ////
 ///////////////
 void Render::
-Init(){
-	//!!Incomplete
-	//// load RenderSettings ////
+Init(){ //!!Incomplete
+    //// load RenderSettings ////
 	LoadSettings();
 	if(settings.debugging && settings.printf){
 		settings.loggingLevel = 4;
 	}
+    
+    TIMER_START(t_r);
+    
+    
+    initialized = true;
 }
 
 /////////////////
 //// @update ////
 /////////////////
 void Render::
-Update(){
-	//!!Incomplete
+Update(){ //!!Incomplete
+    TIMER_START(t_d);
+    
+    if(DeshWindow->resized) remakeWindow = true;
+	if(remakeWindow){
+		int w, h;
+		glfwGetFramebufferSize(DeshWindow->window, &w, &h);
+		if(w <= 0 || h <= 0){ 
+			ImGui::EndFrame(); 
+			return;
+		}
+        glViewport(0,0,w,h);
+		remakeWindow = false;
+	}
+    
+    //render stuff
+    glClearColor(settings.clearColor.r, settings.clearColor.g, settings.clearColor.b, settings.clearColor.a);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui::Render();
+    
+    //execute draw commands
+    if(ImDrawData* imDrawData = ImGui::GetDrawData()){
+        ImGui_ImplOpenGL3_RenderDrawData(imDrawData);
+    }
+    
+    //present stuff
+    glfwSwapBuffers(DeshWindow->window);
+    
+    //reset stuff
+    ResetCommands();
+    
+    DeshTime->renderTime = TIMER_END(t_d);
 }
 
 ////////////////

@@ -5,25 +5,25 @@ void glfwError(int id, const char* description){
 	printf("[GLFW] Error %d: %s\n", id, description);
 }
 
-//thanks: https://github.com/OneLoneCoder/olcPixelGameEngine/pull/181
-void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
+void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	glfwSetErrorCallback(&glfwError);
-	if(!glfwInit()){ PRINTLN("GLFW failed to "); return; }
+	if(!glfwInit()){ printf("[GLFW] Failed to init!"); return; }
 	
 	monitor = glfwGetPrimaryMonitor();
-	if(!monitor) { PRINTLN("GLFW failed to get the monitor!"); return; }
+	if(!monitor) { printf("[GLFW] Failed to get the monitor!"); return; }
 	int work_xpos, work_ypos, work_width, work_height;
 	glfwGetMonitorWorkarea(monitor, &work_xpos, &work_ypos, &work_width, &work_height);
 	
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); 
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
 	glfwWindowHint(GLFW_CENTER_CURSOR, GLFW_FALSE);
 	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 	glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
     
-#if DESHI_OPENGL
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+#if   DESHI_VULKAN
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+#elif DESHI_OPENGL
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if DESHI_MAC
@@ -31,12 +31,14 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 #endif //DESHI_MAC
 #endif //DESHI_OPENGL
 	
-	window = glfwCreateWindow(width, height, "deshi", NULL, NULL);
-	if(!window){ PRINTLN("GLFW failed to create the window!"); glfwTerminate(); return; }
+	window = glfwCreateWindow(width, height, name, NULL, NULL);
+	if(!window){ printf("[GLFW] Failed to create the window!"); glfwTerminate(); return; }
     
 #if DESHI_OPENGL
     glfwMakeContextCurrent(window);
-    if(!gladLoadGL(glfwGetProcAddress)){ PRINTLN("GLAD failed to load OpenGL!"); glfwTerminate(); return; }
+    int gl_version = gladLoadGL(glfwGetProcAddress);
+    if(gl_version == 0){ printf("[GLAD] Failed to load OpenGL!"); glfwTerminate(); return; }
+    printf("[GLAD] Loaded OpenGL %d.%d\n", GLAD_VERSION_MAJOR(gl_version), GLAD_VERSION_MINOR(gl_version));
 #endif //DESHI_OPENGL
 	
 	//set initial window size
@@ -46,8 +48,8 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 		glfwSetWindowPos(window, work_xpos+x, work_ypos+y);
 	}
 	
-	cursor  = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
-	if(!cursor){ PRINTLN("GLFW failed to create the cursor!"); glfwTerminate(); return; }
+	cursor = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+	if(!cursor){ printf("[GLFW] Failed to create the cursor!"); glfwTerminate(); return; }
 	
 	//load and set icon
 	GLFWimage icon; int icon_channels;
@@ -55,7 +57,7 @@ void Window::Init(s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	if(icon.pixels){
 		glfwSetWindowIcon(window, 1, &icon);
 	}else{
-		PRINTLN("Failed to load texture: deshi_icon.png; Using default window icon");
+		printf("[STBI] Failed to load texture: deshi_icon.png; Using default window icon");
 	}
 	
 	//set window's cursor

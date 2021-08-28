@@ -46,7 +46,7 @@ struct Window{
 	vec2 dimensions;
 	
 	//NOTE(delle) vsync isnt handled in GLFW when using vulkan
-	void Init(s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode displayMode = DisplayMode_Windowed);
+	void Init(const char* name, s32 width, s32 height, s32 x = 0xFFFFFFFF, s32 y = 0xFFFFFFFF, DisplayMode displayMode = DisplayMode_Windowed);
 	void Update();
 	void Cleanup();
 	void UpdateDisplayMode(DisplayMode mode);

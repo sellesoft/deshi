@@ -193,11 +193,8 @@ __________ maybe store the text in the actual source and create the file from th
 #pragma comment(lib,"opengl32.lib")
 #pragma comment(lib,"glfw3.lib")
 #endif //_MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4551)
 #define GLAD_GL_IMPLEMENTATION
 #include <glad/gl.h>
-#pragma warning(pop)
 #include <GLFW/glfw3.h>
 #define IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #include <imgui/imgui_impl_opengl3.cpp>
@@ -228,7 +225,7 @@ void deshi::init(){
 	TIMER_START(t_d); TIMER_START(t_s);
 	Assets::enforceDirectories();
 	TIMER_RESET(t_s); deshi_time.Init(300);         SUCCESS("Finished time initialization in ",              TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); deshi_window.Init(1280, 720); SUCCESS("Finished input and window initialization in ",  TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); deshi_window.Init("deshi", 1280, 720); SUCCESS("Finished input and window initialization in ",  TIMER_END(t_s), "ms");
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
 	TIMER_RESET(t_s); deshi_console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
 #endif
