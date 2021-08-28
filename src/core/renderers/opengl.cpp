@@ -463,10 +463,10 @@ LoadMesh(Mesh* mesh){ //!!Incomplete
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, mgl.indexCount*sizeof(Mesh::Index), mesh->indexArray, GL_STATIC_DRAW);
     
     //sepcify how to read vertex buffer
-    glVertexAttribPointer(0, 3, GL_FLOAT,        GL_FALSE, sizeof(Mesh::Vertex), (void*)(0));
-    glVertexAttribPointer(1, 2, GL_FLOAT,        GL_FALSE, sizeof(Mesh::Vertex), (void*)(sizeof(vec3)));
-    glVertexAttribPointer(2, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(Mesh::Vertex), (void*)(sizeof(vec3)+sizeof(vec2)));
-    glVertexAttribPointer(3, 3, GL_FLOAT,        GL_FALSE, sizeof(Mesh::Vertex), (void*)(sizeof(vec3)+sizeof(vec2)+sizeof(u32)));
+    glVertexAttribPointer(0, 3,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,pos));
+    glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,uv));
+    glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,color));
+    glVertexAttribPointer(3, 3,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,normal));
     glEnableVertexAttribArray(0);
     glEnableVertexAttribArray(1);
     glEnableVertexAttribArray(2);
@@ -760,10 +760,10 @@ Init(){ //!!Incomplete
     test_mesh->vertexCount = 4;
     test_mesh->indexCount = 6;
     test_mesh->vertexArray = (Mesh::Vertex*)calloc(4, sizeof(Mesh::Vertex));
-    test_mesh->vertexArray[0] = {{-.5f,-.5f,0.f},{0.f,0.f},0xff0000ff,{0.f,1.f,0.f}};
-    test_mesh->vertexArray[1] = {{ .5f,-.5f,0.f},{0.f,0.f},0x00ff00ff,{0.f,1.f,0.f}};
-    test_mesh->vertexArray[2] = {{ .5f, .5f,0.f},{0.f,0.f},0x0000ffff,{0.f,1.f,0.f}};
-    test_mesh->vertexArray[3] = {{-.5f, .5f,0.f},{0.f,0.f},0xffffffff,{0.f,1.f,0.f}};
+    test_mesh->vertexArray[0] = {{-.5f,-.5f,0.f},{0.f,0.f},PackColorU32(255,0  ,0  ,255),{0.f,1.f,0.f}};
+    test_mesh->vertexArray[1] = {{ .5f,-.5f,0.f},{0.f,0.f},PackColorU32(0  ,255,0  ,255),{0.f,1.f,0.f}};
+    test_mesh->vertexArray[2] = {{ .5f, .5f,0.f},{0.f,0.f},PackColorU32(0  ,0  ,255,255),{0.f,1.f,0.f}};
+    test_mesh->vertexArray[3] = {{-.5f, .5f,0.f},{0.f,0.f},PackColorU32(255,255,255,255),{0.f,1.f,0.f}};
     test_mesh->indexArray = (Mesh::Index*)calloc(6, sizeof(Mesh::Index));
     test_mesh->indexArray[0] = 0; test_mesh->indexArray[1] = 1; test_mesh->indexArray[2] = 2;
     test_mesh->indexArray[3] = 2; test_mesh->indexArray[4] = 3; test_mesh->indexArray[5] = 0;
