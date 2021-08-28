@@ -22,7 +22,7 @@ deleteDirectory(std::string& dirpath, bool logError){
 
 std::vector<char> Assets::
 readFile(const std::string& filepath, u32 chars, bool logError) {
-	std::ifstream file(filepath, std::ios::ate);
+	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
 		return {}; 
@@ -30,11 +30,10 @@ readFile(const std::string& filepath, u32 chars, bool logError) {
 	defer{ file.close(); };
 	
 	if(chars == 0){ chars = (u32)file.tellg(); }
-	
-	std::vector<char> buffer(chars);
-	file.seekg(0);
+	std::vector<char> buffer(chars+1);
+	file.seekg(0, file.beg);
 	file.read(buffer.data(), chars);
-	
+	buffer[chars] = '\0';
 	return buffer;
 }
 
@@ -57,19 +56,18 @@ readFileBinary(const std::string& filepath, u32 bytes, bool logError) {
 
 char* Assets::
 readFileAsciiToArray(std::string filepath, u32 chars, bool logError){
-	std::ifstream file(filepath, std::ifstream::in);
+	std::ifstream file(filepath, std::ifstream::in | std::ios::ate | std::ios::binary);
 	if(!file.is_open()){ 
 		if(logError) ERROR_LOC("Failed to open file: ", filepath); 
 		return 0; 
 	}
 	defer{ file.close(); };
 	
-	file.seekg(0, file.end);
 	if(chars == 0) chars = file.tellg();
-	
-	char* buffer = new char[chars];
+	char* buffer = new char[chars+1];
 	file.seekg(0, file.beg);
 	file.read(buffer,chars);
+    buffer[chars] = '\0';
 	return buffer;
 }
 

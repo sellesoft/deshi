@@ -35,6 +35,15 @@ enum RendererStage_{
     RSVK_RENDER      = 0xFFFFFFFF,
 }; typedef u32 RendererStage;
 
+enum ShaderStage_{
+    ShaderStage_NONE,
+    ShaderStage_Vertex,
+    ShaderStage_Tessellation,
+    ShaderStage_Geometry,
+    ShaderStage_Fragment,
+    ShaderStage_COUNT,
+}; typedef u32 ShaderStage;
+
 struct RenderStats{
     u32 totalTriangles;
     u32 totalVertices;

@@ -124,7 +124,6 @@ Bug Board       //NOTE mark these with a last-known active date (M/D/Y)
 ---------
 (07/10/21) the program crashes if default asset files are not present
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
-(07/14/21) the config parser sometimes throws a console error that its unable to parse the final empty line of configs
 
 */
 

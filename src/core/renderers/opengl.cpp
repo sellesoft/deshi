@@ -29,6 +29,24 @@ struct UICmdGl{
 	vec2 scissorExtent;
 };
 
+struct MeshGl{
+    Mesh* base;
+    u32 vao;
+    u32 vbo;
+    u32 ebo;
+    u32 vertexCount;
+    u32 indexCount;
+};
+
+struct ShaderGl{
+    char filename[DESHI_NAME_SIZE];
+    u32 glid;
+    ShaderStage stage;
+};
+
+struct ProgramGl{
+    u32 glid;
+};
 
 //-------------------------------------------------------------------------------------------------
 // @INTERFACE VARIABLES
@@ -82,6 +100,10 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 
 //-------------------------------------------------------------------------------------------------
 // @OPENGL VARIABLES
+local array<MeshGl>    glMeshes;
+local array<ShaderGl>  glShaders;
+local array<ProgramGl> glPrograms;
+
 //arbitray limits, change if needed
 #define MAX_UI_VERTICES 0xFFFF //max u16: 65535
 #define MAX_UI_INDICES  3*MAX_UI_VERTICES
@@ -111,11 +133,13 @@ typedef u32 ModelIndexGl;
 local ModelIndexGl modelCmdCount = 0;
 local ModelCmdGl   modelCmdArray[MAX_MODEL_CMDS];
 
-local s32 width  = 0;
-local s32 height = 0;
+local s32  width  = 0;
+local s32  height = 0;
 local bool initialized  = false;
 local bool remakeWindow = false;
-
+local int  opengl_success = 0;
+#define OPENGL_INFOLOG_SIZE 512
+local char opengl_infolog[OPENGL_INFOLOG_SIZE] = {};
 
 //-------------------------------------------------------------------------------------------------
 // @OPENGL FUNCTIONS
@@ -128,7 +152,7 @@ PrintGl(u32 level, Args... args){
 }
 
 local void
-ResetCommands(){
+ResetCommandsGl(){
 	{//UI commands
 		uiVertexCount = 0;
 		uiIndexCount  = 0;
@@ -148,8 +172,64 @@ ResetCommands(){
 	}
 }
 
+local void
+CompileAndLoadShaderGl(const char* filename, ShaderStage stage){
+    ShaderGl sgl{};
+    cpystr(sgl.filename, filename, DESHI_NAME_SIZE);
+    sgl.stage = stage;
+    
+    //allocate shader
+    switch(stage){ //TODO(delle) other shader stages
+        case ShaderStage_Vertex:   sgl.glid = glCreateShader(GL_VERTEX_SHADER);   break;
+        case ShaderStage_Fragment: sgl.glid = glCreateShader(GL_FRAGMENT_SHADER); break;
+    }
+    
+    //load and compile shader
+    char* filebuff = Assets::readFileAsciiToArray(Assets::dirShaders()+filename);
+    if(!filebuff) Assert(!"Failed to load shader");
+    glShaderSource(sgl.glid, 1, &filebuff, 0);
+    glCompileShader(sgl.glid);
+    
+    //check for errors
+    glGetShaderiv(sgl.glid, GL_COMPILE_STATUS, &opengl_success);
+    if(opengl_success != GL_TRUE){
+        glGetShaderInfoLog(sgl.glid, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
+        PrintGl(2, "  Failed to compile shader '",filename,"':\n",opengl_infolog);
+    }
+    
+    glShaders.add(sgl);
+}
 
+//TODO(delle) cleanup shaders maybe?
+local void 
+CreateProgramGl(ShaderGl* shaders, u32 shader_count){
+    ProgramGl pgl{};
+    
+    //allocate program
+    pgl.glid = glCreateProgram();
+    
+    //attach shaders and link
+    forI(shader_count){ glAttachShader(pgl.glid, shaders[i].glid); }
+    glLinkProgram(pgl.glid);
+    
+    //check for errors
+    glGetProgramiv(pgl.glid, GL_LINK_STATUS, &opengl_success);
+    if(opengl_success != GL_TRUE){
+        glGetProgramInfoLog(pgl.glid, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
+        PrintGl(2, "  Failed to link program '",pgl.glid,"':\n",opengl_infolog);
+    }
+    
+    glPrograms.add(pgl);
+}
 
+local void 
+DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, int len_args, ...){
+    GLenum error_code = glad_glGetError();
+    if(error_code != GL_NO_ERROR){
+        PrintGl(1, " Error '",error_code,"': ",name);
+        if(settings.crashOnError) Assert(!"crashing because of error in opengl");
+    }
+}
 
 
 //-------------------------------------------------------------------------------------------------
@@ -348,28 +428,56 @@ GetStage(){
 //// @load ////
 ///////////////
 void Render::
-LoadFont(Font* font, Texture* texture){
-	//!!Incomplete
+LoadFont(Font* font, Texture* texture){ //!!Incomplete
+	
 }
 
 void Render::
-LoadTexture(Texture* texture){
-	//!!Incomplete
+LoadTexture(Texture* texture){ //!!Incomplete
+	
 }
 
 void Render::
-LoadMaterial(Material* material){
-	//!!Incomplete
+LoadMaterial(Material* material){ //!!Incomplete
+	
+}
+
+//TODO(delle) one large vertex/index array
+void Render::
+LoadMesh(Mesh* mesh){ //!!Incomplete
+    MeshGl mgl{};
+    mgl.base = mesh;
+    mgl.vertexCount = mesh->vertexCount;
+    mgl.indexCount = mesh->indexCount;
+    
+    //allocate buffers
+    glGenVertexArrays(1, &mgl.vao);
+    glGenBuffers(1, &mgl.vbo);
+    glGenBuffers(1, &mgl.ebo);
+    
+    //bind and fill buffers
+    glBindVertexArray(mgl.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, mgl.vbo);
+    glBufferData(GL_ARRAY_BUFFER, mgl.vertexCount*sizeof(Mesh::Vertex), mesh->vertexArray, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mgl.ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mgl.indexCount*sizeof(Mesh::Index), mesh->indexArray, GL_STATIC_DRAW);
+    
+    //sepcify how to read vertex buffer
+    glVertexAttribPointer(0, 3, GL_FLOAT,        GL_FALSE, sizeof(Mesh::Vertex), (void*)(0));
+    glVertexAttribPointer(1, 2, GL_FLOAT,        GL_FALSE, sizeof(Mesh::Vertex), (void*)(sizeof(vec3)));
+    glVertexAttribPointer(2, 1, GL_UNSIGNED_INT, GL_FALSE, sizeof(Mesh::Vertex), (void*)(sizeof(vec3)+sizeof(vec2)));
+    glVertexAttribPointer(3, 3, GL_FLOAT,        GL_FALSE, sizeof(Mesh::Vertex), (void*)(sizeof(vec3)+sizeof(vec2)+sizeof(u32)));
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+    glEnableVertexAttribArray(3);
+    
+    glMeshes.add(mgl);
 }
 
 void Render::
-LoadMesh(Mesh* mesh){
-	//!!Incomplete
-}
-
-void Render::
-UpdateMaterial(Material* material){
-	//!!Incomplete
+UpdateMaterial(Material* material){ //!!Incomplete
+	
 }
 
 /////////////////
@@ -399,13 +507,13 @@ UnloadMesh(Mesh* mesh){
 //// @draw ////
 ///////////////
 void Render::
-DrawModel(Model* mesh, mat4 matrix){
-	//!!Incomplete
+DrawModel(Model* mesh, mat4 matrix){ //!!Incomplete
+    
 }
 
 void Render::
-DrawModelWireframe(Model* mesh, mat4 matrix, color color){
-	//!!Incomplete
+DrawModelWireframe(Model* mesh, mat4 matrix, color color){ //!!Incomplete
+	
 }
 
 void Render::
@@ -639,13 +747,29 @@ void Render::
 Init(){ //!!Incomplete
     //// load RenderSettings ////
 	LoadSettings();
-	if(settings.debugging && settings.printf){
-		settings.loggingLevel = 4;
-	}
+	if(settings.debugging && settings.printf) settings.loggingLevel = 4;
     
-    TIMER_START(t_r);
+    //// setup debug callback ////
+    gladSetGLPostCallback(DebugPostCallback);
     
+    CompileAndLoadShaderGl("nothing.vert", ShaderStage_Vertex);
+    CompileAndLoadShaderGl("nothing.frag", ShaderStage_Fragment);
+    CreateProgramGl(glShaders.data, 2);
     
+    Mesh* test_mesh = (Mesh*)calloc(1, sizeof(Mesh));
+    test_mesh->vertexCount = 4;
+    test_mesh->indexCount = 6;
+    test_mesh->vertexArray = (Mesh::Vertex*)calloc(4, sizeof(Mesh::Vertex));
+    test_mesh->vertexArray[0] = {{-.5f,-.5f,0.f},{0.f,0.f},0xff0000ff,{0.f,1.f,0.f}};
+    test_mesh->vertexArray[1] = {{ .5f,-.5f,0.f},{0.f,0.f},0x00ff00ff,{0.f,1.f,0.f}};
+    test_mesh->vertexArray[2] = {{ .5f, .5f,0.f},{0.f,0.f},0x0000ffff,{0.f,1.f,0.f}};
+    test_mesh->vertexArray[3] = {{-.5f, .5f,0.f},{0.f,0.f},0xffffffff,{0.f,1.f,0.f}};
+    test_mesh->indexArray = (Mesh::Index*)calloc(6, sizeof(Mesh::Index));
+    test_mesh->indexArray[0] = 0; test_mesh->indexArray[1] = 1; test_mesh->indexArray[2] = 2;
+    test_mesh->indexArray[3] = 2; test_mesh->indexArray[4] = 3; test_mesh->indexArray[5] = 0;
+    LoadMesh(test_mesh);
+    
+    //glfwSwapInterval(1); //vsync
     initialized = true;
 }
 
@@ -677,12 +801,18 @@ Update(){ //!!Incomplete
     if(ImDrawData* imDrawData = ImGui::GetDrawData()){
         ImGui_ImplOpenGL3_RenderDrawData(imDrawData);
     }
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glUseProgram(glPrograms[0].glid);
+    glBindVertexArray(glMeshes[0].vao);
+    glDrawElements(GL_TRIANGLES, glMeshes[0].indexCount, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
     
     //present stuff
     glfwSwapBuffers(DeshWindow->window);
     
     //reset stuff
-    ResetCommands();
+    ResetCommandsGl();
     
     DeshTime->renderTime = TIMER_END(t_d);
 }
