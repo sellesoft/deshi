@@ -88,7 +88,7 @@ inline color::color(u8 _r, u8 _g, u8 _b, u8 _a){
 }
 
 inline color::color(u32 _rgba){
-    rgba = _rgba;
+    rgba = ByteSwap32(_rgba);
 }
 
 ////////////////////
