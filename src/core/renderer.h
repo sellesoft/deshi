@@ -94,6 +94,12 @@ struct RenderSettings{
 	bool tempMeshOnTop   = false;
 };
 
+struct Vertex2{
+	vec2 pos;
+	vec2 uv;
+	u32  color;
+};
+
 struct Mesh;
 struct Texture;
 struct Material;

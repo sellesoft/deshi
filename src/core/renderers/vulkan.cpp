@@ -54,12 +54,6 @@ struct FontVk{
 	VkDescriptorSet descriptorSet;
 };
 
-struct Vertex2{
-	vec2 pos;
-	vec2 uv;
-	u32  color;
-};
-
 struct ModelCmdVk{
 	u32   vertexOffset;
 	u32   indexOffset;

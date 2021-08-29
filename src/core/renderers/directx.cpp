@@ -1,6 +1,6 @@
 //-------------------------------------------------------------------------------------------------
-// @OPENGL STRUCTS
-struct ModelCmdGl{
+// @DIRECTX STRUCTS
+struct ModelCmdDx{
 	u32   vertexOffset;
 	u32   indexOffset;
 	u32   indexCount;
@@ -9,31 +9,12 @@ struct ModelCmdGl{
 	mat4  matrix;
 };
 
-struct UICmdGl{
+struct UICmdDx{
 	u32 texIdx;
 	u16 indexOffset;
 	u16 indexCount;
 	vec2 scissorOffset;
 	vec2 scissorExtent;
-};
-
-struct MeshGl{
-    Mesh* base;
-    u32 vao;
-    u32 vbo;
-    u32 ebo;
-    u32 vertexCount;
-    u32 indexCount;
-};
-
-struct ShaderGl{
-    char filename[DESHI_NAME_SIZE];
-    u32 glid;
-    ShaderStage stage;
-};
-
-struct ProgramGl{
-    u32 glid;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -87,136 +68,50 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 
 
 //-------------------------------------------------------------------------------------------------
-// @OPENGL VARIABLES
-local array<MeshGl>    glMeshes;
-local array<ShaderGl>  glShaders;
-local array<ProgramGl> glPrograms;
-
+// @DIRECTX VARIABLES
 //arbitray limits, change if needed
 #define MAX_UI_VERTICES 0xFFFF //max u16: 65535
 #define MAX_UI_INDICES  3*MAX_UI_VERTICES
 #define MAX_UI_CMDS     1000
-typedef u32 UIIndexGl; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
-local UIIndexGl uiVertexCount = 0;
-local UIIndexGl uiIndexCount  = 0;
-local UIIndexGl uiCmdCount    = 1; //start with 1
+typedef u32 UIIndexDx; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
+local UIIndexDx uiVertexCount = 0;
+local UIIndexDx uiIndexCount  = 0;
+local UIIndexDx uiCmdCount    = 1; //start with 1
 local Vertex2   uiVertexArray[MAX_UI_VERTICES];
-local UIIndexGl uiIndexArray [MAX_UI_INDICES];
-local UICmdGl   uiCmdArray   [MAX_UI_CMDS]; //different UI cmd per font/texture
+local UIIndexDx uiIndexArray [MAX_UI_INDICES];
+local UICmdDx   uiCmdArray   [MAX_UI_CMDS]; //different UI cmd per font/texture
 
 #define MAX_TEMP_VERTICES 0xFFFF //max u16: 65535
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
-typedef u16 TempIndexGl;
-local TempIndexGl  tempWireframeVertexCount = 0;
-local TempIndexGl  tempFilledVertexCount    = 0;
-local TempIndexGl  tempWireframeIndexCount  = 0;
-local TempIndexGl  tempFilledIndexCount     = 0;
+typedef u16 TempIndexDx;
+local TempIndexDx  tempWireframeVertexCount = 0;
+local TempIndexDx  tempFilledVertexCount    = 0;
+local TempIndexDx  tempWireframeIndexCount  = 0;
+local TempIndexDx  tempFilledIndexCount     = 0;
 local Mesh::Vertex tempWireframeVertexArray[MAX_TEMP_VERTICES];
 local Mesh::Vertex tempFilledVertexArray   [MAX_TEMP_VERTICES];
-local TempIndexGl  tempWireframeIndexArray [MAX_TEMP_INDICES];
-local TempIndexGl  tempFilledIndexArray    [MAX_TEMP_INDICES];
+local TempIndexDx  tempWireframeIndexArray [MAX_TEMP_INDICES];
+local TempIndexDx  tempFilledIndexArray    [MAX_TEMP_INDICES];
 
 #define MAX_MODEL_CMDS 10000 
-typedef u32 ModelIndexGl;
-local ModelIndexGl modelCmdCount = 0;
-local ModelCmdGl   modelCmdArray[MAX_MODEL_CMDS];
+typedef u32 ModelIndexDx;
+local ModelIndexDx modelCmdCount = 0;
+local ModelCmdDx   modelCmdArray[MAX_MODEL_CMDS];
 
 local s32  width  = 0;
 local s32  height = 0;
 local bool initialized  = false;
 local bool remakeWindow = false;
-local int  opengl_success = 0;
-#define OPENGL_INFOLOG_SIZE 512
-local char opengl_infolog[OPENGL_INFOLOG_SIZE] = {};
+
 
 //-------------------------------------------------------------------------------------------------
-// @OPENGL FUNCTIONS
+// @DIRECTX FUNCTIONS
 template<typename... Args>
 local inline void
-PrintGl(u32 level, Args... args){
+PrintDx(u32 level, Args... args){
 	if(settings.loggingLevel >= level){
-		LOG("[OpenGL] ", args...);
+		LOG("[DirectX] ", args...);
 	}
-}
-
-local void
-ResetCommandsGl(){
-	{//UI commands
-		uiVertexCount = 0;
-		uiIndexCount  = 0;
-		memset(&uiCmdArray[0], 0, sizeof(UICmdGl)*uiCmdCount);
-		uiCmdCount    = 1;
-	}
-	
-	{//temp commands
-		tempWireframeVertexCount = 0;
-		tempWireframeIndexCount  = 0;
-		tempFilledVertexCount = 0;
-		tempFilledIndexCount  = 0;
-	}
-	
-	{//model commands
-		modelCmdCount = 0;
-	}
-}
-
-local void
-CompileAndLoadShaderGl(const char* filename, ShaderStage stage){
-    ShaderGl sgl{};
-    cpystr(sgl.filename, filename, DESHI_NAME_SIZE);
-    sgl.stage = stage;
-    
-    //allocate shader
-    switch(stage){ //TODO(delle) other shader stages
-        case ShaderStage_Vertex:   sgl.glid = glCreateShader(GL_VERTEX_SHADER);   break;
-        case ShaderStage_Fragment: sgl.glid = glCreateShader(GL_FRAGMENT_SHADER); break;
-    }
-    
-    //load and compile shader
-    char* filebuff = Assets::readFileAsciiToArray(Assets::dirShaders()+filename);
-    if(!filebuff) Assert(!"Failed to load shader");
-    glShaderSource(sgl.glid, 1, &filebuff, 0);
-    glCompileShader(sgl.glid);
-    
-    //check for errors
-    glGetShaderiv(sgl.glid, GL_COMPILE_STATUS, &opengl_success);
-    if(opengl_success != GL_TRUE){
-        glGetShaderInfoLog(sgl.glid, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
-        PrintGl(2, "  Failed to compile shader '",filename,"':\n",opengl_infolog);
-    }
-    
-    glShaders.add(sgl);
-}
-
-//TODO(delle) cleanup shaders maybe?
-local void 
-CreateProgramGl(ShaderGl* shaders, u32 shader_count){
-    ProgramGl pgl{};
-    
-    //allocate program
-    pgl.glid = glCreateProgram();
-    
-    //attach shaders and link
-    forI(shader_count){ glAttachShader(pgl.glid, shaders[i].glid); }
-    glLinkProgram(pgl.glid);
-    
-    //check for errors
-    glGetProgramiv(pgl.glid, GL_LINK_STATUS, &opengl_success);
-    if(opengl_success != GL_TRUE){
-        glGetProgramInfoLog(pgl.glid, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
-        PrintGl(2, "  Failed to link program '",pgl.glid,"':\n",opengl_infolog);
-    }
-    
-    glPrograms.add(pgl);
-}
-
-local void 
-DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, int len_args, ...){
-    GLenum error_code = glad_glGetError();
-    if(error_code != GL_NO_ERROR){
-        PrintGl(1, " Error '",error_code,"': ",name);
-        if(settings.crashOnError) Assert(!"crashing because of error in opengl");
-    }
 }
 
 
@@ -224,34 +119,23 @@ DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, int len_args
 // @IMGUI FUNCTIONS
 local char iniFilepath[256] = {};
 void DeshiImGui::
-Init(){
+Init(){ //!!Incomplete
     //Setup Dear ImGui context
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	cpystr(iniFilepath, (Assets::dirConfig() + "imgui.ini").c_str(), 256);
-	io.IniFilename = iniFilepath;
     
     //Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsClassic();
     
     //Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(DeshWindow->window, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
+    
 }
 
 void DeshiImGui::
-Cleanup(){
-	ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
+Cleanup(){ //!!Incomplete
+	
 }
 
 void DeshiImGui::
-NewFrame(){
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
+NewFrame(){ //!!Incomplete
+	
 }
 
 
@@ -282,7 +166,7 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
     
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
-	UIIndexGl* ip = uiIndexArray + uiIndexCount;
+	UIIndexDx* ip = uiIndexArray + uiIndexCount;
     
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
@@ -334,7 +218,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
     
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
-	UIIndexGl* ip = uiIndexArray + uiIndexCount;
+	UIIndexDx* ip = uiIndexArray + uiIndexCount;
     
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
@@ -430,37 +314,9 @@ LoadMaterial(Material* material){ //!!Incomplete
 	
 }
 
-//TODO(delle) one large vertex/index array maybe
 void Render::
 LoadMesh(Mesh* mesh){ //!!Incomplete
-    MeshGl mgl{};
-    mgl.base = mesh;
-    mgl.vertexCount = mesh->vertexCount;
-    mgl.indexCount = mesh->indexCount;
     
-    //allocate buffers
-    glGenVertexArrays(1, &mgl.vao);
-    glGenBuffers(1, &mgl.vbo);
-    glGenBuffers(1, &mgl.ebo);
-    
-    //bind and fill buffers
-    glBindVertexArray(mgl.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, mgl.vbo);
-    glBufferData(GL_ARRAY_BUFFER, mgl.vertexCount*sizeof(Mesh::Vertex), mesh->vertexArray, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mgl.ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mgl.indexCount*sizeof(Mesh::Index), mesh->indexArray, GL_STATIC_DRAW);
-    
-    //sepcify how to read vertex buffer
-    glVertexAttribPointer(0, 3,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,pos));
-    glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,uv));
-    glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,color));
-    glVertexAttribPointer(3, 3,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,normal));
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
-    glEnableVertexAttribArray(3);
-    
-    glMeshes.add(mgl);
 }
 
 void Render::
@@ -510,7 +366,7 @@ DrawLine(vec3 start, vec3 end, color color){
 	
 	u32 col = color.rgba;
 	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
-	TempIndexGl*  ip = tempWireframeIndexArray + tempWireframeIndexCount;
+	TempIndexDx*  ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
 	ip[0] = tempWireframeVertexCount; 
 	ip[1] = tempWireframeVertexCount+1; 
@@ -528,7 +384,7 @@ DrawTriangle(vec3 p0, vec3 p1, vec3 p2, color color){
 	
 	u32 col = color.rgba;
 	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
-	TempIndexGl*  ip = tempWireframeIndexArray + tempWireframeIndexCount;
+	TempIndexDx*  ip = tempWireframeIndexArray + tempWireframeIndexCount;
 	
 	ip[0] = tempWireframeVertexCount; 
 	ip[1] = tempWireframeVertexCount+1; 
@@ -547,7 +403,7 @@ DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, color color){
 	
 	u32 col = color.rgba;
 	Mesh::Vertex* vp = tempFilledVertexArray + tempFilledVertexCount;
-	TempIndexGl*  ip = tempFilledIndexArray + tempFilledIndexCount;
+	TempIndexDx*  ip = tempFilledIndexArray + tempFilledIndexCount;
 	
 	ip[0] = tempFilledVertexCount; 
 	ip[1] = tempFilledVertexCount+1; 
@@ -738,26 +594,9 @@ Init(){ //!!Incomplete
 	if(settings.debugging && settings.printf) settings.loggingLevel = 4;
     
     //// setup debug callback ////
-    gladSetGLPostCallback(DebugPostCallback);
     
     //// temp testing ////
-    CompileAndLoadShaderGl("nothing.vert", ShaderStage_Vertex);
-    CompileAndLoadShaderGl("nothing.frag", ShaderStage_Fragment);
-    CreateProgramGl(glShaders.data, 2);
-    Mesh* test_mesh = (Mesh*)calloc(1, sizeof(Mesh));
-    test_mesh->vertexCount = 4;
-    test_mesh->indexCount = 6;
-    test_mesh->vertexArray = (Mesh::Vertex*)calloc(4, sizeof(Mesh::Vertex));
-    test_mesh->vertexArray[0] = {{-.5f,-.5f,0.f},{0.f,0.f},PackColorU32(255,0  ,0  ,255),{0.f,1.f,0.f}};
-    test_mesh->vertexArray[1] = {{ .5f,-.5f,0.f},{0.f,0.f},PackColorU32(0  ,255,0  ,255),{0.f,1.f,0.f}};
-    test_mesh->vertexArray[2] = {{ .5f, .5f,0.f},{0.f,0.f},PackColorU32(0  ,0  ,255,255),{0.f,1.f,0.f}};
-    test_mesh->vertexArray[3] = {{-.5f, .5f,0.f},{0.f,0.f},PackColorU32(255,255,255,255),{0.f,1.f,0.f}};
-    test_mesh->indexArray = (Mesh::Index*)calloc(6, sizeof(Mesh::Index));
-    test_mesh->indexArray[0] = 0; test_mesh->indexArray[1] = 1; test_mesh->indexArray[2] = 2;
-    test_mesh->indexArray[3] = 2; test_mesh->indexArray[4] = 3; test_mesh->indexArray[5] = 0;
-    LoadMesh(test_mesh);
     
-    //glfwSwapInterval(1); //vsync
     initialized = true;
 }
 
@@ -766,44 +605,20 @@ Init(){ //!!Incomplete
 /////////////////
 void Render::
 Update(){ //!!Incomplete
-    TIMER_START(t_d);
+    TIMER_START(t_u);
     
-    //handle widow resize
-    if(DeshWindow->resized) remakeWindow = true;
-	if(remakeWindow){
-		int w, h;
-		glfwGetFramebufferSize(DeshWindow->window, &w, &h);
-		if(w <= 0 || h <= 0){ 
-			ImGui::EndFrame(); 
-			return;
-		}
-        glViewport(0,0,w,h);
-		remakeWindow = false;
-	}
+    //handle window resize
     
     //render stuff
-    glClearColor(settings.clearColor.r, settings.clearColor.g, settings.clearColor.b, settings.clearColor.a);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ImGui::Render();
     
     //execute draw commands
-    if(ImDrawData* imDrawData = ImGui::GetDrawData()){
-        ImGui_ImplOpenGL3_RenderDrawData(imDrawData);
-    }
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glUseProgram(glPrograms[0].glid);
-    glBindVertexArray(glMeshes[0].vao);
-    glDrawElements(GL_TRIANGLES, glMeshes[0].indexCount, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
     
     //present stuff
-    glfwSwapBuffers(DeshWindow->window);
     
     //reset stuff
-    ResetCommandsGl();
     
-    DeshTime->renderTime = TIMER_END(t_d);
+    
+    DeshTime->renderTime = TIMER_END(t_u);
 }
 
 ////////////////

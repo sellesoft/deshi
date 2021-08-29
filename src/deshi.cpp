@@ -176,11 +176,6 @@ __________ maybe store the text in the actual source and create the file from th
 
 //// renderer cpp (and libs) ////
 #if   DESHI_VULKAN
-#if defined(_MSC_VER)
-#pragma comment(lib,"vulkan-1.lib")
-#pragma comment(lib,"glfw3.lib")
-#pragma comment(lib,"shaderc_combined.lib")
-#endif //_MSC_VER
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <shaderc/shaderc.h>
@@ -188,10 +183,6 @@ __________ maybe store the text in the actual source and create the file from th
 #include <imgui/imgui_impl_glfw.cpp>
 #include "core/renderers/vulkan.cpp"
 #elif DESHI_OPENGL //DESHI_VULKAN
-#if defined(_MSC_VER)
-#pragma comment(lib,"opengl32.lib")
-#pragma comment(lib,"glfw3.lib")
-#endif //_MSC_VER
 #define GLAD_GL_IMPLEMENTATION
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -199,9 +190,10 @@ __________ maybe store the text in the actual source and create the file from th
 #include <imgui/imgui_impl_opengl3.cpp>
 #include <imgui/imgui_impl_glfw.cpp>
 #include "core/renderers/opengl.cpp"
-#elif DESHI_DIRECTX //DESHI_OPENGL
-
-#else  //DESHI_DIRECTX
+#elif DESHI_DIRECTX12 //DESHI_OPENGL
+#include <GLFW/glfw3.h>
+#include "core/renderers/directx.cpp"
+#else  //DESHI_DIRECTX12
 #error "no renderer selected"
 #endif //DESHI_VULKAN
 
