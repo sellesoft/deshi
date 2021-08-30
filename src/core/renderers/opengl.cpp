@@ -19,21 +19,23 @@ struct UICmdGl{
 
 struct MeshGl{
     Mesh* base;
-    u32 vao;
-    u32 vbo;
-    u32 ebo;
+    u32 vao_handle;
+    u32 vbo_handle;
+    u32 ebo_handle;
     u32 vertexCount;
     u32 indexCount;
 };
 
 struct ShaderGl{
     char filename[DESHI_NAME_SIZE];
-    u32 glid;
+    u32 handle;
     ShaderStage stage;
 };
 
 struct ProgramGl{
-    u32 glid;
+    u32 handle;
+    u32 shader_count;
+    ShaderGl* shaders[4];
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -92,6 +94,9 @@ local array<MeshGl>    glMeshes;
 local array<ShaderGl>  glShaders;
 local array<ProgramGl> glPrograms;
 
+///////////////////
+//// @commands ////
+///////////////////
 //arbitray limits, change if needed
 #define MAX_UI_VERTICES 0xFFFF //max u16: 65535
 #define MAX_UI_INDICES  3*MAX_UI_VERTICES
@@ -121,16 +126,53 @@ typedef u32 ModelIndexGl;
 local ModelIndexGl modelCmdCount = 0;
 local ModelCmdGl   modelCmdArray[MAX_MODEL_CMDS];
 
+////////////////
+//// @state ////
+////////////////
 local s32  width  = 0;
 local s32  height = 0;
 local bool initialized  = false;
-local bool remakeWindow = false;
+local bool remake_window = false;
 local int  opengl_success = 0;
 #define OPENGL_INFOLOG_SIZE 512
 local char opengl_infolog[OPENGL_INFOLOG_SIZE] = {};
 
+//////////////////
+//// @buffers ////
+//////////////////
+local struct{ //uniform buffer for the vertex shaders
+	u32 handle;
+    u32 binding = 1;
+	
+	struct{ //416 bytes
+		mat4 view;        //camera view matrix
+		mat4 proj;        //camera projection matrix
+		vec4 lights[10];  //lights
+		vec4 viewPos;     //camera pos
+		vec2 screen;      //screen dimensions
+		vec2 mousepos;    //mouse screen pos
+		vec3 mouseWorld;  //point casted out from mouse 
+		f32  time;        //total time
+		mat4 lightVP;     //first light's view projection matrix
+		int  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
+        int  padding[3];
+	} values;
+} uboVS{};
+
+local struct{ //uniform buffer for the vertex shaders
+	u32 handle;
+    u32 binding = 2;
+	
+	struct{ //64 bytes
+		mat4 matrix;
+	} values;
+} pushVS{};
+
 //-------------------------------------------------------------------------------------------------
 // @OPENGL FUNCTIONS
+////////////////////
+//// @utilities ////
+////////////////////
 template<typename... Args>
 local inline void
 PrintGl(u32 level, Args... args){
@@ -139,8 +181,31 @@ PrintGl(u32 level, Args... args){
 	}
 }
 
+local void 
+DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, int len_args, ...){
+    GLenum error_code = glad_glGetError();
+    if(error_code != GL_NO_ERROR){
+        const char* error_flag;
+        switch(error_code){
+            case GL_INVALID_ENUM:                  error_flag = "GL_INVALID_ENUM"; break; //Set when an enumeration parameter is not legal.
+            case GL_INVALID_VALUE:                 error_flag = "GL_INVALID_VALUE"; break; //Set when a value parameter is not legal.
+            case GL_INVALID_OPERATION:             error_flag = "GL_INVALID_OPERATION"; break; //Set when the state for a command is not legal for its given parameters.
+            case 1283:                             error_flag = "GL_STACK_OVERFLOW"; break; //Set when a stack pushing operation causes a stack overflow.
+            case 1284:                             error_flag = "GL_STACK_UNDERFLOW"; break; //Set when a stack popping operation occurs while the stack is at its lowest point.
+            case GL_OUT_OF_MEMORY:                 error_flag = "GL_OUT_OF_MEMORY"; break; //	Set when a memory allocation operation cannot allocate (enough) memory.
+            case GL_INVALID_FRAMEBUFFER_OPERATION: error_flag = "GL_INVALID_FRAMEBUFFER_OPERATION"; break; //Set when reading or writing to a framebuffer that is not complete.
+        }
+        PrintGl(0, "ERROR_",error_code," '",error_flag,"' on ",name,"(); Info: http://docs.gl/gl3/",name);
+        if(settings.crashOnError) Assert(!"crashing because of error in opengl");
+    }
+}
+
+
+///////////////////
+//// @commands ////
+///////////////////
 local void
-ResetCommandsGl(){
+ResetCommands(){
 	{//UI commands
 		uiVertexCount = 0;
 		uiIndexCount  = 0;
@@ -160,65 +225,145 @@ ResetCommandsGl(){
 	}
 }
 
+
+//////////////////
+//// @shaders ////
+//////////////////
 local void
-CompileAndLoadShaderGl(const char* filename, ShaderStage stage){
+CompileAndLoadShader(const char* filename, ShaderStage stage){
+    Assert(stage > ShaderStage_NONE && stage < ShaderStage_COUNT);
     ShaderGl sgl{};
     cpystr(sgl.filename, filename, DESHI_NAME_SIZE);
     sgl.stage = stage;
     
-    //allocate shader
-    switch(stage){ //TODO(delle) other shader stages
-        case ShaderStage_Vertex:   sgl.glid = glCreateShader(GL_VERTEX_SHADER);   break;
-        case ShaderStage_Fragment: sgl.glid = glCreateShader(GL_FRAGMENT_SHADER); break;
+    //create shader, load file, and compile shader
+    switch(stage){ //TODO(delle) opengl4 shader stages
+        case ShaderStage_Vertex:   sgl.handle = glCreateShader(GL_VERTEX_SHADER);   break;
+        case ShaderStage_TessCtrl: Assert(!"not implemented yet REQUIRES OPENGL4"); break;
+        case ShaderStage_TessEval: Assert(!"not implemented yet REQUIRES OPENGL4"); break;
+        case ShaderStage_Geometry: sgl.handle = glCreateShader(GL_GEOMETRY_SHADER); break;
+        case ShaderStage_Fragment: sgl.handle = glCreateShader(GL_FRAGMENT_SHADER); break;
+        case ShaderStage_Compute:  Assert(!"not implemented yet REQUIRES OPENGL4"); break;
     }
-    
-    //load and compile shader
     char* filebuff = Assets::readFileAsciiToArray(Assets::dirShaders()+filename);
     if(!filebuff) Assert(!"Failed to load shader");
-    glShaderSource(sgl.glid, 1, &filebuff, 0);
-    glCompileShader(sgl.glid);
+    glShaderSource(sgl.handle, 1, &filebuff, 0);
+    glCompileShader(sgl.handle);
     
     //check for errors
-    glGetShaderiv(sgl.glid, GL_COMPILE_STATUS, &opengl_success);
+    glGetShaderiv(sgl.handle, GL_COMPILE_STATUS, &opengl_success);
     if(opengl_success != GL_TRUE){
-        glGetShaderInfoLog(sgl.glid, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
+        glGetShaderInfoLog(sgl.handle, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
         PrintGl(2, "  Failed to compile shader '",filename,"':\n",opengl_infolog);
+        
+        //delete broken shader
+        glDeleteShader(sgl.handle);
+        return;
     }
     
     glShaders.add(sgl);
 }
 
-//TODO(delle) cleanup shaders maybe?
+
+///////////////////
+//// @programs ////
+///////////////////
+//TODO(delle) cleanup shaders maybe? glDeleteShader()
 local void 
-CreateProgramGl(ShaderGl* shaders, u32 shader_count){
+CreateProgram(ShaderGl* shaders, u32 shader_count){
+    //TODO(delle) Assert(ubo's setup)
+    
     ProgramGl pgl{};
+    pgl.shader_count = shader_count;
     
-    //allocate program
-    pgl.glid = glCreateProgram();
-    
-    //attach shaders and link
-    forI(shader_count){ glAttachShader(pgl.glid, shaders[i].glid); }
-    glLinkProgram(pgl.glid);
+    //create program, attach shaders and link
+    pgl.handle = glCreateProgram();
+    forI(shader_count){ glAttachShader(pgl.handle, shaders[i].handle); pgl.shaders[i] = &shaders[i]; }
+    glLinkProgram(pgl.handle);
     
     //check for errors
-    glGetProgramiv(pgl.glid, GL_LINK_STATUS, &opengl_success);
+    glGetProgramiv(pgl.handle, GL_LINK_STATUS, &opengl_success);
     if(opengl_success != GL_TRUE){
-        glGetProgramInfoLog(pgl.glid, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
-        PrintGl(2, "  Failed to link program '",pgl.glid,"':\n",opengl_infolog);
+        glGetProgramInfoLog(pgl.handle, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
+        PrintGl(0, "Failed to link program '",pgl.handle,"':\n",opengl_infolog);
+        
+        //delete broken program
+        glDeleteProgram(pgl.handle);
+        return;
     }
+    
+    //specify UBOs
+    u32 local_ubi = glGetUniformBlockIndex(pgl.handle,"UniformBufferObject");
+    if(local_ubi != -1){ 
+        glUniformBlockBinding(pgl.handle, local_ubi, uboVS.binding);
+    }else{
+        PrintGl(0, "Failed to find UniformBufferObject in vertex shader of program '",pgl.handle,"'");
+        if(settings.crashOnError) Assert(false);
+        glDeleteProgram(pgl.handle);
+        return; 
+    }
+    
+    local_ubi = glGetUniformBlockIndex(pgl.handle,"PushConsts");
+    if(local_ubi != -1){ 
+        glUniformBlockBinding(pgl.handle, local_ubi, pushVS.binding);
+    }else{
+        PrintGl(0, "Failed to find PushConsts in vertex shader of program '",pgl.handle,"'");
+        if(settings.crashOnError) Assert(false);
+        glDeleteProgram(pgl.handle);
+        return;
+    }
+    
+    //detach shaders
+    forI(shader_count){ glDetachShader(pgl.handle, shaders[i].handle); }
     
     glPrograms.add(pgl);
 }
 
-local void 
-DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, int len_args, ...){
-    GLenum error_code = glad_glGetError();
-    if(error_code != GL_NO_ERROR){
-        PrintGl(1, " Error '",error_code,"': ",name);
-        if(settings.crashOnError) Assert(!"crashing because of error in opengl");
-    }
+//@@
+local void
+SetupPrograms(){
+    //collect shaders files
+    array<string> files;
+	for(auto& entry : std::filesystem::directory_iterator(Assets::dirShaders())){
+		if(entry.path().extension() == ".vert" ||
+		   entry.path().extension() == ".frag" ||
+		   entry.path().extension() == ".geom" ||
+           entry.path().extension() == ".tesc" ||
+           entry.path().extension() == ".tese" ||
+           entry.path().extension() == ".comp"){
+			files.add(entry.path().filename().string().c_str());
+		}
+	}
+    
+    //!!Incomplete
 }
 
+
+//////////////////
+//// @buffers ////
+//////////////////
+local void
+SetupUniformBuffers(){
+    //vertex shader ubo
+    glGenBuffers(1, &uboVS.handle);
+    glBindBufferRange(GL_UNIFORM_BUFFER, uboVS.binding, uboVS.handle, 0, sizeof(uboVS.values));
+    
+    //vertex shader push constant
+    glGenBuffers(1, &pushVS.handle);
+    glBindBufferRange(GL_UNIFORM_BUFFER, pushVS.binding, pushVS.handle, 0, sizeof(pushVS.values));
+}
+
+local void
+UpdateUniformBuffers(){
+    uboVS.values.screen     = vec2(width, height);
+    uboVS.values.mousepos   = vec2(DeshInput->mousePos.x, DeshInput->mousePos.y);
+    uboVS.values.mouseWorld = Math::ScreenToWorld(DeshInput->mousePos, uboVS.values.proj, uboVS.values.view, DeshWindow->dimensions);
+    uboVS.values.time       = DeshTime->totalTime;
+    uboVS.values.enablePCF  = settings.shadowPCF;
+    
+    glBindBuffer(GL_UNIFORM_BUFFER, uboVS.handle);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(uboVS.values), &uboVS.values, GL_STREAM_DRAW);
+}
 
 //-------------------------------------------------------------------------------------------------
 // @IMGUI FUNCTIONS
@@ -237,7 +382,7 @@ Init(){
     
     //Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(DeshWindow->window, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
+    ImGui_ImplOpenGL3_Init();
 }
 
 void DeshiImGui::
@@ -432,22 +577,22 @@ LoadMaterial(Material* material){ //!!Incomplete
 
 //TODO(delle) one large vertex/index array maybe
 void Render::
-LoadMesh(Mesh* mesh){ //!!Incomplete
+LoadMesh(Mesh* mesh){
     MeshGl mgl{};
     mgl.base = mesh;
     mgl.vertexCount = mesh->vertexCount;
     mgl.indexCount = mesh->indexCount;
     
     //allocate buffers
-    glGenVertexArrays(1, &mgl.vao);
-    glGenBuffers(1, &mgl.vbo);
-    glGenBuffers(1, &mgl.ebo);
+    glGenVertexArrays(1, &mgl.vao_handle);
+    glGenBuffers(1, &mgl.vbo_handle);
+    glGenBuffers(1, &mgl.ebo_handle);
     
     //bind and fill buffers
-    glBindVertexArray(mgl.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, mgl.vbo);
+    glBindVertexArray(mgl.vao_handle);
+    glBindBuffer(GL_ARRAY_BUFFER, mgl.vbo_handle);
     glBufferData(GL_ARRAY_BUFFER, mgl.vertexCount*sizeof(Mesh::Vertex), mesh->vertexArray, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mgl.ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mgl.ebo_handle);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, mgl.indexCount*sizeof(Mesh::Index), mesh->indexArray, GL_STATIC_DRAW);
     
     //sepcify how to read vertex buffer
@@ -455,10 +600,7 @@ LoadMesh(Mesh* mesh){ //!!Incomplete
     glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,uv));
     glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,color));
     glVertexAttribPointer(3, 3,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,normal));
-    glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
-    glEnableVertexAttribArray(3);
+    glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2); glEnableVertexAttribArray(3);
     
     glMeshes.add(mgl);
 }
@@ -630,71 +772,49 @@ void Render::
 DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color color){
 	if(color.a == 0) return;
 	
-	f32 y = tanf(RADIANS(fovx / 2.0f));
-	f32 x = y * aspectRatio;
-	f32 nearX = x * nearZ;
-	f32 farX  = x * farZ;
-	f32 nearY = y * nearZ;
-	f32 farY  = y * farZ;
-	
+	f32 y = tanf(RADIANS(fovx/2.0f));
+	f32 x = y*aspectRatio;
+	f32 nearX = x*nearZ, farX = x*farZ;
+	f32 nearY = y*nearZ, farY = y*farZ;
 	vec4 faces[8] = {
-		//near face
-		{ nearX,  nearY, nearZ, 1},
-		{-nearX,  nearY, nearZ, 1},
-		{ nearX, -nearY, nearZ, 1},
-		{-nearX, -nearY, nearZ, 1},
-		
-		//far face
-		{ farX,  farY, farZ, 1},
-		{-farX,  farY, farZ, 1},
-		{ farX, -farY, farZ, 1},
-		{-farX, -farY, farZ, 1},
+		{nearX,nearY,nearZ,1}, {-nearX,nearY,nearZ,1}, {nearX,-nearY,nearZ,1}, {-nearX,-nearY,nearZ,1},
+		{farX, farY, farZ, 1}, {-farX, farY, farZ, 1}, {farX, -farY, farZ, 1}, {-farX, -farY, farZ, 1},
 	};
 	
 	mat4 mat = Math::LookAtMatrix(position, target);
 	vec3 v[8];
-	forI(8){
-		vec4 temp = faces[i] * mat;
-		v[i].x = temp.x / temp.w;
-		v[i].y = temp.y / temp.w;
-		v[i].z = temp.z / temp.w;
-	}
+	forI(8){ vec4 temp = faces[i]*mat; v[i].x = temp.x/temp.w; v[i].y = temp.y/temp.w; v[i].z = temp.z/temp.w; }
 	
-	DrawLine(v[0], v[1], color);
-	DrawLine(v[0], v[2], color);
-	DrawLine(v[3], v[1], color);
-	DrawLine(v[3], v[2], color);
-	DrawLine(v[4], v[5], color);
-	DrawLine(v[4], v[6], color);
-	DrawLine(v[7], v[5], color);
-	DrawLine(v[7], v[6], color);
-	DrawLine(v[0], v[4], color);
-	DrawLine(v[1], v[5], color);
-	DrawLine(v[2], v[6], color);
-	DrawLine(v[3], v[7], color);
+	DrawLine(v[0], v[1], color); DrawLine(v[0], v[2], color); DrawLine(v[3], v[1], color); DrawLine(v[3], v[2], color);
+	DrawLine(v[4], v[5], color); DrawLine(v[4], v[6], color); DrawLine(v[7], v[5], color); DrawLine(v[7], v[6], color);
+    DrawLine(v[0], v[4], color); DrawLine(v[1], v[5], color); DrawLine(v[2], v[6], color); DrawLine(v[3], v[7], color);
 }
 
 /////////////////
 //// @camera ////
 /////////////////
 void Render::
-UpdateCameraPosition(vec3 position){ //!!Incomplete
-    
+UpdateCameraPosition(vec3 position){
+    uboVS.values.viewPos = vec4(position, 1.f);
 }
 
 void Render::
-UpdateCameraViewMatrix(mat4 m){ //!!Incomplete
-    
+UpdateCameraViewMatrix(mat4 m){
+    uboVS.values.view = m;
 }
 
 void Render::
-UpdateCameraProjectionMatrix(mat4 m){ //!!Incomplete
-    
+UpdateCameraProjectionMatrix(mat4 m){
+    uboVS.values.proj = m;
+    uboVS.values.proj.data[5] = -1*uboVS.values.proj.data[5]; //OpenGL is inverted
 }
 
 void Render::
-UseDefaultViewProjMatrix(vec3 position, vec3 rotation){ //!!Incomplete
-    
+UseDefaultViewProjMatrix(vec3 position, vec3 rotation){
+    vec3 forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
+	uboVS.values.view = Math::LookAtMatrix(position, position + forward).Inverse();
+	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix(width, height, 90, 1000, 0.1);
+    uboVS.values.proj.data[5] = -1*uboVS.values.proj.data[5]; //OpenGL is inverted
 }
 
 //////////////////
@@ -732,7 +852,7 @@ RemakeTextures(){ //!!Incomplete
 //// @init ////
 ///////////////
 void Render::
-Init(){ //!!Incomplete
+Init(){
     //// load RenderSettings ////
 	LoadSettings();
 	if(settings.debugging && settings.printf) settings.loggingLevel = 4;
@@ -740,22 +860,19 @@ Init(){ //!!Incomplete
     //// setup debug callback ////
     gladSetGLPostCallback(DebugPostCallback);
     
+    //// initialization ////
+    remake_window = true;
+    SetupUniformBuffers();
+    glFrontFace(GL_CW);
+    glEnable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
+    //glEnable(GL_DEPTH_TEST);
+    
     //// temp testing ////
-    CompileAndLoadShaderGl("nothing.vert", ShaderStage_Vertex);
-    CompileAndLoadShaderGl("nothing.frag", ShaderStage_Fragment);
-    CreateProgramGl(glShaders.data, 2);
-    Mesh* test_mesh = (Mesh*)calloc(1, sizeof(Mesh));
-    test_mesh->vertexCount = 4;
-    test_mesh->indexCount = 6;
-    test_mesh->vertexArray = (Mesh::Vertex*)calloc(4, sizeof(Mesh::Vertex));
-    test_mesh->vertexArray[0] = {{-.5f,-.5f,0.f},{0.f,0.f},PackColorU32(255,0  ,0  ,255),{0.f,1.f,0.f}};
-    test_mesh->vertexArray[1] = {{ .5f,-.5f,0.f},{0.f,0.f},PackColorU32(0  ,255,0  ,255),{0.f,1.f,0.f}};
-    test_mesh->vertexArray[2] = {{ .5f, .5f,0.f},{0.f,0.f},PackColorU32(0  ,0  ,255,255),{0.f,1.f,0.f}};
-    test_mesh->vertexArray[3] = {{-.5f, .5f,0.f},{0.f,0.f},PackColorU32(255,255,255,255),{0.f,1.f,0.f}};
-    test_mesh->indexArray = (Mesh::Index*)calloc(6, sizeof(Mesh::Index));
-    test_mesh->indexArray[0] = 0; test_mesh->indexArray[1] = 1; test_mesh->indexArray[2] = 2;
-    test_mesh->indexArray[3] = 2; test_mesh->indexArray[4] = 3; test_mesh->indexArray[5] = 0;
-    LoadMesh(test_mesh);
+    CompileAndLoadShader("base.vert", ShaderStage_Vertex);
+    CompileAndLoadShader("base.frag", ShaderStage_Fragment);
+    CreateProgram(glShaders.data, 2);
+    LoadMesh(Storage::CreateBoxMesh(.5f, .5f, .5f, Color_Cyan).second);
     
     //glfwSwapInterval(1); //vsync
     initialized = true;
@@ -765,43 +882,59 @@ Init(){ //!!Incomplete
 //// @update ////
 /////////////////
 void Render::
-Update(){ //!!Incomplete
+Update(){
     TIMER_START(t_d);
     
-    //handle widow resize
-    if(DeshWindow->resized) remakeWindow = true;
-	if(remakeWindow){
-		int w, h;
-		glfwGetFramebufferSize(DeshWindow->window, &w, &h);
-		if(w <= 0 || h <= 0){ 
-			ImGui::EndFrame(); 
-			return;
-		}
+    //// handle widow resize ////
+    if(DeshWindow->resized) remake_window = true;
+	if(remake_window){
+		int w, h; glfwGetFramebufferSize(DeshWindow->window, &w, &h);
+		if(w <= 0 || h <= 0){ ImGui::EndFrame(); return; }
         glViewport(0,0,w,h);
-		remakeWindow = false;
+        width = w; height = h;
+		remake_window = false;
 	}
     
-    //render stuff
-    glClearColor(settings.clearColor.r, settings.clearColor.g, settings.clearColor.b, settings.clearColor.a);
-    glClear(GL_COLOR_BUFFER_BIT);
+    //// setup stuff ////
+    UpdateUniformBuffers();
+    
+    //// render stuff ////
     ImGui::Render();
     
-    //execute draw commands
-    if(ImDrawData* imDrawData = ImGui::GetDrawData()){
-        ImGui_ImplOpenGL3_RenderDrawData(imDrawData);
-    }
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glUseProgram(glPrograms[0].glid);
-    glBindVertexArray(glMeshes[0].vao);
-    glDrawElements(GL_TRIANGLES, glMeshes[0].indexCount, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
+    //// draw stuff ////
+    glClearColor(settings.clearColor.r, settings.clearColor.g, settings.clearColor.b, settings.clearColor.a);
+    glClear(GL_COLOR_BUFFER_BIT);
     
-    //present stuff
+    {//temp testing
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glUseProgram(glPrograms[0].handle);
+        glBindVertexArray(glMeshes[0].vao_handle);
+        persist mat4 temp_mat = mat4::IDENTITY;
+        glBindBuffer(GL_UNIFORM_BUFFER, pushVS.handle);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(mat4), &temp_mat, GL_DYNAMIC_DRAW);
+        glDrawElements(GL_TRIANGLES, glMeshes[0].indexCount, GL_UNSIGNED_INT, 0);
+    }
+    
+    //draw meshes //!!Incomplete
+    //glBindVertexArray(meshVertexArray);
+    forI(modelCmdCount){ //TODO(delle) materials/textures
+        glBindBuffer(GL_UNIFORM_BUFFER, pushVS.handle);
+        glBufferData(GL_UNIFORM_BUFFER, sizeof(mat4), &modelCmdArray[i].matrix, GL_DYNAMIC_DRAW);
+        glPolygonMode(GL_FRONT_AND_BACK, (settings.wireframeOnly) ? GL_LINE : GL_FILL);
+        glDrawElementsBaseVertex(GL_TRIANGLES, modelCmdArray[i].indexCount, GL_UNSIGNED_INT,
+                                 (void*)(modelCmdArray[i].indexOffset*sizeof(Mesh::Index)), modelCmdArray[i].vertexOffset);
+    }
+    
+    //draw ui
+    
+    //draw imgui
+    if(ImDrawData* imDrawData = ImGui::GetDrawData()) ImGui_ImplOpenGL3_RenderDrawData(imDrawData);
+    
+    //// present stuff ////
     glfwSwapBuffers(DeshWindow->window);
     
-    //reset stuff
-    ResetCommandsGl();
+    //// reset stuff ////
+    ResetCommands();
     
     DeshTime->renderTime = TIMER_END(t_d);
 }
@@ -811,6 +944,7 @@ Update(){ //!!Incomplete
 ////////////////
 void Render::
 Reset(){ //!!Incomplete
+    glFinish();
     
 }
 
@@ -819,5 +953,6 @@ Reset(){ //!!Incomplete
 //////////////////
 void Render::
 Cleanup(){ //!!Incomplete
+    glFinish();
     
 }

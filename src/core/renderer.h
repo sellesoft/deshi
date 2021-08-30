@@ -38,9 +38,11 @@ enum RendererStage_{
 enum ShaderStage_{
     ShaderStage_NONE,
     ShaderStage_Vertex,
-    ShaderStage_Tessellation,
+    ShaderStage_TessCtrl,
+    ShaderStage_TessEval,
     ShaderStage_Geometry,
     ShaderStage_Fragment,
+    ShaderStage_Compute,
     ShaderStage_COUNT,
 }; typedef u32 ShaderStage;
 

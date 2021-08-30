@@ -22,7 +22,7 @@ void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, Display
     
 #if   DESHI_VULKAN
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-#elif DESHI_OPENGL
+#elif DESHI_OPENGL //DESHI_VULKAN
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);

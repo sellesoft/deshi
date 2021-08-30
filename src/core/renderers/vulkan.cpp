@@ -289,7 +289,7 @@ local struct{ //uniform buffer for the vertex shaders
 		vec3 mouseWorld;  //point casted out from mouse 
 		f32  time;        //total time
 		mat4 lightVP;     //first light's view projection matrix
-		bool  enablePCF;   //whether to blur shadow edges //TODOf(delle,ReVu) convert to specialization constant
+		bool enablePCF;   //whether to blur shadow edges //TODOf(delle,ReVu) convert to specialization constant
 	} values;
 } uboVS{};
 
@@ -3846,10 +3846,7 @@ UpdateCameraProjectionMatrix(mat4 m){
 void Render::
 UseDefaultViewProjMatrix(vec3 position, vec3 rotation) {
 	vec3 forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
-	vec3 right = vec3::UP.cross(forward).normalized();
-	vec3 up = right.cross(forward).normalized();
 	uboVS.values.view = Math::LookAtMatrix(position, position + forward).Inverse();
-    
 	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix(DeshWindow->width, DeshWindow->height, 90, 1000, 0.1);
 }
 
