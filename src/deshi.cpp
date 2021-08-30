@@ -212,11 +212,11 @@ local Input    deshi_input;   Input*    g_input   = &deshi_input;
 local Console  deshi_console; Console*  g_console = &deshi_console;
 local Storage_ deshi_storage; Storage_* g_storage = &deshi_storage;
 
-void deshi::init(){
+void deshi::init(u32 winWidth, u32 winHeight){
 	TIMER_START(t_d); TIMER_START(t_s);
 	Assets::enforceDirectories();
 	TIMER_RESET(t_s); deshi_time.Init(300);         SUCCESS("Finished time initialization in ",              TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); deshi_window.Init("deshi", 1280, 720); SUCCESS("Finished input and window initialization in ",  TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); deshi_window.Init("deshi", winWidth, winHeight); SUCCESS("Finished input and window initialization in ",  TIMER_END(t_s), "ms");
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
 	TIMER_RESET(t_s); deshi_console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
 #endif
