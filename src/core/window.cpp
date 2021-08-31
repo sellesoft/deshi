@@ -14,11 +14,12 @@ void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, Display
 	int work_xpos, work_ypos, work_width, work_height;
 	glfwGetMonitorWorkarea(monitor, &work_xpos, &work_ypos, &work_width, &work_height);
 	
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); 
-	glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
-	glfwWindowHint(GLFW_CENTER_CURSOR, GLFW_FALSE);
-	glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-	glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE,               GLFW_TRUE); 
+	glfwWindowHint(GLFW_FOCUSED,                 GLFW_FALSE);
+	glfwWindowHint(GLFW_CENTER_CURSOR,           GLFW_FALSE);
+	glfwWindowHint(GLFW_VISIBLE,                 GLFW_FALSE);
+	glfwWindowHint(GLFW_FOCUS_ON_SHOW,           GLFW_FALSE);
+	glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
     
 #if   DESHI_VULKAN
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -50,6 +51,8 @@ void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, Display
 	
 	cursor = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
 	if(!cursor){ printf("[GLFW] Failed to create the cursor!"); glfwTerminate(); return; }
+
+	//glfwSetWindowOpacity(window, 0.5);
 	
 	//load and set icon
 	GLFWimage icon; int icon_channels;
@@ -271,7 +274,7 @@ void Window::Cleanup(){
 
 void Window::UpdateDisplayMode(DisplayMode displayMode){
 	if(displayMode == this->displayMode){return;}
-	if(this->displayMode == DisplayMode_Windowed){
+	if(this->displayMode == DisplayMode_Windowed || this->displayMode == DisplayMode_Windowed) {
 		restoreX = x;  restoreY = y; 
 		restoreW = width; restoreH = height;
 	}
@@ -283,7 +286,10 @@ void Window::UpdateDisplayMode(DisplayMode displayMode){
 		case(DisplayMode_Fullscreen):{
 			glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
 		}break;
-		case(DisplayMode_Borderless):{
+		case(DisplayMode_Borderless): {
+			glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
+		}break;
+		case(DisplayMode_BorderlessFullscreen):{
 			glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
 			glfwSetWindowMonitor(window, 0, 0, 0, mode->width, mode->height, mode->refreshRate);
 		}break;
