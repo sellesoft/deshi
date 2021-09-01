@@ -2154,7 +2154,7 @@ loadShader(std::string filename, VkShaderStageFlagBits stage){
 	shaderStage.pName = "main";
 	
 	//check if shader has already been created
-	for(auto& module : shaderModules){
+	for(auto& module : shaderModules){ //!!FixMe this loop doesnt actually prevent recreation
 		if(filename == module.first){
 			shaderStage.module = module.second;
 			break;
@@ -2418,6 +2418,17 @@ specializationInfo.mapEntryCount = 1;
 		pipelineCreateInfo.basePipelineIndex  = -1; //can either use handle or index, not both (section 9.5 of vulkan spec)
 	}
 	
+	{//selected (base with no cull)
+		rasterizationState.cullMode = VK_CULL_MODE_NONE;
+		
+		shaderStages[1].pSpecializationInfo = &specializationInfo;
+		pipelineCreateInfo.stageCount = 2;
+		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.selected));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.selected, "Selected pipeline");
+		
+		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+	}
+	
 	{//null pipeline
 		shaderStages[0] = loadShader("null.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = loadShader("null.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -2482,19 +2493,6 @@ specializationInfo.mapEntryCount = 1;
 		pipelineCreateInfo.stageCount = 2;
 		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.pbr));
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.pbr, "PBR pipeline");
-	}
-	
-	{//selected (base with no cull)
-		rasterizationState.cullMode = VK_CULL_MODE_NONE;
-		
-		shaderStages[0] = loadShader("base.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-		shaderStages[1] = loadShader("base.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-		shaderStages[1].pSpecializationInfo = &specializationInfo;
-		pipelineCreateInfo.stageCount = 2;
-		AssertVk(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, allocator, &pipelines.selected));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.selected, "Selected pipeline");
-		
-		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
 	}
 	
 	//wireframe
@@ -3294,11 +3292,8 @@ LoadMesh(Mesh* mesh){
 	mvk.vtxCount = mesh->vertexCount;
 	mvk.idxCount = mesh->indexCount;
 	if(vkMeshes.count){
-		mvk.vtxOffset = vkMeshes.last->vtxOffset + vkMeshes.last->vtxCount;
-		mvk.idxOffset = vkMeshes.last->idxOffset + vkMeshes.last->idxCount;
-	}else{
-		mvk.vtxOffset = 0;
-		mvk.idxOffset = 0;
+		mvk.vtxOffset = vkMeshes.end()->vtxOffset + vkMeshes.end()->vtxCount;
+		mvk.idxOffset = vkMeshes.end()->idxOffset + vkMeshes.end()->idxCount;
 	}
 	
 	u64 mesh_vb_size   = mesh->vertexCount*sizeof(Mesh::Vertex);
@@ -4032,13 +4027,8 @@ Update(){
 	
 	if(DeshWindow->resized) remakeWindow = true;
 	if(remakeWindow){
-		int w, h;
-		glfwGetFramebufferSize(DeshWindow->window, &w, &h);
-		if(w <= 0 || h <= 0){ 
-			ImGui::EndFrame(); 
-			return;  
-		}
-		
+		glfwGetFramebufferSize(DeshWindow->window, &width, &height);
+		if(width <= 0 || height <= 0){ ImGui::EndFrame(); return; }
 		vkDeviceWaitIdle(device);
 		CreateSwapChain();
 		CreateFrames();

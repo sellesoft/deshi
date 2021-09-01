@@ -68,10 +68,10 @@ struct array {
     T* lookbackptr(int i = 1);
     
     //begin/end functions for for-each loops
-    T* begin(){ return &data[0]; }
-	T* end()  { return &data[count]; }
-	const T* begin()const{ return &data[0]; }
-	const T* end()  const{ return &data[count]; }
+    inline T* begin(){ return &data[0]; }
+	inline T* end()  { return &data[count]; }
+	inline const T* begin()const{ return &data[0]; }
+	inline const T* end()  const{ return &data[count]; }
 };
 
 ///////////////////////

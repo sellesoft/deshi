@@ -1,9 +1,9 @@
 //-------------------------------------------------------------------------------------------------
 // @OPENGL STRUCTS
 struct ModelCmdGl{
-	u32   vertexOffset;
-	u32   indexOffset;
-	u32   indexCount;
+	u32   vtxOffset;
+	u32   idxOffset;
+	u32   idxCount;
 	u32   material;
 	char* name;
 	mat4  matrix;
@@ -19,11 +19,10 @@ struct UICmdGl{
 
 struct MeshGl{
     Mesh* base;
-    u32 vao_handle;
-    u32 vbo_handle;
-    u32 ebo_handle;
-    u32 vertexCount;
-    u32 indexCount;
+    u32 vtxOffset;
+    u32 vtxCount;
+    u32 idxOffset;
+    u32 idxCount;
 };
 
 struct ShaderGl{
@@ -35,7 +34,7 @@ struct ShaderGl{
 struct ProgramGl{
     u32 handle;
     u32 shader_count;
-    ShaderGl* shaders[4];
+    u32 shaders[5];
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -45,29 +44,29 @@ local ConfigMap configMap = {
 	{"#render settings config file",0,0},
 	
 	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)21},
-	{"debugging",            ConfigValueType_Bool, &settings.debugging},
-	{"printf",               ConfigValueType_Bool, &settings.printf},
-	{"texture_filtering",    ConfigValueType_Bool, &settings.textureFiltering},
-	{"anistropic_filtering", ConfigValueType_Bool, &settings.anistropicFiltering},
-	{"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples},
-	{"recompile_all_shaders",        ConfigValueType_Bool, &settings.recompileAllShaders},
+	{"debugging",            ConfigValueType_Bool, &settings.debugging}, //!!Incomplete
+	{"printf",               ConfigValueType_Bool, &settings.printf}, //!!Incomplete
+	{"texture_filtering",    ConfigValueType_Bool, &settings.textureFiltering}, //!!Incomplete
+	{"anistropic_filtering", ConfigValueType_Bool, &settings.anistropicFiltering}, //!!Incomplete
+	{"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples}, //!!Incomplete
+	{"recompile_all_shaders",        ConfigValueType_Bool, &settings.recompileAllShaders}, //!!Incomplete
 	
 	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
 	{"logging_level",  ConfigValueType_U32,  &settings.loggingLevel},
 	{"crash_on_error", ConfigValueType_Bool, &settings.crashOnError},
-	{"vsync_type",     ConfigValueType_U32,  &settings.vsync},
+	{"vsync_type",     ConfigValueType_U32,  &settings.vsync}, //!!Incomplete
 	
 	{"\n#shaders",                         ConfigValueType_PADSECTION,(void*)17},
-	{"optimize_shaders", ConfigValueType_Bool, &settings.optimizeShaders},
+	{"optimize_shaders", ConfigValueType_Bool, &settings.optimizeShaders}, //!!Incomplete
 	
 	{"\n#shadows",                         ConfigValueType_PADSECTION,(void*)20},
-	{"shadow_pcf",          ConfigValueType_Bool, &settings.shadowPCF},
-	{"shadow_resolution",   ConfigValueType_U32,  &settings.shadowResolution},
-	{"shadow_nearz",        ConfigValueType_F32,  &settings.shadowNearZ},
-	{"shadow_farz",         ConfigValueType_F32,  &settings.shadowFarZ},
-	{"depth_bias_constant", ConfigValueType_F32,  &settings.depthBiasConstant},
-	{"depth_bias_slope",    ConfigValueType_F32,  &settings.depthBiasSlope},
-	{"show_shadow_map",     ConfigValueType_Bool, &settings.showShadowMap},
+	{"shadow_pcf",          ConfigValueType_Bool, &settings.shadowPCF}, //!!Incomplete
+	{"shadow_resolution",   ConfigValueType_U32,  &settings.shadowResolution}, //!!Incomplete
+	{"shadow_nearz",        ConfigValueType_F32,  &settings.shadowNearZ}, //!!Incomplete
+	{"shadow_farz",         ConfigValueType_F32,  &settings.shadowFarZ}, //!!Incomplete
+	{"depth_bias_constant", ConfigValueType_F32,  &settings.depthBiasConstant}, //!!Incomplete
+	{"depth_bias_slope",    ConfigValueType_F32,  &settings.depthBiasSlope}, //!!Incomplete
+	{"show_shadow_map",     ConfigValueType_Bool, &settings.showShadowMap}, //!!Incomplete
 	
 	{"\n#colors",                          ConfigValueType_PADSECTION,(void*)15},
 	{"clear_color",    ConfigValueType_FV4, &settings.clearColor},
@@ -79,20 +78,19 @@ local ConfigMap configMap = {
 	
 	{"\n#overlays",                        ConfigValueType_PADSECTION,(void*)17},
 	{"mesh_wireframes",  ConfigValueType_Bool, &settings.meshWireframes},
-	{"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals},
-	{"light_frustrums",  ConfigValueType_Bool, &settings.lightFrustrums},
-	{"temp_mesh_on_top", ConfigValueType_Bool, &settings.tempMeshOnTop},
+	{"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals}, //!!Incomplete
+	{"light_frustrums",  ConfigValueType_Bool, &settings.lightFrustrums}, //!!Incomplete
+	{"temp_mesh_on_top", ConfigValueType_Bool, &settings.tempMeshOnTop}, //!!Incomplete
 };
 
 local RenderStats   stats{};
-local RendererStage rendererStage = RENDERERSTAGE_NONE;
+local RendererStage rendererStage = RENDERERSTAGE_NONE; //!!Incomplete
 
 
 //-------------------------------------------------------------------------------------------------
 // @OPENGL VARIABLES
-local array<MeshGl>    glMeshes;
-local array<ShaderGl>  glShaders;
-local array<ProgramGl> glPrograms;
+local array<MeshGl>   glMeshes;
+local array<ShaderGl> glShaders;
 
 ///////////////////
 //// @commands ////
@@ -140,7 +138,37 @@ local char opengl_infolog[OPENGL_INFOLOG_SIZE] = {};
 //////////////////
 //// @buffers ////
 //////////////////
-local struct{ //uniform buffer for the vertex shaders
+local struct{
+    u32 vao_handle;
+    u32 vbo_handle;
+    u32 ibo_handle;
+    u32 vbo_size;
+    u32 vbo_alloc;
+    u32 ibo_size;
+    u32 ibo_alloc;
+} meshBuffers{};
+
+local struct{
+    u32 vao_handle;
+    u32 vbo_handle;
+    u32 ibo_handle;
+    u32 vbo_size;
+    u32 vbo_alloc;
+    u32 ibo_size;
+    u32 ibo_alloc;
+} uiBuffers{};
+
+local struct{
+    u32 vao_handle;
+    u32 vbo_handle;
+    u32 ibo_handle;
+    u32 vbo_size;
+    u32 vbo_alloc;
+    u32 ibo_size;
+    u32 ibo_alloc;
+} tempBuffers{};
+
+local struct{ //vertex shader uniform buffer
 	u32 handle;
     u32 binding = 1;
 	
@@ -159,7 +187,7 @@ local struct{ //uniform buffer for the vertex shaders
 	} values;
 } uboVS{};
 
-local struct{ //uniform buffer for the vertex shaders
+local struct{ //vertex shader push constant
 	u32 handle;
     u32 binding = 2;
 	
@@ -167,6 +195,49 @@ local struct{ //uniform buffer for the vertex shaders
 		mat4 matrix;
 	} values;
 } pushVS{};
+
+local struct{ //twod vertex shader push constant
+	u32 handle;
+    u32 binding = 3;
+	
+	struct{ //32 bytes
+		vec2 scale;
+		vec2 translate;
+        int  font_idx;
+        int  padding[3];
+	} values;
+} push2D{};
+
+///////////////////
+//// @programs ////
+///////////////////
+local struct{
+    union{
+        ProgramGl arr[16];
+        struct{
+			ProgramGl null;
+            //game shaders
+            ProgramGl flat;
+            ProgramGl phong;
+            ProgramGl pbr;
+            ProgramGl lavalamp;
+			ProgramGl twod;
+			ProgramGl ui;
+			//development shaders
+			ProgramGl base;
+			ProgramGl wireframe;
+            ProgramGl wireframe_depth;
+            ProgramGl selected;
+            ProgramGl collider;
+            ProgramGl testing0;
+            ProgramGl testing1;
+            ProgramGl offscreen;
+			//debug shaders
+            ProgramGl normals_debug;
+            ProgramGl shadowmap_debug;
+        };
+    };
+} programs{};
 
 //-------------------------------------------------------------------------------------------------
 // @OPENGL FUNCTIONS
@@ -205,6 +276,11 @@ DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, int len_args
 //// @commands ////
 ///////////////////
 local void
+SetupCommands(){
+    
+}
+
+local void
 ResetCommands(){
 	{//UI commands
 		uiVertexCount = 0;
@@ -229,9 +305,13 @@ ResetCommands(){
 //////////////////
 //// @shaders ////
 //////////////////
-local void
+local u32
 CompileAndLoadShader(const char* filename, ShaderStage stage){
     Assert(stage > ShaderStage_NONE && stage < ShaderStage_COUNT);
+    
+    //check if already loaded
+    forE(glShaders){ if(strcmp(it->filename, filename) == 0){ return u32(it-it_begin); } }
+    
     ShaderGl sgl{};
     cpystr(sgl.filename, filename, DESHI_NAME_SIZE);
     sgl.stage = stage;
@@ -254,14 +334,13 @@ CompileAndLoadShader(const char* filename, ShaderStage stage){
     glGetShaderiv(sgl.handle, GL_COMPILE_STATUS, &opengl_success);
     if(opengl_success != GL_TRUE){
         glGetShaderInfoLog(sgl.handle, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
-        PrintGl(2, "  Failed to compile shader '",filename,"':\n",opengl_infolog);
-        
-        //delete broken shader
+        PrintGl(0, "Failed to compile shader '",filename,"':\n",opengl_infolog);
         glDeleteShader(sgl.handle);
-        return;
+        return 0;
     }
     
     glShaders.add(sgl);
+    return glShaders.count-1;
 }
 
 
@@ -269,74 +348,190 @@ CompileAndLoadShader(const char* filename, ShaderStage stage){
 //// @programs ////
 ///////////////////
 //TODO(delle) cleanup shaders maybe? glDeleteShader()
-local void 
-CreateProgram(ShaderGl* shaders, u32 shader_count){
+local ProgramGl
+CreateProgram(u32 shader_indexes[], u32 shader_count, bool twod = false){
+    if(shader_count == 0) return {};
     //TODO(delle) Assert(ubo's setup)
     
     ProgramGl pgl{};
     pgl.shader_count = shader_count;
+    string prog_shaders = "|";
     
     //create program, attach shaders and link
     pgl.handle = glCreateProgram();
-    forI(shader_count){ glAttachShader(pgl.handle, shaders[i].handle); pgl.shaders[i] = &shaders[i]; }
+    forI(shader_count){ 
+        glAttachShader(pgl.handle, glShaders[shader_indexes[i]].handle); 
+        pgl.shaders[i] = shader_indexes[i]; 
+        prog_shaders += glShaders[shader_indexes[i]].filename;
+        prog_shaders += "|";
+    }
     glLinkProgram(pgl.handle);
     
     //check for errors
     glGetProgramiv(pgl.handle, GL_LINK_STATUS, &opengl_success);
     if(opengl_success != GL_TRUE){
         glGetProgramInfoLog(pgl.handle, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
-        PrintGl(0, "Failed to link program '",pgl.handle,"':\n",opengl_infolog);
+        PrintGl(0, "Failed to link program '",prog_shaders,"':\n",opengl_infolog);
         
         //delete broken program
         glDeleteProgram(pgl.handle);
-        return;
+        return {};
     }
     
     //specify UBOs
-    u32 local_ubi = glGetUniformBlockIndex(pgl.handle,"UniformBufferObject");
-    if(local_ubi != -1){ 
-        glUniformBlockBinding(pgl.handle, local_ubi, uboVS.binding);
+    if(!twod){
+        u32 local_ubi = glGetUniformBlockIndex(pgl.handle,"UniformBufferObject");
+        if(local_ubi != -1){ 
+            glUniformBlockBinding(pgl.handle, local_ubi, uboVS.binding);
+        }else{
+            PrintGl(0, "Failed to find UniformBufferObject in vertex shader of program '",prog_shaders,"'");
+            if(settings.crashOnError) Assert(false);
+            glDeleteProgram(pgl.handle);
+            return {};
+        }
+        
+        local_ubi = glGetUniformBlockIndex(pgl.handle,"PushConsts");
+        if(local_ubi != -1){ 
+            glUniformBlockBinding(pgl.handle, local_ubi, pushVS.binding);
+        }else{
+            PrintGl(0, "Failed to find PushConsts in vertex shader of program '",prog_shaders,"'");
+            if(settings.crashOnError) Assert(false);
+            glDeleteProgram(pgl.handle);
+            return {};
+        }
     }else{
-        PrintGl(0, "Failed to find UniformBufferObject in vertex shader of program '",pgl.handle,"'");
-        if(settings.crashOnError) Assert(false);
-        glDeleteProgram(pgl.handle);
-        return; 
-    }
-    
-    local_ubi = glGetUniformBlockIndex(pgl.handle,"PushConsts");
-    if(local_ubi != -1){ 
-        glUniformBlockBinding(pgl.handle, local_ubi, pushVS.binding);
-    }else{
-        PrintGl(0, "Failed to find PushConsts in vertex shader of program '",pgl.handle,"'");
-        if(settings.crashOnError) Assert(false);
-        glDeleteProgram(pgl.handle);
-        return;
+        u32 local_ubi = glGetUniformBlockIndex(pgl.handle,"PushConsts");
+        if(local_ubi != -1){ 
+            glUniformBlockBinding(pgl.handle, local_ubi, push2D.binding);
+        }else{
+            PrintGl(0, "Failed to find PushConsts in vertex shader of program '",prog_shaders,"'");
+            if(settings.crashOnError) Assert(false);
+            glDeleteProgram(pgl.handle);
+            return {};
+        }
     }
     
     //detach shaders
-    forI(shader_count){ glDetachShader(pgl.handle, shaders[i].handle); }
+    forI(shader_count){ glDetachShader(pgl.handle, glShaders[shader_indexes[i]].handle); }
     
-    glPrograms.add(pgl);
+    return pgl;
 }
 
 //@@
 local void
 SetupPrograms(){
-    //collect shaders files
-    array<string> files;
-	for(auto& entry : std::filesystem::directory_iterator(Assets::dirShaders())){
-		if(entry.path().extension() == ".vert" ||
-		   entry.path().extension() == ".frag" ||
-		   entry.path().extension() == ".geom" ||
-           entry.path().extension() == ".tesc" ||
-           entry.path().extension() == ".tese" ||
-           entry.path().extension() == ".comp"){
-			files.add(entry.path().filename().string().c_str());
-		}
-	}
+    u32 shaders[5] = {};
+    u32 shader_count = 0;
     
-    //!!Incomplete
-}
+    {//base
+        shaders[0] = CompileAndLoadShader("base.vert", ShaderStage_Vertex);
+        shaders[1] = CompileAndLoadShader("base.frag", ShaderStage_Fragment);
+        shader_count = 2;
+        programs.base = CreateProgram(shaders, shader_count);
+        
+        {//selected
+            
+        }
+    }
+    
+    {//null
+        shaders[0] = CompileAndLoadShader("null.vert", ShaderStage_Vertex);
+        shaders[1] = CompileAndLoadShader("null.frag", ShaderStage_Fragment);
+        shader_count = 2;
+        programs.null = CreateProgram(shaders, shader_count);
+    }
+    
+    {//flat
+        shaders[0] = CompileAndLoadShader("flat.vert", ShaderStage_Vertex);
+        shaders[1] = CompileAndLoadShader("flat.frag", ShaderStage_Fragment);
+        shader_count = 2;
+        programs.flat = CreateProgram(shaders, shader_count);
+    }
+    
+    {//phong
+        shaders[0] = CompileAndLoadShader("phong.vert", ShaderStage_Vertex);
+        shaders[1] = CompileAndLoadShader("phong.frag", ShaderStage_Fragment);
+        shader_count = 2;
+        programs.phong = CreateProgram(shaders, shader_count);
+    }
+    
+    {//pbr
+        shaders[0] = CompileAndLoadShader("pbr.vert", ShaderStage_Vertex);
+        shaders[1] = CompileAndLoadShader("pbr.frag", ShaderStage_Fragment);
+        shader_count = 2;
+        programs.pbr = CreateProgram(shaders, shader_count);
+    }
+    
+    {//2d
+        shaders[0] = CompileAndLoadShader("twod.vert", ShaderStage_Vertex);
+        shaders[1] = CompileAndLoadShader("twod.frag", ShaderStage_Fragment);
+        shader_count = 2;
+        programs.twod = CreateProgram(shaders, shader_count, true);
+        
+        {//ui
+            shaders[0] = CompileAndLoadShader("ui.vert", ShaderStage_Vertex);
+            shaders[1] = CompileAndLoadShader("ui.frag", ShaderStage_Fragment);
+            shader_count = 2;
+            programs.ui = CreateProgram(shaders, shader_count, true);
+            
+            
+        }
+    }
+    
+    {//wireframe
+        shaders[0] = CompileAndLoadShader("wireframe.vert", ShaderStage_Vertex);
+        shaders[1] = CompileAndLoadShader("wireframe.frag", ShaderStage_Fragment);
+        shader_count = 2;
+        programs.wireframe = CreateProgram(shaders, shader_count);
+        
+        {//wireframe with depth test
+            
+        }
+    }
+    
+    {//lavalamp
+        shaders[0] = CompileAndLoadShader("lavalamp.vert", ShaderStage_Vertex);
+        shaders[1] = CompileAndLoadShader("lavalamp.frag", ShaderStage_Fragment);
+        shader_count = 2;
+        programs.lavalamp = CreateProgram(shaders, shader_count);
+    }
+    
+    {//offscreen
+        shaders[0] = CompileAndLoadShader("offscreen.vert", ShaderStage_Vertex);
+        shader_count = 1;
+        programs.offscreen = CreateProgram(shaders, shader_count);
+    }
+    
+    {//testing0
+        shaders[0] = CompileAndLoadShader("testing0.vert", ShaderStage_Vertex);
+        shaders[1] = CompileAndLoadShader("testing0.frag", ShaderStage_Fragment);
+        shader_count = 2;
+        programs.testing0 = CreateProgram(shaders, shader_count);
+    }
+    
+    {//testing1
+        shaders[0] = CompileAndLoadShader("testing1.vert", ShaderStage_Vertex);
+        shaders[1] = CompileAndLoadShader("testing1.frag", ShaderStage_Fragment);
+        shader_count = 2;
+        programs.testing1 = CreateProgram(shaders, shader_count);
+    }
+    
+    {//DEBUG mesh normals
+        shaders[0] = CompileAndLoadShader("nothing.vert", ShaderStage_Vertex);
+        shaders[1] = CompileAndLoadShader("normaldebug.geom", ShaderStage_Geometry);
+        shaders[2] = CompileAndLoadShader("nothing.frag", ShaderStage_Fragment);
+        shader_count = 3;
+        programs.normals_debug = CreateProgram(shaders, shader_count);
+    }
+    
+    {//DEBUG shadow map
+        //shaders[0] = CompileAndLoadShader("shadowmapDEBUG.vert", ShaderStage_Vertex);
+        //shaders[1] = CompileAndLoadShader("shadowmapDEBUG.frag", ShaderStage_Fragment);
+        //shader_count = 2;
+        //programs.shadowmap_debug = CreateProgram(shaders, shader_count);
+    }
+    
+} //SetupPrograms()
 
 
 //////////////////
@@ -580,27 +775,70 @@ void Render::
 LoadMesh(Mesh* mesh){
     MeshGl mgl{};
     mgl.base = mesh;
-    mgl.vertexCount = mesh->vertexCount;
-    mgl.indexCount = mesh->indexCount;
+    mgl.vtxCount = mesh->vertexCount;
+    mgl.idxCount = mesh->indexCount;
+    if(glMeshes.count){
+        mgl.vtxOffset = glMeshes.last->vtxOffset + glMeshes.last->vtxCount;
+        mgl.idxOffset = glMeshes.last->idxOffset + glMeshes.last->idxCount;
+    }
     
-    //allocate buffers
-    glGenVertexArrays(1, &mgl.vao_handle);
-    glGenBuffers(1, &mgl.vbo_handle);
-    glGenBuffers(1, &mgl.ebo_handle);
+    u64 mesh_vb_size   = mesh->vertexCount*sizeof(Mesh::Vertex);
+	u64 mesh_ib_size   = mesh->indexCount*sizeof(Mesh::Index);
+	u64 total_vb_size  = meshBuffers.vbo_size + mesh_vb_size;
+	u64 total_ib_size  = meshBuffers.ibo_size + mesh_ib_size;
+    total_vb_size = Max(1024*sizeof(Mesh::Vertex), total_vb_size); //minimum of 1024 vertexes to avoid early growths
+    total_ib_size = Max(4096*sizeof(Mesh::Index),  total_ib_size); //minimum of 4096 indexes to avoid early growths
     
-    //bind and fill buffers
-    glBindVertexArray(mgl.vao_handle);
-    glBindBuffer(GL_ARRAY_BUFFER, mgl.vbo_handle);
-    glBufferData(GL_ARRAY_BUFFER, mgl.vertexCount*sizeof(Mesh::Vertex), mesh->vertexArray, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mgl.ebo_handle);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mgl.indexCount*sizeof(Mesh::Index), mesh->indexArray, GL_STATIC_DRAW);
+    //create/bind vertex array object
+    if(meshBuffers.vao_handle){
+        glBindVertexArray(meshBuffers.vao_handle);
+    }else{
+        glGenVertexArrays(1, &meshBuffers.vao_handle);
+        glBindVertexArray(meshBuffers.vao_handle);
+    }
     
-    //sepcify how to read vertex buffer
+    //create/resize buffers: allocate new buffer, copy old buffer to new buffer, delete old buffer
+    if(meshBuffers.vbo_alloc < total_vb_size){
+        u32 old_vbo_handle = meshBuffers.vbo_handle;
+        glGenBuffers(1, &meshBuffers.vbo_handle);
+        glBindBuffer(GL_ARRAY_BUFFER, meshBuffers.vbo_handle);
+        glBufferData(GL_ARRAY_BUFFER, total_vb_size, 0, GL_STATIC_DRAW); //TODO(delle) maybe growth rate/fit?
+        if(old_vbo_handle){
+            glBindBuffer(GL_COPY_READ_BUFFER, old_vbo_handle);
+            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ARRAY_BUFFER, 0, 0, meshBuffers.vbo_size);
+            glDeleteBuffers(1, &old_vbo_handle);
+        }
+    }
+    if(meshBuffers.ibo_alloc < total_ib_size){
+        u32 old_ibo_handle = meshBuffers.ibo_handle;
+        glGenBuffers(1, &meshBuffers.ibo_handle);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffers.ibo_handle);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, total_ib_size, 0, GL_STATIC_DRAW); //TODO(delle) maybe growth rate/fit?
+        if(old_ibo_handle){
+            glBindBuffer(GL_COPY_READ_BUFFER, old_ibo_handle);
+            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_ELEMENT_ARRAY_BUFFER, 0, 0, meshBuffers.ibo_size);
+            glDeleteBuffers(1, &old_ibo_handle);
+        }
+    }
+    
+    //copy mesh to buffers
+    glBindBuffer(GL_ARRAY_BUFFER,         meshBuffers.vbo_handle);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshBuffers.ibo_handle);
+    glBufferSubData(GL_ARRAY_BUFFER,         meshBuffers.vbo_size, mesh_vb_size, mesh->vertexArray);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, meshBuffers.ibo_size, mesh_ib_size, mesh->indexArray);
+    
+    //specify vertex packing
     glVertexAttribPointer(0, 3,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,pos));
     glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,uv));
     glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,color));
     glVertexAttribPointer(3, 3,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,normal));
     glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2); glEnableVertexAttribArray(3);
+    
+    //update buffer sizes
+    meshBuffers.vbo_alloc = total_vb_size;
+    meshBuffers.ibo_alloc = total_ib_size;
+    meshBuffers.vbo_size = meshBuffers.vbo_size + mesh_vb_size;
+    meshBuffers.ibo_size = meshBuffers.ibo_size + mesh_ib_size;
     
     glMeshes.add(mgl);
 }
@@ -637,12 +875,24 @@ UnloadMesh(Mesh* mesh){ //!!Incomplete
 //// @draw ////
 ///////////////
 void Render::
-DrawModel(Model* mesh, mat4 matrix){ //!!Incomplete
-    
+DrawModel(Model* model, mat4 matrix){
+    Assert(modelCmdCount + model->batches.count < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
+	
+    ModelCmdGl* cmd = modelCmdArray + modelCmdCount;
+	forI(model->batches.count){
+		if(!model->batches[i].indexCount) continue;
+		cmd[i].vtxOffset = glMeshes[model->mesh->idx].vtxOffset;
+		cmd[i].idxOffset = glMeshes[model->mesh->idx].idxOffset + model->batches[i].indexOffset;
+		cmd[i].idxCount  = model->batches[i].indexCount;
+		cmd[i].material  = model->batches[i].material;
+		cmd[i].name      = model->name;
+		cmd[i].matrix    = matrix;
+		modelCmdCount += 1;
+	}
 }
 
 void Render::
-DrawModelWireframe(Model* mesh, mat4 matrix, color color){ //!!Incomplete
+DrawModelWireframe(Model* model, mat4 matrix, color color){ //!!Incomplete
 	
 }
 
@@ -861,18 +1111,13 @@ Init(){
     gladSetGLPostCallback(DebugPostCallback);
     
     //// initialization ////
-    remake_window = true;
+    glfwGetFramebufferSize(DeshWindow->window, &width, &height);
     SetupUniformBuffers();
+    SetupPrograms();
     glFrontFace(GL_CW);
     glEnable(GL_BLEND);
     glEnable(GL_CULL_FACE);
     //glEnable(GL_DEPTH_TEST);
-    
-    //// temp testing ////
-    CompileAndLoadShader("base.vert", ShaderStage_Vertex);
-    CompileAndLoadShader("base.frag", ShaderStage_Fragment);
-    CreateProgram(glShaders.data, 2);
-    LoadMesh(Storage::CreateBoxMesh(.5f, .5f, .5f, Color_Cyan).second);
     
     //glfwSwapInterval(1); //vsync
     initialized = true;
@@ -888,10 +1133,9 @@ Update(){
     //// handle widow resize ////
     if(DeshWindow->resized) remake_window = true;
 	if(remake_window){
-		int w, h; glfwGetFramebufferSize(DeshWindow->window, &w, &h);
-		if(w <= 0 || h <= 0){ ImGui::EndFrame(); return; }
-        glViewport(0,0,w,h);
-        width = w; height = h;
+		glfwGetFramebufferSize(DeshWindow->window, &width, &height);
+		if(width <= 0 || height <= 0){ ImGui::EndFrame(); return; }
+        glViewport(0,0,width,height);
 		remake_window = false;
 	}
     
@@ -905,24 +1149,15 @@ Update(){
     glClearColor(settings.clearColor.r, settings.clearColor.g, settings.clearColor.b, settings.clearColor.a);
     glClear(GL_COLOR_BUFFER_BIT);
     
-    {//temp testing
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glUseProgram(glPrograms[0].handle);
-        glBindVertexArray(glMeshes[0].vao_handle);
-        persist mat4 temp_mat = mat4::IDENTITY;
-        glBindBuffer(GL_UNIFORM_BUFFER, pushVS.handle);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(mat4), &temp_mat, GL_DYNAMIC_DRAW);
-        glDrawElements(GL_TRIANGLES, glMeshes[0].indexCount, GL_UNSIGNED_INT, 0);
-    }
-    
-    //draw meshes //!!Incomplete
-    //glBindVertexArray(meshVertexArray);
+    //draw meshes
+    glBindVertexArray(meshBuffers.vao_handle);
+    glUseProgram(programs.null.handle);
     forI(modelCmdCount){ //TODO(delle) materials/textures
         glBindBuffer(GL_UNIFORM_BUFFER, pushVS.handle);
         glBufferData(GL_UNIFORM_BUFFER, sizeof(mat4), &modelCmdArray[i].matrix, GL_DYNAMIC_DRAW);
         glPolygonMode(GL_FRONT_AND_BACK, (settings.wireframeOnly) ? GL_LINE : GL_FILL);
-        glDrawElementsBaseVertex(GL_TRIANGLES, modelCmdArray[i].indexCount, GL_UNSIGNED_INT,
-                                 (void*)(modelCmdArray[i].indexOffset*sizeof(Mesh::Index)), modelCmdArray[i].vertexOffset);
+        glDrawElementsBaseVertex(GL_TRIANGLES, modelCmdArray[i].idxCount, GL_UNSIGNED_INT,
+                                 (void*)(modelCmdArray[i].idxOffset*sizeof(Mesh::Index)), modelCmdArray[i].vtxOffset);
     }
     
     //draw ui

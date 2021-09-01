@@ -101,12 +101,12 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 //size of static c-style array
 #define ArrayCount(_ARR) (sizeof((_ARR)) / sizeof(((_ARR))[0]))
 
-#define Kilobytes(x) ((x)*1024ULL)
-#define Megabytes(x) (Kilobytes((x))*1024ULL)
-#define Gigabytes(x) (Megabytes((x))*1024ULL)
-#define Terabytes(x) (Gigabytes((x))*1024ULL)
+#define Kilobytes(x) ((x) << 10)
+#define Megabytes(x) ((x) << 20)
+#define Gigabytes(x) ((x) << 30)
+#define Terabytes(x) (((u64)(x)) << 40)
 
-//NOTE function calls in these macros can get executed for each time they are placed if not optimized away
+//NOTE function calls in these macros can get executed for each time they are placed (if not optimized away)
 //eg: Min(5, sqrt(26)) expands to (5 < sqrt(26)) ? 5 : sqrt(26)
 #define Clamp(value, min, max) (((signed)(value) < (signed)(min)) ? (min) : (((signed)(value) > (signed)(max)) ? (max) : (value)))
 #define Max(a, b) (((a) > (b)) ? (a) : (b))
