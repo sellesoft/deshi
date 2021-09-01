@@ -63,7 +63,7 @@ namespace Cmd{
         
         CMDSTART(alias, "Gives an alias to specified command and arguments"){
             //check that alias name and command arent the same
-            if(args[0] == args[1]){ //!!Robustness: this check doesnt compare inside args[1], so an alias could still be recursive
+            if(args[0] == args[1]){ //!Robustness: this check doesnt compare inside args[1], so an alias could still be recursive
                 Console2::Log("Error: Aliases can't be recursive");
                 return;
             }

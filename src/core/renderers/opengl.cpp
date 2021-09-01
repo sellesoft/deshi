@@ -44,29 +44,29 @@ local ConfigMap configMap = {
 	{"#render settings config file",0,0},
 	
 	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)21},
-	{"debugging",            ConfigValueType_Bool, &settings.debugging}, //!!Incomplete
-	{"printf",               ConfigValueType_Bool, &settings.printf}, //!!Incomplete
-	{"texture_filtering",    ConfigValueType_Bool, &settings.textureFiltering}, //!!Incomplete
-	{"anistropic_filtering", ConfigValueType_Bool, &settings.anistropicFiltering}, //!!Incomplete
-	{"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples}, //!!Incomplete
-	{"recompile_all_shaders",        ConfigValueType_Bool, &settings.recompileAllShaders}, //!!Incomplete
+	{"debugging",            ConfigValueType_Bool, &settings.debugging}, //!Incomplete
+	{"printf",               ConfigValueType_Bool, &settings.printf}, //!Incomplete
+	{"texture_filtering",    ConfigValueType_Bool, &settings.textureFiltering}, //!Incomplete
+	{"anistropic_filtering", ConfigValueType_Bool, &settings.anistropicFiltering}, //!Incomplete
+	{"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples}, //!Incomplete
+	{"recompile_all_shaders",        ConfigValueType_Bool, &settings.recompileAllShaders}, //!Incomplete
 	
 	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
 	{"logging_level",  ConfigValueType_U32,  &settings.loggingLevel},
 	{"crash_on_error", ConfigValueType_Bool, &settings.crashOnError},
-	{"vsync_type",     ConfigValueType_U32,  &settings.vsync}, //!!Incomplete
+	{"vsync_type",     ConfigValueType_U32,  &settings.vsync}, //!Incomplete
 	
 	{"\n#shaders",                         ConfigValueType_PADSECTION,(void*)17},
-	{"optimize_shaders", ConfigValueType_Bool, &settings.optimizeShaders}, //!!Incomplete
+	{"optimize_shaders", ConfigValueType_Bool, &settings.optimizeShaders}, //!Incomplete
 	
 	{"\n#shadows",                         ConfigValueType_PADSECTION,(void*)20},
-	{"shadow_pcf",          ConfigValueType_Bool, &settings.shadowPCF}, //!!Incomplete
-	{"shadow_resolution",   ConfigValueType_U32,  &settings.shadowResolution}, //!!Incomplete
-	{"shadow_nearz",        ConfigValueType_F32,  &settings.shadowNearZ}, //!!Incomplete
-	{"shadow_farz",         ConfigValueType_F32,  &settings.shadowFarZ}, //!!Incomplete
-	{"depth_bias_constant", ConfigValueType_F32,  &settings.depthBiasConstant}, //!!Incomplete
-	{"depth_bias_slope",    ConfigValueType_F32,  &settings.depthBiasSlope}, //!!Incomplete
-	{"show_shadow_map",     ConfigValueType_Bool, &settings.showShadowMap}, //!!Incomplete
+	{"shadow_pcf",          ConfigValueType_Bool, &settings.shadowPCF}, //!Incomplete
+	{"shadow_resolution",   ConfigValueType_U32,  &settings.shadowResolution}, //!Incomplete
+	{"shadow_nearz",        ConfigValueType_F32,  &settings.shadowNearZ}, //!Incomplete
+	{"shadow_farz",         ConfigValueType_F32,  &settings.shadowFarZ}, //!Incomplete
+	{"depth_bias_constant", ConfigValueType_F32,  &settings.depthBiasConstant}, //!Incomplete
+	{"depth_bias_slope",    ConfigValueType_F32,  &settings.depthBiasSlope}, //!Incomplete
+	{"show_shadow_map",     ConfigValueType_Bool, &settings.showShadowMap}, //!Incomplete
 	
 	{"\n#colors",                          ConfigValueType_PADSECTION,(void*)15},
 	{"clear_color",    ConfigValueType_FV4, &settings.clearColor},
@@ -78,13 +78,13 @@ local ConfigMap configMap = {
 	
 	{"\n#overlays",                        ConfigValueType_PADSECTION,(void*)17},
 	{"mesh_wireframes",  ConfigValueType_Bool, &settings.meshWireframes},
-	{"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals}, //!!Incomplete
-	{"light_frustrums",  ConfigValueType_Bool, &settings.lightFrustrums}, //!!Incomplete
-	{"temp_mesh_on_top", ConfigValueType_Bool, &settings.tempMeshOnTop}, //!!Incomplete
+	{"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals}, //!Incomplete
+	{"light_frustrums",  ConfigValueType_Bool, &settings.lightFrustrums}, //!Incomplete
+	{"temp_mesh_on_top", ConfigValueType_Bool, &settings.tempMeshOnTop}, //!Incomplete
 };
 
 local RenderStats   stats{};
-local RendererStage rendererStage = RENDERERSTAGE_NONE; //!!Incomplete
+local RendererStage rendererStage = RENDERERSTAGE_NONE; //!Incomplete
 
 
 //-------------------------------------------------------------------------------------------------
@@ -705,7 +705,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 }
 
 void Render::
-DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){ //!!Incomplete
+DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){ //!Incomplete
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
@@ -714,7 +714,7 @@ DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorE
 
 //NOTE: text scaling looks very ugly with bit map fonts as far as i know
 void Render::
-DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){ //!!Incomplete
+DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){ //!Incomplete
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if(color.a == 0) return;
 	
@@ -756,17 +756,17 @@ GetStage(){
 //// @load ////
 ///////////////
 void Render::
-LoadFont(Font* font, Texture* texture){ //!!Incomplete
+LoadFont(Font* font, Texture* texture){ //!Incomplete
 	
 }
 
 void Render::
-LoadTexture(Texture* texture){ //!!Incomplete
+LoadTexture(Texture* texture){ //!Incomplete
 	
 }
 
 void Render::
-LoadMaterial(Material* material){ //!!Incomplete
+LoadMaterial(Material* material){ //!Incomplete
 	
 }
 
@@ -844,7 +844,7 @@ LoadMesh(Mesh* mesh){
 }
 
 void Render::
-UpdateMaterial(Material* material){ //!!Incomplete
+UpdateMaterial(Material* material){ //!Incomplete
 	
 }
 
@@ -852,22 +852,22 @@ UpdateMaterial(Material* material){ //!!Incomplete
 //// @unload ////
 /////////////////
 void Render::
-UnloadFont(Font* font){ //!!Incomplete
+UnloadFont(Font* font){ //!Incomplete
     
 }
 
 void Render::
-UnloadTexture(Texture* texture){ //!!Incomplete
+UnloadTexture(Texture* texture){ //!Incomplete
     
 }
 
 void Render::
-UnloadMaterial(Material* material){ //!!Incomplete
+UnloadMaterial(Material* material){ //!Incomplete
     
 }
 
 void Render::
-UnloadMesh(Mesh* mesh){ //!!Incomplete
+UnloadMesh(Mesh* mesh){ //!Incomplete
     
 }
 
@@ -892,7 +892,7 @@ DrawModel(Model* model, mat4 matrix){
 }
 
 void Render::
-DrawModelWireframe(Model* model, mat4 matrix, color color){ //!!Incomplete
+DrawModelWireframe(Model* model, mat4 matrix, color color){ //!Incomplete
 	
 }
 
@@ -1071,12 +1071,12 @@ UseDefaultViewProjMatrix(vec3 position, vec3 rotation){
 //// @shaders ////
 //////////////////
 void Render::
-ReloadShader(u32 shader){ //!!Incomplete
+ReloadShader(u32 shader){ //!Incomplete
     
 }
 
 void Render::
-ReloadAllShaders(){ //!!Incomplete
+ReloadAllShaders(){ //!Incomplete
     
 }
 
@@ -1084,17 +1084,17 @@ ReloadAllShaders(){ //!!Incomplete
 //// @remake ////
 /////////////////
 void Render::
-UpdateLight(u32 lightIdx, vec4 vec){ //!!Incomplete
+UpdateLight(u32 lightIdx, vec4 vec){ //!Incomplete
     
 }
 
 void Render::
-remakeOffscreen(){ //!!Incomplete
+remakeOffscreen(){ //!Incomplete
     
 }
 
 void Render::
-RemakeTextures(){ //!!Incomplete
+RemakeTextures(){ //!Incomplete
     
 }
 
@@ -1178,7 +1178,7 @@ Update(){
 //// @reset ////
 ////////////////
 void Render::
-Reset(){ //!!Incomplete
+Reset(){ //!Incomplete
     glFinish();
     
 }
@@ -1187,7 +1187,7 @@ Reset(){ //!!Incomplete
 //// @cleanup ////
 //////////////////
 void Render::
-Cleanup(){ //!!Incomplete
+Cleanup(){ //!Incomplete
     glFinish();
     
 }

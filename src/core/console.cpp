@@ -480,17 +480,6 @@ void Console::AddAliases(){
 //////////////////////////////////////////////////////////////////////
 
 void Console::Init(){
-	AddLog("[c:dcyan]Deshi Console ver. 0.5.1[c]");
-	AddLog("\"listc\" for a list of commands\n\"help {command}\" to view a commands help page");
-	AddLog("see console_release_notes.txt for version information");
-	AddLog("\n[c:dyellow]Console TODOS:[c]");
-	AddLog("> implement argument completion for commands\n"
-		   "> implement arguments for commands that need them\n"
-		   "> add help to commands that don't have a descriptive help yet\n"
-		   "> fix tabcompletion when trying to complete the first word\n"
-		   "> (maybe) rewrite to use characters in the buffer rather than whole strings\n"
-		   "> (maybe) implement showing autocomplete as you type");
-	
 	AddCommands();
 	AddAliases();
 }

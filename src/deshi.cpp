@@ -106,6 +106,7 @@ redo debug bar to be more informative and have different modes
 
 Ungrouped TODOs
 ---------------
+make the transparent framebuffer a start switch since it hurts frames (it must be set at window creation time)
 add the ability to limit framerate
 add a file abstraction so file parsing is simple and not so explicitly handed in different files
 add a logging core separate from the console
@@ -229,42 +230,42 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	
 	TIMER_RESET(t_s); 
 	deshi_time.Init(300);         
-	SUCCESS("Finished time initialization in ", TIMER_END(t_s), "ms");
-
+	SUCCESS("[deshi] Finished time initialization in ", TIMER_END(t_s), "ms");
+    
 	TIMER_RESET(t_s); 
 	deshi_window.Init("deshi", winWidth, winHeight); 
-	SUCCESS("Finished input and window initialization in ", TIMER_END(t_s), "ms");
-
+	SUCCESS("[deshi] Finished input and window initialization in ", TIMER_END(t_s), "ms");
+    
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
 	TIMER_RESET(t_s); 
 	deshi_console.Init(); 
 	Console2::Init(); 
-	SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
+	SUCCESS("[deshi] Finished console initialization in ", TIMER_END(t_s), "ms");
 #endif
-
+    
 	TIMER_RESET(t_s); 
 	Render::Init();               
-	SUCCESS("Finished render initialization in ", TIMER_END(t_s), "ms");
+	SUCCESS("[deshi] Finished render initialization in ", TIMER_END(t_s), "ms");
 	
 	TIMER_RESET(t_s); 
 	Storage::Init();              
-	SUCCESS("Finished storage initialization in ", TIMER_END(t_s), "ms");
-
+	SUCCESS("[deshi] Finished storage initialization in ", TIMER_END(t_s), "ms");
+    
 #ifndef DESHI_DISABLE_IMGUI
 	TIMER_RESET(t_s); 
 	DeshiImGui::Init();           
-	SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
+	SUCCESS("[deshi] Finished imgui initialization in ", TIMER_END(t_s), "ms");
 #endif
-
+    
 	TIMER_RESET(t_s); 
 	UI::Init();                   
-	SUCCESS("Finished UI initialization in ", TIMER_END(t_s), "ms");
+	SUCCESS("[deshi] Finished UI initialization in ", TIMER_END(t_s), "ms");
 	
 	TIMER_RESET(t_s); 
 	Cmd::Init(); 
-	SUCCESS("Finished commands initialization in ", TIMER_END(t_s), "ms");
+	SUCCESS("[deshi] Finished commands initialization in ", TIMER_END(t_s), "ms");
     
-	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
+	SUCCESS("[deshi] Finished deshi initialization in ", TIMER_END(t_d), "ms");
     
 	glfwShowWindow(deshi_window.window);
 }

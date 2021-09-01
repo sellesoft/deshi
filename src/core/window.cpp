@@ -51,7 +51,7 @@ void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, Display
 	
 	cursor = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
 	if(!cursor){ printf("[GLFW] Failed to create the cursor!"); glfwTerminate(); return; }
-
+    
 	//glfwSetWindowOpacity(window, 0.5);
 	
 	//load and set icon
@@ -274,7 +274,7 @@ void Window::Cleanup(){
 
 void Window::UpdateDisplayMode(DisplayMode displayMode){
 	if(displayMode == this->displayMode){return;}
-	if(this->displayMode == DisplayMode_Windowed || this->displayMode == DisplayMode_Windowed) {
+	if(this->displayMode == DisplayMode_Windowed || this->displayMode == DisplayMode_Borderless) {
 		restoreX = x;  restoreY = y; 
 		restoreW = width; restoreH = height;
 	}

@@ -2154,7 +2154,7 @@ loadShader(std::string filename, VkShaderStageFlagBits stage){
 	shaderStage.pName = "main";
 	
 	//check if shader has already been created
-	for(auto& module : shaderModules){ //!!FixMe this loop doesnt actually prevent recreation
+	for(auto& module : shaderModules){ //!FixMe this loop doesnt actually prevent recreation
 		if(filename == module.first){
 			shaderStage.module = module.second;
 			break;
@@ -3647,7 +3647,7 @@ DrawModel(Model* model, mat4 matrix){
 
 void Render::
 DrawModelWireframe(Model* mesh, mat4 matrix, color color){
-	//!!Incomplete
+	//!Incomplete
 }
 
 void Render::

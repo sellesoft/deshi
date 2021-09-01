@@ -51,10 +51,10 @@ zfree(void* ptr){
 //// @implementation ////
 /////////////////////////
 inline void* Memory::
-Allocate(upt bytes){ //!!Incomplete
+Allocate(upt bytes){ //!Incomplete
     if(bytes == 0) return 0;
     Assert(main_arena_used+bytes <= main_arena_size);
-
+    
     void* result = main_arena_cursor+sizeof(upt);
     *(upt*)main_arena_cursor = bytes;
     main_arena_cursor += bytes+sizeof(upt);
@@ -63,10 +63,10 @@ Allocate(upt bytes){ //!!Incomplete
 }
 
 inline void* Memory::
-TempAllocate(upt bytes){ //!!Incomplete
+TempAllocate(upt bytes){ //!Incomplete
     if(bytes == 0) return 0;
     Assert(temp_arena_used+bytes <= temp_arena_size);
-
+    
     void* result = temp_arena_cursor+sizeof(upt);
     *(upt*)temp_arena_cursor = bytes;
     temp_arena_cursor += bytes+sizeof(upt);
@@ -75,7 +75,7 @@ TempAllocate(upt bytes){ //!!Incomplete
 }
 
 inline void Memory::
-ZeroFree(void* ptr){ //!!Incomplete
+ZeroFree(void* ptr){ //!Incomplete
     if(ptr == 0) return;
     Assert(ptr >= main_arena_start && ptr <= main_arena_start+main_arena_used);
 }
