@@ -1181,10 +1181,10 @@ CreateSwapChain(){
 	//get min image count if not specified
 	if(minImageCount == 0){ //TODO(delle,ReVu) add render settings here (extra buffering)
 		switch(presentMode){
-			case VK_PRESENT_MODE_MAILBOX_KHR:     { minImageCount = 2;  }break;
-			case VK_PRESENT_MODE_FIFO_KHR:        { minImageCount = 2;  }break;
-			case VK_PRESENT_MODE_FIFO_RELAXED_KHR:{ minImageCount = 2;  }break;
-			case VK_PRESENT_MODE_IMMEDIATE_KHR:   { minImageCount = 1;  }break;
+			case VK_PRESENT_MODE_MAILBOX_KHR:     { minImageCount =  2; }break;
+			case VK_PRESENT_MODE_FIFO_KHR:        { minImageCount =  2; }break;
+			case VK_PRESENT_MODE_FIFO_RELAXED_KHR:{ minImageCount =  2; }break;
+			case VK_PRESENT_MODE_IMMEDIATE_KHR:   { minImageCount =  1; }break;
 			default:                              { minImageCount = -1; }break;
 		}
 	}

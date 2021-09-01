@@ -191,7 +191,18 @@ __________ maybe store the text in the actual source and create the file from th
 #include <imgui/imgui_impl_glfw.cpp>
 #include "core/renderers/opengl.cpp"
 #elif DESHI_DIRECTX12 //DESHI_OPENGL
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 #include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#include "d3dx12/d3dx12.h"
+#include <d3d12.h>
+#include <wrl/client.h> //ComPtr
+#include <dxgi1_6.h>
+//#include <d3dcompiler.h> this is for compiling HLSL shaders at runtime, which ideally we wont do, but ill keep it just incase
+// if we do, dont forget to link against d3dcompiler.lib and copy D3dcompiler_47.dll to the same file as our exe
+#include <DirectXMath.h>
 #include "core/renderers/directx.cpp"
 #else  //DESHI_DIRECTX12
 #error "no renderer selected"
@@ -215,18 +226,43 @@ local Storage_ deshi_storage; Storage_* g_storage = &deshi_storage;
 void deshi::init(u32 winWidth, u32 winHeight){
 	TIMER_START(t_d); TIMER_START(t_s);
 	Assets::enforceDirectories();
-	TIMER_RESET(t_s); deshi_time.Init(300);         SUCCESS("Finished time initialization in ",              TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); deshi_window.Init("deshi", winWidth, winHeight); SUCCESS("Finished input and window initialization in ",  TIMER_END(t_s), "ms");
+	
+	TIMER_RESET(t_s); 
+	deshi_time.Init(300);         
+	SUCCESS("Finished time initialization in ", TIMER_END(t_s), "ms");
+
+	TIMER_RESET(t_s); 
+	deshi_window.Init("deshi", winWidth, winHeight); 
+	SUCCESS("Finished input and window initialization in ", TIMER_END(t_s), "ms");
+
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
-	TIMER_RESET(t_s); deshi_console.Init(); Console2::Init(); SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); 
+	deshi_console.Init(); 
+	Console2::Init(); 
+	SUCCESS("Finished console initialization in ", TIMER_END(t_s), "ms");
 #endif
-	TIMER_RESET(t_s); Render::Init();               SUCCESS("Finished render initialization in ",            TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); Storage::Init();              SUCCESS("Finished storage initialization in ",           TIMER_END(t_s), "ms");
+
+	TIMER_RESET(t_s); 
+	Render::Init();               
+	SUCCESS("Finished render initialization in ", TIMER_END(t_s), "ms");
+	
+	TIMER_RESET(t_s); 
+	Storage::Init();              
+	SUCCESS("Finished storage initialization in ", TIMER_END(t_s), "ms");
+
 #ifndef DESHI_DISABLE_IMGUI
-	TIMER_RESET(t_s); DeshiImGui::Init();           SUCCESS("Finished imgui initialization in ",             TIMER_END(t_s), "ms");
+	TIMER_RESET(t_s); 
+	DeshiImGui::Init();           
+	SUCCESS("Finished imgui initialization in ", TIMER_END(t_s), "ms");
 #endif
-	TIMER_RESET(t_s); UI::Init();                   SUCCESS("Finished UI initialization in ",                TIMER_END(t_s), "ms");
-	TIMER_RESET(t_s); Cmd::Init();                  SUCCESS("Finished commands initialization in ",          TIMER_END(t_s), "ms");
+
+	TIMER_RESET(t_s); 
+	UI::Init();                   
+	SUCCESS("Finished UI initialization in ", TIMER_END(t_s), "ms");
+	
+	TIMER_RESET(t_s); 
+	Cmd::Init(); 
+	SUCCESS("Finished commands initialization in ", TIMER_END(t_s), "ms");
     
 	SUCCESS("Finished deshi initialization in ", TIMER_END(t_d), "ms");
     

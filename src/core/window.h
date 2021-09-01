@@ -13,6 +13,7 @@ struct GLFWcursor;
 enum DisplayMode_{
 	DisplayMode_Windowed, 
 	DisplayMode_Borderless, 
+	DisplayMode_BorderlessFullscreen,
 	DisplayMode_Fullscreen
 }; typedef u32 DisplayMode;
 

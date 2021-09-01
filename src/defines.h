@@ -35,8 +35,8 @@ typedef float              f32;
 typedef double             f64;
 
 //static defines
-#define local   static  //inside a .cpp
-#define persist static  //inside a function
+#define local    static //inside a .cpp
+#define persist  static //inside a function
 #define global_  static //inside a .h
 
 #if DESHI_SLOW
