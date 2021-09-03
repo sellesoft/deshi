@@ -3347,26 +3347,26 @@ LoadTexture(Texture* texture){
 	
 	//determine image format
 	VkFormat image_format;
-	switch(texture->format){
+	switch(texture->format){ //TODO(delle) handle non RGBA formats
 		case ImageFormat_BW:   image_format = VK_FORMAT_R8G8B8A8_SRGB; break;
 		case ImageFormat_BWA:  image_format = VK_FORMAT_R8G8B8A8_SRGB; break;
 		case ImageFormat_RGB:  image_format = VK_FORMAT_R8G8B8A8_SRGB; break;
 		case ImageFormat_RGBA: image_format = VK_FORMAT_R8G8B8A8_SRGB; break;
-		default: ERROR_LOC("Unhandled image format when loading texture: ", texture->name); return;
+		default: PrintVk(0,"Failed to load texture '",texture->name,"' because of unknown texture format"); return;
 	}
 	
-	//determine image type //TODO(delle) adjust image size?
+	//determine image type
 	VkImageType     image_type;
 	VkImageViewType view_type;
-	switch(texture->type){
-		case TextureType_1D:         image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_1D;         break;
+	switch(texture->type){ //TODO(delle) handle non 2D image types
+		case TextureType_1D:         image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_1D;         Assert(!"not implemented yet"); break;
 		case TextureType_2D:         image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_2D;         break;
-		case TextureType_3D:         image_type = VK_IMAGE_TYPE_3D; view_type = VK_IMAGE_VIEW_TYPE_3D;         break;
-		case TextureType_Cube:       image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_CUBE;       break;
-		case TextureType_Array_1D:   image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_1D_ARRAY;   break;
-		case TextureType_Array_2D:   image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_2D_ARRAY;   break;
-		case TextureType_Array_Cube: image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY; break;
-		default: ERROR_LOC("Uknown image type when loading texture: ", texture->name); return;
+		case TextureType_3D:         image_type = VK_IMAGE_TYPE_3D; view_type = VK_IMAGE_VIEW_TYPE_3D;         Assert(!"not implemented yet"); break;
+		case TextureType_Cube:       image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_CUBE;       Assert(!"not implemented yet"); break;
+		case TextureType_Array_1D:   image_type = VK_IMAGE_TYPE_1D; view_type = VK_IMAGE_VIEW_TYPE_1D_ARRAY;   Assert(!"not implemented yet"); break;
+		case TextureType_Array_2D:   image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_2D_ARRAY;   Assert(!"not implemented yet"); break;
+		case TextureType_Array_Cube: image_type = VK_IMAGE_TYPE_2D; view_type = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY; Assert(!"not implemented yet"); break;
+		default: PrintVk(0,"Failed to load texture '",texture->name,"' because of unknown image type"); return;
 	}
 	
 	//copy the image pixels to a staging buffer

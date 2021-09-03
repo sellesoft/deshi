@@ -1,28 +1,20 @@
 //-------------------------------------------------------------------------------------------------
 // @OPENGL STRUCTS
 struct ModelCmdGl{
-	u32   vtxOffset;
-	u32   idxOffset;
-	u32   idxCount;
-	u32   material;
-	char* name;
-	mat4  matrix;
+    u32   vtxOffset;
+    u32   idxOffset;
+    u32   idxCount;
+    u32   material;
+    char* name;
+    mat4  matrix;
 };
 
 struct UICmdGl{
-	u32 texIdx;
-	u16 indexOffset;
-	u16 indexCount;
-	vec2 scissorOffset;
-	vec2 scissorExtent;
-};
-
-struct MeshGl{
-    Mesh* base;
-    u32 vtxOffset;
-    u32 vtxCount;
-    u32 idxOffset;
-    u32 idxCount;
+    u32 texIdx;
+    u16 indexOffset;
+    u16 indexCount;
+    vec2 scissorOffset;
+    vec2 scissorExtent;
 };
 
 struct ShaderGl{
@@ -37,50 +29,80 @@ struct ProgramGl{
     u32 shaders[5];
 };
 
+struct MeshGl{
+    Mesh* base;
+    u32 vtxOffset;
+    u32 vtxCount;
+    u32 idxOffset;
+    u32 idxCount;
+};
+
+struct TextureGl{
+    Texture* base;
+    GLenum format;
+    GLenum type;
+    u32 handle;
+};
+
+struct MaterialGl{
+    Material* base;
+    ProgramGl* program;
+    u32 texture_count;
+    u32 textures[4];
+};
+
+struct FontGl{
+    Font* base;
+    u32 texture;
+    u32 characterWidth;
+	u32 characterHeight;
+	u32 characterCount;
+};
+
 //-------------------------------------------------------------------------------------------------
 // @INTERFACE VARIABLES
 local RenderSettings settings;
 local ConfigMap configMap = {
-	{"#render settings config file",0,0},
-	
-	{"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)21},
-	{"debugging",            ConfigValueType_Bool, &settings.debugging}, //!Incomplete
-	{"printf",               ConfigValueType_Bool, &settings.printf}, //!Incomplete
-	{"texture_filtering",    ConfigValueType_Bool, &settings.textureFiltering}, //!Incomplete
-	{"anistropic_filtering", ConfigValueType_Bool, &settings.anistropicFiltering}, //!Incomplete
-	{"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples}, //!Incomplete
-	{"recompile_all_shaders",        ConfigValueType_Bool, &settings.recompileAllShaders}, //!Incomplete
-	
-	{"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
-	{"logging_level",  ConfigValueType_U32,  &settings.loggingLevel},
-	{"crash_on_error", ConfigValueType_Bool, &settings.crashOnError},
-	{"vsync_type",     ConfigValueType_U32,  &settings.vsync}, //!Incomplete
-	
-	{"\n#shaders",                         ConfigValueType_PADSECTION,(void*)17},
-	{"optimize_shaders", ConfigValueType_Bool, &settings.optimizeShaders}, //!Incomplete
-	
-	{"\n#shadows",                         ConfigValueType_PADSECTION,(void*)20},
-	{"shadow_pcf",          ConfigValueType_Bool, &settings.shadowPCF}, //!Incomplete
-	{"shadow_resolution",   ConfigValueType_U32,  &settings.shadowResolution}, //!Incomplete
-	{"shadow_nearz",        ConfigValueType_F32,  &settings.shadowNearZ}, //!Incomplete
-	{"shadow_farz",         ConfigValueType_F32,  &settings.shadowFarZ}, //!Incomplete
-	{"depth_bias_constant", ConfigValueType_F32,  &settings.depthBiasConstant}, //!Incomplete
-	{"depth_bias_slope",    ConfigValueType_F32,  &settings.depthBiasSlope}, //!Incomplete
-	{"show_shadow_map",     ConfigValueType_Bool, &settings.showShadowMap}, //!Incomplete
-	
-	{"\n#colors",                          ConfigValueType_PADSECTION,(void*)15},
-	{"clear_color",    ConfigValueType_FV4, &settings.clearColor},
-	{"selected_color", ConfigValueType_FV4, &settings.selectedColor},
-	{"collider_color", ConfigValueType_FV4, &settings.colliderColor},
-	
-	{"\n#filters",                         ConfigValueType_PADSECTION,(void*)15},
-	{"wireframe_only", ConfigValueType_Bool, &settings.wireframeOnly},
-	
-	{"\n#overlays",                        ConfigValueType_PADSECTION,(void*)17},
-	{"mesh_wireframes",  ConfigValueType_Bool, &settings.meshWireframes},
-	{"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals}, //!Incomplete
-	{"light_frustrums",  ConfigValueType_Bool, &settings.lightFrustrums}, //!Incomplete
-	{"temp_mesh_on_top", ConfigValueType_Bool, &settings.tempMeshOnTop}, //!Incomplete
+    {"#render settings config file",0,0},
+    
+    {"\n#    //// REQUIRES RESTART ////",  ConfigValueType_PADSECTION,(void*)21},
+    {"debugging",            ConfigValueType_Bool, &settings.debugging}, //!Incomplete
+    {"printf",               ConfigValueType_Bool, &settings.printf}, //!Incomplete
+    {"texture_filtering",    ConfigValueType_Bool, &settings.textureFiltering}, //!Incomplete
+    {"anistropic_filtering", ConfigValueType_Bool, &settings.anistropicFiltering}, //!Incomplete
+    {"msaa_level",           ConfigValueType_U32,  &settings.msaaSamples}, //!Incomplete
+    {"recompile_all_shaders",ConfigValueType_Bool, &settings.recompileAllShaders}, //!Incomplete
+    
+    {"\n#    //// RUNTIME VARIABLES ////", ConfigValueType_PADSECTION,(void*)15},
+    {"logging_level",  ConfigValueType_U32,  &settings.loggingLevel},
+    {"crash_on_error", ConfigValueType_Bool, &settings.crashOnError},
+    {"vsync_type",     ConfigValueType_U32,  &settings.vsync}, //!Incomplete
+    
+    {"\n#shaders",                         ConfigValueType_PADSECTION,(void*)17},
+    {"optimize_shaders", ConfigValueType_Bool, &settings.optimizeShaders}, //!Incomplete
+    
+    {"\n#shadows",                         ConfigValueType_PADSECTION,(void*)20},
+    {"shadow_pcf",          ConfigValueType_Bool, &settings.shadowPCF}, //!Incomplete
+    {"shadow_resolution",   ConfigValueType_U32,  &settings.shadowResolution}, //!Incomplete
+    {"shadow_nearz",        ConfigValueType_F32,  &settings.shadowNearZ}, //!Incomplete
+    {"shadow_farz",         ConfigValueType_F32,  &settings.shadowFarZ}, //!Incomplete
+    {"depth_bias_constant", ConfigValueType_F32,  &settings.depthBiasConstant}, //!Incomplete
+    {"depth_bias_slope",    ConfigValueType_F32,  &settings.depthBiasSlope}, //!Incomplete
+    {"show_shadow_map",     ConfigValueType_Bool, &settings.showShadowMap}, //!Incomplete
+    
+    {"\n#colors",                          ConfigValueType_PADSECTION,(void*)15},
+    {"clear_color",    ConfigValueType_FV4, &settings.clearColor},
+    {"selected_color", ConfigValueType_FV4, &settings.selectedColor},
+    {"collider_color", ConfigValueType_FV4, &settings.colliderColor},
+    
+    {"\n#filters",                         ConfigValueType_PADSECTION,(void*)15},
+    {"wireframe_only", ConfigValueType_Bool, &settings.wireframeOnly},
+    
+    {"\n#overlays",                        ConfigValueType_PADSECTION,(void*)17},
+    {"mesh_wireframes",  ConfigValueType_Bool, &settings.meshWireframes},
+    {"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals}, //!Incomplete
+    {"light_frustrums",  ConfigValueType_Bool, &settings.lightFrustrums}, //!Incomplete
+    {"temp_mesh_on_top", ConfigValueType_Bool, &settings.tempMeshOnTop}, //!Incomplete
 };
 
 local RenderStats   stats{};
@@ -89,8 +111,11 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE; //!Incomplete
 
 //-------------------------------------------------------------------------------------------------
 // @OPENGL VARIABLES
-local array<MeshGl>   glMeshes;
-local array<ShaderGl> glShaders;
+local array<MeshGl>     glMeshes;
+local array<ShaderGl>   glShaders;
+local array<TextureGl>  glTextures;
+local array<MaterialGl> glMaterials;
+local array<FontGl>     glFont;
 
 ///////////////////
 //// @commands ////
@@ -169,43 +194,43 @@ local struct{
 } tempBuffers{};
 
 local struct{ //vertex shader uniform buffer
-	u32 handle;
+    u32 handle;
     u32 binding = 1;
-	
-	struct{ //416 bytes
-		mat4 view;        //camera view matrix
-		mat4 proj;        //camera projection matrix
-		vec4 lights[10];  //lights
-		vec4 viewPos;     //camera pos
-		vec2 screen;      //screen dimensions
-		vec2 mousepos;    //mouse screen pos
-		vec3 mouseWorld;  //point casted out from mouse 
-		f32  time;        //total time
-		mat4 lightVP;     //first light's view projection matrix
-		int  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
+    
+    struct{ //416 bytes
+        mat4 view;        //camera view matrix
+        mat4 proj;        //camera projection matrix
+        vec4 lights[10];  //lights
+        vec4 viewPos;     //camera pos
+        vec2 screen;      //screen dimensions
+        vec2 mousepos;    //mouse screen pos
+        vec3 mouseWorld;  //point casted out from mouse 
+        f32  time;        //total time
+        mat4 lightVP;     //first light's view projection matrix
+        int  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
         int  padding[3];
-	} values;
+    } values;
 } uboVS{};
 
 local struct{ //vertex shader push constant
-	u32 handle;
+    u32 handle;
     u32 binding = 2;
-	
-	struct{ //64 bytes
-		mat4 matrix;
-	} values;
+    
+    struct{ //64 bytes
+        mat4 matrix;
+    } values;
 } pushVS{};
 
 local struct{ //twod vertex shader push constant
-	u32 handle;
+    u32 handle;
     u32 binding = 3;
-	
-	struct{ //32 bytes
-		vec2 scale;
-		vec2 translate;
+    
+    struct{ //32 bytes
+        vec2 scale;
+        vec2 translate;
         int  font_idx;
         int  padding[3];
-	} values;
+    } values;
 } push2D{};
 
 ///////////////////
@@ -215,24 +240,24 @@ local struct{
     union{
         ProgramGl arr[16];
         struct{
-			ProgramGl null;
+            ProgramGl null;
             //game shaders
             ProgramGl flat;
             ProgramGl phong;
             ProgramGl pbr;
             ProgramGl lavalamp;
-			ProgramGl twod;
-			ProgramGl ui;
-			//development shaders
-			ProgramGl base;
-			ProgramGl wireframe;
+            ProgramGl twod;
+            ProgramGl ui;
+            //development shaders
+            ProgramGl base;
+            ProgramGl wireframe;
             ProgramGl wireframe_depth;
             ProgramGl selected;
             ProgramGl collider;
             ProgramGl testing0;
             ProgramGl testing1;
             ProgramGl offscreen;
-			//debug shaders
+            //debug shaders
             ProgramGl normals_debug;
             ProgramGl shadowmap_debug;
         };
@@ -247,9 +272,9 @@ local struct{
 template<typename... Args>
 local inline void
 PrintGl(u32 level, Args... args){
-	if(settings.loggingLevel >= level){
-		LOG("[OpenGL] ", args...);
-	}
+    if(settings.loggingLevel >= level){
+        LOG("[OpenGL] ", args...);
+    }
 }
 
 local void 
@@ -263,7 +288,7 @@ DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, int len_args
             case GL_INVALID_OPERATION:             error_flag = "GL_INVALID_OPERATION"; break; //Set when the state for a command is not legal for its given parameters.
             case 1283:                             error_flag = "GL_STACK_OVERFLOW"; break; //Set when a stack pushing operation causes a stack overflow.
             case 1284:                             error_flag = "GL_STACK_UNDERFLOW"; break; //Set when a stack popping operation occurs while the stack is at its lowest point.
-            case GL_OUT_OF_MEMORY:                 error_flag = "GL_OUT_OF_MEMORY"; break; //	Set when a memory allocation operation cannot allocate (enough) memory.
+            case GL_OUT_OF_MEMORY:                 error_flag = "GL_OUT_OF_MEMORY"; break; //    Set when a memory allocation operation cannot allocate (enough) memory.
             case GL_INVALID_FRAMEBUFFER_OPERATION: error_flag = "GL_INVALID_FRAMEBUFFER_OPERATION"; break; //Set when reading or writing to a framebuffer that is not complete.
         }
         PrintGl(0, "ERROR_",error_code," '",error_flag,"' on ",name,"(); Info: http://docs.gl/gl3/",name);
@@ -282,23 +307,23 @@ SetupCommands(){
 
 local void
 ResetCommands(){
-	{//UI commands
-		uiVertexCount = 0;
-		uiIndexCount  = 0;
-		memset(&uiCmdArray[0], 0, sizeof(UICmdGl)*uiCmdCount);
-		uiCmdCount    = 1;
-	}
-	
-	{//temp commands
-		tempWireframeVertexCount = 0;
-		tempWireframeIndexCount  = 0;
-		tempFilledVertexCount = 0;
-		tempFilledIndexCount  = 0;
-	}
-	
-	{//model commands
-		modelCmdCount = 0;
-	}
+    {//UI commands
+        uiVertexCount = 0;
+        uiIndexCount  = 0;
+        memset(&uiCmdArray[0], 0, sizeof(UICmdGl)*uiCmdCount);
+        uiCmdCount    = 1;
+    }
+    
+    {//temp commands
+        tempWireframeVertexCount = 0;
+        tempWireframeIndexCount  = 0;
+        tempFilledVertexCount = 0;
+        tempFilledIndexCount  = 0;
+    }
+    
+    {//model commands
+        modelCmdCount = 0;
+    }
 }
 
 
@@ -371,7 +396,7 @@ CreateProgram(u32 shader_indexes[], u32 shader_count, bool twod = false){
     glGetProgramiv(pgl.handle, GL_LINK_STATUS, &opengl_success);
     if(opengl_success != GL_TRUE){
         glGetProgramInfoLog(pgl.handle, OPENGL_INFOLOG_SIZE, 0, opengl_infolog);
-        PrintGl(0, "Failed to link program '",prog_shaders,"':\n",opengl_infolog);
+        PrintGl(0,"Failed to link program '",prog_shaders,"':\n",opengl_infolog);
         
         //delete broken program
         glDeleteProgram(pgl.handle);
@@ -384,7 +409,7 @@ CreateProgram(u32 shader_indexes[], u32 shader_count, bool twod = false){
         if(local_ubi != -1){ 
             glUniformBlockBinding(pgl.handle, local_ubi, uboVS.binding);
         }else{
-            PrintGl(0, "Failed to find UniformBufferObject in vertex shader of program '",prog_shaders,"'");
+            PrintGl(0,"Failed to find UniformBufferObject in vertex shader of program '",prog_shaders,"'");
             if(settings.crashOnError) Assert(false);
             glDeleteProgram(pgl.handle);
             return {};
@@ -394,7 +419,7 @@ CreateProgram(u32 shader_indexes[], u32 shader_count, bool twod = false){
         if(local_ubi != -1){ 
             glUniformBlockBinding(pgl.handle, local_ubi, pushVS.binding);
         }else{
-            PrintGl(0, "Failed to find PushConsts in vertex shader of program '",prog_shaders,"'");
+            PrintGl(0,"Failed to find PushConsts in vertex shader of program '",prog_shaders,"'");
             if(settings.crashOnError) Assert(false);
             glDeleteProgram(pgl.handle);
             return {};
@@ -404,7 +429,7 @@ CreateProgram(u32 shader_indexes[], u32 shader_count, bool twod = false){
         if(local_ubi != -1){ 
             glUniformBlockBinding(pgl.handle, local_ubi, push2D.binding);
         }else{
-            PrintGl(0, "Failed to find PushConsts in vertex shader of program '",prog_shaders,"'");
+            PrintGl(0,"Failed to find PushConsts in vertex shader of program '",prog_shaders,"'");
             if(settings.crashOnError) Assert(false);
             glDeleteProgram(pgl.handle);
             return {};
@@ -566,14 +591,14 @@ local char iniFilepath[256] = {};
 void DeshiImGui::
 Init(){
     //Setup Dear ImGui context
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	cpystr(iniFilepath, (Assets::dirConfig() + "imgui.ini").c_str(), 256);
-	io.IniFilename = iniFilepath;
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    cpystr(iniFilepath, (Assets::dirConfig() + "imgui.ini").c_str(), 256);
+    io.IniFilename = iniFilepath;
     
     //Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsClassic();
+    ImGui::StyleColorsDark();
+    //ImGui::StyleColorsClassic();
     
     //Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(DeshWindow->window, true);
@@ -582,24 +607,24 @@ Init(){
 
 void DeshiImGui::
 Cleanup(){
-	ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 
 void DeshiImGui::
 NewFrame(){
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
 }
 
 
 //-------------------------------------------------------------------------------------------------
 // @UI INTERFACE
 enum texTypes : u32 {
-	UITEX_WHITE,
-	UITEX_FONT
+    UITEX_WHITE,
+    UITEX_FONT
 };
 
 //TODO(sushi) find a nicer way to keep track of this
@@ -609,116 +634,116 @@ vec2 prevScissorExtent = vec2(-1, -1);
 
 void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if (color.a == 0) return;
+    if (color.a == 0) return;
     
-	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
+    if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
        scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
        scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
-		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
-	}
+        prevScissorExtent = scissorExtent;
+        prevScissorOffset = scissorOffset;
+        uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+        uiCmdCount++;
+    }
     
-	u32       col = color.rgba;
-	Vertex2*   vp = uiVertexArray + uiVertexCount;
-	UIIndexGl* ip = uiIndexArray + uiIndexCount;
+    u32       col = color.rgba;
+    Vertex2*   vp = uiVertexArray + uiVertexCount;
+    UIIndexGl* ip = uiIndexArray + uiIndexCount;
     
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
-	vp[0].pos = { pos.x + 0,           pos.y + 0 };            vp[0].uv = { 0,0 }; vp[0].color = col;
-	vp[1].pos = { pos.x + dimensions.w,pos.y + 0 };            vp[1].uv = { 0,0 }; vp[1].color = col;
-	vp[2].pos = { pos.x + dimensions.w,pos.y + dimensions.h }; vp[2].uv = { 0,0 }; vp[2].color = col;
-	vp[3].pos = { pos.x + 0,           pos.y + dimensions.h }; vp[3].uv = { 0,0 }; vp[3].color = col;
+    ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+    ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+    vp[0].pos = { pos.x + 0,           pos.y + 0 };            vp[0].uv = { 0,0 }; vp[0].color = col;
+    vp[1].pos = { pos.x + dimensions.w,pos.y + 0 };            vp[1].uv = { 0,0 }; vp[1].color = col;
+    vp[2].pos = { pos.x + dimensions.w,pos.y + dimensions.h }; vp[2].uv = { 0,0 }; vp[2].color = col;
+    vp[3].pos = { pos.x + 0,           pos.y + dimensions.h }; vp[3].uv = { 0,0 }; vp[3].color = col;
     
-	uiVertexCount += 4;
-	uiIndexCount += 6;
-	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	if(scissorExtent.x != -1){
-		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}else{
-		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-	}
+    uiVertexCount += 4;
+    uiIndexCount += 6;
+    uiCmdArray[uiCmdCount - 1].indexCount += 6;
+    uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+    if(scissorExtent.x != -1){
+        uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+        uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+    }else{
+        uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+        uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+    }
 }
 
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
 //straight lines, see below
 void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if (color.a == 0) return;
-	
-	//top, left, right, bottom
-	DrawLineUI(pos.xAdd(-1),     pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos,              pos + dimensions.xSet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
+    if (color.a == 0) return;
+    
+    //top, left, right, bottom
+    DrawLineUI(pos.xAdd(-1),     pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
+    DrawLineUI(pos,              pos + dimensions.xSet(0),          1, color, scissorOffset, scissorExtent);
+    DrawLineUI(pos + dimensions, pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
+    DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
 }
 
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
 //when drawing them straight
 void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if(color.a == 0) return;
+    if(color.a == 0) return;
     
-	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
+    if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
        scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
        scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
-		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
-	}
+        prevScissorExtent = scissorExtent;
+        prevScissorOffset = scissorOffset;
+        uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+        uiCmdCount++;
+    }
     
-	u32       col = color.rgba;
-	Vertex2*   vp = uiVertexArray + uiVertexCount;
-	UIIndexGl* ip = uiIndexArray + uiIndexCount;
+    u32       col = color.rgba;
+    Vertex2*   vp = uiVertexArray + uiVertexCount;
+    UIIndexGl* ip = uiIndexArray + uiIndexCount;
     
-	vec2 ott = end - start;
-	vec2 norm = vec2(ott.y, -ott.x).normalized();
+    vec2 ott = end - start;
+    vec2 norm = vec2(ott.y, -ott.x).normalized();
     
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
-	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
-	vp[1].pos = { end.x,  end.y };   vp[1].uv = { 0,0 }; vp[1].color = col;
-	vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
-	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
+    ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+    ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+    vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
+    vp[1].pos = { end.x,  end.y };   vp[1].uv = { 0,0 }; vp[1].color = col;
+    vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
+    vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
     
-	vp[0].pos += norm * thickness / 2;
-	vp[1].pos += norm * thickness / 2;
-	vp[2].pos -= norm * thickness / 2;
-	vp[3].pos -= norm * thickness / 2;
+    vp[0].pos += norm * thickness / 2;
+    vp[1].pos += norm * thickness / 2;
+    vp[2].pos -= norm * thickness / 2;
+    vp[3].pos -= norm * thickness / 2;
     
-	uiVertexCount += 4;
-	uiIndexCount += 6;
-	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	if(scissorExtent.x != -1){
-		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}else{
-		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-	}
+    uiVertexCount += 4;
+    uiIndexCount += 6;
+    uiCmdArray[uiCmdCount - 1].indexCount += 6;
+    uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+    if(scissorExtent.x != -1){
+        uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+        uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+    }else{
+        uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+        uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+    }
 }
 
 void Render::
 DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){ //!Incomplete
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if (color.a == 0) return;
-	
-	
+    if (color.a == 0) return;
+    
+    
 }
 
 //NOTE: text scaling looks very ugly with bit map fonts as far as i know
 void Render::
 DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){ //!Incomplete
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if(color.a == 0) return;
-	
-	
+    if(color.a == 0) return;
+    
+    
 }
 
 
@@ -729,27 +754,27 @@ DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset,
 ///////////////////
 void Render::
 SaveSettings(){
-	Assets::saveConfig("render.cfg", configMap);
+    Assets::saveConfig("render.cfg", configMap);
 }
 
 void Render::
 LoadSettings(){
-	Assets::loadConfig("render.cfg", configMap);
+    Assets::loadConfig("render.cfg", configMap);
 }
 
 RenderSettings* Render::
 GetSettings(){
-	return &settings;
+    return &settings;
 }
 
 RenderStats* Render::
 GetStats(){
-	return &stats;
+    return &stats;
 }
 
 RendererStage* Render::
 GetStage(){
-	return &rendererStage;
+    return &rendererStage;
 }
 
 ///////////////
@@ -757,17 +782,67 @@ GetStage(){
 ///////////////
 void Render::
 LoadFont(Font* font, Texture* texture){ //!Incomplete
-	
+    
 }
 
 void Render::
 LoadTexture(Texture* texture){ //!Incomplete
+    TextureGl tgl{};
+    tgl.base = texture;
+    
+	//determine image format
+	switch(texture->format){ //TODO(delle) handle non RGBA formats
+		case ImageFormat_BW:   tgl.format = GL_RGBA; break;
+		case ImageFormat_BWA:  tgl.format = GL_RGBA; break;
+		case ImageFormat_RGB:  tgl.format = GL_RGBA; break;
+		case ImageFormat_RGBA: tgl.format = GL_RGBA; break;
+		default: PrintGl(0,"Unhandled image format when loading texture: ", texture->name); return;
+	}
 	
+	//determine image type
+	switch(texture->type){
+		case TextureType_1D:         tgl.type = GL_TEXTURE_1D; break;
+		case TextureType_2D:         tgl.type = GL_TEXTURE_2D; break;
+		case TextureType_3D:         tgl.type = GL_TEXTURE_3D; break;
+		case TextureType_Cube:       tgl.type = GL_TEXTURE_CUBE_MAP; break;
+		case TextureType_Array_1D:   tgl.type = GL_TEXTURE_1D_ARRAY; break;
+		case TextureType_Array_2D:   tgl.type = GL_TEXTURE_2D_ARRAY; break;
+#if GLAD_VERSION_MAJOR(opengl_version) >= 4
+		case TextureType_Array_Cube: tgl.type = GL_TEXTURE_CUBE_MAP_ARRAY; break;
+#else
+        case TextureType_Array_Cube: Assert(!"GL_TEXTURE_CUBE_MAP_ARRAY requires OpenGL4"); break;
+#endif
+		default: PrintGl(0,"Uknown image type when loading texture: ", texture->name); return;
+	}
+    
+    //create texture
+    glGenTextures(1, &tgl.handle);
+    glBindTexture(tgl.type, tgl.handle);
+    glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(tgl.type, GL_TEXTURE_MIN_FILTER, (settings.textureFiltering) ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST);
+    glTexParameteri(tgl.type, GL_TEXTURE_MAG_FILTER, (settings.textureFiltering) ? GL_LINEAR : GL_NEAREST);
+    //TODO(delle) EXT_texture_filter_anisotropic
+    
+    //load texture to GPU
+    if      (texture->type == TextureType_1D){
+        glTexImage1D(tgl.type, 0, tgl.format, texture->width, 0, tgl.format, GL_UNSIGNED_BYTE, texture->pixels);
+    }else if(texture->type == TextureType_2D || texture->type == TextureType_Array_1D){
+        glTexImage2D(tgl.type, 0, tgl.format, texture->width, texture->height, 0, tgl.format, GL_UNSIGNED_BYTE, texture->pixels);
+    }else if(texture->type == TextureType_Cube || texture->type == TextureType_Array_Cube || 
+             texture->type== TextureType_3D   || texture->type == TextureType_Array_2D){
+        glTexImage3D(tgl.type, 0, tgl.format, texture->width, texture->height, texture->depth, 0, tgl.format, GL_UNSIGNED_BYTE, texture->pixels);
+    }
+    
+    //mipmap texture
+    if(texture->mipmaps > 1) glGenerateMipmap(tgl.type);
+    
+    glTextures.add(tgl);
 }
 
 void Render::
 LoadMaterial(Material* material){ //!Incomplete
-	
+    
 }
 
 //TODO(delle) one large vertex/index array maybe
@@ -783,9 +858,9 @@ LoadMesh(Mesh* mesh){
     }
     
     u64 mesh_vb_size   = mesh->vertexCount*sizeof(Mesh::Vertex);
-	u64 mesh_ib_size   = mesh->indexCount*sizeof(Mesh::Index);
-	u64 total_vb_size  = meshBuffers.vbo_size + mesh_vb_size;
-	u64 total_ib_size  = meshBuffers.ibo_size + mesh_ib_size;
+    u64 mesh_ib_size   = mesh->indexCount*sizeof(Mesh::Index);
+    u64 total_vb_size  = meshBuffers.vbo_size + mesh_vb_size;
+    u64 total_ib_size  = meshBuffers.ibo_size + mesh_ib_size;
     total_vb_size = Max(1024*sizeof(Mesh::Vertex), total_vb_size); //minimum of 1024 vertexes to avoid early growths
     total_ib_size = Max(4096*sizeof(Mesh::Index),  total_ib_size); //minimum of 4096 indexes to avoid early growths
     
@@ -845,7 +920,7 @@ LoadMesh(Mesh* mesh){
 
 void Render::
 UpdateMaterial(Material* material){ //!Incomplete
-	
+    
 }
 
 /////////////////
@@ -877,166 +952,166 @@ UnloadMesh(Mesh* mesh){ //!Incomplete
 void Render::
 DrawModel(Model* model, mat4 matrix){
     Assert(modelCmdCount + model->batches.count < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
-	
+    
     ModelCmdGl* cmd = modelCmdArray + modelCmdCount;
-	forI(model->batches.count){
-		if(!model->batches[i].indexCount) continue;
-		cmd[i].vtxOffset = glMeshes[model->mesh->idx].vtxOffset;
-		cmd[i].idxOffset = glMeshes[model->mesh->idx].idxOffset + model->batches[i].indexOffset;
-		cmd[i].idxCount  = model->batches[i].indexCount;
-		cmd[i].material  = model->batches[i].material;
-		cmd[i].name      = model->name;
-		cmd[i].matrix    = matrix;
-		modelCmdCount += 1;
-	}
+    forI(model->batches.count){
+        if(!model->batches[i].indexCount) continue;
+        cmd[i].vtxOffset = glMeshes[model->mesh->idx].vtxOffset;
+        cmd[i].idxOffset = glMeshes[model->mesh->idx].idxOffset + model->batches[i].indexOffset;
+        cmd[i].idxCount  = model->batches[i].indexCount;
+        cmd[i].material  = model->batches[i].material;
+        cmd[i].name      = model->name;
+        cmd[i].matrix    = matrix;
+        modelCmdCount += 1;
+    }
 }
 
 void Render::
 DrawModelWireframe(Model* model, mat4 matrix, color color){ //!Incomplete
-	
+    
 }
 
 void Render::
 DrawLine(vec3 start, vec3 end, color color){
-	if(color.a == 0) return;
-	
-	u32 col = color.rgba;
-	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
-	TempIndexGl*  ip = tempWireframeIndexArray + tempWireframeIndexCount;
-	
-	ip[0] = tempWireframeVertexCount; 
-	ip[1] = tempWireframeVertexCount+1; 
-	ip[2] = tempWireframeVertexCount;
-	vp[0].pos = start; vp[0].color = col;
-	vp[1].pos = end;   vp[1].color = col;
-	
-	tempWireframeVertexCount += 2;
-	tempWireframeIndexCount  += 3;
+    if(color.a == 0) return;
+    
+    u32 col = color.rgba;
+    Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
+    TempIndexGl*  ip = tempWireframeIndexArray + tempWireframeIndexCount;
+    
+    ip[0] = tempWireframeVertexCount; 
+    ip[1] = tempWireframeVertexCount+1; 
+    ip[2] = tempWireframeVertexCount;
+    vp[0].pos = start; vp[0].color = col;
+    vp[1].pos = end;   vp[1].color = col;
+    
+    tempWireframeVertexCount += 2;
+    tempWireframeIndexCount  += 3;
 }
 
 void Render::
 DrawTriangle(vec3 p0, vec3 p1, vec3 p2, color color){
-	if(color.a == 0) return;
-	
-	u32 col = color.rgba;
-	Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
-	TempIndexGl*  ip = tempWireframeIndexArray + tempWireframeIndexCount;
-	
-	ip[0] = tempWireframeVertexCount; 
-	ip[1] = tempWireframeVertexCount+1; 
-	ip[2] = tempWireframeVertexCount+2;
-	vp[0].pos = p0; vp[0].color = col;
-	vp[1].pos = p1; vp[1].color = col;
-	vp[2].pos = p2; vp[2].color = col;
-	
-	tempWireframeVertexCount += 3;
-	tempWireframeIndexCount  += 3;
+    if(color.a == 0) return;
+    
+    u32 col = color.rgba;
+    Mesh::Vertex* vp = tempWireframeVertexArray + tempWireframeVertexCount;
+    TempIndexGl*  ip = tempWireframeIndexArray + tempWireframeIndexCount;
+    
+    ip[0] = tempWireframeVertexCount; 
+    ip[1] = tempWireframeVertexCount+1; 
+    ip[2] = tempWireframeVertexCount+2;
+    vp[0].pos = p0; vp[0].color = col;
+    vp[1].pos = p1; vp[1].color = col;
+    vp[2].pos = p2; vp[2].color = col;
+    
+    tempWireframeVertexCount += 3;
+    tempWireframeIndexCount  += 3;
 }
 
 void Render::
 DrawTriangleFilled(vec3 p0, vec3 p1, vec3 p2, color color){
-	if(color.a == 0) return;
-	
-	u32 col = color.rgba;
-	Mesh::Vertex* vp = tempFilledVertexArray + tempFilledVertexCount;
-	TempIndexGl*  ip = tempFilledIndexArray + tempFilledIndexCount;
-	
-	ip[0] = tempFilledVertexCount; 
-	ip[1] = tempFilledVertexCount+1; 
-	ip[2] = tempFilledVertexCount+2;
-	vp[0].pos = p0; vp[0].color = col;
-	vp[1].pos = p1; vp[1].color = col;
-	vp[2].pos = p2; vp[2].color = col;
-	
-	tempFilledVertexCount += 3;
-	tempFilledIndexCount  += 3;
+    if(color.a == 0) return;
+    
+    u32 col = color.rgba;
+    Mesh::Vertex* vp = tempFilledVertexArray + tempFilledVertexCount;
+    TempIndexGl*  ip = tempFilledIndexArray + tempFilledIndexCount;
+    
+    ip[0] = tempFilledVertexCount; 
+    ip[1] = tempFilledVertexCount+1; 
+    ip[2] = tempFilledVertexCount+2;
+    vp[0].pos = p0; vp[0].color = col;
+    vp[1].pos = p1; vp[1].color = col;
+    vp[2].pos = p2; vp[2].color = col;
+    
+    tempFilledVertexCount += 3;
+    tempFilledIndexCount  += 3;
 }
 
 void Render::
 DrawQuad(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color color){
-	if(color.a == 0) return;
-	DrawLine(p0, p1, color);
-	DrawLine(p1, p2, color);
-	DrawLine(p2, p3, color);
-	DrawLine(p3, p0, color);
+    if(color.a == 0) return;
+    DrawLine(p0, p1, color);
+    DrawLine(p1, p2, color);
+    DrawLine(p2, p3, color);
+    DrawLine(p3, p0, color);
 }
 
 inline void Render::
 DrawQuadFilled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color color){
-	if(color.a == 0) return;
-	DrawTriangleFilled(p0, p1, p2, color);
-	DrawTriangleFilled(p0, p2, p3, color);
+    if(color.a == 0) return;
+    DrawTriangleFilled(p0, p1, p2, color);
+    DrawTriangleFilled(p0, p2, p3, color);
 }
 
 void Render::
 DrawPoly(array<vec3>& points, color color){
-	Assert(points.count > 2);
-	if(color.a == 0) return;
-	for(int i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
-	DrawLine(points[points.count-2], points[points.count-1], color);
+    Assert(points.count > 2);
+    if(color.a == 0) return;
+    for(int i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
+    DrawLine(points[points.count-2], points[points.count-1], color);
 }
 
 void Render::
 DrawPolyFilled(array<vec3>& points, color color){
-	Assert(points.count > 2);
-	if(color.a == 0) return;
-	for(int i=2; i<points.count-1; ++i) DrawTriangleFilled(points[i-2], points[i-1], points[i], color);
-	DrawTriangle(points[points.count-3], points[points.count-2], points[points.count-1], color);
+    Assert(points.count > 2);
+    if(color.a == 0) return;
+    for(int i=2; i<points.count-1; ++i) DrawTriangleFilled(points[i-2], points[i-1], points[i], color);
+    DrawTriangle(points[points.count-3], points[points.count-2], points[points.count-1], color);
 }
 
 void Render::
 DrawBox(mat4 transform, color color){
-	if(color.a == 0) return;
-	
-	vec3 p(0.5f, 0.5f, 0.5f);
-	vec3 points[8] = {
-		{-p.x, p.y, p.z},{-p.x,-p.y, p.z},{-p.x, p.y,-p.z},{-p.x,-p.y,-p.z},
-		{ p.x, p.y, p.z},{ p.x,-p.y, p.z},{ p.x, p.y,-p.z},{ p.x,-p.y,-p.z},
-	};
-	forI(8){ points[i] = points[i] * transform; }
-	DrawLine(points[3], points[1], color); DrawLine(points[3], points[2], color); DrawLine(points[3], points[7], color);
-	DrawLine(points[0], points[1], color); DrawLine(points[0], points[2], color); DrawLine(points[0], points[4], color);
-	DrawLine(points[5], points[1], color); DrawLine(points[5], points[4], color); DrawLine(points[5], points[7], color);
-	DrawLine(points[6], points[2], color); DrawLine(points[6], points[4], color); DrawLine(points[6], points[7], color);
+    if(color.a == 0) return;
+    
+    vec3 p(0.5f, 0.5f, 0.5f);
+    vec3 points[8] = {
+        {-p.x, p.y, p.z},{-p.x,-p.y, p.z},{-p.x, p.y,-p.z},{-p.x,-p.y,-p.z},
+        { p.x, p.y, p.z},{ p.x,-p.y, p.z},{ p.x, p.y,-p.z},{ p.x,-p.y,-p.z},
+    };
+    forI(8){ points[i] = points[i] * transform; }
+    DrawLine(points[3], points[1], color); DrawLine(points[3], points[2], color); DrawLine(points[3], points[7], color);
+    DrawLine(points[0], points[1], color); DrawLine(points[0], points[2], color); DrawLine(points[0], points[4], color);
+    DrawLine(points[5], points[1], color); DrawLine(points[5], points[4], color); DrawLine(points[5], points[7], color);
+    DrawLine(points[6], points[2], color); DrawLine(points[6], points[4], color); DrawLine(points[6], points[7], color);
 }
 
 void Render::
 DrawBoxFilled(mat4 transform, color color){
-	if(color.a == 0) return;
-	
-	vec3 p(0.5f, 0.5f, 0.5f);
-	vec3 points[8] = {
-		{-p.x, p.y, p.z},{-p.x,-p.y, p.z},{-p.x, p.y,-p.z},{-p.x,-p.y,-p.z},
-		{ p.x, p.y, p.z},{ p.x,-p.y, p.z},{ p.x, p.y,-p.z},{ p.x,-p.y,-p.z},
-	};
-	forI(8){ points[i] = points[i] * transform; }
-	DrawTriangleFilled(points[4], points[2], points[0], color); DrawTriangleFilled(points[4], points[6], points[2], color);
-	DrawTriangleFilled(points[2], points[7], points[3], color); DrawTriangleFilled(points[2], points[6], points[7], color);
-	DrawTriangleFilled(points[6], points[5], points[7], color); DrawTriangleFilled(points[6], points[4], points[5], color);
-	DrawTriangleFilled(points[1], points[7], points[5], color); DrawTriangleFilled(points[1], points[3], points[7], color);
-	DrawTriangleFilled(points[0], points[3], points[1], color); DrawTriangleFilled(points[0], points[2], points[3], color);
-	DrawTriangleFilled(points[4], points[1], points[5], color); DrawTriangleFilled(points[4], points[0], points[1], color);
+    if(color.a == 0) return;
+    
+    vec3 p(0.5f, 0.5f, 0.5f);
+    vec3 points[8] = {
+        {-p.x, p.y, p.z},{-p.x,-p.y, p.z},{-p.x, p.y,-p.z},{-p.x,-p.y,-p.z},
+        { p.x, p.y, p.z},{ p.x,-p.y, p.z},{ p.x, p.y,-p.z},{ p.x,-p.y,-p.z},
+    };
+    forI(8){ points[i] = points[i] * transform; }
+    DrawTriangleFilled(points[4], points[2], points[0], color); DrawTriangleFilled(points[4], points[6], points[2], color);
+    DrawTriangleFilled(points[2], points[7], points[3], color); DrawTriangleFilled(points[2], points[6], points[7], color);
+    DrawTriangleFilled(points[6], points[5], points[7], color); DrawTriangleFilled(points[6], points[4], points[5], color);
+    DrawTriangleFilled(points[1], points[7], points[5], color); DrawTriangleFilled(points[1], points[3], points[7], color);
+    DrawTriangleFilled(points[0], points[3], points[1], color); DrawTriangleFilled(points[0], points[2], points[3], color);
+    DrawTriangleFilled(points[4], points[1], points[5], color); DrawTriangleFilled(points[4], points[0], points[1], color);
 }
 
 void Render::
 DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color color){
-	if(color.a == 0) return;
-	
-	f32 y = tanf(RADIANS(fovx/2.0f));
-	f32 x = y*aspectRatio;
-	f32 nearX = x*nearZ, farX = x*farZ;
-	f32 nearY = y*nearZ, farY = y*farZ;
-	vec4 faces[8] = {
-		{nearX,nearY,nearZ,1}, {-nearX,nearY,nearZ,1}, {nearX,-nearY,nearZ,1}, {-nearX,-nearY,nearZ,1},
-		{farX, farY, farZ, 1}, {-farX, farY, farZ, 1}, {farX, -farY, farZ, 1}, {-farX, -farY, farZ, 1},
-	};
-	
-	mat4 mat = Math::LookAtMatrix(position, target);
-	vec3 v[8];
-	forI(8){ vec4 temp = faces[i]*mat; v[i].x = temp.x/temp.w; v[i].y = temp.y/temp.w; v[i].z = temp.z/temp.w; }
-	
-	DrawLine(v[0], v[1], color); DrawLine(v[0], v[2], color); DrawLine(v[3], v[1], color); DrawLine(v[3], v[2], color);
-	DrawLine(v[4], v[5], color); DrawLine(v[4], v[6], color); DrawLine(v[7], v[5], color); DrawLine(v[7], v[6], color);
+    if(color.a == 0) return;
+    
+    f32 y = tanf(RADIANS(fovx/2.0f));
+    f32 x = y*aspectRatio;
+    f32 nearX = x*nearZ, farX = x*farZ;
+    f32 nearY = y*nearZ, farY = y*farZ;
+    vec4 faces[8] = {
+        {nearX,nearY,nearZ,1}, {-nearX,nearY,nearZ,1}, {nearX,-nearY,nearZ,1}, {-nearX,-nearY,nearZ,1},
+        {farX, farY, farZ, 1}, {-farX, farY, farZ, 1}, {farX, -farY, farZ, 1}, {-farX, -farY, farZ, 1},
+    };
+    
+    mat4 mat = Math::LookAtMatrix(position, target);
+    vec3 v[8];
+    forI(8){ vec4 temp = faces[i]*mat; v[i].x = temp.x/temp.w; v[i].y = temp.y/temp.w; v[i].z = temp.z/temp.w; }
+    
+    DrawLine(v[0], v[1], color); DrawLine(v[0], v[2], color); DrawLine(v[3], v[1], color); DrawLine(v[3], v[2], color);
+    DrawLine(v[4], v[5], color); DrawLine(v[4], v[6], color); DrawLine(v[7], v[5], color); DrawLine(v[7], v[6], color);
     DrawLine(v[0], v[4], color); DrawLine(v[1], v[5], color); DrawLine(v[2], v[6], color); DrawLine(v[3], v[7], color);
 }
 
@@ -1062,8 +1137,8 @@ UpdateCameraProjectionMatrix(mat4 m){
 void Render::
 UseDefaultViewProjMatrix(vec3 position, vec3 rotation){
     vec3 forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
-	uboVS.values.view = Math::LookAtMatrix(position, position + forward).Inverse();
-	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix(width, height, 90, 1000, 0.1);
+    uboVS.values.view = Math::LookAtMatrix(position, position + forward).Inverse();
+    uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix(width, height, 90, 1000, 0.1);
     uboVS.values.proj.data[5] = -1*uboVS.values.proj.data[5]; //OpenGL is inverted
 }
 
@@ -1104,8 +1179,8 @@ RemakeTextures(){ //!Incomplete
 void Render::
 Init(){
     //// load RenderSettings ////
-	LoadSettings();
-	if(settings.debugging && settings.printf) settings.loggingLevel = 4;
+    LoadSettings();
+    if(settings.debugging && settings.printf) settings.loggingLevel = 4;
     
     //// setup debug callback ////
     gladSetGLPostCallback(DebugPostCallback);
@@ -1132,12 +1207,12 @@ Update(){
     
     //// handle widow resize ////
     if(DeshWindow->resized) remake_window = true;
-	if(remake_window){
-		glfwGetFramebufferSize(DeshWindow->window, &width, &height);
-		if(width <= 0 || height <= 0){ ImGui::EndFrame(); return; }
+    if(remake_window){
+        glfwGetFramebufferSize(DeshWindow->window, &width, &height);
+        if(width <= 0 || height <= 0){ ImGui::EndFrame(); return; }
         glViewport(0,0,width,height);
-		remake_window = false;
-	}
+        remake_window = false;
+    }
     
     //// setup stuff ////
     UpdateUniformBuffers();
@@ -1150,8 +1225,12 @@ Update(){
     glClear(GL_COLOR_BUFFER_BIT);
     
     //draw meshes
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(glTextures[0].type, glTextures[0].handle);
+    
     glBindVertexArray(meshBuffers.vao_handle);
     glUseProgram(programs.null.handle);
+    glUniform1i(glGetUniformLocation(programs.null.handle,"nullSampler"),0);
     forI(modelCmdCount){ //TODO(delle) materials/textures
         glBindBuffer(GL_UNIFORM_BUFFER, pushVS.handle);
         glBufferData(GL_UNIFORM_BUFFER, sizeof(mat4), &modelCmdArray[i].matrix, GL_DYNAMIC_DRAW);
