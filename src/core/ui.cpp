@@ -88,9 +88,7 @@ local u32 activeId = -1; //the id of an active widget eg. input text
 
 
 //row variables
-local u32        rowCount     = 0;
-local u32        rowItemsLeft = 0;
-local UIRowFlags rowFlags     = 0;
+local UIRow row;
 
 
 //helper defines
@@ -195,56 +193,85 @@ UIItem* GetLastItem() {
 }
 
 
-void UI::Row(u32 num_items, UIRowFlags flags){
+void UI::Row(u32 columns, UIRowFlags flags){
+	Assert(!row.columns.count, "Attempted to start a new Row without finishing one already in progress!");
 	//TODO(sushi) when we have more row flags, check for mutually exclusive flags here
-	rowCount = num_items;
-	rowItemsLeft = num_items;
-	rowFlags = flags;
+	row.flags = flags;
+	row.itemsLeft = columns;
+	row.numcolumns = columns;
+	forI(columns) row.columns.add(make_pair<u32, f32>(0, 0));
+}
+
+void UI::Row(u32 columns, f32 rowHeight, UIRowFlags flags) {
+	Assert(!row.columns.count, "Attempted to start a new Row without finishing one already in progress!");
+	//TODO(sushi) when we have more row flags, check for mutually exclusive flags here
+	row.flags = flags;
+	row.itemsLeft = columns;
+	row.columns = columns;
+	row.height = rowHeight;
+	forI(columns) row.columns.add(make_pair<u32, f32>(0, 0));
+}
+
+void UI::RowSetupColumn(u32 column, f32 width){
+
+}
+
+inline void PositionRowedItems() {
+	
+	switch (row.flags) {
+		case 0: {
+			//by default, we align items without worrying about sizes of cells or the alignment of items within them
+
+			//for(int i = 0; i < row.columns.size())
+
+
+			for (int i = 1; i < row.columns; i++) {
+				row.items[i]->position.y = row.items[i - 1]->position.y;
+				row.items[i]->position.x = row.items[i - 1]->position.x + row.items[i - 1]->size.x + style.itemSpacing.x;
+			}
+
+			UIItem* item = row.items[0];
+
+			curwin->cursor = vec2{ 0, item->position.y + item->size.y + style.itemSpacing.y - item->style.windowPadding.y + curwin->scroll.y };
+
+			row.items.clear();
+			row = UIRow{ 0 };
+		}break;
+
+		
+
+	}
+	
 }
 
 //internal master cursor controller
-//  an attempt to centralize all cursor movement
-//  this should be called with a requested new position and the function will decide
-//  wether or not the cursor should be moved there or somewhere else based on certain conditions
-//  such as if we're placing items in a row
-//  it also (for now) repositions items into a row if that's supposed to be done
-//TODO(sushi) this should probably take in an item and decide how to move the cursor that way
-//			  that way cursor control is actually centralized here, whereas right now we are still determining how to move the cursor outside of this function
-inline void AdvanceCursor(vec2 nupos){
+//  this is an attempt to centralize what happens at the end of each item function
+//  it serves a couple of purposes
+//	1. move the cursor relative to the item just created
+//  2. if we are in the process of gathering items for a row, we decrement the itemsLeft variable
+//  3. if a row has gathered the amount of items to be aligned, we align them here
+//  (list to be expanded, probably)
+// 
+//  i expect this to fall through at some point, as not all items are created equal and may need to
+//  have different things happen after its creation, which could be handled as special cases within
+//  the function itself.
+inline void AdvanceCursor(UIItem& itemmade, bool moveCursor = 1){
 	//if we're finished setting up a row we position everything according to the flag
-	if (rowCount && !rowItemsLeft) {
-        
-		array<UIItem*> itemsToAlign;
-		
-        //TODO(sushi) find a way to combine these two for loops
-		//we have to look back and filter out any non-rowed item the user may have 
-		//used during the creation of the row such as lines or rectangles
-		for(int idx = 1; rowCount; idx++){
-			UIItem* item = &curwin->items[curwin->items.count - idx];
-			if (item->type != UIItemType_Abstract) {
-				itemsToAlign.insert(item,0);
-				rowCount--;
-			}
-		}
-        
-		for (int i = 1; i < itemsToAlign.count; i++) {
-			itemsToAlign[i]->position.y = itemsToAlign[i - 1]->position.y;
-			itemsToAlign[i]->position.x = itemsToAlign[i-1]->position.x + itemsToAlign[i-1]->size.x + style.itemSpacing.x;
-		}
-        
-		UIItem* item = itemsToAlign[0];
-        
-		curwin->cursor = vec2{ 0, item->position.y + item->size.y + style.itemSpacing.y - item->style.windowPadding.y + curwin->scroll.y };
-        
-		rowCount = 0;
+	if (row.columns && !row.itemsLeft) {
+		PositionRowedItems();
+		return;
 	}
-	else {
-		curwin->cursor = nupos;
+	else if (row.columns && row.itemsLeft) {
+		//if we are in the process of making a Row, decrement the itemsLeft var and add the item
+		row.items.add(&itemmade);
+		row.itemsLeft--;
 	}
+	//we always move the cursor unless we have just finished a row.
+	curwin->cursor = vec2{ 0, itemmade.position.y + itemmade.size.y + style.itemSpacing.y };
 }
 
 //function for getting the position of a new item based on style, so the long string of additions
-//is centralized for new additions to ever be made and so that i dont have to keep writing it :)
+//is centralized for new additions, if ever made, and so that i dont have to keep writing it :)
 inline vec2 PositionForNewItem() {
 	return curwin->cursor + style.windowPadding - curwin->scroll;
 }
@@ -423,11 +450,7 @@ inline local void WrapText(const char* in, vec2 pos, color color, bool move_curs
 	CalcItemSize(item);
 	curwin->items.add(item);
     
-	if (rowCount && rowItemsLeft) rowItemsLeft--;
-	if (move_cursor) {
-		workcur -= style.windowPadding - curwin->scroll;
-		AdvanceCursor(vec2{ curwin->cursor.x, curwin->cursor.y + item.size.y + style.itemSpacing.y });
-	}
+	AdvanceCursor(item, move_cursor);
     
 	NextItemSize = vec2{ -1, 0 };
 }
@@ -436,15 +459,14 @@ inline local void WrapText(const char* in, vec2 pos, color color, bool move_curs
 void UI::Text(const char* text, UITextFlags flags) {
 	if (flags & UITextFlags_NoWrap) {
 		UIItem item{ UIItemType_Text, curwin->cursor, style };
-		item.position = curwin->cursor + style.windowPadding - curwin->scroll;
+		item.position = PositionForNewItem();
         
 		if (NextItemSize.x != -1) item.size = NextItemSize;
 		else                      item.size = UI::CalcTextSize(text);
 		
 		TextCall(text, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
-		if (rowCount && rowItemsLeft) rowItemsLeft--;
 		curwin->items.add(item);
-		AdvanceCursor(vec2{ 0, curwin->cury + style.font->height + style.itemSpacing.y });
+		AdvanceCursor(item);
 	}
 	else {
 		WrapText(text, curwin->cursor, style.colors[UIStyleCol_Text]);
@@ -476,9 +498,8 @@ void UI::Text(const char* text, color color, UITextFlags flags) {
 		else                      item.size = UI::CalcTextSize(text);
         
 		TextCall(text, vec2{ 0,0 }, color, item);
-		if (rowCount && rowItemsLeft) rowItemsLeft--;
 		curwin->items.add(item);
-		AdvanceCursor(vec2{ 0, curwin->cury + style.font->height + style.itemSpacing.y });
+		AdvanceCursor(item);
 	}
 	else {
 		WrapText(text, curwin->cursor, color);
@@ -540,10 +561,7 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 0) {
 
 	curwin->items.add(item);
 
-	if (rowCount && rowItemsLeft) rowItemsLeft--;
-	if (move_cursor) {
-		AdvanceCursor(vec2{ curwin->curx,  curwin->cursor.y + item.size.y + style.itemSpacing.y });
-	}
+	AdvanceCursor(item, move_cursor);
 
 	//TODO(sushi) add a flag for prevent button presses when window is not focused
 	if (/*curwin->focused &&*/ Math::PointInRectangle(DeshInput->mousePos, curwin->position + pos, item.size) && DeshInput->LMousePressed()) return true;
@@ -569,7 +587,7 @@ bool UI::Button(const char* text, vec2 pos, color color) {
 void UI::Checkbox(string label, bool* b) {
 	UIItem item{ UIItemType_Checkbox, curwin->cursor, style };
 
-	vec2 boxpos = curwin->cursor + style.windowPadding - curwin->scroll;
+	vec2 boxpos = PositionForNewItem();
 	vec2 boxsiz = style.checkboxSize;
 
 	item.position = boxpos;
@@ -607,8 +625,8 @@ void UI::Checkbox(string label, bool* b) {
 	if (DeshInput->LMousePressed() && Math::PointInRectangle(DeshInput->mousePos, curwin->position + boxpos, boxsiz))
 		*b = !*b;
 
-	curwin->cury += boxsiz.y + style.itemSpacing.y;
 	curwin->items.add(item);
+	AdvanceCursor(item);
 }
 
 //@InputText
@@ -660,10 +678,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		if (NextActive || Math::PointInRectangle(DeshInput->mousePos, curwin->position + position, dim)) {
 			activeId = state->id;
 			NextActive = 0;
-		}
-		else {
-			if (activeId == state->id) activeId = -1;
-		}
+		} else if (activeId == state->id) activeId = -1;
 	}
 
 	bool bufferChanged = 0;
@@ -846,11 +861,8 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	}
 
 	curwin->items.add(item);
-	if (rowCount && rowItemsLeft) rowItemsLeft--;
-	if (moveCursor) {
-		AdvanceCursor(vec2{ 0,  curwin->cursor.y + dim.y + style.itemSpacing.y });
-	}
-
+	AdvanceCursor(item, moveCursor);
+	
 	if (flags & UIInputTextFlags_EnterReturnsTrue && DeshInput->KeyPressedAnyMod(Key::ENTER) || DeshInput->KeyPressedAnyMod(Key::NUMPADENTER)) {
 		return true;
 	}
@@ -862,19 +874,19 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 }
 
 bool UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextFlags flags) {
-	vec2 position = curwin->cursor + style.windowPadding - curwin->scroll;
+	vec2 position = PositionForNewItem();
 
 	return InputTextCall(label, buffer, buffSize, position, nullptr, flags, 1);
 }
 
 bool UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextCallback callback, UIInputTextFlags flags) {
-	vec2 position = curwin->cursor + style.windowPadding - curwin->scroll;
+	vec2 position = PositionForNewItem();
 
 	return InputTextCall(label, buffer, buffSize, position, callback, flags, 1);
 }
 
 bool UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
-	vec2 position = curwin->cursor + style.windowPadding - curwin->scroll;
+	vec2 position = PositionForNewItem();
 
 	if (InputTextCall(label, buffer, buffSize, position, nullptr, flags, 1)) {
 		getInputTextState = inputTexts.at(label);
@@ -915,7 +927,7 @@ bool UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIIn
 //if begin window is called with a name that was already called before it will work with
 //the data that window previously had
 void UI::BeginWindow(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
-	Assert(!rowCount, "Attempted to start a window without satifying a row quota (holy shit reword this)");
+	Assert(!row.columns, "Attempted to start a window without satifying a row quota (holy shit reword this)");
     
 	//save previous window on stack
 	windowStack.add(curwin); 
@@ -1058,7 +1070,7 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
 
 void UI::EndWindow() {
 	Assert(windowStack.size() > 1, "Attempted to end the base window");
-	Assert(!rowCount, "Attempted to end a window without satifying a row quota (holy shit reword this)");
+	Assert(!row.columns, "Attempted to end a window without satifying a row quota (holy shit reword this)");
     
 	UIItem item{ UIItemType_Base, curwin->cursor, style };
 	item.position = vec2::ZERO;
