@@ -19,7 +19,7 @@ void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, Display
 	glfwWindowHint(GLFW_CENTER_CURSOR,           GLFW_FALSE);
 	glfwWindowHint(GLFW_VISIBLE,                 GLFW_FALSE);
 	glfwWindowHint(GLFW_FOCUS_ON_SHOW,           GLFW_FALSE);
-	glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+	glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_FALSE);
     
 #if   DESHI_VULKAN
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

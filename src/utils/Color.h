@@ -15,30 +15,30 @@
 #define PackColorU32(R,G,B,A) PackU32(A,B,G,R)
 
 enum Colors_ : u32{
-    Color_NONE  = PackColorU32(  0,  0,  0,  0),
-    Color_White = PackColorU32(255,255,255,255),
-    Color_Black = PackColorU32(  0,  0,  0,255),
-    Color_Grey  = PackColorU32(128,128,128,255),
-    Color_Red     = PackColorU32(255,  0,  0,255),
-    Color_Green   = PackColorU32(  0,255,  0,255),
-    Color_Blue    = PackColorU32(  0,  0,255,255),
-    Color_Yellow  = PackColorU32(255,255,  0,255),
-    Color_Cyan    = PackColorU32(  0,255,255,255),
-    Color_Magenta = PackColorU32(255,  0,255,255),
-    Color_LightGrey    = PackColorU32(192,192,192,255),
-    Color_LightRed     = PackColorU32(255,128,128,255),
-    Color_LightGreen   = PackColorU32(128,255,128,255),
-    Color_LightBlue    = PackColorU32(128,128,255,255),
-    Color_LightYellow  = PackColorU32(245,234, 97,255),
-    Color_LightCyan    = PackColorU32(224,255,255,255),
-    Color_LightMagenta = PackColorU32(204,153,204,255),
-    Color_DarkGrey    = PackColorU32( 64, 64, 64,255),
-    Color_DarkRed     = PackColorU32(128,  0,  0,255),
-    Color_DarkGreen   = PackColorU32(  0,128,  0,255),
-    Color_DarkBlue    = PackColorU32(  0,  0,128,255),
-    Color_DarkYellow  = PackColorU32(128,128,  0,255),
-    Color_DarkCyan    = PackColorU32(  0,128,128,255),
-    Color_DarkMagenta = PackColorU32(128,  0,128,255),
+    Color_NONE            = PackColorU32(  0,  0,  0,  0),
+    Color_White           = PackColorU32(255,255,255,255),
+    Color_Black           = PackColorU32(  0,  0,  0,255),
+    Color_Grey            = PackColorU32(128,128,128,255),
+    Color_Red             = PackColorU32(255,  0,  0,255),
+    Color_Green           = PackColorU32(  0,255,  0,255),
+    Color_Blue            = PackColorU32(  0,  0,255,255),
+    Color_Yellow          = PackColorU32(255,255,  0,255),
+    Color_Cyan            = PackColorU32(  0,255,255,255),
+    Color_Magenta         = PackColorU32(255,  0,255,255),
+    Color_LightGrey       = PackColorU32(192,192,192,255),
+    Color_LightRed        = PackColorU32(255,128,128,255),
+    Color_LightGreen      = PackColorU32(128,255,128,255),
+    Color_LightBlue       = PackColorU32(128,128,255,255),
+    Color_LightYellow     = PackColorU32(245,234, 97,255),
+    Color_LightCyan       = PackColorU32(224,255,255,255),
+    Color_LightMagenta    = PackColorU32(204,153,204,255),
+    Color_DarkGrey        = PackColorU32( 64, 64, 64,255),
+    Color_DarkRed         = PackColorU32(128,  0,  0,255),
+    Color_DarkGreen       = PackColorU32(  0,128,  0,255),
+    Color_DarkBlue        = PackColorU32(  0,  0,128,255),
+    Color_DarkYellow      = PackColorU32(128,128,  0,255),
+    Color_DarkCyan        = PackColorU32(  0,128,128,255),
+    Color_DarkMagenta     = PackColorU32(128,  0,128,255),
     Color_VeryDarkGrey    = PackColorU32( 32, 32, 32,255),
     Color_VeryDarkRed     = PackColorU32( 64,  0,  0,255),
     Color_VeryDarkGreen   = PackColorU32(  0, 64,  0,255),
@@ -88,8 +88,8 @@ inline color::color(u8 _r, u8 _g, u8 _b, u8 _a){
 }
 
 inline color::color(u32 _rgba){
-    //rgba = ByteSwap32(_rgba);
-    rgba = _rgba;
+    rgba = ByteSwap32(_rgba);
+   // rgba = _rgba;
 }
 
 ////////////////////

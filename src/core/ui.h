@@ -45,6 +45,7 @@ enum UIStyleVar : u32 {
 	UIStyleVar_CheckboxSize,        // default vec2(10, 10)      
 	UIStyleVar_CheckboxFillPadding, // default 2                 how far from the edge a checkbox's true filling is padding
 	UIStyleVar_InputTextTextAlign,  // default vec2(0, 0.5)      how text is aligned within InputText boxes
+	UIStyleVar_ButtonTextAlign,     // default vec2(0.5, 0.5)    how text is aligned within buttons
 	UIStyleVar_Font,			    // default "gohufont-11.bdf" currently not changable, as we dont support loading multiple fonts yet
 	UIStyleVar_COUNT
 };
@@ -84,6 +85,7 @@ struct UIStyle {
 	vec2  checkboxSize;
 	float checkboxFillPadding;
 	vec2  inputTextTextAlign;
+	vec2  buttonTextAlign;
 	Font* font; //this is a pointer until I fix font to not store so much shit
 	color colors[UIStyleCol_COUNT];
 };
@@ -214,12 +216,12 @@ enum UIItemType : u32 {
 // this is useful for when we have to look back at previous items to position a new one
 // 
 // this does have a drawback, in our final drawing loop we have to add one more for loop to loop
-// over all items and then their draw calls.
-// however this method of storing things shoudl help with positioning items and such later on
+// over all items and then their draw calls. it also probably eats up a good bit more memory, considering
+// im saving the state of style everytime you make an item, this could maybe be reduced by only storing important
+// things instead
 struct UIItem {
 	//these 3 elements can always be initalized by simply doing
 	//UIItem item{ UIItemType_TYPE, curwin->cursor, style };
-	//when you create the item in the cpp
 	UIItemType type;
 	vec2       initialCurPos; //cursor position before this item moved it 
 	UIStyle    style;         //style at the time of making the item
@@ -275,6 +277,8 @@ struct UIWindow {
 	
 	bool hovered = false;
 	bool titleHovered = false;
+
+	bool focused = false;
 	
 	bool minimized = false;
 	bool hidden = false;
@@ -314,7 +318,7 @@ namespace UI {
 	//Row commands
 	void Row(u32 num_items, UIRowFlags flags = 0);
     
-	//primitives
+	//primitive items
 	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
 	void RectFilled(vec2 pos, vec2 dimen, color color = Color_White);
     
