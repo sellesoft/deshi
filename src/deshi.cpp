@@ -42,8 +42,6 @@ implement filtering console buffer by function and file name (add __FILENAME__ a
 Fun TODOs
 ---------
 look into implementing Lua (or finish su and make it an embeddable language!)
-look into making a function that takes in the types on a component and formats binary for saving and what not 
-____like what were currently doing for typeHeader in Admin Save()
 write a preprocessing/postprocessing compiler that makes saving easier
 hotloadable UI
 
@@ -53,7 +51,6 @@ add functions and members similar to what glsl/glm has where you can do stuff li
 ____v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
 ____you probably just need to add a vec2/3 for each permutation of each vector
 ____glm/detail/_swizzle.hpp
-cleanup math library (remove redundant/old things, make functions more consistent, etc.)
 add quaternions and converions between them and other linear algebra primitives
 
 Render TODOs
@@ -64,7 +61,7 @@ fix directional shadow mapping's (projection?) errors
 rework lights
 add omnidirectional shadow mapping
 add not-on-screen object culling thru mesh AABBs
-add front-to-back sorting for perf gain (and maybe transparency?)
+add front-to-back sorting for perf gain and transparency?
 delete shader .spv if failed to compile it after printing error messages
 setup more generalized material/pipeline creation
 ____specialization constants
@@ -97,12 +94,10 @@ turn ShowDebugWindowOf into a general metrics/debug window like imgui once we ha
 add functionality for resetting certain maps like windows and inputtexts
 ____maybe even removing certain labels from them
 tabs (vertical and horizontal)
-buttons
 child windows
 add some markup to text like underlining, bold, etc.
 add a UI popup when reloading shaders
 add UI color palettes for easy color changing
-redo debug bar to be more informative and have different modes
 
 Ungrouped TODOs
 ---------------
@@ -112,7 +107,6 @@ add a file abstraction so file parsing is simple and not so explicitly handed in
 add a logging core separate from the console
 cleanup utils classes so that they are declaration at top and definition below
 centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
-update imgui (so we can get disabled items/text)
 convert std::string to our string throughout the project, primarily .str() methods so i can fully convert TOSTRING to use our string
 make a dynamic timers array in time.h for cleaner timer stuffs
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
