@@ -545,7 +545,8 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 0) {
 		AdvanceCursor(vec2{ curwin->curx,  curwin->cursor.y + item.size.y + style.itemSpacing.y });
 	}
 
-	if (curwin->focused && Math::PointInRectangle(DeshInput->mousePos, curwin->position + pos, item.size) && DeshInput->LMousePressed()) return true;
+	//TODO(sushi) add a flag for prevent button presses when window is not focused
+	if (/*curwin->focused &&*/ Math::PointInRectangle(DeshInput->mousePos, curwin->position + pos, item.size) && DeshInput->LMousePressed()) return true;
 	else return false;
 }
 

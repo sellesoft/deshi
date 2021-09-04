@@ -1,5 +1,6 @@
 local bool _resized = false;
 local int _width, _height, _x, _y;
+local int opengl_version;
 
 void glfwError(int id, const char* description){
 	printf("[GLFW] Error %d: %s\n", id, description);
@@ -37,9 +38,9 @@ void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, Display
     
 #if DESHI_OPENGL
     glfwMakeContextCurrent(window);
-    int gl_version = gladLoadGL(glfwGetProcAddress);
-    if(gl_version == 0){ printf("[GLAD] Failed to load OpenGL!"); glfwTerminate(); return; }
-    printf("[GLAD] Loaded OpenGL %d.%d\n", GLAD_VERSION_MAJOR(gl_version), GLAD_VERSION_MINOR(gl_version));
+    opengl_version = gladLoadGL(glfwGetProcAddress);
+    if(opengl_version == 0){ printf("[GLAD] Failed to load OpenGL!"); glfwTerminate(); return; }
+    printf("[GLAD] Loaded OpenGL %d.%d\n", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
 #endif //DESHI_OPENGL
 	
 	//set initial window size
