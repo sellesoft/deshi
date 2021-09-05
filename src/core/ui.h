@@ -15,7 +15,8 @@
   some ui design guidelines im going to collect:
 
 	ui should never add items to a window internally, only the user adds items, and interally
-	we add drawcalls to build the items. basically, never use items to build other items
+	we add drawcalls to build the items that the user requests. 
+	basically, never use items to build other items.
 
 
 
@@ -46,6 +47,7 @@ enum UIStyleVar : u32 {
 	UIStyleVar_CheckboxFillPadding, // default 2                 how far from the edge a checkbox's true filling is padding
 	UIStyleVar_InputTextTextAlign,  // default vec2(0, 0.5)      how text is aligned within InputText boxes
 	UIStyleVar_ButtonTextAlign,     // default vec2(0.5, 0.5)    how text is aligned within buttons
+	UIStyleVar_RowItemAlign,        // default vec2(0.5, 0.5)    determines how rows align their items within their cells
 	UIStyleVar_Font,			    // default "gohufont-11.bdf" currently not changable, as we dont support loading multiple fonts yet
 	UIStyleVar_COUNT
 };
@@ -72,6 +74,7 @@ enum UIStyleCol : u32 {
 	UIStyleCol_FrameBgActive,
 	UIStyleCol_TitleBg,
 	UIStyleCol_TitleBgActive,
+	UIStyleCol_RowCellBg,
 	UIStyleCol_COUNT
 };
 
@@ -86,6 +89,7 @@ struct UIStyle {
 	float checkboxFillPadding;
 	vec2  inputTextTextAlign;
 	vec2  buttonTextAlign;
+	vec2  rowItemAlign;
 	Font* font; //this is a pointer until I fix font to not store so much shit
 	color colors[UIStyleCol_COUNT];
 };
@@ -93,7 +97,6 @@ struct UIStyle {
 enum UITextFlags_ {
 	UITextFlags_None = 0,
 	UITextFlags_NoWrap = 1 << 0,
-	//UITextFlags_PositionAbsolute = 
 }; typedef u32 UITextFlags;
 
 enum UIWindowFlags_ {
@@ -229,7 +232,8 @@ struct UIItem {
 	
 	vec2 position; //relative to the window its being held in
 	vec2 size;
-    
+
+
 	//all draw command positions are relative to the items position
 	array<UIDrawCmd> drawCmds;
 };
@@ -298,11 +302,50 @@ struct UIWindow {
 
 enum UIRowFlags_ {
 	UIRowFlags_NONE = 0,
-	UIRowFlags_Fit  = 1 << 0,
-    
+	UIRowFlags_FitWidthOfWindow   = 1 << 0,  
+	UIRowFlags_DrawCellBackground = 1 << 1,
+	UIRowFlags_CellBorderTop      = 1 << 2,
+	UIRowFlags_CellBorderBottom   = 1 << 3,
+	UIRowFlags_CellBorderLeft     = 1 << 4,
+	UIRowFlags_CellBorderRight    = 1 << 5,
+	UIRowFlags_CallBorderFull     = UIRowFlags_CellBorderTop | UIRowFlags_CellBorderBottom | UIRowFlags_CellBorderLeft | UIRowFlags_CellBorderRight,
+
 }; typedef u32 UIRowFlags;
 
+//for use internally only!
+//maybe i should move it to the cpp file
+// 
+// struct for organizing items to be aligned in a row
+//
+// rows of items can be made by calling Row(columns, ...)
+// you can use this to make tables by ensuring that each column is the same width
+// for several Row() calls.
+// 
+// however it's primary purpose is to allow easy placing of items on the same line
+// so consecutive Rows do not need to be aligned in anyway, more advanced table stuff will
+// be made into an actual Table item later on
+//
+// Row()'s default behavoir though is to act like ImGui's same line, where it simply aligns items
+// as if you were drawing them in a Row, left aligned, rather than new-lining them each time.
+// we have a SameLine() as well, but this makes it easy to same line several consecutive things 
+// rather than calling SameLine() everytime
+// 
+// the alignment of items within cells can be adjusted by changing UIStyleVar_RowItemAlign
+// this also works in between items as each item stores this variable so you can have one column of items
+// aligned different than the others
+struct UIRow {
+	u32 numcolumns = 0;
+	UIRowFlags flags = 0;
 
+	f32 height = 0;
+
+	u32 itemsLeft = 0;
+
+	u32 currentColumn = 0;
+
+	array<UIItem*> items;
+	array<pair<u32, f32>> columns; //stores index and width of the column
+};
 
 namespace UI {
 	
@@ -316,7 +359,9 @@ namespace UI {
 	vec2    GetLastItemScreenPos();
     
 	//Row commands
-	void Row(u32 num_items, UIRowFlags flags = 0);
+	void Row(u32 columns, UIRowFlags flags = 0);
+	void Row(u32 columns, f32 rowHeight, UIRowFlags flags = 0);
+	void RowSetupColumn(u32 column, f32 width = 0);
     
 	//primitive items
 	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
@@ -330,7 +375,6 @@ namespace UI {
 	void Text(const char* text, vec2 pos, color color, UITextFlags flags = 0);
     
 	//items
-	//NOTE: I probably should make a SetNextItemPos as well, but I like being able to do posiiton inline, not sure yet
 	void SetNextItemSize(vec2 size);
     
 	bool Button(const char* text);
