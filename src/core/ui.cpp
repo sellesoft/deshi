@@ -213,7 +213,7 @@ void UI::Row(u32 columns, f32 rowHeight, UIRowFlags flags) {
 }
 
 void UI::RowSetupColumn(u32 column, f32 width){
-
+    
 }
 
 inline void PositionRowedItems() {
@@ -221,25 +221,25 @@ inline void PositionRowedItems() {
 	switch (row.flags) {
 		case 0: {
 			//by default, we align items without worrying about sizes of cells or the alignment of items within them
-
+            
 			//for(int i = 0; i < row.columns.size())
-
-
-			for (int i = 1; i < row.columns; i++) {
+            
+            
+			for (int i = 1; i < row.columns.count; i++) {
 				row.items[i]->position.y = row.items[i - 1]->position.y;
 				row.items[i]->position.x = row.items[i - 1]->position.x + row.items[i - 1]->size.x + style.itemSpacing.x;
 			}
-
+            
 			UIItem* item = row.items[0];
-
+            
 			curwin->cursor = vec2{ 0, item->position.y + item->size.y + style.itemSpacing.y - item->style.windowPadding.y + curwin->scroll.y };
-
+            
 			row.items.clear();
 			row = UIRow{ 0 };
 		}break;
-
+        
 		
-
+        
 	}
 	
 }
@@ -257,11 +257,11 @@ inline void PositionRowedItems() {
 //  the function itself.
 inline void AdvanceCursor(UIItem& itemmade, bool moveCursor = 1){
 	//if we're finished setting up a row we position everything according to the flag
-	if (row.columns && !row.itemsLeft) {
+	if (row.columns.count && !row.itemsLeft) {
 		PositionRowedItems();
 		return;
 	}
-	else if (row.columns && row.itemsLeft) {
+	else if (row.columns.count && row.itemsLeft) {
 		//if we are in the process of making a Row, decrement the itemsLeft var and add the item
 		row.items.add(&itemmade);
 		row.itemsLeft--;
@@ -363,7 +363,7 @@ inline local void WrapText(const char* in, vec2 pos, color color, bool move_curs
 	UIItem item{ UIItemType_Text, curwin->cursor, style };
     
 	string text = in;
-
+    
 	//we split string by newlines and put them into here 
 	//maybe make this into its own function
 	array<string> newlined;
@@ -528,7 +528,7 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 0) {
 	UIItem item{ UIItemType_Button, curwin->cursor, style };
 	item.size = (NextItemSize.x != -1) ? NextItemSize : vec2(Min(curwin->width, 50), style.font->height * 1.3);
 	item.position = pos;
-
+    
 	{//background
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = vec2::ZERO;
@@ -536,7 +536,7 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 0) {
 		drawCmd.color = color;
 		item.drawCmds.add(drawCmd);
 	}
-
+    
 	{//border
 		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
 		drawCmd.color = style.colors[UIStyleCol_Border];
@@ -546,23 +546,23 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 0) {
 		drawCmd.scissorExtent = curwin->dimensions + vec2::ONE * 2;
 		item.drawCmds.add(drawCmd);
 	}
-
+    
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
 		drawCmd.color = style.colors[UIStyleCol_Text];
 		drawCmd.position = 
 			vec2((item.size.x - strlen(text) * style.font->width) * style.buttonTextAlign.x,
-			(style.font->height * 1.3 - style.font->height) * style.buttonTextAlign.y);
+                 (style.font->height * 1.3 - style.font->height) * style.buttonTextAlign.y);
 		//drawCmd.scissorOffset = item.position;
 		drawCmd.scissorExtent = item.size;
 		drawCmd.text = string(text);
 		item.drawCmds.add(drawCmd);
 	}
-
+    
 	curwin->items.add(item);
-
+    
 	AdvanceCursor(item, move_cursor);
-
+    
 	//TODO(sushi) add a flag for prevent button presses when window is not focused
 	if (/*curwin->focused &&*/ Math::PointInRectangle(DeshInput->mousePos, curwin->position + pos, item.size) && DeshInput->LMousePressed()) return true;
 	else return false;
@@ -586,22 +586,22 @@ bool UI::Button(const char* text, vec2 pos, color color) {
 
 void UI::Checkbox(string label, bool* b) {
 	UIItem item{ UIItemType_Checkbox, curwin->cursor, style };
-
+    
 	vec2 boxpos = PositionForNewItem();
 	vec2 boxsiz = style.checkboxSize;
-
+    
 	item.position = boxpos;
 	item.size = boxsiz;
-
+    
 	{//box
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = vec2{ 0,0 };
 		drawCmd.dimensions = boxsiz;
 		drawCmd.color = style.colors[UIStyleCol_FrameBg];
-
+        
 		item.drawCmds.add(drawCmd);
 	}
-
+    
 	//fill if true
 	int fillPadding = style.checkboxFillPadding;
 	if (*b) {
@@ -609,22 +609,22 @@ void UI::Checkbox(string label, bool* b) {
 		drawCmd.position = boxsiz * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y);
 		drawCmd.dimensions = boxsiz * (vec2::ONE - 2 * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y));
 		drawCmd.color = style.colors[UIStyleCol_FrameBg] * 0.7;
-
+        
 		item.drawCmds.add(drawCmd);
 	}
-
+    
 	{//label
 		UIDrawCmd drawCmd{ UIDrawType_Text };
 		drawCmd.position = vec2(boxsiz.x + style.itemSpacing.x, (boxsiz.y - style.font->height) * 0.5);
 		drawCmd.text = label;
 		drawCmd.color = style.colors[UIStyleCol_Text];
-
+        
 		item.drawCmds.add(drawCmd);
 	}
-
+    
 	if (DeshInput->LMousePressed() && Math::PointInRectangle(DeshInput->mousePos, curwin->position + boxpos, boxsiz))
 		*b = !*b;
-
+    
 	curwin->items.add(item);
 	AdvanceCursor(item);
 }
@@ -634,11 +634,11 @@ void UI::Checkbox(string label, bool* b) {
 //final input text
 bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UIInputTextCallback callback, UIInputTextFlags flags, bool moveCursor) {
 	UIItem item{ UIItemType_InputText, curwin->cursor, style };
-
+    
 	UIInputTextState* state;
-
+    
 	size_t charCount = strlen(buff);
-
+    
 	vec2 dim;
 	if (flags & UIInputTextFlags_FitSizeToText) {
 		dim = UI::CalcTextSize(string(buff));
@@ -650,7 +650,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	else {
 		dim = vec2(Math::clamp(100, 0, Math::clamp(curwin->width - style.windowPadding.x * 2, 1, FLT_MAX)), style.font->height * 1.3);
 	}
-
+    
 	if (!(state = inputTexts.at(label))) {
 		state = inputTexts.atIdx(inputTexts.add(label));
 		state->cursor = charCount;
@@ -662,17 +662,17 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	else {
 		state->callback = callback;
 	}
-
+    
 	if (charCount < state->cursor)
 		state->cursor = charCount;
-
+    
 	//data for callback function
 	UIInputTextCallbackData data;
 	data.flags = flags;
 	data.buffer = buff;
 	data.selectionStart = state->selectStart;
 	data.selectionEnd = state->selectEnd;
-
+    
 	//check for mouse click or next active to set active 
 	if (NextActive || DeshInput->KeyPressedAnyMod(MouseButton::LEFT)) {
 		if (NextActive || Math::PointInRectangle(DeshInput->mousePos, curwin->position + position, dim)) {
@@ -680,14 +680,14 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 			NextActive = 0;
 		} else if (activeId == state->id) activeId = -1;
 	}
-
+    
 	bool bufferChanged = 0;
 	if (activeId == state->id) {
 		if (DeshInput->KeyPressedAnyMod(Key::RIGHT) && state->cursor < charCount) state->cursor++;
 		if (DeshInput->KeyPressedAnyMod(Key::LEFT) && state->cursor > 0) state->cursor--;
-
+        
 		data.cursorPos = state->cursor;
-
+        
 		//check if the user used up/down keys
 		if (DeshInput->KeyPressedAnyMod(Key::UP) && (flags & UIInputTextFlags_CallbackUpDown)) {
 			data.eventFlag = UIInputTextFlags_CallbackUpDown;
@@ -699,27 +699,27 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 			data.eventKey = Key::DOWN;
 			callback(&data);
 		}
-
+        
 		//gather text into buffer from inputs
 		//make this only loop when a key has been pressed eventually
-
+        
 		persist TIMER_START(hold);
 		persist TIMER_START(throttle);
-
+        
 		//TODO(sushi) make this not count modifier keys
 		if (DeshInput->AnyKeyPressed()) {
 			TIMER_RESET(hold);
 		}
-
+        
 		auto insert = [&](char c, u32 idx) {
 			memmove(buff + idx + 1, buff + idx, (buffSize - idx) * CHAR_SIZE);
 			buff[idx] = c;
 		};
-
+        
 		auto erase = [&](u32 idx) {
 			memmove(buff + idx, buff + idx + 1, (--charCount) * CHAR_SIZE);
 		};
-
+        
 		char charPlaced;
 		auto placeKey = [&](u32 i, u32 ins, char toPlace) {
 			if (i >= Key::A && i <= Key::Z) {
@@ -775,7 +775,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 				callback(&data);
 			}
 		};
-
+        
 		if (DeshInput->anyKeyDown) {
 			if (TIMER_END(hold) < 1000) {
 				if (DeshInput->KeyPressedAnyMod(Key::BACKSPACE) && charCount > 0 && state->cursor != 0) {
@@ -816,35 +816,35 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 			}
 		}
 	}
-
-
-
-
+    
+    
+    
+    
 	item.size = dim;
 	item.position = position;
-
+    
 	if (!(flags & UIInputTextFlags_NoBackground)) {//text box
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = dim;
 		drawCmd.color = Color_DarkGrey;
-
+        
 		item.drawCmds.add(drawCmd);
 	}
-
+    
 	vec2 textStart =
 		vec2((dim.x - charCount * style.font->width) * style.inputTextTextAlign.x,
-			(style.font->height * 1.3 - style.font->height) * style.inputTextTextAlign.y);
-
+             (style.font->height * 1.3 - style.font->height) * style.inputTextTextAlign.y);
+    
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
 		drawCmd.position = textStart;
 		drawCmd.text = string(buff);
 		drawCmd.color = style.colors[UIStyleCol_Text];
-
+        
 		item.drawCmds.add(drawCmd);
 	}
-
+    
 	//TODO(sushi, Ui) impl different text cursors
 	if (activeId == state->id) {//cursor
 		UIDrawCmd drawCmd{ UIDrawType_Line };
@@ -852,14 +852,14 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		drawCmd.position2 = textStart + vec2(state->cursor * style.font->width, style.font->height - 1);
 		drawCmd.color =
 			color(255, 255, 255,
-				255 * (
-					cos((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000 -
-						sin((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000)) + 1) / 2);
+                  255 * (
+                         cos((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000 -
+                             sin((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000)) + 1) / 2);
 		drawCmd.thickness = 1;
-
+        
 		item.drawCmds.add(drawCmd);
 	}
-
+    
 	curwin->items.add(item);
 	AdvanceCursor(item, moveCursor);
 	
@@ -869,25 +869,25 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	else if (flags & UIInputTextFlags_AnyChangeReturnsTrue && bufferChanged) {
 		return true;
 	}
-
+    
 	return false;
 }
 
 bool UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextFlags flags) {
 	vec2 position = PositionForNewItem();
-
+    
 	return InputTextCall(label, buffer, buffSize, position, nullptr, flags, 1);
 }
 
 bool UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextCallback callback, UIInputTextFlags flags) {
 	vec2 position = PositionForNewItem();
-
+    
 	return InputTextCall(label, buffer, buffSize, position, callback, flags, 1);
 }
 
 bool UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
 	vec2 position = PositionForNewItem();
-
+    
 	if (InputTextCall(label, buffer, buffSize, position, nullptr, flags, 1)) {
 		getInputTextState = inputTexts.at(label);
 		return true;
@@ -898,19 +898,19 @@ bool UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextSta
 
 bool UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextFlags flags) {
 	pos += curwin->position - curwin->scroll;
-
+    
 	return InputTextCall(label, buffer, buffSize, pos, nullptr, flags, 0);
 }
 
 bool UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, UIInputTextFlags flags) {
 	pos += curwin->position - curwin->scroll;
-
+    
 	return InputTextCall(label, buffer, buffSize, pos, callback, flags, 0);
 }
 
 bool UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
 	pos += curwin->position - curwin->scroll;
-
+    
 	if (InputTextCall(label, buffer, buffSize, pos, nullptr, flags, 0)) {
 		getInputTextState = inputTexts.at(label);
 		return true;
@@ -927,7 +927,7 @@ bool UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIIn
 //if begin window is called with a name that was already called before it will work with
 //the data that window previously had
 void UI::BeginWindow(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
-	Assert(!row.columns, "Attempted to start a window without satifying a row quota (holy shit reword this)");
+	Assert(!row.columns.count, "Attempted to start a window without satifying a row quota (holy shit reword this)");
     
 	//save previous window on stack
 	windowStack.add(curwin); 
@@ -1070,7 +1070,7 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
 
 void UI::EndWindow() {
 	Assert(windowStack.size() > 1, "Attempted to end the base window");
-	Assert(!row.columns, "Attempted to end a window without satifying a row quota (holy shit reword this)");
+	Assert(!row.columns.count, "Attempted to end a window without satifying a row quota (holy shit reword this)");
     
 	UIItem item{ UIItemType_Base, curwin->cursor, style };
 	item.position = vec2::ZERO;
