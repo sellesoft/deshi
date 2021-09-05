@@ -166,10 +166,14 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 
 //-------------------------------------------------------------------------------------------------
 // @VULKAN VARIABLES
+#define INDEX_TYPE_VK_UI   VK_INDEX_TYPE_UINT32
+#define INDEX_TYPE_VK_TEMP VK_INDEX_TYPE_UINT16
+#define INDEX_TYPE_VK_MESH VK_INDEX_TYPE_UINT32
+
 //arbitray limits, change if needed
-#define MAX_UI_VERTICES 0xFFFF //max u16: 65535
-#define MAX_UI_INDICES  3*MAX_UI_VERTICES
-#define MAX_UI_CMDS     1000
+#define MAX_UI_VERTICES  0xFFFF //max u16: 65535
+#define MAX_UI_INDICES   3*MAX_UI_VERTICES
+#define MAX_UI_CMDS      1000
 typedef u32 UIIndexVk; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
 local UIIndexVk uiVertexCount = 0;
 local UIIndexVk uiIndexCount  = 0;
@@ -2418,8 +2422,9 @@ specializationInfo.mapEntryCount = 1;
 		pipelineCreateInfo.basePipelineIndex  = -1; //can either use handle or index, not both (section 9.5 of vulkan spec)
 	}
 	
-	{//selected (base with no cull)
+	{//selected (base with no cull or depth test)
 		rasterizationState.cullMode = VK_CULL_MODE_NONE;
+        depthStencilState.depthTestEnable = VK_FALSE;
 		
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
@@ -2427,6 +2432,7 @@ specializationInfo.mapEntryCount = 1;
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.selected, "Selected pipeline");
 		
 		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+        depthStencilState.depthTestEnable = VK_TRUE;
 	}
 	
 	{//null pipeline
@@ -2820,7 +2826,7 @@ BuildCommands(){
 			DebugBeginLabelVk(cmdBuffer, "Meshes", draw_group_color);
 			VkDeviceSize offsets[1] = {0}; //reset vertex buffer offsets
 			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &meshVertexBuffer.buffer, offsets);
-			vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, INDEX_TYPE_VK_MESH);
 			forI(modelCmdCount){
 				ModelCmdVk& cmd = modelCmdArray[i];
 				MaterialVk& mat = vkMaterials[cmd.material];
@@ -2870,7 +2876,7 @@ BuildCommands(){
 			DebugBeginLabelVk(cmdBuffer, "Meshes", draw_group_color);
 			VkDeviceSize offsets[1] = {0}; //reset vertex buffer offsets
 			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &meshVertexBuffer.buffer, offsets);
-			vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(cmdBuffer, meshIndexBuffer.buffer, 0, INDEX_TYPE_VK_MESH);
 			forI(modelCmdCount){
 				ModelCmdVk& cmd = modelCmdArray[i];
 				MaterialVk& mat = vkMaterials[cmd.material];
@@ -2914,11 +2920,12 @@ BuildCommands(){
 			//draw temporary stuff
 			if(tempWireframeVertexCount > 0 && tempWireframeIndexCount > 0){
 				DebugBeginLabelVk(cmdBuffer, "Temp", draw_group_color);
-				//wireframe
-				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,(settings.tempMeshOnTop) ? pipelines.wireframe : pipelines.wireframe_depth);
 				VkDeviceSize offsets[1] = {0};
 				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &tempVertexBuffer.buffer, offsets);
-				vkCmdBindIndexBuffer(cmdBuffer, tempIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
+				vkCmdBindIndexBuffer(cmdBuffer, tempIndexBuffer.buffer, 0, INDEX_TYPE_VK_TEMP);
+                
+				//wireframe
+				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,(settings.tempMeshOnTop) ? pipelines.wireframe : pipelines.wireframe_depth);
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &mat4::IDENTITY);
 				vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.base, 0, nullptr);
 				vkCmdDrawIndexed(cmdBuffer, tempWireframeIndexCount, 1, 0, 0, 0);
@@ -2939,7 +2946,7 @@ BuildCommands(){
 				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.ui);
 				VkDeviceSize offsets[1] = {0};
 				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &uiVertexBuffer.buffer, offsets);
-				vkCmdBindIndexBuffer(cmdBuffer, uiIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdBindIndexBuffer(cmdBuffer, uiIndexBuffer.buffer, 0, INDEX_TYPE_VK_UI);
 				Push2DVk push{};
 				push.scale.x = 2.0f / (f32)width;
 				push.scale.y = 2.0f / (f32)height;
@@ -3599,22 +3606,22 @@ UpdateMaterial(Material* material){
 /////////////////
 void Render::
 UnloadFont(Font* font){
-	//!Incomplete
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
 UnloadTexture(Texture* texture){
-	//!Incomplete
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
 UnloadMaterial(Material* material){
-	//!Incomplete
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
 UnloadMesh(Mesh* mesh){
-	//!Incomplete
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 ///////////////
@@ -3630,24 +3637,21 @@ DrawModel(Model* model, mat4 matrix){
 	Assert(modelCmdCount + model->batches.size() < MAX_MODEL_CMDS, "attempted to draw more than the global maximum number of batches");
 	ModelCmdVk* cmd = modelCmdArray + modelCmdCount;
 	
-	int new_cmd_count = 0;
 	forI(model->batches.size()){
 		if(!model->batches[i].indexCount) continue;
 		cmd[i].vertexOffset = vkMeshes[model->mesh->idx].vtxOffset;
-		cmd[i].indexOffset = vkMeshes[model->mesh->idx].idxOffset + model->batches[i].indexOffset;
-		cmd[i].indexCount  = model->batches[i].indexCount;
-		cmd[i].material    = model->batches[i].material;
-		cmd[i].name        = model->name;
-		cmd[i].matrix      = matrix;
-		new_cmd_count += 1;
+		cmd[i].indexOffset  = vkMeshes[model->mesh->idx].idxOffset + model->batches[i].indexOffset;
+		cmd[i].indexCount   = model->batches[i].indexCount;
+		cmd[i].material     = model->batches[i].material;
+		cmd[i].name         = model->name;
+		cmd[i].matrix       = matrix;
+		modelCmdCount += 1;
 	}
-	
-	modelCmdCount += new_cmd_count;
 }
 
 void Render::
-DrawModelWireframe(Model* mesh, mat4 matrix, color color){
-	//!Incomplete
+DrawModelWireframe(Model* model, mat4 matrix, color color){
+	Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::

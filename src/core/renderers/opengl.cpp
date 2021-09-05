@@ -111,6 +111,10 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE; //!Incomplete
 
 //-------------------------------------------------------------------------------------------------
 // @OPENGL VARIABLES
+#define INDEX_TYPE_GL_UI   GL_UNSIGNED_INT
+#define INDEX_TYPE_GL_TEMP GL_UNSIGNED_SHORT
+#define INDEX_TYPE_GL_MESH GL_UNSIGNED_INT
+
 local array<MeshGl>     glMeshes;
 local array<ShaderGl>   glShaders;
 local array<TextureGl>  glTextures;
@@ -187,9 +191,7 @@ local struct{
     u32 vao_handle;
     u32 vbo_handle;
     u32 ibo_handle;
-    u32 vbo_size;
     u32 vbo_alloc;
-    u32 ibo_size;
     u32 ibo_alloc;
 } tempBuffers{};
 
@@ -302,7 +304,52 @@ DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, int len_args
 ///////////////////
 local void
 SetupCommands(){
+    //temp mesh vertex and index buffers
+    u64 temp_wire_vb_size = tempWireframeVertexCount*sizeof(Mesh::Vertex);
+    u64 temp_fill_vb_size = tempFilledVertexCount*sizeof(Mesh::Vertex);
+    u64 temp_wire_ib_size = tempWireframeIndexCount*sizeof(TempIndexGl);
+    u64 temp_fill_ib_size = tempFilledIndexCount*sizeof(TempIndexGl);
+    u64 temp_vb_size = temp_wire_vb_size+temp_fill_vb_size;
+    u64 temp_ib_size = temp_wire_ib_size+temp_fill_ib_size;
+    temp_vb_size = Max(1000*sizeof(Mesh::Vertex), temp_vb_size);
+    temp_ib_size = Max(3000*sizeof(TempIndexGl),  temp_ib_size);
     
+    if(temp_vb_size && temp_ib_size){
+        //create vertex array object and buffers if they dont exist
+        if(tempBuffers.vao_handle == 0){
+            glGenVertexArrays(1, &tempBuffers.vao_handle);
+            glGenBuffers(1, &tempBuffers.vbo_handle);
+            glGenBuffers(1, &tempBuffers.ibo_handle);
+        }
+        
+        //bind buffers
+        glBindVertexArray(tempBuffers.vao_handle);
+        glBindBuffer(GL_ARRAY_BUFFER, tempBuffers.vbo_handle);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tempBuffers.ibo_handle);
+        
+        //specify vertex packing
+        glVertexAttribPointer(0, 3,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,pos));
+        glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,uv));
+        glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,color));
+        glVertexAttribPointer(3, 3,  GL_FLOAT,         GL_FALSE, sizeof(Mesh::Vertex), (void*)offsetof(Mesh::Vertex,normal));
+        glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2); glEnableVertexAttribArray(3);
+        
+        //resize buffers if too small and update buffer sizes
+        if(tempBuffers.vbo_alloc < temp_vb_size){
+            glBufferData(GL_ARRAY_BUFFER, temp_vb_size, 0, GL_STATIC_DRAW);
+            tempBuffers.vbo_alloc = temp_vb_size;
+        }
+        if(tempBuffers.ibo_alloc < temp_ib_size){
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, temp_ib_size, 0, GL_STATIC_DRAW);
+            tempBuffers.ibo_alloc = temp_ib_size;
+        }
+        
+        //fill buffers
+        glBufferSubData(GL_ARRAY_BUFFER, 0,                 temp_fill_vb_size, tempFilledVertexArray);
+        glBufferSubData(GL_ARRAY_BUFFER, temp_fill_vb_size, temp_wire_vb_size, tempWireframeVertexArray);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,                 temp_fill_ib_size, tempFilledIndexArray);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, temp_fill_ib_size, temp_wire_ib_size, tempWireframeIndexArray);
+    }
 }
 
 local void
@@ -571,6 +618,7 @@ SetupUniformBuffers(){
     //vertex shader push constant
     glGenBuffers(1, &pushVS.handle);
     glBindBufferRange(GL_UNIFORM_BUFFER, pushVS.binding, pushVS.handle, 0, sizeof(pushVS.values));
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(pushVS.values), 0, GL_DYNAMIC_DRAW);
 }
 
 local void
@@ -786,7 +834,7 @@ LoadFont(Font* font, Texture* texture){ //!Incomplete
 }
 
 void Render::
-LoadTexture(Texture* texture){ //!Incomplete
+LoadTexture(Texture* texture){
     TextureGl tgl{};
     tgl.base = texture;
     
@@ -1189,10 +1237,6 @@ Init(){
     glfwGetFramebufferSize(DeshWindow->window, &width, &height);
     SetupUniformBuffers();
     SetupPrograms();
-    glFrontFace(GL_CW);
-    glEnable(GL_BLEND);
-    glEnable(GL_CULL_FACE);
-    //glEnable(GL_DEPTH_TEST);
     
     //glfwSwapInterval(1); //vsync
     initialized = true;
@@ -1216,13 +1260,19 @@ Update(){
     
     //// setup stuff ////
     UpdateUniformBuffers();
+    SetupCommands();
+    glClearColor(settings.clearColor.r, settings.clearColor.g, settings.clearColor.b, settings.clearColor.a);
+    glClearDepth(1.0f); //1 rather than 0 because openGL Z direction is opposite ours
+    glFrontFace(GL_CW);
+    glEnable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
     
     //// render stuff ////
     ImGui::Render();
     
     //// draw stuff ////
-    glClearColor(settings.clearColor.r, settings.clearColor.g, settings.clearColor.b, settings.clearColor.a);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     //draw meshes
     glActiveTexture(GL_TEXTURE0);
@@ -1233,10 +1283,43 @@ Update(){
     glUniform1i(glGetUniformLocation(programs.null.handle,"nullSampler"),0);
     forI(modelCmdCount){ //TODO(delle) materials/textures
         glBindBuffer(GL_UNIFORM_BUFFER, pushVS.handle);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(mat4), &modelCmdArray[i].matrix, GL_DYNAMIC_DRAW);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4), &modelCmdArray[i].matrix);
         glPolygonMode(GL_FRONT_AND_BACK, (settings.wireframeOnly) ? GL_LINE : GL_FILL);
-        glDrawElementsBaseVertex(GL_TRIANGLES, modelCmdArray[i].idxCount, GL_UNSIGNED_INT,
+        glDrawElementsBaseVertex(GL_TRIANGLES, modelCmdArray[i].idxCount, INDEX_TYPE_GL_MESH,
                                  (void*)(modelCmdArray[i].idxOffset*sizeof(Mesh::Index)), modelCmdArray[i].vtxOffset);
+    }
+    
+    //draw temp
+    if(tempWireframeVertexCount > 0 && tempWireframeIndexCount > 0){
+        glBindVertexArray(tempBuffers.vao_handle);
+        glBindBuffer(GL_UNIFORM_BUFFER, pushVS.handle);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(mat4), &mat4::IDENTITY);
+        glDisable(GL_CULL_FACE);
+        if(settings.tempMeshOnTop){
+            glDisable(GL_DEPTH_TEST);
+        }else{
+            glEnable(GL_DEPTH_TEST);
+        }
+        
+        //filled
+        glUseProgram(programs.selected.handle);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        int mapped1 = -1; int mapped2 = -1;
+        int size1 = -1; int size2 = -1;
+        int is1 = -1; int is2 = -1;
+        is1 = glIsBuffer(tempBuffers.vbo_handle);
+        is2 = glIsBuffer(tempBuffers.ibo_handle);
+        glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_MAPPED, &mapped1);
+        glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_MAPPED, &mapped2);
+        glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size1);
+        glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size2);
+        
+        glDrawElementsBaseVertex(GL_TRIANGLES, tempFilledIndexCount, INDEX_TYPE_GL_TEMP, 0, 0);
+        
+        //wireframe
+        glUseProgram(programs.wireframe.handle);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glDrawElementsBaseVertex(GL_TRIANGLES, tempWireframeIndexCount, INDEX_TYPE_GL_TEMP, (void*)(tempFilledIndexCount*sizeof(TempIndexGl)), 0);
     }
     
     //draw ui
