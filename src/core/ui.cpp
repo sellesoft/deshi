@@ -72,6 +72,7 @@ local bool NextActive   = 0;
 //and their order in layers eg. when one gets clicked it gets moved to be first if its set to
 local map<const char*, UIWindow*>        windows;     
 local map<const char*, UIInputTextState> inputTexts;  //stores known input text labels and their state
+local map<const char*, bool>             dropDowns;   //stores known dropdowns and if they are open or not
 local array<UIWindow*>                   windowStack; //window stack which allow us to use windows like we do colors and styles
 local array<ColorMod>                    colorStack; 
 local array<VarMod>                      varStack; 
@@ -667,6 +668,109 @@ void UI::Checkbox(string label, bool* b) {
 	if (DeshInput->LMousePressed() && Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position, boxsiz))
 		*b = !*b;
     
+}
+
+void UI::DropDown(const char* label, const char* options[], u32 options_count, u32& selected) {
+	UIItem* item = NewUIItem(UIItemType_DropDown);
+
+	bool isOpen = false;
+	if (!dropDowns.has(label)) {
+		dropDowns.add(label);
+		dropDowns[label] = false;
+	}
+	else {
+		isOpen = dropDowns[label];
+	}
+
+
+	item->position = PositionForNewItem();
+	item->size = (NextItemSize.x == -1) ? vec2{ curwin->width - 2 * style.windowPadding.x, 20 } : NextItemSize;
+
+	AdvanceCursor(item);
+
+	//main bar, drawn regardless of if the box is open
+
+	{//background
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+		drawCmd.position = vec3{ 0,0 };
+		drawCmd.dimensions = item->size;
+		drawCmd.color = style.colors[UIStyleCol_FrameBg];
+		item->drawCmds.add(drawCmd);
+	}
+
+	{//selected text
+		UIDrawCmd drawCmd{ UIDrawType_Text };
+		drawCmd.position = vec3{ 10, (item->size.y - style.font->height) * 0.5f };
+		drawCmd.color = style.colors[UIStyleCol_Text];
+		drawCmd.text = string(options[selected]);
+		item->drawCmds.add(drawCmd);
+	}
+
+	vec2 openBoxPos = vec2{ (item->size.x - item->size.y / 2) * 0.95f, item->size.y / 4 };
+	vec2 openBoxSize = vec2{ item->size.y / 2, item->size.y / 2 };
+
+	{//open box
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+		drawCmd.position = openBoxPos;
+		drawCmd.dimensions = openBoxSize;
+		drawCmd.color = style.colors[UIStyleCol_FrameBg] * 0.4;
+		item->drawCmds.add(drawCmd);
+	}
+
+	if (curwin->focused && 
+		DeshInput->LMousePressed() &&
+		Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position + openBoxPos, openBoxSize)) {
+		dropDowns[label] = !dropDowns[label];
+	}
+	
+	if(isOpen) {
+		//find what box the mouse is over
+
+		vec2 sp = item->position.yAdd(item->size.y);
+		vec2 mp = DeshInput->mousePos - (curwin->position + sp);
+		f32 height = item->size.y * options_count;
+		f32 width = item->size.x;
+		u32 mo = -1;
+
+		if (curwin->focused && Math::PointInRectangle(mp, vec2::ZERO, vec2{ width, height })) {
+			mo = floor(mp.y / height * options_count);
+			if (DeshInput->LMousePressed()) {
+				selected = mo;
+			}
+		}
+		
+		for (int i = 0; i < options_count; i++) {
+			{//selection boxes
+				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+				drawCmd.position = vec2{ 0, item->size.y * (i + 1) };
+				drawCmd.dimensions = item->size;
+				drawCmd.color = style.colors[UIStyleCol_FrameBg] * ((i == selected || i == mo) ? 0.5 : 1);
+				item->drawCmds.add(drawCmd);
+				
+			}
+
+			{//underline
+				UIDrawCmd drawCmd{ UIDrawType_Line };
+				drawCmd.position = vec2{ 0,(item->size.y * (i + 2))};
+				drawCmd.position2 = vec2{ item->size.x, (item->size.y * (i + 2))};
+				drawCmd.color = Color_Black;
+				drawCmd.thickness = 1;
+				item->drawCmds.add(drawCmd);
+			}
+
+			{//selection texts
+				UIDrawCmd drawCmd{ UIDrawType_Text };
+				drawCmd.position = vec3{ 10, (item->size.y - style.font->height) * 0.5f + (i + 1) * item->size.y };
+				drawCmd.color = style.colors[UIStyleCol_Text];
+				drawCmd.text = options[i];
+				item->drawCmds.add(drawCmd);
+			}
+		}
+
+
+
+	}
+
 }
 
 //@InputText
@@ -1519,9 +1623,9 @@ void UI::Update() {
                         
 						case UIDrawType_Line: {
 							if (drawCmd.scissorExtent.x == -1)
-								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, winscissor, winsiz);
+								Render::DrawLineUI(dcpos, dcpos2, dct, dccol, winscissor, winsiz);
 							else
-								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, dcso - itempos, dcse);
+								Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcso - itempos, dcse);
 						}break;
                         
 						case UIDrawType_Text: {

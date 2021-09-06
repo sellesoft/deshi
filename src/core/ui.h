@@ -218,7 +218,7 @@ enum UIItemType : u32 {
 	UIItemType_InputText, // InputText()
 	UIItemType_Button,    // Button()
 	UIItemType_Checkbox,  // Checkbox()
-	UIItemType_Row        // BeginRow()
+	UIItemType_DropDown,  // DropDown()
 };
 
 // an item such as a button, checkbox, or input text
@@ -289,7 +289,6 @@ struct UIWindow {
 	array<UIItem> baseItems;
 	
 	UIItem* hoveredItem = 0;
-	
 	
 	bool hovered = false;
 	bool titleHovered = false;
@@ -401,6 +400,8 @@ namespace UI {
 	bool Button(const char* text, vec2 pos, color color);
     
 	void Checkbox(string label, bool* b);
+
+	void DropDown(const char* label, const char* options[], u32 options_count, u32& selected);
     
 	//these overloads are kind of silly change them eventually
 	//InputText takes in a buffer and modifies it according to input and works much like ImGui's InputText
@@ -413,6 +414,8 @@ namespace UI {
 	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
 	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
     
+	
+
     
 	//windows
 	void BeginWindow(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
