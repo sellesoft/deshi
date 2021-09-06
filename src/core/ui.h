@@ -18,12 +18,19 @@
 	we add drawcalls to build the items that the user requests. 
 	basically, never use items to build other items.
 
-
-
+	it is VERY important that a UIItem function calls AdvanceCursor before ANY functionality involving
+	the user interacting with the item visually, as well as after setting the item's size.
+	for example in Button we have to make sure we call AdvanceCursor before querying if the user 
+	has clicked it or not. this is because Row moves items and if you attempt to query for any 
+	interaction before AdvanceCursor correctly positions the item, it will not be in the correct 
+	place when the user attempts to interact with it 
+	
   BIG TODOS:
   
-	make Row adjust the position of objects after the first one is made,
-	currently it only adjusts positions after they have all been made
+	Tabs
+	An actual table item
+	Ability to set flags on Button that allow it to return true if its held, only if mouse is released over it, etc.
+
 
 
 
@@ -48,6 +55,7 @@ enum UIStyleVar : u32 {
 	UIStyleVar_InputTextTextAlign,  // default vec2(0, 0.5)      how text is aligned within InputText boxes
 	UIStyleVar_ButtonTextAlign,     // default vec2(0.5, 0.5)    how text is aligned within buttons
 	UIStyleVar_RowItemAlign,        // default vec2(0.5, 0.5)    determines how rows align their items within their cells
+	UIStyleVar_RowCellPadding,      // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
 	UIStyleVar_Font,			    // default "gohufont-11.bdf" currently not changable, as we dont support loading multiple fonts yet
 	UIStyleVar_COUNT
 };
@@ -62,6 +70,9 @@ global_ const char* styleVarStr[] = {
 	"UIStyleVar_CheckboxSize",
 	"UIStyleVar_CheckboxFillPadding",
 	"UIStyleVar_InputTextTextAlign",
+	"UIStyleVar_ButtonTextAlign",     
+	"UIStyleVar_RowItemAlign",        
+	"UIStyleVar_RowCellPadding",      
 	"UIStyleVar_Font",
 	"UIStyleVar_COUNT"
 };
@@ -201,12 +212,13 @@ struct UIDrawCmd {
 };
 
 enum UIItemType : u32 {
-	UIItemType_Base,      //base window draw commands
-	UIItemType_Abstract,  //any single drawcall such as a line, rectangle, circle, etc
-	UIItemType_Text,      //Text()
-	UIItemType_InputText, //InputText()
-	UIItemType_Button,    //Button()
-	UIItemType_Checkbox,  //Checkbox()
+	UIItemType_Base,      // base window draw commands
+	UIItemType_Abstract,  // any single drawcall such as a line, rectangle, circle, etc
+	UIItemType_Text,      // Text()
+	UIItemType_InputText, // InputText()
+	UIItemType_Button,    // Button()
+	UIItemType_Checkbox,  // Checkbox()
+	UIItemType_Row        // BeginRow()
 };
 
 // an item such as a button, checkbox, or input text
@@ -334,17 +346,20 @@ enum UIRowFlags_ {
 // this also works in between items as each item stores this variable so you can have one column of items
 // aligned different than the others
 struct UIRow {
-	u32 numcolumns = 0;
 	UIRowFlags flags = 0;
+	u32 columns = 0;
 
 	f32 height = 0;
+	f32 width = 0; 
+	f32 xoffset = 0;
 
-	u32 itemsLeft = 0;
+	//the position of the row to base offsets of items off of.
+	vec2 position;
 
-	u32 currentColumn = 0;
-
-	array<UIItem*> items;
-	array<pair<u32, f32>> columns; //stores index and width of the column
+	
+	array<UIItem*> items; 
+	//the boolean indicates whether or not the column width is relative to the size of the object
+	array<pair<f32, bool>> columnWidths;
 };
 
 namespace UI {
@@ -359,9 +374,12 @@ namespace UI {
 	vec2    GetLastItemScreenPos();
     
 	//Row commands
-	void Row(u32 columns, UIRowFlags flags = 0);
-	void Row(u32 columns, f32 rowHeight, UIRowFlags flags = 0);
-	void RowSetupColumn(u32 column, f32 width = 0);
+	void BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags = 0);
+	void EndRow();
+	void RowSetupColumnWidths(array<f32> widths);
+	void RowSetupColumnWidth(u32 column, f32 width);
+	void RowSetupRelativeColumnWidth(u32 column, f32 width);
+	void RowSetupRelativeColumnWidths(array<f32> widths);
     
 	//primitive items
 	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
