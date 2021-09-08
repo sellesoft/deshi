@@ -8,6 +8,8 @@
 #include "../defines.h"
 #include "../math/vectormatrix.h"
 
+#include <cstdarg>
+
 ///////////////
 //// @stox ////
 ///////////////
