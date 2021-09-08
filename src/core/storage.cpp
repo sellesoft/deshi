@@ -50,7 +50,7 @@ Init(){
 	CreateTextureFromFile("null128.png");
 	CreateMaterial("null", Shader_NULL, MaterialFlags_NONE, {0});
 	CreateModelFromMesh(NullMesh(), Shader_NULL); cpystr(NullModel()->name, "null", DESHI_NAME_SIZE);
-    CreateFontFromFileBDF("gohufont-14.bdf");
+    CreateFontFromFileBDF("gohufont-11.bdf");
 }
 
 void Storage::

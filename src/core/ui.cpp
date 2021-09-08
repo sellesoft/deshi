@@ -54,6 +54,7 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 	{1, offsetof(UIStyle, checkboxFillPadding)},
 	{2, offsetof(UIStyle, inputTextTextAlign)},
 	{2, offsetof(UIStyle, buttonTextAlign)},
+	{2, offsetof(UIStyle, rowItemAlign)},
 };
 
 //this variable defines the space the user is working in when calling UI functions
@@ -71,6 +72,7 @@ local bool NextActive   = 0;
 //and their order in layers eg. when one gets clicked it gets moved to be first if its set to
 local map<const char*, UIWindow*>        windows;     
 local map<const char*, UIInputTextState> inputTexts;  //stores known input text labels and their state
+local map<const char*, bool>             dropDowns;   //stores known dropdowns and if they are open or not
 local array<UIWindow*>                   windowStack; //window stack which allow us to use windows like we do colors and styles
 local array<ColorMod>                    colorStack; 
 local array<VarMod>                      varStack; 
@@ -89,6 +91,7 @@ local u32 activeId = -1; //the id of an active widget eg. input text
 
 //row variables
 local UIRow row;
+local bool  rowInProgress;
 
 
 //helper defines
@@ -98,6 +101,7 @@ local UIRow row;
 #define workingWinSizeMinusTitlebar    vec2(curwin->width, curwin->height - ((curwin->flags & UIWindowFlags_NoTitleBar) ? 0 : style.titleBarHeight));
 #define workingHasFlag(flag) (curwin->flags & flag)
 #define HasFlag(flag) (flags & flag)
+
 
 //helper functions
 
@@ -124,11 +128,11 @@ inline vec2 UI::CalcTextSize(string text) {
 
 //calculates the items position and size based on its draw commands
 //should really only be used when doing this manually is too annoying
-inline void CalcItemSize(UIItem& item) {
+inline void CalcItemSize(UIItem* item) {
 	using namespace UI;
     
 	vec2 max;
-	for (UIDrawCmd& drawCmd : item.drawCmds) {
+	for (UIDrawCmd& drawCmd : item->drawCmds) {
 		switch (drawCmd.type) {
 			case UIDrawType_Rectangle:
 			case UIDrawType_FilledRectangle: {
@@ -138,7 +142,7 @@ inline void CalcItemSize(UIItem& item) {
 			case UIDrawType_Line: {
 				vec2 ulm{ Min(drawCmd.position.x, drawCmd.position2.x), Min(drawCmd.position.y, drawCmd.position2.y) };
 				vec2 lrm{ Max(drawCmd.position.x, drawCmd.position2.x), Max(drawCmd.position.y, drawCmd.position2.y) };
-				lrm -= item.position;
+				lrm -= item->position;
 				max.x = Max(max.x, lrm.x);
 				max.y = Max(max.y, lrm.y);
 				
@@ -150,9 +154,49 @@ inline void CalcItemSize(UIItem& item) {
 			}break;
 		}
 	}
-	item.size = max;
+	item->size = max;
 }
 
+//internal master cursor controller
+//  this is an attempt to centralize what happens at the end of each item function
+// 
+//  i expect this to fall through at some point, as not all items are created equal and may need to
+//  have different things happen after its creation, which could be handled as special cases within
+//  the function itself.
+inline void AdvanceCursor(UIItem* itemmade, bool moveCursor = 1) {
+	
+	//if a row is in progress, we must reposition the item to conform to row style variables
+	//this means that you MUST ensure that this happens before any interactions with the item are calculated
+	//for instance in the case of Button, this must happen before you check that the user has clicked it!
+	if (rowInProgress) {
+		//abstract item types (lines, rectangles, etc.) are not row'd, for now
+		if (itemmade->type != UIItemType_Abstract) {
+			row.items.add(itemmade);
+
+			f32 height = row.height;
+			f32 width;
+			//determine if the width is relative to the size of the item or not
+			if (row.columnWidths[row.items.count - 1].second == true)
+				width = itemmade->size.x * row.columnWidths[row.items.count - 1].first;
+			else
+				width = row.columnWidths[row.items.count - 1].first;
+
+			itemmade->position.y = row.position.y + (height - itemmade->size.y) * itemmade->style.rowItemAlign.y;
+			itemmade->position.x = row.position.x + row.xoffset + (width - itemmade->size.x) * itemmade->style.rowItemAlign.x;
+
+			row.xoffset += width;
+
+			//we dont need to handle moving the cursor here, because the final position of the cursor after a row is handled in EndRow()
+		}
+	}
+	else if(moveCursor) curwin->cursor = vec2{ 0, itemmade->position.y + itemmade->size.y + style.itemSpacing.y };
+}
+
+//function for getting the position of a new item based on style, so the long string of additions
+//is centralized for new additions, if ever made, and so that i dont have to keep writing it :)
+inline vec2 PositionForNewItem() {
+	return curwin->cursor + style.windowPadding - curwin->scroll;
+}
 
 void UI::SetNextItemActive() {
 	NextActive = 1;
@@ -192,88 +236,123 @@ UIItem* GetLastItem() {
 	return curwin->items.last;
 }
 
+//@BeginRow
+//  a row is a collection of columns used to align a number of items nicely
+//  you are required to specify the width of each column when using Row, as it removes the complicated
+//  nature of having to figure this out after the fact. row height and width are not necessarily a problem
+//  and can be determined dynamically
+//
 
-void UI::Row(u32 columns, UIRowFlags flags){
-	Assert(!row.columns.count, "Attempted to start a new Row without finishing one already in progress!");
+void UI::BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags) {
+	Assert(!rowInProgress, "Attempted to start a new Row without finishing one already in progress!");
 	//TODO(sushi) when we have more row flags, check for mutually exclusive flags here
-	row.flags = flags;
-	row.itemsLeft = columns;
-	row.numcolumns = columns;
-	forI(columns) row.columns.add(make_pair<u32, f32>(0, 0));
-}
-
-void UI::Row(u32 columns, f32 rowHeight, UIRowFlags flags) {
-	Assert(!row.columns.count, "Attempted to start a new Row without finishing one already in progress!");
-	//TODO(sushi) when we have more row flags, check for mutually exclusive flags here
-	row.flags = flags;
-	row.itemsLeft = columns;
 	row.columns = columns;
+	row.flags = flags;
 	row.height = rowHeight;
-	forI(columns) row.columns.add(make_pair<u32, f32>(0, 0));
+	rowInProgress = 1;
+	row.position = PositionForNewItem();
+	forI(columns) row.columnWidths.add({ 0.f,false });
 }
 
-void UI::RowSetupColumn(u32 column, f32 width){
-    
-}
 
-inline void PositionRowedItems() {
-	
-	switch (row.flags) {
-		case 0: {
-			//by default, we align items without worrying about sizes of cells or the alignment of items within them
-            
-			//for(int i = 0; i < row.columns.size())
-            
-            
-			for (int i = 1; i < row.columns.count; i++) {
-				row.items[i]->position.y = row.items[i - 1]->position.y;
-				row.items[i]->position.x = row.items[i - 1]->position.x + row.items[i - 1]->size.x + style.itemSpacing.x;
-			}
-            
-			UIItem* item = row.items[0];
-            
-			curwin->cursor = vec2{ 0, item->position.y + item->size.y + style.itemSpacing.y - item->style.windowPadding.y + curwin->scroll.y };
-            
-			row.items.clear();
-			row = UIRow{ 0 };
-		}break;
-        
+
+//old code from when I attempted to make Row() too dynamic, and is more suited for something more advanced
+//like a Table that could be implemented later on
+#if 0
+void UI::EndRow() {
+
+	//if the user does not care about the overall width of the row
+	if (row.width == 0) {
+		//this loop follows this scheme:
+		//  determine if the column is to be dynamically fitted, if so we size the width of the column to the 
+		//  max width of the items within it, offset them into the cell and scissor them to stay within it.
+		//  otherwise, we simply offset all items into the cell and scissor them to stay within it.
 		
-        
+		//accumulator for the x offset produced by previous rows
+		f32 xOffset = 0;
+		for (UIColumn& col : row.columns) {
+			// if the column's width is to be dynamic, we must find the maximum width of all of the items it contains
+			if (col.width == -1) {
+				f32 maxItemWidth = 0;
+				vec2 offset = col.items[0]->position - (row.position + vec2{ xOffset, 0 });
+				//we are able to offset the item and gather max width in the same for loop, but we can't adjust
+				//scissors until we know the max width of all items (i think...)
+				for (int i = 0; i < col.items.count; i++) {
+					maxItemWidth = Max(col.items[i]->position.x + col.items[i]->size.x, maxItemWidth);
+					col.items[i]->position += offset;
+				}
+
+				xOffset += maxItemWidth;
+
+				//if the item's drawCmd already has a scissor, we have to ensure that we don't allow that scissor to draw outside of the
+				//cell, so we clamp its offset to the top and left of the cell, and its extent to the bottom and right
+				//otherwise, we just scissor the drawCmd to the cell
+				for()
+			}
+			//else we simply offset the items to be aligned wthin the cell, scissoring to the height of the row and width of the column
+			else {
+
+			}
+
+
+		}
 	}
+
 	
+
+
+}
+#endif
+
+void UI::EndRow() {
+	Assert(rowInProgress, "Attempted to a end a row without calling BeginRow() first!");
+	Assert(row.items.count == row.columns, "Attempted to end a Row without giving the correct amount of items!")
+
+	curwin->cursor = vec2{ 0, row.position.y + row.height + style.itemSpacing.y - style.windowPadding.y + curwin->scroll.y };
+
+	row.items.clear();
+	row.columnWidths.clear();
+	row = UIRow{ 0 };
+	rowInProgress = 0;
 }
 
-//internal master cursor controller
-//  this is an attempt to centralize what happens at the end of each item function
-//  it serves a couple of purposes
-//	1. move the cursor relative to the item just created
-//  2. if we are in the process of gathering items for a row, we decrement the itemsLeft variable
-//  3. if a row has gathered the amount of items to be aligned, we align them here
-//  (list to be expanded, probably)
-// 
-//  i expect this to fall through at some point, as not all items are created equal and may need to
-//  have different things happen after its creation, which could be handled as special cases within
-//  the function itself.
-inline void AdvanceCursor(UIItem& itemmade, bool moveCursor = 1){
-	//if we're finished setting up a row we position everything according to the flag
-	if (row.columns.count && !row.itemsLeft) {
-		PositionRowedItems();
-		return;
-	}
-	else if (row.columns.count && row.itemsLeft) {
-		//if we are in the process of making a Row, decrement the itemsLeft var and add the item
-		row.items.add(&itemmade);
-		row.itemsLeft--;
-	}
-	//we always move the cursor unless we have just finished a row.
-	curwin->cursor = vec2{ 0, itemmade.position.y + itemmade.size.y + style.itemSpacing.y };
+//this function sets up a static column width for a specified column that does not respect the size of the object
+void UI::RowSetupColumnWidth(u32 column, f32 width) {
+	Assert(rowInProgress, "Attempted to set a column's width with no Row in progress!");
+	Assert(column <= row.columns && column >= 1, "Attempted to set a column who doesn't exists width!");
+	row.columnWidths[column - 1] = { width, false };
 }
 
-//function for getting the position of a new item based on style, so the long string of additions
-//is centralized for new additions, if ever made, and so that i dont have to keep writing it :)
-inline vec2 PositionForNewItem() {
-	return curwin->cursor + style.windowPadding - curwin->scroll;
+//this function sets up static column widths that do not respect the size of the item at all
+void UI::RowSetupColumnWidths(array<f32> widths){
+	Assert(rowInProgress, "Attempted to pass column widths without first calling BeginRow()!");
+	Assert(widths.count == row.columns, "Passed in the wrong amount of column widths for in progress Row");
+	forI(row.columns)
+		row.columnWidths[i] = { widths[i], false };
+}
+
+//see the function below for what this does
+void UI::RowSetupRelativeColumnWidth(u32 column, f32 width) {
+	Assert(rowInProgress, "Attempted to set a column's width with no Row in progress!");
+	Assert(column <= row.columns && column >= 1, "Attempted to set a column who doesn't exists width!");
+	row.columnWidths[column - 1] = { width, true };
+}
+
+//this function sets it so that column widths are relative to the size of the item the cell holds
+//meaning it should be passed something like 1.2 or 1.3, indicating that the column should have a width of 
+//1.2 * width of the item
+void UI::RowSetupRelativeColumnWidths(array<f32> widths) {
+	Assert(rowInProgress, "Attempted to pass column widths without first calling BeginRow()!");
+	Assert(widths.count == row.columns, "Passed in the wrong amount of column widths for in progress Row");
+	forI(row.columns)
+		row.columnWidths[i] = { widths[i], true };
+}
+
+//helper for making any new UIItem, since now we must work with item pointers internally
+//basically adds a new item to the window and returns a pointer to it
+UIItem* NewUIItem(UIItemType type) {
+	curwin->items.add(UIItem{ type, curwin->cursor, style });
+	return GetLastItem();
 }
 
 
@@ -345,7 +424,7 @@ void UI::SetNextItemSize(vec2 size) {
 //Text
 
 //internal function for actually making and adding the drawCmd
-local void TextCall(const char* text, vec2 pos, color color, UIItem& item) {
+local void TextCall(const char* text, vec2 pos, color color, UIItem* item) {
 	UIDrawCmd drawCmd{ UIDrawType_Text };
 	drawCmd.text = string(text); 
 	drawCmd.position = pos;
@@ -353,218 +432,178 @@ local void TextCall(const char* text, vec2 pos, color color, UIItem& item) {
 	//drawCmd.scissorOffset = -item.position;
 	//drawCmd.scissorExtent = UI::CalcTextSize(text);
 	
-	item.drawCmds.add(drawCmd);
+	item->drawCmds.add(drawCmd);
 }
 
 //main function for wrapping, where position is starting position of text relative to the top left of the window
-//TODO(sushi) clean this up 
-inline local void WrapText(const char* in, vec2 pos, color color, bool move_cursor = true) {
-	using namespace UI;
-	UIItem item{ UIItemType_Text, curwin->cursor, style };
-    
-	string text = in;
-    
-	//we split string by newlines and put them into here 
-	//maybe make this into its own function
-	array<string> newlined;
-    
-	u32 newline = text.findFirstChar('\n');
-	if (newline != string::npos && newline != text.size - 1) {
-		string remainder = text.substr(newline + 1);
-		newlined.add(text.substr(0, newline - 1));
-		newline = remainder.findFirstChar('\n');
-		while (newline != string::npos) {
-			newlined.add(remainder.substr(0, newline - 1));
-			remainder = remainder.substr(newline + 1);
+//this function also decides if text is to be wrapped or not, and if not simply calls TextEx (to clean up the Text() functions)
+inline local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_cursor = true) {
+	if (!nowrap) {
+		using namespace UI;
+		UIItem* item = NewUIItem(UIItemType_Text);
+
+		string text = in;
+
+		//we split string by newlines and put them into here 
+		//maybe make this into its own function
+		array<string> newlined;
+
+		u32 newline = text.findFirstChar('\n');
+		if (newline != string::npos && newline != text.size - 1) {
+			string remainder = text.substr(newline + 1);
+			newlined.add(text.substr(0, newline - 1));
 			newline = remainder.findFirstChar('\n');
-		}
-		newlined.add(remainder);
-	}
-	else {
-		newlined.add(text);
-	}
-    
-    
-	vec2 workcur = vec2{ 0,0 };
-	
-	item.position = pos;
-	//apply window padding if we're not manually positioning text
-	if (move_cursor)
-		item.position += style.windowPadding - curwin->scroll;
-    
-	
-	//max characters we can place 
-	u32 maxChars = floor(((curwin->width - style.windowPadding.x) - workcur.x) / style.font->width);
-	
-	//make sure max chars never equals 0
-	if (!maxChars) maxChars++;
-	
-	//wrap each string in newline array
-	for (string& t : newlined) {
-		//we need to see if the string goes beyond the width of the window and wrap if it does
-		if (maxChars < t.size) {
-			//if this is true we know item's total width is just maxChars times font width
-			item.size.x = maxChars * style.font->width;
-            
-            
-			//find closest space to split by
-			u32 splitat = t.findLastChar(' ', maxChars);
-			string nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
-			TextCall(nustr.str, workcur, color, item);
-            
-			t = t.substr(nustr.size);
-			workcur.y += style.font->height + style.itemSpacing.y;
-            
-			//continue to wrap if we need to
-			while (t.size > maxChars) {
-				splitat = t.findLastChar(' ', maxChars);
-				nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
-				TextCall(nustr.str, workcur, color, item);
-                
-				t = t.substr(nustr.size);
-				workcur.y += style.font->height + style.itemSpacing.y;
-                
-				if (!strlen(t.str)) break;
+			while (newline != string::npos) {
+				newlined.add(remainder.substr(0, newline - 1));
+				remainder = remainder.substr(newline + 1);
+				newline = remainder.findFirstChar('\n');
 			}
-            
-			//write last bit of text
-			TextCall(t.str, workcur, color, item);
-			workcur.y += style.font->height + style.itemSpacing.y;
-            
+			newlined.add(remainder);
 		}
 		else {
-			//we have to get max string length to determine item's width here
-			item.size.x = Max(style.font->width * t.size, item.size.x);
-            
-			TextCall(t.str, workcur, color, item);
-			workcur.y += style.font->height + style.itemSpacing.y;
+			newlined.add(text);
 		}
+
+
+		vec2 workcur = vec2{ 0,0 };
+
+		item->position = pos;
+		//apply window padding if we're not manually positioning text
+		if (move_cursor)
+			item->position += style.windowPadding - curwin->scroll;
+
+
+		//max characters we can place 
+		u32 maxChars = floor(((curwin->width - style.windowPadding.x) - workcur.x) / style.font->width);
+
+		//make sure max chars never equals 0
+		if (!maxChars) maxChars++;
+
+		//wrap each string in newline array
+		for (string& t : newlined) {
+			//we need to see if the string goes beyond the width of the window and wrap if it does
+			if (maxChars < t.size) {
+				//if this is true we know item's total width is just maxChars times font width
+				item->size.x = maxChars * style.font->width;
+
+
+				//find closest space to split by
+				u32 splitat = t.findLastChar(' ', maxChars);
+				string nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+				TextCall(nustr.str, workcur, color, item);
+
+				t = t.substr(nustr.size);
+				workcur.y += style.font->height + style.itemSpacing.y;
+
+				//continue to wrap if we need to
+				while (t.size > maxChars) {
+					splitat = t.findLastChar(' ', maxChars);
+					nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+					TextCall(nustr.str, workcur, color, item);
+
+					t = t.substr(nustr.size);
+					workcur.y += style.font->height + style.itemSpacing.y;
+
+					if (!strlen(t.str)) break;
+				}
+
+				//write last bit of text
+				TextCall(t.str, workcur, color, item);
+				workcur.y += style.font->height + style.itemSpacing.y;
+
+			}
+			else {
+				//we have to get max string length to determine item's width here
+				item->size.x = Max(style.font->width * t.size, item->size.x);
+
+				TextCall(t.str, workcur, color, item);
+				workcur.y += style.font->height + style.itemSpacing.y;
+			}
+		}
+
+		item->size.y = workcur.y - curwin->position.y;
+
+		if (NextItemSize.x != -1)
+			item->size = NextItemSize;
+
+
+		CalcItemSize(item);
+
+		AdvanceCursor(item, move_cursor);
+
+		NextItemSize = vec2{ -1, 0 };
 	}
+	else {
+		UIItem* item = NewUIItem(UIItemType_Text);
+		item->position = PositionForNewItem();
+
+		if (NextItemSize.x != -1) item->size = NextItemSize;
+		else                      item->size = UI::CalcTextSize(in);
+
+		TextCall(in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
+		
+		CalcItemSize(item);
+		AdvanceCursor(item);
 	
-	item.size.y = workcur.y - curwin->position.y;
-    
-	if (NextItemSize.x != -1)
-		item.size = NextItemSize;
-    
-    
-	CalcItemSize(item);
-	curwin->items.add(item);
-    
-	AdvanceCursor(item, move_cursor);
-    
-	NextItemSize = vec2{ -1, 0 };
+	}
 }
 
 //TODO(sushi) make NoWrap also check for newlines
 void UI::Text(const char* text, UITextFlags flags) {
-	if (flags & UITextFlags_NoWrap) {
-		UIItem item{ UIItemType_Text, curwin->cursor, style };
-		item.position = PositionForNewItem();
-        
-		if (NextItemSize.x != -1) item.size = NextItemSize;
-		else                      item.size = UI::CalcTextSize(text);
-		
-		TextCall(text, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
-		curwin->items.add(item);
-		AdvanceCursor(item);
-	}
-	else {
-		WrapText(text, curwin->cursor, style.colors[UIStyleCol_Text]);
-	}
+	TextW(text, curwin->cursor, style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap));
 }
 
 void UI::Text(const char* text, vec2 pos, UITextFlags flags) {
-	if (flags & UITextFlags_NoWrap) {
-		UIItem item{ UIItemType_Text, curwin->cursor, style };
-		item.position = pos - curwin->scroll;
-        
-		if (NextItemSize.x != -1) item.size = NextItemSize;
-		else                      item.size = UI::CalcTextSize(text);
-        
-		TextCall(text, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
-		curwin->items.add(item);
-	}
-	else {
-		WrapText(text, pos, style.colors[UIStyleCol_Text], 0);
-	}
+	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap), 0);
 }
 
 void UI::Text(const char* text, color color, UITextFlags flags) {
-	if (flags & UITextFlags_NoWrap) {
-		UIItem item{ UIItemType_Text, curwin->cursor, style };
-		item.position = curwin->cursor + style.windowPadding - curwin->scroll;
-		
-		if (NextItemSize.x != -1) item.size = NextItemSize;
-		else                      item.size = UI::CalcTextSize(text);
-        
-		TextCall(text, vec2{ 0,0 }, color, item);
-		curwin->items.add(item);
-		AdvanceCursor(item);
-	}
-	else {
-		WrapText(text, curwin->cursor, color);
-	}
-    
+	TextW(text, curwin->cursor, color, HasFlag(UITextFlags_NoWrap));
 }
 
 void UI::Text(const char* text, vec2 pos, color color, UITextFlags flags) {
-	if (flags & UITextFlags_NoWrap) {
-		UIItem item{ UIItemType_Text, curwin->cursor, style };
-		item.position = pos - curwin->scroll;
-        
-		if (NextItemSize.x != -1) item.size = NextItemSize;
-		else                      item.size = UI::CalcTextSize(text);
-        
-		TextCall(text, vec2{ 0,0 }, color, item);
-		curwin->items.add(item);
-	}
-	else {
-		WrapText(text, pos, color);
-	}
+	TextW(text, pos, color, HasFlag(UITextFlags_NoWrap), 0);
 }
 
 
-bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 0) {
-	UIItem item{ UIItemType_Button, curwin->cursor, style };
-	item.size = (NextItemSize.x != -1) ? NextItemSize : vec2(Min(curwin->width, 50), style.font->height * 1.3);
-	item.position = pos;
-    
+bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
+	UIItem* item = NewUIItem(UIItemType_Button);
+	item->size = (NextItemSize.x != -1) ? NextItemSize : vec2(Min(curwin->width, 50), style.font->height * 1.3);
+	item->position = pos;
+	AdvanceCursor(item, move_cursor);
+
 	{//background
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = vec2::ZERO;
-		drawCmd.dimensions = item.size;
+		drawCmd.dimensions = item->size;
 		drawCmd.color = color;
-		item.drawCmds.add(drawCmd);
+		item->drawCmds.add(drawCmd);
 	}
     
 	{//border
 		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
 		drawCmd.color = style.colors[UIStyleCol_Border];
 		drawCmd.position = vec2::ZERO;
-		drawCmd.dimensions = item.size;
+		drawCmd.dimensions = item->size;
 		drawCmd.scissorOffset = -vec2::ONE * 2;
 		drawCmd.scissorExtent = curwin->dimensions + vec2::ONE * 2;
-		item.drawCmds.add(drawCmd);
+		item->drawCmds.add(drawCmd);
 	}
     
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
 		drawCmd.color = style.colors[UIStyleCol_Text];
 		drawCmd.position = 
-			vec2((item.size.x - strlen(text) * style.font->width) * style.buttonTextAlign.x,
+			vec2((item->size.x - strlen(text) * style.font->width) * style.buttonTextAlign.x,
                  (style.font->height * 1.3 - style.font->height) * style.buttonTextAlign.y);
-		//drawCmd.scissorOffset = item.position;
-		drawCmd.scissorExtent = item.size;
+		//drawCmd.scissorOffset = item->position;
+		drawCmd.scissorExtent = item->size;
 		drawCmd.text = string(text);
-		item.drawCmds.add(drawCmd);
+		item->drawCmds.add(drawCmd);
 	}
     
-	curwin->items.add(item);
-    
-	AdvanceCursor(item, move_cursor);
-    
 	//TODO(sushi) add a flag for prevent button presses when window is not focused
-	if (/*curwin->focused &&*/ Math::PointInRectangle(DeshInput->mousePos, curwin->position + pos, item.size) && DeshInput->LMousePressed()) return true;
+	if (/*curwin->focused &&*/ Math::PointInRectangle(DeshInput->mousePos, curwin->position + pos, item->size) && DeshInput->LMousePressed()) return true;
 	else return false;
 }
 
@@ -585,13 +624,16 @@ bool UI::Button(const char* text, vec2 pos, color color) {
 }
 
 void UI::Checkbox(string label, bool* b) {
-	UIItem item{ UIItemType_Checkbox, curwin->cursor, style };
-    
+	UIItem* item = NewUIItem(UIItemType_Checkbox);
+
 	vec2 boxpos = PositionForNewItem();
 	vec2 boxsiz = style.checkboxSize;
     
-	item.position = boxpos;
-	item.size = boxsiz;
+	item->position = boxpos;
+	item->size = boxsiz;
+	item->size.x += style.itemSpacing.x + CalcTextSize(label).x;
+
+	AdvanceCursor(item);
     
 	{//box
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
@@ -599,7 +641,7 @@ void UI::Checkbox(string label, bool* b) {
 		drawCmd.dimensions = boxsiz;
 		drawCmd.color = style.colors[UIStyleCol_FrameBg];
         
-		item.drawCmds.add(drawCmd);
+		item->drawCmds.add(drawCmd);
 	}
     
 	//fill if true
@@ -610,7 +652,7 @@ void UI::Checkbox(string label, bool* b) {
 		drawCmd.dimensions = boxsiz * (vec2::ONE - 2 * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y));
 		drawCmd.color = style.colors[UIStyleCol_FrameBg] * 0.7;
         
-		item.drawCmds.add(drawCmd);
+		item->drawCmds.add(drawCmd);
 	}
     
 	{//label
@@ -619,22 +661,125 @@ void UI::Checkbox(string label, bool* b) {
 		drawCmd.text = label;
 		drawCmd.color = style.colors[UIStyleCol_Text];
         
-		item.drawCmds.add(drawCmd);
+		item->drawCmds.add(drawCmd);
 	}
     
-	if (DeshInput->LMousePressed() && Math::PointInRectangle(DeshInput->mousePos, curwin->position + boxpos, boxsiz))
+	
+
+	if (DeshInput->LMousePressed() && Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position, boxsiz))
 		*b = !*b;
     
-	curwin->items.add(item);
+}
+
+void UI::DropDown(const char* label, const char* options[], u32 options_count, u32& selected) {
+	UIItem* item = NewUIItem(UIItemType_DropDown);
+
+	bool isOpen = false;
+	if (!dropDowns.has(label)) {
+		dropDowns.add(label);
+		dropDowns[label] = false;
+	}
+	else {
+		isOpen = dropDowns[label];
+	}
+
+
+	item->position = PositionForNewItem();
+	item->size = (NextItemSize.x == -1) ? vec2{ curwin->width - 2 * style.windowPadding.x, 20 } : NextItemSize;
+
 	AdvanceCursor(item);
+
+	//main bar, drawn regardless of if the box is open
+
+	{//background
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+		drawCmd.position = vec3{ 0,0 };
+		drawCmd.dimensions = item->size;
+		drawCmd.color = style.colors[UIStyleCol_FrameBg];
+		item->drawCmds.add(drawCmd);
+	}
+
+	{//selected text
+		UIDrawCmd drawCmd{ UIDrawType_Text };
+		drawCmd.position = vec3{ 10, (item->size.y - style.font->height) * 0.5f };
+		drawCmd.color = style.colors[UIStyleCol_Text];
+		drawCmd.text = string(options[selected]);
+		item->drawCmds.add(drawCmd);
+	}
+
+	vec2 openBoxPos = vec2{ (item->size.x - item->size.y / 2) * 0.95f, item->size.y / 4 };
+	vec2 openBoxSize = vec2{ item->size.y / 2, item->size.y / 2 };
+
+	{//open box
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+		drawCmd.position = openBoxPos;
+		drawCmd.dimensions = openBoxSize;
+		drawCmd.color = style.colors[UIStyleCol_FrameBg] * 0.4;
+		item->drawCmds.add(drawCmd);
+	}
+
+	if (curwin->focused && 
+		DeshInput->LMousePressed() &&
+		Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position + openBoxPos, openBoxSize)) {
+		dropDowns[label] = !dropDowns[label];
+	}
+	
+	if(isOpen) {
+		//find what box the mouse is over
+
+		vec2 sp = item->position.yAdd(item->size.y);
+		vec2 mp = DeshInput->mousePos - (curwin->position + sp);
+		f32 height = item->size.y * options_count;
+		f32 width = item->size.x;
+		u32 mo = -1;
+
+		if (curwin->focused && Math::PointInRectangle(mp, vec2::ZERO, vec2{ width, height })) {
+			mo = floor(mp.y / height * options_count);
+			if (DeshInput->LMousePressed()) {
+				selected = mo;
+			}
+		}
+		
+		for (int i = 0; i < options_count; i++) {
+			{//selection boxes
+				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+				drawCmd.position = vec2{ 0, item->size.y * (i + 1) };
+				drawCmd.dimensions = item->size;
+				drawCmd.color = style.colors[UIStyleCol_FrameBg] * ((i == selected || i == mo) ? 0.5 : 1);
+				item->drawCmds.add(drawCmd);
+				
+			}
+
+			{//underline
+				UIDrawCmd drawCmd{ UIDrawType_Line };
+				drawCmd.position = vec2{ 0,(item->size.y * (i + 2))};
+				drawCmd.position2 = vec2{ item->size.x, (item->size.y * (i + 2))};
+				drawCmd.color = Color_Black;
+				drawCmd.thickness = 1;
+				item->drawCmds.add(drawCmd);
+			}
+
+			{//selection texts
+				UIDrawCmd drawCmd{ UIDrawType_Text };
+				drawCmd.position = vec3{ 10, (item->size.y - style.font->height) * 0.5f + (i + 1) * item->size.y };
+				drawCmd.color = style.colors[UIStyleCol_Text];
+				drawCmd.text = options[i];
+				item->drawCmds.add(drawCmd);
+			}
+		}
+
+
+
+	}
+
 }
 
 //@InputText
 
 //final input text
 bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UIInputTextCallback callback, UIInputTextFlags flags, bool moveCursor) {
-	UIItem item{ UIItemType_InputText, curwin->cursor, style };
-    
+	UIItem* item = NewUIItem(UIItemType_InputText);
+
 	UIInputTextState* state;
     
 	size_t charCount = strlen(buff);
@@ -650,7 +795,12 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	else {
 		dim = vec2(Math::clamp(100, 0, Math::clamp(curwin->width - style.windowPadding.x * 2, 1, FLT_MAX)), style.font->height * 1.3);
 	}
-    
+
+	item->size = dim;
+	item->position = position;
+
+	AdvanceCursor(item, moveCursor);
+
 	if (!(state = inputTexts.at(label))) {
 		state = inputTexts.atIdx(inputTexts.add(label));
 		state->cursor = charCount;
@@ -662,6 +812,14 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	else {
 		state->callback = callback;
 	}
+
+	if (NextActive || DeshInput->KeyPressedAnyMod(MouseButton::LEFT)) {
+		if (NextActive || Math::PointInRectangle(DeshInput->mousePos, curwin->position + GetLastItem()->position, dim)) {
+			activeId = state->id;
+			NextActive = 0;
+		}
+		else if (activeId == state->id) activeId = -1;
+	}
     
 	if (charCount < state->cursor)
 		state->cursor = charCount;
@@ -672,14 +830,6 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	data.buffer = buff;
 	data.selectionStart = state->selectStart;
 	data.selectionEnd = state->selectEnd;
-    
-	//check for mouse click or next active to set active 
-	if (NextActive || DeshInput->KeyPressedAnyMod(MouseButton::LEFT)) {
-		if (NextActive || Math::PointInRectangle(DeshInput->mousePos, curwin->position + position, dim)) {
-			activeId = state->id;
-			NextActive = 0;
-		} else if (activeId == state->id) activeId = -1;
-	}
     
 	bool bufferChanged = 0;
 	if (activeId == state->id) {
@@ -717,7 +867,9 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		};
         
 		auto erase = [&](u32 idx) {
-			memmove(buff + idx, buff + idx + 1, (--charCount) * CHAR_SIZE);
+			if (charCount == 1) memset(buff, 0, buffSize);
+			else                memmove(buff + idx, buff + idx + 1, (--charCount) * CHAR_SIZE);
+			
 		};
         
 		char charPlaced;
@@ -817,19 +969,13 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		}
 	}
     
-    
-    
-    
-	item.size = dim;
-	item.position = position;
-    
 	if (!(flags & UIInputTextFlags_NoBackground)) {//text box
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = dim;
 		drawCmd.color = Color_DarkGrey;
         
-		item.drawCmds.add(drawCmd);
+		item->drawCmds.add(drawCmd);
 	}
     
 	vec2 textStart =
@@ -842,7 +988,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		drawCmd.text = string(buff);
 		drawCmd.color = style.colors[UIStyleCol_Text];
         
-		item.drawCmds.add(drawCmd);
+		item->drawCmds.add(drawCmd);
 	}
     
 	//TODO(sushi, Ui) impl different text cursors
@@ -857,11 +1003,8 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
                              sin((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000)) + 1) / 2);
 		drawCmd.thickness = 1;
         
-		item.drawCmds.add(drawCmd);
+		item->drawCmds.add(drawCmd);
 	}
-    
-	curwin->items.add(item);
-	AdvanceCursor(item, moveCursor);
 	
 	if (flags & UIInputTextFlags_EnterReturnsTrue && DeshInput->KeyPressedAnyMod(Key::ENTER) || DeshInput->KeyPressedAnyMod(Key::NUMPADENTER)) {
 		return true;
@@ -927,8 +1070,8 @@ bool UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIIn
 //if begin window is called with a name that was already called before it will work with
 //the data that window previously had
 void UI::BeginWindow(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
-	Assert(!row.columns.count, "Attempted to start a window without satifying a row quota (holy shit reword this)");
-    
+	Assert(!rowInProgress, "Attempted to begin a window with a Row in progress! (Did you forget to call EndRow()?");
+
 	//save previous window on stack
 	windowStack.add(curwin); 
 	
@@ -1070,7 +1213,7 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
 
 void UI::EndWindow() {
 	Assert(windowStack.size() > 1, "Attempted to end the base window");
-	Assert(!row.columns.count, "Attempted to end a window without satifying a row quota (holy shit reword this)");
+	Assert(!rowInProgress, "Attempted to end a window with a Row in progress! (Did you forget to call EndRow()?");
     
 	UIItem item{ UIItemType_Base, curwin->cursor, style };
 	item.position = vec2::ZERO;
@@ -1325,6 +1468,7 @@ void UI::Init() {
 	PushVar(UIStyleVar_CheckboxFillPadding, 2);
 	PushVar(UIStyleVar_InputTextTextAlign,  vec2(0, 0.5));
 	PushVar(UIStyleVar_ButtonTextAlign,     vec2(0.5, 0.5));
+	PushVar(UIStyleVar_RowItemAlign,        vec2(0.5, 0.5));
     
 	
 	initColorStackSize = colorStack.size();
@@ -1341,6 +1485,7 @@ void UI::Update() {
 	Assert(windowStack.size() == 1, 
 		   "Frame ended with hanging windows in the stack, make sure you call EndWindow() if you call BeginWindow()!");
 	
+
 	//TODO(sushi) impl this for other stacks
 	if (varStack.count != initStyleStackSize) {
 		PRINTLN("Frame ended with hanging vars in the stack, make sure you pop vars if you push them!\nVars were:\n");
@@ -1481,9 +1626,9 @@ void UI::Update() {
                         
 						case UIDrawType_Line: {
 							if (drawCmd.scissorExtent.x == -1)
-								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, winscissor, winsiz);
+								Render::DrawLineUI(dcpos, dcpos2, dct, dccol, winscissor, winsiz);
 							else
-								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, dcso - itempos, dcse);
+								Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcso - itempos, dcse);
 						}break;
                         
 						case UIDrawType_Text: {
