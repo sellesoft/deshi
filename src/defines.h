@@ -131,4 +131,6 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #error "unhandled compiler"
 #endif
 
+template<typename T> inline void Swap(T& a, T& b){T temp = a; a = b; b = temp;};
+
 #endif //DESHI_DEFINES_H
