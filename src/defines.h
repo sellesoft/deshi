@@ -52,8 +52,9 @@ typedef double             f64;
 //debug breakpoint
 #if defined(_MSC_VER)
 #define DEBUG_BREAK __debugbreak()
-#else //NOTE if not using MSVC, see https://github.com/scottt/debugbreak
-#define DEBUG_BREAK (void)0
+#else
+//TODO(delle) handle other compilers: https://github.com/scottt/debugbreak
+#error "unhandled compiler"
 #endif //_MSC_VER
 
 //force inline
@@ -125,7 +126,7 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define ByteSwap64(x) __builtin_bswap64(x)
 #else
 //TODO(delle) do actual bitmath here
-#error "Unhandled compiler"
+#error "unhandled compiler"
 #endif
 
 #endif //DESHI_DEFINES_H

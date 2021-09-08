@@ -232,8 +232,8 @@ struct UIItem {
 	
 	vec2 position; //relative to the window its being held in
 	vec2 size;
-
-
+    
+    
 	//all draw command positions are relative to the items position
 	array<UIDrawCmd> drawCmds;
 };
@@ -281,7 +281,7 @@ struct UIWindow {
 	
 	bool hovered = false;
 	bool titleHovered = false;
-
+    
 	bool focused = false;
 	
 	bool minimized = false;
@@ -309,7 +309,7 @@ enum UIRowFlags_ {
 	UIRowFlags_CellBorderLeft     = 1 << 4,
 	UIRowFlags_CellBorderRight    = 1 << 5,
 	UIRowFlags_CallBorderFull     = UIRowFlags_CellBorderTop | UIRowFlags_CellBorderBottom | UIRowFlags_CellBorderLeft | UIRowFlags_CellBorderRight,
-
+    
 }; typedef u32 UIRowFlags;
 
 //for use internally only!
@@ -336,13 +336,13 @@ enum UIRowFlags_ {
 struct UIRow {
 	u32 numcolumns = 0;
 	UIRowFlags flags = 0;
-
+    
 	f32 height = 0;
-
+    
 	u32 itemsLeft = 0;
-
+    
 	u32 currentColumn = 0;
-
+    
 	array<UIItem*> items;
 	array<pair<u32, f32>> columns; //stores index and width of the column
 };

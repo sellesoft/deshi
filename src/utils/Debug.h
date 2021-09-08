@@ -61,7 +61,6 @@ static std::string to_std_string(T... args) {
 	return str;
 }
 
-static string to_string(const char* str) { return string(str); }
 static string to_string(char* str) { return string(str); }
 
 static string to_string(const string& str) { return str; }
