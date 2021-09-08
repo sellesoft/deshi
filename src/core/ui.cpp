@@ -548,6 +548,18 @@ void UI::Text(const char* text, vec2 pos, color color, UITextFlags flags) {
 	TextW(text, pos, color, HasFlag(UITextFlags_NoWrap), 0);
 }
 
+void UI::TextF(const char* fmt, ...) {
+    string s;
+    va_list argptr;
+    va_start(argptr, fmt);
+    s.size  = vsnprintf(nullptr, 0, fmt, argptr);
+    s.str   = (char*)malloc(s.size+1);
+    s.space = s.size+1;
+    vsnprintf(s.str, s.size+1, fmt, argptr);
+    va_end(argptr);
+	TextW(s.str, curwin->cursor, style.colors[UIStyleCol_Text], false);
+}
+
 
 bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 	UIItem* item = NewUIItem(UIItemType_Button);
