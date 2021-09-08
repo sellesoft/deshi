@@ -46,6 +46,8 @@ typedef double             f64;
 //NOTE we dont place this under DESHI_INTERNAL so that crashes do happen outside of development
 #define Assert(expression, ...) if(!(expression)){*(volatile int*)0 = 0;}
 #else
+#pragma warning(once : 4552)
+#pragma warning(once : 4553)
 #define Assert(expression, ...) expression
 #endif //DESHI_SLOW
 

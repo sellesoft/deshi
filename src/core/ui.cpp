@@ -306,9 +306,9 @@ void UI::EndRow() {
 
 void UI::EndRow() {
 	Assert(rowInProgress, "Attempted to a end a row without calling BeginRow() first!");
-	Assert(row.items.count == row.columns, "Attempted to end a Row without giving the correct amount of items!")
-        
-        curwin->cursor = vec2{ 0, row.position.y + row.height + style.itemSpacing.y - style.windowPadding.y + curwin->scroll.y };
+	Assert(row.items.count == row.columns, "Attempted to end a Row without giving the correct amount of items!");
+    
+    curwin->cursor = vec2{ 0, row.position.y + row.height + style.itemSpacing.y - style.windowPadding.y + curwin->scroll.y };
     
 	row.items.clear();
 	row.columnWidths.clear();
