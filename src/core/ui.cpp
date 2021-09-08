@@ -393,7 +393,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 }
 
 
-//Line
+//@Line
 
 void UI::Line(vec2 start, vec2 end, float thickness, color color){
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
@@ -421,7 +421,7 @@ void UI::SetNextItemSize(vec2 size) {
 }
 
 
-//Text
+//@Text
 
 //internal function for actually making and adding the drawCmd
 local void TextCall(const char* text, vec2 pos, color color, UIItem* item) {
@@ -526,7 +526,10 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 		if (NextItemSize.x != -1) item->size = NextItemSize;
 		else                      item->size = UI::CalcTextSize(in);
         
+		NextItemSize = vec2{ -1, 0 };
+
 		TextCall(in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
+		CalcItemSize(item);
 	}
 	if(move_cursor) AdvanceCursor(item);
 }
