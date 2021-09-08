@@ -1178,7 +1178,7 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
             
             if (Math::PointInRectangle(mp, drawCmd.position, drawCmd.dimensions)) {
                 drawCmd.color = style.colors[UIStyleCol_TitleBg] * 0.7;
-                if (DeshInput->KeyPressedAnyMod(MouseButton::LEFT)) {
+                if (DeshInput->KeyPressed(MouseButton::LEFT)) {
                     curwin->minimized = !curwin->minimized;
                 }
             }

@@ -79,7 +79,7 @@ Command* Console::GetCommand(std::string command){
 
 std::string Console::ExecCommand(std::string command){
 	if(commands.find(command) != commands.end()){
-		return "execcommand to be redone";//commands.at(command)->Exec(g_admin, "");
+		return "use Console2 for commands";//commands.at(command)->Exec(g_admin, "");
 	}
 	else {
 		ERROR("Command, '",command,"' does not exist");
@@ -89,7 +89,7 @@ std::string Console::ExecCommand(std::string command){
 
 std::string Console::ExecCommand(std::string command, std::string args){
 	if(commands.find(command) != commands.end()){
-		return "exec command to be reimplemented in the brand new console 2";//commands.at(command)->Exec(g_admin, args);
+		return "use Console2 for commands";//commands.at(command)->Exec(g_admin, args);
 	}
 	else {
 		ERROR("Command, '",command,"' does not exist");
