@@ -3209,7 +3209,6 @@ DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorE
 	}
 }
 
-//NOTE: text scaling looks very ugly with bit map fonts as far as i know
 void Render::
 DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
@@ -4133,10 +4132,10 @@ Update(){
 ////////////////
 void Render::
 Reset(){
-	SUCCESS("Resetting renderer (Vulkan)");
+	PrintVk(1,"Resetting renderer");
+    
 	vkDeviceWaitIdle(device); //wait before cleanup
-	
-	
+    //TODO(delle) delete things
 }
 
 
@@ -4149,7 +4148,6 @@ Cleanup(){
 	PrintVk(1, "Initializing Cleanup\n");
 	
 	Render::SaveSettings();
-	
 	//save pipeline cache to disk
 	if(pipelineCache != VK_NULL_HANDLE){
 		size_t size{};

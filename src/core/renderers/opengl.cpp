@@ -102,7 +102,7 @@ local ConfigMap configMap = {
     {"mesh_wireframes",  ConfigValueType_Bool, &settings.meshWireframes},
     {"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals}, //!Incomplete
     {"light_frustrums",  ConfigValueType_Bool, &settings.lightFrustrums}, //!Incomplete
-    {"temp_mesh_on_top", ConfigValueType_Bool, &settings.tempMeshOnTop}, //!Incomplete
+    {"temp_mesh_on_top", ConfigValueType_Bool, &settings.tempMeshOnTop},
 };
 
 local RenderStats   stats{};
@@ -119,7 +119,7 @@ local array<MeshGl>     glMeshes;
 local array<ShaderGl>   glShaders;
 local array<TextureGl>  glTextures;
 local array<MaterialGl> glMaterials;
-local array<FontGl>     glFont;
+local array<FontGl>     glFonts;
 
 ///////////////////
 //// @commands ////
@@ -819,20 +819,61 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 }
 
 void Render::
-DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){ //!Incomplete
+DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
     if (color.a == 0) return;
     
-    
+    f32 w = glFonts[1].characterWidth;
+	for (int i = 0; i < text.size; i++) {
+		DrawCharUI((u32)text[i], pos, vec2::ONE, color, scissorOffset, scissorExtent);
+		pos.x += w;
+	}
 }
 
-//NOTE: text scaling looks very ugly with bit map fonts as far as i know
 void Render::
-DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){ //!Incomplete
+DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
     if(color.a == 0) return;
     
-    
+    if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 
+       scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+       scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+	
+	u32       col = color.rgba;
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
+	UIIndexGl* ip = uiIndexArray  + uiIndexCount;
+	
+	f32 w = glFonts[1].characterWidth;
+	f32 h = glFonts[1].characterHeight;
+	f32 dy = 1.f / f32(glFonts[1].characterCount);
+	
+	f32 idx = character-32; 
+	f32 topoff = idx*dy;
+	f32 botoff = topoff+dy;
+	
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
+	vp[0].pos = {pos.x+0,pos.y+0}; vp[0].uv = {0,topoff}; vp[0].color = col;
+	vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,topoff}; vp[1].color = col;
+	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,botoff}; vp[2].color = col;
+	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,botoff}; vp[3].color = col;
+	
+	uiVertexCount += 4;
+	uiIndexCount  += 6;
+	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_FONT;
+	if(scissorExtent.x != -1){
+		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+	}else{
+		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0,0);
+	}
 }
 
 
@@ -870,8 +911,15 @@ GetStage(){
 //// @load ////
 ///////////////
 void Render::
-LoadFont(Font* font, Texture* texture){ //!Incomplete
+LoadFont(Font* font, Texture* texture){
+    FontGl fgl{};
+    fgl.base            = font;
+    fgl.texture         = texture->idx;
+    fgl.characterWidth  = font->width;
+	fgl.characterHeight = font->height;
+	fgl.characterCount  = font->char_count;
     
+    glFonts.add(fgl);
 }
 
 void Render::
@@ -1012,31 +1060,31 @@ LoadMesh(Mesh* mesh){
 }
 
 void Render::
-UpdateMaterial(Material* material){ //!Incomplete
-    
+UpdateMaterial(Material* material){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 /////////////////
 //// @unload ////
 /////////////////
 void Render::
-UnloadFont(Font* font){ //!Incomplete
-    
+UnloadFont(Font* font){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-UnloadTexture(Texture* texture){ //!Incomplete
-    
+UnloadTexture(Texture* texture){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-UnloadMaterial(Material* material){ //!Incomplete
-    
+UnloadMaterial(Material* material){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-UnloadMesh(Mesh* mesh){ //!Incomplete
-    
+UnloadMesh(Mesh* mesh){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 ///////////////
@@ -1060,8 +1108,8 @@ DrawModel(Model* model, mat4 matrix){
 }
 
 void Render::
-DrawModelWireframe(Model* model, mat4 matrix, color color){ //!Incomplete
-    
+DrawModelWireframe(Model* model, mat4 matrix, color color){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
@@ -1239,31 +1287,31 @@ UseDefaultViewProjMatrix(vec3 position, vec3 rotation){
 //// @shaders ////
 //////////////////
 void Render::
-ReloadShader(u32 shader){ //!Incomplete
-    
+ReloadShader(u32 shader){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-ReloadAllShaders(){ //!Incomplete
-    
+ReloadAllShaders(){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 /////////////////
 //// @remake ////
 /////////////////
 void Render::
-UpdateLight(u32 lightIdx, vec4 vec){ //!Incomplete
-    
+UpdateLight(u32 lightIdx, vec4 vec){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-remakeOffscreen(){ //!Incomplete
-    
+remakeOffscreen(){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-RemakeTextures(){ //!Incomplete
-    
+RemakeTextures(){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 ///////////////
@@ -1377,7 +1425,7 @@ Update(){
     if(uiVertexCount > 0 && uiIndexCount > 0){
         glBindVertexArray(uiBuffers.vao_handle);
         glBindBuffer(GL_UNIFORM_BUFFER, push2D.handle);
-        push2D.values.scale     = {2.0f/(f32)width, -2.0f/(f32)height};
+        push2D.values.scale     = {2.0f/f32(width), -2.0f/f32(height)};
         push2D.values.translate = {-1.f, 1.f};
         glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(push2D.values), &push2D.values);
         
@@ -1392,9 +1440,10 @@ Update(){
                       uiCmdArray[cmd_idx].scissorOffset.y,
                       uiCmdArray[cmd_idx].scissorExtent.x,
                       uiCmdArray[cmd_idx].scissorExtent.y);
-            glBindTexture(glTextures[1].type, glTextures[1].handle);
+            glBindTexture(glTextures[glFonts[uiCmdArray[cmd_idx].texIdx].texture].type, 
+                          glTextures[glFonts[uiCmdArray[cmd_idx].texIdx].texture].handle);
             glUniform1i(glGetUniformLocation(programs.null.handle,"tex"),0);
-            glDrawElementsBaseVertex(GL_TRIANGLES, uiIndexCount, INDEX_TYPE_GL_UI,
+            glDrawElementsBaseVertex(GL_TRIANGLES, uiCmdArray[cmd_idx].indexCount, INDEX_TYPE_GL_UI,
                                      (void*)(uiCmdArray[cmd_idx].indexOffset*sizeof(UIIndexGl)), 0);
         }
         
@@ -1417,16 +1466,18 @@ Update(){
 //// @reset ////
 ////////////////
 void Render::
-Reset(){ //!Incomplete
+Reset(){
+    PrintGl(1,"Resetting renderer");
     glFinish();
-    
+    //TODO(delle) delete things
 }
 
 //////////////////
 //// @cleanup ////
 //////////////////
 void Render::
-Cleanup(){ //!Incomplete
+Cleanup(){
+    Render::SaveSettings();
+    //TODO(delle) save pipelines in GL4
     glFinish();
-    
 }
