@@ -128,11 +128,11 @@ inline vec2 UI::CalcTextSize(string text) {
 
 //calculates the items position and size based on its draw commands
 //should really only be used when doing this manually is too annoying
-inline void CalcItemSize(UIItem& item) {
+inline void CalcItemSize(UIItem* item) {
 	using namespace UI;
     
 	vec2 max;
-	for (UIDrawCmd& drawCmd : item.drawCmds) {
+	for (UIDrawCmd& drawCmd : item->drawCmds) {
 		switch (drawCmd.type) {
 			case UIDrawType_Rectangle:
 			case UIDrawType_FilledRectangle: {
@@ -142,7 +142,7 @@ inline void CalcItemSize(UIItem& item) {
 			case UIDrawType_Line: {
 				vec2 ulm{ Min(drawCmd.position.x, drawCmd.position2.x), Min(drawCmd.position.y, drawCmd.position2.y) };
 				vec2 lrm{ Max(drawCmd.position.x, drawCmd.position2.x), Max(drawCmd.position.y, drawCmd.position2.y) };
-				lrm -= item.position;
+				lrm -= item->position;
 				max.x = Max(max.x, lrm.x);
 				max.y = Max(max.y, lrm.y);
 				
@@ -154,7 +154,7 @@ inline void CalcItemSize(UIItem& item) {
 			}break;
 		}
 	}
-	item.size = max;
+	item->size = max;
 }
 
 //internal master cursor controller
@@ -527,7 +527,7 @@ inline local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool
 			item->size = NextItemSize;
 
 
-		CalcItemSize(*item);
+		CalcItemSize(item);
 
 		AdvanceCursor(item, move_cursor);
 
@@ -541,7 +541,8 @@ inline local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool
 		else                      item->size = UI::CalcTextSize(in);
 
 		TextCall(in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
-
+		
+		CalcItemSize(item);
 		AdvanceCursor(item);
 	
 	}
@@ -866,7 +867,9 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		};
         
 		auto erase = [&](u32 idx) {
-			memmove(buff + idx, buff + idx + 1, (--charCount) * CHAR_SIZE);
+			if (charCount == 1) memset(buff, 0, buffSize);
+			else                memmove(buff + idx, buff + idx + 1, (--charCount) * CHAR_SIZE);
+			
 		};
         
 		char charPlaced;

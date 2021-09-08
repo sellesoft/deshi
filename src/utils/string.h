@@ -261,7 +261,8 @@ inline void string::clear(){
 
 inline void string::erase(u32 idx){
     Assert(idx < size && idx >= 0);
-    memmove(str+idx, str+idx+1, (--size)*CHAR_SIZE);
+    if (size == 1) memset(str, 0, space);
+    else           memmove(str+idx, str+idx+1, (--size)*CHAR_SIZE);
 }
 
 inline void string::insert(char c, u32 idx){
