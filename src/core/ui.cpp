@@ -437,11 +437,12 @@ local void TextCall(const char* text, vec2 pos, color color, UIItem* item) {
 
 //main function for wrapping, where position is starting position of text relative to the top left of the window
 //this function also decides if text is to be wrapped or not, and if not simply calls TextEx (to clean up the Text() functions)
-inline local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_cursor = true) {
-	if (!nowrap) {
-		using namespace UI;
-		UIItem* item = NewUIItem(UIItemType_Text);
+local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_cursor = true) {
+	using namespace UI;
+	UIItem* item = NewUIItem(UIItemType_Text);
+	item->position = (move_cursor) ? PositionForNewItem() : pos;
 
+	if (!nowrap) {
 		string text = in;
 
 		//we split string by newlines and put them into here 
@@ -464,14 +465,7 @@ inline local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool
 			newlined.add(text);
 		}
 
-
 		vec2 workcur = vec2{ 0,0 };
-
-		item->position = pos;
-		//apply window padding if we're not manually positioning text
-		if (move_cursor)
-			item->position += style.windowPadding - curwin->scroll;
-
 
 		//max characters we can place 
 		u32 maxChars = floor(((curwin->width - style.windowPadding.x) - workcur.x) / style.font->width);
@@ -522,30 +516,19 @@ inline local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool
 		}
 
 		item->size.y = workcur.y - curwin->position.y;
-
 		if (NextItemSize.x != -1)
 			item->size = NextItemSize;
 
-
 		CalcItemSize(item);
-
-		AdvanceCursor(item, move_cursor);
-
 		NextItemSize = vec2{ -1, 0 };
 	}
 	else {
-		UIItem* item = NewUIItem(UIItemType_Text);
-		item->position = PositionForNewItem();
-
 		if (NextItemSize.x != -1) item->size = NextItemSize;
 		else                      item->size = UI::CalcTextSize(in);
 
 		TextCall(in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
-		
-		CalcItemSize(item);
-		AdvanceCursor(item);
-	
 	}
+	if(move_cursor) AdvanceCursor(item);
 }
 
 //TODO(sushi) make NoWrap also check for newlines
