@@ -1609,9 +1609,9 @@ void UI::Update() {
                         
 						case UIDrawType_Line: {
 							if (drawCmd.scissorExtent.x == -1)
-								Render::DrawLineUI(dcpos, dcpos2, dct, dccol, winscissor, winsiz);
+								Render::DrawLineUI(dcpos-itempos, dcpos2-itempos, dct, dccol, winscissor, winsiz);
 							else
-								Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcso - itempos, dcse);
+								Render::DrawLineUI(dcpos-itempos, dcpos2-itempos, dct, dccol, dcso - itempos, dcse);
 						}break;
                         
 						case UIDrawType_Text: {
