@@ -2955,10 +2955,10 @@ BuildCommands(){
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
 				forX(cmd_idx, uiCmdCount){
-					scissor.extent.height = uiCmdArray[cmd_idx].scissorExtent.y;
-					scissor.extent.width = uiCmdArray[cmd_idx].scissorExtent.x;
 					scissor.offset.x = uiCmdArray[cmd_idx].scissorOffset.x;
 					scissor.offset.y = uiCmdArray[cmd_idx].scissorOffset.y;
+					scissor.extent.width = uiCmdArray[cmd_idx].scissorExtent.x;
+					scissor.extent.height = uiCmdArray[cmd_idx].scissorExtent.y;
 					vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 					
 					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &vkFonts[uiCmdArray[cmd_idx].texIdx].descriptorSet, 0, nullptr);
