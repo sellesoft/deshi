@@ -205,10 +205,10 @@ namespace Console2{
     void Update(){
         {//// handle inputs ////
             //open and close console
-            if(DeshInput->KeyPressedAnyMod(Key::F1)){
-                if(DeshInput->LShiftDown()){
+            if(DeshInput->KeyPressed(Key::F1)){
+                if(DeshInput->ShiftDown()){
                     Toggle(ConsoleState_OpenBig);
-                }else if(DeshInput->LAltDown()){
+                }else if(DeshInput->AltDown()){
                     test_swap = !test_swap;
                 }else{
                     Toggle(ConsoleState_OpenSmall);
@@ -218,16 +218,16 @@ namespace Console2{
             if(intercepting_inputs){
                 //!Incomplete
                 //scrolling
-                if(DeshInput->KeyDownAnyMod(MouseButton::SCROLLUP)) {
+                if(DeshInput->ScrollUp()) {
                     //console_scroll_y--;
                 }
-                if(DeshInput->KeyDownAnyMod(MouseButton::SCROLLDOWN)) {
+                if(DeshInput->ScrollDown()) {
                     //console_scroll_y++;
                 }
                 
                 //!Incomplete
                 //input history
-                if(DeshInput->KeyDownAnyMod(Key::UP)) {
+                if(DeshInput->KeyDown(Key::UP)) {
                     input_history_select_index += 1;
                     if(input_history_select_index > input_history_length) input_history_select_index = 0;
                     if(input_history_select_index) {
@@ -236,7 +236,7 @@ namespace Console2{
                         memset(input_history, 0, input_max_size);
                     }
                 }
-                if(DeshInput->KeyDownAnyMod(Key::DOWN)) {
+                if(DeshInput->KeyDown(Key::DOWN)) {
                     input_history_select_index -= 1;
                     if(input_history_select_index < 0) input_history_select_index = input_history_length;
                     if(input_history_select_index) {

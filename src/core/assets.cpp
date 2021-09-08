@@ -376,8 +376,8 @@ saveConfig(const char* filename, const ConfigMap& configMap){
 				u32 keymod = *(Key::Key*)config.third;
 				out << KeyStrings[keymod & 0x000000FF];
 				switch(keymod & 0xFFFFFF00){
-					case(InputMod_NONE):           break; //do nothing
-					case(InputMod_Any):            out << ",Any"; break;
+					case(InputMod_Any):            break; //do nothing
+					case(InputMod_None):           out << ",None"; break;
 					case(InputMod_Lctrl):          out << ",LCTRL"; break;
 					case(InputMod_Rctrl):          out << ",RCTRL"; break;
 					case(InputMod_Lshift):         out << ",LSHIFT"; break;
