@@ -523,6 +523,8 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 		NextItemSize = vec2{ -1, 0 };
 	}
 	else {
+		//TODO(sushi) make NoWrap also check for newlines
+
 		if (NextItemSize.x != -1) item->size = NextItemSize;
 		else                      item->size = UI::CalcTextSize(in);
         
@@ -534,7 +536,6 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 	if(move_cursor) AdvanceCursor(item);
 }
 
-//TODO(sushi) make NoWrap also check for newlines
 void UI::Text(const char* text, UITextFlags flags) {
 	TextW(text, curwin->cursor, style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap));
 }
@@ -872,14 +873,15 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
         
 		char charPlaced;
 		auto placeKey = [&](u32 i, u32 ins, char toPlace) {
-			if (i >= Key::A && i <= Key::Z) {
+			//TODO(sushi) handle Numerical flag better
+			if (i >= Key::A && i <= Key::Z && !HasFlag(UIInputTextFlags_Numerical)) {
 				if (DeshInput->capsLock || DeshInput->ShiftDown())
 					insert(toPlace, ins);
 				else
 					insert(toPlace + 32, ins);
 			}
 			else if (i >= Key::K0 && i <= Key::K9) {
-				if (DeshInput->ShiftDown()) {
+				if (DeshInput->ShiftDown() && !HasFlag(UIInputTextFlags_Numerical)) {
 					switch (i) {
 						case Key::K0: data.character = ')'; insert(')', ins); break;
 						case Key::K1: data.character = '!'; insert('!', ins); break;
@@ -899,7 +901,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 				}
 			}
 			else {
-				if (DeshInput->ShiftDown()) {
+				if (DeshInput->ShiftDown() && !HasFlag(UIInputTextFlags_Numerical)) {
 					switch (i) {
 						case Key::SEMICOLON:  data.character = ':';  insert(':', ins);  break;
 						case Key::APOSTROPHE: data.character = '"';  insert('"', ins);  break;
@@ -915,8 +917,14 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 					}
 				}
 				else {
-					data.character = KeyStringsLiteral[i];
-					insert(KeyStringsLiteral[i], ins);
+					if (HasFlag(UIInputTextFlags_Numerical) && KeyStringsLiteral[i] == '.') {
+						data.character = '.';
+						insert('.', ins);
+					}
+					else if(!HasFlag(UIInputTextFlags_Numerical)) {
+						data.character = KeyStringsLiteral[i];
+						insert(KeyStringsLiteral[i], ins);
+					}
 				}
 			}
 			TIMER_RESET(state->timeSinceTyped);

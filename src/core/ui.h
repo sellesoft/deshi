@@ -142,6 +142,7 @@ enum UIInputTextFlags_ {
 	UIInputTextFlags_NoBackground          = 1 << 6,
 	UIInputTextFlags_FitSizeToText         = 1 << 7,
 	UIInputTextFlags_SetCursorToEndOnEnter = 1 << 8,
+	UIInputTextFlags_Numerical             = 1 << 9, //only allows input of [0-9|.]
     
 }; typedef u32 UIInputTextFlags;
 
