@@ -1400,18 +1400,6 @@ Update(){
         //filled
         glUseProgram(programs.selected.handle);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-#if 0
-        int mapped1 = -1; int mapped2 = -1;
-        int size1 = -1; int size2 = -1;
-        int is1 = -1; int is2 = -1;
-        is1 = glIsBuffer(tempBuffers.vbo_handle);
-        is2 = glIsBuffer(tempBuffers.ibo_handle);
-        glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_MAPPED, &mapped1);
-        glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_MAPPED, &mapped2);
-        glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size1);
-        glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size2);
-#endif
-        
         glDrawElementsBaseVertex(GL_TRIANGLES, tempFilledIndexCount, INDEX_TYPE_GL_TEMP, 0, 0);
         
         //wireframe
@@ -1437,7 +1425,7 @@ Update(){
         
         forX(cmd_idx, uiCmdCount){
             glScissor(uiCmdArray[cmd_idx].scissorOffset.x,
-                      uiCmdArray[cmd_idx].scissorOffset.y,
+                      (height - uiCmdArray[cmd_idx].scissorOffset.y) - uiCmdArray[cmd_idx].scissorExtent.y,
                       uiCmdArray[cmd_idx].scissorExtent.x,
                       uiCmdArray[cmd_idx].scissorExtent.y);
             glBindTexture(glTextures[glFonts[uiCmdArray[cmd_idx].texIdx].texture].type, 
