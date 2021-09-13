@@ -59,10 +59,10 @@ global_ string to_string(u32 x){
 global_ string to_string(f32 x, bool trunc = true){
     string s;
     if(trunc){
-        s.size = snprintf(nullptr, 0, "%.2f", x);
+        s.size = snprintf(nullptr, 0, "%g", x);
         s.str  = (char*)malloc(s.size+1);
         s.space = s.size+1;
-        snprintf(s.str, s.size+1, "%.2f", x);
+        snprintf(s.str, s.size+1, "%g", x);
     }else{
         s.size = snprintf(nullptr, 0, "%f", x);
         s.str  = (char*)malloc(s.size+1);
@@ -75,10 +75,10 @@ global_ string to_string(f32 x, bool trunc = true){
 global_ string to_string(f64 x, bool trunc = true){
     string s;
     if(trunc){
-        s.size = snprintf(nullptr, 0, "%.2f", x);
+        s.size = snprintf(nullptr, 0, "%g", x);
         s.str  = (char*)malloc(s.size+1);
         s.space = s.size+1;
-        snprintf(s.str, s.size+1, "%.2f", x);
+        snprintf(s.str, s.size+1, "%g", x);
     }else{
         s.size = snprintf(nullptr, 0, "%f", x);
         s.str  = (char*)malloc(s.size+1);

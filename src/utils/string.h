@@ -63,6 +63,8 @@ struct string{
     
     static string eatSpacesLeading(const string& s);
     static string eatSpacesTrailing(const string& s);
+    static string toUpper(const string& s);
+    static string toLower(const string& s);
 };
 
 ///////////////////////
@@ -169,7 +171,7 @@ inline void string::operator+=(const char* s){
     }else if(space < size+1){
         space = RoundUpTo(size+1, 4);
         Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
-        memcpy(str+old_len, s, str_len*CHAR_SIZE);
+        memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
     }else{
         memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
     }
@@ -188,7 +190,7 @@ inline void string::operator+=(const string& s){
     }else if(space < size+1){
         space = RoundUpTo(size+1, 4);
         Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
-        memcpy(str+old_len, s.str, str_len*CHAR_SIZE);
+        memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
     }else{
         memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
     }
@@ -352,6 +354,18 @@ inline string string::eatSpacesLeading(const string& text){
 inline string string::eatSpacesTrailing(const string& text){
     u32 idx = text.findLastCharNot(' ');
     return (idx != npos) ? text.substr(0, idx+1) : string();
+}
+
+inline string string::toUpper(const string& in){
+    string result = in;
+    forI(result.size) if(result.str[i] >= 'a' && result.str[i] <= 'z') result.str[i] -= 32;
+    return result;
+}
+
+inline string string::toLower(const string& in){
+    string result = in;
+    forI(result.size) if(result.str[i] >= 'A' && result.str[i] <= 'Z') result.str[i] += 32;
+    return result;
 }
 
 #endif //DESHI_STRING_H

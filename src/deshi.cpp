@@ -119,7 +119,6 @@ Bug Board       //NOTE mark these with a last-known active date (M/D/Y)
 ---------
 (07/10/21) the program crashes if default asset files are not present
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
-(09/07/21) input.h ShiftDown() doesnt work all the time
 
 */
 
@@ -169,6 +168,7 @@ __________ maybe store the text in the actual source and create the file from th
 #include "memory.h"
 #include "deshi.h"
 #include "core/font.h"
+#include "core/logging.h"
 
 //// renderer cpp (and libs) ////
 #if   DESHI_VULKAN
@@ -223,44 +223,48 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	TIMER_START(t_d); TIMER_START(t_s);
 	Assets::enforceDirectories();
 	
-	TIMER_RESET(t_s); 
-	deshi_time.Init(300);         
-	SUCCESS("[deshi] Finished time initialization in ", TIMER_END(t_s), "ms");
+    TIMER_RESET(t_s); 
+	Logging::Init(5);
+	loga("deshi","Finished logging initialization in $ms", TIMER_END(t_s));
+    
+    TIMER_RESET(t_s); 
+	deshi_time.Init(300);
+	logf("deshi","Finished time initialization in %gms",TIMER_END(t_s));
     
 	TIMER_RESET(t_s); 
-	deshi_window.Init("deshi", winWidth, winHeight); 
-	SUCCESS("[deshi] Finished input and window initialization in ", TIMER_END(t_s), "ms");
+	deshi_window.Init("deshi", winWidth, winHeight);
+	log("deshi","Finished input and window initialization in ",TIMER_END(t_s),"ms");
     
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
 	TIMER_RESET(t_s); 
-	deshi_console.Init(); 
-	Console2::Init(); 
-	SUCCESS("[deshi] Finished console initialization in ", TIMER_END(t_s), "ms");
+	deshi_console.Init();
+	Console2::Init();
+	log("deshi","Finished console initialization in ",TIMER_END(t_s),"ms");
 #endif
     
 	TIMER_RESET(t_s); 
-	Render::Init();               
-	SUCCESS("[deshi] Finished render initialization in ", TIMER_END(t_s), "ms");
+	Render::Init();
+	log("deshi","Finished render initialization in ",TIMER_END(t_s),"ms");
 	
 	TIMER_RESET(t_s); 
-	Storage::Init();              
-	SUCCESS("[deshi] Finished storage initialization in ", TIMER_END(t_s), "ms");
+	Storage::Init();
+	log("deshi","Finished storage initialization in ",TIMER_END(t_s),"ms");
     
 #ifndef DESHI_DISABLE_IMGUI
 	TIMER_RESET(t_s); 
-	DeshiImGui::Init();           
-	SUCCESS("[deshi] Finished imgui initialization in ", TIMER_END(t_s), "ms");
+	DeshiImGui::Init();
+	log("deshi","Finished imgui initialization in ",TIMER_END(t_s),"ms");
 #endif
     
 	TIMER_RESET(t_s); 
-	UI::Init();                   
-	SUCCESS("[deshi] Finished UI initialization in ", TIMER_END(t_s), "ms");
+	UI::Init();
+	log("deshi","Finished UI initialization in ",TIMER_END(t_s),"ms");
 	
 	TIMER_RESET(t_s); 
-	Cmd::Init(); 
-	SUCCESS("[deshi] Finished commands initialization in ", TIMER_END(t_s), "ms");
+	Cmd::Init();
+	log("deshi","Finished commands initialization in ",TIMER_END(t_s),"ms");
     
-	SUCCESS("[deshi] Finished deshi initialization in ", TIMER_END(t_d), "ms");
+	log("deshi","Finished deshi initialization in ",TIMER_END(t_d),"ms");
     
 	glfwShowWindow(deshi_window.window);
 }
@@ -271,6 +275,7 @@ void deshi::cleanup(){
 	deshi_window.Cleanup();
 	deshi_console.CleanUp(); 
 	Console2::Cleanup();
+    Logging::Cleanup();
 }
 
 bool deshi::shouldClose(){

@@ -8,8 +8,8 @@
 #include <ctime>
 #include <string>
 
-#define TIMER_START(name) std::chrono::time_point<std::chrono::high_resolution_clock> name = std::chrono::high_resolution_clock::now();
-#define TIMER_RESET(name) name = std::chrono::high_resolution_clock::now();
+#define TIMER_START(name) std::chrono::time_point<std::chrono::high_resolution_clock> name = std::chrono::high_resolution_clock::now()
+#define TIMER_RESET(name) name = std::chrono::high_resolution_clock::now()
 #define TIMER_END(name) std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - name).count()
 
 struct Time{
