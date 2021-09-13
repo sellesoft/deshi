@@ -3,15 +3,15 @@ local int _width, _height, _x, _y;
 local int opengl_version;
 
 void glfwError(int id, const char* description){
-	printf("[GLFW] Error %d: %s\n", id, description);
+	logE("glfw","%d: %s\n", id, description);
 }
 
 void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	glfwSetErrorCallback(&glfwError);
-	if(!glfwInit()){ printf("[GLFW] Failed to init!\n"); return; }
+	if(!glfwInit()){ logE("glfw","Failed to init!\n"); return; }
 	
 	monitor = glfwGetPrimaryMonitor();
-	if(!monitor) { printf("[GLFW] Failed to get the monitor!\n"); return; }
+	if(!monitor) { logE("glfw","Failed to get the monitor!\n"); return; }
 	int work_xpos, work_ypos, work_width, work_height;
 	glfwGetMonitorWorkarea(monitor, &work_xpos, &work_ypos, &work_width, &work_height);
 	
@@ -34,13 +34,13 @@ void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, Display
 #endif //DESHI_OPENGL
 	
 	window = glfwCreateWindow(width, height, name, NULL, NULL);
-	if(!window){ printf("[GLFW] Failed to create the window!\n"); glfwTerminate(); return; }
+	if(!window){ logE("glfw","Failed to create the window!\n"); glfwTerminate(); return; }
     
 #if DESHI_OPENGL
     glfwMakeContextCurrent(window);
     opengl_version = gladLoadGL(glfwGetProcAddress);
-    if(opengl_version == 0){ printf("[GLAD] Failed to load OpenGL!\n"); glfwTerminate(); return; }
-    printf("[GLAD] Loaded OpenGL %d.%d\n", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
+    if(opengl_version == 0){ logE("glad","Failed to load OpenGL!\n"); glfwTerminate(); return; }
+    log("glad","Loaded OpenGL %d.%d\n", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
 #endif //DESHI_OPENGL
 	
 	//set initial window size
@@ -51,7 +51,7 @@ void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, Display
 	}
 	
 	cursor = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
-	if(!cursor){ printf("[GLFW] Failed to create the cursor!\n"); glfwTerminate(); return; }
+	if(!cursor){ logE("glfw","Failed to create the cursor!\n"); glfwTerminate(); return; }
     
 	//glfwSetWindowOpacity(window, 0.5);
 	
@@ -61,7 +61,7 @@ void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, Display
 	if(icon.pixels){
 		glfwSetWindowIcon(window, 1, &icon);
 	}else{
-		printf("[STBI] Failed to load texture: deshi_icon.png; Using default window icon\n");
+		logE("stbi","Failed to load texture: deshi_icon.png; Using default window icon\n");
 	}
 	
 	//set window's cursor
