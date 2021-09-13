@@ -38,6 +38,11 @@ global_ string to_string(const char* fmt, ...){
     return s;
 }
 
+global_ string to_string(char x){
+    string s(&x, 1);
+    return s;
+}
+
 global_ string to_string(s32 x){
     string s;
     s.size = snprintf(nullptr, 0, "%d", x);
@@ -109,10 +114,10 @@ global_ string to_string(const color& x){
 global_ string to_string(const vec2& x, bool trunc = true){
     string s;
     if(trunc){
-        s.size = snprintf(nullptr, 0, "(%+.2f, %+.2f)", x.x, x.y);
+        s.size = snprintf(nullptr, 0, "(%g, %g)", x.x, x.y);
         s.str  = (char*)malloc(s.size+1);
         s.space = s.size+1;
-        snprintf(s.str, s.size+1, "(%+.2f, %+.2f)", x.x, x.y);
+        snprintf(s.str, s.size+1, "(%g, %g)", x.x, x.y);
     }else{
         s.size = snprintf(nullptr, 0, "(%+f, %+f)", x.x, x.y);
         s.str  = (char*)malloc(s.size+1);
@@ -125,10 +130,10 @@ global_ string to_string(const vec2& x, bool trunc = true){
 global_ string to_string(const vec3& x, bool trunc = true){
     string s;
     if(trunc){
-        s.size = snprintf(nullptr, 0, "(%+.2f, %+.2f, %+.2f)", x.x, x.y, x.z);
+        s.size = snprintf(nullptr, 0, "(%g, %g, %g)", x.x, x.y, x.z);
         s.str  = (char*)malloc(s.size+1);
         s.space = s.size+1;
-        snprintf(s.str, s.size+1, "(%+.2f, %+.2f, %+.2f)", x.x, x.y, x.z);
+        snprintf(s.str, s.size+1, "(%g, %g, %g)", x.x, x.y, x.z);
     }else{
         s.size = snprintf(nullptr, 0, "(%+f, %+f, %+f)", x.x, x.y, x.z);
         s.str  = (char*)malloc(s.size+1);
@@ -141,10 +146,10 @@ global_ string to_string(const vec3& x, bool trunc = true){
 global_ string to_string(const vec4& x, bool trunc = true){
     string s;
     if(trunc){
-        s.size = snprintf(nullptr, 0, "(%+.2f, %+.2f, %+.2f, %+.2f)", x.x, x.y, x.z, x.w);
+        s.size = snprintf(nullptr, 0, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
         s.str  = (char*)malloc(s.size+1);
         s.space = s.size+1;
-        snprintf(s.str, s.size+1, "(%+.2f, %+.2f, %+.2f, %+.2f)", x.x, x.y, x.z, x.w);
+        snprintf(s.str, s.size+1, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
     }else{
         s.size = snprintf(nullptr, 0, "(%+f, %+f, %+f, %+f)", x.x, x.y, x.z, x.w);
         s.str  = (char*)malloc(s.size+1);
@@ -156,22 +161,18 @@ global_ string to_string(const vec4& x, bool trunc = true){
 
 global_ string to_string(const mat3& x, bool trunc = true){
     string s;
-    Assert(!"not implemented yet");
-    if(trunc){
-        
-    }else{
-        
+    forI(3){ 
+        s += to_string(*((vec3*)(x.data+(i*3))), trunc);
+        s += "\n";
     }
     return s;
 }
 
 global_ string to_string(const mat4& x, bool trunc = true){
     string s;
-    Assert(!"not implemented yet");
-    if(trunc){
-        
-    }else{
-        
+    forI(4){ 
+        s += to_string(*((vec4*)(x.data+(i*4))), trunc);
+        s += "\n";
     }
     return s;
 }

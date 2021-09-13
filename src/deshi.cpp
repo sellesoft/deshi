@@ -119,6 +119,7 @@ Bug Board       //NOTE mark these with a last-known active date (M/D/Y)
 ---------
 (07/10/21) the program crashes if default asset files are not present
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
+(09/13/21) the program sometimes hangs on close in log file writing to stdout; temp fix: click the cmd, hit enter
 
 */
 

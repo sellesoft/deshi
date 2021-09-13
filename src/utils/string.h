@@ -20,17 +20,14 @@ struct string{
 	CHAR* str;
 	
     string();
-    string(char c);
     string(const char* s);
     string(const char* s, u32 size);
     string(const string& s);
     ~string();
     
     CHAR&  operator[](u32 idx);
-    void   operator= (CHAR c);
     void   operator= (const char* s);
     void   operator= (const string& s);
-    void   operator+=(CHAR c);
     void   operator+=(const char* s);
     void   operator+=(const string& s);
     string operator--(int);
@@ -38,7 +35,6 @@ struct string{
     string operator+ (const string& s) const;
     bool   operator==(const string& s) const;
     bool   operator==(const char* s) const;
-    bool   operator==(CHAR c) const;
     friend string operator+ (const char* c, const string& s);
     
     void   clear();
@@ -76,13 +72,6 @@ inline string::string(){
     str   = 0;
 };
 
-inline string::string(char c){
-    size  = 1;
-    space = 4;
-    Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
-    str[0] = c;
-}
-
 inline string::string(const char* s){
     size  = strlen(s);
     space = RoundUpTo(size+1, 4);
@@ -116,14 +105,6 @@ inline string::CHAR& string::operator[](u32 idx){
     return str[idx];
 }
 
-inline void string::operator= (CHAR c){
-    free(str);
-    size  = 1;
-    space = 4;
-    Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
-    str[0] = c;
-}
-
 inline void string::operator= (const char* s){
     free(str);
     size  = strlen(s);
@@ -138,24 +119,6 @@ inline void string::operator= (const string& s){
     space = RoundUpTo(size+1, 4);
     Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
     memcpy(str, s.str, size*CHAR_SIZE);
-}
-
-inline void string::operator+=(CHAR c){
-    size += 1;
-    if(space == 0){
-        space = 4;
-        Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
-        str[0] = c;
-        return;
-    }else if(space < size+1){
-        space = RoundUpTo(space*2, 4);
-        Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
-        str[size-1] = c;
-        str[size] = '\0';
-    }else{
-        str[size-1] = c;
-        str[size] = '\0';
-    }
 }
 
 inline void string::operator+=(const char* s){
@@ -234,10 +197,6 @@ inline bool string::operator==(const string& s) const{
 
 inline bool string::operator==(const char* s) const{
     return strcmp(str, s) == 0;
-}
-
-inline bool string::operator==(CHAR c) const{
-    return ((size == 1) && (*str == c));
 }
 
 ////////////////////////////

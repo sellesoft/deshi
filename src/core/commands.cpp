@@ -10,6 +10,12 @@ namespace Cmd{
 #define CMDSTART(name, desc) last_cmd_desc = desc; auto deshi__cmd__##name = [](array<cstring>& args) -> void
 #define CMDEND(name, ...) ; Add(deshi__cmd__##name, #name, last_cmd_desc, {__VA_ARGS__});
         
+        CMDSTART(test, "testing sandbox"){
+            string t  = to_string(mat4::IDENTITY,false);
+            Console2::Log(t);
+            log("",t);
+        }CMDEND(test);
+        
         CMDSTART(add, "Adds two numbers together"){
             if(args.count != 2){
                 Console2::Log("Error: 'add' requires exactly 2 arguments");
@@ -44,6 +50,7 @@ namespace Cmd{
         CMDSTART(help, "Logs description and usage of specified command"){
             if(args.count == 0){
                 Console2::Log("Use 'help <command>' to get a description and usage of the command");
+                Console2::Log("Use 'list' to get a list of all available commands");
                 Console2::Log("Usage Format: command <required> [optional]");
                 return;
             }
@@ -207,7 +214,7 @@ namespace Cmd{
                 Material* mat = Storage::MaterialAt(i);
                 string text = TOSTRING(mat->name,'\t',ShaderStrings[mat->shader],'\t');
                 forI(mat->textures.size()){
-                    text += ' ';
+                    text += " ";
                     text += Storage::TextureName(mat->textures[i]);
                 }
                 Console2::Log(text);
@@ -287,11 +294,11 @@ namespace Cmd{
         string usage = name;
         forE(args){
             max_args++;
-            usage += ' ';
+            usage += " ";
             if(*it & Argument_OPTIONAL){
-                usage += '[';
+                usage += "[";
             }else{
-                usage += '<';
+                usage += "<";
                 min_args++;
             }
             
@@ -299,12 +306,14 @@ namespace Cmd{
                 usage += "S32";
             }else if(*it & Argument_String){
                 usage += "String";
+            }else{
+                Assert(!"unhandled command arguent");
             }
             
             if(*it & Argument_OPTIONAL){
-                usage += ']';
+                usage += "]";
             }else{
-                usage += '>';
+                usage += ">";
             }
         }
         commands.add({func, name, desc, usage, min_args, max_args, args});
