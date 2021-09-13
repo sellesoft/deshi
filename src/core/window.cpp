@@ -183,7 +183,7 @@ void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, Display
 									   if(action == GLFW_PRESS){
 										   DeshInput->realKeyState[it->second] = true;
 										   DeshInput->checkbinds = true;
-										   if(DeshInput->logInput) { LOG("{m", it->second, "|", mods,"}"); }
+										   if(DeshInput->logInput) { log("input","{m", it->second, "|", mods,"}"); }
 									   }else if(action == GLFW_RELEASE){
 										   DeshInput->realKeyState[it->second] = false;
 									   }
@@ -214,7 +214,7 @@ void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, Display
 							   if(action == GLFW_PRESS){
 								   DeshInput->realKeyState[it->second] = true;
 								   DeshInput->checkbinds = true;
-								   if(DeshInput->logInput) { LOG("{k", it->second, "|", mods,"}"); }
+								   if(DeshInput->logInput) { log("input","{k", it->second, "|", mods,"}"); }
 							   }else if(action == GLFW_RELEASE){
 								   DeshInput->realKeyState[it->second] = false;
 							   }

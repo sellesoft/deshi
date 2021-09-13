@@ -2,7 +2,7 @@
 #define TempParseError ParseError
 #undef ParseError
 #endif
-#define ParseError(...) ERROR("[Storage] Error parsing '",filepath,"' on line '",line_number,"'! ",__VA_ARGS__)
+#define ParseError(...) logE("storage","Failed parsing '",filepath,"' on line '",line_number,"'! ",__VA_ARGS__)
 
 namespace Storage{
 	local u8 null128_png[338] = { //TODO(delle) fix this
@@ -343,7 +343,7 @@ CreateMeshFromMemory(void* data){
 	
 	u32 bytes = *((u32*)data);
 	if(bytes < sizeof(Mesh)){
-		ERROR("[Storage] Mesh size was too small when trying to load it from memory");
+		logE("storage","Mesh size was too small when trying to load it from memory");
 		return result;
 	}
 	
@@ -403,7 +403,7 @@ CreateMeshFromMemory(void* data){
 void Storage::
 SaveMesh(Mesh* mesh){
     Assets::writeFileBinary(Assets::dirModels()+std::string(mesh->name)+".mesh", mesh, mesh->bytes);
-    LOG("[Storage] Successfully created ",mesh->name,".mesh");
+    log("storage","Successfully created ",mesh->name,".mesh");
 }
 
 void Storage::
@@ -467,7 +467,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
                                  &texture->depth, STBI_rgb_alpha);
     texture->loaded  = true;
     if(texture->pixels == 0){ 
-        ERROR("[Storage] Failed to create texture '",filename,"': ",stbi_failure_reason()); 
+        logE("storage","Failed to create texture '",filename,"': ",stbi_failure_reason()); 
         free(texture);
         return result; 
     }
@@ -488,7 +488,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 pair<u32,Texture*> Storage::
 CreateTextureFromMemory(void* data, const char* name, int width, int height, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps){
     pair<u32,Texture*> result(0, NullTexture());
-    if(data == 0){ ERROR("[Storage] Failed to create texture '",name,"': No memory passed!"); return result; }
+    if(data == 0){ logE("storage","Failed to create texture '",name,"': No memory passed!"); return result; }
     
     //check if created already
     forI(textures.size()){ if(strcmp(textures[i]->name, name) == 0){
@@ -698,7 +698,7 @@ SaveMaterial(Material* material){
     }
     mat_text.append("\n");
     Assets::writeFile(Assets::dirModels()+std::string(material->name)+".mat", mat_text.c_str(), mat_text.size());
-    LOG("Successfully created ",material->name,".mat");
+    log("storage","Successfully created ",material->name,".mat");
 }
 
 void Storage::
@@ -1129,13 +1129,13 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
         }
         
         //// parsing warnings/errors ////
-        if(non_tri_warning) WARNING("[Storage] The mesh was not triangulated before parsing; Expect missing triangles!");
-        if(s_warning) WARNING("[Storage] There were 's' specifiers when parsing ",filename,", but those are not evaluated currently");
-        if(!vtArray.count){ WARNING_LOC("[Storage] No vertex UVs 'vt' were parsed in ",filename); }
-        if(!vnArray.count){ WARNING_LOC("[Storage] No vertex normals 'vn' were parsed in ",filename); }
-        if(fatal_error){ ERROR_LOC("[Storage] OBJ parsing encountered a fatal error in ",filename); return result; }
-        if(!vArray.count){ ERROR_LOC("[Storage] No vertex positions 'v' were parsed in ",filename); return result; }
-        if(!triangles.count){ ERROR_LOC("[Storage] No faces 'f' were parsed in ",filename); return result; }
+        if(non_tri_warning) logW("storage","The mesh was not triangulated before parsing; Expect missing triangles!");
+        if(s_warning) logW("storage","There were 's' specifiers when parsing ",filename,", but those are not evaluated currently");
+        if(!vtArray.count){ logW("storage","No vertex UVs 'vt' were parsed in ",filename); }
+        if(!vnArray.count){ logW("storage","No vertex normals 'vn' were parsed in ",filename); }
+        if(fatal_error){ logE("storage","OBJ parsing encountered a fatal error in ",filename); return result; }
+        if(!vArray.count){ logE("storage","No vertex positions 'v' were parsed in ",filename); return result; }
+        if(!triangles.count){ logE("storage","No faces 'f' were parsed in ",filename); return result; }
         
         //// create mesh ////
         Mesh* mesh = AllocateMesh(indexes.count, vUnique.count, faces.count, totalTriNeighbors, 
@@ -1213,7 +1213,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
         
         Render::LoadMesh(mesh); //TODO(delle) check if mesh already loaded
         meshes.add(mesh);
-        LOG("[Storage] Parsing and loading OBJ '",filename,"' took ",TIMER_END(t_l),"ms");
+        log("storage","Parsing and loading OBJ '",filename,"' took ",TIMER_END(t_l),"ms");
         
         //parse MTL files
         if(mtllib_found){
@@ -1221,7 +1221,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
             
             //!Incomplete
             
-            LOG("[Storage] Parsing and loading MTLs for OBJ '",filename,"' took ",TIMER_END(t_l),"ms");
+            log("storage","Parsing and loading MTLs for OBJ '",filename,"' took ",TIMER_END(t_l),"ms");
         }
         
         model = AllocateModel(mArray.count);
@@ -1318,7 +1318,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
             
             //!Incomplete
             
-            LOG("[Storage] Parsing and loading MTLs for OBJ '",filename,"' took ",TIMER_END(t_l),"ms");
+            log("storage","Parsing and loading MTLs for OBJ '",filename,"' took ",TIMER_END(t_l),"ms");
         }
         
         model = AllocateModel(mArray.count);
@@ -1418,13 +1418,13 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
             };
         }
         
-        LOG("[Storage] Successfully loaded ",model->name,".model");
+        log("storage","Successfully loaded ",model->name,".model");
     }
     
     result.first  = model->idx;
     result.second = model;
     models.add(model);
-    SUCCESS("[Storage] Finished loading model '",filename,"' in ",TIMER_END(t_m),"ms");
+    log("storage","Finished loading model '",filename,"' in ",TIMER_END(t_m),"ms");
     return result;
 }
 
@@ -1492,7 +1492,7 @@ SaveModel(Model* model){
     }
     model_save.append("\n");
     Assets::writeFile(Assets::dirModels()+std::string(model->name)+".model", model_save.c_str(), model_save.size());
-    LOG("[Storage] Successfully created ",model->name,".model");
+    log("storage","Successfully created ",model->name,".model");
 }
 
 void Storage::

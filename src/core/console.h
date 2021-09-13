@@ -74,7 +74,7 @@ extern Console* g_console;
 #define SUCCESS_LOC(...) g_console->PushConsole(TOSTDSTRING("[c:green]In ", __FILENAME__, " in func ", __FUNCTION__, " at ", __LINE__, ": \n[c]", "[c:green]", __VA_ARGS__, "[c]"))
 #define WARNING_LOC(...) g_console->PushConsole(TOSTDSTRING("[c:yellow]In ", __FILENAME__, " in func ", __FUNCTION__, " at ", __LINE__, ": \n[c]", "[c:yellow]", __VA_ARGS__, "[c]"))
 
-#define LOGFUNC LOG(__FUNCTION__, " called")
-#define LOGFUNCM(...) LOG(__FUNCTION__, " called ", __VA_ARGS__)
+#define LOGFUNCxx LOG(__FUNCTION__, " called")
+#define LOGFUNCMxx(...) LOG(__FUNCTION__, " called ", __VA_ARGS__)
 
 #endif //DESHI_CONSOLE_H

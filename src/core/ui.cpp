@@ -524,12 +524,12 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 	}
 	else {
 		//TODO(sushi) make NoWrap also check for newlines
-
+        
 		if (NextItemSize.x != -1) item->size = NextItemSize;
 		else                      item->size = UI::CalcTextSize(in);
         
 		NextItemSize = vec2{ -1, 0 };
-
+        
 		TextCall(in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
 		CalcItemSize(item);
 	}
@@ -1372,7 +1372,7 @@ void UI::ShowDebugWindowOf(const char* name) {
 		PopVar();
 	}
 	else {
-		LOG("UI::ShowDebugWindowOf() called with unknown window ", name, "!");
+		logE("ui","ShowDebugWindowOf() called with unknown window ", name, "!");
 	}
 }
 
