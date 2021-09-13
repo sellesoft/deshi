@@ -2955,10 +2955,10 @@ BuildCommands(){
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
 				forX(cmd_idx, uiCmdCount){
-					scissor.extent.height = uiCmdArray[cmd_idx].scissorExtent.y;
-					scissor.extent.width = uiCmdArray[cmd_idx].scissorExtent.x;
 					scissor.offset.x = uiCmdArray[cmd_idx].scissorOffset.x;
 					scissor.offset.y = uiCmdArray[cmd_idx].scissorOffset.y;
+					scissor.extent.width = uiCmdArray[cmd_idx].scissorExtent.x;
+					scissor.extent.height = uiCmdArray[cmd_idx].scissorExtent.y;
 					vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 					
 					vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &vkFonts[uiCmdArray[cmd_idx].texIdx].descriptorSet, 0, nullptr);
@@ -3209,7 +3209,6 @@ DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorE
 	}
 }
 
-//NOTE: text scaling looks very ugly with bit map fonts as far as i know
 void Render::
 DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
@@ -4133,10 +4132,10 @@ Update(){
 ////////////////
 void Render::
 Reset(){
-	SUCCESS("Resetting renderer (Vulkan)");
+	PrintVk(1,"Resetting renderer");
+    
 	vkDeviceWaitIdle(device); //wait before cleanup
-	
-	
+    //TODO(delle) delete things
 }
 
 
@@ -4149,7 +4148,6 @@ Cleanup(){
 	PrintVk(1, "Initializing Cleanup\n");
 	
 	Render::SaveSettings();
-	
 	//save pipeline cache to disk
 	if(pipelineCache != VK_NULL_HANDLE){
 		size_t size{};

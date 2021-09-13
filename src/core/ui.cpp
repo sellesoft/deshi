@@ -306,9 +306,9 @@ void UI::EndRow() {
 
 void UI::EndRow() {
 	Assert(rowInProgress, "Attempted to a end a row without calling BeginRow() first!");
-	Assert(row.items.count == row.columns, "Attempted to end a Row without giving the correct amount of items!")
-        
-        curwin->cursor = vec2{ 0, row.position.y + row.height + style.itemSpacing.y - style.windowPadding.y + curwin->scroll.y };
+	Assert(row.items.count == row.columns, "Attempted to end a Row without giving the correct amount of items!");
+    
+    curwin->cursor = vec2{ 0, row.position.y + row.height + style.itemSpacing.y - style.windowPadding.y + curwin->scroll.y };
     
 	row.items.clear();
 	row.columnWidths.clear();
@@ -393,7 +393,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 }
 
 
-//Line
+//@Line
 
 void UI::Line(vec2 start, vec2 end, float thickness, color color){
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
@@ -421,7 +421,7 @@ void UI::SetNextItemSize(vec2 size) {
 }
 
 
-//Text
+//@Text
 
 //internal function for actually making and adding the drawCmd
 local void TextCall(const char* text, vec2 pos, color color, UIItem* item) {
@@ -523,15 +523,19 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 		NextItemSize = vec2{ -1, 0 };
 	}
 	else {
+		//TODO(sushi) make NoWrap also check for newlines
+
 		if (NextItemSize.x != -1) item->size = NextItemSize;
 		else                      item->size = UI::CalcTextSize(in);
         
+		NextItemSize = vec2{ -1, 0 };
+
 		TextCall(in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
+		CalcItemSize(item);
 	}
 	if(move_cursor) AdvanceCursor(item);
 }
 
-//TODO(sushi) make NoWrap also check for newlines
 void UI::Text(const char* text, UITextFlags flags) {
 	TextW(text, curwin->cursor, style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap));
 }
@@ -546,6 +550,18 @@ void UI::Text(const char* text, color color, UITextFlags flags) {
 
 void UI::Text(const char* text, vec2 pos, color color, UITextFlags flags) {
 	TextW(text, pos, color, HasFlag(UITextFlags_NoWrap), 0);
+}
+
+void UI::TextF(const char* fmt, ...) {
+    string s;
+    va_list argptr;
+    va_start(argptr, fmt);
+    s.size  = vsnprintf(nullptr, 0, fmt, argptr);
+    s.str   = (char*)malloc(s.size+1);
+    s.space = s.size+1;
+    vsnprintf(s.str, s.size+1, fmt, argptr);
+    va_end(argptr);
+	TextW(s.str, curwin->cursor, style.colors[UIStyleCol_Text], false);
 }
 
 
@@ -857,14 +873,15 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
         
 		char charPlaced;
 		auto placeKey = [&](u32 i, u32 ins, char toPlace) {
-			if (i >= Key::A && i <= Key::Z) {
+			//TODO(sushi) handle Numerical flag better
+			if (i >= Key::A && i <= Key::Z && !HasFlag(UIInputTextFlags_Numerical)) {
 				if (DeshInput->capsLock || DeshInput->ShiftDown())
 					insert(toPlace, ins);
 				else
 					insert(toPlace + 32, ins);
 			}
 			else if (i >= Key::K0 && i <= Key::K9) {
-				if (DeshInput->ShiftDown()) {
+				if (DeshInput->ShiftDown() && !HasFlag(UIInputTextFlags_Numerical)) {
 					switch (i) {
 						case Key::K0: data.character = ')'; insert(')', ins); break;
 						case Key::K1: data.character = '!'; insert('!', ins); break;
@@ -884,7 +901,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 				}
 			}
 			else {
-				if (DeshInput->ShiftDown()) {
+				if (DeshInput->ShiftDown() && !HasFlag(UIInputTextFlags_Numerical)) {
 					switch (i) {
 						case Key::SEMICOLON:  data.character = ':';  insert(':', ins);  break;
 						case Key::APOSTROPHE: data.character = '"';  insert('"', ins);  break;
@@ -900,8 +917,14 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 					}
 				}
 				else {
-					data.character = KeyStringsLiteral[i];
-					insert(KeyStringsLiteral[i], ins);
+					if (HasFlag(UIInputTextFlags_Numerical) && KeyStringsLiteral[i] == '.') {
+						data.character = '.';
+						insert('.', ins);
+					}
+					else if(!HasFlag(UIInputTextFlags_Numerical)) {
+						data.character = KeyStringsLiteral[i];
+						insert(KeyStringsLiteral[i], ins);
+					}
 				}
 			}
 			TIMER_RESET(state->timeSinceTyped);

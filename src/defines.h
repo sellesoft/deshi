@@ -53,6 +53,8 @@ typedef double             f64;
 //NOTE we dont place this under DESHI_INTERNAL so that crashes do happen outside of development
 #define Assert(expression, ...) if(!(expression)){*(volatile int*)0 = 0;}
 #else
+#pragma warning(once : 4552)
+#pragma warning(once : 4553)
 #define Assert(expression, ...) expression
 #endif //DESHI_SLOW
 
@@ -118,5 +120,7 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 //NOTE macros disliked by delle :)
 #define cpystr(dst,src,bytes) strncpy((dst), (src), (bytes)); (dst)[(bytes)-1] = '\0' //copy c-string and null-terminate
 #define dyncast(child,base) dynamic_cast<child*>(base) //dynamic cast short-hand
+
+template<typename T> inline void Swap(T& a, T& b){T temp = a; a = b; b = temp;};
 
 #endif //DESHI_DEFINES_H

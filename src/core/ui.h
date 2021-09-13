@@ -142,6 +142,7 @@ enum UIInputTextFlags_ {
 	UIInputTextFlags_NoBackground          = 1 << 6,
 	UIInputTextFlags_FitSizeToText         = 1 << 7,
 	UIInputTextFlags_SetCursorToEndOnEnter = 1 << 8,
+	UIInputTextFlags_Numerical             = 1 << 9, //only allows input of [0-9|.]
     
 }; typedef u32 UIInputTextFlags;
 
@@ -347,14 +348,14 @@ enum UIRowFlags_ {
 struct UIRow {
 	UIRowFlags flags = 0;
 	u32 columns = 0;
-
+    
 	f32 height = 0;
 	f32 width = 0; 
 	f32 xoffset = 0;
-
+    
 	//the position of the row to base offsets of items off of.
 	vec2 position;
-
+    
 	
 	array<UIItem*> items; 
 	//the boolean indicates whether or not the column width is relative to the size of the object
@@ -390,6 +391,7 @@ namespace UI {
 	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
 	void Text(const char* text, color color, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, color color, UITextFlags flags = 0);
+    void TextF(const char* fmt, ...);
     
 	//items
 	void SetNextItemSize(vec2 size);
@@ -400,7 +402,7 @@ namespace UI {
 	bool Button(const char* text, vec2 pos, color color);
     
 	void Checkbox(string label, bool* b);
-
+    
 	void DropDown(const char* label, const char* options[], u32 options_count, u32& selected);
     
 	//these overloads are kind of silly change them eventually
@@ -415,7 +417,7 @@ namespace UI {
 	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
     
 	
-
+    
     
 	//windows
 	void BeginWindow(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);

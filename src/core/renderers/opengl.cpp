@@ -102,7 +102,7 @@ local ConfigMap configMap = {
     {"mesh_wireframes",  ConfigValueType_Bool, &settings.meshWireframes},
     {"mesh_normals",     ConfigValueType_Bool, &settings.meshNormals}, //!Incomplete
     {"light_frustrums",  ConfigValueType_Bool, &settings.lightFrustrums}, //!Incomplete
-    {"temp_mesh_on_top", ConfigValueType_Bool, &settings.tempMeshOnTop}, //!Incomplete
+    {"temp_mesh_on_top", ConfigValueType_Bool, &settings.tempMeshOnTop},
 };
 
 local RenderStats   stats{};
@@ -119,7 +119,7 @@ local array<MeshGl>     glMeshes;
 local array<ShaderGl>   glShaders;
 local array<TextureGl>  glTextures;
 local array<MaterialGl> glMaterials;
-local array<FontGl>     glFont;
+local array<FontGl>     glFonts;
 
 ///////////////////
 //// @commands ////
@@ -304,6 +304,43 @@ DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, int len_args
 ///////////////////
 local void
 SetupCommands(){
+    //ui vertex and index buffers
+    u64 ui_vb_size = Max(1000*sizeof(Vertex2),   uiVertexCount * sizeof(Vertex2));
+	u64 ui_ib_size = Max(3000*sizeof(UIIndexGl), uiIndexCount  * sizeof(UIIndexGl));
+    if(ui_vb_size && ui_ib_size){
+        //create vertex array object and buffers if they dont exist
+        if(uiBuffers.vao_handle == 0){
+            glGenVertexArrays(1, &uiBuffers.vao_handle);
+            glGenBuffers(1, &uiBuffers.vbo_handle);
+            glGenBuffers(1, &uiBuffers.ibo_handle);
+        }
+        
+        //bind buffers
+        glBindVertexArray(uiBuffers.vao_handle);
+        glBindBuffer(GL_ARRAY_BUFFER, uiBuffers.vbo_handle);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, uiBuffers.ibo_handle);
+        
+        //specify vertex packing
+        glVertexAttribPointer(0, 2,  GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,pos));
+        glVertexAttribPointer(1, 2,  GL_FLOAT,         GL_FALSE, sizeof(Vertex2), (void*)offsetof(Vertex2,uv));
+        glVertexAttribPointer(2, 4,  GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(Vertex2), (void*)offsetof(Vertex2,color));
+        glEnableVertexAttribArray(0); glEnableVertexAttribArray(1); glEnableVertexAttribArray(2);
+        
+        //resize buffers if too small and update buffer sizes
+        if(uiBuffers.vbo_alloc < ui_vb_size){
+            glBufferData(GL_ARRAY_BUFFER, ui_vb_size, 0, GL_STATIC_DRAW);
+            uiBuffers.vbo_alloc = ui_vb_size;
+        }
+        if(uiBuffers.ibo_alloc < ui_ib_size){
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, ui_ib_size, 0, GL_STATIC_DRAW);
+            uiBuffers.ibo_alloc = ui_ib_size;
+        }
+        
+        //fill buffers
+        glBufferSubData(GL_ARRAY_BUFFER,         0, ui_vb_size, uiVertexArray);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, ui_ib_size, uiIndexArray);
+    }
+    
     //temp mesh vertex and index buffers
     u64 temp_wire_vb_size = tempWireframeVertexCount*sizeof(Mesh::Vertex);
     u64 temp_fill_vb_size = tempFilledVertexCount*sizeof(Mesh::Vertex);
@@ -313,7 +350,6 @@ SetupCommands(){
     u64 temp_ib_size = temp_wire_ib_size+temp_fill_ib_size;
     temp_vb_size = Max(1000*sizeof(Mesh::Vertex), temp_vb_size);
     temp_ib_size = Max(3000*sizeof(TempIndexGl),  temp_ib_size);
-    
     if(temp_vb_size && temp_ib_size){
         //create vertex array object and buffers if they dont exist
         if(tempBuffers.vao_handle == 0){
@@ -619,6 +655,11 @@ SetupUniformBuffers(){
     glGenBuffers(1, &pushVS.handle);
     glBindBufferRange(GL_UNIFORM_BUFFER, pushVS.binding, pushVS.handle, 0, sizeof(pushVS.values));
     glBufferData(GL_UNIFORM_BUFFER, sizeof(pushVS.values), 0, GL_DYNAMIC_DRAW);
+    
+    //twod vertex shader push constant
+    glGenBuffers(1, &push2D.handle);
+    glBindBufferRange(GL_UNIFORM_BUFFER, push2D.binding, push2D.handle, 0, sizeof(push2D.values));
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(push2D.values), 0, GL_DYNAMIC_DRAW);
 }
 
 local void
@@ -778,20 +819,61 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 }
 
 void Render::
-DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){ //!Incomplete
+DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
     if (color.a == 0) return;
     
-    
+    f32 w = glFonts[1].characterWidth;
+	for (int i = 0; i < text.size; i++) {
+		DrawCharUI((u32)text[i], pos, vec2::ONE, color, scissorOffset, scissorExtent);
+		pos.x += w;
+	}
 }
 
-//NOTE: text scaling looks very ugly with bit map fonts as far as i know
 void Render::
-DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){ //!Incomplete
+DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){
     Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
     if(color.a == 0) return;
     
-    
+    if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 
+       scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+       scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+	
+	u32       col = color.rgba;
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
+	UIIndexGl* ip = uiIndexArray  + uiIndexCount;
+	
+	f32 w = glFonts[1].characterWidth;
+	f32 h = glFonts[1].characterHeight;
+	f32 dy = 1.f / f32(glFonts[1].characterCount);
+	
+	f32 idx = character-32; 
+	f32 topoff = idx*dy;
+	f32 botoff = topoff+dy;
+	
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
+	vp[0].pos = {pos.x+0,pos.y+0}; vp[0].uv = {0,topoff}; vp[0].color = col;
+	vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,topoff}; vp[1].color = col;
+	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,botoff}; vp[2].color = col;
+	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,botoff}; vp[3].color = col;
+	
+	uiVertexCount += 4;
+	uiIndexCount  += 6;
+	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_FONT;
+	if(scissorExtent.x != -1){
+		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+	}else{
+		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0,0);
+	}
 }
 
 
@@ -829,8 +911,15 @@ GetStage(){
 //// @load ////
 ///////////////
 void Render::
-LoadFont(Font* font, Texture* texture){ //!Incomplete
+LoadFont(Font* font, Texture* texture){
+    FontGl fgl{};
+    fgl.base            = font;
+    fgl.texture         = texture->idx;
+    fgl.characterWidth  = font->width;
+	fgl.characterHeight = font->height;
+	fgl.characterCount  = font->char_count;
     
+    glFonts.add(fgl);
 }
 
 void Render::
@@ -866,11 +955,6 @@ LoadTexture(Texture* texture){
     //create texture
     glGenTextures(1, &tgl.handle);
     glBindTexture(tgl.type, tgl.handle);
-    glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_REPEAT);	
-    glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(tgl.type, GL_TEXTURE_MIN_FILTER, (settings.textureFiltering) ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST);
-    glTexParameteri(tgl.type, GL_TEXTURE_MAG_FILTER, (settings.textureFiltering) ? GL_LINEAR : GL_NEAREST);
-    //TODO(delle) EXT_texture_filter_anisotropic
     
     //load texture to GPU
     if      (texture->type == TextureType_1D){
@@ -882,8 +966,17 @@ LoadTexture(Texture* texture){
         glTexImage3D(tgl.type, 0, tgl.format, texture->width, texture->height, texture->depth, 0, tgl.format, GL_UNSIGNED_BYTE, texture->pixels);
     }
     
-    //mipmap texture
-    if(texture->mipmaps > 1) glGenerateMipmap(tgl.type);
+    glTexParameteri(tgl.type, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(tgl.type, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //TODO(delle) EXT_texture_filter_anisotropic
+    if(texture->mipmaps > 1){
+        glTexParameteri(tgl.type, GL_TEXTURE_MIN_FILTER, (settings.textureFiltering) ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST);
+        glTexParameteri(tgl.type, GL_TEXTURE_MAG_FILTER, (settings.textureFiltering) ? GL_LINEAR : GL_NEAREST);
+        glGenerateMipmap(tgl.type);
+    }else{
+        glTexParameteri(tgl.type, GL_TEXTURE_MIN_FILTER, (settings.textureFiltering) ? GL_LINEAR : GL_NEAREST);
+        glTexParameteri(tgl.type, GL_TEXTURE_MAG_FILTER, (settings.textureFiltering) ? GL_LINEAR : GL_NEAREST);
+    }
     
     glTextures.add(tgl);
 }
@@ -967,31 +1060,31 @@ LoadMesh(Mesh* mesh){
 }
 
 void Render::
-UpdateMaterial(Material* material){ //!Incomplete
-    
+UpdateMaterial(Material* material){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 /////////////////
 //// @unload ////
 /////////////////
 void Render::
-UnloadFont(Font* font){ //!Incomplete
-    
+UnloadFont(Font* font){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-UnloadTexture(Texture* texture){ //!Incomplete
-    
+UnloadTexture(Texture* texture){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-UnloadMaterial(Material* material){ //!Incomplete
-    
+UnloadMaterial(Material* material){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-UnloadMesh(Mesh* mesh){ //!Incomplete
-    
+UnloadMesh(Mesh* mesh){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 ///////////////
@@ -1015,8 +1108,8 @@ DrawModel(Model* model, mat4 matrix){
 }
 
 void Render::
-DrawModelWireframe(Model* model, mat4 matrix, color color){ //!Incomplete
-    
+DrawModelWireframe(Model* model, mat4 matrix, color color){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
@@ -1194,31 +1287,31 @@ UseDefaultViewProjMatrix(vec3 position, vec3 rotation){
 //// @shaders ////
 //////////////////
 void Render::
-ReloadShader(u32 shader){ //!Incomplete
-    
+ReloadShader(u32 shader){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-ReloadAllShaders(){ //!Incomplete
-    
+ReloadAllShaders(){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 /////////////////
 //// @remake ////
 /////////////////
 void Render::
-UpdateLight(u32 lightIdx, vec4 vec){ //!Incomplete
-    
+UpdateLight(u32 lightIdx, vec4 vec){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-remakeOffscreen(){ //!Incomplete
-    
+remakeOffscreen(){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
-RemakeTextures(){ //!Incomplete
-    
+RemakeTextures(){
+    Assert(!"not implemented yet"); //!Incomplete
 }
 
 ///////////////
@@ -1265,8 +1358,11 @@ Update(){
     glClearDepth(1.0f); //1 rather than 0 because openGL Z direction is opposite ours
     glFrontFace(GL_CW);
     glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(0, 0, width, height);
     
     //// render stuff ////
     ImGui::Render();
@@ -1304,25 +1400,43 @@ Update(){
         //filled
         glUseProgram(programs.selected.handle);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        int mapped1 = -1; int mapped2 = -1;
-        int size1 = -1; int size2 = -1;
-        int is1 = -1; int is2 = -1;
-        is1 = glIsBuffer(tempBuffers.vbo_handle);
-        is2 = glIsBuffer(tempBuffers.ibo_handle);
-        glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_MAPPED, &mapped1);
-        glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_MAPPED, &mapped2);
-        glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size1);
-        glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size2);
-        
         glDrawElementsBaseVertex(GL_TRIANGLES, tempFilledIndexCount, INDEX_TYPE_GL_TEMP, 0, 0);
         
         //wireframe
         glUseProgram(programs.wireframe.handle);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        glDrawElementsBaseVertex(GL_TRIANGLES, tempWireframeIndexCount, INDEX_TYPE_GL_TEMP, (void*)(tempFilledIndexCount*sizeof(TempIndexGl)), 0);
+        glDrawElementsBaseVertex(GL_TRIANGLES, tempWireframeIndexCount, INDEX_TYPE_GL_TEMP,
+                                 (void*)(tempFilledIndexCount*sizeof(TempIndexGl)), 0);
     }
     
     //draw ui
+    if(uiVertexCount > 0 && uiIndexCount > 0){
+        glBindVertexArray(uiBuffers.vao_handle);
+        glBindBuffer(GL_UNIFORM_BUFFER, push2D.handle);
+        push2D.values.scale     = {2.0f/f32(width), -2.0f/f32(height)};
+        push2D.values.translate = {-1.f, 1.f};
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(push2D.values), &push2D.values);
+        
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
+        glFrontFace(GL_CCW);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glUseProgram(programs.ui.handle);
+        
+        forX(cmd_idx, uiCmdCount){
+            glScissor(uiCmdArray[cmd_idx].scissorOffset.x,
+                      (height - uiCmdArray[cmd_idx].scissorOffset.y) - uiCmdArray[cmd_idx].scissorExtent.y,
+                      uiCmdArray[cmd_idx].scissorExtent.x,
+                      uiCmdArray[cmd_idx].scissorExtent.y);
+            glBindTexture(glTextures[glFonts[uiCmdArray[cmd_idx].texIdx].texture].type, 
+                          glTextures[glFonts[uiCmdArray[cmd_idx].texIdx].texture].handle);
+            glUniform1i(glGetUniformLocation(programs.null.handle,"tex"),0);
+            glDrawElementsBaseVertex(GL_TRIANGLES, uiCmdArray[cmd_idx].indexCount, INDEX_TYPE_GL_UI,
+                                     (void*)(uiCmdArray[cmd_idx].indexOffset*sizeof(UIIndexGl)), 0);
+        }
+        
+        glScissor(0, 0, width, height);
+    }
     
     //draw imgui
     if(ImDrawData* imDrawData = ImGui::GetDrawData()) ImGui_ImplOpenGL3_RenderDrawData(imDrawData);
@@ -1340,16 +1454,18 @@ Update(){
 //// @reset ////
 ////////////////
 void Render::
-Reset(){ //!Incomplete
+Reset(){
+    PrintGl(1,"Resetting renderer");
     glFinish();
-    
+    //TODO(delle) delete things
 }
 
 //////////////////
 //// @cleanup ////
 //////////////////
 void Render::
-Cleanup(){ //!Incomplete
+Cleanup(){
+    Render::SaveSettings();
+    //TODO(delle) save pipelines in GL4
     glFinish();
-    
 }
