@@ -39,6 +39,7 @@ typedef unsigned long long u64;
 typedef size_t             upt;
 typedef float              f32;
 typedef double             f64;
+typedef s32                b32;
 
 //static defines
 #define local    static //inside a .cpp

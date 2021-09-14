@@ -283,7 +283,7 @@ local void
 DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, int len_args, ...){
     GLenum error_code = glad_glGetError();
     if(error_code != GL_NO_ERROR){
-        const char* error_flag;
+        const char* error_flag = 0;
         switch(error_code){
             case GL_INVALID_ENUM:                  error_flag = "GL_INVALID_ENUM"; break; //Set when an enumeration parameter is not legal.
             case GL_INVALID_VALUE:                 error_flag = "GL_INVALID_VALUE"; break; //Set when a value parameter is not legal.

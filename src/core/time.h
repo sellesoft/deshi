@@ -2,6 +2,8 @@
 #ifndef DESHI_TIME_H
 #define DESHI_TIME_H
 
+//NOTE real-world times should be un 64bit unix format
+
 #include "../defines.h"
 
 #include <chrono>
@@ -11,6 +13,8 @@
 #define TIMER_START(name) std::chrono::time_point<std::chrono::high_resolution_clock> name = std::chrono::high_resolution_clock::now()
 #define TIMER_RESET(name) name = std::chrono::high_resolution_clock::now()
 #define TIMER_END(name) std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - name).count()
+
+#define WindowsTimeToUnixTime(x) ((u64(x) / 10000000LL) - 11644473600LL)
 
 struct Time{
 	f32 prevDeltaTime = 0;

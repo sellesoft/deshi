@@ -2,6 +2,7 @@
 #ifndef DESHI_LOGGING_H
 #define DESHI_LOGGING_H
 
+#include "console2.h"
 #include "assets.h"
 #include "../defines.h"
 #include "../utils/string.h"
@@ -32,6 +33,7 @@ namespace Logging{
     local char log_path[LOG_PATH_SIZE] = {};
     local cstring last_message = {log_buffer,0};
     local bool mirror_to_stdout = true;
+    local bool mirror_to_console = false;
     local bool log_file_and_line = false;
     
     template<typename... T> void Log(const char* filepath, upt line_number, const char* tag, T... args);
@@ -58,6 +60,7 @@ Log(const char* filepath, upt line_number, const char* tag, T... args){
     fputs(str.str, file);
     memcpy(log_buffer, str.str, str.size);
     last_message.count = str.size;
+    if(mirror_to_console) Console2::Log(str);
 }
 
 inline void Logging::
@@ -71,6 +74,7 @@ LogF(const char* filepath, upt line_number, const char* tag, const char* fmt, ..
     cursor += snprintf(log_buffer+cursor, LOG_BUFFER_SIZE-cursor, "%s", "\n");
     fputs(log_buffer, file);
     last_message.count = cursor;
+    if(mirror_to_console) Console2::Log(to_string(last_message));
 }
 
 template<typename... T> inline void Logging::
@@ -106,6 +110,7 @@ LogA(const char* filepath, upt line_number, const char* tag, const char* fmt, T.
     str += "\n";
     memcpy(log_buffer, str.str, str.size);
     last_message.count = str.size;
+    if(mirror_to_console) Console2::Log(str);
 }
 
 inline void Logging::
@@ -121,7 +126,7 @@ Init(u32 log_count, bool mirror, bool fileline){
     time(&rawtime);
     tm* timeinfo = localtime(&rawtime);
     int cursor = snprintf(log_path,LOG_PATH_SIZE,"%s/log_",Assets::dirLogs().c_str());
-    strftime(cursor+log_path,LOG_PATH_SIZE-cursor,"%F_%H.%d.%S.txt",timeinfo);
+    strftime(cursor+log_path,LOG_PATH_SIZE-cursor,"%F_%H.%M.%S.txt",timeinfo);
     file = fopen(log_path,"a");
     Assert(file, "logger failed to open file");
 #if DESHI_SLOW

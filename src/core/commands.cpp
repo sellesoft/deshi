@@ -16,12 +16,20 @@ namespace Cmd{
             log("",t);
         }CMDEND(test);
         
-        CMDSTART(add, "Adds two numbers together"){
-            if(args.count != 2){
-                Console2::Log("Error: 'add' requires exactly 2 arguments");
-                return;
+        CMDSTART(dir, "List the contents of a directory"){
+            array<File> files = get_directory_files(args[0].str);
+            char time_str[1024];
+            if(files.count){
+                loga("","Directory of '$':",args[0]);
+                forE(files){
+                    strftime(time_str,1024,"%D  %R",localtime((time_t*)&it->time_last_write));
+                    logf("","%s    %s  %-30s  %lu bytes", time_str,((it->is_directory)?"<DIR> ":"<FILE>"),
+                         it->path+it->dir_length+1,it->bytes_size);
+                }
             }
-            
+        }CMDEND(dir, Argument_String);
+        
+        CMDSTART(add, "Adds two numbers together"){
             int i0 = atoi(args[0].str);
             int i1 = atoi(args[1].str);
             Console2::Log(TOSTRING(i0," + ",i1," = ", i0+i1));

@@ -165,10 +165,23 @@ __________ maybe store the text in the actual source and create the file from th
 #include <set>
 #include <unordered_map>
 
+//// platform ////
+#if   DESHI_WINDOWS
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#elif DESHI_LINUX //DESHI_WINDOWS
+
+#elif DESHI_MAC   //DESHI_LINUX
+
+#else             //DESHI_MAC
+#error "unknown platform"
+#endif //DESHI_WINDOWS
+
 //// core headers ////
 #include "memory.h"
 #include "deshi.h"
 #include "core/font.h"
+#include "core/io.h"
 #include "core/logging.h"
 
 //// renderer cpp (and libs) ////
@@ -188,8 +201,6 @@ __________ maybe store the text in the actual source and create the file from th
 #include <imgui/imgui_impl_glfw.cpp>
 #include "core/renderers/opengl.cpp"
 #elif DESHI_DIRECTX12 //DESHI_OPENGL
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
@@ -225,8 +236,9 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	Assets::enforceDirectories();
 	
     TIMER_RESET(t_s); 
+    Console2::Init();
 	Logging::Init(5);
-	loga("deshi","Finished logging initialization in $ms", TIMER_END(t_s));
+	loga("deshi","Finished console and logging initialization in $ms", TIMER_END(t_s));
     
     TIMER_RESET(t_s); 
 	deshi_time.Init(300);
@@ -239,7 +251,6 @@ void deshi::init(u32 winWidth, u32 winHeight){
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
 	TIMER_RESET(t_s); 
 	deshi_console.Init();
-	Console2::Init();
 	log("deshi","Finished console initialization in ",TIMER_END(t_s),"ms");
 #endif
     
