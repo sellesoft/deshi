@@ -107,21 +107,20 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define GLUE_(a,b) a##b
 #define GLUE(a,b) GLUE_(a,b)
 
-#define ArrayCount(_ARR) (sizeof((_ARR)) / sizeof(((_ARR))[0])) //length of a static-size c-array
 #define Kilobytes(x) ((x) << 10)
 #define Megabytes(x) ((x) << 20)
 #define Gigabytes(x) ((x) << 30)
 #define Terabytes(x) (((u64)(x)) << 40)
-#define Clamp(value, min, max) (((signed)(value) < (signed)(min)) ? (min) : (((signed)(value) > (signed)(max)) ? (max) : (value)))
+#define ArrayCount(_ARR) (sizeof((_ARR)) / sizeof(((_ARR))[0])) //length of a static-size c-array
+#define Clamp(value, min, max) (((value) < (min)) ? (min) : (((value) > (max)) ? (max) : (value)))
 #define Max(a, b) (((a) > (b)) ? (a) : (b))
 #define Min(a, b) (((a) < (b)) ? (a) : (b))
 #define RoundUpTo(value, multiple) (((size_t)((value) + (((size_t)(multiple))-1)) / (size_t)(multiple)) * (size_t)(multiple))
 #define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
+template<typename T> inline void Swap(T& a, T& b){T temp = a; a = b; b = temp;};
 
 //NOTE macros disliked by delle :)
 #define cpystr(dst,src,bytes) strncpy((dst), (src), (bytes)); (dst)[(bytes)-1] = '\0' //copy c-string and null-terminate
 #define dyncast(child,base) dynamic_cast<child*>(base) //dynamic cast short-hand
-
-template<typename T> inline void Swap(T& a, T& b){T temp = a; a = b; b = temp;};
 
 #endif //DESHI_DEFINES_H

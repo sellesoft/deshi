@@ -1,5 +1,15 @@
+local b32 io_crash_on_error = false;
+
 #if   DESHI_WINDOWS
-//void Win32LogLastError(){}
+void Win32LogLastError(const char* func_name){
+    LPVOID msg_buffer;
+    DWORD error = GetLastError();
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS|FORMAT_MESSAGE_MAX_WIDTH_MASK, 
+                  0, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&msg_buffer, 0, 0);
+    logfE("io-win32","%s failed with error %d: %s", func_name,(u32)error,(const char*)msg_buffer);
+    LocalFree(msg_buffer);
+    if(io_crash_on_error) ExitProcess(error);
+}
 #elif DESHI_LINUX //DESHI_WINDOWS
 #error "not implemented yet for linux"
 #elif DESHI_MAC   //DESHI_LINUX
@@ -18,7 +28,8 @@ get_directory_files(const char* directory){
     
     next = FindFirstFileA(pattern.str, &data);
     if(next == INVALID_HANDLE_VALUE || !(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)){
-        logaE("io-win32","'$' is not a valid directory",pattern);
+        Win32LogLastError("FindFirstFileA");
+        logaE("io-win32","'$' is not a valid directory.",directory);
         return result;
     }
     while(next != INVALID_HANDLE_VALUE){
@@ -38,21 +49,21 @@ get_directory_files(const char* directory){
         file.bytes_size = size.QuadPart;
         file.is_directory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
         
-        upt path_len = pattern.size-1;
-        upt name_len = strlen(data.cFileName);
+        u32 path_len = pattern.size-1;
+        u32 name_len = strlen(data.cFileName);
         file.path_length = path_len+name_len;
-        file.dir_length  = pattern.size-2;
         file.name_length = name_len;
         Assert(file.path_length < MAX_FILEPATH_SIZE);
         memcpy(file.path, pattern.str, pattern.size-1);
         memcpy(file.path+path_len, data.cFileName, name_len);
+        memcpy(file.name, data.cFileName, name_len);
         
         result.add(file);
         if(FindNextFileA(next, &data) == 0) break;
     }
     DWORD error = GetLastError(); 
-    if(error != ERROR_NO_MORE_FILES){ //TODO(delle) error messages
-        logfE("io-win32","FindNextFileA or FindFirstFileA failed: %#x",(u32)error);
+    if(error != ERROR_NO_MORE_FILES){
+        Win32LogLastError("FindNextFileA");
     }
     FindClose(next);
 #elif DESHI_LINUX //DESHI_WINDOWS
@@ -63,10 +74,12 @@ get_directory_files(const char* directory){
     return result;
 }
 
+//TODO(delle) handle directories
 global_ void 
 delete_file(const char* filepath){
 #if   DESHI_WINDOWS
-    
+    BOOL success = DeleteFile(filepath);
+    if(!success) Win32LogLastError("DeleteFile");
 #elif DESHI_LINUX //DESHI_WINDOWS
     
 #elif DESHI_MAC   //DESHI_LINUX
