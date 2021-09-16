@@ -45,6 +45,12 @@ look into implementing Lua (or finish su and make it an embeddable language!)
 write a preprocessing/postprocessing compiler that makes saving easier
 hotloadable UI
 
+IO TODOs
+--------
+data folder specified on launch
+text file parser (and cleanup locations doing it manually)
+directory removal in delete_file()
+
 Math TODOs
 ----------
 add functions and members similar to what glsl/glm has where you can do stuff like 
@@ -102,7 +108,6 @@ Ungrouped TODOs
 ---------------
 make the transparent framebuffer a start switch since it hurts frames (it must be set at window creation time)
 add the ability to limit framerate
-add a file abstraction so file parsing is simple and not so explicitly handed in different files
 centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
 convert std::string to our string throughout the project, primarily .str() methods so i can fully convert TOSTRING to use our string
 make a dynamic timers array in time.h for cleaner timer stuffs (push/peek/pop)
@@ -166,6 +171,7 @@ __________ maybe store the text in the actual source and create the file from th
 #if   DESHI_WINDOWS
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <shellapi.h>
 #elif DESHI_LINUX //DESHI_WINDOWS
 
 #elif DESHI_MAC   //DESHI_LINUX

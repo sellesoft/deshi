@@ -74,12 +74,28 @@ get_directory_files(const char* directory){
     return result;
 }
 
-//TODO(delle) handle directories
+//TODO(delle) add safety checks so deletion only happens within the data folder
 global_ void 
 delete_file(const char* filepath){
 #if   DESHI_WINDOWS
-    BOOL success = DeleteFileA(filepath);
-    if(!success) Win32LogLastError("DeleteFile");
+    WIN32_FIND_DATAA data;
+    HANDLE next = FindFirstFileA(filepath, &data);
+    if(next == INVALID_HANDLE_VALUE){
+        Win32LogLastError("FindFirstFileA");
+        return;
+    }
+    
+    //if directory, recursively delete all files and directories
+    if(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY){
+        array<File> dir_files = get_directory_files(filepath);
+        forE(dir_files) delete_file(it->path);
+        BOOL success = RemoveDirectoryA(filepath);
+        if(!success) Win32LogLastError("RemoveDirectoryA");
+    }else{
+        BOOL success = DeleteFileA(filepath);
+        if(!success) Win32LogLastError("DeleteFile");
+    }
+    FindClose(next);
 #elif DESHI_LINUX //DESHI_WINDOWS
     
 #elif DESHI_MAC   //DESHI_LINUX
