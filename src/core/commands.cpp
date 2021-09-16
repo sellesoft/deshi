@@ -89,7 +89,7 @@ namespace Cmd{
             
             //check if name is used by a command
             forE(commands){
-                if((it->name.size == args[0].count) && (strncmp(it->name.str, args[0].str, it->name.size) == 0)){
+                if((it->name.count == args[0].count) && (strncmp(it->name.str, args[0].str, it->name.count) == 0)){
                     Console2::Log("Error: Aliases can't use the same name as an existing command");
                     return;
                 }
@@ -336,7 +336,7 @@ namespace Cmd{
     }
     
     void Run(const string& input){
-        cstring remaining{input.str, input.size};
+        cstring remaining{input.str, input.count};
         array<cstring> args;
         
         while(remaining){

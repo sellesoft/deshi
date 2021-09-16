@@ -15,13 +15,13 @@ struct string{
 	static constexpr u32 npos = -1;
     static constexpr u32 CHAR_SIZE = sizeof(CHAR);
     
-    u32   size;
+    u32   count;
     u32   space;
 	CHAR* str;
 	
     string();
     string(const char* s);
-    string(const char* s, u32 size);
+    string(const char* s, u32 count);
     string(const string& s);
     ~string();
     
@@ -67,30 +67,30 @@ struct string{
 //// @constructors ////
 ///////////////////////
 inline string::string(){
-    size  = 0;
+    count  = 0;
     space = 0;
     str   = 0;
 };
 
 inline string::string(const char* s){
-    size  = strlen(s);
-    space = RoundUpTo(size+1, 4);
+    count  = strlen(s);
+    space = RoundUpTo(count+1, 4);
     Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
-    memcpy(str, s, size*CHAR_SIZE);
+    memcpy(str, s, count*CHAR_SIZE);
 }
 
 inline string::string(const char* s, u32 _size){
-    size  = _size;
-    space = RoundUpTo(size+1, 4);
+    count  = _size;
+    space = RoundUpTo(count+1, 4);
     Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
-    memcpy(str, s, size*CHAR_SIZE);
+    memcpy(str, s, count*CHAR_SIZE);
 }
 
 inline string::string(const string& s){
-    size = s.size;
-    space = RoundUpTo(size+1, 4);
+    count = s.count;
+    space = RoundUpTo(count+1, 4);
     Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
-    memcpy(str, s.str, size*CHAR_SIZE);
+    memcpy(str, s.str, count*CHAR_SIZE);
 }
 
 inline string::~string(){
@@ -101,38 +101,38 @@ inline string::~string(){
 //// @operators ////
 ////////////////////
 inline string::CHAR& string::operator[](u32 idx){
-    Assert(idx < size+1);
+    Assert(idx < count+1);
     return str[idx];
 }
 
 inline void string::operator= (const char* s){
     free(str);
-    size  = strlen(s);
-    space = RoundUpTo(size+1, 4);
+    count  = strlen(s);
+    space = RoundUpTo(count+1, 4);
     Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
-    memcpy(str, s, size*CHAR_SIZE);
+    memcpy(str, s, count*CHAR_SIZE);
 }
 
 inline void string::operator= (const string& s){
     free(str);
-    size = s.size;
-    space = RoundUpTo(size+1, 4);
+    count = s.count;
+    space = RoundUpTo(count+1, 4);
     Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
-    memcpy(str, s.str, size*CHAR_SIZE);
+    memcpy(str, s.str, count*CHAR_SIZE);
 }
 
 inline void string::operator+=(const char* s){
-    u32 old_len = size;
+    u32 old_len = count;
     u32 str_len = strlen(s);
     if(str_len == 0) return;
-    size += str_len;
+    count += str_len;
     
     if(space == 0){
-        space = RoundUpTo(size+1, 4);
+        space = RoundUpTo(count+1, 4);
         Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
-        memcpy(str, s, size*CHAR_SIZE);
-    }else if(space < size+1){
-        space = RoundUpTo(size+1, 4);
+        memcpy(str, s, count*CHAR_SIZE);
+    }else if(space < count+1){
+        space = RoundUpTo(count+1, 4);
         Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
         memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
     }else{
@@ -141,17 +141,17 @@ inline void string::operator+=(const char* s){
 }
 
 inline void string::operator+=(const string& s){
-    u32 old_len = size;
-    u32 str_len = s.size;
+    u32 old_len = count;
+    u32 str_len = s.count;
     if(str_len == 0) return;
-    size += str_len;
+    count += str_len;
     
     if(space == 0){
-        space = RoundUpTo(size+1, 4);
+        space = RoundUpTo(count+1, 4);
         Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
-        memcpy(str, s.str, size*CHAR_SIZE);
-    }else if(space < size+1){
-        space = RoundUpTo(size+1, 4);
+        memcpy(str, s.str, count*CHAR_SIZE);
+    }else if(space < count+1){
+        space = RoundUpTo(count+1, 4);
         Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
         memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
     }else{
@@ -160,34 +160,34 @@ inline void string::operator+=(const string& s){
 }
 
 inline string string::operator--(int){
-    if(size == 0) return *this;
-    str[--size] = '\0';
+    if(count == 0) return *this;
+    str[--count] = '\0';
     return *this;
 }
 
 inline string string::operator+ (const char* c) const{
-    if(size == 0) return string(c);
+    if(count == 0) return string(c);
     u32 str_len = strlen(c);
     if(str_len == 0) return *this;
     
     string result;
-    result.size  = size + str_len;
-    result.space = RoundUpTo(result.size+1, 4);
+    result.count  = count + str_len;
+    result.space = RoundUpTo(result.count+1, 4);
     Assert(result.str = (CHAR*)calloc(result.space, CHAR_SIZE));
-    memcpy(result.str,      str, size*CHAR_SIZE);
-    memcpy(result.str+size, c,   str_len*CHAR_SIZE);
+    memcpy(result.str,      str, count*CHAR_SIZE);
+    memcpy(result.str+count, c,   str_len*CHAR_SIZE);
     return result;
 }
 
 inline string string::operator+(const string& s) const{
-    if(s.size == 0) return *this;
+    if(s.count == 0) return *this;
     
     string result;
-    result.size  = size + s.size;
-    result.space = RoundUpTo(result.size+1, 4);
+    result.count  = count + s.count;
+    result.space = RoundUpTo(result.count+1, 4);
     Assert(result.str = (CHAR*)calloc(result.space, CHAR_SIZE));
-    memcpy(result.str,      str,   size*CHAR_SIZE);
-    memcpy(result.str+size, s.str, s.size*CHAR_SIZE);
+    memcpy(result.str,      str,   count*CHAR_SIZE);
+    memcpy(result.str+count, s.str, s.count*CHAR_SIZE);
     return result;
 }
 
@@ -215,77 +215,77 @@ inline string operator+ (const char* c, const string& s){
 ////////////////////
 inline void string::clear(){
     free(str);
-    size  = 0;
+    count  = 0;
     space = 0;
     str   = 0;
 }
 
 inline void string::erase(u32 idx){
-    Assert(idx < size && idx >= 0);
-    if (size == 1) memset(str, 0, space);
-    else           memmove(str+idx, str+idx+1, (--size)*CHAR_SIZE);
+    Assert(idx < count && idx >= 0);
+    if (count == 1) memset(str, 0, space);
+    else           memmove(str+idx, str+idx+1, (--count)*CHAR_SIZE);
 }
 
 inline void string::insert(char c, u32 idx){
-    Assert(idx <= size);
-    size += 1;
+    Assert(idx <= count);
+    count += 1;
     if(space == 0){
         space = 4;
         Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
         str[0] = c;
-    }else if(space < size+1){
-        space = RoundUpTo(size+1, 4);
+    }else if(space < count+1){
+        space = RoundUpTo(count+1, 4);
         Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
-        memmove(str+idx+1, str+idx, (size-idx)*CHAR_SIZE);
+        memmove(str+idx+1, str+idx, (count-idx)*CHAR_SIZE);
         str[idx] = c;
     }else{
-        memmove(str+idx+1, str+idx, (size-idx)*CHAR_SIZE);
+        memmove(str+idx+1, str+idx, (count-idx)*CHAR_SIZE);
         str[idx] = c;
     }
 }
 
 inline char string::at(u32 idx) const{
-    Assert(idx <= size);
+    Assert(idx <= count);
     return str[idx];
 }
 
 inline string string::substr(u32 start, u32 end) const{
-    if(end == npos) end = size-1;
-    Assert(start <= size && end <= size && start <= end, "check start/end vars");
+    if(end == npos) end = count-1;
+    Assert(start <= count && end <= count && start <= end, "check start/end vars");
     return string(str+start, (end-start)+1);
 }
 
 inline u32 string::findFirstStr(const string& s) const{
-    for(u32 i = 0; i < size; ++i){
-        if(strncmp(str+i, s.str, s.size) == 0) return i;
+    for(u32 i = 0; i < count; ++i){
+        if(strncmp(str+i, s.str, s.count) == 0) return i;
     }
     return npos;
 }
 
 inline u32 string::findFirstChar(char c, u32 offset) const{
-    for(u32 i = offset; i < size; ++i){
+    for(u32 i = offset; i < count; ++i){
         if(str[i] == c) return i;
     }
     return npos;
 }
 
 inline u32 string::findFirstCharNot(char c, u32 offset) const{
-    for(u32 i = 0; i < size; ++i){
+    for(u32 i = 0; i < count; ++i){
         if(str[i] != c) return i;
     }
     return npos;
 }
 
 inline u32 string::findLastChar(char c, u32 offset) const{
-    Assert(offset < size);
-    for(u32 i = (offset != 0 ? offset : size - 1); i != 0; --i){
+    Assert(offset < count);
+    for(u32 i = (offset != 0 ? offset : count - 1); i != 0; --i){
         if(str[i] == c) return i;
     }
     return npos;
 }
 
 inline u32 string::findLastCharNot(char c) const{
-    for(u32 i = size-1; i != 0; --i){
+    for(u32 i = count-1; i != 0; --i){
         if(str[i] != c) return i;
     }
     return npos;
@@ -293,7 +293,7 @@ inline u32 string::findLastCharNot(char c) const{
 
 inline u32 string::charCount(char c) const{
     u32 sum = 0;
-    for(u32 i = 0; i < size; ++i){ if(str[i] == c){ sum++; } }
+    for(u32 i = 0; i < count; ++i){ if(str[i] == c){ sum++; } }
     return sum;
 }
 
@@ -317,13 +317,13 @@ inline string string::eatSpacesTrailing(const string& text){
 
 inline string string::toUpper(const string& in){
     string result = in;
-    forI(result.size) if(result.str[i] >= 'a' && result.str[i] <= 'z') result.str[i] -= 32;
+    forI(result.count) if(result.str[i] >= 'a' && result.str[i] <= 'z') result.str[i] -= 32;
     return result;
 }
 
 inline string string::toLower(const string& in){
     string result = in;
-    forI(result.size) if(result.str[i] >= 'A' && result.str[i] <= 'Z') result.str[i] += 32;
+    forI(result.count) if(result.str[i] >= 'A' && result.str[i] <= 'Z') result.str[i] += 32;
     return result;
 }
 

@@ -22,7 +22,7 @@ get_directory_files(const char* directory){
     array<File> result;
 #if   DESHI_WINDOWS
     string pattern = directory;
-    pattern += (pattern[pattern.size-1] != '/') ? "/*" : "*";
+    pattern += (pattern[pattern.count-1] != '/') ? "/*" : "*";
     WIN32_FIND_DATAA data; HANDLE next;
     ULARGE_INTEGER size;   ULARGE_INTEGER time;
     
@@ -49,12 +49,12 @@ get_directory_files(const char* directory){
         file.bytes_size = size.QuadPart;
         file.is_directory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
         
-        u32 path_len = pattern.size-1;
+        u32 path_len = pattern.count-1;
         u32 name_len = strlen(data.cFileName);
         file.path_length = path_len+name_len;
         file.name_length = name_len;
         Assert(file.path_length < MAX_FILEPATH_SIZE);
-        memcpy(file.path, pattern.str, pattern.size-1);
+        memcpy(file.path, pattern.str, pattern.count-1);
         memcpy(file.path+path_len, data.cFileName, name_len);
         memcpy(file.name, data.cFileName, name_len);
         
@@ -78,7 +78,7 @@ get_directory_files(const char* directory){
 global_ void 
 delete_file(const char* filepath){
 #if   DESHI_WINDOWS
-    BOOL success = DeleteFile(filepath);
+    BOOL success = DeleteFileA(filepath);
     if(!success) Win32LogLastError("DeleteFile");
 #elif DESHI_LINUX //DESHI_WINDOWS
     

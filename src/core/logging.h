@@ -57,8 +57,8 @@ Log(const char* filepath, upt line_number, const char* tag, T... args){
     if(mirror_to_stdout) puts(str.str);
     str += "\n";
     fputs(str.str, file);
-    memcpy(log_buffer, str.str, str.size);
-    last_message.count = str.size;
+    memcpy(log_buffer, str.str, str.count);
+    last_message.count = str.count;
     if(mirror_to_console) Console2::Log(str);
 }
 
@@ -107,8 +107,8 @@ LogA(const char* filepath, upt line_number, const char* tag, const char* fmt, T.
     str += string(sub_start,cursor-sub_start);
     if(mirror_to_stdout) puts(str.str);
     str += "\n";
-    memcpy(log_buffer, str.str, str.size);
-    last_message.count = str.size;
+    memcpy(log_buffer, str.str, str.count);
+    last_message.count = str.count;
     if(mirror_to_console) Console2::Log(str);
 }
 

@@ -3197,7 +3197,7 @@ DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorE
 	if (color.a == 0) return;
 	
 	f32 w = vkFonts[1].characterWidth;
-	for (int i = 0; i < text.size; i++) {
+	for (int i = 0; i < text.count; i++) {
 		DrawCharUI((u32)text[i], pos, vec2::ONE, color, scissorOffset, scissorExtent);
 		pos.x += w;
 	}
