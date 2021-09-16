@@ -77,7 +77,6 @@ fix texture transparency
 ____check those vulkan-tutorial links for the suggestions and optimizations
 add instancing
 vulkan auto-cleanup so that it frees the unused parts of memory every now and then
-add buffer pre-allocation and arenas for vertices/indices/textures/etc
 multi-threaded command buffers, shader loading, image loading
 SSBOs in shaders so we can pass variable length arrays to it
 
@@ -104,11 +103,9 @@ Ungrouped TODOs
 make the transparent framebuffer a start switch since it hurts frames (it must be set at window creation time)
 add the ability to limit framerate
 add a file abstraction so file parsing is simple and not so explicitly handed in different files
-add a logging core separate from the console
-cleanup utils classes so that they are declaration at top and definition below
 centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
 convert std::string to our string throughout the project, primarily .str() methods so i can fully convert TOSTRING to use our string
-make a dynamic timers array in time.h for cleaner timer stuffs
+make a dynamic timers array in time.h for cleaner timer stuffs (push/peek/pop)
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
 ____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
 ____to update it's canvas system.

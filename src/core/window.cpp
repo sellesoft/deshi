@@ -6,7 +6,8 @@ void glfwError(int id, const char* description){
 	logfE("glfw","%d: %s", id, description);
 }
 
-void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
+void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
+    name = _name;
 	glfwSetErrorCallback(&glfwError);
 	if(!glfwInit()){ logE("glfw","Failed to init!"); return; }
 	
@@ -33,7 +34,7 @@ void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, Display
 #endif //DESHI_MAC
 #endif //DESHI_OPENGL
 	
-	window = glfwCreateWindow(width, height, name, NULL, NULL);
+	window = glfwCreateWindow(width, height, _name, NULL, NULL);
 	if(!window){ logE("glfw","Failed to create the window!"); glfwTerminate(); return; }
     
 #if DESHI_OPENGL
