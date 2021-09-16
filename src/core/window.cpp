@@ -240,6 +240,9 @@ void Window::Init(const char* name, s32 width, s32 height, s32 x, s32 y, Display
 								   [](GLFWwindow* window, int width, int height)->void{
 									   if(width != _width || height != _height) _resized = true;
 								   });
+
+	//TODO(sushi) implement this function for use on InputText()
+	//glfwSetCharCallback()
 }//Init
 
 void Window::Update() {

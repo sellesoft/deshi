@@ -871,6 +871,16 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 			
 		};
         
+		//
+		//
+		//
+		//IMPORTANT TODO
+		// replace this using glfw's Char callback function.
+		//
+		//
+		//
+		//
+
 		char charPlaced;
 		auto placeKey = [&](u32 i, u32 ins, char toPlace) {
 			//TODO(sushi) handle Numerical flag better
