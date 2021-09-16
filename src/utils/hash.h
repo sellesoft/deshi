@@ -41,7 +41,7 @@ template<>
 struct hash<string> {
 	inline u32 operator()(const string& s) {
 		u32 seed = 2166136261;
-		u32 size = s.size+1;
+		u32 size = s.count+1;
 		while (size-- != 0) {
 			seed ^= s.str[size];
 			seed *= 16777619;

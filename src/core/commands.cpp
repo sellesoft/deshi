@@ -24,10 +24,14 @@ namespace Cmd{
                 forE(files){
                     strftime(time_str,1024,"%D  %R",localtime((time_t*)&it->time_last_write));
                     logf("","%s    %s  %-30s  %lu bytes", time_str,((it->is_directory)?"<DIR> ":"<FILE>"),
-                         it->path+it->dir_length+1,it->bytes_size);
+                         it->name,it->bytes_size);
                 }
             }
         }CMDEND(dir, Argument_String);
+        
+        CMDSTART(rm, "Remove a file"){
+            delete_file(args[0].str);
+        }CMDEND(rm, Argument_String);
         
         CMDSTART(add, "Adds two numbers together"){
             int i0 = atoi(args[0].str);
@@ -85,7 +89,7 @@ namespace Cmd{
             
             //check if name is used by a command
             forE(commands){
-                if((it->name.size == args[0].count) && (strncmp(it->name.str, args[0].str, it->name.size) == 0)){
+                if((it->name.count == args[0].count) && (strncmp(it->name.str, args[0].str, it->name.count) == 0)){
                     Console2::Log("Error: Aliases can't use the same name as an existing command");
                     return;
                 }
@@ -332,7 +336,7 @@ namespace Cmd{
     }
     
     void Run(const string& input){
-        cstring remaining{input.str, input.size};
+        cstring remaining{input.str, input.count};
         array<cstring> args;
         
         while(remaining){

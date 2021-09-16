@@ -3,7 +3,6 @@
 #define DESHI_LOGGING_H
 
 #include "console2.h"
-#include "assets.h"
 #include "../defines.h"
 #include "../utils/string.h"
 #include "../utils/cstring.h"
@@ -16,7 +15,7 @@
 //// @interface ////
 ////////////////////
 #define LOG_BUFFER_SIZE 1024
-#define LOG_PATH_SIZE 512
+#define LOG_PATH_SIZE 1024
 #define log(tag,...) Logging::Log(__FILE__,__LINE__,tag,__VA_ARGS__)           //comma style:  log("first ",12.5," f ",0xff)
 #define logE(tag,...) Logging::Log(__FILE__,__LINE__,GLUE(tag,"-error"),__VA_ARGS__)
 #define logW(tag,...) Logging::Log(__FILE__,__LINE__,GLUE(tag,"-warning"),__VA_ARGS__)
@@ -58,8 +57,8 @@ Log(const char* filepath, upt line_number, const char* tag, T... args){
     if(mirror_to_stdout) puts(str.str);
     str += "\n";
     fputs(str.str, file);
-    memcpy(log_buffer, str.str, str.size);
-    last_message.count = str.size;
+    memcpy(log_buffer, str.str, str.count);
+    last_message.count = str.count;
     if(mirror_to_console) Console2::Log(str);
 }
 
@@ -108,42 +107,9 @@ LogA(const char* filepath, upt line_number, const char* tag, const char* fmt, T.
     str += string(sub_start,cursor-sub_start);
     if(mirror_to_stdout) puts(str.str);
     str += "\n";
-    memcpy(log_buffer, str.str, str.size);
-    last_message.count = str.size;
+    memcpy(log_buffer, str.str, str.count);
+    last_message.count = str.count;
     if(mirror_to_console) Console2::Log(str);
-}
-
-inline void Logging::
-Init(u32 log_count, bool mirror, bool fileline){
-    mirror_to_stdout = mirror;
-    log_file_and_line = fileline;
-    
-    //delete all but last 'log_count' files in logs directory
-    //!Incomplete
-    
-    //create log file named as current time
-    time_t rawtime;
-    time(&rawtime);
-    tm* timeinfo = localtime(&rawtime);
-    int cursor = snprintf(log_path,LOG_PATH_SIZE,"%s/log_",Assets::dirLogs().c_str());
-    strftime(cursor+log_path,LOG_PATH_SIZE-cursor,"%F_%H.%M.%S.txt",timeinfo);
-    file = fopen(log_path,"a");
-    Assert(file, "logger failed to open file");
-#if DESHI_SLOW
-    //write immediately when debugging so that a log() right before Assert() still writes
-    setvbuf(file,0,_IONBF,0);
-#endif //DESHI_SLOW
-}
-
-//TODO maybe flush every X seconds/frames instead of every update?
-inline void Logging::
-Update(){
-    Assert(fflush(file) == 0, "logger failed to flush file");
-}
-
-inline void Logging::
-Cleanup(){
-    fclose(file);
 }
 
 #endif //DESHI_LOGGING_H

@@ -24,6 +24,7 @@ enum CursorMode_{
 }; typedef u32 CursorMode;
 
 struct Window{
+    const char* name;
 	GLFWwindow*  window;
 	GLFWmonitor* monitor;
 	GLFWcursor*  cursor;

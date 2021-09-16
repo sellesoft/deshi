@@ -120,8 +120,8 @@ inline vec2 UI::CalcTextSize(string text) {
 		nlp = stage.findFirstChar('\n');
 	}
 	
-	if (stage.size > longest)
-		longest = stage.size;
+	if (stage.count > longest)
+		longest = stage.count;
 	
 	return vec2(longest * style.font->width, style.font->height * (text.charCount('\n') + 1));
 }
@@ -450,7 +450,7 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 		array<string> newlined;
         
 		u32 newline = text.findFirstChar('\n');
-		if (newline != string::npos && newline != text.size - 1) {
+		if (newline != string::npos && newline != text.count - 1) {
 			string remainder = text.substr(newline + 1);
 			newlined.add(text.substr(0, newline - 1));
 			newline = remainder.findFirstChar('\n');
@@ -476,7 +476,7 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 		//wrap each string in newline array
 		for (string& t : newlined) {
 			//we need to see if the string goes beyond the width of the window and wrap if it does
-			if (maxChars < t.size) {
+			if (maxChars < t.count) {
 				//if this is true we know item's total width is just maxChars times font width
 				item->size.x = maxChars * style.font->width;
                 
@@ -486,16 +486,16 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 				string nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
 				TextCall(nustr.str, workcur, color, item);
                 
-				t = t.substr(nustr.size);
+				t = t.substr(nustr.count);
 				workcur.y += style.font->height + style.itemSpacing.y;
                 
 				//continue to wrap if we need to
-				while (t.size > maxChars) {
+				while (t.count > maxChars) {
 					splitat = t.findLastChar(' ', maxChars);
 					nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
 					TextCall(nustr.str, workcur, color, item);
                     
-					t = t.substr(nustr.size);
+					t = t.substr(nustr.count);
 					workcur.y += style.font->height + style.itemSpacing.y;
                     
 					if (!strlen(t.str)) break;
@@ -508,7 +508,7 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 			}
 			else {
 				//we have to get max string length to determine item's width here
-				item->size.x = Max(style.font->width * t.size, item->size.x);
+				item->size.x = Max(style.font->width * t.count, item->size.x);
                 
 				TextCall(t.str, workcur, color, item);
 				workcur.y += style.font->height + style.itemSpacing.y;
@@ -556,10 +556,10 @@ void UI::TextF(const char* fmt, ...) {
     string s;
     va_list argptr;
     va_start(argptr, fmt);
-    s.size  = vsnprintf(nullptr, 0, fmt, argptr);
-    s.str   = (char*)malloc(s.size+1);
-    s.space = s.size+1;
-    vsnprintf(s.str, s.size+1, fmt, argptr);
+    s.count  = vsnprintf(nullptr, 0, fmt, argptr);
+    s.str   = (char*)malloc(s.count+1);
+    s.space = s.count+1;
+    vsnprintf(s.str, s.count+1, fmt, argptr);
     va_end(argptr);
 	TextW(s.str, curwin->cursor, style.colors[UIStyleCol_Text], false);
 }

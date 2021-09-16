@@ -405,6 +405,7 @@ void Console::PushConsole(std::string s){
 
 //flushes the buffer to a file once it reaches a certain size
 void Console::FlushBuffer(){
+    return; //NOTE disabling old console's log file
 	std::string output = "";
 	for (pair<std::string, color> a : buffer){
 		output += a.first;

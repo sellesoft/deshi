@@ -534,7 +534,7 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 			logW("vulkan",pCallbackData->pMessage); 
 		}break;
 		default:{
-			PrintVk(4, pCallbackData->pMessage);
+			PrintVk(5, pCallbackData->pMessage);
 		}break;
 	}
 	return VK_FALSE;
@@ -547,7 +547,7 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 //finds which memory types the graphics card offers
 local u32
 FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties){
-	PrintVk(4, "      Finding Memory Types");
+	PrintVk(4,"Finding memory types");
 	AssertRS(RSVK_PHYSICALDEVICE, "FindMemoryType called before PickPhysicalDevice");
 	VkPhysicalDeviceMemoryProperties memProperties;
 	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
@@ -565,7 +565,7 @@ FindMemoryType(u32 typeFilter, VkMemoryPropertyFlags properties){
 //creates an image view specifying how to use an image
 local VkImageView
 CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, u32 mipLevels){
-	PrintVk(4, "      Creating Image view");
+	PrintVk(4, "Creating image view");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateImageView called before CreateLogicalDevice");
 	VkImageViewCreateInfo viewInfo{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
 	viewInfo.image    = image;
@@ -585,7 +585,7 @@ CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, 
 //creates and binds a vulkan image to the GPU
 local void 
 CreateImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory){
-	PrintVk(4, "      Creating Image");
+	PrintVk(4,"Creating image");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateImage called before CreateLogicalDevice");
 	VkImageCreateInfo imageInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
 	imageInfo.imageType     = VK_IMAGE_TYPE_2D;
@@ -616,7 +616,7 @@ CreateImage(u32 width, u32 height, u32 mipLevels, VkSampleCountFlagBits numSampl
 //converts a VkImage from one layout to another using an image memory barrier
 local void 
 TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, u32 mipLevels){
-	PrintVk(4, "      Transitioning Image Layout");
+	PrintVk(4,"Transitioning image layout");
 	AssertRS(RSVK_LOGICALDEVICE, "TransitionImageLayout called before CreateLogicalDevice");
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();
 	
@@ -658,7 +658,7 @@ TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, V
 //scans an image for max possible mipmaps and generates them
 local void 
 GenerateMipmaps(VkImage image, VkFormat imageFormat, s32 texWidth, s32 texHeight, u32 mipLevels){
-	PrintVk(4, "      Creating Image Mipmaps");
+	PrintVk(4,"Creating image mipmaps");
 	// Check if image format supports linear blitting
 	VkFormatProperties formatProperties;
 	vkGetPhysicalDeviceFormatProperties(physicalDevice, imageFormat, &formatProperties);
@@ -826,7 +826,7 @@ CreateAndMapBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, VkDeviceSize&
 //uses commands to copy a buffer to an image
 local void 
 CopyBufferToImage(VkBuffer buffer, VkImage image, u32 width, u32 height){
-	PrintVk(4, "      Copying Buffer To Image");
+	PrintVk(4,"Copying buffer to image");
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
 		VkBufferImageCopy region{};
 		region.bufferOffset      = 0;
@@ -858,13 +858,13 @@ CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size){
 /////////////////////////
 local void 
 CreateInstance(){
-	PrintVk(2, "  Creating Vulkan Instance");
+	PrintVk(2,"Creating vulkan instance");
 	Assert(rendererStage == RENDERERSTAGE_NONE, "renderer stage was not NONE at CreateInstance");
 	rendererStage |= RSVK_INSTANCE;
 	
 	//check for validation layer support
 	if(settings.debugging){
-		PrintVk(3, "    Checking Validation Layer Support");
+		PrintVk(3,"Checking validation layer support");
 		bool has_support = true;
 		
 		u32 layerCount;
@@ -886,7 +886,7 @@ CreateInstance(){
 	
 	//set instance's application info
 	VkApplicationInfo appInfo{VK_STRUCTURE_TYPE_APPLICATION_INFO};
-	appInfo.pApplicationName   = "deshi";
+	appInfo.pApplicationName   = DeshWindow->name;
 	appInfo.applicationVersion = VK_MAKE_VERSION(1,0,0);
 	appInfo.pEngineName        = "deshi";
 	appInfo.engineVersion      = VK_MAKE_VERSION(1,0,0);
@@ -899,7 +899,7 @@ CreateInstance(){
 	validationFeatures.pEnabledValidationFeatures     = validationFeaturesEnabled.data();
 	
 	//get required extensions
-	PrintVk(3, "    Getting Required Extensions");
+	PrintVk(3, "Getting required extensions");
 	u32 glfwExtensionCount = 0;
 	const char** glfwExtensions;
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -931,7 +931,7 @@ CreateInstance(){
 
 local void 
 SetupDebugMessenger(){
-	PrintVk(2, "  Setting Up Debug Messenger");
+	PrintVk(2, "Setting up debug messenger");
 	AssertRS(RSVK_INSTANCE, "SetupDebugMessenger was called before CreateInstance");
 	
 	if(!settings.debugging) return;
@@ -951,7 +951,7 @@ SetupDebugMessenger(){
 
 local void 
 CreateSurface(){
-	PrintVk(2, "  Creating GLFW-Vulkan Surface");
+	PrintVk(2, "Creating GLFW-Vulkan surface");
 	AssertRS(RSVK_INSTANCE, "CreateSurface called before CreateInstance");
 	rendererStage |= RSVK_SURFACE;
 	
@@ -960,7 +960,7 @@ CreateSurface(){
 
 local void 
 PickPhysicalDevice(){
-	PrintVk(2, "  Picking Physical Device");
+	PrintVk(2, "Picking physical device");
 	AssertRS(RSVK_SURFACE, "PickPhysicalDevice called before CreateSurface");
 	rendererStage |= RSVK_PHYSICALDEVICE;
 	
@@ -1037,7 +1037,7 @@ PickPhysicalDevice(){
 
 local void 
 CreateLogicalDevice(){
-	PrintVk(2, "  Creating Logical Device");
+	PrintVk(2, "Creating logical device");
 	AssertRS(RSVK_PHYSICALDEVICE, "CreateLogicalDevice called before PickPhysicalDevice");
 	rendererStage |= RSVK_LOGICALDEVICE;
 	
@@ -1102,7 +1102,7 @@ CreateLogicalDevice(){
 //destroy old swap chain and in-flight frames, create a new swap chain with new dimensions
 local void 
 CreateSwapChain(){
-	PrintVk(2, "  Creating Swapchain");
+	PrintVk(2, "Creating swapchain");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateSwapChain called before CreateLogicalDevice");
 	rendererStage |= RSVK_SWAPCHAIN;
 	
@@ -1239,7 +1239,7 @@ CreateSwapChain(){
 /////////////////////
 local VkFormat
 findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features){
-	PrintVk(4, "      Finding supported image formats");
+	PrintVk(4, "Finding supported image formats");
 	for(VkFormat format : candidates){
 		VkFormatProperties props;
 		vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &props);
@@ -1262,7 +1262,7 @@ findDepthFormat(){
 
 local void 
 CreateRenderpasses(){
-	PrintVk(2, "  Creating Render Pass");
+	PrintVk(2, "Creating render pass");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateRenderPasses called before CreateLogicalDevice");
 	rendererStage |= RSVK_RENDERPASS;
 	
@@ -1362,7 +1362,7 @@ CreateRenderpasses(){
 /////////////////
 local void 
 CreateCommandPool(){
-	PrintVk(2, "  Creating Command Pool");
+	PrintVk(2, "Creating command pool");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateCommandPool called before CreateLogicalDevice");
 	rendererStage |= RSVK_COMMANDPOOL;
 	
@@ -1377,7 +1377,7 @@ CreateCommandPool(){
 //creates image views, color/depth resources, framebuffers, commandbuffers
 local void 
 CreateFrames(){
-	PrintVk(2, "  Creating Frames");
+	PrintVk(2, "Creating frames");
 	AssertRS(RSVK_COMMANDPOOL, "CreateFrames called before CreateCommandPool");
 	rendererStage |= RSVK_FRAMES;
 	
@@ -1466,7 +1466,7 @@ CreateFrames(){
 //fences (CPU-GPU) are similar but are waited for in the code itself rather than threads
 local void 
 CreateSyncObjects(){
-	PrintVk(2, "  Creating Sync Objects");
+	PrintVk(2, "Creating sync objects");
 	AssertRS(RSVK_FRAMES, "CreateSyncObjects called before CreateFrames");
 	rendererStage |= RSVK_SYNCOBJECTS;
 	
@@ -1534,7 +1534,7 @@ UpdateUniformBuffers(){
 
 local void 
 CreateUniformBuffers(){
-	PrintVk(2, "  Creating uniform buffers");
+	PrintVk(2, "Creating uniform buffers");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateUniformBuffer called before CreateLogicalDevice");
 	rendererStage |= RSVK_UNIFORMBUFFER;
 	
@@ -1577,7 +1577,7 @@ CreateUniformBuffers(){
 ////////////////
 local void 
 SetupOffscreenRendering(){
-	PrintVk(2, "  Creating offscreen rendering stuffs");
+	PrintVk(2, "Creating offscreen rendering stuffs");
 	AssertRS(RSVK_LOGICALDEVICE, "SetupOffscreenRendering called before CreateLogicalDevice");
 	rendererStage |= RSVK_RENDERPASS;
 	
@@ -1696,7 +1696,7 @@ SetupOffscreenRendering(){
 //creates descriptor set layouts, push constants for shaders, and the pipeline layout
 local void 
 CreateLayouts(){
-	PrintVk(2, "  Creating Layouts");
+	PrintVk(2, "Creating layouts");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateLayouts called before CreateLogicalDevice");
 	rendererStage |= RSVK_LAYOUTS;
 	
@@ -1851,7 +1851,7 @@ CreateLayouts(){
 //TODO(delle,ReVu) find a better/more accurate way to do this, see gltfloading.cpp, line:592
 local void 
 CreateDescriptorPool(){
-	PrintVk(2, "  Creating Descriptor Pool");
+	PrintVk(2, "Creating descriptor pool");
 	AssertRS(RSVK_LOGICALDEVICE, "CreateDescriptorPool called before CreateLogicalDevice");
 	rendererStage |= RSVK_DESCRIPTORPOOL;
 	
@@ -1971,7 +1971,7 @@ CreateDescriptorSets(){
 
 local void 
 CreatePipelineCache(){
-	PrintVk(2, "  Creating Pipeline Cache");
+	PrintVk(2, "Creating pipeline cache");
 	AssertRS(RSVK_LOGICALDEVICE, "CreatePipelineCache called before CreateLogicalDevice");
 	
 	VkPipelineCacheCreateInfo pipelineCacheCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
@@ -1987,7 +1987,7 @@ CreatePipelineCache(){
 
 local void 
 SetupPipelineCreation(){
-	PrintVk(2, "  Setting up pipeline creation");
+	PrintVk(2, "Setting up pipeline creation");
 	AssertRS(RSVK_LAYOUTS | RSVK_RENDERPASS, "SetupPipelineCreation called before CreateLayouts or CreateRenderPasses");
 	rendererStage |= RSVK_PIPELINESETUP;
 	
@@ -2149,7 +2149,7 @@ GetUncompiledShaders(){
 //creates a pipeline shader stage from the shader bytecode
 local VkPipelineShaderStageCreateInfo 
 loadShader(std::string filename, VkShaderStageFlagBits stage){
-	PrintVk(3, "    Loading shader: ", filename);
+	PrintVk(3, "Loading shader: ", filename);
 	//setup shader stage create info
 	VkPipelineShaderStageCreateInfo shaderStage{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
 	shaderStage.stage = stage;
@@ -2183,7 +2183,7 @@ loadShader(std::string filename, VkShaderStageFlagBits stage){
 //TODO(delle,Re) maybe dont crash on failed shader compile?
 local VkPipelineShaderStageCreateInfo 
 CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool optimize = false){
-	PrintVk(3, "    Compiling and loading shader: ", filename);
+	PrintVk(3, "Compiling and loading shader: ", filename);
 	//check if file exists
 	std::filesystem::path entry(Assets::dirShaders() + filename);
 	if(std::filesystem::exists(entry)){
@@ -2259,7 +2259,7 @@ CompileAllShaders(bool optimize = false){
 		if(ext.compare(".spv") == 0) continue; //early out if .spv
 		std::vector<char> code = Assets::readFileBinary(entry.path().string()); //read shader code
 		Assert(code.size(), "Unable to read shader file");
-		PrintVk(4, "      Compiling shader: ", filename);
+		PrintVk(4, "Compiling shader: ", filename);
 		
 		//try compile from GLSL to SPIR-V binary
 		shaderc_compilation_result_t result;
@@ -2298,7 +2298,7 @@ CompileAllShaders(bool optimize = false){
 
 local void
 CompileShader(std::string& filename, bool optimize){
-	PrintVk(3, "    Compiling shader: ", filename);
+	PrintVk(3, "Compiling shader: ", filename);
 	std::filesystem::path entry(Assets::dirShaders() + filename);
 	if(std::filesystem::exists(entry)){
 		std::string ext      = entry.extension().string();
@@ -2350,7 +2350,7 @@ CompileShader(std::string& filename, bool optimize){
 /////////////////////////////
 local void 
 CreatePipelines(){
-	PrintVk(2, "  Creating Pipelines");
+	PrintVk(2, "Creating pipelines");
 	AssertRS(RSVK_PIPELINESETUP, "CreatePipelines called before SetupPipelineCreation");
 	rendererStage |= RSVK_PIPELINECREATE;
 	
@@ -2368,17 +2368,17 @@ CreatePipelines(){
 	
 	//compile uncompiled shaders
 	if(settings.recompileAllShaders){
-		PrintVk(3, "    Compiling shaders");
+		PrintVk(3, "Compiling shaders");
 		TIMER_START(t_s);
 		CompileAllShaders(settings.optimizeShaders);
-		PrintVk(3, "    Finished compiling shaders in ", TIMER_END(t_s), "ms");
+		PrintVk(3, "Finished compiling shaders in ", TIMER_END(t_s), "ms");
 	}else{
 		std::vector<std::string> uncompiled = GetUncompiledShaders();
 		if(uncompiled.size()){
-			PrintVk(3, "    Compiling shaders");
+			PrintVk(3, "Compiling shaders");
 			TIMER_START(t_s);
 			for(auto& s : uncompiled){ CompileShader(s, settings.optimizeShaders); }
-			PrintVk(3, "    Finished compiling shaders in ", TIMER_END(t_s), "ms");
+			PrintVk(3, "Finished compiling shaders in ", TIMER_END(t_s), "ms");
 		}
 	}
 	
@@ -2646,7 +2646,7 @@ GetPipelineFromShader(u32 shader){
 
 local void 
 UpdateMaterialPipelines(){
-	PrintVk(4, "      Updating material pipelines");
+	PrintVk(4, "Updating material pipelines");
 	for(auto& mat : vkMaterials){
 		mat.pipeline = GetPipelineFromShader(mat.base->shader);
 	}
@@ -2775,7 +2775,7 @@ local vec4 draw_cmd_color    = vec4(0.40f, 0.61f, 0.27f, 1.0f);
 //we define a call order to command buffers so they can be executed by vkSubmitQueue()
 local void 
 BuildCommands(){
-	//PrintVk(2, "  Building Command Buffers");
+	//PrintVk(2, "Building Command Buffers");
 	AssertRS(RSVK_DESCRIPTORSETS | RSVK_PIPELINECREATE, "BuildCommandBuffers called before CreateDescriptorSets or CreatePipelines");
 	
 	VkClearValue clearValues[2]{};
@@ -3197,7 +3197,7 @@ DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorE
 	if (color.a == 0) return;
 	
 	f32 w = vkFonts[1].characterWidth;
-	for (int i = 0; i < text.size; i++) {
+	for (int i = 0; i < text.count; i++) {
 		DrawCharUI((u32)text[i], pos, vec2::ONE, color, scissorOffset, scissorExtent);
 		pos.x += w;
 	}
@@ -3474,7 +3474,7 @@ LoadTexture(Texture* texture){
 	vkTextures.add(tvk);
 }
 
-//TODO(delle) this currenty requires 4 textures, fix that
+//TODO(delle) this currently requires 4 textures, fix that
 void Render::
 LoadMaterial(Material* material){
 	AssertRS(RSVK_DESCRIPTORPOOL, "LoadMaterial called before CreateDescriptorPool");
@@ -4139,7 +4139,7 @@ Reset(){
 //TODO(delle,Vu) maybe cache pipeline creation vars?
 void Render::
 Cleanup(){
-	PrintVk(1, "Initializing Cleanup\n");
+	PrintVk(1, "Initializing cleanup\n");
 	
 	Render::SaveSettings();
 	//save pipeline cache to disk

@@ -130,7 +130,7 @@ namespace Console2{
         color color_color;
         int chunk_start = 0;
         
-        for(int i = 0; i < message.size; ++i){
+        for(int i = 0; i < message.count; ++i){
             //check for special
             if(message[i] == '^'){
                 if(special_start_idx != -1){
@@ -154,7 +154,7 @@ namespace Console2{
                     if(color_start_idx == -1){
                         color_start_idx = special_stop_idx+1;
                         
-                        if(special_text.size > 2){
+                        if(special_text.count > 2){
                             if(color* c = color_strings.at(special_text.str+2)){
                                 color_color = *c;
                             }
@@ -353,7 +353,7 @@ namespace Console2{
                         scroll_to_bottom = true;
                         
                         //send input to command system
-                        if(input.size){
+                        if(input.count){
                             //!Incomplete
                             //add input to input_history if not already in it
                             bool already_in_history = false;
