@@ -217,6 +217,7 @@ __________ maybe store the text in the actual source and create the file from th
 #endif //DESHI_VULKAN
 
 //// core cpp ////
+#include "core/io.cpp"
 #include "core/window.cpp"
 #include "core/assets.cpp"
 #include "core/console.cpp"
