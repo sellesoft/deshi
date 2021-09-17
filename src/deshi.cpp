@@ -171,7 +171,6 @@ __________ maybe store the text in the actual source and create the file from th
 #if   DESHI_WINDOWS
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <shellapi.h>
 #elif DESHI_LINUX //DESHI_WINDOWS
 
 #elif DESHI_MAC   //DESHI_LINUX
@@ -246,7 +245,7 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	loga("deshi","Finished console and logging initialization in $ms", TIMER_END(t_s));
     
     TIMER_RESET(t_s); 
-	deshi_time.Init(300);
+	deshi_time.Init();
 	logf("deshi","Finished time initialization in %gms",TIMER_END(t_s));
     
 	TIMER_RESET(t_s); 

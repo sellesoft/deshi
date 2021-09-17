@@ -49,7 +49,7 @@ Init(){
 	//CreateTextureFromMemory(stbi_load_from_memory(null128_png, 338, 0, 0, 0, STBI_rgb_alpha), "null", 128, 128, ImageFormat_RGBA);
 	CreateTextureFromFile("null128.png");
 	CreateMaterial("null", Shader_NULL, MaterialFlags_NONE, {0});
-	CreateModelFromMesh(NullMesh(), Shader_NULL); cpystr(NullModel()->name, "null", DESHI_NAME_SIZE);
+	CreateModelFromMesh(NullMesh(), ModelFlags_NONE); cpystr(NullModel()->name, "null", DESHI_NAME_SIZE);
     CreateFontFromFileBDF("gohufont-11.bdf");
 }
 

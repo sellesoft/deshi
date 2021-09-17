@@ -17,24 +17,16 @@
 #define WindowsTimeToUnixTime(x) ((u64(x) / 10000000LL) - 11644473600LL)
 
 struct Time{
-	f32 prevDeltaTime = 0;
-	f32 deltaTime = 0;
+	f64 prevDeltaTime = 0;
+	f64 deltaTime = 0;
 	f64 totalTime = 0;
 	u64 updateCount = 0;
 	
-	f32 fixedTimeStep;
-	f32 fixedDeltaTime;
-	f64 fixedTotalTime = 0;
-	u64 fixedUpdateCount = 0;
-	f32 fixedAccumulator = 0;
-	
 	f32 timeTime{}, windowTime{}, inputTime{}, consoleTime{}, renderTime{}, frameTime{};
-	
-	bool paused{}, frame{}, phys_pause{};
 	
 	std::chrono::time_point<std::chrono::system_clock> tp1, tp2;
 	
-	void Init(float fixedUpdatesPerSecond);
+	void Init();
 	void Update();
 	
 	std::string FormatDateTime(std::string format);
@@ -46,10 +38,7 @@ extern Time* g_time;
 #define DeshTime g_time
 #define DeshTotalTime g_time->totalTime
 
-inline void Time::Init(float fixedUpdatesPerSecond){
-	fixedTimeStep  = fixedUpdatesPerSecond;
-	fixedDeltaTime = 1.f / fixedUpdatesPerSecond;
-	
+inline void Time::Init(){
 	tp1 = std::chrono::system_clock::now();
 	tp2 = std::chrono::system_clock::now();
 }
@@ -57,24 +46,14 @@ inline void Time::Init(float fixedUpdatesPerSecond){
 inline void Time::Update(){
 	TIMER_START(t_d);
 	tp2 = std::chrono::system_clock::now();
-	std::chrono::duration<float> elapsedTime = tp2 - tp1;
+	std::chrono::duration<double> elapsedTime = tp2 - tp1;
 	tp1 = tp2;
 	
 	prevDeltaTime = deltaTime;
 	deltaTime = elapsedTime.count();
-	
-	if(!paused){
-		totalTime += deltaTime;
-		++updateCount;
-		if (!phys_pause) fixedAccumulator += deltaTime;
-	}else if(frame){
-		totalTime += deltaTime;
-		++updateCount;
-		fixedAccumulator += deltaTime;
-		frame = false;
-	}else{
-		deltaTime = 0;
-	}
+    totalTime += deltaTime;
+    ++updateCount;
+    
 	timeTime = TIMER_END(t_d);
 }
 
