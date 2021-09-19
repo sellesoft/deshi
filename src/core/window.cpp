@@ -3,16 +3,16 @@ local int _width, _height, _x, _y;
 local int opengl_version;
 
 void glfwError(int id, const char* description){
-	logfE("glfw","%d: %s", id, description);
+	LogfE("glfw","%d: %s", id, description);
 }
 
 void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
     name = _name;
 	glfwSetErrorCallback(&glfwError);
-	if(!glfwInit()){ logE("glfw","Failed to init!"); return; }
+	if(!glfwInit()){ LogE("glfw","Failed to init!"); return; }
 	
 	monitor = glfwGetPrimaryMonitor();
-	if(!monitor) { logE("glfw","Failed to get the monitor!"); return; }
+	if(!monitor) { LogE("glfw","Failed to get the monitor!"); return; }
 	int work_xpos, work_ypos, work_width, work_height;
 	glfwGetMonitorWorkarea(monitor, &work_xpos, &work_ypos, &work_width, &work_height);
 	
@@ -35,12 +35,12 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 #endif //DESHI_OPENGL
 	
 	window = glfwCreateWindow(width, height, _name, NULL, NULL);
-	if(!window){ logE("glfw","Failed to create the window!"); glfwTerminate(); return; }
+	if(!window){ LogE("glfw","Failed to create the window!"); glfwTerminate(); return; }
     
 #if DESHI_OPENGL
     glfwMakeContextCurrent(window);
     opengl_version = gladLoadGL(glfwGetProcAddress);
-    if(opengl_version == 0){ logE("glad","Failed to load OpenGL!"); glfwTerminate(); return; }
+    if(opengl_version == 0){ LogE("glad","Failed to load OpenGL!"); glfwTerminate(); return; }
     logf("glad","Loaded OpenGL %d.%d", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
 #endif //DESHI_OPENGL
 	
@@ -52,7 +52,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	}
 	
 	cursor = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
-	if(!cursor){ logE("glfw","Failed to create the cursor!"); glfwTerminate(); return; }
+	if(!cursor){ LogE("glfw","Failed to create the cursor!"); glfwTerminate(); return; }
     
 	//glfwSetWindowOpacity(window, 0.5);
 	
@@ -62,7 +62,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	if(icon.pixels){
 		glfwSetWindowIcon(window, 1, &icon);
 	}else{
-		logE("stbi","Failed to load texture: deshi_icon.png; Using default window icon");
+		LogE("stbi","Failed to load texture: deshi_icon.png; Using default window icon");
 	}
 	
 	//set window's cursor
@@ -184,7 +184,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 									   if(action == GLFW_PRESS){
 										   DeshInput->realKeyState[it->second] = true;
 										   DeshInput->checkbinds = true;
-										   if(DeshInput->logInput) { log("input","{m", it->second, "|", mods,"}"); }
+										   if(DeshInput->logInput) { Log("input","{m", it->second, "|", mods,"}"); }
 									   }else if(action == GLFW_RELEASE){
 										   DeshInput->realKeyState[it->second] = false;
 									   }
@@ -215,7 +215,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 							   if(action == GLFW_PRESS){
 								   DeshInput->realKeyState[it->second] = true;
 								   DeshInput->checkbinds = true;
-								   if(DeshInput->logInput) { log("input","{k", it->second, "|", mods,"}"); }
+								   if(DeshInput->logInput) { Log("input","{k", it->second, "|", mods,"}"); }
 							   }else if(action == GLFW_RELEASE){
 								   DeshInput->realKeyState[it->second] = false;
 							   }
@@ -241,7 +241,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 								   [](GLFWwindow* window, int width, int height)->void{
 									   if(width != _width || height != _height) _resized = true;
 								   });
-
+	
 	//TODO(sushi) implement this function for use on InputText()
 	//glfwSetCharCallback()
 }//Init

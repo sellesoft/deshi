@@ -17,7 +17,7 @@ namespace Console2{
 	
 	bool IsOpen();
 	void Toggle(ConsoleState new_state);
-	void Log(const string& message);
+	void AddLog(const string& message);
 	
 	void Init();
 	void Cleanup();

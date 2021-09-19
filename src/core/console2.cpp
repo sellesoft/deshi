@@ -121,7 +121,7 @@ namespace Console2{
     //    ^c=cyan^/^c^^c=dcyan^\\^c^ - reference
     //    ^c=red^red^c^white^c=blue^blue^c^
     //TODO(delle) this might break if the string doesnt end with \n
-    void Log(const string& _message){
+    void AddLog(const string& _message){
         string message = _message;
         message += "\n";
         
@@ -349,7 +349,7 @@ namespace Console2{
                     if(ImGui::InputText("##console_input_text", input_buffer, input_max_size-1, input_text_flags, &TextEditCallback, 0)) {
                         //add input to history
                         string input = input_buffer;
-                        Log("^c=cyan^/^c^^c=dcyan^\\^c^ " + input + "\n");
+                        AddLog("^c=cyan^/^c^^c=dcyan^\\^c^ " + input + "\n");
                         scroll_to_bottom = true;
                         
                         //send input to command system

@@ -5,14 +5,14 @@
 bool Assets::
 deleteFile(std::string& filepath, bool logError){
 	bool result = std::filesystem::remove(filepath);
-	if(logError && !result) logE("assets","Failed to find file: ", filepath);
+	if(logError && !result) LogE("assets","Failed to find file: ", filepath);
 	return result;
 }
 
 u64 Assets::
 deleteDirectory(std::string& dirpath, bool logError){
 	auto result = std::filesystem::remove_all(dirpath);
-	if(logError && !result) logE("assets","Failed to find directory: ", dirpath);
+	if(logError && !result) LogE("assets","Failed to find directory: ", dirpath);
 	return (u64)result;
 }
 
@@ -24,7 +24,7 @@ std::vector<char> Assets::
 readFile(const std::string& filepath, u32 chars, bool logError) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 	if(!file.is_open()){ 
-		if(logError) logE("assets","Failed to open file: ", filepath); 
+		if(logError) LogE("assets","Failed to open file: ", filepath); 
 		return {}; 
 	}
 	defer{ file.close(); };
@@ -41,7 +41,7 @@ std::vector<char> Assets::
 readFileBinary(const std::string& filepath, u32 bytes, bool logError) {
 	std::ifstream file(filepath, std::ios::ate | std::ios::binary);
 	if(!file.is_open()){ 
-		if(logError) logE("assets","Failed to open file: ", filepath); 
+		if(logError) LogE("assets","Failed to open file: ", filepath); 
 		return {}; 
 	}
 	defer{ file.close(); };
@@ -58,7 +58,7 @@ char* Assets::
 readFileAsciiToArray(std::string filepath, u32 chars, bool logError){
 	std::ifstream file(filepath, std::ifstream::in | std::ios::ate | std::ios::binary);
 	if(!file.is_open()){ 
-		if(logError) logE("assets","Failed to open file: ", filepath); 
+		if(logError) LogE("assets","Failed to open file: ", filepath); 
 		return 0; 
 	}
 	defer{ file.close(); };
@@ -75,7 +75,7 @@ char* Assets::
 readFileBinaryToArray(std::string filepath, u32 bytes, bool logError){
 	std::ifstream file(filepath, std::ifstream::in | std::ios::binary);
 	if(!file.is_open()){ 
-		if(logError) logE("assets","Failed to open file: ", filepath); 
+		if(logError) LogE("assets","Failed to open file: ", filepath); 
 		return 0; 
 	}
 	defer{ file.close(); };
@@ -93,7 +93,7 @@ void Assets::
 writeFile(const std::string& filepath, std::vector<char>& data, u32 chars, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
 	if(!file.is_open()){ 
-		if(logError) logE("assets","Failed to open file: ", filepath); 
+		if(logError) LogE("assets","Failed to open file: ", filepath); 
 		return; 
 	}
 	defer{ file.close(); };
@@ -106,7 +106,7 @@ void Assets::
 writeFile(const std::string& filepath, const char* data, u32 chars, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::trunc);
 	if(!file.is_open()){ 
-		if(logError) logE("assets","Failed to open file: ", filepath); 
+		if(logError) LogE("assets","Failed to open file: ", filepath); 
 		return; 
 	}
 	defer{ file.close(); };
@@ -118,7 +118,7 @@ void Assets::
 appendFile(const std::string& filepath, std::vector<char>& data, u32 chars, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
 	if(!file.is_open()){ 
-		if(logError) logE("assets","Failed to open file: ", filepath); 
+		if(logError) LogE("assets","Failed to open file: ", filepath); 
 		return; 
 	}
 	defer{ file.close(); };
@@ -131,7 +131,7 @@ void Assets::
 appendFile(const std::string& filepath, const char* data, u32 chars, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::app);
 	if(!file.is_open()){ 
-		if(logError) logE("assets","Failed to open file: ", filepath); 
+		if(logError) LogE("assets","Failed to open file: ", filepath); 
 		return; 
 	}
 	defer{ file.close(); };
@@ -143,7 +143,7 @@ void Assets::
 writeFileBinary(const std::string& filepath, std::vector<char>& data, u32 bytes, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ 
-		if(logError) logE("assets","Failed to open file: ", filepath); 
+		if(logError) LogE("assets","Failed to open file: ", filepath); 
 		return; 
 	}
 	defer{ file.close(); };
@@ -156,7 +156,7 @@ void Assets::
 writeFileBinary(const std::string& filepath, void* data, u32 bytes, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::trunc);
 	if(!file.is_open()){ 
-		if(logError) logE("assets","Failed to open file: ", filepath); 
+		if(logError) LogE("assets","Failed to open file: ", filepath); 
 		return; 
 	}
 	defer{ file.close(); };
@@ -168,7 +168,7 @@ void Assets::
 appendFileBinary(const std::string& filepath, void* data, u32 bytes, bool logError){
 	std::ofstream file(filepath, std::ios::out | std::ios::binary | std::ios::app);
 	if(!file.is_open()){ 
-		if(logError) logE("assets","Failed to open file: ", filepath); 
+		if(logError) LogE("assets","Failed to open file: ", filepath); 
 		return; 
 	}
 	defer{ file.close(); };
@@ -275,7 +275,7 @@ extractConfig(const std::string& filepath) {
 	std::map<std::string, std::string> out;
 	
 	std::fstream in(Assets::dirConfig() + filepath, std::fstream::in);
-	if(!in.is_open()){ logE("assets","Failed to open file: ", filepath); out.emplace("FileNotFound", ""); return out; }
+	if(!in.is_open()){ LogE("assets","Failed to open file: ", filepath); out.emplace("FileNotFound", ""); return out; }
 	defer{ in.close(); };
 	
 	std::regex r = std::regex("([A-Za-z]+) += +(.+)");
@@ -290,7 +290,7 @@ extractConfig(const std::string& filepath) {
 		std::smatch m;
 		std::regex_match(s, m, r);
 		if (m.size() == 1) {
-			logE("assets",m[1].str(), "\nConfig regex did not find a match for the string above.");
+			LogE("assets",m[1].str(), "\nConfig regex did not find a match for the string above.");
 			line++;
 			continue;
 		}
@@ -307,9 +307,9 @@ parse_bool(std::string& str, const char* filepath, u32 line_number){
 		return false;
 	}else{
 		if(filepath && line_number){
-			logE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Invalid boolean value: ", str);
+			LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Invalid boolean value: ", str);
 		}else{
-			logE("assets","Failed to parse boolean value: ", str);
+			LogE("assets","Failed to parse boolean value: ", str);
 		}
 		return false;
 	}
@@ -319,7 +319,7 @@ void Assets::
 saveConfig(const char* filename, const ConfigMap& configMap){
 	std::string filepath = Assets::dirConfig() + filename;
 	std::ofstream out(filepath, std::ios::out | std::ios::trunc); //flushes on destruction
-	if(!out.is_open()) { logE("assets","Failed to open file: ", filepath); return; }
+	if(!out.is_open()) { LogE("assets","Failed to open file: ", filepath); return; }
 	
 	size_t pad_amount = 1;
 	for(auto& config : configMap){
@@ -404,11 +404,11 @@ saveConfig(const char* filename, const ConfigMap& configMap){
 					case(InputMod_RctrlLshiftRalt):out << ",RCTRL,LSHIFT,RALT"; break;
 					case(InputMod_RctrlRshiftLalt):out << ",RCTRL,RSHIFT,LALT"; break;
 					case(InputMod_RctrlRshiftRalt):out << ",RCTRL,RSHIFT,RALT"; break;
-					default: logE("assets","Unknown key-modifier combination \'",keymod,"\' when saving config: ", filename);
+					default: LogE("assets","Unknown key-modifier combination \'",keymod,"\' when saving config: ", filename);
 				} 
 			}break;
 			default:{
-				logE("assets","Unknown value type when saving config: ", filename);
+				LogE("assets","Unknown value type when saving config: ", filename);
 			}break;
 		}
 		out << '\n';
@@ -444,14 +444,14 @@ loadConfig(const char* filename, ConfigMap configMap){
 			key_start = info_start;
 			key_end   = key_start;
 			while(key_end != info_end && *key_end++ != ' '){}
-			if(key_end == info_end) { logE("assets","Error parsing '",filepath,"' on line '",line_number,"'! No value passed"); break; }
+			if(key_end == info_end) { LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! No value passed"); break; }
 			key_end -= 1;
 			
 			value_end   = info_end;
 			value_start = key_end;
 			while(*value_start++ == ' '){}
 			value_start -= 1;
-			if(value_end == value_start) { logE("assets","Error parsing '",filepath,"' on line '",line_number,"'! No value passed"); break; }
+			if(value_end == value_start) { LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! No value passed"); break; }
 		}
 		
 		//parse the key-value pair
@@ -470,7 +470,7 @@ loadConfig(const char* filename, ConfigMap configMap){
 						else if(strncmp("1",     value_start, 1) == 0) *b = true;
 						else if(strncmp("false", value_start, 5) == 0) *b = false;
 						else if(strncmp("0",     value_start, 1) == 0) *b = false;
-						else logE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Invalid boolean value: ", value_start);
+						else LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Invalid boolean value: ", value_start);
 					}break;
 					case ConfigValueType_U32:{
 						*(u32*)config.third = (u32)atoi(value_start);
@@ -525,7 +525,7 @@ loadConfig(const char* filename, ConfigMap configMap){
 							}
 						}
 						if(key_number == -1) { 
-							logE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Invalid keybind: ",keys[0]);
+							LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Invalid keybind: ",keys[0]);
 							continue;
 						}
 						
@@ -540,7 +540,7 @@ loadConfig(const char* filename, ConfigMap configMap){
 									}else if(keys[i][1] == 'A'){
 										*keybind |= InputMod_Lalt;
 									}else{
-										logE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Unknown keybind mod: ",keys[i]);
+										LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Unknown keybind mod: ",keys[i]);
 									}
 								}else if(keys[i][0] == 'R'){
 									if      (keys[i][1] == 'C'){
@@ -550,20 +550,20 @@ loadConfig(const char* filename, ConfigMap configMap){
 									}else if(keys[i][1] == 'A'){
 										*keybind |= InputMod_Ralt;
 									}else{
-										logE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Unknown keybind mod: ",keys[i]);
+										LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Unknown keybind mod: ",keys[i]);
 									}
 								}else if(keys[i] == "Any"){
 									//overwrite and ignore other mods with Any
 									*keybind = (Key::Key)(key_number | InputMod_Any);
 									break;
 								}else{
-									logE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Unknown keybind mod: ",keys[i]);
+									LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Unknown keybind mod: ",keys[i]);
 								}
 							}
 						}
 					}break;
 					default:{
-						logE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Invalid key: ", key_start);
+						LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Invalid key: ", key_start);
 					}break;
 				}
 				

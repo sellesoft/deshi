@@ -16,15 +16,15 @@
 ////////////////////
 #define LOG_BUFFER_SIZE 1024
 #define LOG_PATH_SIZE 1024
-#define log(tag,...) Logging::Log(__FILE__,__LINE__,tag,__VA_ARGS__)           //comma style:  log("first ",12.5," f ",0xff)
-#define logE(tag,...) Logging::Log(__FILE__,__LINE__,GLUE(tag,"-error"),__VA_ARGS__)
-#define logW(tag,...) Logging::Log(__FILE__,__LINE__,GLUE(tag,"-warning"),__VA_ARGS__)
-#define logf(tag,fmt,...) Logging::LogF(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //printf style: logf("first %f f %d",12.5f,0xff)
-#define logfE(tag,fmt,...) Logging::LogF(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
-#define logfW(tag,fmt,...) Logging::LogF(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
-#define loga(tag,fmt,...) Logging::LogA(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //auto style:   loga("first $ f $",12.5f,0xff)
-#define logaE(tag,fmt,...) Logging::LogA(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
-#define logaW(tag,fmt,...) Logging::LogA(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
+#define Log(tag,...) Logging::Log_(__FILE__,__LINE__,tag,__VA_ARGS__)           //comma style:  log("first ",12.5," f ",0xff)
+#define LogE(tag,...) Logging::Log_(__FILE__,__LINE__,GLUE(tag,"-error"),__VA_ARGS__)
+#define LogW(tag,...) Logging::Log_(__FILE__,__LINE__,GLUE(tag,"-warning"),__VA_ARGS__)
+#define Logf(tag,fmt,...) Logging::LogF_(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //printf style: logf("first %f f %d",12.5f,0xff)
+#define LogfE(tag,fmt,...) Logging::LogF_(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
+#define LogfW(tag,fmt,...) Logging::LogF_(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
+#define Loga(tag,fmt,...) Logging::LogA_(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //auto style:   loga("first $ f $",12.5f,0xff)
+#define LogaE(tag,fmt,...) Logging::LogA_(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
+#define LogaW(tag,fmt,...) Logging::LogA_(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
 
 namespace Logging{
     local FILE* file = 0;
@@ -35,9 +35,9 @@ namespace Logging{
     local bool mirror_to_console = false;
     local bool log_file_and_line = false;
     
-    template<typename... T> void Log(const char* filepath, upt line_number, const char* tag, T... args);
-    void LogF(const char* filepath, upt line_number, const char* tag, const char* fmt, ...);
-    template<typename... T> void LogA(const char* filepath, upt line_number, const char* tag, const char* fmt, T... args);
+    template<typename... T> void Log_(const char* filepath, upt line_number, const char* tag, T... args);
+    void LogF_(const char* filepath, upt line_number, const char* tag, const char* fmt, ...);
+    template<typename... T> void LogA_(const char* filepath, upt line_number, const char* tag, const char* fmt, T... args);
     
     void Init(u32 log_count = 5, bool mirror = true, bool fileline = false);
     void Update();
@@ -48,7 +48,7 @@ namespace Logging{
 //// @implementation ////
 /////////////////////////
 template<typename... T> inline void Logging::
-Log(const char* filepath, upt line_number, const char* tag, T... args){
+Log_(const char* filepath, upt line_number, const char* tag, T... args){
     string str = (tag && *tag != 0) ? "["+string::toUpper(tag)+"] " : "";
     if(log_file_and_line) str += to_string("%s(%zd): ", filepath,line_number);
     constexpr auto arg_count{sizeof...(T)};
@@ -59,11 +59,11 @@ Log(const char* filepath, upt line_number, const char* tag, T... args){
     fputs(str.str, file);
     memcpy(log_buffer, str.str, str.count);
     last_message.count = str.count;
-    if(mirror_to_console) Console2::Log(str);
+    if(mirror_to_console) Console2::AddLog(str);
 }
 
 inline void Logging::
-LogF(const char* filepath, upt line_number, const char* tag, const char* fmt, ...){
+LogF_(const char* filepath, upt line_number, const char* tag, const char* fmt, ...){
     int cursor = (tag && *tag != 0) ? snprintf(log_buffer, LOG_BUFFER_SIZE, "[%s] ", string::toUpper(tag).str) : 0;
     if(log_file_and_line) cursor += snprintf(log_buffer+cursor, LOG_BUFFER_SIZE-cursor, "%s(%zd): ", filepath,line_number);
     va_list args; va_start(args, fmt);
@@ -73,11 +73,11 @@ LogF(const char* filepath, upt line_number, const char* tag, const char* fmt, ..
     cursor += snprintf(log_buffer+cursor, LOG_BUFFER_SIZE-cursor, "%s", "\n");
     fputs(log_buffer, file);
     last_message.count = cursor;
-    if(mirror_to_console) Console2::Log(to_string(last_message));
+    if(mirror_to_console) Console2::AddLog(to_string(last_message));
 }
 
 template<typename... T> inline void Logging::
-LogA(const char* filepath, upt line_number, const char* tag, const char* fmt, T... args){
+LogA_(const char* filepath, upt line_number, const char* tag, const char* fmt, T... args){
     string str = (tag && *tag != 0) ? "["+string::toUpper(tag)+"] " : "";
     if(log_file_and_line) str += to_string("%s(%zd): ", filepath,line_number);
     constexpr auto arg_count{sizeof...(T)};
@@ -102,14 +102,14 @@ LogA(const char* filepath, upt line_number, const char* tag, const char* fmt, T.
         }
         cursor++;
     }
-    if(special_count != arg_count) log("logging","More arguments passed to loga() than $ characters in the format string");
+    if(special_count != arg_count) LogE("logging","More arguments passed to loga() than $ characters in the format string");
     
     str += string(sub_start,cursor-sub_start);
     if(mirror_to_stdout) puts(str.str);
     str += "\n";
     memcpy(log_buffer, str.str, str.count);
     last_message.count = str.count;
-    if(mirror_to_console) Console2::Log(str);
+    if(mirror_to_console) Console2::AddLog(str);
 }
 
 #endif //DESHI_LOGGING_H
