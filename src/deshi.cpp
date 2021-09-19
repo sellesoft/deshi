@@ -242,45 +242,45 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	TIMER_RESET(t_s); 
 	Console2::Init();
 	Logging::Init(5);
-	loga("deshi","Finished console and logging initialization in $ms", TIMER_END(t_s));
+	Loga("deshi","Finished console and logging initialization in $ms", TIMER_END(t_s));
 	
 	TIMER_RESET(t_s); 
 	deshi_time.Init();
-	logf("deshi","Finished time initialization in %gms",TIMER_END(t_s));
+	Logf("deshi","Finished time initialization in %gms",TIMER_END(t_s));
 	
 	TIMER_RESET(t_s); 
 	deshi_window.Init("deshi", winWidth, winHeight);
-	log("deshi","Finished input and window initialization in ",TIMER_END(t_s),"ms");
+	Log("deshi","Finished input and window initialization in ",TIMER_END(t_s),"ms");
 	
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
 	TIMER_RESET(t_s); 
 	deshi_console.Init();
-	log("deshi","Finished console initialization in ",TIMER_END(t_s),"ms");
+	Log("deshi","Finished console initialization in ",TIMER_END(t_s),"ms");
 #endif
 	
 	TIMER_RESET(t_s); 
 	Render::Init();
-	log("deshi","Finished render initialization in ",TIMER_END(t_s),"ms");
+	Log("deshi","Finished render initialization in ",TIMER_END(t_s),"ms");
 	
 	TIMER_RESET(t_s); 
 	Storage::Init();
-	log("deshi","Finished storage initialization in ",TIMER_END(t_s),"ms");
+	Log("deshi","Finished storage initialization in ",TIMER_END(t_s),"ms");
 	
 #ifndef DESHI_DISABLE_IMGUI
 	TIMER_RESET(t_s); 
 	DeshiImGui::Init();
-	log("deshi","Finished imgui initialization in ",TIMER_END(t_s),"ms");
+	Log("deshi","Finished imgui initialization in ",TIMER_END(t_s),"ms");
 #endif
 	
 	TIMER_RESET(t_s); 
 	UI::Init();
-	log("deshi","Finished UI initialization in ",TIMER_END(t_s),"ms");
+	Log("deshi","Finished UI initialization in ",TIMER_END(t_s),"ms");
 	
 	TIMER_RESET(t_s); 
 	Cmd::Init();
-	log("deshi","Finished commands initialization in ",TIMER_END(t_s),"ms");
+	Log("deshi","Finished commands initialization in ",TIMER_END(t_s),"ms");
 	
-	log("deshi","Finished deshi initialization in ",TIMER_END(t_d),"ms");
+	Log("deshi","Finished deshi initialization in ",TIMER_END(t_d),"ms");
 	
 	glfwShowWindow(deshi_window.window);
 }

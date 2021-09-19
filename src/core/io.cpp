@@ -6,7 +6,7 @@ void Win32LogLastError(const char* func_name){
 	DWORD error = GetLastError();
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS|FORMAT_MESSAGE_MAX_WIDTH_MASK, 
 				  0, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&msg_buffer, 0, 0);
-	logfE("io-win32","%s failed with error %d: %s", func_name,(u32)error,(const char*)msg_buffer);
+	LogfE("io-win32","%s failed with error %d: %s", func_name,(u32)error,(const char*)msg_buffer);
 	LocalFree(msg_buffer);
 	if(io_crash_on_error) ExitProcess(error);
 }
@@ -29,7 +29,7 @@ get_directory_files(const char* directory){
 	next = FindFirstFileA(pattern.str, &data);
 	if(next == INVALID_HANDLE_VALUE || !(data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)){
 		Win32LogLastError("FindFirstFileA");
-		logaE("io-win32","'$' is not a valid directory.",directory);
+		LogaE("io-win32","'$' is not a valid directory.",directory);
 		return result;
 	}
 	while(next != INVALID_HANDLE_VALUE){

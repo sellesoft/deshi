@@ -434,7 +434,7 @@ template<typename... Args>
 local inline void
 PrintVk(u32 level, Args... args){
 	if(settings.loggingLevel >= level){
-		log("vulkan", args...);
+		Log("vulkan", args...);
 	}
 }
 
@@ -527,11 +527,11 @@ DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 			  const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData){
 	switch(messageSeverity){
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:{
-			logE("vulkan",pCallbackData->pMessage); 
+			LogE("vulkan",pCallbackData->pMessage); 
 			if(settings.crashOnError) Assert(!"crashing because of error in vulkan");
 		}break;
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:{
-			logW("vulkan",pCallbackData->pMessage); 
+			LogW("vulkan",pCallbackData->pMessage); 
 		}break;
 		default:{
 			PrintVk(5, pCallbackData->pMessage);
@@ -2214,11 +2214,11 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
 		
 		//check for errors
 		if(!result){ 
-			logE("vulkan",filename,": Shader compiler returned a null result");
+			LogE("vulkan",filename,": Shader compiler returned a null result");
 			Assert(!"crashing on shader compile error"); 
 		}
 		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
-			logE("vulkan",shaderc_result_get_error_message(result)); 
+			LogE("vulkan",shaderc_result_get_error_message(result)); 
 			Assert(!"crashing on shader compile error"); 
 		}
 		
@@ -2277,10 +2277,10 @@ CompileAllShaders(bool optimize = false){
 		
 		//check for errors
 		if(!result){ 
-			logE("vulkan",filename,": Shader compiler returned a null result"); continue; 
+			LogE("vulkan",filename,": Shader compiler returned a null result"); continue; 
 		}
 		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
-			logE("vulkan",shaderc_result_get_error_message(result)); 
+			LogE("vulkan",shaderc_result_get_error_message(result)); 
 			continue;
 		}
 		
@@ -2328,10 +2328,10 @@ CompileShader(std::string& filename, bool optimize){
 		
 		//check for errors
 		if(!result){ 
-			logE("vulkan",filename,": Shader compiler returned a null result");
+			LogE("vulkan",filename,": Shader compiler returned a null result");
 		}
 		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
-			logE("vulkan",shaderc_result_get_error_message(result)); 
+			LogE("vulkan",shaderc_result_get_error_message(result)); 
 		}
 		
 		//create or overwrite .spv files
@@ -2340,7 +2340,7 @@ CompileShader(std::string& filename, bool optimize){
 		defer{ outFile.close(); };
 		outFile.write(shaderc_result_get_bytes(result), shaderc_result_get_length(result));
 	}else{
-		logE("vulkan","failed to open file: ", filename);
+		LogE("vulkan","failed to open file: ", filename);
 	}
 }
 
@@ -4093,9 +4093,9 @@ Update(){
 	frameIndex = (frameIndex + 1) % minImageCount; //loops back to zero after reaching minImageCount
 	result = vkQueueWaitIdle(graphicsQueue);
 	switch(result){
-		case VK_ERROR_OUT_OF_HOST_MEMORY:   logE("vulkan","OUT_OF_HOST_MEMORY");   Assert(!"CPU ran out of memory"); break;
-		case VK_ERROR_OUT_OF_DEVICE_MEMORY: logE("vulkan","OUT_OF_DEVICE_MEMORY"); Assert(!"GPU ran out of memory"); break;
-		case VK_ERROR_DEVICE_LOST:          logE("vulkan","DEVICE_LOST");          Assert(!"Bad Sync/Overheat/Drive Bug"); break;
+		case VK_ERROR_OUT_OF_HOST_MEMORY:   LogE("vulkan","OUT_OF_HOST_MEMORY");   Assert(!"CPU ran out of memory"); break;
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY: LogE("vulkan","OUT_OF_DEVICE_MEMORY"); Assert(!"GPU ran out of memory"); break;
+		case VK_ERROR_DEVICE_LOST:          LogE("vulkan","DEVICE_LOST");          Assert(!"Bad Sync/Overheat/Drive Bug"); break;
 		case VK_SUCCESS:default: break;
 	}
 	
