@@ -109,6 +109,7 @@ AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighb
 //TODO(delle) change this to take in 8 points
 pair<u32,Mesh*> Storage::
 CreateBoxMesh(f32 width, f32 height, f32 depth, color color){
+	width /= 2.f; height /= 2.f; depth /= 2.f;
 	pair<u32,Mesh*> result(0, NullMesh());
 	
 	//check if created already
