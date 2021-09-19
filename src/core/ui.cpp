@@ -880,7 +880,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		//
 		//
 		//
-
+		
 		char charPlaced;
 		auto placeKey = [&](u32 i, u32 ins, char toPlace) {
 			//TODO(sushi) handle Numerical flag better
@@ -1382,7 +1382,7 @@ void UI::ShowDebugWindowOf(const char* name) {
 		PopVar();
 	}
 	else {
-		logE("ui","ShowDebugWindowOf() called with unknown window ", name, "!");
+		LogE("ui","ShowDebugWindowOf() called with unknown window ", name, "!");
 	}
 }
 
