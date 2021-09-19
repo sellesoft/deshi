@@ -36,36 +36,36 @@ namespace ImGui{
 		ImGui::TextEx(text, text+text_length);
 	}
 	
-    static void CopyButton(const char* text) {
-        if(ImGui::Button("Copy")){ ImGui::LogToClipboard(); ImGui::LogText(text); ImGui::LogFinish(); }
-    }
-    
-    static bool Inputvec2(const char* id, vec2* vecPtr, bool inputUpdate = false) {
-        ImGui::SetNextItemWidth(-FLT_MIN);
-        if(inputUpdate) {
-            return ImGui::InputFloat2(id, (float*)vecPtr); 
-        } else {
-            return ImGui::InputFloat2(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
-        }
-    }
-    
-    static bool Inputvec3(const char* id, vec3* vecPtr, bool inputUpdate = false) {
-        ImGui::SetNextItemWidth(-FLT_MIN);
-        if(inputUpdate) {
-            return ImGui::InputFloat3(id, (float*)vecPtr); 
-        } else {
-            return ImGui::InputFloat3(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue); 
-        }
-    }
-    
-    static bool Inputvec4(const char* id, vec4* vecPtr, bool inputUpdate = false) {
-        ImGui::SetNextItemWidth(-FLT_MIN);
-        if(inputUpdate) {
-            return ImGui::InputFloat4(id, (float*)vecPtr);
-        } else {
-            return ImGui::InputFloat4(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue); 
-        }
-    }
+	static void CopyButton(const char* text) {
+		if(ImGui::Button("Copy")){ ImGui::LogToClipboard(); ImGui::LogText(text); ImGui::LogFinish(); }
+	}
+	
+	static bool Inputvec2(const char* id, vec2* vecPtr, bool inputUpdate = false) {
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if(inputUpdate) {
+			return ImGui::InputFloat2(id, (float*)vecPtr); 
+		} else {
+			return ImGui::InputFloat2(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue);
+		}
+	}
+	
+	static bool Inputvec3(const char* id, vec3* vecPtr, bool inputUpdate = false) {
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if(inputUpdate) {
+			return ImGui::InputFloat3(id, (float*)vecPtr); 
+		} else {
+			return ImGui::InputFloat3(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue); 
+		}
+	}
+	
+	static bool Inputvec4(const char* id, vec4* vecPtr, bool inputUpdate = false) {
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		if(inputUpdate) {
+			return ImGui::InputFloat4(id, (float*)vecPtr);
+		} else {
+			return ImGui::InputFloat4(id, (float*)vecPtr, "%.3f", ImGuiInputTextFlags_EnterReturnsTrue); 
+		}
+	}
 	
 	static bool SliderUInt32(const char* label, u32* v, int v_min, int v_max, const char* format = "%d", ImGuiSliderFlags flags = 0){
 		return SliderScalar(label, ImGuiDataType_U32, v, &v_min, &v_max, format, flags);

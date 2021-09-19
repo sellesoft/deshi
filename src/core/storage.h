@@ -16,7 +16,7 @@ struct Storage_{
 	array<Material*> materials;
 	array<Model*>    models;
 	array<Font*>     fonts;
-    array<Light*>    lights; //TODO(delle) move this elsewhere
+	array<Light*>    lights; //TODO(delle) move this elsewhere
 };
 
 //global storage pointer
@@ -93,14 +93,14 @@ namespace Storage{
 	inline char*     ModelName(u32 modelIdx){ return DeshStorage->models[modelIdx]->name; };
 	inline u32       ModelBatchCount(u32 modelIdx){ return DeshStorage->models[modelIdx]->batches.size(); };
 	inline void      DeleteModel(u32 modelIdx){ DeleteModel(DeshStorage->models[modelIdx]); };
-    
-    ///////////////
+	
+	///////////////
 	//// @font ////
 	///////////////
-    pair<u32,Font*> CreateFontFromFileBDF(const char* filename);
-    pair<u32,Font*> CreateFontFromFileTTF(const char* filename);
-    
-    inline Font*    NullFont(){ return DeshStorage->fonts.data[0]; };
+	pair<u32,Font*> CreateFontFromFileBDF(const char* filename);
+	pair<u32,Font*> CreateFontFromFileTTF(const char* filename);
+	
+	inline Font*    NullFont(){ return DeshStorage->fonts.data[0]; };
 	inline u32      FontCount(){ return DeshStorage->fonts.count; };
 	inline Font*    FontAt(u32 fontIdx){ return DeshStorage->fonts[fontIdx]; };
 	inline u32      FontIndex(Font* font){ forI(DeshStorage->fonts.count){ if(font == DeshStorage->fonts[i]) return i; } return -1; };

@@ -7,7 +7,7 @@ void glfwError(int id, const char* description){
 }
 
 void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
-    name = _name;
+	name = _name;
 	glfwSetErrorCallback(&glfwError);
 	if(!glfwInit()){ logE("glfw","Failed to init!"); return; }
 	
@@ -22,26 +22,26 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	glfwWindowHint(GLFW_VISIBLE,                 GLFW_FALSE);
 	glfwWindowHint(GLFW_FOCUS_ON_SHOW,           GLFW_FALSE);
 	glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_FALSE);
-    
+	
 #if   DESHI_VULKAN
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 #elif DESHI_OPENGL //DESHI_VULKAN
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if DESHI_MAC
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif //DESHI_MAC
 #endif //DESHI_OPENGL
 	
 	window = glfwCreateWindow(width, height, _name, NULL, NULL);
 	if(!window){ logE("glfw","Failed to create the window!"); glfwTerminate(); return; }
-    
+	
 #if DESHI_OPENGL
-    glfwMakeContextCurrent(window);
-    opengl_version = gladLoadGL(glfwGetProcAddress);
-    if(opengl_version == 0){ logE("glad","Failed to load OpenGL!"); glfwTerminate(); return; }
-    logf("glad","Loaded OpenGL %d.%d", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
+	glfwMakeContextCurrent(window);
+	opengl_version = gladLoadGL(glfwGetProcAddress);
+	if(opengl_version == 0){ logE("glad","Failed to load OpenGL!"); glfwTerminate(); return; }
+	logf("glad","Loaded OpenGL %d.%d", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
 #endif //DESHI_OPENGL
 	
 	//set initial window size
@@ -53,7 +53,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	
 	cursor = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
 	if(!cursor){ logE("glfw","Failed to create the cursor!"); glfwTerminate(); return; }
-    
+	
 	//glfwSetWindowOpacity(window, 0.5);
 	
 	//load and set icon
@@ -91,7 +91,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	_width = width; _height = height;
 	
 	UpdateDisplayMode(displayMode);
-    
+	
 	glfwSetInputMode(window, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
 	
 	//keyboard mappings

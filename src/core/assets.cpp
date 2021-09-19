@@ -67,7 +67,7 @@ readFileAsciiToArray(std::string filepath, u32 chars, bool logError){
 	char* buffer = new char[chars+1];
 	file.seekg(0, file.beg);
 	file.read(buffer,chars);
-    buffer[chars] = '\0';
+	buffer[chars] = '\0';
 	return buffer;
 }
 

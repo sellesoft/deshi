@@ -405,7 +405,7 @@ void Console::PushConsole(std::string s){
 
 //flushes the buffer to a file once it reaches a certain size
 void Console::FlushBuffer(){
-    return; //NOTE disabling old console's log file
+	return; //NOTE disabling old console's log file
 	std::string output = "";
 	for (pair<std::string, color> a : buffer){
 		output += a.first;
@@ -684,7 +684,7 @@ CMDSTARTA(window_resizable, args.size() == 1){
 
 CMDFUNC(window_info){
 	//return DeshWindow->str();
-    return "";
+	return "";
 }
 
 CMDSTARTA(mat_texture, args.size() == 3){

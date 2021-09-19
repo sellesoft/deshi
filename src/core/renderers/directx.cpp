@@ -153,14 +153,14 @@ PrintDx(u32 level, Args... args){
 local char iniFilepath[256] = {};
 void DeshiImGui::
 Init(){ //!Incomplete
-    //Setup Dear ImGui context
-    
-    //Setup Dear ImGui style
-    
-    //Setup Platform/Renderer backends
+	//Setup Dear ImGui context
 	
-    
-    
+	//Setup Dear ImGui style
+	
+	//Setup Platform/Renderer backends
+	
+	
+	
 }
 
 void DeshiImGui::
@@ -187,29 +187,29 @@ vec2 prevScissorOffset = vec2( 0,  0);
 vec2 prevScissorExtent = vec2(-1, -1);
 
 void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
-    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
-    
+	
 	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
-       scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-       scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
+	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+	   scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-    
+	
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexDx* ip = uiIndexArray + uiIndexCount;
-    
+	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
 	vp[0].pos = { pos.x + 0,           pos.y + 0 };            vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { pos.x + dimensions.w,pos.y + 0 };            vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { pos.x + dimensions.w,pos.y + dimensions.h }; vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { pos.x + 0,           pos.y + dimensions.h }; vp[3].uv = { 0,0 }; vp[3].color = col;
-    
+	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -226,7 +226,7 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
 //straight lines, see below
 void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
-    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
 	//top, left, right, bottom
@@ -239,37 +239,37 @@ void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
 //when drawing them straight
 void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
-    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if(color.a == 0) return;
-    
+	
 	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
-       scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-       scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
+	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+	   scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-    
+	
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexDx* ip = uiIndexArray + uiIndexCount;
-    
+	
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
-    
+	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
 	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { end.x,  end.y };   vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
-    
+	
 	vp[0].pos += norm * thickness / 2;
 	vp[1].pos += norm * thickness / 2;
 	vp[2].pos -= norm * thickness / 2;
 	vp[3].pos -= norm * thickness / 2;
-    
+	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -285,7 +285,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 
 void Render::
 DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){ //!Incomplete
-    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
 	
@@ -294,7 +294,7 @@ DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorE
 //NOTE: text scaling looks very ugly with bit map fonts as far as i know
 void Render::
 DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){ //!Incomplete
-    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if(color.a == 0) return;
 	
 	
@@ -351,7 +351,7 @@ LoadMaterial(Material* material){ //!Incomplete
 
 void Render::
 LoadMesh(Mesh* mesh){ //!Incomplete
-    
+	
 }
 
 void Render::
@@ -364,22 +364,22 @@ UpdateMaterial(Material* material){ //!Incomplete
 /////////////////
 void Render::
 UnloadFont(Font* font){ //!Incomplete
-    
+	
 }
 
 void Render::
 UnloadTexture(Texture* texture){ //!Incomplete
-    
+	
 }
 
 void Render::
 UnloadMaterial(Material* material){ //!Incomplete
-    
+	
 }
 
 void Render::
 UnloadMesh(Mesh* mesh){ //!Incomplete
-    
+	
 }
 
 ///////////////
@@ -387,7 +387,7 @@ UnloadMesh(Mesh* mesh){ //!Incomplete
 ///////////////
 void Render::
 DrawModel(Model* mesh, mat4 matrix){ //!Incomplete
-    
+	
 }
 
 void Render::
@@ -570,22 +570,22 @@ DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f
 /////////////////
 void Render::
 UpdateCameraPosition(vec3 position){ //!Incomplete
-    
+	
 }
 
 void Render::
 UpdateCameraViewMatrix(mat4 m){ //!Incomplete
-    
+	
 }
 
 void Render::
 UpdateCameraProjectionMatrix(mat4 m){ //!Incomplete
-    
+	
 }
 
 void Render::
 UseDefaultViewProjMatrix(vec3 position, vec3 rotation){ //!Incomplete
-    
+	
 }
 
 //////////////////
@@ -593,12 +593,12 @@ UseDefaultViewProjMatrix(vec3 position, vec3 rotation){ //!Incomplete
 //////////////////
 void Render::
 ReloadShader(u32 shader){ //!Incomplete
-    
+	
 }
 
 void Render::
 ReloadAllShaders(){ //!Incomplete
-    
+	
 }
 
 /////////////////
@@ -606,17 +606,17 @@ ReloadAllShaders(){ //!Incomplete
 /////////////////
 void Render::
 UpdateLight(u32 lightIdx, vec4 vec){ //!Incomplete
-    
+	
 }
 
 void Render::
 remakeOffscreen(){ //!Incomplete
-    
+	
 }
 
 void Render::
 RemakeTextures(){ //!Incomplete
-    
+	
 }
 
 ///////////////
@@ -627,45 +627,45 @@ RemakeTextures(){ //!Incomplete
 //Init's functions
 local ComPtr<IDXGIAdapter4> GetAdapter() {
 	//get a compatible adapter for use with DirectX12
-    
+	
 	IDXGIFactory4* dxgiFactory;
 	u32 flags = 0;
 #ifdef DESHI_INTERNAL
 	flags = DXGI_CREATE_FACTORY_DEBUG;
 #endif
 	AssertDx(CreateDXGIFactory2(flags, IID_PPV_ARGS(&dxgiFactory)));
-    
+	
 	ComPtr<IDXGIAdapter1> dxgiAdapter1;
 	ComPtr<IDXGIAdapter4> dxgiAdapter4;
-    
+	
 	SIZE_T maxDedicatedVideoMemory = 0;
 	for (u32 i = 0; dxgiFactory->EnumAdapters1(i, &dxgiAdapter1) != DXGI_ERROR_NOT_FOUND; ++i)
 	{
 		DXGI_ADAPTER_DESC1 dxgiAdapterDesc1;
 		dxgiAdapter1->GetDesc1(&dxgiAdapterDesc1);
-        
+		
 		// Check to see if the adapter can create a D3D12 device without actually 
 		// creating it. The adapter with the largest dedicated video memory
 		// is favored.
 		if ((dxgiAdapterDesc1.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0 &&
 			SUCCEEDED(D3D12CreateDevice(dxgiAdapter1.Get(),
-                                        D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr)) &&
+										D3D_FEATURE_LEVEL_11_0, __uuidof(ID3D12Device), nullptr)) &&
 			dxgiAdapterDesc1.DedicatedVideoMemory > maxDedicatedVideoMemory)
 		{
 			maxDedicatedVideoMemory = dxgiAdapterDesc1.DedicatedVideoMemory;
 			AssertDx(dxgiAdapter1.As(&dxgiAdapter4));
-            
+			
 		}
 	}
-    
+	
 	return dxgiAdapter4;
 }
 
 local ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter){
 	ComPtr<ID3D12Device> d3d12Device2;
 	AssertDx(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&d3d12Device2)));
-    
-    
+	
+	
 	//if were in debug, enable debug messages
 #ifdef DESHI_INTERNAL
 	ComPtr<ID3D12InfoQueue> infoQueue;
@@ -674,22 +674,22 @@ local ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter){
 		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
 		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE);
 	}
-    
+	
 	// Suppress whole categories of messages
-    //D3D12_MESSAGE_CATEGORY Categories[] = {};
-    
-    // Suppress messages based on their severity level
+	//D3D12_MESSAGE_CATEGORY Categories[] = {};
+	
+	// Suppress messages based on their severity level
 	D3D12_MESSAGE_SEVERITY Severities[] = {
 		D3D12_MESSAGE_SEVERITY_INFO
 	};
-    
+	
 	// Suppress individual messages by their ID
 	D3D12_MESSAGE_ID DenyIds[] = {
 		D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,   // I'm really not sure how to avoid this message.
 		D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,                         // This warning occurs when using capture frame while graphics debugging.
 		D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,                       // This warning occurs when using capture frame while graphics debugging.
 	};
-    
+	
 	D3D12_INFO_QUEUE_FILTER NewFilter = {};
 	//NewFilter.DenyList.NumCategories = _countof(Categories);
 	//NewFilter.DenyList.pCategoryList = Categories;
@@ -697,30 +697,30 @@ local ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter){
 	NewFilter.DenyList.pSeverityList = Severities;
 	NewFilter.DenyList.NumIDs = _countof(DenyIds);
 	NewFilter.DenyList.pIDList = DenyIds;
-    
+	
 	AssertDx(infoQueue->PushStorageFilter(&NewFilter));
-    
+	
 #endif
-    
+	
 }
 
 local ComPtr<ID3D12CommandQueue> CreateCommandQueue(ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type) {
 	ComPtr<ID3D12CommandQueue> d3d12CommandQueue;
-    
+	
 	D3D12_COMMAND_QUEUE_DESC desc = {};
 	desc.Type = type;
 	desc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 	desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	desc.NodeMask = 0;
-    
+	
 	AssertDx(device->CreateCommandQueue(&desc, IID_PPV_ARGS(&d3d12CommandQueue)));
-    
+	
 	return d3d12CommandQueue;
 }
 
 local bool CheckTearingSupport(){
 	BOOL allowTearing = FALSE;
-    
+	
 	// Rather than create the DXGI 1.5 factory interface directly, we create the
 	// DXGI 1.4 interface and query for the 1.5 interface. This is to enable the 
 	// graphics debugging tools which will not support the 1.5 factory interface 
@@ -730,15 +730,15 @@ local bool CheckTearingSupport(){
 		ComPtr<IDXGIFactory5> factory5;
 		if (SUCCEEDED(factory4.As(&factory5))){
 			if (FAILED(factory5->CheckFeatureSupport(
-                                                     DXGI_FEATURE_PRESENT_ALLOW_TEARING,
-                                                     &allowTearing, sizeof(allowTearing)))){
+													 DXGI_FEATURE_PRESENT_ALLOW_TEARING,
+													 &allowTearing, sizeof(allowTearing)))){
 				allowTearing = FALSE;
 			}
 		}
 	}
-    
 	
-    
+	
+	
 	return allowTearing == TRUE;
 }
 
@@ -746,13 +746,13 @@ local ComPtr<IDXGISwapChain4> CreateSwapChain(HWND hWnd, ComPtr<ID3D12CommandQue
 	ComPtr<IDXGISwapChain4> dxgiSwapChain4;
 	ComPtr<IDXGIFactory4> dxgiFactory4;
 	u32 createFactoryFlags = 0;
-    
+	
 #ifdef DESHI_INTERNAL
 	createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
 #endif
-    
+	
 	AssertDx(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory4)));
-    
+	
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 	swapChainDesc.      Width = width;
 	swapChainDesc.     Height = height;
@@ -766,49 +766,49 @@ local ComPtr<IDXGISwapChain4> CreateSwapChain(HWND hWnd, ComPtr<ID3D12CommandQue
 	swapChainDesc.  AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
 	// It is recommended to always allow tearing if tearing support is available.
 	swapChainDesc.Flags = CheckTearingSupport() ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
-    
+	
 	ComPtr<IDXGISwapChain1> swapChain1;
 	AssertDx(dxgiFactory4->CreateSwapChainForHwnd(
-                                                  commandQueue.Get(),
-                                                  windowHandle,
-                                                  &swapChainDesc,
-                                                  nullptr,
-                                                  nullptr,
-                                                  &swapChain1));
-    
+												  commandQueue.Get(),
+												  windowHandle,
+												  &swapChainDesc,
+												  nullptr,
+												  nullptr,
+												  &swapChain1));
+	
 	//disable alt+enter toggling fullscreen
 	AssertDx(dxgiFactory4->MakeWindowAssociation(hWnd, DXGI_MWA_NO_ALT_ENTER));
 	
 	AssertDx(swapChain1.As(&dxgiSwapChain4));
-    
+	
 	return dxgiSwapChain4;
 }
 
 local ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(ComPtr<ID3D12Device2> device, D3D12_DESCRIPTOR_HEAP_TYPE type, uint32_t numDescriptors) {
 	ComPtr<ID3D12DescriptorHeap> descriptorHeap;
-    
+	
 	D3D12_DESCRIPTOR_HEAP_DESC desc = {};
 	desc.NumDescriptors = numDescriptors;
 	desc.Type = type;
-    
+	
 	AssertDx(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap)));
-    
+	
 	return descriptorHeap;
 }
 
 local void UpdateRenderTargetViews(ComPtr<ID3D12Device2> device, ComPtr<IDXGISwapChain4> swapChain, ComPtr<ID3D12DescriptorHeap> descriptorHeap) {
 	auto rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    
+	
 	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(descriptorHeap->GetCPUDescriptorHandleForHeapStart());
-    
+	
 	for (int i = 0; i < NumFrames; ++i) {
 		ComPtr<ID3D12Resource> backBuffer;
 		AssertDx(swapChain->GetBuffer(i, IID_PPV_ARGS(&backBuffer)));
-        
+		
 		device->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvHandle);
-        
+		
 		backBuffers[i] = backBuffer;
-        
+		
 		rtvHandle.Offset(rtvDescriptorSize);
 	}
 }
@@ -816,40 +816,40 @@ local void UpdateRenderTargetViews(ComPtr<ID3D12Device2> device, ComPtr<IDXGISwa
 local ComPtr<ID3D12CommandAllocator> CreateCommandAllocator(ComPtr<ID3D12Device2> device, D3D12_COMMAND_LIST_TYPE type) {
 	ComPtr<ID3D12CommandAllocator> commandAllocator;
 	AssertDx(device->CreateCommandAllocator(type, IID_PPV_ARGS(&commandAllocator)));
-    
+	
 	return commandAllocator;
 }
 
 local ComPtr<ID3D12GraphicsCommandList> CreateCommandList(ComPtr<ID3D12Device2> device, ComPtr<ID3D12CommandAllocator> commandAllocator, D3D12_COMMAND_LIST_TYPE type) {
 	ComPtr<ID3D12GraphicsCommandList> commandList;
 	AssertDx(device->CreateCommandList(0, type, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList)));
-    
+	
 	AssertDx(commandList->Close());
-    
+	
 	return commandList;
 }
 
 local ComPtr<ID3D12Fence> CreateFence(ComPtr<ID3D12Device2> device) {
 	ComPtr<ID3D12Fence> fence;
-    
+	
 	AssertDx(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
-    
+	
 	return fence;
 }
 
 local HANDLE CreateEventHandle() {
 	HANDLE fenceEvent;
-    
+	
 	fenceEvent = ::CreateEvent(NULL, FALSE, FALSE, NULL);
 	Assert(fenceEvent, "Failed to create fence event.");
-    
+	
 	return fenceEvent;
 }
 
 local u64 Signal(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fence, u64& fenceValue) {
 	u64 fenceValueForSignal = ++fenceValue;
 	AssertDx(commandQueue->Signal(fence.Get(), fenceValueForSignal));
-    
+	
 	return fenceValueForSignal;
 }
 
@@ -867,54 +867,54 @@ local void Flush(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fe
 
 void Render::
 Init(){ //!Incomplete
-    //// load RenderSettings ////
+	//// load RenderSettings ////
 	LoadSettings();
 	if(settings.debugging && settings.printf) settings.loggingLevel = 4;
-    
-    //// setup debug callback ////
-    
-    //// temp testing ////
-    
-    //enable Dx debug layer
+	
+	//// setup debug callback ////
+	
+	//// temp testing ////
+	
+	//enable Dx debug layer
 #ifdef DESHI_INTERNAL
 	ComPtr<ID3D12Debug> debugInterface;
 	AssertDx(D3D12GetDebugInterface(IID_PPV_ARGS(&debugInterface)));
 	debugInterface->EnableDebugLayer();
 #endif
-    
+	
 	//get the HWND already generated by glfw
 	windowHandle = glfwGetWin32Window(DeshWindow->window);
 	
 	tearingSupported = CheckTearingSupport();
-    
+	
 	device = CreateDevice(GetAdapter());
 	
 	commandQueue = CreateCommandQueue(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
-    
+	
 	swapchain = CreateSwapChain(windowHandle, commandQueue, width, height, NumFrames);
-    
+	
 	currentBackBufferIdx = swapchain->GetCurrentBackBufferIndex();
-    
+	
 	rtvDescriptorHeap = CreateDescriptorHeap(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, NumFrames);
 	rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-    
+	
 	UpdateRenderTargetViews(device, swapchain, rtvDescriptorHeap);
-    
+	
 	for (int i = 0; i < NumFrames; ++i)
 	{
 		commandAllocators[i] = CreateCommandAllocator(device, D3D12_COMMAND_LIST_TYPE_DIRECT);
 	}
 	
 	commandList = CreateCommandList(
-                                    device, commandAllocators[currentBackBufferIdx], D3D12_COMMAND_LIST_TYPE_DIRECT);
-    
+									device, commandAllocators[currentBackBufferIdx], D3D12_COMMAND_LIST_TYPE_DIRECT);
+	
 	fence = CreateFence(device);
 	fenceEvent = CreateEventHandle();
-    
-    
-    
-    
-    initialized = true;
+	
+	
+	
+	
+	initialized = true;
 }
 
 local void Resize(u32 _width, u32 _height) {
@@ -922,25 +922,25 @@ local void Resize(u32 _width, u32 _height) {
 		// Don't allow 0 size swap chain back buffers.
 		width  = Max(1u, width);
 		height = Max(1u, height);
-        
+		
 		// Flush the GPU queue to make sure the swap chain's back buffers
 		// are not being referenced by an in-flight command list.
 		Flush(commandQueue, fence, fenceValue, fenceEvent);
-        
+		
 		for (int i = 0; i < NumFrames; ++i) {
 			// Any references to the back buffers must be released
 			// before the swap chain can be resized.
 			backBuffers[i].Reset();
 			frameFenceValues[i] = frameFenceValues[currentBackBufferIdx];
 		}
-        
+		
 		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
 		AssertDx(swapchain->GetDesc(&swapChainDesc));
 		AssertDx(swapchain->ResizeBuffers(NumFrames, width, height,
-                                          swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
-        
+										  swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
+		
 		currentBackBufferIdx = swapchain->GetCurrentBackBufferIndex();
-        
+		
 		UpdateRenderTargetViews(device, swapchain, rtvDescriptorHeap);
 	}
 }
@@ -950,8 +950,8 @@ local void Resize(u32 _width, u32 _height) {
 /////////////////
 void Render::
 Update(){ //!Incomplete
-    TIMER_START(t_u);
-    
+	TIMER_START(t_u);
+	
 	//reset the command allocator and command list to its initial state
 	auto commandAllocator = commandAllocators[currentBackBufferIdx];
 	auto backBuffer = backBuffers[currentBackBufferIdx];
@@ -959,64 +959,64 @@ Update(){ //!Incomplete
 	commandList->Reset(commandAllocator.Get(), nullptr);
 	
 	{//clear render target
-        
+		
 		//make a transition resource barrier
 		//in order to transition resources between states you must use a barrier
 		//in this case we are transitioning a resource from a presenting state to a render target state
-        
+		
 		CD3DX12_RESOURCE_BARRIER barrier = 
 			CD3DX12_RESOURCE_BARRIER::Transition(
-                                                 backBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-        
+												 backBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		
 		commandList->ResourceBarrier(1, &barrier);
-        
+		
 		float* clearColor = &settings.clearColor.r;
 		CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
-                                          currentBackBufferIdx, rtvDescriptorSize);
-        
+										  currentBackBufferIdx, rtvDescriptorSize);
+		
 		commandList->ClearRenderTargetView(rtv, clearColor, 0, nullptr);
 	}
-    
+	
 	
 	{// present
-        
+		
 		//here we are transitioning again, just in the other way
-        
+		
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
-                                                                                backBuffer.Get(),
-                                                                                D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-        
+																				backBuffer.Get(),
+																				D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+		
 		commandList->ResourceBarrier(1, &barrier);
-        
+		
 		AssertDx(commandList->Close());
-        
+		
 		ID3D12CommandList* const commandLists[] = { commandList.Get() };
-        
+		
 		commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
-        
+		
 		UINT syncInterval = 0;
 		UINT presentFlags = tearingSupported ? DXGI_PRESENT_ALLOW_TEARING : 0;
 		AssertDx(swapchain->Present(syncInterval, presentFlags));
-        
+		
 		frameFenceValues[currentBackBufferIdx] = Signal(commandQueue, fence, fenceValue);
-        
+		
 		currentBackBufferIdx = swapchain->GetCurrentBackBufferIndex();
-        
+		
 		WaitForFenceValue(fence, frameFenceValues[currentBackBufferIdx], fenceEvent);
 	}
-    
-    //handle window resize
-    
-    //render stuff 
-    
-    //execute draw commands
-    
-    //present stuff
-    
-    //reset stuff
-    
-    
-    DeshTime->renderTime = TIMER_END(t_u);
+	
+	//handle window resize
+	
+	//render stuff 
+	
+	//execute draw commands
+	
+	//present stuff
+	
+	//reset stuff
+	
+	
+	DeshTime->renderTime = TIMER_END(t_u);
 }
 
 ////////////////
@@ -1024,7 +1024,7 @@ Update(){ //!Incomplete
 ////////////////
 void Render::
 Reset(){ //!Incomplete
-    
+	
 }
 
 //////////////////
@@ -1033,7 +1033,7 @@ Reset(){ //!Incomplete
 void Render::
 Cleanup(){ //!Incomplete
 	Flush(commandQueue, fence, fenceValue, fenceEvent);
-    
+	
 	::CloseHandle(fenceEvent);
-    
+	
 }

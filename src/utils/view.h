@@ -7,7 +7,7 @@ template<typename T>
 struct view{
 	T*  data;
 	upt count;
-    
+	
 	T& operator[](upt index){ return data[index]; }
 	T* at(size_t index){ return &data[index]; }
 	T* begin(){ return &data[0]; }

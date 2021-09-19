@@ -99,7 +99,7 @@ namespace Assets{
 	
 	//iterates directory and returns a list of files in it
 	//probably return something other than a vector of strings but thts how it is for now
-    std::vector<std::string> iterateDirectory_(const std::string& filepath, const char* extension = 0);
+	std::vector<std::string> iterateDirectory_(const std::string& filepath, const char* extension = 0);
 	array<string> iterateDirectory(const std::string& filepath, const char* extension = 0);
 	
 	//creates base deshi directories if they dont already exist

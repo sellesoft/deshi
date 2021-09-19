@@ -30,19 +30,19 @@ struct MeshVk{
 };
 
 struct TextureVk {
-    Texture* base;
-    VkImage        image;
-    VkDeviceMemory memory;
-    VkDeviceSize   size;
-    VkImageView    view;
-    VkSampler      sampler;
-    VkDescriptorImageInfo descriptor;
+	Texture* base;
+	VkImage        image;
+	VkDeviceMemory memory;
+	VkDeviceSize   size;
+	VkImageView    view;
+	VkSampler      sampler;
+	VkDescriptorImageInfo descriptor;
 };
 
 struct MaterialVk{
 	Material* base;
-    VkDescriptorSet descriptorSet;
-    VkPipeline      pipeline;
+	VkDescriptorSet descriptorSet;
+	VkPipeline      pipeline;
 };
 
 struct FontVk{
@@ -78,31 +78,31 @@ struct UICmdVk{
 };
 
 struct QueueFamilyIndices{
-    optional<u32> graphicsFamily;
-    optional<u32> presentFamily;
-    bool isComplete(){ return graphicsFamily.test() && presentFamily.test(); }
+	optional<u32> graphicsFamily;
+	optional<u32> presentFamily;
+	bool isComplete(){ return graphicsFamily.test() && presentFamily.test(); }
 };
 
 struct SwapChainSupportDetails{
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
+	VkSurfaceCapabilitiesKHR capabilities;
+	std::vector<VkSurfaceFormatKHR> formats;
+	std::vector<VkPresentModeKHR> presentModes;
 };
 
 struct FrameVk{
-    VkImage         image         = VK_NULL_HANDLE;
-    VkImageView     imageView     = VK_NULL_HANDLE;
-    VkFramebuffer   framebuffer   = VK_NULL_HANDLE;
-    VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+	VkImage         image         = VK_NULL_HANDLE;
+	VkImageView     imageView     = VK_NULL_HANDLE;
+	VkFramebuffer   framebuffer   = VK_NULL_HANDLE;
+	VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
 };
 
 struct FramebufferAttachmentsVk{
-    VkImage        colorImage       = VK_NULL_HANDLE;
-    VkDeviceMemory colorImageMemory = VK_NULL_HANDLE;
-    VkImageView    colorImageView   = VK_NULL_HANDLE;
-    VkImage        depthImage       = VK_NULL_HANDLE;
-    VkDeviceMemory depthImageMemory = VK_NULL_HANDLE;
-    VkImageView    depthImageView   = VK_NULL_HANDLE;
+	VkImage        colorImage       = VK_NULL_HANDLE;
+	VkDeviceMemory colorImageMemory = VK_NULL_HANDLE;
+	VkImageView    colorImageView   = VK_NULL_HANDLE;
+	VkImage        depthImage       = VK_NULL_HANDLE;
+	VkDeviceMemory depthImageMemory = VK_NULL_HANDLE;
+	VkImageView    depthImageView   = VK_NULL_HANDLE;
 };
 
 struct BufferVk{
@@ -2214,7 +2214,7 @@ CompileAndLoadShader(std::string filename, VkShaderStageFlagBits stage, bool opt
 		
 		//check for errors
 		if(!result){ 
-            logE("vulkan",filename,": Shader compiler returned a null result");
+			logE("vulkan",filename,": Shader compiler returned a null result");
 			Assert(!"crashing on shader compile error"); 
 		}
 		if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success){
@@ -2418,7 +2418,7 @@ specializationInfo.mapEntryCount = 1;
 	
 	{//selected (base with no cull or depth test)
 		rasterizationState.cullMode = VK_CULL_MODE_NONE;
-        depthStencilState.depthTestEnable = VK_FALSE;
+		depthStencilState.depthTestEnable = VK_FALSE;
 		
 		shaderStages[1].pSpecializationInfo = &specializationInfo;
 		pipelineCreateInfo.stageCount = 2;
@@ -2426,7 +2426,7 @@ specializationInfo.mapEntryCount = 1;
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_PIPELINE, (u64)pipelines.selected, "Selected pipeline");
 		
 		rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
-        depthStencilState.depthTestEnable = VK_TRUE;
+		depthStencilState.depthTestEnable = VK_TRUE;
 	}
 	
 	{//null pipeline
@@ -2917,7 +2917,7 @@ BuildCommands(){
 				VkDeviceSize offsets[1] = {0};
 				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &tempVertexBuffer.buffer, offsets);
 				vkCmdBindIndexBuffer(cmdBuffer, tempIndexBuffer.buffer, 0, INDEX_TYPE_VK_TEMP);
-                
+				
 				//wireframe
 				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,(settings.tempMeshOnTop) ? pipelines.wireframe : pipelines.wireframe_depth);
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &mat4::IDENTITY);
@@ -3095,29 +3095,29 @@ vec2 prevScissorOffset = vec2( 0,  0);
 vec2 prevScissorExtent = vec2(-1, -1);
 
 void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
-    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if(color.a == 0) return;
-    
+	
 	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
-       scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-       scissorExtent != prevScissorExtent){ //and you could do text last in one, and text first in another
+	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+	   scissorExtent != prevScissorExtent){ //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-    
+	
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
-    
+	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
 	vp[0].pos = { pos.x + 0,           pos.y + 0 };            vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { pos.x + dimensions.w,pos.y + 0 };            vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { pos.x + dimensions.w,pos.y + dimensions.h }; vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { pos.x + 0,           pos.y + dimensions.h }; vp[3].uv = { 0,0 }; vp[3].color = col;
-    
+	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -3134,7 +3134,7 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
 //straight lines, see below
 void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
-    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if(color.a == 0) return;
 	
 	//top, left, right, bottom
@@ -3147,37 +3147,37 @@ void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
 //when drawing them straight
 void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
-    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if(color.a == 0) return;
-    
+	
 	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
-       scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-       scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
+	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+	   scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-    
+	
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
-    
+	
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
-    
+	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
 	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { end.x,  end.y };   vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
-    
+	
 	vp[0].pos += norm * thickness / 2;
 	vp[1].pos += norm * thickness / 2;
 	vp[2].pos -= norm * thickness / 2;
 	vp[3].pos -= norm * thickness / 2;
-    
+	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -3193,7 +3193,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 
 void Render::
 DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){
-    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
 	f32 w = vkFonts[1].characterWidth;
@@ -3205,12 +3205,12 @@ DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorE
 
 void Render::
 DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){
-    Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if(color.a == 0) return;
 	
 	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 
-       scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-       scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
+	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+	   scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
@@ -3599,22 +3599,22 @@ UpdateMaterial(Material* material){
 /////////////////
 void Render::
 UnloadFont(Font* font){
-    Assert(!"not implemented yet"); //!Incomplete
+	Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
 UnloadTexture(Texture* texture){
-    Assert(!"not implemented yet"); //!Incomplete
+	Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
 UnloadMaterial(Material* material){
-    Assert(!"not implemented yet"); //!Incomplete
+	Assert(!"not implemented yet"); //!Incomplete
 }
 
 void Render::
 UnloadMesh(Mesh* mesh){
-    Assert(!"not implemented yet"); //!Incomplete
+	Assert(!"not implemented yet"); //!Incomplete
 }
 
 ///////////////
@@ -4127,9 +4127,9 @@ Update(){
 void Render::
 Reset(){
 	PrintVk(1,"Resetting renderer");
-    
+	
 	vkDeviceWaitIdle(device); //wait before cleanup
-    //TODO(delle) delete things
+	//TODO(delle) delete things
 }
 
 

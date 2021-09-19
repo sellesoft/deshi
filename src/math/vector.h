@@ -166,8 +166,8 @@ struct vec3 {
 	matN ToM1x3() const;
 	matN ToM1x4(float w) const;
 	
-    //quaternion interactions
-    vec3 operator* (const quat& rhs) const;
+	//quaternion interactions
+	vec3 operator* (const quat& rhs) const;
 };
 #include "vec3.inl"
 

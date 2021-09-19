@@ -15,7 +15,7 @@ struct Font{
 	vec2 dpi;
 	vec4 bbx;
 	
-    u16* encodings;
+	u16* encodings;
 	u8*  texture;
 };
 

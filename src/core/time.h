@@ -51,9 +51,9 @@ inline void Time::Update(){
 	
 	prevDeltaTime = deltaTime;
 	deltaTime = elapsedTime.count();
-    totalTime += deltaTime;
-    ++updateCount;
-    
+	totalTime += deltaTime;
+	++updateCount;
+	
 	timeTime = TIMER_END(t_d);
 }
 

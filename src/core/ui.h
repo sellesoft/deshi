@@ -143,14 +143,14 @@ enum UIInputTextFlags_ {
 	UIInputTextFlags_FitSizeToText         = 1 << 7,
 	UIInputTextFlags_SetCursorToEndOnEnter = 1 << 8,
 	UIInputTextFlags_Numerical             = 1 << 9, //only allows input of [0-9|.]
-    
+	
 }; typedef u32 UIInputTextFlags;
 
 struct UIInputTextCallbackData {
 	UIInputTextFlags eventFlag; //the flag that caused the call back
 	UIInputTextFlags flags;    //the flags that the input text item has
 	void* userData;           //custom user data
-    
+	
 	u8       character;        //character that was input  | r
 	Key::Key eventKey;         //key pressed on callback   | r
 	char*    buffer;           //buffer pointer			   | r/w
@@ -193,7 +193,7 @@ struct UIDrawCmd {
 	
 	//rectangles have dimensions
 	vec2 dimensions;
-    
+	
 	//lines have a second position
 	vec2 position2;
 	
@@ -204,7 +204,7 @@ struct UIDrawCmd {
 	//TODO(sushi) reformat this as a char*, as this is data that is used directly by render
 	//			  which never modifies the string
 	string text;
-    
+	
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
 	bool trackedForFit = 1;
 	
@@ -241,12 +241,12 @@ struct UIItem {
 	UIItemType type;
 	vec2       initialCurPos; //cursor position before this item moved it 
 	UIStyle    style;         //style at the time of making the item
-    
+	
 	
 	vec2 position; //relative to the window its being held in
 	vec2 size;
-    
-    
+	
+	
 	//all draw command positions are relative to the items position
 	array<UIDrawCmd> drawCmds;
 };
@@ -283,7 +283,7 @@ struct UIWindow {
 	
 	UIWindowFlags flags;
 	
-    
+	
 	//base items are always drawn before items and is just a way to defer drawing 
 	//base window stuff to EndWindow(), so we can do dynamic sizing
 	array<UIItem> items;
@@ -293,23 +293,23 @@ struct UIWindow {
 	
 	bool hovered = false;
 	bool titleHovered = false;
-    
+	
 	bool focused = false;
 	
 	bool minimized = false;
 	bool hidden = false;
-    
+	
 	float titleBarHeight = 0;
 	
 	//this is the state of style when EndWindow() is called for the window
 	//meaning the style for elements before the last bunch could be different
 	//if the user changes stuff before ending the window and therefore this should be used carefully!!
-    
+	
 	//TODO decide if this is necessary anymore or not since we have style on items now
 	UIStyle style;
-    
+	
 	UIWindow() {};
-    
+	
 };
 
 enum UIRowFlags_ {
@@ -321,7 +321,7 @@ enum UIRowFlags_ {
 	UIRowFlags_CellBorderLeft     = 1 << 4,
 	UIRowFlags_CellBorderRight    = 1 << 5,
 	UIRowFlags_CallBorderFull     = UIRowFlags_CellBorderTop | UIRowFlags_CellBorderBottom | UIRowFlags_CellBorderLeft | UIRowFlags_CellBorderRight,
-    
+	
 }; typedef u32 UIRowFlags;
 
 //for use internally only!
@@ -348,14 +348,14 @@ enum UIRowFlags_ {
 struct UIRow {
 	UIRowFlags flags = 0;
 	u32 columns = 0;
-    
+	
 	f32 height = 0;
 	f32 width = 0; 
 	f32 xoffset = 0;
-    
+	
 	//the position of the row to base offsets of items off of.
 	vec2 position;
-    
+	
 	
 	array<UIItem*> items; 
 	//the boolean indicates whether or not the column width is relative to the size of the object
@@ -372,7 +372,7 @@ namespace UI {
 	vec2    GetLastItemPos();
 	vec2    GetLastItemSize();
 	vec2    GetLastItemScreenPos();
-    
+	
 	//Row commands
 	void BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags = 0);
 	void EndRow();
@@ -380,31 +380,31 @@ namespace UI {
 	void RowSetupColumnWidth(u32 column, f32 width);
 	void RowSetupRelativeColumnWidth(u32 column, f32 width);
 	void RowSetupRelativeColumnWidths(array<f32> widths);
-    
+	
 	//primitive items
 	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
 	void RectFilled(vec2 pos, vec2 dimen, color color = Color_White);
-    
+	
 	void Line(vec2 start, vec2 end, float thickness = 1, color color = Color_White);
-    
+	
 	void Text(const char* text, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
 	void Text(const char* text, color color, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, color color, UITextFlags flags = 0);
-    void TextF(const char* fmt, ...);
-    
+	void TextF(const char* fmt, ...);
+	
 	//items
 	void SetNextItemSize(vec2 size);
-    
+	
 	bool Button(const char* text);
 	bool Button(const char* text, vec2 pos);
 	bool Button(const char* text, color color);
 	bool Button(const char* text, vec2 pos, color color);
-    
+	
 	void Checkbox(string label, bool* b);
-    
+	
 	void DropDown(const char* label, const char* options[], u32 options_count, u32& selected);
-    
+	
 	//these overloads are kind of silly change them eventually
 	//InputText takes in a buffer and modifies it according to input and works much like ImGui's InputText
 	//However there are overloads that will return it's UIInputTextState, allowing you to directly r/w some internal information of the
@@ -415,10 +415,10 @@ namespace UI {
 	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextFlags flags = 0);
 	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
 	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
-    
 	
-    
-    
+	
+	
+	
 	//windows
 	void BeginWindow(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	void EndWindow();
@@ -430,18 +430,18 @@ namespace UI {
 	bool IsWinHovered();
 	bool AnyWinHovered();
 	void ShowDebugWindowOf(const char* name);
-    
+	
 	//push/pop functions
 	void PushColor(UIStyleCol idx, color color);
 	void PushVar(UIStyleVar idx, float style);
 	void PushVar(UIStyleVar idx, vec2 style);
-    
+	
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
-    
+	
 	void Init();
 	void Update();
-    
+	
 }; //namespace UI
 
 #endif //DESHI_UI_H

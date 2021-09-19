@@ -11,10 +11,10 @@
 
 namespace Utils{
 	
-    inline upt roundUpToPow2(upt x){
-        return 1U << ((upt)log2(--x) + 1);
-    }
-    
+	inline upt roundUpToPow2(upt x){
+		return 1U << ((upt)log2(--x) + 1);
+	}
+	
 	///////////////////////////////
 	//// FNV-1a hash functions ////
 	///////////////////////////////
@@ -64,8 +64,8 @@ namespace Utils{
 	
 	//returns the index of the last character which is not commented out
 	size_t skipComments(const char* text, const char* comment_chararacters, size_t text_size = 0);
-    
-    u32 findCharFromLeft(char* text, char character, u32 offset = 0);
+	
+	u32 findCharFromLeft(char* text, char character, u32 offset = 0);
 	
 	//returns an array of start-stop index pairs to characters separated by the specified character
 	//NOTE the caller is responsible for freeing the array this allocates
@@ -177,7 +177,7 @@ characterDelimit(std::string text, char character){
 	for(int i=0; i < text.size(); ++i){
 		if(text[i] == character){
 			out.push_back(text.substr(prev, i-prev));
-    		prev = i+1;
+			prev = i+1;
 		}
 	}
 	out.push_back(text.substr(prev, -1));
@@ -194,7 +194,7 @@ characterDelimitIgnoreRepeat(std::string text, char character){
 		if(text[i] == character){
 			out.push_back(text.substr(prev, i-prev));
 			while(text[i+1] == ' ') ++i;
-    		prev = i+1;
+			prev = i+1;
 		}
 	}
 	out.push_back(text.substr(prev, -1));
@@ -213,7 +213,7 @@ spaceDelimit(std::string text){
 		if(text[i] == ' '){
 			out.push_back(text.substr(prev, i-prev));
 			while(text[i+1] == ' ') ++i;
-    		prev = i+1;
+			prev = i+1;
 		}
 	}
 	out.push_back(text.substr(prev, -1));
@@ -259,70 +259,70 @@ spaceDelimitIgnoreStrings(std::string text){
 //returns the index of the first character that is not a space
 inline size_t Utils::
 skipSpacesLeading(const char* text, size_t text_size){
-    const char* cursor = text;
-    if(text_size){
-        while(*cursor == ' '){
-            if(text_size-- == 0) break;
-            cursor++;
-        }
-    }else{
-        while(*cursor == ' ' && *cursor != '\0'){
-            cursor++;
-        }
-    }
-    return cursor-text;
+	const char* cursor = text;
+	if(text_size){
+		while(*cursor == ' '){
+			if(text_size-- == 0) break;
+			cursor++;
+		}
+	}else{
+		while(*cursor == ' ' && *cursor != '\0'){
+			cursor++;
+		}
+	}
+	return cursor-text;
 }
 
 //returns the index of the last character that is not a space
 inline size_t Utils::
 skipSpacesTrailing(const char* text, size_t text_size){
-    const char* cursor = text;
-    if(text_size){
-        cursor += text_size-1;
-        while(*cursor == ' '){
-            if(cursor == text) return 0;
-            cursor--;
-        }
-        cursor++;
-    }else{
-        cursor += strlen(text)-1;
-        while(*cursor == ' '){
-            if(cursor == text) return 0;
-            cursor--;
-        }
-        cursor++;
-    }
-    return cursor-text;
+	const char* cursor = text;
+	if(text_size){
+		cursor += text_size-1;
+		while(*cursor == ' '){
+			if(cursor == text) return 0;
+			cursor--;
+		}
+		cursor++;
+	}else{
+		cursor += strlen(text)-1;
+		while(*cursor == ' '){
+			if(cursor == text) return 0;
+			cursor--;
+		}
+		cursor++;
+	}
+	return cursor-text;
 }
 
 inline size_t Utils::
 skipComments(const char* text, const char* comment_characters, size_t text_size){
-    const char* cursor = text;
-    size_t comment_char_count = strlen(comment_characters);
-    size_t stop = 0;
-    if(text_size){
-        while(strncmp(comment_characters, cursor, comment_char_count) != 0){
-            if(text_size-- == 0) return stop;
-            cursor++;
-            stop++;
-        }
-    }else{
-        while(strncmp(comment_characters, cursor, comment_char_count) != 0){
-            if(*cursor == '\0') return stop;
-            cursor++;
-            stop++;
-        }
-    }
-    return stop;
+	const char* cursor = text;
+	size_t comment_char_count = strlen(comment_characters);
+	size_t stop = 0;
+	if(text_size){
+		while(strncmp(comment_characters, cursor, comment_char_count) != 0){
+			if(text_size-- == 0) return stop;
+			cursor++;
+			stop++;
+		}
+	}else{
+		while(strncmp(comment_characters, cursor, comment_char_count) != 0){
+			if(*cursor == '\0') return stop;
+			cursor++;
+			stop++;
+		}
+	}
+	return stop;
 }
 
 inline u32 Utils::
 findCharFromLeft(char* text, char character, u32 offset){
-    for(u32 i = offset; ;++i){
-        if(text[i] == character) return i;
-        if(text[i] == '\0') break;
-    }
-    return -1;
+	for(u32 i = offset; ;++i){
+		if(text[i] == character) return i;
+		if(text[i] == '\0') break;
+	}
+	return -1;
 }
 
 #endif //UTILS_H

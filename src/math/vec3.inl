@@ -263,9 +263,9 @@ round(int place){
 //round to a decimal place
 inline vec3 vec3::
 rounded(int place) const{
-    return vec3(floor(x * place * 10 + 0.5) / (place * 10),
-                floor(y * place * 10 + 0.5) / (place * 10),
-                floor(z * place * 10 + 0.5) / (place * 10));
+	return vec3(floor(x * place * 10 + 0.5) / (place * 10),
+				floor(y * place * 10 + 0.5) / (place * 10),
+				floor(z * place * 10 + 0.5) / (place * 10));
 }
 
 inline float vec3::
