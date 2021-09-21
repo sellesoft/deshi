@@ -26,7 +26,7 @@
 #define RADIANS(x) ((x) * (M_PI / 180.f))
 #define DEGREES(x) ((x) * (180.f / M_PI))
 
-//number typedefs
+//typedefs
 typedef signed char        s8;
 typedef signed short       s16;
 typedef signed int         s32;
@@ -40,6 +40,8 @@ typedef size_t             upt;
 typedef float              f32;
 typedef double             f64;
 typedef s32                b32;
+typedef u32 Type;
+typedef u32 Flags;
 
 //static defines
 #define local    static //inside a .cpp

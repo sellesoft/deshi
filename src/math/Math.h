@@ -73,7 +73,7 @@ namespace Math {
 		angle = RADIANS(angle);
 		return vec2(v.x * cosf(angle) - v.y * sinf(angle), v.x * sin(angle) + v.y * cos(angle));
 	}
-
+	
 	inline global_ bool PointInRectangle(vec2 point, vec2 rectPos, vec2 rectDims) {
 		return
 			point.x >= rectPos.x &&
@@ -270,11 +270,17 @@ namespace Math {
 		static double average(const T& container, int size) { return average(std::begin(container), std::end(container), size); }
 	
 	//interpolating
-	static float   lerpf(float p1, float p2, float t) { return (1.f - t) * p1 + t * p2; }
-	static vec3 lerpv(vec3 v1, vec3 v2, float t) { return  v1 * (1.f - t) + v2 * t; }
-	static vec2 lerpv(vec2 v1, vec2 v2, float t) { return  v1 * (1.f - t) + v2 * t; }
+	template<typename T> global_ T lerp(T a, T b, f32 t){ return a*(1.f-t) + b*t; }
 	
-	static mat4 lerpm4(mat4 m1, mat4 m2, float t) { return m1 * (1.f - t) + m2 * t; }
+	[[deprecated("Use Math::lerp() instead")]]
+		static float lerpf(float p1, float p2, float t) { return (1.f - t) * p1 + t * p2; }
+	[[deprecated("Use Math::lerp() instead")]]
+		static vec3 lerpv(vec3 v1, vec3 v2, float t) { return  v1 * (1.f - t) + v2 * t; }
+	[[deprecated("Use Math::lerp() instead")]]
+		static vec2 lerpv(vec2 v1, vec2 v2, float t) { return  v1 * (1.f - t) + v2 * t; }
+	[[deprecated("Use Math::lerp() instead")]]
+		static mat4 lerpm4(mat4 m1, mat4 m2, float t) { return m1 * (1.f - t) + m2 * t; }
+	
 	
 	//returns in degrees
 	//this doesn't really work in 3D but this function is here anyways
