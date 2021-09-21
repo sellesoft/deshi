@@ -2,9 +2,9 @@ namespace Cmd{
 	///////////////////
 	//// @internal ////
 	///////////////////
-	array<Command> commands;
-	array<Alias> aliases;
-	const char* last_cmd_desc;
+	local array<Command> commands;
+	local array<Alias> aliases;
+	local const char* last_cmd_desc;
 	
 	void AddDeshiCommands(){
 #define CMDSTART(name, desc) last_cmd_desc = desc; auto deshi__cmd__##name = [](array<cstring>& args) -> void
@@ -27,17 +27,17 @@ namespace Cmd{
 						 it->name,it->bytes_size);
 				}
 			}
-		}CMDEND(dir, Argument_String);
+		}CMDEND(dir, CmdArgument_String);
 		
 		CMDSTART(rm, "Remove a file"){
 			delete_file(args[0].str);
-		}CMDEND(rm, Argument_String);
+		}CMDEND(rm, CmdArgument_String);
 		
 		CMDSTART(add, "Adds two numbers together"){
 			int i0 = atoi(args[0].str);
 			int i1 = atoi(args[1].str);
 			Console2::AddLog(TOSTRING(i0," + ",i1," = ", i0+i1));
-		}CMDEND(add, Argument_S32, Argument_S32);
+		}CMDEND(add, CmdArgument_S32, CmdArgument_S32);
 		
 		CMDSTART(daytime, "Logs the time in day-time format"){
 			Console2::AddLog(DeshTime->FormatDateTime("{w} {M}/{d}/{y} {h}:{m}:{s}").c_str());
@@ -78,7 +78,7 @@ namespace Cmd{
 			if(!found){
 				Console2::AddLog(TOSTRING("Error: Command '",args[0],"' not found"));
 			}
-		}CMDEND(help, Argument_String|Argument_OPTIONAL);
+		}CMDEND(help, CmdArgument_String|CmdArgument_OPTIONAL);
 		
 		CMDSTART(alias, "Gives an alias to specified command and arguments"){
 			//check that alias name and command arent the same
@@ -108,7 +108,7 @@ namespace Cmd{
 			}else{
 				aliases[idx].command = to_string(args[1]);
 			}
-		}CMDEND(alias, Argument_String, Argument_String);
+		}CMDEND(alias, CmdArgument_String, CmdArgument_String);
 		
 		CMDSTART(aliases, "Lists available aliases"){
 			forE(aliases){
@@ -135,7 +135,7 @@ namespace Cmd{
 					Console2::AddLog("Display Modes: 0=Windowed, 1=Borderless, 2=Fullscreen");
 				}break;
 			}
-		}CMDEND(window_display_mode, Argument_S32);
+		}CMDEND(window_display_mode, CmdArgument_S32);
 		
 		CMDSTART(window_cursor_mode, "Changes whether the cursor is in default(0), first person(1), or hidden(2) mode"){
 			int mode = atoi(args[0].str);
@@ -156,7 +156,7 @@ namespace Cmd{
 					Console2::AddLog("Cursor Modes: 0=Default, 1=First Person, 2=Hidden");
 				}break;
 			}
-		}CMDEND(window_cursor_mode, Argument_S32);
+		}CMDEND(window_cursor_mode, CmdArgument_S32);
 		
 		CMDSTART(window_raw_input, "Changes whether the window uses raw input"){
 			int mode = atoi(args[0].str);
@@ -173,7 +173,7 @@ namespace Cmd{
 					Console2::AddLog("Raw Input: 0=False, 1=True");
 				}break;
 			}
-		}CMDEND(window_raw_input, Argument_S32);
+		}CMDEND(window_raw_input, CmdArgument_S32);
 		
 		CMDSTART(window_resizable, "Changes whether the window is resizable"){
 			int mode = atoi(args[0].str);
@@ -190,7 +190,7 @@ namespace Cmd{
 					Console2::AddLog("Window resizability: 0=False, 1=True");
 				}break;
 			}
-		}CMDEND(window_resizable, Argument_S32);
+		}CMDEND(window_resizable, CmdArgument_S32);
 		
 		CMDSTART(window_info, "Lists window's vars"){
 			cstring dispMode;
@@ -240,14 +240,14 @@ namespace Cmd{
 			Storage::MaterialAt(matID)->textures[texSlot] = texID;
 			Console2::AddLog(TOSTRING("Updated material ",Storage::MaterialName(matID),"'s texture",texSlot,
 									  " to ",Storage::TextureName(texID)));
-		}CMDEND(mat_texture, Argument_S32, Argument_S32, Argument_S32);
+		}CMDEND(mat_texture, CmdArgument_S32, CmdArgument_S32, CmdArgument_S32);
 		
 		CMDSTART(mat_shader, "Changes the shader of a material"){
 			int matID = atoi(args[0].str);
 			int shader = atoi(args[1].str);
 			Storage::MaterialAt(matID)->shader = (Shader)shader;
 			Console2::AddLog(TOSTRING("Updated material ",Storage::MaterialName(matID),"'s shader to ", ShaderStrings[shader]));
-		}CMDEND(mat_shader, Argument_S32, Argument_S32);
+		}CMDEND(mat_shader, CmdArgument_S32, CmdArgument_S32);
 		
 		CMDSTART(shader_reload, "Reloads specified shader"){
 			int id = atoi(args[0].str);
@@ -260,7 +260,7 @@ namespace Cmd{
 			}else{
 				Console2::AddLog(TOSTRING("Error: There is no shader with id: ",id));
 			}
-		}CMDEND(shader_reload, Argument_S32);
+		}CMDEND(shader_reload, CmdArgument_S32);
 		
 		CMDSTART(shader_list, "Lists the shaders and their info"){
 			Console2::AddLog("Shader List:"
@@ -276,7 +276,7 @@ namespace Cmd{
 			if(args.count == 2) type = (TextureType)atoi(args[1].str);
 			Storage::CreateTextureFromFile(to_string(args[0]).str, ImageFormat_RGBA, type);
 			Console2::AddLog(TOSTRING("Loaded texture '",args[0],"' in ",TIMER_END(t_l),"ms"));
-		}CMDEND(texture_load, Argument_String, Argument_S32|Argument_OPTIONAL);
+		}CMDEND(texture_load, CmdArgument_String, CmdArgument_S32|CmdArgument_OPTIONAL);
 		
 		CMDSTART(texture_list, "Lists the textures and their info"){
 			Console2::AddLog(TOSTRING("Texture List:"
@@ -300,29 +300,29 @@ namespace Cmd{
 	////////////////////
 	//// @interface ////
 	////////////////////
-	void Add(CmdFunc func, const string& name, const string& desc, const array<Argument>& args){
+	void Add(CmdFunc func, const string& name, const string& desc, const array<Type>& args){
 		u32 min_args = 0;
 		u32 max_args = 0;
 		string usage = name;
 		forE(args){
 			max_args++;
 			usage += " ";
-			if(*it & Argument_OPTIONAL){
+			if(*it & CmdArgument_OPTIONAL){
 				usage += "[";
 			}else{
 				usage += "<";
 				min_args++;
 			}
 			
-			if      (*it & Argument_S32){
+			if      (*it & CmdArgument_S32){
 				usage += "S32";
-			}else if(*it & Argument_String){
+			}else if(*it & CmdArgument_String){
 				usage += "String";
 			}else{
 				Assert(!"unhandled command arguent");
 			}
 			
-			if(*it & Argument_OPTIONAL){
+			if(*it & CmdArgument_OPTIONAL){
 				usage += "]";
 			}else{
 				usage += ">";

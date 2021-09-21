@@ -37,6 +37,7 @@ struct string{
 	bool   operator==(const char* s) const;
 	friend string operator+ (const char* c, const string& s);
 	
+	void   reserve(u32 _space);
 	void   clear();
 	void   erase(u32 idx);
 	//inserts at specified idx, pushing the character at idx and all following characters to the right
@@ -213,6 +214,13 @@ inline string operator+ (const char* c, const string& s){
 ////////////////////
 //// @functions ////
 ////////////////////
+inline void string::reserve(u32 _space){
+	if(_space > space){
+		space = RoundUpTo(_space+1, 4);
+		Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+	}
+}
+
 inline void string::clear(){
 	free(str);
 	count  = 0;
