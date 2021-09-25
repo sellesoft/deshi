@@ -98,7 +98,7 @@ namespace Storage{
 	//// @font ////
 	///////////////
 	pair<u32,Font*> CreateFontFromFileBDF(const char* filename);
-	pair<u32,Font*> CreateFontFromFileTTF(const char* filename);
+	pair<u32,Font*> CreateFontFromFileTTF(const char* filename, u32 height);
 	
 	inline Font*    NullFont(){ return DeshStorage->fonts.data[0]; };
 	inline u32      FontCount(){ return DeshStorage->fonts.count; };

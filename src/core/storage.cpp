@@ -50,7 +50,8 @@ Init(){
 	CreateTextureFromFile("null128.png");
 	CreateMaterial("null", Shader_NULL, MaterialFlags_NONE, {0});
 	CreateModelFromMesh(NullMesh(), ModelFlags_NONE); cpystr(NullModel()->name, "null", DESHI_NAME_SIZE);
-	CreateFontFromFileBDF("gohufont-11.bdf");
+	//CreateFontFromFileBDF("gohufont-11.bdf");
+	CreateFontFromFileTTF("Paskowy.ttf", 25);
 }
 
 void Storage::
@@ -1645,9 +1646,21 @@ CreateFontFromFileBDF(const char* filename){
 }
 
 pair<u32,Font*> Storage::
-CreateFontFromFileTTF(const char* filename){
+CreateFontFromFileTTF(const char* filename, u32 size){
 	pair<u32,Font*> result(0,NullFont());
+	Font* font = new Font;
+	font->texture = (u8*)malloc(512 * 512);
 	
+	string path(Assets::dirFonts().c_str());
+	path += filename; //okay
+
+	u8 ttfbuff[1<<10];
+	stbtt_bakedchar cdata[96];
+
+	u32 cnt = fread(ttfbuff, 1, 1 << 10, fopen(path.str, "rb"));
+	stbtt_BakeFontBitmap(ttfbuff, 0, size, font->texture, 512, 512, 32, 96, cdata);
+
+
 	//stbtt_fontinfo info;
 	//u8* bitmap;
 	//u8 buffer[1 << 25];
