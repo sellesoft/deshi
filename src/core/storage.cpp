@@ -1563,6 +1563,13 @@ pair<u32,Font*> Storage::
 CreateFontFromFileBDF(const char* filename){
 	pair<u32,Font*> result(0,NullFont());
 	
+	//check if created already
+	forX(fi, fonts.size()){
+		if(strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0){
+			return pair<u32,Font*>(fi,fonts[fi]);
+		}
+	}
+	
 	char* buffer = Assets::readFileAsciiToArray(Assets::dirFonts() + filename);
 	if(!buffer){ return result; }
 	defer{ delete[] buffer; };
@@ -1714,6 +1721,13 @@ pair<u32,Font*> Storage::
 CreateFontFromFileTTF(const char* filename, u32 size){
 	pair<u32,Font*> result(0,NullFont());
 	
+	//check if created already
+	forX(fi, fonts.size()){
+		if(strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0){
+			return pair<u32,Font*>(fi,fonts[fi]);
+		}
+	}
+	
 	char* buffer = Assets::readFileBinaryToArray(Assets::dirFonts()+filename);
 	if(!buffer){ return result; }
 	defer{ delete[] buffer; };
@@ -1721,17 +1735,20 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	Font* font = AllocateFont(FontType_TTF);
 	font->height = size;
 	font->count  = 96;
+	font->ttf_size = 512*(u32(size/72.f)+1);
 	cpystr(font->name,filename,DESHI_NAME_SIZE);
 	
-	u8* pixels = (u8*)calloc(512*512,sizeof(u8));
+	u8* pixels = (u8*)calloc(font->ttf_size*font->ttf_size,sizeof(u8));
 	font->ttf_bake = calloc(font->count,sizeof(stbtt_bakedchar));
-	int x = stbtt_BakeFontBitmap((const unsigned char*)buffer,0, size, pixels,512,512, 32,96, (stbtt_bakedchar*)font->ttf_bake);
+	int x = stbtt_BakeFontBitmap((const unsigned char*)buffer,0, size, pixels,font->ttf_size,font->ttf_size, 
+								 32,96, (stbtt_bakedchar*)font->ttf_bake);
 	Assert(x != 0, "if return is 0, no characters fit and no rows were used"); //TODO error handling
 	
 	//TODO find a better way to find a good font width for TTF or rework font usage in UI
 	font->width = (((stbtt_bakedchar*)font->ttf_bake) + ('?'-32))->xadvance;
 	
-	Texture* texture = CreateTextureFromMemory(pixels, font->name, 512, 512, ImageFormat_BW, TextureType_2D, false, false, true).second;
+	Texture* texture = CreateTextureFromMemory(pixels, font->name, font->ttf_size,font->ttf_size, 
+											   ImageFormat_BW, TextureType_2D, false, false, true).second;
 	Render::LoadFont(font, texture);
 	free(pixels);
 	//DeleteTexture(texture);

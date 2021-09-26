@@ -3249,7 +3249,7 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scissorOffset, 
 				UIIndexVk* ip = uiIndexArray  + uiIndexCount;
 				
 				stbtt_aligned_quad q;
-				stbtt_GetBakedQuad((stbtt_bakedchar*)font->ttf_bake, 512,512, text[i]-32, &pos.x,&pos.y,&q,1);//1=opengl & d3d10+,0=d3d9
+				stbtt_GetBakedQuad((stbtt_bakedchar*)font->ttf_bake, font->ttf_size,font->ttf_size, text[i]-32, &pos.x,&pos.y,&q,1);
 				
 				ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
 				ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;

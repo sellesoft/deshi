@@ -101,7 +101,7 @@ struct UIStyle {
 	vec2  inputTextTextAlign;
 	vec2  buttonTextAlign;
 	vec2  rowItemAlign;
-	Font* font; //this is a pointer until I fix font to not store so much shit
+	Font* font;
 	color colors[UIStyleCol_COUNT];
 };
 
@@ -204,6 +204,7 @@ struct UIDrawCmd {
 	//TODO(sushi) reformat this as a char*, as this is data that is used directly by render
 	//			  which never modifies the string
 	string text;
+	Font* font;
 	
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
 	bool trackedForFit = 1;
@@ -365,13 +366,13 @@ struct UIRow {
 namespace UI {
 	
 	//helpers
-	vec2    CalcTextSize(string text);
-	void    SetNextItemActive();
-	UIStyle GetStyle();
-	void    SameLine();
-	vec2    GetLastItemPos();
-	vec2    GetLastItemSize();
-	vec2    GetLastItemScreenPos();
+	vec2     CalcTextSize(string text);
+	void     SetNextItemActive();
+	UIStyle& GetStyle();
+	void     SameLine();
+	vec2     GetLastItemPos();
+	vec2     GetLastItemSize();
+	vec2     GetLastItemScreenPos();
 	
 	//Row commands
 	void BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags = 0);
@@ -392,6 +393,8 @@ namespace UI {
 	void Text(const char* text, color color, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, color color, UITextFlags flags = 0);
 	void TextF(const char* fmt, ...);
+	
+	f32 GetTextWidth(const char* text);
 	
 	//items
 	void SetNextItemSize(vec2 size);
@@ -435,6 +438,7 @@ namespace UI {
 	void PushColor(UIStyleCol idx, color color);
 	void PushVar(UIStyleVar idx, float style);
 	void PushVar(UIStyleVar idx, vec2 style);
+	void PushVar(UIStyleVar idx, void* style);
 	
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
