@@ -14,6 +14,7 @@ struct cstring{
 };
 
 #define cstring_lit(s) cstring{(char*)s, sizeof(s)-1}
+#define cstr_lit(s) cstring{(char*)s, sizeof(s)-1}
 
 global_ inline void
 advance(cstring* s, u64 count){
@@ -73,6 +74,7 @@ b10tou64(cstring s, cstring* next = 0){
     //error cases
     if(!s.str) return 0;
     if(*s.str == '\0') return 0;
+    if(s.count == 0) return 0;
     
     //skip whitespace
     while(*s.str == ' '){ s.str++; idx++; }
@@ -108,6 +110,7 @@ b16tou64(cstring s, cstring* next = 0){
     //error cases
     if(!s.str) return 0;
     if(*s.str == '\0') return 0;
+	if(s.count == 0) return 0;
     
     //skip whitespace
     while(*s.str == ' '){ s.str++; idx++; }

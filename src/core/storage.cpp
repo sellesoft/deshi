@@ -1,7 +1,3 @@
-#ifdef ParseError
-#define TempParseError ParseError
-#undef ParseError
-#endif
 #define ParseError(...) LogE("storage","Failed parsing '",filepath,"' on line '",line_number,"'! ",__VA_ARGS__)
 
 namespace Storage{
@@ -627,8 +623,10 @@ CreateMaterialFromFile(const char* filename, bool warnMissing){
 	char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
 	if(!buffer){ return result; }
 	defer{ delete[] buffer; };
-	char* line_start;  char* line_end = buffer - 1;
+	char* line_start;  char* line_end = buffer-1;
 	char* info_start;  char* info_end;
+	char* key_start;   char* key_end;
+	char* value_start; char* value_end;
 	bool has_cr = false;
 	for(u32 line_number = 1; ;line_number++){
 		//get the next line
@@ -641,33 +639,45 @@ CreateMaterialFromFile(const char* filename, bool warnMissing){
 		info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);  if(info_start == line_end) continue;
 		info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);  if(info_start == info_end) continue;
 		info_end   = info_start + Utils::skipSpacesTrailing(info_start, info_end-info_start); if(info_start == info_end) continue;
+		cstring info{info_start, u64(info_end-info_start)};
 		
-		std::string line(info_start, info_end-info_start);
-		
-		//parse the key-value pair
+		//check for headers
 		if(*info_start == '>'){
-			if     (line == ">material"){ header = MaterialHeader::MATERIAL; }
-			else if(line == ">textures"){ header = MaterialHeader::TEXTURES; }
-			else{ header = MaterialHeader::INVALID; ParseError("Uknown header '",line,"'"); }
+			if     (info == cstr_lit(">material")){ header = MaterialHeader::MATERIAL; }
+			else if(info == cstr_lit(">textures")){ header = MaterialHeader::TEXTURES; }
+			else{ header = MaterialHeader::INVALID; ParseError("Uknown header '",info,"'"); }
 			continue;
 		}
 		
+		//split the key-value pair
+		key_start = info_start;
+		key_end   = key_start;
+		while(key_end != info_end && *key_end++ != ' ');
+		if(key_end == info_end){ ParseError("No key passed."); continue; }
+		key_end -= 1;
+		cstring key{key_start, u64(key_end-key_start)};
+		
+		value_end   = info_end;
+		value_start = key_end;
+		while(*value_start++ == ' ');
+		value_start -= 1;
+		if(value_end == value_start){ ParseError("No value passed."); continue; }
+		cstring value{value_start, u64(value_end-value_start)};
+		
+		//parse the key-value pair
 		if(header == MaterialHeader::INVALID) { ParseError("Invalid header; skipping line"); continue; }
-		std::vector<std::string> split = Utils::spaceDelimitIgnoreStrings(line);
 		
 		if(header == MaterialHeader::MATERIAL){
-			if(split.size() != 2){ ParseError("Material header attributes should have 2 values"); continue; }
-			if      (split[0] == "name")  { 
-				mat_name   = string(split[1].c_str(), split[1].size()); 
-			}else if(split[0] == "shader"){ 
-				forI(Shader_COUNT){ if(strcmp(ShaderStrings[i], split[1].c_str()) == 0){ mat_shader = i; break; } }
-			}else if(split[0] == "flags") { 
-				mat_flags  = (MaterialFlags)std::stoi(split[1]); 
-			}
-			else{ ParseError("Invalid key '",split[0],"' for header '",MaterialHeaderStrings[header],"'"); continue; }
+			if      (key == cstr_lit("name")){
+				mat_name = string(value_start+1, value_end-value_start-2);
+			}else if(key == cstr_lit("flags")){
+				mat_flags = (ModelFlags)b10tou64(value); 
+			}else if(key == cstr_lit("shader")){
+				string s = to_string(value);
+				forI(Shader_COUNT){ if(strcmp(ShaderStrings[i], s.str) == 0){ mat_shader = i; break; } }
+			}else{ ParseError("Invalid key '",key,"' for header '",MaterialHeaderStrings[header],"'"); continue; }
 		}else{
-			if(split.size() != 1){ ParseError("Texture header attributes should have 1 value"); continue; }
-			mat_textures.add(string(split[0].c_str(), split[0].size()));
+			mat_textures.add(string(key_start+1, key_end-key_start-2));
 		}
 	}
 	
@@ -1360,48 +1370,65 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
 		if(!buffer){  return result; }
 		defer{ delete[] buffer; };
-		char* line_start; char* line_end = buffer - 1;
-		char* info_start; char* info_end;
+		char* line_start;  char* line_end = buffer-1;
+		char* info_start;  char* info_end;
+		char* key_start;   char* key_end;
+		char* value_start; char* value_end;
 		bool has_cr = false;
 		for(u32 line_number = 1; ;line_number++){
 			//get the next line
 			line_start = (has_cr) ? line_end+2 : line_end+1;
 			if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
 			if(has_cr || *(line_end-1) == '\r') { has_cr = true; line_end -= 1; }
-			
+			if(line_start == line_end) continue;
 			
 			//format the line
 			info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);  if(info_start == line_end) continue;
 			info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);  if(info_start == info_end) continue;
 			info_end   = info_start + Utils::skipSpacesTrailing(info_start, info_end-info_start); if(info_start == info_end) continue;
+			cstring info{info_start, u64(info_end-info_start)};
 			
-			std::string line(info_start, info_end-info_start);
-			
-			//parse the key-value pair
+			//check for headers
 			if(*info_start == '>'){
-				if     (line == ">model"){ header = ModelHeader::MODEL; }
-				else if(line == ">batches"){ header = ModelHeader::BATCHES; }
-				else{ header = ModelHeader::INVALID; ParseError("Uknown header '",line,"'"); }
+				if     (info == cstr_lit(">model")){ header = ModelHeader::MODEL; }
+				else if(info == cstr_lit(">batches")){ header = ModelHeader::BATCHES; }
+				else{ header = ModelHeader::INVALID; ParseError("Uknown header '",info,"'"); }
 				continue;
 			}
 			
+			//split the key-value pair
+			key_start = info_start;
+			key_end   = key_start;
+			while(key_end != info_end && *key_end++ != ' ');
+			if(key_end == info_end){ ParseError("No key passed."); continue; }
+			key_end -= 1;
+			cstring key{key_start, u64(key_end-key_start)};
+			
+			value_end   = info_end;
+			value_start = key_end;
+			while(*value_start++ == ' ');
+			value_start -= 1;
+			if(value_end == value_start){ ParseError("No value passed."); continue; }
+			cstring value{value_start, u64(value_end-value_start)};
+			
+			//parse the key-value pair
 			if(header == ModelHeader::INVALID) { ParseError("Invalid header; skipping line"); continue; }
-			std::vector<std::string> split = Utils::spaceDelimitIgnoreStrings(line);
 			
 			if(header == ModelHeader::MODEL){
-				if(split.size() != 2){ ParseError("Material header attributes should have 2 values"); continue; }
-				if      (split[0] == "name")  { 
-					model_load_name = string(split[1].c_str(), split[1].size()); 
-				}else if(split[0] == "flags") { 
-					model_load_flags  = (ModelFlags)std::stoi(split[1]); 
-				}else if(split[0] == "mesh"){ 
-					model_load_mesh = string(split[1].c_str(), split[1].size()); 
-				}else if(split[0] == "armature"){ 
-					
-				}else{ ParseError("Invalid key '",split[0],"' for header '",ModelHeaderStrings[header],"'"); continue; }
+				if      (key == cstr_lit("name")){
+					model_load_name = string(value_start+1, value_end-value_start-2);
+				}else if(key == cstr_lit("flags")){
+					model_load_flags = (ModelFlags)b10tou64(value); 
+				}else if(key == cstr_lit("mesh")){
+					model_load_mesh = string(value_start+1, value_end-value_start-2);
+				}else if(key == cstr_lit("armature")){
+					//NOTE currently nothing
+				}else{ ParseError("Invalid key '",key,"' for header '",ModelHeaderStrings[header],"'"); continue; }
 			}else{
-				if(split.size() != 3){ ParseError("Batches should have 3 values"); continue; }
-				model_load_batches.add({string(split[0].c_str(), split[0].size()), (u32)std::stoi(split[1]), (u32)std::stoi(split[2])});
+				cstring s = value;
+				u32 i0 = (u32)b10tou64(s,&s);
+				u32 i1 = (u32)b10tou64(s);
+				model_load_batches.add({string(key_start+1,key_end-key_start-2), i0, i1});
 			}
 		}
 		
@@ -1480,6 +1507,7 @@ CopyModel(Model* _model){
 
 void Storage::
 SaveModel(Model* model){
+	SaveMesh(model->mesh);
 	std::string model_save = TOSTDSTRING(">model"
 										 "\nname     \"",model->name,"\""
 										 "\nflags    ", model->flags,
@@ -1488,6 +1516,7 @@ SaveModel(Model* model){
 										 "\n"
 										 "\n>batches");
 	forI(model->batches.count){
+		SaveMaterial(materials[model->batches[i].material]);
 		model_save.append(TOSTDSTRING("\n\"",materials[model->batches[i].material]->name,"\" ",
 									  model->batches[i].indexOffset," ",model->batches[i].indexCount));
 	}
@@ -1667,7 +1696,3 @@ CreateFontFromFileTTF(const char* filename){
 }
 
 #undef ParseError
-#ifdef TempParseError
-#define ParseError TempParseError
-#undef TempParseError
-#endif
