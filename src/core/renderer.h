@@ -5,7 +5,7 @@
 #include "../defines.h"
 #include "../math/VectorMatrix.h"
 #include "../utils/color.h"
-#include "../utils/string.h"
+#include "../utils/cstring.h"
 #include "../utils/array.h"
 
 enum VSyncType_{
@@ -145,8 +145,7 @@ namespace Render{
 	void FillRectUI(vec2 pos, vec2 dimensions, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
 	void DrawRectUI(vec2 pos, vec2 dimensions, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
 	void DrawLineUI(vec2 start, vec2 end, float thickness = 1, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
-	void DrawTextUI(string text, vec2 pos, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
-	void DrawCharUI(u32 character, vec2 pos, vec2 scale = vec2::ONE, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
+	void DrawTextUI(Font* font, cstring text, vec2 pos, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
 	
 	void UpdateLight(u32 lightIdx, vec4 vec);
 	void UpdateCameraPosition(vec3 position);

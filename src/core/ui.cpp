@@ -1446,24 +1446,16 @@ void UI::PopVar(u32 count){
 //it will not focus if theres a window in front of them.
 //I'm not sure how i want to fix it yet
 void UI::Init() {
-	
 	curwin = new UIWindow();
-	
 	curwin->name = "Base";
 	curwin->position = vec2(0,0);
 	curwin->dimensions = DeshWindow->dimensions;
 	
-	//set default style
-	
 	//load font
-	Font white_font{2, 2, 2, 1, string("white_block")};
-	u8 white_pixels[4] = {255, 255, 255, 255};
-	Texture* white_texture = Storage::CreateTextureFromMemory(&white_pixels, "font_white", 2, 2, ImageFormat_BW, TextureType_2D, false, false).second;;
-	Render::LoadFont(&white_font, white_texture);
-	
-	style.font = Storage::NullFont();
-	Texture* font_texture = Storage::CreateTextureFromMemory(style.font->texture, "font_gohu_14", style.font->width, style.font->height * style.font->char_count, ImageFormat_BW, TextureType_2D, false, false).second;
-	Render::LoadFont(style.font, font_texture);
+	//style.font = Storage::NullFont();
+	style.font = Storage::CreateFontFromFileBDF("gohufont-11.bdf").second;
+	//style.font = Storage::CreateFontFromFileTTF("Paskowy.ttf", 72).second;
+	//style.font = Storage::CreateFontFromFileTTF("comixxx4.otf", 36).second;
 	
 	//push default color scheme
 	//this is never meant to be popped
@@ -1486,13 +1478,11 @@ void UI::Init() {
 	PushVar(UIStyleVar_ButtonTextAlign,     vec2(0.5, 0.5));
 	PushVar(UIStyleVar_RowItemAlign,        vec2(0.5, 0.5));
 	
-	
 	initColorStackSize = colorStack.size();
 	initStyleStackSize = varStack.size();
 	
 	windows.add("base", curwin);
 	windowStack.add(curwin);
-	
 }
 
 //for checking that certain things were taken care of eg, popping colors/styles/windows
@@ -1584,8 +1574,8 @@ void UI::Update() {
 				vec2    dcso = itempos + drawCmd.scissorOffset;
 				dcso.x = Max(0, dcso.x); dcso.y = Max(0, dcso.y); //NOTE scissor offset cant be negative
 				color  dccol = drawCmd.color;
-				string dctex = drawCmd.text;
 				float    dct = drawCmd.thickness;
+				cstring dctex{drawCmd.text.str,drawCmd.text.count};
 				
 				switch (drawCmd.type) {
 					case UIDrawType_FilledRectangle: {
@@ -1598,10 +1588,10 @@ void UI::Update() {
 					
 					case UIDrawType_Text: {
 						if (drawCmd.scissorExtent.x == -1) {
-							Render::DrawTextUI(dctex, dcpos, dccol, winscissor, winsiz);
+							Render::DrawTextUI(style.font, dctex, dcpos, dccol, winscissor, winsiz);
 						}
 						else {
-							Render::DrawTextUI(dctex, dcpos, dccol, dcso, dcse);
+							Render::DrawTextUI(style.font, dctex, dcpos, dccol, dcso, dcse);
 						}
 					}break;
 					case UIDrawType_Rectangle: {
@@ -1628,8 +1618,8 @@ void UI::Update() {
 					vec2    dcso = itempos + drawCmd.scissorOffset;
 					dcso.x = Max(0, dcso.x); dcso.y = Max(0, dcso.y); //NOTE scissor offset cant be negative
 					color  dccol = drawCmd.color;
-					string dctex = drawCmd.text;
 					float    dct = drawCmd.thickness;
+					cstring dctex{drawCmd.text.str,drawCmd.text.count};
 					
 					switch (drawCmd.type) {
 						case UIDrawType_FilledRectangle: {
@@ -1649,9 +1639,9 @@ void UI::Update() {
 						
 						case UIDrawType_Text: {
 							if (drawCmd.scissorExtent.x == -1)
-								Render::DrawTextUI(dctex, dcpos, dccol, winscissor, winsiz);
+								Render::DrawTextUI(style.font, dctex, dcpos, dccol, winscissor, winsiz);
 							else
-								Render::DrawTextUI(dctex, dcpos, dccol, dcso, dcse);
+								Render::DrawTextUI(style.font, dctex, dcpos, dccol, dcso, dcse);
 						}break;
 						
 						case UIDrawType_Rectangle: {
@@ -1679,8 +1669,8 @@ void UI::Update() {
 		vec2    dcso = drawCmd.scissorOffset;
 		dcso.x = Max(0, dcso.x); dcso.y = Max(0, dcso.y); //NOTE scissor offset cant be negative
 		color  dccol = drawCmd.color;
-		string dctex = drawCmd.text;
 		float    dct = drawCmd.thickness;
+		cstring dctex{drawCmd.text.str,drawCmd.text.count};
 		
 		switch (drawCmd.type) {
 			case UIDrawType_FilledRectangle: {
@@ -1700,9 +1690,9 @@ void UI::Update() {
 			
 			case UIDrawType_Text: {
 				if (drawCmd.scissorExtent.x == -1)
-					Render::DrawTextUI(dctex, dcpos, dccol, vec2::ZERO, DeshWindow->dimensions);
+					Render::DrawTextUI(style.font, dctex, dcpos, dccol, vec2::ZERO, DeshWindow->dimensions);
 				else
-					Render::DrawTextUI(dctex, dcpos, dccol, dcso, dcse);
+					Render::DrawTextUI(style.font, dctex, dcpos, dccol, dcso, dcse);
 			}break;
 			
 			case UIDrawType_Rectangle: {

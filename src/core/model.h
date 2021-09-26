@@ -2,7 +2,6 @@
 #ifndef DESHI_MODEL_H
 #define DESHI_MODEL_H
 
-#include "armature.h"
 #include "../defines.h"
 #include "../math/VectorMatrix.h"
 #include "../utils/array.h"
@@ -140,7 +139,8 @@ struct Texture{
 	int  depth;
 	int  mipmaps;
 	u8*  pixels;
-	bool loaded;
+	b32  loaded;
+	b32  forceLinear;
 	ImageFormat format;
 	TextureType type;
 };
@@ -153,6 +153,7 @@ struct Material{
 	array<u32>    textures;
 };
 
+struct Armature;
 struct Model{
 	ModelFlags flags;
 	char name[DESHI_NAME_SIZE];

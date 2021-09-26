@@ -47,10 +47,11 @@ struct MaterialVk{
 
 struct FontVk{
 	Font* base;
-	u32 texture;
-	u32 characterWidth;
-	u32 characterHeight;
-	u32 characterCount;
+	Type type;
+	u32  texture;
+	u32  characterWidth;
+	u32  characterHeight;
+	u32  characterCount;
 	VkDescriptorSet descriptorSet;
 };
 
@@ -3084,11 +3085,6 @@ NewFrame(){
 
 //-------------------------------------------------------------------------------------------------
 // @UI INTERFACE
-enum texTypes : u32 {
-	UITEX_WHITE,
-	UITEX_FONT
-};
-
 //TODO(sushi) find a nicer way to keep track of this
 //NOTE im not sure yet if i should be keeping track of this for each primitive or not yet but i dont think i have to
 vec2 prevScissorOffset = vec2( 0,  0);
@@ -3098,7 +3094,7 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if(color.a == 0) return;
 	
-	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
+	if(uiCmdArray[uiCmdCount - 1].texIdx != 0 ||
 	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
 	   scissorExtent != prevScissorExtent){ //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
@@ -3121,7 +3117,7 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+	uiCmdArray[uiCmdCount - 1].texIdx = 0;
 	if(scissorExtent.x != -1){
 		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
 		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
@@ -3150,7 +3146,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if(color.a == 0) return;
 	
-	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
+	if(uiCmdArray[uiCmdCount - 1].texIdx != 0 ||
 	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
 	   scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
@@ -3181,7 +3177,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+	uiCmdArray[uiCmdCount - 1].texIdx = 0;
 	if(scissorExtent.x != -1){
 		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
 		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
@@ -3192,60 +3188,90 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 }
 
 void Render::
-DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){
+DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
-	f32 w = vkFonts[1].characterWidth;
-	for (int i = 0; i < text.count; i++) {
-		DrawCharUI((u32)text[i], pos, vec2::ONE, color, scissorOffset, scissorExtent);
-		pos.x += w;
-	}
-}
-
-void Render::
-DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){
-	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if(color.a == 0) return;
-	
-	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 
-	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-	   scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
+	//im doing offset and extent because we have to know if we're drawing in a new window
+	//and you could do text last in one, and text first in another
+	if((uiCmdArray[uiCmdCount-1].texIdx != font->idx) 
+	   || (scissorOffset != prevScissorOffset) 
+	   || (scissorExtent != prevScissorExtent)){
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
 	
-	u32       col = color.rgba;
-	Vertex2*   vp = uiVertexArray + uiVertexCount;
-	UIIndexVk* ip = uiIndexArray  + uiIndexCount;
-	
-	f32 w = vkFonts[1].characterWidth;
-	f32 h = vkFonts[1].characterHeight;
-	f32 dy = 1.f / (f32)vkFonts[1].characterCount; 
-	
-	f32 idx = character-32; 
-	f32 topoff = idx*dy;
-	f32 botoff = topoff+dy;
-	
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
-	vp[0].pos = {pos.x+0,pos.y+0}; vp[0].uv = {0,topoff}; vp[0].color = col;
-	vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,topoff}; vp[1].color = col;
-	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,botoff}; vp[2].color = col;
-	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,botoff}; vp[3].color = col;
-	
-	uiVertexCount += 4;
-	uiIndexCount  += 6;
-	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_FONT;
-	if(scissorExtent.x != -1){
-		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}else{
-		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0,0);
+	switch(vkFonts[font->idx].type){
+		//// BDF (and NULL) font rendering ////
+		case FontType_BDF: case FontType_NONE:{
+			forI(text.count){
+				u32       col = color.rgba;
+				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				UIIndexVk* ip = uiIndexArray  + uiIndexCount;
+				
+				f32 w = vkFonts[font->idx].characterWidth;
+				f32 h = vkFonts[font->idx].characterHeight;
+				f32 dy = 1.f / (f32)vkFonts[font->idx].characterCount; 
+				
+				f32 idx = f32(text[i]-32);
+				f32 topoff = idx*dy;
+				f32 botoff = topoff+dy;
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
+				vp[0].pos = {pos.x+0,pos.y+0}; vp[0].uv = {0,topoff}; vp[0].color = col;
+				vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,topoff}; vp[1].color = col;
+				vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,botoff}; vp[2].color = col;
+				vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,botoff}; vp[3].color = col;
+				
+				uiVertexCount += 4;
+				uiIndexCount  += 6;
+				uiCmdArray[uiCmdCount-1].indexCount += 6;
+				uiCmdArray[uiCmdCount-1].texIdx = font->idx;
+				if(scissorExtent.x != -1){
+					uiCmdArray[uiCmdCount-1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount-1].scissorOffset = scissorOffset;
+				}else{
+					uiCmdArray[uiCmdCount-1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount-1].scissorOffset = vec2(0,0);
+				}
+				
+				pos.x += vkFonts[font->idx].characterWidth;
+			}
+		}break;
+		//// TTF font rendering ////
+		case FontType_TTF:{
+			forI(text.count){
+				u32       col = color.rgba;
+				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				UIIndexVk* ip = uiIndexArray  + uiIndexCount;
+				
+				stbtt_aligned_quad q;
+				stbtt_GetBakedQuad((stbtt_bakedchar*)font->ttf_bake, 512,512, text[i]-32, &pos.x,&pos.y,&q,1);//1=opengl & d3d10+,0=d3d9
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
+				vp[0].pos = {q.x0,q.y0+font->height}; vp[0].uv = {q.s0,q.t0}; vp[0].color = col;
+				vp[1].pos = {q.x1,q.y0+font->height}; vp[1].uv = {q.s1,q.t0}; vp[1].color = col;
+				vp[2].pos = {q.x1,q.y1+font->height}; vp[2].uv = {q.s1,q.t1}; vp[2].color = col;
+				vp[3].pos = {q.x0,q.y1+font->height}; vp[3].uv = {q.s0,q.t1}; vp[3].color = col;
+				
+				uiVertexCount += 4;
+				uiIndexCount  += 6;
+				uiCmdArray[uiCmdCount-1].indexCount += 6;
+				uiCmdArray[uiCmdCount-1].texIdx = font->idx;
+				if(scissorExtent.x != -1){
+					uiCmdArray[uiCmdCount-1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount-1].scissorOffset = scissorOffset;
+				}else{
+					uiCmdArray[uiCmdCount-1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount-1].scissorOffset = vec2(0,0);
+				}
+			}
+		}break;
+		default: Assert(!"unhandled font type"); break;
 	}
 }
 
@@ -3449,9 +3475,9 @@ LoadTexture(Texture* texture){
 	
 	//create texture sampler
 	VkSamplerCreateInfo samplerInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-	samplerInfo.magFilter        = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-	samplerInfo.minFilter        = (settings.textureFiltering) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-	samplerInfo.mipmapMode       = (settings.textureFiltering) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	samplerInfo.magFilter        = (settings.textureFiltering || texture->forceLinear) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+	samplerInfo.minFilter        = (settings.textureFiltering || texture->forceLinear) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+	samplerInfo.mipmapMode       = (settings.textureFiltering || texture->forceLinear) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
 	samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -3528,10 +3554,11 @@ LoadFont(Font* font, Texture* texture){
 	AssertRS(RSVK_DESCRIPTORPOOL, "LoadFont called before CreateDescriptorPool");
 	FontVk fvk{};
 	fvk.base            = font;
+	fvk.type            = font->type;
 	fvk.texture         = texture->idx;
 	fvk.characterWidth  = font->width;
 	fvk.characterHeight = font->height;
-	fvk.characterCount  = font->char_count;
+	fvk.characterCount  = font->count;
 	
 	//allocate descriptor set
 	VkDescriptorSetAllocateInfo allocInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
@@ -3540,7 +3567,7 @@ LoadFont(Font* font, Texture* texture){
 	allocInfo.descriptorSetCount = 1;
 	AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &fvk.descriptorSet));
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)fvk.descriptorSet,
-						 TOSTRING("Font descriptor set ",font->name.str).str);
+						 TOSTRING("Font descriptor set ",font->name).str);
 	
 	//write descriptor set
 	VkWriteDescriptorSet writeDescriptorSet{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
