@@ -423,7 +423,7 @@ loadConfig(const char* filename, ConfigMap configMap){
 	if(!buffer){ saveConfig(filename, configMap); return; }
 	defer{ delete[] buffer; };
 	
-	char* line_start;  char* line_end = buffer - 1;
+	char* line_start;  char* line_end = buffer-1;
 	char* info_start;  char* info_end;
 	char* key_start;   char* key_end;
 	char* value_start; char* value_end;
@@ -444,7 +444,7 @@ loadConfig(const char* filename, ConfigMap configMap){
 			key_start = info_start;
 			key_end   = key_start;
 			while(key_end != info_end && *key_end++ != ' '){}
-			if(key_end == info_end) { LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! No value passed"); break; }
+			if(key_end == info_end) { LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! No key passed"); break; }
 			key_end -= 1;
 			
 			value_end   = info_end;

@@ -48,6 +48,7 @@ enum Colors_ : u32{
 	Color_VeryDarkMagenta = PackColorU32( 64,  0, 64,255),
 	
 	Color_Clear = Color_NONE, Color_Transparent = Color_NONE, Color_Blank = Color_NONE,
+	Color_Gray = Color_Grey, Color_LightGray = Color_LightGrey, Color_DarkGray = Color_DarkGrey, Color_VeryDarkGray = Color_VeryDarkGrey,
 };
 
 struct color{

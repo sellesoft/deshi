@@ -2,21 +2,25 @@
 #ifndef DESHI_FONT_H
 #define DESHI_FONT_H
 
+#include "../defines.h"
+
+enum FontType{
+	FontType_NONE,
+	FontType_BDF,
+	FontType_TTF,
+	FontType_COUNT
+};
+
 struct Font{
-	u32 width;
-	u32 height;
-	u32 font_size;
-	
-	u32 char_count;
-	
-	string name;
-	string weight;
-	
-	vec2 dpi;
-	vec4 bbx;
-	
-	u16* encodings;
-	u8*  texture;
+	Type type;
+	u32  idx;
+	char name[DESHI_NAME_SIZE];
+	char weight[DESHI_NAME_SIZE];
+	u32  width;
+	u32  height;
+	u32  count;
+	u32   ttf_size;
+	void* ttf_bake;
 };
 
 #endif //DESHI_FONT_H

@@ -48,8 +48,8 @@ namespace Storage{
 	//////////////////
 	//// @texture ////
 	//////////////////
-	pair<u32,Texture*> CreateTextureFromFile(const char* filename, ImageFormat format = ImageFormat_RGBA, TextureType type = TextureType_2D, bool keepLoaded = false, bool generateMipmaps = true);
-	pair<u32,Texture*> CreateTextureFromMemory(void* data, const char* name, int width, int height, ImageFormat format, TextureType type = TextureType_2D, bool keepLoaded = false, bool generateMipmaps = true);
+	pair<u32,Texture*> CreateTextureFromFile(const char* filename, ImageFormat format = ImageFormat_RGBA, TextureType type = TextureType_2D, bool keepLoaded = false, bool generateMipmaps = true, bool forceLinear = false);
+	pair<u32,Texture*> CreateTextureFromMemory(void* data, const char* name, int width, int height, ImageFormat format, TextureType type = TextureType_2D, bool keepLoaded = false, bool generateMipmaps = true, bool forceLinear = false);
 	void               DeleteTexture(Texture* texture);
 	
 	inline Texture*    NullTexture(){ return DeshStorage->textures.data[0]; };
@@ -99,12 +99,13 @@ namespace Storage{
 	///////////////
 	pair<u32,Font*> CreateFontFromFileBDF(const char* filename);
 	pair<u32,Font*> CreateFontFromFileTTF(const char* filename, u32 height);
+	void            DeleteFont(Font* font);
 	
 	inline Font*    NullFont(){ return DeshStorage->fonts.data[0]; };
 	inline u32      FontCount(){ return DeshStorage->fonts.count; };
 	inline Font*    FontAt(u32 fontIdx){ return DeshStorage->fonts[fontIdx]; };
 	inline u32      FontIndex(Font* font){ forI(DeshStorage->fonts.count){ if(font == DeshStorage->fonts[i]) return i; } return -1; };
-	inline char*    FontName(u32 fontIdx){ return DeshStorage->fonts[fontIdx]->name.str; };
+	inline char*    FontName(u32 fontIdx){ return DeshStorage->fonts[fontIdx]->name; };
 };
 
 #endif //DESHI_STORAGE_H

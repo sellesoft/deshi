@@ -360,6 +360,7 @@ inline void array<T>::resize(u32 _count){
 		last  = data+(space-1);
 		max   = data+(space-1);
 	}else if(_count < space){
+		for(u32 i = _count+1; i < count; ++i){ data[i].~T(); }
 		space = _count;
 		u32 osize = count;
 		u32 iteroffset = iter - first;

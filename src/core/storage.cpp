@@ -1,7 +1,3 @@
-#ifdef ParseError
-#define TempParseError ParseError
-#undef ParseError
-#endif
 #define ParseError(...) LogE("storage","Failed parsing '",filepath,"' on line '",line_number,"'! ",__VA_ARGS__)
 
 namespace Storage{
@@ -50,8 +46,19 @@ Init(){
 	CreateTextureFromFile("null128.png");
 	CreateMaterial("null", Shader_NULL, MaterialFlags_NONE, {0});
 	CreateModelFromMesh(NullMesh(), ModelFlags_NONE); cpystr(NullModel()->name, "null", DESHI_NAME_SIZE);
-	//CreateFontFromFileBDF("gohufont-11.bdf");
-	CreateFontFromFileTTF("Paskowy.ttf", 25);
+	
+	//create null font (white square)
+	fonts.add(new Font);
+	NullFont()->type = FontType_NONE;
+	NullFont()->idx = 0;
+	NullFont()->width = 6;
+	NullFont()->height = 12;
+	NullFont()->count = 1;
+	cpystr(NullFont()->name,"null",DESHI_NAME_SIZE);
+	u8 white_pixels[4] = {255,255,255,255};
+	Texture* nf_tex = CreateTextureFromMemory(&white_pixels, "null_font", 2, 2, ImageFormat_BW, TextureType_2D, false, false).second;
+	Render::LoadFont(NullFont(), nf_tex);
+	//DeleteTexture(nf_tex); //!Incomplete
 }
 
 void Storage::
@@ -60,6 +67,7 @@ Reset(){
 	for(int i=materials.size()-1; i>0; --i){ DeleteMaterial(materials[i]); materials.pop(); } 
 	for(int i=textures.size()-1;  i>0; --i){ DeleteTexture(textures[i]);   textures.pop(); } 
 	for(int i=models.size()-1;    i>0; --i){ DeleteModel(models[i]);       models.pop(); } 
+	for(int i=fonts.size()-1;     i>0; --i){ DeleteFont(fonts[i]);         fonts.pop(); } 
 	lights.clear();
 }
 
@@ -449,7 +457,7 @@ AllocateTexture(){
 }
 
 pair<u32,Texture*> Storage::
-CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps){
+CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps, bool forceLinear){
 	pair<u32,Texture*> result(0, NullTexture());
 	if(strcmp(filename, "null") == 0) return result;
 	
@@ -468,6 +476,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 	texture->pixels  = stbi_load((Assets::dirTextures()+filename).c_str(), &texture->width, &texture->height, 
 								 &texture->depth, STBI_rgb_alpha);
 	texture->loaded  = true;
+	texture->forceLinear = forceLinear;
 	if(texture->pixels == 0){ 
 		LogE("storage","Failed to create texture '",filename,"': ",stbi_failure_reason()); 
 		free(texture);
@@ -488,7 +497,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 }
 
 pair<u32,Texture*> Storage::
-CreateTextureFromMemory(void* data, const char* name, int width, int height, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps){
+CreateTextureFromMemory(void* data, const char* name, int width, int height, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps, bool forceLinear){
 	pair<u32,Texture*> result(0, NullTexture());
 	if(data == 0){ LogE("storage","Failed to create texture '",name,"': No memory passed!"); return result; }
 	
@@ -507,6 +516,7 @@ CreateTextureFromMemory(void* data, const char* name, int width, int height, Ima
 	texture->height  = height;
 	texture->depth   = 4;
 	texture->loaded  = true;
+	texture->forceLinear = forceLinear;
 	texture->mipmaps = (generateMipmaps) ? (int)log2(Max(texture->width, texture->height)) + 1 : 1;
 	
 	//reinterpret image as RGBA32
@@ -628,8 +638,10 @@ CreateMaterialFromFile(const char* filename, bool warnMissing){
 	char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
 	if(!buffer){ return result; }
 	defer{ delete[] buffer; };
-	char* line_start;  char* line_end = buffer - 1;
+	char* line_start;  char* line_end = buffer-1;
 	char* info_start;  char* info_end;
+	char* key_start;   char* key_end;
+	char* value_start; char* value_end;
 	bool has_cr = false;
 	for(u32 line_number = 1; ;line_number++){
 		//get the next line
@@ -642,33 +654,45 @@ CreateMaterialFromFile(const char* filename, bool warnMissing){
 		info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);  if(info_start == line_end) continue;
 		info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);  if(info_start == info_end) continue;
 		info_end   = info_start + Utils::skipSpacesTrailing(info_start, info_end-info_start); if(info_start == info_end) continue;
+		cstring info{info_start, u64(info_end-info_start)};
 		
-		std::string line(info_start, info_end-info_start);
-		
-		//parse the key-value pair
+		//check for headers
 		if(*info_start == '>'){
-			if     (line == ">material"){ header = MaterialHeader::MATERIAL; }
-			else if(line == ">textures"){ header = MaterialHeader::TEXTURES; }
-			else{ header = MaterialHeader::INVALID; ParseError("Uknown header '",line,"'"); }
+			if     (info == cstr_lit(">material")){ header = MaterialHeader::MATERIAL; }
+			else if(info == cstr_lit(">textures")){ header = MaterialHeader::TEXTURES; }
+			else{ header = MaterialHeader::INVALID; ParseError("Uknown header '",info,"'"); }
 			continue;
 		}
 		
+		//split the key-value pair
+		key_start = info_start;
+		key_end   = key_start;
+		while(key_end != info_end && *key_end++ != ' ');
+		if(key_end == info_end){ ParseError("No key passed."); continue; }
+		key_end -= 1;
+		cstring key{key_start, u64(key_end-key_start)};
+		
+		value_end   = info_end;
+		value_start = key_end;
+		while(*value_start++ == ' ');
+		value_start -= 1;
+		if(value_end == value_start){ ParseError("No value passed."); continue; }
+		cstring value{value_start, u64(value_end-value_start)};
+		
+		//parse the key-value pair
 		if(header == MaterialHeader::INVALID) { ParseError("Invalid header; skipping line"); continue; }
-		std::vector<std::string> split = Utils::spaceDelimitIgnoreStrings(line);
 		
 		if(header == MaterialHeader::MATERIAL){
-			if(split.size() != 2){ ParseError("Material header attributes should have 2 values"); continue; }
-			if      (split[0] == "name")  { 
-				mat_name   = string(split[1].c_str(), split[1].size()); 
-			}else if(split[0] == "shader"){ 
-				forI(Shader_COUNT){ if(strcmp(ShaderStrings[i], split[1].c_str()) == 0){ mat_shader = i; break; } }
-			}else if(split[0] == "flags") { 
-				mat_flags  = (MaterialFlags)std::stoi(split[1]); 
-			}
-			else{ ParseError("Invalid key '",split[0],"' for header '",MaterialHeaderStrings[header],"'"); continue; }
+			if      (key == cstr_lit("name")){
+				mat_name = string(value_start+1, value_end-value_start-2);
+			}else if(key == cstr_lit("flags")){
+				mat_flags = (ModelFlags)b10tou64(value); 
+			}else if(key == cstr_lit("shader")){
+				string s = to_string(value);
+				forI(Shader_COUNT){ if(strcmp(ShaderStrings[i], s.str) == 0){ mat_shader = i; break; } }
+			}else{ ParseError("Invalid key '",key,"' for header '",MaterialHeaderStrings[header],"'"); continue; }
 		}else{
-			if(split.size() != 1){ ParseError("Texture header attributes should have 1 value"); continue; }
-			mat_textures.add(string(split[0].c_str(), split[0].size()));
+			mat_textures.add(string(key_start+1, key_end-key_start-2));
 		}
 	}
 	
@@ -1361,48 +1385,65 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
 		if(!buffer){  return result; }
 		defer{ delete[] buffer; };
-		char* line_start; char* line_end = buffer - 1;
-		char* info_start; char* info_end;
+		char* line_start;  char* line_end = buffer-1;
+		char* info_start;  char* info_end;
+		char* key_start;   char* key_end;
+		char* value_start; char* value_end;
 		bool has_cr = false;
 		for(u32 line_number = 1; ;line_number++){
 			//get the next line
 			line_start = (has_cr) ? line_end+2 : line_end+1;
 			if((line_end = strchr(line_start, '\n')) == 0) break; //EOF if no '\n'
 			if(has_cr || *(line_end-1) == '\r') { has_cr = true; line_end -= 1; }
-			
+			if(line_start == line_end) continue;
 			
 			//format the line
 			info_start = line_start + Utils::skipSpacesLeading(line_start, line_end-line_start);  if(info_start == line_end) continue;
 			info_end   = info_start + Utils::skipComments(info_start, "#", line_end-info_start);  if(info_start == info_end) continue;
 			info_end   = info_start + Utils::skipSpacesTrailing(info_start, info_end-info_start); if(info_start == info_end) continue;
+			cstring info{info_start, u64(info_end-info_start)};
 			
-			std::string line(info_start, info_end-info_start);
-			
-			//parse the key-value pair
+			//check for headers
 			if(*info_start == '>'){
-				if     (line == ">model"){ header = ModelHeader::MODEL; }
-				else if(line == ">batches"){ header = ModelHeader::BATCHES; }
-				else{ header = ModelHeader::INVALID; ParseError("Uknown header '",line,"'"); }
+				if     (info == cstr_lit(">model")){ header = ModelHeader::MODEL; }
+				else if(info == cstr_lit(">batches")){ header = ModelHeader::BATCHES; }
+				else{ header = ModelHeader::INVALID; ParseError("Uknown header '",info,"'"); }
 				continue;
 			}
 			
+			//split the key-value pair
+			key_start = info_start;
+			key_end   = key_start;
+			while(key_end != info_end && *key_end++ != ' ');
+			if(key_end == info_end){ ParseError("No key passed."); continue; }
+			key_end -= 1;
+			cstring key{key_start, u64(key_end-key_start)};
+			
+			value_end   = info_end;
+			value_start = key_end;
+			while(*value_start++ == ' ');
+			value_start -= 1;
+			if(value_end == value_start){ ParseError("No value passed."); continue; }
+			cstring value{value_start, u64(value_end-value_start)};
+			
+			//parse the key-value pair
 			if(header == ModelHeader::INVALID) { ParseError("Invalid header; skipping line"); continue; }
-			std::vector<std::string> split = Utils::spaceDelimitIgnoreStrings(line);
 			
 			if(header == ModelHeader::MODEL){
-				if(split.size() != 2){ ParseError("Material header attributes should have 2 values"); continue; }
-				if      (split[0] == "name")  { 
-					model_load_name = string(split[1].c_str(), split[1].size()); 
-				}else if(split[0] == "flags") { 
-					model_load_flags  = (ModelFlags)std::stoi(split[1]); 
-				}else if(split[0] == "mesh"){ 
-					model_load_mesh = string(split[1].c_str(), split[1].size()); 
-				}else if(split[0] == "armature"){ 
-					
-				}else{ ParseError("Invalid key '",split[0],"' for header '",ModelHeaderStrings[header],"'"); continue; }
+				if      (key == cstr_lit("name")){
+					model_load_name = string(value_start+1, value_end-value_start-2);
+				}else if(key == cstr_lit("flags")){
+					model_load_flags = (ModelFlags)b10tou64(value); 
+				}else if(key == cstr_lit("mesh")){
+					model_load_mesh = string(value_start+1, value_end-value_start-2);
+				}else if(key == cstr_lit("armature")){
+					//NOTE currently nothing
+				}else{ ParseError("Invalid key '",key,"' for header '",ModelHeaderStrings[header],"'"); continue; }
 			}else{
-				if(split.size() != 3){ ParseError("Batches should have 3 values"); continue; }
-				model_load_batches.add({string(split[0].c_str(), split[0].size()), (u32)std::stoi(split[1]), (u32)std::stoi(split[2])});
+				cstring s = value;
+				u32 i0 = (u32)b10tou64(s,&s);
+				u32 i1 = (u32)b10tou64(s);
+				model_load_batches.add({string(key_start+1,key_end-key_start-2), i0, i1});
 			}
 		}
 		
@@ -1481,6 +1522,7 @@ CopyModel(Model* _model){
 
 void Storage::
 SaveModel(Model* model){
+	SaveMesh(model->mesh);
 	std::string model_save = TOSTDSTRING(">model"
 										 "\nname     \"",model->name,"\""
 										 "\nflags    ", model->flags,
@@ -1489,6 +1531,7 @@ SaveModel(Model* model){
 										 "\n"
 										 "\n>batches");
 	forI(model->batches.count){
+		SaveMaterial(materials[model->batches[i].material]);
 		model_save.append(TOSTDSTRING("\n\"",materials[model->batches[i].material]->name,"\" ",
 									  model->batches[i].indexOffset," ",model->batches[i].indexCount));
 	}
@@ -1508,16 +1551,32 @@ DeleteModel(Model* model){
 ///////////////
 //// @font ////
 ///////////////
+local Font* 
+AllocateFont(Type type){
+	Font* font = (Font*)calloc(1, sizeof(Font));
+	font->type = type;
+	font->idx = Storage::fonts.count;
+	return font;
+}
+
 pair<u32,Font*> Storage::
 CreateFontFromFileBDF(const char* filename){
 	pair<u32,Font*> result(0,NullFont());
+	
+	//check if created already
+	forX(fi, fonts.size()){
+		if(strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0){
+			return pair<u32,Font*>(fi,fonts[fi]);
+		}
+	}
 	
 	char* buffer = Assets::readFileAsciiToArray(Assets::dirFonts() + filename);
 	if(!buffer){ return result; }
 	defer{ delete[] buffer; };
 	
 	Assert(strncmp("STARTFONT", buffer, 9) == 0); //TODO(delle) error handling: incorrect file
-	Font* font = new Font;
+	Font* font = AllocateFont(FontType_BDF);
+	
 	bool in_char   = false;
 	bool in_bitmap = false;
 	u32 char_idx = 0;
@@ -1525,7 +1584,11 @@ CreateFontFromFileBDF(const char* filename){
 	u32 glyph_offset = 0;
 	u32 top_offset = 0;
 	u32 left_offset = 0;
-	vec4 current_bbx;
+	vec4 current_bbx = vec4::ZERO;
+	vec4 font_bbx = vec4::ZERO;
+	vec2 font_dpi = vec2::ZERO;
+	u16* encodings = 0;
+	u8*  pixels = 0;
 	
 	char* line_start;  char* line_end = buffer-1;
 	char* info_start;  char* info_end;
@@ -1577,7 +1640,7 @@ CreateFontFromFileBDF(const char* filename){
 								 * 0x4001 & 0x0003000300030003) * 0x81 & 0x0101010101010101) * 255;
 				*(u64*)(scaled+i) = ByteSwap64(reversed);
 			}
-			memcpy(font->texture+(upt)(glyph_offset + (bitmap_row+top_offset)*font->width + left_offset), scaled, current_bbx.x*sizeof(u8));
+			memcpy(pixels+(upt)(glyph_offset + (bitmap_row+top_offset)*font->width + left_offset), scaled, current_bbx.x*sizeof(u8));
 			
 			bitmap_row++;
 			continue;
@@ -1585,7 +1648,7 @@ CreateFontFromFileBDF(const char* filename){
 		
 		if(in_char){
 			if      (strncmp("ENCODING", key_start, key_end-key_start) == 0){
-				font->encodings[char_idx] = strtol(value_start, 0, 10);
+				encodings[char_idx] = strtol(value_start, 0, 10);
 			}else if(strncmp("BITMAP", key_start, key_end-key_start) == 0){
 				in_bitmap = true;
 			}else if(strncmp("SWIDTH", key_start, key_end-key_start) == 0){
@@ -1599,15 +1662,15 @@ CreateFontFromFileBDF(const char* filename){
 				current_bbx.z = strtol(cursor+1, &cursor, 10); //lower-left x
 				current_bbx.w = strtol(cursor+1, &cursor, 10); //lower-left y
 				glyph_offset = char_idx*font->height*font->width;
-				top_offset   = font->height-(current_bbx.w-font->bbx.w)-current_bbx.y;
-				left_offset  = current_bbx.z-font->bbx.z;
+				top_offset   = font->height-(current_bbx.w-font_bbx.w)-current_bbx.y;
+				left_offset  = current_bbx.z-font_bbx.z;
 				
-				Assert(current_bbx.x <= font->bbx.x);
-				Assert(current_bbx.y <= font->bbx.y);
-				Assert(current_bbx.z >= font->bbx.z);
-				Assert(current_bbx.w >= font->bbx.w);
+				Assert(current_bbx.x <= font_bbx.x);
+				Assert(current_bbx.y <= font_bbx.y);
+				Assert(current_bbx.z >= font_bbx.z);
+				Assert(current_bbx.w >= font_bbx.w);
 			}else{
-				Assert(false); //finds cases where we are not handling things
+				Assert(!"unhandled key");
 			}
 			continue;
 		}
@@ -1616,71 +1679,91 @@ CreateFontFromFileBDF(const char* filename){
 			in_char = true;
 		}else if(strncmp("SIZE", key_start, key_end-key_start) == 0){
 			char* cursor = value_start;
-			font->font_size = strtol(cursor,   &cursor, 10);
-			font->dpi.x     = strtol(cursor+1, &cursor, 10);
-			font->dpi.y     = strtol(cursor+1, &cursor, 10);
+			font_dpi.x     = strtol(cursor+1, &cursor, 10);
+			font_dpi.y     = strtol(cursor+1, &cursor, 10);
 		}else if(strncmp("FONTBOUNDINGBOX", key_start, key_end-key_start) == 0){
 			char* cursor = value_start;
-			font->bbx.x = strtol(cursor,   &cursor, 10); //width
-			font->bbx.y = strtol(cursor+1, &cursor, 10); //height
-			font->bbx.z = strtol(cursor+1, &cursor, 10); //lower-left x
-			font->bbx.w = strtol(cursor+1, &cursor, 10); //lower-left y
-			font->width  = font->bbx.x;
-			font->height = font->bbx.y;
+			font_bbx.x = strtol(cursor,   &cursor, 10); //width
+			font_bbx.y = strtol(cursor+1, &cursor, 10); //height
+			font_bbx.z = strtol(cursor+1, &cursor, 10); //lower-left x
+			font_bbx.w = strtol(cursor+1, &cursor, 10); //lower-left y
+			font->width  = font_bbx.x;
+			font->height = font_bbx.y;
 		}else if(strncmp("FONT_NAME", key_start, key_end-key_start) == 0){
-			font->name = string(value_start+1, value_end-value_start-2);
+			cpystr(font->name,string(value_start+1, value_end-value_start-2).str,DESHI_NAME_SIZE);
 		}else if(strncmp("WEIGHT_NAME", key_start, key_end-key_start) == 0){
-			font->weight = string(value_start+1, value_end-value_start-2);
+			cpystr(font->weight,string(value_start+1, value_end-value_start-2).str,DESHI_NAME_SIZE);
 		}else if(strncmp("CHARS", key_start, key_end-key_start) == 0){
-			font->char_count = strtol(value_start, 0, 10);
-			Assert(font->width && font->height && font->char_count);
-			font->encodings = (u16*)calloc(font->char_count, sizeof(u16));
-			font->texture = (u8*)calloc(font->char_count, font->width*font->height*sizeof(u8));
+			font->count = strtol(value_start, 0, 10);
+			Assert(font->width && font->height && font->count);
+			encodings = (u16*)calloc(font->count, sizeof(u16));
+			pixels = (u8*)calloc(font->count, font->width*font->height*sizeof(u8));
 		}else{
 			continue;
 		}
 	}
 	
+	Texture* texture = CreateTextureFromMemory(pixels, font->name, font->width, font->height*font->count,
+											   ImageFormat_BW, TextureType_2D, false, false, true).second;
+	Render::LoadFont(font, texture);
+	free(encodings);
+	free(pixels);
+	//DeleteTexture(texture);
+	
 	fonts.add(font);
+	result.first  = font->idx;
+	result.second = font;
 	return result;
 }
 
+//TODO(delle) update this to stb's Improved 3D API
 pair<u32,Font*> Storage::
 CreateFontFromFileTTF(const char* filename, u32 size){
 	pair<u32,Font*> result(0,NullFont());
-	Font* font = new Font;
-	font->texture = (u8*)malloc(512 * 512);
 	
-	string path(Assets::dirFonts().c_str());
-	path += filename; //okay
-
-	u8 ttfbuff[1<<10];
-	stbtt_bakedchar cdata[96];
-
-	u32 cnt = fread(ttfbuff, 1, 1 << 10, fopen(path.str, "rb"));
-	stbtt_BakeFontBitmap(ttfbuff, 0, size, font->texture, 512, 512, 32, 96, cdata);
-
-
-	//stbtt_fontinfo info;
-	//u8* bitmap;
-	//u8 buffer[1 << 25];
-	//
-	//string path = string(Assets::dirFonts().c_str()) + fontname;
-	//
-	////read the actual file into the buffer
-	//fread(buffer, 1, 1 << 25, fopen(path.str, "rb"));
-	//
-	//stbtt_InitFont(&info, buffer, stbtt_GetFontOffsetForIndex(buffer, 0));
-	//
-	//int w = 6, h = 11;
-	//
-	//bitmap = stbtt_GetCodepointBitmap(&info, 0, stbtt_ScaleForPixelHeight(&info, 11), 0, &w, &h, 0, 0);
+	//check if created already
+	forX(fi, fonts.size()){
+		if(strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0){
+			return pair<u32,Font*>(fi,fonts[fi]);
+		}
+	}
 	
+	char* buffer = Assets::readFileBinaryToArray(Assets::dirFonts()+filename);
+	if(!buffer){ return result; }
+	defer{ delete[] buffer; };
+	
+	Font* font = AllocateFont(FontType_TTF);
+	font->height = size;
+	font->count  = 96;
+	font->ttf_size = 512*(u32(size/72.f)+1);
+	cpystr(font->name,filename,DESHI_NAME_SIZE);
+	
+	u8* pixels = (u8*)calloc(font->ttf_size*font->ttf_size,sizeof(u8));
+	font->ttf_bake = calloc(font->count,sizeof(stbtt_bakedchar));
+	int x = stbtt_BakeFontBitmap((const unsigned char*)buffer,0, size, pixels,font->ttf_size,font->ttf_size, 
+								 32,96, (stbtt_bakedchar*)font->ttf_bake);
+	Assert(x != 0, "if return is 0, no characters fit and no rows were used"); //TODO error handling
+	
+	//TODO find a better way to find a good font width for TTF or rework font usage in UI
+	font->width = (((stbtt_bakedchar*)font->ttf_bake) + ('?'-32))->xadvance;
+	
+	Texture* texture = CreateTextureFromMemory(pixels, font->name, font->ttf_size,font->ttf_size, 
+											   ImageFormat_BW, TextureType_2D, false, false, true).second;
+	Render::LoadFont(font, texture);
+	free(pixels);
+	//DeleteTexture(texture);
+	
+	fonts.add(font);
+	result.first  = font->idx;
+	result.second = font;
 	return result;
 }
 
+void Storage::
+DeleteFont(Font* font){
+	//!Incomplete
+	Assert(!"not implemented");
+	free(font);
+}
+
 #undef ParseError
-#ifdef TempParseError
-#define ParseError TempParseError
-#undef TempParseError
-#endif

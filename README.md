@@ -5,11 +5,10 @@ A 3D graphics and realtime utilities engine, originally [P3DPGE](https://github.
 Being used in physics-puzzle game [atmos](https://github.com/e-sushi/atmos) and math tool [suugu](https://github.com/e-sushi/suugu).
 
 ### [Features](https://github.com/DelleVelleD/deshi/wiki)
-* Vulkan rendering
-* OpenGL rendering
+* Vulkan/OpenGL3 rendering
 * Console and commands
 * UI and math libraries
-* BDF font loading and rendering
+* BDF/TTF font loading and rendering
 * Importing and processing OBJ models
 
 ### Major TODOs
@@ -19,7 +18,6 @@ Being used in physics-puzzle game [atmos](https://github.com/e-sushi/atmos) and 
 * Console rewrite
 * File and memory abstraction
 * Platform layers
-* Typefont loading and rendering
 
 ### Build Dependencies
 * [GLFW 3.3.2](https://github.com/glfw/glfw/releases/tag/3.3.2)
