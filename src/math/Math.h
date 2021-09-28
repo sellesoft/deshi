@@ -82,6 +82,12 @@ namespace Math {
 			point.y <= rectPos.y + rectDims.y;
 	}
 	
+	//oscillates between a given upper and lower value based on a given x value
+	inline global_ float BoundedOscillation(float lower, float upper, float x) {
+		assert(upper > lower);
+		return ((upper - lower) * cosf(x) + (upper + lower)) / 2;
+	}
+
 }
 
 //// Non-quat vs quat Interactions ////
