@@ -1,4 +1,3 @@
-#include "ui.h"
 //color pallete 
 //current palette:
 //https://lospec.com/palette-list/slso8
@@ -93,6 +92,16 @@ local u32 activeId = -1; //the id of an active widget eg. input text
 local UIRow row;
 local bool  rowInProgress;
 
+//set when we are in progress of making a custom item, see BeginCustomItem() in ui.h for more info on what that is
+local b32 custom_item = 0;
+
+//the last item worked on
+//this is always set in EndItem()
+//its purpose is to solve a problem caused by custom items, since items all get merged into one item
+//when we're making a custom item, and i want the user to be able to still get information about the last item made
+//for the group, we need to store a copy of it here
+local UIItem lastitem;
+
 
 //helper defines
 
@@ -108,7 +117,6 @@ local bool  rowInProgress;
 
 //this calculates text taking into account newlines, BUT NOT WRAPPING
 //useful for sizing a window to fit some text
-//TODO(sushi, Ui) make a CalcTextSize that takes into account wrapping that would occur in a sized window
 inline vec2 UI::CalcTextSize(string text) {
 	string stage = text;
 	u32 longest = 0;
@@ -168,7 +176,7 @@ inline void AdvanceCursor(UIItem* itemmade, bool moveCursor = 1) {
 	//if a row is in progress, we must reposition the item to conform to row style variables
 	//this means that you MUST ensure that this happens before any interactions with the item are calculated
 	//for instance in the case of Button, this must happen before you check that the user has clicked it!
-	if (rowInProgress) {
+	if (rowInProgress && !custom_item) {
 		//abstract item types (lines, rectangles, etc.) are not row'd, for now
 		if (itemmade->type != UIItemType_Abstract) {
 			row.items.add(itemmade);
@@ -195,8 +203,10 @@ inline void AdvanceCursor(UIItem* itemmade, bool moveCursor = 1) {
 //function for getting the position of a new item based on style, so the long string of additions
 //is centralized for new additions, if ever made, and so that i dont have to keep writing it :)
 inline vec2 PositionForNewItem() {
-	return curwin->cursor + style.windowPadding - curwin->scroll;
+	return curwin->cursor + (style.windowPadding);// -curwin->scroll);
 }
+
+
 
 void UI::SetNextItemActive() {
 	NextActive = 1;
@@ -206,7 +216,7 @@ UIStyle UI::GetStyle(){
 	return style;
 }
 
-//the following 3 functions should probably error out sofly, rather than asserting
+//the following 4 functions should probably error out sofly, rather than asserting
 
 //returns the cursor to the same line as the previous and moves it to the right by the 
 //width of the object
@@ -232,8 +242,22 @@ vec2 UI::GetLastItemScreenPos() {
 }
 
 //internal last item getter, returns nullptr if there are none
-UIItem* GetLastItem() {
+inline UIItem* GetLastItem() {
 	return curwin->items.last;
+}
+
+//helper for making any new UIItem, since now we must work with item pointers internally
+//this function also decides if we are working with a new item or continuing to work on a previous
+inline UIItem* BeginItem(UIItemType type) {
+	if (!custom_item)
+		curwin->items.add(UIItem{ type, curwin->cursor, style });
+	return GetLastItem();
+}
+
+inline void EndItem(UIItem* item) {
+	//copy the last made item to lastitem, so we can look back at it independently of custom item nonsense
+	//maybe only do this is we're making a custom item
+	lastitem = *item;
 }
 
 //@BeginRow
@@ -253,56 +277,6 @@ void UI::BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags) {
 	row.position = PositionForNewItem();
 	forI(columns) row.columnWidths.add({ 0.f,false });
 }
-
-
-
-//old code from when I attempted to make Row() too dynamic, and is more suited for something more advanced
-//like a Table that could be implemented later on
-#if 0
-void UI::EndRow() {
-	
-	//if the user does not care about the overall width of the row
-	if (row.width == 0) {
-		//this loop follows this scheme:
-		//  determine if the column is to be dynamically fitted, if so we size the width of the column to the 
-		//  max width of the items within it, offset them into the cell and scissor them to stay within it.
-		//  otherwise, we simply offset all items into the cell and scissor them to stay within it.
-		
-		//accumulator for the x offset produced by previous rows
-		f32 xOffset = 0;
-		for (UIColumn& col : row.columns) {
-			// if the column's width is to be dynamic, we must find the maximum width of all of the items it contains
-			if (col.width == -1) {
-				f32 maxItemWidth = 0;
-				vec2 offset = col.items[0]->position - (row.position + vec2{ xOffset, 0 });
-				//we are able to offset the item and gather max width in the same for loop, but we can't adjust
-				//scissors until we know the max width of all items (i think...)
-				for (int i = 0; i < col.items.count; i++) {
-					maxItemWidth = Max(col.items[i]->position.x + col.items[i]->size.x, maxItemWidth);
-					col.items[i]->position += offset;
-				}
-				
-				xOffset += maxItemWidth;
-				
-				//if the item's drawCmd already has a scissor, we have to ensure that we don't allow that scissor to draw outside of the
-				//cell, so we clamp its offset to the top and left of the cell, and its extent to the bottom and right
-				//otherwise, we just scissor the drawCmd to the cell
-				for()
-			}
-			//else we simply offset the items to be aligned wthin the cell, scissoring to the height of the row and width of the column
-			else {
-				
-			}
-			
-			
-		}
-	}
-	
-	
-	
-	
-}
-#endif
 
 void UI::EndRow() {
 	Assert(rowInProgress, "Attempted to a end a row without calling BeginRow() first!");
@@ -348,13 +322,6 @@ void UI::RowSetupRelativeColumnWidths(array<f32> widths) {
 		row.columnWidths[i] = { widths[i], true };
 }
 
-//helper for making any new UIItem, since now we must work with item pointers internally
-//basically adds a new item to the window and returns a pointer to it
-UIItem* NewUIItem(UIItemType type) {
-	curwin->items.add(UIItem{ type, curwin->cursor, style });
-	return GetLastItem();
-}
-
 
 
 //@Primitive Items
@@ -394,6 +361,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 
 
 //@Line
+
 
 void UI::Line(vec2 start, vec2 end, float thickness, color color){
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
@@ -438,8 +406,9 @@ local void TextCall(const char* text, vec2 pos, color color, UIItem* item) {
 //main function for wrapping, where position is starting position of text relative to the top left of the window
 //this function also decides if text is to be wrapped or not, and if not simply calls TextEx (to clean up the Text() functions)
 local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_cursor = true) {
+	
 	using namespace UI;
-	UIItem* item = NewUIItem(UIItemType_Text);
+	UIItem* item = BeginItem(UIItemType_Text);
 	item->position = (move_cursor) ? PositionForNewItem() : pos;
 	
 	if (!nowrap) {
@@ -533,7 +502,7 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 		TextCall(in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
 		CalcItemSize(item);
 	}
-	if(move_cursor) AdvanceCursor(item);
+	AdvanceCursor(item, move_cursor);
 }
 
 void UI::Text(const char* text, UITextFlags flags) {
@@ -566,7 +535,7 @@ void UI::TextF(const char* fmt, ...) {
 
 
 bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
-	UIItem* item = NewUIItem(UIItemType_Button);
+	UIItem* item = BeginItem(UIItemType_Button);
 	item->size = (NextItemSize.x != -1) ? NextItemSize : vec2(Min(curwin->width, 50), style.font->height * 1.3);
 	item->position = pos;
 	AdvanceCursor(item, move_cursor);
@@ -623,7 +592,7 @@ bool UI::Button(const char* text, vec2 pos, color color) {
 }
 
 void UI::Checkbox(string label, bool* b) {
-	UIItem* item = NewUIItem(UIItemType_Checkbox);
+	UIItem* item = BeginItem(UIItemType_Checkbox);
 	
 	vec2 boxpos = PositionForNewItem();
 	vec2 boxsiz = style.checkboxSize;
@@ -671,7 +640,7 @@ void UI::Checkbox(string label, bool* b) {
 }
 
 void UI::DropDown(const char* label, const char* options[], u32 options_count, u32& selected) {
-	UIItem* item = NewUIItem(UIItemType_DropDown);
+	UIItem* item = BeginItem(UIItemType_DropDown);
 	
 	bool isOpen = false;
 	if (!dropDowns.has(label)) {
@@ -773,11 +742,13 @@ void UI::DropDown(const char* label, const char* options[], u32 options_count, u
 	
 }
 
+
 //@InputText
+
 
 //final input text
 bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UIInputTextCallback callback, UIInputTextFlags flags, bool moveCursor) {
-	UIItem* item = NewUIItem(UIItemType_InputText);
+	UIItem* item = BeginItem(UIItemType_InputText);
 	
 	UIInputTextState* state;
 	
@@ -1079,13 +1050,79 @@ bool UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIIn
 }
 
 
+//@Utilities
+
+
+void UI::BeginCustomItem(){
+	//make the custom item, add it and set curitem to it
+	curwin->items.add(UIItem{ UIItemType_Custom, curwin->cursor, style });
+	custom_item = 1;
+}
+
+void UI::EndCustomItem() {
+	custom_item = 0;
+	//we always calc the item's size here because it is arbitrary
+	CalcItemSize(GetLastItem());
+	AdvanceCursor(GetLastItem());
+}
+
+//Push/Pop functions
+void UI::PushColor(UIStyleCol idx, color color) {
+	//save old color
+	colorStack.add(ColorMod{ idx, style.colors[idx] });
+	//change to new color
+	style.colors[idx] = color;
+}
+
+void UI::PushVar(UIStyleVar idx, float nuStyle) {
+	Assert(uiStyleVarTypes[idx].count == 1, "Attempt to use a float on a vec2 style variable!");
+	float* p = (float*)((u8*)&style + uiStyleVarTypes[idx].offset);
+	varStack.add(VarMod(idx, *p));
+	*p = nuStyle;
+}
+
+void UI::PushVar(UIStyleVar idx, vec2 nuStyle) {
+	Assert(uiStyleVarTypes[idx].count == 2, "Attempt to use a float on a vec2 style variable!");
+	vec2* p = (vec2*)((u8*)&style + uiStyleVarTypes[idx].offset);
+	varStack.add(VarMod(idx, *p));
+	*p = nuStyle;
+}
+
+//we always leave the current color on top of the stack and the previous gets popped
+void UI::PopColor(u32 count) {
+	//Assert(count < colorStack.size() - 1, "Attempt to pop too many colors!");
+	while (count-- > 0) {
+		style.colors[(colorStack.last)->element] = colorStack.last->oldCol;
+		colorStack.pop();
+	}
+}
+
+void UI::PopVar(u32 count) {
+	while (count-- > 0) {
+		//TODO(sushi, UiCl) do this better
+		UIStyleVarType type = uiStyleVarTypes[varStack.last->var];
+		if (type.count == 1) {
+			float* p = (float*)((u8*)&style + type.offset);
+			*p = varStack.last->oldFloat[0];
+			varStack.pop();
+		}
+		else {
+			vec2* p = (vec2*)((u8*)&style + type.offset);
+			*p = vec2(varStack.last->oldFloat[0], varStack.last->oldFloat[1]);
+			varStack.pop();
+		}
+	}
+}
+
+
+
 //Windows
 
 
 //begins a window with a name, position, and dimensions along with some optional flags
 //if begin window is called with a name that was already called before it will work with
 //the data that window previously had
-void UI::BeginWindow(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
+void UI::Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
 	Assert(!rowInProgress, "Attempted to begin a window with a Row in progress! (Did you forget to call EndRow()?");
 	
 	//save previous window on stack
@@ -1151,6 +1188,75 @@ void UI::BeginWindow(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags 
 	//}
 }
 
+void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {
+	windowStack.add(curwin);
+	
+	UIWindow* parent = curwin;
+
+	UIItem* item = BeginItem(UIItemType_ChildWin);
+
+	//TODO(sushi) add custom positioning for child windows
+	item->position = PositionForNewItem();
+	item->size = dimensions;
+
+	AdvanceCursor(item);
+
+	//check if were making a new child or working with one we already know
+	if (parent->children.has(name)) {
+		curwin = parent->children[name];
+		curwin->cursor = vec2(0, 0);
+		//if (NextWinPos.x != -1) curwin->position = NextWinPos;
+		//if (NextWinSize.x != -1) curwin->dimensions = NextWinSize;
+		//NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
+	}
+	else {
+		vec2 parentNewPos = PositionForNewItem();
+
+		curwin = new UIWindow();
+
+		curwin->scroll = vec2(0, 0);
+		curwin->name = name;
+		curwin->position = parentNewPos + parent->position;
+		curwin->dimensions = dimensions;
+		curwin->cursor = vec2(0, 0);
+		curwin->flags = flags;
+
+		parent->children.add(name, curwin);
+	}
+
+	//check if window is hovered
+	vec2 mp = DeshInput->mousePos;
+	if (Math::PointInRectangle(mp, curwin->position, curwin->dimensions)) {
+		curwin->hovered = 1;
+	}
+	else {
+		curwin->hovered = 0;
+	}
+
+	//check if window's title is hovered (if were drawing it), so we can check for window movement by mouse later
+	if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
+		if (Math::PointInRectangle(mp, curwin->position, vec2(curwin->width, style.titleBarHeight))) {
+			curwin->titleHovered = 1;
+		}
+		else {
+			curwin->titleHovered = 0;
+		}
+	}
+
+	//check for scrolling inputs
+	if (!(flags & UIWindowFlags_NoScroll)) {
+		if (curwin->hovered && DeshInput->ScrollUp()) {
+			curwin->scy -= style.scrollAmount.y;
+			Math::clampr(curwin->scy, 0, curwin->maxScroll.y);
+		}
+		else if (curwin->hovered && DeshInput->ScrollDown()) {
+			curwin->scy += style.scrollAmount.y;
+			Math::clampr(curwin->scy, 0, curwin->maxScroll.y);
+		}
+	}
+
+}
+
 //@CalcWindowMinSize
 
 //calculates the minimum size a window can be to contain all drawn elements
@@ -1158,12 +1264,12 @@ void UI::BeginWindow(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags 
 //instead of doing it at the end, so maybe make an addItem() that calculates this
 //everytime we add one
 vec2 CalcWindowMinSize() {
-	using namespace UI;
 	vec2 max;
 	for (UIItem& item : curwin->items) {
-		max.x = Max(max.x, item.position.x + curwin->scroll.x + item.size.x);
-		max.y = Max(max.y, item.position.y + curwin->scroll.y + item.size.y);
+		max.x = Max(max.x, (item.position.x + curwin->scx) + item.size.x);
+		max.y = Max(max.y, (item.position.y + curwin->scy) + item.size.y);
 	}
+	Log("scroll y", curwin->scy);
 	return max + style.windowPadding;
 }
 
@@ -1225,9 +1331,7 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
 }
 #endif
 
-
-
-void UI::EndWindow() {
+void UI::End() {
 	Assert(windowStack.size() > 1, "Attempted to end the base window");
 	Assert(!rowInProgress, "Attempted to end a window with a Row in progress! (Did you forget to call EndRow()?");
 	
@@ -1276,9 +1380,68 @@ void UI::EndWindow() {
 		curwin->maxScroll.y = minSizeForFit.y - curwin->dimensions.y;
 	else
 		curwin->maxScroll.y = 0;
+
+	//Log("ok", minSizeForFit);
 	
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 	
+	//update stored window with new window state
+	curwin = *windowStack.last;
+	windowStack.pop();
+}
+
+void UI::EndChild() {
+	Assert(windowStack.size() > 1, "Attempted to end the base window");
+	Assert(!rowInProgress, "Attempted to end a window with a Row in progress! (Did you forget to call EndRow()?)");
+
+	UIItem item{ UIItemType_Base, curwin->cursor, style };
+	item.position = vec2::ZERO;
+
+	vec2 mp = DeshInput->mousePos;
+
+	vec2 minSizeForFit = CalcWindowMinSize();
+
+	if ((curwin->flags & UIWindowFlags_FitAllElements))
+		curwin->dimensions = minSizeForFit;
+
+
+	//if the window isn't invisible draw things that havent been disabled
+	if ((curwin->flags & UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
+		//draw background
+		if (!(curwin->flags & UIWindowFlags_NoBackground) && !curwin->minimized) {
+			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+			drawCmd.position = vec2::ZERO;
+			drawCmd.dimensions = curwin->dimensions;
+			drawCmd.color = style.colors[UIStyleCol_WindowBg];
+
+			item.drawCmds.add(drawCmd);
+		}
+
+		//draw border
+		if (!(curwin->flags & UIWindowFlags_NoBorder) && !curwin->minimized) {
+			UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
+			drawCmd.color = style.colors[UIStyleCol_Border];
+			drawCmd.position = vec2::ZERO;
+			drawCmd.dimensions = curwin->dimensions;
+			drawCmd.scissorOffset = -vec2::ONE * 2;
+			drawCmd.scissorExtent = curwin->dimensions + vec2::ONE * 2;
+
+			item.drawCmds.add(drawCmd);
+		}
+	}
+
+	curwin->style = style;
+	curwin->baseItems.add(item);
+
+	//check to see if the elements we have drawn so far have gone beyond the window's size
+	//and allow scrolling if it did, as well as define a max scrolling amount
+	if (curwin->dimensions.y < minSizeForFit.y)
+		curwin->maxScroll.y = minSizeForFit.y - curwin->dimensions.y;
+	else
+		curwin->maxScroll.y = 0;
+
+	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
+
 	//update stored window with new window state
 	curwin = *windowStack.last;
 	windowStack.pop();
@@ -1330,7 +1493,7 @@ void UI::ShowDebugWindowOf(const char* name) {
 		
 		PushVar(UIStyleVar_ItemSpacing, vec2(5, 1));
 		SetNextWindowSize(CalcTextSize(info) + vec2(style.windowPadding.x * 2, style.windowPadding.y * 2));
-		BeginWindow(TOSTRING("#", name, " debug", "#").str, debugee->position + vec2::ONE * 30, debugee->dimensions, UIWindowFlags_FitAllElements);
+		Begin(TOSTRING("#", name, " debug", "#").str, debugee->position + vec2::ONE * 30, debugee->dimensions, UIWindowFlags_FitAllElements);
 		
 		Text(info.str);
 		
@@ -1378,7 +1541,7 @@ void UI::ShowDebugWindowOf(const char* name) {
 		//	}
 		//}
 		
-		EndWindow();
+		End();
 		PopVar();
 	}
 	else {
@@ -1386,53 +1549,6 @@ void UI::ShowDebugWindowOf(const char* name) {
 	}
 }
 
-//Push/Pop functions
-void UI::PushColor(UIStyleCol idx, color color) {
-	//save old color
-	colorStack.add(ColorMod{ idx, style.colors[idx] });
-	//change to new color
-	style.colors[idx] = color;
-}
-
-void UI::PushVar(UIStyleVar idx, float nuStyle){
-	Assert(uiStyleVarTypes[idx].count == 1, "Attempt to use a float on a vec2 style variable!");
-	float* p = (float*)((u8*)&style + uiStyleVarTypes[idx].offset);
-	varStack.add(VarMod(idx, *p));
-	*p = nuStyle;
-}
-
-void UI::PushVar(UIStyleVar idx, vec2 nuStyle) {
-	Assert(uiStyleVarTypes[idx].count == 2, "Attempt to use a float on a vec2 style variable!");
-	vec2* p = (vec2*)((u8*)&style + uiStyleVarTypes[idx].offset);
-	varStack.add(VarMod(idx, *p));
-	*p = nuStyle;
-}
-
-//we always leave the current color on top of the stack and the previous gets popped
-void UI::PopColor(u32 count) {
-	//Assert(count < colorStack.size() - 1, "Attempt to pop too many colors!");
-	while (count-- > 0) {
-		style.colors[(colorStack.last)->element] = colorStack.last->oldCol;
-		colorStack.pop();
-	}
-}
-
-void UI::PopVar(u32 count){
-	while (count-- > 0) {
-		//TODO(sushi, UiCl) do this better
-		UIStyleVarType type = uiStyleVarTypes[varStack.last->var];
-		if (type.count == 1) {
-			float* p = (float*)((u8*)&style + type.offset);
-			*p = varStack.last->oldFloat[0];
-			varStack.pop();
-		}
-		else {
-			vec2* p = (vec2*)((u8*)&style + type.offset);
-			*p = vec2(varStack.last->oldFloat[0], varStack.last->oldFloat[1]);
-			varStack.pop();
-		}
-	}
-}
 
 
 
@@ -1499,7 +1615,7 @@ void UI::Init() {
 void UI::Update() {
 	//there should only be default stuff in the stacks
 	Assert(windowStack.size() == 1, 
-		   "Frame ended with hanging windows in the stack, make sure you call EndWindow() if you call BeginWindow()!");
+		   "Frame ended with hanging windows in the stack, make sure you call End() if you call Begin()!");
 	
 	
 	//TODO(sushi) impl this for other stacks
@@ -1560,22 +1676,21 @@ void UI::Update() {
 			draggingWin = 0;
 		}
 	}
-	
-	//draw windows in order with their drawCmds
-	for (UIWindow* p : windows) {
+
+	auto draw_window = [&](UIWindow* p) {
 		//window position and size corrected for titlebar 
 		vec2 winpos = vec2(p->x, p->y + p->titleBarHeight);
-		vec2 winscissor{Max(0, winpos.x), Max(0, winpos.y)}; //NOTE scissor offset cant be negative
+		vec2 winscissor{ Max(0, winpos.x), Max(0, winpos.y) }; //NOTE scissor offset cant be negative
 		vec2 winsiz = vec2(p->width, p->height - p->titleBarHeight);
-		
+
 		if (p->hovered && !(p->flags & UIWindowFlags_DontSetGlobalHoverFlag))
 			globalHovered = 1;
-		
+
 		//draw base cmds first
 		for (UIItem& item : p->baseItems) {
 			vec2 itempos = (item.type == UIItemType_Abstract ? item.position : winpos + item.position);
 			vec2 itemsiz = item.size;
-			
+
 			for (UIDrawCmd& drawCmd : item.drawCmds) {
 				vec2   dcpos = itempos + drawCmd.position;
 				vec2  dcpos2 = itempos + drawCmd.position2;
@@ -1586,16 +1701,16 @@ void UI::Update() {
 				color  dccol = drawCmd.color;
 				string dctex = drawCmd.text;
 				float    dct = drawCmd.thickness;
-				
+
 				switch (drawCmd.type) {
 					case UIDrawType_FilledRectangle: {
 						Render::FillRectUI(dcpos, dcsiz, dccol, dcso, dcse);
 					}break;
-					
+
 					case UIDrawType_Line: {
 						Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcso, dcse);
 					}break;
-					
+
 					case UIDrawType_Text: {
 						if (drawCmd.scissorExtent.x == -1) {
 							Render::DrawTextUI(dctex, dcpos, dccol, winscissor, winsiz);
@@ -1613,13 +1728,13 @@ void UI::Update() {
 				}
 			}
 		}
-		
+
 		//dont draw non-base draw cmds if we're minimized
 		if (!p->minimized) {
 			for (UIItem& item : p->items) {
 				vec2 itempos = (item.type == UIItemType_Abstract ? item.position : winpos + item.position);
 				vec2 itemsiz = item.size;
-				
+
 				for (UIDrawCmd& drawCmd : item.drawCmds) {
 					vec2   dcpos = itempos + drawCmd.position;
 					vec2  dcpos2 = itempos + drawCmd.position2;
@@ -1630,30 +1745,30 @@ void UI::Update() {
 					color  dccol = drawCmd.color;
 					string dctex = drawCmd.text;
 					float    dct = drawCmd.thickness;
-					
+
 					switch (drawCmd.type) {
 						case UIDrawType_FilledRectangle: {
 							if (drawCmd.scissorExtent.x == -1)
 								Render::FillRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
 							else
 								Render::FillRectUI(dcpos, dcsiz, dccol, dcso, dcse);
-							
+
 						}break;
-						
+
 						case UIDrawType_Line: {
 							if (drawCmd.scissorExtent.x == -1)
-								Render::DrawLineUI(dcpos-itempos, dcpos2-itempos, dct, dccol, winscissor, winsiz);
+								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, winscissor, winsiz);
 							else
-								Render::DrawLineUI(dcpos-itempos, dcpos2-itempos, dct, dccol, dcso - itempos, dcse);
+								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, dcso - itempos, dcse);
 						}break;
-						
+
 						case UIDrawType_Text: {
 							if (drawCmd.scissorExtent.x == -1)
 								Render::DrawTextUI(dctex, dcpos, dccol, winscissor, winsiz);
 							else
 								Render::DrawTextUI(dctex, dcpos, dccol, dcso, dcse);
 						}break;
-						
+
 						case UIDrawType_Rectangle: {
 							if (drawCmd.scissorExtent.x == -1)
 								Render::DrawRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
@@ -1666,7 +1781,17 @@ void UI::Update() {
 		}
 		p->baseItems.clear();
 		p->items.clear();
+	};
+	
+	//draw windows in order with their drawCmds
+	for (UIWindow* p : windows) {
+		draw_window(p);
 		
+		//NOTE children are drawn last for now, this should be changed to respect the order of items and children windows
+		//     later!!!!
+		for (UIWindow* c : p->children) {
+			draw_window(c);
+		}
 	}
 	
 	//draw all debug commands if there are any

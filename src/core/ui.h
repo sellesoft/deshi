@@ -42,6 +42,7 @@
 #include "../math/VectorMatrix.h"
 #include "../utils/color.h"
 #include "../utils/string.h"
+#include "../utils/map.h"
 
 enum UIStyleVar : u32 {
 	UIStyleVar_WindowPadding,	    // default vec2(10, 10)      spacing between every item and the edges of the window
@@ -214,7 +215,9 @@ struct UIDrawCmd {
 
 enum UIItemType : u32 {
 	UIItemType_Base,      // base window draw commands
+	UIItemType_Custom,    // BeginCustomItem()
 	UIItemType_Abstract,  // any single drawcall such as a line, rectangle, circle, etc
+	UIItemType_ChildWin,  // BeginChild() | this does not have any draw commands and is simply to indicate that we are placing a child window
 	UIItemType_Text,      // Text()
 	UIItemType_InputText, // InputText()
 	UIItemType_Button,    // Button()
@@ -222,7 +225,7 @@ enum UIItemType : u32 {
 	UIItemType_DropDown,  // DropDown()
 };
 
-// an item such as a button, checkbox, or input text
+//an item such as a button, checkbox, or input text
 // this is meant to group draw commands and provide a bounding box for them, using a position
 // and overall size. an items position is relative to the window it was created in and all of its
 // drawcall positions are relative to itself
@@ -236,8 +239,6 @@ enum UIItemType : u32 {
 // im saving the state of style everytime you make an item, this could maybe be reduced by only storing important
 // things instead
 struct UIItem {
-	//these 3 elements can always be initalized by simply doing
-	//UIItem item{ UIItemType_TYPE, curwin->cursor, style };
 	UIItemType type;
 	vec2       initialCurPos; //cursor position before this item moved it 
 	UIStyle    style;         //style at the time of making the item
@@ -257,19 +258,20 @@ struct UIItem {
 struct UIWindow {
 	string name;
 	
-	union {
-		vec2 position;
-		struct { float x; float y; };
-	};
 	
 	union {
+		vec2 position;
+		struct { float x, y; };
+	};
+
+	union {
 		vec2 dimensions;
-		struct { float width; float height; };
+		struct { float width, height; };
 	};
 	
 	union {
 		vec2 scroll;
-		struct { float scx; float scy; };
+		struct { float scx, scy; };
 	};
 	
 	vec2 maxScroll;
@@ -278,16 +280,19 @@ struct UIWindow {
 	//this places items and not draw calls
 	union {
 		vec2 cursor;
-		struct { float curx; float cury; };
+		struct { float curx, cury; };
 	};
 	
 	UIWindowFlags flags;
 	
 	
 	//base items are always drawn before items and is just a way to defer drawing 
-	//base window stuff to EndWindow(), so we can do dynamic sizing
+	//base window stuff to End(), so we can do dynamic sizing
 	array<UIItem> items;
 	array<UIItem> baseItems;
+
+	//a collection of child windows
+	map<const char*, UIWindow*> children;
 	
 	UIItem* hoveredItem = 0;
 	
@@ -301,7 +306,7 @@ struct UIWindow {
 	
 	float titleBarHeight = 0;
 	
-	//this is the state of style when EndWindow() is called for the window
+	//this is the state of style when End() is called for the window
 	//meaning the style for elements before the last bunch could be different
 	//if the user changes stuff before ending the window and therefore this should be used carefully!!
 	
@@ -417,11 +422,27 @@ namespace UI {
 	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
 	
 	
+	//utilities
+
+	//this utility is for using a collection of items as if they were one
+	//it basically combines all the items draw commands into one custom item that is
+	//added to the window when EndCustomItem() is called
+	//this is useful for cases where the user wants to manually position a group of items
+	//then work with them as if they were one afterwards
+	void BeginCustomItem();
+	void EndCustomItem();
+
+	//push/pop functions
+	void PushColor(UIStyleCol idx, color color);
+	void PushVar(UIStyleVar idx, float style);
+	void PushVar(UIStyleVar idx, vec2 style);
 	
 	
 	//windows
-	void BeginWindow(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
-	void EndWindow();
+	void Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
+	void End();
+	void BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags = 0);
+	void EndChild();
 	void SetNextWindowPos(vec2 pos);
 	void SetNextWindowPos(float x, float y);
 	void SetNextWindowSize(vec2 size);		  //when you set a windows size through this you aren't supposed to take into account the titlebar!
@@ -430,11 +451,6 @@ namespace UI {
 	bool IsWinHovered();
 	bool AnyWinHovered();
 	void ShowDebugWindowOf(const char* name);
-	
-	//push/pop functions
-	void PushColor(UIStyleCol idx, color color);
-	void PushVar(UIStyleVar idx, float style);
-	void PushVar(UIStyleVar idx, vec2 style);
 	
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
