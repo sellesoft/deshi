@@ -1309,7 +1309,6 @@ vec2 CalcWindowMinSize() {
 		max.x = Max(max.x, (item.position.x + curwin->scx) + item.size.x);
 		max.y = Max(max.y, (item.position.y + curwin->scy) + item.size.y);
 	}
-	Log("scroll y", curwin->scy);
 	return max + style.windowPadding;
 }
 
