@@ -17,7 +17,7 @@ void Win32LogLastError(const char* func_name){
 #endif            //DESHI_MAC
 
 //TODO(delle) search filter
-global_ array<File>
+array<File>
 get_directory_files(const char* directory){
 	array<File> result;
 #if   DESHI_WINDOWS
@@ -49,10 +49,14 @@ get_directory_files(const char* directory){
 		file.bytes_size = size.QuadPart;
 		file.is_directory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
 		
-		u32 path_len = pattern.count-1;
-		u32 name_len = strlen(data.cFileName);
-		file.path_length = path_len+name_len;
-		file.name_length = name_len;
+		u32 path_len  = pattern.count-1;
+		u32 name_len  = strlen(data.cFileName);
+		u32 short_len = name_len;
+		while(short_len && data.cFileName[short_len--] != '.');
+		file.path_length  = path_len+name_len;
+		file.name_length  = name_len;
+		file.short_length = short_len+1;
+		file.ext_length   = name_len-short_len-1;
 		Assert(file.path_length < MAX_FILEPATH_SIZE);
 		memcpy(file.path, pattern.str, pattern.count-1);
 		memcpy(file.path+path_len, data.cFileName, name_len);
@@ -75,7 +79,7 @@ get_directory_files(const char* directory){
 }
 
 //TODO(delle) add safety checks so deletion only happens within the data folder
-global_ void 
+void
 delete_file(const char* filepath){
 #if   DESHI_WINDOWS
 	WIN32_FIND_DATAA data;

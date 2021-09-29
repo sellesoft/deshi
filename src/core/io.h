@@ -14,11 +14,15 @@ struct File{
 	u64 bytes_size = 0;
 	b32 is_directory = false;
 	
-	u32 path_length = 0;
-	u32 name_length = 0;
+	u32 path_length  = 0;
+	u32 name_length  = 0;
+	u32 short_length = 0;
+	u32 ext_length   = 0;
 	char path[MAX_FILEPATH_SIZE] = {};
 	char name[MAX_FILENAME_SIZE] = {};
-	
+};
+
+struct FileReader{
 	cstring data = {};
 	cstring raw  = {};
 	u32 line_number = 0;
@@ -27,9 +31,9 @@ struct File{
 	b32 failed = false;
 };
 
-global_ array<File> get_directory_files(const char* directory);
+array<File> get_directory_files(const char* directory);
 
-global_ void delete_file(const char* filepath);
-global_ void delete_file(File* file){ delete_file(file->path); }
+void delete_file(const char* filepath);
+FORCE_INLINE void delete_file(File* file){ delete_file(file->path); }
 
 #endif //DESHI_IO_H
