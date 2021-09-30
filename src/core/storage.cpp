@@ -664,25 +664,25 @@ CreateMaterialFromFile(const char* filename, bool warnMissing){
 			continue;
 		}
 		
-		//split the key-value pair
-		key_start = info_start;
-		key_end   = key_start;
-		while(key_end != info_end && *key_end++ != ' ');
-		if(key_end == info_end){ ParseError("No key passed."); continue; }
-		key_end -= 1;
-		cstring key{key_start, u64(key_end-key_start)};
-		
-		value_end   = info_end;
-		value_start = key_end;
-		while(*value_start++ == ' ');
-		value_start -= 1;
-		if(value_end == value_start){ ParseError("No value passed."); continue; }
-		cstring value{value_start, u64(value_end-value_start)};
-		
 		//parse the key-value pair
 		if(header == MaterialHeader::INVALID) { ParseError("Invalid header; skipping line"); continue; }
 		
 		if(header == MaterialHeader::MATERIAL){
+			//split the key-value pair
+			key_start = info_start;
+			key_end   = key_start;
+			while(key_end != info_end && *key_end++ != ' ');
+			if(key_end == info_end){ ParseError("No key passed."); continue; }
+			key_end -= 1;
+			cstring key{key_start, u64(key_end-key_start)};
+			
+			value_end   = info_end;
+			value_start = key_end;
+			while(*value_start++ == ' ');
+			value_start -= 1;
+			if(value_end == value_start){ ParseError("No value passed."); continue; }
+			cstring value{value_start, u64(value_end-value_start)};
+			
 			if      (key == cstr_lit("name")){
 				mat_name = string(value_start+1, value_end-value_start-2);
 			}else if(key == cstr_lit("flags")){
@@ -692,7 +692,7 @@ CreateMaterialFromFile(const char* filename, bool warnMissing){
 				forI(Shader_COUNT){ if(strcmp(ShaderStrings[i], s.str) == 0){ mat_shader = i; break; } }
 			}else{ ParseError("Invalid key '",key,"' for header '",MaterialHeaderStrings[header],"'"); continue; }
 		}else{
-			mat_textures.add(string(key_start+1, key_end-key_start-2));
+			mat_textures.add(string(info_start+1, info_end-info_start-2));
 		}
 	}
 	
