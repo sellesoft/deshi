@@ -3318,8 +3318,8 @@ LoadMesh(Mesh* mesh){
 	mvk.vtxCount = mesh->vertexCount;
 	mvk.idxCount = mesh->indexCount;
 	if(vkMeshes.count){
-		mvk.vtxOffset = vkMeshes.end()->vtxOffset + vkMeshes.end()->vtxCount;
-		mvk.idxOffset = vkMeshes.end()->idxOffset + vkMeshes.end()->idxCount;
+		mvk.vtxOffset = vkMeshes.last->vtxOffset + vkMeshes.last->vtxCount;
+		mvk.idxOffset = vkMeshes.last->idxOffset + vkMeshes.last->idxCount;
 	}
 	
 	u64 mesh_vb_size   = mesh->vertexCount*sizeof(Mesh::Vertex);
