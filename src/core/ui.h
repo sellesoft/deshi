@@ -264,7 +264,7 @@ struct UIWindow {
 		vec2 position;
 		struct { float x, y; };
 	};
-
+	
 	union {
 		vec2 dimensions;
 		struct { float width, height; };
@@ -291,7 +291,7 @@ struct UIWindow {
 	//base window stuff to End(), so we can do dynamic sizing
 	array<UIItem> items;
 	array<UIItem> baseItems;
-
+	
 	//a collection of child windows
 	map<const char*, UIWindow*> children;
 	
@@ -371,7 +371,9 @@ struct UIRow {
 namespace UI {
 	
 	//helpers
-	vec2     CalcTextSize(string text);
+	vec2     CalcTextSize(cstring text);
+	FORCE_INLINE vec2 CalcTextSize(const string& text){ return CalcTextSize(cstring{text.str,u64(text.count)}); }
+	FORCE_INLINE vec2 CalcTextSize(const char* text){ return CalcTextSize(cstring{(char*)text,u64(strlen(text))}); }
 	void     SetNextItemActive();
 	UIStyle& GetStyle();
 	void     SameLine();
@@ -398,8 +400,6 @@ namespace UI {
 	void Text(const char* text, color color, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, color color, UITextFlags flags = 0);
 	void TextF(const char* fmt, ...);
-	
-	f32 GetTextWidth(const char* text);
 	
 	//items
 	void SetNextItemSize(vec2 size);
@@ -433,7 +433,7 @@ namespace UI {
 	void PopVar(u32 count = 1);
 	
 	//utilities
-
+	
 	//this utility is for using a collection of items as if they were one
 	//it basically combines all the items draw commands into one custom item that is
 	//added to the window when EndCustomItem() is called
@@ -441,7 +441,7 @@ namespace UI {
 	//then work with them as if they were one afterwards
 	void BeginCustomItem();
 	void EndCustomItem();
-
+	
 	//push/pop functions
 	void PushColor(UIStyleCol idx, color color);
 	void PushVar(UIStyleVar idx, float style);
@@ -462,8 +462,8 @@ namespace UI {
 	bool AnyWinHovered();
 	void ShowDebugWindowOf(const char* name);
 	
-
-
+	
+	
 	
 	void Init();
 	void Update();

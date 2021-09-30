@@ -33,10 +33,8 @@ struct array {
 	//for taking in something without copying it
 	void emplace(const T& t);
 	void insert(const T& t, u32 idx);
-	//removes last element
-	void pop();
 	//removes _count elements from the end
-	void pop(u32 _count);
+	void pop(u32 _count = 1);
 	//removes element at i and shifts all following elements down one
 	void remove(u32 i);
 	//removes all elements
@@ -289,15 +287,6 @@ inline void array<T>::insert(const T& t, u32 idx) {
 		data[idx] = t;
 	}
 }
-
-template<class T>
-inline void array<T>::pop(){
-	Assert(count > 0, "attempt to pop with nothing in array");
-	last->~T();
-	//memset(last, 0, sizeof(T));
-	last--;
-	count--;
-}	
 
 template<class T>
 inline void array<T>::pop(u32 _count){

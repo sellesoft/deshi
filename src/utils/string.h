@@ -36,6 +36,7 @@ struct string{
 	bool   operator==(const string& s) const;
 	bool   operator==(const char* s) const;
 	friend string operator+ (const char* c, const string& s);
+	inline explicit operator bool(){ return count; }
 	
 	void   reserve(u32 _space);
 	void   clear();

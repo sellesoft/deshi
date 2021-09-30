@@ -1723,7 +1723,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	
 	//check if created already
 	forX(fi, fonts.size()){
-		if(strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0){
+		if((strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0) && size == (fonts[fi]->height)){
 			return pair<u32,Font*>(fi,fonts[fi]);
 		}
 	}

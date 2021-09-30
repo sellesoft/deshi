@@ -117,21 +117,35 @@ local UIItem lastitem;
 
 //this calculates text taking into account newlines, BUT NOT WRAPPING
 //useful for sizing a window to fit some text
-inline vec2 UI::CalcTextSize(string text) {
-	string stage = text;
-	u32 longest = 0;
-	u32 nlp = stage.findFirstChar('\n');
-	while (nlp != string::npos) {
-		if (nlp - 1 > longest)
-			longest = nlp - 1;
-		stage = stage.substr(nlp + 1);
-		nlp = stage.findFirstChar('\n');
+vec2 UI::CalcTextSize(cstring text){
+	vec2 result = vec2{0, f32(style.font->height)};
+	f32 line_width = 0;
+	switch(style.font->type){
+		case FontType_BDF: case FontType_NONE:{
+			while(text){
+				if(*text.str == '\n'){
+					result.y += style.font->height;
+					line_width = 0;
+				}
+				line_width += style.font->width;
+				if(line_width > result.x) result.x = line_width;
+				advance(&text,1);
+			}
+		}break;
+		case FontType_TTF:{
+			while(text){
+				if(*text.str == '\n'){
+					result.y += style.font->height;
+					line_width = 0;
+				}
+				line_width += ((stbtt_bakedchar*)style.font->ttf_bake)[*text.str-32].xadvance;
+				if(line_width > result.x) result.x = line_width;
+				advance(&text,1);
+			}
+		}break;
+		default: Assert(!"unhandled font type"); break;
 	}
-	
-	if (stage.count > longest)
-		longest = stage.count;
-	
-	return vec2(longest * style.font->width, style.font->height * (text.charCount('\n') + 1));
+	return result;
 }
 
 //calculates the items position and size based on its draw commands
@@ -534,28 +548,6 @@ void UI::TextF(const char* fmt, ...) {
 	TextW(s.str, curwin->cursor, style.colors[UIStyleCol_Text], false);
 }
 
-f32 UI::GetTextWidth(const char* text){
-	f32 result = 0;
-	switch(style.font->type){
-		case FontType_BDF: case FontType_NONE:{
-			result += strlen(text)*style.font->width;
-		}break;
-		case FontType_TTF:{
-			vec2 pos = vec2::ZERO;
-			while(*text){
-				stbtt_aligned_quad q;
-				stbtt_GetBakedQuad((stbtt_bakedchar*)style.font->ttf_bake, style.font->ttf_size,style.font->ttf_size, 
-								   *text-32, &pos.x,&pos.y,&q,1);
-				
-				++text;
-			}
-			result = pos.x;
-		}break;
-		default: Assert(!"unhandled font type"); break;
-	}
-	return result;
-}
-
 
 bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 	UIItem* item = BeginItem(UIItemType_Button);
@@ -585,7 +577,7 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 		UIDrawCmd drawCmd{ UIDrawType_Text };
 		drawCmd.color = style.colors[UIStyleCol_Text];
 		drawCmd.position = 
-			vec2((item->size.x - UI::GetTextWidth(text)) * style.buttonTextAlign.x,
+			vec2((item->size.x - UI::CalcTextSize(text).x) * style.buttonTextAlign.x,
 				 (style.font->height * 1.3 - style.font->height) * style.buttonTextAlign.y);
 		//drawCmd.scissorOffset = item->position;
 		drawCmd.scissorExtent = item->size;
@@ -1220,15 +1212,15 @@ void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {
 	windowStack.add(curwin);
 	
 	UIWindow* parent = curwin;
-
+	
 	UIItem* item = BeginItem(UIItemType_ChildWin);
-
+	
 	//TODO(sushi) add custom positioning for child windows
 	item->position = PositionForNewItem();
 	item->size = dimensions;
-
+	
 	AdvanceCursor(item);
-
+	
 	//check if were making a new child or working with one we already know
 	if (parent->children.has(name)) {
 		curwin = parent->children[name];
@@ -1239,19 +1231,19 @@ void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {
 	}
 	else {
 		vec2 parentNewPos = PositionForNewItem();
-
+		
 		curwin = new UIWindow();
-
+		
 		curwin->scroll = vec2(0, 0);
 		curwin->name = name;
 		curwin->position = parentNewPos + parent->position;
 		curwin->dimensions = dimensions;
 		curwin->cursor = vec2(0, 0);
 		curwin->flags = flags;
-
+		
 		parent->children.add(name, curwin);
 	}
-
+	
 	//check if window is hovered
 	vec2 mp = DeshInput->mousePos;
 	if (Math::PointInRectangle(mp, curwin->position, curwin->dimensions)) {
@@ -1260,7 +1252,7 @@ void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {
 	else {
 		curwin->hovered = 0;
 	}
-
+	
 	//check if window's title is hovered (if were drawing it), so we can check for window movement by mouse later
 	if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
 		if (Math::PointInRectangle(mp, curwin->position, vec2(curwin->width, style.titleBarHeight))) {
@@ -1270,7 +1262,7 @@ void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {
 			curwin->titleHovered = 0;
 		}
 	}
-
+	
 	//check for scrolling inputs
 	if (!(flags & UIWindowFlags_NoScroll)) {
 		if (curwin->hovered && DeshInput->ScrollUp()) {
@@ -1282,7 +1274,7 @@ void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {
 			Math::clampr(curwin->scy, 0, curwin->maxScroll.y);
 		}
 	}
-
+	
 }
 
 //@CalcWindowMinSize
@@ -1408,7 +1400,7 @@ void UI::End() {
 		curwin->maxScroll.y = minSizeForFit.y - curwin->dimensions.y;
 	else
 		curwin->maxScroll.y = 0;
-
+	
 	//Log("ok", minSizeForFit);
 	
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
@@ -1421,18 +1413,18 @@ void UI::End() {
 void UI::EndChild() {
 	Assert(windowStack.size() > 1, "Attempted to end the base window");
 	Assert(!rowInProgress, "Attempted to end a window with a Row in progress! (Did you forget to call EndRow()?)");
-
+	
 	UIItem item{ UIItemType_Base, curwin->cursor, style };
 	item.position = vec2::ZERO;
-
+	
 	vec2 mp = DeshInput->mousePos;
-
+	
 	vec2 minSizeForFit = CalcWindowMinSize();
-
+	
 	if ((curwin->flags & UIWindowFlags_FitAllElements))
 		curwin->dimensions = minSizeForFit;
-
-
+	
+	
 	//if the window isn't invisible draw things that havent been disabled
 	if ((curwin->flags & UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
 		//draw background
@@ -1441,10 +1433,10 @@ void UI::EndChild() {
 			drawCmd.position = vec2::ZERO;
 			drawCmd.dimensions = curwin->dimensions;
 			drawCmd.color = style.colors[UIStyleCol_WindowBg];
-
+			
 			item.drawCmds.add(drawCmd);
 		}
-
+		
 		//draw border
 		if (!(curwin->flags & UIWindowFlags_NoBorder) && !curwin->minimized) {
 			UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
@@ -1453,23 +1445,23 @@ void UI::EndChild() {
 			drawCmd.dimensions = curwin->dimensions;
 			drawCmd.scissorOffset = -vec2::ONE * 2;
 			drawCmd.scissorExtent = curwin->dimensions + vec2::ONE * 2;
-
+			
 			item.drawCmds.add(drawCmd);
 		}
 	}
-
+	
 	curwin->style = style;
 	curwin->baseItems.add(item);
-
+	
 	//check to see if the elements we have drawn so far have gone beyond the window's size
 	//and allow scrolling if it did, as well as define a max scrolling amount
 	if (curwin->dimensions.y < minSizeForFit.y)
 		curwin->maxScroll.y = minSizeForFit.y - curwin->dimensions.y;
 	else
 		curwin->maxScroll.y = 0;
-
+	
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
-
+	
 	//update stored window with new window state
 	curwin = *windowStack.last;
 	windowStack.pop();
@@ -1691,21 +1683,21 @@ void UI::Update() {
 			draggingWin = 0;
 		}
 	}
-
+	
 	auto draw_window = [&](UIWindow* p) {
 		//window position and size corrected for titlebar 
 		vec2 winpos = vec2(p->x, p->y + p->titleBarHeight);
 		vec2 winscissor{ Max(0, winpos.x), Max(0, winpos.y) }; //NOTE scissor offset cant be negative
 		vec2 winsiz = vec2(p->width, p->height - p->titleBarHeight);
-
+		
 		if (p->hovered && !(p->flags & UIWindowFlags_DontSetGlobalHoverFlag))
 			globalHovered = 1;
-
+		
 		//draw base cmds first
 		for (UIItem& item : p->baseItems) {
 			vec2 itempos = (item.type == UIItemType_Abstract ? item.position : winpos + item.position);
 			vec2 itemsiz = item.size;
-
+			
 			for (UIDrawCmd& drawCmd : item.drawCmds) {
 				vec2   dcpos = itempos + drawCmd.position;
 				vec2  dcpos2 = itempos + drawCmd.position2;
@@ -1715,7 +1707,7 @@ void UI::Update() {
 				dcso.x = Max(0, dcso.x); dcso.y = Max(0, dcso.y); //NOTE scissor offset cant be negative
 				color  dccol = drawCmd.color;
 				float    dct = drawCmd.thickness;
-
+				
 				cstring dctex{drawCmd.text.str,drawCmd.text.count};
 				Font*   font = drawCmd.font;
 				
@@ -1723,11 +1715,11 @@ void UI::Update() {
 					case UIDrawType_FilledRectangle: {
 						Render::FillRectUI(dcpos, dcsiz, dccol, dcso, dcse);
 					}break;
-
+					
 					case UIDrawType_Line: {
 						Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcso, dcse);
 					}break;
-
+					
 					case UIDrawType_Text: {
 						if (drawCmd.scissorExtent.x == -1) {
 							Render::DrawTextUI(font, dctex, dcpos, dccol, winscissor, winsiz);
@@ -1745,13 +1737,13 @@ void UI::Update() {
 				}
 			}
 		}
-
+		
 		//dont draw non-base draw cmds if we're minimized
 		if (!p->minimized) {
 			for (UIItem& item : p->items) {
 				vec2 itempos = (item.type == UIItemType_Abstract ? item.position : winpos + item.position);
 				vec2 itemsiz = item.size;
-
+				
 				for (UIDrawCmd& drawCmd : item.drawCmds) {
 					vec2   dcpos = itempos + drawCmd.position;
 					vec2  dcpos2 = itempos + drawCmd.position2;
@@ -1761,33 +1753,33 @@ void UI::Update() {
 					dcso.x = Max(0, dcso.x); dcso.y = Max(0, dcso.y); //NOTE scissor offset cant be negative
 					color  dccol = drawCmd.color;
 					float    dct = drawCmd.thickness;
-
+					
 					cstring dctex{drawCmd.text.str,drawCmd.text.count};
 					Font*   font = drawCmd.font;
-
+					
 					switch (drawCmd.type) {
 						case UIDrawType_FilledRectangle: {
 							if (drawCmd.scissorExtent.x == -1)
 								Render::FillRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
 							else
 								Render::FillRectUI(dcpos, dcsiz, dccol, dcso, dcse);
-
+							
 						}break;
-
+						
 						case UIDrawType_Line: {
 							if (drawCmd.scissorExtent.x == -1)
 								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, winscissor, winsiz);
 							else
 								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, dcso - itempos, dcse);
 						}break;
-
+						
 						case UIDrawType_Text: {
 							if (drawCmd.scissorExtent.x == -1)
 								Render::DrawTextUI(font, dctex, dcpos, dccol, winscissor, winsiz);
 							else
 								Render::DrawTextUI(font, dctex, dcpos, dccol, dcso, dcse);
 						}break;
-
+						
 						case UIDrawType_Rectangle: {
 							if (drawCmd.scissorExtent.x == -1)
 								Render::DrawRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
