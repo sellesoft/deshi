@@ -75,6 +75,7 @@ local map<const char*, bool>             dropDowns;   //stores known dropdowns a
 local array<UIWindow*>                   windowStack; //window stack which allow us to use windows like we do colors and styles
 local array<ColorMod>                    colorStack; 
 local array<VarMod>                      varStack; 
+local array<Font*>                       fontStack;
 
 local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
 
@@ -1108,6 +1109,11 @@ void UI::PushVar(UIStyleVar idx, vec2 nuStyle) {
 	*p = nuStyle;
 }
 
+void UI::PushFont(Font* font) { 
+	fontStack.add(style.font);
+	style.font = font;
+}
+
 //we always leave the current color on top of the stack and the previous gets popped
 void UI::PopColor(u32 count) {
 	//Assert(count < colorStack.size() - 1, "Attempt to pop too many colors!");
@@ -1134,6 +1140,12 @@ void UI::PopVar(u32 count) {
 	}
 }
 
+void UI::PopFont(u32 count) {
+	while (count-- > 0) {
+		style.font = *fontStack.last;
+		fontStack.pop();
+	}
+}
 
 
 //Windows
@@ -1289,7 +1301,6 @@ vec2 CalcWindowMinSize() {
 		max.x = Max(max.x, (item.position.x + curwin->scx) + item.size.x);
 		max.y = Max(max.y, (item.position.y + curwin->scy) + item.size.y);
 	}
-	Log("scroll y", curwin->scy);
 	return max + style.windowPadding;
 }
 

@@ -40,6 +40,7 @@ typedef size_t             upt;
 typedef float              f32;
 typedef double             f64;
 typedef s32                b32;
+typedef char16_t           uchar;
 typedef u32 Type;
 typedef u32 Flags;
 
