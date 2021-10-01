@@ -145,9 +145,13 @@ struct vec3 {
 	vec3  compOn(const vec3& rhs) const;
 	float projectOn(const vec3& rhs) const;
 	vec3  midpoint(const vec3& rhs) const;
+	float angleBetween(const vec3& rhs) const;
 	vec3  xComp() const;
 	vec3  yComp() const;
 	vec3  zComp() const;
+	vec3  xZero() const;
+	vec3  yZero() const;
+	vec3  zZero() const;
 	vec3  xInvert() const;
 	vec3  yInvert() const;
 	vec3  zInvert() const;

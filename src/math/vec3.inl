@@ -289,6 +289,14 @@ midpoint(const vec3& rhs) const{
 	return vec3((x+rhs.x)/2.f, (y+rhs.y)/2.f, (z+rhs.z)/2.f);
 }
 
+//returns angle in radians
+inline float vec3::
+angleBetween(const vec3& rhs) const{
+	float mags = this->mag()*rhs.mag();
+	if(mags == 0) return 0;
+	return acosf(this->dot(rhs) / mags);
+}
+
 inline vec3 vec3::
 xComp() const{
 	return vec3(x, 0, 0);
@@ -302,6 +310,21 @@ yComp() const{
 inline vec3 vec3::
 zComp() const{
 	return vec3(0, 0, z);
+}
+
+inline vec3 vec3::
+xZero() const{
+	return vec3(0, x, y);
+}
+
+inline vec3 vec3::
+yZero() const{
+	return vec3(x, 0, z);
+}
+
+inline vec3 vec3::
+zZero() const{
+	return vec3(x, y, 0);
 }
 
 inline vec3 vec3::

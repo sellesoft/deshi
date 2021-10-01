@@ -17,6 +17,8 @@
 
 //math constants and macros
 #define M_EPSILON    0.00001f
+#define M_FOURTHPI   0.78539816339f
+#define M_HALFPI     1.57079632679f
 #define M_PI         3.14159265359f
 #define M_2PI        6.28318530718f
 #define M_TAU        M_2PI
