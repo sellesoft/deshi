@@ -50,13 +50,6 @@ namespace Geometry {
 		return (target - center).normalized() * radius;
 	}
 	
-	static vec3 ClosestPointOnBox(vec3 center, vec3 halfDims, vec3 rotation, vec3 target) { //!TestMe
-		target *= mat4::RotationMatrixAroundPoint(center, rotation).Inverse();
-		return vec3(fmaxf(center.x - halfDims.x, fminf(target.x, center.x + halfDims.x)),
-					fmaxf(center.y - halfDims.y, fminf(target.y, center.y + halfDims.y)),
-					fmaxf(center.y - halfDims.z, fminf(target.z, center.z + halfDims.z)));
-	}
-	
 	inline static vec3 MeshTriangleMidpoint(Mesh::Triangle* tri){
 		return (tri->p[0] + tri->p[1] + tri->p[2]) / 3.f;
 	}
