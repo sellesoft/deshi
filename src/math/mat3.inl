@@ -282,7 +282,7 @@ Minor(int row, int col) const {
 	}
 	
 	//2x2 determinant
-	return (data[0] * data[3]) - (data[1] * data[2]);
+	return (arr[0] * arr[3]) - (arr[1] * arr[2]);
 }
 
 //returns the cofactor (minor with adjusted sign based on location in matrix) at given row and column

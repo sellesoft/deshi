@@ -59,7 +59,6 @@ struct vec2 {
 	vec2  absV() const;
 	vec2  copy() const;
 	float dot(const vec2& rhs) const;
-	vec2  cross(const vec2& rhs) const;
 	vec2  perp() const;
 	float mag() const;
 	void  normalize();
