@@ -92,7 +92,7 @@ struct mat3 {
 	
 	//matrix interactions
 	mat3(const mat4& m);
-	mat4 To4x4();
+	mat4 To4x4() const;
 	
 	//vector interactions
 	vec3 row(u32 row);
@@ -155,7 +155,7 @@ struct mat4 {
 	
 	//matrix interactions
 	mat4(const mat3& m);
-	mat3 To3x3();
+	mat3 To3x3() const;
 	
 	//vector interactions
 	vec4 row(u32 row);
@@ -187,7 +187,7 @@ mat3(const mat4& m){
 }
 
 inline mat4 mat3::
-To4x4() {
+To4x4() const{
 	return mat4(data[0], data[1], data[2], 0,
 				data[3], data[4], data[5], 0,
 				data[6], data[7], data[8], 0,
@@ -205,7 +205,7 @@ mat4(const mat3& m){
 }
 
 inline mat3 mat4::
-To3x3() {
+To3x3() const{
 	return mat3(data[0], data[1], data[2],
 				data[4], data[5], data[6],
 				data[8], data[9], data[10]);
