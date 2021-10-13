@@ -39,15 +39,40 @@ namespace Geometry {
 		return furthestTriId;
 	}
 	
+	inline static vec3 ClosestPointOnPlane(vec3 plane_point, vec3 plane_normal, vec3 target){
+		return target + (plane_normal * -Math::DistPointToPlane(target, plane_normal, plane_point));
+	}
 	
-	static vec3 ClosestPointOnAABB(vec3 center, vec3 halfDims, vec3 target) {
+	inline static vec3 ClosestPointOnAABB(vec3 center, vec3 halfDims, vec3 target) {
 		return vec3(fmaxf(center.x - halfDims.x, fminf(target.x, center.x + halfDims.x)),
 					fmaxf(center.y - halfDims.y, fminf(target.y, center.y + halfDims.y)),
 					fmaxf(center.y - halfDims.z, fminf(target.z, center.z + halfDims.z)));
 	}
 	
-	static vec3 ClosestPointOnSphere(vec3 center, float radius, vec3 target) {
+	inline static vec3 ClosestPointOnSphere(vec3 center, float radius, vec3 target) {
 		return (target - center).normalized() * radius;
+	}
+	
+	static vec3 ClosestPointOnConvexMesh(Mesh* mesh, vec3 position, vec3 rotation, vec3 scale, vec3 target){
+		vec3 target_normal = (target - position).normalized();
+		mat3 rotation_matrix = mat3::RotationMatrix(rotation);
+		f32  furthest_dot = -INFINITY;
+		vec3 plane_normal{};
+		
+		MeshFace* closest_face = 0;
+		forE(mesh->faces){
+			vec3 face_normal = it->normal * rotation_matrix;
+			f32  local_dot = target_normal.dot(face_normal);
+			if(local_dot > furthest_dot){
+				furthest_dot = local_dot;
+				closest_face = it;
+				plane_normal = face_normal;
+			}
+		}
+		
+		Assert(closest_face);
+		vec3 plane_point = mesh->vertexes[closest_face->vertexes[0]].pos * mat4::TransformationMatrix(position, rotation, scale);
+		return ClosestPointOnPlane(plane_point, plane_normal, target);
 	}
 	
 	inline static vec3 MeshTriangleMidpoint(Mesh::Triangle* tri){
