@@ -205,78 +205,30 @@ inline quat quat::QuatSlerp(vec3 fromv, vec3 tov, float t) {
 
 namespace Math {
 	
-	//ref: https://en.cppreference.com/w/cpp/algorithm/clamp
-	static float clamp(float v, float lo, float hi) {
-		Assert(lo < hi, "The low must be less than the high clamp");
-		return (v < lo) ? lo : (hi < v) ? hi : v;
-	}
-	
-	static void clampr(float& v, float lo, float hi) {
-		Assert(lo <= hi, "The low must be less than the high clamp");
-		v = (v < lo) ? lo : (hi < v) ? hi : v;
-	}
-	
-	static vec3 clamp(vec3 v, float lo, float hi) {
-		Assert(lo <= hi, "The low must be less than the high clamp");
-		return v.clamp(lo, hi);
-	}
-	
-	//for debugging with floats or doubles
-	static std::string append_decimal(std::string s) {
-		while (s.back() != '.') {
-			s.pop_back();
-		}
-		s.pop_back();
-		return s;
-	}
-	
-	//append all trailing zeros
-	static std::string append_zeroes(std::string s) {
-		while (s.back() == '0') {
-			s.pop_back();
-		}
-		s.pop_back();
-		return s;
-	}
-	
-	//append to two decimal places
-	static std::string append_two_decimal(std::string s) {
-		if (s.length() >= 2) {
-			while (s.at(s.length() - 4) != '.') {
-				s.pop_back();
-			}
-			s.pop_back();
-		}
-		return s;
-	}
-	
-	static std::string str2f(float s) {
-		char buffer[50];
-		std::snprintf(buffer, 50, "%-.2f", s);
-		return std::string(buffer);
-	}
-	
 	//round a float to two decimal places
 	static float round2f(float f) { return (float)((int)(f * 100 + .5)) / 100; }
 	static float round4f(float f) { return (float)((int)(f * 10000 + .5)) / 10000; }
 	
-	
 	static vec3 round2v(vec3 v) {
-		return vec3(
-					(float)((int)(v.x * 100 + .5)) / 100,
+		return vec3((float)((int)(v.x * 100 + .5)) / 100,
 					(float)((int)(v.y * 100 + .5)) / 100,
 					(float)((int)(v.z * 100 + .5)) / 100);
 	}
 	
 	//average any std container probably
-	template<class FWIt>
-		static float average(FWIt a, const FWIt b, int size) { return std::accumulate(a, b, 0.0) / size; }
-	
-	template<class T>
-		static double average(const T& container, int size) { return average(std::begin(container), std::end(container), size); }
+	template<class FWIt> static float average(FWIt a, const FWIt b, int size) { return std::accumulate(a, b, 0.0) / size; }
+	template<class T> static double average(const T& container, int size) { return average(std::begin(container), std::end(container), size); }
 	
 	//interpolating
 	template<typename T> global_ T lerp(T a, T b, f32 t){ return a*(1.f-t) + b*t; }
+	
+	//clamping
+	template<typename T> inline global_ T clamp(T value, T lo, T hi){ 
+		return (value < lo) ? lo : ((value > hi) ? hi : value); 
+	}
+	template<> inline global_ vec3 clamp<vec3>(vec3 value, vec3 lo, vec3 hi){ 
+		return vec3(clamp(value.x,lo.x,hi.x), clamp(value.y,lo.y,hi.y), clamp(value.z,lo.z,hi.z));
+	}
 	
 	//returns in degrees
 	//this doesn't really work in 3D but this function is here anyways
@@ -373,8 +325,7 @@ namespace Math {
 	}
 	
 	static float DistTwoPoints(vec3 a, vec3 b) {
-		return sqrtf(
-					 (a.x - b.x) * (a.x - b.x) +
+		return sqrtf((a.x - b.x) * (a.x - b.x) +
 					 (a.y - b.y) * (a.y - b.y) +
 					 (a.z - b.z) * (a.z - b.z));
 	}
@@ -411,12 +362,6 @@ namespace Math {
 	
 	//returns where two lines intersect in 3D space //TODO(sushi, MaGe) implement this
 	static vec3 LineIntersect3(vec3 adir, vec3 ap, vec3 bdir, vec3 bp) {}
-	
-	static vec3 Midpointv3(std::vector<vec3> vectors) {
-		vec3 sum = vec3::ZERO;
-		for (vec3 v : vectors) sum += v;
-		return sum / vectors.size();
-	}
 	
 	static vec3 LineMidpoint(vec3 start, vec3 end){
 		return (start+end)/2.f;
