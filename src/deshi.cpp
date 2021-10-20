@@ -17,7 +17,6 @@ core:
 
 Command TODOs
 -------------
-move commands to their own files (separate for deshi and game)
 implement command chaining
 command to print all avaliable keys for binding
 command to print all keybinds, with (maybe) an option for printing only contextual keybinds
@@ -47,17 +46,21 @@ hotloadable UI
 
 IO TODOs
 --------
+safety checks for IO operations
+add search filters to get_directory_files
 data folder specified on launch
 text file parser (and cleanup locations doing it manually)
-directory removal in delete_file()
+ linux/mac IO
 
 Math TODOs
 ----------
-add functions and members similar to what glsl/glm has where you can do stuff like 
+move geometry funcs out of math.h 
+SIMD-ize vectors and matrices
+add quaternions and converions between them and other linear algebra primitives
+add functions and members similar to what glsl/glm has where you can do stuff like
 ____v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
 ____you probably just need to add a vec2/3 for each permutation of each vector
 ____glm/detail/_swizzle.hpp
-add quaternions and converions between them and other linear algebra primitives
 
 Render TODOs
 ------------
@@ -68,7 +71,7 @@ revert phong shader so it is like it used to be, but keeps the shadows
 fix directional shadow mapping's (projection?) errors
 rework lights
 add omnidirectional shadow mapping
-add not-on-screen object culling thru mesh AABBs
+add not-on-screen object culling thru mesh AABBs (if they dont cast shadow)
 add front-to-back sorting for perf gain and transparency?
 delete shader .spv if failed to compile it after printing error messages
 setup more generalized material/pipeline creation
@@ -90,7 +93,10 @@ SSBOs in shaders so we can pass variable length arrays to it
 
 Storage TODOs
 -------------
-add MTL parsing and extra face info
+separate physics mesh info from regular mesh info
+merge mesh faces with <10 degree normal difference (for physics)
+add edges and hulls to meshes, remove unused vars
+add MTL parsing
 store null128.png and null shader in code
 add versioning to Mesh since its saved in a binary format
 speedup OBJ parsing and face generation

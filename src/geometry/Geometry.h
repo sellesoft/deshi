@@ -40,7 +40,7 @@ inline global_ vec3 MeshTriangleMidpoint(MeshTriangle* tri){
 	return (tri->p[0] + tri->p[1] + tri->p[2]) / 3.f;
 }
 
-global_ MeshFace* FurthestConvexMeshFaceAlongNormal(Mesh* mesh, vec3 target_normal){
+global_ MeshFace* FurthestHullFaceAlongNormal(Mesh* mesh, vec3 target_normal){
 	MeshFace* closest_face = 0;
 	f32 max_projection = -INFINITY;
 	forE(mesh->faces){
@@ -53,7 +53,7 @@ global_ MeshFace* FurthestConvexMeshFaceAlongNormal(Mesh* mesh, vec3 target_norm
 	return closest_face;
 }
 
-global_ vec3 FurthestConvexMeshVertexPositionAlongNormal(Mesh* mesh, vec3 target_normal){
+global_ vec3 FurthestHullVertexPositionAlongNormal(Mesh* mesh, vec3 target_normal){
 	MeshVertex* closest_vertex = 0;
 	f32 max_projection = -INFINITY;
 	forE(mesh->vertexes){
@@ -71,16 +71,14 @@ inline global_ vec3 ClosestPointOnPlane(vec3 plane_point, vec3 plane_normal, vec
 }
 
 inline global_ vec3 ClosestPointOnAABB(vec3 halfDims, vec3 target) {
-	return vec3(Clamp(target.x, -halfDims.x, halfDims.x),
-				Clamp(target.x, -halfDims.x, halfDims.x),
-				Clamp(target.x, -halfDims.x, halfDims.x));
+	return Math::clamp(target, -halfDims, halfDims);
 }
 
 inline global_ vec3 ClosestPointOnSphere(float radius, vec3 target) {
 	return target.normalized() * radius;
 }
 
-global_ vec3 ClosestPointOnConvexMesh(Mesh* mesh, vec3 target){
+global_ vec3 ClosestPointOnHull(Mesh* mesh, vec3 target){
 	//find closest face to target based on the face normal
 	vec3 target_normal = target.normalized();
 	vec3 closest_normal = vec3::ZERO;

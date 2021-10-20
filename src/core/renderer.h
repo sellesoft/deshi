@@ -128,6 +128,7 @@ namespace Render{
 	void UnloadMaterial(Material* material);
 	void UnloadMesh(Mesh* mesh);
 	
+	//immediate drawing funcs
 	void DrawModel(Model* model, mat4 matrix);
 	void DrawModelWireframe(Model* model, mat4 matrix, color _color = Color_White);
 	void DrawLine(vec3 start, vec3 end, color _color = Color_White);
@@ -140,6 +141,10 @@ namespace Render{
 	void DrawBox(mat4 transform, color _color = Color_White);
 	void DrawBoxFilled(mat4 transform, color _color = Color_White);
 	void DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color _color = Color_White);
+	
+	//debug drawing funcs
+	void ClearDebug();
+	void DebugLine(vec3 p0, vec3 p1, color _color = Color_White);
 	
 	//ui drawing functions
 	void FillRectUI(vec2 pos, vec2 dimensions, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));

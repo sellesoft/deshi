@@ -187,13 +187,22 @@ local UICmdVk   uiCmdArray   [MAX_UI_CMDS]; //different UI cmd per font/texture
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
 typedef u16 TempIndexVk;
 local TempIndexVk  tempWireframeVertexCount = 0;
-local TempIndexVk  tempFilledVertexCount    = 0;
 local TempIndexVk  tempWireframeIndexCount  = 0;
-local TempIndexVk  tempFilledIndexCount     = 0;
 local Mesh::Vertex tempWireframeVertexArray[MAX_TEMP_VERTICES];
-local Mesh::Vertex tempFilledVertexArray   [MAX_TEMP_VERTICES];
 local TempIndexVk  tempWireframeIndexArray [MAX_TEMP_INDICES];
+local TempIndexVk  tempFilledVertexCount    = 0;
+local TempIndexVk  tempFilledIndexCount     = 0;
+local Mesh::Vertex tempFilledVertexArray   [MAX_TEMP_VERTICES];
 local TempIndexVk  tempFilledIndexArray    [MAX_TEMP_INDICES];
+local TempIndexVk  debugWireframeVertexCount = 0;
+local TempIndexVk  debugWireframeIndexCount  = 0;
+local Mesh::Vertex debugWireframeVertexArray[MAX_TEMP_VERTICES];
+local TempIndexVk  debugWireframeIndexArray [MAX_TEMP_INDICES];
+local TempIndexVk  debugFilledVertexCount    = 0;
+local TempIndexVk  debugFilledIndexCount     = 0;
+local Mesh::Vertex debugFilledVertexArray   [MAX_TEMP_VERTICES];
+local TempIndexVk  debugFilledIndexArray    [MAX_TEMP_INDICES];
+
 
 #define MAX_MODEL_CMDS 10000 
 typedef u32 ModelIndexVk;
@@ -327,6 +336,8 @@ local BufferVk uiVertexBuffer{};
 local BufferVk uiIndexBuffer{};
 local BufferVk tempVertexBuffer{};
 local BufferVk tempIndexBuffer{};
+local BufferVk debugVertexBuffer{};
+local BufferVk debugIndexBuffer{};
 
 ////////////////////
 //// @pipelines ////
@@ -2743,6 +2754,53 @@ SetupCommands(){
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)tempVertexBuffer.buffer, "Temp vertex buffer");
 		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)tempIndexBuffer.buffer, "Temp index buffer");
 	}
+	
+	//create debug mesh vertex and index buffers
+	size_t debug_wire_vb_size = debugWireframeVertexCount*sizeof(Mesh::Vertex);
+	size_t debug_fill_vb_size = debugFilledVertexCount*sizeof(Mesh::Vertex);
+	size_t debug_wire_ib_size = debugWireframeIndexCount*sizeof(TempIndexVk);
+	size_t debug_fill_ib_size = debugFilledIndexCount*sizeof(TempIndexVk);
+	size_t debug_vb_size = debug_wire_vb_size+debug_fill_vb_size;
+	size_t debug_ib_size = debug_wire_ib_size+debug_fill_ib_size;
+	if(debugVertexBuffer.size == 0) debug_vb_size = 1000*sizeof(Mesh::Vertex);
+	if(debugIndexBuffer.size == 0)  debug_ib_size = 3000*sizeof(TempIndexVk);
+	if(debug_vb_size && debug_ib_size){
+		//create/resize buffers if they are too small
+		if(debugVertexBuffer.buffer == VK_NULL_HANDLE || debugVertexBuffer.size < debug_vb_size){
+			CreateOrResizeBuffer(debugVertexBuffer.buffer, debugVertexBuffer.memory, debugVertexBuffer.size, debug_vb_size,
+								 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		}
+		if(debugIndexBuffer.buffer == VK_NULL_HANDLE || debugIndexBuffer.size < debug_ib_size){
+			CreateOrResizeBuffer(debugIndexBuffer.buffer, debugIndexBuffer.memory, debugIndexBuffer.size, debug_ib_size,
+								 VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		}
+		
+		//copy memory to the GPU
+		void* vb_data; void* ib_data;
+		AssertVk(vkMapMemory(device, debugVertexBuffer.memory, 0, debug_vb_size, 0, &vb_data));
+		AssertVk(vkMapMemory(device, debugIndexBuffer.memory,  0, debug_ib_size, 0, &ib_data));
+		{
+			memcpy(vb_data, debugWireframeVertexArray, debug_wire_vb_size);
+			memcpy(ib_data, debugWireframeIndexArray,  debug_wire_ib_size);
+			memcpy((char*)vb_data+debug_wire_vb_size, debugFilledVertexArray, debug_fill_vb_size);
+			memcpy((char*)ib_data+debug_wire_ib_size, debugFilledIndexArray,  debug_fill_ib_size);
+			
+			VkMappedMemoryRange range[2] = {};
+			range[0].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+			range[0].memory = debugVertexBuffer.memory;
+			range[0].size   = VK_WHOLE_SIZE;
+			range[1].sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+			range[1].memory = debugIndexBuffer.memory;
+			range[1].size   = VK_WHOLE_SIZE;
+			AssertVk(vkFlushMappedMemoryRanges(device, 2, range));
+		}
+		vkUnmapMemory(device, debugVertexBuffer.memory);
+		vkUnmapMemory(device, debugIndexBuffer.memory);
+		
+		//name buffers for debugging
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)debugVertexBuffer.buffer, "Debug vertex buffer");
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_BUFFER, (u64)debugIndexBuffer.buffer, "Debug index buffer");
+	}
 }
 
 local void
@@ -2935,6 +2993,29 @@ BuildCommands(){
 				DebugEndLabelVk(cmdBuffer);
 			}
 			
+			//draw debug stuff
+			if(debugWireframeVertexCount > 0 && debugWireframeIndexCount > 0){
+				DebugBeginLabelVk(cmdBuffer, "Debug", draw_group_color);
+				VkDeviceSize offsets[1] = {0};
+				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &debugVertexBuffer.buffer, offsets);
+				vkCmdBindIndexBuffer(cmdBuffer, debugIndexBuffer.buffer, 0, INDEX_TYPE_VK_TEMP);
+				
+				//wireframe
+				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,(settings.tempMeshOnTop) ? pipelines.wireframe : pipelines.wireframe_depth);
+				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &mat4::IDENTITY);
+				vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.base, 0, 1, &descriptorSets.base, 0, nullptr);
+				vkCmdDrawIndexed(cmdBuffer, debugWireframeIndexCount, 1, 0, 0, 0);
+				stats.drawnIndices += debugWireframeIndexCount;
+				
+				//filled
+				vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines.selected);
+				vkCmdPushConstants(cmdBuffer, pipelineLayouts.base, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4), &mat4::IDENTITY);
+				vkCmdDrawIndexed(cmdBuffer, debugFilledIndexCount, 1, debugWireframeIndexCount, debugWireframeVertexCount, 0);
+				stats.drawnIndices += debugFilledIndexCount;
+				
+				DebugEndLabelVk(cmdBuffer);
+			}
+			
 			//draw UI stuff
 			if(uiVertexCount > 0 && uiIndexCount > 0){
 				DebugBeginLabelVk(cmdBuffer, "UI", draw_group_color);
@@ -3084,200 +3165,9 @@ NewFrame(){
 
 
 //-------------------------------------------------------------------------------------------------
-// @UI INTERFACE
-//TODO(sushi) find a nicer way to keep track of this
-//NOTE im not sure yet if i should be keeping track of this for each primitive or not yet but i dont think i have to
-vec2 prevScissorOffset = vec2( 0,  0);
-vec2 prevScissorExtent = vec2(-1, -1);
-
-void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
-	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if(color.a == 0) return;
-	
-	if(uiCmdArray[uiCmdCount - 1].texIdx != 0 ||
-	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-	   scissorExtent != prevScissorExtent){ //and you could do text last in one, and text first in another
-		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
-	}
-	
-	u32       col = color.rgba;
-	Vertex2*   vp = uiVertexArray + uiVertexCount;
-	UIIndexVk* ip = uiIndexArray + uiIndexCount;
-	
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
-	vp[0].pos = { pos.x + 0,           pos.y + 0 };            vp[0].uv = { 0,0 }; vp[0].color = col;
-	vp[1].pos = { pos.x + dimensions.w,pos.y + 0 };            vp[1].uv = { 0,0 }; vp[1].color = col;
-	vp[2].pos = { pos.x + dimensions.w,pos.y + dimensions.h }; vp[2].uv = { 0,0 }; vp[2].color = col;
-	vp[3].pos = { pos.x + 0,           pos.y + dimensions.h }; vp[3].uv = { 0,0 }; vp[3].color = col;
-	
-	uiVertexCount += 4;
-	uiIndexCount += 6;
-	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = 0;
-	if(scissorExtent.x != -1){
-		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}else{
-		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-	}
-}
-
-//this func is kind of scuffed i think because of the line thickness stuff when trying to draw
-//straight lines, see below
-void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
-	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if(color.a == 0) return;
-	
-	//top, left, right, bottom
-	DrawLineUI(pos.xAdd(-1),     pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos,              pos + dimensions.xSet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
-}
-
-//TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
-//when drawing them straight
-void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
-	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if(color.a == 0) return;
-	
-	if(uiCmdArray[uiCmdCount - 1].texIdx != 0 ||
-	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-	   scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
-		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
-	}
-	
-	u32       col = color.rgba;
-	Vertex2*   vp = uiVertexArray + uiVertexCount;
-	UIIndexVk* ip = uiIndexArray + uiIndexCount;
-	
-	vec2 ott = end - start;
-	vec2 norm = vec2(ott.y, -ott.x).normalized();
-	
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
-	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
-	vp[1].pos = { end.x,  end.y };   vp[1].uv = { 0,0 }; vp[1].color = col;
-	vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
-	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
-	
-	vp[0].pos += norm * thickness / 2;
-	vp[1].pos += norm * thickness / 2;
-	vp[2].pos -= norm * thickness / 2;
-	vp[3].pos -= norm * thickness / 2;
-	
-	uiVertexCount += 4;
-	uiIndexCount += 6;
-	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = 0;
-	if(scissorExtent.x != -1){
-		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}else{
-		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-	}
-}
-
-void Render::
-DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){
-	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if (color.a == 0) return;
-	
-	//im doing offset and extent because we have to know if we're drawing in a new window
-	//and you could do text last in one, and text first in another
-	if((uiCmdArray[uiCmdCount-1].texIdx != font->idx) 
-	   || (scissorOffset != prevScissorOffset) 
-	   || (scissorExtent != prevScissorExtent)){
-		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
-	}
-	
-	switch(vkFonts[font->idx].type){
-		//// BDF (and NULL) font rendering ////
-		case FontType_BDF: case FontType_NONE:{
-			forI(text.count){
-				u32       col = color.rgba;
-				Vertex2*   vp = uiVertexArray + uiVertexCount;
-				UIIndexVk* ip = uiIndexArray  + uiIndexCount;
-				
-				f32 w = vkFonts[font->idx].characterWidth;
-				f32 h = vkFonts[font->idx].characterHeight;
-				f32 dy = 1.f / (f32)vkFonts[font->idx].characterCount; 
-				
-				f32 idx = f32(text[i]-32);
-				f32 topoff = idx*dy;
-				f32 botoff = topoff+dy;
-				
-				ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
-				ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
-				vp[0].pos = {pos.x+0,pos.y+0}; vp[0].uv = {0,topoff}; vp[0].color = col;
-				vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,topoff}; vp[1].color = col;
-				vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,botoff}; vp[2].color = col;
-				vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,botoff}; vp[3].color = col;
-				
-				uiVertexCount += 4;
-				uiIndexCount  += 6;
-				uiCmdArray[uiCmdCount-1].indexCount += 6;
-				uiCmdArray[uiCmdCount-1].texIdx = font->idx;
-				if(scissorExtent.x != -1){
-					uiCmdArray[uiCmdCount-1].scissorExtent = scissorExtent;
-					uiCmdArray[uiCmdCount-1].scissorOffset = scissorOffset;
-				}else{
-					uiCmdArray[uiCmdCount-1].scissorExtent = vec2(width, height);
-					uiCmdArray[uiCmdCount-1].scissorOffset = vec2(0,0);
-				}
-				
-				pos.x += vkFonts[font->idx].characterWidth;
-			}
-		}break;
-		//// TTF font rendering ////
-		case FontType_TTF:{
-			forI(text.count){
-				u32       col = color.rgba;
-				Vertex2*   vp = uiVertexArray + uiVertexCount;
-				UIIndexVk* ip = uiIndexArray  + uiIndexCount;
-				
-				stbtt_aligned_quad q;
-				stbtt_GetBakedQuad((stbtt_bakedchar*)font->ttf_bake, font->ttf_size,font->ttf_size, text[i]-32, &pos.x,&pos.y,&q,1);
-				
-				ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
-				ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
-				vp[0].pos = {q.x0,q.y0+font->height}; vp[0].uv = {q.s0,q.t0}; vp[0].color = col;
-				vp[1].pos = {q.x1,q.y0+font->height}; vp[1].uv = {q.s1,q.t0}; vp[1].color = col;
-				vp[2].pos = {q.x1,q.y1+font->height}; vp[2].uv = {q.s1,q.t1}; vp[2].color = col;
-				vp[3].pos = {q.x0,q.y1+font->height}; vp[3].uv = {q.s0,q.t1}; vp[3].color = col;
-				
-				uiVertexCount += 4;
-				uiIndexCount  += 6;
-				uiCmdArray[uiCmdCount-1].indexCount += 6;
-				uiCmdArray[uiCmdCount-1].texIdx = font->idx;
-				if(scissorExtent.x != -1){
-					uiCmdArray[uiCmdCount-1].scissorExtent = scissorExtent;
-					uiCmdArray[uiCmdCount-1].scissorOffset = scissorOffset;
-				}else{
-					uiCmdArray[uiCmdCount-1].scissorExtent = vec2(width, height);
-					uiCmdArray[uiCmdCount-1].scissorOffset = vec2(0,0);
-				}
-			}
-		}break;
-		default: Assert(!"unhandled font type"); break;
-	}
-}
-
-
-//-------------------------------------------------------------------------------------------------
 // @INTERFACE FUNCTIONS
+
+
 ///////////////////
 //// @settings ////
 ///////////////////
@@ -3842,6 +3732,228 @@ DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f
 	DrawLine(v[1], v[5], color);
 	DrawLine(v[2], v[6], color);
 	DrawLine(v[3], v[7], color);
+}
+
+////////////////
+//// @debug ////
+////////////////
+void Render::
+ClearDebug(){
+	debugWireframeVertexCount = 0;
+	debugWireframeIndexCount  = 0;
+	debugFilledVertexCount = 0;
+	debugFilledIndexCount  = 0;
+}
+
+void Render::
+DebugLine(vec3 start, vec3 end, color color){
+	if(color.a == 0) return;
+	
+	u32 col = color.rgba;
+	Mesh::Vertex* vp = debugWireframeVertexArray + debugWireframeVertexCount;
+	TempIndexVk*  ip = debugWireframeIndexArray + debugWireframeIndexCount;
+	
+	ip[0] = debugWireframeVertexCount; 
+	ip[1] = debugWireframeVertexCount+1; 
+	ip[2] = debugWireframeVertexCount;
+	vp[0].pos = start; vp[0].color = col;
+	vp[1].pos = end;   vp[1].color = col;
+	
+	debugWireframeVertexCount += 2;
+	debugWireframeIndexCount  += 3;
+}
+
+/////////////
+//// @ui ////
+/////////////
+//TODO(sushi) find a nicer way to keep track of this
+//NOTE im not sure yet if i should be keeping track of this for each primitive or not yet but i dont think i have to
+vec2 prevScissorOffset = vec2( 0,  0);
+vec2 prevScissorExtent = vec2(-1, -1);
+
+void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	if(color.a == 0) return;
+	
+	if(uiCmdArray[uiCmdCount - 1].texIdx != 0 ||
+	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+	   scissorExtent != prevScissorExtent){ //and you could do text last in one, and text first in another
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+	
+	u32       col = color.rgba;
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
+	UIIndexVk* ip = uiIndexArray + uiIndexCount;
+	
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+	vp[0].pos = { pos.x + 0,           pos.y + 0 };            vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = { pos.x + dimensions.w,pos.y + 0 };            vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = { pos.x + dimensions.w,pos.y + dimensions.h }; vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = { pos.x + 0,           pos.y + dimensions.h }; vp[3].uv = { 0,0 }; vp[3].color = col;
+	
+	uiVertexCount += 4;
+	uiIndexCount += 6;
+	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+	uiCmdArray[uiCmdCount - 1].texIdx = 0;
+	if(scissorExtent.x != -1){
+		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+	}else{
+		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+	}
+}
+
+//this func is kind of scuffed i think because of the line thickness stuff when trying to draw
+//straight lines, see below
+void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	if(color.a == 0) return;
+	
+	//top, left, right, bottom
+	DrawLineUI(pos.xAdd(-1),     pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
+	DrawLineUI(pos,              pos + dimensions.xSet(0),          1, color, scissorOffset, scissorExtent);
+	DrawLineUI(pos + dimensions, pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
+	DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
+}
+
+//TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
+//when drawing them straight
+void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	if(color.a == 0) return;
+	
+	if(uiCmdArray[uiCmdCount - 1].texIdx != 0 ||
+	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+	   scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+	
+	u32       col = color.rgba;
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
+	UIIndexVk* ip = uiIndexArray + uiIndexCount;
+	
+	vec2 ott = end - start;
+	vec2 norm = vec2(ott.y, -ott.x).normalized();
+	
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = { end.x,  end.y };   vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
+	
+	vp[0].pos += norm * thickness / 2;
+	vp[1].pos += norm * thickness / 2;
+	vp[2].pos -= norm * thickness / 2;
+	vp[3].pos -= norm * thickness / 2;
+	
+	uiVertexCount += 4;
+	uiIndexCount += 6;
+	uiCmdArray[uiCmdCount - 1].indexCount += 6;
+	uiCmdArray[uiCmdCount - 1].texIdx = 0;
+	if(scissorExtent.x != -1){
+		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+	}else{
+		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+	}
+}
+
+void Render::
+DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	if (color.a == 0) return;
+	
+	//im doing offset and extent because we have to know if we're drawing in a new window
+	//and you could do text last in one, and text first in another
+	if((uiCmdArray[uiCmdCount-1].texIdx != font->idx) 
+	   || (scissorOffset != prevScissorOffset) 
+	   || (scissorExtent != prevScissorExtent)){
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+	
+	switch(vkFonts[font->idx].type){
+		//// BDF (and NULL) font rendering ////
+		case FontType_BDF: case FontType_NONE:{
+			forI(text.count){
+				u32       col = color.rgba;
+				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				UIIndexVk* ip = uiIndexArray  + uiIndexCount;
+				
+				f32 w = vkFonts[font->idx].characterWidth;
+				f32 h = vkFonts[font->idx].characterHeight;
+				f32 dy = 1.f / (f32)vkFonts[font->idx].characterCount; 
+				
+				f32 idx = f32(text[i]-32);
+				f32 topoff = idx*dy;
+				f32 botoff = topoff+dy;
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
+				vp[0].pos = {pos.x+0,pos.y+0}; vp[0].uv = {0,topoff}; vp[0].color = col;
+				vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,topoff}; vp[1].color = col;
+				vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,botoff}; vp[2].color = col;
+				vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,botoff}; vp[3].color = col;
+				
+				uiVertexCount += 4;
+				uiIndexCount  += 6;
+				uiCmdArray[uiCmdCount-1].indexCount += 6;
+				uiCmdArray[uiCmdCount-1].texIdx = font->idx;
+				if(scissorExtent.x != -1){
+					uiCmdArray[uiCmdCount-1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount-1].scissorOffset = scissorOffset;
+				}else{
+					uiCmdArray[uiCmdCount-1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount-1].scissorOffset = vec2(0,0);
+				}
+				
+				pos.x += vkFonts[font->idx].characterWidth;
+			}
+		}break;
+		//// TTF font rendering ////
+		case FontType_TTF:{
+			forI(text.count){
+				u32       col = color.rgba;
+				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				UIIndexVk* ip = uiIndexArray  + uiIndexCount;
+				
+				stbtt_aligned_quad q;
+				stbtt_GetBakedQuad((stbtt_bakedchar*)font->ttf_bake, font->ttf_size,font->ttf_size, text[i]-32, &pos.x,&pos.y,&q,1);
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
+				vp[0].pos = {q.x0,q.y0+font->height}; vp[0].uv = {q.s0,q.t0}; vp[0].color = col;
+				vp[1].pos = {q.x1,q.y0+font->height}; vp[1].uv = {q.s1,q.t0}; vp[1].color = col;
+				vp[2].pos = {q.x1,q.y1+font->height}; vp[2].uv = {q.s1,q.t1}; vp[2].color = col;
+				vp[3].pos = {q.x0,q.y1+font->height}; vp[3].uv = {q.s0,q.t1}; vp[3].color = col;
+				
+				uiVertexCount += 4;
+				uiIndexCount  += 6;
+				uiCmdArray[uiCmdCount-1].indexCount += 6;
+				uiCmdArray[uiCmdCount-1].texIdx = font->idx;
+				if(scissorExtent.x != -1){
+					uiCmdArray[uiCmdCount-1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount-1].scissorOffset = scissorOffset;
+				}else{
+					uiCmdArray[uiCmdCount-1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount-1].scissorOffset = vec2(0,0);
+				}
+			}
+		}break;
+		default: Assert(!"unhandled font type"); break;
+	}
 }
 
 /////////////////
