@@ -3686,6 +3686,23 @@ DrawBoxFilled(mat4 transform, color color){
 	DrawTriangleFilled(points[4], points[1], points[5], color); DrawTriangleFilled(points[4], points[0], points[1], color);
 }
 
+local constexpr int sphere_subdivisions_int = 16;
+local constexpr f32 sphere_subdivisions = f32(sphere_subdivisions_int);
+void Render::
+DrawSphere(vec3 position, vec3 rotation, f32 radius, color c){
+	mat4 transform = mat4::TransformationMatrix(position, rotation, vec3::ONE);
+	forI(sphere_subdivisions_int){
+		f32  a0 = (f32(i-1)*M_2PI) / f32(sphere_subdivisions);
+		f32  a1 = (f32(i  )*M_2PI) / f32(sphere_subdivisions);
+		f32  x0 = radius*cosf(a0); f32 x1 = radius*cosf(a1);
+		f32  y0 = radius*sinf(a0); f32 y1 = radius*sinf(a1);
+		vec3 xaxis0 = vec3{0, y0, x0} * transform; vec3 xaxis1 = vec3{0, y1, x1} * transform;
+		vec3 yaxis0 = vec3{x0, 0, y0} * transform; vec3 yaxis1 = vec3{x1, 0, y1} * transform;
+		vec3 zaxis0 = vec3{x0, y0, 0} * transform; vec3 zaxis1 = vec3{x1, y1, 0} * transform;
+		DrawLine(xaxis0, xaxis1, c); DrawLine(yaxis0, yaxis1, c); DrawLine(zaxis0, zaxis1, c);
+	}
+}
+
 void Render::
 DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color color){
 	if(color.a == 0) return;
@@ -3733,6 +3750,7 @@ DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f
 	DrawLine(v[2], v[6], color);
 	DrawLine(v[3], v[7], color);
 }
+
 
 ////////////////
 //// @debug ////
@@ -4219,7 +4237,7 @@ Update(){
 	presentInfo.pResults           = 0;
 	result = vkQueuePresentKHR(presentQueue, &presentInfo);
 	
-	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow){
+	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || remakeWindow){  //!Cleanup remakeWindow is already checked
 		vkDeviceWaitIdle(device);
 		CreateSwapChain();
 		CreateFrames();

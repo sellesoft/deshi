@@ -140,6 +140,7 @@ namespace Render{
 	void DrawPolyFilled(array<vec3>& points, color _color = Color_White);
 	void DrawBox(mat4 transform, color _color = Color_White);
 	void DrawBoxFilled(mat4 transform, color _color = Color_White);
+	void DrawSphere(vec3 position, vec3 rotation, f32 radius, color c = Color_White);
 	void DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color _color = Color_White);
 	
 	//debug drawing funcs
