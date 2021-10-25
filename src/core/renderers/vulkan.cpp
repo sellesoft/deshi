@@ -3188,7 +3188,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 }
 
 void Render::
-DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){
+DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
@@ -3211,8 +3211,8 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scissorOffset, 
 				Vertex2*   vp = uiVertexArray + uiVertexCount;
 				UIIndexVk* ip = uiIndexArray  + uiIndexCount;
 				
-				f32 w = vkFonts[font->idx].characterWidth;
-				f32 h = vkFonts[font->idx].characterHeight;
+				f32 w = vkFonts[font->idx].characterWidth * scale.x;
+				f32 h = vkFonts[font->idx].characterHeight * scale.y;
 				f32 dy = 1.f / (f32)vkFonts[font->idx].characterCount; 
 				
 				f32 idx = f32(text[i]-32);
@@ -3238,11 +3238,16 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scissorOffset, 
 					uiCmdArray[uiCmdCount-1].scissorOffset = vec2(0,0);
 				}
 				
-				pos.x += vkFonts[font->idx].characterWidth;
+				pos.x += vkFonts[font->idx].characterWidth * scale.x;
 			}
 		}break;
 		//// TTF font rendering ////
 		case FontType_TTF:{
+			vec3 lap0, lap1, //last attempted positions by stbtt
+			     lcp0, lcp1; //last corrected (scaled) positions
+
+			array<pair<vec2, vec2>> all;
+
 			forI(text.count){
 				u32       col = color.rgba;
 				Vertex2*   vp = uiVertexArray + uiVertexCount;
@@ -3250,13 +3255,28 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scissorOffset, 
 				
 				stbtt_aligned_quad q;
 				stbtt_GetBakedQuad((stbtt_bakedchar*)font->ttf_bake, font->ttf_size,font->ttf_size, text[i]-32, &pos.x,&pos.y,&q,1);
+				if (!i) { lcp0 = { q.x0, q.y0 }; lap0 = { q.x0, q.y0 }; }
 				
+
+				//manually position each glyph according to chosen scale
+				float
+				sy = (q.y0 - lap0.y) * scale.y, //scaled separations 
+				sx = (q.x0 - lap0.x) * scale.x,
+				x0 = lcp0.x + sx, //align each glyph according to its separation from the last
+				y0 = lcp0.y + sy,       
+				x1 = x0 + (q.x1 - q.x0) * scale.x,
+				y1 = y0 + (q.y1 - q.y0) * scale.y;
+
+				lcp0 = { x0, y0 };     lcp1 = { x1, y1 };
+				lap0 = { q.x0, q.y0 }; lap1 = { q.x1, q.y1 };
+
 				ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
 				ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
-				vp[0].pos = {q.x0,q.y0+font->height}; vp[0].uv = {q.s0,q.t0}; vp[0].color = col;
-				vp[1].pos = {q.x1,q.y0+font->height}; vp[1].uv = {q.s1,q.t0}; vp[1].color = col;
-				vp[2].pos = {q.x1,q.y1+font->height}; vp[2].uv = {q.s1,q.t1}; vp[2].color = col;
-				vp[3].pos = {q.x0,q.y1+font->height}; vp[3].uv = {q.s0,q.t1}; vp[3].color = col;
+	/*tl*/		vp[0].pos = {x0,y0 /*+font->height*/}; vp[0].uv = {q.s0,q.t0}; vp[0].color = col;
+	/*tr*/		vp[1].pos = {x1,y0 /*+font->height*/}; vp[1].uv = {q.s1,q.t0}; vp[1].color = col;
+	/*br*/		vp[2].pos = {x1,y1 /*+font->height*/}; vp[2].uv = {q.s1,q.t1}; vp[2].color = col;
+	/*bl*/		vp[3].pos = {x0,y1 /*+font->height*/}; vp[3].uv = {q.s0,q.t1}; vp[3].color = col;
+				
 				
 				uiVertexCount += 4;
 				uiIndexCount  += 6;
