@@ -1707,10 +1707,6 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	font->ttf_size = 512*(u32(size/72.f)+1);
 	cpystr(font->name,filename,DESHI_NAME_SIZE);
 
-	font->stbttfontinfo = (void*)malloc(sizeof(stbtt_fontinfo));
-
-	stbtt_InitFont((stbtt_fontinfo*)font->stbttfontinfo, (unsigned char*)Assets::readFileBinaryToArray(Assets::dirFonts() + filename), 0);
-
 	u8* pixels = (u8*)calloc(font->ttf_size*font->ttf_size,sizeof(u8));
 	font->ttf_bake = calloc(font->count,sizeof(stbtt_bakedchar));
 	int x = stbtt_BakeFontBitmap((const unsigned char*)buffer,0, size, pixels,font->ttf_size,font->ttf_size, 
