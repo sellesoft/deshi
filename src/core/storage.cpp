@@ -938,7 +938,6 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 						
 						//check for shared vertexes and mark the edges
 						if(!neighbor_already){
-							
 							bool ct0_ot0 = (vArray[v0] == triangles[oti].v[0]);
 							bool ct0_ot1 = (vArray[v0] == triangles[oti].v[1]);
 							bool ct0_ot2 = (vArray[v0] == triangles[oti].v[2]);
@@ -980,7 +979,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 				}continue;
 				
 				//// use material ////
-				case 'u':{ //use material
+				case 'u':{
 					if(strncmp(line_start, "usemtl ", 7) != 0){ ParseError("Specifier started with 'u' but didn't equal 'usemtl '"); return result; }
 					if(mtllib_found){
 						pair<u32,string> usemtl(indexes.count, string(line_start+7, line_end-(line_start+7)));
@@ -1023,7 +1022,6 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			}
 		}
 		
-		//@@
 		//// generate mesh faces ////
 		forX(bti, triangles.count){
 			if(triangles[bti].face != -1) continue;
@@ -1063,6 +1061,8 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 						faceVertexes[cfi].add(triangles[nti].v[2],triangles[nti].v[2]);
 						totalFaceVertexes += 3;
 					}else{
+						faceTriNeighbors[cfi].add(nti);
+						totalFaceTriNeighbors++;
 						u32 v1 = triangles[cti].v[ triNeighbors[cti][nei_tri_idx].second       ];
 						u32 v2 = triangles[cti].v[(triNeighbors[cti][nei_tri_idx].second+1) % 3];
 						bool v1_already = false; bool v2_already = false;
@@ -1086,63 +1086,24 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			}
 		}
 		
-		/*
-		forX(cti, triangles.count){
-			u32 cfi = faces.count;
-			if(triangles[cti].face == -1){
-				faces.add(Mesh::Face{});
-				faceTriangles.add(array<u32>());
-				faceVertexes.add(set<u32>());
-				faceOuterVertexes.add(array<u32>());
-				faceTriNeighbors.add(array<u32>());
-				faceFaceNeighbors.add(array<u32>());
-				
-				faces[cfi].normal = triangles[cti].normal;
-				triangles[cti].face = cfi;
-				faceTriangles[cfi].add(cti);
-				faceVertexes[cfi].add(triangles[cti].v[0],triangles[cti].v[0]);
-				faceVertexes[cfi].add(triangles[cti].v[1],triangles[cti].v[1]);
-				faceVertexes[cfi].add(triangles[cti].v[2],triangles[cti].v[2]);
-				totalFaceVertexes += 3;
-			}else{
-				cfi = triangles[cti].face;
-			}
-			
-			forX(ctni, triNeighbors[cti].count){
-				u32 oti = triNeighbors[cti][ctni].first;
-				if(triangles[oti].face == triangles[cti].face) continue;
-				
-				//check if normals are the same
-				if(triangles[cti].normal == triangles[oti].normal){
-					triangles[oti].face = cfi;
-					faceTriangles[cfi].add(oti);
-					faceVertexes[cfi].add(triangles[oti].v[0],triangles[oti].v[0]);
-					faceVertexes[cfi].add(triangles[oti].v[1],triangles[oti].v[1]);
-					faceVertexes[cfi].add(triangles[oti].v[2],triangles[oti].v[2]);
-					totalFaceVertexes += 3;
-				}else{ //if not, add vertexes to face's outer
-					u32 v1 = triangles[cti].v[ triNeighbors[cti][ctni].second       ];
-					u32 v2 = triangles[cti].v[(triNeighbors[cti][ctni].second+1) % 3];
-					bool v1_already = false; bool v2_already = false;
-					forX(fovi, faceOuterVertexes[cfi].count){
-						if(!v1_already && faceOuterVertexes[cfi][fovi] == v1){ v1_already = true; }
-						if(!v2_already && faceOuterVertexes[cfi][fovi] == v2){ v2_already = true; }
-						if(v1_already && v2_already) break;
+		//generate face neighbors
+		forX(cfi, faces.count){
+			forX(cnti, faceTriNeighbors[cfi].count){ //check neighbor triangles
+				b32 already_added = false;
+				forX(nfi, faceFaceNeighbors[cfi].count){ //see if face neighbor already added
+					if(triangles[faceTriNeighbors[cfi][cnti]].face == faceFaceNeighbors[cfi][nfi]){
+						already_added = true;
+						break;
 					}
-					if(!v1_already){
-						faceOuterVertexes[cfi].add(v1); 
-						totalFaceOuterVertexes++;
-						faces[cfi].center += vUnique.atIdx(v1)->pos;
-					}
-					if(!v2_already){
-						faceOuterVertexes[cfi].add(v2);
-						totalFaceOuterVertexes++;
-						faces[cfi].center += vUnique.atIdx(v2)->pos;
-					}
+				}
+				if(!already_added){
+					faceFaceNeighbors[cfi].add(triangles[faceTriNeighbors[cfi][cnti]].face);
+					faceFaceNeighbors[triangles[faceTriNeighbors[cfi][cnti]].face].add(cfi);
+					totalFaceFaceNeighbors += 2;
 				}
 			}
 		}
-		*/
+		
 		//// calculate vertex normals ////
 		forI(vUnique.count){
 			aabb_min.x = Min(aabb_min.x, vUnique.data.data[i].pos.x);
@@ -1225,6 +1186,8 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			mesh->faceArray[fi].triangleCount = faceTriangles[fi].count;
 			mesh->faceArray[fi].vertexCount   = faceVertexes[fi].count;
 			mesh->faceArray[fi].outerVertexCount = faceOuterVertexes[fi].count;
+			mesh->faceArray[fi].neighborTriangleCount = faceTriNeighbors[fi].count;
+			mesh->faceArray[fi].neighborFaceCount = faceFaceNeighbors[fi].count;
 			mesh->faceArray[fi].center = faces[fi].center / (f32)faceOuterVertexes[fi].count;
 			forX(fti, mesh->faces[fi].triangles.count){
 				mesh->faceArray[fi].triangleArray[fti] = faceTriangles[fi][fti];
@@ -1234,6 +1197,12 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			}
 			forX(fvi, mesh->faces[fi].outerVertexes.count){
 				mesh->faceArray[fi].outerVertexArray[fvi] = faceOuterVertexes[fi][fvi];
+			}
+			forX(fvi, mesh->faces[fi].triangleNeighbors.count){
+				mesh->faceArray[fi].neighborTriangleArray[fvi] = faceTriNeighbors[fi][fvi];
+			}
+			forX(fvi, mesh->faces[fi].faceNeighbors.count){
+				mesh->faceArray[fi].neighborFaceArray[fvi] = faceFaceNeighbors[fi][fvi];
 			}
 		}
 		

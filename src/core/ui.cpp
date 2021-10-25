@@ -783,7 +783,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		NextItemSize = vec2{ -1,0 };
 	}
 	else {
-		dim = vec2(Math::clamp(100, 0, Math::clamp(curwin->width - style.windowPadding.x * 2, 1, FLT_MAX)), style.font->height * 1.3);
+		dim = vec2(Math::clamp(100.f, 0.f, Math::clamp(curwin->width - 2.f*style.windowPadding.x, 1.f, FLT_MAX)), 1.3f*style.font->height);
 	}
 	
 	item->size = dim;
@@ -1204,11 +1204,11 @@ void UI::Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags)
 	if (!(flags & UIWindowFlags_NoScroll)) {
 		if (curwin->hovered && DeshInput->ScrollUp()) {
 			curwin->scy -= style.scrollAmount.y;
-			Math::clampr(curwin->scy, 0, curwin->maxScroll.y);
+			curwin->scy = Math::clamp(curwin->scy, 0.f, curwin->maxScroll.y);
 		}
 		else if (curwin->hovered && DeshInput->ScrollDown()) {
 			curwin->scy += style.scrollAmount.y;
-			Math::clampr(curwin->scy, 0, curwin->maxScroll.y);
+			curwin->scy = Math::clamp(curwin->scy, 0.f, curwin->maxScroll.y);
 		}
 	}
 	//if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
@@ -1279,11 +1279,11 @@ void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {
 	if (!(flags & UIWindowFlags_NoScroll)) {
 		if (curwin->hovered && DeshInput->ScrollUp()) {
 			curwin->scy -= style.scrollAmount.y;
-			Math::clampr(curwin->scy, 0, curwin->maxScroll.y);
+			curwin->scy = Math::clamp(curwin->scy, 0.f, curwin->maxScroll.y);
 		}
 		else if (curwin->hovered && DeshInput->ScrollDown()) {
 			curwin->scy += style.scrollAmount.y;
-			Math::clampr(curwin->scy, 0, curwin->maxScroll.y);
+			curwin->scy = Math::clamp(curwin->scy, 0.f, curwin->maxScroll.y);
 		}
 	}
 	

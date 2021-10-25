@@ -105,6 +105,8 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
 #endif // defer
 
+#define ToggleBool(variable) variable = !variable
+
 // https://gcc.gnu.org/onlinedocs/cpp/Stringizing.html
 //two level so you can stringize the result of a macro expansion
 #define STRINGIZE_(x) #x
