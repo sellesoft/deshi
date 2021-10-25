@@ -1691,9 +1691,9 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	pair<u32,Font*> result(0,NullFont());
 	
 	//check if created already
-	forX(fi, fonts.size()){
-		if((strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0) && size == (fonts[fi]->height)){
-			return pair<u32,Font*>(fi,fonts[fi]);
+	forX(fi, fonts.size()) {
+		if ((strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0) && size == (fonts[fi]->height)) {
+			return pair<u32, Font*>(fi, fonts[fi]);
 		}
 	}
 	
@@ -1706,7 +1706,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	font->count  = 96;
 	font->ttf_size = 512*(u32(size/72.f)+1);
 	cpystr(font->name,filename,DESHI_NAME_SIZE);
-	
+
 	u8* pixels = (u8*)calloc(font->ttf_size*font->ttf_size,sizeof(u8));
 	font->ttf_bake = calloc(font->count,sizeof(stbtt_bakedchar));
 	int x = stbtt_BakeFontBitmap((const unsigned char*)buffer,0, size, pixels,font->ttf_size,font->ttf_size, 
