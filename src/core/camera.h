@@ -2,7 +2,7 @@
 #ifndef DESHI_CAMERA_H
 #define DESHI_CAMERA_H
 
-#include "../math/vectormatrix.h"
+#include "../math/math.h"
 
 enum CameraMode_{
 	CameraMode_Perspective, 

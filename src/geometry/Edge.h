@@ -134,7 +134,7 @@ struct Edge3D {
 	bool point_on_edge(vec3 point) {
 		if (/*p[0] == point  || p[1] == point ||*/
 			within_range(point) && within_domain(point) && within_depth(point) &&
-			Math::round2v(direction().normalized()) == Math::round2v(point.normalized())) {
+			Math::round(direction().normalized()) == Math::round(point.normalized())) {
 			return true;
 		}
 		return false;

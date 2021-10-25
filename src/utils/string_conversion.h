@@ -6,7 +6,7 @@
 #include "cstring.h"
 #include "color.h"
 #include "../defines.h"
-#include "../math/vectormatrix.h"
+#include "../math/math.h"
 
 #include <cstdarg>
 #include <string>

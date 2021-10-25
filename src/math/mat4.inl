@@ -392,7 +392,7 @@ RotationMatrix(float x, float y, float z) {
 				0,   0,   0,   1);
 }
 
-//returns a translation matrix where (0,3) = translation.x, (1,3) = translation.y, (2,3) = translation.z
+//returns a translation matrix where (3,0) = translation.x, (3,1) = translation.y, (3,2) = translation.z
 inline mat4 mat4::
 TranslationMatrix(float x, float y, float z) {
 	return mat4(1, 0, 0, 0,

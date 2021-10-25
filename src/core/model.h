@@ -3,7 +3,7 @@
 #define DESHI_MODEL_H
 
 #include "../defines.h"
-#include "../math/VectorMatrix.h"
+#include "../math/math.h"
 #include "../utils/array.h"
 #include "../utils/view.h"
 
