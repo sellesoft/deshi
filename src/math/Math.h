@@ -690,7 +690,7 @@ namespace Math {
 		return (p1 + p2 + p3) / 3.f;
 	}
 	
-	inline static vec4 ProjMult(vec4 v, mat4 m){
+	inline static vec4 ProjMult(vec4 v, const mat4& m){
 		vec4 nv = v * m;
 		Assert(nv.w != 0);
 		nv.x /= nv.w; 
@@ -699,23 +699,23 @@ namespace Math {
 		return nv;
 	}
 	
-	static vec3 WorldToCamera3(vec3 vertex, mat4 viewMat){
+	static vec3 WorldToCamera3(vec3 vertex, const mat4& viewMat){
 		return Math::ProjMult(vertex.toVec4(), viewMat).toVec3();
 	}
 	
-	static vec4 WorldToCamera4(vec3 vertex, mat4 viewMat){
+	static vec4 WorldToCamera4(vec3 vertex, const mat4& viewMat){
 		return Math::ProjMult(vertex.toVec4(), viewMat);
 	}
 	
-	static vec3 CameraToWorld3(vec3 vertex, mat4 viewMat){
+	static vec3 CameraToWorld3(vec3 vertex, const mat4& viewMat){
 		return Math::ProjMult(vertex.toVec4(), viewMat.Inverse()).toVec3();
 	}
 	
-	static vec4 CameraToWorld4(vec3 vertex, mat4 viewMat){
+	static vec4 CameraToWorld4(vec3 vertex, const mat4& viewMat){
 		return Math::ProjMult(vertex.toVec4(), viewMat.Inverse());
 	}
 	
-	static vec2 CameraToScreen2(vec3 csVertex, mat4 projMat, vec2 screenDimensions){
+	static vec2 CameraToScreen2(vec3 csVertex, const mat4& projMat, vec2 screenDimensions){
 		vec3 vm = Math::ProjMult(csVertex.toVec4(), projMat).toVec3();
 		vm.x += 1.0f; vm.y += 1.0f;
 		vm.x *= 0.5f * screenDimensions.x;
@@ -723,7 +723,7 @@ namespace Math {
 		return vm.toVec2();
 	}
 	
-	static vec3 CameraToScreen3(vec3 csVertex, mat4 projMat, vec2 screenDimensions){
+	static vec3 CameraToScreen3(vec3 csVertex, const mat4& projMat, vec2 screenDimensions){
 		vec3 vm = Math::ProjMult(csVertex.toVec4(), projMat).toVec3();
 		vm.x += 1.0f; vm.y += 1.0f;
 		vm.x *= 0.5f * screenDimensions.x;
@@ -731,7 +731,7 @@ namespace Math {
 		return vm;
 	}
 	
-	static vec3 CameraToScreen3(vec3 csVertex, mat4 projMat, vec2 screenDimensions, float& w){
+	static vec3 CameraToScreen3(vec3 csVertex, const mat4& projMat, vec2 screenDimensions, float& w){
 		vec4 bleh = csVertex.toVec4() * projMat;
 		w = bleh.w;
 		vec3 vm = bleh.wnormalized().toVec3();
@@ -741,7 +741,7 @@ namespace Math {
 		return vm;
 	}
 	
-	static vec3 CameraToScreen3(vec4 csVertex, mat4 projMat, vec2 screenDimensions){
+	static vec3 CameraToScreen3(vec4 csVertex, const mat4& projMat, vec2 screenDimensions){
 		vec3 vm = Math::ProjMult(csVertex, projMat).toVec3();
 		vm.x += 1.0f; vm.y += 1.0f;
 		vm.x *= 0.5f * screenDimensions.x;
@@ -749,7 +749,7 @@ namespace Math {
 		return vm;
 	}
 	
-	static vec4 CameraToScreen4(vec4 csVertex, mat4 projMat, vec2 screenDimensions){
+	static vec4 CameraToScreen4(vec4 csVertex, const mat4& projMat, vec2 screenDimensions){
 		vec4 vm = (csVertex * projMat).wnormalized();
 		vm.x += 1.0f; vm.y += 1.0f;
 		vm.x *= 0.5f * screenDimensions.x;
@@ -757,16 +757,16 @@ namespace Math {
 		return vm;
 	}
 	
-	static vec3 WorldToScreen(vec3 point, mat4 ProjMat, mat4 ViewMat, vec2 screenDimensions){
+	static vec3 WorldToScreen(vec3 point, const mat4& ProjMat, const mat4& ViewMat, vec2 screenDimensions){
 		return CameraToScreen3(WorldToCamera4(point, ViewMat), ProjMat, screenDimensions);
 	}
 	
-	static vec2 WorldToScreen2(vec3 point, mat4 ProjMat, mat4 ViewMat, vec2 screenDimensions){
+	static vec2 WorldToScreen2(vec3 point, const mat4& ProjMat, const mat4& ViewMat, vec2 screenDimensions){
 		vec3 v = CameraToScreen3(WorldToCamera4(point, ViewMat), ProjMat, screenDimensions);
 		return vec2(v.x, v.y);
 	}
 	
-	static vec3 ScreenToWorld(vec2 pos, mat4 ProjMat, mat4 view, vec2 screenDimensions){
+	static vec3 ScreenToWorld(vec2 pos, const mat4& ProjMat, const mat4& view, vec2 screenDimensions){
 		vec4 out{
 			2.0f*(pos.x / screenDimensions.x) - 1.0f,
 			2.0f*(pos.y / screenDimensions.y) - 1.0f,
