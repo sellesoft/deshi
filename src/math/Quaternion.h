@@ -1,102 +1,107 @@
 #pragma once
+#ifndef DESHI_QUATERNION_H
+#define DESHI_QUATERNION_H
 
 #include "../defines.h"
 
 struct vec3;
-struct mat4;
 struct mat3;
+struct mat4;
 
 //TODO(delle,Ma) implement quaternions
 // https://github.com/erich666/GraphicsGems/blob/master/gemsiv/euler_angle/EulerAngles.c
 struct quat {
-	float x{}, y{}, z{}, w{};
+	float x, y, z, w;
 	
-	quat() : x(0), y(0), z(0), w(1) {}
-	quat(float inX, float inY, float inZ, float inW) : x(inX), y(inY), z(inZ), w(inW) {}
+	quat() : x(0), y(0), z(0), w(1){}
+	quat(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w){}
 	
-	//Non-Quat vs Quat interactions defined in Math.h
-	quat(const vec3& rotation);
-	quat(const vec3& axis, float theta);
+	void operator= (const quat& rhs);
+	quat operator/ (float rhs) const;
+	void operator/=(float rhs);
+	quat operator* (float rhs) const;
+	void operator*=(float rhs);
+	quat operator+ (const quat& rhs) const;
+	void operator+=(const quat& rhs);
+	quat operator- (const quat& rhs) const;
+	void operator-=(const quat& rhs);
+	quat operator* (const quat& rhs) const;
+	void operator*=(const quat& rhs);
+	quat operator/ (const quat& rhs) const;
+	void operator/=(const quat& rhs);
+	quat operator- () const;
 	
-	void operator =	 (const quat& rhs);
-	quat operator /	 (const float& rhs);
-	void operator /= (const float& rhs);
-	quat operator *	 (const float& rhs);
-	void operator *= (const float& rhs);
-	vec3 operator *  (const vec3& rhs);
-	quat operator +	 (const quat& rhs);
-	void operator += (const quat& rhs);
-	quat operator -	 (const quat& rhs);
-	void operator -= (const quat& rhs);
-	quat operator *	 (const quat& rhs);
-	void operator *= (const quat& rhs);
-	quat operator /	 (const quat& rhs);
-	void operator /= (const quat& rhs);
-	quat operator -  ();
-	
-	float mag();
-	void normalize();
-	quat normalized();
-	quat conjugate();
-	quat inverse();
-	float dot(quat q);
-	vec3 toVec3();
-	
-	static quat AxisAngleToQuat(float angle, vec3 axis);
-	static quat RotVecToQuat(vec3 rotation);
+	void  normalize();
+	float mag() const;
+	float dot(const quat& rhs) const;
+	quat  normalized() const;
+	quat  conjugate() const;
+	quat  inverse() const;
 	
 	static quat QuatSlerp(quat from, quat to, float t);
-	static quat QuatSlerp(vec3 from, vec3 to, float t);
 	
+	//vector interactions
+	quat(const vec3& rotation);
+	quat(const vec3& axis, float theta);
+	vec3 operator* (const vec3& rhs) const;
+	vec3 toVec3() const;
+	static quat AxisAngleToQuat(const vec3& axis, float angle);
+	static quat RotVecToQuat(const vec3& rotation);
+	static quat QuatSlerp(const vec3& from, const vec3& to, float t);
 };
 
 
-
-inline void quat::operator = (const quat& rhs) {
+////////////////////
+//// @operators ////
+////////////////////
+inline void quat::
+operator= (const quat& rhs){
 	x = rhs.x; y = rhs.y; z = rhs.z; w = rhs.w;
 }
 
-
-
-//quat vs float
-inline quat quat::operator / (const float& rhs) {
+inline quat quat::
+operator/ (float rhs) const{
 	return quat(x / rhs, y / rhs, z / rhs, w / rhs);
 }
 
-inline void quat::operator /= (const float& rhs) {
+inline void quat::
+operator/=(float rhs){
 	x /= rhs; y /= rhs; z /= rhs; w /= rhs;
 }
 
-inline quat quat::operator * (const float& rhs) {
-	
+inline quat quat::
+operator* (float rhs) const{
 	return quat(x * rhs, y * rhs, z * rhs, w * rhs);
 }
 
-inline void quat::operator *= (const float& rhs) {
+inline void quat::
+operator*=(float rhs){
 	x *= rhs; y *= rhs; z *= rhs; w *= rhs;
 }
 
-
-
-//quat vs quat
-inline quat quat::operator + (const quat& rhs) {
+inline quat quat::
+operator+ (const quat& rhs) const{
 	return quat(rhs.x + x, rhs.y + y, rhs.z + z, rhs.w + w);
 }
 
-inline void quat::operator += (const quat& rhs) {
+inline void quat::
+operator+=(const quat& rhs){
 	x += rhs.x; y += rhs.y; z += rhs.z; w += rhs.w;
 }
 
-inline quat quat::operator - (const quat& rhs) {
+inline quat quat::
+operator- (const quat& rhs) const{
 	return quat(rhs.x - x, rhs.y - y, rhs.z - z, rhs.w - w);
 }
 
-inline void quat::operator -= (const quat& rhs) {
+inline void quat::
+operator-=(const quat& rhs){
 	x -= rhs.x; y -= rhs.y; z -= rhs.z; w -= rhs.w;
 }
 
-inline quat quat::operator * (const quat& rhs) {
-	//efficient quaternion multiplication from https://www.gamasutra.com/view/feature/131686/rotating_objects_using_quaternions.php?page=2
+//!ref: https://www.gamasutra.com/view/feature/131686/rotating_objects_using_quaternions.php?page=2
+inline quat quat::
+operator* (const quat& rhs) const{
 	float A, B, C, D, E, F, G, H;
 	A = (w + x) * (rhs.w + rhs.x);
 	B = (z - y) * (rhs.y - rhs.z);
@@ -106,14 +111,14 @@ inline quat quat::operator * (const quat& rhs) {
 	F = (x - z) * (rhs.x - rhs.y);
 	G = (w + y) * (rhs.w - rhs.z);
 	H = (w - y) * (rhs.w + rhs.z);
-	return quat(
-				A - (E + F + G + H) / 2,
-				C + (E - F + G - H) / 2,
-				D + (E - F - G + H) / 2,
-				B + (-E - F + G + H) / 2);
+	return quat(A - ( E + F + G + H) / 2.f,
+				C + ( E - F + G - H) / 2.f,
+				D + ( E - F - G + H) / 2.f,
+				B + (-E - F + G + H) / 2.f);
 }
 
-inline void quat::operator *= (const quat& rhs) {
+inline void quat::
+operator*=(const quat& rhs){
 	x *= rhs.x; y *= rhs.y; z *= rhs.z; w *= rhs.w;
 	
 	float A, B, C, D, E, F, G, H;
@@ -126,64 +131,74 @@ inline void quat::operator *= (const quat& rhs) {
 	G = (w + y) * (rhs.w - rhs.z);
 	H = (w - y) * (rhs.w + rhs.z);
 	
-	x = A - (E + F + G + H) / 2;
-	y = C + (E - F + G - H) / 2;
-	z = D + (E - F - G + H) / 2;
-	w = B + (-E - F + G + H) / 2;
+	x = A - ( E + F + G + H) / 2.f;
+	y = C + ( E - F + G - H) / 2.f;
+	z = D + ( E - F - G + H) / 2.f;
+	w = B + (-E - F + G + H) / 2.f;
 }
 
 //this probably isn't how this works considering how multiplication works
 //idk if there is division with quaternions
-inline quat quat::operator / (const quat& rhs) {
+inline quat quat::
+operator/ (const quat& rhs) const{
 	return quat(rhs.x * x, rhs.y * y, rhs.z * z, rhs.w * w);
 }
 
-inline void quat::operator /= (const quat& rhs) {
+inline void quat::
+operator/=(const quat& rhs){
 	x /= rhs.x; y /= rhs.y; z /= rhs.z; w /= rhs.w;
 }
 
-inline quat quat::operator - () {
+inline quat quat::
+operator- () const{
 	return quat(-x, -y, -z, -w);
 }
 
 
-
-//quat functions
-inline float quat::mag() {
-	return sqrtf(x * x + y * y + z * z + w * w);
+////////////////////
+//// @functions ////
+////////////////////
+inline float quat::
+mag() const{
+	return sqrtf(x*x + y*y + z*z + w*w);
 }
 
-inline void quat::normalize() {
+inline void quat::
+normalize(){
 	*this / this->mag();
 }
 
-inline quat quat::normalized() {
+inline quat quat::
+normalized() const{
 	return *this / this->mag();
 }
 
-inline quat quat::conjugate() {
+inline quat quat::
+conjugate() const{
 	return quat(-x, -y, -z, w);
 }
 
-inline quat quat::inverse() {
+inline quat quat::
+inverse() const{
 	return this->conjugate() / this->normalized();
 }
 
-inline float quat::dot(quat q) {
-	return x * q.x + y * q.y + z * q.z + w * q.w;
+inline float quat::
+dot(const quat& rhs) const{
+	return x*rhs.x + y*rhs.y + z*rhs.z + w*rhs.w;
 }
 
-inline quat quat::QuatSlerp(quat from, quat to, float t) {
-	//this implements Spherical Linear intERPoplation
-	//it interpolates between two quaternions along the shortest arc on a sphere formed by them
-	//taken from https://www.wikiwand.com/en/Slerp#/quat_Slerp
-	
+//this implements Spherical Linear intERPoplation
+//it interpolates between two quaternions along the shortest arc on a sphere formed by them
+//taken from https://www.wikiwand.com/en/Slerp#/quat_Slerp
+inline quat quat::
+QuatSlerp(quat from, quat to, float t){
 	from.normalize();
 	to.normalize();
 	
 	float dot = to.dot(from);
 	
-	if (dot < 0) {
+	if(dot < 0){
 		to = -to;
 		dot = -dot;
 	}
@@ -191,7 +206,7 @@ inline quat quat::QuatSlerp(quat from, quat to, float t) {
 	const float dot_thresh = 0.9995;
 	
 	// calculate coefficients
-	if (dot > dot_thresh) {
+	if(dot > dot_thresh){
 		// standard case (slerp)
 		quat result = from + ((to - from) * t);
 		result.normalize();
@@ -208,7 +223,6 @@ inline quat quat::QuatSlerp(quat from, quat to, float t) {
 	double s1 = sin_theta / sin_theta_0;
 	
 	return (from * s0) + (to * s1);
-	
-	
-	// calculate final values
 }
+
+#endif //DESHI_QUATERNION_H

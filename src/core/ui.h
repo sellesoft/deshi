@@ -39,7 +39,7 @@
 #include "renderer.h"
 #include "font.h"
 #include "../defines.h"
-#include "../math/VectorMatrix.h"
+#include "../math/math.h"
 #include "../utils/color.h"
 #include "../utils/string.h"
 #include "../utils/map.h"
@@ -430,7 +430,7 @@ namespace UI {
 	void PushVar(UIStyleVar idx, vec2 style);
 	void PushVar(UIStyleVar idx, void* style);
 	void PushFont(Font* font);
-
+	
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
 	void PopFont(u32 count = 1);

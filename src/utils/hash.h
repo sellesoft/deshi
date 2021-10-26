@@ -5,7 +5,7 @@
 #include "array.h"
 #include "string.h"
 #include "../defines.h"
-#include "../math/vectormatrix.h"
+#include "../math/math.h"
 
 template<class T>
 struct hash {

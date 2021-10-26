@@ -4014,20 +4014,33 @@ DrawBoxFilled(mat4 transform, color color){
 	DrawTriangleFilled(points[4], points[1], points[5], color); DrawTriangleFilled(points[4], points[0], points[1], color);
 }
 
-local constexpr int sphere_subdivisions_int = 16;
-local constexpr f32 sphere_subdivisions = f32(sphere_subdivisions_int);
 void Render::
-DrawSphere(vec3 position, vec3 rotation, f32 radius, color c){
+DrawCircle(vec3 position, vec3 rotation, f32 radius, u32 subdivisions_int, color c){
 	mat4 transform = mat4::TransformationMatrix(position, rotation, vec3::ONE);
-	forI(sphere_subdivisions_int){
-		f32  a0 = (f32(i-1)*M_2PI) / f32(sphere_subdivisions);
-		f32  a1 = (f32(i  )*M_2PI) / f32(sphere_subdivisions);
-		f32  x0 = radius*cosf(a0); f32 x1 = radius*cosf(a1);
-		f32  y0 = radius*sinf(a0); f32 y1 = radius*sinf(a1);
+	f32 subdivisions = f32(subdivisions_int);
+	forI(subdivisions_int){
+		f32 a0 = (f32(i-1)*M_2PI) / subdivisions;
+		f32 a1 = (f32(i  )*M_2PI) / subdivisions;
+		f32 x0 = radius*cosf(a0); f32 x1 = radius*cosf(a1);
+		f32 y0 = radius*sinf(a0); f32 y1 = radius*sinf(a1);
+		vec3 xaxis0 = vec3{0, y0, x0} * transform; vec3 xaxis1 = vec3{0, y1, x1} * transform;
+		DrawLine(xaxis0, xaxis1, c);
+	}
+}
+
+void Render::
+DrawSphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions_int, color cx, color cy, color cz){
+	mat4 transform = mat4::TransformationMatrix(position, rotation, vec3::ONE);
+	f32 subdivisions = f32(subdivisions_int);
+	forI(subdivisions_int){
+		f32 a0 = (f32(i-1)*M_2PI) / subdivisions;
+		f32 a1 = (f32(i  )*M_2PI) / subdivisions;
+		f32 x0 = radius*cosf(a0); f32 x1 = radius*cosf(a1);
+		f32 y0 = radius*sinf(a0); f32 y1 = radius*sinf(a1);
 		vec3 xaxis0 = vec3{0, y0, x0} * transform; vec3 xaxis1 = vec3{0, y1, x1} * transform;
 		vec3 yaxis0 = vec3{x0, 0, y0} * transform; vec3 yaxis1 = vec3{x1, 0, y1} * transform;
 		vec3 zaxis0 = vec3{x0, y0, 0} * transform; vec3 zaxis1 = vec3{x1, y1, 0} * transform;
-		DrawLine(xaxis0, xaxis1, c); DrawLine(yaxis0, yaxis1, c); DrawLine(zaxis0, zaxis1, c);
+		DrawLine(xaxis0, xaxis1, cx); DrawLine(yaxis0, yaxis1, cy); DrawLine(zaxis0, zaxis1, cz);
 	}
 }
 
