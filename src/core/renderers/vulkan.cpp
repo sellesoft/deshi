@@ -1,3 +1,4 @@
+#include "..\renderer.h"
 /*
 Useful or Reading List Links:
 https://renderdoc.org/vkspec_chunked/index.html
@@ -3185,11 +3186,11 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 	}
 
 	u32       col = color.rgba;
-	Vertex2* vp = uiVertexArray + uiVertexCount;
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
 
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2; //v0, v1, v2
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3; //v0, v2, v3
 	vp[0].pos = { pos.x + 0,           pos.y + 0 };            vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { pos.x + dimensions.w,pos.y + 0 };            vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { pos.x + dimensions.w,pos.y + dimensions.h }; vp[2].uv = { 0,0 }; vp[2].color = col;
@@ -3238,7 +3239,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	}
 
 	u32       col = color.rgba;
-	Vertex2* vp = uiVertexArray + uiVertexCount;
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
 
 	vec2 ott = end - start;
@@ -3251,10 +3252,11 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
 
-	vp[0].pos += norm * thickness / 2;
-	vp[1].pos += norm * thickness / 2;
-	vp[2].pos -= norm * thickness / 2;
-	vp[3].pos -= norm * thickness / 2;
+	float ht = thickness/2;
+	vp[0].pos += norm * ht;
+	vp[1].pos += norm * ht;
+	vp[2].pos -= norm * ht;
+	vp[3].pos -= norm * ht;
 
 	uiVertexCount += 4;
 	uiIndexCount += 6;
@@ -3268,6 +3270,118 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
 		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
 	}
+}
+
+void Render::DrawLinesUI(array<vec2> points, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent) {
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(points.count > 1, "Lines need at least 2 points");
+	if (color.a == 0 || thickness == 0) return;
+
+	if ((uiCmdArray[uiCmdCount - 1].texIdx != 0)
+		|| (scissorOffset != prevScissorOffset)
+		|| (scissorExtent != prevScissorExtent)) {
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+
+	int newVerts = points.count * 2;
+	int newIndic = 6 * points.count - 6;
+
+	float halfthick = thickness / 2;
+
+	u32       col = color.rgba;
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
+	UIIndexVk* ip = uiIndexArray + uiIndexCount;
+
+	{// first point
+
+		vec2 ott = points[1] - points[0];
+		vec2 norm = vec2(ott.y, -ott.x).normalized();
+
+		vp[0].pos = points[0] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;
+		vp[1].pos = points[0] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;
+
+		ip[0] = uiVertexCount;
+		ip[1] = uiVertexCount + 1;
+		ip[3] = uiVertexCount;
+
+		uiCmdArray[uiCmdCount - 1].indexCount += 3;
+
+		uiVertexCount += 2;
+		uiIndexCount += 3;
+		vp += 2;
+	}
+
+	//in betweens
+	for (int i = 1, flip = -1; i < points.count - 1; i++, flip *= -1) {
+		vec2 last, curr, next, norm;
+
+		last = points[i - 1];
+		curr = points[i];
+		next = points[i + 1];
+
+		//figure out average norm
+		vec2
+		p01 = curr - last,
+		p12 = next - curr,
+		norm01 = vec2{ p01.y, -p01.x }.normalized() * flip, //we flip the normal everytime to keep up the pattern
+		norm12 = vec2{ p12.y, -p12.x }.normalized() * flip,
+		normav = ((norm01 + norm12) / 2).normalized();
+
+		int ipidx = 6 * (i - 1) + 2;
+		ip[ipidx + 0] =
+		ip[ipidx + 2] =
+		ip[ipidx + 4] =
+		ip[ipidx + 7] =
+		uiVertexCount;
+
+		ip[ipidx + 3] =
+		ip[ipidx + 5] =
+		uiVertexCount + 1;
+
+		vp[0].pos = curr + normav * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;
+		vp[1].pos = curr - normav * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;
+
+		uiVertexCount += 2;
+		uiIndexCount += 6;
+		vp += 2;
+
+		uiCmdArray[uiCmdCount - 1].indexCount += 6;
+
+	}
+
+	{//last point
+		vec2 ott = points[points.count - 1] - points[points.count - 2];
+		vec2 norm = vec2(ott.y, -ott.x).normalized();
+
+		vp[0].pos = points[points.count - 1] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;
+		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;
+
+		int ipidx = 6 * (points.count - 2) + 2;
+		ip[ipidx + 0] = uiVertexCount;
+		ip[ipidx + 2] = uiVertexCount;
+		ip[ipidx + 3] = uiVertexCount + 1;
+
+		uiCmdArray[uiCmdCount - 1].indexCount += 3;
+
+		uiVertexCount += 2;
+		uiIndexCount += 3;
+		vp += 2; ip += 3;
+	}
+
+	uiCmdArray[uiCmdCount - 1].texIdx = 0;
+	if (scissorExtent.x != -1) {
+		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+	}
+	else {
+		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+	}
+
+
 }
 
 void Render::
@@ -3327,10 +3441,9 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 	}break;
 		//// TTF font rendering ////
 	case FontType_TTF: {
-		vec3 lap0, lap1, //last attempted positions by stbtt
-			lcp0, lcp1; //last corrected (scaled) positions
-
-		array<pair<vec2, vec2>> all;
+		vec3 
+		lap0, lap1, //last attempted positions by stbtt
+		lcp0, lcp1; //last corrected (scaled) positions
 
 		forI(text.count) {
 			u32       col = color.rgba;
@@ -3379,6 +3492,8 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 	default: Assert(!"unhandled font type"); break;
 	}
 }
+
+
 
 
 ///////////////////
