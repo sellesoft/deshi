@@ -4,7 +4,6 @@
 //TODO(sushi, Ui) implement menu style file loading sort of stuff yeah
 //TODO(sushi, Ui) standardize what UI element each color belongs to
 local struct {
-	//color          midnight_blue = color(0xff0d2b45); //midnight blue
 	color          midnight_blue = color(0x0d2b45ff); //midnight blue
 	color         dark_grey_blue = color(0x203c56ff); //dark gray blue
 	color            purple_gray = color(0x544e68ff); //purple gray
@@ -53,7 +52,9 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 	{1, offsetof(UIStyle, checkboxFillPadding)},
 	{2, offsetof(UIStyle, inputTextTextAlign)},
 	{2, offsetof(UIStyle, buttonTextAlign)},
+	{2, offsetof(UIStyle, rowCellPadding)},
 	{2, offsetof(UIStyle, rowItemAlign)},
+	{1, offsetof(UIStyle, fontHeight)},
 };
 
 //this variable defines the space the user is working in when calling UI functions
@@ -1581,10 +1582,6 @@ void UI::ShowDebugWindowOf(const char* name) {
 }
 
 
-
-
-
-
 //initializes core UI with an invisible working window covering the entire screen
 //also initializes styles
 //the base window should never focus when clicking within it, so any widgets drawn within
@@ -1621,9 +1618,10 @@ void UI::Init() {
 	PushVar(UIStyleVar_InputTextTextAlign,  vec2(0, 0.5));
 	PushVar(UIStyleVar_ButtonTextAlign,     vec2(0.5, 0.5));
 	PushVar(UIStyleVar_RowItemAlign,        vec2(0.5, 0.5));
+	PushVar(UIStyleVar_FontHeight,          20);
 	
-	initColorStackSize = colorStack.size();
-	initStyleStackSize = varStack.size();
+	initColorStackSize = colorStack.count;
+	initStyleStackSize = varStack.count;
 	
 	windows.add("base", curwin);
 	windowStack.add(curwin);
@@ -1786,7 +1784,7 @@ void UI::Update() {
 						
 						case UIDrawType_Text: {
 							if (drawCmd.scissorExtent.x == -1)
-								Render::DrawTextUI(font, dctex, dcpos, dccol, winscissor, winsiz);
+								Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * ((item.style.font->type != FontType_BDF) ? item.style.fontHeight / item.style.font->height : 1), winscissor, winsiz);
 							else
 								Render::DrawTextUI(font, dctex, dcpos, dccol, dcso, dcse);
 						}break;
@@ -1848,7 +1846,7 @@ void UI::Update() {
 			
 			case UIDrawType_Text: {
 				if (drawCmd.scissorExtent.x == -1)
-					Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ZERO, DeshWindow->dimensions);
+					Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * ((font->type != FontType_BDF) ? style.fontHeight / font->height : 1), vec2::ZERO, DeshWindow->dimensions);
 				else
 					Render::DrawTextUI(font, dctex, dcpos, dccol, dcso, dcse);
 			}break;

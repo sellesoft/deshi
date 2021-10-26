@@ -57,7 +57,8 @@ enum UIStyleVar : u32 {
 	UIStyleVar_ButtonTextAlign,     // default vec2(0.5, 0.5)    how text is aligned within buttons
 	UIStyleVar_RowItemAlign,        // default vec2(0.5, 0.5)    determines how rows align their items within their cells
 	UIStyleVar_RowCellPadding,      // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
-	UIStyleVar_Font,			    // default "gohufont-11.bdf" currently not changable, as we dont support loading multiple fonts yet
+	UIStyleVar_FontHeight,          // default 20                height of font in pixels
+	UIStyleVar_Font,			    // default "gohufont-11.bdf" 
 	UIStyleVar_COUNT
 };
 
@@ -73,7 +74,8 @@ global_ const char* styleVarStr[] = {
 	"UIStyleVar_InputTextTextAlign",
 	"UIStyleVar_ButtonTextAlign",     
 	"UIStyleVar_RowItemAlign",        
-	"UIStyleVar_RowCellPadding",      
+	"UIStyleVar_RowCellPadding",    
+	"UIStyleVar_FontHeight",
 	"UIStyleVar_Font",
 	"UIStyleVar_COUNT"
 };
@@ -102,6 +104,8 @@ struct UIStyle {
 	vec2  inputTextTextAlign;
 	vec2  buttonTextAlign;
 	vec2  rowItemAlign;
+	vec2  rowCellPadding;
+	float fontHeight;
 	Font* font;
 	color colors[UIStyleCol_COUNT];
 };

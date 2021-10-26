@@ -153,8 +153,12 @@ namespace Render{
 	void FillRectUI(vec2 pos, vec2 dimensions, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
 	void DrawRectUI(vec2 pos, vec2 dimensions, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
 	void DrawLineUI(vec2 start, vec2 end, float thickness = 1, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
+	void DrawLinesUI(array<vec2>& points, float thickness = 1, color col = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
 	void DrawTextUI(Font* font, cstring text, vec2 pos, color _color = Color_White, vec2 scale = vec2::ONE, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
+
+	//getters for index and vertex array 
 	
+
 	void UpdateLight(u32 lightIdx, vec4 vec);
 	void UpdateCameraPosition(vec3 position);
 	void UpdateCameraViewMatrix(mat4 m);
