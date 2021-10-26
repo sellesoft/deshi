@@ -3272,7 +3272,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	}
 }
 
-void Render::DrawLinesUI(array<vec2> points, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	Assert(points.count > 1, "Lines need at least 2 points");
 	if (color.a == 0 || thickness == 0) return;

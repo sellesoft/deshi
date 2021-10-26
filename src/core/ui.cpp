@@ -1786,7 +1786,7 @@ void UI::Update() {
 						
 						case UIDrawType_Text: {
 							if (drawCmd.scissorExtent.x == -1)
-								Render::DrawTextUI(font, dctex, dcpos, dccol, winscissor, winsiz);
+								Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE, winscissor, winsiz);
 							else
 								Render::DrawTextUI(font, dctex, dcpos, dccol, dcso, dcse);
 						}break;
@@ -1848,7 +1848,7 @@ void UI::Update() {
 			
 			case UIDrawType_Text: {
 				if (drawCmd.scissorExtent.x == -1)
-					Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ZERO, DeshWindow->dimensions);
+					Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE, vec2::ZERO, DeshWindow->dimensions);
 				else
 					Render::DrawTextUI(font, dctex, dcpos, dccol, dcso, dcse);
 			}break;
