@@ -3326,10 +3326,11 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		vec2
 		p01 = curr - last,
 		p12 = next - curr,
-		norm01 = vec2{ p01.y, -p01.x }.normalized() * flip, //we flip the normal everytime to keep up the pattern
-		norm12 = vec2{ p12.y, -p12.x }.normalized() * flip,
+		norm01 = vec2{ p01.y, -p01.x } * flip, //we flip the normal everytime to keep up the pattern
+		norm12 = vec2{ p12.y, -p12.x } * flip,
 		normav = ((norm01 + norm12) / 2).normalized();
 
+		//set indicies by pattern
 		int ipidx = 6 * (i - 1) + 2;
 		ip[ipidx + 0] =
 		ip[ipidx + 2] =
@@ -3359,6 +3360,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		vp[0].pos = points[points.count - 1] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;
 		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;
 
+		//set final indicies by pattern
 		int ipidx = 6 * (points.count - 2) + 2;
 		ip[ipidx + 0] = uiVertexCount;
 		ip[ipidx + 2] = uiVertexCount;
