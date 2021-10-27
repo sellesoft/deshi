@@ -120,16 +120,16 @@ local UIItem lastitem;
 //this calculates text taking into account newlines, BUT NOT WRAPPING
 //useful for sizing a window to fit some text
 vec2 UI::CalcTextSize(cstring text){
-	vec2 result = vec2{0, f32(style.font->height)};
+	vec2 result = vec2{0, f32(style.font->max_height)};
 	f32 line_width = 0;
 	switch(style.font->type){
 		case FontType_BDF: case FontType_NONE:{
 			while(text){
 				if(*text.str == '\n'){
-					result.y += style.font->height;
+					result.y += style.font->max_height;
 					line_width = 0;
 				}
-				line_width += style.font->width;
+				line_width += style.font->max_width;
 				if(line_width > result.x) result.x = line_width;
 				advance(&text,1);
 			}
@@ -137,10 +137,10 @@ vec2 UI::CalcTextSize(cstring text){
 		case FontType_TTF:{
 			while(text){
 				if(*text.str == '\n'){
-					result.y += style.font->height;
+					result.y += style.font->max_height;
 					line_width = 0;
 				}
-				line_width += ((stbtt_bakedchar*)style.font->ttf_bake)[*text.str-32].xadvance;
+				//line_width += ((stbtt_bakedchar*)style.font->ttf_bake)[*text.str-32].xadvance;
 				if(line_width > result.x) result.x = line_width;
 				advance(&text,1);
 			}
@@ -454,7 +454,7 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 		vec2 workcur = vec2{ 0,0 };
 		
 		//max characters we can place 
-		u32 maxChars = floor(((curwin->width - style.windowPadding.x) - workcur.x) / style.font->width);
+		u32 maxChars = floor(((curwin->width - style.windowPadding.x) - workcur.x) / style.font->max_width);
 		
 		//make sure max chars never equals 0
 		if (!maxChars) maxChars++;
@@ -464,7 +464,7 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 			//we need to see if the string goes beyond the width of the window and wrap if it does
 			if (maxChars < t.count) {
 				//if this is true we know item's total width is just maxChars times font width
-				item->size.x = maxChars * style.font->width;
+				item->size.x = maxChars * style.font->max_width;
 				
 				
 				//find closest space to split by
@@ -473,7 +473,7 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 				TextCall(nustr.str, workcur, color, item);
 				
 				t = t.substr(nustr.count);
-				workcur.y += style.font->height + style.itemSpacing.y;
+				workcur.y += style.fontHeight + style.itemSpacing.y;
 				
 				//continue to wrap if we need to
 				while (t.count > maxChars) {
@@ -482,22 +482,26 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 					TextCall(nustr.str, workcur, color, item);
 					
 					t = t.substr(nustr.count);
-					workcur.y += style.font->height + style.itemSpacing.y;
+					workcur.y += style.fontHeight + style.itemSpacing.y;
 					
 					if (!strlen(t.str)) break;
 				}
 				
 				//write last bit of text
 				TextCall(t.str, workcur, color, item);
-				workcur.y += style.font->height + style.itemSpacing.y;
+				workcur.y += style.fontHeight + style.itemSpacing.y;
 				
 			}
 			else {
+				//this is now always handled by CalcItemSize becuase we now support
+				//non monospace fonts, however we should probably handle finding width 
+				//during all of this not after.
+
 				//we have to get max string length to determine item's width here
-				item->size.x = Max(style.font->width * t.count, item->size.x);
+				//item->size.x = Max(style.font->max_width * t.count, item->size.x);
 				
 				TextCall(t.str, workcur, color, item);
-				workcur.y += style.font->height + style.itemSpacing.y;
+				workcur.y += style.fontHeight + style.itemSpacing.y;
 			}
 		}
 		
@@ -553,7 +557,7 @@ void UI::TextF(const char* fmt, ...) {
 
 bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 	UIItem* item = BeginItem(UIItemType_Button);
-	item->size = (NextItemSize.x != -1) ? NextItemSize : vec2(Min(curwin->width, 50), style.font->height * 1.3);
+	item->size = (NextItemSize.x != -1) ? NextItemSize : vec2(Min(curwin->width, 50), style.font->max_height * 1.3);
 	item->position = pos;
 	AdvanceCursor(item, move_cursor);
 	
@@ -580,7 +584,7 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 		drawCmd.color = style.colors[UIStyleCol_Text];
 		drawCmd.position = 
 			vec2((item->size.x - UI::CalcTextSize(text).x) * style.buttonTextAlign.x,
-				 (style.font->height * 1.3 - style.font->height) * style.buttonTextAlign.y);
+				 (style.font->max_height * 1.3 - style.font->max_height) * style.buttonTextAlign.y);
 		//drawCmd.scissorOffset = item->position;
 		drawCmd.scissorExtent = item->size;
 		drawCmd.text = string(text);
@@ -643,7 +647,7 @@ void UI::Checkbox(string label, bool* b) {
 	
 	{//label
 		UIDrawCmd drawCmd{ UIDrawType_Text };
-		drawCmd.position = vec2(boxsiz.x + style.itemSpacing.x, (boxsiz.y - style.font->height) * 0.5);
+		drawCmd.position = vec2(boxsiz.x + style.itemSpacing.x, (boxsiz.y - style.font->max_height) * 0.5);
 		drawCmd.text = label;
 		drawCmd.color = style.colors[UIStyleCol_Text];
 		drawCmd.font = style.font;
@@ -688,7 +692,7 @@ void UI::DropDown(const char* label, const char* options[], u32 options_count, u
 	
 	{//selected text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
-		drawCmd.position = vec3{ 10, (item->size.y - style.font->height) * 0.5f };
+		drawCmd.position = vec3{ 10, (item->size.y - style.font->max_height) * 0.5f };
 		drawCmd.color = style.colors[UIStyleCol_Text];
 		drawCmd.text = string(options[selected]);
 		drawCmd.font = style.font;
@@ -749,7 +753,7 @@ void UI::DropDown(const char* label, const char* options[], u32 options_count, u
 			
 			{//selection texts
 				UIDrawCmd drawCmd{ UIDrawType_Text };
-				drawCmd.position = vec3{ 10, (item->size.y - style.font->height) * 0.5f + (i + 1) * item->size.y };
+				drawCmd.position = vec3{ 10, (item->size.y - style.font->max_height) * 0.5f + (i + 1) * item->size.y };
 				drawCmd.color = style.colors[UIStyleCol_Text];
 				drawCmd.text = options[i];
 				drawCmd.font = style.font;
@@ -784,7 +788,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		NextItemSize = vec2{ -1,0 };
 	}
 	else {
-		dim = vec2(Math::clamp(100.f, 0.f, Math::clamp(curwin->width - 2.f*style.windowPadding.x, 1.f, FLT_MAX)), 1.3f*style.font->height);
+		dim = vec2(Math::clamp(100.f, 0.f, Math::clamp(curwin->width - 2.f*style.windowPadding.x, 1.f, FLT_MAX)), 1.3f*style.font->max_height);
 	}
 	
 	item->size = dim;
@@ -987,8 +991,8 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	}
 	
 	vec2 textStart =
-		vec2((dim.x - charCount * style.font->width) * style.inputTextTextAlign.x,
-			 (style.font->height * 1.3 - style.font->height) * style.inputTextTextAlign.y);
+		vec2((dim.x - charCount * style.font->max_width) * style.inputTextTextAlign.x,
+			 (style.font->max_height * 1.3 - style.font->max_height) * style.inputTextTextAlign.y);
 	
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
@@ -1003,8 +1007,8 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	//TODO(sushi, Ui) impl different text cursors
 	if (activeId == state->id) {//cursor
 		UIDrawCmd drawCmd{ UIDrawType_Line };
-		drawCmd.position = textStart + vec2(state->cursor * style.font->width, 0);
-		drawCmd.position2 = textStart + vec2(state->cursor * style.font->width, style.font->height - 1);
+		drawCmd.position = textStart + vec2(state->cursor * style.font->max_width, 0);
+		drawCmd.position2 = textStart + vec2(state->cursor * style.font->max_width, style.font->max_height - 1);
 		drawCmd.color =
 			color(255, 255, 255,
 				  255 * (
@@ -1326,8 +1330,8 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
 			UIDrawCmd drawCmd; //inst 46
 			drawCmd.type = UIDrawType_Text;
 			drawCmd.text = curwin->name; //inst 48
-			drawCmd.position = vec2(curwin->x + (curwin->width - curwin->name.size * style.font->width) * style.titleTextAlign.x,
-									curwin->y + (style.titleBarHeight - style.font->height) * style.titleTextAlign.y);
+			drawCmd.position = vec2(curwin->x + (curwin->width - curwin->name.size * style.font->max_width) * style.titleTextAlign.x,
+									curwin->y + (style.titleBarHeight - style.font->max_height) * style.titleTextAlign.y);
 			drawCmd.color = Color_White;
 			drawCmd.scissorExtent = vec2{ curwin->width, style.titleBarHeight };
 			drawCmd.scissorOffset = curwin->position;
@@ -1343,7 +1347,7 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
 		if (!((curwin->flags & UIWindowFlags_NoMinimizeButton) || (curwin->flags & UIWindowFlags_NoMinimizeButton))) {
 			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 			drawCmd.position = vec2(
-									curwin->x + (curwin->width - curwin->name.size * style.font->width) * 0.01,
+									curwin->x + (curwin->width - curwin->name.size * style.font->max_width) * 0.01,
 									curwin->y + (style.titleBarHeight * 0.5 - 2));
 			drawCmd.dimensions = vec2(10, 4);
 			
@@ -1608,7 +1612,7 @@ void UI::Init() {
 	
 	//push default style variables
 	PushVar(UIStyleVar_WindowBorderSize,    1);
-	PushVar(UIStyleVar_TitleBarHeight,      style.font->height * 1.2);
+	PushVar(UIStyleVar_TitleBarHeight,      style.font->max_height * 1.2);
 	PushVar(UIStyleVar_TitleTextAlign,      vec2(1, 0.5));
 	PushVar(UIStyleVar_WindowPadding,       vec2(10, 10));
 	PushVar(UIStyleVar_ItemSpacing,         vec2(1, 1));
@@ -1784,7 +1788,7 @@ void UI::Update() {
 						
 						case UIDrawType_Text: {
 							if (drawCmd.scissorExtent.x == -1)
-								Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * ((item.style.font->type != FontType_BDF) ? item.style.fontHeight / item.style.font->height : 1), winscissor, winsiz);
+								Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * ((item.style.font->type != FontType_BDF) ? item.style.fontHeight / item.style.font->max_height : 1), winscissor, winsiz);
 							else
 								Render::DrawTextUI(font, dctex, dcpos, dccol, dcso, dcse);
 						}break;
@@ -1846,7 +1850,7 @@ void UI::Update() {
 			
 			case UIDrawType_Text: {
 				if (drawCmd.scissorExtent.x == -1)
-					Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * ((font->type != FontType_BDF) ? style.fontHeight / font->height : 1), vec2::ZERO, DeshWindow->dimensions);
+					Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * ((font->type != FontType_BDF) ? style.fontHeight / font->max_height : 1), vec2::ZERO, DeshWindow->dimensions);
 				else
 					Render::DrawTextUI(font, dctex, dcpos, dccol, dcso, dcse);
 			}break;

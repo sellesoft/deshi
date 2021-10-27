@@ -3449,32 +3449,32 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 
 		forI(text.count) {
 			u32       col = color.rgba;
-			Vertex2* vp = uiVertexArray + uiVertexCount;
-			UIIndexVk* ip = uiIndexArray + uiIndexCount;
+			Vertex2*   vp = uiVertexArray + uiVertexCount;
+			UIIndexVk* ip =  uiIndexArray + uiIndexCount;
 
-			stbtt_aligned_quad q;
-			stbtt_GetBakedQuad((stbtt_bakedchar*)font->ttf_bake, font->ttf_size, font->ttf_size, text[i] - 32, &pos.x, &pos.y, &q, 1);
+			//stbtt_GetPackedQuad(((stbtt_pack_range*)font->ttf_pack_ranges[0]), font->ttf_size[0], font->ttf_size[1], text[i] - 32, &pos.x, &pos.y, &q, 1);
+			aligned_quad q = font->GetPackedQuad(text[i], &pos);
 			if (!i) { lcp0 = { q.x0, q.y0 }; lap0 = { q.x0, q.y0 }; }
 
 
 			//manually position each glyph according to chosen scale
 			float
-				sy = (q.y0 - lap0.y) * scale.y, //scaled separations 
-				sx = (q.x0 - lap0.x) * scale.x,
-				x0 = lcp0.x + sx, //align each glyph according to its separation from the last
-				y0 = lcp0.y + sy,
-				x1 = x0 + (q.x1 - q.x0) * scale.x,
-				y1 = y0 + (q.y1 - q.y0) * scale.y;
+			sy = (q.y0 - lap0.y) * scale.y, //scaled separations 
+			sx = (q.x0 - lap0.x) * scale.x,
+			x0 = lcp0.x + sx, //align each glyph according to its separation from the last
+			y0 = lcp0.y + sy,
+			x1 = x0 + (q.x1 - q.x0) * scale.x,
+			y1 = y0 + (q.y1 - q.y0) * scale.y;
 
 			lcp0 = { x0, y0 };     lcp1 = { x1, y1 };
 			lap0 = { q.x0, q.y0 }; lap1 = { q.x1, q.y1 };
 
 			ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 			ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
-			/*tl*/		vp[0].pos = { x0,y0 /*+font->height*/ }; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
-			/*tr*/		vp[1].pos = { x1,y0 /*+font->height*/ }; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
-			/*br*/		vp[2].pos = { x1,y1 /*+font->height*/ }; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
-			/*bl*/		vp[3].pos = { x0,y1 /*+font->height*/ }; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
+/*tl*/		vp[0].pos = { x0,y0 /*+font->height*/ }; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
+/*tr*/		vp[1].pos = { x1,y0 /*+font->height*/ }; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
+/*br*/		vp[2].pos = { x1,y1 /*+font->height*/ }; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
+/*bl*/		vp[3].pos = { x0,y1 /*+font->height*/ }; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
 
 
 			uiVertexCount += 4;
@@ -3776,8 +3776,8 @@ LoadFont(Font* font, Texture* texture){
 	fvk.base            = font;
 	fvk.type            = font->type;
 	fvk.texture         = texture->idx;
-	fvk.characterWidth  = font->width;
-	fvk.characterHeight = font->height;
+	fvk.characterWidth  = font->max_width;
+	fvk.characterHeight = font->max_height;
 	fvk.characterCount  = font->count;
 	
 	//allocate descriptor set

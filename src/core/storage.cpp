@@ -1,4 +1,4 @@
-#define ParseError(...) LogE("storage","Failed parsing '",filepath,"' on line '",line_number,"'! ",__VA_ARGS__)
+﻿#define ParseError(...) LogE("storage","Failed parsing '",filepath,"' on line '",line_number,"'! ",__VA_ARGS__)
 
 namespace Storage{
 	local u8 null128_png[338] = { //TODO(delle) fix this
@@ -51,8 +51,8 @@ Init(){
 	fonts.add(new Font);
 	NullFont()->type = FontType_NONE;
 	NullFont()->idx = 0;
-	NullFont()->width = 6;
-	NullFont()->height = 12;
+	NullFont()->max_width = 6;
+	NullFont()->max_height = 12;
 	NullFont()->count = 1;
 	cpystr(NullFont()->name,"null",DESHI_NAME_SIZE);
 	u8 white_pixels[4] = {255,255,255,255};
@@ -1609,7 +1609,7 @@ CreateFontFromFileBDF(const char* filename){
 								 * 0x4001 & 0x0003000300030003) * 0x81 & 0x0101010101010101) * 255;
 				*(u64*)(scaled+i) = ByteSwap64(reversed);
 			}
-			memcpy(pixels+(upt)(glyph_offset + (bitmap_row+top_offset)*font->width + left_offset), scaled, current_bbx.x*sizeof(u8));
+			memcpy(pixels+(upt)(glyph_offset + (bitmap_row+top_offset)*font->max_width + left_offset), scaled, current_bbx.x*sizeof(u8));
 			
 			bitmap_row++;
 			continue;
@@ -1630,8 +1630,8 @@ CreateFontFromFileBDF(const char* filename){
 				current_bbx.y = strtol(cursor+1, &cursor, 10); //height
 				current_bbx.z = strtol(cursor+1, &cursor, 10); //lower-left x
 				current_bbx.w = strtol(cursor+1, &cursor, 10); //lower-left y
-				glyph_offset = char_idx*font->height*font->width;
-				top_offset   = font->height-(current_bbx.w-font_bbx.w)-current_bbx.y;
+				glyph_offset = char_idx*font->max_height*font->max_width;
+				top_offset   = font->max_height-(current_bbx.w-font_bbx.w)-current_bbx.y;
 				left_offset  = current_bbx.z-font_bbx.z;
 				
 				Assert(current_bbx.x <= font_bbx.x);
@@ -1656,23 +1656,23 @@ CreateFontFromFileBDF(const char* filename){
 			font_bbx.y = strtol(cursor+1, &cursor, 10); //height
 			font_bbx.z = strtol(cursor+1, &cursor, 10); //lower-left x
 			font_bbx.w = strtol(cursor+1, &cursor, 10); //lower-left y
-			font->width  = font_bbx.x;
-			font->height = font_bbx.y;
+			font->max_width  = font_bbx.x;
+			font->max_height = font_bbx.y;
 		}else if(strncmp("FONT_NAME", key_start, key_end-key_start) == 0){
 			cpystr(font->name,string(value_start+1, value_end-value_start-2).str,DESHI_NAME_SIZE);
 		}else if(strncmp("WEIGHT_NAME", key_start, key_end-key_start) == 0){
 			cpystr(font->weight,string(value_start+1, value_end-value_start-2).str,DESHI_NAME_SIZE);
 		}else if(strncmp("CHARS", key_start, key_end-key_start) == 0){
 			font->count = strtol(value_start, 0, 10);
-			Assert(font->width && font->height && font->count);
+			Assert(font->max_width && font->max_height && font->count);
 			encodings = (u16*)calloc(font->count, sizeof(u16));
-			pixels = (u8*)calloc(font->count, font->width*font->height*sizeof(u8));
+			pixels = (u8*)calloc(font->count, font->max_width*font->max_height*sizeof(u8));
 		}else{
 			continue;
 		}
 	}
 	
-	Texture* texture = CreateTextureFromMemory(pixels, font->name, font->width, font->height*font->count,
+	Texture* texture = CreateTextureFromMemory(pixels, font->name, font->max_width, font->max_height*font->count,
 											   ImageFormat_BW, TextureType_2D, false, false, true).second;
 	Render::LoadFont(font, texture);
 	free(encodings);
@@ -1685,38 +1685,90 @@ CreateFontFromFileBDF(const char* filename){
 	return result;
 }
 
-//TODO(delle) update this to stb's Improved 3D API
 pair<u32,Font*> Storage::
 CreateFontFromFileTTF(const char* filename, u32 size){
 	pair<u32,Font*> result(0,NullFont());
 	
 	//check if created already
 	forX(fi, fonts.size()) {
-		if ((strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0) && size == (fonts[fi]->height)) {
+		if ((strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0) && size == (fonts[fi]->max_height)) {
 			return pair<u32, Font*>(fi, fonts[fi]);
 		}
 	}
-	
+
 	char* buffer = Assets::readFileBinaryToArray(Assets::dirFonts()+filename);
 	if(!buffer){ return result; }
 	defer{ delete[] buffer; };
 	
-	Font* font = AllocateFont(FontType_TTF);
-	font->height = size;
-	font->count  = 96;
-	font->ttf_size = 512*(u32(size/72.f)+1);
+	Font* font = AllocateFont(FontType_TTF); 
+	
+	int x0, y0, x1, y1;
+
+	stbtt_fontinfo info;
+	stbtt_InitFont(&info, (unsigned char*)buffer, 0);
+	stbtt_GetScaledFontVMetrics((u8*)buffer, 0, size, &font->ascent, &font->decent, &font->line_gap);
+	stbtt_GetFontBoundingBox(&info, &x0, &y0, &x1, &y1);
+
+	//current ranges:
+	// ASCII              32 - 126  ~ 94  chars
+	// Greek and Coptic  880 - 1023 ~ 143 chars
+	// Super/Subscripts 8304 - 8348 ~ 44  chars (we will want our own method for doing super/subscripts in suugu)
+	// Currency Symbols 8352 - 8384 ~ 32  chars
+	// Arrows           8592 - 8703 ~ 111 chars
+	// Math Symbols     8704 - 8959 ~ 255 chars
+	// 
+	// and maybe more to come eventually.
+	// 
+	//TODO(sushi) maybe implement taking in ranges 
+ 
+	stbtt_pack_range* ranges = (stbtt_pack_range*)calloc(6, sizeof(*ranges));
+
+	ranges[0].num_chars = 94;   ranges[0].first_unicode_codepoint_in_range = 32;
+	ranges[1].num_chars = 143;  ranges[1].first_unicode_codepoint_in_range = 880;
+	ranges[2].num_chars = 44;   ranges[2].first_unicode_codepoint_in_range = 8304;
+	ranges[3].num_chars = 32;   ranges[3].first_unicode_codepoint_in_range = 8352;
+	ranges[4].num_chars = 111;  ranges[4].first_unicode_codepoint_in_range = 8592;
+	ranges[5].num_chars = 255;  ranges[5].first_unicode_codepoint_in_range = 8704;
+
+	ranges[0].font_size = size; ranges[0].chardata_for_range = (stbtt_packedchar*)calloc(ranges[0].num_chars, sizeof(stbtt_packedchar));
+	ranges[1].font_size = size; ranges[1].chardata_for_range = (stbtt_packedchar*)calloc(ranges[1].num_chars, sizeof(stbtt_packedchar));
+	ranges[2].font_size = size; ranges[2].chardata_for_range = (stbtt_packedchar*)calloc(ranges[2].num_chars, sizeof(stbtt_packedchar));
+	ranges[3].font_size = size; ranges[3].chardata_for_range = (stbtt_packedchar*)calloc(ranges[3].num_chars, sizeof(stbtt_packedchar));
+	ranges[4].font_size = size; ranges[4].chardata_for_range = (stbtt_packedchar*)calloc(ranges[4].num_chars, sizeof(stbtt_packedchar));
+	ranges[5].font_size = size; ranges[5].chardata_for_range = (stbtt_packedchar*)calloc(ranges[5].num_chars, sizeof(stbtt_packedchar));
+
+	stbtt_pack_context* pc = (stbtt_pack_context*)calloc(1, sizeof(*pc));
+
+	font->num_ranges = 6;
+	font->ttf_pack_ranges = (pack_range*)ranges;
+	font->ttf_pack_context = pc;
+
+	u32 widthmax = x1 - x0, heightmax = y1 - y0;
+	font->aspect_ratio = (float)heightmax / widthmax;
+
+	//trying to minimize the texture here, but its difficult due to stbtt packing all of them together
+	//i believe this makes it into the smallest square it could be w/o knowing how stbtt packs them together
+	float tsy = ceil(size * sqrtf(679) / font->aspect_ratio);
+	float tsx = ceil(widthmax * size /  heightmax * sqrtf(679));
+
+	font->max_height = size;
+	font->count = 679;
+	font->ttf_size[0] = tsx;
+	font->ttf_size[1] =	tsy;
 	cpystr(font->name,filename,DESHI_NAME_SIZE);
 
-	u8* pixels = (u8*)calloc(font->ttf_size*font->ttf_size,sizeof(u8));
-	font->ttf_bake = calloc(font->count,sizeof(stbtt_bakedchar));
-	int x = stbtt_BakeFontBitmap((const unsigned char*)buffer,0, size, pixels,font->ttf_size,font->ttf_size, 
-								 32,96, (stbtt_bakedchar*)font->ttf_bake);
-	Assert(x != 0, "if return is 0, no characters fit and no rows were used"); //TODO error handling
+	u8* pixels = (u8*)calloc(tsx * tsy, sizeof(u8));
+	//font->ttf_bake = calloc(font->count,sizeof(stbtt_bakedchar));
+
+	//begin a font pack
+	Assert(stbtt_PackBegin(pc, pixels, tsx, tsy, 0, 1, nullptr));
+
+	//pack our ranges
+	stbtt_PackFontRanges(pc, (u8*)buffer, 0, ranges, 6);
+
+	stbtt_PackEnd(pc);
 	
-	//TODO find a better way to find a good font width for TTF or rework font usage in UI
-	font->width = (((stbtt_bakedchar*)font->ttf_bake) + ('?'-32))->xadvance;
-	
-	Texture* texture = CreateTextureFromMemory(pixels, font->name, font->ttf_size,font->ttf_size, 
+	Texture* texture = CreateTextureFromMemory(pixels, font->name, tsx, tsy, 
 											   ImageFormat_BW, TextureType_2D, false, false, true).second;
 	Render::LoadFont(font, texture);
 	free(pixels);
