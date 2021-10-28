@@ -434,11 +434,13 @@ namespace UI {
 	void PushVar(UIStyleVar idx, vec2 style);
 	void PushVar(UIStyleVar idx, void* style);
 	void PushFont(Font* font);
+	void PushFontScale(vec2 scale);
 	
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
 	void PopFont(u32 count = 1);
-	
+	void PopFontScale(u32 count = 1);
+
 	//utilities
 	
 	//this utility is for using a collection of items as if they were one
