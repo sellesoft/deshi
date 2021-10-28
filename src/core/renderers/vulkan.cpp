@@ -3217,10 +3217,13 @@ void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 	if (color.a == 0) return;
 	
 	//top, left, right, bottom
-	DrawLineUI(pos.xAdd(-1), pos + dimensions.ySet(0), 1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos, pos + dimensions.xSet(0), 1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.ySet(0), 1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
+	//DrawLineUI(pos.xAdd(-1), pos + dimensions.ySet(0), 1, color, scissorOffset, scissorExtent);
+	//DrawLineUI(pos, pos + dimensions.xSet(0), 1, color, scissorOffset, scissorExtent);
+	//DrawLineUI(pos + dimensions, pos + dimensions.ySet(0), 1, color, scissorOffset, scissorExtent);
+	//DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
+	
+	array<vec2> points{ pos, pos + dimensions.xSet(0), pos + dimensions, pos + dimensions.ySet(0), pos };
+	DrawLinesUI(points, 1, color, scissorOffset, scissorExtent);
 }
 
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
@@ -3326,9 +3329,32 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		vec2
 			p01 = curr - last,
 		p12 = next - curr,
-		norm01 = vec2{ p01.y, -p01.x } * flip, //we flip the normal everytime to keep up the pattern
-		norm12 = vec2{ p12.y, -p12.x } * flip,
-		normav = ((norm01 + norm12) / 2).normalized();
+		p02 = next - last,
+		//norm01 = vec2{ p01.y, -p01.x } * flip, //we flip the normal everytime to keep up the pattern
+		//norm12 = vec2{ p12.y, -p12.x } * flip,
+		normav;//((norm01 + norm12) / 2).normalized();
+		
+		float a = p01.mag(), b = p12.mag(), c = p02.mag();
+		
+		//TODO impl straightline opt here, if this value is 0, then the 3 points are inline
+		// this is used to determine if we rotate p01 cw or ccw
+		float sidecheck = Math::vec2RotateByAngle(90, p02).dot(p01);
+		normav = p12.normalized();
+		normav = Math::vec2RotateByAngle(((sidecheck >= 0) ? -1 : 1) * Math::AngBetweenVectors(-p01, p12) / 2, normav);
+		normav *= flip;
+		
+		//this is where we calc how wide the thickness of the inner line is meant to be
+		float ang = RADIANS(Math::AngBetweenVectors(-p01, p12));
+		normav = normav.normalized() * thickness * cosf(ang / 2) / sinf(ang);
+		
+		vec2 normavout = normav;
+		vec2 normavin = -normav;
+		
+		normavout.clampMag(0, thickness * 2);
+		normavin.clampMag(0, thickness * 4);
+		
+		
+		Log("normav", normav.mag());
 		
 		//set indicies by pattern
 		int ipidx = 6 * (i - 1) + 2;
@@ -3342,8 +3368,8 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 			ip[ipidx + 5] =
 			uiVertexCount + 1;
 		
-		vp[0].pos = curr + normav * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;
-		vp[1].pos = curr - normav * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;
+		vp[0].pos = curr + normavout; vp[0].uv = { 0,0 }; vp[0].color = rand() % INT_MAX + 0x808080FF;
+		vp[1].pos = curr + normavin; vp[1].uv = { 0,0 }; vp[1].color = rand() % INT_MAX + 0x808080FF;
 		
 		uiVertexCount += 2;
 		uiIndexCount += 6;
@@ -3443,38 +3469,19 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 		}break;
 		//// TTF font rendering ////
 		case FontType_TTF: {
-			vec3 
-				lap0, lap1, //last attempted positions by stbtt
-			lcp0, lcp1; //last corrected (scaled) positions
-			
 			forI(text.count) {
 				u32       col = color.rgba;
 				Vertex2*   vp = uiVertexArray + uiVertexCount;
-				UIIndexVk* ip =  uiIndexArray + uiIndexCount;
+				UIIndexVk* ip = uiIndexArray + uiIndexCount;
 				
-				//stbtt_GetPackedQuad(((stbtt_pack_range*)font->ttf_pack_ranges[0]), font->ttf_size[0], font->ttf_size[1], text[i] - 32, &pos.x, &pos.y, &q, 1);
-				aligned_quad q = font->GetPackedQuad(text[i], &pos);
-				if (!i) { lcp0 = { q.x0, q.y0 }; lap0 = { q.x0, q.y0 }; }
-				
-				
-				//manually position each glyph according to chosen scale
-				float
-					sy = (q.y0 - lap0.y) * scale.y, //scaled separations 
-				sx = (q.x0 - lap0.x) * scale.x,
-				x0 = lcp0.x + sx, //align each glyph according to its separation from the last
-				y0 = lcp0.y + sy,
-				x1 = x0 + (q.x1 - q.x0) * scale.x,
-				y1 = y0 + (q.y1 - q.y0) * scale.y;
-				
-				lcp0 = { x0, y0 };     lcp1 = { x1, y1 };
-				lap0 = { q.x0, q.y0 }; lap1 = { q.x1, q.y1 };
+				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
 				
 				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
-				/*tl*/		vp[0].pos = { x0,y0 /*+font->height*/ }; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
-				/*tr*/		vp[1].pos = { x1,y0 /*+font->height*/ }; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
-				/*br*/		vp[2].pos = { x1,y1 /*+font->height*/ }; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
-				/*bl*/		vp[3].pos = { x0,y1 /*+font->height*/ }; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
+				vp[0].pos = { q.x0,q.y0/*+font->ascent*/ }; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
+				vp[1].pos = { q.x1,q.y0/*+font->ascent*/ }; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
+				vp[2].pos = { q.x1,q.y1/*+font->ascent*/ }; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
+				vp[3].pos = { q.x0,q.y1/*+font->ascent*/ }; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
 				
 				
 				uiVertexCount += 4;
@@ -3489,9 +3496,9 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
 					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
 				}
-			}
-		}break;
-		default: Assert(!"unhandled font type"); break;
+			}break;
+			default: Assert(!"unhandled font type"); break;
+		}
 	}
 }
 

@@ -1116,12 +1116,12 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		}
 		
 		//// parsing warnings/errors ////
-		if(non_tri_warning) LogW("storage","The mesh was not triangulated before parsing; Expect missing triangles!");
-		if(s_warning) LogW("storage","There were 's' specifiers when parsing ",filename,", but those are not evaluated currently");
-		if(!vtArray.count){ LogW("storage","No vertex UVs 'vt' were parsed in ",filename); }
-		if(!vnArray.count){ LogW("storage","No vertex normals 'vn' were parsed in ",filename); }
-		if(fatal_error){ LogE("storage","OBJ parsing encountered a fatal error in ",filename); return result; }
-		if(!vArray.count){ LogE("storage","No vertex positions 'v' were parsed in ",filename); return result; }
+		if(non_tri_warning)   LogW("storage","The mesh was not triangulated before parsing; Expect missing triangles!");
+		if(s_warning)         LogW("storage","There were 's' specifiers when parsing ",filename,", but those are not evaluated currently");
+		if(!vtArray.count){   LogW("storage","No vertex UVs 'vt' were parsed in ",filename); }
+		if(!vnArray.count){   LogW("storage","No vertex normals 'vn' were parsed in ",filename); }
+		if(fatal_error){      LogE("storage","OBJ parsing encountered a fatal error in ",filename); return result; }
+		if(!vArray.count){    LogE("storage","No vertex positions 'v' were parsed in ",filename); return result; }
 		if(!triangles.count){ LogE("storage","No faces 'f' were parsed in ",filename); return result; }
 		
 		//// create mesh ////
@@ -1140,36 +1140,36 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		
 		//setup pointers
 		mesh->triangles[0].neighborArray = (u32*)(mesh->faceArray + mesh->faceCount);
-		mesh->triangles[0].edgeArray     = (u8*)(mesh->triangleArray[0].neighborArray + totalTriNeighbors);
-		mesh->triangles[0].neighbors = view<u32>{mesh->triangles[0].neighborArray, triNeighbors[0].count};
-		mesh->triangles[0].edges     = view<u8>{mesh->triangles[0].edgeArray, triNeighbors[0].count};
+		mesh->triangles[0].edgeArray      = (u8*)(mesh->triangleArray[0].neighborArray + totalTriNeighbors);
+		mesh->triangles[0].neighbors  = view<u32>{mesh->triangles[0].neighborArray, triNeighbors[0].count};
+		mesh->triangles[0].edges       = view<u8>{mesh->triangles[0].edgeArray, triNeighbors[0].count};
 		for(int ti=1; ti<mesh->triangles.count; ++ti){
 			mesh->triangles[ti].neighborArray = (u32*)(mesh->triangles[ti-1].neighborArray + triNeighbors[ti-1].count);
-			mesh->triangles[ti].edgeArray     = (u8*)(mesh->triangles[ti-1].edgeArray + triNeighbors[ti-1].count);
-			mesh->triangles[ti].neighbors = view<u32>{mesh->triangles[ti].neighborArray, triNeighbors[ti].count};
-			mesh->triangles[ti].edges     = view<u8>{mesh->triangles[ti].edgeArray, triNeighbors[ti].count};
+			mesh->triangles[ti].edgeArray      = (u8*)(mesh->triangles[ti-1].edgeArray     + triNeighbors[ti-1].count);
+			mesh->triangles[ti].neighbors  = view<u32>{mesh->triangles[ti].neighborArray,    triNeighbors[ti].count};
+			mesh->triangles[ti].edges      =  view<u8>{mesh->triangles[ti].edgeArray,        triNeighbors[ti].count};
 		}
 		mesh->faces[0].triangleArray         = (u32*)(mesh->triangles[0].edgeArray         + totalTriNeighbors);
 		mesh->faces[0].vertexArray           = (u32*)(mesh->faces[0].triangleArray         + triangles.count);
 		mesh->faces[0].outerVertexArray      = (u32*)(mesh->faces[0].vertexArray           + totalFaceVertexes);
 		mesh->faces[0].neighborTriangleArray = (u32*)(mesh->faces[0].outerVertexArray      + totalFaceOuterVertexes);
 		mesh->faces[0].neighborFaceArray     = (u32*)(mesh->faces[0].neighborTriangleArray + totalFaceTriNeighbors);
-		mesh->faces[0].triangles         = view<u32>{mesh->faces[0].triangleArray,         faceTriangles[0].count};
-		mesh->faces[0].vertexes          = view<u32>{mesh->faces[0].vertexArray,           faceVertexes[0].count};
-		mesh->faces[0].outerVertexes     = view<u32>{mesh->faces[0].outerVertexArray,      faceOuterVertexes[0].count};
-		mesh->faces[0].triangleNeighbors = view<u32>{mesh->faces[0].neighborTriangleArray, faceTriNeighbors[0].count};
-		mesh->faces[0].faceNeighbors     = view<u32>{mesh->faces[0].neighborFaceArray,     faceFaceNeighbors[0].count};
+		mesh->faces[0].triangles          = view<u32>{mesh->faces[0].triangleArray,          faceTriangles[0].count};
+		mesh->faces[0].vertexes           = view<u32>{mesh->faces[0].vertexArray,            faceVertexes[0].count};
+		mesh->faces[0].outerVertexes      = view<u32>{mesh->faces[0].outerVertexArray,       faceOuterVertexes[0].count};
+		mesh->faces[0].triangleNeighbors  = view<u32>{mesh->faces[0].neighborTriangleArray,  faceTriNeighbors[0].count};
+		mesh->faces[0].faceNeighbors      = view<u32>{mesh->faces[0].neighborFaceArray,      faceFaceNeighbors[0].count};
 		for(int fi=1; fi<mesh->faces.count; ++fi){
 			mesh->faces[fi].triangleArray         = (u32*)(mesh->faces[fi-1].triangleArray         + faceTriangles[fi-1].count);
 			mesh->faces[fi].vertexArray           = (u32*)(mesh->faces[fi-1].vertexArray           + faceVertexes[fi-1].count);
 			mesh->faces[fi].outerVertexArray      = (u32*)(mesh->faces[fi-1].outerVertexArray      + faceOuterVertexes[fi-1].count);
 			mesh->faces[fi].neighborTriangleArray = (u32*)(mesh->faces[fi-1].neighborTriangleArray + faceTriNeighbors[fi-1].count);
 			mesh->faces[fi].neighborFaceArray     = (u32*)(mesh->faces[fi-1].neighborFaceArray     + faceFaceNeighbors[fi-1].count);
-			mesh->faces[fi].triangles         = view<u32>{mesh->faces[fi].triangleArray,         faceTriangles[fi].count};
-			mesh->faces[fi].vertexes          = view<u32>{mesh->faces[fi].vertexArray,           faceVertexes[fi].count};
-			mesh->faces[fi].outerVertexes     = view<u32>{mesh->faces[fi].outerVertexArray,      faceOuterVertexes[fi].count};
-			mesh->faces[fi].triangleNeighbors = view<u32>{mesh->faces[fi].neighborTriangleArray, faceTriNeighbors[fi].count};
-			mesh->faces[fi].faceNeighbors     = view<u32>{mesh->faces[fi].neighborFaceArray,     faceFaceNeighbors[fi].count};
+			mesh->faces[fi].triangles          = view<u32>{mesh->faces[fi-0].triangleArray,          faceTriangles[fi].count};
+			mesh->faces[fi].vertexes           = view<u32>{mesh->faces[fi-0].vertexArray,            faceVertexes[fi].count};
+			mesh->faces[fi].outerVertexes      = view<u32>{mesh->faces[fi-0].outerVertexArray,       faceOuterVertexes[fi].count};
+			mesh->faces[fi].triangleNeighbors  = view<u32>{mesh->faces[fi-0].neighborTriangleArray,  faceTriNeighbors[fi].count};
+			mesh->faces[fi].faceNeighbors      = view<u32>{mesh->faces[fi-0].neighborFaceArray,      faceFaceNeighbors[fi].count};
 		}
 		
 		//fill triangle neighbors/edges
@@ -1658,11 +1658,11 @@ CreateFontFromFileBDF(const char* filename){
 			font_bbx.w = strtol(cursor+1, &cursor, 10); //lower-left y
 			font->max_width  = font_bbx.x;
 			font->max_height = font_bbx.y;
-		}else if(strncmp("FONT_NAME", key_start, key_end-key_start) == 0){
-			cpystr(font->name,string(value_start+1, value_end-value_start-2).str,DESHI_NAME_SIZE);
+		}else if(strncmp("FONT_NAME",   key_start, key_end-key_start) == 0){
+			cpystr(font->name,   string(value_start+1, value_end-value_start-2).str,DESHI_NAME_SIZE);
 		}else if(strncmp("WEIGHT_NAME", key_start, key_end-key_start) == 0){
-			cpystr(font->weight,string(value_start+1, value_end-value_start-2).str,DESHI_NAME_SIZE);
-		}else if(strncmp("CHARS", key_start, key_end-key_start) == 0){
+			cpystr(font->weight, string(value_start+1, value_end-value_start-2).str,DESHI_NAME_SIZE);
+		}else if(strncmp("CHARS",       key_start, key_end-key_start) == 0){
 			font->count = strtol(value_start, 0, 10);
 			Assert(font->max_width && font->max_height && font->count);
 			encodings = (u16*)calloc(font->count, sizeof(u16));
@@ -1685,6 +1685,7 @@ CreateFontFromFileBDF(const char* filename){
 	return result;
 }
 
+//TODO clean up this function some and add in some stuff to reduce the overhead of adding in a new range
 pair<u32,Font*> Storage::
 CreateFontFromFileTTF(const char* filename, u32 size){
 	pair<u32,Font*> result(0,NullFont());
@@ -1710,10 +1711,10 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	stbtt_GetFontBoundingBox(&info, &x0, &y0, &x1, &y1);
 
 	//current ranges:
-	// ASCII              32 - 126  ~ 94  chars
+	// ASCII              32 - 126  ~  94 chars
 	// Greek and Coptic  880 - 1023 ~ 143 chars
-	// Super/Subscripts 8304 - 8348 ~ 44  chars (we will want our own method for doing super/subscripts in suugu)
-	// Currency Symbols 8352 - 8384 ~ 32  chars
+	// Super/Subscripts 8304 - 8348 ~  44 chars (we will want our own method for doing super/subscripts in suugu)
+	// Currency Symbols 8352 - 8384 ~  32 chars
 	// Arrows           8592 - 8703 ~ 111 chars
 	// Math Symbols     8704 - 8959 ~ 255 chars
 	// 
@@ -1752,14 +1753,14 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	float tsx = ceil(widthmax * size /  heightmax * sqrtf(679));
 
 	font->max_height = size;
+	font->max_width = (float)widthmax / heightmax * size;
 	font->count = 679;
 	font->ttf_size[0] = tsx;
 	font->ttf_size[1] =	tsy;
 	cpystr(font->name,filename,DESHI_NAME_SIZE);
 
 	u8* pixels = (u8*)calloc(tsx * tsy, sizeof(u8));
-	//font->ttf_bake = calloc(font->count,sizeof(stbtt_bakedchar));
-
+	
 	//begin a font pack
 	Assert(stbtt_PackBegin(pc, pixels, tsx, tsy, 0, 1, nullptr));
 
