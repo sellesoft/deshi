@@ -133,6 +133,7 @@ struct vec3 {
 	float dot(const vec3& rhs) const;
 	vec3  cross(const vec3& rhs) const;
 	float mag() const;
+	float magSq() const;
 	void  normalize();
 	vec3  normalized() const;
 	vec3  clamp(float lo, float hi) const;

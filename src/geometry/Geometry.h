@@ -122,8 +122,8 @@ global_ vec3 ClosestPointOnHull(Mesh* mesh, vec3 target){
 	return ClampPointToTriangle(plane_point, closest_vert0, closest_vert1, closest_vert2);
 }
 
-global_ b32 AABBRaycast(vec3 ray_start, vec3 ray_direction, vec3 aabb_min, vec3 aabb_max){
-	//Assert(ray_direction.x != 0 && ray_direction.y != 0 && ray_direction.z != 0);
+//TODO fix this
+global_ b32 AABBRaycast(vec3 ray_start, vec3 ray_direction, vec3 aabb_min, vec3 aabb_max, f32* out_t = 0){
 	f32 tmin, tmax, tymin, tymax, tzmin, tzmax;
 	if(ray_direction.x > 0){
 		tmin = (aabb_min.x - ray_start.x) / ray_direction.x;
@@ -157,10 +157,46 @@ global_ b32 AABBRaycast(vec3 ray_start, vec3 ray_direction, vec3 aabb_min, vec3 
 	if((tmin > tzmax) || (tzmin > tmax)) return false;
 	
 	//NOTE use these if we want the t values eventually
-	//if(tzmin < tmin) tmin = tzmin;
-	//if(tzmax < tmax) tmax = tzmax;
+	if(tzmin < tmin) tmin = tzmin;
+	if(out_t) *out_t = tmin;
 	
 	return true;
+}
+
+global_ b32 PlaneRaycast(vec3 ray_start, vec3 ray_direction, vec3 plane_point, vec3 plane_normal, f32* out_t = 0){
+	f32 t = plane_normal.dot(plane_point - ray_start) / plane_normal.dot(ray_direction);
+	if(out_t) *out_t = t;
+	return t > 0.f;
+}
+
+global_ b32 DiskRaycast(vec3 ray_start, vec3 ray_direction, vec3 disk_center, vec3 disk_normal, f32 disk_radius, f32* out_t = 0){
+	f32 t = disk_normal.dot(disk_center - ray_start) / disk_normal.dot(ray_direction);
+	if((t > 0) && (disk_center.distanceTo(ray_start + (ray_direction * t)) < disk_radius)){
+		if(out_t) *out_t = t;
+		return true;
+	}
+	return false;
+}
+
+global_ b32 SphereRaycast(vec3 ray_start, vec3 ray_direction, vec3 sphere_center, f32 sphere_radius, f32* out_t = 0){
+	//!ref: https://gdbooks.gitbooks.io/3dcollisions/content/Chapter3/raycast_sphere.html
+	vec3 e = sphere_center - ray_start;
+	f32  eSq = e.magSq();
+	f32  rSq = sphere_radius * sphere_radius;
+	f32  a = ray_direction.dot(e);
+	f32  aSq = a * a;
+	f32  b = eSq - aSq;
+	f32  f = sqrtf(rSq - b);
+	
+	if(rSq - eSq + aSq < 0.f){ //no collision
+		return false;
+	}else if(eSq < rSq){       //ray is inside
+		if(out_t) *out_t = a + f;
+		return true;
+	}else{                     //normal intersection
+		if(out_t) *out_t = a - f;
+		return true;
+	}
 }
 
 #endif //DESHI_GEOMETRY_H

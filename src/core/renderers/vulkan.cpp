@@ -3175,7 +3175,7 @@ vec2 prevScissorExtent = vec2(-1, -1);
 void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
-
+	
 	if (uiCmdArray[uiCmdCount - 1].texIdx != 0 ||
 		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
 		scissorExtent != prevScissorExtent) { //and you could do text last in one, and text first in another
@@ -3184,18 +3184,18 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-
+	
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
-
+	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2; //v0, v1, v2
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3; //v0, v2, v3
 	vp[0].pos = { pos.x + 0,           pos.y + 0 };            vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { pos.x + dimensions.w,pos.y + 0 };            vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { pos.x + dimensions.w,pos.y + dimensions.h }; vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { pos.x + 0,           pos.y + dimensions.h }; vp[3].uv = { 0,0 }; vp[3].color = col;
-
+	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -3215,7 +3215,7 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
-
+	
 	//top, left, right, bottom
 	//DrawLineUI(pos.xAdd(-1), pos + dimensions.ySet(0), 1, color, scissorOffset, scissorExtent);
 	//DrawLineUI(pos, pos + dimensions.xSet(0), 1, color, scissorOffset, scissorExtent);
@@ -3231,7 +3231,7 @@ void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
-
+	
 	if (uiCmdArray[uiCmdCount - 1].texIdx != 0 ||
 		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
 		scissorExtent != prevScissorExtent) {  //and you could do text last in one, and text first in another
@@ -3240,27 +3240,27 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-
+	
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
-
+	
 	vec2 ott = end - start;
 	vec2 norm = vec2(ott.y, -ott.x).normalized();
-
+	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
 	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = { end.x,  end.y };   vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = { end.x,  end.y };   vp[2].uv = { 0,0 }; vp[2].color = col;
 	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
-
+	
 	float ht = thickness/2;
 	vp[0].pos += norm * ht;
 	vp[1].pos += norm * ht;
 	vp[2].pos -= norm * ht;
 	vp[3].pos -= norm * ht;
-
+	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
@@ -3279,7 +3279,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	Assert(points.count > 1, "Lines need at least 2 points");
 	if (color.a == 0 || thickness == 0) return;
-
+	
 	if ((uiCmdArray[uiCmdCount - 1].texIdx != 0)
 		|| (scissorOffset != prevScissorOffset)
 		|| (scissorExtent != prevScissorExtent)) {
@@ -3288,55 +3288,51 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-
+	
 	int newVerts = points.count * 2;
 	int newIndic = 6 * points.count - 6;
-
+	
 	float halfthick = thickness / 2;
-
-	array<vec2> verts_placed;
-
+	
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
-
+	
 	{// first point
-
+		
 		vec2 ott = points[1] - points[0];
 		vec2 norm = vec2(ott.y, -ott.x).normalized();
-
-		vp[0].pos = points[0] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = PackColorU32(255, 100, 100, 255);
-		vp[1].pos = points[0] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = PackColorU32(100, 100, 0, 255);
-
-		//verts_placed.add(vp[0].pos)
-
+		
+		vp[0].pos = points[0] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;
+		vp[1].pos = points[0] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;
+		
 		ip[0] = uiVertexCount;
 		ip[1] = uiVertexCount + 1;
 		ip[3] = uiVertexCount;
-
+		
 		uiCmdArray[uiCmdCount - 1].indexCount += 3;
-
+		
 		uiVertexCount += 2;
 		uiIndexCount += 3;
 		vp += 2;
 	}
-
+	
 	//in betweens
 	for (int i = 1, flip = -1; i < points.count - 1; i++, flip *= -1) {
 		vec2 last, curr, next, norm;
-
+		
 		last = points[i - 1];
 		curr = points[i];
 		next = points[i + 1];
-
+		
 		//figure out average norm
 		vec2
-			p01 = curr - last,
-			p12 = next - curr,
-			p02 = next - last,
-			//norm01 = vec2{ p01.y, -p01.x } * flip, //we flip the normal everytime to keep up the pattern
-			//norm12 = vec2{ p12.y, -p12.x } * flip,
-			normav;//((norm01 + norm12) / 2).normalized();
+		p01 = curr - last,
+		p12 = next - curr,
+		p02 = next - last,
+		//norm01 = vec2{ p01.y, -p01.x } * flip, //we flip the normal everytime to keep up the pattern
+		//norm12 = vec2{ p12.y, -p12.x } * flip,
+		normav;//((norm01 + norm12) / 2).normalized();
 		
 		float a = p01.mag(), b = p12.mag(), c = p02.mag();
 		float ang = RADIANS(Math::AngBetweenVectors(-p01, p12));
@@ -3365,7 +3361,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 
 		vec2 normavout = normav;
 		vec2 normavin = -normav;
-
+		
 		normavout.clampMag(0, thickness * 2);
 		normavin.clampMag(0, thickness * 4);
 
@@ -3375,11 +3371,11 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		//set indicies by pattern
 		int ipidx = 6 * (i - 1) + 2;
 		ip[ipidx + 0] =
-		ip[ipidx + 2] =
-		ip[ipidx + 4] =
-		ip[ipidx + 7] =
-		uiVertexCount;
-
+			ip[ipidx + 2] =
+			ip[ipidx + 4] =
+			ip[ipidx + 7] =
+			uiVertexCount;
+		
 		ip[ipidx + 3] =
 		ip[ipidx + 5] =
 		uiVertexCount + 1;
@@ -3390,11 +3386,11 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		uiVertexCount += 2;
 		uiIndexCount += 6;
 		vp += 2;
-
+		
 		uiCmdArray[uiCmdCount - 1].indexCount += 6;
-
+		
 	}
-
+	
 	{//last point
 		vec2 ott = points[points.count - 1] - points[points.count - 2];
 		vec2 norm = vec2(ott.y, -ott.x).normalized();
@@ -3407,14 +3403,14 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		ip[ipidx + 0] = uiVertexCount;
 		ip[ipidx + 2] = uiVertexCount;
 		ip[ipidx + 3] = uiVertexCount + 1;
-
+		
 		uiCmdArray[uiCmdCount - 1].indexCount += 3;
-
+		
 		uiVertexCount += 2;
 		uiIndexCount += 3;
 		vp += 2; ip += 3;
 	}
-
+	
 	uiCmdArray[uiCmdCount - 1].texIdx = 0;
 	if (scissorExtent.x != -1) {
 		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
@@ -3424,15 +3420,15 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
 		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
 	}
-
-
+	
+	
 }
 
 void Render::
 DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
-
+	
 	//im doing offset and extent because we have to know if we're drawing in a new window
 	//and you could do text last in one, and text first in another
 	if ((uiCmdArray[uiCmdCount - 1].texIdx != font->idx)
@@ -3443,78 +3439,78 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-
+	
 	switch (vkFonts[font->idx].type) {
 		//// BDF (and NULL) font rendering ////
-	case FontType_BDF: case FontType_NONE: {
-		forI(text.count) {
-			u32       col = color.rgba;
-			Vertex2* vp = uiVertexArray + uiVertexCount;
-			UIIndexVk* ip = uiIndexArray + uiIndexCount;
-
-			f32 w = vkFonts[font->idx].characterWidth * scale.x;
-			f32 h = vkFonts[font->idx].characterHeight * scale.y;
-			f32 dy = 1.f / (f32)vkFonts[font->idx].characterCount;
-
-			f32 idx = f32(text[i] - 32);
-			f32 topoff = idx * dy;
-			f32 botoff = topoff + dy;
-
-			ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-			ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
-			vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff }; vp[0].color = col;
-			vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col;
-			vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col;
-			vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff }; vp[3].color = col;
-
-			uiVertexCount += 4;
-			uiIndexCount += 6;
-			uiCmdArray[uiCmdCount - 1].indexCount += 6;
-			uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
-			if (scissorExtent.x != -1) {
-				uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-				uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+		case FontType_BDF: case FontType_NONE: {
+			forI(text.count) {
+				u32       col = color.rgba;
+				Vertex2* vp = uiVertexArray + uiVertexCount;
+				UIIndexVk* ip = uiIndexArray + uiIndexCount;
+				
+				f32 w = vkFonts[font->idx].characterWidth * scale.x;
+				f32 h = vkFonts[font->idx].characterHeight * scale.y;
+				f32 dy = 1.f / (f32)vkFonts[font->idx].characterCount;
+				
+				f32 idx = f32(text[i] - 32);
+				f32 topoff = idx * dy;
+				f32 botoff = topoff + dy;
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff }; vp[0].color = col;
+				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col;
+				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col;
+				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff }; vp[3].color = col;
+				
+				uiVertexCount += 4;
+				uiIndexCount += 6;
+				uiCmdArray[uiCmdCount - 1].indexCount += 6;
+				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
+				if (scissorExtent.x != -1) {
+					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+				}
+				else {
+					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+				}
+				
+				pos.x += vkFonts[font->idx].characterWidth * scale.x;
 			}
-			else {
-				uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-				uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-			}
-
-			pos.x += vkFonts[font->idx].characterWidth * scale.x;
-		}
-	}break;
+		}break;
 		//// TTF font rendering ////
-	case FontType_TTF: {
-		forI(text.count) {
-			u32       col = color.rgba;
-			Vertex2*   vp = uiVertexArray + uiVertexCount;
-			UIIndexVk* ip = uiIndexArray + uiIndexCount;
-
-			aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
-
-			ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
-			ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
-			vp[0].pos = { q.x0,q.y0/*+font->ascent*/ }; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
-			vp[1].pos = { q.x1,q.y0/*+font->ascent*/ }; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
-			vp[2].pos = { q.x1,q.y1/*+font->ascent*/ }; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
-			vp[3].pos = { q.x0,q.y1/*+font->ascent*/ }; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
-
-
-			uiVertexCount += 4;
-			uiIndexCount += 6;
-			uiCmdArray[uiCmdCount - 1].indexCount += 6;
-			uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
-			if (scissorExtent.x != -1) {
-				uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-				uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-			}
-			else {
-				uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-				uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-			}
+		case FontType_TTF: {
+			forI(text.count) {
+				u32       col = color.rgba;
+				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				UIIndexVk* ip = uiIndexArray + uiIndexCount;
+				
+				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				vp[0].pos = { q.x0,q.y0/*+font->ascent*/ }; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
+				vp[1].pos = { q.x1,q.y0/*+font->ascent*/ }; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
+				vp[2].pos = { q.x1,q.y1/*+font->ascent*/ }; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
+				vp[3].pos = { q.x0,q.y1/*+font->ascent*/ }; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
+				
+				
+				uiVertexCount += 4;
+				uiIndexCount += 6;
+				uiCmdArray[uiCmdCount - 1].indexCount += 6;
+				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
+				if (scissorExtent.x != -1) {
+					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+				}
+				else {
+					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+				}
+			}break;
+			default: Assert(!"unhandled font type"); break;
 		}
-	}break;
-	default: Assert(!"unhandled font type"); break;
 	}
 }
 
@@ -4006,7 +4002,7 @@ DrawPolyFilled(array<vec3>& points, color color){
 }
 
 void Render::
-DrawBox(mat4 transform, color color){
+DrawBox(const mat4& transform, color color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -4022,7 +4018,7 @@ DrawBox(mat4 transform, color color){
 }
 
 void Render::
-DrawBoxFilled(mat4 transform, color color){
+DrawBoxFilled(const mat4& transform, color color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);

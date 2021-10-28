@@ -175,6 +175,11 @@ mag() const{
 //	return 1.f / k;
 //}
 
+inline float vec3::
+magSq() const{
+	return x*x + y*y + z*z;
+}
+
 inline void vec3::
 normalize(){
 	if (*this != vec3::ZERO) {
