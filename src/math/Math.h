@@ -7,6 +7,7 @@
 #include "quaternion.h"
 #include "matN.h"
 #include "../defines.h"
+#include "../utils/tuple.h"
 
 #include <math.h>
 #include <algorithm>

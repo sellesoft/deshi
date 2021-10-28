@@ -122,4 +122,45 @@ global_ vec3 ClosestPointOnHull(Mesh* mesh, vec3 target){
 	return ClampPointToTriangle(plane_point, closest_vert0, closest_vert1, closest_vert2);
 }
 
+global_ b32 AABBRaycast(vec3 ray_start, vec3 ray_direction, vec3 aabb_min, vec3 aabb_max){
+	//Assert(ray_direction.x != 0 && ray_direction.y != 0 && ray_direction.z != 0);
+	f32 tmin, tmax, tymin, tymax, tzmin, tzmax;
+	if(ray_direction.x > 0){
+		tmin = (aabb_min.x - ray_start.x) / ray_direction.x;
+		tmax = (aabb_max.x - ray_start.x) / ray_direction.x;
+	}else{
+		tmin = (aabb_max.x - ray_start.x) / ray_direction.x;
+		tmax = (aabb_min.x - ray_start.x) / ray_direction.x;
+	}
+	
+	if(ray_direction.y > 0){
+		tymin = (aabb_min.y - ray_start.y) / ray_direction.y;
+		tymax = (aabb_max.y - ray_start.y) / ray_direction.y;
+	}else{
+		tymin = (aabb_max.y - ray_start.y) / ray_direction.y;
+		tymax = (aabb_min.y - ray_start.y) / ray_direction.y;
+	}
+	
+	if((tmin > tymax) || (tymin > tmax)) return false;
+	
+	if(tymin < tmin) tmin = tymin;
+	if(tymax < tmax) tmax = tymax;
+	
+	if(ray_direction.z > 0){
+		tzmin = (aabb_min.z - ray_start.z) / ray_direction.z;
+		tzmax = (aabb_max.z - ray_start.z) / ray_direction.z;
+	}else{
+		tzmin = (aabb_max.z - ray_start.z) / ray_direction.z;
+		tzmax = (aabb_min.z - ray_start.z) / ray_direction.z;
+	}
+	
+	if((tmin > tzmax) || (tzmin > tmax)) return false;
+	
+	//NOTE use these if we want the t values eventually
+	//if(tzmin < tmin) tmin = tzmin;
+	//if(tzmax < tmax) tmax = tzmax;
+	
+	return true;
+}
+
 #endif //DESHI_GEOMETRY_H

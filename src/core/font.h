@@ -48,11 +48,11 @@ struct Font{
 	u32   num_ranges;
 	void* ttf_pack_context;      //stbtt_pack_context
 	pack_range* ttf_pack_ranges; //stbtt_pack_range
-
+	
 	float ascent; //the highest point above baseline a glyph reaches
 	float decent; //the lowest point below baseline a glyph reaches
 	float line_gap; //the recommended 
-
+	
 	float aspect_ratio; //max character height / max character width
 
 	aligned_quad GetPackedQuad(int charidx, vec2* pos, vec2 scale = vec2::ONE);
