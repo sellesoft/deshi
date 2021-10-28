@@ -3294,6 +3294,8 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 
 	float halfthick = thickness / 2;
 
+	array<vec2> verts_placed;
+
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
@@ -3303,8 +3305,10 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		vec2 ott = points[1] - points[0];
 		vec2 norm = vec2(ott.y, -ott.x).normalized();
 
-		vp[0].pos = points[0] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;
-		vp[1].pos = points[0] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;
+		vp[0].pos = points[0] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = PackColorU32(255, 100, 100, 255);
+		vp[1].pos = points[0] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = PackColorU32(100, 100, 0, 255);
+
+		//verts_placed.add(vp[0].pos)
 
 		ip[0] = uiVertexCount;
 		ip[1] = uiVertexCount + 1;
@@ -3335,17 +3339,29 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 			normav;//((norm01 + norm12) / 2).normalized();
 		
 		float a = p01.mag(), b = p12.mag(), c = p02.mag();
+		float ang = RADIANS(Math::AngBetweenVectors(-p01, p12));
 
 		//TODO impl straightline opt here, if this value is 0, then the 3 points are inline
 		// this is used to determine if we rotate p01 cw or ccw
 		float sidecheck = Math::vec2RotateByAngle(90, p02).dot(p01);
 		normav = p12.normalized();
-		normav = Math::vec2RotateByAngle(((sidecheck >= 0) ? -1 : 1) * Math::AngBetweenVectors(-p01, p12) / 2, normav);
+		normav = Math::vec2RotateByAngle(-DEGREES(ang) / 2, normav);
 		normav *= flip;
 
+
+		Log("ang", Math::AngBetweenVectors(-p01, p12));
+		Log("sid", Math::vec2RotateByAngle(90, p02).dot(p01));
+
+		Log("angcheck", fabs(ang) < 2 * atanf(thickness / (2 * p02.mag())));
+
+		//this checks for a special case where the angle between the 2 vectors is so small
+		//that we need to remap vertices to keep it from looking wild
+		if (fabs(ang) < 2 * atanf(thickness / (2 * p02.mag()))) {
+
+		}
+
 		//this is where we calc how wide the thickness of the inner line is meant to be
-		float ang = RADIANS(Math::AngBetweenVectors(-p01, p12));
-		normav = normav.normalized() * thickness * cosf(ang / 2) / sinf(ang);
+		normav = normav.normalized() * thickness / ( 2 * sinf(ang / 2));
 
 		vec2 normavout = normav;
 		vec2 normavin = -normav;
@@ -3354,7 +3370,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		normavin.clampMag(0, thickness * 4);
 
 
-		Log("normav", normav.mag());
+		//Log("normav", normav.mag());
 		
 		//set indicies by pattern
 		int ipidx = 6 * (i - 1) + 2;
@@ -3368,8 +3384,8 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		ip[ipidx + 5] =
 		uiVertexCount + 1;
 
-		vp[0].pos = curr + normavout; vp[0].uv = { 0,0 }; vp[0].color = rand() % INT_MAX + 0x808080FF;
-		vp[1].pos = curr + normavin; vp[1].uv = { 0,0 }; vp[1].color = rand() % INT_MAX + 0x808080FF;
+		vp[0].pos = curr + normavout; vp[0].uv = { 0,0 }; vp[0].color = PackColorU32(255, 0, 0, 255);
+		vp[1].pos = curr + normavin; vp[1].uv = { 0,0 }; vp[1].color = PackColorU32(255, 0, 255, 255);
 
 		uiVertexCount += 2;
 		uiIndexCount += 6;
@@ -3383,8 +3399,8 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		vec2 ott = points[points.count - 1] - points[points.count - 2];
 		vec2 norm = vec2(ott.y, -ott.x).normalized();
 
-		vp[0].pos = points[points.count - 1] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;
-		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;
+		vp[0].pos = points[points.count - 1] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = PackColorU32(255, 50, 255, 255);
+		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = PackColorU32(255, 50, 100, 255);
 
 		//set final indicies by pattern
 		int ipidx = 6 * (points.count - 2) + 2;
