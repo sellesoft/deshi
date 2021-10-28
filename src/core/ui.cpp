@@ -428,6 +428,12 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 	UIItem* item = BeginItem(UIItemType_Text);
 	item->position = (move_cursor) ? PositionForNewItem() : pos;
 	
+	//TODO sometimes the ascent is very large for a given font, and since we also only take out ranges of it, it's probably worth
+	//     to find an average or new ascent of all the characters we do have
+	//if the font is TTF, stbtt places the text's baseline at the specified position, so we offset it to the top here
+	if (style.font->type == FontType_TTF)
+		item->position.y += style.font->ascent;
+	
 	if (!nowrap) {
 		string text = in;
 		
@@ -450,67 +456,77 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 		else {
 			newlined.add(text);
 		}
-		
 		vec2 workcur = vec2{ 0,0 };
-		
-		//max characters we can place 
-		u32 maxChars = floor(((curwin->width - style.windowPadding.x) - workcur.x) / style.font->max_width);
-		
-		//make sure max chars never equals 0
-		if (!maxChars) maxChars++;
-		
-		//wrap each string in newline array
-		for (string& t : newlined) {
-			//we need to see if the string goes beyond the width of the window and wrap if it does
-			if (maxChars < t.count) {
-				//if this is true we know item's total width is just maxChars times font width
-				item->size.x = maxChars * style.font->max_width;
-				
-				
-				//find closest space to split by
-				u32 splitat = t.findLastChar(' ', maxChars);
-				string nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
-				TextCall(nustr.str, workcur, color, item);
-				
-				t = t.substr(nustr.count);
-				workcur.y += style.fontHeight + style.itemSpacing.y;
-				
-				//continue to wrap if we need to
-				while (t.count > maxChars) {
-					splitat = t.findLastChar(' ', maxChars);
-					nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
-					TextCall(nustr.str, workcur, color, item);
-					
-					t = t.substr(nustr.count);
-					workcur.y += style.fontHeight + style.itemSpacing.y;
-					
-					if (!strlen(t.str)) break;
-				}
-				
-				//write last bit of text
-				TextCall(t.str, workcur, color, item);
-				workcur.y += style.fontHeight + style.itemSpacing.y;
-				
-			}
-			else {
-				//this is now always handled by CalcItemSize becuase we now support
-				//non monospace fonts, however we should probably handle finding width 
-				//during all of this not after.
 
-				//we have to get max string length to determine item's width here
-				//item->size.x = Max(style.font->max_width * t.count, item->size.x);
-				
-				TextCall(t.str, workcur, color, item);
-				workcur.y += style.fontHeight + style.itemSpacing.y;
-			}
+		switch (style.font->type) {
+
+			case FontType_TTF: {
+				Font* font = style.font;
+
+				float wscale = style.fontHeight / font->aspect_ratio / font->max_width;
+				float space_width = font->GetPackedChar(' ')->xadvance;
+				float maxw = curwin->width - style.windowPadding.x;
+				float currlinew = 0;
+
+				for (string& t : newlined) {
+					currlinew += font->WidthOfString(t.substr(0, t.findFirstChar(' ')).str, wscale);
+				}
+			}break;
+
+			case FontType_BDF: {
+				//max characters we can place 
+				u32 maxChars = floor(((curwin->width - style.windowPadding.x) - workcur.x) / style.font->max_width);
+
+				//make sure max chars never equals 0
+				if (!maxChars) maxChars++;
+
+				//wrap each string in newline array
+				for (string& t : newlined) {
+					//we need to see if the string goes beyond the width of the window and wrap if it does
+					if (maxChars < t.count) {
+						//if this is true we know item's total width is just maxChars times font width
+						item->size.x = maxChars * style.font->max_width;
+
+						//find closest space to split by
+						u32 splitat = t.findLastChar(' ', maxChars);
+						string nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+						TextCall(nustr.str, workcur, color, item);
+
+						t = t.substr(nustr.count);
+						workcur.y += style.fontHeight + style.itemSpacing.y;
+
+						//continue to wrap if we need to
+						while (t.count > maxChars) {
+							splitat = t.findLastChar(' ', maxChars);
+							nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
+							TextCall(nustr.str, workcur, color, item);
+
+							t = t.substr(nustr.count);
+							workcur.y += style.fontHeight + style.itemSpacing.y;
+
+							if (!strlen(t.str)) break;
+						}
+
+						//write last bit of text
+						TextCall(t.str, workcur, color, item);
+						workcur.y += style.fontHeight + style.itemSpacing.y;
+
+					}
+					else {
+						TextCall(t.str, workcur, color, item);
+						workcur.y += style.fontHeight + style.itemSpacing.y;
+					}
+				}
+
+				item->size.y = workcur.y - curwin->position.y;
+				if (NextItemSize.x != -1)
+					item->size = NextItemSize;
+
+				CalcItemSize(item);
+				NextItemSize = vec2{ -1, 0 };
+			}break;
+			default:Assert(!"unknown font type?");
 		}
-		
-		item->size.y = workcur.y - curwin->position.y;
-		if (NextItemSize.x != -1)
-			item->size = NextItemSize;
-		
-		CalcItemSize(item);
-		NextItemSize = vec2{ -1, 0 };
 	}
 	else {
 		//TODO(sushi) make NoWrap also check for newlines
