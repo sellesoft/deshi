@@ -138,8 +138,10 @@ namespace Render{
 	void DrawQuadFilled(vec3 p0, vec3 p1, vec3 p2, vec3 p3, color _color = Color_White);
 	void DrawPoly(array<vec3>& points, color _color = Color_White);
 	void DrawPolyFilled(array<vec3>& points, color _color = Color_White);
-	void DrawBox(mat4 transform, color _color = Color_White);
-	void DrawBoxFilled(mat4 transform, color _color = Color_White);
+	void DrawBox(const mat4& transform, color _color = Color_White);
+	FORCE_INLINE void DrawBox(vec3 position, vec3 rotation, vec3 scale, color c = Color_White){ DrawBox(mat4::TransformationMatrix(position, rotation, scale), c); }
+	void DrawBoxFilled(const mat4& transform, color _color = Color_White);
+	FORCE_INLINE void DrawBoxFilled(vec3 position, vec3 rotation, vec3 scale, color c = Color_White){ DrawBoxFilled(mat4::TransformationMatrix(position, rotation, scale), c); }
 	void DrawCircle(vec3 position, vec3 rotation, f32 radius, u32 subdivisions = 16, color c = Color_White);
 	void DrawSphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions, color cx, color cy, color cz);
 	FORCE_INLINE void DrawSphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions = 16, color c = Color_White){ DrawSphere(position, rotation, radius, subdivisions, c, c, c); }
@@ -155,10 +157,10 @@ namespace Render{
 	void DrawLineUI(vec2 start, vec2 end, float thickness = 1, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
 	void DrawLinesUI(array<vec2>& points, float thickness = 1, color col = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
 	void DrawTextUI(Font* font, cstring text, vec2 pos, color _color = Color_White, vec2 scale = vec2::ONE, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(-1, -1));
-
+	
 	//getters for index and vertex array 
 	
-
+	
 	void UpdateLight(u32 lightIdx, vec4 vec);
 	void UpdateCameraPosition(vec3 position);
 	void UpdateCameraViewMatrix(mat4 m);
