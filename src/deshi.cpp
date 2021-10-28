@@ -114,6 +114,7 @@ add UI color palettes for easy color changing
 
 Ungrouped TODOs
 ---------------
+add MouseInsideWindow() func to input or window
 make the transparent framebuffer a start switch since it hurts frames (it must be set at window creation time)
 add the ability to limit framerate
 centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
@@ -129,7 +130,9 @@ Bug Board       //NOTE mark these with a last-known active date (M/D/Y)
 ---------
 (07/10/21) the program crashes if default asset files are not present
 __________ maybe store the text in the actual source and create the file from the code, like keybinds.cfg
+__________ alternatively, we can store those specific assets in the source control
 (09/13/21) the program sometimes hangs on close in log file writing to stdout; temp fix: click the cmd, hit enter
+__________ this might not be an error with our stuff and just a quirk of the windows console
 
 */
 
