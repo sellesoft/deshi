@@ -46,21 +46,22 @@ struct Font{
 	u32   num_ranges;
 	void* ttf_pack_context;      //stbtt_pack_context
 	pack_range* ttf_pack_ranges; //stbtt_pack_range
-
+	
 	float ascent; //the highest point above baseline a glyph reaches
 	float decent; //the lowest point below baseline a glyph reaches
 	float line_gap; //the recommended 
-
+	
 	float aspect_ratio; //max character height / max character width
-
+	
 	//u16 xAdvanceOf(char c) { return ((bakedchar*)ttf_bake)[c - 32].xadvance; }
-
+	
 	aligned_quad GetPackedQuad(int charidx, vec2* pos) {
-
+		aligned_quad q{};
+		
 		float ipw = 1.0f / ttf_size[0], iph = 1.0f / ttf_size[1];
 		
 		packedchar* b = nullptr;
-
+		
 		//determine what range the req character is in
 		forI(num_ranges) {
 			if (charidx >= ttf_pack_ranges[i].firstcodepoint && charidx <= ttf_pack_ranges[i].firstcodepoint + ttf_pack_ranges[i].num_chars) {
@@ -70,26 +71,26 @@ struct Font{
 		}
 		
 		if (b) {
-			aligned_quad q;
-
+			
 			q.x0 = pos->x + b->xoff;
 			q.y0 = pos->y + b->yoff;
 			q.x1 = pos->x + b->xoff2;
 			q.y1 = pos->y + b->yoff2;
-
+			
 			q.s0 = b->x0 * ipw;
 			q.t0 = b->y0 * iph;
 			q.s1 = b->x1 * ipw;
 			q.t1 = b->y1 * iph;
-
+			
 			pos->x += b->xadvance;
-
+			
 			return q;
-		}else Assert(0, "The req character was not found in any of the ranges. TODO better error handling here.");
-	
+		}
+		Assert(false, "The req character was not found in any of the ranges. TODO better error handling here.");
+		return q;
 	}
-
-
+	
+	
 };
 
 #endif //DESHI_FONT_H
