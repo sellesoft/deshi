@@ -4,6 +4,9 @@
 
 #include "../defines.h"
 
+//note, to calculate the width of a char from a specified height do
+//   height / aspect_ratio / max_width
+
 enum FontType{
 	FontType_NONE,
 	FontType_BDF,
@@ -42,7 +45,6 @@ struct Font{
 	u32   max_width;
 	u32   max_height;
 	u32   rendered_resolution;
-	vec2  scale;
 	u32   count;
 	u32   ttf_size[2];
 	u32   num_ranges;
@@ -88,9 +90,9 @@ GetPackedQuad(int charidx, vec2* pos, vec2 scale) {
 		aligned_quad q;
 		
 		q.x0 = pos->x + b->xoff;
-		q.y0 = pos->y + b->yoff * scale.y + ascent;
+		q.y0 = pos->y + (b->yoff + ascent) * scale.y;
 		q.x1 = pos->x + b->xoff + (b->xoff2 - b->xoff) * scale.x;
-		q.y1 = pos->y + b->yoff2 + ascent;
+		q.y1 = pos->y + (b->yoff2 + ascent) * scale.y;
 		
 		q.s0 = b->x0 * ipw; //NOTE, we could maybe store the UV values noramalized instead of doing this everytime
 		q.t0 = b->y0 * iph;
@@ -120,11 +122,6 @@ WidthOfString(const char* str, float scale) {
 	float ret = 0;
 	forI(strlen(str)) ret += GetPackedChar(str[i])->xadvance * scale;
 	return ret;
-}
-
-inline vec2 Font::
-ScaleFromPixelHeight(u32 height) {
-	return vec2(height / aspect_ratio / max_width, (float)height / max_height);
 }
 
 
