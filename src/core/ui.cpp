@@ -53,8 +53,8 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 	{1, offsetof(UIStyle, checkboxFillPadding)},
 	{2, offsetof(UIStyle, inputTextTextAlign)},
 	{2, offsetof(UIStyle, buttonTextAlign)},
-	{2, offsetof(UIStyle, rowCellPadding)},
 	{2, offsetof(UIStyle, rowItemAlign)},
+	{2, offsetof(UIStyle, rowCellPadding)},
 	{1, offsetof(UIStyle, fontHeight)},
 };
 
@@ -142,7 +142,7 @@ vec2 UI::CalcTextSize(cstring text){
 					result.y += style.fontHeight;
 					line_width = 0;
 				}
-				line_width += style.font->GetPackedChar(*text.str)->xadvance;
+				line_width += style.font->GetPackedChar(*text.str)->xadvance * style.fontHeight / style.font->aspect_ratio / style.font->max_width;
 				if(line_width > result.x) result.x = line_width;
 				advance(&text,1);
 			}
@@ -500,7 +500,7 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 
 			case FontType_BDF: {
 				//max characters we can place 
-				u32 maxChars = floor(((curwin->width - 2*style.windowPadding.x) - workcur.x) / style.font->max_width);
+				u32 maxChars = floor(((curwin->width - 2 * style.windowPadding.x) - workcur.x) / style.font->max_width);
 
 				//make sure max chars never equals 0
 				if (!maxChars) maxChars++;
