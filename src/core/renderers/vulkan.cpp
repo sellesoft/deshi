@@ -3275,6 +3275,11 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	}
 }
 
+//TODO
+// this function needs to be made more robust as well as cleaned up. currently, if 2 line segments form a small enough angle,
+// the thickness stop being preserved. this funciton also needs to be moved out to suugu and replaced by a more general
+// render function that allows you to manipulate the vertex/index arrays
+
 void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	Assert(points.count > 1, "Lines need at least 2 points");
@@ -3288,10 +3293,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-	
-	int newVerts = points.count * 2;
-	int newIndic = 6 * points.count - 6;
-	
+
 	float halfthick = thickness / 2;
 	
 	u32       col = color.rgba;
@@ -3318,7 +3320,8 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 	}
 	
 	//in betweens
-	for (int i = 1, flip = -1; i < points.count - 1; i++, flip *= -1) {
+	int flip = -1;
+	for (int i = 1; i < points.count - 1; i++, flip *= -1) {
 		vec2 last, curr, next, norm;
 		
 		last = points[i - 1];
@@ -3337,24 +3340,14 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		float a = p01.mag(), b = p12.mag(), c = p02.mag();
 		float ang = RADIANS(Math::AngBetweenVectors(-p01, p12));
 
-		//TODO impl straightline opt here, if this value is 0, then the 3 points are inline
-		// this is used to determine if we rotate p01 cw or ccw
-		float sidecheck = Math::vec2RotateByAngle(90, p02).dot(p01);
+		//this is the critical angle where the thickness of the 2 lines cause them to overlap at small angles
+		//if (fabs(ang) < 2 * atanf(thickness / (2 * p02.mag()))) {
+		//	ang = 2 * atanf(thickness / (2 * p02.mag()));
+		//}
+
 		normav = p12.normalized();
 		normav = Math::vec2RotateByAngle(-DEGREES(ang) / 2, normav);
 		normav *= flip;
-
-
-		Log("ang", Math::AngBetweenVectors(-p01, p12));
-		Log("sid", Math::vec2RotateByAngle(90, p02).dot(p01));
-
-		Log("angcheck", fabs(ang) < 2 * atanf(thickness / (2 * p02.mag())));
-
-		//this checks for a special case where the angle between the 2 vectors is so small
-		//that we need to remap vertices to keep it from looking wild
-		if (fabs(ang) < 2 * atanf(thickness / (2 * p02.mag()))) {
-
-		}
 
 		//this is where we calc how wide the thickness of the inner line is meant to be
 		normav = normav.normalized() * thickness / ( 2 * sinf(ang / 2));
@@ -3362,26 +3355,26 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		vec2 normavout = normav;
 		vec2 normavin = -normav;
 		
-		normavout.clampMag(0, thickness * 2);
+		normavout.clampMag(0, thickness * 2);//sqrt(2) / 2 * thickness );
 		normavin.clampMag(0, thickness * 4);
 
 
-		//Log("normav", normav.mag());
+
 		
 		//set indicies by pattern
 		int ipidx = 6 * (i - 1) + 2;
 		ip[ipidx + 0] =
-			ip[ipidx + 2] =
-			ip[ipidx + 4] =
-			ip[ipidx + 7] =
-			uiVertexCount;
+		ip[ipidx + 2] =
+		ip[ipidx + 4] =
+		ip[ipidx + 7] =
+		uiVertexCount;
 		
 		ip[ipidx + 3] =
 		ip[ipidx + 5] =
 		uiVertexCount + 1;
 
-		vp[0].pos = curr + normavout; vp[0].uv = { 0,0 }; vp[0].color = PackColorU32(255, 0, 0, 255);
-		vp[1].pos = curr + normavin; vp[1].uv = { 0,0 }; vp[1].color = PackColorU32(255, 0, 255, 255);
+		vp[0].pos = curr + normavout; vp[0].uv = { 0,0 }; vp[0].color = col;//PackColorU32(255, 0, 0, 255);
+		vp[1].pos = curr + normavin; vp[1].uv = { 0,0 }; vp[1].color = col;//PackColorU32(255, 0, 255, 255);
 
 		uiVertexCount += 2;
 		uiIndexCount += 6;
@@ -3393,10 +3386,10 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 	
 	{//last point
 		vec2 ott = points[points.count - 1] - points[points.count - 2];
-		vec2 norm = vec2(ott.y, -ott.x).normalized();
+		vec2 norm = vec2(ott.y, -ott.x).normalized() * flip;
 
-		vp[0].pos = points[points.count - 1] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = PackColorU32(255, 50, 255, 255);
-		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = PackColorU32(255, 50, 100, 255);
+		vp[0].pos = points[points.count - 1] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;//PackColorU32(255, 50, 255, 255);
+		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;//PackColorU32(255, 50, 100, 255);
 
 		//set final indicies by pattern
 		int ipidx = 6 * (points.count - 2) + 2;
