@@ -57,7 +57,7 @@ enum UIStyleVar : u32 {
 	UIStyleVar_ButtonTextAlign,     // default vec2(0.5, 0.5)    how text is aligned within buttons
 	UIStyleVar_RowItemAlign,        // default vec2(0.5, 0.5)    determines how rows align their items within their cells
 	UIStyleVar_RowCellPadding,      // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
-	UIStyleVar_FontHeight,          // default 20                height of font in pixels
+	UIStyleVar_FontHeight,          // default font->height      height of font in pixels
 	UIStyleVar_Font,			    // default "gohufont-11.bdf" 
 	UIStyleVar_COUNT
 };
