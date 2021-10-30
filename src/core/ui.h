@@ -106,6 +106,9 @@ struct UIStyle {
 	vec2  rowItemAlign;
 	vec2  rowCellPadding;
 	float fontHeight;
+	
+	//special vars that have special push/pop functions
+	vec2  globalScale;
 	Font* font;
 	color colors[UIStyleCol_COUNT];
 };
@@ -435,11 +438,13 @@ namespace UI {
 	void PushVar(UIStyleVar idx, void* style);
 	void PushFont(Font* font);
 	void PushFontScale(vec2 scale);
+	void PushScale(vec2 scale);
 	
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
 	void PopFont(u32 count = 1);
 	void PopFontScale(u32 count = 1);
+	void PopScale(u32 count = 1);
 
 	//utilities
 	
