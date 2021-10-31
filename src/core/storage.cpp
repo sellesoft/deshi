@@ -1691,8 +1691,10 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	pair<u32,Font*> result(0,NullFont());
 	
 	//check if created already
+	//TODO look into why if we load the same font w a different size it gets weird
+	//(i took that check out of here for now)
 	forX(fi, fonts.size()) {
-		if ((strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0) && size == (fonts[fi]->max_height)) {
+		if ((strncmp(filename, fonts[fi]->name, DESHI_NAME_SIZE) == 0)) {
 			return pair<u32, Font*>(fi, fonts[fi]);
 		}
 	}

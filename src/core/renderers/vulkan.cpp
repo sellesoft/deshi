@@ -3275,6 +3275,11 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	}
 }
 
+//TODO
+// this function needs to be made more robust as well as cleaned up. currently, if 2 line segments form a small enough angle,
+// the thickness stop being preserved. this funciton also needs to be moved out to suugu and replaced by a more general
+// render function that allows you to manipulate the vertex/index arrays
+
 void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	Assert(points.count > 1, "Lines need at least 2 points");
@@ -3288,10 +3293,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-	
-	int newVerts = points.count * 2;
-	int newIndic = 6 * points.count - 6;
-	
+
 	float halfthick = thickness / 2;
 	
 	u32       col = color.rgba;
@@ -3318,7 +3320,8 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 	}
 	
 	//in betweens
-	for (int i = 1, flip = -1; i < points.count - 1; i++, flip *= -1) {
+	int flip = -1;
+	for (int i = 1; i < points.count - 1; i++, flip *= -1) {
 		vec2 last, curr, next, norm;
 		
 		last = points[i - 1];
@@ -3327,7 +3330,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		
 		//figure out average norm
 		vec2
-			p01 = curr - last,
+		p01 = curr - last,
 		p12 = next - curr,
 		p02 = next - last,
 		//norm01 = vec2{ p01.y, -p01.x } * flip, //we flip the normal everytime to keep up the pattern
@@ -3335,42 +3338,44 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		normav;//((norm01 + norm12) / 2).normalized();
 		
 		float a = p01.mag(), b = p12.mag(), c = p02.mag();
-		
-		//TODO impl straightline opt here, if this value is 0, then the 3 points are inline
-		// this is used to determine if we rotate p01 cw or ccw
-		float sidecheck = Math::vec2RotateByAngle(90, p02).dot(p01);
-		normav = p12.normalized();
-		normav = Math::vec2RotateByAngle(((sidecheck >= 0) ? -1 : 1) * Math::AngBetweenVectors(-p01, p12) / 2, normav);
-		normav *= flip;
-		
-		//this is where we calc how wide the thickness of the inner line is meant to be
 		float ang = RADIANS(Math::AngBetweenVectors(-p01, p12));
-		normav = normav.normalized() * thickness * cosf(ang / 2) / sinf(ang);
-		
+
+		//this is the critical angle where the thickness of the 2 lines cause them to overlap at small angles
+		//if (fabs(ang) < 2 * atanf(thickness / (2 * p02.mag()))) {
+		//	ang = 2 * atanf(thickness / (2 * p02.mag()));
+		//}
+
+		normav = p12.normalized();
+		normav = Math::vec2RotateByAngle(-DEGREES(ang) / 2, normav);
+		normav *= flip;
+
+		//this is where we calc how wide the thickness of the inner line is meant to be
+		normav = normav.normalized() * thickness / ( 2 * sinf(ang / 2));
+
 		vec2 normavout = normav;
 		vec2 normavin = -normav;
 		
-		normavout.clampMag(0, thickness * 2);
+		normavout.clampMag(0, thickness * 2);//sqrt(2) / 2 * thickness );
 		normavin.clampMag(0, thickness * 4);
-		
-		
-		Log("normav", normav.mag());
+
+
+
 		
 		//set indicies by pattern
 		int ipidx = 6 * (i - 1) + 2;
 		ip[ipidx + 0] =
-			ip[ipidx + 2] =
-			ip[ipidx + 4] =
-			ip[ipidx + 7] =
-			uiVertexCount;
+		ip[ipidx + 2] =
+		ip[ipidx + 4] =
+		ip[ipidx + 7] =
+		uiVertexCount;
 		
 		ip[ipidx + 3] =
-			ip[ipidx + 5] =
-			uiVertexCount + 1;
-		
-		vp[0].pos = curr + normavout; vp[0].uv = { 0,0 }; vp[0].color = rand() % INT_MAX + 0x808080FF;
-		vp[1].pos = curr + normavin; vp[1].uv = { 0,0 }; vp[1].color = rand() % INT_MAX + 0x808080FF;
-		
+		ip[ipidx + 5] =
+		uiVertexCount + 1;
+
+		vp[0].pos = curr + normavout; vp[0].uv = { 0,0 }; vp[0].color = col;//PackColorU32(255, 0, 0, 255);
+		vp[1].pos = curr + normavin; vp[1].uv = { 0,0 }; vp[1].color = col;//PackColorU32(255, 0, 255, 255);
+
 		uiVertexCount += 2;
 		uiIndexCount += 6;
 		vp += 2;
@@ -3381,11 +3386,11 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 	
 	{//last point
 		vec2 ott = points[points.count - 1] - points[points.count - 2];
-		vec2 norm = vec2(ott.y, -ott.x).normalized();
-		
-		vp[0].pos = points[points.count - 1] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;
-		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;
-		
+		vec2 norm = vec2(ott.y, -ott.x).normalized() * flip;
+
+		vp[0].pos = points[points.count - 1] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;//PackColorU32(255, 50, 255, 255);
+		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;//PackColorU32(255, 50, 100, 255);
+
 		//set final indicies by pattern
 		int ipidx = 6 * (points.count - 2) + 2;
 		ip[ipidx + 0] = uiVertexCount;
@@ -3473,16 +3478,15 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 				u32       col = color.rgba;
 				Vertex2*   vp = uiVertexArray + uiVertexCount;
 				UIIndexVk* ip = uiIndexArray + uiIndexCount;
-				
+
 				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
 				
 				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
-				vp[0].pos = { q.x0,q.y0/*+font->ascent*/ }; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
-				vp[1].pos = { q.x1,q.y0/*+font->ascent*/ }; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
-				vp[2].pos = { q.x1,q.y1/*+font->ascent*/ }; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
-				vp[3].pos = { q.x0,q.y1/*+font->ascent*/ }; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
-				
+				vp[0].pos = { q.x0,q.y0}; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
+				vp[1].pos = { q.x1,q.y0}; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
+				vp[2].pos = { q.x1,q.y1}; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
+				vp[3].pos = { q.x0,q.y1}; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
 				
 				uiVertexCount += 4;
 				uiIndexCount += 6;
@@ -3502,7 +3506,95 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 	}
 }
 
-
+//for now this will be 2 functions, as UI will handle all unicode text stuff for now.
+void Render::DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 scale, vec2 scissorOffset, vec2 scissorExtent) {
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	if (color.a == 0) return;
+	
+	//im doing offset and extent because we have to know if we're drawing in a new window
+	//and you could do text last in one, and text first in another
+	if ((uiCmdArray[uiCmdCount - 1].texIdx != font->idx)
+		|| (scissorOffset != prevScissorOffset)
+		|| (scissorExtent != prevScissorExtent)) {
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+	
+	switch (vkFonts[font->idx].type) {
+		//// BDF (and NULL) font rendering ////
+		case FontType_BDF: case FontType_NONE: {
+			forI(text.count) {
+				u32       col = color.rgba;
+				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				UIIndexVk* ip = uiIndexArray + uiIndexCount;
+				
+				f32 w = vkFonts[font->idx].characterWidth * scale.x;
+				f32 h = vkFonts[font->idx].characterHeight * scale.y;
+				f32 dy = 1.f / (f32)vkFonts[font->idx].characterCount;
+				
+				f32 idx = f32(text[i] - 32);
+				f32 topoff = idx * dy;
+				f32 botoff = topoff + dy;
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff }; vp[0].color = col;
+				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col;
+				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col;
+				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff }; vp[3].color = col;
+				
+				uiVertexCount += 4;
+				uiIndexCount += 6;
+				uiCmdArray[uiCmdCount - 1].indexCount += 6;
+				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
+				if (scissorExtent.x != -1) {
+					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+				}
+				else {
+					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+				}
+				
+				pos.x += vkFonts[font->idx].characterWidth * scale.x;
+			}
+		}break;
+		//// TTF font rendering ////
+		case FontType_TTF: {
+			forI(text.count) {
+				u32       col = color.rgba;
+				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				UIIndexVk* ip = uiIndexArray + uiIndexCount;
+				
+				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				vp[0].pos = { q.x0,q.y0}; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
+				vp[1].pos = { q.x1,q.y0}; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
+				vp[2].pos = { q.x1,q.y1}; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
+				vp[3].pos = { q.x0,q.y1}; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
+				
+				
+				uiVertexCount += 4;
+				uiIndexCount += 6;
+				uiCmdArray[uiCmdCount - 1].indexCount += 6;
+				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
+				if (scissorExtent.x != -1) {
+					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+				}
+				else {
+					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+				}
+			}break;
+			default: Assert(!"unhandled font type"); break;
+		}
+	}
+}
 
 
 ///////////////////

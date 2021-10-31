@@ -57,7 +57,7 @@ enum UIStyleVar : u32 {
 	UIStyleVar_ButtonTextAlign,     // default vec2(0.5, 0.5)    how text is aligned within buttons
 	UIStyleVar_RowItemAlign,        // default vec2(0.5, 0.5)    determines how rows align their items within their cells
 	UIStyleVar_RowCellPadding,      // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
-	UIStyleVar_FontHeight,          // default 20                height of font in pixels
+	UIStyleVar_FontHeight,          // default font->height      height of font in pixels
 	UIStyleVar_Font,			    // default "gohufont-11.bdf" 
 	UIStyleVar_COUNT
 };
@@ -106,6 +106,9 @@ struct UIStyle {
 	vec2  rowItemAlign;
 	vec2  rowCellPadding;
 	float fontHeight;
+	
+	//special vars that have special push/pop functions
+	vec2  globalScale;
 	Font* font;
 	color colors[UIStyleCol_COUNT];
 };
@@ -181,7 +184,8 @@ enum UIDrawType : u32 {
 	UIDrawType_Rectangle,
 	UIDrawType_FilledRectangle,
 	UIDrawType_Line,
-	UIDrawType_Text
+	UIDrawType_Text,
+	UIDrawType_WText,
 };
 
 //draw commands store what kind of command it is, and info relative to that command
@@ -205,10 +209,11 @@ struct UIDrawCmd {
 	//line thickness
 	float thickness;
 	
-	//for use by text draw call
-	//TODO(sushi) reformat this as a char*, as this is data that is used directly by render
-	//			  which never modifies the string
+	//TODO
+	//eventually we could maybe store text as an int* or something, so as unicode codepoints, since in the end,
+	//at least with TTF, thats how we communicate what letter we want.
 	string text;
+	wstring wtext;
 	Font* font;
 	
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
@@ -375,9 +380,12 @@ struct UIRow {
 namespace UI {
 	
 	//helpers
-	vec2     CalcTextSize(cstring text);
-	FORCE_INLINE vec2 CalcTextSize(const string& text){ return CalcTextSize(cstring{text.str,u64(text.count)}); }
-	FORCE_INLINE vec2 CalcTextSize(const char* text){ return CalcTextSize(cstring{(char*)text,u64(strlen(text))}); }
+	vec2              CalcTextSize(cstring text);
+	vec2              CalcTextSize(wcstring text);
+	FORCE_INLINE vec2 CalcTextSize(const string& text)  { return CalcTextSize(cstring {text.str,u64(text.count)}); }
+	FORCE_INLINE vec2 CalcTextSize(const wstring& text) { return CalcTextSize(wcstring{text.str,u64(text.count) }); }
+	FORCE_INLINE vec2 CalcTextSize(const char* text)    { return CalcTextSize(cstring {(char*)text,u64(strlen(text))}); }
+	FORCE_INLINE vec2 CalcTextSize(const wchar_t* text) { return CalcTextSize(wcstring{(wchar_t*)text,u64(wcslen(text)) }); }
 	void     SetNextItemActive();
 	UIStyle& GetStyle();
 	void     SameLine();
@@ -403,6 +411,10 @@ namespace UI {
 	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
 	void Text(const char* text, color color, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, color color, UITextFlags flags = 0);
+	void Text(const wchar_t* text, UITextFlags flags = 0);
+	void Text(const wchar_t* text, vec2 pos, UITextFlags flags = 0);
+	void Text(const wchar_t* text, color color, UITextFlags flags = 0);
+	void Text(const wchar_t* text, vec2 pos, color color, UITextFlags flags = 0);
 	void TextF(const char* fmt, ...);
 	
 	//items
@@ -435,11 +447,13 @@ namespace UI {
 	void PushVar(UIStyleVar idx, void* style);
 	void PushFont(Font* font);
 	void PushFontScale(vec2 scale);
+	void PushScale(vec2 scale);
 	
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
 	void PopFont(u32 count = 1);
 	void PopFontScale(u32 count = 1);
+	void PopScale(u32 count = 1);
 
 	//utilities
 	

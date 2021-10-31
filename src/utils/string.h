@@ -20,43 +20,43 @@ struct string{
 	CHAR* str;
 	
 	string();
-	string(const char* s);
-	string(const char* s, u32 count);
+	string(const CHAR* s);
+	string(const CHAR* s, u32 count);
 	string(const string& s);
 	~string();
 	
 	CHAR&  operator[](u32 idx);
-	void   operator= (const char* s);
+	void   operator= (const CHAR* s);
 	void   operator= (const string& s);
-	void   operator+=(const char* s);
+	void   operator+=(const CHAR* s);
 	void   operator+=(const string& s);
 	string operator--(int);
-	string operator+ (const char* c) const;
+	string operator+ (const CHAR* c) const;
 	string operator+ (const string& s) const;
 	bool   operator==(const string& s) const;
-	bool   operator==(const char* s) const;
-	friend string operator+ (const char* c, const string& s);
+	bool   operator==(const CHAR* s) const;
+	friend string operator+ (const CHAR* c, const string& s);
 	inline explicit operator bool(){ return count; }
 	
 	void   reserve(u32 _space);
 	void   clear();
 	void   erase(u32 idx);
-	//inserts at specified idx, pushing the character at idx and all following characters to the right
+	//inserts at specified idx, pushing the CHARacter at idx and all following CHARacters to the right
 	void   insert(CHAR c, u32 idx);
-	//returns a copy of the character at idx
+	//returns a copy of the CHARacter at idx
 	CHAR   at(u32 idx) const;
-	//returns a string including the start and end characters, end equals the end of the string (size-1) if npos
+	//returns a string including the start and end CHARacters, end equals the end of the string (size-1) if npos
 	string substr(u32 start, u32 end = npos) const;
 	u32    findFirstStr(const string& s) const;
-	//returns first of char from offset
+	//returns first of CHAR from offset
 	u32    findFirstChar(CHAR c, u32 offset = 0) const;
-	//returns first of char from offset backwards
+	//returns first of CHAR from offset backwards
 	u32    findFirstCharNot(CHAR c, u32 offset = 0) const;
 	u32    findLastChar(CHAR c, u32 offset = 0) const;
 	u32    findLastCharNot(CHAR c) const;
-	//returns how many times a char appears in the string
-	u32    charCount(CHAR c) const;
-	//returns a substring from the beginning to specifiec char, not including the char
+	//returns how many times a CHAR appears in the string
+	u32    CHARCount(CHAR c) const;
+	//returns a substring from the beginning to specifiec CHAR, not including the CHAR
 	string substrToChar(CHAR c) const;
 	
 	static string eatSpacesLeading(const string& s);
@@ -74,14 +74,14 @@ inline string::string(){
 	str   = 0;
 };
 
-inline string::string(const char* s){
+inline string::string(const CHAR* s){
 	count  = strlen(s);
 	space = RoundUpTo(count+1, 4);
 	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
 	memcpy(str, s, count*CHAR_SIZE);
 }
 
-inline string::string(const char* s, u32 _size){
+inline string::string(const CHAR* s, u32 _size){
 	count  = _size;
 	space = RoundUpTo(count+1, 4);
 	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
@@ -107,7 +107,7 @@ inline string::CHAR& string::operator[](u32 idx){
 	return str[idx];
 }
 
-inline void string::operator= (const char* s){
+inline void string::operator= (const CHAR* s){
 	free(str);
 	count  = strlen(s);
 	space = RoundUpTo(count+1, 4);
@@ -123,7 +123,7 @@ inline void string::operator= (const string& s){
 	memcpy(str, s.str, count*CHAR_SIZE);
 }
 
-inline void string::operator+=(const char* s){
+inline void string::operator+=(const CHAR* s){
 	u32 old_len = count;
 	u32 str_len = strlen(s);
 	if(str_len == 0) return;
@@ -167,7 +167,7 @@ inline string string::operator--(int){
 	return *this;
 }
 
-inline string string::operator+ (const char* c) const{
+inline string string::operator+ (const CHAR* c) const{
 	if(count == 0) return string(c);
 	u32 str_len = strlen(c);
 	if(str_len == 0) return *this;
@@ -197,7 +197,7 @@ inline bool string::operator==(const string& s) const{
 	return strcmp(str, s.str) == 0;
 }
 
-inline bool string::operator==(const char* s) const{
+inline bool string::operator==(const CHAR* s) const{
 	return strcmp(str, s) == 0;
 }
 
@@ -208,7 +208,7 @@ inline std::ostream& operator<<(std::ostream& os, const string& m){
 	return os << m.str;
 }
 
-inline string operator+ (const char* c, const string& s){
+inline string operator+ (const string::CHAR* c, const string& s){
 	return string(c) + s;
 }
 
@@ -235,7 +235,7 @@ inline void string::erase(u32 idx){
 	else           memmove(str+idx, str+idx+1, (--count)*CHAR_SIZE);
 }
 
-inline void string::insert(char c, u32 idx){
+inline void string::insert(CHAR c, u32 idx){
 	Assert(idx <= count);
 	count += 1;
 	if(space == 0){
@@ -253,7 +253,7 @@ inline void string::insert(char c, u32 idx){
 	}
 }
 
-inline char string::at(u32 idx) const{
+inline string::CHAR string::at(u32 idx) const{
 	Assert(idx <= count);
 	return str[idx];
 }
@@ -271,21 +271,21 @@ inline u32 string::findFirstStr(const string& s) const{
 	return npos;
 }
 
-inline u32 string::findFirstChar(char c, u32 offset) const{
+inline u32 string::findFirstChar(CHAR c, u32 offset) const{
 	for(u32 i = offset; i < count; ++i){
 		if(str[i] == c) return i;
 	}
 	return npos;
 }
 
-inline u32 string::findFirstCharNot(char c, u32 offset) const{
+inline u32 string::findFirstCharNot(CHAR c, u32 offset) const{
 	for(u32 i = 0; i < count; ++i){
 		if(str[i] != c) return i;
 	}
 	return npos;
 }
 
-inline u32 string::findLastChar(char c, u32 offset) const{
+inline u32 string::findLastChar(CHAR c, u32 offset) const{
 	Assert(offset < count);
 	for(u32 i = (offset != 0 ? offset : count - 1); i != 0; --i){
 		if(str[i] == c) return i;
@@ -293,20 +293,20 @@ inline u32 string::findLastChar(char c, u32 offset) const{
 	return npos;
 }
 
-inline u32 string::findLastCharNot(char c) const{
+inline u32 string::findLastCharNot(CHAR c) const{
 	for(u32 i = count-1; i != 0; --i){
 		if(str[i] != c) return i;
 	}
 	return npos;
 }
 
-inline u32 string::charCount(char c) const{
+inline u32 string::CHARCount(CHAR c) const{
 	u32 sum = 0;
 	for(u32 i = 0; i < count; ++i){ if(str[i] == c){ sum++; } }
 	return sum;
 }
 
-inline string string::substrToChar(char c) const{
+inline string string::substrToChar(CHAR c) const{
 	u32 idx = findFirstChar(c);
 	return (idx != npos) ? *this : string(str, idx); //!TestMe
 }
@@ -336,4 +336,336 @@ inline string string::toLower(const string& in){
 	return result;
 }
 
-#endif //DESHI_STRING_H
+
+//WSTRING
+//unicode version of string
+
+
+struct wstring {
+	typedef wchar_t CHAR;
+	static constexpr u32 npos = -1;
+	static constexpr u32 CHAR_SIZE = sizeof(CHAR);
+
+	u32   count;
+	u32   space;
+	CHAR* str;
+
+	wstring();
+	wstring(const CHAR* s);
+	wstring(const CHAR* s, u32 count);
+	wstring(const wstring& s);
+	~wstring();
+
+	CHAR& operator[](u32 idx);
+	void   operator= (const CHAR* s);
+	void   operator= (const wstring& s);
+	void   operator+=(const CHAR* s);
+	void   operator+=(const wstring& s);
+	wstring operator--(int);
+	wstring operator+ (const CHAR* c) const;
+	wstring operator+ (const wstring& s) const;
+	bool   operator==(const wstring& s) const;
+	bool   operator==(const CHAR* s) const;
+	friend wstring operator+ (const CHAR* c, const wstring& s);
+	inline explicit operator bool() { return count; }
+
+	void   reserve(u32 _space);
+	void   clear();
+	void   erase(u32 idx);
+	//inserts at specified idx, pushing the CHARacter at idx and all following CHARacters to the right
+	void   insert(CHAR c, u32 idx);
+	//returns a copy of the CHARacter at idx
+	CHAR   at(u32 idx) const;
+	//returns a wstring including the start and end CHARacters, end equals the end of the wstring (size-1) if npos
+	wstring substr(u32 start, u32 end = npos) const;
+	u32    findFirstStr(const wstring& s) const;
+	//returns first of CHAR from offset
+	u32    findFirstChar(CHAR c, u32 offset = 0) const;
+	//returns first of CHAR from offset backwards
+	u32    findFirstCharNot(CHAR c, u32 offset = 0) const;
+	u32    findLastChar(CHAR c, u32 offset = 0) const;
+	u32    findLastCharNot(CHAR c) const;
+	//returns how many times a CHAR appears in the wstring
+	u32    CHARCount(CHAR c) const;
+	//returns a subwstring from the beginning to specifiec CHAR, not including the CHAR
+	wstring substrToChar(CHAR c) const;
+
+	static wstring eatSpacesLeading(const wstring& s);
+	static wstring eatSpacesTrailing(const wstring& s);
+	static wstring toUpper(const wstring& s);
+	static wstring toLower(const wstring& s);
+};
+
+///////////////////////
+//// @constructors ////
+///////////////////////
+inline wstring::wstring(){
+	count  = 0;
+	space = 0;
+	str   = 0;
+};
+
+inline wstring::wstring(const CHAR* s){
+	count  = wcslen(s);
+	space = RoundUpTo(count+1, 4);
+	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	memcpy(str, s, count*CHAR_SIZE);
+}
+
+inline wstring::wstring(const CHAR* s, u32 _size){
+	count  = _size;
+	space = RoundUpTo(count+1, 4);
+	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	memcpy(str, s, count*CHAR_SIZE);
+}
+
+inline wstring::wstring(const wstring& s){
+	count = s.count;
+	space = RoundUpTo(count+1, 4);
+	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	memcpy(str, s.str, count*CHAR_SIZE);
+}
+
+inline wstring::~wstring(){
+	free(str);
+}
+
+////////////////////
+//// @operators ////
+////////////////////
+inline wstring::CHAR& wstring::operator[](u32 idx){
+	Assert(idx < space+1);
+	return str[idx];
+}
+
+inline void wstring::operator= (const CHAR* s){
+	free(str);
+	count  = wcslen(s);
+	space = RoundUpTo(count+1, 4);
+	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	memcpy(str, s, count*CHAR_SIZE);
+}
+
+inline void wstring::operator= (const wstring& s){
+	free(str);
+	count = s.count;
+	space = RoundUpTo(count+1, 4);
+	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	memcpy(str, s.str, count*CHAR_SIZE);
+}
+
+inline void wstring::operator+=(const CHAR* s){
+	u32 old_len = count;
+	u32 str_len = wcslen(s);
+	if(str_len == 0) return;
+	count += str_len;
+	
+	if(space == 0){
+		space = RoundUpTo(count+1, 4);
+		Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+		memcpy(str, s, count*CHAR_SIZE);
+	}else if(space < count+1){
+		space = RoundUpTo(count+1, 4);
+		Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+		memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
+	}else{
+		memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
+	}
+}
+
+inline void wstring::operator+=(const wstring& s){
+	u32 old_len = count;
+	u32 str_len = s.count;
+	if(str_len == 0) return;
+	count += str_len;
+	
+	if(space == 0){
+		space = RoundUpTo(count+1, 4);
+		Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+		memcpy(str, s.str, count*CHAR_SIZE);
+	}else if(space < count+1){
+		space = RoundUpTo(count+1, 4);
+		Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+		memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
+	}else{
+		memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
+	}
+}
+
+inline wstring wstring::operator--(int){
+	if(count == 0) return *this;
+	str[--count] = '\0';
+	return *this;
+}
+
+inline wstring wstring::operator+ (const CHAR* c) const{
+	if(count == 0) return wstring(c);
+	u32 str_len = wcslen(c);
+	if(str_len == 0) return *this;
+	
+	wstring result;
+	result.count  = count + str_len;
+	result.space = RoundUpTo(result.count+1, 4);
+	Assert(result.str = (CHAR*)calloc(result.space, CHAR_SIZE));
+	memcpy(result.str,      str, count*CHAR_SIZE);
+	memcpy(result.str+count, c,   str_len*CHAR_SIZE);
+	return result;
+}
+
+inline wstring wstring::operator+(const wstring& s) const{
+	if(s.count == 0) return *this;
+	
+	wstring result;
+	result.count  = count + s.count;
+	result.space = RoundUpTo(result.count+1, 4);
+	Assert(result.str = (CHAR*)calloc(result.space, CHAR_SIZE));
+	memcpy(result.str,      str,   count*CHAR_SIZE);
+	memcpy(result.str+count, s.str, s.count*CHAR_SIZE);
+	return result;
+}
+
+inline bool wstring::operator==(const wstring& s) const{
+	return wcscmp(str, s.str) == 0;
+}
+
+inline bool wstring::operator==(const CHAR* s) const{
+	return wcscmp(str, s) == 0;
+}
+
+////////////////////////////
+//// @special operators ////
+////////////////////////////
+inline std::ostream& operator<<(std::ostream& os, const wstring& m){
+	return os << m.str;
+}
+
+inline wstring operator+ (const wstring::CHAR* c, const wstring& s){
+	return wstring(c) + s;
+}
+
+////////////////////
+//// @functions ////
+////////////////////
+inline void wstring::reserve(u32 _space){
+	if(_space > space){
+		space = RoundUpTo(_space+1, 4);
+		Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+	}
+}
+
+inline void wstring::clear(){
+	free(str);
+	count  = 0;
+	space = 0;
+	str   = 0;
+}
+
+inline void wstring::erase(u32 idx){
+	Assert(idx < count && idx >= 0);
+	if (count == 1) memset(str, 0, space);
+	else           memmove(str+idx, str+idx+1, (--count)*CHAR_SIZE);
+}
+
+inline void wstring::insert(CHAR c, u32 idx){
+	Assert(idx <= count);
+	count += 1;
+	if(space == 0){
+		space = 4;
+		Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+		str[0] = c;
+	}else if(space < count+1){
+		space = RoundUpTo(count+1, 4);
+		Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+		memmove(str+idx+1, str+idx, (count-idx)*CHAR_SIZE);
+		str[idx] = c;
+	}else{
+		memmove(str+idx+1, str+idx, (count-idx)*CHAR_SIZE);
+		str[idx] = c;
+	}
+}
+
+inline wstring::CHAR wstring::at(u32 idx) const{
+	Assert(idx <= count);
+	return str[idx];
+}
+
+inline wstring wstring::substr(u32 start, u32 end) const{
+	if(end == npos) end = count-1;
+	Assert(start <= count && end <= count && start <= end, "check start/end vars");
+	return wstring(str+start, (end-start)+1);
+}
+
+inline u32 wstring::findFirstStr(const wstring& s) const{
+	for(u32 i = 0; i < count; ++i){
+		if(wcsncmp(str+i, s.str, s.count) == 0) return i;
+	}
+	return npos;
+}
+
+inline u32 wstring::findFirstChar(CHAR c, u32 offset) const{
+	for(u32 i = offset; i < count; ++i){
+		if(str[i] == c) return i;
+	}
+	return npos;
+}
+
+inline u32 wstring::findFirstCharNot(CHAR c, u32 offset) const{
+	for(u32 i = 0; i < count; ++i){
+		if(str[i] != c) return i;
+	}
+	return npos;
+}
+
+inline u32 wstring::findLastChar(CHAR c, u32 offset) const{
+	Assert(offset < count);
+	for(u32 i = (offset != 0 ? offset : count - 1); i != 0; --i){
+		if(str[i] == c) return i;
+	}
+	return npos;
+}
+
+inline u32 wstring::findLastCharNot(CHAR c) const{
+	for(u32 i = count-1; i != 0; --i){
+		if(str[i] != c) return i;
+	}
+	return npos;
+}
+
+inline u32 wstring::CHARCount(CHAR c) const{
+	u32 sum = 0;
+	for(u32 i = 0; i < count; ++i){ if(str[i] == c){ sum++; } }
+	return sum;
+}
+
+inline wstring wstring::substrToChar(CHAR c) const{
+	u32 idx = findFirstChar(c);
+	return (idx != npos) ? *this : wstring(str, idx); //!TestMe
+}
+
+///////////////////////////
+//// @static functions ////
+///////////////////////////
+inline wstring wstring::eatSpacesLeading(const wstring& text){
+	u32 idx = text.findFirstCharNot(' ');
+	return (idx != npos) ? text.substr(idx) : wstring();
+}
+
+inline wstring wstring::eatSpacesTrailing(const wstring& text){
+	u32 idx = text.findLastCharNot(' ');
+	return (idx != npos) ? text.substr(0, idx+1) : wstring();
+}
+
+inline wstring wstring::toUpper(const wstring& in){
+	wstring result = in;
+	forI(result.count) if(result.str[i] >= 'a' && result.str[i] <= 'z') result.str[i] -= 32;
+	return result;
+}
+
+inline wstring wstring::toLower(const wstring& in){
+	wstring result = in;
+	forI(result.count) if(result.str[i] >= 'A' && result.str[i] <= 'Z') result.str[i] += 32;
+	return result;
+}
+
+
+#endif //DESHI_wstring_H
