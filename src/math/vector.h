@@ -56,6 +56,7 @@ struct vec2 {
 	bool operator!=(const vec2& rhs) const;
 	friend vec2 operator* (float lhs, const vec2& rhs){ return rhs * lhs; }
 	
+	void  set(f32 x, f32 y);
 	vec2  absV() const;
 	vec2  copy() const;
 	float dot(const vec2& rhs) const;
@@ -128,6 +129,7 @@ struct vec3 {
 	bool operator!=(const vec3& rhs) const;
 	friend vec3 operator* (float lhs, const vec3& rhs){ return rhs * lhs; }
 	
+	void  set(f32 x, f32 y, f32 z);
 	vec3  absV() const;
 	vec3  copy() const;
 	float dot(const vec3& rhs) const;
@@ -207,6 +209,7 @@ struct vec4 {
 	bool operator!=(const vec4& rhs) const;
 	friend vec4 operator* (const float& lhs, const vec4& rhs){ return rhs * lhs; }
 	
+	void  set(f32 x, f32 y, f32 z, f32 w);
 	vec4  absV() const;
 	vec4  copy() const;
 	float dot(const vec4& rhs) const;

@@ -118,6 +118,10 @@ operator != (const vec4& rhs) const {
 ///////////////////
 //// functions ////
 ///////////////////
+inline void vec4::
+set(f32 _x, f32 _y, f32 _z, f32 _w){
+	x = _x; y = _y; z = _z; w = _w;
+}
 
 inline vec4 vec4::
 absV() const{

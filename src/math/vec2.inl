@@ -123,6 +123,10 @@ operator!=(const vec2& rhs) const{
 ///////////////////
 //// functions ////
 ///////////////////
+inline void vec2::
+set(f32 _x, f32 _y){
+	x = _x; y = _y;
+}
 
 inline vec2 vec2::
 absV() const{

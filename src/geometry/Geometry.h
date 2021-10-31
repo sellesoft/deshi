@@ -156,7 +156,6 @@ global_ b32 AABBRaycast(vec3 ray_start, vec3 ray_direction, vec3 aabb_min, vec3 
 	
 	if((tmin > tzmax) || (tzmin > tmax)) return false;
 	
-	//NOTE use these if we want the t values eventually
 	if(tzmin < tmin) tmin = tzmin;
 	if(out_t) *out_t = tmin;
 	
