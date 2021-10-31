@@ -75,6 +75,8 @@ inline aligned_quad Font::
 GetPackedQuad(int charidx, vec2* pos, vec2 scale) {
 	
 	float ipw = 1.0f / ttf_size[0], iph = 1.0f / ttf_size[1];
+
+	wchar_t ch = (wchar_t)charidx;
 	
 	packedchar* b = nullptr;
 	
@@ -89,7 +91,7 @@ GetPackedQuad(int charidx, vec2* pos, vec2 scale) {
 	if (b) {
 		aligned_quad q;
 		
-		q.x0 = pos->x + b->xoff;
+		q.x0 = pos->x + b->xoff * scale.x;
 		q.y0 = pos->y + (b->yoff + ascent) * scale.y;
 		q.x1 = pos->x + b->xoff + (b->xoff2 - b->xoff) * scale.x;
 		q.y1 = pos->y + (b->yoff2 + ascent) * scale.y;
