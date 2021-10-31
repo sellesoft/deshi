@@ -464,6 +464,8 @@ namespace Math {
 			point.y <= rectPos.y + rectDims.y;
 	}
 	
+	#define BoundTimeOsc(x, y) Math::BoundedOscillation(x, y, DeshTotalTime)
+
 	//oscillates between a given upper and lower value based on a given x value
 	inline global_ float BoundedOscillation(float lower, float upper, float x){
 		Assert(upper > lower);

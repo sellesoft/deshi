@@ -109,8 +109,6 @@ local UIItem lastitem;
 //helper defines
 
 
-#define workingWinPositionPlusTitlebar vec2(curwin->x, curwin->y + ((curwin->flags & UIWindowFlags_NoTitleBar) ? 0 :style.titleBarHeight));
-#define workingWinSizeMinusTitlebar    vec2(curwin->width, curwin->height - ((curwin->flags & UIWindowFlags_NoTitleBar) ? 0 : style.titleBarHeight));
 #define workingHasFlag(flag) (curwin->flags & flag)
 #define HasFlag(flag) (flags & flag)
 
@@ -145,6 +143,37 @@ vec2 UI::CalcTextSize(cstring text){
 				line_width += style.font->GetPackedChar(*text.str)->xadvance * style.fontHeight / style.font->aspect_ratio / style.font->max_width;
 				if(line_width > result.x) result.x = line_width;
 				advance(&text,1);
+			}
+		}break;
+		default: Assert(!"unhandled font type"); break;
+	}
+	return result;
+}
+
+vec2 UI::CalcTextSize(wcstring text) {
+	vec2 result = vec2{ 0, f32(style.fontHeight) };
+	f32 line_width = 0;
+	switch (style.font->type) {
+		case FontType_BDF: case FontType_NONE: {
+			while (text) {
+				if (*text.str == '\n') {
+					result.y += style.fontHeight;
+					line_width = 0;
+				}
+				line_width += style.font->max_width;
+				if (line_width > result.x) result.x = line_width;
+				advance(&text, 1);
+			}
+		}break;
+		case FontType_TTF: {
+			while (text) {
+				if (*text.str == '\n') {
+					result.y += style.fontHeight;
+					line_width = 0;
+				}
+				line_width += style.font->GetPackedChar(*text.str)->xadvance * style.fontHeight / style.font->aspect_ratio / style.font->max_width;
+				if (line_width > result.x) result.x = line_width;
+				advance(&text, 1);
 			}
 		}break;
 		default: Assert(!"unhandled font type"); break;
@@ -288,8 +317,8 @@ inline void EndItem(UIItem* item) {
 //@BeginRow
 //  a row is a collection of columns used to align a number of items nicely
 //  you are required to specify the width of each column when using Row, as it removes the complicated
-//  nature of having to figure this out after the fact. row height and width are not necessarily a problem
-//  and can be determined dynamically
+//  nature of having to figure this out after the fact. while row width is not much of a problem, row height is
+//  so you are required to define a static height upon calling the function
 //
 
 void UI::BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags) {
@@ -422,10 +451,19 @@ local void TextCall(const char* text, vec2 pos, color color, UIItem* item) {
 	drawCmd.text = string(text); 
 	drawCmd.position = pos;
 	drawCmd.color = color;
-	//drawCmd.scissorOffset = -item.position;
-	//drawCmd.scissorExtent = UI::CalcTextSize(text);
 	drawCmd.font = style.font;
 	
+	item->drawCmds.add(drawCmd);
+}
+
+//secondary, for unicode
+local void TextCall(const wchar_t* text, vec2 pos, color color, UIItem* item) {
+	UIDrawCmd drawCmd{ UIDrawType_WText };
+	drawCmd.wtext = wstring(text);
+	drawCmd.position = pos;
+	drawCmd.color = color;
+	drawCmd.font = style.font;
+
 	item->drawCmds.add(drawCmd);
 }
 
@@ -479,7 +517,7 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 
 							//find closest space to split by, if none we just split the word
 							u32 lastspc = t.findLastChar(' ', i);
-							string nustr = t.substr(0, (lastspc == string::npos) ? i : lastspc);
+							string nustr = t.substr(0, (lastspc == string::npos) ? i - 1 : lastspc);
 							TextCall(nustr.str, workcur, color, item);
 
 							t = t.substr(nustr.count);
@@ -531,11 +569,9 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 
 							if (!strlen(t.str)) break;
 						}
-
 						//write last bit of text
 						TextCall(t.str, workcur, color, item);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
-
 					}
 					else {
 						TextCall(t.str, workcur, color, item);
@@ -571,6 +607,146 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 	AdvanceCursor(item, move_cursor);
 }
 
+//second function for wrapping, using unicode
+//these can probably be merged into one but i dont feel like doing that rn
+local void TextW(const wchar_t* in, vec2 pos, color color, bool nowrap, bool move_cursor = true) {
+
+	using namespace UI;
+	UIItem* item = BeginItem(UIItemType_Text);
+	item->position = (move_cursor ? PositionForNewItem() : pos);
+
+	if (!nowrap) {
+		wstring text = in;
+
+		//we split wstring by newlines and put them into here 
+		//maybe make this into its own function
+		array<wstring> newlined;
+
+		u32 newline = text.findFirstChar('\n');
+		if (newline != wstring::npos && newline != text.count - 1) {
+			wstring remainder = text.substr(newline + 1);
+			newlined.add(text.substr(0, newline - 1));
+			newline = remainder.findFirstChar('\n');
+			while (newline != wstring::npos) {
+				newlined.add(remainder.substr(0, newline - 1));
+				remainder = remainder.substr(newline + 1);
+				newline = remainder.findFirstChar('\n');
+			}
+			newlined.add(remainder);
+		}
+		else {
+			newlined.add(text);
+		}
+		vec2 workcur = vec2{ 0,0 };
+
+		//TODO make this differenciate between monospace/non-monospace when i eventually add that to Font	
+		switch (style.font->type) {
+
+			case FontType_TTF: {
+				Font* font = style.font;
+
+				float wscale = style.fontHeight / font->aspect_ratio / font->max_width;
+				float maxw = curwin->width - 2 * style.windowPadding.x;
+				float currlinew = 0;
+
+				for (wstring& t : newlined) {
+					for (int i = 0; i < t.count; i++) {
+						currlinew += font->GetPackedChar(t[i])->xadvance * wscale;
+
+						if (currlinew >= maxw) {
+
+							//find closest space to split by, if none we just split the word
+							u32 lastspc = t.findLastChar(' ', i);
+							wstring nustr = t.substr(0, (lastspc == wstring::npos) ? i - 1 : lastspc);
+							TextCall(nustr.str, workcur, color, item);
+
+							t = t.substr(nustr.count);
+							workcur.y += style.fontHeight + style.itemSpacing.y;
+
+							i = 0;
+							currlinew = 0;
+						}
+					}
+					//place last bit of text that didn't need wrapped
+					if (currlinew) {
+						TextCall(t.str, workcur, color, item);
+						workcur.y += style.fontHeight + style.itemSpacing.y;
+					}
+
+				}
+			}break;
+
+			case FontType_BDF: {
+				//max characters we can place 
+				u32 maxChars = floor(((curwin->width - 2 * style.windowPadding.x) - workcur.x) / style.font->max_width);
+
+				//make sure max chars never equals 0
+				if (!maxChars) maxChars++;
+
+				//wrap each wstring in newline array
+				for (wstring& t : newlined) {
+					//we need to see if the wstring goes beyond the width of the window and wrap if it does
+					if (maxChars < t.count) {
+						//if this is true we know item's total width is just maxChars times font width
+						item->size.x = maxChars * style.font->max_width;
+
+						//find closest space to split by
+						u32 splitat = t.findLastChar(' ', maxChars);
+						wstring nustr = t.substr(0, (splitat == wstring::npos) ? maxChars - 1 : splitat);
+						TextCall(nustr.str, workcur, color, item);
+
+						t = t.substr(nustr.count);
+						workcur.y += style.fontHeight + style.itemSpacing.y;
+
+						//continue to wrap if we need to
+						while (t.count > maxChars) {
+							splitat = t.findLastChar(' ', maxChars);
+							nustr = t.substr(0, (splitat == wstring::npos) ? maxChars - 1 : splitat);
+							TextCall(nustr.str, workcur, color, item);
+
+							t = t.substr(nustr.count);
+							workcur.y += style.fontHeight + style.itemSpacing.y;
+
+							if (!wcslen(t.str)) break;
+						}
+						//write last bit of text
+						TextCall(t.str, workcur, color, item);
+						workcur.y += style.fontHeight + style.itemSpacing.y;
+					}
+					else {
+						TextCall(t.str, workcur, color, item);
+						workcur.y += style.fontHeight + style.itemSpacing.y;
+					}
+				}
+
+
+
+			}break;
+			default:Assert(!"unknown font type?");
+		}
+
+		if (NextItemSize.x != -1)
+			item->size = NextItemSize;
+		else CalcItemSize(item);
+
+		item->size.y = workcur.y;
+
+		NextItemSize = vec2{ -1, 0 };
+	}
+	else {
+		//TODO(sushi) make NoWrap also check for newlines
+
+		if (NextItemSize.x != -1) item->size = NextItemSize;
+		else                      item->size = UI::CalcTextSize(in);
+
+		NextItemSize = vec2{ -1, 0 };
+
+		TextCall(in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
+		CalcItemSize(item);
+	}
+	AdvanceCursor(item, move_cursor);
+}
+
 void UI::Text(const char* text, UITextFlags flags) {
 	TextW(text, curwin->cursor, style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap));
 }
@@ -584,6 +760,22 @@ void UI::Text(const char* text, color color, UITextFlags flags) {
 }
 
 void UI::Text(const char* text, vec2 pos, color color, UITextFlags flags) {
+	TextW(text, pos, color, HasFlag(UITextFlags_NoWrap), 0);
+}
+
+void UI::Text(const wchar_t* text, UITextFlags flags){
+	TextW(text, curwin->cursor, style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap));
+}
+
+void UI::Text(const wchar_t* text, vec2 pos, UITextFlags flags){
+	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap), 0);
+}
+
+void UI::Text(const wchar_t* text, color color, UITextFlags flags){
+	TextW(text, curwin->cursor, color, HasFlag(UITextFlags_NoWrap));
+}
+
+void UI::Text(const wchar_t* text, vec2 pos, color color, UITextFlags flags){
 	TextW(text, pos, color, HasFlag(UITextFlags_NoWrap), 0);
 }
 
@@ -1781,6 +1973,8 @@ void UI::Update() {
 				float    dct = drawCmd.thickness;
 				
 				cstring dctex{drawCmd.text.str,drawCmd.text.count};
+				wcstring wdctex{ drawCmd.wtext.str,drawCmd.wtext.count };
+
 				Font*   font = drawCmd.font;
 				
 				switch (drawCmd.type) {
@@ -1798,6 +1992,14 @@ void UI::Update() {
 						}
 						else {
 							Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, dcso, dcse);
+						}
+					}break;
+					case UIDrawType_WText: {
+						if (drawCmd.scissorExtent.x == -1) {
+							Render::DrawTextUI(font, wdctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, winscissor, winsiz);
+						}
+						else {
+							Render::DrawTextUI(font, wdctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, dcso, dcse);
 						}
 					}break;
 					case UIDrawType_Rectangle: {
@@ -1826,7 +2028,9 @@ void UI::Update() {
 					color  dccol = drawCmd.color;
 					float    dct = drawCmd.thickness;
 					
-					cstring dctex{drawCmd.text.str,drawCmd.text.count};
+					cstring dctex{ drawCmd.text.str,drawCmd.text.count };
+					wcstring wdctex{ drawCmd.wtext.str, drawCmd.wtext.count };
+
 					Font*   font = drawCmd.font;
 					
 					switch (drawCmd.type) {
@@ -1837,21 +2041,24 @@ void UI::Update() {
 								Render::FillRectUI(dcpos, dcsiz, dccol, dcso, dcse);
 							
 						}break;
-						
 						case UIDrawType_Line: {
 							if (drawCmd.scissorExtent.x == -1)
 								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, winscissor, winsiz);
 							else
 								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, dcso - itempos, dcse);
 						}break;
-						
 						case UIDrawType_Text: {
 							if (drawCmd.scissorExtent.x == -1)
 								Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, winscissor, winsiz);
 							else
 								Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, dcso, dcse);
 						}break;
-						
+						case UIDrawType_WText: {
+							if (drawCmd.scissorExtent.x == -1)
+								Render::DrawTextUI(font, wdctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, winscissor, winsiz);
+							else
+								Render::DrawTextUI(font, wdctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, dcso, dcse);
+						}break;
 						case UIDrawType_Rectangle: {
 							if (drawCmd.scissorExtent.x == -1)
 								Render::DrawRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
