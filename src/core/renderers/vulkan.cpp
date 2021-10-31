@@ -3478,16 +3478,15 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 				u32       col = color.rgba;
 				Vertex2*   vp = uiVertexArray + uiVertexCount;
 				UIIndexVk* ip = uiIndexArray + uiIndexCount;
-				
+
 				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
 				
 				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
-				vp[0].pos = { q.x0,q.y0/*+font->ascent*/ }; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
-				vp[1].pos = { q.x1,q.y0/*+font->ascent*/ }; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
-				vp[2].pos = { q.x1,q.y1/*+font->ascent*/ }; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
-				vp[3].pos = { q.x0,q.y1/*+font->ascent*/ }; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
-				
+				vp[0].pos = { q.x0,q.y0}; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
+				vp[1].pos = { q.x1,q.y0}; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
+				vp[2].pos = { q.x1,q.y1}; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
+				vp[3].pos = { q.x0,q.y1}; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
 				
 				uiVertexCount += 4;
 				uiIndexCount += 6;
@@ -3507,7 +3506,95 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 	}
 }
 
-
+//for now this will be 2 functions, as UI will handle all unicode text stuff for now.
+void Render::DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 scale, vec2 scissorOffset, vec2 scissorExtent) {
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	if (color.a == 0) return;
+	
+	//im doing offset and extent because we have to know if we're drawing in a new window
+	//and you could do text last in one, and text first in another
+	if ((uiCmdArray[uiCmdCount - 1].texIdx != font->idx)
+		|| (scissorOffset != prevScissorOffset)
+		|| (scissorExtent != prevScissorExtent)) {
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+	}
+	
+	switch (vkFonts[font->idx].type) {
+		//// BDF (and NULL) font rendering ////
+		case FontType_BDF: case FontType_NONE: {
+			forI(text.count) {
+				u32       col = color.rgba;
+				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				UIIndexVk* ip = uiIndexArray + uiIndexCount;
+				
+				f32 w = vkFonts[font->idx].characterWidth * scale.x;
+				f32 h = vkFonts[font->idx].characterHeight * scale.y;
+				f32 dy = 1.f / (f32)vkFonts[font->idx].characterCount;
+				
+				f32 idx = f32(text[i] - 32);
+				f32 topoff = idx * dy;
+				f32 botoff = topoff + dy;
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff }; vp[0].color = col;
+				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col;
+				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col;
+				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff }; vp[3].color = col;
+				
+				uiVertexCount += 4;
+				uiIndexCount += 6;
+				uiCmdArray[uiCmdCount - 1].indexCount += 6;
+				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
+				if (scissorExtent.x != -1) {
+					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+				}
+				else {
+					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+				}
+				
+				pos.x += vkFonts[font->idx].characterWidth * scale.x;
+			}
+		}break;
+		//// TTF font rendering ////
+		case FontType_TTF: {
+			forI(text.count) {
+				u32       col = color.rgba;
+				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				UIIndexVk* ip = uiIndexArray + uiIndexCount;
+				
+				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				vp[0].pos = { q.x0,q.y0}; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
+				vp[1].pos = { q.x1,q.y0}; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
+				vp[2].pos = { q.x1,q.y1}; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
+				vp[3].pos = { q.x0,q.y1}; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
+				
+				
+				uiVertexCount += 4;
+				uiIndexCount += 6;
+				uiCmdArray[uiCmdCount - 1].indexCount += 6;
+				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
+				if (scissorExtent.x != -1) {
+					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+				}
+				else {
+					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+				}
+			}break;
+			default: Assert(!"unhandled font type"); break;
+		}
+	}
+}
 
 
 ///////////////////
