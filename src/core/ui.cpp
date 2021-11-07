@@ -794,7 +794,7 @@ void UI::TextF(const char* fmt, ...) {
 
 bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 	UIItem* item = BeginItem(UIItemType_Button);
-	item->size = (NextItemSize.x != -1) ? NextItemSize : vec2(Min(curwin->width, 50), style.fontHeight * 1.3);
+	item->size = (NextItemSize.x != -1) ? NextItemSize : vec2(Min(curwin->width, 50.0f), style.fontHeight * 1.3f);
 	item->position = pos;
 	AdvanceCursor(item, move_cursor);
 	
@@ -1949,7 +1949,7 @@ void UI::Update() {
 	auto draw_window = [&](UIWindow* p) {
 		//window position and size corrected for titlebar 
 		vec2 winpos = vec2(p->x, p->y + p->titleBarHeight);
-		vec2 winscissor{ (f32)Max(0, winpos.x), (f32)Max(0, winpos.y) } ; //NOTE scissor offset cant be negative
+		vec2 winscissor{ Max(0.0f, winpos.x), Max(0.0f, winpos.y) } ; //NOTE scissor offset cant be negative
 		vec2 winsiz = vec2(p->width, p->height - p->titleBarHeight) * p->style.globalScale;
 		
 		//winscissor *= p->style.globalScale;
@@ -1968,7 +1968,7 @@ void UI::Update() {
 				vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
 				vec2    dcse = drawCmd.scissorExtent * (drawCmd.scissorExtent.x == -1 ? vec2::ONE : item.style.globalScale);
 				vec2    dcso = itempos + drawCmd.scissorOffset;
-				dcso.x = Max(0, dcso.x); dcso.y = Max(0, dcso.y); //NOTE scissor offset cant be negative
+				dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
 				color  dccol = drawCmd.color;
 				float    dct = drawCmd.thickness;
 				
@@ -2024,7 +2024,7 @@ void UI::Update() {
 					vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
 					vec2    dcse = drawCmd.scissorExtent * (drawCmd.scissorExtent.x == -1 ? vec2::ONE : item.style.globalScale);
 					vec2    dcso = itempos + drawCmd.scissorOffset * item.style.globalScale;
-					dcso.x = Max(0, dcso.x); dcso.y = Max(0, dcso.y); //NOTE scissor offset cant be negative
+					dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
 					color  dccol = drawCmd.color;
 					float    dct = drawCmd.thickness;
 					
@@ -2092,7 +2092,7 @@ void UI::Update() {
 		vec2   dcsiz = drawCmd.dimensions;
 		vec2    dcse = drawCmd.scissorExtent;
 		vec2    dcso = drawCmd.scissorOffset;
-		dcso.x = Max(0, dcso.x); dcso.y = Max(0, dcso.y); //NOTE scissor offset cant be negative
+		dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
 		color  dccol = drawCmd.color;
 		float    dct = drawCmd.thickness;
 		cstring dctex{drawCmd.text.str,drawCmd.text.count};

@@ -123,9 +123,7 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
 template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;};
 template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;};
-template<typename T, typename U> FORCE_INLINE T Max(T a, U b){return (a > b) ? a : b;};
 template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;};
-template<typename T, typename U> FORCE_INLINE T Min(T a, U b){return (a < b) ? a : b;};
 template<typename T> FORCE_INLINE T Clamp(T value, T min, T max){return (value < min) ? min : ((value > max) ? max : value);};
 template<typename T, typename U> FORCE_INLINE T Clamp(T value, U min, T max){return (value < min) ? min : ((value > max) ? max : value);};
 template<typename T, typename U> FORCE_INLINE T Clamp(T value, T min, U max){return (value < min) ? min : ((value > max) ? max : value);};
