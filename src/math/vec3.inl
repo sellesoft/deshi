@@ -158,7 +158,7 @@ dot(const vec3& rhs) const{
 //left hand cross product
 inline vec3 vec3::
 cross(const vec3& rhs) const{
-	return vec3(this->y*rhs.z - rhs.y*this->z, this->z*rhs.x - rhs.z*this->x, this->x*rhs.y - rhs.x*this->y);
+	return vec3(this->y*rhs.z - this->z*rhs.y, this->z*rhs.x - this->x*rhs.z, this->x*rhs.y - this->y*rhs.x);
 }
 
 inline float vec3::

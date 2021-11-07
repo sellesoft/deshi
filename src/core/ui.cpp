@@ -463,7 +463,7 @@ local void TextCall(const wchar_t* text, vec2 pos, color color, UIItem* item) {
 	drawCmd.position = pos;
 	drawCmd.color = color;
 	drawCmd.font = style.font;
-
+	
 	item->drawCmds.add(drawCmd);
 }
 
@@ -498,28 +498,28 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 			newlined.add(text);
 		}
 		vec2 workcur = vec2{ 0,0 };
-
+		
 		//TODO make this differenciate between monospace/non-monospace when i eventually add that to Font	
 		switch (style.font->type) {
-
+			
 			case FontType_TTF: {
 				Font* font = style.font;
-
+				
 				float wscale = style.fontHeight / font->aspect_ratio / font->max_width;
 				float maxw = curwin->width - 2 * style.windowPadding.x;
 				float currlinew = 0;
-
+				
 				for (string& t : newlined) {
 					for (int i = 0; i < t.count; i++) {
 						currlinew += font->GetPackedChar(t[i])->xadvance * wscale;
-
+						
 						if (currlinew >= maxw) {
-
+							
 							//find closest space to split by, if none we just split the word
 							u32 lastspc = t.findLastChar(' ', i);
 							string nustr = t.substr(0, (lastspc == string::npos) ? i - 1 : lastspc);
 							TextCall(nustr.str, workcur, color, item);
-
+							
 							t = t.substr(nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
 							
@@ -535,38 +535,38 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 					
 				}
 			}break;
-
+			
 			case FontType_BDF: {
 				//max characters we can place 
 				u32 maxChars = floor(((curwin->width - 2 * style.windowPadding.x) - workcur.x) / style.font->max_width);
-
+				
 				//make sure max chars never equals 0
 				if (!maxChars) maxChars++;
-
+				
 				//wrap each string in newline array
 				for (string& t : newlined) {
 					//we need to see if the string goes beyond the width of the window and wrap if it does
 					if (maxChars < t.count) {
 						//if this is true we know item's total width is just maxChars times font width
 						item->size.x = maxChars * style.font->max_width;
-
+						
 						//find closest space to split by
 						u32 splitat = t.findLastChar(' ', maxChars);
 						string nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
 						TextCall(nustr.str, workcur, color, item);
-
+						
 						t = t.substr(nustr.count);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
-
+						
 						//continue to wrap if we need to
 						while (t.count > maxChars) {
 							splitat = t.findLastChar(' ', maxChars);
 							nustr = t.substr(0, (splitat == string::npos) ? maxChars - 1 : splitat);
 							TextCall(nustr.str, workcur, color, item);
-
+							
 							t = t.substr(nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
-
+							
 							if (!strlen(t.str)) break;
 						}
 						//write last bit of text
@@ -578,19 +578,19 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 						workcur.y += style.fontHeight + style.itemSpacing.y;
 					}
 				}
-
+				
 				
 				
 			}break;
 			default:Assert(!"unknown font type?");
 		}
-
+		
 		if (NextItemSize.x != -1)
 			item->size = NextItemSize;
 		else CalcItemSize(item);
-
+		
 		item->size.y = workcur.y;
-
+		
 		NextItemSize = vec2{ -1, 0 };
 	}
 	else {
@@ -610,18 +610,18 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 //second function for wrapping, using unicode
 //these can probably be merged into one but i dont feel like doing that rn
 local void TextW(const wchar_t* in, vec2 pos, color color, bool nowrap, bool move_cursor = true) {
-
+	
 	using namespace UI;
 	UIItem* item = BeginItem(UIItemType_Text);
 	item->position = (move_cursor ? PositionForNewItem() : pos);
-
+	
 	if (!nowrap) {
 		wstring text = in;
-
+		
 		//we split wstring by newlines and put them into here 
 		//maybe make this into its own function
 		array<wstring> newlined;
-
+		
 		u32 newline = text.findFirstChar('\n');
 		if (newline != wstring::npos && newline != text.count - 1) {
 			wstring remainder = text.substr(newline + 1);
@@ -638,31 +638,31 @@ local void TextW(const wchar_t* in, vec2 pos, color color, bool nowrap, bool mov
 			newlined.add(text);
 		}
 		vec2 workcur = vec2{ 0,0 };
-
+		
 		//TODO make this differenciate between monospace/non-monospace when i eventually add that to Font	
 		switch (style.font->type) {
-
+			
 			case FontType_TTF: {
 				Font* font = style.font;
-
+				
 				float wscale = style.fontHeight / font->aspect_ratio / font->max_width;
 				float maxw = curwin->width - 2 * style.windowPadding.x;
 				float currlinew = 0;
-
+				
 				for (wstring& t : newlined) {
 					for (int i = 0; i < t.count; i++) {
 						currlinew += font->GetPackedChar(t[i])->xadvance * wscale;
-
+						
 						if (currlinew >= maxw) {
-
+							
 							//find closest space to split by, if none we just split the word
 							u32 lastspc = t.findLastChar(' ', i);
 							wstring nustr = t.substr(0, (lastspc == wstring::npos) ? i - 1 : lastspc);
 							TextCall(nustr.str, workcur, color, item);
-
+							
 							t = t.substr(nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
-
+							
 							i = 0;
 							currlinew = 0;
 						}
@@ -672,41 +672,41 @@ local void TextW(const wchar_t* in, vec2 pos, color color, bool nowrap, bool mov
 						TextCall(t.str, workcur, color, item);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
 					}
-
+					
 				}
 			}break;
-
+			
 			case FontType_BDF: {
 				//max characters we can place 
 				u32 maxChars = floor(((curwin->width - 2 * style.windowPadding.x) - workcur.x) / style.font->max_width);
-
+				
 				//make sure max chars never equals 0
 				if (!maxChars) maxChars++;
-
+				
 				//wrap each wstring in newline array
 				for (wstring& t : newlined) {
 					//we need to see if the wstring goes beyond the width of the window and wrap if it does
 					if (maxChars < t.count) {
 						//if this is true we know item's total width is just maxChars times font width
 						item->size.x = maxChars * style.font->max_width;
-
+						
 						//find closest space to split by
 						u32 splitat = t.findLastChar(' ', maxChars);
 						wstring nustr = t.substr(0, (splitat == wstring::npos) ? maxChars - 1 : splitat);
 						TextCall(nustr.str, workcur, color, item);
-
+						
 						t = t.substr(nustr.count);
 						workcur.y += style.fontHeight + style.itemSpacing.y;
-
+						
 						//continue to wrap if we need to
 						while (t.count > maxChars) {
 							splitat = t.findLastChar(' ', maxChars);
 							nustr = t.substr(0, (splitat == wstring::npos) ? maxChars - 1 : splitat);
 							TextCall(nustr.str, workcur, color, item);
-
+							
 							t = t.substr(nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
-
+							
 							if (!wcslen(t.str)) break;
 						}
 						//write last bit of text
@@ -718,29 +718,29 @@ local void TextW(const wchar_t* in, vec2 pos, color color, bool nowrap, bool mov
 						workcur.y += style.fontHeight + style.itemSpacing.y;
 					}
 				}
-
-
-
+				
+				
+				
 			}break;
 			default:Assert(!"unknown font type?");
 		}
-
+		
 		if (NextItemSize.x != -1)
 			item->size = NextItemSize;
 		else CalcItemSize(item);
-
+		
 		item->size.y = workcur.y;
-
+		
 		NextItemSize = vec2{ -1, 0 };
 	}
 	else {
 		//TODO(sushi) make NoWrap also check for newlines
-
+		
 		if (NextItemSize.x != -1) item->size = NextItemSize;
 		else                      item->size = UI::CalcTextSize(in);
-
+		
 		NextItemSize = vec2{ -1, 0 };
-
+		
 		TextCall(in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
 		CalcItemSize(item);
 	}
@@ -1872,7 +1872,7 @@ void UI::Init() {
 	PushVar(UIStyleVar_FontHeight,          style.font->max_height);
 	
 	PushScale(vec2(1, 1));
-
+	
 	initColorStackSize = colorStack.count;
 	initStyleStackSize = varStack.count;
 	
@@ -1949,11 +1949,11 @@ void UI::Update() {
 	auto draw_window = [&](UIWindow* p) {
 		//window position and size corrected for titlebar 
 		vec2 winpos = vec2(p->x, p->y + p->titleBarHeight);
-		vec2 winscissor{ Max(0, winpos.x), Max(0, winpos.y) } ; //NOTE scissor offset cant be negative
+		vec2 winscissor{ (f32)Max(0, winpos.x), (f32)Max(0, winpos.y) } ; //NOTE scissor offset cant be negative
 		vec2 winsiz = vec2(p->width, p->height - p->titleBarHeight) * p->style.globalScale;
 		
 		//winscissor *= p->style.globalScale;
-
+		
 		if (p->hovered && !(p->flags & UIWindowFlags_DontSetGlobalHoverFlag))
 			globalHovered = 1;
 		
@@ -1974,7 +1974,7 @@ void UI::Update() {
 				
 				cstring dctex{drawCmd.text.str,drawCmd.text.count};
 				wcstring wdctex{ drawCmd.wtext.str,drawCmd.wtext.count };
-
+				
 				Font*   font = drawCmd.font;
 				
 				switch (drawCmd.type) {
@@ -2030,7 +2030,7 @@ void UI::Update() {
 					
 					cstring dctex{ drawCmd.text.str,drawCmd.text.count };
 					wcstring wdctex{ drawCmd.wtext.str, drawCmd.wtext.count };
-
+					
 					Font*   font = drawCmd.font;
 					
 					switch (drawCmd.type) {

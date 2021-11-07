@@ -119,12 +119,17 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define Gigabytes(x) ((x) << 30)
 #define Terabytes(x) (((u64)(x)) << 40)
 #define ArrayCount(_ARR) (sizeof((_ARR)) / sizeof(((_ARR))[0])) //length of a static-size c-array
-#define Clamp(value, min, max) (((value) < (min)) ? (min) : (((value) > (max)) ? (max) : (value)))
-#define Max(a, b) (((a) > (b)) ? (a) : (b))
-#define Min(a, b) (((a) < (b)) ? (a) : (b))
 #define RoundUpTo(value, multiple) (((size_t)((value) + (((size_t)(multiple))-1)) / (size_t)(multiple)) * (size_t)(multiple))
 #define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
-template<typename T> inline void Swap(T& a, T& b){T temp = a; a = b; b = temp;};
+template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;};
+template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;};
+template<typename T, typename U> FORCE_INLINE T Max(T a, U b){return (a > b) ? a : b;};
+template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;};
+template<typename T, typename U> FORCE_INLINE T Min(T a, U b){return (a < b) ? a : b;};
+template<typename T> FORCE_INLINE T Clamp(T value, T min, T max){return (value < min) ? min : ((value > max) ? max : value);};
+template<typename T, typename U> FORCE_INLINE T Clamp(T value, U min, T max){return (value < min) ? min : ((value > max) ? max : value);};
+template<typename T, typename U> FORCE_INLINE T Clamp(T value, T min, U max){return (value < min) ? min : ((value > max) ? max : value);};
+template<typename T, typename U> FORCE_INLINE T Clamp(T value, U min, U max){return (value < min) ? min : ((value > max) ? max : value);};
 
 //NOTE macros disliked by delle :)
 #define cpystr(dst,src,bytes) strncpy((dst), (src), (bytes)); (dst)[(bytes)-1] = '\0' //copy c-string and null-terminate
