@@ -130,4 +130,24 @@ template<typename T> inline void Swap(T& a, T& b){T temp = a; a = b; b = temp;};
 #define cpystr(dst,src,bytes) strncpy((dst), (src), (bytes)); (dst)[(bytes)-1] = '\0' //copy c-string and null-terminate
 #define dyncast(child,base) dynamic_cast<child*>(base) //dynamic cast short-hand
 
+
+//this struct will outline the guidelines for making a custom allocator that string or array may use
+//and is the default allocator our container structs use
+//so, if you want to use a custom allocator with any of our container types, it must take this form, so just
+//exact same func names and arguments
+struct DefAlloc {
+	void* allocate(upt bytes) {
+		return malloc(bytes);
+	}
+
+	void* callocate(upt count, upt size) {
+		return calloc(count, size);
+	}
+
+	void deallocate(void* ptr) {
+		free(ptr);
+	}
+};
+
+
 #endif //DESHI_DEFINES_H
