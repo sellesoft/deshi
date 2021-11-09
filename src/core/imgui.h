@@ -6,11 +6,7 @@
 #include "../utils/Color.h"
 
 #include "../external/imgui/imgui.h" //includes <float.h>,<stdarg.h>,<stddef.h>,<string.h>
-#undef Max
-#undef Min 
 #include "../external/imgui/imgui_internal.h" //includes <stdio.h>,<stdlib.h>,<math.h>,<limits.h>
-#define Max(a, b) (((a) > (b)) ? (a) : (b))
-#define Min(a, b) (((a) < (b)) ? (a) : (b))
 
 namespace DeshiImGui{
 	

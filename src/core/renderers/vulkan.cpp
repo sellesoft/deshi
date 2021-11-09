@@ -3293,7 +3293,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
 	}
-
+	
 	float halfthick = thickness / 2;
 	
 	u32       col = color.rgba;
@@ -3330,7 +3330,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		
 		//figure out average norm
 		vec2
-		p01 = curr - last,
+			p01 = curr - last,
 		p12 = next - curr,
 		p02 = next - last,
 		//norm01 = vec2{ p01.y, -p01.x } * flip, //we flip the normal everytime to keep up the pattern
@@ -3339,43 +3339,43 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		
 		float a = p01.mag(), b = p12.mag(), c = p02.mag();
 		float ang = RADIANS(Math::AngBetweenVectors(-p01, p12));
-
+		
 		//this is the critical angle where the thickness of the 2 lines cause them to overlap at small angles
 		//if (fabs(ang) < 2 * atanf(thickness / (2 * p02.mag()))) {
 		//	ang = 2 * atanf(thickness / (2 * p02.mag()));
 		//}
-
+		
 		normav = p12.normalized();
 		normav = Math::vec2RotateByAngle(-DEGREES(ang) / 2, normav);
 		normav *= flip;
-
+		
 		//this is where we calc how wide the thickness of the inner line is meant to be
 		normav = normav.normalized() * thickness / ( 2 * sinf(ang / 2));
-
+		
 		vec2 normavout = normav;
 		vec2 normavin = -normav;
 		
 		normavout.clampMag(0, thickness * 2);//sqrt(2) / 2 * thickness );
 		normavin.clampMag(0, thickness * 4);
-
-
-
+		
+		
+		
 		
 		//set indicies by pattern
 		int ipidx = 6 * (i - 1) + 2;
 		ip[ipidx + 0] =
-		ip[ipidx + 2] =
-		ip[ipidx + 4] =
-		ip[ipidx + 7] =
-		uiVertexCount;
+			ip[ipidx + 2] =
+			ip[ipidx + 4] =
+			ip[ipidx + 7] =
+			uiVertexCount;
 		
 		ip[ipidx + 3] =
-		ip[ipidx + 5] =
-		uiVertexCount + 1;
-
+			ip[ipidx + 5] =
+			uiVertexCount + 1;
+		
 		vp[0].pos = curr + normavout; vp[0].uv = { 0,0 }; vp[0].color = col;//PackColorU32(255, 0, 0, 255);
 		vp[1].pos = curr + normavin; vp[1].uv = { 0,0 }; vp[1].color = col;//PackColorU32(255, 0, 255, 255);
-
+		
 		uiVertexCount += 2;
 		uiIndexCount += 6;
 		vp += 2;
@@ -3387,10 +3387,10 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 	{//last point
 		vec2 ott = points[points.count - 1] - points[points.count - 2];
 		vec2 norm = vec2(ott.y, -ott.x).normalized() * flip;
-
+		
 		vp[0].pos = points[points.count - 1] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;//PackColorU32(255, 50, 255, 255);
 		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;//PackColorU32(255, 50, 100, 255);
-
+		
 		//set final indicies by pattern
 		int ipidx = 6 * (points.count - 2) + 2;
 		ip[ipidx + 0] = uiVertexCount;
@@ -3478,7 +3478,7 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 				u32       col = color.rgba;
 				Vertex2*   vp = uiVertexArray + uiVertexCount;
 				UIIndexVk* ip = uiIndexArray + uiIndexCount;
-
+				
 				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
 				
 				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
