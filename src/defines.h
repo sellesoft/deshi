@@ -9,7 +9,7 @@
 
 //NOTE this file is included is almost every other file of the project, so be frugal with includes here
 #include <cstddef> //size_t, ptrdiff_t
-#include <cstring> //memcpy
+#include <cstdlib> //malloc, calloc, free
 
 //deshi constants //TODO(delle) remove/move deshi constants
 //NOTE arbitrarily chosen size, but its convenient to have a fixed size for names
@@ -136,11 +136,11 @@ struct DefAlloc {
 	void* allocate(upt bytes) {
 		return malloc(bytes);
 	}
-
+	
 	void* callocate(upt count, upt size) {
 		return calloc(count, size);
 	}
-
+	
 	void deallocate(void* ptr) {
 		free(ptr);
 	}

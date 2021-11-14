@@ -4,6 +4,7 @@
 
 #include "../defines.h"
 #include <cmath>
+#include <cstring> //memcpy
 
 //// enable SSE if available ////
 //!ref: https://github.com/HandmadeMath/Handmade-Math/blob/master/HandmadeMath.h
@@ -41,6 +42,7 @@ global_ inline f32 Sqrt(f32 a){
 	return result;
 };
 
+//NOTE this has decently low precision (.0001)
 global_ inline f32 Rsqrt(f32 a){
 	f32 result;
 #ifdef DESHI_USE_SSE
