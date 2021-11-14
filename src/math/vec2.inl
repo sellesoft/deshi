@@ -111,8 +111,8 @@ operator-() const{
 
 inline bool vec2::
 operator==(const vec2& rhs) const{
-	return abs(this->x - rhs.x) < VEC_EPSILON 
-		&& abs(this->y - rhs.y) < VEC_EPSILON;
+	return abs(this->x - rhs.x) < M_EPSILON 
+		&& abs(this->y - rhs.y) < M_EPSILON;
 }
 
 inline bool vec2::
@@ -207,7 +207,7 @@ compOn(const vec2& rhs) const{
 
 inline float vec2::
 projectOn(const vec2& rhs) const{
-	if(this->mag() > VEC_EPSILON){
+	if(this->mag() > M_EPSILON){
 		return this->dot(rhs) / this->mag();
 	}else{
 		return 0;

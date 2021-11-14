@@ -8,10 +8,10 @@
 //char (*__kaboom)[sizeof( YourTypeHere )] = 1;
 
 //NOTE this file is included is almost every other file of the project, so be frugal with includes here
-#include <cstddef>
-#include <cstdlib>
+#include <cstddef> //size_t, ptrdiff_t
+#include <cstring> //memcpy
 
-//deshi constants //TODO(delle) remove deshi constants
+//deshi constants //TODO(delle) remove/move deshi constants
 //NOTE arbitrarily chosen size, but its convenient to have a fixed size for names
 #define DESHI_NAME_SIZE 64
 
@@ -57,34 +57,28 @@ typedef u32 Flags;
 //NOTE the ... is to allow the programmer to put some text to read when the assert fails
 //     but it doesnt actually affect the assertion expression
 //NOTE we dont place this under DESHI_INTERNAL so that crashes do happen outside of development
-#define Assert(expression, ...) if(!(expression)){*(volatile int*)0 = 0;}
+#  define Assert(expression, ...) if(!(expression)){*(volatile int*)0 = 0;}
 #else
-#pragma warning(once : 4552)
-#pragma warning(once : 4553)
-#define Assert(expression, ...) expression
+#  pragma warning(once : 4552)
+#  pragma warning(once : 4553)
+#  define Assert(expression, ...) expression
 #endif //DESHI_SLOW
 
 //compiler-dependent builtins
 #if   defined(_MSC_VER)
-
-#define FORCE_INLINE __forceinline
-#define DEBUG_BREAK __debugbreak()
-#define ByteSwap16(x) _byteswap_ushort(x)
-#define ByteSwap32(x) _byteswap_ulong(x)
-#define ByteSwap64(x) _byteswap_uint64(x)
-
+#  define FORCE_INLINE __forceinline
+#  define DEBUG_BREAK __debugbreak()
+#  define ByteSwap16(x) _byteswap_ushort(x)
+#  define ByteSwap32(x) _byteswap_ulong(x)
+#  define ByteSwap64(x) _byteswap_uint64(x)
 #elif defined(__GNUC__) || defined(__clang__) //_MSC_VER
-
-#define FORCE_INLINE inline __attribute__((always_inline))
-#error "unhandled debug breakpoint; look at: https://github.com/scottt/debugbreak"
-#define ByteSwap16(x) __builtin_bswap16(x)
-#define ByteSwap32(x) __builtin_bswap32(x)
-#define ByteSwap64(x) __builtin_bswap64(x)
-
+#  define FORCE_INLINE inline __attribute__((always_inline))
+#  error "unhandled debug breakpoint; look at: https://github.com/scottt/debugbreak"
+#  define ByteSwap16(x) __builtin_bswap16(x)
+#  define ByteSwap32(x) __builtin_bswap32(x)
+#  define ByteSwap64(x) __builtin_bswap64(x)
 #else //__GNUC__ || __clang__
-
-#error "unhandled compiler"
-
+#  error "unhandled compiler"
 #endif
 
 //for-loop shorthands for the simple,sequential iteration case
@@ -100,9 +94,9 @@ typedef u32 Flags;
 struct defer_dummy {};
 template <class F> struct deferrer { F f; ~deferrer() { f(); } };
 template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
-#define DEFER_(LINE) zz_defer##LINE
-#define DEFER(LINE) DEFER_(LINE)
-#define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
+#  define DEFER_(LINE) zz_defer##LINE
+#  define DEFER(LINE) DEFER_(LINE)
+#  define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
 #endif // defer
 
 #define ToggleBool(variable) variable = !variable
@@ -114,11 +108,11 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #define GLUE_(a,b) a##b
 #define GLUE(a,b) GLUE_(a,b)
 
-#define Kilobytes(x) ((x) << 10)
-#define Megabytes(x) ((x) << 20)
-#define Gigabytes(x) ((x) << 30)
-#define Terabytes(x) (((u64)(x)) << 40)
-#define ArrayCount(_ARR) (sizeof((_ARR)) / sizeof(((_ARR))[0])) //length of a static-size c-array
+#define Kilobytes(a) ((a) << 10)
+#define Megabytes(a) ((a) << 20)
+#define Gigabytes(a) ((a) << 30)
+#define Terabytes(a) (((u64)(a)) << 40)
+#define ArrayCount(arr) (sizeof((arr)) / sizeof(((arr))[0])) //length of a static-size c-array
 #define RoundUpTo(value, multiple) (((size_t)((value) + (((size_t)(multiple))-1)) / (size_t)(multiple)) * (size_t)(multiple))
 #define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
 template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;};

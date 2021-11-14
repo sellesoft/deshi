@@ -1,6 +1,6 @@
 #pragma once
-#ifndef DESHI_mat4_INL
-#define DESHI_mat4_INL
+#ifndef DESHI_MAT4_INL
+#define DESHI_MAT4_INL
 
 //////////////////////
 //// constructors ////
@@ -208,7 +208,7 @@ operator %= (const mat4& rhs){
 
 inline bool mat4::
 operator == (const mat4& rhs) const { 
-	for(int i = 0; i < 16; ++i){ if(abs(this->data[i] - rhs.data[i]) > MAT_EPSILON) return false; }
+	for(int i = 0; i < 16; ++i){ if(abs(this->data[i] - rhs.data[i]) > M_EPSILON) return false; }
 	return true;
 }
 
@@ -220,45 +220,6 @@ operator != (const mat4& rhs) const {
 ///////////////////
 //// functions ////
 ///////////////////
-
-//TODO(delle,ClMa) clean up mat4.str() and mat4.str2F()
-inline const std::string mat4::
-str() const {
-	std::string str = "|";
-	for (int i = 0; i < 15; ++i) {
-		char buffer[15];
-		std::snprintf(buffer, 15, "%+.6f", data[i]);
-		str += std::string(buffer);
-		if ((i+1) % 4 != 0) {
-			str += ", ";
-		} else {
-			str += "|\n|";
-		}
-	}
-	char buffer[15];
-	std::snprintf(buffer, 15, "%+.6f", data[15]);
-	str += std::string(buffer) + "|";
-	return str;
-};
-
-inline const std::string mat4::
-str2f() const {
-	std::string str = "|";
-	for (int i = 0; i < 15; ++i) {
-		char buffer[15];
-		std::snprintf(buffer, 15, "%+.2f", data[i]);
-		str += std::string(buffer);
-		if ((i+1) % 4 != 0) {
-			str += ", ";
-		} else {
-			str += "|\n|";
-		}
-	}
-	char buffer[15];
-	std::snprintf(buffer, 15, "%+.2f", data[15]);
-	str += std::string(buffer) + "|";
-	return str;
-};
 
 //converts the rows into columns and vice-versa
 inline mat4 mat4::
@@ -410,4 +371,4 @@ ScaleMatrix(float x, float y, float z) {
 				0, 0, 0, 1);
 }
 
-#endif //DESHI_MATRIX4_INL
+#endif //DESHI_MAT4_INL

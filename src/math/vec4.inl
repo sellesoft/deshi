@@ -7,18 +7,40 @@
 //////////////////////
 
 inline vec4::
-vec4(float inX, float inY, float inZ, float inW) {
-	this->x = inX; this->y = inY; this->z = inZ; this->w = inW;
+vec4(float _x, float _y, float _z, float _w) {
+#ifdef DESHI_USE_SSE
+	sse = _mm_setr_ps(_x, _y, _z, _w);
+#else
+	x = _x; 
+	y = _y; 
+	z = _z; 
+	w = _w;
+#endif
 }
 
 inline vec4::
 vec4(const vec4& v) {
-	this->x = v.x; this->y = v.y; this->z = v.z; this->w = v.w;
+#ifdef DESHI_USE_SSE
+	sse = v.sse;
+#else
+	x = v.x; 
+	y = v.y; 
+	z = v.z; 
+	w = v.w;
+#endif
 }
 
+//!TestMe
 inline vec4::
 vec4(float* ptr){ 
-	x = *ptr; y = *(ptr+1); z = *(ptr+2); z = *(ptr+3);
+#ifdef DESHI_USE_SSE
+	sse = _mm_loadr_ps(ptr);
+#else
+	x = *ptr; 
+	y = *(ptr+1); 
+	z = *(ptr+2); 
+	z = *(ptr+3);
+#endif
 }
 
 ///////////////////
@@ -34,80 +56,202 @@ inline const vec4 vec4::ONE  = vec4(1,1,1,1);
 
 inline void vec4::
 operator =  (const vec4& rhs) {
-	this->x = rhs.x; this->y = rhs.y; this->z = rhs.z; this->w = rhs.w;
+#ifdef DESHI_USE_SSE
+	sse = rhs.sse;
+#else
+	x = rhs.x; 
+	y = rhs.y; 
+	z = rhs.z; 
+	w = rhs.w;
+#endif
 }
 
 inline vec4 vec4::
 operator *  (const float& rhs) const {
-	return vec4(this->x * rhs, this->y * rhs, this->z * rhs, this->w * rhs);
+	vec4 result;
+#ifdef DESHI_USE_SSE
+	__m128 scalar = _mm_set1_ps(rhs);
+	result.sse = _mm_mul_ps(sse, scalar);
+#else
+	result.x = x * rhs;
+	result.y = y * rhs;
+	result.z = z * rhs;
+	result.w = w * rhs;
+#endif
+	return result;
 }
 
 inline void vec4::
 operator *= (const float& rhs) {
-	this->x *= rhs; this->y *= rhs; this->z *= rhs; this->w *= rhs;
+#ifdef DESHI_USE_SSE
+	__m128 scalar = _mm_set1_ps(rhs);
+	sse = _mm_mul_ps(sse, scalar);
+#else
+	x *= rhs;
+	y *= rhs;
+	z *= rhs;
+	w *= rhs;
+#endif
 }
 
 inline vec4 vec4::
 operator /  (const float& rhs) const {
-	return vec4(this->x / rhs, this->y / rhs, this->z / rhs, this->w / rhs);
+	vec4 result;
+#ifdef DESHI_USE_SSE
+	__m128 scalar = _mm_set1_ps(rhs);
+	result.sse = _mm_div_ps(sse, scalar);
+#else
+	result.x = x * rhs;
+	result.y = y * rhs;
+	result.z = z * rhs;
+	result.w = w * rhs;
+#endif
+	return result;
 }
 
 inline void vec4::
 operator /= (const float& rhs) {
-	this->x /= rhs; this->y /= rhs; this->z /= rhs; this->w /= rhs;
+#ifdef DESHI_USE_SSE
+	__m128 scalar = _mm_set1_ps(rhs);
+	sse = _mm_div_ps(sse, scalar);
+#else
+	x /= rhs;
+	y /= rhs;
+	z /= rhs;
+	w /= rhs;
+#endif
 }
 
 inline vec4 vec4::
 operator +  (const vec4& rhs) const {
-	return vec4(this->x + rhs.x, this->y + rhs.y, this->z + rhs.z, this->w + rhs.w);
+	vec4 result;
+#ifdef DESHI_USE_SSE
+	result.sse = _mm_add_ps(sse, rhs.sse);
+#else
+	result.x = x + rhs.x;
+	result.y = y + rhs.y;
+	result.z = z + rhs.z;
+	result.w = w + rhs.w;
+#endif
+	return result;
 }
 
 inline void vec4::
 operator += (const vec4& rhs) {
-	this->x += rhs.x; this->y += rhs.y; this->z += rhs.z;  this->w += rhs.w;
+#ifdef DESHI_USE_SSE
+	sse = _mm_add_ps(sse, rhs.sse);
+#else
+	x += rhs.x;
+	y += rhs.y;
+	z += rhs.z;
+	w += rhs.w;
+#endif
 }
 
 inline vec4 vec4::
 operator -  (const vec4& rhs) const {
-	return vec4(this->x - rhs.x, this->y - rhs.y, this->z - rhs.z, this->w - rhs.w);
+	vec4 result;
+#ifdef DESHI_USE_SSE
+	result.sse = _mm_sub_ps(sse, rhs.sse);
+#else
+	result.x = x - rhs.x;
+	result.y = y - rhs.y;
+	result.z = z - rhs.z;
+	result.w = w - rhs.w;
+#endif
+	return result;
 }
 
 inline void vec4::
 operator -= (const vec4& rhs) {
-	this->x -= rhs.x; this->y -= rhs.y; this->z -= rhs.z; this->w -= rhs.w;
+#ifdef DESHI_USE_SSE
+	sse = _mm_sub_ps(sse, rhs.sse);
+#else
+	x -= rhs.x;
+	y -= rhs.y;
+	z -= rhs.z;
+	w -= rhs.w;
+#endif
 }
 
 inline vec4 vec4::
 operator *  (const vec4& rhs) const {
-	return vec4(this->x * rhs.x, this->y * rhs.y, this->z * rhs.z, this->w * rhs.w);
+	vec4 result;
+#ifdef DESHI_USE_SSE
+	result.sse = _mm_mul_ps(sse, rhs.sse);
+#else
+	result.x = x * rhs.x;
+	result.y = y * rhs.y;
+	result.z = z * rhs.z;
+	result.w = w * rhs.w;
+#endif
+	return result;
 }
 
 inline void vec4::
 operator *= (const vec4& rhs) {
-	this->x *= rhs.x; this->y *= rhs.y; this->z *= rhs.z; this->w *= rhs.w;
+#ifdef DESHI_USE_SSE
+	sse = _mm_mul_ps(sse, rhs.sse);
+#else
+	x *= rhs.x;
+	y *= rhs.y;
+	z *= rhs.z;
+	w *= rhs.w;
+#endif
 }
 
 inline vec4 vec4::
 operator /  (const vec4& rhs) const {
-	return vec4(this->x / rhs.x, this->y / rhs.y, this->z / rhs.z,  this->w / rhs.w);
+	vec4 result;
+#ifdef DESHI_USE_SSE
+	result.sse = _mm_div_ps(sse, rhs.sse);
+#else
+	result.x = x / rhs.x;
+	result.y = y / rhs.y;
+	result.z = z / rhs.z;
+	result.w = w / rhs.w;
+#endif
+	return result;
 }
 
 inline void vec4::
 operator /= (const vec4& rhs) {
-	this->x /= rhs.x; this->y /= rhs.y; this->z /= rhs.z; this->w /= rhs.w;
+#ifdef DESHI_USE_SSE
+	sse = _mm_div_ps(sse, rhs.sse);
+#else
+	x /= rhs.x;
+	y /= rhs.y;
+	z /= rhs.z;
+	w /= rhs.w;
+#endif
 }
 
 inline vec4 vec4::
 operator -  () const {
-	return vec4(-x, -y, -z, -w);
+	vec4 result;
+#ifdef DESHI_USE_SSE
+	result.sse = NegateSSE(sse);
+#else
+	result.x = x * -1.0f;
+	result.y = y * -1.0f;
+	result.z = z * -1.0f;
+	result.w = w * -1.0f;
+#endif
+	return result;
 }
 
 inline bool vec4::
 operator == (const vec4& rhs) const {
-	return abs(this->x - rhs.x) < VEC_EPSILON 
-		&& abs(this->y - rhs.y) < VEC_EPSILON 
-		&& abs(this->z - rhs.z) < VEC_EPSILON 
-		&& abs(this->w - rhs.w) < VEC_EPSILON;
+	bool result;
+#ifdef DESHI_USE_SSE
+	result = EpsilonEqualSSE(sse, rhs.sse);
+#else
+	result = abs(x - rhs.x) < M_EPSILON 
+		&&   abs(y - rhs.y) < M_EPSILON 
+		&&   abs(z - rhs.z) < M_EPSILON 
+		&&   abs(w - rhs.w) < M_EPSILON;
+#endif
+	return result;
 }
 
 inline bool vec4::
@@ -120,23 +264,50 @@ operator != (const vec4& rhs) const {
 ///////////////////
 inline void vec4::
 set(f32 _x, f32 _y, f32 _z, f32 _w){
-	x = _x; y = _y; z = _z; w = _w;
+#ifdef DESHI_USE_SSE
+	sse = _mm_setr_ps(_x, _y, _z, _w);
+#else
+	x = _x; 
+	y = _y; 
+	z = _z; 
+	w = _w;
+#endif
 }
 
 inline vec4 vec4::
 absV() const{
-	return vec4(abs(x), abs(y), abs(z), abs(w));
+	vec4 result;
+#ifdef DESHI_USE_SSE
+	result.sse = AbsoluteSSE(sse);
+#else
+	result.x = abs(x);
+	result.y = abs(y);
+	result.z = abs(z);
+	result.w = abs(w);
+#endif
+	return result;
 }
 
 
 inline vec4 vec4::
 copy() const {
-	return vec4(x, y, z, w);
+	return *this;
 }
 
 inline float vec4::
 dot(const vec4& rhs) const {
-	return this->x*rhs.x + this->y*rhs.y + this->z*rhs.z + this->w*rhs.w;
+	float result;
+#ifdef DESHI_USE_SSE
+	__m128 temp0 = _mm_mul_ps(sse, rhs.sse); //multiply together
+	__m128 temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(2, 3, 0, 1));
+	temp0 = _mm_add_ps(temp0, temp1); //add x, y with z, w
+	temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(0, 1, 2, 3));
+	temp0 = _mm_add_ps(temp0, temp1); //add x+z with y+w
+	_mm_store_ss(&result, temp0);
+#else
+	result = x*rhs.x + y*rhs.y + z*rhs.z + w*rhs.w;
+#endif
+	return result;
 }
 
 inline float vec4::

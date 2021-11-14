@@ -1,10 +1,7 @@
 #pragma once
 #ifndef DESHI_VECTOR_H
 #define DESHI_VECTOR_H
-
-#include "../defines.h"
-
-#include <cmath>
+#include "math_utils.h"
 
 struct vec2;
 struct vec3;
@@ -17,8 +14,6 @@ struct quat;
 //////////////////////
 //// declarations ////
 //////////////////////
-
-static constexpr float VEC_EPSILON = 0.00001f;
 
 struct vec2 {
 	union{ float x = 0; float r; float w; float u; };
@@ -177,11 +172,42 @@ struct vec3 {
 };
 #include "vec3.inl"
 
-struct vec4 {
-	union{ float x = 0; float r; };
-	union{ float y = 0; float g; };
-	union{ float z = 0; float b; };
-	union{ float w = 0; float a; };
+struct vec4{
+	union{
+		float arr[4] = {};
+		struct{ 
+			union{
+				vec3 xyz;
+				struct{ float x, y, z; };
+			};
+			float w;
+		};
+		struct{ 
+			union{
+				vec3 rgb;
+				struct{ float r, g, b; };
+			};
+			float a;
+		};
+		struct{ 
+			vec2 xy;
+			float _unusedZ0;
+			float _unusedW0;
+		};
+		struct{ 
+			float _unusedX0;
+			vec2 yz;
+			float _unusedW1;
+		};
+		struct{ 
+			float _unusedX1;
+			float _unusedY0;
+			vec2 zw;
+		};
+#ifdef DESHI_USE_SSE
+		__m128 sse;
+#endif
+	};
 	
 	vec4(){};
 	vec4(float inX, float inY, float inZ, float inW);

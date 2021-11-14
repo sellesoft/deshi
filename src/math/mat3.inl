@@ -1,6 +1,6 @@
 #pragma once
-#ifndef DESHI_mat3_INL
-#define DESHI_mat3_INL
+#ifndef DESHI_MAT3_INL
+#define DESHI_MAT3_INL
 
 //////////////////////
 //// constructors ////
@@ -193,7 +193,7 @@ operator %= (const mat3& rhs){
 
 inline bool mat3::
 operator == (const mat3& rhs) const { 
-	for(int i = 0; i < 9; ++i){ if(abs(this->data[i] - rhs.data[i]) > MAT_EPSILON) return false; }
+	for(int i = 0; i < 9; ++i){ if(abs(this->data[i] - rhs.data[i]) > M_EPSILON) return false; }
 	return true;
 }
 
@@ -206,45 +206,6 @@ operator != (const mat3& rhs) const {
 ///////////////////
 //// functions ////
 ///////////////////
-
-//TODO(delle,ClMa) clean up mat3.str() and mat3.str2F()
-inline const std::string mat3::
-str() const {
-	std::string str = "|";
-	for (int i = 0; i < 8; ++i) {
-		char buffer[15];
-		std::snprintf(buffer, 15, "%+.6f", data[i]);
-		str += std::string(buffer);
-		if ((i+1) % 3 != 0) {
-			str += ", ";
-		} else {
-			str += "|\n|";
-		}
-	}
-	char buffer[15];
-	std::snprintf(buffer, 15, "%+.6f", data[8]);
-	str += std::string(buffer) + "|";
-	return str;
-};
-
-inline const std::string mat3::
-str2f() const {
-	std::string str = "|";
-	for (int i = 0; i < 8; ++i) {
-		char buffer[15];
-		std::snprintf(buffer, 15, "%+.2f", data[i]);
-		str += std::string(buffer);
-		if ((i + 1) % 3 != 0) {
-			str += ", ";
-		} else {
-			str += "|\n|";
-		}
-	}
-	char buffer[15];
-	std::snprintf(buffer, 15, "%+.2f", data[8]);
-	str += std::string(buffer) + "|";
-	return str;
-};
 
 //converts the rows into columns and vice-versa
 inline mat3 mat3::
@@ -361,4 +322,4 @@ RotationMatrix(float x, float y, float z) {
 				r20, r21, r22);
 }
 
-#endif //DESHI_MATRIX3_INL
+#endif //DESHI_MAT3_INL

@@ -1,4 +1,5 @@
-/* //// Notes ////
+/* 
+//// Notes ////
 Matrices can only hold floats
 Matrices are in row-major format and all the functionality follows that format
 Matrices are Left-Handed meaning that multiplication travels right and rotation is clockwise 
@@ -26,9 +27,7 @@ The transformation matrix will follow the format to the below:
 #pragma once
 #ifndef DESHI_MATRIX_H
 #define DESHI_MATRIX_H
-
-#include "../defines.h"
-#include <string>
+#include "math_utils.h"
 
 struct vec2;
 struct vec3;
@@ -41,8 +40,6 @@ struct quat;
 //////////////////////
 //// declarations ////
 //////////////////////
-
-static constexpr float MAT_EPSILON = 0.00001f;
 
 struct mat3 {
 	float data[9]{};
@@ -76,8 +73,6 @@ struct mat3 {
 	bool	operator != (const mat3& rhs) const;
 	friend mat3 operator * (const float& lhs, const mat3& rhs) { return rhs * lhs; }
 	
-	const std::string str() const;
-	const std::string str2f() const;
 	mat3 Transpose() const;
 	float   Determinant() const;
 	float   Minor(int row, int col) const;
@@ -143,8 +138,6 @@ struct mat4 {
 	float   Cofactor(int row, int col) const;
 	mat4 Adjoint() const;
 	mat4 Inverse() const;
-	const std::string str() const;
-	const std::string str2f() const;
 	
 	static mat4 RotationMatrixX(float degrees);
 	static mat4 RotationMatrixY(float degrees);
