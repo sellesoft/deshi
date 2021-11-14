@@ -14,6 +14,8 @@
 #define COLORU32_ASHIFT 24
 #define PackColorU32(R,G,B,A) PackU32(R,G,B,A)
 
+#define RANDCOL color(rand() % 255, rand() % 255, rand() % 255)
+
 enum Colors_ : u32{
 	Color_NONE            = PackColorU32(  0,  0,  0,  0),
 	Color_White           = PackColorU32(255,255,255,255),

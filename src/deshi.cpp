@@ -193,7 +193,6 @@ __________ this might not be an error with our stuff and just a quirk of the win
 #endif //DESHI_WINDOWS
 
 //// core headers ////
-#include "memory.h"
 #include "deshi.h"
 #include "core/font.h"
 #include "core/io.h"
@@ -233,6 +232,7 @@ __________ this might not be an error with our stuff and just a quirk of the win
 
 //// core cpp ////
 #include "core/io.cpp"
+#include "core/memory.cpp"
 #include "core/logging.cpp"
 #include "core/window.cpp"
 #include "core/assets.cpp"

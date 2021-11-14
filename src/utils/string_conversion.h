@@ -21,6 +21,11 @@ stoi(const string& s){
     return x;
 }
 
+global_ double
+stod(const string& s) {
+    return strtod(s.str, 0);
+}
+
 ////////////////////
 //// @to_string ////
 ////////////////////

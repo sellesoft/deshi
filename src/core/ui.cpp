@@ -1959,7 +1959,7 @@ void UI::Update() {
 		
 		//draw base cmds first
 		for (UIItem& item : p->baseItems) {
-			vec2 itempos = item.type == UIItemType_Abstract ? item.position : (winpos + item.position);
+			vec2 itempos = winpos + item.position * item.style.globalScale;//item.type == UIItemType_Abstract ? item.position : (winpos + item.position);
 			vec2 itemsiz = item.size;
 			
 			for (UIDrawCmd& drawCmd : item.drawCmds) {
@@ -2015,7 +2015,7 @@ void UI::Update() {
 		//dont draw non-base draw cmds if we're minimized
 		if (!p->minimized) {
 			for (UIItem& item : p->items) {
-				vec2 itempos = (item.type == UIItemType_Abstract ? item.position : winpos + item.position * item.style.globalScale);
+				vec2 itempos = winpos + item.position * item.style.globalScale;//(item.type == UIItemType_Abstract ? item.position : winpos + item.position * item.style.globalScale);
 				vec2 itemsiz = item.size;
 				
 				for (UIDrawCmd& drawCmd : item.drawCmds) {
