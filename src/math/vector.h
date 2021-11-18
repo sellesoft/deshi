@@ -239,6 +239,7 @@ struct vec4{
 	vec4  absV() const;
 	vec4  copy() const;
 	float dot(const vec4& rhs) const;
+	float magSq() const;
 	float mag() const;
 	vec4  wnormalized() const;
 	vec4  xComp() const;

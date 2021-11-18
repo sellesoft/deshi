@@ -8,7 +8,7 @@
 
 inline vec4::
 vec4(float _x, float _y, float _z, float _w) {
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	sse = _mm_setr_ps(_x, _y, _z, _w);
 #else
 	x = _x; 
@@ -20,7 +20,7 @@ vec4(float _x, float _y, float _z, float _w) {
 
 inline vec4::
 vec4(const vec4& v) {
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	sse = v.sse;
 #else
 	x = v.x; 
@@ -33,7 +33,7 @@ vec4(const vec4& v) {
 //!TestMe
 inline vec4::
 vec4(float* ptr){ 
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	sse = _mm_loadr_ps(ptr);
 #else
 	x = *ptr; 
@@ -56,7 +56,7 @@ inline const vec4 vec4::ONE  = vec4(1,1,1,1);
 
 inline void vec4::
 operator =  (const vec4& rhs) {
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	sse = rhs.sse;
 #else
 	x = rhs.x; 
@@ -69,7 +69,7 @@ operator =  (const vec4& rhs) {
 inline vec4 vec4::
 operator *  (const float& rhs) const {
 	vec4 result;
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
 	result.sse = _mm_mul_ps(sse, scalar);
 #else
@@ -83,7 +83,7 @@ operator *  (const float& rhs) const {
 
 inline void vec4::
 operator *= (const float& rhs) {
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
 	sse = _mm_mul_ps(sse, scalar);
 #else
@@ -97,7 +97,7 @@ operator *= (const float& rhs) {
 inline vec4 vec4::
 operator /  (const float& rhs) const {
 	vec4 result;
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
 	result.sse = _mm_div_ps(sse, scalar);
 #else
@@ -111,7 +111,7 @@ operator /  (const float& rhs) const {
 
 inline void vec4::
 operator /= (const float& rhs) {
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
 	sse = _mm_div_ps(sse, scalar);
 #else
@@ -125,7 +125,7 @@ operator /= (const float& rhs) {
 inline vec4 vec4::
 operator +  (const vec4& rhs) const {
 	vec4 result;
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	result.sse = _mm_add_ps(sse, rhs.sse);
 #else
 	result.x = x + rhs.x;
@@ -138,7 +138,7 @@ operator +  (const vec4& rhs) const {
 
 inline void vec4::
 operator += (const vec4& rhs) {
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	sse = _mm_add_ps(sse, rhs.sse);
 #else
 	x += rhs.x;
@@ -151,7 +151,7 @@ operator += (const vec4& rhs) {
 inline vec4 vec4::
 operator -  (const vec4& rhs) const {
 	vec4 result;
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	result.sse = _mm_sub_ps(sse, rhs.sse);
 #else
 	result.x = x - rhs.x;
@@ -164,7 +164,7 @@ operator -  (const vec4& rhs) const {
 
 inline void vec4::
 operator -= (const vec4& rhs) {
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	sse = _mm_sub_ps(sse, rhs.sse);
 #else
 	x -= rhs.x;
@@ -177,7 +177,7 @@ operator -= (const vec4& rhs) {
 inline vec4 vec4::
 operator *  (const vec4& rhs) const {
 	vec4 result;
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	result.sse = _mm_mul_ps(sse, rhs.sse);
 #else
 	result.x = x * rhs.x;
@@ -190,7 +190,7 @@ operator *  (const vec4& rhs) const {
 
 inline void vec4::
 operator *= (const vec4& rhs) {
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	sse = _mm_mul_ps(sse, rhs.sse);
 #else
 	x *= rhs.x;
@@ -203,7 +203,7 @@ operator *= (const vec4& rhs) {
 inline vec4 vec4::
 operator /  (const vec4& rhs) const {
 	vec4 result;
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	result.sse = _mm_div_ps(sse, rhs.sse);
 #else
 	result.x = x / rhs.x;
@@ -216,7 +216,7 @@ operator /  (const vec4& rhs) const {
 
 inline void vec4::
 operator /= (const vec4& rhs) {
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	sse = _mm_div_ps(sse, rhs.sse);
 #else
 	x /= rhs.x;
@@ -229,7 +229,7 @@ operator /= (const vec4& rhs) {
 inline vec4 vec4::
 operator -  () const {
 	vec4 result;
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	result.sse = NegateSSE(sse);
 #else
 	result.x = x * -1.0f;
@@ -243,7 +243,7 @@ operator -  () const {
 inline bool vec4::
 operator == (const vec4& rhs) const {
 	bool result;
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	result = EpsilonEqualSSE(sse, rhs.sse);
 #else
 	result = abs(x - rhs.x) < M_EPSILON 
@@ -264,7 +264,7 @@ operator != (const vec4& rhs) const {
 ///////////////////
 inline void vec4::
 set(f32 _x, f32 _y, f32 _z, f32 _w){
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	sse = _mm_setr_ps(_x, _y, _z, _w);
 #else
 	x = _x; 
@@ -277,7 +277,7 @@ set(f32 _x, f32 _y, f32 _z, f32 _w){
 inline vec4 vec4::
 absV() const{
 	vec4 result;
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	result.sse = AbsoluteSSE(sse);
 #else
 	result.x = abs(x);
@@ -297,13 +297,13 @@ copy() const {
 inline float vec4::
 dot(const vec4& rhs) const {
 	float result;
-#ifdef DESHI_USE_SSE
+#if DESHI_USE_SSE
 	__m128 temp0 = _mm_mul_ps(sse, rhs.sse); //multiply together
 	__m128 temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(2, 3, 0, 1));
 	temp0 = _mm_add_ps(temp0, temp1); //add x, y with z, w
 	temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(0, 1, 2, 3));
 	temp0 = _mm_add_ps(temp0, temp1); //add x+z with y+w
-	_mm_store_ss(&result, temp0);
+	result = _mm_cvtss_f32(temp0);
 #else
 	result = x*rhs.x + y*rhs.y + z*rhs.z + w*rhs.w;
 #endif
@@ -311,8 +311,13 @@ dot(const vec4& rhs) const {
 }
 
 inline float vec4::
+magSq() const {
+	return dot(*this);
+}
+
+inline float vec4::
 mag() const {
-	return sqrtf(x*x + y*y + z*z + w*w);
+	return Sqrt(magSq());
 }
 
 inline vec4 vec4::

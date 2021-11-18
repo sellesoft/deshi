@@ -197,7 +197,7 @@ global_ string
 to_string(const mat3& x, bool trunc = true){
     string s;
     forI(3){ 
-        s += to_string(*((vec3*)(x.data+(i*3))), trunc);
+        s += to_string(*((vec3*)(x.arr+(i*3))), trunc);
         s += "\n";
     }
     return s;
@@ -207,7 +207,7 @@ global_ string
 to_string(const mat4& x, bool trunc = true){
     string s;
     forI(4){ 
-        s += to_string(*((vec4*)(x.data+(i*4))), trunc);
+        s += to_string(*((vec4*)(x.arr+(i*4))), trunc);
         s += "\n";
     }
     return s;

@@ -55,7 +55,6 @@ text file parser (and cleanup locations doing it manually)
 Math TODOs
 ----------
 move geometry funcs out of math.h 
-SIMD-ize vectors and matrices
 add quaternions and converions between them and other linear algebra primitives
 add functions and members similar to what glsl/glm has where you can do stuff like
 ____v.xy, v.yz, as well as operators for these things if possible. Prefer them to be member variables and not functions :)
