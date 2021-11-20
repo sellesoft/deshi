@@ -37,31 +37,47 @@ return nf; \
 //// vec3 ////
 //////////////
 inline vec3 vec3::
-operator* (const mat3& rhs) const {
-	return vec3(x*rhs.data[0] + y*rhs.data[3] + z*rhs.data[6], 
-				x*rhs.data[1] + y*rhs.data[4] + z*rhs.data[7], 
-				x*rhs.data[2] + y*rhs.data[5] + z*rhs.data[8]);
+operator* (const mat3& rhs) const{
+	return vec3(x*rhs.arr[0] + y*rhs.arr[3] + z*rhs.arr[6], 
+				x*rhs.arr[1] + y*rhs.arr[4] + z*rhs.arr[7], 
+				x*rhs.arr[2] + y*rhs.arr[5] + z*rhs.arr[8]);
 }
 
 inline void vec3::
 operator*=(const mat3& rhs){
-	*this = vec3(x*rhs.data[0] + y*rhs.data[3] + z*rhs.data[6],
-				 x*rhs.data[1] + y*rhs.data[4] + z*rhs.data[7],
-				 x*rhs.data[2] + y*rhs.data[5] + z*rhs.data[8]);
+	*this = vec3(x*rhs.arr[0] + y*rhs.arr[3] + z*rhs.arr[6],
+				 x*rhs.arr[1] + y*rhs.arr[4] + z*rhs.arr[7],
+				 x*rhs.arr[2] + y*rhs.arr[5] + z*rhs.arr[8]);
 }
 
 inline vec3 vec3::
-operator* (const mat4& rhs) const {
-	return vec3(x*rhs.data[0] + y*rhs.data[4] + z*rhs.data[8]  + rhs.data[12],
-				x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9]  + rhs.data[13],
-				x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + rhs.data[14]);
+operator* (const mat4& rhs) const{
+	vec3 result;
+#if DESHI_USE_SSE
+	vec4 temp(x, y, z, 0);
+	temp.sse = LinearCombineSSE(temp.sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result = temp.xyz;
+#else
+	result.x = x*rhs.arr[0] + y*rhs.arr[4] + z*rhs.arr[8]  + rhs.arr[12];
+	result.y = x*rhs.arr[1] + y*rhs.arr[5] + z*rhs.arr[9]  + rhs.arr[13];
+	result.z = x*rhs.arr[2] + y*rhs.arr[6] + z*rhs.arr[10] + rhs.arr[14];
+#endif
+	return result;
 }
 
 inline void vec3::
 operator*=(const mat4& rhs){
-	*this = vec3(x*rhs.data[0] + y*rhs.data[4] + z*rhs.data[8]  + rhs.data[12],
-				 x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9]  + rhs.data[13],
-				 x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + rhs.data[14]);
+	vec3 result;
+#if DESHI_USE_SSE
+	vec4 temp(x, y, z, 0);
+	temp.sse = LinearCombineSSE(temp.sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+	result = temp.xyz;
+#else
+	result.x = x*rhs.arr[0] + y*rhs.arr[4] + z*rhs.arr[8]  + rhs.arr[12];
+	result.y = x*rhs.arr[1] + y*rhs.arr[5] + z*rhs.arr[9]  + rhs.arr[13];
+	result.z = x*rhs.arr[2] + y*rhs.arr[6] + z*rhs.arr[10] + rhs.arr[14];
+#endif
+	*this = result;
 }
 
 inline vec3 vec3::
@@ -74,19 +90,31 @@ operator* (const quat& rhs) const{
 //// vec4 ////
 //////////////
 inline vec4 vec4::
-operator* (const mat4& rhs) const {
-	return vec4(x*rhs.data[0] + y*rhs.data[4] + z*rhs.data[8]  + w*rhs.data[12],
-				x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9]  + w*rhs.data[13],
-				x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + w*rhs.data[14],
-				x*rhs.data[3] + y*rhs.data[7] + z*rhs.data[11] + w*rhs.data[15]);
+operator* (const mat4& rhs) const{
+	vec4 result;
+#if DESHI_USE_SSE
+	result.sse = LinearCombineSSE(sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+#else
+	result.x = x*rhs.arr[0] + y*rhs.arr[4] + z*rhs.arr[8]  + w*rhs.arr[12];
+	result.y = x*rhs.arr[1] + y*rhs.arr[5] + z*rhs.arr[9]  + w*rhs.arr[13];
+	result.z = x*rhs.arr[2] + y*rhs.arr[6] + z*rhs.arr[10] + w*rhs.arr[14];
+	result.w = x*rhs.arr[3] + y*rhs.arr[7] + z*rhs.arr[11] + w*rhs.arr[15];
+#endif
+	return result;
 }
 
 inline void vec4::
 operator*=(const mat4& rhs){
-	*this = vec4(x*rhs.data[0] + y*rhs.data[4] + z*rhs.data[8]  + w*rhs.data[12],
-				 x*rhs.data[1] + y*rhs.data[5] + z*rhs.data[9]  + w*rhs.data[13],
-				 x*rhs.data[2] + y*rhs.data[6] + z*rhs.data[10] + w*rhs.data[14],
-				 x*rhs.data[3] + y*rhs.data[7] + z*rhs.data[11] + w*rhs.data[15]);
+#if DESHI_USE_SSE
+	sse = LinearCombineSSE(sse, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
+#else
+	vec4 result;
+	result.x = x*rhs.arr[0] + y*rhs.arr[4] + z*rhs.arr[8]  + w*rhs.arr[12];
+	result.y = x*rhs.arr[1] + y*rhs.arr[5] + z*rhs.arr[9]  + w*rhs.arr[13];
+	result.z = x*rhs.arr[2] + y*rhs.arr[6] + z*rhs.arr[10] + w*rhs.arr[14];
+	result.w = x*rhs.arr[3] + y*rhs.arr[7] + z*rhs.arr[11] + w*rhs.arr[15];
+	*this = result;
+#endif
 }
 
 
@@ -213,13 +241,13 @@ QuatSlerp(const vec3& fromv, const vec3& tov, float t){
 inline vec3 mat3::
 row(u32 row){
 	Assert(row < 3, "mat3 subscript out of bounds");
-	return vec3(&data[4*row]);
+	return vec3(&arr[4*row]);
 }
 
 inline vec3 mat3::
 col(u32 col){
 	Assert(col < 3, "mat3 subscript out of bounds");
-	return vec3(data[col], data[4+col], data[8+col]);
+	return vec3(arr[col], arr[4+col], arr[8+col]);
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
@@ -252,18 +280,18 @@ ScaleMatrix(vec3 scale){
 inline vec4 mat4::
 row(u32 row){
 	Assert(row < 4, "mat4 subscript out of bounds");
-	return vec4(&data[4*row]);
+	return vec4(&arr[4*row]);
 }
 
 inline vec4 mat4::
 col(u32 col){
 	Assert(col < 4, "mat4 subscript out of bounds");
-	return vec4(data[col], data[4+col], data[8+col], data[12+col]);
+	return vec4(arr[col], arr[4+col], arr[8+col], arr[12+col]);
 }
 
 inline vec3 mat4::
 Translation(){
-	return vec3(data[12], data[13], data[14]);
+	return vec3(arr[12], arr[13], arr[14]);
 }
 
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
@@ -464,8 +492,8 @@ namespace Math {
 			point.y <= rectPos.y + rectDims.y;
 	}
 	
-	#define BoundTimeOsc(x, y) Math::BoundedOscillation(x, y, DeshTotalTime)
-
+#define BoundTimeOsc(x, y) Math::BoundedOscillation(x, y, DeshTotalTime)
+	
 	//oscillates between a given upper and lower value based on a given x value
 	inline global_ float BoundedOscillation(float lower, float upper, float x){
 		Assert(upper > lower);

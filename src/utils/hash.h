@@ -119,7 +119,7 @@ struct hash<mat3>{
 		size_t seed = 0;
 		hash<float> hasher; size_t hash;
 		forI(9){
-			hash = hasher(m.data[i]);
+			hash = hasher(m.arr[i]);
 			hash += 0x9e3779b9 + (seed << 6) + (seed >> 2);
 			seed ^= hash;
 		}
@@ -133,7 +133,7 @@ struct hash<mat4>{
 		size_t seed = 0;
 		hash<float> hasher; size_t hash;
 		forI(16){
-			hash = hasher(m.data[i]);
+			hash = hasher(m.arr[i]);
 			hash += 0x9e3779b9 + (seed << 6) + (seed >> 2);
 			seed ^= hash;
 		}

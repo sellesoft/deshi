@@ -122,9 +122,9 @@ operator -  () const{
 
 inline bool vec3::
 operator == (const vec3& rhs) const{
-	return abs(this->x - rhs.x) < VEC_EPSILON 
-		&& abs(this->y - rhs.y) < VEC_EPSILON 
-		&& abs(this->z - rhs.z) < VEC_EPSILON;
+	return abs(this->x - rhs.x) < M_EPSILON 
+		&& abs(this->y - rhs.y) < M_EPSILON 
+		&& abs(this->z - rhs.z) < M_EPSILON;
 }
 
 inline bool vec3::

@@ -1,4 +1,5 @@
-/* //// Notes ////
+/* 
+//// Notes ////
 Matrices can only hold floats
 Matrices are in row-major format and all the functionality follows that format
 Matrices are Left-Handed meaning that multiplication travels right and rotation is clockwise 
@@ -26,9 +27,8 @@ The transformation matrix will follow the format to the below:
 #pragma once
 #ifndef DESHI_MATRIX_H
 #define DESHI_MATRIX_H
-
-#include "../defines.h"
-#include <string>
+#include "math_utils.h"
+#include "vector.h"
 
 struct vec2;
 struct vec3;
@@ -42,48 +42,53 @@ struct quat;
 //// declarations ////
 //////////////////////
 
-static constexpr float MAT_EPSILON = 0.00001f;
-
 struct mat3 {
-	float data[9]{};
+	union{
+		float arr[9] = {};
+		struct{
+			vec3 row0;
+			vec3 row1;
+			vec3 row2;
+		};
+	};
 	
 	mat3(){};
+	mat3(float all);
 	mat3(float _00, float _01, float _02,
 		 float _10, float _11, float _12,
 		 float _20, float _21, float _22);
 	mat3(const mat3& m);
+	mat3(float* data);
 	
 	static const mat3 IDENTITY;
 	
-	float&  operator () (u32 row, u32 col);
-	float   operator () (u32 row, u32 col) const;
-	void	operator =  (const mat3& rhs);
-	mat3    operator *  (const float& rhs) const;
-	void	operator *= (const float& rhs);
-	mat3    operator /  (const float& rhs) const;
-	void	operator /= (const float& rhs);
-	mat3    operator +  (const mat3& rhs) const;
-	void	operator += (const mat3& rhs);
-	mat3    operator -  (const mat3& rhs) const;
-	void	operator -= (const mat3& rhs);
-	mat3    operator *  (const mat3& rhs) const;
-	void	operator *= (const mat3& rhs);
-	mat3    operator ^  (const mat3& rhs) const;
-	void	operator ^= (const mat3& rhs);
-	mat3    operator %  (const mat3& rhs) const; 
-	void	operator %= (const mat3& rhs);
-	bool	operator == (const mat3& rhs) const;
-	bool	operator != (const mat3& rhs) const;
-	friend mat3 operator * (const float& lhs, const mat3& rhs) { return rhs * lhs; }
+	float& operator()(u32 row, u32 col);
+	float  operator()(u32 row, u32 col) const;
+	void   operator= (const mat3& rhs);
+	mat3   operator* (const float& rhs) const;
+	void   operator*=(const float& rhs);
+	mat3   operator/ (const float& rhs) const;
+	void   operator/=(const float& rhs);
+	mat3   operator+ (const mat3& rhs) const;
+	void   operator+=(const mat3& rhs);
+	mat3   operator- (const mat3& rhs) const;
+	void   operator-=(const mat3& rhs);
+	mat3   operator^ (const mat3& rhs) const;
+	void   operator^=(const mat3& rhs);
+	mat3   operator% (const mat3& rhs) const; 
+	void   operator%=(const mat3& rhs);
+	mat3   operator* (const mat3& rhs) const;
+	void   operator*=(const mat3& rhs);
+	bool   operator==(const mat3& rhs) const;
+	bool   operator!=(const mat3& rhs) const;
+	friend mat3 operator* (const float& lhs, const mat3& rhs){ return rhs * lhs; }
 	
-	const std::string str() const;
-	const std::string str2f() const;
-	mat3 Transpose() const;
-	float   Determinant() const;
-	float   Minor(int row, int col) const;
-	float   Cofactor(int row, int col) const;
-	mat3 Adjoint() const;
-	mat3 Inverse() const;
+	mat3  Transpose() const;
+	float Determinant() const;
+	float Minor(int row, int col) const;
+	float Cofactor(int row, int col) const;
+	mat3  Adjoint() const;
+	mat3  Inverse() const;
 	
 	static mat3 RotationMatrixX(float degrees);
 	static mat3 RotationMatrixY(float degrees);
@@ -103,7 +108,23 @@ struct mat3 {
 #include "mat3.inl"
 
 struct mat4 {
-	float data[16]{};
+	union{
+		float arr[16] = {};
+		struct{
+			vec4 row0;
+			vec4 row1;
+			vec4 row2;
+			vec4 row3;
+		};
+#if DESHI_USE_SSE
+		struct{
+			__m128 sse_row0;
+			__m128 sse_row1;
+			__m128 sse_row2;
+			__m128 sse_row3;
+		};
+#endif
+	};
 	
 	mat4(){};
 	mat4(float all);
@@ -116,35 +137,33 @@ struct mat4 {
 	
 	static const mat4 IDENTITY;
 	
-	float&  operator () (u32 row, u32 col);
-	float   operator () (u32 row, u32 col) const;
-	void	operator =  (const mat4& rhs);
-	mat4    operator *  (const float& rhs) const;
-	void    operator *= (const float& rhs);
-	mat4    operator /  (const float& rhs) const;
-	void    operator /= (const float& rhs);
-	mat4    operator +  (const mat4& rhs) const;
-	void    operator += (const mat4& rhs);
-	mat4    operator -  (const mat4& rhs) const;
-	void    operator -= (const mat4& rhs);
-	mat4    operator *  (const mat4& rhs) const;
-	void    operator *= (const mat4& rhs);
-	mat4    operator ^  (const mat4& rhs) const;
-	void    operator ^= (const mat4& rhs);
-	mat4    operator %  (const mat4& rhs) const; 
-	void	operator %= (const mat4& rhs);
-	bool	operator == (const mat4& rhs) const;
-	bool	operator != (const mat4& rhs) const;
-	friend mat4 operator * (const float& lhs, const mat4& rhs) { return rhs * lhs; }
+	float& operator()(u32 row, u32 col);
+	float  operator()(u32 row, u32 col) const;
+	void   operator= (const mat4& rhs);
+	mat4   operator* (const float& rhs) const;
+	void   operator*=(const float& rhs);
+	mat4   operator/ (const float& rhs) const;
+	void   operator/=(const float& rhs);
+	mat4   operator+ (const mat4& rhs) const;
+	void   operator+=(const mat4& rhs);
+	mat4   operator- (const mat4& rhs) const;
+	void   operator-=(const mat4& rhs);
+	mat4   operator^ (const mat4& rhs) const;
+	void   operator^=(const mat4& rhs);
+	mat4   operator% (const mat4& rhs) const; 
+	void   operator%=(const mat4& rhs);
+	mat4   operator* (const mat4& rhs) const;
+	void   operator*=(const mat4& rhs);
+	bool   operator==(const mat4& rhs) const;
+	bool   operator!=(const mat4& rhs) const;
+	friend mat4 operator* (const float& lhs, const mat4& rhs){ return rhs * lhs; }
 	
-	mat4 Transpose() const;
-	float   Determinant() const;
-	float   Minor(int row, int col) const;
-	float   Cofactor(int row, int col) const;
-	mat4 Adjoint() const;
-	mat4 Inverse() const;
-	const std::string str() const;
-	const std::string str2f() const;
+	mat4  Transpose() const;
+	float Determinant() const;
+	float Minor(int row, int col) const;
+	float Cofactor(int row, int col) const;
+	mat4  Adjoint() const;
+	mat4  Inverse() const;
 	
 	static mat4 RotationMatrixX(float degrees);
 	static mat4 RotationMatrixY(float degrees);
@@ -181,34 +200,34 @@ struct mat4 {
 
 inline mat3::
 mat3(const mat4& m){
-	data[0] = m.data[0]; data[1] = m.data[1]; data[2] = m.data[2];
-	data[3] = m.data[4]; data[4] = m.data[5]; data[5] = m.data[6];
-	data[6] = m.data[8]; data[7] = m.data[9]; data[8] = m.data[10];
+	arr[0] = m.arr[0]; arr[1] = m.arr[1]; arr[2] = m.arr[2];
+	arr[3] = m.arr[4]; arr[4] = m.arr[5]; arr[5] = m.arr[6];
+	arr[6] = m.arr[8]; arr[7] = m.arr[9]; arr[8] = m.arr[10];
 }
 
 inline mat4 mat3::
 To4x4() const{
-	return mat4(data[0], data[1], data[2], 0,
-				data[3], data[4], data[5], 0,
-				data[6], data[7], data[8], 0,
-				0,       0,       0,       1);
+	return mat4(arr[0], arr[1], arr[2], 0,
+				arr[3], arr[4], arr[5], 0,
+				arr[6], arr[7], arr[8], 0,
+				0,       0,       0,    1);
 }
 
 //// mat4 ////
 
 inline mat4::
 mat4(const mat3& m){
-	data[ 0] = m.data[0]; data[ 1] = m.data[1]; data[ 2] = m.data[2]; data[ 3] = 0;
-	data[ 4] = m.data[3]; data[ 5] = m.data[4]; data[ 6] = m.data[5]; data[ 7] = 0;
-	data[ 8] = m.data[6]; data[ 9] = m.data[7]; data[10] = m.data[8]; data[11] = 0;
-	data[12] = 0;         data[13] = 0;         data[14] = 0;         data[15] = 1;
+	arr[ 0] = m.arr[0]; arr[ 1] = m.arr[1]; arr[ 2] = m.arr[2]; arr[ 3] = 0;
+	arr[ 4] = m.arr[3]; arr[ 5] = m.arr[4]; arr[ 6] = m.arr[5]; arr[ 7] = 0;
+	arr[ 8] = m.arr[6]; arr[ 9] = m.arr[7]; arr[10] = m.arr[8]; arr[11] = 0;
+	arr[12] = 0;        arr[13] = 0;        arr[14] = 0;        arr[15] = 1;
 }
 
 inline mat3 mat4::
 To3x3() const{
-	return mat3(data[0], data[1], data[2],
-				data[4], data[5], data[6],
-				data[8], data[9], data[10]);
+	return mat3(arr[0], arr[1], arr[2],
+				arr[4], arr[5], arr[6],
+				arr[8], arr[9], arr[10]);
 }
 
 #endif //DESHI_MATRIX_H
