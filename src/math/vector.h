@@ -16,8 +16,13 @@ struct quat;
 //////////////////////
 
 struct vec2 {
-	union{ float x = 0; float r; float w; float u; };
-	union{ float y = 0; float g; float h; float v; };
+	union{
+		float arr[2] = {};
+		struct{ float x, y; };
+		struct{ float r, g; };
+		struct{ float w, h; };
+		struct{ float u, v; };
+	};
 	
 	vec2(){};
 	vec2(float inX, float inY);
@@ -83,9 +88,13 @@ struct vec2 {
 #include "vec2.inl"
 
 struct vec3 {
-	union{ float x = 0; float r; };
-	union{ float y = 0; float g; };
-	union{ float z = 0; float b; };
+	union{
+		float arr[3] = {};
+		struct{ float x, y, z; };
+		struct{ float r, g, b; };
+		struct{ vec2 xy; float _unusedZ0; };
+		struct{ float _unusedX0; vec2 yz; };
+	};
 	
 	vec3(){};
 	vec3(float inX, float inY, float inZ);

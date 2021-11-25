@@ -135,7 +135,8 @@ enum UIWindowFlags_ {
 	UIWindowFlags_DontSetGlobalHoverFlag = 1 << 11,
 	UIWindowFlags_FitAllElements         = 1 << 12, //attempts to fit the window's size to all called elements
 	
-	UIWindowFlags_Invisible    = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground | UIWindowFlags_NoFocus
+	UIWindowFlags_NoInteract = UIWindowFlags_NoMove | UIWindowFlags_NoFocus | UIWindowFlags_NoResize | UIWindowFlags_DontSetGlobalHoverFlag | UIWindowFlags_NoScroll, 
+	UIWindowFlags_Invisible  = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground | UIWindowFlags_NoFocus
 }; typedef u32 UIWindowFlags;
 
 
@@ -156,26 +157,26 @@ enum UIInputTextFlags_ {
 
 struct UIInputTextCallbackData {
 	UIInputTextFlags eventFlag; //the flag that caused the call back
-	UIInputTextFlags flags;    //the flags that the input text item has
-	void* userData;           //custom user data
+	UIInputTextFlags flags;     //the flags that the input text item has
+	void* userData;             //custom user data
 	
-	u8       character;        //character that was input  | r
-	Key::Key eventKey;         //key pressed on callback   | r
-	char*    buffer;           //buffer pointer			   | r/w
-	size_t   bufferSize;       //                          | r
-	u32      cursorPos;		   //cursor position		   | r/w
-	u32      selectionStart;   //                          | r/w -- == selection end when no selection
-	u32      selectionEnd;     //                          | r/w
+	u8       character;         //character that was input  | r
+	Key::Key eventKey;          //key pressed on callback   | r
+	char*    buffer;            //buffer pointer            | r/w
+	size_t   bufferSize;        //                          | r
+	u32      cursorPos;         //cursor position		   | r/w
+	u32      selectionStart;    //                          | r/w -- == selection end when no selection
+	u32      selectionEnd;      //                          | r/w
 };
 typedef u32 (*UIInputTextCallback)(UIInputTextCallbackData* data);
 
 struct UIInputTextState {
-	u32    id;                    //id the state belongs to
-	u32    cursor = 0;            //what character in the buffer the cursor is infront of, 0 being all the way to the left
-	f32    cursorBlinkTime;       //time it takes for the cursor to blink
-	f32    scroll;                //scroll offset on x
-	u32    selectStart;           //beginning of text selection
-	u32    selectEnd;	          //end of text selection
+	u32 id;                       //id the state belongs to
+	u32 cursor = 0;               //what character in the buffer the cursor is infront of, 0 being all the way to the left
+	f32 cursorBlinkTime;          //time it takes for the cursor to blink
+	f32 scroll;                   //scroll offset on x
+	u32 selectStart;              //beginning of text selection
+	u32 selectEnd;                //end of text selection
 	UIInputTextCallback callback;
 	TIMER_START(timeSinceTyped);  //timer to time how long its been since typing, for cursor
 };
@@ -220,7 +221,8 @@ struct UIDrawCmd {
 	bool trackedForFit = 1;
 	
 	vec2 scissorOffset = vec2(0, 0);
-	vec2 scissorExtent = vec2(-1,0);
+	vec2 scissorExtent = vec2(0, 0);
+	b32  useWindowScissor = true;
 };
 
 enum UIItemType : u32 {
@@ -379,7 +381,7 @@ struct UIRow {
 
 namespace UI {
 	
-	//helpers
+	//// helpers ////
 	vec2              CalcTextSize(cstring text);
 	vec2              CalcTextSize(wcstring text);
 	FORCE_INLINE vec2 CalcTextSize(const string& text)  { return CalcTextSize(cstring {text.str,u64(text.count)}); }
@@ -393,7 +395,7 @@ namespace UI {
 	vec2     GetLastItemSize();
 	vec2     GetLastItemScreenPos();
 	
-	//Row commands
+	//// rows ////
 	void BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags = 0);
 	void EndRow();
 	void RowSetupColumnWidths(array<f32> widths);
@@ -401,12 +403,12 @@ namespace UI {
 	void RowSetupRelativeColumnWidth(u32 column, f32 width);
 	void RowSetupRelativeColumnWidths(array<f32> widths);
 	
-	//primitive items
+	//// drawing ////
 	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
 	void RectFilled(vec2 pos, vec2 dimen, color color = Color_White);
-	
 	void Line(vec2 start, vec2 end, float thickness = 1, color color = Color_White);
 	
+	//// text ////
 	void Text(const char* text, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
 	void Text(const char* text, color color, UITextFlags flags = 0);
@@ -417,8 +419,13 @@ namespace UI {
 	void Text(const wchar_t* text, vec2 pos, color color, UITextFlags flags = 0);
 	void TextF(const char* fmt, ...);
 	
-	//items
+	//// item utilities ////
 	void SetNextItemSize(vec2 size);
+	
+	//// items ////
+	bool MenuItem(const char* text); //returns true if selected //TODO
+	bool BeginMenu(const char* label);
+	void EndMenu();
 	
 	bool Button(const char* text);
 	bool Button(const char* text, vec2 pos);
@@ -426,7 +433,6 @@ namespace UI {
 	bool Button(const char* text, vec2 pos, color color);
 	
 	void Checkbox(string label, bool* b);
-	
 	void DropDown(const char* label, const char* options[], u32 options_count, u32& selected);
 	
 	//these overloads are kind of silly change them eventually
@@ -440,7 +446,11 @@ namespace UI {
 	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
 	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
 	
-	//push/pop functions
+	//InputText+Menu popup with built-in menu item filtering based on input
+	bool BeginContextMenu(const char* label); //TODO
+	void EndContextMenu();  //TODO
+	
+	//// push/pop ////
 	void PushColor(UIStyleCol idx, color color);
 	void PushVar(UIStyleVar idx, float style);
 	void PushVar(UIStyleVar idx, vec2 style);
@@ -454,24 +464,8 @@ namespace UI {
 	void PopFont(u32 count = 1);
 	void PopFontScale(u32 count = 1);
 	void PopScale(u32 count = 1);
-
-	//utilities
 	
-	//this utility is for using a collection of items as if they were one
-	//it basically combines all the items draw commands into one custom item that is
-	//added to the window when EndCustomItem() is called
-	//this is useful for cases where the user wants to manually position a group of items
-	//then work with them as if they were one afterwards
-	void BeginCustomItem();
-	void EndCustomItem();
-	
-	//push/pop functions
-	void PushColor(UIStyleCol idx, color color);
-	void PushVar(UIStyleVar idx, float style);
-	void PushVar(UIStyleVar idx, vec2 style);
-	
-	
-	//windows
+	//// windows ////
 	void Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	void End();
 	void BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags = 0);
@@ -485,9 +479,16 @@ namespace UI {
 	bool AnyWinHovered();
 	void ShowDebugWindowOf(const char* name);
 	
+	//// other ////
+	//this utility is for using a collection of items as if they were one
+	//it basically combines all the items draw commands into one custom item that is
+	//added to the window when EndCustomItem() is called
+	//this is useful for cases where the user wants to manually position a group of items
+	//then work with them as if they were one afterwards
+	void BeginCustomItem();
+	void EndCustomItem();
 	
-	
-	
+	//// init and update ////
 	void Init();
 	void Update();
 	

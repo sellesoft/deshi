@@ -53,10 +53,11 @@ struct MaterialGl{
 
 struct FontGl{
 	Font* base;
-	u32 texture;
-	u32 characterWidth;
-	u32 characterHeight;
-	u32 characterCount;
+	Type  type;
+	u32   texture;
+	u32   characterWidth;
+	u32   characterHeight;
+	u32   characterCount;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -722,7 +723,8 @@ vec2 prevScissorOffset = vec2( 0,  0);
 vec2 prevScissorExtent = vec2(-1, -1);
 
 void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
-	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
+		   "Scissor Offset and Extent can't be negative");
 	if (color.a == 0) return;
 	
 	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
@@ -732,6 +734,7 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
+		Assert(uiCmdCount <= MAX_UI_CMDS);
 	}
 	
 	u32       col = color.rgba;
@@ -761,7 +764,8 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
 //straight lines, see below
 void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
-	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
+		   "Scissor Offset and Extent can't be negative");
 	if (color.a == 0) return;
 	
 	//top, left, right, bottom
@@ -774,7 +778,8 @@ void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
 //when drawing them straight
 void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
-	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
+		   "Scissor Offset and Extent can't be negative");
 	if(color.a == 0) return;
 	
 	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
@@ -784,6 +789,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
+		Assert(uiCmdCount <= MAX_UI_CMDS);
 	}
 	
 	u32       col = color.rgba;
@@ -818,61 +824,322 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	}
 }
 
-void Render::
-DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){
-	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if (color.a == 0) return;
+void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent) {
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
+		   "Scissor Offset and Extent can't be negative");
+	Assert(points.count > 1, "Lines need at least 2 points");
+	if (color.a == 0 || thickness == 0) return;
 	
-	f32 w = glFonts[1].characterWidth;
-	for (int i = 0; i < text.size; i++) {
-		DrawCharUI((u32)text[i], pos, vec2::ONE, color, scissorOffset, scissorExtent);
-		pos.x += w;
-	}
-}
-
-void Render::
-DrawCharUI(u32 character, vec2 pos, vec2 scale, color color, vec2 scissorOffset, vec2 scissorExtent){
-	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
-	if(color.a == 0) return;
-	
-	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_FONT || 
-	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-	   scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
+	if ((uiCmdArray[uiCmdCount - 1].texIdx != 0)
+		|| (scissorOffset != prevScissorOffset)
+		|| (scissorExtent != prevScissorExtent)) {
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
+		Assert(uiCmdCount <= MAX_UI_CMDS);
 	}
+	
+	float halfthick = thickness / 2;
 	
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
-	UIIndexGl* ip = uiIndexArray  + uiIndexCount;
+	UIIndexGl* ip = uiIndexArray + uiIndexCount;
 	
-	f32 w = glFonts[1].characterWidth;
-	f32 h = glFonts[1].characterHeight;
-	f32 dy = 1.f / f32(glFonts[1].characterCount);
+	{// first point
+		
+		vec2 ott = points[1] - points[0];
+		vec2 norm = vec2(ott.y, -ott.x).normalized();
+		
+		vp[0].pos = points[0] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;
+		vp[1].pos = points[0] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;
+		
+		ip[0] = uiVertexCount;
+		ip[1] = uiVertexCount + 1;
+		ip[3] = uiVertexCount;
+		
+		uiCmdArray[uiCmdCount - 1].indexCount += 3;
+		
+		uiVertexCount += 2;
+		uiIndexCount += 3;
+		vp += 2;
+	}
 	
-	f32 idx = character-32; 
-	f32 topoff = idx*dy;
-	f32 botoff = topoff+dy;
+	//in betweens
+	int flip = -1;
+	for (int i = 1; i < points.count - 1; i++, flip *= -1) {
+		vec2 last, curr, next, norm;
+		
+		last = points[i - 1];
+		curr = points[i];
+		next = points[i + 1];
+		
+		//figure out average norm
+		vec2
+			p01 = curr - last,
+		p12 = next - curr,
+		p02 = next - last,
+		//norm01 = vec2{ p01.y, -p01.x } * flip, //we flip the normal everytime to keep up the pattern
+		//norm12 = vec2{ p12.y, -p12.x } * flip,
+		normav;//((norm01 + norm12) / 2).normalized();
+		
+		float a = p01.mag(), b = p12.mag(), c = p02.mag();
+		float ang = RADIANS(Math::AngBetweenVectors(-p01, p12));
+		
+		//this is the critical angle where the thickness of the 2 lines cause them to overlap at small angles
+		//if (fabs(ang) < 2 * atanf(thickness / (2 * p02.mag()))) {
+		//	ang = 2 * atanf(thickness / (2 * p02.mag()));
+		//}
+		
+		normav = p12.normalized();
+		normav = Math::vec2RotateByAngle(-DEGREES(ang) / 2, normav);
+		normav *= flip;
+		
+		//this is where we calc how wide the thickness of the inner line is meant to be
+		normav = normav.normalized() * thickness / ( 2 * sinf(ang / 2));
+		
+		vec2 normavout = normav;
+		vec2 normavin = -normav;
+		
+		normavout.clampMag(0, thickness * 2);//sqrt(2) / 2 * thickness );
+		normavin.clampMag(0, thickness * 4);
+		
+		
+		
+		
+		//set indicies by pattern
+		int ipidx = 6 * (i - 1) + 2;
+		ip[ipidx + 0] =
+			ip[ipidx + 2] =
+			ip[ipidx + 4] =
+			ip[ipidx + 7] =
+			uiVertexCount;
+		
+		ip[ipidx + 3] =
+			ip[ipidx + 5] =
+			uiVertexCount + 1;
+		
+		vp[0].pos = curr + normavout; vp[0].uv = { 0,0 }; vp[0].color = col;//PackColorU32(255, 0, 0, 255);
+		vp[1].pos = curr + normavin; vp[1].uv = { 0,0 }; vp[1].color = col;//PackColorU32(255, 0, 255, 255);
+		
+		uiVertexCount += 2;
+		uiIndexCount += 6;
+		vp += 2;
+		
+		uiCmdArray[uiCmdCount - 1].indexCount += 6;
+		
+	}
 	
-	ip[0] = uiVertexCount; ip[1] = uiVertexCount+1; ip[2] = uiVertexCount+2;
-	ip[3] = uiVertexCount; ip[4] = uiVertexCount+2; ip[5] = uiVertexCount+3;
-	vp[0].pos = {pos.x+0,pos.y+0}; vp[0].uv = {0,topoff}; vp[0].color = col;
-	vp[1].pos = {pos.x+w,pos.y+0}; vp[1].uv = {1,topoff}; vp[1].color = col;
-	vp[2].pos = {pos.x+w,pos.y+h}; vp[2].uv = {1,botoff}; vp[2].color = col;
-	vp[3].pos = {pos.x+0,pos.y+h}; vp[3].uv = {0,botoff}; vp[3].color = col;
+	{//last point
+		vec2 ott = points[points.count - 1] - points[points.count - 2];
+		vec2 norm = vec2(ott.y, -ott.x).normalized() * flip;
+		
+		vp[0].pos = points[points.count - 1] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;//PackColorU32(255, 50, 255, 255);
+		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;//PackColorU32(255, 50, 100, 255);
+		
+		//set final indicies by pattern
+		int ipidx = 6 * (points.count - 2) + 2;
+		ip[ipidx + 0] = uiVertexCount;
+		ip[ipidx + 2] = uiVertexCount;
+		ip[ipidx + 3] = uiVertexCount + 1;
+		
+		uiCmdArray[uiCmdCount - 1].indexCount += 3;
+		
+		uiVertexCount += 2;
+		uiIndexCount += 3;
+		vp += 2; ip += 3;
+	}
 	
-	uiVertexCount += 4;
-	uiIndexCount  += 6;
-	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_FONT;
-	if(scissorExtent.x != -1){
+	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+	if (scissorExtent.x != -1) {
 		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
 		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}else{
+	}
+	else {
 		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0,0);
+		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+	}
+	
+	
+}
+
+void Render::
+DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 scissorOffset, vec2 scissorExtent){
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
+		   "Scissor Offset and Extent can't be negative");
+	Assert(font->idx < glFonts.count);
+	if(color.a == 0) return;
+	
+	//im doing offset and extent because we have to know if we're drawing in a new window
+	//and you could do text last in one, and text first in another
+	if((uiCmdArray[uiCmdCount - 1].texIdx != font->idx)
+	   || (scissorOffset != prevScissorOffset)
+	   || (scissorExtent != prevScissorExtent)){
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+		Assert(uiCmdCount <= MAX_UI_CMDS);
+	}
+	
+	switch (glFonts[font->idx].type){
+		//// BDF (and NULL) font rendering ////
+		case FontType_BDF: case FontType_NONE:{
+			forI(text.count){
+				u32       col = color.rgba;
+				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				UIIndexGl* ip = uiIndexArray + uiIndexCount;
+				
+				f32 w = glFonts[font->idx].characterWidth * scale.x;
+				f32 h = glFonts[font->idx].characterHeight * scale.y;
+				f32 dy = 1.f / (f32)glFonts[font->idx].characterCount;
+				
+				f32 idx = f32(text[i] - 32);
+				f32 topoff = idx * dy;
+				f32 botoff = topoff + dy;
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff }; vp[0].color = col;
+				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col;
+				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col;
+				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff }; vp[3].color = col;
+				
+				uiVertexCount += 4;
+				uiIndexCount += 6;
+				uiCmdArray[uiCmdCount - 1].indexCount += 6;
+				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
+				if(scissorExtent.x != -1){
+					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+				}else{
+					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+				}
+				
+				pos.x += glFonts[font->idx].characterWidth * scale.x;
+			}
+		}break;
+		//// TTF font rendering ////
+		case FontType_TTF:{
+			forI(text.count){
+				u32       col = color.rgba;
+				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				UIIndexGl* ip = uiIndexArray + uiIndexCount;
+				
+				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				vp[0].pos = { q.x0,q.y0}; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
+				vp[1].pos = { q.x1,q.y0}; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
+				vp[2].pos = { q.x1,q.y1}; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
+				vp[3].pos = { q.x0,q.y1}; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
+				
+				uiVertexCount += 4;
+				uiIndexCount += 6;
+				uiCmdArray[uiCmdCount - 1].indexCount += 6;
+				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
+				if(scissorExtent.x != -1){
+					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+				}else{
+					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+				}
+			}break;
+			default: Assert(!"unhandled font type"); break;
+		}
+	}
+}
+
+void Render::
+DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 scale, vec2 scissorOffset, vec2 scissorExtent){
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
+		   "Scissor Offset and Extent can't be negative");
+	Assert(font->idx < glFonts.count);
+	if(color.a == 0) return;
+	
+	//im doing offset and extent because we have to know if we're drawing in a new window
+	//and you could do text last in one, and text first in another
+	if((uiCmdArray[uiCmdCount - 1].texIdx != font->idx)
+	   || (scissorOffset != prevScissorOffset)
+	   || (scissorExtent != prevScissorExtent)){
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
+		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
+		uiCmdCount++;
+		Assert(uiCmdCount <= MAX_UI_CMDS);
+	}
+	
+	switch (glFonts[font->idx].type){
+		//// BDF (and NULL) font rendering ////
+		case FontType_BDF: case FontType_NONE:{
+			forI(text.count){
+				u32       col = color.rgba;
+				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				UIIndexGl* ip = uiIndexArray + uiIndexCount;
+				
+				f32 w = glFonts[font->idx].characterWidth * scale.x;
+				f32 h = glFonts[font->idx].characterHeight * scale.y;
+				f32 dy = 1.f / (f32)glFonts[font->idx].characterCount;
+				
+				f32 idx = f32(text[i] - 32);
+				f32 topoff = idx * dy;
+				f32 botoff = topoff + dy;
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff }; vp[0].color = col;
+				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col;
+				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col;
+				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff }; vp[3].color = col;
+				
+				uiVertexCount += 4;
+				uiIndexCount += 6;
+				uiCmdArray[uiCmdCount - 1].indexCount += 6;
+				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
+				if(scissorExtent.x != -1){
+					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+				}else{
+					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+				}
+				
+				pos.x += glFonts[font->idx].characterWidth * scale.x;
+			}
+		}break;
+		//// TTF font rendering ////
+		case FontType_TTF:{
+			forI(text.count){
+				u32       col = color.rgba;
+				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				UIIndexGl* ip = uiIndexArray + uiIndexCount;
+				
+				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
+				
+				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+				vp[0].pos = { q.x0,q.y0}; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
+				vp[1].pos = { q.x1,q.y0}; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
+				vp[2].pos = { q.x1,q.y1}; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
+				vp[3].pos = { q.x0,q.y1}; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
+				
+				uiVertexCount += 4;
+				uiIndexCount += 6;
+				uiCmdArray[uiCmdCount - 1].indexCount += 6;
+				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
+				if(scissorExtent.x != -1){
+					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+				}else{
+					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
+					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+				}
+			}break;
+			default: Assert(!"unhandled font type"); break;
+		}
 	}
 }
 
@@ -914,10 +1181,11 @@ void Render::
 LoadFont(Font* font, Texture* texture){
 	FontGl fgl{};
 	fgl.base            = font;
+	fgl.type            = font->type;
 	fgl.texture         = texture->idx;
-	fgl.characterWidth  = font->width;
-	fgl.characterHeight = font->height;
-	fgl.characterCount  = font->char_count;
+	fgl.characterWidth  = font->max_width;
+	fgl.characterHeight = font->max_height;
+	fgl.characterCount  = font->count;
 	
 	glFonts.add(fgl);
 }
@@ -1201,7 +1469,7 @@ DrawPolyFilled(array<vec3>& points, color color){
 }
 
 void Render::
-DrawBox(mat4 transform, color color){
+DrawBox(const mat4& transform, color color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -1217,7 +1485,7 @@ DrawBox(mat4 transform, color color){
 }
 
 void Render::
-DrawBoxFilled(mat4 transform, color color){
+DrawBoxFilled(const mat4& transform, color color){
 	if(color.a == 0) return;
 	
 	vec3 p(0.5f, 0.5f, 0.5f);
@@ -1272,7 +1540,7 @@ UpdateCameraViewMatrix(mat4 m){
 void Render::
 UpdateCameraProjectionMatrix(mat4 m){
 	uboVS.values.proj = m;
-	uboVS.values.proj.data[5] = -1*uboVS.values.proj.data[5]; //OpenGL is inverted
+	uboVS.values.proj.arr[5] = -1*uboVS.values.proj.arr[5]; //OpenGL is inverted
 }
 
 void Render::
@@ -1280,7 +1548,7 @@ UseDefaultViewProjMatrix(vec3 position, vec3 rotation){
 	vec3 forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
 	uboVS.values.view = Math::LookAtMatrix(position, position + forward).Inverse();
 	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix(width, height, 90, 1000, 0.1);
-	uboVS.values.proj.data[5] = -1*uboVS.values.proj.data[5]; //OpenGL is inverted
+	uboVS.values.proj.arr[5] = -1*uboVS.values.proj.arr[5]; //OpenGL is inverted
 }
 
 //////////////////

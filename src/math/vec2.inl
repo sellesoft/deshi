@@ -14,7 +14,7 @@ vec2(float inX, float inY) {
 
 inline vec2::
 vec2(const vec2& v){ 
-	*this = v; 
+	x = v.x; y = v.y; 
 }
 
 inline vec2::

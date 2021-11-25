@@ -41,7 +41,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	glfwMakeContextCurrent(window);
 	opengl_version = gladLoadGL(glfwGetProcAddress);
 	if(opengl_version == 0){ LogE("glad","Failed to load OpenGL!"); glfwTerminate(); return; }
-	logf("glad","Loaded OpenGL %d.%d", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
+	Logf("glad","Loaded OpenGL %d.%d", GLAD_VERSION_MAJOR(opengl_version), GLAD_VERSION_MINOR(opengl_version));
 #endif //DESHI_OPENGL
 	
 	//set initial window size

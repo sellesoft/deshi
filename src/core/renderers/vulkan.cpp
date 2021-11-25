@@ -3183,6 +3183,7 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
+		Assert(uiCmdCount <= MAX_UI_CMDS);
 	}
 	
 	u32       col = color.rgba;
@@ -3239,6 +3240,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
+		Assert(uiCmdCount <= MAX_UI_CMDS);
 	}
 	
 	u32       col = color.rgba;
@@ -3292,6 +3294,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
+		Assert(uiCmdCount <= MAX_UI_CMDS);
 	}
 	
 	float halfthick = thickness / 2;
@@ -3431,6 +3434,7 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
+		Assert(uiCmdCount <= MAX_UI_CMDS);
 	}
 	
 	switch (vkFonts[font->idx].type) {
@@ -3520,6 +3524,7 @@ void Render::DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 s
 		prevScissorOffset = scissorOffset;
 		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
 		uiCmdCount++;
+		Assert(uiCmdCount <= MAX_UI_CMDS);
 	}
 	
 	switch (vkFonts[font->idx].type) {
