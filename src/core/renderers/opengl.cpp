@@ -533,8 +533,8 @@ SetupPrograms(){
 	u32 shader_count = 0;
 	
 	{//base
-		shaders[0] = CompileAndLoadShader("base.vert", ShaderStage_Vertex);
-		shaders[1] = CompileAndLoadShader("base.frag", ShaderStage_Fragment);
+		shaders[0] = CompileAndLoadShader("base_gl3.vert", ShaderStage_Vertex);
+		shaders[1] = CompileAndLoadShader("base_gl3.frag", ShaderStage_Fragment);
 		shader_count = 2;
 		programs.base = CreateProgram(shaders, shader_count);
 		
@@ -544,42 +544,42 @@ SetupPrograms(){
 	}
 	
 	{//null
-		shaders[0] = CompileAndLoadShader("null.vert", ShaderStage_Vertex);
-		shaders[1] = CompileAndLoadShader("null.frag", ShaderStage_Fragment);
+		shaders[0] = CompileAndLoadShader("null_gl3.vert", ShaderStage_Vertex);
+		shaders[1] = CompileAndLoadShader("null_gl3.frag", ShaderStage_Fragment);
 		shader_count = 2;
 		programs.null = CreateProgram(shaders, shader_count);
 	}
 	
 	{//flat
-		shaders[0] = CompileAndLoadShader("flat.vert", ShaderStage_Vertex);
-		shaders[1] = CompileAndLoadShader("flat.frag", ShaderStage_Fragment);
+		shaders[0] = CompileAndLoadShader("flat_gl3.vert", ShaderStage_Vertex);
+		shaders[1] = CompileAndLoadShader("flat_gl3.frag", ShaderStage_Fragment);
 		shader_count = 2;
 		programs.flat = CreateProgram(shaders, shader_count);
 	}
 	
 	{//phong
-		shaders[0] = CompileAndLoadShader("phong.vert", ShaderStage_Vertex);
-		shaders[1] = CompileAndLoadShader("phong.frag", ShaderStage_Fragment);
+		shaders[0] = CompileAndLoadShader("phong_gl3.vert", ShaderStage_Vertex);
+		shaders[1] = CompileAndLoadShader("phong_gl3.frag", ShaderStage_Fragment);
 		shader_count = 2;
 		programs.phong = CreateProgram(shaders, shader_count);
 	}
 	
 	{//pbr
-		shaders[0] = CompileAndLoadShader("pbr.vert", ShaderStage_Vertex);
-		shaders[1] = CompileAndLoadShader("pbr.frag", ShaderStage_Fragment);
+		shaders[0] = CompileAndLoadShader("pbr_gl3.vert", ShaderStage_Vertex);
+		shaders[1] = CompileAndLoadShader("pbr_gl3.frag", ShaderStage_Fragment);
 		shader_count = 2;
 		programs.pbr = CreateProgram(shaders, shader_count);
 	}
 	
 	{//2d
-		shaders[0] = CompileAndLoadShader("twod.vert", ShaderStage_Vertex);
-		shaders[1] = CompileAndLoadShader("twod.frag", ShaderStage_Fragment);
+		shaders[0] = CompileAndLoadShader("twod_gl3.vert", ShaderStage_Vertex);
+		shaders[1] = CompileAndLoadShader("twod_gl3.frag", ShaderStage_Fragment);
 		shader_count = 2;
 		programs.twod = CreateProgram(shaders, shader_count, true);
 		
 		{//ui
-			shaders[0] = CompileAndLoadShader("ui.vert", ShaderStage_Vertex);
-			shaders[1] = CompileAndLoadShader("ui.frag", ShaderStage_Fragment);
+			shaders[0] = CompileAndLoadShader("ui_gl3.vert", ShaderStage_Vertex);
+			shaders[1] = CompileAndLoadShader("ui_gl3.frag", ShaderStage_Fragment);
 			shader_count = 2;
 			programs.ui = CreateProgram(shaders, shader_count, true);
 			
@@ -588,8 +588,8 @@ SetupPrograms(){
 	}
 	
 	{//wireframe
-		shaders[0] = CompileAndLoadShader("wireframe.vert", ShaderStage_Vertex);
-		shaders[1] = CompileAndLoadShader("wireframe.frag", ShaderStage_Fragment);
+		shaders[0] = CompileAndLoadShader("wireframe_gl3.vert", ShaderStage_Vertex);
+		shaders[1] = CompileAndLoadShader("wireframe_gl3.frag", ShaderStage_Fragment);
 		shader_count = 2;
 		programs.wireframe = CreateProgram(shaders, shader_count);
 		
@@ -599,36 +599,36 @@ SetupPrograms(){
 	}
 	
 	{//lavalamp
-		shaders[0] = CompileAndLoadShader("lavalamp.vert", ShaderStage_Vertex);
-		shaders[1] = CompileAndLoadShader("lavalamp.frag", ShaderStage_Fragment);
+		shaders[0] = CompileAndLoadShader("lavalamp_gl3.vert", ShaderStage_Vertex);
+		shaders[1] = CompileAndLoadShader("lavalamp_gl3.frag", ShaderStage_Fragment);
 		shader_count = 2;
 		programs.lavalamp = CreateProgram(shaders, shader_count);
 	}
 	
 	{//offscreen
-		shaders[0] = CompileAndLoadShader("offscreen.vert", ShaderStage_Vertex);
+		shaders[0] = CompileAndLoadShader("offscreen_gl3.vert", ShaderStage_Vertex);
 		shader_count = 1;
 		programs.offscreen = CreateProgram(shaders, shader_count);
 	}
 	
 	{//testing0
-		shaders[0] = CompileAndLoadShader("testing0.vert", ShaderStage_Vertex);
-		shaders[1] = CompileAndLoadShader("testing0.frag", ShaderStage_Fragment);
+		shaders[0] = CompileAndLoadShader("testing0_gl3.vert", ShaderStage_Vertex);
+		shaders[1] = CompileAndLoadShader("testing0_gl3.frag", ShaderStage_Fragment);
 		shader_count = 2;
 		programs.testing0 = CreateProgram(shaders, shader_count);
 	}
 	
 	{//testing1
-		shaders[0] = CompileAndLoadShader("testing1.vert", ShaderStage_Vertex);
-		shaders[1] = CompileAndLoadShader("testing1.frag", ShaderStage_Fragment);
+		shaders[0] = CompileAndLoadShader("testing1_gl3.vert", ShaderStage_Vertex);
+		shaders[1] = CompileAndLoadShader("testing1_gl3.frag", ShaderStage_Fragment);
 		shader_count = 2;
 		programs.testing1 = CreateProgram(shaders, shader_count);
 	}
 	
 	{//DEBUG mesh normals
-		shaders[0] = CompileAndLoadShader("nothing.vert", ShaderStage_Vertex);
-		shaders[1] = CompileAndLoadShader("normaldebug.geom", ShaderStage_Geometry);
-		shaders[2] = CompileAndLoadShader("nothing.frag", ShaderStage_Fragment);
+		shaders[0] = CompileAndLoadShader("nothing_gl3.vert", ShaderStage_Vertex);
+		shaders[1] = CompileAndLoadShader("normaldebug_gl3.geom", ShaderStage_Geometry);
+		shaders[2] = CompileAndLoadShader("nothing_gl3.frag", ShaderStage_Fragment);
 		shader_count = 3;
 		programs.normals_debug = CreateProgram(shaders, shader_count);
 	}
