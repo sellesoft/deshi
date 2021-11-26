@@ -343,7 +343,7 @@ namespace Console2{
 					ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_CallbackAlways;
 					if(show_autocomplete) input_text_flags = ImGuiInputTextFlags_None;
 					
-					ImGui::PushStyleColor(ImGuiCol_FrameBg, Color_VeryDarkCyan);
+					ImGui::PushStyleColor(ImGuiCol_FrameBg, Color_VeryDarkCyan.rgba);
 					ImGui::SetNextItemWidth(ImGui::GetWindowWidth() - 16);
 					//TODO(delle,OpCl) this can be optimized by reducing the amount of string copies
 					if(ImGui::InputText("##console_input_text", input_buffer, input_max_size-1, input_text_flags, &TextEditCallback, 0)) {

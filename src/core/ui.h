@@ -221,7 +221,7 @@ struct UIDrawCmd {
 	float thickness;
 	
 	
-
+	
 	//TODO
 	//eventually we could maybe store text as an int* or something, so as unicode codepoints, since in the end,
 	//at least with TTF, thats how we communicate what letter we want.
@@ -317,9 +317,9 @@ struct UIWindow {
 	//base window stuff to End(), so we can do dynamic sizing
 	array<UIItem> items[UI_WINDOW_ITEM_LAYERS];
 	array<UIItem> baseItems;
-
+	
 	u32 currlayer = floor(UI_WINDOW_ITEM_LAYERS / 2.f);
-
+	
 	u32 windowlayer = 5;
 	
 	//a collection of child windows
@@ -343,14 +343,14 @@ struct UIWindow {
 	
 	//TODO decide if this is necessary anymore or not since we have style on items now
 	UIStyle style;
-
-
-//debug information for use with metrics
+	
+	
+	//debug information for use with metrics
 	
 	f32 render_time = 0;
 	f32 creation_time = 0;
 	u32 items_count = 0;
-
+	
 	UIWindow() {};
 	
 };
@@ -490,14 +490,14 @@ namespace UI {
 	void PushScale(vec2 scale);
 	void PushLayer(u32 layer);
 	void PushWindowLayer(u32 layer);
-
+	
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
 	void PopFont(u32 count = 1);
 	void PopScale(u32 count = 1);
 	void PopLayer(u32 count = 1);
 	void PopWindowLayer(u32 count = 1);
-
+	
 	//// windows ////
 	void Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	void End();
