@@ -267,6 +267,10 @@ UIStyle& UI::GetStyle(){
 	return style;
 }
 
+UIWindow* UI::GetWindow() {
+    return curwin;
+}
+
 //the following 4 functions should probably error out sofly, rather than asserting
 
 //returns the cursor to the same line as the previous and moves it to the right by the 
@@ -749,7 +753,7 @@ local void TextW(const wchar_t* in, vec2 pos, color color, bool nowrap, bool mov
 		
 		NextItemSize = vec2{ -1, 0 };
 		
-		TextCall(in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
+		TextCall(in, vec2{ 0,0 }, color, item);
 		CalcItemSize(item);
 	}
 	AdvanceCursor(item, move_cursor);
@@ -807,7 +811,7 @@ bool ButtonCall(const char* text, vec2 pos, bool move_cursor = 1) {
 	AdvanceCursor(item, move_cursor);
 	
 	bool active = Math::PointInRectangle(DeshInput->mousePos, curwin->position + pos, item->size * style.globalScale);
-
+	
 	{//background
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 		drawCmd.position = vec2::ZERO;
@@ -1367,7 +1371,7 @@ void UI::PushLayer(u32 layer) {
 }
 
 void UI::PushWindowLayer(u32 layer) {
-
+	
 }
 
 //we always leave the current color on top of the stack and the previous gets popped
@@ -1689,7 +1693,7 @@ void UI::End() {
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 	
 	curwin->creation_time = TIMER_END(wincreate);
-
+	
 	//update stored window with new window state
 	curwin = *windowStack.last;
 	windowStack.pop();
@@ -1782,14 +1786,14 @@ bool UI::AnyWinHovered() {
 
 UIWindow* DisplayMetrics() {
 	using namespace UI;
-
+	
 	UIWindow* debugee = nullptr;
 	UIWindow* myself = 0; //pointer returned for drawing
-
+	
 	UIWindow* slomo     = *windows.atIdx(0);
 	UIWindow* quick     = *windows.atIdx(0);
 	UIWindow* mostitems = *windows.atIdx(0);
-
+	
 	for(UIWindow* win : windows) {
 		if (!(win->name == "METRICS")) {
 			if (win->render_time > slomo->render_time)      slomo = win;
@@ -1797,28 +1801,28 @@ UIWindow* DisplayMetrics() {
 			if (win->items->count > mostitems->items->count) mostitems = win;
 		}
 	}
-
-
+	
+	
 	PushColor(UIStyleCol_WindowBg, colors.near_black);
 	PushColor(UIStyleCol_Border, colors.dark_grey_blue);
 	PushColor(UIStyleCol_FrameBgActive, color(Color_Cyan));
 	PushColor(UIStyleCol_FrameBgHovered, color(Color_Cyan) * 0.8);
 	PushColor(UIStyleCol_FrameBg, color(Color_Cyan) * 0.6);
-
+	
 	Begin("METRICS", vec2::ZERO, vec2(300, 500));
 	myself = curwin;
-
+	
 	Text(TOSTRING("Active Windows: ", windowStack.count).str);
-
+	
 	float fw = CalcTextSize("Slowest Render: ").x;
-
+	
 	BeginRow(2, 15);
 	RowSetupColumnWidths({ fw, 20 });
 	Text(TOSTRING("Slowest Render: ", slomo->name).str);
 	if (Button("select")) debugee = slomo;
 	EndRow();
-
-
+	
+	
 	BeginRow(2, 15);
 	RowSetupColumnWidths({ fw, 20 });
 	Text(TOSTRING("Fastest Render: ", quick->name).str);
@@ -1830,13 +1834,13 @@ UIWindow* DisplayMetrics() {
 	Text(TOSTRING("Most Items:     ", quick->name).str);
 	if (Button("select")) debugee = mostitems;
 	EndRow();
-
+	
 	End();
-
+	
 	PopColor(5);
-
+	
 	return myself;
-
+	
 }
 
 //this just sets a flag to show the window at the very end of the frame, so we can gather all data
@@ -1871,7 +1875,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_FrameBgHovered, colors.pink_gray * 0.8);
 	PushColor(UIStyleCol_FrameBgActive,  colors.pink_gray * 1.2);
 	PushColor(UIStyleCol_Text,           Color_White);
-
+	
 	//push default style variables
 	PushVar(UIStyleVar_WindowBorderSize,    1);
 	PushVar(UIStyleVar_TitleBarHeight,      style.fontHeight * 1.2);
@@ -1992,7 +1996,7 @@ void UI::Update() {
 				color  dccol = drawCmd.color;
 				float    dct = drawCmd.thickness;
 				u32      dcl = p->windowlayer;
-
+				
 				cstring dctex{drawCmd.text.str,drawCmd.text.count};
 				wcstring wdctex{ drawCmd.wtext.str,drawCmd.wtext.count };
 				
@@ -2027,7 +2031,7 @@ void UI::Update() {
 				for (UIItem& item : p->items[i]) {
 					vec2 itempos = winpos + item.position * item.style.globalScale;//(item.type == UIItemType_Abstract ? item.position : winpos + item.position * item.style.globalScale);
 					vec2 itemsiz = item.size;
-
+					
 					for (UIDrawCmd& drawCmd : item.drawCmds) {
 						vec2   dcpos = itempos + drawCmd.position * item.style.globalScale;
 						vec2  dcpos2 = itempos + drawCmd.position2 * item.style.globalScale;
@@ -2040,16 +2044,16 @@ void UI::Update() {
 						color  dccol = drawCmd.color;
 						float    dct = drawCmd.thickness;
 						u32      dcl = p->windowlayer;
-
+						
 						cstring dctex{ drawCmd.text.str,drawCmd.text.count };
 						wcstring wdctex{ drawCmd.wtext.str, drawCmd.wtext.count };
-
+						
 						Font* font = drawCmd.font;
-
+						
 						switch (drawCmd.type) {
 							case UIDrawType_FilledRectangle: {
 								Render::FillRectUI(dcpos, dcsiz, dccol, dcl, dcso, dcse);
-
+								
 							}break;
 							case UIDrawType_Line: {
 								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, dcl, dcso, dcse);
@@ -2091,7 +2095,7 @@ void UI::Update() {
 			draw_window(c);
 		}
 	}
-
+	
 	if (show_metrics) {
 		draw_window(DisplayMetrics());
 		show_metrics = 0;
@@ -2110,7 +2114,7 @@ void UI::Update() {
 		float    dct = drawCmd.thickness;
 		cstring dctex{drawCmd.text.str,drawCmd.text.count};
 		u32      dcl = 5;
-
+		
 		Font*   font = drawCmd.font;
 		
 		switch (drawCmd.type) {
@@ -2145,7 +2149,7 @@ void UI::Update() {
 			}break;
 		}
 	}
-
+	
 	
 	
 	debugCmds.clear();
