@@ -76,10 +76,10 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 typedef u32 UIIndexDx; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
 local UIIndexDx uiVertexCount = 0;
 local UIIndexDx uiIndexCount  = 0;
-local UIIndexDx uiCmdCount    = 1; //start with 1
+local UIIndexDx uiCmdCounts    = 1; //start with 1
 local Vertex2   uiVertexArray[MAX_UI_VERTICES];
 local UIIndexDx uiIndexArray [MAX_UI_INDICES];
-local UICmdDx   uiCmdArray   [MAX_UI_CMDS]; //different UI cmd per font/texture
+local UICmdDx   uiCmdArrays   [MAX_UI_CMDS]; //different UI cmd per font/texture
 
 #define MAX_TEMP_VERTICES 0xFFFF //max u16: 65535
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
@@ -186,17 +186,17 @@ enum texTypes : u32 {
 vec2 prevScissorOffset = vec2( 0,  0);
 vec2 prevScissorExtent = vec2(-1, -1);
 
-void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
+void Render::FillRect2D(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
-	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
+	if(uiCmdArrays[uiCmdCounts - 1].texIdx != UITEX_WHITE ||
 	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
 	   scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
+		uiCmdArrays[uiCmdCounts].indexOffset = uiIndexCount;
+		uiCmdCounts++;
 	}
 	
 	u32       col = color.rgba;
@@ -212,43 +212,43 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
-	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+	uiCmdArrays[uiCmdCounts - 1].indexCount += 6;
+	uiCmdArrays[uiCmdCounts - 1].texIdx = UITEX_WHITE;
 	if(scissorExtent.x != -1){
-		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+		uiCmdArrays[uiCmdCounts - 1].scissorExtent = scissorExtent;
+		uiCmdArrays[uiCmdCounts - 1].scissorOffset = scissorOffset;
 	}else{
-		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+		uiCmdArrays[uiCmdCounts - 1].scissorExtent = vec2(width, height);
+		uiCmdArrays[uiCmdCounts - 1].scissorOffset = vec2(0, 0);
 	}
 }
 
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
 //straight lines, see below
-void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
+void Render::DrawRect2D(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
 	//top, left, right, bottom
-	DrawLineUI(pos.xAdd(-1),     pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos,              pos + dimensions.xSet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
+	DrawLine2D(pos.xAdd(-1),     pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
+	DrawLine2D(pos,              pos + dimensions.xSet(0),          1, color, scissorOffset, scissorExtent);
+	DrawLine2D(pos + dimensions, pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
+	DrawLine2D(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
 }
 
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
 //when drawing them straight
-void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
+void Render::DrawLine2D(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if(color.a == 0) return;
 	
-	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
+	if(uiCmdArrays[uiCmdCounts - 1].texIdx != UITEX_WHITE ||
 	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
 	   scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
+		uiCmdArrays[uiCmdCounts].indexOffset = uiIndexCount;
+		uiCmdCounts++;
 	}
 	
 	u32       col = color.rgba;
@@ -272,19 +272,19 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
-	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
+	uiCmdArrays[uiCmdCounts - 1].indexCount += 6;
+	uiCmdArrays[uiCmdCounts - 1].texIdx = UITEX_WHITE;
 	if(scissorExtent.x != -1){
-		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+		uiCmdArrays[uiCmdCounts - 1].scissorExtent = scissorExtent;
+		uiCmdArrays[uiCmdCounts - 1].scissorOffset = scissorOffset;
 	}else{
-		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+		uiCmdArrays[uiCmdCounts - 1].scissorExtent = vec2(width, height);
+		uiCmdArrays[uiCmdCounts - 1].scissorOffset = vec2(0, 0);
 	}
 }
 
 void Render::
-DrawTextUI(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){ //!Incomplete
+DrawText2D(string text, vec2 pos, color color, vec2 scissorOffset, vec2 scissorExtent){ //!Incomplete
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	

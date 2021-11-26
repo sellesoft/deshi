@@ -139,4 +139,5 @@ inline void color::FillFloat4FromU32(f32* floats, u32 color){
 	*(floats+2) = (f32)((color >> COLORU32_BSHIFT) & 0xFF) / 255.0f;
 	*(floats+3) = (f32)((color >> COLORU32_ASHIFT) & 0xFF) / 255.0f;
 }
+
 #endif //DESHI_COLOR_H

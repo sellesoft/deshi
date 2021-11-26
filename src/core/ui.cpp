@@ -2004,22 +2004,22 @@ void UI::Update() {
 				
 				switch (drawCmd.type) {
 					case UIDrawType_FilledRectangle: {
-						Render::FillRectUI(dcpos, dcsiz, dccol, dcl, dcso, dcse);
+						Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 					}break;
 					
 					case UIDrawType_Line: {
-						Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
+						Render::DrawLine2D(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
 					}break;
 					case UIDrawType_Text: {
 						vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
-						Render::DrawTextUI(font, dctex, dcpos, dccol, scale, dcl, dcso, dcse);
+						Render::DrawText2D(font, dctex, dcpos, dccol, scale, dcl, dcso, dcse);
 					}break;
 					case UIDrawType_WText: {
 						vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
-						Render::DrawTextUI(font, wdctex, dcpos, dccol, scale, dcl, dcso, dcse);
+						Render::DrawText2D(font, wdctex, dcpos, dccol, scale, dcl, dcso, dcse);
 					}break;
 					case UIDrawType_Rectangle: {
-						Render::DrawRectUI(dcpos, dcsiz, dccol, dcl, dcso, dcse);
+						Render::DrawRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 					}break;
 				}
 			}
@@ -2052,22 +2052,21 @@ void UI::Update() {
 						
 						switch (drawCmd.type) {
 							case UIDrawType_FilledRectangle: {
-								Render::FillRectUI(dcpos, dcsiz, dccol, dcl, dcso, dcse);
-								
+								Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 							}break;
 							case UIDrawType_Line: {
-								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, dcl, dcso, dcse);
+								Render::DrawLine2D(dcpos - itempos, dcpos2 - itempos, dct, dccol, dcl, dcso, dcse);
 							}break;
 							case UIDrawType_Text: {
 								vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
-								Render::DrawTextUI(font, dctex, dcpos, dccol, scale, dcl, dcso, dcse);
+								Render::DrawText2D(font, dctex, dcpos, dccol, scale, dcl, dcso, dcse);
 							}break;
 							case UIDrawType_WText: {
 								vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
-								Render::DrawTextUI(font, wdctex, dcpos, dccol, scale, dcl, dcso, dcse);
+								Render::DrawText2D(font, wdctex, dcpos, dccol, scale, dcl, dcso, dcse);
 							}break;
 							case UIDrawType_Rectangle: {
-								Render::DrawRectUI(dcpos, dcsiz, dccol, dcl, dcso, dcse);
+								Render::DrawRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 							}break;
 						}
 					}
@@ -2120,32 +2119,32 @@ void UI::Update() {
 		switch (drawCmd.type) {
 			case UIDrawType_FilledRectangle: {
 				if (drawCmd.useWindowScissor)
-					Render::FillRectUI(dcpos, dcsiz, dccol, dcl, vec2::ZERO, DeshWindow->dimensions);
+					Render::FillRect2D(dcpos, dcsiz, dccol, dcl, vec2::ZERO, DeshWindow->dimensions);
 				else
-					Render::FillRectUI(dcpos, dcsiz, dccol, dcl, dcso, dcse);
+					Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 				
 			}break;
 			
 			case UIDrawType_Line: {
 				if (drawCmd.useWindowScissor)
-					Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcl, vec2::ZERO, DeshWindow->dimensions);
+					Render::DrawLine2D(dcpos, dcpos2, dct, dccol, dcl, vec2::ZERO, DeshWindow->dimensions);
 				else
-					Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
+					Render::DrawLine2D(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
 			}break;
 			
 			case UIDrawType_Text: {
 				vec2 scale = vec2::ONE * ((font->type != FontType_BDF) ? style.fontHeight / font->max_height : 1);
 				if (drawCmd.useWindowScissor)
-					Render::DrawTextUI(font, dctex, dcpos, dccol, scale, dcl, vec2::ZERO, DeshWindow->dimensions);
+					Render::DrawText2D(font, dctex, dcpos, dccol, scale, dcl, vec2::ZERO, DeshWindow->dimensions);
 				else
-					Render::DrawTextUI(font, dctex, dcpos, dccol, scale, dcl, dcso, dcse);
+					Render::DrawText2D(font, dctex, dcpos, dccol, scale, dcl, dcso, dcse);
 			}break;
 			
 			case UIDrawType_Rectangle: {
 				if (drawCmd.useWindowScissor)
-					Render::DrawRectUI(dcpos, dcsiz, dccol, dcl,  vec2::ZERO, DeshWindow->dimensions);
+					Render::DrawRect2D(dcpos, dcsiz, dccol, dcl,  vec2::ZERO, DeshWindow->dimensions);
 				else
-					Render::DrawRectUI(dcpos, dcsiz, dccol, dcl, dcso, dcse);
+					Render::DrawRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 			}break;
 		}
 	}

@@ -63,8 +63,11 @@ ____glm/detail/_swizzle.hpp
 
 Render TODOs
 ------------
+rework the lines drawing algorithm and move it to a more appropriate spot like UI or suugu
+make functions for exposing render's 2D vertex and index arrays so the app can freely make custom
+____2D shapes
 give text its own stuff in renderer so it can have different settings from other UI (filtering,antialiasing,etc)
-find a nice way to not pass Font* to DrawTextUI: maybe fixed fonts rather than array? maybe set active font?
+find a nice way to not pass Font* to DrawText2D: maybe fixed fonts rather than array? maybe set active font?
 add texture/material recreation without restart
 revert phong shader so it is like it used to be, but keeps the shadows
 fix directional shadow mapping's (projection?) errors
@@ -102,7 +105,6 @@ speedup OBJ parsing and face generation
 
 UI TODOs
 --------
-add window layers 
 turn ShowDebugWindowOf into a general metrics/debug window like imgui once we have drop downs and stuff
 add functionality for resetting certain maps like windows and inputtexts
 ____maybe even removing certain labels from them

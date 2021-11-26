@@ -254,9 +254,9 @@ namespace Console2{
 			if(!open_amount) return; //early out if fully closed
 			
 			if(test_swap){
-				Render::FillRectUI(vec2(console_x, console_y), vec2(console_w, console_h), Color_Black); //background
-				Render::FillRectUI(vec2(console_x+pad, console_y+pad), vec2(console_w-pad2x, console_h-pad2x-input_box_height), color(0, 9, 13)); //report
-				Render::FillRectUI(vec2(console_x+pad, console_h-pad-input_box_height), vec2(console_w-pad2x, input_box_height), Color_VeryDarkCyan); //input
+				Render::FillRect2D(vec2(console_x, console_y), vec2(console_w, console_h), Color_Black); //background
+				Render::FillRect2D(vec2(console_x+pad, console_y+pad), vec2(console_w-pad2x, console_h-pad2x-input_box_height), color(0, 9, 13)); //report
+				Render::FillRect2D(vec2(console_x+pad, console_h-pad-input_box_height), vec2(console_w-pad2x, input_box_height), Color_VeryDarkCyan); //input
 			}else{
 				ImGuiStyle& style = ImGui::GetStyle();
 				style.AntiAliasedFill = false;
