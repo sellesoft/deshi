@@ -755,7 +755,6 @@ void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, v
 	uiVertexCount += 3;
 	uiIndexCount += 3;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 3;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = UITEX_WHITE;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 
@@ -802,7 +801,6 @@ void Render::FillRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = UITEX_WHITE;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
@@ -884,7 +882,6 @@ void Render::DrawLine2D(vec2 start, vec2 end, float thickness, color color, u32 
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = UITEX_WHITE;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
@@ -1019,7 +1016,6 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 		vp += 2; ip += 3;
 	}
 	
-	uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = UITEX_WHITE;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
@@ -1070,14 +1066,8 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 				uiVertexCount += 4;
 				uiIndexCount += 6;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
-				if(scissorExtent.x != -1){
-					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
-					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
-				}else{
-					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = vec2(width, height);
-					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = vec2(0, 0);
-				}
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 				
 				pos.x += glFonts[font->idx].characterWidth * scale.x;
 			}
@@ -1101,7 +1091,6 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 				uiVertexCount += 4;
 				uiIndexCount += 6;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 			}break;
