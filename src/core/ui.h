@@ -404,13 +404,14 @@ namespace UI {
 	FORCE_INLINE vec2 CalcTextSize(const wstring& text) { return CalcTextSize(wcstring{text.str,u64(text.count) }); }
 	FORCE_INLINE vec2 CalcTextSize(const char* text)    { return CalcTextSize(cstring {(char*)text,u64(strlen(text))}); }
 	FORCE_INLINE vec2 CalcTextSize(const wchar_t* text) { return CalcTextSize(wcstring{(wchar_t*)text,u64(wcslen(text)) }); }
-	void     SetNextItemActive();
-	UIStyle& GetStyle();
-	void     SameLine();
-	vec2     GetLastItemPos();
-	vec2     GetLastItemSize();
-	vec2     GetLastItemScreenPos();
-	u32      GetCenterLayer();
+	void      SetNextItemActive();
+	UIStyle&  GetStyle();
+	UIWindow* GetWindow();
+	void      SameLine();
+	vec2      GetLastItemPos();
+	vec2      GetLastItemSize();
+	vec2      GetLastItemScreenPos();
+	u32       GetCenterLayer();
 	
 	//// rows ////
 	void BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags = 0);

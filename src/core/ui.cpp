@@ -267,6 +267,10 @@ UIStyle& UI::GetStyle(){
 	return style;
 }
 
+UIWindow* UI::GetWindow() {
+	return curwin;
+}
+
 //the following 4 functions should probably error out sofly, rather than asserting
 
 //returns the cursor to the same line as the previous and moves it to the right by the 
