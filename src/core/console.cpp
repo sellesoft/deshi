@@ -266,7 +266,7 @@ void Console::DrawConsole(){
 							TableNextColumn();
 							if(i == match_sel){
 								SetScrollHereY(0);
-								PushStyleColor(ImGuiCol_Text, Color_Red);
+								PushStyleColor(ImGuiCol_Text, Color_Red.rgba);
 								Text(s.c_str());
 								ImGui::PopStyleColor();
 								if(selected){
@@ -341,7 +341,7 @@ void Console::DrawConsole(){
 	else  input_text_flags = 0;
 	
 	
-	PushStyleColor(ImGuiCol_FrameBg, Color_VeryDarkCyan);
+	PushStyleColor(ImGuiCol_FrameBg, Color_VeryDarkCyan.rgba);
 	SetNextItemWidth(ImGui::GetWindowWidth() - 15);
 	ImGui::SetItemDefaultFocus();
 	

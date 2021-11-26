@@ -16,52 +16,10 @@
 
 #define RANDCOL color(rand() % 255, rand() % 255, rand() % 255)
 
-enum Colors_ : u32{
-	Color_NONE            = PackColorU32(  0,  0,  0,  0),
-	Color_White           = PackColorU32(255,255,255,255),
-	Color_Black           = PackColorU32(  0,  0,  0,255),
-	Color_Grey            = PackColorU32(128,128,128,255),
-	Color_Red             = PackColorU32(255,  0,  0,255),
-	Color_Green           = PackColorU32(  0,255,  0,255),
-	Color_Blue            = PackColorU32(  0,  0,255,255),
-	Color_Yellow          = PackColorU32(255,255,  0,255),
-	Color_Cyan            = PackColorU32(  0,255,255,255),
-	Color_Magenta         = PackColorU32(255,  0,255,255),
-	Color_LightGrey       = PackColorU32(192,192,192,255),
-	Color_LightRed        = PackColorU32(255,128,128,255),
-	Color_LightGreen      = PackColorU32(128,255,128,255),
-	Color_LightBlue       = PackColorU32(128,128,255,255),
-	Color_LightYellow     = PackColorU32(245,234, 97,255),
-	Color_LightCyan       = PackColorU32(224,255,255,255),
-	Color_LightMagenta    = PackColorU32(204,153,204,255),
-	Color_DarkGrey        = PackColorU32( 64, 64, 64,255),
-	Color_DarkRed         = PackColorU32(128,  0,  0,255),
-	Color_DarkGreen       = PackColorU32(  0,128,  0,255),
-	Color_DarkBlue        = PackColorU32(  0,  0,128,255),
-	Color_DarkYellow      = PackColorU32(128,128,  0,255),
-	Color_DarkCyan        = PackColorU32(  0,128,128,255),
-	Color_DarkMagenta     = PackColorU32(128,  0,128,255),
-	Color_VeryDarkGrey    = PackColorU32( 32, 32, 32,255),
-	Color_VeryDarkRed     = PackColorU32( 64,  0,  0,255),
-	Color_VeryDarkGreen   = PackColorU32(  0, 64,  0,255),
-	Color_VeryDarkBlue    = PackColorU32(  0,  0, 64,255),
-	Color_VeryDarkYellow  = PackColorU32( 64, 64,  0,255),
-	Color_VeryDarkCyan    = PackColorU32(  0, 64, 64,255),
-	Color_VeryDarkMagenta = PackColorU32( 64,  0, 64,255),
-	
-	Color_Clear = Color_NONE, Color_Transparent = Color_NONE, Color_Blank = Color_NONE,
-	Color_Gray = Color_Grey, Color_LightGray = Color_LightGrey, Color_DarkGray = Color_DarkGrey, Color_VeryDarkGray = Color_VeryDarkGrey,
-};
-
 struct color{
 	union{
-		u32 rgba;
-		struct{
-			u8 r;
-			u8 g;
-			u8 b;
-			u8 a;
-		};
+		u32 rgba = 0;
+		struct{ u8 r, g, b, a; };
 	};
 	
 	color();
@@ -78,6 +36,48 @@ struct color{
 	static void  FillFloat3FromU32(f32* floats, u32 color);
 	static void  FillFloat4FromU32(f32* floats, u32 color);
 };
+
+////////////////////
+//// @constants ////
+////////////////////
+inline global_ color Color_NONE            = color(  0,  0,  0,  0);
+inline global_ color Color_White           = color(255,255,255,255);
+inline global_ color Color_Black           = color(  0,  0,  0,255);
+inline global_ color Color_Grey            = color(128,128,128,255);
+inline global_ color Color_Red             = color(255,  0,  0,255);
+inline global_ color Color_Green           = color(  0,255,  0,255);
+inline global_ color Color_Blue            = color(  0,  0,255,255);
+inline global_ color Color_Yellow          = color(255,255,  0,255);
+inline global_ color Color_Cyan            = color(  0,255,255,255);
+inline global_ color Color_Magenta         = color(255,  0,255,255);
+inline global_ color Color_LightGrey       = color(192,192,192,255);
+inline global_ color Color_LightRed        = color(255,128,128,255);
+inline global_ color Color_LightGreen      = color(128,255,128,255);
+inline global_ color Color_LightBlue       = color(128,128,255,255);
+inline global_ color Color_LightYellow     = color(245,234, 97,255);
+inline global_ color Color_LightCyan       = color(224,255,255,255);
+inline global_ color Color_LightMagenta    = color(204,153,204,255);
+inline global_ color Color_DarkGrey        = color( 64, 64, 64,255);
+inline global_ color Color_DarkRed         = color(128,  0,  0,255);
+inline global_ color Color_DarkGreen       = color(  0,128,  0,255);
+inline global_ color Color_DarkBlue        = color(  0,  0,128,255);
+inline global_ color Color_DarkYellow      = color(128,128,  0,255);
+inline global_ color Color_DarkCyan        = color(  0,128,128,255);
+inline global_ color Color_DarkMagenta     = color(128,  0,128,255);
+inline global_ color Color_VeryDarkGrey    = color( 32, 32, 32,255);
+inline global_ color Color_VeryDarkRed     = color( 64,  0,  0,255);
+inline global_ color Color_VeryDarkGreen   = color(  0, 64,  0,255);
+inline global_ color Color_VeryDarkBlue    = color(  0,  0, 64,255);
+inline global_ color Color_VeryDarkYellow  = color( 64, 64,  0,255);
+inline global_ color Color_VeryDarkCyan    = color(  0, 64, 64,255);
+inline global_ color Color_VeryDarkMagenta = color( 64,  0, 64,255);
+inline global_ color Color_Clear       = Color_NONE;
+inline global_ color Color_Transparent = Color_NONE; 
+inline global_ color Color_Blank       = Color_NONE;
+inline global_ color Color_Gray         = Color_Grey; 
+inline global_ color Color_LightGray    = Color_LightGrey; 
+inline global_ color Color_DarkGray     = Color_DarkGrey;
+inline global_ color Color_VeryDarkGray = Color_VeryDarkGrey;
 
 ///////////////////////
 //// @constructors ////

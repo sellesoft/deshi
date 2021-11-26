@@ -813,7 +813,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		u32 totalFaceFaceNeighbors = 0;
 		vec3 aabb_min{ FLT_MAX, FLT_MAX, FLT_MAX};
 		vec3 aabb_max{-FLT_MAX,-FLT_MAX,-FLT_MAX};
-		u32 default_color = Color_White;
+		u32 default_color = Color_White.rgba;
 		bool mtllib_found    = false;
 		bool s_warning       = false;
 		bool non_tri_warning = false;
