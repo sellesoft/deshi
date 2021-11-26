@@ -182,10 +182,19 @@ struct UIInputTextState {
 	TIMER_START(timeSinceTyped);  //timer to time how long its been since typing, for cursor
 };
 
+enum UISliderFlags_ {
+	UISliderFlags_NONE     = 0,
+	UISliderFlags_Vertical = 1,
+
+
+}; typedef u32 UISliderFlags;
+
 enum UIDrawType : u32 {
 	UIDrawType_Rectangle,
 	UIDrawType_FilledRectangle,
 	UIDrawType_Line,
+	UIDrawType_Circle,
+	UIDrawType_CircleFilled,
 	UIDrawType_Text,
 	UIDrawType_WText,
 };
@@ -238,6 +247,7 @@ enum UIItemType : u32 {
 	UIItemType_Button,    // Button()
 	UIItemType_Checkbox,  // Checkbox()
 	UIItemType_DropDown,  // DropDown()
+	UIItemType_Slider,    // Slider()
 };
 
 //an item such as a button, checkbox, or input text
@@ -425,7 +435,10 @@ namespace UI {
 	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
 	void RectFilled(vec2 pos, vec2 dimen, color color = Color_White);
 	void Line(vec2 start, vec2 end, float thickness = 1, color color = Color_White);
-	
+	void Circle(vec2 pos, f32 radius, u32 subdivisions = 30, color color = Color_White);
+	void CircleFilled(vec2 pos, f32 radius, u32 subdivisions = 30, color color = Color_White);
+
+
 	//// text ////
 	void Text(const char* text, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
@@ -449,8 +462,11 @@ namespace UI {
 	bool Button(const char* text, vec2 pos);
 	
 	void Checkbox(string label, bool* b);
+
 	void DropDown(const char* label, const char* options[], u32 options_count, u32& selected);
 	
+	void Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
+
 	//these overloads are kind of silly change them eventually
 	//InputText takes in a buffer and modifies it according to input and works much like ImGui's InputText
 	//However there are overloads that will return it's UIInputTextState, allowing you to directly r/w some internal information of the

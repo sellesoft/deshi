@@ -76,6 +76,7 @@ local bool NextActive   = 0;
 local map<const char*, UIWindow*>        windows;     
 local map<const char*, UIInputTextState> inputTexts;  //stores known input text labels and their state
 local map<const char*, bool>             dropDowns;   //stores known dropdowns and if they are open or not
+local map<const char*, bool>             sliders;     //stores whether a slider is being actively changed
 local array<UIWindow*>                   windowStack; //window stack which allow us to use windows like we do colors and styles
 local array<ColorMod>                    colorStack; 
 local array<VarMod>                      varStack; 
@@ -110,6 +111,8 @@ local UIItem lastitem;
 
 local u32 currlayer = floor(UI_WINDOW_ITEM_LAYERS / 2.f);
 
+//set when an item need to supress window dragging
+local b32 drag_override = 0;
 
 //helper defines
 
@@ -432,7 +435,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 void UI::Line(vec2 start, vec2 end, float thickness, color color){
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd{ UIDrawType_Line};
-	drawCmd. position = start;
+	drawCmd.position = start;
 	drawCmd.position2 = end;
 	drawCmd.thickness = thickness;
 	drawCmd.    color = color;
@@ -444,6 +447,40 @@ void UI::Line(vec2 start, vec2 end, float thickness, color color){
 	curwin->items[currlayer].add(item);
 }
 
+
+//@Circle
+
+
+void UI::Circle(vec2 pos, f32 radius, u32 subdivisions, color color) {
+	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
+	UIDrawCmd drawCmd{ UIDrawType_Circle };
+	drawCmd.position = vec2{ radius, radius };
+	drawCmd.thickness = radius;
+	drawCmd.position2 = vec2( subdivisions, 0 );
+	drawCmd.color = color;
+
+	item.position = pos - vec2::ONE * radius;
+	item.size = vec2::ONE * radius * 2;
+
+	item.drawCmds.add(drawCmd);
+	curwin->items[currlayer].add(item);
+
+}
+
+void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {
+	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
+	UIDrawCmd drawCmd{ UIDrawType_CircleFilled };
+	drawCmd.position = vec2{ radius, radius };
+	drawCmd.thickness = radius;
+	drawCmd.position2 = vec2( subdivisions, 0 );
+	drawCmd.color = color;
+
+	item.position = pos - vec2::ONE * radius;
+	item.size = vec2::ONE * radius * 2;
+
+	item.drawCmds.add(drawCmd);
+	curwin->items[currlayer].add(item);
+}
 
 
 //@Items
@@ -753,7 +790,7 @@ local void TextW(const wchar_t* in, vec2 pos, color color, bool nowrap, bool mov
 		
 		NextItemSize = vec2{ -1, 0 };
 		
-		TextCall(in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
+		TextCall(in, vec2{ 0,0 }, color, item);
 		CalcItemSize(item);
 	}
 	AdvanceCursor(item, move_cursor);
@@ -928,7 +965,7 @@ void UI::DropDown(const char* label, const char* options[], u32 options_count, u
 	
 	{//background
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
-		drawCmd.position = vec3{ 0,0 };
+		drawCmd.position = vec2{ 0,0 };
 		drawCmd.dimensions = item->size;
 		drawCmd.color = style.colors[UIStyleCol_FrameBg];
 		item->drawCmds.add(drawCmd);
@@ -936,7 +973,7 @@ void UI::DropDown(const char* label, const char* options[], u32 options_count, u
 	
 	{//selected text
 		UIDrawCmd drawCmd{ UIDrawType_Text};
-		drawCmd.position = vec3{ 10, (item->size.y - style.fontHeight) * 0.5f };
+		drawCmd.position = vec2{ 10, (item->size.y - style.fontHeight) * 0.5f };
 		drawCmd.color = style.colors[UIStyleCol_Text];
 		drawCmd.text = string(options[selected]);
 		drawCmd.font = style.font;
@@ -1005,6 +1042,67 @@ void UI::DropDown(const char* label, const char* options[], u32 options_count, u
 			}
 		}
 	}
+}
+
+void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags){
+	UIItem* item = BeginItem(UIItemType_Slider);
+	
+	b32 being_moved = 0;
+	if (!sliders.has(label)) {
+		sliders.add(label);
+		sliders[label] = false;
+	}
+	else {
+		being_moved = sliders[label];
+	}
+	
+	item->position = PositionForNewItem();
+	
+	item->size = (NextItemSize.x == -1 ?
+		vec2{ curwin->width * (1.f / 3), 10 } :
+		NextItemSize
+		);
+
+	AdvanceCursor(item);
+
+	//we latch the active state so the user doesnt have to keep the mouse within the bounds of the box to move the slider after they have clicked
+	//i could have used drag_override, but that can be set by other items 
+	static b32 active_latch = 0; 
+	b32 active = Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position, item->size);
+
+	if ((active || being_moved) && DeshInput->LMouseDown()) {
+		drag_override = 1;
+		sliders[label] = 1;
+		f32 ratio = (DeshInput->mousePos.x - item->position.x - curwin->position.x) / item->size.x;
+		*val = ratio * val_max;
+	}
+	if (DeshInput->LMouseReleased()) {
+		drag_override = 0;
+		sliders[label] = 0;
+	}
+
+	*val = Clamp(*val, val_min, val_max);
+	
+	vec2 draggersiz = vec2{ item->size.x / 8, item->size.y };
+	vec2 draggerpos = vec2{ *val / val_max * (item->size.x - draggersiz.x), 0 };
+	
+	{//guideline
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+		drawCmd.position = vec2::ZERO;
+		drawCmd.dimensions = item->size;
+		drawCmd.color = style.colors[UIStyleCol_FrameBg] * 0.8;
+		item->drawCmds.add(drawCmd);
+	}
+
+	{//dragger
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+		drawCmd.position = draggerpos;
+		drawCmd.dimensions = draggersiz;
+		drawCmd.color = style.colors[(active ? UIStyleCol_FrameBgActive : UIStyleCol_FrameBg)];
+		item->drawCmds.add(drawCmd);
+	}
+
+
 }
 
 
@@ -1945,7 +2043,7 @@ void UI::Update() {
 	}
 	
 	
-	{ //drag
+	if (!drag_override) { //drag
 		UIWindow* focused = *windows.atIdx(windows.count-1);
 		
 		static bool newDrag = true;
@@ -2008,7 +2106,7 @@ void UI::Update() {
 					}break;
 					
 					case UIDrawType_Line: {
-						Render::DrawLine2D(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
+						Render::DrawLine2D(dcpos - item.position, dcpos2 - item.position, dct, dccol, dcl, dcso, dcse);
 					}break;
 					case UIDrawType_Text: {
 						vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
@@ -2056,7 +2154,13 @@ void UI::Update() {
 
 							}break;
 							case UIDrawType_Line: {
-								Render::DrawLine2D(dcpos - itempos, dcpos2 - itempos, dct, dccol, dcl, dcso, dcse);
+								Render::DrawLine2D(dcpos - item.position, dcpos2 - item.position, dct, dccol, dcl, dcso, dcse);
+							}break;
+							case UIDrawType_Circle: {
+								Render::DrawCircle2D(dcpos, dct, drawCmd.position2.x, dccol, dcl, dcso, dcse);
+							}break;
+							case UIDrawType_CircleFilled: {
+								Render::FillCircle2D(dcpos, dct, drawCmd.position2.x, dccol, dcl, dcso, dcse);
 							}break;
 							case UIDrawType_Text: {
 								vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
