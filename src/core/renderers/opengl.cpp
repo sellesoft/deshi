@@ -719,8 +719,8 @@ enum texTypes : u32 {
 
 //TODO(sushi) find a nicer way to keep track of this
 //NOTE im not sure yet if i should be keeping track of this for each primitive or not yet but i dont think i have to
-vec2 prevScissorOffset = vec2( 0,  0);
-vec2 prevScissorExtent = vec2(-1, -1);
+vec2 prevScissorOffset = vec2::ZERO;
+vec2 prevScissorExtent = vec2::ZERO;
 
 void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
@@ -752,13 +752,8 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	if(scissorExtent.x != -1){
-		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}else{
-		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-	}
+	uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+	uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
 }
 
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
@@ -815,13 +810,8 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	uiIndexCount += 6;
 	uiCmdArray[uiCmdCount - 1].indexCount += 6;
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	if(scissorExtent.x != -1){
-		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}else{
-		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-	}
+	uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+	uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
 }
 
 void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent) {
@@ -951,16 +941,8 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 	}
 	
 	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	if (scissorExtent.x != -1) {
-		uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-		uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-	}
-	else {
-		uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-		uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-	}
-	
-	
+	uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+	uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
 }
 
 void Render::
@@ -1040,13 +1022,8 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 				uiIndexCount += 6;
 				uiCmdArray[uiCmdCount - 1].indexCount += 6;
 				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
-				if(scissorExtent.x != -1){
-					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-				}else{
-					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-				}
+				uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+				uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
 			}break;
 			default: Assert(!"unhandled font type"); break;
 		}
@@ -1130,13 +1107,8 @@ DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 scale, vec2 sc
 				uiIndexCount += 6;
 				uiCmdArray[uiCmdCount - 1].indexCount += 6;
 				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
-				if(scissorExtent.x != -1){
-					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
-				}else{
-					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
-				}
+				uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
+				uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
 			}break;
 			default: Assert(!"unhandled font type"); break;
 		}
