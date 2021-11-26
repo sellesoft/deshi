@@ -720,12 +720,58 @@ enum texTypes : u32 {
 	UITEX_FONT
 };
 
+//TODO we need a way to communicate to non-text draw funcs that the texture they're using is the last
+//     used font, which probably just means setting up a fontidx global var so do that later
+
 //TODO(sushi) find a nicer way to keep track of this
 //NOTE im not sure yet if i should be keeping track of this for each primitive or not yet but i dont think i have to
 vec2 prevScissorOffset = vec2::ZERO;
 vec2 prevScissorExtent = vec2::ZERO;
 
-void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
+		"Scissor Offset and Extent can't be negative");
+	if (color.a == 0) return;
+
+	if (//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != prevTexIdx ||
+		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+		scissorExtent != prevScissorExtent) {  //and you could do text last in one, and text first in another
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
+		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
+		uiCmdCounts[layer]++;
+		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
+	}
+
+	u32       col = color.rgba;
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
+	UIIndexGl* ip = uiIndexArray + uiIndexCount;
+
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = p2; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = p3; vp[2].uv = { 0,0 }; vp[2].color = col;
+
+	uiVertexCount += 3;
+	uiIndexCount += 3;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 3;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = UITEX_WHITE;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
+
+}
+
+void Render::DrawTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
+		"Scissor Offset and Extent can't be negative");
+	if (color.a == 0) return;
+
+	DrawLine2D(p1, p2, 1, color, layer, scissorOffset, scissorExtent);
+	DrawLine2D(p2, p3, 1, color, layer, scissorOffset, scissorExtent);
+	DrawLine2D(p3, p1, 1, color, layer, scissorOffset, scissorExtent);
+}
+
+void Render::FillRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	if (color.a == 0) return;
@@ -763,21 +809,43 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 
 
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
 //straight lines, see below
-void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+void Render::DrawRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	if (color.a == 0) return;
 	
 	//top, left, right, bottom
-	DrawLineUI(pos.xAdd(-1),     pos + dimensions.ySet(0),          1, color, layer, scissorOffset, scissorExtent);
-	DrawLineUI(pos,              pos + dimensions.xSet(0),          1, color, layer, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.ySet(0),          1, color, layer, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, layer, scissorOffset, scissorExtent);
+	DrawLine2D(pos.xAdd(-1),     pos + dimensions.ySet(0),          1, color, layer, scissorOffset, scissorExtent);
+	DrawLine2D(pos,              pos + dimensions.xSet(0),          1, color, layer, scissorOffset, scissorExtent);
+	DrawLine2D(pos + dimensions, pos + dimensions.ySet(0),          1, color, layer, scissorOffset, scissorExtent);
+	DrawLine2D(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, layer, scissorOffset, scissorExtent);
+}
+
+void Render::DrawCircle2D(vec2 pos, float radius, u32 subdivisions_int, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+	f32 subdivisions = f32(subdivisions_int);
+	forI(subdivisions_int) {
+		f32 a0 = (f32(i - 1) * M_2PI) / subdivisions;
+		f32 a1 = (f32(i) * M_2PI) / subdivisions;
+		f32 x0 = pos.x + radius * cosf(a0); f32 x1 = pos.x + radius * cosf(a1);
+		f32 y0 = pos.y + radius * sinf(a0); f32 y1 = pos.y + radius * sinf(a1);
+		DrawLine2D(vec2(x0, y0), vec2(x1, y1), 1, color, layer, scissorOffset, scissorExtent);
+	}
+}
+
+void Render::FillCircle2D(vec2 pos, float radius, u32 subdivisions_int, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+	f32 subdivisions = f32(subdivisions_int);
+	forI(subdivisions_int) {
+		f32 a0 = (f32(i - 1) * M_2PI) / subdivisions;
+		f32 a1 = (f32(i) * M_2PI) / subdivisions;
+		f32 x0 = pos.x + radius * cosf(a0); f32 x1 = pos.x + radius * cosf(a1);
+		f32 y0 = pos.y + radius * sinf(a0); f32 y1 = pos.y + radius * sinf(a1);
+		FillTriangle2D(pos, vec2(x0, y0), vec2(x1, y1), color, layer, scissorOffset, scissorExtent);
+	}
 }
 
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
 //when drawing them straight
-void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+void Render::DrawLine2D(vec2 start, vec2 end, float thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	if(color.a == 0) return;
@@ -821,7 +889,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, u32 
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
 
-void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	Assert(points.count > 1, "Lines need at least 2 points");
@@ -957,7 +1025,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, u32 
 }
 
 void Render::
-DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	Assert(font->idx < glFonts.count);
@@ -1043,7 +1111,7 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 }
 
 void Render::
-DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	Assert(font->idx < glFonts.count);
@@ -1127,6 +1195,8 @@ DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 		}
 	}
 }
+
+
 
 
 //-------------------------------------------------------------------------------------------------

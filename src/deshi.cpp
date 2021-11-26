@@ -64,7 +64,7 @@ ____glm/detail/_swizzle.hpp
 Render TODOs
 ------------
 give text its own stuff in renderer so it can have different settings from other UI (filtering,antialiasing,etc)
-find a nice way to not pass Font* to DrawTextUI: maybe fixed fonts rather than array? maybe set active font?
+find a nice way to not pass Font* to DrawText2D: maybe fixed fonts rather than array? maybe set active font?
 add texture/material recreation without restart
 revert phong shader so it is like it used to be, but keeps the shadows
 fix directional shadow mapping's (projection?) errors

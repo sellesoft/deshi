@@ -3172,7 +3172,7 @@ NewFrame(){
 vec2 prevScissorOffset = vec2(0, 0);
 vec2 prevScissorExtent = vec2(-1, -1);
 
-void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::FillRect2D(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
@@ -3213,7 +3213,7 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
 //straight lines, see below
-void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawRect2D(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
@@ -3224,12 +3224,12 @@ void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 	//DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
 	
 	array<vec2> points{ pos, pos + dimensions.xSet(0), pos + dimensions, pos + dimensions.ySet(0), pos };
-	DrawLinesUI(points, 1, color, scissorOffset, scissorExtent);
+	DrawLines2D(points, 1, color, scissorOffset, scissorExtent);
 }
 
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
 //when drawing them straight
-void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawLine2D(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
@@ -3282,7 +3282,7 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 // the thickness stop being preserved. this funciton also needs to be moved out to suugu and replaced by a more general
 // render function that allows you to manipulate the vertex/index arrays
 
-void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawLines2D(array<vec2>& points, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	Assert(points.count > 1, "Lines need at least 2 points");
 	if (color.a == 0 || thickness == 0) return;
@@ -3421,7 +3421,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 }
 
 void Render::
-DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 scissorOffset, vec2 scissorExtent) {
+DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
@@ -3480,7 +3480,7 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 		case FontType_TTF: {
 			forI(text.count) {
 				u32       col = color.rgba;
-				Vertex2*   vp = uiVertexArray + uiVertexCount;
+				Vertex2*   vp = uiVertexArray + uiVertexCounDrat;
 				UIIndexVk* ip = uiIndexArray + uiIndexCount;
 				
 				aligned_quad q = font->GetPackedQuad(text[i], &pos, scale);
@@ -3511,7 +3511,7 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 }
 
 //for now this will be 2 functions, as UI will handle all unicode text stuff for now.
-void Render::DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 scale, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0, "Scissor Offset can't be negative");
 	if (color.a == 0) return;
 	
