@@ -303,6 +303,7 @@ inline UIItem* BeginItem(UIItemType type) {
 		}
 		else {
 			curwin->items.add(UIItem{ type, curwin->cursor, style });
+			Assert(curwin->items.count <= 1000); //MAX_UI_CMDS from renderer
 		}
 	}
 	return GetLastItem();
@@ -813,6 +814,7 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 		drawCmd.dimensions = item->size;
 		drawCmd.scissorOffset = -vec2::ONE * 2;
 		drawCmd.scissorExtent = curwin->dimensions + vec2::ONE * 2;
+		drawCmd.useWindowScissor = false;
 		item->drawCmds.add(drawCmd);
 	}
 	
@@ -824,6 +826,7 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 				 (style.fontHeight * 1.3 - style.fontHeight) * style.buttonTextAlign.y);
 		//drawCmd.scissorOffset = item->position;
 		drawCmd.scissorExtent = item->size;
+		drawCmd.useWindowScissor = false;
 		drawCmd.text = string(text);
 		drawCmd.font = style.font;
 		item->drawCmds.add(drawCmd);
@@ -1584,6 +1587,7 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
 			drawCmd.color = Color_White;
 			drawCmd.scissorExtent = vec2{ curwin->width, style.titleBarHeight };
 			drawCmd.scissorOffset = curwin->position;
+			drawCmd.useWindowScissor = false;
 			drawCmd.font = style.font;
 			
 			//TODO(sushi, Ui) add title text coloring
@@ -1651,7 +1655,7 @@ void UI::End() {
 			drawCmd.dimensions = curwin->dimensions;
 			drawCmd.scissorOffset = -vec2::ONE * 2;
 			drawCmd.scissorExtent = curwin->dimensions + vec2::ONE * 2;
-			
+			drawCmd.useWindowScissor = false;
 			item->drawCmds.add(drawCmd);
 		}
 	}
@@ -1710,7 +1714,7 @@ void UI::EndChild() {
 			drawCmd.dimensions = curwin->dimensions;
 			drawCmd.scissorOffset = -vec2::ONE * 2;
 			drawCmd.scissorExtent = curwin->dimensions + vec2::ONE * 2;
-			
+			drawCmd.useWindowScissor = false;
 			item.drawCmds.add(drawCmd);
 		}
 	}
@@ -1794,6 +1798,7 @@ void UI::ShowDebugWindowOf(const char* name) {
 		//	drawCmd.dimensions = cursize;
 		//	drawCmd.color = Color_White;
 		//	drawCmd.scissorExtent = DeshWindow->dimensions;
+		//drawCmd.useWindowScissor = false;
 		//	drawCmd.trackedForFit = 0;
 		//    
 		//	curwin->drawCmds.add(drawCmd);
@@ -1804,6 +1809,7 @@ void UI::ShowDebugWindowOf(const char* name) {
 			UIDrawCmd drawCmd{ UIDrawType_Rectangle };
 			drawCmd.color = Color_Red;
 			drawCmd.scissorExtent = DeshWindow->dimensions;
+			drawCmd.useWindowScissor = false;
 			drawCmd.trackedForFit = 0;
 			
 			for (UIItem& i : debugee->items) {
@@ -1818,6 +1824,7 @@ void UI::ShowDebugWindowOf(const char* name) {
 		//	UIDrawCmd drawCmd{ UIDrawType_Rectangle };
 		//	drawCmd.color = color::GREEN;
 		//	drawCmd.scissorExtent = DeshWindow->dimensions;
+		//drawCmd.useWindowScissor = false;
 		//	drawCmd.trackedForFit = 0;
 		//	for (UIDrawCmd& d : debugee->drawCmds) {
 		//		drawCmd.position = d.scissorOffset;
@@ -1849,7 +1856,7 @@ void UI::Init() {
 	//load font
 	style.font = Storage::CreateFontFromFileBDF("gohufont-11.bdf").second;
 	Assert(style.font != Storage::NullFont());
-
+	
 	//push default color scheme
 	//this is never meant to be popped
 	PushColor(UIStyleCol_Border,   colors.near_black);
@@ -1967,7 +1974,7 @@ void UI::Update() {
 				vec2   dcpos = itempos + drawCmd.position * item.style.globalScale;
 				vec2  dcpos2 = itempos + drawCmd.position * item.style.globalScale;
 				vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
-				vec2    dcse = drawCmd.scissorExtent * (drawCmd.scissorExtent.x == -1 ? vec2::ONE : item.style.globalScale);
+				vec2    dcse = drawCmd.scissorExtent * (drawCmd.useWindowScissor  ? vec2::ONE : item.style.globalScale);
 				vec2    dcso = itempos + drawCmd.scissorOffset;
 				dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
 				color  dccol = drawCmd.color;
@@ -1988,7 +1995,7 @@ void UI::Update() {
 					}break;
 					
 					case UIDrawType_Text: {
-						if (drawCmd.scissorExtent.x == -1) {
+						if (drawCmd.useWindowScissor) {
 							Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, winscissor, winsiz);
 						}
 						else {
@@ -1996,7 +2003,7 @@ void UI::Update() {
 						}
 					}break;
 					case UIDrawType_WText: {
-						if (drawCmd.scissorExtent.x == -1) {
+						if (drawCmd.useWindowScissor) {
 							Render::DrawTextUI(font, wdctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, winscissor, winsiz);
 						}
 						else {
@@ -2004,7 +2011,7 @@ void UI::Update() {
 						}
 					}break;
 					case UIDrawType_Rectangle: {
-						if (drawCmd.scissorExtent.x == -1)
+						if (drawCmd.useWindowScissor)
 							Render::DrawRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
 						else
 							Render::DrawRectUI(dcpos, dcsiz, dccol, dcso, dcse);
@@ -2023,7 +2030,7 @@ void UI::Update() {
 					vec2   dcpos = itempos + drawCmd.position * item.style.globalScale;
 					vec2  dcpos2 = itempos + drawCmd.position2 * item.style.globalScale;
 					vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
-					vec2    dcse = drawCmd.scissorExtent * (drawCmd.scissorExtent.x == -1 ? vec2::ONE : item.style.globalScale);
+					vec2    dcse = drawCmd.scissorExtent * (drawCmd.useWindowScissor ? vec2::ONE : item.style.globalScale);
 					vec2    dcso = itempos + drawCmd.scissorOffset * item.style.globalScale;
 					dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
 					color  dccol = drawCmd.color;
@@ -2036,32 +2043,32 @@ void UI::Update() {
 					
 					switch (drawCmd.type) {
 						case UIDrawType_FilledRectangle: {
-							if (drawCmd.scissorExtent.x == -1)
+							if (drawCmd.useWindowScissor)
 								Render::FillRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
 							else
 								Render::FillRectUI(dcpos, dcsiz, dccol, dcso, dcse);
 							
 						}break;
 						case UIDrawType_Line: {
-							if (drawCmd.scissorExtent.x == -1)
+							if (drawCmd.useWindowScissor)
 								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, winscissor, winsiz);
 							else
 								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, dcso - itempos, dcse);
 						}break;
 						case UIDrawType_Text: {
-							if (drawCmd.scissorExtent.x == -1)
+							if (drawCmd.useWindowScissor)
 								Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, winscissor, winsiz);
 							else
 								Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, dcso, dcse);
 						}break;
 						case UIDrawType_WText: {
-							if (drawCmd.scissorExtent.x == -1)
+							if (drawCmd.useWindowScissor)
 								Render::DrawTextUI(font, wdctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, winscissor, winsiz);
 							else
 								Render::DrawTextUI(font, wdctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, dcso, dcse);
 						}break;
 						case UIDrawType_Rectangle: {
-							if (drawCmd.scissorExtent.x == -1)
+							if (drawCmd.useWindowScissor)
 								Render::DrawRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
 							else
 								Render::DrawRectUI(dcpos, dcsiz, dccol, dcso, dcse);
@@ -2101,7 +2108,7 @@ void UI::Update() {
 		
 		switch (drawCmd.type) {
 			case UIDrawType_FilledRectangle: {
-				if (drawCmd.scissorExtent.x == -1)
+				if (drawCmd.useWindowScissor)
 					Render::FillRectUI(dcpos, dcsiz, dccol, vec2::ZERO, DeshWindow->dimensions);
 				else
 					Render::FillRectUI(dcpos, dcsiz, dccol, dcso, dcse);
@@ -2109,21 +2116,21 @@ void UI::Update() {
 			}break;
 			
 			case UIDrawType_Line: {
-				if (drawCmd.scissorExtent.x == -1)
+				if (drawCmd.useWindowScissor)
 					Render::DrawLineUI(dcpos, dcpos2, dct, dccol, vec2::ZERO, DeshWindow->dimensions);
 				else
 					Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcso, dcse);
 			}break;
 			
 			case UIDrawType_Text: {
-				if (drawCmd.scissorExtent.x == -1)
+				if (drawCmd.useWindowScissor)
 					Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * ((font->type != FontType_BDF) ? style.fontHeight / font->max_height : 1), vec2::ZERO, DeshWindow->dimensions);
 				else
 					Render::DrawTextUI(font, dctex, dcpos, dccol, dcso, dcse);
 			}break;
 			
 			case UIDrawType_Rectangle: {
-				if (drawCmd.scissorExtent.x == -1)
+				if (drawCmd.useWindowScissor)
 					Render::DrawRectUI(dcpos, dcsiz, dccol, vec2::ZERO, DeshWindow->dimensions);
 				else
 					Render::DrawRectUI(dcpos, dcsiz, dccol, dcso, dcse);

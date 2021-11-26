@@ -1698,7 +1698,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 			return pair<u32, Font*>(fi, fonts[fi]);
 		}
 	}
-
+	
 	char* buffer = Assets::readFileBinaryToArray(Assets::dirFonts()+filename);
 	if(!buffer){ return result; }
 	defer{ delete[] buffer; };
@@ -1706,12 +1706,12 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	Font* font = AllocateFont(FontType_TTF); 
 	
 	int x0, y0, x1, y1;
-
+	
 	stbtt_fontinfo info;
 	stbtt_InitFont(&info, (unsigned char*)buffer, 0);
 	stbtt_GetScaledFontVMetrics((u8*)buffer, 0, size, &font->ascent, &font->decent, &font->line_gap);
 	stbtt_GetFontBoundingBox(&info, &x0, &y0, &x1, &y1);
-
+	
 	//current ranges:
 	// ASCII              32 - 126  ~  94 chars
 	// Greek and Coptic  880 - 1023 ~ 143 chars
@@ -1723,58 +1723,58 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	// and maybe more to come eventually.
 	// 
 	//TODO(sushi) maybe implement taking in ranges 
- 
+	
 	stbtt_pack_range* ranges = (stbtt_pack_range*)calloc(6, sizeof(*ranges));
-
+	
 	ranges[0].num_chars = 94;   ranges[0].first_unicode_codepoint_in_range = 32;
 	ranges[1].num_chars = 143;  ranges[1].first_unicode_codepoint_in_range = 880;
 	ranges[2].num_chars = 44;   ranges[2].first_unicode_codepoint_in_range = 8304;
 	ranges[3].num_chars = 32;   ranges[3].first_unicode_codepoint_in_range = 8352;
 	ranges[4].num_chars = 111;  ranges[4].first_unicode_codepoint_in_range = 8592;
 	ranges[5].num_chars = 255;  ranges[5].first_unicode_codepoint_in_range = 8704;
-
+	
 	ranges[0].font_size = size; ranges[0].chardata_for_range = (stbtt_packedchar*)calloc(ranges[0].num_chars, sizeof(stbtt_packedchar));
 	ranges[1].font_size = size; ranges[1].chardata_for_range = (stbtt_packedchar*)calloc(ranges[1].num_chars, sizeof(stbtt_packedchar));
 	ranges[2].font_size = size; ranges[2].chardata_for_range = (stbtt_packedchar*)calloc(ranges[2].num_chars, sizeof(stbtt_packedchar));
 	ranges[3].font_size = size; ranges[3].chardata_for_range = (stbtt_packedchar*)calloc(ranges[3].num_chars, sizeof(stbtt_packedchar));
 	ranges[4].font_size = size; ranges[4].chardata_for_range = (stbtt_packedchar*)calloc(ranges[4].num_chars, sizeof(stbtt_packedchar));
 	ranges[5].font_size = size; ranges[5].chardata_for_range = (stbtt_packedchar*)calloc(ranges[5].num_chars, sizeof(stbtt_packedchar));
-
+	
 	stbtt_pack_context* pc = (stbtt_pack_context*)calloc(1, sizeof(*pc));
-
+	
 	font->num_ranges = 6;
 	font->ttf_pack_ranges = (pack_range*)ranges;
 	font->ttf_pack_context = pc;
-
+	
 	u32 widthmax = x1 - x0, heightmax = y1 - y0;
 	font->aspect_ratio = (float)heightmax / widthmax;
-
+	
 	//trying to minimize the texture here, but its difficult due to stbtt packing all of them together
 	//i believe this makes it into the smallest square it could be w/o knowing how stbtt packs them together
 	//also just doesnt really work well with non-monospaced fonts
 	//TODO figure out a better way to do this.
 	u32 tsy = ceil(size * sqrtf(679) / font->aspect_ratio);
 	u32 tsx = ceil(widthmax * size /  heightmax * sqrtf(679)) + 4; //add four rows to make room for 4 white pixels to optimize uicmds
-
+	
 	font->max_height = size;
 	font->max_width = (float)widthmax / heightmax * size;
 	font->count = 679;
 	font->ttf_size[0] = tsx;
-	font->ttf_size[1] =	tsy; 
+	font->ttf_size[1] = tsy; 
 	cpystr(font->name,filename,DESHI_NAME_SIZE);
-
+	
 	u8* pixels = (u8*)calloc(tsx * tsy, sizeof(u8));
-	pixels[0]       = 255;
-	pixels[1]       = 255;
-	pixels[tsy]     = 255;
-	pixels[tsy + 1] = 255;
-
+	pixels[0]     = 255;
+	pixels[1]     = 255;
+	pixels[tsx]   = 255;
+	pixels[tsx+1] = 255;
+	
 	//begin a font pack
 	Assert(stbtt_PackBegin(pc, pixels + 2 * tsx, tsx, tsy - 4, 0, 1, nullptr));
-
+	
 	//pack our ranges
 	stbtt_PackFontRanges(pc, (u8*)buffer, 0, ranges, 6);
-
+	
 	stbtt_PackEnd(pc);
 	
 	Texture* texture = CreateTextureFromMemory(pixels, font->name, tsx, tsy, 
@@ -1784,7 +1784,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	//DeleteTexture(texture);
 	
 	font->uvOffset = 2.f / tsy;
-
+	
 	fonts.add(font);
 	result.first  = font->idx;
 	result.second = font;
