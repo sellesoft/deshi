@@ -1031,10 +1031,10 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 				
 				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
-				vp[0].pos = { q.x0,q.y0}; vp[0].uv = { q.s0,q.t0 }; vp[0].color = col;
-				vp[1].pos = { q.x1,q.y0}; vp[1].uv = { q.s1,q.t0 }; vp[1].color = col;
-				vp[2].pos = { q.x1,q.y1}; vp[2].uv = { q.s1,q.t1 }; vp[2].color = col;
-				vp[3].pos = { q.x0,q.y1}; vp[3].uv = { q.s0,q.t1 }; vp[3].color = col;
+				vp[0].pos={q.x0,q.y0}; vp[0].uv={q.s0,q.t0+font->uvOffset}; vp[0].color=col;
+				vp[1].pos={q.x1,q.y0}; vp[1].uv={q.s1,q.t0+font->uvOffset}; vp[1].color=col;
+				vp[2].pos={q.x1,q.y1}; vp[2].uv={q.s1,q.t1+font->uvOffset}; vp[2].color=col;
+				vp[3].pos={q.x0,q.y1}; vp[3].uv={q.s0,q.t1+font->uvOffset}; vp[3].color=col;
 				
 				uiVertexCount += 4;
 				uiIndexCount += 6;

@@ -1751,20 +1751,26 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 
 	//trying to minimize the texture here, but its difficult due to stbtt packing all of them together
 	//i believe this makes it into the smallest square it could be w/o knowing how stbtt packs them together
-	float tsy = ceil(size * sqrtf(679) / font->aspect_ratio);
-	float tsx = ceil(widthmax * size /  heightmax * sqrtf(679));
+	//also just doesnt really work well with non-monospaced fonts
+	//TODO figure out a better way to do this.
+	u32 tsy = ceil(size * sqrtf(679) / font->aspect_ratio);
+	u32 tsx = ceil(widthmax * size /  heightmax * sqrtf(679)) + 4; //add four rows to make room for 4 white pixels to optimize uicmds
 
 	font->max_height = size;
 	font->max_width = (float)widthmax / heightmax * size;
 	font->count = 679;
 	font->ttf_size[0] = tsx;
-	font->ttf_size[1] =	tsy;
+	font->ttf_size[1] =	tsy; 
 	cpystr(font->name,filename,DESHI_NAME_SIZE);
 
 	u8* pixels = (u8*)calloc(tsx * tsy, sizeof(u8));
-	
+	pixels[0]       = 255;
+	pixels[1]       = 255;
+	pixels[tsy]     = 255;
+	pixels[tsy + 1] = 255;
+
 	//begin a font pack
-	Assert(stbtt_PackBegin(pc, pixels, tsx, tsy, 0, 1, nullptr));
+	Assert(stbtt_PackBegin(pc, pixels + 2 * tsx, tsx, tsy - 4, 0, 1, nullptr));
 
 	//pack our ranges
 	stbtt_PackFontRanges(pc, (u8*)buffer, 0, ranges, 6);
@@ -1777,6 +1783,8 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	free(pixels);
 	//DeleteTexture(texture);
 	
+	font->uvOffset = 2.f / tsy;
+
 	fonts.add(font);
 	result.first  = font->idx;
 	result.second = font;

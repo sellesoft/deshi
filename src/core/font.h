@@ -50,6 +50,9 @@ struct Font{
 	u32   num_ranges;
 	void* ttf_pack_context;      //stbtt_pack_context
 	pack_range* ttf_pack_ranges; //stbtt_pack_range
+
+	//the y offset of UV since we are now packing a white square into every font.
+	float uvOffset;
 	
 	float ascent; //the highest point above baseline a glyph reaches
 	float decent; //the lowest point below baseline a glyph reaches
