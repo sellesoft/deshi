@@ -152,12 +152,12 @@ namespace Render{
 	void DebugLine(vec3 p0, vec3 p1, color _color = Color_White);
 	
 	//ui drawing functions
-	void FillRectUI(vec2 pos, vec2 dimensions, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawRectUI(vec2 pos, vec2 dimensions, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawLineUI(vec2 start, vec2 end, float thickness = 1, color _color = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawLinesUI(array<vec2>& points, float thickness = 1, color col = Color_White, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawTextUI(Font* font,  cstring text, vec2 pos, color _color = Color_White, vec2 scale = vec2::ONE, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-	void DrawTextUI(Font* font, wcstring text, vec2 pos, color _color = Color_White, vec2 scale = vec2::ONE, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
+	void FillRectUI(vec2 pos, vec2 dimensions, color _color = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
+	void DrawRectUI(vec2 pos, vec2 dimensions, color _color = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
+	void DrawLineUI(vec2 start, vec2 end, float thickness = 1, color _color = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
+	void DrawLinesUI(array<vec2>& points, float thickness = 1, color col = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
+	void DrawTextUI(Font* font,  cstring text, vec2 pos, color _color = Color_White, vec2 scale = vec2::ONE, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
+	void DrawTextUI(Font* font, wcstring text, vec2 pos, color _color = Color_White, vec2 scale = vec2::ONE, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
 	
 	
 	//getters for index and vertex array 

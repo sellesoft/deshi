@@ -129,13 +129,14 @@ local array<FontGl>     glFonts;
 #define MAX_UI_VERTICES 0xFFFF //max u16: 65535
 #define MAX_UI_INDICES  3*MAX_UI_VERTICES
 #define MAX_UI_CMDS     1000
+#define UI_LAYERS       11
 typedef u32 UIIndexGl; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
 local UIIndexGl uiVertexCount = 0;
 local UIIndexGl uiIndexCount  = 0;
-local UIIndexGl uiCmdCount    = 1; //start with 1
 local Vertex2   uiVertexArray[MAX_UI_VERTICES];
 local UIIndexGl uiIndexArray [MAX_UI_INDICES];
-local UICmdGl   uiCmdArray   [MAX_UI_CMDS]; //different UI cmd per font/texture
+local UIIndexGl uiCmdCounts[UI_LAYERS];
+local UICmdGl   uiCmdArrays[UI_LAYERS][MAX_UI_CMDS];  //different UI cmd per font/texture
 
 #define MAX_TEMP_VERTICES 0xFFFF //max u16: 65535
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
@@ -394,8 +395,10 @@ ResetCommands(){
 	{//UI commands
 		uiVertexCount = 0;
 		uiIndexCount  = 0;
-		memset(&uiCmdArray[0], 0, sizeof(UICmdGl)*uiCmdCount);
-		uiCmdCount    = 1;
+		forX(layer, 9) {
+			memset(&uiCmdArrays[layer][0], 0, sizeof(UICmdGl) * uiCmdCounts[layer]);
+			uiCmdCounts[layer] = 1;
+		}
 	}
 	
 	{//temp commands
@@ -721,20 +724,23 @@ enum texTypes : u32 {
 //NOTE im not sure yet if i should be keeping track of this for each primitive or not yet but i dont think i have to
 vec2 prevScissorOffset = vec2::ZERO;
 vec2 prevScissorExtent = vec2::ZERO;
+u32 prevTexIdx = -1;
 
-void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
+void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	if (color.a == 0) return;
 	
-	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
+	//NOTE currently the first check in this if statement will never happen for non-text items, but when
+	//     we start being able to use a texture as a color it can be
+	if(//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != prevTexIdx ||
 	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
 	   scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
-		Assert(uiCmdCount <= MAX_UI_CMDS);
+		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
+		uiCmdCounts[layer]++;
+		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
 	
 	u32       col = color.rgba;
@@ -750,41 +756,43 @@ void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffs
 	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
-	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-	uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = UITEX_WHITE;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
 
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
 //straight lines, see below
-void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, vec2 scissorOffset, vec2 scissorExtent){
+void Render::DrawRectUI(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	if (color.a == 0) return;
 	
 	//top, left, right, bottom
-	DrawLineUI(pos.xAdd(-1),     pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos,              pos + dimensions.xSet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.ySet(0),          1, color, scissorOffset, scissorExtent);
-	DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
+	DrawLineUI(pos.xAdd(-1),     pos + dimensions.ySet(0),          1, color, layer, scissorOffset, scissorExtent);
+	DrawLineUI(pos,              pos + dimensions.xSet(0),          1, color, layer, scissorOffset, scissorExtent);
+	DrawLineUI(pos + dimensions, pos + dimensions.ySet(0),          1, color, layer, scissorOffset, scissorExtent);
+	DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, layer, scissorOffset, scissorExtent);
 }
 
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
 //when drawing them straight
-void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent){
+void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	if(color.a == 0) return;
 	
-	if(uiCmdArray[uiCmdCount - 1].texIdx != UITEX_WHITE ||
+	//NOTE currently the first check in this if statement will never happen for non-text items, but when
+	//     we start being able to use a texture as a color it can be
+	if(//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != prevTexIdx ||
 	   scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
 	   scissorExtent != prevScissorExtent){  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
-		Assert(uiCmdCount <= MAX_UI_CMDS);
+		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
+		uiCmdCounts[layer]++;
+		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
 	
 	u32       col = color.rgba;
@@ -808,26 +816,29 @@ void Render::DrawLineUI(vec2 start, vec2 end, float thickness, color color, vec2
 	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
-	uiCmdArray[uiCmdCount - 1].indexCount += 6;
-	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-	uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = UITEX_WHITE;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
 
-void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	Assert(points.count > 1, "Lines need at least 2 points");
 	if (color.a == 0 || thickness == 0) return;
 	
-	if ((uiCmdArray[uiCmdCount - 1].texIdx != 0)
-		|| (scissorOffset != prevScissorOffset)
-		|| (scissorExtent != prevScissorExtent)) {
+	//NOTE currently the first check in this if statement will never happen for non-text items, but when
+	//     we start being able to use a texture as a color it can be
+	//     OR these functions will take in an optional texture, so this check wont ever matter
+	if (//(uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != prevTexIdx ) || 
+		scissorOffset != prevScissorOffset ||
+		scissorExtent != prevScissorExtent) {
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
-		Assert(uiCmdCount <= MAX_UI_CMDS);
+		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
+		uiCmdCounts[layer]++;
+		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
 	
 	float halfthick = thickness / 2;
@@ -848,7 +859,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		ip[1] = uiVertexCount + 1;
 		ip[3] = uiVertexCount;
 		
-		uiCmdArray[uiCmdCount - 1].indexCount += 3;
+		uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 3;
 		
 		uiVertexCount += 2;
 		uiIndexCount += 3;
@@ -916,7 +927,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		uiIndexCount += 6;
 		vp += 2;
 		
-		uiCmdArray[uiCmdCount - 1].indexCount += 6;
+		uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
 		
 	}
 	
@@ -933,20 +944,20 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, vec2
 		ip[ipidx + 2] = uiVertexCount;
 		ip[ipidx + 3] = uiVertexCount + 1;
 		
-		uiCmdArray[uiCmdCount - 1].indexCount += 3;
+		uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 3;
 		
 		uiVertexCount += 2;
 		uiIndexCount += 3;
 		vp += 2; ip += 3;
 	}
 	
-	uiCmdArray[uiCmdCount - 1].texIdx = UITEX_WHITE;
-	uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-	uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = UITEX_WHITE;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
 
 void Render::
-DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 scissorOffset, vec2 scissorExtent){
+DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	Assert(font->idx < glFonts.count);
@@ -954,14 +965,14 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 	
 	//im doing offset and extent because we have to know if we're drawing in a new window
 	//and you could do text last in one, and text first in another
-	if((uiCmdArray[uiCmdCount - 1].texIdx != font->idx)
+	if((uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != font->idx)
 	   || (scissorOffset != prevScissorOffset)
 	   || (scissorExtent != prevScissorExtent)){
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
-		Assert(uiCmdCount <= MAX_UI_CMDS);
+		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
+		uiCmdCounts[layer]++;
+		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
 	
 	switch (glFonts[font->idx].type){
@@ -982,21 +993,21 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 				
 				ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 				ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
-				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff }; vp[0].color = col;
-				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff }; vp[1].color = col;
-				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff }; vp[2].color = col;
-				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff }; vp[3].color = col;
+				vp[0].pos = { pos.x + 0,pos.y + 0 }; vp[0].uv = { 0,topoff+font->uvOffset }; vp[0].color = col;
+				vp[1].pos = { pos.x + w,pos.y + 0 }; vp[1].uv = { 1,topoff+font->uvOffset }; vp[1].color = col;
+				vp[2].pos = { pos.x + w,pos.y + h }; vp[2].uv = { 1,botoff+font->uvOffset }; vp[2].color = col;
+				vp[3].pos = { pos.x + 0,pos.y + h }; vp[3].uv = { 0,botoff+font->uvOffset }; vp[3].color = col;
 				
 				uiVertexCount += 4;
 				uiIndexCount += 6;
-				uiCmdArray[uiCmdCount - 1].indexCount += 6;
-				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
 				if(scissorExtent.x != -1){
-					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 				}else{
-					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = vec2(width, height);
+					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = vec2(0, 0);
 				}
 				
 				pos.x += glFonts[font->idx].characterWidth * scale.x;
@@ -1020,10 +1031,10 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 				
 				uiVertexCount += 4;
 				uiIndexCount += 6;
-				uiCmdArray[uiCmdCount - 1].indexCount += 6;
-				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
-				uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-				uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 			}break;
 			default: Assert(!"unhandled font type"); break;
 		}
@@ -1031,7 +1042,7 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, vec2 sci
 }
 
 void Render::
-DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 scale, vec2 scissorOffset, vec2 scissorExtent){
+DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	Assert(font->idx < glFonts.count);
@@ -1039,14 +1050,14 @@ DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 scale, vec2 sc
 	
 	//im doing offset and extent because we have to know if we're drawing in a new window
 	//and you could do text last in one, and text first in another
-	if((uiCmdArray[uiCmdCount - 1].texIdx != font->idx)
+	if((uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != font->idx)
 	   || (scissorOffset != prevScissorOffset)
 	   || (scissorExtent != prevScissorExtent)){
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
-		uiCmdArray[uiCmdCount].indexOffset = uiIndexCount;
-		uiCmdCount++;
-		Assert(uiCmdCount <= MAX_UI_CMDS);
+		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
+		uiCmdCounts[layer]++;
+		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
 	
 	switch (glFonts[font->idx].type){
@@ -1074,14 +1085,14 @@ DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 scale, vec2 sc
 				
 				uiVertexCount += 4;
 				uiIndexCount += 6;
-				uiCmdArray[uiCmdCount - 1].indexCount += 6;
-				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
 				if(scissorExtent.x != -1){
-					uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-					uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 				}else{
-					uiCmdArray[uiCmdCount - 1].scissorExtent = vec2(width, height);
-					uiCmdArray[uiCmdCount - 1].scissorOffset = vec2(0, 0);
+					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = vec2(width, height);
+					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = vec2(0, 0);
 				}
 				
 				pos.x += glFonts[font->idx].characterWidth * scale.x;
@@ -1105,10 +1116,10 @@ DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 scale, vec2 sc
 				
 				uiVertexCount += 4;
 				uiIndexCount += 6;
-				uiCmdArray[uiCmdCount - 1].indexCount += 6;
-				uiCmdArray[uiCmdCount - 1].texIdx = font->idx;
-				uiCmdArray[uiCmdCount - 1].scissorExtent = scissorExtent;
-				uiCmdArray[uiCmdCount - 1].scissorOffset = scissorOffset;
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 			}break;
 			default: Assert(!"unhandled font type"); break;
 		}
@@ -1571,6 +1582,9 @@ Init(){
 	SetupUniformBuffers();
 	SetupPrograms();
 	
+	//not sure the appropriate place for this
+	forI(UI_LAYERS) uiCmdCounts[i] = 1;
+
 	//glfwSwapInterval(1); //vsync
 	initialized = true;
 }
@@ -1663,17 +1677,22 @@ Update(){
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glUseProgram(programs.ui.handle);
 		
-		forX(cmd_idx, uiCmdCount){
-			glScissor(uiCmdArray[cmd_idx].scissorOffset.x,
-					  (height - uiCmdArray[cmd_idx].scissorOffset.y) - uiCmdArray[cmd_idx].scissorExtent.y,
-					  uiCmdArray[cmd_idx].scissorExtent.x,
-					  uiCmdArray[cmd_idx].scissorExtent.y);
-			glBindTexture(glTextures[glFonts[uiCmdArray[cmd_idx].texIdx].texture].type, 
-						  glTextures[glFonts[uiCmdArray[cmd_idx].texIdx].texture].handle);
-			glUniform1i(glGetUniformLocation(programs.null.handle,"tex"),0);
-			glDrawElementsBaseVertex(GL_TRIANGLES, uiCmdArray[cmd_idx].indexCount, INDEX_TYPE_GL_UI,
-									 (void*)(uiCmdArray[cmd_idx].indexOffset*sizeof(UIIndexGl)), 0);
+		//NOTE I don't think using a 2D array would be any different than having a separate for loop
+		//     for each layer here, if its worse tell me and ill fix it.
+		forX(layer, UI_LAYERS) {
+			forX(cmd_idx, uiCmdCounts[layer]) {
+				glScissor(uiCmdArrays[layer][cmd_idx].scissorOffset.x,
+					(height - uiCmdArrays[layer][cmd_idx].scissorOffset.y) - uiCmdArrays[layer][cmd_idx].scissorExtent.y,
+					uiCmdArrays[layer][cmd_idx].scissorExtent.x,
+					uiCmdArrays[layer][cmd_idx].scissorExtent.y);
+				glBindTexture(glTextures[glFonts[uiCmdArrays[layer][cmd_idx].texIdx].texture].type,
+					glTextures[glFonts[uiCmdArrays[layer][cmd_idx].texIdx].texture].handle);
+				glUniform1i(glGetUniformLocation(programs.null.handle, "tex"), 0);
+				glDrawElementsBaseVertex(GL_TRIANGLES, uiCmdArrays[layer][cmd_idx].indexCount, INDEX_TYPE_GL_UI,
+					(void*)(uiCmdArrays[layer][cmd_idx].indexOffset * sizeof(UIIndexGl)), 0);
+			}
 		}
+
 		
 		glScissor(0, 0, width, height);
 	}
