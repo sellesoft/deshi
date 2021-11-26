@@ -248,7 +248,7 @@ inline void AdvanceCursor(UIItem* itemmade, bool moveCursor = 1) {
 			//we dont need to handle moving the cursor here, because the final position of the cursor after a row is handled in EndRow()
 		}
 	}
-	else if(moveCursor) curwin->cursor = vec2{ 0, itemmade->position.y + itemmade->size.y + style.itemSpacing.y };
+	else if(moveCursor) curwin->cursor = vec2{ 0, itemmade->position.y + itemmade->size.y + style.itemSpacing.y } + curwin->scroll;
 }
 
 //function for getting the position of a new item based on style, so the long string of additions
@@ -821,7 +821,6 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 		drawCmd.dimensions = item->size;
 		drawCmd.scissorOffset = -vec2::ONE * 2;
 		drawCmd.scissorExtent = curwin->dimensions + vec2::ONE * 2;
-		drawCmd.useWindowScissor = false;
 		item->drawCmds.add(drawCmd);
 	}
 	
@@ -831,7 +830,7 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 		drawCmd.position = 
 			vec2((item->size.x - UI::CalcTextSize(text).x) * style.buttonTextAlign.x,
 				 (style.fontHeight * 1.3 - style.fontHeight) * style.buttonTextAlign.y);
-		//drawCmd.scissorOffset = item->position;
+		drawCmd.scissorOffset = vec2::ZERO;
 		drawCmd.scissorExtent = item->size;
 		drawCmd.useWindowScissor = false;
 		drawCmd.text = string(text);
@@ -1923,6 +1922,8 @@ void UI::Update() {
 				vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
 				vec2    dcse = (drawCmd.useWindowScissor ? winsiz : drawCmd.scissorExtent * item.style.globalScale);
 				vec2    dcso = (drawCmd.useWindowScissor ? winscissor : itempos + drawCmd.scissorOffset);
+				dcso.x = Max(winpos.x, dcso.x); dcso.y = Max(winpos.y, dcso.y); //force all items to stay within their windows
+				dcso.x = Min(winpos.x + winsiz.x, dcso.x); dcso.y = Min(winpos.y + winsiz.y, dcso.y);
 				dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
 				color  dccol = drawCmd.color;
 				float    dct = drawCmd.thickness;
@@ -1969,6 +1970,8 @@ void UI::Update() {
 						vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
 						vec2    dcse = (drawCmd.useWindowScissor ? winsiz : drawCmd.scissorExtent * item.style.globalScale);
 						vec2    dcso = (drawCmd.useWindowScissor ? winscissor : itempos + drawCmd.scissorOffset);
+						dcso.x = Max(winpos.x, dcso.x); dcso.y = Max(winpos.y, dcso.y); //force all items to stay within their windows
+						dcso.x = Min(winpos.x + winsiz.x - dcse.x, dcso.x); dcso.y = Min(winpos.y + winsiz.y - dcse.y, dcso.y);
 						dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
 						color  dccol = drawCmd.color;
 						float    dct = drawCmd.thickness;

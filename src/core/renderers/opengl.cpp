@@ -724,7 +724,6 @@ enum texTypes : u32 {
 //NOTE im not sure yet if i should be keeping track of this for each primitive or not yet but i dont think i have to
 vec2 prevScissorOffset = vec2::ZERO;
 vec2 prevScissorExtent = vec2::ZERO;
-u32 prevTexIdx = -1;
 
 void Render::FillRectUI(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
@@ -832,6 +831,7 @@ void Render::DrawLinesUI(array<vec2>& points, float thickness, color color, u32 
 	//     we start being able to use a texture as a color it can be
 	//     OR these functions will take in an optional texture, so this check wont ever matter
 	if (//(uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != prevTexIdx ) || 
+		
 		scissorOffset != prevScissorOffset ||
 		scissorExtent != prevScissorExtent) {
 		prevScissorExtent = scissorExtent;
@@ -971,6 +971,7 @@ DrawTextUI(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
+		uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
 		uiCmdCounts[layer]++;
 		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
@@ -1056,6 +1057,7 @@ DrawTextUI(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
+		uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
 		uiCmdCounts[layer]++;
 		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
