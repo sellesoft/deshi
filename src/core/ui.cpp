@@ -800,17 +800,19 @@ void UI::TextF(const char* fmt, ...) {
 }
 
 
-bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
+bool ButtonCall(const char* text, vec2 pos, bool move_cursor = 1) {
 	UIItem* item = BeginItem(UIItemType_Button);
 	item->size = (NextItemSize.x != -1) ? NextItemSize : vec2(Min(curwin->width, 50.0f), style.fontHeight * 1.3f);
 	item->position = pos;
 	AdvanceCursor(item, move_cursor);
 	
+	bool active = Math::PointInRectangle(DeshInput->mousePos, curwin->position + pos, item->size * style.globalScale);
+
 	{//background
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = item->size;
-		drawCmd.color = color;
+		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_FrameBgActive : UIStyleCol_FrameBgHovered) : UIStyleCol_FrameBg)];
 		item->drawCmds.add(drawCmd);
 	}
 	
@@ -839,24 +841,16 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 	}
 	
 	//TODO(sushi) add a flag for prevent button presses when window is not focused
-	if (/*curwin->focused &&*/ Math::PointInRectangle(DeshInput->mousePos, curwin->position + pos, item->size * style.globalScale) && DeshInput->LMousePressed()) return true;
+	if (/*curwin->focused &&*/ active && DeshInput->LMousePressed()) return true;
 	else return false;
 }
 
 bool UI::Button(const char* text) {
-	return ButtonCall(text, PositionForNewItem(), style.colors[UIStyleCol_FrameBg]);
+	return ButtonCall(text, PositionForNewItem());
 }
 
 bool UI::Button(const char* text, vec2 pos) {
-	return ButtonCall(text, pos, style.colors[UIStyleCol_FrameBg], 0);
-}
-
-bool UI::Button(const char* text, color color) {
-	return ButtonCall(text, PositionForNewItem(), color);
-}
-
-bool UI::Button(const char* text, vec2 pos, color color) {
-	return ButtonCall(text, pos, color, 0);
+	return ButtonCall(text, pos, 0);
 }
 
 void UI::Checkbox(string label, bool* b) {
@@ -983,7 +977,7 @@ void UI::DropDown(const char* label, const char* options[], u32 options_count, u
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 				drawCmd.position = vec2{ 0, item->size.y * (i + 1) };
 				drawCmd.dimensions = item->size;
-				drawCmd.color = style.colors[UIStyleCol_FrameBg] * ((i == selected || i == mo) ? 0.5 : 1);
+				drawCmd.color = style.colors[(i==selected || i == mo) ? UIStyleCol_FrameBgActive : UIStyleCol_FrameBg];
 				item->drawCmds.add(drawCmd);
 				
 			}
@@ -1430,9 +1424,10 @@ void UI::PopLayer(u32 count) {
 //begins a window with a name, position, and dimensions along with some optional flags
 //if begin window is called with a name that was already called before it will work with
 //the data that window previously had
+TIMER_START(wincreate);
 void UI::Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
 	Assert(!rowInProgress, "Attempted to begin a window with a Row in progress! (Did you forget to call EndRow()?");
-	
+	TIMER_RESET(wincreate);
 	//save previous window on stack
 	windowStack.add(curwin);
 	
@@ -1693,6 +1688,8 @@ void UI::End() {
 	
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 	
+	curwin->creation_time = TIMER_END(wincreate);
+
 	//update stored window with new window state
 	curwin = *windowStack.last;
 	windowStack.pop();
@@ -1783,8 +1780,70 @@ bool UI::AnyWinHovered() {
 	return globalHovered || draggingWin;
 }
 
-void UI::ShowDebugWindowOf(const char* name) {
+UIWindow* DisplayMetrics() {
+	using namespace UI;
+
+	UIWindow* debugee = nullptr;
+	UIWindow* myself = 0; //pointer returned for drawing
+
+	UIWindow* slomo     = *windows.atIdx(0);
+	UIWindow* quick     = *windows.atIdx(0);
+	UIWindow* mostitems = *windows.atIdx(0);
+
+	for(UIWindow* win : windows) {
+		if (!(win->name == "METRICS")) {
+			if (win->render_time > slomo->render_time)      slomo = win;
+			if (win->render_time < quick->render_time)      quick = win;
+			if (win->items->count > mostitems->items->count) mostitems = win;
+		}
+	}
+
+
+	PushColor(UIStyleCol_WindowBg, colors.near_black);
+	PushColor(UIStyleCol_Border, colors.dark_grey_blue);
+	PushColor(UIStyleCol_FrameBgActive, color(Color_Cyan));
+	PushColor(UIStyleCol_FrameBgHovered, color(Color_Cyan) * 0.8);
+	PushColor(UIStyleCol_FrameBg, color(Color_Cyan) * 0.6);
+
+	Begin("METRICS", vec2::ZERO, vec2(300, 500));
+	myself = curwin;
+
+	Text(TOSTRING("Active Windows: ", windowStack.count).str);
+
+	float fw = CalcTextSize("Slowest Render: ").x;
+
+	BeginRow(2, 15);
+	RowSetupColumnWidths({ fw, 20 });
+	Text(TOSTRING("Slowest Render: ", slomo->name).str);
+	if (Button("select")) debugee = slomo;
+	EndRow();
+
+
+	BeginRow(2, 15);
+	RowSetupColumnWidths({ fw, 20 });
+	Text(TOSTRING("Fastest Render: ", quick->name).str);
+	if (Button("select")) debugee = quick;
+	EndRow();
 	
+	BeginRow(2, 15);
+	RowSetupColumnWidths({ fw, 20 });
+	Text(TOSTRING("Most Items:     ", quick->name).str);
+	if (Button("select")) debugee = mostitems;
+	EndRow();
+
+	End();
+
+	PopColor(5);
+
+	return myself;
+
+}
+
+//this just sets a flag to show the window at the very end of the frame, so we can gather all data
+//about windows incase the user tries to call this before making all their windows
+bool show_metrics = 0;
+void UI::ShowMetricsWindow() {
+	show_metrics = 1;
 }
 
 
@@ -1805,12 +1864,14 @@ void UI::Init() {
 	
 	//push default color scheme
 	//this is never meant to be popped
-	PushColor(UIStyleCol_Border,   colors.near_black);
-	PushColor(UIStyleCol_WindowBg, colors.midnight_blue);
-	PushColor(UIStyleCol_TitleBg,  colors.purple_gray);
-	PushColor(UIStyleCol_FrameBg,  colors.pink_gray);
-	PushColor(UIStyleCol_Text,     Color_White);
-	
+	PushColor(UIStyleCol_Border,         colors.near_black);
+	PushColor(UIStyleCol_WindowBg,       colors.midnight_blue);
+	PushColor(UIStyleCol_TitleBg,        colors.purple_gray);
+	PushColor(UIStyleCol_FrameBg,        colors.pink_gray);
+	PushColor(UIStyleCol_FrameBgHovered, colors.pink_gray * 0.8);
+	PushColor(UIStyleCol_FrameBgActive,  colors.pink_gray * 1.2);
+	PushColor(UIStyleCol_Text,           Color_White);
+
 	//push default style variables
 	PushVar(UIStyleVar_WindowBorderSize,    1);
 	PushVar(UIStyleVar_TitleBarHeight,      style.fontHeight * 1.2);
@@ -1836,6 +1897,8 @@ void UI::Init() {
 
 //for checking that certain things were taken care of eg, popping colors/styles/windows
 void UI::Update() {
+	
+	
 	//there should only be default stuff in the stacks
 	Assert(windowStack.size() == 1, 
 		   "Frame ended with hanging windows in the stack, make sure you call End() if you call Begin()!");
@@ -1901,6 +1964,7 @@ void UI::Update() {
 	}
 	
 	auto draw_window = [&](UIWindow* p) {
+		TIMER_START(winren);
 		//window position and size corrected for titlebar 
 		vec2 winpos = vec2(p->x, p->y + p->titleBarHeight);
 		vec2 winscissor{ Max(0.0f, winpos.x), Max(0.0f, winpos.y) } ; //NOTE scissor offset cant be negative
@@ -2006,9 +2070,15 @@ void UI::Update() {
 				}
 			}
 		}
+		//a lot of the following is debug related and can be totally removed, or moved into
+		//#if stuff to make sure it doesnt ship in a release build
 		p->baseItems.clear();
-		forI(UI_WINDOW_ITEM_LAYERS)
+		p->items_count = 0;
+		forI(UI_WINDOW_ITEM_LAYERS) {
+			p->items_count += p->items[i].count;
 			p->items[i].clear();
+		}
+		p->render_time = TIMER_END(winren);
 	};
 	
 	//draw windows in order with their drawCmds
@@ -2020,6 +2090,11 @@ void UI::Update() {
 		for (UIWindow* c : p->children) {
 			draw_window(c);
 		}
+	}
+
+	if (show_metrics) {
+		draw_window(DisplayMetrics());
+		show_metrics = 0;
 	}
 	
 	//draw all debug commands if there are any
@@ -2070,6 +2145,8 @@ void UI::Update() {
 			}break;
 		}
 	}
+
+	
 	
 	debugCmds.clear();
 }

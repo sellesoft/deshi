@@ -85,10 +85,11 @@ enum UIStyleCol : u32 {
 	UIStyleCol_WindowBg,
 	UIStyleCol_Border,
 	UIStyleCol_FrameBg,
+	UIStyleCol_FrameBgHovered,
 	UIStyleCol_FrameBgActive,
 	UIStyleCol_TitleBg,
+	UIStyleCol_TitleBgHovered,
 	UIStyleCol_TitleBgActive,
-	UIStyleCol_RowCellBg,
 	UIStyleCol_COUNT
 };
 
@@ -332,7 +333,14 @@ struct UIWindow {
 	
 	//TODO decide if this is necessary anymore or not since we have style on items now
 	UIStyle style;
+
+
+//debug information for use with metrics
 	
+	f32 render_time = 0;
+	f32 creation_time = 0;
+	u32 items_count = 0;
+
 	UIWindow() {};
 	
 };
@@ -438,8 +446,6 @@ namespace UI {
 	
 	bool Button(const char* text);
 	bool Button(const char* text, vec2 pos);
-	bool Button(const char* text, color color);
-	bool Button(const char* text, vec2 pos, color color);
 	
 	void Checkbox(string label, bool* b);
 	void DropDown(const char* label, const char* options[], u32 options_count, u32& selected);
@@ -487,7 +493,7 @@ namespace UI {
 	void SetWindowName(const char* name);
 	bool IsWinHovered();
 	bool AnyWinHovered();
-	void ShowDebugWindowOf(const char* name);
+	void ShowMetricsWindow();
 	
 	//// other ////
 	//this utility is for using a collection of items as if they were one

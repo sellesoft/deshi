@@ -9,7 +9,7 @@ std::regex FloatRegex(const char* param){ return std::regex(std::string("-")+ pa
 std::regex BoolRegex(const char* param)  { return std::regex(std::string("-")+ param +"=(true|1|false|0)", std::regex::optimize|std::regex::icase); }
 std::regex Vec3Regex(const char* param)  { return std::regex(std::string("-")+ param +"=\\(([-]?[0-9|.]+),([-]?[0-9|.]+),([-]?[0-9|.]+)\\)", std::regex::optimize); }
 
-using namespace ImGui;
+
 
 local bool mirror_logging_to_stdout = true;
 int buffersize = 0;
@@ -201,6 +201,7 @@ int Console::TextEditCallbackStub(ImGuiInputTextCallbackData* data){
 
 
 void Console::DrawConsole(){
+	using namespace ImGui;
 	ImGuiStyle& style = ImGui::GetStyle();
 	ImGuiIO& io = ImGui::GetIO();
 	
