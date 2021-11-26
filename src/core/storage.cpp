@@ -1609,7 +1609,7 @@ CreateFontFromFileBDF(const char* filename){
 								 * 0x4001 & 0x0003000300030003) * 0x81 & 0x0101010101010101) * 255;
 				*(u64*)(scaled+i) = ByteSwap64(reversed);
 			}
-			memcpy(pixels+(upt)(glyph_offset + (bitmap_row+top_offset)*font->max_width + left_offset), scaled, current_bbx.x*sizeof(u8));
+			memcpy(pixels+2*font->max_width+(upt)(glyph_offset + (bitmap_row+top_offset)*font->max_width + left_offset), scaled, current_bbx.x*sizeof(u8));
 			
 			bitmap_row++;
 			continue;
@@ -1666,7 +1666,12 @@ CreateFontFromFileBDF(const char* filename){
 			font->count = strtol(value_start, 0, 10);
 			Assert(font->max_width && font->max_height && font->count);
 			encodings = (u16*)calloc(font->count, sizeof(u16));
-			pixels = (u8*)calloc(font->count, font->max_width*font->max_height*sizeof(u8));
+			pixels = (u8*)calloc(font->count, (font->max_width*font->max_height + 2 * font->max_width)*sizeof(u8) );
+			pixels[0] = 255;
+			pixels[1] = 255;
+			pixels[font->max_width] = 255;
+			pixels[font->max_width + 1] = 255;
+			font->uvOffset = 2.f / (font->max_height * font->count + 2);
 		}else{
 			continue;
 		}
