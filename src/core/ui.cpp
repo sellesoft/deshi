@@ -27,6 +27,8 @@ struct ColorMod {
 
 static constexpr u32 CHAR_SIZE = sizeof(CHAR);
 
+static const u32 UI_CENTER_LAYER = floor(UI_LAYERS / 2.f);
+
 
 //for style variable stack
 struct VarMod {
@@ -79,6 +81,7 @@ local array<ColorMod>                    colorStack;
 local array<VarMod>                      varStack; 
 local array<vec2>                        scaleStack;  //global scales
 local array<Font*>                       fontStack;
+local array<u32>                         layerStack;
 
 local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
 
@@ -105,16 +108,17 @@ local b32 custom_item = 0;
 //for the group, we need to store a copy of it here
 local UIItem lastitem;
 
+local u32 currlayer = floor(UI_WINDOW_ITEM_LAYERS / 2.f);
+
 
 //helper defines
 
 
-#define workingHasFlag(flag) (curwin->flags & flag)
+#define WinHasFlag(flag) (curwin->flags & flag)
 #define HasFlag(flag) (flags & flag)
 
 
 //helper functions
-
 
 
 //this calculates text taking into account newlines, BUT NOT WRAPPING
@@ -268,45 +272,48 @@ UIStyle& UI::GetStyle(){
 //returns the cursor to the same line as the previous and moves it to the right by the 
 //width of the object
 void UI::SameLine(){
-	Assert(curwin->items.count, "Attempt to sameline an item creating any items!");
-	curwin->cursor.y = curwin->items.last->initialCurPos.y;
-	curwin->cursor.x += curwin->items.last->size.x + style.itemSpacing.x;
+	//Assert(curwin->items.count, "Attempt to sameline an item creating any items!");
+	curwin->cursor.y = curwin->items[currlayer].last->initialCurPos.y;
+	curwin->cursor.x += curwin->items[currlayer].last->size.x + style.itemSpacing.x;
 }
 
 vec2 UI::GetLastItemPos() {
-	Assert(curwin->items.count, "Attempt to get last item position without creating any items!");
-	return curwin->items.last->position;
+	//Assert(curwin->items.count, "Attempt to get last item position without creating any items!");
+	return curwin->items[currlayer].last->position;
 }
 
 vec2 UI::GetLastItemSize() {
-	Assert(curwin->items.count, "Attempt to get last item size without creating any items!");
-	return curwin->items.last->size;
+	//Assert(curwin->items.count, "Attempt to get last item size without creating any items!");
+	return curwin->items[currlayer].last->size;
 }
 
 vec2 UI::GetLastItemScreenPos() {
-	Assert(curwin->items.count, "Attempt to get last item position without creating any items!");
-	return curwin->position + curwin->items.last->position;
+	//Assert(curwin->items.count, "Attempt to get last item position without creating any items!");
+	return curwin->position + curwin->items[currlayer].last->position;
+}
+
+u32 UI::GetCenterLayer() {
+	return UI_CENTER_LAYER;
 }
 
 //internal last item getter, returns nullptr if there are none
-inline UIItem* GetLastItem() {
-	return curwin->items.last;
+inline UIItem* GetLastItem(u32 layeroffset = 0) {
+	return curwin->items[currlayer + layeroffset].last;
 }
 
 //helper for making any new UIItem, since now we must work with item pointers internally
 //this function also decides if we are working with a new item or continuing to work on a previous
-inline UIItem* BeginItem(UIItemType type) {
+inline UIItem* BeginItem(UIItemType type, u32 layeroffset = 0) {
 	if (!custom_item) {
 		if (type == UIItemType_Base) {
 			curwin->baseItems.add(UIItem{ type, curwin->cursor, style });
 			return curwin->baseItems.last;
 		}
 		else {
-			curwin->items.add(UIItem{ type, curwin->cursor, style });
-			Assert(curwin->items.count <= 1000); //MAX_UI_CMDS from renderer
+			curwin->items[currlayer + layeroffset].add(UIItem{ type, curwin->cursor, style });
 		}
 	}
-	return GetLastItem();
+	return GetLastItem(layeroffset);
 }
 
 inline void EndItem(UIItem* item) {
@@ -388,7 +395,7 @@ void UI::RowSetupRelativeColumnWidths(array<f32> widths) {
 //TODO(sushi) decide if abstract objs should be placed in window space or screen space
 void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
-	UIDrawCmd drawCmd{ UIDrawType_Rectangle };
+	UIDrawCmd drawCmd{ UIDrawType_Rectangle};
 	drawCmd.position = vec2::ZERO;
 	drawCmd.dimensions = dimen;
 	drawCmd.color = color;
@@ -397,12 +404,12 @@ void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	item.size = dimen;
 	
 	item.drawCmds.add(drawCmd);
-	curwin->items.add(item);
+	curwin->items[currlayer].add(item);
 }
 
 void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
-	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 	drawCmd.position = vec2::ZERO;
 	drawCmd.dimensions = dimen;
 	drawCmd.color = color;
@@ -411,7 +418,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 	item.size = dimen;
 	
 	item.drawCmds.add(drawCmd);
-	curwin->items.add(item);
+	curwin->items[currlayer].add(item);
 }
 
 
@@ -420,7 +427,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 
 void UI::Line(vec2 start, vec2 end, float thickness, color color){
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
-	UIDrawCmd drawCmd{ UIDrawType_Line };
+	UIDrawCmd drawCmd{ UIDrawType_Line};
 	drawCmd. position = start;
 	drawCmd.position2 = end;
 	drawCmd.thickness = thickness;
@@ -430,7 +437,7 @@ void UI::Line(vec2 start, vec2 end, float thickness, color color){
 	item.    size = vec2{ Max(drawCmd.position.x, drawCmd.position2.x), Max(drawCmd.position.y, drawCmd.position2.y) } - item.position;
 	
 	item.drawCmds.add(drawCmd);
-	curwin->items.add(item);
+	curwin->items[currlayer].add(item);
 }
 
 
@@ -448,7 +455,7 @@ void UI::SetNextItemSize(vec2 size) {
 
 //internal function for actually making and adding the drawCmd
 local void TextCall(const char* text, vec2 pos, color color, UIItem* item) {
-	UIDrawCmd drawCmd{ UIDrawType_Text };
+	UIDrawCmd drawCmd{ UIDrawType_Text};
 	drawCmd.text = string(text); 
 	drawCmd.position = pos;
 	drawCmd.color = color;
@@ -459,7 +466,7 @@ local void TextCall(const char* text, vec2 pos, color color, UIItem* item) {
 
 //secondary, for unicode
 local void TextCall(const wchar_t* text, vec2 pos, color color, UIItem* item) {
-	UIDrawCmd drawCmd{ UIDrawType_WText };
+	UIDrawCmd drawCmd{ UIDrawType_WText};
 	drawCmd.wtext = wstring(text);
 	drawCmd.position = pos;
 	drawCmd.color = color;
@@ -800,7 +807,7 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 	AdvanceCursor(item, move_cursor);
 	
 	{//background
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = item->size;
 		drawCmd.color = color;
@@ -808,7 +815,7 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 	}
 	
 	{//border
-		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
+		UIDrawCmd drawCmd{ UIDrawType_Rectangle}; //inst 58
 		drawCmd.color = style.colors[UIStyleCol_Border];
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = item->size;
@@ -819,7 +826,7 @@ bool ButtonCall(const char* text, vec2 pos, color color, bool move_cursor = 1) {
 	}
 	
 	{//text
-		UIDrawCmd drawCmd{ UIDrawType_Text };
+		UIDrawCmd drawCmd{ UIDrawType_Text};
 		drawCmd.color = style.colors[UIStyleCol_Text];
 		drawCmd.position = 
 			vec2((item->size.x - UI::CalcTextSize(text).x) * style.buttonTextAlign.x,
@@ -866,7 +873,7 @@ void UI::Checkbox(string label, bool* b) {
 	AdvanceCursor(item);
 	
 	{//box
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 		drawCmd.position = vec2{ 0,0 };
 		drawCmd.dimensions = boxsiz;
 		drawCmd.color = style.colors[UIStyleCol_FrameBg];
@@ -877,7 +884,7 @@ void UI::Checkbox(string label, bool* b) {
 	//fill if true
 	int fillPadding = style.checkboxFillPadding;
 	if (*b) {
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 		drawCmd.position = boxsiz * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y);
 		drawCmd.dimensions = boxsiz * (vec2::ONE - 2 * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y));
 		drawCmd.color = style.colors[UIStyleCol_FrameBg] * 0.7;
@@ -886,7 +893,7 @@ void UI::Checkbox(string label, bool* b) {
 	}
 	
 	{//label
-		UIDrawCmd drawCmd{ UIDrawType_Text };
+		UIDrawCmd drawCmd{ UIDrawType_Text};
 		drawCmd.position = vec2(boxsiz.x + style.itemSpacing.x, (boxsiz.y - style.fontHeight) * 0.5);
 		drawCmd.text = label;
 		drawCmd.color = style.colors[UIStyleCol_Text];
@@ -903,7 +910,7 @@ void UI::Checkbox(string label, bool* b) {
 }
 
 void UI::DropDown(const char* label, const char* options[], u32 options_count, u32& selected) {
-	UIItem* item = BeginItem(UIItemType_DropDown);
+	UIItem* item = BeginItem(UIItemType_DropDown, 1);
 	
 	bool isOpen = false;
 	if (!dropDowns.has(label)) {
@@ -923,7 +930,7 @@ void UI::DropDown(const char* label, const char* options[], u32 options_count, u
 	//main bar, drawn regardless of if the box is open
 	
 	{//background
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 		drawCmd.position = vec3{ 0,0 };
 		drawCmd.dimensions = item->size;
 		drawCmd.color = style.colors[UIStyleCol_FrameBg];
@@ -931,7 +938,7 @@ void UI::DropDown(const char* label, const char* options[], u32 options_count, u
 	}
 	
 	{//selected text
-		UIDrawCmd drawCmd{ UIDrawType_Text };
+		UIDrawCmd drawCmd{ UIDrawType_Text};
 		drawCmd.position = vec3{ 10, (item->size.y - style.fontHeight) * 0.5f };
 		drawCmd.color = style.colors[UIStyleCol_Text];
 		drawCmd.text = string(options[selected]);
@@ -983,7 +990,7 @@ void UI::DropDown(const char* label, const char* options[], u32 options_count, u
 			}
 			
 			{//underline
-				UIDrawCmd drawCmd{ UIDrawType_Line };
+				UIDrawCmd drawCmd{ UIDrawType_Line};
 				drawCmd.position = vec2{ 0,(item->size.y * (i + 2))};
 				drawCmd.position2 = vec2{ item->size.x, (item->size.y * (i + 2))};
 				drawCmd.color = Color_Black;
@@ -992,7 +999,7 @@ void UI::DropDown(const char* label, const char* options[], u32 options_count, u
 			}
 			
 			{//selection texts
-				UIDrawCmd drawCmd{ UIDrawType_Text };
+				UIDrawCmd drawCmd{ UIDrawType_Text};
 				drawCmd.position = vec3{ 10, (item->size.y - style.fontHeight) * 0.5f + (i + 1) * item->size.y };
 				drawCmd.color = style.colors[UIStyleCol_Text];
 				drawCmd.text = options[i];
@@ -1000,11 +1007,7 @@ void UI::DropDown(const char* label, const char* options[], u32 options_count, u
 				item->drawCmds.add(drawCmd);
 			}
 		}
-		
-		
-		
 	}
-	
 }
 
 
@@ -1222,7 +1225,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	}
 	
 	if (!(flags & UIInputTextFlags_NoBackground)) {//text box
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = dim;
 		drawCmd.color = Color_DarkGrey;
@@ -1235,7 +1238,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 			 (style.fontHeight * 1.3 - style.fontHeight) * style.inputTextTextAlign.y);
 	
 	{//text
-		UIDrawCmd drawCmd{ UIDrawType_Text };
+		UIDrawCmd drawCmd{ UIDrawType_Text};
 		drawCmd.position = textStart;
 		drawCmd.text = string(buff);
 		drawCmd.color = style.colors[UIStyleCol_Text];
@@ -1246,7 +1249,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	
 	//TODO(sushi, Ui) impl different text cursors
 	if (activeId == state->id) {//cursor
-		UIDrawCmd drawCmd{ UIDrawType_Line };
+		UIDrawCmd drawCmd{ UIDrawType_Line};
 		drawCmd.position = textStart + vec2(state->cursor * style.font->max_width, 0);
 		drawCmd.position2 = textStart + vec2(state->cursor * style.font->max_width, style.fontHeight - 1);
 		drawCmd.color =
@@ -1321,7 +1324,7 @@ bool UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIIn
 
 void UI::BeginCustomItem(){
 	//make the custom item, add it and set curitem to it
-	curwin->items.add(UIItem{ UIItemType_Custom, curwin->cursor, style });
+	curwin->items[currlayer].add(UIItem{ UIItemType_Custom, curwin->cursor, style });
 	custom_item = 1;
 }
 
@@ -1364,6 +1367,16 @@ void UI::PushScale(vec2 scale) {
 	style.globalScale = scale;
 }
 
+void UI::PushLayer(u32 layer) {
+	Assert(layer < UI_WINDOW_ITEM_LAYERS, "last layer is currently reserved by UI, increase the amount of layers in ui.h if you need more");
+	layerStack.add(currlayer);
+	currlayer = layer;
+}
+
+void UI::PushWindowLayer(u32 layer) {
+
+}
+
 //we always leave the current color on top of the stack and the previous gets popped
 void UI::PopColor(u32 count) {
 	//Assert(count < colorStack.size() - 1, "Attempt to pop too many colors!");
@@ -1404,8 +1417,15 @@ void UI::PopScale(u32 count) {
 	}
 }
 
+void UI::PopLayer(u32 count) {
+	while (count-- > 0) {
+		currlayer = *layerStack.last;
+		layerStack.pop();
+	}
+}
 
-//Windows
+
+//@Windows
 
 
 //begins a window with a name, position, and dimensions along with some optional flags
@@ -1415,7 +1435,7 @@ void UI::Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags)
 	Assert(!rowInProgress, "Attempted to begin a window with a Row in progress! (Did you forget to call EndRow()?");
 	
 	//save previous window on stack
-	windowStack.add(curwin); 
+	windowStack.add(curwin);
 	
 	//check if were making a new window or working with one we already know
 	if (windows.has(name)) {
@@ -1554,9 +1574,11 @@ void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {
 //everytime we add one
 vec2 CalcWindowMinSize() {
 	vec2 max;
-	for (UIItem& item : curwin->items) {
-		max.x = Max(max.x, (item.position.x + curwin->scx) + item.size.x);
-		max.y = Max(max.y, (item.position.y + curwin->scy) + item.size.y);
+	forI(UI_WINDOW_ITEM_LAYERS) {
+		for (UIItem& item : curwin->items[i]) {
+			max.x = Max(max.x, (item.position.x + curwin->scx) + item.size.x);
+			max.y = Max(max.y, (item.position.y + curwin->scy) + item.size.y);
+		}
 	}
 	return max + style.windowPadding;
 }
@@ -1598,7 +1620,7 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
 	
 	{//draw titlebar minimize button and check for it being clicked
 		if (!((curwin->flags & UIWindowFlags_NoMinimizeButton) || (curwin->flags & UIWindowFlags_NoMinimizeButton))) {
-			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 			drawCmd.position = vec2(
 									curwin->x + (curwin->width - curwin->name.size * style.font->max_width) * 0.01,
 									curwin->y + (style.titleBarHeight * 0.5 - 2));
@@ -1639,7 +1661,7 @@ void UI::End() {
 	if ((curwin->flags & UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
 		//draw background
 		if (!(curwin->flags & UIWindowFlags_NoBackground) && !curwin->minimized) {
-			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle }; 
+			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle}; 
 			drawCmd.position = vec2::ZERO;
 			drawCmd.dimensions = curwin->dimensions;
 			drawCmd.color = style.colors[UIStyleCol_WindowBg];
@@ -1649,7 +1671,7 @@ void UI::End() {
 		
 		//draw border
 		if (!(curwin->flags & UIWindowFlags_NoBorder) && !curwin->minimized) {
-			UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
+			UIDrawCmd drawCmd{ UIDrawType_Rectangle}; //inst 58
 			drawCmd.color = style.colors[UIStyleCol_Border];
 			drawCmd.position = vec2::ZERO;
 			drawCmd.dimensions = curwin->dimensions;
@@ -1669,8 +1691,6 @@ void UI::End() {
 		curwin->maxScroll.y = minSizeForFit.y - curwin->dimensions.y;
 	else
 		curwin->maxScroll.y = 0;
-	
-	//Log("ok", minSizeForFit);
 	
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 	
@@ -1698,7 +1718,7 @@ void UI::EndChild() {
 	if ((curwin->flags & UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
 		//draw background
 		if (!(curwin->flags & UIWindowFlags_NoBackground) && !curwin->minimized) {
-			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 			drawCmd.position = vec2::ZERO;
 			drawCmd.dimensions = curwin->dimensions;
 			drawCmd.color = style.colors[UIStyleCol_WindowBg];
@@ -1708,7 +1728,7 @@ void UI::EndChild() {
 		
 		//draw border
 		if (!(curwin->flags & UIWindowFlags_NoBorder) && !curwin->minimized) {
-			UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
+			UIDrawCmd drawCmd{ UIDrawType_Rectangle}; //inst 58
 			drawCmd.color = style.colors[UIStyleCol_Border];
 			drawCmd.position = vec2::ZERO;
 			drawCmd.dimensions = curwin->dimensions;
@@ -1765,80 +1785,7 @@ bool UI::AnyWinHovered() {
 }
 
 void UI::ShowDebugWindowOf(const char* name) {
-	if (UIWindow* debugee = *windows.at(name)) {
-		
-		persist bool show_drawcall_sizes    = 1;
-		persist bool show_drawcall_scissors = 0;
-		persist bool show_cursor = 0;
-		
-		string info =
-			TOSTRING("    position: ", debugee->position, "\n") +
-			TOSTRING("  dimensions: ", debugee->dimensions, "\n") +
-			TOSTRING("      scroll: ", debugee->scroll, "\n") +
-			TOSTRING("   maxScroll: ", debugee->maxScroll, "\n") +
-			TOSTRING("     hovered: ", (debugee->hovered) ? "true" : "false", "\n") +
-			TOSTRING("titleHovered: ", (debugee->titleHovered) ? "true" : "false", "\n") +
-			TOSTRING("      cursor: ", debugee->cursor);
-		
-		PushVar(UIStyleVar_ItemSpacing, vec2(5, 1));
-		SetNextWindowSize(CalcTextSize(info) + vec2(style.windowPadding.x * 2, style.windowPadding.y * 2));
-		Begin(TOSTRING("#", name, " debug", "#").str, debugee->position + vec2::ONE * 30, debugee->dimensions, UIWindowFlags_FitAllElements);
-		
-		Text(info.str);
-		
-		Checkbox("cursor",         &show_cursor);
-		Checkbox("Item boxes",     &show_drawcall_sizes);
-		Checkbox("Item scissors",  &show_drawcall_scissors);
-		
-		//if (show_cursor) {
-		//	vec2 cursize = vec2::ONE * 2;
-		//	UIItem item{ UIItemType_Button, curwin->cursor, style };
-		//	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-		//	drawCmd.position = debugee->position + (debugee->cursor - cursize / 2) - debugee->scroll + debugee->style.windowPadding;
-		//	drawCmd.dimensions = cursize;
-		//	drawCmd.color = Color_White;
-		//	drawCmd.scissorExtent = DeshWindow->dimensions;
-		//drawCmd.useWindowScissor = false;
-		//	drawCmd.trackedForFit = 0;
-		//    
-		//	curwin->drawCmds.add(drawCmd);
-		//}
-		
-		
-		if (show_drawcall_sizes) {
-			UIDrawCmd drawCmd{ UIDrawType_Rectangle };
-			drawCmd.color = Color_Red;
-			drawCmd.scissorExtent = DeshWindow->dimensions;
-			drawCmd.useWindowScissor = false;
-			drawCmd.trackedForFit = 0;
-			
-			for (UIItem& i : debugee->items) {
-				drawCmd.position = debugee->position + i.position;
-				drawCmd.dimensions = i.size;
-				
-				debugCmds.add(drawCmd);
-			}
-		}
-		
-		//if (show_drawcall_scissors) {
-		//	UIDrawCmd drawCmd{ UIDrawType_Rectangle };
-		//	drawCmd.color = color::GREEN;
-		//	drawCmd.scissorExtent = DeshWindow->dimensions;
-		//drawCmd.useWindowScissor = false;
-		//	drawCmd.trackedForFit = 0;
-		//	for (UIDrawCmd& d : debugee->drawCmds) {
-		//		drawCmd.position = d.scissorOffset;
-		//		drawCmd.dimensions = d.scissorExtent;
-		//		curwin->drawCmds.add(drawCmd);
-		//	}
-		//}
-		
-		End();
-		PopVar();
-	}
-	else {
-		LogE("ui","ShowDebugWindowOf() called with unknown window ", name, "!");
-	}
+	
 }
 
 
@@ -1974,12 +1921,13 @@ void UI::Update() {
 				vec2   dcpos = itempos + drawCmd.position * item.style.globalScale;
 				vec2  dcpos2 = itempos + drawCmd.position * item.style.globalScale;
 				vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
-				vec2    dcse = drawCmd.scissorExtent * (drawCmd.useWindowScissor  ? vec2::ONE : item.style.globalScale);
-				vec2    dcso = itempos + drawCmd.scissorOffset;
+				vec2    dcse = (drawCmd.useWindowScissor ? winsiz : drawCmd.scissorExtent * item.style.globalScale);
+				vec2    dcso = (drawCmd.useWindowScissor ? winscissor : itempos + drawCmd.scissorOffset);
 				dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
 				color  dccol = drawCmd.color;
 				float    dct = drawCmd.thickness;
-				
+				u32      dcl = p->windowlayer;
+
 				cstring dctex{drawCmd.text.str,drawCmd.text.count};
 				wcstring wdctex{ drawCmd.wtext.str,drawCmd.wtext.count };
 				
@@ -1987,34 +1935,22 @@ void UI::Update() {
 				
 				switch (drawCmd.type) {
 					case UIDrawType_FilledRectangle: {
-						Render::FillRectUI(dcpos, dcsiz, dccol, dcso, dcse);
+						Render::FillRectUI(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 					}break;
 					
 					case UIDrawType_Line: {
-						Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcso, dcse);
+						Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
 					}break;
-					
 					case UIDrawType_Text: {
-						if (drawCmd.useWindowScissor) {
-							Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, winscissor, winsiz);
-						}
-						else {
-							Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, dcso, dcse);
-						}
+						vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
+						Render::DrawTextUI(font, dctex, dcpos, dccol, scale, dcl, dcso, dcse);
 					}break;
 					case UIDrawType_WText: {
-						if (drawCmd.useWindowScissor) {
-							Render::DrawTextUI(font, wdctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, winscissor, winsiz);
-						}
-						else {
-							Render::DrawTextUI(font, wdctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, dcso, dcse);
-						}
+						vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
+						Render::DrawTextUI(font, wdctex, dcpos, dccol, scale, dcl, dcso, dcse);
 					}break;
 					case UIDrawType_Rectangle: {
-						if (drawCmd.useWindowScissor)
-							Render::DrawRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
-						else
-							Render::DrawRectUI(dcpos, dcsiz, dccol, dcso, dcse);
+						Render::DrawRectUI(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 					}break;
 				}
 			}
@@ -2022,63 +1958,54 @@ void UI::Update() {
 		
 		//dont draw non-base draw cmds if we're minimized
 		if (!p->minimized) {
-			for (UIItem& item : p->items) {
-				vec2 itempos = winpos + item.position * item.style.globalScale;//(item.type == UIItemType_Abstract ? item.position : winpos + item.position * item.style.globalScale);
-				vec2 itemsiz = item.size;
-				
-				for (UIDrawCmd& drawCmd : item.drawCmds) {
-					vec2   dcpos = itempos + drawCmd.position * item.style.globalScale;
-					vec2  dcpos2 = itempos + drawCmd.position2 * item.style.globalScale;
-					vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
-					vec2    dcse = drawCmd.scissorExtent * (drawCmd.useWindowScissor ? vec2::ONE : item.style.globalScale);
-					vec2    dcso = itempos + drawCmd.scissorOffset * item.style.globalScale;
-					dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
-					color  dccol = drawCmd.color;
-					float    dct = drawCmd.thickness;
-					
-					cstring dctex{ drawCmd.text.str,drawCmd.text.count };
-					wcstring wdctex{ drawCmd.wtext.str, drawCmd.wtext.count };
-					
-					Font*   font = drawCmd.font;
-					
-					switch (drawCmd.type) {
-						case UIDrawType_FilledRectangle: {
-							if (drawCmd.useWindowScissor)
-								Render::FillRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
-							else
-								Render::FillRectUI(dcpos, dcsiz, dccol, dcso, dcse);
-							
-						}break;
-						case UIDrawType_Line: {
-							if (drawCmd.useWindowScissor)
-								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, winscissor, winsiz);
-							else
-								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, dcso - itempos, dcse);
-						}break;
-						case UIDrawType_Text: {
-							if (drawCmd.useWindowScissor)
-								Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, winscissor, winsiz);
-							else
-								Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, dcso, dcse);
-						}break;
-						case UIDrawType_WText: {
-							if (drawCmd.useWindowScissor)
-								Render::DrawTextUI(font, wdctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, winscissor, winsiz);
-							else
-								Render::DrawTextUI(font, wdctex, dcpos, dccol, vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale, dcso, dcse);
-						}break;
-						case UIDrawType_Rectangle: {
-							if (drawCmd.useWindowScissor)
-								Render::DrawRectUI(dcpos, dcsiz, dccol, winscissor, winsiz);
-							else
-								Render::DrawRectUI(dcpos, dcsiz, dccol, dcso, dcse);
-						}break;
+			forI(UI_WINDOW_ITEM_LAYERS) {
+				for (UIItem& item : p->items[i]) {
+					vec2 itempos = winpos + item.position * item.style.globalScale;//(item.type == UIItemType_Abstract ? item.position : winpos + item.position * item.style.globalScale);
+					vec2 itemsiz = item.size;
+
+					for (UIDrawCmd& drawCmd : item.drawCmds) {
+						vec2   dcpos = itempos + drawCmd.position * item.style.globalScale;
+						vec2  dcpos2 = itempos + drawCmd.position2 * item.style.globalScale;
+						vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
+						vec2    dcse = (drawCmd.useWindowScissor ? winsiz : drawCmd.scissorExtent * item.style.globalScale);
+						vec2    dcso = (drawCmd.useWindowScissor ? winscissor : itempos + drawCmd.scissorOffset);
+						dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
+						color  dccol = drawCmd.color;
+						float    dct = drawCmd.thickness;
+						u32      dcl = p->windowlayer;
+
+						cstring dctex{ drawCmd.text.str,drawCmd.text.count };
+						wcstring wdctex{ drawCmd.wtext.str, drawCmd.wtext.count };
+
+						Font* font = drawCmd.font;
+
+						switch (drawCmd.type) {
+							case UIDrawType_FilledRectangle: {
+								Render::FillRectUI(dcpos, dcsiz, dccol, dcl, dcso, dcse);
+
+							}break;
+							case UIDrawType_Line: {
+								Render::DrawLineUI(dcpos - itempos, dcpos2 - itempos, dct, dccol, dcl, dcso, dcse);
+							}break;
+							case UIDrawType_Text: {
+								vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
+								Render::DrawTextUI(font, dctex, dcpos, dccol, scale, dcl, dcso, dcse);
+							}break;
+							case UIDrawType_WText: {
+								vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
+								Render::DrawTextUI(font, wdctex, dcpos, dccol, scale, dcl, dcso, dcse);
+							}break;
+							case UIDrawType_Rectangle: {
+								Render::DrawRectUI(dcpos, dcsiz, dccol, dcl, dcso, dcse);
+							}break;
+						}
 					}
 				}
 			}
 		}
 		p->baseItems.clear();
-		p->items.clear();
+		forI(UI_WINDOW_ITEM_LAYERS)
+			p->items[i].clear();
 	};
 	
 	//draw windows in order with their drawCmds
@@ -2104,36 +2031,39 @@ void UI::Update() {
 		color  dccol = drawCmd.color;
 		float    dct = drawCmd.thickness;
 		cstring dctex{drawCmd.text.str,drawCmd.text.count};
+		u32      dcl = 5;
+
 		Font*   font = drawCmd.font;
 		
 		switch (drawCmd.type) {
 			case UIDrawType_FilledRectangle: {
 				if (drawCmd.useWindowScissor)
-					Render::FillRectUI(dcpos, dcsiz, dccol, vec2::ZERO, DeshWindow->dimensions);
+					Render::FillRectUI(dcpos, dcsiz, dccol, dcl, vec2::ZERO, DeshWindow->dimensions);
 				else
-					Render::FillRectUI(dcpos, dcsiz, dccol, dcso, dcse);
+					Render::FillRectUI(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 				
 			}break;
 			
 			case UIDrawType_Line: {
 				if (drawCmd.useWindowScissor)
-					Render::DrawLineUI(dcpos, dcpos2, dct, dccol, vec2::ZERO, DeshWindow->dimensions);
+					Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcl, vec2::ZERO, DeshWindow->dimensions);
 				else
-					Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcso, dcse);
+					Render::DrawLineUI(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
 			}break;
 			
 			case UIDrawType_Text: {
+				vec2 scale = vec2::ONE * ((font->type != FontType_BDF) ? style.fontHeight / font->max_height : 1);
 				if (drawCmd.useWindowScissor)
-					Render::DrawTextUI(font, dctex, dcpos, dccol, vec2::ONE * ((font->type != FontType_BDF) ? style.fontHeight / font->max_height : 1), vec2::ZERO, DeshWindow->dimensions);
+					Render::DrawTextUI(font, dctex, dcpos, dccol, scale, dcl, vec2::ZERO, DeshWindow->dimensions);
 				else
-					Render::DrawTextUI(font, dctex, dcpos, dccol, dcso, dcse);
+					Render::DrawTextUI(font, dctex, dcpos, dccol, scale, dcl, dcso, dcse);
 			}break;
 			
 			case UIDrawType_Rectangle: {
 				if (drawCmd.useWindowScissor)
-					Render::DrawRectUI(dcpos, dcsiz, dccol, vec2::ZERO, DeshWindow->dimensions);
+					Render::DrawRectUI(dcpos, dcsiz, dccol, dcl,  vec2::ZERO, DeshWindow->dimensions);
 				else
-					Render::DrawRectUI(dcpos, dcsiz, dccol, dcso, dcse);
+					Render::DrawRectUI(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 			}break;
 		}
 	}

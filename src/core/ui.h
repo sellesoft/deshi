@@ -210,6 +210,8 @@ struct UIDrawCmd {
 	//line thickness
 	float thickness;
 	
+	
+
 	//TODO
 	//eventually we could maybe store text as an int* or something, so as unicode codepoints, since in the end,
 	//at least with TTF, thats how we communicate what letter we want.
@@ -264,6 +266,8 @@ struct UIItem {
 	array<UIDrawCmd> drawCmds;
 };
 
+#define UI_WINDOW_ITEM_LAYERS 11
+
 // a window is a collection of items and items are a collection of drawcalls.
 // item positions are relative to the window's upper left corner.
 // drawcall positions are relative to the item's upper left corner.
@@ -300,8 +304,12 @@ struct UIWindow {
 	
 	//base items are always drawn before items and is just a way to defer drawing 
 	//base window stuff to End(), so we can do dynamic sizing
-	array<UIItem> items;
+	array<UIItem> items[UI_WINDOW_ITEM_LAYERS];
 	array<UIItem> baseItems;
+
+	u32 currlayer = floor(UI_WINDOW_ITEM_LAYERS / 2.f);
+
+	u32 windowlayer = 5;
 	
 	//a collection of child windows
 	map<const char*, UIWindow*> children;
@@ -394,6 +402,7 @@ namespace UI {
 	vec2     GetLastItemPos();
 	vec2     GetLastItemSize();
 	vec2     GetLastItemScreenPos();
+	u32      GetCenterLayer();
 	
 	//// rows ////
 	void BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags = 0);
@@ -454,17 +463,18 @@ namespace UI {
 	void PushColor(UIStyleCol idx, color color);
 	void PushVar(UIStyleVar idx, float style);
 	void PushVar(UIStyleVar idx, vec2 style);
-	void PushVar(UIStyleVar idx, void* style);
 	void PushFont(Font* font);
-	void PushFontScale(vec2 scale);
 	void PushScale(vec2 scale);
-	
+	void PushLayer(u32 layer);
+	void PushWindowLayer(u32 layer);
+
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
 	void PopFont(u32 count = 1);
-	void PopFontScale(u32 count = 1);
 	void PopScale(u32 count = 1);
-	
+	void PopLayer(u32 count = 1);
+	void PopWindowLayer(u32 count = 1);
+
 	//// windows ////
 	void Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	void End();
