@@ -5,15 +5,7 @@
 //TODO(sushi, Ui) implement menu style file loading sort of stuff yeah
 //TODO(sushi, Ui) standardize what UI element each color belongs to
 local struct {
-	color          midnight_blue = color(0x0d2b45ff); //midnight blue
-	color         dark_grey_blue = color(0x203c56ff); //dark gray blue
-	color            purple_gray = color(0x544e68ff); //purple gray
-	color              pink_gray = color(0x8d697aff); //pink gray
-	color        bleached_orange = color(0xd08159ff); //bleached orange
-	color bright_bleached_orange = color(0xffaa5eff); //above but brighter
-	color             skin_white = color(0xffd4a3ff); //skin white
-	color      bright_skin_white = color(0xffecd6ff); //even whiter skin
-	color             near_black = color(0x141414ff); //almost black
+	//TODO make a nice default palette maybe
 } colors;
 
 //global styling
@@ -55,6 +47,11 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 	{1, offsetof(UIStyle, checkboxFillPadding)},
 	{2, offsetof(UIStyle, inputTextTextAlign)},
 	{2, offsetof(UIStyle, buttonTextAlign)},
+	{2, offsetof(UIStyle, headerTextAlign)},
+	{1, offsetof(UIStyle, buttonHeightRelToFont)},
+	{1, offsetof(UIStyle, headerHeightRelToFont)},
+	{1, offsetof(UIStyle, inputTextHeightRelToFont)},
+	{1, offsetof(UIStyle, checkboxHeightRelToFont)},
 	{2, offsetof(UIStyle, rowItemAlign)},
 	{2, offsetof(UIStyle, rowCellPadding)},
 	{1, offsetof(UIStyle, fontHeight)},
@@ -77,6 +74,7 @@ local map<const char*, UIWindow*>        windows;
 local map<const char*, UIInputTextState> inputTexts;  //stores known input text labels and their state
 local map<const char*, bool>             dropDowns;   //stores known dropdowns and if they are open or not
 local map<const char*, bool>             sliders;     //stores whether a slider is being actively changed
+local map<const char*, b32>             headers;     //stores whether a header is open or not
 local array<UIWindow*>                   windowStack; //window stack which allow us to use windows like we do colors and styles
 local array<ColorMod>                    colorStack; 
 local array<VarMod>                      varStack; 
@@ -119,6 +117,8 @@ local b32 drag_override = 0;
 
 #define WinHasFlag(flag) (curwin->flags & flag)
 #define HasFlag(flag) (flags & flag)
+#define DrawCmdScreenPos(pos) pos + item->position + curwin->position 
+#define ItemScreenPos item->position + curwin->position 
 
 
 //helper functions
@@ -136,8 +136,8 @@ vec2 UI::CalcTextSize(cstring text){
 					result.y += style.fontHeight;
 					line_width = 0;
 				}
-				line_width += style.font->max_width;
-				if(line_width > result.x) result.x = line_width;
+				line_width += style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width;
+				if(line_width > result.x) result.x = line_width ;
 				advance(&text,1);
 			}
 		}break;
@@ -219,6 +219,14 @@ inline void CalcItemSize(UIItem* item) {
 	item->size = max;
 }
 
+inline bool isItemHovered(UIItem* item) {
+	return Math::PointInRectangle(DeshInput->mousePos, item->position + curwin->position, item->size);
+}
+
+inline bool isLocalAreaHovered(vec2 pos, vec2 size, UIItem* item) {
+	return Math::PointInRectangle(DeshInput->mousePos, pos + item->position + curwin->position, size);
+}
+
 //internal master cursor controller
 //  this is an attempt to centralize what happens at the end of each item function
 // 
@@ -234,7 +242,7 @@ inline void AdvanceCursor(UIItem* itemmade, bool moveCursor = 1) {
 		//abstract item types (lines, rectangles, etc.) are not row'd, for now
 		if (itemmade->type != UIItemType_Abstract) {
 			row.items.add(itemmade);
-			
+
 			f32 height = row.height;
 			f32 width;
 			//determine if the width is relative to the size of the item or not
@@ -242,16 +250,16 @@ inline void AdvanceCursor(UIItem* itemmade, bool moveCursor = 1) {
 				width = itemmade->size.x * row.columnWidths[row.items.count - 1].first;
 			else
 				width = row.columnWidths[row.items.count - 1].first;
-			
+
 			itemmade->position.y = row.position.y + (height - itemmade->size.y) * itemmade->style.rowItemAlign.y;
 			itemmade->position.x = row.position.x + row.xoffset + (width - itemmade->size.x) * itemmade->style.rowItemAlign.x;
-			
+
 			row.xoffset += width;
-			
+
 			//we dont need to handle moving the cursor here, because the final position of the cursor after a row is handled in EndRow()
 		}
 	}
-	else if(moveCursor) curwin->cursor = vec2{ 0, itemmade->position.y + itemmade->size.y + style.itemSpacing.y } + curwin->scroll;
+	else if (moveCursor) curwin->cursor = vec2{ 0, itemmade->position.y + itemmade->size.y + style.itemSpacing.y - style.windowPadding.y } + curwin->scroll;
 }
 
 //function for getting the position of a new item based on style, so the long string of additions
@@ -320,6 +328,7 @@ inline UIItem* BeginItem(UIItemType type, u32 layeroffset = 0) {
 			curwin->items[currlayer + layeroffset].add(UIItem{ type, curwin->cursor, style });
 		}
 	}
+	curwin->items_count++;
 	return GetLastItem(layeroffset);
 }
 
@@ -399,6 +408,7 @@ void UI::RowSetupRelativeColumnWidths(array<f32> widths) {
 
 //rectangle
 
+
 //TODO(sushi) decide if abstract objs should be placed in window space or screen space
 void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
@@ -442,7 +452,7 @@ void UI::Line(vec2 start, vec2 end, float thickness, color color){
 	
 	item.position = vec2{ Min(drawCmd.position.x, drawCmd.position2.x), Min(drawCmd.position.y, drawCmd.position2.y) };
 	item.    size = vec2{ Max(drawCmd.position.x, drawCmd.position2.x), Max(drawCmd.position.y, drawCmd.position2.y) } - item.position;
-	
+
 	item.drawCmds.add(drawCmd);
 	curwin->items[currlayer].add(item);
 }
@@ -486,13 +496,13 @@ void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {
 //@Items
 
 
-
 void UI::SetNextItemSize(vec2 size) {
 	NextItemSize = size;
 }
 
 
 //@Text
+
 
 //internal function for actually making and adding the drawCmd
 local void TextCall(const char* text, vec2 pos, color color, UIItem* item) {
@@ -804,14 +814,6 @@ void UI::Text(const char* text, vec2 pos, UITextFlags flags) {
 	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap), 0);
 }
 
-void UI::Text(const char* text, color color, UITextFlags flags) {
-	TextW(text, curwin->cursor, color, HasFlag(UITextFlags_NoWrap));
-}
-
-void UI::Text(const char* text, vec2 pos, color color, UITextFlags flags) {
-	TextW(text, pos, color, HasFlag(UITextFlags_NoWrap), 0);
-}
-
 void UI::Text(const wchar_t* text, UITextFlags flags){
 	TextW(text, curwin->cursor, style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap));
 }
@@ -820,13 +822,6 @@ void UI::Text(const wchar_t* text, vec2 pos, UITextFlags flags){
 	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap), 0);
 }
 
-void UI::Text(const wchar_t* text, color color, UITextFlags flags){
-	TextW(text, curwin->cursor, color, HasFlag(UITextFlags_NoWrap));
-}
-
-void UI::Text(const wchar_t* text, vec2 pos, color color, UITextFlags flags){
-	TextW(text, pos, color, HasFlag(UITextFlags_NoWrap), 0);
-}
 
 void UI::TextF(const char* fmt, ...) {
 	string s;
@@ -843,27 +838,25 @@ void UI::TextF(const char* fmt, ...) {
 
 bool ButtonCall(const char* text, vec2 pos, bool move_cursor = 1) {
 	UIItem* item = BeginItem(UIItemType_Button);
-	item->size = (NextItemSize.x != -1) ? NextItemSize : vec2(Min(curwin->width, 50.0f), style.fontHeight * 1.3f);
+	item->size = (NextItemSize.x != -1) ? NextItemSize : vec2(Min(curwin->width, 50.0f), style.fontHeight * style.buttonHeightRelToFont);
 	item->position = pos;
 	AdvanceCursor(item, move_cursor);
 	
-	bool active = Math::PointInRectangle(DeshInput->mousePos, curwin->position + pos, item->size * style.globalScale);
+	bool active = Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position, item->size * style.globalScale);
 	
 	{//background
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = item->size;
-		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_FrameBgActive : UIStyleCol_FrameBgHovered) : UIStyleCol_FrameBg)];
+		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_ButtonBgActive : UIStyleCol_ButtonBgHovered) : UIStyleCol_ButtonBg)];
 		item->drawCmds.add(drawCmd);
-	}
+	} 
 	
 	{//border
 		UIDrawCmd drawCmd{ UIDrawType_Rectangle}; //inst 58
-		drawCmd.color = style.colors[UIStyleCol_Border];
+		drawCmd.color = style.colors[UIStyleCol_ButtonBorder];
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = item->size;
-		drawCmd.scissorOffset = -vec2::ONE * 2;
-		drawCmd.scissorExtent = curwin->dimensions + vec2::ONE * 2;
 		item->drawCmds.add(drawCmd);
 	}
 	
@@ -872,10 +865,10 @@ bool ButtonCall(const char* text, vec2 pos, bool move_cursor = 1) {
 		drawCmd.color = style.colors[UIStyleCol_Text];
 		drawCmd.position = 
 			vec2((item->size.x - UI::CalcTextSize(text).x) * style.buttonTextAlign.x,
-				 (style.fontHeight * 1.3 - style.fontHeight) * style.buttonTextAlign.y);
+				 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
 		drawCmd.scissorOffset = vec2::ZERO;
 		drawCmd.scissorExtent = item->size;
-		drawCmd.useWindowScissor = false;
+		drawCmd.useWindowScissor = false;  
 		drawCmd.text = string(text);
 		drawCmd.font = style.font;
 		item->drawCmds.add(drawCmd);
@@ -898,7 +891,7 @@ void UI::Checkbox(string label, bool* b) {
 	UIItem* item = BeginItem(UIItemType_Checkbox);
 	
 	vec2 boxpos = PositionForNewItem();
-	vec2 boxsiz = style.checkboxSize;
+	vec2 boxsiz = vec2::ONE * style.checkboxHeightRelToFont * style.fontHeight;
 	
 	item->position = boxpos;
 	item->size = boxsiz;
@@ -906,23 +899,40 @@ void UI::Checkbox(string label, bool* b) {
 	
 	AdvanceCursor(item);
 	
+	int fillPadding = style.checkboxFillPadding;
+	vec2 fillpos = boxsiz * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y);
+	vec2 fillsiz = boxsiz * (vec2::ONE - 2 * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y));
+
+	b32 bgactive = isItemHovered(item);
+	b32 fiactive = isLocalAreaHovered(fillpos, fillsiz, item);
+
+
 	{//box
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 		drawCmd.position = vec2{ 0,0 };
 		drawCmd.dimensions = boxsiz;
-		drawCmd.color = style.colors[UIStyleCol_FrameBg];
+		drawCmd.color = style.colors[
+			(bgactive ? (DeshInput->LMouseDown() ? UIStyleCol_CheckboxBgActive : UIStyleCol_CheckboxBgHovered) : UIStyleCol_CheckboxBg)
+		];
 		
 		item->drawCmds.add(drawCmd);
 	}
 	
 	//fill if true
-	int fillPadding = style.checkboxFillPadding;
 	if (*b) {
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
-		drawCmd.position = boxsiz * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y);
-		drawCmd.dimensions = boxsiz * (vec2::ONE - 2 * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y));
-		drawCmd.color = style.colors[UIStyleCol_FrameBg] * 0.7;
+		drawCmd.position = fillpos;
+		drawCmd.dimensions = fillsiz;
+		drawCmd.color = style.colors[UIStyleCol_CheckboxFilling];
 		
+		item->drawCmds.add(drawCmd);
+	}
+
+	{//border
+		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
+		drawCmd.color = style.colors[UIStyleCol_CheckboxBorder];
+		drawCmd.position = vec2::ZERO;
+		drawCmd.dimensions = item->size;
 		item->drawCmds.add(drawCmd);
 	}
 	
@@ -943,105 +953,179 @@ void UI::Checkbox(string label, bool* b) {
 	
 }
 
-void UI::DropDown(const char* label, const char* options[], u32 options_count, u32& selected) {
-	UIItem* item = BeginItem(UIItemType_DropDown, 1);
-	
-	bool isOpen = false;
-	if (!dropDowns.has(label)) {
-		dropDowns.add(label);
-		dropDowns[label] = false;
+bool UI::BeginCombo(const char* label, const char* prev_val) {
+	//UIItem* item = BeginItem(UIItemType_DropDown, 1);
+	//b32 ret = 0;
+
+	//bool isOpen = false;
+	//if (!dropDowns.has(label)) {
+	//	dropDowns.add(label);
+	//	dropDowns[label] = false;
+	//}
+	//else {
+	//	isOpen = dropDowns[label];
+	//}
+	//
+	//
+	//item->position = PositionForNewItem();
+	//item->size = (NextItemSize.x == -1) ? vec2{ curwin->width - 2 * style.windowPadding.x, 20 } : NextItemSize;
+	//
+	//AdvanceCursor(item);
+	//
+	////main bar, drawn regardless of if the box is open
+	//
+	//{//background
+	//	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
+	//	drawCmd.position = vec2{ 0,0 };
+	//	drawCmd.dimensions = item->size;
+	//	drawCmd.color = style.colors[UIStyleCol_FrameBg];
+	//	item->drawCmds.add(drawCmd);
+	//}
+	//
+	//{//selected text
+	//	UIDrawCmd drawCmd{ UIDrawType_Text};
+	//	drawCmd.position = vec2{ 10, (item->size.y - style.fontHeight) * 0.5f };
+	//	drawCmd.color = style.colors[UIStyleCol_Text];
+	//	drawCmd.text = string(options[selected]);
+	//	drawCmd.font = style.font;
+	//	item->drawCmds.add(drawCmd);
+	//}
+	//
+	//vec2 openBoxPos = vec2{ (item->size.x - item->size.y / 2) * 0.95f, item->size.y / 4 };
+	//vec2 openBoxSize = vec2{ item->size.y / 2, item->size.y / 2 };
+	//
+	//{//open box
+	//	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+	//	drawCmd.position = openBoxPos;
+	//	drawCmd.dimensions = openBoxSize;
+	//	drawCmd.color = style.colors[UIStyleCol_FrameBg] * 0.4;
+	//	item->drawCmds.add(drawCmd);
+	//}
+	//
+	//if (curwin->focused && 
+	//	DeshInput->LMousePressed() &&
+	//	Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position + openBoxPos, openBoxSize * style.globalScale)) {
+	//	dropDowns[label] = !dropDowns[label];
+	//}
+	//
+	//if(isOpen) {
+	//	//find what box the mouse is over
+	//	
+	//	vec2 sp = item->position.yAdd(item->size.y);
+	//	vec2 mp = DeshInput->mousePos - (curwin->position + sp);
+	//	f32 height = item->size.y * options_count;
+	//	f32 width = item->size.x;
+	//	u32 mo = -1;
+	//	
+	//	if (curwin->focused && Math::PointInRectangle(mp, vec2::ZERO, vec2{ width, height } * style.globalScale)) {
+	//		mo = floor(mp.y / height * options_count);
+	//		if (DeshInput->LMousePressed()) {
+	//			selected = mo;
+	//			ret = 1;
+	//		}
+	//	}
+	//	
+	//	for (int i = 0; i < options_count; i++) {
+	//		{//selection boxes
+	//			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+	//			drawCmd.position = vec2{ 0, item->size.y * (i + 1) };
+	//			drawCmd.dimensions = item->size;
+	//			drawCmd.color = style.colors[(i==selected || i == mo) ? UIStyleCol_FrameBgActive : UIStyleCol_FrameBg];
+	//			item->drawCmds.add(drawCmd);
+	//			
+	//		}
+	//		
+	//		{//underline
+	//			UIDrawCmd drawCmd{ UIDrawType_Line};
+	//			drawCmd.position = vec2{ 0,(item->size.y * (i + 2))};
+	//			drawCmd.position2 = vec2{ item->size.x, (item->size.y * (i + 2))};
+	//			drawCmd.color = Color_Black;
+	//			drawCmd.thickness = 1;
+	//			item->drawCmds.add(drawCmd);
+	//		}
+	//		
+	//		{//selection texts
+	//			UIDrawCmd drawCmd{ UIDrawType_Text};
+	//			drawCmd.position = vec3{ 10, (item->size.y - style.fontHeight) * 0.5f + (i + 1) * item->size.y };
+	//			drawCmd.color = style.colors[UIStyleCol_Text];
+	//			drawCmd.text = options[i];
+	//			drawCmd.font = style.font;
+	//			item->drawCmds.add(drawCmd);
+	//		}
+	//	}
+	//}
+	return 0;
+}
+
+bool UI::Header(const char* label) {
+	UIItem* item = BeginItem(UIItemType_Header);
+
+	b32* open = 0;
+	if (!headers.has(label)) {
+		headers.add(label);
+		headers[label] = false;
 	}
-	else {
-		isOpen = dropDowns[label];
-	}
-	
-	
+	open = &headers[label];
+
 	item->position = PositionForNewItem();
-	item->size = (NextItemSize.x == -1) ? vec2{ curwin->width - 2 * style.windowPadding.x, 20 } : NextItemSize;
-	
+	item->size = (NextItemSize.x == -1 ?
+		vec2(curwin->width - style.windowPadding.x, style.fontHeight * style.headerHeightRelToFont) :
+		NextItemSize);
+
 	AdvanceCursor(item);
-	
-	//main bar, drawn regardless of if the box is open
-	
+
+	b32 active = isItemHovered(item);
+
+	if (active && DeshInput->LMousePressed()) *open = !*open;
+
+	f32 buttonrad = item->size.y / 4;
+
+	vec2 bgpos = vec2{ buttonrad * 2 + 5, 0 };
+	vec2 bgdim = vec2{ 
+		item->size.x - bgpos.x - style.windowPadding.x, 
+		item->size.y };
+
 	{//background
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
-		drawCmd.position = vec2{ 0,0 };
-		drawCmd.dimensions = item->size;
-		drawCmd.color = style.colors[UIStyleCol_FrameBg];
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+		drawCmd.position = bgpos;
+		drawCmd.dimensions = bgdim;
+		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
 		item->drawCmds.add(drawCmd);
 	}
-	
-	{//selected text
-		UIDrawCmd drawCmd{ UIDrawType_Text};
-		drawCmd.position = vec2{ 10, (item->size.y - style.fontHeight) * 0.5f };
+
+	{//button
+		UIDrawCmd drawCmd{ (*open ? UIDrawType_CircleFilled : UIDrawType_Circle) };
+		drawCmd.position = vec2{ item->size.y / 4, item->size.y / 2 };
+		drawCmd.thickness = item->size.y / 4;
+		drawCmd.position2 = vec2{ 30.f, 0 };
+		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
+		item->drawCmds.add(drawCmd);
+	}
+
+	{//text
+		UIDrawCmd drawCmd{ UIDrawType_Text };
 		drawCmd.color = style.colors[UIStyleCol_Text];
-		drawCmd.text = string(options[selected]);
+		drawCmd.position = 
+			vec2(bgpos.x + (item->size.x - bgpos.x - style.windowPadding.x - UI::CalcTextSize(label).x) * style.headerTextAlign.x,
+				((style.fontHeight * style.headerHeightRelToFont - style.fontHeight) * style.headerTextAlign.y));
+		drawCmd.scissorOffset = vec2::ZERO;
+		drawCmd.scissorExtent = item->size;
+		drawCmd.useWindowScissor = false;
+		drawCmd.text = string(label);
 		drawCmd.font = style.font;
 		item->drawCmds.add(drawCmd);
 	}
-	
-	vec2 openBoxPos = vec2{ (item->size.x - item->size.y / 2) * 0.95f, item->size.y / 4 };
-	vec2 openBoxSize = vec2{ item->size.y / 2, item->size.y / 2 };
-	
-	{//open box
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-		drawCmd.position = openBoxPos;
-		drawCmd.dimensions = openBoxSize;
-		drawCmd.color = style.colors[UIStyleCol_FrameBg] * 0.4;
+
+	{//border
+		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
+		drawCmd.color = style.colors[UIStyleCol_HeaderBorder];
+		drawCmd.position = bgpos;
+		drawCmd.dimensions = bgdim;
 		item->drawCmds.add(drawCmd);
 	}
-	
-	if (curwin->focused && 
-		DeshInput->LMousePressed() &&
-		Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position + openBoxPos, openBoxSize * style.globalScale)) {
-		dropDowns[label] = !dropDowns[label];
-	}
-	
-	if(isOpen) {
-		//find what box the mouse is over
-		
-		vec2 sp = item->position.yAdd(item->size.y);
-		vec2 mp = DeshInput->mousePos - (curwin->position + sp);
-		f32 height = item->size.y * options_count;
-		f32 width = item->size.x;
-		u32 mo = -1;
-		
-		if (curwin->focused && Math::PointInRectangle(mp, vec2::ZERO, vec2{ width, height } * style.globalScale)) {
-			mo = floor(mp.y / height * options_count);
-			if (DeshInput->LMousePressed()) {
-				selected = mo;
-			}
-		}
-		
-		for (int i = 0; i < options_count; i++) {
-			{//selection boxes
-				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-				drawCmd.position = vec2{ 0, item->size.y * (i + 1) };
-				drawCmd.dimensions = item->size;
-				drawCmd.color = style.colors[(i==selected || i == mo) ? UIStyleCol_FrameBgActive : UIStyleCol_FrameBg];
-				item->drawCmds.add(drawCmd);
-				
-			}
-			
-			{//underline
-				UIDrawCmd drawCmd{ UIDrawType_Line};
-				drawCmd.position = vec2{ 0,(item->size.y * (i + 2))};
-				drawCmd.position2 = vec2{ item->size.x, (item->size.y * (i + 2))};
-				drawCmd.color = Color_Black;
-				drawCmd.thickness = 1;
-				item->drawCmds.add(drawCmd);
-			}
-			
-			{//selection texts
-				UIDrawCmd drawCmd{ UIDrawType_Text};
-				drawCmd.position = vec3{ 10, (item->size.y - style.fontHeight) * 0.5f + (i + 1) * item->size.y };
-				drawCmd.color = style.colors[UIStyleCol_Text];
-				drawCmd.text = options[i];
-				drawCmd.font = style.font;
-				item->drawCmds.add(drawCmd);
-			}
-		}
-	}
+
+
+	return *open;
 }
 
 void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags){
@@ -1057,24 +1141,22 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 	}
 	
 	item->position = PositionForNewItem();
-	
 	item->size = (NextItemSize.x == -1 ?
 		vec2{ curwin->width * (1.f / 3), 10 } :
-		NextItemSize
-		);
+		NextItemSize);
 
 	AdvanceCursor(item);
 
-	//we latch the active state so the user doesnt have to keep the mouse within the bounds of the box to move the slider after they have clicked
-	//i could have used drag_override, but that can be set by other items 
-	static b32 active_latch = 0; 
-	b32 active = Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position, item->size);
+	b32 active = isItemHovered(item);
 
-	if ((active || being_moved) && DeshInput->LMouseDown()) {
+
+	if (active && DeshInput->LMousePressed()) {
 		drag_override = 1;
 		sliders[label] = 1;
+	}
+	if (being_moved && DeshInput->LMouseDown()) {
 		f32 ratio = (DeshInput->mousePos.x - item->position.x - curwin->position.x) / item->size.x;
-		*val = ratio * val_max;
+		*val = ratio * (val_max - val_min) + val_min;
 	}
 	if (DeshInput->LMouseReleased()) {
 		drag_override = 0;
@@ -1084,13 +1166,13 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 	*val = Clamp(*val, val_min, val_max);
 	
 	vec2 draggersiz = vec2{ item->size.x / 8, item->size.y };
-	vec2 draggerpos = vec2{ *val / val_max * (item->size.x - draggersiz.x), 0 };
+	vec2 draggerpos = vec2{ (*val - val_min) / (val_max - val_min) * (item->size.x - draggersiz.x), 0 };
 	
-	{//guideline
+	{//background
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = item->size;
-		drawCmd.color = style.colors[UIStyleCol_FrameBg] * 0.8;
+		drawCmd.color = style.colors[UIStyleCol_SliderBg];
 		item->drawCmds.add(drawCmd);
 	}
 
@@ -1098,7 +1180,15 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = draggerpos;
 		drawCmd.dimensions = draggersiz;
-		drawCmd.color = style.colors[(active ? UIStyleCol_FrameBgActive : UIStyleCol_FrameBg)];
+		drawCmd.color = style.colors[((active || being_moved) ? (DeshInput->LMouseDown() ? UIStyleCol_SliderBarActive : UIStyleCol_SliderBarHovered) : UIStyleCol_SliderBar)];
+		item->drawCmds.add(drawCmd);
+	}
+
+	{//border
+		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
+		drawCmd.color = style.colors[UIStyleCol_SliderBorder];
+		drawCmd.position = vec2::ZERO;
+		drawCmd.dimensions = item->size;
 		item->drawCmds.add(drawCmd);
 	}
 
@@ -1126,11 +1216,13 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		NextItemSize = vec2{ -1,0 };
 	}
 	else {
-		dim = vec2(Math::clamp(100.f, 0.f, Math::clamp(curwin->width - 2.f*style.windowPadding.x, 1.f, FLT_MAX)), 1.3f*style.fontHeight);
+		dim = vec2(Math::clamp(100.f, 0.f, Math::clamp(curwin->width - 2.f*style.windowPadding.x, 1.f, FLT_MAX)), style.inputTextHeightRelToFont*style.fontHeight);
 	}
 	
 	item->size = dim;
 	item->position = position;
+
+	b32 hovered = isItemHovered(item);
 	
 	AdvanceCursor(item, moveCursor);
 	
@@ -1146,12 +1238,13 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		state->callback = callback;
 	}
 	
+	b32 active = (activeId == state->id);
 	if (NextActive || DeshInput->KeyPressed(MouseButton::LEFT)) {
 		if (NextActive || Math::PointInRectangle(DeshInput->mousePos, curwin->position + GetLastItem()->position, dim)) {
 			activeId = state->id;
 			NextActive = 0;
 		}
-		else if (activeId == state->id) activeId = -1;
+		else if (active) activeId = -1;
 	}
 	
 	if (charCount < state->cursor)
@@ -1165,7 +1258,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	data.selectionEnd = state->selectEnd;
 	
 	bool bufferChanged = 0;
-	if (activeId == state->id) {
+	if (active) {
 		if (DeshInput->KeyPressed(Key::RIGHT) && state->cursor < charCount) state->cursor++;
 		if (DeshInput->KeyPressed(Key::LEFT) && state->cursor > 0) state->cursor--;
 		
@@ -1323,14 +1416,15 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = dim;
-		drawCmd.color = Color_DarkGrey;
+		drawCmd.color =
+			style.colors[(!active ? (hovered ? UIStyleCol_InputTextBgHovered : UIStyleCol_InputTextBg) : UIStyleCol_InputTextBg)];
 		
 		item->drawCmds.add(drawCmd);
 	}
 	
 	vec2 textStart =
 		vec2((dim.x - charCount * style.font->max_width) * style.inputTextTextAlign.x,
-			 (style.fontHeight * 1.3 - style.fontHeight) * style.inputTextTextAlign.y);
+			 (style.fontHeight * style.inputTextHeightRelToFont - style.fontHeight) * style.inputTextTextAlign.y);
 	
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text};
@@ -1341,12 +1435,20 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		
 		item->drawCmds.add(drawCmd);
 	}
+
+	{//border
+		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
+		drawCmd.color = style.colors[UIStyleCol_InputTextBorder];
+		drawCmd.position = vec2::ZERO;
+		drawCmd.dimensions = item->size;
+		item->drawCmds.add(drawCmd); 
+	}
 	
 	//TODO(sushi, Ui) impl different text cursors
-	if (activeId == state->id) {//cursor
+	if (active) {//cursor
 		UIDrawCmd drawCmd{ UIDrawType_Line};
-		drawCmd.position = textStart + vec2(state->cursor * style.font->max_width, 0);
-		drawCmd.position2 = textStart + vec2(state->cursor * style.font->max_width, style.fontHeight - 1);
+		drawCmd.position = textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, 0);
+		drawCmd.position2 = textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, style.fontHeight - 1);
 		drawCmd.color =
 			color(255, 255, 255,
 				  255 * (
@@ -1891,51 +1993,80 @@ UIWindow* DisplayMetrics() {
 	UIWindow* slomo     = *windows.atIdx(0);
 	UIWindow* quick     = *windows.atIdx(0);
 	UIWindow* mostitems = *windows.atIdx(0);
-	
+	UIWindow* longname  = *windows.atIdx(0);
+
+	array<char*> names;
 	for(UIWindow* win : windows) {
 		if (!(win->name == "METRICS")) {
-			if (win->render_time > slomo->render_time)      slomo = win;
-			if (win->render_time < quick->render_time)      quick = win;
-			if (win->items->count > mostitems->items->count) mostitems = win;
+			if (win->render_time > slomo->render_time)     slomo = win;
+			if (win->render_time < quick->render_time)     quick = win;
+			if (win->items_count > mostitems->items_count) mostitems = win;
+			if (win->name.count  > longname->name.count)   longname = win;
+			names.add(win->name.str);
 		}
 	}
 	
 	
-	PushColor(UIStyleCol_WindowBg, colors.near_black);
-	PushColor(UIStyleCol_Border, colors.dark_grey_blue);
-	PushColor(UIStyleCol_FrameBgActive, color(Color_Cyan));
-	PushColor(UIStyleCol_FrameBgHovered, color(Color_Cyan) * 0.8);
-	PushColor(UIStyleCol_FrameBg, color(Color_Cyan) * 0.6);
+	//PushColor(UIStyleCol_WindowBg,       colors.near_black);
+	//PushColor(UIStyleCol_Border,         colors.dark_grey_blue);
+	//PushColor(UIStyleCol_FrameBgActive,  color(Color_Cyan));
+	//PushColor(UIStyleCol_FrameBgHovered, color(Color_Cyan) * 0.8);
+	//PushColor(UIStyleCol_FrameBg,        color(Color_Cyan) * 0.6);
 	
 	Begin("METRICS", vec2::ZERO, vec2(300, 500));
 	myself = curwin;
 	
 	Text(TOSTRING("Active Windows: ", windowStack.count).str);
 	
-	float fw = CalcTextSize("Slowest Render: ").x;
+	string slomotext = TOSTRING("Slowest Render:");
+	string quicktext = TOSTRING("Fastest Render:");
+	string mostitext = TOSTRING("Most Items: "); 
+
+
+	static float sw = CalcTextSize(longname->name).x;
+	static float fw = CalcTextSize(slomotext).x + 5;
 	
-	BeginRow(2, 15);
-	RowSetupColumnWidths({ fw, 20 });
-	Text(TOSTRING("Slowest Render: ", slomo->name).str);
+	BeginRow(3, 11);
+	RowSetupColumnWidths({ fw, sw, 55 });
+	PushVar(UIStyleVar_RowItemAlign, vec2{ 0, 0.5 });
+	Text(slomotext.str);
+	PopVar();
+	Text(slomo->name.str);
 	if (Button("select")) debugee = slomo;
 	EndRow();
 	
-	
-	BeginRow(2, 15);
-	RowSetupColumnWidths({ fw, 20 });
-	Text(TOSTRING("Fastest Render: ", quick->name).str);
+	BeginRow(3, 11);
+	RowSetupColumnWidths({ fw, sw, 55 });
+	PushVar(UIStyleVar_RowItemAlign, vec2{ 0, 0.5 });
+	Text(quicktext.str);
+	PopVar();
+	Text(quick->name.str);
 	if (Button("select")) debugee = quick;
 	EndRow();
 	
-	BeginRow(2, 15);
-	RowSetupColumnWidths({ fw, 20 });
-	Text(TOSTRING("Most Items:     ", quick->name).str);
+	BeginRow(3, 11);
+	RowSetupColumnWidths({ fw, sw, 55 });
+	PushVar(UIStyleVar_RowItemAlign, vec2{ 0, 0.5 });
+	Text(mostitext.str);
+	PopVar();
+	Text(mostitems->name.str);
 	if (Button("select")) debugee = mostitems;
 	EndRow();
 	
+
+	static u32 selected = 0;
+	//if (DropDown("windowstochoosefrom", names.data, windows.count, selected)) {
+	//	debugee = *windows.atIdx(selected);
+	//}
+
+
+
+
+
+
 	End();
 	
-	PopColor(5);
+	//PopColor(5);
 	
 	return myself;
 	
@@ -1966,27 +2097,68 @@ void UI::Init() {
 	
 	//push default color scheme
 	//this is never meant to be popped
-	PushColor(UIStyleCol_Border,         colors.near_black);
-	PushColor(UIStyleCol_WindowBg,       colors.midnight_blue);
-	PushColor(UIStyleCol_TitleBg,        colors.purple_gray);
-	PushColor(UIStyleCol_FrameBg,        colors.pink_gray);
-	PushColor(UIStyleCol_FrameBgHovered, colors.pink_gray * 0.8);
-	PushColor(UIStyleCol_FrameBgActive,  colors.pink_gray * 1.2);
+	PushColor(UIStyleCol_Border,         Color_DarkGrey);
+	PushColor(UIStyleCol_WindowBg,       color(14, 14, 14));
 	PushColor(UIStyleCol_Text,           Color_White);
 	
+	//backgrounds
+	PushColor(UIStyleCol_ButtonBg,    Color_VeryDarkCyan);
+	PushColor(UIStyleCol_CheckboxBg,  Color_VeryDarkCyan);
+	PushColor(UIStyleCol_HeaderBg,    color(0, 100, 100, 255));
+	PushColor(UIStyleCol_SliderBg,    Color_VeryDarkCyan);
+	PushColor(UIStyleCol_InputTextBg, Color_DarkCyan);
+
+	//active backgrounds
+	PushColor(UIStyleCol_ButtonBgActive,    Color_Cyan);
+	PushColor(UIStyleCol_CheckboxBgActive,  Color_Cyan);
+	PushColor(UIStyleCol_HeaderBgActive,    color(0, 255, 255, 255));
+	PushColor(UIStyleCol_SliderBgActive,    Color_Cyan);
+	PushColor(UIStyleCol_InputTextBgActive, Color_DarkCyan);
+
+	//hovered backgrounds
+	PushColor(UIStyleCol_ButtonBgHovered,    Color_DarkCyan);
+	PushColor(UIStyleCol_CheckboxBgHovered,  Color_DarkCyan);
+	PushColor(UIStyleCol_HeaderBgHovered,    color(0, 128, 128, 255));
+	PushColor(UIStyleCol_SliderBgHovered,    Color_DarkCyan);
+	PushColor(UIStyleCol_InputTextBgHovered, Color_DarkCyan);
+
+
+	//borders
+	PushColor(UIStyleCol_ButtonBorder,   Color_Black);
+	PushColor(UIStyleCol_CheckboxBorder, Color_Black);
+	PushColor(UIStyleCol_HeaderBorder,   Color_Black);
+	PushColor(UIStyleCol_SliderBorder,   Color_Black);
+	PushColor(UIStyleCol_InputTextBorder,Color_Black);
+
+	//misc
+	PushColor(UIStyleCol_CheckboxFilling,     Color_DarkMagenta);
+	
+	PushColor(UIStyleCol_HeaderButton,        Color_VeryDarkRed);
+	PushColor(UIStyleCol_HeaderButtonActive,  Color_Red);
+	PushColor(UIStyleCol_HeaderButtonHovered, Color_DarkRed);
+	
+	PushColor(UIStyleCol_SliderBar,		   Color_VeryDarkRed);
+	PushColor(UIStyleCol_SliderBarActive,  Color_Red);
+	PushColor(UIStyleCol_SliderBarHovered, Color_DarkRed);
+
 	//push default style variables
-	PushVar(UIStyleVar_WindowBorderSize,    1);
-	PushVar(UIStyleVar_TitleBarHeight,      style.fontHeight * 1.2);
-	PushVar(UIStyleVar_TitleTextAlign,      vec2(1, 0.5));
-	PushVar(UIStyleVar_WindowPadding,       vec2(10, 10));
-	PushVar(UIStyleVar_ItemSpacing,         vec2(1, 1));
-	PushVar(UIStyleVar_ScrollAmount,        vec2(5, 5));
-	PushVar(UIStyleVar_CheckboxSize,        vec2(10, 10));
-	PushVar(UIStyleVar_CheckboxFillPadding, 2);
-	PushVar(UIStyleVar_InputTextTextAlign,  vec2(0, 0.5));
-	PushVar(UIStyleVar_ButtonTextAlign,     vec2(0.5, 0.5));
-	PushVar(UIStyleVar_RowItemAlign,        vec2(0.5, 0.5));
-	PushVar(UIStyleVar_FontHeight,          style.font->max_height);
+	PushVar(UIStyleVar_WindowBorderSize,         1);
+	PushVar(UIStyleVar_TitleBarHeight,           style.fontHeight * 1.2);
+	PushVar(UIStyleVar_TitleTextAlign,           vec2(1, 0.5));
+	PushVar(UIStyleVar_WindowPadding,            vec2(10, 10));
+	PushVar(UIStyleVar_ItemSpacing,              vec2(1, 1));
+	PushVar(UIStyleVar_ScrollAmount,             vec2(5, 5));
+	PushVar(UIStyleVar_CheckboxSize,             vec2(10, 10));
+	PushVar(UIStyleVar_CheckboxFillPadding,      2);
+	PushVar(UIStyleVar_InputTextTextAlign,       vec2(0, 0.5));
+	PushVar(UIStyleVar_ButtonTextAlign,          vec2(0.5, 0.5));
+	PushVar(UIStyleVar_HeaderTextAlign,          vec2(0.05, 0.5));
+	PushVar(UIStyleVar_ButtonHeightRelToFont,    1.3);
+	PushVar(UIStyleVar_HeaderHeightRelToFont,    1.3);
+	PushVar(UIStyleVar_InputTextHeightRelToFont, 1.3);
+	PushVar(UIStyleVar_CheckboxHeightRelToFont,  1.3);
+	PushVar(UIStyleVar_RowItemAlign,             vec2(0.5, 0.5));
+	PushVar(UIStyleVar_FontHeight,               style.font->max_height);
 	
 	PushScale(vec2(1, 1));
 	
@@ -2106,7 +2278,7 @@ void UI::Update() {
 					}break;
 					
 					case UIDrawType_Line: {
-						Render::DrawLine2D(dcpos - item.position, dcpos2 - item.position, dct, dccol, dcl, dcso, dcse);
+						Render::DrawLine2D(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
 					}break;
 					case UIDrawType_Text: {
 						vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
@@ -2153,7 +2325,7 @@ void UI::Update() {
 								Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 							}break;
 							case UIDrawType_Line: {
-								Render::DrawLine2D(dcpos - item.position, dcpos2 - item.position, dct, dccol, dcl, dcso, dcse);
+								Render::DrawLine2D(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
 							}break;
 							case UIDrawType_Circle: {
 								Render::DrawCircle2D(dcpos, dct, drawCmd.position2.x, dccol, dcl, dcso, dcse);

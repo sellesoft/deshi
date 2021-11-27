@@ -45,20 +45,25 @@
 #include "../utils/map.h"
 
 enum UIStyleVar : u32 {
-	UIStyleVar_WindowPadding,	    // default vec2(10, 10)      spacing between every item and the edges of the window
-	UIStyleVar_ItemSpacing,         // default vec2(1, 1)	     spacing between items within a window
-	UIStyleVar_WindowBorderSize,    // default 1                 border size in pixels                
-	UIStyleVar_TitleBarHeight,	    // default font.height * 1.2                                        
-	UIStyleVar_TitleTextAlign,      // default vec2(0, 0.5)  	 how title text is aligned in title bar 
-	UIStyleVar_ScrollAmount,        // default vec2(5, 5)		 amount to scroll in pixels             
-	UIStyleVar_CheckboxSize,        // default vec2(10, 10)      
-	UIStyleVar_CheckboxFillPadding, // default 2                 how far from the edge a checkbox's true filling is padding
-	UIStyleVar_InputTextTextAlign,  // default vec2(0, 0.5)      how text is aligned within InputText boxes
-	UIStyleVar_ButtonTextAlign,     // default vec2(0.5, 0.5)    how text is aligned within buttons
-	UIStyleVar_RowItemAlign,        // default vec2(0.5, 0.5)    determines how rows align their items within their cells
-	UIStyleVar_RowCellPadding,      // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
-	UIStyleVar_FontHeight,          // default font->height      height of font in pixels
-	UIStyleVar_Font,			    // default "gohufont-11.bdf" 
+	UIStyleVar_WindowPadding,	     // default vec2(10, 10)      spacing between every item and the edges of the window
+	UIStyleVar_ItemSpacing,          // default vec2(1, 1)	     spacing between items within a window
+	UIStyleVar_WindowBorderSize,     // default 1                 border size in pixels                
+	UIStyleVar_TitleBarHeight,	     // default font.height * 1.2                                        
+	UIStyleVar_TitleTextAlign,       // default vec2(0, 0.5)  	 how title text is aligned in title bar 
+	UIStyleVar_ScrollAmount,         // default vec2(5, 5)		 amount to scroll in pixels             
+	UIStyleVar_CheckboxSize,         // default vec2(10, 10)      
+	UIStyleVar_CheckboxFillPadding,  // default 2                 how far from the edge a checkbox's true filling is padding
+	UIStyleVar_InputTextTextAlign,   // default vec2(0, 0.5)      how text is aligned within InputText boxes
+	UIStyleVar_ButtonTextAlign,      // default vec2(0.5, 0.5)    how text is aligned within buttons
+	UIStyleVar_HeaderTextAlign,      // default vec2(0.05, 0.5)
+	UIStyleVar_ButtonHeightRelToFont,// default 1.3                height of header box relative to the font height
+	UIStyleVar_HeaderHeightRelToFont,// default 1.3
+	UIStyleVar_InputTextHeightRelToFont,// default 1.3
+	UIStyleVar_CheckboxHeightRelToFont, // default 1.3
+	UIStyleVar_RowItemAlign,         // default vec2(0.5, 0.5)    determines how rows align their items within their cells
+	UIStyleVar_RowCellPadding,       // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
+	UIStyleVar_FontHeight,           // default font->height      height of font in pixels
+	UIStyleVar_Font,			     // default "gohufont-11.bdf" 
 	UIStyleVar_COUNT
 };
 
@@ -82,11 +87,46 @@ global_ const char* styleVarStr[] = {
 
 enum UIStyleCol : u32 {
 	UIStyleCol_Text,
+	
 	UIStyleCol_WindowBg,
 	UIStyleCol_Border,
+	
 	UIStyleCol_FrameBg,
 	UIStyleCol_FrameBgHovered,
-	UIStyleCol_FrameBgActive,
+	UIStyleCol_FrameBgActive,  //
+	
+	UIStyleCol_ButtonBg,
+	UIStyleCol_ButtonBgActive,
+	UIStyleCol_ButtonBgHovered,
+	UIStyleCol_ButtonBorder,
+	
+	UIStyleCol_CheckboxBg,
+	UIStyleCol_CheckboxBgActive,
+	UIStyleCol_CheckboxBgHovered,
+	UIStyleCol_CheckboxFilling,
+	UIStyleCol_CheckboxBorder,
+	
+	UIStyleCol_HeaderBg,
+	UIStyleCol_HeaderBgActive,
+	UIStyleCol_HeaderBgHovered,
+	UIStyleCol_HeaderButton,
+	UIStyleCol_HeaderButtonActive,
+	UIStyleCol_HeaderButtonHovered,
+	UIStyleCol_HeaderBorder,
+
+	UIStyleCol_SliderBg,
+	UIStyleCol_SliderBgActive,
+	UIStyleCol_SliderBgHovered,
+	UIStyleCol_SliderBar,
+	UIStyleCol_SliderBarActive,
+	UIStyleCol_SliderBarHovered,
+	UIStyleCol_SliderBorder,
+
+	UIStyleCol_InputTextBg,
+	UIStyleCol_InputTextBgActive,
+	UIStyleCol_InputTextBgHovered,
+	UIStyleCol_InputTextBorder,
+
 	UIStyleCol_TitleBg,
 	UIStyleCol_TitleBgHovered,
 	UIStyleCol_TitleBgActive,
@@ -104,6 +144,11 @@ struct UIStyle {
 	float checkboxFillPadding;
 	vec2  inputTextTextAlign;
 	vec2  buttonTextAlign;
+	vec2  headerTextAlign;
+	float buttonHeightRelToFont;
+	float headerHeightRelToFont;
+	float inputTextHeightRelToFont;
+	float checkboxHeightRelToFont;
 	vec2  rowItemAlign;
 	vec2  rowCellPadding;
 	float fontHeight;
@@ -248,6 +293,7 @@ enum UIItemType : u32 {
 	UIItemType_Checkbox,  // Checkbox()
 	UIItemType_DropDown,  // DropDown()
 	UIItemType_Slider,    // Slider()
+	UIItemType_Header,    // Header()
 };
 
 //an item such as a button, checkbox, or input text
@@ -414,15 +460,21 @@ namespace UI {
 	FORCE_INLINE vec2 CalcTextSize(const wstring& text) { return CalcTextSize(wcstring{text.str,u64(text.count) }); }
 	FORCE_INLINE vec2 CalcTextSize(const char* text)    { return CalcTextSize(cstring {(char*)text,u64(strlen(text))}); }
 	FORCE_INLINE vec2 CalcTextSize(const wchar_t* text) { return CalcTextSize(wcstring{(wchar_t*)text,u64(wcslen(text)) }); }
-	void      SetNextItemActive();
 	UIStyle&  GetStyle();
 	UIWindow* GetWindow();
-	void      SameLine();
 	vec2      GetLastItemPos();
 	vec2      GetLastItemSize();
 	vec2      GetLastItemScreenPos();
 	u32       GetCenterLayer();
+
+
+	//// control functions ////
+	void SameLine();
+	void SetCursor(vec2 pos);
+	void SetNextItemActive();
+	void SetNextItemSize(vec2 size);
 	
+
 	//// rows ////
 	void BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags = 0);
 	void EndRow();
@@ -442,29 +494,24 @@ namespace UI {
 	//// text ////
 	void Text(const char* text, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
-	void Text(const char* text, color color, UITextFlags flags = 0);
-	void Text(const char* text, vec2 pos, color color, UITextFlags flags = 0);
 	void Text(const wchar_t* text, UITextFlags flags = 0);
 	void Text(const wchar_t* text, vec2 pos, UITextFlags flags = 0);
-	void Text(const wchar_t* text, color color, UITextFlags flags = 0);
-	void Text(const wchar_t* text, vec2 pos, color color, UITextFlags flags = 0);
 	void TextF(const char* fmt, ...);
 	
-	//// item utilities ////
-	void SetNextItemSize(vec2 size);
 	
 	//// items ////
-	bool MenuItem(const char* text); //returns true if selected //TODO
-	bool BeginMenu(const char* label);
-	void EndMenu();
-	
 	bool Button(const char* text);
 	bool Button(const char* text, vec2 pos);
 	
 	void Checkbox(string label, bool* b);
 
-	void DropDown(const char* label, const char* options[], u32 options_count, u32& selected);
-	
+	bool BeginCombo(const char* label, const char* prev_val);
+	void EndCombo();
+
+	bool Selectable();
+
+	bool Header(const char* label);
+
 	void Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
 
 	//these overloads are kind of silly change them eventually
@@ -478,10 +525,6 @@ namespace UI {
 	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
 	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
 	
-	//InputText+Menu popup with built-in menu item filtering based on input
-	bool BeginContextMenu(const char* label); //TODO
-	void EndContextMenu();  //TODO
-	
 	//// push/pop ////
 	void PushColor(UIStyleCol idx, color color);
 	void PushVar(UIStyleVar idx, float style);
@@ -490,13 +533,18 @@ namespace UI {
 	void PushScale(vec2 scale);
 	void PushLayer(u32 layer);
 	void PushWindowLayer(u32 layer);
-	
+
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
 	void PopFont(u32 count = 1);
 	void PopScale(u32 count = 1);
 	void PopLayer(u32 count = 1);
 	void PopWindowLayer(u32 count = 1);
+	
+	
+	//// special functions ////
+
+
 	
 	//// windows ////
 	void Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);

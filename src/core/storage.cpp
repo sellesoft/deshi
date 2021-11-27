@@ -1684,6 +1684,8 @@ CreateFontFromFileBDF(const char* filename){
 	free(pixels);
 	//DeleteTexture(texture);
 	
+	font->aspect_ratio = (float)font->max_height / font->max_width;
+
 	fonts.add(font);
 	result.first  = font->idx;
 	result.second = font;
