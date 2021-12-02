@@ -1678,14 +1678,14 @@ CreateFontFromFileBDF(const char* filename){
 	}
 	
 	Texture* texture = CreateTextureFromMemory(pixels, font->name, font->max_width, font->max_height*font->count,
-											   ImageFormat_BW, TextureType_2D, false, false, true).second;
+											   ImageFormat_BW, TextureType_2D, false, false, false).second;
 	Render::LoadFont(font, texture);
 	free(encodings);
 	free(pixels);
 	//DeleteTexture(texture);
 	
 	font->aspect_ratio = (float)font->max_height / font->max_width;
-
+	
 	fonts.add(font);
 	result.first  = font->idx;
 	result.second = font;
@@ -1785,7 +1785,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	stbtt_PackEnd(pc);
 	
 	Texture* texture = CreateTextureFromMemory(pixels, font->name, tsx, tsy, 
-											   ImageFormat_BW, TextureType_2D, false, false, true).second;
+											   ImageFormat_BW, TextureType_2D, false, false, false).second;
 	Render::LoadFont(font, texture);
 	free(pixels);
 	//DeleteTexture(texture);
