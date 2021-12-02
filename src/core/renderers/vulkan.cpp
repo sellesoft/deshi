@@ -3836,8 +3836,8 @@ LoadTexture(Texture* texture){
 	
 	//create texture sampler
 	VkSamplerCreateInfo samplerInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-	samplerInfo.magFilter        = VK_FILTER_NEAREST;//(settings.textureFiltering || texture->forceLinear) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-	samplerInfo.minFilter        = VK_FILTER_NEAREST;//(settings.textureFiltering || texture->forceLinear) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+	samplerInfo.magFilter        = (settings.textureFiltering || texture->forceLinear) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+	samplerInfo.minFilter        = (settings.textureFiltering || texture->forceLinear) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
 	samplerInfo.mipmapMode       = (settings.textureFiltering || texture->forceLinear) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
 	samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
