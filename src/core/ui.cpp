@@ -1754,11 +1754,11 @@ void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {
 	if (!(flags & UIWindowFlags_NoScroll)) {
 		if (curwin->hovered && DeshInput->ScrollUp()) {
 			curwin->scy -= style.scrollAmount.y;
-			curwin->scy = Math::clamp(curwin->scy, 0.f, curwin->maxScroll.y);
+			curwin->scy = Clamp(curwin->scy, 0.f, curwin->maxScroll.y);
 		}
 		else if (curwin->hovered && DeshInput->ScrollDown()) {
 			curwin->scy += style.scrollAmount.y;
-			curwin->scy = Math::clamp(curwin->scy, 0.f, curwin->maxScroll.y);
+			curwin->scy = Clamp(curwin->scy, 0.f, curwin->maxScroll.y);
 		}
 	}
 	

@@ -3035,15 +3035,17 @@ BuildCommands(){
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
 				forX(layer, UI_LAYERS) {
-					forX(cmd_idx, uiCmdCounts[layer]) {
-						scissor.offset.x = uiCmdArrays[layer][cmd_idx].scissorOffset.x;
-						scissor.offset.y = uiCmdArrays[layer][cmd_idx].scissorOffset.y;
-						scissor.extent.width = uiCmdArrays[layer][cmd_idx].scissorExtent.x;
-						scissor.extent.height = uiCmdArrays[layer][cmd_idx].scissorExtent.y;
-						vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+					if (uiCmdCounts[layer] > 1) {
+						forX(cmd_idx, uiCmdCounts[layer]) {
+							scissor.offset.x = uiCmdArrays[layer][cmd_idx].scissorOffset.x;
+							scissor.offset.y = uiCmdArrays[layer][cmd_idx].scissorOffset.y;
+							scissor.extent.width = uiCmdArrays[layer][cmd_idx].scissorExtent.x;
+							scissor.extent.height = uiCmdArrays[layer][cmd_idx].scissorExtent.y;
+							vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-						vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &vkFonts[uiCmdArrays[layer][cmd_idx].texIdx].descriptorSet, 0, nullptr);
-						vkCmdDrawIndexed(cmdBuffer, uiCmdArrays[layer][cmd_idx].indexCount, 1, uiCmdArrays[layer][cmd_idx].indexOffset, 0, 0);
+							vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &vkFonts[uiCmdArrays[layer][cmd_idx].texIdx].descriptorSet, 0, nullptr);
+							vkCmdDrawIndexed(cmdBuffer, uiCmdArrays[layer][cmd_idx].indexCount, 1, uiCmdArrays[layer][cmd_idx].indexOffset, 0, 0);
+						}
 					}
 				}
 				stats.drawnIndices += uiIndexCount;
@@ -3834,8 +3836,8 @@ LoadTexture(Texture* texture){
 	
 	//create texture sampler
 	VkSamplerCreateInfo samplerInfo{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-	samplerInfo.magFilter        = (settings.textureFiltering || texture->forceLinear) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
-	samplerInfo.minFilter        = (settings.textureFiltering || texture->forceLinear) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+	samplerInfo.magFilter        = VK_FILTER_NEAREST;//(settings.textureFiltering || texture->forceLinear) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
+	samplerInfo.minFilter        = VK_FILTER_NEAREST;//(settings.textureFiltering || texture->forceLinear) ? VK_FILTER_LINEAR : VK_FILTER_NEAREST;
 	samplerInfo.mipmapMode       = (settings.textureFiltering || texture->forceLinear) ? VK_SAMPLER_MIPMAP_MODE_LINEAR : VK_SAMPLER_MIPMAP_MODE_NEAREST;
 	samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 	samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
