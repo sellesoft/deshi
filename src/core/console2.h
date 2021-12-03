@@ -4,13 +4,7 @@
 
 #include "../defines.h"
 
-enum ConsoleState_{
-	ConsoleState_Closed, 
-	ConsoleState_OpenSmall, 
-	ConsoleState_OpenBig, 
-	ConsoleState_Popout, 
-	ConsoleState_Window
-};typedef u32 ConsoleState;
+
 
 namespace Console2{
 	local bool intercepting_inputs = false;

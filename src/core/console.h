@@ -6,53 +6,39 @@
 #include "../utils/Color.h"
 #include "../utils/Debug.h"
 #include "../utils/tuple.h"
+#include "../utils/map.h"
+#include "../utils/array.h"
+#include "../utils/string.h"
+#include "../utils/ring_array.h"
 
-#include <vector>
-#include <string>     // std::string, std::stoi
-#include <map>
-
-struct ImGuiInputTextCallbackData;
 struct Command;
 
+
+enum ConsoleState_ {
+	ConsoleState_Closed,
+	ConsoleState_OpenSmall,
+	ConsoleState_OpenBig,
+	ConsoleState_Popout,
+	ConsoleState_Window
+}; typedef u32 ConsoleState;
+
+
 struct Console  {
-	std::map<std::string, Command*> commands;
 	
-	char inputBuf[256]{};
-	std::vector<pair<std::string, color>> buffer; //text, color
-	std::vector<std::string> history;
-	int historyPos = -1;
-	
-	u32 alert_count = 0;
-	std::string alert_message;
-	color alert_color = Color_Red;
-	bool show_alert = false;
-	
-	bool dispcon = false;
-	bool autoScroll = true;
-	bool scrollToBottom = false;
-	bool window = false;
-	
-	//imgui capture flags
-	bool IMGUI_KEY_CAPTURE = false;
-	//im diofferenciating between console and imgui so external things (like canvas)
-	//can set imgui key capture without console overriding it 
-	bool CONSOLE_KEY_CAPTURE = false;
-	bool IMGUI_MOUSE_CAPTURE = false;
+
 	
 	Console() {}
 	
 	void Init();
 	void Update();
-	void DrawConsole();
-	void PushConsole(std::string s);
-	void AddLog(std::string input);
+	void AddLog(string input);
+	void ChangeState(ConsoleState new_state);
 	void FlushBuffer();
-	int TextEditCallback(ImGuiInputTextCallbackData* data);
-	static int TextEditCallbackStub(ImGuiInputTextCallbackData* data);
-	
-	Command* GetCommand(std::string command);
-	std::string ExecCommand(std::string command);
-	std::string ExecCommand(std::string command, std::string args);
+
+
+	Command* GetCommand(string command);
+	string ExecCommand(string command);
+	string ExecCommand(string command, string args);
 	void AddCommands();
 	void AddAliases();
 	

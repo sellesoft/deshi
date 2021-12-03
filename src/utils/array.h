@@ -18,7 +18,7 @@ struct array {
 	T* iter  = nullptr;
 
 	Alloc allocator; //not sure if I have to make this an object
-	
+
 	array();
 	array(u32 _count);
 	array(std::initializer_list<T> l);

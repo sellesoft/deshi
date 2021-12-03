@@ -166,8 +166,7 @@ inline T* ring_array<T>::at(u32 position){
 	
 	T* result = 0;
 	if(position < count){
-		position = start + position;
-		if(position > capacity) position = position - capacity;
+		position = (start + position) % capacity;
 		result = &data[position];
 	}
 	return result;

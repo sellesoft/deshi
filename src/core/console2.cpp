@@ -315,9 +315,9 @@ namespace Console2{
 								//draw text
 								for(int i = str_start; i <= str_end; ++i){
 									ImGui::SetCursorPos(ImVec2(x, y));
-									ImGui::PushStyleColor(ImGuiCol_Text, ColorToVec4(dictionary[i].color));
+									//ImGui::PushStyleColor(ImGuiCol_Text, ColorToVec4(dictionary[i].color));
 									ImGui::TextEx(dictionary[i].start, dictionary[i].end, ImGuiTextFlags_NoWidthForLargeClippedText);
-									ImGui::PopStyleColor();
+									//ImGui::PopStyleColor();
 									
 									//!Incomplete
 									//handle text wrapping

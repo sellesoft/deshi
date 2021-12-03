@@ -77,7 +77,7 @@ namespace Logging{
 	
 	//TODO maybe flush every X seconds/frames instead of every update?
 	void Update(){
-		Assert(fflush(file) == 0, "logger failed to flush file");
+		Assert(!fflush(file), "logger failed to flush file");
 	}
 	
 	void Cleanup(){
