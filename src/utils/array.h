@@ -91,11 +91,11 @@ inline array<T, Alloc>::array(){ //TODO(delle) we should not allocate on default
 template<class T, class Alloc>
 inline array<T, Alloc>::array(u32 _count){
 	space = RoundUpTo(_count, 4);
-	count = 0;
+	count = _count;
 	data  = (T*)allocator.callocate(_count, sizeof(T));
 	first = data;
 	iter  = first;
-	last  = 0; //could break things but it makes add work 
+	last  = &data[count - 1]; 
 	max   = data+(space-1);
 }
 

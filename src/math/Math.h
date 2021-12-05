@@ -591,12 +591,12 @@ namespace Math {
 	
 	//return where two lines intersect on the x axis with slope and the y-intercept
 	static vec2 LineIntersect2(float slope1, float ycross1, float slope2, float ycross2){
-		matN lhs(2,2,{ slope1, ycross1, slope2, ycross2 });
-		matN rhs(2,1,{ 1, 1 });
-		matN det = lhs.Inverse() * rhs;
-		float x = 1 / det(1,0) * det(0,0);
-		float y = slope1 * x + ycross1;
-		return vec2(x, y);
+		//matN lhs(2,2,{ slope1, ycross1, slope2, ycross2 });
+		//matN rhs(2,1,{ 1, 1 });
+		//matN det = lhs.Inverse() * rhs;
+		//float x = 1 / det(1,0) * det(0,0);
+		//float y = slope1 * x + ycross1;
+		//return vec2(x, y);
 	}
 	
 	static vec3 LineMidpoint(vec3 start, vec3 end){

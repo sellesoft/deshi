@@ -6,6 +6,7 @@
 struct vec2;
 struct vec3;
 struct vec4;
+template<u32 n, u32 m>
 struct matN;
 struct mat3;
 struct mat4;
@@ -173,8 +174,8 @@ struct vec3 {
 	void operator*=(const mat3& rhs);
 	vec3 operator* (const mat4& rhs) const;
 	void operator*=(const mat4& rhs);
-	matN ToM1x3() const;
-	matN ToM1x4(float w) const;
+	//matN ToM1x3() const;
+	//matN ToM1x4(float w) const;
 	
 	//quaternion interactions
 	vec3 operator* (const quat& rhs) const;

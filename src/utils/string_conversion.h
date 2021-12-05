@@ -213,6 +213,43 @@ to_string(const mat4& x, bool trunc = true){
     return s;
 }
 
+template<u32 n, u32 m>
+global_ string
+to_string(const matN<n, m>& x, bool trunc = true) {
+    if (x.rows == 0 || x.cols == 0) {
+        return "|Zero dimension matrix|";
+    }
+
+    string str = to_string(x.rows) + "x" + to_string(x.cols) + " matN<n,m>:\n|";
+    if (x.rows == 1) {
+        for (int i = 0; i < x.cols - 1; ++i) {
+            char buffer[15];
+            snprintf(buffer, 15, "%+.6f", x.data[i]);
+            str += string(buffer) + ", ";
+        }
+        char buffer[15];
+        snprintf(buffer, 15, "%+.6f", x.data[x.elementCount - 1]);
+        str += string(buffer) + "|";
+        return str;
+    }
+
+    for (int i = 0; i < x.elementCount - 1; ++i) {
+        char buffer[15];
+        snprintf(buffer, 15, "%+.6f", x.data[i]);
+        str += string(buffer);
+        if ((i + 1) % x.cols != 0) {
+            str += ", ";
+        }
+        else {
+            str += "|\n|";
+        }
+    }
+    char buffer[15];
+    snprintf(buffer, 15, "%+.6f", x.data[x.elementCount - 1]);
+    str += string(buffer) + "|";
+    return str;
+}
+
 #define TOSTRING(...) ToString(__VA_ARGS__)
 template<class... T> global_ string 
 ToString(T... args){

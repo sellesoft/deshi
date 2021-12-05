@@ -1,5 +1,5 @@
 /* //// Notes ////
-Matrices can only hold floats
+Matrices can only hold f64s
 Matrices are in row-major format and all the functionality follows that format
 Non-matN vs matN interactions should be in Math.h (or a header file dedicated to those interactions)
 
@@ -26,12 +26,12 @@ eg: matN(vec3(1,2,3), 1); This will create a 1x4 matrix: |1.0, 2.0, 3.0, 1.0|
 //// Accessing matN Values ////
 You can access the values of a matrix using the () operator.
 Acessing matrix values starts at zero for both the row and column: 0...n-1 not 1...n
-eg: matrix(0,3); This will return the float on the first row and fourth column
-eg: matrix(1,1); This will return the float on the second row and second column
+eg: matrix(0,3); This will return the f64 on the first row and fourth column
+eg: matrix(1,1); This will return the f64 on the second row and second column
 
 Alternatively, you can access the elements directly by their index in a one-dimensional array.
 This avoids doing one multiplication and one addition but might be confusing to readers of your code.
-eg: matrix.data[3]; This will return the float on the first row and fourth column
+eg: matrix.data[3]; This will return the f64 on the first row and fourth column
 eg: matN(4,4).data[10]; This will return the 0 on the third row and third column
 
 //// Visualizing Matrices ////                                                                    2x2 matN:
@@ -76,108 +76,128 @@ The transformation matrix will follow the format to the right:                  
 #define DESHI_matN_H
 
 #include "vector.h"
+#include "../utils/array.h"
 
 #include <vector>
 #include <string>
 
+template<u32 n, u32 m>
 struct matN {
-	u32 rows = 0;
-	u32 cols = 0;
-	u32 elementCount = 0;
-	std::vector<float> data;
+	u32 rows = n;
+	u32 cols = m;
+	u32 elementCount = n*m;
+	f64 data[n * m];
 	
 	matN() {}
-	matN(u32 inRows, u32 inCols);
-	matN(u32 inRows, u32 inCols, std::vector<float> list);
-	matN(const matN& m);
+	matN(array<f64> list);
 	
-	float&  operator () (u32 row, u32 col);
-	float   operator () (u32 row, u32 col) const;
-	void    operator =    (const matN& rhs);
-	matN operator *  (const float& rhs) const;
-	void    operator *= (const float& rhs);
-	matN operator /  (const float& rhs) const;
-	void    operator /= (const float& rhs);
-	matN operator +  (const matN& rhs) const;
-	void    operator += (const matN& rhs);
-	matN operator -  (const matN& rhs) const;
-	void    operator -= (const matN& rhs);
-	matN operator *  (const matN& rhs) const;
-	void    operator *= (const matN& rhs);
-	matN operator ^  (const matN& rhs) const;
-	void    operator ^= (const matN& rhs);
-	matN operator %  (const matN& rhs) const; 
-	void    operator %= (const matN& rhs);
-	bool    operator == (const matN& rhs) const;
-	bool    operator != (const matN& rhs) const;
-	friend matN operator * (const float& lhs, const matN& rhs) { return rhs * lhs; }
+	f64&    operator () (u32 row, u32 col);
+	f64     operator () (u32 row, u32 col) const;
+	void      operator =  (const matN<n,m>& rhs);
+	matN<n,m> operator *  (const f64& rhs) const;
+	void      operator *= (const f64& rhs);
+	matN<n,m> operator /  (const f64& rhs) const;
+	void      operator /= (const f64& rhs);
+	matN<n,m> operator +  (const matN<n,m>& rhs) const;
+	void      operator += (const matN<n,m>& rhs);
+	matN<n,m> operator -  (const matN<n,m>& rhs) const;
+	void      operator -= (const matN<n,m>& rhs);
+	matN<n,m> operator *  (const matN<n,m>& rhs) const;
+	void      operator *= (const matN<n,m>& rhs);
+	matN<n,m> operator ^  (const matN<n,m>& rhs) const;
+	void      operator ^= (const matN<n,m>& rhs);
+	matN<n,m> operator %  (const matN<n,m>& rhs) const; 
+	void      operator %= (const matN<n,m>& rhs);
+	bool      operator == (const matN<n,m>& rhs) const;
+	bool      operator != (const matN<n,m>& rhs) const;
+	friend matN<n,m> operator * (const f64& lhs, const matN<n,m>& rhs) { return rhs * lhs; }
 	
+	//special friend operator* overload so we can have compile time matrix mult checking
+	template<u32 N>
+	friend matN<n, N> operator * (matN<n, m>& lhs, matN<m, N>& rhs) {
+		matN<n,N> newMatrix;
+		for (int i = 0; i < lhs.rows; ++i) { //i=m
+			for (int j = 0; j < rhs.cols; ++j) { //j=p
+				for (int k = 0; k < rhs.rows; ++k) { //k=n
+					newMatrix.data[rhs.cols * i + j] += lhs.data[lhs.cols * i + k] * rhs.data[rhs.cols * k + j];
+				}
+			}
+		}
+		return newMatrix;
+	}
+
+	friend matN operator * (matN<0,0>& lhs, matN<n,m>& rhs) {
+		Assert(lhs.cols == rhs.rows, "matN multiplication requires the columns of the left matrix to equal the rows of the right matrix");
+		matN newMatrix(lhs.rows, rhs.cols);
+		for (int i = 0; i < lhs.rows; ++i) { //i=m
+			for (int j = 0; j < rhs.cols; ++j) { //j=p
+				for (int k = 0; k < rhs.rows; ++k) { //k=n
+					newMatrix.data[rhs.cols * i + j] += lhs.data[lhs.cols * i + k] * rhs.data[rhs.cols * k + j];
+				}
+			}
+		}
+		return newMatrix;
+	}
+
+
 	const std::string str() const;
 	const std::string str2f() const;
-	matN Transpose() const;
-	matN Submatrix(std::vector<u32> inRows, std::vector<u32> inCols) const;
-	float   Minor(int row, int col) const;
-	float   Cofactor(int row, int col) const;
-	matN Adjoint() const;
-	float   Determinant() const;
-	matN Inverse() const;
+	matN<m,n> Transpose() const;
+	//TODO reimplement this with templates
+	//matN<n,m> Submatrix(array<u32> inRows, array<u32> inCols) const;
+	f64     Minor(int row, int col) const;
+	f64     Cofactor(int row, int col) const;
+	matN<n,m> Adjoint() const;
+	f64     Determinant() const;
+	matN<n,m> Inverse() const;
 	
-	static matN Identity(u32 rows, u32 cols);
-	static matN M3x3To4x4(const matN& m);
-	static matN RotationMatrix(vec3 rotation, bool _4x4 = true);
-	static matN RotationMatrixX(float degrees, bool _4x4 = true);
-	static matN RotationMatrixY(float degrees, bool _4x4 = true);
-	static matN RotationMatrixZ(float degrees, bool _4x4 = true);
-	static matN TranslationMatrix(vec3 translation);
-	static matN ScaleMatrix(vec3 scale, bool _4x4 = true);
-	static matN TransformationMatrix(vec3 translation, vec3 rotation, vec3 scale);
+	static matN<n,m> Identity();
+	static matN<4,4> M3x3To4x4(const matN<3,3>& m);
+	static matN<4,4> RotationMatrix(vec3 rotation);
+	static matN<4,4> RotationMatrixX(f64 degrees);
+	static matN<4,4> RotationMatrixY(f64 degrees);
+	static matN<4,4> RotationMatrixZ(f64 degrees);
+	static matN<4,4> TranslationMatrix(vec3 translation);
+	static matN<4,4> ScaleMatrix(vec3 scale);
+	static matN<4,4> TransformationMatrix(vec3 translation, vec3 rotation, vec3 scale);
 	
-	//Non-matN vs matN interactions
+	//diag_offset > 0 is above the main diagonal
+	static matN<n,m> Diag(f64 val, s32 diag_offset = 0);
+
+	//Non-matN<n,m> vs matN<n,m> interactions
 	matN(vec3 v);
-	matN(vec3 v, float w);
+	matN(vec3 v, f64 w);
 	
 };
 
 //// Constructors ////
 
-inline matN::matN(u32 inRows, u32 inCols) : rows(inRows), cols(inCols) {
-	Assert(inRows != 0 && inCols != 0, "matN constructor was given zero size");
-	this->elementCount = inRows * inCols;
-	this->data = std::vector<float>(elementCount);
+template<u32 n, u32 m>
+matN<n, m>::matN(array<f64> list) {
+	Assert(n && m, "can't instantiate matN with no template arguments in list constructor");
+	Assert(list.count == elementCount, "given list for matN's size does not equal elementCount");
+	memcpy(data, list.data, elementCount * sizeof(f64));
 }
-
-inline matN::matN(u32 inRows, u32 inCols, std::vector<float> list) : rows(inRows), cols(inCols) {
-	Assert(inRows != 0 && inCols != 0, "matN constructor was given zero size");
-	this->elementCount = inRows * inCols;
-	u32 inCount = list.size();
-	Assert(inCount <= elementCount, "matN constructor was given too many elements for given dimensions");
-	this->data = std::vector<float>(elementCount);
-	for (int i = 0; i < list.size(); ++i) {
-		this->data[i] = list[i];
-	}
-}
-
-inline matN::matN(const matN& m) : rows(m.rows), cols(m.cols), elementCount(m.elementCount) {
-	this->data = m.data;
-}
-
 
 
 //// Operators ////
 
 //element accessor: matrix(row,col)
-inline float& matN::operator () (u32 row, u32 col) {
+template<u32 n, u32 m> inline f64& matN<n,m>::
+operator () (u32 row, u32 col) {
 	Assert(row < rows && col < cols, "matN subscript out of bounds");
-	return data[(size_t)cols*row + col];
+	return data[(size_t)cols * row + col];
 }
 
-inline float  matN::operator () (u32 row, u32 col) const {
+template<u32 n, u32 m> inline f64 matN<n,m>::
+operator () (u32 row, u32 col) const {
 	Assert(row < rows && col < cols, "matN subscript out of bounds");
 	return data[(size_t)cols * row + col];
 }
 
 //deletes current data, copies properties from rhs, creates a new copy of the data from rhs
-inline void       matN::operator =  (const matN& rhs) {
+template<u32 n, u32 m> inline void matN<n,m>::
+operator = (const matN<n,m>& rhs) {
 	if (&this->data != &rhs.data) {
 		this->rows = rhs.rows;
 		this->cols = rhs.cols;
@@ -187,8 +207,9 @@ inline void       matN::operator =  (const matN& rhs) {
 }
 
 //scalar multiplication
-inline matN  matN::operator *  (const float& rhs) const {
-	matN newMatrix(*this);
+template<u32 n, u32 m> inline matN<n,m> matN<n,m>::
+operator *  (const f64& rhs) const {
+	matN<n,m> newMatrix(*this);
 	for (int i = 0; i < newMatrix.elementCount; ++i) {
 		newMatrix.data[i] *= rhs;
 	}
@@ -196,16 +217,18 @@ inline matN  matN::operator *  (const float& rhs) const {
 }
 
 //scalar multiplication and assignment
-inline void    matN::operator *= (const float& rhs) {
+template<u32 n, u32 m> inline void matN<n,m>::
+operator *= (const f64& rhs) {
 	for (int i = 0; i < elementCount; ++i) {
 		this->data[i] *= rhs;
 	}
 }
 
 //scalar division
-inline matN  matN::operator /  (const float& rhs) const {
+template<u32 n, u32 m> inline matN<n,m> matN<n,m>::
+operator /  (const f64& rhs) const {
 	Assert(rhs != 0, "matN elements cant be divided by zero");
-	matN newMatrix(*this);
+	matN<n,m> newMatrix(*this);
 	for (int i = 0; i < newMatrix.elementCount; ++i) {
 		newMatrix.data[i] /= rhs;
 	}
@@ -213,7 +236,8 @@ inline matN  matN::operator /  (const float& rhs) const {
 }
 
 //scalar division and assignment
-inline void    matN::operator /= (const float& rhs){
+template<u32 n, u32 m> inline void matN<n,m>::
+operator /= (const f64& rhs) {
 	Assert(rhs != 0, "matN elements cant be divided by zero");
 	for (int i = 0; i < elementCount; ++i) {
 		this->data[i] /= rhs;
@@ -221,9 +245,10 @@ inline void    matN::operator /= (const float& rhs){
 }
 
 //element-wise addition
-inline matN  matN::operator +  (const matN& rhs) const{
+template<u32 n, u32 m> inline matN<n,m> matN<n,m>::
+operator +  (const matN<n,m>& rhs) const {
 	Assert(rows == rhs.rows && cols == rhs.cols, "matN addition requires the same dimensions");
-	matN newMatrix(*this);
+	matN<n,m> newMatrix(*this);
 	for (int i = 0; i < newMatrix.elementCount; ++i) {
 		newMatrix.data[i] += rhs.data[i];
 	}
@@ -231,7 +256,8 @@ inline matN  matN::operator +  (const matN& rhs) const{
 }
 
 //element-wise addition and assignment
-inline void    matN::operator += (const matN& rhs){
+template<u32 n, u32 m> inline void matN<n,m>::
+operator += (const matN<n,m>& rhs) {
 	Assert(rows == rhs.rows && cols == rhs.cols, "matN addition requires the same dimensions");
 	for (int i = 0; i < elementCount; ++i) {
 		this->data[i] += rhs.data[i];
@@ -239,9 +265,10 @@ inline void    matN::operator += (const matN& rhs){
 }
 
 //element-wise substraction
-inline matN  matN::operator -  (const matN& rhs) const{
+template<u32 n, u32 m> inline matN<n,m> matN<n,m>::
+operator -  (const matN<n,m>& rhs) const {
 	Assert(rows == rhs.rows && cols == rhs.cols, "matN subtraction requires the same dimensions");
-	matN newMatrix(*this);
+	matN<n,m> newMatrix(*this);
 	for (int i = 0; i < newMatrix.elementCount; ++i) {
 		newMatrix.data[i] -= rhs.data[i];
 	}
@@ -249,7 +276,8 @@ inline matN  matN::operator -  (const matN& rhs) const{
 }
 
 //element-wise substraction and assignment
-inline void    matN::operator -= (const matN& rhs){
+template<u32 n, u32 m> inline void    matN<n,m>::
+operator -= (const matN<n,m>& rhs) {
 	Assert(rows == rhs.rows && cols == rhs.cols, "matN subtraction requires the same dimensions");
 	for (int i = 0; i < elementCount; ++i) {
 		this->data[i] -= rhs.data[i];
@@ -257,7 +285,9 @@ inline void    matN::operator -= (const matN& rhs){
 }
 
 //TODO(delle,Op) look into optimizing this by transposing to remove a loop, see Unreal implementation
-inline matN  matN::operator *  (const matN& rhs) const{
+template<u32 n, u32 m> 
+inline matN<n,m> matN<n,m>::
+operator * (const matN<n, m>& rhs) const {
 	Assert(cols == rhs.rows, "matN multiplication requires the columns of the left matrix to equal the rows of the right matrix");
 	matN newMatrix(rows, rhs.cols);
 	for (int i = 0; i < this->rows; ++i) { //i=m
@@ -270,9 +300,10 @@ inline matN  matN::operator *  (const matN& rhs) const{
 	return newMatrix;
 }
 
-inline void    matN::operator *= (const matN& rhs){
+template<u32 n, u32 m> inline void    matN<n,m>::
+operator *= (const matN<n,m>& rhs) {
 	Assert(cols == rhs.rows, "matN multiplication requires the columns of the left matrix to equal the rows of the right matrix");
-	matN newMatrix(rows, rhs.cols);
+	matN<n,m> newMatrix(rows, rhs.cols);
 	for (int i = 0; i < this->rows; ++i) { //i=m
 		for (int j = 0; j < rhs.cols; ++j) { //j=p
 			for (int k = 0; k < rhs.rows; ++k) { //k=n
@@ -284,17 +315,19 @@ inline void    matN::operator *= (const matN& rhs){
 }
 
 //element-wise multiplication
-inline matN  matN::operator ^  (const matN& rhs) const{
+template<u32 n, u32 m> inline matN<n,m>  matN<n,m>::
+operator ^ (const matN<n,m>& rhs) const {
 	Assert(rows == rhs.rows && cols == rhs.cols, "matN element-wise multiplication requires the same dimensions");
-	matN newMatrix(*this);
+	matN<n,m> newMatrix(*this);
 	for (int i = 0; i < newMatrix.elementCount; ++i) {
 		newMatrix.data[i] *= rhs.data[i];
 	}
 	return newMatrix;
-} 
+}
 
 //element-wise multiplication and assignment
-inline void    matN::operator ^= (const matN& rhs){
+template<u32 n, u32 m> inline void    matN<n,m>::
+operator ^= (const matN<n,m>& rhs) {
 	Assert(rows == rhs.rows && cols == rhs.cols, "matN element-wise multiplication requires the same dimensions");
 	for (int i = 0; i < elementCount; ++i) {
 		this->data[i] *= rhs.data[i];
@@ -302,18 +335,20 @@ inline void    matN::operator ^= (const matN& rhs){
 }
 
 //element-wise division
-inline matN  matN::operator %  (const matN& rhs) const{
+template<u32 n, u32 m> inline matN<n,m>  matN<n,m>::
+operator % (const matN<n,m>& rhs) const {
 	Assert(rows == rhs.rows && cols == rhs.cols, "matN element-wise division requires the same dimensions");
-	matN newMatrix(*this);
+	matN<n,m> newMatrix(*this);
 	for (int i = 0; i < newMatrix.elementCount; ++i) {
 		Assert(rhs.data[i] != 0, "matN element-wise division doesnt allow zeros in the right matrix");
 		newMatrix.data[i] /= rhs.data[i];
 	}
 	return newMatrix;
-} 
+}
 
 //element-wise division and assignment
-inline void    matN::operator %= (const matN& rhs){
+template<u32 n, u32 m> inline void    matN<n,m>::
+operator %= (const matN<n,m>& rhs) {
 	Assert(rows == rhs.rows && cols == rhs.cols, "matN element-wise division requires the same dimensions");
 	for (int i = 0; i < elementCount; ++i) {
 		Assert(rhs.data[i] != 0, "matN element-wise division doesnt allow zeros in the right matrix");
@@ -321,7 +356,8 @@ inline void    matN::operator %= (const matN& rhs){
 	}
 }
 
-inline bool       matN::operator    == (const matN& rhs) const { 
+template<u32 n, u32 m> inline bool matN<n,m>::
+operator == (const matN<n,m>& rhs) const {
 	if (this->rows != rhs.rows || this->cols != rhs.cols || this->elementCount != rhs.elementCount) {
 		return false;
 	}
@@ -333,55 +369,28 @@ inline bool       matN::operator    == (const matN& rhs) const {
 	return true;
 }
 
-inline bool    matN::operator    != (const matN& rhs) const { 
-	return !(*this == rhs); 
+template<u32 n, u32 m> inline bool    matN<n,m>::
+operator != (const matN<n,m>& rhs) const {
+	return !(*this == rhs);
 }
 
 
 
 //// Functions ////
 
-//TODO(delle,ClMa) clean up matN.str() and matN.str2F()
-inline const std::string matN::str() const {
-	if (rows == 0 || cols == 0) {
-		return "|Zero dimension matrix|";
-	}
+//TODO(delle,ClMa) clean up matN<n,m>.str() and matN<n,m>.str2F(
+template<u32 n, u32 m> inline const std::string matN<n,m>::
+str() const {
 	
-	std::string str = std::to_string(rows) + "x" + std::to_string(cols) + " matN:\n|";
-	if (rows == 1) {
-		for (int i = 0; i < cols-1; ++i) {
-			char buffer[15];
-			std::snprintf(buffer, 15, "%+.6f", data[i]);
-			str += std::string(buffer) + ", ";
-		}
-		char buffer[15];
-		std::snprintf(buffer, 15, "%+.6f", data[elementCount - 1]);
-		str += std::string(buffer) + "|";
-		return str;
-	}
-	
-	for (int i = 0; i < elementCount-1; ++i) {
-		char buffer[15];
-		std::snprintf(buffer, 15, "%+.6f", data[i]);
-		str += std::string(buffer);
-		if ((i+1) % cols != 0) {
-			str += ", ";
-		} else {
-			str += "|\n|";
-		}
-	}
-	char buffer[15];
-	std::snprintf(buffer, 15, "%+.6f", data[elementCount - 1]);
-	str += std::string(buffer) + "|";
-	return str;
 };
 
-inline const std::string matN::str2f() const {
+template<u32 n, u32 m> inline const std::string matN<n,m>::
+str2f() const {
 	if (rows == 0 || cols == 0) {
 		return "|Zero dimension matrix|";
 	}
-	
-	std::string str = std::to_string(rows) + "x" + std::to_string(cols) + " matN:\n|";
+
+	std::string str = std::to_string(rows) + "x" + std::to_string(cols) + " matN<n,m>:\n|";
 	if (rows == 1) {
 		for (int i = 0; i < cols - 1; ++i) {
 			char buffer[15];
@@ -393,14 +402,15 @@ inline const std::string matN::str2f() const {
 		str += std::string(buffer) + "|";
 		return str;
 	}
-	
+
 	for (int i = 0; i < elementCount - 1; ++i) {
 		char buffer[15];
 		std::snprintf(buffer, 15, "%+.2f", data[i]);
 		str += std::string(buffer);
 		if ((i + 1) % cols != 0) {
 			str += ", ";
-		} else {
+		}
+		else {
 			str += "|\n|";
 		}
 	}
@@ -411,32 +421,35 @@ inline const std::string matN::str2f() const {
 };
 
 //converts the rows into columns and vice-versa
-inline matN matN::Transpose() const{
-	matN newMatrix(cols, rows);
+template<u32 n, u32 m> inline matN<m,n> matN<n,m>::
+Transpose() const {
+	matN<m,n> newMatrix;
 	for (int i = 0; i < elementCount; ++i) {
-		newMatrix.data[i] = data[(size_t)cols * (i%rows) + (i/rows)];
+		newMatrix.data[i] = data[(size_t)cols * (i % rows) + (i / rows)];
 	}
 	return newMatrix;
 }
 
 //returns a matrix only with the specified rows and cols
 //NOTE 0...n-1 not 1...n
-inline matN matN::Submatrix(std::vector<u32> inRows, std::vector<u32> inCols) const{
-	Assert(inRows.size() != 0 && inCols.size() > 0, "matN submatrix cant be performed with zero dimensions");
-	matN newMatrix(inRows.size(), inCols.size());
-	for (int i = 0; i < inRows.size(); ++i) {
-		for (int j = 0; j < inCols.size(); ++j) {
-			newMatrix.data[(size_t)newMatrix.cols * i + j] = data[(size_t)cols * inRows[i] + inCols[j]];
-		}
-	}
-	return newMatrix;
-}
+//template<u32 n, u32 m> inline matN<n,m> //matN<n,m>::
+//Submatrix(std::vector<u32> inRows, std::vector<u32> inCols) const {
+//	Assert(inRows.size() != 0 && inCols.size() > 0, "matN submatrix cant be performed with zero dimensions");
+//	matN<n,m> newMatrix(inRows.size(), inCols.size());
+//	for (int i = 0; i < inRows.size(); ++i) {
+//		for (int j = 0; j < inCols.size(); ++j) {
+//			newMatrix.data[(size_t)newMatrix.cols * i + j] = data[(size_t)cols * inRows[i] + inCols[j]];
+//		}
+//	}
+//	return newMatrix;
+//}
 
 //returns the determinant of this matrix without the specified row and column
-inline float matN::Minor(int row, int col) const {
+template<u32 n, u32 m> inline f64 matN<n,m>::
+Minor(int row, int col) const {
 	Assert(rows == cols, "matN minor can only be take of a square matrix");
 	Assert(elementCount > 1, "matN minor cant be take of one-dimensional matrix");
-	matN newMatrix(rows - 1, cols - 1);
+	matN<n,m> newMatrix(rows - 1, cols - 1);
 	int index = 0;
 	for (int i = 0; i < rows; ++i) {
 		if (i == row) continue;
@@ -449,16 +462,19 @@ inline float matN::Minor(int row, int col) const {
 }
 
 //returns the cofactor (minor with adjusted sign based on location in matrix) at given row and column
-inline float matN::Cofactor(int row, int col) const{
+template<u32 n, u32 m> inline f64 matN<n, m>::
+Cofactor(int row, int col) const {
 	if ((row + col) % 2) {
 		return -Minor(row, col);
-	} else {
+	}
+	else {
 		return Minor(row, col);
 	}
 }
 
 //returns the determinant of the matrix
-inline float matN::Determinant() const{
+template<u32 n, u32 m> inline f64 matN<n,m>::
+Determinant() const {
 	Assert(rows == cols, "matN determinant can only be found for square matrices");
 	switch (rows) {
 		case(1): { //a
@@ -469,31 +485,31 @@ inline float matN::Determinant() const{
 		}
 		case(3): { //aei + bfg + cdh - ceg - bdi - afh
 			return  (data[0] * data[4] * data[8]) +        //aei
-			(data[1] * data[5] * data[6]) +        //bfg
-			(data[2] * data[3] * data[7]) -        //cdh
-			(data[2] * data[4] * data[6]) -        //ceg
-			(data[1] * data[3] * data[8]) -        //bdi
-			(data[0] * data[5] * data[7]);        //afh
+				(data[1] * data[5] * data[6]) +        //bfg
+				(data[2] * data[3] * data[7]) -        //cdh
+				(data[2] * data[4] * data[6]) -        //ceg
+				(data[1] * data[3] * data[8]) -        //bdi
+				(data[0] * data[5] * data[7]);        //afh
 		}
 		case(4): { //not writing this out in letters
-			return  data[ 0] * (data[ 5] * (data[10] * data[15] - data[11] * data[14]) -
-								data[ 9] * (data[ 6] * data[15] - data[ 7] * data[14]) + 
-								data[13] * (data[ 6] * data[11] - data[ 7] * data[10]))
+			return  data[0] * (data[5] * (data[10] * data[15] - data[11] * data[14]) -
+				data[9] * (data[6] * data[15] - data[7] * data[14]) +
+				data[13] * (data[6] * data[11] - data[7] * data[10]))
 				-
-				data[ 4] * (data[ 1] * (data[10] * data[15] - data[11] * data[14]) -
-							data[ 9] * (data[ 2] * data[15] - data[ 3] * data[14]) +
-							data[13] * (data[ 2] * data[11] - data[ 3] * data[10]))
+				data[4] * (data[1] * (data[10] * data[15] - data[11] * data[14]) -
+					data[9] * (data[2] * data[15] - data[3] * data[14]) +
+					data[13] * (data[2] * data[11] - data[3] * data[10]))
 				+
-				data[ 8] * (data[ 1] * (data[ 6] * data[15] - data[ 7] * data[14]) -
-							data[ 5] * (data[ 2] * data[15] - data[ 3] * data[14]) +
-							data[13] * (data[ 2] * data[ 7] - data[ 3] * data[ 6]))
+				data[8] * (data[1] * (data[6] * data[15] - data[7] * data[14]) -
+					data[5] * (data[2] * data[15] - data[3] * data[14]) +
+					data[13] * (data[2] * data[7] - data[3] * data[6]))
 				-
-				data[12] * (data[ 1] * (data[ 6] * data[11] - data[ 7] * data[10]) -
-							data[ 5] * (data[ 2] * data[11] - data[ 3] * data[10]) +
-							data[ 9] * (data[ 2] * data[ 7] - data[ 3] * data[ 6]));
+				data[12] * (data[1] * (data[6] * data[11] - data[7] * data[10]) -
+					data[5] * (data[2] * data[11] - data[3] * data[10]) +
+					data[9] * (data[2] * data[7] - data[3] * data[6]));
 		}
 		default: {
-			float result = 0;
+			f64 result = 0;
 			for (int i = 0; i < cols; ++i) {
 				result += data[i] * this->Cofactor(0, i);
 			}
@@ -503,9 +519,10 @@ inline float matN::Determinant() const{
 }
 
 //returns the transposed matrix of cofactors of this matrix
-inline matN matN::Adjoint() const {
+template<u32 n, u32 m> inline matN<n,m> matN<n,m>::
+Adjoint() const {
 	Assert(rows == cols, "matN adjoint can only be found for square matrices");
-	matN newMatrix(rows, cols);
+	matN<n,m> newMatrix(rows, cols);
 	int index = 0;
 	for (int i = 0; i < rows; ++i) {
 		for (int j = 0; j < cols; ++j) {
@@ -516,24 +533,27 @@ inline matN matN::Adjoint() const {
 }
 
 //returns the adjoint divided by the determinant
-inline matN matN::Inverse() const {
-	float determinant = this->Determinant();
+template<u32 n, u32 m> inline matN<n,m> matN<n,m>::
+Inverse() const {
+	f64 determinant = this->Determinant();
 	Assert(determinant, "matN inverse does not exist if determinant is zero");
 	if (elementCount > 1) {
 		return this->Adjoint() / determinant;
 	}
-	return matN(1, 1, {1.f / determinant});
+	return matN<n,m>({ 1.f / determinant });
 }
 
 //returns an identity matrix with the given dimensions
-inline matN matN::Identity(u32 rows, u32 cols) {
-	matN newMatrix(rows, cols);
+template<u32 n, u32 m> inline matN<n,m> matN<n,m>::
+Identity() {
+	matN<n,m> newMatrix;
 	int index = 0;
-	for (int i = 0; i < rows; ++i) {
-		for (int j = 0; j < cols; ++j) {
+	for (int i = 0; i < n; ++i) {
+		for (int j = 0; j < m; ++j) {
 			if (i == j) {
 				newMatrix.data[index++] = 1;
-			} else {
+			}
+			else {
 				newMatrix.data[index++] = 0;
 			}
 		}
@@ -542,138 +562,148 @@ inline matN matN::Identity(u32 rows, u32 cols) {
 }
 
 //returns a 4x4 matrix with the last element 1 from the provided 3x3 matrix
-inline matN matN::M3x3To4x4(const matN& m) {
-	Assert(m.rows == 3 && m.cols == 3, "Cant convert 3x3 matrix to 4x4 if the matrix isnt 3x3");
-	return matN(4, 4,{m(0,0), m(0,1), m(0,2), 0,
-					m(1,0), m(1,1), m(1,2), 0,
-					m(2,0), m(2,1), m(2,2), 0,
-					0,      0,      0, 1});
+template<u32 n, u32 m> inline matN<4,4> matN<n,m>::
+M3x3To4x4(const matN<3,3>& ma) {
+	Assert(ma.rows == 3 && m.acols == 3, "Cant convert 3x3 matrix to 4x4 if the matrix isnt 3x3");
+	return matN<4,4>({ma(0,0), ma(0,1), ma(0,2), 0,
+					  ma(1,0), ma(1,1), ma(1,2), 0,
+					  ma(2,0), ma(2,1), ma(2,2), 0,
+					  0,      0,      0,         1 });
 }
 
 //returns a 4x4 or 3x3 rotation transformation matrix depending on boolean argument
 //the input rotation is in degrees
-inline matN matN::RotationMatrix(vec3 rotation, bool _4x4) {
+template<u32 n, u32 m> inline matN<4,4> matN<n,m>::
+RotationMatrix(vec3 rotation) {
 	rotation = RADIANS(rotation);
-	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
-	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
-	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
-	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
-	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
-	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
-	if (_4x4) {
-		return matN(4, 4, {r00, r01, r02, 0,
-						r10, r11, r12, 0,
-						r20, r21, r22, 0,
-						0,   0,   0,   1});
-	} else {
-		return matN(3, 3, {r00, r01, r02,
-						r10, r11, r12,
-						r20, r21, r22});
-	}
+	f64 cX = cosf(rotation.x); f64 sX = sinf(rotation.x);
+	f64 cY = cosf(rotation.y); f64 sY = sinf(rotation.y);
+	f64 cZ = cosf(rotation.z); f64 sZ = sinf(rotation.z);
+	f64 r00 = cZ * cY;            f64 r01 = cY * sZ;            f64 r02 = -sY;
+	f64 r10 = cZ * sX * sY - cX * sZ; f64 r11 = cZ * cX + sX * sY * sZ; f64 r12 = sX * cY;
+	f64 r20 = cZ * cX * sY + sX * sZ; f64 r21 = cX * sY * sZ - cZ * sX; f64 r22 = cX * cY;
+	
+	return matN<4,4>({ r00, r01, r02, 0,
+					   r10, r11, r12, 0,
+					   r20, r21, r22, 0,
+					   0,   0,   0,   1 });
+	
+	
 }
 
 //returns a 4x4 or 3x3 rotation transformation matrix depending on boolean argument
 //the input rotation is in degrees
-inline matN matN::RotationMatrixX(float degrees, bool _4x4) {
-	float r = degrees * (3.14159265359f / 180.f);
-	float c = cosf(r);  float s = sinf(r);
-	matN newMatrix(3, 3, {1,  0, 0,
-					   0,  c, s,
-					   0, -s, c});
-	if (_4x4) {
-		return matN::M3x3To4x4(newMatrix);
-	} else {
-		return newMatrix;
-	}
+template<u32 n, u32 m> inline matN<4,4> matN<n,m>::
+RotationMatrixX(f64 degrees) {
+	f64 r = degrees * (3.14159265359f / 180.f);
+	f64 c = cosf(r);  f64 s = sinf(r);
+	matN<4,4> newMatrix({ 1,  0, 0,	0,
+					      0,  c, s,	0,
+					      0, -s, c, 0,
+						  0,  0, 0, 1});
 }
 
 //returns a 4x4 or 3x3 rotation transformation matrix depending on boolean argument
 //the input rotation is in degrees
-inline matN matN::RotationMatrixY(float degrees, bool _4x4) {
-	float r = degrees * (3.14159265359f / 180.f);
-	float c = cosf(r); float s = sinf(r);
-	matN newMatrix(3, 3, {c, 0, -s,
-					   0, 1,  0,
-					   s, 0,  c});
-	if (_4x4) {
-		return matN::M3x3To4x4(newMatrix);
-	} else {
-		return newMatrix;
-	}
+template<u32 n, u32 m> inline matN<4,4> matN<n,m>::
+RotationMatrixY(f64 degrees) {
+	f64 r = degrees * (3.14159265359f / 180.f);
+	f64 c = cosf(r); f64 s = sinf(r);
+	matN<4,4> newMatrix({ c, 0, -s, 0,
+					      0, 1,  0, 0,
+					      s, 0,  c, 0,
+						  0, 0,  0, 1});
 }
 
 //returns a 4x4 or 3x3 rotation transformation matrix depending on boolean argument
 //the input rotation is in degrees
-inline matN matN::RotationMatrixZ(float degrees, bool _4x4) {
-	float r = degrees * (3.14159265359f / 180.f);
-	float c = cosf(r); float s = sinf(r);
-	matN newMatrix(3, 3, { c, s, 0,
-					   -s, c, 0,
-					   0, 0, 1});
-	if (_4x4) {
-		return matN::M3x3To4x4(newMatrix);
-	} else {
-		return newMatrix;
-	}
+template<u32 n, u32 m> inline matN<4,4> matN<n,m>::
+RotationMatrixZ(f64 degrees) {
+	f64 r = degrees * (3.14159265359f / 180.f);
+	f64 c = cosf(r); f64 s = sinf(r);
+	matN<4,4> newMatrix({ c, s, 0, 0,
+					     -s, c, 0, 0,
+					      0, 0, 1, 0,
+						  0, 0, 0, 1});
 }
 
 //returns a 4x4 translation transformation matrix
-inline matN matN::TranslationMatrix(vec3 translation) {
-	matN newMatrix = Identity(4,4);
-	newMatrix(0,3) = translation.x;
-	newMatrix(1,3) = translation.y;
-	newMatrix(2,3) = translation.z;
+template<u32 n, u32 m> inline matN<4,4> matN<n,m>::
+TranslationMatrix(vec3 translation) {
+	matN<4,4> newMatrix = Identity();
+	newMatrix(0, 3) = translation.x;
+	newMatrix(1, 3) = translation.y;
+	newMatrix(2, 3) = translation.z;
 	return newMatrix;
 }
 
-inline matN matN::ScaleMatrix(vec3 scale, bool _4x4) {
-	matN newMatrix = Identity(3,3);
-	newMatrix(0,0) = scale.x;
-	newMatrix(1,1) = scale.y;
-	newMatrix(2,2) = scale.z;
-	if(_4x4) {
-		return matN::M3x3To4x4(newMatrix);
-	} else {
-		return newMatrix;
-	}
+template<u32 n, u32 m> inline matN<4,4> matN<n,m>::
+ScaleMatrix(vec3 scale) {
+	matN<4,4> newMatrix = Identity();
+	newMatrix(0, 0) = scale.x;
+	newMatrix(1, 1) = scale.y;
+	newMatrix(2, 2) = scale.z;
 }
 
-inline matN matN::TransformationMatrix(vec3 tr, vec3 rot, vec3 scale) {
+template<u32 n, u32 m> inline matN<4,4> matN<n,m>::
+TransformationMatrix(vec3 tr, vec3 rot, vec3 scale) {
 	rot = RADIANS(rot);
-	float cX = cosf(rot.x); float sX = sinf(rot.x);
-	float cY = cosf(rot.y); float sY = sinf(rot.y);
-	float cZ = cosf(rot.z); float sZ = sinf(rot.z);
-	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
-	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
-	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
-	return matN(4, 4, {scale.x*r00, scale.x*r01, scale.x*r02, 0,
-					scale.y*r10, scale.y*r11, scale.y*r12, 0,
-					scale.z*r20, scale.z*r21, scale.z*r22, 0,
-					tr.x,        tr.y,        tr.z, 1});
+	f64 cX = cosf(rot.x); f64 sX = sinf(rot.x);
+	f64 cY = cosf(rot.y); f64 sY = sinf(rot.y);
+	f64 cZ = cosf(rot.z); f64 sZ = sinf(rot.z);
+	f64 r00 = cZ * cY;            f64 r01 = cY * sZ;            f64 r02 = -sY;
+	f64 r10 = cZ * sX * sY - cX * sZ; f64 r11 = cZ * cX + sX * sY * sZ; f64 r12 = sX * cY;
+	f64 r20 = cZ * cX * sY + sX * sZ; f64 r21 = cX * sY * sZ - cZ * sX; f64 r22 = cX * cY;
+	return matN<4,4>({ scale.x * r00, scale.x * r01, scale.x * r02, 0,
+					   scale.y * r10, scale.y * r11, scale.y * r12, 0,
+					   scale.z * r20, scale.z * r21, scale.z * r22, 0,
+					   tr.x,          tr.y,          tr.z,          1 });
 }
+
+template<u32 n, u32 m> inline matN<n, m> matN<n, m>::
+Diag(f64 val, s32 diag_offset) {
+	matN<n, m> newMatrix;
+	int index = 0;
+	for (int i = 0; i < n; ++i) {
+		for (int j = 0; j < m; ++j) {
+			if (i == j-diag_offset) {
+				newMatrix.data[index++] = val;
+			}
+			else {
+				newMatrix.data[index++] = 0;
+			}
+		}
+	}
+	return newMatrix;
+}
+
 
 //// Non-Vector vs Vector Interactions ////
 
-inline matN vec3::ToM1x3() const {
-	return matN(1, 3, {x, y, z});
-}
-
-inline matN vec3::ToM1x4(float w) const {
-	return matN(1, 4, { x, y, z, w });
-}
-
-//// Non-matN vs matN Interactions ////
-
-//Creates a 1x3 matrix
-inline matN::matN(vec3 v) {
-	this->rows = 1; this->cols = 3; this->elementCount = 3;
-	this->data = {v.x, v.y, v.z};
-}
-
-//Creates a 1x4 matrix
-inline matN::matN(vec3 v, float w) {
-	this->rows = 1; this->cols = 4; this->elementCount = 4;
-	this->data = {v.x, v.y, v.z, w};
-}
+//template<u32 n, u32 m> inline matN<n,m><rows,cols> 
+//vec3::ToM1x3() const {
+//	return matN<n,m>(1, 3, { x, y, z });
+//}
+//
+//template<u32 n, u32 m> inline matN<n,m><rows,cols> 
+//vec3::ToM1x4(f64 w) const {
+//	return matN<n,m>(1, 4, { x, y, z, w });
+//}
+//
+////// Non-matN<n,m> vs matN<n,m> Interactions ////
+//
+////Creates a 1x3 matrix
+//template<u32 n, u32 m> inline matN<n,m><rows,cols>
+//<rows, cols>::matN<n,m>(vec3 v) {
+//	this->rows = 1; this->cols = 3; this->elementCount = 3;
+//	this->data = { v.x, v.y, v.z };
+//}
+//
+////Creates a 1x4 matrix
+//template<u32 n, u32 m> inline matN<n,m>
+//<rows,cols>::matN<n,m>(vec3 v, f64 w) {
+//	this->rows = 1; this->cols = 4; this->elementCount = 4;
+//	this->data = {v.x, v.y, v.z, w};
+//}
 
 #endif //DESHI_matN_H

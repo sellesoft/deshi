@@ -33,6 +33,7 @@ The transformation matrix will follow the format to the below:
 struct vec2;
 struct vec3;
 struct vec4;
+template<u32 n = 0, u32 m = 0>
 struct matN;
 struct mat3;
 struct mat4;
