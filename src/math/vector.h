@@ -6,7 +6,6 @@
 struct vec2;
 struct vec3;
 struct vec4;
-template<u32 n, u32 m>
 struct matN;
 struct mat3;
 struct mat4;

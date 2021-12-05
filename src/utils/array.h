@@ -28,6 +28,7 @@ struct array {
 	
 	array<T, Alloc>& operator= (const array<T, Alloc>& array);
 	T&        operator[](u32 i);
+	T         operator[](u32 i) const;
 	
 	u32  size();
 	void add(const T& t);
@@ -193,6 +194,12 @@ inline array<T, Alloc>& array<T, Alloc>::operator= (const array<T, Alloc>& _arra
 
 template<class T, class Alloc>
 inline T& array<T, Alloc>::operator[](u32 i){
+	Assert(i < count);
+	return data[i];
+}
+
+template<class T, class Alloc>
+inline T array<T, Alloc>::operator[](u32 i) const {
 	Assert(i < count);
 	return data[i];
 }

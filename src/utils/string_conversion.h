@@ -213,9 +213,8 @@ to_string(const mat4& x, bool trunc = true){
     return s;
 }
 
-template<u32 n, u32 m>
 global_ string
-to_string(const matN<n, m>& x, bool trunc = true) {
+to_string(const matN& x, bool trunc = true) {
     if (x.rows == 0 || x.cols == 0) {
         return "|Zero dimension matrix|";
     }
