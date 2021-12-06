@@ -242,7 +242,7 @@ inline void AdvanceCursor(UIItem* itemmade, bool moveCursor = 1) {
 		//abstract item types (lines, rectangles, etc.) are not row'd, for now
 		if (itemmade->type != UIItemType_Abstract) {
 			row.items.add(itemmade);
-
+			
 			f32 height = row.height;
 			f32 width;
 			//determine if the width is relative to the size of the item or not
@@ -250,12 +250,12 @@ inline void AdvanceCursor(UIItem* itemmade, bool moveCursor = 1) {
 				width = itemmade->size.x * row.columnWidths[row.items.count - 1].first;
 			else
 				width = row.columnWidths[row.items.count - 1].first;
-
+			
 			itemmade->position.y = row.position.y + (height - itemmade->size.y) * itemmade->style.rowItemAlign.y;
 			itemmade->position.x = row.position.x + row.xoffset + (width - itemmade->size.x) * itemmade->style.rowItemAlign.x;
-
+			
 			row.xoffset += width;
-
+			
 			//we dont need to handle moving the cursor here, because the final position of the cursor after a row is handled in EndRow()
 		}
 	}
@@ -452,7 +452,7 @@ void UI::Line(vec2 start, vec2 end, float thickness, color color){
 	
 	item.position = vec2{ Min(drawCmd.position.x, drawCmd.position2.x), Min(drawCmd.position.y, drawCmd.position2.y) };
 	item.    size = vec2{ Max(drawCmd.position.x, drawCmd.position2.x), Max(drawCmd.position.y, drawCmd.position2.y) } - item.position;
-
+	
 	item.drawCmds.add(drawCmd);
 	curwin->items[currlayer].add(item);
 }
@@ -468,13 +468,13 @@ void UI::Circle(vec2 pos, f32 radius, u32 subdivisions, color color) {
 	drawCmd.thickness = radius;
 	drawCmd.position2 = vec2( subdivisions, 0 );
 	drawCmd.color = color;
-
+	
 	item.position = pos - vec2::ONE * radius;
 	item.size = vec2::ONE * radius * 2;
-
+	
 	item.drawCmds.add(drawCmd);
 	curwin->items[currlayer].add(item);
-
+	
 }
 
 void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {
@@ -484,10 +484,10 @@ void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {
 	drawCmd.thickness = radius;
 	drawCmd.position2 = vec2( subdivisions, 0 );
 	drawCmd.color = color;
-
+	
 	item.position = pos - vec2::ONE * radius;
 	item.size = vec2::ONE * radius * 2;
-
+	
 	item.drawCmds.add(drawCmd);
 	curwin->items[currlayer].add(item);
 }
@@ -902,18 +902,18 @@ void UI::Checkbox(string label, bool* b) {
 	int fillPadding = style.checkboxFillPadding;
 	vec2 fillpos = boxsiz * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y);
 	vec2 fillsiz = boxsiz * (vec2::ONE - 2 * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y));
-
+	
 	b32 bgactive = isItemHovered(item);
 	b32 fiactive = isLocalAreaHovered(fillpos, fillsiz, item);
-
-
+	
+	
 	{//box
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
 		drawCmd.position = vec2{ 0,0 };
 		drawCmd.dimensions = boxsiz;
 		drawCmd.color = style.colors[
-			(bgactive ? (DeshInput->LMouseDown() ? UIStyleCol_CheckboxBgActive : UIStyleCol_CheckboxBgHovered) : UIStyleCol_CheckboxBg)
-		];
+									 (bgactive ? (DeshInput->LMouseDown() ? UIStyleCol_CheckboxBgActive : UIStyleCol_CheckboxBgHovered) : UIStyleCol_CheckboxBg)
+									 ];
 		
 		item->drawCmds.add(drawCmd);
 	}
@@ -927,7 +927,7 @@ void UI::Checkbox(string label, bool* b) {
 		
 		item->drawCmds.add(drawCmd);
 	}
-
+	
 	{//border
 		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
 		drawCmd.color = style.colors[UIStyleCol_CheckboxBorder];
@@ -956,7 +956,7 @@ void UI::Checkbox(string label, bool* b) {
 bool UI::BeginCombo(const char* label, const char* prev_val) {
 	//UIItem* item = BeginItem(UIItemType_DropDown, 1);
 	//b32 ret = 0;
-
+	
 	//bool isOpen = false;
 	//if (!dropDowns.has(label)) {
 	//	dropDowns.add(label);
@@ -1059,32 +1059,32 @@ bool UI::BeginCombo(const char* label, const char* prev_val) {
 
 bool UI::Header(const char* label) {
 	UIItem* item = BeginItem(UIItemType_Header);
-
+	
 	b32* open = 0;
 	if (!headers.has(label)) {
 		headers.add(label);
 		headers[label] = false;
 	}
 	open = &headers[label];
-
+	
 	item->position = PositionForNewItem();
 	item->size = (NextItemSize.x == -1 ?
-		vec2(curwin->width - style.windowPadding.x, style.fontHeight * style.headerHeightRelToFont) :
-		NextItemSize);
-
+				  vec2(curwin->width - style.windowPadding.x, style.fontHeight * style.headerHeightRelToFont) :
+				  NextItemSize);
+	
 	AdvanceCursor(item);
-
+	
 	b32 active = isItemHovered(item);
-
+	
 	if (active && DeshInput->LMousePressed()) *open = !*open;
-
+	
 	f32 buttonrad = item->size.y / 4;
-
+	
 	vec2 bgpos = vec2{ buttonrad * 2 + 5, 0 };
 	vec2 bgdim = vec2{ 
 		item->size.x - bgpos.x - style.windowPadding.x, 
 		item->size.y };
-
+	
 	{//background
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = bgpos;
@@ -1092,7 +1092,7 @@ bool UI::Header(const char* label) {
 		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
 		item->drawCmds.add(drawCmd);
 	}
-
+	
 	{//button
 		UIDrawCmd drawCmd{ (*open ? UIDrawType_CircleFilled : UIDrawType_Circle) };
 		drawCmd.position = vec2{ item->size.y / 4, item->size.y / 2 };
@@ -1101,13 +1101,13 @@ bool UI::Header(const char* label) {
 		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_HeaderBgActive : UIStyleCol_HeaderBgHovered) : UIStyleCol_HeaderBg)];
 		item->drawCmds.add(drawCmd);
 	}
-
+	
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
 		drawCmd.color = style.colors[UIStyleCol_Text];
 		drawCmd.position = 
 			vec2(bgpos.x + (item->size.x - bgpos.x - style.windowPadding.x - UI::CalcTextSize(label).x) * style.headerTextAlign.x,
-				((style.fontHeight * style.headerHeightRelToFont - style.fontHeight) * style.headerTextAlign.y));
+				 ((style.fontHeight * style.headerHeightRelToFont - style.fontHeight) * style.headerTextAlign.y));
 		drawCmd.scissorOffset = vec2::ZERO;
 		drawCmd.scissorExtent = item->size;
 		drawCmd.useWindowScissor = false;
@@ -1115,7 +1115,7 @@ bool UI::Header(const char* label) {
 		drawCmd.font = style.font;
 		item->drawCmds.add(drawCmd);
 	}
-
+	
 	{//border
 		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
 		drawCmd.color = style.colors[UIStyleCol_HeaderBorder];
@@ -1123,8 +1123,8 @@ bool UI::Header(const char* label) {
 		drawCmd.dimensions = bgdim;
 		item->drawCmds.add(drawCmd);
 	}
-
-
+	
+	
 	return *open;
 }
 
@@ -1142,14 +1142,14 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 	
 	item->position = PositionForNewItem();
 	item->size = (NextItemSize.x == -1 ?
-		vec2{ curwin->width * (1.f / 3), 10 } :
-		NextItemSize);
-
+				  vec2{ curwin->width * (1.f / 3), 10 } :
+				  NextItemSize);
+	
 	AdvanceCursor(item);
-
+	
 	b32 active = isItemHovered(item);
-
-
+	
+	
 	if (active && DeshInput->LMousePressed()) {
 		drag_override = 1;
 		sliders[label] = 1;
@@ -1162,7 +1162,7 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 		drag_override = 0;
 		sliders[label] = 0;
 	}
-
+	
 	*val = Clamp(*val, val_min, val_max);
 	
 	vec2 draggersiz = vec2{ item->size.x / 8, item->size.y };
@@ -1175,7 +1175,7 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 		drawCmd.color = style.colors[UIStyleCol_SliderBg];
 		item->drawCmds.add(drawCmd);
 	}
-
+	
 	{//dragger
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = draggerpos;
@@ -1183,7 +1183,7 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 		drawCmd.color = style.colors[((active || being_moved) ? (DeshInput->LMouseDown() ? UIStyleCol_SliderBarActive : UIStyleCol_SliderBarHovered) : UIStyleCol_SliderBar)];
 		item->drawCmds.add(drawCmd);
 	}
-
+	
 	{//border
 		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
 		drawCmd.color = style.colors[UIStyleCol_SliderBorder];
@@ -1191,8 +1191,8 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 		drawCmd.dimensions = item->size;
 		item->drawCmds.add(drawCmd);
 	}
-
-
+	
+	
 }
 
 
@@ -1221,7 +1221,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	
 	item->size = dim;
 	item->position = position;
-
+	
 	b32 hovered = isItemHovered(item);
 	
 	AdvanceCursor(item, moveCursor);
@@ -1435,7 +1435,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 		
 		item->drawCmds.add(drawCmd);
 	}
-
+	
 	{//border
 		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
 		drawCmd.color = style.colors[UIStyleCol_InputTextBorder];
@@ -1994,7 +1994,7 @@ UIWindow* DisplayMetrics() {
 	UIWindow* quick     = *windows.atIdx(0);
 	UIWindow* mostitems = *windows.atIdx(0);
 	UIWindow* longname  = *windows.atIdx(0);
-
+	
 	array<char*> names;
 	for(UIWindow* win : windows) {
 		if (!(win->name == "METRICS")) {
@@ -2021,8 +2021,8 @@ UIWindow* DisplayMetrics() {
 	string slomotext = TOSTRING("Slowest Render:");
 	string quicktext = TOSTRING("Fastest Render:");
 	string mostitext = TOSTRING("Most Items: "); 
-
-
+	
+	
 	static float sw = CalcTextSize(longname->name).x;
 	static float fw = CalcTextSize(slomotext).x + 5;
 	
@@ -2053,17 +2053,17 @@ UIWindow* DisplayMetrics() {
 	if (Button("select")) debugee = mostitems;
 	EndRow();
 	
-
+	
 	static u32 selected = 0;
 	//if (DropDown("windowstochoosefrom", names.data, windows.count, selected)) {
 	//	debugee = *windows.atIdx(selected);
 	//}
-
-
-
-
-
-
+	
+	
+	
+	
+	
+	
 	End();
 	
 	//PopColor(5);
@@ -2107,29 +2107,29 @@ void UI::Init() {
 	PushColor(UIStyleCol_HeaderBg,    color(0, 100, 100, 255));
 	PushColor(UIStyleCol_SliderBg,    Color_VeryDarkCyan);
 	PushColor(UIStyleCol_InputTextBg, Color_DarkCyan);
-
+	
 	//active backgrounds
 	PushColor(UIStyleCol_ButtonBgActive,    Color_Cyan);
 	PushColor(UIStyleCol_CheckboxBgActive,  Color_Cyan);
 	PushColor(UIStyleCol_HeaderBgActive,    color(0, 255, 255, 255));
 	PushColor(UIStyleCol_SliderBgActive,    Color_Cyan);
 	PushColor(UIStyleCol_InputTextBgActive, Color_DarkCyan);
-
+	
 	//hovered backgrounds
 	PushColor(UIStyleCol_ButtonBgHovered,    Color_DarkCyan);
 	PushColor(UIStyleCol_CheckboxBgHovered,  Color_DarkCyan);
 	PushColor(UIStyleCol_HeaderBgHovered,    color(0, 128, 128, 255));
 	PushColor(UIStyleCol_SliderBgHovered,    Color_DarkCyan);
 	PushColor(UIStyleCol_InputTextBgHovered, Color_DarkCyan);
-
-
+	
+	
 	//borders
 	PushColor(UIStyleCol_ButtonBorder,   Color_Black);
 	PushColor(UIStyleCol_CheckboxBorder, Color_Black);
 	PushColor(UIStyleCol_HeaderBorder,   Color_Black);
 	PushColor(UIStyleCol_SliderBorder,   Color_Black);
 	PushColor(UIStyleCol_InputTextBorder,Color_Black);
-
+	
 	//misc
 	PushColor(UIStyleCol_CheckboxFilling,     Color_DarkMagenta);
 	
@@ -2140,7 +2140,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_SliderBar,		   Color_VeryDarkRed);
 	PushColor(UIStyleCol_SliderBarActive,  Color_Red);
 	PushColor(UIStyleCol_SliderBarHovered, Color_DarkRed);
-
+	
 	//push default style variables
 	PushVar(UIStyleVar_WindowBorderSize,         1);
 	PushVar(UIStyleVar_TitleBarHeight,           style.fontHeight * 1.2);
@@ -2278,7 +2278,7 @@ void UI::Update() {
 					}break;
 					
 					case UIDrawType_Line: {
-						Render::DrawLine2D(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
+						Render::DrawLine2D(dcpos - item.position, dcpos2 - item.position, dct, dccol, dcl, dcso, dcse);
 					}break;
 					case UIDrawType_Text: {
 						vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
@@ -2325,7 +2325,7 @@ void UI::Update() {
 								Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 							}break;
 							case UIDrawType_Line: {
-								Render::DrawLine2D(dcpos, dcpos2, dct, dccol, dcl, dcso, dcse);
+								Render::DrawLine2D(dcpos - item.position, dcpos2 - item.position, dct, dccol, dcl, dcso, dcse);
 							}break;
 							case UIDrawType_Circle: {
 								Render::DrawCircle2D(dcpos, dct, drawCmd.position2.x, dccol, dcl, dcso, dcse);

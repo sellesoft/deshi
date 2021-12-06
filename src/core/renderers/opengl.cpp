@@ -277,7 +277,7 @@ template<typename... Args>
 local inline void
 PrintGl(u32 level, Args... args){
 	if(settings.loggingLevel >= level){
-		LOG("[OpenGL] ", args...);
+		Log("[OpenGL] ", args...);
 	}
 }
 
@@ -730,9 +730,9 @@ vec2 prevScissorExtent = vec2::ZERO;
 
 void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
-		"Scissor Offset and Extent can't be negative");
+		   "Scissor Offset and Extent can't be negative");
 	if (color.a == 0) return;
-
+	
 	if (//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != prevTexIdx ||
 		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
 		scissorExtent != prevScissorExtent) {  //and you could do text last in one, and text first in another
@@ -742,29 +742,29 @@ void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, v
 		uiCmdCounts[layer]++;
 		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
-
+	
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexGl* ip = uiIndexArray + uiIndexCount;
-
+	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = p2; vp[1].uv = { 0,0 }; vp[1].color = col;
 	vp[2].pos = p3; vp[2].uv = { 0,0 }; vp[2].color = col;
-
+	
 	uiVertexCount += 3;
 	uiIndexCount += 3;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 3;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
-
+	
 }
 
 void Render::DrawTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
-		"Scissor Offset and Extent can't be negative");
+		   "Scissor Offset and Extent can't be negative");
 	if (color.a == 0) return;
-
+	
 	DrawLine2D(p1, p2, 1, color, layer, scissorOffset, scissorExtent);
 	DrawLine2D(p2, p3, 1, color, layer, scissorOffset, scissorExtent);
 	DrawLine2D(p3, p1, 1, color, layer, scissorOffset, scissorExtent);
@@ -1647,7 +1647,7 @@ Init(){
 	
 	//not sure the appropriate place for this
 	forI(UI_LAYERS) uiCmdCounts[i] = 1;
-
+	
 	//glfwSwapInterval(1); //vsync
 	initialized = true;
 }
@@ -1745,17 +1745,17 @@ Update(){
 		forX(layer, UI_LAYERS) {
 			forX(cmd_idx, uiCmdCounts[layer]) {
 				glScissor(uiCmdArrays[layer][cmd_idx].scissorOffset.x,
-					(height - uiCmdArrays[layer][cmd_idx].scissorOffset.y) - uiCmdArrays[layer][cmd_idx].scissorExtent.y,
-					uiCmdArrays[layer][cmd_idx].scissorExtent.x,
-					uiCmdArrays[layer][cmd_idx].scissorExtent.y);
+						  (height - uiCmdArrays[layer][cmd_idx].scissorOffset.y) - uiCmdArrays[layer][cmd_idx].scissorExtent.y,
+						  uiCmdArrays[layer][cmd_idx].scissorExtent.x,
+						  uiCmdArrays[layer][cmd_idx].scissorExtent.y);
 				glBindTexture(glTextures[glFonts[uiCmdArrays[layer][cmd_idx].texIdx].texture].type,
-					glTextures[glFonts[uiCmdArrays[layer][cmd_idx].texIdx].texture].handle);
+							  glTextures[glFonts[uiCmdArrays[layer][cmd_idx].texIdx].texture].handle);
 				glUniform1i(glGetUniformLocation(programs.null.handle, "tex"), 0);
 				glDrawElementsBaseVertex(GL_TRIANGLES, uiCmdArrays[layer][cmd_idx].indexCount, INDEX_TYPE_GL_UI,
-					(void*)(uiCmdArrays[layer][cmd_idx].indexOffset * sizeof(UIIndexGl)), 0);
+										 (void*)(uiCmdArrays[layer][cmd_idx].indexOffset * sizeof(UIIndexGl)), 0);
 			}
 		}
-
+		
 		
 		glScissor(0, 0, width, height);
 	}
