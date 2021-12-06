@@ -13,7 +13,7 @@ local char inputBuf[256]{};
 local constexpr u32 BUFF_SIZE = 0xFFFF; //size very large to try and ensure the dictionary runs out before the buffer does
 local constexpr u32 DICT_SIZE = 5;
 
-struct ColoredStr {
+struct ColoredStr{
 	color color;
 	char* strptr;
 	u32 strsize;
@@ -21,14 +21,14 @@ struct ColoredStr {
 
 
 //buffer struct that holds all text that has been logged in the console
-struct {
+struct{
 	char                   buff[BUFF_SIZE]; //i decided not to use ring_array on char, i will probably write more about why later
 	ring_array<ColoredStr> dictionary;
 	u32 buff_count = 0;
-
+	
 	void add(char* str, u32 strsize, color color) {
 		
-
+		
 		//check if the dictionary has been filled and is about to wrap around again
 		//if it is, we can safely flush the previous DICT_SIZE dictionary entries
 		if (dictionary.start == dictionary.capacity - 1) {
@@ -40,7 +40,7 @@ struct {
 			u32 sztomove = buff_count;
 			memmove(buff, buff + sztoflsh, sztomove);
 			memset(buff + sztomove, 0, sztomove);
-
+			
 			//move all previous things back
 			forI(dictionary.count) 	dictionary[i].strptr -= sztoflsh;
 		}
@@ -49,8 +49,8 @@ struct {
 		dictionary.add(ColoredStr{ color, buff + buff_count, strsize });
 		buff_count += strsize;
 	}
-
-
+	
+	
 } buffer;
 local ColoredStr dictionary;   //dictionary that indexes the buffer
 
@@ -60,8 +60,6 @@ local u32 scroll_y = 0;
 local u32 rows_in_buffer = 0;
 local b32 scroll_to_bottom = 0;
 local ConsoleState state;
-
-local map<string, Command*> commands;
 
 local map<const char*, color> color_strings{
 	{"red",    Color_Red},     {"dred",    Color_DarkRed},
@@ -79,7 +77,7 @@ void Console::Init(){
 }
 
 void Console::Update(){
-
+	
 }
 
 void Console::AddLog(string input){
@@ -93,14 +91,14 @@ void Console::AddLog(string input){
 }
 
 void Console::ChangeState(ConsoleState new_state) {
-
+	
 }
 
 void Console::FlushBuffer() {
-
+	
 }
 
-void Console::CleanUp() {
-
+void Console::Cleanup() {
+	
 }
 

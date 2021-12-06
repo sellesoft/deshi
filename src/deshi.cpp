@@ -304,8 +304,7 @@ void deshi::cleanup(){
 	DeshiImGui::Cleanup();
 	Render::Cleanup();
 	deshi_window.Cleanup();
-	deshi_console.CleanUp(); 
-	Console2::Cleanup();
+	deshi_console.Cleanup(); Console2::Cleanup();
 	Logging::Cleanup();
 }
 

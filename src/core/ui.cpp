@@ -2092,8 +2092,8 @@ void UI::Init() {
 	curwin->dimensions = DeshWindow->dimensions;
 	
 	//load font
-	//style.font = Storage::CreateFontFromFileBDF("gohufont-11.bdf").second;
-	style.font = Storage::CreateFontFromFileTTF("gohufont-11.ttf", 11).second;
+	style.font = Storage::CreateFontFromFileBDF("gohufont-11.bdf").second;
+	//style.font = Storage::CreateFontFromFileTTF("gohufont-11.ttf", 11).second;
 	Assert(style.font != Storage::NullFont());
 	
 	//push default color scheme

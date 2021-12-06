@@ -149,6 +149,14 @@ local Mesh::Vertex tempWireframeVertexArray[MAX_TEMP_VERTICES];
 local Mesh::Vertex tempFilledVertexArray   [MAX_TEMP_VERTICES];
 local TempIndexGl  tempWireframeIndexArray [MAX_TEMP_INDICES];
 local TempIndexGl  tempFilledIndexArray    [MAX_TEMP_INDICES];
+local TempIndexGl  debugWireframeVertexCount = 0;
+local TempIndexGl  debugWireframeIndexCount  = 0;
+local Mesh::Vertex debugWireframeVertexArray[MAX_TEMP_VERTICES];
+local TempIndexGl  debugWireframeIndexArray [MAX_TEMP_INDICES];
+local TempIndexGl  debugFilledVertexCount    = 0;
+local TempIndexGl  debugFilledIndexCount     = 0;
+local Mesh::Vertex debugFilledVertexArray   [MAX_TEMP_VERTICES];
+local TempIndexGl  debugFilledIndexArray    [MAX_TEMP_INDICES];
 
 #define MAX_MODEL_CMDS 10000 
 typedef u32 ModelIndexGl;
@@ -1549,6 +1557,36 @@ DrawBoxFilled(const mat4& transform, color color){
 }
 
 void Render::
+DrawCircle(vec3 position, vec3 rotation, f32 radius, u32 subdivisions_int, color c){
+	mat4 transform = mat4::TransformationMatrix(position, rotation, vec3::ONE);
+	f32 subdivisions = f32(subdivisions_int);
+	forI(subdivisions_int){
+		f32 a0 = (f32(i-1)*M_2PI) / subdivisions;
+		f32 a1 = (f32(i  )*M_2PI) / subdivisions;
+		f32 x0 = radius*cosf(a0); f32 x1 = radius*cosf(a1);
+		f32 y0 = radius*sinf(a0); f32 y1 = radius*sinf(a1);
+		vec3 xaxis0 = vec3{0, y0, x0} * transform; vec3 xaxis1 = vec3{0, y1, x1} * transform;
+		DrawLine(xaxis0, xaxis1, c);
+	}
+}
+
+void Render::
+DrawSphere(vec3 position, vec3 rotation, f32 radius, u32 subdivisions_int, color cx, color cy, color cz){
+	mat4 transform = mat4::TransformationMatrix(position, rotation, vec3::ONE);
+	f32 subdivisions = f32(subdivisions_int);
+	forI(subdivisions_int){
+		f32 a0 = (f32(i-1)*M_2PI) / subdivisions;
+		f32 a1 = (f32(i  )*M_2PI) / subdivisions;
+		f32 x0 = radius*cosf(a0); f32 x1 = radius*cosf(a1);
+		f32 y0 = radius*sinf(a0); f32 y1 = radius*sinf(a1);
+		vec3 xaxis0 = vec3{0, y0, x0} * transform; vec3 xaxis1 = vec3{0, y1, x1} * transform;
+		vec3 yaxis0 = vec3{x0, 0, y0} * transform; vec3 yaxis1 = vec3{x1, 0, y1} * transform;
+		vec3 zaxis0 = vec3{x0, y0, 0} * transform; vec3 zaxis1 = vec3{x1, y1, 0} * transform;
+		DrawLine(xaxis0, xaxis1, cx); DrawLine(yaxis0, yaxis1, cy); DrawLine(zaxis0, zaxis1, cz);
+	}
+}
+
+void Render::
 DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color color){
 	if(color.a == 0) return;
 	
@@ -1568,6 +1606,35 @@ DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f
 	DrawLine(v[0], v[1], color); DrawLine(v[0], v[2], color); DrawLine(v[3], v[1], color); DrawLine(v[3], v[2], color);
 	DrawLine(v[4], v[5], color); DrawLine(v[4], v[6], color); DrawLine(v[7], v[5], color); DrawLine(v[7], v[6], color);
 	DrawLine(v[0], v[4], color); DrawLine(v[1], v[5], color); DrawLine(v[2], v[6], color); DrawLine(v[3], v[7], color);
+}
+
+////////////////
+//// @debug ////
+////////////////
+void Render::
+ClearDebug(){
+	debugWireframeVertexCount = 0;
+	debugWireframeIndexCount  = 0;
+	debugFilledVertexCount = 0;
+	debugFilledIndexCount  = 0;
+}
+
+void Render::
+DebugLine(vec3 start, vec3 end, color color){
+	if(color.a == 0) return;
+	
+	u32 col = color.rgba;
+	Mesh::Vertex* vp = debugWireframeVertexArray + debugWireframeVertexCount;
+	TempIndexGl*  ip = debugWireframeIndexArray + debugWireframeIndexCount;
+	
+	ip[0] = debugWireframeVertexCount; 
+	ip[1] = debugWireframeVertexCount+1; 
+	ip[2] = debugWireframeVertexCount;
+	vp[0].pos = start; vp[0].color = col;
+	vp[1].pos = end;   vp[1].color = col;
+	
+	debugWireframeVertexCount += 2;
+	debugWireframeIndexCount  += 3;
 }
 
 /////////////////
