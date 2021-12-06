@@ -1778,6 +1778,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	
 	//begin a font pack
 	Assert(stbtt_PackBegin(pc, pixels + 2 * tsx, tsx, tsy - 4, 0, 1, nullptr));
+	stbtt_PackSetSkipMissingCodepoints(pc, true);
 	
 	//pack our ranges
 	stbtt_PackFontRanges(pc, (u8*)buffer, 0, ranges, 6);

@@ -2092,7 +2092,8 @@ void UI::Init() {
 	curwin->dimensions = DeshWindow->dimensions;
 	
 	//load font
-	style.font = Storage::CreateFontFromFileBDF("gohufont-11.bdf").second;
+	//style.font = Storage::CreateFontFromFileBDF("gohufont-11.bdf").second;
+	style.font = Storage::CreateFontFromFileTTF("gohufont-11.ttf", 11).second;
 	Assert(style.font != Storage::NullFont());
 	
 	//push default color scheme
@@ -2256,7 +2257,9 @@ void UI::Update() {
 			
 			for (UIDrawCmd& drawCmd : item.drawCmds) {
 				vec2   dcpos = itempos + drawCmd.position * item.style.globalScale;
+				dcpos.x = floor(dcpos.x); dcpos.y = floor(dcpos.y);
 				vec2  dcpos2 = itempos + drawCmd.position * item.style.globalScale;
+				dcpos2.x = floor(dcpos2.x); dcpos2.y = floor(dcpos2.y);
 				vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
 				vec2    dcse = (drawCmd.useWindowScissor ? winsiz : drawCmd.scissorExtent * item.style.globalScale);
 				vec2    dcso = (drawCmd.useWindowScissor ? winscissor : itempos + drawCmd.scissorOffset);
@@ -2304,7 +2307,9 @@ void UI::Update() {
 					
 					for (UIDrawCmd& drawCmd : item.drawCmds) {
 						vec2   dcpos = itempos + drawCmd.position * item.style.globalScale;
+						dcpos.x = floor(dcpos.x); dcpos.y = floor(dcpos.y);
 						vec2  dcpos2 = itempos + drawCmd.position2 * item.style.globalScale;
+						dcpos2.x = floor(dcpos2.x); dcpos2.y = floor(dcpos2.y);
 						vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
 						vec2    dcse = (drawCmd.useWindowScissor ? winsiz : drawCmd.scissorExtent * item.style.globalScale);
 						vec2    dcso = (drawCmd.useWindowScissor ? winscissor : itempos + drawCmd.scissorOffset);
