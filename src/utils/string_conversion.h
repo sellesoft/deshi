@@ -223,18 +223,18 @@ to_string(const matN& x, bool trunc = true) {
     if (x.rows == 1) {
         for (int i = 0; i < x.cols - 1; ++i) {
             char buffer[15];
-            snprintf(buffer, 15, "%+.6f", x.data[i]);
+            snprintf(buffer, 15, "%+g", x.data[i]);
             str += string(buffer) + ", ";
         }
         char buffer[15];
-        snprintf(buffer, 15, "%+.6f", x.data[x.elementCount - 1]);
+        snprintf(buffer, 15, "%+g", x.data[x.elementCount - 1]);
         str += string(buffer) + "|";
         return str;
     }
 
     for (int i = 0; i < x.elementCount - 1; ++i) {
         char buffer[15];
-        snprintf(buffer, 15, "%+.6f", x.data[i]);
+        snprintf(buffer, 15, "%+g", x.data[i]);
         str += string(buffer);
         if ((i + 1) % x.cols != 0) {
             str += ", ";
@@ -244,7 +244,7 @@ to_string(const matN& x, bool trunc = true) {
         }
     }
     char buffer[15];
-    snprintf(buffer, 15, "%+.6f", x.data[x.elementCount - 1]);
+    snprintf(buffer, 15, "%+g", x.data[x.elementCount - 1]);
     str += string(buffer) + "|";
     return str;
 }

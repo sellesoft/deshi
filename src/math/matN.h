@@ -91,6 +91,7 @@ struct matN {
 		forI(elementCount) data.add(0);
 	};
 	matN(u32 _rows, u32 _cols, array<f64> list) {
+		Assert(list.count == _rows * _cols);
 		rows = _rows; cols = _cols;
 		elementCount = _rows * _cols;
 		data = list;
@@ -103,8 +104,10 @@ struct matN {
 	void operator *= (const f64& rhs);
 	matN operator /  (const f64& rhs) const;
 	void operator /= (const f64& rhs);
+	matN operator +  (const f64& rhs) const;
 	matN operator +  (const matN& rhs) const;
 	void operator += (const matN& rhs);
+	matN operator -  () const;
 	matN operator -  (const matN& rhs) const;
 	void operator -= (const matN& rhs);
 	matN operator *  (const matN& rhs) const;
@@ -128,6 +131,8 @@ struct matN {
 	void SetRow(u32 row, const matN& rowmat);
 	matN Col(u32 col) const;
 	void SetCol(u32 col, const matN& colmat);
+	void RowSwap(u32 row1, u32 row2);
+	void ColSwap(u32 col1, u32 col2);
 
 
 	static matN Identity(u32 rows);
@@ -139,9 +144,12 @@ struct matN {
 	static matN TranslationMatrix(vec3 translation);
 	static matN ScaleMatrix(vec3 scale);
 	static matN TransformationMatrix(vec3 translation, vec3 rotation, vec3 scale);
-	
-	//diag_offset > 0 is above the main diagonal
 	static matN Diag(u32 rows, f64 val, s32 diag_offset = 0);
+	static matN Rand(u32 rows, u32 cols, u32 lower, u32 upper);
+	static matN Ones(u32 rows, u32 cols);
+	static matN TriL(const matN& m);
+	static matN TriU(const matN& m);
+	static matN Diag(const matN& m);
 
 	//Non-matN vs matN interactions
 	matN(vec3 v);
@@ -220,6 +228,15 @@ operator /= (const f64& rhs) {
 	}
 }
 
+inline matN matN::
+operator + (const f64& rhs) const {
+	matN newMatrix(*this);
+	for (int i = 0; i < newMatrix.elementCount; ++i) {
+		newMatrix.data[i] += rhs;
+	}
+	return newMatrix;
+}
+
 //element-wise addition
 inline matN matN::
 operator +  (const matN& rhs) const {
@@ -251,8 +268,18 @@ operator -  (const matN& rhs) const {
 	return newMatrix;
 }
 
+//element-wise negation
+inline matN matN::
+operator -  () const {
+	matN newMatrix(*this);
+	for (int i = 0; i < newMatrix.elementCount; ++i) {
+		newMatrix.data[i] = data[i] * -1;
+	}
+	return newMatrix;
+}
+
 //element-wise substraction and assignment
-inline void    matN::
+inline void matN::
 operator -= (const matN& rhs) {
 	Assert(rows == rhs.rows && cols == rhs.cols, "matN subtraction requires the same dimensions");
 	for (int i = 0; i < elementCount; ++i) {
@@ -315,7 +342,7 @@ operator % (const matN& rhs) const {
 	Assert(rows == rhs.rows && cols == rhs.cols, "matN element-wise division requires the same dimensions");
 	matN newMatrix(*this);
 	for (int i = 0; i < newMatrix.elementCount; ++i) {
-		Assert(rhs.data[i] != 0, "matN element-wise division doesnt allow zeros in the right matrix");
+		Assert(rhs.data[i], "matN element-wise division doesnt allow zeros in the right matrix");
 		newMatrix.data[i] /= rhs.data[i];
 	}
 	return newMatrix;
@@ -358,7 +385,7 @@ operator != (const matN& rhs) const {
 //converts the rows into columns and vice-versa
 inline matN matN::
 Transpose() const {
-	matN newMatrix;
+	matN newMatrix(rows, cols);
 	for (int i = 0; i < elementCount; ++i) {
 		newMatrix.data[i] = data[(size_t)cols * (i % rows) + (i / rows)];
 	}
@@ -470,16 +497,39 @@ Adjoint() const {
 //returns the adjoint divided by the determinant
 inline matN matN::
 Inverse() const {
-	f64 determinant = this->Determinant();
-	Assert(determinant, "matN inverse does not exist if determinant is zero");
-	if (elementCount > 1) {
-		return this->Adjoint() / determinant;
+	
+	//first check if we just have a diagonal matrix, whose inverse is just I / A
+	b32 diag = 1;
+	matN nu = matN::Identity(rows);
+	for (int i = 0; i < rows; i++) {
+		for (int j = 0; j < cols; j++) {
+			
+			if (i != j && this->operator()(i, j)) {
+				diag = 0;
+				goto diagbreak;
+			}
+			else if(i==j) {
+				Assert(this->operator()(i, j), "matN inverse does not exist if determinant is 0");
+				nu(i, j) /= this->operator()(i, j);
+
+			}
+		}
 	}
-	return matN(rows, cols, { 1.f / determinant });
+diagbreak:
+	if (diag) return nu;
+	else {
+		f64 determinant = this->Determinant();
+		Assert(determinant, "matN inverse does not exist if determinant is zero");
+		if (elementCount > 1) {
+			return this->Adjoint() / determinant;
+		}
+		return matN(rows, cols, { 1.f / determinant });
+	}
 }
 
 inline matN matN::
 Row(u32 row) const{
+	Assert(row < rows, "subscript out of range");
 	matN ret(1, cols);
 	memcpy(ret.data.data, data.data + cols * row, sizeof(f64) * cols);
 	return ret;
@@ -487,11 +537,13 @@ Row(u32 row) const{
 
 inline void matN::
 SetRow(u32 row, const matN& rowmat){
+	Assert(row < rows, "subscript out of range");
 	memcpy(&data[cols * row], rowmat.data.data, sizeof(f64) * cols);
 }
 
 inline matN matN::
 Col(u32 col) const{
+	Assert(col < cols, "subscript out of range");
 	matN ret(rows, 1);
 	forI(rows)
 		memcpy(&ret.data[i], data.data + col * rows + i, sizeof(f64));
@@ -500,9 +552,27 @@ Col(u32 col) const{
 
 inline void matN::
 SetCol(u32 col, const matN& colmat){
+	Assert(col < cols, "subscript out of range");
 	forI(rows)
 		memcpy(&data[col * rows + i], colmat.data.data + i, sizeof(f64));
 }
+
+inline void matN::
+RowSwap(u32 row1, u32 row2){
+	Assert(row1 < rows && row2 < rows, "subscript out of range");
+	matN temp = Row(row1);
+	SetRow(row1, Row(row2));
+	SetRow(row2, temp);
+}
+
+inline void matN::
+ColSwap(u32 col1, u32 col2){
+	Assert(col1 < cols && col2 < cols, "subscript out of range");
+	matN temp = Col(col1);
+	SetCol(col1, Col(col2));
+	SetCol(col2, temp);
+}
+
 
 
 //returns an identity matrix with the given dimensions
@@ -622,6 +692,7 @@ TransformationMatrix(vec3 tr, vec3 rot, vec3 scale) {
 					   tr.x,          tr.y,          tr.z,          1 });
 }
 
+//diag_offset > 0 is above the main diagonal
 inline matN matN::
 Diag(u32 rows, f64 val, s32 diag_offset) {
 	matN newMatrix(rows,rows);
@@ -638,6 +709,52 @@ Diag(u32 rows, f64 val, s32 diag_offset) {
 	}
 	return newMatrix;
 }
+
+//returns a matrix wth random integer values from lower to upper
+inline matN matN::
+Rand(u32 rows, u32 cols, u32 lower, u32 upper) {
+	matN nu(rows, cols);
+	forX(i, rows) {
+		forX(j, cols) {
+			nu(i, j) = rand() % upper + lower;
+		}
+	}
+	return nu;
+}
+
+inline matN matN::
+Ones(u32 rows, u32 cols) {
+	matN nu(rows, cols);
+	forI(nu.elementCount) nu.data[i] = 1;
+	return nu;
+}
+
+inline matN matN::TriL(const matN& m){
+	matN nu(m.rows, m.cols);
+	forX(i, m.rows) {
+		for (int j = 0; j <= i; j++) {
+			nu(i, j) = m(i, j);
+		}
+	}
+	return nu;
+}
+
+inline matN matN::TriU(const matN& m){
+	matN nu(m.rows, m.cols);
+	forX(i, m.rows) {
+		for (int j = i; j < m.cols; j++) {
+			nu(i, j) = m(i, j);
+		}
+	}
+	return nu;
+}
+
+inline matN matN::Diag(const matN& m){
+	matN nu(m.rows, m.cols);
+	forI(m.rows) nu(i, i) = m(i, i);
+	return nu;
+}
+
 
 
 //// Non-Vector vs Vector Interactions ////
