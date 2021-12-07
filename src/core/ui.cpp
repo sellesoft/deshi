@@ -450,7 +450,7 @@ void UI::Line(vec2 start, vec2 end, float thickness, color color){
 	drawCmd.thickness = thickness;
 	drawCmd.    color = color;
 	
-	item.position = vec2{ Min(drawCmd.position.x, drawCmd.position2.x), Min(drawCmd.position.y, drawCmd.position2.y) };
+	item.position = vec2::ZERO;// { Min(drawCmd.position.x, drawCmd.position2.x), Min(drawCmd.position.y, drawCmd.position2.y) };
 	item.    size = vec2{ Max(drawCmd.position.x, drawCmd.position2.x), Max(drawCmd.position.y, drawCmd.position2.y) } - item.position;
 	
 	item.drawCmds.add(drawCmd);
@@ -2330,7 +2330,7 @@ void UI::Update() {
 								Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 							}break;
 							case UIDrawType_Line: {
-								Render::DrawLine2D(dcpos - item.position, dcpos2 - item.position, dct, dccol, dcl, dcso, dcse);
+								Render::DrawLine2D(dcpos , dcpos2 , dct, dccol, dcl, dcso, dcse);
 							}break;
 							case UIDrawType_Circle: {
 								Render::DrawCircle2D(dcpos, dct, drawCmd.position2.x, dccol, dcl, dcso, dcse);

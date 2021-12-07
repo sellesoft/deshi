@@ -3495,7 +3495,7 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
-		uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
+		uiCmdArrays[layer][uiCmdCounts[layer]].texIdx = font->idx;
 		uiCmdCounts[layer]++;
 		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
@@ -3526,7 +3526,7 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 				uiVertexCount += 4;
 				uiIndexCount += 6;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
+				//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 				pos.x += vkFonts[font->idx].characterWidth * scale.x;
@@ -3551,7 +3551,7 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 				uiVertexCount += 4;
 				uiIndexCount += 6;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
+				//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 			}break;
@@ -3574,7 +3574,7 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;
 		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
-		uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
+		uiCmdArrays[layer][uiCmdCounts[layer]].texIdx = font->idx;
 		uiCmdCounts[layer]++;
 		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
@@ -3605,7 +3605,7 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 				uiVertexCount += 4;
 				uiIndexCount += 6;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
+				//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 				pos.x += vkFonts[font->idx].characterWidth * scale.x;
@@ -3630,7 +3630,7 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 				uiVertexCount += 4;
 				uiIndexCount += 6;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-				uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
+				//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 			}break;
