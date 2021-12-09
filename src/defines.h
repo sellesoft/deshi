@@ -1,21 +1,15 @@
 #pragma once
 #ifndef DESHI_DEFINES_H
 #define DESHI_DEFINES_H
-//NOTE function calls in macros can get executed for each time they are placed (if not optimized away)
-//eg: Min(5, sqrt(26)) expands to (5 < sqrt(26)) ? 5 : sqrt(26)
-
-//compile-time print sizeof(); compiler will give an error with the size of the object
-//char (*__kaboom)[sizeof( YourTypeHere )] = 1;
-
-//NOTE this file is included is almost every other file of the project, so be frugal with includes here
+///////////////////////// //NOTE this file is included is almost every other file of the project, so be frugal with includes here
+//// common includes ////
+/////////////////////////
 #include <cstddef> //size_t, ptrdiff_t
 #include <cstdlib> //malloc, calloc, free
 
-//deshi constants //TODO(delle) remove/move deshi constants
-//NOTE arbitrarily chosen size, but its convenient to have a fixed size for names
-#define DESHI_NAME_SIZE 64
-
-//math constants and macros
+/////////////////////
+//// math macros ////
+/////////////////////
 #define M_EPSILON    0.00001f
 #define M_FOURTHPI   0.78539816339f
 #define M_HALFPI     1.57079632679f
@@ -29,43 +23,28 @@
 #define RADIANS(x) ((x) * (M_PI / 180.f))
 #define DEGREES(x) ((x) * (180.f / M_PI))
 
-//typedefs
-typedef signed char        s8;
-typedef signed short       s16;
-typedef signed int         s32;
-typedef signed long long   s64;
-typedef ptrdiff_t          spt;
-typedef unsigned char      u8;
-typedef unsigned short     u16;
-typedef unsigned int       u32;
-typedef unsigned long long u64;
-typedef size_t             upt;
-typedef float              f32;
-typedef double             f64;
-typedef s32                b32;
-typedef char16_t           uchar;
-typedef u32 Type;
-typedef u32 Flags;
-
-//static defines
+///////////////////////
+//// static macros ////
+///////////////////////
 #define local    static //inside a .cpp
 #define persist  static //inside a function
 #define global_  static //inside a .h
 
-//slow macros
+/////////////////////// //assert that an expression is true
+//// assert macros //// //NOTE we dont place these under DESHI_INTERNAL so that crashes DO happen outside of development
+/////////////////////// //NOTE the ... is for a programmer message at the assert; it is unused otherwise
 #if DESHI_SLOW
-//assert that an expression is true
-//NOTE the ... is to allow the programmer to put some text to read when the assert fails
-//     but it doesnt actually affect the assertion expression
-//NOTE we dont place this under DESHI_INTERNAL so that crashes do happen outside of development
 #  define Assert(expression, ...) if(!(expression)){*(volatile int*)0 = 0;}
 #else
 #  pragma warning(once : 4552)
 #  pragma warning(once : 4553)
 #  define Assert(expression, ...) expression
 #endif //DESHI_SLOW
+#define NotImplemented Assert(false, "not implemented yet")
 
-//compiler-dependent builtins
+/////////////////////////////////////
+//// compiler-dependent builtins ////
+/////////////////////////////////////
 #if   defined(_MSC_VER)
 #  define FORCE_INLINE __forceinline
 #  define DEBUG_BREAK __debugbreak()
@@ -82,15 +61,102 @@ typedef u32 Flags;
 #  error "unhandled compiler"
 #endif
 
-//for-loop shorthands for the simple,sequential iteration case
+/////////////////////////
+//// for-loop macros ////
+/////////////////////////
 #define forX(var_name,iterations) for(int var_name=0; var_name<(iterations); ++var_name)
 #define forI(iterations) for(int i=0; i<(iterations); ++i)
 #define forE(iterable) for(auto it = iterable.begin(), it_begin = iterable.begin(), it_end = iterable.end(); it != it_end; ++it)
 
-// https://stackoverflow.com/a/42060129 by pmttavara
-//defers execution inside the block to the end of the current scope; this works by
-//placing that code in a lambda that a dummy object will call in its destructor
-//NOTE it is kept unique by its line number, so you can't call two on the same line
+//////////////////////
+//// common types ////
+//////////////////////
+typedef signed char        s8;
+typedef signed short       s16;
+typedef signed int         s32;
+typedef signed long long   s64;
+typedef ptrdiff_t          spt;
+typedef unsigned char      u8;
+typedef unsigned short     u16;
+typedef unsigned int       u32;
+typedef unsigned long long u64;
+typedef size_t             upt;
+typedef float              f32;
+typedef double             f64;
+typedef s32                b32;
+typedef char16_t           uchar;
+
+typedef u32 Type;
+typedef u32 Flags;
+
+typedef void* (*BaseAllocator_Reserve_Func)(void* ctx, upt bytes);
+typedef void  (*BaseAllocator_ChangeMemory_Func)(void* ctx, void* ptr, upt bytes);
+struct BaseAllocator{
+	BaseAllocator_Reserve_Func*      reserve;  //ask for memory from OS
+	BaseAllocator_ChangeMemory_Func* commit;   //grab memory for use
+	BaseAllocator_ChangeMemory_Func* decommit; //not using memory anymore
+	BaseAllocator_ChangeMemory_Func* release;  //tell OS we dont need memory
+	void* ctx;
+};
+struct STLAllocator{
+	void* allocate(upt bytes){return malloc(bytes);}
+	void* callocate(upt count, upt size){return calloc(count,size);}
+	void  deallocate(void* ptr){free(ptr);};
+};
+
+/////////////////////// //NOTE some are two level so you can use the result of a macro expansion (STRINGIZE, GLUE, etc)
+//// common macros ////
+///////////////////////
+#define UNUSED_VAR(a) ((void)(a))
+#define STRINGIZE_(a) #a
+#define STRINGIZE(a) STRINGIZE_(a)
+#define GLUE_(a,b) a##b
+#define GLUE(a,b) GLUE_(a,b)
+#define ToggleBool(variable) variable = !variable
+#define Kilobytes(a) (((u64)(a)) << 10)
+#define Megabytes(a) (((u64)(a)) << 20)
+#define Gigabytes(a) (((u64)(a)) << 30)
+#define Terabytes(a) (((u64)(a)) << 40)
+#define ArrayCount(arr) (sizeof((arr)) / sizeof(((arr))[0])) //length of a static-size c-array
+#define RoundUpTo(value, multiple) (((size_t)((value) + (((size_t)(multiple))-1)) / (size_t)(multiple)) * (size_t)(multiple))
+#define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
+#define PointerDifference(a,b) ((u8*)(a) - (u8*)(b))
+#define PointerAsInt(a) PointerDifference(a,0)
+#define OffsetOfMember(structName,memberName) PointerAsInt(&(((structName*)0)->memberName))
+#define CastFromMember(structName,memberName,ptr) (structName*)((u8*)(ptr) - OffsetOfMember(structName,memberName))
+
+//////////////////////////
+//// common functions ////
+//////////////////////////
+FORCE_INLINE b32 IsPow2(u64 value){return (value != 0) && (value & (value-1) == 0);}
+template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;}
+template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;}
+template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;}
+template<typename T> FORCE_INLINE T Clamp(T value, T min, T max){return (value < min) ? min : ((value > max) ? max : value);};
+template<typename T,typename U> FORCE_INLINE T Clamp(T value, U min, T max){return (value < min) ? min : ((value > max) ? max : value);}
+template<typename T,typename U> FORCE_INLINE T Clamp(T value, T min, U max){return (value < min) ? min : ((value > max) ? max : value);}
+template<typename T,typename U> FORCE_INLINE T Clamp(T value, U min, U max){return (value < min) ? min : ((value > max) ? max : value);}
+template<typename T> FORCE_INLINE T ClampMin(T value, T min){return (value < min) ? min : value;};
+template<typename T> FORCE_INLINE T ClampMax(T value, T min){return (value > max) ? max : value;};
+template<typename T,typename U> FORCE_INLINE T ClampMin(T value, U min){return (value < min) ? min : value;};
+template<typename T,typename U> FORCE_INLINE T ClampMax(T value, U max){return (value > max) ? max : value;};
+
+///////////////////////////// //TODO remove/rework/rename these
+//// to-be-redone macros ////
+/////////////////////////////
+#define DESHI_NAME_SIZE 64 //NOTE arbitrarily chosen size, but its convenient to have a fixed size for names
+#define cpystr(dst,src,bytes) strncpy((dst), (src), (bytes)); (dst)[(bytes)-1] = '\0' //copy c-string and null-terminate
+#define dyncast(child,base) dynamic_cast<child*>(base) //dynamic cast short-hand
+
+///////////////
+//// other ////
+///////////////
+//compile-time print sizeof(); compiler will give an error with the size of the object
+//char (*__kaboom)[sizeof( YourTypeHere )] = 1;
+
+//ref: https://stackoverflow.com/a/42060129 by pmttavara
+//defers execution inside the block to the end of the current scope; this works by placing
+//that code in a lambda specific to that linethat a dummy object will call in its destructor
 #ifndef defer
 struct defer_dummy {};
 template <class F> struct deferrer { F f; ~deferrer() { f(); } };
@@ -99,53 +165,5 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #  define DEFER(LINE) DEFER_(LINE)
 #  define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
 #endif // defer
-
-#define ToggleBool(variable) variable = !variable
-
-// https://gcc.gnu.org/onlinedocs/cpp/Stringizing.html
-//two level so you can stringize the result of a macro expansion
-#define STRINGIZE_(x) #x
-#define STRINGIZE(x) STRINGIZE_(x)
-#define GLUE_(a,b) a##b
-#define GLUE(a,b) GLUE_(a,b)
-
-#define Kilobytes(a) ((a) << 10)
-#define Megabytes(a) ((a) << 20)
-#define Gigabytes(a) ((a) << 30)
-#define Terabytes(a) (((u64)(a)) << 40)
-#define ArrayCount(arr) (sizeof((arr)) / sizeof(((arr))[0])) //length of a static-size c-array
-#define RoundUpTo(value, multiple) (((size_t)((value) + (((size_t)(multiple))-1)) / (size_t)(multiple)) * (size_t)(multiple))
-#define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
-template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;};
-template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;};
-template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;};
-template<typename T> FORCE_INLINE T Clamp(T value, T min, T max){return (value < min) ? min : ((value > max) ? max : value);};
-template<typename T, typename U> FORCE_INLINE T Clamp(T value, U min, T max){return (value < min) ? min : ((value > max) ? max : value);};
-template<typename T, typename U> FORCE_INLINE T Clamp(T value, T min, U max){return (value < min) ? min : ((value > max) ? max : value);};
-template<typename T, typename U> FORCE_INLINE T Clamp(T value, U min, U max){return (value < min) ? min : ((value > max) ? max : value);};
-
-//NOTE macros disliked by delle :)
-#define cpystr(dst,src,bytes) strncpy((dst), (src), (bytes)); (dst)[(bytes)-1] = '\0' //copy c-string and null-terminate
-#define dyncast(child,base) dynamic_cast<child*>(base) //dynamic cast short-hand
-
-
-//this struct will outline the guidelines for making a custom allocator that string or array may use
-//and is the default allocator our container structs use
-//so, if you want to use a custom allocator with any of our container types, it must take this form, so just
-//exact same func names and arguments
-struct DefAlloc {
-	void* allocate(upt bytes) {
-		return malloc(bytes);
-	}
-	
-	void* callocate(upt count, upt size) {
-		return calloc(count, size);
-	}
-	
-	void deallocate(void* ptr) {
-		free(ptr);
-	}
-};
-
 
 #endif //DESHI_DEFINES_H
