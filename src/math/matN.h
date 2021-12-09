@@ -425,6 +425,8 @@ Minor(int row, int col) const {
 
 //returns the cofactor (minor with adjusted sign based on location in matrix) at given row and column
 inline f64 matN::
+
+
 Cofactor(int row, int col) const {
 	if ((row + col) % 2) {
 		return -Minor(row, col);
@@ -510,21 +512,20 @@ Inverse() const {
 			}
 			else if(i==j) {
 				Assert(this->operator()(i, j), "matN inverse does not exist if determinant is 0");
-				nu(i, j) /= this->operator()(i, j);
+				nu(i, j) /= data[cols * i + j];
 
 			}
 		}
 	}
-diagbreak:
 	if (diag) return nu;
-	else {
-		f64 determinant = this->Determinant();
-		Assert(determinant, "matN inverse does not exist if determinant is zero");
-		if (elementCount > 1) {
-			return this->Adjoint() / determinant;
-		}
-		return matN(rows, cols, { 1.f / determinant });
+diagbreak:
+	f64 determinant = this->Determinant();
+	Assert(determinant, "matN inverse does not exist if determinant is zero");
+	if (elementCount > 1) {
+		return this->Adjoint() / determinant;
 	}
+	return matN(rows, cols, { 1.f / determinant });
+	
 }
 
 inline matN matN::
