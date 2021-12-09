@@ -116,6 +116,7 @@ add UI color palettes for easy color changing
 
 Ungrouped TODOs
 ---------------
+allow the generic memory arena to grow if it will be maxed out
 add MouseInsideWindow() func to input or window
 make the transparent framebuffer a start switch since it hurts frames (it must be set at window creation time)
 add the ability to limit framerate

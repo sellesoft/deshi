@@ -60,6 +60,7 @@
 #else //__GNUC__ || __clang__
 #  error "unhandled compiler"
 #endif
+#define DebugBreakpoint DEBUG_BREAK
 
 /////////////////////////
 //// for-loop macros ////

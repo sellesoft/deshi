@@ -12,8 +12,10 @@ namespace Memory{
 #define MEMORY_CHECK_HEAPS false
 #define MEMORY_ARENA_MIN_SIZE Kilobytes(4)
 #define MEMORY_ARENA_BYTE_ALIGNMENT 8
-	local Heap  main_heap;
-	local Arena temp_arena;
+#define MEMORY_LARGE_GENERAL_ALLOCATION_SIZE Megabytes(4)
+	local Heap   main_heap;
+	local Arena  temp_arena;
+	local Arena* generic_arena;
 	
 #define HeapNodeInsertNext(x,node) ((node)->next=(x)->next,(node)->prev=(x),(node)->next->prev=(node),(x)->next=(node))
 #define HeapNodeInsertPrev(x,node) ((node)->prev=(x)->prev,(node)->next=(x),(node)->prev->next=(node),(x)->prev=(node))
@@ -76,6 +78,7 @@ namespace Memory{
 		DEBUGAssertHeapIsGood(&main_heap);
 		if(bytes == 0) return 0;
 		upt reserve_size = ClampMin(RoundUpTo(bytes + sizeof(HeapNode), MEMORY_ARENA_BYTE_ALIGNMENT), MEMORY_ARENA_MIN_SIZE);
+		Assert(main_heap.start, "Attempted to create an arena before Memory::Init() has been called");
 		Assert(main_heap.used + reserve_size <= main_heap.size, "Attempted to use more than max main heap size");
 		
 		//check if there are any empty nodes that can hold the new arena
@@ -150,6 +153,7 @@ namespace Memory{
 			   && (next->empty.next != 0) && (next->empty.prev != 0)){
 				u8* ptr = (u8*)(node + 1) + node->arena.size;
 				if(PointerDifference(ptr, next) == 0){
+					if(next->order.next == &main_heap.order) main_heap.cursor -= next->arena.size + sizeof(HeapNode);
 					HeapNodeRemove(&next->order); DEBUGAssertHeapIsGood(&main_heap);
 					HeapNodeRemove(&next->empty); DEBUGAssertHeapIsGood(&main_heap);
 					HeapNodeRemove(&node->empty); DEBUGAssertHeapIsGood(&main_heap);
@@ -167,6 +171,7 @@ namespace Memory{
 			   && node->empty.next != 0 && node->empty.prev != 0){
 				u8* ptr = (u8*)(prev + 1) + prev->arena.size;
 				if(PointerDifference(ptr, node) == 0){
+					if(node->order.next == &main_heap.order) main_heap.cursor -= node->arena.size + sizeof(HeapNode);
 					HeapNodeRemove(&node->order); DEBUGAssertHeapIsGood(&main_heap);
 					HeapNodeRemove(&node->empty); DEBUGAssertHeapIsGood(&main_heap);
 					HeapNodeRemove(&prev->empty); DEBUGAssertHeapIsGood(&main_heap);
@@ -183,15 +188,23 @@ namespace Memory{
 		DEBUGAssertHeapIsGood(&main_heap); //DEBUGPrintMainHeapNodes();
 	}
 	
-	void* Allocate(upt bytes){ //!Incomplete
+	void* Allocate(upt bytes){
 		DEBUGAssertHeapIsGood(&main_heap);
 		if(bytes == 0) return 0;
+		Assert(generic_arena, "Attempted to allocate before Memory::Init() has been called");
 		Assert(main_heap.used + bytes <= main_heap.size, "Attempted to use more than max main heap size");
 		
-		NotImplemented;
+		//if the allocation is large, create an arena for it rather than using the generic arena
+		Arena* arena = (bytes > MEMORY_LARGE_GENERAL_ALLOCATION_SIZE) ? CreateArena(bytes) : generic_arena;
+		Assert(arena->cursor + bytes <= arena->start + arena->size, "Attempted to use more than max arena size");
+		
+		void* result = arena->cursor + sizeof(upt);
+		*((upt*)arena->cursor) = bytes; //place allocation size at cursor
+		arena->cursor += bytes + sizeof(upt);
+		arena->used += bytes + sizeof(upt);
 		
 		DEBUGAssertHeapIsGood(&main_heap);
-		return 0;
+		return result;
 	}
 	
 	void* TempAllocate(upt bytes){
@@ -205,13 +218,17 @@ namespace Memory{
 		return result;
 	}
 	
-	void ZeroFree(void* ptr){ //!Incomplete
+	void ZeroFree(void* ptr){
 		DEBUGAssertHeapIsGood(&main_heap);
 		if(ptr == 0) return;
 		Assert(ptr >= main_heap.start && ptr <= main_heap.start + main_heap.used, "Attempted to free a pointer outside the main heap");
 		
 		upt* size = ((upt*)ptr - 1);
-		ZeroBytes(size, *size);
+		if(*size > MEMORY_LARGE_GENERAL_ALLOCATION_SIZE){
+			DeleteArena(&((HeapNode*)size - 1)->arena);
+		}else{
+			ZeroBytes(size, *size);
+		}
 		DEBUGAssertHeapIsGood(&main_heap);
 	}
 	
@@ -247,6 +264,8 @@ namespace Memory{
 		temp_arena.cursor = temp_arena.start;
 		temp_arena.size   = temp_size;
 		temp_arena.used   = 0;
+		
+		generic_arena = CreateArena(Megabytes(64)-sizeof(HeapNode));
 	}
 	
 	void Update(){
