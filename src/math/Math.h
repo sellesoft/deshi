@@ -12,6 +12,7 @@
 #include <math.h>
 #include <algorithm>
 #include <numeric>
+#include <vector>
 
 #define F_AVG(i, f) ([&] { \
 persist std::vector<float> floats; \

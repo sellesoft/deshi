@@ -163,7 +163,6 @@ __________ this might not be an error with our stuff and just a quirk of the win
 #include "utils/optional.h"
 #include "utils/debug.h"
 #include "utils/ring_array.h"
-#include "utils/command.h"
 #include "utils/array.h"
 #include "utils/hash.h"
 #include "utils/map.h"
@@ -304,8 +303,7 @@ void deshi::cleanup(){
 	DeshiImGui::Cleanup();
 	Render::Cleanup();
 	deshi_window.Cleanup();
-	deshi_console.CleanUp(); 
-	Console2::Cleanup();
+	deshi_console.Cleanup(); Console2::Cleanup();
 	Logging::Cleanup();
 }
 

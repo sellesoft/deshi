@@ -113,7 +113,7 @@ enum UIStyleCol : u32 {
 	UIStyleCol_HeaderButtonActive,
 	UIStyleCol_HeaderButtonHovered,
 	UIStyleCol_HeaderBorder,
-
+	
 	UIStyleCol_SliderBg,
 	UIStyleCol_SliderBgActive,
 	UIStyleCol_SliderBgHovered,
@@ -121,12 +121,12 @@ enum UIStyleCol : u32 {
 	UIStyleCol_SliderBarActive,
 	UIStyleCol_SliderBarHovered,
 	UIStyleCol_SliderBorder,
-
+	
 	UIStyleCol_InputTextBg,
 	UIStyleCol_InputTextBgActive,
 	UIStyleCol_InputTextBgHovered,
 	UIStyleCol_InputTextBorder,
-
+	
 	UIStyleCol_TitleBg,
 	UIStyleCol_TitleBgHovered,
 	UIStyleCol_TitleBgActive,
@@ -230,8 +230,8 @@ struct UIInputTextState {
 enum UISliderFlags_ {
 	UISliderFlags_NONE     = 0,
 	UISliderFlags_Vertical = 1,
-
-
+	
+	
 }; typedef u32 UISliderFlags;
 
 enum UIDrawType : u32 {
@@ -466,15 +466,15 @@ namespace UI {
 	vec2      GetLastItemSize();
 	vec2      GetLastItemScreenPos();
 	u32       GetCenterLayer();
-
-
+	
+	
 	//// control functions ////
 	void SameLine();
 	void SetCursor(vec2 pos);
 	void SetNextItemActive();
 	void SetNextItemSize(vec2 size);
 	
-
+	
 	//// rows ////
 	void BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags = 0);
 	void EndRow();
@@ -489,8 +489,8 @@ namespace UI {
 	void Line(vec2 start, vec2 end, float thickness = 1, color color = Color_White);
 	void Circle(vec2 pos, f32 radius, u32 subdivisions = 30, color color = Color_White);
 	void CircleFilled(vec2 pos, f32 radius, u32 subdivisions = 30, color color = Color_White);
-
-
+	
+	
 	//// text ////
 	void Text(const char* text, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
@@ -504,16 +504,16 @@ namespace UI {
 	bool Button(const char* text, vec2 pos);
 	
 	void Checkbox(string label, bool* b);
-
+	
 	bool BeginCombo(const char* label, const char* prev_val);
 	void EndCombo();
-
+	
 	bool Selectable();
-
+	
 	bool Header(const char* label);
-
+	
 	void Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
-
+	
 	//these overloads are kind of silly change them eventually
 	//InputText takes in a buffer and modifies it according to input and works much like ImGui's InputText
 	//However there are overloads that will return it's UIInputTextState, allowing you to directly r/w some internal information of the
@@ -533,7 +533,7 @@ namespace UI {
 	void PushScale(vec2 scale);
 	void PushLayer(u32 layer);
 	void PushWindowLayer(u32 layer);
-
+	
 	void PopColor(u32 count = 1);
 	void PopVar(u32 count = 1);
 	void PopFont(u32 count = 1);
@@ -543,8 +543,8 @@ namespace UI {
 	
 	
 	//// special functions ////
-
-
+	
+	
 	
 	//// windows ////
 	void Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);

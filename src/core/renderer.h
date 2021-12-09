@@ -59,7 +59,7 @@ struct RenderSettings{
 	//// requires restart ////
 	bool debugging = true;
 	bool printf    = false;
-	bool recompileAllShaders = true;
+	bool recompileAllShaders = false;
 	u32  msaaSamples = 0;
 	bool textureFiltering = false;
 	bool anistropicFiltering = false;
@@ -162,7 +162,7 @@ namespace Render{
 	void DrawLines2D(array<vec2>& points, float thickness = 1, color col = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
 	void DrawText2D(Font* font,  cstring text, vec2 pos, color _color = Color_White, vec2 scale = vec2::ONE, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
 	void DrawText2D(Font* font, wcstring text, vec2 pos, color _color = Color_White, vec2 scale = vec2::ONE, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));
-
+	
 	
 	//getters for index and vertex array 
 	

@@ -96,7 +96,7 @@ GetPackedQuad(int charidx, vec2* pos, vec2 scale) {
 		
 		q.x0 = pos->x + b->xoff * scale.x;
 		q.y0 = pos->y + (b->yoff + ascent) * scale.y;
-		q.x1 = pos->x + b->xoff + (b->xoff2 - b->xoff) * scale.x;
+		q.x1 = pos->x + (b->xoff2 - b->xoff) * scale.x;
 		q.y1 = pos->y + (b->yoff2 + ascent) * scale.y;
 		
 		q.s0 = b->x0 * ipw; //NOTE, we could maybe store the UV values noramalized instead of doing this everytime

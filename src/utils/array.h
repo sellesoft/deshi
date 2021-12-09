@@ -6,8 +6,8 @@
 #include <cstdlib>
 #include <initializer_list>
 
-template<class T, class Alloc = DefAlloc>
-struct array {
+template<typename T, typename Allocator = STLAllocator>
+struct array{
 	u32 count = 0;
 	u32 space = 0; //total space array has allocated
 	T* data   = nullptr;
@@ -16,23 +16,23 @@ struct array {
 	T* last  = nullptr;
 	T* max   = nullptr;
 	T* iter  = nullptr;
-
-	Alloc allocator; //not sure if I have to make this an object
-
+	
+	Allocator allocator;
+	
 	array();
 	array(u32 _count);
 	array(std::initializer_list<T> l);
-	array(const array<T, Alloc>& array);
+	array(const array<T,Allocator>& array);
 	array(T* _data, u32 _count);
 	~array();
 	
-	array<T, Alloc>& operator= (const array<T, Alloc>& array);
-	T&        operator[](u32 i);
-	T         operator[](u32 i) const;
+	array<T,Allocator>& operator= (const array<T,Allocator>& array);
+	T& operator[](u32 i);
+	T  operator[](u32 i) const;
 	
 	u32  size();
 	void add(const T& t);
-	void add(const array<T, Alloc>& t);
+	void add(const array<T, Allocator>& t);
 	//for taking in something without copying it
 	void emplace(const T& t);
 	void insert(const T& t, u32 idx);
@@ -78,8 +78,8 @@ struct array {
 ///////////////////////
 //// @constructors ////
 ///////////////////////
-template<class T, class Alloc>
-inline array<T, Alloc>::array(){ //TODO(delle) we should not allocate on default init
+template<typename T, typename Allocator>
+inline array<T, Allocator>::array(){ //TODO(delle) we should not allocate on default init
 	space = 4;
 	count = 0;
 	data  = (T*)allocator.callocate(space, sizeof(T));
@@ -89,8 +89,8 @@ inline array<T, Alloc>::array(){ //TODO(delle) we should not allocate on default
 	max   = data+(space-1);
 }
 
-template<class T, class Alloc>
-inline array<T, Alloc>::array(u32 _count){
+template<typename T, typename Allocator>
+inline array<T, Allocator>::array(u32 _count){
 	space = RoundUpTo(_count, 4);
 	count = _count;
 	data  = (T*)allocator.callocate(_count, sizeof(T));
@@ -100,8 +100,8 @@ inline array<T, Alloc>::array(u32 _count){
 	max   = data+(space-1);
 }
 
-template<class T, class Alloc>
-inline array<T, Alloc>::array(std::initializer_list<T> l){
+template<typename T, typename Allocator>
+inline array<T, Allocator>::array(std::initializer_list<T> l){
 	space = RoundUpTo(l.size(), 4);
 	count = l.size();
 	data  = (T*)allocator.callocate(space, sizeof(T));
@@ -122,8 +122,8 @@ inline array<T, Alloc>::array(std::initializer_list<T> l){
 //TODO this can probably be much better
 //its necessary so when we return elements the entire array copies properly
 //so we have to make sure everything in the array gets recreated
-template<class T, class Alloc>
-inline array<T, Alloc>::array(const array<T, Alloc>& array){
+template<typename T, typename Allocator>
+inline array<T, Allocator>::array(const array<T, Allocator>& array){
 	space = array.space;
 	count = array.count;
 	data = (T*)allocator.callocate(space, sizeof(T));
@@ -143,8 +143,8 @@ inline array<T, Alloc>::array(const array<T, Alloc>& array){
 	max  = data+(space-1);
 }
 
-template<class T, class Alloc>
-inline array<T, Alloc>::array(T* _data, u32 _count){
+template<typename T, typename Allocator>
+inline array<T, Allocator>::array(T* _data, u32 _count){
 	space = RoundUpTo(_count, 4);
 	count = _count;
 	data = (T*)allocator.callocate(space, sizeof(T));
@@ -155,8 +155,8 @@ inline array<T, Alloc>::array(T* _data, u32 _count){
 	max   = data+(space-1);
 }
 
-template<class T, class Alloc>
-inline array<T, Alloc>::~array(){
+template<typename T, typename Allocator>
+inline array<T, Allocator>::~array(){
 	if(last != 0){
 		for(T* i = first; i <= last; i++){
 			i->~T();
@@ -168,8 +168,8 @@ inline array<T, Alloc>::~array(){
 ////////////////////
 //// @operators ////
 ////////////////////
-template<class T, class Alloc>
-inline array<T, Alloc>& array<T, Alloc>::operator= (const array<T, Alloc>& _array){
+template<typename T, typename Allocator>
+inline array<T, Allocator>& array<T, Allocator>::operator= (const array<T, Allocator>& _array){
 	this->~array();
 	
 	space = _array.space;
@@ -192,14 +192,14 @@ inline array<T, Alloc>& array<T, Alloc>::operator= (const array<T, Alloc>& _arra
 	return *this;
 }
 
-template<class T, class Alloc>
-inline T& array<T, Alloc>::operator[](u32 i){
+template<typename T, typename Allocator>
+inline T& array<T, Allocator>::operator[](u32 i){
 	Assert(i < count);
 	return data[i];
 }
 
-template<class T, class Alloc>
-inline T array<T, Alloc>::operator[](u32 i) const {
+template<typename T, typename Allocator>
+inline T array<T, Allocator>::operator[](u32 i) const {
 	Assert(i < count);
 	return data[i];
 }
@@ -208,13 +208,13 @@ inline T array<T, Alloc>::operator[](u32 i) const {
 ////////////////////
 //// @functions ////
 ////////////////////
-template<class T, class Alloc>
-inline u32 array<T, Alloc>::size(){
+template<typename T, typename Allocator>
+inline u32 array<T, Allocator>::size(){
 	return count;
 }
 
-template<class T, class Alloc>
-inline void array<T, Alloc>::add(const T& t){
+template<typename T, typename Allocator>
+inline void array<T, Allocator>::add(const T& t){
 	//if array is full, realloc the memory and extend it to accomodate the new item
 	if(max - last == 0){
 		u32 iteroffset = iter - first;
@@ -241,15 +241,15 @@ inline void array<T, Alloc>::add(const T& t){
 	count++;
 }
 
-template<class T, class Alloc>
-inline void array<T, Alloc>::add(const array<T, Alloc>& t){
+template<typename T, typename Allocator>
+inline void array<T, Allocator>::add(const array<T, Allocator>& t){
 	for(const T& item : t){
 		this->add(item);
 	}
 }
 
-template<class T, class Alloc>
-inline void array<T, Alloc>::emplace(const T& t){
+template<typename T, typename Allocator>
+inline void array<T, Allocator>::emplace(const T& t){
 	//if array is full, realloc the memory and extend it to accomodate the new item
 	if(max - last == 0){
 		int iteroffset = iter - first;
@@ -276,8 +276,8 @@ inline void array<T, Alloc>::emplace(const T& t){
 	count++;
 }
 
-template<class T, class Alloc>
-inline void array<T, Alloc>::insert(const T& t, u32 idx) {
+template<typename T, typename Allocator>
+inline void array<T, Allocator>::insert(const T& t, u32 idx) {
 	Assert(idx <= count);
 	count += 1;
 	if (space == 0) {
@@ -297,8 +297,8 @@ inline void array<T, Alloc>::insert(const T& t, u32 idx) {
 	}
 }
 
-template<class T, class Alloc>
-inline void array<T, Alloc>::pop(u32 _count){
+template<typename T, typename Allocator>
+inline void array<T, Allocator>::pop(u32 _count){
 	Assert(count >= _count, "attempt to pop more than array size");
 	forI(_count){
 		last->~T();
@@ -307,8 +307,8 @@ inline void array<T, Alloc>::pop(u32 _count){
 	}
 }	
 
-template<class T, class Alloc>
-inline void array<T, Alloc>::remove(u32 i){
+template<typename T, typename Allocator>
+inline void array<T, Allocator>::remove(u32 i){
 	Assert(count > 0, "can't remove element from empty vector");
 	Assert(i < count, "index is out of bounds");
 	data[i].~T();
@@ -333,8 +333,8 @@ inline void array<T, Alloc>::remove(u32 i){
 //	count--;
 //}
 
-template<class T, class Alloc>
-inline void array<T, Alloc>::clear(){
+template<typename T, typename Allocator>
+inline void array<T, Allocator>::clear(){
 	this->~array();
 	space = 4;
 	count = 0;
@@ -345,8 +345,8 @@ inline void array<T, Alloc>::clear(){
 	max = data + (space - 1);
 }
 
-template<class T, class Alloc>
-inline void array<T, Alloc>::resize(u32 _count){
+template<typename T, typename Allocator>
+inline void array<T, Allocator>::resize(u32 _count){
 	if(_count > space){
 		space = _count;
 		u32 osize = count;
@@ -371,8 +371,8 @@ inline void array<T, Alloc>::resize(u32 _count){
 	count = _count;
 }
 
-template<class T, class Alloc>
-inline void array<T, Alloc>::reserve(u32 nuspace){
+template<typename T, typename Allocator>
+inline void array<T, Allocator>::reserve(u32 nuspace){
 	if(nuspace > space){
 		space = RoundUpTo(nuspace, 4);
 		u32 osize = count;
@@ -386,8 +386,8 @@ inline void array<T, Alloc>::reserve(u32 nuspace){
 	}
 }
 
-template<class T, class Alloc>
-inline void array<T, Alloc>::swap(u32 idx1, u32 idx2){
+template<typename T, typename Allocator>
+inline void array<T, Allocator>::swap(u32 idx1, u32 idx2){
 	Assert(idx1 < count && idx2 < count, "index out of bounds");
 	Assert(idx1 != idx2, "can't swap an element with itself");
 	T save = data[idx1];
@@ -395,63 +395,63 @@ inline void array<T, Alloc>::swap(u32 idx1, u32 idx2){
 	data[idx2] = save;
 }
 
-template<class T, class Alloc>
-inline bool array<T, Alloc>::has(const T& value){
+template<typename T, typename Allocator>
+inline bool array<T, Allocator>::has(const T& value){
 	for(const T& blahabuasjdas : *this) 
 		if(blahabuasjdas == value) 
 		return true;
 	return false;
 }
 
-template<class T, class Alloc>
-inline T& array<T, Alloc>::at(u32 i){
+template<typename T, typename Allocator>
+inline T& array<T, Allocator>::at(u32 i){
 	Assert(i < count);
 	return data[i];
 }
 
-template<class T, class Alloc>
-inline T& array<T, Alloc>::next(){
+template<typename T, typename Allocator>
+inline T& array<T, Allocator>::next(){
 	if(last - iter + 1 >= 0) return *++iter;
 	return *iter;
 }
 
-template<class T, class Alloc>
-inline T& array<T, Alloc>::peek(int i){
+template<typename T, typename Allocator>
+inline T& array<T, Allocator>::peek(int i){
 	if(last - iter + 1 >= 0) return *(iter + i);
 	return *iter;
 }
 
-template<class T, class Alloc>
-inline T& array<T, Alloc>::prev(){
+template<typename T, typename Allocator>
+inline T& array<T, Allocator>::prev(){
 	if(first - iter + 1 >= 0) return *iter--;
 }
 
-template<class T, class Alloc>
-inline T& array<T, Alloc>::lookback(int i){
+template<typename T, typename Allocator>
+inline T& array<T, Allocator>::lookback(int i){
 	if(first - iter + 1 >= 0) return *(iter - i);
 }
 
-template<class T, class Alloc>
-inline T* array<T, Alloc>::nextptr(){
+template<typename T, typename Allocator>
+inline T* array<T, Allocator>::nextptr(){
 	if(iter + 1 - last >= 0) return iter++;
 	else return nullptr;
 }
 
 //TODO come up with a better name for this and the corresponding previous overload
-template<class T, class Alloc>
-inline T* array<T, Alloc>::peekptr(int i){
+template<typename T, typename Allocator>
+inline T* array<T, Allocator>::peekptr(int i){
 	if(iter + 1 - last >= 0) return iter + i;
 	else return nullptr;
 }
 
-template<class T, class Alloc>
-inline T* array<T, Alloc>::prevptr(){
+template<typename T, typename Allocator>
+inline T* array<T, Allocator>::prevptr(){
 	if(iter - 1 - first >= 0) return iter--;
 	else return nullptr;
 }
 
-template<class T, class Alloc>
-inline T* array<T, Alloc>::lookbackptr(int i){
+template<typename T, typename Allocator>
+inline T* array<T, Allocator>::lookbackptr(int i){
 	if(iter - 1 - first >= 0) return iter - i;
 	else return nullptr;
 }

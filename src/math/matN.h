@@ -77,6 +77,7 @@ The transformation matrix will follow the format to the right:                  
 
 #include "vector.h"
 #include "../utils/array.h"
+#include <cstring> //memcpy
 
 struct matN {
 	u32 rows;
@@ -96,7 +97,7 @@ struct matN {
 		elementCount = _rows * _cols;
 		data = list;
 	}
-
+	
 	f64& operator () (u32 row, u32 col);
 	f64  operator () (u32 row, u32 col) const;
 	void operator =  (const matN& rhs);
@@ -119,7 +120,7 @@ struct matN {
 	bool operator == (const matN& rhs) const;
 	bool operator != (const matN& rhs) const;
 	friend matN operator * (const f64& lhs, const matN& rhs) { return rhs * lhs; }
-
+	
 	matN Transpose() const;
 	matN Submatrix(array<u32> inRows, array<u32> inCols) const;
 	f64  Minor(int row, int col) const;
@@ -133,8 +134,8 @@ struct matN {
 	void SetCol(u32 col, const matN& colmat);
 	void RowSwap(u32 row1, u32 row2);
 	void ColSwap(u32 col1, u32 col2);
-
-
+	
+	
 	static matN Identity(u32 rows);
 	static matN M3x3To4x4(const matN& m);
 	static matN RotationMatrix(vec3 rotation);
@@ -150,7 +151,7 @@ struct matN {
 	static matN TriL(const matN& m);
 	static matN TriU(const matN& m);
 	static matN Diag(const matN& m);
-
+	
 	//Non-matN vs matN interactions
 	matN(vec3 v);
 	matN(vec3 v, f64 w);
@@ -449,28 +450,28 @@ Determinant() const {
 		}
 		case(3): { //aei + bfg + cdh - ceg - bdi - afh
 			return  (data[0] * data[4] * data[8]) +        //aei
-				(data[1] * data[5] * data[6]) +        //bfg
-				(data[2] * data[3] * data[7]) -        //cdh
-				(data[2] * data[4] * data[6]) -        //ceg
-				(data[1] * data[3] * data[8]) -        //bdi
-				(data[0] * data[5] * data[7]);        //afh
+			(data[1] * data[5] * data[6]) +        //bfg
+			(data[2] * data[3] * data[7]) -        //cdh
+			(data[2] * data[4] * data[6]) -        //ceg
+			(data[1] * data[3] * data[8]) -        //bdi
+			(data[0] * data[5] * data[7]);        //afh
 		}
 		case(4): { //not writing this out in letters
 			return  data[0] * (data[5] * (data[10] * data[15] - data[11] * data[14]) -
-				data[9] * (data[6] * data[15] - data[7] * data[14]) +
-				data[13] * (data[6] * data[11] - data[7] * data[10]))
+							   data[9] * (data[6] * data[15] - data[7] * data[14]) +
+							   data[13] * (data[6] * data[11] - data[7] * data[10]))
 				-
 				data[4] * (data[1] * (data[10] * data[15] - data[11] * data[14]) -
-					data[9] * (data[2] * data[15] - data[3] * data[14]) +
-					data[13] * (data[2] * data[11] - data[3] * data[10]))
+						   data[9] * (data[2] * data[15] - data[3] * data[14]) +
+						   data[13] * (data[2] * data[11] - data[3] * data[10]))
 				+
 				data[8] * (data[1] * (data[6] * data[15] - data[7] * data[14]) -
-					data[5] * (data[2] * data[15] - data[3] * data[14]) +
-					data[13] * (data[2] * data[7] - data[3] * data[6]))
+						   data[5] * (data[2] * data[15] - data[3] * data[14]) +
+						   data[13] * (data[2] * data[7] - data[3] * data[6]))
 				-
 				data[12] * (data[1] * (data[6] * data[11] - data[7] * data[10]) -
-					data[5] * (data[2] * data[11] - data[3] * data[10]) +
-					data[9] * (data[2] * data[7] - data[3] * data[6]));
+							data[5] * (data[2] * data[11] - data[3] * data[10]) +
+							data[9] * (data[2] * data[7] - data[3] * data[6]));
 		}
 		default: {
 			f64 result = 0;
@@ -599,9 +600,9 @@ inline matN matN::
 M3x3To4x4(const matN& ma) {
 	Assert(ma.rows == 3 && ma.cols == 3, "Cant convert 3x3 matrix to 4x4 if the matrix isnt 3x3");
 	return matN(4,4,{ma(0,0), ma(0,1), ma(0,2), 0,
-				     ma(1,0), ma(1,1), ma(1,2), 0,
-				     ma(2,0), ma(2,1), ma(2,2), 0,
-				     0,      0,      0,         1 });
+					ma(1,0), ma(1,1), ma(1,2), 0,
+					ma(2,0), ma(2,1), ma(2,2), 0,
+					0,      0,      0,         1 });
 }
 
 //returns a 4x4 or 3x3 rotation transformation matrix depending on boolean argument
@@ -617,9 +618,9 @@ RotationMatrix(vec3 rotation) {
 	f64 r20 = cZ * cX * sY + sX * sZ; f64 r21 = cX * sY * sZ - cZ * sX; f64 r22 = cX * cY;
 	
 	return matN(4,4,{ r00, r01, r02, 0,
-			          r10, r11, r12, 0,
-			          r20, r21, r22, 0,
-			          0,   0,   0,   1 });
+					r10, r11, r12, 0,
+					r20, r21, r22, 0,
+					0,   0,   0,   1 });
 	
 	
 }
@@ -631,9 +632,9 @@ RotationMatrixX(f64 degrees) {
 	f64 r = degrees * (3.14159265359f / 180.f);
 	f64 c = cosf(r);  f64 s = sinf(r);
 	matN newMatrix(4,4, { 1,  0, 0,	0,
-					      0,  c, s,	0,
-					      0, -s, c, 0,
-						  0,  0, 0, 1});
+					   0,  c, s,	0,
+					   0, -s, c, 0,
+					   0,  0, 0, 1});
 }
 
 //returns a 4x4 or 3x3 rotation transformation matrix depending on boolean argument
@@ -643,9 +644,9 @@ RotationMatrixY(f64 degrees) {
 	f64 r = degrees * (3.14159265359f / 180.f);
 	f64 c = cosf(r); f64 s = sinf(r);
 	matN newMatrix(4,4, { c, 0, -s, 0,
-					      0, 1,  0, 0,
-					      s, 0,  c, 0,
-						  0, 0,  0, 1});
+					   0, 1,  0, 0,
+					   s, 0,  c, 0,
+					   0, 0,  0, 1});
 }
 
 //returns a 4x4 or 3x3 rotation transformation matrix depending on boolean argument
@@ -655,9 +656,9 @@ RotationMatrixZ(f64 degrees) {
 	f64 r = degrees * (3.14159265359f / 180.f);
 	f64 c = cosf(r); f64 s = sinf(r);
 	matN newMatrix(4,4,{ c, s, 0, 0,
-					     -s, c, 0, 0,
-					      0, 0, 1, 0,
-						  0, 0, 0, 1});
+					   -s, c, 0, 0,
+					   0, 0, 1, 0,
+					   0, 0, 0, 1});
 }
 
 //returns a 4x4 translation transformation matrix
@@ -688,9 +689,9 @@ TransformationMatrix(vec3 tr, vec3 rot, vec3 scale) {
 	f64 r10 = cZ * sX * sY - cX * sZ; f64 r11 = cZ * cX + sX * sY * sZ; f64 r12 = sX * cY;
 	f64 r20 = cZ * cX * sY + sX * sZ; f64 r21 = cX * sY * sZ - cZ * sX; f64 r22 = cX * cY;
 	return matN(4,4, { scale.x * r00, scale.x * r01, scale.x * r02, 0,
-					   scale.y * r10, scale.y * r11, scale.y * r12, 0,
-					   scale.z * r20, scale.z * r21, scale.z * r22, 0,
-					   tr.x,          tr.y,          tr.z,          1 });
+					scale.y * r10, scale.y * r11, scale.y * r12, 0,
+					scale.z * r20, scale.z * r21, scale.z * r22, 0,
+					tr.x,          tr.y,          tr.z,          1 });
 }
 
 //diag_offset > 0 is above the main diagonal
