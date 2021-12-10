@@ -36,6 +36,8 @@ namespace Logging{
 	}
 	
 	void Init(u32 log_count, bool mirror){
+		TIMER_START(t_s);
+		
 		mirror_to_stdout = mirror;
 		
 		//delete all but last 'log_count' files in logs directory
@@ -73,6 +75,8 @@ namespace Logging{
 		//write immediately when debugging so that a log() right before Assert() still writes
 		setvbuf(file,0,_IONBF,0);
 #endif //DESHI_SLOW
+		
+		Log("deshi","Finished logging initialization in ",TIMER_END(t_s),"ms");
 	}
 	
 	//TODO maybe flush every X seconds/frames instead of every update?

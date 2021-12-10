@@ -193,8 +193,12 @@ namespace Console2{
 	}
 	
 	void Init(){
+		TIMER_START(t_s);
+		
 		history.init(8192);
 		dictionary.init(512);
+		
+		//Log("deshi","Finished console2 initialization in ",TIMER_END(t_s),"ms");
 	}
 	
 	void Cleanup(){

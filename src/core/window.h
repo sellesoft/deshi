@@ -58,6 +58,9 @@ struct Window{
 	void UpdateResizable(bool resizable);
 	void Close();
 	void UpdateTitle(const char* title);
+	void ShowWindow();
+	void HideWindow();
+	b32  ShouldClose();
 };
 
 //global_ window pointer

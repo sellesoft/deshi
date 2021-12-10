@@ -5,11 +5,13 @@
 //NOTE real-world times should be un 64bit unix format
 
 #include "../defines.h"
+#include "logging.h"
 
 #include <chrono>
 #include <ctime>
 #include <string>
 
+//TODO OS layer timers
 #define TIMER_START(name) std::chrono::time_point<std::chrono::high_resolution_clock> name = std::chrono::high_resolution_clock::now()
 #define TIMER_RESET(name) name = std::chrono::high_resolution_clock::now()
 #define TIMER_END(name) std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - name).count()
@@ -39,8 +41,12 @@ extern Time* g_time;
 #define DeshTotalTime g_time->totalTime
 
 inline void Time::Init(){
+	TIMER_START(t_s);
+	
 	tp1 = std::chrono::system_clock::now();
 	tp2 = std::chrono::system_clock::now();
+	
+	Log("deshi","Finished time initialization in ",TIMER_END(t_s),"ms");
 }
 
 inline void Time::Update(){

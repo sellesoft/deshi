@@ -38,7 +38,10 @@ namespace Storage{
 //// @init ////
 ///////////////
 void Storage::
-Init(){
+Init(u64 bytes){
+	TIMER_START(t_s);
+	//Arena* arena = CreateArena(bytes);
+	
 	stbi_set_flip_vertically_on_load(true);
 	//null assets      //TODO(delle) store null.png and null shader in a .cpp
 	CreateBoxMesh(1.0f, 1.0f, 1.0f); cpystr(NullMesh()->name, "null", DESHI_NAME_SIZE);
@@ -59,6 +62,8 @@ Init(){
 	Texture* nf_tex = CreateTextureFromMemory(&white_pixels, "null_font", 2, 2, ImageFormat_BW, TextureType_2D, false, false).second;
 	Render::LoadFont(NullFont(), nf_tex);
 	//DeleteTexture(nf_tex); //!Incomplete
+	
+	Log("deshi","Finished storage initialization in ",TIMER_END(t_s),"ms");
 }
 
 void Storage::
@@ -1800,9 +1805,8 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 }
 
 void Storage::
-DeleteFont(Font* font){
-	//!Incomplete
-	Assert(!"not implemented");
+DeleteFont(Font* font){ //!Incomplete
+	NotImplemented;
 	free(font);
 }
 

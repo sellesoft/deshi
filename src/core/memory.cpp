@@ -275,3 +275,43 @@ namespace Memory{
 		temp_arena.used = 0;
 	}
 }; //namespace Memory
+
+#if 0
+void test_memory(){
+	Arena* arena1 = Memory::CreateArena(Kilobytes(4));
+	Memory::DeleteArena(arena1);
+	
+	arena1 = Memory::CreateArena(Kilobytes(8));
+	Arena* arena2 = Memory::CreateArena(Kilobytes(16));
+	Arena* arena3 = Memory::CreateArena(Kilobytes(8));
+	Memory::DeleteArena(arena2);
+	
+	arena2 = Memory::CreateArena(Kilobytes(4));
+	Arena* arena4 = Memory::CreateArena(Kilobytes(4));
+	
+	Memory::DeleteArena(arena1);
+	Memory::DeleteArena(arena2);
+	Memory::DeleteArena(arena3);
+	Memory::DeleteArena(arena4);
+	
+	char* string1 = (char*)alloc(64);
+	forI(52){ string1[i] = 'a'+char(i); }
+	char* string2 = (char*)alloc(256);
+	char* string3 = (char*)alloc(56);
+	memset(string2, '2', 128);
+	memset(string3, '3', 50);
+	zfree(string2);
+	zfree(string1);
+	
+	void* big_block = alloc(Megabytes(8));
+	memset(big_block, 7, Megabytes(2));
+	zfree(string3);
+	zfree(big_block);
+	
+	/*
+	for(u32 i = 0; i < -1; ++i){
+		alloc(Megabytes(1));
+	}
+	*/
+}
+#endif

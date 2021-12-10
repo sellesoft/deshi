@@ -153,6 +153,8 @@ PrintDx(u32 level, Args... args){
 local char iniFilepath[256] = {};
 void DeshiImGui::
 Init(){ //!Incomplete
+	TIMER_START(t_s);
+	
 	//Setup Dear ImGui context
 	
 	//Setup Dear ImGui style
@@ -160,7 +162,7 @@ Init(){ //!Incomplete
 	//Setup Platform/Renderer backends
 	
 	
-	
+	Log("deshi","Finished imgui initialization in ",TIMER_END(t_s),"ms");
 }
 
 void DeshiImGui::
@@ -867,6 +869,8 @@ local void Flush(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fe
 
 void Render::
 Init(){ //!Incomplete
+	TIMER_START(t_s);
+	
 	//// load RenderSettings ////
 	LoadSettings();
 	if(settings.debugging && settings.printf) settings.loggingLevel = 4;
@@ -915,6 +919,8 @@ Init(){ //!Incomplete
 	
 	
 	initialized = true;
+	
+	Log("deshi","Finished directx renderer initialization in ",TIMER_END(t_s),"ms");
 }
 
 local void Resize(u32 _width, u32 _height) {

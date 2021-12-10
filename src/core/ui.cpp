@@ -2086,6 +2086,8 @@ void UI::ShowMetricsWindow() {
 //it will not focus if theres a window in front of them.
 //I'm not sure how i want to fix it yet
 void UI::Init() {
+	TIMER_START(t_s);
+	
 	curwin = new UIWindow();
 	curwin->name = "Base";
 	curwin->position = vec2(0,0);
@@ -2168,6 +2170,8 @@ void UI::Init() {
 	
 	windows.add("base", curwin);
 	windowStack.add(curwin);
+	
+	Log("deshi","Finished UI initialization in ",TIMER_END(t_s),"ms");
 }
 
 //for checking that certain things were taken care of eg, popping colors/styles/windows

@@ -29,6 +29,8 @@
 #define local    static //inside a .cpp
 #define persist  static //inside a function
 #define global_  static //inside a .h
+#define StartNamespace(a) namespace a{ (void)0
+#define EndNamespace(a) }
 
 /////////////////////// //assert that an expression is true
 //// assert macros //// //NOTE we dont place these under DESHI_INTERNAL so that crashes DO happen outside of development

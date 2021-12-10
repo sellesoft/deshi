@@ -24,7 +24,7 @@ extern Storage_* g_storage;
 #define DeshStorage g_storage
 
 namespace Storage{
-	void Init();
+	void Init(u64 bytes);
 	void Reset();
 	
 	///////////////
