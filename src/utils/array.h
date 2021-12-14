@@ -114,7 +114,7 @@ array(u32 _count, Allocator* a){
 	
 	count = 0;
 	space = RoundUpTo(_count, DESHI_ARRAY_SPACE_ALIGNMENT);
-	data  = (T*)allocator->reserve(_count*sizeof(T));
+	data  = (T*)allocator->reserve(space*sizeof(T));
 	
 	first = 0;
 	iter  = 0;
@@ -247,7 +247,7 @@ add(const T& t){
 		data[count] = t;
 		count++;
 	}else{
-		last++;
+		last = data + count;
 		data[count] = t;
 		count++;
 	}
@@ -300,6 +300,7 @@ insert(const T& t, u32 idx){
 		memset(data+idx, 0, 1*sizeof(T));
 		data[idx] = t;
 		count++;
+		last++;
 	}
 }
 
@@ -311,6 +312,12 @@ pop(u32 _count){
 		last--;
 		count--;
 	}
+	memset(last+1, 0, _count*sizeof(T));
+	if(count == 0){
+		first = 0;
+		last  = 0;
+		iter  = 0;
+	}
 }	
 
 template<typename T> inline void array<T>::
@@ -318,12 +325,17 @@ remove(u32 i){
 	Assert(count > 0, "can't remove element from empty vector");
 	Assert(i < count, "index is out of bounds");
 	data[i].~T();
-	for(u32 o = i; o < size(); o++){
+	for(u32 o = i; o < count; o++){
 		data[o] = data[o+1];
 	}
 	memset(last, 0, sizeof(T));
 	last--;
 	count--;
+	if(count == 0){
+		first = 0;
+		last  = 0;
+		iter  = 0;
+	}
 }
 
 //TODO(sushi) impl this
@@ -342,10 +354,11 @@ remove(u32 i){
 template<typename T> inline void array<T>::
 clear(){
 	forI(count){ data[i].~T(); }
+	memset(data, 0, count*sizeof(T));
 	
 	count = 0;
-	first = data;
-	iter  = data;
+	first = 0;
+	iter  = 0;
 	last  = 0;
 }
 
@@ -367,7 +380,7 @@ resize(u32 new_count){
 		space = new_count;
 		data = (T*)allocator->resize(data, space*sizeof(T));
 		
-		iter  = data + (iter - first);
+		iter  = data + (iter - first); //TODO check that iter isnt beyond last
 		first = data;
 		last  = data + (space-1);
 	}
