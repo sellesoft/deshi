@@ -102,7 +102,7 @@ inline void color::operator*=(float rhs){
 }
 
 inline color color::operator* (color rhs) const{
-	return color(r * rhs.r, g * rhs.g, b * rhs.b);
+	return color(r*rhs.r, g*rhs.g, b*rhs.b, a);
 }
 
 inline bool color::operator==(color rhs) const{
@@ -121,10 +121,10 @@ inline color color::operator/ (float rhs) const{
 //// @static functions ////
 ///////////////////////////
 inline color color::FloatsToColor(f32 r, f32 g, f32 b, f32 a){
-	return color((u8)(r / 255.0f),
-				 (u8)(g / 255.0f),
-				 (u8)(b / 255.0f),
-				 (u8)(a / 255.0f));
+	return color((u8)(r * 255.0f),
+				 (u8)(g * 255.0f),
+				 (u8)(b * 255.0f),
+				 (u8)(a * 255.0f));
 }
 
 inline void color::FillFloat3FromU32(f32* floats, u32 color){

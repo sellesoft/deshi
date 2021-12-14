@@ -1,5 +1,6 @@
 #include <typeinfo>
 #include <cstdio>
+#include <ctime>
 
 #define DESHI_ARRAY_GROWTH_FACTOR 2
 #define DESHI_ARRAY_SPACE_ALIGNMENT 4
@@ -380,12 +381,90 @@ function void TEST_deshi_utils_array(){
 
 #include "array_sorting.h"
 function void TEST_deshi_utils_array_sorting(){
-	printf("[DESHI-TEST] TODO:   utils/array_sorting\n");
+	srand(time(0));
+	
+	array<s32> array1(1024);
+	forI(1024) array1.add(rand() % 1024);
+	bubble_sort_low_to_high(array1);
+	forI(1024){ if(i){ AssertAlways(array1[i] >= array1[i-1]); } }
+	
+	srand(time(0));
+	array1.clear();
+	forI(1024) array1.add(rand() % 1024);
+	bubble_sort_high_to_low(array1);
+	forI(1024){ if(i){ AssertAlways(array1[i] <= array1[i-1]); } }
+	
+	printf("[DESHI-TEST] PASSED: utils/array_sorting\n");
 }
 
 #include "color.h"
 function void TEST_deshi_utils_color(){
-	printf("[DESHI-TEST] TODO:   utils/color\n");
+	//// constructors ////
+	color color1;
+	AssertAlways(color1.r == 000 && color1.g == 000 && color1.b == 000 && color1.a == 000);
+	AssertAlways(color1.rgba == 0);
+	
+	color color2(0, 255, 0, 255);
+	AssertAlways(color2.r == 000 && color2.g == 255 && color2.b == 000 && color2.a == 255);
+	AssertAlways(color2.rgba == 0xFF00FF00);
+	
+	color color3(0xFFFF0000);
+	AssertAlways(color3.r == 255 && color3.g == 255 && color3.b == 000 && color3.a == 000);
+	AssertAlways(color3.rgba == 0x0000FFFF);
+	
+	color color4 = Color_Red;
+	AssertAlways(color4.r == 255 && color4.g == 000 && color4.b == 000 && color4.a == 255);
+	AssertAlways(color4.rgba == 0xFF0000FF);
+	
+	//// macros ////
+	AssertAlways((Color_Blue.rgba & COLORU32_RMASK) == 0);
+	AssertAlways((Color_Blue.rgba & COLORU32_GMASK) == 0);
+	AssertAlways((Color_Blue.rgba & COLORU32_BMASK) == COLORU32_BMASK);
+	AssertAlways((Color_Blue.rgba & COLORU32_AMASK) == COLORU32_AMASK);
+	
+	AssertAlways((Color_Green.rgba & COLORU32_RMASK) == 0);
+	AssertAlways((Color_Green.rgba & COLORU32_GMASK) == COLORU32_GMASK);
+	AssertAlways((Color_Green.rgba & COLORU32_BMASK) == 0);
+	AssertAlways((Color_Green.rgba & COLORU32_AMASK) == COLORU32_AMASK);
+	
+	AssertAlways(Color_Green == PackColorU32(0,255,0,255));
+	AssertAlways(color(0,255,0,255) == PackColorU32(0,255,0,255));
+	
+	//// operators ////
+	color color5(32, 32, 32, 128);
+	color5 *= 2;
+	AssertAlways(color5.r == 64 && color5.g == 64 && color5.b == 64 && color5.a == 128);
+	
+	AssertAlways(color(255, 0, 0, 255) == Color_Red);
+	AssertAlways(Color_Blue == 0x0000FFFF);
+	
+	AssertAlways(color5*color(2,0,0,2) == color(128,0,0,128));
+	
+	AssertAlways(color5*2 == color(128,128,128,128));
+	
+	AssertAlways(color5/2 == color(32,32,32,128));
+	
+	//// functions ////
+	color color6 = color::FloatsToColor(0,1,0,1);
+	AssertAlways(color6 == Color_Green);
+	color6 = color::FloatsToColor(0,.5f,0,1);
+	AssertAlways(color6 == Color_Green/2);
+	
+	f32 test_arr1[4] = {1.f, 1.f, 1.f, 1.f};
+	color::FillFloat3FromU32(test_arr1, Color_Blue.rgba);
+	AssertAlways(test_arr1[0] == 0.f);
+	AssertAlways(test_arr1[1] == 0.f);
+	AssertAlways(test_arr1[2] == 1.f);
+	AssertAlways(test_arr1[3] == 1.f);
+	
+	f32 test_arr2[4] = {0, 0, 1.f, 0};
+	color::FillFloat4FromU32(test_arr2, color(128,128,0,128).rgba);
+	AssertAlways(abs(test_arr2[0] - .5f) <= .01f);
+	AssertAlways(abs(test_arr2[1] - .5f) <= .01f);
+	AssertAlways(test_arr2[2] == 0.f);
+	AssertAlways(abs(test_arr2[3] - .5f) <= .01f);
+	
+	printf("[DESHI-TEST] PASSED: utils/color\n");
 }
 
 #include "cstring.h"
