@@ -82,7 +82,7 @@ typedef void* (*Allocator_ResizeMemory_Func)(void* ptr, upt bytes);
 function void Allocator_ChangeMemory_Noop(void* ptr, upt bytes){}
 struct Allocator{
 	Allocator_Reserve_Func       reserve;  //reserves address space from OS
-	Allocator_ChangeMemory_Func  commit;   //alloctes memory from reserved space
+	Allocator_ChangeMemory_Func  commit;   //allocates memory from reserved space
 	Allocator_ChangeMemory_Func  decommit; //returns the memory to reserved state
 	Allocator_ReleaseMemory_Func release;  //release the reserved memory back to OS
 	Allocator_ResizeMemory_Func  resize;   //resizes reserved memory and moves memory if a new location is required
@@ -159,7 +159,7 @@ global_const f64 MIN_F64 = -MAX_F64;
 /////////////////////// //TODO(delle) refactor Assert() usages so the expression is not used
 #define AssertAlways(expression, ...) STMNT( if(!(expression)){*(volatile int*)0 = 0;} ) //works regardless of SLOW or INTERNAL
 #define AssertBreakpoint(expression, ...) STMNT( if(!(expression)){ DebugBreakpoint; } )
-#define StaticAssertAlways(expression, ...) char GLUE(__FILE__, GLUE(__LINE__,__default__))[(expression)?1:-1]
+#define StaticAssertAlways(expression, ...) char GLUE(__ignore__, GLUE(__LINE__,__default__))[(expression)?1:-1]
 
 #if   DESHI_INTERNAL
 #  define Assert(expression, ...) AssertBreakpoint(expression)

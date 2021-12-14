@@ -20,7 +20,6 @@ struct array{
 	T*  data;
 	T*  first;
 	T*  last;
-	T*  max;
 	T*  iter;
 	Allocator* allocator;
 	
@@ -32,11 +31,12 @@ struct array{
 	array(T* _data, u32 _count, Allocator* a = &base_stl_allocator);
 	~array();
 	
-	array<T>& operator= (const array<T>& array);
+	//copies the values from rhs, BUT does NOT copy iter value and ONLY copies allocator if there wasnt one already
+	array<T>& operator= (const array<T>& rhs);
 	T& operator[](u32 i);
 	T  operator[](u32 i) const;
 	
-	u32  size();
+	u32  size() const;
 	void add(const T& t);
 	void add_array(const array<T>& t);
 	//for taking in something without copying it
@@ -94,7 +94,6 @@ array(){
 	first = 0;
 	iter  = 0;
 	last  = 0;
-	max   = 0;
 }
 
 template<typename T> inline array<T>::
@@ -107,7 +106,6 @@ array(Allocator* a){
 	first = 0;
 	iter  = 0;
 	last  = 0;
-	max   = 0;
 }
 
 template<typename T> inline array<T>::
@@ -118,10 +116,9 @@ array(u32 _count, Allocator* a){
 	space = RoundUpTo(_count, DESHI_ARRAY_SPACE_ALIGNMENT);
 	data  = (T*)allocator->reserve(_count*sizeof(T));
 	
-	first = data;
-	iter  = data;
+	first = 0;
+	iter  = 0;
 	last  = 0;
-	max   = data + (space-1);
 }
 
 template<typename T> inline array<T>::
@@ -133,17 +130,11 @@ array(std::initializer_list<T> l, Allocator* a){
 	data  = (T*)allocator->reserve(space*sizeof(T));
 	allocator->commit(data, count*sizeof(T));
 	
-	u32 index = 0;
-	for(T item : l){
-		u32 he = index * sizeof(T);
-		T* nu = new(data + index) T(item);
-		index++;
-	}
+	forI(l.size()) data[i] = *(l.begin()+i);
 	
 	first = data;
 	iter  = data;
 	last  = &data[count - 1];
-	max   = data + (space-1);
 }
 
 //TODO this can probably be much better
@@ -158,19 +149,11 @@ array(const array<T>& array, Allocator* a){
 	data  = (T*)allocator->reserve(space*sizeof(T));
 	allocator->commit(data, count*sizeof(T));
 	
-	//if last is 0 then the array is empty
-	if(array.count != 0){
-		u32 i = 0;
-		for(T item : array){
-			new(data + i) T(item);
-			i++;
-		}
-	}
+	forI(array.count) data[i] = array.data[i];
 	
 	first = data;
 	iter  = first;
 	last  = (array.last == 0) ? 0 : data+(array.count-1);
-	max   = data + (space-1);
 }
 
 template<typename T> inline array<T>::
@@ -184,9 +167,8 @@ array(T* _data, u32 _count, Allocator* a){
 	memcpy(data, _data, _count*sizeof(T));
 	
 	first = data;
-	iter  = first;
+	iter  = data;
 	last  = data + (_count-1);
-	max   = data + (space-1);
 }
 
 template<typename T> inline array<T>::
@@ -199,30 +181,22 @@ template<typename T> inline array<T>::
 //// @operators ////
 ////////////////////
 template<typename T> inline array<T>& array<T>::
-operator= (const array<T>& _array){
+operator= (const array<T>& rhs){
 	if(!allocator) allocator = &base_stl_allocator;
 	
 	forI(count){ data[i].~T(); }
-	allocator->release(data);
+	allocator->release(data);  //TODO maybe resize rather than release and reserve
 	
-	space = _array.space;
-	count = _array.count;
+	space = rhs.space;
+	count = rhs.count;
 	data  = (T*)allocator->reserve(space*sizeof(T));
 	allocator->commit(data, count*sizeof(T));
 	
-	//if last is 0 then the array is empty
-	if(_array.last != 0){
-		u32 i = 0;
-		for(T item : _array){
-			new(data + i) T(item);
-			i++;
-		}
-	}
+	forI(rhs.count) data[i] = rhs.data[i];
 	
 	first = data;
-	iter  = first;
-	last  = (_array.last == 0) ? 0 : data+(_array.count-1);
-	max   = data + (space-1);
+	iter  = data;
+	last  = data + (count-1);
 	return *this;
 }
 
@@ -243,7 +217,7 @@ operator[](u32 i) const {
 //// @functions ////
 ////////////////////
 template<typename T> inline u32 array<T>::
-size(){
+size() const{
 	return count;
 }
 
@@ -257,7 +231,6 @@ add(const T& t){
 		first = data;
 		iter  = data;
 		last  = data;
-		max   = data + (space-1);
 		
 		data[0] = t;
 		count = 1;
@@ -270,7 +243,6 @@ add(const T& t){
 		iter  = data + (iter - first);
 		first = data;
 		last  = data + count;
-		max   = data + (space-1);
 		
 		data[count] = t;
 		count++;
@@ -304,7 +276,6 @@ insert(const T& t, u32 idx){
 		first = data;
 		iter  = data;
 		last  = data;
-		max   = data + (space-1);
 		
 		count = 1;
 		data[0] = t;
@@ -319,7 +290,6 @@ insert(const T& t, u32 idx){
 		iter  = data + (iter - first);
 		first = data;
 		last  = data + count;
-		max   = data + (space-1);
 		
 		data[idx] = t;
 		count++;
@@ -377,7 +347,6 @@ clear(){
 	first = data;
 	iter  = data;
 	last  = 0;
-	max   = data + (space-1);
 }
 
 template<typename T> inline void array<T>::
@@ -391,7 +360,6 @@ resize(u32 new_count){
 		iter  = data + (iter - first);
 		first = data;
 		last  = data + (space-1);
-		max   = last;
 	}else if(new_count < space){
 		for(u32 i = new_count+1; i < count; ++i){ data[i].~T(); }
 		
@@ -402,7 +370,6 @@ resize(u32 new_count){
 		iter  = data + (iter - first);
 		first = data;
 		last  = data + (space-1);
-		max   = last;
 	}
 }
 
@@ -416,7 +383,6 @@ reserve(u32 new_space){
 		iter  = data + (iter - first);
 		first = data;
 		last  = (count) ? data + (count-1) : 0;
-		max   = data + (space-1);
 	}
 }
 
@@ -491,18 +457,5 @@ lookbackptr(int i){
 	if(iter - 1 - first >= 0) return iter - i;
 	else return nullptr;
 }
-
-#if DESHI_RUN_TESTS
-#include <typeinfo>
-#include <cstdio>
-function void TEST_deshi_utils_array(){
-	array<int> array1;
-	AssertAlways(array1.count == 0 && array1.space == 0 && array1.data == 0 && array1.first == 0 && array1.last == 0 && array1.max == 0 && array1.iter == 0);
-	AssertAlways(typeid(array1.data) == typeid(int*));
-	AssertAlways(typeid(array1.allocator) == typeid(STLAllocator*));
-	
-	printf("[DESHI TEST] PASSED: utils/array");
-}
-#endif //DESHI_RUN_TESTS
 
 #endif //DESHI_ARRAY_H
