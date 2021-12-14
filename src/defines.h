@@ -75,24 +75,17 @@ typedef char16_t           uchar;
 typedef u32 Type;
 typedef u32 Flags;
 
-typedef void* (*BaseAllocator_Reserve_Func)(upt bytes, void* ctx);
-typedef void  (*BaseAllocator_ChangeMemory_Func)(void* ptr, upt bytes, void* ctx);
-typedef void* (*BaseAllocator_ResizeMemory_Func)(void* ptr, upt bytes, void* ctx);
-function void BaseAllocator_ChangeMemory_Noop(void* ptr, upt bytes, void* ctx){}
-struct BaseAllocator{
-	BaseAllocator_Reserve_Func*      reserve;  //reserves address space from OS
-	BaseAllocator_ChangeMemory_Func* commit;   //alloctes memory from reserved space
-	BaseAllocator_ChangeMemory_Func* decommit; //returns the memory to reserved state
-	BaseAllocator_ChangeMemory_Func* release;  //release the reserved memory back to OS
-	BaseAllocator_ResizeMemory_Func* resize;   //resizes reserved memory and moves memory if a new location is required
-	void* ctx;
-};
-struct STLAllocator{
-	void* reserve (upt bytes,              void* ctx=0){return calloc(1,bytes);}
-	void  commit  (void* ptr, upt bytes,   void* ctx=0){}
-	void  decommit(void* ptr, upt bytes,   void* ctx=0){}
-	void  release (void* ptr, upt bytes=0, void* ctx=0){free(ptr);};
-	void* resize  (void* ptr, upt bytes,   void* ctx=0){return realloc(ptr,bytes);}
+typedef void* (*Allocator_Reserve_Func)(upt bytes);
+typedef void  (*Allocator_ChangeMemory_Func)(void* ptr, upt bytes);
+typedef void  (*Allocator_ReleaseMemory_Func)(void* ptr);
+typedef void* (*Allocator_ResizeMemory_Func)(void* ptr, upt bytes);
+function void Allocator_ChangeMemory_Noop(void* ptr, upt bytes){}
+struct Allocator{
+	Allocator_Reserve_Func       reserve;  //reserves address space from OS
+	Allocator_ChangeMemory_Func  commit;   //alloctes memory from reserved space
+	Allocator_ChangeMemory_Func  decommit; //returns the memory to reserved state
+	Allocator_ReleaseMemory_Func release;  //release the reserved memory back to OS
+	Allocator_ResizeMemory_Func  resize;   //resizes reserved memory and moves memory if a new location is required
 };
 
 /////////////////////// //NOTE some are two level so you can use the result of a macro expansion (STRINGIZE, GLUE, etc)
@@ -209,15 +202,15 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #  define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
 #endif // defer
 
-function void* STLAllocator_Reserve(upt bytes, void* ctx){void* a = calloc(1,bytes); Assert(a); return a;}
-function void  STLAllocator_Release(void* ptr, upt bytes, void* ctx){free(ptr);}
-function void* STLAllocator_Resize(void* ptr, upt bytes, void* ctx){void* a = realloc(ptr,bytes); Assert(a); return a;}
-global_const BaseAllocator base_stl_allocator{
-	(BaseAllocator_Reserve_Func*)     STLAllocator_Reserve,
-	(BaseAllocator_ChangeMemory_Func*)BaseAllocator_ChangeMemory_Noop,
-	(BaseAllocator_ChangeMemory_Func*)BaseAllocator_ChangeMemory_Noop,
-	(BaseAllocator_ChangeMemory_Func*)STLAllocator_Release,
-	(BaseAllocator_ResizeMemory_Func*)STLAllocator_Resize
+function void* STLAllocator_Reserve(upt bytes){void* a = calloc(1,bytes); Assert(a); return a;}
+function void  STLAllocator_Release(void* ptr){free(ptr);}
+function void* STLAllocator_Resize(void* ptr, upt bytes){void* a = realloc(ptr,bytes); Assert(a); return a;}
+global_ Allocator base_stl_allocator{
+	STLAllocator_Reserve,
+	Allocator_ChangeMemory_Noop,
+	Allocator_ChangeMemory_Noop,
+	STLAllocator_Release,
+	STLAllocator_Resize
 };
 
 ///////////////////////////// //TODO remove/rework/rename these

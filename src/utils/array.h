@@ -13,7 +13,7 @@
 #include <cstdlib>
 #include <initializer_list>
 
-template<typename T, typename Allocator = STLAllocator>
+template<typename T>
 struct array{
 	u32 count;
 	u32 space; //number of items array can fit
@@ -25,19 +25,20 @@ struct array{
 	Allocator* allocator;
 	
 	array();
-	array(u32 _count);
-	array(std::initializer_list<T> l);
-	array(const array<T,Allocator>& array);
-	array(T* _data, u32 _count);
+	array(Allocator* a);
+	array(u32 _count, Allocator* a = &base_stl_allocator);
+	array(std::initializer_list<T> l, Allocator* a = &base_stl_allocator);
+	array(const array<T>& array, Allocator* a = &base_stl_allocator);
+	array(T* _data, u32 _count, Allocator* a = &base_stl_allocator);
 	~array();
 	
-	array<T,Allocator>& operator= (const array<T,Allocator>& array);
+	array<T>& operator= (const array<T>& array);
 	T& operator[](u32 i);
 	T  operator[](u32 i) const;
 	
 	u32  size();
 	void add(const T& t);
-	void add(const array<T, Allocator>& t);
+	void add_array(const array<T>& t);
 	//for taking in something without copying it
 	void emplace(const T& t);
 	void insert(const T& t, u32 idx);
@@ -83,8 +84,10 @@ struct array{
 ///////////////////////
 //// @constructors ////
 ///////////////////////
-template<typename T, typename Allocator> inline array<T, Allocator>::
+template<typename T> inline array<T>::
 array(){
+	allocator = &base_stl_allocator;
+	
 	space = 0;
 	count = 0;
 	data  = 0;
@@ -94,8 +97,23 @@ array(){
 	max   = 0;
 }
 
-template<typename T, typename Allocator> inline array<T, Allocator>::
-array(u32 _count){
+template<typename T> inline array<T>::
+array(Allocator* a){
+	allocator = a;
+	
+	space = 0;
+	count = 0;
+	data  = 0;
+	first = 0;
+	iter  = 0;
+	last  = 0;
+	max   = 0;
+}
+
+template<typename T> inline array<T>::
+array(u32 _count, Allocator* a){
+	allocator = a;
+	
 	count = 0;
 	space = RoundUpTo(_count, DESHI_ARRAY_SPACE_ALIGNMENT);
 	data  = (T*)allocator->reserve(_count*sizeof(T));
@@ -106,8 +124,10 @@ array(u32 _count){
 	max   = data + (space-1);
 }
 
-template<typename T, typename Allocator> inline array<T, Allocator>::
-array(std::initializer_list<T> l){
+template<typename T> inline array<T>::
+array(std::initializer_list<T> l, Allocator* a){
+	allocator = a;
+	
 	count = l.size();
 	space = RoundUpTo(l.size(), DESHI_ARRAY_SPACE_ALIGNMENT);
 	data  = (T*)allocator->reserve(space*sizeof(T));
@@ -129,8 +149,10 @@ array(std::initializer_list<T> l){
 //TODO this can probably be much better
 //its necessary so when we return elements the entire array copies properly
 //so we have to make sure everything in the array gets recreated
-template<typename T, typename Allocator> inline array<T, Allocator>::
-array(const array<T, Allocator>& array){
+template<typename T> inline array<T>::
+array(const array<T>& array, Allocator* a){
+	allocator = a;
+	
 	count = array.count;
 	space = array.space;
 	data  = (T*)allocator->reserve(space*sizeof(T));
@@ -151,8 +173,10 @@ array(const array<T, Allocator>& array){
 	max   = data + (space-1);
 }
 
-template<typename T, typename Allocator> inline array<T, Allocator>::
-array(T* _data, u32 _count){
+template<typename T> inline array<T>::
+array(T* _data, u32 _count, Allocator* a){
+	allocator = a;
+	
 	count = _count;
 	space = RoundUpTo(_count, DESHI_ARRAY_SPACE_ALIGNMENT);
 	data  = (T*)allocator->reserve(space*sizeof(T));
@@ -165,7 +189,7 @@ array(T* _data, u32 _count){
 	max   = data + (space-1);
 }
 
-template<typename T, typename Allocator> inline array<T, Allocator>::
+template<typename T> inline array<T>::
 ~array(){
 	forI(count){ data[i].~T(); }
 	allocator->release(data);
@@ -174,8 +198,10 @@ template<typename T, typename Allocator> inline array<T, Allocator>::
 ////////////////////
 //// @operators ////
 ////////////////////
-template<typename T,typename Allocator> inline array<T,Allocator>& array<T, Allocator>::
-operator= (const array<T, Allocator>& _array){
+template<typename T> inline array<T>& array<T>::
+operator= (const array<T>& _array){
+	if(!allocator) allocator = &base_stl_allocator;
+	
 	forI(count){ data[i].~T(); }
 	allocator->release(data);
 	
@@ -200,13 +226,13 @@ operator= (const array<T, Allocator>& _array){
 	return *this;
 }
 
-template<typename T, typename Allocator> inline T& array<T, Allocator>::
+template<typename T> inline T& array<T>::
 operator[](u32 i){
 	Assert(i < count);
 	return data[i];
 }
 
-template<typename T, typename Allocator> inline T array<T, Allocator>::
+template<typename T> inline T array<T>::
 operator[](u32 i) const {
 	Assert(i < count);
 	return data[i];
@@ -216,12 +242,12 @@ operator[](u32 i) const {
 ////////////////////
 //// @functions ////
 ////////////////////
-template<typename T, typename Allocator> inline u32 array<T, Allocator>::
+template<typename T> inline u32 array<T>::
 size(){
 	return count;
 }
 
-template<typename T, typename Allocator> inline void array<T, Allocator>::
+template<typename T> inline void array<T>::
 add(const T& t){
 	if(space == 0){ //if first item, allocate memory
 		space = DESHI_ARRAY_SPACE_ALIGNMENT;
@@ -255,19 +281,19 @@ add(const T& t){
 	}
 }
 
-template<typename T, typename Allocator> inline void array<T, Allocator>::
-add(const array<T, Allocator>& t){
+template<typename T> inline void array<T>::
+add_array(const array<T>& t){
 	for(const T& item : t){
 		this->add(item);
 	}
 }
 
-template<typename T, typename Allocator> inline void array<T, Allocator>::
+template<typename T> inline void array<T>::
 emplace(const T& t){
 	this->add(t); //TODO emplace function signature should mimic the type's constructor
 }
 
-template<typename T, typename Allocator> inline void array<T, Allocator>::
+template<typename T> inline void array<T>::
 insert(const T& t, u32 idx){
 	Assert(idx <= count);
 	if(space == 0){ //if first item, allocate memory
@@ -307,7 +333,7 @@ insert(const T& t, u32 idx){
 	}
 }
 
-template<typename T, typename Allocator> inline void array<T, Allocator>::
+template<typename T> inline void array<T>::
 pop(u32 _count){
 	Assert(count >= _count, "attempted to pop more than array size");
 	forI(_count){
@@ -317,7 +343,7 @@ pop(u32 _count){
 	}
 }	
 
-template<typename T, typename Allocator> inline void array<T, Allocator>::
+template<typename T> inline void array<T>::
 remove(u32 i){
 	Assert(count > 0, "can't remove element from empty vector");
 	Assert(i < count, "index is out of bounds");
@@ -343,7 +369,7 @@ remove(u32 i){
 //	count--;
 //}
 
-template<typename T, typename Allocator> inline void array<T, Allocator>::
+template<typename T> inline void array<T>::
 clear(){
 	forI(count){ data[i].~T(); }
 	
@@ -354,7 +380,7 @@ clear(){
 	max   = data + (space-1);
 }
 
-template<typename T, typename Allocator> inline void array<T, Allocator>::
+template<typename T> inline void array<T>::
 resize(u32 new_count){
 	if(new_count > space){
 		space = new_count;
@@ -380,7 +406,7 @@ resize(u32 new_count){
 	}
 }
 
-template<typename T, typename Allocator> inline void array<T, Allocator>::
+template<typename T> inline void array<T>::
 reserve(u32 new_space){
 	if(new_space > space){
 		space = RoundUpTo(new_space, DESHI_ARRAY_SPACE_ALIGNMENT);
@@ -394,7 +420,7 @@ reserve(u32 new_space){
 	}
 }
 
-template<typename T, typename Allocator> inline void array<T, Allocator>::
+template<typename T> inline void array<T>::
 swap(u32 idx1, u32 idx2){
 	Assert(idx1 < count && idx2 < count, "index out of bounds");
 	Assert(idx1 != idx2, "can't swap an element with itself");
@@ -403,7 +429,7 @@ swap(u32 idx1, u32 idx2){
 	data[idx2] = save;
 }
 
-template<typename T, typename Allocator> inline bool array<T, Allocator>::
+template<typename T> inline bool array<T>::
 has(const T& value){
 	for(const T& blahabuasjdas : *this){
 		if(blahabuasjdas == value){
@@ -413,54 +439,54 @@ has(const T& value){
 	return false;
 }
 
-template<typename T, typename Allocator> inline T& array<T, Allocator>::
+template<typename T> inline T& array<T>::
 at(u32 i){
 	Assert(i < count);
 	return data[i];
 }
 
-template<typename T, typename Allocator> inline T& array<T, Allocator>::
+template<typename T> inline T& array<T>::
 next(){
 	if(last - iter + 1 >= 0) return *++iter;
 	return *iter;
 }
 
-template<typename T, typename Allocator> inline T& array<T, Allocator>::
+template<typename T> inline T& array<T>::
 peek(int i){
 	if(last - iter + 1 >= 0) return *(iter + i);
 	return *iter;
 }
 
-template<typename T, typename Allocator> inline T& array<T, Allocator>::
+template<typename T> inline T& array<T>::
 prev(){
 	if(first - iter + 1 >= 0) return *iter--;
 }
 
-template<typename T, typename Allocator> inline T& array<T, Allocator>::
+template<typename T> inline T& array<T>::
 lookback(int i){
 	if(first - iter + 1 >= 0) return *(iter - i);
 }
 
-template<typename T, typename Allocator> inline T* array<T, Allocator>::
+template<typename T> inline T* array<T>::
 nextptr(){
 	if(iter + 1 - last >= 0) return iter++;
 	else return nullptr;
 }
 
 //TODO come up with a better name for this and the corresponding previous overload
-template<typename T, typename Allocator> inline T* array<T, Allocator>::
+template<typename T> inline T* array<T>::
 peekptr(int i){
 	if(iter + 1 - last >= 0) return iter + i;
 	else return nullptr;
 }
 
-template<typename T, typename Allocator> inline T* array<T, Allocator>::
+template<typename T> inline T* array<T>::
 prevptr(){
 	if(iter - 1 - first >= 0) return iter--;
 	else return nullptr;
 }
 
-template<typename T, typename Allocator> inline T* array<T, Allocator>::
+template<typename T> inline T* array<T>::
 lookbackptr(int i){
 	if(iter - 1 - first >= 0) return iter - i;
 	else return nullptr;
