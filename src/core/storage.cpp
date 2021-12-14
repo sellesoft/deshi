@@ -1,7 +1,7 @@
 ﻿#define ParseError(...) LogE("storage","Failed parsing '",filepath,"' on line '",line_number,"'! ",__VA_ARGS__)
 
 namespace Storage{
-	local u8 null128_png[338] = { //TODO(delle) fix this
+	local u8 null128_png[] = { //TODO(delle) fix this
 		0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A,0x00,0x00,0x00,0x0D,0x49,0x48,0x44,0x52,
 		0x00,0x00,0x00,0x80,0x00,0x00,0x00,0x80,0x08,0x02,0x00,0x00,0x00,0x4C,0x5C,0xF6,
 		0x9C,0x00,0x00,0x00,0x09,0x70,0x48,0x59,0x73,0x00,0x00,0x2E,0x23,0x00,0x00,0x2E,
@@ -38,20 +38,20 @@ namespace Storage{
 //// @init ////
 ///////////////
 void Storage::
-Init(u64 bytes){
+Init(){
 	TIMER_START(t_s);
-	//Arena* arena = CreateArena(bytes);
 	
 	stbi_set_flip_vertically_on_load(true);
-	//null assets      //TODO(delle) store null.png and null shader in a .cpp
-	CreateBoxMesh(1.0f, 1.0f, 1.0f); cpystr(NullMesh()->name, "null", DESHI_NAME_SIZE);
-	//CreateTextureFromMemory(stbi_load_from_memory(null128_png, 338, 0, 0, 0, STBI_rgb_alpha), "null", 128, 128, ImageFormat_RGBA);
-	CreateTextureFromFile("null128.png");
-	CreateMaterial("null", Shader_NULL, MaterialFlags_NONE, {0});
-	CreateModelFromMesh(NullMesh(), ModelFlags_NONE); cpystr(NullModel()->name, "null", DESHI_NAME_SIZE);
+	//setup null assets      //TODO(delle) store null.png and null shader in a .cpp
+	DeshStorage->null_mesh     = CreateBoxMesh(1.0f, 1.0f, 1.0f).second; cpystr(NullMesh()->name, "null", DESHI_NAME_SIZE);
+	//DeshStorage->null_texture  = CreateTextureFromMemory(stbi_load_from_memory(null128_png, 338, 0, 0, 0, STBI_rgb_alpha), "null", 128, 128, ImageFormat_RGBA),second;
+	DeshStorage->null_texture  = CreateTextureFromFile("null128.png").second;
+	DeshStorage->null_material = CreateMaterial("null", Shader_NULL, MaterialFlags_NONE, {0}).second;
+	DeshStorage->null_model    = CreateModelFromMesh(NullMesh(), ModelFlags_NONE).second; cpystr(DeshStorage->null_model->name, "null", DESHI_NAME_SIZE);
 	
 	//create null font (white square)
-	fonts.add(new Font);
+	DeshStorage->null_font    = (Font*)calloc(1, sizeof(Font));
+	fonts.add(DeshStorage->null_font);
 	NullFont()->type = FontType_NONE;
 	NullFont()->idx = 0;
 	NullFont()->max_width = 6;

@@ -262,7 +262,7 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	deshi_console.Init();
 #endif
 	Render::Init();
-	Storage::Init(Megabytes(128));
+	Storage::Init();
 #ifndef DESHI_DISABLE_IMGUI
 	DeshiImGui::Init();
 #endif

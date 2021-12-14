@@ -1,6 +1,6 @@
 #pragma once
-#ifndef DESHI_DEFINES_H
-#define DESHI_DEFINES_H
+#ifndef DEFINES_H
+#define DEFINES_H
 ///////////////////////// //NOTE this file is included is almost every other file of the project, so be frugal with includes here
 //// common includes ////
 /////////////////////////
@@ -26,23 +26,13 @@
 ///////////////////////
 //// static macros ////
 ///////////////////////
+#define function static
 #define local    static //inside a .cpp
 #define persist  static //inside a function
 #define global_  static //inside a .h
-#define StartNamespace(a) namespace a{ (void)0
-#define EndNamespace(a) }
-
-/////////////////////// //assert that an expression is true
-//// assert macros //// //NOTE we dont place these under DESHI_INTERNAL so that crashes DO happen outside of development
-/////////////////////// //NOTE the ... is for a programmer message at the assert; it is unused otherwise
-#if DESHI_SLOW
-#  define Assert(expression, ...) if(!(expression)){*(volatile int*)0 = 0;}
-#else
-#  pragma warning(once : 4552)
-#  pragma warning(once : 4553)
-#  define Assert(expression, ...) expression
-#endif //DESHI_SLOW
-#define NotImplemented Assert(false, "not implemented yet")
+#define local_const static const
+#define global_const static const
+#define external extern "C"
 
 /////////////////////////////////////
 //// compiler-dependent builtins ////
@@ -63,13 +53,6 @@
 #  error "unhandled compiler"
 #endif
 #define DebugBreakpoint DEBUG_BREAK
-
-/////////////////////////
-//// for-loop macros ////
-/////////////////////////
-#define forX(var_name,iterations) for(int var_name=0; var_name<(iterations); ++var_name)
-#define forI(iterations) for(int i=0; i<(iterations); ++i)
-#define forE(iterable) for(auto it = iterable.begin(), it_begin = iterable.begin(), it_end = iterable.end(); it != it_end; ++it)
 
 //////////////////////
 //// common types ////
@@ -92,24 +75,30 @@ typedef char16_t           uchar;
 typedef u32 Type;
 typedef u32 Flags;
 
-typedef void* (*BaseAllocator_Reserve_Func)(void* ctx, upt bytes);
-typedef void  (*BaseAllocator_ChangeMemory_Func)(void* ctx, void* ptr, upt bytes);
+typedef void* (*BaseAllocator_Reserve_Func)(upt bytes, void* ctx);
+typedef void  (*BaseAllocator_ChangeMemory_Func)(void* ptr, upt bytes, void* ctx);
+typedef void* (*BaseAllocator_ResizeMemory_Func)(void* ptr, upt bytes, void* ctx);
+function void BaseAllocator_ChangeMemory_Noop(void* ptr, upt bytes, void* ctx){}
 struct BaseAllocator{
-	BaseAllocator_Reserve_Func*      reserve;  //ask for memory from OS
-	BaseAllocator_ChangeMemory_Func* commit;   //grab memory for use
-	BaseAllocator_ChangeMemory_Func* decommit; //not using memory anymore
-	BaseAllocator_ChangeMemory_Func* release;  //tell OS we dont need memory
+	BaseAllocator_Reserve_Func*      reserve;  //reserves address space from OS
+	BaseAllocator_ChangeMemory_Func* commit;   //alloctes memory from reserved space
+	BaseAllocator_ChangeMemory_Func* decommit; //returns the memory to reserved state
+	BaseAllocator_ChangeMemory_Func* release;  //release the reserved memory back to OS
+	BaseAllocator_ResizeMemory_Func* resize;   //resizes reserved memory and moves memory if a new location is required
 	void* ctx;
 };
 struct STLAllocator{
-	void* allocate(upt bytes){return malloc(bytes);}
-	void* callocate(upt count, upt size){return calloc(count,size);}
-	void  deallocate(void* ptr){free(ptr);};
+	void* reserve (upt bytes,              void* ctx=0){return calloc(1,bytes);}
+	void  commit  (void* ptr, upt bytes,   void* ctx=0){}
+	void  decommit(void* ptr, upt bytes,   void* ctx=0){}
+	void  release (void* ptr, upt bytes=0, void* ctx=0){free(ptr);};
+	void* resize  (void* ptr, upt bytes,   void* ctx=0){return realloc(ptr,bytes);}
 };
 
 /////////////////////// //NOTE some are two level so you can use the result of a macro expansion (STRINGIZE, GLUE, etc)
 //// common macros ////
 ///////////////////////
+#define STMNT(s) do{ s }while(0)
 #define UNUSED_VAR(a) ((void)(a))
 #define STRINGIZE_(a) #a
 #define STRINGIZE(a) STRINGIZE_(a)
@@ -127,6 +116,12 @@ struct STLAllocator{
 #define PointerAsInt(a) PointerDifference(a,0)
 #define OffsetOfMember(structName,memberName) PointerAsInt(&(((structName*)0)->memberName))
 #define CastFromMember(structName,memberName,ptr) (structName*)((u8*)(ptr) - OffsetOfMember(structName,memberName))
+#define StartNamespace(a) namespace a{ (void)0
+#define EndNamespace(a) }
+#define CastToConst(type,a) const_cast<const type>(a)
+#define CastFromConst(type,a) const_cast<type>(a)
+#define StaticCast(type,a) static_cast<type>(a)
+#define DynamicCast(type,a) dynamic_cast<type>(a)
 
 //////////////////////////
 //// common functions ////
@@ -144,12 +139,57 @@ template<typename T> FORCE_INLINE T ClampMax(T value, T min){return (value > max
 template<typename T,typename U> FORCE_INLINE T ClampMin(T value, U min){return (value < min) ? min : value;};
 template<typename T,typename U> FORCE_INLINE T ClampMax(T value, U max){return (value > max) ? max : value;};
 
-///////////////////////////// //TODO remove/rework/rename these
-//// to-be-redone macros ////
-/////////////////////////////
-#define DESHI_NAME_SIZE 64 //NOTE arbitrarily chosen size, but its convenient to have a fixed size for names
-#define cpystr(dst,src,bytes) strncpy((dst), (src), (bytes)); (dst)[(bytes)-1] = '\0' //copy c-string and null-terminate
-#define dyncast(child,base) dynamic_cast<child*>(base) //dynamic cast short-hand
+//////////////////////////
+//// common constants ////
+//////////////////////////
+global_const u8  MAX_U8  = 0xFF;
+global_const u16 MAX_U16 = 0xFFFF;
+global_const u32 MAX_U32 = 0xFFFFFFFF;
+global_const u64 MAX_U64 = 0xFFFFFFFFFFFFFFFF;
+
+global_const s8  MIN_S8  = -128;
+global_const s8  MAX_S8  = 127;
+global_const s16 MIN_S16 = -32768;
+global_const s16 MAX_S16 = 32767;
+global_const s32 MIN_S32 = -2147483648;
+global_const s32 MAX_S32 = 2147483647;
+global_const s64 MIN_S64 = -9223372036854775808;
+global_const s64 MAX_S64 = 9223372036854775807;
+
+global_const f32 MAX_F32 = 3.402823466e+38f;
+global_const f32 MIN_F32 = -MAX_F32;
+global_const f64 MAX_F64 = 1.79769313486231e+308;
+global_const f64 MIN_F64 = -MAX_F64;
+
+/////////////////////// 
+//// assert macros //// //NOTE the ... is for a programmer message at the assert; it is unused otherwise
+/////////////////////// //TODO(delle) refactor Assert() usages so the expression is not used
+#define AssertAlways(expression, ...) STMNT( if(!(expression)){*(volatile int*)0 = 0;} ) //works regardless of SLOW or INTERNAL
+#define AssertBreakpoint(expression, ...) STMNT( if(!(expression)){ DebugBreakpoint; } )
+#define StaticAssertAlways(expression, ...) char GLUE(__FILE__, GLUE(__LINE__,__default__))[(expression)?1:-1]
+
+#if   DESHI_INTERNAL
+#  define Assert(expression, ...) AssertBreakpoint(expression)
+#  define StaticAssert(expression, ...) StaticAssertAlways(expression)
+#elif DESHI_SLOW
+#  define Assert(expression, ...) AssertAlways(expression)
+#  define StaticAssert(expression, ...) StaticAssertAlways(expression)
+#else
+#  define Assert(expression, ...) expression
+#  define StaticAssert(expression, ...) 
+#endif
+
+#define NotImplemented Assert(false, "not implemented yet")
+#define InvalidPath Assert(false, "invalid path")
+#define TestMe AssertBreakpoint(false, "this needs to be tested")
+#define FixMe AssertBreakpoint(false, "this is broken in some way")
+
+/////////////////////////
+//// for-loop macros ////
+/////////////////////////
+#define forX(var_name,iterations) for(int var_name=0; var_name<(iterations); ++var_name)
+#define forI(iterations) for(int i=0; i<(iterations); ++i)
+#define forE(iterable) for(auto it = iterable.begin(), it_begin = iterable.begin(), it_end = iterable.end(); it != it_end; ++it)
 
 ///////////////
 //// other ////
@@ -169,4 +209,22 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #  define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
 #endif // defer
 
-#endif //DESHI_DEFINES_H
+function void* STLAllocator_Reserve(upt bytes, void* ctx){void* a = calloc(1,bytes); Assert(a); return a;}
+function void  STLAllocator_Release(void* ptr, upt bytes, void* ctx){free(ptr);}
+function void* STLAllocator_Resize(void* ptr, upt bytes, void* ctx){void* a = realloc(ptr,bytes); Assert(a); return a;}
+global_const BaseAllocator base_stl_allocator{
+	(BaseAllocator_Reserve_Func*)     STLAllocator_Reserve,
+	(BaseAllocator_ChangeMemory_Func*)BaseAllocator_ChangeMemory_Noop,
+	(BaseAllocator_ChangeMemory_Func*)BaseAllocator_ChangeMemory_Noop,
+	(BaseAllocator_ChangeMemory_Func*)STLAllocator_Release,
+	(BaseAllocator_ResizeMemory_Func*)STLAllocator_Resize
+};
+
+///////////////////////////// //TODO remove/rework/rename these
+//// to-be-redone macros ////
+/////////////////////////////
+#define DESHI_NAME_SIZE 64 //NOTE arbitrarily chosen size, but its convenient to have a fixed size for names
+#define cpystr(dst,src,bytes) strncpy((dst), (src), (bytes)); (dst)[(bytes)-1] = '\0' //copy c-string and null-terminate
+#define dyncast(child,base) dynamic_cast<child*>(base) //dynamic cast short-hand
+
+#endif //DEFINES_H
