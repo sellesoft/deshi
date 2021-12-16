@@ -31,7 +31,7 @@ struct MeshVk{
 };
 
 struct TextureVk {
-	Texture* base;
+	Texture*       base;
 	VkImage        image;
 	VkDeviceMemory memory;
 	VkDeviceSize   size;
@@ -3526,7 +3526,6 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 				uiVertexCount += 4;
 				uiIndexCount += 6;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-				//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 				pos.x += vkFonts[font->idx].characterWidth * scale.x;
@@ -3551,7 +3550,6 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 				uiVertexCount += 4;
 				uiIndexCount += 6;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-				//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 			}break;
@@ -3605,7 +3603,6 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 				uiVertexCount += 4;
 				uiIndexCount += 6;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-				//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 				pos.x += vkFonts[font->idx].characterWidth * scale.x;
@@ -3630,13 +3627,52 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 				uiVertexCount += 4;
 				uiIndexCount += 6;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
-				//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx = font->idx;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 			}break;
 		default: Assert(!"unhandled font type"); break;
 		}
 	}
+}
+
+void Render::
+DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, float alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+
+	if (uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != texture->idx ||
+		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+		scissorExtent != prevScissorExtent) {  //and you could do text last in one, and text first in another
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
+		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
+		uiCmdCounts[layer]++;
+		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
+	}
+
+	u32       col = PackColorU32(255, 255, 255, 255.f * alpha);
+	Vertex2*   vp = uiVertexArray + uiVertexCount;
+	UIIndexVk* ip = uiIndexArray + uiIndexCount;
+
+	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
+	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
+	vp[0].pos = p0; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = p1; vp[1].uv = { 0,1 }; vp[1].color = col;
+	vp[2].pos = p2; vp[2].uv = { 1,1 }; vp[2].color = col;
+	vp[3].pos = p3; vp[3].uv = { 1,0 }; vp[3].color = col;
+
+	uiVertexCount += 4;
+	uiIndexCount += 6;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
+	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
+
+}
+
+
+void Render::
+DrawTexture2D(Texture* texture, vec2 pos, vec2 size, float rotation, float alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+
+
+
 }
 
 ///////////////////

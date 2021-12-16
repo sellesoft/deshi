@@ -72,9 +72,9 @@ local bool NextActive   = 0;
 //and their order in layers eg. when one gets clicked it gets moved to be first if its set to
 local map<const char*, UIWindow*>        windows;     
 local map<const char*, UIInputTextState> inputTexts;  //stores known input text labels and their state
-local map<const char*, bool>             dropDowns;   //stores known dropdowns and if they are open or not
-local map<const char*, bool>             sliders;     //stores whether a slider is being actively changed
-local map<const char*, b32>             headers;     //stores whether a header is open or not
+local map<const char*, b32>              combos;      //stores known combos and if they are open or not
+local map<const char*, b32>              sliders;     //stores whether a slider is being actively changed
+local map<const char*, b32>              headers;     //stores whether a header is open or not
 local array<UIWindow*>                   windowStack; //window stack which allow us to use windows like we do colors and styles
 local array<ColorMod>                    colorStack; 
 local array<VarMod>                      varStack; 
@@ -100,17 +100,13 @@ local bool  rowInProgress;
 //set when we are in progress of making a custom item, see BeginCustomItem() in ui.h for more info on what that is
 local b32 custom_item = 0;
 
-//the last item worked on
-//this is always set in EndItem()
-//its purpose is to solve a problem caused by custom items, since items all get merged into one item
-//when we're making a custom item, and i want the user to be able to still get information about the last item made
-//for the group, we need to store a copy of it here
-local UIItem lastitem;
-
 local u32 currlayer = floor(UI_WINDOW_ITEM_LAYERS / 2.f);
 
 //set when an item need to supress window dragging
 local b32 drag_override = 0;
+
+//misc state vars
+local b32 combo_active = 0; //set when BeginCombo is called
 
 //helper defines
 
@@ -335,7 +331,7 @@ inline UIItem* BeginItem(UIItemType type, u32 layeroffset = 0) {
 inline void EndItem(UIItem* item) {
 	//copy the last made item to lastitem, so we can look back at it independently of custom item nonsense
 	//maybe only do this is we're making a custom item
-	lastitem = *item;
+	//lastitem = *item;
 }
 
 //@BeginRow
@@ -953,107 +949,57 @@ void UI::Checkbox(string label, bool* b) {
 	
 }
 
+UIItem* comboItem = 0; //global, so endcombo can share this with begincombo, and so selectable can read how it should be placed 
+bool UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
+	comboItem = BeginItem(UIItemType_Combo, 1);
+	comboItem->position = pos;
+
+	if (!combos.has(label)) {
+		combos.add(label);
+		combos[label] = false;
+	}
+
+
+	return combos[label];
+}
+
 bool UI::BeginCombo(const char* label, const char* prev_val) {
-	//UIItem* item = BeginItem(UIItemType_DropDown, 1);
-	//b32 ret = 0;
+	return BeginCombo(label, prev_val, PositionForNewItem());
+}
+
+
+
+void UI::EndCombo() {
+	Assert(comboItem, "attempt to end a combo without starting one");
+
+
+
+
+}
+
+bool SelectableCall(const char* label, vec2 pos, b32 selected) {
+	UIItem* item = BeginItem(UIItemType_Selectable, 0);
+
+	return 0;
+}
+
+bool UI::Selectable(const char* label, b32* selected) {
 	
-	//bool isOpen = false;
-	//if (!dropDowns.has(label)) {
-	//	dropDowns.add(label);
-	//	dropDowns[label] = false;
-	//}
-	//else {
-	//	isOpen = dropDowns[label];
-	//}
-	//
-	//
-	//item->position = PositionForNewItem();
-	//item->size = (NextItemSize.x == -1) ? vec2{ curwin->width - 2 * style.windowPadding.x, 20 } : NextItemSize;
-	//
-	//AdvanceCursor(item);
-	//
-	////main bar, drawn regardless of if the box is open
-	//
-	//{//background
-	//	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
-	//	drawCmd.position = vec2{ 0,0 };
-	//	drawCmd.dimensions = item->size;
-	//	drawCmd.color = style.colors[UIStyleCol_FrameBg];
-	//	item->drawCmds.add(drawCmd);
-	//}
-	//
-	//{//selected text
-	//	UIDrawCmd drawCmd{ UIDrawType_Text};
-	//	drawCmd.position = vec2{ 10, (item->size.y - style.fontHeight) * 0.5f };
-	//	drawCmd.color = style.colors[UIStyleCol_Text];
-	//	drawCmd.text = string(options[selected]);
-	//	drawCmd.font = style.font;
-	//	item->drawCmds.add(drawCmd);
-	//}
-	//
-	//vec2 openBoxPos = vec2{ (item->size.x - item->size.y / 2) * 0.95f, item->size.y / 4 };
-	//vec2 openBoxSize = vec2{ item->size.y / 2, item->size.y / 2 };
-	//
-	//{//open box
-	//	UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-	//	drawCmd.position = openBoxPos;
-	//	drawCmd.dimensions = openBoxSize;
-	//	drawCmd.color = style.colors[UIStyleCol_FrameBg] * 0.4;
-	//	item->drawCmds.add(drawCmd);
-	//}
-	//
-	//if (curwin->focused && 
-	//	DeshInput->LMousePressed() &&
-	//	Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position + openBoxPos, openBoxSize * style.globalScale)) {
-	//	dropDowns[label] = !dropDowns[label];
-	//}
-	//
-	//if(isOpen) {
-	//	//find what box the mouse is over
-	//	
-	//	vec2 sp = item->position.yAdd(item->size.y);
-	//	vec2 mp = DeshInput->mousePos - (curwin->position + sp);
-	//	f32 height = item->size.y * options_count;
-	//	f32 width = item->size.x;
-	//	u32 mo = -1;
-	//	
-	//	if (curwin->focused && Math::PointInRectangle(mp, vec2::ZERO, vec2{ width, height } * style.globalScale)) {
-	//		mo = floor(mp.y / height * options_count);
-	//		if (DeshInput->LMousePressed()) {
-	//			selected = mo;
-	//			ret = 1;
-	//		}
-	//	}
-	//	
-	//	for (int i = 0; i < options_count; i++) {
-	//		{//selection boxes
-	//			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-	//			drawCmd.position = vec2{ 0, item->size.y * (i + 1) };
-	//			drawCmd.dimensions = item->size;
-	//			drawCmd.color = style.colors[(i==selected || i == mo) ? UIStyleCol_FrameBgActive : UIStyleCol_FrameBg];
-	//			item->drawCmds.add(drawCmd);
-	//			
-	//		}
-	//		
-	//		{//underline
-	//			UIDrawCmd drawCmd{ UIDrawType_Line};
-	//			drawCmd.position = vec2{ 0,(item->size.y * (i + 2))};
-	//			drawCmd.position2 = vec2{ item->size.x, (item->size.y * (i + 2))};
-	//			drawCmd.color = Color_Black;
-	//			drawCmd.thickness = 1;
-	//			item->drawCmds.add(drawCmd);
-	//		}
-	//		
-	//		{//selection texts
-	//			UIDrawCmd drawCmd{ UIDrawType_Text};
-	//			drawCmd.position = vec3{ 10, (item->size.y - style.fontHeight) * 0.5f + (i + 1) * item->size.y };
-	//			drawCmd.color = style.colors[UIStyleCol_Text];
-	//			drawCmd.text = options[i];
-	//			drawCmd.font = style.font;
-	//			item->drawCmds.add(drawCmd);
-	//		}
-	//	}
-	//}
+	return 0;
+}
+
+bool UI::Selectable(const char* label, vec2 pos, b32* selected) {
+
+	return 0;
+}
+
+bool UI::Selectable(const char* label, b32 selected) {
+
+	return 0;
+}
+
+bool UI::Selectable(const char* label, vec2 pos, b32 selected) {
+
 	return 0;
 }
 
@@ -2005,13 +1951,7 @@ UIWindow* DisplayMetrics() {
 			names.add(win->name.str);
 		}
 	}
-	
-	
-	//PushColor(UIStyleCol_WindowBg,       colors.near_black);
-	//PushColor(UIStyleCol_Border,         colors.dark_grey_blue);
-	//PushColor(UIStyleCol_FrameBgActive,  color(Color_Cyan));
-	//PushColor(UIStyleCol_FrameBgHovered, color(Color_Cyan) * 0.8);
-	//PushColor(UIStyleCol_FrameBg,        color(Color_Cyan) * 0.6);
+
 	
 	Begin("METRICS", vec2::ZERO, vec2(300, 500));
 	myself = curwin;
@@ -2021,7 +1961,6 @@ UIWindow* DisplayMetrics() {
 	string slomotext = TOSTRING("Slowest Render:");
 	string quicktext = TOSTRING("Fastest Render:");
 	string mostitext = TOSTRING("Most Items: "); 
-	
 	
 	static float sw = CalcTextSize(longname->name).x;
 	static float fw = CalcTextSize(slomotext).x + 5;

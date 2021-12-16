@@ -22,6 +22,7 @@ struct ColoredStr{
 
 //buffer struct that holds all text that has been logged in the console
 struct{
+	//TODO change this buffer to just be the file that logger uses
 	char                   buff[BUFF_SIZE]; //i decided not to use ring_array on char, i will probably write more about why later
 	ring_array<ColoredStr> dictionary;
 	u32 buff_count = 0;

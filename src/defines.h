@@ -137,7 +137,7 @@ template<typename T,typename U> FORCE_INLINE T Clamp(T value, U min, T max){retu
 template<typename T,typename U> FORCE_INLINE T Clamp(T value, T min, U max){return (value < min) ? min : ((value > max) ? max : value);}
 template<typename T,typename U> FORCE_INLINE T Clamp(T value, U min, U max){return (value < min) ? min : ((value > max) ? max : value);}
 template<typename T> FORCE_INLINE T ClampMin(T value, T min){return (value < min) ? min : value;};
-template<typename T> FORCE_INLINE T ClampMax(T value, T min){return (value > max) ? max : value;};
+template<typename T> FORCE_INLINE T ClampMax(T value, T max){return (value > max) ? max : value;};
 template<typename T,typename U> FORCE_INLINE T ClampMin(T value, U min){return (value < min) ? min : value;};
 template<typename T,typename U> FORCE_INLINE T ClampMax(T value, U max){return (value > max) ? max : value;};
 
