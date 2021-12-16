@@ -332,7 +332,11 @@ namespace Cmd{
 	}
 	
 	void Init(){
+		TIMER_START(t_s);
+		
 		AddDeshiCommands();
+		
+		Log("deshi","Finished commands initialization in ",TIMER_END(t_s),"ms");
 	}
 	
 	void Run(const string& input){

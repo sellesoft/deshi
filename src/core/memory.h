@@ -35,19 +35,25 @@ struct Heap{
 namespace Memory{
 	//arena functions
 	Arena* CreateArena(upt bytes);
+	void   GrowArena(Arena* arena);
 	void   DeleteArena(Arena* arena);
 	
 	//general memory functions
 	void* Allocate(upt bytes);
 	void* TempAllocate(upt bytes);
+	void* Reallocate(void* ptr, upt bytes);
 	void  ZeroFree(void* ptr);
 	
 	void Init(upt main_size, upt temp_size);
 	void Update();
 };
 
-FORCE_INLINE void* alloc(upt bytes) { return Memory::Allocate(bytes); }
-FORCE_INLINE void* talloc(upt bytes){ return Memory::TempAllocate(bytes); }
-FORCE_INLINE void  zfree(void* ptr) { return Memory::ZeroFree(ptr); }
+struct DeshiAllocator{
+	void* reserve (upt bytes,              void* ctx=0){return Memory::Allocate(bytes);}
+	void  commit  (void* ptr, upt bytes,   void* ctx=0){}
+	void  decommit(void* ptr, upt bytes,   void* ctx=0){}
+	void  release (void* ptr, upt bytes=0, void* ctx=0){Memory::ZeroFree(ptr);};
+	void* resize  (void* ptr, upt bytes,   void* ctx=0){return Memory::Reallocate(ptr,bytes);}
+};
 
 #endif //DESHI_MEMORY_H

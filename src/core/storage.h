@@ -17,6 +17,12 @@ struct Storage_{
 	array<Model*>    models;
 	array<Font*>     fonts;
 	array<Light*>    lights; //TODO(delle) move this elsewhere
+	
+	Mesh*     null_mesh = 0;
+	Texture*  null_texture = 0;
+	Material* null_material = 0;
+	Model*    null_model = 0;
+	Font*     null_font = 0;
 };
 
 //global storage pointer
@@ -38,7 +44,7 @@ namespace Storage{
 	
 	array<vec2> GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camView, vec3 camPosition, vec2 screenDims);
 	
-	inline Mesh*    NullMesh(){ return DeshStorage->meshes.data[0]; };
+	inline Mesh*    NullMesh(){ return DeshStorage->null_mesh; };
 	inline u32      MeshCount(){ return DeshStorage->meshes.size(); };
 	inline Mesh*    MeshAt(u32 meshIdx){ return DeshStorage->meshes[meshIdx]; };
 	inline u32      MeshIndex(Mesh* mesh){ forI(DeshStorage->meshes.size()){ if(mesh == DeshStorage->meshes[i]) return i; } return -1; };
@@ -52,7 +58,7 @@ namespace Storage{
 	pair<u32,Texture*> CreateTextureFromMemory(void* data, const char* name, int width, int height, ImageFormat format, TextureType type = TextureType_2D, bool keepLoaded = false, bool generateMipmaps = true, bool forceLinear = false);
 	void               DeleteTexture(Texture* texture);
 	
-	inline Texture*    NullTexture(){ return DeshStorage->textures.data[0]; };
+	inline Texture*    NullTexture(){ return DeshStorage->null_texture; };
 	inline u32         TextureCount(){ return DeshStorage->textures.size(); };
 	inline Texture*    TextureAt(u32 textureIdx){ return DeshStorage->textures[textureIdx]; };
 	inline u32         TextureIndex(Texture* texture){ forI(DeshStorage->textures.size()){ if(texture == DeshStorage->textures[i]) return i; } return -1; };
@@ -67,7 +73,7 @@ namespace Storage{
 	void                SaveMaterial(Material* material);
 	void                DeleteMaterial(Material* material);
 	
-	inline Material*    NullMaterial(){ return DeshStorage->materials.data[0]; };
+	inline Material*    NullMaterial(){ return DeshStorage->null_material; };
 	inline u32          MaterialCount(){ return DeshStorage->materials.size(); };
 	inline Material*    MaterialAt(u32 materialIdx){ return DeshStorage->materials[materialIdx]; };
 	inline u32          MaterialIndex(Material* material){ forI(DeshStorage->materials.size()){ if(material == DeshStorage->materials[i]) return i; } return -1; };
@@ -86,7 +92,7 @@ namespace Storage{
 	void             SaveModel(Model* model);
 	void             DeleteModel(Model* model);
 	
-	inline Model*    NullModel(){ return DeshStorage->models.data[0]; };
+	inline Model*    NullModel(){ return DeshStorage->null_model; };
 	inline u32       ModelCount(){ return DeshStorage->models.size(); };
 	inline Model*    ModelAt(u32 modelIdx){ return DeshStorage->models[modelIdx]; };
 	inline u32       ModelIndex(Model* model){ forI(DeshStorage->models.size()){ if(model == DeshStorage->models[i]) return i; } return -1; };
@@ -101,7 +107,7 @@ namespace Storage{
 	pair<u32,Font*> CreateFontFromFileTTF(const char* filename, u32 height);
 	void            DeleteFont(Font* font);
 	
-	inline Font*    NullFont(){ return DeshStorage->fonts.data[0]; };
+	inline Font*    NullFont(){ return DeshStorage->null_font; };
 	inline u32      FontCount(){ return DeshStorage->fonts.count; };
 	inline Font*    FontAt(u32 fontIdx){ return DeshStorage->fonts[fontIdx]; };
 	inline u32      FontIndex(Font* font){ forI(DeshStorage->fonts.count){ if(font == DeshStorage->fonts[i]) return i; } return -1; };

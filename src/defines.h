@@ -91,7 +91,7 @@ typedef u32 Flags;
 
 typedef void* (*BaseAllocator_Reserve_Func)(void* ctx, upt bytes);
 typedef void  (*BaseAllocator_ChangeMemory_Func)(void* ctx, void* ptr, upt bytes);
-struct BaseAllocator{
+struct Allocator{
 	BaseAllocator_Reserve_Func*      reserve;  //ask for memory from OS
 	BaseAllocator_ChangeMemory_Func* commit;   //grab memory for use
 	BaseAllocator_ChangeMemory_Func* decommit; //not using memory anymore

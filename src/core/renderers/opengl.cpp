@@ -691,6 +691,8 @@ UpdateUniformBuffers(){
 local char iniFilepath[256] = {};
 void DeshiImGui::
 Init(){
+	TIMER_START(t_s);
+	
 	//Setup Dear ImGui context
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
@@ -704,6 +706,8 @@ Init(){
 	//Setup Platform/Renderer backends
 	ImGui_ImplGlfw_InitForOpenGL(DeshWindow->window, true);
 	ImGui_ImplOpenGL3_Init();
+	
+	Log("deshi","Finished imgui initialization in ",TIMER_END(t_s),"ms");
 }
 
 void DeshiImGui::
@@ -1700,6 +1704,8 @@ RemakeTextures(){
 ///////////////
 void Render::
 Init(){
+	TIMER_START(t_s);
+	
 	//// load RenderSettings ////
 	LoadSettings();
 	if(settings.debugging && settings.printf) settings.loggingLevel = 4;
@@ -1717,6 +1723,8 @@ Init(){
 	
 	//glfwSwapInterval(1); //vsync
 	initialized = true;
+	
+	Log("deshi","Finished opengl renderer initialization in ",TIMER_END(t_s),"ms");
 }
 
 /////////////////

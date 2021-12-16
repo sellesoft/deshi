@@ -7,6 +7,8 @@ void glfwError(int id, const char* description){
 }
 
 void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
+	TIMER_START(t_s);
+	
 	name = _name;
 	glfwSetErrorCallback(&glfwError);
 	if(!glfwInit()){ LogE("glfw","Failed to init!"); return; }
@@ -244,10 +246,13 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	
 	//TODO(sushi) implement this function for use on InputText()
 	//glfwSetCharCallback()
-}//Init
+	
+	Log("deshi","Finished window initialization in ",TIMER_END(t_s),"ms");
+} //Init()
 
 void Window::Update() {
 	TIMER_START(t_d);
+	glfwPollEvents();
 	glfwGetWindowPos(window, &_x, &_y);
 	x = _x; y = _y;
 	
@@ -342,10 +347,22 @@ void Window::UpdateResizable(bool resizable){
 	glfwSetWindowAttrib(this->window, GLFW_RESIZABLE, resizable);
 }
 
-void Window::Close() {
+void Window::Close(){
 	closeWindow = true;
 }
 
 void Window::UpdateTitle(const char* title){
 	glfwSetWindowTitle(this->window, title);
+}
+
+void Window::ShowWindow(){
+	glfwShowWindow(window);
+}
+
+void Window::HideWindow(){
+	glfwHideWindow(window);
+}
+
+b32 Window::ShouldClose(){
+	return glfwWindowShouldClose(window) || closeWindow;
 }
