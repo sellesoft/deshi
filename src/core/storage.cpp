@@ -60,7 +60,8 @@ Init(){
 	cpystr(NullFont()->name,"null",DESHI_NAME_SIZE);
 	u8 white_pixels[4] = {255,255,255,255};
 	Texture* nf_tex = CreateTextureFromMemory(&white_pixels, "null_font", 2, 2, ImageFormat_BW, TextureType_2D, false, false).second;
-	Render::LoadFont(NullFont(), nf_tex);
+	
+	
 	//DeleteTexture(nf_tex); //!Incomplete
 	
 	Log("deshi","Finished storage initialization in ",TIMER_END(t_s),"ms");
@@ -1684,13 +1685,13 @@ CreateFontFromFileBDF(const char* filename){
 	
 	Texture* texture = CreateTextureFromMemory(pixels, font->name, font->max_width, font->max_height*font->count,
 											   ImageFormat_BW, TextureType_2D, false, false, false).second;
-	Render::LoadFont(font, texture);
 	free(encodings);
 	free(pixels);
 	//DeleteTexture(texture);
 	
 	font->aspect_ratio = (float)font->max_height / font->max_width;
-	
+	font->tex = texture;
+
 	fonts.add(font);
 	result.first  = font->idx;
 	result.second = font;
@@ -1792,11 +1793,11 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	
 	Texture* texture = CreateTextureFromMemory(pixels, font->name, tsx, tsy, 
 											   ImageFormat_BW, TextureType_2D, false, false, false).second;
-	Render::LoadFont(font, texture);
 	free(pixels);
 	//DeleteTexture(texture);
 	
 	font->uvOffset = 2.f / tsy;
+	font->tex = texture;
 	
 	fonts.add(font);
 	result.first  = font->idx;

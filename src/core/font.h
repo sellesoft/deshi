@@ -3,6 +3,7 @@
 #define DESHI_FONT_H
 
 #include "../defines.h"
+#include "model.h"
 
 //note, to calculate the width of a char from a specified height do
 //   height / aspect_ratio / max_width
@@ -38,17 +39,18 @@ typedef struct {
 //pack_context isnt really necessary as its really just something used internally by stbtt
 
 struct Font{
-	Type  type;
-	u32   idx;
-	char  name[DESHI_NAME_SIZE];
-	char  weight[DESHI_NAME_SIZE];
-	u32   max_width;
-	u32   max_height;
-	u32   rendered_resolution;
-	u32   count;
-	u32   ttf_size[2];
-	u32   num_ranges;
-	void* ttf_pack_context;      //stbtt_pack_context
+	Type     type;
+	u32      idx;
+	Texture* tex;
+	char     name[DESHI_NAME_SIZE];
+	char     weight[DESHI_NAME_SIZE];
+	u32      max_width;
+	u32      max_height;
+	u32      rendered_resolution;
+	u32      count;
+	u32      ttf_size[2];
+	u32      num_ranges;
+	void*    ttf_pack_context;      //stbtt_pack_context
 	pack_range* ttf_pack_ranges; //stbtt_pack_range
 
 	//the y offset of UV since we are now packing a white square into every font.

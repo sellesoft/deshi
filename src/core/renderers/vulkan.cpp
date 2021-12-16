@@ -38,22 +38,13 @@ struct TextureVk {
 	VkImageView    view;
 	VkSampler      sampler;
 	VkDescriptorImageInfo descriptor;
+	VkDescriptorSet descriptorSet;
 };
 
 struct MaterialVk{
-	Material* base;
+	Material*       base;
 	VkDescriptorSet descriptorSet;
 	VkPipeline      pipeline;
-};
-
-struct FontVk{
-	Font* base;
-	Type type;
-	u32  texture;
-	u32  characterWidth;
-	u32  characterHeight;
-	u32  characterCount;
-	VkDescriptorSet descriptorSet;
 };
 
 struct ModelCmdVk{
@@ -72,11 +63,12 @@ struct Push2DVk{
 };
 
 struct UICmdVk{
-	u32 texIdx;
-	u16 indexOffset;
-	u16 indexCount;
+	VkDescriptorSet descriptorSet;
+	u16  indexOffset;
+	u16  indexCount;
 	vec2 scissorOffset;
 	vec2 scissorExtent;
+	b32  textured;
 };
 
 struct QueueFamilyIndices{
@@ -183,7 +175,7 @@ local UIIndexVk uiIndexCount  = 0;
 local Vertex2   uiVertexArray[MAX_UI_VERTICES];
 local UIIndexVk uiIndexArray [MAX_UI_INDICES];
 local UIIndexVk uiCmdCounts[UI_LAYERS]; //start with 1
-local UICmdVk   uiCmdArrays[UI_LAYERS][MAX_UI_CMDS]; //different UI cmd per font/texture
+local UICmdVk   uiCmdArrays[UI_LAYERS][MAX_UI_CMDS]; //different UI cmd per texture
 
 #define MAX_TEMP_VERTICES 0xFFFF //max u16: 65535
 #define MAX_TEMP_INDICES 3*MAX_TEMP_VERTICES
@@ -212,9 +204,8 @@ local ModelIndexVk modelCmdCount = 0;
 local ModelCmdVk   modelCmdArray[MAX_MODEL_CMDS];
 
 local array<MeshVk>      vkMeshes;
-local array<TextureVk>   vkTextures;
+local array<TextureVk>   textures;
 local array<MaterialVk>  vkMaterials;
-local array<FontVk>      vkFonts;
 local vec4 vkLights[10]{ vec4(0,0,0,-1) };
 
 local std::vector<const char*> validationLayers = { 
@@ -226,9 +217,9 @@ local std::vector<const char*> deviceExtensions = {
 };
 local std::vector<VkValidationFeatureEnableEXT> validationFeaturesEnabled = {};
 
-local bool initialized     = false;
-local bool remakeWindow    = false;
-local bool remakePipelines = false;
+local bool initialized      = false;
+local bool remakeWindow     = false;
+local bool remakePipelines  = false;
 local bool _remakeOffscreen = false;
 
 local VkSampleCountFlagBits msaaSamples{};
@@ -346,7 +337,7 @@ local BufferVk debugIndexBuffer{};
 ////////////////////
 local struct{
 	VkDescriptorSetLayout base;
-	VkDescriptorSetLayout vkTextures;
+	VkDescriptorSetLayout textures;
 	VkDescriptorSetLayout instances;
 	VkDescriptorSetLayout twod;
 	VkDescriptorSetLayout geometry;
@@ -1763,8 +1754,8 @@ CreateLayouts(){
 		setLayoutBindings[3].descriptorCount = 1;
 		
 		descriptorSetLayoutCI.bindingCount = 4;
-		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.vkTextures));
-		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.vkTextures, 
+		AssertVk(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCI, allocator, &descriptorSetLayouts.textures));
+		DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (u64)descriptorSetLayouts.textures, 
 							 "Textures descriptor set layout");
 	}
 	
@@ -1814,7 +1805,7 @@ CreateLayouts(){
 		pushConstantRange.size       = sizeof(mat4);
 		
 		VkDescriptorSetLayout setLayouts[] = { 
-			descriptorSetLayouts.base, descriptorSetLayouts.vkTextures
+			descriptorSetLayouts.base, descriptorSetLayouts.textures
 		};
 		
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
@@ -3043,8 +3034,10 @@ BuildCommands(){
 							scissor.extent.height = uiCmdArrays[layer][cmd_idx].scissorExtent.y;
 							vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 							
-							vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &vkFonts[uiCmdArrays[layer][cmd_idx].texIdx].descriptorSet, 0, nullptr);
-							vkCmdDrawIndexed(cmdBuffer, uiCmdArrays[layer][cmd_idx].indexCount, 1, uiCmdArrays[layer][cmd_idx].indexOffset, 0, 0);
+							if (uiCmdArrays[layer][cmd_idx].descriptorSet) {
+								vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &uiCmdArrays[layer][cmd_idx].descriptorSet, 0, nullptr);
+								vkCmdDrawIndexed(cmdBuffer, uiCmdArrays[layer][cmd_idx].indexCount, 1, uiCmdArrays[layer][cmd_idx].indexOffset, 0, 0);
+							}
 						}
 					}
 				}
@@ -3183,20 +3176,28 @@ NewFrame(){
 vec2 prevScissorOffset = vec2(0, 0);
 vec2 prevScissorExtent = vec2(0, 0);
 
+void CheckUICmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset, vec2 scissorExtent) {
+	if (uiCmdArrays[layer][uiCmdCounts[layer] - 1].textured != textured ||
+		(tex ? uiCmdArrays[layer][uiCmdCounts[layer] - 1].descriptorSet != textures[tex->idx].descriptorSet : 0) ||
+		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
+		scissorExtent != prevScissorExtent) {  //and you could do text last in one, and text first in another
+		prevScissorExtent = scissorExtent;
+		prevScissorOffset = scissorOffset;
+		uiCmdArrays[layer][uiCmdCounts[layer]].descriptorSet = textures[(tex ? tex->idx : 0)].descriptorSet;
+		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
+		uiCmdCounts[layer]++;
+
+		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
+	}
+
+}
+
 void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
 	if (color.a == 0) return;
 	
-	if (//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != prevTexIdx ||
-		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-		scissorExtent != prevScissorExtent) {  //and you could do text last in one, and text first in another
-		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;
-		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
-		uiCmdCounts[layer]++;
-		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
-	}
+	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
 	
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
@@ -3230,17 +3231,7 @@ void Render::FillRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 
 		   "Scissor Offset and Extent can't be negative");
 	if (color.a == 0) return;
 	
-	//NOTE currently the first check in this if statement will never happen for non-text items, but when
-	//     we start being able to use a texture as a color it can be
-	if (//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != prevTexIdx ||
-		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-		scissorExtent != prevScissorExtent) {  //and you could do text last in one, and text first in another
-		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;
-		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
-		uiCmdCounts[layer]++;
-		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
-	}
+	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
 	
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
@@ -3268,13 +3259,13 @@ void Render::DrawRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 
 	if (color.a == 0) return;
 	
 	//top, left, right, bottom
-	//DrawLineUI(pos.xAdd(-1), pos + dimensions.ySet(0), 1, color, scissorOffset, scissorExtent);
-	//DrawLineUI(pos, pos + dimensions.xSet(0), 1, color, scissorOffset, scissorExtent);
-	//DrawLineUI(pos + dimensions, pos + dimensions.ySet(0), 1, color, scissorOffset, scissorExtent);
-	//DrawLineUI(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, scissorOffset, scissorExtent);
+	DrawLine2D(pos.xAdd(-1), pos + dimensions.ySet(0), 1, color, layer, scissorOffset, scissorExtent);
+	DrawLine2D(pos, pos + dimensions.xSet(0), 1, color, layer, scissorOffset, scissorExtent);
+	DrawLine2D(pos + dimensions, pos + dimensions.ySet(0), 1, color, layer, scissorOffset, scissorExtent);
+	DrawLine2D(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, layer, scissorOffset, scissorExtent);
 	
-	array<vec2> points{ pos, pos + dimensions.xSet(0), pos + dimensions, pos + dimensions.ySet(0), pos };
-	DrawLines2D(points, 1, color, layer, scissorOffset, scissorExtent);
+	//array<vec2> points{ pos, pos + dimensions.xSet(0), pos + dimensions, pos + dimensions.ySet(0), pos };
+	//DrawLines2D(points, 1, color, layer, scissorOffset, scissorExtent);
 }
 
 void Render::DrawCircle2D(vec2 pos, float radius, u32 subdivisions_int, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
@@ -3306,17 +3297,7 @@ void Render::DrawLine2D(vec2 start, vec2 end, float thickness, color color, u32 
 		   "Scissor Offset and Extent can't be negative");
 	if (color.a == 0) return;
 	
-	//NOTE currently the first check in this if statement will never happen for non-text items, but when
-	//     we start being able to use a texture as a color it can be
-	if (//uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != prevTexIdx ||
-		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-		scissorExtent != prevScissorExtent) {  //and you could do text last in one, and text first in another
-		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;
-		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
-		uiCmdCounts[layer]++;
-		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
-	}
+	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
 	
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
@@ -3355,19 +3336,7 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 	Assert(points.count > 1, "Lines need at least 2 points");
 	if (color.a == 0 || thickness == 0) return;
 	
-	//NOTE currently the first check in this if statement will never happen for non-text items, but when
-	//     we start being able to use a texture as a color it can be
-	//     OR these functions will take in an optional texture, so this check wont ever matter
-	if (//(uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != prevTexIdx ) || 
-		
-		scissorOffset != prevScissorOffset ||
-		scissorExtent != prevScissorExtent) {
-		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;
-		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
-		uiCmdCounts[layer]++;
-		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
-	}
+	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
 	
 	float halfthick = thickness / 2;
 	
@@ -3433,9 +3402,6 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 		normavout.clampMag(0, thickness * 2);//sqrt(2) / 2 * thickness );
 		normavin.clampMag(0, thickness * 4);
 		
-		
-		
-		
 		//set indicies by pattern
 		int ipidx = 6 * (i - 1) + 2;
 		ip[ipidx + 0] =
@@ -3488,23 +3454,11 @@ void Render::
 DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
-	Assert(font->idx < vkFonts.count);
 	if (color.a == 0) return;
 	
-	//im doing offset and extent because we have to know if we're drawing in a new window
-	//and you could do text last in one, and text first in another
-	if ((uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != font->idx)
-		|| (scissorOffset != prevScissorOffset)
-		|| (scissorExtent != prevScissorExtent)) {
-		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;
-		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
-		uiCmdArrays[layer][uiCmdCounts[layer]].texIdx = font->idx;
-		uiCmdCounts[layer]++;
-		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
-	}
+	CheckUICmdArrays(layer, font->tex, 0, scissorOffset, scissorExtent);
 	
-	switch (vkFonts[font->idx].type) {
+	switch (font->type) {
 		//// BDF (and NULL) font rendering ////
 		case FontType_BDF: case FontType_NONE: {
 			forI(text.count) {
@@ -3512,9 +3466,9 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 				Vertex2*   vp = uiVertexArray + uiVertexCount;
 				UIIndexVk* ip = uiIndexArray + uiIndexCount;
 				
-				f32 w = vkFonts[font->idx].characterWidth * scale.x;
-				f32 h = vkFonts[font->idx].characterHeight * scale.y;
-				f32 dy = 1.f / (f32)vkFonts[font->idx].characterCount;
+				f32 w = font->max_width * scale.x;
+				f32 h = font->max_height * scale.y;
+				f32 dy = 1.f / (f32)font->count;
 				
 				f32 idx = f32(text[i] - 32);
 				f32 topoff = idx * dy;
@@ -3532,7 +3486,7 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
-				pos.x += vkFonts[font->idx].characterWidth * scale.x;
+				pos.x += font->max_width * scale.x;
 			}
 		}break;
 		//// TTF font rendering ////
@@ -3565,23 +3519,11 @@ void Render::
 DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
-	Assert(font->idx < vkFonts.count);
 	if (color.a == 0) return;
 	
-	//im doing offset and extent because we have to know if we're drawing in a new window
-	//and you could do text last in one, and text first in another
-	if ((uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != font->idx)
-		|| (scissorOffset != prevScissorOffset)
-		|| (scissorExtent != prevScissorExtent)) {
-		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;
-		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
-		uiCmdArrays[layer][uiCmdCounts[layer]].texIdx = font->idx;
-		uiCmdCounts[layer]++;
-		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
-	}
+	CheckUICmdArrays(layer, font->tex, 0, scissorOffset, scissorExtent);
 	
-	switch (vkFonts[font->idx].type) {
+	switch (font->type) {
 		//// BDF (and NULL) font rendering ////
 		case FontType_BDF: case FontType_NONE: {
 			forI(text.count) {
@@ -3589,9 +3531,9 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 				Vertex2*   vp = uiVertexArray + uiVertexCount;
 				UIIndexVk* ip = uiIndexArray + uiIndexCount;
 				
-				f32 w = vkFonts[font->idx].characterWidth * scale.x;
-				f32 h = vkFonts[font->idx].characterHeight * scale.y;
-				f32 dy = 1.f / (f32)vkFonts[font->idx].characterCount;
+				f32 w = font->max_width * scale.x;
+				f32 h = font->max_height * scale.y;
+				f32 dy = 1.f / (f32)font->count;
 				
 				f32 idx = f32(text[i] - 32);
 				f32 topoff = idx * dy;
@@ -3609,7 +3551,7 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 				uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
-				pos.x += vkFonts[font->idx].characterWidth * scale.x;
+				pos.x += font->max_width * scale.x;
 			}
 		}break;
 		//// TTF font rendering ////
@@ -3641,17 +3583,12 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 
 void Render::
 DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, float alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
+		"Scissor Offset and Extent can't be negative");
+	if (alpha == 0) return;
 
-	if (uiCmdArrays[layer][uiCmdCounts[layer] - 1].texIdx != texture->idx ||
-		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-		scissorExtent != prevScissorExtent) {  //and you could do text last in one, and text first in another
-		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;
-		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
-		uiCmdCounts[layer]++;
-		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
-	}
-
+	CheckUICmdArrays(layer, texture, 1, scissorOffset, scissorExtent);
+	
 	u32       col = PackColorU32(255, 255, 255, 255.f * alpha);
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
@@ -3898,7 +3835,26 @@ LoadTexture(Texture* texture){
 	tvk.descriptor.sampler     = tvk.sampler;
 	tvk.descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	
-	vkTextures.add(tvk);
+	//allocate descriptor set
+	VkDescriptorSetAllocateInfo setAllocInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+	setAllocInfo.descriptorPool = descriptorPool;
+	setAllocInfo.pSetLayouts = &descriptorSetLayouts.twod;
+	setAllocInfo.descriptorSetCount = 1;
+	AssertVk(vkAllocateDescriptorSets(device, &setAllocInfo, &tvk.descriptorSet));
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)tvk.descriptorSet,
+		TOSTRING("Texture descriptor set ", texture->name).str);
+
+	VkWriteDescriptorSet set{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+	set.dstSet = tvk.descriptorSet;
+	set.dstArrayElement = 0;
+	set.descriptorCount = 1;
+	set.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	set.pImageInfo = &tvk.descriptor;
+	set.dstBinding = 0;
+	
+	vkUpdateDescriptorSets(device, 1, &set, 0, nullptr);
+	
+	textures.add(tvk);
 }
 
 //TODO(delle) this currently requires 4 textures, fix that
@@ -3912,7 +3868,7 @@ LoadMaterial(Material* material){
 	//allocate descriptor set
 	VkDescriptorSetAllocateInfo allocInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
 	allocInfo.descriptorPool     = descriptorPool;
-	allocInfo.pSetLayouts        = &descriptorSetLayouts.vkTextures;
+	allocInfo.pSetLayouts        = &descriptorSetLayouts.textures;
 	allocInfo.descriptorSetCount = 1;
 	AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &mvk.descriptorSet));
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)mvk.descriptorSet,
@@ -3926,7 +3882,7 @@ LoadMaterial(Material* material){
 		set.dstArrayElement = 0;
 		set.descriptorCount = 1;
 		set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		set.pImageInfo      = &vkTextures[texIdx].descriptor;
+		set.pImageInfo      = &textures[texIdx].descriptor;
 		set.dstBinding      = sets.size();
 		sets.add(set);
 	}
@@ -3940,7 +3896,7 @@ LoadMaterial(Material* material){
 			set.dstArrayElement = 0;
 			set.descriptorCount = 1;
 			set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			set.pImageInfo      = &vkTextures[0].descriptor;
+			set.pImageInfo      = &textures[0].descriptor;
 			set.dstBinding      = sets.size();
 			sets.add(set);
 		}
@@ -3948,39 +3904,6 @@ LoadMaterial(Material* material){
 	}
 	
 	vkMaterials.add(mvk);
-}
-
-void Render::
-LoadFont(Font* font, Texture* texture){
-	AssertRS(RSVK_DESCRIPTORPOOL, "LoadFont called before CreateDescriptorPool");
-	FontVk fvk{};
-	fvk.base            = font;
-	fvk.type            = font->type;
-	fvk.texture         = texture->idx;
-	fvk.characterWidth  = font->max_width;
-	fvk.characterHeight = font->max_height;
-	fvk.characterCount  = font->count;
-	
-	//allocate descriptor set
-	VkDescriptorSetAllocateInfo allocInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
-	allocInfo.descriptorPool     = descriptorPool;
-	allocInfo.pSetLayouts        = &descriptorSetLayouts.twod;
-	allocInfo.descriptorSetCount = 1;
-	AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &fvk.descriptorSet));
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)fvk.descriptorSet,
-						 TOSTRING("Font descriptor set ",font->name).str);
-	
-	//write descriptor set
-	VkWriteDescriptorSet writeDescriptorSet{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-	writeDescriptorSet.dstSet          = fvk.descriptorSet;
-	writeDescriptorSet.dstArrayElement = 0;
-	writeDescriptorSet.descriptorCount = 1;
-	writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	writeDescriptorSet.pImageInfo      = &vkTextures[fvk.texture].descriptor;
-	writeDescriptorSet.dstBinding      = 0;
-	vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
-	
-	vkFonts.add(fvk);
 }
 
 /////////////////
@@ -3999,7 +3922,7 @@ UpdateMaterial(Material* material){
 		set.dstArrayElement = 0;
 		set.descriptorCount = 1;
 		set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		set.pImageInfo      = &vkTextures[texIdx].descriptor;
+		set.pImageInfo      = &textures[texIdx].descriptor;
 		set.dstBinding      = sets.size();
 		sets.add(set);
 	}
@@ -4013,7 +3936,7 @@ UpdateMaterial(Material* material){
 			set.dstArrayElement = 0;
 			set.descriptorCount = 1;
 			set.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			set.pImageInfo      = &vkTextures[0].descriptor;
+			set.pImageInfo      = &textures[0].descriptor;
 			set.dstBinding      = sets.size();
 			sets.add(set);
 		}
@@ -4025,11 +3948,6 @@ UpdateMaterial(Material* material){
 /////////////////
 //// @unload ////
 /////////////////
-void Render::
-UnloadFont(Font* font){
-	Assert(!"not implemented yet"); //!Incomplete
-}
-
 void Render::
 UnloadTexture(Texture* texture){
 	Assert(!"not implemented yet"); //!Incomplete
@@ -4502,8 +4420,8 @@ Init(){
 	PrintVk(3, "Finished setting up pipeline creation in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	CreatePipelines();
 	PrintVk(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-	
-	forI(UI_LAYERS) uiCmdCounts[i] = 1;
+
+	forI(UI_LAYERS) { uiCmdCounts[i] = 1; }
 	initialized = true;
 	
 	Log("deshi","Finished vulkan renderer initialization in ",TIMER_END(t_s),"ms");

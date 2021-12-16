@@ -118,12 +118,10 @@ namespace Render{
 	void LoadMesh(Mesh* mesh);
 	void LoadTexture(Texture* texture);
 	void LoadMaterial(Material* material);
-	void LoadFont(Font* font, Texture* texture);
 	
 	void RemakeTextures();
 	void UpdateMaterial(Material* material);
 	
-	void UnloadFont(Font* font);
 	void UnloadTexture(Texture* texture);
 	void UnloadMaterial(Material* material);
 	void UnloadMesh(Mesh* mesh);
