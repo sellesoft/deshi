@@ -74,7 +74,11 @@ local map<const char*, color> color_strings{
 };
 
 void Console::Init(){
+	TIMER_START(t_s);
+	
 	buffer.dictionary.init(DICT_SIZE);
+	
+	Log("deshi","Finished console initialization in ",TIMER_END(t_s),"ms");
 }
 
 void Console::Update(){
