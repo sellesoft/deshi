@@ -3,6 +3,7 @@
 #define DESHI_COMMANDS_H
 
 #include "../defines.h"
+#include "../utils/string.h"
 #include "../utils/cstring.h"
 
 enum CmdArgument{
