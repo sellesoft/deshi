@@ -89,7 +89,6 @@ local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
 local u32 initColorStackSize;
 local u32 initStyleStackSize;
 
-
 local b32 globalHovered = false; //set if any window other than base is hovered
 local b32 draggingWin   = false; //if a user moves their mouse too fast while dragging, the globalHover flag can be set to false
 local b32 resizingWin   = false;
@@ -2277,16 +2276,16 @@ void UI::Update() {
 			vec2 mp = DeshInput->mousePos;
 
 			static b32 trz = 0, brz = 0, lrz = 0, rrz = 0, latch = 0;
-			static vec2 vl1;
-			static vec2 vl2;
+			static vec2 vl1, vl2, vl3;
 
 			//top edge
-			if (trz && !(brz || lrz || rrz) || Math::PointInRectangle(mp, focused->position, vec2(focused->width, 2))) {
+			if (trz && !(brz || lrz || rrz) || Math::PointInRectangle(mp, focused->position.yAdd(-2), vec2(focused->width, 2))) {
 				DeshWindow->SetCursor(CursorType_VResize); cursor_was_set = 1;
 				if (DeshInput->LMouseDown()) {
-					if (!latch) { vl1 = mp; vl2 = focused->dimensions; latch = 1; trz = 1; drag_override = 1; resizingWin = 1; }
+					if (!latch) { vl1 = mp; vl2 = focused->dimensions; vl3 = focused->scroll; latch = 1; trz = 1; drag_override = 1; resizingWin = 1; }
 					focused->position.y = mp.y;
 					focused->dimensions = vl2.yAdd(vl1.y - mp.y);
+					focused->scy = Clamp(focused->scy, 0.f, focused->maxScroll.y);
 				}
 				if (DeshInput->LMouseReleased()) {
 					latch = 0; drag_override = 0; trz = 0; resizingWin = 0;
@@ -2296,8 +2295,9 @@ void UI::Update() {
 			else if (brz && !(trz || lrz || rrz) || Math::PointInRectangle(mp, focused->position.yAdd(focused->height), vec2(focused->width, 2))) {
 				DeshWindow->SetCursor(CursorType_VResize); cursor_was_set = 1;
 				if (DeshInput->LMouseDown()) {
-					if (!latch) { vl1 = mp; vl2 = focused->dimensions; latch = 1; brz = 1; drag_override = 1; resizingWin = 1; }
+					if (!latch) { vl1 = mp; vl2 = focused->dimensions; vl3 = focused->scroll; latch = 1; brz = 1; drag_override = 1; resizingWin = 1; }
 					focused->dimensions = vl2.yAdd(mp.y - vl1.y);
+					focused->scy = Clamp(focused->scy, 0.f, focused->maxScroll.y);
 				}
 				if (DeshInput->LMouseReleased()) {
 					latch = 0; drag_override = 0; brz = 0; resizingWin = 0;
@@ -2307,9 +2307,10 @@ void UI::Update() {
 			else if (lrz && !(brz || trz || rrz) || Math::PointInRectangle(mp, focused->position, vec2(2, focused->height))) {
 				DeshWindow->SetCursor(CursorType_HResize); cursor_was_set = 1;
 				if (DeshInput->LMouseDown()) {
-					if (!latch) { vl1 = mp; vl2 = focused->dimensions; latch = 1; lrz = 1; drag_override = 1; resizingWin = 1; }
+					if (!latch) { vl1 = mp; vl2 = focused->dimensions; vl3 = focused->scroll; latch = 1; lrz = 1; drag_override = 1; resizingWin = 1; }
 					focused->position.x = mp.x;
 					focused->dimensions = vl2.xAdd(vl1.x - mp.x);
+					focused->scx = Clamp(focused->scx, 0.f, focused->maxScroll.x);
 				}
 				if (DeshInput->LMouseReleased()) {
 					latch = 0; drag_override = 0; lrz = 0; resizingWin = 0;
@@ -2319,8 +2320,9 @@ void UI::Update() {
 			else if (rrz && !(brz || lrz || trz) || Math::PointInRectangle(mp, focused->position.xAdd(focused->width), vec2(2, focused->height))) {
 				DeshWindow->SetCursor(CursorType_HResize); cursor_was_set = 1;
 				if (DeshInput->LMouseDown()) {
-					if (!latch) { vl1 = mp; vl2 = focused->dimensions; latch = 1; rrz = 1; drag_override = 1; resizingWin = 1; }
+					if (!latch) { vl1 = mp; vl2 = focused->dimensions; vl3 = focused->scroll; latch = 1; rrz = 1; drag_override = 1; resizingWin = 1; }
 					focused->dimensions = vl2.xAdd(mp.x - vl1.x);
+					focused->scx = Clamp(focused->scx, 0.f, focused->maxScroll.x);
 				}
 				if (DeshInput->LMouseReleased()) {
 					latch = 0; drag_override = 0; rrz = 0; resizingWin = 0;
