@@ -481,6 +481,7 @@ namespace Math {
 	}
 	
 	static vec2 vec2RotateByAngle(float angle, vec2 v){
+		if (!angle) return v;
 		angle = RADIANS(angle);
 		return vec2(v.x * cosf(angle) - v.y * sinf(angle), v.x * sin(angle) + v.y * cos(angle));
 	}

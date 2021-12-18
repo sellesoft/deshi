@@ -438,7 +438,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 //@Line
 
 
-void UI::Line(vec2 start, vec2 end, float thickness, color color){
+void UI::Line(vec2 start, vec2 end, f32 thickness, color color){
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd{ UIDrawType_Line};
 	drawCmd.position = start;
@@ -560,9 +560,9 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 			case FontType_TTF: {
 				Font* font = style.font;
 				
-				float wscale = style.fontHeight / font->aspect_ratio / font->max_width;
-				float maxw = curwin->width - 2 * style.windowPadding.x;
-				float currlinew = 0;
+				f32 wscale = style.fontHeight / font->aspect_ratio / font->max_width;
+				f32 maxw = curwin->width - 2 * style.windowPadding.x;
+				f32 currlinew = 0;
 				
 				for (string& t : newlined) {
 					for (int i = 0; i < t.count; i++) {
@@ -700,9 +700,9 @@ local void TextW(const wchar_t* in, vec2 pos, color color, bool nowrap, bool mov
 			case FontType_TTF: {
 				Font* font = style.font;
 				
-				float wscale = style.fontHeight / font->aspect_ratio / font->max_width;
-				float maxw = curwin->width - 2 * style.windowPadding.x;
-				float currlinew = 0;
+				f32 wscale = style.fontHeight / font->aspect_ratio / font->max_width;
+				f32 maxw = curwin->width - 2 * style.windowPadding.x;
+				f32 currlinew = 0;
 				
 				for (wstring& t : newlined) {
 					for (int i = 0; i < t.count; i++) {
@@ -983,16 +983,6 @@ bool SelectableCall(const char* label, vec2 pos, b32 selected) {
 	return 0;
 }
 
-bool UI::Selectable(const char* label, b32* selected) {
-	
-	return 0;
-}
-
-bool UI::Selectable(const char* label, vec2 pos, b32* selected) {
-
-	return 0;
-}
-
 bool UI::Selectable(const char* label, b32 selected) {
 
 	return 0;
@@ -1140,6 +1130,32 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 	
 	
 }
+
+void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
+	UIItem* item = BeginItem(UIItemType_Image);
+
+	item->position = pos;
+	item->size = (NextItemSize.x == -1 ? vec2(image->width, image->height) : NextItemSize);
+	NextItemSize = vec2(-1, 1);
+
+	AdvanceCursor(item);
+
+	//TODO(sushi) image borders
+	{//image
+		UIDrawCmd drawCmd{ UIDrawType_Image };
+		drawCmd.tex = image;
+		drawCmd.position = vec2::ZERO;
+		drawCmd.dimensions = item->size;
+		drawCmd.thickness = alpha;
+		item->drawCmds.add(drawCmd);
+	}
+
+}
+
+void UI::Image(Texture* image, f32 alpha, UIImageFlags flags) {
+	Image(image, PositionForNewItem(), alpha, flags);
+}
+
 
 
 //@InputText
@@ -1486,15 +1502,15 @@ void UI::PushColor(UIStyleCol idx, color color) {
 	style.colors[idx] = color;
 }
 
-void UI::PushVar(UIStyleVar idx, float nuStyle) {
-	Assert(uiStyleVarTypes[idx].count == 1, "Attempt to use a float on a vec2 style variable!");
-	float* p = (float*)((u8*)&style + uiStyleVarTypes[idx].offset);
+void UI::PushVar(UIStyleVar idx, f32 nuStyle) {
+	Assert(uiStyleVarTypes[idx].count == 1, "Attempt to use a f32 on a vec2 style variable!");
+	f32* p = (f32*)((u8*)&style + uiStyleVarTypes[idx].offset);
 	varStack.add(VarMod(idx, *p));
 	*p = nuStyle;
 }
 
 void UI::PushVar(UIStyleVar idx, vec2 nuStyle) {
-	Assert(uiStyleVarTypes[idx].count == 2, "Attempt to use a float on a vec2 style variable!");
+	Assert(uiStyleVarTypes[idx].count == 2, "Attempt to use a f32 on a vec2 style variable!");
 	vec2* p = (vec2*)((u8*)&style + uiStyleVarTypes[idx].offset);
 	varStack.add(VarMod(idx, *p));
 	*p = nuStyle;
@@ -1534,7 +1550,7 @@ void UI::PopVar(u32 count) {
 		//TODO(sushi, UiCl) do this better
 		UIStyleVarType type = uiStyleVarTypes[varStack.last->var];
 		if (type.count == 1) {
-			float* p = (float*)((u8*)&style + type.offset);
+			f32* p = (f32*)((u8*)&style + type.offset);
 			*p = varStack.last->oldFloat[0];
 			varStack.pop();
 		}
@@ -1906,7 +1922,7 @@ void UI::SetNextWindowPos(vec2 pos) {
 	NextWinPos = pos;
 }
 
-void UI::SetNextWindowPos(float x, float y) {
+void UI::SetNextWindowPos(f32 x, f32 y) {
 	NextWinPos = vec2(x,y);
 }
 
@@ -1914,7 +1930,7 @@ void UI::SetNextWindowSize(vec2 size) {
 	NextWinSize = size.yAdd(style.titleBarHeight);
 }
 
-void UI::SetNextWindowSize(float x, float y) {
+void UI::SetNextWindowSize(f32 x, f32 y) {
 	NextWinSize = vec2(x, y);
 }
 
@@ -1962,8 +1978,8 @@ UIWindow* DisplayMetrics() {
 	string quicktext = TOSTRING("Fastest Render:");
 	string mostitext = TOSTRING("Most Items: "); 
 	
-	static float sw = CalcTextSize(longname->name).x;
-	static float fw = CalcTextSize(slomotext).x + 5;
+	static f32 sw = CalcTextSize(longname->name).x;
+	static f32 fw = CalcTextSize(slomotext).x + 5;
 	
 	BeginRow(3, 11);
 	RowSetupColumnWidths({ fw, sw, 55 });
@@ -2193,51 +2209,65 @@ void UI::Update() {
 		if (p->hovered && !(p->flags & UIWindowFlags_DontSetGlobalHoverFlag))
 			globalHovered = 1;
 		
+		//lol nested lambdas
+		//i dont like having this entire thing in 2 different places
+		//could maybe be made an inlined function instead
+		auto draw_cmds = [&](UIDrawCmd& drawCmd, UIItem& item, vec2 itempos, vec2 itemsiz) {
+			vec2   dcpos = itempos + drawCmd.position * item.style.globalScale;
+			vec2  dcpos2 = itempos + drawCmd.position * item.style.globalScale;
+			vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
+			vec2    dcse = (drawCmd.useWindowScissor ? winsiz : drawCmd.scissorExtent * item.style.globalScale);
+			vec2    dcso = (drawCmd.useWindowScissor ? winscissor : itempos + drawCmd.scissorOffset);
+			color  dccol = drawCmd.color;
+			f32      dct = drawCmd.thickness;
+			u32      dcl = p->windowlayer;
+
+			dcpos.x = floor(dcpos.x); dcpos.y = floor(dcpos.y);
+			dcpos2.x = floor(dcpos2.x); dcpos2.y = floor(dcpos2.y);
+
+			dcso.x = Max(winpos.x, dcso.x); dcso.y = Max(winpos.y, dcso.y); //force all items to stay within their windows
+			dcso.x = Min(winpos.x + winsiz.x, dcso.x); dcso.y = Min(winpos.y + winsiz.y, dcso.y);
+			dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
+
+			Texture* dctex = drawCmd.tex;
+
+			cstring dctext{ drawCmd.text.str,drawCmd.text.count };
+			wcstring wdctext{ drawCmd.wtext.str, drawCmd.wtext.count };
+
+			Font* font = drawCmd.font;
+
+			switch (drawCmd.type) {
+				case UIDrawType_FilledRectangle: {
+					Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
+				}break;
+
+				case UIDrawType_Line: {
+					Render::DrawLine2D(dcpos - item.position, dcpos2 - item.position, dct, dccol, dcl, dcso, dcse);
+				}break;
+				case UIDrawType_Text: {
+					vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
+					Render::DrawText2D(font, dctext, dcpos, dccol, scale, dcl, dcso, dcse);
+				}break;
+				case UIDrawType_WText: {
+					vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
+					Render::DrawText2D(font, wdctext, dcpos, dccol, scale, dcl, dcso, dcse);
+				}break;
+				case UIDrawType_Rectangle: {
+					Render::DrawRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
+				}break;
+				case UIDrawType_Image: {
+					Render::DrawTexture2D(dctex, dcpos, dcsiz, 0, dct, dcl, dcso, dcse);
+				}break;
+			}
+		};
+
 		//draw base cmds first
 		for (UIItem& item : p->baseItems) {
 			vec2 itempos = winpos + item.position * item.style.globalScale;//item.type == UIItemType_Abstract ? item.position : (winpos + item.position);
 			vec2 itemsiz = item.size;
 			
 			for (UIDrawCmd& drawCmd : item.drawCmds) {
-				vec2   dcpos = itempos + drawCmd.position * item.style.globalScale;
-				dcpos.x = floor(dcpos.x); dcpos.y = floor(dcpos.y);
-				vec2  dcpos2 = itempos + drawCmd.position * item.style.globalScale;
-				dcpos2.x = floor(dcpos2.x); dcpos2.y = floor(dcpos2.y);
-				vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
-				vec2    dcse = (drawCmd.useWindowScissor ? winsiz : drawCmd.scissorExtent * item.style.globalScale);
-				vec2    dcso = (drawCmd.useWindowScissor ? winscissor : itempos + drawCmd.scissorOffset);
-				dcso.x = Max(winpos.x, dcso.x); dcso.y = Max(winpos.y, dcso.y); //force all items to stay within their windows
-				dcso.x = Min(winpos.x + winsiz.x, dcso.x); dcso.y = Min(winpos.y + winsiz.y, dcso.y);
-				dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
-				color  dccol = drawCmd.color;
-				float    dct = drawCmd.thickness;
-				u32      dcl = p->windowlayer;
-				
-				cstring dctex{drawCmd.text.str,drawCmd.text.count};
-				wcstring wdctex{ drawCmd.wtext.str,drawCmd.wtext.count };
-				
-				Font*   font = drawCmd.font;
-				
-				switch (drawCmd.type) {
-					case UIDrawType_FilledRectangle: {
-						Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
-					}break;
-					
-					case UIDrawType_Line: {
-						Render::DrawLine2D(dcpos - item.position, dcpos2 - item.position, dct, dccol, dcl, dcso, dcse);
-					}break;
-					case UIDrawType_Text: {
-						vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
-						Render::DrawText2D(font, dctex, dcpos, dccol, scale, dcl, dcso, dcse);
-					}break;
-					case UIDrawType_WText: {
-						vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
-						Render::DrawText2D(font, wdctex, dcpos, dccol, scale, dcl, dcso, dcse);
-					}break;
-					case UIDrawType_Rectangle: {
-						Render::DrawRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
-					}break;
-				}
+				draw_cmds(drawCmd, item, itempos, itemsiz);
 			}
 		}
 		
@@ -2249,50 +2279,7 @@ void UI::Update() {
 					vec2 itemsiz = item.size;
 					
 					for (UIDrawCmd& drawCmd : item.drawCmds) {
-						vec2   dcpos = itempos + drawCmd.position * item.style.globalScale;
-						dcpos.x = floor(dcpos.x); dcpos.y = floor(dcpos.y);
-						vec2  dcpos2 = itempos + drawCmd.position2 * item.style.globalScale;
-						dcpos2.x = floor(dcpos2.x); dcpos2.y = floor(dcpos2.y);
-						vec2   dcsiz = drawCmd.dimensions * item.style.globalScale;
-						vec2    dcse = (drawCmd.useWindowScissor ? winsiz : drawCmd.scissorExtent * item.style.globalScale);
-						vec2    dcso = (drawCmd.useWindowScissor ? winscissor : itempos + drawCmd.scissorOffset);
-						dcso.x = Max(winpos.x, dcso.x); dcso.y = Max(winpos.y, dcso.y); //force all items to stay within their windows
-						dcso.x = Min(winpos.x + winsiz.x - dcse.x, dcso.x); dcso.y = Min(winpos.y + winsiz.y - dcse.y, dcso.y);
-						dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
-						color  dccol = drawCmd.color;
-						float    dct = drawCmd.thickness;
-						u32      dcl = p->windowlayer;
-						
-						cstring dctex{ drawCmd.text.str,drawCmd.text.count };
-						wcstring wdctex{ drawCmd.wtext.str, drawCmd.wtext.count };
-						
-						Font* font = drawCmd.font;
-						
-						switch (drawCmd.type) {
-							case UIDrawType_FilledRectangle: {
-								Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
-							}break;
-							case UIDrawType_Line: {
-								Render::DrawLine2D(dcpos , dcpos2 , dct, dccol, dcl, dcso, dcse);
-							}break;
-							case UIDrawType_Circle: {
-								Render::DrawCircle2D(dcpos, dct, drawCmd.position2.x, dccol, dcl, dcso, dcse);
-							}break;
-							case UIDrawType_CircleFilled: {
-								Render::FillCircle2D(dcpos, dct, drawCmd.position2.x, dccol, dcl, dcso, dcse);
-							}break;
-							case UIDrawType_Text: {
-								vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
-								Render::DrawText2D(font, dctex, dcpos, dccol, scale, dcl, dcso, dcse);
-							}break;
-							case UIDrawType_WText: {
-								vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
-								Render::DrawText2D(font, wdctex, dcpos, dccol, scale, dcl, dcso, dcse);
-							}break;
-							case UIDrawType_Rectangle: {
-								Render::DrawRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
-							}break;
-						}
+						draw_cmds(drawCmd, item, itempos, itemsiz);
 					}
 				}
 			}
@@ -2334,7 +2321,7 @@ void UI::Update() {
 		vec2    dcso = drawCmd.scissorOffset;
 		dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
 		color  dccol = drawCmd.color;
-		float    dct = drawCmd.thickness;
+		f32    dct = drawCmd.thickness;
 		cstring dctex{drawCmd.text.str,drawCmd.text.count};
 		u32      dcl = 5;
 		
