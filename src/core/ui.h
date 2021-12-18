@@ -294,6 +294,8 @@ enum UIItemType : u32 {
 	UIItemType_DropDown,  // DropDown()
 	UIItemType_Slider,    // Slider()
 	UIItemType_Header,    // Header()
+	UIItemType_Selectable,// Selectable()
+	UIItemType_Combo,     // BeginCombo()
 };
 
 //an item such as a button, checkbox, or input text
@@ -505,11 +507,17 @@ namespace UI {
 	
 	void Checkbox(string label, bool* b);
 	
-	bool BeginCombo(const char* label, const char* prev_val);
+	bool BeginCombo(const char* label, const char* preview_val);
+	bool BeginCombo(const char* label, const char* preview_val, vec2 pos);
+
 	void EndCombo();
 	
-	bool Selectable();
-	
+	bool Selectable(const char* label, b32* selected);
+	bool Selectable(const char* label, vec2 pos, b32* selected);
+	bool Selectable(const char* label, b32 selected);  //overloads which do not control the selected boolean 
+	bool Selectable(const char* label, vec2 pos, b32 selected);
+
+
 	bool Header(const char* label);
 	
 	void Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);

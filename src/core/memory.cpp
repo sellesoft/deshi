@@ -421,3 +421,9 @@ namespace Memory{
 		temp_arena.used = 0;
 	}
 }; //namespace Memory
+
+void* TempAllocator_Resize(void* ptr, upt bytes){
+	void* a = Memory::TempAllocate(bytes); 
+	memcpy(a, ptr, *((upt*)ptr-1)); 
+	return a;
+}

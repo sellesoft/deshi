@@ -62,7 +62,7 @@ global_ Allocator deshi_allocator_{
 };
 global_ Allocator* deshi_allocator = &deshi_allocator_;
 
-function void* TempAllocator_Resize(void* ptr, upt bytes){void* a = Memory::TempAllocate(bytes); memcpy(a, ptr, *((upt*)ptr-1)); return a;}
+void* TempAllocator_Resize(void* ptr, upt bytes);
 global_ Allocator deshi_temp_allocator_{
 	Memory::TempAllocate,
 	Allocator_ChangeMemory_Noop,
