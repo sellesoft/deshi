@@ -54,6 +54,8 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 	{1, offsetof(UIStyle, checkboxHeightRelToFont)},
 	{2, offsetof(UIStyle, rowItemAlign)},
 	{2, offsetof(UIStyle, rowCellPadding)},
+	{1, offsetof(UIStyle, scrollBarYWidth)},
+	{1, offsetof(UIStyle, scrollBarXHeight)},
 	{1, offsetof(UIStyle, fontHeight)},
 };
 
@@ -111,8 +113,10 @@ local b32 combo_active = 0; //set when BeginCombo is called
 //helper defines
 
 
-#define WinHasFlag(flag) (curwin->flags & flag)
 #define HasFlag(flag) (flags & flag)
+#define HasFlags(flag) ((flags & flag) != flag) //used on flag enums that are collections of flags
+#define WinHasFlag(flag) (curwin->flags & flag)
+#define WinHasFlags(flag) ((curwin->flags & flag) != flag) 
 #define DrawCmdScreenPos(pos) pos + item->position + curwin->position 
 #define ItemScreenPos item->position + curwin->position 
 
@@ -1813,14 +1817,14 @@ void UI::End() {
 	
 	vec2 minSizeForFit = CalcWindowMinSize();
 	
-	if ((curwin->flags & UIWindowFlags_FitAllElements)) 
+	if (WinHasFlag(UIWindowFlags_FitAllElements)) 
 		curwin->dimensions = minSizeForFit;
 	
 	
 	//if the window isn't invisible draw things that havent been disabled
-	if ((curwin->flags & UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
+	if (WinHasFlag(UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
 		//draw background
-		if (!(curwin->flags & UIWindowFlags_NoBackground) && !curwin->minimized) {
+		if (!WinHasFlag(UIWindowFlags_NoBackground) && !curwin->minimized) {
 			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle}; 
 			drawCmd.position = vec2::ZERO;
 			drawCmd.dimensions = curwin->dimensions;
@@ -1830,32 +1834,156 @@ void UI::End() {
 		}
 		
 		//draw border
-		if (!(curwin->flags & UIWindowFlags_NoBorder) && !curwin->minimized) {
+		if (!WinHasFlag(UIWindowFlags_NoBorder) && !curwin->minimized) {
 			UIDrawCmd drawCmd{ UIDrawType_Rectangle}; //inst 58
 			drawCmd.color = style.colors[UIStyleCol_Border];
 			drawCmd.position = vec2::ZERO;
-			drawCmd.dimensions = curwin->dimensions;
+			drawCmd.dimensions = curwin->dimensions + vec2::ONE;
 			drawCmd.scissorOffset = -vec2::ONE * 2;
-			drawCmd.scissorExtent = curwin->dimensions + vec2::ONE * 2;
+			drawCmd.scissorExtent = curwin->dimensions + vec2::ONE * 5;
 			drawCmd.useWindowScissor = false;
 			item->drawCmds.add(drawCmd);
 		}
 	}
 	
-	curwin->style = style;
-	//curwin->baseItems.add(item);
 	
 	//check to see if the elements we have drawn so far have gone beyond the window's size
 	//and allow scrolling if it did, as well as define a max scrolling amount
-	if (curwin->dimensions.y < minSizeForFit.y)
+	//also draw the scroll bar if allowed
+	if (!WinHasFlag(UIWindowFlags_NoScrollY) && curwin->dimensions.y < minSizeForFit.y) {
 		curwin->maxScroll.y = minSizeForFit.y - curwin->dimensions.y;
+		if (!WinHasFlag(UIWindowFlags_NoScrollBarY)) {
+			f32 scrollbarheight = (curwin->dimensions.x < minSizeForFit.x ? curwin->height - style.scrollBarXHeight : curwin->height);
+			f32 draggerheight = scrollbarheight * scrollbarheight / minSizeForFit.y;
+			vec2 draggerpos(curwin->dimensions.x - style.scrollBarYWidth, (scrollbarheight - draggerheight) * curwin->scy / curwin->maxScroll.y);
+			
+			b32 scbgactive = Math::PointInRectangle(DeshInput->mousePos,
+				curwin->position.xAdd(curwin->dimensions.x - style.scrollBarYWidth),
+				vec2(style.scrollBarYWidth, scrollbarheight));
+			
+			b32 scdractive = Math::PointInRectangle(DeshInput->mousePos,
+				draggerpos + curwin->position,
+				vec2(style.scrollBarYWidth, draggerheight));
+
+			static vec2 offset;
+			static b32 initial = true;
+			if (scdractive && DeshInput->LMouseDown() || !initial) {
+				if (initial) {
+					offset = draggerpos - DeshInput->mousePos;
+					initial = false;
+				}
+				drag_override = 1;
+
+				draggerpos.y = DeshInput->mousePos.y + offset.y;
+				draggerpos.y = Clamp(draggerpos.y, 0, scrollbarheight - draggerheight);
+
+				curwin->scy = draggerpos.y * curwin->maxScroll.y / (scrollbarheight - draggerheight);
+				curwin->scy = Clamp(curwin->scy, 0.f, curwin->maxScroll.y);
+			}
+			if (DeshInput->LMouseReleased()) {
+				initial = true;
+				drag_override = 0;
+			}
+
+			{//scroll bg
+				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+				drawCmd.color = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
+				drawCmd.position = vec2(curwin->dimensions.x - style.scrollBarYWidth, 0);
+				drawCmd.dimensions = vec2(style.scrollBarYWidth, scrollbarheight);
+				drawCmd.layerOffset = 1;
+				item->drawCmds.add(drawCmd);
+			}
+
+			{//scroll dragger
+				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+				drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown() || !initial) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
+				drawCmd.position = draggerpos;
+				drawCmd.dimensions = vec2(style.scrollBarYWidth, draggerheight);
+				drawCmd.layerOffset = 1;
+				item->drawCmds.add(drawCmd);
+			}
+
+			//if both scroll bars are active draw a little square to obscure the empty space 
+			if(curwin->dimensions.x < minSizeForFit.x){
+				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+				drawCmd.color = style.colors[UIStyleCol_WindowBg];
+				drawCmd.position = vec2(curwin->dimensions.x - style.scrollBarYWidth, scrollbarheight);
+				drawCmd.dimensions = vec2(style.scrollBarYWidth, style.scrollBarXHeight);
+				drawCmd.layerOffset = 1;
+				item->drawCmds.add(drawCmd);
+			}
+		}
+	} else curwin->maxScroll.y = 0;
+
+	//do the same but for x
+	if (!WinHasFlag(UIWindowFlags_NoScrollX) && curwin->dimensions.x < minSizeForFit.x) {
+		curwin->maxScroll.x = minSizeForFit.x - curwin->dimensions.x;
+		if (!WinHasFlag(UIWindowFlags_NoScrollBarX)) {
+			f32 scrollbarwidth = curwin->dimensions.x - style.scrollBarYWidth;
+			f32 draggerwidth = scrollbarwidth * curwin->dimensions.x / minSizeForFit.x;
+			vec2 draggerpos((curwin->dimensions.x - draggerwidth) * curwin->scx / curwin->maxScroll.x, curwin->dimensions.y - style.scrollBarXHeight);
+
+			b32 scbgactive = Math::PointInRectangle(DeshInput->mousePos,
+				curwin->position.yAdd(scrollbarwidth - style.scrollBarXHeight),
+				vec2(scrollbarwidth, style.scrollBarXHeight));
+
+			b32 scdractive = Math::PointInRectangle(DeshInput->mousePos,
+				draggerpos + curwin->position,
+				vec2(draggerwidth, style.scrollBarXHeight));
+
+			static vec2 offset;
+			static b32 initial = true;
+			if (scdractive && DeshInput->LMouseDown() || !initial) {
+				if (initial) {
+					offset = draggerpos - DeshInput->mousePos;
+					initial = false;
+				}
+				drag_override = 1;
+
+				draggerpos.x = DeshInput->mousePos.x + offset.x;
+				
+
+				curwin->scx = draggerpos.x * curwin->maxScroll.x / (scrollbarwidth - draggerwidth);
+				curwin->scx = Clamp(curwin->scx, 0.f, curwin->maxScroll.x);
+			}
+			if (DeshInput->LMouseReleased()) {
+				initial = true;
+				drag_override = 0;
+			}
+
+			draggerpos.x = Clamp(draggerpos.x, 0, scrollbarwidth - draggerwidth);
+
+			{//scroll bg
+				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+				drawCmd.color = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
+				drawCmd.position = vec2(0, curwin->dimensions.y - style.scrollBarXHeight);
+				drawCmd.dimensions = vec2(scrollbarwidth, style.scrollBarXHeight);
+				drawCmd.layerOffset = 1;
+				item->drawCmds.add(drawCmd);
+			}
+
+			{//scroll dragger
+				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+				drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown() || !initial) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
+				drawCmd.position = draggerpos;
+				drawCmd.dimensions = vec2(draggerwidth, style.scrollBarXHeight);
+				drawCmd.layerOffset = 1;
+				item->drawCmds.add(drawCmd);
+			}
+		}
+	} else curwin->maxScroll.x = 0;
+
+	if (!WinHasFlag(UIWindowFlags_NoScrollX) && curwin->dimensions.x < minSizeForFit.x)
+		curwin->maxScroll.x = minSizeForFit.x - curwin->dimensions.x;
 	else
-		curwin->maxScroll.y = 0;
+		curwin->maxScroll.x = 0;
+
 	
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
+	curwin->style = style;
 	
 	curwin->creation_time = TIMER_END(wincreate);
-	
+
 	//update stored window with new window state
 	curwin = *windowStack.last;
 	windowStack.pop();
@@ -1864,7 +1992,7 @@ void UI::End() {
 void UI::EndChild() {
 	Assert(windowStack.size() > 1, "Attempted to end the base window");
 	Assert(!rowInProgress, "Attempted to end a window with a Row in progress! (Did you forget to call EndRow()?)");
-	
+
 	UIItem item{ UIItemType_Base, curwin->cursor, style };
 	item.position = vec2::ZERO;
 	
@@ -1872,12 +2000,12 @@ void UI::EndChild() {
 	
 	vec2 minSizeForFit = CalcWindowMinSize();
 	
-	if ((curwin->flags & UIWindowFlags_FitAllElements))
+	if (WinHasFlag(UIWindowFlags_FitAllElements))
 		curwin->dimensions = minSizeForFit;
 	
 	
 	//if the window isn't invisible draw things that havent been disabled
-	if ((curwin->flags & UIWindowFlags_Invisible) != UIWindowFlags_Invisible) {
+	if (WinHasFlags(UIWindowFlags_Invisible)) {
 		//draw background
 		if (!(curwin->flags & UIWindowFlags_NoBackground) && !curwin->minimized) {
 			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
@@ -1889,7 +2017,7 @@ void UI::EndChild() {
 		}
 		
 		//draw border
-		if (!(curwin->flags & UIWindowFlags_NoBorder) && !curwin->minimized) {
+		if (!WinHasFlag(UIWindowFlags_NoBorder) && !curwin->minimized) {
 			UIDrawCmd drawCmd{ UIDrawType_Rectangle}; //inst 58
 			drawCmd.color = style.colors[UIStyleCol_Border];
 			drawCmd.position = vec2::ZERO;
@@ -1901,15 +2029,28 @@ void UI::EndChild() {
 		}
 	}
 	
-	curwin->style = style;
-	curwin->baseItems.add(item);
+	
 	
 	//check to see if the elements we have drawn so far have gone beyond the window's size
 	//and allow scrolling if it did, as well as define a max scrolling amount
-	if (curwin->dimensions.y < minSizeForFit.y)
+	//also draw the scroll bar if allowed
+	if (!WinHasFlag(UIWindowFlags_NoScrollY) && curwin->dimensions.y < minSizeForFit.y) {
 		curwin->maxScroll.y = minSizeForFit.y - curwin->dimensions.y;
+		if (!WinHasFlag(UIWindowFlags_NoScrollBarY)) {
+			//f32 draggerwidth = curwin->dimensions.y * curwin->dimensions.y / minSizeForFit.y;
+
+		}
+	} else curwin->maxScroll.y = 0;
+	
+	if (!WinHasFlag(UIWindowFlags_NoScrollX) && curwin->dimensions.x < minSizeForFit.x)
+		curwin->maxScroll.x = minSizeForFit.x - curwin->dimensions.x;
 	else
-		curwin->maxScroll.y = 0;
+		curwin->maxScroll.x = 0;
+
+
+	curwin->style = style;
+	curwin->baseItems.add(item);
+
 	
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 	
@@ -2014,11 +2155,6 @@ UIWindow* DisplayMetrics() {
 	//	debugee = *windows.atIdx(selected);
 	//}
 	
-	
-	
-	
-	
-	
 	End();
 	
 	//PopColor(5);
@@ -2060,6 +2196,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_Text,           Color_White);
 	
 	//backgrounds
+	PushColor(UIStyleCol_ScrollBarBg, Color_VeryDarkCyan);
 	PushColor(UIStyleCol_ButtonBg,    Color_VeryDarkCyan);
 	PushColor(UIStyleCol_CheckboxBg,  Color_VeryDarkCyan);
 	PushColor(UIStyleCol_HeaderBg,    color(0, 100, 100, 255));
@@ -2067,6 +2204,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_InputTextBg, Color_DarkCyan);
 	
 	//active backgrounds
+	PushColor(UIStyleCol_ScrollBarBgActive, Color_VeryDarkCyan);
 	PushColor(UIStyleCol_ButtonBgActive,    Color_Cyan);
 	PushColor(UIStyleCol_CheckboxBgActive,  Color_Cyan);
 	PushColor(UIStyleCol_HeaderBgActive,    color(0, 255, 255, 255));
@@ -2074,12 +2212,12 @@ void UI::Init() {
 	PushColor(UIStyleCol_InputTextBgActive, Color_DarkCyan);
 	
 	//hovered backgrounds
+	PushColor(UIStyleCol_ScrollBarBgHovered, Color_VeryDarkCyan);
 	PushColor(UIStyleCol_ButtonBgHovered,    Color_DarkCyan);
 	PushColor(UIStyleCol_CheckboxBgHovered,  Color_DarkCyan);
 	PushColor(UIStyleCol_HeaderBgHovered,    color(0, 128, 128, 255));
 	PushColor(UIStyleCol_SliderBgHovered,    Color_DarkCyan);
 	PushColor(UIStyleCol_InputTextBgHovered, Color_DarkCyan);
-	
 	
 	//borders
 	PushColor(UIStyleCol_ButtonBorder,   Color_Black);
@@ -2089,6 +2227,10 @@ void UI::Init() {
 	PushColor(UIStyleCol_InputTextBorder,Color_Black);
 	
 	//misc
+	PushColor(UIStyleCol_ScrollBarDragger,        Color_VeryDarkRed);
+	PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_Red);
+	PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_DarkRed);
+
 	PushColor(UIStyleCol_CheckboxFilling,     Color_DarkMagenta);
 	
 	PushColor(UIStyleCol_HeaderButton,        Color_VeryDarkRed);
@@ -2116,6 +2258,8 @@ void UI::Init() {
 	PushVar(UIStyleVar_InputTextHeightRelToFont, 1.3);
 	PushVar(UIStyleVar_CheckboxHeightRelToFont,  1.3);
 	PushVar(UIStyleVar_RowItemAlign,             vec2(0.5, 0.5));
+	PushVar(UIStyleVar_ScrollBarYWidth,          10);
+	PushVar(UIStyleVar_ScrollBarXHeight,         10);
 	PushVar(UIStyleVar_FontHeight,               style.font->max_height);
 	
 	PushScale(vec2(1, 1));
@@ -2221,13 +2365,19 @@ void UI::Update() {
 			color  dccol = drawCmd.color;
 			f32      dct = drawCmd.thickness;
 			u32      dcl = p->windowlayer;
+			u32     dclo = drawCmd.layerOffset;
 
 			dcpos.x = floor(dcpos.x); dcpos.y = floor(dcpos.y);
 			dcpos2.x = floor(dcpos2.x); dcpos2.y = floor(dcpos2.y);
-
+			
 			dcso.x = Max(winpos.x, dcso.x); dcso.y = Max(winpos.y, dcso.y); //force all items to stay within their windows
-			dcso.x = Min(winpos.x + winsiz.x, dcso.x); dcso.y = Min(winpos.y + winsiz.y, dcso.y);
+			dcso.x = Min(winpos.x + winsiz.x - dcse.x, dcso.x); dcso.y = Min(winpos.y + winsiz.y - dcse.y, dcso.y);
+			if (drawCmd.useWindowScissor && winpos.x < 0) dcse.x += winpos.x; //if the window's pos goes negative, the scissor extent needs to adjust itself
+			if (drawCmd.useWindowScissor && winpos.y < 0) dcse.y += winpos.y;
+			dcse.x = Max(0.f, dcse.x); dcse.y = Max(0.f, dcse.y);
 			dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
+
+
 
 			Texture* dctex = drawCmd.tex;
 
@@ -2238,25 +2388,25 @@ void UI::Update() {
 
 			switch (drawCmd.type) {
 				case UIDrawType_FilledRectangle: {
-					Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
+					Render::FillRect2D(dcpos, dcsiz, dccol, dcl + dclo, dcso, dcse);
 				}break;
 
 				case UIDrawType_Line: {
-					Render::DrawLine2D(dcpos - item.position, dcpos2 - item.position, dct, dccol, dcl, dcso, dcse);
+					Render::DrawLine2D(dcpos - item.position, dcpos2 - item.position, dct, dccol, dcl + dclo, dcso, dcse);
 				}break;
 				case UIDrawType_Text: {
 					vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
-					Render::DrawText2D(font, dctext, dcpos, dccol, scale, dcl, dcso, dcse);
+					Render::DrawText2D(font, dctext, dcpos, dccol, scale, dcl + dclo, dcso, dcse);
 				}break;
 				case UIDrawType_WText: {
 					vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
-					Render::DrawText2D(font, wdctext, dcpos, dccol, scale, dcl, dcso, dcse);
+					Render::DrawText2D(font, wdctext, dcpos, dccol, scale, dcl + dclo, dcso, dcse);
 				}break;
 				case UIDrawType_Rectangle: {
-					Render::DrawRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
+					Render::DrawRect2D(dcpos, dcsiz, dccol, dcl + dclo, dcso, dcse);
 				}break;
 				case UIDrawType_Image: {
-					Render::DrawTexture2D(dctex, dcpos, dcsiz, 0, dct, dcl, dcso, dcse);
+					Render::DrawTexture2D(dctex, dcpos, dcsiz, 0, dct, dcl + dclo, dcso, dcse);
 				}break;
 			}
 		};

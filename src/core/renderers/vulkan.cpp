@@ -3182,8 +3182,8 @@ void CheckUICmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset,
 		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
 		scissorExtent != prevScissorExtent) {  //and you could do text last in one, and text first in another
 		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;
-		uiCmdArrays[layer][uiCmdCounts[layer]].descriptorSet = textures[(tex ? tex->idx : 0)].descriptorSet;
+		prevScissorOffset = scissorOffset;                     //NOTE null_font is the default texture for 2D items, as its just a white square
+		uiCmdArrays[layer][uiCmdCounts[layer]].descriptorSet = textures[(tex ? tex->idx : 1)].descriptorSet;
 		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
 		uiCmdCounts[layer]++;
 

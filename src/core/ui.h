@@ -62,6 +62,8 @@ enum UIStyleVar : u32 {
 	UIStyleVar_CheckboxHeightRelToFont, // default 1.3
 	UIStyleVar_RowItemAlign,            // default vec2(0.5, 0.5)    determines how rows align their items within their cells
 	UIStyleVar_RowCellPadding,          // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
+	UIStyleVar_ScrollBarYWidth,         // default 10
+	UIStyleVar_ScrollBarXHeight,        // default 10
 	UIStyleVar_FontHeight,              // default font->height      height of font in pixels
 	UIStyleVar_Font,			        // default "gohufont-11.bdf" 
 	UIStyleVar_COUNT
@@ -93,7 +95,14 @@ enum UIStyleCol : u32 {
 	
 	UIStyleCol_FrameBg,
 	UIStyleCol_FrameBgHovered,
-	UIStyleCol_FrameBgActive,  //
+	UIStyleCol_FrameBgActive,  
+
+	UIStyleCol_ScrollBarBg,
+	UIStyleCol_ScrollBarBgHovered,
+	UIStyleCol_ScrollBarBgActive,
+	UIStyleCol_ScrollBarDragger,
+	UIStyleCol_ScrollBarDraggerHovered,
+	UIStyleCol_ScrollBarDraggerActive,
 	
 	UIStyleCol_ButtonBg,
 	UIStyleCol_ButtonBgActive,
@@ -151,6 +160,8 @@ struct UIStyle {
 	f32  checkboxHeightRelToFont;
 	vec2 rowItemAlign;
 	vec2 rowCellPadding;
+	f32  scrollBarYWidth;
+	f32  scrollBarXHeight;
 	f32  fontHeight;
 	
 	//special vars that have special push/pop functions
@@ -171,16 +182,19 @@ enum UIWindowFlags_ {
 	UIWindowFlags_NoTitleBar             = 1 << 2,
 	UIWindowFlags_NoBorder               = 1 << 3,
 	UIWindowFlags_NoBackground           = 1 << 4,
-	UIWindowFlags_NoScrollX              = 1 << 5,
-	UIWindowFlags_NoScrollY              = 1 << 6,
+	UIWindowFlags_NoScrollBarX           = 1 << 5,
+	UIWindowFlags_NoScrollBarY           = 1 << 6, 
+	UIWindowFlags_NoScrollBars           = UIWindowFlags_NoScrollBarX | UIWindowFlags_NoScrollBarY,
+	UIWindowFlags_NoScrollX              = 1 << 7 | UIWindowFlags_NoScrollBarX,
+	UIWindowFlags_NoScrollY              = 1 << 8 | UIWindowFlags_NoScrollBarY,
 	UIWindowFlags_NoScroll               = UIWindowFlags_NoScrollX | UIWindowFlags_NoScrollY,
-	UIWindowFlags_NoFocus                = 1 << 7,
-	UIWindowFlags_FocusOnHover           = 1 << 8,
-	UIWindowFlags_NoMinimize             = 1 << 9,
-	UIWindowFlags_NoMinimizeButton       = 1 << 10,
-	UIWindowFlags_DontSetGlobalHoverFlag = 1 << 11,
-	UIWindowFlags_FitAllElements         = 1 << 12, //attempts to fit the window's size to all called elements
-	
+	UIWindowFlags_NoFocus                = 1 << 9,
+	UIWindowFlags_FocusOnHover           = 1 << 10,
+	UIWindowFlags_NoMinimize             = 1 << 11,
+	UIWindowFlags_NoMinimizeButton       = 1 << 12,
+	UIWindowFlags_DontSetGlobalHoverFlag = 1 << 13,
+	UIWindowFlags_FitAllElements         = 1 << 14, //attempts to fit the window's size to all called elements
+
 	UIWindowFlags_NoInteract = UIWindowFlags_NoMove | UIWindowFlags_NoFocus | UIWindowFlags_NoResize | UIWindowFlags_DontSetGlobalHoverFlag | UIWindowFlags_NoScroll, 
 	UIWindowFlags_Invisible  = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground | UIWindowFlags_NoFocus
 }; typedef u32 UIWindowFlags;
@@ -271,6 +285,8 @@ struct UIDrawCmd {
 	string text;
 	wstring wtext;
 	Font* font;
+
+	u32 layerOffset = 0; //for use when you need to offset drawCmds into another layer, for example scroll bar should be drawn above other things in the window and this avoids making another item just for it
 	
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
 	bool trackedForFit = 1;
