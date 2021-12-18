@@ -62,8 +62,8 @@ enum UIStyleVar : u32 {
 	UIStyleVar_CheckboxHeightRelToFont, // default 1.3
 	UIStyleVar_RowItemAlign,            // default vec2(0.5, 0.5)    determines how rows align their items within their cells
 	UIStyleVar_RowCellPadding,          // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
-	UIStyleVar_ScrollBarYWidth,         // default 10
-	UIStyleVar_ScrollBarXHeight,        // default 10
+	UIStyleVar_ScrollBarYWidth,         // default 5
+	UIStyleVar_ScrollBarXHeight,        // default 5
 	UIStyleVar_FontHeight,              // default font->height      height of font in pixels
 	UIStyleVar_Font,			        // default "gohufont-11.bdf" 
 	UIStyleVar_COUNT
@@ -286,8 +286,6 @@ struct UIDrawCmd {
 	wstring wtext;
 	Font* font;
 
-	u32 layerOffset = 0; //for use when you need to offset drawCmds into another layer, for example scroll bar should be drawn above other things in the window and this avoids making another item just for it
-	
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
 	bool trackedForFit = 1;
 	
@@ -297,7 +295,8 @@ struct UIDrawCmd {
 };
 
 enum UIItemType : u32 {
-	UIItemType_Base,      // base window draw commands
+	UIItemType_PreItems,  // internal items drawn before user items
+	UIItemType_PostItems, // ditto, but afterwards
 	UIItemType_Custom,    // BeginCustomItem()
 	UIItemType_Abstract,  // any single drawcall such as a line, rectangle, circle, etc
 	UIItemType_ChildWin,  // BeginChild() | this does not have any draw commands and is simply to indicate that we are placing a child window
@@ -379,7 +378,9 @@ struct UIWindow {
 	//base items are always drawn before items and is just a way to defer drawing 
 	//base window stuff to End(), so we can do dynamic sizing
 	array<UIItem> items[UI_WINDOW_ITEM_LAYERS];
-	array<UIItem> baseItems;
+	array<UIItem> preItems;
+	array<UIItem> postItems;
+
 	
 	u32 currlayer = floor(UI_WINDOW_ITEM_LAYERS / 2.f);
 	
@@ -399,6 +400,8 @@ struct UIWindow {
 	bool hidden = false;
 	
 	f32 titleBarHeight = 0;
+
+	vec2 minSizeForFit;
 	
 	//this is the state of style when End() is called for the window
 	//meaning the style for elements before the last bunch could be different
