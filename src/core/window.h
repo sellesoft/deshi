@@ -23,11 +23,17 @@ enum CursorMode_{
 	CursorMode_Hidden,
 }; typedef u32 CursorMode;
 
+enum CursorType_ {
+	CursorType_Arrow,
+	CursorType_HResize,
+	CursorType_VResize,
+	CursorType_Hand,
+	CursorType_IBeam,
+}; typedef u32 CursorType;
 struct Window{
 	const char* name;
 	GLFWwindow*  window;
 	GLFWmonitor* monitor;
-	GLFWcursor*  cursor;
 	
 	s32 x, y;
 	s32 width, height;
@@ -54,6 +60,7 @@ struct Window{
 	void UpdateDisplayMode(DisplayMode mode);
 	void UpdateCursorMode(CursorMode mode); 
 	void SetCursorPos(vec2 pos);
+	void SetCursor(CursorType curtype);
 	void UpdateRawInput(bool rawInput);
 	void UpdateResizable(bool resizable);
 	void Close();
