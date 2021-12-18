@@ -183,10 +183,10 @@ template<typename T> inline array<T>::
 template<typename T> inline array<T>& array<T>::
 operator= (const array<T>& rhs){
 	if(!allocator) allocator = &base_stl_allocator;
-	
 	forI(count){ data[i].~T(); }
 	allocator->release(data);  //TODO maybe resize rather than release and reserve
 	
+	allocator = rhs.allocator;
 	space = rhs.space;
 	count = rhs.count;
 	data  = (T*)allocator->reserve(space*sizeof(T));

@@ -7,22 +7,6 @@
 #include <cstddef> //size_t, ptrdiff_t
 #include <cstdlib> //malloc, calloc, free
 
-/////////////////////
-//// math macros ////
-/////////////////////
-#define M_EPSILON    0.00001f
-#define M_FOURTHPI   0.78539816339f
-#define M_HALFPI     1.57079632679f
-#define M_PI         3.14159265359f
-#define M_PId        3.14159265358979
-#define M_2PI        6.28318530718f
-#define M_TAU        M_2PI
-#define M_E          2.71828182846f
-#define M_SQRT_TWO   1.41421356237f
-#define M_SQRT_THREE 1.73205080757f
-#define RADIANS(x) ((x) * (M_PI / 180.f))
-#define DEGREES(x) ((x) * (180.f / M_PI))
-
 ///////////////////////
 //// static macros ////
 ///////////////////////
@@ -75,14 +59,17 @@ typedef char16_t           uchar;
 typedef u32 Type;
 typedef u32 Flags;
 
-
-typedef void* (*Allocator_Reserve_Func)(upt bytes);
+//TODO(delle) function pointer signature macro
+typedef void* (*Allocator_ReserveMemory_Func)(upt bytes);
 typedef void  (*Allocator_ChangeMemory_Func)(void* ptr, upt bytes);
 typedef void  (*Allocator_ReleaseMemory_Func)(void* ptr);
 typedef void* (*Allocator_ResizeMemory_Func)(void* ptr, upt bytes);
-function void Allocator_ChangeMemory_Noop(void* ptr, upt bytes){}
+function void* Allocator_ReserveMemory_Noop(upt bytes){}
+function void  Allocator_ChangeMemory_Noop(void* ptr, upt bytes){}
+function void  Allocator_ReleaseMemory_Noop(void* ptr){}
+function void* Allocator_ResizeMemory_Noop(void* ptr, upt bytes){}
 struct Allocator{
-	Allocator_Reserve_Func       reserve;  //reserves address space from OS
+	Allocator_ReserveMemory_Func reserve;  //reserves address space from OS
 	Allocator_ChangeMemory_Func  commit;   //allocates memory from reserved space
 	Allocator_ChangeMemory_Func  decommit; //returns the memory to reserved state
 	Allocator_ReleaseMemory_Func release;  //release the reserved memory back to OS
@@ -103,6 +90,8 @@ struct Allocator{
 #define Megabytes(a) (((u64)(a)) << 20)
 #define Gigabytes(a) (((u64)(a)) << 30)
 #define Terabytes(a) (((u64)(a)) << 40)
+#define RADIANS(x) ((x) * (M_PI / 180.f))
+#define DEGREES(x) ((x) * (180.f / M_PI))
 #define ArrayCount(arr) (sizeof((arr)) / sizeof(((arr))[0])) //length of a static-size c-array
 #define RoundUpTo(value, multiple) (((size_t)((value) + (((size_t)(multiple))-1)) / (size_t)(multiple)) * (size_t)(multiple))
 #define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
@@ -120,7 +109,7 @@ struct Allocator{
 //////////////////////////
 //// common functions ////
 //////////////////////////
-FORCE_INLINE b32 IsPow2(u64 value){return (value != 0) && (value & (value-1) == 0);}
+FORCE_INLINE b32 IsPow2(u64 value){return (value != 0) && ((value & (value-1)) == 0);}
 template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;}
 template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;}
 template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;}
@@ -141,11 +130,11 @@ global_const u16 MAX_U16 = 0xFFFF;
 global_const u32 MAX_U32 = 0xFFFFFFFF;
 global_const u64 MAX_U64 = 0xFFFFFFFFFFFFFFFF;
 
-global_const s8  MIN_S8  = -128;
+global_const s8  MIN_S8  = -127 - 1;
 global_const s8  MAX_S8  = 127;
-global_const s16 MIN_S16 = -32768;
+global_const s16 MIN_S16 = -32767 - 1;
 global_const s16 MAX_S16 = 32767;
-global_const s32 MIN_S32 = -2147483648;
+global_const s32 MIN_S32 = -2147483647 - 1;
 global_const s32 MAX_S32 = 2147483647;
 global_const s64 MIN_S64 = -9223372036854775807 - 1;
 global_const s64 MAX_S64 = 9223372036854775807;
@@ -154,6 +143,18 @@ global_const f32 MAX_F32 = 3.402823466e+38f;
 global_const f32 MIN_F32 = -MAX_F32;
 global_const f64 MAX_F64 = 1.79769313486231e+308;
 global_const f64 MIN_F64 = -MAX_F64;
+
+//TODO make these typed
+#define M_EPSILON    0.00001f
+#define M_FOURTHPI   0.78539816339f
+#define M_HALFPI     1.57079632679f
+#define M_PI         3.14159265359f
+#define M_PId        3.14159265358979
+#define M_2PI        6.28318530718f
+#define M_TAU        M_2PI
+#define M_E          2.71828182846f
+#define M_SQRT_TWO   1.41421356237f
+#define M_SQRT_THREE 1.73205080757f
 
 /////////////////////// 
 //// assert macros //// //NOTE the ... is for a programmer message at the assert; it is unused otherwise

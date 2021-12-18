@@ -63,6 +63,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	icon.pixels = stbi_load("data/textures/deshi_icon.png", &icon.width, &icon.height, &icon_channels, STBI_rgb_alpha);
 	if(icon.pixels){
 		glfwSetWindowIcon(window, 1, &icon);
+		stbi_image_free(icon.pixels);
 	}else{
 		LogE("stbi","Failed to load texture: deshi_icon.png; Using default window icon");
 	}

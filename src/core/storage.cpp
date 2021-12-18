@@ -41,6 +41,13 @@ void Storage::
 Init(){
 	TIMER_START(t_s);
 	
+	meshes = array<Mesh*>(deshi_allocator);
+	textures = array<Texture*>(deshi_allocator);
+	materials = array<Material*>(deshi_allocator);
+	models = array<Model*>(deshi_allocator);
+	fonts = array<Font*>(deshi_allocator);
+	lights = array<Light*>(deshi_allocator);
+	
 	stbi_set_flip_vertically_on_load(true);
 	//setup null assets      //TODO(delle) store null.png and null shader in a .cpp
 	DeshStorage->null_mesh     = CreateBoxMesh(1.0f, 1.0f, 1.0f).second; cpystr(NullMesh()->name, "null", DESHI_NAME_SIZE);
@@ -50,7 +57,7 @@ Init(){
 	DeshStorage->null_model    = CreateModelFromMesh(NullMesh(), ModelFlags_NONE).second; cpystr(DeshStorage->null_model->name, "null", DESHI_NAME_SIZE);
 	
 	//create null font (white square)
-	DeshStorage->null_font    = (Font*)calloc(1, sizeof(Font));
+	DeshStorage->null_font     = (Font*)Memory::Allocate(sizeof(Font));
 	fonts.add(DeshStorage->null_font);
 	NullFont()->type = FontType_NONE;
 	NullFont()->idx = 0;
@@ -99,7 +106,7 @@ AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighb
 		+ facesNeighborTriangleCount*sizeof(u32)
 		+     facesNeighborFaceCount*sizeof(u32);
 	
-	Mesh* mesh = (Mesh*)calloc(1,bytes);   char* cursor = (char*)mesh + (1*sizeof(Mesh));
+	Mesh* mesh = (Mesh*)Memory::Allocate(bytes);   char* cursor = (char*)mesh + (1*sizeof(Mesh));
 	mesh->bytes         = bytes;
 	mesh->indexCount    = indexCount;
 	mesh->vertexCount   = vertexCount;
@@ -364,7 +371,7 @@ CreateMeshFromMemory(void* data){
 	}
 	
 	//allocate
-	Mesh* mesh = (Mesh*)malloc(bytes);           char* cursor = (char*)mesh + (1*sizeof(Mesh));
+	Mesh* mesh = (Mesh*)Memory::Allocate(bytes);  char* cursor = (char*)mesh + (1*sizeof(Mesh));
 	memcpy(mesh, data, bytes);
 	mesh->idx = meshes.count;
 	mesh->vertexArray   = (Mesh::Vertex*)cursor;       cursor +=   mesh->vertexCount*sizeof(Mesh::Vertex);
@@ -423,16 +430,14 @@ SaveMesh(Mesh* mesh){
 }
 
 void Storage::
-DeleteMesh(Mesh* mesh){
-	//!Incomplete
-	Assert(!"not setup yet");
-	free(mesh);
+DeleteMesh(Mesh* mesh){ //!Incomplete
+	NotImplemented;
 }
 
 array<vec2> Storage::
 GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camview, vec3 camPosition, vec2 screenDims){ //!FixMe
-	array<vec2> outline;
-	array<Mesh::Triangle*> nonculled;
+	array<vec2> outline(deshi_allocator);
+	array<Mesh::Triangle*> nonculled(deshi_allocator);
 	for(Mesh::Triangle& t :mesh->triangles){
 		t.removed = false;
 		if(t.normal.dot(camPosition - (t.p[0] * transform)) > 0){
@@ -458,7 +463,7 @@ GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 c
 //////////////////
 local Texture* 
 AllocateTexture(){
-	Texture* texture = (Texture*)calloc(1,sizeof(Texture));
+	Texture* texture = (Texture*)Memory::Allocate(sizeof(Texture));
 	return texture;
 }
 
@@ -485,7 +490,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 	texture->forceLinear = forceLinear;
 	if(texture->pixels == 0){ 
 		LogE("storage","Failed to create texture '",filename,"': ",stbi_failure_reason()); 
-		free(texture);
+		Memory::ZeroFree(texture);
 		return result; 
 	}
 	texture->mipmaps = (generateMipmaps) ? (int)log2(Max(texture->width, texture->height)) + 1 : 1;

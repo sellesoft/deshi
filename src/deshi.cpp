@@ -116,6 +116,7 @@ add UI color palettes for easy color changing
 
 Ungrouped TODOs
 ---------------
+make the most recent logging file be named log.txt, while the rest have a date
 allow the generic memory arena to grow if it will be maxed out
 add MouseInsideWindow() func to input or window
 make the transparent framebuffer a start switch since it hurts frames (it must be set at window creation time)
@@ -140,20 +141,6 @@ __________ this might not be an error with our stuff and just a quirk of the win
 
 
 */
-
-//// external for core ////
-#define STB_IMAGE_IMPLEMENTATION
-//#define STB_TRUETYPE_IMPLEMENTATION
-#define STBI_FAILURE_USERMSG
-#include <stb/stb_image.h>
-//#include <stb/stb_truetype.h>
-#include <imgui/imgui.cpp>
-#include <imgui/imgui_demo.cpp>
-#include <imgui/imgui_draw.cpp>
-#include <imgui/imgui_tables.cpp>
-#include <imgui/imgui_widgets.cpp>
-#undef ERROR
-#undef DELETE
 
 //// utility headers ////
 #include "defines.h"
@@ -186,8 +173,12 @@ __________ this might not be an error with our stuff and just a quirk of the win
 
 //// platform ////
 #if   DESHI_WINDOWS
+#undef function
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#define function static
+#undef ERROR
+#undef DELETE
 #elif DESHI_LINUX //DESHI_WINDOWS
 
 #elif DESHI_MAC   //DESHI_LINUX
@@ -198,9 +189,44 @@ __________ this might not be an error with our stuff and just a quirk of the win
 
 //// core headers ////
 #include "deshi.h"
+#include "defines.h"
+#include "core/assets.h"
+#include "core/camera.h"
+#include "core/commands.h"
+#ifndef DESHI_DISABLE_CONSOLE
+#  include "core/console.h"
+#  include "core/console2.h"
+#endif //DESHI_DISABLE_CONSOLE
 #include "core/font.h"
+#ifndef DESHI_DISABLE_IMGUI
+#  define IMGUI_DEFINE_MATH_OPERATORS
+#  include "core/imgui.h"
+#endif //DESHI_DISABLE_IMGUI
+#include "core/input.h"
 #include "core/io.h"
 #include "core/logging.h"
+#include "core/memory.h"
+#include "core/model.h"
+#include "core/renderer.h"
+#include "core/storage.h"
+#include "core/time.h"
+#include "core/ui.h"
+#include "core/window.h"
+
+//// external for core ////
+#define STB_IMAGE_IMPLEMENTATION
+//#define STB_TRUETYPE_IMPLEMENTATION
+#define STBI_MALLOC(sz) Memory::Allocate(sz)
+#define STBI_REALLOC(p,newsz) Memory::Reallocate(p,newsz)
+#define STBI_FREE(p) Memory::ZeroFree(p)
+#define STBI_FAILURE_USERMSG
+#include <stb/stb_image.h>
+//#include <stb/stb_truetype.h> //included by imgui
+#include <imgui/imgui.cpp>
+#include <imgui/imgui_demo.cpp>
+#include <imgui/imgui_draw.cpp>
+#include <imgui/imgui_tables.cpp>
+#include <imgui/imgui_widgets.cpp>
 
 //// renderer cpp (and libs) ////
 #if   DESHI_VULKAN

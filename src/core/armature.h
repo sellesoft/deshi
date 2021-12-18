@@ -3,7 +3,8 @@
 #define DESHI_ARMATURE_H
 
 #include "../defines.h"
-#include "../math/VectorMatrix.h"
+#include "../math/vector.h"
+#include "../math/matrix.h"
 
 struct Bone{
 	char name[DESHI_NAME_SIZE];
