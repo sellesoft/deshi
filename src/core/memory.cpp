@@ -14,7 +14,7 @@ namespace Memory{
 	///////////////////
 	//// @internal ////
 	///////////////////
-#define MEMORY_CHECK_HEAPS true
+#define MEMORY_CHECK_HEAPS false
 #define MEMORY_ARENA_MIN_SIZE Kilobytes(4)
 #define MEMORY_LARGE_GENERIC_ALLOCATION_SIZE Kilobytes(256)
 	local Heap   main_heap;
