@@ -78,9 +78,9 @@ struct QueueFamilyIndices{
 };
 
 struct SwapChainSupportDetails{
-	VkSurfaceCapabilitiesKHR capabilities;
-	std::vector<VkSurfaceFormatKHR> formats;
-	std::vector<VkPresentModeKHR> presentModes;
+	VkSurfaceCapabilitiesKHR  capabilities;
+	array<VkSurfaceFormatKHR> formats;
+	array<VkPresentModeKHR>   presentModes;
 };
 
 struct FrameVk{
@@ -203,19 +203,19 @@ typedef u32 ModelIndexVk;
 local ModelIndexVk modelCmdCount = 0;
 local ModelCmdVk   modelCmdArray[MAX_MODEL_CMDS];
 
-local array<MeshVk>      vkMeshes;
-local array<TextureVk>   textures;
-local array<MaterialVk>  vkMaterials;
+local array<MeshVk>      vkMeshes(deshi_allocator);
+local array<TextureVk>   textures(deshi_allocator);
+local array<MaterialVk>  vkMaterials(deshi_allocator);
 local vec4 vkLights[10]{ vec4(0,0,0,-1) };
 
-local std::vector<const char*> validationLayers = { 
-	"VK_LAYER_KHRONOS_validation" 
+local const char* validationLayers[] = {
+	"VK_LAYER_KHRONOS_validation"
 };
 local std::vector<const char*> deviceExtensions = { 
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
 	VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME 
 };
-local std::vector<VkValidationFeatureEnableEXT> validationFeaturesEnabled = {};
+local array<VkValidationFeatureEnableEXT> validationFeaturesEnabled(deshi_allocator);
 
 local bool initialized      = false;
 local bool remakeWindow     = false;
@@ -232,7 +232,10 @@ VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 /////////////////////////
 //// @initialization ////
 /////////////////////////
-local VkAllocationCallbacks*   allocator             = VK_NULL_HANDLE;
+local VkAllocationCallbacks    allocator_            = {};
+local VkAllocationCallbacks*   allocator             = &allocator_;
+local VkAllocationCallbacks    temp_allocator_       = {};
+local VkAllocationCallbacks*   temp_allocator        = &temp_allocator_;
 local VkInstance               instance              = VK_NULL_HANDLE;
 local VkDebugUtilsMessengerEXT debugMessenger        = VK_NULL_HANDLE;
 local VkSurfaceKHR             surface;
@@ -862,6 +865,55 @@ CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size){
 //// @initialization ////
 /////////////////////////
 local void 
+SetupAllocator(){
+	//!ref: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkAllocationCallbacks.html
+	PrintVk(2,"Setting up vulkan allocator");
+	Assert(rendererStage == RENDERERSTAGE_NONE, "renderer stage was not NONE at SetupAllocator");
+	
+	//regular allocator
+	auto deshi_vulkan_allocation_func = [](void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope){
+		size = RoundUpTo(size,alignment);
+		return Memory::Allocate(size);
+	};
+	
+	auto deshi_vulkan_reallocation_func = [](void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope){
+		upt* prev_size = ((upt*)pOriginal - 1);
+		Assert(*prev_size % alignment == 0, "The alignment of the previous allocation and this reallocation must be the same");
+		size = RoundUpTo(size,alignment);
+		return Memory::Reallocate(pOriginal, size);
+	};
+	
+	auto deshi_vulkan_free_func = [](void* pUserData, void* pMemory){
+		Memory::ZeroFree(pMemory);
+	};
+	
+	allocator_.pfnAllocation = deshi_vulkan_allocation_func;
+	allocator_.pfnReallocation = deshi_vulkan_reallocation_func;
+	allocator_.pfnFree = deshi_vulkan_free_func;
+	
+	//temporary allocator
+	auto deshi_vulkan_temp_allocation_func = [](void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope){
+		Assert(allocationScope != VK_SYSTEM_ALLOCATION_SCOPE_DEVICE && allocationScope != VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE,
+			   "Vulkan device and instance creation can not use the temporary allocator");
+		size = RoundUpTo(size,alignment);
+		return Memory::TempAllocate(size);
+	};
+	
+	auto deshi_vulkan_temp_reallocation_func = [](void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope){
+		upt* prev_size = ((upt*)pOriginal - 1);
+		Assert(*prev_size % alignment == 0, "The alignment of the previous allocation and this reallocation must be the same");
+		size = RoundUpTo(size,alignment);
+		return TempAllocator_Resize(pOriginal, size);
+	};
+	
+	auto deshi_vulkan_temp_free_func = [](void* pUserData, void* pMemory){};
+	
+	temp_allocator_.pfnAllocation = deshi_vulkan_temp_allocation_func;
+	temp_allocator_.pfnReallocation = deshi_vulkan_temp_reallocation_func;
+	temp_allocator_.pfnFree = deshi_vulkan_temp_free_func;
+}
+
+local void 
 CreateInstance(){
 	PrintVk(2,"Creating vulkan instance");
 	Assert(rendererStage == RENDERERSTAGE_NONE, "renderer stage was not NONE at CreateInstance");
@@ -877,7 +929,8 @@ CreateInstance(){
 		std::vector<VkLayerProperties> availableLayers(layerCount);
 		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 		
-		for(const char* layerName : validationLayers){
+		forI(ArrayCount(validationLayers)){
+			const char* layerName = validationLayers[i];
 			bool layerFound = false;
 			for(const auto& layerProperties : availableLayers){
 				if(strcmp(layerName, layerProperties.layerName) == 0){
@@ -900,8 +953,8 @@ CreateInstance(){
 	VkValidationFeaturesEXT validationFeatures{VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT};
 	validationFeatures.disabledValidationFeatureCount = 0;
 	validationFeatures.pDisabledValidationFeatures    = nullptr;
-	validationFeatures.enabledValidationFeatureCount  = validationFeaturesEnabled.size();
-	validationFeatures.pEnabledValidationFeatures     = validationFeaturesEnabled.data();
+	validationFeatures.enabledValidationFeatureCount  = validationFeaturesEnabled.count;
+	validationFeatures.pEnabledValidationFeatures     = validationFeaturesEnabled.data;
 	
 	//get required extensions
 	PrintVk(3, "Getting required extensions");
@@ -923,8 +976,8 @@ CreateInstance(){
 	createInfo.enabledExtensionCount   = (u32)extensions.size();
 	createInfo.ppEnabledExtensionNames = extensions.data();
 	if(settings.debugging){
-		createInfo.enabledLayerCount   = (u32)validationLayers.size();
-		createInfo.ppEnabledLayerNames = validationLayers.data();
+		createInfo.enabledLayerCount   = (u32)ArrayCount(validationLayers);
+		createInfo.ppEnabledLayerNames = validationLayers;
 		debugCreateInfo.pNext          = &validationFeatures;
 		createInfo.pNext               = &debugCreateInfo;
 	} else {
@@ -1088,8 +1141,8 @@ CreateLogicalDevice(){
 	createInfo.enabledExtensionCount   = (u32)deviceExtensions.size();
 	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	if(settings.debugging){
-		createInfo.enabledLayerCount   = (u32)validationLayers.size();
-		createInfo.ppEnabledLayerNames = validationLayers.data();
+		createInfo.enabledLayerCount   = (u32)ArrayCount(validationLayers);
+		createInfo.ppEnabledLayerNames = validationLayers;
 	}else{
 		createInfo.enabledLayerCount   = 0;
 	}
@@ -1125,14 +1178,14 @@ CreateSwapChain(){
 		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
 		if(formatCount != 0){
 			supportDetails.formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, supportDetails.formats.data());
+			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, supportDetails.formats.data);
 		}
 		
 		u32 presentModeCount;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
 		if(presentModeCount != 0){
 			supportDetails.presentModes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, supportDetails.presentModes.data());
+			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, supportDetails.presentModes.data);
 		}
 	}
 	
@@ -3186,10 +3239,10 @@ void CheckUICmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset,
 		uiCmdArrays[layer][uiCmdCounts[layer]].descriptorSet = textures[(tex ? tex->idx : 0)].descriptorSet;
 		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
 		uiCmdCounts[layer]++;
-
+		
 		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
-
+	
 }
 
 void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
@@ -3584,36 +3637,36 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 void Render::
 DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, float alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
-		"Scissor Offset and Extent can't be negative");
+		   "Scissor Offset and Extent can't be negative");
 	if (alpha == 0) return;
-
+	
 	CheckUICmdArrays(layer, texture, 1, scissorOffset, scissorExtent);
 	
 	u32       col = PackColorU32(255, 255, 255, 255.f * alpha);
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
 	UIIndexVk* ip = uiIndexArray + uiIndexCount;
-
+	
 	ip[0] = uiVertexCount; ip[1] = uiVertexCount + 1; ip[2] = uiVertexCount + 2;
 	ip[3] = uiVertexCount; ip[4] = uiVertexCount + 2; ip[5] = uiVertexCount + 3;
 	vp[0].pos = p0; vp[0].uv = { 0,0 }; vp[0].color = col;
 	vp[1].pos = p1; vp[1].uv = { 0,1 }; vp[1].color = col;
 	vp[2].pos = p2; vp[2].uv = { 1,1 }; vp[2].color = col;
 	vp[3].pos = p3; vp[3].uv = { 1,0 }; vp[3].color = col;
-
+	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
-
+	
 }
 
 
 void Render::
 DrawTexture2D(Texture* texture, vec2 pos, vec2 size, float rotation, float alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
-
-
-
+	
+	
+	
 }
 
 ///////////////////
@@ -3842,8 +3895,8 @@ LoadTexture(Texture* texture){
 	setAllocInfo.descriptorSetCount = 1;
 	AssertVk(vkAllocateDescriptorSets(device, &setAllocInfo, &tvk.descriptorSet));
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)tvk.descriptorSet,
-		TOSTRING("Texture descriptor set ", texture->name).str);
-
+						 TOSTRING("Texture descriptor set ", texture->name).str);
+	
 	VkWriteDescriptorSet set{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 	set.dstSet = tvk.descriptorSet;
 	set.dstArrayElement = 0;
@@ -3875,7 +3928,7 @@ LoadMaterial(Material* material){
 						 TOSTRING("Material descriptor set ",material->name).str);
 	
 	//write descriptor set per texture
-	array<VkWriteDescriptorSet> sets;
+	array<VkWriteDescriptorSet> sets(deshi_temp_allocator);
 	for(u32 texIdx : material->textures){
 		VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 		set.dstSet          = mvk.descriptorSet;
@@ -3915,7 +3968,7 @@ UpdateMaterial(Material* material){
 	mvk->pipeline = GetPipelineFromShader(material->shader);
 	
 	//update descriptor set per texture
-	array<VkWriteDescriptorSet> sets;
+	array<VkWriteDescriptorSet> sets(deshi_temp_allocator);
 	for(u32 texIdx : material->textures){
 		VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 		set.dstSet          = mvk->descriptorSet;
@@ -4360,12 +4413,13 @@ Init(){
 	//// load RenderSettings ////
 	LoadSettings();
 	if(settings.debugging && settings.printf){
-		validationFeaturesEnabled.push_back(VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT);
+		validationFeaturesEnabled.add(VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT);
 		settings.loggingLevel = 4;
 	}
 	
 	TIMER_START(t_temp);
 	//// setup Vulkan instance ////
+	SetupAllocator();
 	CreateInstance();
 	PrintVk(3, "Finished creating instance in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	SetupDebugMessenger();
@@ -4420,7 +4474,7 @@ Init(){
 	PrintVk(3, "Finished setting up pipeline creation in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	CreatePipelines();
 	PrintVk(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
-
+	
 	forI(UI_LAYERS) { uiCmdCounts[i] = 1; }
 	initialized = true;
 	

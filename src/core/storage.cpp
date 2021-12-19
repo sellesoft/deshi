@@ -434,29 +434,6 @@ DeleteMesh(Mesh* mesh){ //!Incomplete
 	NotImplemented;
 }
 
-array<vec2> Storage::
-GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camview, vec3 camPosition, vec2 screenDims){ //!FixMe
-	array<vec2> outline(deshi_allocator);
-	array<Mesh::Triangle*> nonculled(deshi_allocator);
-	for(Mesh::Triangle& t :mesh->triangles){
-		t.removed = false;
-		if(t.normal.dot(camPosition - (t.p[0] * transform)) > 0){
-			nonculled.add(&t);
-		}else{
-			t.removed = true;
-		}
-	}
-	for(Mesh::Triangle* t : nonculled){
-		forI(t->neighborCount){
-			if(mesh->triangles[t->neighbors[i]].removed){
-				outline.add(Math::WorldToScreen(t->p[ t->edges[i]       ]*transform, camProjection, camview, screenDims).toVec2());
-				outline.add(Math::WorldToScreen(t->p[(t->edges[i]+1) % 3]*transform, camProjection, camview, screenDims).toVec2());
-			}
-		}
-	}
-	return outline;
-}
-
 
 //////////////////
 //// @texture ////
@@ -533,7 +510,7 @@ CreateTextureFromMemory(void* data, const char* name, int width, int height, Ima
 	//reinterpret image as RGBA32
 	const u8* src = (u8*)data;
 	if(format != ImageFormat_RGBA){
-		texture->pixels = (u8*)malloc((size_t)width * (size_t)height * 4);
+		texture->pixels = (u8*)Memory::Allocate((size_t)width * (size_t)height * 4);
 		data = texture->pixels;
 		u32* dst = (u32*)texture->pixels;
 		switch(format){
@@ -558,7 +535,7 @@ CreateTextureFromMemory(void* data, const char* name, int width, int height, Ima
 	
 	Render::LoadTexture(texture);
 	if(!keepLoaded){
-		free(data);
+		Memory::ZeroFree(data);
 		data = 0;
 		texture->pixels = 0;
 	}
@@ -570,10 +547,8 @@ CreateTextureFromMemory(void* data, const char* name, int width, int height, Ima
 }
 
 void Storage::
-DeleteTexture(Texture* texture){
-	//!Incomplete
-	Assert(!"not setup yet");
-	free(texture);
+DeleteTexture(Texture* texture){ //!Incomplete
+	NotImplemented;
 }
 
 
@@ -582,8 +557,8 @@ DeleteTexture(Texture* texture){
 ///////////////////
 local Material* 
 AllocateMaterial(u32 textureCount){
-	Material* material = (Material*)calloc(1, sizeof(Material));
-	material->textures = array<u32>(textureCount);
+	Material* material = (Material*)Memory::Allocate(sizeof(Material));
+	material->textures = array<u32>(textureCount, deshi_allocator);
 	return material;
 }
 
@@ -739,10 +714,8 @@ SaveMaterial(Material* material){
 }
 
 void Storage::
-DeleteMaterial(Material* material){
-	//!Incomplete
-	Assert(!"not setup yet");
-	free(material);
+DeleteMaterial(Material* material){ //!Incomplete
+	NotImplemented;
 }
 
 
@@ -751,8 +724,8 @@ DeleteMaterial(Material* material){
 ////////////////
 local Model* 
 AllocateModel(u32 batchCount){
-	Model* model = (Model*)calloc(1, sizeof(Model));
-	model->batches = array<Model::Batch>();
+	Model* model = (Model*)Memory::Allocate(sizeof(Model));
+	model->batches = array<Model::Batch>(deshi_allocator);
 	model->batches.resize((batchCount) ? batchCount : 1);
 	return model;
 }
@@ -1521,10 +1494,8 @@ SaveModel(Model* model){
 }
 
 void Storage::
-DeleteModel(Model* model){
-	//!Incomplete
-	Assert(!"not setup yet");
-	free(model);
+DeleteModel(Model* model){ //!Incomplete
+	NotImplemented;
 }
 
 
@@ -1533,7 +1504,7 @@ DeleteModel(Model* model){
 ///////////////
 local Font* 
 AllocateFont(Type type){
-	Font* font = (Font*)calloc(1, sizeof(Font));
+	Font* font = (Font*)Memory::Allocate(sizeof(Font));
 	font->type = type;
 	font->idx = Storage::fonts.count;
 	return font;
@@ -1676,8 +1647,8 @@ CreateFontFromFileBDF(const char* filename){
 		}else if(strncmp("CHARS",       key_start, key_end-key_start) == 0){
 			font->count = strtol(value_start, 0, 10);
 			Assert(font->max_width && font->max_height && font->count);
-			encodings = (u16*)calloc(font->count, sizeof(u16));
-			pixels = (u8*)calloc(font->count, (font->max_width*font->max_height + 2 * font->max_width)*sizeof(u8) );
+			encodings = (u16*)Memory::TempAllocate(font->count*sizeof(u16));
+			pixels = (u8*)Memory::TempAllocate(font->count * ((font->max_width*font->max_height + 2*font->max_width) * sizeof(u8)));
 			pixels[0] = 255;
 			pixels[1] = 255;
 			pixels[font->max_width] = 255;
@@ -1690,13 +1661,11 @@ CreateFontFromFileBDF(const char* filename){
 	
 	Texture* texture = CreateTextureFromMemory(pixels, font->name, font->max_width, font->max_height*font->count,
 											   ImageFormat_BW, TextureType_2D, false, false, false).second;
-	free(encodings);
-	free(pixels);
 	//DeleteTexture(texture);
 	
 	font->aspect_ratio = (float)font->max_height / font->max_width;
 	font->tex = texture;
-
+	
 	fonts.add(font);
 	result.first  = font->idx;
 	result.second = font;
@@ -1742,7 +1711,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	// 
 	//TODO(sushi) maybe implement taking in ranges 
 	
-	stbtt_pack_range* ranges = (stbtt_pack_range*)calloc(6, sizeof(*ranges));
+	stbtt_pack_range* ranges = (stbtt_pack_range*)Memory::Allocate(6*sizeof(*ranges));
 	
 	ranges[0].num_chars = 94;   ranges[0].first_unicode_codepoint_in_range = 32;
 	ranges[1].num_chars = 143;  ranges[1].first_unicode_codepoint_in_range = 880;
@@ -1751,14 +1720,21 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	ranges[4].num_chars = 111;  ranges[4].first_unicode_codepoint_in_range = 8592;
 	ranges[5].num_chars = 255;  ranges[5].first_unicode_codepoint_in_range = 8704;
 	
-	ranges[0].font_size = size; ranges[0].chardata_for_range = (stbtt_packedchar*)calloc(ranges[0].num_chars, sizeof(stbtt_packedchar));
-	ranges[1].font_size = size; ranges[1].chardata_for_range = (stbtt_packedchar*)calloc(ranges[1].num_chars, sizeof(stbtt_packedchar));
-	ranges[2].font_size = size; ranges[2].chardata_for_range = (stbtt_packedchar*)calloc(ranges[2].num_chars, sizeof(stbtt_packedchar));
-	ranges[3].font_size = size; ranges[3].chardata_for_range = (stbtt_packedchar*)calloc(ranges[3].num_chars, sizeof(stbtt_packedchar));
-	ranges[4].font_size = size; ranges[4].chardata_for_range = (stbtt_packedchar*)calloc(ranges[4].num_chars, sizeof(stbtt_packedchar));
-	ranges[5].font_size = size; ranges[5].chardata_for_range = (stbtt_packedchar*)calloc(ranges[5].num_chars, sizeof(stbtt_packedchar));
+	ranges[0].font_size = size; 
+	ranges[1].font_size = size; 
+	ranges[2].font_size = size; 
+	ranges[3].font_size = size; 
+	ranges[4].font_size = size; 
+	ranges[5].font_size = size; 
 	
-	stbtt_pack_context* pc = (stbtt_pack_context*)calloc(1, sizeof(*pc));
+	ranges[0].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[0].num_chars*sizeof(stbtt_packedchar));
+	ranges[1].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[1].num_chars*sizeof(stbtt_packedchar));
+	ranges[2].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[2].num_chars*sizeof(stbtt_packedchar));
+	ranges[3].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[3].num_chars*sizeof(stbtt_packedchar));
+	ranges[4].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[4].num_chars*sizeof(stbtt_packedchar));
+	ranges[5].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[5].num_chars*sizeof(stbtt_packedchar));
+	
+	stbtt_pack_context* pc = (stbtt_pack_context*)Memory::Allocate(1*sizeof(*pc));
 	
 	font->num_ranges = 6;
 	font->ttf_pack_ranges = (pack_range*)ranges;
@@ -1781,7 +1757,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	font->ttf_size[1] = tsy; 
 	cpystr(font->name,filename,DESHI_NAME_SIZE);
 	
-	u8* pixels = (u8*)calloc(tsx * tsy, sizeof(u8));
+	u8* pixels = (u8*)Memory::TempAllocate((tsx * tsy)*sizeof(u8));
 	pixels[0]     = 255;
 	pixels[1]     = 255;
 	pixels[tsx]   = 255;
@@ -1798,7 +1774,6 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	
 	Texture* texture = CreateTextureFromMemory(pixels, font->name, tsx, tsy, 
 											   ImageFormat_BW, TextureType_2D, false, false, false).second;
-	free(pixels);
 	//DeleteTexture(texture);
 	
 	font->uvOffset = 2.f / tsy;
@@ -1813,7 +1788,6 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 void Storage::
 DeleteFont(Font* font){ //!Incomplete
 	NotImplemented;
-	free(font);
 }
 
 #undef ParseError

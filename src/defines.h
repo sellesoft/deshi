@@ -207,13 +207,14 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 function void* STLAllocator_Reserve(upt bytes){void* a = calloc(1,bytes); Assert(a); return a;}
 function void  STLAllocator_Release(void* ptr){free(ptr);}
 function void* STLAllocator_Resize(void* ptr, upt bytes){void* a = realloc(ptr,bytes); Assert(a); return a;}
-global_ Allocator base_stl_allocator{
+global_ Allocator stl_allocator_{
 	STLAllocator_Reserve,
 	Allocator_ChangeMemory_Noop,
 	Allocator_ChangeMemory_Noop,
 	STLAllocator_Release,
 	STLAllocator_Resize
 };
+global_ Allocator* stl_allocator = &stl_allocator_;
 
 ///////////////////////////// //TODO remove/rework/rename these
 //// to-be-redone macros ////

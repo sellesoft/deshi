@@ -364,7 +364,7 @@ namespace Memory{
 	void ZeroFree(void* ptr){
 		DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap);
 		if(ptr == 0) return;
-		Assert(ptr > main_heap.start && ptr < main_heap.start + main_heap.used, "Attempted to free a pointer outside the main heap");
+		Assert(ptr > main_heap.start && ptr < main_heap.cursor, "Attempted to free a pointer outside the main heap");
 		
 		upt* size = ((upt*)ptr - 1);
 		if(*size >= MEMORY_LARGE_GENERIC_ALLOCATION_SIZE){
@@ -375,6 +375,18 @@ namespace Memory{
 			ZeroBytes(size, *size);
 		}
 		DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap);
+	}
+	
+	Heap* ExposeMainHeap(){
+		return &main_heap;
+	}
+	
+	Arena* ExposeTempArena(){
+		return &temp_arena;
+	}
+	
+	Arena* ExposeGenericArena(){
+		return generic_arena;
 	}
 	
 	void Init(upt main_size, upt temp_size){

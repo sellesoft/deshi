@@ -25,10 +25,10 @@ struct array{
 	
 	array();
 	array(Allocator* a);
-	array(u32 _count, Allocator* a = &base_stl_allocator);
-	array(std::initializer_list<T> l, Allocator* a = &base_stl_allocator);
-	array(const array<T>& array, Allocator* a = &base_stl_allocator);
-	array(T* _data, u32 _count, Allocator* a = &base_stl_allocator);
+	array(u32 _count, Allocator* a = stl_allocator);
+	array(std::initializer_list<T> l, Allocator* a = stl_allocator);
+	array(const array<T>& array, Allocator* a = stl_allocator);
+	array(T* _data, u32 _count, Allocator* a = stl_allocator);
 	~array();
 	
 	//copies the values from rhs, BUT does NOT copy iter value and ONLY copies allocator if there wasnt one already
@@ -86,7 +86,7 @@ struct array{
 ///////////////////////
 template<typename T> inline array<T>::
 array(){
-	allocator = &base_stl_allocator;
+	allocator = stl_allocator;
 	
 	space = 0;
 	count = 0;
@@ -182,7 +182,7 @@ template<typename T> inline array<T>::
 ////////////////////
 template<typename T> inline array<T>& array<T>::
 operator= (const array<T>& rhs){
-	if(!allocator) allocator = &base_stl_allocator;
+	if(!allocator) allocator = stl_allocator;
 	forI(count){ data[i].~T(); }
 	allocator->release(data);  //TODO maybe resize rather than release and reserve
 	

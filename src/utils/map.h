@@ -11,16 +11,24 @@ template<typename Key, typename Value, typename HashStruct = hash<Key>>
 struct map {
 	array<u32>   hashes;
 	array<Value> data;
-	u32 count = 0;
+	u32 count;
 	
-	map() {}
-
-	map(std::initializer_list<pair<Key,Value>> list) {
+	map(Allocator* a = stl_allocator){
+		hashes.allocator = a;
+		data.allocator = a;
+		count = 0;
+	}
+	
+	map(std::initializer_list<pair<Key,Value>> list, Allocator* a = stl_allocator) {
+		hashes.allocator = a;
+		data.allocator = a;
+		count = 0;
+		
 		for (auto& p : list) {
 			add(p.first, p.second);
 		}
 	}
-
+	
 	void clear() {
 		hashes.clear();
 		data.clear();
@@ -32,17 +40,17 @@ struct map {
 		forI(hashes.count){ if(hashed == hashes[i]){ return true; } }
 		return false;
 	}
-
+	
 	Value* at(const Key& key) {
 		u32 hashed = HashStruct{}(key);
 		forI(hashes.count){ if(hashed == hashes[i]){ return &data[i]; } }
 		return 0;
 	}
-
+	
 	Value* atIdx(u32 index){
 		return &data[index];
 	}
-
+	
 	Value& operator[](const Key& key) {
 		u32 hashed = HashStruct{}(key);
 		forI(hashes.count) { if (hashed == hashes[i]) { return data[i]; } }
@@ -82,4 +90,4 @@ struct map {
 template<typename Key, typename HashStruct = hash<Key>>
 using set = map<Key,Key,HashStruct>;
 
-#endif
+#endif //DESHI_MAP_H

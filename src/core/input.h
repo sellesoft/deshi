@@ -125,7 +125,7 @@ struct Input{
 	
 	//NOTE sushi: I was going to put this on keybinds, but I wanted it to only check binds if some input occured, and it seems easiest to do that here
 	//for console command binding
-	std::vector<pair<std::string, Key::Key>> binds;
+	std::vector<pair<std::string, Key::Key>> binds; //TODO remove/move this and make it array
 	bool checkbinds = false; //needed bc glfw callbacks would call the function too early
 	
 	//real values are updated through GLFW callbacks

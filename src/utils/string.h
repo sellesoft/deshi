@@ -2,6 +2,10 @@
 #ifndef DESHI_STRING_H
 #define DESHI_STRING_H
 
+#ifndef DESHI_ARRAY_ALLOCATOR
+#  define DESHI_ARRAY_ALLOCATOR stl_allocator
+#endif
+
 #include "tuple.h"
 #include "utils.h"
 #include "../defines.h"
@@ -18,6 +22,8 @@ struct string{
 	u32   count;
 	u32   space;
 	CHAR* str;
+	
+	Allocator* allocator; //TODO(delle) maybe make this a constructor arg like array?
 	
 	string();
 	string(const CHAR* s);
@@ -69,34 +75,41 @@ struct string{
 //// @constructors ////
 ///////////////////////
 inline string::string(){
+	allocator = DESHI_ARRAY_ALLOCATOR;
 	count  = 0;
 	space = 0;
 	str   = 0;
 };
 
 inline string::string(const CHAR* s){
+	allocator = DESHI_ARRAY_ALLOCATOR;
 	count  = strlen(s);
 	space = RoundUpTo(count+1, 4);
-	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space*CHAR_SIZE);
 	memcpy(str, s, count*CHAR_SIZE);
 }
 
 inline string::string(const CHAR* s, u32 _size){
+	allocator = DESHI_ARRAY_ALLOCATOR;
 	count  = _size;
 	space = RoundUpTo(count+1, 4);
-	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space*CHAR_SIZE);
 	memcpy(str, s, count*CHAR_SIZE);
 }
 
 inline string::string(const string& s){
+	allocator = DESHI_ARRAY_ALLOCATOR;
 	count = s.count;
 	space = RoundUpTo(count+1, 4);
-	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space*CHAR_SIZE);
 	memcpy(str, s.str, count*CHAR_SIZE);
 }
 
 inline string::~string(){
-	free(str);
+	allocator->release(str);
 }
 
 ////////////////////
@@ -108,18 +121,25 @@ inline string::CHAR& string::operator[](u32 idx){
 }
 
 inline void string::operator= (const CHAR* s){
-	free(str);
+	if(!allocator) allocator = DESHI_ARRAY_ALLOCATOR;
+	allocator->release(str);
+	
 	count  = strlen(s);
 	space = RoundUpTo(count+1, 4);
-	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space*CHAR_SIZE);
 	memcpy(str, s, count*CHAR_SIZE);
 }
 
 inline void string::operator= (const string& s){
-	free(str);
+	if(!allocator) allocator = DESHI_ARRAY_ALLOCATOR;
+	allocator->release(str);
+	allocator = s.allocator;
+	
 	count = s.count;
 	space = RoundUpTo(count+1, 4);
-	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space*CHAR_SIZE); 
 	memcpy(str, s.str, count*CHAR_SIZE);
 }
 
@@ -131,11 +151,12 @@ inline void string::operator+=(const CHAR* s){
 	
 	if(space == 0){
 		space = RoundUpTo(count+1, 4);
-		Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+		str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+		allocator->commit(str, space*CHAR_SIZE);
 		memcpy(str, s, count*CHAR_SIZE);
 	}else if(space < count+1){
 		space = RoundUpTo(count+1, 4);
-		Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+		str = (CHAR*)allocator->resize(str, space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 		memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
 	}else{
 		memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
@@ -150,11 +171,12 @@ inline void string::operator+=(const string& s){
 	
 	if(space == 0){
 		space = RoundUpTo(count+1, 4);
-		Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+		str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+		allocator->commit(str, space*CHAR_SIZE);
 		memcpy(str, s.str, count*CHAR_SIZE);
 	}else if(space < count+1){
 		space = RoundUpTo(count+1, 4);
-		Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+		str = (CHAR*)allocator->resize(str, space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 		memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
 	}else{
 		memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
@@ -175,8 +197,9 @@ inline string string::operator+ (const CHAR* c) const{
 	string result;
 	result.count  = count + str_len;
 	result.space = RoundUpTo(result.count+1, 4);
-	Assert(result.str = (CHAR*)calloc(result.space, CHAR_SIZE));
-	memcpy(result.str,      str, count*CHAR_SIZE);
+	result.str = (CHAR*)allocator->reserve(result.space*CHAR_SIZE); Assert(result.str, "Failed to allocate memory");
+	allocator->commit(result.str, result.space*CHAR_SIZE);
+	memcpy(result.str,       str, count*CHAR_SIZE);
 	memcpy(result.str+count, c,   str_len*CHAR_SIZE);
 	return result;
 }
@@ -187,8 +210,9 @@ inline string string::operator+(const string& s) const{
 	string result;
 	result.count  = count + s.count;
 	result.space = RoundUpTo(result.count+1, 4);
-	Assert(result.str = (CHAR*)calloc(result.space, CHAR_SIZE));
-	memcpy(result.str,      str,   count*CHAR_SIZE);
+	result.str = (CHAR*)allocator->reserve(result.space*CHAR_SIZE); Assert(result.str, "Failed to allocate memory");
+	allocator->commit(result.str, result.space*CHAR_SIZE);
+	memcpy(result.str,       str,   count*CHAR_SIZE);
 	memcpy(result.str+count, s.str, s.count*CHAR_SIZE);
 	return result;
 }
@@ -218,13 +242,13 @@ inline string operator+ (const string::CHAR* c, const string& s){
 inline void string::reserve(u32 _space){
 	if(_space > space){
 		space = RoundUpTo(_space+1, 4);
-		Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+		str = (CHAR*)allocator->resize(str, space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 	}
 }
 
 inline void string::clear(){
-	free(str);
-	count  = 0;
+	allocator->release(str);
+	count = 0;
 	space = 0;
 	str   = 0;
 }
@@ -232,7 +256,7 @@ inline void string::clear(){
 inline void string::erase(u32 idx){
 	Assert(idx < count && idx >= 0);
 	if (count == 1) memset(str, 0, space);
-	else           memmove(str+idx, str+idx+1, (--count)*CHAR_SIZE);
+	else            memmove(str+idx, str+idx+1, (--count)*CHAR_SIZE);
 }
 
 inline void string::insert(CHAR c, u32 idx){
@@ -240,11 +264,12 @@ inline void string::insert(CHAR c, u32 idx){
 	count += 1;
 	if(space == 0){
 		space = 4;
-		Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+		str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+		allocator->commit(str, space*CHAR_SIZE);
 		str[0] = c;
 	}else if(space < count+1){
 		space = RoundUpTo(count+1, 4);
-		Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+		str = (CHAR*)allocator->resize(str, space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 		memmove(str+idx+1, str+idx, (count-idx)*CHAR_SIZE);
 		str[idx] = c;
 	}else{
@@ -345,17 +370,19 @@ struct wstring {
 	typedef wchar_t CHAR;
 	static constexpr u32 npos = -1;
 	static constexpr u32 CHAR_SIZE = sizeof(CHAR);
-
+	
 	u32   count;
 	u32   space;
 	CHAR* str;
-
+	
+	Allocator* allocator; //TODO(delle) maybe make this a constructor arg like array?
+	
 	wstring();
 	wstring(const CHAR* s);
 	wstring(const CHAR* s, u32 count);
 	wstring(const wstring& s);
 	~wstring();
-
+	
 	CHAR& operator[](u32 idx);
 	void   operator= (const CHAR* s);
 	void   operator= (const wstring& s);
@@ -368,7 +395,7 @@ struct wstring {
 	bool   operator==(const CHAR* s) const;
 	friend wstring operator+ (const CHAR* c, const wstring& s);
 	inline explicit operator bool() { return count; }
-
+	
 	void   reserve(u32 _space);
 	void   clear();
 	void   erase(u32 idx);
@@ -389,7 +416,7 @@ struct wstring {
 	u32    CHARCount(CHAR c) const;
 	//returns a subwstring from the beginning to specifiec CHAR, not including the CHAR
 	wstring substrToChar(CHAR c) const;
-
+	
 	static wstring eatSpacesLeading(const wstring& s);
 	static wstring eatSpacesTrailing(const wstring& s);
 	static wstring toUpper(const wstring& s);
@@ -400,34 +427,41 @@ struct wstring {
 //// @constructors ////
 ///////////////////////
 inline wstring::wstring(){
+	allocator = DESHI_ARRAY_ALLOCATOR;
 	count  = 0;
 	space = 0;
 	str   = 0;
 };
 
 inline wstring::wstring(const CHAR* s){
+	allocator = DESHI_ARRAY_ALLOCATOR;
 	count  = wcslen(s);
 	space = RoundUpTo(count+1, 4);
-	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space*CHAR_SIZE);
 	memcpy(str, s, count*CHAR_SIZE);
 }
 
 inline wstring::wstring(const CHAR* s, u32 _size){
+	allocator = DESHI_ARRAY_ALLOCATOR;
 	count  = _size;
 	space = RoundUpTo(count+1, 4);
-	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space*CHAR_SIZE);
 	memcpy(str, s, count*CHAR_SIZE);
 }
 
 inline wstring::wstring(const wstring& s){
+	allocator = DESHI_ARRAY_ALLOCATOR;
 	count = s.count;
 	space = RoundUpTo(count+1, 4);
-	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space*CHAR_SIZE);
 	memcpy(str, s.str, count*CHAR_SIZE);
 }
 
 inline wstring::~wstring(){
-	free(str);
+	allocator->release(str);
 }
 
 ////////////////////
@@ -439,18 +473,23 @@ inline wstring::CHAR& wstring::operator[](u32 idx){
 }
 
 inline void wstring::operator= (const CHAR* s){
-	free(str);
+	allocator->release(str);
+	
 	count  = wcslen(s);
 	space = RoundUpTo(count+1, 4);
-	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space*CHAR_SIZE);
 	memcpy(str, s, count*CHAR_SIZE);
 }
 
 inline void wstring::operator= (const wstring& s){
-	free(str);
+	allocator->release(str);
+	allocator = s.allocator;
+	
 	count = s.count;
 	space = RoundUpTo(count+1, 4);
-	Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+	allocator->commit(str, space*CHAR_SIZE); 
 	memcpy(str, s.str, count*CHAR_SIZE);
 }
 
@@ -462,11 +501,12 @@ inline void wstring::operator+=(const CHAR* s){
 	
 	if(space == 0){
 		space = RoundUpTo(count+1, 4);
-		Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+		str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+		allocator->commit(str, space*CHAR_SIZE);
 		memcpy(str, s, count*CHAR_SIZE);
 	}else if(space < count+1){
 		space = RoundUpTo(count+1, 4);
-		Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+		str = (CHAR*)allocator->resize(str, space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 		memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
 	}else{
 		memcpy(str+old_len, s, (str_len+1)*CHAR_SIZE);
@@ -481,11 +521,12 @@ inline void wstring::operator+=(const wstring& s){
 	
 	if(space == 0){
 		space = RoundUpTo(count+1, 4);
-		Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+		str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+		allocator->commit(str, space*CHAR_SIZE);
 		memcpy(str, s.str, count*CHAR_SIZE);
 	}else if(space < count+1){
 		space = RoundUpTo(count+1, 4);
-		Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+		str = (CHAR*)allocator->resize(str, space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 		memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
 	}else{
 		memcpy(str+old_len, s.str, (str_len+1)*CHAR_SIZE);
@@ -506,8 +547,9 @@ inline wstring wstring::operator+ (const CHAR* c) const{
 	wstring result;
 	result.count  = count + str_len;
 	result.space = RoundUpTo(result.count+1, 4);
-	Assert(result.str = (CHAR*)calloc(result.space, CHAR_SIZE));
-	memcpy(result.str,      str, count*CHAR_SIZE);
+	result.str = (CHAR*)allocator->reserve(result.space*CHAR_SIZE); Assert(result.str, "Failed to allocate memory");
+	allocator->commit(result.str, result.space*CHAR_SIZE);
+	memcpy(result.str,       str, count*CHAR_SIZE);
 	memcpy(result.str+count, c,   str_len*CHAR_SIZE);
 	return result;
 }
@@ -518,8 +560,9 @@ inline wstring wstring::operator+(const wstring& s) const{
 	wstring result;
 	result.count  = count + s.count;
 	result.space = RoundUpTo(result.count+1, 4);
-	Assert(result.str = (CHAR*)calloc(result.space, CHAR_SIZE));
-	memcpy(result.str,      str,   count*CHAR_SIZE);
+	result.str = (CHAR*)allocator->reserve(result.space*CHAR_SIZE); Assert(result.str, "Failed to allocate memory");
+	allocator->commit(result.str, result.space*CHAR_SIZE);
+	memcpy(result.str,       str,   count*CHAR_SIZE);
 	memcpy(result.str+count, s.str, s.count*CHAR_SIZE);
 	return result;
 }
@@ -549,13 +592,13 @@ inline wstring operator+ (const wstring::CHAR* c, const wstring& s){
 inline void wstring::reserve(u32 _space){
 	if(_space > space){
 		space = RoundUpTo(_space+1, 4);
-		Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+		str = (CHAR*)allocator->resize(str, space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 	}
 }
 
 inline void wstring::clear(){
-	free(str);
-	count  = 0;
+	allocator->release(str);
+	count = 0;
 	space = 0;
 	str   = 0;
 }
@@ -563,7 +606,7 @@ inline void wstring::clear(){
 inline void wstring::erase(u32 idx){
 	Assert(idx < count && idx >= 0);
 	if (count == 1) memset(str, 0, space);
-	else           memmove(str+idx, str+idx+1, (--count)*CHAR_SIZE);
+	else            memmove(str+idx, str+idx+1, (--count)*CHAR_SIZE);
 }
 
 inline void wstring::insert(CHAR c, u32 idx){
@@ -571,11 +614,12 @@ inline void wstring::insert(CHAR c, u32 idx){
 	count += 1;
 	if(space == 0){
 		space = 4;
-		Assert(str = (CHAR*)calloc(space, CHAR_SIZE));
+		str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
+		allocator->commit(str, space*CHAR_SIZE);
 		str[0] = c;
 	}else if(space < count+1){
 		space = RoundUpTo(count+1, 4);
-		Assert(str = (CHAR*)realloc(str, space*CHAR_SIZE));
+		str = (CHAR*)allocator->resize(str, space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
 		memmove(str+idx+1, str+idx, (count-idx)*CHAR_SIZE);
 		str[idx] = c;
 	}else{

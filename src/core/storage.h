@@ -42,8 +42,6 @@ namespace Storage{
 	void            SaveMesh(Mesh* mesh);
 	void            DeleteMesh(Mesh* mesh);
 	
-	array<vec2> GenerateMeshOutlinePoints(Mesh* mesh, mat4 transform, mat4 camProjection, mat4 camView, vec3 camPosition, vec2 screenDims);
-	
 	inline Mesh*    NullMesh(){ return DeshStorage->null_mesh; };
 	inline u32      MeshCount(){ return DeshStorage->meshes.size(); };
 	inline Mesh*    MeshAt(u32 meshIdx){ return DeshStorage->meshes[meshIdx]; };

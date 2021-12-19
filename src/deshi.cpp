@@ -17,6 +17,7 @@ core:
 
 Command TODOs
 -------------
+use Logger instead of directly adding text to the console
 implement command chaining
 command to print all avaliable keys for binding
 command to print all keybinds, with (maybe) an option for printing only contextual keybinds
@@ -63,6 +64,9 @@ ____glm/detail/_swizzle.hpp
 
 Render TODOs
 ------------
+figure out how to use custom allocators with opengl3
+remove usage of STL
+replace allocator with temp_allocator in relevant places
 rework the lines drawing algorithm and move it to a more appropriate spot like UI or suugu
 make functions for exposing render's 2D vertex and index arrays so the app can freely make custom
 ____2D shapes
@@ -116,6 +120,7 @@ add UI color palettes for easy color changing
 
 Ungrouped TODOs
 ---------------
+restyle map to match the rest of utils
 make the most recent logging file be named log.txt, while the rest have a date
 allow the generic memory arena to grow if it will be maxed out
 add MouseInsideWindow() func to input or window
@@ -140,8 +145,11 @@ __________ this might not be an error with our stuff and just a quirk of the win
 
 */
 
-//// utility headers ////
 #include "defines.h"
+#include "core/memory.h" //this is included above everything so things can reference deshi_allocator
+
+//// utility headers ////"
+#define DESHI_ARRAY_ALLOCATOR deshi_allocator
 #include "utils/string.h"
 #include "utils/cstring.h"
 #include "utils/color.h"
@@ -279,7 +287,7 @@ local Storage_ deshi_storage; Storage_* g_storage = &deshi_storage;
 void deshi::init(u32 winWidth, u32 winHeight){
 	TIMER_START(t_s);
 	Assets::enforceDirectories();
-	
+	Memory::Init(Gigabytes(1), Gigabytes(1));
 	Console2::Init();
 	Logging::Init(5);
 	deshi_time.Init();

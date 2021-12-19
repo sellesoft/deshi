@@ -16,10 +16,10 @@ void Win32LogLastError(const char* func_name){
 #error "not implemented yet for mac"
 #endif            //DESHI_MAC
 
-//TODO(delle) search filter
+//TODO(delle) search filters
 array<File>
 get_directory_files(const char* directory){
-	array<File> result;
+	array<File> result(deshi_temp_allocator);
 #if   DESHI_WINDOWS
 	string pattern = directory;
 	pattern += (pattern[pattern.count-1] != '/') ? "/*" : "*";

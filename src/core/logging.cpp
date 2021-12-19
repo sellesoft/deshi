@@ -1,5 +1,5 @@
 namespace Logging{
-#define LOG_BUFFER_SIZE 1024
+#define LOG_BUFFER_SIZE 4096
 #define LOG_PATH_SIZE 1024
 	local FILE* file = 0;
 	local char  log_buffer[LOG_BUFFER_SIZE] = {};
