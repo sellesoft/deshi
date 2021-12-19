@@ -54,8 +54,9 @@ to_string(const char* fmt, ...){
     va_list argptr;
     va_start(argptr, fmt);
     string s;
-    s.count  = vsnprintf(nullptr, 0, fmt, argptr);
-    s.str   = (char*)malloc(s.count+1);
+    s.count = vsnprintf(nullptr, 0, fmt, argptr);
+    s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.allocator->commit(s.str, s.count+1);
     s.space = s.count+1;
     vsnprintf(s.str, s.count+1, fmt, argptr);
     va_end(argptr);
@@ -72,7 +73,8 @@ global_ string
 to_string(s32 x){
     string s;
     s.count = snprintf(nullptr, 0, "%d", x);
-    s.str  = (char*)calloc(1, s.count+1);
+	s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.allocator->commit(s.str, s.count+1);
     s.space = s.count+1;
     snprintf(s.str, s.count+1, "%d", x);
     return s;
@@ -82,7 +84,8 @@ global_ string
 to_string(u32 x){
     string s;
     s.count = snprintf(nullptr, 0, "%d", x);
-    s.str  = (char*)calloc(1, s.count+1);
+    s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.allocator->commit(s.str, s.count+1);
     s.space = s.count+1;
     snprintf(s.str, s.count+1, "%d", x);
     return s;
@@ -93,12 +96,14 @@ to_string(f32 x, bool trunc = true){
     string s;
     if(trunc){
         s.count = snprintf(nullptr, 0, "%g", x);
-        s.str  = (char*)malloc(s.count+1);
+		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
         s.space = s.count+1;
         snprintf(s.str, s.count+1, "%g", x);
     }else{
         s.count = snprintf(nullptr, 0, "%f", x);
-        s.str  = (char*)malloc(s.count+1);
+		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
         s.space = s.count+1;
         snprintf(s.str, s.count+1, "%f", x);
     }
@@ -110,12 +115,14 @@ to_string(f64 x, bool trunc = true){
     string s;
     if(trunc){
         s.count = snprintf(nullptr, 0, "%g", x);
-        s.str  = (char*)malloc(s.count+1);
+		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
         s.space = s.count+1;
         snprintf(s.str, s.count+1, "%g", x);
     }else{
         s.count = snprintf(nullptr, 0, "%f", x);
-        s.str  = (char*)malloc(s.count+1);
+		s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
         s.space = s.count+1;
         snprintf(s.str, s.count+1, "%f", x);
     }
@@ -126,7 +133,8 @@ global_ string
 to_string(upt x){
     string s;
     s.count = snprintf(nullptr, 0, "%zu", x);
-    s.str  = (char*)malloc(s.count+1);
+	s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.allocator->commit(s.str, s.count+1);
     s.space = s.count+1;
     snprintf(s.str, s.count+1, "%zu", x);
     return s;
@@ -136,7 +144,8 @@ global_ string
 to_string(const color& x){
     string s;
     s.count = snprintf(nullptr, 0, "{R:%d, G:%d, B:%d, A:%d}", x.r, x.g, x.b, x.a);
-    s.str  = (char*)malloc(s.count+1);
+    s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+	s.allocator->commit(s.str, s.count+1);
     s.space = s.count+1;
     snprintf(s.str, s.count+1, "{R:%d, G:%d, B:%d, A:%d}", x.r, x.g, x.b, x.a);
     return s;
@@ -147,12 +156,14 @@ to_string(const vec2& x, bool trunc = true){
     string s;
     if(trunc){
         s.count = snprintf(nullptr, 0, "(%g, %g)", x.x, x.y);
-        s.str  = (char*)malloc(s.count+1);
+        s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
         s.space = s.count+1;
         snprintf(s.str, s.count+1, "(%g, %g)", x.x, x.y);
     }else{
         s.count = snprintf(nullptr, 0, "(%+f, %+f)", x.x, x.y);
-        s.str  = (char*)malloc(s.count+1);
+        s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
         s.space = s.count+1;
         snprintf(s.str, s.count+1, "(%+f, %+f)", x.x, x.y);
     }
@@ -164,12 +175,14 @@ to_string(const vec3& x, bool trunc = true){
     string s;
     if(trunc){
         s.count = snprintf(nullptr, 0, "(%g, %g, %g)", x.x, x.y, x.z);
-        s.str  = (char*)malloc(s.count+1);
+        s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
         s.space = s.count+1;
         snprintf(s.str, s.count+1, "(%g, %g, %g)", x.x, x.y, x.z);
     }else{
         s.count = snprintf(nullptr, 0, "(%+f, %+f, %+f)", x.x, x.y, x.z);
-        s.str  = (char*)malloc(s.count+1);
+        s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
         s.space = s.count+1;
         snprintf(s.str, s.count+1, "(%+f, %+f, %+f)", x.x, x.y, x.z);
     }
@@ -181,12 +194,14 @@ to_string(const vec4& x, bool trunc = true){
     string s;
     if(trunc){
         s.count = snprintf(nullptr, 0, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
-        s.str  = (char*)malloc(s.count+1);
+        s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
         s.space = s.count+1;
         snprintf(s.str, s.count+1, "(%g, %g, %g, %g)", x.x, x.y, x.z, x.w);
     }else{
         s.count = snprintf(nullptr, 0, "(%+f, %+f, %+f, %+f)", x.x, x.y, x.z, x.w);
-        s.str  = (char*)malloc(s.count+1);
+        s.str   = (char*)s.allocator->reserve(s.count+1); Assert(s.str, "Failed to allocate memory");
+		s.allocator->commit(s.str, s.count+1);
         s.space = s.count+1;
         snprintf(s.str, s.count+1, "(%+f, %+f, %+f, %+f)", x.x, x.y, x.z, x.w);
     }
@@ -218,7 +233,7 @@ to_string(const matN& x, bool trunc = true) {
     if (x.rows == 0 || x.cols == 0) {
         return "|Zero dimension matrix|";
     }
-
+	
     string str = to_string(x.rows) + "x" + to_string(x.cols) + " matN<n,m>:\n|";
     if (x.rows == 1) {
         for (int i = 0; i < x.cols - 1; ++i) {
@@ -231,7 +246,7 @@ to_string(const matN& x, bool trunc = true) {
         str += string(buffer) + "|";
         return str;
     }
-
+	
     for (int i = 0; i < x.elementCount - 1; ++i) {
         char buffer[15];
         snprintf(buffer, 15, "%+g", x.data[i]);

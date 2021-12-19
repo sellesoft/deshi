@@ -73,19 +73,19 @@ local bool NextActive   = 0;
 
 //window map which only stores known windows
 //and their order in layers eg. when one gets clicked it gets moved to be first if its set to
-local map<const char*, UIWindow*>        windows;     
-local map<const char*, UIInputTextState> inputTexts;  //stores known input text labels and their state
-local map<const char*, b32>              combos;      //stores known combos and if they are open or not
-local map<const char*, b32>              sliders;     //stores whether a slider is being actively changed
-local map<const char*, b32>              headers;     //stores whether a header is open or not
-local array<UIWindow*>                   windowStack; //window stack which allow us to use windows like we do colors and styles
-local array<ColorMod>                    colorStack; 
-local array<VarMod>                      varStack; 
-local array<vec2>                        scaleStack;  //global scales
-local array<Font*>                       fontStack;
-local array<u32>                         layerStack;
+local map<const char*, UIWindow*>        windows(deshi_allocator);     
+local map<const char*, UIInputTextState> inputTexts(deshi_allocator);  //stores known input text labels and their state
+local map<const char*, b32>              combos(deshi_allocator);      //stores known combos and if they are open or not
+local map<const char*, b32>              sliders(deshi_allocator);     //stores whether a slider is being actively changed
+local map<const char*, b32>              headers(deshi_allocator);     //stores whether a header is open or not
+local array<UIWindow*>                   windowStack(deshi_allocator); //window stack which allow us to use windows like we do colors and styles
+local array<ColorMod>                    colorStack(deshi_allocator); 
+local array<VarMod>                      varStack(deshi_allocator); 
+local array<vec2>                        scaleStack(deshi_allocator);  //global scales
+local array<Font*>                       fontStack(deshi_allocator);
+local array<u32>                         layerStack(deshi_allocator);
 
-local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
+local array<UIDrawCmd> debugCmds(deshi_allocator); //debug draw cmds that are always drawn last
 
 local u32 initColorStackSize;
 local u32 initStyleStackSize;
@@ -544,7 +544,7 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 		
 		//we split string by newlines and put them into here 
 		//maybe make this into its own function
-		array<string> newlined;
+		array<string> newlined(deshi_allocator);
 		
 		u32 newline = text.findFirstChar('\n');
 		if (newline != string::npos && newline != text.count - 1) {
@@ -684,7 +684,7 @@ local void TextW(const wchar_t* in, vec2 pos, color color, bool nowrap, bool mov
 		
 		//we split wstring by newlines and put them into here 
 		//maybe make this into its own function
-		array<wstring> newlined;
+		array<wstring> newlined(deshi_allocator);
 		
 		u32 newline = text.findFirstChar('\n');
 		if (newline != wstring::npos && newline != text.count - 1) {
@@ -833,7 +833,7 @@ void UI::TextF(const char* fmt, ...) {
 	va_list argptr;
 	va_start(argptr, fmt);
 	s.count  = vsnprintf(nullptr, 0, fmt, argptr);
-	s.str   = (char*)malloc(s.count+1);
+	s.str   = (char*)Memory::Allocate(s.count+1);
 	s.space = s.count+1;
 	vsnprintf(s.str, s.count+1, fmt, argptr);
 	va_end(argptr);
@@ -2168,8 +2168,9 @@ UIWindow* DisplayMetrics() {
 	static UIWindow* mostitems = *windows.atIdx(0);
 	static UIWindow* longname = *windows.atIdx(0);
 
-	array<UIWindow*> winsorted;
+	array<UIWindow*> winsorted(deshi_allocator);
 	for (UIWindow* win : windows) {
+
 		if (!(win->name == "METRICS")) {
 			if (win->render_time > slomo->render_time)     slomo = win;
 			if (win->render_time < quick->render_time)     quick = win;
@@ -2180,6 +2181,7 @@ UIWindow* DisplayMetrics() {
 	}
 
 	bubble_sort(winsorted, [](UIWindow* win1, UIWindow* win2) {return win1->name[0] > win2->name[0]; });
+
 
 	
 	Begin("METRICS", vec2::ZERO, vec2(300, 500));

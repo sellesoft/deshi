@@ -8,7 +8,6 @@
 // can also shrink which will simply reduce the 'capacity' variable but not actually re-allocate
 // the original allocation. Lastly, all unused but within 'capacity' items are zero-filled.
 // TLDR: back insertion only, front removal only, insertion overwrites old data if array is full
-// NOTE clearing and freeing does not call destructors!
 
 #include "../defines.h"
 
@@ -19,9 +18,10 @@ struct ring_array{
 	u32 end;      //index of the last item of the ring
 	u32 count;    //the number of items in the ring
 	u32 capacity; //the maximum number of items in the ring
+	Allocator* allocator;
 	
 	//allocates a contiguous block of 'capacity' zero-filled 'T' structs
-	void init(u32 capacity);
+	void init(u32 capacity, Allocator* a = stl_allocator);
 	//deallocates 'data' previously allocated in the constructor
 	void free();
 	
@@ -63,8 +63,10 @@ struct ring_array{
 };
 
 template<typename T>
-inline void ring_array<T>::init(u32 new_capacity){
-	data = (T*)calloc(new_capacity, sizeof(T));
+inline void ring_array<T>::init(u32 new_capacity, Allocator* a){
+	allocator = a;
+	data = (T*)allocator->reserve(new_capacity*sizeof(T));
+	allocator->commit(data, new_capacity*sizeof(T));
 	start = 0;
 	end = -1;
 	count = 0;
@@ -73,7 +75,8 @@ inline void ring_array<T>::init(u32 new_capacity){
 
 template<typename T>
 inline void ring_array<T>::free(){
-	free(data);
+	forI(count){ data[i].~T(); }
+	allocator->release(data);
 }
 
 template<typename T>
@@ -191,6 +194,7 @@ inline bool ring_array<T>::empty() const{
 
 template<typename T>
 inline void ring_array<T>::clear(){
+	forI(count){ data[i].~T(); }
 	memset(data, 0, sizeof(T)*capacity);
 	count = 0;
 	start = 0;
@@ -200,12 +204,13 @@ inline void ring_array<T>::clear(){
 template<typename T>
 inline void ring_array<T>::grow(u32 new_capacity){
 	if(new_capacity && new_capacity > capacity){
-		T* temp = (T*)calloc(new_capacity, sizeof(T));
+		T* temp = (T*)allocator->reserve(new_capacity*sizeof(T));
+		allocator->commit(data, new_capacity*sizeof(T));
 		if(count){
 			memcpy(temp, data+start, sizeof(T)*(capacity-start));
 			memcpy(temp+(capacity-start), data, sizeof(T)*(start));
 		}
-		free(data);
+		allocator->release(data);
 		data = temp;
 		capacity = new_capacity;
 		start = 0;
@@ -228,8 +233,9 @@ inline void ring_array<T>::shrink(u32 new_capacity){
 		if((start + count > new_capacity) && (start + count > capacity)){
 			u32 left_of_start = (start + count) - capacity;
 			u32 right_of_start = capacity - start;
-			void* temp = calloc(left_of_start, sizeof(T));
-			defer{ free(temp); };
+			void* temp = allocator->reserve(left_of_start*sizeof(T));
+			allocator->commit(left_of_start*sizeof(T));
+			defer{ allocator->release(temp); };
 			memcpy(temp, data, sizeof(T)*(left_of_start));
 			memcpy(data, data+start, sizeof(T)*(right_of_start));
 			memcpy(data+right_of_start, temp, sizeof(T)*(left_of_start));

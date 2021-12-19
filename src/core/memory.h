@@ -35,10 +35,10 @@ struct Heap{
 namespace Memory{
 	//creates an arena AT LEAST 'bytes' in size with all memory zeroed
 	Arena* CreateArena(upt bytes);
-	//grows the arena to AT LEAST 'new_size' in bytes
+	//grows the arena by AT LEAST 'bytes' in size
 	//  returns a different pointer than was passed if the memory was moved
 	//  if its memory was moved, pointers to its memory are no longer valid
-	Arena* GrowArena(Arena* arena, upt new_size);
+	Arena* GrowArena(Arena* arena, upt bytes);
 	void   DeleteArena(Arena* arena);
 	
 	void* Allocate(upt bytes);
@@ -46,8 +46,13 @@ namespace Memory{
 	//grows the allocation to AT LEAST 'new_size' in bytes if greater than previous allocation
 	//  returns a different pointer than was passed if the memory was moved
 	//  if its memory was moved, pointers to its memory are no longer valid
+	//  if 'new_size' is zero, calls ZeroFree on 'ptr' and returns 0
 	void* Reallocate(void* ptr, upt new_size);
 	void  ZeroFree(void* ptr);
+	
+	Heap*  ExposeMainHeap();
+	Arena* ExposeTempArena();
+	Arena* ExposeGenericArena();
 	
 	void Init(upt main_size, upt temp_size);
 	void Update();

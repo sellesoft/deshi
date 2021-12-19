@@ -31,6 +31,7 @@ struct FileReader{
 	b32 failed = false;
 };
 
+//returns a temporary array of the files in the target directory
 array<File> get_directory_files(const char* directory);
 
 void delete_file(const char* filepath);

@@ -116,11 +116,11 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE; //!Incomplete
 #define INDEX_TYPE_GL_TEMP GL_UNSIGNED_SHORT
 #define INDEX_TYPE_GL_MESH GL_UNSIGNED_INT
 
-local array<MeshGl>     glMeshes;
-local array<ShaderGl>   glShaders;
-local array<TextureGl>  glTextures;
-local array<MaterialGl> glMaterials;
-local array<FontGl>     glFonts;
+local array<MeshGl>     glMeshes(deshi_allocator);
+local array<ShaderGl>   glShaders(deshi_allocator);
+local array<TextureGl>  glTextures(deshi_allocator);
+local array<MaterialGl> glMaterials(deshi_allocator);
+local array<FontGl>     glFonts(deshi_allocator);
 
 ///////////////////
 //// @commands ////
