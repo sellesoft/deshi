@@ -957,16 +957,52 @@ void UI::Checkbox(string label, bool* b) {
 	
 }
 
-UIItem* comboItem = 0; //global, so endcombo can share this with begincombo, and so selectable can read how it should be placed 
+local b32 combo_open = 0;
+local u32 selectables_added = 0;
+local UIItem* comboItem = 0; //global, so endcombo can share this with begincombo, and so selectable can read how it should be placed 
+//a combo is built by selectables called within its Begin/End
 bool UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 	comboItem = BeginItem(UIItemType_Combo, 1);
 	comboItem->position = pos;
+	comboItem->size = (NextItemSize.x != -1 ? NextItemSize : CalcTextSize(prev_val) * 1.5);
+
+	AdvanceCursor(comboItem);
 
 	if (!combos.has(label)) {
 		combos.add(label);
 		combos[label] = false;
 	}
+	else {
+		combo_open = combos[label];
+	}
 
+	b32& open = combos[label];
+
+	b32 active = isItemHovered(comboItem);
+	if (active && DeshInput->LMousePressed()) open = !open;
+
+	{//background
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
+		drawCmd.position = vec2::ZERO;
+		drawCmd.dimensions = comboItem->size;
+		comboItem->drawCmds.add(drawCmd);
+
+	}
+
+	{//text
+		UIDrawCmd drawCmd{ UIDrawType_Text };
+		drawCmd.position =
+			vec2((comboItem->size.x - CalcTextSize(prev_val).x) * style.buttonTextAlign.x,
+				(style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
+		drawCmd.text = string(prev_val);
+		drawCmd.color = style.colors[UIStyleCol_Text];
+		drawCmd.scissorOffset = vec2::ZERO;
+		drawCmd.scissorExtent = comboItem->size;
+		drawCmd.useWindowScissor = false;
+		drawCmd.font = style.font;
+		comboItem->drawCmds.add(drawCmd);
+	}
 
 	return combos[label];
 }
@@ -979,27 +1015,92 @@ bool UI::BeginCombo(const char* label, const char* prev_val) {
 
 void UI::EndCombo() {
 	Assert(comboItem, "attempt to end a combo without starting one");
+	
+	comboItem = 0;
+	combo_open = 0;
+	selectables_added = 0;
 
-
-
-
-}
-
-bool SelectableCall(const char* label, vec2 pos, b32 selected) {
-	UIItem* item = BeginItem(UIItemType_Selectable, 0);
-
-	return 0;
-}
-
-bool UI::Selectable(const char* label, b32 selected) {
-
-	return 0;
 }
 
 bool UI::Selectable(const char* label, vec2 pos, b32 selected) {
+	
+	b32 clicked = 0;
+	if (comboItem && combo_open) {
+		//if a combo has been started and is open, we attach the selectables to it
+		selectables_added++;
+		b32 active = Math::PointInRectangle(DeshInput->mousePos, curwin->position + comboItem->position.yAdd(comboItem->size.y * selectables_added), comboItem->size);
+		if (active && DeshInput->LMousePressed()) clicked = true;
+		
+		{//background
+			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+			drawCmd.position = vec2(0, comboItem->size.y * selectables_added);
+			drawCmd.dimensions = comboItem->size;
+			if(selected)
+				drawCmd.color = style.colors[(active && DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered)];
+			else
+				drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
+			comboItem->drawCmds.add(drawCmd);
+		}
 
-	return 0;
+		{//text
+			UIDrawCmd drawCmd{ UIDrawType_Text };
+			drawCmd.position =
+				vec2((comboItem->size.x - CalcTextSize(label).x) * style.buttonTextAlign.x,
+					(style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y + comboItem->size.y * selectables_added);
+			drawCmd.text = string(label);
+			drawCmd.color = style.colors[UIStyleCol_Text];
+			drawCmd.scissorOffset = vec2(0, comboItem->size.y * selectables_added);
+			drawCmd.scissorExtent = comboItem->size;
+			drawCmd.useWindowScissor = false;
+			drawCmd.font = style.font;
+			comboItem->drawCmds.add(drawCmd);
+		}
+	}
+	else {
+		//else the selectable is just its own item
+		UIItem* item = BeginItem(UIItemType_Selectable, 0);
+		item->size = (NextItemSize.x != -1 ? NextItemSize : CalcTextSize(label) * 1.5);
+		item->position = pos;
+
+		AdvanceCursor(item);
+
+		b32 active = Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position.yAdd(item->size.y * selectables_added), item->size);
+		if (active && DeshInput->LMousePressed()) clicked = true;
+
+		{//background
+			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+			drawCmd.position = vec2(0, item->size.y * selectables_added);
+			drawCmd.dimensions = item->size;
+			if (selected)
+				drawCmd.color = style.colors[(active && DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered)];
+			else
+				drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
+			item->drawCmds.add(drawCmd);
+		}
+
+		{//text
+			UIDrawCmd drawCmd{ UIDrawType_Text };
+			drawCmd.position =
+				vec2((item->size.x - CalcTextSize(label).x) * style.buttonTextAlign.x,
+					(style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y + item->size.y * selectables_added);
+			drawCmd.text = string(label);
+			drawCmd.color = style.colors[UIStyleCol_Text];
+			drawCmd.scissorOffset = vec2(0, item->size.y * selectables_added);
+			drawCmd.scissorExtent = item->size;
+			drawCmd.useWindowScissor = false;
+			drawCmd.font = style.font;
+			item->drawCmds.add(drawCmd);
+		}
+	}
+
+	return clicked;
 }
+
+bool UI::Selectable(const char* label, b32 selected) {
+	return Selectable(label, PositionForNewItem(), selected);
+}
+
+
 
 bool UI::Header(const char* label) {
 	UIItem* item = BeginItem(UIItemType_Header);
@@ -2147,28 +2248,31 @@ void UI::Init() {
 	PushColor(UIStyleCol_Text,           Color_White);
 	
 	//backgrounds
-	PushColor(UIStyleCol_ScrollBarBg, Color_VeryDarkCyan);
-	PushColor(UIStyleCol_ButtonBg,    Color_VeryDarkCyan);
-	PushColor(UIStyleCol_CheckboxBg,  Color_VeryDarkCyan);
-	PushColor(UIStyleCol_HeaderBg,    color(0, 100, 100, 255));
-	PushColor(UIStyleCol_SliderBg,    Color_VeryDarkCyan);
-	PushColor(UIStyleCol_InputTextBg, Color_DarkCyan);
-	
+	PushColor(UIStyleCol_ScrollBarBg,  Color_VeryDarkCyan);
+	PushColor(UIStyleCol_ButtonBg,     Color_VeryDarkCyan);
+	PushColor(UIStyleCol_CheckboxBg,   Color_VeryDarkCyan);
+	PushColor(UIStyleCol_HeaderBg,     color(0, 100, 100, 255));
+	PushColor(UIStyleCol_SliderBg,     Color_VeryDarkCyan);
+	PushColor(UIStyleCol_InputTextBg,  Color_DarkCyan);
+	PushColor(UIStyleCol_SelectableBg, Color_VeryDarkCyan);
+
 	//active backgrounds
-	PushColor(UIStyleCol_ScrollBarBgActive, Color_VeryDarkCyan);
-	PushColor(UIStyleCol_ButtonBgActive,    Color_Cyan);
-	PushColor(UIStyleCol_CheckboxBgActive,  Color_Cyan);
-	PushColor(UIStyleCol_HeaderBgActive,    color(0, 255, 255, 255));
-	PushColor(UIStyleCol_SliderBgActive,    Color_Cyan);
-	PushColor(UIStyleCol_InputTextBgActive, Color_DarkCyan);
+	PushColor(UIStyleCol_ScrollBarBgActive,  Color_VeryDarkCyan);
+	PushColor(UIStyleCol_ButtonBgActive,     Color_Cyan);
+	PushColor(UIStyleCol_CheckboxBgActive,   Color_Cyan);
+	PushColor(UIStyleCol_HeaderBgActive,     color(0, 255, 255, 255));
+	PushColor(UIStyleCol_SliderBgActive,     Color_Cyan);
+	PushColor(UIStyleCol_InputTextBgActive,  Color_DarkCyan);
+	PushColor(UIStyleCol_SelectableBgActive, Color_Cyan);
 	
 	//hovered backgrounds
-	PushColor(UIStyleCol_ScrollBarBgHovered, Color_VeryDarkCyan);
-	PushColor(UIStyleCol_ButtonBgHovered,    Color_DarkCyan);
-	PushColor(UIStyleCol_CheckboxBgHovered,  Color_DarkCyan);
-	PushColor(UIStyleCol_HeaderBgHovered,    color(0, 128, 128, 255));
-	PushColor(UIStyleCol_SliderBgHovered,    Color_DarkCyan);
-	PushColor(UIStyleCol_InputTextBgHovered, Color_DarkCyan);
+	PushColor(UIStyleCol_ScrollBarBgHovered,  Color_VeryDarkCyan);
+	PushColor(UIStyleCol_ButtonBgHovered,     Color_DarkCyan);
+	PushColor(UIStyleCol_CheckboxBgHovered,   Color_DarkCyan);
+	PushColor(UIStyleCol_HeaderBgHovered,     color(0, 128, 128, 255));
+	PushColor(UIStyleCol_SliderBgHovered,     Color_DarkCyan);
+	PushColor(UIStyleCol_InputTextBgHovered,  Color_DarkCyan);
+	PushColor(UIStyleCol_SelectableBgHovered, Color_DarkCyan);
 	
 	//borders
 	PushColor(UIStyleCol_ButtonBorder,   Color_Black);

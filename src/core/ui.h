@@ -135,6 +135,10 @@ enum UIStyleCol : u32 {
 	UIStyleCol_InputTextBgActive,
 	UIStyleCol_InputTextBgHovered,
 	UIStyleCol_InputTextBorder,
+
+	UIStyleCol_SelectableBg,
+	UIStyleCol_SelectableBgActive,
+	UIStyleCol_SelectableBgHovered,
 	
 	UIStyleCol_TitleBg,
 	UIStyleCol_TitleBgHovered,
