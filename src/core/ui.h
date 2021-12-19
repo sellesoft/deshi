@@ -30,7 +30,7 @@
 	Tabs
 	An actual table item
 	Ability to set flags on Button that allow it to return true if its held, only if mouse is released over it, etc.
-
+	The internal set up for Child Windows is incredibly messy and needs to be redone
 
 
 
@@ -276,13 +276,15 @@ enum UIDrawType : u32 {
 struct UIDrawCmd {
 	UIDrawType type;
 	
-	vec2   position; //all draw commands have a position, this is also considered the start of a line cmd
-	color     color; //draw cmds have either a texture or a color, 
-	Texture*    tex; // if texture is non-zero, we use that as its color, and thickness as its alpha
+	vec2   position; //draw cmd start, line start
+	vec2  position2; //line end
 	vec2 dimensions; //rectangles have dimensions
-	vec2  position2; //lines have a second position
-	f32   thickness; //line thickness, also image alpha if tex is non zero
-	
+	f32   thickness; //line thickness, circle radius, texture alpha
+	color     color; //draw cmds have either a texture or a color
+	Texture*    tex; //if texture is non-zero, we use that as its color, and thickness as its alpha
+
+	u32 subdivisions; //circle subdivisons
+
 	//TODO
 	//eventually we could maybe store text as an int* or something, so as unicode codepoints, since in the end,
 	//at least with TTF, thats how we communicate what letter we want.
@@ -291,7 +293,7 @@ struct UIDrawCmd {
 	Font* font;
 
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
-	bool trackedForFit = 1;
+	b32 trackedForFit = 1;
 	
 	vec2 scissorOffset = vec2(0, 0);
 	vec2 scissorExtent = vec2(0, 0);
@@ -318,6 +320,25 @@ enum UIItemType : u32 {
 	UIItemType_Separator, // Separator()
 };
 
+global_ const char* UIItemTypeStrs[] = {
+	"PreItems",  
+	"PostItems", 
+	"Custom",    
+	"Abstract",  
+	"ChildWin",  
+	"Text",      
+	"InputText", 
+	"Button",    
+	"Checkbox",  
+	"DropDown",  
+	"Slider",    
+	"Header",    
+	"Selectable",
+	"Combo",     
+	"Image",     
+	"Separator", 
+};
+
 //an item such as a button, checkbox, or input text
 // this is meant to group draw commands and provide a bounding box for them, using a position
 // and overall size. an items position is relative to the window it was created in and all of its
@@ -331,18 +352,20 @@ enum UIItemType : u32 {
 // over all items and then their draw calls. it also probably eats up a good bit more memory, considering
 // im saving the state of style everytime you make an item, this could maybe be reduced by only storing important
 // things instead
+struct UIWindow;
 struct UIItem {
 	UIItemType type;
 	vec2       initialCurPos; //cursor position before this item moved it 
 	UIStyle    style;         //style at the time of making the item
 	
-	
 	vec2 position; //relative to the window its being held in
 	vec2 size;
 	
-	
 	//all draw command positions are relative to the items position
 	array<UIDrawCmd> drawCmds;
+
+	//this is only used when the item is a child window
+	UIWindow* child;
 };
 
 #define UI_WINDOW_ITEM_LAYERS 11
@@ -352,7 +375,6 @@ struct UIItem {
 // drawcall positions are relative to the item's upper left corner.
 struct UIWindow {
 	string name;
-	
 	
 	union {
 		vec2 position;
@@ -380,30 +402,31 @@ struct UIWindow {
 	
 	UIWindowFlags flags;
 	
-	
 	//base items are always drawn before items and is just a way to defer drawing 
 	//base window stuff to End(), so we can do dynamic sizing
 	array<UIItem> items[UI_WINDOW_ITEM_LAYERS];
 	array<UIItem> preItems;
 	array<UIItem> postItems;
-
 	
 	u32 currlayer = floor(UI_WINDOW_ITEM_LAYERS / 2.f);
 	
 	u32 windowlayer = 5;
 	
 	//a collection of child windows
+	UIWindow* parent;
 	map<const char*, UIWindow*> children;
 	
 	UIItem* hoveredItem = 0;
 	
-	bool hovered = false;
-	bool titleHovered = false;
+	b32 hovered = false;
+	b32 titleHovered = false;
 	
-	bool focused = false;
+	b32 focused = false;
 	
-	bool minimized = false;
-	bool hidden = false;
+	b32 minimized = false;
+	b32 hidden = false;
+
+	b32 beingScrolled = false;
 	
 	f32 titleBarHeight = 0;
 
@@ -467,14 +490,15 @@ struct UIRow {
 	f32 height = 0;
 	f32 width = 0; 
 	f32 xoffset = 0;
+	f32 yoffset = 0; //used when using Row to make several rows
 	
 	//the position of the row to base offsets of items off of.
 	vec2 position;
 	
 	
 	array<UIItem*> items; 
-	//the boolean indicates whether or not the column width is relative to the size of the object
-	array<pair<f32, bool>> columnWidths;
+	//the b32ean indicates whether or not the column width is relative to the size of the object
+	array<pair<f32, b32>> columnWidths;
 };
 
 namespace UI {
@@ -526,20 +550,20 @@ namespace UI {
 	
 	
 	//// items ////
-	bool Button(const char* text);
-	bool Button(const char* text, vec2 pos);
+	b32 Button(const char* text);
+	b32 Button(const char* text, vec2 pos);
 	
-	void Checkbox(string label, bool* b);
+	void Checkbox(string label, b32* b);
 	
-	bool BeginCombo(const char* label, const char* preview_val);
-	bool BeginCombo(const char* label, const char* preview_val, vec2 pos);
+	b32 BeginCombo(const char* label, const char* preview_val);
+	b32 BeginCombo(const char* label, const char* preview_val, vec2 pos);
 
 	void EndCombo();
 	
-	bool Selectable(const char* label, b32 selected); 
-	bool Selectable(const char* label, vec2 pos, b32 selected);
+	b32 Selectable(const char* label, b32 selected); 
+	b32 Selectable(const char* label, vec2 pos, b32 selected);
 
-	bool Header(const char* label);
+	b32 Header(const char* label);
 	
 	void Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
 
@@ -552,12 +576,12 @@ namespace UI {
 	//InputText takes in a buffer and modifies it according to input and works much like ImGui's InputText
 	//However there are overloads that will return it's UIInputTextState, allowing you to directly r/w some internal information of the
 	//InputText item. This should only be used if you have a good reason to!
-	bool InputText(const char* label, char* buffer, u32 buffSize, UIInputTextFlags flags = 0);
-	bool InputText(const char* label, char* buffer, u32 buffSize, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
-	bool InputText(const char* label, char* buffer, u32 buffSize, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
-	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextFlags flags = 0);
-	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
-	bool InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
+	b32 InputText(const char* label, char* buffer, u32 buffSize, UIInputTextFlags flags = 0);
+	b32 InputText(const char* label, char* buffer, u32 buffSize, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
+	b32 InputText(const char* label, char* buffer, u32 buffSize, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
+	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextFlags flags = 0);
+	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
+	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
 	
 	//// push/pop ////
 	void PushColor(UIStyleCol idx, color color);
@@ -590,8 +614,8 @@ namespace UI {
 	void SetNextWindowSize(vec2 size);		  //when you set a windows size through this you aren't supposed to take into account the titlebar!
 	void SetNextWindowSize(f32 x, f32 y); //when you set a windows size through this you aren't supposed to take into account the titlebar!
 	void SetWindowName(const char* name);
-	bool IsWinHovered();
-	bool AnyWinHovered();
+	b32 IsWinHovered();
+	b32 AnyWinHovered();
 	void ShowMetricsWindow();
 	
 	//// other ////

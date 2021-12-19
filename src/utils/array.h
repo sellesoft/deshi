@@ -14,6 +14,7 @@
 
 #include "../defines.h"
 #include <cstdlib>
+#include <cstring>
 #include <initializer_list>
 
 template<typename T>
