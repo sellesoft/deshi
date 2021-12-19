@@ -41,13 +41,6 @@ void Storage::
 Init(){
 	TIMER_START(t_s);
 	
-	meshes = array<Mesh*>(deshi_allocator);
-	textures = array<Texture*>(deshi_allocator);
-	materials = array<Material*>(deshi_allocator);
-	models = array<Model*>(deshi_allocator);
-	fonts = array<Font*>(deshi_allocator);
-	lights = array<Light*>(deshi_allocator);
-	
 	stbi_set_flip_vertically_on_load(true);
 	//setup null assets      //TODO(delle) store null.png and null shader in a .cpp
 	DeshStorage->null_mesh     = CreateBoxMesh(1.0f, 1.0f, 1.0f).second; cpystr(NullMesh()->name, "null", DESHI_NAME_SIZE);
@@ -558,7 +551,7 @@ DeleteTexture(Texture* texture){ //!Incomplete
 local Material* 
 AllocateMaterial(u32 textureCount){
 	Material* material = (Material*)Memory::Allocate(sizeof(Material));
-	material->textures = array<u32>(textureCount, deshi_allocator);
+	material->textures = array<u32>(textureCount);
 	return material;
 }
 
@@ -725,7 +718,7 @@ DeleteMaterial(Material* material){ //!Incomplete
 local Model* 
 AllocateModel(u32 batchCount){
 	Model* model = (Model*)Memory::Allocate(sizeof(Model));
-	model->batches = array<Model::Batch>(deshi_allocator);
+	model->batches = array<Model::Batch>();
 	model->batches.resize((batchCount) ? batchCount : 1);
 	return model;
 }

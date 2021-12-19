@@ -8,6 +8,9 @@
 #ifndef DESHI_ARRAY_SPACE_ALIGNMENT
 #  define DESHI_ARRAY_SPACE_ALIGNMENT 4
 #endif
+#ifndef DESHI_ARRAY_ALLOCATOR
+#  define DESHI_ARRAY_ALLOCATOR stl_allocator
+#endif
 
 #include "../defines.h"
 #include <cstdlib>
@@ -24,11 +27,10 @@ struct array{
 	Allocator* allocator;
 	
 	array();
-	array(Allocator* a);
-	array(u32 _count, Allocator* a = stl_allocator);
-	array(std::initializer_list<T> l, Allocator* a = stl_allocator);
-	array(const array<T>& array, Allocator* a = stl_allocator);
-	array(T* _data, u32 _count, Allocator* a = stl_allocator);
+	array(u32 _count);
+	array(std::initializer_list<T> l);
+	array(const array<T>& array);
+	array(T* _data, u32 _count);
 	~array();
 	
 	//copies the values from rhs, BUT does NOT copy iter value and ONLY copies allocator if there wasnt one already
@@ -86,7 +88,7 @@ struct array{
 ///////////////////////
 template<typename T> inline array<T>::
 array(){
-	allocator = stl_allocator;
+	allocator = DESHI_ARRAY_ALLOCATOR;
 	
 	space = 0;
 	count = 0;
@@ -97,20 +99,8 @@ array(){
 }
 
 template<typename T> inline array<T>::
-array(Allocator* a){
-	allocator = a;
-	
-	space = 0;
-	count = 0;
-	data  = 0;
-	first = 0;
-	iter  = 0;
-	last  = 0;
-}
-
-template<typename T> inline array<T>::
-array(u32 _count, Allocator* a){
-	allocator = a;
+array(u32 _count){
+	allocator = DESHI_ARRAY_ALLOCATOR;
 	
 	count = 0;
 	space = RoundUpTo(_count, DESHI_ARRAY_SPACE_ALIGNMENT);
@@ -122,8 +112,8 @@ array(u32 _count, Allocator* a){
 }
 
 template<typename T> inline array<T>::
-array(std::initializer_list<T> l, Allocator* a){
-	allocator = a;
+array(std::initializer_list<T> l){
+	allocator = DESHI_ARRAY_ALLOCATOR;
 	
 	count = l.size();
 	space = RoundUpTo(l.size(), DESHI_ARRAY_SPACE_ALIGNMENT);
@@ -141,8 +131,8 @@ array(std::initializer_list<T> l, Allocator* a){
 //its necessary so when we return elements the entire array copies properly
 //so we have to make sure everything in the array gets recreated
 template<typename T> inline array<T>::
-array(const array<T>& array, Allocator* a){
-	allocator = a;
+array(const array<T>& array){
+	allocator = DESHI_ARRAY_ALLOCATOR;
 	
 	count = array.count;
 	space = array.space;
@@ -157,8 +147,8 @@ array(const array<T>& array, Allocator* a){
 }
 
 template<typename T> inline array<T>::
-array(T* _data, u32 _count, Allocator* a){
-	allocator = a;
+array(T* _data, u32 _count){
+	allocator = DESHI_ARRAY_ALLOCATOR;
 	
 	count = _count;
 	space = RoundUpTo(_count, DESHI_ARRAY_SPACE_ALIGNMENT);
@@ -182,7 +172,7 @@ template<typename T> inline array<T>::
 ////////////////////
 template<typename T> inline array<T>& array<T>::
 operator= (const array<T>& rhs){
-	if(!allocator) allocator = stl_allocator;
+	if(!allocator) allocator = DESHI_ARRAY_ALLOCATOR;
 	forI(count){ data[i].~T(); }
 	allocator->release(data);  //TODO maybe resize rather than release and reserve
 	

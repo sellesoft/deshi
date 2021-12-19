@@ -2,8 +2,8 @@
 #ifndef DESHI_STRING_H
 #define DESHI_STRING_H
 
-#ifndef DESHI_ARRAY_ALLOCATOR
-#  define DESHI_ARRAY_ALLOCATOR stl_allocator
+#ifndef DESHI_STRING_ALLOCATOR
+#  define DESHI_STRING_ALLOCATOR stl_allocator
 #endif
 
 #include "tuple.h"
@@ -75,14 +75,14 @@ struct string{
 //// @constructors ////
 ///////////////////////
 inline string::string(){
-	allocator = DESHI_ARRAY_ALLOCATOR;
+	allocator = DESHI_STRING_ALLOCATOR;
 	count  = 0;
 	space = 0;
 	str   = 0;
 };
 
 inline string::string(const CHAR* s){
-	allocator = DESHI_ARRAY_ALLOCATOR;
+	allocator = DESHI_STRING_ALLOCATOR;
 	count  = strlen(s);
 	space = RoundUpTo(count+1, 4);
 	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
@@ -91,7 +91,7 @@ inline string::string(const CHAR* s){
 }
 
 inline string::string(const CHAR* s, u32 _size){
-	allocator = DESHI_ARRAY_ALLOCATOR;
+	allocator = DESHI_STRING_ALLOCATOR;
 	count  = _size;
 	space = RoundUpTo(count+1, 4);
 	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
@@ -100,7 +100,7 @@ inline string::string(const CHAR* s, u32 _size){
 }
 
 inline string::string(const string& s){
-	allocator = DESHI_ARRAY_ALLOCATOR;
+	allocator = DESHI_STRING_ALLOCATOR;
 	count = s.count;
 	space = RoundUpTo(count+1, 4);
 	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
@@ -121,7 +121,7 @@ inline string::CHAR& string::operator[](u32 idx){
 }
 
 inline void string::operator= (const CHAR* s){
-	if(!allocator) allocator = DESHI_ARRAY_ALLOCATOR;
+	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
 	allocator->release(str);
 	
 	count  = strlen(s);
@@ -132,7 +132,7 @@ inline void string::operator= (const CHAR* s){
 }
 
 inline void string::operator= (const string& s){
-	if(!allocator) allocator = DESHI_ARRAY_ALLOCATOR;
+	if(!allocator) allocator = DESHI_STRING_ALLOCATOR;
 	allocator->release(str);
 	allocator = s.allocator;
 	
@@ -427,14 +427,14 @@ struct wstring {
 //// @constructors ////
 ///////////////////////
 inline wstring::wstring(){
-	allocator = DESHI_ARRAY_ALLOCATOR;
+	allocator = DESHI_STRING_ALLOCATOR;
 	count  = 0;
 	space = 0;
 	str   = 0;
 };
 
 inline wstring::wstring(const CHAR* s){
-	allocator = DESHI_ARRAY_ALLOCATOR;
+	allocator = DESHI_STRING_ALLOCATOR;
 	count  = wcslen(s);
 	space = RoundUpTo(count+1, 4);
 	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
@@ -443,7 +443,7 @@ inline wstring::wstring(const CHAR* s){
 }
 
 inline wstring::wstring(const CHAR* s, u32 _size){
-	allocator = DESHI_ARRAY_ALLOCATOR;
+	allocator = DESHI_STRING_ALLOCATOR;
 	count  = _size;
 	space = RoundUpTo(count+1, 4);
 	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");
@@ -452,7 +452,7 @@ inline wstring::wstring(const CHAR* s, u32 _size){
 }
 
 inline wstring::wstring(const wstring& s){
-	allocator = DESHI_ARRAY_ALLOCATOR;
+	allocator = DESHI_STRING_ALLOCATOR;
 	count = s.count;
 	space = RoundUpTo(count+1, 4);
 	str = (CHAR*)allocator->reserve(space*CHAR_SIZE); Assert(str, "Failed to allocate memory");

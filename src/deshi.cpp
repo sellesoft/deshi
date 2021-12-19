@@ -151,7 +151,9 @@ __________ this might not be an error with our stuff and just a quirk of the win
 #include "core/memory.h" //this is included above everything so things can reference deshi_allocator
 
 //// utility headers ////"
-#define DESHI_ARRAY_ALLOCATOR deshi_allocator
+//#define DESHI_ARRAY_ALLOCATOR deshi_allocator
+//#define DESHI_STRING_ALLOCATOR deshi_allocator
+#include "utils/array.h"
 #include "utils/string.h"
 #include "utils/cstring.h"
 #include "utils/color.h"
@@ -161,7 +163,6 @@ __________ this might not be an error with our stuff and just a quirk of the win
 #include "utils/optional.h"
 #include "utils/debug.h"
 #include "utils/ring_array.h"
-#include "utils/array.h"
 #include "utils/hash.h"
 #include "utils/map.h"
 #include "utils/view.h"

@@ -2,8 +2,8 @@ namespace Cmd{
 	///////////////////
 	//// @internal ////
 	///////////////////
-	local array<Command> commands(deshi_allocator);
-	local array<Alias> aliases(deshi_allocator);
+	local array<Command> commands;
+	local array<Alias> aliases;
 	local const char* last_cmd_desc;
 	
 	void AddDeshiCommands(){
@@ -341,7 +341,7 @@ namespace Cmd{
 	
 	void Run(const string& input){
 		cstring remaining{input.str, input.count};
-		array<cstring> args(deshi_temp_allocator);
+		array<cstring> args;
 		
 		while(remaining){
 			remaining = eat_spaces(remaining);

@@ -203,9 +203,9 @@ typedef u32 ModelIndexVk;
 local ModelIndexVk modelCmdCount = 0;
 local ModelCmdVk   modelCmdArray[MAX_MODEL_CMDS];
 
-local array<MeshVk>      vkMeshes(deshi_allocator);
-local array<TextureVk>   textures(deshi_allocator);
-local array<MaterialVk>  vkMaterials(deshi_allocator);
+local array<MeshVk>      vkMeshes;
+local array<TextureVk>   textures;
+local array<MaterialVk>  vkMaterials;
 local vec4 vkLights[10]{ vec4(0,0,0,-1) };
 
 local const char* validationLayers[] = {
@@ -215,7 +215,7 @@ local std::vector<const char*> deviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME, 
 	VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME 
 };
-local array<VkValidationFeatureEnableEXT> validationFeaturesEnabled(deshi_allocator);
+local array<VkValidationFeatureEnableEXT> validationFeaturesEnabled;
 
 local bool initialized      = false;
 local bool remakeWindow     = false;
@@ -3652,7 +3652,7 @@ DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, float alpha,
 	vp[1].pos = p1; vp[1].uv = { 1,1 }; vp[1].color = col;
 	vp[2].pos = p2; vp[2].uv = { 1,0 }; vp[2].color = col;
 	vp[3].pos = p3; vp[3].uv = { 0,0 }; vp[3].color = col;
-
+	
 	uiVertexCount += 4;
 	uiIndexCount += 6;
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].indexCount += 6;
@@ -3665,12 +3665,12 @@ DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, float alpha,
 void Render::
 DrawTexture2D(Texture* texture, vec2 pos, vec2 size, float rotation, float alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
 	vec2
-	center = (pos + size) / 2,
+		center = (pos + size) / 2,
 	p0 = Math::vec2RotateByAngle(rotation, pos              - center) + center,
 	p1 = Math::vec2RotateByAngle(rotation, pos.xAdd(size.x) - center) + center,
 	p2 = Math::vec2RotateByAngle(rotation, pos + size       - center) + center,
 	p3 = Math::vec2RotateByAngle(rotation, pos.yAdd(size.y) - center) + center;
-
+	
 	DrawTexture2D(texture, p0, p1, p2, p3, alpha, layer, scissorOffset, scissorExtent);
 }
 
@@ -3933,7 +3933,7 @@ LoadMaterial(Material* material){
 						 TOSTRING("Material descriptor set ",material->name).str);
 	
 	//write descriptor set per texture
-	array<VkWriteDescriptorSet> sets(deshi_temp_allocator);
+	array<VkWriteDescriptorSet> sets;
 	for(u32 texIdx : material->textures){
 		VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 		set.dstSet          = mvk.descriptorSet;
@@ -3973,7 +3973,7 @@ UpdateMaterial(Material* material){
 	mvk->pipeline = GetPipelineFromShader(material->shader);
 	
 	//update descriptor set per texture
-	array<VkWriteDescriptorSet> sets(deshi_temp_allocator);
+	array<VkWriteDescriptorSet> sets;
 	for(u32 texIdx : material->textures){
 		VkWriteDescriptorSet set{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
 		set.dstSet          = mvk->descriptorSet;

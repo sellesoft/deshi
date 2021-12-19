@@ -72,19 +72,19 @@ local bool NextActive   = 0;
 
 //window map which only stores known windows
 //and their order in layers eg. when one gets clicked it gets moved to be first if its set to
-local map<const char*, UIWindow*>        windows(deshi_allocator);     
-local map<const char*, UIInputTextState> inputTexts(deshi_allocator);  //stores known input text labels and their state
-local map<const char*, b32>              combos(deshi_allocator);      //stores known combos and if they are open or not
-local map<const char*, b32>              sliders(deshi_allocator);     //stores whether a slider is being actively changed
-local map<const char*, b32>              headers(deshi_allocator);     //stores whether a header is open or not
-local array<UIWindow*>                   windowStack(deshi_allocator); //window stack which allow us to use windows like we do colors and styles
-local array<ColorMod>                    colorStack(deshi_allocator); 
-local array<VarMod>                      varStack(deshi_allocator); 
-local array<vec2>                        scaleStack(deshi_allocator);  //global scales
-local array<Font*>                       fontStack(deshi_allocator);
-local array<u32>                         layerStack(deshi_allocator);
+local map<const char*, UIWindow*>        windows;     
+local map<const char*, UIInputTextState> inputTexts;  //stores known input text labels and their state
+local map<const char*, b32>              combos;      //stores known combos and if they are open or not
+local map<const char*, b32>              sliders;     //stores whether a slider is being actively changed
+local map<const char*, b32>              headers;     //stores whether a header is open or not
+local array<UIWindow*>                   windowStack; //window stack which allow us to use windows like we do colors and styles
+local array<ColorMod>                    colorStack; 
+local array<VarMod>                      varStack; 
+local array<vec2>                        scaleStack;  //global scales
+local array<Font*>                       fontStack;
+local array<u32>                         layerStack;
 
-local array<UIDrawCmd> debugCmds(deshi_allocator); //debug draw cmds that are always drawn last
+local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
 
 local u32 initColorStackSize;
 local u32 initStyleStackSize;
@@ -543,7 +543,7 @@ local void TextW(const char* in, vec2 pos, color color, bool nowrap, bool move_c
 		
 		//we split string by newlines and put them into here 
 		//maybe make this into its own function
-		array<string> newlined(deshi_allocator);
+		array<string> newlined;
 		
 		u32 newline = text.findFirstChar('\n');
 		if (newline != string::npos && newline != text.count - 1) {
@@ -683,7 +683,7 @@ local void TextW(const wchar_t* in, vec2 pos, color color, bool nowrap, bool mov
 		
 		//we split wstring by newlines and put them into here 
 		//maybe make this into its own function
-		array<wstring> newlined(deshi_allocator);
+		array<wstring> newlined;
 		
 		u32 newline = text.findFirstChar('\n');
 		if (newline != wstring::npos && newline != text.count - 1) {
@@ -965,9 +965,9 @@ bool UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 	comboItem = BeginItem(UIItemType_Combo, 1);
 	comboItem->position = pos;
 	comboItem->size = (NextItemSize.x != -1 ? NextItemSize : CalcTextSize(prev_val) * 1.5);
-
+	
 	AdvanceCursor(comboItem);
-
+	
 	if (!combos.has(label)) {
 		combos.add(label);
 		combos[label] = false;
@@ -975,26 +975,26 @@ bool UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 	else {
 		combo_open = combos[label];
 	}
-
+	
 	b32& open = combos[label];
-
+	
 	b32 active = isItemHovered(comboItem);
 	if (active && DeshInput->LMousePressed()) open = !open;
-
+	
 	{//background
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = comboItem->size;
 		comboItem->drawCmds.add(drawCmd);
-
+		
 	}
-
+	
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
 		drawCmd.position =
 			vec2((comboItem->size.x - CalcTextSize(prev_val).x) * style.buttonTextAlign.x,
-				(style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
+				 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
 		drawCmd.text = string(prev_val);
 		drawCmd.color = style.colors[UIStyleCol_Text];
 		drawCmd.scissorOffset = vec2::ZERO;
@@ -1003,7 +1003,7 @@ bool UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 		drawCmd.font = style.font;
 		comboItem->drawCmds.add(drawCmd);
 	}
-
+	
 	return combos[label];
 }
 
@@ -1019,7 +1019,7 @@ void UI::EndCombo() {
 	comboItem = 0;
 	combo_open = 0;
 	selectables_added = 0;
-
+	
 }
 
 bool UI::Selectable(const char* label, vec2 pos, b32 selected) {
@@ -1041,12 +1041,12 @@ bool UI::Selectable(const char* label, vec2 pos, b32 selected) {
 				drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
 			comboItem->drawCmds.add(drawCmd);
 		}
-
+		
 		{//text
 			UIDrawCmd drawCmd{ UIDrawType_Text };
 			drawCmd.position =
 				vec2((comboItem->size.x - CalcTextSize(label).x) * style.buttonTextAlign.x,
-					(style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y + comboItem->size.y * selectables_added);
+					 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y + comboItem->size.y * selectables_added);
 			drawCmd.text = string(label);
 			drawCmd.color = style.colors[UIStyleCol_Text];
 			drawCmd.scissorOffset = vec2(0, comboItem->size.y * selectables_added);
@@ -1061,12 +1061,12 @@ bool UI::Selectable(const char* label, vec2 pos, b32 selected) {
 		UIItem* item = BeginItem(UIItemType_Selectable, 0);
 		item->size = (NextItemSize.x != -1 ? NextItemSize : CalcTextSize(label) * 1.5);
 		item->position = pos;
-
+		
 		AdvanceCursor(item);
-
+		
 		b32 active = Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position.yAdd(item->size.y * selectables_added), item->size);
 		if (active && DeshInput->LMousePressed()) clicked = true;
-
+		
 		{//background
 			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 			drawCmd.position = vec2(0, item->size.y * selectables_added);
@@ -1077,12 +1077,12 @@ bool UI::Selectable(const char* label, vec2 pos, b32 selected) {
 				drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
 			item->drawCmds.add(drawCmd);
 		}
-
+		
 		{//text
 			UIDrawCmd drawCmd{ UIDrawType_Text };
 			drawCmd.position =
 				vec2((item->size.x - CalcTextSize(label).x) * style.buttonTextAlign.x,
-					(style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y + item->size.y * selectables_added);
+					 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y + item->size.y * selectables_added);
 			drawCmd.text = string(label);
 			drawCmd.color = style.colors[UIStyleCol_Text];
 			drawCmd.scissorOffset = vec2(0, item->size.y * selectables_added);
@@ -1092,7 +1092,7 @@ bool UI::Selectable(const char* label, vec2 pos, b32 selected) {
 			item->drawCmds.add(drawCmd);
 		}
 	}
-
+	
 	return clicked;
 }
 
@@ -1242,13 +1242,13 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 
 void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
 	UIItem* item = BeginItem(UIItemType_Image);
-
+	
 	item->position = pos;
 	item->size = (NextItemSize.x == -1 ? vec2(image->width, image->height) : NextItemSize);
 	NextItemSize = vec2(-1, 1);
-
+	
 	AdvanceCursor(item);
-
+	
 	//TODO(sushi) image borders
 	{//image
 		UIDrawCmd drawCmd{ UIDrawType_Image };
@@ -1258,7 +1258,7 @@ void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
 		drawCmd.thickness = alpha;
 		item->drawCmds.add(drawCmd);
 	}
-
+	
 }
 
 void UI::Image(Texture* image, f32 alpha, UIImageFlags flags) {
@@ -1319,7 +1319,7 @@ bool InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, U
 	}
 	
 	if (hovered) { DeshWindow->SetCursor(CursorType_IBeam); cursor_was_set = 1; }
-
+	
 	if (charCount < state->cursor)
 		state->cursor = charCount;
 	
@@ -1909,15 +1909,15 @@ void UI::End() {
 	
 	UIItem* preitem = BeginItem(UIItemType_PreItems);
 	UIItem* postitem = BeginItem(UIItemType_PostItems);
-
+	
 	preitem->position = vec2::ZERO;
 	postitem->position = vec2::ZERO;
-
+	
 	vec2 mp = DeshInput->mousePos;
 	
 	curwin->minSizeForFit = CalcWindowMinSize();
 	vec2 minSizeForFit = curwin->minSizeForFit;
-
+	
 	if (WinHasFlag(UIWindowFlags_FitAllElements)) 
 		curwin->dimensions = minSizeForFit;
 	
@@ -1958,15 +1958,15 @@ void UI::End() {
 			f32 scrollbarheight = (curwin->dimensions.x < minSizeForFit.x ? curwin->height - style.scrollBarXHeight : curwin->height);
 			f32 draggerheight = scrollbarheight * scrollbarheight / minSizeForFit.y;
 			vec2 draggerpos(curwin->dimensions.x - style.scrollBarYWidth, (scrollbarheight - draggerheight) * curwin->scy / curwin->maxScroll.y);
-
+			
 			b32 scbgactive = Math::PointInRectangle(DeshInput->mousePos,
-				curwin->position.xAdd(curwin->dimensions.x - style.scrollBarYWidth),
-				vec2(style.scrollBarYWidth, scrollbarheight));
-
+													curwin->position.xAdd(curwin->dimensions.x - style.scrollBarYWidth),
+													vec2(style.scrollBarYWidth, scrollbarheight));
+			
 			b32 scdractive = Math::PointInRectangle(DeshInput->mousePos,
-				draggerpos + curwin->position,
-				vec2(style.scrollBarYWidth, draggerheight));
-
+													draggerpos + curwin->position,
+													vec2(style.scrollBarYWidth, draggerheight));
+			
 			{//scroll bg
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 				drawCmd.color = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
@@ -1974,7 +1974,7 @@ void UI::End() {
 				drawCmd.dimensions = vec2(style.scrollBarYWidth, scrollbarheight);
 				postitem->drawCmds.add(drawCmd);
 			}
-
+			
 			{//scroll dragger
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 				drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
@@ -1982,7 +1982,7 @@ void UI::End() {
 				drawCmd.dimensions = vec2(style.scrollBarYWidth, draggerheight);
 				postitem->drawCmds.add(drawCmd);
 			}
-
+			
 			//if both scroll bars are active draw a little square to obscure the empty space 
 			if (curwin->dimensions.x < minSizeForFit.x) {
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
@@ -1993,8 +1993,8 @@ void UI::End() {
 			}
 		}
 	} else curwin->maxScroll.y = 0;
-
-
+	
+	
 	//do the same but for x
 	if (!WinHasFlag(UIWindowFlags_NoScrollX) && curwin->dimensions.x < minSizeForFit.x) {
 		curwin->maxScroll.x = minSizeForFit.x - curwin->dimensions.x + (curwin->dimensions.y < minSizeForFit.y ? style.scrollBarYWidth : 0);
@@ -2002,15 +2002,15 @@ void UI::End() {
 			f32 scrollbarwidth = (curwin->dimensions.y < minSizeForFit.y ? curwin->width - style.scrollBarYWidth : curwin->width);
 			f32 draggerwidth = scrollbarwidth * curwin->dimensions.x / minSizeForFit.x;
 			vec2 draggerpos((scrollbarwidth - draggerwidth) * curwin->scx / curwin->maxScroll.x, curwin->dimensions.y - style.scrollBarXHeight);
-
+			
 			b32 scbgactive = Math::PointInRectangle(DeshInput->mousePos,
-				curwin->position.yAdd(scrollbarwidth - style.scrollBarXHeight),
-				vec2(scrollbarwidth, style.scrollBarXHeight));
-
+													curwin->position.yAdd(scrollbarwidth - style.scrollBarXHeight),
+													vec2(scrollbarwidth, style.scrollBarXHeight));
+			
 			b32 scdractive = Math::PointInRectangle(DeshInput->mousePos,
-				draggerpos + curwin->position,
-				vec2(draggerwidth, style.scrollBarXHeight));
-
+													draggerpos + curwin->position,
+													vec2(draggerwidth, style.scrollBarXHeight));
+			
 			{//scroll bg
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 				drawCmd.color = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
@@ -2018,7 +2018,7 @@ void UI::End() {
 				drawCmd.dimensions = vec2(scrollbarwidth, style.scrollBarXHeight);
 				postitem->drawCmds.add(drawCmd);
 			}
-
+			
 			{//scroll dragger
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 				drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
@@ -2028,14 +2028,14 @@ void UI::End() {
 			}
 		}
 	} else curwin->maxScroll.x = 0;
-
+	
 	
 	
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 	curwin->style = style;
 	
 	curwin->creation_time = TIMER_END(wincreate);
-
+	
 	//update stored window with new window state
 	curwin = *windowStack.last;
 	windowStack.pop();
@@ -2044,7 +2044,7 @@ void UI::End() {
 void UI::EndChild() {
 	Assert(windowStack.size() > 1, "Attempted to end the base window");
 	Assert(!rowInProgress, "Attempted to end a window with a Row in progress! (Did you forget to call EndRow()?)");
-
+	
 	UIItem item{ UIItemType_PreItems, curwin->cursor, style };
 	item.position = vec2::ZERO;
 	
@@ -2090,7 +2090,7 @@ void UI::EndChild() {
 		curwin->maxScroll.y = minSizeForFit.y - curwin->dimensions.y;
 		if (!WinHasFlag(UIWindowFlags_NoScrollBarY)) {
 			//f32 draggerwidth = curwin->dimensions.y * curwin->dimensions.y / minSizeForFit.y;
-
+			
 		}
 	} else curwin->maxScroll.y = 0;
 	
@@ -2098,11 +2098,11 @@ void UI::EndChild() {
 		curwin->maxScroll.x = minSizeForFit.x - curwin->dimensions.x;
 	else
 		curwin->maxScroll.x = 0;
-
-
+	
+	
 	curwin->style = style;
 	curwin->preItems.add(item);
-
+	
 	
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 	
@@ -2150,7 +2150,7 @@ UIWindow* DisplayMetrics() {
 	UIWindow* mostitems = *windows.atIdx(0);
 	UIWindow* longname  = *windows.atIdx(0);
 	
-	array<char*> names(deshi_allocator);
+	array<char*> names;
 	for(UIWindow* win : windows) {
 		if (!(win->name == "METRICS")) {
 			if (win->render_time > slomo->render_time)     slomo = win;
@@ -2255,7 +2255,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_SliderBg,     Color_VeryDarkCyan);
 	PushColor(UIStyleCol_InputTextBg,  Color_DarkCyan);
 	PushColor(UIStyleCol_SelectableBg, Color_VeryDarkCyan);
-
+	
 	//active backgrounds
 	PushColor(UIStyleCol_ScrollBarBgActive,  Color_VeryDarkCyan);
 	PushColor(UIStyleCol_ButtonBgActive,     Color_Cyan);
@@ -2285,7 +2285,7 @@ void UI::Init() {
 	PushColor(UIStyleCol_ScrollBarDragger,        Color_VeryDarkRed);
 	PushColor(UIStyleCol_ScrollBarDraggerActive,  Color_Red);
 	PushColor(UIStyleCol_ScrollBarDraggerHovered, Color_DarkRed);
-
+	
 	PushColor(UIStyleCol_CheckboxFilling,     Color_DarkMagenta);
 	
 	PushColor(UIStyleCol_HeaderButton,        Color_VeryDarkRed);
@@ -2351,7 +2351,7 @@ void UI::Update() {
 		   "Frame ended with hanging colors in the stack, make sure you pop colors if you push them!");
 	
 	globalHovered = 0;
-
+	
 	
 	//focusing and dragging
 	
@@ -2373,15 +2373,15 @@ void UI::Update() {
 			}
 		}
 	}
-
+	
 	if(!(draggingWin || scrollingWin)) {//check for edge resizing
 		UIWindow* focused = *windows.atIdx(windows.count - 1);
 		if (!(focused->flags & UIWindowFlags_NoResize)) {
 			vec2 mp = DeshInput->mousePos;
-
+			
 			static b32 trz = 0, brz = 0, lrz = 0, rrz = 0, latch = 0;
 			static vec2 vl1, vl2, vl3;
-
+			
 			//top edge
 			if (trz && !(brz || lrz || rrz) || Math::PointInRectangle(mp, focused->position.yAdd(-2), vec2(focused->width, 2))) {
 				DeshWindow->SetCursor(CursorType_VResize); cursor_was_set = 1;
@@ -2434,7 +2434,7 @@ void UI::Update() {
 			}
 		}
 	}
-
+	
 	//this is separate from the code in End() because we need to only take scroll inputs
 	//on the focused window, which i guess could be checked in End(), but i like window
 	//property changing inputs to be centralized here
@@ -2447,15 +2447,15 @@ void UI::Update() {
 			f32 scrollbarheight = (focused->dimensions.x < focused->minSizeForFit.x ? focused->height - style.scrollBarXHeight : focused->height);
 			f32 draggerheight = scrollbarheight * scrollbarheight / focused->minSizeForFit.y;
 			vec2 draggerpos(focused->dimensions.x - style.scrollBarYWidth, (scrollbarheight - draggerheight) * focused->scy / focused->maxScroll.y);
-
+			
 			b32 scbgactive = Math::PointInRectangle(DeshInput->mousePos,
-				focused->position.xAdd(focused->dimensions.x - style.scrollBarYWidth),
-				vec2(style.scrollBarYWidth, scrollbarheight));
-
+													focused->position.xAdd(focused->dimensions.x - style.scrollBarYWidth),
+													vec2(style.scrollBarYWidth, scrollbarheight));
+			
 			b32 scdractive = Math::PointInRectangle(DeshInput->mousePos,
-				draggerpos + focused->position,
-				vec2(style.scrollBarYWidth, draggerheight));
-
+													draggerpos + focused->position,
+													vec2(style.scrollBarYWidth, draggerheight));
+			
 			static vec2 offset;
 			static b32 initial = true;
 			if (scdractive && DeshInput->LMouseDown() || !initial) {
@@ -2466,10 +2466,10 @@ void UI::Update() {
 					vscroll = 1;
 				}
 				drag_override = 1;
-
+				
 				draggerpos.y = DeshInput->mousePos.y + offset.y;
 				draggerpos.y = Clamp(draggerpos.y, 0, scrollbarheight - draggerheight);
-
+				
 				focused->scy = draggerpos.y * focused->maxScroll.y / (scrollbarheight - draggerheight);
 				focused->scy = Clamp(focused->scy, 0.f, focused->maxScroll.y);
 			}
@@ -2484,15 +2484,15 @@ void UI::Update() {
 			f32 scrollbarwidth = (focused->dimensions.y < focused->minSizeForFit.y ? focused->width - style.scrollBarYWidth : focused->width);
 			f32 draggerwidth = scrollbarwidth * scrollbarwidth / focused->minSizeForFit.x;
 			vec2 draggerpos((scrollbarwidth - draggerwidth) * focused->scx / focused->maxScroll.x, focused->dimensions.y - style.scrollBarXHeight);
-
+			
 			b32 scbgactive = Math::PointInRectangle(DeshInput->mousePos,
-				focused->position.yAdd(scrollbarwidth - style.scrollBarXHeight),
-				vec2(scrollbarwidth, style.scrollBarXHeight));
-
+													focused->position.yAdd(scrollbarwidth - style.scrollBarXHeight),
+													vec2(scrollbarwidth, style.scrollBarXHeight));
+			
 			b32 scdractive = Math::PointInRectangle(DeshInput->mousePos,
-				draggerpos + focused->position,
-				vec2(draggerwidth, style.scrollBarXHeight));
-
+													draggerpos + focused->position,
+													vec2(draggerwidth, style.scrollBarXHeight));
+			
 			static vec2 offset;
 			static b32 initial = true;
 			if (scdractive && DeshInput->LMouseDown() || !initial) {
@@ -2503,10 +2503,10 @@ void UI::Update() {
 					hscroll = 1;
 				}
 				drag_override = 1;
-
+				
 				draggerpos.x = DeshInput->mousePos.x + offset.x;
 				draggerpos.x = Clamp(draggerpos.x, 0, scrollbarwidth - draggerwidth);
-
+				
 				focused->scx = draggerpos.x * focused->maxScroll.x / (scrollbarwidth - draggerwidth);
 				focused->scx = Clamp(focused->scx, 0.f, focused->maxScroll.x);
 			}
@@ -2518,13 +2518,13 @@ void UI::Update() {
 			}
 		}
 	}
-
+	
 	if (!(drag_override || scrollingWin)) { //drag
 		UIWindow* focused = *windows.atIdx(windows.count - 1);
-
+		
 		static bool newDrag = true;
 		static vec2 mouseOffset = vec2(0, 0);
-
+		
 		if (
 			!(focused->flags & UIWindowFlags_NoMove) &&
 			focused->hovered &&
@@ -2540,11 +2540,11 @@ void UI::Update() {
 			draggingWin = 0;
 		}
 	}
-
+	
 	//reset cursor to default if no item decided to set it 
 	if (!cursor_was_set) DeshWindow->SetCursor(CursorType_Arrow);
 	cursor_was_set = 0;
-
+	
 	auto draw_window = [&](UIWindow* p) {
 		TIMER_START(winren);
 		//window position and size corrected for titlebar 
@@ -2569,7 +2569,7 @@ void UI::Update() {
 			color  dccol = drawCmd.color;
 			f32      dct = drawCmd.thickness;
 			u32      dcl = p->windowlayer;
-
+			
 			dcpos.x = floor(dcpos.x); dcpos.y = floor(dcpos.y);
 			dcpos2.x = floor(dcpos2.x); dcpos2.y = floor(dcpos2.y);
 			
@@ -2579,21 +2579,21 @@ void UI::Update() {
 			if (drawCmd.useWindowScissor && winpos.y < 0) dcse.y += winpos.y;
 			dcse.x = Max(0.f, dcse.x); dcse.y = Max(0.f, dcse.y);
 			dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
-
-
-
+			
+			
+			
 			Texture* dctex = drawCmd.tex;
-
+			
 			cstring dctext{ drawCmd.text.str,drawCmd.text.count };
 			wcstring wdctext{ drawCmd.wtext.str, drawCmd.wtext.count };
-
+			
 			Font* font = drawCmd.font;
-
+			
 			switch (drawCmd.type) {
 				case UIDrawType_FilledRectangle: {
 					Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
 				}break;
-
+				
 				case UIDrawType_Line: {
 					Render::DrawLine2D(dcpos - item.position, dcpos2 - item.position, dct, dccol, dcl, dcso, dcse);
 				}break;
@@ -2613,7 +2613,7 @@ void UI::Update() {
 				}break;
 			}
 		};
-
+		
 		//draw base cmds first
 		for (UIItem& item : p->preItems) {
 			vec2 itempos = winpos + item.position * item.style.globalScale;//item.type == UIItemType_Abstract ? item.position : (winpos + item.position);
@@ -2634,7 +2634,7 @@ void UI::Update() {
 					}
 				}
 			}
-
+			
 			//draw post items, such as scroll bars
 			for (UIItem& item : p->postItems) {
 				vec2 itempos = winpos + item.position * item.style.globalScale;//item.type == UIItemType_Abstract ? item.position : (winpos + item.position);
@@ -2647,7 +2647,7 @@ void UI::Update() {
 		
 		p->preItems.clear();
 		p->postItems.clear();
-
+		
 		//the following is debug related and can be totally removed, or moved into
 		//#if stuff to make sure it doesnt ship in a release build
 		p->render_time = TIMER_END(winren);
