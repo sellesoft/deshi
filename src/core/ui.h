@@ -64,6 +64,7 @@ enum UIStyleVar : u32 {
 	UIStyleVar_RowCellPadding,          // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
 	UIStyleVar_ScrollBarYWidth,         // default 5
 	UIStyleVar_ScrollBarXHeight,        // default 5
+	UIStyleVar_IndentAmount,            // default 8
 	UIStyleVar_FontHeight,              // default font->height      height of font in pixels
 	UIStyleVar_Font,			        // default "gohufont-11.bdf" 
 	UIStyleVar_COUNT
@@ -166,6 +167,7 @@ struct UIStyle {
 	vec2 rowCellPadding;
 	f32  scrollBarYWidth;
 	f32  scrollBarXHeight;
+	f32  indentAmount;
 	f32  fontHeight;
 	
 	//special vars that have special push/pop functions
@@ -563,7 +565,9 @@ namespace UI {
 	b32 Selectable(const char* label, b32 selected); 
 	b32 Selectable(const char* label, vec2 pos, b32 selected);
 
-	b32 Header(const char* label);
+
+	b32  BeginHeader(const char* label);
+	void EndHeader();
 	
 	void Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
 

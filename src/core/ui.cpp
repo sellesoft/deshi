@@ -57,6 +57,7 @@ local const UIStyleVarType uiStyleVarTypes[] = {
 	{2, offsetof(UIStyle, rowCellPadding)},
 	{1, offsetof(UIStyle, scrollBarYWidth)},
 	{1, offsetof(UIStyle, scrollBarXHeight)},
+	{1, offsetof(UIStyle, indentAmount)},
 	{1, offsetof(UIStyle, fontHeight)},
 };
 
@@ -106,9 +107,10 @@ local b32 custom_item = 0;
 
 //misc state vars
 local u32 currlayer = floor(UI_WINDOW_ITEM_LAYERS / 2.f);
-local b32 drag_override  = 0; //set when an item needs to supress window dragging
-local b32 combo_active   = 0; //set when BeginCombo is called
-local b32 cursor_was_set = 0; //set when something changes the window's cursor
+local b32 drag_override   = 0; //set when an item needs to supress window dragging
+local b32 combo_active    = 0; //set when BeginCombo is called
+local b32 cursor_was_set  = 0; //set when something changes the window's cursor
+local f32 globalIndent    = 0; //inc/dec by things that indent following things, such as header 
 local UIWindow* inputupon = 0; //set to a window who has drag, scrolling, or resizing inputs being used on it 
 
 
@@ -273,7 +275,7 @@ inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1) {
 //function for getting the position of a new item based on style, so the long string of additions
 //is centralized for new additions, if ever made, and so that i dont have to keep writing it :)
 inline vec2 PositionForNewItem() {
-	return curwin->cursor + (style.windowPadding - curwin->scroll);
+	return curwin->cursor + (style.windowPadding - curwin->scroll) + vec2(globalIndent, 0);
 }
 
 
@@ -1114,7 +1116,7 @@ b32 UI::Selectable(const char* label, b32 selected) {
 
 
 
-b32 UI::Header(const char* label) {
+b32 UI::BeginHeader(const char* label) {
 	UIItem* item = BeginItem(UIItemType_Header);
 	
 	b32* open = 0;
@@ -1129,11 +1131,14 @@ b32 UI::Header(const char* label) {
 				  vec2(curwin->width - style.windowPadding.x, style.fontHeight * style.headerHeightRelToFont) :
 				  NextItemSize);
 	
+
 	AdvanceCursor(item);
 	
 	b32 active = isItemHovered(item);
 	
 	if (active && DeshInput->LMousePressed()) *open = !*open;
+	
+	if(*open) globalIndent += style.indentAmount;
 	
 	f32 buttonrad = item->size.y / 4;
 	
@@ -1185,6 +1190,10 @@ b32 UI::Header(const char* label) {
 	return *open;
 }
 
+void UI::EndHeader() {
+	globalIndent -= style.indentAmount;
+}
+
 void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags){
 	UIItem* item = BeginItem(UIItemType_Slider);
 	
@@ -1203,6 +1212,8 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 				  NextItemSize);
 	
 	AdvanceCursor(item);
+
+
 	
 	b32 active = isItemHovered(item);
 	
@@ -1251,6 +1262,8 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 	
 	
 }
+
+
 
 void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
 	UIItem* item = BeginItem(UIItemType_Image);
@@ -2476,7 +2489,7 @@ UIWindow* DisplayMetrics() {
 	
 	Separator(20);
 
-	if (Header("UI Globals")) {
+	if (BeginHeader("UI Globals")) {
 		const char* str1 = "global hovered";
 		f32 fw = CalcTextSize(str1).x * 1.2;
 		
@@ -2490,12 +2503,12 @@ UIWindow* DisplayMetrics() {
 
 		EndRow();
 
-
+		EndHeader();
 	}
 
 	
 	PushVar(UIStyleVar_RowItemAlign, vec2(0, 0.5));
-	BeginRow(2, style.fontHeight * 1.3);
+	BeginRow(2, style.fontHeight * 1.5);
 	RowSetupRelativeColumnWidths({ 1.2, 1 });
 	
 	static u32 selected = 0;
@@ -2513,86 +2526,57 @@ UIWindow* DisplayMetrics() {
 	
 	EndRow();
 
-	if (debugee && Header("Window Vars")) {
-		BeginRow(2, style.fontHeight * 1.2);
-		RowSetupColumnWidths({CalcTextSize("Max Scroll: ").x , 10 });
-		
-		Text("Position: ");   Text(TOSTRING(debugee->position).str);
-		Text("Dimensions: "); Text(TOSTRING(debugee->dimensions).str);
-		Text("Scroll: ");     Text(TOSTRING(debugee->scroll).str);
-		Text("Max Scroll: "); Text(TOSTRING(debugee->maxScroll).str);
-		Text("Hovered: ");    Text(TOSTRING(debugee->hovered).str);
-		Text("Focused: ");    Text(TOSTRING(debugee->focused).str);
+	if (debugee) {
+		if (BeginHeader("Window Vars")) {
+			BeginRow(2, style.fontHeight * 1.2);
+			RowSetupColumnWidths({ CalcTextSize("Max Scroll: ").x , 10 });
 
-		EndRow();
+			Text("Position: ");   Text(TOSTRING(debugee->position).str);
+			Text("Dimensions: "); Text(TOSTRING(debugee->dimensions).str);
+			Text("Scroll: ");     Text(TOSTRING(debugee->scroll).str);
+			Text("Max Scroll: "); Text(TOSTRING(debugee->maxScroll).str);
+			Text("Hovered: ");    Text(TOSTRING(debugee->hovered).str);
+			Text("Focused: ");    Text(TOSTRING(debugee->focused).str);
 
-		if (Header("Items")) {
-			BeginChild("METRICSItems", vec2(curwin->dimensions.x - style.windowPadding.x * 2, 300)); {
+			EndRow();
+
+			if (BeginHeader("Items")) {
+				BeginChild("METRICSItems", vec2(curwin->dimensions.x - style.windowPadding.x * 2, 300)); {
+					forI(UI_WINDOW_ITEM_LAYERS) {
+						for (UIItem& item : debugee->items[i]) {
+							Text(UIItemTypeStrs[item.type]);
+						}
+					}
+				}EndChild();
+				EndHeader();
+			}
+			EndHeader();
+		}
+		if (BeginHeader("Window Debug Visuals")) {
+			static b32 showItemBoxes = false;
+			
+			Checkbox("Show Item Boxes", &showItemBoxes);
+
+
+			if (showItemBoxes) {
 				forI(UI_WINDOW_ITEM_LAYERS) {
 					for (UIItem& item : debugee->items[i]) {
-						Text(UIItemTypeStrs[item.type]);
+						{
+							UIDrawCmd dc{ UIDrawType_Rectangle };
+							dc.color = Color_Red;
+							dc.position = debugee->position + item.position;
+							dc.dimensions = item.size;
+							debugCmds.add(dc);
+						}
 					}
 				}
-			}EndChild();
-
+			}
+			EndHeader();
 		}
-		
 	
 	}
 
-	if (debugee) {
-		forI(UI_WINDOW_ITEM_LAYERS) {
-			for (UIItem& item : debugee->items[i]) {
-				if (item.type == UIItemType_ChildWin) {
-					UIWindow* child = item.child;
-					{
-						UIDrawCmd dc{ UIDrawType_Circle };
-						dc.thickness = 3;
-						dc.color = Color_Yellow;
-						dc.subdivisions = 30;
-						dc.position = child->position.yAdd(child->height);
-						debugCmds.add(dc);
-					}
-
-					{
-						UIDrawCmd dc{ UIDrawType_Circle };
-						dc.thickness = 3;
-						dc.color = Color_Red;
-						dc.subdivisions = 30;
-						dc.position = debugee->position.yAdd(debugee->height);
-						debugCmds.add(dc);
-
-					}
-
-					{
-						UIDrawCmd dc{ UIDrawType_Circle };
-						dc.thickness = 3;
-						dc.color = Color_Red;
-						dc.subdivisions = 30;
-						dc.position = debugee->position.yAdd(debugee->height - child->y);
-						debugCmds.add(dc);
-					}
-
-					{
-						UIDrawCmd dc{ UIDrawType_Rectangle };
-						dc.position = child->position;
-						f32 xch = (debugee->x + debugee->width) - child->x;
-						f32 ych = (debugee->y + debugee->height) - child->y;
-						dc.dimensions = 
-						{ 
-							Min(
-							child->width, 
-							Clamp(xch, 0.f, xch)), 
-							Min(child->height,
-							Clamp(ych, 0.f, ych))};
-						dc.color = Color_Red;
-						debugCmds.add(dc);
-					}
-					Text(TOSTRING(child->y - debugee->y + debugee->height).str);
-				}
-			}
-		}
-	}
+	
 
 	PopVar();
 	End();
@@ -2703,6 +2687,7 @@ void UI::Init() {
 	PushVar(UIStyleVar_RowItemAlign,             vec2(0.5, 0.5));
 	PushVar(UIStyleVar_ScrollBarYWidth,          5);
 	PushVar(UIStyleVar_ScrollBarXHeight,         5);
+	PushVar(UIStyleVar_IndentAmount,             8);
 	PushVar(UIStyleVar_FontHeight,               style.font->max_height);
 	
 	PushScale(vec2(1, 1));
@@ -2882,6 +2867,8 @@ void UI::Update() {
 	Assert(colorStack.size() == initColorStackSize, 
 		   "Frame ended with hanging colors in the stack, make sure you pop colors if you push them!");
 	
+	Assert(!globalIndent, "Forgot to call End for an indenting Begin!");
+
 	globalHovered = 0;
 	
 
