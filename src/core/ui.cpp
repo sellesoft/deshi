@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "../utils/array_sorting.h"
 //color pallete 
 //current palette:
 //https://lospec.com/palette-list/slso8
@@ -449,7 +450,7 @@ void UI::RectFilled(vec2 pos, vec2 dimen, color color) {
 void UI::Line(vec2 start, vec2 end, f32 thickness, color color){
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd{ UIDrawType_Line};
-	drawCmd.position = start;
+	drawCmd.position  = start;
 	drawCmd.position2 = end;
 	drawCmd.thickness = thickness;
 	drawCmd.    color = color;
@@ -972,14 +973,13 @@ bool UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 		combos.add(label);
 		combos[label] = false;
 	}
-	else {
-		combo_open = combos[label];
-	}
 
 	b32& open = combos[label];
 
 	b32 active = isItemHovered(comboItem);
 	if (active && DeshInput->LMousePressed()) open = !open;
+
+	combo_open = open;
 
 	{//background
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
@@ -1265,6 +1265,22 @@ void UI::Image(Texture* image, f32 alpha, UIImageFlags flags) {
 	Image(image, PositionForNewItem(), alpha, flags);
 }
 
+
+void UI::Separator(f32 height) {
+	UIItem* item = BeginItem(UIItemType_Separator);
+	item->position = PositionForNewItem();
+	item->size = vec2(curwin->width, height);
+
+	AdvanceCursor(item);
+
+	UIDrawCmd drawCmd{ UIDrawType_Line };
+	drawCmd.position  = vec2(0, height / 2);
+	drawCmd.position2 = vec2(item->size.x, height / 2);
+	drawCmd.thickness = 2;
+	drawCmd.color = color(64,64,64);
+	item->drawCmds.add(drawCmd);
+
+}
 
 
 //@InputText
@@ -1939,10 +1955,11 @@ void UI::End() {
 			UIDrawCmd drawCmd{ UIDrawType_Rectangle}; //inst 58
 			drawCmd.color = style.colors[UIStyleCol_Border];
 			drawCmd.position = vec2::ZERO;
-			drawCmd.dimensions = curwin->dimensions + vec2::ONE;
+			drawCmd.dimensions = curwin->dimensions + vec2::ONE * 2;
 			drawCmd.scissorOffset = -vec2::ONE * 2;
 			drawCmd.scissorExtent = curwin->dimensions + vec2::ONE * 5;
 			drawCmd.useWindowScissor = false;
+			drawCmd.overrideScissorRules = true;
 			preitem->drawCmds.add(drawCmd);
 		}
 	}
@@ -2141,31 +2158,36 @@ bool UI::AnyWinHovered() {
 
 UIWindow* DisplayMetrics() {
 	using namespace UI;
+
+	static UIWindow* debugee = nullptr;
 	
-	UIWindow* debugee = nullptr;
 	UIWindow* myself = 0; //pointer returned for drawing
-	
-	UIWindow* slomo     = *windows.atIdx(0);
-	UIWindow* quick     = *windows.atIdx(0);
-	UIWindow* mostitems = *windows.atIdx(0);
-	UIWindow* longname  = *windows.atIdx(0);
-	
-	array<char*> names;
-	for(UIWindow* win : windows) {
+
+	static UIWindow* slomo = *windows.atIdx(0);
+	static UIWindow* quick = *windows.atIdx(0);
+	static UIWindow* mostitems = *windows.atIdx(0);
+	static UIWindow* longname = *windows.atIdx(0);
+
+	array<UIWindow*> winsorted;
+	for (UIWindow* win : windows) {
 		if (!(win->name == "METRICS")) {
 			if (win->render_time > slomo->render_time)     slomo = win;
 			if (win->render_time < quick->render_time)     quick = win;
 			if (win->items_count > mostitems->items_count) mostitems = win;
-			if (win->name.count  > longname->name.count)   longname = win;
-			names.add(win->name.str);
+			if (win->name.count > longname->name.count)   longname = win;
+			winsorted.add(win);
 		}
 	}
+
+	bubble_sort(winsorted, [](UIWindow* win1, UIWindow* win2) {return win1->name[0] > win2->name[0]; });
 
 	
 	Begin("METRICS", vec2::ZERO, vec2(300, 500));
 	myself = curwin;
 	
 	Text(TOSTRING("Active Windows: ", windowStack.count).str);
+
+	Separator(20);
 	
 	string slomotext = TOSTRING("Slowest Render:");
 	string quicktext = TOSTRING("Fastest Render:");
@@ -2201,12 +2223,28 @@ UIWindow* DisplayMetrics() {
 	if (Button("select")) debugee = mostitems;
 	EndRow();
 	
+	Separator(20);
+
+	PushVar(UIStyleVar_RowItemAlign, vec2(0, 0.5));
+	BeginRow(2, style.fontHeight * 1.3);
+	RowSetupRelativeColumnWidths({ 1.2, 1 });
 	
 	static u32 selected = 0;
-	//if (DropDown("windowstochoosefrom", names.data, windows.count, selected)) {
-	//	debugee = *windows.atIdx(selected);
-	//}
-	
+	if (BeginCombo("METRICSwindows", "windows")) {
+		for (int i = 0; i < winsorted.count; i++) {
+			if (UI::Selectable(winsorted[i]->name.str, selected == i)) {
+				selected = i;
+				debugee = winsorted[i];
+			}
+		}
+		EndCombo();
+	}
+
+	Text(TOSTRING("Selected Window: ", (debugee ? debugee->name : "none")).str);
+
+	EndRow();
+	PopVar();
+
 	End();
 	
 	//PopColor(5);
@@ -2573,14 +2611,12 @@ void UI::Update() {
 			dcpos.x = floor(dcpos.x); dcpos.y = floor(dcpos.y);
 			dcpos2.x = floor(dcpos2.x); dcpos2.y = floor(dcpos2.y);
 			
-			dcso.x = Max(winpos.x, dcso.x); dcso.y = Max(winpos.y, dcso.y); //force all items to stay within their windows
-			dcso.x = Min(winpos.x + winsiz.x - dcse.x, dcso.x); dcso.y = Min(winpos.y + winsiz.y - dcse.y, dcso.y);
+			if (!drawCmd.overrideScissorRules){ dcso.x = Max(winpos.x, dcso.x); dcso.y = Max(winpos.y, dcso.y); } //force all items to stay within their windows
+			if (!drawCmd.overrideScissorRules) { dcso.x = Min(winpos.x + winsiz.x - dcse.x, dcso.x); dcso.y = Min(winpos.y + winsiz.y - dcse.y, dcso.y); }
 			if (drawCmd.useWindowScissor && winpos.x < 0) dcse.x += winpos.x; //if the window's pos goes negative, the scissor extent needs to adjust itself
 			if (drawCmd.useWindowScissor && winpos.y < 0) dcse.y += winpos.y;
 			dcse.x = Max(0.f, dcse.x); dcse.y = Max(0.f, dcse.y);
 			dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
-
-
 
 			Texture* dctex = drawCmd.tex;
 

@@ -296,6 +296,7 @@ struct UIDrawCmd {
 	vec2 scissorOffset = vec2(0, 0);
 	vec2 scissorExtent = vec2(0, 0);
 	b32  useWindowScissor = true;
+	b32  overrideScissorRules = false;
 };
 
 enum UIItemType : u32 {
@@ -314,6 +315,7 @@ enum UIItemType : u32 {
 	UIItemType_Selectable,// Selectable()
 	UIItemType_Combo,     // BeginCombo()
 	UIItemType_Image,     // Image()
+	UIItemType_Separator, // Separator()
 };
 
 //an item such as a button, checkbox, or input text
@@ -543,6 +545,8 @@ namespace UI {
 
 	void Image(Texture* image, vec2 pos, f32 alpha = 1, UIImageFlags flags = 0);
 	void Image(Texture* image, f32 alpha = 1, UIImageFlags flags = 0);
+
+	void Separator(f32 height);
 	
 	//these overloads are kind of silly change them eventually
 	//InputText takes in a buffer and modifies it according to input and works much like ImGui's InputText
