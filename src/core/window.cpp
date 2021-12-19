@@ -1,10 +1,18 @@
-local bool _resized = false;
+﻿local bool _resized = false;
 local int _width, _height, _x, _y;
 local int opengl_version;
 
 void glfwError(int id, const char* description){
 	LogfE("glfw","%d: %s", id, description);
 }
+
+GLFWcursor* дефолткурсор;
+GLFWcursor* hResizeCursor;
+GLFWcursor* vResizeCursor;
+GLFWcursor* handCursor;
+GLFWcursor* textCursor;
+
+
 
 void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	TIMER_START(t_s);
@@ -53,9 +61,15 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 		glfwSetWindowPos(window, work_xpos+x, work_ypos+y);
 	}
 	
-	cursor = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
-	if(!cursor){ LogE("glfw","Failed to create the cursor!"); glfwTerminate(); return; }
+	дефолткурсор = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
+	hResizeCursor = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+	vResizeCursor = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
+	handCursor = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
+	textCursor = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
+
+	if(!дефолткурсор){ LogE("glfw","Failed to create the cursor!"); glfwTerminate(); return; }
 	
+
 	//glfwSetWindowOpacity(window, 0.5);
 	
 	//load and set icon
@@ -69,7 +83,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	}
 	
 	//set window's cursor
-	glfwSetCursor(window, cursor);
+	glfwSetCursor(window, дефолткурсор);
 	
 	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
 	int xpos, ypos;
@@ -225,13 +239,6 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 						   }
 					   });
 	
-	//void cursor_enter_callback(GLFWwindow* window, int entered)
-	glfwSetCursorEnterCallback(window, 
-							   [](GLFWwindow* w, int entered)->void{
-								   DeshInput->keyFocus = entered;
-								   glfwSetCursor(w, g_window->cursor);
-							   });
-	
 	//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	glfwSetScrollCallback(window, 
 						  [](GLFWwindow* window, double xoffset, double yoffset)->void{
@@ -334,6 +341,16 @@ void Window::UpdateCursorMode(CursorMode mode){
 
 void Window::SetCursorPos(vec2 pos){
 	glfwSetCursorPos(window, pos.x, pos.y);
+}
+
+void Window::SetCursor(CursorType curtype) {
+	switch (curtype) {
+		case CursorType_Arrow:   glfwSetCursor(window, дефолткурсор);  break;
+		case CursorType_HResize: glfwSetCursor(window, hResizeCursor); break;
+		case CursorType_VResize: glfwSetCursor(window, vResizeCursor); break;
+		case CursorType_Hand:    glfwSetCursor(window, handCursor);    break;
+		case CursorType_IBeam:   glfwSetCursor(window, textCursor);    break;
+	}
 }
 
 void Window::UpdateRawInput(bool rawInput){

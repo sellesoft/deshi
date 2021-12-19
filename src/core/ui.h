@@ -45,25 +45,27 @@
 #include "../utils/map.h"
 
 enum UIStyleVar : u32 {
-	UIStyleVar_WindowPadding,	     // default vec2(10, 10)      spacing between every item and the edges of the window
-	UIStyleVar_ItemSpacing,          // default vec2(1, 1)	     spacing between items within a window
-	UIStyleVar_WindowBorderSize,     // default 1                 border size in pixels                
-	UIStyleVar_TitleBarHeight,	     // default font.height * 1.2                                        
-	UIStyleVar_TitleTextAlign,       // default vec2(0, 0.5)  	 how title text is aligned in title bar 
-	UIStyleVar_ScrollAmount,         // default vec2(5, 5)		 amount to scroll in pixels             
-	UIStyleVar_CheckboxSize,         // default vec2(10, 10)      
-	UIStyleVar_CheckboxFillPadding,  // default 2                 how far from the edge a checkbox's true filling is padding
-	UIStyleVar_InputTextTextAlign,   // default vec2(0, 0.5)      how text is aligned within InputText boxes
-	UIStyleVar_ButtonTextAlign,      // default vec2(0.5, 0.5)    how text is aligned within buttons
-	UIStyleVar_HeaderTextAlign,      // default vec2(0.05, 0.5)
-	UIStyleVar_ButtonHeightRelToFont,// default 1.3                height of header box relative to the font height
-	UIStyleVar_HeaderHeightRelToFont,// default 1.3
+	UIStyleVar_WindowPadding,	        // default vec2(10, 10)      spacing between every item and the edges of the window
+	UIStyleVar_ItemSpacing,             // default vec2(1, 1)	     spacing between items within a window
+	UIStyleVar_WindowBorderSize,        // default 1                 border size in pixels                
+	UIStyleVar_TitleBarHeight,	        // default font.height * 1.2                                        
+	UIStyleVar_TitleTextAlign,          // default vec2(0, 0.5)  	 how title text is aligned in title bar 
+	UIStyleVar_ScrollAmount,            // default vec2(5, 5)		 amount to scroll in pixels             
+	UIStyleVar_CheckboxSize,            // default vec2(10, 10)      
+	UIStyleVar_CheckboxFillPadding,     // default 2                 how far from the edge a checkbox's true filling is padding
+	UIStyleVar_InputTextTextAlign,      // default vec2(0, 0.5)      how text is aligned within InputText boxes
+	UIStyleVar_ButtonTextAlign,         // default vec2(0.5, 0.5)    how text is aligned within buttons
+	UIStyleVar_HeaderTextAlign,         // default vec2(0.05, 0.5)
+	UIStyleVar_ButtonHeightRelToFont,   // default 1.3                height of header box relative to the font height
+	UIStyleVar_HeaderHeightRelToFont,   // default 1.3
 	UIStyleVar_InputTextHeightRelToFont,// default 1.3
 	UIStyleVar_CheckboxHeightRelToFont, // default 1.3
-	UIStyleVar_RowItemAlign,         // default vec2(0.5, 0.5)    determines how rows align their items within their cells
-	UIStyleVar_RowCellPadding,       // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
-	UIStyleVar_FontHeight,           // default font->height      height of font in pixels
-	UIStyleVar_Font,			     // default "gohufont-11.bdf" 
+	UIStyleVar_RowItemAlign,            // default vec2(0.5, 0.5)    determines how rows align their items within their cells
+	UIStyleVar_RowCellPadding,          // default vec2(10, 10)      the amount of pixels to pad items within cells from the edges of the cell
+	UIStyleVar_ScrollBarYWidth,         // default 5
+	UIStyleVar_ScrollBarXHeight,        // default 5
+	UIStyleVar_FontHeight,              // default font->height      height of font in pixels
+	UIStyleVar_Font,			        // default "gohufont-11.bdf" 
 	UIStyleVar_COUNT
 };
 
@@ -93,7 +95,14 @@ enum UIStyleCol : u32 {
 	
 	UIStyleCol_FrameBg,
 	UIStyleCol_FrameBgHovered,
-	UIStyleCol_FrameBgActive,  //
+	UIStyleCol_FrameBgActive,  
+
+	UIStyleCol_ScrollBarBg,
+	UIStyleCol_ScrollBarBgHovered,
+	UIStyleCol_ScrollBarBgActive,
+	UIStyleCol_ScrollBarDragger,
+	UIStyleCol_ScrollBarDraggerHovered,
+	UIStyleCol_ScrollBarDraggerActive,
 	
 	UIStyleCol_ButtonBg,
 	UIStyleCol_ButtonBgActive,
@@ -126,6 +135,10 @@ enum UIStyleCol : u32 {
 	UIStyleCol_InputTextBgActive,
 	UIStyleCol_InputTextBgHovered,
 	UIStyleCol_InputTextBorder,
+
+	UIStyleCol_SelectableBg,
+	UIStyleCol_SelectableBgActive,
+	UIStyleCol_SelectableBgHovered,
 	
 	UIStyleCol_TitleBg,
 	UIStyleCol_TitleBgHovered,
@@ -134,24 +147,26 @@ enum UIStyleCol : u32 {
 };
 
 struct UIStyle {
-	vec2  windowPadding;
-	vec2  itemSpacing;
-	float windowBorderSize;
-	float titleBarHeight;
-	vec2  titleTextAlign;
-	vec2  scrollAmount;
-	vec2  checkboxSize;
-	float checkboxFillPadding;
-	vec2  inputTextTextAlign;
-	vec2  buttonTextAlign;
-	vec2  headerTextAlign;
-	float buttonHeightRelToFont;
-	float headerHeightRelToFont;
-	float inputTextHeightRelToFont;
-	float checkboxHeightRelToFont;
-	vec2  rowItemAlign;
-	vec2  rowCellPadding;
-	float fontHeight;
+	vec2 windowPadding;
+	vec2 itemSpacing;
+	f32  windowBorderSize;
+	f32  titleBarHeight;
+	vec2 titleTextAlign;
+	vec2 scrollAmount;
+	vec2 checkboxSize;
+	f32  checkboxFillPadding;
+	vec2 inputTextTextAlign;
+	vec2 buttonTextAlign;
+	vec2 headerTextAlign;
+	f32  buttonHeightRelToFont;
+	f32  headerHeightRelToFont;
+	f32  inputTextHeightRelToFont;
+	f32  checkboxHeightRelToFont;
+	vec2 rowItemAlign;
+	vec2 rowCellPadding;
+	f32  scrollBarYWidth;
+	f32  scrollBarXHeight;
+	f32  fontHeight;
 	
 	//special vars that have special push/pop functions
 	vec2  globalScale;
@@ -171,16 +186,19 @@ enum UIWindowFlags_ {
 	UIWindowFlags_NoTitleBar             = 1 << 2,
 	UIWindowFlags_NoBorder               = 1 << 3,
 	UIWindowFlags_NoBackground           = 1 << 4,
-	UIWindowFlags_NoScrollX              = 1 << 5,
-	UIWindowFlags_NoScrollY              = 1 << 6,
+	UIWindowFlags_NoScrollBarX           = 1 << 5,
+	UIWindowFlags_NoScrollBarY           = 1 << 6, 
+	UIWindowFlags_NoScrollBars           = UIWindowFlags_NoScrollBarX | UIWindowFlags_NoScrollBarY,
+	UIWindowFlags_NoScrollX              = 1 << 7 | UIWindowFlags_NoScrollBarX,
+	UIWindowFlags_NoScrollY              = 1 << 8 | UIWindowFlags_NoScrollBarY,
 	UIWindowFlags_NoScroll               = UIWindowFlags_NoScrollX | UIWindowFlags_NoScrollY,
-	UIWindowFlags_NoFocus                = 1 << 7,
-	UIWindowFlags_FocusOnHover           = 1 << 8,
-	UIWindowFlags_NoMinimize             = 1 << 9,
-	UIWindowFlags_NoMinimizeButton       = 1 << 10,
-	UIWindowFlags_DontSetGlobalHoverFlag = 1 << 11,
-	UIWindowFlags_FitAllElements         = 1 << 12, //attempts to fit the window's size to all called elements
-	
+	UIWindowFlags_NoFocus                = 1 << 9,
+	UIWindowFlags_FocusOnHover           = 1 << 10,
+	UIWindowFlags_NoMinimize             = 1 << 11,
+	UIWindowFlags_NoMinimizeButton       = 1 << 12,
+	UIWindowFlags_DontSetGlobalHoverFlag = 1 << 13,
+	UIWindowFlags_FitAllElements         = 1 << 14, //attempts to fit the window's size to all called elements
+
 	UIWindowFlags_NoInteract = UIWindowFlags_NoMove | UIWindowFlags_NoFocus | UIWindowFlags_NoResize | UIWindowFlags_DontSetGlobalHoverFlag | UIWindowFlags_NoScroll, 
 	UIWindowFlags_Invisible  = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground | UIWindowFlags_NoFocus
 }; typedef u32 UIWindowFlags;
@@ -210,7 +228,7 @@ struct UIInputTextCallbackData {
 	Key::Key eventKey;          //key pressed on callback   | r
 	char*    buffer;            //buffer pointer            | r/w
 	size_t   bufferSize;        //                          | r
-	u32      cursorPos;         //cursor position		   | r/w
+	u32      cursorPos;         //cursor position		    | r/w
 	u32      selectionStart;    //                          | r/w -- == selection end when no selection
 	u32      selectionEnd;      //                          | r/w
 };
@@ -234,6 +252,13 @@ enum UISliderFlags_ {
 	
 }; typedef u32 UISliderFlags;
 
+enum UIImageFlags_ {
+	UIImageFlags_NONE = 0,
+	UIImageFlags_RestrictAspectRatio = 1 << 0,
+	UIImageFlags_Invert = 1 << 1,
+
+}; typedef u32 UIImageFlags;
+
 enum UIDrawType : u32 {
 	UIDrawType_Rectangle,
 	UIDrawType_FilledRectangle,
@@ -242,6 +267,7 @@ enum UIDrawType : u32 {
 	UIDrawType_CircleFilled,
 	UIDrawType_Text,
 	UIDrawType_WText,
+	UIDrawType_Image,
 };
 
 //draw commands store what kind of command it is, and info relative to that command
@@ -250,22 +276,12 @@ enum UIDrawType : u32 {
 struct UIDrawCmd {
 	UIDrawType type;
 	
-	//all draw commands have a position, this is also considered the start of a line cmd
-	vec2 position;
-	
-	//all draw commands have a color
-	color color;
-	
-	//rectangles have dimensions
-	vec2 dimensions;
-	
-	//lines have a second position
-	vec2 position2;
-	
-	//line thickness
-	float thickness;
-	
-	
+	vec2   position; //all draw commands have a position, this is also considered the start of a line cmd
+	color     color; //draw cmds have either a texture or a color, 
+	Texture*    tex; // if texture is non-zero, we use that as its color, and thickness as its alpha
+	vec2 dimensions; //rectangles have dimensions
+	vec2  position2; //lines have a second position
+	f32   thickness; //line thickness, also image alpha if tex is non zero
 	
 	//TODO
 	//eventually we could maybe store text as an int* or something, so as unicode codepoints, since in the end,
@@ -273,7 +289,7 @@ struct UIDrawCmd {
 	string text;
 	wstring wtext;
 	Font* font;
-	
+
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
 	bool trackedForFit = 1;
 	
@@ -283,7 +299,8 @@ struct UIDrawCmd {
 };
 
 enum UIItemType : u32 {
-	UIItemType_Base,      // base window draw commands
+	UIItemType_PreItems,  // internal items drawn before user items
+	UIItemType_PostItems, // ditto, but afterwards
 	UIItemType_Custom,    // BeginCustomItem()
 	UIItemType_Abstract,  // any single drawcall such as a line, rectangle, circle, etc
 	UIItemType_ChildWin,  // BeginChild() | this does not have any draw commands and is simply to indicate that we are placing a child window
@@ -296,6 +313,7 @@ enum UIItemType : u32 {
 	UIItemType_Header,    // Header()
 	UIItemType_Selectable,// Selectable()
 	UIItemType_Combo,     // BeginCombo()
+	UIItemType_Image,     // Image()
 };
 
 //an item such as a button, checkbox, or input text
@@ -336,17 +354,17 @@ struct UIWindow {
 	
 	union {
 		vec2 position;
-		struct { float x, y; };
+		struct { f32 x, y; };
 	};
 	
 	union {
 		vec2 dimensions;
-		struct { float width, height; };
+		struct { f32 width, height; };
 	};
 	
 	union {
 		vec2 scroll;
-		struct { float scx, scy; };
+		struct { f32 scx, scy; };
 	};
 	
 	vec2 maxScroll;
@@ -355,7 +373,7 @@ struct UIWindow {
 	//this places items and not draw calls
 	union {
 		vec2 cursor;
-		struct { float curx, cury; };
+		struct { f32 curx, cury; };
 	};
 	
 	UIWindowFlags flags;
@@ -364,7 +382,9 @@ struct UIWindow {
 	//base items are always drawn before items and is just a way to defer drawing 
 	//base window stuff to End(), so we can do dynamic sizing
 	array<UIItem> items[UI_WINDOW_ITEM_LAYERS];
-	array<UIItem> baseItems;
+	array<UIItem> preItems;
+	array<UIItem> postItems;
+
 	
 	u32 currlayer = floor(UI_WINDOW_ITEM_LAYERS / 2.f);
 	
@@ -383,7 +403,9 @@ struct UIWindow {
 	bool minimized = false;
 	bool hidden = false;
 	
-	float titleBarHeight = 0;
+	f32 titleBarHeight = 0;
+
+	vec2 minSizeForFit;
 	
 	//this is the state of style when End() is called for the window
 	//meaning the style for elements before the last bunch could be different
@@ -488,7 +510,7 @@ namespace UI {
 	//// drawing ////
 	void Rect(vec2 pos, vec2 dimen, color color = Color_White);
 	void RectFilled(vec2 pos, vec2 dimen, color color = Color_White);
-	void Line(vec2 start, vec2 end, float thickness = 1, color color = Color_White);
+	void Line(vec2 start, vec2 end, f32 thickness = 1, color color = Color_White);
 	void Circle(vec2 pos, f32 radius, u32 subdivisions = 30, color color = Color_White);
 	void CircleFilled(vec2 pos, f32 radius, u32 subdivisions = 30, color color = Color_White);
 	
@@ -512,15 +534,15 @@ namespace UI {
 
 	void EndCombo();
 	
-	bool Selectable(const char* label, b32* selected);
-	bool Selectable(const char* label, vec2 pos, b32* selected);
-	bool Selectable(const char* label, b32 selected);  //overloads which do not control the selected boolean 
+	bool Selectable(const char* label, b32 selected); 
 	bool Selectable(const char* label, vec2 pos, b32 selected);
-
 
 	bool Header(const char* label);
 	
 	void Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
+
+	void Image(Texture* image, vec2 pos, f32 alpha = 1, UIImageFlags flags = 0);
+	void Image(Texture* image, f32 alpha = 1, UIImageFlags flags = 0);
 	
 	//these overloads are kind of silly change them eventually
 	//InputText takes in a buffer and modifies it according to input and works much like ImGui's InputText
@@ -535,7 +557,7 @@ namespace UI {
 	
 	//// push/pop ////
 	void PushColor(UIStyleCol idx, color color);
-	void PushVar(UIStyleVar idx, float style);
+	void PushVar(UIStyleVar idx, f32 style);
 	void PushVar(UIStyleVar idx, vec2 style);
 	void PushFont(Font* font);
 	void PushScale(vec2 scale);
@@ -560,9 +582,9 @@ namespace UI {
 	void BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags = 0);
 	void EndChild();
 	void SetNextWindowPos(vec2 pos);
-	void SetNextWindowPos(float x, float y);
+	void SetNextWindowPos(f32 x, f32 y);
 	void SetNextWindowSize(vec2 size);		  //when you set a windows size through this you aren't supposed to take into account the titlebar!
-	void SetNextWindowSize(float x, float y); //when you set a windows size through this you aren't supposed to take into account the titlebar!
+	void SetNextWindowSize(f32 x, f32 y); //when you set a windows size through this you aren't supposed to take into account the titlebar!
 	void SetWindowName(const char* name);
 	bool IsWinHovered();
 	bool AnyWinHovered();
