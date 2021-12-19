@@ -109,6 +109,7 @@ inline string::string(const string& s){
 }
 
 inline string::~string(){
+	if(!allocator) allocator = DESHI_ARRAY_ALLOCATOR;
 	allocator->release(str);
 }
 
@@ -247,6 +248,7 @@ inline void string::reserve(u32 _space){
 }
 
 inline void string::clear(){
+	if(!allocator) allocator = DESHI_ARRAY_ALLOCATOR;
 	allocator->release(str);
 	count = 0;
 	space = 0;
@@ -461,6 +463,7 @@ inline wstring::wstring(const wstring& s){
 }
 
 inline wstring::~wstring(){
+	if(!allocator) allocator = DESHI_ARRAY_ALLOCATOR;
 	allocator->release(str);
 }
 
@@ -473,6 +476,7 @@ inline wstring::CHAR& wstring::operator[](u32 idx){
 }
 
 inline void wstring::operator= (const CHAR* s){
+	if(!allocator) allocator = DESHI_ARRAY_ALLOCATOR;
 	allocator->release(str);
 	
 	count  = wcslen(s);
@@ -483,6 +487,7 @@ inline void wstring::operator= (const CHAR* s){
 }
 
 inline void wstring::operator= (const wstring& s){
+	if(!allocator) allocator = DESHI_ARRAY_ALLOCATOR;
 	allocator->release(str);
 	allocator = s.allocator;
 	
@@ -597,6 +602,7 @@ inline void wstring::reserve(u32 _space){
 }
 
 inline void wstring::clear(){
+	if(!allocator) allocator = DESHI_ARRAY_ALLOCATOR;
 	allocator->release(str);
 	count = 0;
 	space = 0;
