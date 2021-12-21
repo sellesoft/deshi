@@ -109,7 +109,7 @@ speedup OBJ parsing and face generation
 
 UI TODOs
 --------
-turn ShowDebugWindowOf into a general metrics/debug window like imgui once we have drop downs and stuff
+remove BeginChild and EndChild and just do nested window stuff with Begin and End
 add functionality for resetting certain maps like windows and inputtexts
 ____maybe even removing certain labels from them
 tabs (vertical and horizontal)

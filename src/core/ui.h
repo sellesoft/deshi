@@ -430,7 +430,7 @@ struct UIWindow {
 	u32 windowlayer = 5;
 	
 	//a collection of child windows
-	UIWindow* parent;
+	UIWindow* parent = 0;
 	map<const char*, UIWindow*> children;
 	
 	UIItem* hoveredItem = 0;
@@ -454,6 +454,9 @@ struct UIWindow {
 	f32 titleBarHeight = 0;
 
 	vec2 minSizeForFit;
+
+	vec2 visibleRegionStart;
+	vec2 visibleRegionSize;
 	
 	//this is the state of style when End() is called for the window
 	//meaning the style for elements before the last bunch could be different
@@ -638,6 +641,7 @@ namespace UI {
 	b32 IsWinHovered();
 	b32 AnyWinHovered();
 	void ShowMetricsWindow();
+	void DemoWindow();
 
 	
 	//// init and update ////
