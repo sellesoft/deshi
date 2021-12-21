@@ -261,6 +261,14 @@ enum UIImageFlags_ {
 
 }; typedef u32 UIImageFlags;
 
+enum UIButtonFlags_ {
+	UIButtonFlags_NONE = 0,
+	UIButtonFlags_ReturnTrueOnHold    = 1 << 0,
+	UIButtonFlags_ReturnTrueOnRelease = 1 << 1,
+
+
+}; typedef u32 UIButtonFlags;
+
 enum UIDrawType : u32 {
 	UIDrawType_Rectangle,
 	UIDrawType_FilledRectangle,
@@ -552,8 +560,8 @@ namespace UI {
 	
 	
 	//// items ////
-	b32 Button(const char* text);
-	b32 Button(const char* text, vec2 pos);
+	b32 Button(const char* text, UIButtonFlags flags = 0);
+	b32 Button(const char* text, vec2 pos, UIButtonFlags flags = 0);
 	
 	void Checkbox(string label, b32* b);
 	

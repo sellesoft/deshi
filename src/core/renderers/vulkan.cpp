@@ -2856,6 +2856,7 @@ ResetCommands(){
 		uiIndexCount  = 0;
 		forI(UI_LAYERS) {
 			memset(&uiCmdArrays[i][0], 0, sizeof(UICmdVk) * uiCmdCounts[i]);
+			uiCmdArrays[i][0].descriptorSet = textures[1].descriptorSet;
 			uiCmdCounts[i] = 1;
 		}
 	}
@@ -3233,13 +3234,12 @@ void CheckUICmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset,
 	if (uiCmdArrays[layer][uiCmdCounts[layer] - 1].textured != textured ||
 		(tex ? uiCmdArrays[layer][uiCmdCounts[layer] - 1].descriptorSet != textures[tex->idx].descriptorSet : 0) ||
 		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-		scissorExtent != prevScissorExtent) {  //and you could do text last in one, and text first in another
+		scissorExtent != prevScissorExtent ) { //and you could do text last in one, and text first in another {  
 		prevScissorExtent = scissorExtent;
 		prevScissorOffset = scissorOffset;                     //NOTE null_font is the default texture for 2D items, as its just a white square
 		uiCmdArrays[layer][uiCmdCounts[layer]].descriptorSet = textures[(tex ? tex->idx : 1)].descriptorSet;
 		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
 		uiCmdCounts[layer]++;
-		
 		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
 	
@@ -4480,7 +4480,11 @@ Init(){
 	CreatePipelines();
 	PrintVk(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
-	forI(UI_LAYERS) { uiCmdCounts[i] = 1; }
+	forI(UI_LAYERS) { 
+		uiCmdCounts[i] = 1; 
+		
+	}
+	
 	initialized = true;
 	
 	Log("deshi","Finished vulkan renderer initialization in ",TIMER_END(t_s),"ms");

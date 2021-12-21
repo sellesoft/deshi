@@ -269,7 +269,7 @@ inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1) {
 			//we dont need to handle moving the cursor here, because the final position of the cursor after a row is handled in EndRow()
 		}
 	}
-	else if (moveCursor) curwin->cursor = vec2{ 0, itemmade->position.y + itemmade->size.y + style.itemSpacing.y - style.windowPadding.y } + curwin->scroll;
+	else if (moveCursor) curwin->cursor = vec2{ 0, itemmade->position.y + itemmade->size.y + style.itemSpacing.y - style.windowPadding.y + curwin->scy } ;
 }
 
 //function for getting the position of a new item based on style, so the long string of additions
@@ -546,7 +546,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 	
 	using namespace UI;
 	UIItem* item = BeginItem(UIItemType_Text);
-	item->position = (move_cursor ? PositionForNewItem() : pos);
+	item->position = pos;
 	
 	if (!nowrap) {
 		string text = in;
@@ -611,7 +611,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 			
 			case FontType_BDF: {
 				//max characters we can place 
-				u32 maxChars = floor(((curwin->width - 2 * style.windowPadding.x) - workcur.x) / style.font->max_width);
+				u32 maxChars = floor(((curwin->width - 2 * style.windowPadding.x + curwin->scx) - workcur.x) / style.font->max_width);
 				
 				//make sure max chars never equals 0
 				if (!maxChars) maxChars++;
@@ -681,7 +681,8 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 		TextCall(in, vec2{ 0,0 }, style.colors[UIStyleCol_Text], item);
 		CalcItemSize(item);
 	}
-	AdvanceCursor(item, move_cursor);
+
+	AdvanceCursor(item);
 }
 
 //second function for wrapping, using unicode
@@ -854,57 +855,62 @@ void UI::TextF(const char* fmt, ...) {
 	TextW(s.str, curwin->cursor, style.colors[UIStyleCol_Text], false);
 }
 
-
-b32 ButtonCall(const char* text, vec2 pos, b32 move_cursor = 1) {
+b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
 	UIItem* item = BeginItem(UIItemType_Button);
-	item->size = (NextItemSize.x != -1) ? NextItemSize : vec2(Min(curwin->width, 50.0f), style.fontHeight * style.buttonHeightRelToFont);
+	item->size = (NextItemSize.x != -1) ? NextItemSize : vec2(Min(curwin->width, Max(50.f, CalcTextSize(text).x * 1.1f)), style.fontHeight * style.buttonHeightRelToFont);
 	item->position = pos;
-	AdvanceCursor(item, move_cursor);
-	
+	AdvanceCursor(item);
+
 	b32 active = Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position, item->size * style.globalScale);
-	
+
 	{//background
-		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
+		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = item->size;
 		drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_ButtonBgActive : UIStyleCol_ButtonBgHovered) : UIStyleCol_ButtonBg)];
 		item->drawCmds.add(drawCmd);
-	} 
-	
+	}
+
 	{//border
-		UIDrawCmd drawCmd{ UIDrawType_Rectangle}; //inst 58
+		UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
 		drawCmd.color = style.colors[UIStyleCol_ButtonBorder];
 		drawCmd.position = vec2::ZERO;
 		drawCmd.dimensions = item->size;
 		item->drawCmds.add(drawCmd);
 	}
-	
+
 	{//text
-		UIDrawCmd drawCmd{ UIDrawType_Text};
+		UIDrawCmd drawCmd{ UIDrawType_Text };
 		drawCmd.color = style.colors[UIStyleCol_Text];
-		drawCmd.position = 
+		drawCmd.position =
 			vec2((item->size.x - UI::CalcTextSize(text).x) * style.buttonTextAlign.x,
-				 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
+				(style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
 		drawCmd.scissorOffset = vec2::ZERO;
 		drawCmd.scissorExtent = item->size;
-		drawCmd.useWindowScissor = false;  
+		drawCmd.useWindowScissor = false;
 		drawCmd.text = string(text);
 		drawCmd.font = style.font;
 		item->drawCmds.add(drawCmd);
 	}
-	
-	//TODO(sushi) add a flag for prevent button presses when window is not focused
-	if (/*curwin->focused &&*/ active && DeshInput->LMousePressed()) return true;
+
+	if (active) {
+		//TODO(sushi) do this better
+		if (HasFlag(UIButtonFlags_ReturnTrueOnHold))
+			if (DeshInput->LMouseDown()) return true;
+			else return false;
+		if (HasFlag(UIButtonFlags_ReturnTrueOnRelease))
+			if (DeshInput->LMouseReleased()) return true;
+			else return false;
+		if (DeshInput->LMousePressed()) return true;
+	}
 	else return false;
 }
 
-b32 UI::Button(const char* text) {
-	return ButtonCall(text, PositionForNewItem());
+b32 UI::Button(const char* text, UIButtonFlags flags) {
+	return Button(text, PositionForNewItem(), flags);
 }
 
-b32 UI::Button(const char* text, vec2 pos) {
-	return ButtonCall(text, pos, 0);
-}
+
 
 void UI::Checkbox(string label, b32* b) {
 	UIItem* item = BeginItem(UIItemType_Checkbox);
@@ -1128,7 +1134,7 @@ b32 UI::BeginHeader(const char* label) {
 	
 	item->position = PositionForNewItem();
 	item->size = (NextItemSize.x == -1 ?
-				  vec2(curwin->width - style.windowPadding.x, style.fontHeight * style.headerHeightRelToFont) :
+				  vec2(curwin->width - style.windowPadding.x * 2, style.fontHeight * style.headerHeightRelToFont) :
 				  NextItemSize);
 	
 
@@ -1141,10 +1147,10 @@ b32 UI::BeginHeader(const char* label) {
 	if(*open) globalIndent += style.indentAmount;
 	
 	f32 buttonrad = item->size.y / 4;
-	
+
 	vec2 bgpos = vec2{ buttonrad * 2 + 5, 0 };
 	vec2 bgdim = vec2{ 
-		item->size.x - bgpos.x - style.windowPadding.x, 
+		item->size.x - bgpos.x, 
 		item->size.y };
 	
 	{//background
@@ -2552,28 +2558,45 @@ UIWindow* DisplayMetrics() {
 			}
 			EndHeader();
 		}
+
+		static b32 showItemBoxes = false;
+		static b32 showItemCursors = false;
+		
 		if (BeginHeader("Window Debug Visuals")) {
-			static b32 showItemBoxes = false;
-			
 			Checkbox("Show Item Boxes", &showItemBoxes);
+			Checkbox("Show Item Cursors", &showItemCursors);
 
+			EndHeader();
+		}
 
-			if (showItemBoxes) {
-				forI(UI_WINDOW_ITEM_LAYERS) {
-					for (UIItem& item : debugee->items[i]) {
-						{
-							UIDrawCmd dc{ UIDrawType_Rectangle };
-							dc.color = Color_Red;
-							dc.position = debugee->position + item.position;
-							dc.dimensions = item.size;
-							debugCmds.add(dc);
-						}
+		if (showItemBoxes) {
+			forI(UI_WINDOW_ITEM_LAYERS) {
+				for (UIItem& item : debugee->items[i]) {
+					{
+						UIDrawCmd dc{ UIDrawType_Rectangle };
+						dc.color = Color_Red;
+						dc.position = debugee->position + item.position;
+						dc.dimensions = item.size;
+						debugCmds.add(dc);
 					}
 				}
 			}
-			EndHeader();
 		}
-	
+
+		if (showItemCursors) {
+			forI(UI_WINDOW_ITEM_LAYERS) {
+				for (UIItem& item : debugee->items[i]) {
+					{
+						UIDrawCmd dc{ UIDrawType_Rectangle };
+						dc.color = Color_Green;
+						dc.position = debugee->position + item.initialCurPos + item.style.windowPadding - vec2::ONE * 3 / 2.f;
+						dc.dimensions = vec2::ONE * 3;
+						debugCmds.add(dc);
+					}
+				}
+			}
+		}
+
 	}
 
 	
@@ -2687,7 +2710,7 @@ void UI::Init() {
 	PushVar(UIStyleVar_RowItemAlign,             vec2(0.5, 0.5));
 	PushVar(UIStyleVar_ScrollBarYWidth,          5);
 	PushVar(UIStyleVar_ScrollBarXHeight,         5);
-	PushVar(UIStyleVar_IndentAmount,             8);
+	PushVar(UIStyleVar_IndentAmount,             10);
 	PushVar(UIStyleVar_FontHeight,               style.font->max_height);
 	
 	PushScale(vec2(1, 1));
