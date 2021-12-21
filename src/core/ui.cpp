@@ -91,28 +91,28 @@ local array<UIDrawCmd> debugCmds; //debug draw cmds that are always drawn last
 local u32 initColorStackSize;
 local u32 initStyleStackSize;
 
-local b32 globalHovered = false; //set if any window other than base is hovered
-local b32 draggingWin   = false; //if a user moves their mouse too fast while dragging, the globalHover flag can be set to false
-local b32 resizingWin   = false;
-local b32 scrollingWin  = false;
-
 local u32 activeId = -1; //the id of an active widget eg. input text
 
 //row variables
 local UIRow row;
 local b32   rowInProgress;
 
-//set when we are in progress of making a custom item, see BeginCustomItem() in ui.h for more info on what that is
-local b32 custom_item = 0;
-
 //misc state vars
-local u32 currlayer = floor(UI_WINDOW_ITEM_LAYERS / 2.f);
-local b32 drag_override   = 0; //set when an item needs to supress window dragging
-local b32 combo_active    = 0; //set when BeginCombo is called
-local b32 cursor_was_set  = 0; //set when something changes the window's cursor
+local u32 currlayer       = floor(UI_WINDOW_ITEM_LAYERS / 2.f);
+local b32 globalHovered   = false; //set if any window other than base is hovered
+local b32 cursorWasSet    = 0; //set when something changes the window's cursor
 local f32 globalIndent    = 0; //inc/dec by things that indent following things, such as header 
 local UIWindow* inputupon = 0; //set to a window who has drag, scrolling, or resizing inputs being used on it 
 
+enum WinInputState_ {
+	ISNone,
+	ISScrolling,
+	ISDragging,
+	ISResizing,
+	ISPreventInputs,
+}; typedef u32 WinInputState;
+
+WinInputState inputState = ISNone;
 
 //helper defines
 
@@ -124,6 +124,15 @@ local UIWindow* inputupon = 0; //set to a window who has drag, scrolling, or res
 #define DrawCmdScreenPos(pos) pos + item->position + curwin->position 
 #define ItemScreenPos item->position + curwin->position 
 
+#define WinCanTakeInput   inputState == ISNone
+#define PreventInputs     inputState = ISPreventInputs
+#define AllowInputs       inputState = ISNone;      inputupon = 0;
+#define SetResizingInput  inputState = ISResizing;  inputupon = window;
+#define SetDraggingInput  inputState = ISDragging;  inputupon = window;
+#define SetScrollingInput inputState = ISScrolling; inputupon = window; window->beingScrolled = 1;
+#define WinResizing       inputState == ISResizing
+#define WinDragging       inputState == ISDragging
+#define WinScrolling      inputState == ISScrolling
 
 //helper functions
 
@@ -242,7 +251,7 @@ inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1) {
 	//if a row is in progress, we must reposition the item to conform to row style variables
 	//this means that you MUST ensure that this happens before any interactions with the item are calculated
 	//for instance in the case of Button, this must happen before you check that the user has clicked it!
-	if (rowInProgress && !custom_item) {
+	if (rowInProgress) {
 		//abstract item types (lines, rectangles, etc.) are not row'd, for now
 		if (itemmade->type != UIItemType_Abstract) {
 			row.items.add(itemmade);
@@ -329,18 +338,17 @@ inline UIItem* GetLastItem(u32 layeroffset = 0) {
 //helper for making any new UIItem, since now we must work with item pointers internally
 //this function also decides if we are working with a new item or continuing to work on a previous
 inline UIItem* BeginItem(UIItemType type, u32 layeroffset = 0) {
-	if (!custom_item) {
-		if (type == UIItemType_PreItems) {
-			curwin->preItems.add(UIItem{ type, curwin->cursor, style });
-			return curwin->preItems.last;
-		}
-		else if (type == UIItemType_PostItems) {
-			curwin->postItems.add(UIItem{ type, curwin->cursor, style });
-			return curwin->postItems.last;
-		}
-		else {
-			curwin->items[currlayer + layeroffset].add(UIItem{ type, curwin->cursor, style });
-		}
+	
+	if (type == UIItemType_PreItems) {
+		curwin->preItems.add(UIItem{ type, curwin->cursor, style });
+		return curwin->preItems.last;
+	}
+	else if (type == UIItemType_PostItems) {
+		curwin->postItems.add(UIItem{ type, curwin->cursor, style });
+		return curwin->postItems.last;
+	}
+	else {
+		curwin->items[currlayer + layeroffset].add(UIItem{ type, curwin->cursor, style });
 	}
 	curwin->items_count++;
 	return GetLastItem(layeroffset);
@@ -973,9 +981,10 @@ void UI::Checkbox(string label, b32* b) {
 	
 	
 	
-	if (DeshInput->LMousePressed() && Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position * style.globalScale, boxsiz * style.globalScale))
+	if (DeshInput->LMousePressed() && Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position * style.globalScale, boxsiz * style.globalScale)) {
 		*b = !*b;
-	
+		PreventInputs;
+	}
 }
 
 local b32 combo_open = 0;
@@ -997,7 +1006,10 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 	b32& open = combos[label];
 	
 	b32 active = isItemHovered(comboItem);
-	if (active && DeshInput->LMousePressed()) open = !open;
+	if (active && DeshInput->LMousePressed()) { 
+		open = !open; 
+		PreventInputs;
+	}
 	
 	combo_open = open;
 	
@@ -1049,7 +1061,10 @@ b32 UI::Selectable(const char* label, vec2 pos, b32 selected) {
 		//if a combo has been started and is open, we attach the selectables to it
 		selectables_added++;
 		b32 active = Math::PointInRectangle(DeshInput->mousePos, curwin->position + comboItem->position.yAdd(comboItem->size.y * selectables_added), comboItem->size);
-		if (active && DeshInput->LMousePressed()) clicked = true;
+		if (active && DeshInput->LMousePressed()) { 
+			clicked = true; 
+			PreventInputs;
+		}
 		
 		{//background
 			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
@@ -1085,8 +1100,11 @@ b32 UI::Selectable(const char* label, vec2 pos, b32 selected) {
 		AdvanceCursor(item);
 		
 		b32 active = Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position.yAdd(item->size.y * selectables_added), item->size);
-		if (active && DeshInput->LMousePressed()) clicked = true;
-		
+		if (active && DeshInput->LMousePressed()) { 
+			clicked = true; 
+			PreventInputs;
+		}
+
 		{//background
 			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 			drawCmd.position = vec2(0, item->size.y * selectables_added);
@@ -1120,8 +1138,6 @@ b32 UI::Selectable(const char* label, b32 selected) {
 	return Selectable(label, PositionForNewItem(), selected);
 }
 
-
-
 b32 UI::BeginHeader(const char* label) {
 	UIItem* item = BeginItem(UIItemType_Header);
 	
@@ -1142,7 +1158,10 @@ b32 UI::BeginHeader(const char* label) {
 	
 	b32 active = isItemHovered(item);
 	
-	if (active && DeshInput->LMousePressed()) *open = !*open;
+	if (active && DeshInput->LMousePressed()) { 
+		*open = !*open; 
+		PreventInputs;
+	}
 	
 	if(*open) globalIndent += style.indentAmount;
 	
@@ -1218,23 +1237,20 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 				  NextItemSize);
 	
 	AdvanceCursor(item);
-
-
 	
 	b32 active = isItemHovered(item);
 	
-	
 	if (active && DeshInput->LMousePressed()) {
-		drag_override = 1;
 		sliders[label] = 1;
+		PreventInputs;
 	}
 	if (being_moved && DeshInput->LMouseDown()) {
 		f32 ratio = (DeshInput->mousePos.x - item->position.x - curwin->position.x) / item->size.x;
 		*val = ratio * (val_max - val_min) + val_min;
 	}
 	if (DeshInput->LMouseReleased()) {
-		drag_override = 0;
 		sliders[label] = 0;
+		AllowInputs;
 	}
 	
 	*val = Clamp(*val, val_min, val_max);
@@ -1365,7 +1381,7 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 		else if (active) activeId = -1;
 	}
 	
-	if (hovered) { DeshWindow->SetCursor(CursorType_IBeam); cursor_was_set = 1; }
+	if (hovered) { DeshWindow->SetCursor(CursorType_IBeam); cursorWasSet = 1; }
 	
 	if (charCount < state->cursor)
 		state->cursor = charCount;
@@ -1629,19 +1645,6 @@ b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInp
 //@Utilities
 
 
-void UI::BeginCustomItem(){
-	//make the custom item, add it and set curitem to it
-	curwin->items[currlayer].add(UIItem{ UIItemType_Custom, curwin->cursor, style });
-	custom_item = 1;
-}
-
-void UI::EndCustomItem() {
-	custom_item = 0;
-	//we always calc the item's size here because it is arbitrary
-	CalcItemSize(GetLastItem());
-	AdvanceCursor(GetLastItem());
-}
-
 //Push/Pop functions
 void UI::PushColor(UIStyleCol idx, color color) {
 	//save old color
@@ -1759,77 +1762,87 @@ void CheckWindowsForFocusInputs() {
 }
 
 void CheckWindowForResizingInputs(UIWindow* window) {
-	if (!(draggingWin || scrollingWin)) {//check for edge resizing
-		if (!(window->flags & UIWindowFlags_NoResize)) {
-			vec2 mp = DeshInput->mousePos;
+	//check for edge resizing
+	if (!(window->flags & UIWindowFlags_NoResize) && (WinCanTakeInput || WinResizing)) {
+		vec2 mp = DeshInput->mousePos;
 
-			static b32 trz = 0, brz = 0, lrz = 0, rrz = 0, latch = 0;
-			static vec2 vl1, vl2, vl3;
+		b32& latch = window->latch;
+		static vec2 vl1, vl2, vl3;
 
-			//top edge
-			if (trz && !(brz || lrz || rrz) || Math::PointInRectangle(mp, window->position.yAdd(-2), vec2(window->width, 2))) {
-				DeshWindow->SetCursor(CursorType_VResize); cursor_was_set = 1;
-				if (DeshInput->LMouseDown()) {
-					if (!latch) { vl1 = mp; vl2 = window->dimensions; vl3 = window->scroll; latch = 1; trz = 1; drag_override = 1; resizingWin = 1; }
+	
+		b32 mpres = DeshInput->LMousePressed();
+		b32 mdown = DeshInput->LMouseDown();
+		b32 mrele = DeshInput->LMouseReleased();
+		
+		//get which side is active
+		WinActiveSide& activeSide = window->activeSide;
+		constexpr f32 boundrysize = 2;
+		
+		if (!mdown) {
+			if (Math::PointInRectangle(mp, window->position.yAdd(-boundrysize), vec2(window->width, boundrysize)))
+				activeSide = wTop;
+			else if (Math::PointInRectangle(mp, window->position.yAdd(window->height), vec2(window->width, boundrysize)))
+				activeSide = wBottom;
+			else if (Math::PointInRectangle(mp, window->position, vec2(boundrysize, window->height)))
+				activeSide = wLeft;
+			else if (Math::PointInRectangle(mp, window->position.xAdd(window->width), vec2(boundrysize, window->height)))
+				activeSide = wRight;
+			else activeSide = wNone;
+		}
+		
+		Log("as", activeSide);
+		if (mpres && !latch && activeSide != wNone) {
+			window->latch = 1;
+			vl1 = mp;
+			vl2 = window->dimensions;
+			vl3 = window->scroll;
+			SetResizingInput;
+		}
+
+		if (mrele) {
+			latch = 0;
+			AllowInputs;
+		}
+		
+		switch (activeSide) {
+			case wTop: {
+				DeshWindow->SetCursor(CursorType_VResize); cursorWasSet = 1;
+				if (mdown) {
 					window->position.y = mp.y;
 					window->dimensions = vl2.yAdd(vl1.y - mp.y);
 					window->scy = Clamp(window->scy, 0.f, window->maxScroll.y);
-					inputupon=window;
 				}
-				if (DeshInput->LMouseReleased()) {
-					latch = 0; drag_override = 0; trz = 0; resizingWin = 0;
-					inputupon = 0;
-				}
-			}
-			//bottom edge
-			else if (brz && !(trz || lrz || rrz) || Math::PointInRectangle(mp, window->position.yAdd(window->height), vec2(window->width, 2))) {
-				DeshWindow->SetCursor(CursorType_VResize); cursor_was_set = 1;
-				if (DeshInput->LMouseDown()) {
-					if (!latch) { vl1 = mp; vl2 = window->dimensions; vl3 = window->scroll; latch = 1; brz = 1; drag_override = 1; resizingWin = 1; }
+			}break;
+			case wBottom: {
+				DeshWindow->SetCursor(CursorType_VResize); cursorWasSet = 1;
+				if (mdown) {
 					window->dimensions = vl2.yAdd(mp.y - vl1.y);
 					window->scy = Clamp(window->scy, 0.f, window->maxScroll.y);
-					inputupon=window;
 				}
-				if (DeshInput->LMouseReleased()) {
-					latch = 0; drag_override = 0; brz = 0; resizingWin = 0;
-					inputupon = 0;
-				}
-			}
-			//left edge
-			else if (lrz && !(brz || trz || rrz) || Math::PointInRectangle(mp, window->position, vec2(2, window->height))) {
-				DeshWindow->SetCursor(CursorType_HResize); cursor_was_set = 1;
-				if (DeshInput->LMouseDown()) {
-					if (!latch) { vl1 = mp; vl2 = window->dimensions; vl3 = window->scroll; latch = 1; lrz = 1; drag_override = 1; resizingWin = 1; }
+			}break;
+			case wLeft: {
+				DeshWindow->SetCursor(CursorType_HResize); cursorWasSet = 1;
+				if (mdown) {
 					window->position.x = mp.x;
 					window->dimensions = vl2.xAdd(vl1.x - mp.x);
 					window->scx = Clamp(window->scx, 0.f, window->maxScroll.x);
-					inputupon=window;
 				}
-				if (DeshInput->LMouseReleased()) {
-					latch = 0; drag_override = 0; lrz = 0; resizingWin = 0;
-					inputupon = 0;
-				}
-			}
-			//right edge
-			else if (rrz && !(brz || lrz || trz) || Math::PointInRectangle(mp, window->position.xAdd(window->width), vec2(2, window->height))) {
-				DeshWindow->SetCursor(CursorType_HResize); cursor_was_set = 1;
-				if (DeshInput->LMouseDown()) {
-					if (!latch) { vl1 = mp; vl2 = window->dimensions; vl3 = window->scroll; latch = 1; rrz = 1; drag_override = 1; resizingWin = 1; }
+			}break;
+			case wRight: {
+				DeshWindow->SetCursor(CursorType_HResize); cursorWasSet = 1;
+				if (mdown) {
 					window->dimensions = vl2.xAdd(mp.x - vl1.x);
 					window->scx = Clamp(window->scx, 0.f, window->maxScroll.x);
-					inputupon=window;
 				}
-				if (DeshInput->LMouseReleased()) {
-					latch = 0; drag_override = 0; rrz = 0; resizingWin = 0;
-					inputupon = 0;
-				}
-			}
+			}break;
+			case wNone:break;
 		}
 	}
 }
 
 //TODO(sushi) PLEASE clean this shit up
 void CheckWindowForScrollingInputs(UIWindow* window) {
+	//mouse wheel inputs
 	if (window->hovered && DeshInput->ScrollUp()) {
 		window->scy -= style.scrollAmount.y;
 		window->scy = Math::clamp(window->scy, 0.f, window->maxScroll.y);
@@ -1841,9 +1854,15 @@ void CheckWindowForScrollingInputs(UIWindow* window) {
 		return;
 	}
 
-	if (!(draggingWin || resizingWin)) {
+	if (WinCanTakeInput || WinScrolling) {
 		static b32 vscroll = 0, hscroll = 0;
+		static vec2 offset;
+		static b32 initial = true;
 		u32 flags = window->flags;
+
+		b32 mdown = DeshInput->LMouseDown();
+		b32 mrele = DeshInput->LMouseReleased();
+
 		if (!hscroll && !HasFlag(UIWindowFlags_NoScrollY)) {
 			f32 scrollbarheight = (window->dimensions.x < window->minSizeForFit.x ? window->height - style.scrollBarXHeight : window->height);
 			f32 draggerheight = scrollbarheight * scrollbarheight / window->minSizeForFit.y;
@@ -1857,32 +1876,27 @@ void CheckWindowForScrollingInputs(UIWindow* window) {
 				draggerpos + window->position,
 				vec2(style.scrollBarYWidth, draggerheight));
 
-			static vec2 offset;
-			static b32 initial = true;
+			
 			if (scdractive && DeshInput->LMouseDown() || !initial) {
 				if (initial) {
 					offset = draggerpos - DeshInput->mousePos;
 					initial = false;
-					scrollingWin = 1;
+					SetScrollingInput;
 					vscroll = 1;
-					window->beingScrolled = 1;
 				}
-				drag_override = 1;
 
 				draggerpos.y = DeshInput->mousePos.y + offset.y;
 				draggerpos.y = Clamp(draggerpos.y, 0, scrollbarheight - draggerheight);
 
 				window->scy = draggerpos.y * window->maxScroll.y / (scrollbarheight - draggerheight);
 				window->scy = Clamp(window->scy, 0.f, window->maxScroll.y);
-				inputupon = window;
 			}
 			if (DeshInput->LMouseReleased()) {
 				initial = true;
-				drag_override = 0;
-				scrollingWin = 0;
 				vscroll = 0;
 				window->beingScrolled = 0;
 				inputupon = 0;
+				AllowInputs;
 			}
 
 		}
@@ -1899,58 +1913,49 @@ void CheckWindowForScrollingInputs(UIWindow* window) {
 				draggerpos + window->position,
 				vec2(draggerwidth, style.scrollBarXHeight));
 
-			static vec2 offset;
-			static b32 initial = true;
 			if (scdractive && DeshInput->LMouseDown() || !initial) {
 				if (initial) {
 					offset = draggerpos - DeshInput->mousePos;
 					initial = false;
-					scrollingWin = 1;
 					hscroll = 1;
-					window->beingScrolled = 1;
+					SetScrollingInput;
 				}
-				drag_override = 1;
 
 				draggerpos.x = DeshInput->mousePos.x + offset.x;
 				draggerpos.x = Clamp(draggerpos.x, 0, scrollbarwidth - draggerwidth);
 
 				window->scx = draggerpos.x * window->maxScroll.x / (scrollbarwidth - draggerwidth);
 				window->scx = Clamp(window->scx, 0.f, window->maxScroll.x);
-				inputupon = window;
 			}
 			if (DeshInput->LMouseReleased()) {
 				initial = true;
-				drag_override = 0;
-				scrollingWin = 0;
 				hscroll = 0;
 				window->beingScrolled = 0;
-				inputupon = 0;
+				AllowInputs;
 			}
 		}
 	}
 }
 
 void CheckWindowForDragInputs(UIWindow* window) {
-	if (!(drag_override || scrollingWin)) { //drag
-		static b32 newDrag = true;
+	if (WinCanTakeInput || WinDragging) { //drag
+		b32& beingDragged = window->beingDragged;
 		static vec2 mouseOffset = vec2(0, 0);
 
 		if (
 			!(window->flags & UIWindowFlags_NoMove) &&
 			window->hovered &&
 			DeshInput->KeyPressed(MouseButton::LEFT)) {
-			draggingWin = 1;
+			SetDraggingInput;
 			mouseOffset = window->position - DeshInput->mousePos;
-			newDrag = false;
-			inputupon = window;
+			beingDragged = true;
 		}
-		if (!newDrag) {
+		if (beingDragged) {
 			window->position = DeshInput->mousePos + mouseOffset;
 		}
 		if (DeshInput->KeyReleased(MouseButton::LEFT)) {
-			newDrag = true;
-			draggingWin = 0;
-			inputupon = 0;
+			beingDragged = false;
+			AllowInputs;
 		}
 	}
 }
@@ -2430,7 +2435,7 @@ b32 UI::IsWinHovered() {
 }
 
 b32 UI::AnyWinHovered() {
-	return globalHovered || draggingWin;
+	return globalHovered || inputState != ISNone;
 }
 
 UIWindow* DisplayMetrics() {
@@ -2500,12 +2505,18 @@ UIWindow* DisplayMetrics() {
 		f32 fw = CalcTextSize(str1).x * 1.2;
 		
 		BeginRow(2, style.fontHeight * 1.2);
-		RowSetupColumnWidths({ fw, 10 });
+		RowSetupColumnWidths({ fw, 96 });
 
 		Text(str1);            Text(TOSTRING(globalHovered).str);
-		Text("dragging win");  Text(TOSTRING(draggingWin).str);
-		Text("resizing win");  Text(TOSTRING(resizingWin).str);
-		Text("scrolling win"); Text(TOSTRING(scrollingWin).str);
+		Text("input state: ");
+		switch (inputState) {
+			case ISNone:          Text("None");           break;
+			case ISScrolling:     Text("Scrolling");      break;
+			case ISResizing:      Text("Resizing");       break;
+			case ISDragging:      Text("Dragging");       break;
+			case ISPreventInputs: Text("Prevent Inputs"); break;
+		}
+		Text("input upon: "); Text((inputupon ? inputupon->name.str : "none"));
 
 		EndRow();
 
@@ -2710,7 +2721,7 @@ void UI::Init() {
 	PushVar(UIStyleVar_RowItemAlign,             vec2(0.5, 0.5));
 	PushVar(UIStyleVar_ScrollBarYWidth,          5);
 	PushVar(UIStyleVar_ScrollBarXHeight,         5);
-	PushVar(UIStyleVar_IndentAmount,             10);
+	PushVar(UIStyleVar_IndentAmount,             12);
 	PushVar(UIStyleVar_FontHeight,               style.font->max_height);
 	
 	PushScale(vec2(1, 1));
@@ -2894,7 +2905,7 @@ void UI::Update() {
 
 	globalHovered = 0;
 	
-
+	
 	//windows input checking functions
 	CheckWindowsForFocusInputs();
 
@@ -2905,8 +2916,8 @@ void UI::Update() {
 	
 	
 	//reset cursor to default if no item decided to set it 
-	if (!cursor_was_set) DeshWindow->SetCursor(CursorType_Arrow);
-	cursor_was_set = 0;
+	if (!cursorWasSet) DeshWindow->SetCursor(CursorType_Arrow);
+	cursorWasSet = 0;
 	
 	//draw windows in order 
 	for (UIWindow* p : windows) {
@@ -2917,6 +2928,10 @@ void UI::Update() {
 		DrawWindow(DisplayMetrics());
 		show_metrics = 0;
 	}
+
+	//it should be safe to do this any time the mouse is released...
+	if (DeshInput->LMouseReleased()) { AllowInputs; }
+
 
 	//we defer window item clearing to after the metrics window is drawn
 	//in debug builds

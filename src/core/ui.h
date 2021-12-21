@@ -380,6 +380,13 @@ struct UIItem {
 
 #define UI_WINDOW_ITEM_LAYERS 11
 
+//for resizing inputs, but could maybe be used for other things later
+enum WinActiveSide {
+	wNone,
+	wLeft, wRight, wTop, wBottom,
+};
+
+
 // a window is a collection of items and items are a collection of drawcalls.
 // item positions are relative to the window's upper left corner.
 // drawcall positions are relative to the item's upper left corner.
@@ -436,8 +443,14 @@ struct UIWindow {
 	b32 minimized = false;
 	b32 hidden = false;
 
+	//input state vars
+	b32 latch         = false;
 	b32 beingScrolled = false;
-	
+	b32 beingResized  = false;
+	b32 beingDragged  = false;
+	WinActiveSide activeSide = wNone;
+
+
 	f32 titleBarHeight = 0;
 
 	vec2 minSizeForFit;
@@ -573,7 +586,6 @@ namespace UI {
 	b32 Selectable(const char* label, b32 selected); 
 	b32 Selectable(const char* label, vec2 pos, b32 selected);
 
-
 	b32  BeginHeader(const char* label);
 	void EndHeader();
 	
@@ -595,6 +607,7 @@ namespace UI {
 	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags = 0);
 	
+
 	//// push/pop ////
 	void PushColor(UIStyleCol idx, color color);
 	void PushVar(UIStyleVar idx, f32 style);
@@ -612,10 +625,6 @@ namespace UI {
 	void PopWindowLayer(u32 count = 1);
 	
 	
-	//// special functions ////
-	
-	
-	
 	//// windows ////
 	void Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
 	void End();
@@ -629,15 +638,7 @@ namespace UI {
 	b32 IsWinHovered();
 	b32 AnyWinHovered();
 	void ShowMetricsWindow();
-	
-	//// other ////
-	//this utility is for using a collection of items as if they were one
-	//it basically combines all the items draw commands into one custom item that is
-	//added to the window when EndCustomItem() is called
-	//this is useful for cases where the user wants to manually position a group of items
-	//then work with them as if they were one afterwards
-	void BeginCustomItem();
-	void EndCustomItem();
+
 	
 	//// init and update ////
 	void Init();
