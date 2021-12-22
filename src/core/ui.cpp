@@ -310,8 +310,10 @@ UIWindow* UI::GetWindow() {
 //width of the object
 void UI::SameLine(){
 	//Assert(curwin->items.count, "Attempt to sameline an item creating any items!");
-	curwin->cursor.y = curwin->items[currlayer].last->initialCurPos.y;
-	curwin->cursor.x += curwin->items[currlayer].last->size.x + style.itemSpacing.x;
+	if (curwin->items[currlayer].last) {
+		curwin->cursor.y = curwin->items[currlayer].last->initialCurPos.y;
+		curwin->cursor.x += curwin->items[currlayer].last->initialCurPos.x + curwin->items[currlayer].last->size.x + style.itemSpacing.x;
+	}
 }
 
 vec2 UI::GetLastItemPos() {
