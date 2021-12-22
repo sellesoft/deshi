@@ -196,6 +196,24 @@ __________ this might not be an error with our stuff and just a quirk of the win
 #error "unknown platform"
 #endif //DESHI_WINDOWS
 
+enum DeshiStage_ {
+	DS_NONE = 0,
+	DS_MEMORY = 1 << 0,
+	DS_LOGGER = 1 << 1,
+	DS_CONSOLE = 1 << 2,
+	DS_TIME = 1 << 3,
+	DS_WINDOW = 1 << 4,
+	DS_RENDER = 1 << 5,
+	DS_STORAGE = 1 << 6,
+	DS_UI = 1 << 7,
+	DS_CMD = 1 << 8,
+}; typedef u32 DeshiStage;
+
+DeshiStage deshiStage = DS_NONE;
+
+#define AssertDS(stages, ...) Assert((deshiStage & (stages)) == (stages))
+#define IsDeshiModuleLoaded (deshiStage & (stages)) == (stages)
+
 //// core headers ////
 #include "deshi.h"
 #include "defines.h"

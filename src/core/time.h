@@ -41,6 +41,9 @@ extern Time* g_time;
 #define DeshTotalTime g_time->totalTime
 
 inline void Time::Init(){
+	//AssertDS(DS_MEMORY, "Attempt to load Time without loading Memory first");
+	//deshiStage |= DS_TIME;
+
 	TIMER_START(t_s);
 	
 	tp1 = std::chrono::system_clock::now();

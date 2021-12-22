@@ -540,7 +540,7 @@ Inverse() const{
 //returns a LH rotation transformation matrix in degrees around the X axis
 inline mat4 mat4::
 RotationMatrixX(float angle){
-	angle = RADIANS(angle);
+	angle = Radians(angle);
 	float c = cosf(angle); float s = sinf(angle);
 	return mat4(1,  0, 0, 0,
 				0,  c, s, 0,
@@ -551,7 +551,7 @@ RotationMatrixX(float angle){
 //returns a LH rotation transformation matrix in degrees around the Y axis
 inline mat4 mat4::
 RotationMatrixY(float angle){
-	angle = RADIANS(angle);
+	angle = Radians(angle);
 	float c = cosf(angle); float s = sinf(angle);
 	return mat4(c, 0, -s, 0,
 				0, 1,  0, 0,
@@ -562,7 +562,7 @@ RotationMatrixY(float angle){
 //returns a LH rotation transformation matrix in degrees around the Z axis
 inline mat4 mat4::
 RotationMatrixZ(float angle){
-	angle = RADIANS(angle);
+	angle = Radians(angle);
 	float c = cosf(angle); float s = sinf(angle);
 	return mat4(c,  s, 0, 0,
 				-s, c, 0, 0,
@@ -573,7 +573,7 @@ RotationMatrixZ(float angle){
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
 inline mat4 mat4::
 RotationMatrix(float x, float y, float z){
-	x = RADIANS(x); y = RADIANS(y); z = RADIANS(z);
+	x = Radians(x); y = Radians(y); z = Radians(z);
 	float cX = cosf(x); float sX = sinf(x);
 	float cY = cosf(y); float sY = sinf(y);
 	float cZ = cosf(z); float sZ = sinf(z);

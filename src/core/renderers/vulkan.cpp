@@ -3436,7 +3436,7 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 		normav;//((norm01 + norm12) / 2).normalized();
 		
 		float a = p01.mag(), b = p12.mag(), c = p02.mag();
-		float ang = RADIANS(Math::AngBetweenVectors(-p01, p12));
+		float ang = Radians(Math::AngBetweenVectors(-p01, p12));
 		
 		//this is the critical angle where the thickness of the 2 lines cause them to overlap at small angles
 		//if (fabs(ang) < 2 * atanf(thickness / (2 * p02.mag()))) {
@@ -3444,7 +3444,7 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 		//}
 		
 		normav = p12.normalized();
-		normav = Math::vec2RotateByAngle(-DEGREES(ang) / 2, normav);
+		normav = Math::vec2RotateByAngle(-Degrees(ang) / 2, normav);
 		normav *= flip;
 		
 		//this is where we calc how wide the thickness of the inner line is meant to be
@@ -4208,7 +4208,7 @@ void Render::
 DrawFrustrum(vec3 position, vec3 target, f32 aspectRatio, f32 fovx, f32 nearZ, f32 farZ, color color){
 	if(color.a == 0) return;
 	
-	f32 y = tanf(RADIANS(fovx / 2.0f));
+	f32 y = tanf(Radians(fovx / 2.0f));
 	f32 x = y * aspectRatio;
 	f32 nearX = x * nearZ;
 	f32 farX  = x * farZ;
@@ -4414,6 +4414,11 @@ remakeOffscreen(){
 ///////////////
 void Render::
 Init(){
+	AssertDS(DS_MEMORY, "Attempt to init Vulkan without loading Memory first");
+	AssertDS(DS_LOGGER, "Attempt to init Vulkan without loading Logger first");
+	AssertDS(DS_WINDOW, "Attempt to init Vulkan without loading Window first");
+	deshiStage |= DS_RENDER;
+
 	TIMER_START(t_s);
 	
 	//// load RenderSettings ////

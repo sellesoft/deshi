@@ -178,6 +178,10 @@ void Console::ChangeState(ConsoleState new_state) {
 }
 
 void Console::Init() {
+	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
+	AssertDS(DS_LOGGER, "Attempt to load Console without loading Logger first");
+	deshiStage |= DS_CONSOLE;
+
 	TIMER_START(t_s);
 	buffer = Logger::GetFilePtr();
 
@@ -202,6 +206,7 @@ void Console::Update() {
 		
 		PushColor(UIStyleCol_Text, colstr.color);
 		Text(toprint);
+		
 		PopColor();
 	}
 

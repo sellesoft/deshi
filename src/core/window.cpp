@@ -15,6 +15,9 @@ GLFWcursor* textCursor;
 
 
 void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
+	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
+	deshiStage |= DS_WINDOW;
+
 	TIMER_START(t_s);
 	
 	name = _name;

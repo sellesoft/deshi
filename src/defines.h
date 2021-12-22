@@ -90,8 +90,8 @@ struct Allocator{
 #define Megabytes(a) (((u64)(a)) << 20)
 #define Gigabytes(a) (((u64)(a)) << 30)
 #define Terabytes(a) (((u64)(a)) << 40)
-#define RADIANS(x) ((x) * (M_PI / 180.f))
-#define DEGREES(x) ((x) * (180.f / M_PI))
+#define Radians(x) ((x) * (M_PI / 180.f))
+#define Degrees(x) ((x) * (180.f / M_PI))
 #define ArrayCount(arr) (sizeof((arr)) / sizeof(((arr))[0])) //length of a static-size c-array
 #define RoundUpTo(value, multiple) (((size_t)((value) + (((size_t)(multiple))-1)) / (size_t)(multiple)) * (size_t)(multiple))
 #define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
@@ -144,17 +144,16 @@ global_const f32 MIN_F32 = -MAX_F32;
 global_const f64 MAX_F64 = 1.79769313486231e+308;
 global_const f64 MIN_F64 = -MAX_F64;
 
-//TODO make these typed
-#define M_EPSILON    0.00001f
-#define M_FOURTHPI   0.78539816339f
-#define M_HALFPI     1.57079632679f
-#define M_PI         3.14159265359f
-#define M_PId        3.14159265358979
-#define M_2PI        6.28318530718f
-#define M_TAU        M_2PI
-#define M_E          2.71828182846f
-#define M_SQRT_TWO   1.41421356237f
-#define M_SQRT_THREE 1.73205080757f
+global_const f32 M_EPSILON    = 0.00001f;
+global_const f32 M_FOURTHPI   = 0.78539816339f;
+global_const f32 M_HALFPI     = 1.57079632679f;
+global_const f32 M_PI         = 3.14159265359f;
+global_const f64 M_PId        = 3.14159265358979;
+global_const f32 M_2PI        = 6.28318530718f;
+global_const f32 M_TAU        = M_2PI;
+global_const f32 M_E          = 2.71828182846f;
+global_const f32 M_SQRT_TWO   = 1.41421356237f;
+global_const f32 M_SQRT_THREE = 1.73205080757f;
 
 /////////////////////// 
 //// assert macros //// //NOTE the ... is for a programmer message at the assert; it is unused otherwise

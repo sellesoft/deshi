@@ -1704,6 +1704,10 @@ RemakeTextures(){
 ///////////////
 void Render::
 Init(){
+	AssertDS(DS_MEMORY, "Attempt to load OpenGL without loading Memory first");
+	AssertDS(DS_WINDOW, "Attempt to load OpenGL without loading Window first");
+	deshiStage |= DS_RENDER;
+
 	TIMER_START(t_s);
 	
 	//// load RenderSettings ////

@@ -609,7 +609,7 @@ M3x3To4x4(const matN& ma) {
 //the input rotation is in degrees
 inline matN matN::
 RotationMatrix(vec3 rotation) {
-	rotation = RADIANS(rotation);
+	rotation = Radians(rotation);
 	f64 cX = cosf(rotation.x); f64 sX = sinf(rotation.x);
 	f64 cY = cosf(rotation.y); f64 sY = sinf(rotation.y);
 	f64 cZ = cosf(rotation.z); f64 sZ = sinf(rotation.z);
@@ -681,7 +681,7 @@ ScaleMatrix(vec3 scale) {
 
 inline matN matN::
 TransformationMatrix(vec3 tr, vec3 rot, vec3 scale) {
-	rot = RADIANS(rot);
+	rot = Radians(rot);
 	f64 cX = cosf(rot.x); f64 sX = sinf(rot.x);
 	f64 cY = cosf(rot.y); f64 sY = sinf(rot.y);
 	f64 cZ = cosf(rot.z); f64 sZ = sinf(rot.z);

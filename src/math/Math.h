@@ -167,7 +167,7 @@ toVec3() const{
 //set up properly (sorry)
 inline quat quat::
 AxisAngleToQuat(const vec3& axis, float angle){
-	float angler = RADIANS(angle);
+	float angler = Radians(angle);
 	return quat(sinf(angler / 2) * axis.x, sinf(angler / 2) * axis.y, sinf(angler / 2) * axis.z, cosf(angler / 2));
 }
 
@@ -177,7 +177,7 @@ AxisAngleToQuat(const vec3& axis, float angle){
 inline quat quat::
 RotVecToQuat(const vec3& rotation){
 	//this is probably necessary although he didn't do this in the Gamasutra article
-	vec3 rotationrad = RADIANS(rotation);
+	vec3 rotationrad = Radians(rotation);
 	float cy = cos(rotationrad.z * 0.5);
 	float sy = sin(rotationrad.z * 0.5);
 	float cp = cos(rotationrad.y * 0.5);
@@ -254,7 +254,7 @@ col(u32 col){
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
 inline mat3 mat3::
 RotationMatrix(vec3 rotation){
-	rotation = RADIANS(rotation);
+	rotation = Radians(rotation);
 	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
 	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
 	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
@@ -298,7 +298,7 @@ Translation(){
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
 inline mat4 mat4::
 RotationMatrix(vec3 rotation){
-	rotation = RADIANS(rotation);
+	rotation = Radians(rotation);
 	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
 	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
 	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
@@ -317,7 +317,7 @@ RotationMatrix(vec3 rotation){
 //TODO(sushi, Ma) redo this function, I think its completely wrong around any axis thats not a world axis
 inline mat4 mat4::
 AxisAngleRotationMatrix(float angle, vec4 axis){
-	angle = RADIANS(angle); 
+	angle = Radians(angle); 
 	float mag = axis.mag();
 	axis = vec4(axis.x / mag, axis.y / mag, axis.z / mag, axis.w / mag);
 	//axis.normalize();
@@ -355,7 +355,7 @@ AxisAngleRotationMatrix(float angle, vec4 axis){
 //rotates over the Y, then Z then X, ref: https://www.euclideanspace.com/maths/geometry/affine/aroundPoint/index.htm
 inline mat4 mat4::RotationMatrixAroundPoint(vec3 pivot, vec3 rotation){
 	//pivot = -pivot; //gotta negate this for some reason :)
-	rotation = RADIANS(rotation);
+	rotation = Radians(rotation);
 	float cX = cosf(rotation.x); float sX = sinf(rotation.x);
 	float cY = cosf(rotation.y); float sY = sinf(rotation.y);
 	float cZ = cosf(rotation.z); float sZ = sinf(rotation.z);
@@ -384,7 +384,7 @@ ScaleMatrix(vec3 scale){
 //returns a transformation matrix of the combined translation, rotation, and scale matrices from input vectors
 inline mat4 mat4::
 TransformationMatrix(vec3 tr, vec3 rot, vec3 scale){
-	rot = RADIANS(rot);
+	rot = Radians(rot);
 	float cX = cosf(rot.x); float sX = sinf(rot.x);
 	float cY = cosf(rot.y); float sY = sinf(rot.y);
 	float cZ = cosf(rot.z); float sZ = sinf(rot.z);
@@ -403,12 +403,12 @@ inline vec3 mat4::
 Rotation(){
 	if((*this)(0,2) < 1){
 		if((*this)(0,2) > -1){
-			return -vec3(DEGREES(atan2(-(*this)(1,2), (*this)(2,2))), DEGREES(asin((*this)(0,2))), DEGREES(atan2(-(*this)(0,1), (*this)(0,0))));
+			return -vec3(Degrees(atan2(-(*this)(1,2), (*this)(2,2))), Degrees(asin((*this)(0,2))), Degrees(atan2(-(*this)(0,1), (*this)(0,0))));
 		}else{
-			return -vec3(DEGREES(-atan2((*this)(1,0), (*this)(1,1))), DEGREES(-M_HALFPI), 0);
+			return -vec3(Degrees(-atan2((*this)(1,0), (*this)(1,1))), Degrees(-M_HALFPI), 0);
 		}
 	}else{
-		return -vec3(DEGREES(atan2((*this)(1,0), (*this)(1,1))), DEGREES(M_HALFPI), 0);
+		return -vec3(Degrees(atan2((*this)(1,0), (*this)(1,1))), Degrees(M_HALFPI), 0);
 	}
 	
 	
@@ -482,7 +482,7 @@ namespace Math {
 	
 	static vec2 vec2RotateByAngle(float angle, vec2 v){
 		if (!angle) return v;
-		angle = RADIANS(angle);
+		angle = Radians(angle);
 		return vec2(v.x * cosf(angle) - v.y * sinf(angle), v.x * sin(angle) + v.y * cos(angle));
 	}
 	
@@ -505,17 +505,17 @@ namespace Math {
 	//returns in degrees
 	//this doesn't really work in 3D but this function is here anyways
 	static float AngBetweenVectors(vec3 v1, vec3 v2){
-		return DEGREES(acosf(v1.dot(v2) / (v1.mag() * v2.mag())));
+		return Degrees(acosf(v1.dot(v2) / (v1.mag() * v2.mag())));
 	}
 	
 	//returns in degrees
 	static float AngBetweenVectors(vec2 v1, vec2 v2){
-		return DEGREES(atan2(v1.x * v2.y - v1.y * v2.x, v1.dot(v2)));
+		return Degrees(atan2(v1.x * v2.y - v1.y * v2.x, v1.dot(v2)));
 	}
 	
 	//returns in degrees between 0 and 360
 	static float AngBetweenVectors360(vec2 v1, vec2 v2){
-		float ang = DEGREES(atan2(v1.x * v2.y - v1.y * v2.x, v1.dot(v2)));
+		float ang = Degrees(atan2(v1.x * v2.y - v1.y * v2.x, v1.dot(v2)));
 		return (ang < 0) ? 360 + ang : ang;
 	}
 	
@@ -523,7 +523,7 @@ namespace Math {
 	static mat4 PerspectiveProjectionMatrix(f32 width, f32 height, f32 hFOV, f32 nearZ, f32 farZ){
 		float renderDistance = farZ - nearZ;
 		float aspectRatio = (f32)height / (f32)width;
-		float fovRad = 1.0f / tanf(RADIANS(hFOV / 2.0f));
+		float fovRad = 1.0f / tanf(Radians(hFOV / 2.0f));
 		return mat4( //NOTE setting (1,1) to negative flips the y-axis so y is up when x is right and z is forward
 					aspectRatio * fovRad, 0,	   0,							  0,
 					0,					-fovRad, 0,							  0,
@@ -559,14 +559,14 @@ namespace Math {
 	
 	//this assumes its in degrees
 	static vec3 SphericalToRectangularCoords(vec3 v){
-		float y = RADIANS(v.y);
-		float z = RADIANS(v.z);
+		float y = Radians(v.y);
+		float z = Radians(v.z);
 		return vec3(v.x * sinf(z) * cosf(y), v.x * cosf(z), v.x * sinf(z) * sinf(y));
 	}
 	
 	static vec3 RectangularToSphericalCoords(vec3 v){
-		float rho = RADIANS(sqrt(v.mag()));
-		float theta = RADIANS(atan(v.y / v.z));
+		float rho = Radians(sqrt(v.mag()));
+		float theta = Radians(atan(v.y / v.z));
 		float phi = acos(v.z / v.mag()); //maybe use v.y instead of v.z because y is our vertical axis
 		return vec3(rho, theta, phi);
 		

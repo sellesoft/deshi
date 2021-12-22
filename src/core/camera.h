@@ -45,7 +45,7 @@ struct Camera  {
 	static mat4 MakePerspectiveProjectionMatrix(float winWidth, float winHeight, float _fov, float _farZ, float _nearZ) {
 		float renderDistance = _farZ - _nearZ;
 		float aspectRatio = winHeight / winWidth;
-		float fovRad = 1.f / tanf(RADIANS(_fov * .5f));
+		float fovRad = 1.f / tanf(Radians(_fov * .5f));
 		return mat4( //NOTE setting (1,1) to negative flips the y-axis
 					aspectRatio * fovRad, 0, 0, 0,
 					0, -fovRad, 0, 0,

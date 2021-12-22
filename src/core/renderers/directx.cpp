@@ -869,6 +869,8 @@ local void Flush(ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D12Fence> fe
 
 void Render::
 Init(){ //!Incomplete
+	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
+
 	TIMER_START(t_s);
 	
 	//// load RenderSettings ////

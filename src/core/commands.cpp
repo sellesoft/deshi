@@ -332,6 +332,9 @@ namespace Cmd{
 	}
 	
 	void Init(){
+		AssertDS(DS_MEMORY, "Attempt to load Cmd without loading Memory first");
+		deshiStage |= DS_CMD;
+
 		TIMER_START(t_s);
 		
 		AddDeshiCommands();

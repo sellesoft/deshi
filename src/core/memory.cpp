@@ -390,6 +390,8 @@ namespace Memory{
 	}
 	
 	void Init(upt main_size, upt temp_size){
+		deshiStage |= DS_MEMORY;
+
 		void* base_address = 0;
 		u8*   allocation = 0;
 		u64   total_size = main_size + temp_size;

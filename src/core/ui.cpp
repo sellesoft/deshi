@@ -2955,6 +2955,11 @@ void UI::DemoWindow() {
 //it will not focus if theres a window in front of them.
 //I'm not sure how i want to fix it yet
 void UI::Init() {
+	AssertDS(DS_MEMORY,  "Attempt to load UI without loading Memory first");
+	AssertDS(DS_WINDOW,  "Attempt to load UI without loading Window first");
+	AssertDS(DS_STORAGE, "Attempt to load UI without loading Storage first");
+	deshiStage |= DS_UI;
+
 	TIMER_START(t_s);
 	
 	curwin = new UIWindow();

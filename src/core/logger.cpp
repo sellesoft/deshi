@@ -59,6 +59,9 @@ namespace Logger{
 	}
 	
 	void Init(u32 log_count, b32 mirror){
+		AssertDS(DS_MEMORY, "Attempt to initialize Logger without loading memory first");
+		deshiStage |= DS_LOGGER;
+
 		TIMER_START(t_s);
 		
 		mirror_to_stdout = mirror;
@@ -100,6 +103,7 @@ namespace Logger{
 #endif //DESHI_SLOW
 		
 		Log("deshi","Finished logging initialization in ",TIMER_END(t_s),"ms");
+		mirror_to_console = true;
 	}
 	
 	//TODO maybe flush every X seconds/frames instead of every update?

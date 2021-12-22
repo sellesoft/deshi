@@ -39,6 +39,9 @@ namespace Storage{
 ///////////////
 void Storage::
 Init(){
+	AssertDS(DS_MEMORY, "Attempt to load Storage without loading Memory first");
+	deshiStage |= DS_STORAGE;
+
 	TIMER_START(t_s);
 	
 	stbi_set_flip_vertically_on_load(true);
