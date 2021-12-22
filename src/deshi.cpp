@@ -62,6 +62,18 @@ ____v.xy, v.yz, as well as operators for these things if possible. Prefer them t
 ____you probably just need to add a vec2/3 for each permutation of each vector
 ____glm/detail/_swizzle.hpp
 
+Memory TODOs
+------------
+when running out of memory, log an error then fallback on STL or OS (rather than assert)
+add macro interface over functions to track where they are called from (file, line, function)
+standardize naming of bytes vs size
+add memory naming/tagging (like vulkan)
+add fast generic bins
+____ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
+add a memory visualizer
+____ref: https://en.wikipedia.org/wiki/Treemapping
+consider multiple thread contexts
+
 Render TODOs
 ------------
 figure out how to use custom allocators with opengl3

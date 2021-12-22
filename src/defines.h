@@ -45,16 +45,16 @@ typedef signed char        s8;
 typedef signed short       s16;
 typedef signed int         s32;
 typedef signed long long   s64;
-typedef ptrdiff_t          spt;
+typedef ptrdiff_t          spt;   //signed pointer type
 typedef unsigned char      u8;
 typedef unsigned short     u16;
 typedef unsigned int       u32;
 typedef unsigned long long u64;
-typedef size_t             upt;
+typedef size_t             upt;   //unsigned pointer type
 typedef float              f32;
 typedef double             f64;
-typedef s32                b32;
-typedef char16_t           uchar;
+typedef s32                b32;   //sized boolean type
+typedef char16_t           uchar; //unicode char type
 
 typedef u32 Type;
 typedef u32 Flags;
@@ -188,9 +188,11 @@ global_const f32 M_SQRT_THREE = 1.73205080757f;
 ///////////////
 //// other ////
 ///////////////
-//compile-time print sizeof(); compiler will give an error with the size of the object
+//// compile time sizeof() ////
+//compiler will give an error with the size of the object
 //char (*__kaboom)[sizeof( YourTypeHere )] = 1;
 
+//// defer statement ////
 //ref: https://stackoverflow.com/a/42060129 by pmttavara
 //defers execution inside the block to the end of the current scope; this works by placing
 //that code in a lambda specific to that linethat a dummy object will call in its destructor
@@ -203,6 +205,16 @@ template <class F> deferrer<F> operator*(defer_dummy, F f) { return {f}; }
 #  define defer auto DEFER(__LINE__) = defer_dummy{} *[&]()
 #endif // defer
 
+//// double linked list node ////
+struct Node{
+	Node* next;
+	Node* prev;
+};
+#define NodeInsertNext(x,node) ((node)->next=(x)->next,(node)->prev=(x),(node)->next->prev=(node),(x)->next=(node))
+#define NodeInsertPrev(x,node) ((node)->prev=(x)->prev,(node)->next=(x),(node)->prev->next=(node),(x)->prev=(node))
+#define NodeRemove(node) ((node)->next->prev=(node)->prev,(node)->prev->next=(node)->next)
+
+//// C/C++ STL allocator ////
 function void* STLAllocator_Reserve(upt bytes){void* a = calloc(1,bytes); Assert(a); return a;}
 function void  STLAllocator_Release(void* ptr){free(ptr);}
 function void* STLAllocator_Resize(void* ptr, upt bytes){void* a = realloc(ptr,bytes); Assert(a); return a;}
