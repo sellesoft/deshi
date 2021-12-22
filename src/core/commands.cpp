@@ -36,7 +36,7 @@ namespace Cmd{
 		CMDSTART(add, "Adds two numbers together"){
 			int i0 = atoi(args[0].str);
 			int i1 = atoi(args[1].str);
-			Console2::AddLog(TOSTRING(i0," + ",i1," = ", i0+i1));
+			Console2::AddLog(toStr(i0," + ",i1," = ", i0+i1));
 		}CMDEND(add, CmdArgument_S32, CmdArgument_S32);
 		
 		CMDSTART(daytime, "Logs the time in day-time format"){
@@ -76,7 +76,7 @@ namespace Cmd{
 				}
 			}
 			if(!found){
-				Console2::AddLog(TOSTRING("Error: Command '",args[0],"' not found"));
+				Console2::AddLog(toStr("Error: Command '",args[0],"' not found"));
 			}
 		}CMDEND(help, CmdArgument_String|CmdArgument_OPTIONAL);
 		
@@ -112,7 +112,7 @@ namespace Cmd{
 		
 		CMDSTART(aliases, "Lists available aliases"){
 			forE(aliases){
-				Console2::AddLog(TOSTRING(it->name,": ",it->command));
+				Console2::AddLog(toStr(it->name,": ",it->command));
 			}
 		}CMDEND(aliases);
 		
@@ -205,7 +205,7 @@ namespace Cmd{
 				case(CursorMode_FirstPerson):{ cursMode = cstring_lit("First Person"); }break;
 				case(CursorMode_Hidden):     { cursMode = cstring_lit("Hidden"); }break;
 			}
-			Console2::AddLog(TOSTRING("Window Info"
+			Console2::AddLog(toStr("Window Info"
 									  "\n    Window Position: ",DeshWindow->x,",",DeshWindow->y,
 									  "\n    Window Dimensions: ",DeshWindow->width,"x",DeshWindow->height,
 									  "\n    Screen Dimensions: ",DeshWindow->screenWidth,"x",DeshWindow->screenHeight,
@@ -224,7 +224,7 @@ namespace Cmd{
 							 "\nName\tShader\tTextures");
 			forI(Storage::MaterialCount()){
 				Material* mat = Storage::MaterialAt(i);
-				string text = TOSTRING(mat->name,'\t',ShaderStrings[mat->shader],'\t');
+				string text = toStr(mat->name,'\t',ShaderStrings[mat->shader],'\t');
 				forI(mat->textures.size()){
 					text += " ";
 					text += Storage::TextureName(mat->textures[i]);
@@ -238,7 +238,7 @@ namespace Cmd{
 			int texSlot = atoi(args[1].str);
 			int texID = atoi(args[2].str);
 			Storage::MaterialAt(matID)->textures[texSlot] = texID;
-			Console2::AddLog(TOSTRING("Updated material ",Storage::MaterialName(matID),"'s texture",texSlot,
+			Console2::AddLog(toStr("Updated material ",Storage::MaterialName(matID),"'s texture",texSlot,
 									  " to ",Storage::TextureName(texID)));
 		}CMDEND(mat_texture, CmdArgument_S32, CmdArgument_S32, CmdArgument_S32);
 		
@@ -246,7 +246,7 @@ namespace Cmd{
 			int matID = atoi(args[0].str);
 			int shader = atoi(args[1].str);
 			Storage::MaterialAt(matID)->shader = (Shader)shader;
-			Console2::AddLog(TOSTRING("Updated material ",Storage::MaterialName(matID),"'s shader to ", ShaderStrings[shader]));
+			Console2::AddLog(toStr("Updated material ",Storage::MaterialName(matID),"'s shader to ", ShaderStrings[shader]));
 		}CMDEND(mat_shader, CmdArgument_S32, CmdArgument_S32);
 		
 		CMDSTART(shader_reload, "Reloads specified shader"){
@@ -256,9 +256,9 @@ namespace Cmd{
 				Console2::AddLog("^c:magen^Reloaded all shaders^c^");
 			}else if(id < Shader_COUNT){
 				Render::ReloadShader(id);
-				Console2::AddLog(TOSTRING("^c:magen^Reloaded '",ShaderStrings[id],"'^c^"));
+				Console2::AddLog(toStr("^c:magen^Reloaded '",ShaderStrings[id],"'^c^"));
 			}else{
-				Console2::AddLog(TOSTRING("Error: There is no shader with id: ",id));
+				Console2::AddLog(toStr("Error: There is no shader with id: ",id));
 			}
 		}CMDEND(shader_reload, CmdArgument_S32);
 		
@@ -266,7 +266,7 @@ namespace Cmd{
 			Console2::AddLog("Shader List:"
 							 "\nID\tName");
 			forI(ArrayCount(ShaderStrings)){
-				Console2::AddLog(TOSTRING(i,'\t',ShaderStrings[i]));
+				Console2::AddLog(toStr(i,'\t',ShaderStrings[i]));
 			}
 		}CMDEND(shader_list);
 		
@@ -275,15 +275,15 @@ namespace Cmd{
 			TextureType type = TextureType_2D;
 			if(args.count == 2) type = (TextureType)atoi(args[1].str);
 			Storage::CreateTextureFromFile(to_string(args[0]).str, ImageFormat_RGBA, type);
-			Console2::AddLog(TOSTRING("Loaded texture '",args[0],"' in ",TIMER_END(t_l),"ms"));
+			Console2::AddLog(toStr("Loaded texture '",args[0],"' in ",TIMER_END(t_l),"ms"));
 		}CMDEND(texture_load, CmdArgument_String, CmdArgument_S32|CmdArgument_OPTIONAL);
 		
 		CMDSTART(texture_list, "Lists the textures and their info"){
-			Console2::AddLog(TOSTRING("Texture List:"
+			Console2::AddLog(toStr("Texture List:"
 									  "\nName\tWidth\tHeight\tDepth\tMipmaps\tType"));
 			forI(Storage::TextureCount()){
 				Texture* tex = Storage::TextureAt(i);
-				Console2::AddLog(TOSTRING('\n',tex->name,'\t',tex->width,'\t',tex->height,'\t',tex->depth,
+				Console2::AddLog(toStr('\n',tex->name,'\t',tex->width,'\t',tex->height,'\t',tex->depth,
 										  '\t',tex->mipmaps,'\t',TextureTypeStrings[tex->type]));
 			}
 		}CMDEND(texture_list);
@@ -373,14 +373,14 @@ namespace Cmd{
 			if(command_name == it->name){
 				if(it->func){
 					if(args.count < it->min_args){
-						Console2::AddLog(TOSTRING("Error: Command '",command_name,"' requires at least ",it->min_args," arguments"));
+						Console2::AddLog(toStr("Error: Command '",command_name,"' requires at least ",it->min_args," arguments"));
 					}else if(args.count > it->max_args){
-						Console2::AddLog(TOSTRING("Error: Command '",command_name,"' requires at most ",it->max_args," arguments"));
+						Console2::AddLog(toStr("Error: Command '",command_name,"' requires at most ",it->max_args," arguments"));
 					}else{
 						it->func(args);
 					}
 				}else{
-					Console2::AddLog(TOSTRING("Error: Command '",command_name,"' has no registered function"));
+					Console2::AddLog(toStr("Error: Command '",command_name,"' has no registered function"));
 				}
 				found = true;
 				break;
@@ -394,7 +394,7 @@ namespace Cmd{
 			}
 		}
 		if(!found){
-			Console2::AddLog(TOSTRING("Error: Unknown command '",command_name,"'"));
+			Console2::AddLog(toStr("Error: Unknown command '",command_name,"'"));
 		}
 	}
 }; //namespace Cmd

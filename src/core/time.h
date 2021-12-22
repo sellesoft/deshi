@@ -5,7 +5,7 @@
 //NOTE real-world times should be un 64bit unix format
 
 #include "../defines.h"
-#include "logging.h"
+#include "logger.h"
 
 #include <chrono>
 #include <ctime>

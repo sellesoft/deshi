@@ -264,7 +264,7 @@ to_string(const matN& x, bool trunc = true) {
     return str;
 }
 
-#define TOSTRING(...) ToString(__VA_ARGS__)
+#define toStr(...) ToString(__VA_ARGS__)
 template<class... T> global_ string 
 ToString(T... args){
 	string str;

@@ -127,7 +127,7 @@ add MouseInsideWindow() func to input or window
 make the transparent framebuffer a start switch since it hurts frames (it must be set at window creation time)
 add the ability to limit framerate
 centralize the settings files (combine all deshi.cfg and all game.cfg, make them hot-loadable)
-convert std::string to our string throughout the project, primarily .str() methods so i can fully convert TOSTRING to use our string
+convert std::string to our string throughout the project, primarily .str() methods so i can fully convert toStr to use our string
 make a dynamic timers array in time.h for cleaner timer stuffs (push/peek/pop)
 deshi or admin callback function that allows for displaying some sort of indicator that stuff is loading
 ____the call back function could be on deshi, which updates imgui and/or renderer only and then calls on entity admin
@@ -213,7 +213,7 @@ __________ this might not be an error with our stuff and just a quirk of the win
 #endif //DESHI_DISABLE_IMGUI
 #include "core/input.h"
 #include "core/io.h"
-#include "core/logging.h"
+#include "core/logger.h"
 #include "core/memory.h"
 #include "core/model.h"
 #include "core/renderer.h"
@@ -272,7 +272,7 @@ __________ this might not be an error with our stuff and just a quirk of the win
 //// core cpp ////
 #include "core/io.cpp"
 #include "core/memory.cpp"
-#include "core/logging.cpp"
+#include "core/logger.cpp"
 #include "core/window.cpp"
 #include "core/assets.cpp"
 #include "core/console.cpp"
@@ -292,7 +292,7 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	Assets::enforceDirectories();
 	Memory::Init(Gigabytes(1), Gigabytes(1));
 	Console2::Init();
-	Logging::Init(5);
+	Logger::Init(5);
 	deshi_time.Init();
 	deshi_window.Init("deshi", winWidth, winHeight);
 #ifndef DESHI_DISABLE_CONSOLE //really ugly lookin huh
@@ -315,7 +315,7 @@ void deshi::cleanup(){
 	Render::Cleanup();
 	deshi_window.Cleanup();
 	deshi_console.Cleanup(); Console2::Cleanup();
-	Logging::Cleanup();
+	Logger::Cleanup();
 }
 
 bool deshi::shouldClose(){

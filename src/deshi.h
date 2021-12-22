@@ -18,7 +18,7 @@
 #endif //DESHI_DISABLE_IMGUI
 #include "core/input.h"
 #include "core/io.h"
-#include "core/logging.h"
+#include "core/logger.h"
 #include "core/memory.h"
 #include "core/model.h"
 #include "core/renderer.h"

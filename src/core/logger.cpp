@@ -1,4 +1,4 @@
-namespace Logging{
+namespace Logger{
 #define LOG_BUFFER_SIZE 4096
 #define LOG_PATH_SIZE 1024
 	local FILE* file = 0;

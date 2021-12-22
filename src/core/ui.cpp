@@ -2561,13 +2561,13 @@ UIWindow* DisplayMetrics() {
 	Begin("METRICS", vec2::ZERO, vec2(300, 500));
 	myself = curwin;
 	
-	Text(TOSTRING("Active Windows: ", windowStack.count).str);
+	Text(toStr("Active Windows: ", windowStack.count).str);
 	
 	Separator(20);
 	
-	string slomotext = TOSTRING("Slowest Render:");
-	string quicktext = TOSTRING("Fastest Render:");
-	string mostitext = TOSTRING("Most Items: "); 
+	string slomotext = toStr("Slowest Render:");
+	string quicktext = toStr("Fastest Render:");
+	string mostitext = toStr("Most Items: "); 
 	
 	{
 		static f32 sw = CalcTextSize(longname->name).x;
@@ -2602,7 +2602,7 @@ UIWindow* DisplayMetrics() {
 		BeginRow(2, style.fontHeight * 1.2);
 		RowSetupColumnWidths({ fw, 96 });
 
-		Text(str1);            Text(TOSTRING(globalHovered).str);
+		Text(str1);            Text(toStr(globalHovered).str);
 		Text("input state: ");
 		switch (inputState) {
 			case ISNone:          Text("None");           break;
@@ -2634,7 +2634,7 @@ UIWindow* DisplayMetrics() {
 		EndCombo();
 	}
 	
-	Text(TOSTRING("Selected Window: ", (debugee ? debugee->name : "none")).str);
+	Text(toStr("Selected Window: ", (debugee ? debugee->name : "none")).str);
 	
 	EndRow();
 
@@ -2643,12 +2643,12 @@ UIWindow* DisplayMetrics() {
 			BeginRow(2, style.fontHeight * 1.2);
 			RowSetupColumnWidths({ CalcTextSize("Max Scroll: ").x , 10 });
 
-			Text("Position: ");   Text(TOSTRING(debugee->position).str);
-			Text("Dimensions: "); Text(TOSTRING(debugee->dimensions).str);
-			Text("Scroll: ");     Text(TOSTRING(debugee->scroll).str);
-			Text("Max Scroll: "); Text(TOSTRING(debugee->maxScroll).str);
-			Text("Hovered: ");    Text(TOSTRING(debugee->hovered).str);
-			Text("Focused: ");    Text(TOSTRING(debugee->focused).str);
+			Text("Position: ");   Text(toStr(debugee->position).str);
+			Text("Dimensions: "); Text(toStr(debugee->dimensions).str);
+			Text("Scroll: ");     Text(toStr(debugee->scroll).str);
+			Text("Max Scroll: "); Text(toStr(debugee->maxScroll).str);
+			Text("Hovered: ");    Text(toStr(debugee->hovered).str);
+			Text("Focused: ");    Text(toStr(debugee->focused).str);
 
 			EndRow();
 
@@ -2799,7 +2799,7 @@ void UI::DemoWindow() {
 	if (BeginHeader("Slider")) {
 		static f32 sl1 = 0;
 
-		Slider("slider1", &sl1, 0, 100); SameLine(); Text(TOSTRING(sl1).str);
+		Slider("slider1", &sl1, 0, 100); SameLine(); Text(toStr(sl1).str);
 
 		EndHeader();
 	}
@@ -2865,8 +2865,8 @@ void UI::DemoWindow() {
 		Separator(7);
 
 		Text("you can change how items are aligned within row cells as well");
-		Slider("slider1", &rowxalign, 0, 1); SameLine(); Text(TOSTRING("x align ", rowxalign).str);
-		Slider("slider2", &rowyalign, 0, 1); SameLine(); Text(TOSTRING("y align ", rowyalign).str);
+		Slider("slider1", &rowxalign, 0, 1); SameLine(); Text(toStr("x align ", rowxalign).str);
+		Slider("slider2", &rowyalign, 0, 1); SameLine(); Text(toStr("y align ", rowyalign).str);
 
 		PopVar();
 
@@ -2899,9 +2899,9 @@ void UI::DemoWindow() {
 				Text("text");
 				EndRow();
 
-				Slider("scw1", &scw1, 0, 90); SameLine(); Text(TOSTRING(scw1).str);
-				Slider("scw2", &scw2, 0, 90); SameLine(); Text(TOSTRING(scw2).str);
-				Slider("scw3", &scw3, 0, 90); SameLine(); Text(TOSTRING(scw3).str);
+				Slider("scw1", &scw1, 0, 90); SameLine(); Text(toStr(scw1).str);
+				Slider("scw2", &scw2, 0, 90); SameLine(); Text(toStr(scw2).str);
+				Slider("scw3", &scw3, 0, 90); SameLine(); Text(toStr(scw3).str);
 			}break;
 			case 1: {
 				BeginRow(3, 16);
@@ -2911,9 +2911,9 @@ void UI::DemoWindow() {
 				Text("text");
 				EndRow();
 
-				Slider("dcw1", &dcw1, 1, 5); SameLine(); Text(TOSTRING(dcw1).str);
-				Slider("dcw2", &dcw2, 1, 5); SameLine(); Text(TOSTRING(dcw2).str);
-				Slider("dcw3", &dcw3, 1, 5); SameLine(); Text(TOSTRING(dcw3).str);
+				Slider("dcw1", &dcw1, 1, 5); SameLine(); Text(toStr(dcw1).str);
+				Slider("dcw2", &dcw2, 1, 5); SameLine(); Text(toStr(dcw2).str);
+				Slider("dcw3", &dcw3, 1, 5); SameLine(); Text(toStr(dcw3).str);
 			}break;
 		}
 

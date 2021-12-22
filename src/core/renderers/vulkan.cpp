@@ -3817,7 +3817,7 @@ LoadTexture(Texture* texture){
 	allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	AssertVk(vkAllocateMemory(device, &allocInfo, allocator, &tvk.memory), "failed to allocate image memory");
 	vkBindImageMemory(device, tvk.image, tvk.memory, 0);
-	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE,(u64)tvk.image, TOSTRING("Texture image ", texture->name).str);
+	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_IMAGE,(u64)tvk.image, toStr("Texture image ", texture->name).str);
 	
 	VkCommandBuffer commandBuffer = BeginSingleTimeCommands();{
 		//transition image layout to accept memory transfers
@@ -3901,7 +3901,7 @@ LoadTexture(Texture* texture){
 	setAllocInfo.descriptorSetCount = 1;
 	AssertVk(vkAllocateDescriptorSets(device, &setAllocInfo, &tvk.descriptorSet));
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)tvk.descriptorSet,
-						 TOSTRING("Texture descriptor set ", texture->name).str);
+						 toStr("Texture descriptor set ", texture->name).str);
 	
 	VkWriteDescriptorSet set{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
 	set.dstSet = tvk.descriptorSet;
@@ -3931,7 +3931,7 @@ LoadMaterial(Material* material){
 	allocInfo.descriptorSetCount = 1;
 	AssertVk(vkAllocateDescriptorSets(device, &allocInfo, &mvk.descriptorSet));
 	DebugSetObjectNameVk(device, VK_OBJECT_TYPE_DESCRIPTOR_SET, (u64)mvk.descriptorSet,
-						 TOSTRING("Material descriptor set ",material->name).str);
+						 toStr("Material descriptor set ",material->name).str);
 	
 	//write descriptor set per texture
 	array<VkWriteDescriptorSet> sets;

@@ -34,12 +34,12 @@ struct{
 	void add(const char* str, u32 strsize, color color, Format format = Colored) {
 		dict.add(ColoredStr{ color,  format, (u32)ftell(buffer), strsize });
 		string to(str, strsize);
-		Logging::LogFromConsole(to);
+		Logger::LogFromConsole(to);
 	}
 
 	void add(string& str, color color, Format format = Colored) {
 		dict.add(ColoredStr{ color, format, (u32)ftell(buffer), str.count });
-		Logging::LogFromConsole(str);
+		Logger::LogFromConsole(str);
 	}
 	
 	void add(u32 charstart, u32 strsize, color color, Format format = Colored) {
@@ -179,7 +179,7 @@ void Console::ChangeState(ConsoleState new_state) {
 
 void Console::Init() {
 	TIMER_START(t_s);
-	buffer = Logging::GetFilePtr();
+	buffer = Logger::GetFilePtr();
 
 	dictionary.dict.init(DICT_SIZE, deshi_allocator);
 

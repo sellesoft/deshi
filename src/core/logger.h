@@ -13,20 +13,20 @@
 ////////////////////
 //// @interface ////
 ////////////////////
-#define Log(tag,...)       Logging::Log_(__FILE__,__LINE__,tag,__VA_ARGS__)           //comma style:  log("first ",12.5," f ",0xff)
-#define LogE(tag,...)      Logging::Log_(__FILE__,__LINE__,GLUE(tag,"-error"),__VA_ARGS__)
-#define LogW(tag,...)      Logging::Log_(__FILE__,__LINE__,GLUE(tag,"-warning"),__VA_ARGS__)
-#define Logf(tag,fmt,...)  Logging::LogF_(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //printf style: logf("first %f f %d",12.5f,0xff)
-#define LogfE(tag,fmt,...) Logging::LogF_(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
-#define LogfW(tag,fmt,...) Logging::LogF_(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
-#define Loga(tag,fmt,...)  Logging::LogA_(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //auto style:   loga("first $ f $",12.5f,0xff)
-#define LogaE(tag,fmt,...) Logging::LogA_(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
-#define LogaW(tag,fmt,...) Logging::LogA_(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
+#define Log(tag,...)       Logger::Log_(__FILE__,__LINE__,tag,__VA_ARGS__)           //comma style:  log("first ",12.5," f ",0xff)
+#define LogE(tag,...)      Logger::Log_(__FILE__,__LINE__,GLUE(tag,"-error"),__VA_ARGS__)
+#define LogW(tag,...)      Logger::Log_(__FILE__,__LINE__,GLUE(tag,"-warning"),__VA_ARGS__)
+#define Logf(tag,fmt,...)  Logger::LogF_(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //printf style: logf("first %f f %d",12.5f,0xff)
+#define LogfE(tag,fmt,...) Logger::LogF_(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
+#define LogfW(tag,fmt,...) Logger::LogF_(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
+#define Loga(tag,fmt,...)  Logger::LogA_(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //auto style:   loga("first $ f $",12.5f,0xff)
+#define LogaE(tag,fmt,...) Logger::LogA_(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
+#define LogaW(tag,fmt,...) Logger::LogA_(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
 
-#define EnableLogging  Logging::SetIsLogging(1);
-#define DisableLogging Logging::SetIsLogging(0);
+#define EnableLogging  Logger::SetIsLogging(1);
+#define DisableLogging Logger::SetIsLogging(0);
 
-namespace Logging{
+namespace Logger{
 	template<typename... T> void Log_(const char* filepath, upt line_number, const char* tag, T... args);
 	void LogF_(const char* filepath, upt line_number, const char* tag, const char* fmt, ...);
 	template<typename... T> void LogA_(const char* filepath, upt line_number, const char* tag, const char* fmt, T... args);
@@ -49,7 +49,7 @@ namespace Logging{
 /////////////////////////
 //// @implementation ////
 /////////////////////////
-template<typename... T> inline void Logging::
+template<typename... T> inline void Logger::
 Log_(const char* filepath, upt line_number, const char* tag, T... args){
 	string str = (tag && *tag != 0) ? "["+string::toUpper(tag)+"] " : "";
 	constexpr auto arg_count{sizeof...(T)};
@@ -58,7 +58,7 @@ Log_(const char* filepath, upt line_number, const char* tag, T... args){
 	LogInternal(str);
 }
 
-template<typename... T> inline void Logging::
+template<typename... T> inline void Logger::
 LogA_(const char* filepath, upt line_number, const char* tag, const char* fmt, T... args){
 	string str = (tag && *tag != 0) ? "["+string::toUpper(tag)+"] " : "";
 	constexpr auto arg_count{sizeof...(T)};
