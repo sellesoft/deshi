@@ -614,9 +614,16 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 			newlined.add(text.substr(0, newline - 1));
 			newline = remainder.findFirstChar('\n');
 			while (newline != string::npos) {
-				newlined.add(remainder.substr(0, newline - 1));
-				remainder = remainder.substr(newline + 1);
-				newline = remainder.findFirstChar('\n');
+				if (!newline) {
+					newlined.add("");
+					remainder.erase(0);
+					newline = remainder.findFirstChar('\n');
+				}
+				else {
+					newlined.add(remainder.substr(0, newline - 1));
+					remainder = remainder.substr(newline + 1);
+					newline = remainder.findFirstChar('\n');
+				}
 			}
 			newlined.add(remainder);
 		}
@@ -2728,7 +2735,7 @@ void UI::ShowMetricsWindow() {
 }
 
 void UI::DemoWindow() {
-	Begin("test", vec2::ONE * 300, vec2::ONE * 300);
+	Begin("deshiUIDEMO", vec2::ONE * 300, vec2::ONE * 300);
 
 	//Text("heres some long text to test if this shit will scroll right or not", UITextFlags_NoWrap);
 
@@ -2938,10 +2945,6 @@ void UI::DemoWindow() {
 
 	}
 
-	End();
-
-	Begin("another window to test", vec2::ZERO, vec2::ONE * 300);
-	Text("yep");
 	End();
 }
 

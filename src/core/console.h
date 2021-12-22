@@ -21,15 +21,15 @@ enum ConsoleState_ {
 
 
 struct Console{
-	void Init();
-	void Update();
-	void Cleanup();
-	
 	bool IsOpen();
 	void ChangeState(ConsoleState new_state);
 	void AddLog(string input);
-	void FlushBuffer();
+	void LoggerMirror(string in, u32 charstart);
 	
+	void Init();
+	void Update();
+	void Cleanup();
+
 	void AddAliases();
 };
 

@@ -10,50 +10,43 @@ local f32 open_dt = 2000.0f;       //speed at which it opens
 //console 
 local char inputBuf[256]{};
 
-local constexpr u32 BUFF_SIZE = 0xFFFF; //size very large to try and ensure the dictionary runs out before the buffer does
-local constexpr u32 DICT_SIZE = 5;
+local constexpr u32 DICT_SIZE = 25;
+
+//this is always from Logger
+FILE* buffer;
+
+enum Format {
+	Alert,
+	Colored,
+};
 
 struct ColoredStr{
 	color color;
-	char* strptr;
+	Format format;
+	u32 charstart;
 	u32 strsize;
 };
 
 
-//buffer struct that holds all text that has been logged in the console
 struct{
-	//TODO change this buffer to just be the file that logger uses
-	char                   buff[BUFF_SIZE]; //i decided not to use ring_array on char, i will probably write more about why later
-	ring_array<ColoredStr> dictionary;
-	u32 buff_count = 0;
+	ring_array<ColoredStr> dict;
 	
-	void add(char* str, u32 strsize, color color) {
-		
-		
-		//check if the dictionary has been filled and is about to wrap around again
-		//if it is, we can safely flush the previous DICT_SIZE dictionary entries
-		if (dictionary.start == dictionary.capacity - 1) {
-			//TODO flush console stuff to the log file
-			u32 sztoflsh = dictionary[DICT_SIZE - 1].strptr - buff + dictionary[DICT_SIZE - 1].strsize;
-			buff_count -= sztoflsh;
-			memset(buff, 0, sztoflsh);
-			//this may could be buff_count - sztoflsh
-			u32 sztomove = buff_count;
-			memmove(buff, buff + sztoflsh, sztomove);
-			memset(buff + sztomove, 0, sztomove);
-			
-			//move all previous things back
-			forI(dictionary.count) 	dictionary[i].strptr -= sztoflsh;
-		}
-		
-		memcpy(buff + buff_count, str, strsize);
-		dictionary.add(ColoredStr{ color, buff + buff_count, strsize });
-		buff_count += strsize;
+	void add(const char* str, u32 strsize, color color, Format format = Colored) {
+		dict.add(ColoredStr{ color,  format, (u32)ftell(buffer), strsize });
+		string to(str, strsize);
+		Logging::LogFromConsole(to);
+	}
+
+	void add(string& str, color color, Format format = Colored) {
+		dict.add(ColoredStr{ color, format, (u32)ftell(buffer), str.count });
+		Logging::LogFromConsole(str);
 	}
 	
+	void add(u32 charstart, u32 strsize, color color, Format format = Colored) {
+		dict.add(ColoredStr{ color, format, charstart, strsize });
+	}
 	
-} buffer;
-local ColoredStr dictionary;   //dictionary that indexes the buffer
+} dictionary;
 
 //state of console
 local b32 show_autocomplete = 0;
@@ -73,34 +66,146 @@ local map<const char*, color> color_strings{
 	{"white",  Color_White},   {"black",   Color_Black}
 };
 
-void Console::Init(){
-	TIMER_START(t_s);
+
+//message modifier syntax:
+//	
+//  {{c=red} some kind of message {}}
+//
+//	{{a} some kind of alert!! {}}
+// 
+//modifiers
+// 
+//	a     - flashes the background of the message red
+//  c=... - sets the color of the wrapped message
+//
+void ParseMessage(string input) {
+	enum ParseState {
+		None,
+		ParsingChunk,
+		ParsingFormatting,
+		ParsingFormattedChunk
+	}; ParseState state = None;
+
+#define ConFormatOpening i + 1 < input.count && input[i] == '{' && input[i + 1] == '{'
+#define ConFormatClosing i + 2 < input.count && input[i] == '{' && input[i + 1] == '}' && input[i + 2] == '}'
+
 	
-	buffer.dictionary.init(DICT_SIZE, deshi_allocator);
-	
-	Log("deshi","Finished console initialization in ",TIMER_END(t_s),"ms");
+	char* formatting_start = 0;
+	char* chunk_start = 0;
+
+	color chunk_color = Color_White;
+	Format chunk_format = Colored;
+
+	//if the input is less than 7 characters its impossible for it to have valid modifier syntax
+	if (input.count < 7) { 
+		dictionary.add(input.str, input.count, Color_White); 
+		return;
+	}
+
+	for (int i = 0; i < input.count; i++) {
+		char* curr = &input[i];
+		switch (state) {
+			case None: { //initial state and state after finishing a formatted string
+				if (ConFormatOpening) {
+					state = ParsingFormatting;
+					formatting_start = &input[i];
+					i++; continue;
+				}
+				else {
+					state = ParsingChunk;
+					chunk_start = &input[i];
+				}
+			}break;
+			case ParsingChunk: {
+				if (ConFormatOpening) {
+					state = ParsingFormatting;
+					formatting_start = &input[i];
+					dictionary.add(chunk_start, &input[i] - chunk_start, Color_White);
+					i++; continue;
+				}
+				else if (i == input.count - 1) {
+					//we've reached the end of the string
+					dictionary.add(chunk_start, (&input[i] - chunk_start) + 1, Color_White);
+				}
+			}break;
+			case ParsingFormatting: {
+				if (input[i] == '}') {
+					state = ParsingFormattedChunk;
+					string format(formatting_start+2, &input[i] - (formatting_start+2));
+					if (format == "a") {
+						chunk_format = Alert;
+					}
+					else if (format[0] == 'c' && format[1] == '=') {
+						chunk_format = Colored;
+						chunk_color = color_strings[format.substr(2).str];
+					}
+					chunk_start = &input[i + 1];
+				}
+				else if (i == input.count - 1) {
+					//we've reached the end of the string
+					dictionary.add(formatting_start, (&input[i] - formatting_start) + 1, Color_White);
+				}
+			}break;
+			case ParsingFormattedChunk: {
+				if (ConFormatClosing) {
+					state = None;
+					dictionary.add(chunk_start, (&input[i] - chunk_start), chunk_color, chunk_format);
+					chunk_color = Color_White;
+					chunk_format = Colored;
+					chunk_start = 0;
+					i+=2;
+				}
+				else if (i == input.count - 1) {
+					//we've reached the end of the string
+					dictionary.add(formatting_start, (&input[i] - formatting_start) + 1, Color_White);
+				}
+			}break;
+		}
+	}
 }
 
-void Console::Update(){
-	
-}
 
 void Console::AddLog(string input){
-	buffer.add(input.str, input.count, Color_White);
-	Log("------------------------------", "--------------");
-	Log("buffer", buffer.buff);
-	Log("dict start, end", buffer.dictionary.start, " ", buffer.dictionary.end);
-	forI(buffer.dictionary.count) {
-		Log(TOSTRING("dict", i).str, string(buffer.dictionary.at(i)->strptr, buffer.dictionary.at(i)->strsize));
-	}
+	ParseMessage(input);
+}
+
+void Console::LoggerMirror(string input, u32 charstart) {
+	ParseMessage(input);
 }
 
 void Console::ChangeState(ConsoleState new_state) {
 	
 }
 
-void Console::FlushBuffer() {
-	
+void Console::Init() {
+	TIMER_START(t_s);
+	buffer = Logging::GetFilePtr();
+
+	dictionary.dict.init(DICT_SIZE, deshi_allocator);
+
+	Log("deshi", "Finished console initialization in ", TIMER_END(t_s), "ms");
+}
+
+void Console::Update() {
+	using namespace UI;
+
+	char toprint[1024];
+
+	Begin("deshiConsole", vec2::ZERO, vec2(DeshWindow->width, DeshWindow->height * open_max_percent));
+
+	for (int i = 0; i < dictionary.dict.count; i++) {
+		ColoredStr colstr = dictionary.dict[i];
+		
+		fseek(buffer, colstr.charstart, SEEK_SET);
+		fread(toprint, colstr.strsize + 1, 1, buffer);
+		toprint[dictionary.dict[i].strsize] = 0;
+		
+		PushColor(UIStyleCol_Text, colstr.color);
+		Text(toprint);
+		PopColor();
+	}
+
+	End();
 }
 
 void Console::Cleanup() {

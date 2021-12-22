@@ -23,6 +23,9 @@
 #define LogaE(tag,fmt,...) Logging::LogA_(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
 #define LogaW(tag,fmt,...) Logging::LogA_(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
 
+#define EnableLogging  Logging::SetIsLogging(1);
+#define DisableLogging Logging::SetIsLogging(0);
+
 namespace Logging{
 	template<typename... T> void Log_(const char* filepath, upt line_number, const char* tag, T... args);
 	void LogF_(const char* filepath, upt line_number, const char* tag, const char* fmt, ...);
@@ -30,10 +33,17 @@ namespace Logging{
 	
 	void LogInternal(string& msg);
 	cstring LastMessage();
+
+	void LogFromConsole(string& in);
+
+	void SetIsLogging(b32 thebooleanforthisfunction);
 	
-	void Init(u32 log_count = 5, bool mirror = true);
+	FILE* GetFilePtr();
+	
+	void Init(u32 log_count = 5, b32 mirror = true);
 	void Update();
 	void Cleanup();
+
 };
 
 /////////////////////////
