@@ -1,68 +1,81 @@
+//NOTE Memory Layout: 
+//|                       Total Size                          |
+//|                  Main Heap                  |  Temp Arena |
+//|      Heap Arena      |      Heap Arena      | Item | Item |
+//| Header |    Memory   | Header |    Memory   |      |      |
+//|        | Item | Item |        | Item | Item |      |      |
+
 namespace Memory{
-	//NOTE Memory Layout: 
-	//|                       Total Size                          |
-	//|                  Main Heap                  |  Temp Arena |
-	//|      Heap Arena      |      Heap Arena      | Item | Item |
-	//| Header |    Memory   | Header |    Memory   |      |      |
-	//|        | Item | Item |        | Item | Item |      |      |
+	////////////////
+	//// @utils ////
+	////////////////
+#define MEMORY_POINTER_SIZE sizeof(void*)
+#define MEMORY_BYTE_ALIGNMENT (2*MEMORY_POINTER_SIZE)
+#define MEMORY_DO_HEAP_CHECKS false
 	
-	//TODO(delle) maybe convert out of memory asserts to errors?
-	//TODO(delle) add macro interface over functions to track where they are called from (file, line, function)
-	//TODO(delle) standardize naming of bytes vs size
-	//TODO(delle) convert generic_arena to a heap with custom HeapNodes
-	
-	///////////////////
-	//// @internal ////
-	///////////////////
-#define MEMORY_CHECK_HEAPS false
-#define MEMORY_ARENA_MIN_SIZE Kilobytes(4)
-#define MEMORY_LARGE_GENERIC_ALLOCATION_SIZE Kilobytes(256)
-	local Heap   main_heap;
-	local Arena  temp_arena;
-	local Arena* generic_arena;
-	local b32    initialized = false;
-	
-#define HeapNodeInsertNext(x,node) ((node)->next=(x)->next,(node)->prev=(x),(node)->next->prev=(node),(x)->next=(node))
-#define HeapNodeInsertPrev(x,node) ((node)->prev=(x)->prev,(node)->next=(x),(node)->prev->next=(node),(x)->prev=(node))
-#define HeapNodeRemove(node) ((node)->next->prev=(node)->prev,(node)->prev->next=(node)->next)
 	
 	FORCE_INLINE void ZeroBytes(void* ptr, upt bytes){
 		memset(ptr, 0, bytes);
 	}
 	
-	function inline void UpdateHeapCursor(Heap* heap){ //NOTE this relies on empty nodes having correct arena.start positions
-		HeapNode* last_order_node = CastFromMember(HeapNode, order, main_heap.order.prev);
-		heap->cursor = last_order_node->arena.start + last_order_node->arena.size;
-	}
+	////////////////
+	//// @arena ////
+	////////////////
+#define MEMORY_ARENA_MIN_SIZE Kilobytes(4)
 	
-#if MEMORY_CHECK_HEAPS
-	function void DEBUGAssertHeapNodesAreGood(Heap* heap){
+	
+	struct ArenaHeapNode{
+		Arena arena;
+		Node  order; //overall order
+		Node  empty; //empty node order
+	};
+	
+	struct ArenaHeap{
+		u8*  start;
+		u8*  cursor;
+		upt  used;
+		upt  size;
+		Node order; //overall nodes
+		Node empty; //empty nodes
+		b32 initialized;
+	};
+	
+	
+	local ArenaHeap arena_heap;
+	
+	
+#if !MEMORY_DO_HEAP_CHECKS
+#  define DEBUG_CheckHeapArenaNodes(heap) 
+#  define DEBUG_CheckArenaHeapArenas(heap)
+#  define DEBUG_PrintHeapArenaNodes(heap)
+#else //MEMORY_DO_HEAP_CHECKS
+	function void DEBUG_CheckHeapArenaNodes(ArenaHeap* heap){
 		Assert(heap->order.next != 0 && heap->order.prev != 0, "First heap order node is invalid");
 		Assert(heap->empty.next != 0 && heap->empty.prev != 0, "First heap empty node is invalid");
 		for(Node* node = &heap->order; ; ){
-			Assert(node->next->prev == node && node->prev->next == node, "Heap order node is invalid");
+			Assert(node->next->prev == node && node->prev->next == node, "ArenaHeap order node is invalid");
 			node = node->next;
 			if(node == &heap->order) break;
 		}
 		for(Node* node = &heap->empty; ; ){
-			Assert(node->next->prev == node && node->prev->next == node, "Heap empty node is invalid");
+			Assert(node->next->prev == node && node->prev->next == node, "ArenaHeap empty node is invalid");
 			node = node->next;
 			if(node == &heap->empty) break;
 		}
 	}
 	
-	function void DEBUGAssertHeapArenasAreGood(Heap* heap){
+	function void DEBUG_CheckArenaHeapArenas(ArenaHeap* heap){
 		upt overall_used = 0;
 		for(Node* order = &heap->order; ; ){
 			if(order != &heap->order){
 				if(order->next != &heap->order){
-					HeapNode* node = CastFromMember(HeapNode, order, order);
-					overall_used += node->arena.size + sizeof(HeapNode);
-					HeapNode* next = CastFromMember(HeapNode, order, order->next);
+					ArenaHeapNode* node = CastFromMember(ArenaHeapNode, order, order);
+					overall_used += node->arena.size + sizeof(ArenaHeapNode);
+					ArenaHeapNode* next = CastFromMember(ArenaHeapNode, order, order->next);
 					Assert(node->arena.start + node->arena.size == (u8*)next, "Heap node arena is not sized correctly");
 				}else{
-					HeapNode* node = CastFromMember(HeapNode, order, order);
-					overall_used += node->arena.size + sizeof(HeapNode);
+					ArenaHeapNode* node = CastFromMember(ArenaHeapNode, order, order);
+					overall_used += node->arena.size + sizeof(ArenaHeapNode);
 					Assert(node->arena.start + node->arena.size == heap->cursor, "Heap cursor is not in the right spot");
 					break;
 				}
@@ -73,141 +86,131 @@ namespace Memory{
 		//Assert(overall_used == heap->used, "Heap used is incorrect"); //TODO(delle) add this back
 	}
 	
-	function void DEBUGPrintHeapNodes(Heap* heap){
-		if(!initialized) return;
+	function void DEBUG_PrintHeapArenaNodes(ArenaHeap* heap){
+		if(heap->initialized) return;
 		string heap_order = "Order: ", heap_empty = "Empty: ";
 		if(heap->used > 0){
-			for(HeapNode* node = (HeapNode*)heap->start; ;){
+			for(ArenaHeapNode* node = (ArenaHeapNode*)heap->start; ;){
 				heap_order += to_string("%p", node); heap_order += " -> ";
 				heap_empty += (node->empty.next) ? to_string("%p", node) : "                ";
 				heap_empty += " -> ";
 				
 				if(node->order.next == &heap->order) break;
-				node = CastFromMember(HeapNode, order, node->order.next);
+				node = CastFromMember(ArenaHeapNode, order, node->order.next);
 			}
 		}
 		Log("memory",heap_order); Log("memory",heap_empty); Log("","----------------------------------------------");
 	}
-#else //MEMORY_CHECK_HEAPS
-#  define DEBUGAssertHeapNodesAreGood(heap) 
-#  define DEBUGAssertHeapArenasAreGood(heap)
-#  define DEBUGPrintHeapNodes(heap)
-#endif //MEMORY_CHECK_HEAPS
+#endif //MEMORY_DO_HEAP_CHECKS
 	
-	function void DEBUGDrawMemory(){
-		UI::PushColor(UIStyleCol_WindowBg, color(128,128,128,128));
-		UI::Begin("debug__memory", {100,100}, {480,480});
-		//TODO this
-		UI::End();
-		UI::PopColor();
+	function inline void UpdateArenaHeapCursor(ArenaHeap* heap){ //NOTE this relies on empty nodes having correct arena.start positions
+		ArenaHeapNode* last_order_node = CastFromMember(ArenaHeapNode, order, arena_heap.order.prev);
+		heap->cursor = last_order_node->arena.start + last_order_node->arena.size;
 	}
 	
-	////////////////////
-	//// @interface ////
-	////////////////////
 	Arena* CreateArena(upt bytes){
-		DEBUGAssertHeapNodesAreGood(&main_heap);
+		DEBUG_CheckHeapArenaNodes(&arena_heap);
 		if(bytes == 0) return 0;
-		Assert(main_heap.start, "Attempted to create an arena before Memory::Init() has been called");
-		upt aligned_size = ClampMin(RoundUpTo(bytes, sizeof(HeapNode)), MEMORY_ARENA_MIN_SIZE);
-		Assert(main_heap.used + aligned_size <= main_heap.size, "Attempted to use more than max main heap size");
+		Assert(arena_heap.start, "Attempted to create an arena before Memory::Init() has been called");
+		upt aligned_size = ClampMin(RoundUpTo(bytes, sizeof(ArenaHeapNode)), MEMORY_ARENA_MIN_SIZE);
+		Assert(arena_heap.used + aligned_size <= arena_heap.size, "Attempted to use more than max arena heap size");
 		
 		//check if there are any empty nodes that can hold the new arena
-		if(main_heap.empty.next != &main_heap.empty){
-			for(Node* n = main_heap.empty.next; n != &main_heap.empty; n = n->next){
-				HeapNode* node = CastFromMember(HeapNode, empty, n);
+		if(arena_heap.empty.next != &arena_heap.empty){
+			for(Node* n = arena_heap.empty.next; n != &arena_heap.empty; n = n->next){
+				ArenaHeapNode* node = CastFromMember(ArenaHeapNode, empty, n);
 				if(node->arena.size >= aligned_size){
 					upt leftover_size = node->arena.size - aligned_size;
-					Assert(leftover_size % sizeof(HeapNode) == 0, "Memory was not aligned correctly");
+					Assert(leftover_size % sizeof(ArenaHeapNode) == 0, "Memory was not aligned correctly");
 					
 					//make new empty node after new order node if there is enough space
-					if(leftover_size > sizeof(HeapNode)){
-						HeapNode* new_node = (HeapNode*)(node->arena.start + aligned_size);
-						HeapNodeInsertNext(&node->order, &new_node->order); DEBUGAssertHeapNodesAreGood(&main_heap);
-						HeapNodeInsertNext(&node->empty, &new_node->empty); DEBUGAssertHeapNodesAreGood(&main_heap);
+					if(leftover_size > sizeof(ArenaHeapNode)){
+						ArenaHeapNode* new_node = (ArenaHeapNode*)(node->arena.start + aligned_size);
+						NodeInsertNext(&node->order, &new_node->order); DEBUG_CheckHeapArenaNodes(&arena_heap);
+						NodeInsertNext(&node->empty, &new_node->empty); DEBUG_CheckHeapArenaNodes(&arena_heap);
 						new_node->arena.start = (u8*)(new_node+1);
-						new_node->arena.size = leftover_size - sizeof(HeapNode);
-						main_heap.used += sizeof(HeapNode);
+						new_node->arena.size = leftover_size - sizeof(ArenaHeapNode);
+						arena_heap.used += sizeof(ArenaHeapNode);
 					}else{
 						aligned_size += leftover_size;
 					}
 					
 					//convert empty node to order node
-					HeapNodeRemove(&node->empty); DEBUGAssertHeapNodesAreGood(&main_heap);
+					NodeRemove(&node->empty); DEBUG_CheckHeapArenaNodes(&arena_heap);
 					node->empty.next = 0;
 					node->empty.prev = 0;
 					//node->arena.start = (u8*)(node+1); //NOTE arena starts are correct in empty nodes
 					node->arena.cursor = node->arena.start;
 					node->arena.size   = aligned_size;
 					node->arena.used   = 0;
-					main_heap.used += aligned_size;
-					UpdateHeapCursor(&main_heap);
+					arena_heap.used += aligned_size;
+					UpdateArenaHeapCursor(&arena_heap);
 					
-					DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap); DEBUGPrintHeapNodes(&main_heap);
+					DEBUG_CheckHeapArenaNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap); DEBUG_PrintHeapArenaNodes(&arena_heap);
 					return &node->arena;
 				}
 			}
 		}
 		
 		//if we cant replace an empty node, make a new order node for the new arena
-		Assert(main_heap.cursor + aligned_size + sizeof(HeapNode) <= main_heap.start + main_heap.size, "Attempted to use more than max main heap size");
-		HeapNode* new_node = (HeapNode*)main_heap.cursor;
-		HeapNodeInsertPrev(&main_heap.order, &new_node->order); DEBUGAssertHeapNodesAreGood(&main_heap);
-		new_node->arena.start  = (u8*)new_node + sizeof(HeapNode);
+		Assert(arena_heap.cursor + aligned_size + sizeof(ArenaHeapNode) <= arena_heap.start + arena_heap.size, "Attempted to use more than max arena heap size");
+		ArenaHeapNode* new_node = (ArenaHeapNode*)arena_heap.cursor;
+		NodeInsertPrev(&arena_heap.order, &new_node->order); DEBUG_CheckHeapArenaNodes(&arena_heap);
+		new_node->arena.start  = (u8*)new_node + sizeof(ArenaHeapNode);
 		new_node->arena.cursor = new_node->arena.start;
 		new_node->arena.size   = aligned_size;
 		//new_node->arena.used   = 0; //NOTE new memory is already zero
-		main_heap.used   += aligned_size + sizeof(HeapNode);
-		UpdateHeapCursor(&main_heap);
+		arena_heap.used   += aligned_size + sizeof(ArenaHeapNode);
+		UpdateArenaHeapCursor(&arena_heap);
 		
-		DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap); DEBUGPrintHeapNodes(&main_heap); 
+		DEBUG_CheckHeapArenaNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap); DEBUG_PrintHeapArenaNodes(&arena_heap); 
 		return &new_node->arena;
 	}
 	
 	Arena* GrowArena(Arena* arena, upt bytes){
-		DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap);
+		DEBUG_CheckHeapArenaNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap);
 		if(bytes == 0) return arena;
 		if(arena == 0) return 0;
-		Assert((u8*)arena >= main_heap.start && (u8*)arena < main_heap.cursor, "Attempted to grow an arena that's outside the main heap");
-		Assert(main_heap.used + bytes <= main_heap.size, "Attempted to use more than max main heap size");
+		Assert((u8*)arena >= arena_heap.start && (u8*)arena < arena_heap.cursor, "Attempted to grow an arena that's outside the arena heap");
+		Assert(arena_heap.used + bytes <= arena_heap.size, "Attempted to use more than max arena heap size");
 		
 		//check if the next node is empty and can hold the grown size, or if we need to make a new arena
 		Arena* result = arena;
-		upt aligned_bytes = RoundUpTo(bytes, sizeof(HeapNode));
-		HeapNode* node = CastFromMember(HeapNode, arena, arena);
-		HeapNode* next = CastFromMember(HeapNode, order, node->order.next);
-		if(&next->order == &main_heap.order){ //we are the last node
-			Assert(main_heap.cursor + bytes <= main_heap.start + main_heap.size, "Attempted to use more than max main heap size");
-			upt growth_bytes = (main_heap.cursor + aligned_bytes <= main_heap.start + main_heap.size) ? aligned_bytes : bytes;
+		upt aligned_bytes = RoundUpTo(bytes, sizeof(ArenaHeapNode));
+		ArenaHeapNode* node = CastFromMember(ArenaHeapNode, arena, arena);
+		ArenaHeapNode* next = CastFromMember(ArenaHeapNode, order, node->order.next);
+		if(&next->order == &arena_heap.order){ //we are the last node
+			Assert(arena_heap.cursor + bytes <= arena_heap.start + arena_heap.size, "Attempted to use more than max arena heap size");
+			upt growth_bytes = (arena_heap.cursor + aligned_bytes <= arena_heap.start + arena_heap.size) ? aligned_bytes : bytes;
 			
 			arena->size += growth_bytes;
-			main_heap.used += growth_bytes;
-			UpdateHeapCursor(&main_heap);
+			arena_heap.used += growth_bytes;
+			UpdateArenaHeapCursor(&arena_heap);
 		}else if((next->empty.next != 0) && (next->empty.prev != 0) && (next->arena.size >= bytes)){ //next node is empty and can hold the growth
-			upt growth_bytes = ((u8*)next + aligned_bytes <= main_heap.start + main_heap.size) ? aligned_bytes : bytes;
+			upt growth_bytes = ((u8*)next + aligned_bytes <= arena_heap.start + arena_heap.size) ? aligned_bytes : bytes;
 			
 			//make new empty+order node after current node if there is enough space
-			upt leftover_size = next->arena.size - growth_bytes + sizeof(HeapNode);
-			if(leftover_size > sizeof(HeapNode)){
-				HeapNode* new_node = (HeapNode*)((u8*)next + growth_bytes);
-				HeapNodeInsertNext(&next->order, &new_node->order); DEBUGAssertHeapNodesAreGood(&main_heap);
-				HeapNodeInsertNext(&next->empty, &new_node->empty); DEBUGAssertHeapNodesAreGood(&main_heap);
+			upt leftover_size = next->arena.size - growth_bytes + sizeof(ArenaHeapNode);
+			if(leftover_size > sizeof(ArenaHeapNode)){
+				ArenaHeapNode* new_node = (ArenaHeapNode*)((u8*)next + growth_bytes);
+				NodeInsertNext(&next->order, &new_node->order); DEBUG_CheckHeapArenaNodes(&arena_heap);
+				NodeInsertNext(&next->empty, &new_node->empty); DEBUG_CheckHeapArenaNodes(&arena_heap);
 				new_node->arena.start = (u8*)(new_node+1);
-				new_node->arena.size = leftover_size - sizeof(HeapNode);
-				main_heap.used += sizeof(HeapNode);
+				new_node->arena.size = leftover_size - sizeof(ArenaHeapNode);
+				arena_heap.used += sizeof(ArenaHeapNode);
 			}else{
 				growth_bytes += leftover_size;
 			}
 			
 			//add empty node space to current node
-			HeapNodeRemove(&next->order); DEBUGAssertHeapNodesAreGood(&main_heap);
-			HeapNodeRemove(&next->empty); DEBUGAssertHeapNodesAreGood(&main_heap);
-			ZeroBytes(next, sizeof(HeapNode)); //NOTE the node's memory should already be zeroed
+			NodeRemove(&next->order); DEBUG_CheckHeapArenaNodes(&arena_heap);
+			NodeRemove(&next->empty); DEBUG_CheckHeapArenaNodes(&arena_heap);
+			ZeroBytes(next, sizeof(ArenaHeapNode)); //NOTE the node's memory should already be zeroed
 			arena->size += growth_bytes;
-			main_heap.used += (growth_bytes - sizeof(HeapNode));
-			UpdateHeapCursor(&main_heap);
+			arena_heap.used += (growth_bytes - sizeof(ArenaHeapNode));
+			UpdateArenaHeapCursor(&arena_heap);
 		}else{ //need to move memory in order to fit new size
-			upt growth_bytes = (main_heap.cursor + arena->size + aligned_bytes <= main_heap.start + main_heap.size) ? aligned_bytes : bytes;
+			upt growth_bytes = (arena_heap.cursor + arena->size + aligned_bytes <= arena_heap.start + arena_heap.size) ? aligned_bytes : bytes;
 			Arena* new_arena = CreateArena(arena->size + growth_bytes);
 			memcpy(new_arena->start, arena->start, arena->used);
 			new_arena->used = arena->used;
@@ -216,80 +219,89 @@ namespace Memory{
 			DeleteArena(arena);
 		}
 		
-		DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap); DEBUGPrintHeapNodes(&main_heap); 
+		DEBUG_CheckHeapArenaNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap); DEBUG_PrintHeapArenaNodes(&arena_heap); 
 		return result;
 	}
 	
 	void DeleteArena(Arena* arena){
-		DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap);
+		DEBUG_CheckHeapArenaNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap);
 		if(arena == 0) return;
-		Assert((u8*)arena >= main_heap.start && (u8*)arena < main_heap.cursor, "Attempted to delete an arena outside the main heap");
+		Assert((u8*)arena >= arena_heap.start && (u8*)arena < arena_heap.cursor, "Attempted to delete an arena outside the main heap");
 		
-		HeapNode* node = CastFromMember(HeapNode, arena, arena);
+		ArenaHeapNode* node = CastFromMember(ArenaHeapNode, arena, arena);
 		void* zero_pointer = arena->start;
 		upt   zero_amount = arena->size;
 		upt   used_amount = arena->size;
 		
 		//insert current node into empty
-		HeapNodeInsertNext(&main_heap.empty, &node->empty); DEBUGAssertHeapNodesAreGood(&main_heap);
+		NodeInsertNext(&arena_heap.empty, &node->empty); DEBUG_CheckHeapArenaNodes(&arena_heap);
 		
 		//try to merge next empty into current empty 
-		HeapNode* next = CastFromMember(HeapNode, order, node->order.next);
-		if(   (&node->order != &main_heap.order) 
-		   && (&next->order != &main_heap.order)
+		ArenaHeapNode* next = CastFromMember(ArenaHeapNode, order, node->order.next);
+		if(   (&node->order != &arena_heap.order) 
+		   && (&next->order != &arena_heap.order)
 		   && (node->empty.next != 0) && (node->empty.prev != 0)
 		   && (next->empty.next != 0) && (next->empty.prev != 0)
 		   && (PointerDifference(node->arena.start + node->arena.size, next) == 0)){
-			HeapNodeRemove(&next->order); DEBUGAssertHeapNodesAreGood(&main_heap);
-			HeapNodeRemove(&next->empty); DEBUGAssertHeapNodesAreGood(&main_heap);
-			HeapNodeRemove(&node->empty); DEBUGAssertHeapNodesAreGood(&main_heap);
-			UpdateHeapCursor(&main_heap);
-			node->arena.size += next->arena.size + sizeof(HeapNode);
-			HeapNodeInsertNext(&main_heap.empty, &node->empty); DEBUGAssertHeapNodesAreGood(&main_heap);
+			NodeRemove(&next->order); DEBUG_CheckHeapArenaNodes(&arena_heap);
+			NodeRemove(&next->empty); DEBUG_CheckHeapArenaNodes(&arena_heap);
+			NodeRemove(&node->empty); DEBUG_CheckHeapArenaNodes(&arena_heap);
+			UpdateArenaHeapCursor(&arena_heap);
+			node->arena.size += next->arena.size + sizeof(ArenaHeapNode);
+			NodeInsertNext(&arena_heap.empty, &node->empty); DEBUG_CheckHeapArenaNodes(&arena_heap);
 			zero_pointer = node+1;
 			zero_amount  = node->arena.size;
-			used_amount += sizeof(HeapNode);
+			used_amount += sizeof(ArenaHeapNode);
 		}
 		
 		//try to merge current empty into prev empty 
-		HeapNode* prev = CastFromMember(HeapNode, order, node->order.prev);
-		if(   (&prev->order != &main_heap.order) 
-		   && (&node->order != &main_heap.order)
+		ArenaHeapNode* prev = CastFromMember(ArenaHeapNode, order, node->order.prev);
+		if(   (&prev->order != &arena_heap.order) 
+		   && (&node->order != &arena_heap.order)
 		   && (prev->empty.next != 0) && (prev->empty.prev != 0)
 		   && (node->empty.next != 0) && (node->empty.prev != 0)
 		   && (PointerDifference(prev->arena.start + prev->arena.size, node) == 0)){
-			HeapNodeRemove(&node->order); DEBUGAssertHeapNodesAreGood(&main_heap);
-			HeapNodeRemove(&node->empty); DEBUGAssertHeapNodesAreGood(&main_heap);
-			HeapNodeRemove(&prev->empty); DEBUGAssertHeapNodesAreGood(&main_heap);
-			UpdateHeapCursor(&main_heap);
-			prev->arena.size += node->arena.size + sizeof(HeapNode);
-			HeapNodeInsertNext(&main_heap.empty, &prev->empty); DEBUGAssertHeapNodesAreGood(&main_heap);
+			NodeRemove(&node->order); DEBUG_CheckHeapArenaNodes(&arena_heap);
+			NodeRemove(&node->empty); DEBUG_CheckHeapArenaNodes(&arena_heap);
+			NodeRemove(&prev->empty); DEBUG_CheckHeapArenaNodes(&arena_heap);
+			UpdateArenaHeapCursor(&arena_heap);
+			prev->arena.size += node->arena.size + sizeof(ArenaHeapNode);
+			NodeInsertNext(&arena_heap.empty, &prev->empty); DEBUG_CheckHeapArenaNodes(&arena_heap);
 			zero_pointer = prev+1;
 			zero_amount  = prev->arena.size;
-			used_amount += sizeof(HeapNode);
+			used_amount += sizeof(ArenaHeapNode);
 			node = prev;
 		}
 		
 		//remove the last order node if its empty
-		if(node->order.next == &main_heap.order){
-			HeapNodeRemove(&node->order); DEBUGAssertHeapNodesAreGood(&main_heap);
-			HeapNodeRemove(&node->empty); DEBUGAssertHeapNodesAreGood(&main_heap);
-			main_heap.cursor = (u8*)node;
+		if(node->order.next == &arena_heap.order){
+			NodeRemove(&node->order); DEBUG_CheckHeapArenaNodes(&arena_heap);
+			NodeRemove(&node->empty); DEBUG_CheckHeapArenaNodes(&arena_heap);
+			arena_heap.cursor = (u8*)node;
 			zero_pointer = node; 
-			zero_amount  = node->arena.size + sizeof(HeapNode);
-			used_amount += sizeof(HeapNode);
+			zero_amount  = node->arena.size + sizeof(ArenaHeapNode);
+			used_amount += sizeof(ArenaHeapNode);
 		}
 		
-		main_heap.used -= used_amount;
+		arena_heap.used -= used_amount;
 		ZeroBytes(zero_pointer, zero_amount);
-		DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap); DEBUGPrintHeapNodes(&main_heap);
+		DEBUG_CheckHeapArenaNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap); DEBUG_PrintHeapArenaNodes(&arena_heap);
 	}
 	
+	//////////////////
+	//// @generic ////
+	//////////////////
+#define MEMORY_LARGE_GENERIC_ALLOCATION_SIZE Kilobytes(256)
+	
+	
+	local Arena* generic_arena;
+	
+	
 	void* Allocate(upt bytes){
-		DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap);
+		DEBUG_CheckHeapArenaNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap);
 		if(bytes == 0) return 0;
 		Assert(generic_arena, "Attempted to allocate before Memory::Init() has been called");
-		Assert(main_heap.used + bytes <= main_heap.size, "Attempted to use more than max main heap size");
+		Assert(arena_heap.used + bytes <= arena_heap.size, "Attempted to use more than max main heap size");
 		
 		//if the allocation is large, create an arena for it rather than using the generic arena
 		Arena* arena = (bytes >= MEMORY_LARGE_GENERIC_ALLOCATION_SIZE) ? CreateArena(bytes) : generic_arena;
@@ -300,32 +312,21 @@ namespace Memory{
 		arena->cursor += bytes + sizeof(upt);
 		arena->used += bytes + sizeof(upt);
 		
-		DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap);
-		return result;
-	}
-	
-	void* TempAllocate(upt bytes){
-		if(bytes == 0) return 0;
-		Assert(temp_arena.used + bytes <= temp_arena.size, "Attempted to use more than max temp arena size");
-		
-		void* result = temp_arena.cursor + sizeof(upt);
-		*((upt*)temp_arena.cursor) = bytes; //place allocation size at cursor
-		temp_arena.cursor += bytes + sizeof(upt);
-		temp_arena.used += bytes + sizeof(upt);
+		DEBUG_CheckHeapArenaNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap);
 		return result;
 	}
 	
 	void* Reallocate(void* ptr, upt bytes){
-		DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap);
+		DEBUG_CheckHeapArenaNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap);
 		if(ptr == 0) return Allocate(bytes);
 		if(bytes == 0){ ZeroFree(ptr); return 0; }
-		Assert(ptr > main_heap.start && ptr < main_heap.start + main_heap.used, "Attempted to reallocate a pointer outside the main heap");
+		Assert(ptr > arena_heap.start && ptr < arena_heap.start + arena_heap.used, "Attempted to reallocate a pointer outside the main heap");
 		Assert(generic_arena, "Attempted to allocate before Memory::Init() has been called");
 		
 		upt* size = ((upt*)ptr - 1);
 		if(*size >= MEMORY_LARGE_GENERIC_ALLOCATION_SIZE){ //previous allocation was an arena
 			if(bytes <= *size) return ptr; //do nothing if less than previous size
-			Arena* arena = &((HeapNode*)size - 1)->arena;
+			Arena* arena = &((ArenaHeapNode*)size - 1)->arena;
 			arena = GrowArena(arena, bytes - *size);
 			size = (upt*)arena->start;
 			*size = arena->size - sizeof(upt);
@@ -350,48 +351,55 @@ namespace Memory{
 			}
 		}else{ //need to move memory in order to fit new size
 			if(bytes <= *size) return ptr; //do nothing if less than previous size
-			Assert(main_heap.used + (*size - bytes) <= main_heap.size, "Attempted to use more than max main heap size");
+			Assert(arena_heap.used + (*size - bytes) <= arena_heap.size, "Attempted to use more than max main heap size");
 			void* new_ptr = Allocate(bytes);
 			memcpy(new_ptr, ptr, *size);
 			size = (upt*)new_ptr - 1;
 			ZeroFree(ptr);
 		}
 		
-		DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap);
+		DEBUG_CheckHeapArenaNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap);
 		return size+1;
 	}
 	
 	void ZeroFree(void* ptr){
-		DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap);
+		DEBUG_CheckHeapArenaNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap);
 		if(ptr == 0) return;
-		Assert(ptr > main_heap.start && ptr < main_heap.cursor, "Attempted to free a pointer outside the main heap");
+		Assert(ptr > arena_heap.start && ptr < arena_heap.cursor, "Attempted to free a pointer outside the main heap");
 		
 		upt* size = ((upt*)ptr - 1);
 		if(*size >= MEMORY_LARGE_GENERIC_ALLOCATION_SIZE){
-			DeleteArena(&((HeapNode*)size - 1)->arena);
+			DeleteArena(&((ArenaHeapNode*)size - 1)->arena);
 		}else{
 			if((u8*)ptr + *size == generic_arena->cursor) generic_arena->cursor -= *size + sizeof(upt);
 			generic_arena->used -= *size + sizeof(upt);
 			ZeroBytes(size, *size);
 		}
-		DEBUGAssertHeapNodesAreGood(&main_heap); DEBUGAssertHeapArenasAreGood(&main_heap);
+		DEBUG_CheckHeapArenaNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap);
 	}
 	
-	Heap* ExposeMainHeap(){
-		return &main_heap;
+	////////////////////
+	//// @temporary ////
+	////////////////////
+	local Arena temp_arena;
+	
+	void* TempAllocate(upt bytes){
+		if(bytes == 0) return 0;
+		Assert(temp_arena.used + bytes <= temp_arena.size, "Attempted to use more than max temp arena size");
+		
+		void* result = temp_arena.cursor + sizeof(upt);
+		*((upt*)temp_arena.cursor) = bytes; //place allocation size at cursor
+		temp_arena.cursor += bytes + sizeof(upt);
+		temp_arena.used += bytes + sizeof(upt);
+		return result;
 	}
 	
-	Arena* ExposeTempArena(){
-		return &temp_arena;
-	}
-	
-	Arena* ExposeGenericArena(){
-		return generic_arena;
-	}
-	
+	///////////////
+	//// @init ////
+	///////////////
 	void Init(upt main_size, upt temp_size){
 		deshiStage |= DS_MEMORY;
-
+		
 		void* base_address = 0;
 		u8*   allocation = 0;
 		u64   total_size = main_size + temp_size;
@@ -411,25 +419,27 @@ namespace Memory{
 #endif            //DESHI_MAC
 		Assert(allocation != 0, "Failed to allocate memory");
 		
-		main_heap.start  = allocation;
-		main_heap.cursor = allocation;
-		main_heap.size   = main_size;
-		main_heap.used   = 0;
-		main_heap.order.next = main_heap.order.prev = &main_heap.order;
-		main_heap.empty.next = main_heap.empty.prev = &main_heap.empty;
-		DEBUGAssertHeapNodesAreGood(&main_heap);
+		arena_heap.start  = allocation;
+		arena_heap.cursor = allocation;
+		arena_heap.size   = main_size;
+		arena_heap.used   = 0;
+		arena_heap.order.next = arena_heap.order.prev = &arena_heap.order;
+		arena_heap.empty.next = arena_heap.empty.prev = &arena_heap.empty;
+		DEBUG_CheckHeapArenaNodes(&arena_heap);
 		
-		temp_arena.start  = main_heap.start + main_heap.size;
+		temp_arena.start  = arena_heap.start + arena_heap.size;
 		temp_arena.cursor = temp_arena.start;
 		temp_arena.size   = temp_size;
 		temp_arena.used   = 0;
 		
-		generic_arena = CreateArena(Megabytes(64)-sizeof(HeapNode));
+		generic_arena = CreateArena(Megabytes(64)-sizeof(ArenaHeapNode));
 		initialized = true;
 	}
 	
+	/////////////////
+	//// @udpate ////
+	/////////////////
 	void Update(){
-		//DEBUGDrawMemory();
 		ZeroBytes(temp_arena.start, temp_arena.used);
 		temp_arena.cursor = temp_arena.start;
 		temp_arena.used = 0;

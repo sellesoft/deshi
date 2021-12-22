@@ -12,26 +12,6 @@ struct Arena{
 	upt used;
 };
 
-struct Node{
-	Node* next;
-	Node* prev;
-};
-
-struct HeapNode{
-	Arena arena;
-	Node  order; //overall order
-	Node  empty; //empty node order
-};
-
-struct Heap{
-	u8*  start;
-	u8*  cursor;
-	upt  used;
-	upt  size;
-	Node order; //overall nodes
-	Node empty; //empty nodes
-};
-
 namespace Memory{
 	//creates an arena AT LEAST 'bytes' in size with all memory zeroed
 	Arena* CreateArena(upt bytes);
@@ -42,7 +22,6 @@ namespace Memory{
 	void   DeleteArena(Arena* arena);
 	
 	void* Allocate(upt bytes);
-	void* TempAllocate(upt bytes);
 	//grows the allocation to AT LEAST 'new_size' in bytes if greater than previous allocation
 	//  returns a different pointer than was passed if the memory was moved
 	//  if its memory was moved, pointers to its memory are no longer valid
@@ -50,9 +29,7 @@ namespace Memory{
 	void* Reallocate(void* ptr, upt new_size);
 	void  ZeroFree(void* ptr);
 	
-	Heap*  ExposeMainHeap();
-	Arena* ExposeTempArena();
-	Arena* ExposeGenericArena();
+	void* TempAllocate(upt bytes);
 	
 	void Init(upt main_size, upt temp_size);
 	void Update();

@@ -33,9 +33,9 @@ namespace Logger{
 	
 	void LogInternal(string& msg);
 	cstring LastMessage();
-
+	
 	void LogFromConsole(string& in);
-
+	
 	void SetIsLogging(b32 thebooleanforthisfunction);
 	
 	FILE* GetFilePtr();
@@ -43,7 +43,6 @@ namespace Logger{
 	void Init(u32 log_count = 5, b32 mirror = true);
 	void Update();
 	void Cleanup();
-
 };
 
 /////////////////////////

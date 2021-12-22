@@ -64,7 +64,7 @@ namespace Logger{
 		last_message_len = str.count;
 		if (mirror_to_console) ConsoleMirror(str, chst);
 	}
-
+	
 	
 	inline cstring LastMessage(){
 		return cstring{log_buffer,last_message_len};
@@ -79,12 +79,12 @@ namespace Logger{
 		memcpy(log_buffer, str.str, str.count);
 		last_message_len = str.count;
 	}
-
+	
 	void SetIsLogging(b32 yep) {
 		is_logging = yep;
 	}
-
-
+	
+	
 	inline FILE* GetFilePtr() {
 		return file;
 	}
@@ -92,7 +92,7 @@ namespace Logger{
 	void Init(u32 log_count, b32 mirror){
 		AssertDS(DS_MEMORY, "Attempt to initialize Logger without loading memory first");
 		deshiStage |= DS_LOGGER;
-
+		
 		TIMER_START(t_s);
 		
 		mirror_to_stdout = mirror;
@@ -133,8 +133,9 @@ namespace Logger{
 		setvbuf(file,0,_IONBF,0);
 #endif //DESHI_SLOW
 		
+		is_logging = true;
 		Log("deshi","Finished logging initialization in ",TIMER_END(t_s),"ms");
-		mirror_to_console = true;
+		mirror_to_console = true; //NOTE this happens after the Log() so it doesnt try calling into the console
 	}
 	
 	//TODO maybe flush every X seconds/frames instead of every update?
