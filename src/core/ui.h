@@ -541,6 +541,7 @@ namespace UI {
 	vec2      GetLastItemPos();
 	vec2      GetLastItemSize();
 	vec2      GetLastItemScreenPos();
+	vec2      GetWindowRemainingSpace();
 	u32       GetCenterLayer();
 	
 	

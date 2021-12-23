@@ -3241,8 +3241,8 @@ void CheckUICmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset,
 		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
 		uiCmdArrays[layer][uiCmdCounts[layer]].textured = textured;
 		uiCmdCounts[layer]++;
-		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
+	Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	
 }
 

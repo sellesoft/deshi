@@ -15,28 +15,12 @@ namespace Logger{
 			u32 rb = str.findFirstChar(']');
 			string tag = str.substr(1, rb - 1);
 			if (rb != string::npos) {
-				if (tag == "-error") {
-					modified += "e}" + str.substr(rb + 2);
-					DeshConsole->LoggerMirror(modified, chst);
-				}
-				else if (tag == "-warning") {
-					modified += "w}" + str.substr(rb + 2);
-					DeshConsole->LoggerMirror(modified, chst);
-				}
-				else if (tag == "VULKAN-ERROR") {
-					modified += "VE}" + str.substr(rb + 2);
-					//DeshConsole->Lo
-				}
-
-				else {
-					modified += "t=" + tag + "}" + str.substr(rb + 2) + "{}}";
-					DeshConsole->LoggerMirror(modified, chst);
-				}
-			}
-			else {
-				DeshConsole->LoggerMirror(str, chst);
+				modified += "t=" + tag + "}" + str.substr(rb + 2) + "{}}";
+				DeshConsole->LoggerMirror(modified, chst + tag.count + 3);
+				return;
 			}
 		}
+		DeshConsole->LoggerMirror(str, chst);
 	}
 
 	void LogF_(const char* filepath, upt line_number, const char* tag, const char* fmt, ...){
@@ -72,10 +56,13 @@ namespace Logger{
 
 	//just a special function called by Console to prevent feedback between 
 	//console and logger and to prevent logger from appending a newline
-	void LogFromConsole(string& str) {
+	void LogFromConsole(string str) {
 		if (!is_logging) return;
-		if (mirror_to_stdout) puts(str.str);
 		fputs(str.str, file);
+		if (mirror_to_stdout) {
+			if (str.endsWith("\n")) str--;
+			puts(str.str);
+		}
 		memcpy(log_buffer, str.str, str.count);
 		last_message_len = str.count;
 	}
@@ -133,7 +120,7 @@ namespace Logger{
 		setvbuf(file,0,_IONBF,0);
 #endif //DESHI_SLOW
 		
-		is_logging = true;
+		//is_logging = true;
 		Log("deshi","Finished logging initialization in ",TIMER_END(t_s),"ms");
 		mirror_to_console = true; //NOTE this happens after the Log() so it doesnt try calling into the console
 	}

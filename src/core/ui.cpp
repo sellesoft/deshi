@@ -331,9 +331,16 @@ vec2 UI::GetLastItemScreenPos() {
 	return curwin->position + curwin->items[currlayer].last->position;
 }
 
+vec2 UI::GetWindowRemainingSpace() {
+	//TODO(sushi) this	
+	return vec2::ZERO;
+}
+
 u32 UI::GetCenterLayer() {
 	return UI_CENTER_LAYER;
 }
+
+
 
 //internal last item getter, returns nullptr if there are none
 inline UIItem* GetLastItem(u32 layeroffset = 0) {
@@ -2209,11 +2216,9 @@ void UI::End() {
 			vec2 visRegionStart = vec2(Max(curwin->x, c->x), Max(curwin->y, c->y));
 			vec2 visRegionEnd = vec2(Min(curwin->x + curwin->width - (yCanScroll ? style.scrollBarYWidth : 0), c->x + c->width), Min(curwin->y + curwin->height - (xCanScroll ? style.scrollBarXHeight : 0), c->y + c->height));
 			vec2 childVisibleRegion = visRegionEnd - visRegionStart;
-			DebugCircle(visRegionStart, 3);
 			c->visibleRegionStart = visRegionStart;
 			c->visibleRegionSize = childVisibleRegion;
 			if (Math::PointInRectangle(mp, visRegionStart, childVisibleRegion * style.globalScale)) {
-				
 				curwin->hovered = 0;
 				break;
 			}
@@ -2332,10 +2337,6 @@ void UI::End() {
 		}
 	}
 	
-	
-	
-	
-	
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 	curwin->style = style;
 	
@@ -2366,9 +2367,6 @@ void UI::EndChild() {
 	
 	//check if window is hovered, or if its children are hovered
 	if (Math::PointInRectangle(mp, curwin->visibleRegionStart, curwin->visibleRegionSize * style.globalScale)) {
-		
-		DebugRect(curwin->visibleRegionStart, curwin->visibleRegionSize);
-		
 		curwin->hovered = 1;
 		for (UIWindow* c : curwin->children) {
 			vec2 scrollBarAdjust = vec2((yCanScroll ? style.scrollBarYWidth : 0), (xCanScroll ? style.scrollBarXHeight : 0));
@@ -2678,13 +2676,15 @@ UIWindow* DisplayMetrics() {
 			EndHeader();
 		}
 		
-		static b32 showItemBoxes = false;
-		static b32 showItemCursors = false;
+		persist b32 showItemBoxes = false;
+		persist b32 showItemCursors = false;
+		persist b32 showAllDrawCmdScissors = false;
 		
 		if (BeginHeader("Window Debug Visuals")) {
 			Checkbox("Show Item Boxes", &showItemBoxes);
 			Checkbox("Show Item Cursors", &showItemCursors);
-			
+			Checkbox("Show All DrawCmd Scissors", &showAllDrawCmdScissors);
+
 			EndHeader();
 		}
 		
@@ -2715,6 +2715,49 @@ UIWindow* DisplayMetrics() {
 				}
 			}
 		}
+
+		if (showAllDrawCmdScissors) {
+			for (UIItem& item : debugee->preItems) {
+				for (UIDrawCmd& dc : item.drawCmds) {
+					DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Red);
+				}
+			}
+			forI(UI_WINDOW_ITEM_LAYERS) {
+				for (UIItem& item : debugee->items[i]) {
+					for (UIDrawCmd& dc : item.drawCmds) {
+						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Yellow);
+					}
+				}
+			}
+			for (UIItem& item : debugee->postItems) {
+				for (UIDrawCmd& dc : item.drawCmds) {
+					DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Green);
+				}
+			}
+
+			for (UIWindow* c : debugee->children) {
+				for (UIItem& item : c->preItems) {
+					for (UIDrawCmd& dc : item.drawCmds) {
+						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Red);
+					}
+				}
+				forI(UI_WINDOW_ITEM_LAYERS) {
+					for (UIItem& item : c->items[i]) {
+						for (UIDrawCmd& dc : item.drawCmds) {
+							DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Yellow);
+						}
+					}
+				}
+				for (UIItem& item : c->postItems) {
+					for (UIDrawCmd& dc : item.drawCmds) {
+						DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Green);
+					}
+				}
+			}
+
+		}
+
+
 		
 	}
 	
@@ -2926,7 +2969,7 @@ void UI::DemoWindow() {
 	if (BeginHeader("Child Windows")) {
 		Text("You can nest windows inside another one by using BeginChild");
 		
-		BeginChild("demochild", vec2(curwin->width, 300));
+		BeginChild("demochild", vec2(curwin->width - style.indentAmount, 300));
 		
 		Text("Heres some text in the child window");
 		
@@ -2941,6 +2984,10 @@ void UI::DemoWindow() {
 		Text("heres a image in the child window:");
 		Image(tex);
 		
+		forI(99) {
+			Text("heres a bunch of text in the child window");
+		}
+
 		EndChild();
 		
 		EndHeader();
@@ -3102,6 +3149,17 @@ inline void DrawCmd(UIDrawCmd& drawCmd, UIItem& item, vec2 itempos, vec2 itemsiz
 	wcstring wdctext{ drawCmd.wtext.str, drawCmd.wtext.count };
 	
 	Font* font = drawCmd.font;
+
+#if DESHI_INTERNAL
+	//copy all drawCmd changes back to the actual drawCmd in debug mode so we
+	//can visualize it in metrics
+	drawCmd.scissorExtent = dcse;
+	drawCmd.scissorOffset = dcso;
+	drawCmd.position = dcpos;
+	drawCmd.position2 = dcpos2;
+	drawCmd.thickness = dct;
+	//NOTE add more stuff as we need it
+#endif
 	
 	switch (drawCmd.type) {
 		case UIDrawType_FilledRectangle: {

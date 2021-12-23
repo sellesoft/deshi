@@ -9,48 +9,55 @@ local f32 open_dt = 2000.0f;       //speed at which it opens
 
 //console 
 local char inputBuf[256]{};
-
 local constexpr u32 DICT_SIZE = 250;
+local constexpr UIWindowFlags flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize;
+
+
+UIWindow* conmain = 0; //the main console window
+UIWindow* conterm = 0; //the terminal child window
+
+UIStyle* uistyle = 0; //for quick access to the style of ui, we should not change any styles through this pointer
+
 
 //this is always from Logger
 FILE* buffer;
 
-enum Format {
-	Alert,
-	Warning,
-	Error,
-	Tagged,
-	Colored,
-};
+enum Format_ {
+	None    = 0,
+	Alert   = 1 << 0, 
+	Warning = 1 << 1, //these 2 are mutually exclusive!
+	Error   = 1 << 2, //these 2 are mutually exclusive!
+	Tagged  = 1 << 3,
+	Colored = 1 << 4,
+}; typedef u32 Format;
 
-struct ColoredStr{
-	color color;
-	Format format;
-	u32 charstart;
-	u32 strsize;
-	b32 EndOfLine = 0; //true if this ColoredStr is the end of a line
-	char tag[255];
+#define HasFlag(var, flag) (var & flag)
+#define HasFlags(var, flags) ((var & flags) == flags)
+
+struct Chunk{
+	color color = Color_White;
+	Format format = None;
+	u32 charstart = 0;
+	u32 strsize = 0;
+	b32 eol = 0; //true if this Chunk is the end of a line
+	string tag = ""; //change to a char array eventually
 };
 
 
 struct{
-	ring_array<ColoredStr> dict;
-	
-	void add(const char* str, u32 strsize, color color, b32 newLine = 0, Format format = Colored) {
-		dict.add(ColoredStr{ color,  format, (u32)ftell(buffer), strsize, newLine });
-		string to(str, strsize);
-		Logger::LogFromConsole(to);
+	ring_array<Chunk> dict;
+
+	void add(string to_logger, Chunk chunk) {
+		dict.add(chunk);
+
+		Logger::LogFromConsole(to_logger);
 	}
 
-	void add(string& str, color color, b32 newLine = 0, Format format = Colored) {
-		dict.add(ColoredStr{ color, format, (u32)ftell(buffer), str.count, newLine });
-		Logger::LogFromConsole(str);
+	//for chunks that have already been logged
+	void add(Chunk chunk) {
+		dict.add(chunk);
 	}
-	
-	void add(u32 charstart, u32 strsize, color color, b32 newLine = 0, Format format = Colored) {
-		dict.add(ColoredStr{ color, format, charstart, strsize, newLine });
-	}
-	
+
 } dictionary;
 
 //state of console
@@ -77,7 +84,7 @@ local map<const char*, color> color_strings{
 //
 //	{{a} some kind of alert!! {}}
 // 
-//  {{t=vulkan,c=yellow} a message with multiple modifiers {}}
+//  {{t=vulkan, c=yellow} a message with multiple modifiers {}}
 // 
 //	if a message is formatted and ends without terminating the formatting
 //  its still valid, {}} only ends the formatting so you can have different formatting per message
@@ -87,142 +94,225 @@ local map<const char*, color> color_strings{
 //	
 //  will still color the message yellow also,
 // 
-//  some text before formatting {{a} some formatted text at the end
+//  some text before formatting {{.a} some formatted text at the end
 //  
 //  will not format the first part, and format the rest
 // 
 //modifiers
 // 
-//	a     - flashes the background of the message red
-//  e     - these messages are red
-//  w     - these messages are yellow
-//  t=... - these messages have a tag they can be filtered by
-//  c=... - sets the color of the wrapped message
+//	.a     - (alert)        flashes the background of the message red
+//  .e     - (error)        these messages are red
+//  .w     - (warning)      these messages are yellow
+//  .t=... - (tag)          these messages have a tag they can be filtered by
+//  .c=... - (color)        sets the color of the wrapped message
 //
-void ParseMessage(string& input) {
+//TODO(sushi) clean this function up please
+void ParseMessage(string& input, s32 chstart = -1) {
+	//if the input is less than 7 characters its impossible for it to have valid modifier syntax
+	if (input.count < 7) {
+		Chunk chunk;
+		chunk.charstart = (chstart == -1 ? ftell(buffer) : chstart);
+		chunk.color = Color_White;
+		chunk.eol = 1;
+		chunk.format = None;
+		if (chstart == -1) {
+			dictionary.add(input, chunk);
+		}
+		else {
+			dictionary.add(chunk);
+		}
+		return;
+	}
+	
 	enum ParseState {
-		None,
+		Init,
 		ParsingChunk,
 		ParsingFormatting,
 		ParsingFormattedChunk
-	}; ParseState state = None;
+	}; ParseState state = Init;
 
 	//defines to make customizing syntax easier
-#define ConFormatOpening    i + 1 < input.count && input[i] == '{' && input[i + 1] == '{'
-#define ConFormatSpecifierClosing   input[i] == '}'
-#define ConFormatSpecifierSeparator input[i] == ','
-#define ConFormatClosing    i + 2 < input.count && input[i] == '{' && input[i + 1] == '}' && input[i + 2] == '}'
+#define ConFormatOpening    (i + 1 < input.count && input[i] == '{' && input[i + 1] == '{')
+#define ConFormatSpecifierClosing   (input[i] == '}')
+#define ConFormatSpecifierSeparator (input[i] == ',')
+#define ConFormatClosing    (i + 2 < input.count && input[i] == '{' && input[i + 1] == '}' && input[i + 2] == '}')
+#define ResetChunk chunk = Chunk()
+#define AddChunk if(chstart == -1){ string tl(chunk_start, chunk.strsize); dictionary.add(tl, chunk); } else dictionary.add(chunk);
+#define AddChunkWithNewline if(chstart == -1) { string tl(chunk_start, chunk.strsize); dictionary.add(tl + "\n", chunk); } else dictionary.add(chunk);
 
 	char* formatting_start = 0;
+	char* specifier_start = 0;
 	char* chunk_start = 0;
 
-	ColoredStr working;
+	Chunk chunk;
 
-	color chunk_color = Color_White;
-	Format chunk_format = Colored;
-
-	//if the input is less than 7 characters its impossible for it to have valid modifier syntax
-	if (input.count < 7) {
-		dictionary.add(input.str, input.count, Color_White);
-		return;
-	}
+	u32 charstart = (chstart == -1 ? ftell(buffer) : chstart);
 
 	for (int i = 0; i < input.count; i++) {
+#if 0
+		//leaving this here for whenever this function goes wrong again,
+		// as its stupidly finicky
 		char* curr = &input[i];
+		PRINTLN("-----------------------------------------");
+		PRINTLN("       charstart: " << charstart);
+		PRINTLN("     chunk start: " << (chunk_start ? chunk_start : "0"));
+		PRINTLN("formatting start: " << (formatting_start ? formatting_start : "0"));
+		PRINTLN(" specifier start: " << (specifier_start ? specifier_start : "0"));
+		PRINTLN("    chunk format: " << chunk.format);
+		PRINTLN(" chunk charstart: " << chunk.charstart);
+		PRINTLN("   chunk strsize: " << chunk.strsize);
+		PRINTLN("            curr: " << curr);
+#endif
 		switch (state) {
-			case None: { //initial state and state after finishing a formatted string
+			case Init: { //initial state and state after finishing a formatted string
 				if (ConFormatOpening) {
 					state = ParsingFormatting;
 					formatting_start = &input[i];
+					specifier_start = formatting_start + 2;
 					i++; continue;
 				}
 				else {
 					state = ParsingChunk;
 					chunk_start = &input[i];
+					chunk.charstart = charstart;
 				}
 			}break;
 			case ParsingChunk: {
 				if (ConFormatOpening) {
 					state = ParsingFormatting;
 					formatting_start = &input[i];
-					dictionary.add(chunk_start, &input[i] - chunk_start, Color_White);
+					specifier_start = formatting_start + 2;
+					chunk.strsize = &input[i] - chunk_start;
+					charstart += chunk.strsize;
+					AddChunk;
+					//dictionary.add(chunk_start, chunk);
+					ResetChunk;
 					i++; continue;
 				}
 				else if (input[i] == '\n') {
 					//we end the chunk if we find a newline
-					state = None;
-					dictionary.add(chunk_start, (&input[i] - chunk_start) + 1, Color_White, 1);
+					state = Init;
+					chunk.strsize = &input[i] - chunk_start;
+					chunk.eol = 1;
+					AddChunk;
+					//dictionary.add(chunk_start, chunk);
+					ResetChunk;
 				}
 				else if (i == input.count - 1) {
 					//we've reached the end of the string
-					dictionary.add(chunk_start, (&input[i] - chunk_start) + 1, Color_White, 1);
+					chunk.strsize = (&input[i] - chunk_start) + 1;
+					chunk.eol = 1;
+					AddChunkWithNewline;
+					//dictionary.add(chunk_start, chunk);
 				}
 			}break;
 			case ParsingFormatting: {
+				auto parse_specifier = [&](string& specifier) {
+					if (!HasFlags(chunk.format, (Warning | Error))) {
+						if (specifier == "e") {
+							chunk.format |= Error;
+							return;
+						}
+						else if (specifier == "w") {
+							chunk.format |= Warning;
+							return;
+						}
+					}
+					if (specifier == "a") {
+						chunk.format |= Alert;
+						return;
+					}
+					if (specifier[0] == 'c' && specifier[1] == '=') {
+						chunk.format |= Colored;
+						chunk.color = color_strings[specifier.substr(2).str];
+						return;
+					}
+					if (specifier[0] == 't' && specifier[1] == '=') {
+						chunk.format |= Tagged;
+						chunk.tag = specifier.substr(2);
+						return;
+					}
+				};
 				if (ConFormatSpecifierClosing) {
 					state = ParsingFormattedChunk;
-					string format(formatting_start + 2, &input[i] - (formatting_start + 2));
-					if (format.count == 1) {
-						if (format == "a") {
-							chunk_format = Alert;
-						}
-						else if (format == "w") {
-							chunk_format = Warning;
-						}
-						else if (format == "e") {
-							chunk_format = Error;
-						}
-					}
-					else {
-						if (format[0] == 'c' && format[1] == '=') {
-							chunk_format = Colored;
-							chunk_color = color_strings[format.substr(2).str];
-						}
-						else if (format[0] == 't' && format[1] == '=') {
-							chunk_format = Tagged;
-						}
-					}
-					chunk_start = &input[i + 1];
+					string specifier(specifier_start, (&input[i] - specifier_start));
+					parse_specifier(specifier);
+					specifier_start = 0;
+					chunk_start = &input[++i];
+					chunk.charstart = charstart;
+					
+				}
+				else if (ConFormatSpecifierSeparator) {
+					i++;
+					string specifier(specifier_start, (&input[i] - specifier_start) - 1);
+					parse_specifier(specifier);
+					specifier_start += specifier.count + 1;
+					
 				}
 				else if (input[i] == '\n') {
 					//what we were parsing must not have actually been formatting
 					//so just end the chunk and start again
-					state = None;
-					dictionary.add(formatting_start, (&input[i] - formatting_start) + 1, Color_White, 1);
+					state = Init;
+					ResetChunk; //remove any formatting we may have added
+					chunk.strsize = (&input[i] - formatting_start);
+					chunk.eol = 1;
+					AddChunk;
+					//dictionary.add(formatting_start, chunk);
+					charstart += chunk.strsize + 1;
+
 				}
 				else if (i == input.count - 1) {
 					//we've reached the end of the string
-					dictionary.add(formatting_start, (&input[i] - formatting_start) + 1, Color_White, 1);
+					chunk.strsize = (&input[i] - formatting_start);
+					chunk.eol = 1;
+					AddChunkWithNewline;
+					
 				}
 			}break;
 			case ParsingFormattedChunk: {
 				if (ConFormatClosing) {
-					state = None;
-					dictionary.add(chunk_start, (&input[i] - chunk_start), chunk_color, 0, chunk_format);
-					chunk_color = Color_White;
-					chunk_format = Colored;
-					chunk_start = 0;
+					state = Init;
+					chunk.strsize = (&input[i] - chunk_start);
 					i += 2;
+					if (i == input.count - 1) { 
+						chunk.eol = 1; 
+						AddChunkWithNewline;
+						break;
+					}
+					else {
+						AddChunk;
+						charstart += chunk.strsize;
+					}
+					ResetChunk;
 				}
 				else if (input[i] == '\n') {
 					i++;
 					if (ConFormatClosing) {
 						//in this case we find a newline right at the end of a formatted chunk
-						state = None;
-						dictionary.add(chunk_start, (&input[i - 1] - chunk_start), chunk_color, 1, chunk_format);
-						chunk_color = Color_White;
-						chunk_format = Colored;
-						chunk_start = 0;
+						state = Init;
+						i--;
+						chunk.strsize = (&input[i] - chunk_start);
+						chunk.eol = 1;
+						AddChunk;
+						charstart += chunk.strsize;
+						ResetChunk;
 						i += 2;
 					}
 					else {
-						dictionary.add(chunk_start, (&input[i - 1] - chunk_start), chunk_color, 1, chunk_format);
-						chunk_start = &input[i];
+						i--;
+						chunk.strsize = (&input[i] - chunk_start);
+						chunk.eol = 1;
+						AddChunkWithNewline;
+						charstart += chunk.strsize + 1;
+						chunk_start = &input[i+1];
+						chunk.charstart = charstart;
 					}
 				}
 				else if (i == input.count - 1) {
 					//we've reached the end of the string
-					dictionary.add(chunk_start, (&input[i] - chunk_start) + 1, chunk_color, 1, chunk_format);
+					chunk.strsize = (&input[i] - chunk_start) + 1;
+					chunk.eol = 1;
+					AddChunkWithNewline;
 				}
 			}break;
 		}
@@ -234,7 +324,7 @@ void Console::AddLog(string input){
 }
 
 void Console::LoggerMirror(string input, u32 charstart) {
-	ParseMessage(input);
+	ParseMessage(input, charstart);
 }
 
 void Console::ChangeState(ConsoleState new_state) {
@@ -251,31 +341,47 @@ void Console::Init() {
 
 	dictionary.dict.init(DICT_SIZE, deshi_allocator);
 
+
+
 	Log("deshi", "Finished console initialization in ", TIMER_END(t_s), "ms");
 }
 
 void Console::Update() {
 	using namespace UI;
+	uistyle = &GetStyle(); //TODO(sushi) try to get this only once
 
+
+
+	Begin("deshiConsole", vec2::ZERO, vec2(DeshWindow->width, DeshWindow->height * open_max_percent), flags);
+	conmain = GetWindow(); //TODO(sushi) try to get this only once
+
+	BeginChild("deshiConsoleTerminal", (conmain->dimensions - 2 * uistyle->windowPadding).yAdd(-(uistyle->fontHeight * 1.3 + uistyle->itemSpacing.y)), flags);
+	conterm = GetWindow(); //TODO(sushi) try to get this only once
+
+	PushVar(UIStyleVar_WindowPadding, vec2(5, 0));
+	PushVar(UIStyleVar_ItemSpacing, vec2(0, 0));
 	char toprint[1024];
-
-	Begin("deshiConsole", vec2::ZERO, vec2(DeshWindow->width, DeshWindow->height * open_max_percent));
-
 	for (int i = 0; i < dictionary.dict.count; i++) {
-		ColoredStr colstr = dictionary.dict[i];
+		Chunk colstr = dictionary.dict[i];
 		
 		fseek(buffer, colstr.charstart, SEEK_SET);
 		fread(toprint, colstr.strsize + 1, 1, buffer);
 		toprint[dictionary.dict[i].strsize] = 0;
 		
+		//adjust what we're going to print based on formatting
+
 		PushColor(UIStyleCol_Text, colstr.color);
-		if (!colstr.EndOfLine) SameLine();
 		Text(toprint);
+		if (!colstr.eol && i != (dictionary.dict.count - 1)) SameLine();
 		
 		PopColor();
 	}
+	PopVar(2);
 
+	EndChild();
+	PushColor(UIStyleCol_WindowBg, color(0, 25, 18));
 	End();
+	PopColor();
 }
 
 void Console::Cleanup() {
