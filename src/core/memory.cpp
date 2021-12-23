@@ -1,9 +1,9 @@
 //NOTE Memory Layout: 
-//|                       Total Size                          |
-//|                  Main Heap                  |  Temp Arena |
-//|      Heap Arena      |      Heap Arena      | Item | Item |
-//| Header |    Memory   | Header |    Memory   |      |      |
-//|        | Item | Item |        | Item | Item |      |      |
+//|                                Total Size                                 |
+//|                            Main Heap                        |  Temp Arena |
+//| Generic Arena |      Heap Arena      |      Heap Arena      | Item | Item |
+//| Chunk | Chunk | Header |    Memory   | Header |    Memory   |      |      |
+//|       |       |        | Item | Item |        | Item | Item |      |      |
 
 namespace Memory{
 	////////////////
@@ -95,11 +95,11 @@ namespace Memory{
 		heap->cursor = last_order_node->arena.start + last_order_node->arena.size;
 	}
 	
-	Arena* CreateArena(upt bytes){
+	Arena* CreateArena(upt size){
 		DEBUG_CheckArenaHeapNodes(&arena_heap);
-		if(bytes == 0) return 0;
+		if(size == 0) return 0;
 		Assert(arena_heap.start, "Attempted to create an arena before Memory::Init() has been called");
-		upt aligned_size = ClampMin(RoundUpTo(bytes, MEMORY_ARENA_ALIGNMENT), MEMORY_ARENA_MINIMUM_ALLOCATION_SIZE);
+		upt aligned_size = ClampMin(RoundUpTo(size, MEMORY_ARENA_ALIGNMENT), MEMORY_ARENA_MINIMUM_ALLOCATION_SIZE);
 		Assert(arena_heap.used + aligned_size <= arena_heap.size, "Attempted to use more than max arena heap size");
 		
 		//check if there are any empty nodes that can hold the new arena
@@ -152,51 +152,51 @@ namespace Memory{
 		return &new_node->arena;
 	}
 	
-	Arena* GrowArena(Arena* arena, upt bytes){
+	Arena* GrowArena(Arena* arena, upt size){
 		DEBUG_CheckArenaHeapNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap);
-		if(bytes == 0) return arena;
+		if(size == 0) return arena;
 		if(arena == 0) return 0;
 		Assert((u8*)arena >= arena_heap.start && (u8*)arena < arena_heap.cursor, "Attempted to grow an arena that's outside the arena heap");
-		Assert(arena_heap.used + bytes <= arena_heap.size, "Attempted to use more than max arena heap size");
+		Assert(arena_heap.used + size <= arena_heap.size, "Attempted to use more than max arena heap size");
 		
 		//check if the next node is empty and can hold the grown size, or if we need to make a new arena
 		Arena* result = arena;
-		upt aligned_bytes = RoundUpTo(bytes, MEMORY_ARENA_ALIGNMENT);
+		upt aligned_size = RoundUpTo(size, MEMORY_ARENA_ALIGNMENT);
 		ArenaHeapNode* node = CastFromMember(ArenaHeapNode, arena, arena);
 		ArenaHeapNode* next = CastFromMember(ArenaHeapNode, order, node->order.next);
 		if(&next->order == &arena_heap.order){ //we are the last node
-			Assert(arena_heap.cursor + bytes <= arena_heap.start + arena_heap.size, "Attempted to use more than max arena heap size");
-			upt growth_bytes = (arena_heap.cursor + aligned_bytes <= arena_heap.start + arena_heap.size) ? aligned_bytes : bytes;
+			Assert(arena_heap.cursor + size <= arena_heap.start + arena_heap.size, "Attempted to use more than max arena heap size");
+			upt growth_size = (arena_heap.cursor + aligned_size <= arena_heap.start + arena_heap.size) ? aligned_size : size;
 			
-			arena->size += growth_bytes;
-			arena_heap.used += growth_bytes;
+			arena->size += growth_size;
+			arena_heap.used += growth_size;
 			UpdateArenaHeapCursor(&arena_heap);
-		}else if((next->empty.next != 0) && (next->empty.prev != 0) && (next->arena.size >= bytes)){ //next node is empty and can hold the growth
-			upt growth_bytes = ((u8*)next + aligned_bytes <= arena_heap.start + arena_heap.size) ? aligned_bytes : bytes;
+		}else if((next->empty.next != 0) && (next->empty.prev != 0) && (next->arena.size >= size)){ //next node is empty and can hold the growth
+			upt growth_size = ((u8*)next + aligned_size <= arena_heap.start + arena_heap.size) ? aligned_size : size;
 			
 			//make new empty+order node after current node if there is enough space
-			upt leftover_size = next->arena.size - growth_bytes + sizeof(ArenaHeapNode);
+			upt leftover_size = next->arena.size - growth_size + sizeof(ArenaHeapNode);
 			if(leftover_size > sizeof(ArenaHeapNode)){
-				ArenaHeapNode* new_node = (ArenaHeapNode*)((u8*)next + growth_bytes);
+				ArenaHeapNode* new_node = (ArenaHeapNode*)((u8*)next + growth_size);
 				NodeInsertNext(&next->order, &new_node->order); DEBUG_CheckArenaHeapNodes(&arena_heap);
 				NodeInsertNext(&next->empty, &new_node->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
 				new_node->arena.start = (u8*)(new_node+1);
 				new_node->arena.size = leftover_size - sizeof(ArenaHeapNode);
 				arena_heap.used += sizeof(ArenaHeapNode);
 			}else{
-				growth_bytes += leftover_size;
+				growth_size += leftover_size;
 			}
 			
 			//add empty node space to current node
 			NodeRemove(&next->order); DEBUG_CheckArenaHeapNodes(&arena_heap);
 			NodeRemove(&next->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
 			ZeroBytes(next, sizeof(ArenaHeapNode)); //NOTE the node's memory should already be zeroed
-			arena->size += growth_bytes;
-			arena_heap.used += (growth_bytes - sizeof(ArenaHeapNode));
+			arena->size += growth_size;
+			arena_heap.used += (growth_size - sizeof(ArenaHeapNode));
 			UpdateArenaHeapCursor(&arena_heap);
 		}else{ //need to move memory in order to fit new size
-			upt growth_bytes = (arena_heap.cursor + arena->size + aligned_bytes <= arena_heap.start + arena_heap.size) ? aligned_bytes : bytes;
-			Arena* new_arena = CreateArena(arena->size + growth_bytes);
+			upt growth_size = (arena_heap.cursor + arena->size + aligned_size <= arena_heap.start + arena_heap.size) ? aligned_size : size;
+			Arena* new_arena = CreateArena(arena->size + growth_size);
 			memcpy(new_arena->start, arena->start, arena->used);
 			new_arena->used = arena->used;
 			new_arena->cursor = new_arena->start + (arena->cursor - arena->start);
@@ -623,14 +623,14 @@ namespace Memory{
 	////////////////////
 	local Arena temp_arena;
 	
-	void* TempAllocate(upt bytes){
-		if(bytes == 0) return 0;
-		Assert(temp_arena.used + bytes <= temp_arena.size, "Attempted to use more than max temp arena size");
+	void* TempAllocate(upt size){
+		if(size == 0) return 0;
+		Assert(temp_arena.used + size <= temp_arena.size, "Attempted to use more than max temp arena size");
 		
 		void* result = temp_arena.cursor + sizeof(upt);
-		*((upt*)temp_arena.cursor) = bytes; //place allocation size at cursor
-		temp_arena.cursor += bytes + sizeof(upt);
-		temp_arena.used += bytes + sizeof(upt);
+		*((upt*)temp_arena.cursor) = size; //place allocation size at cursor
+		temp_arena.cursor += size + sizeof(upt);
+		temp_arena.used += size + sizeof(upt);
 		return result;
 	}
 	
@@ -713,8 +713,8 @@ namespace Memory{
 	}
 }; //namespace Memory
 
-void* TempAllocator_Resize(void* ptr, upt bytes){
-	void* a = Memory::TempAllocate(bytes); 
+void* TempAllocator_Resize(void* ptr, upt size){
+	void* a = Memory::TempAllocate(size);
 	memcpy(a, ptr, *((upt*)ptr-1)); 
 	return a;
 }

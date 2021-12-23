@@ -45,24 +45,26 @@ namespace Memory{
 		b32    initialized;
 	};
 	
-	//creates an arena AT LEAST 'bytes' in size with all memory zeroed
-	Arena* CreateArena(upt bytes);
-	//grows the arena by AT LEAST 'bytes' in size
+	//creates an arena AT LEAST 'size' in bytes with all memory zeroed
+	Arena* CreateArena(upt size);
+	//grows the arena by AT LEAST 'size' in bytes
 	//  returns a different pointer than was passed if the memory was moved
 	//  if its memory was moved, pointers to its memory are no longer valid
-	Arena* GrowArena(Arena* arena, upt bytes);
+	Arena* GrowArena(Arena* arena, upt size);
 	void   ClearArena(Arena* arena);
 	void   DeleteArena(Arena* arena);
 	
-	void* Allocate(upt bytes);
-	//grows the allocation to AT LEAST 'new_size' in bytes if greater than previous allocation
+	//allocates AT LEAST 'size' in bytes with all memory zeroed
+	void* Allocate(upt size);
+	//resizes the allocation to AT LEAST 'new_size' in bytes
 	//  returns a different pointer than was passed if the memory was moved
 	//  if its memory was moved, pointers to its memory are no longer valid
 	//  if 'new_size' is zero, calls ZeroFree on 'ptr' and returns 0
 	void* Reallocate(void* ptr, upt new_size);
 	void  ZeroFree(void* ptr);
 	
-	void* TempAllocate(upt bytes);
+	//allocates AT LEAST 'size' in bytes with all memory zeroed which will be automatically freed by Memory::Update
+	void* TempAllocate(upt size);
 	
 	ArenaHeap*   ExposeArenaHeap();
 	GenericHeap* ExposeGenericHeap();
@@ -81,7 +83,7 @@ global_ Allocator deshi_allocator_{
 };
 global_ Allocator* deshi_allocator = &deshi_allocator_;
 
-void* TempAllocator_Resize(void* ptr, upt bytes);
+void* TempAllocator_Resize(void* ptr, upt size);
 global_ Allocator deshi_temp_allocator_{
 	Memory::TempAllocate,
 	Allocator_ChangeMemory_Noop,

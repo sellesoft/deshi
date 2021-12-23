@@ -64,10 +64,8 @@ ____glm/detail/_swizzle.hpp
 
 Memory TODOs
 ------------
-add ClearArena()
 when running out of memory, log an error then fallback on STL or OS (rather than assert)
 add macro interface over functions to track where they are called from (file, line, function)
-standardize naming of bytes vs size
 add memory naming/tagging (like vulkan)
 add fast generic bins
 ____ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555

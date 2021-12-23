@@ -60,14 +60,14 @@ typedef u32 Type;
 typedef u32 Flags;
 
 //TODO(delle) function pointer signature macro
-typedef void* (*Allocator_ReserveMemory_Func)(upt bytes);
-typedef void  (*Allocator_ChangeMemory_Func)(void* ptr, upt bytes);
+typedef void* (*Allocator_ReserveMemory_Func)(upt size);
+typedef void  (*Allocator_ChangeMemory_Func)(void* ptr, upt size);
 typedef void  (*Allocator_ReleaseMemory_Func)(void* ptr);
-typedef void* (*Allocator_ResizeMemory_Func)(void* ptr, upt bytes);
-function void* Allocator_ReserveMemory_Noop(upt bytes){}
-function void  Allocator_ChangeMemory_Noop(void* ptr, upt bytes){}
+typedef void* (*Allocator_ResizeMemory_Func)(void* ptr, upt size);
+function void* Allocator_ReserveMemory_Noop(upt size){}
+function void  Allocator_ChangeMemory_Noop(void* ptr, upt size){}
 function void  Allocator_ReleaseMemory_Noop(void* ptr){}
-function void* Allocator_ResizeMemory_Noop(void* ptr, upt bytes){}
+function void* Allocator_ResizeMemory_Noop(void* ptr, upt size){}
 struct Allocator{
 	Allocator_ReserveMemory_Func reserve;  //reserves address space from OS
 	Allocator_ChangeMemory_Func  commit;   //allocates memory from reserved space
@@ -222,9 +222,9 @@ struct Node{
 #define NodeRemove(node) ((node)->next->prev=(node)->prev,(node)->prev->next=(node)->next)
 
 //// C/C++ STL allocator ////
-function void* STLAllocator_Reserve(upt bytes){void* a = calloc(1,bytes); Assert(a); return a;}
+function void* STLAllocator_Reserve(upt size){void* a = calloc(1,size); Assert(a); return a;}
 function void  STLAllocator_Release(void* ptr){free(ptr);}
-function void* STLAllocator_Resize(void* ptr, upt bytes){void* a = realloc(ptr,bytes); Assert(a); return a;}
+function void* STLAllocator_Resize(void* ptr, upt size){void* a = realloc(ptr,size); Assert(a); return a;}
 global_ Allocator stl_allocator_{
 	STLAllocator_Reserve,
 	Allocator_ChangeMemory_Noop,
