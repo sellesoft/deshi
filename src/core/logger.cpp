@@ -35,7 +35,7 @@ namespace Logger{
 		u32 chst = ftell(file);
 		fputs(log_buffer, file);
 		last_message_len = cursor;
-		if (mirror_to_console) ConsoleMirror(toStr(LastMessage()), chst);
+		if (mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)) ConsoleMirror(toStr(LastMessage()), chst);
 	}
 	
 	inline void LogInternal(string& str){
@@ -46,7 +46,7 @@ namespace Logger{
 		fputs(str.str, file);
 		memcpy(log_buffer, str.str, str.count);
 		last_message_len = str.count;
-		if (mirror_to_console) ConsoleMirror(str, chst);
+		if (mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)) ConsoleMirror(str, chst);
 	}
 	
 	

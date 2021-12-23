@@ -320,11 +320,11 @@ void ParseMessage(string& input, s32 chstart = -1) {
 }
 
 void Console::AddLog(string input){
-	ParseMessage(input);
+	if(DeshiModuleLoaded(DS_CONSOLE)) ParseMessage(input);
 }
 
 void Console::LoggerMirror(string input, u32 charstart) {
-	ParseMessage(input, charstart);
+	if(DeshiModuleLoaded(DS_CONSOLE)) ParseMessage(input, charstart);
 }
 
 void Console::ChangeState(ConsoleState new_state) {
@@ -349,8 +349,6 @@ void Console::Init() {
 void Console::Update() {
 	using namespace UI;
 	uistyle = &GetStyle(); //TODO(sushi) try to get this only once
-
-
 
 	Begin("deshiConsole", vec2::ZERO, vec2(DeshWindow->width, DeshWindow->height * open_max_percent), flags);
 	conmain = GetWindow(); //TODO(sushi) try to get this only once
