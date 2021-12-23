@@ -13,6 +13,7 @@ namespace Memory{
 #define MEMORY_BYTE_ALIGNMENT (2*MEMORY_POINTER_SIZE)
 #define MEMORY_BYTE_ALIGNMENT_MASK (MEMORY_BYTE_ALIGNMENT-1)
 #define MEMORY_DO_HEAP_CHECKS true
+#define MEMORY_DO_HEAP_PRINTS false
 	
 	FORCE_INLINE void ZeroBytes(void* ptr, upt bytes){
 		memset(ptr, 0, bytes);
@@ -46,7 +47,6 @@ namespace Memory{
 #if !MEMORY_DO_HEAP_CHECKS
 #  define DEBUG_CheckArenaHeapNodes(heap) 
 #  define DEBUG_CheckArenaHeapArenas(heap)
-#  define DEBUG_PrintArenaHeapNodes(heap)
 #else //MEMORY_DO_HEAP_CHECKS
 	function void DEBUG_CheckArenaHeapNodes(ArenaHeap* heap){
 		Assert(heap->order.next != 0 && heap->order.prev != 0, "First heap order node is invalid");
@@ -86,7 +86,10 @@ namespace Memory{
 		}
 		//Assert(overall_used == heap->used, "Heap used is incorrect"); //TODO(delle) add this back
 	}
-	
+#endif //MEMORY_DO_HEAP_CHECKS
+#if !MEMORY_DO_HEAP_PRINTS
+#  define DEBUG_PrintArenaHeapNodes(heap)
+#else //MEMORY_DO_HEAP_PRINTS
 	function void DEBUG_PrintArenaHeapNodes(ArenaHeap* heap){
 		if(heap->initialized && heap->used > 0){
 			string heap_order = "Order: ", heap_empty = "Empty: ";
@@ -101,7 +104,7 @@ namespace Memory{
 			Log("memory-arena",heap_order); Log("memory-arena",heap_empty); Log("","----------------------------------------------");
 		}
 	}
-#endif //MEMORY_DO_HEAP_CHECKS
+#endif //MEMORY_DO_HEAP_PRINTS
 	
 	function inline void UpdateArenaHeapCursor(ArenaHeap* heap){ //NOTE this relies on empty nodes having correct arena.start positions
 		ArenaHeapNode* last_order_node = CastFromMember(ArenaHeapNode, order, arena_heap.order.prev);
@@ -243,8 +246,8 @@ namespace Memory{
 		   && (PointerDifference(node->arena.start + node->arena.size, next) == 0)){
 			NodeRemove(&next->order); DEBUG_CheckArenaHeapNodes(&arena_heap);
 			NodeRemove(&next->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
-			NodeRemove(&node->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
-			UpdateArenaHeapCursor(&arena_heap);
+			NodeRemove(&node->empty); DEBUG_CheckArenaHeapNodes(&arena_heap); //NOTE remove and reinsert as first empty node for locality
+			//UpdateArenaHeapCursor(&arena_heap); //NOTE cursor should not change as next is empty and cant be last
 			node->arena.size += next->arena.size + sizeof(ArenaHeapNode);
 			NodeInsertNext(&arena_heap.empty, &node->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
 			zero_pointer = node+1;
@@ -332,32 +335,24 @@ namespace Memory{
 #define MEMORY_GENERIC_CHUNK_SIZE_BITS (MEMORY_GENERIC_PREVINUSE_FLAG | MEMORY_GENERIC_ISARENAD_FLAG)
 #define MEMORY_GENERIC_EXTRACT_SIZE_BITMASK (~MEMORY_GENERIC_CHUNK_SIZE_BITS)
 	
-	//NOTE all these expect 'chunk' to be a pointer
-#define PrevChunkIsInUse(chunk)\
-((chunk)->size & MEMORY_GENERIC_PREVINUSE_FLAG)
-#define ChunkIsArenad(chunk)\
-((chunk)->size & MEMORY_GENERIC_ISARENAD_FLAG)
-#define GetChunkSize(chunk)\
-((chunk)->size & MEMORY_GENERIC_EXTRACT_SIZE_BITMASK)
-#define GetNextOrderChunk(chunk)\
-((Chunk*)((u8*)(chunk) + GetChunkSize(chunk)))
-#define GetPrevOrderChunk(chunk)\
-((chunk)->prev)
-#define GetChunkAtOffset(chunk,offset)\
-((Chunk*)((u8*)(chunk) + (offset)))
-	
-	//TODO(delle) remove these if not used
-#define ChunkIsInUse(chunk)\
-(((Chunk*)((u8*)(chunk) + GetChunkSize(chunk)))->size & MEMORY_GENERIC_PREVINUSE_FLAG)
-#define SetChunkInUse(chunk)\
-(((Chunk*)((u8*)(chunk) + GetChunkSize(chunk)))->size |= MEMORY_GENERIC_PREVINUSE_FLAG)
-#define ClearChunkInUse(chunk)\
-(((Chunk*)((u8*)(chunk) + GetChunkSize(chunk)))->size &= ~(MEMORY_GENERIC_PREVINUSE_FLAG))
+#define PrevChunkIsInUse(chunk_ptr)\
+((chunk_ptr)->size & MEMORY_GENERIC_PREVINUSE_FLAG)
+#define ChunkIsArenad(chunk_ptr)\
+((chunk_ptr)->size & MEMORY_GENERIC_ISARENAD_FLAG)
+#define GetChunkSize(chunk_ptr)\
+((chunk_ptr)->size & MEMORY_GENERIC_EXTRACT_SIZE_BITMASK)
+#define GetNextOrderChunk(chunk_ptr)\
+((Chunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))
+#define GetPrevOrderChunk(chunk_ptr)\
+((chunk_ptr)->prev)
+#define GetChunkAtOffset(chunk_ptr,offset)\
+((Chunk*)((u8*)(chunk_ptr) + (offset)))
+#define ChunkIsInUse(chunk_ptr)\
+(((Chunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))->size & MEMORY_GENERIC_PREVINUSE_FLAG)
 	
 	
 #if !MEMORY_DO_HEAP_CHECKS
 #  define DEBUG_CheckGenericHeap(heap)
-#  define DEBUG_PrintGenericArenaNodes(heap)
 #else //MEMORY_DO_HEAP_CHECKS
 	function void DEBUG_CheckGenericHeap(GenericHeap* heap){
 		Assert(PointerDifference(heap->cursor, heap->start) % MEMORY_BYTE_ALIGNMENT == 0, "Memory alignment is invalid");
@@ -369,16 +364,54 @@ namespace Memory{
 			if(node == &heap->empty_nodes) break;
 		}
 		
-		//upt overall_used = 0;
-		//Assert(overall_used == heap->used, "Heap used is incorrect");
-	}
-	
-	function void DEBUG_PrintGenericArenaNodes(GenericHeap* heap){
 		if(heap->initialized && heap->used > 0){
-			
+			upt overall_used = 0;
+			for(Chunk* chunk = (Chunk*)heap->start; ; chunk = GetNextOrderChunk(chunk)){
+				Assert((u8*)chunk < heap->cursor, "All chunks must be below the cursor");
+				Assert(GetChunkSize(chunk) >= MEMORY_GENERIC_MINIMUM_ALLOCATION_SIZE, "Chunk size is less than minimum");
+				Assert(GetChunkSize(chunk) % MEMORY_BYTE_ALIGNMENT == 0, "Chunk size is not aligned correctly");
+				if(chunk != heap->last_chunk){
+					Assert(GetNextOrderChunk(chunk)->prev == chunk, "Next order chunk is not correctly pointing to current chunk");
+					if(!PrevChunkIsInUse(GetNextOrderChunk(chunk))){
+						overall_used += sizeof(Chunk);
+					}else{
+						overall_used += GetChunkSize(chunk);
+					}
+				}else{
+					overall_used += GetChunkSize(chunk);
+					break;
+				}
+			}
+			Assert(overall_used == heap->used, "Heap used amount is invalid");
 		}
 	}
 #endif //MEMORY_DO_HEAP_CHECKS
+#if !MEMORY_DO_HEAP_PRINTS
+#  define DEBUG_PrintGenericArenaNodes(heap)
+#else //MEMORY_DO_HEAP_PRINTS
+	function void DEBUG_PrintGenericArenaNodes(GenericHeap* heap){
+		if(heap->initialized && heap->used > 0){
+			string heap_order = "Order: ", heap_empty = "Empty: ";
+			for(Chunk* chunk = (Chunk*)heap->start; ; chunk = GetNextOrderChunk(chunk)){
+				heap_order += to_string("%p", chunk); heap_order += " -> ";
+				if(chunk != heap->last_chunk){
+					if(!ChunkIsInUse(chunk)){
+						heap_empty += to_string("%p", chunk);
+						heap_empty += " -> ";
+					}else{
+						heap_empty += "                ";
+						heap_empty += " -> ";
+					}
+				}else{
+					heap_empty += "                ";
+					heap_empty += " -> ";
+					break;
+				}
+			}
+			Log("memory-generic",heap_order); Log("memory-generic",heap_empty); Log("","----------------------------------------------");
+		}
+	}
+#endif //MEMORY_DO_HEAP_PRINTS
 	
 	void* Allocate(upt requested_size){
 		DEBUG_CheckGenericHeap(generic_heap);
@@ -395,7 +428,7 @@ namespace Memory{
 			Assert(arena->size >= aligned_size, "Arena size must be greater than requested size");
 			Assert(arena->start == (u8*)(CastFromMember(ArenaHeapNode, arena, arena) + 1), "Arena start must be right after the ArenaHeapNode");
 			Chunk* chunk = (Chunk*)arena->start;
-			chunk->prev = 0;
+			//chunk->prev = 0; //NOTE fresh memory is already zero
 			chunk->size = arena->size | MEMORY_GENERIC_ISARENAD_FLAG;
 			return ChunkToMemory(chunk);
 		}
@@ -407,14 +440,17 @@ namespace Memory{
 			if(chunk_size >= aligned_size){
 				upt leftover_size = chunk_size - aligned_size;
 				Assert(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
+				Chunk* next = GetNextOrderChunk(chunk);
 				
 				//make new empty chunk after current chunk if there is enough space for an empty chunk
 				//NOTE '>=' rather than '>' because empty chunks use 8/16 bytes (Node) that in-use chunks dont (useful for small allocations)
 				if(leftover_size >= MEMORY_GENERIC_MINIMUM_ALLOCATION_SIZE){
 					Chunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
-					NodeInsertNext(&chunk->node, &new_chunk->node);
+					NodeInsertNext(&generic_heap->empty_nodes, &new_chunk->node);
 					new_chunk->prev = chunk;
-					new_chunk->size = leftover_size | MEMORY_GENERIC_PREVINUSE_FLAG;
+					new_chunk->size = leftover_size; //NOTE this gets OR'd with MEMORY_GENERIC_PREVINUSE_FLAG below
+					next->prev = new_chunk;
+					next = new_chunk;
 					generic_heap->used += sizeof(Chunk);
 				}else{
 					aligned_size += leftover_size;
@@ -424,7 +460,8 @@ namespace Memory{
 				NodeRemove(&chunk->node);
 				chunk->node = {0}; //zero this data since it will be used by the allocation
 				chunk->size = (PrevChunkIsInUse(chunk)) ? aligned_size | MEMORY_GENERIC_PREVINUSE_FLAG : aligned_size;
-				generic_heap->used += aligned_size - MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD;
+				next->size |= MEMORY_GENERIC_PREVINUSE_FLAG; //set PREVINUSE flag on next chunk
+				generic_heap->used += aligned_size - sizeof(Chunk);
 				
 				DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
 				return &chunk->node;
@@ -453,48 +490,82 @@ namespace Memory{
 		
 		//include chunk overhead, align to the byte alignment, and clamp the minimum
 		upt aligned_size = ClampMin(RoundUpTo(requested_size + MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD, MEMORY_BYTE_ALIGNMENT), MEMORY_GENERIC_MINIMUM_ALLOCATION_SIZE);
-		
 		Chunk* chunk = MemoryToChunk(ptr);
-		if(ChunkIsArenad(chunk)){ //previous allocation was an arena
-			if(requested_size <= chunk->size) return ptr; //do nothing if less than previous size
+		spt difference = (spt)GetChunkSize(chunk) - (spt)aligned_size;
+		
+		//previous allocation was an arena
+		if(ChunkIsArenad(chunk)){ 
+			if(aligned_size <= GetChunkSize(chunk)) return ptr; //do nothing if less than previous size
 			Arena* arena = &((ArenaHeapNode*)chunk - 1)->arena;
-			arena = GrowArena(arena, requested_size - arena->size);
+			arena = GrowArena(arena, aligned_size - arena->size);
 			Assert(arena->size >= aligned_size, "Arena size must be greater than requested size");
 			Assert(arena->start == (u8*)(CastFromMember(ArenaHeapNode, arena, arena) + 1), "Arena start must be right after the ArenaHeapNode");
 			arena->used = aligned_size;
 			chunk = (Chunk*)arena->start;
-			chunk->prev = 0;
+			//chunk->prev = 0; //NOTE it should already be zero
 			chunk->size = arena->size | MEMORY_GENERIC_ISARENAD_FLAG;
-		}else if(aligned_size >= MEMORY_GENERIC_MAXIMUM_ALLOCATION_SIZE){ //new allocation needs to be an arena
+			DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+			return &chunk->node;
+		}
+		Assert(ptr > generic_heap->start && ptr < generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
+		
+		//new allocation needs to be an arena
+		if(aligned_size >= MEMORY_GENERIC_MAXIMUM_ALLOCATION_SIZE){
 			//NOTE since its larger than MEMORY_GENERIC_MAXIMUM_ALLOCATION_SIZE and not an arena already, it cant be less than previous size
-			Assert(ptr > generic_heap->start && ptr < generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
 			Arena* arena = CreateArena(aligned_size);
 			Assert(arena->size >= aligned_size, "Arena size must be greater than requested size");
 			Assert(arena->start == (u8*)(CastFromMember(ArenaHeapNode, arena, arena) + 1), "Arena start must be right after the ArenaHeapNode");
 			arena->used = aligned_size;
 			memcpy(arena->start, chunk, GetChunkSize(chunk));
 			chunk = (Chunk*)arena->start;
-			chunk->prev = 0;
+			chunk->prev = 0; //NOTE fresh memory is already zero
 			chunk->size = arena->size | MEMORY_GENERIC_ISARENAD_FLAG;
 			ZeroFree(ptr);
-		}else if(chunk == generic_heap->last_chunk){ //there is no used memory after this, so just adjust chunk size and heap cursor
-			Assert(ptr > generic_heap->start && ptr < generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
-			upt difference = GetChunkSize(chunk) - aligned_size;
+			DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+			return &chunk->node;
+		}
+		
+		//there is no used memory after this, so just adjust chunk size and heap cursor
+		if(chunk == generic_heap->last_chunk){
 			if(difference != 0){
 				generic_heap->cursor -= difference;
+				if(difference > 0) ZeroBytes(generic_heap->cursor, difference);
 				generic_heap->used   -= difference;
 				chunk->size = (PrevChunkIsInUse(chunk)) ? aligned_size | MEMORY_GENERIC_PREVINUSE_FLAG : aligned_size;
 			}
-		}else{ //need to move memory in order to fit new size
-			Assert(ptr > generic_heap->start && ptr < generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
-			if(requested_size <= GetChunkSize(chunk)) return ptr; //do nothing if less than previous size
-			void* new_ptr = Allocate(aligned_size);
-			Assert(MemoryToChunk(new_ptr)->size >= GetChunkSize(chunk) - MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD, "New chunk size must be greater than previous size");
-			memcpy(new_ptr, &chunk->node, GetChunkSize(chunk) - MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD);
-			chunk = MemoryToChunk(new_ptr);
-			ZeroFree(ptr);
+			DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+			return &chunk->node;
 		}
 		
+		//if requested size is less than previous size and there is enough space for a new chunk, make a new chunk
+		if(difference >= (spt)MEMORY_GENERIC_MINIMUM_ALLOCATION_SIZE){
+			Chunk* next = GetNextOrderChunk(chunk);
+			Chunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
+			NodeInsertNext(&generic_heap->empty_nodes, &new_chunk->node);
+			new_chunk->prev = chunk;
+			new_chunk->size = (upt)difference | MEMORY_GENERIC_PREVINUSE_FLAG;
+			chunk->size -= difference;
+			next->prev = new_chunk;
+			next->size &= ~(MEMORY_GENERIC_PREVINUSE_FLAG); //remove INUSE flag from next chunk
+			generic_heap->used -= difference;
+			generic_heap->used += sizeof(Chunk);
+			DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+			return &chunk->node;
+		}
+		
+		//if requested size is less than or equal to previous size and there is not enough space for a new chunk, do nothing
+		if(difference >= 0){
+			Assert(ptr > generic_heap->start && ptr < generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
+			return ptr;
+		}
+		
+		//requested size is greater than previous size and we need to move memory in order to fit the new size
+		Assert(ptr > generic_heap->start && ptr < generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
+		void* new_ptr = Allocate(requested_size);
+		Assert(GetChunkSize(MemoryToChunk(new_ptr)) >= GetChunkSize(chunk) - MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD, "New chunk size must be greater than previous size");
+		memcpy(new_ptr, &chunk->node, GetChunkSize(chunk) - MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD);
+		chunk = MemoryToChunk(new_ptr);
+		ZeroFree(ptr);
 		DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
 		return &chunk->node;
 	}
@@ -505,67 +576,70 @@ namespace Memory{
 		Assert(ptr > arena_heap.start && ptr < arena_heap.cursor, "Attempted to free a pointer outside the main heap");
 		
 		Chunk* chunk = MemoryToChunk(ptr);
+		
 		if(ChunkIsArenad(chunk)){
 			DeleteArena(&((ArenaHeapNode*)chunk - 1)->arena);
-		}else{
-			Assert(ptr > generic_heap->start && ptr < generic_heap->cursor, "Attempted to free a pointer outside the generic heap");
-			
-			void* zero_pointer = chunk+1;
-			upt   zero_amount  = GetChunkSize(chunk) - sizeof(Chunk);
-			upt   used_amount  = GetChunkSize(chunk) - sizeof(Chunk);
-			
-			//insert current chunk into heap's empty nodes
-			NodeInsertNext(&generic_heap->empty_nodes, &chunk->node);
-			
-			//try to merge next empty into current empty
-			Chunk* next = GetNextOrderChunk(chunk);
-			if(   (chunk != generic_heap->last_chunk) //we are not the last chunk
-			   && (next  != generic_heap->last_chunk) //next is not the last chunk
-			   && (!ChunkIsInUse(next))){             //next is empty
-				Chunk* next_next = GetNextOrderChunk(next);
-				next_next->prev = chunk;
-				NodeRemove(&next->node);
-				chunk->size += next->size;
-				//NOTE zero_pointer doesnt change
-				zero_amount += sizeof(Chunk); //NOTE next's memory is already zeroed, so only zero the chunk header
-				used_amount += sizeof(Chunk);
-				next = next_next;
-			}
-			
-			//try to merge current empty into prev empty
-			Chunk* prev = GetPrevOrderChunk(chunk);
-			if(   (prev != 0)                  //we are not the first chunk
-			   && (!PrevChunkIsInUse(chunk))){ //previous chunk is empty
-				if(chunk == generic_heap->last_chunk){
-					generic_heap->last_chunk = prev;
-				}else{
-					next->prev = prev;
-				}
-				NodeRemove(&chunk->node);
-				NodeRemove(&prev->node); //NOTE remove and reinsert as first empty node for locality
-				NodeInsertNext(&generic_heap->empty_nodes, &prev->node);
-				prev->size += next->size;
-				zero_pointer = chunk; //NOTE prev's memory is already zeroed, so only zero chunk
-				zero_amount  = GetChunkSize(chunk);
-				used_amount += sizeof(Chunk);
-				chunk = prev;
-			}
-			
-			//remove the last order chunk if its empty
-			if(chunk == generic_heap->last_chunk){
-				NodeRemove(&chunk->node);
-				generic_heap->last_chunk = chunk->prev;
-				generic_heap->cursor = (u8*)chunk;
-				zero_pointer = chunk;
-				zero_amount  = GetChunkSize(chunk);
-			}else{
-				Assert((u8*)next == (u8*)chunk + GetChunkSize(chunk), "Next is invalid at this point");
-				next->size &= ~(MEMORY_GENERIC_PREVINUSE_FLAG); //remove INUSE flag from next chunk
-			}
-			
-			generic_heap->used -= used_amount;
-			ZeroBytes(zero_pointer, zero_amount);
+			DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+			return;
 		}
+		
+		Assert(ptr > generic_heap->start && ptr < generic_heap->cursor, "Attempted to free a pointer outside the generic heap");
+		void* zero_pointer = chunk+1;
+		upt   zero_amount  = GetChunkSize(chunk) - sizeof(Chunk);
+		upt   used_amount  = GetChunkSize(chunk) - sizeof(Chunk);
+		
+		//insert current chunk into heap's empty nodes
+		NodeInsertNext(&generic_heap->empty_nodes, &chunk->node);
+		
+		//try to merge next empty into current empty
+		Chunk* next = GetNextOrderChunk(chunk);
+		if(   (chunk != generic_heap->last_chunk) //we are not the last chunk
+		   && (next  != generic_heap->last_chunk) //next is not the last chunk
+		   && (!ChunkIsInUse(next))){             //next is empty
+			Chunk* next_next = GetNextOrderChunk(next);
+			next_next->prev = chunk;
+			NodeRemove(&next->node);
+			chunk->size += GetChunkSize(next);
+			//NOTE zero_pointer doesnt change
+			zero_amount += sizeof(Chunk); //NOTE next's memory is already zeroed, so only zero the chunk header
+			used_amount += sizeof(Chunk);
+			next = next_next;
+		}
+		
+		//try to merge current empty into prev empty
+		Chunk* prev = GetPrevOrderChunk(chunk);
+		if(   (prev != 0)                  //we are not the first chunk
+		   && (!PrevChunkIsInUse(chunk))){ //previous chunk is empty
+			if(chunk == generic_heap->last_chunk){
+				generic_heap->last_chunk = prev;
+			}else{
+				next->prev = prev;
+			}
+			NodeRemove(&chunk->node);
+			NodeRemove(&prev->node); //NOTE remove and reinsert as first empty node for locality
+			NodeInsertNext(&generic_heap->empty_nodes, &prev->node);
+			prev->size += chunk->size; //NOTE not GetChunkSize(chunk) b/c we know that PREVINUSE flag is not there
+			zero_pointer = chunk; //NOTE prev's memory is already zeroed, so only zero chunk
+			zero_amount  = GetChunkSize(chunk);
+			used_amount += sizeof(Chunk);
+			chunk = prev;
+		}
+		
+		//remove the last order chunk if its empty
+		if(chunk == generic_heap->last_chunk){
+			NodeRemove(&chunk->node);
+			generic_heap->last_chunk = chunk->prev;
+			generic_heap->cursor = (u8*)chunk;
+			zero_pointer = chunk;
+			zero_amount  = GetChunkSize(chunk);
+			used_amount += sizeof(Chunk);
+		}else{
+			Assert((u8*)next == (u8*)chunk + GetChunkSize(chunk), "Next is invalid at this point");
+			next->size &= ~(MEMORY_GENERIC_PREVINUSE_FLAG); //remove INUSE flag from next chunk
+		}
+		
+		generic_heap->used -= used_amount;
+		ZeroBytes(zero_pointer, zero_amount);
 		DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
 	}
 	

@@ -25,7 +25,7 @@ make binds and aliases check if one already exists for a key or a command. if a 
 add a component_state command to print state of a component (add str methods to all components/systems)
 add device_info command (graphics card, sound device, monitor res, etc)
 
-Console(2) TODOs
+Console TODOs
 -------------
 convert all ImGui stuff used in console to UI since console will be in final release
 showing a commands help if tab is pressed when the command is already typed
@@ -133,6 +133,7 @@ add UI color palettes for easy color changing
 
 Ungrouped TODOs
 ---------------
+rename RoundUpTo() to AlignTo() in defines.h
 restyle map to match the rest of utils
 make the most recent logging file be named log.txt, while the rest have a date
 add MouseInsideWindow() func to input or window
@@ -154,13 +155,15 @@ __________ maybe store the text in the actual source and create the file from th
 __________ alternatively, we can store those specific assets in the source control
 (09/13/21) the program sometimes hangs on close in log file writing to stdout; temp fix: click the cmd, hit enter
 __________ this might not be an error with our stuff and just a quirk of the windows console
+(12/23/21) if the console fills up too much, it starts overwriting static memory
+__________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
 */
 
 #include "defines.h"
 #include "core/memory.h" //NOTE this is included above everything so things can reference deshi_allocator
 
 //// utility headers ////"
-//#define DESHI_ARRAY_ALLOCATOR deshi_allocator
+//#define DESHI_ARRAY_ALLOCATOR deshi_allocator //NOTE we cant do this b/c we dont have static initialization like STL does
 //#define DESHI_STRING_ALLOCATOR deshi_allocator
 #include "utils/array.h"
 #include "utils/string.h"

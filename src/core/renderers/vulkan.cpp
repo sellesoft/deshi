@@ -872,15 +872,16 @@ SetupAllocator(){
 	
 	//regular allocator
 	auto deshi_vulkan_allocation_func = [](void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope){
-		size = RoundUpTo(size,alignment);
-		return Memory::Allocate(size);
+		void* result = Memory::Allocate(RoundUpTo(size,alignment));
+		Assert((size_t)result % alignment == 0, "The alignment of the pointer is invalid");
+		return result;
 	};
 	
 	auto deshi_vulkan_reallocation_func = [](void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope){
-		upt* prev_size = ((upt*)pOriginal - 1);
-		Assert(*prev_size % alignment == 0, "The alignment of the previous allocation and this reallocation must be the same");
-		size = RoundUpTo(size,alignment);
-		return Memory::Reallocate(pOriginal, size);
+		Assert((size_t)pOriginal % alignment == 0, "The previous allocation does not match the requested alignment");
+		void* result = Memory::Reallocate(pOriginal, RoundUpTo(size,alignment));
+		Assert((size_t)result % alignment == 0, "The alignment of the pointer is invalid");
+		return result;
 	};
 	
 	auto deshi_vulkan_free_func = [](void* pUserData, void* pMemory){
@@ -895,15 +896,16 @@ SetupAllocator(){
 	auto deshi_vulkan_temp_allocation_func = [](void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope){
 		Assert(allocationScope != VK_SYSTEM_ALLOCATION_SCOPE_DEVICE && allocationScope != VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE,
 			   "Vulkan device and instance creation can not use the temporary allocator");
-		size = RoundUpTo(size,alignment);
-		return Memory::TempAllocate(size);
+		void* result = Memory::TempAllocate(RoundUpTo(size,alignment));
+		Assert((size_t)result % alignment == 0, "The alignment of the pointer is invalid");
+		return result;
 	};
 	
 	auto deshi_vulkan_temp_reallocation_func = [](void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope){
-		upt* prev_size = ((upt*)pOriginal - 1);
-		Assert(*prev_size % alignment == 0, "The alignment of the previous allocation and this reallocation must be the same");
-		size = RoundUpTo(size,alignment);
-		return TempAllocator_Resize(pOriginal, size);
+		Assert((size_t)pOriginal % alignment == 0, "The previous allocation does not match the requested alignment");
+		void* result = TempAllocator_Resize(pOriginal, RoundUpTo(size,alignment));
+		Assert((size_t)result % alignment == 0, "The alignment of the pointer is invalid");
+		return result;
 	};
 	
 	auto deshi_vulkan_temp_free_func = [](void* pUserData, void* pMemory){};
@@ -4421,7 +4423,7 @@ Init(){
 	AssertDS(DS_LOGGER, "Attempt to init Vulkan without loading Logger first");
 	AssertDS(DS_WINDOW, "Attempt to init Vulkan without loading Window first");
 	deshiStage |= DS_RENDER;
-
+	
 	TIMER_START(t_s);
 	
 	//// load RenderSettings ////

@@ -331,15 +331,13 @@ void Console::ChangeState(ConsoleState new_state) {
 void Console::Init() {
 	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
 	AssertDS(DS_LOGGER, "Attempt to load Console without loading Logger first");
-	deshiStage |= DS_CONSOLE;
 	
 	TIMER_START(t_s);
 	buffer = Logger::GetFilePtr();
 	
 	dictionary.dict.init(DICT_SIZE, deshi_allocator);
 	
-	
-	
+	deshiStage |= DS_CONSOLE;
 	Log("deshi", "Finished console initialization in ", TIMER_END(t_s), "ms");
 }
 

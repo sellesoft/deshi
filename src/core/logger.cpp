@@ -7,8 +7,8 @@ namespace Logger{
 	local u64   last_message_len = 0;
 	local b32   mirror_to_stdout = false;
 	local b32   mirror_to_console = false;
-	local b32   is_logging = true;
-
+	local b32   is_logging = false;
+	
 	void ConsoleMirror(string str, u32 chst) {
 		if (str[0] == '[') {
 			string modified = "{{";
@@ -22,7 +22,7 @@ namespace Logger{
 		}
 		DeshConsole->LoggerMirror(str, chst);
 	}
-
+	
 	void LogF_(const char* filepath, upt line_number, const char* tag, const char* fmt, ...){
 		if (!is_logging) return;
 		int cursor = (tag && *tag != 0) ? snprintf(log_buffer, LOG_BUFFER_SIZE, "[%s] ", string::toUpper(tag).str) : 0;
@@ -53,7 +53,7 @@ namespace Logger{
 	inline cstring LastMessage(){
 		return cstring{log_buffer,last_message_len};
 	}
-
+	
 	//just a special function called by Console to prevent feedback between 
 	//console and logger and to prevent logger from appending a newline
 	void LogFromConsole(string str) {
@@ -120,7 +120,7 @@ namespace Logger{
 		setvbuf(file,0,_IONBF,0);
 #endif //DESHI_SLOW
 		
-		//is_logging = true;
+		is_logging = true; //NOTE this prevents errors in calls to Log before Logger is finished initializing
 		Log("deshi","Finished logging initialization in ",TIMER_END(t_s),"ms");
 		mirror_to_console = true; //NOTE this happens after the Log() so it doesnt try calling into the console
 	}
