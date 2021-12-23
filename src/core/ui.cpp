@@ -132,7 +132,6 @@ WinInputState inputState = ISNone;
 #define WinResizing       inputState == ISResizing
 #define WinDragging       inputState == ISDragging
 #define WinScrolling      inputState == ISScrolling
-#define ItemCanTakeInput  !(WinResizing || WinDragging || WinScrolling)
 
 //for breaking on an item from the metrics window
 UIWindow* break_window = 0;
@@ -246,7 +245,7 @@ inline void CalcItemSize(UIItem* item) {
 }
 
 inline b32 isItemHovered(UIItem* item) {
-	return Math::PointInRectangle(DeshInput->mousePos, item->position + curwin->position, item->size);
+	return Math::PointInRectangle(DeshInput->mousePos, item->position + curwin->position, item->size * style.globalScale);
 }
 
 inline b32 isLocalAreaHovered(vec2 pos, vec2 size, UIItem* item) {
@@ -254,7 +253,7 @@ inline b32 isLocalAreaHovered(vec2 pos, vec2 size, UIItem* item) {
 }
 
 inline b32 isItemActive(UIItem* item) {
-	return curwin->hovered && ItemCanTakeInput && isItemHovered(item);
+	return curwin->hovered && CanTakeInput && isItemHovered(item);
 }
 
 //internal master cursor controller
@@ -1076,7 +1075,7 @@ b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
 	item->position = pos;
 	AdvanceCursor(item);
 	
-	b32 active = ItemCanTakeInput && Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position, item->size * style.globalScale);
+	b32 active = CanTakeInput && Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position, item->size * style.globalScale);
 	
 	{//background
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
@@ -1211,7 +1210,7 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 	
 	b32& open = combos[label];
 	
-	b32 active = ItemCanTakeInput && isItemHovered(comboItem);
+	b32 active = isItemActive(comboItem);
 	if (active && DeshInput->LMousePressed()) { 
 		open = !open; 
 		PreventInputs;
@@ -1267,7 +1266,7 @@ b32 UI::Selectable(const char* label, vec2 pos, b32 selected) {
 	if (comboItem && combo_open) {
 		//if a combo has been started and is open, we attach the selectables to it
 		selectables_added++;
-		b32 active = curwin->hovered && ItemCanTakeInput && Math::PointInRectangle(DeshInput->mousePos, curwin->position + comboItem->position.yAdd(comboItem->size.y * selectables_added), comboItem->size);
+		b32 active = curwin->hovered && CanTakeInput && Math::PointInRectangle(DeshInput->mousePos, curwin->position + comboItem->position.yAdd(comboItem->size.y * selectables_added), comboItem->size);
 		if (active && DeshInput->LMousePressed()) { 
 			clicked = true; 
 			PreventInputs;
@@ -1566,7 +1565,7 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 	item->size = dim;
 	item->position = position;
 	
-	b32 hovered = ItemCanTakeInput && isItemHovered(item);
+	b32 hovered = isItemActive(item);
 	
 	AdvanceCursor(item, moveCursor);
 	
@@ -1582,7 +1581,7 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 		state->callback = callback;
 	}
 	
-	b32 active = ItemCanTakeInput && (activeId == state->id);
+	b32 active = CanTakeInput && (activeId == state->id);
 	if (NextActive || DeshInput->KeyPressed(MouseButton::LEFT)) {
 		if (NextActive || hovered) {
 			activeId = state->id;
@@ -2842,6 +2841,40 @@ UIWindow* DisplayMetrics() {
 		
 		EndHeader();
 	}
+
+	static b32 break_on_cursor = 0;
+	static b32 frame_skip = 0;
+	if (!break_on_cursor && Button("Break on Cursor")) {
+		break_on_cursor = 1;
+	}
+
+	if (break_on_cursor && frame_skip) {
+		Text("Press ESC to cancel");
+		if (DeshInput->KeyPressed(Key::ESCAPE)) break_on_cursor = 0;
+		PreventInputs;
+		for (UIWindow* w : windows) {
+			if (w->hovered) {
+				forI(UI_WINDOW_ITEM_LAYERS) {
+					for (UIItem& item : w->items[i]) {
+						if (MouseInArea(w->position + item.position, item.size)) {
+							DebugRect(w->position + item.position, item.size);
+							if (DeshInput->LMousePressed()) {
+								break_window = w;
+								item_idx = item.item_idx;
+								item_layer = item.item_layer;
+								break_on_cursor = 0;
+								frame_skip = 0;
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	if (break_on_cursor) {
+		frame_skip = 1;
+	}
 	
 	Separator(20);
 	
@@ -3722,8 +3755,7 @@ void UI::Update() {
 			}break;
 		}
 	}
-	
-	
-	
 	debugCmds.clear();
+
+	if (inputState == ISNone && DeshInput->LMouseDown()) PreventInputs;
 }
