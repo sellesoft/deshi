@@ -1108,7 +1108,8 @@ b32 UI::BeginCombo(const char* label, const char* prev_val) {
 
 void UI::EndCombo() {
 	Assert(comboItem, "attempt to end a combo without starting one");
-	
+	CalcItemSize(comboItem);
+
 	comboItem = 0;
 	combo_open = 0;
 	selectables_added = 0;
@@ -1903,6 +1904,11 @@ void CheckWindowForResizingInputs(UIWindow* window) {
 
 //TODO(sushi) PLEASE clean this shit up
 void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
+	
+	//always clamp scroll to make sure that it doesnt get stuck pass max scroll when stuff changes inside the window
+	window->scx = Math::clamp(window->scx, 0.f, window->maxScroll.x);
+	window->scy = Math::clamp(window->scy, 0.f, window->maxScroll.y);
+	
 	//mouse wheel inputs
 	//if this is a child window and it cant scroll, redirect the scrolling inputs to the parent
 	if (window->parent && window->hovered && window->maxScroll.x == 0 && window->maxScroll.y == 0) {
@@ -1911,12 +1917,12 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
 	}
 	if ((window->hovered || fromChild) && DeshInput->ScrollUp()) {
 		window->scy -= style.scrollAmount.y;
-		window->scy = Math::clamp(window->scy, 0.f, window->maxScroll.y);
+		window->scy = Math::clamp(window->scy, 0.f, window->maxScroll.y); // clamp y again to prevent user from seeing it not be clamped for a frame
 		return;
 	}
 	if ((window->hovered || fromChild) && DeshInput->ScrollDown()) {
 		window->scy += style.scrollAmount.y;
-		window->scy = Math::clamp(window->scy, 0.f, window->maxScroll.y);
+		window->scy = Math::clamp(window->scy, 0.f, window->maxScroll.y); // clamp y again to prevent user from seeing it not be clamped for a frame
 		return;
 	}
 	
@@ -2782,15 +2788,6 @@ void UI::ShowMetricsWindow() {
 void UI::DemoWindow() {
 	Begin("deshiUIDEMO", vec2::ONE * 300, vec2::ONE * 300);
 	
-	//Text("heres some long text to test if this shit will scroll right or not", UITextFlags_NoWrap);
-	
-	//BeginRow(3, tex->height);
-	//RowSetupRelativeColumnWidths({ 1,1,1 });
-	//forI(9) {
-	//	Image(tex);
-	//}
-	//EndRow();
-	
 	if (BeginHeader("Text")) {
 		Text("heres some text");
 		
@@ -2805,10 +2802,10 @@ void UI::DemoWindow() {
 		EndHeader();
 	}
 	
-	Separator(11);
+	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
 	
 	if (BeginHeader("Button")) {
-		static string str = "heres some text";
+		persist string str = "heres some text";
 		if (Button("change text")) {
 			str = "heres some new text, because you pressed the button";
 		}
@@ -2816,7 +2813,7 @@ void UI::DemoWindow() {
 		
 		Separator(7);
 		
-		static color col = color(55, 45, 66);
+		persist color col = color(55, 45, 66);
 		PushColor(UIStyleCol_ButtonBg, col);
 		PushColor(UIStyleCol_ButtonBgActive, col);
 		PushColor(UIStyleCol_ButtonBgHovered, col);
@@ -2829,7 +2826,7 @@ void UI::DemoWindow() {
 		
 		Separator(7);
 		
-		static string str2 = "this will change on button release";
+		persist string str2 = "this will change on button release";
 		if (Button("true on release", UIButtonFlags_ReturnTrueOnRelease)) {
 			str2 = "this was changed on release";
 		}
@@ -2839,17 +2836,17 @@ void UI::DemoWindow() {
 		EndHeader();
 	}
 	
-	Separator(11);
+	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
 	
 	if (BeginHeader("Slider")) {
-		static f32 sl1 = 0;
+		persist f32 sl1 = 0;
 		
 		Slider("slider1", &sl1, 0, 100); SameLine(); Text(toStr(sl1).str);
 		
 		EndHeader();
 	}
 	
-	Separator(11);
+	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
 	
 	if (BeginHeader("Headers")) {
 		Text(
@@ -2872,7 +2869,7 @@ void UI::DemoWindow() {
 		EndHeader();
 	}
 	
-	Separator(11);
+	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
 	
 	if (BeginHeader("Row")) {
 		Text(
@@ -2894,8 +2891,8 @@ void UI::DemoWindow() {
 			 "Rows aren't restricted to one Row, you can add as many items as you like as long as the amount of items is divisible by the amount of columns you made the Row with"
 			 );
 		
-		static f32 rowyalign = 0.5;
-		static f32 rowxalign = 0.5;
+		persist f32 rowyalign = 0.5;
+		persist f32 rowxalign = 0.5;
 		
 		PushVar(UIStyleVar_RowItemAlign, vec2(rowxalign, rowyalign));
 		
@@ -2919,19 +2916,19 @@ void UI::DemoWindow() {
 		
 		
 		
-		Text("Rows also allow you to use either static or relative column widths");
+		Text("Rows also allow you to use either persist or relative column widths");
 		
 		Separator(7);
 		
-		static f32 scw1 = 60;
-		static f32 scw2 = 60;
-		static f32 scw3 = 60;
+		persist f32 scw1 = 60;
+		persist f32 scw2 = 60;
+		persist f32 scw3 = 60;
 		
-		static f32 dcw1 = 1;
-		static f32 dcw2 = 1;
-		static f32 dcw3 = 1;
+		persist f32 dcw1 = 1;
+		persist f32 dcw2 = 1;
+		persist f32 dcw3 = 1;
 		
-		static u32 selected = 0;
+		persist u32 selected = 0;
 		if (Selectable("Static Column Widths", !selected)) selected = 0;
 		if (Selectable("Relative column widths", selected)) selected = 1;
 		
@@ -2965,6 +2962,8 @@ void UI::DemoWindow() {
 		
 		EndHeader();
 	}
+
+	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
 	
 	if (BeginHeader("Child Windows")) {
 		Text("You can nest windows inside another one by using BeginChild");
@@ -2979,7 +2978,7 @@ void UI::DemoWindow() {
 		
 		Separator(7);
 		
-		static Texture* tex = Storage::CreateTextureFromFile("lcdpix.png").second;
+		persist Texture* tex = Storage::CreateTextureFromFile("lcdpix.png").second;
 		
 		Text("heres a image in the child window:");
 		Image(tex);
@@ -2992,6 +2991,26 @@ void UI::DemoWindow() {
 		
 		EndHeader();
 		
+	}
+
+	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
+
+	if (BeginHeader("Combos")) {
+		Text("Combos are a huge TODO right now, but heres how they currently look");
+
+		Separator(7);
+
+		persist u32 selected = 0;
+		if (BeginCombo("uiDemoCombo", "preview text")) {
+			forI(10) {
+				if (Selectable(toStr("selection", i).str, selected == i)) {
+					selected = i;
+				}
+			}
+			EndCombo();
+		}
+
+		EndHeader();
 	}
 	
 	End();
@@ -3018,7 +3037,6 @@ void UI::Init() {
 	
 	//load font
 	style.font = Storage::CreateFontFromFileBDF("gohufont-11.bdf").second;
-	//style.font = Storage::CreateFontFromFileTTF("gohufont-11.ttf", 11).second;
 	Assert(style.font != Storage::NullFont());
 	
 	//push default color scheme
@@ -3082,7 +3100,7 @@ void UI::Init() {
 	PushVar(UIStyleVar_TitleTextAlign,           vec2(1, 0.5));
 	PushVar(UIStyleVar_WindowPadding,            vec2(10, 10));
 	PushVar(UIStyleVar_ItemSpacing,              vec2(1, 1));
-	PushVar(UIStyleVar_ScrollAmount,             vec2(5, 5));
+	PushVar(UIStyleVar_ScrollAmount,             vec2(10, 10));
 	PushVar(UIStyleVar_CheckboxSize,             vec2(10, 10));
 	PushVar(UIStyleVar_CheckboxFillPadding,      2);
 	PushVar(UIStyleVar_InputTextTextAlign,       vec2(0, 0.5));
@@ -3138,8 +3156,12 @@ inline void DrawCmd(UIDrawCmd& drawCmd, UIItem& item, vec2 itempos, vec2 itemsiz
 		dcso.y = Max(Max(winParentScissorOffset.y, winpos.y), dcso.y); //force all items to stay within their windows
 		dcso.x = Min(winParentScissorOffset.x + winParentScissorExtent.x - dcse.x, dcso.x); 
 		dcso.y = Min(winParentScissorOffset.y + winParentScissorExtent.y - dcse.y, dcso.y);
-		if (drawCmd.useWindowScissor && winpos.x - winParentScissorOffset.x < 0) dcse.x += winpos.x - winParentScissorOffset.x; //if the window's pos goes negative, the scissor extent needs to adjust itself
-		if (drawCmd.useWindowScissor && winpos.y - winParentScissorOffset.y < 0) dcse.y += winpos.y - winParentScissorOffset.y;
+		if ((winpos.x - winParentScissorOffset.x) < 0) 
+			dcse.x += winpos.x - winParentScissorOffset.x; //if the window's pos goes negative, the scissor extent needs to adjust itself
+		if ((winpos.y - winParentScissorOffset.y) < 0) 
+			dcse.y += winpos.y - winParentScissorOffset.y;
+		if (winpos.x < 0) dcse.x += winpos.x;
+		if (winpos.y < 0) dcse.y += winpos.y;
 		dcse.x = Max(0.f, dcse.x); dcse.y = Max(0.f, dcse.y);
 		dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
 	}
