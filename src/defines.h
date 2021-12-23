@@ -76,52 +76,6 @@ struct Allocator{
 	Allocator_ResizeMemory_Func  resize;   //resizes reserved memory and moves memory if a new location is required
 };
 
-/////////////////////// //NOTE some are two level so you can use the result of a macro expansion (STRINGIZE, GLUE, etc)
-//// common macros ////
-///////////////////////
-#define STMNT(s) do{ s }while(0)
-#define UNUSED_VAR(a) ((void)(a))
-#define STRINGIZE_(a) #a
-#define STRINGIZE(a) STRINGIZE_(a)
-#define GLUE_(a,b) a##b
-#define GLUE(a,b) GLUE_(a,b)
-#define ToggleBool(variable) variable = !variable
-#define Kilobytes(a) (((u64)(a)) << 10)
-#define Megabytes(a) (((u64)(a)) << 20)
-#define Gigabytes(a) (((u64)(a)) << 30)
-#define Terabytes(a) (((u64)(a)) << 40)
-#define Radians(x) ((x) * (M_PI / 180.f))
-#define Degrees(x) ((x) * (180.f / M_PI))
-#define ArrayCount(arr) (sizeof((arr)) / sizeof(((arr))[0])) //length of a static-size c-array
-#define RoundUpTo(value, multiple) (((size_t)((value) + (((size_t)(multiple))-1)) / (size_t)(multiple)) * (size_t)(multiple))
-#define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
-#define PointerDifference(a,b) ((u8*)(a) - (u8*)(b))
-#define PointerAsInt(a) PointerDifference(a,0)
-#define OffsetOfMember(structName,memberName) PointerAsInt(&(((structName*)0)->memberName))
-#define CastFromMember(structName,memberName,ptr) (structName*)((u8*)(ptr) - OffsetOfMember(structName,memberName))
-#define StartNamespace(a) namespace a{ (void)0
-#define EndNamespace(a) }
-#define CastToConst(type,a) const_cast<const type>(a)
-#define CastFromConst(type,a) const_cast<type>(a)
-#define StaticCast(type,a) static_cast<type>(a)
-#define DynamicCast(type,a) dynamic_cast<type>(a)
-
-//////////////////////////
-//// common functions ////
-//////////////////////////
-FORCE_INLINE b32 IsPow2(u64 value){return (value != 0) && ((value & (value-1)) == 0);}
-template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;}
-template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;}
-template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;}
-template<typename T> FORCE_INLINE T Clamp(T value, T min, T max){return (value < min) ? min : ((value > max) ? max : value);};
-template<typename T,typename U> FORCE_INLINE T Clamp(T value, U min, T max){return (value < min) ? min : ((value > max) ? max : value);}
-template<typename T,typename U> FORCE_INLINE T Clamp(T value, T min, U max){return (value < min) ? min : ((value > max) ? max : value);}
-template<typename T,typename U> FORCE_INLINE T Clamp(T value, U min, U max){return (value < min) ? min : ((value > max) ? max : value);}
-template<typename T> FORCE_INLINE T ClampMin(T value, T min){return (value < min) ? min : value;};
-template<typename T> FORCE_INLINE T ClampMax(T value, T max){return (value > max) ? max : value;};
-template<typename T,typename U> FORCE_INLINE T ClampMin(T value, U min){return (value < min) ? min : value;};
-template<typename T,typename U> FORCE_INLINE T ClampMax(T value, U max){return (value > max) ? max : value;};
-
 //////////////////////////
 //// common constants ////
 //////////////////////////
@@ -154,6 +108,59 @@ global_const f32 M_TAU        = M_2PI;
 global_const f32 M_E          = 2.71828182846f;
 global_const f32 M_SQRT_TWO   = 1.41421356237f;
 global_const f32 M_SQRT_THREE = 1.73205080757f;
+
+/////////////////////// //NOTE some are two level so you can use the result of a macro expansion (STRINGIZE, GLUE, etc)
+//// common macros ////
+///////////////////////
+#define STMNT(s) do{ s }while(0)
+#define UNUSED_VAR(a) ((void)(a))
+#define STRINGIZE_(a) #a
+#define STRINGIZE(a) STRINGIZE_(a)
+#define GLUE_(a,b) a##b
+#define GLUE(a,b) GLUE_(a,b)
+#define ToggleBool(variable) variable = !variable
+#define Kilobytes(a) (((u64)(a)) << 10)
+#define Megabytes(a) (((u64)(a)) << 20)
+#define Gigabytes(a) (((u64)(a)) << 30)
+#define Terabytes(a) (((u64)(a)) << 40)
+#define Thousand(a) (((u64)(a)) * 1000)
+#define Million(a) (((u64)(a)) * 1000000)
+#define Billion(a) (((u64)(a)) * 1000000000)
+#define Radians(a) ((a) * (M_PI / 180.f))
+#define Degrees(a) ((a) * (180.f / M_PI))
+#define ArrayCount(arr) (sizeof((arr)) / sizeof(((arr))[0])) //length of a static-size c-array
+#define RoundUpTo(value, multiple) (((size_t)((value) + (((size_t)(multiple))-1)) / (size_t)(multiple)) * (size_t)(multiple))
+#define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
+#define PointerDifference(a,b) ((u8*)(a) - (u8*)(b))
+#define PointerAsInt(a) PointerDifference(a,0)
+#define OffsetOfMember(structName,memberName) PointerAsInt(&(((structName*)0)->memberName))
+#define CastFromMember(structName,memberName,ptr) (structName*)((u8*)(ptr) - OffsetOfMember(structName,memberName))
+#define StartNamespace(a) namespace a{ (void)0
+#define EndNamespace(a) }
+#define CastToConst(type,a) const_cast<const type>(a)
+#define CastFromConst(type,a) const_cast<type>(a)
+#define StaticCast(type,a) static_cast<type>(a)
+#define DynamicCast(type,a) dynamic_cast<type>(a)
+#define HasFlag(var,flag) ((var) & (flag))
+#define HasAllFlags(var,flags) (((var) & (flags)) == (flags))
+#define AddFlag(var,flag) ((var) |= (flag))
+#define RemoveFlag(var,flag) ((var) &= (~(flag)))
+
+//////////////////////////
+//// common functions ////
+//////////////////////////
+FORCE_INLINE b32 IsPow2(u64 value){return (value != 0) && ((value & (value-1)) == 0);}
+template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;}
+template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;}
+template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;}
+template<typename T> FORCE_INLINE T Clamp(T value, T min, T max){return (value < min) ? min : ((value > max) ? max : value);};
+template<typename T,typename U> FORCE_INLINE T Clamp(T value, U min, T max){return (value < min) ? min : ((value > max) ? max : value);}
+template<typename T,typename U> FORCE_INLINE T Clamp(T value, T min, U max){return (value < min) ? min : ((value > max) ? max : value);}
+template<typename T,typename U> FORCE_INLINE T Clamp(T value, U min, U max){return (value < min) ? min : ((value > max) ? max : value);}
+template<typename T> FORCE_INLINE T ClampMin(T value, T min){return (value < min) ? min : value;};
+template<typename T> FORCE_INLINE T ClampMax(T value, T max){return (value > max) ? max : value;};
+template<typename T,typename U> FORCE_INLINE T ClampMin(T value, U min){return (value < min) ? min : value;};
+template<typename T,typename U> FORCE_INLINE T ClampMax(T value, U max){return (value > max) ? max : value;};
 
 /////////////////////// 
 //// assert macros //// //NOTE the ... is for a programmer message at the assert; it is unused otherwise

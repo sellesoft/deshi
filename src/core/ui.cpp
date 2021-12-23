@@ -115,10 +115,6 @@ enum WinInputState_ {
 WinInputState inputState = ISNone;
 
 //helper defines
-
-
-#define HasFlag(flag) (flags & flag)
-#define HasFlags(flag) ((flags & flag) != flag) //used on flag enums that are collections of flags
 #define WinHasFlag(flag) (curwin->flags & flag)
 #define WinHasFlags(flag) ((curwin->flags & flag) == flag) 
 #define DrawCmdScreenPos(pos) pos + item->position + curwin->position 
@@ -303,9 +299,9 @@ inline vec2 PositionForNewItem(UIWindow* window = curwin) {
 //first is the position and second is the size
 inline pair<vec2, vec2> BorderedArea(UIWindow* window = curwin) {
 	return make_pair(
-		vec2::ONE * style.windowBorderSize,
-		window->dimensions - vec2::ONE * 2 * style.windowBorderSize
-	);
+					 vec2::ONE * style.windowBorderSize,
+					 window->dimensions - vec2::ONE * 2 * style.windowBorderSize
+					 );
 }
 
 //same as the bordered area, but also takes into account the margins
@@ -960,19 +956,19 @@ local void TextW(const wchar_t* in, vec2 pos, color color, b32 nowrap, b32 move_
 }
 
 void UI::Text(const char* text, UITextFlags flags) {
-	TextW(text, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap));
+	TextW(text, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
 }
 
 void UI::Text(const char* text, vec2 pos, UITextFlags flags) {
-	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap), 0);
+	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap), 0);
 }
 
 void UI::Text(const wchar_t* text, UITextFlags flags){
-	TextW(text, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap));
+	TextW(text, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
 }
 
 void UI::Text(const wchar_t* text, vec2 pos, UITextFlags flags){
-	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(UITextFlags_NoWrap), 0);
+	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap), 0);
 }
 
 
@@ -1029,10 +1025,10 @@ b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
 	
 	if (active) {
 		//TODO(sushi) do this better
-		if (HasFlag(UIButtonFlags_ReturnTrueOnHold))
+		if (HasFlag(flags, UIButtonFlags_ReturnTrueOnHold))
 			if (DeshInput->LMouseDown()) { PreventInputs; return true; }
 		else return false;
-		if (HasFlag(UIButtonFlags_ReturnTrueOnRelease))
+		if (HasFlag(flags, UIButtonFlags_ReturnTrueOnRelease))
 			if (DeshInput->LMouseReleased()) return true;
 		else return false;
 		if (DeshInput->LMousePressed()){ PreventInputs; return true;}
@@ -1174,7 +1170,7 @@ b32 UI::BeginCombo(const char* label, const char* prev_val) {
 void UI::EndCombo() {
 	Assert(comboItem, "attempt to end a combo without starting one");
 	CalcItemSize(comboItem);
-
+	
 	comboItem = 0;
 	combo_open = 0;
 	selectables_added = 0;
@@ -1565,14 +1561,14 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 		char charPlaced;
 		auto placeKey = [&](u32 i, u32 ins, char toPlace) {
 			//TODO(sushi) handle Numerical flag better
-			if (i >= Key::A && i <= Key::Z && !HasFlag(UIInputTextFlags_Numerical)) {
+			if (i >= Key::A && i <= Key::Z && !HasFlag(flags, UIInputTextFlags_Numerical)) {
 				if (DeshInput->capsLock || DeshInput->ShiftDown())
 					insert(toPlace, ins);
 				else
 					insert(toPlace + 32, ins);
 			}
 			else if (i >= Key::K0 && i <= Key::K9) {
-				if (DeshInput->ShiftDown() && !HasFlag(UIInputTextFlags_Numerical)) {
+				if (DeshInput->ShiftDown() && !HasFlag(flags, UIInputTextFlags_Numerical)) {
 					switch (i) {
 						case Key::K0: data.character = ')'; insert(')', ins); break;
 						case Key::K1: data.character = '!'; insert('!', ins); break;
@@ -1592,7 +1588,7 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 				}
 			}
 			else {
-				if (DeshInput->ShiftDown() && !HasFlag(UIInputTextFlags_Numerical)) {
+				if (DeshInput->ShiftDown() && !HasFlag(flags, UIInputTextFlags_Numerical)) {
 					switch (i) {
 						case Key::SEMICOLON:  data.character = ':';  insert(':', ins);  break;
 						case Key::APOSTROPHE: data.character = '"';  insert('"', ins);  break;
@@ -1608,11 +1604,11 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 					}
 				}
 				else {
-					if (HasFlag(UIInputTextFlags_Numerical) && KeyStringsLiteral[i] == '.') {
+					if (HasFlag(flags, UIInputTextFlags_Numerical) && KeyStringsLiteral[i] == '.') {
 						data.character = '.';
 						insert('.', ins);
 					}
-					else if(!HasFlag(UIInputTextFlags_Numerical)) {
+					else if(!HasFlag(flags, UIInputTextFlags_Numerical)) {
 						data.character = KeyStringsLiteral[i];
 						insert(KeyStringsLiteral[i], ins);
 					}
@@ -1996,28 +1992,28 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
 		static vec2 offset;
 		static b32 initial = true;
 		u32 flags = window->flags;
-
+		
 		vec2 winpos = window->position;
 		f32 wpx = window->x;
 		f32 wpy = window->y;
-
+		
 		vec2 windim = window->dimensions;
 		f32 winw = window->width;
 		f32 winh = window->height;
-
+		
 		vec2 winmin = window->minSizeForFit;
-
+		
 		f32 scrollBarYw = style.scrollBarYWidth;
 		f32 scrollBarXh = style.scrollBarXHeight;
-
+		
 		b32 mdown = DeshInput->LMouseDown();
 		b32 mrele = DeshInput->LMouseReleased();
 		
-		if (!hscroll && !HasFlag(UIWindowFlags_NoScrollY)) {
+		if (!hscroll && !HasFlag(flags, UIWindowFlags_NoScrollY)) {
 			f32 scrollbarheight = ScrollBaredBottom(window) - ScrollBaredTop(window);
 			f32 draggerheight = scrollbarheight * scrollbarheight / winmin.y;
 			vec2 draggerpos(ScrollBaredRight(), (scrollbarheight - draggerheight) * window->scy / window->maxScroll.y + BorderedTop(window));
-
+			
 			b32 scbgactive = MouseInWinArea(vec2(ScrollBaredRight(window), BorderedTop(window)), vec2(style.scrollBarYWidth, scrollbarheight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(style.scrollBarYWidth, draggerheight));
 			
@@ -2044,11 +2040,11 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
 			}
 			
 		}
-		if (!vscroll && !HasFlag(UIWindowFlags_NoScrollX)) {
+		if (!vscroll && !HasFlag(flags, UIWindowFlags_NoScrollX)) {
 			f32 scrollbarwidth = ScrollBaredRight(window) - ScrollBaredLeft(window);
 			f32 draggerwidth = scrollbarwidth * window->dimensions.x / winmin.x;
 			vec2 draggerpos((scrollbarwidth - draggerwidth) * window->scx / window->maxScroll.x, ScrollBaredBottom(window));
-
+			
 			b32 scbgactive = MouseInWinArea(vec2(ScrollBaredBottom(window), BorderedLeft(window)), vec2(scrollbarwidth, style.scrollBarXHeight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(draggerwidth, style.scrollBarXHeight));
 			
@@ -2137,7 +2133,7 @@ void UI::Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags)
 		
 		windows.add(name, curwin);
 	}
-
+	
 	curwin->style = style;
 }
 
@@ -2319,7 +2315,7 @@ void UI::End() {
 			
 			b32 scbgactive = MouseInWinArea(vec2(ScrollBaredRight(), BorderedTop()), vec2(style.scrollBarYWidth, scrollbarheight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(style.scrollBarYWidth, draggerheight));
-
+			
 			{//scroll bg
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 				drawCmd.color = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
@@ -2358,7 +2354,7 @@ void UI::End() {
 			
 			b32 scbgactive = MouseInWinArea(vec2(ScrollBaredBottom(), BorderedLeft()), vec2(scrollbarwidth, style.scrollBarXHeight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(draggerwidth, style.scrollBarXHeight));
-
+			
 			{//scroll bg
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 				drawCmd.color = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
@@ -2683,7 +2679,7 @@ UIWindow* DisplayMetrics() {
 	}
 	
 	Separator(20);
-
+	
 	PushVar(UIStyleVar_RowItemAlign, vec2(0, 0.5));
 	BeginRow(2, style.fontHeight * 1.5);
 	RowSetupRelativeColumnWidths({ 1.2, 1 });
@@ -2718,7 +2714,7 @@ UIWindow* DisplayMetrics() {
 			Text("Hovered: ");        Text(toStr(debugee->hovered).str);
 			Text("Focused: ");        Text(toStr(debugee->focused).str);
 			Text("Max Item Width: "); Text(toStr(MaxItemWidth(debugee)).str);
-
+			
 			
 			EndRow();
 			
@@ -2752,7 +2748,7 @@ UIWindow* DisplayMetrics() {
 		persist b32 showBorderArea = false;
 		persist b32 showMarginArea = false;
 		persist b32 showScrollBarArea = false;
-
+		
 		
 		if (BeginHeader("Window Debug Visuals")) {
 			Checkbox("Show Item Boxes", &showItemBoxes);
@@ -2761,8 +2757,8 @@ UIWindow* DisplayMetrics() {
 			Checkbox("Show Bordered Area", &showBorderArea);
 			Checkbox("Show Margined Area", &showMarginArea);
 			Checkbox("Show ScrollBared Area", &showScrollBarArea);
-
-
+			
+			
 			EndHeader();
 		}
 		
@@ -2793,7 +2789,7 @@ UIWindow* DisplayMetrics() {
 				}
 			}
 		}
-
+		
 		if (showAllDrawCmdScissors) {
 			for (UIItem& item : debugee->preItems) {
 				for (UIDrawCmd& dc : item.drawCmds) {
@@ -2812,7 +2808,7 @@ UIWindow* DisplayMetrics() {
 					DebugRect(dc.scissorOffset, dc.scissorExtent, Color_Green);
 				}
 			}
-
+			
 			for (UIWindow* c : debugee->children) {
 				for (UIItem& item : c->preItems) {
 					for (UIDrawCmd& dc : item.drawCmds) {
@@ -2832,9 +2828,9 @@ UIWindow* DisplayMetrics() {
 					}
 				}
 			}
-
+			
 		}
-
+		
 		if (showBorderArea) {
 			auto b = BorderedArea(debugee);
 			DebugRect(b.first + debugee->position, b.second);
@@ -2847,7 +2843,7 @@ UIWindow* DisplayMetrics() {
 			auto s = ScrollBaredArea(debugee);
 			DebugRect(s.first + debugee->position, s.second);
 		}
-
+		
 		
 	}
 	
@@ -2871,7 +2867,7 @@ void UI::ShowMetricsWindow() {
 
 void UI::DemoWindow() {
 	Begin("deshiUIDEMO", vec2::ONE * 300, vec2::ONE * 300);
-
+	
 	if (BeginHeader("Text")) {
 		Text("heres some text");
 		
@@ -3046,7 +3042,7 @@ void UI::DemoWindow() {
 		
 		EndHeader();
 	}
-
+	
 	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
 	
 	if (BeginHeader("Child Windows")) {
@@ -3070,20 +3066,20 @@ void UI::DemoWindow() {
 		forI(99) {
 			Text("heres a bunch of text in the child window");
 		}
-
+		
 		EndChild();
 		
 		EndHeader();
 		
 	}
-
+	
 	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
-
+	
 	if (BeginHeader("Combos")) {
 		Text("Combos are a huge TODO right now, but heres how they currently look");
-
+		
 		Separator(7);
-
+		
 		persist u32 selected = 0;
 		if (BeginCombo("uiDemoCombo", "preview text")) {
 			forI(10) {
@@ -3093,12 +3089,12 @@ void UI::DemoWindow() {
 			}
 			EndCombo();
 		}
-
+		
 		EndHeader();
 	}
 	
 	Separator(11); /////////////////////////////////////////////////////////////////////////////////////////
-
+	
 	if (BeginHeader("Style Variables")) {
 		Text("Adjusting these will adjust the base style variables of UI");
 		Separator(7);
@@ -3107,15 +3103,15 @@ void UI::DemoWindow() {
 		Slider("demo_wpx", &style.windowPadding.x, 0, 100);
 		SameLine();
 		Slider("demo_wpy", &style.windowPadding.y, 0, 100);
-
+		
 		Text("Item Spacing (vec2)");
 		Slider("demo_isx", &style.itemSpacing.x, 0, 100);
 		SameLine();
 		Slider("demo_isy", &style.itemSpacing.y, 0, 100);
-
+		
 		EndHeader();
 	}
-
+	
 	End();
 }
 
@@ -3274,7 +3270,7 @@ inline void DrawCmd(UIDrawCmd& drawCmd, UIItem& item, vec2 itempos, vec2 itemsiz
 	wcstring wdctext{ drawCmd.wtext.str, drawCmd.wtext.count };
 	
 	Font* font = drawCmd.font;
-
+	
 #if DESHI_INTERNAL
 	//copy all drawCmd changes back to the actual drawCmd in debug mode so we
 	//can visualize it in metrics
