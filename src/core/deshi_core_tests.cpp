@@ -41,7 +41,7 @@ function void TEST_deshi_core_io(){
 	DESHI_TEST_CORE_TODO("io");
 }
 
-#include "logging.h"
+#include "logger.h"
 function void TEST_deshi_core_logging(){
 	DESHI_TEST_CORE_TODO("logging");
 }

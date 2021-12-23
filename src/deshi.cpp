@@ -64,6 +64,7 @@ ____glm/detail/_swizzle.hpp
 
 Memory TODOs
 ------------
+add ClearArena()
 when running out of memory, log an error then fallback on STL or OS (rather than assert)
 add macro interface over functions to track where they are called from (file, line, function)
 standardize naming of bytes vs size
@@ -134,7 +135,6 @@ Ungrouped TODOs
 ---------------
 restyle map to match the rest of utils
 make the most recent logging file be named log.txt, while the rest have a date
-allow the generic memory arena to grow if it will be maxed out
 add MouseInsideWindow() func to input or window
 make the transparent framebuffer a start switch since it hurts frames (it must be set at window creation time)
 add the ability to limit framerate
@@ -154,13 +154,10 @@ __________ maybe store the text in the actual source and create the file from th
 __________ alternatively, we can store those specific assets in the source control
 (09/13/21) the program sometimes hangs on close in log file writing to stdout; temp fix: click the cmd, hit enter
 __________ this might not be an error with our stuff and just a quirk of the windows console
-
-
-
 */
 
 #include "defines.h"
-#include "core/memory.h" //this is included above everything so things can reference deshi_allocator
+#include "core/memory.h" //NOTE this is included above everything so things can reference deshi_allocator
 
 //// utility headers ////"
 //#define DESHI_ARRAY_ALLOCATOR deshi_allocator
@@ -208,20 +205,19 @@ __________ this might not be an error with our stuff and just a quirk of the win
 #error "unknown platform"
 #endif //DESHI_WINDOWS
 
-enum DeshiStage_ {
-	DS_NONE = 0,
-	DS_MEMORY = 1 << 0,
-	DS_LOGGER = 1 << 1,
+enum DeshiStage{
+	DS_NONE    = 0,
+	DS_MEMORY  = 1 << 0,
+	DS_LOGGER  = 1 << 1,
 	DS_CONSOLE = 1 << 2,
-	DS_TIME = 1 << 3,
-	DS_WINDOW = 1 << 4,
-	DS_RENDER = 1 << 5,
+	DS_TIME    = 1 << 3,
+	DS_WINDOW  = 1 << 4,
+	DS_RENDER  = 1 << 5,
 	DS_STORAGE = 1 << 6,
-	DS_UI = 1 << 7,
-	DS_CMD = 1 << 8,
-}; typedef u32 DeshiStage;
-
-DeshiStage deshiStage = DS_NONE;
+	DS_UI      = 1 << 7,
+	DS_CMD     = 1 << 8,
+};
+local Flags deshiStage = DS_NONE;
 
 #define AssertDS(stages, ...) Assert((deshiStage & (stages)) == (stages))
 #define IsDeshiModuleLoaded (deshiStage & (stages)) == (stages)
