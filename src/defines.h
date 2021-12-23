@@ -59,15 +59,35 @@ typedef char16_t           uchar; //unicode char type
 typedef u32 Type;
 typedef u32 Flags;
 
+enum Type_ {
+	Type_s8,
+	Type_s16,
+	Type_s32,
+	Type_s64,
+	Type_spt,
+	Type_u8,
+	Type_u16,
+	Type_u32,
+	Type_u64,
+	Type_upt,
+	Type_f32,
+	Type_f64,
+	Type_b32,
+	Type_uchar,
+	Type_vec2,
+	Type_vec3,
+	Type_vec4,
+};
+
 //TODO(delle) function pointer signature macro
-typedef void* (*Allocator_ReserveMemory_Func)(upt bytes);
-typedef void  (*Allocator_ChangeMemory_Func)(void* ptr, upt bytes);
+typedef void* (*Allocator_ReserveMemory_Func)(upt size);
+typedef void  (*Allocator_ChangeMemory_Func)(void* ptr, upt size);
 typedef void  (*Allocator_ReleaseMemory_Func)(void* ptr);
-typedef void* (*Allocator_ResizeMemory_Func)(void* ptr, upt bytes);
-function void* Allocator_ReserveMemory_Noop(upt bytes){}
-function void  Allocator_ChangeMemory_Noop(void* ptr, upt bytes){}
+typedef void* (*Allocator_ResizeMemory_Func)(void* ptr, upt size);
+function void* Allocator_ReserveMemory_Noop(upt size){}
+function void  Allocator_ChangeMemory_Noop(void* ptr, upt size){}
 function void  Allocator_ReleaseMemory_Noop(void* ptr){}
-function void* Allocator_ResizeMemory_Noop(void* ptr, upt bytes){}
+function void* Allocator_ResizeMemory_Noop(void* ptr, upt size){}
 struct Allocator{
 	Allocator_ReserveMemory_Func reserve;  //reserves address space from OS
 	Allocator_ChangeMemory_Func  commit;   //allocates memory from reserved space
@@ -75,52 +95,6 @@ struct Allocator{
 	Allocator_ReleaseMemory_Func release;  //release the reserved memory back to OS
 	Allocator_ResizeMemory_Func  resize;   //resizes reserved memory and moves memory if a new location is required
 };
-
-/////////////////////// //NOTE some are two level so you can use the result of a macro expansion (STRINGIZE, GLUE, etc)
-//// common macros ////
-///////////////////////
-#define STMNT(s) do{ s }while(0)
-#define UNUSED_VAR(a) ((void)(a))
-#define STRINGIZE_(a) #a
-#define STRINGIZE(a) STRINGIZE_(a)
-#define GLUE_(a,b) a##b
-#define GLUE(a,b) GLUE_(a,b)
-#define ToggleBool(variable) variable = !variable
-#define Kilobytes(a) (((u64)(a)) << 10)
-#define Megabytes(a) (((u64)(a)) << 20)
-#define Gigabytes(a) (((u64)(a)) << 30)
-#define Terabytes(a) (((u64)(a)) << 40)
-#define Radians(x) ((x) * (M_PI / 180.f))
-#define Degrees(x) ((x) * (180.f / M_PI))
-#define ArrayCount(arr) (sizeof((arr)) / sizeof(((arr))[0])) //length of a static-size c-array
-#define RoundUpTo(value, multiple) (((size_t)((value) + (((size_t)(multiple))-1)) / (size_t)(multiple)) * (size_t)(multiple))
-#define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
-#define PointerDifference(a,b) ((u8*)(a) - (u8*)(b))
-#define PointerAsInt(a) PointerDifference(a,0)
-#define OffsetOfMember(structName,memberName) PointerAsInt(&(((structName*)0)->memberName))
-#define CastFromMember(structName,memberName,ptr) (structName*)((u8*)(ptr) - OffsetOfMember(structName,memberName))
-#define StartNamespace(a) namespace a{ (void)0
-#define EndNamespace(a) }
-#define CastToConst(type,a) const_cast<const type>(a)
-#define CastFromConst(type,a) const_cast<type>(a)
-#define StaticCast(type,a) static_cast<type>(a)
-#define DynamicCast(type,a) dynamic_cast<type>(a)
-
-//////////////////////////
-//// common functions ////
-//////////////////////////
-FORCE_INLINE b32 IsPow2(u64 value){return (value != 0) && ((value & (value-1)) == 0);}
-template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;}
-template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;}
-template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;}
-template<typename T> FORCE_INLINE T Clamp(T value, T min, T max){return (value < min) ? min : ((value > max) ? max : value);};
-template<typename T,typename U> FORCE_INLINE T Clamp(T value, U min, T max){return (value < min) ? min : ((value > max) ? max : value);}
-template<typename T,typename U> FORCE_INLINE T Clamp(T value, T min, U max){return (value < min) ? min : ((value > max) ? max : value);}
-template<typename T,typename U> FORCE_INLINE T Clamp(T value, U min, U max){return (value < min) ? min : ((value > max) ? max : value);}
-template<typename T> FORCE_INLINE T ClampMin(T value, T min){return (value < min) ? min : value;};
-template<typename T> FORCE_INLINE T ClampMax(T value, T max){return (value > max) ? max : value;};
-template<typename T,typename U> FORCE_INLINE T ClampMin(T value, U min){return (value < min) ? min : value;};
-template<typename T,typename U> FORCE_INLINE T ClampMax(T value, U max){return (value > max) ? max : value;};
 
 //////////////////////////
 //// common constants ////
@@ -148,12 +122,83 @@ global_const f32 M_EPSILON    = 0.00001f;
 global_const f32 M_FOURTHPI   = 0.78539816339f;
 global_const f32 M_HALFPI     = 1.57079632679f;
 global_const f32 M_PI         = 3.14159265359f;
-global_const f64 M_PId        = 3.14159265358979;
+global_const f64 M_PId        = 3.14159265358979323;
 global_const f32 M_2PI        = 6.28318530718f;
 global_const f32 M_TAU        = M_2PI;
 global_const f32 M_E          = 2.71828182846f;
 global_const f32 M_SQRT_TWO   = 1.41421356237f;
 global_const f32 M_SQRT_THREE = 1.73205080757f;
+
+///////////////////////// 
+//// common var sizes////
+/////////////////////////
+global_const u64 s8size    = sizeof(s8);
+global_const u64 s16size   = sizeof(s16);
+global_const u64 s32size   = sizeof(s32);
+global_const u64 s64size   = sizeof(s64);
+global_const u64 sptsize   = sizeof(spt);
+global_const u64 u8size    = sizeof(u8);
+global_const u64 u16size   = sizeof(u16);
+global_const u64 u32size   = sizeof(u32);
+global_const u64 u64size   = sizeof(u64);
+global_const u64 uptsize   = sizeof(upt);
+global_const u64 f32size   = sizeof(f32);
+global_const u64 f64size   = sizeof(f64);
+global_const u64 b32size   = sizeof(b32);
+global_const u64 ucharsize = sizeof(uchar);
+
+/////////////////////// //NOTE some are two level so you can use the result of a macro expansion (STRINGIZE, GLUE, etc)
+//// common macros ////
+///////////////////////
+#define STMNT(s) do{ s }while(0)
+#define UNUSED_VAR(a) ((void)(a))
+#define STRINGIZE_(a) #a
+#define STRINGIZE(a) STRINGIZE_(a)
+#define GLUE_(a,b) a##b
+#define GLUE(a,b) GLUE_(a,b)
+#define ToggleBool(variable) variable = !variable
+#define Kilobytes(a) (((u64)(a)) << 10)
+#define Megabytes(a) (((u64)(a)) << 20)
+#define Gigabytes(a) (((u64)(a)) << 30)
+#define Terabytes(a) (((u64)(a)) << 40)
+#define Thousand(a) (((u64)(a)) * 1000)
+#define Million(a) (((u64)(a)) * 1000000)
+#define Billion(a) (((u64)(a)) * 1000000000)
+#define Radians(a) ((a) * (M_PI / 180.f))
+#define Degrees(a) ((a) * (180.f / M_PI))
+#define ArrayCount(arr) (sizeof((arr)) / sizeof(((arr))[0])) //length of a static-size c-array
+#define RoundUpTo(value, multiple) (((size_t)((value) + (((size_t)(multiple))-1)) / (size_t)(multiple)) * (size_t)(multiple))
+#define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
+#define PointerDifference(a,b) ((u8*)(a) - (u8*)(b))
+#define PointerAsInt(a) PointerDifference(a,0)
+#define OffsetOfMember(structName,memberName) PointerAsInt(&(((structName*)0)->memberName))
+#define CastFromMember(structName,memberName,ptr) (structName*)((u8*)(ptr) - OffsetOfMember(structName,memberName))
+#define StartNamespace(a) namespace a{ (void)0
+#define EndNamespace(a) }
+#define CastToConst(type,a) const_cast<const type>(a)
+#define CastFromConst(type,a) const_cast<type>(a)
+#define StaticCast(type,a) static_cast<type>(a)
+#define DynamicCast(type,a) dynamic_cast<type>(a)
+#define HasFlag(var,flag) ((var) & (flag))
+#define HasAllFlags(var,flags) (((var) & (flags)) == (flags))
+#define AddFlag(var,flag) ((var) |= (flag))
+#define RemoveFlag(var,flag) ((var) &= (~(flag)))
+
+//////////////////////////
+//// common functions ////
+//////////////////////////
+FORCE_INLINE b32 IsPow2(u64 value){return (value != 0) && ((value & (value-1)) == 0);}
+template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;}
+template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;}
+template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;}
+template<typename T> FORCE_INLINE T Clamp(T value, T min, T max){return (value < min) ? min : ((value > max) ? max : value);};
+template<typename T,typename U> FORCE_INLINE T Clamp(T value, U min, T max){return (value < min) ? min : ((value > max) ? max : value);}
+template<typename T,typename U> FORCE_INLINE T Clamp(T value, T min, U max){return (value < min) ? min : ((value > max) ? max : value);}
+template<typename T,typename U> FORCE_INLINE T Clamp(T value, U min, U max){return (value < min) ? min : ((value > max) ? max : value);}
+template<typename T> FORCE_INLINE T ClampMin(T value, T min){return (value < min) ? min : value;};
+template<typename T> FORCE_INLINE T ClampMax(T value, T max){return (value > max) ? max : value;};
+template<typename T,typename U> FORCE_INLINE T ClampMin(T value, U min){return (value < min) ? min : value;};
+template<typename T,typename U> FORCE_INLINE T ClampMax(T value, U max){return (value > max) ? max : value;};
 
 /////////////////////// 
 //// assert macros //// //NOTE the ... is for a programmer message at the assert; it is unused otherwise
@@ -215,9 +260,9 @@ struct Node{
 #define NodeRemove(node) ((node)->next->prev=(node)->prev,(node)->prev->next=(node)->next)
 
 //// C/C++ STL allocator ////
-function void* STLAllocator_Reserve(upt bytes){void* a = calloc(1,bytes); Assert(a); return a;}
+function void* STLAllocator_Reserve(upt size){void* a = calloc(1,size); Assert(a); return a;}
 function void  STLAllocator_Release(void* ptr){free(ptr);}
-function void* STLAllocator_Resize(void* ptr, upt bytes){void* a = realloc(ptr,bytes); Assert(a); return a;}
+function void* STLAllocator_Resize(void* ptr, upt size){void* a = realloc(ptr,size); Assert(a); return a;}
 global_ Allocator stl_allocator_{
 	STLAllocator_Reserve,
 	Allocator_ChangeMemory_Noop,

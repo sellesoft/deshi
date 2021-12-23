@@ -370,12 +370,17 @@ struct UIItem {
 	
 	vec2 position; //relative to the window its being held in
 	vec2 size;
-	
+
 	//all draw command positions are relative to the items position
 	array<UIDrawCmd> drawCmds;
 
 	//this is only used when the item is a child window
 	UIWindow* child;
+
+
+	//DEBUG info
+	u32 item_idx;
+	u32 item_layer;
 };
 
 #define UI_WINDOW_ITEM_LAYERS 11
@@ -436,6 +441,7 @@ struct UIWindow {
 	UIItem* hoveredItem = 0;
 	
 	b32 hovered = false;
+	b32 childHovered = false;
 	b32 titleHovered = false;
 	
 	b32 focused = false;

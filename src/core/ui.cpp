@@ -126,6 +126,7 @@ WinInputState inputState = ISNone;
 
 #define globalIndent *indentStack.last
 
+
 #define CanTakeInput      inputState == ISNone
 #define PreventInputs     inputState = ISPreventInputs
 #define AllowInputs       inputState = ISNone;      inputupon = 0;
@@ -136,6 +137,19 @@ WinInputState inputState = ISNone;
 #define WinDragging       inputState == ISDragging
 #define WinScrolling      inputState == ISScrolling
 #define ItemCanTakeInput  !(WinResizing || WinDragging || WinScrolling)
+
+//for breaking on an item from the metrics window
+UIWindow* break_window = 0;
+u32 item_idx = -1;
+u32 item_layer = -1;
+
+#ifdef DESHI_INTERNAL
+#define BreakOnItem if(break_window && curwin->items[item_layer].count == item_idx){ DebugBreakpoint;}
+#else
+#define BreakOnItem
+#endif
+
+
 
 //helper functions
 
@@ -243,6 +257,10 @@ inline b32 isLocalAreaHovered(vec2 pos, vec2 size, UIItem* item) {
 	return Math::PointInRectangle(DeshInput->mousePos, pos + item->position + curwin->position, size);
 }
 
+inline b32 isItemActive(UIItem* item) {
+	return curwin->hovered && ItemCanTakeInput && isItemHovered(item);
+}
+
 //internal master cursor controller
 //  this is an attempt to centralize what happens at the end of each item function
 // 
@@ -320,8 +338,8 @@ inline pair<vec2, vec2> MarginedArea(UIWindow* window = curwin) {
 //the bordered area taking into account the scroll bars
 inline pair<vec2, vec2> ScrollBaredArea(UIWindow* window = curwin) {
 	auto p = BorderedArea(window);
-	p.second.x -= (CanScrollY() ? style.scrollBarYWidth : 0);
-	p.second.y -= (CanScrollX() ? style.scrollBarXHeight : 0);
+	p.second.x -= (CanScrollY(window) ? style.scrollBarYWidth : 0);
+	p.second.y -= (CanScrollX(window) ? style.scrollBarXHeight : 0);
 	return p;
 }
 
@@ -355,10 +373,69 @@ inline b32 MouseInWinArea(vec2 pos, vec2 size) {
 	return Math::PointInRectangle(DeshInput->mousePos - curwin->position, pos, size);
 }
 
+inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {
+	vec2 size;
+	if (NextItemSize.x != -1) {
+		if (NextItemSize.x == MAX_F32)
+			size.x = MarginedRight() - itemPos.x;
+		else if (NextItemSize.x == 0)
+			if (defaultSize.x == MAX_F32)
+				size.x = MarginedRight() - itemPos.x;
+			else size.x = defaultSize.x;
+		else size.x = NextItemSize.x;
 
-void UI::SetNextItemActive() {
-	NextActive = 1;
+		if (NextItemSize.y == MAX_F32)
+			size.y = MarginedBottom() - itemPos.y;
+		else if (NextItemSize.y == 0)
+			if(defaultSize.y == MAX_F32)
+				size.y = MarginedBottom() - itemPos.y;
+			else size.y = defaultSize.y;
+		else size.y = NextItemSize.y;
+	}
+	else {
+		if (defaultSize.x == MAX_F32)
+			size.x = MarginedRight() - itemPos.x;
+		else size.x = defaultSize.x;
+
+		if (defaultSize.y == MAX_F32)
+			size.y = MarginedBottom() - itemPos.y;
+		else size.y = defaultSize.y;
+	}
+	return size;
+
 }
+
+inline vec2 DecideWinSize(vec2 defaultSize, vec2 itemPos) {
+	vec2 size;
+	if (NextWinSize.x != -1) {
+		if (NextWinSize.x == MAX_F32)
+			size.x = MarginedRight() - itemPos.x;
+		else if (NextWinSize.x == 0)
+			if (defaultSize.x == MAX_F32)
+				size.x = MarginedRight() - itemPos.x;
+			else size.x = defaultSize.x;
+		else size.x = NextWinSize.x;
+
+		if (NextWinSize.y == MAX_F32)
+			size.y = MarginedBottom() - itemPos.y;
+		else if (NextWinSize.y == 0)
+			if (defaultSize.y == MAX_F32)
+				size.y = MarginedBottom() - itemPos.y;
+			else size.y = defaultSize.y;
+		else size.y = NextWinSize.y;
+	}
+	else {
+		if (defaultSize.x == MAX_F32)
+			size.x = MarginedRight() - itemPos.x;
+		else size.x = defaultSize.x;
+
+		if (defaultSize.y == MAX_F32)
+			size.y = MarginedBottom() - itemPos.y;
+		else size.y = defaultSize.y;
+	}
+	return size;
+}
+
 
 UIStyle& UI::GetStyle(){
 	return style;
@@ -366,18 +443,6 @@ UIStyle& UI::GetStyle(){
 
 UIWindow* UI::GetWindow() {
     return curwin;
-}
-
-//the following 4 functions should probably error out sofly, rather than asserting
-
-//returns the cursor to the same line as the previous and moves it to the right by the 
-//width of the object
-void UI::SameLine(){
-	//Assert(curwin->items.count, "Attempt to sameline an item creating any items!");
-	if (curwin->items[currlayer].last) {
-		curwin->cursor.y = curwin->items[currlayer].last->initialCurPos.y;
-		curwin->cursor.x += curwin->items[currlayer].last->initialCurPos.x + curwin->items[currlayer].last->size.x + style.itemSpacing.x;
-	}
 }
 
 vec2 UI::GetLastItemPos() {
@@ -404,6 +469,24 @@ u32 UI::GetCenterLayer() {
 	return UI_CENTER_LAYER;
 }
 
+//returns the cursor to the same line as the previous and moves it to the right by the 
+//width of the object
+void UI::SameLine() {
+	//Assert(curwin->items.count, "Attempt to sameline an item creating any items!");
+	if (curwin->items[currlayer].last) {
+		curwin->cursor.y = curwin->items[currlayer].last->initialCurPos.y;
+		curwin->cursor.x += curwin->items[currlayer].last->initialCurPos.x + curwin->items[currlayer].last->size.x + style.itemSpacing.x;
+	}
+}
+
+void UI::SetNextItemActive() {
+	NextActive = 1;
+}
+
+void UI::SetNextItemSize(vec2 size) {
+	NextItemSize = size;
+}
+
 
 
 //internal last item getter, returns nullptr if there are none
@@ -425,8 +508,13 @@ inline UIItem* BeginItem(UIItemType type, u32 layeroffset = 0) {
 	}
 	else {
 		curwin->items[currlayer + layeroffset].add(UIItem{ type, curwin->cursor, style });
+#ifdef DESHI_INTERNAL
+		GetLastItem(layeroffset)->item_layer = currlayer + layeroffset;
+		GetLastItem(layeroffset)->item_idx = curwin->items[currlayer + layeroffset].count;
+#endif
 	}
 	curwin->items_count++;
+	BreakOnItem;
 	return GetLastItem(layeroffset);
 }
 
@@ -637,9 +725,6 @@ void UI::CircleFilled(vec2 pos, f32 radius, u32 subdivisions, color color) {
 //@Items
 
 
-void UI::SetNextItemSize(vec2 size) {
-	NextItemSize = size;
-}
 
 
 //@Text
@@ -1062,8 +1147,7 @@ void UI::Checkbox(string label, b32* b) {
 	vec2 fillpos = boxsiz * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y);
 	vec2 fillsiz = boxsiz * (vec2::ONE - 2 * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y));
 	
-	b32 bgactive = ItemCanTakeInput && isItemHovered(item);
-	b32 fiactive = ItemCanTakeInput && isLocalAreaHovered(fillpos, fillsiz, item);
+	b32 bgactive = isItemActive(item);
 	
 	
 	{//box
@@ -1107,7 +1191,7 @@ void UI::Checkbox(string label, b32* b) {
 	
 	
 	
-	if (DeshInput->LMousePressed() && Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position * style.globalScale, boxsiz * style.globalScale)) {
+	if (DeshInput->LMousePressed() && bgactive) {
 		*b = !*b;
 		PreventInputs;
 	}
@@ -1187,7 +1271,7 @@ b32 UI::Selectable(const char* label, vec2 pos, b32 selected) {
 	if (comboItem && combo_open) {
 		//if a combo has been started and is open, we attach the selectables to it
 		selectables_added++;
-		b32 active = ItemCanTakeInput && Math::PointInRectangle(DeshInput->mousePos, curwin->position + comboItem->position.yAdd(comboItem->size.y * selectables_added), comboItem->size);
+		b32 active = curwin->hovered && ItemCanTakeInput && Math::PointInRectangle(DeshInput->mousePos, curwin->position + comboItem->position.yAdd(comboItem->size.y * selectables_added), comboItem->size);
 		if (active && DeshInput->LMousePressed()) { 
 			clicked = true; 
 			PreventInputs;
@@ -1226,7 +1310,7 @@ b32 UI::Selectable(const char* label, vec2 pos, b32 selected) {
 		
 		AdvanceCursor(item);
 		
-		b32 active = ItemCanTakeInput && Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position.yAdd(item->size.y * selectables_added), item->size);
+		b32 active = isItemActive(item);//ItemCanTakeInput && Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position.yAdd(item->size.y * selectables_added), item->size);
 		if (active && DeshInput->LMousePressed()) { 
 			clicked = true; 
 			PreventInputs;
@@ -1276,18 +1360,20 @@ b32 UI::BeginHeader(const char* label) {
 	open = &headers[label];
 	
 	item->position = PositionForNewItem();
-	item->size = (NextItemSize.x == -1 ?
-				  vec2(MarginedRight() - item->position.x, style.fontHeight * style.headerHeightRelToFont) :
-				  NextItemSize);
-	
+	item->size = DecideItemSize(vec2(MAX_F32, style.fontHeight * style.headerHeightRelToFont), item->position);
+		
 	
 	AdvanceCursor(item);
 	
-	b32 active = ItemCanTakeInput && isItemHovered(item);
+	b32 active = isItemActive(item);
 	
 	if (active && DeshInput->LMousePressed()) { 
 		*open = !*open; 
 		PreventInputs;
+	}
+
+	if (active) {
+		int i = 0; 
 	}
 	
 	
@@ -1366,7 +1452,7 @@ void UI::Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderF
 	
 	AdvanceCursor(item);
 	
-	b32 active = ItemCanTakeInput && isItemHovered(item);
+	b32 active = isItemActive(item);
 	
 	if (active && DeshInput->LMousePressed()) {
 		sliders[label] = 1;
@@ -1868,8 +1954,54 @@ void UI::PopLayer(u32 count) {
 
 //window input helper funcs 
 
+void SetFocusedWindow(UIWindow* window) {
+	//we must find what idx the window is at
+	//i think
+	for (int i = 0; i < windows.count; i++) {
+		if (*windows.atIdx(i) == window) {
+			for (int move = i; move < windows.count - 1; move++)
+				windows.swap(move, move + 1);
+			break;
+		}
+	}
+}
+
+void CheckForHoveredWindow() {
+	b32 hovered_found = 0;
+	for (int i = windows.count - 1; i > 0; i--) {
+		UIWindow* w = *windows.atIdx(i);
+
+		if (!hovered_found && MouseInArea(w->position, w->dimensions * w->style.globalScale)) {
+			w->hovered = 1;
+			w->childHovered = 0;
+			for (UIWindow* c : w->children) {
+				vec2 scrollBarAdjust = vec2((CanScrollY() ? style.scrollBarYWidth : 0), (CanScrollX() ? style.scrollBarXHeight : 0));
+				vec2 visRegionStart = vec2(Max(w->x, c->x), Max(w->y, c->y));
+				vec2 visRegionEnd = vec2(Min(w->x + w->width - (CanScrollY() ? style.scrollBarYWidth : 0), c->x + c->width), Min(w->y + w->height - (CanScrollX() ? style.scrollBarXHeight : 0), c->y + c->height));
+				vec2 childVisibleRegion = visRegionEnd - visRegionStart;
+				c->visibleRegionStart = visRegionStart;
+				c->visibleRegionSize = childVisibleRegion;
+				if (MouseInArea(visRegionStart, childVisibleRegion * style.globalScale)) {
+					w->hovered = 0;
+					w->childHovered = 1;
+					c->hovered = 1;
+					break;
+				}
+			}
+			hovered_found = 1;
+		}
+		else {
+			w->hovered = 0;
+			//this kind of sucks
+			for (UIWindow* c : w->children) c->hovered = 0;
+		}
+	}
+}
+
 //this function is checked in UI::Update, while the other 3 are checked per window
 void CheckWindowsForFocusInputs() {
+	//special case where we always check for metrics first since it draws last
+	
 	for (int i = windows.count - 1; i > 0; i--) {
 		UIWindow* w = *windows.atIdx(i);
 		w->focused = 0;
@@ -1878,7 +2010,7 @@ void CheckWindowsForFocusInputs() {
 				w->focused = 1;
 				break;
 			}
-			else if (w->hovered && ((w->flags & UIWindowFlags_FocusOnHover) ? 1 : DeshInput->LMousePressed())) {
+			else if ((w->hovered || w->childHovered) && ((w->flags & UIWindowFlags_FocusOnHover) ? 1 : DeshInput->LMousePressed())) {
 				(*windows.data.last)->hovered = 0;
 				w->focused = 1;
 				for (int move = i; move < windows.count - 1; move++)
@@ -1887,6 +2019,7 @@ void CheckWindowsForFocusInputs() {
 			}
 		}
 	}
+	
 }
 
 void CheckWindowForResizingInputs(UIWindow* window) {
@@ -1923,6 +2056,7 @@ void CheckWindowForResizingInputs(UIWindow* window) {
 			mouse = mp;
 			wdims = window->dimensions;
 			wpos = window->position;
+			SetFocusedWindow(window);
 			SetResizingInput;
 		}
 		
@@ -2025,6 +2159,7 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
 				if (initial) {
 					offset = draggerpos - DeshInput->mousePos;
 					initial = false;
+					SetFocusedWindow(window);
 					SetScrollingInput;
 					vscroll = 1;
 				}
@@ -2056,6 +2191,7 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
 				if (initial) {
 					offset = draggerpos - DeshInput->mousePos;
 					initial = false;
+					SetFocusedWindow(window);
 					hscroll = 1;
 					SetScrollingInput;
 				}
@@ -2094,6 +2230,7 @@ void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {
 			SetDraggingInput;
 			mouseOffset = window->position - DeshInput->mousePos;
 			beingDragged = true;
+			SetFocusedWindow(window);
 		}
 		if (beingDragged) {
 			window->position = DeshInput->mousePos + mouseOffset;
@@ -2154,13 +2291,30 @@ void UI::BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags) {
 	//check if were making a new child or working with one we already know
 	if (parent->children.has(name)) {
 		item->size = parent->children[name]->dimensions;
+		
+		
+
+		if (NextWinSize.x != -1 || NextWinSize.y != 0) {
+			if (NextWinSize.x == MAX_F32)
+				item->size.x = MarginedRight() - item->position.x;
+			else if (NextWinSize.x == -1) {}
+			else item->size.x = NextWinSize.x;
+
+			if (NextWinSize.y == MAX_F32)
+				item->size.y = MarginedBottom() - item->position.x;
+			else if (NextWinSize.y == -1) {}
+			else item->size.y = NextWinSize.y;
+		}
+
+		NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
+		
 		AdvanceCursor(item);
 		
 		curwin = parent->children[name];
+		curwin->dimensions = item->size;
 		curwin->cursor = vec2(0, 0);
-		if (NextWinPos.x != -1) curwin->position = NextWinPos;
-		if (NextWinSize.x != -1) curwin->dimensions = NextWinSize;
-		NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
+		if (NextWinPos.x != -1) { curwin->position = NextWinPos; }
+		
 		
 	}
 	else {
@@ -2261,51 +2415,54 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
 }
 #endif
 
-void UI::End() {
+void WindowEndBehavoir() {
 	Assert(windowStack.size() > 1, "Attempted to end the base window");
 	Assert(!rowInProgress, "Attempted to end a window with a Row in progress! (Did you forget to call EndRow()?");
-	
+
 	UIItem* preitem = BeginItem(UIItemType_PreItems);
 	UIItem* postitem = BeginItem(UIItemType_PostItems);
-	
+
 	preitem->position = vec2::ZERO;
 	postitem->position = vec2::ZERO;
-	
+
 	vec2 mp = DeshInput->mousePos;
-	
+
 	curwin->minSizeForFit = CalcWindowMinSize();
 	vec2 minSizeForFit = curwin->minSizeForFit;
-	
-	if (WinHasFlag(UIWindowFlags_FitAllElements)) 
+
+	if (WinHasFlag(UIWindowFlags_FitAllElements))
 		curwin->dimensions = minSizeForFit;
-	
+
 	b32 xCanScroll = CanScrollX();
 	b32 yCanScroll = CanScrollY();
-	
-	
-	//check if window is hovered, or if its children are hovered
-	if (Math::PointInRectangle(mp, curwin->position, curwin->dimensions * style.globalScale)) {
-		curwin->hovered = 1;
-		for (UIWindow* c : curwin->children) {
-			vec2 scrollBarAdjust = vec2((yCanScroll ? style.scrollBarYWidth : 0), (xCanScroll ? style.scrollBarXHeight : 0));
-			vec2 visRegionStart = vec2(Max(curwin->x, c->x), Max(curwin->y, c->y));
-			vec2 visRegionEnd = vec2(Min(curwin->x + curwin->width - (yCanScroll ? style.scrollBarYWidth : 0), c->x + c->width), Min(curwin->y + curwin->height - (xCanScroll ? style.scrollBarXHeight : 0), c->y + c->height));
-			vec2 childVisibleRegion = visRegionEnd - visRegionStart;
-			c->visibleRegionStart = visRegionStart;
-			c->visibleRegionSize = childVisibleRegion;
-			if (Math::PointInRectangle(mp, visRegionStart, childVisibleRegion * style.globalScale)) {
-				curwin->hovered = 0;
-				break;
-			}
-		}
-	} else curwin->hovered = 0;
-	
+
+
+	////check if window is hovered, or if its children are hovered
+	//if (Math::PointInRectangle(mp, curwin->position, curwin->dimensions * style.globalScale)) {
+	//	curwin->hovered = 1;
+	//	curwin->childHovered = 0;
+	//	for (UIWindow* c : curwin->children) {
+	//		vec2 scrollBarAdjust = vec2((yCanScroll ? style.scrollBarYWidth : 0), (xCanScroll ? style.scrollBarXHeight : 0));
+	//		vec2 visRegionStart = vec2(Max(curwin->x, c->x), Max(curwin->y, c->y));
+	//		vec2 visRegionEnd = vec2(Min(curwin->x + curwin->width - (yCanScroll ? style.scrollBarYWidth : 0), c->x + c->width), Min(curwin->y + curwin->height - (xCanScroll ? style.scrollBarXHeight : 0), c->y + c->height));
+	//		vec2 childVisibleRegion = visRegionEnd - visRegionStart;
+	//		c->visibleRegionStart = visRegionStart;
+	//		c->visibleRegionSize = childVisibleRegion;
+	//		if (Math::PointInRectangle(mp, visRegionStart, childVisibleRegion * style.globalScale)) {
+	//			curwin->hovered = 0;
+	//			curwin->childHovered = 1;
+	//			break;
+	//		}
+	//	}
+	//}
+	//else curwin->hovered = 0;
+
 	if (!inputupon) {
 		CheckWindowForScrollingInputs(curwin);
 		CheckWindowForResizingInputs(curwin);
 		CheckWindowForDragInputs(curwin);
 	}
-	
+
 	//check to see if the elements we have drawn so far have gone beyond the window's size
 	//and allow scrolling if it did, as well as define a max scrolling amount
 	//also draw the scroll bar if allowed
@@ -2316,7 +2473,7 @@ void UI::End() {
 			f32 scrollbarheight = ScrollBaredBottom() - ScrollBaredTop();
 			f32 draggerheight = scrollbarheight * scrollbarheight / minSizeForFit.y;
 			vec2 draggerpos(ScrollBaredRight(), (scrollbarheight - draggerheight) * curwin->scy / curwin->maxScroll.y + BorderedTop());
-			
+
 			b32 scbgactive = MouseInWinArea(vec2(ScrollBaredRight(), BorderedTop()), vec2(style.scrollBarYWidth, scrollbarheight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(style.scrollBarYWidth, draggerheight));
 
@@ -2327,7 +2484,7 @@ void UI::End() {
 				drawCmd.dimensions = vec2(style.scrollBarYWidth, scrollbarheight);
 				postitem->drawCmds.add(drawCmd);
 			}
-			
+
 			{//scroll dragger
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 				drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
@@ -2335,7 +2492,7 @@ void UI::End() {
 				drawCmd.dimensions = vec2(style.scrollBarYWidth, draggerheight);
 				postitem->drawCmds.add(drawCmd);
 			}
-			
+
 			//if both scroll bars are active draw a little square to obscure the empty space 
 			if (CanScrollX()) {
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
@@ -2345,9 +2502,10 @@ void UI::End() {
 				postitem->drawCmds.add(drawCmd);
 			}
 		}
-	} else curwin->maxScroll.y = 0;
-	
-	
+	}
+	else curwin->maxScroll.y = 0;
+
+
 	//do the same but for x
 	if (!WinHasFlag(UIWindowFlags_NoScrollX) && CanScrollX()) {
 		curwin->maxScroll.x = minSizeForFit.x - curwin->dimensions.x + (yCanScroll ? style.scrollBarYWidth : 0);
@@ -2355,7 +2513,7 @@ void UI::End() {
 			f32 scrollbarwidth = ScrollBaredRight() - ScrollBaredLeft();
 			f32 draggerwidth = scrollbarwidth * curwin->dimensions.x / minSizeForFit.x;
 			vec2 draggerpos((scrollbarwidth - draggerwidth) * curwin->scx / curwin->maxScroll.x, ScrollBaredBottom());
-			
+
 			b32 scbgactive = MouseInWinArea(vec2(ScrollBaredBottom(), BorderedLeft()), vec2(scrollbarwidth, style.scrollBarXHeight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(draggerwidth, style.scrollBarXHeight));
 
@@ -2366,165 +2524,7 @@ void UI::End() {
 				drawCmd.dimensions = vec2(scrollbarwidth, style.scrollBarXHeight);
 				postitem->drawCmds.add(drawCmd);
 			}
-			
-			{//scroll dragger
-				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-				drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
-				drawCmd.position = draggerpos;
-				drawCmd.dimensions = vec2(draggerwidth, style.scrollBarXHeight);
-				postitem->drawCmds.add(drawCmd);
-			}
-		}
-	} else curwin->maxScroll.x = 0;
-	
-	
-	//if the window isn't invisible draw things that havent been disabled
-	if (!WinHasFlags(UIWindowFlags_Invisible)) {
-		//draw background
-		if (!WinHasFlag(UIWindowFlags_NoBackground) && !curwin->minimized) {
-			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle}; 
-			drawCmd.position = vec2::ZERO;
-			drawCmd.dimensions = curwin->dimensions;
-			drawCmd.color = style.colors[UIStyleCol_WindowBg];
-			
-			preitem->drawCmds.add(drawCmd); 
-		}
-		
-		//draw border
-		if (!WinHasFlag(UIWindowFlags_NoBorder) && !curwin->minimized) {
-			UIDrawCmd drawCmd{ UIDrawType_Rectangle}; //inst 58
-			drawCmd.color = style.colors[UIStyleCol_Border];
-			drawCmd.position =  vec2::ONE * ceil(style.windowBorderSize / 2);
-			drawCmd.dimensions = curwin->dimensions - vec2::ONE * ceil(style.windowBorderSize);
-			drawCmd.thickness = style.windowBorderSize;
-			postitem->drawCmds.add(drawCmd);
-		}
-	}
-	
-	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
-	curwin->style = style;
-	
-	curwin->creation_time = TIMER_END(wincreate);
-	
-	//update stored window with new window state
-	curwin = *windowStack.last;
-	windowStack.pop();
-}
 
-void UI::EndChild() {
-	Assert(windowStack.size() > 1, "Attempted to end the base window");
-	Assert(!rowInProgress, "Attempted to end a window with a Row in progress! (Did you forget to call EndRow()?)");
-	
-	UIItem* preitem = BeginItem(UIItemType_PreItems);
-	UIItem* postitem = BeginItem(UIItemType_PostItems);
-	
-	vec2 mp = DeshInput->mousePos;
-	
-	vec2 minSizeForFit = CalcWindowMinSize();
-	curwin->minSizeForFit = minSizeForFit;
-	
-	if (WinHasFlag(UIWindowFlags_FitAllElements))
-		curwin->dimensions = minSizeForFit;
-	
-	b32 xCanScroll = CanScrollX();
-	b32 yCanScroll = CanScrollY();
-	
-	//check if window is hovered, or if its children are hovered
-	if (Math::PointInRectangle(mp, curwin->visibleRegionStart, curwin->visibleRegionSize * style.globalScale)) {
-		curwin->hovered = 1;
-		for (UIWindow* c : curwin->children) {
-			vec2 scrollBarAdjust = vec2((yCanScroll ? style.scrollBarYWidth : 0), (xCanScroll ? style.scrollBarXHeight : 0));
-			vec2 visRegionStart = vec2(Max(curwin->x, c->x), Max(curwin->y, c->y));
-			vec2 visRegionEnd = vec2(Min(curwin->x + curwin->width, c->x + c->width), Min(curwin->y + curwin->height, c->y + c->height)) - scrollBarAdjust;
-			vec2 childVisibleRegion = visRegionEnd - visRegionStart;
-			c->visibleRegionStart = visRegionStart;
-			c->visibleRegionSize = childVisibleRegion;
-			if (Math::PointInRectangle(mp, visRegionStart, childVisibleRegion * style.globalScale)) {
-				curwin->hovered = 0;
-				break;
-			}
-		}
-	}
-	else curwin->hovered = 0;
-	
-	if (!inputupon) {
-		CheckWindowForScrollingInputs(curwin);
-		CheckWindowForResizingInputs(curwin);
-		CheckWindowForDragInputs(curwin);
-	}
-	
-	//check to see if the elements we have drawn so far have gone beyond the window's size
-	//and allow scrolling if it did, as well as define a max scrolling amount
-	//also draw the scroll bar if allowed
-	//TODO(sushi) clean up this code, it really needs it. here and in the update function
-	if (!WinHasFlag(UIWindowFlags_NoScrollY) && yCanScroll) {
-		curwin->maxScroll.y = minSizeForFit.y - curwin->dimensions.y + (CanScrollX() ? style.scrollBarXHeight : 0);
-		if (!WinHasFlag(UIWindowFlags_NoScrollBarY)) {
-			f32 scrollbarheight = (CanScrollX() ? curwin->height - style.scrollBarXHeight : curwin->height);
-			f32 draggerheight = scrollbarheight * scrollbarheight / minSizeForFit.y;
-			vec2 draggerpos(curwin->dimensions.x - style.scrollBarYWidth, (scrollbarheight - draggerheight) * curwin->scy / curwin->maxScroll.y);
-			
-			b32 scbgactive = Math::PointInRectangle(DeshInput->mousePos,
-													curwin->position.xAdd(curwin->dimensions.x - style.scrollBarYWidth),
-													vec2(style.scrollBarYWidth, scrollbarheight));
-			
-			b32 scdractive = Math::PointInRectangle(DeshInput->mousePos,
-													draggerpos + curwin->position,
-													vec2(style.scrollBarYWidth, draggerheight));
-			
-			{//scroll bg
-				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-				drawCmd.color = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
-				drawCmd.position = vec2(curwin->dimensions.x - style.scrollBarYWidth, 0);
-				drawCmd.dimensions = vec2(style.scrollBarYWidth, scrollbarheight);
-				postitem->drawCmds.add(drawCmd);
-			}
-			
-			{//scroll dragger
-				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-				drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
-				drawCmd.position = draggerpos;
-				drawCmd.dimensions = vec2(style.scrollBarYWidth, draggerheight);
-				postitem->drawCmds.add(drawCmd);
-			}
-			
-			//if both scroll bars are active draw a little square to obscure the empty space 
-			if (CanScrollX()) {
-				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-				drawCmd.color = style.colors[UIStyleCol_WindowBg];
-				drawCmd.position = vec2(curwin->dimensions.x - style.scrollBarYWidth, scrollbarheight);
-				drawCmd.dimensions = vec2(style.scrollBarYWidth, style.scrollBarXHeight);
-				postitem->drawCmds.add(drawCmd);
-			}
-		}
-	}
-	else curwin->maxScroll.y = 0;
-	
-	
-	//do the same but for x
-	if (!WinHasFlag(UIWindowFlags_NoScrollX) && CanScrollX()) {
-		curwin->maxScroll.x = minSizeForFit.x - curwin->dimensions.x + (CanScrollY() ? style.scrollBarYWidth : 0);
-		if (!WinHasFlag(UIWindowFlags_NoScrollBarX)) {
-			f32 scrollbarwidth = (CanScrollY() ? curwin->width - style.scrollBarYWidth : curwin->width);
-			f32 draggerwidth = scrollbarwidth * curwin->dimensions.x / minSizeForFit.x;
-			vec2 draggerpos((scrollbarwidth - draggerwidth) * curwin->scx / curwin->maxScroll.x, curwin->dimensions.y - style.scrollBarXHeight);
-			
-			b32 scbgactive = Math::PointInRectangle(DeshInput->mousePos,
-													curwin->position.yAdd(scrollbarwidth - style.scrollBarXHeight),
-													vec2(scrollbarwidth, style.scrollBarXHeight));
-			
-			b32 scdractive = Math::PointInRectangle(DeshInput->mousePos,
-													draggerpos + curwin->position,
-													vec2(draggerwidth, style.scrollBarXHeight));
-			
-			{//scroll bg
-				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
-				drawCmd.color = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
-				drawCmd.position = vec2(0, curwin->dimensions.y - style.scrollBarXHeight);
-				drawCmd.dimensions = vec2(scrollbarwidth, style.scrollBarXHeight);
-				postitem->drawCmds.add(drawCmd);
-			}
-			
 			{//scroll dragger
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 				drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
@@ -2535,38 +2535,203 @@ void UI::EndChild() {
 		}
 	}
 	else curwin->maxScroll.x = 0;
-	
+
+
 	//if the window isn't invisible draw things that havent been disabled
 	if (!WinHasFlags(UIWindowFlags_Invisible)) {
 		//draw background
-		if (!(curwin->flags & UIWindowFlags_NoBackground) && !curwin->minimized) {
-			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
+		if (!WinHasFlag(UIWindowFlags_NoBackground) && !curwin->minimized) {
+			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 			drawCmd.position = vec2::ZERO;
 			drawCmd.dimensions = curwin->dimensions;
 			drawCmd.color = style.colors[UIStyleCol_WindowBg];
-			
+
 			preitem->drawCmds.add(drawCmd);
 		}
-		
+
 		//draw border
 		if (!WinHasFlag(UIWindowFlags_NoBorder) && !curwin->minimized) {
-			UIDrawCmd drawCmd{ UIDrawType_Rectangle}; //inst 58
+			UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
 			drawCmd.color = style.colors[UIStyleCol_Border];
-			drawCmd.position = vec2::ONE;
-			drawCmd.dimensions = curwin->dimensions - vec2::ONE;
+			drawCmd.position = vec2::ONE * ceil(style.windowBorderSize / 2);
+			drawCmd.dimensions = curwin->dimensions - vec2::ONE * ceil(style.windowBorderSize);
+			drawCmd.thickness = style.windowBorderSize;
 			postitem->drawCmds.add(drawCmd);
 		}
 	}
-	
-	curwin->style = style;
-	
+
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
-	
-	indentStack.pop();
-	
+	curwin->style = style;
+
+	curwin->creation_time = TIMER_END(wincreate);
+
 	//update stored window with new window state
 	curwin = *windowStack.last;
 	windowStack.pop();
+}
+
+void UI::End() {
+	WindowEndBehavoir();
+}
+
+void UI::EndChild() {
+	//Assert(windowStack.size() > 1, "Attempted to end the base window");
+	//Assert(!rowInProgress, "Attempted to end a window with a Row in progress! (Did you forget to call EndRow()?)");
+	//
+	//UIItem* preitem = BeginItem(UIItemType_PreItems);
+	//UIItem* postitem = BeginItem(UIItemType_PostItems);
+	//
+	//vec2 mp = DeshInput->mousePos;
+	//
+	//vec2 minSizeForFit = CalcWindowMinSize();
+	//curwin->minSizeForFit = minSizeForFit;
+	//
+	//if (WinHasFlag(UIWindowFlags_FitAllElements))
+	//	curwin->dimensions = minSizeForFit;
+	//
+	//b32 xCanScroll = CanScrollX();
+	//b32 yCanScroll = CanScrollY();
+	//
+	////check if window is hovered, or if its children are hovered
+	//if (Math::PointInRectangle(mp, curwin->visibleRegionStart, curwin->visibleRegionSize * style.globalScale)) {
+	//	curwin->hovered = 1;
+	//	for (UIWindow* c : curwin->children) {
+	//		vec2 scrollBarAdjust = vec2((yCanScroll ? style.scrollBarYWidth : 0), (xCanScroll ? style.scrollBarXHeight : 0));
+	//		vec2 visRegionStart = vec2(Max(curwin->x, c->x), Max(curwin->y, c->y));
+	//		vec2 visRegionEnd = vec2(Min(curwin->x + curwin->width, c->x + c->width), Min(curwin->y + curwin->height, c->y + c->height)) - scrollBarAdjust;
+	//		vec2 childVisibleRegion = visRegionEnd - visRegionStart;
+	//		c->visibleRegionStart = visRegionStart;
+	//		c->visibleRegionSize = childVisibleRegion;
+	//		if (Math::PointInRectangle(mp, visRegionStart, childVisibleRegion * style.globalScale)) {
+	//			curwin->hovered = 0;
+	//			break;
+	//		}
+	//	}
+	//}
+	//else curwin->hovered = 0;
+	//
+	//if (!inputupon) {
+	//	CheckWindowForScrollingInputs(curwin);
+	//	CheckWindowForResizingInputs(curwin);
+	//	CheckWindowForDragInputs(curwin);
+	//}
+	//
+	////check to see if the elements we have drawn so far have gone beyond the window's size
+	////and allow scrolling if it did, as well as define a max scrolling amount
+	////also draw the scroll bar if allowed
+	////TODO(sushi) clean up this code, it really needs it. here and in the update function
+	//if (!WinHasFlag(UIWindowFlags_NoScrollY) && yCanScroll) {
+	//	curwin->maxScroll.y = minSizeForFit.y - curwin->dimensions.y + (CanScrollX() ? style.scrollBarXHeight : 0);
+	//	if (!WinHasFlag(UIWindowFlags_NoScrollBarY)) {
+	//		f32 scrollbarheight = (CanScrollX() ? curwin->height - style.scrollBarXHeight : curwin->height);
+	//		f32 draggerheight = scrollbarheight * scrollbarheight / minSizeForFit.y;
+	//		vec2 draggerpos(curwin->dimensions.x - style.scrollBarYWidth, (scrollbarheight - draggerheight) * curwin->scy / curwin->maxScroll.y);
+	//		
+	//		b32 scbgactive = Math::PointInRectangle(DeshInput->mousePos,
+	//												curwin->position.xAdd(curwin->dimensions.x - style.scrollBarYWidth),
+	//												vec2(style.scrollBarYWidth, scrollbarheight));
+	//		
+	//		b32 scdractive = Math::PointInRectangle(DeshInput->mousePos,
+	//												draggerpos + curwin->position,
+	//												vec2(style.scrollBarYWidth, draggerheight));
+	//		
+	//		{//scroll bg
+	//			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+	//			drawCmd.color = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
+	//			drawCmd.position = vec2(curwin->dimensions.x - style.scrollBarYWidth, 0);
+	//			drawCmd.dimensions = vec2(style.scrollBarYWidth, scrollbarheight);
+	//			postitem->drawCmds.add(drawCmd);
+	//		}
+	//		
+	//		{//scroll dragger
+	//			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+	//			drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
+	//			drawCmd.position = draggerpos;
+	//			drawCmd.dimensions = vec2(style.scrollBarYWidth, draggerheight);
+	//			postitem->drawCmds.add(drawCmd);
+	//		}
+	//		
+	//		//if both scroll bars are active draw a little square to obscure the empty space 
+	//		if (CanScrollX()) {
+	//			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+	//			drawCmd.color = style.colors[UIStyleCol_WindowBg];
+	//			drawCmd.position = vec2(curwin->dimensions.x - style.scrollBarYWidth, scrollbarheight);
+	//			drawCmd.dimensions = vec2(style.scrollBarYWidth, style.scrollBarXHeight);
+	//			postitem->drawCmds.add(drawCmd);
+	//		}
+	//	}
+	//}
+	//else curwin->maxScroll.y = 0;
+	//
+	//
+	////do the same but for x
+	//if (!WinHasFlag(UIWindowFlags_NoScrollX) && CanScrollX()) {
+	//	curwin->maxScroll.x = minSizeForFit.x - curwin->dimensions.x + (CanScrollY() ? style.scrollBarYWidth : 0);
+	//	if (!WinHasFlag(UIWindowFlags_NoScrollBarX)) {
+	//		f32 scrollbarwidth = (CanScrollY() ? curwin->width - style.scrollBarYWidth : curwin->width);
+	//		f32 draggerwidth = scrollbarwidth * curwin->dimensions.x / minSizeForFit.x;
+	//		vec2 draggerpos((scrollbarwidth - draggerwidth) * curwin->scx / curwin->maxScroll.x, curwin->dimensions.y - style.scrollBarXHeight);
+	//		
+	//		b32 scbgactive = Math::PointInRectangle(DeshInput->mousePos,
+	//												curwin->position.yAdd(scrollbarwidth - style.scrollBarXHeight),
+	//												vec2(scrollbarwidth, style.scrollBarXHeight));
+	//		
+	//		b32 scdractive = Math::PointInRectangle(DeshInput->mousePos,
+	//												draggerpos + curwin->position,
+	//												vec2(draggerwidth, style.scrollBarXHeight));
+	//		
+	//		{//scroll bg
+	//			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+	//			drawCmd.color = style.colors[UIStyleCol_ScrollBarBg]; //TODO(sushi) add active/hovered scrollbarbg colors
+	//			drawCmd.position = vec2(0, curwin->dimensions.y - style.scrollBarXHeight);
+	//			drawCmd.dimensions = vec2(scrollbarwidth, style.scrollBarXHeight);
+	//			postitem->drawCmds.add(drawCmd);
+	//		}
+	//		
+	//		{//scroll dragger
+	//			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
+	//			drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
+	//			drawCmd.position = draggerpos;
+	//			drawCmd.dimensions = vec2(draggerwidth, style.scrollBarXHeight);
+	//			postitem->drawCmds.add(drawCmd);
+	//		}
+	//	}
+	//}
+	//else curwin->maxScroll.x = 0;
+	//
+	////if the window isn't invisible draw things that havent been disabled
+	//if (!WinHasFlags(UIWindowFlags_Invisible)) {
+	//	//draw background
+	//	if (!(curwin->flags & UIWindowFlags_NoBackground) && !curwin->minimized) {
+	//		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle};
+	//		drawCmd.position = vec2::ZERO;
+	//		drawCmd.dimensions = curwin->dimensions;
+	//		drawCmd.color = style.colors[UIStyleCol_WindowBg];
+	//		
+	//		preitem->drawCmds.add(drawCmd);
+	//	}
+	//	
+	//	//draw border
+	//	if (!WinHasFlag(UIWindowFlags_NoBorder) && !curwin->minimized) {
+	//		UIDrawCmd drawCmd{ UIDrawType_Rectangle}; //inst 58
+	//		drawCmd.color = style.colors[UIStyleCol_Border];
+	//		drawCmd.position = vec2::ONE;
+	//		drawCmd.dimensions = curwin->dimensions - vec2::ONE;
+	//		postitem->drawCmds.add(drawCmd);
+	//	}
+	//}
+	//
+	//curwin->style = style;
+	//
+	//NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
+	//
+	//indentStack.pop();
+	//
+	////update stored window with new window state
+	//curwin = *windowStack.last;
+	//windowStack.pop();
+	WindowEndBehavoir();
+	indentStack.pop();
 }
 
 void UI::SetNextWindowPos(vec2 pos) {
@@ -2611,13 +2776,13 @@ UIWindow* DisplayMetrics() {
 	
 	array<UIWindow*> winsorted;
 	for (UIWindow* win : windows) {
-		if (!(win->name == "METRICS")) {
+		//if (!(win->name == "METRICS")) {
 			if (win->render_time > slomo->render_time)     slomo = win;
 			if (win->render_time < quick->render_time)     quick = win;
 			if (win->items_count > mostitems->items_count) mostitems = win;
 			if (win->name.count > longname->name.count)   longname = win;
 			winsorted.add(win);
-		}
+		//}
 	}
 	
 	bubble_sort(winsorted, [](UIWindow* win1, UIWindow* win2) {return win1->name[0] > win2->name[0]; });
@@ -2704,6 +2869,11 @@ UIWindow* DisplayMetrics() {
 	EndRow();
 	
 	if (debugee) {
+
+		if (Button("Set Focused")) {
+			SetFocusedWindow(debugee);
+		}
+
 		if (BeginHeader("Window Vars")) {
 			BeginRow(2, style.fontHeight * 1.2);
 			RowSetupColumnWidths({ CalcTextSize("Max Item Width: ").x , 10 });
@@ -2723,12 +2893,26 @@ UIWindow* DisplayMetrics() {
 			EndRow();
 			
 			if (BeginHeader("Items")) {
-				BeginChild("METRICSItems", vec2(curwin->dimensions.x - style.windowPadding.x * 2, 300)); {
+				SetNextWindowSize(vec2(MAX_F32, 300));
+				BeginChild("METRICSItems", vec2(0,0)); {
+					BeginRow(2, style.buttonHeightRelToFont * style.fontHeight);
+					RowSetupRelativeColumnWidths({ 1,1 });
 					forI(UI_WINDOW_ITEM_LAYERS) {
 						for (UIItem& item : debugee->items[i]) {
 							Text(UIItemTypeStrs[item.type]);
+							if (MouseInArea(GetLastItemScreenPos(), GetLastItemSize())) {
+								DebugRect(debugee->position + item.position, item.size);
+							}
+							
+							if (Button("break")) {
+								break_window = debugee;
+								item_idx = item.item_idx;
+								item_layer = item.item_layer;
+							}
+
 						}
 					}
+					EndRow();
 				}EndChild();
 				EndHeader();
 			}
@@ -3432,6 +3616,7 @@ void UI::Update() {
 	
 	
 	//windows input checking functions
+	CheckForHoveredWindow();
 	CheckWindowsForFocusInputs();
 	
 	
@@ -3444,15 +3629,26 @@ void UI::Update() {
 	if (!cursorWasSet) DeshWindow->SetCursor(CursorType_Arrow);
 	cursorWasSet = 0;
 	
+
+#ifdef DESHI_INTERNAL
+	//clear break vars in debug mode
+	break_window = 0;
+	item_idx = -1;
+	item_layer = -1;
+#endif
+
+	if (show_metrics) {
+		DisplayMetrics();
+		//DrawWindow(DisplayMetrics());
+		show_metrics = 0;
+	}
+
 	//draw windows in order 
 	for (UIWindow* p : windows) {
 		DrawWindow(p);
 	}
 	
-	if (show_metrics) {
-		DrawWindow(DisplayMetrics());
-		show_metrics = 0;
-	}
+	
 	
 	//it should be safe to do this any time the mouse is released...
 	if (DeshInput->LMouseReleased()) { AllowInputs; }
@@ -3475,6 +3671,8 @@ void UI::Update() {
 			}
 		}
 	}
+
+
 #endif
 	
 	//draw all debug commands if there are any
