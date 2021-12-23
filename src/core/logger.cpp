@@ -7,8 +7,22 @@ namespace Logger{
 	local u64   last_message_len = 0;
 	local b32   mirror_to_stdout = false;
 	local b32   mirror_to_console = false;
-	local b32   is_logging = false;
-	
+	local b32   is_logging = true;
+
+	void ConsoleMirror(string str, u32 chst) {
+		if (str[0] == '[') {
+			string modified = "{{";
+			u32 rb = str.findFirstChar(']');
+			string tag = str.substr(1, rb - 1);
+			if (rb != string::npos) {
+				modified += "t=" + tag + "}" + str.substr(rb + 2) + "{}}";
+				DeshConsole->LoggerMirror(modified, chst + tag.count + 3);
+				return;
+			}
+		}
+		DeshConsole->LoggerMirror(str, chst);
+	}
+
 	void LogF_(const char* filepath, upt line_number, const char* tag, const char* fmt, ...){
 		if (!is_logging) return;
 		int cursor = (tag && *tag != 0) ? snprintf(log_buffer, LOG_BUFFER_SIZE, "[%s] ", string::toUpper(tag).str) : 0;
@@ -18,33 +32,37 @@ namespace Logger{
 		if(mirror_to_stdout) puts(log_buffer);
 		log_buffer[cursor] = '\n'; log_buffer[cursor+1] = '\0';
 		cursor += 1;
-		
+		u32 chst = ftell(file);
 		fputs(log_buffer, file);
 		last_message_len = cursor;
-		if(mirror_to_console) DeshConsole->LoggerMirror(to_string(LastMessage()), ftell(file));
+		if (mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)) ConsoleMirror(toStr(LastMessage()), chst);
 	}
 	
 	inline void LogInternal(string& str){
 		if (!is_logging) return;
 		if(mirror_to_stdout) puts(str.str);
 		str += "\n";
+		u32 chst = ftell(file);
 		fputs(str.str, file);
 		memcpy(log_buffer, str.str, str.count);
 		last_message_len = str.count;
-		if(mirror_to_console) DeshConsole->LoggerMirror(str, ftell(file));
+		if (mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)) ConsoleMirror(str, chst);
 	}
 	
 	
 	inline cstring LastMessage(){
 		return cstring{log_buffer,last_message_len};
 	}
-	
-	//just a special function to prevent feedback between console and logger
-	//and to prevent logger from appending a newline
-	void LogFromConsole(string& str) {
+
+	//just a special function called by Console to prevent feedback between 
+	//console and logger and to prevent logger from appending a newline
+	void LogFromConsole(string str) {
 		if (!is_logging) return;
-		if (mirror_to_stdout) puts(str.str);
 		fputs(str.str, file);
+		if (mirror_to_stdout) {
+			if (str.endsWith("\n")) str--;
+			puts(str.str);
+		}
 		memcpy(log_buffer, str.str, str.count);
 		last_message_len = str.count;
 	}
@@ -102,7 +120,7 @@ namespace Logger{
 		setvbuf(file,0,_IONBF,0);
 #endif //DESHI_SLOW
 		
-		is_logging = true;
+		//is_logging = true;
 		Log("deshi","Finished logging initialization in ",TIMER_END(t_s),"ms");
 		mirror_to_console = true; //NOTE this happens after the Log() so it doesnt try calling into the console
 	}

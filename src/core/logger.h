@@ -34,7 +34,7 @@ namespace Logger{
 	void LogInternal(string& msg);
 	cstring LastMessage();
 	
-	void LogFromConsole(string& in);
+	void LogFromConsole(string in);
 	
 	void SetIsLogging(b32 thebooleanforthisfunction);
 	

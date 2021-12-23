@@ -32,6 +32,7 @@ struct string{
 	~string();
 	
 	CHAR&  operator[](u32 idx);
+	CHAR   operator[](u32 idx) const;
 	void   operator= (const CHAR* s);
 	void   operator= (const string& s);
 	void   operator+=(const CHAR* s);
@@ -64,7 +65,10 @@ struct string{
 	u32    CHARCount(CHAR c) const;
 	//returns a substring from the beginning to specifiec CHAR, not including the CHAR
 	string substrToChar(CHAR c) const;
-	
+	b32 beginsWith(const string& s) const;
+	b32 endsWith(const string& s) const;
+	b32 contains(const string& s) const;
+
 	static string eatSpacesLeading(const string& s);
 	static string eatSpacesTrailing(const string& s);
 	static string toUpper(const string& s);
@@ -118,6 +122,11 @@ inline string::~string(){
 ////////////////////
 inline string::CHAR& string::operator[](u32 idx){
 	Assert(idx < count+1);
+	return str[idx];
+}
+
+inline string::CHAR string::operator[](u32 idx) const {
+	Assert(idx < count + 1);
 	return str[idx];
 }
 
@@ -337,6 +346,25 @@ inline string string::substrToChar(CHAR c) const{
 	u32 idx = findFirstChar(c);
 	return (idx != npos) ? *this : string(str, idx); //!TestMe
 }
+
+inline b32 string::beginsWith(const string& s) const{
+	if (s.count > count) return false;
+	return !memcmp(str, s.str, s.count);
+}
+
+inline b32 string::endsWith(const string& s) const{
+	if (s.count > count) return false;
+	return !memcmp(str + (count - s.count), s.str, s.count);
+}
+
+inline b32 string::contains(const string& s) const{
+	if (s.count > count) return false;
+	for (u32 i = 0; i < count - s.count; i++) {
+		if (!memcmp(s.str, str + i, s.count)) return true;
+	}
+	return false;
+}
+
 
 ///////////////////////////
 //// @static functions ////

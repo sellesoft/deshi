@@ -3241,8 +3241,8 @@ void CheckUICmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset,
 		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
 		uiCmdArrays[layer][uiCmdCounts[layer]].textured = textured;
 		uiCmdCounts[layer]++;
-		Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	}
+	Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
 	
 }
 
@@ -3307,16 +3307,19 @@ void Render::FillRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 
 
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
 //straight lines, see below
-void Render::DrawRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawRect2D(vec2 pos, vec2 dimensions, f32 thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
 	if (color.a == 0) return;
 	
-	//top, left, right, bottom
-	DrawLine2D(pos.xAdd(-1), pos + dimensions.ySet(0), 1, color, layer, scissorOffset, scissorExtent);
-	DrawLine2D(pos, pos + dimensions.xSet(0), 1, color, layer, scissorOffset, scissorExtent);
-	DrawLine2D(pos + dimensions, pos + dimensions.ySet(0), 1, color, layer, scissorOffset, scissorExtent);
-	DrawLine2D(pos + dimensions, pos + dimensions.xSet(0).xAdd(-1), 1, color, layer, scissorOffset, scissorExtent);
+	//top left to top right 
+	DrawLine2D(pos.xAdd(-thickness), pos.xAdd(thickness/2)+ dimensions.ySet(0), thickness, color, layer, scissorOffset, scissorExtent);
+	//top left to bottom left
+	DrawLine2D(pos, pos + dimensions.xSet(0), thickness, color, layer, scissorOffset, scissorExtent);
+	//bottom right to top right
+	DrawLine2D(pos + dimensions, pos + dimensions.ySet(0), thickness, color, layer, scissorOffset, scissorExtent);
+	//bottom right to bottom left
+	DrawLine2D((pos + dimensions).xAdd(thickness/2), pos + dimensions.xSet(0).xAdd(-thickness), thickness, color, layer, scissorOffset, scissorExtent);
 	
 	//array<vec2> points{ pos, pos + dimensions.xSet(0), pos + dimensions, pos + dimensions.ySet(0), pos };
 	//DrawLines2D(points, 1, color, layer, scissorOffset, scissorExtent);

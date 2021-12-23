@@ -220,7 +220,7 @@ enum DeshiStage{
 local Flags deshiStage = DS_NONE;
 
 #define AssertDS(stages, ...) Assert((deshiStage & (stages)) == (stages))
-#define IsDeshiModuleLoaded (deshiStage & (stages)) == (stages)
+#define DeshiModuleLoaded(stages) (deshiStage & (stages)) == (stages)
 
 //// core headers ////
 #include "deshi.h"

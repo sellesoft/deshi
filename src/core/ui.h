@@ -458,19 +458,18 @@ struct UIWindow {
 	vec2 visibleRegionStart;
 	vec2 visibleRegionSize;
 	
-	//this is the state of style when End() is called for the window
-	//meaning the style for elements before the last bunch could be different
-	//if the user changes stuff before ending the window and therefore this should be used carefully!!
-	
-	//TODO decide if this is necessary anymore or not since we have style on items now
+	//the state of style when Begin and End are called
 	UIStyle style;
 	
 	
 	//debug information for use with metrics
-	
+#ifdef DESHI_INTERNAL
 	f32 render_time = 0;
 	f32 creation_time = 0;
 	u32 items_count = 0;
+	
+	
+#endif
 	
 	UIWindow() {};
 	
@@ -541,6 +540,7 @@ namespace UI {
 	vec2      GetLastItemPos();
 	vec2      GetLastItemSize();
 	vec2      GetLastItemScreenPos();
+	vec2      GetWindowRemainingSpace();
 	u32       GetCenterLayer();
 	
 	
