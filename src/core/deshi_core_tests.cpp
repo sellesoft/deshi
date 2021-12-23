@@ -41,15 +41,13 @@ function void TEST_deshi_core_io(){
 	DESHI_TEST_CORE_TODO("io");
 }
 
-#include "logging.h"
+#include "logger.h"
 function void TEST_deshi_core_logging(){
 	DESHI_TEST_CORE_TODO("logging");
 }
 
 #include "memory.h"
 function void TEST_deshi_core_memory(){
-	DebugBreakpoint;
-	
 	//arena creation
 	Arena* arena1 = Memory::CreateArena(Kilobytes(4));
 	Assert(arena1);
@@ -66,6 +64,15 @@ function void TEST_deshi_core_memory(){
 	Arena* arena2 = Memory::CreateArena(Kilobytes(16));
 	Arena* arena3 = Memory::CreateArena(Kilobytes(8));
 	Memory::DeleteArena(arena2);
+	
+	//clearing an arena
+	memset(arena1->start, '3', 1024);
+	arena1->cursor += 1024;
+	arena1->used += 1024;
+	Memory::ClearArena(arena1);
+	Assert(*arena1->start == 0);
+	Assert(arena1->cursor == arena1->start);
+	Assert(arena1->used == 0);
 	
 	//filling the gap with arenas
 	arena2 = Memory::CreateArena(Kilobytes(4));
@@ -112,40 +119,67 @@ function void TEST_deshi_core_memory(){
 	
 	//generic reallocation of a big block
 	big_block = Memory::Allocate(Megabytes(8));
+	memset(big_block, 7, Kilobytes(1));
 	big_block = Memory::Reallocate(big_block, Megabytes(16));
 	Memory::ZeroFree(big_block);
 	
 	//generic reallocation of a big block where new size is less than previous
 	big_block = Memory::Allocate(Megabytes(8));
+	memset(big_block, 7, Kilobytes(1));
 	big_block = Memory::Reallocate(big_block, Megabytes(4));
+	Memory::ZeroFree(big_block);
+	
+	//generic reallocation of a big block where new size is the same as previous
+	big_block = Memory::Allocate(Megabytes(8));
+	memset(big_block, 7, Kilobytes(1));
+	big_block = Memory::Reallocate(big_block, Megabytes(8));
 	Memory::ZeroFree(big_block);
 	
 	//generic reallocation of small block into big block
 	string1 = (char*)Memory::Allocate(64);
+	memset(string1, '1', 32);
 	string1 = (char*)Memory::Reallocate(string1, Kilobytes(512));
 	Memory::ZeroFree(string1);
 	
 	//generic reallocation with nothing to the right
 	string1 = (char*)Memory::Allocate(64);
+	memset(string1, '1', 32);
 	string1 = (char*)Memory::Reallocate(string1, 128);
 	Memory::ZeroFree(string1);
 	
 	//generic reallocation with nothing to the right where new size is less than previous
 	string1 = (char*)Memory::Allocate(64);
+	memset(string1, '1', 48);
 	string1 = (char*)Memory::Reallocate(string1, 32);
 	Memory::ZeroFree(string1);
 	
 	//generic rellocation with stuff to the right and needs to move
 	string1 = (char*)Memory::Allocate(64);
+	memset(string1, '1', 32);
 	string2 = (char*)Memory::Allocate(64);
+	memset(string2, '2', 32);
 	string1 = (char*)Memory::Reallocate(string1, 128);
 	Memory::ZeroFree(string1);
 	Memory::ZeroFree(string2);
 	
 	//generic rellocation with stuff to the right where new size is less than previous
 	string1 = (char*)Memory::Allocate(64);
+	memset(string1, '1', 48);
 	string2 = (char*)Memory::Allocate(64);
+	memset(string2, '2', 48);
 	string1 = (char*)Memory::Reallocate(string1, 32);
+	string3 = (char*)Memory::Allocate(16);
+	memset(string3, '3', 8);
+	Memory::ZeroFree(string1);
+	Memory::ZeroFree(string2);
+	Memory::ZeroFree(string3);
+	
+	//generic rellocation with stuff to the right where new size is the same as previous
+	string1 = (char*)Memory::Allocate(64);
+	memset(string1, '1', 32);
+	string2 = (char*)Memory::Allocate(64);
+	memset(string2, '2', 32);
+	string1 = (char*)Memory::Reallocate(string1, 64);
 	Memory::ZeroFree(string1);
 	Memory::ZeroFree(string2);
 	

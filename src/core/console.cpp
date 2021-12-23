@@ -31,9 +31,6 @@ enum Format_ {
 	Colored = 1 << 4,
 }; typedef u32 Format;
 
-#define HasFlag(var, flag) (var & flag)
-#define HasFlags(var, flags) ((var & flags) == flags)
-
 struct Chunk{
 	color color = Color_White;
 	Format format = None;
@@ -46,18 +43,18 @@ struct Chunk{
 
 struct{
 	ring_array<Chunk> dict;
-
+	
 	void add(string to_logger, Chunk chunk) {
 		dict.add(chunk);
-
+		
 		Logger::LogFromConsole(to_logger);
 	}
-
+	
 	//for chunks that have already been logged
 	void add(Chunk chunk) {
 		dict.add(chunk);
 	}
-
+	
 } dictionary;
 
 //state of console
@@ -130,7 +127,7 @@ void ParseMessage(string& input, s32 chstart = -1) {
 		ParsingFormatting,
 		ParsingFormattedChunk
 	}; ParseState state = Init;
-
+	
 	//defines to make customizing syntax easier
 #define ConFormatOpening    (i + 1 < input.count && input[i] == '{' && input[i + 1] == '{')
 #define ConFormatSpecifierClosing   (input[i] == '}')
@@ -139,15 +136,15 @@ void ParseMessage(string& input, s32 chstart = -1) {
 #define ResetChunk chunk = Chunk()
 #define AddChunk if(chstart == -1){ string tl(chunk_start, chunk.strsize); dictionary.add(tl, chunk); } else dictionary.add(chunk);
 #define AddChunkWithNewline if(chstart == -1) { string tl(chunk_start, chunk.strsize); dictionary.add(tl + "\n", chunk); } else dictionary.add(chunk);
-
+	
 	char* formatting_start = 0;
 	char* specifier_start = 0;
 	char* chunk_start = 0;
-
+	
 	Chunk chunk;
-
+	
 	u32 charstart = (chstart == -1 ? ftell(buffer) : chstart);
-
+	
 	for (int i = 0; i < input.count; i++) {
 #if 0
 		//leaving this here for whenever this function goes wrong again,
@@ -208,7 +205,7 @@ void ParseMessage(string& input, s32 chstart = -1) {
 			}break;
 			case ParsingFormatting: {
 				auto parse_specifier = [&](string& specifier) {
-					if (!HasFlags(chunk.format, (Warning | Error))) {
+					if (!HasAllFlags(chunk.format, (Warning | Error))) {
 						if (specifier == "e") {
 							chunk.format |= Error;
 							return;
@@ -259,7 +256,7 @@ void ParseMessage(string& input, s32 chstart = -1) {
 					AddChunk;
 					//dictionary.add(formatting_start, chunk);
 					charstart += chunk.strsize + 1;
-
+					
 				}
 				else if (i == input.count - 1) {
 					//we've reached the end of the string
@@ -334,28 +331,26 @@ void Console::ChangeState(ConsoleState new_state) {
 void Console::Init() {
 	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
 	AssertDS(DS_LOGGER, "Attempt to load Console without loading Logger first");
-	deshiStage |= DS_CONSOLE;
-
+	
 	TIMER_START(t_s);
 	buffer = Logger::GetFilePtr();
-
+	
 	dictionary.dict.init(DICT_SIZE, deshi_allocator);
-
-
-
+	
+	deshiStage |= DS_CONSOLE;
 	Log("deshi", "Finished console initialization in ", TIMER_END(t_s), "ms");
 }
 
 void Console::Update() {
 	using namespace UI;
 	uistyle = &GetStyle(); //TODO(sushi) try to get this only once
-
+	
 	Begin("deshiConsole", vec2::ZERO, vec2(DeshWindow->width, DeshWindow->height * open_max_percent), flags);
 	conmain = GetWindow(); //TODO(sushi) try to get this only once
-
+	
 	BeginChild("deshiConsoleTerminal", (conmain->dimensions - 2 * uistyle->windowPadding).yAdd(-(uistyle->fontHeight * 1.3 + uistyle->itemSpacing.y)), flags);
 	conterm = GetWindow(); //TODO(sushi) try to get this only once
-
+	
 	PushVar(UIStyleVar_WindowPadding, vec2(5, 0));
 	PushVar(UIStyleVar_ItemSpacing, vec2(0, 0));
 	char toprint[1024];
@@ -367,7 +362,7 @@ void Console::Update() {
 		toprint[dictionary.dict[i].strsize] = 0;
 		
 		//adjust what we're going to print based on formatting
-
+		
 		PushColor(UIStyleCol_Text, colstr.color);
 		Text(toprint);
 		if (!colstr.eol && i != (dictionary.dict.count - 1)) SameLine();
@@ -375,7 +370,7 @@ void Console::Update() {
 		PopColor();
 	}
 	PopVar(2);
-
+	
 	EndChild();
 	PushColor(UIStyleCol_WindowBg, color(0, 25, 18));
 	End();

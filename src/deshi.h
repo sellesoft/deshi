@@ -33,8 +33,6 @@ namespace deshi {
 	bool shouldClose();
 }
 
-
-
 //////////////////////////
 //// deshi quickstart ////
 //////////////////////////

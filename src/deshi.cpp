@@ -25,7 +25,7 @@ make binds and aliases check if one already exists for a key or a command. if a 
 add a component_state command to print state of a component (add str methods to all components/systems)
 add device_info command (graphics card, sound device, monitor res, etc)
 
-Console(2) TODOs
+Console TODOs
 -------------
 convert all ImGui stuff used in console to UI since console will be in final release
 showing a commands help if tab is pressed when the command is already typed
@@ -66,7 +66,6 @@ Memory TODOs
 ------------
 when running out of memory, log an error then fallback on STL or OS (rather than assert)
 add macro interface over functions to track where they are called from (file, line, function)
-standardize naming of bytes vs size
 add memory naming/tagging (like vulkan)
 add fast generic bins
 ____ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
@@ -132,9 +131,9 @@ add UI color palettes for easy color changing
 
 Ungrouped TODOs
 ---------------
+rename RoundUpTo() to AlignTo() in defines.h
 restyle map to match the rest of utils
 make the most recent logging file be named log.txt, while the rest have a date
-allow the generic memory arena to grow if it will be maxed out
 add MouseInsideWindow() func to input or window
 make the transparent framebuffer a start switch since it hurts frames (it must be set at window creation time)
 add the ability to limit framerate
@@ -154,16 +153,15 @@ __________ maybe store the text in the actual source and create the file from th
 __________ alternatively, we can store those specific assets in the source control
 (09/13/21) the program sometimes hangs on close in log file writing to stdout; temp fix: click the cmd, hit enter
 __________ this might not be an error with our stuff and just a quirk of the windows console
-
-
-
+(12/23/21) if the console fills up too much, it starts overwriting static memory
+__________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
 */
 
 #include "defines.h"
-#include "core/memory.h" //this is included above everything so things can reference deshi_allocator
+#include "core/memory.h" //NOTE this is included above everything so things can reference deshi_allocator
 
 //// utility headers ////"
-//#define DESHI_ARRAY_ALLOCATOR deshi_allocator
+//#define DESHI_ARRAY_ALLOCATOR deshi_allocator //NOTE we cant do this b/c we dont have static initialization like STL does
 //#define DESHI_STRING_ALLOCATOR deshi_allocator
 #include "utils/array.h"
 #include "utils/string.h"
@@ -208,20 +206,19 @@ __________ this might not be an error with our stuff and just a quirk of the win
 #error "unknown platform"
 #endif //DESHI_WINDOWS
 
-enum DeshiStage_ {
-	DS_NONE = 0,
-	DS_MEMORY = 1 << 0,
-	DS_LOGGER = 1 << 1,
+enum DeshiStage{
+	DS_NONE    = 0,
+	DS_MEMORY  = 1 << 0,
+	DS_LOGGER  = 1 << 1,
 	DS_CONSOLE = 1 << 2,
-	DS_TIME = 1 << 3,
-	DS_WINDOW = 1 << 4,
-	DS_RENDER = 1 << 5,
+	DS_TIME    = 1 << 3,
+	DS_WINDOW  = 1 << 4,
+	DS_RENDER  = 1 << 5,
 	DS_STORAGE = 1 << 6,
-	DS_UI = 1 << 7,
-	DS_CMD = 1 << 8,
-}; typedef u32 DeshiStage;
-
-DeshiStage deshiStage = DS_NONE;
+	DS_UI      = 1 << 7,
+	DS_CMD     = 1 << 8,
+};
+local Flags deshiStage = DS_NONE;
 
 #define AssertDS(stages, ...) Assert((deshiStage & (stages)) == (stages))
 #define DeshiModuleLoaded(stages) (deshiStage & (stages)) == (stages)
