@@ -65,6 +65,15 @@ function void TEST_deshi_core_memory(){
 	Arena* arena3 = Memory::CreateArena(Kilobytes(8));
 	Memory::DeleteArena(arena2);
 	
+	//clearing an arena
+	memset(arena1->start, '3', 1024);
+	arena1->cursor += 1024;
+	arena1->used += 1024;
+	Memory::ClearArena(arena1);
+	Assert(*arena1->start == 0);
+	Assert(arena1->cursor == arena1->start);
+	Assert(arena1->used == 0);
+	
 	//filling the gap with arenas
 	arena2 = Memory::CreateArena(Kilobytes(4));
 	Arena* arena4 = Memory::CreateArena(Kilobytes(4));

@@ -13,12 +13,45 @@ struct Arena{
 };
 
 namespace Memory{
+	struct ArenaHeapNode{
+		Arena arena;
+		Node  order; //overall order
+		Node  empty; //empty node order
+	};
+	
+	struct ArenaHeap{
+		u8*  start;
+		u8*  cursor;
+		upt  used;
+		upt  size;
+		Node order; //overall nodes
+		Node empty; //empty nodes
+		b32  initialized;
+	};
+	
+	struct Chunk{ //generic heap node
+		Chunk* prev; //pointer to previous order chunk
+		upt    size; //size of this chunk (including this var and above vars as overhead)
+		Node   node; //user memory starts here when in use; points to free chunks when not
+	};
+	
+	struct GenericHeap{
+		u8*    start;
+		u8*    cursor;
+		upt    used;
+		upt    size;
+		Node   empty_nodes;
+		Chunk* last_chunk;
+		b32    initialized;
+	};
+	
 	//creates an arena AT LEAST 'bytes' in size with all memory zeroed
 	Arena* CreateArena(upt bytes);
 	//grows the arena by AT LEAST 'bytes' in size
 	//  returns a different pointer than was passed if the memory was moved
 	//  if its memory was moved, pointers to its memory are no longer valid
 	Arena* GrowArena(Arena* arena, upt bytes);
+	void   ClearArena(Arena* arena);
 	void   DeleteArena(Arena* arena);
 	
 	void* Allocate(upt bytes);
@@ -30,6 +63,10 @@ namespace Memory{
 	void  ZeroFree(void* ptr);
 	
 	void* TempAllocate(upt bytes);
+	
+	ArenaHeap*   ExposeArenaHeap();
+	GenericHeap* ExposeGenericHeap();
+	Arena*       ExposeTempArena();
 	
 	void Init(upt main_size, upt temp_size);
 	void Update();

@@ -23,22 +23,6 @@ namespace Memory{
 	////////////////
 	//// @arena ////
 	////////////////
-	struct ArenaHeapNode{
-		Arena arena;
-		Node  order; //overall order
-		Node  empty; //empty node order
-	};
-	
-	struct ArenaHeap{
-		u8*  start;
-		u8*  cursor;
-		upt  used;
-		upt  size;
-		Node order; //overall nodes
-		Node empty; //empty nodes
-		b32  initialized;
-	};
-	
 	local ArenaHeap arena_heap;
 	
 #define MEMORY_ARENA_MINIMUM_ALLOCATION_SIZE ((sizeof(ArenaHeapNode) + MEMORY_BYTE_ALIGNMENT_MASK) & ~(MEMORY_BYTE_ALIGNMENT_MASK))
@@ -224,6 +208,12 @@ namespace Memory{
 		return result;
 	}
 	
+	void ClearArena(Arena* arena){
+		ZeroBytes(arena->start, arena->used);
+		arena->cursor = arena->start;
+		arena->used = 0;
+	}
+	
 	void DeleteArena(Arena* arena){
 		DEBUG_CheckArenaHeapNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap);
 		if(arena == 0) return;
@@ -293,22 +283,6 @@ namespace Memory{
 	//////////////////
 	//// @generic ////
 	//////////////////
-	struct Chunk{ //generic heap node
-		Chunk* prev; //pointer to previous order chunk
-		upt    size; //size of this chunk (including this var and above vars as overhead)
-		Node   node; //user memory starts here when in use; points to free chunks when not
-	};
-	
-	struct GenericHeap{
-		u8*    start;
-		u8*    cursor;
-		upt    used;
-		upt    size;
-		Node   empty_nodes;
-		Chunk* last_chunk;
-		b32    initialized;
-	};
-	
 	local Arena*       _generic_arena; //generic_heap is stored here; not used otherwise
 	local GenericHeap* generic_heap;
 	
@@ -658,6 +632,22 @@ namespace Memory{
 		temp_arena.cursor += bytes + sizeof(upt);
 		temp_arena.used += bytes + sizeof(upt);
 		return result;
+	}
+	
+	
+	/////////////////
+	//// @expose ////
+	/////////////////
+	ArenaHeap* ExposeArenaHeap(){
+		return &arena_heap;
+	}
+	
+	GenericHeap* ExposeGenericHeap(){
+		return generic_heap;
+	}
+	
+	Arena* ExposeTempArena(){
+		return &temp_arena;
 	}
 	
 	
