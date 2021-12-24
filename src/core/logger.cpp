@@ -14,7 +14,17 @@ namespace Logger{
 			string modified = "{{";
 			u32 rb = str.findFirstChar(']');
 			string tag = str.substr(1, rb - 1);
+
 			if (rb != string::npos) {
+				if (tag.endsWith("-ERROR")) {
+					modified += "e,";
+				}
+				else if (tag.endsWith("-WARNING")) {
+					modified += "w,";
+				}
+				else if (tag.endsWith("-SUCCESS")) {
+					modified += "s,";
+				}
 				modified += "t=" + tag + "}" + str.substr(rb + 2) + "{}}";
 				DeshConsole->LoggerMirror(modified, chst + tag.count + 3);
 				return;
@@ -121,7 +131,7 @@ namespace Logger{
 #endif //DESHI_SLOW
 		
 		is_logging = true; //NOTE this prevents errors in calls to Log before Logger is finished initializing
-		Log("deshi","Finished logging initialization in ",TIMER_END(t_s),"ms");
+		LogS("deshi","Finished logging initialization in ",TIMER_END(t_s),"ms");
 		mirror_to_console = true; //NOTE this happens after the Log() so it doesnt try calling into the console
 	}
 	

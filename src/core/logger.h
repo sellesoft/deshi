@@ -16,12 +16,15 @@
 #define Log(tag,...)       Logger::Log_(__FILE__,__LINE__,tag,__VA_ARGS__)           //comma style:  log("first ",12.5," f ",0xff)
 #define LogE(tag,...)      Logger::Log_(__FILE__,__LINE__,GLUE(tag,"-error"),__VA_ARGS__)
 #define LogW(tag,...)      Logger::Log_(__FILE__,__LINE__,GLUE(tag,"-warning"),__VA_ARGS__)
+#define LogS(tag,...)      Logger::Log_(__FILE__,__LINE__,GLUE(tag,"-success"),__VA_ARGS__)
 #define Logf(tag,fmt,...)  Logger::LogF_(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //printf style: logf("first %f f %d",12.5f,0xff)
 #define LogfE(tag,fmt,...) Logger::LogF_(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
 #define LogfW(tag,fmt,...) Logger::LogF_(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
+#define LogfW(tag,fmt,...) Logger::LogF_(__FILE__,__LINE__,GLUE(tag,"-success"),fmt,__VA_ARGS__)
 #define Loga(tag,fmt,...)  Logger::LogA_(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //auto style:   loga("first $ f $",12.5f,0xff)
 #define LogaE(tag,fmt,...) Logger::LogA_(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
 #define LogaW(tag,fmt,...) Logger::LogA_(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
+#define LogaS(tag,fmt,...) Logger::LogA_(__FILE__,__LINE__,GLUE(tag,"-success"),fmt,__VA_ARGS__)
 
 #define EnableLogging  Logger::SetIsLogging(1);
 #define DisableLogging Logger::SetIsLogging(0);
