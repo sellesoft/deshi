@@ -41,7 +41,9 @@ struct string{
 	string operator+ (const CHAR* c) const;
 	string operator+ (const string& s) const;
 	bool   operator==(const string& s) const;
+	bool   operator!=(const string& s) const;
 	bool   operator==(const CHAR* s) const;
+	bool   operator!=(const CHAR* s) const;
 	friend string operator+ (const CHAR* c, const string& s);
 	inline explicit operator bool(){ return count; }
 	
@@ -228,12 +230,21 @@ inline string string::operator+(const string& s) const{
 }
 
 inline bool string::operator==(const string& s) const{
-	return strcmp(str, s.str) == 0;
+	return !strcmp(str, s.str);
 }
 
 inline bool string::operator==(const CHAR* s) const{
-	return strcmp(str, s) == 0;
+	return !strcmp(str, s);
 }
+
+inline bool string::operator!=(const string& s) const {
+	return strcmp(str, s.str);
+}
+
+inline bool string::operator!=(const CHAR* s) const {
+	return strcmp(str, s);
+}
+
 
 ////////////////////////////
 //// @special operators ////
