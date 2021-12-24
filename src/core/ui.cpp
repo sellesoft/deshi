@@ -304,11 +304,11 @@ inline void AdvanceCursor(UIItem* itemmade, b32 moveCursor = 1) {
 
 //returns if the window can scroll over x
 inline b32 CanScrollX(UIWindow* window = curwin) {
-	return window->width < window->minSizeForFit.x;
+	return !HasFlag(window->flags, UIWindowFlags_NoScrollX) && window->width < window->minSizeForFit.x;
 }
 
 inline b32 CanScrollY(UIWindow* window = curwin) {
-	return window->height < window->minSizeForFit.y;
+	return !HasFlag(window->flags, UIWindowFlags_NoScrollY) && window->height < window->minSizeForFit.y;
 }
 
 //function for getting the position of a new item based on style, so the long string of additions

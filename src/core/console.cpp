@@ -17,7 +17,7 @@ local FILE*     buffer;      //this is always from Logger
 local UIWindow* conmain = 0; //the main console window
 local UIWindow* conterm = 0; //the terminal child window
 local UIStyle*  uistyle = 0; //for quick access to the style of ui, we should not change any styles through this pointer
-local UIWindowFlags flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize;
+local UIWindowFlags flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize | UIWindowFlags_NoScrollX;
 
 //state of console
 local b32 show_autocomplete = 0;
@@ -450,6 +450,7 @@ void Console::Update() {
 		SetNextWindowSize(vec2(MAX_F32, GetMarginedBottom() - (uistyle->fontHeight * uistyle->inputTextHeightRelToFont + uistyle->itemSpacing.y) * 3));
 		BeginChild("deshiConsoleTerminal", (conmain->dimensions - 2 * uistyle->windowPadding).yAdd(-(uistyle->fontHeight * 1.3 + uistyle->itemSpacing.y)), flags);
 		conterm = GetWindow(); //TODO(sushi) try to get this only once
+//		PushVar(UIStyleVar_FontHeight, BoundTimeOsc(11, 50));
 
 		PushVar(UIStyleVar_WindowPadding, vec2(5, 0));
 		PushVar(UIStyleVar_ItemSpacing, vec2(0, 0));
@@ -523,10 +524,11 @@ void Console::Update() {
 
 							if (tag_highlighting) {
 								PushLayer(GetCenterLayer() - 1);
-								SetNextItemSize(vec2(conterm->width, tag_end - lpy));
+								SetNextItemSize(vec2(GetMarginedRight(), tag_end - lpy));
 								PushColor(UIStyleCol_SelectableBg, Color_Clear);
 								PushColor(UIStyleCol_SelectableBgHovered, color(155, 155, 155, 10));
 								PushColor(UIStyleCol_SelectableBgActive, color(155, 155, 155, 10));
+								SetNextItemMinSizeIgnored();
 								Selectable("", vec2(0, lpy), 0);
 								PopLayer();
 								PopColor(3);
@@ -566,6 +568,7 @@ void Console::Update() {
 
 		if (scroll_to_bottom) { SetScroll(vec2(0, MAX_F32)); scroll_to_bottom = 0; }
 
+		//SetScroll(vec2(0, MAX_F32));
 		EndChild();
 
 		f32 inputBoxHeight = uistyle->inputTextHeightRelToFont * uistyle->fontHeight;

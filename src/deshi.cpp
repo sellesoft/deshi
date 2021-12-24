@@ -214,9 +214,10 @@ enum DeshiStage{
 	DS_TIME    = 1 << 3,
 	DS_WINDOW  = 1 << 4,
 	DS_RENDER  = 1 << 5,
-	DS_STORAGE = 1 << 6,
-	DS_UI      = 1 << 7,
-	DS_CMD     = 1 << 8,
+	DS_IMGUI   = 1 << 6,
+	DS_STORAGE = 1 << 7,
+	DS_UI      = 1 << 8,
+	DS_CMD     = 1 << 9,
 };
 local Flags deshiStage = DS_NONE;
 
@@ -338,7 +339,8 @@ void deshi::init(u32 winWidth, u32 winHeight){
 }
 
 void deshi::cleanup(){
-	DeshiImGui::Cleanup();
+	if(DeshiModuleLoaded(DS_IMGUI))
+		DeshiImGui::Cleanup();
 	Render::Cleanup();
 	deshi_window.Cleanup();
 	deshi_console.Cleanup(); Console2::Cleanup();
