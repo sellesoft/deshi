@@ -303,7 +303,7 @@ struct UIDrawCmd {
 	Font* font;
 
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
-	b32 trackedForFit = 1;
+	b32 trackedForMinSize = 1;
 	
 	vec2 scissorOffset = vec2(0, 0);
 	vec2 scissorExtent = vec2(0, 0);
@@ -377,6 +377,8 @@ struct UIItem {
 	//this is only used when the item is a child window
 	UIWindow* child;
 
+	//set false when you dont want the item to affect scrolling or fitting all elements
+	b32 trackedForMinSize = 1;
 
 	//DEBUG info
 	u32 item_idx;
@@ -543,20 +545,44 @@ namespace UI {
 	FORCE_INLINE vec2 CalcTextSize(const wchar_t* text) { return CalcTextSize(wcstring{(wchar_t*)text,u64(wcslen(text)) }); }
 	UIStyle&  GetStyle();
 	UIWindow* GetWindow();
+	UIItem*   GetLastItem(u32 layeroffset = 0);
 	vec2      GetLastItemPos();
 	vec2      GetLastItemSize();
 	vec2      GetLastItemScreenPos();
 	vec2      GetWindowRemainingSpace();
+	vec2      GetPositionForNextItem();
 	u32       GetCenterLayer();
+	f32       GetBorderedRight();
+	f32       GetBorderedLeft();
+	f32       GetBorderedTop();
+	f32       GetBorderedBottom();
+	f32       GetMarginedRight();
+	f32       GetMarginedLeft();
+	f32       GetMarginedTop();
+	f32       GetMarginedBottom();
+	f32       GetScrollBaredRight();
+	f32       GetScrollBaredLeft();
+	f32       GetScrollBaredTop();
+	f32       GetScrollBaredBottom();
+	pair<vec2, vec2> GetBorderedArea();
+	pair<vec2, vec2> GetMarginedArea();
+	pair<vec2, vec2> GetScrollBaredArea();
+
+
 	
 	
 	//// control functions ////
 	void SameLine();
 	void SetCursor(vec2 pos);
+	void SetScroll(vec2 scroll); //MAX_F32 sets to max scroll
 	void SetNextItemActive();
 	void SetNextItemSize(vec2 size);
-	
-	
+	void SetMarginPositionOffset(vec2 offset);
+	void SetMarginSizeOffset(vec2 offset);
+	void SetNextItemMinSizeIgnored();
+
+
+
 	//// rows ////
 	void BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags = 0);
 	void EndRow();
@@ -653,6 +679,14 @@ namespace UI {
 	//// init and update ////
 	void Init();
 	void Update();
+
+
+	//// debug ////
+	void DrawDebugRect(vec2 pos, vec2 size, color color = Color_Red);
+	void DrawDebugRectFilled(vec2 pos, vec2 size, color color = Color_Red);
+	void DrawDebugCircle(vec2 pos, f32 radius, color color = Color_Red);
+	void DrawDebugCircleFilled(vec2 pos, f32 radius, color color = Color_Red);
+	void DrawDebugLine(vec2 pos1, vec2 pos2, color color = Color_Red);
 	
 }; //namespace UI
 

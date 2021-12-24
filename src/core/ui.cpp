@@ -69,8 +69,13 @@ UIWindow* curwin;
 
 local vec2 NextWinSize  = vec2(-1, 0);
 local vec2 NextWinPos   = vec2(-1, 0);
+local vec2 NextItemPos  = vec2(-1, 0);
 local vec2 NextItemSize = vec2(-1, 0);
-local b32 NextActive   = 0;
+local b32  NextActive   = 0;
+local b32  NextItemMinSizeIgnored = 0;
+
+local vec2 MarginPositionOffset = vec2::ZERO;
+local vec2 MarginSizeOffset = vec2::ZERO;
 
 //window map which only stores known windows
 //and their order in layers eg. when one gets clicked it gets moved to be first if its set to
@@ -139,7 +144,7 @@ u32 item_idx = -1;
 u32 item_layer = -1;
 
 #ifdef DESHI_INTERNAL
-#define BreakOnItem if(break_window && curwin->items[item_layer].count == item_idx){ DebugBreakpoint;}
+#define BreakOnItem if(break_window && break_window == curwin && curwin->items[item_layer].count == item_idx){ DebugBreakpoint;}
 #else
 #define BreakOnItem
 #endif
@@ -309,7 +314,10 @@ inline b32 CanScrollY(UIWindow* window = curwin) {
 //function for getting the position of a new item based on style, so the long string of additions
 //is centralized for new additions, if ever made, and so that i dont have to keep writing it :)
 inline vec2 PositionForNewItem(UIWindow* window = curwin) {
-	return window->cursor + (style.windowPadding - window->scroll) + vec2(globalIndent, 0) + vec2::ONE * style.windowBorderSize;
+	vec2 pos = 
+		window->cursor + (style.windowPadding + MarginPositionOffset - window->scroll) + vec2(globalIndent, 0) + vec2::ONE * style.windowBorderSize ;
+	MarginPositionOffset = vec2::ZERO;
+	return pos;
 }
 
 //returns a pair representing the area of the window that is bordered
@@ -324,9 +332,10 @@ inline pair<vec2, vec2> BorderedArea(UIWindow* window = curwin) {
 //same as the bordered area, but also takes into account the margins
 inline pair<vec2, vec2> MarginedArea(UIWindow* window = curwin) {
 	vec2 f = vec2::ONE * style.windowBorderSize + vec2::ONE * style.windowPadding;
-	vec2 s = window->dimensions - 2 * f;
+	vec2 s = window->dimensions - 2 * f - MarginSizeOffset;
 	s.x -= (CanScrollY() ? style.scrollBarYWidth : 0);
 	//s.y -= (CanScrollX() ? style.scrollBarXHeight : 0);
+	MarginSizeOffset = vec2::ZERO;
 	return make_pair(f, s);
 }
 
@@ -345,10 +354,10 @@ inline f32 BorderedLeft(UIWindow* window = curwin)   { return (window == curwin 
 inline f32 BorderedTop(UIWindow* window = curwin)    { return (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
 inline f32 BorderedBottom(UIWindow* window = curwin) { return window->dimensions.y - (window == curwin ? style.windowBorderSize : window->style.windowBorderSize); }
 
-inline f32 MarginedRight(UIWindow* window = curwin)  { return window->dimensions.x - (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) - (CanScrollY(window) ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0) ; }
+inline f32 MarginedRight(UIWindow* window = curwin) { f32 ret = window->dimensions.x - (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) - (CanScrollY(window) ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0) + MarginSizeOffset.x; MarginSizeOffset.x = 0; return ret; }
 inline f32 MarginedLeft(UIWindow* window = curwin)   { return (window == curwin ? style.windowBorderSize + style.windowPadding.x : window->style.windowBorderSize + window->style.windowPadding.x) ; }
 inline f32 MarginedTop(UIWindow* window = curwin)    { return (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) ; }
-inline f32 MarginedBottom(UIWindow* window = curwin) { return window->dimensions.y - (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) - (CanScrollX(window) ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0) ; }
+inline f32 MarginedBottom(UIWindow* window = curwin) { f32 ret = window->dimensions.y - (window == curwin ? style.windowBorderSize + style.windowPadding.y : window->style.windowBorderSize + window->style.windowPadding.y) - (CanScrollX(window) ? (window == curwin ? style.scrollBarXHeight : window->style.scrollBarXHeight) : 0) + MarginSizeOffset.y; MarginSizeOffset.y = 0; return ret; }
 
 inline f32 ScrollBaredRight(UIWindow* window = curwin)  { return BorderedRight(window) - (CanScrollY() ? (window == curwin ? style.scrollBarYWidth : window->style.scrollBarYWidth) : 0); }
 inline f32 ScrollBaredLeft(UIWindow* window = curwin)   { return BorderedLeft(window); }
@@ -456,13 +465,32 @@ vec2 UI::GetLastItemScreenPos() {
 }
 
 vec2 UI::GetWindowRemainingSpace() {
-	//TODO(sushi) this	
-	return vec2::ZERO;
+	return vec2(MarginedRight() - curwin->curx, MarginedBottom() - curwin->cury);
+}
+
+vec2 UI::GetPositionForNextItem() {
+	return PositionForNewItem();
 }
 
 u32 UI::GetCenterLayer() {
 	return UI_CENTER_LAYER;
 }
+
+f32 UI::GetBorderedRight()                { return BorderedRight(); }
+f32 UI::GetBorderedLeft()                 { return BorderedLeft(); }
+f32 UI::GetBorderedTop()                  { return BorderedTop(); }
+f32 UI::GetBorderedBottom()               { return BorderedBottom(); }
+f32 UI::GetMarginedRight()                { return MarginedRight(); }
+f32 UI::GetMarginedLeft()                 { return MarginedLeft(); }
+f32 UI::GetMarginedTop()                  { return MarginedTop(); }
+f32 UI::GetMarginedBottom()               { return MarginedBottom(); }
+f32 UI::GetScrollBaredRight()             { return ScrollBaredRight(); }
+f32 UI::GetScrollBaredLeft()              { return ScrollBaredLeft(); }
+f32 UI::GetScrollBaredTop()               { return ScrollBaredTop(); }
+f32 UI::GetScrollBaredBottom()            { return ScrollBaredBottom(); }
+pair<vec2, vec2> UI::GetBorderedArea()    { return BorderedArea(); }
+pair<vec2, vec2> UI::GetMarginedArea()    { return MarginedArea(); }
+pair<vec2, vec2> UI::GetScrollBaredArea() { return ScrollBaredArea(); }
 
 //returns the cursor to the same line as the previous and moves it to the right by the 
 //width of the object
@@ -474,6 +502,18 @@ void UI::SameLine() {
 	}
 }
 
+void UI::SetScroll(vec2 scroll) {
+	if (scroll.x == MAX_F32)
+		curwin->scx = curwin->maxScroll.x;
+	else
+		curwin->scx = scroll.x;
+
+	if (scroll.y == MAX_F32)
+		curwin->scy = curwin->maxScroll.y;
+	else
+		curwin->scy = scroll.y;
+}
+
 void UI::SetNextItemActive() {
 	NextActive = 1;
 }
@@ -482,10 +522,20 @@ void UI::SetNextItemSize(vec2 size) {
 	NextItemSize = size;
 }
 
+void UI::SetMarginPositionOffset(vec2 offset) {
+	MarginPositionOffset = offset;
+}
 
+void UI::SetMarginSizeOffset(vec2 offset){
+	MarginSizeOffset = offset;
+}
+
+void UI::SetNextItemMinSizeIgnored() {
+	NextItemMinSizeIgnored = 1;
+}
 
 //internal last item getter, returns nullptr if there are none
-inline UIItem* GetLastItem(u32 layeroffset = 0) {
+inline UIItem* UI::GetLastItem(u32 layeroffset) {
 	return curwin->items[currlayer + layeroffset].last;
 }
 
@@ -504,13 +554,16 @@ inline UIItem* BeginItem(UIItemType type, u32 layeroffset = 0) {
 	else {
 		curwin->items[currlayer + layeroffset].add(UIItem{ type, curwin->cursor, style });
 #ifdef DESHI_INTERNAL
-		GetLastItem(layeroffset)->item_layer = currlayer + layeroffset;
-		GetLastItem(layeroffset)->item_idx = curwin->items[currlayer + layeroffset].count;
+		UI::GetLastItem(layeroffset)->item_layer = currlayer + layeroffset;
+		UI::GetLastItem(layeroffset)->item_idx = curwin->items[currlayer + layeroffset].count;
 #endif
+		BreakOnItem;
 	}
+	if (NextItemMinSizeIgnored)
+		UI::GetLastItem(layeroffset)->trackedForMinSize = 0;
+
 	curwin->items_count++;
-	BreakOnItem;
-	return GetLastItem(layeroffset);
+	return UI::GetLastItem(layeroffset);
 }
 
 inline void EndItem(UIItem* item) {
@@ -896,7 +949,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 		CalcItemSize(item);
 	}
 	
-	AdvanceCursor(item);
+	AdvanceCursor(item, move_cursor);
 }
 
 //second function for wrapping, using unicode
@@ -1260,34 +1313,34 @@ void UI::EndCombo() {
 	
 }
 
-b32 UI::Selectable(const char* label, vec2 pos, b32 selected) {
-	
+b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 1) {
+
 	b32 clicked = 0;
 	if (comboItem && combo_open) {
 		//if a combo has been started and is open, we attach the selectables to it
 		selectables_added++;
 		b32 active = curwin->hovered && CanTakeInput && Math::PointInRectangle(DeshInput->mousePos, curwin->position + comboItem->position.yAdd(comboItem->size.y * selectables_added), comboItem->size);
-		if (active && DeshInput->LMousePressed()) { 
-			clicked = true; 
+		if (active && DeshInput->LMousePressed()) {
+			clicked = true;
 			PreventInputs;
 		}
-		
+
 		{//background
 			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 			drawCmd.position = vec2(0, comboItem->size.y * selectables_added);
 			drawCmd.dimensions = comboItem->size;
-			if(selected)
+			if (selected)
 				drawCmd.color = style.colors[(active && DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered)];
 			else
 				drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
 			comboItem->drawCmds.add(drawCmd);
 		}
-		
+
 		{//text
 			UIDrawCmd drawCmd{ UIDrawType_Text };
 			drawCmd.position =
-				vec2((comboItem->size.x - CalcTextSize(label).x) * style.buttonTextAlign.x,
-					 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y + comboItem->size.y * selectables_added);
+				vec2((comboItem->size.x - UI::CalcTextSize(label).x) * style.buttonTextAlign.x,
+					(style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y + comboItem->size.y * selectables_added);
 			drawCmd.text = string(label);
 			drawCmd.color = style.colors[UIStyleCol_Text];
 			drawCmd.scissorOffset = vec2(0, comboItem->size.y * selectables_added);
@@ -1300,17 +1353,17 @@ b32 UI::Selectable(const char* label, vec2 pos, b32 selected) {
 	else {
 		//else the selectable is just its own item
 		UIItem* item = BeginItem(UIItemType_Selectable, 0);
-		item->size = (NextItemSize.x != -1 ? NextItemSize : CalcTextSize(label) * 1.5);
+		item->size = (NextItemSize.x != -1 ? NextItemSize : UI::CalcTextSize(label) * 1.5);
 		item->position = pos;
-		
-		AdvanceCursor(item);
-		
+
+		AdvanceCursor(item, move_cursor);
+
 		b32 active = isItemActive(item);//ItemCanTakeInput && Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position.yAdd(item->size.y * selectables_added), item->size);
-		if (active && DeshInput->LMousePressed()) { 
-			clicked = true; 
+		if (active && DeshInput->LMousePressed()) {
+			clicked = true;
 			PreventInputs;
 		}
-		
+
 		{//background
 			UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 			drawCmd.position = vec2(0, item->size.y * selectables_added);
@@ -1321,12 +1374,12 @@ b32 UI::Selectable(const char* label, vec2 pos, b32 selected) {
 				drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
 			item->drawCmds.add(drawCmd);
 		}
-		
+
 		{//text
 			UIDrawCmd drawCmd{ UIDrawType_Text };
 			drawCmd.position =
-				vec2((item->size.x - CalcTextSize(label).x) * style.buttonTextAlign.x,
-					 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y + item->size.y * selectables_added);
+				vec2((item->size.x - UI::CalcTextSize(label).x) * style.buttonTextAlign.x,
+					(style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y + item->size.y * selectables_added);
 			drawCmd.text = string(label);
 			drawCmd.color = style.colors[UIStyleCol_Text];
 			drawCmd.scissorOffset = vec2(0, item->size.y * selectables_added);
@@ -1336,12 +1389,16 @@ b32 UI::Selectable(const char* label, vec2 pos, b32 selected) {
 			item->drawCmds.add(drawCmd);
 		}
 	}
-	
+
 	return clicked;
 }
 
+b32 UI::Selectable(const char* label, vec2 pos, b32 selected) {
+	return SelectableCall(label, pos, selected, 0);
+}
+
 b32 UI::Selectable(const char* label, b32 selected) {
-	return Selectable(label, PositionForNewItem(), selected);
+	return SelectableCall(label, PositionForNewItem(), selected);
 }
 
 b32 UI::BeginHeader(const char* label) {
@@ -1550,20 +1607,17 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 	
 	size_t charCount = strlen(buff);
 	
+	item->position = position;
+	
 	vec2 dim;
 	if (flags & UIInputTextFlags_FitSizeToText) {
 		dim = UI::CalcTextSize(string(buff));
 	}
-	else if (NextItemSize.x != -1) {
-		dim = NextItemSize;
-		NextItemSize = vec2{ -1,0 };
-	}
 	else {
-		dim = vec2(Math::clamp(100.f, 0.f, Math::clamp(curwin->width - 2.f*style.windowPadding.x, 1.f, FLT_MAX)), style.inputTextHeightRelToFont*style.fontHeight);
+		dim = DecideItemSize(vec2(Math::clamp(100.f, 0.f, Math::clamp(curwin->width - 2.f * style.windowPadding.x, 1.f, FLT_MAX)), style.inputTextHeightRelToFont * style.fontHeight), item->position);
 	}
 	
 	item->size = dim;
-	item->position = position;
 	
 	b32 hovered = isItemActive(item);
 	
@@ -1758,7 +1812,7 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 	}
 	
 	vec2 textStart =
-		vec2((dim.x - charCount * style.font->max_width) * style.inputTextTextAlign.x,
+		vec2((dim.x - charCount * style.font->max_width) * style.inputTextTextAlign.x + 3, //TODO(sushi) make an input text offset style var
 			 (style.fontHeight * style.inputTextHeightRelToFont - style.fontHeight) * style.inputTextTextAlign.y);
 	
 	{//text
@@ -1782,8 +1836,8 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 	//TODO(sushi, Ui) impl different text cursors
 	if (active) {//cursor
 		UIDrawCmd drawCmd{ UIDrawType_Line};
-		drawCmd.position = textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, 0);
-		drawCmd.position2 = textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, style.fontHeight - 1);
+		drawCmd.position = item->position + textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, 0);
+		drawCmd.position2 = item->position + textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, style.fontHeight - 1);
 		drawCmd.color =
 			color(255, 255, 255,
 				  255 * (
@@ -1828,20 +1882,14 @@ b32 UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextStat
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextFlags flags) {
-	pos += curwin->position - curwin->scroll;
-	
 	return InputTextCall(label, buffer, buffSize, pos, nullptr, flags, 0);
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, UIInputTextFlags flags) {
-	pos += curwin->position - curwin->scroll;
-	
 	return InputTextCall(label, buffer, buffSize, pos, callback, flags, 0);
 }
 
 b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
-	pos += curwin->position - curwin->scroll;
-	
 	if (InputTextCall(label, buffer, buffSize, pos, nullptr, flags, 0)) {
 		getInputTextState = inputTexts.at(label);
 		return true;
@@ -2256,6 +2304,7 @@ void UI::Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags)
 		if (NextWinPos.x != -1) curwin->position = NextWinPos;
 		if (NextWinSize.x != -1) curwin->dimensions = NextWinSize;
 		NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
+		curwin->flags = flags;
 	}
 	else {
 		curwin = new UIWindow();
@@ -2344,8 +2393,10 @@ vec2 CalcWindowMinSize() {
 	vec2 max;
 	forI(UI_WINDOW_ITEM_LAYERS) {
 		for (UIItem& item : curwin->items[i]) {
-			max.x = Max(max.x, (item.position.x + curwin->scx) + item.size.x);
-			max.y = Max(max.y, (item.position.y + curwin->scy) + item.size.y);
+			if (item.trackedForMinSize) {
+				max.x = Max(max.x, (item.position.x + curwin->scx) + item.size.x);
+				max.y = Max(max.y, (item.position.y + curwin->scy) + item.size.y);
+			}
 		}
 	}
 	return max + style.windowPadding + vec2::ONE * style.windowBorderSize;
@@ -2869,6 +2920,25 @@ UIWindow* DisplayMetrics() {
 						}
 					}
 				}
+			} 
+			else if (w->childHovered) {
+				for (UIWindow* c : w->children) {
+					forI(UI_WINDOW_ITEM_LAYERS) {
+						for (UIItem& item : c->items[i]) {
+							if (MouseInArea(c->position + item.position, item.size)) {
+								DebugRect(c->position + item.position, item.size);
+								if (DeshInput->LMousePressed()) {
+									break_window = c;
+									item_idx = item.item_idx;
+									item_layer = item.item_layer;
+									break_on_cursor = 0;
+									frame_skip = 0;
+									break;
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -2982,13 +3052,7 @@ UIWindow* DisplayMetrics() {
 		if (showItemBoxes) {
 			forI(UI_WINDOW_ITEM_LAYERS) {
 				for (UIItem& item : debugee->items[i]) {
-					{
-						UIDrawCmd dc{ UIDrawType_Rectangle };
-						dc.color = Color_Red;
-						dc.position = debugee->position + item.position;
-						dc.dimensions = item.size;
-						debugCmds.add(dc);
-					}
+					DebugRect(debugee->position + item.position, item.size);
 				}
 			}
 		}
@@ -3440,7 +3504,7 @@ void UI::Init() {
 	windows.add("base", curwin);
 	windowStack.add(curwin);
 	
-	Log("deshi","Finished UI initialization in ",TIMER_END(t_s),"ms");
+	LogS("deshi","Finished UI initialization in ",TIMER_END(t_s),"ms");
 }
 
 
@@ -3642,8 +3706,10 @@ void UI::Update() {
 	Assert(indentStack.count == 1, "Forgot to call End for an indenting Begin!");
 	
 	globalHovered = 0;
-	
-	
+
+	MarginPositionOffset = vec2::ZERO;
+	MarginSizeOffset = vec2::ZERO;
+
 	//windows input checking functions
 	CheckForHoveredWindow();
 	CheckWindowsForFocusInputs();
@@ -3759,3 +3825,10 @@ void UI::Update() {
 
 	if (inputState == ISNone && DeshInput->LMouseDown()) PreventInputs;
 }
+
+void UI::DrawDebugRect(vec2 pos, vec2 size, color col)          { DebugRect(pos, size, col); }
+void UI::DrawDebugRectFilled(vec2 pos, vec2 size, color col)    { DebugRectFilled(pos, size, col); }
+void UI::DrawDebugCircle(vec2 pos, f32 radius, color col)       { DebugCircle(pos, radius, col); }
+void UI::DrawDebugCircleFilled(vec2 pos, f32 radius, color col) { DebugCircleFilled(pos, radius, col); }
+void UI::DrawDebugLine(vec2 pos1, vec2 pos2, color col)         { DebugLine(pos1, pos2, col); }
+
