@@ -27,7 +27,9 @@ struct ring_array{
 	
 	//returns a pointer to the item at 'position' in the ring, asserts false if out of bounds
 	T& operator[](u32 position);
-	
+	T  operator[](u32 position) const;
+
+
 	//adds '_count' of 'items' at the end of the ring, pushing 'end' forward
 	//overwrites old data if it goes above 'capacity', pushing 'end' and 'start' forward
 	void add(T item);
@@ -178,6 +180,12 @@ inline T* ring_array<T>::at(u32 position){
 
 template<typename T>
 inline T& ring_array<T>::operator[](u32 position){
+	Assert(position < count);
+	return data[position];
+}
+
+template<typename T>
+inline T ring_array<T>::operator[](u32 position) const {
 	Assert(position < count);
 	return data[position];
 }
