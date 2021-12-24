@@ -2,33 +2,46 @@ local vec2 console_pos;
 local vec2 console_dim;
 
 //fancy console opening parameters
-local f32 open_max_percent = 0.7f; //percentage of the height of the window to open to
-local f32 open_amount = 0.0f;      //current opened amount
-local f32 open_target = 0.0f;      //target opened amount
-local f32 open_dt = 2000.0f;       //speed at which it opens
+local f32 open_small_percent = 0.2f; //percentage of the height of the window to open to in small mode
+local f32 open_max_percent = 0.7f;   //percentage of the height of the window to open to
+local f32 open_amount = 0.0f;        //current opened amount
+local f32 open_target = 0.0f;        //target opened amount
+local f32 open_dt = 200.0f;         //speed at which it opens
+local TIMER_START(open_timer);
 
 //console 
-local char inputBuf[256]{};
-local constexpr u32 DICT_SIZE = 250;
-local constexpr UIWindowFlags flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize;
+#define CONSOLE_INPUT_BUFFER_SIZE 256
+local char inputBuf[CONSOLE_INPUT_BUFFER_SIZE]{};
+local constexpr u32 DICT_SIZE = 512;
+local FILE*     buffer;      //this is always from Logger
+local UIWindow* conmain = 0; //the main console window
+local UIWindow* conterm = 0; //the terminal child window
+local UIStyle*  uistyle = 0; //for quick access to the style of ui, we should not change any styles through this pointer
+local UIWindowFlags flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize;
 
+//state of console
+local b32 show_autocomplete = 0;
+local u32 scroll_y = 0;
+local u32 rows_in_buffer = 0;
+local b32 scroll_to_bottom = 0;
+local b32 intercepting_inputs = 0;
 
-UIWindow* conmain = 0; //the main console window
-UIWindow* conterm = 0; //the terminal child window
+local ConsoleState state = ConsoleState_Closed;
 
-UIStyle* uistyle = 0; //for quick access to the style of ui, we should not change any styles through this pointer
-
-
-//this is always from Logger
-FILE* buffer;
+//console preferences
+local b32 tag_show = 1;
+local b32 tag_highlighting = 1;
+local b32 tag_outlines = 1;
+local b32 line_highlighing = 1;
 
 enum Format_ {
 	None    = 0,
 	Alert   = 1 << 0, 
-	Warning = 1 << 1, //these 2 are mutually exclusive!
-	Error   = 1 << 2, //these 2 are mutually exclusive!
-	Tagged  = 1 << 3,
-	Colored = 1 << 4,
+	Success = 1 << 1, //these 3 are mutually exclusive!
+	Warning = 1 << 2, //these 3 are mutually exclusive!
+	Error   = 1 << 3, //these 3 are mutually exclusive!
+	Tagged  = 1 << 4,
+	Colored = 1 << 5,
 }; typedef u32 Format;
 
 struct Chunk{
@@ -38,15 +51,24 @@ struct Chunk{
 	u32 strsize = 0;
 	b32 eol = 0; //true if this Chunk is the end of a line
 	string tag = ""; //change to a char array eventually
+
+#ifdef DESHI_INTERNAL
+	string message = "";
+#endif 
 };
 
 
 struct{
 	ring_array<Chunk> dict;
-	
+	u32& count = dict.count;
+
 	void add(string to_logger, Chunk chunk) {
 		dict.add(chunk);
 		
+#ifdef DESHI_INTERNAL
+		chunk.message = to_logger;
+#endif
+
 		Logger::LogFromConsole(to_logger);
 	}
 	
@@ -55,14 +77,13 @@ struct{
 		dict.add(chunk);
 	}
 	
+	Chunk& operator[] (u32 idx) { return *dict.at(idx); }
+
+	//u32 count() { return dict.count; }
+
 } dictionary;
 
-//state of console
-local b32 show_autocomplete = 0;
-local u32 scroll_y = 0;
-local u32 rows_in_buffer = 0;
-local b32 scroll_to_bottom = 0;
-local ConsoleState state;
+
 
 local map<const char*, color> color_strings{
 	{"red",    Color_Red},     {"dred",    Color_DarkRed},
@@ -109,11 +130,12 @@ void ParseMessage(string& input, s32 chstart = -1) {
 	if (input.count < 7) {
 		Chunk chunk;
 		chunk.charstart = (chstart == -1 ? ftell(buffer) : chstart);
+		chunk.strsize = input.count;
 		chunk.color = Color_White;
 		chunk.eol = 1;
 		chunk.format = None;
 		if (chstart == -1) {
-			dictionary.add(input, chunk);
+			dictionary.add(input + "\n", chunk);
 		}
 		else {
 			dictionary.add(chunk);
@@ -207,11 +229,15 @@ void ParseMessage(string& input, s32 chstart = -1) {
 				auto parse_specifier = [&](string& specifier) {
 					if (!HasAllFlags(chunk.format, (Warning | Error))) {
 						if (specifier == "e") {
-							chunk.format |= Error;
+							AddFlag(chunk.format, Error);
 							return;
 						}
 						else if (specifier == "w") {
-							chunk.format |= Warning;
+							AddFlag(chunk.format, Warning);
+							return;
+						}
+						else if (specifier == "s") {
+							AddFlag(chunk.format, Success);
 							return;
 						}
 					}
@@ -317,64 +343,245 @@ void ParseMessage(string& input, s32 chstart = -1) {
 }
 
 void Console::AddLog(string input){
-	if(DeshiModuleLoaded(DS_CONSOLE)) ParseMessage(input);
+	if(DeshiModuleLoaded(DS_CONSOLE)) 
+		ParseMessage(input);
 }
 
 void Console::LoggerMirror(string input, u32 charstart) {
-	if(DeshiModuleLoaded(DS_CONSOLE)) ParseMessage(input, charstart);
+	if(DeshiModuleLoaded(DS_CONSOLE)) 
+		ParseMessage(input, charstart);
 }
 
 void Console::ChangeState(ConsoleState new_state) {
+	if (state == new_state) new_state = ConsoleState_Closed;
 	
+	intercepting_inputs = true;
+	
+	switch (new_state) {
+		case ConsoleState_Closed: {
+			if (state == ConsoleState_Popout) {
+				console_dim = conmain->dimensions;
+				console_pos = conmain->position;
+			}
+			open_target = 0;
+			open_amount = console_dim.y;
+			intercepting_inputs = false;
+			TIMER_RESET(open_timer);
+		}break;
+		case ConsoleState_OpenSmall: {
+			open_target = DeshWindow->height * open_small_percent;
+			open_amount = console_dim.y;
+			console_pos = vec2(0, -1);
+			console_dim.x = DeshWindow->width;
+			flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize;
+			TIMER_RESET(open_timer);
+		}break;
+		case ConsoleState_OpenBig: {
+			open_target = DeshWindow->height * open_max_percent;
+			open_amount = console_dim.y;
+			console_pos = vec2(0, -1);
+			console_dim.x = DeshWindow->width;
+			flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize;
+			TIMER_RESET(open_timer);
+		}break;
+		case ConsoleState_Popout: {
+			open_target = console_dim.y;
+			open_amount = 0;
+			flags = 0;
+			TIMER_RESET(open_timer);
+
+		}break;
+	}
+	state = new_state;
 }
 
 void Console::Init() {
 	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
 	AssertDS(DS_LOGGER, "Attempt to load Console without loading Logger first");
+	deshiStage |= DS_CONSOLE;
 	
 	TIMER_START(t_s);
 	buffer = Logger::GetFilePtr();
 	
 	dictionary.dict.init(DICT_SIZE, deshi_allocator);
 	
-	deshiStage |= DS_CONSOLE;
-	Log("deshi", "Finished console initialization in ", TIMER_END(t_s), "ms");
+	scroll_to_bottom = 1;
+
+	console_pos = vec2::ZERO;
+	console_dim = vec2(DeshWindow->width, DeshWindow->height * open_max_percent);
+
+	LogS("deshi", "Finished console initialization in ", TIMER_END(t_s), "ms");
+}
+
+void OpenToTarget() {
+	console_dim.y = Math::lerp(open_amount, open_target, Min((f32)TIMER_END(open_timer) / open_dt, 1.f));
+	if (console_dim.y == open_target) open_amount = open_target;
 }
 
 void Console::Update() {
 	using namespace UI;
+
+	//check for console state changing inputs
+	if (DeshInput->KeyPressed(Key::TILDE)) {
+		if (DeshInput->ShiftDown()) {
+			ChangeState(ConsoleState_OpenBig);
+		}
+		else if (DeshInput->CtrlDown()) {
+			ChangeState(ConsoleState_Popout);
+		}
+		else {
+			ChangeState(ConsoleState_OpenSmall);
+		}
+	}
+
+	if (open_target != open_amount) OpenToTarget();
+	
+
 	uistyle = &GetStyle(); //TODO(sushi) try to get this only once
 	
-	Begin("deshiConsole", vec2::ZERO, vec2(DeshWindow->width, DeshWindow->height * open_max_percent), flags);
-	conmain = GetWindow(); //TODO(sushi) try to get this only once
-	
-	BeginChild("deshiConsoleTerminal", (conmain->dimensions - 2 * uistyle->windowPadding).yAdd(-(uistyle->fontHeight * 1.3 + uistyle->itemSpacing.y)), flags);
-	conterm = GetWindow(); //TODO(sushi) try to get this only once
-	
-	PushVar(UIStyleVar_WindowPadding, vec2(5, 0));
-	PushVar(UIStyleVar_ItemSpacing, vec2(0, 0));
-	char toprint[1024];
-	for (int i = 0; i < dictionary.dict.count; i++) {
-		Chunk colstr = dictionary.dict[i];
-		
-		fseek(buffer, colstr.charstart, SEEK_SET);
-		fread(toprint, colstr.strsize + 1, 1, buffer);
-		toprint[dictionary.dict[i].strsize] = 0;
-		
-		//adjust what we're going to print based on formatting
-		
-		PushColor(UIStyleCol_Text, colstr.color);
-		Text(toprint);
-		if (!colstr.eol && i != (dictionary.dict.count - 1)) SameLine();
-		
+	if (console_dim.y > 0) {
+		if (open_target != open_amount || state != ConsoleState_Popout) {
+			SetNextWindowPos(console_pos);
+			SetNextWindowSize(console_dim);
+		}
+		Begin("deshiConsole", vec2::ZERO, vec2::ZERO, flags);
+		conmain = GetWindow(); //TODO(sushi) try to get this only once
+
+		SetNextWindowSize(vec2(MAX_F32, GetMarginedBottom() - (uistyle->fontHeight * uistyle->inputTextHeightRelToFont + uistyle->itemSpacing.y) * 3));
+		BeginChild("deshiConsoleTerminal", (conmain->dimensions - 2 * uistyle->windowPadding).yAdd(-(uistyle->fontHeight * 1.3 + uistyle->itemSpacing.y)), flags);
+		conterm = GetWindow(); //TODO(sushi) try to get this only once
+
+		PushVar(UIStyleVar_WindowPadding, vec2(5, 0));
+		PushVar(UIStyleVar_ItemSpacing, vec2(0, 0));
+		char toprint[1024];
+		for (int i = 0; i < dictionary.count; i++) {
+			Chunk& colstr = dictionary[i];
+			u32 format = colstr.format;
+
+			fseek(buffer, colstr.charstart, SEEK_SET);
+			fread(toprint, colstr.strsize + 1, 1, buffer);
+			toprint[dictionary[i].strsize] = 0;
+
+
+			//adjust what we're going to print based on formatting
+			if (format) {
+				string tp = toprint;
+				if (HasFlag(format, Error)) {
+					PushColor(UIStyleCol_Text, Color_Red);
+				}
+				else if (HasFlag(format, Warning)) {
+					PushColor(UIStyleCol_Text, Color_Yellow);
+				}
+				else if (HasFlag(format, Success)) {
+					PushColor(UIStyleCol_Text, Color_Green);
+				}
+				else if (HasFlag(format, Colored)) {
+					PushColor(UIStyleCol_Text, colstr.color);
+				}
+				if (HasFlag(format, Alert)) {
+
+				}
+
+				static UIItem* last_tag = 0;
+				if (tag_show && HasFlag(format, Tagged)) {
+					//TODO(sushi) make a boolean for turning off fancy tag showing
+					if (!i || dictionary[i - 1].tag != colstr.tag) {
+
+						f32 lpy = GetPositionForNextItem().y;
+						f32 mr = GetMarginedRight();
+						vec2 tagsize = CalcTextSize(colstr.tag);
+
+						//look ahead for the end of the tag range
+						//dont draw if its not visible
+						f32 tag_end = lpy;
+						for (int o = i; o < dictionary.count; o++) {
+							if (dictionary[o].tag == colstr.tag)
+								tag_end += tagsize.y;
+							else break;
+						}
+						if (tag_end > GetMarginedTop()) {
+							if (tag_end < tagsize.y) {
+								lpy = GetMarginedTop() + (tag_end - tagsize.y);
+							}
+							else {
+								lpy = Max(lpy, GetMarginedTop());
+							}
+
+							PushColor(UIStyleCol_Text, color(150, 150, 150, 150));
+							Text(colstr.tag.str, vec2(mr - tagsize.x, lpy));
+							PopColor();
+
+							if (tag_outlines && tag_end - (lpy + tagsize.y) > 4) {
+								//vertline
+								Line(vec2(mr - 1, lpy + tagsize.y + 3), vec2(mr - 1, tag_end - 3), 2, color(150, 150, 150, 150));
+								//tag underline
+								Line(vec2(mr - tagsize.x, lpy + tagsize.y + 2), vec2(mr, lpy + tagsize.y + 2), 2, color(150, 150, 150, 150));
+								//tag coloser
+								Line(vec2(mr - tagsize.x, tag_end - 2), vec2(mr, tag_end - 2), 2, color(150, 150, 150, 150));
+
+							}
+
+							if (tag_highlighting) {
+								PushLayer(GetCenterLayer() - 1);
+								SetNextItemSize(vec2(conterm->width, tag_end - lpy));
+								PushColor(UIStyleCol_SelectableBg, Color_Clear);
+								PushColor(UIStyleCol_SelectableBgHovered, color(155, 155, 155, 10));
+								PushColor(UIStyleCol_SelectableBgActive, color(155, 155, 155, 10));
+								Selectable("", vec2(0, lpy), 0);
+								PopLayer();
+								PopColor(3);
+							}
+
+							SetMarginSizeOffset(vec2(-tagsize.x, 0));
+						}
+
+
+					}
+				}
+
+				Text(tp.str);
+				if (!colstr.eol && i != (dictionary.count - 1)) SameLine();
+
+				if (HasFlag(format, Error | Warning | Success | Colored))
+					PopColor();
+
+				if (line_highlighing) {
+					UIItem* last_text = GetLastItem();
+					SetNextItemSize(vec2(GetMarginedRight(), last_text->size.y));
+					PushLayer(GetCenterLayer() - 1);
+					PushColor(UIStyleCol_SelectableBg, Color_Clear);
+					PushColor(UIStyleCol_SelectableBgHovered, color(155, 155, 155, 10));
+					PushColor(UIStyleCol_SelectableBgActive, color(155, 155, 155, 10));
+					SetNextItemMinSizeIgnored();
+					Selectable("", vec2(0, last_text->position.y), 0);
+					PopLayer();
+					PopColor(3);
+				}
+			}
+			else {
+				Text(toprint);
+			}
+		}
+		PopVar(2);
+
+		if (scroll_to_bottom) { SetScroll(vec2(0, MAX_F32)); scroll_to_bottom = 0; }
+
+		EndChild();
+
+		f32 inputBoxHeight = uistyle->inputTextHeightRelToFont * uistyle->fontHeight;
+		SetNextItemSize(vec2(MAX_F32, inputBoxHeight));
+		vec2 itpos(GetMarginedLeft(), GetMarginedBottom() - inputBoxHeight);
+		if (InputText("deshiConsoleInput", inputBuf, CONSOLE_INPUT_BUFFER_SIZE, itpos, UIInputTextFlags_EnterReturnsTrue)) {
+			scroll_to_bottom = 1;
+			string input(inputBuf);
+			AddLog(input);
+			memset(inputBuf, 0, CONSOLE_INPUT_BUFFER_SIZE);
+		}
+
+		PushColor(UIStyleCol_WindowBg, color(0, 25, 18));
+		End();
 		PopColor();
 	}
-	PopVar(2);
-	
-	EndChild();
-	PushColor(UIStyleCol_WindowBg, color(0, 25, 18));
-	End();
-	PopColor();
 }
 
 void Console::Cleanup() {

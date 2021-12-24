@@ -339,7 +339,7 @@ namespace Cmd{
 		
 		AddDeshiCommands();
 		
-		Log("deshi","Finished commands initialization in ",TIMER_END(t_s),"ms");
+		LogS("deshi","Finished commands initialization in ",TIMER_END(t_s),"ms");
 	}
 	
 	void Run(const string& input){
