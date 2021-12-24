@@ -258,7 +258,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	//TODO(sushi) implement this function for use on InputText()
 	//glfwSetCharCallback()
 	
-	Log("deshi","Finished window initialization in ",TIMER_END(t_s),"ms");
+	LogS("deshi","Finished window initialization in ",TIMER_END(t_s),"ms");
 } //Init()
 
 void Window::Update() {

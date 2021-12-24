@@ -67,7 +67,7 @@ Init(){
 	
 	//DeleteTexture(nf_tex); //!Incomplete
 	
-	Log("deshi","Finished storage initialization in ",TIMER_END(t_s),"ms");
+	LogS("deshi","Finished storage initialization in ",TIMER_END(t_s),"ms");
 }
 
 void Storage::

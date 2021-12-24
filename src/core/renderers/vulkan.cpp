@@ -3206,7 +3206,7 @@ Init(){
 	AssertVk(vkDeviceWaitIdle(device));
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
 	
-	Log("deshi","Finished imgui initialization in ",TIMER_END(t_s),"ms");
+	LogS("deshi","Finished imgui initialization in ",TIMER_END(t_s),"ms");
 }
 
 void DeshiImGui::
@@ -4498,7 +4498,7 @@ Init(){
 	
 	initialized = true;
 	
-	Log("deshi","Finished vulkan renderer initialization in ",TIMER_END(t_s),"ms");
+	LogS("deshi","Finished vulkan renderer initialization in ",TIMER_END(t_s),"ms");
 }
 
 

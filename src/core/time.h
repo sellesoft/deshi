@@ -49,7 +49,7 @@ inline void Time::Init(){
 	tp1 = std::chrono::system_clock::now();
 	tp2 = std::chrono::system_clock::now();
 	
-	Log("deshi","Finished time initialization in ",TIMER_END(t_s),"ms");
+	LogS("deshi","Finished time initialization in ",TIMER_END(t_s),"ms");
 }
 
 inline void Time::Update(){
