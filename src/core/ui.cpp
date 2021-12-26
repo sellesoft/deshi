@@ -2053,6 +2053,8 @@ void CheckForHoveredWindow() {
 			if (!hovered_found && MouseInArea(w->position, w->dimensions * w->style.globalScale)) {
 				WinAddHovered(w);
 				WinRemoveChildHovered(w);
+				if (!HasFlag(w->flags, UIWindowFlags_DontSetGlobalHoverFlag))
+					StateAddFlag(UISGlobalHovered);
 				for (UIWindow* c : w->children) {
 					if (WinBegan(c)) {
 						vec2 scrollBarAdjust = vec2((CanScrollY() ? style.scrollBarYWidth : 0), (CanScrollX() ? style.scrollBarXHeight : 0));
@@ -2579,8 +2581,6 @@ if (!(curwin->flags & UIWindowFlags_NoTitleBar)) {
 void EndCall() {
 	Assert(windowStack.count, "Attempted to end the base window");
 	
-
-
 	UIItem* preitem = BeginItem(UIItemType_PreItems);
 	UIItem* postitem = BeginItem(UIItemType_PostItems);
 
@@ -2828,6 +2828,8 @@ UIWindow* DisplayMetrics() {
 		BeginRow(2, style.fontHeight * 1.2);
 		RowSetupColumnWidths({ fw, 96 });
 		
+		
+
 		Text(str1); Text(toStr(StateHasFlag(UISGlobalHovered)).str);
 		Text("input state: ");
 		switch (ui_state.input) {
@@ -3679,6 +3681,8 @@ inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {
 
 //for checking that certain things were taken care of eg, popping colors/styles/windows
 void UI::Update() {
+	
+	
 	//there should only be default stuff in the stacks
 	Assert(!windowStack.count, 
 		   "Frame ended with hanging windows in the stack, make sure you call End() if you call Begin()!");
@@ -3708,12 +3712,6 @@ void UI::Update() {
 	item_idx = -1;
 	item_layer = -1;
 #endif
-	
-	if (show_metrics) {
-		DisplayMetrics();
-		//DrawWindow(DisplayMetrics());
-		show_metrics = 0;
-	}
 
 	//windows input checking functions
 	CheckForHoveredWindow();
@@ -3733,6 +3731,13 @@ void UI::Update() {
 		DrawWindow(p);
 		WinRemoveBegan(p);
 	}
+
+	if (show_metrics) {
+		//DisplayMetrics();
+		DrawWindow(DisplayMetrics());
+		show_metrics = 0;
+	}
+
 	
 	//it should be safe to do this any time the mouse is released
 	if (DeshInput->LMouseReleased()) { AllowInputs; }

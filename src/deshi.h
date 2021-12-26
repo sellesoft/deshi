@@ -9,7 +9,6 @@
 #include "core/commands.h"
 #ifndef DESHI_DISABLE_CONSOLE
 #  include "core/console.h"
-#  include "core/console2.h"
 #endif //DESHI_DISABLE_CONSOLE
 #include "core/font.h"
 #ifndef DESHI_DISABLE_IMGUI

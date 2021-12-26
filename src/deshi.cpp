@@ -41,10 +41,6 @@ implement filtering console buffer by function and file name (add __FILENAME__ a
 
 Fun TODOs
 ---------
-add file_exists()
-add read_file_to_char_array()
-add write_char_array_to_file()
-add rename_file()
 look into implementing Lua (or finish su and make it an embeddable language!)
 write a preprocessing/postprocessing compiler that makes saving easier
 hotloadable UI
@@ -236,7 +232,6 @@ local Flags deshiStage = DS_NONE;
 #include "core/commands.h"
 #ifndef DESHI_DISABLE_CONSOLE
 #  include "core/console.h"
-#  include "core/console2.h"
 #endif //DESHI_DISABLE_CONSOLE
 #include "core/font.h"
 #ifndef DESHI_DISABLE_IMGUI
@@ -308,7 +303,6 @@ local Flags deshiStage = DS_NONE;
 #include "core/window.cpp"
 #include "core/assets.cpp"
 #include "core/console.cpp"
-#include "core/console2.cpp"
 #include "core/storage.cpp"
 #include "core/ui.cpp"
 #include "core/commands.cpp"
@@ -323,7 +317,6 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	TIMER_START(t_s);
 	Assets::enforceDirectories();
 	Memory::Init(Gigabytes(1), Gigabytes(1));
-	Console2::Init();
 	Logger::Init(5);
 	deshi_time.Init();
 	deshi_window.Init("deshi", winWidth, winHeight);
@@ -347,7 +340,7 @@ void deshi::cleanup(){
 		DeshiImGui::Cleanup();
 	Render::Cleanup();
 	deshi_window.Cleanup();
-	deshi_console.Cleanup(); Console2::Cleanup();
+	deshi_console.Cleanup();
 	Logger::Cleanup();
 }
 
