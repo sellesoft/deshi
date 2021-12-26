@@ -41,6 +41,10 @@ implement filtering console buffer by function and file name (add __FILENAME__ a
 
 Fun TODOs
 ---------
+add file_exists()
+add read_file_to_char_array()
+add write_char_array_to_file()
+add rename_file()
 look into implementing Lua (or finish su and make it an embeddable language!)
 write a preprocessing/postprocessing compiler that makes saving easier
 hotloadable UI

@@ -20,7 +20,7 @@
 #define Logf(tag,fmt,...)  Logger::LogF_(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //printf style: logf("first %f f %d",12.5f,0xff)
 #define LogfE(tag,fmt,...) Logger::LogF_(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
 #define LogfW(tag,fmt,...) Logger::LogF_(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
-#define LogfW(tag,fmt,...) Logger::LogF_(__FILE__,__LINE__,GLUE(tag,"-success"),fmt,__VA_ARGS__)
+#define LogfS(tag,fmt,...) Logger::LogF_(__FILE__,__LINE__,GLUE(tag,"-success"),fmt,__VA_ARGS__)
 #define Loga(tag,fmt,...)  Logger::LogA_(__FILE__,__LINE__,tag,fmt,__VA_ARGS__) //auto style:   loga("first $ f $",12.5f,0xff)
 #define LogaE(tag,fmt,...) Logger::LogA_(__FILE__,__LINE__,GLUE(tag,"-error"),fmt,__VA_ARGS__)
 #define LogaW(tag,fmt,...) Logger::LogA_(__FILE__,__LINE__,GLUE(tag,"-warning"),fmt,__VA_ARGS__)
