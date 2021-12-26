@@ -161,10 +161,10 @@ struct {
 #define WinAddBeingResized(win)  AddFlag(win->win_state.flags, UIWSBeingResized)
 #define WinAddBeingDragged(win)  AddFlag(win->win_state.flags, UIWSBeingDragged)
 
-#define WinRemoveBegan(win)            RemoveFlag(win->win_state.flags, UIWSBegan)
-#define WinRemoveEnded(win)            RemoveFlag(win->win_state.flags, UIWSEnded)
-#define WinRemoveHovered(win)          RemoveFlag(win->win_state.flags, UIWSHovered)
-#define WinRemoveChildHovered(win)     RemoveFlag(win->win_state.flags, UIWSChildHovered)
+#define WinRemoveBegan(win)         RemoveFlag(win->win_state.flags, UIWSBegan)
+#define WinRemoveEnded(win)         RemoveFlag(win->win_state.flags, UIWSEnded)
+#define WinRemoveHovered(win)       RemoveFlag(win->win_state.flags, UIWSHovered)
+#define WinRemoveChildHovered(win)  RemoveFlag(win->win_state.flags, UIWSChildHovered)
 #define WinRemoveFocused(win)       RemoveFlag(win->win_state.flags, UIWSFocused)
 #define WinRemoveLatched(win)       RemoveFlag(win->win_state.flags, UIWSLatch)
 #define WinRemoveBeingScrolled(win) RemoveFlag(win->win_state.flags, UIWSBeingScrolled)
@@ -206,7 +206,6 @@ u32 item_layer = -1;
 #else
 #define BreakOnItem
 #endif
-
 
 
 //helper functions
@@ -316,7 +315,7 @@ inline b32 isLocalAreaHovered(vec2 pos, vec2 size, UIItem* item) {
 }
 
 inline b32 isItemActive(UIItem* item) {
-	return WinStateHasFlag(curwin, UIWSHovered) && CanTakeInput && isItemHovered(item);
+	return WinHovered(curwin) && CanTakeInput && isItemHovered(item);
 }
 
 //internal master cursor controller
@@ -1196,7 +1195,7 @@ b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
 	item->size = DecideItemSize(vec2(Min(curwin->width, Max(50.f, CalcTextSize(text).x * 1.1f)), style.fontHeight * style.buttonHeightRelToFont), item->position);
 	AdvanceCursor(item);
 	
-	b32 active = WinStateHasFlag(curwin, UIWSHovered) && isItemHovered(item);
+	b32 active = WinHovered(curwin) && isItemHovered(item);
 	
 	{//background
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };

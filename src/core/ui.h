@@ -286,13 +286,12 @@ enum UIDrawType : u32 {
 struct UIDrawCmd {
 	UIDrawType type;
 	
-	vec2   position; //draw cmd start, line start
-	vec2  position2; //line end
-	vec2 dimensions; //rectangles have dimensions
-	f32   thickness; //line thickness, circle radius, texture alpha
-	color     color; //draw cmds have either a texture or a color
-	Texture*    tex; //if texture is non-zero, we use that as its color, and thickness as its alpha
-
+	vec2    position; //draw cmd start, line start
+	vec2   position2; //line end
+	vec2  dimensions; //rectangles have dimensions
+	f32    thickness; //line thickness, circle radius, texture alpha
+	color      color; //draw cmds have either a texture or a color
+	Texture*     tex; //if texture is non-zero, we use that as its color, and thickness as its alpha
 	u32 subdivisions; //circle subdivisons
 
 	//TODO
