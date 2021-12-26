@@ -40,6 +40,7 @@ namespace Logger{
 	void LogFromConsole(string in);
 	
 	void SetIsLogging(b32 thebooleanforthisfunction);
+	void SetMirrorToConsole(b32 mirrorToConsole);
 	
 	FILE* GetFilePtr();
 	

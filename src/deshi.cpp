@@ -71,11 +71,11 @@ Memory TODOs
 when running out of memory, log an error then fallback on STL or OS (rather than assert)
 add macro interface over functions to track where they are called from (file, line, function)
 add memory naming/tagging (like vulkan)
-add fast generic bins
-____ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
 add a memory visualizer
 ____ref: https://en.wikipedia.org/wiki/Treemapping
 consider multiple thread contexts
+add fast generic bins
+____ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1555
 
 Render TODOs
 ------------
@@ -157,7 +157,7 @@ __________ maybe store the text in the actual source and create the file from th
 __________ alternatively, we can store those specific assets in the source control
 (09/13/21) the program sometimes hangs on close in log file writing to stdout; temp fix: click the cmd, hit enter
 __________ this might not be an error with our stuff and just a quirk of the windows console
-(12/23/21) if the console fills up too much, it starts overwriting static memory
+(12/23/21) if the console fills up too much, it crashes
 __________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.cpp
 */
 

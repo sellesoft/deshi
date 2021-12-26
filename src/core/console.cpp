@@ -51,7 +51,7 @@ struct Chunk{
 	u32 strsize = 0;
 	b32 eol = 0; //true if this Chunk is the end of a line
 	string tag = ""; //change to a char array eventually
-
+	
 #ifdef DESHI_INTERNAL
 	string message = "";
 #endif 
@@ -61,14 +61,14 @@ struct Chunk{
 struct{
 	ring_array<Chunk> dict;
 	u32& count = dict.count;
-
+	
 	void add(string to_logger, Chunk chunk) {
 		dict.add(chunk);
 		
 #ifdef DESHI_INTERNAL
 		chunk.message = to_logger;
 #endif
-
+		
 		Logger::LogFromConsole(to_logger);
 	}
 	
@@ -78,9 +78,9 @@ struct{
 	}
 	
 	Chunk& operator[] (u32 idx) { return *dict.at(idx); }
-
+	
 	//u32 count() { return dict.count; }
-
+	
 } dictionary;
 
 
@@ -389,7 +389,7 @@ void Console::ChangeState(ConsoleState new_state) {
 			open_amount = 0;
 			flags = 0;
 			TIMER_RESET(open_timer);
-
+			
 		}break;
 	}
 	state = new_state;
@@ -406,10 +406,11 @@ void Console::Init() {
 	dictionary.dict.init(DICT_SIZE, deshi_allocator);
 	
 	scroll_to_bottom = 1;
-
+	
 	console_pos = vec2::ZERO;
 	console_dim = vec2(DeshWindow->width, DeshWindow->height * open_max_percent);
-
+	
+	Logger::SetMirrorToConsole(true);
 	LogS("deshi", "Finished console initialization in ", TIMER_END(t_s), "ms");
 }
 
@@ -420,7 +421,7 @@ void OpenToTarget() {
 
 void Console::Update() {
 	using namespace UI;
-
+	
 	//check for console state changing inputs
 	if (DeshInput->KeyPressed(Key::TILDE)) {
 		if (DeshInput->ShiftDown()) {
@@ -433,10 +434,10 @@ void Console::Update() {
 			ChangeState(ConsoleState_OpenSmall);
 		}
 	}
-
+	
 	if (open_target != open_amount) OpenToTarget();
 	
-
+	
 	uistyle = &GetStyle(); //TODO(sushi) try to get this only once
 	
 	if (console_dim.y > 0) {
@@ -444,10 +445,10 @@ void Console::Update() {
 			SetNextWindowPos(console_pos);
 			SetNextWindowSize(console_dim);
 		}
-
+		
 		Begin("deshiConsole", vec2::ZERO, vec2::ZERO, flags);
 		conmain = GetWindow(); //TODO(sushi) try to get this only once
-
+		
 		SetNextWindowSize(vec2(MAX_F32, GetMarginedBottom() - (uistyle->fontHeight * uistyle->inputTextHeightRelToFont + uistyle->itemSpacing.y) * 3));
 		BeginChild("deshiConsoleTerminal", (conmain->dimensions - 2 * uistyle->windowPadding).yAdd(-(uistyle->fontHeight * 1.3 + uistyle->itemSpacing.y)), flags);
 		conterm = GetWindow(); //TODO(sushi) try to get this only once
@@ -459,12 +460,12 @@ void Console::Update() {
 		for (int i = 0; i < dictionary.count; i++) {
 			Chunk& colstr = dictionary[i];
 			u32 format = colstr.format;
-
+			
 			fseek(buffer, colstr.charstart, SEEK_SET);
 			fread(toprint, colstr.strsize + 1, 1, buffer);
 			toprint[dictionary[i].strsize] = 0;
-
-
+			
+			
 			//adjust what we're going to print based on formatting
 			if (format) {
 				string tp = toprint;
@@ -481,18 +482,18 @@ void Console::Update() {
 					PushColor(UIStyleCol_Text, colstr.color);
 				}
 				if (HasFlag(format, Alert)) {
-
+					
 				}
-
+				
 				static UIItem* last_tag = 0;
 				if (tag_show && HasFlag(format, Tagged)) {
 					//TODO(sushi) make a boolean for turning off fancy tag showing
 					if (!i || dictionary[i - 1].tag != colstr.tag) {
-
+						
 						f32 lpy = GetPositionForNextItem().y;
 						f32 mr = GetMarginedRight();
 						vec2 tagsize = CalcTextSize(colstr.tag);
-
+						
 						//look ahead for the end of the tag range
 						//dont draw if its not visible
 						f32 tag_end = lpy;
@@ -508,11 +509,11 @@ void Console::Update() {
 							else {
 								lpy = Max(lpy, GetMarginedTop());
 							}
-
+							
 							PushColor(UIStyleCol_Text, color(150, 150, 150, 150));
 							Text(colstr.tag.str, vec2(mr - tagsize.x, lpy));
 							PopColor();
-
+							
 							if (tag_outlines && tag_end - (lpy + tagsize.y) > 4) {
 								//vertline
 								Line(vec2(mr - 1, lpy + tagsize.y + 3), vec2(mr - 1, tag_end - 3), 2, color(150, 150, 150, 150));
@@ -520,9 +521,9 @@ void Console::Update() {
 								Line(vec2(mr - tagsize.x, lpy + tagsize.y + 2), vec2(mr, lpy + tagsize.y + 2), 2, color(150, 150, 150, 150));
 								//tag coloser
 								Line(vec2(mr - tagsize.x, tag_end - 2), vec2(mr, tag_end - 2), 2, color(150, 150, 150, 150));
-
+								
 							}
-
+							
 							if (tag_highlighting) {
 								PushLayer(GetCenterLayer() - 1);
 								SetNextItemSize(vec2(GetMarginedRight(), tag_end - lpy));
@@ -534,20 +535,20 @@ void Console::Update() {
 								PopLayer();
 								PopColor(3);
 							}
-
+							
 							SetMarginSizeOffset(vec2(-tagsize.x, 0));
 						}
-
-
+						
+						
 					}
 				}
-
+				
 				Text(tp.str);
 				if (!colstr.eol && i != (dictionary.count - 1)) SameLine();
-
+				
 				if (HasFlag(format, Error | Warning | Success | Colored))
 					PopColor();
-
+				
 				if (line_highlighing) {
 					UIItem* last_text = GetLastItem();
 					SetNextItemSize(vec2(GetMarginedRight(), last_text->size.y));
@@ -566,13 +567,13 @@ void Console::Update() {
 			}
 		}
 		PopVar(2);
-
+		
 		if (scroll_to_bottom) { SetScroll(vec2(0, MAX_F32)); scroll_to_bottom = 0; }
-
+		
 		//SetScroll(vec2(0, MAX_F32));
 		EndChild();
-
-
+		
+		
 		//get text input
 		f32 inputBoxHeight = uistyle->inputTextHeightRelToFont * uistyle->fontHeight;
 		SetNextItemSize(vec2(MAX_F32, inputBoxHeight));
@@ -583,7 +584,7 @@ void Console::Update() {
 			AddLog(input);
 			memset(inputBuf, 0, CONSOLE_INPUT_BUFFER_SIZE);
 		}
-
+		
 		PushColor(UIStyleCol_WindowBg, color(0, 25, 18));
 		End();
 		PopColor();

@@ -14,7 +14,7 @@ namespace Logger{
 			string modified = "{{";
 			u32 rb = str.findFirstChar(']');
 			string tag = str.substr(1, rb - 1);
-
+			
 			if (rb != string::npos) {
 				if (tag.endsWith("-ERROR")) {
 					modified += "e,";
@@ -49,14 +49,16 @@ namespace Logger{
 	}
 	
 	inline void LogInternal(string& str){
-		if (!is_logging) return;
+		if(!is_logging) return;
 		if(mirror_to_stdout) puts(str.str);
+		if(str.count >= LOG_BUFFER_SIZE) LogW("logger","Attempted to log a message more than 4096 characters long.");
 		str += "\n";
+		
 		u32 chst = ftell(file);
 		fputs(str.str, file);
-		memcpy(log_buffer, str.str, str.count);
-		last_message_len = str.count;
-		if (mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)) ConsoleMirror(str, chst);
+		memcpy(log_buffer, str.str, ClampMax(str.count, LOG_BUFFER_SIZE));
+		last_message_len = ClampMax(str.count, LOG_BUFFER_SIZE);
+		if(mirror_to_console && DeshiModuleLoaded(DS_CONSOLE)) ConsoleMirror(str, chst);
 	}
 	
 	
@@ -81,6 +83,9 @@ namespace Logger{
 		is_logging = yep;
 	}
 	
+	void SetMirrorToConsole(b32 mirrorToConsole){
+		mirror_to_console = mirrorToConsole;
+	}
 	
 	inline FILE* GetFilePtr() {
 		return file;
@@ -132,7 +137,6 @@ namespace Logger{
 		
 		is_logging = true; //NOTE this prevents errors in calls to Log before Logger is finished initializing
 		LogS("deshi","Finished logging initialization in ",TIMER_END(t_s),"ms");
-		mirror_to_console = true; //NOTE this happens after the Log() so it doesnt try calling into the console
 	}
 	
 	//TODO maybe flush every X seconds/frames instead of every update?

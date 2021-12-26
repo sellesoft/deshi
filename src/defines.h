@@ -176,7 +176,7 @@ global_const u64 ucharsize = sizeof(uchar);
 #define OffsetOfMember(structName,memberName) PointerAsInt(&(((structName*)0)->memberName))
 #define CastFromMember(structName,memberName,ptr) (structName*)((u8*)(ptr) - OffsetOfMember(structName,memberName))
 #define StartNamespace(a) namespace a{ (void)0
-#define EndNamespace(a) }
+#define EndNamespace(a) } (void)0
 #define CastToConst(type,a) const_cast<const type>(a)
 #define CastFromConst(type,a) const_cast<type>(a)
 #define StaticCast(type,a) static_cast<type>(a)
