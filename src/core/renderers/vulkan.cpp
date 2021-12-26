@@ -168,7 +168,7 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 #define MAX_UI_VERTICES  0xFFFF //max u16: 65535
 #define MAX_UI_INDICES   3*MAX_UI_VERTICES
 #define MAX_UI_CMDS      1000
-#define UI_LAYERS        11
+#define UI_LAYERS        (u32)11
 typedef u32 UIIndexVk; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
 local UIIndexVk uiVertexCount = 0;
 local UIIndexVk uiIndexCount  = 0;
@@ -3108,11 +3108,15 @@ BuildCommands(){
 			}
 			
 			//draw imgui stuff
-			if(ImDrawData* imDrawData = ImGui::GetDrawData()){
-				DebugBeginLabelVk(cmdBuffer, "ImGui", draw_group_color);
-				ImGui_ImplVulkan_RenderDrawData(imDrawData, cmdBuffer);
-				DebugEndLabelVk(cmdBuffer);
+#ifndef DESHI_DISABLE_IMGUI
+			if (DeshiModuleLoaded(DS_IMGUI)) {
+				if (ImDrawData* imDrawData = ImGui::GetDrawData()) {
+					DebugBeginLabelVk(cmdBuffer, "ImGui", draw_group_color);
+					ImGui_ImplVulkan_RenderDrawData(imDrawData, cmdBuffer);
+					DebugEndLabelVk(cmdBuffer);
+				}
 			}
+#endif
 			
 			//DEBUG draw shadow map
 			if(settings.showShadowMap){
@@ -3156,6 +3160,7 @@ local void imguiCheckVkResult(VkResult err){
 local char iniFilepath[256] = {};
 void DeshiImGui::
 Init(){
+	AddFlag(deshiStage, DS_IMGUI);
 	TIMER_START(t_s);
 	
 	//Setup Dear ImGui context
@@ -4538,7 +4543,8 @@ Update(){
 	
 	//render stuff
 	if(settings.lightFrustrums) DrawFrustrum(vkLights[0].toVec3(), vec3::ZERO, 1, 90, settings.shadowNearZ, settings.shadowFarZ);
-	ImGui::Render();
+	if(DeshiModuleLoaded(DS_IMGUI))
+		ImGui::Render();
 	UpdateUniformBuffers();
 	SetupCommands();
 	

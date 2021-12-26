@@ -316,7 +316,7 @@ enum UIItemType : u32 {
 	UIItemType_PostItems, // ditto, but afterwards
 	UIItemType_Custom,    // BeginCustomItem()
 	UIItemType_Abstract,  // any single drawcall such as a line, rectangle, circle, etc
-	UIItemType_ChildWin,  // BeginChild() | this does not have any draw commands and is simply to indicate that we are placing a child window
+	UIItemType_Window,    // an item that holds a pointer to a window to be drawn
 	UIItemType_Text,      // Text()
 	UIItemType_InputText, // InputText()
 	UIItemType_Button,    // Button()
@@ -375,7 +375,7 @@ struct UIItem {
 	array<UIDrawCmd> drawCmds;
 
 	//this is only used when the item is a child window
-	UIWindow* child;
+	UIWindow* child = 0;
 
 	//set false when you dont want the item to affect scrolling or fitting all elements
 	b32 trackedForMinSize = 1;
@@ -393,13 +393,32 @@ enum WinActiveSide {
 	wLeft, wRight, wTop, wBottom,
 };
 
+enum UIWindowState_ {
+	UIWSNone          = 0,
+	UIWSBegan         = 1 << 0,
+	UIWSEnded         = 1 << 1,
+	UIWSFocused       = 1 << 2,
+	UIWSHovered       = 1 << 3,
+	UIWSChildHovered  = 1 << 4,
+	UIWSLatch         = 1 << 5,
+	UIWSBeingScrolled = 1 << 6,
+	UIWSBeingResized  = 1 << 7,
+	UIWSBeingDragged  = 1 << 8,
+}; typedef u32 UIWindowState;
+
+enum UIWindowType_ {
+	UIWindowType_Normal,
+	UIWindowType_Child,  //stays embedded within a parent window
+	UIWindowType_PopOut, //is able to leave the parent windows boundries
+}; typedef u32 UIWindowType;
 
 // a window is a collection of items and items are a collection of drawcalls.
 // item positions are relative to the window's upper left corner.
 // drawcall positions are relative to the item's upper left corner.
 struct UIWindow {
 	string name;
-	
+	UIWindowType type;
+
 	union {
 		vec2 position;
 		struct { f32 x, y; };
@@ -425,6 +444,11 @@ struct UIWindow {
 	};
 	
 	UIWindowFlags flags;
+
+	struct {
+		UIWindowState flags = UIWSNone;
+		WinActiveSide active_side = wNone;
+	} win_state;
 	
 	//base items are always drawn before items and is just a way to defer drawing 
 	//base window stuff to End(), so we can do dynamic sizing
@@ -432,34 +456,13 @@ struct UIWindow {
 	array<UIItem> preItems;
 	array<UIItem> postItems;
 	
-	u32 currlayer = floor(UI_WINDOW_ITEM_LAYERS / 2.f);
-	
 	u32 windowlayer = 5;
 	
 	//a collection of child windows
 	UIWindow* parent = 0;
 	map<const char*, UIWindow*> children;
 	
-	UIItem* hoveredItem = 0;
-	
-	b32 hovered = false;
-	b32 childHovered = false;
-	b32 titleHovered = false;
-	
-	b32 focused = false;
-	
-	b32 minimized = false;
-	b32 hidden = false;
 
-	//input state vars
-	b32 latch         = false;
-	b32 beingScrolled = false;
-	b32 beingResized  = false;
-	b32 beingDragged  = false;
-	WinActiveSide activeSide = wNone;
-
-
-	f32 titleBarHeight = 0;
 
 	vec2 minSizeForFit;
 
@@ -661,10 +664,14 @@ namespace UI {
 	
 	
 	//// windows ////
-	void Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
-	void End();
+	void Begin(const char* name, UIWindowFlags flags = 0, UIWindowType type = UIWindowType_Normal);
+	void Begin(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0, UIWindowType type = UIWindowType_Normal);
 	void BeginChild(const char* name, vec2 dimensions, UIWindowFlags flags = 0);
+	void BeginChild(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
+	void BeginPopOut(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags = 0);
+	void End();
 	void EndChild();
+	void EndPopOut();
 	void SetNextWindowPos(vec2 pos);
 	void SetNextWindowPos(f32 x, f32 y);
 	void SetNextWindowSize(vec2 size);		  //when you set a windows size through this you aren't supposed to take into account the titlebar!
