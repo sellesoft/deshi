@@ -11,9 +11,9 @@ local TIMER_START(open_timer);
 
 //console 
 #define CONSOLE_INPUT_BUFFER_SIZE 256
-local char inputBuf[CONSOLE_INPUT_BUFFER_SIZE]{};
 local constexpr u32 DICT_SIZE = 512;
 local FILE*     buffer;      //this is always from Logger
+local char      inputBuf[CONSOLE_INPUT_BUFFER_SIZE]{};
 local UIWindow* conmain = 0; //the main console window
 local UIWindow* conterm = 0; //the terminal child window
 local UIStyle*  uistyle = 0; //for quick access to the style of ui, we should not change any styles through this pointer
