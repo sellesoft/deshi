@@ -168,7 +168,7 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 #define MAX_UI_VERTICES  0xFFFF //max u16: 65535
 #define MAX_UI_INDICES   3*MAX_UI_VERTICES
 #define MAX_UI_CMDS      1000
-#define UI_LAYERS        11
+#define UI_LAYERS        (u32)11
 typedef u32 UIIndexVk; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
 local UIIndexVk uiVertexCount = 0;
 local UIIndexVk uiIndexCount  = 0;

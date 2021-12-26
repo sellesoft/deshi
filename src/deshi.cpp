@@ -335,7 +335,7 @@ void deshi::init(u32 winWidth, u32 winHeight){
 	Cmd::Init();
 	
 	glfwShowWindow(deshi_window.window);
-	Log("deshi","Finished deshi initialization in ",TIMER_END(t_s),"ms");
+	LogS("deshi","Finished deshi initialization in ",TIMER_END(t_s),"ms");
 }
 
 void deshi::cleanup(){

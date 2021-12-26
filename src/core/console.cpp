@@ -444,14 +444,15 @@ void Console::Update() {
 			SetNextWindowPos(console_pos);
 			SetNextWindowSize(console_dim);
 		}
+
 		Begin("deshiConsole", vec2::ZERO, vec2::ZERO, flags);
 		conmain = GetWindow(); //TODO(sushi) try to get this only once
 
 		SetNextWindowSize(vec2(MAX_F32, GetMarginedBottom() - (uistyle->fontHeight * uistyle->inputTextHeightRelToFont + uistyle->itemSpacing.y) * 3));
 		BeginChild("deshiConsoleTerminal", (conmain->dimensions - 2 * uistyle->windowPadding).yAdd(-(uistyle->fontHeight * 1.3 + uistyle->itemSpacing.y)), flags);
 		conterm = GetWindow(); //TODO(sushi) try to get this only once
-//		PushVar(UIStyleVar_FontHeight, BoundTimeOsc(11, 50));
-
+		
+		//draw text fro the dictionary
 		PushVar(UIStyleVar_WindowPadding, vec2(5, 0));
 		PushVar(UIStyleVar_ItemSpacing, vec2(0, 0));
 		char toprint[1024];
@@ -571,6 +572,8 @@ void Console::Update() {
 		//SetScroll(vec2(0, MAX_F32));
 		EndChild();
 
+
+		//get text input
 		f32 inputBoxHeight = uistyle->inputTextHeightRelToFont * uistyle->fontHeight;
 		SetNextItemSize(vec2(MAX_F32, inputBoxHeight));
 		vec2 itpos(GetMarginedLeft(), GetMarginedBottom() - inputBoxHeight);

@@ -118,6 +118,8 @@ global_const f32 MIN_F32 = -MAX_F32;
 global_const f64 MAX_F64 = 1.79769313486231e+308;
 global_const f64 MIN_F64 = -MAX_F64;
 
+global_const f32 M_ONETHIRD   = 0.33333333333f;
+global_const f32 M_ONESIXTH   = 0.16666666667f;
 global_const f32 M_EPSILON    = 0.00001f;
 global_const f32 M_FOURTHPI   = 0.78539816339f;
 global_const f32 M_HALFPI     = 1.57079632679f;
