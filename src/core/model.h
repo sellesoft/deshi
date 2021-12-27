@@ -5,7 +5,6 @@
 #include "../defines.h"
 #include "../math/math.h"
 #include "../utils/array.h"
-#include "../utils/view.h"
 
 enum ImageFormat_{ //NOTE value = bytes per pixel
 	ImageFormat_BW   = 1,
@@ -76,7 +75,7 @@ struct Mesh{
 		u32  color;
 		vec3 normal;
 	} *vertexArray;
-	view<Vertex> vertexes;
+	carray<Vertex> vertexes;
 	//struct VertexEx{
 	//vec3 tangent;
 	//vec3 bitangent;
@@ -86,7 +85,7 @@ struct Mesh{
 	
 	typedef u32 Index;
 	Index* indexArray;
-	view<u32> indexes;
+	carray<u32> indexes;
 	
 	struct Triangle{
 		vec3 normal;
@@ -99,10 +98,10 @@ struct Mesh{
 		
 		u32* neighborArray;
 		u8*  edgeArray;
-		view<u32> neighbors;
-		view<u8>  edges;
+		carray<u32> neighbors;
+		carray<u8>  edges;
 	} *triangleArray;
-	view<Triangle> triangles;
+	carray<Triangle> triangles;
 	
 	struct Face{
 		vec3 normal;
@@ -118,13 +117,13 @@ struct Mesh{
 		u32* outerVertexArray;
 		u32* neighborTriangleArray;
 		u32* neighborFaceArray;
-		view<u32> triangles;
-		view<u32> vertexes;
-		view<u32> outerVertexes;
-		view<u32> triangleNeighbors;
-		view<u32> faceNeighbors;
+		carray<u32> triangles;
+		carray<u32> vertexes;
+		carray<u32> outerVertexes;
+		carray<u32> triangleNeighbors;
+		carray<u32> faceNeighbors;
 	} *faceArray;
-	view<Face> faces;
+	carray<Face> faces;
 };
 typedef Mesh::Vertex   MeshVertex;
 typedef Mesh::Index    MeshIndex;

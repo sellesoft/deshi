@@ -59,24 +59,33 @@ typedef char16_t           uchar; //unicode char type
 typedef u32 Type;
 typedef u32 Flags;
 
-enum Type_ {
-	Type_s8,
-	Type_s16,
-	Type_s32,
-	Type_s64,
-	Type_spt,
-	Type_u8,
-	Type_u16,
-	Type_u32,
-	Type_u64,
-	Type_upt,
-	Type_f32,
-	Type_f64,
-	Type_b32,
-	Type_uchar,
-	Type_vec2,
-	Type_vec3,
-	Type_vec4,
+struct cstring{
+    char* str;
+    upt   count;
+    
+    FORCE_INLINE explicit operator bool(){ return count; }
+	FORCE_INLINE char& operator[](upt idx){ return str[idx]; }
+	FORCE_INLINE char* at(upt idx){ return &str[idx]; }
+	FORCE_INLINE char* begin(){ return &str[0]; }
+	FORCE_INLINE char* end()  { return &str[count]; }
+	FORCE_INLINE const char* begin()const{ return &str[0]; }
+	FORCE_INLINE const char* end()  const{ return &str[count]; }
+};
+#define cstring_lit(s) cstring{(char*)s, sizeof(s)-1}
+#define cstr_lit(s) cstring{(char*)s, sizeof(s)-1}
+
+template<typename T>
+struct carray{
+    T*  data;
+    upt count;
+    
+    FORCE_INLINE explicit operator bool(){ return count; }
+	FORCE_INLINE T& operator[](upt idx){ return data[idx]; }
+	FORCE_INLINE T* at(upt idx){ return &data[idx]; }
+	FORCE_INLINE T* begin(){ return &data[0]; }
+	FORCE_INLINE T* end()  { return &data[count]; }
+	FORCE_INLINE const T* begin()const{ return &data[0]; }
+	FORCE_INLINE const T* end()  const{ return &data[count]; }
 };
 
 //TODO(delle) function pointer signature macro
@@ -94,6 +103,32 @@ struct Allocator{
 	Allocator_ChangeMemory_Func  decommit; //returns the memory to reserved state
 	Allocator_ReleaseMemory_Func release;  //release the reserved memory back to OS
 	Allocator_ResizeMemory_Func  resize;   //resizes reserved memory and moves memory if a new location is required
+};
+
+enum Types{
+	Type_void,
+	Type_s8,
+	Type_s16,
+	Type_s32,
+	Type_s64,
+	Type_spt,
+	Type_u8,
+	Type_u16,
+	Type_u32,
+	Type_u64,
+	Type_upt,
+	Type_f32,
+	Type_f64,
+	Type_b32,
+	Type_uchar,
+	Type_cstring,
+	Type_carray,
+	Type_Allocator,
+	
+	//TODO define deshi types elsewhere
+	Type_vec2,
+	Type_vec3,
+	Type_vec4,
 };
 
 //////////////////////////
@@ -124,7 +159,7 @@ global_const f32 M_EPSILON    = 0.00001f;
 global_const f32 M_FOURTHPI   = 0.78539816339f;
 global_const f32 M_HALFPI     = 1.57079632679f;
 global_const f32 M_PI         = 3.14159265359f;
-global_const f64 M_PId        = 3.14159265358979323;
+global_const f64 M_PId        = 3.14159265358979323846;
 global_const f32 M_2PI        = 6.28318530718f;
 global_const f32 M_TAU        = M_2PI;
 global_const f32 M_E          = 2.71828182846f;

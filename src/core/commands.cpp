@@ -45,7 +45,7 @@ namespace Cmd{
 		
 		CMDSTART(time_engine, "Logs deshi engine times"){
 			DeshConsole->AddLog(DeshTime->FormatTickTime("Time:   {t}ms Window:{w}ms Input:{i}ms Admin:{a}ms\n"
-													  "Console:{c}ms Render:{r}ms Frame:{f}ms Delta:{d}ms").c_str());
+														 "Console:{c}ms Render:{r}ms Frame:{f}ms Delta:{d}ms").c_str());
 		}CMDEND(time_engine);
 		
 		CMDSTART(list, "Lists available commands"){
@@ -82,7 +82,7 @@ namespace Cmd{
 		
 		CMDSTART(alias, "Gives an alias to specified command and arguments"){
 			//check that alias name and command arent the same
-			if(args[0] == args[1]){ //!Robustness: this check doesnt compare inside args[1], so an alias could still be recursive
+			if(strings_equal(args[0], args[1])){ //!Robustness: this check doesnt compare inside args[1], so an alias could still be recursive
 				DeshConsole->AddLog("Error: Aliases can't be recursive");
 				return;
 			}
@@ -221,7 +221,7 @@ namespace Cmd{
 		
 		CMDSTART(mat_list, "Lists the materials and their info"){
 			DeshConsole->AddLog("Material List:"
-							 "\nName\tShader\tTextures");
+								"\nName\tShader\tTextures");
 			forI(Storage::MaterialCount()){
 				Material* mat = Storage::MaterialAt(i);
 				string text = toStr(mat->name,'\t',ShaderStrings[mat->shader],'\t');
@@ -264,7 +264,7 @@ namespace Cmd{
 		
 		CMDSTART(shader_list, "Lists the shaders and their info"){
 			DeshConsole->AddLog("Shader List:"
-							 "\nID\tName");
+								"\nID\tName");
 			forI(ArrayCount(ShaderStrings)){
 				DeshConsole->AddLog(toStr(i,'\t',ShaderStrings[i]));
 			}
@@ -334,7 +334,7 @@ namespace Cmd{
 	void Init(){
 		AssertDS(DS_MEMORY, "Attempt to load Cmd without loading Memory first");
 		deshiStage |= DS_CMD;
-
+		
 		TIMER_START(t_s);
 		
 		AddDeshiCommands();

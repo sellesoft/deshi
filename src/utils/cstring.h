@@ -3,35 +3,28 @@
 #define DESHI_CSTRING_H
 
 #include "../defines.h"
-#include <cstring>
-
-struct cstring{
-    char* str;
-    u64   count;
-    
-    inline char operator[](u32 idx){ return str[idx]; }
-    inline explicit operator bool(){ return count; }
-    inline bool operator==(cstring s){ return (count==s.count) && (strncmp(str, s.str, count) == 0); }
-};
-
-#define cstring_lit(s) cstring{(char*)s, sizeof(s)-1}
-#define cstr_lit(s) cstring{(char*)s, sizeof(s)-1}
+#include <cstring> //strncmp, memcpy
 
 global_ inline void
-advance(cstring* s, u64 count){
+advance(cstring* s, upt count){
     s->str += count; s->count -= count;
+}
+
+global_ inline b32
+strings_equal(cstring a, cstring b){
+	return (a.count == b.count) && (strncmp(a.str, b.str, a.count) == 0);
 }
 
 global_ inline cstring 
 eat_until_char(cstring s, char c){
-    for(u64 i=0; i<s.count; ++i){ if(s[i] == c){ return cstring{s.str, i}; } }
+    for(upt i=0; i<s.count; ++i){ if(s[i] == c){ return cstring{s.str, i}; } }
     return cstring{};
 }
 
 global_ inline cstring 
 eat_until_char_skip_quotes(cstring s, char c){
     bool in_quotes = false;
-    for(u64 i=0; i<s.count; ++i){ 
+    for(upt i=0; i<s.count; ++i){ 
         if(s[i] == '\"') in_quotes = !in_quotes;
         if(!in_quotes && s[i] == c){ 
             return cstring{s.str, i}; 
@@ -53,12 +46,12 @@ to_c_string(cstring s){
     return cs;
 }
 
-global_ inline u64
+global_ inline upt
 isnumber(char c){
     return (c >= '0' && c <= '9') ? true : false;
 }
 
-global_ inline u64
+global_ inline upt
 ishex(char c){
     return ((c >= '0' && c <= '9') || 
             (c >= 'A' && c <= 'F') || 
