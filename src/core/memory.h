@@ -3,6 +3,7 @@
 #define DESHI_MEMORY_H
 
 #include "../defines.h"
+#include "../utils/cstring.h"
 #include <cstdlib>
 
 struct Arena{
@@ -53,6 +54,7 @@ namespace Memory{
 	Arena* GrowArena(Arena* arena, upt size);
 	void   ClearArena(Arena* arena);
 	void   DeleteArena(Arena* arena);
+	ArenaHeap* ExposeArenaHeap();
 	
 	//allocates AT LEAST 'size' in bytes with all memory zeroed
 	void* Allocate(upt size);
@@ -62,13 +64,21 @@ namespace Memory{
 	//  if 'new_size' is zero, calls ZeroFree on 'ptr' and returns 0
 	void* Reallocate(void* ptr, upt new_size);
 	void  ZeroFree(void* ptr);
+	GenericHeap* ExposeGenericHeap();
 	
 	//allocates AT LEAST 'size' in bytes with all memory zeroed which will be automatically freed by Memory::Update
 	void* TempAllocate(upt size);
+	Arena* ExposeTempArena();
 	
-	ArenaHeap*   ExposeArenaHeap();
-	GenericHeap* ExposeGenericHeap();
-	Arena*       ExposeTempArena();
+#if DESHI_INTERNAL
+	void    DEBUG_SetAddressName(void* address, cstring name, Type type = 0);
+	cstring DEBUG_GetAddressName(void* address);
+	Arena*  DEBUG_ExposeAddressNamingArena();
+#elif
+#  define DEBUG_SetAddressName(...)
+#  define DEBUG_GetAddressName(...)
+#  define DEBUG_ExposeAddressNamingArena(...)
+#endif //DESHI_INTERNAL
 	
 	void Init(upt main_size, upt temp_size);
 	void Update();

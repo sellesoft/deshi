@@ -1,27 +1,5 @@
-#include "..\renderer.h"
-/*
-Useful or Reading List Links:
-https://renderdoc.org/vkspec_chunked/index.html
-https://vulkan-tutorial.com/en/Vertex_buffers/Staging_buffer#page_Using-a-staging-buffer:~:text=You%20may
-https://vulkan-tutorial.com/en/Vertex_buffers/Staging_buffer#page_Conclusion:~:text=It%20should
-https://vulkan-tutorial.com/en/Vertex_buffers/Index_buffer#page_Using-an-index-buffer:~:text=The%20previous
-https://vulkan-tutorial.com/en/Uniform_buffers/Descriptor_layout_and_buffer#page_Updating-uniform-data:~:text=Using%20a%20UBO
-https://vulkan-tutorial.com/en/Texture_mapping/Combined_image_sampler#page_Updating-the-descriptors:~:text=determined.-,It%20is
-https://vulkan-tutorial.com/en/Generating_Mipmaps#page_Generating-Mipmaps:~:text=Beware%20if%20you
-https://vulkan-tutorial.com/en/Generating_Mipmaps#page_Linear-filtering-support:~:text=There%20are%20two
-https://vulkan-tutorial.com/en/Multisampling#page_Conclusion:~:text=features%2C-,like
-https://vkguide.dev/docs/extra-chapter/abstracting_descriptors/
-https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
-https://github.com/zeux/volk
-http://www.ludicon.com/castano/blog/2009/02/optimal-grid-rendering/
-http://gameangst.com/?p=9
-*/
-
-
 //-------------------------------------------------------------------------------------------------
 // @VULKAN STRUCTS
-
-
 struct MeshVk{
 	Mesh* base;
 	u32 vtxOffset;
@@ -106,10 +84,9 @@ struct BufferVk{
 	VkDescriptorBufferInfo descriptor;
 };
 
+
 //-------------------------------------------------------------------------------------------------
 // @INTERFACE VARIABLES
-
-
 local RenderSettings settings;
 local ConfigMap configMap = {
 	{"#render settings config file",0,0},
@@ -168,7 +145,7 @@ local RendererStage rendererStage = RENDERERSTAGE_NONE;
 #define MAX_UI_VERTICES  0xFFFF //max u16: 65535
 #define MAX_UI_INDICES   3*MAX_UI_VERTICES
 #define MAX_UI_CMDS      1000
-#define UI_LAYERS        (u32)11
+#define UI_LAYERS        11
 typedef u32 UIIndexVk; //if you change this make sure to change whats passed in the vkCmdBindIndexBuffer as well
 local UIIndexVk uiVertexCount = 0;
 local UIIndexVk uiIndexCount  = 0;
@@ -197,15 +174,14 @@ local TempIndexVk  debugFilledIndexCount     = 0;
 local Mesh::Vertex debugFilledVertexArray   [MAX_TEMP_VERTICES];
 local TempIndexVk  debugFilledIndexArray    [MAX_TEMP_INDICES];
 
-
 #define MAX_MODEL_CMDS 10000 
 typedef u32 ModelIndexVk;
 local ModelIndexVk modelCmdCount = 0;
 local ModelCmdVk   modelCmdArray[MAX_MODEL_CMDS];
 
-local array<MeshVk>      vkMeshes;
-local array<TextureVk>   textures;
-local array<MaterialVk>  vkMaterials;
+local array<MeshVk>      vkMeshes(deshi_allocator);
+local array<TextureVk>   textures(deshi_allocator);
+local array<MaterialVk>  vkMaterials(deshi_allocator);
 local vec4 vkLights[10]{ vec4(0,0,0,-1) };
 
 local const char* validationLayers[] = {
@@ -2856,7 +2832,7 @@ ResetCommands(){
 	{//UI commands
 		uiVertexCount = 0;
 		uiIndexCount  = 0;
-		forI(UI_LAYERS) {
+		forI(UI_LAYERS){
 			memset(&uiCmdArrays[i][0], 0, sizeof(UICmdVk) * uiCmdCounts[i]);
 			uiCmdArrays[i][0].descriptorSet = textures[1].descriptorSet;
 			uiCmdCounts[i] = 1;
@@ -3081,16 +3057,16 @@ BuildCommands(){
 				push.translate.y = -1.0f;
 				vkCmdPushConstants(cmdBuffer, pipelineLayouts.twod, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Push2DVk), &push);
 				
-				forX(layer, UI_LAYERS) {
-					if (uiCmdCounts[layer] > 1) {
-						forX(cmd_idx, uiCmdCounts[layer]) {
+				forX(layer, UI_LAYERS){
+					if(uiCmdCounts[layer] > 1){
+						forX(cmd_idx, uiCmdCounts[layer]){
 							scissor.offset.x = uiCmdArrays[layer][cmd_idx].scissorOffset.x;
 							scissor.offset.y = uiCmdArrays[layer][cmd_idx].scissorOffset.y;
 							scissor.extent.width = uiCmdArrays[layer][cmd_idx].scissorExtent.x;
 							scissor.extent.height = uiCmdArrays[layer][cmd_idx].scissorExtent.y;
 							vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 							
-							if (uiCmdArrays[layer][cmd_idx].descriptorSet) {
+							if(uiCmdArrays[layer][cmd_idx].descriptorSet){
 								vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts.twod, 0, 1, &uiCmdArrays[layer][cmd_idx].descriptorSet, 0, nullptr);
 								vkCmdDrawIndexed(cmdBuffer, uiCmdArrays[layer][cmd_idx].indexCount, 1, uiCmdArrays[layer][cmd_idx].indexOffset, 0, 0);
 							}
@@ -3109,8 +3085,8 @@ BuildCommands(){
 			
 			//draw imgui stuff
 #ifndef DESHI_DISABLE_IMGUI
-			if (DeshiModuleLoaded(DS_IMGUI)) {
-				if (ImDrawData* imDrawData = ImGui::GetDrawData()) {
+			if(DeshiModuleLoaded(DS_IMGUI)){
+				if(ImDrawData* imDrawData = ImGui::GetDrawData()){
 					DebugBeginLabelVk(cmdBuffer, "ImGui", draw_group_color);
 					ImGui_ImplVulkan_RenderDrawData(imDrawData, cmdBuffer);
 					DebugEndLabelVk(cmdBuffer);
@@ -3237,27 +3213,25 @@ NewFrame(){
 vec2 prevScissorOffset = vec2(0, 0);
 vec2 prevScissorExtent = vec2(0, 0);
 
-void CheckUICmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset, vec2 scissorExtent) {
-	if (uiCmdArrays[layer][uiCmdCounts[layer] - 1].textured != textured ||
-		(tex ? uiCmdArrays[layer][uiCmdCounts[layer] - 1].descriptorSet != textures[tex->idx].descriptorSet : 0) ||
-		scissorOffset != prevScissorOffset || //im doing these 2 because we have to know if we're drawing in a new window
-		scissorExtent != prevScissorExtent ) { //and you could do text last in one, and text first in another {  
+void CheckUICmdArrays(u32 layer, Texture* tex, b32 textured, vec2 scissorOffset, vec2 scissorExtent){
+	if((uiCmdArrays[layer][uiCmdCounts[layer] - 1].textured != textured)
+	   || ((tex) ? uiCmdArrays[layer][uiCmdCounts[layer] - 1].descriptorSet != textures[tex->idx].descriptorSet : 0)
+	   || (scissorOffset != prevScissorOffset)   //im doing these 2 because we have to know if we're drawing in a new window
+	   || (scissorExtent != prevScissorExtent)){ //and you could do text last in one, and text first in another {  
 		prevScissorExtent = scissorExtent;
-		prevScissorOffset = scissorOffset;                     //NOTE null_font is the default texture for 2D items, as its just a white square
+		prevScissorOffset = scissorOffset;         //NOTE null_font is the default texture for 2D items, as its just a white square
 		uiCmdArrays[layer][uiCmdCounts[layer]].descriptorSet = textures[(tex ? tex->idx : 1)].descriptorSet;
 		uiCmdArrays[layer][uiCmdCounts[layer]].indexOffset = uiIndexCount;
 		uiCmdArrays[layer][uiCmdCounts[layer]].textured = textured;
 		uiCmdCounts[layer]++;
 	}
 	Assert(uiCmdCounts[layer] <= MAX_UI_CMDS);
-	
 }
 
-void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
-	if (color.a == 0) return;
-	
+	if(color.a == 0) return;
 	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
 	
 	u32       col = color.rgba;
@@ -3277,21 +3251,20 @@ void Render::FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, v
 	
 }
 
-void Render::DrawTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawTriangle2D(vec2 p1, vec2 p2, vec2 p3, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
-	if (color.a == 0) return;
+	if(color.a == 0) return;
 	
 	DrawLine2D(p1, p2, 1, color, layer, scissorOffset, scissorExtent);
 	DrawLine2D(p2, p3, 1, color, layer, scissorOffset, scissorExtent);
 	DrawLine2D(p3, p1, 1, color, layer, scissorOffset, scissorExtent);
 }
 
-void Render::FillRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::FillRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
-	if (color.a == 0) return;
-	
+	if(color.a == 0) return;
 	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
 	
 	u32       col = color.rgba;
@@ -3314,10 +3287,10 @@ void Render::FillRect2D(vec2 pos, vec2 dimensions, color color, u32 layer, vec2 
 
 //this func is kind of scuffed i think because of the line thickness stuff when trying to draw
 //straight lines, see below
-void Render::DrawRect2D(vec2 pos, vec2 dimensions, f32 thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawRect2D(vec2 pos, vec2 dimensions, f32 thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
-	if (color.a == 0) return;
+	if(color.a == 0) return;
 	
 	//top left to top right 
 	DrawLine2D(pos.xAdd(-thickness), pos.xAdd(thickness/2)+ dimensions.ySet(0), thickness, color, layer, scissorOffset, scissorExtent);
@@ -3327,14 +3300,16 @@ void Render::DrawRect2D(vec2 pos, vec2 dimensions, f32 thickness, color color, u
 	DrawLine2D(pos + dimensions, pos + dimensions.ySet(0), thickness, color, layer, scissorOffset, scissorExtent);
 	//bottom right to bottom left
 	DrawLine2D((pos + dimensions).xAdd(thickness/2), pos + dimensions.xSet(0).xAdd(-thickness), thickness, color, layer, scissorOffset, scissorExtent);
-	
-	//array<vec2> points{ pos, pos + dimensions.xSet(0), pos + dimensions, pos + dimensions.ySet(0), pos };
-	//DrawLines2D(points, 1, color, layer, scissorOffset, scissorExtent);
 }
 
-void Render::DrawCircle2D(vec2 pos, float radius, u32 subdivisions_int, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawCircle2D(vec2 pos, float radius, u32 subdivisions_int, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
+		   "Scissor Offset and Extent can't be negative");
+	if(color.a == 0) return;
+	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
+	
 	f32 subdivisions = f32(subdivisions_int);
-	forI(subdivisions_int) {
+	forI(subdivisions_int){
 		f32 a0 = (f32(i - 1) * M_2PI) / subdivisions;
 		f32 a1 = (f32(i) * M_2PI) / subdivisions;
 		f32 x0 = pos.x + radius * cosf(a0); f32 x1 = pos.x + radius * cosf(a1);
@@ -3343,9 +3318,14 @@ void Render::DrawCircle2D(vec2 pos, float radius, u32 subdivisions_int, color co
 	}
 }
 
-void Render::FillCircle2D(vec2 pos, float radius, u32 subdivisions_int, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::FillCircle2D(vec2 pos, float radius, u32 subdivisions_int, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
+		   "Scissor Offset and Extent can't be negative");
+	if(color.a == 0) return;
+	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
+	
 	f32 subdivisions = f32(subdivisions_int);
-	forI(subdivisions_int) {
+	forI(subdivisions_int){
 		f32 a0 = (f32(i - 1) * M_2PI) / subdivisions;
 		f32 a1 = (f32(i) * M_2PI) / subdivisions;
 		f32 x0 = pos.x + radius * cosf(a0); f32 x1 = pos.x + radius * cosf(a1);
@@ -3356,11 +3336,10 @@ void Render::FillCircle2D(vec2 pos, float radius, u32 subdivisions_int, color co
 
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
 //when drawing them straight
-void Render::DrawLine2D(vec2 start, vec2 end, float thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawLine2D(vec2 start, vec2 end, float thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
-	if (color.a == 0) return;
-	
+	if(color.a == 0) return;
 	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
 	
 	u32       col = color.rgba;
@@ -3394,12 +3373,11 @@ void Render::DrawLine2D(vec2 start, vec2 end, float thickness, color color, u32 
 // the thickness stop being preserved. this funciton also needs to be moved out to suugu and replaced by a more general
 // render function that allows you to manipulate the vertex/index arrays
 
-void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
 	Assert(points.count > 1, "Lines need at least 2 points");
-	if (color.a == 0 || thickness == 0) return;
-	
+	if(color.a == 0 || thickness == 0) return;
 	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
 	
 	float halfthick = thickness / 2;
@@ -3429,7 +3407,7 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 	
 	//in betweens
 	int flip = -1;
-	for (int i = 1; i < points.count - 1; i++, flip *= -1) {
+	for(int i = 1; i < points.count - 1; i++, flip *= -1){
 		vec2 last, curr, next, norm;
 		
 		last = points[i - 1];
@@ -3449,7 +3427,7 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 		float ang = Radians(Math::AngBetweenVectors(-p01, p12));
 		
 		//this is the critical angle where the thickness of the 2 lines cause them to overlap at small angles
-		//if (fabs(ang) < 2 * atanf(thickness / (2 * p02.mag()))) {
+		//if(fabs(ang) < 2 * atanf(thickness / (2 * p02.mag()))){
 		//	ang = 2 * atanf(thickness / (2 * p02.mag()));
 		//}
 		
@@ -3513,19 +3491,17 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
 
-
 void Render::
-DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
-	if (color.a == 0) return;
-	
+	if(color.a == 0) return;
 	CheckUICmdArrays(layer, font->tex, 0, scissorOffset, scissorExtent);
 	
-	switch (font->type) {
+	switch (font->type){
 		//// BDF (and NULL) font rendering ////
 		case FontType_BDF: case FontType_NONE: {
-			forI(text.count) {
+			forI(text.count){
 				u32       col = color.rgba;
 				Vertex2*   vp = uiVertexArray + uiVertexCount;
 				UIIndexVk* ip = uiIndexArray + uiIndexCount;
@@ -3555,7 +3531,7 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 		}break;
 		//// TTF font rendering ////
 		case FontType_TTF: {
-			forI(text.count) {
+			forI(text.count){
 				u32       col = color.rgba;
 				Vertex2*   vp = uiVertexArray + uiVertexCount;
 				UIIndexVk* ip = uiIndexArray + uiIndexCount;
@@ -3579,18 +3555,18 @@ DrawText2D(Font* font, cstring text, vec2 pos, color color, vec2 scale, u32 laye
 		}
 	}
 }
+
 void Render::
-DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
-	if (color.a == 0) return;
-	
+	if(color.a == 0) return;
 	CheckUICmdArrays(layer, font->tex, 0, scissorOffset, scissorExtent);
 	
-	switch (font->type) {
+	switch (font->type){
 		//// BDF (and NULL) font rendering ////
 		case FontType_BDF: case FontType_NONE: {
-			forI(text.count) {
+			forI(text.count){
 				u32       col = color.rgba;
 				Vertex2*   vp = uiVertexArray + uiVertexCount;
 				UIIndexVk* ip = uiIndexArray + uiIndexCount;
@@ -3620,7 +3596,7 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 		}break;
 		//// TTF font rendering ////
 		case FontType_TTF: {
-			forI(text.count) {
+			forI(text.count){
 				u32       col = color.rgba;
 				Vertex2*   vp = uiVertexArray + uiVertexCount;
 				UIIndexVk* ip = uiIndexArray + uiIndexCount;
@@ -3646,10 +3622,10 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 }
 
 void Render::
-DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, float alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, float alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
-	if (alpha == 0) return;
+	if(alpha == 0) return;
 	
 	CheckUICmdArrays(layer, texture, 1, scissorOffset, scissorExtent);
 	
@@ -3674,7 +3650,7 @@ DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, float alpha,
 
 
 void Render::
-DrawTexture2D(Texture* texture, vec2 pos, vec2 size, float rotation, float alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent) {
+DrawTexture2D(Texture* texture, vec2 pos, vec2 size, float rotation, float alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	vec2
 		center = (pos + size) / 2,
 	p0 = Math::vec2RotateByAngle(rotation, pos              - center) + center,
@@ -4317,7 +4293,7 @@ UpdateCameraProjectionMatrix(mat4 m){
 }
 
 void Render::
-UseDefaultViewProjMatrix(vec3 position, vec3 rotation) {
+UseDefaultViewProjMatrix(vec3 position, vec3 rotation){
 	vec3 forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
 	uboVS.values.view = Math::LookAtMatrix(position, position + forward).Inverse();
 	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix(DeshWindow->width, DeshWindow->height, 90, 1000, 0.1);
@@ -4496,7 +4472,7 @@ Init(){
 	CreatePipelines();
 	PrintVk(3, "Finished creating pipelines in ", TIMER_END(t_temp), "ms");TIMER_RESET(t_temp);
 	
-	forI(UI_LAYERS) { 
+	forI(UI_LAYERS){ 
 		uiCmdCounts[i] = 1; 
 		
 	}
@@ -4543,8 +4519,9 @@ Update(){
 	
 	//render stuff
 	if(settings.lightFrustrums) DrawFrustrum(vkLights[0].toVec3(), vec3::ZERO, 1, 90, settings.shadowNearZ, settings.shadowFarZ);
-	if(DeshiModuleLoaded(DS_IMGUI))
+	if(DeshiModuleLoaded(DS_IMGUI)){
 		ImGui::Render();
+	}
 	UpdateUniformBuffers();
 	SetupCommands();
 	

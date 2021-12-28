@@ -28,13 +28,14 @@ struct array{
 	Allocator* allocator;
 	
 	array();
-	array(u32 _count);
-	array(std::initializer_list<T> l);
-	array(const array<T>& array);
-	array(T* _data, u32 _count);
+	array(Allocator* a);
+	array(u32 _count, Allocator* a = DESHI_ARRAY_ALLOCATOR);
+	array(std::initializer_list<T> l, Allocator* a = DESHI_ARRAY_ALLOCATOR);
+	array(const array<T>& array, Allocator* a = DESHI_ARRAY_ALLOCATOR);
+	array(T* _data, u32 _count, Allocator* a = DESHI_ARRAY_ALLOCATOR);
 	~array();
 	
-	//copies the values from rhs, BUT does NOT copy iter value and ONLY copies allocator if there wasnt one already
+	//copies the values and allocator from rhs
 	array<T>& operator= (const array<T>& rhs);
 	T& operator[](u32 i);
 	T  operator[](u32 i) const;
@@ -100,8 +101,20 @@ array(){
 }
 
 template<typename T> inline array<T>::
-array(u32 _count){
-	allocator = DESHI_ARRAY_ALLOCATOR;
+array(Allocator* a){
+	allocator = a;
+	
+	space = 0;
+	count = 0;
+	data  = 0;
+	first = 0;
+	iter  = 0;
+	last  = 0;
+}
+
+template<typename T> inline array<T>::
+array(u32 _count, Allocator* a){
+	allocator = a;
 	
 	count = 0;
 	space = RoundUpTo(_count, DESHI_ARRAY_SPACE_ALIGNMENT);
@@ -113,8 +126,8 @@ array(u32 _count){
 }
 
 template<typename T> inline array<T>::
-array(std::initializer_list<T> l){
-	allocator = DESHI_ARRAY_ALLOCATOR;
+array(std::initializer_list<T> l, Allocator* a){
+	allocator = a;
 	
 	count = l.size();
 	space = RoundUpTo(l.size(), DESHI_ARRAY_SPACE_ALIGNMENT);
@@ -132,8 +145,8 @@ array(std::initializer_list<T> l){
 //its necessary so when we return elements the entire array copies properly
 //so we have to make sure everything in the array gets recreated
 template<typename T> inline array<T>::
-array(const array<T>& array){
-	allocator = DESHI_ARRAY_ALLOCATOR;
+array(const array<T>& array, Allocator* a){
+	allocator = a;
 	
 	count = array.count;
 	space = array.space;
@@ -148,8 +161,8 @@ array(const array<T>& array){
 }
 
 template<typename T> inline array<T>::
-array(T* _data, u32 _count){
-	allocator = DESHI_ARRAY_ALLOCATOR;
+array(T* _data, u32 _count, Allocator* a){
+	allocator = a;
 	
 	count = _count;
 	space = RoundUpTo(_count, DESHI_ARRAY_SPACE_ALIGNMENT);
@@ -186,7 +199,7 @@ operator= (const array<T>& rhs){
 	forI(rhs.count) data[i] = rhs.data[i];
 	
 	first = data;
-	iter  = data;
+	iter  = data + (rhs.iter - rhs.first);
 	last  = data + (count-1);
 	return *this;
 }

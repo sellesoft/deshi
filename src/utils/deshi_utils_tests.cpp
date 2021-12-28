@@ -102,7 +102,7 @@ function void TEST_deshi_utils_array(){
 	AssertAlways(array3.first == array3.data);
 	AssertAlways(array3.last == array3.data+2);
 	AssertAlways(array3.iter == array3.data);
-	AssertAlways(array3.allocator == &test_allocator);
+	AssertAlways(array3.allocator == DESHI_ARRAY_ALLOCATOR);
 	AssertAlways(array3.data[0].value == 2);
 	AssertAlways(array3.data[1].value == 4);
 	AssertAlways(array3.data[2].value == 6);
@@ -113,9 +113,9 @@ function void TEST_deshi_utils_array(){
 	AssertAlways(array3.data[1].value == 4);
 	AssertAlways(array3.data[2].value == 6);
 	
-	Assert(array3[0].value == 10);
-	Assert(array3[1].value == 4);
-	Assert(array3[2].value == 6);
+	AssertAlways(array3[0].value == 10);
+	AssertAlways(array3[1].value == 4);
+	AssertAlways(array3[2].value == 6);
 	
 	//// functions ////
 	array2.add(TestType(1));
@@ -364,8 +364,8 @@ function void TEST_deshi_utils_array(){
 	AssertAlways(array5[0].value == 2);
 	AssertAlways(array5[1].value == 4);
 	
-	Assert(array5.has(TestType(2)));
-	Assert(!array5.has(TestType(4)));
+	AssertAlways(array5.has(TestType(2)));
+	AssertAlways(!array5.has(TestType(4)));
 	
 	array5.at(0) = TestType(5);
 	AssertAlways(array3[0].value == 10);
@@ -379,11 +379,18 @@ function void TEST_deshi_utils_array(){
 	printf("[DESHI-TEST] PASSED: utils/array\n");
 }
 
-#include "array_sorting.h"
-function void TEST_deshi_utils_array_sorting(){
+#include "array_algorithms.h"
+function void TEST_deshi_utils_array_algorithms(){
 	srand(time(0));
 	
+	//bubble sort
 	array<s32> array1(1024);
+	forI(1024) array1.add(rand() % 1024);
+	bubble_sort(array1, [](s32 a, s32 b){return a < b;});
+	forI(1024){ if(i){ AssertAlways(array1[i] <= array1[i-1]); } }
+	
+	srand(time(0));
+	array1.clear();
 	forI(1024) array1.add(rand() % 1024);
 	bubble_sort_low_to_high(array1);
 	forI(1024){ if(i){ AssertAlways(array1[i] >= array1[i-1]); } }
@@ -394,7 +401,70 @@ function void TEST_deshi_utils_array_sorting(){
 	bubble_sort_high_to_low(array1);
 	forI(1024){ if(i){ AssertAlways(array1[i] <= array1[i-1]); } }
 	
-	printf("[DESHI-TEST] PASSED: utils/array_sorting\n");
+	//reverse
+	reverse(array1);
+	forI(1024){ if(i){ AssertAlways(array1[i] >= array1[i-1]); } }
+	
+	//binary search
+	array1[0] = MAX_S32;
+	array1[84] = MIN_S32;
+	array1[123] = 0;
+	bubble_sort_low_to_high(array1);
+	AssertAlways(binary_search(array1, MAX_S32) != -1);
+	AssertAlways(binary_search(array1, MIN_S32) != -1);
+	AssertAlways(binary_search(array1, 0) != -1);
+	
+	printf("[DESHI-TEST] PASSED: utils/array_algorithms\n");
+}
+
+#include "carray.h"
+function void TEST_deshi_utils_carray(){
+	int* arr0 = (int*)calloc(1, 16*sizeof(int));
+	defer{ free(arr0); };
+	forI(16){ arr0[i] = 1 << i; }
+	
+	carray<int> arr1{arr0, 16};
+	AssertAlways(arr1.data == arr0);
+	AssertAlways(arr1.count == 16);
+	AssertAlways(arr1);
+	AssertAlways(arr1[0] == 1 << 0);
+	AssertAlways(arr1[1] == 1 << 1);
+	AssertAlways(arr1[4] == 1 << 4);
+	AssertAlways(arr1[15] == 1 << 15);
+	AssertAlways(arr1.at(8) == arr0+8);
+	forE(arr1){ AssertAlways(*it == 1 << (it - it_begin)); }
+	
+	array_pop(arr1, 2);
+	AssertAlways(arr1.count == 16);
+	arr1.count = 14;
+	AssertAlways(arr1);
+	AssertAlways(arr1[0] == 1 << 0);
+	AssertAlways(arr1[1] == 1 << 1);
+	AssertAlways(arr1[4] == 1 << 4);
+	AssertAlways(arr1[13] == 1 << 13);
+	forE(arr1){ AssertAlways(*it == 1 << (it - it_begin)); }
+	
+	array_remove_unordered(arr1, 4);
+	AssertAlways(arr1.data == arr0);
+	AssertAlways(arr1.count == 14);
+	arr1.count = 13;
+	AssertAlways(arr1);
+	AssertAlways(arr1[0] == 1 << 0);
+	AssertAlways(arr1[1] == 1 << 1);
+	AssertAlways(arr1[4] == 1 << 13);
+	AssertAlways(arr1[12] == 1 << 12);
+	
+	array_remove_ordered(arr1, 4);
+	AssertAlways(arr1.data == arr0);
+	AssertAlways(arr1.count == 13);
+	arr1.count = 12;
+	AssertAlways(arr1);
+	AssertAlways(arr1[0] == 1 << 0);
+	AssertAlways(arr1[1] == 1 << 1);
+	AssertAlways(arr1[4] == 1 << 5);
+	AssertAlways(arr1[11] == 1 << 12);
+	
+	printf("[DESHI-TEST] PASSED: utils/carray\n");
 }
 
 #include "color.h"
@@ -512,14 +582,10 @@ function void TEST_deshi_utils_utils(){
 	printf("[DESHI-TEST] TODO:   utils/utils\n");
 }
 
-#include "view.h"
-function void TEST_deshi_utils_view(){
-	printf("[DESHI-TEST] TODO:   utils/view\n");
-}
-
 function void TEST_deshi_utils(){
 	TEST_deshi_utils_array();
-	TEST_deshi_utils_array_sorting();
+	TEST_deshi_utils_array_algorithms();
+	TEST_deshi_utils_carray();
 	TEST_deshi_utils_color();
 	TEST_deshi_utils_cstring();
 	TEST_deshi_utils_hash();
@@ -530,5 +596,4 @@ function void TEST_deshi_utils(){
 	TEST_deshi_utils_string_conversion();
 	TEST_deshi_utils_tuple();
 	TEST_deshi_utils_utils();
-	TEST_deshi_utils_view();
 }
