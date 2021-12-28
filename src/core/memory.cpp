@@ -701,8 +701,7 @@ void DEBUG_SetAddressName(void* address, cstring name, Type type){
 				LogE("memory","Address naming arena is out of space."); 
 				return; 
 			}
-			DEBUG_AddressNameInfo ani{ address, name, type };
-			array_insert(arr, ani, middle);
+			array_insert(arr, DEBUG_AddressNameInfo{ address, name, type }, middle);
 			address_naming_arena->used += sizeof(DEBUG_AddressNameInfo);
 		}
 	}else if(index != -1){ //remove address name
