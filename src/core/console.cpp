@@ -369,18 +369,18 @@ void Console::ChangeState(ConsoleState new_state) {
 			TIMER_RESET(open_timer);
 		}break;
 		case ConsoleState_OpenSmall: {
-			open_target = DeshWindow->height * open_small_percent;
+			open_target = (f32)DeshWindow->height * open_small_percent;
 			open_amount = console_dim.y;
 			console_pos = vec2(0, -1);
-			console_dim.x = DeshWindow->width;
+			console_dim.x = (f32)DeshWindow->width;
 			flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize;
 			TIMER_RESET(open_timer);
 		}break;
 		case ConsoleState_OpenBig: {
-			open_target = DeshWindow->height * open_max_percent;
+			open_target = (f32)DeshWindow->height * open_max_percent;
 			open_amount = console_dim.y;
 			console_pos = vec2(0, -1);
-			console_dim.x = DeshWindow->width;
+			console_dim.x = (f32)DeshWindow->width;
 			flags = UIWindowFlags_NoMove | UIWindowFlags_NoResize;
 			TIMER_RESET(open_timer);
 		}break;
@@ -408,7 +408,7 @@ void Console::Init() {
 	scroll_to_bottom = 1;
 	
 	console_pos = vec2::ZERO;
-	console_dim = vec2(DeshWindow->width, DeshWindow->height * open_max_percent);
+	console_dim = vec2(f32(DeshWindow->width), f32(DeshWindow->height) * open_max_percent);
 	
 	Logger::SetMirrorToConsole(true);
 	LogS("deshi", "Finished console initialization in ", TIMER_END(t_s), "ms");

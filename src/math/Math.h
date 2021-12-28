@@ -213,7 +213,7 @@ QuatSlerp(const vec3& fromv, const vec3& tov, float t){
 		dot = -dot;
 	}
 	
-	const float dot_thresh = 0.9995;
+	const float dot_thresh = 0.9995f;
 	
 	// calculate coefficients
 	if(dot > dot_thresh){

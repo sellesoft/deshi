@@ -20,7 +20,7 @@ struct ColorMod {
 
 #define UI_LAYERS 11
 static constexpr u32 CHAR_SIZE = sizeof(CHAR);
-static const u32 UI_CENTER_LAYER = floor(UI_LAYERS / 2.f);
+static const u32 UI_CENTER_LAYER = (u32)floor((f32)UI_LAYERS / 2.f);
 
 //for style variable stack
 struct VarMod {
@@ -943,7 +943,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 			
 			case FontType_BDF: {
 				//max characters we can place 
-				u32 maxChars = floor(MarginedRight() - item->position.x) / style.font->max_width;
+				u32 maxChars = u32(floor(MarginedRight() - item->position.x) / style.font->max_width);
 				
 				//make sure max chars never equals 0
 				if (!maxChars) maxChars++;
@@ -953,7 +953,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 					//we need to see if the string goes beyond the width of the window and wrap if it does
 					if (maxChars < t.count) {
 						//if this is true we know item's total width is just maxChars times font width
-						item->size.x = maxChars * style.font->max_width;
+						item->size.x = maxChars * (f32)style.font->max_width;
 						
 						//find closest space to split by
 						u32 splitat = t.findLastChar(' ', maxChars);
@@ -1088,7 +1088,7 @@ local void TextW(const wchar_t* in, vec2 pos, color color, b32 nowrap, b32 move_
 			
 			case FontType_BDF: {
 				//max characters we can place 
-				u32 maxChars = floor(((curwin->width - 2 * style.windowPadding.x) - workcur.x) / style.font->max_width);
+				u32 maxChars = u32(floor(((curwin->width - 2 * style.windowPadding.x) - workcur.x) / style.font->max_width));
 				
 				//make sure max chars never equals 0
 				if (!maxChars) maxChars++;
@@ -1098,7 +1098,7 @@ local void TextW(const wchar_t* in, vec2 pos, color color, b32 nowrap, b32 move_
 					//we need to see if the wstring goes beyond the width of the window and wrap if it does
 					if (maxChars < t.count) {
 						//if this is true we know item's total width is just maxChars times font width
-						item->size.x = maxChars * style.font->max_width;
+						item->size.x = maxChars * (f32)style.font->max_width;
 						
 						//find closest space to split by
 						u32 splitat = t.findLastChar(' ', maxChars);
@@ -1262,7 +1262,7 @@ void UI::Checkbox(string label, b32* b) {
 	
 	AdvanceCursor(item);
 	
-	int fillPadding = style.checkboxFillPadding;
+	int fillPadding = (int)style.checkboxFillPadding;
 	vec2 fillpos = boxsiz * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y);
 	vec2 fillsiz = boxsiz * (vec2::ONE - 2 * vec2(fillPadding / boxsiz.x, fillPadding / boxsiz.y));
 	
@@ -1592,7 +1592,7 @@ void UI::Image(Texture* image, vec2 pos, f32 alpha, UIImageFlags flags) {
 	UIItem* item = BeginItem(UIItemType_Image);
 	
 	item->position = pos;
-	item->size = (NextItemSize.x == -1 ? vec2(image->width, image->height) : NextItemSize);
+	item->size = (NextItemSize.x == -1 ? vec2((f32)image->width, (f32)image->height) : NextItemSize);
 	NextItemSize = vec2(-1, 1);
 	
 	AdvanceCursor(item);
@@ -1873,11 +1873,10 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 		UIDrawCmd drawCmd{ UIDrawType_Line};
 		drawCmd.position = item->position + textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, 0);
 		drawCmd.position2 = item->position + textStart + vec2(state->cursor * style.font->max_width * style.fontHeight / style.font->aspect_ratio / style.font->max_width, style.fontHeight - 1);
-		drawCmd.color =
-			color(255, 255, 255,
-				  255 * (
-						 cos((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000 -
-							 sin((2 * M_PI) / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000)) + 1) / 2);
+		drawCmd.color = 
+			color(255, 255, 255, 
+				  u8(255 * (cos(M_2PI / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000 
+								- sin(M_2PI / (state->cursorBlinkTime / 2) * TIMER_END(state->timeSinceTyped) / 1000)) + 1) / 2));
 		drawCmd.thickness = 1;
 		
 		item->drawCmds.add(drawCmd);
@@ -2077,10 +2076,10 @@ void CheckForHoveredWindow(UIWindow* window = 0) {
 									}
 								}break;
 								case UIWindowType_PopOut: {
-
+									
 								}break;
 							}
-
+							
 						}
 					}
 					hovered_found = 1;
@@ -2094,7 +2093,7 @@ void CheckForHoveredWindow(UIWindow* window = 0) {
 		}
 	}
 	else {
-
+		
 	}
 }
 
@@ -2483,9 +2482,9 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 			curwin->type = UIWindowType_PopOut;
 		}break;
 	}
-
+	
 	WinSetBegan(curwin);
-
+	
 }
 
 
@@ -2610,7 +2609,7 @@ void EndCall() {
 	
 	b32 xCanScroll = CanScrollX();
 	b32 yCanScroll = CanScrollY();
-
+	
 	if (!inputupon) {
 		CheckWindowForScrollingInputs(curwin);
 		CheckWindowForResizingInputs(curwin);
@@ -2955,9 +2954,9 @@ UIWindow* DisplayMetrics() {
 	
 	Separator(20);
 	
-	PushVar(UIStyleVar_RowItemAlign, vec2(0, 0.5));
-	BeginRow(2, style.fontHeight * 1.5);
-	RowSetupRelativeColumnWidths({ 1.2, 1 });
+	PushVar(UIStyleVar_RowItemAlign, vec2(0, 0.5f));
+	BeginRow(2, style.fontHeight * 1.5f);
+	RowSetupRelativeColumnWidths({ 1.2f, 1 });
 	
 	static u32 selected = 0;
 	if (BeginCombo("METRICSwindows", "windows")) {
@@ -3485,24 +3484,24 @@ void UI::Init() {
 	//push default style variables
 	PushVar(UIStyleVar_WindowPadding,            vec2(10, 10));
 	PushVar(UIStyleVar_WindowBorderSize,         2);
-	PushVar(UIStyleVar_TitleBarHeight,           style.fontHeight * 1.2);
-	PushVar(UIStyleVar_TitleTextAlign,           vec2(1, 0.5));
+	PushVar(UIStyleVar_TitleBarHeight,           style.fontHeight * 1.2f);
+	PushVar(UIStyleVar_TitleTextAlign,           vec2(1, 0.5f));
 	PushVar(UIStyleVar_ItemSpacing,              vec2(1, 1));
 	PushVar(UIStyleVar_ScrollAmount,             vec2(10, 10));
 	PushVar(UIStyleVar_CheckboxSize,             vec2(10, 10));
 	PushVar(UIStyleVar_CheckboxFillPadding,      2);
-	PushVar(UIStyleVar_InputTextTextAlign,       vec2(0, 0.5));
-	PushVar(UIStyleVar_ButtonTextAlign,          vec2(0.5, 0.5));
-	PushVar(UIStyleVar_HeaderTextAlign,          vec2(0.05, 0.5));
-	PushVar(UIStyleVar_ButtonHeightRelToFont,    1.3);
-	PushVar(UIStyleVar_HeaderHeightRelToFont,    1.3);
-	PushVar(UIStyleVar_InputTextHeightRelToFont, 1.3);
-	PushVar(UIStyleVar_CheckboxHeightRelToFont,  1.3);
-	PushVar(UIStyleVar_RowItemAlign,             vec2(0.5, 0.5));
+	PushVar(UIStyleVar_InputTextTextAlign,       vec2(0.0f, 0.5f));
+	PushVar(UIStyleVar_ButtonTextAlign,          vec2(0.5f, 0.5f));
+	PushVar(UIStyleVar_HeaderTextAlign,          vec2(0.05f, 0.5f));
+	PushVar(UIStyleVar_ButtonHeightRelToFont,    1.3f);
+	PushVar(UIStyleVar_HeaderHeightRelToFont,    1.3f);
+	PushVar(UIStyleVar_InputTextHeightRelToFont, 1.3f);
+	PushVar(UIStyleVar_CheckboxHeightRelToFont,  1.3f);
+	PushVar(UIStyleVar_RowItemAlign,             vec2(0.5f, 0.5f));
 	PushVar(UIStyleVar_ScrollBarYWidth,          5);
 	PushVar(UIStyleVar_ScrollBarXHeight,         5);
 	PushVar(UIStyleVar_IndentAmount,             12);
-	PushVar(UIStyleVar_FontHeight,               style.font->max_height);
+	PushVar(UIStyleVar_FontHeight,               (f32)style.font->max_height);
 	
 	PushScale(vec2(1, 1));
 	
@@ -3622,11 +3621,11 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 				Render::FillCircle2D(dcpos, dct, dcsub, dccol, dcl, dcso, dcse);
 			}break;
 			case UIDrawType_Text: {
-				vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
+				vec2 scale = vec2::ONE * item.style.fontHeight / (f32)item.style.font->max_height * item.style.globalScale;
 				Render::DrawText2D(font, dctext, dcpos, dccol, scale, dcl, dcso, dcse);
 			}break;
 			case UIDrawType_WText: {
-				vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
+				vec2 scale = vec2::ONE * item.style.fontHeight / (f32)item.style.font->max_height * item.style.globalScale;
 				Render::DrawText2D(font, wdctext, dcpos, dccol, scale, dcl, dcso, dcse);
 			}break;
 			
@@ -3653,17 +3652,17 @@ inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {
 	
 	//dont draw post-pre drawcmds if we're minimized
 	//	if (!p->minimized) {
-		forI(UI_WINDOW_ITEM_LAYERS) {
-			for (UIItem& item : p->items[i]) {
-				if (item.type == UIItemType_Window) {
-					item.child->position = p->position + item.position * item.style.globalScale;
-					DrawWindow(item.child, p);
-					WinUnSetBegan(item.child);
-					continue;
-				}
-				DrawItem(item, p);
+	forI(UI_WINDOW_ITEM_LAYERS) {
+		for (UIItem& item : p->items[i]) {
+			if (item.type == UIItemType_Window) {
+				item.child->position = p->position + item.position * item.style.globalScale;
+				DrawWindow(item.child, p);
+				WinUnSetBegan(item.child);
+				continue;
 			}
+			DrawItem(item, p);
 		}
+	}
 	
 	
 	//draw post items, such as scroll bars or context menus
@@ -3832,7 +3831,7 @@ void UI::Update() {
 	debugCmds.clear();
 	
 	if (CanTakeInput && DeshInput->LMouseDown()) PreventInputs;
-
+	
 	hovered = 0;
 	StateRemoveFlag(UISGlobalHovered);
 	StateRemoveFlag(UISCursorSet);

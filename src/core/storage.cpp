@@ -1587,7 +1587,7 @@ CreateFontFromFileBDF(const char* filename){
 								 * 0x4001 & 0x0003000300030003) * 0x81 & 0x0101010101010101) * 255;
 				*(u64*)(scaled+i) = ByteSwap64(reversed);
 			}
-			memcpy(pixels+2*font->max_width+(upt)(glyph_offset + (bitmap_row+top_offset)*font->max_width + left_offset), scaled, current_bbx.x*sizeof(u8));
+			memcpy(pixels+2*font->max_width+(upt)(glyph_offset + (bitmap_row+top_offset)*font->max_width + left_offset), scaled, upt(current_bbx.x*sizeof(u8)));
 			
 			bitmap_row++;
 			continue;
@@ -1604,13 +1604,13 @@ CreateFontFromFileBDF(const char* filename){
 				//unused in monospace fonts
 			}else if(strncmp("BBX", key_start, key_end-key_start) == 0){
 				char* cursor = value_start;
-				current_bbx.x = strtol(cursor,   &cursor, 10); //width
-				current_bbx.y = strtol(cursor+1, &cursor, 10); //height
-				current_bbx.z = strtol(cursor+1, &cursor, 10); //lower-left x
-				current_bbx.w = strtol(cursor+1, &cursor, 10); //lower-left y
+				current_bbx.x = (f32)strtol(cursor,   &cursor, 10); //width
+				current_bbx.y = (f32)strtol(cursor+1, &cursor, 10); //height
+				current_bbx.z = (f32)strtol(cursor+1, &cursor, 10); //lower-left x
+				current_bbx.w = (f32)strtol(cursor+1, &cursor, 10); //lower-left y
 				glyph_offset = char_idx*font->max_height*font->max_width;
-				top_offset   = font->max_height-(current_bbx.w-font_bbx.w)-current_bbx.y;
-				left_offset  = current_bbx.z-font_bbx.z;
+				top_offset   = u32(font->max_height-(current_bbx.w-font_bbx.w)-current_bbx.y);
+				left_offset  = u32(current_bbx.z-font_bbx.z);
 				
 				Assert(current_bbx.x <= font_bbx.x);
 				Assert(current_bbx.y <= font_bbx.y);
@@ -1626,16 +1626,16 @@ CreateFontFromFileBDF(const char* filename){
 			in_char = true;
 		}else if(strncmp("SIZE", key_start, key_end-key_start) == 0){
 			char* cursor = value_start;
-			font_dpi.x     = strtol(cursor+1, &cursor, 10);
-			font_dpi.y     = strtol(cursor+1, &cursor, 10);
+			font_dpi.x = (f32)strtol(cursor+1, &cursor, 10);
+			font_dpi.y = (f32)strtol(cursor+1, &cursor, 10);
 		}else if(strncmp("FONTBOUNDINGBOX", key_start, key_end-key_start) == 0){
 			char* cursor = value_start;
-			font_bbx.x = strtol(cursor,   &cursor, 10); //width
-			font_bbx.y = strtol(cursor+1, &cursor, 10); //height
-			font_bbx.z = strtol(cursor+1, &cursor, 10); //lower-left x
-			font_bbx.w = strtol(cursor+1, &cursor, 10); //lower-left y
-			font->max_width  = font_bbx.x;
-			font->max_height = font_bbx.y;
+			font_bbx.x = (f32)strtol(cursor,   &cursor, 10); //width
+			font_bbx.y = (f32)strtol(cursor+1, &cursor, 10); //height
+			font_bbx.z = (f32)strtol(cursor+1, &cursor, 10); //lower-left x
+			font_bbx.w = (f32)strtol(cursor+1, &cursor, 10); //lower-left y
+			font->max_width  = (u32)font_bbx.x;
+			font->max_height = (u32)font_bbx.y;
 		}else if(strncmp("FONT_NAME",   key_start, key_end-key_start) == 0){
 			cpystr(font->name,   string(value_start+1, value_end-value_start-2).str,DESHI_NAME_SIZE);
 		}else if(strncmp("WEIGHT_NAME", key_start, key_end-key_start) == 0){
@@ -1692,7 +1692,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	
 	stbtt_fontinfo info;
 	stbtt_InitFont(&info, (unsigned char*)buffer, 0);
-	stbtt_GetScaledFontVMetrics((u8*)buffer, 0, size, &font->ascent, &font->decent, &font->line_gap);
+	stbtt_GetScaledFontVMetrics((u8*)buffer, 0, (f32)size, &font->ascent, &font->decent, &font->line_gap);
 	stbtt_GetFontBoundingBox(&info, &x0, &y0, &x1, &y1);
 	
 	//current ranges:
@@ -1716,12 +1716,12 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	ranges[4].num_chars = 111;  ranges[4].first_unicode_codepoint_in_range = 8592;
 	ranges[5].num_chars = 255;  ranges[5].first_unicode_codepoint_in_range = 8704;
 	
-	ranges[0].font_size = size; 
-	ranges[1].font_size = size; 
-	ranges[2].font_size = size; 
-	ranges[3].font_size = size; 
-	ranges[4].font_size = size; 
-	ranges[5].font_size = size; 
+	ranges[0].font_size = (f32)size; 
+	ranges[1].font_size = (f32)size; 
+	ranges[2].font_size = (f32)size; 
+	ranges[3].font_size = (f32)size; 
+	ranges[4].font_size = (f32)size; 
+	ranges[5].font_size = (f32)size; 
 	
 	ranges[0].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[0].num_chars*sizeof(stbtt_packedchar));
 	ranges[1].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[1].num_chars*sizeof(stbtt_packedchar));
@@ -1743,11 +1743,11 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	//i believe this makes it into the smallest square it could be w/o knowing how stbtt packs them together
 	//also just doesnt really work well with non-monospaced fonts
 	//TODO figure out a better way to do this.
-	u32 tsy = ceil(size * sqrtf(679) / font->aspect_ratio);
-	u32 tsx = ceil(widthmax * size /  heightmax * sqrtf(679)) + 4; //add four rows to make room for 4 white pixels to optimize uicmds
+	u32 tsy = (u32)ceil(size * sqrtf(679) / font->aspect_ratio);
+	u32 tsx = (u32)ceil(widthmax * size /  heightmax * sqrtf(679)) + 4; //add four rows to make room for 4 white pixels to optimize uicmds
 	
 	font->max_height = size;
-	font->max_width = (float)widthmax / heightmax * size;
+	font->max_width = u32(f32(widthmax) / f32(heightmax * size));
 	font->count = 679;
 	font->ttf_size[0] = tsx;
 	font->ttf_size[1] = tsy; 

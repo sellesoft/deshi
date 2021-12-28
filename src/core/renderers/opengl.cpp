@@ -667,7 +667,7 @@ SetupUniformBuffers(){
 
 local void
 UpdateUniformBuffers(){
-	uboVS.values.screen     = vec2(width, height);
+	uboVS.values.screen     = vec2((f32)width, (f32)height);
 	uboVS.values.mousepos   = vec2(DeshInput->mousePos.x, DeshInput->mousePos.y);
 	uboVS.values.mouseWorld = Math::ScreenToWorld(DeshInput->mousePos, uboVS.values.proj, uboVS.values.view, DeshWindow->dimensions);
 	uboVS.values.time       = DeshTime->totalTime;
@@ -939,7 +939,7 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 		
 		normav = p12.normalized();
 		normav = Math::vec2RotateByAngle(-Degrees(ang) / 2, normav);
-		normav *= flip;
+		normav *= (f32)flip;
 		
 		//this is where we calc how wide the thickness of the inner line is meant to be
 		normav = normav.normalized() * thickness / ( 2 * sinf(ang / 2));
@@ -975,7 +975,7 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 	
 	{//last point
 		vec2 ott = points[points.count - 1] - points[points.count - 2];
-		vec2 norm = vec2(ott.y, -ott.x).normalized() * flip;
+		vec2 norm = vec2(ott.y, -ott.x).normalized() * (f32)flip;
 		
 		vp[0].pos = points[points.count - 1] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;//PackColorU32(255, 50, 255, 255);
 		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;//PackColorU32(255, 50, 100, 255);
@@ -1100,7 +1100,7 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = scissorExtent;
 					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 				}else{
-					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = vec2(width, height);
+					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorExtent = vec2((f32)width, (f32)height);
 					uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = vec2(0, 0);
 				}
 				
@@ -1616,7 +1616,7 @@ void Render::
 UseDefaultViewProjMatrix(vec3 position, vec3 rotation){
 	vec3 forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
 	uboVS.values.view = Math::LookAtMatrix(position, position + forward).Inverse();
-	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix(width, height, 90, 1000, 0.1);
+	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix((f32)width, (f32)height, 90.f, 1000.f, 0.1f);
 	uboVS.values.proj.arr[5] = -1*uboVS.values.proj.arr[5]; //OpenGL is inverted
 }
 
@@ -1777,10 +1777,10 @@ Update(){
 		//     for each layer here, if its worse tell me and ill fix it.
 		forX(layer, UI_LAYERS){
 			forX(cmd_idx, uiCmdCounts[layer]){
-				glScissor(uiCmdArrays[layer][cmd_idx].scissorOffset.x,
-						  (height - uiCmdArrays[layer][cmd_idx].scissorOffset.y) - uiCmdArrays[layer][cmd_idx].scissorExtent.y,
-						  uiCmdArrays[layer][cmd_idx].scissorExtent.x,
-						  uiCmdArrays[layer][cmd_idx].scissorExtent.y);
+				glScissor(GLint(uiCmdArrays[layer][cmd_idx].scissorOffset.x),
+						  GLint((height - uiCmdArrays[layer][cmd_idx].scissorOffset.y) - uiCmdArrays[layer][cmd_idx].scissorExtent.y),
+						  GLsizei(uiCmdArrays[layer][cmd_idx].scissorExtent.x),
+						  GLsizei(uiCmdArrays[layer][cmd_idx].scissorExtent.y));
 				glBindTexture(glTextures[uiCmdArrays[layer][cmd_idx].texIdx].type, glTextures[uiCmdArrays[layer][cmd_idx].texIdx].handle);
 				glUniform1i(glGetUniformLocation(programs.ui.handle, "tex"), 0);
 				glDrawElementsBaseVertex(GL_TRIANGLES, uiCmdArrays[layer][cmd_idx].indexCount, INDEX_TYPE_GL_UI,

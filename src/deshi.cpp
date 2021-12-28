@@ -72,7 +72,6 @@ Memory TODOs
 ------------
 when running out of memory, log an error then fallback on STL or OS (rather than assert)
 add macro interface over functions to track where they are called from (file, line, function)
-add memory naming/tagging (like vulkan)
 add a memory visualizer
 ____ref: https://en.wikipedia.org/wiki/Treemapping
 consider multiple thread contexts

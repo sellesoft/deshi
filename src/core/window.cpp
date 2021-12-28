@@ -17,7 +17,7 @@ GLFWcursor* textCursor;
 void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, DisplayMode displayMode){
 	AssertDS(DS_MEMORY, "Attempt to load Console without loading Memory first");
 	deshiStage |= DS_WINDOW;
-
+	
 	TIMER_START(t_s);
 	
 	name = _name;
@@ -69,10 +69,10 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	vResizeCursor = glfwCreateStandardCursor(GLFW_VRESIZE_CURSOR);
 	handCursor = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
 	textCursor = glfwCreateStandardCursor(GLFW_IBEAM_CURSOR);
-
+	
 	if(!дефолткурсор){ LogE("glfw","Failed to create the cursor!"); glfwTerminate(); return; }
 	
-
+	
 	//glfwSetWindowOpacity(window, 0.5);
 	
 	//load and set icon
@@ -99,7 +99,7 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 	this->screenRefreshRate = mode->refreshRate;
 	this->displayMode = displayMode;
 	this->cursorMode = CursorMode_Default;
-	this->dimensions = vec2(width, height);
+	this->dimensions = vec2((f32)width, (f32)height);
 	
 	this->rawInput = false;
 	UpdateRawInput(true); //sets raw input to true if supported
@@ -282,7 +282,7 @@ void Window::Update() {
 	screenRefreshRate = mode->refreshRate; 
 	
 	centerX = width/2; centerY = height/2;
-	this->dimensions = vec2(width, height);
+	this->dimensions = vec2((f32)width, (f32)height);
 	
 	glfwGetCursorPos(window, &DeshInput->mouseX, &DeshInput->mouseY);
 	if(cursorMode == CursorMode_FirstPerson){ glfwSetCursorPos(window, width/2, height/2); }
