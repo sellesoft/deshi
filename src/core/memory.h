@@ -74,7 +74,7 @@ namespace Memory{
 	void    DEBUG_SetAddressName(void* address, cstring name, Type type = 0);
 	cstring DEBUG_GetAddressName(void* address);
 	Arena*  DEBUG_ExposeAddressNamingArena();
-#elif
+#else
 #  define DEBUG_SetAddressName(...)
 #  define DEBUG_GetAddressName(...)
 #  define DEBUG_ExposeAddressNamingArena(...)
