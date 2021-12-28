@@ -1,5 +1,5 @@
 #include "ui.h"
-#include "../utils/array_sorting.h"
+#include "../utils/array_algorithms.h"
 //color pallete 
 //current palette:
 //https://lospec.com/palette-list/slso8
@@ -127,11 +127,11 @@ enum InputState_ {
 }; typedef u32 InputState;
 
 struct {
-
+	
 	UIState flags = UISNone;
 	InputState input = ISNone;
 	u32 currlayer = UI_CENTER_LAYER;
-
+	
 }ui_state;
 
 //helper defines
@@ -441,29 +441,29 @@ inline vec2 DecideItemSize(vec2 defaultSize, vec2 itemPos) {
 			size.x = MarginedRight() - itemPos.x;
 		else if (NextItemSize.x == 0)
 			if (defaultSize.x == MAX_F32)
-				size.x = MarginedRight() - itemPos.x;
-			else size.x = defaultSize.x;
+			size.x = MarginedRight() - itemPos.x;
+		else size.x = defaultSize.x;
 		else size.x = NextItemSize.x;
-
+		
 		if (NextItemSize.y == MAX_F32)
 			size.y = MarginedBottom() - itemPos.y;
 		else if (NextItemSize.y == 0)
 			if(defaultSize.y == MAX_F32)
-				size.y = MarginedBottom() - itemPos.y;
-			else size.y = defaultSize.y;
+			size.y = MarginedBottom() - itemPos.y;
+		else size.y = defaultSize.y;
 		else size.y = NextItemSize.y;
 	}
 	else {
 		if (defaultSize.x == MAX_F32)
 			size.x = MarginedRight() - itemPos.x;
 		else size.x = defaultSize.x;
-
+		
 		if (defaultSize.y == MAX_F32)
 			size.y = MarginedBottom() - itemPos.y;
 		else size.y = defaultSize.y;
 	}
 	return size;
-
+	
 }
 
 inline vec2 DecideWinSize(vec2 defaultSize, vec2 itemPos) {
@@ -473,23 +473,23 @@ inline vec2 DecideWinSize(vec2 defaultSize, vec2 itemPos) {
 			size.x = MarginedRight() - itemPos.x;
 		else if (NextWinSize.x == 0)
 			if (defaultSize.x == MAX_F32)
-				size.x = MarginedRight() - itemPos.x;
-			else size.x = defaultSize.x;
+			size.x = MarginedRight() - itemPos.x;
+		else size.x = defaultSize.x;
 		else size.x = NextWinSize.x;
-
+		
 		if (NextWinSize.y == MAX_F32)
 			size.y = MarginedBottom() - itemPos.y;
 		else if (NextWinSize.y == 0)
 			if (defaultSize.y == MAX_F32)
-				size.y = MarginedBottom() - itemPos.y;
-			else size.y = defaultSize.y;
+			size.y = MarginedBottom() - itemPos.y;
+		else size.y = defaultSize.y;
 		else size.y = NextWinSize.y;
 	}
 	else {
 		if (defaultSize.x == MAX_F32)
 			size.x = MarginedRight() - itemPos.x;
 		else size.x = defaultSize.x;
-
+		
 		if (defaultSize.y == MAX_F32)
 			size.y = MarginedBottom() - itemPos.y;
 		else size.y = defaultSize.y;
@@ -569,7 +569,7 @@ void UI::SetScroll(vec2 scroll) {
 		curwin->scx = curwin->maxScroll.x;
 	else
 		curwin->scx = scroll.x;
-
+	
 	if (scroll.y == MAX_F32)
 		curwin->scy = curwin->maxScroll.y;
 	else
@@ -625,7 +625,7 @@ inline UIItem* BeginItem(UIItemType type, u32 layeroffset = 0) {
 		UI::GetLastItem(layeroffset)->trackedForMinSize = 0;
 		StateRemoveFlag(UISNextItemMinSizeIgnored);
 	}
-
+	
 	curwin->items_count++;
 	return UI::GetLastItem(layeroffset);
 }
@@ -925,7 +925,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 							TextCall(nustr.str, workcur, color, item);
 							
 							if (nustr.count == t.count) continue;
-
+							
 							t = t.substr(nustr.count);
 							workcur.y += style.fontHeight + style.itemSpacing.y;
 							
@@ -1231,7 +1231,7 @@ b32 UI::Button(const char* text, vec2 pos, UIButtonFlags flags) {
 		//TODO(sushi) do this better
 		if (HasFlag(flags, UIButtonFlags_ReturnTrueOnHold))
 			if (DeshInput->LMouseDown()) { PreventInputs; return true; }
-			else return false;
+		else return false;
 		if (HasFlag(flags, UIButtonFlags_ReturnTrueOnRelease)) {
 			PreventInputs;
 			if (DeshInput->LMouseReleased()) return true;
@@ -1275,8 +1275,8 @@ void UI::Checkbox(string label, b32* b) {
 		drawCmd.position = vec2{ 0,0 };
 		drawCmd.dimensions = boxsiz;
 		drawCmd.color = style.colors[
-		(bgactive ? (DeshInput->LMouseDown() ? UIStyleCol_CheckboxBgActive : UIStyleCol_CheckboxBgHovered) : UIStyleCol_CheckboxBg)
-		];
+									 (bgactive ? (DeshInput->LMouseDown() ? UIStyleCol_CheckboxBgActive : UIStyleCol_CheckboxBgHovered) : UIStyleCol_CheckboxBg)
+									 ];
 		
 		item->drawCmds.add(drawCmd);
 	}
@@ -1362,7 +1362,7 @@ b32 UI::BeginCombo(const char* label, const char* prev_val, vec2 pos) {
 		drawCmd.font = style.font;
 		item->drawCmds.add(drawCmd);
 	}
-
+	
 	if (open) {
 		BeginPopOut(toStr("comboPopOut", label).str, item->position.yAdd(item->size.y), vec2::ZERO, UIWindowFlags_FitAllElements);
 		StateAddFlag(UISComboBegan);
@@ -1386,21 +1386,21 @@ void UI::EndCombo() {
 //@Selectable
 
 b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 1) {
-
+	
 	UIItem* item = BeginItem(UIItemType_Selectable, 0);
 	item->position = pos;
 	item->size = DecideItemSize(UI::CalcTextSize(label) * 1.5, item->position);
-
+	
 	b32 clicked = 0;
-		
+	
 	AdvanceCursor(item, move_cursor);
-
+	
 	b32 active = isItemActive(item);//ItemCanTakeInput && Math::PointInRectangle(DeshInput->mousePos, curwin->position + item->position.yAdd(item->size.y * selectables_added), item->size);
 	if (active && DeshInput->LMousePressed()) {
 		clicked = true;
 		PreventInputs;
 	}
-
+	
 	{//background
 		UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 		drawCmd.position = vec2(0, 0);
@@ -1411,12 +1411,12 @@ b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 
 			drawCmd.color = style.colors[(active ? (DeshInput->LMouseDown() ? UIStyleCol_SelectableBgActive : UIStyleCol_SelectableBgHovered) : UIStyleCol_SelectableBg)];
 		item->drawCmds.add(drawCmd);
 	}
-
+	
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text };
 		drawCmd.position =
 			vec2((item->size.x - UI::CalcTextSize(label).x) * style.buttonTextAlign.x,
-				(style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
+				 (style.fontHeight * style.buttonHeightRelToFont - style.fontHeight) * style.buttonTextAlign.y);
 		drawCmd.text = string(label);
 		drawCmd.color = style.colors[UIStyleCol_Text];
 		//drawCmd.scissorOffset = vec2(0, item->size.y * selectables_added);
@@ -1425,8 +1425,8 @@ b32 SelectableCall(const char* label, vec2 pos, b32 selected, b32 move_cursor = 
 		drawCmd.font = style.font;
 		item->drawCmds.add(drawCmd);
 	}
-
-
+	
+	
 	return clicked;
 }
 
@@ -1452,7 +1452,7 @@ b32 UI::BeginHeader(const char* label) {
 	
 	item->position = PositionForNewItem();
 	item->size = DecideItemSize(vec2(MAX_F32, style.fontHeight * style.headerHeightRelToFont), item->position);
-		
+	
 	
 	AdvanceCursor(item);
 	
@@ -2073,8 +2073,8 @@ void CheckForHoveredWindow() {
 						}
 					}
 				}
-
-
+				
+				
 				hovered_found = 1;
 			}
 			else {
@@ -2339,7 +2339,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 	TIMER_RESET(wincreate);
 	//save previous window on stack
 	windowStack.add(curwin);
-
+	
 	switch (type) {
 		case UIWindowType_Normal: { //////////////////////////////////////////////////////////////////////
 			//check if were making a new window or working with one we already know
@@ -2353,14 +2353,14 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 			}
 			else {
 				curwin = new UIWindow();
-
+				
 				curwin->scroll = vec2(0, 0);
 				curwin->name = name;
 				curwin->position = pos;
 				curwin->dimensions = dimensions;
 				curwin->cursor = vec2(0, 0);
 				curwin->flags = flags;
-
+				
 				windows.add(name, curwin);
 			}
 			curwin->style = style;
@@ -2368,12 +2368,12 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 		}break;
 		case UIWindowType_Child: { ///////////////////////////////////////////////////////////////////////
 			UIWindow* parent = curwin;
-
+			
 			UIItem* item = BeginItem(UIItemType_Window);
-
+			
 			//TODO(sushi) add custom positioning for child windows
 			item->position = PositionForNewItem();
-
+			
 			//check if were making a new child or working with one we already know
 			if (parent->children.has(name)) {
 				item->size = parent->children[name]->dimensions;
@@ -2382,17 +2382,17 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 						item->size.x = MarginedRight() - item->position.x;
 					else if (NextWinSize.x == -1) {}
 					else item->size.x = NextWinSize.x;
-
+					
 					if (NextWinSize.y == MAX_F32)
 						item->size.y = MarginedBottom() - item->position.x;
 					else if (NextWinSize.y == -1) {}
 					else item->size.y = NextWinSize.y;
 				}
-
+				
 				NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
-
+				
 				AdvanceCursor(item);
-
+				
 				curwin = parent->children[name];
 				curwin->dimensions = item->size;
 				curwin->cursor = vec2(0, 0);
@@ -2401,20 +2401,20 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 			else {
 				item->size = dimensions;
 				AdvanceCursor(item);
-
+				
 				vec2 parentNewPos = PositionForNewItem();
 				curwin = new UIWindow();
-
+				
 				curwin->scroll = vec2(0, 0);
 				curwin->name = name;
 				curwin->position = parentNewPos;
 				curwin->dimensions = dimensions;
 				curwin->cursor = vec2(0, 0);
 				curwin->flags = flags;
-
+				
 				parent->children.add(name, curwin);
 			}
-
+			
 			indentStack.add(0);
 			item->child = curwin;
 			curwin->parent = parent;
@@ -2424,7 +2424,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 			UIWindow* parent = curwin;
 			UIItem* item = BeginItem(UIItemType_Window);
 			item->position = pos;
-
+			
 			if (parent->children.has(name)) {
 				item->size = parent->children[name]->dimensions;
 				if (NextWinSize.x != -1 || NextWinSize.y != 0) {
@@ -2432,17 +2432,17 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 						item->size.x = MarginedRight() - item->position.x;
 					else if (NextWinSize.x == -1) {}
 					else item->size.x = NextWinSize.x;
-
+					
 					if (NextWinSize.y == MAX_F32)
 						item->size.y = MarginedBottom() - item->position.x;
 					else if (NextWinSize.y == -1) {}
 					else item->size.y = NextWinSize.y;
 				}
-
+				
 				NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
-
+				
 				AdvanceCursor(item, 0);
-
+				
 				curwin = parent->children[name];
 				curwin->dimensions = item->size;
 				curwin->cursor = vec2(0, 0);
@@ -2451,27 +2451,27 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 			else {
 				item->size = dimensions;
 				AdvanceCursor(item, 0);
-
+				
 				vec2 parentNewPos = PositionForNewItem();
 				curwin = new UIWindow();
-
+				
 				curwin->scroll = vec2(0, 0);
 				curwin->name = name;
 				curwin->position = parentNewPos;
 				curwin->dimensions = dimensions;
 				curwin->cursor = vec2(0, 0);
 				curwin->flags = flags;
-
+				
 				parent->children.add(name, curwin);
 			}
-
+			
 			indentStack.add(0);
 			item->child = curwin;
 			curwin->parent = parent;
 			curwin->type = UIWindowType_PopOut;
 		}break;
 	}
-
+	
 	WinAddBegan(curwin);
 }
 
@@ -2583,27 +2583,27 @@ void EndCall() {
 	
 	UIItem* preitem = BeginItem(UIItemType_PreItems);
 	UIItem* postitem = BeginItem(UIItemType_PostItems);
-
+	
 	preitem->position = vec2::ZERO;
 	postitem->position = vec2::ZERO;
-
+	
 	vec2 mp = DeshInput->mousePos;
-
+	
 	curwin->minSizeForFit = CalcWindowMinSize();
 	vec2 minSizeForFit = curwin->minSizeForFit;
-
+	
 	if (WinHasFlag(UIWindowFlags_FitAllElements))
 		curwin->dimensions = minSizeForFit;
-
+	
 	b32 xCanScroll = CanScrollX();
 	b32 yCanScroll = CanScrollY();
-
+	
 	if (!inputupon) {
 		CheckWindowForScrollingInputs(curwin);
 		CheckWindowForResizingInputs(curwin);
 		CheckWindowForDragInputs(curwin);
 	}
-
+	
 	//check to see if the elements we have drawn so far have gone beyond the window's size
 	//and allow scrolling if it did, as well as define a max scrolling amount
 	//also draw the scroll bar if allowed
@@ -2614,7 +2614,7 @@ void EndCall() {
 			f32 scrollbarheight = ScrollBaredBottom() - ScrollBaredTop();
 			f32 draggerheight = scrollbarheight * scrollbarheight / minSizeForFit.y;
 			vec2 draggerpos(ScrollBaredRight(), (scrollbarheight - draggerheight) * curwin->scy / curwin->maxScroll.y + BorderedTop());
-
+			
 			b32 scbgactive = MouseInWinArea(vec2(ScrollBaredRight(), BorderedTop()), vec2(style.scrollBarYWidth, scrollbarheight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(style.scrollBarYWidth, draggerheight));
 			
@@ -2625,7 +2625,7 @@ void EndCall() {
 				drawCmd.dimensions = vec2(style.scrollBarYWidth, scrollbarheight);
 				postitem->drawCmds.add(drawCmd);
 			}
-
+			
 			{//scroll dragger
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 				drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
@@ -2633,7 +2633,7 @@ void EndCall() {
 				drawCmd.dimensions = vec2(style.scrollBarYWidth, draggerheight);
 				postitem->drawCmds.add(drawCmd);
 			}
-
+			
 			//if both scroll bars are active draw a little square to obscure the empty space 
 			if (CanScrollX()) {
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
@@ -2645,8 +2645,8 @@ void EndCall() {
 		}
 	}
 	else curwin->maxScroll.y = 0;
-
-
+	
+	
 	//do the same but for x
 	if (!WinHasFlag(UIWindowFlags_NoScrollX) && CanScrollX()) {
 		curwin->maxScroll.x = minSizeForFit.x - curwin->dimensions.x + (yCanScroll ? style.scrollBarYWidth : 0);
@@ -2654,7 +2654,7 @@ void EndCall() {
 			f32 scrollbarwidth = ScrollBaredRight() - ScrollBaredLeft();
 			f32 draggerwidth = scrollbarwidth * curwin->dimensions.x / minSizeForFit.x;
 			vec2 draggerpos((scrollbarwidth - draggerwidth) * curwin->scx / curwin->maxScroll.x, ScrollBaredBottom());
-
+			
 			b32 scbgactive = MouseInWinArea(vec2(ScrollBaredBottom(), BorderedLeft()), vec2(scrollbarwidth, style.scrollBarXHeight));
 			b32 scdractive = MouseInWinArea(draggerpos, vec2(draggerwidth, style.scrollBarXHeight));
 			
@@ -2665,7 +2665,7 @@ void EndCall() {
 				drawCmd.dimensions = vec2(scrollbarwidth, style.scrollBarXHeight);
 				postitem->drawCmds.add(drawCmd);
 			}
-
+			
 			{//scroll dragger
 				UIDrawCmd drawCmd{ UIDrawType_FilledRectangle };
 				drawCmd.color = style.colors[(scdractive ? ((DeshInput->LMouseDown()) ? UIStyleCol_ScrollBarDraggerActive : UIStyleCol_ScrollBarDraggerHovered) : UIStyleCol_ScrollBarDragger)];
@@ -2676,8 +2676,8 @@ void EndCall() {
 		}
 	}
 	else curwin->maxScroll.x = 0;
-
-
+	
+	
 	//if the window isn't invisible draw things that havent been disabled
 	if (!WinHasFlags(UIWindowFlags_Invisible)) {
 		//draw background
@@ -2686,10 +2686,10 @@ void EndCall() {
 			drawCmd.position = vec2::ZERO;
 			drawCmd.dimensions = curwin->dimensions;
 			drawCmd.color = style.colors[UIStyleCol_WindowBg];
-
+			
 			preitem->drawCmds.add(drawCmd);
 		}
-
+		
 		//draw border
 		if (!WinHasFlag(UIWindowFlags_NoBorder)) {
 			UIDrawCmd drawCmd{ UIDrawType_Rectangle }; //inst 58
@@ -2700,12 +2700,12 @@ void EndCall() {
 			postitem->drawCmds.add(drawCmd);
 		}
 	}
-
+	
 	NextWinPos = vec2(-1, 0); NextWinSize = vec2(-1, 0);
 	curwin->style = style;
-
+	
 	curwin->creation_time = TIMER_END(wincreate);
-
+	
 	//update stored window with new window state
 	curwin = *windowStack.last;
 	windowStack.pop();
@@ -2714,14 +2714,14 @@ void EndCall() {
 void UI::End() {
 	Assert(!StateHasFlag(UISRowBegan), "Attempted to end a window with a Row in progress!");
 	Assert(!StateHasFlag(UISComboBegan), "Attempted to end a window with a Combo in progress!");
-
+	
 	EndCall();
 }
 
 void UI::EndChild() {
 	Assert(!StateHasFlag(UISRowBegan), "Attempted to end a window with a Row in progress!");
 	Assert(!StateHasFlag(UISComboBegan), "Attempted to end a window with a Combo in progress!");
-
+	
 	EndCall();
 	indentStack.pop();
 }
@@ -2774,11 +2774,11 @@ UIWindow* DisplayMetrics() {
 	array<UIWindow*> winsorted;
 	for (UIWindow* win : windows) {
 		//if (!(win->name == "METRICS")) {
-			if (win->render_time > slomo->render_time)     slomo = win;
-			if (win->render_time < quick->render_time)     quick = win;
-			if (win->items_count > mostitems->items_count) mostitems = win;
-			if (win->name.count > longname->name.count)   longname = win;
-			winsorted.add(win);
+		if (win->render_time > slomo->render_time)     slomo = win;
+		if (win->render_time < quick->render_time)     quick = win;
+		if (win->items_count > mostitems->items_count) mostitems = win;
+		if (win->name.count > longname->name.count)   longname = win;
+		winsorted.add(win);
 		//}
 	}
 	
@@ -2829,7 +2829,7 @@ UIWindow* DisplayMetrics() {
 		RowSetupColumnWidths({ fw, 96 });
 		
 		
-
+		
 		Text(str1); Text(toStr(StateHasFlag(UISGlobalHovered)).str);
 		Text("input state: ");
 		switch (ui_state.input) {
@@ -2845,14 +2845,14 @@ UIWindow* DisplayMetrics() {
 		
 		EndHeader();
 	}
-
+	
 	if (BeginHeader("Windows")) {
 		persist b32 showChildren = 0;
-
+		
 		Checkbox("show children", &showChildren);
-
+		
 		BeginChild("METRICSWindows", vec2(MAX_F32, 300));
-
+		
 		for (UIWindow* window : windows) {
 			Text(toStr(window->name, "; hovered: ", WinHovered(window)).str, UITextFlags_NoWrap);
 			UIItem* tex = GetLastItem();
@@ -2867,32 +2867,32 @@ UIWindow* DisplayMetrics() {
 				for (UIWindow* child : window->children) {
 					Text(toStr(child->name, "; hovered: ", WinHovered(child)).str, UITextFlags_NoWrap);
 					tex = GetLastItem();
-
+					
 					SetNextItemSize(tex->size);
 					PushLayer(GetCenterLayer() - 1);
 					if (Selectable("", tex->position, child == debugee)) {
 						debugee = child;
-
+						
 					}
 					PopLayer();
 				}
 				popGlobalIndent;
 			}
 		}
-
+		
 		EndChild();
-
-
+		
+		
 		EndHeader();
 	}
-
+	
 	static b32 break_on_cursor = 0;
 	static b32 frame_skip = 0;
 	if (!break_on_cursor && (Button("Break on Cursor") || 
-		DeshInput->KeyPressed(Key::B) && DeshInput->LShiftDown() && DeshInput->LCtrlDown())) {
+							 DeshInput->KeyPressed(Key::B) && DeshInput->LShiftDown() && DeshInput->LCtrlDown())) {
 		break_on_cursor = 1;
 	}
-
+	
 	if (break_on_cursor && frame_skip) {
 		Text("Press ESC to cancel");
 		if (DeshInput->KeyPressed(Key::ESCAPE)) break_on_cursor = 0;
@@ -2962,11 +2962,11 @@ UIWindow* DisplayMetrics() {
 	EndRow();
 	
 	if (debugee) {
-
+		
 		if (Button("Set Focused")) {
 			SetFocusedWindow(debugee);
 		}
-
+		
 		if (BeginHeader("Window Vars")) {
 			BeginRow(2, style.fontHeight * 1.2);
 			RowSetupColumnWidths({ CalcTextSize("Max Item Width: ").x , 10 });
@@ -3002,7 +3002,7 @@ UIWindow* DisplayMetrics() {
 								item_idx = item.item_idx;
 								item_layer = item.item_layer;
 							}
-
+							
 						}
 					}
 					EndRow();
@@ -3338,12 +3338,12 @@ void UI::DemoWindow() {
 		Text("heres a image in the child window:");
 		Image(tex);
 		
-
-
+		
+		
 		forI(15) {
 			Text("heres a bunch of text in the child window");
 		}
-
+		
 		Button("child window button");
 		
 		EndChild();
@@ -3505,14 +3505,14 @@ void UI::Init() {
 //in our final draw system, this is the function that primarily does the work
 //of figuring out how each draw call will be sent to the renderer
 inline void DrawItem(UIItem& item, UIWindow* window) {
-
+	
 	vec2 winpos = vec2(window->x, window->y);
 	vec2 winsiz = vec2(window->width, window->height) * window->style.globalScale;
 	vec2 winScissorOffset;
 	vec2 winScissorExtent;
-
+	
 	UIWindow* parent = window->parent;
-
+	
 	if (parent && window->type != UIWindowType_PopOut) {
 		//if this is a child window we need to keep the child window's items within the parents
 		//visible length of child window on each axis
@@ -3528,10 +3528,10 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 		winScissorOffset = { Max(0.0f,winpos.x), Max(0.0f, winpos.y) }; //NOTE scissor offset cant be negative
 		winScissorExtent = winsiz;
 	}
-
+	
 	vec2 itempos = window->position + item.position;
 	vec2 itemsiz = item.size;
-
+	
 	for (UIDrawCmd& drawCmd : item.drawCmds) {
 		vec2   dcpos = itempos + drawCmd.position * item.style.globalScale;
 		vec2  dcpos2 = itempos + drawCmd.position2 * item.style.globalScale;
@@ -3542,10 +3542,10 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 		u32      dcl = window->windowlayer;
 		u32    dcsub = drawCmd.subdivisions;
 		color  dccol = drawCmd.color;
-
+		
 		dcpos.x = floor(dcpos.x); dcpos.y = floor(dcpos.y);
 		dcpos2.x = floor(dcpos2.x); dcpos2.y = floor(dcpos2.y);
-
+		
 		//modify the scissor offset and extent according to the kind of window we are drawing
 		switch (window->type) {
 			case UIWindowType_PopOut:
@@ -3571,17 +3571,17 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 				dcse.x = Max(0.f, dcse.x); dcse.y = Max(0.f, dcse.y);
 				dcso.x = Max(0.0f, dcso.x); dcso.y = Max(0.0f, dcso.y); //NOTE scissor offset cant be negative
 			}break;
-
+			
 		}
-
-
+		
+		
 		Texture* dctex = drawCmd.tex;
-
+		
 		cstring dctext{ drawCmd.text.str,drawCmd.text.count };
 		wcstring wdctext{ drawCmd.wtext.str, drawCmd.wtext.count };
-
+		
 		Font* font = drawCmd.font;
-
+		
 #if DESHI_INTERNAL
 		//copy all drawCmd changes back to the actual drawCmd in debug mode so we
 		//can visualize it in metrics
@@ -3591,7 +3591,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 		drawCmd.position2 = dcpos2;
 		drawCmd.thickness = dct;
 #endif
-
+		
 		switch (drawCmd.type) {
 			case UIDrawType_FilledRectangle: {
 				Render::FillRect2D(dcpos, dcsiz, dccol, dcl, dcso, dcse);
@@ -3616,7 +3616,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 				vec2 scale = vec2::ONE * item.style.fontHeight / item.style.font->max_height * item.style.globalScale;
 				Render::DrawText2D(font, wdctext, dcpos, dccol, scale, dcl, dcso, dcse);
 			}break;
-
+			
 			case UIDrawType_Image: {
 				Render::DrawTexture2D(dctex, dcpos, dcsiz, 0, dct, dcl, dcso, dcse);
 			}break;
@@ -3629,7 +3629,7 @@ inline void DrawItem(UIItem& item, UIWindow* window) {
 
 inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {
 	TIMER_START(winren);
-
+	
 	if (WinHovered(p) && !(p->flags & UIWindowFlags_DontSetGlobalHoverFlag))
 		StateAddFlag(UISGlobalHovered);
 	
@@ -3639,25 +3639,25 @@ inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {
 	}
 	
 	//dont draw post-pre drawcmds if we're minimized
-//	if (!p->minimized) {
-		forI(UI_WINDOW_ITEM_LAYERS) {
-			for (UIItem& item : p->items[i]) {
-				if (item.type == UIItemType_Window) {
-					item.child->position = p->position + item.position * item.style.globalScale;
-					DrawWindow(item.child, p);
-					WinRemoveBegan(item.child);
-					continue;
-				}
-				DrawItem(item, p);
+	//	if (!p->minimized) {
+	forI(UI_WINDOW_ITEM_LAYERS) {
+		for (UIItem& item : p->items[i]) {
+			if (item.type == UIItemType_Window) {
+				item.child->position = p->position + item.position * item.style.globalScale;
+				DrawWindow(item.child, p);
+				WinRemoveBegan(item.child);
+				continue;
 			}
-		}
-		
-		//draw post items, such as scroll bars or context menus
-		for (UIItem& item : p->postItems) {
 			DrawItem(item, p);
 		}
-//	}
-
+	}
+	
+	//draw post items, such as scroll bars or context menus
+	for (UIItem& item : p->postItems) {
+		DrawItem(item, p);
+	}
+	//	}
+	
 	p->render_time = TIMER_END(winren);
 	
 	//when compiling for debug we defer this to after the metrics window
@@ -3702,17 +3702,17 @@ void UI::Update() {
 		   "Frame ended with hanging colors in the stack, make sure you pop colors if you push them!");
 	
 	Assert(indentStack.count == 1, "Forgot to call End for an indenting Begin!");
-
+	
 	MarginPositionOffset = vec2::ZERO;
 	MarginSizeOffset = vec2::ZERO;
-
+	
 #ifdef DESHI_INTERNAL
 	//clear break vars in debug mode
 	break_window = 0;
 	item_idx = -1;
 	item_layer = -1;
 #endif
-
+	
 	//windows input checking functions
 	CheckForHoveredWindow();
 	CheckWindowsForFocusInputs();
@@ -3725,19 +3725,19 @@ void UI::Update() {
 	
 	//reset cursor to default if no item decided to set it 
 	if (!StateHasFlag(UISCursorSet)) DeshWindow->SetCursor(CursorType_Arrow);
-
+	
 	//draw windows in order 
 	for (UIWindow* p : windows) {
 		DrawWindow(p);
 		WinRemoveBegan(p);
 	}
-
+	
 	if (show_metrics) {
 		//DisplayMetrics();
 		DrawWindow(DisplayMetrics());
 		show_metrics = 0;
 	}
-
+	
 	
 	//it should be safe to do this any time the mouse is released
 	if (DeshInput->LMouseReleased()) { AllowInputs; }
@@ -3760,8 +3760,8 @@ void UI::Update() {
 			}
 		}
 	}
-
-
+	
+	
 #endif
 	
 	//draw all debug commands if there are any
@@ -3816,9 +3816,9 @@ void UI::Update() {
 		}
 	}
 	debugCmds.clear();
-
+	
 	if (CanTakeInput && DeshInput->LMouseDown()) PreventInputs;
-
+	
 	StateRemoveFlag(UISGlobalHovered);
 	StateRemoveFlag(UISCursorSet);
 }

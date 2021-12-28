@@ -640,8 +640,8 @@ CreateMaterialFromFile(const char* filename, bool warnMissing){
 		
 		//check for headers
 		if(*info_start == '>'){
-			if     (strings_equal(info, cstr_lit(">material"))){ header = MaterialHeader::MATERIAL; }
-			else if(strings_equal(info, cstr_lit(">textures"))){ header = MaterialHeader::TEXTURES; }
+			if     (equals(info, cstr_lit(">material"))){ header = MaterialHeader::MATERIAL; }
+			else if(equals(info, cstr_lit(">textures"))){ header = MaterialHeader::TEXTURES; }
 			else{ header = MaterialHeader::INVALID; ParseError("Uknown header '",info,"'"); }
 			continue;
 		}
@@ -665,11 +665,11 @@ CreateMaterialFromFile(const char* filename, bool warnMissing){
 			if(value_end == value_start){ ParseError("No value passed."); continue; }
 			cstring value{value_start, u64(value_end-value_start)};
 			
-			if      (strings_equal(key, cstr_lit("name"))){
+			if      (equals(key, cstr_lit("name"))){
 				mat_name = string(value_start+1, value_end-value_start-2);
-			}else if(strings_equal(key, cstr_lit("flags"))){
+			}else if(equals(key, cstr_lit("flags"))){
 				mat_flags = (ModelFlags)b10tou64(value); 
-			}else if(strings_equal(key, cstr_lit("shader"))){
+			}else if(equals(key, cstr_lit("shader"))){
 				string s = to_string(value);
 				forI(Shader_COUNT){ if(strcmp(ShaderStrings[i], s.str) == 0){ mat_shader = i; break; } }
 			}else{ ParseError("Invalid key '",key,"' for header '",MaterialHeaderStrings[header],"'"); continue; }
@@ -1354,8 +1354,8 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			
 			//check for headers
 			if(*info_start == '>'){
-				if     (strings_equal(info, cstr_lit(">model"))){ header = ModelHeader::MODEL; }
-				else if(strings_equal(info, cstr_lit(">batches"))){ header = ModelHeader::BATCHES; }
+				if     (equals(info, cstr_lit(">model"))){ header = ModelHeader::MODEL; }
+				else if(equals(info, cstr_lit(">batches"))){ header = ModelHeader::BATCHES; }
 				else{ header = ModelHeader::INVALID; ParseError("Uknown header '",info,"'"); }
 				continue;
 			}
@@ -1379,13 +1379,13 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 			if(header == ModelHeader::INVALID) { ParseError("Invalid header; skipping line"); continue; }
 			
 			if(header == ModelHeader::MODEL){
-				if      (strings_equal(key, cstr_lit("name"))){
+				if      (equals(key, cstr_lit("name"))){
 					model_load_name = string(value_start+1, value_end-value_start-2);
-				}else if(strings_equal(key, cstr_lit("flags"))){
+				}else if(equals(key, cstr_lit("flags"))){
 					model_load_flags = (ModelFlags)b10tou64(value); 
-				}else if(strings_equal(key, cstr_lit("mesh"))){
+				}else if(equals(key, cstr_lit("mesh"))){
 					model_load_mesh = string(value_start+1, value_end-value_start-2);
-				}else if(strings_equal(key, cstr_lit("armature"))){
+				}else if(equals(key, cstr_lit("armature"))){
 					//NOTE currently nothing
 				}else{ ParseError("Invalid key '",key,"' for header '",ModelHeaderStrings[header],"'"); continue; }
 			}else{

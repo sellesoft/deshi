@@ -44,7 +44,7 @@ DeshWindow-> Update(); \
 DeshiImGui::NewFrame(); \
 DeshInput->  Update();
 #define deshi_loop_end() \
-DeshConsole->Update(); Console2::Update(); \
+DeshConsole->Update(); \
 UI::         Update(); \
 Render::     Update(); \
 DeshTime->frameTime = TIMER_END(t_f); TIMER_RESET(t_f); \

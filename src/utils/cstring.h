@@ -11,7 +11,7 @@ advance(cstring* s, upt count){
 }
 
 global_ inline b32
-strings_equal(cstring a, cstring b){
+equals(cstring a, cstring b){
 	return (a.count == b.count) && (strncmp(a.str, b.str, a.count) == 0);
 }
 

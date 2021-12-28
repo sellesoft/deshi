@@ -82,7 +82,7 @@ namespace Cmd{
 		
 		CMDSTART(alias, "Gives an alias to specified command and arguments"){
 			//check that alias name and command arent the same
-			if(strings_equal(args[0], args[1])){ //!Robustness: this check doesnt compare inside args[1], so an alias could still be recursive
+			if(equals(args[0], args[1])){ //!Robustness: this check doesnt compare inside args[1], so an alias could still be recursive
 				DeshConsole->AddLog("Error: Aliases can't be recursive");
 				return;
 			}

@@ -44,10 +44,19 @@ hotloadable UI
 
 IO TODOs
 --------
+add file reading (simple and smart)
+add file writing (simple and smart)
+add file/dir creation
+add file/dir renaming
+add file/dir existence checking
+add file locking and determination
+add hard/symbolic link creation/deletion
+add file hard/symbolic link determination
+add drive statistics
 safety checks for IO operations
 add search filters to get_directory_files
 data folder specified on launch
-text file parser (and cleanup locations doing it manually)
+smart text file parser (handles new line checking and formatting)
  linux/mac IO
 
 Math TODOs
@@ -162,6 +171,7 @@ __________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.
 //#define DESHI_STRING_ALLOCATOR deshi_allocator
 #include "utils/array.h"
 #include "utils/string.h"
+#include "utils/carray.h"
 #include "utils/cstring.h"
 #include "utils/color.h"
 #include "utils/tuple.h"
@@ -172,6 +182,7 @@ __________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.
 #include "utils/ring_array.h"
 #include "utils/hash.h"
 #include "utils/map.h"
+#include "utils/array_algorithms.h"
 #include "math/math.h"
 
 //// STL for core ////

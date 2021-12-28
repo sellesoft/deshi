@@ -63,7 +63,7 @@ struct cstring{
     char* str;
     upt   count;
     
-    FORCE_INLINE explicit operator bool(){ return count; }
+    FORCE_INLINE explicit operator bool(){ return str && count; }
 	FORCE_INLINE char& operator[](upt idx){ return str[idx]; }
 	FORCE_INLINE char* at(upt idx){ return &str[idx]; }
 	FORCE_INLINE char* begin(){ return &str[0]; }
@@ -79,7 +79,7 @@ struct carray{
     T*  data;
     upt count;
     
-    FORCE_INLINE explicit operator bool(){ return count; }
+    FORCE_INLINE explicit operator bool(){ return data && count; }
 	FORCE_INLINE T& operator[](upt idx){ return data[idx]; }
 	FORCE_INLINE T* at(upt idx){ return &data[idx]; }
 	FORCE_INLINE T* begin(){ return &data[0]; }
@@ -210,8 +210,8 @@ global_const u64 ucharsize = sizeof(uchar);
 #define PointerAsInt(a) PointerDifference(a,0)
 #define OffsetOfMember(structName,memberName) PointerAsInt(&(((structName*)0)->memberName))
 #define CastFromMember(structName,memberName,ptr) (structName*)((u8*)(ptr) - OffsetOfMember(structName,memberName))
-#define StartNamespace(a) namespace a{ (void)0
-#define EndNamespace(a) } (void)0
+#define StartNamespace(a) namespace a{ 
+#define EndNamespace(a) }
 #define CastToConst(type,a) const_cast<const type>(a)
 #define CastFromConst(type,a) const_cast<type>(a)
 #define StaticCast(type,a) static_cast<type>(a)
