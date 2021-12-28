@@ -151,25 +151,25 @@ struct {
 #define WinBeingResized(win)  HasFlag(win->win_state.flags, UIWSBeingResized)
 #define WinBeingDragged(win)  HasFlag(win->win_state.flags, UIWSBeingDragged)
 
-#define WinAddBegan(win)         AddFlag(win->win_state.flags, UIWSBegan)
-#define WinAddEnded(win)         AddFlag(win->win_state.flags, UIWSEnded)
-#define WinAddHovered(win)       AddFlag(win->win_state.flags, UIWSHovered)
-#define WinAddChildHovered(win)  AddFlag(win->win_state.flags, UIWSChildHovered)
-#define WinAddFocused(win)       AddFlag(win->win_state.flags, UIWSFocused)
-#define WinAddLatched(win)       AddFlag(win->win_state.flags, UIWSLatch)
-#define WinAddBeingScrolled(win) AddFlag(win->win_state.flags, UIWSBeingScrolled)
-#define WinAddBeingResized(win)  AddFlag(win->win_state.flags, UIWSBeingResized)
-#define WinAddBeingDragged(win)  AddFlag(win->win_state.flags, UIWSBeingDragged)
+#define WinSetBegan(win)         AddFlag(win->win_state.flags, UIWSBegan)
+#define WinSetEnded(win)         AddFlag(win->win_state.flags, UIWSEnded)
+#define WinSetHovered(win)       AddFlag(win->win_state.flags, UIWSHovered)
+#define WinSetChildHovered(win)  AddFlag(win->win_state.flags, UIWSChildHovered)
+#define WinSetFocused(win)       AddFlag(win->win_state.flags, UIWSFocused)
+#define WinSetLatched(win)       AddFlag(win->win_state.flags, UIWSLatch)
+#define WinSetBeingScrolled(win) AddFlag(win->win_state.flags, UIWSBeingScrolled)
+#define WinSetBeingResized(win)  AddFlag(win->win_state.flags, UIWSBeingResized)
+#define WinSetBeingDragged(win)  AddFlag(win->win_state.flags, UIWSBeingDragged)
 
-#define WinRemoveBegan(win)         RemoveFlag(win->win_state.flags, UIWSBegan)
-#define WinRemoveEnded(win)         RemoveFlag(win->win_state.flags, UIWSEnded)
-#define WinRemoveHovered(win)       RemoveFlag(win->win_state.flags, UIWSHovered)
-#define WinRemoveChildHovered(win)  RemoveFlag(win->win_state.flags, UIWSChildHovered)
-#define WinRemoveFocused(win)       RemoveFlag(win->win_state.flags, UIWSFocused)
-#define WinRemoveLatched(win)       RemoveFlag(win->win_state.flags, UIWSLatch)
-#define WinRemoveBeingScrolled(win) RemoveFlag(win->win_state.flags, UIWSBeingScrolled)
-#define WinRemoveBeingResized(win)  RemoveFlag(win->win_state.flags, UIWSBeingResized)
-#define WinRemoveBeingDragged(win)  RemoveFlag(win->win_state.flags, UIWSBeingDragged)
+#define WinUnSetBegan(win)         RemoveFlag(win->win_state.flags, UIWSBegan)
+#define WinUnSetEnded(win)         RemoveFlag(win->win_state.flags, UIWSEnded)
+#define WinUnSetHovered(win)       RemoveFlag(win->win_state.flags, UIWSHovered)
+#define WinUnSetChildHovered(win)  RemoveFlag(win->win_state.flags, UIWSChildHovered)
+#define WinUnSetFocused(win)       RemoveFlag(win->win_state.flags, UIWSFocused)
+#define WinUnSetLatched(win)       RemoveFlag(win->win_state.flags, UIWSLatch)
+#define WinUnSetBeingScrolled(win) RemoveFlag(win->win_state.flags, UIWSBeingScrolled)
+#define WinUnSetBeingResized(win)  RemoveFlag(win->win_state.flags, UIWSBeingResized)
+#define WinUnSetBeingDragged(win)  RemoveFlag(win->win_state.flags, UIWSBeingDragged)
 
 #define WinStateResetFlags(win) win->win_state.flags = UIWSNone
 
@@ -189,7 +189,7 @@ struct {
 #define AllowInputs       ui_state.input = ISNone;      inputupon = 0;
 #define SetResizingInput  ui_state.input = ISResizing;  inputupon = window;
 #define SetDraggingInput  ui_state.input = ISDragging;  inputupon = window;
-#define SetScrollingInput ui_state.input = ISScrolling; inputupon = window; WinAddBeingScrolled(window);
+#define SetScrollingInput ui_state.input = ISScrolling; inputupon = window; WinSetBeingScrolled(window);
 #define WinResizing       ui_state.input == ISResizing
 #define WinDragging       ui_state.input == ISDragging
 #define WinScrolling      ui_state.input == ISScrolling
@@ -497,7 +497,7 @@ inline vec2 DecideWinSize(vec2 defaultSize, vec2 itemPos) {
 	return size;
 }
 
-void WinAdddowCursor(CursorType curtype) {
+void WinSetdowCursor(CursorType curtype) {
 	DeshWindow->SetCursor(curtype);
 	StateAddFlag(UISCursorSet);
 }
@@ -1680,7 +1680,7 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 		else if (active) activeId = -1;
 	}
 	
-	if (hovered) WinAdddowCursor(CursorType_IBeam);
+	if (hovered) WinSetdowCursor(CursorType_IBeam);
 	
 	if (charCount < state->cursor)
 		state->cursor = charCount;
@@ -2045,44 +2045,59 @@ void SetFocusedWindow(UIWindow* window) {
 	}
 }
 
-void CheckForHoveredWindow() {
+void CheckForHoveredWindow(UIWindow* window = 0) {
 	b32 hovered_found = 0;
-	for (int i = windows.count - 1; i > 0; i--) {
-		UIWindow* w = *windows.atIdx(i);
-		if (WinBegan(w)) {
-			if (!hovered_found && MouseInArea(w->position, w->dimensions * w->style.globalScale)) {
-				WinAddHovered(w);
-				WinRemoveChildHovered(w);
-				if (!HasFlag(w->flags, UIWindowFlags_DontSetGlobalHoverFlag))
-					StateAddFlag(UISGlobalHovered);
-				for (UIWindow* c : w->children) {
-					if (WinBegan(c)) {
-						vec2 scrollBarAdjust = vec2((CanScrollY() ? style.scrollBarYWidth : 0), (CanScrollX() ? style.scrollBarXHeight : 0));
-						vec2 visRegionStart = vec2(Max(w->x, c->x), Max(w->y, c->y));
-						vec2 visRegionEnd = vec2(Min(w->x + w->width - (CanScrollY() ? style.scrollBarYWidth : 0), c->x + c->width), Min(w->y + w->height - (CanScrollX() ? style.scrollBarXHeight : 0), c->y + c->height));
-						vec2 childVisibleRegion = visRegionEnd - visRegionStart;
-						c->visibleRegionStart = visRegionStart;
-						c->visibleRegionSize = childVisibleRegion;
-						if (MouseInArea(visRegionStart, childVisibleRegion * style.globalScale)) {
-							WinAddChildHovered(w);
-							WinAddHovered(c);
-							break;
-						}
-						else {
-							WinRemoveHovered(c);
+	if (!window) {
+		for (int i = windows.count - 1; i > 0; i--) {
+			UIWindow* w = *windows.atIdx(i);
+			if (WinBegan(w)) {
+				if (!hovered_found && MouseInArea(w->position, w->dimensions * w->style.globalScale)) {
+					WinSetHovered(w);
+					WinUnSetChildHovered(w);
+					if (!HasFlag(w->flags, UIWindowFlags_DontSetGlobalHoverFlag))
+						StateAddFlag(UISGlobalHovered);
+					for (UIWindow* c : w->children) {
+						if (WinBegan(c)) {
+							CheckForHoveredWindow(c);
+							switch (c->type) {
+								case UIWindowType_Child: {
+									//in the normal child case we take into account the parents scissors
+									vec2 scrollBarAdjust = vec2((CanScrollY() ? style.scrollBarYWidth : 0), (CanScrollX() ? style.scrollBarXHeight : 0));
+									vec2 visRegionStart = vec2(Max(w->x, c->x), Max(w->y, c->y));
+									vec2 visRegionEnd = vec2(Min(w->x + w->width - (CanScrollY() ? style.scrollBarYWidth : 0), c->x + c->width), Min(w->y + w->height - (CanScrollX() ? style.scrollBarXHeight : 0), c->y + c->height));
+									vec2 childVisibleRegion = visRegionEnd - visRegionStart;
+									c->visibleRegionStart = visRegionStart;
+									c->visibleRegionSize = childVisibleRegion;
+									if (MouseInArea(visRegionStart, childVisibleRegion * style.globalScale)) {
+										WinSetChildHovered(w);
+										WinSetHovered(c);
+										break;
+									}
+									else {
+										WinUnSetHovered(c);
+									}
+								}break;
+								case UIWindowType_PopOut: {
+
+								}break;
+							}
+
 						}
 					}
+
+
+					hovered_found = 1;
 				}
-
-
-				hovered_found = 1;
-			}
-			else {
-				WinRemoveHovered(w);
-				//this kind of sucks
-				for (UIWindow* c : w->children) WinRemoveHovered(c);
+				else {
+					WinUnSetHovered(w);
+					//this kind of sucks
+					for (UIWindow* c : w->children) WinUnSetHovered(c);
+				}
 			}
 		}
+	}
+	else {
+
 	}
 }
 
@@ -2092,15 +2107,15 @@ void CheckWindowsForFocusInputs() {
 	
 	for (int i = windows.count - 1; i > 0; i--) {
 		UIWindow* w = *windows.atIdx(i);
-		WinRemoveFocused(w);
+		WinUnSetFocused(w);
 		if (!(w->flags & UIWindowFlags_NoFocus)) {
 			if (i == windows.count - 1 && WinHovered(w)) {
-				WinAddFocused(w);
+				WinSetFocused(w);
 				break;
 			}
 			else if ((WinHovered(w) || WinChildHovered(w)) && ((w->flags & UIWindowFlags_FocusOnHover) ? 1 : DeshInput->LMousePressed())) {
-				WinRemoveFocused((*windows.data.last));
-				WinAddFocused(w);
+				WinUnSetFocused((*windows.data.last));
+				WinSetFocused(w);
 				for (int move = i; move < windows.count - 1; move++)
 					windows.swap(move, move + 1);
 				break;
@@ -2140,7 +2155,7 @@ void CheckWindowForResizingInputs(UIWindow* window) {
 		}
 		
 		if (mpres && !latch && activeSide != wNone) {
-			WinAddLatched(window);
+			WinSetLatched(window);
 			mouse = mp;
 			wdims = window->dimensions;
 			wpos = window->position;
@@ -2149,13 +2164,13 @@ void CheckWindowForResizingInputs(UIWindow* window) {
 		}
 		
 		if (mrele) {
-			WinRemoveLatched(window);
+			WinUnSetLatched(window);
 			AllowInputs;
 		}
 		
 		switch (activeSide) {
 			case wTop: {
-				WinAdddowCursor(CursorType_VResize);
+				WinSetdowCursor(CursorType_VResize);
 				if (mdown) {
 					window->position.y = wpos.y + (mp.y - mouse.y);
 					window->dimensions = wdims.yAdd(mouse.y - mp.y);
@@ -2163,14 +2178,14 @@ void CheckWindowForResizingInputs(UIWindow* window) {
 				}
 			}break;
 			case wBottom: {
-				WinAdddowCursor(CursorType_VResize); 
+				WinSetdowCursor(CursorType_VResize); 
 				if (mdown) {
 					window->dimensions = wdims.yAdd(mp.y - mouse.y);
 					window->scy = Clamp(window->scy, 0.f, window->maxScroll.y);
 				}
 			}break;
 			case wLeft: {
-				WinAdddowCursor(CursorType_HResize);
+				WinSetdowCursor(CursorType_HResize);
 				if (mdown) {
 					window->position.x = wpos.x + (mp.x - mouse.x);
 					window->dimensions = wdims.xAdd(mouse.x - mp.x);
@@ -2178,7 +2193,7 @@ void CheckWindowForResizingInputs(UIWindow* window) {
 				}
 			}break;
 			case wRight: {
-				WinAdddowCursor(CursorType_HResize); 
+				WinSetdowCursor(CursorType_HResize); 
 				if (mdown) {
 					window->dimensions = wdims.xAdd(mp.x - mouse.x);
 					window->scx = Clamp(window->scx, 0.f, window->maxScroll.x);
@@ -2261,7 +2276,7 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
 				initial = true;
 				vscroll = 0;
 				inputupon = 0;
-				WinRemoveBeingScrolled(window);
+				WinUnSetBeingScrolled(window);
 				AllowInputs;
 			}
 			
@@ -2292,7 +2307,7 @@ void CheckWindowForScrollingInputs(UIWindow* window, b32 fromChild = 0) {
 			if (DeshInput->LMouseReleased()) {
 				initial = true;
 				hscroll = 0;
-				WinRemoveBeingScrolled(window);
+				WinUnSetBeingScrolled(window);
 				AllowInputs;
 			}
 		}
@@ -2314,7 +2329,7 @@ void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {
 			(WinHovered(window) || fromChild) &&
 			DeshInput->KeyPressed(MouseButton::LEFT)) {
 			SetDraggingInput;
-			WinAddBeingDragged(window);
+			WinSetBeingDragged(window);
 			mouseOffset = window->position - DeshInput->mousePos;
 			SetFocusedWindow(window);
 		}
@@ -2322,7 +2337,7 @@ void CheckWindowForDragInputs(UIWindow* window, b32 fromChild = 0) {
 			window->position = DeshInput->mousePos + mouseOffset;
 		}
 		if (DeshInput->KeyReleased(MouseButton::LEFT)) {
-			WinRemoveBeingDragged(window);
+			WinUnSetBeingDragged(window);
 			AllowInputs;
 		}
 	}
@@ -2472,7 +2487,7 @@ void BeginCall(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags,
 		}break;
 	}
 
-	WinAddBegan(curwin);
+	WinSetBegan(curwin);
 }
 
 
@@ -2598,6 +2613,13 @@ void EndCall() {
 	b32 xCanScroll = CanScrollX();
 	b32 yCanScroll = CanScrollY();
 
+
+	//NOTE we need to check for window hovering in End 
+	// but we need a good way to also prevent it from setting the 
+	// hovered flag if a window is hovered above it, 
+	// so adapt CheckForHoveredWindow() to check down the window order
+	// and set something when it finds a window who is hovered, so no
+	// other windows check afterwards
 	if (!inputupon) {
 		CheckWindowForScrollingInputs(curwin);
 		CheckWindowForResizingInputs(curwin);
@@ -3645,7 +3667,7 @@ inline void DrawWindow(UIWindow* p, UIWindow* parent = 0) {
 				if (item.type == UIItemType_Window) {
 					item.child->position = p->position + item.position * item.style.globalScale;
 					DrawWindow(item.child, p);
-					WinRemoveBegan(item.child);
+					WinUnSetBegan(item.child);
 					continue;
 				}
 				DrawItem(item, p);
@@ -3714,8 +3736,8 @@ void UI::Update() {
 #endif
 
 	//windows input checking functions
-	CheckForHoveredWindow();
 	CheckWindowsForFocusInputs();
+	CheckForHoveredWindow();
 	
 	
 	if (inputupon) CheckWindowForScrollingInputs(inputupon);
@@ -3729,7 +3751,7 @@ void UI::Update() {
 	//draw windows in order 
 	for (UIWindow* p : windows) {
 		DrawWindow(p);
-		WinRemoveBegan(p);
+		WinUnSetBegan(p);
 	}
 
 	if (show_metrics) {
@@ -3819,6 +3841,7 @@ void UI::Update() {
 
 	if (CanTakeInput && DeshInput->LMouseDown()) PreventInputs;
 
+	hovered = 0;
 	StateRemoveFlag(UISGlobalHovered);
 	StateRemoveFlag(UISCursorSet);
 }
