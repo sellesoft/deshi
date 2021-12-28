@@ -18,10 +18,9 @@ struct ColorMod {
 	color oldCol;
 };
 
+#define UI_LAYERS 11
 static constexpr u32 CHAR_SIZE = sizeof(CHAR);
-
 static const u32 UI_CENTER_LAYER = floor(UI_LAYERS / 2.f);
-
 
 //for style variable stack
 struct VarMod {
@@ -2493,7 +2492,7 @@ void UI::BeginChild(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags f
 }
 
 void UI::BeginPopOut(const char* name, vec2 pos, vec2 dimensions, UIWindowFlags flags) {
-	ui_state.currlayer = Min(++ui_state.currlayer, UI_LAYERS);
+	ui_state.currlayer = Min(++ui_state.currlayer, (u32)UI_LAYERS);
 	BeginCall(name, pos, dimensions, flags, UIWindowType_PopOut);
 	ui_state.currlayer--;
 }
