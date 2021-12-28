@@ -121,14 +121,30 @@ enum Types{
 	Type_f64,
 	Type_b32,
 	Type_uchar,
-	Type_cstring,
-	Type_carray,
 	Type_Allocator,
 	
 	//TODO define deshi types elsewhere
+	//math
 	Type_vec2,
 	Type_vec3,
 	Type_vec4,
+	Type_mat3,
+	Type_mat4,
+	Type_matN,
+	Type_quat,
+
+	//utils
+	Type_cstring,
+	Type_carray,
+	Type_array,
+	Type_string,
+	Type_ring_array,
+	Type_pair,
+	Type_tuple,
+	Type_color,
+	Type_optional,
+	Type_hash,
+
 };
 
 //////////////////////////

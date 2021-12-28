@@ -564,7 +564,23 @@ function void TEST_deshi_utils_ring_array(){
 
 #include "string.h"
 function void TEST_deshi_utils_string(){
-	printf("[DESHI-TEST] TODO:   utils/string\n");
+	
+	{//empty constructor does not allocate or set any vars
+		string str;
+		AssertAlways(!str.str);
+		AssertAlways(!str.count);
+		AssertAlways(!str.space);
+	}
+
+	{//const char* constructor
+		string str("ABCDEFG");
+		AssertAlways(!memcmp(str.str, "ABCDEFG", 7));
+		AssertAlways(str.count == 7);
+		AssertAlways(str.space == 8);
+
+	}
+
+
 }
 
 #include "string_conversion.h"

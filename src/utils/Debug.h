@@ -20,11 +20,6 @@
 //if called by the same object
 #define PERM_RAND_INT ([]{ persist int rint = rand() % 100000; return rint;}())
 
-namespace Math { //forward declare average
-	template<class T>
-		static double average(const T& container, int size);
-}
-
 //template magic thanks to fux#2562
 /*
 template<class T>
@@ -34,9 +29,6 @@ struct has_str_method {
 	static constexpr bool value = decltype(test<T>(0))::value;
 };
 */
-
-//// Primarily for outputting to ingame console, but can return a string from any object that is a c++ number
-//// or any of our classes (or yours :) ) that has a .str() member
 
 static std::string to_std_string(const char* str) { return std::string(str); }
 static std::string to_std_string(char* str)       { return std::string(str); }
