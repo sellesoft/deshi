@@ -45,6 +45,7 @@ hotloadable UI
 IO TODOs
 --------
 add file reading (simple and smart)
+add file writing (simple and smart)
 add file/dir creation
 add file/dir renaming
 add file/dir existence checking
@@ -135,6 +136,7 @@ add UI color palettes for easy color changing
 
 Ungrouped TODOs
 ---------------
+override Assert macro in Logger.h so it logs the message before stopping
 rename RoundUpTo() to AlignTo() in defines.h
 restyle map to match the rest of utils
 make the most recent logging file be named log.txt, while the rest have a date
@@ -197,10 +199,8 @@ __________ you can test by setting MEMORY_DO_HEAP_PRINTS to true in core/memory.
 
 //// platform ////
 #if   DESHI_WINDOWS
-#undef function
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#define function static
 #undef ERROR
 #undef DELETE
 #elif DESHI_LINUX //DESHI_WINDOWS
@@ -257,9 +257,9 @@ local Flags deshiStage = DS_NONE;
 //// external for core ////
 #define STB_IMAGE_IMPLEMENTATION
 //#define STB_TRUETYPE_IMPLEMENTATION
-#define STBI_MALLOC(sz) Memory::Allocate(sz)
-#define STBI_REALLOC(p,newsz) Memory::Reallocate(p,newsz)
-#define STBI_FREE(p) Memory::ZeroFree(p)
+#define STBI_MALLOC(sz) memory_alloc(sz)
+#define STBI_REALLOC(p,newsz) memory_realloc(p,newsz)
+#define STBI_FREE(p) memory_zfree(p)
 #define STBI_FAILURE_USERMSG
 #include <stb/stb_image.h>
 //#include <stb/stb_truetype.h> //included by imgui
@@ -321,7 +321,7 @@ local Storage_ deshi_storage; Storage_* g_storage = &deshi_storage;
 void deshi::init(u32 winWidth, u32 winHeight){
 	TIMER_START(t_s);
 	Assets::enforceDirectories();
-	Memory::Init(Gigabytes(1), Gigabytes(1));
+	memory_init(Gigabytes(1), Gigabytes(1));
 	Logger::Init(5);
 	deshi_time.Init();
 	deshi_window.Init("deshi", winWidth, winHeight);

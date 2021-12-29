@@ -514,12 +514,12 @@ Inverse() const {
 			else if(i==j) {
 				Assert(this->operator()(i, j), "matN inverse does not exist if determinant is 0");
 				nu(i, j) /= data[cols * i + j];
-
+				
 			}
 		}
 	}
 	if (diag) return nu;
-diagbreak:
+	diagbreak:
 	f64 determinant = this->Determinant();
 	Assert(determinant, "matN inverse does not exist if determinant is zero");
 	if (elementCount > 1) {
@@ -718,7 +718,7 @@ Rand(u32 rows, u32 cols, u32 lower, u32 upper) {
 	matN nu(rows, cols);
 	forX(i, rows) {
 		forX(j, cols) {
-			nu(i, j) = rand() % upper + (u64)lower;
+			nu(i, j) = f64((rand() % upper) + (u64)lower);
 		}
 	}
 	return nu;

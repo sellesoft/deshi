@@ -74,7 +74,7 @@ operator= (const mat3& rhs){
 inline mat3 mat3::
 operator* (const f32& rhs) const{
 	mat3 newMatrix(*this);
-	for(u32 i = 0; i < 9; ++i){
+	for(s32 i = 0; i < 9; ++i){
 		newMatrix.arr[i] *= rhs;
 	}
 	return newMatrix;
@@ -83,7 +83,7 @@ operator* (const f32& rhs) const{
 //scalar multiplication and assignment
 inline void mat3::
 operator*=(const f32& rhs){
-	for(u32 i = 0; i < 9; ++i){
+	for(s32 i = 0; i < 9; ++i){
 		arr[i] *= rhs;
 	}
 }
@@ -93,7 +93,7 @@ inline mat3 mat3::
 operator/ (const f32& rhs) const{
 	Assert(rhs != 0, "mat3 elements cant be divided by zero");
 	mat3 newMatrix(*this);
-	for(u32 i = 0; i < 9; ++i){
+	for(s32 i = 0; i < 9; ++i){
 		newMatrix.arr[i] /= rhs;
 	}
 	return newMatrix;
@@ -103,7 +103,7 @@ operator/ (const f32& rhs) const{
 inline void mat3::
 operator/=(const f32& rhs){
 	Assert(rhs != 0, "mat3 elements cant be divided by zero");
-	for(u32 i = 0; i < 9; ++i){
+	for(s32 i = 0; i < 9; ++i){
 		arr[i] /= rhs;
 	}
 }
@@ -112,7 +112,7 @@ operator/=(const f32& rhs){
 inline mat3 mat3::
 operator+ (const mat3& rhs) const{
 	mat3 newMatrix(*this);
-	for(u32 i = 0; i < 9; ++i){
+	for(s32 i = 0; i < 9; ++i){
 		newMatrix.arr[i] += rhs.arr[i];
 	}
 	return newMatrix;
@@ -121,7 +121,7 @@ operator+ (const mat3& rhs) const{
 //element-wise addition and assignment
 inline void mat3::
 operator+=(const mat3& rhs){
-	for(u32 i = 0; i < 9; ++i){
+	for(s32 i = 0; i < 9; ++i){
 		this->arr[i] += rhs.arr[i];
 	}
 }
@@ -130,7 +130,7 @@ operator+=(const mat3& rhs){
 inline mat3 mat3::
 operator- (const mat3& rhs) const{
 	mat3 newMatrix(*this);
-	for(u32 i = 0; i < 9; ++i){
+	for(s32 i = 0; i < 9; ++i){
 		newMatrix.arr[i] -= rhs.arr[i];
 	}
 	return newMatrix;
@@ -139,7 +139,7 @@ operator- (const mat3& rhs) const{
 //element-wise substraction and assignment
 inline void mat3::
 operator-=(const mat3& rhs){
-	for(u32 i = 0; i < 9; ++i){
+	for(s32 i = 0; i < 9; ++i){
 		this->arr[i] -= rhs.arr[i];
 	}
 }
@@ -148,9 +148,9 @@ operator-=(const mat3& rhs){
 inline mat3 mat3::
 operator* (const mat3& rhs) const{
 	mat3 newMatrix;
-	for(u32 i = 0; i < 3; ++i){ //i=m
-		for(u32 j = 0; j < 3; ++j){ //j=p
-			for(u32 k = 0; k < 3; ++k){ //k=n
+	for(s32 i = 0; i < 3; ++i){ //i=m
+		for(s32 j = 0; j < 3; ++j){ //j=p
+			for(s32 k = 0; k < 3; ++k){ //k=n
 				newMatrix.arr[3 * i + j] += this->arr[3 * i + k] * rhs.arr[3 * k + j];
 			}
 		}
@@ -161,9 +161,9 @@ operator* (const mat3& rhs) const{
 inline void mat3::
 operator*=(const mat3& rhs){
 	mat3 newMatrix;
-	for(u32 i = 0; i < 3; ++i){ //i=m
-		for(u32 j = 0; j < 3; ++j){ //j=p
-			for(u32 k = 0; k < 3; ++k){ //k=n
+	for(s32 i = 0; i < 3; ++i){ //i=m
+		for(s32 j = 0; j < 3; ++j){ //j=p
+			for(s32 k = 0; k < 3; ++k){ //k=n
 				newMatrix.arr[3 * i + j] += this->arr[3 * i + k] * rhs.arr[3 * k + j];
 			}
 		}
@@ -175,7 +175,7 @@ operator*=(const mat3& rhs){
 inline mat3 mat3::
 operator^ (const mat3& rhs) const{
 	mat3 newMatrix(*this);
-	for(u32 i = 0; i < 9; ++i){
+	for(s32 i = 0; i < 9; ++i){
 		newMatrix.arr[i] *= rhs.arr[i];
 	}
 	return newMatrix;
@@ -184,7 +184,7 @@ operator^ (const mat3& rhs) const{
 //element-wise multiplication and assignment
 inline void mat3::
 operator^=(const mat3& rhs){
-	for(u32 i = 0; i < 9; ++i){
+	for(s32 i = 0; i < 9; ++i){
 		this->arr[i] *= rhs.arr[i];
 	}
 }
@@ -193,7 +193,7 @@ operator^=(const mat3& rhs){
 inline mat3 mat3::
 operator% (const mat3& rhs) const{
 	mat3 newMatrix(*this);
-	for(u32 i = 0; i < 9; ++i){
+	for(s32 i = 0; i < 9; ++i){
 		Assert(rhs.arr[i] != 0, "mat3 element-wise division doesnt allow zeros in the right matrix");
 		newMatrix.arr[i] /= rhs.arr[i];
 	}
@@ -203,7 +203,7 @@ operator% (const mat3& rhs) const{
 //element-wise division and assignment
 inline void mat3::
 operator%=(const mat3& rhs){
-	for(u32 i = 0; i < 9; ++i){
+	for(s32 i = 0; i < 9; ++i){
 		Assert(rhs.arr[i] != 0, "mat3 element-wise division doesnt allow zeros in the right matrix");
 		this->arr[i] /= rhs.arr[i];
 	}
@@ -211,7 +211,7 @@ operator%=(const mat3& rhs){
 
 inline b32 mat3::
 operator==(const mat3& rhs) const{ 
-	for(u32 i = 0; i < 9; ++i){ if(abs(this->arr[i] - rhs.arr[i]) > M_EPSILON) return false; }
+	for(s32 i = 0; i < 9; ++i){ if(abs(this->arr[i] - rhs.arr[i]) > M_EPSILON) return false; }
 	return true;
 }
 
@@ -229,7 +229,7 @@ operator!=(const mat3& rhs) const{
 inline mat3 mat3::
 Transpose() const{
 	mat3 newMatrix;
-	for(u32 i = 0; i < 9; ++i){
+	for(s32 i = 0; i < 9; ++i){
 		newMatrix.arr[i] = arr[3 * (i%3) + (i/3)];
 	}
 	return newMatrix;
@@ -250,12 +250,12 @@ Determinant() const{
 
 //returns the determinant of this matrix without the specified row and column
 inline f32 mat3::
-Minor(u32 row, u32 col) const{
+Minor(s32 row, s32 col) const{
 	f32 arr[4]{0.f};
-	u32 index = 0;
-	for(u32 i = 0; i < 3; ++i){
+	s32 index = 0;
+	for(s32 i = 0; i < 3; ++i){
 		if(i == row) continue;
-		for(u32 j = 0; j < 3; ++j){
+		for(s32 j = 0; j < 3; ++j){
 			if(j == col) continue;
 			arr[index++] = arr[3 * i + j];
 		}
@@ -267,7 +267,7 @@ Minor(u32 row, u32 col) const{
 
 //returns the cofactor (minor with adjusted sign based on location in matrix) at given row and column
 inline f32 mat3::
-Cofactor(u32 row, u32 col) const{
+Cofactor(s32 row, s32 col) const{
 	if((row + col) % 2){
 		return -Minor(row, col);
 	} else {
@@ -279,16 +279,16 @@ Cofactor(u32 row, u32 col) const{
 inline mat3 mat3::
 Adjoint() const{
 	mat3 newMatrix = mat3();
-	u32 index = 0;
-	for(u32 i = 0; i < 3; ++i){
-		for(u32 j = 0; j < 3; ++j){
+	s32 index = 0;
+	for(s32 i = 0; i < 3; ++i){
+		for(s32 j = 0; j < 3; ++j){
 			newMatrix.arr[index++] = this->Cofactor(i, j);
 		}
 	}
 	return newMatrix.Transpose();
 }
 
-//returns the adjou32 divided by the determinant
+//returns the adjoint divided by the determinant
 inline mat3 mat3::
 Inverse() const{
 	f32 det = this->Determinant();

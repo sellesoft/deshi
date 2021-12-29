@@ -330,10 +330,10 @@ operator* (const mat4& rhs) const{
 	result.sse_row2 = LinearCombineSSE(sse_row2, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.sse_row3 = LinearCombineSSE(sse_row3, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 #else
-	//TODO(delle,OpMa) look u32o optimizing this by transposing to remove a loop, see Unreal Matrix.h
-	for(u32 i = 0; i < 4; ++i){ //i=m
-		for(u32 j = 0; j < 4; ++j){ //j=p
-			for(u32 k = 0; k < 4; ++k){ //k=n
+	//TODO(delle,OpMa) look into optimizing this by transposing to remove a loop, see Unreal Matrix.h
+	for(s32 i = 0; i < 4; ++i){ //i=m
+		for(s32 j = 0; j < 4; ++j){ //j=p
+			for(s32 k = 0; k < 4; ++k){ //k=n
 				result.arr[4 * i + j] += this->arr[4 * i + k] * rhs.arr[4 * k + j];
 			}
 		}
@@ -352,9 +352,9 @@ operator*=(const mat4& rhs){
 	result.sse_row3 = LinearCombineSSE(sse_row3, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 #else
 	//TODO(delle,OpMa) look u32o optimizing this by transposing to remove a loop, see Unreal Matrix.h
-	for(u32 i = 0; i < 4; ++i){ //i=m
-		for(u32 j = 0; j < 4; ++j){ //j=p
-			for(u32 k = 0; k < 4; ++k){ //k=n
+	for(s32 i = 0; i < 4; ++i){ //i=m
+		for(s32 j = 0; j < 4; ++j){ //j=p
+			for(s32 k = 0; k < 4; ++k){ //k=n
 				result.arr[4 * i + j] += this->arr[4 * i + k] * rhs.arr[4 * k + j];
 			}
 		}
@@ -371,7 +371,7 @@ operator==(const mat4& rhs) const{
 	if(!EpsilonEqualSSE(sse_row2, rhs.sse_row2)) return false;
 	if(!EpsilonEqualSSE(sse_row3, rhs.sse_row3)) return false;
 #else
-	for(u32 i = 0; i < 16; ++i){ 
+	for(s32 i = 0; i < 16; ++i){ 
 		if(abs(this->arr[i] - rhs.arr[i]) > M_EPSILON) return false; 
 	}
 #endif
@@ -387,7 +387,7 @@ operator!=(const mat4& rhs) const{
 //// functions ////
 ///////////////////
 
-//converts the rows u32o columns and vice-versa
+//converts the rows into columns and vice-versa
 inline mat4 mat4::
 Transpose() const{
 	mat4 result;
@@ -395,7 +395,7 @@ Transpose() const{
 	result = *this;
 	_MM_TRANSPOSE4_PS(result.sse_row0, result.sse_row1, result.sse_row2, result.sse_row3);
 #else
-	for(u32 i = 0; i < 16; ++i){
+	for(s32 i = 0; i < 16; ++i){
 		result.arr[i] = arr[4 * (i%4) + (i/4)];
 	}
 #endif
@@ -425,12 +425,12 @@ Determinant() const{
 
 //returns the determinant of this matrix without the specified row and column
 inline f32 mat4::
-Minor(u32 row, u32 col) const{
+Minor(s32 row, s32 col) const{
 	f32 arr[9]{ 0 };
-	u32 index = 0;
-	for(u32 i = 0; i < 4; ++i){
+	s32 index = 0;
+	for(s32 i = 0; i < 4; ++i){
 		if(i == row) continue;
-		for(u32 j = 0; j < 4; ++j){
+		for(s32 j = 0; j < 4; ++j){
 			if(j == col) continue;
 			arr[index++] = arr[4 * i + j];
 		}
@@ -447,7 +447,7 @@ Minor(u32 row, u32 col) const{
 
 //returns the cofactor (minor with adjusted sign based on location in matrix) at given row and column
 inline f32 mat4::
-Cofactor(u32 row, u32 col) const{
+Cofactor(s32 row, s32 col) const{
 	if((row + col) % 2){
 		return -Minor(row, col);
 	} else {
@@ -459,22 +459,22 @@ Cofactor(u32 row, u32 col) const{
 inline mat4 mat4::
 Adjoint() const{
 	mat4 result;
-	u32 index = 0;
-	for(u32 i = 0; i < 4; ++i){
-		for(u32 j = 0; j < 4; ++j){
+	s32 index = 0;
+	for(s32 i = 0; i < 4; ++i){
+		for(s32 j = 0; j < 4; ++j){
 			result.arr[index++] = this->Cofactor(i, j);
 		}
 	}
 	return result.Transpose();
 }
 
-//returns the adjou32 divided by the determinant
+//returns the adjoint divided by the determinant
 inline mat4 mat4::
 Inverse() const{
 	mat4 result;
-#if DESHI_USE_SSE //NOTE probably right-handed matrix multiplication used u32ernally here
+#if DESHI_USE_SSE //NOTE probably right-handed matrix multiplication used internally here
 	//!ref https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
-	//2x2 sub matrices (ordered u32ernally tl->tr->bl->br)
+	//2x2 sub matrices (ordered internally tl->tr->bl->br)
 	__m128 A = _mm_movelh_ps(sse_row0, sse_row1); //top left
 	__m128 B = _mm_movehl_ps(sse_row1, sse_row0); //top right
 	__m128 C = _mm_movelh_ps(sse_row2, sse_row3); //bot left
@@ -486,7 +486,7 @@ Inverse() const{
 	__m128 detB = _mm_set1_ps(arr[ 2] * arr[ 7] - arr[ 3] * arr[ 6]);
 	__m128 detC = _mm_set1_ps(arr[ 8] * arr[13] - arr[ 9] * arr[12]);
 	__m128 detD = _mm_set1_ps(arr[10] * arr[15] - arr[11] * arr[14]);
-#  else //NOTE alternate method with using shuffle instead of f32 set
+#  else //NOTE alternate method with using shuffle instead of float set
 	__m128 detSub = _mm_sub_ps(__mm_mul_ps(SSEVecShuffle(sse_row0, sse_row2, 0,2,0,2), SSEVecShuffle(sse_row1, sse_row3, 1,3,1,3)), 
 							   __mm_mul_ps(SSEVecShuffle(sse_row0, sse_row2, 1,3,1,3), SSEVecShuffle(sse_row1, sse_row3, 0,2,0,2)));
 	__m128 detA = SSEVecSwizzle(detSub, 0,0,0,0);
@@ -532,7 +532,7 @@ Inverse() const{
 #else
 	f32 det = this->Determinant();
 	Assert(det, "mat4 inverse does not exist if determinant is zero");
-	result = this->Adjou32() / det;
+	result = this->Adjoint() / det;
 #endif
 	return result;
 }

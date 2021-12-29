@@ -169,10 +169,10 @@ mag() const{
 ////ref: https://betterexplained.com/articles/understanding-quakes-fast-inverse-square-root/
 //inline f32 vec3::
 //mag() const{
-//	Assert(CHAR_BIT*sizeof(f32) == 32 && CHAR_BIT*sizeof(u3232) == 32, "This mag method only works if f32 and u32 are 32bit");
+//	Assert(CHAR_BIT*sizeof(f32) == 32 && CHAR_BIT*sizeof(s32) == 32, "This mag method only works if f32 and s32 are 32bit");
 //	f32 k = x * x + y * y + z * z;
 //	f32 kHalf = .5f * k;
-//	u3232 i = *(u3232*)&k;
+//	s32 i = *(s32*)&k;
 //	i = 0x5f3759df - (i >> 1);
 //	k = *(f32*)&i;
 //	k = k*(1.5f - kHalf*k*k);
@@ -194,10 +194,10 @@ normalize(){
 //inline void vec3::
 //normalize() {
 //	if (*this != vec3(0, 0, 0)) {
-//		Assert(CHAR_BIT*sizeof(f32) == 32 && CHAR_BIT*sizeof(u3232) == 32, "This mag method only works if f32 and u32 are 32bit");
+//		Assert(CHAR_BIT*sizeof(f32) == 32 && CHAR_BIT*sizeof(s32) == 32, "This mag method only works if f32 and s32 are 32bit");
 //		f32 k = x * x + y * y + z * z;
 //		f32 kHalf = .5f * k;
-//		u3232 i = *(u3232*)&k;
+//		s32 i = *(s32*)&k;
 //		i = 0x5f3759df - (i >> 1);
 //		k = *(f32*)&i;
 //		k = k*(1.5f - kHalf*k*k);
@@ -216,10 +216,10 @@ normalized() const{
 //inline vec3 vec3::
 //normalized() const{
 //	if (*this != vec3(0, 0, 0)) {
-//		Assert(CHAR_BIT*sizeof(f32) == 32 && CHAR_BIT*sizeof(u3232) == 32, "This mag method only works if f32 and u32 are 32bit");
+//		Assert(CHAR_BIT*sizeof(f32) == 32 && CHAR_BIT*sizeof(s32) == 32, "This mag method only works if f32 and s32 are 32bit");
 //		f32 k = x * x + y * y + z * z;
 //		f32 kHalf = .5f * k;
-//		u3232 i = *(u3232*)&k;
+//		s32 i = *(s32*)&k;
 //		i = 0x5f3759df - (i >> 1);
 //		k = *(f32*)&i;
 //		k = k*(1.5f - kHalf*k*k);
@@ -228,7 +228,7 @@ normalized() const{
 //	return vec3(*this);
 //}
 
-//clamps all values of a vec3 between two f32s
+//clamps all values of a vec3 between two floats
 inline vec3 vec3::
 clamp(f32 lo, f32 hi) const{
 	if(lo > hi) f32 temp = lo; lo = hi; hi = lo;
@@ -263,7 +263,7 @@ clampedMag(f32 min, f32 max) const{
 
 //round to a decimal place
 inline void vec3::
-round(u32 place){
+round(s32 place){
 	x = floorf(x * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f);
 	y = floorf(y * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f);
 	z = floorf(z * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f);
@@ -271,7 +271,7 @@ round(u32 place){
 
 //round to a decimal place
 inline vec3 vec3::
-rounded(u32 place) const{
+rounded(s32 place) const{
 	return vec3(floorf(x * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f),
 				floorf(y * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f),
 				floorf(z * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f));

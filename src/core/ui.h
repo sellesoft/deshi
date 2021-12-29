@@ -97,7 +97,7 @@ enum UIStyleCol : u32 {
 	UIStyleCol_FrameBg,
 	UIStyleCol_FrameBgHovered,
 	UIStyleCol_FrameBgActive,  
-
+	
 	UIStyleCol_ScrollBarBg,
 	UIStyleCol_ScrollBarBgHovered,
 	UIStyleCol_ScrollBarBgActive,
@@ -136,7 +136,7 @@ enum UIStyleCol : u32 {
 	UIStyleCol_InputTextBgActive,
 	UIStyleCol_InputTextBgHovered,
 	UIStyleCol_InputTextBorder,
-
+	
 	UIStyleCol_SelectableBg,
 	UIStyleCol_SelectableBgActive,
 	UIStyleCol_SelectableBgHovered,
@@ -200,7 +200,7 @@ enum UIWindowFlags_ {
 	UIWindowFlags_NoMinimizeButton       = 1 << 12,
 	UIWindowFlags_DontSetGlobalHoverFlag = 1 << 13,
 	UIWindowFlags_FitAllElements         = 1 << 14, //attempts to fit the window's size to all called elements
-
+	
 	UIWindowFlags_NoInteract = UIWindowFlags_NoMove | UIWindowFlags_NoFocus | UIWindowFlags_NoResize | UIWindowFlags_DontSetGlobalHoverFlag | UIWindowFlags_NoScroll, 
 	UIWindowFlags_Invisible  = UIWindowFlags_NoMove | UIWindowFlags_NoTitleBar | UIWindowFlags_NoResize | UIWindowFlags_NoBackground | UIWindowFlags_NoFocus
 }; typedef u32 UIWindowFlags;
@@ -258,15 +258,15 @@ enum UIImageFlags_ {
 	UIImageFlags_NONE = 0,
 	UIImageFlags_RestrictAspectRatio = 1 << 0,
 	UIImageFlags_Invert = 1 << 1,
-
+	
 }; typedef u32 UIImageFlags;
 
 enum UIButtonFlags_ {
 	UIButtonFlags_NONE = 0,
 	UIButtonFlags_ReturnTrueOnHold    = 1 << 0,
 	UIButtonFlags_ReturnTrueOnRelease = 1 << 1,
-
-
+	
+	
 }; typedef u32 UIButtonFlags;
 
 enum UIDrawType : u32 {
@@ -304,14 +304,14 @@ struct UIDrawCmd {
 	color      color; //draw cmds have either a texture or a color
 	Texture*     tex; //if texture is non-zero, we use that as its color, and thickness as its alpha
 	u32 subdivisions; //circle subdivisons
-
+	
 	//TODO
 	//eventually we could maybe store text as an int* or something, so as unicode codepoints, since in the end,
 	//at least with TTF, thats how we communicate what letter we want.
 	string text;
 	wstring wtext;
 	Font* font;
-
+	
 	//determines if the drawCmd should be considered when using UIWindowFlag_FitAllElements
 	b32 trackedForMinSize = 1;
 	
@@ -319,7 +319,7 @@ struct UIDrawCmd {
 	vec2 scissorExtent = vec2(0, 0);
 	b32  useWindowScissor = true;
 	b32  overrideScissorRules = false;
-
+	
 	//for matching draw cmds in debug
 	u32 hash = MAX_U32;
 };
@@ -385,16 +385,16 @@ struct UIItem {
 	
 	vec2 position; //relative to the window its being held in
 	vec2 size;
-
+	
 	//all draw command positions are relative to the items position
 	array<UIDrawCmd> drawCmds;
-
+	
 	//this is only used when the item is a child window
 	UIWindow* child = 0;
-
+	
 	//set false when you dont want the item to affect scrolling or fitting all elements
 	b32 trackedForMinSize = 1;
-
+	
 	//DEBUG info
 	u32 item_idx;
 	u32 item_layer;
@@ -433,7 +433,7 @@ enum UIWindowType_ {
 struct UIWindow {
 	string name;
 	UIWindowType type;
-
+	
 	union {
 		vec2 position;
 		struct { f32 x, y; };
@@ -459,7 +459,7 @@ struct UIWindow {
 	};
 	
 	UIWindowFlags flags;
-
+	
 	struct {
 		UIWindowState flags = UIWSNone;
 		WinActiveSide active_side = wNone;
@@ -478,10 +478,10 @@ struct UIWindow {
 	UIWindow* parent = 0;
 	map<const char*, UIWindow*> children;
 	pair<UIWindow*, UIItem*> hoveredChild;
-
-
+	
+	
 	vec2 minSizeForFit;
-
+	
 	vec2 visibleRegionStart;
 	vec2 visibleRegionSize;
 	
@@ -490,13 +490,13 @@ struct UIWindow {
 	
 	
 	//debug information for use with metrics
-//#ifdef DESHI_INTERNAL
+	//#ifdef DESHI_INTERNAL
 	f32 render_time = 0;
 	f32 creation_time = 0;
 	u32 items_count = 0;
 	
 	
-//#endif
+	//#endif
 	
 	UIWindow() {};
 	
@@ -586,8 +586,8 @@ namespace UI {
 	pair<vec2, vec2> GetBorderedArea();
 	pair<vec2, vec2> GetMarginedArea();
 	pair<vec2, vec2> GetScrollBaredArea();
-
-
+	
+	
 	
 	
 	//// control functions ////
@@ -599,9 +599,9 @@ namespace UI {
 	void SetMarginPositionOffset(vec2 offset);
 	void SetMarginSizeOffset(vec2 offset);
 	void SetNextItemMinSizeIgnored();
-
-
-
+	
+	
+	
 	//// rows ////
 	void BeginRow(u32 columns, f32 rowHeight, UIRowFlags flags = 0);
 	void EndRow();
@@ -634,20 +634,20 @@ namespace UI {
 	
 	b32 BeginCombo(const char* label, const char* preview_val);
 	b32 BeginCombo(const char* label, const char* preview_val, vec2 pos);
-
+	
 	void EndCombo();
 	
 	b32 Selectable(const char* label, b32 selected); 
 	b32 Selectable(const char* label, vec2 pos, b32 selected);
-
+	
 	b32  BeginHeader(const char* label);
 	void EndHeader();
 	
 	void Slider(const char* label, f32* val, f32 val_min, f32 val_max, UISliderFlags flags = 0);
-
+	
 	void Image(Texture* image, vec2 pos, f32 alpha = 1, UIImageFlags flags = 0);
 	void Image(Texture* image, f32 alpha = 1, UIImageFlags flags = 0);
-
+	
 	void Separator(f32 height);
 	
 	//these overloads are kind of silly change them eventually
@@ -660,11 +660,10 @@ namespace UI {
 	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, const char* preview = 0, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callbackFunc, const char* preview = 0, UIInputTextFlags flags = 0);
 	b32 InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, const char* preview = 0, UIInputTextFlags flags = 0);
-	
+
 	UIItem* BeginCustomItem(u32 layeroffset = 0);
 	void    CustomItemAdvanceCursor(UIItem* item, b32 move_cursor = 1);
 	void    EndCustomItem();
-
 
 	//// push/pop ////
 	void PushColor(UIStyleCol idx, color color);
@@ -701,13 +700,13 @@ namespace UI {
 	b32 AnyWinHovered();
 	void ShowMetricsWindow();
 	void DemoWindow();
-
+	
 	
 	//// init and update ////
 	void Init();
 	void Update();
-
-
+	
+	
 	//// debug ////
 	void DrawDebugRect(vec2 pos, vec2 size, color color = Color_Red);
 	void DrawDebugRectFilled(vec2 pos, vec2 size, color color = Color_Red);

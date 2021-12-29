@@ -29,11 +29,11 @@ typedef struct {
 
 typedef struct {
 	f32 font_size;
-	u32 firstcodepou32;  // if non-zero, then the chars are continuous, and this is the first codepou32
-	u32* array_of_unicode_codepou32s;       // if non-zero, then this is an array of unicode codepou32s
-	u32 num_chars;
+	s32 firstcodepoint;  // if non-zero, then the chars are continuous, and this is the first codepoints
+	s32* array_of_unicode_codepoints;       // if non-zero, then this is an array of unicode codepoints
+	s32 num_chars;
 	packedchar* chardata_for_range; // output
-	unsigned char h_oversample, v_oversample; // don't set these, they're used u32ernally
+	unsigned char h_oversample, v_oversample; // don't set these, they're used internally
 } pack_range;
 
 //pack_context isnt really necessary as its really just something used u32ernally by stbtt
@@ -52,18 +52,18 @@ struct Font{
 	u32      num_ranges;
 	void*    ttf_pack_context;      //stbtt_pack_context
 	pack_range* ttf_pack_ranges; //stbtt_pack_range
-
-	//the y offset of UV since we are now packing a white square u32o every font.
+	
+	//the y offset of UV since we are now packing a white square into every font.
 	f32 uvOffset;
 	
-	f32 ascent; //the highest pou32 above baseline a glyph reaches
-	f32 decent; //the lowest pou32 below baseline a glyph reaches
+	f32 ascent; //the highest point above baseline a glyph reaches
+	f32 decent; //the lowest point below baseline a glyph reaches
 	f32 line_gap; //the recommended 
 	
 	f32 aspect_ratio; //max character height / max character width
 	
-	aligned_quad GetPackedQuad(u32 charidx, vec2* pos, vec2 scale = vec2::ONE);
-	packedchar* GetPackedChar(u32 charidx);
+	aligned_quad GetPackedQuad(s32 charidx, vec2* pos, vec2 scale = vec2::ONE);
+	packedchar* GetPackedChar(s32 charidx);
 	
 	f32 WidthOfString(const char* str, f32 scale = 1);
 	
@@ -77,15 +77,15 @@ struct Font{
 //TODO an overload for specifying range if you know where you're working
 //     eg. different text modes for InputText like alpha, numeric, etc..
 inline aligned_quad Font::
-GetPackedQuad(u32 charidx, vec2* pos, vec2 scale) {
+GetPackedQuad(s32 charidx, vec2* pos, vec2 scale) {
 	f32 ipw = 1.0f / ttf_size[0], iph = 1.0f / ttf_size[1];
 	
 	packedchar* b = nullptr;
 	
 	//determine what range the req character is in
 	forI(num_ranges) {
-		if (charidx >= ttf_pack_ranges[i].firstcodepou32 && charidx <= ttf_pack_ranges[i].firstcodepou32 + ttf_pack_ranges[i].num_chars) {
-			b = ttf_pack_ranges[i].chardata_for_range + (charidx - ttf_pack_ranges[i].firstcodepou32);
+		if (charidx >= ttf_pack_ranges[i].firstcodepoint && charidx <= ttf_pack_ranges[i].firstcodepoint + ttf_pack_ranges[i].num_chars) {
+			b = ttf_pack_ranges[i].chardata_for_range + (charidx - ttf_pack_ranges[i].firstcodepoint);
 			break;
 		}
 	}
@@ -112,11 +112,11 @@ GetPackedQuad(u32 charidx, vec2* pos, vec2 scale) {
 }
 
 inline packedchar* Font::
-GetPackedChar(u32 charidx) {
+GetPackedChar(s32 charidx) {
 	//determine what range the req character is in
 	forI(num_ranges)
-		if (charidx >= ttf_pack_ranges[i].firstcodepou32 && charidx <= ttf_pack_ranges[i].firstcodepou32 + ttf_pack_ranges[i].num_chars)
-		return ttf_pack_ranges[i].chardata_for_range + (charidx - ttf_pack_ranges[i].firstcodepou32);
+		if (charidx >= ttf_pack_ranges[i].firstcodepoint && charidx <= ttf_pack_ranges[i].firstcodepoint + ttf_pack_ranges[i].num_chars)
+		return ttf_pack_ranges[i].chardata_for_range + (charidx - ttf_pack_ranges[i].firstcodepoint);
 	Assert(0, "The req character was not found in any of the ranges. TODO better error handling here.");
 	return 0;
 }

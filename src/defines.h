@@ -6,11 +6,11 @@
 /////////////////////////
 #include <cstddef> //size_t, ptrdiff_t
 #include <cstdlib> //malloc, calloc, free
+#include <cstring> //memcpy, memset, strcpy, strlen, etc
 
 ///////////////////////
 //// static macros ////
 ///////////////////////
-#define function static
 #define local    static //inside a .cpp
 #define persist  static //inside a function
 #define global_  static //inside a .h
@@ -93,10 +93,10 @@ typedef void* (*Allocator_ReserveMemory_Func)(upt size);
 typedef void  (*Allocator_ChangeMemory_Func)(void* ptr, upt size);
 typedef void  (*Allocator_ReleaseMemory_Func)(void* ptr);
 typedef void* (*Allocator_ResizeMemory_Func)(void* ptr, upt size);
-function void* Allocator_ReserveMemory_Noop(upt size){}
-function void  Allocator_ChangeMemory_Noop(void* ptr, upt size){}
-function void  Allocator_ReleaseMemory_Noop(void* ptr){}
-function void* Allocator_ResizeMemory_Noop(void* ptr, upt size){}
+global_ void* Allocator_ReserveMemory_Noop(upt size){}
+global_ void  Allocator_ChangeMemory_Noop(void* ptr, upt size){}
+global_ void  Allocator_ReleaseMemory_Noop(void* ptr){}
+global_ void* Allocator_ResizeMemory_Noop(void* ptr, upt size){}
 struct Allocator{
 	Allocator_ReserveMemory_Func reserve;  //reserves address space from OS
 	Allocator_ChangeMemory_Func  commit;   //allocates memory from reserved space
@@ -132,7 +132,7 @@ enum Types{
 	Type_mat4,
 	Type_matN,
 	Type_quat,
-
+	
 	//utils
 	Type_cstring,
 	Type_carray,
@@ -144,7 +144,7 @@ enum Types{
 	Type_color,
 	Type_optional,
 	Type_hash,
-
+	
 };
 
 //////////////////////////
@@ -220,7 +220,7 @@ global_const u64 wcharsize = sizeof(wchar);
 #define Radians(a) ((a) * (M_PI / 180.f))
 #define Degrees(a) ((a) * (180.f / M_PI))
 #define ArrayCount(arr) (sizeof((arr)) / sizeof(((arr))[0])) //length of a static-size c-array
-#define RoundUpTo(value, multiple) (((u32)((value) + (((u32)(multiple))-1)) / (u32)(multiple)) * (u32)(multiple))
+#define RoundUpTo(value, multiple) (((upt)((value) + (((upt)(multiple))-1)) / (upt)(multiple)) * (upt)(multiple))
 #define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
 #define PointerDifference(a,b) ((u8*)(a) - (u8*)(b))
 #define PointerAsInt(a) PointerDifference(a,0)
@@ -240,8 +240,9 @@ global_const u64 wcharsize = sizeof(wchar);
 //////////////////////////
 //// common functions ////
 //////////////////////////
+FORCE_INLINE void ZeroMemory(void* ptr, upt bytes){memset(ptr, 0, bytes);}
 FORCE_INLINE b32 IsPow2(u64 value){return (value != 0) && ((value & (value-1)) == 0);}
-FORCE_INLINE upt roundUpToPow2(upt x) { return (upt)1 << (upt)((upt)log2(--x) + 1); }
+FORCE_INLINE upt roundUpToPow2(upt x) { return (upt)1 << (upt)((upt)log2(f64(--x)) + 1); }
 template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;}
 template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;}
 template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;}
@@ -314,9 +315,9 @@ struct Node{
 #define NodeRemove(node) ((node)->next->prev=(node)->prev,(node)->prev->next=(node)->next)
 
 //// C/C++ STL allocator ////
-function void* STLAllocator_Reserve(upt size){void* a = calloc(1,size); Assert(a); return a;}
-function void  STLAllocator_Release(void* ptr){free(ptr);}
-function void* STLAllocator_Resize(void* ptr, upt size){void* a = realloc(ptr,size); Assert(a); return a;}
+global_ void* STLAllocator_Reserve(upt size){void* a = calloc(1,size); Assert(a); return a;}
+global_ void  STLAllocator_Release(void* ptr){free(ptr);}
+global_ void* STLAllocator_Resize(void* ptr, upt size){void* a = realloc(ptr,size); Assert(a); return a;}
 global_ Allocator stl_allocator_{
 	STLAllocator_Reserve,
 	Allocator_ChangeMemory_Noop,

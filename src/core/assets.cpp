@@ -307,9 +307,9 @@ parse_bool(std::string& str, const char* filepath, u32 line_number){
 		return false;
 	}else{
 		if(filepath && line_number){
-			LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Invalid b32ean value: ", str);
+			LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Invalid boolean value: ", str);
 		}else{
-			LogE("assets","Failed to parse b32ean value: ", str);
+			LogE("assets","Failed to parse boolean value: ", str);
 		}
 		return false;
 	}
@@ -470,7 +470,7 @@ loadConfig(const char* filename, ConfigMap configMap){
 						else if(strncmp("1",     value_start, 1) == 0) *b = true;
 						else if(strncmp("false", value_start, 5) == 0) *b = false;
 						else if(strncmp("0",     value_start, 1) == 0) *b = false;
-						else LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Invalid b32ean value: ", value_start);
+						else LogE("assets","Error parsing '",filepath,"' on line '",line_number,"'! Invalid boolean value: ", value_start);
 					}break;
 					case ConfigValueType_U32:{
 						*(u32*)config.third = (u32)atoi(value_start);
