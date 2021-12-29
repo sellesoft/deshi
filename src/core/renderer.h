@@ -147,7 +147,7 @@ namespace Render{
 	
 	//debug drawing funcs
 	void ClearDebug();
-	void DebugLine(vec3 p0, vec3 p1, color _color = Color_White);
+	void DebugLine(vec3 p0, vec3 p1,  color _color = Color_White);
 	
 	//2d drawing functions
 	void FillTriangle2D(vec2 p1, vec2 p2, vec2 p3, color _color = Color_White, u32 layer = 4, vec2 scissorOffset = vec2(0, 0), vec2 scissorExtent = vec2(0, 0));

@@ -1664,12 +1664,12 @@ void UI::Separator(f32 height) {
 
 
 //final input text
-b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UIInputTextCallback callback, UIInputTextFlags flags, b32 moveCursor) {
+b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, const char* preview, UIInputTextCallback callback, UIInputTextFlags flags, b32 moveCursor) {
 	UIItem* item = BeginItem(UIItemType_InputText);
 	
 	UIInputTextState* state;
 	
-	size_t charCount = strlen(buff);
+	upt charCount = strlen(buff);
 	
 	item->position = position;
 	
@@ -1882,8 +1882,14 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 	{//text
 		UIDrawCmd drawCmd{ UIDrawType_Text};
 		drawCmd.position = textStart;
-		drawCmd.text = string(buff);
-		drawCmd.color = style.colors[UIStyleCol_Text];
+		if (preview && !buff[0]) {
+			drawCmd.text = string(preview);
+			drawCmd.color = style.colors[UIStyleCol_Text];
+		}
+		else {
+			drawCmd.text = string(buff);
+			drawCmd.color = style.colors[UIStyleCol_Text] * 0.5;
+		}
 		drawCmd.font = style.font;
 		
 		AddDrawCmd(item, drawCmd);
@@ -1921,22 +1927,16 @@ b32 InputTextCall(const char* label, char* buff, u32 buffSize, vec2 position, UI
 	return false;
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextFlags flags) {
-	vec2 position = PositionForNewItem();
-	
-	return InputTextCall(label, buffer, buffSize, position, nullptr, flags, 1);
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, PositionForNewItem(), preview, nullptr, flags, 1);
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextCallback callback, UIInputTextFlags flags) {
-	vec2 position = PositionForNewItem();
-	
-	return InputTextCall(label, buffer, buffSize, position, callback, flags, 1);
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize,  UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, PositionForNewItem(), preview, callback, flags, 1);
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
-	vec2 position = PositionForNewItem();
-	
-	if (InputTextCall(label, buffer, buffSize, position, nullptr, flags, 1)) {
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize,  UIInputTextState*& getInputTextState, const char* preview, UIInputTextFlags flags) {
+	if (InputTextCall(label, buffer, buffSize, PositionForNewItem(), preview, nullptr, flags, 1)) {
 		getInputTextState = inputTexts.at(label);
 		return true;
 	}
@@ -1944,21 +1944,51 @@ b32 UI::InputText(const char* label, char* buffer, u32 buffSize, UIInputTextStat
 	return false;
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextFlags flags) {
-	return InputTextCall(label, buffer, buffSize, pos, nullptr, flags, 0);
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, pos, preview, nullptr, flags, 0);
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, UIInputTextFlags flags) {
-	return InputTextCall(label, buffer, buffSize, pos, callback, flags, 0);
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextCallback callback, const char* preview, UIInputTextFlags flags) {
+	return InputTextCall(label, buffer, buffSize, pos, preview, callback, flags, 0);
 }
 
-b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, UIInputTextFlags flags) {
-	if (InputTextCall(label, buffer, buffSize, pos, nullptr, flags, 0)) {
+b32 UI::InputText(const char* label, char* buffer, u32 buffSize, vec2 pos, UIInputTextState*& getInputTextState, const char* preview, UIInputTextFlags flags) {
+	if (InputTextCall(label, buffer, buffSize, pos, preview, nullptr, flags, 0)) {
 		getInputTextState = inputTexts.at(label);
 		return true;
 	}
 	getInputTextState = inputTexts.at(label);
 	return false;
+}
+
+//this doesnt need to be an enum at this point,
+//but im making it one incase this function becomes more complicated in the future
+enum CustomItemStage_{
+	CISNone = 0,
+	CISItemBegan = 1 << 0,
+	CISItemAdvancedCursor = 1 << 1,
+}; typedef u32 CustomItemStage;
+CustomItemStage cistage = CISNone;
+
+//@BeginCustomItem
+UIItem* UI::BeginCustomItem(u32 layeroffset) {
+	Assert(!cistage, "attempt to start a custom item");
+	AddFlag(cistage, CISItemBegan);
+	return BeginItem(UIItemType_Custom, layeroffset);
+}
+
+void UI::CustomItemAdvanceCursor(UIItem* item, b32 move_cursor) {
+	Assert(HasFlag(cistage, CISItemBegan), "attempt to advance a custom item who has not begun!");
+	AddFlag(cistage, CISItemAdvancedCursor);
+	AdvanceCursor(item, move_cursor);
+
+}
+
+
+void UI::EndCustomItem() {
+	Assert(HasFlag(cistage, CISItemBegan), "attempt to end a custom item that hasnt been started");
+	Assert(HasFlag(cistage, CISItemAdvancedCursor), "attempt to end a custom item who hasnt advanced the cursor yet");
+	cistage = CISNone;
 }
 
 
