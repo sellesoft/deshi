@@ -848,20 +848,20 @@ SetupAllocator(){
 	
 	//regular allocator
 	auto deshi_vulkan_allocation_func = [](void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope){
-		void* result = Memory::Allocate(RoundUpTo(size,alignment));
+		void* result = memalloc(RoundUpTo(size,alignment));
 		Assert((size_t)result % alignment == 0, "The alignment of the pointer is invalid");
 		return result;
 	};
 	
 	auto deshi_vulkan_reallocation_func = [](void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope){
 		Assert((size_t)pOriginal % alignment == 0, "The previous allocation does not match the requested alignment");
-		void* result = Memory::Reallocate(pOriginal, RoundUpTo(size,alignment));
+		void* result = memrealloc(pOriginal, RoundUpTo(size,alignment));
 		Assert((size_t)result % alignment == 0, "The alignment of the pointer is invalid");
 		return result;
 	};
 	
 	auto deshi_vulkan_free_func = [](void* pUserData, void* pMemory){
-		Memory::ZeroFree(pMemory);
+		memzfree(pMemory);
 	};
 	
 	allocator_.pfnAllocation = deshi_vulkan_allocation_func;
@@ -872,14 +872,14 @@ SetupAllocator(){
 	auto deshi_vulkan_temp_allocation_func = [](void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope){
 		Assert(allocationScope != VK_SYSTEM_ALLOCATION_SCOPE_DEVICE && allocationScope != VK_SYSTEM_ALLOCATION_SCOPE_INSTANCE,
 			   "Vulkan device and instance creation can not use the temporary allocator");
-		void* result = Memory::TempAllocate(RoundUpTo(size,alignment));
+		void* result = memtalloc(RoundUpTo(size,alignment));
 		Assert((size_t)result % alignment == 0, "The alignment of the pointer is invalid");
 		return result;
 	};
 	
 	auto deshi_vulkan_temp_reallocation_func = [](void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope){
 		Assert((size_t)pOriginal % alignment == 0, "The previous allocation does not match the requested alignment");
-		void* result = TempAllocator_Resize(pOriginal, RoundUpTo(size,alignment));
+		void* result = memtrealloc(pOriginal, RoundUpTo(size,alignment));
 		Assert((size_t)result % alignment == 0, "The alignment of the pointer is invalid");
 		return result;
 	};

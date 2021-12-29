@@ -76,6 +76,7 @@ struct GenericHeap{
 void* deshi__memory_generic_allocate(upt size, char* file, upt line);
 FORCE_INLINE void* deshi__memory_generic_allocate(upt size){return deshi__memory_generic_allocate(size, 0, 0);}
 #define memory_alloc(size) deshi__memory_generic_allocate(size, __FILE__, __LINE__)
+#define memalloc(size) memory_alloc(size)
 
 //resizes the allocation to AT LEAST 'new_size' in bytes
 //  returns a different pointer than was passed if the memory was moved
@@ -84,11 +85,13 @@ FORCE_INLINE void* deshi__memory_generic_allocate(upt size){return deshi__memory
 void* deshi__memory_generic_reallocate(void* ptr, upt new_size, char* file, upt line);
 FORCE_INLINE void* deshi__memory_generic_reallocate(void* ptr, upt new_size){return deshi__memory_generic_reallocate(ptr, new_size, 0, 0);}
 #define memory_realloc(ptr, new_size) deshi__memory_generic_reallocate(ptr, new_size, __FILE__, __LINE__)
+#define memrealloc(ptr, new_size) memory_realloc(ptr, new_size)
 
 //frees allocated memory and zeros it
 void deshi__memory_generic_zero_free(void* ptr, char* file, upt line);
 FORCE_INLINE void deshi__memory_generic_zero_free(void* ptr){return deshi__memory_generic_zero_free(ptr, 0, 0);}
 #define memory_zfree(ptr) deshi__memory_generic_zero_free(ptr, __FILE__, __LINE__)
+#define memzfree(ptr) memory_zfree(ptr)
 
 //exposes the internal generic heap
 GenericHeap* deshi__memory_generic_expose();
@@ -102,11 +105,13 @@ GenericHeap* deshi__memory_generic_expose();
 void* deshi__memory_temp_allocate(upt size, char* file, upt line);
 FORCE_INLINE void* deshi__memory_temp_allocate(upt size){return deshi__memory_temp_allocate(size, 0, 0);}
 #define memory_talloc(size) deshi__memory_temp_allocate(size, __FILE__, __LINE__)
+#define memtalloc(size) memory_talloc(size)
 
 //allocates 'size' in bytes and copies the memory to the new location
 void* deshi__memory_temp_reallocate(void* ptr, upt size, char* file, upt line);
 FORCE_INLINE void* deshi__memory_temp_reallocate(void* ptr, upt size){return deshi__memory_temp_reallocate(ptr, size, 0, 0);}
 #define memory_trealloc(ptr, size) deshi__memory_temp_reallocate(ptr, size, __FILE__, __LINE__)
+#define memtrealloc(ptr, size) memory_trealloc(ptr, size)
 
 //clears and resets the temp arena
 void deshi__memory_temp_clear();

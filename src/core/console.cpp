@@ -578,7 +578,7 @@ void Console::Update() {
 		f32 inputBoxHeight = uistyle->inputTextHeightRelToFont * uistyle->fontHeight;
 		SetNextItemSize(vec2(MAX_F32, inputBoxHeight));
 		vec2 itpos(GetMarginedLeft(), GetMarginedBottom() - inputBoxHeight);
-		if (InputText("deshiConsoleInput", inputBuf, CONSOLE_INPUT_BUFFER_SIZE, itpos, UIInputTextFlags_EnterReturnsTrue)) {
+		if (InputText("deshiConsoleInput", inputBuf, CONSOLE_INPUT_BUFFER_SIZE, itpos, "enter a command", UIInputTextFlags_EnterReturnsTrue)) {
 			scroll_to_bottom = 1;
 			string input(inputBuf);
 			AddLog(input);
