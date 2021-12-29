@@ -1,6 +1,7 @@
 ﻿local bool _resized = false;
 local int _width, _height, _x, _y;
 local int opengl_version;
+local b32 block_mouse_pos_change = false;
 
 void glfwError(int id, const char* description){
 	LogfE("glfw","%d: %s", id, description);
@@ -255,6 +256,14 @@ void Window::Init(const char* _name, s32 width, s32 height, s32 x, s32 y, Displa
 									   if(width != _width || height != _height) _resized = true;
 								   });
 	
+	//void window_focus_callback(GLFWwindow* window, int focused)
+	glfwSetWindowFocusCallback(window,
+		[](GLFWwindow* window, int focused) {
+			if (focused) block_mouse_pos_change = false;
+			else block_mouse_pos_change = true;
+		});
+
+
 	//TODO(sushi) implement this function for use on InputText()
 	//glfwSetCharCallback()
 	
@@ -284,7 +293,8 @@ void Window::Update() {
 	centerX = width/2; centerY = height/2;
 	this->dimensions = vec2(width, height);
 	
-	glfwGetCursorPos(window, &DeshInput->mouseX, &DeshInput->mouseY);
+	if(!block_mouse_pos_change)
+		glfwGetCursorPos(window, &DeshInput->mouseX, &DeshInput->mouseY);
 	if(cursorMode == CursorMode_FirstPerson){ glfwSetCursorPos(window, width/2, height/2); }
 	DeshTime->windowTime = TIMER_END(t_d);
 }
