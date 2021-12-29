@@ -565,6 +565,12 @@ function void TEST_deshi_utils_ring_array(){
 #include "string.h"
 function void TEST_deshi_utils_string(){
 	
+
+//#define teststr "ABCDEFG"
+#define teststr "While the butterflies form a monophyletic group, the moths, comprising the rest of the Lepidoptera, do not. Many attempts have been made to group the superfamilies of the Lepidoptera into natural groups, most of which fail because one of the two groups is not monophyletic: Microlepidoptera and Macrolepidoptera, Heterocera and Rhopalocera, Jugatae and Frenatae, Monotrysia and Ditrysia.\nAlthough the rules for distinguishing moths from butterflies are not well established, one very good guiding principle is that butterflies have thin antennae and (with the exception of the family Hedylidae) have small balls or clubs at the end of their antennae.Moth antennae are usually feathery with no ball on the end.The divisions are named by this principle: \"club-antennae\" (Rhopalocera) or \"varied-antennae\" (Heterocera).Lepidoptera differs between butterflies and other organisms due to evolving a special characteristic of having the tube - like proboscis in the Middle Triassic which allowed them to acquire nectar from flowering plants.[3] "
+	const u32 len = strlen(teststr);
+
+	//// constructors ////
 	{//empty constructor does not allocate or set any vars
 		string str;
 		AssertAlways(!str.str);
@@ -573,14 +579,235 @@ function void TEST_deshi_utils_string(){
 	}
 
 	{//const char* constructor
-		string str("ABCDEFG");
-		AssertAlways(!memcmp(str.str, "ABCDEFG", 7));
-		AssertAlways(str.count == 7);
-		AssertAlways(str.space == 8);
+		string str(teststr);
+		AssertAlways(!memcmp(str.str, teststr, len));
+		AssertAlways(str.count == len);
+		AssertAlways(str.space == RoundUpTo(len + 1, 4));
+	}
 
+	{//const char* with count constructor
+		string str(teststr, len);
+		AssertAlways(!memcmp(str.str, teststr, len));
+		AssertAlways(str.count == len);
+		AssertAlways(str.space == RoundUpTo(len + 1, 4));
+	}
+
+	{//copy constructor
+		string str(teststr);
+		string str2(str);
+		AssertAlways(!memcmp(str2.str, teststr, len));
+		AssertAlways(str2.count == len);
+		AssertAlways(str2.space == RoundUpTo(len + 1, 4));
 	}
 
 
+	//// operators ////
+
+
+	{//operator[](u32)
+		string str(teststr);
+		for (u32 i = 0; i < len; i++)
+			AssertAlways(str[i] == teststr[i]);
+	}
+
+	{//operator[] const
+		const string str(teststr);
+		for (u32 i = 0; i < len; i++)
+			AssertAlways(str[i] == teststr[i]);
+	}
+
+	{//operator= const char*
+		string str = teststr;
+		AssertAlways(!memcmp(str.str, teststr, len));
+		AssertAlways(str.count == len);
+		AssertAlways(str.space == RoundUpTo(len + 1, 4));
+	}
+
+	{//operator= string
+		string str = teststr;
+		string str2 = str;
+		AssertAlways(!memcmp(str2.str, teststr, len));
+		AssertAlways(str2.count == len);
+		AssertAlways(str2.space == RoundUpTo(len + 1, 4));
+	}
+
+	{//operator+= const char*
+		string str = teststr;
+		str += teststr;
+		AssertAlways(!memcmp(str.str, teststr teststr, len * 2));
+		AssertAlways(str.count == len * 2);
+		AssertAlways(str.space == RoundUpTo(len * 2 + 1, 4));
+	}
+
+	{//operator+= string
+		string str = teststr;
+		string str2 = teststr;
+		str += str2;
+		AssertAlways(!memcmp(str.str, teststr teststr, len * 2));
+		AssertAlways(str.count == len * 2);
+		AssertAlways(str.space == RoundUpTo(len * 2 + 1 , 4));
+	}
+
+	{//operator--
+		string str = teststr;
+		str--;
+		for (u32 i = 0; i < len - 1; i++)
+			AssertAlways(str[i] == teststr[i]);
+		AssertAlways(str.count == len - 1);
+		AssertAlways(str.space == RoundUpTo(len + 1, 4));
+	}
+
+	{//operator+ const char*
+		string str = teststr;
+		string str2 = str + teststr;
+		AssertAlways(!memcmp(str2.str, teststr teststr, len * 2));
+		AssertAlways(str2.count == len * 2);
+		AssertAlways(str2.space == RoundUpTo(len * 2 + 1, 4));
+	}
+
+	{//operator+ string
+		string str = teststr;
+		string str2 = teststr;
+		string str3 = str + str2;
+		AssertAlways(!memcmp(str3.str, teststr teststr, len * 2));
+		AssertAlways(str3.count == len * 2);
+		AssertAlways(str3.space == RoundUpTo(len * 2 + 1, 4));
+	}
+
+	{//operator== string
+		string str = teststr;
+		string str2 = teststr;
+		AssertAlways(str == str2);
+	}
+
+	{//operator!= string
+		string str = teststr;
+		string str2 = teststr "a";
+		AssertAlways(str != str2);
+	}
+
+	{//operator== const char*
+		string str = teststr;
+		AssertAlways(str == teststr);
+	}
+
+	{//operator!= const char*
+		string str = teststr;
+		AssertAlways(str != teststr"a");
+	}
+
+	{//friend operator+ const char* and string
+		string str = "yep";
+		string str2 = teststr + str;
+		AssertAlways(!memcmp(str2.str, teststr "yep", len + 3));
+		AssertAlways(str2.count == len+3);
+		AssertAlways(str2.space == RoundUpTo(len + 3 + 1, 4));
+	}
+
+	{//operator bool()
+		string str;
+		AssertAlways(!str);
+		str = teststr;
+		AssertAlways(str);
+	}
+
+
+	//// functions ////
+
+
+	{//reserve
+		string str;
+		str.reserve(len);
+		AssertAlways(str.str);
+		AssertAlways(!str.count);
+		AssertAlways(str.space == RoundUpTo(len + 1, 4));
+
+		str.reserve(len - 1);
+		AssertAlways(str.str);
+		AssertAlways(!str.count);
+		AssertAlways(str.space == RoundUpTo(len + 1, 4));
+
+		//forI(len) str[i] = teststr[i];
+		//AssertAlways(!memcmp(str.str, teststr, len));
+		//AssertAlways(str.count == len);
+		//AssertAlways(str.space == RoundUpTo(len + 1, 4));
+	}
+
+	{//clear
+		string str = teststr;
+		str.clear();
+		AssertAlways(!str.str);
+		AssertAlways(!str.count);
+		AssertAlways(!str.space);
+	}
+
+	{//erase
+		string str;
+		for (u32 i = 0; i < len; i++) {
+			str = teststr;
+			str.erase(i);
+			for (u32 o = 0; o < len; o++) {
+				if (o != i)
+					AssertAlways(str[(o >= i ? o - 1 : o)] == teststr[o]);
+			}
+		}
+
+		str = teststr;
+		while (str) str.erase(0);
+		AssertAlways(!str.str);
+		AssertAlways(!str.count);
+		AssertAlways(!str.space);
+
+		str = teststr;
+		srand(time(0));
+		while (str) str.erase(rand() % str.count); 
+		AssertAlways(!str.str);
+		AssertAlways(!str.count);
+		AssertAlways(!str.space);
+	}
+
+	{//insert
+		string str;
+		for (u32 i = 0; i < len; i++) {
+			str = teststr;
+			str.insert('A', i);
+			for (u32 o = 0; o < len+1; o++) {
+				if (o != i)
+					AssertAlways(str[o] == teststr[(o >= i ? o - 1 : o)]);
+			}
+
+		}
+
+	}
+
+	{//at
+		string str = teststr;
+		forI(str.count) AssertAlways(str.at(i) == str[i]);
+	}
+
+	{//substr
+		string str = teststr;
+
+		forI(1000) {
+			s32 rand1 = rand() % str.count,
+				rand2 = rand() % str.count;
+			string str2 = str.substr(Min(rand1, rand2), Max(rand1, rand2));
+			AssertAlways(!memcmp(str.str + Min(rand1, rand2), str2.str, fabs(rand1 - rand2)));
+		}
+
+
+	}
+
+	{//findFirstStr
+		string str = teststr;
+
+
+	}
+
+	//TODO(sushi) write tests for the remaining functions
+
+
+	printf("[DESHI-TEST] PASSED: utils/string\n");
 }
 
 #include "string_conversion.h"
