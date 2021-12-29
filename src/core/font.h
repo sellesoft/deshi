@@ -17,26 +17,26 @@ enum FontType{
 
 //a bunch of structs copied from stbtt, so we can use them locally w/o having to include imgui's stb
 typedef struct {
-	float x0, y0, s0, t0; // top-left
-	float x1, y1, s1, t1; // bottom-right
+	f32 x0, y0, s0, t0; // top-left
+	f32 x1, y1, s1, t1; // bottom-right
 } aligned_quad;
 
 typedef struct {
 	unsigned short x0, y0, x1, y1; // coordinates of bbox in bitmap
-	float xoff, yoff, xadvance;
-	float xoff2, yoff2;
+	f32 xoff, yoff, xadvance;
+	f32 xoff2, yoff2;
 } packedchar;
 
 typedef struct {
-	float font_size;
-	int firstcodepoint;  // if non-zero, then the chars are continuous, and this is the first codepoint
-	int* array_of_unicode_codepoints;       // if non-zero, then this is an array of unicode codepoints
-	int num_chars;
+	f32 font_size;
+	u32 firstcodepou32;  // if non-zero, then the chars are continuous, and this is the first codepou32
+	u32* array_of_unicode_codepou32s;       // if non-zero, then this is an array of unicode codepou32s
+	u32 num_chars;
 	packedchar* chardata_for_range; // output
-	unsigned char h_oversample, v_oversample; // don't set these, they're used internally
+	unsigned char h_oversample, v_oversample; // don't set these, they're used u32ernally
 } pack_range;
 
-//pack_context isnt really necessary as its really just something used internally by stbtt
+//pack_context isnt really necessary as its really just something used u32ernally by stbtt
 
 struct Font{
 	Type     type;
@@ -53,19 +53,19 @@ struct Font{
 	void*    ttf_pack_context;      //stbtt_pack_context
 	pack_range* ttf_pack_ranges; //stbtt_pack_range
 
-	//the y offset of UV since we are now packing a white square into every font.
-	float uvOffset;
+	//the y offset of UV since we are now packing a white square u32o every font.
+	f32 uvOffset;
 	
-	float ascent; //the highest point above baseline a glyph reaches
-	float decent; //the lowest point below baseline a glyph reaches
-	float line_gap; //the recommended 
+	f32 ascent; //the highest pou32 above baseline a glyph reaches
+	f32 decent; //the lowest pou32 below baseline a glyph reaches
+	f32 line_gap; //the recommended 
 	
-	float aspect_ratio; //max character height / max character width
+	f32 aspect_ratio; //max character height / max character width
 	
-	aligned_quad GetPackedQuad(int charidx, vec2* pos, vec2 scale = vec2::ONE);
-	packedchar* GetPackedChar(int charidx);
+	aligned_quad GetPackedQuad(u32 charidx, vec2* pos, vec2 scale = vec2::ONE);
+	packedchar* GetPackedChar(u32 charidx);
 	
-	float WidthOfString(const char* str, float scale = 1);
+	f32 WidthOfString(const char* str, f32 scale = 1);
 	
 	vec2 ScaleFromPixelHeight(u32 height);
 	
@@ -77,18 +77,15 @@ struct Font{
 //TODO an overload for specifying range if you know where you're working
 //     eg. different text modes for InputText like alpha, numeric, etc..
 inline aligned_quad Font::
-GetPackedQuad(int charidx, vec2* pos, vec2 scale) {
-	
-	float ipw = 1.0f / ttf_size[0], iph = 1.0f / ttf_size[1];
-
-	wchar_t ch = (wchar_t)charidx;
+GetPackedQuad(u32 charidx, vec2* pos, vec2 scale) {
+	f32 ipw = 1.0f / ttf_size[0], iph = 1.0f / ttf_size[1];
 	
 	packedchar* b = nullptr;
 	
 	//determine what range the req character is in
 	forI(num_ranges) {
-		if (charidx >= ttf_pack_ranges[i].firstcodepoint && charidx <= ttf_pack_ranges[i].firstcodepoint + ttf_pack_ranges[i].num_chars) {
-			b = ttf_pack_ranges[i].chardata_for_range + (charidx - ttf_pack_ranges[i].firstcodepoint);
+		if (charidx >= ttf_pack_ranges[i].firstcodepou32 && charidx <= ttf_pack_ranges[i].firstcodepou32 + ttf_pack_ranges[i].num_chars) {
+			b = ttf_pack_ranges[i].chardata_for_range + (charidx - ttf_pack_ranges[i].firstcodepou32);
 			break;
 		}
 	}
@@ -115,18 +112,18 @@ GetPackedQuad(int charidx, vec2* pos, vec2 scale) {
 }
 
 inline packedchar* Font::
-GetPackedChar(int charidx) {
+GetPackedChar(u32 charidx) {
 	//determine what range the req character is in
 	forI(num_ranges)
-		if (charidx >= ttf_pack_ranges[i].firstcodepoint && charidx <= ttf_pack_ranges[i].firstcodepoint + ttf_pack_ranges[i].num_chars)
-		return ttf_pack_ranges[i].chardata_for_range + (charidx - ttf_pack_ranges[i].firstcodepoint);
+		if (charidx >= ttf_pack_ranges[i].firstcodepou32 && charidx <= ttf_pack_ranges[i].firstcodepou32 + ttf_pack_ranges[i].num_chars)
+		return ttf_pack_ranges[i].chardata_for_range + (charidx - ttf_pack_ranges[i].firstcodepou32);
 	Assert(0, "The req character was not found in any of the ranges. TODO better error handling here.");
 	return 0;
 }
 
-inline float Font::
-WidthOfString(const char* str, float scale) {
-	float ret = 0;
+inline f32 Font::
+WidthOfString(const char* str, f32 scale) {
+	f32 ret = 0;
 	forI(strlen(str)) ret += GetPackedChar(str[i])->xadvance * scale;
 	return ret;
 }

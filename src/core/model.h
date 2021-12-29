@@ -93,8 +93,8 @@ struct Mesh{
 		u32  v[3];
 		u32  neighborCount;
 		u32  face;
-		bool removed;
-		bool checked;
+		b32 removed;
+		b32 checked;
 		
 		u32* neighborArray;
 		u8*  edgeArray;

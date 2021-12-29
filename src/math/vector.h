@@ -17,17 +17,17 @@ struct quat;
 
 struct vec2 {
 	union{
-		float arr[2] = {};
-		struct{ float x, y; };
-		struct{ float r, g; };
-		struct{ float w, h; };
-		struct{ float u, v; };
+		f32 arr[2] = {};
+		struct{ f32 x, y; };
+		struct{ f32 r, g; };
+		struct{ f32 w, h; };
+		struct{ f32 u, v; };
 	};
 	
 	vec2(){};
-	vec2(float inX, float inY);
+	vec2(f32 inX, f32 inY);
 	vec2(const vec2& v);
-	vec2(float* ptr);
+	vec2(f32* ptr);
 	
 	static const vec2 ZERO;
 	static const vec2 ONE;
@@ -39,10 +39,10 @@ struct vec2 {
 	static const vec2 UNITY;
 	
 	void operator= (const vec2& rhs);
-	vec2 operator* (float rhs) const;
-	void operator*=(float rhs);
-	vec2 operator/ (float rhs) const;
-	void operator/=(float rhs);
+	vec2 operator* (f32 rhs) const;
+	void operator*=(f32 rhs);
+	vec2 operator/ (f32 rhs) const;
+	void operator/=(f32 rhs);
 	vec2 operator+ (const vec2& rhs) const;
 	void operator+=(const vec2& rhs);
 	vec2 operator- (const vec2& rhs) const;
@@ -54,30 +54,30 @@ struct vec2 {
 	vec2 operator- () const;
 	bool operator==(const vec2& rhs) const;
 	bool operator!=(const vec2& rhs) const;
-	friend vec2 operator* (float lhs, const vec2& rhs){ return rhs * lhs; }
+	friend vec2 operator* (f32 lhs, const vec2& rhs){ return rhs * lhs; }
 	
 	void  set(f32 x, f32 y);
 	vec2  absV() const;
 	vec2  copy() const;
-	float dot(const vec2& rhs) const;
+	f32   dot(const vec2& rhs) const;
 	vec2  perp() const;
-	float mag() const;
+	f32   mag()  const;
 	void  normalize();
 	vec2  normalized() const;
-	void  clampMag(float min, float max);
-	vec2  clampedMag(float min, float max) const;
-	float distanceTo(const vec2& rhs) const;
-	vec2  compOn(const vec2& rhs) const;
-	float projectOn(const vec2& rhs) const;
-	vec2  midpoint(const vec2& rhs) const;
+	void  clampMag(f32 min, f32 max);
+	vec2  clampedMag(f32 min, f32 max) const;
+	f32   distanceTo(const vec2& rhs)  const;
+	vec2  compOn(const vec2& rhs)      const;
+	f32   projectOn(const vec2& rhs)   const;
+	vec2  midpoint(const vec2& rhs)    const;
 	vec2  xComp() const;
 	vec2  yComp() const;
 	vec2  xInvert() const;
 	vec2  yInvert() const;
-	vec2  xSet(float set) const; //for single line vector arithmetic eg. ShowDebugWindowOf() when I call BeginWindow
-	vec2  ySet(float set) const; //for single line vector arithmetic eg. ShowDebugWindowOf() when I call BeginWindow
-	vec2  xAdd(float set) const; //for single line vector arithmetic eg. ShowDebugWindowOf() when I call BeginWindow
-	vec2  yAdd(float set) const; //for single line vector arithmetic eg. ShowDebugWindowOf() when I call BeginWindow
+	vec2  xSet(f32 set) const; 
+	vec2  ySet(f32 set) const; 
+	vec2  xAdd(f32 set) const; 
+	vec2  yAdd(f32 set) const; 
 	
 	//vector interactions
 	vec2(const vec3& v);
@@ -89,18 +89,18 @@ struct vec2 {
 
 struct vec3 {
 	union{
-		float arr[3] = {};
-		struct{ float x, y, z; };
-		struct{ float r, g, b; };
-		struct{ vec2 xy; float _unusedZ0; };
-		struct{ float _unusedX0; vec2 yz; };
+		f32 arr[3] = {};
+		struct{ f32 x, y, z; };
+		struct{ f32 r, g, b; };
+		struct{ vec2 xy; f32 _unusedZ0; };
+		struct{ f32 _unusedX0; vec2 yz; };
 	};
 	
 	vec3(){};
-	vec3(float inX, float inY, float inZ);
-	vec3(float inX, float inY);
+	vec3(f32 inX, f32 inY, f32 inZ);
+	vec3(f32 inX, f32 inY);
 	vec3(const vec3& v);
-	vec3(float* ptr);
+	vec3(f32* ptr);
 	
 	static const vec3 ZERO;
 	static const vec3 ONE;
@@ -116,10 +116,10 @@ struct vec3 {
 	
 	void operator= (const vec3& rhs);
 	void operator= (vec3& rhs);
-	vec3 operator* (float rhs) const;
-	void operator*=(float rhs);
-	vec3 operator/ (float rhs) const;
-	void operator/=(float rhs);
+	vec3 operator* (f32 rhs) const;
+	void operator*=(f32 rhs);
+	vec3 operator/ (f32 rhs) const;
+	void operator/=(f32 rhs);
 	vec3 operator+ (const vec3& rhs) const;
 	void operator+=(const vec3& rhs);
 	vec3 operator- (const vec3& rhs) const;
@@ -131,86 +131,86 @@ struct vec3 {
 	vec3 operator- () const;
 	bool operator==(const vec3& rhs) const;
 	bool operator!=(const vec3& rhs) const;
-	friend vec3 operator* (float lhs, const vec3& rhs){ return rhs * lhs; }
+	friend vec3 operator* (f32 lhs, const vec3& rhs){ return rhs * lhs; }
 	
-	void  set(f32 x, f32 y, f32 z);
-	vec3  absV() const;
-	vec3  copy() const;
-	float dot(const vec3& rhs) const;
-	vec3  cross(const vec3& rhs) const;
-	float mag() const;
-	float magSq() const;
-	void  normalize();
-	vec3  normalized() const;
-	vec3  clamp(float lo, float hi) const;
-	void  clampMag(float min, float max);
-	vec3  clampedMag(float min, float max) const;
-	void  round(int place);
-	vec3  rounded(int place) const;
-	float distanceTo(const vec3& rhs) const;
-	vec3  compOn(const vec3& rhs) const;
-	float projectOn(const vec3& rhs) const;
-	vec3  midpoint(const vec3& rhs) const;
-	float angleBetween(const vec3& rhs) const;
-	vec3  xComp() const;
-	vec3  yComp() const;
-	vec3  zComp() const;
-	vec3  xZero() const;
-	vec3  yZero() const;
-	vec3  zZero() const;
-	vec3  xInvert() const;
-	vec3  yInvert() const;
-	vec3  zInvert() const;
+	void set(f32 x, f32 y, f32 z);
+	vec3 absV() const;
+	vec3 copy() const;
+	f32  dot(const vec3& rhs) const;
+	vec3 cross(const vec3& rhs) const;
+	f32  mag() const;
+	f32  magSq() const;
+	void normalize();
+	vec3 normalized() const;
+	vec3 clamp(f32 lo, f32 hi) const;
+	void clampMag(f32 min, f32 max);
+	vec3 clampedMag(f32 min, f32 max) const;
+	void round(u32 place);
+	vec3 rounded(u32 place) const;
+	f32  distanceTo(const vec3& rhs) const;
+	vec3 compOn(const vec3& rhs) const;
+	f32  projectOn(const vec3& rhs) const;
+	vec3 midpoint(const vec3& rhs) const;
+	f32  angleBetween(const vec3& rhs) const;
+	vec3 xComp() const;
+	vec3 yComp() const;
+	vec3 zComp() const;
+	vec3 xZero() const;
+	vec3 yZero() const;
+	vec3 zZero() const;
+	vec3 xInvert() const;
+	vec3 yInvert() const;
+	vec3 zInvert() const;
 	
-	//vector interactions
+	//vector u32eractions
 	vec3(const vec2& v);
 	vec3(const vec4& v);
 	vec2 toVec2() const;
 	vec4 toVec4() const;
 	
-	//matrix interactions
+	//matrix u32eractions
 	vec3 operator* (const mat3& rhs) const;
 	void operator*=(const mat3& rhs);
 	vec3 operator* (const mat4& rhs) const;
 	void operator*=(const mat4& rhs);
 	//matN ToM1x3() const;
-	//matN ToM1x4(float w) const;
+	//matN ToM1x4(f32 w) const;
 	
-	//quaternion interactions
+	//quaternion u32eractions
 	vec3 operator* (const quat& rhs) const;
 };
 #include "vec3.inl"
 
 struct vec4{
 	union{
-		float arr[4] = {};
+		f32 arr[4] = {};
 		struct{ 
 			union{
 				vec3 xyz;
-				struct{ float x, y, z; };
+				struct{ f32 x, y, z; };
 			};
-			float w;
+			f32 w;
 		};
 		struct{ 
 			union{
 				vec3 rgb;
-				struct{ float r, g, b; };
+				struct{ f32 r, g, b; };
 			};
-			float a;
+			f32 a;
 		};
 		struct{ 
 			vec2 xy;
-			float _unusedZ0;
-			float _unusedW0;
+			f32 _unusedZ0;
+			f32 _unusedW0;
 		};
 		struct{ 
-			float _unusedX0;
+			f32 _unusedX0;
 			vec2 yz;
-			float _unusedW1;
+			f32 _unusedW1;
 		};
 		struct{ 
-			float _unusedX1;
-			float _unusedY0;
+			f32 _unusedX1;
+			f32 _unusedY0;
 			vec2 zw;
 		};
 #ifdef DESHI_USE_SSE
@@ -219,18 +219,18 @@ struct vec4{
 	};
 	
 	vec4(){};
-	vec4(float inX, float inY, float inZ, float inW);
+	vec4(f32 inX, f32 inY, f32 inZ, f32 inW);
 	vec4(const vec4& v);
-	vec4(float* ptr);
+	vec4(f32* ptr);
 	
 	static const vec4 ZERO;
 	static const vec4 ONE;
 	
 	void operator= (const vec4& rhs);
-	vec4 operator* (const float& rhs) const;
-	void operator*=(const float& rhs);
-	vec4 operator/ (const float& rhs) const;
-	void operator/=(const float& rhs);
+	vec4 operator* (const f32& rhs) const;
+	void operator*=(const f32& rhs);
+	vec4 operator/ (const f32& rhs) const;
+	void operator/=(const f32& rhs);
 	vec4 operator+ (const vec4& rhs) const;
 	void operator+=(const vec4& rhs);
 	vec4 operator- (const vec4& rhs) const;
@@ -242,38 +242,38 @@ struct vec4{
 	vec4 operator- () const;
 	bool operator==(const vec4& rhs) const;
 	bool operator!=(const vec4& rhs) const;
-	friend vec4 operator* (const float& lhs, const vec4& rhs){ return rhs * lhs; }
+	friend vec4 operator* (const f32& lhs, const vec4& rhs){ return rhs * lhs; }
 	
-	void  set(f32 x, f32 y, f32 z, f32 w);
-	vec4  absV() const;
-	vec4  copy() const;
-	float dot(const vec4& rhs) const;
-	float magSq() const;
-	float mag() const;
-	vec4  wnormalized() const;
-	vec4  xComp() const;
-	vec4  yComp() const;
-	vec4  zComp() const;
-	vec4  wComp() const;
-	vec4  xInvert() const;
-	vec4  yInvert() const;
-	vec4  zInvert() const;
-	vec4  wInvert() const;
+	void set(f32 x, f32 y, f32 z, f32 w);
+	vec4 absV() const;
+	vec4 copy() const;
+	f32  dot(const vec4& rhs) const;
+	f32  magSq() const;
+	f32  mag() const;
+	vec4 wnormalized() const;
+	vec4 xComp() const;
+	vec4 yComp() const;
+	vec4 zComp() const;
+	vec4 wComp() const;
+	vec4 xInvert() const;
+	vec4 yInvert() const;
+	vec4 zInvert() const;
+	vec4 wInvert() const;
 	
-	//vector interactions
-	vec4(const vec2& v, float z, float w);
-	vec4(const vec3& v, float w);
+	//vector u32eractions
+	vec4(const vec2& v, f32 z, f32 w);
+	vec4(const vec3& v, f32 w);
 	vec3 toVec3() const;
 	void takeVec3(const vec3& v);
 	
-	//matrix interactions
+	//matrix u32eractions
 	vec4 operator* (const mat4& rhs) const;
 	void operator*=(const mat4& rhs);
 };
 #include "vec4.inl"
 
 //////////////////////
-//// interactions ////
+//// u32eractions ////
 //////////////////////
 
 //// vec2 ////
@@ -323,12 +323,12 @@ toVec4() const {
 //// vec4 ////
 
 inline vec4::
-vec4(const vec2& v, float inZ, float inW) {
+vec4(const vec2& v, f32 inZ, f32 inW) {
 	x = v.x; y = v.y; z = inZ; w = inW;
 }
 
 inline vec4::
-vec4(const vec3& v, float inW) {
+vec4(const vec3& v, f32 inW) {
 	x = v.x; y = v.y; z = v.z; w = inW;
 }
 
@@ -349,12 +349,12 @@ takeVec3(const vec3& v) {
 
 #define RANDVEC(a) vec3(rand() % a + 1, rand() % a + 1, rand() % a + 1)
 
-//averages a vector v over an interval i and returns that average
+//averages a vector v over an u32erval i and returns that average
 #define V_AVG(i, v) \
 ([&] { \
 persist std::vector<vec3> vectors; \
 persist vec3 nv; \
-persist int iter = 0; \
+persist u32 iter = 0; \
 if(i == vectors.size()){ \
 vectors.erase(vectors.begin()); \
 vectors.push_back(v); \

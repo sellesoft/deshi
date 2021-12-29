@@ -52,8 +52,8 @@ namespace Storage{
 	//////////////////
 	//// @texture ////
 	//////////////////
-	pair<u32,Texture*> CreateTextureFromFile(const char* filename, ImageFormat format = ImageFormat_RGBA, TextureType type = TextureType_2D, bool keepLoaded = false, bool generateMipmaps = true, bool forceLinear = false);
-	pair<u32,Texture*> CreateTextureFromMemory(void* data, const char* name, int width, int height, ImageFormat format, TextureType type = TextureType_2D, bool keepLoaded = false, bool generateMipmaps = true, bool forceLinear = false);
+	pair<u32,Texture*> CreateTextureFromFile(const char* filename, ImageFormat format = ImageFormat_RGBA, TextureType type = TextureType_2D, b32 keepLoaded = false, b32 generateMipmaps = true, b32 forceLinear = false);
+	pair<u32,Texture*> CreateTextureFromMemory(void* data, const char* name, u32 width, u32 height, ImageFormat format, TextureType type = TextureType_2D, b32 keepLoaded = false, b32 generateMipmaps = true, b32 forceLinear = false);
 	void               DeleteTexture(Texture* texture);
 	
 	inline Texture*    NullTexture(){ return DeshStorage->null_texture; };
@@ -67,7 +67,7 @@ namespace Storage{
 	//// @material ////
 	///////////////////
 	pair<u32,Material*> CreateMaterial(const char* name, Shader shader = Shader_PBR, MaterialFlags flags = MaterialFlags_NONE, array<u32> textures = {});
-	pair<u32,Material*> CreateMaterialFromFile(const char* name, bool warnMissing = true);
+	pair<u32,Material*> CreateMaterialFromFile(const char* name, b32 warnMissing = true);
 	void                SaveMaterial(Material* material);
 	void                DeleteMaterial(Material* material);
 	
@@ -84,7 +84,7 @@ namespace Storage{
 	////////////////
 	//// @model ////
 	////////////////
-	pair<u32,Model*> CreateModelFromFile(const char* filename, ModelFlags flags = ModelFlags_NONE, bool forceLoadOBJ = false);
+	pair<u32,Model*> CreateModelFromFile(const char* filename, ModelFlags flags = ModelFlags_NONE, b32 forceLoadOBJ = false);
 	pair<u32,Model*> CreateModelFromMesh(Mesh* mesh, ModelFlags flags = ModelFlags_NONE);
 	pair<u32,Model*> CopyModel(Model* base);
 	void             SaveModel(Model* model);

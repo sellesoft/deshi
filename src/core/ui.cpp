@@ -880,7 +880,7 @@ local void TextCall(const char* text, vec2 pos, color color, UIItem* item) {
 }
 
 //secondary, for unicode
-local void TextCall(const wchar_t* text, vec2 pos, color color, UIItem* item) {
+local void TextCall(const wchar* text, vec2 pos, color color, UIItem* item) {
 	UIDrawCmd drawCmd{ UIDrawType_WText};
 	drawCmd.wtext = wstring(text);
 	drawCmd.position = pos;
@@ -1046,7 +1046,7 @@ local void TextW(const char* in, vec2 pos, color color, b32 nowrap, b32 move_cur
 
 //second function for wrapping, using unicode
 //these can probably be merged into one but i dont feel like doing that rn
-local void TextW(const wchar_t* in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {
+local void TextW(const wchar* in, vec2 pos, color color, b32 nowrap, b32 move_cursor = true) {
 	
 	using namespace UI;
 	UIItem* item = BeginItem(UIItemType_Text);
@@ -1192,11 +1192,11 @@ void UI::Text(const char* text, vec2 pos, UITextFlags flags) {
 	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap), 0);
 }
 
-void UI::Text(const wchar_t* text, UITextFlags flags){
+void UI::Text(const wchar* text, UITextFlags flags){
 	TextW(text, PositionForNewItem(), style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap));
 }
 
-void UI::Text(const wchar_t* text, vec2 pos, UITextFlags flags){
+void UI::Text(const wchar* text, vec2 pos, UITextFlags flags){
 	TextW(text, pos, style.colors[UIStyleCol_Text], HasFlag(flags, UITextFlags_NoWrap), 0);
 }
 

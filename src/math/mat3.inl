@@ -7,16 +7,16 @@
 //////////////////////
 
 inline mat3::
-mat3(float x) {
+mat3(f32 x) {
 	arr[0] = x; arr[1] = x; arr[2] = x; 
 	arr[3] = x; arr[4] = x; arr[5] = x; 
 	arr[6] = x; arr[7] = x; arr[8] = x;
 }
 
 inline mat3::
-mat3(float _00, float _01, float _02,
-	 float _10, float _11, float _12,
-	 float _20, float _21, float _22){
+mat3(f32 _00, f32 _01, f32 _02,
+	 f32 _10, f32 _11, f32 _12,
+	 f32 _20, f32 _21, f32 _22){
 	arr[0] = _00; arr[1] = _01; arr[2] = _02;
 	arr[3] = _10; arr[4] = _11; arr[5] = _12;
 	arr[6] = _20; arr[7] = _21; arr[8] = _22;
@@ -30,7 +30,7 @@ mat3(const mat3& m){
 }
 
 inline mat3::
-mat3(float* src){
+mat3(f32* src){
 	arr[0] = src[0]; arr[1] = src[1]; arr[2] = src[2]; 
 	arr[3] = src[3]; arr[4] = src[4]; arr[5] = src[5]; 
 	arr[6] = src[6]; arr[7] = src[7]; arr[8] = src[8];
@@ -49,14 +49,14 @@ inline const mat3 mat3::IDENTITY = mat3(1, 0, 0,
 ///////////////////
 
 //element accessor: matrix(row,col)
-inline float& mat3::
+inline f32& mat3::
 operator()(u32 row, u32 col){
 	Assert(row < 3 && col < 3, "mat3 subscript out of bounds");
 	return arr[3*row + col];
 }
 
 //element accessor [read-only]: matrix(row,col)
-inline float mat3::
+inline f32 mat3::
 operator()(u32 row, u32 col) const{
 	Assert(row < 3 && col < 3, "mat3 subscript out of bounds");
 	return arr[3 * row + col];
@@ -72,9 +72,9 @@ operator= (const mat3& rhs){
 
 //scalar multiplication
 inline mat3 mat3::
-operator* (const float& rhs) const{
+operator* (const f32& rhs) const{
 	mat3 newMatrix(*this);
-	for(int i = 0; i < 9; ++i){
+	for(u32 i = 0; i < 9; ++i){
 		newMatrix.arr[i] *= rhs;
 	}
 	return newMatrix;
@@ -82,18 +82,18 @@ operator* (const float& rhs) const{
 
 //scalar multiplication and assignment
 inline void mat3::
-operator*=(const float& rhs){
-	for(int i = 0; i < 9; ++i){
+operator*=(const f32& rhs){
+	for(u32 i = 0; i < 9; ++i){
 		arr[i] *= rhs;
 	}
 }
 
 //scalar division
 inline mat3 mat3::
-operator/ (const float& rhs) const{
+operator/ (const f32& rhs) const{
 	Assert(rhs != 0, "mat3 elements cant be divided by zero");
 	mat3 newMatrix(*this);
-	for(int i = 0; i < 9; ++i){
+	for(u32 i = 0; i < 9; ++i){
 		newMatrix.arr[i] /= rhs;
 	}
 	return newMatrix;
@@ -101,9 +101,9 @@ operator/ (const float& rhs) const{
 
 //scalar division and assignment
 inline void mat3::
-operator/=(const float& rhs){
+operator/=(const f32& rhs){
 	Assert(rhs != 0, "mat3 elements cant be divided by zero");
-	for(int i = 0; i < 9; ++i){
+	for(u32 i = 0; i < 9; ++i){
 		arr[i] /= rhs;
 	}
 }
@@ -112,7 +112,7 @@ operator/=(const float& rhs){
 inline mat3 mat3::
 operator+ (const mat3& rhs) const{
 	mat3 newMatrix(*this);
-	for(int i = 0; i < 9; ++i){
+	for(u32 i = 0; i < 9; ++i){
 		newMatrix.arr[i] += rhs.arr[i];
 	}
 	return newMatrix;
@@ -121,7 +121,7 @@ operator+ (const mat3& rhs) const{
 //element-wise addition and assignment
 inline void mat3::
 operator+=(const mat3& rhs){
-	for(int i = 0; i < 9; ++i){
+	for(u32 i = 0; i < 9; ++i){
 		this->arr[i] += rhs.arr[i];
 	}
 }
@@ -130,7 +130,7 @@ operator+=(const mat3& rhs){
 inline mat3 mat3::
 operator- (const mat3& rhs) const{
 	mat3 newMatrix(*this);
-	for(int i = 0; i < 9; ++i){
+	for(u32 i = 0; i < 9; ++i){
 		newMatrix.arr[i] -= rhs.arr[i];
 	}
 	return newMatrix;
@@ -139,7 +139,7 @@ operator- (const mat3& rhs) const{
 //element-wise substraction and assignment
 inline void mat3::
 operator-=(const mat3& rhs){
-	for(int i = 0; i < 9; ++i){
+	for(u32 i = 0; i < 9; ++i){
 		this->arr[i] -= rhs.arr[i];
 	}
 }
@@ -148,9 +148,9 @@ operator-=(const mat3& rhs){
 inline mat3 mat3::
 operator* (const mat3& rhs) const{
 	mat3 newMatrix;
-	for(int i = 0; i < 3; ++i){ //i=m
-		for(int j = 0; j < 3; ++j){ //j=p
-			for(int k = 0; k < 3; ++k){ //k=n
+	for(u32 i = 0; i < 3; ++i){ //i=m
+		for(u32 j = 0; j < 3; ++j){ //j=p
+			for(u32 k = 0; k < 3; ++k){ //k=n
 				newMatrix.arr[3 * i + j] += this->arr[3 * i + k] * rhs.arr[3 * k + j];
 			}
 		}
@@ -161,9 +161,9 @@ operator* (const mat3& rhs) const{
 inline void mat3::
 operator*=(const mat3& rhs){
 	mat3 newMatrix;
-	for(int i = 0; i < 3; ++i){ //i=m
-		for(int j = 0; j < 3; ++j){ //j=p
-			for(int k = 0; k < 3; ++k){ //k=n
+	for(u32 i = 0; i < 3; ++i){ //i=m
+		for(u32 j = 0; j < 3; ++j){ //j=p
+			for(u32 k = 0; k < 3; ++k){ //k=n
 				newMatrix.arr[3 * i + j] += this->arr[3 * i + k] * rhs.arr[3 * k + j];
 			}
 		}
@@ -175,7 +175,7 @@ operator*=(const mat3& rhs){
 inline mat3 mat3::
 operator^ (const mat3& rhs) const{
 	mat3 newMatrix(*this);
-	for(int i = 0; i < 9; ++i){
+	for(u32 i = 0; i < 9; ++i){
 		newMatrix.arr[i] *= rhs.arr[i];
 	}
 	return newMatrix;
@@ -184,7 +184,7 @@ operator^ (const mat3& rhs) const{
 //element-wise multiplication and assignment
 inline void mat3::
 operator^=(const mat3& rhs){
-	for(int i = 0; i < 9; ++i){
+	for(u32 i = 0; i < 9; ++i){
 		this->arr[i] *= rhs.arr[i];
 	}
 }
@@ -193,7 +193,7 @@ operator^=(const mat3& rhs){
 inline mat3 mat3::
 operator% (const mat3& rhs) const{
 	mat3 newMatrix(*this);
-	for(int i = 0; i < 9; ++i){
+	for(u32 i = 0; i < 9; ++i){
 		Assert(rhs.arr[i] != 0, "mat3 element-wise division doesnt allow zeros in the right matrix");
 		newMatrix.arr[i] /= rhs.arr[i];
 	}
@@ -203,19 +203,19 @@ operator% (const mat3& rhs) const{
 //element-wise division and assignment
 inline void mat3::
 operator%=(const mat3& rhs){
-	for(int i = 0; i < 9; ++i){
+	for(u32 i = 0; i < 9; ++i){
 		Assert(rhs.arr[i] != 0, "mat3 element-wise division doesnt allow zeros in the right matrix");
 		this->arr[i] /= rhs.arr[i];
 	}
 }
 
-inline bool mat3::
+inline b32 mat3::
 operator==(const mat3& rhs) const{ 
-	for(int i = 0; i < 9; ++i){ if(abs(this->arr[i] - rhs.arr[i]) > M_EPSILON) return false; }
+	for(u32 i = 0; i < 9; ++i){ if(abs(this->arr[i] - rhs.arr[i]) > M_EPSILON) return false; }
 	return true;
 }
 
-inline bool mat3::
+inline b32 mat3::
 operator!=(const mat3& rhs) const{ 
 	return !(*this == rhs); 
 }
@@ -229,14 +229,14 @@ operator!=(const mat3& rhs) const{
 inline mat3 mat3::
 Transpose() const{
 	mat3 newMatrix;
-	for(int i = 0; i < 9; ++i){
+	for(u32 i = 0; i < 9; ++i){
 		newMatrix.arr[i] = arr[3 * (i%3) + (i/3)];
 	}
 	return newMatrix;
 }
 
 //returns the determinant of the matrix
-inline float mat3::
+inline f32 mat3::
 Determinant() const{
 	//aei + bfg + cdh - ceg - bdi - afh
 	return 
@@ -249,13 +249,13 @@ Determinant() const{
 }
 
 //returns the determinant of this matrix without the specified row and column
-inline float mat3::
-Minor(int row, int col) const{
-	float arr[4];
-	int index = 0;
-	for(int i = 0; i < 3; ++i){
+inline f32 mat3::
+Minor(u32 row, u32 col) const{
+	f32 arr[4]{0.f};
+	u32 index = 0;
+	for(u32 i = 0; i < 3; ++i){
 		if(i == row) continue;
-		for(int j = 0; j < 3; ++j){
+		for(u32 j = 0; j < 3; ++j){
 			if(j == col) continue;
 			arr[index++] = arr[3 * i + j];
 		}
@@ -266,8 +266,8 @@ Minor(int row, int col) const{
 }
 
 //returns the cofactor (minor with adjusted sign based on location in matrix) at given row and column
-inline float mat3::
-Cofactor(int row, int col) const{
+inline f32 mat3::
+Cofactor(u32 row, u32 col) const{
 	if((row + col) % 2){
 		return -Minor(row, col);
 	} else {
@@ -279,28 +279,28 @@ Cofactor(int row, int col) const{
 inline mat3 mat3::
 Adjoint() const{
 	mat3 newMatrix = mat3();
-	int index = 0;
-	for(int i = 0; i < 3; ++i){
-		for(int j = 0; j < 3; ++j){
+	u32 index = 0;
+	for(u32 i = 0; i < 3; ++i){
+		for(u32 j = 0; j < 3; ++j){
 			newMatrix.arr[index++] = this->Cofactor(i, j);
 		}
 	}
 	return newMatrix.Transpose();
 }
 
-//returns the adjoint divided by the determinant
+//returns the adjou32 divided by the determinant
 inline mat3 mat3::
 Inverse() const{
-	float det = this->Determinant();
+	f32 det = this->Determinant();
 	Assert(det, "mat3 inverse does not exist if determinant is zero");
 	return this->Adjoint() / det;
 }
 
 //returns a LH rotation transformation matrix based on input in degrees
 inline mat3 mat3::
-RotationMatrixX(float angle){
+RotationMatrixX(f32 angle){
 	angle = Radians(angle);
-	float c = cosf(angle); float s = sinf(angle);
+	f32 c = cosf(angle); f32 s = sinf(angle);
 	return mat3(1,  0, 0,
 				0,  c, s,
 				0, -s, c);
@@ -308,9 +308,9 @@ RotationMatrixX(float angle){
 
 //returns a LH rotation transformation matrix based on input in degrees
 inline mat3 mat3::
-RotationMatrixY(float angle){
+RotationMatrixY(f32 angle){
 	angle = Radians(angle);
-	float c = cosf(angle); float s = sinf(angle);
+	f32 c = cosf(angle); f32 s = sinf(angle);
 	return mat3(c, 0, -s,
 				0, 1,  0,
 				s, 0,  c);
@@ -318,9 +318,9 @@ RotationMatrixY(float angle){
 
 //returns a LH rotation transformation matrix based on input in degrees
 inline mat3 mat3::
-RotationMatrixZ(float angle){
+RotationMatrixZ(f32 angle){
 	angle = Radians(angle);
-	float c = cosf(angle); float s = sinf(angle);
+	f32 c = cosf(angle); f32 s = sinf(angle);
 	return mat3(c,  s, 0,
 				-s, c, 0,
 				0,  0, 1);
@@ -328,14 +328,14 @@ RotationMatrixZ(float angle){
 
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
 inline mat3 mat3::
-RotationMatrix(float x, float y, float z){
+RotationMatrix(f32 x, f32 y, f32 z){
 	x = Radians(x); y = Radians(y); z = Radians(z);
-	float cX = cosf(x); float sX = sinf(x);
-	float cY = cosf(y); float sY = sinf(y);
-	float cZ = cosf(z); float sZ = sinf(z);
-	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
-	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
-	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
+	f32 cX = cosf(x); f32 sX = sinf(x);
+	f32 cY = cosf(y); f32 sY = sinf(y);
+	f32 cZ = cosf(z); f32 sZ = sinf(z);
+	f32 r00 = cZ*cY;            f32 r01 = cY*sZ;            f32 r02 = -sY;
+	f32 r10 = cZ*sX*sY - cX*sZ; f32 r11 = cZ*cX + sX*sY*sZ; f32 r12 = sX*cY;
+	f32 r20 = cZ*cX*sY + sX*sZ; f32 r21 = cX*sY*sZ - cZ*sX; f32 r22 = cX*cY;
 	return mat3(r00, r01, r02,
 				r10, r11, r12,
 				r20, r21, r22);

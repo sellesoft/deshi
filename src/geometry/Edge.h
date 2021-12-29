@@ -12,8 +12,8 @@ struct Edge {
 	vec2 p[2];
 	//if lead is true then p[1] is the right most point.
 	//ditto for high but on y
-	bool lead = false;
-	bool high = false;
+	b32 lead = false;
+	b32 high = false;
 	
 	Edge() {}
 	Edge(vec2 point1, vec2 point2) {
@@ -34,17 +34,17 @@ struct Edge {
 		else { high = true; }
 	}
 	
-	float slope() {
+	f32 slope() {
 		if (p[1].x == p[0].x || p[1].y == p[0].y) { return 0; }
 		else { return (p[1].y - p[0].y) / (p[1].x - p[0].x); }
 	}
 	
 	//y intercept and range/domain checks
-	float ycross() { return p[!lead].y - slope() * p[!lead].x; }
-	bool within_range(vec2 point)  { return (point.y <= p[high].y&& point.y >= p[!high].y); }
-	bool within_range(float y_point)  { return (y_point <= p[high].y&& y_point >= p[!high].y); }
-	bool within_domain(vec2 point) { return (point.x <= p[lead].x&& point.x >= p[!lead].x); }
-	bool within_domain(float x_point) { return (x_point <= p[lead].x&& x_point >= p[!lead].x); }
+	f32 ycross() { return p[!lead].y - slope() * p[!lead].x; }
+	b32 within_range(vec2 point)   { return (point.y <= p[high].y && point.y >= p[!high].y); }
+	b32 within_range(f32 y_point)  { return (y_point <= p[high].y && y_point >= p[!high].y); }
+	b32 within_domain(vec2 point)  { return (point.x <= p[lead].x && point.x >= p[!lead].x); }
+	b32 within_domain(f32 x_point) { return (x_point <= p[lead].x && x_point >= p[!lead].x); }
 	
 	//returns edge's normal
 	//returns a normal rotated -90
@@ -58,36 +58,36 @@ struct Edge {
 	}
 	
 	//is a point on, above, or below edge
-	bool on_edge(vec2 point) {
+	b32 on_edge(vec2 point) {
 		if ((point.y == slope() * point.x + ycross()) && within_domain(point)) { return true; }
 		else { return false; }
 	}
 	
 	//these signs may look wrong but its to accomidate for the top left coord (maybe)
-	bool above_edge(vec2 point) {
+	b32 above_edge(vec2 point) {
 		int bp = 0;
 		if (point.y < slope() * point.x + ycross()) { return true; }
 		else { return false; }
 	}
 	
-	bool below_edge(vec2 point) {
+	b32 below_edge(vec2 point) {
 		if (point.y > slope() * point.x + ycross()) { return true; }
 		else { return false; }
 	}
 	
-	bool right_of_edge(vec2 point) {
+	b32 right_of_edge(vec2 point) {
 		if ((point.x > (point.y - ycross()) / slope())) { return true; }
 		else { return false; }
 	}
 	
-	bool left_of_edge(vec2 point) {
+	b32 left_of_edge(vec2 point) {
 		if ((point.x < (point.y - ycross()) / slope())) { return true; }
 		else { return false; }
 	}
 	
 	//checks if two edges intersect by finding their line representation's
 	//intersection and then seeing if that point lies on either of them
-	bool edge_intersect(Edge e) {
+	b32 edge_intersect(Edge e) {
 		if (slope() == e.slope() && (!on_edge(e.p[0]) || !on_edge(e.p[1]))) { return false; }
 		vec2 cross = Math::LineIntersect2(slope(), ycross(), e.slope(), e.ycross());
 		if (within_domain(cross) && within_range(cross) &&
@@ -101,9 +101,9 @@ struct Edge3D {
 	vec3 p[2];
 	//if lead is true then p[1] is the right most point.
 	//ditto for high but on y and for deep on z
-	bool lead = false;
-	bool high = false;
-	bool deep = false;
+	b32 lead = false;
+	b32 high = false;
+	b32 deep = false;
 	Entity* e = nullptr;
 	
 	Edge3D() {}
@@ -118,12 +118,12 @@ struct Edge3D {
 		else { deep = true; }
 	}
 	
-	bool within_range(vec3 point)  { return (point.y <= p[high].y && point.y >= p[!high].y); }
-	bool within_range(float y_point)  { return (y_point <= p[high].y && y_point >= p[!high].y); }
-	bool within_domain(vec3 point) { return (point.x <= p[lead].x && point.x >= p[!lead].x); }
-	bool within_domain(float x_point) { return (x_point <= p[lead].x && x_point >= p[!lead].x); }
-	bool within_depth(vec3 point)  { return (point.z <= p[deep].z && point.z >= p[!deep].z); }
-	bool within_depth(float z_point)  { return (z_point <= p[deep].z && z_point >= p[!deep].z); }
+	b32 within_range(vec3 point)   { return (point.y <= p[high].y && point.y >= p[!high].y); }
+	b32 within_range(f32 y_point)  { return (y_point <= p[high].y && y_point >= p[!high].y); }
+	b32 within_domain(vec3 point)  { return (point.x <= p[lead].x && point.x >= p[!lead].x); }
+	b32 within_domain(f32 x_point) { return (x_point <= p[lead].x && x_point >= p[!lead].x); }
+	b32 within_depth(vec3 point)   { return (point.z <= p[deep].z && point.z >= p[!deep].z); }
+	b32 within_depth(f32 z_point)  { return (z_point <= p[deep].z && z_point >= p[!deep].z); }
 	
 	vec3 edge_midpoint() {
 		return vec3((p[0].x + p[1].x) / 2, (p[0].y + p[1].y) / 2, (p[0].z + p[1].z) / 2);
@@ -131,7 +131,7 @@ struct Edge3D {
 	
 	vec3 direction() { return p[1] - p[0]; }
 	
-	bool point_on_edge(vec3 point) {
+	b32 point_on_edge(vec3 point) {
 		if (/*p[0] == point  || p[1] == point ||*/
 			within_range(point) && within_domain(point) && within_depth(point) &&
 			Math::round(direction().normalized()) == Math::round(point.normalized())) {

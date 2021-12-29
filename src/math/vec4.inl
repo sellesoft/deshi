@@ -7,7 +7,7 @@
 //////////////////////
 
 inline vec4::
-vec4(float _x, float _y, float _z, float _w) {
+vec4(f32 _x, f32 _y, f32 _z, f32 _w) {
 #if DESHI_USE_SSE
 	sse = _mm_setr_ps(_x, _y, _z, _w);
 #else
@@ -32,7 +32,7 @@ vec4(const vec4& v) {
 
 //!TestMe
 inline vec4::
-vec4(float* ptr){ 
+vec4(f32* ptr){ 
 #if DESHI_USE_SSE
 	sse = _mm_loadr_ps(ptr);
 #else
@@ -67,7 +67,7 @@ operator =  (const vec4& rhs) {
 }
 
 inline vec4 vec4::
-operator *  (const float& rhs) const {
+operator *  (const f32& rhs) const {
 	vec4 result;
 #if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
@@ -82,7 +82,7 @@ operator *  (const float& rhs) const {
 }
 
 inline void vec4::
-operator *= (const float& rhs) {
+operator *= (const f32& rhs) {
 #if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
 	sse = _mm_mul_ps(sse, scalar);
@@ -95,7 +95,7 @@ operator *= (const float& rhs) {
 }
 
 inline vec4 vec4::
-operator /  (const float& rhs) const {
+operator /  (const f32& rhs) const {
 	vec4 result;
 #if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
@@ -110,7 +110,7 @@ operator /  (const float& rhs) const {
 }
 
 inline void vec4::
-operator /= (const float& rhs) {
+operator /= (const f32& rhs) {
 #if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
 	sse = _mm_div_ps(sse, scalar);
@@ -294,9 +294,9 @@ copy() const {
 	return *this;
 }
 
-inline float vec4::
+inline f32 vec4::
 dot(const vec4& rhs) const {
-	float result;
+	f32 result;
 #if DESHI_USE_SSE
 	__m128 temp0 = _mm_mul_ps(sse, rhs.sse); //multiply together
 	__m128 temp1 = _mm_shuffle_ps(temp0, temp0, _MM_SHUFFLE(2, 3, 0, 1));
@@ -310,12 +310,12 @@ dot(const vec4& rhs) const {
 	return result;
 }
 
-inline float vec4::
+inline f32 vec4::
 magSq() const {
 	return dot(*this);
 }
 
-inline float vec4::
+inline f32 vec4::
 mag() const {
 	return Sqrt(magSq());
 }

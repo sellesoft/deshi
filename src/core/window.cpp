@@ -1,4 +1,4 @@
-﻿local bool _resized = false;
+﻿local b32 _resized = false;
 local int _width, _height, _x, _y;
 local int opengl_version;
 local b32 block_mouse_pos_change = false;
@@ -366,14 +366,14 @@ void Window::SetCursor(CursorType curtype) {
 	}
 }
 
-void Window::UpdateRawInput(bool rawInput){
+void Window::UpdateRawInput(b32 rawInput){
 	if (glfwRawMouseMotionSupported()){
 		this->rawInput = rawInput;
 		glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, rawInput);
 	}
 }
 
-void Window::UpdateResizable(bool resizable){
+void Window::UpdateResizable(b32 resizable){
 	this->resizable = resizable;
 	glfwSetWindowAttrib(this->window, GLFW_RESIZABLE, resizable);
 }

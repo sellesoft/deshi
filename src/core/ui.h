@@ -321,7 +321,7 @@ struct UIDrawCmd {
 	b32  overrideScissorRules = false;
 
 	//for matching draw cmds in debug
-	u32 hash = -1;
+	u32 hash = MAX_U32;
 };
 
 enum UIItemType : u32 {
@@ -561,7 +561,7 @@ namespace UI {
 	FORCE_INLINE vec2 CalcTextSize(const string& text)  { return CalcTextSize(cstring {text.str,u64(text.count)}); }
 	FORCE_INLINE vec2 CalcTextSize(const wstring& text) { return CalcTextSize(wcstring{text.str,u64(text.count) }); }
 	FORCE_INLINE vec2 CalcTextSize(const char* text)    { return CalcTextSize(cstring {(char*)text,u64(strlen(text))}); }
-	FORCE_INLINE vec2 CalcTextSize(const wchar_t* text) { return CalcTextSize(wcstring{(wchar_t*)text,u64(wcslen(text)) }); }
+	FORCE_INLINE vec2 CalcTextSize(const wchar* text) { return CalcTextSize(wcstring{(wchar*)text,u64(wcslen(text)) }); }
 	UIStyle&  GetStyle();
 	UIWindow* GetWindow();
 	UIItem*   GetLastItem(u32 layeroffset = 0);
@@ -621,8 +621,8 @@ namespace UI {
 	//// text ////
 	void Text(const char* text, UITextFlags flags = 0);
 	void Text(const char* text, vec2 pos, UITextFlags flags = 0);
-	void Text(const wchar_t* text, UITextFlags flags = 0);
-	void Text(const wchar_t* text, vec2 pos, UITextFlags flags = 0);
+	void Text(const wchar* text, UITextFlags flags = 0);
+	void Text(const wchar* text, vec2 pos, UITextFlags flags = 0);
 	void TextF(const char* fmt, ...);
 	
 	

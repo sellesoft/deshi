@@ -84,7 +84,7 @@ b10tou64(cstring s, cstring* next = 0){
     
     while(*s.str != '\0' && idx < s.count){
         if(!isnumber(*s.str)) break;
-        result = (result*10) + (*s.str - '0');
+        result = (result*10) + (*s.str - (upt)'0');
         s.str++; idx++;
     }
     
@@ -125,11 +125,11 @@ b16tou64(cstring s, cstring* next = 0){
     
     while(*s.str != '\0' && idx < s.count){
         if      (*s.str >= '0' && *s.str <= '9'){
-            result = (result*16) + (*s.str - '0');
+            result = (result*16) + (*s.str - (upt)'0');
         }else if(*s.str >= 'A' && *s.str <= 'F'){
-            result = (result*16) + (*s.str - 'A') + 10;
+            result = (result*16) + (*s.str - (upt)'A') + 10;
         }else if(*s.str >= 'a' && *s.str <= 'f'){
-            result = (result*16) + (*s.str - 'a') + 10;
+            result = (result*16) + (*s.str - (upt)'a') + 10;
         }else{
             break;
         }
