@@ -398,4 +398,20 @@ if(t){ vect[0] = v; return vr; } \
 else return vr; }\
 ())
 
+
+template<> FORCE_INLINE vec2 Min(vec2 a, vec2 b) { return vec2(Min(a.x, b.x), Min(a.y, b.y));}
+template<> FORCE_INLINE vec2 Max(vec2 a, vec2 b) { return vec2(Max(a.x, b.x), Max(a.y, b.y)); }
+template<> FORCE_INLINE vec2 Clamp(vec2 value, vec2 min, vec2 max) { return vec2(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y)); };
+template<> FORCE_INLINE vec2 ClampMax(vec2 value, vec2 max) { return vec2(ClampMax(value.x, max.x), ClampMax(value.y, max.y)); };template<> FORCE_INLINE vec2 ClampMin(vec2 value, vec2 min) { return vec2(ClampMin(value.x, min.x), ClampMin(value.y, min.y)); };
+
+template<> FORCE_INLINE vec3 Min(vec3 a, vec3 b) { return vec3(Min(a.x, b.x), Min(a.y, b.y), Min(a.z, b.z)); }
+template<> FORCE_INLINE vec3 Max(vec3 a, vec3 b) { return vec3(Max(a.x, b.x), Max(a.y, b.y), Max(a.z, b.z)); }
+template<> FORCE_INLINE vec3 Clamp(vec3 value, vec3 min, vec3 max) { return vec3(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y), Clamp(value.z, min.z, max.z)); };
+template<> FORCE_INLINE vec3 ClampMin(vec3 value, vec3 min) { return vec3(ClampMin(value.x, min.x), ClampMin(value.y, min.y), ClampMin(value.z, min.z)); };
+template<> FORCE_INLINE vec3 ClampMax(vec3 value, vec3 max) { return vec3(ClampMax(value.x, max.x), ClampMax(value.y, max.y), ClampMax(value.z, max.z)); };
+template<> FORCE_INLINE vec4 Min(vec4 a, vec4 b) { return vec4(Min(a.x, b.x), Min(a.y, b.y), Min(a.z, b.z), Min(a.w, b.w)); }
+template<> FORCE_INLINE vec4 Max(vec4 a, vec4 b) { return vec4(Max(a.x, b.x), Max(a.y, b.y), Max(a.z, b.z), Max(a.w, b.w)); }
+template<> FORCE_INLINE vec4 Clamp(vec4 value, vec4 min, vec4 max) { return vec4(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y), Clamp(value.z, min.z, max.z), Clamp(value.w, min.w, max.w)); };
+template<> FORCE_INLINE vec4 ClampMin(vec4 value, vec4 min) { return vec4(ClampMin(value.x, min.x), ClampMin(value.y, min.y), ClampMin(value.z, min.z), ClampMin(value.w, min.w)); };
+template<> FORCE_INLINE vec4 ClampMax(vec4 value, vec4 max) { return vec4(ClampMax(value.x, max.x), ClampMax(value.y, max.y), ClampMax(value.z, max.z), ClampMax(value.w, max.w)); };
 #endif //DESHI_VECTOR_H
