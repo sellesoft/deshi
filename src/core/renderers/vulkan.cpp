@@ -1533,7 +1533,7 @@ UpdateUniformBuffers(){
 		//calculate light ViewProjection for shadow map based on first light
 		uboVSoffscreen.values.lightVP = 
 			Math::LookAtMatrix(vkLights[0].toVec3(), vec3::ZERO).Inverse() * 
-			Math::PerspectiveProjectionMatrix(settings.shadowResolution, settings.shadowResolution, 90.0f, settings.shadowNearZ, settings.shadowFarZ);
+			Math::PerspectiveProjectionMatrix((f32)settings.shadowResolution, (f32)settings.shadowResolution, 90.0f, settings.shadowNearZ, settings.shadowFarZ);
 		
 		void* data;
 		vkMapMemory(device, uboVSoffscreen.bufferMemory, 0, sizeof(uboVSoffscreen.values), 0, &data);{
@@ -1544,7 +1544,7 @@ UpdateUniformBuffers(){
 	{//update scene vertex shader ubo
 		uboVS.values.time = DeshTime->totalTime;
 		std::copy(vkLights, vkLights+10, uboVS.values.lights);
-		uboVS.values.screen = vec2(extent.width, extent.height);
+		uboVS.values.screen = vec2((f32)extent.width, (f32)extent.height);
 		uboVS.values.mousepos = vec2(DeshInput->mousePos.x, DeshInput->mousePos.y);
 		if(initialized) uboVS.values.mouseWorld = Math::ScreenToWorld(DeshInput->mousePos, uboVS.values.proj, uboVS.values.view, DeshWindow->dimensions);
 		uboVS.values.enablePCF = settings.shadowPCF;
@@ -3060,10 +3060,10 @@ BuildCommands(){
 				forX(layer, UI_LAYERS){
 					if(uiCmdCounts[layer] > 1){
 						forX(cmd_idx, uiCmdCounts[layer]){
-							scissor.offset.x = uiCmdArrays[layer][cmd_idx].scissorOffset.x;
-							scissor.offset.y = uiCmdArrays[layer][cmd_idx].scissorOffset.y;
-							scissor.extent.width = uiCmdArrays[layer][cmd_idx].scissorExtent.x;
-							scissor.extent.height = uiCmdArrays[layer][cmd_idx].scissorExtent.y;
+							scissor.offset.x = (u32)uiCmdArrays[layer][cmd_idx].scissorOffset.x;
+							scissor.offset.y = (u32)uiCmdArrays[layer][cmd_idx].scissorOffset.y;
+							scissor.extent.width = (u32)uiCmdArrays[layer][cmd_idx].scissorExtent.x;
+							scissor.extent.height = (u32)uiCmdArrays[layer][cmd_idx].scissorExtent.y;
 							vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 							
 							if(uiCmdArrays[layer][cmd_idx].descriptorSet){
@@ -3433,7 +3433,7 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 		
 		normav = p12.normalized();
 		normav = Math::vec2RotateByAngle(-Degrees(ang) / 2, normav);
-		normav *= flip;
+		normav *= (f32)flip;
 		
 		//this is where we calc how wide the thickness of the inner line is meant to be
 		normav = normav.normalized() * thickness / (2 * sinf(ang / 2));
@@ -3469,7 +3469,7 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 	
 	{//last point
 		vec2 ott = points[points.count - 1] - points[points.count - 2];
-		vec2 norm = vec2(ott.y, -ott.x).normalized() * flip;
+		vec2 norm = vec2(ott.y, -ott.x).normalized() * (f32)flip;
 		
 		vp[0].pos = points[points.count - 1] + norm * halfthick; vp[0].uv = { 0,0 }; vp[0].color = col;//PackColorU32(255, 50, 255, 255);
 		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;//PackColorU32(255, 50, 100, 255);
@@ -4296,7 +4296,7 @@ void Render::
 UseDefaultViewProjMatrix(vec3 position, vec3 rotation){
 	vec3 forward = (vec3::FORWARD * mat4::RotationMatrix(rotation)).normalized();
 	uboVS.values.view = Math::LookAtMatrix(position, position + forward).Inverse();
-	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix(DeshWindow->width, DeshWindow->height, 90, 1000, 0.1);
+	uboVS.values.proj = Camera::MakePerspectiveProjectionMatrix((f32)DeshWindow->width, (f32)DeshWindow->height, 90.f, 1000.f, 0.1f);
 }
 
 //////////////////

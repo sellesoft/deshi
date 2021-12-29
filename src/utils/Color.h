@@ -98,7 +98,7 @@ inline color::color(u32 _rgba){
 //// @operators ////
 ////////////////////
 inline void color::operator*=(float rhs){
-	r *= rhs; g *= rhs; b *= rhs;
+	r = u8((f32)r * rhs); g = u8((f32)g * rhs); b = u8((f32)b * rhs);
 }
 
 inline color color::operator* (color rhs) const{
@@ -110,11 +110,11 @@ inline bool color::operator==(color rhs) const{
 }
 
 inline color color::operator* (float rhs) const{
-	return color(r*rhs, g*rhs, b*rhs, a);
+	return color(u8((f32)r * rhs), u8((f32)g * rhs), u8((f32)b * rhs), a);
 }
 
 inline color color::operator/ (float rhs) const{
-	return color(r / rhs, g / rhs, b / rhs, a);
+	return color(u8((f32)r / rhs), u8((f32)g / rhs), u8((f32)b / rhs), a);
 }
 
 ///////////////////////////
