@@ -1,6 +1,6 @@
 namespace Cmd{
 	///////////////////
-	//// @internal ////
+	//// @u32ernal ////
 	///////////////////
 	local array<Command> commands;
 	local array<Alias> aliases;
@@ -34,8 +34,8 @@ namespace Cmd{
 		}CMDEND(rm, CmdArgument_String);
 		
 		CMDSTART(add, "Adds two numbers together"){
-			int i0 = atoi(args[0].str);
-			int i1 = atoi(args[1].str);
+			u32 i0 = atoi(args[0].str);
+			u32 i1 = atoi(args[1].str);
 			DeshConsole->AddLog(toStr(i0," + ",i1," = ", i0+i1));
 		}CMDEND(add, CmdArgument_S32, CmdArgument_S32);
 		
@@ -66,7 +66,7 @@ namespace Cmd{
 				DeshConsole->AddLog("Usage Format: command <required> [optional]");
 				return;
 			}
-			bool found = false;
+			b32 found = false;
 			forE(commands){
 				if(strcmp(it->name.str, args[0].str) == 0){
 					DeshConsole->AddLog(it->desc);
@@ -117,7 +117,7 @@ namespace Cmd{
 		}CMDEND(aliases);
 		
 		CMDSTART(window_display_mode, "Changes whether the window is in windowed(0), borderless(1), or fullscreen(2) mode"){
-			int mode = atoi(args[0].str);
+			u32 mode = atoi(args[0].str);
 			switch(mode){
 				case 0:{
 					DeshWindow->UpdateDisplayMode(DisplayMode_Windowed);
@@ -138,7 +138,7 @@ namespace Cmd{
 		}CMDEND(window_display_mode, CmdArgument_S32);
 		
 		CMDSTART(window_cursor_mode, "Changes whether the cursor is in default(0), first person(1), or hidden(2) mode"){
-			int mode = atoi(args[0].str);
+			u32 mode = atoi(args[0].str);
 			switch(mode){
 				case 0:{
 					DeshWindow->UpdateCursorMode(CursorMode_Default);
@@ -159,7 +159,7 @@ namespace Cmd{
 		}CMDEND(window_cursor_mode, CmdArgument_S32);
 		
 		CMDSTART(window_raw_input, "Changes whether the window uses raw input"){
-			int mode = atoi(args[0].str);
+			u32 mode = atoi(args[0].str);
 			switch(mode){
 				case 0:{
 					DeshWindow->UpdateRawInput(false);
@@ -176,7 +176,7 @@ namespace Cmd{
 		}CMDEND(window_raw_input, CmdArgument_S32);
 		
 		CMDSTART(window_resizable, "Changes whether the window is resizable"){
-			int mode = atoi(args[0].str);
+			u32 mode = atoi(args[0].str);
 			switch(mode){
 				case 0:{
 					DeshWindow->UpdateResizable(false);
@@ -234,23 +234,23 @@ namespace Cmd{
 		}CMDEND(mat_list);
 		
 		CMDSTART(mat_texture, "Changes a texture of a material"){
-			int matID = atoi(args[0].str);
-			int texSlot = atoi(args[1].str);
-			int texID = atoi(args[2].str);
+			u32 matID = atoi(args[0].str);
+			u32 texSlot = atoi(args[1].str);
+			u32 texID = atoi(args[2].str);
 			Storage::MaterialAt(matID)->textures[texSlot] = texID;
 			DeshConsole->AddLog(toStr("Updated material ",Storage::MaterialName(matID),"'s texture",texSlot,
 									  " to ",Storage::TextureName(texID)));
 		}CMDEND(mat_texture, CmdArgument_S32, CmdArgument_S32, CmdArgument_S32);
 		
 		CMDSTART(mat_shader, "Changes the shader of a material"){
-			int matID = atoi(args[0].str);
-			int shader = atoi(args[1].str);
+			u32 matID = atoi(args[0].str);
+			u32 shader = atoi(args[1].str);
 			Storage::MaterialAt(matID)->shader = (Shader)shader;
 			DeshConsole->AddLog(toStr("Updated material ",Storage::MaterialName(matID),"'s shader to ", ShaderStrings[shader]));
 		}CMDEND(mat_shader, CmdArgument_S32, CmdArgument_S32);
 		
 		CMDSTART(shader_reload, "Reloads specified shader"){
-			int id = atoi(args[0].str);
+			u32 id = atoi(args[0].str);
 			if(id == -1){
 				Render::ReloadAllShaders();
 				DeshConsole->AddLog("^c:magen^Reloaded all shaders^c^");
@@ -371,7 +371,7 @@ namespace Cmd{
 		
 		string command_name = string(args[0].str, args[0].count);
 		args.remove(0);
-		bool found = false;
+		b32 found = false;
 		forE(commands){
 			if(command_name == it->name){
 				if(it->func){

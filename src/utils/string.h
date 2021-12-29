@@ -50,23 +50,16 @@ struct string{
 	void   reserve(u32 _space);
 	void   clear();
 	void   erase(u32 idx);
-	//inserts at specified idx, pushing the CHARacter at idx and all following CHARacters to the right
-	void   insert(CHAR c, u32 idx);
-	//returns a copy of the CHARacter at idx
-	CHAR   at(u32 idx) const;
-	//returns a string including the start and end CHARacters, end equals the end of the string (size-1) if npos
-	string substr(u32 start, u32 end = npos) const;
+	void   insert(CHAR c, u32 idx); //inserts at specified idx, pushing the CHARacter at idx and all following CHARacters to the right
+	CHAR   at(u32 idx) const; //returns a copy of the CHARacter at idx
+	string substr(u32 start, u32 end = npos) const; //returns a string including the start and end CHARacters, end equals the end of the string (size-1) if npos
 	u32    findFirstStr(const string& s) const;
-	//returns first of CHAR from offset
-	u32    findFirstChar(CHAR c, u32 offset = 0) const;
-	//returns first of CHAR from offset backwards
-	u32    findFirstCharNot(CHAR c, u32 offset = 0) const;
+	u32    findFirstChar(CHAR c, u32 offset = 0) const; //returns first of CHAR from offset
+	u32    findFirstCharNot(CHAR c, u32 offset = 0) const; //returns first of CHAR from offset backwards
 	u32    findLastChar(CHAR c, u32 offset = 0) const;
 	u32    findLastCharNot(CHAR c) const;
-	//returns how many times a CHAR appears in the string
-	u32    CHARCount(CHAR c) const;
-	//returns a substring from the beginning to specifiec CHAR, not including the CHAR
-	string substrToChar(CHAR c) const;
+	u32    CHARCount(CHAR c) const; //returns how many times a CHAR appears in the string
+	string substrToChar(CHAR c) const; //returns a substring from the beginning to specifiec CHAR, not including the CHAR
 	b32 beginsWith(const string& s) const;
 	b32 endsWith(const string& s) const;
 	b32 contains(const string& s) const;
@@ -250,7 +243,7 @@ inline bool string::operator!=(const CHAR* s) const {
 //// @special operators ////
 ////////////////////////////
 inline std::ostream& operator<<(std::ostream& os, const string& m){
-	return os << m.str;
+	return os << (m.str ? m.str : "");
 }
 
 inline string operator+ (const string::CHAR* c, const string& s){
@@ -277,8 +270,8 @@ inline void string::clear(){
 
 inline void string::erase(u32 idx){
 	Assert(idx < count && idx >= 0);
-	if (count == 1) memset(str, 0, space);
-	else            memmove(str+idx, str+idx+1, (--count)*CHAR_SIZE);
+	if (count == 1) clear();
+	else memmove(str+idx, str+idx+1, (count-- - idx)*CHAR_SIZE);
 }
 
 inline void string::insert(CHAR c, u32 idx){

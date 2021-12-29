@@ -21,7 +21,7 @@ enum ConsoleState_ {
 
 
 struct Console{
-	bool IsOpen();
+	b32  IsOpen();
 	void ChangeState(ConsoleState new_state);
 	void AddLog(string input);
 	void LoggerMirror(string in, u32 charstart);

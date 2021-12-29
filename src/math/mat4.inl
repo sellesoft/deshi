@@ -7,7 +7,7 @@
 //////////////////////
 
 inline mat4::
-mat4(float x){
+mat4(f32 x){
 #if DESHI_USE_SSE
 	sse_row0 = _mm_set1_ps(x);
 	sse_row1 = _mm_set1_ps(x);
@@ -22,10 +22,10 @@ mat4(float x){
 }
 
 inline mat4::
-mat4(float _00, float _01, float _02, float _03,
-	 float _10, float _11, float _12, float _13,
-	 float _20, float _21, float _22, float _23,
-	 float _30, float _31, float _32, float _33){
+mat4(f32 _00, f32 _01, f32 _02, f32 _03,
+	 f32 _10, f32 _11, f32 _12, f32 _13,
+	 f32 _20, f32 _21, f32 _22, f32 _23,
+	 f32 _30, f32 _31, f32 _32, f32 _33){
 #if DESHI_USE_SSE
 	sse_row0 = _mm_setr_ps(_00, _01, _02, _03);
 	sse_row1 = _mm_setr_ps(_10, _11, _12, _13);
@@ -55,7 +55,7 @@ mat4(const mat4& m){
 }
 
 inline mat4::
-mat4(float* src){
+mat4(f32* src){
 #if DESHI_USE_SSE
 	sse_row0 = _mm_load_ps(src);
 	sse_row1 = _mm_load_ps(src+4);
@@ -83,13 +83,13 @@ inline const mat4 mat4::IDENTITY = mat4(1, 0, 0, 0,
 ///////////////////
 
 //element accessor: matrix(row,col)
-inline float& mat4::
+inline f32& mat4::
 operator()(u32 row, u32 col){
 	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
 	return arr[4*row + col];
 }
 
-inline float mat4::
+inline f32 mat4::
 operator()(u32 row, u32 col) const{
 	Assert(row < 4 && col < 4, "mat4 subscript out of bounds");
 	return arr[4*row + col];
@@ -113,7 +113,7 @@ operator= (const mat4& rhs){
 
 //scalar multiplication
 inline mat4 mat4::
-operator* (const float& rhs) const{
+operator* (const f32& rhs) const{
 	mat4 result;
 #if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
@@ -132,7 +132,7 @@ operator* (const float& rhs) const{
 
 //scalar multiplication and assignment
 inline void mat4::
-operator*=(const float& rhs){
+operator*=(const f32& rhs){
 #if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
 	sse_row0 = _mm_mul_ps(sse_row0, scalar);
@@ -149,7 +149,7 @@ operator*=(const float& rhs){
 
 //scalar division
 inline mat4 mat4::
-operator/ (const float& rhs) const{
+operator/ (const f32& rhs) const{
 	Assert(rhs != 0, "mat4 elements cant be divided by zero");
 	mat4 result;
 #if DESHI_USE_SSE
@@ -169,7 +169,7 @@ operator/ (const float& rhs) const{
 
 //scalar division and assignment
 inline void mat4::
-operator/=(const float& rhs){
+operator/=(const f32& rhs){
 	Assert(rhs != 0, "mat4 elements cant be divided by zero");
 #if DESHI_USE_SSE
 	__m128 scalar = _mm_set1_ps(rhs);
@@ -330,10 +330,10 @@ operator* (const mat4& rhs) const{
 	result.sse_row2 = LinearCombineSSE(sse_row2, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.sse_row3 = LinearCombineSSE(sse_row3, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 #else
-	//TODO(delle,OpMa) look into optimizing this by transposing to remove a loop, see Unreal Matrix.h
-	for(int i = 0; i < 4; ++i){ //i=m
-		for(int j = 0; j < 4; ++j){ //j=p
-			for(int k = 0; k < 4; ++k){ //k=n
+	//TODO(delle,OpMa) look u32o optimizing this by transposing to remove a loop, see Unreal Matrix.h
+	for(u32 i = 0; i < 4; ++i){ //i=m
+		for(u32 j = 0; j < 4; ++j){ //j=p
+			for(u32 k = 0; k < 4; ++k){ //k=n
 				result.arr[4 * i + j] += this->arr[4 * i + k] * rhs.arr[4 * k + j];
 			}
 		}
@@ -351,10 +351,10 @@ operator*=(const mat4& rhs){
 	result.sse_row2 = LinearCombineSSE(sse_row2, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 	result.sse_row3 = LinearCombineSSE(sse_row3, rhs.sse_row0, rhs.sse_row1, rhs.sse_row2, rhs.sse_row3);
 #else
-	//TODO(delle,OpMa) look into optimizing this by transposing to remove a loop, see Unreal Matrix.h
-	for(int i = 0; i < 4; ++i){ //i=m
-		for(int j = 0; j < 4; ++j){ //j=p
-			for(int k = 0; k < 4; ++k){ //k=n
+	//TODO(delle,OpMa) look u32o optimizing this by transposing to remove a loop, see Unreal Matrix.h
+	for(u32 i = 0; i < 4; ++i){ //i=m
+		for(u32 j = 0; j < 4; ++j){ //j=p
+			for(u32 k = 0; k < 4; ++k){ //k=n
 				result.arr[4 * i + j] += this->arr[4 * i + k] * rhs.arr[4 * k + j];
 			}
 		}
@@ -363,7 +363,7 @@ operator*=(const mat4& rhs){
 	*this = result;
 }
 
-inline bool mat4::
+inline b32 mat4::
 operator==(const mat4& rhs) const{ 
 #if DESHI_USE_SSE
 	if(!EpsilonEqualSSE(sse_row0, rhs.sse_row0)) return false;
@@ -371,14 +371,14 @@ operator==(const mat4& rhs) const{
 	if(!EpsilonEqualSSE(sse_row2, rhs.sse_row2)) return false;
 	if(!EpsilonEqualSSE(sse_row3, rhs.sse_row3)) return false;
 #else
-	for(int i = 0; i < 16; ++i){ 
+	for(u32 i = 0; i < 16; ++i){ 
 		if(abs(this->arr[i] - rhs.arr[i]) > M_EPSILON) return false; 
 	}
 #endif
 	return true;
 }
 
-inline bool mat4::
+inline b32 mat4::
 operator!=(const mat4& rhs) const{ 
 	return !(*this == rhs); 
 }
@@ -387,7 +387,7 @@ operator!=(const mat4& rhs) const{
 //// functions ////
 ///////////////////
 
-//converts the rows into columns and vice-versa
+//converts the rows u32o columns and vice-versa
 inline mat4 mat4::
 Transpose() const{
 	mat4 result;
@@ -395,7 +395,7 @@ Transpose() const{
 	result = *this;
 	_MM_TRANSPOSE4_PS(result.sse_row0, result.sse_row1, result.sse_row2, result.sse_row3);
 #else
-	for(int i = 0; i < 16; ++i){
+	for(u32 i = 0; i < 16; ++i){
 		result.arr[i] = arr[4 * (i%4) + (i/4)];
 	}
 #endif
@@ -403,7 +403,7 @@ Transpose() const{
 }
 
 //returns the determinant of the matrix
-inline float mat4::
+inline f32 mat4::
 Determinant() const{
 	return 
 		arr[ 0] * (arr[ 5] * (arr[10] * arr[15] - arr[11] * arr[14]) -
@@ -424,13 +424,13 @@ Determinant() const{
 }
 
 //returns the determinant of this matrix without the specified row and column
-inline float mat4::
-Minor(int row, int col) const{
-	float arr[9];
-	int index = 0;
-	for(int i = 0; i < 4; ++i){
+inline f32 mat4::
+Minor(u32 row, u32 col) const{
+	f32 arr[9]{ 0 };
+	u32 index = 0;
+	for(u32 i = 0; i < 4; ++i){
 		if(i == row) continue;
-		for(int j = 0; j < 4; ++j){
+		for(u32 j = 0; j < 4; ++j){
 			if(j == col) continue;
 			arr[index++] = arr[4 * i + j];
 		}
@@ -446,8 +446,8 @@ Minor(int row, int col) const{
 }
 
 //returns the cofactor (minor with adjusted sign based on location in matrix) at given row and column
-inline float mat4::
-Cofactor(int row, int col) const{
+inline f32 mat4::
+Cofactor(u32 row, u32 col) const{
 	if((row + col) % 2){
 		return -Minor(row, col);
 	} else {
@@ -459,22 +459,22 @@ Cofactor(int row, int col) const{
 inline mat4 mat4::
 Adjoint() const{
 	mat4 result;
-	int index = 0;
-	for(int i = 0; i < 4; ++i){
-		for(int j = 0; j < 4; ++j){
+	u32 index = 0;
+	for(u32 i = 0; i < 4; ++i){
+		for(u32 j = 0; j < 4; ++j){
 			result.arr[index++] = this->Cofactor(i, j);
 		}
 	}
 	return result.Transpose();
 }
 
-//returns the adjoint divided by the determinant
+//returns the adjou32 divided by the determinant
 inline mat4 mat4::
 Inverse() const{
 	mat4 result;
-#if DESHI_USE_SSE //NOTE probably right-handed matrix multiplication used internally here
+#if DESHI_USE_SSE //NOTE probably right-handed matrix multiplication used u32ernally here
 	//!ref https://lxjk.github.io/2017/09/03/Fast-4x4-Matrix-Inverse-with-SSE-SIMD-Explained.html
-	//2x2 sub matrices (ordered internally tl->tr->bl->br)
+	//2x2 sub matrices (ordered u32ernally tl->tr->bl->br)
 	__m128 A = _mm_movelh_ps(sse_row0, sse_row1); //top left
 	__m128 B = _mm_movehl_ps(sse_row1, sse_row0); //top right
 	__m128 C = _mm_movelh_ps(sse_row2, sse_row3); //bot left
@@ -486,7 +486,7 @@ Inverse() const{
 	__m128 detB = _mm_set1_ps(arr[ 2] * arr[ 7] - arr[ 3] * arr[ 6]);
 	__m128 detC = _mm_set1_ps(arr[ 8] * arr[13] - arr[ 9] * arr[12]);
 	__m128 detD = _mm_set1_ps(arr[10] * arr[15] - arr[11] * arr[14]);
-#  else //NOTE alternate method with using shuffle instead of float set
+#  else //NOTE alternate method with using shuffle instead of f32 set
 	__m128 detSub = _mm_sub_ps(__mm_mul_ps(SSEVecShuffle(sse_row0, sse_row2, 0,2,0,2), SSEVecShuffle(sse_row1, sse_row3, 1,3,1,3)), 
 							   __mm_mul_ps(SSEVecShuffle(sse_row0, sse_row2, 1,3,1,3), SSEVecShuffle(sse_row1, sse_row3, 0,2,0,2)));
 	__m128 detA = SSEVecSwizzle(detSub, 0,0,0,0);
@@ -530,18 +530,18 @@ Inverse() const{
 #  undef VecSwizzle
 #  undef VecShuffle
 #else
-	float det = this->Determinant();
+	f32 det = this->Determinant();
 	Assert(det, "mat4 inverse does not exist if determinant is zero");
-	result = this->Adjoint() / det;
+	result = this->Adjou32() / det;
 #endif
 	return result;
 }
 
 //returns a LH rotation transformation matrix in degrees around the X axis
 inline mat4 mat4::
-RotationMatrixX(float angle){
+RotationMatrixX(f32 angle){
 	angle = Radians(angle);
-	float c = cosf(angle); float s = sinf(angle);
+	f32 c = cosf(angle); f32 s = sinf(angle);
 	return mat4(1,  0, 0, 0,
 				0,  c, s, 0,
 				0, -s, c, 0,
@@ -550,9 +550,9 @@ RotationMatrixX(float angle){
 
 //returns a LH rotation transformation matrix in degrees around the Y axis
 inline mat4 mat4::
-RotationMatrixY(float angle){
+RotationMatrixY(f32 angle){
 	angle = Radians(angle);
-	float c = cosf(angle); float s = sinf(angle);
+	f32 c = cosf(angle); f32 s = sinf(angle);
 	return mat4(c, 0, -s, 0,
 				0, 1,  0, 0,
 				s, 0,  c, 0,
@@ -561,9 +561,9 @@ RotationMatrixY(float angle){
 
 //returns a LH rotation transformation matrix in degrees around the Z axis
 inline mat4 mat4::
-RotationMatrixZ(float angle){
+RotationMatrixZ(f32 angle){
 	angle = Radians(angle);
-	float c = cosf(angle); float s = sinf(angle);
+	f32 c = cosf(angle); f32 s = sinf(angle);
 	return mat4(c,  s, 0, 0,
 				-s, c, 0, 0,
 				0,  0, 1, 0,
@@ -572,14 +572,14 @@ RotationMatrixZ(float angle){
 
 //returns a pre-multiplied X->Y->Z LH rotation transformation matrix based on input in degrees
 inline mat4 mat4::
-RotationMatrix(float x, float y, float z){
+RotationMatrix(f32 x, f32 y, f32 z){
 	x = Radians(x); y = Radians(y); z = Radians(z);
-	float cX = cosf(x); float sX = sinf(x);
-	float cY = cosf(y); float sY = sinf(y);
-	float cZ = cosf(z); float sZ = sinf(z);
-	float r00 = cZ*cY;            float r01 = cY*sZ;            float r02 = -sY;
-	float r10 = cZ*sX*sY - cX*sZ; float r11 = cZ*cX + sX*sY*sZ; float r12 = sX*cY;
-	float r20 = cZ*cX*sY + sX*sZ; float r21 = cX*sY*sZ - cZ*sX; float r22 = cX*cY;
+	f32 cX = cosf(x); f32 sX = sinf(x);
+	f32 cY = cosf(y); f32 sY = sinf(y);
+	f32 cZ = cosf(z); f32 sZ = sinf(z);
+	f32 r00 = cZ*cY;            f32 r01 = cY*sZ;            f32 r02 = -sY;
+	f32 r10 = cZ*sX*sY - cX*sZ; f32 r11 = cZ*cX + sX*sY*sZ; f32 r12 = sX*cY;
+	f32 r20 = cZ*cX*sY + sX*sZ; f32 r21 = cX*sY*sZ - cZ*sX; f32 r22 = cX*cY;
 	return mat4(r00, r01, r02, 0,
 				r10, r11, r12, 0,
 				r20, r21, r22, 0,
@@ -588,7 +588,7 @@ RotationMatrix(float x, float y, float z){
 
 //returns a translation matrix where (3,0) = translation.x, (3,1) = translation.y, (3,2) = translation.z
 inline mat4 mat4::
-TranslationMatrix(float x, float y, float z){
+TranslationMatrix(f32 x, f32 y, f32 z){
 	return mat4(1, 0, 0, 0,
 				0, 1, 0, 0,
 				0, 0, 1, 0,
@@ -597,7 +597,7 @@ TranslationMatrix(float x, float y, float z){
 
 //returns a scale matrix where (0,0) = scale.x, (1,1) = scale.y, (2,2) = scale.z
 inline mat4 mat4::
-ScaleMatrix(float x, float y, float z){
+ScaleMatrix(f32 x, f32 y, f32 z){
 	return mat4(x, 0, 0, 0,
 				0, y, 0, 0,
 				0, 0, z, 0,

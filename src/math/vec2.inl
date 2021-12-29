@@ -8,7 +8,7 @@
 //////////////////////
 
 inline vec2::
-vec2(float inX, float inY) { 
+vec2(f32 inX, f32 inY) { 
 	x = inX; y = inY; 
 }
 
@@ -18,7 +18,7 @@ vec2(const vec2& v){
 }
 
 inline vec2::
-vec2(float* ptr){ 
+vec2(f32* ptr){ 
 	x = *ptr; y = *(ptr+1);
 }
 
@@ -45,22 +45,22 @@ operator=(const vec2& rhs) {
 }
 
 inline vec2 vec2::
-operator*(float rhs) const{
+operator*(f32 rhs) const{
 	return vec2(this->x * rhs, this->y * rhs);
 }
 
 inline void vec2::
-operator*=(float rhs) {
+operator*=(f32 rhs) {
 	this->x *= rhs; this->y *= rhs; ;
 }
 
 inline vec2 vec2::
-operator/(float rhs) const{
+operator/(f32 rhs) const{
 	return vec2(this->x / rhs, this->y / rhs);
 }
 
 inline void vec2::
-operator/=(float rhs) {
+operator/=(f32 rhs) {
 	this->x /= rhs; this->y /= rhs;
 }
 
@@ -138,7 +138,7 @@ copy() const{
 	return vec2(x, y);
 }
 
-inline float vec2::
+inline f32 vec2::
 dot(const vec2& rhs) const{
 	return (this->x * rhs.x) + (this->y * rhs.y);
 }
@@ -148,7 +148,7 @@ perp() const{
 	return vec2(-y, x);
 }
 
-inline float vec2::
+inline f32 vec2::
 mag() const{
 	return sqrt(x * x + y * y);
 }
@@ -169,8 +169,8 @@ normalized() const{
 }
 
 inline void vec2::
-clampMag(float min, float max) {
-	float mag = this->mag();
+clampMag(f32 min, f32 max) {
+	f32 mag = this->mag();
 	if (mag < min) {
 		this->normalize();
 		*this *= min;
@@ -182,8 +182,8 @@ clampMag(float min, float max) {
 }
 
 inline vec2 vec2::
-clampedMag(float min, float max) const{
-	float mag = this->mag();
+clampedMag(f32 min, f32 max) const{
+	f32 mag = this->mag();
 	if (mag < min) {
 		return normalized() * min;
 	}
@@ -195,7 +195,7 @@ clampedMag(float min, float max) const{
 	}
 }
 
-inline float vec2::
+inline f32 vec2::
 distanceTo(const vec2& rhs) const{
 	return (*this - rhs).mag();
 }
@@ -205,7 +205,7 @@ compOn(const vec2& rhs) const{
 	return rhs.normalized() * this->projectOn(rhs);
 }
 
-inline float vec2::
+inline f32 vec2::
 projectOn(const vec2& rhs) const{
 	if(this->mag() > M_EPSILON){
 		return this->dot(rhs) / this->mag();
@@ -240,22 +240,22 @@ yInvert() const{
 }
 
 inline vec2 vec2::
-xSet(float set) const{
+xSet(f32 set) const{
 	return vec2(set, y);
 }
 
 inline vec2 vec2::
-ySet(float set) const{
+ySet(f32 set) const{
 	return vec2(x, set);
 }
 
 inline vec2 vec2::
-xAdd(float add) const{
+xAdd(f32 add) const{
 	return vec2(x + add, y);
 }
 
 inline vec2 vec2::
-yAdd(float add) const{
+yAdd(f32 add) const{
 	return vec2(x, y + add);
 }
 

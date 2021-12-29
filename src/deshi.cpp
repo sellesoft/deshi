@@ -45,7 +45,6 @@ hotloadable UI
 IO TODOs
 --------
 add file reading (simple and smart)
-add file writing (simple and smart)
 add file/dir creation
 add file/dir renaming
 add file/dir existence checking
@@ -349,7 +348,7 @@ void deshi::cleanup(){
 	Logger::Cleanup();
 }
 
-bool deshi::shouldClose(){
+b32 deshi::shouldClose(){
 	glfwPollEvents(); //this maybe should be elsewhere, but i dont want to move glfw includes to deshi.h 
 	return glfwWindowShouldClose(deshi_window.window) || deshi_window.closeWindow;
 }

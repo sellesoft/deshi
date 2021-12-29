@@ -11,16 +11,16 @@ struct mat4;
 //TODO(delle,Ma) implement quaternions
 // https://github.com/erich666/GraphicsGems/blob/master/gemsiv/euler_angle/EulerAngles.c
 struct quat {
-	float x, y, z, w;
+	f32 x, y, z, w;
 	
 	quat() : x(0), y(0), z(0), w(1){}
-	quat(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w){}
+	quat(f32 _x, f32 _y, f32 _z, f32 _w) : x(_x), y(_y), z(_z), w(_w){}
 	
 	void operator= (const quat& rhs);
-	quat operator/ (float rhs) const;
-	void operator/=(float rhs);
-	quat operator* (float rhs) const;
-	void operator*=(float rhs);
+	quat operator/ (f32 rhs) const;
+	void operator/=(f32 rhs);
+	quat operator* (f32 rhs) const;
+	void operator*=(f32 rhs);
 	quat operator+ (const quat& rhs) const;
 	void operator+=(const quat& rhs);
 	quat operator- (const quat& rhs) const;
@@ -31,23 +31,23 @@ struct quat {
 	void operator/=(const quat& rhs);
 	quat operator- () const;
 	
-	void  normalize();
-	float mag() const;
-	float dot(const quat& rhs) const;
-	quat  normalized() const;
-	quat  conjugate() const;
-	quat  inverse() const;
+	void normalize();
+	f32  mag() const;
+	f32  dot(const quat& rhs) const;
+	quat normalized() const;
+	quat conjugate() const;
+	quat inverse() const;
 	
-	static quat QuatSlerp(quat from, quat to, float t);
+	static quat QuatSlerp(quat from, quat to, f32 t);
 	
 	//vector interactions
 	quat(const vec3& rotation);
-	quat(const vec3& axis, float theta);
+	quat(const vec3& axis, f32 theta);
 	vec3 operator* (const vec3& rhs) const;
 	vec3 toVec3() const;
-	static quat AxisAngleToQuat(const vec3& axis, float angle);
+	static quat AxisAngleToQuat(const vec3& axis, f32 angle);
 	static quat RotVecToQuat(const vec3& rotation);
-	static quat QuatSlerp(const vec3& from, const vec3& to, float t);
+	static quat QuatSlerp(const vec3& from, const vec3& to, f32 t);
 };
 
 
@@ -60,22 +60,22 @@ operator= (const quat& rhs){
 }
 
 inline quat quat::
-operator/ (float rhs) const{
+operator/ (f32 rhs) const{
 	return quat(x / rhs, y / rhs, z / rhs, w / rhs);
 }
 
 inline void quat::
-operator/=(float rhs){
+operator/=(f32 rhs){
 	x /= rhs; y /= rhs; z /= rhs; w /= rhs;
 }
 
 inline quat quat::
-operator* (float rhs) const{
+operator* (f32 rhs) const{
 	return quat(x * rhs, y * rhs, z * rhs, w * rhs);
 }
 
 inline void quat::
-operator*=(float rhs){
+operator*=(f32 rhs){
 	x *= rhs; y *= rhs; z *= rhs; w *= rhs;
 }
 
@@ -102,7 +102,7 @@ operator-=(const quat& rhs){
 //!ref: https://www.gamasutra.com/view/feature/131686/rotating_objects_using_quaternions.php?page=2
 inline quat quat::
 operator* (const quat& rhs) const{
-	float A, B, C, D, E, F, G, H;
+	f32 A, B, C, D, E, F, G, H;
 	A = (w + x) * (rhs.w + rhs.x);
 	B = (z - y) * (rhs.y - rhs.z);
 	C = (w - x) * (rhs.y + rhs.z);
@@ -121,7 +121,7 @@ inline void quat::
 operator*=(const quat& rhs){
 	x *= rhs.x; y *= rhs.y; z *= rhs.z; w *= rhs.w;
 	
-	float A, B, C, D, E, F, G, H;
+	f32 A, B, C, D, E, F, G, H;
 	A = (w + x) * (rhs.w + rhs.x);
 	B = (z - y) * (rhs.y - rhs.z);
 	C = (w - x) * (rhs.y + rhs.z);
@@ -158,7 +158,7 @@ operator- () const{
 ////////////////////
 //// @functions ////
 ////////////////////
-inline float quat::
+inline f32 quat::
 mag() const{
 	return sqrtf(x*x + y*y + z*z + w*w);
 }
@@ -183,7 +183,7 @@ inverse() const{
 	return this->conjugate() / this->normalized();
 }
 
-inline float quat::
+inline f32 quat::
 dot(const quat& rhs) const{
 	return x*rhs.x + y*rhs.y + z*rhs.z + w*rhs.w;
 }
@@ -192,18 +192,18 @@ dot(const quat& rhs) const{
 //it interpolates between two quaternions along the shortest arc on a sphere formed by them
 //taken from https://www.wikiwand.com/en/Slerp#/quat_Slerp
 inline quat quat::
-QuatSlerp(quat from, quat to, float t){
+QuatSlerp(quat from, quat to, f32 t){
 	from.normalize();
 	to.normalize();
 	
-	float dot = to.dot(from);
+	f32 dot = to.dot(from);
 	
 	if(dot < 0){
 		to = -to;
 		dot = -dot;
 	}
 	
-	const float dot_thresh = 0.9995f;
+	const f32 dot_thresh = 0.9995f;
 	
 	// calculate coefficients
 	if(dot > dot_thresh){

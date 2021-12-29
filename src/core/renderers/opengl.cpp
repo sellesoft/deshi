@@ -161,7 +161,7 @@ local s32  width  = 0;
 local s32  height = 0;
 local bool initialized  = false;
 local bool remake_window = false;
-local int  opengl_success = 0;
+local u32  opengl_success = 0;
 #define OPENGL_INFOLOG_SIZE 512
 local char opengl_infolog[OPENGL_INFOLOG_SIZE] = {};
 
@@ -207,11 +207,11 @@ local struct{ //vertex shader uniform buffer
 		vec4 viewPos;     //camera pos
 		vec2 screen;      //screen dimensions
 		vec2 mousepos;    //mouse screen pos
-		vec3 mouseWorld;  //point casted out from mouse 
+		vec3 mouseWorld;  //pou32 casted out from mouse 
 		f32  time;        //total time
 		mat4 lightVP;     //first light's view projection matrix
-		int  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
-		int  padding[3];
+		u32  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
+		u32  padding[3];
 	} values;
 } uboVS{};
 
@@ -231,8 +231,8 @@ local struct{ //twod vertex shader push constant
 	struct{ //32 bytes
 		vec2 scale;
 		vec2 translate;
-		int  font_idx;
-		int  padding[3];
+		u32  font_idx;
+		u32  padding[3];
 	} values;
 } push2D{};
 
@@ -281,7 +281,7 @@ PrintGl(u32 level, Args... args){
 }
 
 local void 
-DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, int len_args, ...){
+DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, u32 len_args, ...){
 	GLenum error_code = glad_glGetError();
 	if(error_code != GL_NO_ERROR){
 		const char* error_flag = 0;
@@ -813,7 +813,7 @@ void Render::DrawRect2D(vec2 pos, vec2 dimensions, f32 thickness, color color, u
 	DrawLine2D((pos + dimensions).xAdd(thickness/2), pos + dimensions.xSet(0).xAdd(-thickness), thickness, color, layer, scissorOffset, scissorExtent);
 }
 
-void Render::DrawCircle2D(vec2 pos, float radius, u32 subdivisions_int, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+void Render::DrawCircle2D(vec2 pos, f32 radius, u32 subdivisions_int, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	if(color.a == 0) return;
@@ -829,7 +829,7 @@ void Render::DrawCircle2D(vec2 pos, float radius, u32 subdivisions_int, color co
 	}
 }
 
-void Render::FillCircle2D(vec2 pos, float radius, u32 subdivisions_int, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+void Render::FillCircle2D(vec2 pos, f32 radius, u32 subdivisions_int, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	if(color.a == 0) return;
@@ -847,7 +847,7 @@ void Render::FillCircle2D(vec2 pos, float radius, u32 subdivisions_int, color co
 
 //TODO(sushi) implement special line drawing for straight lines, since we dont need to do the normal thing
 //when drawing them straight
-void Render::DrawLine2D(vec2 start, vec2 end, float thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+void Render::DrawLine2D(vec2 start, vec2 end, f32 thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	if(color.a == 0) return;
@@ -879,14 +879,14 @@ void Render::DrawLine2D(vec2 start, vec2 end, float thickness, color color, u32 
 	uiCmdArrays[layer][uiCmdCounts[layer] - 1].scissorOffset = scissorOffset;
 }
 
-void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0, 
 		   "Scissor Offset and Extent can't be negative");
 	Assert(points.count > 1, "Lines need at least 2 points");
 	if(color.a == 0 || thickness == 0) return;
 	CheckUICmdArrays(layer, 0, 0, scissorOffset, scissorExtent);
 	
-	float halfthick = thickness / 2;
+	f32 halfthick = thickness / 2;
 	
 	u32       col = color.rgba;
 	Vertex2*   vp = uiVertexArray + uiVertexCount;
@@ -912,8 +912,8 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 	}
 	
 	//in betweens
-	int flip = -1;
-	for(int i = 1; i < points.count - 1; i++, flip *= -1){
+	u32 flip = -1;
+	for(u32 i = 1; i < points.count - 1; i++, flip *= -1){
 		vec2 last, curr, next, norm;
 		
 		last = points[i - 1];
@@ -929,8 +929,8 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 		//norm12 = vec2{ p12.y, -p12.x } * flip,
 		normav;//((norm01 + norm12) / 2).normalized();
 		
-		float a = p01.mag(), b = p12.mag(), c = p02.mag();
-		float ang = Radians(Math::AngBetweenVectors(-p01, p12));
+		f32 a = p01.mag(), b = p12.mag(), c = p02.mag();
+		f32 ang = Radians(Math::AngBetweenVectors(-p01, p12));
 		
 		//this is the critical angle where the thickness of the 2 lines cause them to overlap at small angles
 		//if(fabs(ang) < 2 * atanf(thickness / (2 * p02.mag()))){
@@ -951,7 +951,7 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 		normavin.clampMag(0, thickness * 4);
 		
 		//set indicies by pattern
-		int ipidx = 6 * (i - 1) + 2;
+		u32 ipidx = 6 * (i - 1) + 2;
 		ip[ipidx + 0] =
 			ip[ipidx + 2] =
 			ip[ipidx + 4] =
@@ -981,7 +981,7 @@ void Render::DrawLines2D(array<vec2>& points, float thickness, color color, u32 
 		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;//PackColorU32(255, 50, 100, 255);
 		
 		//set final indicies by pattern
-		int ipidx = 6 * (points.count - 2) + 2;
+		u32 ipidx = 6 * (points.count - 2) + 2;
 		ip[ipidx + 0] = uiVertexCount;
 		ip[ipidx + 2] = uiVertexCount;
 		ip[ipidx + 3] = uiVertexCount + 1;
@@ -1135,7 +1135,7 @@ DrawText2D(Font* font, wcstring text, vec2 pos, color color, vec2 scale, u32 lay
 }
 
 void Render::
-DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, float alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, f32 alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	Assert(scissorOffset.x >= 0 && scissorOffset.y >= 0 && scissorExtent.x >= 0 && scissorExtent.y >= 0,
 		   "Scissor Offset and Extent can't be negative");
 	if(alpha == 0) return;
@@ -1160,7 +1160,7 @@ DrawTexture2D(Texture* texture, vec2 p0, vec2 p1, vec2 p2, vec2 p3, float alpha,
 }
 
 void Render::
-DrawTexture2D(Texture* texture, vec2 pos, vec2 size, float rotation, float alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
+DrawTexture2D(Texture* texture, vec2 pos, vec2 size, f32 rotation, f32 alpha, u32 layer, vec2 scissorOffset, vec2 scissorExtent){
 	vec2
 		center = (pos + size) / 2,
 	p0 = Math::vec2RotateByAngle(rotation, pos              - center) + center,
@@ -1466,7 +1466,7 @@ void Render::
 DrawPoly(array<vec3>& points, color color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
-	for(int i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
+	for(u32 i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
 	DrawLine(points[points.count-2], points[points.count-1], color);
 }
 
@@ -1474,7 +1474,7 @@ void Render::
 DrawPolyFilled(array<vec3>& points, color color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
-	for(int i=2; i<points.count-1; ++i) DrawTriangleFilled(points[i-2], points[i-1], points[i], color);
+	for(u32 i=2; i<points.count-1; ++i) DrawTriangleFilled(points[i-2], points[i-1], points[i], color);
 	DrawTriangle(points[points.count-3], points[points.count-2], points[points.count-1], color);
 }
 

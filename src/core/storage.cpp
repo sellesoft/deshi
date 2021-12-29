@@ -72,11 +72,11 @@ Init(){
 
 void Storage::
 Reset(){
-	for(int i=meshes.size()-1;    i>0; --i){ DeleteMesh(meshes[i]);        meshes.pop(); } 
-	for(int i=materials.size()-1; i>0; --i){ DeleteMaterial(materials[i]); materials.pop(); } 
-	for(int i=textures.size()-1;  i>0; --i){ DeleteTexture(textures[i]);   textures.pop(); } 
-	for(int i=models.size()-1;    i>0; --i){ DeleteModel(models[i]);       models.pop(); } 
-	for(int i=fonts.size()-1;     i>0; --i){ DeleteFont(fonts[i]);         fonts.pop(); } 
+	for(u32 i=meshes.size()-1;    i>0; --i){ DeleteMesh(meshes[i]);        meshes.pop(); } 
+	for(u32 i=materials.size()-1; i>0; --i){ DeleteMaterial(materials[i]); materials.pop(); } 
+	for(u32 i=textures.size()-1;  i>0; --i){ DeleteTexture(textures[i]);   textures.pop(); } 
+	for(u32 i=models.size()-1;    i>0; --i){ DeleteModel(models[i]);       models.pop(); } 
+	for(u32 i=fonts.size()-1;     i>0; --i){ DeleteFont(fonts[i]);         fonts.pop(); } 
 	lights.clear();
 }
 
@@ -151,7 +151,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){
 	vec3 p{width, height, depth};
 	vec3 uv{0.0f, 0.0f};
 	u32 c = color.rgba;
-	f32 ir3 = 1.0f / M_SQRT_THREE; // inverse root 3 (component of point on unit circle)
+	f32 ir3 = 1.0f / M_SQRT_THREE; // inverse root 3 (component of pou32 on unit circle)
 	
 	//vertex array {pos, uv, color, normal(from center)}
 	va[0]={{-p.x, p.y, p.z}, uv, c, {-ir3, ir3, ir3}}; // -x, y, z  0
@@ -178,7 +178,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){
 	ta[ 6].normal = vec3::DOWN;    ta[ 7].normal = vec3::DOWN;
 	ta[ 8].normal = vec3::LEFT;    ta[ 9].normal = vec3::LEFT;
 	ta[10].normal = vec3::FORWARD; ta[11].normal = vec3::FORWARD;
-	for(int i=0; i<12; ++i){
+	for(u32 i=0; i<12; ++i){
 		ta[i].p[0] = va[ia[(i*3)+0]].pos;
 		ta[i].p[1] = va[ia[(i*3)+1]].pos;
 		ta[i].p[2] = va[ia[(i*3)+2]].pos;
@@ -194,7 +194,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){
 	ta[0].edgeArray     = (u8*)(ta[0].neighborArray + 36);
 	ta[0].neighbors = {ta[0].neighborArray, 3};
 	ta[0].edges     = {ta[0].edgeArray,     3};
-	for(int i=1; i<12; ++i){
+	for(u32 i=1; i<12; ++i){
 		ta[i].neighborArray = ta[i-1].neighborArray+3;
 		ta[i].edgeArray     = ta[i-1].edgeArray+3;
 		ta[i].neighbors = {ta[i].neighborArray, 3};
@@ -230,7 +230,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){
 	ta[11].edges[0]=2; ta[11].edges[1]=0; ta[11].edges[2]=1;
 	
 	//face array  0=up, 1=back, 2=right, 3=down, 4=left, 5=forward
-	for(int i=0; i<6; ++i){
+	for(u32 i=0; i<6; ++i){
 		fa[i].normal                = ta[i*2].normal;
 		fa[i].center                = ta[i*2].normal * p;
 		fa[i].triangleCount         = 2;
@@ -243,13 +243,13 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){
 	//face array triangle array offsets
 	fa[0].triangleArray = (u32*)(ta[0].edgeArray + 36);
 	fa[0].triangles = {fa[0].triangleArray, 2};
-	for(int i=1; i<6; ++i){
+	for(u32 i=1; i<6; ++i){
 		fa[i].triangleArray = fa[i-1].triangleArray+2;
 		fa[i].triangles = {fa[i].triangleArray, 2};
 	}
 	
 	//face array triangle arrays
-	for(int i=0; i<6; ++i){
+	for(u32 i=0; i<6; ++i){
 		fa[i].triangleArray[0]= i*2;
 		fa[i].triangleArray[1]=(i*2)+1;
 	}
@@ -259,7 +259,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){
 	fa[0].outerVertexArray = (u32*)(fa[0].vertexArray+24);
 	fa[0].vertexes      = {fa[0].vertexArray,      4};
 	fa[0].outerVertexes = {fa[0].outerVertexArray, 4};
-	for(int i=1; i<6; ++i){
+	for(u32 i=1; i<6; ++i){
 		fa[i].vertexArray      = fa[i-1].vertexArray+4;
 		fa[i].outerVertexArray = fa[i-1].outerVertexArray+4;
 		fa[i].vertexes      = {fa[i].vertexArray,      4};
@@ -287,7 +287,7 @@ CreateBoxMesh(f32 width, f32 height, f32 depth, color color){
 	fa[0].neighborFaceArray     = (u32*)(fa[0].neighborTriangleArray+24);
 	fa[0].triangleNeighbors = {fa[0].neighborTriangleArray, 4};
 	fa[0].faceNeighbors     = {fa[0].neighborFaceArray, 4};
-	for(int i=1; i<6; ++i){
+	for(u32 i=1; i<6; ++i){
 		fa[i].neighborTriangleArray = fa[i-1].neighborTriangleArray+4;
 		fa[i].neighborFaceArray     = fa[i-1].neighborFaceArray+4;
 		fa[i].triangleNeighbors = {fa[i].neighborTriangleArray, 4};
@@ -327,7 +327,7 @@ CreateMeshFromFile(const char* filename){
 	std::string filepath = Assets::dirModels()+filename;
 	string fullname(filename);
 	string name, extension;
-	bool has_extension;
+	b32 has_extension;
 	u32 dot_idx = fullname.findLastChar('.');
 	if(dot_idx != -1){
 		has_extension = true;
@@ -382,7 +382,7 @@ CreateMeshFromMemory(void* data){
 	mesh->triangles[0].edgeArray     = (u8*) (mesh->triangleArray[0].neighborArray + mesh->totalTriNeighborCount);
 	mesh->triangles[0].neighbors = {mesh->triangles[0].neighborArray, mesh->triangles[0].neighborCount};
 	mesh->triangles[0].edges     = {mesh->triangles[0].edgeArray, mesh->triangles[0].neighborCount};
-	for(int ti=1; ti<mesh->triangles.count; ++ti){
+	for(u32 ti=1; ti<mesh->triangles.count; ++ti){
 		mesh->triangles[ti].neighborArray = (u32*)(mesh->triangles[ti-1].neighborArray + mesh->triangles[ti-1].neighborCount);
 		mesh->triangles[ti].edgeArray     = (u8*) (mesh->triangles[ti-1].edgeArray + mesh->triangles[ti-1].neighborCount);
 		mesh->triangles[ti].neighbors = {mesh->triangles[ti].neighborArray, mesh->triangles[ti].neighborCount};
@@ -398,7 +398,7 @@ CreateMeshFromMemory(void* data){
 	mesh->faces[0].outerVertexes     = {mesh->faces[0].outerVertexArray,      mesh->faces[0].outerVertexCount};
 	mesh->faces[0].triangleNeighbors = {mesh->faces[0].neighborTriangleArray, mesh->faces[0].neighborTriangleCount};
 	mesh->faces[0].faceNeighbors     = {mesh->faces[0].neighborFaceArray,     mesh->faces[0].neighborFaceCount};
-	for(int fi=1; fi<mesh->faces.count; ++fi){
+	for(u32 fi=1; fi<mesh->faces.count; ++fi){
 		mesh->faces[fi].triangleArray         = (u32*)(mesh->faces[fi-1].triangleArray         + mesh->faces[fi-1].triangleCount);
 		mesh->faces[fi].vertexArray           = (u32*)(mesh->faces[fi-1].vertexArray           + mesh->faces[fi-1].vertexCount);
 		mesh->faces[fi].outerVertexArray      = (u32*)(mesh->faces[fi-1].outerVertexArray      + mesh->faces[fi-1].outerVertexCount);
@@ -441,7 +441,7 @@ AllocateTexture(){
 }
 
 pair<u32,Texture*> Storage::
-CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps, bool forceLinear){
+CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type, b32 keepLoaded, b32 generateMipmaps, b32 forceLinear){
 	pair<u32,Texture*> result(0, NullTexture());
 	if(strcmp(filename, "null") == 0) return result;
 	
@@ -466,7 +466,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 		memory_zfree(texture);
 		return result; 
 	}
-	texture->mipmaps = (generateMipmaps) ? (int)log2(Max(texture->width, texture->height)) + 1 : 1;
+	texture->mipmaps = (generateMipmaps) ? (u32)log2(Max(texture->width, texture->height)) + 1 : 1;
 	
 	Render::LoadTexture(texture);
 	if(!keepLoaded){
@@ -481,7 +481,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 }
 
 pair<u32,Texture*> Storage::
-CreateTextureFromMemory(void* data, const char* name, int width, int height, ImageFormat format, TextureType type, bool keepLoaded, bool generateMipmaps, bool forceLinear){
+CreateTextureFromMemory(void* data, const char* name, u32 width, u32 height, ImageFormat format, TextureType type, b32 keepLoaded, b32 generateMipmaps, b32 forceLinear){
 	pair<u32,Texture*> result(0, NullTexture());
 	if(data == 0){ LogE("storage","Failed to create texture '",name,"': No memory passed!"); return result; }
 	
@@ -501,17 +501,17 @@ CreateTextureFromMemory(void* data, const char* name, int width, int height, Ima
 	texture->depth   = 4;
 	texture->loaded  = true;
 	texture->forceLinear = forceLinear;
-	texture->mipmaps = (generateMipmaps) ? (int)log2(Max(texture->width, texture->height)) + 1 : 1;
+	texture->mipmaps = (generateMipmaps) ? (u32)log2(Max(texture->width, texture->height)) + 1 : 1;
 	
 	//reinterpret image as RGBA32
 	const u8* src = (u8*)data;
 	if(format != ImageFormat_RGBA){
-		texture->pixels = (u8*)memory_alloc((size_t)width * (size_t)height * 4);
+		texture->pixels = (u8*)memory_alloc((upt)width * (upt)height * 4);
 		data = texture->pixels;
 		u32* dst = (u32*)texture->pixels;
 		switch(format){
 			case ImageFormat_BW:{
-				for(int i = width*height; i > 0; i--){
+				for(u32 i = width*height; i > 0; i--){
 					u32 value = (u32)(*src++);
 					*dst++ = PackColorU32(value, value, value, value);
 				}
@@ -581,7 +581,7 @@ CreateMaterial(const char* name, Shader shader, MaterialFlags flags, array<u32> 
 }
 
 pair<u32,Material*> Storage::
-CreateMaterialFromFile(const char* filename, bool warnMissing){
+CreateMaterialFromFile(const char* filename, b32 warnMissing){
 	pair<u32,Material*> result(0, NullMaterial());
 	if(strcmp(filename, "null") == 0) return result;
 	
@@ -589,7 +589,7 @@ CreateMaterialFromFile(const char* filename, bool warnMissing){
 	std::string filepath = Assets::dirModels()+filename;
 	string fullname(filename);
 	string name, extension;
-	bool has_extension;
+	b32 has_extension;
 	u32 dot_idx = fullname.findLastChar('.');
 	if(dot_idx != -1){
 		has_extension = true;
@@ -624,7 +624,7 @@ CreateMaterialFromFile(const char* filename, bool warnMissing){
 	char* info_start;  char* info_end;
 	char* key_start;   char* key_end;
 	char* value_start; char* value_end;
-	bool has_cr = false;
+	b32 has_cr = false;
 	for(u32 line_number = 1; ;line_number++){
 		//get the next line
 		line_start = (has_cr) ? line_end+2 : line_end+1;
@@ -727,12 +727,12 @@ AllocateModel(u32 batchCount){
 }
 
 pair<u32,Model*> Storage::
-CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
+CreateModelFromFile(const char* filename, ModelFlags flags, b32 forceLoadOBJ){
 	pair<u32,Model*> result(0, NullModel());
 	if(strcmp(filename, "null") == 0) return result;
 	
 	TIMER_START(t_m);
-	bool has_extension;
+	b32 has_extension;
 	std::string filepath = Assets::dirModels() + filename;
 	string fullname(filename);
 	string name;
@@ -753,8 +753,8 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 	//check if model is already loaded
 	forX(mi, models.count){ if((strcmp(models[mi]->name, name.str) == 0)){ return pair<u32,Model*>(mi,models[mi]); } }
 	
-	bool parse_obj_mesh  = true;
-	bool parse_obj_model = true;
+	b32 parse_obj_mesh  = true;
+	b32 parse_obj_model = true;
 	if(!forceLoadOBJ){
 		std::vector<std::string> files = Assets::iterateDirectory_(Assets::dirModels());
 		for(std::string& file : files){
@@ -794,10 +794,10 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		vec3 aabb_min{ FLT_MAX, FLT_MAX, FLT_MAX};
 		vec3 aabb_max{-FLT_MAX,-FLT_MAX,-FLT_MAX};
 		u32 default_color = Color_White.rgba;
-		bool mtllib_found    = false;
-		bool s_warning       = false;
-		bool non_tri_warning = false;
-		bool fatal_error     = false;
+		b32 mtllib_found    = false;
+		b32 s_warning       = false;
+		b32 non_tri_warning = false;
+		b32 fatal_error     = false;
 		
 		TIMER_START(t_l);
 		char* buffer = Assets::readFileAsciiToArray(filepath, 0, true);
@@ -805,7 +805,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		defer{ delete[] buffer; };
 		char* line_start;
 		char* line_end = buffer - 1;
-		bool has_cr = false;
+		b32 has_cr = false;
 		for(u32 line_number = 1; ;line_number++){
 			//get the next line
 			line_start = (has_cr) ? line_end+2 : line_end+1;
@@ -911,22 +911,22 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 					//triangle neighbors
 					for(u32 oti=0; oti<triangles.count-1; ++oti){
 						//check that its not already a neighbor
-						bool neighbor_already = false;
+						b32 neighbor_already = false;
 						for(u32 tni=0; tni<triNeighbors[oti].count; ++tni){
 							if(triNeighbors[oti][tni].first == cti){ neighbor_already = true; break; }
 						}
 						
 						//check for shared vertexes and mark the edges
 						if(!neighbor_already){
-							bool ct0_ot0 = (vArray[v0] == triangles[oti].v[0]);
-							bool ct0_ot1 = (vArray[v0] == triangles[oti].v[1]);
-							bool ct0_ot2 = (vArray[v0] == triangles[oti].v[2]);
-							bool ct1_ot0 = (vArray[v1] == triangles[oti].v[0]);
-							bool ct1_ot1 = (vArray[v1] == triangles[oti].v[1]);
-							bool ct1_ot2 = (vArray[v1] == triangles[oti].v[2]);
-							bool ct2_ot0 = (vArray[v2] == triangles[oti].v[0]);
-							bool ct2_ot1 = (vArray[v2] == triangles[oti].v[1]);
-							bool ct2_ot2 = (vArray[v2] == triangles[oti].v[2]);
+							b32 ct0_ot0 = (vArray[v0] == triangles[oti].v[0]);
+							b32 ct0_ot1 = (vArray[v0] == triangles[oti].v[1]);
+							b32 ct0_ot2 = (vArray[v0] == triangles[oti].v[2]);
+							b32 ct1_ot0 = (vArray[v1] == triangles[oti].v[0]);
+							b32 ct1_ot1 = (vArray[v1] == triangles[oti].v[1]);
+							b32 ct1_ot2 = (vArray[v1] == triangles[oti].v[2]);
+							b32 ct2_ot0 = (vArray[v2] == triangles[oti].v[0]);
+							b32 ct2_ot1 = (vArray[v2] == triangles[oti].v[1]);
+							b32 ct2_ot2 = (vArray[v2] == triangles[oti].v[2]);
 							
 							//current tri v0 && v1
 							if(ct0_ot0 && ct1_ot1){triNeighbors[cti].add({oti,0}); triNeighbors[oti].add({cti,0}); totalTriNeighbors+=2; continue;}
@@ -1027,7 +1027,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 				u32 cti = check_tris[check_tri_idx];
 				forX(nei_tri_idx, triNeighbors[cti].count){
 					u32 nti = triNeighbors[cti][nei_tri_idx].first;
-					bool checked = false;
+					b32 checked = false;
 					forI(check_tris.count){ if(check_tris[i] == nti){ checked = true; break; } }
 					if(checked) continue;
 					
@@ -1045,7 +1045,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 						totalFaceTriNeighbors++;
 						u32 v1 = triangles[cti].v[ triNeighbors[cti][nei_tri_idx].second       ];
 						u32 v2 = triangles[cti].v[(triNeighbors[cti][nei_tri_idx].second+1) % 3];
-						bool v1_already = false; bool v2_already = false;
+						b32 v1_already = false; b32 v2_already = false;
 						forX(fovi, faceOuterVertexes[cfi].count){
 							if(!v1_already && faceOuterVertexes[cfi][fovi] == v1){ v1_already = true; }
 							if(!v2_already && faceOuterVertexes[cfi][fovi] == v2){ v2_already = true; }
@@ -1123,7 +1123,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		mesh->triangles[0].edgeArray      = (u8*)(mesh->triangleArray[0].neighborArray + totalTriNeighbors);
 		mesh->triangles[0].neighbors = {mesh->triangles[0].neighborArray, triNeighbors[0].count};
 		mesh->triangles[0].edges     = {mesh->triangles[0].edgeArray,     triNeighbors[0].count};
-		for(int ti=1; ti<mesh->triangles.count; ++ti){
+		for(u32 ti=1; ti<mesh->triangles.count; ++ti){
 			mesh->triangles[ti].neighborArray = (u32*)(mesh->triangles[ti-1].neighborArray + triNeighbors[ti-1].count);
 			mesh->triangles[ti].edgeArray      = (u8*)(mesh->triangles[ti-1].edgeArray     + triNeighbors[ti-1].count);
 			mesh->triangles[ti].neighbors  = {mesh->triangles[ti].neighborArray, triNeighbors[ti].count};
@@ -1139,7 +1139,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		mesh->faces[0].outerVertexes      = {mesh->faces[0].outerVertexArray,       faceOuterVertexes[0].count};
 		mesh->faces[0].triangleNeighbors  = {mesh->faces[0].neighborTriangleArray,  faceTriNeighbors[0].count};
 		mesh->faces[0].faceNeighbors      = {mesh->faces[0].neighborFaceArray,      faceFaceNeighbors[0].count};
-		for(int fi=1; fi<mesh->faces.count; ++fi){
+		for(u32 fi=1; fi<mesh->faces.count; ++fi){
 			mesh->faces[fi].triangleArray         = (u32*)(mesh->faces[fi-1].triangleArray         + faceTriangles[fi-1].count);
 			mesh->faces[fi].vertexArray           = (u32*)(mesh->faces[fi-1].vertexArray           + faceVertexes[fi-1].count);
 			mesh->faces[fi].outerVertexArray      = (u32*)(mesh->faces[fi-1].outerVertexArray      + faceOuterVertexes[fi-1].count);
@@ -1228,7 +1228,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		
 		set<pair<u32,string>> oUnique, gUnique, uUnique, mUnique; //index offset, name
 		array<u32> oArray, gArray,  uArray,  mArray; //index in unique array
-		bool mtllib_found = false;
+		b32 mtllib_found = false;
 		u32 index_count = 0;
 		
 		TIMER_START(t_l);
@@ -1236,7 +1236,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		if(!buffer){  return result; }
 		defer{ delete[] buffer; };
 		char* line_start; char* line_end = buffer - 1;
-		bool has_cr = false;
+		b32 has_cr = false;
 		for(u32 line_number = 1; ;line_number++){
 			//get the next line
 			line_start = (has_cr) ? line_end+2 : line_end+1;
@@ -1338,7 +1338,7 @@ CreateModelFromFile(const char* filename, ModelFlags flags, bool forceLoadOBJ){
 		char* info_start;  char* info_end;
 		char* key_start;   char* key_end;
 		char* value_start; char* value_end;
-		bool has_cr = false;
+		b32 has_cr = false;
 		for(u32 line_number = 1; ;line_number++){
 			//get the next line
 			line_start = (has_cr) ? line_end+2 : line_end+1;
@@ -1524,8 +1524,8 @@ CreateFontFromFileBDF(const char* filename){
 	Assert(strncmp("STARTFONT", buffer, 9) == 0); //TODO(delle) error handling: incorrect file
 	Font* font = AllocateFont(FontType_BDF);
 	
-	bool in_char   = false;
-	bool in_bitmap = false;
+	b32 in_char   = false;
+	b32 in_bitmap = false;
 	u32 char_idx = 0;
 	u32 bitmap_row = 0;
 	u32 glyph_offset = 0;
@@ -1541,7 +1541,7 @@ CreateFontFromFileBDF(const char* filename){
 	char* info_start;  char* info_end;
 	char* key_start;   char* key_end;
 	char* value_start; char* value_end;
-	bool has_cr = false;
+	b32 has_cr = false;
 	for(u32 line_number = 1; ;line_number++){
 		//get the next line
 		line_start = (has_cr) ? line_end+2 : line_end+1;
@@ -1573,7 +1573,7 @@ CreateFontFromFileBDF(const char* filename){
 			}
 			Assert(bitmap_row < current_bbx.y);
 			
-			int chars = (int)(info_end-info_start);
+			u32 chars = (u32)(info_end-info_start);
 			Assert(chars <= 4); //TODO(delle) error handling: max 16 pixel width
 			u8 scaled[16]{};
 			
@@ -1582,7 +1582,7 @@ CreateFontFromFileBDF(const char* filename){
 			//scale = 8 (1 bit to 1 byte)
 			//mask0 = 0x0000000f0000000f, mask1 = 0x0003000300030003, mask2 = 0x0101010101010101
 			//shift0 = (1 << 28) + 1, shift1 = (1 << 14) + 1, shift2 = (1 << 7) + 1
-			for(int i=0; i<chars; i+=2){
+			for(u32 i=0; i<chars; i+=2){
 				u64 reversed = (((b16tou64({info_start+i, 2}) * 0x10000001 & 0x0000000f0000000f) 
 								 * 0x4001 & 0x0003000300030003) * 0x81 & 0x0101010101010101) * 255;
 				*(u64*)(scaled+i) = ByteSwap64(reversed);
@@ -1659,7 +1659,7 @@ CreateFontFromFileBDF(const char* filename){
 											   ImageFormat_BW, TextureType_2D, false, false, false).second;
 	//DeleteTexture(texture);
 	
-	font->aspect_ratio = (float)font->max_height / font->max_width;
+	font->aspect_ratio = (f32)font->max_height / font->max_width;
 	font->tex = texture;
 	
 	fonts.add(font);
@@ -1737,7 +1737,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	font->ttf_pack_context = pc;
 	
 	u32 widthmax = x1 - x0, heightmax = y1 - y0;
-	font->aspect_ratio = (float)heightmax / widthmax;
+	font->aspect_ratio = (f32)heightmax / widthmax;
 	
 	//trying to minimize the texture here, but its difficult due to stbtt packing all of them together
 	//i believe this makes it into the smallest square it could be w/o knowing how stbtt packs them together

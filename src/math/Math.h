@@ -143,20 +143,20 @@ toVec3() const{
 	vec3 angles;
 	
 	// roll (x-axis rotation)
-	double sinr_cosp = 2 * (w * x + y * z);
-	double cosr_cosp = 1 - 2 * (x * x + y * y);
+	f64 sinr_cosp = 2.0 * ((f64)w * x + (f64)y * z);
+	f64 cosr_cosp = 1.0 - 2.0 * ((f64)x * x + (f64)y * y);
 	angles.x = atan2(sinr_cosp, cosr_cosp);
 	
 	// pitch (y-axis rotation)
-	double sinp = 2 * (w * y - z * x);
+	f64 sinp = 2.0 * ((f64)w * y - (f64)z * x);
 	if(std::abs(sinp) >= 1)
 		angles.y = copysign(M_PI / 2, sinp); // use 90 degrees if out of range
 	else
 		angles.y = asin(sinp);
 	
 	// yaw (z-axis rotation)
-	double siny_cosp = 2 * (w * z + x * y);
-	double cosy_cosp = 1 - 2 * (y * y + z * z);
+	f64 siny_cosp = 2.0 * ((f64)w * z +(f64)x * y);
+	f64 cosy_cosp = 1.0 - 2.0 * ((f64)y * y + (f64)z * z);
 	angles.z = atan2(siny_cosp, cosy_cosp);
 	
 	return angles;
@@ -224,13 +224,13 @@ QuatSlerp(const vec3& fromv, const vec3& tov, float t){
 	}
 	
 	//since dot is in range [0, DOT_THRESHOLD], acos is safe
-	double theta_0 = acos(dot);			//theta_0 = angle between input vectors
-	double theta = theta_0 * t;			//theta = angle between v0 and result
-	double sin_theta = sin(theta);		//compute this value only once
-	double sin_theta_0 = sin(theta_0);	//compute this value only once
+	f64 theta_0 = acos(dot);			//theta_0 = angle between input vectors
+	f64 theta = theta_0 * t;			//theta = angle between v0 and result
+	f64 sin_theta = sin(theta);		//compute this value only once
+	f64 sin_theta_0 = sin(theta_0);	//compute this value only once
 	
-	double s0 = cos(theta) - dot * sin_theta / sin_theta_0;  // == sin(theta_0 - theta) / sin(theta_0)
-	double s1 = sin_theta / sin_theta_0;
+	f64 s0 = cos(theta) - dot * sin_theta / sin_theta_0;  // == sin(theta_0 - theta) / sin(theta_0)
+	f64 s1 = sin_theta / sin_theta_0;
 	
 	return (from * s0) + (to * s1);
 }
@@ -444,7 +444,7 @@ namespace Math {
 	
 	//average any std container probably
 	template<class FWIt> static float average(FWIt a, const FWIt b, int size){ return std::accumulate(a, b, 0.0) / size; }
-	template<class T> static double average(const T& container, int size){ return average(std::begin(container), std::end(container), size); }
+	template<class T> static f64 average(const T& container, int size){ return average(std::begin(container), std::end(container), size); }
 	
 	//interpolating
 	template<typename T> global_ T lerp(T a, T b, f32 t){ return a*(1.f-t) + b*t; }
@@ -676,7 +676,7 @@ namespace Math {
 				//both points are in the same outside zone
 				return false;
 			}else{
-				float x, y;
+				float x = 0, y = 0;
 				//select one of the points outside
 				int code = lineEndCode > lineStartCode ? lineEndCode : lineStartCode;
 				

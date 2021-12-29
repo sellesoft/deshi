@@ -29,7 +29,7 @@
 namespace deshi {
 	void init(u32 winWidth = 1280, u32 winHeight = 720);
 	void cleanup();
-	bool shouldClose();
+	b32  shouldClose();
 }
 
 //////////////////////////

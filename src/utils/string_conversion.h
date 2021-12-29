@@ -17,7 +17,7 @@
 global_ int 
 stoi(const string& s){
     int x;
-    sscanf(s.str, "%d", &x);
+    (void)sscanf(s.str, "%d", &x);
     return x;
 }
 

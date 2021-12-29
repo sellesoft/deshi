@@ -54,7 +54,7 @@ typedef size_t             upt;   //unsigned pointer type
 typedef float              f32;
 typedef double             f64;
 typedef s32                b32;   //sized boolean type
-typedef char16_t           uchar; //unicode char type
+typedef wchar_t            wchar;
 
 typedef u32 Type;
 typedef u32 Flags;
@@ -198,7 +198,7 @@ global_const u64 uptsize   = sizeof(upt);
 global_const u64 f32size   = sizeof(f32);
 global_const u64 f64size   = sizeof(f64);
 global_const u64 b32size   = sizeof(b32);
-global_const u64 ucharsize = sizeof(uchar);
+global_const u64 wcharsize = sizeof(wchar);
 
 /////////////////////// //NOTE some are two level so you can use the result of a macro expansion (STRINGIZE, GLUE, etc)
 //// common macros ////
@@ -220,7 +220,7 @@ global_const u64 ucharsize = sizeof(uchar);
 #define Radians(a) ((a) * (M_PI / 180.f))
 #define Degrees(a) ((a) * (180.f / M_PI))
 #define ArrayCount(arr) (sizeof((arr)) / sizeof(((arr))[0])) //length of a static-size c-array
-#define RoundUpTo(value, multiple) (((size_t)((value) + (((size_t)(multiple))-1)) / (size_t)(multiple)) * (size_t)(multiple))
+#define RoundUpTo(value, multiple) (((u32)((value) + (((u32)(multiple))-1)) / (u32)(multiple)) * (u32)(multiple))
 #define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
 #define PointerDifference(a,b) ((u8*)(a) - (u8*)(b))
 #define PointerAsInt(a) PointerDifference(a,0)
@@ -242,6 +242,7 @@ global_const u64 ucharsize = sizeof(uchar);
 //////////////////////////
 FORCE_INLINE void ZeroMemory(void* ptr, upt bytes){memset(ptr, 0, bytes);}
 FORCE_INLINE b32 IsPow2(u64 value){return (value != 0) && ((value & (value-1)) == 0);}
+FORCE_INLINE upt roundUpToPow2(upt x) { return (upt)1 << (upt)((upt)log2(--x) + 1); }
 template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;}
 template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;}
 template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;}
@@ -325,6 +326,9 @@ global_ Allocator stl_allocator_{
 	STLAllocator_Resize
 };
 global_ Allocator* stl_allocator = &stl_allocator_;
+
+//// for quick reference when i forget again ////
+#define PRINTBASICTYPESIZES PRINTLN("   s8 size: " << s8size); PRINTLN("  s16 size: " << s16size); PRINTLN("  s32 size: " << s32size); PRINTLN("  s64 size: " << s64size); PRINTLN("  spt size: " << sptsize); PRINTLN("   u8 size: " << u8size); PRINTLN("  u16 size: " << u16size); PRINTLN("  u32 size: " << u32size); PRINTLN("  u64 size: " << u64size); PRINTLN("  upt size: " << uptsize); PRINTLN("  f32 size: " << f32size); PRINTLN("  f64 size: " << f64size); PRINTLN("  b32 size: " << b32size); PRINTLN("wchar size: " << wcharsize);
 
 ///////////////////////////// //TODO remove/rework/rename these
 //// to-be-redone macros ////

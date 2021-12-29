@@ -11,9 +11,7 @@
 
 namespace Utils{
 	
-	inline upt roundUpToPow2(upt x){
-		return 1U << ((upt)log2(--x) + 1);
-	}
+
 	
 	///////////////////////////////
 	//// FNV-1a hash functions ////
@@ -192,7 +190,7 @@ characterDelimitIgnoreRepeat(std::string text, char character){
 	int prev = 0;
 	for(int i=0; i < text.size(); ++i){
 		if(text[i] == character){
-			out.push_back(text.substr(prev, i-prev));
+			out.push_back(text.substr((upt)prev, (upt)i-prev));
 			while(text[i+1] == ' ') ++i;
 			prev = i+1;
 		}

@@ -1,18 +1,18 @@
 /* 
 //// Notes ////
-Matrices can only hold floats
+Matrices can only hold f32s
 Matrices are in row-major format and all the functionality follows that format
 Matrices are Left-Handed meaning that multiplication travels right and rotation is clockwise 
 
 //// Accessing Matrix Values ////
 You can access the values of a matrix using the () operator.
 Acessing matrix values starts at zero for both the row and column: 0...n-1 not 1...n
-eg: matrix(0,3); This will return the float on the first row and fourth column
-eg: matrix(1,1); This will return the float on the second row and second column
+eg: matrix(0,3); This will return the f32 on the first row and fourth column
+eg: matrix(1,1); This will return the f32 on the second row and second column
 
 Alternatively, you can access the elements directly by their index in a one-dimensional array
 This avoids doing one multiplication and one addition but might be confusing to readers of your code
-eg: matrix.data[3]; This will return the float on the first row and fourth column
+eg: matrix.data[3]; This will return the f32 on the first row and fourth column
 
 //// Transformation Matrix ////												
 You can create a transformation matrix by providing the translation, rotation,
@@ -44,7 +44,7 @@ struct quat;
 
 struct mat3 {
 	union{
-		float arr[9] = {};
+		f32 arr[9] = {};
 		struct{
 			vec3 row0;
 			vec3 row1;
@@ -53,47 +53,47 @@ struct mat3 {
 	};
 	
 	mat3(){};
-	mat3(float all);
-	mat3(float _00, float _01, float _02,
-		 float _10, float _11, float _12,
-		 float _20, float _21, float _22);
+	mat3(f32 all);
+	mat3(f32 _00, f32 _01, f32 _02,
+		 f32 _10, f32 _11, f32 _12,
+		 f32 _20, f32 _21, f32 _22);
 	mat3(const mat3& m);
-	mat3(float* data);
+	mat3(f32* data);
 	
 	static const mat3 IDENTITY;
 	
-	float& operator()(u32 row, u32 col);
-	float  operator()(u32 row, u32 col) const;
-	void   operator= (const mat3& rhs);
-	mat3   operator* (const float& rhs) const;
-	void   operator*=(const float& rhs);
-	mat3   operator/ (const float& rhs) const;
-	void   operator/=(const float& rhs);
-	mat3   operator+ (const mat3& rhs) const;
-	void   operator+=(const mat3& rhs);
-	mat3   operator- (const mat3& rhs) const;
-	void   operator-=(const mat3& rhs);
-	mat3   operator^ (const mat3& rhs) const;
-	void   operator^=(const mat3& rhs);
-	mat3   operator% (const mat3& rhs) const; 
-	void   operator%=(const mat3& rhs);
-	mat3   operator* (const mat3& rhs) const;
-	void   operator*=(const mat3& rhs);
-	bool   operator==(const mat3& rhs) const;
-	bool   operator!=(const mat3& rhs) const;
-	friend mat3 operator* (const float& lhs, const mat3& rhs){ return rhs * lhs; }
+	f32& operator()(u32 row, u32 col);
+	f32  operator()(u32 row, u32 col) const;
+	void operator= (const mat3& rhs);
+	mat3 operator* (const f32& rhs) const;
+	void operator*=(const f32& rhs);
+	mat3 operator/ (const f32& rhs) const;
+	void operator/=(const f32& rhs);
+	mat3 operator+ (const mat3& rhs) const;
+	void operator+=(const mat3& rhs);
+	mat3 operator- (const mat3& rhs) const;
+	void operator-=(const mat3& rhs);
+	mat3 operator^ (const mat3& rhs) const;
+	void operator^=(const mat3& rhs);
+	mat3 operator% (const mat3& rhs) const; 
+	void operator%=(const mat3& rhs);
+	mat3 operator* (const mat3& rhs) const;
+	void operator*=(const mat3& rhs);
+	b32  operator==(const mat3& rhs) const;
+	b32  operator!=(const mat3& rhs) const;
+	friend mat3 operator* (const f32& lhs, const mat3& rhs){ return rhs * lhs; }
 	
 	mat3  Transpose() const;
-	float Determinant() const;
-	float Minor(int row, int col) const;
-	float Cofactor(int row, int col) const;
+	f32 Determinant() const;
+	f32 Minor(u32 row, u32 col) const;
+	f32 Cofactor(u32 row, u32 col) const;
 	mat3  Adjoint() const;
 	mat3  Inverse() const;
 	
-	static mat3 RotationMatrixX(float degrees);
-	static mat3 RotationMatrixY(float degrees);
-	static mat3 RotationMatrixZ(float degrees);
-	static mat3 RotationMatrix(float x, float y, float z);
+	static mat3 RotationMatrixX(f32 degrees);
+	static mat3 RotationMatrixY(f32 degrees);
+	static mat3 RotationMatrixZ(f32 degrees);
+	static mat3 RotationMatrix(f32 x, f32 y, f32 z);
 	
 	//matrix interactions
 	mat3(const mat4& m);
@@ -109,7 +109,7 @@ struct mat3 {
 
 struct mat4 {
 	union{
-		float arr[16] = {};
+		f32 arr[16] = {};
 		struct{
 			vec4 row0;
 			vec4 row1;
@@ -127,50 +127,50 @@ struct mat4 {
 	};
 	
 	mat4(){};
-	mat4(float all);
-	mat4(float _00, float _01, float _02, float _03,
-		 float _10, float _11, float _12, float _13,
-		 float _20, float _21, float _22, float _23,
-		 float _30, float _31, float _32, float _33);
+	mat4(f32 all);
+	mat4(f32 _00, f32 _01, f32 _02, f32 _03,
+		 f32 _10, f32 _11, f32 _12, f32 _13,
+		 f32 _20, f32 _21, f32 _22, f32 _23,
+		 f32 _30, f32 _31, f32 _32, f32 _33);
 	mat4(const mat4& m);
-	mat4(float* data);
+	mat4(f32* data);
 	
 	static const mat4 IDENTITY;
 	
-	float& operator()(u32 row, u32 col);
-	float  operator()(u32 row, u32 col) const;
-	void   operator= (const mat4& rhs);
-	mat4   operator* (const float& rhs) const;
-	void   operator*=(const float& rhs);
-	mat4   operator/ (const float& rhs) const;
-	void   operator/=(const float& rhs);
-	mat4   operator+ (const mat4& rhs) const;
-	void   operator+=(const mat4& rhs);
-	mat4   operator- (const mat4& rhs) const;
-	void   operator-=(const mat4& rhs);
-	mat4   operator^ (const mat4& rhs) const;
-	void   operator^=(const mat4& rhs);
-	mat4   operator% (const mat4& rhs) const; 
-	void   operator%=(const mat4& rhs);
-	mat4   operator* (const mat4& rhs) const;
-	void   operator*=(const mat4& rhs);
-	bool   operator==(const mat4& rhs) const;
-	bool   operator!=(const mat4& rhs) const;
-	friend mat4 operator* (const float& lhs, const mat4& rhs){ return rhs * lhs; }
+	f32& operator()(u32 row, u32 col);
+	f32  operator()(u32 row, u32 col) const;
+	void operator= (const mat4& rhs);
+	mat4 operator* (const f32& rhs) const;
+	void operator*=(const f32& rhs);
+	mat4 operator/ (const f32& rhs) const;
+	void operator/=(const f32& rhs);
+	mat4 operator+ (const mat4& rhs) const;
+	void operator+=(const mat4& rhs);
+	mat4 operator- (const mat4& rhs) const;
+	void operator-=(const mat4& rhs);
+	mat4 operator^ (const mat4& rhs) const;
+	void operator^=(const mat4& rhs);
+	mat4 operator% (const mat4& rhs) const; 
+	void operator%=(const mat4& rhs);
+	mat4 operator* (const mat4& rhs) const;
+	void operator*=(const mat4& rhs);
+	b32  operator==(const mat4& rhs) const;
+	b32  operator!=(const mat4& rhs) const;
+	friend mat4 operator* (const f32& lhs, const mat4& rhs){ return rhs * lhs; }
 	
-	mat4  Transpose() const;
-	float Determinant() const;
-	float Minor(int row, int col) const;
-	float Cofactor(int row, int col) const;
-	mat4  Adjoint() const;
-	mat4  Inverse() const;
+	mat4 Transpose() const;
+	f32  Determinant() const;
+	f32  Minor(u32 row, u32 col) const;
+	f32  Cofactor(u32 row, u32 col) const;
+	mat4 Adjoint() const;
+	mat4 Inverse() const;
 	
-	static mat4 RotationMatrixX(float degrees);
-	static mat4 RotationMatrixY(float degrees);
-	static mat4 RotationMatrixZ(float degrees);
-	static mat4 RotationMatrix(float x, float y, float z);
-	static mat4 TranslationMatrix(float x, float y, float z);
-	static mat4 ScaleMatrix(float x, float y, float z);
+	static mat4 RotationMatrixX(f32 degrees);
+	static mat4 RotationMatrixY(f32 degrees);
+	static mat4 RotationMatrixZ(f32 degrees);
+	static mat4 RotationMatrix(f32 x, f32 y, f32 z);
+	static mat4 TranslationMatrix(f32 x, f32 y, f32 z);
+	static mat4 ScaleMatrix(f32 x, f32 y, f32 z);
 	
 	//matrix interactions
 	mat4(const mat3& m);
@@ -183,7 +183,7 @@ struct mat4 {
 	vec3 Rotation();
 	vec3 Scale();
 	static mat4 RotationMatrix(vec3 rotation);
-	static mat4 AxisAngleRotationMatrix(float angle, vec4 axis);
+	static mat4 AxisAngleRotationMatrix(f32 angle, vec4 axis);
 	static mat4 RotationMatrixAroundPoint(vec3 pivot, vec3 rotation);
 	static mat4 TranslationMatrix(vec3 translation);
 	static mat4 ScaleMatrix(vec3 scale);

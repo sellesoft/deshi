@@ -26,11 +26,11 @@ struct Camera  {
 	vec3 position{};
 	vec3 rotation{};
 	
-	float nearZ; //the distance from the camera's position to screen plane
-	float farZ; //the maximum render distance
-	float fov; //horizontal field of view
+	f32 nearZ; //the distance from the camera's position to screen plane
+	f32 farZ; //the maximum render distance
+	f32 fov; //horizontal field of view
 	
-	bool freeCamera = true;
+	b32 freeCamera = true;
 	
 	CameraMode mode = CameraMode_Perspective;
 	OrthoView orthoview = OrthoView_Front;
@@ -42,10 +42,10 @@ struct Camera  {
 	mat4 viewMat;
 	mat4 projMat;
 	
-	static mat4 MakePerspectiveProjectionMatrix(float winWidth, float winHeight, float _fov, float _farZ, float _nearZ) {
-		float renderDistance = _farZ - _nearZ;
-		float aspectRatio = winHeight / winWidth;
-		float fovRad = 1.f / tanf(Radians(_fov * .5f));
+	static mat4 MakePerspectiveProjectionMatrix(f32 winWidth, f32 winHeight, f32 _fov, f32 _farZ, f32 _nearZ) {
+		f32 renderDistance = _farZ - _nearZ;
+		f32 aspectRatio = winHeight / winWidth;
+		f32 fovRad = 1.f / tanf(Radians(_fov * .5f));
 		return mat4( //NOTE setting (1,1) to negative flips the y-axis
 					aspectRatio * fovRad, 0, 0, 0,
 					0, -fovRad, 0, 0,
@@ -53,11 +53,11 @@ struct Camera  {
 					0, 0, -(_farZ * _nearZ) / renderDistance, 0);
 	}
 	
-	static mat4 MakeOrthographicProjection(float width, float height, float r, float l, float t, float b, float _farZ, float _nearZ) {
-		float aspectRatio = width / height;
+	static mat4 MakeOrthographicProjection(f32 width, f32 height, f32 r, f32 l, f32 t, f32 b, f32 _farZ, f32 _nearZ) {
+		f32 aspectRatio = width / height;
 		
-		float f = _farZ;
-		float n = _nearZ;
+		f32 f = _farZ;
+		f32 n = _nearZ;
 		
 		return mat4(2 / (r - l), 0, 0, 0,
 					0, 2 / (b - t), 0, 0,

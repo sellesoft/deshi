@@ -110,38 +110,38 @@ struct Input{
 	std::map<size_t, u8> mapKeys;
 	std::map<size_t, u8> mapMouse;
 	
-	bool oldKeyState[MAX_KEYBOARD_KEYS] = {0};
-	bool newKeyState[MAX_KEYBOARD_KEYS] = {0};
-	double mouseX,       mouseY;
-	double screenMouseX, screenMouseY;
-	double scrollX,      scrollY;
+	b32 oldKeyState[MAX_KEYBOARD_KEYS] = {0};
+	b32 newKeyState[MAX_KEYBOARD_KEYS] = {0};
+	f64 mouseX,       mouseY;
+	f64 screenMouseX, screenMouseY;
+	f64 scrollX,      scrollY;
 	vec2 mousePos;
 	
-	bool zero[MAX_KEYBOARD_KEYS] = {0};
+	b32 zero[MAX_KEYBOARD_KEYS] = {0};
 	
-	bool anyKeyDown = 0;
+	b32 anyKeyDown = 0;
 	
-	bool capsLock = false;
+	b32 capsLock = false;
 	
 	//NOTE sushi: I was going to put this on keybinds, but I wanted it to only check binds if some input occured, and it seems easiest to do that here
 	//for console command binding
 	std::vector<pair<std::string, Key::Key>> binds; //TODO remove/move this and make it array
-	bool checkbinds = false; //needed bc glfw callbacks would call the function too early
+	b32 checkbinds = false; //needed bc glfw callbacks would call the function too early
 	
 	//real values are updated through GLFW callbacks
-	bool realKeyState[MAX_KEYBOARD_KEYS]   = {0};
-	double realMouseX,       realMouseY;
-	double realScreenMouseX, realScreenMouseY;
-	double realScrollX,      realScrollY;
-	bool keyFocus, mouseFocus;
+	b32 realKeyState[MAX_KEYBOARD_KEYS]   = {0};
+	f64 realMouseX,       realMouseY;
+	f64 realScreenMouseX, realScreenMouseY;
+	f64 realScrollX,      realScrollY;
+	b32 keyFocus, mouseFocus;
 	
-	bool logInput = false;
+	b32 logInput = false;
 	
 	//caches values so they are consistent thru the frame
 	void Update(){
 		TIMER_START(t_d);
-		memcpy(&oldKeyState, &newKeyState,  sizeof(bool) * MAX_KEYBOARD_KEYS);
-		memcpy(&newKeyState, &realKeyState, sizeof(bool) * MAX_KEYBOARD_KEYS);
+		memcpy(&oldKeyState, &newKeyState,  sizeof(b32) * MAX_KEYBOARD_KEYS);
+		memcpy(&newKeyState, &realKeyState, sizeof(b32) * MAX_KEYBOARD_KEYS);
 		
 		if (!memcmp(newKeyState, zero, MAX_KEYBOARD_KEYS)) {
 			newKeyState[0] = 1;
@@ -165,31 +165,31 @@ struct Input{
 	//// input helper functions /////
 	/////////////////////////////////
 	
-	inline bool LCtrlDown() { return newKeyState[Key::LCTRL]; }
-	inline bool RCtrlDown() { return newKeyState[Key::RCTRL]; }
-	inline bool LShiftDown(){ return newKeyState[Key::LSHIFT]; }
-	inline bool RShiftDown(){ return newKeyState[Key::RSHIFT]; }
-	inline bool LAltDown()  { return newKeyState[Key::LALT]; }
-	inline bool RAltDown()  { return newKeyState[Key::RALT]; }
-	inline bool CtrlDown()  { return newKeyState[Key::RCTRL] || newKeyState[Key::LCTRL]; }
-	inline bool ShiftDown() { return newKeyState[Key::RSHIFT] || newKeyState[Key::LSHIFT]; }
-	inline bool AltDown()   { return newKeyState[Key::RALT] || newKeyState[Key::LALT]; }
+	inline b32 LCtrlDown() { return newKeyState[Key::LCTRL]; }
+	inline b32 RCtrlDown() { return newKeyState[Key::RCTRL]; }
+	inline b32 LShiftDown(){ return newKeyState[Key::LSHIFT]; }
+	inline b32 RShiftDown(){ return newKeyState[Key::RSHIFT]; }
+	inline b32 LAltDown()  { return newKeyState[Key::LALT]; }
+	inline b32 RAltDown()  { return newKeyState[Key::RALT]; }
+	inline b32 CtrlDown()  { return newKeyState[Key::RCTRL] || newKeyState[Key::LCTRL]; }
+	inline b32 ShiftDown() { return newKeyState[Key::RSHIFT] || newKeyState[Key::LSHIFT]; }
+	inline b32 AltDown()   { return newKeyState[Key::RALT] || newKeyState[Key::LALT]; }
 	
 	//make options for, or just make it so these dont take into account mods
-	inline bool AnyKeyPressed()   { return KeyReleased(Key::Key_NONE); }
-	inline bool AnyKeyDown()      { return !KeyDown(Key::Key_NONE); }
-	inline bool AllKeysReleased() { return KeyPressed(Key::Key_NONE); }
+	inline b32 AnyKeyPressed()   { return KeyReleased(Key::Key_NONE); }
+	inline b32 AnyKeyDown()      { return !KeyDown(Key::Key_NONE); }
+	inline b32 AllKeysReleased() { return KeyPressed(Key::Key_NONE); }
 	
-	inline bool LMouseDown()     { return  newKeyState[MouseButton::LEFT]; }
-	inline bool RMouseDown()     { return  newKeyState[MouseButton::RIGHT]; }
-	inline bool LMousePressed()  { return  newKeyState[MouseButton::LEFT]       && !oldKeyState[MouseButton::LEFT]; }
-	inline bool RMousePressed()  { return  newKeyState[MouseButton::RIGHT]      && !oldKeyState[MouseButton::RIGHT]; }
-	inline bool LMouseReleased() { return !newKeyState[MouseButton::LEFT]       &&  oldKeyState[MouseButton::LEFT]; }
-	inline bool RMouseReleased() { return !newKeyState[MouseButton::RIGHT]      &&  oldKeyState[MouseButton::RIGHT]; }
-	inline bool ScrollUp()       { return  newKeyState[MouseButton::SCROLLUP]   && !oldKeyState[MouseButton::SCROLLUP]; }
-	inline bool ScrollDown()     { return  newKeyState[MouseButton::SCROLLDOWN] && !oldKeyState[MouseButton::SCROLLDOWN]; }
+	inline b32 LMouseDown()     { return  newKeyState[MouseButton::LEFT]; }
+	inline b32 RMouseDown()     { return  newKeyState[MouseButton::RIGHT]; }
+	inline b32 LMousePressed()  { return  newKeyState[MouseButton::LEFT]       && !oldKeyState[MouseButton::LEFT]; }
+	inline b32 RMousePressed()  { return  newKeyState[MouseButton::RIGHT]      && !oldKeyState[MouseButton::RIGHT]; }
+	inline b32 LMouseReleased() { return !newKeyState[MouseButton::LEFT]       &&  oldKeyState[MouseButton::LEFT]; }
+	inline b32 RMouseReleased() { return !newKeyState[MouseButton::RIGHT]      &&  oldKeyState[MouseButton::RIGHT]; }
+	inline b32 ScrollUp()       { return  newKeyState[MouseButton::SCROLLUP]   && !oldKeyState[MouseButton::SCROLLUP]; }
+	inline b32 ScrollDown()     { return  newKeyState[MouseButton::SCROLLDOWN] && !oldKeyState[MouseButton::SCROLLDOWN]; }
 	
-	bool ModsDown(u32 mods){
+	b32 ModsDown(u32 mods){
 		switch(mods){
 			case(InputMod_Any):            return true;
 			case(InputMod_None):           return !LCtrlDown() && !RCtrlDown() && !LShiftDown() && !RShiftDown() && !LAltDown() && !RAltDown();
@@ -233,19 +233,19 @@ struct Input{
 	//mod_key & 0x000000FF extract the key
 	//mod_key & 0xFFFFFF00 extract the mods
 	
-	inline bool KeyDown(u32 mod_key = InputMod_Any){ 
+	inline b32 KeyDown(u32 mod_key = InputMod_Any){ 
 		return  newKeyState[mod_key & 0x000000FF] && ModsDown(mod_key & 0xFFFFFF00); 
 	}
 	
-	inline bool KeyUp(u32 mod_key = InputMod_Any){
+	inline b32 KeyUp(u32 mod_key = InputMod_Any){
 		return !newKeyState[mod_key & 0x000000FF] && ModsDown(mod_key & 0xFFFFFF00);
 	}
 	
-	inline bool KeyPressed(u32 mod_key = InputMod_Any){
+	inline b32 KeyPressed(u32 mod_key = InputMod_Any){
 		return  newKeyState[mod_key & 0x000000FF] && !oldKeyState[mod_key & 0x000000FF] && ModsDown(mod_key & 0xFFFFFF00);
 	}
 	
-	inline bool KeyReleased(u32 mod_key = InputMod_Any){
+	inline b32 KeyReleased(u32 mod_key = InputMod_Any){
 		return !newKeyState[mod_key & 0x000000FF] && oldKeyState[mod_key & 0x000000FF] && ModsDown(mod_key & 0xFFFFFF00);
 	}
 };

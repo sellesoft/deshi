@@ -7,12 +7,12 @@
 //////////////////////
 
 inline vec3::
-vec3(float inX, float inY, float inZ) {
+vec3(f32 inX, f32 inY, f32 inZ) {
 	this->x = inX; this->y = inY; this->z = inZ;
 }
 
 inline vec3::
-vec3(float inX, float inY) {
+vec3(f32 inX, f32 inY) {
 	this->x = inX; this->y = inY; this->z = 0;
 }
 
@@ -22,7 +22,7 @@ vec3(const vec3& v) {
 }
 
 inline vec3::
-vec3(float* ptr){ 
+vec3(f32* ptr){ 
 	x = *ptr; y = *(ptr+1); z = *(ptr+2);
 }
 
@@ -57,21 +57,21 @@ operator =  (vec3& rhs) {
 }
 
 inline vec3 vec3::
-operator *  (float rhs) const{
+operator *  (f32 rhs) const{
 	return vec3(this->x * rhs, this->y * rhs, this->z * rhs);
 }
 
 inline void vec3::
-operator *= (float rhs) {
+operator *= (f32 rhs) {
 	this->x *= rhs; this->y *= rhs; this->z *= rhs;
 }
 
-inline vec3 vec3::operator /  (float rhs) const{
+inline vec3 vec3::operator /  (f32 rhs) const{
 	return vec3(this->x / rhs, this->y / rhs, this->z / rhs);
 }
 
 inline void vec3::
-operator /= (float rhs) {
+operator /= (f32 rhs) {
 	this->x /= rhs; this->y /= rhs; this->z /= rhs;
 }
 
@@ -150,7 +150,7 @@ copy() const{
 	return vec3(x, y, z);
 }
 
-inline float vec3::
+inline f32 vec3::
 dot(const vec3& rhs) const{
 	return this->x*rhs.x + this->y*rhs.y + this->z*rhs.z;
 }
@@ -161,25 +161,25 @@ cross(const vec3& rhs) const{
 	return vec3(this->y*rhs.z - this->z*rhs.y, this->z*rhs.x - this->x*rhs.z, this->x*rhs.y - this->y*rhs.x);
 }
 
-inline float vec3::
+inline f32 vec3::
 mag() const{
 	return sqrt(x*x + y*y + z*z);
 }
 
 ////ref: https://betterexplained.com/articles/understanding-quakes-fast-inverse-square-root/
-//inline float vec3::
+//inline f32 vec3::
 //mag() const{
-//	Assert(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
-//	float k = x * x + y * y + z * z;
-//	float kHalf = .5f * k;
-//	int32 i = *(int32*)&k;
+//	Assert(CHAR_BIT*sizeof(f32) == 32 && CHAR_BIT*sizeof(u3232) == 32, "This mag method only works if f32 and u32 are 32bit");
+//	f32 k = x * x + y * y + z * z;
+//	f32 kHalf = .5f * k;
+//	u3232 i = *(u3232*)&k;
 //	i = 0x5f3759df - (i >> 1);
-//	k = *(float*)&i;
+//	k = *(f32*)&i;
 //	k = k*(1.5f - kHalf*k*k);
 //	return 1.f / k;
 //}
 
-inline float vec3::
+inline f32 vec3::
 magSq() const{
 	return x*x + y*y + z*z;
 }
@@ -194,12 +194,12 @@ normalize(){
 //inline void vec3::
 //normalize() {
 //	if (*this != vec3(0, 0, 0)) {
-//		Assert(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
-//		float k = x * x + y * y + z * z;
-//		float kHalf = .5f * k;
-//		int32 i = *(int32*)&k;
+//		Assert(CHAR_BIT*sizeof(f32) == 32 && CHAR_BIT*sizeof(u3232) == 32, "This mag method only works if f32 and u32 are 32bit");
+//		f32 k = x * x + y * y + z * z;
+//		f32 kHalf = .5f * k;
+//		u3232 i = *(u3232*)&k;
 //		i = 0x5f3759df - (i >> 1);
-//		k = *(float*)&i;
+//		k = *(f32*)&i;
 //		k = k*(1.5f - kHalf*k*k);
 //		*this *= k;
 //	}
@@ -216,30 +216,30 @@ normalized() const{
 //inline vec3 vec3::
 //normalized() const{
 //	if (*this != vec3(0, 0, 0)) {
-//		Assert(CHAR_BIT*sizeof(float) == 32 && CHAR_BIT*sizeof(int32) == 32, "This mag method only works if float and int are 32bit");
-//		float k = x * x + y * y + z * z;
-//		float kHalf = .5f * k;
-//		int32 i = *(int32*)&k;
+//		Assert(CHAR_BIT*sizeof(f32) == 32 && CHAR_BIT*sizeof(u3232) == 32, "This mag method only works if f32 and u32 are 32bit");
+//		f32 k = x * x + y * y + z * z;
+//		f32 kHalf = .5f * k;
+//		u3232 i = *(u3232*)&k;
 //		i = 0x5f3759df - (i >> 1);
-//		k = *(float*)&i;
+//		k = *(f32*)&i;
 //		k = k*(1.5f - kHalf*k*k);
 //		return *this * k;
 //	}
 //	return vec3(*this);
 //}
 
-//clamps all values of a vec3 between two floats
+//clamps all values of a vec3 between two f32s
 inline vec3 vec3::
-clamp(float lo, float hi) const{
-	if(lo > hi) float temp = lo; lo = hi; hi = lo;
+clamp(f32 lo, f32 hi) const{
+	if(lo > hi) f32 temp = lo; lo = hi; hi = lo;
 	return vec3((x < lo) ? lo : (hi < x) ? hi : x,
 				(y < lo) ? lo : (hi < y) ? hi : y,
 				(z < lo) ? lo : (hi < z) ? hi : z);
 }
 
 inline void vec3::
-clampMag(float min, float max){
-	float mag = this->mag();
+clampMag(f32 min, f32 max){
+	f32 mag = this->mag();
 	if (mag < min) {
 		this->normalize();
 		*this *= min; 
@@ -250,8 +250,8 @@ clampMag(float min, float max){
 }
 
 inline vec3 vec3::
-clampedMag(float min, float max) const{
-	float mag = this->mag();
+clampedMag(f32 min, f32 max) const{
+	f32 mag = this->mag();
 	if (mag < min) {
 		return normalized() * min; 
 	} else if(mag > max){ 
@@ -263,21 +263,21 @@ clampedMag(float min, float max) const{
 
 //round to a decimal place
 inline void vec3::
-round(int place){
-	x = floor(x * place * 10 + 0.5) / (place * 10);
-	y = floor(y * place * 10 + 0.5) / (place * 10);
-	z = floor(z * place * 10 + 0.5) / (place * 10);
+round(u32 place){
+	x = floorf(x * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f);
+	y = floorf(y * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f);
+	z = floorf(z * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f);
 }
 
 //round to a decimal place
 inline vec3 vec3::
-rounded(int place) const{
-	return vec3(floor(x * place * 10 + 0.5) / (place * 10),
-				floor(y * place * 10 + 0.5) / (place * 10),
-				floor(z * place * 10 + 0.5) / (place * 10));
+rounded(u32 place) const{
+	return vec3(floorf(x * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f),
+				floorf(y * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f),
+				floorf(z * (f32)place * 10.f + 0.5f) / ((f32)place * 10.f));
 }
 
-inline float vec3::
+inline f32 vec3::
 distanceTo(const vec3& rhs) const{
 	return (*this - rhs).mag();
 }
@@ -287,7 +287,7 @@ compOn(const vec3& rhs) const{
 	return rhs.normalized() * this->projectOn(rhs);
 }
 
-inline float vec3::
+inline f32 vec3::
 projectOn(const vec3& rhs) const{
 	if (this->mag() != 0) return this->dot(rhs) / rhs.mag();
 	else return 0;
@@ -299,9 +299,9 @@ midpoint(const vec3& rhs) const{
 }
 
 //returns angle in radians
-inline float vec3::
+inline f32 vec3::
 angleBetween(const vec3& rhs) const{
-	float mags = this->mag()*rhs.mag();
+	f32 mags = this->mag()*rhs.mag();
 	if(mags == 0) return 0;
 	return acosf(this->dot(rhs) / mags);
 }

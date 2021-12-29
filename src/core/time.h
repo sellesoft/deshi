@@ -84,7 +84,7 @@ inline std::string Time::FormatDateTime(std::string fmt){
 	std::string out = ""; out.reserve(256);
 	forI(fmt.size()){
 		if(fmt[i] == '{'){
-			switch(fmt[i+1]){
+			switch(fmt[(spt)i+1]){
 				case('y'):{
 					out.append(std::to_string(ltm->tm_year + 1900));
 				}i+=2;continue;
@@ -124,7 +124,7 @@ inline std::string Time::FormatTickTime(std::string fmt){
 	std::string out = ""; out.reserve(512);
 	forI(fmt.size()){
 		if(fmt[i] == '{'){
-			switch(fmt[i+1]){
+			switch(fmt[(upt)i+1]){
 				case('t'):{
 					out.append(std::to_string(timeTime));
 				}i+=2;continue;

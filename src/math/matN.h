@@ -85,7 +85,7 @@ struct matN {
 	u32 elementCount;
 	array<f64> data;
 	
-	matN() {}
+	matN() { rows = 0; cols = 0; elementCount = 0; }
 	matN(u32 _rows, u32 _cols) {
 		rows = _rows; cols = _cols;
 		elementCount = _rows * _cols;
@@ -533,7 +533,7 @@ inline matN matN::
 Row(u32 row) const{
 	Assert(row < rows, "subscript out of range");
 	matN ret(1, cols);
-	memcpy(ret.data.data, data.data + cols * row, sizeof(f64) * cols);
+	memcpy(ret.data.data, data.data + (u64)cols * row, sizeof(f64) * cols);
 	return ret;
 }
 
@@ -718,7 +718,7 @@ Rand(u32 rows, u32 cols, u32 lower, u32 upper) {
 	matN nu(rows, cols);
 	forX(i, rows) {
 		forX(j, cols) {
-			nu(i, j) = rand() % upper + lower;
+			nu(i, j) = rand() % upper + (u64)lower;
 		}
 	}
 	return nu;

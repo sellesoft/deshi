@@ -44,12 +44,12 @@ struct Window{
 	s32 refreshRate, screenRefreshRate; //TODO(delle,Wi) add selecting the refresh rate
 	DisplayMode displayMode;
 	CursorMode cursorMode;
-	bool minimized;
-	bool rawInput;
-	bool resizable;
-	bool closeWindow;
+	b32 minimized;
+	b32 rawInput;
+	b32 resizable;
+	b32 closeWindow;
 	
-	bool  resized;
+	b32  resized;
 	
 	vec2 dimensions;
 	
@@ -61,8 +61,8 @@ struct Window{
 	void UpdateCursorMode(CursorMode mode); 
 	void SetCursorPos(vec2 pos);
 	void SetCursor(CursorType curtype);
-	void UpdateRawInput(bool rawInput);
-	void UpdateResizable(bool resizable);
+	void UpdateRawInput(b32 rawInput);
+	void UpdateResizable(b32 resizable);
 	void Close();
 	void UpdateTitle(const char* title);
 	void ShowWindow();
