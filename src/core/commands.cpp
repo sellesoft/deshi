@@ -1,6 +1,6 @@
 namespace Cmd{
 	///////////////////
-	//// @u32ernal ////
+	//// @internal ////
 	///////////////////
 	local array<Command> commands;
 	local array<Alias> aliases;
@@ -34,8 +34,8 @@ namespace Cmd{
 		}CMDEND(rm, CmdArgument_String);
 		
 		CMDSTART(add, "Adds two numbers together"){
-			u32 i0 = atoi(args[0].str);
-			u32 i1 = atoi(args[1].str);
+			s32 i0 = atoi(args[0].str);
+			s32 i1 = atoi(args[1].str);
 			DeshConsole->AddLog(toStr(i0," + ",i1," = ", i0+i1));
 		}CMDEND(add, CmdArgument_S32, CmdArgument_S32);
 		
@@ -117,7 +117,7 @@ namespace Cmd{
 		}CMDEND(aliases);
 		
 		CMDSTART(window_display_mode, "Changes whether the window is in windowed(0), borderless(1), or fullscreen(2) mode"){
-			u32 mode = atoi(args[0].str);
+			s32 mode = atoi(args[0].str);
 			switch(mode){
 				case 0:{
 					DeshWindow->UpdateDisplayMode(DisplayMode_Windowed);
@@ -138,7 +138,7 @@ namespace Cmd{
 		}CMDEND(window_display_mode, CmdArgument_S32);
 		
 		CMDSTART(window_cursor_mode, "Changes whether the cursor is in default(0), first person(1), or hidden(2) mode"){
-			u32 mode = atoi(args[0].str);
+			s32 mode = atoi(args[0].str);
 			switch(mode){
 				case 0:{
 					DeshWindow->UpdateCursorMode(CursorMode_Default);
@@ -159,7 +159,7 @@ namespace Cmd{
 		}CMDEND(window_cursor_mode, CmdArgument_S32);
 		
 		CMDSTART(window_raw_input, "Changes whether the window uses raw input"){
-			u32 mode = atoi(args[0].str);
+			s32 mode = atoi(args[0].str);
 			switch(mode){
 				case 0:{
 					DeshWindow->UpdateRawInput(false);
@@ -234,23 +234,23 @@ namespace Cmd{
 		}CMDEND(mat_list);
 		
 		CMDSTART(mat_texture, "Changes a texture of a material"){
-			u32 matID = atoi(args[0].str);
-			u32 texSlot = atoi(args[1].str);
-			u32 texID = atoi(args[2].str);
+			s32 matID = atoi(args[0].str);
+			s32 texSlot = atoi(args[1].str);
+			s32 texID = atoi(args[2].str);
 			Storage::MaterialAt(matID)->textures[texSlot] = texID;
 			DeshConsole->AddLog(toStr("Updated material ",Storage::MaterialName(matID),"'s texture",texSlot,
 									  " to ",Storage::TextureName(texID)));
 		}CMDEND(mat_texture, CmdArgument_S32, CmdArgument_S32, CmdArgument_S32);
 		
 		CMDSTART(mat_shader, "Changes the shader of a material"){
-			u32 matID = atoi(args[0].str);
-			u32 shader = atoi(args[1].str);
+			s32 matID = atoi(args[0].str);
+			s32 shader = atoi(args[1].str);
 			Storage::MaterialAt(matID)->shader = (Shader)shader;
 			DeshConsole->AddLog(toStr("Updated material ",Storage::MaterialName(matID),"'s shader to ", ShaderStrings[shader]));
 		}CMDEND(mat_shader, CmdArgument_S32, CmdArgument_S32);
 		
 		CMDSTART(shader_reload, "Reloads specified shader"){
-			u32 id = atoi(args[0].str);
+			s32 id = atoi(args[0].str);
 			if(id == -1){
 				Render::ReloadAllShaders();
 				DeshConsole->AddLog("^c:magen^Reloaded all shaders^c^");

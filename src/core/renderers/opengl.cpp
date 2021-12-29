@@ -161,7 +161,7 @@ local s32  width  = 0;
 local s32  height = 0;
 local bool initialized  = false;
 local bool remake_window = false;
-local u32  opengl_success = 0;
+local s32  opengl_success = 0;
 #define OPENGL_INFOLOG_SIZE 512
 local char opengl_infolog[OPENGL_INFOLOG_SIZE] = {};
 
@@ -207,11 +207,11 @@ local struct{ //vertex shader uniform buffer
 		vec4 viewPos;     //camera pos
 		vec2 screen;      //screen dimensions
 		vec2 mousepos;    //mouse screen pos
-		vec3 mouseWorld;  //pou32 casted out from mouse 
+		vec3 mouseWorld;  //point casted out from mouse 
 		f32  time;        //total time
 		mat4 lightVP;     //first light's view projection matrix
-		u32  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
-		u32  padding[3];
+		s32  enablePCF;   //whether to blur shadow edges //TODO(delle,ReVu) convert to specialization constant
+		s32  padding[3];
 	} values;
 } uboVS{};
 
@@ -231,8 +231,8 @@ local struct{ //twod vertex shader push constant
 	struct{ //32 bytes
 		vec2 scale;
 		vec2 translate;
-		u32  font_idx;
-		u32  padding[3];
+		s32  font_idx;
+		s32  padding[3];
 	} values;
 } push2D{};
 
@@ -281,7 +281,7 @@ PrintGl(u32 level, Args... args){
 }
 
 local void 
-DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, u32 len_args, ...){
+DebugPostCallback(void *ret, const char *name, GLADapiproc apiproc, s32 len_args, ...){
 	GLenum error_code = glad_glGetError();
 	if(error_code != GL_NO_ERROR){
 		const char* error_flag = 0;
@@ -912,8 +912,8 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 	}
 	
 	//in betweens
-	u32 flip = -1;
-	for(u32 i = 1; i < points.count - 1; i++, flip *= -1){
+	s32 flip = -1;
+	for(s32 i = 1; i < points.count - 1; i++, flip *= -1){
 		vec2 last, curr, next, norm;
 		
 		last = points[i - 1];
@@ -951,7 +951,7 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 		normavin.clampMag(0, thickness * 4);
 		
 		//set indicies by pattern
-		u32 ipidx = 6 * (i - 1) + 2;
+		s32 ipidx = 6 * (i - 1) + 2;
 		ip[ipidx + 0] =
 			ip[ipidx + 2] =
 			ip[ipidx + 4] =
@@ -1466,7 +1466,7 @@ void Render::
 DrawPoly(array<vec3>& points, color color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
-	for(u32 i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
+	for(s32 i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
 	DrawLine(points[points.count-2], points[points.count-1], color);
 }
 

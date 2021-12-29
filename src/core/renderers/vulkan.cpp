@@ -37,7 +37,7 @@ struct ModelCmdVk{
 struct Push2DVk{
 	vec2 scale;
 	vec2 translate;
-	u32 font_offset;
+	s32 font_offset;
 };
 
 struct UICmdVk{
@@ -272,7 +272,7 @@ local struct{ //uniform buffer for the vertex shaders
 		vec4 viewPos;     //camera pos
 		vec2 screen;      //screen dimensions
 		vec2 mousepos;    //mouse screen pos
-		vec3 mouseWorld;  //pou32 casted out from mouse 
+		vec3 mouseWorld;  //point casted out from mouse 
 		f32  time;        //total time
 		mat4 lightVP;     //first light's view projection matrix
 		bool enablePCF;   //whether to blur shadow edges //TODOf(delle,ReVu) convert to specialization constant
@@ -1891,7 +1891,7 @@ CreateDescriptorPool(){
 	AssertRS(RSVK_LOGICALDEVICE, "CreateDescriptorPool called before CreateLogicalDevice");
 	rendererStage |= RSVK_DESCRIPTORPOOL;
 	
-	const u32 types = 11;
+	const s32 types = 11;
 	VkDescriptorPoolSize poolSizes[types] = {
 		{ VK_DESCRIPTOR_TYPE_SAMPLER,                1000 },
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
@@ -3406,8 +3406,8 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 	}
 	
 	//in betweens
-	u32 flip = -1;
-	for(u32 i = 1; i < points.count - 1; i++, flip *= -1){
+	s32 flip = -1;
+	for(s32 i = 1; i < points.count - 1; i++, flip *= -1){
 		vec2 last, curr, next, norm;
 		
 		last = points[i - 1];
@@ -3445,7 +3445,7 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 		normavin.clampMag(0, thickness * 4);
 		
 		//set indicies by pattern
-		u32 ipidx = 6 * (i - 1) + 2;
+		s32 ipidx = 6 * (i - 1) + 2;
 		ip[ipidx + 0] =
 			ip[ipidx + 2] =
 			ip[ipidx + 4] =
@@ -3475,7 +3475,7 @@ void Render::DrawLines2D(array<vec2>& points, f32 thickness, color color, u32 la
 		vp[1].pos = points[points.count - 1] - norm * halfthick; vp[1].uv = { 0,0 }; vp[1].color = col;//PackColorU32(255, 50, 100, 255);
 		
 		//set final indicies by pattern
-		u32 ipidx = 6 * (points.count - 2) + 2;
+		s32 ipidx = 6 * (points.count - 2) + 2;
 		ip[ipidx + 0] = uiVertexCount;
 		ip[ipidx + 2] = uiVertexCount;
 		ip[ipidx + 3] = uiVertexCount + 1;
@@ -4114,7 +4114,7 @@ void Render::
 DrawPoly(array<vec3>& points, color color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
-	for(u32 i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
+	for(s32 i=1; i<points.count-1; ++i) DrawLine(points[i-1], points[i], color);
 	DrawLine(points[points.count-2], points[points.count-1], color);
 }
 
@@ -4122,7 +4122,7 @@ void Render::
 DrawPolyFilled(array<vec3>& points, color color){
 	Assert(points.count > 2);
 	if(color.a == 0) return;
-	for(u32 i=2; i<points.count-1; ++i) DrawTriangleFilled(points[i-2], points[i-1], points[i], color);
+	for(s32 i=2; i<points.count-1; ++i) DrawTriangleFilled(points[i-2], points[i-1], points[i], color);
 	DrawTriangle(points[points.count-3], points[points.count-2], points[points.count-1], color);
 }
 

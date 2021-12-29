@@ -1,18 +1,18 @@
 /* 
 //// Notes ////
-Matrices can only hold f32s
+Matrices can only hold floats
 Matrices are in row-major format and all the functionality follows that format
 Matrices are Left-Handed meaning that multiplication travels right and rotation is clockwise 
 
 //// Accessing Matrix Values ////
 You can access the values of a matrix using the () operator.
 Acessing matrix values starts at zero for both the row and column: 0...n-1 not 1...n
-eg: matrix(0,3); This will return the f32 on the first row and fourth column
-eg: matrix(1,1); This will return the f32 on the second row and second column
+eg: matrix(0,3); This will return the float on the first row and fourth column
+eg: matrix(1,1); This will return the float on the second row and second column
 
 Alternatively, you can access the elements directly by their index in a one-dimensional array
 This avoids doing one multiplication and one addition but might be confusing to readers of your code
-eg: matrix.data[3]; This will return the f32 on the first row and fourth column
+eg: matrix.data[3]; This will return the float on the first row and fourth column
 
 //// Transformation Matrix ////												
 You can create a transformation matrix by providing the translation, rotation,
@@ -85,8 +85,8 @@ struct mat3 {
 	
 	mat3  Transpose() const;
 	f32 Determinant() const;
-	f32 Minor(u32 row, u32 col) const;
-	f32 Cofactor(u32 row, u32 col) const;
+	f32 Minor(s32 row, s32 col) const;
+	f32 Cofactor(s32 row, s32 col) const;
 	mat3  Adjoint() const;
 	mat3  Inverse() const;
 	
@@ -160,8 +160,8 @@ struct mat4 {
 	
 	mat4 Transpose() const;
 	f32  Determinant() const;
-	f32  Minor(u32 row, u32 col) const;
-	f32  Cofactor(u32 row, u32 col) const;
+	f32  Minor(s32 row, s32 col) const;
+	f32  Cofactor(s32 row, s32 col) const;
 	mat4 Adjoint() const;
 	mat4 Inverse() const;
 	

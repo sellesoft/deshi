@@ -45,6 +45,7 @@ hotloadable UI
 IO TODOs
 --------
 add file reading (simple and smart)
+add file writing (simple and smart)
 add file/dir creation
 add file/dir renaming
 add file/dir existence checking

@@ -220,7 +220,7 @@ global_const u64 wcharsize = sizeof(wchar);
 #define Radians(a) ((a) * (M_PI / 180.f))
 #define Degrees(a) ((a) * (180.f / M_PI))
 #define ArrayCount(arr) (sizeof((arr)) / sizeof(((arr))[0])) //length of a static-size c-array
-#define RoundUpTo(value, multiple) (((u32)((value) + (((u32)(multiple))-1)) / (u32)(multiple)) * (u32)(multiple))
+#define RoundUpTo(value, multiple) (((upt)((value) + (((upt)(multiple))-1)) / (upt)(multiple)) * (upt)(multiple))
 #define PackU32(x,y,z,w) (((u32)(x) << 24) | ((u32)(y) << 16) | ((u32)(z) << 8) | ((u32)(w) << 0))
 #define PointerDifference(a,b) ((u8*)(a) - (u8*)(b))
 #define PointerAsInt(a) PointerDifference(a,0)
@@ -242,7 +242,7 @@ global_const u64 wcharsize = sizeof(wchar);
 //////////////////////////
 FORCE_INLINE void ZeroMemory(void* ptr, upt bytes){memset(ptr, 0, bytes);}
 FORCE_INLINE b32 IsPow2(u64 value){return (value != 0) && ((value & (value-1)) == 0);}
-FORCE_INLINE upt roundUpToPow2(upt x) { return (upt)1 << (upt)((upt)log2(--x) + 1); }
+FORCE_INLINE upt roundUpToPow2(upt x) { return (upt)1 << (upt)((upt)log2(f64(--x)) + 1); }
 template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;}
 template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;}
 template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;}

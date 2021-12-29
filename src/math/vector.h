@@ -145,8 +145,8 @@ struct vec3 {
 	vec3 clamp(f32 lo, f32 hi) const;
 	void clampMag(f32 min, f32 max);
 	vec3 clampedMag(f32 min, f32 max) const;
-	void round(u32 place);
-	vec3 rounded(u32 place) const;
+	void round(s32 place);
+	vec3 rounded(s32 place) const;
 	f32  distanceTo(const vec3& rhs) const;
 	vec3 compOn(const vec3& rhs) const;
 	f32  projectOn(const vec3& rhs) const;
@@ -162,7 +162,7 @@ struct vec3 {
 	vec3 yInvert() const;
 	vec3 zInvert() const;
 	
-	//vector u32eractions
+	//vector interactions
 	vec3(const vec2& v);
 	vec3(const vec4& v);
 	vec2 toVec2() const;
@@ -176,7 +176,7 @@ struct vec3 {
 	//matN ToM1x3() const;
 	//matN ToM1x4(f32 w) const;
 	
-	//quaternion u32eractions
+	//quaternion interactions
 	vec3 operator* (const quat& rhs) const;
 };
 #include "vec3.inl"
@@ -260,7 +260,7 @@ struct vec4{
 	vec4 zInvert() const;
 	vec4 wInvert() const;
 	
-	//vector u32eractions
+	//vector interactions
 	vec4(const vec2& v, f32 z, f32 w);
 	vec4(const vec3& v, f32 w);
 	vec3 toVec3() const;
@@ -273,7 +273,7 @@ struct vec4{
 #include "vec4.inl"
 
 //////////////////////
-//// u32eractions ////
+//// interactions ////
 //////////////////////
 
 //// vec2 ////
@@ -349,12 +349,12 @@ takeVec3(const vec3& v) {
 
 #define RANDVEC(a) vec3(rand() % a + 1, rand() % a + 1, rand() % a + 1)
 
-//averages a vector v over an u32erval i and returns that average
+//averages a vector v over an interval i and returns that average
 #define V_AVG(i, v) \
 ([&] { \
 persist std::vector<vec3> vectors; \
 persist vec3 nv; \
-persist u32 iter = 0; \
+persist s32 iter = 0; \
 if(i == vectors.size()){ \
 vectors.erase(vectors.begin()); \
 vectors.push_back(v); \
@@ -403,15 +403,15 @@ template<> FORCE_INLINE vec2 Min(vec2 a, vec2 b) { return vec2(Min(a.x, b.x), Mi
 template<> FORCE_INLINE vec2 Max(vec2 a, vec2 b) { return vec2(Max(a.x, b.x), Max(a.y, b.y)); }
 template<> FORCE_INLINE vec2 Clamp(vec2 value, vec2 min, vec2 max) { return vec2(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y)); };
 template<> FORCE_INLINE vec2 ClampMin(vec2 value, vec2 min) { return vec2(ClampMin(value.x, min.x), ClampMin(value.y, min.y)); };
-template<> FORCE_INLINE vec2 ClampMax(vec2 value,  vec2 max) { return vec2(ClampMax(value.x, max.x), ClampMax(value.y, max.y)); };
+template<> FORCE_INLINE vec2 ClampMax(vec2 value,  vec2 max) { return vec2(ClampMax(value.x, max.x), ClampMax(value.y, max.y)); };
 template<> FORCE_INLINE vec3 Min(vec3 a, vec3 b) { return vec3(Min(a.x, b.x), Min(a.y, b.y), Min(a.z, b.z)); }
 template<> FORCE_INLINE vec3 Max(vec3 a, vec3 b) { return vec3(Max(a.x, b.x), Max(a.y, b.y), Max(a.z, b.z)); }
 template<> FORCE_INLINE vec3 Clamp(vec3 value, vec3 min, vec3 max) { return vec3(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y), Clamp(value.z, min.z, max.z)); };
 template<> FORCE_INLINE vec3 ClampMin(vec3 value, vec3 min) { return vec3(ClampMin(value.x, min.x), ClampMin(value.y, min.y), ClampMin(value.z, min.z)); };
-template<> FORCE_INLINE vec3 ClampMax(vec3 value, vec3 max) { return vec3(ClampMax(value.x, max.x), ClampMax(value.y, max.y), ClampMax(value.z, max.z)); };
+template<> FORCE_INLINE vec3 ClampMax(vec3 value, vec3 max) { return vec3(ClampMax(value.x, max.x), ClampMax(value.y, max.y), ClampMax(value.z, max.z)); };
 template<> FORCE_INLINE vec4 Min(vec4 a, vec4 b) { return vec4(Min(a.x, b.x), Min(a.y, b.y), Min(a.z, b.z), Min(a.w, b.w)); }
 template<> FORCE_INLINE vec4 Max(vec4 a, vec4 b) { return vec4(Max(a.x, b.x), Max(a.y, b.y), Max(a.z, b.z), Max(a.w, b.w)); }
 template<> FORCE_INLINE vec4 Clamp(vec4 value, vec4 min, vec4 max) { return vec4(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y), Clamp(value.z, min.z, max.z), Clamp(value.w, min.w, max.w)); };
 template<> FORCE_INLINE vec4 ClampMin(vec4 value, vec4 min) { return vec4(ClampMin(value.x, min.x), ClampMin(value.y, min.y), ClampMin(value.z, min.z), ClampMin(value.w, min.w)); };
-template<> FORCE_INLINE vec4 ClampMax(vec4 value, vec4 max) { return vec4(ClampMax(value.x, max.x), ClampMax(value.y, max.y), ClampMax(value.z, max.z), ClampMax(value.w, max.w)); };
+template<> FORCE_INLINE vec4 ClampMax(vec4 value, vec4 max) { return vec4(ClampMax(value.x, max.x), ClampMax(value.y, max.y), ClampMax(value.z, max.z), ClampMax(value.w, max.w)); };
 #endif //DESHI_VECTOR_H
