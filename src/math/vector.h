@@ -402,8 +402,8 @@ else return vr; }\
 template<> FORCE_INLINE vec2 Min(vec2 a, vec2 b) { return vec2(Min(a.x, b.x), Min(a.y, b.y));}
 template<> FORCE_INLINE vec2 Max(vec2 a, vec2 b) { return vec2(Max(a.x, b.x), Max(a.y, b.y)); }
 template<> FORCE_INLINE vec2 Clamp(vec2 value, vec2 min, vec2 max) { return vec2(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y)); };
-template<> FORCE_INLINE vec2 ClampMax(vec2 value, vec2 max) { return vec2(ClampMax(value.x, max.x), ClampMax(value.y, max.y)); };template<> FORCE_INLINE vec2 ClampMin(vec2 value, vec2 min) { return vec2(ClampMin(value.x, min.x), ClampMin(value.y, min.y)); };
-
+template<> FORCE_INLINE vec2 ClampMin(vec2 value, vec2 min) { return vec2(ClampMin(value.x, min.x), ClampMin(value.y, min.y)); };
+template<> FORCE_INLINE vec2 ClampMax(vec2 value,  vec2 max) { return vec2(ClampMax(value.x, max.x), ClampMax(value.y, max.y)); };
 template<> FORCE_INLINE vec3 Min(vec3 a, vec3 b) { return vec3(Min(a.x, b.x), Min(a.y, b.y), Min(a.z, b.z)); }
 template<> FORCE_INLINE vec3 Max(vec3 a, vec3 b) { return vec3(Max(a.x, b.x), Max(a.y, b.y), Max(a.z, b.z)); }
 template<> FORCE_INLINE vec3 Clamp(vec3 value, vec3 min, vec3 max) { return vec3(Clamp(value.x, min.x, max.x), Clamp(value.y, min.y, max.y), Clamp(value.z, min.z, max.z)); };

@@ -280,6 +280,17 @@ enum UIDrawType : u32 {
 	UIDrawType_Image,
 };
 
+global_ const char* UIDrawTypeStrs[] = {
+	"Rectangle",
+	"FilledRectangle",
+	"Line",
+	"Circle",
+	"CircleFilled",
+	"Text",
+	"WText",
+	"Image",
+};
+
 //draw commands store what kind of command it is, and info relative to that command
 //this is to be stored on an array on UIWindow and determines what elements it draws when
 //we do the rendering pass
@@ -308,6 +319,9 @@ struct UIDrawCmd {
 	vec2 scissorExtent = vec2(0, 0);
 	b32  useWindowScissor = true;
 	b32  overrideScissorRules = false;
+
+	//for matching draw cmds in debug
+	u32 hash = -1;
 };
 
 enum UIItemType : u32 {
@@ -316,6 +330,7 @@ enum UIItemType : u32 {
 	UIItemType_Custom,    // BeginCustomItem()
 	UIItemType_Abstract,  // any single drawcall such as a line, rectangle, circle, etc
 	UIItemType_Window,    // an item that holds a pointer to a window to be drawn
+	UIItemType_PopOutWindow,    // an item that holds a pointer to a window to be drawn
 	UIItemType_Text,      // Text()
 	UIItemType_InputText, // InputText()
 	UIItemType_Button,    // Button()
@@ -335,6 +350,7 @@ global_ const char* UIItemTypeStrs[] = {
 	"Custom",    
 	"Abstract",  
 	"ChildWin",  
+	"PopOutWindow",
 	"Text",      
 	"InputText", 
 	"Button",    
@@ -454,13 +470,14 @@ struct UIWindow {
 	array<UIItem> items[UI_WINDOW_ITEM_LAYERS];
 	array<UIItem> preItems;
 	array<UIItem> postItems;
+	array<UIItem> popOuts;
 	
 	u32 windowlayer = 5;
 	
 	//a collection of child windows
 	UIWindow* parent = 0;
 	map<const char*, UIWindow*> children;
-	
+	pair<UIWindow*, UIItem*> hoveredChild;
 
 
 	vec2 minSizeForFit;
@@ -473,13 +490,13 @@ struct UIWindow {
 	
 	
 	//debug information for use with metrics
-#ifdef DESHI_INTERNAL
+//#ifdef DESHI_INTERNAL
 	f32 render_time = 0;
 	f32 creation_time = 0;
 	u32 items_count = 0;
 	
 	
-#endif
+//#endif
 	
 	UIWindow() {};
 	

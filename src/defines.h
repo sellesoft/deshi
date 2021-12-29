@@ -242,8 +242,8 @@ global_const u64 ucharsize = sizeof(uchar);
 //////////////////////////
 FORCE_INLINE b32 IsPow2(u64 value){return (value != 0) && ((value & (value-1)) == 0);}
 template<typename T> FORCE_INLINE void Swap(T& a, T& b){T temp = a; a = b; b = temp;}
-template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;}
 template<typename T> FORCE_INLINE T Min(T a, T b){return (a < b) ? a : b;}
+template<typename T> FORCE_INLINE T Max(T a, T b){return (a > b) ? a : b;}
 template<typename T> FORCE_INLINE T Clamp(T value, T min, T max){return (value < min) ? min : ((value > max) ? max : value);};
 template<typename T,typename U> FORCE_INLINE T Clamp(T value, U min, T max){return (value < min) ? min : ((value > max) ? max : value);}
 template<typename T,typename U> FORCE_INLINE T Clamp(T value, T min, U max){return (value < min) ? min : ((value > max) ? max : value);}
