@@ -35,8 +35,8 @@ namespace deshi {
 //////////////////////////
 //// deshi quickstart ////
 //////////////////////////
-function void deshi_init(u32 winWidth = 1280, u32 winHeight = 720);
-function void deshi_cleanup();
+global_ void deshi_init(u32 winWidth = 1280, u32 winHeight = 720);
+global_ void deshi_cleanup();
 #define deshi_loop_start() \
 TIMER_START(t_f); \
 while(!DeshWindow->ShouldClose()){ \

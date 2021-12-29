@@ -53,7 +53,7 @@ Init(){
 	DeshStorage->null_model    = CreateModelFromMesh(NullMesh(), ModelFlags_NONE).second; cpystr(DeshStorage->null_model->name, "null", DESHI_NAME_SIZE);
 	
 	//create null font (white square)
-	DeshStorage->null_font     = (Font*)Memory::Allocate(sizeof(Font));
+	DeshStorage->null_font     = (Font*)memory_alloc(sizeof(Font));
 	fonts.add(DeshStorage->null_font);
 	NullFont()->type = FontType_NONE;
 	NullFont()->idx = 0;
@@ -102,7 +102,7 @@ AllocateMesh(u32 indexCount, u32 vertexCount, u32 faceCount, u32 trianglesNeighb
 		+ facesNeighborTriangleCount*sizeof(u32)
 		+     facesNeighborFaceCount*sizeof(u32);
 	
-	Mesh* mesh = (Mesh*)Memory::Allocate(bytes);   char* cursor = (char*)mesh + (1*sizeof(Mesh));
+	Mesh* mesh = (Mesh*)memory_alloc(bytes);   char* cursor = (char*)mesh + (1*sizeof(Mesh));
 	mesh->bytes         = bytes;
 	mesh->indexCount    = indexCount;
 	mesh->vertexCount   = vertexCount;
@@ -367,7 +367,7 @@ CreateMeshFromMemory(void* data){
 	}
 	
 	//allocate
-	Mesh* mesh = (Mesh*)Memory::Allocate(bytes);  char* cursor = (char*)mesh + (1*sizeof(Mesh));
+	Mesh* mesh = (Mesh*)memory_alloc(bytes);  char* cursor = (char*)mesh + (1*sizeof(Mesh));
 	memcpy(mesh, data, bytes);
 	mesh->idx = meshes.count;
 	mesh->vertexArray   = (Mesh::Vertex*)cursor;       cursor +=   mesh->vertexCount*sizeof(Mesh::Vertex);
@@ -436,7 +436,7 @@ DeleteMesh(Mesh* mesh){ //!Incomplete
 //////////////////
 local Texture* 
 AllocateTexture(){
-	Texture* texture = (Texture*)Memory::Allocate(sizeof(Texture));
+	Texture* texture = (Texture*)memory_alloc(sizeof(Texture));
 	return texture;
 }
 
@@ -463,7 +463,7 @@ CreateTextureFromFile(const char* filename, ImageFormat format, TextureType type
 	texture->forceLinear = forceLinear;
 	if(texture->pixels == 0){ 
 		LogE("storage","Failed to create texture '",filename,"': ",stbi_failure_reason()); 
-		Memory::ZeroFree(texture);
+		memory_zfree(texture);
 		return result; 
 	}
 	texture->mipmaps = (generateMipmaps) ? (int)log2(Max(texture->width, texture->height)) + 1 : 1;
@@ -506,7 +506,7 @@ CreateTextureFromMemory(void* data, const char* name, int width, int height, Ima
 	//reinterpret image as RGBA32
 	const u8* src = (u8*)data;
 	if(format != ImageFormat_RGBA){
-		texture->pixels = (u8*)Memory::Allocate((size_t)width * (size_t)height * 4);
+		texture->pixels = (u8*)memory_alloc((size_t)width * (size_t)height * 4);
 		data = texture->pixels;
 		u32* dst = (u32*)texture->pixels;
 		switch(format){
@@ -531,7 +531,7 @@ CreateTextureFromMemory(void* data, const char* name, int width, int height, Ima
 	
 	Render::LoadTexture(texture);
 	if(!keepLoaded){
-		Memory::ZeroFree(data);
+		memory_zfree(data);
 		data = 0;
 		texture->pixels = 0;
 	}
@@ -553,7 +553,7 @@ DeleteTexture(Texture* texture){ //!Incomplete
 ///////////////////
 local Material* 
 AllocateMaterial(u32 textureCount){
-	Material* material = (Material*)Memory::Allocate(sizeof(Material));
+	Material* material = (Material*)memory_alloc(sizeof(Material));
 	material->textures = array<u32>(textureCount);
 	return material;
 }
@@ -720,7 +720,7 @@ DeleteMaterial(Material* material){ //!Incomplete
 ////////////////
 local Model* 
 AllocateModel(u32 batchCount){
-	Model* model = (Model*)Memory::Allocate(sizeof(Model));
+	Model* model = (Model*)memory_alloc(sizeof(Model));
 	model->batches = array<Model::Batch>();
 	model->batches.resize((batchCount) ? batchCount : 1);
 	return model;
@@ -1500,7 +1500,7 @@ DeleteModel(Model* model){ //!Incomplete
 ///////////////
 local Font* 
 AllocateFont(Type type){
-	Font* font = (Font*)Memory::Allocate(sizeof(Font));
+	Font* font = (Font*)memory_alloc(sizeof(Font));
 	font->type = type;
 	font->idx = Storage::fonts.count;
 	return font;
@@ -1643,8 +1643,8 @@ CreateFontFromFileBDF(const char* filename){
 		}else if(strncmp("CHARS",       key_start, key_end-key_start) == 0){
 			font->count = strtol(value_start, 0, 10);
 			Assert(font->max_width && font->max_height && font->count);
-			encodings = (u16*)Memory::TempAllocate(font->count*sizeof(u16));
-			pixels = (u8*)Memory::TempAllocate(font->count * ((font->max_width*font->max_height + 2*font->max_width) * sizeof(u8)));
+			encodings = (u16*)memory_talloc(font->count*sizeof(u16));
+			pixels = (u8*)memory_talloc(font->count * ((font->max_width*font->max_height + 2*font->max_width) * sizeof(u8)));
 			pixels[0] = 255;
 			pixels[1] = 255;
 			pixels[font->max_width] = 255;
@@ -1707,7 +1707,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	// 
 	//TODO(sushi) maybe implement taking in ranges 
 	
-	stbtt_pack_range* ranges = (stbtt_pack_range*)Memory::Allocate(6*sizeof(*ranges));
+	stbtt_pack_range* ranges = (stbtt_pack_range*)memory_alloc(6*sizeof(*ranges));
 	
 	ranges[0].num_chars = 94;   ranges[0].first_unicode_codepoint_in_range = 32;
 	ranges[1].num_chars = 143;  ranges[1].first_unicode_codepoint_in_range = 880;
@@ -1723,14 +1723,14 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	ranges[4].font_size = (f32)size; 
 	ranges[5].font_size = (f32)size; 
 	
-	ranges[0].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[0].num_chars*sizeof(stbtt_packedchar));
-	ranges[1].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[1].num_chars*sizeof(stbtt_packedchar));
-	ranges[2].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[2].num_chars*sizeof(stbtt_packedchar));
-	ranges[3].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[3].num_chars*sizeof(stbtt_packedchar));
-	ranges[4].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[4].num_chars*sizeof(stbtt_packedchar));
-	ranges[5].chardata_for_range = (stbtt_packedchar*)Memory::Allocate(ranges[5].num_chars*sizeof(stbtt_packedchar));
+	ranges[0].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[0].num_chars*sizeof(stbtt_packedchar));
+	ranges[1].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[1].num_chars*sizeof(stbtt_packedchar));
+	ranges[2].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[2].num_chars*sizeof(stbtt_packedchar));
+	ranges[3].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[3].num_chars*sizeof(stbtt_packedchar));
+	ranges[4].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[4].num_chars*sizeof(stbtt_packedchar));
+	ranges[5].chardata_for_range = (stbtt_packedchar*)memory_alloc(ranges[5].num_chars*sizeof(stbtt_packedchar));
 	
-	stbtt_pack_context* pc = (stbtt_pack_context*)Memory::Allocate(1*sizeof(*pc));
+	stbtt_pack_context* pc = (stbtt_pack_context*)memory_alloc(1*sizeof(*pc));
 	
 	font->num_ranges = 6;
 	font->ttf_pack_ranges = (pack_range*)ranges;
@@ -1753,7 +1753,7 @@ CreateFontFromFileTTF(const char* filename, u32 size){
 	font->ttf_size[1] = tsy; 
 	cpystr(font->name,filename,DESHI_NAME_SIZE);
 	
-	u8* pixels = (u8*)Memory::TempAllocate((tsx * tsy)*sizeof(u8));
+	u8* pixels = (u8*)memory_talloc((tsx * tsy)*sizeof(u8));
 	pixels[0]     = 255;
 	pixels[1]     = 255;
 	pixels[tsx]   = 255;

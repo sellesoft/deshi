@@ -5,7 +5,7 @@
 #define DESHI_ARRAY_GROWTH_FACTOR 2
 #define DESHI_ARRAY_SPACE_ALIGNMENT 4
 #include "array.h"
-function void TEST_deshi_utils_array(){
+local void TEST_deshi_utils_array(){
 	//// constructors ////
 	array<int> array1;
 	AssertAlways(typeid(array1.data) == typeid(int*));
@@ -380,7 +380,7 @@ function void TEST_deshi_utils_array(){
 }
 
 #include "array_algorithms.h"
-function void TEST_deshi_utils_array_algorithms(){
+local void TEST_deshi_utils_array_algorithms(){
 	srand(time(0));
 	
 	//bubble sort
@@ -418,7 +418,7 @@ function void TEST_deshi_utils_array_algorithms(){
 }
 
 #include "carray.h"
-function void TEST_deshi_utils_carray(){
+local void TEST_deshi_utils_carray(){
 	int* arr0 = (int*)calloc(1, 16*sizeof(int));
 	defer{ free(arr0); };
 	forI(16){ arr0[i] = 1 << i; }
@@ -468,7 +468,7 @@ function void TEST_deshi_utils_carray(){
 }
 
 #include "color.h"
-function void TEST_deshi_utils_color(){
+local void TEST_deshi_utils_color(){
 	//// constructors ////
 	color color1;
 	AssertAlways(color1.r == 000 && color1.g == 000 && color1.b == 000 && color1.a == 000);
@@ -538,32 +538,32 @@ function void TEST_deshi_utils_color(){
 }
 
 #include "cstring.h"
-function void TEST_deshi_utils_cstring(){
+local void TEST_deshi_utils_cstring(){
 	printf("[DESHI-TEST] TODO:   utils/cstring\n");
 }
 
 #include "hash.h"
-function void TEST_deshi_utils_hash(){
+local void TEST_deshi_utils_hash(){
 	printf("[DESHI-TEST] TODO:   utils/hash\n");
 }
 
 #include "map.h"
-function void TEST_deshi_utils_map(){
+local void TEST_deshi_utils_map(){
 	printf("[DESHI-TEST] TODO:   utils/map\n");
 }
 
 #include "optional.h"
-function void TEST_deshi_utils_optional(){
+local void TEST_deshi_utils_optional(){
 	printf("[DESHI-TEST] TODO:   utils/optional\n");
 }
 
 #include "ring_array.h"
-function void TEST_deshi_utils_ring_array(){
+local void TEST_deshi_utils_ring_array(){
 	printf("[DESHI-TEST] TODO:   utils/ring_array\n");
 }
 
 #include "string.h"
-function void TEST_deshi_utils_string(){
+local void TEST_deshi_utils_string(){
 	
 	{//empty constructor does not allocate or set any vars
 		string str;
@@ -571,34 +571,34 @@ function void TEST_deshi_utils_string(){
 		AssertAlways(!str.count);
 		AssertAlways(!str.space);
 	}
-
+	
 	{//const char* constructor
 		string str("ABCDEFG");
 		AssertAlways(!memcmp(str.str, "ABCDEFG", 7));
 		AssertAlways(str.count == 7);
 		AssertAlways(str.space == 8);
-
+		
 	}
-
-
+	
+	
 }
 
 #include "string_conversion.h"
-function void TEST_deshi_utils_string_conversion(){
+local void TEST_deshi_utils_string_conversion(){
 	printf("[DESHI-TEST] TODO:   utils/string_conversion\n");
 }
 
 #include "tuple.h"
-function void TEST_deshi_utils_tuple(){
+local void TEST_deshi_utils_tuple(){
 	printf("[DESHI-TEST] TODO:   utils/tuple\n");
 }
 
 #include "utils.h"
-function void TEST_deshi_utils_utils(){
+local void TEST_deshi_utils_utils(){
 	printf("[DESHI-TEST] TODO:   utils/utils\n");
 }
 
-function void TEST_deshi_utils(){
+local void TEST_deshi_utils(){
 	TEST_deshi_utils_array();
 	TEST_deshi_utils_array_algorithms();
 	TEST_deshi_utils_carray();

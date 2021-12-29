@@ -5,7 +5,6 @@
 //| Chunk | Chunk | Header |    Memory   | Header |    Memory   |      |      |
 //|       |       |        | Item | Item |        | Item | Item |      |      |
 
-StartNamespace(Memory);
 ////////////////
 //// @utils ////
 ////////////////
@@ -15,24 +14,18 @@ StartNamespace(Memory);
 #define MEMORY_DO_HEAP_CHECKS true
 #define MEMORY_DO_HEAP_PRINTS false
 
-FORCE_INLINE void ZeroBytes(void* ptr, upt bytes){
-	memset(ptr, 0, bytes);
-}
-
-
 ////////////////
 //// @arena ////
 ////////////////
-local ArenaHeap arena_heap;
+local ArenaHeap deshi__arena_heap_;
+local ArenaHeap* deshi__arena_heap = &deshi__arena_heap_;
 
-#define MEMORY_ARENA_MINIMUM_ALLOCATION_SIZE ((sizeof(ArenaHeapNode) + MEMORY_BYTE_ALIGNMENT_MASK) & ~(MEMORY_BYTE_ALIGNMENT_MASK))
-#define MEMORY_ARENA_ALIGNMENT MEMORY_ARENA_MINIMUM_ALLOCATION_SIZE
+#define MEMORY_ARENA_MIN_ALLOC_SIZE ((sizeof(ArenaHeapNode) + MEMORY_BYTE_ALIGNMENT_MASK) & ~(MEMORY_BYTE_ALIGNMENT_MASK))
+#define MEMORY_ARENA_ALIGNMENT MEMORY_ARENA_MIN_ALLOC_SIZE
 
-#if !MEMORY_DO_HEAP_CHECKS
-#  define DEBUG_CheckArenaHeapNodes(heap) 
-#  define DEBUG_CheckArenaHeapArenas(heap)
-#else //MEMORY_DO_HEAP_CHECKS
-function void DEBUG_CheckArenaHeapNodes(ArenaHeap* heap){
+#if MEMORY_DO_HEAP_CHECKS
+local void
+DEBUG_CheckArenaHeapNodes(ArenaHeap* heap){
 	Assert(heap->order.next != 0 && heap->order.prev != 0, "First heap order node is invalid");
 	Assert(heap->empty.next != 0 && heap->empty.prev != 0, "First heap empty node is invalid");
 	for(Node* node = &heap->order; ; ){
@@ -47,7 +40,8 @@ function void DEBUG_CheckArenaHeapNodes(ArenaHeap* heap){
 	}
 }
 
-function void DEBUG_CheckArenaHeapArenas(ArenaHeap* heap){
+local void
+DEBUG_CheckArenaHeapArenas(ArenaHeap* heap){
 	Assert(PointerDifference(heap->cursor, heap->start) % MEMORY_BYTE_ALIGNMENT == 0, "Memory alignment is invalid");
 	Assert(PointerDifference(heap->cursor, heap->start) >= heap->used, "Heap used amount is greater than cursor offset");
 	upt overall_used = 0;
@@ -70,11 +64,13 @@ function void DEBUG_CheckArenaHeapArenas(ArenaHeap* heap){
 	}
 	//Assert(overall_used == heap->used, "Heap used is incorrect"); //TODO(delle) add this back
 }
+#else //MEMORY_DO_HEAP_CHECKS
+#  define DEBUG_CheckArenaHeapNodes(heap) 
+#  define DEBUG_CheckArenaHeapArenas(heap)
 #endif //MEMORY_DO_HEAP_CHECKS
-#if !MEMORY_DO_HEAP_PRINTS
-#  define DEBUG_PrintArenaHeapNodes(heap)
-#else //MEMORY_DO_HEAP_PRINTS
-function void DEBUG_PrintArenaHeapNodes(ArenaHeap* heap){
+#if MEMORY_DO_HEAP_PRINTS
+local void
+DEBUG_PrintArenaHeapNodes(ArenaHeap* heap){
 	if(heap->initialized && heap->used > 0){
 		string heap_order = "Order: ", heap_empty = "Empty: ";
 		for(ArenaHeapNode* node = (ArenaHeapNode*)heap->start; ;){
@@ -88,22 +84,26 @@ function void DEBUG_PrintArenaHeapNodes(ArenaHeap* heap){
 		Log("memory-arena",heap_order); Log("memory-arena",heap_empty); Log("","----------------------------------------------");
 	}
 }
+#else //MEMORY_DO_HEAP_PRINTS
+#  define DEBUG_PrintArenaHeapNodes(heap)
 #endif //MEMORY_DO_HEAP_PRINTS
 
-function inline void UpdateArenaHeapCursor(ArenaHeap* heap){ //NOTE this relies on empty nodes having correct arena.start positions
-	ArenaHeapNode* last_order_node = CastFromMember(ArenaHeapNode, order, arena_heap.order.prev);
+local inline void
+UpdateArenaHeapCursor(ArenaHeap* heap){ //NOTE this relies on empty nodes having correct arena.start positions
+	ArenaHeapNode* last_order_node = CastFromMember(ArenaHeapNode, order, deshi__arena_heap->order.prev);
 	heap->cursor = last_order_node->arena.start + last_order_node->arena.size;
 }
 
-Arena* CreateArena(upt size){
-	DEBUG_CheckArenaHeapNodes(&arena_heap);
+Arena*
+deshi__memory_arena_create(upt size, char* file, upt line){
+	DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 	if(size == 0) return 0;
-	Assert(arena_heap.start, "Attempted to create an arena before Memory::Init() has been called");
-	upt aligned_size = ClampMin(RoundUpTo(size, MEMORY_ARENA_ALIGNMENT), MEMORY_ARENA_MINIMUM_ALLOCATION_SIZE);
-	Assert(arena_heap.used + aligned_size <= arena_heap.size, "Attempted to use more than max arena heap size");
+	Assert(deshi__arena_heap->start, "Attempted to create an arena before Memory::Init() has been called");
+	upt aligned_size = ClampMin(RoundUpTo(size, MEMORY_ARENA_ALIGNMENT), MEMORY_ARENA_MIN_ALLOC_SIZE);
+	Assert(deshi__arena_heap->used + aligned_size <= deshi__arena_heap->size, "Attempted to use more than max arena heap size");
 	
 	//check if there are any empty nodes that can hold the new arena
-	for(Node* n = arena_heap.empty.next; n != &arena_heap.empty; n = n->next){
+	for(Node* n = deshi__arena_heap->empty.next; n != &deshi__arena_heap->empty; n = n->next){
 		ArenaHeapNode* node = CastFromMember(ArenaHeapNode, empty, n);
 		if(node->arena.size >= aligned_size){
 			upt leftover_size = node->arena.size - aligned_size;
@@ -112,112 +112,115 @@ Arena* CreateArena(upt size){
 			//make new empty node after new order node if there is enough space
 			if(leftover_size > sizeof(ArenaHeapNode)){
 				ArenaHeapNode* new_node = (ArenaHeapNode*)(node->arena.start + aligned_size);
-				NodeInsertNext(&node->order, &new_node->order); DEBUG_CheckArenaHeapNodes(&arena_heap);
-				NodeInsertNext(&node->empty, &new_node->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
+				NodeInsertNext(&node->order, &new_node->order); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
+				NodeInsertNext(&node->empty, &new_node->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 				new_node->arena.start = (u8*)(new_node+1);
 				new_node->arena.size = leftover_size - sizeof(ArenaHeapNode);
-				arena_heap.used += sizeof(ArenaHeapNode);
+				deshi__arena_heap->used += sizeof(ArenaHeapNode);
 			}else{
 				aligned_size += leftover_size;
 			}
 			
 			//convert empty node to order node
-			NodeRemove(&node->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
+			NodeRemove(&node->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 			node->empty.next = 0;
 			node->empty.prev = 0;
 			//node->arena.start = (u8*)(node+1); //NOTE arena starts are correct in empty nodes
 			node->arena.cursor = node->arena.start;
 			node->arena.size   = aligned_size;
 			node->arena.used   = 0;
-			arena_heap.used += aligned_size;
-			UpdateArenaHeapCursor(&arena_heap); //NOTE an empty node can't be the last order node //TODO(delle) comment this out then test
+			deshi__arena_heap->used += aligned_size;
+			UpdateArenaHeapCursor(deshi__arena_heap); //NOTE an empty node can't be the last order node //TODO(delle) comment this out then test
 			
-			DEBUG_CheckArenaHeapNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap); DEBUG_PrintArenaHeapNodes(&arena_heap);
+			DEBUG_CheckArenaHeapNodes(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(deshi__arena_heap); DEBUG_PrintArenaHeapNodes(deshi__arena_heap);
 			return &node->arena;
 		}
 	}
 	
 	//if we cant replace an empty node, make a new order node for the new arena
-	Assert(arena_heap.cursor + aligned_size + sizeof(ArenaHeapNode) <= arena_heap.start + arena_heap.size, "Attempted to use more than max arena heap size");
-	ArenaHeapNode* new_node = (ArenaHeapNode*)arena_heap.cursor;
-	NodeInsertPrev(&arena_heap.order, &new_node->order); DEBUG_CheckArenaHeapNodes(&arena_heap);
+	Assert(deshi__arena_heap->cursor + aligned_size + sizeof(ArenaHeapNode) <= deshi__arena_heap->start + deshi__arena_heap->size, "Attempted to use more than max arena heap size");
+	ArenaHeapNode* new_node = (ArenaHeapNode*)deshi__arena_heap->cursor;
+	NodeInsertPrev(&deshi__arena_heap->order, &new_node->order); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 	new_node->arena.start  = (u8*)new_node + sizeof(ArenaHeapNode);
 	new_node->arena.cursor = new_node->arena.start;
 	new_node->arena.size   = aligned_size;
 	//new_node->arena.used   = 0; //NOTE new memory is already zero
-	arena_heap.used   += aligned_size + sizeof(ArenaHeapNode);
-	UpdateArenaHeapCursor(&arena_heap);
+	deshi__arena_heap->used   += aligned_size + sizeof(ArenaHeapNode);
+	UpdateArenaHeapCursor(deshi__arena_heap);
 	
-	DEBUG_CheckArenaHeapNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap); DEBUG_PrintArenaHeapNodes(&arena_heap); 
+	DEBUG_CheckArenaHeapNodes(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(deshi__arena_heap); DEBUG_PrintArenaHeapNodes(deshi__arena_heap); 
 	return &new_node->arena;
 }
 
-Arena* GrowArena(Arena* arena, upt size){
-	DEBUG_CheckArenaHeapNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap);
+Arena*
+deshi__memory_arena_grow(Arena* arena, upt size, char* file, upt line){
+	DEBUG_CheckArenaHeapNodes(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(deshi__arena_heap);
 	if(size == 0) return arena;
 	if(arena == 0) return 0;
-	Assert((u8*)arena >= arena_heap.start && (u8*)arena < arena_heap.cursor, "Attempted to grow an arena that's outside the arena heap");
-	Assert(arena_heap.used + size <= arena_heap.size, "Attempted to use more than max arena heap size");
+	Assert((u8*)arena >= deshi__arena_heap->start && (u8*)arena < deshi__arena_heap->cursor, "Attempted to grow an arena that's outside the arena heap");
+	Assert(deshi__arena_heap->used + size <= deshi__arena_heap->size, "Attempted to use more than max arena heap size");
 	
 	//check if the next node is empty and can hold the grown size, or if we need to make a new arena
 	Arena* result = arena;
 	upt aligned_size = RoundUpTo(size, MEMORY_ARENA_ALIGNMENT);
 	ArenaHeapNode* node = CastFromMember(ArenaHeapNode, arena, arena);
 	ArenaHeapNode* next = CastFromMember(ArenaHeapNode, order, node->order.next);
-	if(&next->order == &arena_heap.order){ //we are the last node
-		Assert(arena_heap.cursor + size <= arena_heap.start + arena_heap.size, "Attempted to use more than max arena heap size");
-		upt growth_size = (arena_heap.cursor + aligned_size <= arena_heap.start + arena_heap.size) ? aligned_size : size;
+	if(&next->order == &deshi__arena_heap->order){ //we are the last node
+		Assert(deshi__arena_heap->cursor + size <= deshi__arena_heap->start + deshi__arena_heap->size, "Attempted to use more than max arena heap size");
+		upt growth_size = (deshi__arena_heap->cursor + aligned_size <= deshi__arena_heap->start + deshi__arena_heap->size) ? aligned_size : size;
 		
 		arena->size += growth_size;
-		arena_heap.used += growth_size;
-		UpdateArenaHeapCursor(&arena_heap);
+		deshi__arena_heap->used += growth_size;
+		UpdateArenaHeapCursor(deshi__arena_heap);
 	}else if((next->empty.next != 0) && (next->empty.prev != 0) && (next->arena.size >= size)){ //next node is empty and can hold the growth
-		upt growth_size = ((u8*)next + aligned_size <= arena_heap.start + arena_heap.size) ? aligned_size : size;
+		upt growth_size = ((u8*)next + aligned_size <= deshi__arena_heap->start + deshi__arena_heap->size) ? aligned_size : size;
 		
 		//make new empty+order node after current node if there is enough space
 		upt leftover_size = next->arena.size - growth_size + sizeof(ArenaHeapNode);
 		if(leftover_size > sizeof(ArenaHeapNode)){
 			ArenaHeapNode* new_node = (ArenaHeapNode*)((u8*)next + growth_size);
-			NodeInsertNext(&next->order, &new_node->order); DEBUG_CheckArenaHeapNodes(&arena_heap);
-			NodeInsertNext(&next->empty, &new_node->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
+			NodeInsertNext(&next->order, &new_node->order); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
+			NodeInsertNext(&next->empty, &new_node->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 			new_node->arena.start = (u8*)(new_node+1);
 			new_node->arena.size = leftover_size - sizeof(ArenaHeapNode);
-			arena_heap.used += sizeof(ArenaHeapNode);
+			deshi__arena_heap->used += sizeof(ArenaHeapNode);
 		}else{
 			growth_size += leftover_size;
 		}
 		
 		//add empty node space to current node
-		NodeRemove(&next->order); DEBUG_CheckArenaHeapNodes(&arena_heap);
-		NodeRemove(&next->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
-		ZeroBytes(next, sizeof(ArenaHeapNode)); //NOTE the node's memory should already be zeroed
+		NodeRemove(&next->order); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
+		NodeRemove(&next->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
+		ZeroMemory(next, sizeof(ArenaHeapNode)); //NOTE only zero header since the node's memory should already be zeroed
 		arena->size += growth_size;
-		arena_heap.used += (growth_size - sizeof(ArenaHeapNode));
-		UpdateArenaHeapCursor(&arena_heap);
+		deshi__arena_heap->used += (growth_size - sizeof(ArenaHeapNode));
+		UpdateArenaHeapCursor(deshi__arena_heap);
 	}else{ //need to move memory in order to fit new size
-		upt growth_size = (arena_heap.cursor + arena->size + aligned_size <= arena_heap.start + arena_heap.size) ? aligned_size : size;
-		Arena* new_arena = CreateArena(arena->size + growth_size);
+		upt growth_size = (deshi__arena_heap->cursor + arena->size + aligned_size <= deshi__arena_heap->start + deshi__arena_heap->size) ? aligned_size : size;
+		Arena* new_arena = deshi__memory_arena_create(arena->size + growth_size, file, line);
 		memcpy(new_arena->start, arena->start, arena->used);
 		new_arena->used = arena->used;
 		new_arena->cursor = new_arena->start + (arena->cursor - arena->start);
 		result = new_arena;
-		DeleteArena(arena);
+		deshi__memory_arena_delete(arena, file, line);
 	}
 	
-	DEBUG_CheckArenaHeapNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap); DEBUG_PrintArenaHeapNodes(&arena_heap); 
+	DEBUG_CheckArenaHeapNodes(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(deshi__arena_heap); DEBUG_PrintArenaHeapNodes(deshi__arena_heap); 
 	return result;
 }
 
-void ClearArena(Arena* arena){
-	ZeroBytes(arena->start, arena->used);
+void
+deshi__memory_arena_clear(Arena* arena, char* file, upt line){
+	ZeroMemory(arena->start, arena->used);
 	arena->cursor = arena->start;
 	arena->used = 0;
 }
 
-void DeleteArena(Arena* arena){
-	DEBUG_CheckArenaHeapNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap);
+void
+deshi__memory_arena_delete(Arena* arena, char* file, upt line){
+	DEBUG_CheckArenaHeapNodes(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(deshi__arena_heap);
 	if(arena == 0) return;
-	Assert((u8*)arena >= arena_heap.start && (u8*)arena < arena_heap.cursor, "Attempted to delete an arena outside the main heap");
+	Assert((u8*)arena >= deshi__arena_heap->start && (u8*)arena < deshi__arena_heap->cursor, "Attempted to delete an arena outside the main heap");
 	
 	ArenaHeapNode* node = CastFromMember(ArenaHeapNode, arena, arena);
 	void* zero_pointer = arena->start;
@@ -225,21 +228,21 @@ void DeleteArena(Arena* arena){
 	upt   used_amount  = arena->size;
 	
 	//insert current node into empty
-	NodeInsertNext(&arena_heap.empty, &node->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
+	NodeInsertNext(&deshi__arena_heap->empty, &node->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 	
 	//try to merge next empty into current empty
 	ArenaHeapNode* next = CastFromMember(ArenaHeapNode, order, node->order.next);
-	if(   (&node->order != &arena_heap.order)
-	   && (&next->order != &arena_heap.order)
+	if(   (&node->order != &deshi__arena_heap->order)
+	   && (&next->order != &deshi__arena_heap->order)
 	   && (node->empty.next != 0) && (node->empty.prev != 0)
 	   && (next->empty.next != 0) && (next->empty.prev != 0)
 	   && (PointerDifference(node->arena.start + node->arena.size, next) == 0)){
-		NodeRemove(&next->order); DEBUG_CheckArenaHeapNodes(&arena_heap);
-		NodeRemove(&next->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
-		NodeRemove(&node->empty); DEBUG_CheckArenaHeapNodes(&arena_heap); //NOTE remove and reinsert as first empty node for locality
-		//UpdateArenaHeapCursor(&arena_heap); //NOTE cursor should not change as next is empty and cant be last
+		NodeRemove(&next->order); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
+		NodeRemove(&next->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
+		NodeRemove(&node->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap); //NOTE remove and reinsert as first empty node for locality
+		//UpdateArenaHeapCursor(deshi__arena_heap); //NOTE cursor should not change as next is empty and cant be last
 		node->arena.size += next->arena.size + sizeof(ArenaHeapNode);
-		NodeInsertNext(&arena_heap.empty, &node->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
+		NodeInsertNext(&deshi__arena_heap->empty, &node->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 		zero_pointer = node+1;
 		zero_amount  = node->arena.size;
 		used_amount += sizeof(ArenaHeapNode);
@@ -247,17 +250,17 @@ void DeleteArena(Arena* arena){
 	
 	//try to merge current empty into prev empty
 	ArenaHeapNode* prev = CastFromMember(ArenaHeapNode, order, node->order.prev);
-	if(   (&prev->order != &arena_heap.order)
-	   && (&node->order != &arena_heap.order)
+	if(   (&prev->order != &deshi__arena_heap->order)
+	   && (&node->order != &deshi__arena_heap->order)
 	   && (prev->empty.next != 0) && (prev->empty.prev != 0)
 	   && (node->empty.next != 0) && (node->empty.prev != 0)
 	   && (PointerDifference(prev->arena.start + prev->arena.size, node) == 0)){
-		NodeRemove(&node->order); DEBUG_CheckArenaHeapNodes(&arena_heap);
-		NodeRemove(&node->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
-		NodeRemove(&prev->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
-		UpdateArenaHeapCursor(&arena_heap);
+		NodeRemove(&node->order); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
+		NodeRemove(&node->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
+		NodeRemove(&prev->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
+		UpdateArenaHeapCursor(deshi__arena_heap);
 		prev->arena.size += node->arena.size + sizeof(ArenaHeapNode);
-		NodeInsertNext(&arena_heap.empty, &prev->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
+		NodeInsertNext(&deshi__arena_heap->empty, &prev->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 		zero_pointer = prev+1;
 		zero_amount  = prev->arena.size;
 		used_amount += sizeof(ArenaHeapNode);
@@ -265,44 +268,46 @@ void DeleteArena(Arena* arena){
 	}
 	
 	//remove the last order node if its empty
-	if(node->order.next == &arena_heap.order){
-		NodeRemove(&node->order); DEBUG_CheckArenaHeapNodes(&arena_heap);
-		NodeRemove(&node->empty); DEBUG_CheckArenaHeapNodes(&arena_heap);
-		arena_heap.cursor = (u8*)node;
+	if(node->order.next == &deshi__arena_heap->order){
+		NodeRemove(&node->order); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
+		NodeRemove(&node->empty); DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
+		deshi__arena_heap->cursor = (u8*)node;
 		zero_pointer = node; 
 		zero_amount  = node->arena.size + sizeof(ArenaHeapNode);
 		used_amount += sizeof(ArenaHeapNode);
 	}
 	
-	arena_heap.used -= used_amount;
-	ZeroBytes(zero_pointer, zero_amount);
-	DEBUG_CheckArenaHeapNodes(&arena_heap); DEBUG_CheckArenaHeapArenas(&arena_heap); DEBUG_PrintArenaHeapNodes(&arena_heap);
+	deshi__arena_heap->used -= used_amount;
+	ZeroMemory(zero_pointer, zero_amount);
+	DEBUG_CheckArenaHeapNodes(deshi__arena_heap); DEBUG_CheckArenaHeapArenas(deshi__arena_heap); DEBUG_PrintArenaHeapNodes(deshi__arena_heap);
 }
 
-ArenaHeap* ExposeArenaHeap(){
-	return &arena_heap;
+ArenaHeap*
+deshi__memory_arena_expose(){
+	return deshi__arena_heap;
 }
 
 
 //////////////////
 //// @generic ////
 //////////////////
-local Arena*       _generic_arena; //generic_heap is stored here; not used otherwise
-local GenericHeap* generic_heap;
+typedef GenericHeapNode MemoryChunk; //just an easier name than GenericHeapNode
+local Arena*       deshi__generic_arena; //deshi__generic_heap is stored here; not used otherwise
+local GenericHeap* deshi__generic_heap;
 
-#define MEMORY_GENERIC_CHUNK_MEMORY_OFFSET ((upt)OffsetOfMember(Chunk, node))
+#define MEMORY_GENERIC_CHUNK_MEMORY_OFFSET ((upt)OffsetOfMember(MemoryChunk, node))
 #define MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD MEMORY_GENERIC_CHUNK_MEMORY_OFFSET
-#define MEMORY_GENERIC_MINIMUM_ALLOCATION_SIZE ((sizeof(Chunk) + MEMORY_BYTE_ALIGNMENT_MASK) & ~(MEMORY_BYTE_ALIGNMENT_MASK))
-#define MEMORY_GENERIC_MAXIMUM_ALLOCATION_SIZE Kilobytes(64)
+#define MEMORY_GENERIC_MIN_ALLOC_SIZE ((sizeof(MemoryChunk) + MEMORY_BYTE_ALIGNMENT_MASK) & ~(MEMORY_BYTE_ALIGNMENT_MASK))
+#define MEMORY_GENERIC_MAX_ALLOC_SIZE Kilobytes(64)
 
 #define ChunkToMemory(chunk)\
 ((void*)((u8*)(chunk) + MEMORY_GENERIC_CHUNK_MEMORY_OFFSET))
 #define MemoryToChunk(memory)\
-((Chunk*)((u8*)(memory) - MEMORY_GENERIC_CHUNK_MEMORY_OFFSET))
+((MemoryChunk*)((u8*)(memory) - MEMORY_GENERIC_CHUNK_MEMORY_OFFSET))
 
 //NOTE Chunk Flags !ref: https://github.com/lattera/glibc/blob/895ef79e04a953cac1493863bcae29ad85657ee1/malloc/malloc.c#L1224
 //  Chunk flags are stored in the lower bits of the chunk's size variable, and this doesn't cause problems b/c the size 
-//  is always greater than 8 bytes on 32bit and 16 bytes on on 64bit (MEMORY_GENERIC_MINIMUM_ALLOCATION_SIZE).
+//  is always greater than 8 bytes on 32bit and 16 bytes on on 64bit (MEMORY_GENERIC_MIN_ALLOC_SIZE).
 //  To get the size, we mask off the bits holding these flags.
 //  ISARENAD and PREVINUSE should never be used together
 //
@@ -320,19 +325,18 @@ local GenericHeap* generic_heap;
 #define GetChunkSize(chunk_ptr)\
 ((chunk_ptr)->size & MEMORY_GENERIC_EXTRACT_SIZE_BITMASK)
 #define GetNextOrderChunk(chunk_ptr)\
-((Chunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))
+((MemoryChunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))
 #define GetPrevOrderChunk(chunk_ptr)\
 ((chunk_ptr)->prev)
 #define GetChunkAtOffset(chunk_ptr,offset)\
-((Chunk*)((u8*)(chunk_ptr) + (offset)))
+((MemoryChunk*)((u8*)(chunk_ptr) + (offset)))
 #define ChunkIsInUse(chunk_ptr)\
-(((Chunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))->size & MEMORY_GENERIC_PREVINUSE_FLAG)
+(((MemoryChunk*)((u8*)(chunk_ptr) + GetChunkSize(chunk_ptr)))->size & MEMORY_GENERIC_PREVINUSE_FLAG)
 
 
-#if !MEMORY_DO_HEAP_CHECKS
-#  define DEBUG_CheckGenericHeap(heap)
-#else //MEMORY_DO_HEAP_CHECKS
-function void DEBUG_CheckGenericHeap(GenericHeap* heap){
+#if MEMORY_DO_HEAP_CHECKS
+local void
+DEBUG_CheckGenericHeap(GenericHeap* heap){
 	Assert(PointerDifference(heap->cursor, heap->start) % MEMORY_BYTE_ALIGNMENT == 0, "Memory alignment is invalid");
 	Assert(PointerDifference(heap->cursor, heap->start) >= heap->used, "Heap used amount is greater than cursor offset");
 	Assert(heap->empty_nodes.next != 0 && heap->empty_nodes.prev != 0, "First heap empty node is invalid");
@@ -344,14 +348,14 @@ function void DEBUG_CheckGenericHeap(GenericHeap* heap){
 	
 	if(heap->initialized && heap->used > 0){
 		upt overall_used = 0;
-		for(Chunk* chunk = (Chunk*)heap->start; ; chunk = GetNextOrderChunk(chunk)){
+		for(MemoryChunk* chunk = (MemoryChunk*)heap->start; ; chunk = GetNextOrderChunk(chunk)){
 			Assert((u8*)chunk < heap->cursor, "All chunks must be below the cursor");
-			Assert(GetChunkSize(chunk) >= MEMORY_GENERIC_MINIMUM_ALLOCATION_SIZE, "Chunk size is less than minimum");
+			Assert(GetChunkSize(chunk) >= MEMORY_GENERIC_MIN_ALLOC_SIZE, "Chunk size is less than minimum");
 			Assert(GetChunkSize(chunk) % MEMORY_BYTE_ALIGNMENT == 0, "Chunk size is not aligned correctly");
 			if(chunk != heap->last_chunk){
 				Assert(GetNextOrderChunk(chunk)->prev == chunk, "Next order chunk is not correctly pointing to current chunk");
 				if(!PrevChunkIsInUse(GetNextOrderChunk(chunk))){
-					overall_used += sizeof(Chunk);
+					overall_used += sizeof(MemoryChunk);
 				}else{
 					overall_used += GetChunkSize(chunk);
 				}
@@ -363,14 +367,15 @@ function void DEBUG_CheckGenericHeap(GenericHeap* heap){
 		Assert(overall_used == heap->used, "Heap used amount is invalid");
 	}
 }
+#else //MEMORY_DO_HEAP_CHECKS
+#  define DEBUG_CheckGenericHeap(heap)
 #endif //MEMORY_DO_HEAP_CHECKS
-#if !MEMORY_DO_HEAP_PRINTS
-#  define DEBUG_PrintGenericArenaNodes(heap)
-#else //MEMORY_DO_HEAP_PRINTS
-function void DEBUG_PrintGenericArenaNodes(GenericHeap* heap){
+#if MEMORY_DO_HEAP_PRINTS
+local void
+DEBUG_PrintGenericArenaNodes(GenericHeap* heap){
 	if(heap->initialized && heap->used > 0){
 		string heap_order = "Order: ", heap_empty = "Empty: ";
-		for(Chunk* chunk = (Chunk*)heap->start; ; chunk = GetNextOrderChunk(chunk)){
+		for(MemoryChunk* chunk = (MemoryChunk*)heap->start; ; chunk = GetNextOrderChunk(chunk)){
 			heap_order += to_string("%p", chunk); heap_order += " -> ";
 			if(chunk != heap->last_chunk){
 				if(!ChunkIsInUse(chunk)){
@@ -389,47 +394,50 @@ function void DEBUG_PrintGenericArenaNodes(GenericHeap* heap){
 		Log("memory-generic",heap_order); Log("memory-generic",heap_empty); Log("","----------------------------------------------");
 	}
 }
+#else //MEMORY_DO_HEAP_PRINTS
+#  define DEBUG_PrintGenericArenaNodes(heap)
 #endif //MEMORY_DO_HEAP_PRINTS
 
-void* Allocate(upt requested_size){
-	DEBUG_CheckGenericHeap(generic_heap);
+void*
+deshi__memory_generic_allocate(upt requested_size, char* file, upt line){
+	DEBUG_CheckGenericHeap(deshi__generic_heap);
 	if(requested_size == 0) return 0;
-	Assert(generic_heap, "Attempted to allocate before Memory::Init() has been called");
+	Assert(deshi__generic_heap, "Attempted to allocate before Memory::Init() has been called");
 	
 	//include chunk overhead, align to the byte alignment, and clamp the minimum
-	upt aligned_size = ClampMin(RoundUpTo(requested_size + MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD, MEMORY_BYTE_ALIGNMENT), MEMORY_GENERIC_MINIMUM_ALLOCATION_SIZE);
+	upt aligned_size = ClampMin(RoundUpTo(requested_size + MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD, MEMORY_BYTE_ALIGNMENT), MEMORY_GENERIC_MIN_ALLOC_SIZE);
 	
 	//if the allocation is large, create an arena for it rather than using the generic heap
-	if(aligned_size >= MEMORY_GENERIC_MAXIMUM_ALLOCATION_SIZE){
-		Arena* arena = CreateArena(aligned_size);
+	if(aligned_size >= MEMORY_GENERIC_MAX_ALLOC_SIZE){
+		Arena* arena = deshi__memory_arena_create(aligned_size, file, line);
 		arena->used = aligned_size;
 		Assert(arena->size >= aligned_size, "Arena size must be greater than requested size");
 		Assert(arena->start == (u8*)(CastFromMember(ArenaHeapNode, arena, arena) + 1), "Arena start must be right after the ArenaHeapNode");
-		Chunk* chunk = (Chunk*)arena->start;
+		MemoryChunk* chunk = (MemoryChunk*)arena->start;
 		//chunk->prev = 0; //NOTE fresh memory is already zero
 		chunk->size = arena->size | MEMORY_GENERIC_ISARENAD_FLAG;
 		return ChunkToMemory(chunk);
 	}
 	
 	//check if there are any empty chunks that can hold the allocation
-	for(Node* node = generic_heap->empty_nodes.next; node != &generic_heap->empty_nodes; node = node->next){
-		Chunk* chunk = CastFromMember(Chunk, node, node);
+	for(Node* node = deshi__generic_heap->empty_nodes.next; node != &deshi__generic_heap->empty_nodes; node = node->next){
+		MemoryChunk* chunk = CastFromMember(MemoryChunk, node, node);
 		upt chunk_size = GetChunkSize(chunk); //NOTE remember that chunk size includes the overhead
 		if(chunk_size >= aligned_size){
 			upt leftover_size = chunk_size - aligned_size;
 			Assert(leftover_size % MEMORY_BYTE_ALIGNMENT == 0, "Memory was not aligned correctly");
-			Chunk* next = GetNextOrderChunk(chunk);
+			MemoryChunk* next = GetNextOrderChunk(chunk);
 			
 			//make new empty chunk after current chunk if there is enough space for an empty chunk
 			//NOTE '>=' rather than '>' because empty chunks use 8/16 bytes (Node) that in-use chunks dont (useful for small allocations)
-			if(leftover_size >= MEMORY_GENERIC_MINIMUM_ALLOCATION_SIZE){
-				Chunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
-				NodeInsertNext(&generic_heap->empty_nodes, &new_chunk->node);
+			if(leftover_size >= MEMORY_GENERIC_MIN_ALLOC_SIZE){
+				MemoryChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
+				NodeInsertNext(&deshi__generic_heap->empty_nodes, &new_chunk->node);
 				new_chunk->prev = chunk;
 				new_chunk->size = leftover_size; //NOTE this gets OR'd with MEMORY_GENERIC_PREVINUSE_FLAG below
 				next->prev = new_chunk;
 				next = new_chunk;
-				generic_heap->used += sizeof(Chunk);
+				deshi__generic_heap->used += sizeof(MemoryChunk);
 			}else{
 				aligned_size += leftover_size;
 			}
@@ -439,211 +447,229 @@ void* Allocate(upt requested_size){
 			chunk->node = {0}; //zero this data since it will be used by the allocation
 			chunk->size = (PrevChunkIsInUse(chunk)) ? aligned_size | MEMORY_GENERIC_PREVINUSE_FLAG : aligned_size;
 			next->size |= MEMORY_GENERIC_PREVINUSE_FLAG; //set PREVINUSE flag on next chunk
-			generic_heap->used += aligned_size - sizeof(Chunk);
+			deshi__generic_heap->used += aligned_size - sizeof(MemoryChunk);
 			
-			DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+			DEBUG_CheckGenericHeap(deshi__generic_heap); DEBUG_PrintGenericArenaNodes(deshi__generic_heap);
 			return &chunk->node;
 		}
 	}
 	
 	//if we cant replace an empty node, make a new order node for the allocation
-	Assert(generic_heap->cursor + aligned_size <= generic_heap->start + generic_heap->size, "Attempted to use more than max generic heap size");
-	Chunk* new_chunk = (Chunk*)generic_heap->cursor;
-	new_chunk->prev = generic_heap->last_chunk;
-	new_chunk->size = (generic_heap->last_chunk != 0) ? aligned_size | MEMORY_GENERIC_PREVINUSE_FLAG : aligned_size;
-	generic_heap->cursor    += aligned_size;
-	generic_heap->used      += aligned_size;
-	generic_heap->last_chunk = new_chunk;
+	Assert(deshi__generic_heap->cursor + aligned_size <= deshi__generic_heap->start + deshi__generic_heap->size, "Attempted to use more than max generic heap size");
+	MemoryChunk* new_chunk = (MemoryChunk*)deshi__generic_heap->cursor;
+	new_chunk->prev = deshi__generic_heap->last_chunk;
+	new_chunk->size = (deshi__generic_heap->last_chunk != 0) ? aligned_size | MEMORY_GENERIC_PREVINUSE_FLAG : aligned_size;
+	deshi__generic_heap->cursor    += aligned_size;
+	deshi__generic_heap->used      += aligned_size;
+	deshi__generic_heap->last_chunk = new_chunk;
 	
-	DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+	DEBUG_CheckGenericHeap(deshi__generic_heap); DEBUG_PrintGenericArenaNodes(deshi__generic_heap);
 	return &new_chunk->node;
 }
 
-void* Reallocate(void* ptr, upt requested_size){
-	DEBUG_CheckGenericHeap(generic_heap); 
-	if(ptr == 0) return Allocate(requested_size);
-	if(requested_size == 0){ ZeroFree(ptr); return 0; }
-	Assert(generic_heap, "Attempted to allocate before Memory::Init() has been called");
-	Assert(ptr > arena_heap.start && ptr < arena_heap.cursor, "Attempted to reallocate a pointer outside the main heap");
+void*
+deshi__memory_generic_reallocate(void* ptr, upt requested_size, char* file, upt line){
+	DEBUG_CheckGenericHeap(deshi__generic_heap); 
+	if(ptr == 0) return deshi__memory_generic_allocate(requested_size, file, line);
+	if(requested_size == 0){ deshi__memory_generic_zero_free(ptr, file, line); return 0; }
+	Assert(deshi__generic_heap, "Attempted to allocate before Memory::Init() has been called");
+	Assert(ptr > deshi__arena_heap->start && ptr < deshi__arena_heap->cursor, "Attempted to reallocate a pointer outside the main heap");
 	
 	//include chunk overhead, align to the byte alignment, and clamp the minimum
-	upt aligned_size = ClampMin(RoundUpTo(requested_size + MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD, MEMORY_BYTE_ALIGNMENT), MEMORY_GENERIC_MINIMUM_ALLOCATION_SIZE);
-	Chunk* chunk = MemoryToChunk(ptr);
+	upt aligned_size = ClampMin(RoundUpTo(requested_size + MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD, MEMORY_BYTE_ALIGNMENT), MEMORY_GENERIC_MIN_ALLOC_SIZE);
+	MemoryChunk* chunk = MemoryToChunk(ptr);
 	spt difference = (spt)GetChunkSize(chunk) - (spt)aligned_size;
 	
 	//previous allocation was an arena
 	if(ChunkIsArenad(chunk)){ 
 		if(aligned_size <= GetChunkSize(chunk)) return ptr; //do nothing if less than previous size
 		Arena* arena = &((ArenaHeapNode*)chunk - 1)->arena;
-		arena = GrowArena(arena, aligned_size - arena->size);
+		arena = deshi__memory_arena_grow(arena, aligned_size - arena->size, file, line);
 		Assert(arena->size >= aligned_size, "Arena size must be greater than requested size");
 		Assert(arena->start == (u8*)(CastFromMember(ArenaHeapNode, arena, arena) + 1), "Arena start must be right after the ArenaHeapNode");
 		arena->used = aligned_size;
-		chunk = (Chunk*)arena->start;
+		chunk = (MemoryChunk*)arena->start;
 		//chunk->prev = 0; //NOTE it should already be zero
 		chunk->size = arena->size | MEMORY_GENERIC_ISARENAD_FLAG;
-		DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+		DEBUG_CheckGenericHeap(deshi__generic_heap); DEBUG_PrintGenericArenaNodes(deshi__generic_heap);
 		return &chunk->node;
 	}
-	Assert(ptr > generic_heap->start && ptr < generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
+	Assert(ptr > deshi__generic_heap->start && ptr < deshi__generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
 	
 	//new allocation needs to be an arena
-	if(aligned_size >= MEMORY_GENERIC_MAXIMUM_ALLOCATION_SIZE){
-		//NOTE since its larger than MEMORY_GENERIC_MAXIMUM_ALLOCATION_SIZE and not an arena already, it cant be less than previous size
-		Arena* arena = CreateArena(aligned_size);
+	if(aligned_size >= MEMORY_GENERIC_MAX_ALLOC_SIZE){
+		//NOTE since its larger than MEMORY_GENERIC_MAX_ALLOC_SIZE and not an arena already, it cant be less than previous size
+		Arena* arena = deshi__memory_arena_create(aligned_size, file, line);
 		Assert(arena->size >= aligned_size, "Arena size must be greater than requested size");
 		Assert(arena->start == (u8*)(CastFromMember(ArenaHeapNode, arena, arena) + 1), "Arena start must be right after the ArenaHeapNode");
 		arena->used = aligned_size;
 		memcpy(arena->start, chunk, GetChunkSize(chunk));
-		chunk = (Chunk*)arena->start;
+		chunk = (MemoryChunk*)arena->start;
 		chunk->prev = 0; //NOTE fresh memory is already zero
 		chunk->size = arena->size | MEMORY_GENERIC_ISARENAD_FLAG;
-		ZeroFree(ptr);
-		DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+		deshi__memory_generic_zero_free(ptr, file, line);
+		DEBUG_CheckGenericHeap(deshi__generic_heap); DEBUG_PrintGenericArenaNodes(deshi__generic_heap);
 		return &chunk->node;
 	}
 	
 	//there is no used memory after this, so just adjust chunk size and heap cursor
-	if(chunk == generic_heap->last_chunk){
+	if(chunk == deshi__generic_heap->last_chunk){
 		if(difference != 0){
-			generic_heap->cursor -= difference;
-			if(difference > 0) ZeroBytes(generic_heap->cursor, difference);
-			generic_heap->used   -= difference;
+			deshi__generic_heap->cursor -= difference;
+			if(difference > 0) ZeroMemory(deshi__generic_heap->cursor, difference);
+			deshi__generic_heap->used   -= difference;
 			chunk->size = (PrevChunkIsInUse(chunk)) ? aligned_size | MEMORY_GENERIC_PREVINUSE_FLAG : aligned_size;
 		}
-		DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+		DEBUG_CheckGenericHeap(deshi__generic_heap); DEBUG_PrintGenericArenaNodes(deshi__generic_heap);
 		return &chunk->node;
 	}
 	
 	//if requested size is less than previous size and there is enough space for a new chunk, make a new chunk
-	if(difference >= (spt)MEMORY_GENERIC_MINIMUM_ALLOCATION_SIZE){
-		Chunk* next = GetNextOrderChunk(chunk);
-		Chunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
-		NodeInsertNext(&generic_heap->empty_nodes, &new_chunk->node);
+	if(difference >= (spt)MEMORY_GENERIC_MIN_ALLOC_SIZE){
+		MemoryChunk* next = GetNextOrderChunk(chunk);
+		MemoryChunk* new_chunk = GetChunkAtOffset(chunk, aligned_size);
+		NodeInsertNext(&deshi__generic_heap->empty_nodes, &new_chunk->node);
 		new_chunk->prev = chunk;
 		new_chunk->size = (upt)difference | MEMORY_GENERIC_PREVINUSE_FLAG;
 		chunk->size -= difference;
 		next->prev = new_chunk;
 		next->size &= ~(MEMORY_GENERIC_PREVINUSE_FLAG); //remove INUSE flag from next chunk
-		generic_heap->used -= difference;
-		generic_heap->used += sizeof(Chunk);
-		DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+		deshi__generic_heap->used -= difference;
+		deshi__generic_heap->used += sizeof(MemoryChunk);
+		DEBUG_CheckGenericHeap(deshi__generic_heap); DEBUG_PrintGenericArenaNodes(deshi__generic_heap);
 		return &chunk->node;
 	}
 	
 	//if requested size is less than or equal to previous size and there is not enough space for a new chunk, do nothing
 	if(difference >= 0){
-		Assert(ptr > generic_heap->start && ptr < generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
+		Assert(ptr > deshi__generic_heap->start && ptr < deshi__generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
 		return ptr;
 	}
 	
 	//requested size is greater than previous size and we need to move memory in order to fit the new size
-	Assert(ptr > generic_heap->start && ptr < generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
-	void* new_ptr = Allocate(requested_size);
+	Assert(ptr > deshi__generic_heap->start && ptr < deshi__generic_heap->cursor, "Attempted to reallocate a pointer outside the generic heap");
+	void* new_ptr = deshi__memory_generic_allocate(requested_size, file, line);
 	Assert(GetChunkSize(MemoryToChunk(new_ptr)) >= GetChunkSize(chunk) - MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD, "New chunk size must be greater than previous size");
 	memcpy(new_ptr, &chunk->node, GetChunkSize(chunk) - MEMORY_GENERIC_CHUNK_INUSE_OVERHEAD);
 	chunk = MemoryToChunk(new_ptr);
-	ZeroFree(ptr);
-	DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+	deshi__memory_generic_zero_free(ptr, file, line);
+	DEBUG_CheckGenericHeap(deshi__generic_heap); DEBUG_PrintGenericArenaNodes(deshi__generic_heap);
 	return &chunk->node;
 }
 
-void ZeroFree(void* ptr){
-	DEBUG_CheckGenericHeap(generic_heap);
+void
+deshi__memory_generic_zero_free(void* ptr, char* file, upt line){
+	DEBUG_CheckGenericHeap(deshi__generic_heap);
 	if(ptr == 0) return;
-	Assert(ptr > arena_heap.start && ptr < arena_heap.cursor, "Attempted to free a pointer outside the main heap");
+	Assert(ptr > deshi__arena_heap->start && ptr < deshi__arena_heap->cursor, "Attempted to free a pointer outside the main heap");
 	
-	Chunk* chunk = MemoryToChunk(ptr);
+	MemoryChunk* chunk = MemoryToChunk(ptr);
 	
 	if(ChunkIsArenad(chunk)){
-		DeleteArena(&((ArenaHeapNode*)chunk - 1)->arena);
-		DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+		deshi__memory_arena_delete(&((ArenaHeapNode*)chunk - 1)->arena, file, line);
+		DEBUG_CheckGenericHeap(deshi__generic_heap); DEBUG_PrintGenericArenaNodes(deshi__generic_heap);
 		return;
 	}
 	
-	Assert(ptr > generic_heap->start && ptr < generic_heap->cursor, "Attempted to free a pointer outside the generic heap");
+	Assert(ptr > deshi__generic_heap->start && ptr < deshi__generic_heap->cursor, "Attempted to free a pointer outside the generic heap");
 	void* zero_pointer = chunk+1;
-	upt   zero_amount  = GetChunkSize(chunk) - sizeof(Chunk);
-	upt   used_amount  = GetChunkSize(chunk) - sizeof(Chunk);
+	upt   zero_amount  = GetChunkSize(chunk) - sizeof(MemoryChunk);
+	upt   used_amount  = GetChunkSize(chunk) - sizeof(MemoryChunk);
 	
 	//insert current chunk into heap's empty nodes
-	NodeInsertNext(&generic_heap->empty_nodes, &chunk->node);
+	NodeInsertNext(&deshi__generic_heap->empty_nodes, &chunk->node);
 	
 	//try to merge next empty into current empty
-	Chunk* next = GetNextOrderChunk(chunk);
-	if(   (chunk != generic_heap->last_chunk) //we are not the last chunk
-	   && (next  != generic_heap->last_chunk) //next is not the last chunk
+	MemoryChunk* next = GetNextOrderChunk(chunk);
+	if(   (chunk != deshi__generic_heap->last_chunk) //we are not the last chunk
+	   && (next  != deshi__generic_heap->last_chunk) //next is not the last chunk
 	   && (!ChunkIsInUse(next))){             //next is empty
-		Chunk* next_next = GetNextOrderChunk(next);
+		MemoryChunk* next_next = GetNextOrderChunk(next);
 		next_next->prev = chunk;
 		NodeRemove(&next->node);
 		chunk->size += GetChunkSize(next);
 		//NOTE zero_pointer doesnt change
-		zero_amount += sizeof(Chunk); //NOTE next's memory is already zeroed, so only zero the chunk header
-		used_amount += sizeof(Chunk);
+		zero_amount += sizeof(MemoryChunk); //NOTE next's memory is already zeroed, so only zero the chunk header
+		used_amount += sizeof(MemoryChunk);
 		next = next_next;
 	}
 	
 	//try to merge current empty into prev empty
-	Chunk* prev = GetPrevOrderChunk(chunk);
+	MemoryChunk* prev = GetPrevOrderChunk(chunk);
 	if(   (prev != 0)                  //we are not the first chunk
 	   && (!PrevChunkIsInUse(chunk))){ //previous chunk is empty
-		if(chunk == generic_heap->last_chunk){
-			generic_heap->last_chunk = prev;
+		if(chunk == deshi__generic_heap->last_chunk){
+			deshi__generic_heap->last_chunk = prev;
 		}else{
 			next->prev = prev;
 		}
 		NodeRemove(&chunk->node);
 		NodeRemove(&prev->node); //NOTE remove and reinsert as first empty node for locality
-		NodeInsertNext(&generic_heap->empty_nodes, &prev->node);
+		NodeInsertNext(&deshi__generic_heap->empty_nodes, &prev->node);
 		prev->size += chunk->size; //NOTE not GetChunkSize(chunk) b/c we know that PREVINUSE flag is not there
 		zero_pointer = chunk; //NOTE prev's memory is already zeroed, so only zero chunk
 		zero_amount  = GetChunkSize(chunk);
-		used_amount += sizeof(Chunk);
+		used_amount += sizeof(MemoryChunk);
 		chunk = prev;
 	}
 	
 	//remove the last order chunk if its empty
-	if(chunk == generic_heap->last_chunk){
+	if(chunk == deshi__generic_heap->last_chunk){
 		NodeRemove(&chunk->node);
-		generic_heap->last_chunk = chunk->prev;
-		generic_heap->cursor = (u8*)chunk;
+		deshi__generic_heap->last_chunk = chunk->prev;
+		deshi__generic_heap->cursor = (u8*)chunk;
 		zero_pointer = chunk;
 		zero_amount  = GetChunkSize(chunk);
-		used_amount += sizeof(Chunk);
+		used_amount += sizeof(MemoryChunk);
 	}else{
 		Assert((u8*)next == (u8*)chunk + GetChunkSize(chunk), "Next is invalid at this point");
 		next->size &= ~(MEMORY_GENERIC_PREVINUSE_FLAG); //remove INUSE flag from next chunk
 	}
 	
-	generic_heap->used -= used_amount;
-	ZeroBytes(zero_pointer, zero_amount);
-	DEBUG_CheckGenericHeap(generic_heap); DEBUG_PrintGenericArenaNodes(generic_heap);
+	deshi__generic_heap->used -= used_amount;
+	ZeroMemory(zero_pointer, zero_amount);
+	DEBUG_CheckGenericHeap(deshi__generic_heap); DEBUG_PrintGenericArenaNodes(deshi__generic_heap);
 }
 
-GenericHeap* ExposeGenericHeap(){
-	return generic_heap;
+GenericHeap*
+deshi__memory_generic_expose(){
+	return deshi__generic_heap;
 }
-
 
 ////////////////////
 //// @temporary ////
 ////////////////////
-local Arena temp_arena;
+local Arena deshi__temp_arena_;
+local Arena* deshi__temp_arena = &deshi__temp_arena_;
 
-void* TempAllocate(upt size){
+void*
+deshi__memory_temp_allocate(upt size, char* file, upt line){
 	if(size == 0) return 0;
-	Assert(temp_arena.used + size <= temp_arena.size, "Attempted to use more than max temp arena size");
+	Assert(deshi__temp_arena->used + size <= deshi__temp_arena->size, "Attempted to use more than max temp arena size");
 	
-	void* result = temp_arena.cursor + sizeof(upt);
-	*((upt*)temp_arena.cursor) = size; //place allocation size at cursor
-	temp_arena.cursor += size + sizeof(upt);
-	temp_arena.used += size + sizeof(upt);
+	void* result = deshi__temp_arena->cursor + sizeof(upt);
+	*((upt*)deshi__temp_arena->cursor) = size; //place allocation size at cursor
+	deshi__temp_arena->cursor += size + sizeof(upt);
+	deshi__temp_arena->used += size + sizeof(upt);
 	return result;
 }
 
-Arena* ExposeTempArena(){
-	return &temp_arena;
+void*
+deshi__memory_temp_reallocate(void* ptr, upt size, char* file, upt line){
+	void* new_ptr = deshi__memory_temp_allocate(size, file, line);
+	upt prev_size = *((upt*)ptr-1);
+	memcpy(new_ptr, ptr, (prev_size > size) ? size : prev_size); 
+	return new_ptr;
+}
+
+void
+deshi__memory_temp_clear(){
+	memory_clear_arena(deshi__temp_arena);
+}
+
+Arena*
+deshi__memory_temp_expose(){
+	return deshi__temp_arena;
 }
 
 
@@ -651,26 +677,21 @@ Arena* ExposeTempArena(){
 //// @naming //// //we don't copy names, so it expects constant strings to be passed in
 ///////////////// //we don't use arena cursor here, so it's value will be invalid
 #if DESHI_INTERNAL
-#  define MEMORY_NAMING_MAXIMUM_AMOUNT 4096 //arbitrary limit
+#  define MEMORY_NAMING_MAX_COUNT 4096 //arbitrary limit
 
-struct DEBUG_AddressNameInfo{
-	void*   address;
-	cstring name;
-	Type    type;
-	u32     reserved; //padding
-};
+local Arena* deshi__naming_arena;
 
-local Arena* address_naming_arena;
-
-local b32 DEBUG_AddressNameInfo_LessThan(const DEBUG_AddressNameInfo& a, const DEBUG_AddressNameInfo& b){
+local b32
+AddressNameInfo_LessThan(const AddressNameInfo& a, const AddressNameInfo& b){
 	return a.address < b.address;
 }
 
-void DEBUG_SetAddressName(void* address, cstring name, Type type){
+void
+deshi__memory_naming_set(void* address, cstring name, Type type){
 	if(address == 0) return;
 	
 	//binary search for address index (or index to insert at)
-	carray<DEBUG_AddressNameInfo> arr{(DEBUG_AddressNameInfo*)address_naming_arena->start, address_naming_arena->used / sizeof(DEBUG_AddressNameInfo)};
+	carray<AddressNameInfo> arr{(AddressNameInfo*)deshi__naming_arena->start, deshi__naming_arena->used / sizeof(AddressNameInfo)};
 	spt index = -1;
 	spt middle = 0;
 	if(arr.count > 0){
@@ -697,42 +718,44 @@ void DEBUG_SetAddressName(void* address, cstring name, Type type){
 			arr[index].name = name;
 			arr[index].type = type;
 		}else{ //make a new info
-			if(address_naming_arena->used >= address_naming_arena->size){ 
+			if(deshi__naming_arena->used >= deshi__naming_arena->size){ 
 				LogE("memory","Address naming arena is out of space."); 
 				return; 
 			}
-			array_insert(arr, DEBUG_AddressNameInfo{ address, name, type }, middle);
-			address_naming_arena->used += sizeof(DEBUG_AddressNameInfo);
+			array_insert(arr, AddressNameInfo{ address, name, type }, middle);
+			deshi__naming_arena->used += sizeof(AddressNameInfo);
 		}
 	}else if(index != -1){ //remove address name
 		array_remove_ordered(arr, index);
-		address_naming_arena->used -= sizeof(DEBUG_AddressNameInfo);
+		deshi__naming_arena->used -= sizeof(AddressNameInfo);
 	}
 }
 
-cstring DEBUG_GetAddressName(void* address){
+cstring
+deshi__memory_naming_get(void* address){
 	if(address == 0) return {};
-	if(address_naming_arena->used == 0) return {};
+	if(deshi__naming_arena->used == 0) return {};
 	
-	carray<DEBUG_AddressNameInfo> arr{
-		(DEBUG_AddressNameInfo*)address_naming_arena->start,
-		address_naming_arena->used / sizeof(DEBUG_AddressNameInfo)
+	carray<AddressNameInfo> arr{
+		(AddressNameInfo*)deshi__naming_arena->start,
+		deshi__naming_arena->used / sizeof(AddressNameInfo)
 	};
-	upt index = binary_search(arr, DEBUG_AddressNameInfo{address}, DEBUG_AddressNameInfo_LessThan);
+	upt index = binary_search(arr, AddressNameInfo{address}, AddressNameInfo_LessThan);
 	return (index != -1) ? arr[index].name : cstring{};
 }
 
-Arena* DEBUG_ExposeAddressNamingArena(){
-	return address_naming_arena;
+Arena*
+deshi__memory_naming_expose(){
+	return deshi__naming_arena;
 }
 #endif //DESHI_INTERNAL
 
-///////////////
-//// @init ////
-///////////////
-void Init(upt main_size, upt temp_size){
-	deshiStage |= DS_MEMORY;
-	
+
+////////////////
+//// @state ////
+////////////////
+void
+deshi__memory_init(upt main_size, upt temp_size){
 	void* base_address = 0;
 	u8*   allocation = 0;
 	u64   total_size = main_size + temp_size;
@@ -752,53 +775,38 @@ void Init(upt main_size, upt temp_size){
 #endif            //DESHI_MAC
 	Assert(allocation != 0, "Failed to allocate memory");
 	
-	arena_heap.start  = allocation;
-	arena_heap.cursor = allocation;
-	arena_heap.size   = main_size;
-	arena_heap.used   = 0;
-	arena_heap.order.next = arena_heap.order.prev = &arena_heap.order;
-	arena_heap.empty.next = arena_heap.empty.prev = &arena_heap.empty;
-	arena_heap.initialized = true;
-	DEBUG_CheckArenaHeapNodes(&arena_heap);
+	deshi__arena_heap->start  = allocation;
+	deshi__arena_heap->cursor = allocation;
+	deshi__arena_heap->size   = main_size;
+	deshi__arena_heap->used   = 0;
+	deshi__arena_heap->order.next = deshi__arena_heap->order.prev = &deshi__arena_heap->order;
+	deshi__arena_heap->empty.next = deshi__arena_heap->empty.prev = &deshi__arena_heap->empty;
+	deshi__arena_heap->initialized = true;
+	DEBUG_CheckArenaHeapNodes(deshi__arena_heap);
 	
-	_generic_arena = CreateArena(Megabytes(64));
-	generic_heap = (GenericHeap*)_generic_arena->start;
-	generic_heap->start  = (u8*)(generic_heap+1);
-	generic_heap->cursor = generic_heap->start;
-	generic_heap->used   = 0;
-	generic_heap->size   = _generic_arena->size - sizeof(GenericHeap);
-	generic_heap->empty_nodes.next = generic_heap->empty_nodes.prev = &generic_heap->empty_nodes;
-	generic_heap->last_chunk = 0;
-	generic_heap->initialized = true;
-	DEBUG_CheckGenericHeap(generic_heap);
+	deshi__generic_arena = memory_create_arena(Megabytes(64));
+	deshi__generic_heap = (GenericHeap*)deshi__generic_arena->start;
+	deshi__generic_heap->start  = (u8*)(deshi__generic_heap+1);
+	deshi__generic_heap->cursor = deshi__generic_heap->start;
+	deshi__generic_heap->used   = 0;
+	deshi__generic_heap->size   = deshi__generic_arena->size - sizeof(GenericHeap);
+	deshi__generic_heap->empty_nodes.next = deshi__generic_heap->empty_nodes.prev = &deshi__generic_heap->empty_nodes;
+	deshi__generic_heap->last_chunk = 0;
+	deshi__generic_heap->initialized = true;
+	DEBUG_CheckGenericHeap(deshi__generic_heap);
 	
-	temp_arena.start  = arena_heap.start + arena_heap.size;
-	temp_arena.cursor = temp_arena.start;
-	temp_arena.size   = temp_size;
-	temp_arena.used   = 0;
+	deshi__temp_arena->start  = deshi__arena_heap->start + deshi__arena_heap->size;
+	deshi__temp_arena->cursor = deshi__temp_arena->start;
+	deshi__temp_arena->size   = temp_size;
+	deshi__temp_arena->used   = 0;
 	
 #if DESHI_INTERNAL
-	address_naming_arena = CreateArena(MEMORY_NAMING_MAXIMUM_AMOUNT*sizeof(DEBUG_AddressNameInfo));
-	DEBUG_SetAddressName(&arena_heap, cstr_lit("Arena Heap"));
-	DEBUG_SetAddressName(generic_heap, cstr_lit("Generic Heap"));
-	DEBUG_SetAddressName(&temp_arena, cstr_lit("Temp Arena"));
-	DEBUG_SetAddressName(address_naming_arena, cstr_lit("Naming Arena"));
+	deshi__naming_arena = memory_create_arena(MEMORY_NAMING_MAX_COUNT*sizeof(AddressNameInfo));
+	memory_set_address_name(deshi__arena_heap,   cstr_lit("Arena Heap"), 0);
+	memory_set_address_name(deshi__generic_heap, cstr_lit("Generic Heap"), 0);
+	memory_set_address_name(deshi__temp_arena,   cstr_lit("Temp Arena"), 0);
+	memory_set_address_name(deshi__naming_arena, cstr_lit("Naming Arena"), 0);
 #endif //DESHI_INTERNAL
-}
-
-
-/////////////////
-//// @udpate ////
-/////////////////
-void Update(){
-	ZeroBytes(temp_arena.start, temp_arena.used);
-	temp_arena.cursor = temp_arena.start;
-	temp_arena.used = 0;
-}
-EndNamespace(Memory);
-
-void* TempAllocator_Resize(void* ptr, upt size){
-	void* a = Memory::TempAllocate(size);
-	memcpy(a, ptr, *((upt*)ptr-1)); 
-	return a;
+	
+	deshiStage |= DS_MEMORY;
 }
