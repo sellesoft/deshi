@@ -4334,7 +4334,7 @@ void UI::Update() {
 	}
 	debugCmds.clear();
 	
-	if (CanTakeInput && DeshInput->LMouseDown()) PreventInputs;
+	//if (CanTakeInput && DeshInput->LMouseDown()) PreventInputs;
 	
 	hovered = 0;
 	StateRemoveFlag(UISGlobalHovered);

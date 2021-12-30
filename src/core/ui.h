@@ -335,7 +335,7 @@ struct UIDrawCmd {
 	b32  overrideScissorRules = false;
 	
 	//for matching draw cmds in debug
-	u32 hash = MAX_U32;
+	u32 hash = 0;
 	
 	UIItem* parent = 0;
 };

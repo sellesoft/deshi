@@ -163,7 +163,7 @@ void random_walk_avoid() {
 }
 
 void vector_field() {
-	f32 precision = 100;
+	f32 precision = 80;
 	static f32 zoom = 20;
 	if (DeshInput->ScrollDown()) zoom++;
 	if (DeshInput->ScrollUp()) zoom--;
@@ -172,6 +172,8 @@ void vector_field() {
 	static vec2 postrack(0, 0);
 	static array<vec2> hist;
 	static vec2 mpl(0,0);
+	static TIMER_START(vft);
+
 
 	vec2 mp = DeshInput->mousePos;
 
@@ -187,13 +189,22 @@ void vector_field() {
 	}
 
 	f32 time = DeshTotalTime;
+
+	static vec2 target = vec2(rand() % DeshWindow->width, rand() % DeshWindow->height);
 	
 	auto step = [&](vec2 pos) {
-		vec2 tc = (DeshWinSize / 2 - pos) / zoom;
+		vec2 tc = (target - pos).normalized() / zoom;
 		f32 x = tc.x, y = tc.y;
 		//vec2 tm = mp - pos;// - DeshWinSize / 2;
-		return vec2(cos(x),sin(y) + cos(x+time));
+		return vec2(sin(x), cos(y));
 	};
+
+	if (TIMER_END(vft) > 1000) {
+		TIMER_RESET(vft);
+		target = vec2(rand() % DeshWindow->width, rand() % DeshWindow->height);
+	}
+
+	static f32 maxmag = 0;
 
 	Render::StartNewTwodCmd(4, 0, vec2::ZERO, DeshWinSize);
 	for (u32 i = 0; i < precision; i++) {
@@ -204,10 +215,10 @@ void vector_field() {
 			vec2 pos2 = pos + s.normalized() * 10;
 
 			f32 ang = Math::AngBetweenVectors(pos2 - pos, vec2(0, 1));
-			
+			maxmag = Max(maxmag, s.mag());
 
 			//Render::DrawCircle2D(pos, 4, 10, Color_Red, 4, vec2::ZERO, DeshWinSize);
-			Render::DrawLine2D(pos, pos2, 2, color(25, 255*s.mag()/1, 125), 4, vec2::ZERO, DeshWinSize);
+			Render::DrawLine2D(pos, pos2, 2, color(25,  Clamp(255 * s.mag() / maxmag, 0.f, 255.f), 125), 4, vec2::ZERO, DeshWinSize);
 			
 		
 		}
