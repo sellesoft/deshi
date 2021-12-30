@@ -291,6 +291,11 @@ global_ const char* UIDrawTypeStrs[] = {
 	"Image",
 };
 
+#define UIDRAWCMD_MAX_VERTICES 0xFFFF
+#define UIDRAWCMD_MAX_INDICIES UIDRAWCMD_MAX_VERTICES * 3
+
+struct UIItem;
+
 //draw commands store what kind of command it is, and info relative to that command
 //this is to be stored on an array on UIWindow and determines what elements it draws when
 //we do the rendering pass
@@ -304,7 +309,16 @@ struct UIDrawCmd {
 	color      color; //draw cmds have either a texture or a color
 	Texture*     tex; //if texture is non-zero, we use that as its color, and thickness as its alpha
 	u32 subdivisions; //circle subdivisons
-	
+
+	//TODO(sushi) eventually use static arrays when we get an idea of how large these usually are
+	//Vertex2 vertices[UIDRAWCMD_MAX_VERTICES];
+	//u32     vertcount;
+	//u32     indices[UIDRAWCMD_MAX_INDICIES];
+	//u32     indexcount;
+
+	array<Vertex2> vertices;
+	array<u32>     indicies;
+
 	//TODO
 	//eventually we could maybe store text as an int* or something, so as unicode codepoints, since in the end,
 	//at least with TTF, thats how we communicate what letter we want.
@@ -322,6 +336,8 @@ struct UIDrawCmd {
 	
 	//for matching draw cmds in debug
 	u32 hash = MAX_U32;
+	
+	UIItem* parent = 0;
 };
 
 enum UIItemType : u32 {

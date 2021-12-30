@@ -534,7 +534,7 @@ UIStyle& UI::GetStyle(){
 }
 
 UIWindow* UI::GetWindow() {
-    return curwin;
+	return curwin;
 }
 
 vec2 UI::GetLastItemPos() {
@@ -780,23 +780,134 @@ void DebugText(vec2 pos, const char* text, color col = Color_White) {
 	debugCmds.add(dc);
 }
 
+
+//@Shape Generators
+enum GenShapes : u32 {
+	Shape_FilledTriangle,
+	Shape_Line,
+	Shape_FilledRect,
+	Shape_Rect,
+}; 
+
+
+pair<u32, u32> shapecounts[] = {
+	{3,3},
+	{4,6},
+	{4,6},
+	{8,24},
+};
+
+template<class... T>
+pair<u32, u32> sum_shapes(T... arg) {
+	return { (shapecounts[arg].first + ...),(shapecounts[arg].second + ...) };
+}
+
+//3 verts, 3 indicies
+void MakeFilledTriangle(Vertex2* putverts, u32* putindicies, vec2 p1, vec2 p2, vec2 p3, color color, u32 indicieOffset = 0) {
+	u32     col = color.rgba;
+	Vertex2* vp = putverts;
+	u32*     ip = putindicies;
+
+	ip[0] = indicieOffset; ip[1] = indicieOffset + 1; ip[2] = indicieOffset + 2;
+	vp[0].pos = p1; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = p2; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = p3; vp[2].uv = { 0,0 }; vp[2].color = col;
+}
+
+//4 verts, 6 indicies
+void MakeLine(Vertex2* putverts, u32* putindicies, vec2 start, vec2 end, f32 thickness, color color, u32 indicieOffset = 0) {
+	Assert(putverts && putindicies);
+
+	u32     col = color.rgba;
+	Vertex2* vp = putverts;
+	u32* ip = putindicies;
+
+	vec2 ott = end - start;
+	vec2 norm = vec2(ott.y, -ott.x).normalized();
+
+	ip[0] = indicieOffset; ip[1] = indicieOffset + 1; ip[2] = indicieOffset + 2;
+	ip[3] = indicieOffset; ip[4] = indicieOffset + 2; ip[5] = indicieOffset + 3;
+	vp[0].pos = { start.x,start.y }; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = { end.x,    end.y }; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = { end.x,    end.y }; vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = { start.x,start.y }; vp[3].uv = { 0,0 }; vp[3].color = col;
+
+	vp[0].pos += norm * thickness / 2;
+	vp[1].pos += norm * thickness / 2;
+	vp[2].pos -= norm * thickness / 2;
+	vp[3].pos -= norm * thickness / 2;
+}
+
+//4 verts, 6 indicies
+void MakeFilledRect(Vertex2* putverts, u32* putindicies, vec2 pos, vec2 size, color color, u32 indicieOffset = 0) {
+	Assert(putverts && putindicies);
+
+	u32     col = color.rgba;
+	Vertex2* vp = putverts;
+	u32*     ip = putindicies;
+
+	vec2 tl = pos;
+	vec2 br = pos + size;
+	vec2 bl = pos + vec2(0, size.y);
+	vec2 tr = pos + vec2(size.x, 0);
+
+	ip[0] = indicieOffset; ip[1] = indicieOffset + 1; ip[2] = indicieOffset + 2;
+	ip[3] = indicieOffset; ip[4] = indicieOffset + 2; ip[5] = indicieOffset + 3;
+	vp[0].pos = tl; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = tr; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = br; vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = bl; vp[3].uv = { 0,0 }; vp[3].color = col;
+
+}
+
+
+//8 verts, 24 indicies
+void MakeRect(Vertex2* putverts, u32* putindicies, vec2 pos, vec2 size, f32 thickness, color color, u32 indicieOffset = 0) {
+	Assert(putverts && putindicies);
+
+	u32     col = color.rgba;
+	Vertex2* vp = putverts;
+	u32* ip = putindicies;
+
+	vec2 tl = pos;
+	vec2 br = pos + size;
+	vec2 bl = pos + vec2(0, size.y);
+	vec2 tr = pos + vec2(size.x, 0);
+
+	f32 sqt = sqrtf(thickness);
+	vec2 tlo = sqt * vec2(-M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
+	vec2 bro = sqt * vec2(M_HALF_SQRT_TWO, M_HALF_SQRT_TWO);
+	vec2 tro = sqt * vec2(M_HALF_SQRT_TWO, -M_HALF_SQRT_TWO);
+	vec2 blo = sqt * vec2(-M_HALF_SQRT_TWO, M_HALF_SQRT_TWO);
+
+	memset(ip, indicieOffset, 24 * u32size);
+	ip[0] += 0; ip[1] += 1; ip[2] += 3;
+	ip[3] += 0; ip[4] += 3; ip[5] += 2;
+	ip[6] += 2; ip[7] += 3; ip[8] += 5;
+	ip[9] += 2; ip[10] += 5; ip[11] += 4;
+	ip[12] += 4; ip[13] += 5; ip[14] += 7;
+	ip[15] += 4; ip[16] += 7; ip[17] += 6;
+	ip[18] += 6; ip[19] += 7; ip[20] += 1;
+	ip[21] += 6; ip[22] += 1; ip[23] += 0;
+
+	vp[0].pos = tl + tlo; vp[0].uv = { 0,0 }; vp[0].color = col;
+	vp[1].pos = tl + bro; vp[1].uv = { 0,0 }; vp[1].color = col;
+	vp[2].pos = tr + tro; vp[2].uv = { 0,0 }; vp[2].color = col;
+	vp[3].pos = tr + blo; vp[3].uv = { 0,0 }; vp[3].color = col;
+	vp[4].pos = br + bro; vp[4].uv = { 0,0 }; vp[4].color = col;
+	vp[5].pos = br + tlo; vp[5].uv = { 0,0 }; vp[5].color = col;
+	vp[6].pos = bl + blo; vp[6].uv = { 0,0 }; vp[6].color = col;
+	vp[7].pos = bl + tro; vp[7].uv = { 0,0 }; vp[7].color = col;
+}
+
+
 //@Primitive Items
 
 
-
-//rectangle
-
-
-//TODO(sushi) decide if abstract objs should be placed in window space or screen space
 void UI::Rect(vec2 pos, vec2 dimen, color color) {
 	UIItem       item{ UIItemType_Abstract, curwin->cursor, style };
 	UIDrawCmd drawCmd{ UIDrawType_Rectangle};
-	drawCmd.position = vec2::ZERO;
-	drawCmd.dimensions = dimen;
-	drawCmd.color = color;
-	
-	item.position = pos;
-	item.size = dimen;
+
 	
 	item.drawCmds.add(drawCmd);
 	curwin->items[ui_state.layer].add(item);
@@ -3819,6 +3930,8 @@ void UI::Init() {
 	deshiStage |= DS_UI;
 	
 	TIMER_START(t_s);
+
+	
 	
 	curwin = new UIWindow();
 	curwin->name = "Base";
@@ -4092,7 +4205,8 @@ void CleanUpWindow(UIWindow* window) {
 
 //for checking that certain things were taken care of eg, popping colors/styles/windows
 void UI::Update() {
-	
+
+
 	
 	//there should only be default stuff in the stacks
 	Assert(!windowStack.count, 
